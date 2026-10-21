@@ -104,6 +104,12 @@ On an Android development build (the real test - tilt, millimetre sizes and thum
 14. Arena (Brood Rush or Broadside, 2+ AI teammates): the swap tiles sit between the goal stack and the score bar; a
     tap swaps hulls and does not steer.
 15. Turn the phone upside down mid-flight: nothing toggles (orientation no longer raises FlipAction).
+16. No steering lag, every device (pad, keyboard, mouse, phone), every hull: the nose answers the stick the same frame and
+    stops when it centres - no swing after the input. AI hulls still fly as before.
+17. Invert Y in Settings: on a pad, the keyboard and a phone, flip it and fly a two-stick hull (Squirrel) and a one-thumb
+    hull (Sparrow): both invert; with it off, a push up pitches both the same way. On a phone, tipping the top edge away
+    pitches like a pushed-up thumb (Manta soar, Thresher launch aim).
+18. Scarab with Time 5: flick up on the throttle slider - Snap Dash, and the slider stays where it was set.
 
 First-pass tuning (`Resources/TouchControlProfiles`): buttons 10 mm (floor 7 mm), gap 1.5 mm, inner arc 22 mm, arc step
 12 mm, corner box 36 % x 55 %; tilt full scale 25°, dead zone 2.5°, smoothing 12/s, forward tilt dives; slider 9 x 32 mm;

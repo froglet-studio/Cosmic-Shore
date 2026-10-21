@@ -152,7 +152,6 @@ MonoBehaviour:
     tail = """  tiltFullScaleDegrees: 25
   tiltDeadZoneDegrees: 2.5
   tiltSmoothingPerSecond: 12
-  tiltForwardDives: 1
   buttonMillimetres: 10
   buttonGapMillimetres: 1.5
   innerArcMillimetres: 22

@@ -855,6 +855,10 @@ applies to new abilities, new resources on the meter list, and anything that add
     `author_touch_profiles.py --check` fails when a TotemButtons hull shows a card or button whose input resolves to
     no action on touch (it caught the Stoat, whose only bindings were the pad overrides, and the Angler, whose paint and
     erase read only trigger depth). Run `Tools/Build/touch_controls_harness/run.sh` after touching the layout or tilt.
+    Two fleet rules ride with it (2026-10-21): **a human pilot's nose has no lag** - every transformer's RotateShip
+    goes through `VesselTransformer.NoseFollowFraction` (never write `LERP_AMOUNT * dt` into a new override; read
+    `NoseFollowRate` to predict a hull) - and **Invert Y is the setting's alone** (`ApplyInvertSettings` in every
+    input strategy; a pitch never carries a sign of its own; `InputInversionTests`).
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 

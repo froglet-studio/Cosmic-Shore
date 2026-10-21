@@ -124,7 +124,14 @@ namespace CosmicShore.UI
             {
                 _slider = TouchThrottleSlider.Create(row, disc, _lockup.ColourFor(Element.Time), size * 0.8f, size * 3f);
                 _slider.Bind(_status.InputStatus, _profile.throttleSliderStart);
+                _slider.Flicked += OnSliderFlicked;
             }
+        }
+
+        /// <summary>An upward flick on the throttle slider: the hull's phone Snap Dash, if it has one.</summary>
+        void OnSliderFlicked()
+        {
+            if (_status?.VesselTransformer is ScarabVesselTransformer scarab) scarab.TryTouchSnapDash();
         }
 
         void ClearExtras()

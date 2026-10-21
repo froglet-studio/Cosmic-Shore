@@ -1360,9 +1360,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-21 by Garrett's session (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 3 and 8
 
-### T-20261021-cb48 · open · dev · vessels
+### T-20261021-cb48 · done · dev · vessels
 - **Task:** Touch feel leftovers: set touchNoseResponse on Dolphin, Manta, Rhino, Urchin and route it through SingleStickVesselTransformer.RotateShip (the Angler's 9 is ignored there); honour Invert Y / Invert Throttle in TouchInputStrategy.Reparameterize and the one-thumb Pitch()
 - **Done when:** Dual-stick hulls answer the thumb without the 0.67 s nose lag on a phone; the invert settings change touch flight
 - **Who can take it:** any session (Garrett's vessels); Yash (offered) to check on a phone
 - **Added:** 2026-10-21 by Garrett's session (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 2 rows 7 and 14
+- **Done:** 2026-10-21, Done wider than the task (Garrett: 'get rid of all steering lag, and inconsistent y-inversions that are not left to the settings'): no nose lag for any human pilot on any device/hull (NoseFollowFraction), touchNoseResponse retired; one Invert Y rule in every strategy (ApplyInvertSettings), touch reads both invert settings. MOBILE_VESSELS.md section 8, second round.

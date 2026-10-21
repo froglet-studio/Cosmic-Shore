@@ -321,12 +321,19 @@ shader (§2 row 15).
 - **D9:** the Butterfly's re-grip Fold.
 - **D10:** the Wrasse across two phones.
 - **D11:** Termite / Falcon.
-- **§2 row 7:** the touch nose response on the other hulls.
-- **§2 row 14:** Invert Y on touch.
+- ~~**§2 row 7:** the touch nose response~~ and ~~**§2 row 14:** Invert Y on touch~~: done 2026-10-21, wider
+  than asked - see "Second round" below.
 - **§2 rows 13 and 16-18:** the remaining small fixes.
 - **§4:** every performance lever. No phone capture yet; T-20261021-d476.
 - **AI Dolphins on a phone host** resolve presses as Touch, so their drift now also lights Echo. This is harmless,
   noted in `DOLPHIN_ENERGY_ECONOMY.md` §2b.
-- **Snap Dash on touch** needs a tap high, a tap at the very bottom and a tap high on the slider. It is reachable,
-  but a phone test should judge whether it is usable.
+- ~~**Snap Dash on touch**~~: an upward flick on the slider now (second round, below).
 - **A drift on a phone is always the sharp tier** (no trigger depth), on every drift hull.
+
+### Second round (Garrett, 2026-10-21, same day)
+
+| Garrett | Built |
+|---|---|
+| "get rid of all steering lag" | **No human pilot's nose lags on any device or hull any more.** `VesselTransformer.NoseFollowFraction` makes the nose the commanded rotation each frame for this machine's human pilot (pad, keyboard, mouse, touch), and every transformer (base, single-stick, gun, command) now goes through it; the single-stick override used to hard-code the 0.67 s lag, so no one-thumb hull ever got the touch fix. A leftover gap from a discontinuous command closes at 1.5 x the hull's own max turn rate (a fast turn, never a snap). AI, autopilot and remote hulls keep the fleet's 1.5/s: the autopilots model it. The per-hull `touchNoseResponse` is retired (five prefabs). The Stoat's foresight reads the hull's own rate. The tilt is read unsmoothed from the gravity sensor (only a raw-accelerometer fallback is smoothed). |
+| "... and inconsistent y-inversions that are not left to the settings" | **One Invert Y rule** (`BaseInputStrategy.ApplyInvertSettings`): the setting turns the vertical axis over everywhere flight reads it, on every device. It used to flip only the two-stick pitch and roll, so on a pad or keyboard it did nothing on the nine one-thumb hulls; touch never read it (nor Invert Throttle); dual mouse pitched the other way by default; and the tilt carried its own "forward dives" switch. Now a push up pitches every hull the same way by default, the setting flips all of it, and tipping the phone forward is a pushed-up thumb. `InputInversionTests` holds it (and fails on the old dual-mouse line). Not changed: dual mouse's throttle runs the other way from the pad's (an X inversion, reported, not touched). |
+| "why can't the scarab just record a swipe with the right thumb for the snap dash?" | It does: a quick upward flick that starts on the throttle slider fires the Snap Dash (Time 5), and the slider goes back to where it was set. On the slider rather than open glass because the juke already owns every right-thumb push past 35 %. |

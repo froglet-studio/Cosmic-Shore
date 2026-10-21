@@ -165,16 +165,15 @@ namespace CosmicShore.Gameplay
         /// crossing the same deadzone the input strategy uses for its own trigger edges; two
         /// rising edges inside the window fire the dash. The upgrade gate is read at the moment
         /// of the second tap (per-use snapshot), never cached.
-        /// On a phone the value is the slider (<see cref="PilotThrottle01"/>), unchanged here: two
-        /// jumps up from the bottom 5% of the slider inside the window are the double tap (from a
-        /// stop: tap high, tap the bottom, tap high). Two taps at the SAME height are not, because the
-        /// slider holds its value between them and so never crosses the deadzone (SCARAB.md §3.11).</summary>
+        /// On a phone the dash is a flick on the slider instead (<see cref="TryTouchSnapDash"/>), so the
+        /// slider's own value never counts as taps here: a flick raises and restores it, and two flicks
+        /// would otherwise fire the dash twice (SCARAB.md §3.11).</summary>
         void DetectSnapDash(float throttle01)
         {
             bool held = throttle01 > TriggerDeadzone;
             bool risingEdge = held && !_triggerHeld;
             _triggerHeld = held;
-            if (!risingEdge) return;
+            if (!risingEdge || ThrottleIsSetAndHold(InputStatus)) return;
 
             // Autopilot holds the trigger permanently — no edges, no dash. (Defensive: held
             // stays true under AI, so risingEdge can never fire there anyway.)
@@ -202,6 +201,25 @@ namespace CosmicShore.Gameplay
         public bool TryAutopilotSnapDash()
         {
             if (VesselStatus == null || !VesselStatus.AutoPilotEnabled) return false;
+            if (VesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Time) != true) return false;
+
+            FireSnapDash();
+            return true;
+        }
+
+        /// <summary>
+        /// The Snap Dash on a phone: a quick upward FLICK of the right thumb on the throttle slider
+        /// (Garrett, 2026-10-21: "why can't the scarab just record a swipe with the right thumb for the
+        /// snap dash?"). The pad's dash is a double-tap of the throttle; on a phone the throttle is the
+        /// set-and-hold slider, so a flick ON it is the same gesture's twin, and it cannot be confused
+        /// with the juke: a touch that starts on the slider is the slider's (FlightTouchClaims), never the
+        /// right stick the juke reads. Same TIME-5 gate, read at the moment of use, and the same impulse.
+        /// Only for this machine's human on touch, which is the only place the slider exists.
+        /// </summary>
+        public bool TryTouchSnapDash()
+        {
+            if (VesselStatus == null || VesselStatus.AutoPilotEnabled) return false;
+            if (!ThrottleIsSetAndHold(InputStatus)) return false;
             if (VesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Time) != true) return false;
 
             FireSnapDash();

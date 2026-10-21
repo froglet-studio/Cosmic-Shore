@@ -204,7 +204,7 @@ namespace CosmicShore.Gameplay
         ///
         /// The 90/10 pass answered "touch feels
         /// less responsive than a pad" by steepening the curve, but the unresponsiveness was the
-        /// hull's 0.67 s nose lag (VesselTransformer.touchNoseResponse fixes it), and a steeper
+        /// hull's 0.67 s nose lag (gone for every human pilot since 2026-10-21, VesselTransformer.NoseFollowFraction), and a steeper
         /// curve on top of a lagging nose is a bigger turn to overshoot. With the lag gone, the
         /// softer centre is precision rather than sluggishness. Tremor is still the dead zone's job.
         ///
@@ -380,14 +380,10 @@ namespace CosmicShore.Gameplay
             inputStatus.YDiff = Mathf.Clamp(stick.x, -1f, 1f);
         }
 
-        /// <summary>Tilt as a thumb: wheel-turn is the stick's x, and tipping the top edge away dives
-        /// (this game's thumb-up is nose-up, so forward tilt is a DOWN stick) unless the library says otherwise.</summary>
-        private static Vector2 TiltToStick(Vector2 tiltStick)
-        {
-            var library = TouchControlProfileLibrarySO.Instance;
-            bool forwardDives = !library || library.TiltForwardDives;
-            return new Vector2(tiltStick.x, forwardDives ? -tiltStick.y : tiltStick.y);
-        }
+        /// <summary>Tilt as a thumb: wheel-turn is the stick's x, and tipping the top edge away is the
+        /// thumb pushed UP - so it flies exactly as a pushed-up thumb does, and the Invert Y setting turns
+        /// it over with every other stick (no inversion of its own; Garrett, 2026-10-21).</summary>
+        private static Vector2 TiltToStick(Vector2 tiltStick) => tiltStick;
 
         /// <summary>A held AIM button's drag from where it landed is the right stick (single-stick hulls
         /// only - a two-stick hull flies on it). Written after the flight mix so it wins over the mirror.</summary>
@@ -756,6 +752,9 @@ namespace CosmicShore.Gameplay
             inputStatus.YSum = -Ease(right.y + left.y);
             inputStatus.XDiff = (right.x - left.x + 2) / 4;
             inputStatus.YDiff = Ease(right.y - left.y);
+
+            // The settings' Invert Y / Invert Throttle, which touch never read (BaseInputStrategy).
+            ApplyInvertSettings();
         }
 
         /// <summary>

@@ -12,8 +12,22 @@ namespace CosmicShore.UI
     /// (replicated, owner-write) - the manual throttle channel no touch strategy writes - which the
     /// Scarab reads on touch in place of its trigger depth.
     /// </summary>
-    public class TouchThrottleSlider : MonoBehaviour, IPointerDownHandler, IDragHandler
+    public class TouchThrottleSlider : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler
     {
+        /// <summary>A quick upward flick that started on the slider (the Scarab's Snap Dash). The slider
+        /// is put back where it was set before the flick, so a dash never moves the throttle.</summary>
+        public event System.Action Flicked;
+
+        // A flick: up at least this far, this fast, in at most this long. Millimetres, so it reads the
+        // same on every screen.
+        const float FlickMinMillimetres = 8f;
+        const float FlickMaxSeconds = 0.25f;
+        const float FallbackDpi = 160f;
+
+        float _downTime;
+        Vector2 _downPosition;
+        float _valueAtDown;
+        bool _down;
         IInputStatus _input;
         RectTransform _region;
         Image _fill;
@@ -79,7 +93,25 @@ namespace CosmicShore.UI
         public void OnPointerDown(PointerEventData eventData)
         {
             _eventCamera = eventData.pressEventCamera;
+            _down = true;
+            _downTime = Time.unscaledTime;
+            _downPosition = eventData.position;
+            _valueAtDown = _value;
             Follow(eventData.position);
+        }
+
+        public void OnPointerUp(PointerEventData eventData)
+        {
+            if (!_down) return;
+            _down = false;
+            float pxPerMm = (Screen.dpi > 1f ? Screen.dpi : FallbackDpi) / 25.4f;
+            float rise = (eventData.position.y - _downPosition.y) / pxPerMm;
+            float across = Mathf.Abs(eventData.position.x - _downPosition.x) / pxPerMm;
+            bool flick = Time.unscaledTime - _downTime <= FlickMaxSeconds
+                         && rise >= FlickMinMillimetres && rise > across;
+            if (!flick) return;
+            SetValue(_valueAtDown);
+            Flicked?.Invoke();
         }
 
         public void OnDrag(PointerEventData eventData) => Follow(eventData.position);

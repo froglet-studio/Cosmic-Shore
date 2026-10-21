@@ -24,11 +24,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("Degrees of tilt that read as nothing, so a steady hand flies straight.")]
         [SerializeField, Range(0f, 10f)] float tiltDeadZoneDegrees = 2.5f;
 
-        [Tooltip("How fast the tilt stick follows the phone (1/s). Higher is snappier, lower filters hand shake.")]
+        [Tooltip("How fast the tilt follows the phone (1/s) on a phone WITHOUT a gravity sensor, where the raw " +
+                 "accelerometer carries every jolt of the hand. A gravity sensor is read unsmoothed (no lag).")]
         [SerializeField, Range(1f, 40f)] float tiltSmoothingPerSecond = 12f;
-
-        [Tooltip("Tipping the phone's top edge away dives the nose (a pushed-forward stick). Off makes it climb.")]
-        [SerializeField] bool tiltForwardDives = true;
 
         [Header("Button layout (millimetres on the glass)")]
         [Tooltip("Width of one totem or button on the glass. Platform guidance is 7-9 mm minimum.")]
@@ -82,7 +80,6 @@ namespace CosmicShore.Gameplay
         public float TiltFullScaleDegrees => tiltFullScaleDegrees;
         public float TiltDeadZoneDegrees => tiltDeadZoneDegrees;
         public float TiltSmoothingPerSecond => tiltSmoothingPerSecond;
-        public bool TiltForwardDives => tiltForwardDives;
         public float ButtonMillimetres => buttonMillimetres;
         public float ButtonGapMillimetres => buttonGapMillimetres;
         public float InnerArcMillimetres => innerArcMillimetres;

@@ -307,7 +307,7 @@ the orbit, exactly as letting go of a trigger does. A hidden HUD or a vessel swa
 (`AbilityCardPress.OnDisable`), so nothing stays pressed.
 
 **The autopilot.** On a handheld every `InputController` reports `Touch`, the AI's and the menu's included
-(`VesselTransformer.IsLocalHumanTouchPilot`'s note). So until this change an AI Stoat on a phone (the lava lamp, the
+(`VesselTransformer.IsLocalHumanPilot`'s note). So until this change an AI Stoat on a phone (the lava lamp, the
 Slingshot AIs) also resolved every press against the empty touch map and never laid a pair or switched mode. It now
 does. The hand-back (vessel skill §4.ad item 3, `StoatDipoleExecutor.HandBackAiHold`) is unchanged: `ResolveBoundInput`
 reads every map (`CollectBoundActions`), and the release carries the device its press was resolved with

@@ -711,7 +711,6 @@ MonoBehaviour:
   RollScaler: 130
   RotationThrottleScaler: 0
   restrictedTurnMultiplier: 3
-  touchNoseResponse: 9
   thresher: {fileID: 7788112233445566780}
   pivotFacingRate: 25
 --- !u!114 &874579555101021522

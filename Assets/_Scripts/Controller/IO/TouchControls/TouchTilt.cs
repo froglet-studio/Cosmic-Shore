@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Takes the phone's current pose as neutral and starts producing a stick.</summary>
         public void Engage()
         {
-            _hasGravity = TryReadGravity(out var gravity);
+            _hasGravity = TryReadGravity(out var gravity, out _);
             _smoothedGravity = gravity;
             _reference = _hasGravity ? TiltMath.Angles(gravity, LandscapeRight) : Vector2.zero;
             _stick = Vector2.zero;
@@ -47,7 +47,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Advances the stick one frame and returns it. Zero while disengaged or with no sensor.</summary>
         public Vector2 Sample(float deltaTime, TouchControlProfileLibrarySO tuning)
         {
-            if (!_engaged || !TryReadGravity(out var gravity)) return Vector2.zero;
+            if (!_engaged || !TryReadGravity(out var gravity, out bool fused)) return Vector2.zero;
 
             float full = tuning ? tuning.TiltFullScaleDegrees : 25f;
             float dead = tuning ? tuning.TiltDeadZoneDegrees : 2.5f;
@@ -61,15 +61,19 @@ namespace CosmicShore.Gameplay
                 _reference = TiltMath.Angles(gravity, LandscapeRight);
             }
 
-            _smoothedGravity = Vector3.Lerp(_smoothedGravity, gravity, 1f - Mathf.Exp(-rate * deltaTime));
+            // No steering lag (Garrett, 2026-10-21): the OS's gravity sensor is already fused and
+            // filtered, so it is read as it comes. Only the raw accelerometer fallback - which carries
+            // every jolt of the hand - is smoothed.
+            _smoothedGravity = fused ? gravity : Vector3.Lerp(_smoothedGravity, gravity, 1f - Mathf.Exp(-rate * deltaTime));
             _stick = TiltMath.Stick(TiltMath.Angles(_smoothedGravity, LandscapeRight), _reference, full, dead);
             return _stick;
         }
 
         static bool LandscapeRight => Screen.orientation == ScreenOrientation.LandscapeRight;
 
-        static bool TryReadGravity(out Vector3 gravity)
+        static bool TryReadGravity(out Vector3 gravity, out bool fused)
         {
+            fused = true;
             var sensor = GravitySensor.current;
             if (sensor != null)
             {
@@ -77,6 +81,8 @@ namespace CosmicShore.Gameplay
                 gravity = sensor.gravity.ReadValue();
                 if (gravity.sqrMagnitude > 1e-4f) return true;
             }
+
+            fused = false;
 
             var accelerometer = Accelerometer.current;
             if (accelerometer != null)

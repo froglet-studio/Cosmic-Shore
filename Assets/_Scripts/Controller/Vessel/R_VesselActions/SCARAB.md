@@ -1054,11 +1054,15 @@ thumb) steers, and the rest is on screen.
   pilot's device (`ActiveInputDevice`, replicated) is Touch and `RightTriggerAnalog` otherwise; the
   autopilot still reads a full throttle. `ScarabAnimation` reads the same value, and on touch an idle
   frame (no thumb on the glass) does not drop it to zero, because the slider still holds it.
-- **Snap Dash (Time 5).** The double-tap detector is unchanged and now reads the slider: two rises
-  from the bottom 5% of the slider inside 0.3 s fire it (from a stop: tap high, tap the bottom, tap
-  high). Two taps at the same height do not, because the slider holds its value between them and never
-  crosses the deadzone. Reachable, but not a natural double tap: a phone test decides whether it needs
-  a gesture of its own.
+- **Snap Dash (Time 5): flick the slider up.** Garrett: "why can't the scarab just record a swipe with the
+  right thumb for the snap dash?" It does: a quick upward swipe that STARTS on the throttle slider (at least
+  8 mm up, more up than across, inside 0.25 s; `TouchThrottleSlider.Flicked`) fires
+  `ScarabVesselTransformer.TryTouchSnapDash` - the same TIME-5 gate and impulse as the pad's double tap - and
+  the slider goes back to where it was set, so a dash never moves the throttle. It lives on the slider, not
+  on open glass, because the juke owns the right thumb everywhere else: any right-thumb push past 35 % is a
+  juke, so a free swipe would juke first. A touch that starts on the slider is the slider's
+  (`FlightTouchClaims`), never the right stick. On touch the double-tap detector no longer counts the
+  slider's value as taps (a flick raises and restores it, and would otherwise dash twice).
 - **The juke.** `ScarabJukeController` polls `RightNormalizedJoystickPosition`. With one flight thumb
   the touch strategy writes the right stick as zero on a single-stick hull (it used to mirror the
   steering thumb onto it, so every hard turn was also a juke). A second flight finger is the right
@@ -1069,7 +1073,7 @@ thumb) steers, and the rest is on screen.
   button as binary: both drift actions are active, the sum is 2, and the button is always the
   **sharp** tier (eased in at the non-pad ramp, passing through the single tier on the way). The
   single-only drift (a half pull on a pad) has no phone equivalent.
-- **Not reachable on a phone**: the single (half-pull) drift; a natural double-tap Snap Dash (above).
+- **Not reachable on a phone**: the single (half-pull) drift.
 - **If the HUD builds no slider** (a mode without the phone HUD), `Throttle` stays 0 and a touch
   Scarab does not move — as before this change, when touch wrote no trigger depth at all.
 

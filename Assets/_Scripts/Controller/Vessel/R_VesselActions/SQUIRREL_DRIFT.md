@@ -484,7 +484,7 @@ when a pilot switches device.
 watching machine's: a PC watching a pad pilot's Squirrel reads that pilot's analog trigger depth
 (it read full pull when the PC had no pad); a phone watching a pad Manta now runs its trigger turn
 and boost exactly as a PC peer always did. An AI's device is the host's on every machine. Surfaces
-gated on the LOCAL pilot (`VesselTransformer.IsLocalHumanTouchPilot`,
+gated on the LOCAL pilot (`VesselTransformer.IsLocalHumanPilot`,
 `ShieldSwipeActionExecutor.IsLocalAnalogPilot`) are unchanged. No asset changed.
 
 **Files.**
