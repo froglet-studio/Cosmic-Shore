@@ -1259,3 +1259,39 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `BrittleStarBlastForm`, `BrittleStarTests.Blast_IsAVolume_NotAFlatSheet` (with its flatten control), the
   LOCKED rule in `Docs/claude/SHADERS_AND_PERFORMANCE.md`, and `/vessel` §4.ab5.
 
+### L-STU-127 — A parity scenario that cannot reach a new code path passes every mutation of it
+- Lab: Thresher Plant Lab (a shipped-solver port, two rounds in one day) · Branch: `cece/youthful-johnson-hccyzf` · Date: 2026-10-21
+- What happened: the shipped `ThresherChainSolver` gained a two-phase "launch line" after an aimed launch, and the
+  page's `Solver` got a line-for-line port. Parity passed. Three mutations of the second phase also passed, one at a
+  time: deleting `keepOnLine`, then two attempts at a steering scenario. That phase only exists when the launch
+  outruns the ball, i.e. with the shipped ×4.8 launch boost. The page's `armLaunch` predated the boost, so no
+  scenario could launch fast enough, and steering from the start kept the line in its first phase.
+- Do instead:
+  - After porting a rule, delete it from the page and run parity. A pass means no scenario reaches the rule; it
+    does not mean the port is right.
+  - When the lab's API lags the shipped one (a parameter the game passes and the lab never learned), port the
+    parameter with a default that keeps the lab's own vessel unchanged. Then give the scenarios a field for it
+    (here `boost`, read by `TraceDriver.cs` and `parityTrace`).
+  - A clause that still stays under tolerance (here "the ball is not closing", 0.84×) needs another owner. Name
+    the C# test that fails without it.
+- Evidence: `analog-armed-line-steer` in `Tools/Build/thresher_plant_lab/scenarios.json` (dropping `keepOnLine`
+  fails at 2.56×); `THRESHER_PLANT_LAB.md` § Checked, 2026-10-21.
+- Promoted: no
+
+### L-STU-128 — Measure the input left over AFTER an edge, and the follower at the leader's top speed
+- Lab: Thresher Plant Lab (the shipped aimed launch) · Branch: `cece/youthful-johnson-hccyzf` · Date: 2026-10-21
+- What happened: "it doesn't always shoot me at the cross hair" had two causes. Neither showed in the scenarios,
+  which fly each trigger at 0 or 1 after an edge.
+  - The launch fires as LT passes 90%, so the trigger is still most of the way down for the next frames. That
+    depth read as a partial pull: the ball became a sliding anchor and the heading went 177° off the aim.
+  - With the Time element raised, the boosted launch leaves at ~1 300 u/s against the ball's 479 u/s cap. A
+    rigid chain then brakes the ship under the ball's speed, and the ball overtakes and swings across.
+- Do instead:
+  - For any edge fired at a threshold, fly the input at the threshold's far side for a second: 0.85, not 0.
+  - Sweep the element multipliers to their maximum. A capped follower (ball, tow, wake) fails only where the
+    leader outruns the cap.
+  - Probe with the stand-in pilot WITH grip (the nose turns with the tug, as the transformer does). Without
+    grip the tug is erased every frame and the swing never shows.
+- Evidence: `ThresherAnalogTriggerTests.AimedLaunch_*` (177° on the old solver, 55° on round 1);
+  `R_VesselActions/THRESHER.md` §5a "The launch flies the crosshair's line".
+- Promoted: no

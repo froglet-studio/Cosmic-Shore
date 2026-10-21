@@ -868,6 +868,25 @@ slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Ca
 
 ## Follow-ups
 
+### Refactor rows (2026-10-21 launch-view ship pass, `cece/youthful-johnson-hccyzf` — rows only)
+
+- **The launch line's three numbers are solver constants, not dials (debt CREATED).**
+  `LaunchLineTrailDegrees` 10, `LaunchLineMaxSeconds` 3 and `LaunchReleaseRestDepth` 0.2 are `const`s in
+  `ThresherChainSolver`, because a `ThresherDials` field would also need a lab dial and a row in parity.cjs's
+  "20 analog dials" asset check. That is fine while they are bounds, not feel. If anyone tunes one, it becomes a
+  dial: add the field to `ThresherDials` and the asset, add it to the lab's `SHIPPED`/`analogDials`, and parity's
+  dial count goes to 23. Measure first: `bash Tools/Build/thresher_chain_harness/run.sh` (the `AimedLaunch_*` rows).
+- **The lab's own vessel arms with boost 1; the game arms with `launchBoost` 4.8 (debt WALKED PAST).**
+  `ThresherPlantLab.html` `armLaunch(..., boost)` takes the boost since 2026-10-21, but the page's vessel
+  (`s.armLaunch(this.cam.aim, this.Q.perfectWindowSeconds, 1)`) and its "Perfect Release" window predate the
+  2026-10-13 rule that every aimed launch takes the boost, so the page FLIES a different launch than it gates.
+  That is incompleteness of a lab (a report), not an inconsistency in the game. Fix when the lab next runs a round:
+  `grep -n "perfectWindow\|armLaunch(" Docs/Studios/ThresherPlantLab.html`.
+- **A remote replica never arms (debt made VISIBLE).** `LetGo` arms only while `_spectating`, which is
+  camera-side and local-pilot-only, so a guest's copy of a host's aimed launch leaves on the tangent at once and
+  never flies the line. The plant's pre-existing §7 exposure, now bigger, because the owner's launch is held on its
+  line for up to 3 s. Measure in MPPM: host aims, guest watches the host's ball and hull for the first 3 s.
+
 ### Refactor rows (2026-10-14 crosshair-trail + launch-boost ship pass, `cece/relaxed-dijkstra-g6ix3x` — rows only)
 
 - **The trail pen is a fifth last-writer of one flag (debt CREATED).** `HoldTrailPen` writes

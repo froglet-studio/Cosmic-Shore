@@ -12783,8 +12783,9 @@ Garrett: the both-triggers launch view entered and left with camera jank, each e
 release with RT held "doesn't always shoot me at the cross hair". `THRESHER.md` §5a has the cause and the numbers.
 Changed: `ThresherChainSolver` (launch line + LT let-go latch), `ThresherExecutor` (aim seeded from the pre-plant
 camera facing and kept through the plant; `spectateDropSeconds` grace), `ThresherConfigSO` + `ThresherConfig.asset`
-(`spectateDropSeconds: 0.25`), the plant lab's JS port, `ThresherAnalogTriggerTests` (+3). Chain harness 69/69 (the
-new tests fail on the old solver: 177° off the aim); lab parity PASS with negative controls; `verify_lab.cjs` PASS;
+(`spectateDropSeconds: 0.25`), the plant lab's JS port, `ThresherAnalogTriggerTests` (+5 over two rounds). Chain harness
+70/70 (the new tests fail on the old solver: 177° off the aim, 55° on the round-1 solver at a Time-raised spin); lab
+parity PASS (10 scenarios) with negative controls; `verify_lab.cjs` PASS;
 `unity_refcompile` player: 0 project errors (editor: the 3 known `AuthenticationServiceFacade` errors, none in changed
 files). No editor or `unity` CLI in the session, so `/verify-unity` did not run.
 1. Toy Box > Vessel Changer → Thresher, gamepad. Fly at a landmark, LT full, RT full: the launch view's crosshair sits
