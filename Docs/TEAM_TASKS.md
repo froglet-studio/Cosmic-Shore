@@ -1260,3 +1260,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner, the launch feel)
 - **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a 'Known feel cost'
+
+### T-20261021-8190 · open · test · In-game UI / arena pilot swap
+- **Task:** Play an arena match (Brood Rush or Broadside) with 2+ AI teammates on PC, pad and a phone: the pilot-swap tiles sit between the goal stack and the score bar (16:9, 4:3, notched phone), tapping a tile swaps hulls and does not also steer, keycaps read 1/2 on keyboard and nothing on a phone
+- **Done when:** Tiles placed in the gap on all three aspects, a tap swaps without steering, keycaps follow the device
+- **Who can take it:** Yash, or Shombith (GameCanvas top bar)
+- **Added:** 2026-10-21 by Garrett (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/GAME_MODE_TOPBAR.md §2.7
+
+### T-20261021-64ee · open · content · In-game UI / control glyphs
+- **Task:** Author PadDpadLeft / PadDpadRight entries (padLabel or padGlyph) in Assets/Resources/ControlGlyphSet.asset so the pilot-swap tiles show a D-pad keycap on a pad
+- **Done when:** A pad player sees a D-pad chip under each pilot-swap tile
+- **Who can take it:** Shombith (UI art) or Yash
+- **Added:** 2026-10-21 by Garrett (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/GAME_MODE_TOPBAR.md §2.7

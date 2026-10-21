@@ -188,6 +188,7 @@ namespace CosmicShore.UI
             EnsureObjectiveIndicator();
             EnsureVolumeIndicator();
             EnsureSpectatorBadge();
+            EnsurePilotSwapIndicator();
             PrewarmPauseMenu();
 
             // If OnClientReady already fired before we subscribed (client race condition:
@@ -1037,6 +1038,25 @@ namespace CosmicShore.UI
             var stack = view != null ? view.GoalStack : null;
             if (stack == null) return;
             SpectatorWatchBadge.Ensure(stack.transform, gameData);
+        }
+
+        /// <summary>
+        /// The arena pilot swap's targets in the top bar, between the goal stack and the score bar,
+        /// tappable on a phone (Docs/GAME_MODE_TOPBAR.md §2.7). Ensured in code for the spectator
+        /// badge's reason - one call reaches every scene that instances the canvas, with no prefab
+        /// or scene edit - and it hides itself outside an arena match.
+        /// </summary>
+        void EnsurePilotSwapIndicator()
+        {
+            var stack = view != null ? view.GoalStack : null;
+            var stackRect = stack != null ? stack.transform as RectTransform : null;
+            var parent = stackRect != null ? stackRect.parent as RectTransform : transform as RectTransform;
+
+            RectTransform scoreBar = null;
+            if (view is MultiplayerHUDView mp && mp.UsesSingleDomainBar)
+                scoreBar = mp.AllyDomainContainer as RectTransform;
+
+            PilotSwapIndicator.Ensure(parent, gameData, stackRect, scoreBar);
         }
 
         protected void RefreshGoalStack()
