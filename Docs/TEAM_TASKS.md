@@ -1905,3 +1905,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-21 by a Claude session (`cece/quirky-gates-skplxp`)
 - **See:** Docs/Studios/SwarmCardVessel/cards.json
+
+### T-20261021-52b0 · open · test · vessels
+- **Task:** On a phone, fly the Goby & Pistol: double tap the small (Pistol) view to fly the Pistol, hold to dive and drag to launch, double tap the small (Goby) view to come back. Check a planted left thumb in that corner never swaps.
+- **Done when:** Both swaps work on a phone build and flying thumbs never swap by accident
+- **Who can take it:** Yash or Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md §11 (2026-10-21)

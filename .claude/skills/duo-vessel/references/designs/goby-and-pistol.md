@@ -490,3 +490,11 @@ the line it settled.
   prisms themselves; an aimed fling lights the prisms it will break (its landing ring is gone; the dotted arc stays as
   the aim mark); a falling Pistol lights the trail tile under it (the contact dot is gone); flares are small lit
   volumes. **Unity still draws the rings** (`PistolWarp`, `PistolWorldMesh`) until the clone ports this.
+- 2026-10-21, Garrett: "i can not switch to the pistol on mobile". The Unity duo read only the D-pad and keys 1 / 2
+  (`CrewSeat.PollSwap`), which a phone has neither of, and the Pistol's own pointer read `Mouse.current`, which a phone
+  does not have. Now a **double tap on the small view swaps**, as on the Wrasse, the Marlin and the Honeyguide (one
+  shared detector, `CrewSmallViewDoubleTap` in `CrewViews.cs`, the Wrasse's numbers), on the arena cooldown; the Pistol
+  reads `Pointer.current` (mouse or finger), and a press in the small view is the swap's, never a dive. The lab's ⇄ Swap
+  button stays the lab's stand-in. **[read] for Garrett:** on a phone, double tap the Pistol's square to fly it, double
+  tap the Goby's square to come back; hold to dive and drag to launch on the Pistol. Not yet on a phone: the Goby's
+  primer and flares (3 / 4, D-pad up / down) have no touch input.

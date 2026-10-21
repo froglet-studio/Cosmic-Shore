@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     /// and the Pistol rides the ground its trail's hinges make, seen side on through a second camera. The Pistol's body,
     /// its launch, ghost and Snap (the vortex ring) act on the scene's REAL prisms; the Goby's primer and flares do too.
     /// One human flies one half and the AI flies the other; the swap is the arena's gesture (D-pad left / right, keyboard
-    /// 1 / 2, <see cref="PilotSwapGesture"/>). The design: <c>.claude/skills/duo-vessel/references/designs/goby-and-pistol.md</c>.
+    /// 1 / 2, <see cref="PilotSwapGesture"/>) or, on a phone, a double tap on the small view (<see cref="CrewSmallViewDoubleTap"/>). The design: <c>.claude/skills/duo-vessel/references/designs/goby-and-pistol.md</c>.
     ///
     /// <para>It lives on <c>Goby.prefab</c> and wakes only on the LOCAL pilot's hull while a human flies it (not on an AI
     /// or remote copy, not while the menu's autopilot flies it): the Pistol is simulated on that one machine, so its
@@ -96,6 +96,7 @@ namespace CosmicShore.Gameplay
         readonly List<Prism> _expiredK = new();
         readonly PistolWorldMesh _world = new();
         readonly CrewPictureInPicture _pip = new();                 // the crew vessels' one layout of the two views
+        readonly CrewSmallViewDoubleTap _pipTap = new();            // and their touch swap: a double tap on the small view
         CrewViewRender _render;                                      // and their one look for a seat camera's render
         readonly PistolTrueDraw _true = new();                      // the world drawn as itself: real meshes, real materials, lit, under the sky
         readonly Dictionary<Prism, Renderer> _renderers = new(2048); // each prism's renderer (its live sharedMaterials)
@@ -478,8 +479,12 @@ namespace CosmicShore.Gameplay
         {
             // the arena's gesture on the arena's cooldown (CrewSeat.PollSwap), read here because the Goby's input is paused
             // while the human is on the Pistol (and RequestPilotSwap is a no-op outside an arena match, so the two never
-            // both act)
-            if (CrewSeat.PollSwap(ref _swapReadyAt)) SetHuman(_human == Half.Goby ? Half.Pistol : Half.Goby);
+            // both act). A phone has neither a D-pad nor keys: there a double tap on the small view swaps, as on every crew
+            // vessel (Garrett, 2026-10-21: "i can not switch to the pistol on mobile"). Polled every frame: it tracks taps.
+            bool tapped = _pipTap.Poll(showSideView ? _pip.SmallView(_cam, HumanInSeat) : null);
+            if (tapped && Time.unscaledTime >= _swapReadyAt) _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
+            else if (!CrewSeat.PollSwap(ref _swapReadyAt)) return;
+            SetHuman(_human == Half.Goby ? Half.Pistol : Half.Goby);
         }
 
         void SetHuman(Half half)
@@ -506,22 +511,25 @@ namespace CosmicShore.Gameplay
             _mouseDown = _aiming = false; _mouseAim = _padAim = null;
         }
 
-        // the lab's humanPistol: hold to dive; drag (or RT + right stick) to aim a launch; G / B ghost; Q / E / X / Y Snap
+        // the lab's humanPistol: hold to dive; drag (or RT + right stick) to aim a launch; G / B ghost; Q / E / X / Y Snap.
+        // The pointer is the mouse or a finger (Pointer.current: a phone has no Mouse); a press in the small view is the
+        // touch swap's, never a dive.
         PistolBodyMath.Input HumanPistol()
         {
             var inp = new PistolBodyMath.Input();
-            var kb = Keyboard.current; var mouse = Mouse.current; var pad = Gamepad.current;
+            var kb = Keyboard.current; var pointer = Pointer.current; var pad = Gamepad.current;
             float dive = 0f;
-            if (mouse != null && _cam)
+            if (pointer != null && _cam)
             {
-                Vector2 mp = mouse.position.ReadValue();
-                if (mouse.leftButton.wasPressedThisFrame && _cam.pixelRect.Contains(mp)) { _mouseDown = true; _aiming = false; _mouseFrom = mp; }
+                Vector2 mp = pointer.position.ReadValue();
+                if (pointer.press.wasPressedThisFrame && _cam.pixelRect.Contains(mp) && !_pip.SmallViewContains(_cam, HumanInSeat, mp))
+                { _mouseDown = true; _aiming = false; _mouseFrom = mp; }
                 if (_mouseDown)
                 {
                     if ((mp - _mouseFrom).magnitude > 12f) _aiming = true;
                     if (_aiming && PlanePoint(mp, out var w)) _mouseAim = new Vector2(w.x - (_p.x - _scX), w.y - _p.y);
                     if (!_aiming) dive = 1f;
-                    if (!mouse.leftButton.isPressed)
+                    if (!pointer.press.isPressed)
                     {
                         if (_aiming && _mouseAim.HasValue) { inp.HasLaunch = true; inp.Launch = _mouseAim.Value; }
                         _mouseDown = _aiming = false; _mouseAim = null;
@@ -1046,13 +1054,13 @@ namespace CosmicShore.Gameplay
             var box = new Rect(10f, 10f, 560f, 150f);
             GUI.Box(box, string.Empty);
             GUILayout.BeginArea(new Rect(box.x + 8f, box.y + 6f, box.width - 16f, box.height - 12f));
-            GUILayout.Label($"GOBY & PISTOL   you fly: {(_human == Half.Goby ? "GOBY" : "PISTOL")}   AI: {aiLevel}   swap: D-pad left/right or 1/2");
+            GUILayout.Label($"GOBY & PISTOL   you fly: {(_human == Half.Goby ? "GOBY" : "PISTOL")}   AI: {aiLevel}   swap: D-pad left/right, 1/2 or double tap the small view");
             GUILayout.Label($"Pistol  launch {_p.launch}/{Mathf.RoundToInt(_body.pLaunchCharges)}   ghost {Ready(_p.ghostAt)}   snap {Ready(_p.vortexAt)}   " +
                             $"{(_p.grounded ? "on the ground" : "in the air")}   {_rb.GobyX - _p.x:0} u behind the Goby");
             GUILayout.Label($"Goby    primer {_primer}/{Mathf.RoundToInt(Config.PrimerCharges)}   flares {_flare}/{Mathf.RoundToInt(Config.FlareCharges)}   " +
                             $"primed {_primed.Count}   hot {_hot.Count}   rings {_rings.Count}");
             GUILayout.Label(_human == Half.Pistol
-                ? "Pistol: hold Space / mouse / A to dive; drag (or RT + right stick) and let go to launch; F launch; G / B ghost; Q E / X Y Snap"
+                ? "Pistol: hold Space / mouse / finger / A to dive; drag (or RT + right stick) and let go to launch; F launch; G / B ghost; Q E / X Y Snap"
                 : "Goby: fly the vessel as usual; 3 / D-pad up primer; 4 / D-pad down flares");
             GUILayout.Label($"view    mapped {_cntMapped}   warped {_cntWarped}   bars {_cntBars}   rigid {_cntBoxes}   tiles {_cntTiles}   segTests {_rb.SegTests}   draws {_true.Draws}   marks {_world.VertexCount} v");
             GUILayout.EndArea();
