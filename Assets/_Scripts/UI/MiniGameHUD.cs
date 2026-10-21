@@ -485,6 +485,10 @@ namespace CosmicShore.UI
                 case GameModes.ThresherTime:
                     // Grizzly Time's answer on the Thresher's circuit: neutral rings, a per-viewer arrow.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_ThresherTime");
+                case GameModes.WrasseRun:
+                    // The same answer on the Wrasse and Grouper's circuit: the arrow names the ring the
+                    // Grouper must carry the kite's plane through.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_WrasseRun");
                 case GameModes.Regatta:
                     // Same provider once more: a lapped circuit of neutral rings. The rails are
                     // painted per DOMAIN and say which lane is yours; they say nothing about which

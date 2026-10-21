@@ -48,6 +48,9 @@ namespace CosmicShore.Tests
             public readonly ThresherChainSolver S;
             public Vector3 P, F = Vector3.forward, Last;
             public float V, Cruise;
+            /// <summary>The nose turns with the chain's tug while towing too, as <c>ThresherVesselTransformer</c>
+            /// turns the hull (off: the stick alone flies the nose, so a tug is erased on the next frame).</summary>
+            public bool Grip;
             public ThresherStepResult R;
             public Flight(ThresherChainSettings s)
             {
@@ -64,7 +67,7 @@ namespace CosmicShore.Tests
                 F = Yaw(F, yawDegPerSec * dt);
                 float th = V + (Cruise - V) * 1.5f * dt;
                 R = S.Step(P, F * th, false, Cruise, dt);
-                if (S.Mode == ThresherMode.Pivot || R.Launched) F = R.ShipVelocity.normalized;
+                if (Grip || S.Mode == ThresherMode.Pivot || R.Launched) F = R.ShipVelocity.normalized;
                 V = R.ShipVelocity.magnitude;
                 P += R.ShipVelocity * dt;
                 Last = R.ShipVelocity;
@@ -226,6 +229,96 @@ namespace CosmicShore.Tests
             float off = AngleDeg(Launch(0.3f, aimDir), aimDir);
             Assert.Greater(off, 5f, "with a lead it leaves early, along the orbit, for the wind-down to turn onto the aim");
             Assert.Less(off, 0.3f / Mathf.Deg2Rad + 8f);
+        }
+
+        /// <summary>Plant, spin up, arm a launch along +X and fly it to its point, holding LT at
+        /// <paramref name="ltAfter"/> and RT at <paramref name="rtAfter"/> from the arm on; the nose turns with the tug.</summary>
+        static Flight AimedLaunch(float ltAfter, float rtAfter, float timeSpin = 1f)
+        {
+            var s = Analog();
+            s.LockSpinRate *= timeSpin;   // the Time element's spin multiplier, as ThresherExecutor.ApplyElementScaling folds it
+            s.LockMaxSpeed *= timeSpin;
+            var f = new Flight(s) { Grip = true };
+            f.Fly(1f, 0f, 1f, 60f);
+            f.Fly(2.5f, 1f, 1f);
+            f.S.ArmLaunch(Vector3.right, 4.8f);
+            for (int i = 0; i < 600; i++) { f.Frame(ltAfter, rtAfter, 0f); if (f.R.Launched) return f; }
+            Assert.IsTrue(false, "the armed launch never left");
+            return f;
+        }
+
+        [Test]
+        public void AimedLaunch_FliesTheAimLine_WhateverTheTriggersStillHold()
+        {
+            // RT held rigid with LT just past the let-go point used to swing the ship 177 degrees round the ball
+            // left at the old pivot (Garrett, 2026-10-21: "it doesn't always shoot me at the cross hair").
+            foreach (var (lt, rt) in new[] { (0.85f, 1f), (0.85f, 0f), (0.5f, 1f), (0f, 1f), (0f, 0f) })
+            {
+                var f = AimedLaunch(lt, rt);
+                Vector3 p0 = f.P;
+                float worstDeg = 0f, worstOff = 0f;
+                for (int k = 0; k < 90; k++)
+                {
+                    f.Frame(lt, rt, 0f);
+                    Vector3 d = f.P - p0;
+                    worstOff = Mathf.Max(worstOff, (d - Vector3.right * Vector3.Dot(d, Vector3.right)).magnitude);
+                    worstDeg = Mathf.Max(worstDeg, AngleDeg(f.Last, Vector3.right));
+                }
+                Assert.Less(worstDeg, 3f, $"LT {lt} RT {rt}: the heading stays on the aim");
+                Assert.Less(worstOff, 10f, $"LT {lt} RT {rt}: the ship stays on the crosshair's line");
+            }
+        }
+
+        [Test]
+        public void AimedLaunch_OffATimeRaisedSpin_StaysOnTheLine_WhenTheShipOutrunsTheBall()
+        {
+            // Time maxed (x1.75): the launch leaves at ~1 300 u/s against the ball's 479 u/s cap. The rigid chain then
+            // brakes the ship below the ball's speed and the ball overtakes it; letting the line go as soon as the ball
+            // first trailed pulled the ship 55 degrees off the aim (30 with the along-line rule but an early end).
+            var f = AimedLaunch(0f, 1f, 1.75f);
+            Assert.Greater(f.R.ShipVelocity.magnitude, f.S.Settings.MaxBallSpeed * 2f, "the case under test: the launch outruns the ball");
+            float worstDeg = 0f;
+            for (int k = 0; k < 120; k++) { f.Frame(0f, 1f, 0f); worstDeg = Mathf.Max(worstDeg, AngleDeg(f.Last, Vector3.right)); }
+            Assert.Less(worstDeg, 3f, "the heading stays on the aim through the brake and the ball's overtake");
+            Assert.Greater(Vector3.Dot(f.Last, Vector3.right), 0f, "never reversed");
+        }
+
+        [Test]
+        public void AimedLaunch_TheLineAlwaysEnds_AndTheHeadingHoldsAfterIt()
+        {
+            // RT held, the rigid chain brakes the ship below the ball's speed and the ball overtakes and leads it; RT
+            // released, the slack chain swings the ball round like a pendulum. Either way the line lets go by its cap,
+            // the chain then tows normally, and the ship is still on the aim a second later.
+            foreach (float rt in new[] { 1f, 0f })
+            {
+                var f = AimedLaunch(0f, rt);
+                Assert.IsTrue(f.S.OnLaunchLine, $"RT {rt}: the launch frame starts the line");
+                int frames = 0;
+                float worstDeg = 0f;
+                for (; frames < 400 && f.S.OnLaunchLine; frames++) { f.Frame(0f, rt, 0f); worstDeg = Mathf.Max(worstDeg, AngleDeg(f.Last, Vector3.right)); }
+                Assert.IsFalse(f.S.OnLaunchLine, $"RT {rt}: the line ends");
+                Assert.LessOrEqual(frames * Dt, ThresherChainSolver.LaunchLineMaxSeconds + 2f * Dt, $"RT {rt}: by its cap");
+                for (int k = 0; k < 60; k++) { f.Frame(0f, rt, 0f); worstDeg = Mathf.Max(worstDeg, AngleDeg(f.Last, Vector3.right)); }
+                Assert.Less(worstDeg, 3f, $"RT {rt}: on the aim through the line and a second after it");
+            }
+        }
+
+        [Test]
+        public void AimedLaunch_LtAnchorsNothingUntilBackAtRest_AndAFullPullStillPlants()
+        {
+            var f = AimedLaunch(0.85f, 1f);
+            Assert.IsTrue(f.S.LeftTriggerLetGo, "LT is still most of the way down when the launch fires");
+            f.Fly(0.5f, 0.85f, 1f);
+            Assert.IsTrue(f.S.LeftTriggerLetGo, "held short of rest, it stays let go");
+            f.Frame(0.1f, 1f, 0f);
+            Assert.IsFalse(f.S.LeftTriggerLetGo, "back at rest, the next pull brakes again");
+
+            var g = AimedLaunch(0.85f, 1f);
+            g.Fly(0.3f, 0.85f, 1f);
+            g.Frame(1f, 1f, 0f);
+            Assert.AreEqual(ThresherMode.Pivot, g.S.Mode, "a full pull plants again without waiting for rest");
+            Assert.IsFalse(g.S.LeftTriggerLetGo);
+            Assert.IsFalse(g.S.OnLaunchLine, "a new plant ends the line");
         }
 
         [Test]

@@ -18,6 +18,13 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// A probe that also trips the Toybox's switches (<see cref="Toy"/>): the Thresher's ball, the flail (Garrett,
+    /// 2026-10-20: "lets flip things so the wrasse does not activate toys, but the thresher flail does"). A separate opt-in,
+    /// so a probe that only threads race rings (the Wrasse's kite) does not fire every toy it swings past.
+    /// </summary>
+    public interface ISwitchThreadProbe : IRingThreadProbe { }
+
+    /// <summary>
     /// One pilot's probe samples, held by each ring system beside its hull sample
     /// (<see cref="GateRaceController"/>, <see cref="CrystalRaceRing"/>, <see cref="ModePreviewGateCourse"/>).
     /// <see cref="Advance"/> is called once per frame for every pilot, whatever the hull test then does, so
@@ -33,6 +40,10 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Drop the last sample: the next frame seeds instead of testing.</summary>
         public void Forget() => _has = false;
+
+        /// <summary>True when the last <see cref="Advance(IVessel, float, out Vector3, out Vector3)"/> found a live probe:
+        /// the vessel threads with a second body this frame.</summary>
+        public bool Live => _has;
 
         /// <summary>
         /// Sample <paramref name="vessel"/>'s probe and return the segment it flew since the last frame.
