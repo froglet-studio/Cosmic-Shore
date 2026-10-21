@@ -2779,8 +2779,8 @@ namespace CosmicShore.Gameplay
                 yield return null;
             }
             LoadInsights.End(suctionSpan);
-            int releaseSpan = LoadInsights.Begin(LoadInsightCategory.Environment,
-                "Cell swap: the retired world is released (500 prisms a frame)");
+            int trailSpan = LoadInsights.Begin(LoadInsightCategory.Environment,
+                $"Cell swap: {pooledRetiring.Count} pooled trail prisms return to their pool");
 
             // Pooled prisms go back to their pool (destroying one corrupts the pool's
             // accounting). Detach with worldPositionStays:FALSE so the suction factor is not
@@ -2796,7 +2796,10 @@ namespace CosmicShore.Gameplay
                 block.ReturnToPool();
             }
             pooledRetiring.Clear();
+            LoadInsights.End(trailSpan);
 
+            int releaseSpan = LoadInsights.Begin(LoadInsightCategory.Environment,
+                "Cell swap: the retired world is released (500 prisms a frame)");
             yield return ReleaseRetiredWorld(retiring);
             LoadInsights.End(releaseSpan);
 

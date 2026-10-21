@@ -1271,9 +1271,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Docs/ECOSYSTEM.md §62.2b; Assets/_Scripts/Tests/Editor/PrismLayoutBakeTests.cs
 
-### T-20261021-ffcf · open · test · ecology
+### T-20261021-ffcf · done · test · ecology
 - **Task:** Measure where a world swap's time goes. In the Editor open FrogletTools > Performance > Performance Benchmark, tab Load Time Insights, and arm Record Insight Mode. Enter Play in Menu_Main and use the Cell Selector to swap to the Orrery (then Atlantis, if you can). Each swap now records like a game load: spans for the suction, the release of the old world, the layout bake, the streamed lay and the settle (creation + grow-in), ending when the veil lifts. Press Copy on the report and paste it into a Claude session
 - **Done when:** A Load Time Insights report of an Orrery swap is pasted into a session, which names the stage that dominates and fixes that stage
 - **Who can take it:** Garrett, or Yash (offered)
 - **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Docs/ECOSYSTEM.md §62.2b (What the bake does NOT speed up); Cell.SwapCellConfigRoutine
+- **Done:** 2026-10-21, 2026-10-21, Garrett's capture: Orrery swap 21.3 s, streamed lay 16.1 s of it with 0.8 s of per-prism work (frame-bound: one 256-prism async clone batch per frame). Fixed on cece/relaxed-hopper-ns2hdu: 2,048-prism batches and a raised integration slice while the gate holds; the re-capture is the next test task on this board
+
+### T-20261021-8321 · open · test · ecology
+- **Task:** Re-capture the Orrery swap after the lay fix, exactly as before: Load Time Insights armed, Menu_Main, Cell Selector to the Orrery, Copy the report into a session. The last capture was 21.3 s (lay 16.1 s, settle 2.8 s, release 1.4 s). The lay now clones 2,048 prisms per batch behind the veil, so it should drop by several seconds. Watch for: the settle growing (creation still completes 512 per frame), and the new rows for the clone wait, reused vs new prisms, creation completions, the trail return, and prisms with no render entity at suction. Also say whether the world looks right after the veil lifts
+- **Done when:** A new Orrery swap report is in a session; the lay span is clearly shorter than 16.1 s and the world looks as before; the next stage to fix is named from it
+- **Who can take it:** Garrett, or Yash (offered)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b (Measured); PrismTrailBuilder.LoadGateCloneBatchSize

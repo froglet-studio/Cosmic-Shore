@@ -222,6 +222,7 @@ namespace CosmicShore.Gameplay
             UseBatchedInstantiate = true;
             LoadGateLayBudgetOverrideMs = 0f;
             LoadGateCreationBudgetMsOverride = 0f;
+            s_integrationMsBeforeGate = -1f;
         }
 
         // All budgeted lays draw from ONE per-frame time pool, so three concurrently-streaming
@@ -326,6 +327,7 @@ namespace CosmicShore.Gameplay
                 // veil's own clears stay as the explicit statement of intent.
                 LoadGateLayBudgetOverrideMs = 0f;
                 LoadGateCreationBudgetMsOverride = 0f;
+                RestoreIntegrationSlice();
             }
             EndSettleSpan();
         }
@@ -546,6 +548,49 @@ namespace CosmicShore.Gameplay
         /// </summary>
         const int CloneBatchSize = 256;
 
+        /// <summary>
+        /// Prisms cloned per batch while the load gate holds. Each batch is awaited before the next
+        /// starts, so a lay can never clone faster than one batch per frame: at 256 the Orrery's
+        /// 34,573 prisms took ~125 frames, 16 s of a 21 s Cell Selector swap at 7.8 fps (Load Time
+        /// Insights, 2026-10-21), while the per-prism work inside the lay was 0.8 s. Behind a
+        /// covered screen the readout only needs a few updates a second, so a batch is bigger.
+        /// </summary>
+        const int LoadGateCloneBatchSize = 2048;
+
+        /// <summary>Unity's async-instantiate integration slice from before the gate raised it,
+        /// or -1 while it is not raised (see <see cref="ApplyGateIntegrationSlice"/>).</summary>
+        static float s_integrationMsBeforeGate = -1f;
+
+        /// <summary>
+        /// While the load gate holds, let Unity integrate async clones for as long per frame as the
+        /// gate lets the lay configure them (<see cref="EffectiveLayBudget"/>: 80 ms under the
+        /// menu veil, 250 ms behind the connecting screen). Its own default is a few milliseconds,
+        /// sized for loading under live play, which would turn a bigger batch into many frames.
+        /// Restored when the gate releases.
+        /// </summary>
+        static void ApplyGateIntegrationSlice()
+        {
+            if (!s_loadGateHolding) return;
+            float slice = EffectiveLayBudget(0f);
+            if (s_integrationMsBeforeGate < 0f)
+            {
+                s_integrationMsBeforeGate = AsyncInstantiateOperation.GetIntegrationTimeMS();
+                if (slice <= s_integrationMsBeforeGate)
+                {
+                    s_integrationMsBeforeGate = -1f;
+                    return;
+                }
+            }
+            AsyncInstantiateOperation.SetIntegrationTimeMS(slice);
+        }
+
+        static void RestoreIntegrationSlice()
+        {
+            if (s_integrationMsBeforeGate < 0f) return;
+            AsyncInstantiateOperation.SetIntegrationTimeMS(s_integrationMsBeforeGate);
+            s_integrationMsBeforeGate = -1f;
+        }
+
         /// <summary>Seconds an async clone batch may sit unintegrated before the watchdog
         /// forces synchronous completion (normal integration is well under a second).</summary>
         const float CloneStallSeconds = 4f;
@@ -565,6 +610,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         static async UniTask<Prism[]> CloneBatchAsync(Prism prefab, int count, Transform parent)
         {
+            ApplyGateIntegrationSlice();
             var (clones, batchedFailed) = await EnvironmentPrismPool.GetBatchAsync(
                 prefab, count, parent, UseBatchedInstantiate, CloneStallSeconds);
             if (batchedFailed) UseBatchedInstantiate = false;
@@ -635,7 +681,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (!parent || ct.IsCancellationRequested) return; // container destroyed — stop laying
 
-                    int batch = Mathf.Min(CloneBatchSize, count - i);
+                    int batch = Mathf.Min(s_loadGateHolding ? LoadGateCloneBatchSize : CloneBatchSize, count - i);
                     var clones = await CloneBatchAsync(prefab, batch, parent);
                     if (clones == null || !parent) return;
 

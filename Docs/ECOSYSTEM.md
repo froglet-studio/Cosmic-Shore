@@ -11905,7 +11905,26 @@ a load. The Orrery generated in 22 ms in the harness and 97 ms in Amoebius's deb
 - the grow-in, a stable all-clear, and the veil's 0.65 s of fades.
 
 Two of those stages are capped by count per frame, not by time, so a faster machine does not
-shorten them. Which one dominates in Unity has not been measured. **A swap now records in Load
+shorten them.
+
+**Measured (Load Time Insights, Editor, 2026-10-21): an Orrery swap took 21.3 s at 7.8 fps.**
+
+| stage | time |
+|---|---:|
+| streamed lay of 34,573 prisms | 16.1 s |
+| settle (creation queue + grow-in) | 2.8 s |
+| release of the old world | 1.4 s |
+| suction | 0.9 s |
+| layout bake | 5 ms |
+
+Inside the lay, the per-prism work was only 0.8 s. The lay was FRAME-bound: it awaits one
+256-prism async clone batch before it starts the next, so 135 batches took ~125 frames of
+~130 ms. While the gate holds, a batch is now 2,048 prisms
+(`PrismTrailBuilder.LoadGateCloneBatchSize`). Unity's async-instantiate integration slice
+(`AsyncInstantiateOperation.SetIntegrationTimeMS`) is raised to the gate's lay slice (80 ms
+under the menu veil) and restored when the gate releases. The swap now also records the trail
+return separately from the world release, the clone wait per batch, how many prisms were reused
+or newly made, the creation completions, and how many prisms had no render entity at suction. **A swap now records in Load
 Time Insights**: arm Record Insight Mode, then swap. The report has a span for the suction, the
 release, the layout bake, the streamed lay and the settle, and it ends when the veil lifts. Fix
 the stage that report names, not a guess.
