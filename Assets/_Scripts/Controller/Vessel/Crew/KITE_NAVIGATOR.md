@@ -502,10 +502,12 @@ python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' sprea
   `SO_Vessel.CardName` and falls back to `VesselClassType.ToString()` when the definition has no `vesselArt` list or
   the list misses a class. The shipped `Toy_VesselChanger.asset` wires `SO_Classlist_All`, which holds every rostered
   class, so the fallback does not show today.
-- **`KiteNavigator.cs` is 967 lines and owns seven jobs**: board frame, motes, prism / rival / creature shadows, input,
-  head contacts, loop effects (with L5s and the Omni burst), and boosts. The effects and the boost bank are the natural
-  split: they read the config and the hull, never the board. Measured: the "tail: loops and their effects"
-  section runs lines 709-941 (233 of 967). Before splitting, list every field only those methods touch.
+- **`KiteNavigator.cs` is 1308 lines and owns seven jobs** (re-measured 2026-10-21, `wc -l`; it was 967 before rounds 6-10):
+  board frame, motes, prism / rival / creature shadows, input, head contacts, loop effects (with L5s, the Omni burst
+  and the bursts for the juice), and boosts. The effects and the boost bank are the natural split: they read the config
+  and the hull, never the board. Measured: the "tail: loops and their effects" section runs lines 1011-1264 (254 of
+  1308); the juice itself already lives apart (`KiteNavigatorJuice.cs`). Before splitting, list every field only those
+  methods touch.
 - **The plane depth reaches two shader paths**: `PrismFlightSqrDistance` (every BlockGraph prism) and the swarm
   members' spread. `ExplodingBlockGraph` (debris; constant distance) and `UnstablePrismGraph` (camera distance used
   only for its flicker) keep the camera's distance in the kite view, which is incompleteness, not a defect. The kite

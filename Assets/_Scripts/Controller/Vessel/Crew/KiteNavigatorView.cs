@@ -14,17 +14,19 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>The kite view</b> is a second camera looking straight down the hull's up axis onto its x-z plane,
     /// orthographic, seeing viewDepth above and below the plane, so it renders the real world - prisms, hulls, crystals -
-    /// as a map of the board. The kite, its tail, the motes (lime, each element in its
-    /// own petal shape), the loop and effect rings are world-space meshes drawn ONLY for that camera.</para>
+    /// as a map of the board. The kite, its tail, the cord, the motes (each element its own shade of lime and its own petal
+    /// shape) and the closing lasso are world-space meshes drawn ONLY for that camera. There are no effect rings: every
+    /// effect is its motes' own petals (<see cref="KiteNavigatorJuice"/>, round 10).</para>
     ///
     /// <para><b>The pilot view</b> is the game's own camera (<see cref="CameraManager.ViewCamera"/>). It sees the kite
-    /// as a faint transparent kite and the motes as faint lime dots, drawn ONLY for that camera, so the crew role is
-    /// visible to the pilot without getting in the way.</para>
+    /// as a larger faint stand-in kite and the motes as faint dots in their elements' limes, drawn ONLY for that camera, so
+    /// the crew role is visible to the pilot without getting in the way; the juice is drawn for it too, facing it.</para>
     ///
     /// <para><b>Which is big.</b> Piloting: the pilot camera has the screen and the kite view is a small square in the
-    /// lower left. Navigating: the kite view has the screen and the pilot camera is lifted over it in the same small
-    /// square (Garrett, 2026-10-18: "the kite view when flying the pilot was good; use that"). The pilot camera's rect and
-    /// depth are restored the moment the human flies again, the camera changes, or the seat is unbound.</para>
+    /// lower left. Navigating: the kite view has the screen and the pilot camera is lifted over it into the box left of the
+    /// ability cards and below the hand line (round 8; the cards' rect is latched at rest, round 10), or the small square
+    /// when there are no cards. The pilot camera's rect and depth are restored the moment the human flies again, the camera
+    /// changes, or the seat is unbound.</para>
     ///
     /// <para><b>Out of the plane</b> (Garrett, round 4d: "they should just use the normal prism depth shader instead but use
     /// distance from the plane for depth. for the prisms above the plane just use the dither effect in a cone to preserve

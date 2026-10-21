@@ -1311,3 +1311,37 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `ThresherAnalogTriggerTests.AimedLaunch_*` (177° on the old solver, 55° on round 1);
   `R_VesselActions/THRESHER.md` §5a "The launch flies the crosshair's line".
 - Promoted: no
+
+### L-STU-129 — A retune can push a parity scenario onto a knife edge that float32 and doubles resolve differently
+- Lab: Wrasse Lasso Lab (`sling_parity.cjs`, C# float32 against the page's doubles) · Branch: `cece/loving-fermat-ntdnbu` · By: Claude session for Garrett · Date: 2026-10-20
+- What happened: lowering `slingMaxSpeed` 520 → 364 (a pure retune, both sides changed together) turned the parity gate
+  red: 294 structural mismatches and 2.5 × tolerance in the "tow" scenario. The first structural mismatch was a
+  one-point tail difference, and the velocities had split three frames earlier at frame 117. The kite sat 41.97 u from
+  the hand, grazing the 42 u rope. "Taut or slack" there is decided in the 5th decimal, and the damper's kick on taut
+  separated the two runs. Both implementations were the same rule; the scenario had wandered onto a discontinuity.
+- Do instead:
+  - When parity fails after a change that touched both sides identically, find the FIRST diverging frame (velocities,
+    not positions; a dump of frames 0-200 with a 0.05 threshold) and read the state there before suspecting the port.
+  - If it sits on a threshold (`d <= rope`, a crossing test, a clamp), move the scripted input off it (here the tow's
+    swing 60 → 64 u). Say why in the scenario, and keep the planted controls proving the gate still bites.
+  - Report the first structural mismatch apart from the worst numeric one (the gate now does): the worst error lands
+    after the divergence and points at the wrong frame.
+- Evidence: `Tools/Build/kite_navigator_lab/sling_parity.cjs` (the tow comment, `firstStructural`); PASS at 0.006 × after.
+- Promoted: no
+
+### L-STU-130 — Render the SHIPPED visual code offline: give it a snapshot, not the MonoBehaviour
+- Lab: the Wrasse's juice (`KiteNavigatorJuice`, no browser page) · Branch: `cece/loving-fermat-ntdnbu` · By: Claude session for Garrett · Date: 2026-10-21
+- What happened: the effects had to be "bespoke, unique, dynamic, and polished", and no session here can open Unity. The
+  first draft read the seat (a MonoBehaviour with the whole game behind it), so nothing could run it. Splitting its
+  inputs into a plain `KiteJuiceFrame` (board axes, hull, kite, pilot camera) and `KiteJuiceSettings` let
+  `Tools/Build/kite_navigator_lab/juice_sheet.sh` compile the shipped file with the card-art harness's Unity shim (four
+  members added) and rasterise every effect into a contact sheet, top-down and from the chase camera. The first sheet
+  showed three things no test would have: Space's petals left in three clumps (one per mote), not one blast; the Omni
+  bloom opened into a neat ring of dots (the very rings being removed); Time's landing chips were invisible.
+- Do instead: for any effect, camera or view code meant to be judged by eye, keep its math free of engine objects
+  (a frame snapshot in, vertex lists out, the MonoBehaviour fills the Mesh). Then render a time-sampled contact sheet
+  offline and LOOK at it before claiming polish. Make the harness fail on non-finite vertices and on an effect that
+  draws nothing, so it is also a gate.
+- Evidence: `KiteNavigatorJuice.cs` (`KiteJuiceFrame`, `KiteJuiceSettings`); `juice_sheet.sh [out.png] [pilot]`;
+  `KITE_NAVIGATOR.md` round 10.
+- Promoted: no
