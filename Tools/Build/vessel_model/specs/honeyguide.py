@@ -30,6 +30,8 @@ Contract (FLEET_CONVENTION sections 1-4 for a NEW vessel):
   file      Assets/_Models/Vessel Models/Honeyguide.fbx (guid 4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b), preset "zup"
   nodes     mesh `mesh`, armature `rig`; root bone `hull`
   bones     hull; beak; ratel; wing.L / wing.R; tail. Rigid skinning, one bone per part.
+  assembly  a HOVERING ASSEMBLY (vessel-model section 0.5): beak, turret, wings and tail fan each float clear of the
+            hull, 1.3-1.9% of the diagonal; gate `assembly_report.py Honeyguide.fbx --floating beak,ratel,wing.L,wing.R,tail`
   size      the Sparrow's drawn hull, which Honeyguide.prefab drew until now (SparrowModel1.fbx with its 0.2034 node
             scale: 12.50 wide, 12.23 long, 1.78 tall in Unity units, Docs/VesselModels/Sparrow.md 1.3), within
             10% in length and span; the height is the clade's (a stout body and the turret), declared in size_tol
@@ -56,15 +58,20 @@ D, H, W, J = 0, 1, 2, 3
 # The layout, in the Blender frame: nose -Y, up +Z, pilot's left +X. The Sparrow's drawn hull spans
 # x -6.25..6.25 and y -4.66 (nose) .. 7.57 (tail).
 FACE_Y = -3.70                  # where the beak's collar meets the face
-BEAK_TIP_Y = -4.62
+BEAK_GAP = 0.30                 # the beak floats this far ahead of the face collar
+BEAK_TIP_Y = -4.62 - BEAK_GAP
 TAIL_Y = 3.10                   # where the body ends and the tail hub begins
-WING_ROOT = (0.95, -1.70, 0.12)
-WING_SPAN, WING_DIHEDRAL, WING_SWEEP = 5.45, 4.0, 3.10
+# a HOVERING ASSEMBLY (vessel-model section 0.5, Garrett 2026-10-21): every bone part floats clear of the hull and of
+# each other, about 1.5-2% of the diagonal - the wings clear the hinge fairings, the beak the face collar, the turret
+# the back, the tail fan the engine mouths
+WING_ROOT = (1.55, -1.70, 0.12)
+WING_SPAN, WING_DIHEDRAL, WING_SWEEP = 4.90, 4.0, 3.10
 WING_CHORD_ROOT, WING_CHORD_TIP = 2.70, 0.60
-TAIL_HUB = (0.0, 3.00, 0.18)    # the tail bone's head
-TAIL_LEN = 4.35
+TAIL_HUB = (0.0, 3.95, 0.18)    # the tail bone's head, clear of the engine mouths (3.55)
+TAIL_LEN = 3.80
 RATEL_C = (0.0, -0.55)          # the turret's centre (y) and ...
 RATEL_R = 0.78                  # ... its hex radius
+RATEL_LIFT = 0.36               # the turret hovers this far above the back
 ENGINE_X, ENGINE_Z, ENGINE_Y = 0.52, -0.42, 3.55
 
 # (y, half-width, half-height top, half-height bottom, centre lift)
@@ -189,7 +196,7 @@ def build(ctx):
 
     # the wing roots: hinge fairings on the flanks
     for sx in (1, -1):
-        fr = f.sphere("fairing", 1.0, center=(sx * (WING_ROOT[0] + 0.02), WING_ROOT[1] + 1.15, WING_ROOT[2]),
+        fr = f.sphere("fairing", 1.0, center=(sx * 0.97, WING_ROOT[1] + 1.15, WING_ROOT[2]),
                       segments=16, rings=8, scale=(0.26, 1.35, 0.26))
         hull_parts.append(piece(fr, H, 15))
 
@@ -212,7 +219,7 @@ def build(ctx):
 
     # ------------------------------------------------------------------ THE BEAK (stubby beak -> sensor beak)
     bk = []
-    beak_len = FACE_Y - BEAK_TIP_Y
+    beak_len = FACE_Y - BEAK_GAP - BEAK_TIP_Y
     beak = f.lathe("beak", [(0.0, 0.0), (0.07, 0.04), (0.18, 0.30), (0.30, 0.70), (0.36, beak_len - 0.05),
                             (0.0, beak_len - 0.05)], segments=8, axis=(0, 1, 0), origin=(0, BEAK_TIP_Y, 0.02))
     f.ensure_slots(beak, SLOTS)
@@ -226,7 +233,7 @@ def build(ctx):
 
     # ------------------------------------------------------------------ THE RATEL (the second seat -> hex turret)
     rp = []
-    rc = Vector((0.0, RATEL_C[1], top_z(RATEL_C[1]) - 0.16))
+    rc = Vector((0.0, RATEL_C[1], top_z(RATEL_C[1]) + RATEL_LIFT))
     hexo = [(RATEL_R * math.cos(math.radians(30 + 60 * k)), RATEL_R * math.sin(math.radians(30 + 60 * k))) for k in range(6)]
     base = f.plate("ratelbase", hexo, 0.42, normal=(0, 0, 1), origin=tuple(rc + Vector((0, 0, 0.12))), right=(1, 0, 0))
     f.ensure_slots(base, SLOTS)
@@ -334,7 +341,7 @@ def build(ctx):
     # ------------------------------------------------------------------ RIG
     B = rig.BoneSpec
     bones = [B("hull", (0, 0, 0), (0, -1.6, 0))]
-    bones.append(B("beak", (0, FACE_Y, 0.02), (0, BEAK_TIP_Y, 0.02), parent="hull"))
+    bones.append(B("beak", (0, FACE_Y - BEAK_GAP, 0.02), (0, BEAK_TIP_Y, 0.02), parent="hull"))
     bones.append(B("ratel", tuple(rc), tuple(rc + Vector((0, 0, 0.6))), parent="hull"))
     for tag_, sx in (("L", 1), ("R", -1)):
         h = Vector((sx * WING_ROOT[0], WING_ROOT[1] + 0.9, WING_ROOT[2]))
@@ -372,7 +379,7 @@ def build(ctx):
 
     shapes = {
         "Charge": [  # the weapon: the sensor beak juts into a lance, the turret's cells rise
-            morphs.stretch_along((0, -1, 0), (0, FACE_Y, 0.02), 2.6, beakm),
+            morphs.stretch_along((0, -1, 0), (0, FACE_Y - BEAK_GAP, 0.02), 2.6, beakm),
             morphs.translate((0, 0, 0.42), cellm),
         ],
         "Mass": [  # volume: the body, the turret and the nacelles swell
