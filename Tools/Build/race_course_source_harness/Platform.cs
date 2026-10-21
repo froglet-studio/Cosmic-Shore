@@ -4,7 +4,16 @@
 using System;
 namespace UnityEngine
 {
-    public class Object { public string name = ""; }
+    public class Object
+    {
+        public string name = "";
+        public static implicit operator bool(Object o) => o != null;
+        // Scene lookups: there is no scene here, so every lookup answers "nothing", the path a
+        // source takes when no scene instance is authored (RegattaCourseSource.TryResolveLiveRails).
+        public static T FindAnyObjectByType<T>() where T : Object => null;
+        public static T[] FindObjectsByType<T>(FindObjectsSortMode mode) where T : Object => System.Array.Empty<T>();
+    }
+    public enum FindObjectsSortMode { None, InstanceID }
     public class ScriptableObject : Object { }
     public class Component : Object { }
     public class MonoBehaviour : Component { }
@@ -49,6 +58,8 @@ namespace CosmicShore.ScriptableObjects
 
 namespace CosmicShore.Gameplay
 {
+    public class Trail { public System.Collections.Generic.List<UnityEngine.Vector3> TrailList = new(); }
+
     public class SpawnableBase : UnityEngine.MonoBehaviour { }
 
     public class SpawnableSkein : SpawnableBase
@@ -57,8 +68,15 @@ namespace CosmicShore.Gameplay
         public SkeinCourseSettings CourseSettings => SkeinCourseSettings.ForIntensity(1);
     }
 
+    public class Cell : UnityEngine.MonoBehaviour
+    {
+        public CosmicShore.Utility.CellConfigDataSO Config;
+        public CosmicShore.Utility.CellConfigDataSO ExpectedConfig;
+    }
+
     public class SpawnableRegattaRails : SpawnableBase
     {
+        public System.Collections.Generic.List<Trail> GetTrails() => new();
         public System.Collections.Generic.List<RaceGate> BuildGatesNow() =>
             RegattaCourse.BuildGates(RegattaCourse.DefaultSeed, 1);
     }
