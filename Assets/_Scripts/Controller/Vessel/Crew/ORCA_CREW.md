@@ -362,5 +362,5 @@ python3 Tools/Build/element_ability_table.py Orca  # four cards, four channels
   that card to name an input AND the hull to bind an action to it (`AbilityCardPress` presses only bound inputs).
 - **The duo-vessel system** (`cece/sharp-tesla-j0kd7z`, `/duo-vessel`) moves seat swapping into `CrewSeat`. Fold the
   Orca's seats into it when it lands.
-- **`EnumIntegrityTests` count:** 22 after the merge with the Starling (21). bleeding-edge itself asserted 19 against 21
-  members, so the test was red before this branch. The Goby (`cece/sharp-tesla-j0kd7z`, 18) makes it 23 when it lands.
+- **`EnumIntegrityTests` count:** 23 after the merges with the Starling (21) and the Marlin (22). bleeding-edge itself asserted 19 against 21
+  members, so the test was red before this branch. The Goby (`cece/sharp-tesla-j0kd7z`, 18) makes it 24 when it lands.

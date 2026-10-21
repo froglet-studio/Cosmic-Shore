@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef0cbedf970646ff9af5837edb46243f, type: 3}
+  m_Name: MarlinJacksConfig
+  m_EditorClassIdentifier: 
+  labScale: 0.4
+  thumbMm: 22
+  thumbMargin: 1.25
+  viewSpan: 1800
+  camSlack: 0.45
+  planePull: 1.6
+  separation: 58
+  neighbourRadius: 160
+  grazeSense: 130
+  minHerd: 12
+  herdCap: 60
+  floorBirthSeconds: 0.25
+  companionFauna: {fileID: 11400000, guid: 0e87f3117e7141a7b5bce66b0385a2d0, type: 2}
+  dogSpeed: 520
+  padDogSpeed: 1
+  aiNoise: 0.15
+  callTime: 2.5
+  callCooldown: 20
+  decoyCooldown: 4
+  teleportGuard: 0.6
+  pooEvery: 6
+  pooCount: 7
+  pooSpread: 22
+  pooPrismScale: {x: 2, y: 2, z: 5}
+  attackRange: 200
+  contactReach: 8
+  strikeCooldown: 1.2
+  pipSize: 0.32
+  viewMargin: 0.02
+  viewDepth: 600
+  jackSeatPlaneEase: 0.25
+  pilotSeatPlaneEase: 3
+  jackSeatMarlinWeight: 0
+  pilotSeatMarlinWeight: 0.45
+  viewPanEase: 1.2
+  callSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  decoySfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  teleportSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 

@@ -73,7 +73,8 @@ motion, give it a volume. A screen-space ring, a label or a word over it is the 
 - **Read first:** `Docs/PERFORMANCE_OPTIMIZATION.md` (where the game stands, what was done, the ranked lever
   list, how to measure without fooling yourself). Then `Docs/MEMORY_AUDIT.md` (what the game HOLDS) and
   `Docs/PLATFORM_UNIFICATION.md` (device tiers: Desktop / MobileHigh / MobileLow, the trail cap, one codebase
-  for Windows, iOS and Android). The next session's brief: `Docs/prompts/PERFORMANCE_NEXT_SESSION_PROMPT.md`.
+  for Windows, iOS and Android; §3.10 is what the Medium / Low / Very Low quality presets take off the GPU, in
+  `Resources/QualityPresetCuts.asset`, read through `GraphicsCuts`). The next session's brief: `Docs/prompts/PERFORMANCE_NEXT_SESSION_PROMPT.md`.
 - **The performance system** (`/perf-hunt`, `Tools/Build/perf_hunt.py`, `.github/workflows/perf-daily.yml`): once a day
   from `bleeding-edge` the static gates run, every capture a collaborator's editor shared is judged against its baseline,
   and the game's markers are measured in Amoebius with allocations as the gate; a regression becomes a team task and

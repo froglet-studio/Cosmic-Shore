@@ -35,6 +35,9 @@ namespace CosmicShore.Gameplay
         /// <c>Docs/ECOSYSTEM.md</c> §0 and §61.4), fenced: its one reader is <see cref="Fauna"/>'s starvation test, a holder
         /// sustains at most ONE creature, and only starvation is waived - a keeper that is eaten or shot dies the ordinary
         /// way, heart and wither included. Not a precedent: a second holder that wants this needs its own sign-off.
+        /// <para>The second sign-off (the designer, 2026-10-21): a HERD (<see cref="IFaunaHerd"/>, Marlin and Jacks) "should only
+        /// starve down to a minimum size", so its holder sustains its first creatures up to that floor. Only starvation is
+        /// waived there too.</para>
         /// </summary>
         bool Sustains(Fauna creature);
     }

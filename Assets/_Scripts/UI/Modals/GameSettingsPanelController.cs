@@ -570,6 +570,9 @@ namespace CosmicShore.UI
                 return;
             }
             S?.SetQualityPreset((QualityPresetSetting)index);
+            // A preset may write its members (Low turns AA off, QualityPresetCutsSO): show them.
+            SetDropdown(antiAliasingDropdown, AntiAliasingIndex);
+            SetDropdown(upscalingDropdown, UpscalingIndex);
             FlagRestartNeeded();
         }
         public void SetAntiAliasingIndex(int index) { S?.SetAntiAliasing((AntiAliasingSetting)index); OnPresetMemberChanged(); }

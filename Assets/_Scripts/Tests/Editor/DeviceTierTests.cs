@@ -312,7 +312,7 @@ namespace CosmicShore.Tests
             Assert.IsFalse(profile.JoustTrail.Active, $"{tier} Joust trail cap");
             Assert.IsFalse(profile.DeactivateMenuWhileFlying, $"{tier} menu teardown");
             Assert.IsFalse(profile.QuietScoreGlow, $"{tier} glow");
-            Assert.IsFalse(profile.DisableCytoplasm, $"{tier} cytoplasm");
+            Assert.AreEqual(1f, profile.CytoplasmDensity, $"{tier} cytoplasm");
 
             var authored = new CosmicShore.Gameplay.ConveyorConfig();
             var applied = new CosmicShore.Gameplay.ConveyorConfig();
@@ -334,7 +334,10 @@ namespace CosmicShore.Tests
             Assert.AreEqual(800, profile.SkimRaceTrail.PerVessel(12), "Skim Race 12 seats");
             Assert.AreEqual(1200, profile.JoustTrail.PerVessel(2), "Joust 2 seats");
             Assert.AreEqual(400, profile.JoustTrail.PerVessel(12), "Joust 12 seats");
-            Assert.IsTrue(profile.DeactivateMenuWhileFlying && profile.QuietScoreGlow && profile.DisableCytoplasm);
+            Assert.IsTrue(profile.DeactivateMenuWhileFlying && profile.QuietScoreGlow);
+            // Thinned, never removed: the shards point at the crystal (Garrett, 2026-10-21).
+            Assert.Less(profile.CytoplasmDensity, 1f, "cytoplasm thinned");
+            Assert.GreaterOrEqual(profile.CytoplasmDensity, GraphicsCuts.MinCytoplasmDensity, "cytoplasm kept");
 
             var cfg = new CosmicShore.Gameplay.ConveyorConfig();
             profile.Wanderway.ApplyTo(cfg);

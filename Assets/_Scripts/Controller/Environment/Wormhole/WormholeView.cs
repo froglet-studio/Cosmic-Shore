@@ -411,15 +411,8 @@ namespace CosmicShore.Gameplay
             return manager.GetActiveController() as CustomCameraController;
         }
 
-        /// <summary>The device tier's ceiling on an exact view's render scale —
-        /// <c>PlatformProfileSO.FoldGateWindowMaxRenderScale</c> (1 = none).</summary>
-        static float TierMaxRenderScale
-        {
-            get
-            {
-                var profile = CosmicShore.Core.PlatformProfile.Current;
-                return profile ? profile.FoldGateWindowMaxRenderScale : 1f;
-            }
-        }
+        /// <summary>The device tier's and quality preset's ceiling on an exact view's render scale —
+        /// <c>GraphicsCuts.OffscreenViewMaxRenderScale</c> (1 = none).</summary>
+        static float TierMaxRenderScale => CosmicShore.Core.GraphicsCuts.OffscreenViewMaxRenderScale;
     }
 }

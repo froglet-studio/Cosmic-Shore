@@ -36,7 +36,7 @@ MonoBehaviour:
     ceilingPerVessel: 1
   deactivateMenuWhileFlying: 0
   quietScoreGlow: 0
-  disableCytoplasm: 0
+  cytoplasmDensity: 1
   wanderwayBudget:
     poolSize: -1
     prismBudgetPerScene: -1

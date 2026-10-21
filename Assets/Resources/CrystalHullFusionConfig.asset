@@ -1528,6 +1528,9 @@ MonoBehaviour:
   - vessel: 20
     element: 1
     bake: {fileID: 11400000, guid: 5dc417aaffeab4244ad1bb36f4728391, type: 2}
+  - vessel: 22
+    element: 1
+    bake: {fileID: 11400000, guid: 50461fa4c3cc456408e327543fdf5dda, type: 2}
     approachStandoff: 2.5
     approachSeconds: 0.22
     peelSeconds: 0.16
@@ -1549,6 +1552,9 @@ MonoBehaviour:
   - vessel: 20
     element: 2
     bake: {fileID: 11400000, guid: 121cd8353f7524641911d85b4cd897e3, type: 2}
+  - vessel: 22
+    element: 2
+    bake: {fileID: 11400000, guid: 9f0416a37fcb8a146a96ac70beaf10f6, type: 2}
     approachStandoff: 2.5
     approachSeconds: 0.22
     peelSeconds: 0.16
@@ -1570,6 +1576,9 @@ MonoBehaviour:
   - vessel: 20
     element: 3
     bake: {fileID: 11400000, guid: ef446e5f90c24454baf2ff9623d9dadd, type: 2}
+  - vessel: 22
+    element: 3
+    bake: {fileID: 11400000, guid: 08f80458f6145af43bd05a9b299d1869, type: 2}
     approachStandoff: 2.5
     approachSeconds: 0.22
     peelSeconds: 0.16
@@ -1591,6 +1600,9 @@ MonoBehaviour:
   - vessel: 20
     element: 4
     bake: {fileID: 11400000, guid: 3f4fed7fe1b640a4e8d0c99158647953, type: 2}
+  - vessel: 22
+    element: 4
+    bake: {fileID: 11400000, guid: 01b6e02034f8fb440a355971e8f66696, type: 2}
     approachStandoff: 2.5
     approachSeconds: 0.22
     peelSeconds: 0.16

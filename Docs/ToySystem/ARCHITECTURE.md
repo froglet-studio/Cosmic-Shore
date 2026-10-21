@@ -35,8 +35,9 @@ detection. On top of that base the `Toy` class adds:
   (`ToyContext.IsFreestyleActive`).
 - **Continuity-law bloom-in** — every toy scales from zero on spawn (nothing pops in).
 - **A switch ring** — every toy is drawn inside one continuous ring, square across your flight
-  path, **at the radius of its own trigger collider**, in the **prism shader**. The ring is the
-  affordance: thread it and something fires, and *which prism it is painted as* says what.
+  path, **at the radius of its own trigger collider**, drawn as a **spindle** in the colour of a
+  prism (since 2026-10-21). The ring is the affordance: thread it and something fires, and *which
+  prism's colour it wears* says what.
   See "The switch" below — there are no exemptions left.
 - **Exit-gated re-arm** — a toy is *not consumed*, but it re-arms **only once the local vessel
   has flown clear of its trigger volume** (a per-frame distance poll with `exitRadiusMultiplier`
@@ -1171,9 +1172,21 @@ and is gone: that toy is a switch now.)*
 
 #### What a switch's SHADER says
 
-> **Every switch is drawn in the PRISM shader**, the same material family the painted trail wears
-> — so a switch is made of the same stuff as the world it acts on. The one channel left free to
-> carry meaning is *which prism it is painted as*, and that channel is `ToySwitchSignal`.
+> **Every switch wears a PRISM's colour**, the material family the painted trail wears — so a
+> switch speaks the language of the world it acts on. The one channel left free to carry meaning is
+> *which prism's colour it wears*, and that channel is `ToySwitchSignal`.
+
+**The ring is a SYNTHETIC WIRE (Garrett, 2026-10-21: "a synthetic spindle geometry that is more like a wire
+... synthetic constructs up close, but spindles from afar").** `ToyFactory.AddSwitchRing` builds it as a
+machined three-strand cable (`Assets/_Models/Spindles/SpindleWireRing`) on `SpindleWireGraph`, in the
+signal's colour (a dark body at `switchRingDarkShare` of the signal, facets square to the camera in the
+signal colour itself, so the machined facets read), and `SwitchRingLod` hands it to the
+spindle LOD: solid and machined up close, turning to a spindle's lace while the prisms' depth effect is open
+(184 - 700 units), settling back into a solid ring and then a glowing thread that never fades or is culled
+(`Docs/SPINDLE_LOD.md` §9). Tuning on `Resources/SpindleLodProfile`: `switchRingStrength` (how far the lay
+loosens), `switchRingDistance` (the lace's fade, ~14,000 units) and `switchRingSway` (0). Outside Play,
+without the profile or with `lodEnabled` off, the ring is the signal's prism, as before. Hubs and cones
+beside a ring stay prisms.
 
 | Signal | Painted as | Says | Wearers |
 |---|---|---|---|
