@@ -1332,6 +1332,11 @@ namespace CosmicShore.Gameplay
             // (its hunting tick is gated), so this is the belt to that braces.
             if (!IsSimAuthority) return false;
 
+            // A SILENCED pilot harms no creature (VesselSilence): a joust, a ripple or a black hole
+            // that names a silenced pilot as the killer lets the creature live. Creature predators
+            // are never silenced - only pilots are - so the food web is untouched.
+            if (VesselSilence.IsSilenced(predatorName)) return false;
+
             // ALREADY DEAD - a corpse is not prey. Die() is sealed but NOT idempotent: it
             // re-raises ReportKill (a second LifeformsKilled credit for one creature) and,
             // because Jousted has by then stamped the style, it takes the ReleaseHeart branch

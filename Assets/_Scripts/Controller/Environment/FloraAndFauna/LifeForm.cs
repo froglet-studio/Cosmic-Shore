@@ -113,6 +113,8 @@ namespace CosmicShore.Gameplay
         public bool Jousted(string killerName)
         {
             if (dying || isCleaningUp) return false;
+            // A silenced pilot harms no lifeform (VesselSilence, Docs/ElementalAbilitySystem/SILENCE.md).
+            if (VesselSilence.IsSilenced(killerName)) return false;
             dying = true;
             deathStyle = LifeformDeathStyle.Jousted;
             Die(killerName);

@@ -628,6 +628,8 @@ namespace CosmicShore.Gameplay
                         if (q.prismProperties.IsShielded)
                         {
                             if (bitesNeed == int.MaxValue || Rnd() >= dt * 2f) continue;
+                            // A silenced swarm cracks no rival shield (VesselSilence): the bite wobbles off.
+                            if (q.DeflectsSilenced(_status.PlayerName, m.V.magnitude)) continue;
                             _bites.TryGetValue(q, out int bites);
                             if (++bites >= bitesNeed) { q.DeactivateShields(); _bites.Remove(q); }
                             else _bites[q] = bites;

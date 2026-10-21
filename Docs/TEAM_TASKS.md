@@ -1222,6 +1222,64 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-21 by Garrett's session (cece/gallant-keller-6mr1u4) (`cece/gallant-keller-6mr1u4`)
 - **See:** Docs/SPINDLE_LOD.md section 8; Docs/UNITY_VERIFICATION_CHECKLIST.md spindle LOD step 10
 
+### T-20261020-1ffa · open · test · vessels
+- **Task:** Editor-verify SILENCE (cece/sleepy-shannon-9qk646): run SILENCE.md §8 steps 1-6 (step 6: the onset shake and the danger vignette) - a pilot who took a scored hit (no petals needed) has their hits deflect off rival prisms with a wobble for the hit's worth (a Strike 3.2 s, a rocket 4-8 s), take and score nothing, kill no lifeform and lay no new danger, while every ability and control still works (Thresher flail on both triggers, Sparrow guns and turret prisms); MPPM host+client agree on the window
+- **Done when:** All six steps observed in the editor, including the MPPM step, with any mismatch filed as a dev task
+- **Who can take it:** Yash (offered; editor + MPPM), Garrett (owner's eye)
+- **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
+- **See:** Docs/ElementalAbilitySystem/SILENCE.md
+
+### T-20261020-83ca · done · decision · vessels
+- **Task:** Silence HUD readout: the silenced pilot has no HUD signal today (hits just deflect). The cooldown veil is the wrong read because every ability still works. Pick a look for the ability row or the vessel; VesselSilence.RemainingSeconds / Remaining01 / Changed are ready to drive it
+- **Done when:** A readout is chosen and a dev task is filed for it
+- **Who can take it:** Garrett (vessel HUD owner)
+- **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
+- **See:** Docs/ElementalAbilitySystem/SILENCE.md
+- **Done:** 2026-10-20, Garrett chose it 2026-10-20: a very subtle onset camera shake plus a subtle danger-coloured vignette for the window, on every hull. Built as SilenceScreenFeedback (cece/sleepy-shannon-9qk646); its editor check is step 6 of T-20261020-1ffa.
+
+### T-20261020-89f4 · open · decision · vessels
+- **Task:** Name each hull's Charge arcade game for the silence balancing plan (SILENCE.md §6). Candidates today: Grizzly Charge, Dog Fight, Joust, The Bends, Undertow; eleven hulls have none named. (The arena half is decided: Broadside, the Charge arena rumble - Garrett 2026-10-20.)
+- **Done when:** SILENCE.md §6's table names a Charge game per hull
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
+- **See:** Docs/ElementalAbilitySystem/SILENCE.md
+
+### T-20261020-eafd · open · dev · vessels
+- **Task:** Petals-caused-lost ledger, the score the silence balancing plan measures (SILENCE.md §6): count per attacker the petals every opponent loses that the attacker caused - strips and steals where ElementalTransfer settles them (attacker named), danger-prism burns attributed to the prism's layer (VesselElementalDebuffByDangerPrismEffectSO knows the prism) - and report it per match and per minute
+- **Done when:** A match can report score(i) for every pilot, offline and on the host, and an AI-vs-AI run can read it headless
+- **Who can take it:** Yash (AI / diagnostics), any session
+- **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
+- **See:** Docs/ElementalAbilitySystem/SILENCE.md
+
+### T-20261020-a619 · open · dev · vessels
+- **Task:** Teach the autopilots silence both ways (SILENCE.md §5-6): press the attack while an opponent is silenced (VesselSilence.IsSilenced), and while silenced stop wasting attacks and go collect crystals
+- **Done when:** AIs measurably change behaviour during a silence window in a mirror match
+- **Who can take it:** Yash (AI on Ys-bleeding-edge)
+- **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
+- **See:** Docs/ElementalAbilitySystem/SILENCE.md
+
+### T-20261020-363d · open · dev · Broadside
+- **Task:** Bring the hulls Broadside does not seat yet (Grizzly, Serpent, Butterfly, Stoat, Thresher, Shrike, Brittle Star, Angler, Wrasse) onto the Broadside card (/arenagame), so every hull can reach stage 2 of the silence balancing plan (SILENCE.md §6): AI vs AI in the Charge arena rumble
+- **Done when:** Every hull is offered on Broadside and an AI can fly it there
+- **Who can take it:** Garrett (Broadside / arena owner), Yash (AI)
+- **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
+- **See:** Docs/ElementalAbilitySystem/SILENCE.md
+
+### T-20261021-7e2e · done · decision · vessels
+- **Task:** Pick the silenced pilot's screen-edge look in the Silence Vignette Lab (https://claude.ai/artifact/Hequw1VLdwXi2ztrDeuXQC): the shipped edge is overtuned on purpose (strength 0.75); compare Ember, Faceted window, Prism rim, Hard frame, Breathing over the Dog Fight scenes, log the pick in Decisions, and the next session writes its To-Unity lines into VesselSilenceConfig.asset
+- **Done when:** a pick is logged in the lab's Decisions and VesselSilenceConfig.asset carries it
+- **Who can take it:** Garrett (art direction)
+- **Added:** 2026-10-21 by Garrett's session (cece/sleepy-shannon-9qk646) (`cece/sleepy-shannon-9qk646`)
+- **See:** Docs/Studios/SILENCE_VIGNETTE_LAB.md
+- **Done:** 2026-10-21, 2026-10-21, Garrett picked round 4 of the Silence Vignette Lab after trying it ('its great'): the thin pull + danger frame that deepens with the seconds of silence left. It is the shipped VesselSilenceConfig.asset (cece/sleepy-shannon-9qk646).
+
+### T-20261021-2973 · open · test · vessels
+- **Task:** Editor-check the silence 3D perimeter (cece/sleepy-shannon-9qk646): in Dog Fight or with 'silence test' in the console, a thin band of half-buried shards over a thin danger frame hugs the screen border, dragged toward a point that wanders around the edge; 'silence test 8' sends it deep and it bleeds back out as the seconds drain; hits sink and glitch it; it fades when the silence ends; no magenta, nothing on other cameras or other players' screens; 'silence' reports 'perimeter drawing 160 shards on <camera>' and the depth. Note the frame cost on a phone (one camera-colour copy while silenced)
+- **Done when:** seen working in the editor and on one phone build, or the failures are filed
+- **Who can take it:** Garrett (owner's eye), Yash (offered)
+- **Added:** 2026-10-21 by Garrett's session (cece/sleepy-shannon-9qk646) (`cece/sleepy-shannon-9qk646`)
+- **See:** Docs/ElementalAbilitySystem/SILENCE.md §5, §8
+
 ### T-20261020-26a6 · open · test · Starling vessel
 - **Task:** Fly the Starlings (class 21) from the Toybox Vessel Changer and run its edit-mode tests; branch claude/project-thread-ytyab2
 - **Done when:** Every step of the Starlings entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or the failures are reported

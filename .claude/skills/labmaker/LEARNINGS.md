@@ -785,6 +785,34 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `KiteNavigatorView.PetalCentreOut` / `PetalScale`; `KITE_NAVIGATOR.md` "Round 4f" table.
 - Promoted: no
 
+### L-STU-125 — URP's Vignette multiplies: a coloured vignette over dark space is invisible, and a lab yardstick must score that cut near zero
+- Lab: Silence Vignette Lab (`Docs/Studios/SilenceVignetteLab.html`) · Branch: `cece/sleepy-shannon-9qk646` · By: session_01PEp87yJAmoDHUn7QvRdtkg · Date: 2026-10-21
+- What happened: the silence feedback's first cut drove the gameplay profile's URP Vignette in the palette's danger colour (intensity 0.26). Garrett played Dog Fight twice and never saw it. URP's `ApplyVignette` lerps the frame toward `frame × colour`, so red can only darken, and the arena's sky is (0, 0, 0.1): red times near-black is near-black. The driver was proven to reach weight 1.0 in Amoebius, so "the code runs" said nothing about "the player sees it". The lab's scorecard (OKLab ΔE ×100 over the edge band, 480×270, seeds 1-3) reads that cut at 2.8 on open space, about the just-noticeable difference, against 45 for an alpha-blended overlay at 0.75.
+- Do instead: signal a state with an overlay that ADDS colour (a ScreenSpaceOverlay canvas with a baked mask texture), keep URP's Vignette only for black darkening, and put the shipped look in the lab as a baseline row ("Round 0") that the yardstick must score near the just-noticeable difference, or the yardstick is not measuring sight.
+- Evidence: `SilenceVignetteMask.cs`, `SilenceScreenFeedback.EnsureOverlay`; the lab's scorecard and yardstick check; `Tools/Build/silence_vignette_parity/run.sh`.
+- Promoted: no
+
+### L-STU-126 — Verify the version you published, after the last edit, not the one before it
+- Lab: Silence Vignette Lab (`Docs/Studios/SilenceVignetteLab.html`) · Branch: `cece/sleepy-shannon-9qk646` · By: session_01PEp87yJAmoDHUn7QvRdtkg · Date: 2026-10-21
+- What happened: `verify_lab.cjs` passed, then a one-line wording edit was published straight through the Artifact tool's `edits`. The new text, "the breath's peak", put an apostrophe inside a single-quoted `innerHTML` string, so the whole script failed to parse (`Unexpected identifier 's'`). Garrett opened a page with no lab in it ("the lab seems broken").
+- Do instead: re-run `verify_lab.cjs` after EVERY edit to the page, however small, and before you report it. Once it is live, download the published page (`Artifact read` with `path: index.html`) and load it headless; any `pageerror` fails it. Keep apostrophes out of single-quoted HTML-in-JS strings, or build that text with `textContent`.
+- Evidence: the published version 2 against version 3 of https://claude.ai/artifact/Hequw1VLdwXi2ztrDeuXQC.
+- Promoted: no
+
+### L-STU-133 — An edge-band average under-reads a sparse, moving 3D effect; a GLSL-to-HLSL port needs its own compile gate
+- Lab: Silence Vignette Lab, round 2 (the 3D perimeter) · Branch: `cece/sleepy-shannon-9qk646` · By: session_01PEp87yJAmoDHUn7QvRdtkg · Date: 2026-10-21
+- What happened: the round-1 yardstick averages the colour change over the outer 12% of the frame. That scored the full 2D frame at 45 and the 3D perimeter at 5 to 17, although the shards read plainly on screen. Their motion and the hits' jolt are not in a still frame at all. Separately, the HLSL port of the lab's GLSL named a variable `line`, which HLSL reserves. WebGL had compiled the GLSL happily, so the lab could not catch it.
+- Do instead: label a look's column with what it cannot see, and judge a sparse or moving effect by eye before its number. Relax the yardstick check to "beats the invisible baseline", not "beats the full frame". Give a shader port a compile gate of its own (`Tools/Shaders/verify_silence_perimeter.py`: glslang in HLSL mode against a mock of the URP calls, plus a negative control), and keep the variable names identical in both twins.
+- Evidence: `Docs/Studios/SILENCE_VIGNETTE_LAB.md` round 2; `Tools/Shaders/verify_silence_perimeter.py`.
+- Promoted: no
+
+### L-STU-134 — The lab's draw ORDER is part of the look: port the compositing, not just the per-pixel math
+- Lab: Silence Vignette Lab, round 4 · Branch: `cece/sleepy-shannon-9qk646` · By: session_01PEp87yJAmoDHUn7QvRdtkg · Date: 2026-10-21
+- What happened: Garrett picked "the pull plus the 2d edge" as "very strong". In the lab the 2D edge is painted into the frame BEFORE the WebGL shards copy it, so the pull drags the edge and every facet refracts it. The game drew the same edge as a Screen Space Overlay canvas, AFTER the camera, on top of the shards. Every per-pixel function was under a parity gate and matched, but the game would still have shown a different, flatter picture: an unwarped red frame over the distortion. Nothing measured the order the layers were composited in.
+- Do instead: when a lab composites several layers, write the order down (which layer samples which) and port it as a structure. Here the edge became pass 2 of the game's own perimeter pass, drawn before the copy, and the order is pinned by a test on the shader's pass indices. A per-function parity gate cannot see a layering difference: check it by reading the lab's render loop beside the game's pass list.
+- Evidence: `SilencePerimeterPass.RecordRenderGraph` (edge, then copy, then warp and shards); `SilencePerimeterTests.TheShaderDeclaresItsPassesInTheOrderThePassDrawsThem`; `Docs/Studios/SILENCE_VIGNETTE_LAB.md` round 4.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

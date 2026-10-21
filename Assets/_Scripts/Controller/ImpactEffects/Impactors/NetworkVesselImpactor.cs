@@ -4,7 +4,7 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     [RequireComponent(typeof(VesselImpactor))]
-    public class NetworkVesselImpactor : NetworkBehaviour, IElementalLossRelay
+    public class NetworkVesselImpactor : NetworkBehaviour, IElementalLossRelay, ISilenceRelay
     {
         [SerializeField] VesselImpactor vesselImpactor;
 
@@ -236,6 +236,35 @@ namespace CosmicShore.Gameplay
             // conserve; it needs an ownership swap inside one round trip.
             if (!IsOwner) return;
             ElementalTransfer.GrantSettled(VesselStatusHere, packedPetals);
+        }
+
+        // ── Silence (ISilenceRelay, Docs/ElementalAbilitySystem/SILENCE.md) ─────────
+        //
+        // A scored hit silences its victim when it is ADMITTED, and only the machine that decides
+        // the hit admits it - the attacker's owner, which usually does not own this hull. Every peer
+        // has to refuse the same hits (prism damage is simulated on every peer), so the decider sends
+        // the EXTENSION it applied, and each other peer extends its own copy of the window by the
+        // same amount. An extension rather than an absolute time: two attackers on two machines can
+        // each land one inside the same window, and both must count.
+
+        public void PublishSilence(float addSeconds)
+        {
+            if (!IsSpawned || addSeconds <= 0f) return;
+            PublishSilence_ServerRpc(addSeconds);
+        }
+
+        // RequireOwnership = false: the sender is the hit's decider, not this hull's owner.
+        [ServerRpc(RequireOwnership = false)]
+        void PublishSilence_ServerRpc(float addSeconds, ServerRpcParams rpcParams = default) =>
+            PublishSilence_ClientRpc(addSeconds, rpcParams.Receive.SenderClientId);
+
+        [ClientRpc]
+        void PublishSilence_ClientRpc(float addSeconds, ulong decidedBy)
+        {
+            // The decider extended its own copy when it admitted the hit.
+            if (NetworkManager != null && NetworkManager.LocalClientId == decidedBy) return;
+            var status = VesselStatusHere;
+            if (status != null) VesselSilence.ExtendBy(status, addSeconds);
         }
 
         IVesselStatus VesselStatusHere => vesselImpactor ? vesselImpactor.Vessel?.VesselStatus : null;
