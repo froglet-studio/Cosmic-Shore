@@ -20,7 +20,7 @@ the Decisions tab. The Unity port (phase 2) starts only after that.
 - **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html` (PASS, round 6).
 - **Parity:** `node Tools/Build/dynamo_lab/parity.cjs` holds `DynamoCore.cs` to the **round 4** core, the Engineer AI
   included (PASS 2026-10-21: 16,824 steps over 24 rule sets, 1,501 AI moves chosen alike, 48 port sets, 400 slips).
-- **In Unity (phase 2, started 2026-10-21 on Garrett's "lets play it in unity"):** `VesselClassType.Honeyguide = 21`,
+- **In Unity (phase 2, started 2026-10-21 on Garrett's "lets play it in unity"):** `VesselClassType.Honeyguide = 23` (21 until the bleeding-edge merge gave it to the Starling),
   offered by the Toybox's Vessel Changer. See `Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md`.
 
 Why a lab of its own and not a fourth round of the Crew Vessel Lab: that page is the Wrasse's signed-off and graduated
@@ -596,7 +596,7 @@ Charges/min, Eng idle % (0 for every AI Engineer: it never lets a tick's AP go t
 ## The port (phase 2, 2026-10-21)
 
 Garrett asked for it before a written sign-off ("lets play it in unity"), so the round 4 lab is what was ported.
-- **`VesselClassType.Honeyguide = 21`** (19 is the Wrasse, 20 the Orca). It is in `ToyVesselRoster.Default` and
+- **`VesselClassType.Honeyguide = 23`** (19 is the Wrasse, 20 the Orca, 21 the Starling, 22 the Marlin). It is in `ToyVesselRoster.Default` and
   `EndGameSequencer`'s Sparrow-hull rule.
 - **`DynamoCore.cs`** is re-ported from the round 4 core, with `aiPlan` as `DynamoCore.AIPlan`. The parity gate points
   at `HoneyguideLab.html`.

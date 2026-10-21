@@ -229,11 +229,23 @@
         "Assets/_Scripts/Utility/PrismDepthPlane.cs",
         "Assets/_Graphics/Materials/Graphs/PrismDepthPlane.hlsl",
         "Assets/_SO_Assets/Classes/SO_Class_Wrasse.asset",
-        "Assets/Resources/ElementalAbilityMaps/Wrasse.asset"
+        "Assets/Resources/ElementalAbilityMaps/Wrasse.asset",
+        "Assets/_Prefabs/Spacevessels/Orca.prefab",
+        "Tools/Build/author_orca_assets.py",
+        "Tools/Build/orca_crew_lab",
+        "Assets/_SO_Assets/VesselActions/OrcaCrew",
+        "Assets/_Scripts/UI/Controller/OrcaHUDController.cs",
+        "Assets/_Scripts/Tests/Editor/OrcaCrewCoreTests.cs",
+        "Assets/_SO_Assets/Classes/SO_Class_Orca.asset",
+        "Assets/Resources/ElementalAbilityMaps/Orca.asset",
+        "Docs/Studios/CrewOfFourLab.html",
+        "Docs/Studios/CREW_OF_FOUR_LAB.md"
       ],
       "docs": [
         "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md",
-        "Docs/Studios/CREW_VESSEL_LAB.md"
+        "Docs/Studios/CREW_VESSEL_LAB.md",
+        "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md",
+        "Docs/Studios/CREW_OF_FOUR_LAB.md"
       ],
       "artifacts": [
         {
@@ -250,6 +262,58 @@
         "Open the Toybox, fly into the Vessel Changer and fly the Wrasse and Grouper station (a Sparrow body): the kite view is a small square in the lower left and the AI flies the kite.",
         "Press 2 (or D-pad right) to take the kite: its view fills the screen and the hull's shrinks to the corner. The kite follows the mouse or stick; loop motes of one petal shape. Press 1 to fly again.",
         "Run the steps of the Kite Navigator entry in Docs/UNITY_VERIFICATION_CHECKLIST.md."
+      ]
+    },
+    "mobile-vessels": {
+      "title": "Vessels on a phone",
+      "aliases": [
+        "mobile",
+        "mobile audit",
+        "phone",
+        "touch",
+        "touch controls",
+        "mobile vessels",
+        "vessels on mobile",
+        "mobile friendly"
+      ],
+      "owner": "Garrett",
+      "people": [
+        "Shombith",
+        "Yash"
+      ],
+      "audience": [
+        "Garrett",
+        "the core four"
+      ],
+      "branch": "cece/admiring-hamilton-gyzzh8",
+      "branchNote": "audit 2026-10-21, then Garrett's decisions built the same day; not on bleeding-edge, not flown on a phone or opened in the Editor",
+      "summary": "The fleet on a phone: an audit of all 18 hulls, then Garrett's decisions built - every hull has a touch profile (thumb lifts with glyphs, or totems as buttons laid out round the right thumb in millimetres), idle parity, tilt steering/roll, per-hull phone controls (Scarab slider, Brittle Star aim discs, Dolphin lift-either, Manta/Rhino/Thresher both-thumbs-off), the idle-animation fixes and the arena pilot-swap tiles.",
+      "paths": [
+        "Assets/Resources/TouchControlProfiles.asset",
+        "Assets/_Scripts/Controller/IO/DeviceOrientationHandler.cs",
+        "Assets/_Scripts/Controller/IO/FlightTouchClaims.cs",
+        "Assets/_Scripts/Controller/IO/TouchControls",
+        "Assets/_Scripts/Controller/IO/TouchInputStrategy.cs",
+        "Assets/_Scripts/UI/Elements/AbilityCardPress.cs",
+        "Assets/_Scripts/UI/Elements/PilotSwapIndicator.cs",
+        "Assets/_Scripts/UI/TouchControls",
+        "Tools/Build/author_touch_profiles.py",
+        "Tools/Build/touch_controls_harness",
+        "Tools/Build/touch_glyph_art.py"
+      ],
+      "docs": [
+        "Docs/ABILITY_LOCKUP.md",
+        "Docs/ANDROID_BUILD.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/MOBILE_VESSELS.md",
+      "taskAreas": [
+        "vessels"
+      ],
+      "test": [
+        "Check out cece/admiring-hamilton-gyzzh8 and build an Android development APK (Docs/ANDROID_BUILD.md).",
+        "Run Docs/UNITY_VERIFICATION_CHECKLIST.md \"Phone controls for the whole fleet\" steps 4-15 in the Toybox Vessel Changer and an arena match.",
+        "In the Editor, Device Simulator with a phone selected shows the button layouts (steps 1-3)."
       ]
     }
   }

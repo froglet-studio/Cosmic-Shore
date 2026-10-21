@@ -1175,7 +1175,7 @@ MonoBehaviour:
   boostMultiplier: 5
   inertia: 1
   _name: Honeyguide
-  vesselType: 21
+  vesselType: 23
   _nearFieldSkimmer: {fileID: 6062314127581257774}
   _farFieldSkimmer: {fileID: 0}
   orientationHandle: {fileID: 6015654187000967467}

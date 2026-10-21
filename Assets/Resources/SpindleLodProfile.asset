@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2752eb76f9dbc45b6da7297e4b92ad42, type: 3}
+  m_Name: SpindleLodProfile
+  m_EditorClassIdentifier:
+  style: 1
+  lodEnabled: 1
+  tickIntervalSeconds: 0.2
+  maxTransitionsPerFrame: 384
+  batchFarThreads: 1
+  nearEndGirths: 100
+  midEndGirths: 420
+  hysteresis: 0.08
+  convergeStartGirths: 110
+  farFadeStartGirths: 1300
+  farFadeEndGirths: 1900
+  overtThreadStartNorm: 10
+  overtFadeStartNorm: 15.625
+  overtFadeEndNorm: 22.5
+  chargeStrength: 0.01
+  otherStrength: 0.005
+  minThreadPixels: 1.25
+  threadBase: 0.35
+  threadFacet: 0.55
+  threadGlow: 1.35
+  threadAlpha: 0.85
+  depthOnBodies: 1
+  switchRingStrength: 0.005
+  switchRingDistance: 200000000
+  switchRingSway: 0
+  switchRingDarkShare: 0.18
+  switchRingRimWhiten: 0
+  switchRingShadeBase: 0
+  switchRingShadeFacet: 1
+  midTemplate: {fileID: 2100000, guid: 20a1e347c703b74989b4c9e9c90e94e4, type: 2}
+  farTemplate: {fileID: 2100000, guid: e504df112b682b68f8997daade6a4fbe, type: 2}
+  depthTemplate: {fileID: 2100000, guid: 9241f93012c8e673e853d04c59dd7811, type: 2}
+  wireTemplate: {fileID: 2100000, guid: 818394c7d10998795aa6fb5532796da1, type: 2}
+  meshSets:
+  - source: {fileID: 1825875415147931077, guid: c9a0b575455114844a1b087dd889626e, type: 3}
+    mid: {fileID: 4300000, guid: c1aecf9c0373a5b17d09bdbd0936b107, type: 2}
+    low: {fileID: 4300000, guid: d9060d4f67475b078e46d14a321b6ff9, type: 2}
+    far: {fileID: 4300000, guid: 9e3c5af8d6c4ef453fe29b2282c8abe8, type: 2}
+    girth: 1.401072
+    strandRadius: 0.08083986
+    expectedSourceCenter: {x: -0.06366834, y: 0.008492053, z: -0.7069523}
+    expectedSourceExtent: {x: 0.619967, y: 0.66188765, z: 1.2596264}
+    synthetic: 0
+  - source: {fileID: 4300000, guid: 23d8d2ff9067b7aaeef426554d372e14, type: 2}
+    mid: {fileID: 4300000, guid: 23d8d2ff9067b7aaeef426554d372e14, type: 2}
+    low: {fileID: 4300000, guid: 2eafc38f7a2c4751e9084dbc6389eb73, type: 2}
+    far: {fileID: 4300000, guid: 7b364d8df02bac4f6ed009e179e7fc2b, type: 2}
+    girth: 0.076
+    strandRadius: 0.016
+    expectedSourceCenter: {x: 0, y: 0, z: 0}
+    expectedSourceExtent: {x: 0.538, y: 0.538, z: 0.032908965}
+    synthetic: 1

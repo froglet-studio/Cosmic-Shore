@@ -222,22 +222,16 @@ namespace CosmicShore.Gameplay
             inputStatus.RightNormalizedJoystickPosition = rightStick;
             inputStatus.LeftNormalizedJoystickPosition = leftStick;
 
-            // Match gamepad / keyboard reparameterization so the downstream
-            // vessel controllers see identical XSum/YSum/XDiff/YDiff shapes.
-            // For dual mouse, pitch and roll are swapped relative to gamepad:
-            // both mice fore/aft together = roll, differential = pitch.
+            // Match gamepad / keyboard reparameterization so the downstream vessel controllers see
+            // identical XSum/YSum/XDiff/YDiff shapes. Pitch carries the same minus as the pad's
+            // (DualStickMix): both mice forward climbs, as both sticks up does. It used to pitch the
+            // OTHER way by default - a Y inversion the setting did not make (2026-10-21).
             inputStatus.XSum = Ease(rightStick.x + leftStick.x);
-            inputStatus.YSum = Ease(rightStick.y + leftStick.y);
+            inputStatus.YSum = -Ease(rightStick.y + leftStick.y);
             inputStatus.XDiff = (leftStick.x - rightStick.x + 2) / 4;
             inputStatus.YDiff = Ease(rightStick.y - leftStick.y);
 
-            if (inputStatus.InvertYEnabled)
-            {
-                inputStatus.YSum *= -1f;
-                inputStatus.YDiff *= -1f;
-            }
-            if (inputStatus.InvertThrottleEnabled)
-                inputStatus.XDiff = 1f - inputStatus.XDiff;
+            ApplyInvertSettings();
         }
 
         private void PerformSpeedAndDirectionalEffects()

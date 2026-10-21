@@ -49,8 +49,9 @@ namespace CosmicShore.Gameplay
     ///
     /// <b>The chain slices and shields</b>, taut or slack. Every rival prism its links touch is
     /// <see cref="Prism.Slice"/>d along the plane the chain is sweeping, with debris at the touching
-    /// link's own velocity, and every prism of its OWN domain it touches is shielded. A shielded rival
-    /// loses its shield to the first cut and dies to the next; super-shielded mass refuses.
+    /// link's own velocity, and every prism of its OWN domain it touches is shielded (or LIT, when it
+    /// already is: a contact that does nothing reads as a clip). A shielded rival loses its shield to
+    /// the first cut and dies to the next; super-shielded mass refuses with its deflection jiggle.
     ///
     /// <b>The chain's kills charge the ball.</b> Every prism the chain slices banks
     /// <c>energyPerSlice</c> in the ball; the ball's next hit on a RIVAL prism releases the bank as
@@ -117,6 +118,8 @@ namespace CosmicShore.Gameplay
         float _ltDepth, _rtDepth;
         bool _launchedThisStep;
         int _lastPollFrame = -1;
+        // A phone: both thumbs off a planted spin read as both triggers full (the aimed launch, ThresherTouchLaunch).
+        ThresherTouchLaunch _touchLaunch;
         bool _massMode;
         float _energy;
         /// <summary>The launch direction the AIM camera chose for the pending plant release, taken
@@ -237,7 +240,8 @@ namespace CosmicShore.Gameplay
         /// <c>spectateReleaseFraction</c> of the threshold or (analog, unarmed) a slackened chain. Simulated in <see cref="StepChain"/> on
         /// EVERY peer from the chain's own state, so the trail it pauses agrees across machines; the
         /// local pilot's camera (<see cref="UpdateCamera"/>) switches to the crosshair on exactly this
-        /// edge, so crosshair on == trail off.
+        /// edge, so crosshair on == trail off. On a phone both thumbs off a planted spin read as both
+        /// triggers full (<see cref="ThresherTouchLaunch"/>, from replayed press events every peer has).
         /// </summary>
         public bool LaunchViewUp { get; private set; }
         /// <summary>The ball's colour this frame (LINEAR; a UI consumer converts with .gamma).</summary>
@@ -259,6 +263,7 @@ namespace CosmicShore.Gameplay
             _seeded = false;
             _payOut = false;
             _plantHeld = false;
+            _touchLaunch.Clear();
             _massMode = true;   // the default (Garrett, 2026-10-21): A leaves it for the breaking ball
             _energy = 0f;
             _releaseDirection = null;
@@ -328,9 +333,34 @@ namespace CosmicShore.Gameplay
         {
             if (_solver == null) return;
             _plantHeld = false;
-            if (_settings.Analog) return;   // PollTriggers lets go when LT falls below letGoBelow
+            if (_settings.Analog)
+            {
+                // PollTriggers lets go when LT falls below letGoBelow. On a phone the release may be the last thumb
+                // leaving the glass, whose IdleAction press follows on the same frame: give it one poll to arrive.
+                if (IsTouchPilot) _touchLaunch.PlantReleased();
+                return;
+            }
             LetGo();
         }
+
+        /// <summary>
+        /// A PHONE's IdleAction press (the Thresher's touch map only): the last thumb left the glass. Off a planted
+        /// spin it holds the plant and reads both triggers full, so the launch view comes up as on a pad with both
+        /// triggers pulled, aimed by tilting the phone (<see cref="ThresherTouchLaunch"/>, which documents why the
+        /// Plant release that precedes this press on the same frame never lets the ball go).
+        /// </summary>
+        public void BeginTouchLaunchHold()
+        {
+            if (_solver == null) return;
+            _touchLaunch.IdlePressed(_solver.Mode, _solver.LaunchArmed);
+        }
+
+        /// <summary>IdleAction released - a thumb is back on the glass: the next poll lets go, which in the launch
+        /// view ARMS the aimed launch along the crosshair (<see cref="LetGo"/>), exactly as the pad's LT let-go.</summary>
+        public void EndTouchLaunchHold() => _touchLaunch.IdleReleased();
+
+        /// <summary>The pilot flies this hull on a phone (the replicated device, so every peer reads the same).</summary>
+        bool IsTouchPilot => _status?.InputStatus != null && _status.InputStatus.ActiveInputDevice == InputDeviceType.Touch;
 
         /// <summary>
         /// ANALOG TRIGGERS, once per frame before the hull moves (<see cref="ThresherVesselTransformer"/>; the
@@ -351,6 +381,8 @@ namespace CosmicShore.Gameplay
             float rt = input != null ? input.RightTriggerAnalog : 0f;
             _ltDepth = lt > 1e-3f ? Mathf.Clamp01(lt) : (_plantHeld ? 1f : 0f);
             _rtDepth = rt > 1e-3f ? Mathf.Clamp01(rt) : (_payOut ? 1f : 0f);
+            // A phone: both thumbs off a planted spin read as both triggers full (never set off a phone).
+            _touchLaunch.Apply(_solver.Mode, ref _ltDepth, ref _rtDepth);
             float full = config ? config.FullPull : 0.97f, letGo = config ? config.LetGoBelow : 0.9f;
             var edge = _solver.AnalogTriggers(_ltDepth, _rtDepth, full, letGo, shipPosition, _lastShipVelocity, shipUp, dt);
             if (edge == ThresherTriggerEdge.LetGo) LetGo();
@@ -419,10 +451,13 @@ namespace CosmicShore.Gameplay
             if (_solver != null && (_plantHeld || _solver.LaunchArmed || _solver.Mode == ThresherMode.Pivot || _solver.Mode == ThresherMode.Skidding))
                 _solver.Release(_lastShipVelocity);
             _plantHeld = false;
+            _touchLaunch.Clear();
             _ltDepth = 0f; _rtDepth = 0f;
             _releaseDirection = null;
             _freezeUntilUnscaled = 0f;
             _cts?.Cancel();
+            _ackAny = false;
+            PrismLit.ClearLight(GetInstanceID());
             ClearLaunchView();
             ReleaseCamera();
             SetVisualsActive(false);
@@ -476,6 +511,7 @@ namespace CosmicShore.Gameplay
             _links.Step(shipPosition + result.ShipVelocity * dt, _solver.BallPosition, _solver.Length,
                         iterations: ThresherChainLinks.IterationsFor(_links.Count - 1));
             CutWithChain(dt);
+            PublishAcknowledged();
 
             UpdateLaunchView(dt);
             UpdateCombo(dt);
@@ -504,7 +540,8 @@ namespace CosmicShore.Gameplay
                 // full pull (RT read as the chain's slew-limited rigidity) - and RT eased below letGoBelow
                 // drops it unless a launch is armed.
                 bool analog = _settings.Analog;
-                bool bothFull = !analog || (!_solver.IsBraking && _ltDepth >= config.FullPull && _solver.Rigidity >= config.FullPull);
+                // (On a phone, both thumbs off a planted spin read as both triggers full: ThresherTouchLaunch.)
+                bool bothFull = ThresherCameraFraming.LaunchViewGrip(analog, _solver.IsBraking, _ltDepth, _solver.Rigidity, config.FullPull);
                 bool slackened = analog && !_solver.LaunchArmed && _solver.Rigidity < config.LetGoBelow;
                 // Up only once the spin has held over the threshold for spectateEngageSeconds, so a tap of
                 // LT does not bob the camera toward the vantage and straight back down.
@@ -623,7 +660,15 @@ namespace CosmicShore.Gameplay
                 if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, _status)) continue;
 
                 _touchingNext.Add(prism);
-                if (_touching.Contains(prism)) continue;   // one hit per contact
+                if (_touching.Contains(prism))
+                {
+                    // One HIT per contact - but own armour the Mass Mode ball is still inside stays
+                    // lit for as long as it is inside, as the chain's does (PublishAcknowledged).
+                    if (_massMode && prism.Domain == own && prism.prismProperties is { } held &&
+                        (held.IsShielded || held.IsSuperShielded))
+                        Acknowledge(prism);
+                    continue;
+                }
 
                 Vector3 at = from + ab * _hits[i].t;
                 float speed = _solver.BallSpeed;
@@ -650,7 +695,8 @@ namespace CosmicShore.Gameplay
                 float debrisLimit = config ? config.DebrisSpeedLimit : 200f;
                 // Space L5 "Breaker": a red ball's direct hit breaks super-shielded mass, through the
                 // sanctioned sequence (shields off, then a devastating hit - Prism.Damage's own doc).
-                if (hot && breaker && prism.prismProperties is { IsSuperShielded: true })
+                if (hot && breaker && prism.prismProperties is { IsSuperShielded: true }
+                    && !prism.DeflectsSilenced(_status.PlayerName, impact.magnitude))   // VesselSilence
                 {
                     prism.DeactivateShields(impact, debrisLimit);
                     prism.Damage(impact, _status.Domain, _status.PlayerName, devastate: true, debrisSpeedLimit: debrisLimit);
@@ -707,18 +753,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Mass Mode's touch: shield own-domain mass (once — an already armoured prism is
-        /// left alone), steal rival mass (a shielded rival sheds its shield first and changes hands
-        /// on the next touch, the fleet's steal rule; super-shielded mass refuses).</summary>
+        /// lit instead), steal rival mass (a shielded rival sheds its shield first and changes hands
+        /// on the next touch, the fleet's steal rule; super-shielded mass refuses with its jiggle).</summary>
         void MassModeTouch(Prism prism, bool ownDomain, Vector3 at)
         {
             var props = prism.prismProperties;
             if (ownDomain)
             {
-                if (props == null || props.IsShielded || props.IsSuperShielded) return;
-                prism.ActivateShield();
+                // Already armoured: nothing to build, so the touch is acknowledged (lit) rather
+                // than passing through in silence.
+                if (props == null || props.IsShielded || props.IsSuperShielded) Acknowledge(prism);
+                else prism.ActivateShield();
                 return;
             }
-            if (props != null && props.IsSuperShielded) return;
+            if (prism.AbsorbSuperShieldHit(_solver.BallSpeed)) return;   // refuses; the jiggle says so
             prism.Steal(_status.PlayerName, _status.Domain);
             if (prism.Domain == _status.Domain) Bank(config ? config.EnergyPerSteal : 0f);
             PlayAt(crushEvent, at);
@@ -957,11 +1005,6 @@ namespace CosmicShore.Gameplay
                 {
                     var prism = _candidates[i];
                     if (!prism || prism.destroyed || _cutThisFrame.Contains(prism)) continue;
-                    var props = prism.prismProperties;
-                    bool ownDomain = prism.Domain == own;
-                    // Nothing to do to armoured own mass, or to a super-shielded rival.
-                    if (ownDomain && (props == null || props.IsShielded || props.IsSuperShielded)) continue;
-                    if (!ownDomain && props != null && props.IsSuperShielded) continue;
                     if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, _status)) continue;
 
                     Vector3 centre = prism.transform.position;
@@ -971,15 +1014,28 @@ namespace CosmicShore.Gameplay
                     if ((centre - onChain).sqrMagnitude > contact * contact) continue;
 
                     _cutThisFrame.Add(prism);
-                    if (ownDomain)
-                    {
-                        prism.ActivateShield();
-                        continue;
-                    }
-
+                    var props = prism.prismProperties;
                     // The link's own velocity is the blade's: the chain point moves between the
                     // hull's velocity and the ball's (a lever arm), so the debris does too.
                     Vector3 v = Vector3.Lerp(_links.NodeVelocity(s, dt), _links.NodeVelocity(s + 1, dt), t);
+
+                    if (prism.Domain == own)
+                    {
+                        // Own mass the chain has nothing left to do to (already armoured) is LIT,
+                        // never passed through in silence: a contact that does nothing reads as the
+                        // cord clipping through the prism.
+                        if (props == null || props.IsShielded || props.IsSuperShielded) Acknowledge(prism);
+                        else prism.ActivateShield();
+                        continue;
+                    }
+                    if (props != null && props.IsSuperShielded)
+                    {
+                        // A super-shielded rival refuses the cut; the refusal is the fleet's
+                        // deflection jiggle, the same answer every other hit on it gets.
+                        prism.AbsorbSuperShieldHit(v.magnitude);
+                        continue;
+                    }
+
                     Vector3 cutNormal = Vector3.Cross(ab, v);
                     if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.Cross(ab, Vector3.up);
                     if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.right;
@@ -990,6 +1046,53 @@ namespace CosmicShore.Gameplay
                     PlayAt(sliceEvent, onChain);
                 }
             }
+        }
+
+        // ------------------------------------------------------------------ acknowledgement
+
+        // The own-domain prisms this step touched and could do nothing to, as the span from the
+        // first to the last of them plus the widest reach - see PublishAcknowledged.
+        bool _ackAny;
+        Vector3 _ackFrom, _ackTo;
+        float _ackRadius;
+
+        /// <summary>Record an own-domain prism the ball or the chain touched with no mechanical
+        /// effect, for this step's light.</summary>
+        void Acknowledge(Prism prism)
+        {
+            Vector3 centre = prism.transform.position;
+            float reach = 0.5f * prism.transform.lossyScale.magnitude;
+            if (!_ackAny)
+            {
+                _ackAny = true;
+                _ackFrom = centre;
+                _ackRadius = 0f;
+            }
+            _ackTo = centre;
+            _ackRadius = Mathf.Max(_ackRadius, reach);
+        }
+
+        /// <summary>
+        /// DYNAMIC CONTACT NEVER DOES NOTHING. When the chain or the ball passes through mass of the
+        /// pilot's own domain that it has nothing left to do to (the mass is already shielded), the
+        /// prisms enter the LIT state - the pass-through light a blast that spares its own mass
+        /// already uses (<see cref="PrismLit"/>, Docs/LIT.md) - so the player sees the hit
+        /// acknowledged instead of the cord clipping through. One light per Thresher, a cylinder
+        /// over the span of this step's touches, gated to the pilot's own domain. Reported every
+        /// step the contact lasts; once it ends the bank fades it over its afterglow, so it never
+        /// pops off. Pure photons: nothing reads it to decide an outcome.
+        /// </summary>
+        void PublishAcknowledged()
+        {
+            if (!_ackAny) return;
+            _ackAny = false;
+            Vector3 span = _ackTo - _ackFrom;
+            float length = span.magnitude;
+            var volume = length < 1e-3f
+                ? LitVolume.Sphere(_ackFrom, _ackRadius)
+                : LitVolume.Cylinder(_ackFrom - span / length * _ackRadius, span / length,
+                                     length + 2f * _ackRadius, _ackRadius, false);
+            PrismLit.PublishLight(GetInstanceID(), volume, 1f, PilotDomain(), ownDomainOnly: true);
         }
 
         // ------------------------------------------------------------------ feedback
@@ -1174,7 +1277,8 @@ namespace CosmicShore.Gameplay
             }
 
             // AIM. The sticks turn the launch direction in screen terms (right is right, the hull's
-            // pitch sign up/down) until a release ARMS it; then the point is chosen and held.
+            // pitch sign up/down) until a release ARMS it; then the point is chosen and held. On a phone
+            // (both thumbs off, ThresherTouchLaunch) the tilt virtual thumb writes these same XSum / YSum.
             var input = _status.InputStatus;
             if (input != null && !_solver.LaunchArmed)
                 ThresherCameraFraming.TurnAim(ref _aimDir, ref _aimUp, input.XSum, input.YSum,

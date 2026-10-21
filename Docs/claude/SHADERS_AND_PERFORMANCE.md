@@ -26,6 +26,23 @@ sticker.
   that (2026-10-18, `cece/compassionate-babbage-gc13io`, "the prisms that go out of plane for the kite should be unlit
   but not disappear"). Ask before applying this rule to someone else's deliberate look.
 
+### In the world, not on the screen (LOCKED, Garrett 2026-10-21)
+
+> "always go for the 3d in world solution over the 2d flat text solution."
+
+When a player needs to see something about the world (what a blast will catch, where a shot will land, which thing is
+targeted, what state a thing is in), show it **on the thing itself, in 3D**: light it, colour it, change its shape or
+motion, give it a volume. A screen-space ring, a label or a word over it is the last resort, not the first.
+- **Worked example: the Orca's bomb seat** (round 9). The crosshair drew a ring the size of the blast and "BURST" over
+  the live bomb. Now the prisms the blast will break are lit through PrismLit's bank (a sphere gated to each domain the
+  blast breaks, `OrcaCrewView.LightBomb`) and the crosshair keeps only its aim mark.
+- **Reach for the world's own channels first**: PrismLit (`Docs/LIT.md`) for "this mass is about to be acted on",
+  the hull's element morphs and petals for a vessel's state, faceted lit volumes for effects (the rule above).
+- **The crosshair itself stays UI**: an aim mark has no world thing to sit on. Keep it small and leave the facts to
+  the world.
+- **It holds in labs and studios too**: a page that decides a look draws it in its 3D view, so what is decided is what
+  the game shows.
+
 ### HLSL / Shader Graph
 
 - Custom Function nodes use HLSL files stored in a consistent location
@@ -56,7 +73,8 @@ sticker.
 - **Read first:** `Docs/PERFORMANCE_OPTIMIZATION.md` (where the game stands, what was done, the ranked lever
   list, how to measure without fooling yourself). Then `Docs/MEMORY_AUDIT.md` (what the game HOLDS) and
   `Docs/PLATFORM_UNIFICATION.md` (device tiers: Desktop / MobileHigh / MobileLow, the trail cap, one codebase
-  for Windows, iOS and Android). The next session's brief: `Docs/prompts/PERFORMANCE_NEXT_SESSION_PROMPT.md`.
+  for Windows, iOS and Android; §3.10 is what the Medium / Low / Very Low quality presets take off the GPU, in
+  `Resources/QualityPresetCuts.asset`, read through `GraphicsCuts`). The next session's brief: `Docs/prompts/PERFORMANCE_NEXT_SESSION_PROMPT.md`.
 - **The performance system** (`/perf-hunt`, `Tools/Build/perf_hunt.py`, `.github/workflows/perf-daily.yml`): once a day
   from `bleeding-edge` the static gates run, every capture a collaborator's editor shared is judged against its baseline,
   and the game's markers are measured in Amoebius with allocations as the gate; a regression becomes a team task and

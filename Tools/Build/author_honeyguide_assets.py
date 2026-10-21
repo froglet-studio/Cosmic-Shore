@@ -11,7 +11,7 @@ hull class, the Wrasse's way (author_wrasse_assets.py is the pattern; this tool 
 
 WHAT IT MAKES (the design: Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md; the lab: Docs/Studios/HoneyguideLab.html)
     Assets/_Prefabs/Spacevessels/Honeyguide.prefab (+ .meta)   a text clone of Sparrow.prefab with:
-        - the root GameObject and VesselStatus renamed, `vesselType: 21` (VesselClassType.Honeyguide)
+        - the root GameObject and VesselStatus renamed, `vesselType: 23` (VesselClassType.Honeyguide)
         - a FRESH Netcode GlobalObjectIdHash for this guid, InScenePlacedSourceGlobalObjectIdHash cleared
         - HoneyguideCrew on the root, wired to HoneyguideConfig.asset
         - the triggers retargeted (lab round 6): RightStickAction -> HoneyguideRTAction, LeftStickAction -> HoneyguideLTAction,
@@ -66,8 +66,8 @@ CONFIG = os.path.join(CONFIG_DIR, "HoneyguideConfig.asset")
 LAB = os.path.join(ROOT, "Docs", "Studios", "HoneyguideLab.html")
 GAME_DATA_GUID = "b35f33752bb10a44cb5033b5670f50aa"   # GameData.asset (KiteNavigatorConfig wires the same)
 
-# 19 is the Wrasse, 20 the Orca (cece/happy-noether-m54hz6); 21 was reserved for the Honeyguide on bleeding-edge.
-HONEYGUIDE_CLASS_ID = 21
+# 19 is the Wrasse, 20 the Orca, 21 the Starling, 22 the Marlin (all on bleeding-edge, 2026-10-21): the Honeyguide is 23.
+HONEYGUIDE_CLASS_ID = 23
 SPARROW_CLASS_ID = 11
 PREFAB_GUID = "f6abe5afafae41909d25da175bc23493"
 CLASS_GUID = "7fcf1c753fc8440198a6dc26e5d5d63a"

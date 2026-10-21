@@ -1,0 +1,90 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: baff6f3cc6b14e969371b861e716a586, type: 3}
+  m_Name: QualityPresetCuts
+  m_EditorClassIdentifier: 
+  bakedSkies:
+  - authored: {fileID: 2100000, guid: b9e5d3c7f0a2468135792bde4c6a8f01, type: 2}
+    replacementResource: PlatformSkyboxes/StaticHyperSeaSkybox
+  presets:
+  - preset: 0
+    setsAntiAliasing: 1
+    antiAliasing: 0
+    maxRenderScalePercent: 70
+    upscalingWhenScaled: 1
+    bakedSky: 1
+    disableHdr: 1
+    bloomAtQuarterResolution: 1
+    bloomMaxIterations: 3
+    membraneMaxSubdivisions: 3
+    offscreenViewMaxRenderScale: 0.5
+    cytoplasmDensity: 0.25
+  - preset: 1
+    setsAntiAliasing: 1
+    antiAliasing: 0
+    maxRenderScalePercent: 80
+    upscalingWhenScaled: 1
+    bakedSky: 1
+    disableHdr: 1
+    bloomAtQuarterResolution: 1
+    bloomMaxIterations: 3
+    membraneMaxSubdivisions: 3
+    offscreenViewMaxRenderScale: 0.5
+    cytoplasmDensity: 0.25
+  - preset: 2
+    setsAntiAliasing: 0
+    antiAliasing: 0
+    maxRenderScalePercent: 100
+    upscalingWhenScaled: 1
+    bakedSky: 1
+    disableHdr: 0
+    bloomAtQuarterResolution: 0
+    bloomMaxIterations: 0
+    membraneMaxSubdivisions: -1
+    offscreenViewMaxRenderScale: 0.75
+    cytoplasmDensity: 1
+  - preset: 3
+    setsAntiAliasing: 0
+    antiAliasing: 0
+    maxRenderScalePercent: 100
+    upscalingWhenScaled: 1
+    bakedSky: 0
+    disableHdr: 0
+    bloomAtQuarterResolution: 0
+    bloomMaxIterations: 0
+    membraneMaxSubdivisions: -1
+    offscreenViewMaxRenderScale: 1
+    cytoplasmDensity: 1
+  - preset: 4
+    setsAntiAliasing: 0
+    antiAliasing: 0
+    maxRenderScalePercent: 100
+    upscalingWhenScaled: 1
+    bakedSky: 0
+    disableHdr: 0
+    bloomAtQuarterResolution: 0
+    bloomMaxIterations: 0
+    membraneMaxSubdivisions: -1
+    offscreenViewMaxRenderScale: 1
+    cytoplasmDensity: 1
+  - preset: 5
+    setsAntiAliasing: 0
+    antiAliasing: 0
+    maxRenderScalePercent: 100
+    upscalingWhenScaled: 1
+    bakedSky: 0
+    disableHdr: 0
+    bloomAtQuarterResolution: 0
+    bloomMaxIterations: 0
+    membraneMaxSubdivisions: -1
+    offscreenViewMaxRenderScale: 1
+    cytoplasmDensity: 1

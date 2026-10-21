@@ -425,6 +425,9 @@ namespace CosmicShore.Gameplay
                     _fade = Mathf.Min(1f, _fade + dt / FadeInSeconds);
                     _group.alpha = _fade;
                 }
+                // Opaque from here: the gate may settle grow-ins nobody can see
+                // (PrismTrailBuilder.LoadGateCovered).
+                if (_gated && _fade >= 1f) PrismTrailBuilder.LoadGateCovered = true;
 
                 UpdateStage();
                 var span = BarSpan(PrismTrailBuilder.IsLayingInProgress, PrismTrailBuilder.LayProgress,
@@ -458,6 +461,7 @@ namespace CosmicShore.Gameplay
             UpdateStage();
             if (_gated)
             {
+                PrismTrailBuilder.LoadGateCovered = false;
                 PrismTrailBuilder.SetLoadGateHolding(false);
                 PrismTrailBuilder.LoadGateLayBudgetOverrideMs = 0f;
             }

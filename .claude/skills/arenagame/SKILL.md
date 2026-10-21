@@ -156,6 +156,7 @@ python3 Tools/Build/check_vessel_class_icons.py       # every hull's IconActive/
 python3 Tools/Build/author_arena_launch_panel_layout.py --check  # the SELECT VESSEL button is in the carousel, not on Play
 bash Tools/Build/regatta_course_harness/run.sh        # after ANY edit to a pure course file
 python3 Tools/Build/render_card_backgrounds.py --check   # after ANY arena/course edit: the card must still be that arena
+python3 Tools/Build/bake_prism_layouts.py --check       # a CellEnvironmentSpawnableBase arena loads from its bake (ECOSYSTEM §62.2b)
 ```
 
 The editor still owns: whether a hull actually latches / skims / clears the mouth at the speed

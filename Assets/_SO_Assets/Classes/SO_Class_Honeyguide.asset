@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
   m_Name: SO_Class_Honeyguide
   m_EditorClassIdentifier: 
-  Class: 21
+  Class: 23
   Name: Honeyguide
   Description: Two seats, one hull, like the honeyguide bird and the honey badger it leads.
     The Honeyguide flies the hull and rides trails: touch a trail of a domain the battery holds,

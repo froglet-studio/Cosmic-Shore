@@ -23,6 +23,7 @@ MonoBehaviour:
   - Wrasse
   - Grouper
   CrewNameTemplate: '{0} and {1}'
+  SeatCount: 2
   PrimaryElement: 0
   Element: {fileID: 0}
   InitialResourceLevels:

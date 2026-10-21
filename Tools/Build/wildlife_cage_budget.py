@@ -11,14 +11,24 @@ at intensity 4. The WILDLIFE ROSTER is identical at every intensity, so this tab
 entire difficulty curve.
 
 Counts are exact loop arithmetic - the icosahedral subdivision, the shared-edge dedupe and the
-per-segment prism walk are all simulated the same way the C# does, not estimated. Volume uses
-E[k^3] ~ 1.04 for Jit(s, 0.2) (one uniform factor on all three axes).
+per-segment prism walk are all simulated the same way the C# does, not estimated.
+
+VOLUME IS THE LAID VOLUME, prism by prism. Since the flush pass (no prism may interpenetrate
+another, Docs/ECOSYSTEM.md §49.10) a bar's length depends on its run, its joint and the post it
+meets, and a post can be capped where a box is tight - so an E[k^3] factor on a nominal size no
+longer describes the cage. `shell_rows` walks the same runs and joints the C# walks and reproduces
+the C#'s draws (`NetRandom` is .NET's seeded System.Random, which Unity's Mono shares; the cage
+draws one factor per bar, run by run, then one per post, from seed 40), so it sizes every prism
+exactly as SpawnableWildlifeCage does - to float rounding against the audit's measured volume
+(Tools/Build/audit_prism_clipping.py --json). That sum is then priced at LEGACY_VOLUME_SCALE (2x),
+the convention the shipped thresholds were tuned on - see JIT below.
 
 Emits the per-intensity baselines that Tools/Build/author_wildlife_liberation_assets.py turns
 into the four CellConfigDataSO PhaseThresholds blocks, and the one roam band its
 FaunaConfigurationSO assets are authored from - so the band and the membrane cannot drift.
 """
 import math
+import struct
 
 # ── Arena (mirrors SpawnableWildlifeCage) ────────────────────────────────────
 SHELL_RADII = [1050.0, 600.0, 200.0]     # outer / middle / core
@@ -50,6 +60,21 @@ SHELL_PLANS = [
 # intensities lighter AND more open than the easy ones.
 
 JIT = ((1.2) ** 4 - (0.8) ** 4) / (4 * 0.2)
+
+# JIT above integrates k^3 over the jitter range but divides by half its width, so it is exactly
+# 2x the true E[k^3] = 1 + 0.2^2 (boneyard_budget.py's note). The shipped thresholds were tuned
+# against that 2x, so it is KEPT as a calibration on the laid volume rather than silently halving
+# every PhaseThreshold: the flush pass moves the thresholds by exactly its own trim, nothing else.
+CAGE_JITTER = 0.2
+LEGACY_VOLUME_SCALE = JIT / (1.0 + CAGE_JITTER ** 2)
+SEED = 40                      # SpawnableWildlifeCage.DefaultSeed (the prefabs author seed 40)
+
+# ── Flush (mirrors SpawnableWildlifeCage's "Flush" constants) ──────────────────
+PRISM_FLOOR = 0.5
+BAR_HALF_THICK_MAX = BAR_THICK * (1.0 + CAGE_JITTER) * 0.5
+GEODESIC_JOINT_CLEAR = BAR_HALF_THICK_MAX / math.tan(math.radians(27.0)) * 1.1
+BOX_JOINT_CLEAR = BAR_HALF_THICK_MAX * math.sqrt(2.0) * 1.02
+FLUSH_MARGIN = 0.995
 
 # PhaseThresholds = measured baseline + the standard Blob deltas (Docs/ECOSYSTEM.md §18).
 BLOB_DELTAS = dict(re=700, rx=500, fe=3600, fx=3000,
@@ -216,7 +241,175 @@ def boxed_frame(radius, f):
     return segments, nodes
 
 
+# ── The draws and the flush sizes (mirrors SpawnableWildlifeCage) ────────────
+_F32 = struct.Struct("<f")
+
+
+def _f32(x):
+    """Round to a C# float."""
+    return _F32.unpack(_F32.pack(x))[0]
+
+
+class NetRandom:
+    """.NET's seeded System.Random (the Knuth subtractive generator; Net5CompatSeedImpl in .NET 8,
+    and the implementation Unity's Mono ships), bit for bit, so the cage's jitter can be
+    reproduced rather than estimated."""
+    MBIG = 2147483647
+    MSEED = 161803398
+
+    def __init__(self, seed):
+        sa = [0] * 56
+        sub = self.MBIG if seed == -2 ** 31 else abs(seed)
+        mj = self.MSEED - sub
+        sa[55] = mj
+        mk = 1
+        for i in range(1, 55):
+            ii = (21 * i) % 55
+            sa[ii] = mk
+            mk = mj - mk
+            if mk < 0:
+                mk += self.MBIG
+            mj = sa[ii]
+        for _ in range(4):
+            for i in range(1, 56):
+                sa[i] -= sa[1 + (i + 30) % 55]
+                if sa[i] < 0:
+                    sa[i] += self.MBIG
+        self._sa, self._inext, self._inextp = sa, 0, 21
+
+    def next_double(self):
+        self._inext = 1 if self._inext + 1 >= 56 else self._inext + 1
+        self._inextp = 1 if self._inextp + 1 >= 56 else self._inextp + 1
+        r = self._sa[self._inext] - self._sa[self._inextp]
+        if r == self.MBIG:
+            r -= 1
+        if r < 0:
+            r += self.MBIG
+        self._sa[self._inext] = r
+        return r * (1.0 / self.MBIG)
+
+    def jitter(self):
+        """1f + RangeF(-0.2f, 0.2f), as Jit draws it."""
+        return _f32(1.0 + _f32(self.next_double() * (CAGE_JITTER * 2) - CAGE_JITTER))
+
+
+def bars_on(length):
+    """SpawnableWildlifeCage.BarsOn - Mathf.RoundToInt is half-to-even, like round()."""
+    return max(1, round(length / BAR_STEP))
+
+
+def _sub(a, b):
+    return (a[0] - b[0], a[1] - b[1], a[2] - b[2])
+
+
+def _dot(a, b):
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+
+
+def _cross(a, b):
+    return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
+
+
+def _post_axes(p):
+    """PostRotation's basis: LookRotation(radial, up) - z along the radial, x = up x z."""
+    z = _norm(p) if _dot(p, p) > 0.001 else (0.0, 0.0, 1.0)
+    x = _cross((0.0, 1.0, 0.0), z)
+    if _dot(x, x) < 1e-12:
+        # A joint on the world pole (an even-frequency geodesic has two): LookRotation falls back
+        # to the from-forward rotation, whose x stays world x.
+        x = (1.0, 0.0, 0.0)
+    x = _norm(x)
+    return x, _cross(z, x), z
+
+
+def _support(axes, d):
+    return sum(abs(_dot(a, d)) for a in axes)
+
+
+def _bar_centre(a, b, u, project):
+    p = tuple(a[i] + (b[i] - a[i]) * u for i in range(3))
+    if project > 0:
+        m = math.sqrt(_dot(p, p))
+        p = (p[0] / m * project, p[1] / m * project, p[2] / m * project)
+    return p
+
+
+def shell_flush(form, radius, segments, nodes, rng):
+    """(bar volume, post volume) as laid: every bar and post sized as SpawnableWildlifeCage sizes
+    it, consuming `rng` in the C#'s order. Mirrors BuildShell / ShellJitter / Joints / LayBar."""
+    live = [(a, b, _dist(a, b)) for a, b in segments if _dist(a, b) >= 0.001]
+    half_step_min = min(0.5 * ln / bars_on(ln) for _, _, ln in live)
+
+    bar_k = [rng.jitter() for _, _, ln in live for _ in range(bars_on(ln))]
+    post_k = [rng.jitter() for _ in nodes]
+    post_at = {_key(p): i for i, (p, _) in enumerate(nodes)}
+
+    def post_half_cap(axes):
+        reach = (math.sqrt(3.0) if form == GEODESIC else
+                 max(_support(axes, e) for e in ((1, 0, 0), (0, 1, 0), (0, 0, 1))))
+        return (half_step_min - PRISM_FLOOR * 0.5) * FLUSH_MARGIN / reach
+
+    def post_edge(i):
+        p, scale = nodes[i]
+        drawn = max(PRISM_FLOOR, POST * scale * post_k[i])
+        return min(drawn, 2.0 * post_half_cap(_post_axes(p)))
+
+    def clearance(joint, d):
+        clear = GEODESIC_JOINT_CLEAR if form == GEODESIC else BOX_JOINT_CLEAR
+        i = post_at.get(_key(joint))
+        if i is None:
+            return clear
+        return max(clear, 0.5 * post_edge(i) * _support(_post_axes(joint), d))
+
+    project = radius if form == GEODESIC else 0.0
+    bar_vol, draw = 0.0, 0
+    for a, b, ln in live:
+        d = (b[0] - a[0]) / ln, (b[1] - a[1]) / ln, (b[2] - a[2]) / ln
+        c_from = clearance(a, d)
+        c_to = clearance(b, (-d[0], -d[1], -d[2]))
+        n = bars_on(ln)
+        s_prev = 0.0
+        pos = _bar_centre(a, b, 0.5 / n, project)
+        s = _dot(_sub(pos, a), d)
+        for i in range(n):
+            nxt = _bar_centre(a, b, (i + 1.5) / n, project) if i + 1 < n else b
+            s_next = _dot(_sub(nxt, a), d) if i + 1 < n else ln
+            room = 2.0 * (s - c_from) if i == 0 else s - s_prev
+            room = min(room, 2.0 * (ln - s - c_to) if i == n - 1 else s_next - s)
+            k = bar_k[draw]
+            draw += 1
+            thick = max(PRISM_FLOOR, _f32(BAR_THICK * k))
+            length = max(PRISM_FLOOR, min(max(PRISM_FLOOR, _f32(BAR_LEN * k)), room * FLUSH_MARGIN))
+            bar_vol += thick * thick * length
+            s_prev, s, pos = s, s_next, nxt
+
+    post_vol = sum(post_edge(i) ** 3 for i in range(len(nodes)))
+    return bar_vol, post_vol
+
+
 # ── Per-shell totals ─────────────────────────────────────────────────────────
+def _laid(intensity):
+    """The laid (bar, post) volume of every shell at an intensity - one build, one stream."""
+    rng = NetRandom(SEED)
+    out = []
+    for shell in range(SHELL_COUNT):
+        form, f = SHELL_PLANS[max(1, min(intensity, 4)) - 1][shell]
+        radius = SHELL_RADII[shell]
+        segments, nodes = (geodesic_frame(radius, f) if form == GEODESIC
+                           else boxed_frame(radius, f))
+        out.append(shell_flush(form, radius, segments, nodes, rng))
+    return out
+
+
+_LAID = {}
+
+
+def laid(intensity, shell):
+    if intensity not in _LAID:
+        _LAID[intensity] = _laid(intensity)
+    return _LAID[intensity][shell]
+
+
 def shell_rows(intensity, shell):
     form, f = SHELL_PLANS[max(1, min(intensity, 4)) - 1][shell]
     radius = SHELL_RADII[shell]
@@ -235,7 +428,7 @@ def shell_rows(intensity, shell):
                     danger += 1
                 idx += 1
 
-    node_vol = sum((POST * scale) ** 3 for _, scale in nodes)
+    bar_vol, node_vol = laid(intensity, shell)
     opening = (sum(_dist(a, b) for a, b in segments) / len(segments)) if segments else 0.0
 
     return {
@@ -249,7 +442,7 @@ def shell_rows(intensity, shell):
         "node_vol": node_vol,
         "opening": opening,
         "count": bars + len(nodes),
-        "volume": (bars * BAR_VOL + node_vol) * JIT,
+        "volume": (bar_vol + node_vol) * LEGACY_VOLUME_SCALE,
     }
 
 

@@ -24,6 +24,12 @@ since it is net-new (no burn/ignite/DoT existed in the codebase before).
   `IgniteTicksPerSecond`, `IgnitesPerTick` budget) and ignites enemy prisms.
 - Mass-5 state is sampled at IGNITE time: burns started under the upgrade
   convert on burnout even if the level drops mid-burn.
+- **The cone visual** (`Controller/FX/GrizzlyClawConeVisual.cs`) copies
+  `Resources/KiteNavigatorUnlit.mat` (URP/Unlit, transparent) and sets it additive, so a player build
+  carries the shader (2026-10-21, team task T-20261019-41bb). It used to build its material from
+  `Shader.Find` alone, which returns null once a build has stripped the shader, and `new Material(null)`
+  throws. With neither the material nor the shader present it logs one error and draws no cone; the
+  claw still burns.
 
 ## Burn system (PrismBurnManager — Controller/Managers/)
 

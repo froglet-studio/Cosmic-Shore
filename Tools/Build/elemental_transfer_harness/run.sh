@@ -31,6 +31,11 @@ SRCS=("$ROOT/Assets/_Scripts/Data/Enums/Element.cs" \
       "$ROOT/Assets/_Scripts/Data/Enums/InitialControllingDomain.cs" \
       "$ROOT/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/ElementalTransfer.cs" \
       "$ROOT/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/CombatHitDrain.cs" \
+      "$ROOT/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/VesselCombatHitLatch.cs" \
+      "$ROOT/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/VesselSilence.cs" \
+      "$ROOT/Assets/_Scripts/ScriptableObjects/VesselSilenceConfigSO.cs" \
+      "$ROOT/Assets/_Scripts/Controller/FX/SilenceVignetteMask.cs" \
+      "$ROOT/Assets/_Scripts/Controller/FX/SilencePerimeter.cs" \
       "$ROOT/Assets/_Scripts/Controller/Environment/FlowField/ElementalCrystalEjector.cs" \
       "$ROOT/Assets/_Scripts/Controller/Environment/FlowField/EjectedCrystal.cs")
 

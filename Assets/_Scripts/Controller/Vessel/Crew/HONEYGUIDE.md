@@ -1,6 +1,7 @@
 # The Honeyguide and Ratel
 
-A two-seat crew vessel on the Sparrow's hull: `VesselClassType.Honeyguide = 21`. It carries *Slipstream*, the tabletop game
+A two-seat crew vessel on the Sparrow's airframe, with its own hull model: `VesselClassType.Honeyguide = 23` (21 until the
+2026-10-21 bleeding-edge merge gave 21 to the Starling). It carries *Slipstream*, the tabletop game
 Garrett and friends designed and played from 2019 to 2022. The design was made and decided in the Honeyguide Lab
 (`Docs/Studios/HoneyguideLab.html`, write-up `Docs/Studios/HONEYGUIDE_LAB.md`, pattern list
 `Docs/Studios/HONEYGUIDE_PATTERNS.md`). The lab is the record. This port is its clone in the game, as of lab round 6.

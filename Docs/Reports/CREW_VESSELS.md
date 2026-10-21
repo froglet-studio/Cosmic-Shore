@@ -47,6 +47,22 @@ the hit box, jets and engine flash are still the Sparrow's (`T-20261020-a9f5`).
   the blast, Mass blocks morph into the prisms, Time streaks onto the Grouper, and Charge orbits onto the Wrasse.
 - Not editor-verified: `T-20261020-8dbc`, `T-20261021-3d24`, `T-20261021-d063`.
 
+**2026-10-21, two seats, either device (decided by Garrett):** "wrasse and grouper, are two seats. players can select,
+change seats etc. both can be played on mobile or pc." This closes `T-20261017-b06e`, and it replaces the audit line
+that one phone runs one human plus an AI.
+- **Today, one human:** keys 1 / 2 pick the Grouper or the Wrasse, and the D-pad or a double tap on the small view
+  steps to the other seat. The pick is remembered per hull class (`CrewSeatChoice`).
+- **The phone boost:** lifting both thumbs now really speeds the Grouper up (idle reads a released pad, 72.5 against
+  35 u/s at a full spread). It is spent only after a thumb has touched in the pilot seat.
+- **The online plan:** `KITE_NAVIGATOR.md` "Two humans, two seats (plan, 2026-10-21)":
+  - the hull is owned by the pilot seat's machine;
+  - the Wrasse is simulated on its holder's machine, which sends each decided effect through a server-checked relay;
+  - the seat owns the swap gesture on a crew hull: seats first, then the arena's ring;
+  - the work order is on the board as `T-20261021-aa19` (Yash with Garrett, on `cece/sharp-tesla-j0kd7z`'s
+    `CrewSeat`).
+- **A gap it fixes first:** pops, blasts and Mass clusters happen only on the Wrasse's own machine today, even with one
+  human online.
+
 ## 2. Try it
 
 **The browser lab:** [Crew Vessel Lab](https://claude.ai/artifact/JtQptDHQhNdC2CxPmspfct). Private to Garrett until
@@ -95,19 +111,80 @@ counts, five-petal motes, depth measured from the plane and a dither cone in the
 HUD, the flowers, the L5s, the Omni burst, the out-of-plane look). The real blast can also hit rival hulls, and it all
 runs on one machine. Each is explained in `Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md`.
 
+## 3b. The Orca: the 4-seat vessel (2026-10-20, branch `cece/happy-noether-m54hz6`)
+
+The second crew vessel, Garrett's design from the **Crew of Four Lab**
+([artifact](https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb), `Docs/Studios/CREW_OF_FOUR_LAB.md`). Its card reads
+**Orca · 4 seat**: Garrett asked for multiplayer vessels to be named by their seats ("that lets players know it supports
+four players or brings in 4 AI"), so `SO_Vessel` gained `SeatCount`, and the Wrasse's card now reads "Wrasse and
+Grouper · 2 seat".
+- **The seats.** One **helm** flies with two thumbs, boosts from a tank and rings the hull in danger prisms that leave
+  the front open. Three **gunners** sit in gyro-stabilized first-person turrets on outriggers. Each gunner launches
+  and flies missiles from one shared magazine. Omni crystals refill the magazine. The AI fills every empty seat.
+- **The stabilization (lab round 4)** cut a gunner's unsteered view sway from 47–54 °/s to 3–6 °/s (12 seeds, every
+  game). The gunner's aim lives in the world; the view's horizon is held, then eased; the turrets sit on outriggers
+  that follow a lagged copy of the hull's frame.
+- **In Unity:** `VesselClassType.Orca = 20`, `Orca.prefab` (the Sparrow without its kit, on two sticks), `OrcaCrew` and
+  its engine-free core, the view, the HUD controller and the omni effect. It is in the Toybox Vessel Changer. The
+  author tool is `Tools/Build/author_orca_assets.py`; the parity gate is `Tools/Build/orca_crew_lab/parity.cjs`.
+  Design doc: `Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md`.
+- **Checked:**
+  - The C# core matches the page step by step, and the asset matches the lab's numbers; planted controls are caught.
+  - Unity reference compile: no project errors.
+  - 14 core tests pass under .NET.
+  - All static gates pass.
+- **Not checked: it has not been flown in the Unity editor.** It also runs on one machine only, like the Wrasse.
+- **Status: a stub, shipped as one** (Garrett, 2026-10-21: "this is a good stub of a vessel"). Every seat, gun and
+  missile is built and wired (Garrett flew it through round 7; rounds 8 and 9 are not flown yet); networking, level-5 upgrades, sounds, a prefab fitted to the model and its own
+  HUD art are the follow-ups in `ORCA_CREW.md`.
+- **Round 9 (2026-10-21).** After Garrett flew round 8: each flown missile is the Sparrow's skyburst rocket with an
+  igniting motor, a light, a bank into the stick and a lit faceted plume trail (`OrcaMissileVisual`). The bomb's ring and
+  "BURST" text are gone: the prisms its live bomb will break are lit through PrismLit's light bank, never the gunner's
+  own. Garrett's "always go for the 3d in world solution over the 2d flat text solution" is now a LOCKED rule
+  (`Docs/claude/SHADERS_AND_PERFORMANCE.md`). Not flown yet.
+- **Round 8 (2026-10-21).** The minigun's model sat at an odd angle to its shot: the turrets' rest is now read from the
+  skin's bind poses. The hull was rebuilt as a hovering assembly like the original vessels (17 floating parts, gaps
+  1.6-2.3% of its size, `assembly_report.py`), its plates and engines animated, and the jets remounted on its engine
+  mouths. Not flown yet.
+- **Round 7 (2026-10-21).** After Garrett flew round 6: every shot now flies down its aim (it keeps only the hull's
+  velocity along the aim), and the turret model, the crosshair and the shot share one line (posed and fired after the
+  hull moves, from the barrel tips). The sniper looks over its turret with the Serpent's pip scope always open. In the
+  lab, gun hits on rival hulls rise 60–130%. Not flown yet.
+- **Round 6 (2026-10-21).**
+  - **Every seat is an element**: Helm Time, Sniper Space, Fast gun Mass, Bomb Charge. The person's seat lights its
+    ability card, and each gunner card shows its own missiles and its gun's recharge.
+  - The **sniper is always scoped**; the **bomb** has no cooldown but one at a time (burst it to throw the next).
+  - The **fast gun writes prisms like a pen**: clean strokes of thin prisms, 5 u apart, 120 u out, up to 10 pen rounds
+    a second.
+  - The fast gun and the bomb look **over their turret**; every gun has a **bespoke crosshair** (scope, nib, blast ring).
+  - Lab cost: the no-cooldown bomb doubles the hits both ways, and Anchorage falls to 73 (from 120).
+  - **Its own hull model** (`Orca.fbx`, `/vessel-model`): an orca-inspired spaceship with three bespoke turrets the crew
+    aims (`OrcaHullRig`). Jets, hit box and chase camera are still the Sparrow's and need fitting.
+  - Same status: compiled and parity-checked, not flown in the editor.
+- **Round 5 (2026-10-21).**
+  - Each gunner seat has **its own gun**: gunner 1 the Serpent's sniper (12 s cooldown; every hostile prism in a thin
+    cone dies, super-shielded ones included), gunner 2 the Brittle Star's rounds (overheats), gunner 3 the Grizzly's
+    bomb (it never pushes the Orca).
+  - Each seat has **its own missiles**, and an omni crystal gives every seat one.
+  - The helm's shield **rides with the hull super-shielded, then drops in place as danger prisms**. That shield is the
+    round's biggest measured gain: 120 against 77 in Anchorage.
+  - Both crew cameras (the Orca's gunner view, the Wrasse's kite view) now have the game camera's post-processing.
+  - Same status: compiled and parity-checked, not flown in the editor.
+
 ## 4. Open items, and what is asked of you
 
 - **Fly it in the editor** (`T-20261018-5c29`; Yash can run the editor pass). Let the shaders re-import, check the pilot
   view's prisms look unchanged, then follow the Kite Navigator entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
   `T-20261017-aca2` is the original playtest task.
-- **Decide how the seat goes online** (`T-20261017-b06e`, Garrett with Yash):
-  - which machine decides each effect;
-  - who owns the swap gesture in an arena match.
+- **Build the two human seats** (`T-20261021-aa19`, Yash with Garrett). The decision (`T-20261017-b06e`) was made on
+  2026-10-21: two seats, either device. The plan is in `KITE_NAVIGATOR.md`.
 - **Register the seat as a duo design** when your duo-vessel branch (`cece/sharp-tesla-j0kd7z`) lands
   (`T-20261017-efca`, Garrett). The Goby there still uses enum value 16 and has to move; 18 is left for it.
 - **Card icons:** the Wrasse still shows the Sparrow's four ability icons (`T-20261018-8ff7`).
 - **Sounds:** eight empty FMOD slots (`T-20261017-3cbe`).
 - **Catch the lab up** to rounds 4-4f (`T-20261018-3247`).
+- **Fly the Orca in the editor**, round by round (`T-20261020-440c`, `T-20261021-9ef8`, `T-20261021-a73f`,
+  `T-20261021-07cd`; Garrett or Yash), and **fit its prefab to the model** (`T-20261021-8afe`).
 
 ## 5. Latest activity (generated)
 
@@ -115,50 +192,57 @@ runs on one machine. Each is explained in `Assets/_Scripts/Controller/Vessel/Cre
 _Generated 2026-10-21 from git (last 14 days), who_works_where.py and Docs/TEAM_TASKS.md: `python3 Tools/Build/team_report.py area crew-vessels --days 14`._
 
 ### Recent changes (25+)
+- 2026-10-21 `00793bd50` docs(crew-lab): name round 8 in the lab page's header comment — on another branch
+- 2026-10-21 `d08d78afd` feat(orca): rocket missiles with a faceted plume; the bomb's blast lit in the world, not a BURST ring — on another branch
+- 2026-10-21 `a5bbd6454` feat(honeyguide): Garrett's first-play notes - centred board, toasts, right-click, cursor prisms, slip zip — on another branch
+- 2026-10-21 `86d89e91f` feat(crew): pick and keep your seat on the Wrasse, on every device; the online plan — on bleeding-edge
+- 2026-10-21 `e41f4d494` fix(honeyguide): draw the Dynamo board from the screen's corner, not its centre — on another branch
+- 2026-10-21 `98c69145c` feat(orca): the hull rebuilt as a hovering assembly, its floating parts animated — on another branch
+- 2026-10-21 `c47e51195` fix(orca): turret rest from bind poses, jets on the model's mouths; vessels are hovering assemblies — on another branch
+- 2026-10-21 `5c9451c81` feat(honeyguide): the Honeyguide and Ratel in the Toybox Vessel Changer — on another branch
+- 2026-10-21 `3d7c0c430` docs(crew): ship pass - view doc current, re-measured follow-up, lab learnings, refactor row — on bleeding-edge
 - 2026-10-21 `a859581c4` fix(orca): shots fly down the aim; sniper keeps the Serpent's pip scope open (lab round 7) — on another branch
-- 2026-10-21 `6fd866b2d` feat(crew): the Wrasse's juice - every effect is its motes' own petals, no rings; a steady small view — on another branch
+- 2026-10-21 `6fd866b2d` feat(crew): the Wrasse's juice - every effect is its motes' own petals, no rings; a steady small view — on bleeding-edge
 - 2026-10-21 `e0050f8e9` feat(orca): its own hull model with three code-aimed turrets (/vessel-model) — on another branch
 - 2026-10-21 `abdec3ecf` feat(orca): seats are elements, scoped sniper, one-at-a-time bomb, the fast gun's pen, crosshairs (lab round 6) — on another branch
-- 2026-10-21 `920bc7e5d` feat(crew): the Wrasse's four limes are green-yellows - no blue, no orange — on another branch
-- 2026-10-21 `072a96353` feat(crew): only the cord holds the Wrasse; its four lasso elements are four limes — on another branch
+- 2026-10-21 `920bc7e5d` feat(crew): the Wrasse's four limes are green-yellows - no blue, no orange — on bleeding-edge
+- 2026-10-21 `072a96353` feat(crew): only the cord holds the Wrasse; its four lasso elements are four limes — on bleeding-edge
 - 2026-10-21 `c5985f500` feat(orca): three distinct guns per seat, per-seat missiles, carried super-shield (lab round 5) — on another branch
-- 2026-10-20 `b4fc7ddbf` feat(crew): the Wrasse's hand line above the totems; the Grouper's view fills the corner — on another branch
+- 2026-10-20 `b4fc7ddbf` feat(crew): the Wrasse's hand line above the totems; the Grouper's view fills the corner — on bleeding-edge
 - 2026-10-20 `d42f8b177` feat(labmaker): Honeyguide Lab round 1 and the engine-free Dynamo core — on another branch
 - 2026-10-20 `2adae812d` feat(crew): the Orca, the 4-seat vessel, in the Toybox Vessel Changer — on another branch
-- 2026-10-20 `01c24e802` feat(crew): the Wrasse and Grouper get real bodies; the kite flies the whole screen — on another branch
-- 2026-10-20 `47c0d54ca` feat(crew): AI Wrasses are two AIs; the flail trips toys, not the kite; one Sling for every input — on another branch
-- 2026-10-20 `b6293d5a3` feat(crew): the Wrasse's Sling, switches, and Wrasse Run (GameModes 68) — on another branch
-- 2026-10-20 `91f878645` feat(elements): a strip or a steal silences its victim's harm — on another branch
-- 2026-10-19 `27a4e1a4e` docs(ship): re-measured Shader.Find count, card taps in the HUD topic file, refactor rows — on bleeding-edge
-- 2026-10-19 `35ddff56f` fix(crew): no stray material when the kite view falls back to Shader.Find — on bleeding-edge
-- 2026-10-19 `04dfaf3c7` docs(hud,crew): record the phone round - tap-to-press cards, the Wrasse's shader, the PIP swap — on bleeding-edge
-- 2026-10-19 `df14a3121` feat(crew): double-tap the small view to swap seats on the Wrasse — on bleeding-edge
-- 2026-10-19 `1543a6e93` fix(crew): the Wrasse's kite, tail and motes draw in a player build — on bleeding-edge
-- 2026-10-18 `ea77f28d5` feat(goby): the vortex ring and flares are lit faceted volumes; ship-pass fixes — on another branch
-- 2026-10-18 `c2d559666` feat(crew): one notion of a crew vessel - the Goby and Pistol joins the Wrasse and Grouper — on another branch
-- 2026-10-18 `9ad432e2f` docs(crew): ship polish - the Wrasse's current state, the report, follow-ups, lab capture — on bleeding-edge
-- 2026-10-18 `d5b555ef1` feat(crew): the Wrasse's motes in the totem's proportions; Mass holds three in, one Charge bolt — on bleeding-edge
-- 2026-10-18 `3e189603b` feat(crew): name each subvessel - the card reads "Wrasse and Grouper" — on bleeding-edge
-- 2026-10-18 `bad724760` refactor(crew): name the crew hull the Wrasse - a cleaner wrasse and its host — on bleeding-edge
+- 2026-10-20 `bc311e6c0` feat(lab): Crew of Four Lab round 4 - stabilized gunner turrets on outriggers, the 4-seat vessel — on another branch
+- 2026-10-20 `01c24e802` feat(crew): the Wrasse and Grouper get real bodies; the kite flies the whole screen — on bleeding-edge
+- 2026-10-20 `1719e93f9` feat(lab): Crew of Four Lab round 3 - one helm, three gunner seats, flown missiles — on another branch
+- 2026-10-20 `47c0d54ca` feat(crew): AI Wrasses are two AIs; the flail trips toys, not the kite; one Sling for every input — on bleeding-edge
+- 2026-10-20 `0c72f1eac` feat(lab): Crew of Four Lab round 2 - 3D with the game's chase camera — on another branch
+- 2026-10-20 `b6293d5a3` feat(crew): the Wrasse's Sling, switches, and Wrasse Run (GameModes 68) — on bleeding-edge
 
 ### Also in flight on other branches
-- `cece/happy-noether-m54hz6` (unattributed, 2026-10-21): fix(orca): shots fly down the aim; sniper keeps the Serpent's pip scope open (lab round 7)
-- `cece/sleepy-shannon-9qk646` (unattributed, 2026-10-21): fix(silence-lab): unbreak the lab script (apostrophe in a quoted string)
-- `claude/honeyguide-ratel` (unattributed, 2026-10-21): feat(honeyguide-lab): round 4 - every pattern gets its own tabletop card's effect
-- `cece/loving-fermat-ntdnbu` (unattributed, 2026-10-21): feat(crew): the Wrasse's juice - every effect is its motes' own petals, no rings; a steady small view
+- `cece/happy-noether-m54hz6` (unattributed, 2026-10-21): docs(crew-lab): name round 8 in the lab page's header comment
+- `claude/honeyguide-ratel` (unattributed, 2026-10-21): feat(honeyguide-lab): round 5, timed actives on the open buttons, no guns
 - `cece/sharp-tesla-j0kd7z` (unattributed, 2026-10-19): fix(team-tasks): --check fails on merge conflict markers left in the board
 
 ### Open tasks (Docs/TEAM_TASKS.md)
-- T-20261017-b06e [open] decision: Decide how the Kite Navigator seat goes online: today the board, motes, AI and every effect run on the hull's local human's machine. A second human on another machine needs the seat replicated, and a choice of which machine decides pops, blasts, Mass clusters, boost and steals (vessel rule 48). Also decide the arena case: the seat's swap uses PilotSwapGesture, which in an arena match also asks the arena to swap hulls while the human flies. (who: Garrett with Yash (party / multiplayer))
 - T-20261017-efca [open] dev: When the duo-vessel system (cece/sharp-tesla-j0kd7z) reaches bleeding-edge, register the Kite Navigator as a duo design so a hull can carry it from a mode or a menu, not only from the play-mode FrogletTools menu; keep its one swap (PilotSwapGesture) and its AI-in-every-empty-seat rule. (who: Garrett (duo-vessel owner))
 - T-20261017-3cbe [open] content: Author FMOD events for the Kite Navigator's eight empty EventReference slots on KiteNavigatorConfig.asset: loop closed, loop fizzled, prism popped, Mass cluster, Time boost, Charge, steal, fauna struck. (who: anyone who does audio)
 - T-20261017-aca2 [open] test: Playtest the Wrasse in the Unity Editor: open the Toybox, fly the Wrasse station in the Vessel Changer, then the 9 verify steps of its checklist entry (board draws, AI loops, 2/D-pad right swaps to the kite, each element's loop fires, a charged ram steals and scores, 1 swaps back with no stuck input or boost, the changer swaps cleanly in and out of the Wrasse). It has only been compiled headlessly. (who: Yash (offered), anyone with the Editor)
 - T-20261018-3247 [open] dev: Bring the Crew Vessel Lab up to the Wrasse's rounds 4-4f, which were directed in Unity on 2026-10-18 (KITE_NAVIGATOR.md "Where it stands"). They cover: the kite view and the pilot view swapping (the small view lower left); the kite following the mouse or stick with no click; a two-stick pilot who spends saved Time boosts on the right trigger (2 s cooldown, none at Time L5); lime five-petal motes in the totem's proportions, each moving like its element; mote frequency weighted by the hull's petals; Charge rams on fauna; Eject below Charge L5 and Steal at it; shielded Mass clusters at Mass L5; Space L5 blasts through shields and super shields; the Omni crystal's burst of motes; and out-of-plane prisms seen with depth from the plane. Then re-run parity.cjs and verify_lab.cjs and republish. (who: any session; Garrett to sign off)
 - T-20261018-8ff7 [open] content: Draw the Wrasse's four ability-card icons. Since round 4d the cards read the navigator (WrasseHUDController: Time = saved boosts, Charge = kite rams, Space = last blast's kills, Mass = flash on a cluster) and ElementalAbilityMaps/Wrasse.asset names them Space Blast, Saved Boosts, Mass Cluster and Kite Ram, but the sprites on the HUD (SparrowHUDVariant) are still the Sparrow's gun, missile and stance icons. (who: Garrett (vessels, icons); any session for the variant wiring)
 - T-20261018-5c29 [open] test: Fly the Wrasse's round 4d in the Unity Editor: let BlockGraph and the swarm member shaders re-import with the new PrismDepthPlane.hlsl include, confirm the pilot's own view of prisms is unchanged, then run Docs/UNITY_VERIFICATION_CHECKLIST.md's Wrasse steps 2-4 (two-thumb flight, the HUD counts, the five-petal motes, out-of-plane prisms opening with distance from the plane and dithering above it). (who: Garrett (sign-off); Yash can run the editor pass)
+- T-20261020-d102 [open] test: Playtest the Crew of Four Lab (round 4, the 4-seat vessel) by hand, on PC and phone: take the helm and a gunner seat in each of the four games at I2, compare the Round 4 preset (stabilized turrets on outriggers) with the Hull-locked turrets control from a gunner seat, and record on the Decisions tab which seats felt like a job, which felt like waiting, and whether the turret view feels steady enough. The AI cannot feel sway (its points are the same with and without stabilization), and the shield's worth is within noise, so a person at the helm decides both. (who: Yash (offered), Garrett, anyone)
+- T-20261020-1607 [open] decision: Rule on the Crew of Four Lab round 3 questions: the ammo economy (missiles per omni crystal and the omni share; 3 and 40% proposed because 2 and 25% left magazines empty 70-80% of a match), a shared magazine for the three gunners or one per seat, whether AI gunners keep a missile for a human gunner, the helm's shield riding with the hull or dropped in place (its 50-70 u radius is the DangerHemisphereConfig asset's), what gives gunners a job in the Ring Race (they are worth nothing there today), and how many petals a blast takes from a hull (2 proposed). (who: Garrett (vessels, product decisions))
+- T-20261020-440c [open] test: Fly the Orca (the 4-seat vessel) in the Unity editor from the Toybox Vessel Changer on cece/happy-noether-m54hz6: the helm (two thumbs, right-trigger boost tank, left-trigger danger shield), then keys 2-4 for each gunner turret (stabilized aim while the AI turns the hull, Release launches a missile you fly, a second Release bursts it, an omni crystal through a missile adds 3 to the Charge card's count), then 1 back to the helm. Steps and expected results: Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Orca'. (who: Garrett (owner), Yash (offered))
+- T-20261020-3967 [open] decision: Orca design calls the port left open: (1) the four level-5 upgrades (Charge missiles, Space burst, Mass shield, Time boost tank - none designed, every UpgradeLabel is empty), (2) the hull's turn rates (the lab's 0.55 x Sparrow gives roll 16.5, likely slow - the Wrasse went to 120), (3) the shield on a touch screen (the left trigger has no touch equivalent), (4) which machine decides bursts once the crew is networked. (who: Garrett (vessels, product decisions))
+- T-20261021-9ef8 [open] test: Fly the Orca's round 5 in the Unity editor on cece/happy-noether-m54hz6, and check the crew cameras' post-processing: the Wrasse's kite view and the Orca's turret view should have bloom like the pilot view; the helm shield rides white (super-shielded) then drops red (danger) ~4 s later and stays ~20 s; seat 2 sniper beam kills a super-shielded wall and counts down 12 s; seat 3 fast gun overheats after ~6 s; seat 4 bomb bursts on a second press and never pushes the Orca; an omni crystal gives every seat a missile. Steps: Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 5'. (who: Garrett (owner), Yash (offered))
+- T-20261021-a73f [open] test: Fly the Orca's round 6 in the Unity editor on cece/happy-noether-m54hz6: the person's seat lights its ability card (helm Time, 2 Space, 3 Mass, 4 Charge) and each gunner card shows its own missiles; the sniper is always scoped with its ring and countdown; the fast gun's view sits over the turret and a slow sweep draws a clean line of thin prisms ~120 u out; the bomb has no cooldown, one at a time (Fire throws, Fire bursts, the next press throws again); every gun has its own crosshair. (who: Garrett (owner), Yash (offered))
+- T-20261021-8afe [open] dev: Fit the Orca prefab to its new model (Orca.fbx, 36 u long, 49 u across): the hit box, skimmer, jets (move them to the model's jet.L.mouth / jet.R.mouth, z -14.75) and flare are still the Sparrow's, sized for a 12 u hull; decide the chase camera distance (the convention says ~113 u back, the lab's camBack is 50: change it in the lab first). (who: Garrett (owner, the feel), Yash (offered))
+- T-20261021-3fbb [open] test: Fly the Orca's round 7 in the Unity editor on cece/happy-noether-m54hz6, boosting and turning hard: the fast gun's rounds and the bomb leave the barrel tips and fly straight through their crosshairs (not sideways with the hull); the sniper's view is normal with the Serpent's pip scope always open in the upper left and the beam passing through both reticles; missiles leave the turret tubes; the Serpent's own scope is unchanged. (who: Garrett (owner), Yash (offered))
+- T-20261021-07cd [open] test: Fly the Orca's round 9 in the Unity editor on cece/happy-noether-m54hz6: launch a missile from any gunner seat (F): it is the skyburst rocket with an igniting, flickering motor, it banks into your turns, and a lit faceted plume trail swells behind it and stays after the burst; in seat 4 the bomb has no ring and no BURST text, and while a bomb is out the prisms its blast will break (not yours) glow in your colour. (who: Garrett (owner), Yash (offered))
 - T-20261020-d09f [open] test: Round 7 of the Wrasse on cece/loving-fermat-ntdnbu: reimport Grouper.fbx and WrasseKite.fbx, open Wrasse.prefab, then fly it - the Grouper and Wrasse bodies and their puppetry, the whole-screen kite, the 30% zoom centred on the Grouper, yaw in place, the drawn cord, let go by lift / held click / held trigger, top speed 364 and the doubled lasso, and two machines seeing each other's Wrasse (who: Yash (offered) runs the Editor pass; Garrett judges the feel)
 - T-20261020-a9f5 [open] dev: Fit the Wrasse hull's parts to the Grouper model: a hit box sized to Docs/VesselModels/Grouper.md (it is still the Sparrow's flat 10.3 x 0.46 x 4.4 box, the Grouper is 5.6 u tall), the two jets re-homed to the engine mouths (+-0.78, -0.30, -2.62), FlareEngine pointed at the Grouper's Engine slot, and the Wrasse's CrystalHullFusion bakes re-baked on the Grouper mesh (who: Yash (offered) or anyone with the Editor; Garrett signs off the fit)
 - T-20261020-8dbc [open] test: Round 8 of the Wrasse on cece/loving-fermat-ntdnbu: on the kite, the hand stops at a line just above the ability cards while the kite swings past it and off the bottom; the Grouper's view fills the box left of the cards and below the line; the Grouper's view keeps a larger faint Wrasse stand-in. Check a phone and a wide monitor (who: Garrett (feel); Yash (offered) can run it)
 - T-20261021-3d24 [open] test: Rounds 8b and 9 of the Wrasse on cece/loving-fermat-ntdnbu: the hand stops a small margin inside the screen's sides and top while the Wrasse swings past every edge on its cord; the four lasso elements' motes are four green-yellows with no blue or orange (Charge #a0ff00, Mass #5ec600, Space #40ff00, Time #9bcf00); say if any two are hard to tell apart in play (who: Garrett (feel and colour call); Yash (offered) can run it)
 - T-20261021-d063 [open] test: Round 10 of the Wrasse on cece/loving-fermat-ntdnbu: the juice. No effect rings; each loop's motes become its effect (fizzle sputters out grey, Space explodes with the blast, Mass blocks morph into the prisms, Time streaks onto the Grouper, Charge orbits onto the Wrasse); the lasso cinches; the Grouper's small view no longer pumps in and out of its box (who: Garrett (feel: is it bespoke, unique, dynamic and polished?); Yash (offered) can run it)
+- T-20261021-aa19 [open] dev: Build two human seats on the Wrasse and Grouper (Garrett, 2026-10-21: "wrasse and grouper, are two seats. players can select, change seats etc. both can be played on mobile or pc"), in the plan's order: (1) prism parity for one human online - pops, Space blasts and Mass clusters (seeded) applied on every peer, which today happen only on the Wrasse's machine; (2) land cece/sharp-tesla-j0kd7z and put the seat on ICrewSeat; (3) seat occupancy on the Player (CrewSeatOccupancy, RequestSeat_ServerRpc, PilotSwap.TryValidateSeatServer, offers between two humans, AI fills an empty seat); (4) the navigator seat simulated on its holder's machine, boosts and rams sent to the hull owner; (5) one owner for the swap gesture on a crew hull (seats first, then the arena ring); (6) seat stations in the Vessel Changer and two party members on one crew hull. (who: Yash (multiplayer) with Garrett; builds on cece/sharp-tesla-j0kd7z's CrewSeat)
 <!-- team_report:end -->

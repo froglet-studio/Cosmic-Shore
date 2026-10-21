@@ -48,11 +48,23 @@ namespace CosmicShore.Core
                 Screen.SetResolution(w, h, mode);
         }
 
+        /// <summary>The URP asset's own HDR choice, read before anything here first wrote it, so a
+        /// preset that lifts its HDR cut puts back what was authored (not a blanket "on").</summary>
+        static UniversalRenderPipelineAsset s_hdrAsset;
+        static bool s_authoredHdr;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => s_hdrAsset = null;
+
         public static void ApplyQuality(GraphicsSettingsData s)
         {
             // The preset is the master tier; Custom means individual overrides - don't stomp them.
             if (s.QualityPreset != QualityPresetSetting.Custom)
                 QualitySettings.SetQualityLevel((int)s.QualityPreset, true);
+
+            // The preset's GPU cuts (QualityPresetCutsSO) stay in force after a hand change made it
+            // Custom: they follow the preset it started from. Docs/PLATFORM_UNIFICATION.md §3.10.
+            GraphicsCuts.SetPreset(s.EffectivePreset);
 
             QualitySettings.globalTextureMipmapLimit = Mathf.Clamp(s.TextureQuality, 0, 3);
 
@@ -62,16 +74,23 @@ namespace CosmicShore.Core
                 urp.msaaSampleCount = MsaaSampleCount(s.AntiAliasing);
                 urp.upscalingFilter = ToUpscalingFilter(s.Upscaling);
 
-                // A device tier may turn HDR off (MobileLow: half the colour bandwidth, and room for
-                // 4x MSAA in tile memory). Only ever OFF: a tier that does not ask leaves the URP
-                // asset's authored value alone, so Desktop and MobileHigh render exactly as before.
-                // Docs/PLATFORM_UNIFICATION.md, Step 4.
-                var profile = PlatformProfile.Current;
-                if (profile && profile.DisableHdr)
-                    urp.supportsHDR = false;
+                // The device tier (MobileLow) or the preset (Low) may turn HDR off: half the colour
+                // bandwidth, and room for MSAA in tile memory. Only ever OFF: with no cut the URP
+                // asset's authored value stands, so Desktop on High renders exactly as before.
+                // Docs/PLATFORM_UNIFICATION.md, Step 4 and §3.10.
+                if (s_hdrAsset != urp)
+                {
+                    s_hdrAsset = urp;
+                    s_authoredHdr = urp.supportsHDR;
+                }
+                urp.supportsHDR = s_authoredHdr && !GraphicsCuts.DisableHdr;
             }
 
             ApplyCameraAntiAliasing(Camera.main, s.AntiAliasing);
+
+            // The preset's other live cuts: bloom resolution and the baked sky.
+            PostProcessCuts.Apply(GraphicsCuts.Current);
+            PlatformRenderApplier.ApplySkybox();
         }
 
         public static void ApplyFrameRate(GraphicsSettingsData s)
