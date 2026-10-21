@@ -12774,3 +12774,6 @@ the shipped HLSL compiled and checked by `Tools/Shaders/verify_spindle_lod.py`.
    at ~400 units away). Fly AWAY from a plant past ~470 units: the fan eases closed over a long stretch (no point where
    it jumps) and by ~1,300 units each limb is a single thin glowing thread, fading out by ~2,500. The HUD console
    `renderers` line splits the far limbs into braid / low / thread.
+9. (Round 4) Step 8 with the round-4 numbers: a CHARGE plant fans ~5 units, every other ~1.5 (half of round 3);
+   flying away, the fan closes over twice the distance - still settling at ~1,300 units, a thread by ~2,050, faded
+   out by ~3,150. `SpindleLodTests.ChargeLimbsPartHardest` asserts 0.35 / 0.1.

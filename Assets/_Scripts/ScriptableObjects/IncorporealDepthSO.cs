@@ -32,8 +32,8 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Where the parts START settling back, in the prisms' normalised squared distance (1 = fully open, ~316 units). 2.25 = 1.5x the ramp's distance, ~474 units: the peak holds until here.")]
         [Min(1.01f)] public float recedeStartNorm = 2.25f;
 
-        [Tooltip("Where they are back at rest. The recede is smooth in DISTANCE between the two, so it eases in over a long way. 16 = 4x the ramp's distance, ~1,265 units.")]
-        [Min(1.02f)] public float recedeEndNorm = 16f;
+        [Tooltip("Where they are back at rest. The recede is smooth in DISTANCE between the two, so it eases in over a long way. 42.25 = 6.5x the ramp's distance, ~2,056 units (Garrett, round 4: graded in over twice the round-3 stretch).")]
+        [Min(1.02f)] public float recedeEndNorm = 42.25f;
 
         [Header("Alive: the wave through what has opened")]
         [Tooltip("How much the opening breathes with the wave, as a fraction of the opening (0 = still). Scales with how open the part is, so a closed part never moves.")]

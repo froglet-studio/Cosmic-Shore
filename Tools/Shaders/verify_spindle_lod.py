@@ -304,13 +304,14 @@ int main() {
         CHECK(std::fabs(length(tip - held) - 15.2f) < 1e-3f, "overt: the tip fanned %g, not the danger face's 15.2", length(tip - held));
         CHECK(length(normalize(tip - held) - splay) < 1e-5f, "overt: the tip fanned off its splay");
     }
-    // R. The far side (round 3): the effect settles back with distance, and a limb's Strength scales it.
-    _IncorporealRecede = float4{2.25f, 16.f, 0, 0};
+    // R. The far side (rounds 3-4): the effect settles back with distance, and a limb's Strength scales it.
+    //    The shipped recede (Resources/IncorporealDepth): 2.25 -> 42.25, ~474 -> ~2,056 units.
+    _IncorporealRecede = float4{2.25f, 42.25f, 0, 0};
     {
         // R1. the recede is 1 to its start, 0 from its end, monotone and SMOOTH in distance between (no
         //     step bigger than 1.5% of the effect per 1% of distance: the onset eases in over a long way)
         float prevR = 2.f, worstStep = 0.f;
-        for (float d = 200.f; d < 2000.f; d *= 1.01f) {
+        for (float d = 200.f; d < 3000.f; d *= 1.01f) {
             float r = IncorporealDepth_Recede(d * d / SQR);
             CHECK(r <= prevR + 1e-6f, "recede rose with distance at %g units", d);
             if (prevR <= 1.f) worstStep = std::max(worstStep, prevR - r);
@@ -326,9 +327,9 @@ int main() {
         }
         CHECK(worstStep < nearWorst, "far side steps %g per 1%% of distance, the near ramp only %g: the onset is the abrupt side", worstStep, nearWorst);
         std::printf("onset: far side %.4f, near ramp %.4f per 1%% of distance\n", worstStep, nearWorst);
-        CHECK(IncorporealDepth_Recede(2.25f) == 1.f && IncorporealDepth_Recede(16.f) == 0.f, "recede band edges");
+        CHECK(IncorporealDepth_Recede(2.25f) == 1.f && IncorporealDepth_Recede(42.25f) == 0.f, "recede band edges");
         // R2. at the recede's end the braid IS the thread's construction: no fan, strands on the centreline
-        place(std::sqrt(16.f * SQR), 1.f);
+        place(std::sqrt(42.25f * SQR), 1.f);
         SpindleLodView v = SpindleLod_View(G);
         float3 o;
         SpindleLodVertex_float(pos, nrmOS, mk3(0.8f, 0.5f, 0.f), toAxis, radial, splay, G, R, 1.f, 0.3f, 1.7f, o);
@@ -337,7 +338,7 @@ int main() {
         // ... and past the peak the lace stays closed (progress 1) while it recedes
         CHECK(std::fabs(v.progress - 1.f) < 1e-5f, "the lace came back on the far side");
         // R3. Strength: at the peak a limb's tip travels Strength x the danger face's 15.2 units
-        for (float S : {0.7f, 0.2f}) {
+        for (float S : {0.35f, 0.1f}) {
             place(std::sqrt(2.f * SQR), 1.f);
             SpindleLodView vp = SpindleLod_View(G);
             float3 tip;

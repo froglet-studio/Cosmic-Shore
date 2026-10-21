@@ -73,18 +73,18 @@ namespace CosmicShore.ScriptableObjects
         [Min(1f)] public float farFadeEndGirths = 1900f;
 
         [Header("Overt fade (the prisms' normalised squared distance: 1 = fully open, ~316 units)")]
-        [Tooltip("OVERT: where the minimal thread (what the braid settles back to, Resources/IncorporealDepth's recede) starts fading out, in units of the prisms' ramp (d^2 / _SqrDistance). 36 = 6x the ramp's distance, ~1,900 units.")]
-        [Min(1.01f)] public float overtFadeStartNorm = 36f;
+        [Tooltip("OVERT: where the minimal thread (what the braid settles back to, Resources/IncorporealDepth's recede) starts fading out, in units of the prisms' ramp (d^2 / _SqrDistance). 46 = ~6.8x the ramp's distance, ~2,145 units.")]
+        [Min(1.01f)] public float overtFadeStartNorm = 46f;
 
-        [Tooltip("OVERT: where it is gone and stops being drawn. 64 = 8x the ramp's distance, ~2,530 units.")]
-        [Min(1.02f)] public float overtFadeEndNorm = 64f;
+        [Tooltip("OVERT: where it is gone and stops being drawn. 100 = 10x the ramp's distance, ~3,160 units.")]
+        [Min(1.02f)] public float overtFadeEndNorm = 100f;
 
         [Header("Overt strength (share of the danger prisms' spread, Resources/IncorporealDepth)")]
-        [Tooltip("OVERT: how far a CHARGE lifeform's limbs fan open, as a share of the danger prisms' face travel (0.7 = a tip travels ~10.6 units at the peak).")]
-        [Range(0f, 2f)] public float chargeStrength = 0.7f;
+        [Tooltip("OVERT: how far a CHARGE lifeform's limbs fan open, as a share of the danger prisms' face travel (0.35 = a tip travels ~5.3 units at the peak).")]
+        [Range(0f, 2f)] public float chargeStrength = 0.35f;
 
-        [Tooltip("OVERT: how far every other lifeform's limbs fan open (Mass, Space, Time, Omni and none). 0.2 = ~3 units at the peak.")]
-        [Range(0f, 2f)] public float otherStrength = 0.2f;
+        [Tooltip("OVERT: how far every other lifeform's limbs fan open (Mass, Space, Time, Omni and none). 0.1 = ~1.5 units at the peak.")]
+        [Range(0f, 2f)] public float otherStrength = 0.1f;
 
         [Header("The thread's look")]
         [Tooltip("The narrowest a thread is ever DRAWN, in screen pixels. Thinner geometry rasterises as broken, sparkling dots; past this width the thread is drawn wider and its alpha pays for the difference (coverage), so it reads as a continuous line of the right brightness.")]

@@ -228,13 +228,31 @@ minimal presence."*
   held at `minThreadPixels` with coverage alpha, faint glow, faded out between norm 36 and 64 (~1,900–2,530 units),
   then culled. All three far tiers are instanced while still.
 
+### 7.2c Round 4: twice the distance, half the amplitude
+
+Garrett: *"Grade them in over twice the distance and cut both the charge and normal max amplitude values in half."*
+
+- **Strength** halves: `chargeStrength` 0.35 (a Charge tip travels ~5.3 units at the peak), `otherStrength` 0.1
+  (~1.5 units).
+- **The recede's span doubles in distance**: `recedeEndNorm` 16 -> 42.25, so the settle-back runs ~474 -> ~2,056
+  units (it was ~474 -> ~1,265). The harness's onset is now 1.3% of the effect per 1% of distance at its steepest
+  (round 3: 1.7%; the near ramp: 3.2%).
+- **The thread's fade moves out with it**: `overtFadeStartNorm` 46 / `overtFadeEndNorm` 100 (~2,145 -> ~3,160
+  units). The start must lie past the Low tier's outer edge (`recedeEndNorm / keep` = 45.9), which
+  `OvertBandsAreSane` checks.
+- **Cost**: the 72-triangle braid now reaches ~2,140 units (it handed over to the 12-triangle thread at ~1,320).
+  Amoebius, Garland, the last of six samples: 910 limbs - braid 24, low 886, thread 0, 889 of them instanced (round 3:
+  low 799, thread 87). Garrett's call if the frame-time A/B shows it: pull `recedeEndNorm` back in.
+
+The numbers in §7.2b are round 3's; the table below is round 4's.
+
 | tier | overt range (norm, ~units) | mesh | draws |
 |---|---|---|---|
 | Near | < 0.34 (184) | authored braid, 432 | own renderer, SpindleGraph |
 | Mid | 0.34 – 1.09 (330) | braid, 144 | own renderer, opening ramp |
 | Far | 1.09 – 2.25 (474) | braid, 144 | instanced, the peak |
-| Low | 2.25 – 17.4 (1,318) | braid, 72 | instanced, settling back |
-| Min | 17.4 – 69.6 (2,640) | thread, 12 | instanced, fading from norm 36 |
+| Low | 2.25 – 45.9 (2,143) | braid, 72 | instanced, settling back |
+| Min | 45.9 – 108.7 (3,297) | thread, 12 | instanced, fading from norm 46 |
 | Culled | beyond | — | nothing |
 
 (Each boundary moves outward at the value shown and back inward at value × (1 − hysteresis); every band sits where
@@ -243,7 +261,7 @@ last of six samples: 910 limbs - braid 24, low 799, thread 87, 890 of them insta
 
 ### 7.3 Seeing it without Unity
 
-`python3 Tools/Shaders/render_spindle_lod_preview.py OUT --style overt|covert [--strength 0.7]` compiles the SHIPPED
+`python3 Tools/Shaders/render_spindle_lod_preview.py OUT --style overt|covert [--strength 0.35]` compiles the SHIPPED
 `SpindleLod.hlsl` + `IncorporealDepth.hlsl` + `SpindleSway.hlsl` with clang, runs them on the real mid braid posed
 as the Branch prefab poses it (a star of 8 limbs, like one lattice node), drawing the tier's own mesh at each
 distance, and writes a sheet (seven points from rest through the peak to the fading thread:

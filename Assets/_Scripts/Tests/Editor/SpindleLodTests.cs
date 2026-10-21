@@ -32,8 +32,8 @@ namespace CosmicShore.Tests
 
         static SpindleLodSystem.TierBounds Covert(SpindleLodProfileSO p) => SpindleLodSystem.BoundsFor(p, false, default, default);
 
-        // Resources/IncorporealDepth's far side: hold the peak to norm 2.25, settled back by 16.
-        static readonly Vector4 Recede = new(2.25f, 16f, 0f, 0f);
+        // Resources/IncorporealDepth's far side: hold the peak to norm 2.25, settled back by 42.25.
+        static readonly Vector4 Recede = new(2.25f, 42.25f, 0f, 0f);
 
         static SpindleLodSystem.TierBounds Overt(SpindleLodProfileSO p) => SpindleLodSystem.BoundsFor(p, true, Danger, Recede);
 
@@ -183,8 +183,9 @@ namespace CosmicShore.Tests
         public void ChargeLimbsPartHardest()
         {
             var p = Profile();
-            Assert.AreEqual(0.7f, p.StrengthFor(true), 1e-6f);
-            Assert.AreEqual(0.2f, p.StrengthFor(false), 1e-6f);
+            Assert.AreEqual(0.35f, p.StrengthFor(true), 1e-6f);
+            Assert.AreEqual(0.1f, p.StrengthFor(false), 1e-6f);
+            Assert.Greater(p.StrengthFor(true), p.StrengthFor(false));
             Object.DestroyImmediate(p);
         }
 

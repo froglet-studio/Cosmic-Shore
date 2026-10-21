@@ -418,10 +418,10 @@ MonoBehaviour:
   convergeStartGirths: 110
   farFadeStartGirths: 1300
   farFadeEndGirths: 1900
-  overtFadeStartNorm: 36
-  overtFadeEndNorm: 64
-  chargeStrength: 0.7
-  otherStrength: 0.2
+  overtFadeStartNorm: 46
+  overtFadeEndNorm: 100
+  chargeStrength: 0.35
+  otherStrength: 0.1
   minThreadPixels: 1.25
   threadBase: 0.35
   threadFacet: 0.55
