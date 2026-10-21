@@ -13,11 +13,12 @@ another part, as a percentage of the model's diagonal. A part whose gap is ~0 to
 welded on); a part with a clear gap floats.
 
     python3 Tools/Build/vessel_model/assembly_report.py "Assets/_Models/Vessel Models/Orca.fbx"
-    python3 Tools/Build/vessel_model/assembly_report.py <fbx> --floating fin,wing.L.1,FastGunYaw --min-gap 0.4
+    python3 Tools/Build/vessel_model/assembly_report.py <fbx> --floating fin,wing.L.1,FastGunYaw+FastGunPitch --min-gap 0.4
     python3 Tools/Build/vessel_model/assembly_report.py --fleet        # the artist hulls' band
     python3 Tools/Build/vessel_model/assembly_report.py --self-test    # the gate fires on a welded pair, passes a floating one
 
-With --floating, exits 1 when a listed part's gap is under --min-gap (default 0.4 % of the diagonal) or over --max-gap
+A part spanning several bones (a turret's ring and yoke, an engine case and its bell) is listed as `a+b+c`: those bones'
+vertices are measured as ONE part, so its own pieces touching each other is not a weld. With --floating, exits 1 when a listed part's gap is under --min-gap (default 0.4 % of the diagonal) or over --max-gap
 (default 10 %, past which a part reads as detached rather than hovering), or when a listed part is missing. Without it,
 it is a READER. The artist band (measured 2026-10-21): Manta wings 3.4-6.5 %, Dolphin wings 5.7 % and jaws 1.2-1.3 %,
 Sparrow tail segments 0.8-1.1 % and shells 0.4-0.5 %, Squirrel wing pieces 0.9-1.2 % and engine tips 0.9 %, Serpent
@@ -74,6 +75,10 @@ def read_model(path: str):
 
 def report(path: str, floating=None, min_gap=0.4, max_gap=10.0, quiet=False):
     pts, labs = read_model(path)
+    for name in floating or []:   # "a+b+c": one part over several bones
+        bones = name.split("+")
+        if len(bones) > 1:
+            labs = np.where(np.isin(labs, bones), name, labs)
     diag = float(np.linalg.norm(pts.max(0) - pts.min(0)))
     gaps = part_gaps(pts, labs)
     rows = sorted(((g / diag * 100.0, n, lab) for lab, (g, n) in gaps.items()), key=lambda r: -r[1])

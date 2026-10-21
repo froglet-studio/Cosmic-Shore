@@ -4,26 +4,36 @@ Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md). Today Orca.prefab draws th
 procedural octahedron pods on box struts (OrcaCrewView). Garrett, 2026-10-21: "it is time to use the vessel
 modeling tools and really step up the vessel". A spaceship inspired by an orca, never the animal (SKILL.md 0).
 
-THE READ, from the chase camera (the Sparrow's followOffset z -50: the ~46-unit span fills ~45% of a 16:9 frame):
-a broad, deep, black gunmetal hull with ONE tall triangular dorsal pylon carrying a long railgun, two long paddle
-outriggers carrying a gun pod at each tip, and black flukes with two glowing engine mouths between them; the
-orca's white becomes the domain saddle, flank sweeps and belly, the eye patch becomes the glass.
+A HOVERING ASSEMBLY (Garrett, 2026-10-21, after flying round 1: "the original vessels are based largely around the
+idea of free floating parts that are associated and animated together but clearly distinct parts of a hovering
+assembly ... this will also help keep the guns associated with the vessel but not have to worry about mating planar
+surfaces"). Measured on the artist hulls: the Manta's wings float 3.4-6.5% of the diagonal clear, the Dolphin's 5.7%,
+the Sparrow's tail and wing pieces 0.1-1.1%. So every major part here floats on its own bone with a designed gap of
+~1.5-2.2% (GAP 1.15 u, the dorsal blade 1.6 u), facing edges parallel (the outrigger plates' end faces are x = const
+planes, the blade's root edge follows the hull's back line), nothing mated, no struts, no root fillets.
+
+THE READ, from the chase camera (the Sparrow's followOffset z -50): a broad black gunmetal core with a tall dorsal blade
+hovering over its back and a railgun hovering over the blade's tip, a chain of three floating paddle plates stepping
+out to a gun pod on each side, and two floating engine pods with glowing mouths between two floating fluke blades; the
+orca's white is the domain saddle, flank sweeps and belly, the eye patch is the glass.
 
 Clade -> ship (every part answers "what is this on the ship?"):
-  broad deep body       -> the armoured hull (bone `hull`): a superellipse loft, blunt melon nose, three panel seams
-  eye patch             -> sunk sensor glass on each side of the head; the blowhole is the helm's canopy, dark-framed
-  white chin / belly    -> the domain belly plate (sunk, framed)
-  white flank sweep     -> a sunk domain plate per flank rising toward the tail; the grey saddle behind the dorsal fin
-                           is a domain saddle plate
-  tall dorsal fin       -> the DORSAL PYLON (bone `fin`): a raked airfoil blade with a domain rank band, topped by a
-                           collar pedestal carrying the SNIPER turret
-  pectoral fins         -> the OUTRIGGERS (bones `wing.L` / `wing.R`): broad swept paddles with sunk domain panels,
-                           each ending in a nacelle (domain band, running light, small ember mouth aft) whose pedestal
-                           carries a turret: FAST GUN on the port (pilot's left) tip, BOMB on the starboard tip
-  tail stock            -> the peduncle (bone `tail`) behind a domain-trimmed joint collar
-  flukes                -> the ENGINE SECTION (bone `tail.2`): two broad swept fluke planes, domain under and a domain
-                           trailing-edge trim on top, carrying the two main engines (`jet.L` / `jet.R`, each with a
-                           `.mouth` child at the nozzle lip, length axis aft, skinning the bell)
+  broad deep body       -> the CORE (bone `hull`): a superellipse loft with a conical melon nose, three panel seams and
+                           the tail stock behind a domain-trimmed collar
+  eye patch             -> a long tilted sensor lens on each side of the head in a dark bezel; the blowhole is the helm's
+                           canopy, dark-framed, with a spine rail behind it
+  white flank / saddle  -> conformal domain armour plates on the core: a flank sweep per side, the saddle behind the
+  / chin and belly         dorsal blade, the chin-and-belly plate (smooth outlines, not painted face stairs)
+  tall dorsal fin       -> the DORSAL BLADE (bone `fin`), hovering 1.6 u over the back: a raked airfoil with a domain
+                           rank band, a domain trailing-edge trim and a domain tip cap facing the SNIPER, which hovers
+                           ~1.45 u above the flat tip at its exact pivot
+  pectoral fins         -> the OUTRIGGER CHAIN (bones `wing.L.1..3` / `wing.R.1..3`): three floating paddle plates per
+                           side, each with a sunk domain panel, stepping out and up to the turret POD (`pod.L` / `pod.R`:
+                           a nacelle with a domain band, running light and small ember mouth aft) over which the FAST GUN
+                           (port, pilot's left) or the BOMB (starboard) hovers ~1.0-1.1 u at its exact pivot
+  flukes                -> the ENGINE SECTION, floating behind the tail stock: two engine pods (`engine.L` / `engine.R`,
+                           each bell skinned to its `jet.X.mouth` child: length axis aft, the plume host) between two
+                           fluke blades (`fluke.L` / `fluke.R`), domain under and a domain trailing-edge trim on top
 
 THE TURRETS (each one bespoke to its weapon, every turret at rest aims straight forward, +Z Unity):
   each = a domain-banded BASE RING + yoke plates (yaw bone) | trunnion pins, housing, gun, scope (pitch bone) |
@@ -48,25 +58,29 @@ Every turret bone points along the nose (Blender -Y) with its Z axis up (roll 0 
 Z = +Z world), so yaw is about the bone's up and pitch about its right in Blender.
 
 Contract (FLEET_CONVENTION 1-4 for a NEW vessel, with the brief's names):
-  file      Assets/_Models/Vessel Models/Orca.fbx (new guid), preset "zup"
+  file      Assets/_Models/Vessel Models/Orca.fbx (guid 9b34bfdd14c8462c8bc138b3938820a2), preset "zup"
   nodes     mesh `Orca`, armature `OrcaArmature` (the brief's names, so the nested model resolves unambiguously
             beside the hidden Sparrow model; the convention's generic `mesh` / `rig` would collide by name); root
             bone `hull`
+  bones     every floating part on its own bone, head at the part's centre, parented to `hull`: fin, wing.L.1..3,
+            wing.R.1..3, pod.L, pod.R, fluke.L, fluke.R, engine.L, engine.R (-> jet.L.mouth / jet.R.mouth). The three
+            turret yaw bones are parented to `hull` too (code sets their pose in the hull's frame, so no floating
+            part carries them): <Seat>Yaw -> <Seat>Pitch -> <Seat>Muzzle, <Seat>Missile. Rigid skin throughout.
   slots     0 Domain, 1 Body, 2 Window, 3 Engine
   shapes    Charge (weapon): the three turret housings, cradle and scope grow 2x along the gun / 1.15x across, the
                              barrels, coils, muzzle parts, drum and missile tubes swell; no tip moves
-            Mass (volume):   the hull, peduncle, nacelles and engine cases swell, the flukes, fin and outriggers thicken
-            Space (reach):   the railgun barrel telescopes 1.35x (at 100% the sniper tip moves 6.1 u forward,
-                             the fast gun's 1.7 u, the bomb lip 1.0 u; the muzzle bones mark the REST tips),
-                             the fast gun's barrels 1.35x, the mortar drum 1.3x; the flukes span 1.25x; the outrigger
-                             nacelles telescope fore and aft about the turret pivot
-            Time (speed):    the nose stretches and sharpens, the flukes and the outriggers sweep back, the nacelle
-                             tails stretch aft
+            Mass (volume):   the core fattens (a deeper belly; the back barely rises, so the blade's hover survives), the
+                             blade, plates, pods, engines and flukes thicken, the outrigger chain rides out with the flank
+            Space (reach):   the railgun barrel telescopes 1.35x (at 100% the sniper tip moves 6.1 u forward, the fast
+                             gun's 1.7 u, the bomb lip 1.0 u; the muzzle bones mark the REST tips), the fast gun's barrels
+                             1.35x, the mortar drum 1.3x; the flukes reach out from their roots; the pods telescope
+            Time (speed):    the nose stretches and sharpens, the flukes and the outrigger chain sweep back, the pod tails
+                             stretch aft
             No morph moves a turret pivot (each morph is centred on it) or a jet .mouth bone.
   takes     none drive it (code poses the turret bones by name; the Sparrow's Animator stays on the hidden
             Sparrow bones). Four documentation poses for the sheet and the studio, each direction-proved by
-            pose_expect: pitchup (flukes curl down), yawright (flukes swing to the outside), aimright (every turret
-            yaws 40 deg right), aimup (every turret pitches 25 deg up).
+            pose_expect: pitchup (the flukes and engines tip and drop), yawright (they swing to the outside of the
+            turn), aimright (every turret yaws 40 deg right), aimup (every turret pitches 25 deg up).
 """
 
 import math
@@ -87,7 +101,7 @@ BOMB_P = (-21.6, 4.5, 3.15)
 
 NOSE_Y = -16.0
 BODY_END_Y = 9.6
-PED_Y0, PED_LEN = 9.0, 4.0
+PED_Y0, PED_LEN = 9.0, 3.6
 # (y, half-width, half-height top, half-height bottom, centre lift): a conical melon head, the back rising to
 # the pylon and falling to the tail stock, a fuller flatter belly (the orca's side profile)
 BODY_STATIONS = [
@@ -105,26 +119,30 @@ BODY_STATIONS = [
 ]
 N_TOP, N_BOT = 2.35, 2.6
 
-FIN_ROOT = (0.0, -6.0, 3.8)     # leading edge at the root
-FIN_SPAN, FIN_CR, FIN_CT, FIN_SWEEP = 11.4, 10.5, 3.6, 6.0
+# THE HOVERING ASSEMBLY (Garrett, 2026-10-21: "the original vessels are based largely around the idea of free
+# floating parts that are associated and animated together but clearly distinct parts of a hovering assembly"):
+# every major part floats clear of its neighbours by a designed gap, its facing edges parallel. 1% of the ~66 u
+# diagonal is 0.66 u.
+GAP = 1.15                        # the standard gap between floating parts (~1.75% of the diagonal)
+FIN_GAP = 1.6                     # the dorsal blade's hover above the hull's back (~2.4%)
+FIN_LE_Y, FIN_CR, FIN_CT, FIN_SWEEP = -6.0, 10.5, 3.6, 6.0
+FIN_TIP_Z = 14.1                  # flat tip; the sniper's base ring hovers ~1.45 u above it (pivot z 16.2)
 
-WING_ROOT_X, WING_ROOT_Y, WING_ROOT_Z = 4.45, -9.0, -2.2
-WING_CR, WING_CT = 7.6, 4.4
+WING_X0, WING_X1 = 6.6, 19.05     # the outrigger chain's inner and outer edges (hull flank ~5.3; pod side 20.2)
+WING_Z0 = -1.6                    # chain height at the hull; it rises to the pod's axis
+WING_LE0, WING_CR, WING_CT = -8.0, 7.6, 4.4
 WING_BULGE, WING_LE_BULGE = 2.2, 1.0   # the paddle: chord and leading edge bulge mid-span
-NAC_R, NAC_Z = 1.40, 1.80
+N_PLATES = 3
+NAC_R, NAC_Z = 1.40, -0.10        # the turret pods; their tops sit ~1.0-1.1 u under the turret base rings
 NAC_Y0, NAC_LEN = -0.2, 9.0
+WING_Z1 = NAC_Z
+WING_SWEEP = (FAST_P[1] - WING_CT / 2) - WING_LE0
+_PLATE_W = (WING_X1 - WING_X0 - (N_PLATES - 1) * GAP) / N_PLATES
+PLATES = [(WING_X0 + k * (_PLATE_W + GAP), WING_X0 + k * (_PLATE_W + GAP) + _PLATE_W) for k in range(N_PLATES)]
 
-FLUKE_ROOT = (0.0, 12.0, 0.50)
-FLUKE_SPAN, FLUKE_CR, FLUKE_CT, FLUKE_SWEEP = 9.6, 4.8, 1.6, 4.6
-JET_X, JET_Y0, JET_Z, JET_R = 2.2, 11.5, 0.60, 1.25
-
-# wing geometry derived so the tip sits in the nacelle under the turret pivot
-_TIP_X, _TIP_Z = 21.2, NAC_Z
-_RUN = _TIP_X - WING_ROOT_X
-_RISE = _TIP_Z - WING_ROOT_Z
-WING_DIHEDRAL = math.degrees(math.atan2(_RISE, _RUN))
-WING_SPAN = math.hypot(_RUN, _RISE)
-WING_SWEEP = (FAST_P[1] - WING_CT / 2) - WING_ROOT_Y
+ENG_X, ENG_Y0, ENG_Z, ENG_R = 1.90, 13.6, 0.50, 1.15     # the engine pods float behind the tail stock (ends y 12.6)
+FLUKE_X0, FLUKE_LE_Y, FLUKE_Z = ENG_X + ENG_R + GAP, 13.2, 0.50
+FLUKE_SPAN, FLUKE_CR, FLUKE_CT, FLUKE_SWEEP = 7.4, 4.2, 1.4, 4.4
 
 # per-turret layout: housing half-width, trunnion height above the pivot, ring scale, missile side (+1 = +X)
 TURRET_K = 1.35   # every turret is built at unit dims and scaled about its pivot (the pivot never moves)
@@ -337,84 +355,105 @@ def build(ctx):
     hull_parts.append(piece(frame, H, 2))
     can = f.sphere("canopy", 1.0, center=(0, cy, top_z(cy) - 0.38), segments=16, rings=8, scale=(1.20, 2.80, 0.85))
     hull_parts.append(piece(can, W, 2))
-    # a dorsal spine rail from the canopy to the pylon: a dark structural ridge
-    rail_pts = [(0.0, y, top_z(y) - 0.18) for y in (-9.0, -8.0, -6.9, -5.8)]
-    rail = f.tube_along("spine", rail_pts, [0.22, 0.38, 0.48, 0.50], segments=10)
+    # a dorsal spine rail from the canopy back toward the dorsal blade: a dark structural ridge
+    rail_pts = [(0.0, y, top_z(y) - 0.18) for y in (-10.0, -9.2, -8.3, -7.4)]
+    rail = f.tube_along("spine", rail_pts, [0.22, 0.38, 0.46, 0.40], segments=10)
     hull_parts.append(piece(rail, H, 3))
-    # the outrigger roots: hinge fairings on the lower flanks
-    for sx in (1, -1):
-        fr = f.sphere("fairing", 1.0, center=(sx * (WING_ROOT_X + 0.05), WING_ROOT_Y + 3.6, WING_ROOT_Z + 0.05),
-                      segments=14, rings=7, scale=(0.90, 3.8, 0.75))
-        hull_parts.append(piece(fr, H, 3))
+    # the tail stock is part of the core: a peduncle behind a domain-trimmed joint collar
+    ped = f.fuselage("peduncle", PED_LEN, nose=(0, PED_Y0, 0.48), axis=(0, 1, 0), segments=24,
+                     stations=[(0.0, 2.20, 2.20, 1.66, 2.4, 2.4, 0.0), (0.5, 1.55, 1.75, 1.20, 2.4, 2.4, 0.02),
+                               (1.0, 1.05, 1.10, 0.85, 2.4, 2.4, 0.03)])
+    hull_parts.append(piece(ped, H, 30))
+    col = lathe_aft("collar", [(0.0, 0.0), (2.28, 0.0), (2.44, 0.12), (2.44, 0.40), (2.28, 0.52), (0.0, 0.52)],
+                    origin=(0, PED_Y0 - 0.05, 0.48), seg=24)
+    f.transform_mesh(col, Matrix.Translation(Vector((0, 0, 0.48))) @ Matrix.Diagonal((1.0, 1.0, 0.86, 1.0))
+                     @ Matrix.Translation(Vector((0, 0, -0.48))))
+    f.ensure_slots(col, SLOTS)
+    f.paint(col, H)
+    f.paint(col, D, lambda c, n, i: abs(n.y) < 0.3)
+    hull_parts.append(piece(col, None, 31))
     parts.append(bone_part(hull_parts, "hull"))
 
-    # ================================================================== DORSAL PYLON (tall dorsal fin)
-    fin_parts = []
-    blade = f.wing("pylon", root=FIN_ROOT, span=FIN_SPAN, chord_root=FIN_CR, chord_tip=FIN_CT, sweep=FIN_SWEEP,
-                   forward=(0, -1, 0), up=(-1, 0, 0), thickness=0.165, sections=7, segments=22, tip_round=False,
-                   taper_power=0.85)
+    centre = {}          # bone name -> the part's centre (bone heads sit at part centres)
+
+    def note_centre(obj, name):
+        lo, hi = f.bounds(obj)
+        centre[name] = (lo + hi) / 2
+        return obj
+
+    # ================================================================== DORSAL BLADE (tall dorsal fin), hovering
+    # Its root edge follows the hull's back at FIN_GAP (parallel edges), its tip is flat under the sniper's ring.
+    root_z = top_z(FIN_LE_Y) + FIN_GAP
+    fin_span = FIN_TIP_Z - root_z
+    blade = f.wing("dorsal", root=(0.0, FIN_LE_Y, root_z), span=fin_span, chord_root=FIN_CR, chord_tip=FIN_CT,
+                   sweep=FIN_SWEEP, forward=(0, -1, 0), up=(-1, 0, 0), thickness=0.165, sections=7, segments=22,
+                   tip_round=False, taper_power=0.85)
+    for v in blade.data.vertices:          # shear the root down onto the hull's back line, fading out by the tip
+        t = max(0.0, min(1.0, (v.co.z - root_z) / fin_span))
+        v.co.z += (top_z(v.co.y) + FIN_GAP - root_z) * (1.0 - t) ** 1.6
+    blade.data.update()
     f.ensure_slots(blade, SLOTS)
     f.paint(blade, H)
-    # a domain rank band high on the pylon (both faces), and a thin domain leading-edge trim below it
-    f.paint(blade, D, lambda c, n, i: 11.45 < c.z < 12.95)
+    f.paint(blade, D, lambda c, n, i: 11.25 < c.z < 12.75)          # the rank band
 
     def fin_te(c, n, i):
-        t = max(0.0, (c.z - FIN_ROOT[2]) / FIN_SPAN) ** 0.85
-        le = FIN_ROOT[1] + FIN_SWEEP * t
-        return 5.2 < c.z < 11.3 and (c.y - le) / (FIN_CR + (FIN_CT - FIN_CR) * t) > 0.86
-    f.paint(blade, D, fin_te)     # a domain trim line up the pylon's trailing edge: the fin reads from behind
+        t = max(0.0, (c.z - root_z) / fin_span) ** 0.85
+        le = FIN_LE_Y + FIN_SWEEP * t
+        return 7.3 < c.z < 11.1 and (c.y - le) / (FIN_CR + (FIN_CT - FIN_CR) * t) > 0.86
+    f.paint(blade, D, fin_te)     # a domain trim line up the trailing edge: the blade reads from behind
+    f.paint(blade, D, lambda c, n, i: n.z > 0.9 and c.z > FIN_TIP_Z - 0.05)   # a domain tip cap facing the turret
     blade = piece(blade, None, 10)
     f.sharpen_by_angle(blade, 38)
-    fin_parts.append(blade)
-    P = Vector(SNIPER_P)
-    ped = lathe_up("pedestal", [(0.0, -2.2), (1.15, -2.2), (1.35, -1.45), (1.80, -0.95), (1.80, -0.62), (1.5, -0.50), (0.0, -0.50)],
-                   origin=P, seg=24)
-    f.transform_mesh(ped, Matrix.Translation(P) @ Matrix.Diagonal((1.0, 1.32, 1.0, 1.0)) @ Matrix.Translation(-P))
-    f.ensure_slots(ped, SLOTS)
-    f.paint(ped, H)
-    f.paint(ped, D, lambda c, n, i: abs(n.z) < 0.3 and c.z > P.z - 0.85)
-    fin_parts.append(piece(ped, None, 11, bevel=0.02))
-    parts.append(bone_part(fin_parts, "fin"))
+    parts.append(note_centre(bone_part([blade], "fin"), "fin"))
+    info["fin_root_z"], info["fin_span"] = root_z, fin_span
 
-    # ================================================================== OUTRIGGERS (pectoral fins) + nacelles
-    span_dir = {}
-    cosd = math.cos(math.radians(WING_DIHEDRAL))
+    # ================================================================== OUTRIGGERS: a chain of floating paddle plates
+    def chain_t(x):
+        return (abs(x) - WING_X0) / (WING_X1 - WING_X0)
 
     def paddle_chord(t):
         return WING_CR + (WING_CT - WING_CR) * t + WING_BULGE * math.sin(math.pi * t) ** 1.3
 
     def paddle_le(t):
-        return WING_ROOT_Y + WING_SWEEP * t - WING_LE_BULGE * math.sin(math.pi * t)
+        return WING_LE0 + WING_SWEEP * t - WING_LE_BULGE * math.sin(math.pi * t)
 
-    def paddle(name, sx, n_sec=7):
-        """The pectoral paddle: airfoil sections whose chord swells mid-span and whose leading edge bows forward."""
+    def plate_z(t):
+        return WING_Z0 + (WING_Z1 - WING_Z0) * t
+
+    def paddle_plate(name, sx, x0, x1, n_sec=3):
+        """One plate of the chain: airfoil sections between x0 and x1; its end faces are x = const planes, so each
+        gap is bounded by two parallel faces."""
         sts = []
         for k in range(n_sec + 1):
-            t = k / n_sec
+            x = x0 + (x1 - x0) * k / n_sec
+            t = chain_t(x)
             ch = paddle_chord(t)
-            le = Vector((sx * (WING_ROOT_X + _RUN * t), paddle_le(t), WING_ROOT_Z + _RISE * t))
+            le = Vector((sx * x, paddle_le(t), plate_z(t)))
             prof = f.airfoil(chord=ch, thickness=0.105 - 0.02 * t, camber=0.02, segments=16)
             sts.append(f.Station(le, prof, right=(0, 1, 0), up=(0, 0, 1)))
         return f.loft(name, sts)
-    for tg, sx, tp in (("L", 1, FAST_P), ("R", -1, BOMB_P)):
-        wp = []
-        root = Vector((sx * WING_ROOT_X, WING_ROOT_Y, WING_ROOT_Z))
-        wg = paddle("outrigger", sx)
-        f.ensure_slots(wg, SLOTS)
-        f.paint(wg, H)
 
-        def wing_panel(c, n, i, sx=sx):
-            t = (sx * c.x - WING_ROOT_X) / _RUN
-            if not (0.27 < t < 0.73) or n.z < 0.3:
-                return False
-            frac = (c.y - paddle_le(t)) / paddle_chord(t)
-            return 0.22 < frac < 0.62
-        f.inset_faces(wg, wing_panel, 0.10, depth=0.04, slot=D)
-        wp.append(piece(wg, None, 20 if sx > 0 else 25))
-        f.sharpen_by_angle(wp[-1], 38)
-        d = math.radians(WING_DIHEDRAL)
-        span_dir[sx] = Vector((sx * math.cos(d), 0.0, math.sin(d)))
-        # the nacelle the turret stands on
+    span_dir = {}
+    dih = math.atan2(WING_Z1 - WING_Z0, WING_X1 - WING_X0)
+    for tg, sx, tp in (("L", 1, FAST_P), ("R", -1, BOMB_P)):
+        span_dir[sx] = Vector((sx * math.cos(dih), 0.0, math.sin(dih)))
+        for k, (x0, x1) in enumerate(PLATES):
+            pl = paddle_plate("plate", sx, x0, x1)
+            f.ensure_slots(pl, SLOTS)
+            f.paint(pl, H)
+            m = 0.11 * (x1 - x0)
+
+            def panel(c, n, i, sx=sx, x0=x0, x1=x1, m=m):
+                if not (x0 + m < sx * c.x < x1 - m) or n.z < 0.3:
+                    return False
+                t = chain_t(c.x)
+                return 0.13 < (c.y - paddle_le(t)) / paddle_chord(t) < 0.74
+            f.inset_faces(pl, panel, 0.10, depth=0.04, slot=D)
+            pl = piece(pl, None, (20 if sx > 0 else 25) + k)
+            f.sharpen_by_angle(pl, 38)
+            name = "wing.%s.%d" % (tg, k + 1)
+            parts.append(note_centre(bone_part([pl], name), name))
+        # the turret's pod: a nacelle hovering under the turret (domain band, running light, small ember mouth aft)
         nx = tp[0]
         q = NAC_R / 1.15
         prof = [(0.0, 0.0), (0.45 * q, 0.08), (0.85 * q, 0.45), (NAC_R, 1.15), (NAC_R, 1.55), (NAC_R, 2.05), (NAC_R, NAC_LEN - 1.7),
@@ -425,69 +464,46 @@ def build(ctx):
         f.paint(nac, D, lambda c, n, i: NAC_Y0 + 1.55 < c.y < NAC_Y0 + 2.05)
         f.paint(nac, J, lambda c, n, i, nx=nx: c.y > NAC_Y0 + NAC_LEN - 0.3 and math.hypot(c.x - nx, c.z - NAC_Z) < 0.62 * NAC_R / 1.15)
         f.paint(nac, H, lambda c, n, i: c.y < NAC_Y0 + 0.3)
-        wp.append(piece(nac, None, 21 if sx > 0 else 26))
-        f.sharpen_by_angle(wp[-1], 35)
-        # the turret pedestal on the nacelle's back
-        TP = Vector(tp)
-        pd = lathe_up("ringseat", [(0.0, -1.0), (1.75, -1.0), (1.95, -0.66), (1.80, -0.48), (0.0, -0.48)], origin=TP, seg=24)
-        wp.append(piece(pd, H, 22 if sx > 0 else 27, bevel=0.02))
-        # a running light on the nacelle's outboard flank (domain, never lime)
+        nac = piece(nac, None, 23 if sx > 0 else 28)
+        f.sharpen_by_angle(nac, 35)
         lt = f.sphere("runlight", 0.16, center=(nx + sx * (NAC_R - 0.02), NAC_Y0 + 1.8, NAC_Z + 0.15), segments=10, rings=6,
                       scale=(1.0, 2.2, 1.0))
-        wp.append(piece(lt, D, 23 if sx > 0 else 28))
-        parts.append(bone_part(wp, "wing." + tg))
+        lt = piece(lt, D, 24 if sx > 0 else 29)
+        parts.append(bone_part([nac, lt], "pod." + tg))
+        centre["pod." + tg] = Vector((nx, NAC_Y0 + NAC_LEN / 2, NAC_Z))
 
-    # ================================================================== PEDUNCLE (tail)
-    tp_ = []
-    ped = f.fuselage("peduncle", PED_LEN, nose=(0, PED_Y0, 0.48), axis=(0, 1, 0), segments=24,
-                     stations=[(0.0, 2.20, 2.20, 1.66, 2.4, 2.4, 0.0), (0.5, 1.55, 1.75, 1.20, 2.4, 2.4, 0.02),
-                               (1.0, 1.05, 1.10, 0.85, 2.4, 2.4, 0.03)])
-    tp_.append(piece(ped, H, 30))
-    col = lathe_aft("collar", [(0.0, 0.0), (2.28, 0.0), (2.44, 0.12), (2.44, 0.40), (2.28, 0.52), (0.0, 0.52)],
-                    origin=(0, PED_Y0 - 0.05, 0.48), seg=24)
-    f.transform_mesh(col, Matrix.Translation(Vector((0, 0, 0.48))) @ Matrix.Diagonal((1.0, 1.0, 0.86, 1.0))
-                     @ Matrix.Translation(Vector((0, 0, -0.48))))
-    f.ensure_slots(col, SLOTS)
-    f.paint(col, H)
-    f.paint(col, D, lambda c, n, i: abs(n.y) < 0.3)
-    tp_.append(piece(col, None, 31))
-    parts.append(bone_part(tp_, "tail"))
-
-    # ================================================================== FLUKES (tail.2) - the engine section
-    fl = []
-    for sx in (1, -1):
-        fk = f.wing("fluke", root=FLUKE_ROOT, span=FLUKE_SPAN, chord_root=FLUKE_CR, chord_tip=FLUKE_CT, sweep=FLUKE_SWEEP,
-                    dihedral_deg=0.0, thickness=0.14, sections=6, segments=20, side=sx, tip_round=True)
+    # ================================================================== ENGINE SECTION: floating engine pods + fluke blades
+    for tg, sx in (("L", 1), ("R", -1)):
+        x = sx * ENG_X
+        R = ENG_R
+        case = lathe_aft("engcase", [(0.0, 0.0), (0.47 * R, 0.08), (0.86 * R, 0.6), (R, 1.45), (R, 2.9), (0.0, 2.9)],
+                         origin=(x, ENG_Y0, ENG_Z), seg=20)
+        f.ensure_slots(case, SLOTS)
+        f.paint(case, H)
+        f.paint(case, D, lambda c, n, i: ENG_Y0 + 1.75 < c.y < ENG_Y0 + 2.05)
+        parts.append(bone_part([piece(case, None, 40 if sx > 0 else 41)], "engine." + tg))
+        centre["engine." + tg] = Vector((x, ENG_Y0 + 1.45, ENG_Z))
+        bell = lathe_aft("engbell", [(0.0, 0.0), (0.97 * R, 0.0), (1.07 * R, 0.2), (1.12 * R, 0.55), (0.86 * R, 0.55), (0.74 * R, 0.36),
+                                     (0.0, 0.36)], origin=(x, ENG_Y0 + 2.7, ENG_Z), seg=20)
+        f.ensure_slots(bell, SLOTS)
+        f.paint(bell, H)
+        f.paint(bell, J, lambda c, n, i, x=x: c.y > ENG_Y0 + 2.9 and math.hypot(c.x - x, c.z - ENG_Z) < 0.83 * ENG_R)
+        parts.append(bone_part([piece(bell, None, 42 if sx > 0 else 43)], "jet." + tg + ".mouth"))
+        fk = f.wing("fluke", root=(sx * FLUKE_X0, FLUKE_LE_Y, FLUKE_Z), span=FLUKE_SPAN, chord_root=FLUKE_CR, chord_tip=FLUKE_CT,
+                    sweep=FLUKE_SWEEP, dihedral_deg=0.0, thickness=0.14, sections=6, segments=20, side=sx, tip_round=True)
         f.ensure_slots(fk, SLOTS)
         f.paint(fk, H)
         f.paint(fk, D, lambda c, n, i: n.z < -0.5)
 
         def te_trim(c, n, i, sx=sx):
-            t = min(1.0, max(0.0, sx * c.x / FLUKE_SPAN))
-            le = FLUKE_ROOT[1] + FLUKE_SWEEP * t
+            t = min(1.0, max(0.0, (sx * c.x - FLUKE_X0) / FLUKE_SPAN))
+            le = FLUKE_LE_Y + FLUKE_SWEEP * t
             ch = FLUKE_CR + (FLUKE_CT - FLUKE_CR) * t
-            return n.z > 0.5 and (c.y - le) / ch > 0.80 and sx * c.x > 2.75
+            return n.z > 0.5 and (c.y - le) / ch > 0.78 and t > 0.12
         f.paint(fk, D, te_trim)
-        fl.append(piece(fk, None, 35))
-    parts.append(bone_part(fl, "tail.2"))
-
-    # main engines: a case on each fluke root (jet.L / jet.R) and its bell (jet.X.mouth)
-    for tg, sx in (("L", 1), ("R", -1)):
-        x = sx * JET_X
-        R = JET_R
-        shell = lathe_aft("jetcase", [(0.0, 0.0), (0.47 * R, 0.08), (0.86 * R, 0.6), (R, 1.45), (R, 2.9), (0.0, 2.9)],
-                          origin=(x, JET_Y0, JET_Z), seg=20)
-        f.ensure_slots(shell, SLOTS)
-        f.paint(shell, H)
-        f.paint(shell, D, lambda c, n, i: JET_Y0 + 1.75 < c.y < JET_Y0 + 2.05)
-        parts.append(bone_part([piece(shell, None, 40 if sx > 0 else 41)], "jet." + tg))
-        bell = lathe_aft("jetbell", [(0.0, 0.0), (0.97 * R, 0.0), (1.07 * R, 0.2), (1.12 * R, 0.55), (0.86 * R, 0.55), (0.74 * R, 0.36),
-                                     (0.0, 0.36)], origin=(x, JET_Y0 + 2.7, JET_Z), seg=20)
-        f.ensure_slots(bell, SLOTS)
-        f.paint(bell, H)
-        f.paint(bell, J, lambda c, n, i, x=x: c.y > JET_Y0 + 2.9 and math.hypot(c.x - x, c.z - JET_Z) < 0.83 * JET_R)
-        parts.append(bone_part([piece(bell, None, 42 if sx > 0 else 43)], "jet." + tg + ".mouth"))
-    info["jet_mouth"] = {tg: (sx * JET_X, JET_Y0 + 3.25, JET_Z) for tg, sx in (("L", 1), ("R", -1))}
+        fk = piece(fk, None, 35 if sx > 0 else 36)
+        parts.append(note_centre(bone_part([fk], "fluke." + tg), "fluke." + tg))
+    info["jet_mouth"] = {tg: (sx * ENG_X, ENG_Y0 + 3.25, ENG_Z) for tg, sx in (("L", 1), ("R", -1))}
 
     # ================================================================== TURRETS
     def missile_tube(name_root, T, x, z, length, pid0):
@@ -676,22 +692,20 @@ def build(ctx):
     B = rig.BoneSpec
     fwd = Vector((0, -1, 0))
     bones = [B("hull", (0, 0, 0), (0, -1.6, 0))]
-    bones.append(B("fin", (0, -0.4, 2.8), (0, 1.8, 14.4), parent="hull"))
-    wing_root_mid = {}
+    # every floating part on its own bone, its head at the part's centre; the turret yaw bones hang off the hull
+    # (code sets their pose in the hull's frame, so no part of the chain carries them)
+    bones.append(B("fin", centre["fin"], centre["fin"] + Vector((0, 0, 2.0)), parent="hull"))
     for tg, sx in (("L", 1), ("R", -1)):
-        h = Vector((sx * WING_ROOT_X, WING_ROOT_Y + WING_CR * 0.45, WING_ROOT_Z + 0.1))
-        wing_root_mid[sx] = h
-        bones.append(B("wing." + tg, h, h + span_dir[sx] * (WING_SPAN * 0.9), parent="hull"))
-    bones.append(B("tail", (0, PED_Y0 + 0.3, 0.48), (0, PED_Y0 + 3.4, 0.5), parent="hull"))
-    bones.append(B("tail.2", (0, FLUKE_ROOT[1] + 0.5, FLUKE_ROOT[2]), (0, FLUKE_ROOT[1] + 3.5, FLUKE_ROOT[2]), parent="tail"))
-    for tg, sx in (("L", 1), ("R", -1)):
-        x = sx * JET_X
-        bones.append(B("jet." + tg, (x, JET_Y0 + 0.3, JET_Z), (x, JET_Y0 + 2.6, JET_Z), parent="tail.2"))
+        for k in range(N_PLATES):
+            nm = "wing.%s.%d" % (tg, k + 1)
+            bones.append(B(nm, centre[nm], centre[nm] + span_dir[sx] * 1.5, parent="hull"))
+        bones.append(B("pod." + tg, centre["pod." + tg], centre["pod." + tg] + fwd * 1.5, parent="hull"))
+        bones.append(B("fluke." + tg, centre["fluke." + tg], centre["fluke." + tg] + Vector((sx * 1.5, 0, 0)), parent="hull"))
+        bones.append(B("engine." + tg, centre["engine." + tg], centre["engine." + tg] + Vector((0, 1.2, 0)), parent="hull"))
         m = Vector(info["jet_mouth"][tg])
-        bones.append(B("jet." + tg + ".mouth", m, m + Vector((0, 0.8, 0)), parent="jet." + tg))
-    host = {"Sniper": "fin", "FastGun": "wing.L", "Bomb": "wing.R"}
+        bones.append(B("jet." + tg + ".mouth", m, m + Vector((0, 0.8, 0)), parent="engine." + tg))
     for t, tt in turret.items():
-        bones.append(B(t + "Yaw", tt["P"], tt["P"] + fwd * 1.2, parent=host[t]))
+        bones.append(B(t + "Yaw", tt["P"], tt["P"] + fwd * 1.2, parent="hull"))
         bones.append(B(t + "Pitch", tt["T"], tt["T"] + fwd * 1.2, parent=t + "Yaw"))
         bones.append(B(t + "Muzzle", tt["tip"], tt["tip"] + fwd * 0.8, parent=t + "Pitch"))
         bones.append(B(t + "Missile", tt["missile"], tt["missile"] + fwd * 0.8, parent=t + "Pitch"))
@@ -735,8 +749,8 @@ def build(ctx):
     def ring_xy(mask, c, factor):
         return custom(mask, lambda co, n: Vector(((co.x - c.x) * (factor - 1), (co.y - c.y) * (factor - 1), 0)))
 
-    body_m = pm(1, 4)
-    hullish = pm(1, 2, 3, 4)
+    body_m = pm(1, 4, 30)
+    hullish = pm(1, 2, 3, 4, 30, 31)
     charge, mass, space, timee = [], [], [], []
     for t, cfg in TURRETS.items():
         tt, p0 = turret[t], cfg["pid"]
@@ -763,31 +777,33 @@ def build(ctx):
             charge.append(radial(pm(p0 + P_MUZ), do.x, do.z, 1.50))
             space.append(morphs.stretch_along((0, -1, 0), tuple(do), 1.30, pm(p0 + P_GUN, p0 + P_MUZ), ramp=(0.0, 0.6)))
 
-    # MASS: volume - the hull fattens about its axis, everything structural thickens
-    mass.append(custom(hullish, lambda co, n: Vector((co.x * 0.38, 0, (co.z - Z0) * 0.38))))
-    mass.append(custom(body_m, lambda co, n: n * 0.45))
-    mass.append(radial(pm(30, 31), 0.0, 0.48, 1.38))
-    mass.append(custom(pm(35), lambda co, n: Vector((0, 0, (co.z - FLUKE_ROOT[2]) * 0.9))))
+    # MASS: volume - the core fattens about its axis (deeper belly, the back barely rises, so the dorsal blade's hover
+    # survives), every floating part thickens, and the outrigger chain rides out with the flank so its gaps stay open
+    def core(co, n):
+        dz = co.z - Z0
+        return Vector((co.x * 0.20, 0, dz * (0.12 if dz > 0 else 0.62)))
+    mass.append(custom(hullish, core))
+    mass.append(custom(body_m, lambda co, n: n * 0.25))
     mass.append(custom(pm(10), lambda co, n: Vector((co.x * 0.7, 0, 0))))
-    for sx, wid, nid, tp in ((1, 20, 21, FAST_P), (-1, 25, 26, BOMB_P)):
-        r = Vector((sx * WING_ROOT_X, WING_ROOT_Y, WING_ROOT_Z))
+    for sx, base, nid in ((1, 20, 23), (-1, 25, 28)):
+        for k in range(N_PLATES):
+            shift = (1.2, 0.8, 0.4)[k]
 
-        def wing_thick(co, n, r=r, sx=sx):
-            t = (sx * co.x - WING_ROOT_X) / max(1e-6, WING_SPAN * cosd)
-            zmid = r.z + t * (WING_SPAN * math.sin(math.radians(WING_DIHEDRAL))) + 0.02
-            return Vector((0, 0, (co.z - zmid) * 0.75))
-        mass.append(custom(pm(wid), wing_thick))
-        # the nacelle widens but never rises into the turret's base ring
-        mass.append(custom(pm(nid), lambda co, n, tp=tp: Vector(((co.x - tp[0]) * 0.36, 0, min(0.0, co.z - NAC_Z) * 0.36))))
-    for sx, sid in ((1, 40), (-1, 41)):
-        mass.append(radial(pm(sid), sx * JET_X, JET_Z, 1.25))
+            def plate_mass(co, n, sx=sx, shift=shift):
+                zmid = plate_z(chain_t(co.x)) + 0.03
+                return Vector((sx * shift, 0, (co.z - zmid) * 0.8))
+            mass.append(custom(pm(base + k), plate_mass))
+        mass.append(custom(pm(nid), lambda co, n, sx=sx: Vector(((co.x - sx * abs(FAST_P[0])) * 0.36, 0, min(0.0, co.z - NAC_Z) * 0.36))))
+    for sx, cid, fid in ((1, 40, 35), (-1, 41, 36)):
+        mass.append(radial(pm(cid), sx * ENG_X, ENG_Z, 1.25))
+        mass.append(custom(pm(fid), lambda co, n: Vector((0, 0, (co.z - FLUKE_Z) * 0.9))))
 
-    # SPACE: reach - the guns telescope (above), the flukes span wider, the outrigger nacelles telescope about the pivot
-    space.append(custom(pm(35), lambda co, n: Vector((co.x * 0.25, 0, 0))))
-    for nid, tp in ((21, FAST_P), (26, BOMB_P)):
+    # SPACE: reach - the guns telescope (above), the flukes reach out from their roots, the pods telescope about the pivot
+    for sx, fid, nid, tp in ((1, 35, 23, FAST_P), (-1, 36, 28, BOMB_P)):
+        space.append(custom(pm(fid), lambda co, n, sx=sx: Vector(((co.x - sx * FLUKE_X0) * 0.30, 0, 0))))
         space.append(custom(pm(nid), lambda co, n, tp=tp: Vector((0, (co.y - tp[1]) * 0.32, 0))))
 
-    # TIME: speed - the nose stretches and sharpens, flukes and outriggers sweep back, nacelle tails stretch aft
+    # TIME: speed - the nose stretches and sharpens, the flukes and the outrigger chain sweep back, pod tails stretch aft
     def nose(co, n):
         d = -7.0 - co.y
         if d <= 0:
@@ -795,13 +811,13 @@ def build(ctx):
         s = morphs.smoothstep(0.0, 9.0, d)
         return Vector((-co.x * 0.28 * s, -d * 0.32 * s, -(co.z - 0.0) * 0.22 * s))
     timee.append(custom(hullish, nose))
-    timee.append(custom(pm(35), lambda co, n: Vector((0, abs(co.x) * 0.50, 0))))
-    for sx, wid in ((1, 20), (-1, 25)):
-        def bow(co, n, sx=sx):
-            t = min(1.0, max(0.0, (sx * co.x - WING_ROOT_X) / (WING_SPAN * cosd)))
+    for sx, fid, base, nid, tp in ((1, 35, 20, 23, FAST_P), (-1, 36, 25, 28, BOMB_P)):
+        timee.append(custom(pm(fid), lambda co, n, sx=sx: Vector((0, (sx * co.x - FLUKE_X0) * 0.50, 0))))
+
+        def bow(co, n):
+            t = min(1.0, max(0.0, chain_t(co.x)))
             return Vector((0, 2.6 * math.sin(math.pi * t) ** 1.2, 0))
-        timee.append(custom(pm(wid), bow))
-    for nid, tp in ((21, FAST_P), (26, BOMB_P)):
+        timee.append(custom(pm(base, base + 1, base + 2), bow))
         timee.append(custom(pm(nid), lambda co, n, tp=tp: Vector((0, max(0.0, co.y - tp[1]) * 0.28, 0))))
 
     shapes = {"Charge": charge, "Mass": mass, "Space": space, "Time": timee}
@@ -817,8 +833,11 @@ def build(ctx):
     yaws = {t + "Yaw": (0, 0, -40) for t in turret}
     pitches = {t + "Pitch": (-25, 0, 0) for t in turret}
     poses = {
-        "pitchup": {"tail": (-10, 0, 0), "tail.2": (-16, 0, 0)},
-        "yawright": {"tail": (0, 0, -12), "tail.2": (0, 0, -16)},
+        # the engine section is a hovering assembly: its parts both turn and move (they hinge on nothing)
+        "pitchup": {"fluke.L": {"rot": (-14, 0, 0), "loc": (0, 0, -0.7)}, "fluke.R": {"rot": (-14, 0, 0), "loc": (0, 0, -0.7)},
+                    "engine.L": {"rot": (-8, 0, 0), "loc": (0, 0, -0.35)}, "engine.R": {"rot": (-8, 0, 0), "loc": (0, 0, -0.35)}},
+        "yawright": {"fluke.L": {"rot": (0, 0, -12), "loc": (0.9, 0, 0)}, "fluke.R": {"rot": (0, 0, -12), "loc": (0.9, 0, 0)},
+                     "engine.L": {"rot": (0, 0, -8), "loc": (0.6, 0, 0)}, "engine.R": {"rot": (0, 0, -8), "loc": (0.6, 0, 0)}},
         "aimright": yaws,
         "aimup": pitches,
     }
@@ -838,8 +857,8 @@ def build(ctx):
             "pose_takes": [ARMATURE + "|" + p for p in names],
             "sheet_poses": names,
             "pose_expect": {
-                "pitchup": [("tail.2", "z", -1, 0.5)],
-                "yawright": [("tail.2", "x", +1, 0.5)],
+                "pitchup": [("fluke.L", "z", -1, 0.4), ("fluke.R", "z", -1, 0.4)],
+                "yawright": [("fluke.L", "x", +1, 0.5), ("fluke.R", "x", +1, 0.5)],
                 "aimright": [("SniperPitch", "x", -1, 1.0), ("FastGunPitch", "x", -1, 0.3), ("BombPitch", "x", -1, 0.3)],
                 "aimup": [("SniperPitch", "z", +1, 0.5), ("FastGunPitch", "z", +1, 0.2), ("BombPitch", "z", +1, 0.2)],
             },

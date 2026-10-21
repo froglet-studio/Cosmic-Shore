@@ -29,7 +29,7 @@ How every vessel is coloured (the colour language, the shared materials' scheme,
 | Stoat | (none; `STOAT.md` section 2.1) | `Stoat.fbx` (new), replacing `StoatHullBuilder` | the same | `specs/stoat.py` |
 | Angler | (none; `ANGLER.md` section 9) | `Angler.fbx` (new), replacing the Stoat stand-in | the same | `specs/angler.py` |
 | Brittle Star | (none; `BRITTLE_STAR.md` section 2) | `BrittleStar.fbx` (new), replacing `BrittleStarHullBuilder` | the same | `specs/brittlestar.py` |
-| Orca | [Orca.md](Orca.md) | `Orca.fbx` (new, 2026-10-21), the 4-seat crew hull with three code-aimed turrets; not yet nested in `Orca.prefab`, which still draws the Sparrow's mesh and `OrcaCrewView`'s pods | the same | `specs/orca.py` |
+| Orca | [Orca.md](Orca.md) | `Orca.fbx` (new, 2026-10-21; rebuilt the same day as the first HOVERING ASSEMBLY to SKILL 0.5: 17 / 17 parts float 1.55-2.26 % clear, `assembly_report.py --floating` OK), the 4-seat crew hull with three code-aimed turrets, nested in `Orca.prefab` (`author_orca_assets.py`) and posed by `OrcaHullRig` | the same | `specs/orca.py` |
 | Shrike | (none; `SHRIKE.md` section 2) | `Shrike.fbx` (new), replacing `ShrikeHullBuilder` | the same | `specs/shrike.py` |
 | Rhino | [Rhino.md](Rhino.md) | `Rhino_Test.fbx` (part-per-mesh placeholder) | `rhino_shapekey_with_animations.fbx`, the rig-swap target, with four REAL morphs | `specs/rhino.py` |
 

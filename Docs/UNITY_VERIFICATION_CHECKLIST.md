@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Orca round 8: the turret rest-pose fix, the hovering-assembly model, jets on its engine mouths (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-21, after flying round 7: the minigun's model sat at an odd angle to its shot, and the new models were not
+the hovering assemblies the original vessels are. `/verify-unity` did not run. What did run: the reference compile, the
+model gates (three readers, `--check`), `assembly_report.py --floating` on the Orca's major parts, `author_orca_assets.py
+--check`. Affects `VesselJet` (an additive `Remount`), and the `/vessel-model` skill's rules.
+
+**Verify in editor** (re-import `Orca.fbx` first):
+1. **Turret alignment.** Spawn the Orca with an AI crew, let the gunners fight, then take seat 3 (the minigun): its
+   barrels point exactly along the stream of rounds to the crosshair. Same in seats 2 and 4, and after leaving and
+   re-taking a seat.
+2. **The assembly.** From the helm's chase view: the fin, the outrigger plates, the engines and the turrets float clear
+   of the hull with even gaps; through a hard turn the outrigger plates swing out as one chain to the turrets; every
+   part bobs gently; the engines lean into the turn.
+3. **Jets.** The plumes come out of the model's two engine mouths, pointing backward, and colour with the domain.
+4. Clean console (no `[VesselJet] ... wants to mount on bone` error, no NRE from `OrcaHullRig`).
+
+---
+
 ### 🔴 Orca round 7: shots fly down the aim; the sniper's pip scope always open; model, crosshair and shot on one line (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-21, after flying round 6: the sniper should keep the Serpent's pip scope open instead of zooming the

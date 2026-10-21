@@ -54,6 +54,21 @@ players know it supports four players or brings in 4 AI" (Garrett, 2026-10-20). 
   scope always open** in the upper left (`SniperScopeOverlay`, the eyepiece a Serpent opens with the left trigger). The
   scope looks from the barrel tip down the aim at 22°, and its cone reticle also sits over the main view.
 
+**Round 8 (Garrett, 2026-10-21, after flying round 7):**
+- **The minigun's odd angle was a rest-pose bug.** `OrcaHullRig` took each turret's rest from its bones as found, so
+  after a re-bind (an AI crew at spawn, then a person boarding) it took an AIMED turret as rest and drew it at that
+  angle off its aim for good. Rest now comes from the skin's bind poses, which no pose can change, and the bones go
+  back to rest when the crew lets go.
+- **The model is a hovering assembly** ("free floating parts that are associated and animated together but clearly
+  distinct parts of a hovering assembly"): the core, a floating dorsal fin, a chain of floating outrigger plates out to
+  each side turret, floating engines and flukes, every part on its own bone (see *The model*). The rig animates them
+  together: the outrigger plates swing as a chain between the hull and the lagged turret frame, every part bobs on its
+  own phase, and the engines lean into turns.
+- **The jets burn from the model's engine mouths.** The prefab's six `VesselJet`s name the hidden Sparrow's tail bones;
+  the rig remounts each on the mouth on its side (`VesselJet.Remount`, new), keeping where its plume points.
+- **How vessel models are made changed with it** (`/vessel-model` SKILL 0.5, LESSONS 49, gate
+  `assembly_report.py --floating`). Every from-scratch hull welds its parts; their rebuild is `T-20261021-ab48`.
+
 **Unverified:** nothing has been flown in the Unity Editor yet (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, and the team
 task in "Try it"). The crew runs on one machine, as the Wrasse's seat does (see Follow-ups).
 
@@ -129,14 +144,21 @@ does a **two-finger tap** on a touch screen. While the person holds a gunner sea
 
 `Assets/_Models/Vessel Models/Orca.fbx`, built by `/vessel-model` from `Tools/Build/vessel_model/specs/orca.py` (dossier
 `Docs/VesselModels/Orca.md`, contact sheets `Docs/VesselModels/sheets/orca_after.jpg` and `orca_turrets.jpg`). A
-spaceship inspired by the killer whale: a deep gunmetal hull with domain armour plates (the orca's saddle and flank
-pattern), the eye patches as sensor lenses, the tall dorsal fin as the sniper's pylon, the pectoral fins as the two
-outrigger wings, the flukes as the engine section with two glowing throats. 49 × 24 × 36 u, 17,536 triangles.
+spaceship inspired by the killer whale, built (round 8) as a **hovering assembly** like the artist hulls: a deep
+gunmetal hull core with domain armour plates and the eye patches as sensor lenses; a dorsal fin blade hovering 1.6 u
+over the back with the sniper hovering above it; on each side a chain of three floating paddle plates out to a pod
+nacelle, with the fast gun (port) or the bomb (starboard) hovering over its pod; two engine pods with glowing bells
+between two floating fluke blades. Every part is its own closed shell on its own bone; nothing is mated. 17 / 17 parts
+float 1.55-2.26 % of the diagonal clear (`assembly_report.py --floating`). 49 × 24 × 37 u, 16,280 triangles.
 - **Three bespoke turrets**, each a YAW / PITCH / MUZZLE bone chain at exactly the code's mounts
   (`OrcaCrewCore.Mounts` × `hullRadius`): the sniper a long railgun with coil rings and a scope, the fast gun a
   six-barrel rotary "pen", the bomb a fat mortar drum. Each also carries a missile tube.
-- **Four element morphs**: Charge 4.6% (the turrets swell), Mass 4.0% (the hull bulks), Space 9.3% (the barrels and
-  flukes reach), Time 7.3% (the nose sharpens, the wings sweep). Slots: Domain, Body, Window, Engine.
+- **The floating parts' bones** (all children of `hull`): `fin`, `wing.L.1..3` / `wing.R.1..3`, `pod.L` / `pod.R`,
+  `engine.L` / `engine.R` (with `jet.L.mouth` / `jet.R.mouth`), `fluke.L` / `fluke.R`. The turret yaw bones are
+  children of `hull` too.
+- **Four element morphs**: Charge 4.6% (the turrets swell), Mass 4.3% (the hull bulks; the plate chain rides out so its
+  gaps stay open), Space 9.3% (the barrels and flukes reach), Time 5.6% (the nose sharpens, the chain sweeps back).
+  Slots: Domain, Body, Window, Engine.
 - **Nested by `author_orca_assets.py`** (`model_retrofit`, the Grouper's pattern) under the root as `Orca`: it is the
   ship geometry the domain paints (`_shipGeometries`, slot 0), and the Sparrow's mesh is switched off. The Sparrow's
   bones, jets, colliders and Animator stay, so the hull still flies on them.
@@ -210,7 +232,7 @@ the explosion's effect are the game's.
 | `OrcaCrewConfigSO.cs` | Every number; each tooltip names its lab key. Asset: `Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset`. |
 | `OrcaCrew.cs` | The crew on the hull. The seats and the swap. The helm's boost tank and shield: laid super-shielded with `BoostRingBuilder.LayOne`, posed every frame by the prism mover contract, re-themed to danger at the drop, retired by the pooled-prism identity test. The gunners' input and AI, the three guns (the bomb with no cooldown and the AI's burst; the pen's queued landings, laid with `BoostRingBuilder.LayOne`), the missiles' contacts, crystal collection and bursts. Readers for the HUD: `SeatElement`, `SeatVeil01`, `BurstAt`, `MissilesAt`, `PenReady`. |
 | `OrcaCrewView.cs` | The gunner's camera (the scoped sniper, the over-the-turret fast gun and bomb, the missile) and the crosshair canvas (with the game camera's post-processing, `OffscreenCameraSetup.AdoptGameCameraImage`), the picture-in-picture chase view, and the faceted lit pods, struts and missiles (`Graphics.RenderMesh`, `Resources/OrcaCrewLit.mat`). Each gun's pod has its own shape. |
-| `OrcaHullRig.cs` | The model's three turrets aimed by the crew (found by bone name, posed relative to rest, stood at the lagged mounts); their barrel tips are where the guns fire from. |
+| `OrcaHullRig.cs` | The model posed by the crew: the three turrets aimed (rest read from the skin's bind poses, stood at the lagged mounts), the floating plates swung as a chain between the hull and the lagged turret frame, every part's hover bob, the engines' lean, and the prefab's jets remounted on the engine mouths. Barrel tips and missile tubes are where the guns fire from. |
 | `Assets/_Models/Vessel Models/Orca.fbx`, `Tools/Build/vessel_model/specs/orca.py` | The hull model and its spec (`build.py specs/orca.py --check` is its drift gate). |
 | `UI/View/OrcaCrosshairGraphic.cs` | The bespoke crosshairs as generated uGUI geometry (nib, bomb ring, missile ring), feathered and haloed. The sniper's is the Serpent's `SniperScopeOverlay`, which gained an explicit-eye `Tick` (eye, rotation, flight camera) for it. |
 | `UI/Controller/OrcaHUDController.cs` | The four cards are the four seats (round 6): the person's seat's card is lit (re-asserted every frame), each card's veil is its seat's recharge, each gunner card counts its own seat's missiles, and a card flashes when its seat's missile or bomb bursts (Time also when the shield goes up). Plus the seat line (`seatLineTemplate`: the seat, its gun and state, its missiles; rebuilt only when one changes). |
@@ -271,6 +293,8 @@ the explosion's effect are the game's.
 node Tools/Build/orca_crew_lab/parity.cjs          # core vs page, asset vs page, planted controls
 python3 Tools/Build/author_orca_assets.py --check  # the hull, the crew's assets, the registrations
 python3 Tools/Build/author_orca_assets.py --self-test
+python3 Tools/Build/vessel_model/build.py Tools/Build/vessel_model/specs/orca.py --check   # the model's drift gate
+python3 Tools/Build/vessel_model/assembly_report.py "Assets/_Models/Vessel Models/Orca.fbx" --floating fin,wing.L.1,wing.L.2,wing.L.3,wing.R.1,wing.R.2,wing.R.3,pod.L,pod.R,engine.L+jet.L.mouth,engine.R+jet.R.mouth,fluke.L,fluke.R,SniperYaw+SniperPitch+SniperMuzzle+SniperMissile,FastGunYaw+FastGunPitch+FastGunMuzzle+FastGunMissile,BombYaw+BombPitch+BombMuzzle+BombMissile
 bash Tools/Build/unity_refcompile/run.sh           # the player compile
 python3 Tools/Build/element_ability_table.py Orca  # four cards, four channels
 ```

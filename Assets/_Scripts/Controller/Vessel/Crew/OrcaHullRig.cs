@@ -42,8 +42,9 @@ namespace CosmicShore.Gameplay
         static readonly (string name, Motion motion, float along)[] Parts =
         {
             ("fin", Motion.Hover, 0f),
-            ("wing.L.1", Motion.Chain, 0.33f), ("wing.L.2", Motion.Chain, 0.66f),
-            ("wing.R.1", Motion.Chain, 0.33f), ("wing.R.2", Motion.Chain, 0.66f),
+            // the chain's plates sit 8.3 / 12.8 / 17.4 u out on the 21.6 u outrigger, and the pod under each turret at it
+            ("wing.L.1", Motion.Chain, 0.38f), ("wing.L.2", Motion.Chain, 0.59f), ("wing.L.3", Motion.Chain, 0.80f), ("pod.L", Motion.Chain, 1f),
+            ("wing.R.1", Motion.Chain, 0.38f), ("wing.R.2", Motion.Chain, 0.59f), ("wing.R.3", Motion.Chain, 0.80f), ("pod.R", Motion.Chain, 1f),
             ("engine.L", Motion.Engine, 0f), ("engine.R", Motion.Engine, 0f),
             ("fluke.L", Motion.Engine, 0f), ("fluke.R", Motion.Engine, 0f),
         };
