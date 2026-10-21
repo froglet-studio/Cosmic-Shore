@@ -1,0 +1,226 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cb77c5f589c404eb1770678f24d97b9, type: 3}
+  m_Name: OrcaCrewConfig
+  m_EditorClassIdentifier: 
+  hullRadius: 9
+  boostTank: 3
+  boostRefill: 
+    Enabled: 1
+    Value: 0.25
+    Min: 0.25
+    Max: 0.35
+    element: 4
+    UseFloor: 1
+    Floor: 0.05
+  shieldBlocks: 144
+  shieldMinRadius: 50
+  shieldMaxRadius: 70
+  shieldOpenDeg: 45
+  shieldSeconds: 
+    Enabled: 1
+    Value: 4
+    Min: 4
+    Max: 6.1333333
+    element: 2
+    UseFloor: 1
+    Floor: 0.5
+  shieldCooldown: 9
+  shieldBlockScale: {x: 10, y: 1, z: 1}
+  shieldSuper: 1
+  shieldLinger: 20
+  mountSmooth: 0.35
+  horizonSmooth: 3
+  turretTurn: 160
+  mouseAimRadiansPerPixel: 0.0035
+  missileSpeed: 180
+  missileTurn: 150
+  missileScale: 
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.4
+    element: 1
+    UseFloor: 1
+    Floor: 0.5
+  missileLife: 5
+  launchCooldown: 0.6
+  blastRadius: 
+    Enabled: 1
+    Value: 30
+    Min: 30
+    Max: 46
+    element: 3
+    UseFloor: 1
+    Floor: 5
+  blastSeconds: 0.5
+  missileCollectRadius: 9
+  missileContactRadius: 3.46
+  missileMesh: {fileID: -3416553540687559647, guid: 98d8cb0114a1ad04e9682869849be719, type: 3}
+  missileMaterials: 
+  - {fileID: 2236194519873700097, guid: 98d8cb0114a1ad04e9682869849be719, type: 3}
+  - {fileID: 2100000, guid: f5a1f1d453134cc4193ba1adbdd49d7a, type: 2}
+  - {fileID: 2100000, guid: f5a1f1d453134cc4193ba1adbdd49d7a, type: 2}
+  missileLength: 7
+  missileTrailSeconds: 3
+  missileTrailWidth: 1.4
+  missileTrailSpacing: 6
+  missileLightRange: 30
+  missileLightIntensity: 3
+  missileIgnitionSeconds: 0.15
+  missileBankDeg: 45
+  missileBankSmooth: 0.12
+  startMissiles: 2
+  maxMissiles: 4
+  omniMissiles: 1
+  gunsOn: 1
+  shotInherit: 1
+  seatElements: 
+  - 4
+  - 3
+  - 2
+  - 1
+  sniperCooldown: 12
+  sniperRange: 3000
+  sniperConeDeg: 1.5
+  sniperMinPathRadius: 6
+  sniperStripPerElement: 0.1
+  sniperEjectSpeed: 45
+  sniperSameVictimCooldown: 0.5
+  sniperDebrisSpeed: 90
+  sniperDebrisSpeedLimit: 120
+  sniperBeamStartWidth: 1.5
+  sniperBeamSeconds: 0.35
+  sniperFlareRadius: 18
+  sniperFlareSeconds: 0.3
+  fastGunRate: 30
+  fastGunRoundSpeed: 135
+  fastGunRoundSeconds: 4.5
+  fastGunRoundScale: 1
+  fastGunRoundGrowth: 3
+  fastGunHeatSeconds: 6
+  fastGunCoolSeconds: 5
+  fastGunPenRate: 10
+  fastGunPenReach: 120
+  fastGunPenSpacing: 5
+  fastGunPenFill: 2
+  fastGunPenGap: 0.35
+  fastGunPenCap: 150
+  fastGunPenScale: {x: 0.8, y: 0.5, z: 4.6}
+  bombSpeed: 90
+  bombFuse: 10
+  bombBlastRadius: 
+    Enabled: 1
+    Value: 50
+    Min: 50
+    Max: 76.666667
+    element: 3
+    UseFloor: 1
+    Floor: 10
+  bombScale: 3.75
+  bombColor: {r: 1, g: 0.072, b: 0.105, a: 1}
+  bombLitStrength: 1
+  aiSkill: 2
+  aiRetargetSeconds: 0.4
+  turretFov: 75
+  sniperScopeFov: 22
+  sniperCamBack: 12
+  sniperCamUp: 6
+  fastGunCamBack: 14
+  fastGunCamUp: 8
+  bombCamBack: 22
+  bombCamUp: 10
+  gunCamAim: 180
+  missileCamBack: 14
+  missileCamUp: 3
+  explosions:
+  - {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792, type: 3}
+  bombExplosions:
+  - {fileID: 3479271500403630839, guid: 8713aea50e6b47119e57afc2ce603771, type: 3}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
+  missileLaunchSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  missileBurstSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  shieldRaiseSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  omniRefillSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  emptyMagazineSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  sniperShotSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  bombThrowSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  bombBurstSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  seatLineTemplate: "{seat}  \xB7  {gun}  \xB7  {count} missiles  \xB7  1-4 to change seat"
+  seatNames:
+  - Helm
+  - Sniper
+  - Fast gun
+  - Bomb
+  gunNames:
+  - 
+  - Sniper
+  - Fast gun
+  - Bomb
+  gunLineTemplate: '{name} {state}'
+  gunReadyText: ready
+  gunCooldownTemplate: '{seconds}s'
+  gunHotText: overheated
+  bombOutText: bomb out
+  crosshairColor: {r: 0.95, g: 0.97, b: 0.98, a: 1}
+  crosshairReadyColor: {r: 0.6156863, g: 1, b: 0.18039216, a: 1}
+  crosshairHotColor: {r: 1, g: 0.302, b: 0.427, a: 1}
+  crosshairWarmColor: {r: 1, g: 0.655, b: 0, a: 1}

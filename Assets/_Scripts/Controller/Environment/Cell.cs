@@ -393,6 +393,10 @@ namespace CosmicShore.Gameplay
 
         SnowChanger spawnedCytoplasm;
 
+        /// <summary>This cell's cytoplasm (its drifting shard field), or null: a satellite, a config with
+        /// no cytoplasm, or before the bootstrap spawned it. Dying spindles add their shards to it.</summary>
+        public SnowChanger Cytoplasm => spawnedCytoplasm;
+
         // ---------------------------------------------------------------------
         // Static spatial registry. Pooled prefab-spawned objects (trail prisms)
         // use this to find their containing cell - they have no scene identity
@@ -641,7 +645,7 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < _containmentProbe.Count; i++)
                 {
                     var p = _containmentProbe[i];
-                    if (!p || IsShieldedMass(p)) continue;   // shields are not food, so not an intruder
+                    if (!p || IsInedibleShield(p)) continue;   // an inedible shield is not food, so not an intruder
                     _containmentHasPrey = true;
                     break;
                 }
@@ -1327,6 +1331,7 @@ namespace CosmicShore.Gameplay
         public void ApplyAuthoritativePhaseAndDomain(CellPhase newPhase, Domains newDominantDomain)
         {
             phase = newPhase;
+            SyncShieldFoodFiling();
             if (runtime != null)
                 runtime.WriteCellRuntimeStats(ID, LiveBlockCount, newPhase, newDominantDomain);
         }
@@ -1554,6 +1559,7 @@ namespace CosmicShore.Gameplay
             QuasicrystalColonyFrontier.Clear(this);
             QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
+            SyncShieldFoodFiling();
 
             if (spawnedCytoplasm)
             {
@@ -1861,6 +1867,7 @@ namespace CosmicShore.Gameplay
             QuasicrystalColonyFrontier.Clear(this);
             QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
+            SyncShieldFoodFiling();
 
             // Bind runtime -> this cell
             runtime.Cell = this;
@@ -2670,6 +2677,7 @@ namespace CosmicShore.Gameplay
             QuasicrystalColonyFrontier.Clear(this);
             QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
+            SyncShieldFoodFiling();
 
             SetVesselTrailsDetached(pauseSpawners: false);
 
@@ -2730,6 +2738,11 @@ namespace CosmicShore.Gameplay
         IEnumerator SwapCellConfigRoutine(CellConfigDataSO config, bool clearLooseTrailMass)
         {
             _swapping = true;
+            // A world swap is a load the player waits through behind the veil, so with Record
+            // Insight Mode armed (FrogletTools > Performance > Performance Benchmark > Load Time
+            // Insights) it records like a game launch: the suction and release below, then the
+            // build's own spans (layout bake, streamed lay, settle), ending when the veil lifts.
+            LoadInsights.BeginLoad($"Cell swap -> {config.CellName}");
             if (CSDebug.IsVerbose(CSLogChannel.Ecology))
                 CSDebug.LogVerbose(CSLogChannel.Ecology,
                     $"[Cell {ID}] Cell swap -> {config.CellName} " +
@@ -2757,6 +2770,8 @@ namespace CosmicShore.Gameplay
             // ── Suction (continuity law) ──────────────────────────────────────
             float elapsed = 0f;
             float duration = retireSuctionSeconds > 0.01f ? retireSuctionSeconds : DefaultRetireSuctionSeconds;
+            int suctionSpan = LoadInsights.Begin(LoadInsightCategory.ScriptedDelay,
+                $"Cell swap: the retiring world suctions away ({duration:F1}s)", isWait: true);
             StampRetiredWorldSuction(retiring, duration);
             while (elapsed < duration && retiring)
             {
@@ -2771,6 +2786,9 @@ namespace CosmicShore.Gameplay
                 retiring.transform.localScale = Vector3.one * Mathf.Max(SuctionFloorScale, eased);
                 yield return null;
             }
+            LoadInsights.End(suctionSpan);
+            int trailSpan = LoadInsights.Begin(LoadInsightCategory.Environment,
+                $"Cell swap: {pooledRetiring.Count} pooled trail prisms return to their pool");
 
             // Pooled prisms go back to their pool (destroying one corrupts the pool's
             // accounting). Detach with worldPositionStays:FALSE so the suction factor is not
@@ -2786,8 +2804,12 @@ namespace CosmicShore.Gameplay
                 block.ReturnToPool();
             }
             pooledRetiring.Clear();
+            LoadInsights.End(trailSpan);
 
+            int releaseSpan = LoadInsights.Begin(LoadInsightCategory.Environment,
+                "Cell swap: the retired world is released (500 prisms a frame)");
             yield return ReleaseRetiredWorld(retiring);
+            LoadInsights.End(releaseSpan);
 
             // ── Bookkeeping reset (the same set ResetCell clears) ─────────────
             // After the drain: every prism's OnDestroy routes through RemoveBlock, so
@@ -2813,6 +2835,7 @@ namespace CosmicShore.Gameplay
             QuasicrystalColonyFrontier.Clear(this);
             QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
+            SyncShieldFoodFiling();
             _nucleusControlRadiusSqr = 0f;
 
             // ── Become the new config ────────────────────────────────────────
@@ -2835,6 +2858,11 @@ namespace CosmicShore.Gameplay
             // The veil raised inside BuildEnvironmentNow holds the screen while the world
             // streams in - the same treatment a boot-time build gets.
             BuildEnvironmentNow();
+            if (LoadInsights.IsRecording)
+            {
+                if (EnvironmentLoadVeil.IsCovering) EnvironmentLoadVeil.Released += CompleteSwapRecording;
+                else LoadInsights.CompleteLoad("Cell swap: nothing to build behind a veil");
+            }
 
             // Let the lay drain before life returns, so flora/fauna seed into a finished world
             // rather than racing it. The deadline mirrors the veil's own stall cap: a wedged
@@ -2848,6 +2876,14 @@ namespace CosmicShore.Gameplay
 
             _swapping = false;
             CSDebug.LogVerbose(CSLogChannel.Ecology, $"[Cell {ID}] Cell swap complete -> {config.CellName}.");
+        }
+
+        /// <summary>The swap's Load Time Insights recording ends when the player can see the new
+        /// world: the veil lifts once every prism is laid and grown.</summary>
+        static void CompleteSwapRecording()
+        {
+            EnvironmentLoadVeil.Released -= CompleteSwapRecording;
+            LoadInsights.CompleteLoad("Cell swap: the new world is laid and grown, the veil lifts");
         }
 
         /// <summary>
@@ -3255,7 +3291,7 @@ namespace CosmicShore.Gameplay
                     // grid writes — it is the same instant, and the read is a
                     // managed→engine interop on the per-prism creation path.
                     Vector3 blockPosition = block.transform.position;
-                    if (!IsInsideNucleus(blockPosition) && !IsShieldedMass(block))
+                    if (!IsInsideNucleus(blockPosition) && !IsInedibleShield(block))
                     {
                         gridTracked[block] = blockPosition; // remembered for the symmetric remove
 
@@ -3346,7 +3382,7 @@ namespace CosmicShore.Gameplay
         {
             if (block is null || !trackedBlocks.ContainsKey(block)) return;
 
-            bool shouldBeGridTracked = !IsShieldedMass(block) && !IsInsideNucleus(block.transform.position);
+            bool shouldBeGridTracked = !IsInedibleShield(block) && !IsInsideNucleus(block.transform.position);
             if (shouldBeGridTracked == gridTracked.ContainsKey(block)) return;
 
             RemoveBlock(block);
@@ -3354,13 +3390,46 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Shield-state test used for grid membership. Mirrors <c>Fauna.IsShieldedMass</c>
-        /// (the diet rule) so "not food" and "not a steering target" can never disagree.
+        /// True while this cell's SHIELDED (not super-shielded) mass is food: the cell is in <see cref="CellPhase.Frenzy"/>,
+        /// it holds too much mass, and its grazers may eat through the shields (the designer, 2026-10-21: "in general
+        /// shielded prisms should be food during a frenzy when the cell has too many prism"). Super-shielded mass is never
+        /// food (<see cref="Prism.AbsorbSuperShieldHit"/>).
         /// </summary>
-        static bool IsShieldedMass(Prism block)
+        public bool ShieldedMassIsFood => phase == CellPhase.Frenzy;
+
+        /// <summary>
+        /// The diet's shield rule in this cell, used for grid membership AND by every grazer
+        /// (<c>Fauna.IsInedibleShield</c>), so "not food" and "not a steering target" can never disagree:
+        /// super-shielded mass is never food; shielded mass is food only during a Frenzy (<see cref="ShieldedMassIsFood"/>).
+        /// </summary>
+        public bool IsInedibleShield(Prism block)
         {
             var props = block ? block.prismProperties : null;
-            return props != null && (props.IsShielded || props.IsSuperShielded);
+            if (props == null) return false;
+            if (props.IsSuperShielded) return true;
+            return props.IsShielded && !ShieldedMassIsFood;
+        }
+
+        // The Frenzy state the targeting grids were last filed under. Entering or leaving a Frenzy flips whether shielded
+        // mass is food, so every shielded prism is re-filed once at the edge (NotifyBlockShieldStateChanged, which is a
+        // no-op for every prism whose classification did not change). Rare: a cell crosses the Frenzy line a few times a
+        // match at most.
+        bool _shieldFoodFiled;
+        readonly List<Prism> _shieldRefile = new();
+
+        void SyncShieldFoodFiling()
+        {
+            bool food = ShieldedMassIsFood;
+            if (food == _shieldFoodFiled) return;
+            _shieldFoodFiled = food;
+            _shieldRefile.Clear();
+            foreach (var kv in trackedBlocks)
+            {
+                var props = kv.Key ? kv.Key.prismProperties : null;
+                if (props != null && props.IsShielded && !props.IsSuperShielded) _shieldRefile.Add(kv.Key);
+            }
+            for (int i = 0; i < _shieldRefile.Count; i++) NotifyBlockShieldStateChanged(_shieldRefile[i]);
+            _shieldRefile.Clear();
         }
 
         /// <summary>

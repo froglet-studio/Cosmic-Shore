@@ -18,7 +18,9 @@ WHAT IT MAKES
           AnglerVesselTransformer (the lure brake), cruise 40 u/s and boost x2.75 (110 u/s) - the lab's flight numbers;
         - the executors: every Stoat executor removed; AnglerCommandExecutor added (config, turn-end channel);
         - the bindings: A (Button1) Lure, B (Button2) Dash, X (Button3) Squad, Y (Button4Action) Recall. The Sling painter reads the two
-          TRIGGERS as analog depth, so neither trigger is bound to an action;
+          TRIGGERS as analog depth, so neither trigger is bound in the SHARED map; on a PHONE (no trigger depth; the owner,
+          2026-10-21: "one thumb controls like the other vessels") the TOUCH overrides bind RightStickAction to AnglerPaint and
+          LeftStickAction to AnglerErase, held cards read as a full pull (ANGLER.md "On a phone");
         - the AI: no blind ability cycle; the donor's boost policy kept (SkimRingAIPolicy, inert on a hull with no
           Squirrel tube bound - exactly as on the Stoat); no Angler autopilot yet (ANGLER.md follow-ups);
         - the HUD: AnglerHUDVariant (a copy of StoatHUDVariant: same internal fileIDs, the view swapped to
@@ -34,7 +36,7 @@ WHAT IT MAKES
     KEPT FROM THE DONOR ON PURPOSE: the two jets (now at the model's nacelle mouths), the tails, the hit box (StoatBody,
     1.2 x 1.4 x 7 - narrower than the model's bow, an open decision), the skimmer container and the shared prism /
     haptics effects the vessel container keeps.
-    Assets: AnglerConfig + the four control assets (VesselActions/Angler/), the camera, SO_Class_Angler, every new
+    Assets: AnglerConfig + the six control assets (VesselActions/Angler/: four buttons, two touch triggers), the camera, SO_Class_Angler, every new
     script's .meta, the doc's .meta. Registrations: Vessel Prefab Container (root TRANSFORM), DefaultNetworkPrefabs (root
     GAMEOBJECT), SO_Classlist_All / _Classes, four CrystalHullFusionConfig entries (copied from the Stoat's: same hull).
     NOT here (code, held by tests): the enum member, ToyVesselRoster.Default, EnumIntegrityTests.
@@ -121,7 +123,11 @@ OMNI_FAUNA = ("9a71c56e49ff4ee493c70be766f1b335", "d6d14731fd184959b837ab47e378f
 # layout (the designer, 2026-10-18); the squad pick and recall took the freed X and Y. The triggers (RightStickAction=1, LeftStickAction=2) stay unbound: the Sling
 # painter reads their analog depth from the replicated InputStatus. LB raises no event in the game, so it is unused.
 CONTROLS = (("AnglerLure", 0, 6), ("AnglerSquad", 1, 8), ("AnglerRecall", 2, 14), ("AnglerDash", 3, 7))
-CONTROL_GUID = {name: guid_for(name + ".asset") for name, _, _ in CONTROLS}
+# The triggers held as BUTTONS on a phone (no depth on glass): bound in the TOUCH overrides only, so a pad's analog
+# depth (the brush width, the 0.5 thresholds) is never raised to a binary 1. The cards press RightStickAction (Space,
+# Paint) and LeftStickAction (Charge, Erase / Lock-on) - Tools/Build/author_touch_profiles.py.
+TOUCH_CONTROLS = (("AnglerPaint", 4, 1), ("AnglerErase", 5, 2))
+CONTROL_GUID = {name: guid_for(name + ".asset") for name, _, _ in CONTROLS + TOUCH_CONTROLS}
 
 # Every script this vessel added: (path under Assets/_Scripts, guid).
 NEW_SCRIPTS = tuple((rel, guid_for(os.path.basename(rel))) for rel in (
@@ -215,12 +221,16 @@ def executor_block() -> str:
             f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_CHANNEL}, type: 2}}\n")
 
 
+def _entries(controls) -> str:
+    return "".join(f"  - InputEvent: {event}\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL_GUID[name]}, type: 2}}\n"
+                   for name, _, event in sorted(controls, key=lambda c: c[2]))
+
+
 def bindings() -> str:
-    """Shared (every device): the four buttons. The triggers are read as analog depth, never bound."""
-    out = "  _inputEventShipActions:\n"
-    for name, _, event in sorted(CONTROLS, key=lambda c: c[2]):
-        out += f"  - InputEvent: {event}\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL_GUID[name]}, type: 2}}\n"
-    return out + "  _resourceEventClassActions: []\n  _touchActionOverrides: []\n  _gamepadActionOverrides: []\n"
+    """Shared (every device): the four buttons. The triggers are read as analog depth, never bound there; on touch they
+    are held cards (TOUCH_CONTROLS) in the touch overrides."""
+    return ("  _inputEventShipActions:\n" + _entries(CONTROLS) + "  _resourceEventClassActions: []\n"
+            "  _touchActionOverrides:\n" + _entries(TOUCH_CONTROLS) + "  _gamepadActionOverrides: []\n")
 
 
 def hud_controller_block() -> str:
@@ -229,7 +239,8 @@ def hud_controller_block() -> str:
             "  _iconSetSwitcher: {fileID: 0}\n"
             f"  view: {{fileID: {HUD_VIEW_ID}}}\n"
             f"  angler: {{fileID: {EXECUTOR_ID}}}\n"
-            "  lureEaseRate: 6\n")
+            "  lureEaseRate: 6\n"
+            "  squadLabelTemplate: '{squad} x{count}'\n")
 
 
 def hull_blocks() -> str:
@@ -430,7 +441,8 @@ def config_asset() -> str:
             "  lockBiteReach: 6\n"
             "  omniFauna:\n" + "".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in OMNI_FAUNA) +
             f"  companionFauna: {{fileID: 11400000, guid: {KEEPER_SPECIES}, type: 2}}\n"
-            "  brushInterval: 0\n")
+            "  brushInterval: 0\n"
+            "  tameHueLean: 0.35\n")
 
 
 def omni_effect_asset() -> str:
@@ -577,7 +589,7 @@ def owned_files() -> "dict[str, str]":
         IMPACT_CONTAINER + ".meta": S.asset_meta(IMPACT_CONTAINER_GUID),
         MAP: map_asset(), MAP + ".meta": S.asset_meta(MAP_GUID),
     }
-    for name, value, _ in CONTROLS:
+    for name, value, _ in CONTROLS + TOUCH_CONTROLS:
         path = os.path.join(ACTIONS_DIR, name + ".asset")
         out[path] = control_asset(name, value)
         out[path + ".meta"] = S.asset_meta(CONTROL_GUID[name])
@@ -688,8 +700,12 @@ def check(files: "dict[str, str]") -> "list[str]":
     for name, _, event in CONTROLS:
         need(re.search(r"  - InputEvent: %d\n    ShipActions:\n    - \{fileID: 11400000, guid: %s, type: 2\}" % (event, CONTROL_GUID[name]), handler),
              f"{name} is not bound to InputEvents {event}")
-    need(not re.search(r"  - InputEvent: [12]\n", handler), "a trigger is bound to an action (the Sling painter reads their depth)")
-    need("_gamepadActionOverrides: []" in handler and "_touchActionOverrides: []" in handler, "device overrides must be empty (shared bindings)")
+    shared = re.search(r"  _inputEventShipActions:\n((?:  - .*\n|    .*\n)*)", handler)
+    need(shared and not re.search(r"  - InputEvent: [12]\n", shared.group(1)),
+         "a trigger is bound in the SHARED map (a pad's analog depth would be raised to a full pull; bind it in the touch overrides)")
+    need("_gamepadActionOverrides: []" in handler, "the gamepad overrides must be empty (the pad reads the triggers' depth)")
+    need(f"  _touchActionOverrides:\n{_entries(TOUCH_CONTROLS)}  _gamepadActionOverrides:" in handler,
+         "the touch overrides are not RightStickAction -> AnglerPaint, LeftStickAction -> AnglerErase (a phone could not paint or erase)")
     dangling = S.dangling_refs(prefab)
     need(not dangling, f"{len(dangling)} dangling local reference(s): {dangling[:5]}")
 
@@ -712,8 +728,9 @@ def check(files: "dict[str, str]") -> "list[str]":
     need(f"  followOffset: {{x: 0, y: {CHASE_UP}, z: -{CHASE_BACK}}}\n" in files.get(CAMERA, ""),
          f"AnglerCameraSettingsSO.followOffset is not the lab's chase (0, {CHASE_UP}, -{CHASE_BACK})")
     cfg = files.get(CONFIG_PATH, "")
-    for key in ("brushNear", "dashFrac", "dashTime", "cameraLift", "cameraLiftTime", "paintedPreference", "lureGrowth", "faunaSpeed", "lockBiteCooldown", "lockBiteReach"):
-        need(re.search(r"^  %s:" % key, cfg, re.M), f"AnglerConfig has no {key} (rounds 3-4; re-seed it or add the line)")
+    for key in ("brushNear", "dashFrac", "dashTime", "cameraLift", "cameraLiftTime", "paintedPreference", "lureGrowth", "faunaSpeed", "lockBiteCooldown", "lockBiteReach",
+                "tameHueLean"):
+        need(re.search(r"^  %s:" % key, cfg, re.M), f"AnglerConfig has no {key} (rounds 3-4, the school's mark; re-seed it or add the line)")
     need(len(re.findall(r"^  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}$", cfg.split("  omniFauna:")[-1].split("  companionFauna:")[0], re.M)) > 0,
          "AnglerConfig's omniFauna is empty - an omni crystal could morph into nothing")
     for path, (_, script, name) in SEEDED.items():
@@ -810,6 +827,8 @@ def self_test() -> int:
         "a Stoat executor left behind": (PREFAB, lambda t: t.replace(SCRIPT["AnglerCommandExecutor"], "6eee000b02734120a5138fb645997915")),
         "the Stoat's flight back": (PREFAB, lambda t: t.replace(f"  DefaultThrottleScaler: {CRUISE}\n", "  DefaultThrottleScaler: 60\n")),
         "a trigger bound": (PREFAB, lambda t: t.replace("  - InputEvent: 6\n", "  - InputEvent: 1\n", 1)),
+        "paint not on touch": (PREFAB, lambda t: t.replace(CONTROL_GUID["AnglerPaint"], CONTROL_GUID["AnglerErase"], 1)),
+        "touch overrides cleared": (PREFAB, lambda t: re.sub(r"  _touchActionOverrides:\n(?:  - .*\n|    .*\n)*", "  _touchActionOverrides: []\n", t, count=1)),
         "unregistered from the container": (CONTAINER, lambda t: t.replace(PREFAB_GUID, "0" * 32)),
         "Lure unbound": (PREFAB, lambda t: t.replace(CONTROL_GUID["AnglerLure"], "f" * 32)),
         "fusion entries missing": (FUSION, lambda t: t.replace(f"  - vessel: {CLASS_ID}\n", "  - vessel: 99\n")),

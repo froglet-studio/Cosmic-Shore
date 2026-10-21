@@ -86,11 +86,13 @@ def _files(icon, inactive, silhouette, large, hangar):
 VESSELS = {
     "Butterfly": {"fbx": MODELS + "Butterfly.fbx", "roles": FLEET_SLOTS},
     "Angler": {"fbx": MODELS + "Angler.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_angler_assets.py"},
+    "Starling": {"fbx": MODELS + "Starling.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_starling_assets.py"},
     "BrittleStar": {"fbx": MODELS + "BrittleStar.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_brittlestar_assets.py"},
     "Scarab": {"fbx": MODELS + "Scarab.fbx", "roles": FLEET_SLOTS},
     "Shrike": {"fbx": MODELS + "Shrike.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_shrike_assets.py"},
     "Stoat": {"fbx": MODELS + "Stoat.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_stoat_assets.py"},
     "Thresher": {"fbx": MODELS + "Thresher.fbx", "roles": FLEET_SLOTS},
+    "Marlin": {"fbx": MODELS + "Marlin.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_marlin_assets.py"},
     # the artist hulls: rendered in place over the files their class assets (and other UI) already reference
     "Squirrel": {"fbx": MODELS + "SquirrelVessel_CosmicShoresTest1.fbx", "roles": FLEET_SLOTS},
     "Dolphin": {"fbx": MODELS + "dolphin_shapekey_with_animations.fbx", "roles": ARTIST_SLOTS,

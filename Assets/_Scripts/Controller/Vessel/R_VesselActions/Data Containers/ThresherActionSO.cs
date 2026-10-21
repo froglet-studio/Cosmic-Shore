@@ -13,9 +13,14 @@ namespace CosmicShore.Gameplay
     /// release = reel in fast (the crack).</item>
     /// <item><see cref="ThresherControl.Plant"/> (left trigger): hold = plant the ball and swing round
     /// it; release = fly off, the ball yanked after you.</item>
-    /// <item><see cref="ThresherControl.MassMode"/> (A): each PRESS toggles Mass Mode; the release
+    /// <item><see cref="ThresherControl.MassMode"/> (A): each PRESS toggles Mass Mode (the hull spawns
+    /// in it); the release
     /// does nothing (rule 37: a press-and-forget toggle must ignore the release, or an AI's
     /// zero-length press would toggle it straight back).</item>
+    /// <item><see cref="ThresherControl.TouchLaunch"/> (a phone's <c>IdleAction</c>, bound in the TOUCH map only):
+    /// press = both thumbs off - off a planted spin the triggers read as both full, so the launch view
+    /// comes up, aimed by tilting the phone; release = a thumb back on the glass, the pad's LT let-go
+    /// (it arms the aimed launch). See <see cref="ThresherTouchLaunch"/>.</item>
     /// </list>
     ///
     /// Release semantics are REAL for both triggers (rule 37: they are holds, not press-and-forget),
@@ -31,11 +36,14 @@ namespace CosmicShore.Gameplay
             Winch = 0,
             Plant = 1,
             MassMode = 2,
+            TouchLaunch = 3,
         }
 
         [Tooltip("Winch = right trigger (hold to let chain out, release to reel in and crack). " +
                  "Plant = left trigger (hold to plant the ball and swing round it, release to fly off). " +
-                 "MassMode = A (each press toggles Mass Mode; the release is ignored).")]
+                 "MassMode = A (each press toggles Mass Mode; the release is ignored). " +
+                 "TouchLaunch = a phone's IdleAction (both thumbs off a planted spin = both triggers full, the " +
+                 "launch view aimed by tilt; a thumb back down = the let-go that launches). Bind it in the touch map only.")]
         [SerializeField] ThresherControl control = ThresherControl.Winch;
 
         public override void StartAction(ActionExecutorRegistry executors, IVesselStatus status)
@@ -47,6 +55,7 @@ namespace CosmicShore.Gameplay
                 case ThresherControl.Winch: thresher.BeginPayOut(); break;
                 case ThresherControl.Plant: thresher.BeginPlant(); break;
                 case ThresherControl.MassMode: thresher.ToggleMassMode(); break;
+                case ThresherControl.TouchLaunch: thresher.BeginTouchLaunchHold(); break;
             }
         }
 
@@ -58,6 +67,7 @@ namespace CosmicShore.Gameplay
             {
                 case ThresherControl.Winch: thresher.EndPayOut(); break;
                 case ThresherControl.Plant: thresher.EndPlant(); break;
+                case ThresherControl.TouchLaunch: thresher.EndTouchLaunchHold(); break;
                 // MassMode: a toggle - the release means nothing.
             }
         }

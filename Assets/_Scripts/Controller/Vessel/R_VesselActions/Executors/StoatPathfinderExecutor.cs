@@ -183,7 +183,8 @@ namespace CosmicShore.Gameplay
             var response = new StoatDipoleMath.HullResponse
             {
                 Enabled = true,
-                NoseFollowRate = VesselTransformer.RotationFollowRate,
+                // THIS hull's rate: a human pilot's nose has no lag (infinite rate), an AI's keeps the fleet's.
+                NoseFollowRate = transformer.NoseFollowRate,
                 SpeedFollowRate = VesselTransformer.RotationFollowRate,
                 // The target in the same units as `engine` (the published speed carries the speed multiplier and warp field).
                 TargetSpeed = target * transformer.SpeedMultiplier * WarpFieldRuntime.ScaleAt(hull.position),

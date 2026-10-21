@@ -419,6 +419,39 @@ cannot be traced.) The scalar path's boost-cancel cliff described above is real 
 
 ---
 
+## 2b. On a phone (2026-10-21)
+
+Garrett, 2026-10-21: *"the dolphin can combine the scope and the drift into one when you lift either
+thumb. you can still fly with one thumb ... the only thing you lose is the roll axis rotation but we
+can recover that with the phone's gyro."*
+
+| Pad | Phone |
+| --- | --- |
+| LT (held) = drift + charge boost + drift trail | lift **either** thumb = drift + charge boost + drift trail **+ Echo Sight**, together |
+| RT (held) = Echo Sight | (same lift) |
+| release LT = discharge (the boost) | put the thumb back = discharge (the boost), Echo off |
+| right stick = roll | while one thumb flies, **turn the phone like a wheel** = roll (`TouchControlProfile.tiltRollOnOneThumb`) |
+
+- **Binding.** `Dolphin.prefab` `_touchActionOverrides`: `LeftStickAction (2)` and `RightStickAction (1)` both run
+  `[DolphinDriftAction, ChargeBoostAction, DriftTrailAction, EchoSightAction]` (guids `51198b11…`, `ab7bab2c…`,
+  `ca0139e3…`, `b58d21e7…`, the shared map's own assets). `TouchInputStrategy` raises `LeftStickAction` when the
+  RIGHT thumb lifts (the left flies on) and `RightStickAction` when the LEFT lifts, so either lift is the whole kit.
+  `OnlyLeft/OnlyRightStickAction` (raised on the same lift) are deliberately NOT bound - that would start everything
+  twice. The pad and keyboard are untouched (no touch override reaches them).
+- **Every action is a press/release pair**: the drift (`DriftActionSO` → `VesselTransformer.BeginDrift/EndDrift`,
+  flag-based, idempotent), the charge (`ChargeBoostActionExecutor.BeginCharge` on the lift → `BeginDischarge` when the
+  thumb returns, which is the boost), the trail (`DriftTrailActionExecutor.Begin/End`, idempotent) and Echo Sight
+  (`EchoSightActionExecutor.Engage/Release`, a bool). Echo Sight held through a drift is the pad's LT+RT, which a pad
+  pilot can already hold. Lifting the second thumb (one → none) releases all four (`StopStickEffects`) before idle.
+- **Drift depth on a phone is a full pull**: `VesselTransformer.GetTriggerSum` reads an analog trigger only for a
+  Gamepad; every other device drifts at the action's full authored `Mult` (binary, eased in and out).
+- **AI on a phone host.** An AI's input status reads the host's device (or `Touch`, the enum's zero), so an AI Dolphin
+  on a phone resolves through these overrides too: its commit drift (`AIPilot.CommitControl` = `LeftStickAction`)
+  now also lights Echo Sight, and its telegraph lookup (`TryGetInputForAction<IAimTelegraphAction>`) answers
+  `LeftStickAction` - the same control - so the replicated telegraph press re-starts the drift/charge/trail it already
+  holds (all idempotent; the charge restarts from its banked units, one extra boost SFX on release). Behaviour is the
+  same drift-and-announce beat; worth a look in an Android single-player match with AI Dolphins.
+
 ## 3. The hull reads out the blast
 
 `RiptideAnimation` opens the model's jaws with Energy, so a pilot can see how wide their next

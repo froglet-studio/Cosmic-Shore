@@ -111,6 +111,11 @@ namespace CosmicShore.Gameplay
                 if (dist > so.Range || dist < 0.01f) continue;
                 if (Vector3.Dot(to / dist, forward) < cosLimit) continue;
 
+                // Super-shielded mass cannot burn; the flame still lands on it, visibly - the
+                // deflection jiggle - and spends no ignite on it (Docs/LIT.md, "dynamic contact
+                // never does nothing").
+                if (prism.AbsorbSuperShieldHit(0f)) continue;
+
                 burn.Ignite(prism, status.PlayerName, status.Domain, convert);
                 ignited++;
             }

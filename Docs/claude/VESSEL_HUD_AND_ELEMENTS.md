@@ -167,6 +167,11 @@ geometry re-point. The printed procedure ends by clearing the animation's part f
 > `lavaDrift`, `lavaPeriod`, `lavaMotion` off = still colour, no per-frame work). Mockups: the canvas's Rev 3 page,
 > `R3Hud<Vessel>` boards.
 
+> **Every card is its ability's button (2026-10-19, Garrett).** A finger on a pressable card presses the control its
+> chip names and lifting releases (`AbilityCardPress`); locked, passive (`Input: 0`) and gesture cards are not
+> pressable, and a touch that starts on a card is not a flight thumb (`FlightTouchClaims`). `Docs/ABILITY_LOCKUP.md`
+> "Tap a card".
+
 Every vessel HUD shows **exactly four ELEMENTAL ability icons in the lower right — one per element** —
 and the order is not a layout preference, it is the element contract made visible:
 

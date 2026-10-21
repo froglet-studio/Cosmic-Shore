@@ -137,6 +137,11 @@ namespace CosmicShore.Gameplay
             var velocity = PrismEffectHelper.ContactVelocity(
                 impactor, status, prism.transform.position, swingVelocityScale, maxImpactSpeed);
 
+            // A SILENCED pilot's blade still swings and still connects, but cuts no rival mass,
+            // pops no shield and banks no energy for it (VesselSilence). Asked first, because the
+            // shield pops below act before any Damage call could refuse them.
+            if (prism.DeflectsSilenced(status.PlayerName, velocity.magnitude)) return;
+
             if (IsSuperShield(prismImpactee))
             {
                 // The supershield key: only an ENERGIZED blade pops hardened mass. With no

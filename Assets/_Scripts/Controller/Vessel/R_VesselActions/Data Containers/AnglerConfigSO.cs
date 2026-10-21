@@ -98,6 +98,10 @@ namespace CosmicShore.Gameplay
         [Header("Presentation (game only: the lab draws its own)")]
         [Tooltip("How often the brush re-reads the prisms under it while a trigger is held (s). The lab paints every frame; 0 does the same here.")]
         [SerializeField, Min(0f)] float brushInterval = 0f;
+        [Tooltip("The school's mark: how far (0..1 of the way round the hue circle) a tamed creature's spindles lean toward " +
+                 "the Angler's domain hue, so its school reads as its own (Garrett, 2026-10-21: \"a slight hue shift in your " +
+                 "domain ... do the same thing for other tamer classes like the angler\"). 0 = no mark.")]
+        [SerializeField, Range(0f, 1f)] float tameHueLean = 0.35f;
 
         public float LureAhead => lureAhead;
         public float LureCruise => lureCruise;
@@ -133,5 +137,6 @@ namespace CosmicShore.Gameplay
         public float LockBiteReach => lockBiteReach;
         public IReadOnlyList<FaunaConfigurationSO> OmniFauna => omniFauna;
         public float BrushInterval => brushInterval;
+        public float TameHueLean => tameHueLean;
     }
 }

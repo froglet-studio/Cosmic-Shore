@@ -151,7 +151,9 @@ namespace CosmicShore.Gameplay
         // leashed, a creature steers where its holder says and eats only the prism its holder orders, re-checked by its
         // OWN edibility rule and eaten by its OWN mouthful. Behaviour only: nothing is spawned, killed or recoloured, the
         // starvation clock keeps running, and the cell's pens still clamp every goal (Goal's setter). One holder at a
-        // time; only the peer that SIMULATES the creature can leash it (a puppet's pose is replicated).
+        // time; only the peer that SIMULATES the creature can leash it (a puppet's pose is replicated). Its one visual is
+        // the holder's MARK (IFaunaLeash.TryGetLeashMark): the spindles lean toward the holder's domain hue, replicated
+        // to puppets by FaunaNetworkSync; its domain, body prisms and diet are untouched.
 
         /// <summary>The holder steering this creature, or null when it is wild.</summary>
         public IFaunaLeash Leash { get; private set; }
@@ -179,16 +181,53 @@ namespace CosmicShore.Gameplay
                 var previous = Leash;
                 Leash = holder;
                 previous.Released(this);
+                ShowLeashMark();
                 return true;
             }
             Leash = holder;
+            ShowLeashMark();
             return true;
         }
 
         /// <summary>Let go (a no-op unless <paramref name="holder"/> holds it). The holder's own release, so it is not told.</summary>
         public void Unleash(IFaunaLeash holder)
         {
-            if (ReferenceEquals(Leash, holder)) Leash = null;
+            if (!ReferenceEquals(Leash, holder)) return;
+            Leash = null;
+            if (!_diedThisLife) ShowLeashMark();
+        }
+
+        /// <summary>
+        /// Wear the holder's mark, or none when wild, and publish it to the puppets. On the simulating peer. A dying
+        /// creature keeps the mark it died in, so its wither does not change colour (<see cref="DropLeash"/> leaves it).
+        /// </summary>
+        void ShowLeashMark()
+        {
+            Domains markDomain = default;
+            float lean = 0f;
+            if (Leash == null || !Leash.TryGetLeashMark(out markDomain, out lean)) lean = 0f;
+            ApplyLeashMark(markDomain, lean);
+            var sync = NetSync;
+            if (sync) sync.PublishLeashMark(markDomain, lean);
+        }
+
+        static readonly List<Spindle> s_markSpindles = new();
+
+        /// <summary>
+        /// The leash's mark (Garrett, 2026-10-21: "distinguish them by giving their spindles a slight hue shift in your
+        /// domain"): every spindle's colours lean <paramref name="lean"/> of the way toward <paramref name="markDomain"/>'s
+        /// prism hue; 0 takes the mark off. Presentation only. Called by the leash on the simulating peer and by
+        /// <see cref="FaunaNetworkSync"/> on a puppet.
+        /// </summary>
+        public void ApplyLeashMark(Domains markDomain, float lean)
+        {
+            var colors = PrismLit.ColorSet;
+            Color hue = default;
+            bool on = lean > 0f && colors && colors.TryGetPrismKindColors(markDomain, PrismKind.Plain, out hue, out _);
+            GetComponentsInChildren(true, s_markSpindles);
+            for (int i = 0; i < s_markSpindles.Count; i++)
+                if (s_markSpindles[i]) s_markSpindles[i].SetHueLean(hue, on ? lean : 0f);
+            s_markSpindles.Clear();
         }
 
         /// <summary>The creature's own release: it is dying or being destroyed. The holder is told so it drops it.</summary>
@@ -311,7 +350,7 @@ namespace CosmicShore.Gameplay
         float _surrenderedMeal;
 
         /// <summary>True once metabolism has burned this creature's stomach to zero (never with starvationSeconds 0), unless
-        /// its leash holder SUSTAINS it (<see cref="IFaunaLeash.Sustains"/>: the Angler's keeper, the one fenced exception).</summary>
+        /// its leash holder SUSTAINS it (<see cref="IFaunaLeash.Sustains"/>: the Angler's keeper and a herd's floor, the fenced exceptions).</summary>
         protected bool IsStarving => _stomachLive && _stomach.IsEmpty(Time.time) && !(Leash != null && Leash.Sustains(this));
 
         /// <summary>The stomach's current contents in prism volume (0 before the creature comes alive).</summary>
@@ -530,8 +569,12 @@ namespace CosmicShore.Gameplay
             // The cap is the CELL's, not the config's: a biome that scales its population
             // (SpawnProfileSO.FaunaPopulationScale) has to scale what reproduction may fill to,
             // or the seeder and the food web would be working to two different ceilings.
+            // A herd's holder scales the feeds a birth takes (IFaunaHerd: Marlin and Jacks' Mass element).
+            int feedsPerOffspring = Leash is IFaunaHerd herd
+                ? Mathf.Max(1, Mathf.RoundToInt(cfg.FeedsPerOffspring * Mathf.Max(0f, herd.FeedsPerOffspringScale(this))))
+                : cfg.FeedsPerOffspring;
             if (!FaunaReproductionRules.ShouldBirth(
-                    _feedsSinceBirth, cfg.FeedsPerOffspring,
+                    _feedsSinceBirth, feedsPerOffspring,
                     Time.time - _lastBirthTime, cfg.ReproductionCooldownSeconds,
                     host.GetLiveFaunaCount(cfg), host.ResolveFaunaCap(cfg)))
                 return;
@@ -546,11 +589,13 @@ namespace CosmicShore.Gameplay
                 // overshoot the performance backstop.
                 if (host.IsFaunaAtCap(cfg))
                     break;
-                SpawnOffspring(host, cfg);
+                var child = SpawnOffspring(host, cfg);
+                // A herded creature's offspring is born into the herd (IFaunaHerd.Born).
+                if (child && Leash is IFaunaHerd herdHolder) herdHolder.Born(this, child);
             }
         }
 
-        void SpawnOffspring(Cell host, FaunaConfigurationSO cfg)
+        Fauna SpawnOffspring(Cell host, FaunaConfigurationSO cfg)
         {
             Vector3 pos = transform.position + Random.insideUnitSphere * OffspringSpawnJitter;
             var child = Instantiate(cfg.FaunaPrefab, pos, Quaternion.identity);
@@ -569,6 +614,7 @@ namespace CosmicShore.Gameplay
             // AFTER AssignLineage: the lineage bind is what settles this child's element, and
             // the spawn payload carries that identity to every peer.
             FaunaNetworkSync.ServerSpawn(child);
+            return child;
         }
 
         protected virtual void OnDestroy()
@@ -776,6 +822,27 @@ namespace CosmicShore.Gameplay
         {
             var properties = prism ? prism.prismProperties : null;
             return properties != null && (properties.IsShielded || properties.IsSuperShielded);
+        }
+
+        /// <summary>
+        /// The shield half of THIS creature's diet: true when <paramref name="prism"/> carries a shield it may not eat
+        /// through. Every grazer's edibility predicate routes through here (not <see cref="IsShieldedMass"/>), so the two
+        /// exceptions apply everywhere at once:
+        /// <list type="bullet">
+        /// <item>its cell is in a <b>Frenzy</b> (<see cref="Cell.ShieldedMassIsFood"/>; the designer, 2026-10-21: "in general
+        /// shielded prisms should be food during a frenzy when the cell has too many prism");</item>
+        /// <item>its herd's holder lets it eat shields (<see cref="IFaunaHerd.EatsShields"/>: Marlin and Jacks at Space 5).</item>
+        /// </list>
+        /// Super-shielded mass is never food. A shielded prism that is food is eaten whole: the grazer consumes it with
+        /// <c>devastate</c> (<see cref="Prism.Consume"/> otherwise only sheds the shield).
+        /// </summary>
+        protected bool IsInedibleShield(Prism prism)
+        {
+            if (!IsShieldedMass(prism)) return false;
+            if (prism.prismProperties.IsSuperShielded) return true;
+            var c = cell;
+            if (c && c.ShieldedMassIsFood) return false;
+            return !(Leash is IFaunaHerd herd && herd.EatsShields(this));
         }
 
         /// <summary>
@@ -1331,6 +1398,11 @@ namespace CosmicShore.Gameplay
             // Who eats whom is the server's call; a puppet predator never reaches here either
             // (its hunting tick is gated), so this is the belt to that braces.
             if (!IsSimAuthority) return false;
+
+            // A SILENCED pilot harms no creature (VesselSilence): a joust, a ripple or a black hole
+            // that names a silenced pilot as the killer lets the creature live. Creature predators
+            // are never silenced - only pilots are - so the food web is untouched.
+            if (VesselSilence.IsSilenced(predatorName)) return false;
 
             // ALREADY DEAD - a corpse is not prey. Die() is sealed but NOT idempotent: it
             // re-raises ReportKill (a second LifeformsKilled credit for one creature) and,

@@ -34,8 +34,9 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>Writes poses directly, not through the base's lerp helpers</b> — the
     /// <see cref="ButterflyAnimation"/> lesson: those lag a 0.66 Hz bound into a fraction of its
-    /// authored amplitude. The lope is already a smooth function of time; the stick terms are
-    /// pre-eased by the input layer.</para>
+    /// authored amplitude. The lope is already a smooth function of time; the stick term is eased HERE
+    /// (<c>stickEaseRate</c>), because on a phone lifting the thumb is an instant <c>Idle()</c> that never
+    /// sees the input layer's eased stick (vessel skill rule 53).</para>
     /// </summary>
     public class StoatAnimation : VesselAnimation
     {
@@ -68,6 +69,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float tailLift = 0.45f;
         [Tooltip("Degrees the legs reach fore and aft at the landing.")]
         [SerializeField] float legReachDegrees = 52f;
+        [Tooltip("How fast the stick terms (spine bend, head turn, tail swing) ease to the stick, per second. Keeps a " +
+                 "touch lifting off the screen from snapping a full-stick bend straight in one frame.")]
+        [SerializeField, Min(0.1f)] float stickEaseRate = 10f;
 
         [Header("Hull")]
         [Tooltip("The transform the lope lifts, pitches and stretches (and the tide spaghettifies): the GameObject " +
@@ -111,6 +115,7 @@ namespace CosmicShore.Gameplay
         Vector3 _headRest, _headLocal;
         Quaternion _headRestRot, _headLocalRot;
         float _phase;
+        float _yawEased;                 // the stick, eased here: Idle() never sees the input layer's eased stick
 
         // ---- procedural element morphs (the ButterflyAnimation plumbing, verbatim in shape) ----
         readonly float[] _morphWeights = new float[4];      // StoatHullForm.MorphElements order
@@ -292,7 +297,8 @@ namespace CosmicShore.Gameplay
             _phase += StoatLopeMath.PhaseRate(lope, speed01) * Time.deltaTime;
             if (_phase > Mathf.PI * 64f) _phase -= Mathf.PI * 64f;   // keep the float small; sin² has period π
             var pose = StoatLopeMath.Evaluate(lope, _phase, speed01);
-            yaw = Mathf.Clamp(yaw, -1f, 1f);
+            _yawEased = Mathf.Lerp(_yawEased, Mathf.Clamp(yaw, -1f, 1f), 1f - Mathf.Exp(-stickEaseRate * Time.deltaTime));
+            yaw = _yawEased;
 
             // The whole drawn hull: lift, pitch, stretch (volume kept). The vessel's transform is untouched.
             _hullTransform.localPosition = _hullRestPos + Vector3.up * pose.BodyLift;
@@ -359,6 +365,7 @@ namespace CosmicShore.Gameplay
             ResetParts(_tail, _tailLocal, _tailLocalRot);
             ResetParts(_legs, _legLocal, _legLocalRot);
             if (_head) { _head.localPosition = _headLocal; _head.localRotation = _headLocalRot; }
+            _yawEased = 0f;
         }
 
         void ResetParts(Transform[] parts, Vector3[] local, Quaternion[] localRot)

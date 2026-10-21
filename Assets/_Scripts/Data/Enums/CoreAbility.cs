@@ -52,5 +52,14 @@ namespace CosmicShore.Data
         /// for.</para>
         /// </summary>
         OmniCrystal = 2,
+
+        /// <summary>
+        /// What a passive vessel is going for right now, and how long it has left: the Starlings' phase objective
+        /// (<c>R_VesselActions/STARLING.md</c> §5). Its icon is the phase's target and drains as the phase timer runs
+        /// out. Bound to no input (the passive sentinel), so the card draws no control chip and is not pressable; it has
+        /// no emblem, so it is a bare plate like the drift's. It sits between the drift and the omni crystal, so on a hull
+        /// that binds it the card is directly left of the omnicrystal's.
+        /// </summary>
+        Objective = 3,
     }
 }

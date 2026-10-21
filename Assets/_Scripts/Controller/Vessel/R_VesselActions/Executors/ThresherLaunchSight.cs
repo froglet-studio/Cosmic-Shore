@@ -140,7 +140,7 @@ namespace CosmicShore.Gameplay
         /// Show and advance the sight. <paramref name="launchPoint"/> / <paramref name="aim"/> /
         /// <paramref name="aimUp"/> are the launch trajectory and its "up"; <paramref name="fieldOfView"/>
         /// the window's vertical FOV (a pure function of the trigger); <paramref name="tint"/> the
-        /// crosshairs' colour (lime while the release timing is right).
+        /// crosshairs' colour.
         /// </summary>
         public void Tick(Vector3 launchPoint, Vector3 aim, Vector3 aimUp, float fieldOfView, Color tint)
         {

@@ -20,6 +20,7 @@ OUT=$(mktemp -d)
   Tools/Build/thresher_chain_harness/Stubs.cs \
   Tools/Build/thresher_chain_harness/Driver.cs \
   Assets/_Scripts/Controller/Vessel/ThresherChainSolver.cs \
+  Assets/_Scripts/Controller/Vessel/ThresherTouchLaunch.cs \
   Assets/_Scripts/Tests/Editor/ThresherChainSolverTests.cs \
   Assets/_Scripts/Tests/Editor/ThresherAnalogTriggerTests.cs
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$VER" \

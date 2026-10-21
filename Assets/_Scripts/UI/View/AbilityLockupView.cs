@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using TMPro;
 using DG.Tweening;
@@ -81,6 +82,22 @@ namespace CosmicShore.UI
             public bool Upgraded;
             public bool HasTint;        // rev 3: the card wears its element's colour
             public Color Tint;
+            public AbilityCardPress Press;   // a tap on the card presses its ability
+            public RectTransform Host;       // what the row positions (the card hangs off it)
+            public int Index;                // its row slot, for RestoreRowLayout
+            public int Count;
+            public Image TouchGlyph;         // the thumb-lift glyph a phone draws in the chip socket
+        }
+
+        /// <summary>One card, as the phone controls (<c>TouchControlsHud</c>) see it.</summary>
+        public struct CardInfo
+        {
+            public bool IsCore;
+            public Element Element;
+            public CoreAbility Core;
+            public RectTransform Host;
+            public AbilityCardPress Press;
+            public bool Locked;
         }
 
         /// <summary>One drifting colour blob of the rev 3 lava lamp, behind a card's icon.</summary>
@@ -164,6 +181,50 @@ namespace CosmicShore.UI
             return Mathf.Max(size.x, size.y);
         }
 
+        static readonly Vector3[] s_corners = new Vector3[4];
+
+        /// <summary>
+        /// The screen rectangle, in pixels, that the built cards cover together AT REST - so a view or an input can keep
+        /// clear of the totems (the Wrasse's hand line sits just above it). Each card is measured without its own scale and
+        /// rotation, so its press and upgrade tweens do not move the answer. False before <see cref="Build"/>, or while no
+        /// card is showing. A question, not a demand: a miss is an answer.
+        /// </summary>
+        public bool TryGetCardsScreenRect(out Rect rect)
+        {
+            rect = default;
+            if (!_built) return false;
+            var canvas = GetComponentInParent<Canvas>();
+            var root = canvas ? canvas.rootCanvas : null;
+            Camera cam = root && root.renderMode != RenderMode.ScreenSpaceOverlay ? root.worldCamera : null;
+            bool any = false;
+            float xMin = float.MaxValue, yMin = float.MaxValue, xMax = float.MinValue, yMax = float.MinValue;
+            foreach (var slot in _slots.Values) Grow(slot.Card, cam, ref any, ref xMin, ref yMin, ref xMax, ref yMax);
+            foreach (var slot in _coreSlots.Values) Grow(slot.Card, cam, ref any, ref xMin, ref yMin, ref xMax, ref yMax);
+            if (any) rect = Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+            return any;
+        }
+
+        static void Grow(RectTransform card, Camera cam, ref bool any, ref float xMin, ref float yMin, ref float xMax, ref float yMax)
+        {
+            if (!card || !card.gameObject.activeInHierarchy) return;
+            // the card's rect placed at its pivot in its parent, leaving out its own (tweened) scale and rotation
+            var r = card.rect;
+            var at = card.localPosition;
+            var parent = card.parent;
+            s_corners[0] = at + new Vector3(r.xMin, r.yMin, 0f);
+            s_corners[1] = at + new Vector3(r.xMin, r.yMax, 0f);
+            s_corners[2] = at + new Vector3(r.xMax, r.yMax, 0f);
+            s_corners[3] = at + new Vector3(r.xMax, r.yMin, 0f);
+            for (int i = 0; i < 4; i++)
+            {
+                var world = parent ? parent.TransformPoint(s_corners[i]) : s_corners[i];
+                var p = RectTransformUtility.WorldToScreenPoint(cam, world);
+                xMin = Mathf.Min(xMin, p.x); xMax = Mathf.Max(xMax, p.x);
+                yMin = Mathf.Min(yMin, p.y); yMax = Mathf.Max(yMax, p.y);
+            }
+            any = true;
+        }
+
         /// <summary>The flower socket for an element, if a card was built for it.</summary>
         public RectTransform GetFlowerSocket(Element element)
             => _slots.TryGetValue(element, out var slot) ? slot.FlowerSocket : null;
@@ -182,6 +243,86 @@ namespace CosmicShore.UI
         /// <summary>True when this slot's ability does not exist yet (no icon bound).</summary>
         public bool IsSlotLocked(Element element)
             => _slots.TryGetValue(element, out var slot) && slot.Locked;
+
+        // ---------------------------------------------------------------
+        // Phone controls (TouchControlsHud, Docs/Reports/MOBILE_VESSELS.md)
+        // ---------------------------------------------------------------
+
+        /// <summary>Every card of the row, elemental then non-elemental.</summary>
+        public void GetCards(List<CardInfo> into)
+        {
+            into.Clear();
+            foreach (var pair in _slots)
+                into.Add(new CardInfo { Element = pair.Key, Host = pair.Value.Host, Press = pair.Value.Press,
+                                        Locked = pair.Value.Locked });
+            foreach (var pair in _coreSlots)
+                into.Add(new CardInfo { IsCore = true, Core = pair.Key, Host = pair.Value.Host,
+                                        Press = pair.Value.Press, Locked = pair.Value.Locked });
+        }
+
+        /// <summary>The row the cards hang off (bottom-right of the HUD root).</summary>
+        public RectTransform Row => transform.Find("AbilityLockupRow") as RectTransform;
+
+        /// <summary>A card's width in canvas units, at host scale 1.</summary>
+        public float CardWidth => ResolveStyle() ? style.plateWidth : 104f;
+
+        /// <summary>A full totem's height (element plate, gap, ability plate) in canvas units.</summary>
+        public float CardHeight => ResolveStyle() ? style.PlateHeight : 182f;
+
+        /// <summary>How far above its host's centre a full totem's centre sits, in canvas units at scale 1.</summary>
+        public float CardCentreAboveHost => ResolveStyle() ? style.CardCenterOffsetY : 47f;
+
+        /// <summary>A colour for a button that is not an element's (the drift colour).</summary>
+        public Color NeutralColour => ResolveStyle() ? style.driftColour : Color.white;
+
+        public Color ColourFor(Element element) => ResolveStyle() ? style.ColourFor(element) : Color.white;
+
+        /// <summary>Puts every card back where the fleet row puts it, at scale 1 - undoing a phone layout.</summary>
+        public void RestoreRowLayout()
+        {
+            var row = Row;
+            if (!row || !ResolveStyle()) return;
+            foreach (var slot in _slots.Values)
+                if (slot.Host) PlaceHost(row, slot.Host, slot.Index, slot.Count);
+            foreach (var slot in _coreSlots.Values)
+                if (slot.Host) PlaceHost(row, slot.Host, slot.Index, slot.Count);
+        }
+
+        /// <summary>The touch gesture a card's ability is on, drawn in its chip socket. Null clears it.</summary>
+        public void SetTouchGlyph(Element element, Sprite glyph)
+        {
+            if (_slots.TryGetValue(element, out var slot)) SetSlotTouchGlyph(slot, glyph);
+        }
+
+        /// <summary>The same for a non-elemental card (the Squirrel's drift).</summary>
+        public void SetCoreTouchGlyph(CoreAbility ability, Sprite glyph)
+        {
+            if (_coreSlots.TryGetValue(ability, out var slot)) SetSlotTouchGlyph(slot, glyph);
+        }
+
+        void SetSlotTouchGlyph(Slot slot, Sprite glyph)
+        {
+            if (!slot.ChipSocket) return;
+            if (!glyph)
+            {
+                if (slot.TouchGlyph) slot.TouchGlyph.enabled = false;
+                return;
+            }
+            if (!slot.TouchGlyph)
+            {
+                slot.TouchGlyph = ResolveChildImage(slot.ChipSocket, "TouchGlyph", null);
+                var rt = slot.TouchGlyph.rectTransform;
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = Vector2.zero;
+                float side = style.chipHeight * 1.8f;
+                rt.sizeDelta = new Vector2(side, side);
+                slot.TouchGlyph.preserveAspect = true;
+                slot.TouchGlyph.raycastTarget = false;
+            }
+            slot.TouchGlyph.sprite = glyph;
+            slot.TouchGlyph.color = slot.HasTint ? slot.Tint : Color.white;
+            slot.TouchGlyph.enabled = true;
+        }
 
         // ---------------------------------------------------------------
         // Build
@@ -235,6 +376,16 @@ namespace CosmicShore.UI
             // The NON-elemental cards first, at NEGATIVE slot indices, so they land one pitch further
             // left per card and the elemental columns never move. A vessel that binds none of them
             // (every vessel but the Squirrel today) emits nothing at all here.
+            // A core card is DROPPED entirely only when the fleet has nothing to say about it:
+            // no art, no meter and no emblem. The omni crystal card always has an emblem, so
+            // every vessel draws it - locked where that hull has no omni ability yet, which is
+            // the honest state and what a locked card is for. The cards that are drawn pack
+            // against the elemental row, so a hull that binds only some of them shows no hole.
+            bool Present(CoreAbility a) =>
+                (hudView.TryGetCoreAbilityIcon(a, out var probeIcon) && probeIcon) ||
+                (hudView.TryGetCoreAbilityEmblem(a, out var probeEmblem) && probeEmblem) ||
+                (style && style.EmblemFor(a));
+
             int coreCount = 0;
             for (int i = 0; i < coreOrder.Length; i++)
             {
@@ -242,10 +393,6 @@ namespace CosmicShore.UI
                 var emblemSprite = style ? style.EmblemFor(ability) : null;
                 hudView.TryGetCoreAbilityEmblem(ability, out var emblem);
 
-                // A core card is DROPPED entirely only when the fleet has nothing to say about it:
-                // no art, no meter and no emblem. The omni crystal card always has an emblem, so
-                // every vessel draws it - locked where that hull has no omni ability yet, which is
-                // the honest state and what a locked card is for.
                 bool hasIcon = hudView.TryGetCoreAbilityIcon(ability, out var icon) && icon;
                 if (!hasIcon && !emblem && !emblemSprite) continue;
 
@@ -254,12 +401,18 @@ namespace CosmicShore.UI
                     : ResolveLockedHost(row, ability.ToString());
                 if (!host || host == row) continue;
 
-                // The LAST entry in the display order sits nearest Charge: index -1, then -2 leftward.
-                PlaceHost(row, host, -(coreOrder.Length - i), order.Length);
+                // The LAST drawn entry in the display order sits nearest Charge: index -1, then -2 leftward.
+                int drawnAfter = 0;
+                for (int j = i + 1; j < coreOrder.Length; j++)
+                    if (Present(coreOrder[j])) drawnAfter++;
+                PlaceHost(row, host, -(drawnAfter + 1), order.Length);
 
                 var slot = BuildSlot($"AbilityLockup_{ability}", host, hasIcon ? icon : null,
                                      Element.None, emblem, emblemSprite);
                 if (slot == null) continue;
+                slot.Host = host;
+                slot.Index = -(coreOrder.Length - i);
+                slot.Count = order.Length;
 
                 if (hasIcon)
                 {
@@ -288,6 +441,9 @@ namespace CosmicShore.UI
                 var slot = BuildSlot($"AbilityLockup_{element}", host, hasIcon ? icon : null, element,
                                      emblem: null, emblemSprite: null);
                 if (slot == null) continue;
+                slot.Host = host;
+                slot.Index = i;
+                slot.Count = order.Length;
 
                 if (hasIcon) NormaliseIcon(icon.rectTransform);
 
@@ -537,6 +693,12 @@ namespace CosmicShore.UI
             ApplySlantEdge(slot.AbilityPlate, slot.Locked, upgraded: false);
             slot.AbilityPlate.raycastTarget = false;
             AdoptButtonTarget(host, slot.AbilityPlate);
+
+            // The card is its ability's button (SetSlotControl decides whether it is pressable).
+            if (!host.TryGetComponent(out slot.Press))
+                slot.Press = host.gameObject.AddComponent<AbilityCardPress>();
+            slot.Press.SetRegion(card);
+            slot.Press.SetInput(InputEvents.FullSpeedStraightAction, pressable: false);
 
             // The gauge lines the ABILITY plate, so the fill reads as the icon filling up. It stays
             // INVISIBLE until a meter is actually adopted onto this card (AdoptGauge turns it on):
@@ -1241,6 +1403,11 @@ namespace CosmicShore.UI
             slot.PadBinding = pad;
             slot.KeyBinding = key;
             RefreshChip(slot);
+
+            // A tap presses the control's own event when it has one; a gesture no button names
+            // (the Rhino's sticks pushed apart) cannot be pressed from a card.
+            var events = InputHintBindingMap.InputEventsFor(InputHintBindingMap.Canonical(pad));
+            SetSlotPressInput(slot, events.Count > 0 ? events[0] : InputEvents.FullSpeedStraightAction);
         }
 
         /// <summary>The same chip on a NON-elemental card.</summary>
@@ -1254,6 +1421,30 @@ namespace CosmicShore.UI
             slot.PadBinding = InputHintBindingMap.BindingFor(input, keyboard: false);
             slot.KeyBinding = InputHintBindingMap.BindingFor(input, keyboard: true);
             RefreshChip(slot);
+            SetSlotPressInput(slot, input);
+        }
+
+        /// <summary>
+        /// Arms the card's tap to press <paramref name="input"/>. A locked card or the passive sentinel
+        /// is not pressable. A pressable card's plates take hits, so a finger anywhere on the totem counts.
+        /// </summary>
+        void SetSlotPressInput(Slot slot, InputEvents input)
+        {
+            if (!slot.Press) return;
+            bool pressable = !slot.Locked && input != InputEvents.FullSpeedStraightAction;
+            slot.Press.SetInput(input, pressable);
+            if (!pressable) return;
+            if (slot.AbilityPlate) slot.AbilityPlate.raycastTarget = true;
+            if (slot.ElementPlate) slot.ElementPlate.raycastTarget = true;
+        }
+
+        /// <summary>Who a tapped card presses for: the pilot's input status and the vessel's action handler.</summary>
+        public void SetPressSource(IInputStatus input, R_VesselActionHandler actions)
+        {
+            foreach (var slot in _slots.Values)
+                if (slot.Press) slot.Press.Bind(input, actions);
+            foreach (var slot in _coreSlots.Values)
+                if (slot.Press) slot.Press.Bind(input, actions);
         }
 
         /// <summary>Which device the chips should speak for. Pushed on every set change.</summary>

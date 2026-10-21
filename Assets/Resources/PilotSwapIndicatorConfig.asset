@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66ae96ef002b4a03a33e29b116e5fae7, type: 3}
+  m_Name: PilotSwapIndicatorConfig
+  m_EditorClassIdentifier: 
+  vessels: {fileID: 11400000, guid: 49c7c10ad2901c74589c28317a4eb17b, type: 2}
+  glyphSet: {fileID: 11400000, guid: dfac1b6bf2504f4ca95be53fc325f734, type: 2}
+  theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
+  font: {fileID: 11400000, guid: 137312175295ff84fbe0b8c18ec605aa, type: 2}
+  caption: 
+  keyboardLeftLabel: 1
+  keyboardRightLabel: 2
+  tileSize: 72
+  minTouchMillimetres: 9
+  tileSpacing: 12
+  iconInset: 0.12
+  chipHeight: 26
+  chipFontSize: 14
+  captionFontSize: 14
+  neighbourMargin: 16
+  plateToken: 4
+  plateAlpha: 0.7
+  outlineToken: 6
+  iconToken: 0
+  textToken: 0
+  pressedToken: 17

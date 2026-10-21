@@ -172,8 +172,8 @@ def parity_failures(strategy_text: str, base_text: str, prefab_text: str, lookup
 def simulate(yaw_scaler, mult, grip, x_sum, throttle_target, seconds):
     """Full-pull drift with the turn held at x_sum. Returns per-frame (slip degrees, speed).
     Transcribes VesselTransformer's vector path in 2D: the drift is planar. The nose turns at
-    the commanded rate - touchNoseResponse keeps it within ~24 degrees of the command through a
-    full-lock drift, so this is the TOUCH nose; a pad nose lags further and slides less."""
+    the commanded rate - a human pilot's nose IS the command (no steering lag on any device since
+    2026-10-21, VesselTransformer.NoseFollowFraction), so this is the pilot's nose."""
     omega = math.radians(x_sum * yaw_scaler * mult)  # RotationThrottleScaler is 0 here
     angle, vel = 0.0, [throttle_target, 0.0]
     trace = []

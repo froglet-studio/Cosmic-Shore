@@ -88841,7 +88841,7 @@ MonoBehaviour:
   previewCaption: {fileID: 1102698391866749615}
   aboutHeading: {fileID: 953542627811642118}
   crystalClickHandler: {fileID: 1486013850}
-  arrivalDistanceFactor: 2.4
+  arrivalDistanceFactor: 7.2
   freestyleHandoffTimeout: 8
 --- !u!224 &8760397952932569419
 RectTransform:

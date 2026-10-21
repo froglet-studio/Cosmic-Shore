@@ -23,7 +23,11 @@ namespace CosmicShore.Gameplay
     /// instead - a full ±1 single-trigger swing the moment a trigger crossed its deadzone - and
     /// each peer cuts prisms against its OWN blade, so a half-pull sweep that missed on the
     /// pilot's screen cut on everyone else's and the prism fields diverged. The press/release
-    /// path survives only for a device that writes no mirrors (touch). An AI Rhino's
+    /// path survives only for touch, whose SWINGS are thumb lifts (events). A phone writes the
+    /// mirrors only while both thumbs are off the glass (TouchControlProfile.idlePullsBothTriggers,
+    /// 2026-10-21): both read fully pulled, which is the energize stance - so a phone energizes
+    /// through the mirrors like every other device and the event-driven pose drops into the
+    /// centred chop with it (<see cref="MirrorsInStance"/>). An AI Rhino's
     /// <see cref="RhinoSwordAutopilot"/> writes the mirrors on its owning machine, so its sword
     /// replicates the same way.
     ///
@@ -136,7 +140,10 @@ namespace CosmicShore.Gameplay
                 // the stance at full deflection. If autopilot took over mid-hold the release edge
                 // never arrives, so drop the stance.
                 if (_activeSign != 0f && IgnoresTriggers) ClearStance();
-                if (_rightHeld && _leftHeld)
+                // Both swing controls held, or (a phone with both thumbs off) both mirrors pulled:
+                // the centred chop. The second reads the same replicated values the energize stance
+                // reads, so the blade is down on every peer exactly while the stance counts.
+                if ((_rightHeld && _leftHeld) || (_status.Player != null && MirrorsInStance(_status.InputStatus)))
                 {
                     diffTarget = 0f;
                     sumTarget = 2f;
@@ -335,11 +342,20 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            sword.SetInStance(MirrorsInStance(input));
+        }
+
+        /// <summary>The energize stance read off the trigger MIRRORS: both pulled (sum at or over
+        /// <c>StanceSumThreshold</c>) and even (difference within <c>StanceCenterEpsilon</c>),
+        /// deadzone-renormalized. On every device, touch included - a phone's mirrors read 1 while
+        /// both thumbs are off the glass.</summary>
+        bool MirrorsInStance(IInputStatus input)
+        {
+            if (input == null) return false;
             float lt = ApplyDeadzone(input.LeftTriggerAnalog);
             float rt = ApplyDeadzone(input.RightTriggerAnalog);
-            bool inStance = lt + rt >= config.StanceSumThreshold
-                            && Mathf.Abs(rt - lt) <= config.StanceCenterEpsilon;
-            sword.SetInStance(inStance);
+            return lt + rt >= config.StanceSumThreshold
+                   && Mathf.Abs(rt - lt) <= config.StanceCenterEpsilon;
         }
 
         /// <summary>
@@ -405,8 +421,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// This frame's trigger depths (deadzoned), from the source every peer agrees on. False for a
-        /// device that writes no mirrors (touch), whose press/release events drive the stance instead.
+        /// This frame's trigger depths (deadzoned), from the source every peer agrees on. False for
+        /// touch, whose thumb-lift press/release events drive the swing instead (its mirrors move only
+        /// for the both-thumbs-off energize stance, read by <see cref="MirrorsInStance"/>).
         /// <paramref name="analog"/> says whether the values are continuous (track them) or binary
         /// (rate-limit them into a swing) - decided from the REPLICATED device, so it is the same
         /// answer on every peer.
