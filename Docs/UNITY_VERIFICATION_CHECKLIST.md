@@ -119,6 +119,51 @@ First-pass tuning (`Resources/TouchControlProfiles`): buttons 10 mm (floor 7 mm)
 12 mm, corner box 36 % x 55 %; tilt full scale 25°, dead zone 2.5°, smoothing 12/s, forward tilt dives; slider 9 x 32 mm;
 Thresher lift delay 0.12 s; Rhino touch energize x2 (`ShieldSkimmerScaleConfig.touchEnergizeRateMultiplier`).
 
+### 🔴 Squirrel: drift loop volume follows the slip angle (`cece/eloquent-pasteur-fes2ni`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett: "modify the amplitude of the squirrel's drift sound effect based on the difference between the drift angle
+and the return angle, so small angle is quiet, large angle is what we hear now." `DriftAudioController` scales the
+looping `event:/SFX/Drift` by the angle between Course and the nose (`R_VesselActions/SQUIRREL_DRIFT.md` §13); on for
+the Squirrel only. `/verify-unity` was unavailable; the headless reference compile ran (player OK; editor config: the
+new `DriftSlipVolumeTests` compiles, 3 unrelated pre-existing errors in `AuthenticationServiceFacade.cs`).
+
+Toy Box > Vessel Changer → Squirrel:
+1. Run `DriftSlipVolumeTests` (4) in the Test Runner.
+2. Drift with the nose on the slide: the loop is quiet. Swing the nose further off the slide: it rises linearly,
+   reaching the pre-change volume at 180 degrees (nose back along the slide); swing back: it falls, no flutter.
+3. Release one-shot: quiet when the drift ends with the nose on the slide, louder the further off it ended (same
+   linear curve, angle taken on the last drifting frame). Dolphin drift and release sounds unchanged.
+
+| Knob | First pass |
+|---|---|
+| `quietSlipDegrees` / `fullSlipDegrees` | 0 / 180 (linear) |
+| `quietVolume01` | 0.15 |
+| `slipVolumeSmoothing` | 10 /s |
+
+### 🔴 Squirrel: engine pods swing onto Course while drifting (`cece/eloquent-pasteur-fes2ni`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett: "the squirrel should have a drift animation similar to the dolphin's ... it would be nice if the model
+engines also aligned so they were parallel with the jets and the jets remained coming out the back of the rotated
+engines." New `DriftEngineSwivel` on the Squirrel root (`R_VesselActions/SQUIRREL_DRIFT.md` §12): after the
+Animator, each of the four pods turns about its centre until its jet's flight axis (`DriftJet.FlightAxis`) lies on
+Course; the jets ride their pod bones, so they stay seated. `/verify-unity` was unavailable (no Editor, no `unity`
+binary); the headless reference compile ran (result in the commit message).
+
+Toy Box > Vessel Changer → Squirrel:
+1. Hold LT into a hard drift and aim well off the slide: all four pods lie along the travel direction, parallel with
+   their plumes, plumes leaving from the same spot on each pod. Hull, wings, crest and tail keep aiming with the nose.
+2. Release: pods ease back with the plumes, no snap. Fly without drifting: the pods animate exactly as before.
+3. Aim fully backwards mid-drift: pods hold their swing, no flicker.
+4. Beyond ~30 degrees of aim the pods pass within ~0.01 u of the wing slats (measured on the FBX). If that reads as
+   clipping, try `engines[].driftOffset` outward on the front pods (x -0.4 on L, +0.4 on R) and report the back pods.
+5. Console clean (no `could not find engine bone(s)` warning).
+
+| Knob | First pass |
+|---|---|
+| `swivelRate` | 3.7 /s (the jets' own ease at 60 fps) |
+| `maxSwivelDegreesPerSecond` | 360 |
+| `engines[].driftOffset` | 0 on all four pods |
+
 ### 🔴 Thresher: no lime on the chain, the crosshair or the ball (`cece/tender-hamilton-qcd1hi`, 2026-10-20) — NOT EDITOR-VERIFIED
 
 Garrett: "remove the lime from the chain and the crosshair. we can let players get a feel for that. the lime on the

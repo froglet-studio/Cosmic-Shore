@@ -88,8 +88,12 @@ namespace CosmicShore.Gameplay
 
             // Super-shielded prisms are fully invulnerable: no team change,
             // no shield decay. Ways to break super-shields will be added
-            // later as targeted opt-in mechanics.
-            if (prism.prismProperties.IsSuperShielded) return;
+            // later as targeted opt-in mechanics. The refusal is still SEEN: the
+            // deflection jiggle every other hit on super-shielded mass gets, so a
+            // steal attempt never reads as passing through (Docs/LIT.md, "dynamic
+            // contact never does nothing"). One place covers every steal source -
+            // hull, skimmer, Urchin spike, black hole, the Thresher's Mass Mode.
+            if (prism.AbsorbSuperShieldHit(0f)) return;
 
             if (!superSteal && prism.prismProperties.IsShielded)
             {

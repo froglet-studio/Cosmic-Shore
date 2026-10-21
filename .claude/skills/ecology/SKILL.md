@@ -524,6 +524,21 @@ nucleus hands `DominantDomain` to whatever colour it favours before anyone flies
 That defect shipped undetected in Caldera (89% of its mass) until a one-line
 check over the point cloud found it.
 
+**A cell environment ships as a BAKE** (`Docs/ECOSYSTEM.md` §62.2b): the game reads
+`Assets/Resources/PrismLayouts/<Type>_<fingerprint>.bytes` instead of running the generator.
+After ANY change to a `CellEnvironmentSpawnableBase` generator, its prefab or the base class,
+re-bake in the same change and gate it:
+
+```bash
+python3 Tools/Build/bake_prism_layouts.py           # re-bake (writes the .bytes + prism_layout_bakes.json)
+python3 Tools/Build/bake_prism_layouts.py --check   # fails on a drifted, missing or orphan bake
+```
+
+Skipping it fails `--check`. In Unity, the world is generated live with a `[PrismLayoutBake]`
+warning, which is correct but slow. A generator whose layout reads its intensity, or whose
+`SpawnLeafObjects` needs build state beyond the lays and planting sites, overrides
+`BakesLayout => false`.
+
 ### 4.6 "It stopped growing" — prove WHICH gate binds before you turn a dial
 
 A population that stops has at least three ceilings — the species cap

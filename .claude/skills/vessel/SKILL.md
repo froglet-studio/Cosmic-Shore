@@ -843,7 +843,21 @@ applies to new abilities, new resources on the meter list, and anything that add
     such a control must be kept out of touch flight (`FlightTouchClaims`), or the same finger also steers and fires
     the one-thumb drift edges.
 
-57. **Every vessel has a PHONE SCHEME, and a new one needs a row in `Tools/Build/author_touch_profiles.py`.** A phone
+57. **To move part of an ANIMATOR-driven hull from code, write in `LateUpdate` on top of the animated pose — and
+    undo your own write on any bone the Animator did not rewrite.** The Squirrel's model is an Animator
+    (`MantaAnimationContoller`, single-frame poses in blend trees), which rewrites bones between `Update` and
+    `LateUpdate`; anything written in `Update` is erased, and an absolute pose written in `LateUpdate` throws the
+    takes away. `DriftEngineSwivel` (2026-10-21) applies its swing to the animated pose in `LateUpdate`, records the
+    local pose it wrote, and at the next `LateUpdate` restores the animated pose on any bone still holding EXACTLY
+    that write (`Equals`, not `==`, which is approximate) — a bone no clip animates would otherwise compound the swing
+    every frame. Read every part's pivot and axis BEFORE writing any of them, since writing a parent bone moves its
+    children. A child (a jet on a bone) then rides the part with no code of its own. Two audio traps from the same
+    branch: **a state that ENDS this frame has usually already been undone by the time you read it** (the drift
+    release reads the slip angle off the last DRIFTING frame, because Grip rotates Course back onto the nose the
+    moment the drift lets go); and **a new behaviour on a component several hulls share defaults OFF in code and is
+    switched on in the one prefab that asked** (`DriftAudioController` also plays the Dolphin's drift).
+
+58. **Every vessel has a PHONE SCHEME, and a new one needs a row in `Tools/Build/author_touch_profiles.py`.** A phone
     has no trigger depth, can never hold LT+RT (lifting the second thumb is "let go of everything"), and a thumb that
     leaves its stick to reach a card fires that thumb's lift ability on the way (Garrett, 2026-10-21,
     `Docs/Reports/MOBILE_VESSELS.md` §8). So each hull picks one: **ThumbLifts** (abilities on thumb lifts, cards show a

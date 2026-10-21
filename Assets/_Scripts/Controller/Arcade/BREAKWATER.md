@@ -30,7 +30,7 @@ it with two rockets in the bay and make one choice:
 |---|---|---|
 | **fire** | half the missile tank (50 hostile prisms' worth of ammunition) | a 50-unit spherical hole, cut wherever you aimed |
 | **saw** | your speed — turret stance stops you dead | the weave ground open with free gun rounds |
-| **thread** | nothing at all | a 1.46× hull clearance with danger bars a hull-width away |
+| **thread** | nothing at all | a 1.46× hull clearance through the collar, with the danger weave starting just outside it (26.3 u off the axis) |
 
 **The walls you shoot ARE the ammunition.** `ammoPerPrism` is `0.01` on `Sparrow.prefab` and
 `SkyBurstGunAction.asset`'s `ammoCost` is `0.5` against a tank of 1, so **50 hostile prisms buy a
@@ -424,7 +424,7 @@ holds the other still. Every row below is swept, and the sweep is the authority:
     worst JOIN corner        : 66.0 deg (cap-exempt; Dubins needs 237.8 u, shortest leg is 302.2)
     start gate presentation  : 48.1 deg, spread across pads 0.0000
     start gate pad distances : spread 0.0000 u
-    clear eye radius         : 18.000 u (1.46 x hull)
+    clear eye radius         : 18.000 u (1.46 x hull); danger weave from 26.306 u
 
   I2  (port 60, legs 300-433, turn cap 55, present cap 54)
     generation failures      : 0 / 400
@@ -438,7 +438,7 @@ holds the other still. Every row below is swept, and the sweep is the authority:
     worst JOIN corner        : 64.3 deg (cap-exempt; Dubins needs 234.5 u, shortest leg is 300.0)
     start gate presentation  : 48.7 deg, spread across pads 0.0000
     start gate pad distances : spread 0.0000 u
-    clear eye radius         : 18.000 u (1.46 x hull)
+    clear eye radius         : 18.000 u (1.46 x hull); danger weave from 26.306 u
 
   I3  (port 50, legs 300-407, turn cap 65, present cap 58)
     generation failures      : 0 / 400
@@ -452,7 +452,7 @@ holds the other still. Every row below is swept, and the sweep is the authority:
     worst JOIN corner        : 66.2 deg (cap-exempt; Dubins needs 238.0 u, shortest leg is 300.1)
     start gate presentation  : 48.7 deg, spread across pads 0.0000
     start gate pad distances : spread 0.0000 u
-    clear eye radius         : 18.000 u (1.46 x hull)
+    clear eye radius         : 18.000 u (1.46 x hull); danger weave from 26.306 u
 
   I4  (port 42, legs 300-380, turn cap 75, present cap 62)
     generation failures      : 0 / 400
@@ -466,7 +466,7 @@ holds the other still. Every row below is swept, and the sweep is the authority:
     worst JOIN corner        : 66.9 deg (cap-exempt; Dubins needs 239.4 u, shortest leg is 300.0)
     start gate presentation  : 48.8 deg, spread across pads 0.0000
     start gate pad distances : spread 0.0000 u
-    clear eye radius         : 18.000 u (1.46 x hull)
+    clear eye radius         : 18.000 u (1.46 x hull); danger weave from 26.306 u
 ```
 
 ### Flyability is a Dubins condition, checked at the transient ceiling
@@ -600,9 +600,34 @@ Two things generalise:
   circle. Both were run against a negative control that restores the centreline clip and reports
   16.5 at all four intensities.
 
+#### Flush: the weave is layered, and it stops at the collar and the dish
+
+NO PRISM MAY INTERPENETRATE ANOTHER (`Docs/ECOSYSTEM.md` §49.10), held at authoring time. The clip
+audit (`Tools/Build/audit_prism_clipping.py SpawnableBreakwater -v`) found 6,015 interpenetrating
+pairs at intensity 1, every one in the plug, in three shapes - and none in the dish:
+
+1. **The three rakes lay in one plane**, so every bar cut straight through the bars of the other two
+   rakes where their lines crossed. No scale separates a crossing, so the rakes are now **layered**
+   along the axis one cross-section apart (`RakeLayer`: −3 / 0 / +3): down the axis the weave is
+   exactly the weave it was, every bar keeps its 3 × 3 section, and two rakes' bars meet face to face.
+   The weave is 9 u deep instead of 3.
+2. **The two innermost lines ran in to the eye through the collar's blocks.** Their bars now start
+   on `CollarClearRadius` - the circle that just contains the collar, `hypot(26, 4) = 26.31` - so
+   the rim from 18 out to the collar's outer face is the collar's alone: the Plain aim point the
+   collar's own section describes, with the Danger weave beyond it.
+3. **Every line ran out to the port rim, into the dish's innermost ring** (whose plates are centred
+   on the rim). The bars now stop where their outer corner meets `DishInnerReach`: the rim less
+   that ring's reach toward the axis, `1.18 × (3.5 sin 22° + 0.75 cos 22°) = 2.37` u.
+
+Neither trim changes a count: a run is still cut into as many bars as its eye-to-rim length always
+needed (`BarsFor`), and those bars share the shorter laid length end to end. Prism counts are
+unchanged at every intensity; the arena's volume fell 10.0 / 11.8 / 14.0 / 15.1 % (intensities
+1-4), which `breakwater_arena.py` prices exactly and the cell's `PhaseThresholds` follow.
+
 One more geometric fact worth carrying:
 
-- **The longest bar the ladder produces is 58.79 u** (intensity 4, the 30-unit offset line),
+- **The longest bar the ladder produces is 54.37 u** (intensity 1; it was 58.79 before the flush
+  trims),
   against the 62 cut and a `PrismScaleAnimator` clamp at 100. It is far inside the clamp, but the
   clamp is the thing that would swallow an overshoot **in silence** (the environment lay path
   writes `TargetScale` directly and never calls `AdmitTargetScale`), which is why the model checks
@@ -800,27 +825,26 @@ where it crosses between them.
 Per-station geometry
                                 I1          I2          I3          I4
 R_port                          72          60          50          42
-plug lines/rake                  7           6           5           4
-plug bars                       78          54          42          30
-longest bar                     58          57          54          59
+plug lines/rake                 12          10           8           6
+plug bars                       84          54          42          30
+longest bar                     54          48          39          48
 dish rings                       4           4           3           3
 dish plates                    167         145          86          75
 collar blocks                   12          12          12          12
-prisms/station                 257         211         140         117
-volume/station              53,984      40,927      28,598      21,928
+prisms/station                 263         211         140         117
+volume/station              47,554      35,056      23,498      17,513
 
-Arena totals (15 stations + shoals)
+Arena totals (14 stations + shoals)
 arena prisms                 4,575       3,795       2,730       2,385
-arena volume               837,677     641,833     456,896     356,842
-x nominal (16/prism)          11.9        10.9        10.9         9.8
+arena volume               753,632     566,166     392,795     303,020
+x nominal (16/prism)          10.3         9.3         9.0         7.9
 
-Shoals: 546 prisms / 34,944 volume (constant at every intensity)
+Shoals: 630 prisms / 40,320 volume (constant at every intensity)
 ```
 
-> **Reading that table:** the row printed as **`plug lines/rake`** is `runs ÷ 2`, not the number of
-> lines. The real line count per rake is **12 / 10 / 8 / 6** (6 / 5 / 4 / 3 offsets, each ±). It is
-> a **display-only** label bug in `station_totals` — `bars`, `volume` and the clamp proof all come
-> from `plug_runs`/`plug_bars` directly and are correct. Fix the label, not the geometry.
+> **Reading that table:** `plug lines/rake` counts lines (both signs of every offset), and
+> `longest bar` / `volume` are the LAID bars - after the flush trims (see "Flush: the weave is
+> layered") - while `plug bars` is the count, which the trims never change.
 
 And the course rows, which run the **opposite** way (see *The ladder is measured*):
 
@@ -1064,16 +1088,16 @@ with exits 10% under their enters so a trail-caused Frenzy always releases with 
 
 ```
 Phase thresholds (volume is the spine; count is the backstop)
-  I1: baseline    837,677   RestlessEnter    957,677   FrenzyEnter  1,137,677
-  I2: baseline    641,833   RestlessEnter    761,833   FrenzyEnter    941,833
-  I3: baseline    456,896   RestlessEnter    576,896   FrenzyEnter    756,896
-  I4: baseline    356,842   RestlessEnter    476,842   FrenzyEnter    656,842
+  I1: baseline    753,632   RestlessEnter    873,632   FrenzyEnter  1,053,632
+  I2: baseline    566,166   RestlessEnter    686,166   FrenzyEnter    866,166
+  I3: baseline    392,795   RestlessEnter    512,795   FrenzyEnter    692,795
+  I4: baseline    303,020   RestlessEnter    423,020   FrenzyEnter    603,020
 ```
 
 Exits are `baseline + 108,000` and `baseline + 270,000`; counts ride `+700 / +500 / +3,600 /
 +3,000`.
 
-This arena is **9.8×–11.9× nominal volume per prism** (a 62-unit danger bar is 558 volume against
+This arena is **7.9×–10.3× nominal volume per prism** (a 62-unit danger bar is 558 volume against
 the nominal 16), which is exactly the case CLAUDE.md records for Rampage: *a cell whose prisms are
 not nominal must author its volume ladder, never inherit the `count × 16` derivation.* Inheriting
 it here would put the ladder an order of magnitude low and pin the cell at Frenzy from the first
@@ -1389,17 +1413,17 @@ $ python3 Tools/Build/author_breakwater_assets.py --check
 Validation passed (30 files).
   scene: shipped (read-only)
   stations 15 x 2 laps = 29 crossings  comeback 0.35 (2.54 levels at a quarter-of-target deficit)  sense radius 1250
-  I1: port 72   4,575 prisms     837,677 volume  ->  Restless    957,677  Frenzy  1,137,677
-  I2: port 60   3,795 prisms     641,833 volume  ->  Restless    761,833  Frenzy    941,833
-  I3: port 50   2,730 prisms     456,896 volume  ->  Restless    576,896  Frenzy    756,896
-  I4: port 42   2,385 prisms     356,842 volume  ->  Restless    476,842  Frenzy    656,842
+  I1: port 72   4,575 prisms     753,632 volume  ->  Restless    873,632  Frenzy  1,053,632
+  I2: port 60   3,795 prisms     566,166 volume  ->  Restless    686,166  Frenzy    866,166
+  I3: port 50   2,730 prisms     392,795 volume  ->  Restless    512,795  Frenzy    692,795
+  I4: port 42   2,385 prisms     303,020 volume  ->  Restless    423,020  Frenzy    603,020
 --check: no files written; all 30 files match what this script authors.
 ```
 
 Those rows are **imported from `breakwater_arena.py`, not retyped**, which is the whole point:
 the cell's `PhaseThresholds` are derived from the same arithmetic that builds the arena, so the two
 cannot drift. (Spot-checked against the shipped `Breakwater Cell Config 1.asset`: `RestlessEnter
-5275` = 4,575 + 700, `FrenzyExitVolume 1,107,677` = 837,677 + 270,000.)
+5275` = 4,575 + 700, `FrenzyExitVolume 1,023,632` = 753,632 + 270,000.)
 
 Drumfire's generator was the failure mode to avoid, and the reason there was no green baseline to
 copy: a spent one-shot `assert` sitting **above** the validation section (`donor crystal block not
@@ -1562,7 +1586,8 @@ Run this in order:
   at all four intensities, the weave and the collar now both stand at exactly **18.0000**
   (`1.461 ×` the hull), against a negative control that restores the old test and reports 16.5.
   Cost: +6 bars at intensity 1 and −92 u of bar length everywhere, so every `PhaseThreshold` was
-  re-derived.
+  re-derived. (Since the flush pass the weave stands further out still - its bars start on the
+  collar's clear circle, 26.31 - and the collar's faces alone are the 18-unit eye.)
 
 - ~~**Nothing kept a station off a spawn pad.**~~ **FIXED** — see "…and no station may swallow a
   spawn pad" above. 7 of 14,400 measured pad-cases put a pilot inside station structure; the walk

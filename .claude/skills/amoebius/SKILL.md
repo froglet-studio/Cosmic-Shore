@@ -127,5 +127,20 @@ the engine.
      override that still exists, and pick one whose value differs from the prefab's own (a same-value override
      proves nothing).
 
+15. **Traps from the cell-environment bake session (2026-10-21, `cece/relaxed-hopper-ns2hdu`).**
+   - **A scripted run's game clock is synthetic.** With `--frames`, `Time.realtimeSinceStartup` also steps at 1/60 s, so
+     two runs of different real cost print identical timestamps. Time real work with `System.Diagnostics.Stopwatch` in
+     temporary marks, and compare FRAME numbers, not seconds.
+   - **`--scene Menu_Main` skips Bootstrap, and the world build dies after its first clone batch**: the theme manager
+     is not injected, so the first prism's colour lookup throws and ends the lay (Garland lays 2,048 of 4,259). Count
+     what really laid with `get Environment/Cell/<Spawnable> Transform childCount` before reading anything from such a
+     run (team task T-20261021-aa08).
+   - **`pkill -f '<pattern>'` kills your own shell** when the pattern also appears in the bash command line that runs
+     it, and every command after it in that call silently never runs. Stop the player with the control port's `quit`,
+     or `pkill -f` a pattern only the player's own command line contains (`net10.0/CosmicShore`).
+   - **`Resources.Load<TextAsset>` returned null for `.bytes` until 2026-10-21**: `ContentRuntime.LoadResource` had no
+     text-asset case. A game feature that ships data in `Resources/` as text or bytes is worth one boot to confirm
+     Amoebius finds it; the miss reads as "the feature quietly falls back".
+
 Report what you saw (attach the screenshot path) and what you verified; say plainly if a check
 did not run.
