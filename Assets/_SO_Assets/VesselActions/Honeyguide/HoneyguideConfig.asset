@@ -280,11 +280,14 @@ MonoBehaviour:
   - {r: 1, g: 0, b: 0.976, a: 1}
   - {r: 0.075, g: 1, b: 0.949, a: 1}
   - {r: 1, g: 0.655, b: 0, a: 1}
+  longPressSeconds: 0.45
+  flyButtonMillimetres: 10
   ratelLabel: 'Ratel'
   colourNames:
   - Ruby
   - Jade
   - Gold
+  flyButtonLabel: 'Fly'
   tapToMake: 'TAP'
   freePrismTemplate: '{count} free ({colour} on your cursor): tap an empty cell'
   revealAbilityTemplate: 'New ability: {name}'
