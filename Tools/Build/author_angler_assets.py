@@ -441,7 +441,8 @@ def config_asset() -> str:
             "  lockBiteReach: 6\n"
             "  omniFauna:\n" + "".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in OMNI_FAUNA) +
             f"  companionFauna: {{fileID: 11400000, guid: {KEEPER_SPECIES}, type: 2}}\n"
-            "  brushInterval: 0\n")
+            "  brushInterval: 0\n"
+            "  tameHueLean: 0.35\n")
 
 
 def omni_effect_asset() -> str:
@@ -727,8 +728,9 @@ def check(files: "dict[str, str]") -> "list[str]":
     need(f"  followOffset: {{x: 0, y: {CHASE_UP}, z: -{CHASE_BACK}}}\n" in files.get(CAMERA, ""),
          f"AnglerCameraSettingsSO.followOffset is not the lab's chase (0, {CHASE_UP}, -{CHASE_BACK})")
     cfg = files.get(CONFIG_PATH, "")
-    for key in ("brushNear", "dashFrac", "dashTime", "cameraLift", "cameraLiftTime", "paintedPreference", "lureGrowth", "faunaSpeed", "lockBiteCooldown", "lockBiteReach"):
-        need(re.search(r"^  %s:" % key, cfg, re.M), f"AnglerConfig has no {key} (rounds 3-4; re-seed it or add the line)")
+    for key in ("brushNear", "dashFrac", "dashTime", "cameraLift", "cameraLiftTime", "paintedPreference", "lureGrowth", "faunaSpeed", "lockBiteCooldown", "lockBiteReach",
+                "tameHueLean"):
+        need(re.search(r"^  %s:" % key, cfg, re.M), f"AnglerConfig has no {key} (rounds 3-4, the school's mark; re-seed it or add the line)")
     need(len(re.findall(r"^  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}$", cfg.split("  omniFauna:")[-1].split("  companionFauna:")[0], re.M)) > 0,
          "AnglerConfig's omniFauna is empty - an omni crystal could morph into nothing")
     for path, (_, script, name) in SEEDED.items():

@@ -13191,3 +13191,22 @@ session, so `/verify-unity` did not run.
    where the client runs them, and the sail rise on the client's call; the host's herd parts round the client's real
    jacks and decoy (not an AI's). An AI marlin on the host shows the same on the client. Note on the PR whether a
    client-owned marlin's danger stings score (contacts are decided on the owner).
+11. (Round 4, `cece/sharp-faraday-gq7m65`, Garrett: "jacks camera should be zoomed out enough that on a full size
+   mobile device an above average sized thumb barely covers the smallest jack repulsion radius") On a full-size phone
+   (6.7-inch), take the jacks' seat at Space -5 or less and rest a big thumb on a jack: the thumb just covers its dotted
+   ring. The view shows about 1.6x more of the board than before; the ring is the same size in the world. Tune it with
+   `thumbCover` (lower zooms out) and `phoneShortMm` on `MarlinJacksConfig`.
+12. (Round 4, "make the dots that form the radius much more subtle to the marlin") Fly the marlin: the rings round the
+   jacks, the decoy and the marlin are faint and sparse in the main view (24 small dots at a fifth of the alpha); the
+   small jacks' view in the corner still shows them full. Swap seats: the jacks' view keeps them full. Tune with
+   `pilotRing*` on the executor.
+13. (Round 4, "make the swarm way bigger") With no wildlife near, a herd of 30 blooms in within ~4 s; it grows to 150
+   with recruits and births. Watch the frame time with a full herd (the herd's step is O(n^2) over its members).
+14. (Round 4, "distinguish them by giving their spindles a slight hue shift in your domain. do the same thing for other
+   tamer classes like the angler") Herded creatures' spindles lean toward your domain's hue (Jade: a little greener;
+   Gold: toward violet-magenta from the blue spindles, the short way round); wild creatures beside them keep their own
+   colour, and their body prisms keep the cell's. Change domain in the Toybox and recruit again: the lean follows the
+   new domain. Let a creature go (turn end): its colour returns. A herded creature that dies withers in its marked
+   colour. The Angler's tamed school wears the same mark. Host plus one client: the client sees the host's herd marked,
+   and a client joining mid-herd sees it marked. Spindle draw calls do not rise beyond one batch per mark (the marks
+   are shared materials). Two builds must both be protocol 11 to join.

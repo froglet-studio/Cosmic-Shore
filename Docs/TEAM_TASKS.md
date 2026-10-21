@@ -1677,3 +1677,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (the Amoebius engine); Yash (offered)
 - **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Port/src/CosmicShore.Player (--scene Menu_Main); ThemeManagerDataContainerSO.GetTeamTransparentBlockMaterial
+
+### T-20261021-249e · open · test · vessels
+- **Task:** Fly Marlin and Jacks round 4 on cece/sharp-faraday-gq7m65: the thumb-framed jacks' view on a full-size phone, the faint rings in the marlin's view, the 30-150 herd and its frame time, and the domain hue mark on herded and Angler-tamed creatures (host + client too)
+- **Done when:** UNITY_VERIFICATION_CHECKLIST 2026-10-21 Marlin and Jacks steps 11-14 pass, or the failures are dev tasks
+- **Who can take it:** Garrett (the look and feel); Yash (offered: editor, phone and host-client steps)
+- **Added:** 2026-10-21 by Garrett (`cece/sharp-faraday-gq7m65`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Marlin and Jacks, steps 11-14); R_VesselActions/MARLIN_JACKS.md

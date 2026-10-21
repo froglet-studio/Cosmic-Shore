@@ -39,8 +39,14 @@ the old); the pilot can teleport to it.
 - **Seats.** D-pad left / right, keys 1 / 2, or a double tap on the small view move the local human between the marlin and
   the jacks (the Wrasse's gesture, `PilotSwapGesture`). The empty seat is an AI: the hull's own `AIPilot` for the marlin, or
   `MarlinJacksAI` for the jacks, which plays through aim points only, as thumbs do.
-- **The view.** Running the jacks, an orthographic camera looks straight down the marlin's plane, `viewSpan` across the
-  screen's short side, and never turns with the marlin (the lab's Steady camera); the game camera is the small square.
+- **The view.** Running the jacks, an orthographic camera looks straight down the marlin's plane and never turns with
+  the marlin (the lab's Steady camera); the game camera is the small square. It is zoomed out until, on a full-size phone
+  (`phoneShortMm` 71 mm, a 6.7-inch screen's short side), a big thumb (`thumbMm` 22) barely covers the smallest ring: the
+  ring's diameter is `thumbCover` (0.9) of the thumb (Garrett, 2026-10-21: "zoomed out enough that on a full size mobile
+  device an above average sized thumb barely covers the smallest jack repulsion radius";
+  `MarlinJacksMath.ThumbViewSpan`). At the shipped numbers that is about 1,147 u across the short side (the lab's view
+  was 720 u, where the ring was 1.25 thumbs on a smaller phone). The ring's size in the world does not change with the
+  view: `viewSpan` (the lab's) still sizes it. The span is the same on every device, so every player sees the same board.
   Flying the marlin, the game camera has the screen and the jacks' view is the small square. It draws the way the game
   camera does: post-processing (bloom), anti-aliasing, HDR and the same volumes, copied from the game camera every frame
   (`MarlinJacksView.AdoptPilotLook`).
@@ -70,6 +76,14 @@ is a Strike.
 "These are a special swarm that can be upgraded to break rules and should only starve down to a minimum size and break
 other rules if need be. In general shielded prisms should be food during a frenzy when the cell has too many prism."
 
+- **Size** (Garrett, 2026-10-21: "make the swarm way bigger"): the floor is 30 (was 12), born 0.12 s apart (was 0.25),
+  and the herd holds up to 150 (was 60).
+- **The mark** (Garrett, 2026-10-21: "distinguish them by giving their spindles a slight hue shift in your domain. do the
+  same thing for other tamer classes like the angler"): a herded creature's spindles lean `herdHueLean` (0.35) of the way
+  round the hue circle toward our domain's hue. It is the leash's mark (`IFaunaLeash.TryGetLeashMark`), so every tamer
+  wears it (the Angler's school too, `tameHueLean`): `Fauna.ApplyLeashMark` leans each `Spindle` onto a shared material
+  per mark (it still batches, and the LOD tiers copy it), `FaunaNetworkSync` replicates it (protocol 11), it comes off
+  when a creature is let go and stays on through its wither. The creature's domain, body prisms and diet are the cell's.
 - **Who joins.** Wild leashable herbivores that come inside any herder's ring join the herd, up to `herdCap`; a herded
   creature's offspring joins it (`IFaunaHerd.Born`).
 - **The floor.** The first `minHerd` creatures (in join order) do not starve (`IFaunaLeash.Sustains`), and an EMPTY herd has
@@ -104,7 +118,11 @@ units and multiplied by `labScale` (0.4).
   marlin calls (the call is replicated, so rivals see the herd being called).
 - **The jacks** are two `Jack.fbx` (a deep body, a forked tail, domain scutes and a saddle on the back so the top-down
   view finds them), drawn where the jacks run, facing the way they swim, the spine waving with their speed, scaled by
-  `jackModelScale` (2.5: 40 units long). The rings and dots stay as the local player's instruments.
+  `jackModelScale` (2.5: 40 units long). The rings and dots stay as the local player's instruments. Each view draws its
+  own set for its own camera (`AnglerWorldMarks.Begin(cam, onlyThisCamera)`): the jacks' view at full strength, the
+  marlin's view much more subtle (Garrett, 2026-10-21: "make the dots that form the radius much more subtle to the
+  marlin"): 24 dots a ring instead of 48, half the size, down to 1.5 px, at a fifth of the alpha (`pilotRing*` on the
+  executor).
 - **Networking.** The machine that owns the hull runs the jacks, the decoy and the call and publishes them on
   `MarlinCrewBodies` (offsets from the hull, quantized to 0.25 u, owner-write NetworkVariables). Every other peer draws
   them, and its executor HERDS with them (`MarlinJacksExecutor.FollowRemoteCrew`) instead of running its own AI jacks, so

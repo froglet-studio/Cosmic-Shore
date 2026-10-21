@@ -25,6 +25,16 @@ namespace CosmicShore.Gameplay
         public static float FloorUnits(float thumbMm, float margin, float viewSpan) =>
             thumbMm * 0.5f * PxPerMm * margin * viewSpan / PhoneShortPx;
 
+        /// <summary>
+        /// The jacks' view span (game units across the screen's short side) at which a ring of radius <paramref name="floor"/>
+        /// is <paramref name="cover"/> of a <paramref name="thumbMm"/> thumb across, on a phone whose screen's short side is
+        /// <paramref name="phoneShortMm"/>: the ring's diameter on screen is 2 x floor / span x phoneShortMm (Garrett,
+        /// 2026-10-21: "zoomed out enough that on a full size mobile device an above average sized thumb barely covers the
+        /// smallest jack repulsion radius").
+        /// </summary>
+        public static float ThumbViewSpan(float floor, float thumbMm, float cover, float phoneShortMm) =>
+            2f * floor * phoneShortMm / Mathf.Max(1e-3f, thumbMm * cover);
+
         /// <summary>The ring every herder repels inside (the lab's <c>SEL.ring</c>): the floor at Space -5, +6% of it per level
         /// above. Space never takes it below the floor.</summary>
         public static float Ring(float floor, float space) => floor * (1f + 0.06f * Mathf.Max(0f, space + 5f));

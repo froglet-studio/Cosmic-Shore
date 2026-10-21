@@ -66,6 +66,16 @@ namespace CosmicShore.Gameplay
         [Tooltip("The rings' dots.")]
         [SerializeField] Color ringColor = new(0.949f, 0.784f, 0.294f, 0.55f);
 
+        [Header("The rings in the marlin's own view (Garrett, 2026-10-21: \"make the dots that form the radius much more subtle to the marlin\")")]
+        [Tooltip("The rings' dots in the marlin's view: their alpha is multiplied by this. The jacks' view keeps them full.")]
+        [SerializeField, Range(0f, 1f)] float pilotRingAlpha = 0.2f;
+        [Tooltip("Dots per ring in the marlin's view (the jacks' view draws 48).")]
+        [SerializeField, Range(4, 48)] int pilotRingDots = 24;
+        [Tooltip("A ring dot's world size in the marlin's view, as a share of the jacks' view's.")]
+        [SerializeField, Range(0.1f, 1f)] float pilotRingDotScale = 0.5f;
+        [Tooltip("The smallest a ring dot draws in the marlin's view (pixels; the jacks' view uses 3).")]
+        [SerializeField, Min(0f)] float pilotRingDotPixels = 1.5f;
+
         sealed class Member
         {
             public Fauna Creature;
@@ -110,7 +120,8 @@ namespace CosmicShore.Gameplay
         float _swapReadyAt;
         MarlinJacksAI _ai;
         MarlinJacksView _view;
-        AnglerWorldMarks _marks;
+        AnglerWorldMarks _marks;        // the jacks' view: the crew's instruments, full strength
+        AnglerWorldMarks _pilotMarks;   // the marlin's view: the same rings, subtle
         MarlinCrewBodies _bodies;   // the drawn bodies, and the owner's crew on a peer that does not own the hull
 
         // the human's thumbs, mouse and sticks on the jacks
@@ -181,6 +192,8 @@ namespace CosmicShore.Gameplay
         {
             _marks?.Dispose();
             _marks = null;
+            _pilotMarks?.Dispose();
+            _pilotMarks = null;
             _view?.Dispose();
             _view = null;
         }
@@ -965,6 +978,14 @@ namespace CosmicShore.Gameplay
         /// <summary>MASS: the herd's birth rate (<see cref="MarlinJacksMath.FeedsPerOffspringScale"/>).</summary>
         public float FeedsPerOffspringScale(Fauna creature) => MarlinJacksMath.FeedsPerOffspringScale(Level(Element.Mass));
 
+        /// <summary>The herd's mark: its spindles lean toward our domain's hue (<c>herdHueLean</c>).</summary>
+        public bool TryGetLeashMark(out Domains domain, out float lean)
+        {
+            domain = _status != null ? _status.Domain : default;
+            lean = config ? config.HerdHueLean : 0f;
+            return _status != null && lean > 0f;
+        }
+
         public void Born(Fauna parent, Fauna child)
         {
             if (config && _herd.Count < config.HerdCap) Join(child);
@@ -1010,32 +1031,44 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ presentation
 
-        /// <summary>Only the local human sees the jacks' rings and marks (they are the crew's instruments).</summary>
+        /// <summary>
+        /// Only the local human sees the jacks' rings and marks (they are the crew's instruments). Each view draws its own
+        /// set, for its camera alone: the jacks' view at full strength, the marlin's view with the rings' dots much more
+        /// subtle (fewer, smaller, fainter; <c>pilotRing*</c>), so they mark the herd's edges without cluttering the flight.
+        /// </summary>
         void DrawMarks()
         {
             if (!IsLocalHuman) return;
-            var cam = _humanRunsJacks && _view != null ? _view.Camera : ResolveCamera();
-            if (!cam) return;
-            _marks ??= new AnglerWorldMarks();
-            if (!_marks.Begin(cam)) return;
+            var board = _view != null ? _view.Camera : null;
+            if (board && board.enabled) DrawMarks(_marks ??= new AnglerWorldMarks(), board, false);
+            var pilot = ResolveCamera();
+            if (pilot && pilot != board) DrawMarks(_pilotMarks ??= new AnglerWorldMarks(), pilot, true);
+        }
+
+        void DrawMarks(AnglerWorldMarks marks, Camera cam, bool marlinView)
+        {
+            if (!marks.Begin(cam, onlyThisCamera: true)) return;
             float ring = Ring, dot = Mathf.Max(1.5f, ring * 0.02f);
+            float ringDot = marlinView ? dot * pilotRingDotScale : dot, ringPixels = marlinView ? pilotRingDotPixels : 3f;
+            int ringDots = marlinView ? pilotRingDots : 48;
+            var fade = new Color(1f, 1f, 1f, marlinView ? pilotRingAlpha : 1f);
             for (int k = 0; k < 2; k++)
             {
-                _marks.Dot(_jack[k], jackColor, dot * 3f, 8f);
-                _marks.Ring(_jack[k], _r, _f, ring, 48, ringColor, dot, 3f);
+                marks.Dot(_jack[k], jackColor, dot * 3f, 8f);
+                marks.Ring(_jack[k], _r, _f, ring, ringDots, ringColor * fade, ringDot, ringPixels);
             }
             if (_hasDecoy)
             {
-                _marks.Dot(_decoy, decoyColor, dot * 3f, 8f);
-                _marks.Ring(_decoy, _r, _f, ring, 48, decoyColor * new Color(1f, 1f, 1f, 0.6f), dot, 3f);
+                marks.Dot(_decoy, decoyColor, dot * 3f, 8f);
+                marks.Ring(_decoy, _r, _f, ring, ringDots, decoyColor * new Color(1f, 1f, 1f, 0.6f) * fade, ringDot, ringPixels);
             }
-            if (!Calling) _marks.Ring(MarlinPosition, _r, _f, ring, 48, marlinColor * new Color(1f, 1f, 1f, 0.6f), dot, 3f);
-            if (_humanRunsJacks) _marks.Dot(MarlinPosition, marlinColor, dot * 3f, 8f);
+            if (!Calling) marks.Ring(MarlinPosition, _r, _f, ring, ringDots, marlinColor * new Color(1f, 1f, 1f, 0.6f) * fade, ringDot, ringPixels);
+            if (!marlinView) marks.Dot(MarlinPosition, marlinColor, dot * 3f, 8f);
             float charge = Level(Element.Charge);
             for (int i = 0; i < _herd.Count; i++)
                 if (MarlinJacksMath.IsDanger(_herd[i].Roll, charge))
-                    _marks.Dot(_herd[i].LastPos + _u * 4f, dangerColor, dot * 1.5f, 5f);
-            _marks.End();
+                    marks.Dot(_herd[i].LastPos + _u * 4f, dangerColor, dot * 1.5f, 5f);
+            marks.End();
         }
 
         static Camera ResolveCamera()
