@@ -12765,3 +12765,14 @@ compile clean; Amoebius builds.
 3. If a title stays generic, the Console has no error: the sound FMOD reported matched no `soundName` - check its name
    against `Assets/_SO_Assets/Audio/Soundtrack.asset`.
 4. Arena: every card's hull chips show the vessel icons, no white squares.
+
+## 🔴 2026-10-21 — The Thresher spawns in Mass Mode (`cece/youthful-johnson-hccyzf`) - NOT EDITOR-VERIFIED
+
+Garrett: "the default mode for thresher should be mass mode." `ThresherExecutor.Initialize` now sets `_massMode = true`
+(it ran `false`); A still toggles. No editor or `unity` CLI in the session, so `/verify-unity` did not run.
+`THRESHER.md` §2b and its hand tests updated.
+1. Toy Box > Vessel Changer → Thresher: the ball wears your **lit** colour at once. Tow it through a rival trail:
+   prisms flip to your domain, no blasts; it lays a trail of your prisms.
+2. Press A: the ball takes your plain domain colour; whip it red into a rival trail - blasts. Press A: lit again.
+3. Swap to another hull and back to the Thresher: it is in Mass Mode again.
+4. Thresher Time with an AI Thresher: the AI's ball is lit and never explodes (the AI never presses A).

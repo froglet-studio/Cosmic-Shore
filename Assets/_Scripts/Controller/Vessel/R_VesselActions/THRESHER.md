@@ -6,7 +6,8 @@ tail; a thresher is also what a flail is). A small, nimble two-stick ship towing
 ball on a chain. Turn hard and the ball whips round; wind the chain out and let it reel in, and the
 ball cracks red-hot through everything. The **chain slices**, the **ball is always destructive**,
 and prisms are **binary** — there is no partial damage anywhere. The chain's kills **charge** the
-ball's next explosion; **A** switches to **Mass Mode**, where the ball builds instead of breaking;
+ball's next explosion; the hull **spawns in Mass Mode**, where the ball builds instead of breaking,
+and **A** toggles it off to break and back on to build;
 an **omni crystal** windmills the ball round the ship (§2a–2c, added 2026-10-13). Since the
 own-vessel pass (2026-10-13, `cece/dazzling-hypatia-nmdhle`) it flies its **own hull** — a faceted
 thresher shark whose long scythe of a tail hangs along the chain like its last links and cracks like a whip — tows a faceted
@@ -116,6 +117,10 @@ Own-domain bounces never spend it.
 
 ## 2b. Mass Mode (A, toggle) — the ball builds instead of breaking
 
+**The default** (Garrett, 2026-10-21): every Thresher spawns in Mass Mode (`ThresherExecutor.Initialize`,
+which also runs on a vessel swap), so a fresh hull builds until its pilot presses A. The AI pilots never
+press A, so an autopiloted Thresher stays in Mass Mode.
+
 | Ball touches… | Mass Mode does | Speed cost |
 |---|---|---|
 | a **rival** prism | **steals** it (`Prism.Steal` — a shielded rival sheds its shield first and changes hands on the next touch; super-shielded refuses), banking `energyPerSteal` 0.5 | none |
@@ -133,7 +138,7 @@ Own-domain bounces never spend it.
   identity-testable. A planted ball does not move and lays nothing.
 - The chain still slices in Mass Mode, and its kills still bank.
 - The ball wears its domain's **lit** colour in Mass Mode (it never shows red: it does not smash).
-- Leave Mass Mode (A again) and the next rival hit spends everything banked.
+- Leave Mass Mode (A) and the next rival hit spends everything banked.
 
 ## 2c. Windmill — an omni crystal
 
@@ -763,7 +768,8 @@ A8. **MPPM**: a guest sees the host's ball stop at the press (expected, §7); sc
 
 1. **Toy Box > Vessel Changer → Thresher.** The hull swaps in with a ball 22 u behind on a chain, in
    front of the camera; the HUD shows the four Thresher icons (Wrecking Ball · Mass Mode · Winch ·
-   Plant) and petal bars. Console clean.
+   Plant) and petal bars. Console clean. The ball wears your **lit** colour: it spawns in Mass Mode (§2b).
+   **Press A once** to leave it before steps 2-5; step 6 covers Mass Mode itself.
 2. **Slow ball**: tow gently into a RIVAL trail — prisms are destroyed, no explosion, the ball is in
    your domain colour. Into your OWN older trail — the ball bounces off, nothing breaks.
 3. **Whip**: hold RT ~1 s, turn hard ~1 s, snap back briefly, release. No lime on the chain;
@@ -775,9 +781,9 @@ A8. **MPPM**: a guest sees the host's ball stop at the press (expected, §7); sc
 5. **Chain energy**: slice a few rival prisms — the ball's rim burns toward white and the SPACE card's gauge
    fills. Tow the slow ball into a rival prism — it explodes, bigger the more you sliced; rim and
    gauge empty. Bounce off your own trail — no blast, nothing spent.
-6. **Mass Mode** (A): the ball turns your lit colour. Through a rival trail: prisms flip to your
+6. **Mass Mode** (A, back on): the ball turns your lit colour. Through a rival trail: prisms flip to your
    domain (no blasts, even red-hot); through your own: shields; it lays a trail of your prisms. Press
-   A again, hit a rival prism: one big blast.
+   A again, hit a rival prism: one big blast. Swap to another hull and back: the Thresher is in Mass Mode again.
 7. **Plant and spin** (LT): from straight flight with the ball behind, the ship swings wide and
    curves onto the orbit (no snap, no stall); RT up winds in and spins faster.
 8. **Launch view**: once it spins, the camera glides (~0.9 s, no wobble) to sit level behind a point

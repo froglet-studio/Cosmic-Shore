@@ -57,7 +57,7 @@ namespace CosmicShore.Gameplay
     /// an explosion even below smash speed (and a smash's own explosion spends it), its diameter
     /// growing with the bank.
     ///
-    /// <b>Mass Mode</b> (A, a toggle). The bank is never released: the ball STEALS the rival prisms
+    /// <b>Mass Mode</b> (A, a toggle; the hull SPAWNS in it - Garrett, 2026-10-21). The bank is never released: the ball STEALS the rival prisms
     /// it touches (each steal banks <c>energyPerSteal</c>), SHIELDS its own domain's, lays a trail
     /// of its own prisms behind it, and makes no explosion at any speed. Leave Mass Mode and the
     /// next rival hit spends everything it banked.
@@ -257,7 +257,7 @@ namespace CosmicShore.Gameplay
             _seeded = false;
             _payOut = false;
             _plantHeld = false;
-            _massMode = false;
+            _massMode = true;   // the default (Garrett, 2026-10-21): A leaves it for the breaking ball
             _energy = 0f;
             _releaseDirection = null;
             _trailOwed = 0f;
