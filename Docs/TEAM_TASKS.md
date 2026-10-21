@@ -1578,6 +1578,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a 'Known feel cost'
 
+### T-20261021-18a1 · open · test · vessels
+- **Task:** Fly Marlin and Jacks in the editor (UNITY_VERIFICATION_CHECKLIST 2026-10-21, steps 1-10: the models and the host-client crew included) and the Frenzy shield-food rule
+- **Done when:** Every step of the checklist entry passes, or each failure is written up on the PR
+- **Who can take it:** Garrett or Yash
+- **Added:** 2026-10-21 by Garrett's session (`claude/project-thread-xrej29`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/MARLIN_JACKS.md
+
+### T-20261021-1844 · done · content · vessels
+- **Task:** Give Marlin and Jacks its own model, icons and card art (it wears the Rhino's)
+- **Done when:** The marlin hull and jacks have /vessel-model bodies and the class card has its own icons
+- **Who can take it:** Garrett
+- **Added:** 2026-10-21 by Garrett's session (`claude/project-thread-xrej29`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/MARLIN_JACKS.md §5
+- **Done:** 2026-10-21, Marlin.fbx and Jack.fbx built by /vessel-model (specs/marlin.py, specs/jack.py), drawn by MarlinCrewBodies; class card rendered from the model (render_cards.py Marlin)
+
 ### T-20261021-8190 · open · test · In-game UI / arena pilot swap
 - **Task:** Play an arena match (Brood Rush or Broadside) with 2+ AI teammates on PC, pad and a phone: the pilot-swap tiles sit between the goal stack and the score bar (16:9, 4:3, notched phone), tapping a tile swaps hulls and does not also steer, keycaps read 1/2 on keyboard and nothing on a phone
 - **Done when:** Tiles placed in the gap on all three aspects, a tap swaps without steering, keycaps follow the device
