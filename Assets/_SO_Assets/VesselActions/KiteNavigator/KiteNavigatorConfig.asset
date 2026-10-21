@@ -14,16 +14,28 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   boardRadius: 160
   anchor: 0.3
-  frame: 0
+  frame: 3
+  headingAlignDistance: 220
   easeRate: 3
   reachY: 40
   kiteRadius: 8
   kiteSpeed: 320
   kiteAccel: 12
-  tailLength: 2.4
+  tailLength: 4.8
   thumbOffsetMillimetres: 21
   offsetMouse: 0
   stickDeadzone: 0.15
+  control: 1
+  slingRope: 42
+  slingStiffness: 260
+  slingDamping: 5
+  slingDrag: 0.35
+  slingFreeDrag: 0.9
+  slingMaxSpeed: 364
+  slingStickReach: 0.6
+  aiSlingLead: 0.25
+  raceTimeMoteBonus: 2
+  raceTimeLoopPreference: 3
   moteHome: 0
   moteCount: 26
   moteCluster: 4
@@ -48,12 +60,32 @@ MonoBehaviour:
   stealCooldown: 1
   faunaChargeCost: 1
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
+  aiCrewNavigates: 1
+  aiBoostRingDistance: 180
   aiSkill: 2
   omniMotesPerElement: 6
   omniClusterRadius: 0.5
   pipSize: 0.32
   viewMargin: 0.015
+  viewScale: 1.352
+  wholeScreen: 1
+  cordWidth: 0.6
+  cordAlpha: 0.75
+  handLineGap: 0.012
+  handLineFallback: 0.2
+  handEdgeMargin: 10
+  kiteOffscreenReach: 240
   moteSize: 4.5
+  elementColors:
+  - {r: 0.626, g: 1, b: 0, a: 1}
+  - {r: 0.3682, g: 0.7764, b: 0, a: 1}
+  - {r: 0.25, g: 1, b: 0, a: 1}
+  - {r: 0.6094, g: 0.8125, b: 0, a: 1}
+  fizzleSeconds: 0.95
+  spaceRideSeconds: 1.1
+  massMorphSeconds: 0.75
+  timeFlightSeconds: 0.7
+  chargeFlightSeconds: 0.55
   spaceSpinDegreesPerSecond: 150
   massPulse: 0.72
   massPetalsOut: 2
@@ -63,6 +95,7 @@ MonoBehaviour:
   chargeBoltTrail: 7
   tailWidth: 1.4
   pilotKiteAlpha: 0.22
+  pilotKiteScale: 2.5
   pilotDotAlpha: 0.35
   pilotDotSize: 0.9
   viewDepth: 400

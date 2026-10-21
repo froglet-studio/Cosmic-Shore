@@ -1699,6 +1699,150 @@ authoring session, so `/verify-unity` did NOT run. Headless proof:
 
 ---
 
+### 🔴 The Wrasse's juice: every effect is its motes' petals, no rings; a steady small view (`cece/loving-fermat-ntdnbu`, 2026-10-21, round 10) — NOT EDITOR-VERIFIED
+
+**What landed** (`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md` round 10):
+- `KiteNavigatorJuice` (new) and `KiteBurst` (new) replace every flat effect ring.
+- The lasso cinches shut.
+- The Mass prisms are laid as the morphing blocks arrive (0.75 s later than before).
+- The Grouper's small view latches the totems' layout at rest.
+
+**Checked headless:**
+- `unity_refcompile`: player 0 errors; editor 0 errors in changed files.
+- `KiteNavigatorJuiceTests` 4/4 out of editor (NUnit shim); two planted defects fail them.
+- `juice_sheet.sh` renders every effect from above and from the chase camera, and the sheets were looked at.
+
+**Verify:**
+1. **Steady small view** - on the Wrasse, press and upgrade cards, swap seats and resize the window. The Grouper's
+   view stays in its box left of the totems and below the line, and never pumps.
+2. **Fizzle** - lasso two elements together: no ring and no outline. The motes sputter, go grey, droop and flicker out.
+3. **Space** - lasso Space motes: they spiral into the centre, a white-hot star flares as the blast goes off, and white
+   shards and petals fly out evenly and cool to lime.
+4. **Mass** - lasso Mass motes: each petal folds into a block, and the blocks rise and fly into the cluster's places,
+   becoming the prisms. The prisms appear as the blocks land; no prism shows before its block.
+5. **Time** - lasso Time motes: streaks spiral onto the Grouper (watch from the Grouper's view too) and land as glints.
+   The saved-boost dots appear when they land.
+6. **Charge** - lasso Charge motes: the petals home onto the Wrasse, orbit it and turn gold. The pips and the kite's gold
+   appear when they arrive.
+7. **Pops and steals** - the head popping a prism bursts white shards; a ram that steals streams gold into the Wrasse; an
+   Omni crystal blooms its four clusters open.
+8. **Frame time** - a big Mass loop (64 blocks) and a wall of pops cost nothing visible (`prof`).
+
+### 🔴 The Wrasse and Grouper get real bodies; the kite flies the whole screen (`cece/loving-fermat-ntdnbu`, 2026-10-20, round 7) — NOT EDITOR-VERIFIED
+
+**What landed** (`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md` round 7):
+- **Two models** from `/vessel-model`, `Grouper.fbx` and `WrasseKite.fbx` (dossiers in `Docs/VesselModels/`), nested
+  in `Wrasse.prefab` by `author_wrasse_assets.py`:
+  - The Grouper is the ship geometry. The Sparrow's mesh renderer is off; its bones, jets, colliders and Animator stay.
+  - `WrasseCrewBodies` (a NetworkBehaviour on the root) animates both. It replicates the Wrasse's pose, so every peer
+    sees it.
+- **The kite:**
+  - `slingMaxSpeed` 520 → 364, `tailLength` 2.4 → 4.8.
+  - It flies the whole kite view (`wholeScreen`).
+  - The view is zoomed out 30% (`viewScale` 1.352) and centred on the hull.
+  - The board turns to the hull's heading over ~220 u flown (`KiteBoardFrame.Heading`), so a yaw in place does not drag
+    the motes.
+  - The cord is drawn while held.
+  - Holding a mouse button or a trigger lets go; lifting a thumb still does.
+- Wrasse Run's detection clamp is 2400 → 3800.
+
+**Checked headless:**
+- `unity_refcompile`: the player config has 0 errors in project code. The editor config has 0 errors in changed files;
+  its 3 are on bleeding-edge.
+- `sling_parity.cjs` PASS, worst 0.006 × tolerance, all controls caught.
+  - Its tow scenario's hand swing moved 60 → 64 u, off a 41.97 u knife edge of the 42 u rope that float and double
+    resolve differently.
+- `parity.cjs` PASS.
+- `verify_lab.cjs` PASS on both labs.
+- Offline NUnit shim: 34/34, including 3 new whole-screen tests.
+- `author_wrasse_assets.py --check` OK and `--self-test` ok (6 new negative controls for the bodies).
+- `author_wrasse_run_assets.py --check` OK.
+- `build.py grouper|wrassekite --check` OK. The three readers agree, and the contact sheets were looked at.
+
+**Verify:**
+1. **Import** - both FBXs import with four slots (Domain, Body, Window, Engine) and four shape keys. The Wrasse prefab
+   shows `Grouper` and `WrasseKite` under the root, with no missing references.
+2. **The Grouper** - Toybox, Vessel Changer, the Wrasse:
+   - The hull is the Grouper in your domain colour; no Sparrow shows through.
+   - Its tail beats faster with speed and bends OUT of a turn.
+   - The jaw opens and the dorsal rises when you boost.
+   - Each element upgrade morphs it.
+3. **The Wrasse** - the kite view shows the Wrasse model, not a flat diamond. It swims faster when slung fast and points
+   where it flies. The chase camera sees it too.
+4. **Whole screen** - the kite reaches every edge and corner of the kite view and bounces off each edge.
+5. **Zoom and centre** - the kite view is ~30% wider than before, with the Grouper in its centre.
+6. **Yaw in place** - yaw the Grouper on the spot: the board, the motes and the kite stay put. Fly a few hundred units
+   on a new heading: the view eases round to it.
+7. **The cord** - while you hold the kite, a thin line runs from your thumb, cursor or stick hand to the kite. It is
+   gone when you let go.
+8. **Let go and grab** - each of these flings the kite and hides the cord: lifting the thumb, holding left or right
+   click, holding either trigger. Touching down or releasing grabs it again.
+9. **Speed and lasso** - the kite's top speed feels ~70% of before. Loops can be about twice as big before the tail
+   trims.
+10. **Two machines** - host and client both fly Wrasses: each sees the other's Grouper and Wrasse. A host's AI Wrasse's
+    kite is seen on the client.
+11. **Feel** - tune the `WrasseCrewBodies` numbers in the inspector (swim, tail, jaw, dorsal, fins). Flip a sign if a
+    part moves the wrong way.
+12. **Round 8, the hand line** - on the kite: drag, move the cursor or lean the stick toward the ability cards. The hand
+    (where the cord starts) stops just above them, and the kite still swings across that line and off the bottom of the
+    screen.
+13. **Round 8, the Grouper's corner** - on the kite, the Grouper's view fills the box left of the ability cards, below
+    the line, and never rises above it. Double-tap it to swap. In it, the Wrasse has a large faint stand-in. Try a phone
+    and a wide monitor: the box follows the cards.
+14. **Round 8b, only the cord** - on the kite, with the mouse, a thumb and a stick: the hand stops ~10 u inside the
+    screen's sides and top (and at the line at the bottom), and the Wrasse swings past every edge on its cord. Fling it
+    off the side: it flies on and stops by drag; grab again and the cord pulls it back.
+15. **Round 9b, four green-yellows** - the kite view's motes are four limes with no blue or orange in them: Charge
+    bright yellow-green `#a0ff00`, Mass deep green `#5ec600`, Space green with a little yellow `#40ff00`, and Time
+    chartreuse `#9bcf00`. The pilot's faint dots match. None reads as Jade, Gold or the neutral blue, the four are told
+    apart, and the tail and saved-boost dots are still the CTA lime.
+
+### 🔴 The Wrasse's Sling, AI crews, the flail's toys, and Wrasse Run (68) (`cece/loving-fermat-ntdnbu`, 2026-10-20) — NOT EDITOR-VERIFIED
+
+**What landed** (`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md` round 6, `_Scripts/Controller/Arcade/WRASSERUN.md`):
+- **The Sling** (Garrett: "Sling is excellent. bring it to unity"; "the gamepad and AI should be consistent with mouse
+  and touch"): every input holds the Wrasse's kite on an invisible 42 u rope (`KiteNavigatorCore.Sling`,
+  `KiteNavigatorConfig.control` = Sling and the `sling*` fields): a thumb, the mouse, a thumbstick (the hand placed
+  on the board, `slingStickReach` 0.6) and the AI squad mate (`KiteNavigatorAI.Control`).
+- **Race rings:** the kite is the hull's `IRingThreadProbe` - it threads every gate race's rings, the Skim Race's
+  and a preview course's. It does NOT trip toys; the **Thresher's ball does** (`ThresherExecutor` is the
+  `ISwitchThreadProbe`, `Toy.Update`).
+- **AI crews are two AIs:** an AI Wrasse this machine simulates seats its kite (`KiteNavigator.ShouldRun`, `IsAICrew`),
+  flown by the navigator AI; the hull's `AIPilot` flies the Grouper and spends saved boosts on the straights.
+- **Wrasse Run** (`GameModes.WrasseRun = 68`): a ring counts only when the kite threads it
+  (`GateRaceController.HullThreadsWhileProbeLive`); Time motes come more often and the AI kite prefers Time loops and
+  flies through the hull's next ring (`GateRaceController.TryGetNextRing`). Every asset by `Tools/Build/author_wrasse_run_assets.py`;
+  card art `CardBackgrounds/WrasseRun.png` (`/cardart` COURSE tier).
+
+**Checked headless:** `unity_refcompile` player config 0 errors in project code; editor config 0 errors in changed
+files (its 3 are on bleeding-edge). `sling_parity.cjs` PASS (C# vs the lab page, 3 controls caught) and `parity.cjs`
+PASS. `KiteNavigatorSlingTests`, `WrasseRunCourseTests` and `KiteNavigatorCoreTests` RUN out of editor (a scratch NUnit
+shim): 31/31 - including the AI on the Sling whirling a loop and dragging the kite through a goal - and planted
+defects fail them (two sling defects fail three; a lagging hand and an AI that ignores its goal fail one each). `author_wrasse_run_assets.py --check` OK (and caught a
+planted edit); the arcade gates and `render_card_backgrounds.py --check` / `author_card_backgrounds.py --strict` pass.
+
+**Verify:**
+1. **Compiles; tests** - Test Runner: `KiteNavigatorSlingTests` (6), `WrasseRunCourseTests` (11 with cases),
+   `KiteNavigatorCoreTests`, `KiteNavigatorConfigTests`, `EnumIntegrityTests` (63 modes).
+2. **Sling on a phone** - Toybox, Vessel Changer, the Wrasse; swap to the kite (double-tap the small view). Drag: the
+   kite trails your thumb on a rope. Small circles: it whirls round in big ones and closes loops. Lift: it flies free
+   and slows. Feel: rope length (`slingRope`), stiffness, drag.
+3. **Sling with a mouse and a pad** - the kite trails the cursor without a click; circling the cursor whirls it. A
+   pad's left stick places the hand on the board (centred = the board's centre): circling the stick whirls the kite.
+   With the hull on its AI and you on the kite, the AI squad mate's kite (when you swap back) also whirls on a rope.
+4. **Toys** - in the Toybox, swing the Wrasse's kite through a toy's ring: nothing fires. Fly the Thresher and swing the
+   ball through a toy's ring: it fires once, and again only after both the hull and the ball have left it.
+5. **Wrasse Run card** - Menu → Arcade: **Wrasse Run**, its course render; the launch panel pins the Wrasse.
+6. **Wrasse Run, the hull alone** - fly the Grouper through the lit ring: no credit.
+7. **Wrasse Run, the kite** - with the AI navigating, bring the lit ring onto the kite's board: the AI flies the kite
+   through it and it counts; the goal row reads 1/16. Swap to the kite and sling it through the next one: it counts once.
+8. **Time is the fuel** - in the race more motes are Time diamonds; a Time loop banks boosts on the Time card; the right
+   trigger (both thumbs lifted on a phone) spends one.
+9. **AI crews** - add AI Wrasses (host): each one's kite slings through its rings (its hull flying through alone does not
+   count) and loops Time motes; its hull boosts on the straights; they finish the race.
+10. **Regressions** - Thresher Time's ball still threads its rings; Headlong / Redline / Skim Race unchanged; Toybox toys
+    still fire for every other hull.
+
 ### 🔴 Kite Navigator on the Wrasse ("Wrasse and Grouper"): the Kite & Tail crew seat on the local hull (`cece/compassionate-babbage-gc13io`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** the first multiplayer vessel, `VesselClassType.Wrasse = 19` (a Sparrow hull, in the Toybox's
@@ -12844,3 +12988,19 @@ files). No editor or `unity` CLI in the session, so `/verify-unity` did not run.
    every time. With RT held it slows hard and the ball overtakes and leads; with RT released the ball swings round
    like a pendulum. Neither may turn the ship. If a 180 still happens, note the Time level, RT, and whether the
    crosshair was up when LT was let go.
+
+## 🔴 2026-10-21 — App shell pad buttons: Select toggles freestyle, Start opens Settings (`claude/project-thread-i9ydba`) - NOT EDITOR-VERIFIED
+
+Garrett's remap. `ScreenSwitcher` toggles freestyle on Select / View (was Y) and opens Settings on Start (was X).
+`OverviewGesture` (freestyle exit, in-game overview, spectator close) moved from Start to Select with it, and so did
+`ModePreviewWindow`'s focus release, so Start on Home never fights a focused preview. The screenshot capture moved
+off Select to a right-stick click (R3). `/verify-unity` was not run (no editor; the reference compile could not run:
+no .NET in the container).
+
+1. **Home with a pad:** Select flies into the cell. After the 3 s cooldown, Select brings you back. Y and X do
+   nothing on Home.
+2. **Start on Home** opens Settings once. Start does nothing while a window is open or in freestyle.
+3. **A game scene:** Select opens the overview (Volume / Pause). Start no longer does.
+4. **A mode preview with focus:** Select releases it; Start does not open Settings underneath.
+5. **Screenshot:** clicking the right stick in flight takes a capture; Select does not.
+6. **Spectating:** Select leaves.

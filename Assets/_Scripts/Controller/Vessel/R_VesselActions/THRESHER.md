@@ -640,6 +640,12 @@ race, Thresher Time included), `CrystalRaceRing` (Skim Race) and `ModePreviewGat
 previews). A ring is threaded by the hull's segment OR the ball's, the same mouth test, one credit a
 frame; a re-seed (respawn) or a step past `maxPlausibleSpeed` threads nothing. `RingThreadProbeTests`.
 
+**Toys** (2026-10-20, Garrett: "lets flip things so the wrasse does not activate toys, but the thresher flail
+does"): `ThresherExecutor` is an `ISwitchThreadProbe`, so the ball also trips the Toybox's toys. `Toy.Update`
+samples the local hull's probe and fires a toy when the ball's segment passes through its trigger sphere; the
+toy re-arms once the hull AND the ball are clear of it (`Docs/ToySystem/ARCHITECTURE.md`, "The switch"). Swing
+the flail through a toy's ring and it fires, as a hull flying through it does.
+
 **Colliders and jets**: the Squirrel FBX's two box colliders and `ImpactCollider` went with it;
 `ThresherBody` (box 1.6 × 1.4 × 5.2 + `ImpactCollider`, layer Default) and `ThresherHitbox` (trigger
 2.2 × 1.9 × 5.8, layer Ships) are the shark's. Two of the four jets ride the hull flanking the peduncle,

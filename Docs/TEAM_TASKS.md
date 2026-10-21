@@ -1179,6 +1179,70 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-19 by Garrett's session (`cece/elegant-goldberg-eanwgx`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
 
+### T-20261020-bbc3 · done · decision · crew-vessels
+- **Task:** Play the Wrasse Lasso Lab on a phone and pick the kite's phone control: the shipped Follow, Sling (thumb on a tether), Plant (the Thresher's anchor), Hook (curled flick) or Well (gravity); also keep or drop snap-shut loops. Round 1's scorecard picks Plant (29 mm of thumb per loop against Follow's 147, 3.3 motes per loop).
+- **Done when:** A 'Which control goes to Unity' entry is in the lab's Decisions tab (shared log)
+- **Who can take it:** Garrett (Wrasse owner); Yash can play it and record a second opinion
+- **Added:** 2026-10-20 by a Claude session (`cece/loving-fermat-ntdnbu`)
+- **See:** https://claude.ai/artifact/T5EBvmTvFw4KNRMQtwXDQb, Docs/Studios/WRASSE_LASSO_LAB.md
+- **Done:** 2026-10-20, Garrett picked the Sling (2026-10-20: 'Sling is excellent. bring it to unity'); ported as KiteNavigatorCore.Sling on cece/loving-fermat-ntdnbu. Snap-shut loops stay open.
+
+### T-20261020-1187 · open · test · crew-vessels
+- **Task:** Play the Wrasse's new Sling control in the Unity Editor and on a phone: Toybox > Vessel Changer > Wrasse, swap to the kite (double-tap the small view or press 2), then drag (the kite trails on a rope), make small circles (it whirls round in big ones and closes loops) and lift (it flies free). Also: the pad's stick places the rope's hand on the board; swinging the kite through a Toybox toy fires nothing, while the Thresher's ball (the flail) swung through one fires it once.
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Wrasse's Sling, switches, and Wrasse Run' steps 1-4 pass, with any feel notes (rope length, stiffness, drag) recorded
+- **Who can take it:** Garrett (feel sign-off, phone); Yash (offered) for the Editor pass
+- **Added:** 2026-10-20 by a Claude session (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md round 6
+
+### T-20261020-ec68 · open · test · crew-vessels
+- **Task:** Play Wrasse Run (GameModes 68) in the Editor: the Arcade card, a 2-player launch, the hull alone not counting, the kite collecting rings (AI navigating and you navigating), Time boosts, AI crews (two AIs: the hull's pilot and a kite navigator) slinging through their rings and finishing, and Thresher Time's ball still threading.
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Wrasse's Sling, switches, and Wrasse Run' steps 5-10 pass
+- **Who can take it:** Yash (offered; editor tests), Garrett (sign-off); Caleb or Andrew for a QA run
+- **Added:** 2026-10-20 by a Claude session (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Arcade/WRASSERUN.md §7
+
+### T-20261020-24a4 · open · decision · crew-vessels
+- **Task:** Wrasse Run tuning after a first play: race length (16 = two laps of eight), how far rings lift out of the lap's plane (60-180 u), the Time mote bonus (2) and the AI's Time preference (3), and the AI Grouper's boost rule (spend while the next ring is 180 u or more ahead).
+- **Done when:** The numbers are kept or changed in author_wrasse_run_assets.py / WrasseRunCourse.cs / KiteNavigatorConfig.asset, and the AI boost rule is kept or changed
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by a Claude session (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Arcade/WRASSERUN.md §5, KITE_NAVIGATOR.md Follow-ups
+
+### T-20261020-d09f · open · test · Crew vessels
+- **Task:** Round 7 of the Wrasse on cece/loving-fermat-ntdnbu: reimport Grouper.fbx and WrasseKite.fbx, open Wrasse.prefab, then fly it - the Grouper and Wrasse bodies and their puppetry, the whole-screen kite, the 30% zoom centred on the Grouper, yaw in place, the drawn cord, let go by lift / held click / held trigger, top speed 364 and the doubled lasso, and two machines seeing each other's Wrasse
+- **Done when:** Every step of the round-7 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or each failure is written down
+- **Who can take it:** Yash (offered) runs the Editor pass; Garrett judges the feel
+- **Added:** 2026-10-20 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 7)
+
+### T-20261020-a9f5 · open · dev · Crew vessels
+- **Task:** Fit the Wrasse hull's parts to the Grouper model: a hit box sized to Docs/VesselModels/Grouper.md (it is still the Sparrow's flat 10.3 x 0.46 x 4.4 box, the Grouper is 5.6 u tall), the two jets re-homed to the engine mouths (+-0.78, -0.30, -2.62), FlareEngine pointed at the Grouper's Engine slot, and the Wrasse's CrystalHullFusion bakes re-baked on the Grouper mesh
+- **Done when:** The Grouper's collisions, plumes, engine flash and crystal fusion all sit on the Grouper in play
+- **Who can take it:** Yash (offered) or anyone with the Editor; Garrett signs off the fit
+- **Added:** 2026-10-20 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Follow-ups)
+
+### T-20261020-8dbc · open · test · Crew vessels
+- **Task:** Round 8 of the Wrasse on cece/loving-fermat-ntdnbu: on the kite, the hand stops at a line just above the ability cards while the kite swings past it and off the bottom; the Grouper's view fills the box left of the cards and below the line; the Grouper's view keeps a larger faint Wrasse stand-in. Check a phone and a wide monitor
+- **Done when:** Steps 12 and 13 of the round-7 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, or each failure is written down
+- **Who can take it:** Garrett (feel); Yash (offered) can run it
+- **Added:** 2026-10-20 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 8)
+
+### T-20261021-3d24 · open · test · Crew vessels
+- **Task:** Rounds 8b and 9 of the Wrasse on cece/loving-fermat-ntdnbu: the hand stops a small margin inside the screen's sides and top while the Wrasse swings past every edge on its cord; the four lasso elements' motes are four green-yellows with no blue or orange (Charge #a0ff00, Mass #5ec600, Space #40ff00, Time #9bcf00); say if any two are hard to tell apart in play
+- **Done when:** Steps 14 and 15 of the round-7 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, or each failure is written down
+- **Who can take it:** Garrett (feel and colour call); Yash (offered) can run it
+- **Added:** 2026-10-21 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
+- **See:** Docs/VesselModels/COLOR.md 5b; Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 8b and 9)
+
+### T-20261021-d063 · open · test · Crew vessels
+- **Task:** Round 10 of the Wrasse on cece/loving-fermat-ntdnbu: the juice. No effect rings; each loop's motes become its effect (fizzle sputters out grey, Space explodes with the blast, Mass blocks morph into the prisms, Time streaks onto the Grouper, Charge orbits onto the Wrasse); the lasso cinches; the Grouper's small view no longer pumps in and out of its box
+- **Done when:** The round-10 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or each failure is written down with what to change
+- **Who can take it:** Garrett (feel: is it bespoke, unique, dynamic and polished?); Yash (offered) can run it
+- **Added:** 2026-10-21 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 10); bash Tools/Build/kite_navigator_lab/juice_sheet.sh
+
 ### T-20261020-3bfe · open · test · vessels
 - **Task:** Fly the Sparrow (Toybox Vessel Changer or any mode): flying, the camera sits level directly behind the hull; press the turret/MASS stance and it eases up to the old elevated view; leave the stance (press again, or a turn end) and it drops back. Check the Serpent and the Stoat cameras are unchanged in and out of their stance.
 - **Done when:** All three behave as described in Play mode, or the failure is noted with the camera height seen

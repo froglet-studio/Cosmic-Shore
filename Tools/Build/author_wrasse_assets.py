@@ -32,6 +32,12 @@ WHAT IT MAKES (the design: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR
           requires, and is inert with no boost binding); the Sparrow's gun telemetry
           becomes DefaultVesselTelemetry. Every local reference into a removed part is dropped, and --check holds the prefab
           to having no dangling local fileID
+        - TWO BODIES (round 7; Garrett, 2026-10-20: "give the wrasse and grouper proper 3d vessels with animations etc." -
+          "the wrasse and grouper should be visible to others"): Grouper.fbx and WrasseKite.fbx (/vessel-model,
+          specs/grouper.py and specs/wrassekite.py) nested under the root by name; the Grouper is the hull's drawn geometry
+          (VesselCustomization._shipGeometries, so the domain paint lands on it) and the Sparrow's mesh renderer is switched
+          off (its bones, jets, colliders and Animator stay: the hull still flies on them); WrasseCrewBodies on the root
+          places, swims and replicates the Wrasse and puppets the Grouper (bodies_retrofit)
       Everything else is the Sparrow's: the lab flew the Sparrow's numbers, and the hull is the pilot's half.
       Unlike the clone, the no-buttons and container edits are RETROFITS: applied to the committed prefab too, idempotently.
     SO_Class_Wrasse (the Sparrow's icons and abilities, owned from the start) + its entry in SO_Classlist_All / _Classes;
@@ -270,6 +276,115 @@ def tuning_retrofit(text: str) -> str:
     return head + "".join(out)
 
 
+# ----------------------------------------------------------------------------- the two bodies (round 7)
+SPARROW_FBX_GUID = "151e3f0352963624abf4da579618e66d"
+SPARROW_INSTANCE_ID = "3134011750752858212"      # the Sparrow model nested under the root
+SPARROW_SMR_SOURCE = "2692722512241470911"       # its SkinnedMeshRenderer, in the FBX
+SPARROW_MODEL_GO = "2864103291091619125"         # its root GameObject (stripped): the ship geometry until round 7
+GROUPER_FBX_GUID = "e8c932601ef7e35b1f3017557298424c"
+KITE_FBX_GUID = "c56064d56acc061a124729744a5966fa"
+MODEL_ROOT_GO = "919132149155446097"             # a model's root GameObject / Transform: constants of the importer
+MODEL_ROOT_TRANSFORM = "-8679921383154817045"
+GROUPER_INSTANCE_ID = "7319000000000000001"
+GROUPER_TRANSFORM_ID = "7319000000000000002"
+GROUPER_GO_ID = "7319000000000000003"
+KITE_INSTANCE_ID = "7319000000000000011"
+KITE_TRANSFORM_ID = "7319000000000000012"
+BODIES_ID = "7319000000000000021"                # WrasseCrewBodies on the root
+BODIES_SCRIPT_META = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "Vessel", "Crew", "WrasseCrewBodies.cs.meta")
+# WrasseCrewBodies' serialized fields at the C# initializers, written once (the team tunes them in the inspector after)
+BODIES_FIELDS = (
+    "  kiteModelName: WrasseKite\n  grouperModelName: Grouper\n  kiteModelEuler: {x: 0, y: 0, z: 0}\n  kiteModelScale: 1\n"
+    "  swimHz: 1.2\n  swimHzPer100: 1.4\n  swimDegrees: {x: 8, y: 14, z: 24}\n  swimLagBeats: 0.18\n  finFlapDegrees: 28\n"
+    "  swimTurnBendDegrees: 18\n  grouperCruiseSpeed: 60\n  grouperBoostSpeed: 260\n  grouperTailHz: {x: 0.6, y: 1.4}\n"
+    "  grouperTailDegrees: {x: 7, y: 16}\n  grouperTurnBendDegrees: 22\n  grouperFullYawRate: 110\n"
+    "  grouperFinScullDegrees: 14\n  grouperFinBankDegrees: 26\n  grouperJawDegrees: 24\n  grouperDorsalDegrees: 30\n"
+    "  remoteSmoothing: 14\n")
+SPARROW_SMR_OFF = (f"    - target: {{fileID: {SPARROW_SMR_SOURCE}, guid: {SPARROW_FBX_GUID},\n        type: 3}}\n"
+                   "      propertyPath: m_Enabled\n      value: 0\n      objectReference: {fileID: 0}\n")
+
+
+def model_instance(instance_id: str, transform_id: str, fbx_guid: str, name: str, go_id: str = None) -> str:
+    """A model nested under the root in its own frame (the fleet's: nose +Z, up +Y, where the Sparrow's sits)."""
+    mods = [(MODEL_ROOT_GO, "m_Name", name)] + [(MODEL_ROOT_TRANSFORM, k, v) for k, v in (
+        ("m_LocalPosition.x", "0"), ("m_LocalPosition.y", "0"), ("m_LocalPosition.z", "0"), ("m_LocalRotation.w", "1"),
+        ("m_LocalRotation.x", "0"), ("m_LocalRotation.y", "0"), ("m_LocalRotation.z", "0"),
+        ("m_LocalEulerAnglesHint.x", "0"), ("m_LocalEulerAnglesHint.y", "0"), ("m_LocalEulerAnglesHint.z", "0"))]
+    out = (f"--- !u!1001 &{instance_id}\nPrefabInstance:\n  m_ObjectHideFlags: 0\n  serializedVersion: 2\n"
+           f"  m_Modification:\n    serializedVersion: 3\n    m_TransformParent: {{fileID: {ROOT_TRANSFORM_ID}}}\n"
+           "    m_Modifications:\n" +
+           "".join(f"    - target: {{fileID: {fid}, guid: {fbx_guid},\n        type: 3}}\n      propertyPath: {path}\n"
+                   f"      value: {v}\n      objectReference: {{fileID: 0}}\n" for fid, path, v in mods) +
+           "    m_RemovedComponents: []\n    m_RemovedGameObjects: []\n    m_AddedGameObjects: []\n    m_AddedComponents: []\n"
+           f"  m_SourcePrefab: {{fileID: 100100000, guid: {fbx_guid}, type: 3}}\n"
+           f"--- !u!4 &{transform_id} stripped\nTransform:\n"
+           f"  m_CorrespondingSourceObject: {{fileID: {MODEL_ROOT_TRANSFORM}, guid: {fbx_guid},\n    type: 3}}\n"
+           f"  m_PrefabInstance: {{fileID: {instance_id}}}\n  m_PrefabAsset: {{fileID: 0}}\n")
+    if go_id:
+        out += (f"--- !u!1 &{go_id} stripped\nGameObject:\n"
+                f"  m_CorrespondingSourceObject: {{fileID: {MODEL_ROOT_GO}, guid: {fbx_guid},\n    type: 3}}\n"
+                f"  m_PrefabInstance: {{fileID: {instance_id}}}\n  m_PrefabAsset: {{fileID: 0}}\n")
+    return out
+
+
+def bodies_block(script_guid: str) -> str:
+    return (f"--- !u!114 &{BODIES_ID}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
+            f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {ROOT_GO}}}\n"
+            f"  m_Enabled: 1\n  m_EditorHideFlags: 0\n  m_Script: {{fileID: 11500000, guid: {script_guid}, type: 3}}\n"
+            "  m_Name: \n  m_EditorClassIdentifier: \n  ShowTopMostFoldoutHeaderGroup: 1\n" + BODIES_FIELDS)
+
+
+def bodies_retrofit(text: str, script_guid: str) -> str:
+    """The Grouper and the Wrasse as models (round 7). Idempotent: every step looks before it writes."""
+    if f"--- !u!1001 &{GROUPER_INSTANCE_ID}\n" not in text:
+        text += model_instance(GROUPER_INSTANCE_ID, GROUPER_TRANSFORM_ID, GROUPER_FBX_GUID, "Grouper", GROUPER_GO_ID)
+    if f"--- !u!1001 &{KITE_INSTANCE_ID}\n" not in text:
+        text += model_instance(KITE_INSTANCE_ID, KITE_TRANSFORM_ID, KITE_FBX_GUID, "WrasseKite")
+    if f"--- !u!114 &{BODIES_ID}\n" not in text:
+        text += bodies_block(script_guid)
+    # the root lists the component and both model transforms
+    m = re.search(r"(--- !u!1 &%s\nGameObject:\n(?:.*\n)*?  m_Component:\n(?:  - component: \{fileID: -?\d+\}\n)+)" % ROOT_GO, text)
+    if m and f"  - component: {{fileID: {BODIES_ID}}}\n" not in m.group(1):
+        text = text[:m.end(1)] + f"  - component: {{fileID: {BODIES_ID}}}\n" + text[m.end(1):]
+    m = re.search(r"(--- !u!4 &%s\nTransform:\n(?:.*\n)*?  m_Children:\n(?:  - \{fileID: -?\d+\}\n)*)" % ROOT_TRANSFORM_ID, text)
+    if m:
+        add = "".join(f"  - {{fileID: {t}}}\n" for t in (GROUPER_TRANSFORM_ID, KITE_TRANSFORM_ID)
+                      if f"  - {{fileID: {t}}}\n" not in m.group(1))
+        text = text[:m.end(1)] + add + text[m.end(1):]
+    # the Grouper is the drawn hull: the domain paint lands on it, and the Sparrow's mesh is switched off (its bones, jets,
+    # colliders and Animator stay - the hull still flies on them)
+    text = text.replace(f"  _shipGeometries:\n  - {{fileID: {SPARROW_MODEL_GO}}}\n", f"  _shipGeometries:\n  - {{fileID: {GROUPER_GO_ID}}}\n")
+    m = re.search(r"--- !u!1001 &%s\nPrefabInstance:\n(?:.*\n)*?    m_Modifications:\n" % SPARROW_INSTANCE_ID, text)
+    if m and SPARROW_SMR_OFF not in text:
+        text = text[:m.end()] + SPARROW_SMR_OFF + text[m.end():]
+    return text
+
+
+def check_bodies(text: str, script_guid: str):
+    errs = []
+    def want(cond, msg):
+        if not cond:
+            errs.append(msg)
+    for iid, fbx, name in ((GROUPER_INSTANCE_ID, GROUPER_FBX_GUID, "Grouper"), (KITE_INSTANCE_ID, KITE_FBX_GUID, "WrasseKite")):
+        inst = re.search(r"--- !u!1001 &%s\n((?:.*\n)*?)(?=--- !u!|\Z)" % iid, text)
+        want(inst and f"m_SourcePrefab: {{fileID: 100100000, guid: {fbx}, type: 3}}" in inst.group(1)
+             and f"m_TransformParent: {{fileID: {ROOT_TRANSFORM_ID}}}" in inst.group(1)
+             and f"      value: {name}\n" in inst.group(1),
+             f"Wrasse.prefab: {name}.fbx is not nested under the root as '{name}' (WrasseCrewBodies finds it by that name)")
+    root_t = re.search(r"--- !u!4 &%s\nTransform:\n((?:.*\n)*?)(?=--- !u!|\Z)" % ROOT_TRANSFORM_ID, text)
+    want(root_t and all(f"  - {{fileID: {t}}}\n" in root_t.group(1) for t in (GROUPER_TRANSFORM_ID, KITE_TRANSFORM_ID)),
+         "Wrasse.prefab: the root's children do not list both model instances")
+    root = re.search(r"--- !u!1 &%s\nGameObject:\n(?:.*\n)*?  m_Component:\n((?:  - component: \{fileID: -?\d+\}\n)+)" % ROOT_GO, text)
+    want(root and f"{{fileID: {BODIES_ID}}}" in root.group(1), "Wrasse.prefab: WrasseCrewBodies is not on the root's component list")
+    body = re.search(r"--- !u!114 &%s\n((?:.*\n)*?)(?=--- !u!|\Z)" % BODIES_ID, text)
+    want(body and f"guid: {script_guid}, type: 3" in body.group(1),
+         "Wrasse.prefab: the WrasseCrewBodies document is missing or names another script (no one would see the Wrasse)")
+    want(f"  _shipGeometries:\n  - {{fileID: {GROUPER_GO_ID}}}\n" in text,
+         "Wrasse.prefab: the ship geometry is not the Grouper (the domain colour would paint the hidden Sparrow)")
+    want(SPARROW_SMR_OFF in text, "Wrasse.prefab: the Sparrow's mesh still draws (a Sparrow inside the Grouper)")
+    return errs
+
+
 def retrofit(text: str) -> str:
     """No buttons, and the Wrasse's own impactor container. Idempotent: run on the clone and on the committed prefab."""
     text = BINDINGS.sub(lambda m: m.group(1) + " []\n", text, count=1)
@@ -277,7 +392,8 @@ def retrofit(text: str) -> str:
     text = hud_retrofit(text)
     text = text.replace(f"guid: {SINGLE_STICK_TRANSFORMER_GUID},", f"guid: {TWO_STICK_TRANSFORMER_GUID},")
     text = tuning_retrofit(text)
-    return text.replace(f"guid: {DONOR_CONTAINER_GUID},", f"guid: {WRASSE_CONTAINER_GUID},")
+    text = text.replace(f"guid: {DONOR_CONTAINER_GUID},", f"guid: {WRASSE_CONTAINER_GUID},")
+    return bodies_retrofit(text, guid_of(BODIES_SCRIPT_META))
 
 
 def container_retrofit(text: str) -> str:
@@ -530,6 +646,7 @@ def check_all():
         return ["Wrasse.prefab (+ .meta) is missing: run Tools/Build/author_wrasse_assets.py"]
     errs += [] if guid_of(PREFAB + ".meta") == PREFAB_GUID else ["Wrasse.prefab.meta: guid is not PREFAB_GUID"]
     errs += check_prefab(read(PREFAB), script_guid, config_guid)
+    errs += check_bodies(read(PREFAB), guid_of(BODIES_SCRIPT_META))
     for path in (CLASS_ASSET, MAP):
         if not os.path.exists(path) or not os.path.exists(path + ".meta"):
             return errs + [f"{os.path.relpath(path, ROOT)} (+ .meta) is missing: run the tool"]
@@ -605,6 +722,14 @@ def self_test():
         fails.append("the turn-rate retrofit overwrote a value tuned after it")
     if retrofit(good) != good:
         fails.append("the retrofit is not idempotent")
+    bodies_guid = guid_of(BODIES_SCRIPT_META)
+    expect(check_bodies(good, bodies_guid), 0, "a fresh clone carries both bodies")
+    expect(check_bodies(good.replace(SPARROW_SMR_OFF, ""), bodies_guid), 1, "the Sparrow's mesh left drawing")
+    expect(check_bodies(good.replace(f"  - component: {{fileID: {BODIES_ID}}}\n", ""), bodies_guid), 1, "the bodies off the root")
+    expect(check_bodies(good.replace(f"  - {{fileID: {GROUPER_GO_ID}}}\n", f"  - {{fileID: {SPARROW_MODEL_GO}}}\n"), bodies_guid), 1,
+           "the Sparrow still the ship geometry")
+    expect(check_bodies(good.replace("      value: WrasseKite\n", "      value: Kite\n"), bodies_guid), 1, "the kite model renamed")
+    expect(check_bodies(good.replace(KITE_FBX_GUID, "0" * 32), bodies_guid), 1, "the kite model not nested")
     omni_script = guid_of(OMNI_SCRIPT_META)
     kc, oe = container_asset(read(DONOR_CONTAINER)), omni_effect_asset(omni_script)
     expect(check_container(kc, oe, omni_script), 0, "a Wrasse container passes")

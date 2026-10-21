@@ -111,6 +111,7 @@ SOURCES = [
     f"{_AR}/GrizzlyTime/GrizzlyTimeCourse.cs",
     f"{_AR}/Slingshot/SlingshotCourse.cs",
     f"{_AR}/ThresherTime/ThresherTimeCourse.cs",
+    f"{_AR}/WrasseRun/WrasseRunCourse.cs",
     f"{_AR}/Breakwater/BreakwaterCourse.cs",
     f"{_AR}/Breakwater/BreakwaterStationBuilder.cs",
 ]
@@ -692,6 +693,10 @@ CAMERAS = {
     # dotted orbit (the signature act, staged in the harness at the lap's tightest corner) reads
     # against it. A side-on angle saw this seed's lap edge-on.
     "ThresherTime": (20, 60, 0.9, 42),
+    # Wrasse Run is Thresher Time's octagon cut against the Grouper's boosted circle, its rings lifted out
+    # of the lap's plane: shot lower than Thresher Time so the lift reads, from the far side so the two
+    # octagons differ, with the kite threading a ring after lassoing Time motes (the harness's StageKite).
+    "WrasseRun": (155, 40, 0.9, 42),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -746,7 +751,7 @@ def recipe(stem, card_path, pal, ends):
         layers.append(node)
         nucleus()
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
-               "Breakwater"):
+               "WrasseRun", "Breakwater"):
         # GateRaceController.BuildCourse, mirrored: the shell comes off the scene's controller and
         # the cell's nucleus (ResolveShell), the gate count off EndConditionOverrides.
         tier = "COURSE"
@@ -765,7 +770,8 @@ def recipe(stem, card_path, pal, ends):
                 settings["FirstGateDistance"] = min(max(ctl.get("firstGateDistance", 620.0), inner), outer)
             else:
                 key = {"GrizzlyTime": "grizzlyTimeGateTarget",
-                       "ThresherTime": "thresherTimeGateTarget"}.get(s, f"{s.lower()}GateTarget")
+                       "ThresherTime": "thresherTimeGateTarget",
+                       "WrasseRun": "wrasseRunGateTarget"}.get(s, f"{s.lower()}GateTarget")
                 target = ends.get(key, 24)
                 settings["GateCount"] = max(3, math.ceil(target / max(1, ctl.get("laps", 3))))
             # Warpline cuts Slingshot's circuit (WarplineController.BuildCourse): the same generator.
@@ -776,7 +782,8 @@ def recipe(stem, card_path, pal, ends):
                                      "GrizzlyTime": [0.95, 0.45, 1.5],
                                      "Slingshot": [0.35, 1.5, 0.95],
                                      "Warpline": [0.62, 1.0, 0.18],
-                                     "ThresherTime": [1.6, 1.05, 0.25]}[s]})
+                                     "ThresherTime": [1.6, 1.05, 0.25],
+                                     "WrasseRun": [0.3, 1.25, 1.45]}[s]})
             nucleus()
     elif s == "Waystation":
         # COURSE tier through the OFFLINE MIRROR (Tools/Build/waystation_course.py), which its own
@@ -946,7 +953,7 @@ def recipe(stem, card_path, pal, ends):
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
-               "Waystation"):
+               "WrasseRun", "Waystation"):
         cam["percentile"] = 0.6
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
