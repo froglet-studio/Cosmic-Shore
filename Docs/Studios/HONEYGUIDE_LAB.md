@@ -4,9 +4,10 @@ A `/labmaker` browser studio for the **Honeyguide and Ratel**, the two-seat crew
 tabletop game Garrett and friends designed and played from 2019 to 2022). The question it puts to the designer:
 
 > Is the handoff fun? The **Ratel** (the Engineer seat) plays a hex pattern-building puzzle, the **Dynamo**, whose
-> injection ports rotate every tick. Activating a pattern pulls one muton of the Engineer's choice into the battery.
-> That muton's domain becomes a slip charge for the **Honeyguide** (the Pilot seat), and when the hull touches a trail
-> of that domain it teleports to the end of the trail it is pointing at.
+> injection ports turn 60 degrees every spin. Making a pattern sends one prism of the Ratel's choice to the battery,
+> where its domain is a slip charge, and gives the **Honeyguide** (the Pilot seat) a temporary passive upgrade. The
+> Honeyguide flies with two triggers, and its Time ability is the **Slip**: touch a trail of a domain you hold with the
+> nose near the trail's line, and the hull jumps to the end of the trail it is pointing at.
 
 **The acceptance gate for phase 1:** Garrett plays the Engineer on a phone and records *Sign-off* ("this is fun") on
 the Decisions tab. The Unity port (phase 2) starts only after that.
@@ -15,8 +16,10 @@ the Decisions tab. The Unity port (phase 2) starts only after that.
   (the claude.ai viewer can block the Gamepad API).
 - **Live page:** https://claude.ai/artifact/4B7oZwb5aYxFJR7XKyWx7v (private to the owner until shared; decisions recorded
   there land in the shared log Claude reads at the start of each round).
-- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html` (PASS, round 1).
-- **Parity:** `node Tools/Build/dynamo_lab/parity.cjs` (PASS, round 1; see Checked).
+- **Round 1** (the brief's rules) is kept as `Docs/Studios/HoneyguideLab.round1.html`.
+- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html` (PASS, round 2).
+- **Parity:** `node Tools/Build/dynamo_lab/parity.cjs` holds `DynamoCore.cs` to the **round 1** core (PASS). Round 2
+  changed the Dynamo's rules while they are still being decided, so the C# is re-ported once the lab is signed off.
 
 Why a lab of its own and not a fourth round of the Crew Vessel Lab: that page is the Wrasse's signed-off and graduated
 record with an open catch-up task (`T-20261018-3247`), and one decision log per vessel keeps each sign-off readable.
@@ -29,17 +32,123 @@ mate, decision log, platform detection) is the Crew Vessel Lab's, rebuilt around
   Dynamo), **Watch** (two AIs) or **Couch** (two people: the keyboard flies, the mouse or a finger plays the Dynamo).
   Swap with the D-pad left/right, 1 / 2, the Swap button, or a double-tap on the small view on a phone. It is the
   arena's gesture (`PilotSwapGesture`, `PilotSwap.CooldownSeconds` 0.75 s).
-- **The Ratel (Engineer).** Drag a muton to move it (Tinker: one AP per cell). Tap an empty coloured port to Refuel
-  (a muton of the port's colour). A slot card lights when its pattern is on the board: tap it to Activate, then tap one
-  of the outlined mutons. That muton goes to the battery, and its colour is the domain the pilot can slip through. Tap
-  the left of the AP row to Research (2 AP: draw 3 cards of one family, keep 1 in a slot).
-- **The Honeyguide (Pilot).** A/D or ←/→ steer, W/Space boost (only while an ability has given boost), Shift or E fires
-  a dash or swap token, F arms the slip. On touch, hold a finger on the flight view and the hull turns toward it; two
-  fingers boost; the pads lower left are the button and arm. Fly into a trail of a domain you hold and you slip.
-- **Rules tab:** the brief's nine open questions as dropdowns (each change restarts the match). **Cards tab:** all 39
-  Slipstream upgrade cards with their printed shapes and what each does here.
+- **The Ratel (Engineer).** Drag a prism to move it (1 AP a cell). Tap an empty injection port to inject a prism of its
+  colour (1 AP). An empty port already counts as a prism of its colour in a pattern, but every pattern needs at least
+  one real prism. When a card lights, tap it (1 AP), then tap one of the outlined prisms: it goes to the battery. The
+  ports turn 60 degrees every spin; the countdown is top right, and in the last 1.5 s rings show where they will land.
+  Each card names the passive the pilot gets, and its pips count the makes before it is replaced. Your ability is under
+  the AP row and changes, with the port pattern, every 4 patterns.
+- **The Honeyguide (Pilot).** A/D or ←/→ steer; E or K fires the Bolt (RT), Q or J the Burst (LT); W or Space boosts
+  when you have boost. On touch, hold a finger on the flight view and the hull turns toward it (two fingers boost); the
+  four cards bottom right (Bolt, Burst, Boost, Slip) are the buttons. The Slip arms itself: a grey wedge on the nose
+  shows the 45-degree cone, it lights in the trail's colour when a slip is armed, and a dashed line shows where it
+  would land.
+- **Rules tab:** Garrett's round 2 rules, each a box you can turn off (a control). **Patterns tab:** all 39 patterns and
+  the passive each gives.
 
-## Round 1 (2026-10-20): the Dynamo, the Slip and the starter twelve
+## Round 2 (2026-10-21): Garrett's rules from his first play
+
+Garrett's notes after playing round 1 (thread, 2026-10-21), all built:
+
+| Note | What the lab does now |
+|---|---|
+| The slip arms on its own when the nose is within 45° of the prism's z axis, either way, and the prism is part of a 1-D prismscape | `arming: 'axis'`. A prism's z axis is its trail's direction there (the prisms either side). "1-D" is measured locally: a trail prism with at most two other prisms within 1.5 prism spacings (10.5 u). The arena now has 2-D beds of prisms (7 flat beds of 20, 6 u apart) that slow and can be shot but never arm a slip; a crossing of two trails is 2-D where they cross |
+| The pilot's Time ability is the slip | The pilot HUD is the four-card row (`Docs/claude/VESSEL_HUD_AND_ELEMENTS.md`): Charge = Bolt (RT), Mass = Burst (LT), Space = Boost, Time = Slip (auto, shows the charges) |
+| No letter labels; if letters, J R G | No letters. A box on the Rules tab shows R J G for anyone who wants them |
+| Patterns register at any orientation | Six rotations (mirror images only with the Mirror ability) |
+| The spin is animated, 60° holding the same injection pattern | The whole port pattern turns 60° clockwise about the centre as one piece, animated over 0.6 s; prisms stay put |
+| The Ratel sees how long until the spin | "spin 4.2 s" top right, the ring round the board, and rings where the ports will land in the last 1.5 s |
+| An injection point counts as a prism for completing patterns, but a real prism still goes to the battery | `shows(cell)` = its prism, or its port's colour when empty. A match needs at least one real prism; only real prisms can be picked |
+| Mutons are now prisms | Renamed everywhere on the page |
+| A random Ratel ability at the start, a new one every 4 patterns with a new port pattern | Nine abilities (table below); 216 port patterns: the four designed engines in 6 turns × 6 colourings, and 72 random scatters of 12 |
+| A pattern made for the third time is replaced by a random one | Per slot; the pips on the card count the makes |
+| Each pattern grants the pilot's vessel a passive | 39 patterns → 15 passives (table below), 20 s each; a repeat refreshes it and raises its level (max 3) |
+| Two versatile weapons on the triggers that take upgrades as patterns complete | RT Bolt (5/s, 160 u/s, 110 u) and LT Burst (1.5/s, 5 pellets in 40°, 60 u). Shots destroy prisms not of your domain. Every weapon passive shapes both |
+
+**The Ratel's abilities** (one at a time): Overclock (+1 AP a spin, bank +1), Long Reach (a drag of any length through
+empty cells is 1 AP), Printer (a free prism of any colour each spin, hold 2), Swap (drag a prism onto a neighbour to swap,
+1 AP), Free Fire (making a pattern is free), Wild Core (the centre counts as any colour), Capacitor (battery +2), Mirror
+(patterns also match mirrored), Refund (each pattern banks 1 AP, hold 2).
+
+**The passives** (by pattern family; the card's place in its family picks the row). Ruby family, the triggers: Rapid
+Fire, Piercing, Scatter, Long Barrel, Seeker, Blast. Jade family, the hull: Overdrive (+15% speed a level), Shield,
+Agile, Afterburner (boost refills), Magnet (slips catch from farther). Gold family, the slip: Long Slip (+35% reach a
+level), Echo (the next slip keeps its charge), Wake (your trail is laid in your newest charge's domain), Chroma Rounds
+(shots turn hostile prisms to your newest charge's domain instead of destroying them).
+
+### Scorecard (round 2)
+
+24 seeds × 120 s at 30 Hz, AI Hard pilot, AI Hard Ratel unless named. ±SE is Legs/min's standard error (about ±5%,
+so lift differences under about 12 points are not findings).
+
+| Variant | Legs/min | ±SE | Lift % | Slips/min | Slip gain (u) | Bad slips % | Patterns/min | Kills/min | Hostile hits/min |
+|---|---|---|---|---|---|---|---|---|---|
+| Solo (no Ratel) | 4.55 | 0.08 | 0 | 0 | 0 | 0 | 0 | 51.9 | 1.8 |
+| **Candidate · hard Ratel** | **5.70** | 0.28 | **+25** | 5.2 | 128 | 15 | 7.8 | 40.2 | 6.2 |
+| Candidate · easy Ratel | 5.62 | 0.26 | +24 | 3.9 | 139 | 17 | 5.7 | 42.3 | 5.5 |
+| Candidate · idle Ratel | 4.55 | 0.08 | 0 | 0 | 0 | 0 | 0 | 51.9 | 1.8 |
+| Passives off (slip only) | 4.74 | 0.12 | +4 | 4.3 | 138 | 19 | 7.8 | 27.9 | 6.3 |
+| Slip off (passives only) | 5.92 | 0.36 | +30 | 0 | 0 | 0 | 8.0 | 22.4 | 8.0 |
+| Triggers never fired | 5.41 | 0.25 | +19 | 5.3 | 112 | 22 | 8.0 | 0 | 8.2 |
+| Ports do not count | 5.42 | 0.23 | +19 | 5.4 | 114 | 19 | 8.1 | 50.3 | 5.7 |
+| Patterns never replaced | 5.37 | 0.26 | +18 | 4.9 | 131 | 17 | 8.8 | 43.9 | 6.5 |
+| No new ability or ports | 5.59 | 0.25 | +23 | 5.5 | 116 | 17 | 8.0 | 48.0 | 5.7 |
+| Patterns as printed (no rotation) | 5.65 | 0.27 | +24 | 4.7 | 123 | 15 | 6.6 | 48.5 | 6.2 |
+| Hold to arm (round 1 rule) | 6.29 | 0.23 | +38 | 6.0 | 130 | 16 | 7.8 | 45.8 | 5.1 |
+| Always armed (the brief) | 5.40 | 0.27 | +19 | 6.9 | 57 | 35 | 7.9 | 60.1 | 3.6 |
+| Arming cone 30° | 5.88 | 0.30 | +29 | 4.6 | 155 | 14 | 7.8 | 37.2 | 7.6 |
+| Spin every 6 s | 5.78 | 0.27 | +27 | 6.4 | 107 | 20 | 10.3 | 44.5 | 7.1 |
+| Spin every 12 s | 5.79 | 0.31 | +27 | 4.3 | 130 | 13 | 5.5 | 52.3 | 5.6 |
+
+The Dynamo alone (12 seeds × 10 min, the Ratel AI only), patterns a minute by ability: Printer 12.7, Refund 7.9,
+Overclock 7.7, Free Fire 7.6, Long Reach 6.8, Wild Core 6.5, Mirror 5.9, Capacitor 5.8 (no Dynamo effect: the
+baseline), Swap 5.7. Ports counting 7.2 against 7.4 without.
+
+### Found (round 2)
+
+1. **The passives carry the race now; the auto-armed slip barely pays for its set-up.** Passives alone lift the race
+   30%, the slip alone 4%, both 25%. A slip still takes 128-138 u off the way, but under the axis rule the AI pilot has
+   to swing round to come in along the trail, and it flies into hostile prisms on the way in (6 hits a minute against
+   1.8 solo). Under hold-to-arm, the same slips lift the race +15% alone and +38% with the passives. A wider cone does
+   not help (60°: +4%, 75°: -2%, as brushes turn into wrong-way slips). This is the AI's line-up, not yours: your
+   play is the test of whether lining up along a trail feels good. The race also flatters the hull passives
+   (Overdrive is +15% speed a level), so read "passives +30%" as "the passives work", not as their worth against the slip.
+2. **Auto-arming fixed the brief's problem without a button.** Always-armed: 35% of slips go the wrong way (gain 57 u).
+   The axis rule: 15% (gain 128 u), the same as hold-to-arm (16%).
+3. **The Ratel's ability matters more than the other new rules.** Printer doubles the Dynamo's rate (12.7 patterns a
+   minute against 5.8); Mirror and Swap add nothing the AI can use. With a random draw every 4 patterns, Printer turns
+   up about one draw in nine.
+4. **Ports counting as prisms did not speed the AI up** (7.2 against 7.4 patterns a minute). At first it made it
+   slower (4.8): the AI built on empty ports and the spin turned them away. It now injects at the ports it is relying
+   on when the pattern cannot be finished before the spin. A person sees the ports and the countdown; whether counting
+   ports feels easier is a play question.
+5. **The triggers are worth about 6 points of race** (+25 against +19 with them never fired), inside the noise. They
+   destroy 40-60 hostile prisms a minute; nothing in the lab scores kills yet.
+6. Replacement after 3 makes, the new ability and ports every 4, rotation and the spin rate all land within the noise
+   of the candidate for the AI pair. They are rules about variety and feel; the scorecard cannot judge them.
+
+### Checked (round 2)
+
+- `verify_lab.cjs` PASS (the `__lab` contract, the scorecard batch, phone and desktop screenshots).
+- The Ratel AI: no input it returns is refused; it uses every AP (0 wasted over 10 minutes); it no longer moves the same
+  prism back and forth (it keeps the placement it is building unless another is 1.5 AP cheaper).
+- Screenshots at an iPhone 13 viewport as the Engineer (the board's hexes 44 × 51 px), mid-spin (the port pattern
+  turning as one piece), and as the pilot (the four cards, the passive chips and the arming wedge).
+
+### What round 2 does not model
+
+Everything round 1 did not, plus: kills score nothing; the triggers have no ammo, heat or element cost; the passive
+numbers, the nine abilities and the pattern-to-passive table are proposals; 1-D is a local test in a flat world.
+
+### Decisions needed (Garrett), on the Decisions tab
+
+1. **Sign-off** on a phone, as the Engineer.
+2. **Slip arming:** keep the axis rule (Found 1 says it costs the AI its slips' worth; your play decides), or go back to
+   hold-to-arm.
+3. **The passives and abilities:** which feel worth chasing; Printer is far stronger than the rest.
+4. **The two triggers:** Bolt and Burst as built, and whether kills should score.
+
+## Round 1 (2026-10-20): the Dynamo, the Slip and the starter twelve (superseded; `HoneyguideLab.round1.html`)
 
 ### The model
 
@@ -199,7 +308,8 @@ Charges/min, Eng idle % (0 for every AI Engineer: it never lets a tick's AP go t
 - **`VesselClassType.Honeyguide = 21`.** 18 is the Goby's (`cece/sharp-tesla-j0kd7z`), 19 the Wrasse's and **20 the
   Orca's** (`cece/happy-noether-m54hz6`, in flight on 2026-10-20). The enum carries a comment reserving 21.
 - **`DynamoCore.cs` is already in the game** (`Assets/_Scripts/Controller/Vessel/Crew/`), engine-free, and held to the
-  page by the parity gate. `DynamoAI` (the page's `aiPlan`) is ported next, with the same gate extended.
+  round 1 page by the parity gate. It is re-ported from the round 2 core (or whichever round is signed off) first, and
+  the gate pointed back at `HoneyguideLab.html`. `DynamoAI` (the page's `aiPlan`) is ported next, with the same gate extended.
 - The generic duo-vessel system (`CrewSeat`, `/duo-vessel`, `cece/sharp-tesla-j0kd7z`) had not landed on 2026-10-20.
   If it has by phase 2, the Ratel seat builds on it instead of copying the Wrasse's seat plumbing.
 - Everything else follows the brief's phase 2 and `/vessel` `CONTRACT.md` §1.

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// parity.cjs - holds the Honeyguide Lab's Dynamo core (Docs/Studios/HoneyguideLab.html, the script block
+// parity.cjs - holds the Honeyguide Lab's ROUND 1 Dynamo core (Docs/Studios/HoneyguideLab.round1.html, the script block
 // id="dynamo-core", exposed as window.__lab.core) to the SHIPPED C# DynamoCore, input by input.
 //
 //   node Tools/Build/dynamo_lab/parity.cjs
@@ -21,7 +21,9 @@ let chromium;
 try { ({ chromium } = require('playwright')); } catch (e) { chromium = require(path.join(process.execPath, '../../lib/node_modules/playwright')).chromium; }
 
 const ROOT = path.resolve(__dirname, '../../..');
-const PAGE = path.join(ROOT, 'Docs/Studios/HoneyguideLab.html');
+// Round 2 (2026-10-21) changed the Dynamo's rules while Garrett is still deciding them; DynamoCore.cs stays the round 1
+// port until the lab is signed off, and this gate holds it to the round 1 page it was ported from.
+const PAGE = path.join(ROOT, 'Docs/Studios/HoneyguideLab.round1.html');
 
 // Runs INSIDE the page. `src` is the core's source (the page's own, or a planted copy); returns scenarios + JS results.
 function buildInPage(arg) {

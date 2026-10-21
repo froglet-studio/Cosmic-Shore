@@ -806,6 +806,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `Tools/Build/dynamo_lab/parity.cjs` variant 2 (synthetic patterns) and the reversed-scan plant.
 - Promoted: no
 
+### L-STU-116 — A greedy puzzle AI must lock in help that is about to move, and keep its plan
+- Lab: Honeyguide Lab round 2 · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-21
+- What happened: round 2 let an empty injection port count as a prism. The Ratel AI (cheapest placement first) leaned on those ports, the spin turned them away before it could finish, and it made patterns 35% slower with the help than without (4.8 against 7.4 a minute). With few prisms on the board it also flipped between two equally cheap placements and moved the same prism back and forth (38 reversals in one seed).
+- Do instead: when a plan uses something that expires (a port before the spin, a buff before its timer), cost it as permanent only if the plan finishes in time; otherwise spend the action that makes it permanent. Keep the placement being built until another is clearly cheaper. Measure a rule that "should help" with the AI before reading its scorecard row.
+- Evidence: `HoneyguideLab.html` `placementCost` (`onPorts`, `durable`) and `aiPlan(..., memo)`; `HONEYGUIDE_LAB.md` round 2 Found 4.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were
