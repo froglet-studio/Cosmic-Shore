@@ -233,9 +233,12 @@ namespace CosmicShore.Tests
 
         /// <summary>Plant, spin up, arm a launch along +X and fly it to its point, holding LT at
         /// <paramref name="ltAfter"/> and RT at <paramref name="rtAfter"/> from the arm on; the nose turns with the tug.</summary>
-        static Flight AimedLaunch(float ltAfter, float rtAfter)
+        static Flight AimedLaunch(float ltAfter, float rtAfter, float timeSpin = 1f)
         {
-            var f = new Flight(Analog()) { Grip = true };
+            var s = Analog();
+            s.LockSpinRate *= timeSpin;   // the Time element's spin multiplier, as ThresherExecutor.ApplyElementScaling folds it
+            s.LockMaxSpeed *= timeSpin;
+            var f = new Flight(s) { Grip = true };
             f.Fly(1f, 0f, 1f, 60f);
             f.Fly(2.5f, 1f, 1f);
             f.S.ArmLaunch(Vector3.right, 4.8f);
@@ -267,14 +270,37 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void AimedLaunch_TheChainHaulsTheBallAndThenTowsAgain()
+        public void AimedLaunch_OffATimeRaisedSpin_StaysOnTheLine_WhenTheShipOutrunsTheBall()
         {
-            var f = AimedLaunch(0f, 1f);
-            Assert.IsTrue(f.S.OnLaunchLine, "the launch frame starts the line");
-            for (int k = 0; k < 120 && f.S.OnLaunchLine; k++) f.Frame(0f, 1f, 0f);
-            Assert.IsFalse(f.S.OnLaunchLine, "the line ends once the hauled ball trails the ship");
-            Vector3 back = (f.S.BallPosition - f.P).normalized;
-            Assert.Greater(Vector3.Dot(back, -f.Last.normalized), Mathf.Cos(ThresherChainSolver.LaunchLineTrailDegrees * Mathf.Deg2Rad) - 1e-3f);
+            // Time maxed (x1.75): the launch leaves at ~1 300 u/s against the ball's 479 u/s cap. The rigid chain then
+            // brakes the ship below the ball's speed and the ball overtakes it; letting the line go as soon as the ball
+            // first trailed pulled the ship 55 degrees off the aim (30 with the along-line rule but an early end).
+            var f = AimedLaunch(0f, 1f, 1.75f);
+            Assert.Greater(f.R.ShipVelocity.magnitude, f.S.Settings.MaxBallSpeed * 2f, "the case under test: the launch outruns the ball");
+            float worstDeg = 0f;
+            for (int k = 0; k < 120; k++) { f.Frame(0f, 1f, 0f); worstDeg = Mathf.Max(worstDeg, AngleDeg(f.Last, Vector3.right)); }
+            Assert.Less(worstDeg, 3f, "the heading stays on the aim through the brake and the ball's overtake");
+            Assert.Greater(Vector3.Dot(f.Last, Vector3.right), 0f, "never reversed");
+        }
+
+        [Test]
+        public void AimedLaunch_TheLineAlwaysEnds_AndTheHeadingHoldsAfterIt()
+        {
+            // RT held, the rigid chain brakes the ship below the ball's speed and the ball overtakes and leads it; RT
+            // released, the slack chain swings the ball round like a pendulum. Either way the line lets go by its cap,
+            // the chain then tows normally, and the ship is still on the aim a second later.
+            foreach (float rt in new[] { 1f, 0f })
+            {
+                var f = AimedLaunch(0f, rt);
+                Assert.IsTrue(f.S.OnLaunchLine, $"RT {rt}: the launch frame starts the line");
+                int frames = 0;
+                float worstDeg = 0f;
+                for (; frames < 400 && f.S.OnLaunchLine; frames++) { f.Frame(0f, rt, 0f); worstDeg = Mathf.Max(worstDeg, AngleDeg(f.Last, Vector3.right)); }
+                Assert.IsFalse(f.S.OnLaunchLine, $"RT {rt}: the line ends");
+                Assert.LessOrEqual(frames * Dt, ThresherChainSolver.LaunchLineMaxSeconds + 2f * Dt, $"RT {rt}: by its cap");
+                for (int k = 0; k < 60; k++) { f.Frame(0f, rt, 0f); worstDeg = Mathf.Max(worstDeg, AngleDeg(f.Last, Vector3.right)); }
+                Assert.Less(worstDeg, 3f, $"RT {rt}: on the aim through the line and a second after it");
+            }
         }
 
         [Test]

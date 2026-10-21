@@ -12794,3 +12794,8 @@ files). No editor or `unity` CLI in the session, so `/verify-unity` did not run.
 3. Ease LT only to about 3/4 with RT still full: the ship leaves at the launch point straight down the crosshair, the
    ball hauled behind; it is not swung back round the ball. Repeat with LT snapped off and with RT released.
 4. Right after a launch, squeeze LT halfway: no brake until LT has come back near rest; a full squeeze plants at once.
+5. (Round 2, Garrett: "still getting launch at 180 sometimes") Raise TIME (crystals or the element tools), plant until
+   the spin is at its fastest, launch with RT held, then again with RT released: the ship flies the crosshair's line
+   every time. With RT held it slows hard and the ball overtakes and leads; with RT released the ball swings round
+   like a pendulum. Neither may turn the ship. If a 180 still happens, note the Time level, RT, and whether the
+   crosshair was up when LT was let go.

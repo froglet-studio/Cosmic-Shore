@@ -340,7 +340,7 @@
   // Lab branches are fenced with `S.<LabDial>` checks; with every lab dial at its SHIPPED value the
   // shipped path runs (parity.cjs holds that path to the C# solver frame by frame).
   // ThresherChainSolver.LaunchLineTrailDegrees / LaunchLineMaxSeconds / LaunchReleaseRestDepth (2026-10-21)
-  const LAUNCH_LINE_TRAIL_DEG = 10, LAUNCH_LINE_MAX_S = 2, LAUNCH_RELEASE_REST = 0.2;
+  const LAUNCH_LINE_TRAIL_DEG = 10, LAUNCH_LINE_MAX_S = 3, LAUNCH_RELEASE_REST = 0.2;
   class Solver {
     constructor(S) { this.S = S; }
     reset(shipPos, shipFwd, shipVel) {
@@ -348,8 +348,8 @@
       this.Length = this.S.RestLength; this.Ball = add(shipPos, scl(back, this.Length)); this.BallVel = shipVel;
       this.Mode = FREE; this.Pivot = ZERO; this.LockSpeed = 0; this.IsTaut = true;
       this.lockDir = ZERO; this.skidTime = 0; this.wasSlack = false; this.hookHeading = ZERO; this.hookSlack = 0; this.hookSlackSpeed = 0;
-      this.launchAim = ZERO; this.armedSeconds = 0; this.perfectWindow = 0; this.perfectBoost = 1;
-      this.lineAge = -1; this.ltLetGo = false;   // the aimed launch's line and LT's let-go latch (ThresherChainSolver.OnLaunchLine)
+      this.launchAim = ZERO; this.armedSeconds = 0; this.perfectWindow = 0; this.perfectBoost = 1; this.launchBoost = 1;
+      this.lineAge = -1; this.lineHauling = false; this.ltLetGo = false;   // the aimed launch's line and LT's let-go latch (ThresherChainSolver.OnLaunchLine)
       // lab state
       this.braking = false; this.brakeT = 0; this.brakeV0 = ZERO; this.brakeSlack = 0; this.brakeSlackSpeed = 0;
       this.hookStart = ZERO; this.hookT = 0; this.pivotAge = 0; this.releaseAge = 1e9; this.launchLead = 0; this.plantedNow = false;
@@ -374,10 +374,11 @@
       if (this.Mode === PIVOT && !this.braking) { this.BallVel = clampMag(scl(shipVel, this.S.Yank), this.S.MaxBallSpeed); this.releaseAge = 0; this.ropeAmax = 1.5 * len(shipVel) / Math.max(0.05, this.S.RopeGive); }
       this.Mode = FREE; this.LockSpeed = 0; this.wasSlack = false; this.braking = false;
     }
-    armLaunch(aim, perfectWindowSeconds, perfectBoost) {
+    // boost: ThresherChainSolver.ArmLaunch's boost (the game passes launchBoost x4.8; the lab's own vessel passes 1)
+    armLaunch(aim, perfectWindowSeconds, perfectBoost, boost) {
       if (this.Mode !== PIVOT || sq(aim) < 1e-8) return;
       this.launchAim = nrm(aim); this.armedSeconds = 0;
-      this.perfectWindow = Math.max(0, perfectWindowSeconds || 0); this.perfectBoost = Math.max(1, perfectBoost || 1);
+      this.perfectWindow = Math.max(0, perfectWindowSeconds || 0); this.perfectBoost = Math.max(1, perfectBoost || 1); this.launchBoost = Math.max(1, boost || 1);
     }
     orbitNormal(shipPos) {
       if (this.Mode !== PIVOT) return ZERO;
@@ -437,14 +438,14 @@
       const d = sub(ballNext, shipNext), dist = len(d);
       const taut = !soft && dist > this.Length && dist > 1e-5;
       if (taut) {
-        const n = scl(d, 1 / dist), excess = dist - this.Length, shipShare = this.lineAge >= 0 ? 0 : clamp01(S.Tug * S.BallMass / (1 + S.BallMass));
+        const n = scl(d, 1 / dist), excess = dist - this.Length, shipShare = this.lineAge >= 0 && this.lineHauling ? 0 : clamp01(S.Tug * S.BallMass / (1 + S.BallMass));
         const relative = sub(this.BallVel, shipVel), radial = dot(relative, n), tangential = sub(relative, scl(n, radial));
         shipNext = add(shipNext, scl(n, excess * shipShare));
         ballNext = sub(ballNext, scl(n, excess * (1 - shipShare)));
         const newShipVel = scl(sub(shipNext, shipPos), 1 / dt);
         this.BallVel = scl(sub(ballNext, this.Ball), 1 / dt);
         if (this.wasSlack && radial > 0 && sq(tangential) > 1e-6) this.BallVel = add(this.BallVel, scl(nrm(tangential), S.CrackShare * radial));
-        res.ShipVelocity = this.applyShipFloor(shipVel, newShipVel, shipCruise);
+        res.ShipVelocity = this.keepOnLine(shipVel, this.applyShipFloor(shipVel, newShipVel, shipCruise), shipCruise);
       }
       this.BallVel = clampMag(this.BallVel, S.MaxBallSpeed);
       this.Ball = ballNext; this.IsTaut = taut;
@@ -535,7 +536,7 @@
     stepAnalog(shipPos, shipVel, shipCruise, dt, res) {
       const S = this.S, stopping = this.Mode === SKID, base = clamp01(S.Tug * S.BallMass / (1 + S.BallMass));
       const depth = stopping ? 1 : this.ltLetGo ? 0 : clamp01(this.ltIn / Math.max(1e-3, this.anFullPull || 1));
-      const share = this.lineAge >= 0 ? 0 : stopping ? 1 : base + (1 - base) * Math.pow(depth, S.AnchorCurve);
+      const share = this.lineAge >= 0 && this.lineHauling ? 0 : stopping ? 1 : base + (1 - base) * Math.pow(depth, S.AnchorCurve);
       res.BallFrom = this.Ball;
       // Sub-stepped so the stiffest spring in play stays well inside semi-implicit Euler's stable range
       // (w x h <= 0.15) at ANY frame rate: a rigid 30 rad/s chain at 30 fps is otherwise at the edge.
@@ -559,7 +560,7 @@
         shipP = add(shipP, scl(ship, h));
       }
       // the transformer moves the hull by velocity x dt once, so hand it the sub-steps' mean velocity
-      res.ShipVelocity = this.applyShipFloor(shipVel, scl(sub(shipP, shipPos), 1 / dt), shipCruise);
+      res.ShipVelocity = this.keepOnLine(shipVel, this.applyShipFloor(shipVel, scl(sub(shipP, shipPos), 1 / dt), shipCruise), shipCruise);
       this.anPrevVel = this.anCurVel || shipVel; this.anCurVel = res.ShipVelocity; this.anDt = dt;
       this.IsTaut = dist > S.RestLength; this.wasSlack = false;
       this.Length = Math.min(S.MaxLength, Math.max(S.RestLength, dist));
@@ -606,13 +607,23 @@
       this.anWasHooking = true;                                                    // round 2
     }
     // An aimed launch flies its LINE: the chain hauls the ball and does not pull the ship until the ball trails
-    // within LAUNCH_LINE_TRAIL_DEG of straight behind (or LAUNCH_LINE_MAX_S), as ThresherChainSolver.AdvanceLaunchLine.
+    // within LAUNCH_LINE_TRAIL_DEG of straight behind; then it pulls only along the ship's line until the ball has settled
+    // into the tow - trailing, the ship no faster than the ball can follow, the ball not closing (or LAUNCH_LINE_MAX_S) -
+    // ThresherChainSolver.AdvanceLaunchLine / KeepOnLine.
     advanceLine(shipPos, shipVel, dt) {
       if (this.lineAge < 0) return;
       this.lineAge += dt;
       const back = sub(this.Ball, shipPos);
       const trailing = sq(shipVel) > 1e-6 && sq(back) > 1e-6 && dot(nrm(back), scl(nrm(shipVel), -1)) >= Math.cos(LAUNCH_LINE_TRAIL_DEG * D2R);
-      if (trailing || this.lineAge >= LAUNCH_LINE_MAX_S) this.lineAge = -1;
+      if (this.lineHauling && trailing) this.lineHauling = false;
+      const closing = sq(back) > 1e-6 && dot(sub(this.BallVel, shipVel), back) < 0;
+      const settled = !this.lineHauling && trailing && !closing && len(shipVel) <= this.S.MaxBallSpeed;
+      if (settled || this.lineAge >= LAUNCH_LINE_MAX_S) this.lineAge = -1;
+    }
+    keepOnLine(before, after, shipCruise) {
+      if (this.lineAge < 0 || sq(before) < 1e-8) return after;
+      const line = nrm(before), floor = Math.min(len(before), this.S.MinShipFraction * Math.max(0, shipCruise));
+      return scl(line, Math.max(floor, dot(after, line)));
     }
     tryLaunch(shipPos, dt, res) {
       if (!this.LaunchArmed) return false;
@@ -628,9 +639,9 @@
       // Shipped: leave along the aim. Lab (a spin wind-down): leave along the CURRENT tangent and let the
       // wind-down carry the heading onto the aim, so the velocity never steps.
       const dir = lead > 0 ? nrm(cross(n, add(scl(rh, Math.cos(stepA / 2)), scl(nrm(t), Math.sin(stepA / 2))))) : aim;   // the chord the orbit step would fly
-      const vel = scl(dir, this.LockSpeed * (perfect ? this.perfectBoost : 1));
+      const vel = scl(dir, this.LockSpeed * (perfect ? this.perfectBoost : 1) * this.launchBoost);
       this.release(vel);
-      this.lineAge = 0; this.ltLetGo = !!this.S.Analog;   // the line, and LT anchors nothing until it is back at rest
+      this.lineAge = 0; this.lineHauling = true; this.ltLetGo = !!this.S.Analog;   // the line, and LT anchors nothing until it is back at rest
       res.ShipVelocity = vel; res.BallFrom = this.Ball; res.Launched = true; res.LaunchDirection = aim; res.Perfect = perfect;
       return true;
     }
@@ -1070,7 +1081,7 @@
       for (const st of sc.steps) {
         if (st.plant) solver.plant(p, last);
         if (st.release) solver.release(last);
-        if (st.arm) solver.armLaunch(v3(st.arm[0], st.arm[1], st.arm[2]), 0, 1);
+        if (st.arm) solver.armLaunch(v3(st.arm[0], st.arm[1], st.arm[2]), 0, 1, st.boost || 1);
         if (st.lead != null) solver.launchLead = st.lead;
         const n = Math.round(st.t / dt);
         for (let i = 0; i < n; i++) {

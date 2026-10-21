@@ -326,6 +326,7 @@ namespace CosmicShore.Gameplay
         Vector3 _launchAim;        // armed launch direction (zero = none armed)
         float _launchBoost;        // the armed launch leaves this many times the orbit's speed (1 = none)
         float _lineAge = -1f;      // seconds an aimed launch has flown its line (negative = not on one)
+        bool _lineHauling;         // on the line, the ball has not fallen in behind the ship yet
         bool _ltLetGo;             // an aimed launch left and LT has not come back to rest: its depth anchors nothing
 
         // Analog triggers (Settings.Analog). The lab's names are kept in comments so the port reads beside
@@ -373,15 +374,21 @@ namespace CosmicShore.Gameplay
         /// it the ball, still sitting at the old pivot, swung the ship back round it: with RT held rigid and
         /// LT just past the let-go point (its depth still anchors the ball) the heading went 177 degrees off
         /// the aim within 1.5 s (Garrett, 2026-10-21: "if I release the ball and keep the tension it doesn't
-        /// always shoot me at the cross hair"). The line ends once the ball trails within
-        /// <see cref="LaunchLineTrailDegrees"/> of straight behind the ship, after
+        /// always shoot me at the cross hair"). Two phases: until the ball trails within
+        /// <see cref="LaunchLineTrailDegrees"/> of straight behind, the chain does not pull the ship at all;
+        /// after that it pulls as usual but only ALONG the ship's line of flight - it can slow the ship, never
+        /// turn or reverse it - until the ball has settled into the tow: trailing, the ship no faster than the ball
+        /// can follow (<see cref="ThresherChainSettings.MaxBallSpeed"/>), and the ball not closing on the ship.
+        /// The boosted launch leaves at up to ~1 300 u/s off a Time-raised spin against the ball's 479 u/s cap: a
+        /// rigid chain then brakes the ship below the ball's own speed and the ball overtakes it, which pulled
+        /// the ship 30-55 degrees off the aim once the line let go early. The line also ends after
         /// <see cref="LaunchLineMaxSeconds"/>, or on a new plant or windmill.
         /// </summary>
         public bool OnLaunchLine => _lineAge >= 0f;
         /// <summary>The ball counts as trailing (the launch line ends) within this angle of straight behind the ship.</summary>
         public const float LaunchLineTrailDegrees = 10f;
         /// <summary>The longest a launch line holds, however the ball is lying.</summary>
-        public const float LaunchLineMaxSeconds = 2f;
+        public const float LaunchLineMaxSeconds = 3f;
         /// <summary>
         /// After an aimed launch, LT's depth brakes and anchors nothing until the trigger eases back under this
         /// (or is pulled full again, which plants). The launch fires as LT passes the let-go point, so the
@@ -638,7 +645,7 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 n = d / dist;
                 float excess = dist - Length;
-                float shipShare = OnLaunchLine ? 0f : ShipShare(Settings);
+                float shipShare = OnLaunchLine && _lineHauling ? 0f : ShipShare(Settings);
 
                 // The radial speed this frame's projection is about to cancel — measured BEFORE
                 // the projection, because that is the speed the crack redistributes.
@@ -661,7 +668,7 @@ namespace CosmicShore.Gameplay
                     result.Cracked = true;
                 }
 
-                result.ShipVelocity = ApplyShipFloor(shipVelocity, newShipVelocity, shipCruise);
+                result.ShipVelocity = KeepOnLine(shipVelocity, ApplyShipFloor(shipVelocity, newShipVelocity, shipCruise), shipCruise);
             }
 
             BallVelocity = Vector3.ClampMagnitude(BallVelocity, Settings.MaxBallSpeed);
@@ -779,7 +786,7 @@ namespace CosmicShore.Gameplay
             float baseShare = ShipShare(s);
             float depth = stopping ? 1f : _ltLetGo ? 0f : Mathf.Clamp01(LeftTriggerDepth / Mathf.Max(1e-3f, AnalogFullPull));
             float share = stopping ? 1f : baseShare + (1f - baseShare) * Mathf.Pow(depth, s.AnchorCurve);
-            if (OnLaunchLine) share = 0f;   // the ship flies its aimed line; the chain only hauls the ball
+            if (OnLaunchLine && _lineHauling) share = 0f;   // the ship flies its aimed line; the chain only hauls the ball
             result.BallFrom = BallPosition;
 
             float wMax = Mathf.Max(ChainRate(Rigidity), (BallPosition - shipPosition).magnitude > s.MaxLength * 0.9f ? 2f * s.ChainRigidRate : 0f);
@@ -809,7 +816,7 @@ namespace CosmicShore.Gameplay
                 shipP += ship * h;
             }
             // The transformer moves the hull by velocity x dt once, so hand it the sub-steps' mean velocity.
-            result.ShipVelocity = ApplyShipFloor(shipVelocity, (shipP - shipPosition) / dt, shipCruise);
+            result.ShipVelocity = KeepOnLine(shipVelocity, ApplyShipFloor(shipVelocity, (shipP - shipPosition) / dt, shipCruise), shipCruise);
             _prevVel = _hasVel ? _curVel : shipVelocity;
             _curVel = result.ShipVelocity;
             _hasVel = true;
@@ -821,9 +828,10 @@ namespace CosmicShore.Gameplay
             return result;
         }
 
-        /// <summary>Age the launch line by one Free frame and end it once the ball trails the ship (or it has
-        /// held <see cref="LaunchLineMaxSeconds"/>). <paramref name="shipPosition"/> is where the ship is after
-        /// this frame's move.</summary>
+        /// <summary>Age the launch line by one Free frame: the haul ends once the ball trails the ship, and the line
+        /// once the ball has settled into the tow - trailing, the ship no faster than the ball can follow, the ball not
+        /// closing on it (or it has held <see cref="LaunchLineMaxSeconds"/>). <paramref name="shipPosition"/> is where
+        /// the ship is after this frame's move.</summary>
         void AdvanceLaunchLine(Vector3 shipPosition, Vector3 shipVelocity, float dt)
         {
             if (_lineAge < 0f) return;
@@ -831,7 +839,21 @@ namespace CosmicShore.Gameplay
             Vector3 back = BallPosition - shipPosition;
             bool trailing = shipVelocity.sqrMagnitude > 1e-6f && back.sqrMagnitude > 1e-6f &&
                             Vector3.Dot(back.normalized, -shipVelocity.normalized) >= Mathf.Cos(LaunchLineTrailDegrees * Mathf.Deg2Rad);
-            if (trailing || _lineAge >= LaunchLineMaxSeconds) _lineAge = -1f;
+            if (_lineHauling && trailing) _lineHauling = false;
+            bool closing = back.sqrMagnitude > 1e-6f && Vector3.Dot(BallVelocity - shipVelocity, back) < 0f;
+            bool settled = !_lineHauling && trailing && !closing && shipVelocity.magnitude <= Settings.MaxBallSpeed;
+            if (settled || _lineAge >= LaunchLineMaxSeconds) _lineAge = -1f;
+        }
+
+        /// <summary>On the launch line the chain changes the ship's speed along the line it is flying
+        /// (<paramref name="before"/>, the flight model's own direction this frame, so the pilot's stick and the
+        /// release wind-down still turn it) and nothing else: no sideways pull, and never below the tug's floor.</summary>
+        Vector3 KeepOnLine(Vector3 before, Vector3 after, float shipCruise)
+        {
+            if (!OnLaunchLine || before.sqrMagnitude < 1e-8f) return after;
+            Vector3 line = before.normalized;
+            float floor = Mathf.Min(before.magnitude, Settings.MinShipFraction * Mathf.Max(0f, shipCruise));
+            return line * Mathf.Max(floor, Vector3.Dot(after, line));
         }
 
         /// <summary>The full-pull depth a partial pull's brake and anchor curves are measured against (the
@@ -1031,6 +1053,7 @@ namespace CosmicShore.Gameplay
             Vector3 velocity = dir * (LockSpeed * Mathf.Max(1f, _launchBoost));
             Release(velocity);   // Pivot -> Free, the yank, disarms
             _lineAge = 0f;       // ...and flies its line (OnLaunchLine)
+            _lineHauling = true;
             _ltLetGo = Settings.Analog;   // ...and LT anchors nothing until it is back at rest
             result.ShipVelocity = velocity;
             result.BallFrom = BallPosition;

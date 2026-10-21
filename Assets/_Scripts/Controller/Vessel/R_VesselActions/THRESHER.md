@@ -416,11 +416,26 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
     sliding anchor taking ~85% of a rigid chain's pull. Measured on the shipped solver, RT held and LT
     at 0.85: the heading went **177°** off the aim within 1.5 s (LT at 0.5: 14°). Two rules in
     `ThresherChainSolver`, both held by `ThresherAnalogTriggerTests` and ported to the plant lab:
-    **the line** (`OnLaunchLine`): until the hauled ball trails within `LaunchLineTrailDegrees` 10° of
-    straight behind the ship (at most `LaunchLineMaxSeconds` 2), the chain pulls the ball and not the
-    ship; and **the let-go latch** (`LeftTriggerLetGo`): LT's depth brakes and anchors nothing until
-    the trigger eases back under `LaunchReleaseRestDepth` 0.2, while a full pull still plants at once.
-    Now every LT depth flies within 1.6° of the aim and 4 u of the line, RT rigid or slack.
+    **the line** (`OnLaunchLine`, `KeepOnLine`), in two phases: until the hauled ball trails within
+    `LaunchLineTrailDegrees` 10° of straight behind, the chain pulls the ball and not the ship; after
+    that it pulls as usual but only ALONG the ship's own line of flight (it can slow the ship, never
+    turn or reverse it; the stick and the release wind-down still turn it), until the ball has settled
+    into the tow (trailing, the ship no faster than `MaxBallSpeed`, the ball not closing on it) or
+    `LaunchLineMaxSeconds` 3 have passed, or a new plant. And **the let-go latch** (`LeftTriggerLetGo`):
+    LT's depth brakes and anchors nothing until the trigger eases back under `LaunchReleaseRestDepth`
+    0.2, while a full pull still plants at once.
+    **The second phase is round 2 of the fix** (Garrett flew round 1: "better, still getting launch at
+    180 sometimes"). Off a Time-raised spin (×1.75) the boosted launch leaves at ~1 300 u/s against the
+    ball's 479 u/s cap: a rigid chain brakes the ship from 1 263 to its 42 u/s floor in 0.45 s, the ball
+    overtakes it and swings across, and a line that let go when the ball first trailed left the ship
+    **55°** off (30° with the along-line rule but the early end). Measured at the shipped dials, chain
+    harness stand-in pilot with grip: every LT depth, RT rigid or slack, normal or Time-raised spin,
+    stays within **1.9°** of the aim. Where the "180" came from is a measured guess, not a repro: the
+    in-editor pilot has a real hull and grip, so a case this model misses can remain.
+    **Known feel cost, not a fault** (a decision for the owner): with RT held the rigid chain spends the
+    ×4.8 launch boost in under half a second and the ball overtakes and leads the ship at rest length
+    (it decelerates with the ship); with RT released the slack chain swings the ball round like a
+    pendulum. Both now leave the ship's line alone.
   - It re-attaches once the ship has launched, or if the spin falls under `spectateReleaseFraction`
     0.75 of the threshold, or (analog) RT slackens under `letGoBelow`, for `spectateDropSeconds` 0.25
     (an armed launch still fires at its point). The grace is 2026-10-21's: a trigger held "at 100%"
