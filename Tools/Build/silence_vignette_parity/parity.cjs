@@ -1,9 +1,10 @@
-// Holds the Silence Vignette Lab's mask twin (Docs/Studios/SilenceVignetteLab.html, between the
-// <mask-twin> markers) to the game's SilenceVignetteMask.cs, and the lab's SHIPPED block to the
-// shipped asset (Assets/Resources/VesselSilenceConfig.asset). Run through run.sh.
+// Holds the Silence Vignette Lab's twins (Docs/Studios/SilenceVignetteLab.html) to the game: the
+// <mask-twin> block to SilenceVignetteMask.cs, the <perimeter-twin> block to SilencePerimeter.cs, and the
+// lab's SHIPPED block to the shipped asset (Assets/Resources/VesselSilenceConfig.asset). Run through run.sh.
 //
-// Planted controls: three mutated twins (feather doubled, facet phase flipped, breathing inverted)
-// and one moved asset value must each FAIL, or the gate is not measuring anything.
+// Planted controls: mutated twins (feather doubled, facet phase flipped, breathing inverted, a shard's
+// presence stagger changed, a facet wound inward) and one moved asset value must each FAIL, or the gate
+// is not measuring anything.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -11,15 +12,15 @@ const path = require('path');
 const [, , labPath, assetPath, casesPath, csOutPath] = process.argv;
 const TOL = 1e-4; // float32 (Unity) vs float64 (browser)
 
-function twinFrom(src) {
-  const m = src.match(/\/\/ <mask-twin>[^\n]*\n([\s\S]*?)\/\/ <\/mask-twin>/);
-  if (!m) throw new Error('no <mask-twin> block in ' + labPath);
+function twinFrom(src, tag) {
+  const m = src.match(new RegExp('// <' + tag + '>[^\\n]*\\n([\\s\\S]*?)// </' + tag + '>'));
+  if (!m) throw new Error('no <' + tag + '> block in ' + labPath);
   return m[1];
 }
-function loadTwin(block) {
-  return new Function(block + '\nreturn MASK;')();
+function loadTwin(block, name) {
+  return new Function(block + '\nreturn ' + (name || 'MASK') + ';')();
 }
-function evalCases(MASK, lines) {
+function evalCases(MASK, lines, PERIM) {
   const out = [];
   for (const line of lines) {
     const f = line.trim().split(/\s+/);
@@ -34,6 +35,18 @@ function evalCases(MASK, lines) {
       out.push(['shape', vals]);
     } else if (f[0] === 'breathe') out.push(['breathe', [MASK.breathe(n[1], n[2], n[3])]]);
     else if (f[0] === 'opacity') out.push(['opacity', [MASK.opacity(n[1], n[2], n[3], n[4], n[5])]]);
+    else if (f[0] === 'layout') {
+      const s = { shape: n[1], count: n[2], seed: n[3], size: n[4], reach: n[5], spin: n[6] }, vals = [];
+      for (let i = 0; i < s.count; i++) {
+        const q = PERIM.layout(i, s, n[7], n[8], n[9], n[10], n[11]);
+        vals.push(...q.position, ...q.right, ...q.up, ...q.forward, q.presence, q.seed);
+      }
+      out.push(['layout', vals]);
+    } else if (f[0] === 'geometry') {
+      const g = PERIM.geometry({ shape: n[1], count: n[2], seed: n[3] }, n[4]), vals = [];
+      for (let j = 0; j < g.pos.length / 3; j++) vals.push(...g.pos.slice(j * 3, j * 3 + 3), ...g.nor.slice(j * 3, j * 3 + 3), ...g.bar.slice(j * 3, j * 3 + 3));
+      out.push(['geometry', vals]);
+    }
   }
   return out;
 }
@@ -77,10 +90,12 @@ const cs = fs.readFileSync(csOutPath, 'utf8').trim().split('\n').map((l) => {
   const f = l.trim().split(/\s+/);
   return [f[0], f.slice(1).map(Number)];
 });
-const block = twinFrom(lab);
+const block = twinFrom(lab, 'mask-twin');
+const pblock = twinFrom(lab, 'perimeter-twin');
+const PERIM = loadTwin(pblock, 'PERIM');
 let failed = false;
 
-const real = compare(evalCases(loadTwin(block), lines), cs);
+const real = compare(evalCases(loadTwin(block), lines, PERIM), cs);
 if (real.errs.length) { failed = true; console.log('FAIL  twin vs C#:\n  ' + real.errs.slice(0, 8).join('\n  ')); }
 else console.log(`ok    twin vs C#: ${cs.length} cases, ${cs.reduce((a, c) => a + c[1].length, 0)} values, worst |js - cs| ${real.worst.toExponential(2)}`);
 
@@ -97,7 +112,17 @@ const MUTANTS = [
 ];
 for (const [name, from, to] of MUTANTS) {
   if (!block.includes(from)) { failed = true; console.log(`FAIL  control "${name}": its anchor is gone from the twin; update the control`); continue; }
-  const r = compare(evalCases(loadTwin(block.replace(from, to)), lines), cs);
+  const r = compare(evalCases(loadTwin(block.replace(from, to)), lines, PERIM), cs);
+  if (r.errs.length) console.log(`ok    control "${name}" caught (${r.errs.length} values differ)`);
+  else { failed = true; console.log(`FAIL  control "${name}" was NOT caught`); }
+}
+const PMUTANTS = [
+  ['presence stagger changed', '- 0.35 * r(2)', '- 0.3 * r(2)'],
+  ['a facet wound inward', 'if (nx * mx + ny * my + nz * mz < 0)', 'if (nx * mx + ny * my + nz * mz > 0)'],
+];
+for (const [name, from, to] of PMUTANTS) {
+  if (!pblock.includes(from)) { failed = true; console.log(`FAIL  control "${name}": its anchor is gone from the twin; update the control`); continue; }
+  const r = compare(evalCases(loadTwin(block), lines, loadTwin(pblock.replace(from, to), 'PERIM')), cs);
   if (r.errs.length) console.log(`ok    control "${name}" caught (${r.errs.length} values differ)`);
   else { failed = true; console.log(`FAIL  control "${name}" was NOT caught`); }
 }

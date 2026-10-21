@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Parity gate for the silence vignette's SHAPE (Docs/ElementalAbilitySystem/SILENCE.md §5):
-# the game's SilenceVignetteMask.cs and the Silence Vignette Lab's JavaScript twin
-# (Docs/Studios/SilenceVignetteLab.html) must be the same function, and the lab's SHIPPED block must
+# Parity gate for the silence feedback's SHAPES (Docs/ElementalAbilitySystem/SILENCE.md §5), the 2D edge and the 3D perimeter:
+# the game's SilenceVignetteMask.cs and SilencePerimeter.cs and the Silence Vignette Lab's JavaScript twins
+# (Docs/Studios/SilenceVignetteLab.html) must be the same functions, and the lab's SHIPPED block must
 # equal Assets/Resources/VesselSilenceConfig.asset. The C# is compiled with a float32 Mathf stub and
 # printed on a grid; parity.cjs evaluates the twin on the same grid and compares (1e-4), then runs
 # planted controls that must fail.
@@ -20,7 +20,8 @@ mkdir -p "$OUT"
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "@$OUT/refs.rsp" \
   -target:exe -main:Driver -out:"$OUT/mask.exe" \
-  "$HERE/Stubs.cs" "$HERE/Driver.cs" "$ROOT/Assets/_Scripts/Controller/FX/SilenceVignetteMask.cs" 1>&2
+  "$HERE/Stubs.cs" "$HERE/Driver.cs" "$ROOT/Assets/_Scripts/Controller/FX/SilenceVignetteMask.cs" \
+  "$ROOT/Assets/_Scripts/Controller/FX/SilencePerimeter.cs" 1>&2
 
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" \

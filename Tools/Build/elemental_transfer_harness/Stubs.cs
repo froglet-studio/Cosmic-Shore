@@ -60,6 +60,11 @@ namespace UnityEngine
         public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
         public static float Cos(float f) => (float)Math.Cos(f);
         public static float Floor(float f) => (float)Math.Floor(f);
+        // SilencePerimeter (compiled with VesselSilenceConfigSO, which hands out its Settings).
+        public static float Sin(float f) => (float)Math.Sin(f);
+        public static float Tan(float f) => (float)Math.Tan(f);
+        public static int Max(int a, int b) => a > b ? a : b;
+        public static int Clamp(int v, int a, int b) => v < a ? a : v > b ? b : v;
     }
     public static class Time
     {
@@ -105,6 +110,8 @@ namespace UnityEngine
     }
     public class Behaviour : Component { public bool enabled { get; set; } }
     public class MonoBehaviour : Behaviour { }
+    // VesselSilenceConfigSO's perimeter shader reference (type-checked only).
+    public class Shader : Object { public bool isSupported => true; }
     public class ScriptableObject : Object
     {
         public static T CreateInstance<T>() where T : ScriptableObject => Activator.CreateInstance<T>();

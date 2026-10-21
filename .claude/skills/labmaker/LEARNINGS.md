@@ -799,6 +799,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: the published version 2 against version 3 of https://claude.ai/artifact/Hequw1VLdwXi2ztrDeuXQC.
 - Promoted: no
 
+### L-STU-127 — An edge-band average under-reads a sparse, moving 3D effect; a GLSL-to-HLSL port needs its own compile gate
+- Lab: Silence Vignette Lab, round 2 (the 3D perimeter) · Branch: `cece/sleepy-shannon-9qk646` · By: session_01PEp87yJAmoDHUn7QvRdtkg · Date: 2026-10-21
+- What happened: the round-1 yardstick averages the colour change over the outer 12% of the frame. That scored the full 2D frame at 45 and the 3D perimeter at 5 to 17, although the shards read plainly on screen. Their motion and the hits' jolt are not in a still frame at all. Separately, the HLSL port of the lab's GLSL named a variable `line`, which HLSL reserves. WebGL had compiled the GLSL happily, so the lab could not catch it.
+- Do instead: label a look's column with what it cannot see, and judge a sparse or moving effect by eye before its number. Relax the yardstick check to "beats the invisible baseline", not "beats the full frame". Give a shader port a compile gate of its own (`Tools/Shaders/verify_silence_perimeter.py`: glslang in HLSL mode against a mock of the URP calls, plus a negative control), and keep the variable names identical in both twins.
+- Evidence: `Docs/Studios/SILENCE_VIGNETTE_LAB.md` round 2; `Tools/Shaders/verify_silence_perimeter.py`.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

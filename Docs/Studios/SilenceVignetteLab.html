@@ -1,10 +1,11 @@
 <!doctype html>
 <!--
-  SILENCE VIGNETTE LAB — a /labmaker browser lab (round 1).
+  SILENCE VIGNETTE LAB — a /labmaker browser lab (round 2: the 3D perimeter).
   Question: what should the silenced pilot's danger-coloured screen edge look like, so it is noticed for
   sure and still fits the game (Docs/ElementalAbilitySystem/SILENCE.md §5)?
   The mask is a line-for-line twin of Assets/_Scripts/Controller/FX/SilenceVignetteMask.cs (between the
-  <mask-twin> markers); Tools/Build/silence_vignette_parity/run.sh holds the two together. Every SHIPPED
+  <mask-twin> markers), and the 3D perimeter's layout and shard geometry are a twin of SilencePerimeter.cs
+  (between the <perimeter-twin> markers); Tools/Build/silence_vignette_parity/run.sh holds both together. Every SHIPPED
   key is a VesselSilenceConfigSO field (Assets/Resources/VesselSilenceConfig.asset).
   Write-up: Docs/Studios/SILENCE_VIGNETTE_LAB.md. Live: https://claude.ai/artifact/Hequw1VLdwXi2ztrDeuXQC
   Verify: node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/SilenceVignetteLab.html
@@ -50,6 +51,7 @@
   #diff { color: var(--changed); }
   #stageWrap { grid-area: stage; position: relative; min-height: 0; background: var(--stage); overflow: hidden; }
   #stage { width: 100%; height: 100%; display: block; }
+  #glStage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
   #hud { position: absolute; left: 12px; top: 10px; color: #c9d3ea; font: 12px/1.55 var(--mono); pointer-events: none; text-shadow: 0 1px 2px #000; }
   #stageBar { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100% - 24px); }
   #stageBar .btn { background: rgba(10, 12, 26, 0.78); color: #e5e8f0; border-color: rgba(255, 255, 255, 0.18); }
@@ -108,6 +110,7 @@
   </header>
   <div id="stageWrap">
     <canvas id="stage"></canvas>
+    <canvas id="glStage" hidden></canvas>
     <div id="hud"></div>
     <div id="stageBar">
       <button class="btn" id="hitBullet" type="button">Bullet hit</button>
@@ -126,13 +129,13 @@
   const $ = (id) => document.getElementById(id);
 
   // ================= (1) LAB meta + the shipped numbers =================
-  const LAB = { name: 'Silence Vignette Lab', branch: 'cece/sleepy-shannon-9qk646', round: 1, doc: 'Docs/Studios/SILENCE_VIGNETTE_LAB.md' };
+  const LAB = { name: 'Silence Vignette Lab', branch: 'cece/sleepy-shannon-9qk646', round: 2, doc: 'Docs/Studios/SILENCE_VIGNETTE_LAB.md' };
   // Every key is a VesselSilenceConfigSO field, read off Assets/Resources/VesselSilenceConfig.asset
   // (the "overtuned" first cut of the overlay, 2026-10-21). Lab-only knobs carry the lab* prefix.
   const SHIPPED = {
-    vignetteIntensity: 0.75,      // VesselSilenceConfigSO.vignetteIntensity (peak overlay opacity)
+    vignetteIntensity: 0,         // VesselSilenceConfigSO.vignetteIntensity (the 2D edge: off since round 2, "instead of a 2d effect")
     vignetteColorStrength: 1,     // .vignetteColorStrength (black .. the palette's danger colour)
-    vignetteDarken: 0.3,          // .vignetteDarken (URP Vignette, black, under the colour)
+    vignetteDarken: 0,            // .vignetteDarken (URP Vignette, black, under the colour; off with the 2D edge)
     vignetteSmoothness: 0.55,     // .vignetteSmoothness (that darkening's URP smoothness)
     vignetteStyle: 0,             // .vignetteStyle (0 Soft, 1 Faceted)
     vignetteFacets: 10,           // .vignetteFacets
@@ -154,6 +157,24 @@
     hitShakeSeconds: 0.15,        // .hitShakeSeconds
     secondsPerPetal: 1,           // .secondsPerPetal
     maxSeconds: 8,                // .maxSeconds
+    perimeterAmount: 1,           // .perimeterAmount (the 3D perimeter: 0 off .. 1 full)
+    perimeterShape: 0,            // .perimeterShape (0 crystal shards, 1 prism slabs)
+    perimeterCount: 22,           // .perimeterCount
+    perimeterSeed: 7,             // .perimeterSeed
+    perimeterSize: 0.26,          // .perimeterSize (shard length, x the screen's height)
+    perimeterReach: 0.26,         // .perimeterReach (how far in from the edge, x half the height)
+    perimeterSpin: 0.5,           // .perimeterSpin (radians a second)
+    perimeterRefraction: 0.06,    // .perimeterRefraction
+    perimeterTwist: 0.5,          // .perimeterTwist
+    perimeterAberration: 0.006,   // .perimeterAberration
+    perimeterTint: 0.15,          // .perimeterTint
+    perimeterRimGlow: 1.2,        // .perimeterRimGlow
+    perimeterEdgeGlow: 0.8,       // .perimeterEdgeGlow
+    perimeterFill: 0.4,           // .perimeterFill
+    perimeterInvert: 0,           // .perimeterInvert
+    perimeterOpacity: 0.9,        // .perimeterOpacity
+    perimeterWarp: 0.03,          // .perimeterWarp
+    perimeterGlitch: 0.05,        // .perimeterGlitch
     labHitsPerSecond: 1.2,        // lab: how often the stand-in rival lands a hit while firing
   };
   // OriginalColorSetSO.asset (the live palette, Docs/PALETTE.md §1).
@@ -169,6 +190,24 @@
 
   // ================= (2) SPEC: one row per slider =================
   const SPEC = [
+    ['Perimeter', 'perimeterAmount',      0, 1, 0.01, 'Amount', '0 = off. The 3D perimeter: faceted shards on the screen\'s edge, each facet showing the frame behind it bent - reality breaking. Drawn only for the silenced pilot.'],
+    ['Perimeter', 'perimeterShape',       0, 1, 1,    'Shape (0 crystal, 1 prism slab)', 'Crystal: pointed shards. Prism slab: broken pieces of a trail, the prisms\' own boxes.'],
+    ['Perimeter', 'perimeterCount',       4, 40, 1,   'Shards', 'How many shards ring the screen.'],
+    ['Perimeter', 'perimeterSeed',        1, 99, 1,   'Arrangement', 'Reshuffles where the shards sit and how each is cut.'],
+    ['Perimeter', 'perimeterSize',     0.05, 0.6, 0.01, 'Size', 'Shard length, as a share of the screen\'s height.'],
+    ['Perimeter', 'perimeterReach',       0, 0.6, 0.01, 'Reach', 'How far the shards push in from the edge at full silence (share of half the height).'],
+    ['Perimeter', 'perimeterSpin',        0, 3, 0.05, 'Spin', 'How fast each shard turns about its long axis (radians a second).'],
+    ['Perimeter', 'perimeterRefraction',  0, 0.3, 0.005, 'Refraction', 'How far each facet bends the frame it shows (by the facet\'s normal).'],
+    ['Perimeter', 'perimeterTwist',       0, 1, 0.01, 'Twist', 'How much each shard turns and scales the reality it shows.'],
+    ['Perimeter', 'perimeterAberration',  0, 0.04, 0.001, 'Aberration', 'Red and blue pulled apart inside the facets.'],
+    ['Perimeter', 'perimeterTint',        0, 1, 0.01, 'Danger tint', 'How much the bent frame takes the danger colour.'],
+    ['Perimeter', 'perimeterRimGlow',     0, 3, 0.05, 'Rim glow', 'Danger light where a facet turns away from you (fresnel), as every prism\'s rim does.'],
+    ['Perimeter', 'perimeterEdgeGlow',    0, 3, 0.05, 'Edge lines', 'Danger lines along the shards\' facet edges.'],
+    ['Perimeter', 'perimeterFill',        0, 1, 0.01, 'Danger fill', 'A lit danger glow inside every facet, brighter on facets that face the light, so a shard reads as a solid volume even over black space.'],
+    ['Perimeter', 'perimeterInvert',      0, 1, 0.01, 'Invert', 'Turns the reality inside a facet into its negative.'],
+    ['Perimeter', 'perimeterOpacity',     0, 1, 0.01, 'Opacity', 'How solid the shards are.'],
+    ['Perimeter', 'perimeterWarp',        0, 0.15, 0.005, 'Warp', 'The frame swirls and ripples near the edges while silenced; hits send a ring through it.'],
+    ['Perimeter', 'perimeterGlitch',      0, 0.2, 0.005, 'Hit glitch', 'Each hit tears the facets\' picture into sliding bands (decays with the hit flare).'],
     ['Edge',   'vignetteIntensity',      0, 1, 0.01, 'Strength', 'Peak opacity of the danger-coloured edge while silenced. The overlay ADDS colour, so it shows on black space.'],
     ['Edge',   'vignetteColorStrength',  0, 1, 0.01, 'Danger colour', '1 = the palette\'s danger signal colour (the rim every danger prism wears); toward 0 it darkens to black.'],
     ['Edge',   'vignetteDarken',         0, 1, 0.01, 'Darken under it', 'URP Vignette, black, under the colour: helps the edge read over a bright scene. On its own it is invisible on black space.'],
@@ -245,6 +284,267 @@
     return { distance, alpha, breathe, opacity };
   })();
   // </mask-twin>
+
+  // <perimeter-twin> SilencePerimeter.cs, line for line. Tools/Build/silence_vignette_parity extracts this block.
+  const PERIM = (() => {
+    const ShapeSlab = 1;
+    const Depth = 4;
+    const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+    const smooth = (x) => x * x * (3 - 2 * x);
+    function hash(h) {
+      h = (h ^ (h >>> 16)) >>> 0; h = Math.imul(h, 0x7feb352d) >>> 0;
+      h = (h ^ (h >>> 15)) >>> 0; h = Math.imul(h, 0x846ca68b) >>> 0;
+      return (h ^ (h >>> 16)) >>> 0;
+    }
+    // A stable random number 0..1 (24 bits, exact in float and double) for shard i, draw k.
+    function rand(seed, shard, k) {
+      const h = hash((Math.imul(seed, 0x9e3779b1) ^ Math.imul(shard + 1, 0x85ebca77) ^ Math.imul(k + 1, 0xc2b2ae3d)) >>> 0);
+      return (h >>> 8) / 16777216;
+    }
+    // Shard i's pose in the camera's own space (+x right, +y up, +z forward, as Unity's camera transform): its
+    // centre and its three axes, scaled by its length (the geometry is one unit long along +y).
+    function layout(i, s, weight, pulse, time, aspect, fovDeg) {
+      const n = Math.max(1, s.count);
+      const r = (k) => rand(s.seed, i, k);
+      const theta = 2 * Math.PI * (i + 0.8 * (r(0) - 0.5)) / n;
+      const depth = Depth * (0.85 + 0.3 * r(1));
+      const h = depth * Math.tan(fovDeg * 0.5 * Math.PI / 180), w = h * aspect;
+      const cx = Math.cos(theta), cy = Math.sin(theta);
+      const tx = Math.abs(cx) > 1e-4 ? w / Math.abs(cx) : 1e9, ty = Math.abs(cy) > 1e-4 ? h / Math.abs(cy) : 1e9;
+      const edge = Math.min(tx, ty);
+      const presence = smooth(clamp01(clamp01(weight) * 1.35 - 0.35 * r(2)));
+      const len = s.size * 2 * h * (0.6 + 0.8 * r(3));
+      const jolt = 1 + 0.6 * Math.max(0, pulse) * (0.5 + r(4));
+      const reach = s.reach * h * presence * jolt;
+      const sway = 0.04 * h * Math.sin(time * (0.6 + r(5)) + r(6) * 6.2831855);
+      const along = edge + 0.6 * len * (1 - presence) - reach;
+      const px = cx * along - cy * sway, py = cy * along + cx * sway;
+      // The long axis points inward, turned a little in the screen's plane and tilted toward or away from you.
+      const turn = (r(7) - 0.5) * 0.9, tilt = (r(8) - 0.5) * 1.6;
+      let ax = -(cx * Math.cos(turn) - cy * Math.sin(turn)), ay = -(cx * Math.sin(turn) + cy * Math.cos(turn)), az = tilt;
+      const al = Math.sqrt(ax * ax + ay * ay + az * az); ax /= al; ay /= al; az /= al;
+      let x0x = ay, x0y = -ax;                                   // cross(axis, forward), forward = (0, 0, 1)
+      const xl = Math.sqrt(x0x * x0x + x0y * x0y); x0x /= xl; x0y /= xl;
+      const z0x = x0y * az, z0y = -x0x * az, z0z = x0x * ay - x0y * ax;   // cross(x0, axis)
+      const phi = s.spin * (0.5 + r(9)) * time * (r(10) < 0.5 ? -1 : 1) + r(11) * 6.2831855;
+      const c = Math.cos(phi), sn = Math.sin(phi);
+      return {
+        position: [px, py, depth],
+        right: [(x0x * c + z0x * sn) * len, (x0y * c + z0y * sn) * len, z0z * sn * len],
+        up: [ax * len, ay * len, az * len],
+        forward: [(-x0x * sn + z0x * c) * len, (-x0y * sn + z0y * c) * len, z0z * c * len],
+        presence, seed: r(12),
+      };
+    }
+    // Shard i's facets as flat triangles, one unit long along +y: positions, normals and barycentrics (a quad's
+    // diagonal carries 1, so only real edges draw a line). Wound so cross(b - a, c - a) faces OUT (Unity's front).
+    function geometry(s, i) {
+      const r = (k) => rand(s.seed, i, 20 + k);
+      const pos = [], nor = [], bar = [];
+      function tri(a, b, c, hide) {
+        let nx = (b[1] - a[1]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[1] - a[1]);
+        let ny = (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]);
+        let nz = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+        const mx = a[0] + b[0] + c[0], my = a[1] + b[1] + c[1], mz = a[2] + b[2] + c[2];
+        if (nx * mx + ny * my + nz * mz < 0) { const t = b; b = c; c = t; nx = -nx; ny = -ny; nz = -nz; hide = hide === 1 ? 2 : hide === 2 ? 1 : hide; }
+        const nl = Math.sqrt(nx * nx + ny * ny + nz * nz); nx /= nl; ny /= nl; nz /= nl;
+        const v = [a, b, c];
+        for (let j = 0; j < 3; j++) {
+          pos.push(v[j][0], v[j][1], v[j][2]); nor.push(nx, ny, nz);
+          bar.push(j === 0 || hide === 0 ? 1 : 0, j === 1 || hide === 1 ? 1 : 0, j === 2 || hide === 2 ? 1 : 0);
+        }
+      }
+      const quad = (a, b, c, d) => { tri(a, b, c, 1); tri(a, c, d, 2); };
+      if (s.shape === ShapeSlab) {
+        const hx = 0.32 * (0.8 + 0.4 * r(0)), hz = 0.18 * (0.8 + 0.4 * r(1)), shear = (r(2) - 0.5) * 0.3;
+        const v = (x, y, z) => [x * hx + y * shear * hx, y * 0.5, z * hz];
+        quad(v(-1, -1, -1), v(1, -1, -1), v(1, 1, -1), v(-1, 1, -1));
+        quad(v(-1, -1, 1), v(-1, 1, 1), v(1, 1, 1), v(1, -1, 1));
+        quad(v(-1, -1, -1), v(-1, 1, -1), v(-1, 1, 1), v(-1, -1, 1));
+        quad(v(1, -1, -1), v(1, -1, 1), v(1, 1, 1), v(1, 1, -1));
+        quad(v(-1, 1, -1), v(1, 1, -1), v(1, 1, 1), v(-1, 1, 1));
+        quad(v(-1, -1, -1), v(-1, -1, 1), v(1, -1, 1), v(1, -1, -1));
+      } else {
+        const k = 5 + Math.floor(r(0) * 3);
+        const rad = 0.16 * (0.8 + 0.4 * r(1));
+        const top = [(r(2) - 0.5) * 0.1, 0.5, (r(3) - 0.5) * 0.1];
+        const bottom = [(r(4) - 0.5) * 0.1, -0.5 * (0.6 + 0.4 * r(5)), (r(6) - 0.5) * 0.1];
+        const lo = [], hi = [];
+        for (let j = 0; j < k; j++) {
+          const ang = 2 * Math.PI * (j + 0.3 * (r(7 + j) - 0.5)) / k, rr = rad * (0.8 + 0.4 * r(14 + j));
+          lo.push([Math.cos(ang) * rr, -0.18, Math.sin(ang) * rr]);
+          hi.push([Math.cos(ang) * rr * 0.9, 0.18, Math.sin(ang) * rr * 0.9]);
+        }
+        for (let j = 0; j < k; j++) {
+          const j1 = (j + 1) % k;
+          quad(lo[j], lo[j1], hi[j1], hi[j]);
+          tri(hi[j], hi[j1], top, -1);
+          tri(lo[j1], lo[j], bottom, -1);
+        }
+      }
+      return { pos, nor, bar };
+    }
+    return { rand, layout, geometry };
+  })();
+  // </perimeter-twin>
+
+  // The perimeter's settings, from the lab's (VesselSilenceConfigSO.PerimeterSettings).
+  function perimOf(p) {
+    return { shape: Math.round(p.perimeterShape), count: Math.round(p.perimeterCount), seed: Math.round(p.perimeterSeed),
+      size: p.perimeterSize, reach: p.perimeterReach, spin: p.perimeterSpin };
+  }
+
+  // ---- the 3D perimeter, drawn in WebGL2 the way SilencePerimeterPass draws it in the game: copy the frame, warp
+  // it near the edges, then draw each shard (back to front, back faces culled) sampling that copy. ----
+  const LAB_FOV = 60;   // a stand-in: the game passes the camera's own field of view
+  const VS_FULL = `#version 300 es
+out vec2 vUv;
+void main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); vUv = p; gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+  // <warp-shader> SilencePerimeter.shader, pass "SilencePerimeterWarp"
+  const FS_WARP = `#version 300 es
+precision highp float;
+uniform sampler2D uScene; uniform float uWarp, uTime, uShock, uAspect;
+in vec2 vUv; out vec4 o;
+void main() {
+  vec2 q = (vUv - 0.5) * 2.0;
+  float edge = smoothstep(0.6, 1.3, length(q));
+  vec2 p = vec2(q.x * uAspect, q.y);
+  float r = length(p);
+  float ang = uWarp * edge * (2.0 + 1.5 * sin(r * 9.0 - uTime * 2.3));
+  float s = sin(ang), c = cos(ang);
+  p = vec2(c * p.x - s * p.y, s * p.x + c * p.y);
+  p *= 1.0 + uShock * 0.06 * sin(r * 14.0 - uTime * 20.0) * edge;
+  o = vec4(texture(uScene, vec2(p.x / uAspect, p.y) * 0.5 + 0.5).rgb, 1.0);
+}`;
+  const VS_SHARD = `#version 300 es
+in vec3 aPos; in vec3 aNor; in vec3 aBar;
+uniform mat4 uModel; uniform mat4 uProj;
+out vec3 vN; out vec3 vV; out vec3 vBar;
+void main() { vec4 w = uModel * vec4(aPos, 1.0); vN = mat3(uModel) * aNor; vV = -w.xyz; vBar = aBar; gl_Position = uProj * w; }`;
+  // <shard-shader> SilencePerimeter.shader, pass "SilencePerimeter"
+  const FS_SHARD = `#version 300 es
+precision highp float;
+uniform sampler2D uScene; uniform vec2 uRes; uniform vec3 uDanger; uniform vec2 uCenter;
+uniform float uRefract, uTwist, uAberr, uRim, uEdge, uAlpha, uGlitch, uTime, uSeed, uTint, uFill, uInvert;
+in vec3 vN; in vec3 vV; in vec3 vBar; out vec4 o;
+float hash1(float n) { return fract(sin(n) * 43758.5453); }
+void main() {
+  vec3 n = normalize(vN); vec3 v = normalize(vV);
+  float aspect = uRes.x / uRes.y;
+  vec2 uv = gl_FragCoord.xy / uRes;
+  vec2 d = uv - uCenter; d.x *= aspect;
+  float a = uTwist * (uSeed * 2.0 - 1.0) * 1.2;
+  float ca = cos(a), sa = sin(a);
+  d = vec2(ca * d.x - sa * d.y, sa * d.x + ca * d.y);
+  d *= 1.0 + 0.35 * uTwist * (fract(uSeed * 7.31) - 0.5);
+  d.x /= aspect;
+  vec2 suv = uCenter + d + n.xy * uRefract;
+  suv.x += (hash1(floor(uv.y * 180.0) + floor(uTime * 24.0)) - 0.5) * uGlitch;
+  vec2 ab = n.xy * uAberr;
+  vec3 col = vec3(texture(uScene, suv + ab).r, texture(uScene, suv).g, texture(uScene, suv - ab).b);
+  col = mix(col, vec3(1.0) - col, uInvert);
+  float shade = max(0.0, dot(n, normalize(vec3(0.35, 0.6, 0.7))));
+  float lit = 0.8 + 0.3 * shade;
+  float fres = pow(1.0 - abs(dot(n, v)), 3.0);
+  float e = min(min(vBar.x, vBar.y), vBar.z);
+  float edgeLine = 1.0 - smoothstep(0.0, max(fwidth(e) * 1.5, 1e-4), e);
+  col = mix(col * lit, uDanger * dot(col, vec3(0.3, 0.59, 0.11)) * 2.0, uTint) + uDanger * (uFill * (0.35 + 0.65 * shade) + fres * uRim + edgeLine * uEdge);
+  o = vec4(col * uAlpha, uAlpha);
+}`;
+  function perspective(fovDeg, aspect, near, far) {
+    const f = 1 / Math.tan(fovDeg * Math.PI / 360), nf = 1 / (near - far);
+    return new Float32Array([f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) * nf, -1, 0, 0, 2 * far * near * nf, 0]);
+  }
+  function makePerimeter(cv) {
+    let gl = null;
+    try { gl = cv.getContext('webgl2', { alpha: true, premultipliedAlpha: true, preserveDrawingBuffer: true, antialias: true }); } catch (e) { gl = null; }
+    if (!gl) return { ok: false, why: 'no WebGL2' };
+    function program(vs, fs, attrs) {
+      const pr = gl.createProgram();
+      for (const [src, type] of [[vs, gl.VERTEX_SHADER], [fs, gl.FRAGMENT_SHADER]]) {
+        const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh);
+        if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) { console.error('perimeter shader: ' + gl.getShaderInfoLog(sh)); return null; }
+        gl.attachShader(pr, sh);
+      }
+      (attrs || []).forEach((a, k) => gl.bindAttribLocation(pr, k, a));
+      gl.linkProgram(pr);
+      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) { console.error('perimeter program: ' + gl.getProgramInfoLog(pr)); return null; }
+      const u = {}, n = gl.getProgramParameter(pr, gl.ACTIVE_UNIFORMS);
+      for (let k = 0; k < n; k++) { const info = gl.getActiveUniform(pr, k); u[info.name] = gl.getUniformLocation(pr, info.name); }
+      return { pr, u };
+    }
+    const warp = program(VS_FULL, FS_WARP), shard = program(VS_SHARD, FS_SHARD, ['aPos', 'aNor', 'aBar']);
+    if (!warp || !shard) return { ok: false, why: 'shader failed' };
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const emptyVao = gl.createVertexArray();
+    let meshKey = '', meshes = [];
+    function buildMeshes(s) {
+      const key = s.shape + '|' + s.count + '|' + s.seed;
+      if (key === meshKey) return;
+      for (const m of meshes) { gl.deleteVertexArray(m.vao); m.bufs.forEach((b) => gl.deleteBuffer(b)); }
+      meshes = [];
+      for (let i = 0; i < s.count; i++) {
+        const g = PERIM.geometry(s, i), vao = gl.createVertexArray(), bufs = [];
+        gl.bindVertexArray(vao);
+        [g.pos, g.nor, g.bar].forEach((arr, k) => {
+          const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(arr), gl.STATIC_DRAW);
+          gl.enableVertexAttribArray(k); gl.vertexAttribPointer(k, 3, gl.FLOAT, false, 0, 0); bufs.push(b);
+        });
+        meshes.push({ vao, bufs, n: g.pos.length / 3 });
+      }
+      gl.bindVertexArray(null);
+      meshKey = key;
+    }
+    // st: { t, drive (eased weight 0..1), pulse }. Draws the warped frame, then the shards over it.
+    function draw(src, w, h, p, st) {
+      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+      gl.viewport(0, 0, w, h);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+      const aspect = w / h, amount = Math.max(0, Math.min(1, p.perimeterAmount)), pulse = st.pulse * st.drive;
+      gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE); gl.disable(gl.DEPTH_TEST);
+      gl.useProgram(warp.pr); gl.bindVertexArray(emptyVao);
+      gl.uniform1i(warp.u.uScene, 0); gl.uniform1f(warp.u.uWarp, p.perimeterWarp * st.drive * amount);
+      gl.uniform1f(warp.u.uTime, st.t); gl.uniform1f(warp.u.uShock, pulse * amount); gl.uniform1f(warp.u.uAspect, aspect);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if (amount <= 0 || st.drive <= 0.0001) return;
+      const s = perimOf(p);
+      buildMeshes(s);
+      const proj = perspective(LAB_FOV, aspect, 0.1, 50);
+      const poses = [];
+      for (let i = 0; i < s.count; i++) poses.push(PERIM.layout(i, s, st.drive, pulse, st.t, aspect, LAB_FOV));
+      const order = poses.map((q, i) => i).sort((a, b) => poses[b].position[2] - poses[a].position[2]);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); gl.frontFace(gl.CW);   // the camera's +z is mirrored into GL's -z
+      gl.useProgram(shard.pr);
+      gl.uniformMatrix4fv(shard.u.uProj, false, proj);
+      gl.uniform1i(shard.u.uScene, 0); gl.uniform2f(shard.u.uRes, w, h); gl.uniform3f(shard.u.uDanger, DANGER[0], DANGER[1], DANGER[2]);
+      gl.uniform1f(shard.u.uRefract, p.perimeterRefraction); gl.uniform1f(shard.u.uTwist, p.perimeterTwist);
+      gl.uniform1f(shard.u.uAberr, p.perimeterAberration); gl.uniform1f(shard.u.uRim, p.perimeterRimGlow);
+      gl.uniform1f(shard.u.uEdge, p.perimeterEdgeGlow); gl.uniform1f(shard.u.uGlitch, p.perimeterGlitch * pulse);
+      gl.uniform1f(shard.u.uTime, st.t); gl.uniform1f(shard.u.uTint, p.perimeterTint);
+      gl.uniform1f(shard.u.uFill, p.perimeterFill); gl.uniform1f(shard.u.uInvert, p.perimeterInvert);
+      for (const i of order) {
+        const q = poses[i];
+        if (q.presence <= 0.001) continue;
+        const [px, py, pz] = q.position, R = q.right, U = q.up, F = q.forward;
+        gl.uniformMatrix4fv(shard.u.uModel, false, new Float32Array([R[0], R[1], -R[2], 0, U[0], U[1], -U[2], 0, F[0], F[1], -F[2], 0, px, py, -pz, 1]));
+        const cw = proj[11] * -pz, cx = proj[0] * px / cw, cy = proj[5] * py / cw;
+        gl.uniform2f(shard.u.uCenter, cx * 0.5 + 0.5, cy * 0.5 + 0.5);
+        gl.uniform1f(shard.u.uSeed, q.seed);
+        gl.uniform1f(shard.u.uAlpha, Math.max(0, Math.min(1, p.perimeterOpacity)) * q.presence * amount);
+        gl.bindVertexArray(meshes[i].vao);
+        gl.drawArrays(gl.TRIANGLES, 0, meshes[i].n);
+      }
+      gl.bindVertexArray(null);
+    }
+    function read(w, h) { const buf = new Uint8Array(w * h * 4); gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf); return buf; }
+    return { ok: true, draw, read };
+  }
 
   // The shape the mask reads, from the lab's settings (VesselSilenceConfigSO.VignetteShape).
   function shapeOf(p) {
@@ -402,6 +702,7 @@
   }
 
   const canvas = $('stage'), ctx = canvas.getContext('2d');
+  const glCanvas = $('glStage'), stagePerim = makePerimeter(glCanvas);
   function render() {
     const w = canvas.width, h = canvas.height, W = world;
     const amp = W.shakeLeft > 0 ? W.shakeAmp * (W.shakeLeft / W.shakeDur) : 0;
@@ -419,13 +720,19 @@
     const drive = smooth(Math.max(0, Math.min(1, W.weight)));
     if (drive > 0.0001) {
       drawDarken(ctx, w, h, P.vignetteDarken * drive, P.vignetteSmoothness, [0, 0, 0]);
-      bakeMask(w / h, P);
-      const b = MASK.breathe(W.t, P.vignetteBreatheDepth, P.vignetteBreatheHz);
-      ctx.save(); ctx.globalAlpha = MASK.opacity(1, drive, P.vignetteIntensity, b, W.pulse * drive); ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(maskCanvas, 0, 0, w, h); ctx.restore();
+      if (P.vignetteIntensity > 0) {   // SilenceScreenFeedback: no 2D edge at strength 0, not even the hit flare
+        bakeMask(w / h, P);
+        const b = MASK.breathe(W.t, P.vignetteBreatheDepth, P.vignetteBreatheHz);
+        ctx.save(); ctx.globalAlpha = MASK.opacity(1, drive, P.vignetteIntensity, b, W.pulse * drive); ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(maskCanvas, 0, 0, w, h); ctx.restore();
+      }
     }
+    const perimOn = P.perimeterAmount > 0 && stagePerim.ok;
+    glCanvas.hidden = !perimOn;
+    if (perimOn) stagePerim.draw(canvas, w, h, P, { t: W.t, drive, pulse: W.pulse });
     $('hud').textContent = 'silenced ' + W.left.toFixed(1) + ' s   edge ' + drive.toFixed(2) + '   flare ' + W.pulse.toFixed(2)
-      + '\nhits ' + W.hits + '   onsets ' + W.onsets + '   scene ' + BACKDROPS.find((x) => x.key === backdrop).name + (paused ? '   [paused]' : '');
+      + '\nhits ' + W.hits + '   onsets ' + W.onsets + '   scene ' + BACKDROPS.find((x) => x.key === backdrop).name + (paused ? '   [paused]' : '')
+      + (P.perimeterAmount > 0 && !stagePerim.ok ? '\n3D perimeter unavailable here (' + stagePerim.why + ')' : '');
     $('hud').style.whiteSpace = 'pre';
   }
 
@@ -451,21 +758,45 @@
     return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s];
   }
   // One variant = settings plus an optional legacy URP-red pass (Round 0, the cut that showed nothing).
+  // One pixel of the 2D composite: the legacy URP-red pass, the black darkening, then the edge overlay.
+  function compositePixel(src, i, u, v, p, legacy, aspect, s, col, op) {
+    let r = src[i] / 255, g = src[i + 1] / 255, b = src[i + 2] / 255;
+    if (legacy) { const f = urpFactor(u, 1 - v, aspect, legacy.intensity, legacy.smoothness, false); r *= legacy.color[0] + (1 - legacy.color[0]) * f; g *= legacy.color[1] + (1 - legacy.color[1]) * f; b *= legacy.color[2] + (1 - legacy.color[2]) * f; }
+    if (p.vignetteDarken > 0) { const f = urpFactor(u, 1 - v, aspect, p.vignetteDarken, p.vignetteSmoothness, false); r *= f; g *= f; b *= f; }
+    const a = op > 0 ? MASK.alpha(u, v, aspect, s) * op : 0;
+    if (a > 0) { r += (col[0] - r) * a; g += (col[1] - g) * a; b += (col[2] - b) * a; }
+    return [r, g, b];
+  }
+  const frameCanvas = document.createElement('canvas'); frameCanvas.width = SW; frameCanvas.height = SH;
+  const frameCtx = frameCanvas.getContext('2d');
+  const scorePerim = makePerimeter(Object.assign(document.createElement('canvas'), { width: SW, height: SH }));
   function compositeScore(p, legacy, kind, sd) {
     const src = backdropPixels(kind, sd), aspect = SW / SH, s = shapeOf(p), col = edgeColour(p);
     const op = MASK.opacity(1, 1, p.vignetteIntensity, 1, 0);
+    // A perimeter look: the 2D composite of the whole frame goes through the same WebGL passes the stage draws
+    // (t = 0, full silence, no flare), and the measure reads what comes back.
+    let out = null;
+    if (p.perimeterAmount > 0) {
+      if (!scorePerim.ok) return null;
+      const img = frameCtx.createImageData(SW, SH);
+      for (let y = 0; y < SH; y++) for (let x = 0; x < SW; x++) {
+        const i = (y * SW + x) * 4, c = compositePixel(src, i, (x + 0.5) / SW, 1 - (y + 0.5) / SH, p, legacy, aspect, s, col, op);
+        img.data[i] = Math.round(c[0] * 255); img.data[i + 1] = Math.round(c[1] * 255); img.data[i + 2] = Math.round(c[2] * 255); img.data[i + 3] = 255;
+      }
+      frameCtx.putImageData(img, 0, 0);
+      scorePerim.draw(frameCanvas, SW, SH, p, { t: 0, drive: 1, pulse: 0 });
+      out = scorePerim.read(SW, SH);
+    }
     let edgeSum = 0, edgeN = 0, midSum = 0, midN = 0, redSum = 0;
     const band = Math.round(SH * 0.12), cx0 = SW * 0.3, cx1 = SW * 0.7, cy0 = SH * 0.3, cy1 = SH * 0.7;
     for (let y = 0; y < SH; y += 2) for (let x = 0; x < SW; x += 2) {
       const inEdge = x < band || y < band || x >= SW - band || y >= SH - band, inMid = x >= cx0 && x < cx1 && y >= cy0 && y < cy1;
       if (!inEdge && !inMid) continue;
       const i = (y * SW + x) * 4, u = (x + 0.5) / SW, v = 1 - (y + 0.5) / SH;
-      let r = src[i] / 255, g = src[i + 1] / 255, b = src[i + 2] / 255;
-      const r0 = r, g0 = g, b0 = b;
-      if (legacy) { const f = urpFactor(u, 1 - v, aspect, legacy.intensity, legacy.smoothness, false); r *= legacy.color[0] + (1 - legacy.color[0]) * f; g *= legacy.color[1] + (1 - legacy.color[1]) * f; b *= legacy.color[2] + (1 - legacy.color[2]) * f; }
-      if (p.vignetteDarken > 0) { const f = urpFactor(u, 1 - v, aspect, p.vignetteDarken, p.vignetteSmoothness, false); r *= f; g *= f; b *= f; }
-      const a = MASK.alpha(u, v, aspect, s) * op;
-      if (a > 0) { r += (col[0] - r) * a; g += (col[1] - g) * a; b += (col[2] - b) * a; }
+      const r0 = src[i] / 255, g0 = src[i + 1] / 255, b0 = src[i + 2] / 255;
+      let r, g, b;
+      if (out) { const j = ((SH - 1 - y) * SW + x) * 4; r = out[j] / 255; g = out[j + 1] / 255; b = out[j + 2] / 255; }
+      else [r, g, b] = compositePixel(src, i, u, v, p, legacy, aspect, s, col, op);
       const A = oklab(r0, g0, b0), B = oklab(r, g, b), dE = 100 * Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
       if (inEdge) { edgeSum += dE; edgeN++; redSum += Math.max(0, (r - Math.max(g, b)) - (r0 - Math.max(g0, b0))); }
       if (inMid) { midSum += dE; midN++; }
@@ -474,23 +805,34 @@
   }
   // Baselines first: the effect OFF (a negative control: every column must read 0) and Round 0 (URP red, the
   // cut Garrett could not see - the yardstick must score it near the just-noticeable difference on open space, or it is not measuring sight).
+  // Round 1's shipped 2D edge (overtuned) - superseded by the perimeter on 2026-10-21 ("instead of a 2d effect").
+  const R1_EDGE = { vignetteIntensity: 0.75, vignetteDarken: 0.3, perimeterAmount: 0 };
+  const OFF = { vignetteIntensity: 0, vignetteDarken: 0, vignetteRimStrength: 0, perimeterAmount: 0 };
   const VARIANTS = [
-    { name: 'Off (control)', v: { vignetteIntensity: 0, vignetteDarken: 0, vignetteRimStrength: 0 } },
-    { name: 'Round 0: URP red multiply', v: { vignetteIntensity: 0, vignetteDarken: 0, vignetteRimStrength: 0 }, legacy: { intensity: 0.26, smoothness: 0.55, color: [0.75, 0, 0] } },
-    { name: 'Shipped (overtuned)', v: {} },
-    { name: 'Ember (subtle)', v: { vignetteIntensity: 0.45, vignetteInner: 0.7, vignetteFeather: 0.45, vignetteRimStrength: 0, vignetteDarken: 0.2 } },
-    { name: 'Faceted window', v: { vignetteStyle: 1, vignetteFacets: 10, vignetteInner: 0.62, vignetteFeather: 0.25, vignetteFill: 0.85, vignetteRimStrength: 0.6, vignetteRimWidth: 0.025 } },
-    { name: 'Prism rim', v: { vignetteInner: 0.75, vignetteFeather: 0.4, vignetteFill: 0.25, vignetteRimStrength: 0.9, vignetteRimWidth: 0.05 } },
-    { name: 'Hard frame', v: { vignetteIntensity: 0.9, vignetteInner: 0.45, vignetteFeather: 0.3, vignetteDarken: 0.5 } },
-    { name: 'Breathing', v: { vignetteBreatheDepth: 0.6, vignetteBreatheHz: 1.2 } },
+    { name: 'Off (control)', v: OFF },
+    { name: 'Round 0: URP red multiply', v: OFF, legacy: { intensity: 0.26, smoothness: 0.55, color: [0.75, 0, 0] } },
+    { name: 'Round 1: 2D edge (overtuned)', v: R1_EDGE },
+    { name: 'Shipped: 3D perimeter', v: {} },
+    { name: 'Crystal crown', v: { perimeterCount: 24, perimeterSize: 0.18, perimeterReach: 0.22, perimeterTwist: 0.3, perimeterRimGlow: 1.6, perimeterEdgeGlow: 1.0 } },
+    { name: 'Broken trail (prism slabs)', v: { perimeterShape: 1, perimeterCount: 16, perimeterSize: 0.2, perimeterReach: 0.2, perimeterSpin: 0.9, perimeterTwist: 0.8 } },
+    { name: 'Negative space (inverted)', v: { perimeterInvert: 1, perimeterFill: 0.1, perimeterTint: 0.5, perimeterRimGlow: 0.8 } },
+    { name: 'Tear (warp + glitch)', v: { perimeterCount: 10, perimeterSize: 0.4, perimeterReach: 0.35, perimeterWarp: 0.09, perimeterGlitch: 0.12, perimeterAberration: 0.02, perimeterTwist: 1 } },
+    { name: 'Swarm (many small)', v: { perimeterCount: 40, perimeterSize: 0.1, perimeterReach: 0.18, perimeterSpin: 1.6 } },
+    { name: 'Perimeter + 2D edge', v: { vignetteIntensity: 0.4, vignetteInner: 0.7 } },
     { name: 'Yours (current settings)', v: null },
+    // Archive: round 1's 2D looks, one click away (not scored).
+    { name: 'Ember (subtle)', archive: true, v: Object.assign({}, R1_EDGE, { vignetteIntensity: 0.45, vignetteInner: 0.7, vignetteFeather: 0.45, vignetteRimStrength: 0, vignetteDarken: 0.2 }) },
+    { name: 'Faceted window', archive: true, v: Object.assign({}, R1_EDGE, { vignetteStyle: 1, vignetteFacets: 10, vignetteInner: 0.62, vignetteFeather: 0.25, vignetteFill: 0.85, vignetteRimStrength: 0.6, vignetteRimWidth: 0.025 }) },
+    { name: 'Prism rim', archive: true, v: Object.assign({}, R1_EDGE, { vignetteInner: 0.75, vignetteFeather: 0.4, vignetteFill: 0.25, vignetteRimStrength: 0.9, vignetteRimWidth: 0.05 }) },
+    { name: 'Hard frame', archive: true, v: Object.assign({}, R1_EDGE, { vignetteIntensity: 0.9, vignetteInner: 0.45, vignetteFeather: 0.3, vignetteDarken: 0.5 }) },
+    { name: 'Breathing', archive: true, v: Object.assign({}, R1_EDGE, { vignetteBreatheDepth: 0.6, vignetteBreatheHz: 1.2 }) },
   ];
   const SCORE_SEEDS = [1, 2, 3];
   function scoreVariant(base) {
     const out = {};
     for (const b of BACKDROPS) {
       let e = 0, m = 0, r = 0;
-      for (const sd of SCORE_SEEDS) { const s = compositeScore(base.p, base.legacy, b.key, sd); e += s.edge; m += s.mid; r += s.red; }
+      for (const sd of SCORE_SEEDS) { const s = compositeScore(base.p, base.legacy, b.key, sd); if (!s) return null; e += s.edge; m += s.mid; r += s.red; }
       out[b.key] = { edge: +(e / SCORE_SEEDS.length).toFixed(2), mid: +(m / SCORE_SEEDS.length).toFixed(2), red: +(r / SCORE_SEEDS.length).toFixed(3) };
     }
     return out;
@@ -498,14 +840,16 @@
   function runBatch() {
     const rows = [];
     for (const va of VARIANTS) {
+      if (va.archive) continue;
       const p = Object.assign({}, va.v === null ? P : SHIPPED, va.v || {});
       const s = scoreVariant({ p, legacy: va.legacy });
+      if (!s) { rows.push({ variant: va.name, edgeSpace: null, edgeBright: null, edgeDanger: null, centre: null, redSpace: null }); continue; }
       rows.push({ variant: va.name, edgeSpace: s.space.edge, edgeBright: s.bright.edge, edgeDanger: s.danger.edge,
         centre: +((s.space.mid + s.bright.mid + s.danger.mid) / 3).toFixed(2), redSpace: s.space.red });
     }
     return rows;
   }
-  function score() { const s = scoreVariant({ p: Object.assign({}, P) }); return { edgeSpace: s.space.edge, edgeBright: s.bright.edge, edgeDanger: s.danger.edge, centre: +((s.space.mid + s.bright.mid + s.danger.mid) / 3).toFixed(2), t: +world.t.toFixed(2) }; }
+  function score() { const s = scoreVariant({ p: Object.assign({}, P) }); if (!s) return null; return { edgeSpace: s.space.edge, edgeBright: s.bright.edge, edgeDanger: s.danger.edge, centre: +((s.space.mid + s.bright.mid + s.danger.mid) / 3).toFixed(2), t: +world.t.toFixed(2) }; }
 
   // ================= platform =================
   function detectPlatform() {
@@ -546,17 +890,17 @@
   }
   function presetsBox() {
     const box = document.createElement('div');
-    box.innerHTML = '<p class="eyebrow">Looks</p><div class="presets"></div><p class="hint">A look loads its settings over the shipped ones and lands a hit so you see it. Shipped = what the game draws today.</p>';
-    const grid = box.querySelector('.presets');
+    box.innerHTML = '<p class="eyebrow">Looks</p><div class="presets" id="lookGrid"></div><p class="eyebrow">Archive: round 1, the 2D edge</p><div class="presets" id="archiveGrid"></div><p class="hint">A look loads its settings over the shipped ones and lands a hit so you see it. Shipped = what the game draws today.</p>';
     for (const va of VARIANTS) {
-      if (va.v === null || va.legacy) continue;
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = va.name; b.onclick = () => applyPreset(va.v); grid.appendChild(b);
+      if (va.v === null || va.legacy || /control/.test(va.name)) continue;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = va.name; b.onclick = () => applyPreset(va.v);
+      box.querySelector(va.archive ? '#archiveGrid' : '#lookGrid').appendChild(b);
     }
     return box;
   }
   function sliderGroup(group) {
     const box = document.createElement('div');
-    if (group === 'Edge') box.appendChild(presetsBox());
+    if (group === 'Perimeter') box.appendChild(presetsBox());
     for (const [g, key, lo, hi, step, label, tip] of SPEC) {
       if (g !== group) continue;
       const row = document.createElement('div'); row.className = 'row';
@@ -617,20 +961,20 @@
     box.innerHTML = '<div class="flex"><button class="btn primary" id="runBatch" type="button">Score the looks</button><span class="hint">Edge = how much the edge changes the picture (OKLab difference x100, higher reads more). Centre = how much it touches the middle of the screen (lower keeps play clear). Seeds 1-3, full strength, at the peak of each breath (breathing is judged by eye).</span></div><p class="hint" id="yard"></p><div class="tablewrap"><table id="scoreTable"></table></div>';
     box.querySelector('#runBatch').onclick = () => {
       const rows = runBatch(), t = box.querySelector('#scoreTable');
-      const best = (k, hi) => (hi ? Math.max : Math.min)(...rows.filter((r) => !/control|Round 0/.test(r.variant)).map((r) => r[k]));
+      const best = (k, hi) => (hi ? Math.max : Math.min)(...rows.filter((r) => !/control|Round 0/.test(r.variant) && r[k] !== null).map((r) => r[k]));
       t.innerHTML = '<tr><th>Look</th><th>Edge: open space</th><th>Edge: bright cell</th><th>Edge: danger prisms</th><th>Centre</th><th>Red added (space)</th></tr>';
       const hiKeys = { edgeSpace: 1, edgeBright: 1, edgeDanger: 1, redSpace: 1 }, bests = {};
       for (const k of ['edgeSpace', 'edgeBright', 'edgeDanger', 'centre', 'redSpace']) bests[k] = best(k, !!hiKeys[k]);
       for (const r of rows) {
         const tr = document.createElement('tr'), cells = [r.variant, r.edgeSpace, r.edgeBright, r.edgeDanger, r.centre, r.redSpace];
-        cells.forEach((v, i) => { const td = document.createElement('td'); td.textContent = v; if (i) td.className = 'num'; tr.appendChild(td); });
+        cells.forEach((v, i) => { const td = document.createElement('td'); td.textContent = v === null ? 'n/a' : v; if (i) td.className = 'num'; tr.appendChild(td); });
         ['edgeSpace', 'edgeBright', 'edgeDanger', 'centre', 'redSpace'].forEach((k, i) => { if (!/control|Round 0/.test(r.variant) && r[k] === bests[k]) tr.children[i + 1].classList.add('best'); });
         if (/Round 0/.test(r.variant)) tr.children[1].classList.add('bad');
         t.appendChild(tr);
       }
-      const off = rows[0], r0 = rows[1], sh = rows[2];
-      const ok = off.edgeSpace === 0 && off.centre === 0 && r0.edgeSpace < 4 && sh.edgeSpace > 10 * Math.max(0.1, r0.edgeSpace);
-      box.querySelector('#yard').textContent = (ok ? 'Yardstick check passed: ' : 'Yardstick check FAILED: ') + 'Off reads ' + off.edgeSpace + ' / ' + off.centre + ' (must be 0), Round 0 reads ' + r0.edgeSpace + ' on open space (must be under 4, near the just-noticeable difference of about 2: nobody saw it), Shipped reads ' + sh.edgeSpace + '.';
+      const off = rows[0], r0 = rows[1], sh = rows.find((r) => /^Shipped/.test(r.variant));
+      const ok = off.edgeSpace === 0 && off.centre === 0 && r0.edgeSpace < 4 && sh.edgeSpace !== null && sh.edgeSpace > 2 * Math.max(0.1, r0.edgeSpace);
+      box.querySelector('#yard').textContent = (ok ? 'Yardstick check passed: ' : 'Yardstick check FAILED: ') + 'Off reads ' + off.edgeSpace + ' / ' + off.centre + ' (must be 0), Round 0 reads ' + r0.edgeSpace + ' on open space (must be under 4, near the just-noticeable difference of about 2: nobody saw it), Shipped reads ' + sh.edgeSpace + ' (must be over twice Round 0; the band average favours a full frame, so a sparse moving perimeter is judged by eye too).';
       box.querySelector('#yard').className = 'hint ' + (ok ? 'status-ok' : 'status-warn');
     };
     return box;
@@ -647,7 +991,8 @@
     const box = document.createElement('div');
     box.innerHTML = '<p id="aboutLine"></p>'
       + '<p class="hint"><strong>Why an overlay.</strong> URP\'s Vignette multiplies the frame by its colour, so a red one only darkens. Over the arena\'s near-black space that is invisible; Round 0 shipped exactly that and Garrett saw nothing in Dog Fight. The game now draws the edge as an overlay in the palette\'s danger colour (it adds colour), with an optional black URP darkening under it.</p>'
-      + '<p class="hint"><strong>What this lab does NOT model.</strong> The scene is a 2D stand-in drawn in the shipped palette, not the game\'s 3D render: no bloom, no tonemapping, no HDR, no HUD. The URP darkening uses URP 17\'s formula without its colour grading. The shake is an approximate pixel offset (1 world unit at the chase camera taken as 1/40 of the height). The rival\'s hits are a seeded schedule, not an AI. Phones draw the same overlay; the game\'s mobile render path is not modelled.</p>';
+      + '<p class="hint"><strong>What this lab does NOT model.</strong> The scene is a 2D stand-in drawn in the shipped palette, not the game\'s 3D render: no bloom, no tonemapping, no HDR, no HUD. The URP darkening uses URP 17\'s formula without its colour grading. The shake is an approximate pixel offset (1 world unit at the chase camera taken as 1/40 of the height). The rival\'s hits are a seeded schedule, not an AI. Phones draw the same overlay; the game\'s mobile render path is not modelled.</p>'
+      + '<p class="hint"><strong>The 3D perimeter (round 2).</strong> The shards are real 3D facets drawn the way the game draws them: the frame is copied, warped near the edges, and every shard samples that copy, bent by its facet\'s normal, turned by its own twist and torn by hits. Their layout and geometry are the game\'s own code (SilencePerimeter.cs, held by a parity gate). Not modelled: the game\'s camera field of view (the lab uses 60 degrees), HDR and bloom on the danger lines, anything nearer the camera than the shards (the game draws them over everything), and the extra cost of the frame copy on a phone.</p>';
     box.querySelector('#aboutLine').textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up: ' + LAB.doc + ' · the mask is SilenceVignetteMask.cs, line for line';
     return box;
   }
@@ -680,7 +1025,8 @@
   reset(); syncToggles(); resize(); refreshDiff(); render(); requestAnimationFrame(frame);
 
   window.__lab = {
-    LAB, SHIPPED, SPEC, P, PLATFORM, VARIANTS, MASK, PALETTE, DANGER,
+    LAB, SHIPPED, SPEC, P, PLATFORM, VARIANTS, MASK, PERIM, PALETTE, DANGER,
+    get perimeterOk() { return stagePerim.ok; },
     set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
     tick(dt, n) { dt = dt || 1 / 60; n = n || 1; for (let i = 0; i < n; i++) simStep(dt); resize(); render(); },
     reset, score, runBatch, setParam, record, hit,

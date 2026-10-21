@@ -20,7 +20,26 @@ MonoBehaviour:
   onsetShakeSeconds: 0.35
   hitShakeIntensity: 0.2
   hitShakeSeconds: 0.15
-  vignetteIntensity: 0.75
+  perimeterAmount: 1
+  perimeterShape: 0
+  perimeterCount: 22
+  perimeterSeed: 7
+  perimeterSize: 0.26
+  perimeterReach: 0.26
+  perimeterSpin: 0.5
+  perimeterRefraction: 0.06
+  perimeterTwist: 0.5
+  perimeterAberration: 0.006
+  perimeterTint: 0.15
+  perimeterRimGlow: 1.2
+  perimeterEdgeGlow: 0.8
+  perimeterFill: 0.4
+  perimeterInvert: 0
+  perimeterOpacity: 0.9
+  perimeterWarp: 0.03
+  perimeterGlitch: 0.05
+  perimeterShader: {fileID: 4800000, guid: b7392ddcfaa64f5186fdd1a7e0150004, type: 3}
+  vignetteIntensity: 0
   vignetteStyle: 0
   vignetteFacets: 10
   vignetteInner: 0.55
@@ -35,7 +54,7 @@ MonoBehaviour:
   vignetteBreatheHz: 0.8
   vignetteHitPulse: 0.35
   vignetteHitPulseSeconds: 0.35
-  vignetteDarken: 0.3
+  vignetteDarken: 0
   vignetteSmoothness: 0.55
   vignetteFadeInSeconds: 0.15
   vignetteFadeOutSeconds: 0.6

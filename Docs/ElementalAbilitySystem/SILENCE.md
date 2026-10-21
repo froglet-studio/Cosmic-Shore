@@ -135,21 +135,31 @@ Thresher's red ball still breaks its own trail and an explosion still shields it
     shook once at 0.18 and never again: Garrett's second Dog Fight run (2026-10-21) "felt nothing from
     the enemy Sparrow hits", because the AI's rounds kept ONE window open for the whole fight and
     0.18 world units at chase distance is under a degree;
-  - a **danger-coloured edge** for the whole window, drawn as an alpha-blended OVERLAY (a
-    ScreenSpaceOverlay canvas sorted under the HUD, `vignetteSortingOrder` -50) whose image is a mask
-    baked from `SilenceVignetteMask` and tinted with the active palette's DANGER signal colour
-    (`SO_ColorSet.GetDangerSignalColor`, the rim every danger prism wears). It rises in 0.15 s,
-    **breathes** while the silence holds (25% at 0.8 Hz), **flares** on every hit that extends it
-    (+0.35, decaying over 0.35 s) and drains over 0.6 s. The URP Vignette is kept only for a black
-    darkening under it (0.3, through `PostProcessingManager.SetSilenceVignette`, restored after).
-    **The first cut was invisible**: it drove URP's Vignette in the danger colour at 0.26, and URP
+  - a **3D perimeter** for the whole window (Garrett, 2026-10-21: "instead of a 2d effect we just
+    have a client side perimeter of 3d craziness on the perimeter where vignettes typically use 2d
+    effects"). Faceted shards ring the screen's edge, each facet showing the frame behind it bent:
+    refracted by the facet's normal, turned by the shard's own twist, colour-split, faintly tinted
+    toward the danger colour, with a lit danger fill, a danger fresnel rim and danger lines along the
+    facet edges. The frame itself swirls and ripples near the edges. The shards slide in from beyond
+    the edge as the silence lands (each a little after the last), spin slowly, **jolt inward and tear
+    their picture into sliding bands on every hit** (the hit flare, +0.35 decaying over 0.35 s), and
+    draw back out over 0.6 s when it ends. Where the shards sit and how each is cut is
+    `SilencePerimeter` (pure, deterministic); `SilencePerimeterPass` draws them on the LOCAL pilot's
+    camera only, after URP's transparents: copy the frame, warp it, then each shard back to front from
+    that copy (`SilencePerimeter.shader`, injected from script like the black hole lens, so no asset
+    changes and no other camera or machine pays). The shards are drawn over everything: they belong to
+    the screen. Shipped: 22 crystal shards, size 0.26 of the screen's height, reach 0.26, fill 0.4.
+  - the **2D edge** of round 1 is still there and off (`vignetteIntensity` 0): an alpha-blended
+    overlay whose image is a mask baked from `SilenceVignetteMask`, in the danger colour. **The first
+    cut of all was invisible**: it drove URP's Vignette in the danger colour at 0.26, and URP
     MULTIPLIES the frame by that colour, so on the arena's near-black sky red can only darken.
-    Garrett saw nothing in two Dog Fight runs (2026-10-21), and he asked to "overtune it so it is for
-    sure noticeable". The shipped look is overtuned on purpose (strength 0.75, the edge starting at
-    0.55 of the way to the top, a 0.35 rim) until the **Silence Vignette Lab** picks one:
-    https://claude.ai/artifact/Hequw1VLdwXi2ztrDeuXQC (`Docs/Studios/SilenceVignetteLab.html`,
-    write-up `Docs/Studios/SILENCE_VIGNETTE_LAB.md`), which compares six looks against the
-    invisible cut over Dog Fight scenes in the shipped palette.
+    Garrett saw nothing in two Dog Fight runs (2026-10-21).
+
+  The look is explored in the **Silence Vignette Lab**:
+  https://claude.ai/artifact/Hequw1VLdwXi2ztrDeuXQC (`Docs/Studios/SilenceVignetteLab.html`, write-up
+  `Docs/Studios/SILENCE_VIGNETTE_LAB.md`). Round 2 draws the perimeter in WebGL the way the game does
+  (its layout and geometry are the game's code, under a parity gate), with six perimeter looks and the
+  round-1 2D edges in an archive.
 
   Every number is on `VesselSilenceConfig.asset` under *Feedback*. It plays for the local human pilot
   only: a rival's or an AI's silence changes nothing on your screen. On top of that their hits still
@@ -255,6 +265,7 @@ AI's skill, not the hull's strength, and a balance pass would buff a hull for ha
 | The rules, the gates on vessels, the network split | `bash Tools/Build/elemental_transfer_harness/run.sh`, block **T11** (28 checks, real `VesselSilence` + `CombatHitDrain` + `VesselCombatHitLatch` + `ElementalTransfer` against fake hulls, including the Dog Fight case: a fresh pilot hit by a Strike is silenced 3.2 s) | ALL PASS. Negative controls: removing the silence call in `TryAdmit` fails 11 checks; removing the missile-tier netting fails 1 |
 | Runtime C# binds against real Unity | `bash Tools/Build/unity_refcompile/run.sh` | OK: no errors in project code (80 assemblies) |
 | The real game code, end to end, in Dog Fight (2026-10-21) | Amoebius headless (`Port/`, the game's own `Assets/_Scripts` compiled live): Menu_Main -> `arcade DogFight`, 2 seats (pilot + AI), `arcade ready`, the pilot flies nothing; then `console silence` and `get "CM PlayerCam" CustomCameraController _shakeTimeRemaining / _shakeIntensity` sampled every 3 frames | The AI's hits on a pilot holding NO petals are decided, admitted and silence them (29-40 hits, every take empty, one window held at the 8 s ceiling); the vignette driver reaches weight 1.00 with post-processing present; the camera receives the 0.45 onset shake and then 0.2 per-hit shakes. Amoebius draws no URP vignette, so the vignette's LOOK is still an editor check |
+| The perimeter's layout and shards are the lab's, and its shader compiles | `bash Tools/Build/silence_vignette_parity/run.sh` (now also the `<perimeter-twin>` against `SilencePerimeter.cs`); `SilencePerimeterTests` (edit mode: hidden beyond the edge with no silence, in on the edge and out of the middle at full silence, a hit jolts inward, every shard a closed outward-wound volume and not a flat sheet, the shader's pass order); `python3 Tools/Shaders/verify_silence_perimeter.py` (glslang, HLSL mode, both passes, a negative control) | PASS (2026-10-21): 33 cases and 10366 values, worst difference 3e-6, 42 asset fields equal, six planted controls caught; both passes compile. Not run: the edit-mode tests (no Unity here) and the real URP library compile (the editor does it) |
 | The vignette's shape is the lab's shape, and the lab's numbers are the asset's | `bash Tools/Build/silence_vignette_parity/run.sh`; `SilenceVignetteMaskTests` (edit mode); `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/SilenceVignetteLab.html` | PASS (2026-10-21): 5214 values, worst difference 4e-7, 24 asset fields equal, four planted controls caught; the lab scores the URP cut at 2.8 (about the just-noticeable difference) and the shipped overlay at 45 on open space |
 | Static gates | `check_conditional_compilation`, `check_enum_member_references`, `check_switch_label_collisions`, `check_self_referential_locals`, `check_console_logging`, `check_using_directives`, `check_abstract_member_implementations`, `check_elemental_economy` | all OK |
 
@@ -275,8 +286,9 @@ In the editor (no petals needed - any scored hit silences):
 5. MPPM host + client: silence the client's pilot from the host; on BOTH windows the client's shots
    deflect for the same window (within a frame or two), and the client's flowers agree.
 6. Silence a human pilot (any hull; `silence test` in the console does it without a fight): a camera
-   shake as it lands, a lighter one on every further hit while it lasts, an unmistakable danger-red edge over the frame (an overlay, under the
-   HUD) that breathes while the window lasts, flares on each further hit and drains over about half a
-   second when it ends. If it is missing, `silence` in the console prints the overlay's state and alpha. An AI or a rival being silenced shows nothing on your screen. Tune it on
+   shake as it lands, a lighter one on every further hit while it lasts, a ring of red crystal shards slides in on the screen's edge, each
+   facet showing the world behind it bent; they jolt inward and glitch on each further hit and slide back
+   out over about half a second when it ends. If they are missing, `silence` in the console says whether
+   the perimeter is drawing, on which camera, or that its shader is missing. An AI or a rival being silenced shows nothing on your screen. Tune it on
    `VesselSilenceConfig.asset` > *Feedback*. In Dog Fight, the first AI hit on you should start it;
    `silence` in the console then shows the hits decided against you and the windows that began.

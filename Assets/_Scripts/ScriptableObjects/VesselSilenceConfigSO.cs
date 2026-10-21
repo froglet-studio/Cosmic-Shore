@@ -65,13 +65,93 @@ namespace CosmicShore.ScriptableObjects
         [Min(0f)]
         [SerializeField] float hitShakeSeconds = 0.15f;
 
-        [Header("Vignette - a danger-coloured edge drawn OVER the frame")]
-        [Tooltip("Peak opacity of the danger-coloured edge while silenced. It is an overlay that ADDS " +
-                 "the colour (URP's Vignette multiplies, so on near-black space a red one is invisible - " +
-                 "the first cut was). Overtuned on purpose until the Silence Vignette Lab picks a look. " +
-                 "0 = no edge.")]
+        [Header("Perimeter - 3D shards on the screen's edge, where a vignette would sit")]
+        [Tooltip("The silence perimeter (Garrett, 2026-10-21: \"instead of a 2d effect we just have a client " +
+                 "side perimeter of 3d craziness\"): faceted shards ring the silenced pilot's screen, each facet " +
+                 "showing the frame behind it bent. 0 = off, 1 = full.")]
         [Range(0f, 1f)]
-        [SerializeField] float vignetteIntensity = 0.75f;
+        [SerializeField] float perimeterAmount = 1f;
+
+        [Tooltip("0 = crystal shards (pointed), 1 = prism slabs (broken pieces of a trail).")]
+        [Range(0, 1)]
+        [SerializeField] int perimeterShape = 0;
+
+        [Tooltip("How many shards ring the screen.")]
+        [Range(4, 40)]
+        [SerializeField] int perimeterCount = 22;
+
+        [Tooltip("The arrangement: reshuffles where the shards sit and how each is cut.")]
+        [Range(1, 99)]
+        [SerializeField] int perimeterSeed = 7;
+
+        [Tooltip("Shard length, as a share of the screen's height.")]
+        [Range(0.05f, 0.6f)]
+        [SerializeField] float perimeterSize = 0.26f;
+
+        [Tooltip("How far the shards push in from the edge at full silence, as a share of half the height.")]
+        [Range(0f, 0.6f)]
+        [SerializeField] float perimeterReach = 0.26f;
+
+        [Tooltip("How fast each shard turns about its long axis, radians a second.")]
+        [Range(0f, 3f)]
+        [SerializeField] float perimeterSpin = 0.5f;
+
+        [Tooltip("How far each facet bends the frame it shows, along the facet's normal.")]
+        [Range(0f, 0.3f)]
+        [SerializeField] float perimeterRefraction = 0.06f;
+
+        [Tooltip("How much each shard turns and scales the reality it shows.")]
+        [Range(0f, 1f)]
+        [SerializeField] float perimeterTwist = 0.5f;
+
+        [Tooltip("Red and blue pulled apart inside the facets.")]
+        [Range(0f, 0.04f)]
+        [SerializeField] float perimeterAberration = 0.006f;
+
+        [Tooltip("How much the bent frame inside a facet takes the danger colour.")]
+        [Range(0f, 1f)]
+        [SerializeField] float perimeterTint = 0.15f;
+
+        [Tooltip("Danger light where a facet turns away from you (fresnel), as every prism's rim does.")]
+        [Range(0f, 3f)]
+        [SerializeField] float perimeterRimGlow = 1.2f;
+
+        [Tooltip("Danger lines along the shards' facet edges.")]
+        [Range(0f, 3f)]
+        [SerializeField] float perimeterEdgeGlow = 0.8f;
+
+        [Tooltip("A lit danger glow inside every facet, brighter where it faces the light, so a shard reads " +
+                 "as a solid volume even over black space.")]
+        [Range(0f, 1f)]
+        [SerializeField] float perimeterFill = 0.4f;
+
+        [Tooltip("Turns the reality inside a facet into its negative.")]
+        [Range(0f, 1f)]
+        [SerializeField] float perimeterInvert = 0f;
+
+        [Tooltip("How solid the shards are.")]
+        [Range(0f, 1f)]
+        [SerializeField] float perimeterOpacity = 0.9f;
+
+        [Tooltip("The frame swirls and ripples near the edges while silenced; each hit sends a ring through it.")]
+        [Range(0f, 0.15f)]
+        [SerializeField] float perimeterWarp = 0.03f;
+
+        [Tooltip("Each hit tears the facets' picture into sliding bands, decaying with the hit flare.")]
+        [Range(0f, 0.2f)]
+        [SerializeField] float perimeterGlitch = 0.05f;
+
+        [Tooltip("CosmicShore/SilencePerimeter. Referenced here so a build includes it. Empty = no perimeter " +
+                 "(a warning names this field once).")]
+        [SerializeField] Shader perimeterShader;
+
+        [Header("Vignette - a danger-coloured 2D edge drawn OVER the frame (off since the perimeter)")]
+        [Tooltip("Peak opacity of the danger-coloured 2D edge while silenced. It is an overlay that ADDS " +
+                 "the colour (URP's Vignette multiplies, so on near-black space a red one is invisible - " +
+                 "the first cut was). Round 1 shipped it at 0.75; the 3D perimeter replaced it. " +
+                 "0 = no edge at all, not even the hit flare.")]
+        [Range(0f, 1f)]
+        [SerializeField] float vignetteIntensity = 0f;
 
         [Tooltip("0 = Soft (a smooth ellipse), 1 = Faceted (a polygonal window, the prisms' language).")]
         [Range(0, 1)]
@@ -122,8 +202,9 @@ namespace CosmicShore.ScriptableObjects
         [Range(0f, 4f)]
         [SerializeField] float vignetteBreatheHz = 0.8f;
 
-        [Tooltip("Extra opacity every hit that extends a live silence adds to the edge, decaying - the " +
-                 "edge flares with each hit you take.")]
+        [Tooltip("The hit flare: every hit that extends a live silence adds this, decaying. It flares the " +
+                 "2D edge (when on) and jolts the perimeter's shards inward, tears their picture and sends a " +
+                 "ring through the warp.")]
         [Range(0f, 1f)]
         [SerializeField] float vignetteHitPulse = 0.35f;
 
@@ -134,7 +215,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("A darkening at the screen's edge under the colour (URP Vignette, black), so the edge " +
                  "still reads over a bright scene. 0 = none.")]
         [Range(0f, 1f)]
-        [SerializeField] float vignetteDarken = 0.3f;
+        [SerializeField] float vignetteDarken = 0f;
 
         [Tooltip("URP Vignette smoothness of that darkening.")]
         [Range(0.01f, 1f)]
@@ -160,6 +241,19 @@ namespace CosmicShore.ScriptableObjects
         public float OnsetShakeSeconds => onsetShakeSeconds;
         public float HitShakeIntensity => hitShakeIntensity;
         public float HitShakeSeconds => hitShakeSeconds;
+        public float PerimeterAmount => perimeterAmount;
+        public float PerimeterRefraction => perimeterRefraction;
+        public float PerimeterTwist => perimeterTwist;
+        public float PerimeterAberration => perimeterAberration;
+        public float PerimeterTint => perimeterTint;
+        public float PerimeterRimGlow => perimeterRimGlow;
+        public float PerimeterEdgeGlow => perimeterEdgeGlow;
+        public float PerimeterFill => perimeterFill;
+        public float PerimeterInvert => perimeterInvert;
+        public float PerimeterOpacity => perimeterOpacity;
+        public float PerimeterWarp => perimeterWarp;
+        public float PerimeterGlitch => perimeterGlitch;
+        public Shader PerimeterShader => perimeterShader;
         public float VignetteIntensity => vignetteIntensity;
         public float VignetteColorStrength => vignetteColorStrength;
         public Color FallbackDangerColor => fallbackDangerColor;
@@ -172,6 +266,17 @@ namespace CosmicShore.ScriptableObjects
         public float VignetteFadeInSeconds => vignetteFadeInSeconds;
         public float VignetteFadeOutSeconds => vignetteFadeOutSeconds;
         public int VignetteSortingOrder => vignetteSortingOrder;
+
+        /// <summary>The perimeter's layout, as <see cref="CosmicShore.Gameplay.SilencePerimeter"/> takes it.</summary>
+        public CosmicShore.Gameplay.SilencePerimeter.Settings PerimeterSettings => new()
+        {
+            Shape = perimeterShape,
+            Count = Mathf.Clamp(perimeterCount, 1, CosmicShore.Gameplay.SilencePerimeter.MaxShards),
+            Seed = perimeterSeed,
+            Size = perimeterSize,
+            Reach = perimeterReach,
+            Spin = perimeterSpin,
+        };
 
         /// <summary>The mask's shape, as <see cref="CosmicShore.Gameplay.SilenceVignetteMask"/> takes it.</summary>
         public CosmicShore.Gameplay.SilenceVignetteMask.Shape VignetteShape => new()

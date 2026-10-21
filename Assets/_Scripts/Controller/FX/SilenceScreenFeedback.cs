@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
@@ -8,8 +9,10 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// What the SILENCED pilot sees on their own screen (Docs/ElementalAbilitySystem/SILENCE.md §5):
-    /// a camera shake at the onset and a lighter one on every further hit, and a danger-coloured edge
-    /// that holds for the whole window, flares with each hit and drains when it runs out. Fleet-wide by construction - it listens to
+    /// a camera shake at the onset and a lighter one on every further hit, and a 3D PERIMETER that holds
+    /// for the whole window: faceted shards on the screen's edge, where a vignette would sit, each facet
+    /// showing the frame behind it bent, jolting and tearing with each hit and drawing back out when it
+    /// runs out. Fleet-wide by construction - it listens to
     /// <see cref="VesselSilence.VesselSilenced"/>, not to any vessel - so every hull, present and
     /// future, signals silence the same way.
     ///
@@ -17,7 +20,13 @@ namespace CosmicShore.Gameplay
     /// a replica of another peer's hull) changes nothing on this screen. Which pilot is watched is
     /// re-decided at every onset, so a vessel swap or a Hijack pilot swap follows the pilot.</para>
     ///
-    /// <para><b>The edge is an OVERLAY, not URP's Vignette.</b> URP's Vignette multiplies the frame by
+    /// <para><b>The perimeter</b> (Garrett, 2026-10-21: "instead of a 2d effect we just have a client side
+    /// perimeter of 3d craziness on the perimeter where vignettes typically use 2d effects"). Where the
+    /// shards sit and how they are cut is <see cref="SilencePerimeter"/>; this component builds their meshes
+    /// once per arrangement and hands the frame to <see cref="SilencePerimeterPass"/>, which draws them on the
+    /// local pilot's camera only. The 2D edge below is still here, off by default (strength 0).</para>
+    ///
+    /// <para><b>The 2D edge is an OVERLAY, not URP's Vignette.</b> URP's Vignette multiplies the frame by
     /// its colour, so a red one can only darken, and over the arena's near-black space it showed
     /// nothing (Garrett's Dog Fight run, 2026-10-21). The edge is a full-screen <c>RawImage</c> on
     /// its own Screen Space Overlay canvas, under the HUD, whose alpha is
@@ -55,6 +64,12 @@ namespace CosmicShore.Gameplay
         SilenceVignetteMask.Shape _maskShape;
         float _maskAspect;
 
+        // The perimeter: one mesh per shard, rebuilt when the arrangement changes; one material for the session.
+        Mesh[] _shards;
+        SilencePerimeter.Settings _shardSettings;
+        Material _perimeterMaterial;
+        bool _warnedNoShader;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Install()
         {
@@ -76,6 +91,8 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             if (_mask) Destroy(_mask);
+            DestroyShards();
+            if (_perimeterMaterial) Destroy(_perimeterMaterial);
         }
 
         void OnVesselSilenced(IVesselStatus status)
@@ -93,7 +110,7 @@ namespace CosmicShore.Gameplay
             else
             {
                 ShakeCamera(config.HitShakeIntensity, config.HitShakeSeconds);
-                _pulse = Mathf.Min(1f, _pulse + config.VignetteHitPulse);   // the edge flares with the hit
+                _pulse = Mathf.Min(1f, _pulse + config.VignetteHitPulse);   // the edge flares, the shards jolt
             }
         }
 
@@ -125,18 +142,25 @@ namespace CosmicShore.Gameplay
 
         void Push(float weight, VesselSilenceConfigSO config)
         {
-            EnsureOverlay(config);
-            float breathe = SilenceVignetteMask.Breathe(Time.unscaledTime, config.VignetteBreatheDepth,
-                                                        config.VignetteBreatheHz);
-            // The mask texture carries the shape; the image's alpha is everything else (Opacity with
-            // a mask of 1 - the texture multiplies the shape back in).
-            var c = VignetteColor(config);
-            c.a = SilenceVignetteMask.Opacity(1f, weight, config.VignetteIntensity, breathe, _pulse * weight);
-            if (_edge)
+            PushPerimeter(weight, config);
+
+            // The 2D edge: none at all at strength 0 (the default since the perimeter), not even the hit flare.
+            if (config.VignetteIntensity > 0f)
             {
-                _edge.color = c;
-                if (!_edge.gameObject.activeSelf) _edge.gameObject.SetActive(true);
+                EnsureOverlay(config);
+                float breathe = SilenceVignetteMask.Breathe(Time.unscaledTime, config.VignetteBreatheDepth,
+                                                            config.VignetteBreatheHz);
+                // The mask texture carries the shape; the image's alpha is everything else (Opacity with
+                // a mask of 1 - the texture multiplies the shape back in).
+                var c = VignetteColor(config);
+                c.a = SilenceVignetteMask.Opacity(1f, weight, config.VignetteIntensity, breathe, _pulse * weight);
+                if (_edge)
+                {
+                    _edge.color = c;
+                    if (!_edge.gameObject.activeSelf) _edge.gameObject.SetActive(true);
+                }
             }
+            else if (_edge && _edge.gameObject.activeSelf) _edge.gameObject.SetActive(false);
 
             var post = PostProcessingManager.Instance;
             if (post && config.VignetteDarken > 0f)
@@ -150,9 +174,102 @@ namespace CosmicShore.Gameplay
             _pushed = false;
             _weight = 0f;
             _pulse = 0f;
+            SilencePerimeterPass.Current = default;
             if (_edge) _edge.gameObject.SetActive(false);
             var post = PostProcessingManager.Instance;
             if (post) post.SetSilenceVignette(0f, Color.black, 0f, 0f);
+        }
+
+        /// <summary>
+        /// Hands this frame's perimeter to <see cref="SilencePerimeterPass"/>: the local pilot's camera, the
+        /// shard meshes (rebuilt only when the arrangement changes), the silence's eased weight, the hit
+        /// flare and the look. With amount 0 or no shader, nothing is drawn.
+        /// </summary>
+        void PushPerimeter(float weight, VesselSilenceConfigSO config)
+        {
+            var settings = config.PerimeterSettings;
+            var camera = PilotCamera();
+            if (config.PerimeterAmount <= 0f || settings.Count <= 0 || !camera || !EnsurePerimeterMaterial(config))
+            {
+                SilencePerimeterPass.Current = default;
+                return;
+            }
+            EnsureShards(settings);
+            SilencePerimeterPass.Current = new SilencePerimeterPass.Frame
+            {
+                Active = true,
+                Camera = camera,
+                Material = _perimeterMaterial,
+                Meshes = _shards,
+                Settings = settings,
+                Drive = weight,
+                Pulse = _pulse * weight,
+                Time = Time.unscaledTime,
+                Amount = config.PerimeterAmount,
+                Opacity = config.PerimeterOpacity,
+                Glitch = config.PerimeterGlitch,
+                Warp = config.PerimeterWarp,
+                Look = new Vector4(config.PerimeterRefraction, config.PerimeterTwist, config.PerimeterAberration, config.PerimeterTint),
+                Look2 = new Vector4(config.PerimeterRimGlow, config.PerimeterEdgeGlow, config.PerimeterFill, config.PerimeterInvert),
+                Danger = DangerColor(config),
+            };
+        }
+
+        bool EnsurePerimeterMaterial(VesselSilenceConfigSO config)
+        {
+            if (_perimeterMaterial) return true;
+            var shader = config.PerimeterShader;
+            if (!shader || !shader.isSupported)
+            {
+                if (!_warnedNoShader)
+                    CSDebug.LogWarning("[Silence] The perimeter cannot draw: VesselSilenceConfig.perimeterShader is " +
+                                       (shader ? "not supported on this device" : "empty") + ". Silence shows no perimeter.");
+                _warnedNoShader = true;
+                return false;
+            }
+            _perimeterMaterial = new Material(shader) { name = "SilencePerimeter", hideFlags = HideFlags.DontSave };
+            return true;
+        }
+
+        void EnsureShards(in SilencePerimeter.Settings settings)
+        {
+            if (_shards != null && _shards.Length == settings.Count && _shardSettings.Shape == settings.Shape &&
+                _shardSettings.Seed == settings.Seed) return;
+            DestroyShards();
+            _shards = new Mesh[settings.Count];
+            var positions = new List<Vector3>();
+            var normals = new List<Vector3>();
+            var barycentrics = new List<Vector3>();
+            for (int i = 0; i < settings.Count; i++)
+            {
+                positions.Clear(); normals.Clear(); barycentrics.Clear();
+                SilencePerimeter.Geometry(settings, i, positions, normals, barycentrics);
+                var triangles = new int[positions.Count];
+                for (int t = 0; t < triangles.Length; t++) triangles[t] = t;
+                var mesh = new Mesh { name = "SilenceShard" + i, hideFlags = HideFlags.DontSave };
+                mesh.SetVertices(positions);
+                mesh.SetNormals(normals);
+                mesh.SetUVs(0, barycentrics);
+                mesh.SetTriangles(triangles, 0);
+                mesh.RecalculateBounds();
+                _shards[i] = mesh;
+            }
+            _shardSettings = settings;
+        }
+
+        void DestroyShards()
+        {
+            if (_shards == null) return;
+            foreach (var mesh in _shards) if (mesh) Destroy(mesh);
+            _shards = null;
+        }
+
+        static Camera PilotCamera()
+        {
+            if (CameraManager.Instance != null &&
+                CameraManager.Instance.GetActiveController() is CustomCameraController controller && controller.Camera)
+                return controller.Camera;
+            return Camera.main;
         }
 
         /// <summary>
@@ -224,12 +341,18 @@ namespace CosmicShore.Gameplay
             a.Roundness == b.Roundness && a.Fill == b.Fill && a.RimStrength == b.RimStrength &&
             a.RimWidth == b.RimWidth;
 
-        static Color VignetteColor(VesselSilenceConfigSO config)
+        static Color DangerColor(VesselSilenceConfigSO config)
         {
             var palette = PrismLit.ColorSet;
             var danger = palette ? palette.GetDangerSignalColor() : default;
             if (danger.a <= 0f) danger = config.FallbackDangerColor;
-            var c = Color.Lerp(Color.black, danger, config.VignetteColorStrength);
+            danger.a = 1f;
+            return danger;
+        }
+
+        static Color VignetteColor(VesselSilenceConfigSO config)
+        {
+            var c = Color.Lerp(Color.black, DangerColor(config), config.VignetteColorStrength);
             c.a = 1f;
             return c;
         }
@@ -266,7 +389,10 @@ namespace CosmicShore.Gameplay
             var post = PostProcessingManager.Instance;
             sb.Append("silence: post-processing ").Append(post ? "found" : "missing (no darkening)")
               .Append(" | edge weight ").Append(s_instance ? s_instance._weight.ToString("0.00") : "-")
-              .Append(", overlay ").Append(s_instance && s_instance._edge && s_instance._edge.gameObject.activeSelf
+              .Append(", perimeter ").Append(SilencePerimeterPass.Current.Active
+                  ? $"drawing {SilencePerimeterPass.Current.Settings.Count} shards on {SilencePerimeterPass.Current.Camera.name}"
+                  : s_instance && s_instance._warnedNoShader ? "cannot draw (no shader)" : "idle")
+              .Append(", 2D edge ").Append(s_instance && s_instance._edge && s_instance._edge.gameObject.activeSelf
                   ? "showing, alpha " + s_instance._edge.color.a.ToString("0.00") : "hidden");
             if (VesselSilence.Tallies.Count == 0)
                 sb.Append(" | no scored hit has landed on anybody on this machine yet");
