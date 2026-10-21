@@ -34,6 +34,12 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 1f)] private float energizeCostFraction = 0.1f;
         [Tooltip("Seconds the lower/chop stance must be held to energize.")]
         [SerializeField] private float energizeHoldSeconds = 1f;
+        [Tooltip("PHONE ONLY: how many times FASTER the energize charge fills for a human flying on touch. " +
+                 "A phone pilot energizes by lifting BOTH thumbs, which also lets go of the steering, so the " +
+                 "hold is divided by this (2 = half the hold). 1 = the pad's timing. AI and autopilot keep the " +
+                 "pad's timing. Decided on the vessel's owner and replicated with the energize phase " +
+                 "(RhinoSwordNetworkRelay), so every peer ignites on the same edge.")]
+        [SerializeField, Min(0.01f)] private float touchEnergizeRateMultiplier = 2f;
         [Tooltip("Seconds the blade stays energized AFTER leaving the stance. Holding the stance " +
                  "from ignition keeps it lit; once let go the tail runs out whatever the fingers do - " +
                  "unless Live Wire (below) is active.")]
@@ -168,6 +174,12 @@ namespace CosmicShore.Gameplay
 
         public float EnergizeCostFraction    => Mathf.Clamp01(energizeCostFraction);
         public float EnergizeHoldSeconds     => Mathf.Max(0.01f, energizeHoldSeconds);
+        public float TouchEnergizeRateMultiplier => Mathf.Max(0.01f, touchEnergizeRateMultiplier);
+
+        /// <summary>The stance hold that energizes this pilot's blade: <see cref="EnergizeHoldSeconds"/>,
+        /// divided by <see cref="TouchEnergizeRateMultiplier"/> for a human flying on a phone.</summary>
+        public float EnergizeHoldSecondsFor(bool touchPilot) =>
+            touchPilot ? Mathf.Max(0.01f, EnergizeHoldSeconds / TouchEnergizeRateMultiplier) : EnergizeHoldSeconds;
         public float EnergizedTailSeconds    => Mathf.Max(0f, energizedTailSeconds);
         public float EnergizeCooldownSeconds => Mathf.Max(0f, energizeCooldownSeconds);
         public Element LiveWireUpgradeElement => liveWireUpgradeElement;

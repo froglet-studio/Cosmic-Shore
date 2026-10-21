@@ -9,10 +9,9 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// What the SILENCED pilot sees on their own screen (Docs/ElementalAbilitySystem/SILENCE.md §5):
-    /// a camera shake at the onset and a lighter one on every further hit, and a 3D PERIMETER that holds
-    /// for the whole window: faceted shards on the screen's edge, where a vignette would sit, each facet
-    /// showing the frame behind it bent, jolting and tearing with each hit and drawing back out when it
-    /// runs out. Fleet-wide by construction - it listens to
+    /// a camera shake at the onset and a lighter one on every further hit, and, for the whole window, a
+    /// thin 3D PERIMETER over a thin danger EDGE on the screen's border that goes DEEPER with the seconds
+    /// of silence left and bleeds back out as they drain. Fleet-wide by construction - it listens to
     /// <see cref="VesselSilence.VesselSilenced"/>, not to any vessel - so every hull, present and
     /// future, signals silence the same way.
     ///
@@ -20,26 +19,23 @@ namespace CosmicShore.Gameplay
     /// a replica of another peer's hull) changes nothing on this screen. Which pilot is watched is
     /// re-decided at every onset, so a vessel swap or a Hijack pilot swap follows the pilot.</para>
     ///
-    /// <para><b>The perimeter</b> (Garrett, 2026-10-21: "instead of a 2d effect we just have a client side
-    /// perimeter of 3d craziness on the perimeter where vignettes typically use 2d effects"). Where the
+    /// <para><b>The perimeter</b> (Garrett, 2026-10-21, over four rounds in the Silence Vignette Lab,
+    /// <c>Docs/Studios/SilenceVignetteLab.html</c>): 160 half-buried, overlapping faceted shards whose
+    /// facets show the frame behind them bent and dragged toward a pull that wanders the screen. Where the
     /// shards sit and how they are cut is <see cref="SilencePerimeter"/>; this component cuts their facets
-    /// once per arrangement and hands the frame to <see cref="SilencePerimeterPass"/>, which draws them all in
-    /// one mesh on the local pilot's camera only. Round 3 (Garrett, 2026-10-21: "it doesn't read as crystals
-    /// coming in from the edge it read reality trying to pull you somewhere you don't want to be"): 110 shards
-    /// half buried on the edge, overlapping, their pictures dragged toward a pull that wanders the screen. The 2D edge below is still here, off by default (strength 0).</para>
+    /// once per arrangement, tracks the depth (seconds left / <c>depthFullSeconds</c>), and hands the frame
+    /// to <see cref="SilencePerimeterPass"/>, which draws on the local pilot's camera only.</para>
     ///
-    /// <para><b>The 2D edge is an OVERLAY, not URP's Vignette.</b> URP's Vignette multiplies the frame by
-    /// its colour, so a red one can only darken, and over the arena's near-black space it showed
-    /// nothing (Garrett's Dog Fight run, 2026-10-21). The edge is a full-screen <c>RawImage</c> on
-    /// its own Screen Space Overlay canvas, under the HUD, whose alpha is
-    /// <see cref="SilenceVignetteMask"/> baked into a small texture and whose colour is the active
-    /// palette's DANGER signal colour - the rim every danger prism wears - so it ADDS the game's own
-    /// red over whatever is behind it. URP's Vignette is kept for one job only: an optional black
-    /// darkening under the colour (<see cref="PostProcessingManager.SetSilenceVignette"/>), so the
-    /// edge still reads over a bright scene. The shake is <see cref="CustomCameraController.Shake"/>,
-    /// which keeps a stronger shake already playing. Every number is on
-    /// <see cref="VesselSilenceConfigSO"/>, and the Silence Vignette Lab
-    /// (<c>Docs/Studios/SilenceVignetteLab.html</c>) explores them over a stand-in Dog Fight.</para>
+    /// <para><b>The edge is never URP's Vignette.</b> URP's Vignette multiplies the frame by its colour,
+    /// so a red one can only darken, and over the arena's near-black space it showed nothing (Garrett's
+    /// Dog Fight run, 2026-10-21). The edge is <see cref="SilenceVignetteMask"/> in the active palette's
+    /// DANGER signal colour - the rim every danger prism wears - ADDED over the frame. With the perimeter
+    /// on, the perimeter's own pass draws it into the frame before the shards copy it, so the pull drags
+    /// it and the facets refract it (the look Garrett approved in the lab). With the perimeter off, it is
+    /// a full-screen <c>RawImage</c> on its own Screen Space Overlay canvas under the HUD. URP's Vignette
+    /// is kept for one optional job, a black darkening (<see cref="PostProcessingManager.SetSilenceVignette"/>,
+    /// off by default). The shake is <see cref="CustomCameraController.Shake"/>, which keeps a stronger
+    /// shake already playing. Every number is on <see cref="VesselSilenceConfigSO"/>.</para>
     ///
     /// <para>Self-installs once per play session, like <c>HumanFlightRecorder</c>: a hidden,
     /// scene-independent object with nothing to wire.</para>

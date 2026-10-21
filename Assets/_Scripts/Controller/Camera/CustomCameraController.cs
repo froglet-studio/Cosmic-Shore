@@ -192,9 +192,11 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// How much of the follow offset's HEIGHT (y) the camera keeps: 1 = the authored offset,
-        /// 0 = level with the vessel, directly behind it. Driven only by the Butterfly's
+        /// 0 = level with the vessel, directly behind it. Driven by the Butterfly's
         /// <c>SpreadWingsActionExecutor</c> — Mass mode drops the camera to directly behind the
-        /// hull, Dust mode keeps the authored height (<c>R_VesselActions/BUTTERFLY.md</c> §2.0).
+        /// hull, Dust mode keeps the authored height (<c>R_VesselActions/BUTTERFLY.md</c> §2.0) —
+        /// and by <c>ToggleTranslationModeActionExecutor</c>: the Sparrow flies level and keeps its
+        /// authored height only in the turret stance (<c>SPARROW_TURRET_STANCE.md</c>).
         ///
         /// <para>Applied at the point of use (<see cref="EffectiveOffset"/>), never by writing
         /// <see cref="_followOffset"/>, for the same reason as <see cref="RearView"/>: every

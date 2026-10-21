@@ -106,7 +106,7 @@ Each column is averaged over seeds 1 to 3 at full strength, measured at the brea
 | Round 2: crystals from the edge | 8.68 | 7.16 | 10.13 | 0.13 | 0.117 |
 | Pull + 2D edge | 28.32 | 20.44 | 28.61 | 0.07 | 0.449 |
 
-- The scorecard is still a still frame. The pull, drift, streak and maw are motion, so judge them by eye (L-STU-127).
+- The scorecard is still a still frame. The pull, drift, streak and maw are motion, so judge them by eye (L-STU-133).
 
 **Checked.**
 - `verify_lab.cjs` passes. Screenshots over the three scenes were looked at, twice, and the look was changed between them.

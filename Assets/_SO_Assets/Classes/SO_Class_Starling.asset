@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
+  m_Name: SO_Class_Starling
+  m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel
+  Class: 21
+  Name: Starling
+  Description: A swarm, not a ship. The starlings roam the cell on their own after each objective in turn -
+    the omnicrystal, elemental crystals, rival vessels, rival mass. You turn the view and pick one card
+    from every hand; the cards you pick are what your swarm becomes.
+  PrimaryElement: 0
+  Element: {fileID: 0}
+  InitialResourceLevels: {Mass: 0, Charge: 0, Space: 0, Time: 0}
+  IconActive: {fileID: 21300000, guid: 8af85fbf4d51a9a969eaf95e33243c4e, type: 3}
+  IconInactive: {fileID: 21300000, guid: 70ea71e517512c9f3306a7a6b2faa7e8, type: 3}
+  PreviewImage: {fileID: 21300000, guid: 20349bad8ba97e0b6a5a9de0f2c1a19c, type: 3}
+  SquadImage: {fileID: 21300000, guid: 42bbb35c6c8abd11030e8d8e7d482149, type: 3}
+  TrailPreviewImage: {fileID: 0}
+  CardSilohoutteActive: {fileID: 21300000, guid: 8af85fbf4d51a9a969eaf95e33243c4e, type: 3}
+  CardSilohoutteInactive: {fileID: 21300000, guid: e25a3a7db0c68de7088379c60d1bb5e4, type: 3}
+  Abilities: []
+  Games: []
+  TrainingGames: []
+  gameplayParameter1:
+    LeftHandLabel: Casual
+    RightHandLabel: Challenging
+    Value: 0.3
+  gameplayParameter2:
+    LeftHandLabel: Relaxing
+    RightHandLabel: Thrilling
+    Value: 0.3
+  gameplayParameter3:
+    LeftHandLabel: Solo
+    RightHandLabel: Social
+    Value: 0.4
+  isLocked: 0
+  ownedFromStart: 0
+  UnlockCost: 100

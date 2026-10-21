@@ -26,7 +26,7 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Game Modes & Controllers
 - [`Docs/claude/DOCUMENTATION_INDEX.md`](Docs/claude/DOCUMENTATION_INDEX.md): Catalogue of every doc under Docs/ and what it covers.
   Sections: Documentation Index
-- [`Docs/claude/ARCHITECTURE_CORE.md`](Docs/claude/ARCHITECTURE_CORE.md): SOAP, threading, bootstrap, auth/session flow, Reflex DI, input strategy.
+- [`Docs/claude/ARCHITECTURE_CORE.md`](Docs/claude/ARCHITECTURE_CORE.md): SOAP, threading, bootstrap, auth/session flow, Reflex DI, input strategy (with the one Invert Y rule, no nose lag for human pilots, and the per-hull phone touch profiles).
   Sections: Architecture Patterns; ScriptableObject Config Separation; SOAP — Scriptable Object Architecture Pattern (Primary Architecture); Threading & Main-Thread Affinity; Bootstrap & Scene Flow; Authentication & Session Flow; Dependency Injection (Reflex); Input Strategy Pattern
 - [`Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`](Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md): Impact effects architecture; the LOCKED PvP-is-petals-only rule (and silence, its one consequence beyond the petals: every scored hit leaves the victim's abilities harmless for what the hit is worth, `Docs/ElementalAbilitySystem/SILENCE.md`, which also holds the AI-plateau balancing plan); the LOCKED FMOD exposed-field convention.
   Sections: Impact Effects Architecture; PvP is petals only (LOCKED, Garrett 2026-10-10); Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)

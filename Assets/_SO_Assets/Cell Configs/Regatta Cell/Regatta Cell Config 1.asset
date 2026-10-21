@@ -15,13 +15,14 @@ MonoBehaviour:
   CellName: Regatta
   Description: 'Regatta at intensity 1 of 4 (CellTypeChoiceOptions.IntensityWise, list order =
     intensity): a closed circuit of 8 rings with three super-shielded rails - one per
-    playable domain - braided along it, 1812 (6,6,8) prisms on a 4828u spine, mouths 110u,
-    no corner under 200u. The standard nucleus is the crystal respawn volume and the inner
-    shell; the spawn profile is the Barren cell''s (no flora, no fauna - shielded mass is
-    never food, and a race whose obstacles differ per peer is not a race). PhaseThresholds
-    ride the rails'' MEASURED volume (Tools/Build/regatta_course_measurements.json) plus a
-    trail band - regenerate with Tools/Build/author_regatta_assets.py, never by hand; the
-    count x 16 derivation is 18x low here because a (6,6,8) prism is 288 volume.'
+    playable domain - braided along it, 1812 (6,6,8) prisms (each length fitted flush to its
+    neighbours, 517,194 volume) on a 4828u spine, mouths 110u, no corner under 200u. The
+    standard nucleus is the crystal respawn volume and the inner shell; the spawn profile is
+    the Barren cell''s (no flora, no fauna - shielded mass is never food, and a race whose
+    obstacles differ per peer is not a race). PhaseThresholds ride the rails'' MEASURED
+    volume (Tools/Build/regatta_course_measurements.json) plus a trail band - regenerate
+    with Tools/Build/author_regatta_assets.py, never by hand; the count x 16 derivation is
+    18x low here because a (6,6,8) prism is 288 volume.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 1
   CellEndGameScore: 0
@@ -37,7 +38,7 @@ MonoBehaviour:
     RestlessExit: 2312
     FrenzyEnter: 5412
     FrenzyExit: 4812
-    RestlessEnterVolume: 581856
-    RestlessExitVolume: 561856
-    FrenzyEnterVolume: 921856
-    FrenzyExitVolume: 841856
+    RestlessEnterVolume: 577194
+    RestlessExitVolume: 557194
+    FrenzyEnterVolume: 917194
+    FrenzyExitVolume: 837194

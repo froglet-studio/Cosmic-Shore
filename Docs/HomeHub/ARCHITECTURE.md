@@ -507,6 +507,8 @@ untouched by the six-seat cards.
 rear view). Left/1 = previous, right/2 = next, round a ring of the pilot's own hull plus every AI
 teammate's, ordered by vessel NetworkObjectId so every peer walks it identically
 (`PilotSwap.TryPickRingTarget`). Human teammates' hulls are never in the ring.
+The same two targets are drawn in the in-game top bar and are tappable there, which is the
+swap control on a phone (`PilotSwapIndicator`, 2026-10-21, `Docs/GAME_MODE_TOPBAR.md` §2.7).
 
 It is the **Cellular Duel vessel swap generalised** (`IPlayer.ChangeVessel` + `IVessel.ChangePlayer`),
 not a respawn: nothing is spawned or destroyed, the two Players EXCHANGE live hulls, so rule 2
@@ -850,7 +852,8 @@ They call exactly what the cards call - `DailyToyActivity.Today` + `TryClaim`, `
 to build its first gate beside the gallery, a cell away, where the player could not see it. So a
 shell option can now answer **`ToyShellOption.Arrival`** - the ring the player threads next and the
 way through it, resolved AFTER the press because the press is what builds the ring - and the pole
-puts the vessel in front of it, facing through, at the Navigate stand-off (2.4 ring radii) plus
+puts the vessel in front of it, facing through, at 2.4 ring radii (Navigate's original stand-off;
+Navigate itself now stands off 7.2, see below) plus
 1.5 s of the vessel's own speed (a fresh gate blooms for 1.2 s and cannot fire until it has, and a
 fast hull needs room to see it). The painting gallery answers with its live run's start gate or
 ride checkpoint (`PaintingRunner.TryGetArrival`, read off the stroke's points, not the ring object,
@@ -942,7 +945,11 @@ ring mid-blend and trips the toy before the player has touched a control — `To
 
 The stand-off sits **outside** the toy's own `SwitchRingRadius` (`arrivalDistanceFactor` > 1) and
 faces it, so the player looks at what they chose and flies through the ring to use it; arriving
-inside would trip the toy on the first frame, using it without ever seeing it.
+inside would trip the toy on the first frame, using it without ever seeing it. **It is 7.2 ring
+radii, three times the original 2.4** (Garrett, 2026-10-20): the player has already made their
+selection in the window and usually just wants to return to freestyle, so they need time to steer
+around the switch rather than run into it. The inward-lane cap (80% of the distance to the cell
+centre) still bounds it.
 
 **The approach is the toy's INWARD radial — from inside the cell.** The toybox rings its toys
 around the membrane facing inward, so the inward radial is both the toy's own front and the side

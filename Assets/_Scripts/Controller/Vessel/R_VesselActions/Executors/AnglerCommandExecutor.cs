@@ -18,12 +18,18 @@ namespace CosmicShore.Gameplay
     /// from the nose — the squeeze sets the brush (<see cref="AnglerCommandMath.BrushScale"/>) — while the picked squad
     /// balls up ahead of the nose.</item>
     /// <item><b>LT, held</b>: erases paint with a narrower beam. While LT is held RT does not paint.</item>
+    /// <item><b>On a phone</b> there is no trigger depth: the Space card (Paint, RightStickAction) and the Charge card
+    /// (Erase / Lock-on, LeftStickAction) are held buttons bound in the prefab's TOUCH overrides to
+    /// <see cref="AnglerControl.Paint"/> / <see cref="AnglerControl.Erase"/>, which hold <see cref="SetPaintPressed"/> /
+    /// <see cref="SetErasePressed"/>. A held press reads as a full pull (the Thresher's <c>PollTriggers</c> shape), so the
+    /// brush is always full width on touch. A pad never sets them (its triggers are not bound), so an analog pilot's
+    /// half-pull, brush width and 0.5 thresholds are exactly as before.</item>
     /// <item><b>RT, let go</b>: the throw. Each creature in the ball is given its own painted prism
     /// (<see cref="AnglerCommandMath.PickTarget"/>) and launched at it at throw speed, homing; inside its mouth's reach
     /// the throw ends and it eats by its own mouthful rule, with the painted set as its order. Nothing painted: it throws
     /// like a plain sling, and each creature latches onto the first enemy prism it passes.</item>
-    /// <item><b>X</b> (held): the lure (<see cref="BeginLure"/>); <b>A</b>: pick the squad (<see cref="CycleSquad"/>);
-    /// <b>B</b>: recall (<see cref="Recall"/>).</item>
+    /// <item><b>A</b> (held): the lure (<see cref="BeginLure"/>); <b>B</b>: the dash (<see cref="Dash"/>); <b>X</b>: pick the
+    /// squad (<see cref="CycleSquad"/>); <b>Y</b>: recall (<see cref="Recall"/>).</item>
     /// </list>
     ///
     /// <para><b>Who decides what.</b> Every peer runs this executor from the vessel's REPLICATED inputs (trigger depths
@@ -110,6 +116,7 @@ namespace CosmicShore.Gameplay
         bool _luring;
         bool _cmdHeld;
         float _cmdDepth, _eraseDepth;
+        bool _paintPressed, _erasePressed;   // touch: the Paint / Erase cards held (no trigger depth on glass)
         float _brushOwed;
         float _keeperRetryAt;      // when the next keeper may be born (Time.time); +inf once the turn has ended
         readonly List<Member> _hunters = new();   // Charge: spent creatures, out of the school, each chasing its vessel
@@ -183,6 +190,7 @@ namespace CosmicShore.Gameplay
             _luring = false;
             _cmdHeld = false;
             _cmdDepth = _eraseDepth = 0f;
+            _paintPressed = _erasePressed = false;
             _brushOwed = 0f;
             _keeperRetryAt = 0f;
             _beamVessel = null;
@@ -206,6 +214,7 @@ namespace CosmicShore.Gameplay
         {
             OnMiniGameTurnEnd.OnRaised -= OnTurnEnd;
             ReleaseAll();
+            _paintPressed = _erasePressed = false;   // a held card must not stay held across a disable
             if (_transformer) _transformer.LureSpeedCap = AnglerVesselTransformer.NoCap;
             DropCameraLift();
         }
@@ -233,6 +242,17 @@ namespace CosmicShore.Gameplay
             _luring = false;
             PlantSeeds();
         }
+
+        /// <summary>
+        /// The Paint card held on a phone (<see cref="AnglerControl.Paint"/>, bound to RightStickAction in the TOUCH
+        /// overrides only): read as RT fully pulled while held, and its release is the throw, as letting go of RT is. Every
+        /// peer runs it from the replicated press, which carries the touch device it was resolved with.
+        /// </summary>
+        public void SetPaintPressed(bool pressed) => _paintPressed = pressed;
+
+        /// <summary>The Erase / Lock-on card held on a phone (<see cref="AnglerControl.Erase"/>, LeftStickAction): read as
+        /// LT fully pulled while held. See <see cref="SetPaintPressed"/>.</summary>
+        public void SetErasePressed(bool pressed) => _erasePressed = pressed;
 
         /// <summary>The whole school, then each kind in the order it was first tamed, then the school again.</summary>
         public void CycleSquad() => _squad = _squad >= _species.Count - 1 ? -1 : _squad + 1;
@@ -524,8 +544,10 @@ namespace CosmicShore.Gameplay
             EnsureKeeper();
 
             var input = _status.InputStatus;
-            float rt = input != null ? input.RightTriggerAnalog : 0f;
-            float lt = input != null ? input.LeftTriggerAnalog : 0f;
+            // A trigger's depth, or a held touch card as a full pull (no depth on glass). The cards are bound on touch
+            // only, so a pad pilot's analog reading is never raised by this.
+            float rt = Mathf.Max(input != null ? input.RightTriggerAnalog : 0f, _paintPressed ? 1f : 0f);
+            float lt = Mathf.Max(input != null ? input.LeftTriggerAnalog : 0f, _erasePressed ? 1f : 0f);
             bool held = rt > 0.5f, erasing = lt > 0.5f, released = !held && _cmdHeld;
             _cmdHeld = held;
             _cmdDepth = rt;

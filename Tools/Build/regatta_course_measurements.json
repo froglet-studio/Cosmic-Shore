@@ -5,7 +5,7 @@
     "Assets/_Scripts/Controller/Arcade/Headlong/HeadlongCircuit.cs",
     "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourse.cs"
   ],
-  "sourceHash": "97f8b4931cd359b576f0511035531e55dbab64a976e7fee07efef49fb4dc2741",
+  "sourceHash": "8f28c3b4d5e56d6644ebc4a8f8f0f757c45eccf023eb8d65c26562ec88ba1d3a",
   "intensities": {
     "1": {
       "seed": 20268834,
@@ -18,6 +18,8 @@
         4831.7,
         4830.2
       ],
+      "railVolume": 517194,
+      "minPrismLength": 7.8,
       "prismCount": 1812,
       "minLaneSeparation": 38.09,
       "maxSpacingError": 0.006,
@@ -58,6 +60,8 @@
         5405.3,
         5445.1
       ],
+      "railVolume": 580342,
+      "minPrismLength": 7.623,
       "prismCount": 2038,
       "minLaneSeparation": 38.08,
       "maxSpacingError": 0.009,
@@ -98,6 +102,8 @@
         5876.4,
         5882.8
       ],
+      "railVolume": 627530,
+      "minPrismLength": 7.434,
       "prismCount": 2209,
       "minLaneSeparation": 38.06,
       "maxSpacingError": 0.014,
@@ -138,6 +144,8 @@
         5824.7,
         5858.2
       ],
+      "railVolume": 625649,
+      "minPrismLength": 7.527,
       "prismCount": 2201,
       "minLaneSeparation": 38.08,
       "maxSpacingError": 0.011,

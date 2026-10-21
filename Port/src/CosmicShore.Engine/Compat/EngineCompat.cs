@@ -297,6 +297,13 @@ namespace CosmicShore.Engine
 
         public static Object Load(string path) => Load<Object>(path);
 
+        /// <summary>
+        /// Unity contract: frees a loaded asset's memory (a cell environment's layout bake is
+        /// unloaded as soon as it is decoded). The port keeps a loaded asset as an ordinary managed
+        /// object, so there is nothing to free beyond what the GC reclaims; a no-op.
+        /// </summary>
+        public static void UnloadAsset(Object assetToUnload) { }
+
         public static T[] FindObjectsOfTypeAll<T>() where T : Object
         {
             var results = new List<T>();

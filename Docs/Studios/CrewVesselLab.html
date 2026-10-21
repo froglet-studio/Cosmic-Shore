@@ -147,7 +147,7 @@
     // The kite
     kiteRadius: 8, kiteSpeed: 320, kiteAccel: 12,
     thumbOffset: 80,     // lab: on touch, the kite aims this many screen pixels ABOVE the thumb, so the thumb never covers it
-    tailLen: 2.4,        // lab: the tail's length (board radii); cross it to close a loop. 2.4 = round 3's 1.6 + 50% (Garrett, 2026-10-18, in Unity)
+    tailLen: 4.8,        // lab: the tail's length (board radii); cross it to close a loop. 2.4 = round 3's 1.6 + 50% (Garrett, 2026-10-18, in Unity); 4.8 = doubled (2026-10-20, KiteNavigatorConfig.asset)
     moteCount: 26,       // lab: navigator motes kept near the board
     moteCluster: 4,      // lab: motes per same-element cluster (average)
     // Effects: base × growth^(n − 1) for a pure loop of n motes
@@ -170,7 +170,7 @@
 
   const SPEC = [
     ['Kite', 'thumbOffset', 0, 200, 4, 'Thumb offset (px)', 'On a touch screen the kite aims this far above your thumb. 0 = under the thumb.'],
-    ['Kite', 'tailLen', 0.4, 4, 0.1, 'Tail length (radii)', 'How long a tail the kite drags. Longer: bigger loops, slower to close.'],
+    ['Kite', 'tailLen', 0.4, 8, 0.1, 'Tail length (radii)', 'How long a tail the kite drags. Longer: bigger loops, slower to close.'],
     ['Kite', 'kiteRadius', 3, 24, 1, 'Kite head (u)', 'How near a prism or a rival the head must pass.'],
     ['Kite', 'kiteSpeed', 80, 700, 10, 'Kite speed (u/s)', 'Top speed toward the aim point.'],
     ['Kite', 'kiteAccel', 2, 30, 1, 'Kite response (/s)', 'How fast the kite reaches the speed it is asked for.'],
@@ -222,7 +222,7 @@
     { key: 'kite', name: 'Kite & Tail', blurb: 'The candidate. Head pops hostile prisms; cross your tail to loop motes; one element per loop, doubling per mote.', opts: {}, set: {} },
     { key: 'gentle', name: 'Gentle growth', blurb: 'Each extra mote is worth ×1.5, not ×2. Big loops matter less; small ones more often.', opts: {}, set: { growth: 1.5 } },
     { key: 'steep', name: 'Steep growth', blurb: 'Each extra mote is worth ×3. One perfect loop of five is a match-ender.', opts: {}, set: { growth: 3 } },
-    { key: 'long', name: 'Long tail', blurb: 'A 2.6-radius tail: wide loops round big clusters, slower to close.', opts: {}, set: { tailLen: 2.6 } },
+    { key: 'long', name: 'Long tail', blurb: 'A 7.2-radius tail (1.5x the shipped 4.8): wide loops round big clusters, slower to close.', opts: {}, set: { tailLen: 7.2 } },
     { key: 'short', name: 'Short tail', blurb: 'A 1.0-radius tail: tight, quick loops round small clusters.', opts: {}, set: { tailLen: 1.0 } },
     { key: 'majority', name: 'Forgiving mixes', blurb: 'A mixed loop still fires its biggest element, one mote weaker per stray.', opts: { mixed: 'majority' }, set: {} },
     { key: 'locked', name: 'Locked board', blurb: 'The candidate with the board locked to every bank and pitch.', opts: { frame: 'locked' }, set: {} },

@@ -631,7 +631,6 @@ namespace CosmicShore.Gameplay
                     {
                         var prism = _candidates[i];
                         if (!prism || prism.destroyed || _cutThisFrame.Contains(prism)) continue;
-                        if (prism.prismProperties is { IsSuperShielded: true }) continue;
                         if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, _status)) continue;
 
                         Vector3 centre = prism.transform.position;
@@ -642,6 +641,9 @@ namespace CosmicShore.Gameplay
 
                         _cutThisFrame.Add(prism);
                         Vector3 v = Vector3.Lerp(cord.NodeVelocity(s), cord.NodeVelocity(s + 1), t);
+                        // Super-shielded mass refuses the cut, visibly: the deflection jiggle, never
+                        // a cord passing through armour in silence (Docs/LIT.md).
+                        if (prism.AbsorbSuperShieldHit(v.magnitude)) continue;
                         Vector3 cutNormal = Vector3.Cross(ab, v);
                         if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.Cross(ab, _status.Transform.up);
                         if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.right;

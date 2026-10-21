@@ -86,6 +86,7 @@ def _files(icon, inactive, silhouette, large, hangar):
 VESSELS = {
     "Butterfly": {"fbx": MODELS + "Butterfly.fbx", "roles": FLEET_SLOTS},
     "Angler": {"fbx": MODELS + "Angler.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_angler_assets.py"},
+    "Starling": {"fbx": MODELS + "Starling.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_starling_assets.py"},
     "BrittleStar": {"fbx": MODELS + "BrittleStar.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_brittlestar_assets.py"},
     "Scarab": {"fbx": MODELS + "Scarab.fbx", "roles": FLEET_SLOTS},
     "Shrike": {"fbx": MODELS + "Shrike.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_shrike_assets.py"},

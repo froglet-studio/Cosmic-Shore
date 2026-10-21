@@ -138,6 +138,60 @@ render_cards.py Squirrel Rhino Thresher --compare out.jpg --candidates before.js
 
 `before.json` holds the old values in the candidates format, `{label: {role: {rim, face, mult}}}`.
 
+## 5b. Lime's four shades: the Wrasse's lasso elements (Garrett, 2026-10-21)
+
+> "make all four of the lasso elements different hues, saturations and values within the lime green color family
+> (lime). make a 3d boundary that defines the space as distinct from jade, ruby, gold, blue (neutral), and fire (danger).
+> form the largest tetrahedron within that space that makes four distinct values within that boundary and assign them
+> to each element."
+
+`Tools/Build/kite_mote_colors.py` derives them from the live palette. It writes them into `KiteNavigatorConfig.asset`
+(`elementColors`) and the Wrasse Lasso Lab (`LIME_E`), and `--check` fails if either drifts.
+
+- **The space** is OKLab: L is the value, and the angle and radius of (a, b) are the hue and the saturation. A distance
+  there is a visible difference; about 0.02 is just noticeable.
+- **The boundary** contains every sRGB colour at least 0.05 nearer a lime anchor than any anchor of another family. The
+  anchors are what the game already draws:
+  - Lime: the CTA signal, BrightCTA / the HUD's lime, and the kite's lime.
+  - Jade, Ruby, Gold: each domain's UI and signal colours.
+  - Blue: the Blue domain, the HUD's blue, the hull body and glass, and every grey (this page's rule 1: grey is Blue's).
+  - Fire: the danger signal, the HUD's fire, and the engine ember.
+
+  The region is small. Its value runs 0.73–0.97, its chroma 0.14–0.29 and its hue 104–154°. Jade's teal takes the dark
+  greens (the "dark olive is not lime" finding, `Docs/PALETTE.md` §2.5), and the grey axis takes the pale ones.
+- **Green-yellow, round 2** (Garrett, 2026-10-21, after the first cut: "pull time [and] space away from jade and charge
+  away from gold" and "it has to have green in the yellow and yellow in the green. it can not have any blue or orange at
+  all"). The boundary keeps only red + green:
+  - blue is 0;
+  - green leads red (no orange);
+  - red is a quarter to three quarters of green, an HSV hue of 75–105°: a quarter of the way in from pure yellow and from
+    pure green (`GREEN_YELLOW_HUES`).
+
+  With blue at 0, lime is a curved sheet of hue × value in OKLab, not a volume. Saturation (chroma) still differs from
+  corner to corner, but only as hue and value carry it.
+- **The tetrahedron** has the largest OKLab volume among those whose four corners differ pairwise in value, in saturation
+  and in hue by the largest of 0.03 / 0.025 / 0.02 that fits. On the sheet that is 0.02, one just-noticeable difference,
+  because value, saturation and hue move together there. The tetrahedron is nearly flat (volume 5e-9): its corners are the
+  sheet's four most spread colours. Without the distinctness rule, the first cut put two corners at one hue (#00ff00 and
+  #a5ff95).
+- **The assignment** reads each corner: Mass is the lowest value (weight), Charge the highest (the spark), and of the
+  other two Space is the cooler hue (toward green) and Time the warmer (toward yellow).
+
+| element | colour | sRGB | red / green | HSV hue | L (value) | chroma | nearest other family, beyond lime |
+|---|---|---|---|---|---|---|---|
+| Charge | `#a0ff00` | (0.626, 1, 0) | 0.63 | 82° | 0.905 | 0.250 | Jade +0.19 (Gold further) |
+| Mass | `#5ec600` | (0.368, 0.776, 0) | 0.47 | 92° | 0.735 | 0.220 | Jade +0.05 |
+| Space | `#40ff00` | (0.25, 1, 0) | 0.25 | 105° | 0.872 | 0.287 | Jade +0.16 |
+| Time | `#9bcf00` | (0.609, 0.813, 0) | 0.75 | 75° | 0.789 | 0.200 | Gold +0.10 (Jade further) |
+
+The first cut (`#ffff00`, `#a1c417`, `#00ff00`, `#c0fb93`) had pure yellow, pure green and a blue-tinted mint. The window
+moves Charge off Gold (its gap to Gold went from 0.11 to over 0.19) and puts yellow into Space (red 0 → a quarter of
+green).
+
+The motes in the kite view and the pilot's faint mote dots wear them. The kite's tail, the saved-boost dots and every
+other call to action keep the palette's one lime. Mass sits on the boundary's Jade edge (+0.05): the dark green-yellows
+are the ones nearest Jade's teal. Narrowing the window further squeezes the four together (at 78–102°, under 0.02 apart).
+
 ## 6. Open: decisions and checks owed
 
 - **Jade's and Ruby's hues: deferred** (Garrett, 2026-10-18: "we'll address the jade and ruby hues later").

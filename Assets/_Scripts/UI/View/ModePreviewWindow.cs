@@ -392,18 +392,18 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Focus is given up by Escape, gamepad Start, or a tap outside the window. Read from
+        /// Focus is given up by Escape, gamepad Select / View, or a tap outside the window. Read from
         /// the devices directly rather than through the EventSystem, because a focused window has
         /// navigation events switched off — that is the point of focus.
         ///
         /// Deliberately NOT gamepad B / East: while flying, every face button belongs to the
-        /// vessel. Start mirrors the freestyle exit button and is the one pad button flight
-        /// never uses.
+        /// vessel. Select mirrors the freestyle exit (OverviewGesture) and flight never uses it;
+        /// it was Start until Start became Settings on the app shell (2026-10-21).
         /// </summary>
         bool WantsRelease()
         {
             var pad = Gamepad.current;
-            if (pad != null && pad.startButton.wasPressedThisFrame)
+            if (pad != null && pad.selectButton.wasPressedThisFrame)
                 return true;
 
             var keyboard = Keyboard.current;
