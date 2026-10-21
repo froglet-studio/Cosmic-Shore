@@ -78,7 +78,7 @@ they are not game crystals.
 | Space blasts destroy shielded and super-shielded prisms at Space L5 | Super shields inside the blast's reach are dropped first (`Prism.DeactivateShields`, the Rhino sword's sequence), and the blast goes out with `DevastatingOverride = true`. |
 | The lasso 50% longer (round 4b) | `tailLength` 1.6 → 2.4 board radii (384 u); the lab's default moved with it (parity's asset check holds them equal). |
 | An Omni crystal: 5 s of a longer lasso and a kite view zoomed out twice as far | Replaced in round 4e by a burst of motes (below). |
-| Boosts: 2 s cooldown, none at Time L5 | `boostCooldownSeconds` (2) after a boost ends; 0 at Time L5. |
+| Boosts: 2 s cooldown, none at Time L5 | Retired 2026-10-21 (Garrett: "the grouper should not have a cooldown on its boost forward ability. as it is already limited by the wrasse's ability to collect"). A held trigger chains saved boosts back to back; the field is gone and Time L5 is an open slot. |
 
 **Round 4b (the same day, after flying round 4):** the petals could not be seen. Every instanced draw used
 `Sprites/Default`, whose instanced path takes its colour from `unity_SpriteRendererColorArray`, which only a

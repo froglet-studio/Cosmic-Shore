@@ -2040,6 +2040,19 @@ the Rhino; combos have 24 empty FMOD slots, no HUD callout, and the AI never com
 
 ---
 
+### 🔴 Angler round 8: two groups take turns; no squad pick, no recall, no boost (`cece/wizardly-ride-0c1axn`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Offline only: `unity_refcompile` player config 0 errors (editor config: 3 errors, none in changed files);
+`author_angler_assets.py --check` / `--self-test` 25/25; `author_touch_profiles.py --check`; angler parity 6/6;
+`studio_to_unity.py --vessel Angler --check` 0 drift. No Unity editor in the session (`/verify-unity` not run).
+
+1. **Half goes.** Tame 4+ creatures. Hold RT on a field and let go: about half the school flies at it, the rest stay with the hull.
+2. **The other half goes next.** Hold RT on a second field and let go: the half that stayed flies at it; the first half keeps eating the first field.
+3. **Alternates back.** A third paint sends the first half again, called back from wherever it is.
+4. **Dash between them.** With both halves out on far fields, press B: the hull dashes toward one half. Press B again: toward the other.
+5. **Gone.** X (Q) and Y (F) do nothing on the Angler; the Mass card shows no squad label; on a phone the cluster is the four cards only (no Squad or Recall disc).
+6. **Rebalance.** Spend creatures with LT on a rival until the groups are uneven: the next throw still sends about half.
+
 ### 🔴 Angler round 7: A lures and B dashes (the Sparrow's buttons); "the QuadFish don't always listen" fixed (`cece/zealous-feynman-po8k8d`, 2026-10-18) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/ANGLER.md` §1, §1k. No `unity` CLI was available, so `/verify-unity` did NOT run. Headless: `unity_refcompile` player OK (editor: only the 3 pre-existing `UgsRequestPolicyTests` errors); `author_angler_assets --check` and `--self-test` 19/19; `element_ability_table Angler` reads Mass A / Space and Time B / T.

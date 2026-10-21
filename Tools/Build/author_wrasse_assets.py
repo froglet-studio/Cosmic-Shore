@@ -582,7 +582,7 @@ WRASSE_MAP_ENTRIES = [
      "Shield Breaker", "Space blasts destroy shielded and super-shielded prisms."),
     (4, "Saved Boosts", "Every loop of Time motes the kite closes saves boosts for the pilot. The pilot spends them on "
         "the trigger; the card counts how many are saved.",
-     "No Cooldown", "Saved boosts chain back to back with no cooldown."),
+     "", ""),  # Time L5 is an open slot: boosts have no cooldown to remove (Garrett, 2026-10-21)
     (2, "Mass Cluster", "A loop of Mass motes lays a cluster of prisms on the kite's plane. The card flashes when one "
         "is laid.",
      "Shielded Clusters", "Mass clusters are laid shielded."),

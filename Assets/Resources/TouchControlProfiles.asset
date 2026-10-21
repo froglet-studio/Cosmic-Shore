@@ -363,21 +363,7 @@ MonoBehaviour:
     idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
-    extraButtons:
-    - input: 8
-      behaviour: 0
-      aimsWhileHeld: 0
-      icon: {fileID: 21300000, guid: 25f98cc56fed6aa89055c503bd247aa3, type: 3}
-      tint: 2
-      label: 
-      primary: 0
-    - input: 14
-      behaviour: 0
-      aimsWhileHeld: 0
-      icon: {fileID: 21300000, guid: ca1ac713c24158d9f2895b8311bac0cb, type: 3}
-      tint: 4
-      label: 
-      primary: 0
+    extraButtons: []
     throttleSlider: 0
     throttleSliderStart: 0.5
     glyphs: []

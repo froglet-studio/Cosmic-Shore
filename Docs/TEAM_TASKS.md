@@ -1047,7 +1047,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/ElementalAbilitySystem/BACKLOG.md '[gate false positive] check_vessel_on_vessel_motion.py'
 
 ### T-20261018-3247 · open · dev · Crew vessels
-- **Task:** Bring the Crew Vessel Lab up to the Wrasse's rounds 4-4f, which were directed in Unity on 2026-10-18 (KITE_NAVIGATOR.md "Where it stands"). They cover: the kite view and the pilot view swapping (the small view lower left); the kite following the mouse or stick with no click; a two-stick pilot who spends saved Time boosts on the right trigger (2 s cooldown, none at Time L5); lime five-petal motes in the totem's proportions, each moving like its element; mote frequency weighted by the hull's petals; Charge rams on fauna; Eject below Charge L5 and Steal at it; shielded Mass clusters at Mass L5; Space L5 blasts through shields and super shields; the Omni crystal's burst of motes; and out-of-plane prisms seen with depth from the plane. Then re-run parity.cjs and verify_lab.cjs and republish.
+- **Task:** Bring the Crew Vessel Lab up to the Wrasse's rounds 4-4f, which were directed in Unity on 2026-10-18 (KITE_NAVIGATOR.md "Where it stands"). They cover: the kite view and the pilot view swapping (the small view lower left); the kite following the mouse or stick with no click; a two-stick pilot who spends saved Time boosts on the right trigger (no cooldown since 2026-10-21; Time L5 is an open slot); lime five-petal motes in the totem's proportions, each moving like its element; mote frequency weighted by the hull's petals; Charge rams on fauna; Eject below Charge L5 and Steal at it; shielded Mass clusters at Mass L5; Space L5 blasts through shields and super shields; the Omni crystal's burst of motes; and out-of-plane prisms seen with depth from the plane. Then re-run parity.cjs and verify_lab.cjs and republish.
 - **Done when:** The lab's SHIPPED block and scorecard carry round 4 and parity.cjs still passes
 - **Who can take it:** any session; Garrett to sign off
 - **Added:** 2026-10-18 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
@@ -1885,6 +1885,20 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 8 'Third round'; Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs GobyAbilities / HumanPistol
 
+### T-20261021-5d4e · open · decision · Crew vessels
+- **Task:** Pick the Wrasse's Time L5 upgrade: its old one (No Cooldown) is gone with the Grouper's boost cooldown, so the Time card's L5 slot is open (blank in ElementalAbilityMaps/Wrasse.asset).
+- **Done when:** Time L5 names an upgrade and KiteNavigator gates it with Upgraded(Element.Time)
+- **Who can take it:** Garrett (owner)
+- **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md
+
+### T-20261021-308e · open · test · Crew vessels
+- **Task:** Fly the Wrasse and hold the Grouper's boost trigger (RT, right Shift, or the phone's left-thumb lift) with several saved boosts: they chain back to back with no gap, and the Time card shows no cooldown veil.
+- **Done when:** Saved boosts chain with no wait in the editor and on a phone
+- **Who can take it:** Yash (offered), Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md
+
 ### T-20261021-90a6 · open · test · Crew vessels
 - **Task:** Android dev build, branch cece/compassionate-rubin-baeyvi: (1) Toybox > Vessel Changer > Honeyguide and Ratel, swap to the Ratel: hold a finger still on a prism ~0.5 s and it is deleted (1 AP); a drag that leaves the cell still moves it; the Fly button left of the big board swaps back to flying. (2) Fly the Wrasse kite seat, go back to the app shell (HOME): touching or using a pad in the menu must not steer the kite or swap seats; re-enter freestyle and you are seated where you were. Repeat (2) for the Orca gunner, the Ratel, the Pistol and the Marlin jacks.
 - **Done when:** Both steps pass on a phone, or the failure is filed as a dev task
@@ -1919,6 +1933,20 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-21 by a Claude session (`cece/quirky-gates-skplxp`)
 - **See:** Docs/Studios/SwarmCardVessel/cards.json
+
+### T-20261021-2f67 · open · test · Angler
+- **Task:** Fly the Angler's round 8 (two groups take turns; no squad pick, recall or boost) in the editor and on a phone: Docs/UNITY_VERIFICATION_CHECKLIST.md 'Angler round 8', steps 1-6.
+- **Done when:** All six steps pass, or the failures are filed as dev tasks
+- **Who can take it:** Yash (offered), Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md §1m
+
+### T-20261021-e29a · open · dev · Angler
+- **Task:** Bring the Angler Command Lab (Docs/Studios/AnglerCommandLab.html) to round 8: drop the squad pick and recall, split the school into two groups that throws and dashes alternate, re-run parity and verify_lab.cjs, republish.
+- **Done when:** The lab models two alternating groups and verify_lab.cjs passes
+- **Who can take it:** any session; Garrett to sign off
+- **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md §1m
 
 ### T-20261021-876d · open · test · Crew vessels
 - **Task:** Phone playtest of the Orca gunner buttons (Android dev build, no pad): Toybox > Vessel Changer > Orca · 4 seat, two-finger tap (or the D-pad) to a gunner seat. Two buttons sit round the right thumb: Fire (seat colour) and Missile (rocket icon); the top line of seat text is gone. Left-thumb drag aims the turret while the right thumb holds Fire; Missile launches, the left thumb steers it, Missile again bursts it, and Fire hides while it flies. A thumb resting on a button while the left aims never swaps seats. On the bomb seat Fire throws, Fire again bursts. Buttons hide on the helm and when a pad connects. On a pad: X or RT fires, A launches/bursts, left stick aims.

@@ -5,12 +5,11 @@ namespace CosmicShore.Gameplay
     /// <summary>The Angler's button controls (values are serialized on the control assets — never renumber). The Sling
     /// painter rides the two TRIGGERS, read as analog depth (<see cref="AnglerCommandExecutor"/>); <see cref="Paint"/> and
     /// <see cref="Erase"/> are the same two held as BUTTONS on a phone, where there is no trigger depth (bound in the
-    /// prefab's touch overrides only, ANGLER.md "On a phone").</summary>
+    /// prefab's touch overrides only, ANGLER.md "On a phone"). 1 (the squad pick) and 2 (the recall) were retired on
+    /// 2026-10-21, when the school became two alternating groups (ANGLER.md §1m): never reuse them.</summary>
     public enum AnglerControl
     {
         Lure = 0,
-        CycleSquad = 1,
-        Recall = 2,
         Dash = 3,
         Paint = 4,
         Erase = 5,
@@ -20,8 +19,8 @@ namespace CosmicShore.Gameplay
     /// One of the Angler's button controls (design: <c>R_VesselActions/ANGLER.md</c> §2). Stateless and shared: every
     /// press goes straight to the hull's own <see cref="AnglerCommandExecutor"/>, which owns all state.
     ///
-    /// <para><b>The lure is held</b> (the light is out from press to release). <b>Squad</b> and <b>Recall</b> are
-    /// press-and-forget: they have no release semantics (vessel rule 37). So is the <b>Dash</b> (the Time ability).
+    /// <para><b>The lure is held</b> (the light is out from press to release). The <b>Dash</b> (the Time ability) is
+    /// press-and-forget: it has no release semantics (vessel rule 37).
     /// <b>Paint</b> and <b>Erase</b> are held (a phone's RT / LT): the press holds the trigger fully pulled on the executor
     /// and the release lets go of it, which for Paint is the throw.</para>
     /// </summary>
@@ -40,8 +39,6 @@ namespace CosmicShore.Gameplay
             switch (control)
             {
                 case AnglerControl.Lure: angler.BeginLure(); break;
-                case AnglerControl.CycleSquad: angler.CycleSquad(); break;
-                case AnglerControl.Recall: angler.Recall(); break;
                 case AnglerControl.Dash: angler.Dash(); break;
                 case AnglerControl.Paint: angler.SetPaintPressed(true); break;
                 case AnglerControl.Erase: angler.SetErasePressed(true); break;
@@ -50,7 +47,7 @@ namespace CosmicShore.Gameplay
 
         public override void StopAction(ActionExecutorRegistry executors, IVesselStatus vesselStatus)
         {
-            // A squad pick, a recall and a dash have no release (no case below); the lure, paint and erase are held.
+            // A dash has no release (no case below); the lure, paint and erase are held.
             var angler = executors ? executors.Get<AnglerCommandExecutor>() : null;
             if (!angler) return;
             switch (control)
