@@ -65,6 +65,34 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Honeyguide and Ratel: the lab's round 4 in the game (`claude/honeyguide-ratel`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett: "lets play it in unity". This adds a new hull class, `VesselClassType.Honeyguide = 21` (the Sparrow hull plus the
+Ratel's Dynamo seat; `Controller/Vessel/Crew/HONEYGUIDE.md`). The C# (`DynamoCore`, `HoneyguideConfigSO`, `HoneyguideCrew`,
+`HoneyguideCrew.Pilot`, `HoneyguideDynamoView`) and every asset (`Honeyguide.prefab`, `HoneyguideConfig.asset`,
+`SO_Class_Honeyguide`, `ElementalAbilityMaps/Honeyguide`, the container, network, class-list and fusion entries) were written
+from the lab by `Tools/Build/author_honeyguide_assets.py`. `/verify-unity` was unavailable (no Editor, no `unity`
+binary). The headless reference compile is clean on the player config; the editor config shows only the 3 errors that
+are already on bleeding-edge. Also green: the Dynamo parity gate (16,824 steps, AI included),
+`author_honeyguide_assets.py --check` / `--self-test` and the three vessel gates.
+
+Toy Box > Vessel Changer → **Honeyguide and Ratel**:
+1. The station's card reads "Honeyguide and Ratel", and the swap spawns a Sparrow-bodied hull with no console errors.
+   The small Dynamo board shows at the left, and the AI Ratel makes patterns on it (cards light, flash and count uses;
+   the battery fills).
+2. Fly along a trail of a domain the battery holds, with the nose within 45° of it: the hull jumps to the trail's far end
+   and a charge is spent. A 2-D bed of prisms never slips. Your own fresh trail does not slip you.
+3. D-pad left / right (or 1 / 2, or a double tap on the small board): the board fills the right half, the AIPilot flies,
+   and touch or mouse plays the Ratel. Drag a prism to move it, tap a port to inject, tap a lit card to make it.
+   Swap back: flight input returns.
+4. Every 15 s the bar across the top empties and the ports turn 60°. After 4 patterns, the clock stops, the new ability
+   is shown (about 3.5 s) and then the new ports (about 2 s).
+5. Blink Drive / Rosen Bridge / Monte Cannon made: the Jump chip appears; R or pad Y jumps. FTL swaps with a prism ahead.
+6. The `HoneyguideConfig` asset shows no missing-field warnings after a reimport; `HoneyguideTests` and
+   `EnumIntegrityTests` pass in the Test Runner.
+7. Things to watch for: the board overlay's sorting (19000) above the HUD; the TMP labels' size on a phone; the frame time
+   with the AI Ratel on several AI hulls (`aiCrewEngineers`).
+
 ### 🔴 Thresher: no lime on the chain, the crosshair or the ball (`cece/tender-hamilton-qcd1hi`, 2026-10-20) — NOT EDITOR-VERIFIED
 
 Garrett: "remove the lime from the chain and the crosshair. we can let players get a feel for that. the lime on the

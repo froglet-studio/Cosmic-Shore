@@ -18,8 +18,10 @@ the Decisions tab. The Unity port (phase 2) starts only after that.
   there land in the shared log Claude reads at the start of each round).
 - **Round 1** (the brief's rules) is kept as `Docs/Studios/HoneyguideLab.round1.html`.
 - **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html` (PASS, round 2).
-- **Parity:** `node Tools/Build/dynamo_lab/parity.cjs` holds `DynamoCore.cs` to the **round 1** core (PASS). Round 2
-  changed the Dynamo's rules while they are still being decided, so the C# is re-ported once the lab is signed off.
+- **Parity:** `node Tools/Build/dynamo_lab/parity.cjs` holds `DynamoCore.cs` to the **round 4** core, the Engineer AI
+  included (PASS 2026-10-21: 16,824 steps over 24 rule sets, 1,501 AI moves chosen alike, 48 port sets, 400 slips).
+- **In Unity (phase 2, started 2026-10-21 on Garrett's "lets play it in unity"):** `VesselClassType.Honeyguide = 21`,
+  offered by the Toybox's Vessel Changer. See `Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md`.
 
 Why a lab of its own and not a fourth round of the Crew Vessel Lab: that page is the Wrasse's signed-off and graduated
 record with an open catch-up task (`T-20261018-3247`), and one decision log per vessel keeps each sign-off readable.
@@ -384,16 +386,19 @@ Charges/min, Eng idle % (0 for every AI Engineer: it never lets a tick's AP go t
 9. **Starter set and loadout** (8): which three cards fill the slots at launch.
 10. **Engine at launch** (9): the 2020-22 board, Heimdall-13, Claw or co-op (Found 5).
 
-## The port, when signed off (phase 2)
+## The port (phase 2, 2026-10-21)
 
-- **`VesselClassType.Honeyguide = 21`.** 18 is the Goby's (`cece/sharp-tesla-j0kd7z`), 19 the Wrasse's and **20 the
-  Orca's** (`cece/happy-noether-m54hz6`, in flight on 2026-10-20). The enum carries a comment reserving 21.
-- **`DynamoCore.cs` is already in the game** (`Assets/_Scripts/Controller/Vessel/Crew/`), engine-free, and held to the
-  round 1 page by the parity gate. It is re-ported from the round 2 core (or whichever round is signed off) first, and
-  the gate pointed back at `HoneyguideLab.html`. `DynamoAI` (the page's `aiPlan`) is ported next, with the same gate extended.
-- The generic duo-vessel system (`CrewSeat`, `/duo-vessel`, `cece/sharp-tesla-j0kd7z`) had not landed on 2026-10-20.
-  If it has by phase 2, the Ratel seat builds on it instead of copying the Wrasse's seat plumbing.
-- Everything else follows the brief's phase 2 and `/vessel` `CONTRACT.md` §1.
+Garrett asked for it before a written sign-off ("lets play it in unity"), so the round 4 lab is what was ported.
+- **`VesselClassType.Honeyguide = 21`** (19 is the Wrasse, 20 the Orca). It is in `ToyVesselRoster.Default` and
+  `EndGameSequencer`'s Sparrow-hull rule.
+- **`DynamoCore.cs`** is re-ported from the round 4 core, with `aiPlan` as `DynamoCore.AIPlan`. The parity gate points
+  at `HoneyguideLab.html`.
+- **The seat** is `HoneyguideCrew`, which follows the Wrasse's seat plumbing. The generic duo-vessel system
+  (`CrewSeat`) had not landed on bleeding-edge by 2026-10-21.
+- **The assets** are written from the page by `Tools/Build/author_honeyguide_assets.py` (`--check` holds the cards,
+  shapes, effects, engines and ability words to the page).
+- **Tests:** `HoneyguideTests.cs` carries a golden game from the page's own core.
+- The design choices made in the port, and the 8 parked trigger-upgrade cards, are listed in `HONEYGUIDE.md`.
 
 ## Parity toolchain note
 

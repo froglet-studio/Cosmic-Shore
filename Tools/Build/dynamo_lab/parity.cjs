@@ -1,17 +1,19 @@
 #!/usr/bin/env node
-// parity.cjs - holds the Honeyguide Lab's ROUND 1 Dynamo core (Docs/Studios/HoneyguideLab.round1.html, the script block
-// id="dynamo-core", exposed as window.__lab.core) to the SHIPPED C# DynamoCore, input by input.
+// parity.cjs - holds the Honeyguide Lab's Dynamo core (Docs/Studios/HoneyguideLab.html, the script block id="dynamo-core",
+// exposed as window.__lab.core; round 4) to the SHIPPED C# DynamoCore, input by input - the Engineer AI included.
 //
 //   node Tools/Build/dynamo_lab/parity.cjs
 //
-// 1. Opens the lab page in headless Chromium and builds the scenarios THERE, from the page's own pattern library and
-//    engines: the page's Engineer AI (Hard and Easy) plays each engine under each rule, mixed with random and illegal
-//    inputs, Research / Keep / Discard, battery spends and drains. The page's core records every step.
+// 1. Opens the lab page in headless Chromium and builds the scenarios THERE, from the page's own pattern library and port
+//    sets: under several rule sets (reveal on / off, ports count or not, rotations, replace, shuffle, every fixed ability
+//    and the random draw) a mix of clock steps, Engineer-AI steps (the page's aiPlan and the C# AIPlan each pick from the
+//    same state with the same dice and memo), random legal inputs, illegal inputs, battery spends and every board effect.
+//    The page's core records every step.
 // 2. Runs trace.sh: the shipped DynamoCore.cs, compiled from its real path, replays the same steps.
-// 3. Compares every step exactly: legal or not, the state digest (cells, ports, AP, battery, slots, pick, offer, ticks,
-//    wasted AP, RNG) and the events. Slip destinations are compared to 1e-9.
-// 4. Negative controls: the page's core re-run with a planted change MUST disagree (ports turning the wrong way, the
-//    placement scan reversed, a tick 0.25 s long, the slip taking the other end). A gate that cannot see them is not a gate.
+// 3. Compares every step exactly: legal or not, the state digest (cells, ports, AP, battery, slots and uses, reveal, free
+//    placements, ability, ticks, patterns made, wasted AP, RNG) and the events (the AI's chosen input among them). Also the
+//    port sets the C# builds from the engines' printed rows against the page's PORT_SETS, and slip destinations to 1e-9.
+// 4. Negative controls: the page's core re-run with a planted change MUST disagree. A gate that cannot see them is not a gate.
 'use strict';
 const fs = require('fs');
 const os = require('os');
@@ -21,52 +23,59 @@ let chromium;
 try { ({ chromium } = require('playwright')); } catch (e) { chromium = require(path.join(process.execPath, '../../lib/node_modules/playwright')).chromium; }
 
 const ROOT = path.resolve(__dirname, '../../..');
-// Round 2 (2026-10-21) changed the Dynamo's rules while Garrett is still deciding them; DynamoCore.cs stays the round 1
-// port until the lab is signed off, and this gate holds it to the round 1 page it was ported from.
-const PAGE = path.join(ROOT, 'Docs/Studios/HoneyguideLab.round1.html');
+const PAGE = path.join(ROOT, 'Docs/Studios/HoneyguideLab.html');
 
 // Runs INSIDE the page. `src` is the core's source (the page's own, or a planted copy); returns scenarios + JS results.
 function buildInPage(arg) {
   const L = window.__lab;
   const D = arg.src ? (new Function('root', arg.src.replace(/\}\)\(typeof window[^\n]*\n?\s*$/, '})(root);') + '\nreturn root.DynamoCore;'))({}) : L.core;
   const mul = (a) => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-  const pats = L.PATTERNS.map((p) => ({ family: p.family, effect: p.effect, cells: p.cells }));
-  const byName = (n) => L.PATTERNS.findIndex((p) => p.name === n);
-  const loadouts = [['Amanita Furnace', 'Reality Detangler', 'Blink Drive'], ['Chrono-Compressor', '5D Printer', 'Anode Ray'], ['Big Red Button', 'Dragon Saddle', 'Amanita Furnace'], ['Blink Drive', 'Rosen Bridge', 'Monte Cannon']];
-  const ev = (e) => ({ tinker: () => 'T' + e.from + '>' + e.to, refuel: () => 'R' + e.cell + ':' + e.colour, place: () => 'P' + e.cell + ':' + e.colour, ability: () => 'A' + e.slot + ':' + e.pid,
-    charge: () => 'C' + e.colour, replaced: () => 'X' + e.colour, pick: () => 'K' + e.slot + ':' + e.pid + ':' + e.cell + ':' + e.colour + ':' + (e.auto ? 1 : 0), destroyed: () => 'D' + e.colour + ':' + e.n,
-    burned: () => 'B' + e.cell + ':' + e.colour, offer: () => 'O' + e.family + ':' + e.offer.join('.'), keep: () => 'E' + e.slot + ':' + e.pid, tick: () => 't' + e.n })[e.k]();
+  const pats = L.PATTERNS.map((p) => ({ cells: p.cells, parked: !!p.parked }));
+  const portSets = L.PORT_SETS.map((s) => s.map((p) => [p[0], p[1]]));
+  const ev = (e) => ({ tinker: () => 'T' + e.from + '>' + e.to, refuel: () => 'R' + e.cell + ':' + e.colour, place: () => 'P' + e.cell + ':' + e.colour,
+    ability: () => 'A' + e.slot + ':' + e.pid + ':' + e.use, charge: () => 'C' + e.colour, replaced: () => 'X' + e.colour,
+    pick: () => 'K' + e.slot + ':' + e.pid + ':' + e.cell + ':' + e.colour, retire: () => 'Q' + e.slot + ':' + e.old + ':' + e.pid,
+    shuffle: () => 'S' + e.ability + ':' + e.portSet, ports: () => 'p' + e.portSet, resume: () => 'r', effect: () => 'F' + e.kind + ':' + e.n,
+    tick: () => 't' + e.n + ':' + e.ap })[e.k]();
+  const inpStr = (i) => (i ? 'i' + i.k + ':' + (i.k === 'tinker' ? i.from + '>' + i.to : i.k === 'refuel' ? i.cell + ':' + (i.colour || 0) : i.slot) : 'i-');
+  const KINDS = ['burn', 'purge', 'free', 'bonus', 'rewind', 'unspin', 'trio', 'scatter', 'charge', 'drain', 'drainOne'];
+  const ABIL = D.ABILITIES;
+  const rules = [];
+  for (let v = 0; v < 24; v++) rules.push({
+    tickSeconds: arg.tick || [15, 8, 4][v % 3], apPerTick: 3 + (v % 4 === 3 ? 3 : 0), apBank: 3 + (v % 5 === 4 ? 3 : 0), bonusApCap: 2, batteryCap: 3 + (v % 6 === 5 ? 3 : 0),
+    revealAbility: v % 4 === 1 ? 0 : 3.5, revealPorts: v % 7 === 2 ? 0 : 2, allowRotatedMatches: v % 8 !== 7, portsCount: v % 9 !== 8, slotCount: 3,
+    startFilled: v % 3 !== 2, usesPerPattern: v % 10 === 9 ? 0 : 3, patternsPerShuffle: v % 11 === 10 ? 0 : v % 5 === 3 ? 1 : 4,
+    fixedAbility: v < ABIL.length ? ABIL[v] : '', firstPortSet: v % 2 ? -1 : (v * 7) % portSets.length,
+  });
   const scenarios = [], results = [];
-  let n = 0;
-  // synthetic tiny patterns: many copies on the board at once, so WHICH copy fires (the scan order) is tested too
-  const tiny = [{ family: 1, effect: '', cells: [[0, 0, 1]] }, { family: 2, effect: 'amanita', cells: [[0, 0, 2], [1, 0, 1]] }, { family: 3, effect: 'bigred', cells: [[0, 0, 3], [0, 1, 3]] }];
-  for (const eng of Object.keys(L.ENGINES)) for (const rot of [false, true]) for (const variant of [0, 1, 2]) {
-    n++;
-    const S = { tickSeconds: arg.tick || 8, apPerTick: 3, apBank: 3 + variant, bonusApCap: 1, batteryCap: variant ? 6 : 3, pickTimeout: 4, researchCost: 2,
-      rotateWholeEngine: rot, allowRotatedMatches: variant >= 1, centreWild: n % 3 === 0, startFilled: n % 4 !== 1,
-      ports: L.ENGINES[eng].ports, patterns: variant === 2 ? tiny : pats, loadout: variant === 2 ? [0, 1, 2] : loadouts[n % loadouts.length].map(byName) };
-    const seed = 1000 + n * 7, st = D.create(S, seed), r = mul(seed ^ 0xabcdef), steps = [], rows = [{ ok: true, d: D.digest(st), e: [] }];
-    const prm = n % 2 ? { top: 1, blunder: 0, noise: 5 } : { top: 4, blunder: 0.25, noise: 400 };
-    for (let k = 0; k < 900; k++) {
+  rules.forEach((R, n) => {
+    const S = Object.assign({}, R, { portSets, patterns: pats, fixedAbility: R.fixedAbility, firstPortSet: R.firstPortSet >= 0 ? R.firstPortSet : null });
+    const seed = 2000 + n * 13, st = D.create(S, seed), r = mul(seed ^ 0xabcdef), steps = [], rows = [{ ok: true, d: D.digest(st), e: [] }], memo = {};
+    for (let k = 0; k < 700; k++) {
       let step;
       const u = r();
-      if (u < 0.35) step = { dt: [1 / 30, 1 / 60, 0.25, 0.5, 1.7, 3.1][Math.floor(r() * 6)] };
-      else if (u < 0.75) { const inp = D.aiPlan(st, S, prm, [0, r() * 100, r() * 100, r() * 100], r); step = inp ? { inp } : { dt: 0.4 }; }
-      else if (u < 0.85) { const all = D.legalInputs(st, S); step = all.length ? { inp: all[Math.floor(r() * all.length)] } : { dt: 0.2 }; }
-      else if (u < 0.9) step = { inp: [{ k: 'research', family: 1 + Math.floor(r() * 3) }, { k: 'keep', choice: Math.floor(r() * 3), slot: Math.floor(r() * 3) }, { k: 'discard' }][Math.floor(r() * 3)] };
-      else if (u < 0.95) step = { inp: { k: ['tinker', 'refuel', 'activate', 'pick'][Math.floor(r() * 4)], from: Math.floor(r() * 40) - 1, to: Math.floor(r() * 40) - 1, cell: Math.floor(r() * 40) - 1, slot: Math.floor(r() * 4) - 1, colour: Math.floor(r() * 4) } };
-      else if (u < 0.985) step = { spend: 1 + Math.floor(r() * 3) };
-      else step = { drain: 1 };
+      if (u < 0.3) step = { dt: [1 / 30, 1 / 60, 0.25, 0.5, 1.7, 3.1][Math.floor(r() * 6)] };
+      else if (u < 0.72) step = { ai: { top: [1, 2, 4][Math.floor(r() * 3)], blunder: [0, 0.08, 0.25][Math.floor(r() * 3)] }, seed: Math.floor(r() * 2147483647) };
+      else if (u < 0.82) { const all = D.legalInputs(st); step = all.length ? { inp: all[Math.floor(r() * all.length)] } : { dt: 0.2 }; }
+      else if (u < 0.88) step = { inp: { k: ['tinker', 'refuel', 'activate'][Math.floor(r() * 3)], from: Math.floor(r() * 40) - 1, to: Math.floor(r() * 40) - 1, cell: Math.floor(r() * 40) - 1, slot: Math.floor(r() * 4) - 1, colour: Math.floor(r() * 4) } };
+      else if (u < 0.94) step = { spend: 1 + Math.floor(r() * 3) };
+      else { const kind = KINDS[Math.floor(r() * KINDS.length)]; step = { fx: kind, arg: kind === 'purge' || kind === 'charge' ? 1 + Math.floor(r() * 3) : kind === 'rewind' ? 5 : Math.floor(r() * 4) }; }
       steps.push(step);
       let ok = true;
+      const pre = [];
       if (step.dt != null) D.advance(st, S, step.dt);
       else if (step.spend != null) ok = D.spend(st, step.spend);
-      else if (step.drain != null) D.drainAll(st);
-      else ok = D.apply(st, S, step.inp);
-      rows.push({ ok, d: D.digest(st), e: st.events.splice(0).map(ev) });
+      else if (step.fx != null) ok = D.boardEffect(st, S, step.fx, step.arg) >= 0;
+      else if (step.ai != null) {
+        const inp = D.aiPlan(st, S, step.ai, [0, 0, 0, 0], mul(step.seed), memo);
+        if (inp && inp.k === 'activate') memo.key = '';
+        pre.push(inpStr(inp));
+        ok = inp ? D.apply(st, S, inp) : false;
+      } else ok = D.apply(st, S, step.inp);
+      rows.push({ ok, d: D.digest(st), e: pre.concat(st.events.splice(0).map(ev)) });
     }
-    scenarios.push({ S, seed, steps }); results.push(rows);
-  }
+    scenarios.push({ S: Object.assign({}, R, { patterns: pats, portSets }), seed, steps }); results.push(rows);
+  });
   // slip cases: random-walk trails, contacts, positions, headings and reaches
   const slips = [], slipOut = [], r = mul(4242);
   for (let k = 0; k < 400; k++) {
@@ -76,7 +85,7 @@ function buildInPage(arg) {
     const a = r() * 6.283, c = { pts, contact: Math.floor(r() * n2), pos: [r() * 400 - 200, 0, r() * 400 - 200], fwd: [Math.cos(a), 0, Math.sin(a)], reach: 20 + r() * 500, exit: r() * 20 };
     slips.push(c); slipOut.push(D.slipDestination(c.pts, c.contact, c.pos, c.fwd, c.reach, c.exit));
   }
-  return { scenarios, results, slips, slipOut };
+  return { scenarios, results, slips, slipOut, portSets };
 }
 
 function compare(a, b) {
@@ -100,6 +109,9 @@ function compare(a, b) {
   const m = /<script id="dynamo-core">([\s\S]*?)<\/script>/.exec(html);
   if (!m) { console.error('FAIL: no <script id="dynamo-core"> block in ' + PAGE); process.exit(1); }
   const coreSrc = m[1];
+  // the engines' printed rows, in the page's ENGINES order (the C# builds the port sets from these)
+  const engines = [...html.matchAll(/^\s+(\w+): \{ label: '[^']*', ports: parseEngine\((\[[^\]]*\])\) \},?$/gm)].map((x) => JSON.parse(x[2].replace(/'/g, '"')));
+  if (engines.length !== 4) { console.error(`FAIL: found ${engines.length} engines in the page, not 4 (the ENGINES table moved; update the regex)`); process.exit(1); }
   const browser = await chromium.launch();
   const page = await browser.newPage();
   await page.goto('file://' + PAGE);
@@ -107,29 +119,33 @@ function compare(a, b) {
   const ref = await page.evaluate(buildInPage, {});
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dynamo-parity-'));
   const scnFile = path.join(tmp, 'scenarios.json');
-  fs.writeFileSync(scnFile, JSON.stringify({ scenarios: ref.scenarios, slips: ref.slips }));
-  const cs = JSON.parse(execFileSync('bash', [path.join(__dirname, 'trace.sh'), scnFile], { cwd: ROOT, maxBuffer: 1 << 30, stdio: ['ignore', 'pipe', 'ignore'] }).toString());
+  fs.writeFileSync(scnFile, JSON.stringify({ scenarios: ref.scenarios, slips: ref.slips, engines }));
+  const cs = JSON.parse(execFileSync('bash', [path.join(__dirname, 'trace.sh'), scnFile], { cwd: ROOT, maxBuffer: 1 << 30, stdio: ['ignore', 'pipe', 'inherit'] }).toString());
   const res = compare(ref, cs);
   let fail = false;
-  const acts = ref.results.reduce((s, rows) => s + rows.filter((r) => r.e.some((e) => e[0] === 'A')).length, 0);
-  const picks = ref.results.reduce((s, rows) => s + rows.reduce((t, r) => t + r.e.filter((e) => e[0] === 'K').length, 0), 0);
-  const ticks = ref.results.reduce((s, rows) => s + rows.reduce((t, r) => t + r.e.filter((e) => e[0] === 't').length, 0), 0);
-  const offers = ref.results.reduce((s, rows) => s + rows.reduce((t, r) => t + r.e.filter((e) => e[0] === 'O').length, 0), 0);
+  const count = (pred) => ref.results.reduce((s, rows) => s + rows.reduce((t, r) => t + r.e.filter(pred).length, 0), 0);
+  const acts = count((e) => e[0] === 'A'), picks = count((e) => e[0] === 'K'), ticks = count((e) => e[0] === 't'), shuffles = count((e) => e[0] === 'S'),
+    retires = count((e) => e[0] === 'Q'), effects = count((e) => e[0] === 'F'), aiMoves = count((e) => e[0] === 'i' && e !== 'i-'), places = count((e) => e[0] === 'P');
   const illegal = ref.results.reduce((s, rows) => s + rows.filter((r) => !r.ok).length, 0);
+  const portsSame = JSON.stringify(cs.portSets) === JSON.stringify(ref.portSets);
+  if (!portsSame) { fail = true; console.log(`FAIL: the C# BuildPortSets makes ${cs.portSets.length} port sets, the page ${ref.portSets.length}, or their order differs`); }
   if (res.bad || res.slipBad) {
     fail = true;
     console.log(`FAIL: ${res.bad} of ${res.steps} steps and ${res.slipBad} of ${res.slips} slips differ`);
-    if (res.first) console.log(JSON.stringify(res.first, null, 1).slice(0, 2000));
+    if (res.first) console.log(JSON.stringify(res.first, null, 1).slice(0, 2400));
     if (res.slipFirst) console.log(JSON.stringify(res.slipFirst, null, 1).slice(0, 2000));
   } else {
-    console.log(`PASS: ${res.steps} steps over ${ref.scenarios.length} scenarios (4 engines x ports/whole-engine x 3 rule sets, one with synthetic tiny patterns), ${acts} activations, ${picks} picks, ${ticks} ticks, ${offers} research offers, ${illegal} illegal inputs refused alike; ${res.slips} slip destinations equal to 1e-9`);
+    console.log(`PASS: ${res.steps} steps over ${ref.scenarios.length} rule sets, ${aiMoves} Engineer-AI moves chosen alike, ${acts} patterns made, ${picks} battery picks, ${retires} retired, ${shuffles} new abilities + port patterns, ${ticks} spins, ${effects} board effects, ${places} free placements, ${illegal} illegal inputs refused alike; ${ref.portSets.length} port sets built alike from the engines; ${res.slips} slip destinations equal to 1e-9`);
   }
-  if (acts < 50 || picks < 50 || offers < 10) { fail = true; console.log(`FAIL: the scenarios exercised too little (${acts} activations, ${picks} picks, ${offers} offers)`); }
+  if (acts < 300 || shuffles < 30 || retires < 30 || aiMoves < 1000 || places < 10) { fail = true; console.log(`FAIL: the scenarios exercised too little (${acts} made, ${shuffles} shuffles, ${retires} retired, ${aiMoves} AI moves, ${places} free placements)`); }
   // negative controls
   const plants = [
-    ['ports turn counter-clockwise', (s) => s.replace('return ring[(RING_POS[i] + 1) % ring.length];', 'return ring[(RING_POS[i] + ring.length - 1) % ring.length];'), {}],
+    ['ports turn counter-clockwise', (s) => s.replace('for (const p of st.ports) p[0] = rot60(p[0]);\n    const over', 'for (const p of st.ports) p[0] = rot60(rot60(rot60(rot60(rot60(p[0])))));\n    const over'), {}],
     ['placement scan reversed', (s) => s.replace('      for (let a = 0; a < N; a++) {\n        const cells = [];', '      for (let a = N - 1; a >= 0; a--) {\n        const cells = [];'), {}],
-    ['tick 8 s -> 8.25 s', (s) => s, { tick: 8.25 }],
+    ['AI ties broken the other way', (s) => s.replace('x.total - y.total || x.pid - y.pid', 'x.total - y.total || y.pid - x.pid'), {}],
+    ['the spin clock keeps its time after a reveal', (s) => s.replace("st.reveal = null; st.clock = 0;\n    st.events.push({ k: 'resume' });", "st.reveal = null;\n    st.events.push({ k: 'resume' });"), {}],
+    ['Square-Peg scatter lands on ports too', (s) => s.replace('pool = e.length ? e : empty();', 'pool = empty();'), {}],
+    ['spin 15 s -> 15.25 s', (s) => s, { tick: 15.25 }],
     ['the slip takes the other end', (s) => s.replace('const end = d1 >= d0 ? 1 : 0', 'const end = d1 >= d0 ? 0 : 1'), {}],
   ];
   for (const [name, plant, extra] of plants) {

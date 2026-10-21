@@ -1282,3 +1282,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner, the launch feel)
 - **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a 'Known feel cost'
+
+### T-20261021-2574 · open · test · Crew vessels
+- **Task:** Playtest the Honeyguide and Ratel in the Unity Editor: Toybox Vessel Changer station, then the 7 steps of its checklist entry. It has only been compiled headlessly.
+- **Done when:** the steps in Docs/UNITY_VERIFICATION_CHECKLIST.md 'Honeyguide and Ratel' pass and HoneyguideTests is green
+- **Who can take it:** Yash (offered), anyone with the Editor
+- **Added:** 2026-10-21 by Garrett (Claude session) (`claude/honeyguide-ratel`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+
+### T-20261021-1b13 · open · content · Crew vessels
+- **Task:** Author FMOD events for the Honeyguide's five empty EventReference slots on HoneyguideConfig.asset: pattern made, slip, jump, spin, reveal.
+- **Done when:** all five slots are wired
+- **Who can take it:** anyone who does audio
+- **Added:** 2026-10-21 by Garrett (Claude session) (`claude/honeyguide-ratel`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+
+### T-20261021-f05e · open · decision · Crew vessels
+- **Task:** Decide how the Ratel seat goes online (today the Dynamo, its AI and the effects run on the hull's local machine), and when the 8 parked trigger-upgrade cards come back (they need the Sparrow's guns to take upgrades).
+- **Done when:** Garrett picks a networking plan and a plan for the parked cards
+- **Who can take it:** Garrett with Yash (multiplayer)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`claude/honeyguide-ratel`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md

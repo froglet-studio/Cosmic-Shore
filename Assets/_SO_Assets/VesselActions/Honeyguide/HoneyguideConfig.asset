@@ -1,0 +1,451 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36e89e93b8a94e3d80caf3eb8b4dae44, type: 3}
+  m_Name: HoneyguideConfig
+  m_EditorClassIdentifier: 
+  tickSeconds: 15
+  apPerTick: 3
+  apBank: 3
+  bonusApCap: 2
+  batteryCap: 3
+  revealAbility: 3.5
+  revealPorts: 2
+  usesPerPattern: 3
+  patternsPerShuffle: 4
+  spinAnim: 0.6
+  portsCount: 1
+  rotatable: 1
+  minSlipTrailLength: 6
+  slipReach: 400
+  exitOffset: 8
+  slipGrace: 1
+  aimCone: 45
+  contactRadius: 5.5
+  selfGrace: 1
+  exitAligned: 1
+  passiveSeconds: 20
+  passiveMaxLevel: 3
+  boostCap: 6
+  plowBoost: 1
+  amanitaBoost: 3
+  bigRedBoostEach: 0.5
+  saddleBoostEach: 1.5
+  zeroPointBoost: 1.5
+  sailBoost: 1
+  maxSails: 3
+  magnetPerLevel: 3
+  gravityBoostPerLevel: 1
+  skipperBoostPerLevel: 0.4
+  eigenTurnPerUnit: 0.3
+  wattSpeedPerLevel: 0.3
+  wattReach: 14
+  wattCone: 30
+  thrusterDashes: 4
+  dashDistance: 20
+  detangleCount: 3
+  noodleCount: 5
+  noodlePush: 12
+  noodleReach: 6
+  condenserCount: 6
+  condenserAhead: 30
+  condenserSpacing: 7
+  etiReach: 40
+  hammerCount: 3
+  ciliaBonus: 3
+  chronoRewind: 5
+  maxStoredJumps: 3
+  jumpCone: 35
+  jumpMinDistance: 8
+  blinkDistance: 60
+  portalsHop: 30
+  portalsEmptyRadius: 12
+  rosenReach: 300
+  ftlReach: 60
+  monteHops: 3
+  monteReach: 40
+  engineerLevel: 2
+  engineerSkills:
+  - think: 1.6
+    top: 4
+    blunder: 0.25
+  - think: 0.9
+    top: 2
+    blunder: 0.08
+  - think: 0.45
+    top: 1
+    blunder: 0
+  aiCrewEngineers: 1
+  engineerRect:
+    serializedVersion: 2
+    x: 0.5
+    y: 0.04
+    width: 0.48
+    height: 0.92
+  pilotRect:
+    serializedVersion: 2
+    x: 0.01
+    y: 0.3
+    width: 0.2
+    height: 0.42
+  colours:
+  - {r: 1, g: 0, b: 0.976, a: 1}
+  - {r: 0.075, g: 1, b: 0.949, a: 1}
+  - {r: 1, g: 0.655, b: 0, a: 1}
+  ratelLabel: 'Ratel'
+  colourNames:
+  - Ruby
+  - Jade
+  - Gold
+  tapToMake: 'TAP'
+  freePrismTemplate: '{count} free: tap an empty cell ({colour}; tap the AP row to change)'
+  revealAbilityTemplate: 'New ability: {name}'
+  revealPortsLine: 'New injection ports'
+  madeBannerTemplate: '{name} {level}'
+  jumpCardTemplate: 'Jump x{count}'
+  dashCardTemplate: 'Dash x{count}'
+  noJumpTarget: 'No jump target'
+  patterns:
+  - name: 'Juggernaut Plow'
+    family: 1
+    shape: C2,0 M1,1 S0,2 M0,3
+    effect: 1
+    effectText: 'Plough through hostile prisms: they break on contact and do not slow you. +1 s of boost now.'
+    parked: 0
+  - name: 'Singularity Dock'
+    family: 1
+    shape: S3,0 M2,1 M0,2 C1,2 M1,3
+    effect: 2
+    effectText: 'Slips catch trails 6 u farther away a level: the dock pulls you in.'
+    parked: 0
+  - name: 'Amanita Furnace'
+    family: 1
+    shape: C3,0 M2,1 M0,2 S1,2 M1,3
+    effect: 3
+    effectText: 'Burns one more prism on the Dynamo for 3 s of boost.'
+    parked: 0
+  - name: 'Plankter Sail'
+    family: 1
+    shape: M3,0 M1,1 S2,1 C1,2 M0,3
+    effect: 4
+    effectText: 'Your next slip needs no charge and rides a trail of any domain, at half reach, then 1 s of boost.'
+    parked: 0
+  - name: 'Anomaly Skipper'
+    family: 1
+    shape: M3,0 S2,1 C1,2 M0,3
+    effect: 5
+    effectText: 'Touching a prism of a different domain from the last gives 0.4 s of boost a level.'
+    parked: 0
+  - name: 'Fugacity Discharger'
+    family: 1
+    shape: S2,0 M3,0 M1,1 C0,2 M0,3
+    effect: 6
+    effectText: 'Both triggers fire 5% faster a level for every prism within 40 u (up to +50% a level).'
+    parked: 1
+  - name: 'Thruster Swarm'
+    family: 1
+    shape: C2,0 M3,0 M1,1 S0,2
+    effect: 7
+    effectText: 'Your next 4 boost presses each throw the hull 20 u ahead.'
+    parked: 0
+  - name: 'Hard Light Lasso'
+    family: 1
+    shape: S1,0 M2,0 M0,1 C1,1
+    effect: 8
+    effectText: 'Each Bolt hit pulls you 6 u a level toward it.'
+    parked: 1
+  - name: 'Big Red Button'
+    family: 1
+    shape: M2,0 M0,1 C1,1 S0,2
+    effect: 9
+    effectText: 'Destroys every other Dynamo prism of the battery prism''s colour; 0.5 s of boost for each.'
+    parked: 0
+  - name: 'Eigen Booster'
+    family: 1
+    shape: M2,0 M0,1 C1,1 S0,2 M1,2
+    effect: 10
+    effectText: 'Turn 60% faster a level.'
+    parked: 0
+  - name: 'Dragon Saddle'
+    family: 1
+    shape: M2,0 M0,1 S1,1 C0,2
+    effect: 11
+    effectText: 'Drains the whole battery into boost: 1.5 s for each charge.'
+    parked: 0
+  - name: 'Wattslider'
+    family: 1
+    shape: S3,0 M4,0 M2,1 M0,2 C1,2
+    effect: 12
+    effectText: 'Flying alongside a trail (within 14 u, heading within 30 degrees of it): +30% speed a level.'
+    parked: 0
+  - name: 'Eyelet Jet'
+    family: 1
+    shape: M2,0 M0,1 S1,1 C0,2 M1,2
+    effect: 13
+    effectText: 'Shots pass through 2 more hostile prisms a level.'
+    parked: 1
+  - name: 'Reality Detangler'
+    family: 2
+    shape: C2,0 C0,1 S1,1 M0,2
+    effect: 14
+    effectText: 'The next 3 prisms you touch turn your newest charge''s domain: new slip lanes, and they do not slow you.'
+    parked: 0
+  - name: 'Epitaxial Condenser'
+    family: 2
+    shape: M1,0 C2,0 C0,1 S1,1
+    effect: 15
+    effectText: 'Lays a 6-prism trail of your newest charge''s domain ahead of you.'
+    parked: 0
+  - name: 'Sepia Drone'
+    family: 2
+    shape: C2,0 C0,1 M1,1 S0,2 C1,2
+    effect: 16
+    effectText: 'A drone shoots the nearest hostile prism within 60 u, twice a second a level.'
+    parked: 1
+  - name: 'Zero Point Amplifier'
+    family: 2
+    shape: S2,0 C1,1 M0,2 C0,3
+    effect: 17
+    effectText: 'Fires the effect of another pattern in the Ratel''s hand, and drains your oldest charge into 1.5 s of boost.'
+    parked: 0
+  - name: 'Noodley Appendages'
+    family: 2
+    shape: C3,0 C1,1 M2,1 S1,2 C0,3
+    effect: 18
+    effectText: 'The next 5 hostile prisms in your path are pushed aside instead of hitting you.'
+    parked: 0
+  - name: 'Triplesynth'
+    family: 2
+    shape: M3,0 C2,1 C0,2 S1,2 C1,3
+    effect: 19
+    effectText: 'Places a touching Ruby, Jade and Gold prism on empty Dynamo cells.'
+    parked: 0
+  - name: 'Particle Harmonizer'
+    family: 2
+    shape: M2,0 C1,1 S0,2 C0,3
+    effect: 20
+    effectText: 'Shots turn hostile prisms to your newest charge''s domain instead of destroying them.'
+    parked: 1
+  - name: 'Genesis Lance'
+    family: 2
+    shape: C2,0 C0,1 S1,1 M0,2 C1,2
+    effect: 21
+    effectText: 'Bolt shots that miss plant a prism of your newest charge''s domain where they stop: fire ahead to build a slip lane.'
+    parked: 1
+  - name: 'Universal Translator'
+    family: 2
+    shape: C2,0 C0,1 M1,1 S0,2
+    effect: 22
+    effectText: 'The Ratel gets a free prism of any colour: tap an empty cell.'
+    parked: 0
+  - name: 'Anode Ray'
+    family: 2
+    shape: M3,0 C4,0 C2,1 C0,2 S1,2
+    effect: 23
+    effectText: '+1 charge of each colour.'
+    parked: 0
+  - name: '5D Printer'
+    family: 2
+    shape: S3,0 C2,1 C0,2 M1,2 C1,3
+    effect: 24
+    effectText: 'The Ratel gets 2 free prisms of any colour.'
+    parked: 0
+  - name: 'Square-Peg Hammer'
+    family: 2
+    shape: C3,0 M2,1 S1,2 C0,3
+    effect: 25
+    effectText: 'Drops 3 prisms of random colours on empty Dynamo cells.'
+    parked: 0
+  - name: 'Reactor Cilia'
+    family: 2
+    shape: S2,0 C3,0 C1,1 M0,2 C0,3
+    effect: 26
+    effectText: 'The Ratel banks 3 extra AP.'
+    parked: 0
+  - name: 'Chrono-Compressor'
+    family: 3
+    shape: S2,0 S0,1 C1,1 M0,2
+    effect: 27
+    effectText: 'The Ratel banks 1 extra AP and the spin bar winds back 5 s.'
+    parked: 0
+  - name: 'Meta Machine'
+    family: 3
+    shape: M2,0 S3,0 S1,1 C0,2 S0,3
+    effect: 28
+    effectText: 'Fires the effect of the last pattern replaced (or else the last other pattern made).'
+    parked: 0
+  - name: 'Mystic Eti'
+    family: 3
+    shape: S3,0 S1,1 C2,1 M1,2 S0,3
+    effect: 29
+    effectText: '+1 charge for each domain with a trail within 40 u of you.'
+    parked: 0
+  - name: 'FTL Chromatool'
+    family: 3
+    shape: C2,0 S1,1 M0,2 S0,3
+    effect: 30
+    effectText: 'Jump: swap places with the nearest prism ahead within 60 u; it becomes a charge of its domain.'
+    parked: 0
+  - name: 'Little Bang Grenade'
+    family: 3
+    shape: M2,0 S1,1 C0,2 S0,3
+    effect: 31
+    effectText: 'A hit destroys hostile prisms around it (4 u + 3 u a level).'
+    parked: 1
+  - name: 'Vorticity Module'
+    family: 3
+    shape: C3,0 S4,0 S2,1 S0,2 M1,2
+    effect: 32
+    effectText: 'The injection ports turn back 60 degrees and the spin bar refills.'
+    parked: 0
+  - name: 'Gravity Engine'
+    family: 3
+    shape: S2,0 S0,1 M1,1 C0,2 S1,2
+    effect: 33
+    effectText: 'Slips catch trails 3 u farther away and end with 1 s of boost, a level.'
+    parked: 0
+  - name: 'All Terrain Portals'
+    family: 3
+    shape: S2,0 S0,1 C1,1 M0,2 S1,2
+    effect: 34
+    effectText: 'Jump 30 u ahead; land in empty space and you jump 30 u again.'
+    parked: 0
+  - name: 'Rosen Bridge'
+    family: 3
+    shape: C3,0 S2,1 S0,2 M1,2 S1,3
+    effect: 35
+    effectText: 'Jump to the farthest prism of your newest charge''s domain within 300 u and 35 degrees of your nose.'
+    parked: 0
+  - name: 'Frame Dragger'
+    family: 3
+    shape: C1,0 S2,0 S0,1 M1,1
+    effect: 36
+    effectText: 'Your trail is laid in your newest charge''s domain: a slip lane behind you.'
+    parked: 1
+  - name: 'Void Jumper'
+    family: 3
+    shape: M3,0 S2,1 S0,2 C1,2 S1,3
+    effect: 37
+    effectText: 'Slip on trails of any domain (each slip spends your oldest charge).'
+    parked: 0
+  - name: 'Blink Drive'
+    family: 3
+    shape: S2,0 S0,1 M1,1 C0,2
+    effect: 38
+    effectText: 'Jump 60 u ahead.'
+    parked: 0
+  - name: 'Monte Cannon'
+    family: 3
+    shape: S3,0 C2,1 M1,2 S0,3
+    effect: 39
+    effectText: 'Jump: three hops, each swapping places with the farthest prism ahead within 40 u.'
+    parked: 0
+  engines:
+  - label: '2020-22 player board'
+    rows:
+    - '. . . .'
+    - '. M C C .'
+    - '. S . . C .'
+    - '. S . . . S .'
+    - '. S . . M .'
+    - '. C M M .'
+    - '. . . .'
+  - label: 'Heimdall-13'
+    rows:
+    - '. . . .'
+    - '. S S S .'
+    - '. C . . M .'
+    - '. M . X . C .'
+    - '. M . . C .'
+    - '. M S C .'
+    - '. . . .'
+  - label: 'Claw that rends the sky'
+    rows:
+    - '. M . .'
+    - '. M . . .'
+    - '. M . C S .'
+    - '. . S X . S .'
+    - '. . . M . S'
+    - 'C C C . .'
+    - '. . . .'
+  - label: 'Apr 2021 co-op engine'
+    rows:
+    - 'C . . .'
+    - '. . C . .'
+    - '. C . M S .'
+    - '. . S . . . S'
+    - '. M . C S .'
+    - '. . M . .'
+    - 'M . . .'
+  abilities:
+  - ability: 0
+    name: 'Overclock'
+    text: '+1 AP every spin; the bank holds 1 more.'
+  - ability: 1
+    name: 'Long Reach'
+    text: 'Drag a prism to any empty cell you can reach through empty cells, for 1 AP.'
+  - ability: 2
+    name: 'Printer'
+    text: 'A free prism of any colour every spin (hold 2): tap an empty cell.'
+  - ability: 3
+    name: 'Swap'
+    text: 'Drag a prism onto a neighbouring prism to swap them, for 1 AP.'
+  - ability: 4
+    name: 'Free Fire'
+    text: 'Making a pattern costs no AP.'
+  - ability: 5
+    name: 'Wild Core'
+    text: 'The centre cell counts as any colour.'
+  - ability: 6
+    name: 'Capacitor'
+    text: 'The battery holds 2 more charges.'
+  - ability: 7
+    name: 'Mirror'
+    text: 'Patterns also match mirrored.'
+  - ability: 8
+    name: 'Refund'
+    text: 'Each pattern made banks 1 extra AP (hold 2).'
+  patternMadeSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  slipSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  jumpSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  spinSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  revealSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}

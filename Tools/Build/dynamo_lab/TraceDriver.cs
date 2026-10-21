@@ -1,6 +1,7 @@
 // TraceDriver.cs - runs the SHIPPED DynamoCore (compiled from its real path by trace.sh) over the scenarios parity.cjs
 // writes, and prints the same rows the Honeyguide Lab's own core produces: per step, whether the input was legal, the
-// state digest and the events. Also runs every slip case through DynamoCore.SlipDestination.
+// state digest and the events (an Engineer-AI step first prints the input the C# AI chose). Also builds the port sets from
+// the engines' printed rows and runs every slip case through DynamoCore.SlipDestination.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -12,18 +13,10 @@ using CosmicShore.Gameplay;
 
 public static class TraceDriver
 {
-    static readonly Dictionary<string, DynamoPatternEffect> Effects = new()
-    {
-        [""] = DynamoPatternEffect.None, ["amanita"] = DynamoPatternEffect.AmanitaFurnace, ["bigred"] = DynamoPatternEffect.BigRedButton,
-        ["saddle"] = DynamoPatternEffect.DragonSaddle, ["thruster"] = DynamoPatternEffect.ThrusterSwarm, ["detangler"] = DynamoPatternEffect.RealityDetangler,
-        ["condenser"] = DynamoPatternEffect.EpitaxialCondenser, ["anode"] = DynamoPatternEffect.AnodeRay, ["printer"] = DynamoPatternEffect.FiveDPrinter,
-        ["blink"] = DynamoPatternEffect.BlinkDrive, ["rosen"] = DynamoPatternEffect.RosenBridge, ["monte"] = DynamoPatternEffect.MonteCannon,
-        ["chrono"] = DynamoPatternEffect.ChronoCompressor,
-    };
+    static readonly string[] EffectKeys = { "burn", "purge", "free", "bonus", "rewind", "unspin", "trio", "scatter", "charge", "drain", "drainOne" };
     static readonly Dictionary<string, DynamoInputKind> Kinds = new()
     {
-        ["tinker"] = DynamoInputKind.Tinker, ["refuel"] = DynamoInputKind.Refuel, ["activate"] = DynamoInputKind.Activate, ["pick"] = DynamoInputKind.Pick,
-        ["research"] = DynamoInputKind.Research, ["keep"] = DynamoInputKind.Keep, ["discard"] = DynamoInputKind.Discard,
+        ["tinker"] = DynamoInputKind.Tinker, ["refuel"] = DynamoInputKind.Refuel, ["activate"] = DynamoInputKind.Activate,
     };
 
     static int Int(JsonElement o, string k) => o.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : 0;
@@ -34,16 +27,24 @@ public static class TraceDriver
         DynamoEventKind.Tinker => $"T{e.From}>{e.To}",
         DynamoEventKind.Refuel => $"R{e.Cell}:{e.Colour}",
         DynamoEventKind.Place => $"P{e.Cell}:{e.Colour}",
-        DynamoEventKind.Ability => $"A{e.Slot}:{e.Pid}",
+        DynamoEventKind.Ability => $"A{e.Slot}:{e.Pid}:{e.Use}",
         DynamoEventKind.Charge => $"C{e.Colour}",
         DynamoEventKind.Replaced => $"X{e.Colour}",
-        DynamoEventKind.Pick => $"K{e.Slot}:{e.Pid}:{e.Cell}:{e.Colour}:{(e.Auto ? 1 : 0)}",
-        DynamoEventKind.Destroyed => $"D{e.Colour}:{e.Count}",
-        DynamoEventKind.Burned => $"B{e.Cell}:{e.Colour}",
-        DynamoEventKind.Offer => $"O{e.Family}:{string.Join(".", e.Offer)}",
-        DynamoEventKind.Keep => $"E{e.Slot}:{e.Pid}",
-        DynamoEventKind.Tick => $"t{e.Count}",
+        DynamoEventKind.Pick => $"K{e.Slot}:{e.Pid}:{e.Cell}:{e.Colour}",
+        DynamoEventKind.Retire => $"Q{e.Slot}:{e.Old}:{e.Pid}",
+        DynamoEventKind.Shuffle => $"S{DynamoCore.AbilityKeys[(int)e.Ability]}:{e.PortSet}",
+        DynamoEventKind.Ports => $"p{e.PortSet}",
+        DynamoEventKind.Resume => "r",
+        DynamoEventKind.Effect => $"F{EffectKeys[(int)e.Effect]}:{e.Count}",
+        DynamoEventKind.Tick => $"t{e.Count}:{e.Ap}",
         _ => "?",
+    };
+
+    static string InpStr(DynamoInput? i) => i == null ? "i-" : i.Value.Kind switch
+    {
+        DynamoInputKind.Tinker => $"itinker:{i.Value.From}>{i.Value.To}",
+        DynamoInputKind.Refuel => $"irefuel:{i.Value.Cell}:{i.Value.Colour}",
+        _ => $"iactivate:{i.Value.Slot}",
     };
 
     static string Num(double v) => v.ToString("R", CultureInfo.InvariantCulture);
@@ -58,45 +59,64 @@ public static class TraceDriver
         foreach (var scn in doc.RootElement.GetProperty("scenarios").EnumerateArray())
         {
             var j = scn.GetProperty("S");
+            string fixedAbility = j.GetProperty("fixedAbility").GetString();
             var s = new DynamoSettings
             {
-                TickSeconds = j.GetProperty("tickSeconds").GetDouble(),
+                TickSeconds = j.GetProperty("tickSeconds").GetDouble(), RevealAbility = j.GetProperty("revealAbility").GetDouble(),
+                RevealPorts = j.GetProperty("revealPorts").GetDouble(),
                 ApPerTick = Int(j, "apPerTick"), ApBank = Int(j, "apBank"), BonusApCap = Int(j, "bonusApCap"), BatteryCap = Int(j, "batteryCap"),
-                ResearchCost = Int(j, "researchCost"), PickTimeout = j.GetProperty("pickTimeout").GetDouble(),
-                RotateWholeEngine = j.GetProperty("rotateWholeEngine").GetBoolean(), AllowRotatedMatches = j.GetProperty("allowRotatedMatches").GetBoolean(),
-                CentreWild = j.GetProperty("centreWild").GetBoolean(), StartFilled = j.GetProperty("startFilled").GetBoolean(),
-                Ports = Pairs(j.GetProperty("ports")),
-                Loadout = j.GetProperty("loadout").EnumerateArray().Select(x => x.GetInt32()).ToArray(),
+                SlotCount = Int(j, "slotCount"), UsesPerPattern = Int(j, "usesPerPattern"), PatternsPerShuffle = Int(j, "patternsPerShuffle"),
+                AllowRotatedMatches = j.GetProperty("allowRotatedMatches").GetBoolean(), PortsCount = j.GetProperty("portsCount").GetBoolean(),
+                StartFilled = j.GetProperty("startFilled").GetBoolean(),
+                FixedAbility = string.IsNullOrEmpty(fixedAbility) ? -1 : Array.IndexOf(DynamoCore.AbilityKeys, fixedAbility),
+                FirstPortSet = Int(j, "firstPortSet"),
             };
+            foreach (var ps in j.GetProperty("portSets").EnumerateArray()) s.PortSets.Add(Pairs(ps));
             foreach (var p in j.GetProperty("patterns").EnumerateArray())
-                s.Patterns.Add(new DynamoPattern { Family = p.GetProperty("family").GetInt32(), Effect = Effects[p.GetProperty("effect").GetString()], Cells = Pairs(p.GetProperty("cells")) });
+                s.Patterns.Add(new DynamoPattern { Cells = Pairs(p.GetProperty("cells")), Parked = p.GetProperty("parked").GetBoolean() });
             var core = new DynamoCore(s, scn.GetProperty("seed").GetInt32());
+            var memo = new DynamoCore.AIMemo();
             if (!firstScn) sb.Append(',');
             firstScn = false;
             sb.Append("[{\"ok\":true,\"d\":\"").Append(core.Digest()).Append("\",\"e\":[]}");
             foreach (var st in scn.GetProperty("steps").EnumerateArray())
             {
                 bool ok = true;
+                string pre = null;
                 if (st.TryGetProperty("dt", out var dt)) core.Advance(s, dt.GetDouble());
                 else if (st.TryGetProperty("spend", out var sp)) ok = core.Spend(sp.GetInt32());
-                else if (st.TryGetProperty("drain", out _)) core.DrainAll();
+                else if (st.TryGetProperty("fx", out var fx)) ok = core.BoardEffect(s, (DynamoBoardEffect)Array.IndexOf(EffectKeys, fx.GetString()), Int(st, "arg")) >= 0;
+                else if (st.TryGetProperty("ai", out var ai))
+                {
+                    var prm = new DynamoAISkill { Top = Int(ai, "top"), Blunder = ai.GetProperty("blunder").GetDouble() };
+                    var inp = core.AIPlan(s, prm, DynamoCore.Mulberry32(st.GetProperty("seed").GetInt32()), memo);
+                    if (inp != null && inp.Value.Kind == DynamoInputKind.Activate) memo.Key = "";
+                    pre = InpStr(inp);
+                    ok = inp != null && core.Apply(s, inp.Value);
+                }
                 else
                 {
                     var i = st.GetProperty("inp");
                     var inp = new DynamoInput
                     {
                         Kind = Kinds[i.GetProperty("k").GetString()], From = Int(i, "from"), To = Int(i, "to"), Cell = Int(i, "cell"), Colour = Int(i, "colour"),
-                        Slot = Int(i, "slot"), Family = Int(i, "family"), Choice = Int(i, "choice"),
+                        Slot = Int(i, "slot"),
                     };
                     ok = core.Apply(s, inp);
                 }
+                var evs = core.Events.Select(e => "\"" + Ev(e) + "\"").ToList();
+                if (pre != null) evs.Insert(0, "\"" + pre + "\"");
                 sb.Append(",{\"ok\":").Append(ok ? "true" : "false").Append(",\"d\":\"").Append(core.Digest()).Append("\",\"e\":[");
-                sb.Append(string.Join(",", core.Events.Select(e => "\"" + Ev(e) + "\"")));
+                sb.Append(string.Join(",", evs));
                 sb.Append("]}");
                 core.Events.Clear();
             }
             sb.Append(']');
         }
+        sb.Append("],\"portSets\":[");
+        var engines = doc.RootElement.GetProperty("engines").EnumerateArray()
+            .Select(e => DynamoCore.ParseEngine(e.EnumerateArray().Select(x => x.GetString()).ToList())).ToList();
+        sb.Append(string.Join(",", DynamoCore.BuildPortSets(engines).Select(set => "[" + string.Join(",", set.Select(p => $"[{p[0]},{p[1]}]")) + "]")));
         sb.Append("],\"slips\":[");
         bool firstSlip = true;
         foreach (var c in doc.RootElement.GetProperty("slips").EnumerateArray())

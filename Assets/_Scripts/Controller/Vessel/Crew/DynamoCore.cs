@@ -1,49 +1,63 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CosmicShore.Gameplay
 {
-    /// <summary>What a pattern does beyond lighting up. The Engineer-side effects (Chrono-Compressor, 5D Printer, Anode Ray,
-    /// Big Red Button, Amanita Furnace) run inside <see cref="DynamoCore"/>; the rest are the pilot's and are applied by the
-    /// hull. Every member keeps its value: these are serialized on pattern assets.</summary>
-    public enum DynamoPatternEffect
+    /// <summary>The Ratel's abilities (one held at a time, redrawn every few patterns). Values are the lab's
+    /// <c>ABILITIES</c> order and are serialized on the Honeyguide config's ability table, so each member keeps its value.</summary>
+    public enum DynamoAbility
     {
-        None = 0,
-        AmanitaFurnace = 1,
-        BigRedButton = 2,
-        DragonSaddle = 3,
-        ThrusterSwarm = 4,
-        RealityDetangler = 5,
-        EpitaxialCondenser = 6,
-        AnodeRay = 7,
-        FiveDPrinter = 8,
-        BlinkDrive = 9,
-        RosenBridge = 10,
-        MonteCannon = 11,
-        ChronoCompressor = 12,
+        Overclock = 0,
+        LongReach = 1,
+        Printer = 2,
+        Swap = 3,
+        FreeFire = 4,
+        WildCore = 5,
+        Capacitor = 6,
+        Mirror = 7,
+        Refund = 8,
     }
 
-    /// <summary>One pattern card: its family colour (1 Mass, 2 Charge, 3 Space-Time), its effect, and its shape as
-    /// (q, r, colour) cells in the card's printed orientation, r running down.</summary>
+    /// <summary>What a pattern can do to the Dynamo itself (the Ratel-side cards): the lab's <c>boardEffect</c> kinds.</summary>
+    public enum DynamoBoardEffect
+    {
+        Burn = 0,
+        Purge = 1,
+        Free = 2,
+        Bonus = 3,
+        Rewind = 4,
+        Unspin = 5,
+        Trio = 6,
+        Scatter = 7,
+        Charge = 8,
+        Drain = 9,
+        DrainOne = 10,
+    }
+
+    /// <summary>One pattern card's shape as (q, r, colour) cells in the card's printed orientation, r running down, and
+    /// whether it is parked (never drawn). Colours: 1 Ruby, 2 Jade, 3 Gold.</summary>
     public sealed class DynamoPattern
     {
-        public int Family;
-        public DynamoPatternEffect Effect;
         public int[][] Cells;
+        public bool Parked;
     }
 
-    /// <summary>The Dynamo numbers the core reads (from the Honeyguide's Dynamo config). A plain class so the core and its
-    /// tests need no ScriptableObject.</summary>
+    /// <summary>The Dynamo numbers and tables the core reads (from the Honeyguide's config). A plain class so the core and
+    /// its tests need no ScriptableObject. Field names are the lab's <c>dynamoSettings</c> keys.</summary>
     public sealed class DynamoSettings
     {
-        public double TickSeconds;
-        public int ApPerTick, ApBank, BonusApCap, BatteryCap, ResearchCost;
-        public double PickTimeout;
-        public bool RotateWholeEngine, AllowRotatedMatches, CentreWild, StartFilled;
-        /// <summary>Injection ports as (cell index, colour) at the start of a match.</summary>
-        public int[][] Ports;
+        public double TickSeconds, RevealAbility, RevealPorts;
+        public int ApPerTick, ApBank, BonusApCap, BatteryCap, SlotCount = 3, UsesPerPattern, PatternsPerShuffle;
+        public bool AllowRotatedMatches, PortsCount, StartFilled;
+        /// <summary>-1 draws the ability at random (the shipped rule); otherwise every draw is this ability.</summary>
+        public int FixedAbility = -1;
+        /// <summary>-1 draws the first port pattern at random.</summary>
+        public int FirstPortSet = -1;
+        /// <summary>Every port pattern as (cell index, colour) pairs; <see cref="DynamoCore.BuildPortSets"/> makes them.</summary>
+        public List<int[][]> PortSets = new();
         public List<DynamoPattern> Patterns = new();
-        /// <summary>The slots' pattern indices at launch (-1 = empty slot).</summary>
+        /// <summary>The slots' pattern indices at launch, or null to draw them.</summary>
         public int[] Loadout;
     }
 
@@ -52,17 +66,18 @@ namespace CosmicShore.Gameplay
         Tinker = 0,
         Refuel = 1,
         Activate = 2,
-        Pick = 3,
-        Research = 4,
-        Keep = 5,
-        Discard = 6,
     }
 
-    /// <summary>One Engineer input. A human's tap and the AI's choice are the same value.</summary>
+    /// <summary>One Engineer input. A human's tap and the AI's choice are the same value. <see cref="Colour"/> on a Refuel
+    /// spends a free placement (the Printer, the 5D Printer) on any empty cell.</summary>
     public struct DynamoInput
     {
         public DynamoInputKind Kind;
-        public int From, To, Cell, Colour, Slot, Family, Choice;
+        public int From, To, Cell, Colour, Slot;
+
+        public static DynamoInput Tinker(int from, int to) => new() { Kind = DynamoInputKind.Tinker, From = from, To = to };
+        public static DynamoInput Refuel(int cell, int colour = 0) => new() { Kind = DynamoInputKind.Refuel, Cell = cell, Colour = colour };
+        public static DynamoInput Activate(int slot) => new() { Kind = DynamoInputKind.Activate, Slot = slot };
     }
 
     public enum DynamoEventKind
@@ -74,19 +89,20 @@ namespace CosmicShore.Gameplay
         Charge = 4,
         Replaced = 5,
         Pick = 6,
-        Destroyed = 7,
-        Burned = 8,
-        Offer = 9,
-        Keep = 10,
-        Tick = 11,
+        Retire = 7,
+        Shuffle = 8,
+        Ports = 9,
+        Resume = 10,
+        Effect = 11,
+        Tick = 12,
     }
 
     public struct DynamoEvent
     {
         public DynamoEventKind Kind;
-        public int Slot, Pid, Cell, From, To, Colour, Count, Family;
-        public bool Auto;
-        public int[] Offer;
+        public int Slot, Pid, Old, Cell, From, To, Colour, Count, Use, PortSet, Ap;
+        public DynamoAbility Ability;
+        public DynamoBoardEffect Effect;
     }
 
     /// <summary>A point for the slip's pure math (double, as the lab is).</summary>
@@ -105,12 +121,25 @@ namespace CosmicShore.Gameplay
         public SlipVec Heading, Point;
     }
 
+    /// <summary>The Engineer AI's skill: how many placements it weighs (1 = the cheapest only) and the chance of a random
+    /// legal move. Difficulty changes belief and pace, never the rules (/vessel-ai).</summary>
+    public struct DynamoAISkill
+    {
+        public int Top;
+        public double Blunder;
+    }
+
     /// <summary>
     /// The Ratel's hex puzzle (the Engineer seat of the Honeyguide), engine-free: its only inputs are seat inputs and a
     /// clock. The Honeyguide Lab's <c>DynamoCore</c> (<c>Docs/Studios/HoneyguideLab.html</c>, the <c>dynamo-core</c> script
-    /// block) ported line for line and held to it input by input by <c>Tools/Build/dynamo_lab/parity.cjs</c>. It knows
-    /// nothing about prisms, hulls or screens. The whole state is 37 cells, the ports, the AP, the battery and 3 slots, so
-    /// it can later replicate by sending Engineer inputs to the hull owner.
+    /// block, round 4) ported line for line and held to it input by input - the Engineer AI included - by
+    /// <c>Tools/Build/dynamo_lab/parity.cjs</c>. It knows nothing about prisms, hulls or screens.
+    ///
+    /// <para>Round 2-4 rules (Garrett, 2026-10-21): the injection ports turn as one rigid pattern, 60 degrees clockwise a
+    /// spin; an empty port counts as a prism of its colour for completing a pattern (a real prism must still be in it, for
+    /// the battery); patterns match in any of the six rotations; a made pattern sends one of its real prisms, drawn at
+    /// random, to the battery; a pattern made for the third time is replaced by a random one; every 4 patterns the Ratel
+    /// draws a new ability and a new port pattern, revealed one after the other while the spin clock stands still.</para>
     /// </summary>
     public sealed class DynamoCore
     {
@@ -119,9 +148,10 @@ namespace CosmicShore.Gameplay
         public static readonly int[] Q, R;
         public static readonly int CellCount, Centre;
         static readonly int[] Lut = new int[49];
-        public static readonly int[][] Rings;
-        static readonly int[] RingPos;
         public static readonly int[][] Neighbours;
+        /// <summary>The lab's ability keys, in <see cref="DynamoAbility"/> order (the digest prints them).</summary>
+        public static readonly string[] AbilityKeys = { "overclock", "longReach", "printer", "swap", "freeFire", "wildCore", "capacitor", "mirror", "refund" };
+        public static readonly int AbilityCount = AbilityKeys.Length;
 
         static DynamoCore()
         {
@@ -139,19 +169,6 @@ namespace CosmicShore.Gameplay
             R = r.ToArray();
             CellCount = Q.Length;
             Centre = Index(0, 0);
-            Rings = new int[Radius + 1][];
-            Rings[0] = new[] { Centre };
-            RingPos = new int[CellCount];
-            int[][] legs = { new[] { 1, 0 }, new[] { 0, 1 }, new[] { -1, 1 }, new[] { -1, 0 }, new[] { 0, -1 }, new[] { 1, -1 } };
-            for (int k = 1; k <= Radius; k++)
-            {
-                var ring = new List<int>();
-                int cq = 0, cr = -k;
-                foreach (var d in legs)
-                    for (int s = 0; s < k; s++) { ring.Add(Index(cq, cr)); cq += d[0]; cr += d[1]; }
-                Rings[k] = ring.ToArray();
-                for (int p = 0; p < ring.Count; p++) RingPos[ring[p]] = p;
-            }
             Neighbours = new int[CellCount][];
             for (int i = 0; i < CellCount; i++)
             {
@@ -163,77 +180,200 @@ namespace CosmicShore.Gameplay
 
         public static int Index(int q, int r) => q < -3 || q > 3 || r < -3 || r > 3 ? -1 : Lut[(q + 3) * 7 + (r + 3)];
         public static int RingOf(int i) => Math.Max(Math.Abs(Q[i]), Math.Max(Math.Abs(R[i]), Math.Abs(Q[i] + R[i])));
-        public static int StepClockwise(int i)
-        {
-            int k = RingOf(i);
-            if (k == 0) return i;
-            var ring = Rings[k];
-            return ring[(RingPos[i] + 1) % ring.Length];
-        }
-        /// <summary>60 degrees clockwise about the centre.</summary>
+        /// <summary>60 degrees clockwise on screen about the centre.</summary>
         public static int Rot60(int i) => Index(-R[i], Q[i] + R[i]);
         public static bool IsNeighbour(int a, int b) => Array.IndexOf(Neighbours[a], b) >= 0;
 
-        /// <summary>The pattern's shape in each allowed rotation, as offsets from its first cell.</summary>
-        public static int[][][] Shapes(int[][] cells, bool allowRotated)
+        // ------------------------------------------------------------------ pattern shapes
+
+        static int[][][] Rotations(int[][] cells)
         {
-            var outShapes = new List<int[][]>();
+            var outShapes = new int[6][][];
             var cur = new int[cells.Length][];
             for (int c = 0; c < cells.Length; c++) cur[c] = new[] { cells[c][0], cells[c][1], cells[c][2] };
-            for (int k = 0; k < (allowRotated ? 6 : 1); k++)
+            for (int k = 0; k < 6; k++)
             {
                 var shape = new int[cur.Length][];
                 for (int c = 0; c < cur.Length; c++) shape[c] = new[] { cur[c][0] - cur[0][0], cur[c][1] - cur[0][1], cur[c][2] };
-                outShapes.Add(shape);
+                outShapes[k] = shape;
                 var next = new int[cur.Length][];
                 for (int c = 0; c < cur.Length; c++) next[c] = new[] { -cur[c][1], cur[c][0] + cur[c][1], cur[c][2] };
                 cur = next;
             }
-            return outShapes.ToArray();
+            return outShapes;
         }
 
-        public sealed class PendingPick
+        /// <summary>A pattern's shapes as offsets from its first cell: the six rotations and the six rotations of the mirror
+        /// image (q &lt;-&gt; r); only the printed one of each when rotated matches are off.</summary>
+        public sealed class PatternShapes
         {
-            public int Slot, Pid;
-            public List<int> Cells;
-            public double Timer;
+            public int[][][] Rot, Mir;
+        }
+
+        public static PatternShapes Shapes(int[][] cells, bool allowRotated)
+        {
+            var mirrored = new int[cells.Length][];
+            for (int c = 0; c < cells.Length; c++) mirrored[c] = new[] { cells[c][1], cells[c][0], cells[c][2] };
+            var rot = Rotations(cells);
+            var mir = Rotations(mirrored);
+            return new PatternShapes { Rot = allowRotated ? rot : new[] { rot[0] }, Mir = allowRotated ? mir : new[] { mir[0] } };
+        }
+
+        // ------------------------------------------------------------------ port patterns
+
+        /// <summary>An engine's printed rows (top row first, tokens M / C / S for Ruby / Jade / Gold, anything else no
+        /// port) as (cell, colour) ports: the lab's <c>parseEngine</c>.</summary>
+        public static int[][] ParseEngine(IReadOnlyList<string> rows)
+        {
+            var ports = new List<int[]>();
+            for (int ri = 0; ri < rows.Count; ri++)
+            {
+                int r = ri - 3, q0 = Math.Max(-3, -3 - r);
+                var toks = rows[ri].Trim().Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+                for (int k = 0; k < toks.Length; k++)
+                {
+                    int col = toks[k] == "M" ? 1 : toks[k] == "C" ? 2 : toks[k] == "S" ? 3 : 0;
+                    if (col != 0) ports.Add(new[] { Index(q0 + k, r), col });
+                }
+            }
+            return ports.ToArray();
+        }
+
+        /// <summary>Three-fold colour symmetry (Garrett, 2026-10-21): a 120 degree turn maps the ports onto the ports, each
+        /// colour onto one other colour. The lab's <c>symmetricPorts</c>.</summary>
+        public static bool SymmetricPorts(int[][] ports)
+        {
+            var at = new Dictionary<int, int>();
+            foreach (var p in ports) at[p[0]] = p[1];
+            var map = new int[4];
+            foreach (var p in ports)
+            {
+                if (!at.TryGetValue(Rot60(Rot60(p[0])), out int t) || t == p[1] || (map[p[1]] != 0 && map[p[1]] != t)) return false;
+                map[p[1]] = t;
+            }
+            return true;
+        }
+
+        static readonly int[][] Perms = { new[] { 1, 2, 3 }, new[] { 1, 3, 2 }, new[] { 2, 1, 3 }, new[] { 2, 3, 1 }, new[] { 3, 1, 2 }, new[] { 3, 2, 1 } };
+
+        /// <summary>Every distinct three-fold colour-symmetric port pattern the engines make, turned and recoloured, in the
+        /// lab's <c>PORT_SETS</c> order (engine, turn, colour permutation).</summary>
+        public static List<int[][]> BuildPortSets(IEnumerable<int[][]> engines)
+        {
+            var outSets = new List<int[][]>();
+            var seen = new HashSet<string>();
+            foreach (var e in engines)
+                for (int k = 0; k < 6; k++)
+                    foreach (var pm in Perms)
+                    {
+                        var ports = new int[e.Length][];
+                        for (int p = 0; p < e.Length; p++)
+                        {
+                            int c = e[p][0];
+                            for (int j = 0; j < k; j++) c = Rot60(c);
+                            ports[p] = new[] { c, pm[e[p][1] - 1] };
+                        }
+                        var keys = ports.Select(p => p[0] + ":" + p[1]).ToArray();
+                        Array.Sort(keys, string.CompareOrdinal);
+                        string key = string.Join(",", keys);
+                        if (!seen.Contains(key) && SymmetricPorts(ports)) { seen.Add(key); outSets.Add(ports); }
+                    }
+            return outSets;
+        }
+
+        // ------------------------------------------------------------------ state
+
+        /// <summary>The reveal: stage 1 shows the new ability (the old ports stay), stage 2 the new ports.</summary>
+        public sealed class Reveal
+        {
+            public int Stage, PortSet;
+            public double T;
         }
 
         public int[] Cells = new int[CellCount];
-        /// <summary>Each port as (cell, colour); the cell moves on every tick.</summary>
-        public int[][] Ports;
-        public int Ap, BonusAp, Ticks, Wasted, FreePlace;
+        /// <summary>Each port as (cell, colour); the cells turn on every spin.</summary>
+        public int[][] Ports = new int[0][];
+        public int PortSet = -1;
+        public int Ap, BonusAp, Ticks, Made, Wasted, FreePlace;
         public double Clock;
         public readonly List<int> Battery = new();
-        public int[] Slots;
-        public PendingPick Pick;
-        public int[] Offer;
+        public int[] Slots, Uses;
+        public Reveal RevealState;
+        public DynamoAbility Ability;
         public int Rng;
         public readonly List<DynamoEvent> Events = new();
-        int[][][][] shapes;
+        readonly PatternShapes[] shapes;
 
         public DynamoCore(DynamoSettings s, int seed)
         {
-            Ports = new int[s.Ports.Length][];
-            for (int p = 0; p < s.Ports.Length; p++) Ports[p] = new[] { s.Ports[p][0], s.Ports[p][1] };
             Ap = s.ApPerTick < s.ApBank ? s.ApPerTick : s.ApBank;
-            Slots = (int[])s.Loadout.Clone();
             Rng = seed;
-            shapes = new int[s.Patterns.Count][][][];
+            shapes = new PatternShapes[s.Patterns.Count];
             for (int p = 0; p < s.Patterns.Count; p++) shapes[p] = Shapes(s.Patterns[p].Cells, s.AllowRotatedMatches);
+            Slots = new int[s.SlotCount];
+            Uses = new int[s.SlotCount];
+            for (int k = 0; k < Slots.Length; k++) Slots[k] = -1;
+            for (int k = 0; k < s.SlotCount; k++) Slots[k] = s.Loadout != null && k < s.Loadout.Length ? s.Loadout[k] : DrawPattern(s);
+            SetPorts(s, s.FirstPortSet >= 0 ? s.FirstPortSet : (int)Math.Floor(NextRandom() * s.PortSets.Count));
+            Ability = s.FixedAbility >= 0 ? (DynamoAbility)s.FixedAbility : (DynamoAbility)(int)Math.Floor(NextRandom() * AbilityCount);
+            if (Ability == DynamoAbility.Printer) FreePlace = 1;
             if (s.StartFilled) foreach (var p in Ports) Cells[p[0]] = p[1];
         }
 
+        /// <summary>mulberry32 over the state's own stream, so a replay of the same inputs draws the same cards.</summary>
         double NextRandom()
         {
             unchecked
             {
                 uint a = (uint)Rng + 0x6D2B79F5u;
                 Rng = (int)a;
+                return Mulberry(a);
+            }
+        }
+
+        static double Mulberry(uint a)
+        {
+            unchecked
+            {
                 uint t = (a ^ (a >> 15)) * (1u | a);
                 t = (t + ((t ^ (t >> 7)) * (61u | t))) ^ t;
                 return (t ^ (t >> 14)) / 4294967296.0;
             }
+        }
+
+        /// <summary>A mulberry32 stream as the lab's <c>mulberry32(seed)</c> makes one (the AI's dice).</summary>
+        public static Func<double> Mulberry32(int seed)
+        {
+            uint a = unchecked((uint)seed);
+            return () =>
+            {
+                unchecked { a += 0x6D2B79F5u; }
+                return Mulberry(a);
+            };
+        }
+
+        int PickOther(int n, int not)
+        {
+            if (n <= 1) return 0;
+            int k = (int)Math.Floor(NextRandom() * (n - 1));
+            if (k >= not) k++;
+            return k;
+        }
+
+        // a random pattern not already in a slot
+        int DrawPattern(DynamoSettings s)
+        {
+            var cand = new List<int>();
+            for (int p = 0; p < s.Patterns.Count; p++) if (!s.Patterns[p].Parked && Array.IndexOf(Slots, p) < 0) cand.Add(p);
+            return cand.Count > 0 ? cand[(int)Math.Floor(NextRandom() * cand.Count)] : -1;
+        }
+
+        void SetPorts(DynamoSettings s, int k)
+        {
+            PortSet = k;
+            var set = s.PortSets[k];
+            Ports = new int[set.Length][];
+            for (int p = 0; p < set.Length; p++) Ports[p] = new[] { set[p][0], set[p][1] };
         }
 
         public int PortAt(int cell)
@@ -242,29 +382,48 @@ namespace CosmicShore.Gameplay
             return 0;
         }
 
-        /// <summary>The cells of the first placement of pattern <paramref name="pid"/> the board shows, or null. Placement
-        /// order: rotation, then the anchor cell in index order.</summary>
+        /// <summary>What a cell counts as for completing a pattern: its prism, or (empty) its port's colour.</summary>
+        public int Shows(DynamoSettings s, int i) => Cells[i] != 0 ? Cells[i] : s.PortsCount ? PortAt(i) : 0;
+
+        public int BatteryCap(DynamoSettings s) => s.BatteryCap + (Ability == DynamoAbility.Capacitor ? 2 : 0);
+
+        /// <summary>The ports one spin from now (the Ratel's warning rings).</summary>
+        public int[][] NextPorts() => Ports.Select(p => new[] { Rot60(p[0]), p[1] }).ToArray();
+
+        /// <summary>The cells of the first placement of pattern <paramref name="pid"/> the board shows, or null. A placement
+        /// needs at least one real prism (it goes to the battery). Order: rotations, then mirror images (the Mirror ability),
+        /// each by anchor cell index.</summary>
         public List<int> Match(DynamoSettings s, int pid)
         {
-            var sh = shapes[pid];
-            for (int k = 0; k < sh.Length; k++)
-            {
-                var shape = sh[k];
-                for (int a = 0; a < CellCount; a++)
+            var sets = Ability == DynamoAbility.Mirror ? new[] { shapes[pid].Rot, shapes[pid].Mir } : new[] { shapes[pid].Rot };
+            bool wild = Ability == DynamoAbility.WildCore;
+            foreach (var sh in sets)
+                for (int k = 0; k < sh.Length; k++)
                 {
-                    var cells = new List<int>(shape.Length);
-                    bool ok = true;
-                    for (int c = 0; c < shape.Length; c++)
+                    var shape = sh[k];
+                    for (int a = 0; a < CellCount; a++)
                     {
-                        int i = Index(Q[a] + shape[c][0], R[a] + shape[c][1]);
-                        if (i < 0) { ok = false; break; }
-                        if (Cells[i] == shape[c][2] || (s.CentreWild && i == Centre)) cells.Add(i);
-                        else { ok = false; break; }
+                        var cells = new List<int>(shape.Length);
+                        bool ok = true, real = false;
+                        for (int c = 0; c < shape.Length; c++)
+                        {
+                            int i = Index(Q[a] + shape[c][0], R[a] + shape[c][1]);
+                            if (i < 0) { ok = false; break; }
+                            if (Shows(s, i) == shape[c][2] || (wild && i == Centre)) { cells.Add(i); if (Cells[i] != 0) real = true; }
+                            else { ok = false; break; }
+                        }
+                        if (ok && real) return cells;
                     }
-                    if (ok) return cells;
                 }
-            }
             return null;
+        }
+
+        /// <summary>Each slot's matching cells, or null (the cards that light).</summary>
+        public List<int>[] Built(DynamoSettings s)
+        {
+            var built = new List<int>[Slots.Length];
+            for (int k = 0; k < Slots.Length; k++) built[k] = Slots[k] >= 0 ? Match(s, Slots[k]) : null;
+            return built;
         }
 
         bool SpendAp(int n)
@@ -278,8 +437,9 @@ namespace CosmicShore.Gameplay
 
         void Charge(DynamoSettings s, int colour)
         {
-            if (s.BatteryCap < 1) return;
-            if (Battery.Count >= s.BatteryCap)
+            int cap = BatteryCap(s);
+            if (cap < 1) return;
+            while (Battery.Count >= cap)
             {
                 int old = Battery[0];
                 Battery.RemoveAt(0);
@@ -289,31 +449,28 @@ namespace CosmicShore.Gameplay
             Events.Add(new DynamoEvent { Kind = DynamoEventKind.Charge, Colour = colour });
         }
 
-        void PickCell(DynamoSettings s, int cell, bool auto)
+        // A made pattern sends one of its real prisms, drawn at random, to the battery.
+        void TakeRandom(DynamoSettings s, int slot, int pid, List<int> cells)
         {
-            var pk = Pick;
-            var pat = s.Patterns[pk.Pid];
-            int colour = Cells[cell];
+            var real = new List<int>();
+            foreach (int c in cells) if (Cells[c] != 0) real.Add(c);
+            int cell = real[(int)Math.Floor(NextRandom() * real.Count)], colour = Cells[cell];
             Cells[cell] = 0;
-            Pick = null;
-            Events.Add(new DynamoEvent { Kind = DynamoEventKind.Pick, Slot = pk.Slot, Pid = pk.Pid, Cell = cell, Colour = colour, Auto = auto });
+            Events.Add(new DynamoEvent { Kind = DynamoEventKind.Pick, Slot = slot, Pid = pid, Cell = cell, Colour = colour });
             Charge(s, colour);
-            if (pat.Effect == DynamoPatternEffect.BigRedButton)
-            {
-                int n = 0;
-                for (int i = 0; i < CellCount; i++) if (Cells[i] == colour) { Cells[i] = 0; n++; }
-                Events.Add(new DynamoEvent { Kind = DynamoEventKind.Destroyed, Colour = colour, Count = n });
-            }
-            else if (pat.Effect == DynamoPatternEffect.AmanitaFurnace)
-            {
-                foreach (int c in pk.Cells)
-                    if (c != cell && Cells[c] != 0)
-                    {
-                        Events.Add(new DynamoEvent { Kind = DynamoEventKind.Burned, Cell = c, Colour = Cells[c] });
-                        Cells[c] = 0;
-                        break;
-                    }
-            }
+        }
+
+        /// <summary>Empty cells reachable from <paramref name="from"/> through empty cells (the Long Reach ability's move).</summary>
+        public bool[] Reach(int from)
+        {
+            var seen = new bool[CellCount];
+            var q = new List<int> { from };
+            seen[from] = true;
+            for (int h = 0; h < q.Count; h++)
+                foreach (int v in Neighbours[q[h]])
+                    if (!seen[v] && Cells[v] == 0) { seen[v] = true; q.Add(v); }
+            seen[from] = false;
+            return seen;
         }
 
         static bool InBoard(int i) => i >= 0 && i < CellCount;
@@ -321,20 +478,26 @@ namespace CosmicShore.Gameplay
         /// <summary>One seat input. True when it was legal and applied; an illegal input changes nothing.</summary>
         public bool Apply(DynamoSettings s, DynamoInput inp)
         {
+            if (RevealState != null) return false;   // the clock is stopped while the new ability and ports are shown
             switch (inp.Kind)
             {
                 case DynamoInputKind.Tinker:
-                    if (Pick != null || !InBoard(inp.From) || !InBoard(inp.To)) return false;
-                    if (Cells[inp.From] == 0 || Cells[inp.To] != 0 || !IsNeighbour(inp.From, inp.To)) return false;
+                {
+                    if (!InBoard(inp.From) || !InBoard(inp.To) || inp.From == inp.To || Cells[inp.From] == 0) return false;
+                    bool full = Cells[inp.To] != 0;
+                    if (full && !(Ability == DynamoAbility.Swap && IsNeighbour(inp.From, inp.To))) return false;
+                    if (!full && !IsNeighbour(inp.From, inp.To) && !(Ability == DynamoAbility.LongReach && Reach(inp.From)[inp.To])) return false;
                     if (!SpendAp(1)) return false;
-                    Cells[inp.To] = Cells[inp.From];
-                    Cells[inp.From] = 0;
+                    int a = Cells[inp.From];
+                    Cells[inp.From] = Cells[inp.To];
+                    Cells[inp.To] = a;
                     Events.Add(new DynamoEvent { Kind = DynamoEventKind.Tinker, From = inp.From, To = inp.To });
                     return true;
+                }
                 case DynamoInputKind.Refuel:
                 {
-                    if (Pick != null || !InBoard(inp.Cell) || Cells[inp.Cell] != 0) return false;
-                    if (FreePlace > 0 && inp.Colour >= 1 && inp.Colour <= 3)
+                    if (!InBoard(inp.Cell) || Cells[inp.Cell] != 0) return false;
+                    if (FreePlace > 0 && inp.Colour >= 1 && inp.Colour <= 3)   // the Printer: any empty cell, any colour, no AP
                     {
                         FreePlace--;
                         Cells[inp.Cell] = inp.Colour;
@@ -349,57 +512,113 @@ namespace CosmicShore.Gameplay
                 }
                 case DynamoInputKind.Activate:
                 {
-                    if (Pick != null || inp.Slot < 0 || inp.Slot >= Slots.Length || Slots[inp.Slot] < 0) return false;
-                    int pid = Slots[inp.Slot];
+                    if (inp.Slot < 0 || inp.Slot >= Slots.Length || Slots[inp.Slot] < 0) return false;
+                    int pid = Slots[inp.Slot], cost = Ability == DynamoAbility.FreeFire ? 0 : 1;
                     var cells = Match(s, pid);
-                    if (cells == null || Ap + BonusAp < 1) return false;
-                    SpendAp(1);
-                    var pat = s.Patterns[pid];
-                    Events.Add(new DynamoEvent { Kind = DynamoEventKind.Ability, Slot = inp.Slot, Pid = pid });
-                    if (pat.Effect == DynamoPatternEffect.ChronoCompressor) BonusAp = BonusAp + 1 > s.BonusApCap ? s.BonusApCap : BonusAp + 1;
-                    else if (pat.Effect == DynamoPatternEffect.FiveDPrinter) FreePlace += 2;
-                    else if (pat.Effect == DynamoPatternEffect.AnodeRay) { Charge(s, 1); Charge(s, 2); Charge(s, 3); }
-                    var live = new List<int>();
-                    foreach (int c in cells) if (Cells[c] != 0) live.Add(c);
-                    if (live.Count > 0) Pick = new PendingPick { Slot = inp.Slot, Pid = pid, Cells = live, Timer = s.PickTimeout };
-                    return true;
-                }
-                case DynamoInputKind.Pick:
-                    if (Pick == null || !Pick.Cells.Contains(inp.Cell) || Cells[inp.Cell] == 0) return false;
-                    PickCell(s, inp.Cell, false);
-                    return true;
-                case DynamoInputKind.Research:
-                {
-                    if (Pick != null || Offer != null || inp.Family < 1 || inp.Family > 3) return false;
-                    var cand = new List<int>();
-                    for (int p = 0; p < s.Patterns.Count; p++) if (s.Patterns[p].Family == inp.Family && Array.IndexOf(Slots, p) < 0) cand.Add(p);
-                    if (cand.Count == 0 || !SpendAp(s.ResearchCost)) return false;
-                    var offer = new List<int>();
-                    for (int k = 0; k < 3 && cand.Count > 0; k++)
+                    if (cells == null || Ap + BonusAp < cost) return false;
+                    SpendAp(cost);
+                    Uses[inp.Slot]++;
+                    Made++;
+                    Events.Add(new DynamoEvent { Kind = DynamoEventKind.Ability, Slot = inp.Slot, Pid = pid, Use = Uses[inp.Slot] });
+                    if (Ability == DynamoAbility.Refund) BonusAp = BonusAp + 1 > s.BonusApCap ? s.BonusApCap : BonusAp + 1;
+                    TakeRandom(s, inp.Slot, pid, cells);
+                    if (s.UsesPerPattern > 0 && Uses[inp.Slot] >= s.UsesPerPattern)   // made for the third time: a new pattern
                     {
-                        int j = (int)Math.Floor(NextRandom() * cand.Count);
-                        offer.Add(cand[j]);
-                        cand.RemoveAt(j);
+                        int old = Slots[inp.Slot];
+                        Slots[inp.Slot] = -1;
+                        Slots[inp.Slot] = DrawPattern(s);
+                        Uses[inp.Slot] = 0;
+                        if (Slots[inp.Slot] < 0) Slots[inp.Slot] = old;
+                        Events.Add(new DynamoEvent { Kind = DynamoEventKind.Retire, Slot = inp.Slot, Old = old, Pid = Slots[inp.Slot] });
                     }
-                    Offer = offer.ToArray();
-                    Events.Add(new DynamoEvent { Kind = DynamoEventKind.Offer, Family = inp.Family, Offer = (int[])Offer.Clone() });
+                    if (s.PatternsPerShuffle > 0 && Made % s.PatternsPerShuffle == 0)   // a new ability, then a new port pattern
+                    {
+                        if (s.FixedAbility < 0) Ability = (DynamoAbility)PickOther(AbilityCount, (int)Ability);
+                        if (Ability == DynamoAbility.Printer && FreePlace < 1) FreePlace = 1;
+                        int next = s.PortSets.Count > 1 ? PickOther(s.PortSets.Count, PortSet) : PortSet;
+                        Events.Add(new DynamoEvent { Kind = DynamoEventKind.Shuffle, Ability = Ability, PortSet = next });
+                        RevealState = new Reveal { Stage = 1, T = s.RevealAbility, PortSet = next };
+                        if (!(s.RevealAbility > 0)) RevealStep(s);
+                    }
                     return true;
                 }
-                case DynamoInputKind.Keep:
-                    if (Offer == null || inp.Choice < 0 || inp.Choice >= Offer.Length || inp.Slot < 0 || inp.Slot >= Slots.Length) return false;
-                    Slots[inp.Slot] = Offer[inp.Choice];
-                    Events.Add(new DynamoEvent { Kind = DynamoEventKind.Keep, Slot = inp.Slot, Pid = Offer[inp.Choice] });
-                    Offer = null;
-                    return true;
-                case DynamoInputKind.Discard:
-                    if (Offer == null) return false;
-                    Offer = null;
-                    return true;
             }
             return false;
         }
 
-        /// <summary>A slip spends one charge of its colour from the battery the two seats share.</summary>
+        List<int> EmptyCells()
+        {
+            var e = new List<int>();
+            for (int i = 0; i < CellCount; i++) if (Cells[i] == 0) e.Add(i);
+            return e;
+        }
+
+        /// <summary>A pattern's effect on the Dynamo itself (the Ratel-side cards). Returns how many prisms or charges it
+        /// touched. Runs on the core's own stream, so a replay matches.</summary>
+        public int BoardEffect(DynamoSettings s, DynamoBoardEffect kind, int arg)
+        {
+            int n = 0;
+            switch (kind)
+            {
+                case DynamoBoardEffect.Burn:
+                    for (int k = 0; k < arg; k++)
+                    {
+                        var full = new List<int>();
+                        for (int i = 0; i < CellCount; i++) if (Cells[i] != 0) full.Add(i);
+                        if (full.Count == 0) break;
+                        Cells[full[(int)Math.Floor(NextRandom() * full.Count)]] = 0;
+                        n++;
+                    }
+                    break;
+                case DynamoBoardEffect.Purge:
+                    for (int i = 0; i < CellCount; i++) if (Cells[i] == arg) { Cells[i] = 0; n++; }
+                    break;
+                case DynamoBoardEffect.Free: FreePlace += arg; n = arg; break;
+                case DynamoBoardEffect.Bonus: BonusAp += arg; n = arg; break;
+                case DynamoBoardEffect.Rewind: Clock = Clock > arg ? Clock - arg : 0; break;
+                case DynamoBoardEffect.Unspin:
+                    foreach (var p in Ports) for (int k = 0; k < 5; k++) p[0] = Rot60(p[0]);
+                    Clock = 0;
+                    break;
+                case DynamoBoardEffect.Trio:   // a Ruby, a Jade and a Gold prism on three empty cells that touch each other
+                {
+                    var tris = new List<int[]>();
+                    foreach (int a in EmptyCells())
+                        foreach (int b in Neighbours[a])
+                            if (b > a && Cells[b] == 0)
+                                foreach (int c in Neighbours[b])
+                                    if (c > b && Cells[c] == 0 && IsNeighbour(a, c)) tris.Add(new[] { a, b, c });
+                    if (tris.Count == 0) break;
+                    var t = tris[(int)Math.Floor(NextRandom() * tris.Count)];
+                    int first = 1 + (int)Math.Floor(NextRandom() * 3);
+                    for (int k = 0; k < 3; k++) Cells[t[k]] = 1 + (first - 1 + k) % 3;
+                    n = 3;
+                    break;
+                }
+                case DynamoBoardEffect.Scatter:
+                    for (int k = 0; k < arg; k++)
+                    {
+                        var empty = EmptyCells();
+                        var e = empty.Where(i => PortAt(i) == 0).ToList();
+                        var pool = e.Count > 0 ? e : empty;
+                        if (pool.Count == 0) break;
+                        int cell = pool[(int)Math.Floor(NextRandom() * pool.Count)];
+                        int colour = 1 + (int)Math.Floor(NextRandom() * 3);
+                        Cells[cell] = colour;
+                        n++;
+                    }
+                    break;
+                case DynamoBoardEffect.Charge: Charge(s, arg); n = 1; break;
+                case DynamoBoardEffect.Drain: n = Battery.Count; Battery.Clear(); break;
+                case DynamoBoardEffect.DrainOne:
+                    if (Battery.Count > 0) { Battery.RemoveAt(0); n = 1; }
+                    break;
+            }
+            Events.Add(new DynamoEvent { Kind = DynamoEventKind.Effect, Effect = kind, Count = n });
+            return n;
+        }
+
+        /// <summary>The battery is shared with the pilot: a slip spends one charge of its colour.</summary>
         public bool Spend(int colour)
         {
             int i = Battery.IndexOf(colour);
@@ -408,47 +627,45 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        public int DrainAll()
-        {
-            int n = Battery.Count;
-            Battery.Clear();
-            return n;
-        }
-
+        // The spin: the port pattern turns 60 degrees clockwise as one piece; the prisms stay where they are.
         void Tick(DynamoSettings s)
         {
-            if (s.RotateWholeEngine)
-            {
-                var next = new int[CellCount];
-                for (int i = 0; i < CellCount; i++) next[Rot60(i)] = Cells[i];
-                Cells = next;
-                foreach (var p in Ports) p[0] = Rot60(p[0]);
-                if (Pick != null) for (int c = 0; c < Pick.Cells.Count; c++) Pick.Cells[c] = Rot60(Pick.Cells[c]);
-            }
-            else
-            {
-                foreach (var p in Ports) p[0] = StepClockwise(p[0]);
-            }
-            int before = Ap, cap = s.ApBank;
-            Ap = before + s.ApPerTick > cap ? (before > cap ? before : cap) : before + s.ApPerTick;
-            Wasted += before + s.ApPerTick - Ap;
+            foreach (var p in Ports) p[0] = Rot60(p[0]);
+            int over = Ability == DynamoAbility.Overclock ? 1 : 0, gain = s.ApPerTick + over, cap = s.ApBank + over;
+            int before = Ap;
+            Ap = before + gain > cap ? (before > cap ? before : cap) : before + gain;
+            Wasted += before + gain - Ap;
+            if (Ability == DynamoAbility.Printer && FreePlace < 2) FreePlace++;
             Ticks++;
-            Events.Add(new DynamoEvent { Kind = DynamoEventKind.Tick, Count = Ticks });
+            Events.Add(new DynamoEvent { Kind = DynamoEventKind.Tick, Count = Ticks, Ap = gain });
         }
 
-        /// <summary>Advance the Dynamo clock by <paramref name="dt"/> seconds of match time.</summary>
+        // The reveal: stage 1 shows the new ability (the old ports stay), stage 2 the new ports; then the spin clock restarts.
+        void RevealStep(DynamoSettings s)
+        {
+            var rv = RevealState;
+            if (rv.Stage == 1)
+            {
+                SetPorts(s, rv.PortSet);
+                Events.Add(new DynamoEvent { Kind = DynamoEventKind.Ports, PortSet = rv.PortSet });
+                rv.Stage = 2;
+                rv.T = s.RevealPorts;
+                if (rv.T > 0) return;
+            }
+            RevealState = null;
+            Clock = 0;
+            Events.Add(new DynamoEvent { Kind = DynamoEventKind.Resume });
+        }
+
+        /// <summary>Advance the Dynamo clock by <paramref name="dt"/> seconds of match time. It stands still during a
+        /// reveal.</summary>
         public void Advance(DynamoSettings s, double dt)
         {
-            if (Pick != null)
+            if (RevealState != null)
             {
-                Pick.Timer -= dt;
-                if (Pick.Timer <= 0)
-                {
-                    int fam = s.Patterns[Pick.Pid].Family;
-                    int cell = Pick.Cells[0];
-                    foreach (int c in Pick.Cells) if (Cells[c] == fam) { cell = c; break; }
-                    PickCell(s, cell, true);
-                }
+                RevealState.T -= dt;
+                while (RevealState != null && RevealState.T <= 0) RevealStep(s);
+                return;
             }
             Clock += dt;
             while (Clock >= s.TickSeconds)
@@ -467,13 +684,206 @@ namespace CosmicShore.Gameplay
             for (int p = 0; p < Ports.Length; p++) { if (p > 0) sb.Append(','); sb.Append(Ports[p][0]).Append(':').Append(Ports[p][1]); }
             sb.Append('|').Append(Ap).Append('+').Append(BonusAp).Append('|');
             foreach (int b in Battery) sb.Append(b);
-            sb.Append('|').Append(string.Join(",", Slots)).Append('|');
-            sb.Append(Pick != null ? Pick.Slot + ":" + string.Join(".", Pick.Cells) : "-").Append('|');
-            sb.Append(FreePlace).Append('|');
-            sb.Append(Offer != null ? string.Join(".", Offer) : "-").Append('|');
-            sb.Append(Ticks).Append('|').Append(Wasted).Append('|').Append(unchecked((uint)Rng));
+            sb.Append('|').Append(string.Join(",", Slots)).Append('/').Append(string.Join(",", Uses)).Append('|');
+            sb.Append(RevealState != null ? RevealState.Stage + ":" + RevealState.PortSet : "-").Append('|');
+            sb.Append(FreePlace).Append('|').Append(AbilityKeys[(int)Ability]).Append('|');
+            sb.Append(Ticks).Append('|').Append(Made).Append('|').Append(Wasted).Append('|').Append(unchecked((uint)Rng));
             return sb.ToString();
         }
+
+        // ------------------------------------------------------------------ the Engineer AI (input-only)
+
+        /// <summary>One way to make a pattern: its cells, the AP it still needs and the first input of each fix.</summary>
+        public sealed class Placement
+        {
+            public List<int> Cells;
+            public double Total;
+            public List<Fix> Fixes;
+            public int Pid;
+            public string Key;
+        }
+
+        public struct Fix
+        {
+            public double Cost;
+            public DynamoInput First;
+        }
+
+        /// <summary>The placement the AI is building, kept between its thoughts so it does not swap plans (and move the same
+        /// prism back and forth) over a small saving.</summary>
+        public sealed class AIMemo
+        {
+            public string Key = "";
+        }
+
+        Placement PlacementCost(DynamoSettings s, int[][] shape, int a, bool[] locked)
+        {
+            var cells = new List<int>(shape.Length);
+            var need = new List<int>(shape.Length);
+            for (int c = 0; c < shape.Length; c++)
+            {
+                int i = Index(Q[a] + shape[c][0], R[a] + shape[c][1]);
+                if (i < 0) return null;
+                cells.Add(i);
+                need.Add(shape[c][2]);
+            }
+            double total = 0;
+            bool real = false;
+            var fixes = new List<Fix>();
+            var onPorts = new List<int>();
+            for (int c = 0; c < cells.Count; c++)
+            {
+                int i = cells[c], want = need[c];
+                if (Cells[i] == want || (Ability == DynamoAbility.WildCore && i == Centre)) { if (Cells[i] != 0) real = true; continue; }
+                if (Cells[i] == 0 && s.PortsCount && PortAt(i) == want) { onPorts.Add(i); continue; }
+                var fix = CellFix(s, i, want, cells, locked);
+                if (fix == null) return null;
+                total += fix.Value.Cost;
+                fixes.Add(fix.Value);
+                real = true;
+            }
+            // An empty port only counts until the spin moves it. If the pattern cannot be finished (and made) before the
+            // spin, inject at those ports now so the prisms stay when the ports turn away.
+            int apNow = Ap + BonusAp;
+            double actions = total + (Ability == DynamoAbility.FreeFire ? 0 : 1), timeLeft = s.TickSeconds - Clock;
+            bool durable = onPorts.Count > 0 && (actions > apNow || actions * 0.5 > timeLeft);
+            if (durable)
+                foreach (int i in onPorts) { fixes.Add(new Fix { Cost = 1, First = DynamoInput.Refuel(i) }); total += 1; real = true; }
+            if (!real)   // every cell is an empty port: put one real prism on one of them
+            {
+                if (onPorts.Count == 0) return null;
+                fixes.Add(new Fix { Cost = 1, First = DynamoInput.Refuel(onPorts[0]) });
+                total += 1;
+            }
+            return new Placement { Cells = cells, Total = total, Fixes = fixes };
+        }
+
+        // The cheapest way to make cell i show colour `want`, and that way's first input.
+        Fix? CellFix(DynamoSettings s, int i, int want, List<int> inPlacement, bool[] locked)
+        {
+            int extra = 0;
+            DynamoInput? clear = null;
+            if (Cells[i] != 0)   // a wrong prism sits there: move it aside first (or swap a right one in)
+            {
+                if (Ability == DynamoAbility.Swap)
+                    foreach (int n in Neighbours[i])
+                        if (Cells[n] == want && !locked[n]) return new Fix { Cost = 1, First = DynamoInput.Tinker(n, i) };
+                extra = 1;
+                foreach (int n in Neighbours[i]) if (Cells[n] == 0 && !inPlacement.Contains(n)) { clear = DynamoInput.Tinker(i, n); break; }
+                if (clear == null) foreach (int n in Neighbours[i]) if (Cells[n] == 0) { clear = DynamoInput.Tinker(i, n); break; }
+                if (clear == null) return null;
+                if (s.PortsCount && PortAt(i) == want) return new Fix { Cost = 1, First = clear.Value };   // cleared, the port shows the colour
+            }
+            if (FreePlace > 0 && Cells[i] == 0) return new Fix { Cost = 0.5, First = DynamoInput.Refuel(i, want) };
+            var dist = new int[CellCount];
+            for (int k = 0; k < CellCount; k++) dist[k] = -1;
+            var queue = new List<int> { i };
+            dist[i] = 0;
+            for (int h = 0; h < queue.Count; h++)
+            {
+                int u = queue[h];
+                foreach (int v in Neighbours[u]) if (dist[v] < 0 && Cells[v] == 0) { dist[v] = dist[u] + 1; queue.Add(v); }
+            }
+            bool longReach = Ability == DynamoAbility.LongReach;
+            Fix? best = null;
+            if (PortAt(i) == want) best = new Fix { Cost = 1, First = DynamoInput.Refuel(i) };
+            for (int m = 0; m < CellCount; m++)
+            {
+                if (Cells[m] != want || m == i || locked[m]) continue;
+                int bn = -1;
+                foreach (int n in Neighbours[m]) if (dist[n] >= 0 && (bn < 0 || dist[n] < dist[bn])) bn = n;
+                if (bn < 0) continue;
+                double cost = longReach ? 1 : dist[bn] + 1;
+                if (best == null || cost < best.Value.Cost)
+                    best = new Fix { Cost = cost, First = DynamoInput.Tinker(m, longReach && Cells[i] == 0 ? i : bn) };
+            }
+            foreach (var p in Ports)
+            {
+                if (p[1] != want || p[0] == i || dist[p[0]] < 0 || Cells[p[0]] != 0) continue;
+                double cost = 1 + (longReach ? 1 : dist[p[0]]);
+                if (best == null || cost < best.Value.Cost) best = new Fix { Cost = cost, First = DynamoInput.Refuel(p[0]) };
+            }
+            if (best == null) return null;
+            return new Fix { Cost = best.Value.Cost + extra, First = clear ?? best.Value.First };
+        }
+
+        /// <summary>Every way to make a pattern in a slot, cheapest first (ties by pattern index, then scan order).</summary>
+        public List<Placement> BestPlacements(DynamoSettings s, int top)
+        {
+            var found = new List<Placement>();
+            for (int sl = 0; sl < Slots.Length; sl++)
+            {
+                int pid = Slots[sl];
+                if (pid < 0) continue;
+                var sets = Ability == DynamoAbility.Mirror ? shapes[pid].Rot.Concat(shapes[pid].Mir).ToArray() : shapes[pid].Rot;
+                for (int k = 0; k < sets.Length; k++)
+                    for (int a = 0; a < CellCount; a++)
+                    {
+                        var shape = sets[k];
+                        var locked = new bool[CellCount];
+                        bool inBoard = true;
+                        foreach (var c in shape)
+                        {
+                            int i = Index(Q[a] + c[0], R[a] + c[1]);
+                            if (i < 0) { inBoard = false; break; }
+                            if (Cells[i] == c[2]) locked[i] = true;
+                        }
+                        if (!inBoard) continue;
+                        var pl = PlacementCost(s, shape, a, locked);
+                        if (pl != null) { pl.Pid = pid; pl.Key = pid + ":" + k + ":" + a; found.Add(pl); }
+                    }
+            }
+            // a STABLE sort, as the lab's Array.prototype.sort is
+            var sorted = found.OrderBy(x => x.Total).ThenBy(x => x.Pid).ToList();
+            return top > 0 && sorted.Count > top ? sorted.GetRange(0, top) : sorted;
+        }
+
+        public List<DynamoInput> LegalInputs()
+        {
+            var legal = new List<DynamoInput>();
+            for (int i = 0; i < CellCount; i++)
+                if (Cells[i] != 0)
+                    foreach (int n in Neighbours[i]) if (Cells[n] == 0) legal.Add(DynamoInput.Tinker(i, n));
+            foreach (var p in Ports) if (Cells[p[0]] == 0) legal.Add(DynamoInput.Refuel(p[0]));
+            return legal;
+        }
+
+        /// <summary>The Engineer AI: input-only. ONE input (or null) from the state it sees; the caller paces it.
+        /// <paramref name="rnd"/> is the AI's own dice; <paramref name="memo"/> (optional) keeps the placement it is
+        /// building.</summary>
+        public DynamoInput? AIPlan(DynamoSettings s, DynamoAISkill prm, Func<double> rnd, AIMemo memo)
+        {
+            if (RevealState != null) return null;
+            bool free = Ability == DynamoAbility.FreeFire;
+            if (Ap + BonusAp < 1 && FreePlace < 1 && !free) return null;
+            if (free || Ap + BonusAp >= 1)
+                for (int sl = 0; sl < Slots.Length; sl++)
+                    if (Slots[sl] >= 0 && Match(s, Slots[sl]) != null) return DynamoInput.Activate(sl);
+            if (Ap + BonusAp < 1 && FreePlace < 1) return null;
+            if (prm.Blunder > 0 && rnd() < prm.Blunder)
+            {
+                var legal = LegalInputs();
+                if (legal.Count > 0) return legal[(int)Math.Floor(rnd() * legal.Count)];
+            }
+            var all = BestPlacements(s, 0);
+            if (all.Count == 0) return null;
+            Placement pl = null;
+            if (memo != null && !string.IsNullOrEmpty(memo.Key))
+                foreach (var x in all)
+                    if (x.Key == memo.Key) { if (x.Total <= all[0].Total + 1.5) pl = x; break; }
+            if (pl == null)
+            {
+                int n = Math.Min(all.Count, Math.Max(1, prm.Top));
+                pl = all[prm.Top > 1 ? (int)Math.Floor(rnd() * n) : 0];
+            }
+            if (memo != null) memo.Key = pl.Key;
+            Fix? fix = null;
+            foreach (var f in pl.Fixes) if (fix == null || f.Cost < fix.Value.Cost) fix = f;
+            if (fix != null && Ap + BonusAp < 1 && !(fix.Value.First.Kind == DynamoInputKind.Refuel && fix.Value.First.Colour != 0)) return null;
+            return fix?.First;
+        }
+
+        // ------------------------------------------------------------------ the Slip
 
         static SlipVec Sub(SlipVec a, SlipVec b) => new(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
         static double Dot(SlipVec a, SlipVec b) => a.X * b.X + a.Y * b.Y + a.Z * b.Z;
