@@ -1671,7 +1671,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
 
 ### T-20261021-f05e · open · decision · Crew vessels
-- **Task:** Decide how the Ratel seat goes online (today the Dynamo, its AI and the effects run on the hull's local machine), and when the 8 parked trigger-upgrade cards come back (they need the Sparrow's guns to take upgrades).
+- **Task:** Decide how the Ratel seat goes online (today the Dynamo, its AI and the effects run on the hull's local machine). (Round 6 parks no card: the trigger cards are the upgrades of Peck and Flit.)
 - **Done when:** Garrett picks a networking plan and a plan for the parked cards
 - **Who can take it:** Garrett with Yash (multiplayer)
 - **Added:** 2026-10-21 by Garrett (Claude session) (`claude/honeyguide-ratel`)
