@@ -1165,6 +1165,7 @@ namespace CosmicShore.Gameplay
             foreach (var p in _query)
             {
                 if (!p || p.destroyed || p.Domain == own || p.prismProperties is not { IsSuperShielded: true }) continue;
+                if (p.DeflectsSilenced(_status?.PlayerName, 0f)) continue;   // VesselSilence
                 p.DeactivateShields((p.transform.position - centre).normalized * 20f);
             }
         }

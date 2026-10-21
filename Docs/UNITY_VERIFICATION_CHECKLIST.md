@@ -13037,6 +13037,25 @@ compile clean; Amoebius builds.
    against `Assets/_SO_Assets/Audio/Soundtrack.asset`.
 4. Arena: every card's hull chips show the vessel icons, no white squares.
 
+## 🔴 2026-10-20 — The Starlings, vessel class 21 (`claude/project-thread-ytyab2`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session. `R_VesselActions/STARLING.md`. New: `StarlingRules`, `StarlingSwarmExecutor`, `StarlingVesselTransformer`,
+`StarlingAnimation`, `StarlingActionSO`, `StarlingConfigSO`, `StarlingCardDeckSO`, `StarlingHUDView`, `StarlingHUDController`, `Starling.prefab`,
+`StarlingHUDVariant.prefab`, `Starling.fbx`; changed `VesselClassType` (Starling = 21), `ToyVesselRoster`, the class lists, the
+prefab container and `DefaultNetworkPrefabs`. Reference compile clean; `author_starling_assets.py --check` OK;
+`starling_rules_parity/run.sh --self-test` 10/10.
+1. Let Unity import: `Starling.fbx` imports with four blend shapes (Charge, Mass, Space, Time); no missing-script or
+   missing-reference warnings on `Starling.prefab` or `StarlingHUDVariant.prefab`.
+2. Test Runner: `StarlingRulesTests`, `EnumIntegrityTests` and the Toybox roster coverage tests pass.
+3. Toybox (freestyle) > Vessel Changer > Starling: about 24 starlings appear and roam; the carrier hull is hidden; the left
+   stick turns the view and it stops when let go.
+4. Watch a cycle: the phase line counts down Omnicrystal 30 s, Elemental crystals, Opposing vessels, Opposing mass. When
+   the Omnicrystal phase ends four cards show names and levels over the ability row; A/B/X/Y pick Mass/Time/Charge/Space,
+   and the picked element's gauge rises.
+5. The starlings collect crystals (score and elements move) and bite rival-domain prisms; with an AI rival, nips land as
+   petal hits only. The swarm never drops below 6.
+6. Console: no errors and no per-frame logs while the Starlings flies.
+
 ## 🔴 2026-10-21 — The Thresher spawns in Mass Mode (`cece/youthful-johnson-hccyzf`) - NOT EDITOR-VERIFIED
 
 Garrett: "the default mode for thresher should be mass mode." `ThresherExecutor.Initialize` now sets `_massMode = true`
@@ -13071,6 +13090,25 @@ files). No editor or `unity` CLI in the session, so `/verify-unity` did not run.
    every time. With RT held it slows hard and the ball overtakes and leads; with RT released the ball swings round
    like a pendulum. Neither may turn the ship. If a 180 still happens, note the Time level, RT, and whether the
    crosshair was up when LT was let go.
+
+## 🔴 2026-10-21 — The Starlings: objective card, zoom/roll, card details (`claude/project-thread-ytyab2`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session. `R_VesselActions/STARLING.md` §1 and §5. Changed `StarlingVesselTransformer`, `StarlingSwarmExecutor`,
+`StarlingActionSO`, `StarlingRules` (`StarlingPilotControls`, `StarlingPickPress`), `StarlingConfigSO`, `StarlingHUDView`,
+`StarlingHUDController`, `CoreAbility` (`Objective = 3`), `VesselHUDView.CoreAbilityDisplayOrder`, `AbilityLockupView` (core cards
+pack against the elemental row). Reference compile clean (player; editor: the 3 known errors only); rules harness 17/17.
+1. Toybox > Vessel Changer > Starlings: a card LEFT of the omnicrystal card shows a gem in the Omnicrystal phase, and it
+   drains from the top as the phase counts down. The glyph changes each phase (shards, crosshair, blocks).
+2. Squirrel and any other hull: the ability row looks exactly as before (the drift and omni cards in the same places).
+3. Pad: both sticks the same way turn the view; spread the sticks apart (x) to zoom in, squeeze to zoom out; one stick up
+   and the other down rolls the camera. A resting pad does not drift. Zoom stops at near/far limits.
+4. Phone: one thumb turns the view; pinch zooms with the fingers; two-finger spin rolls with the fingers.
+5. When a hand is dealt: tap A/B/X/Y picks on release. Hold a trigger and press a pick, or hold a pick ~0.5 s: a LARGE
+   card in the middle of the screen shows the element glyph, the card's name, level, text, numbers and next jolt; letting
+   go hides it and picks nothing. Long-press a card on a phone: same. (Round 3, 2026-10-21: it was a panel above the
+   header that never showed on Garrett's screen.)
+6. Swap to another vessel after zooming: its camera is back at its own distance.
+7. The objective glyphs: the game's omnicrystal icon, the four petals as a flower, the crosshair, prism blocks with an X.
 
 ## 🔴 2026-10-21 — App shell pad buttons: Select toggles freestyle, Start opens Settings (`claude/project-thread-i9ydba`) - NOT EDITOR-VERIFIED
 

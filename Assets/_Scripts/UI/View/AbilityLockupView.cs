@@ -376,6 +376,16 @@ namespace CosmicShore.UI
             // The NON-elemental cards first, at NEGATIVE slot indices, so they land one pitch further
             // left per card and the elemental columns never move. A vessel that binds none of them
             // (every vessel but the Squirrel today) emits nothing at all here.
+            // A core card is DROPPED entirely only when the fleet has nothing to say about it:
+            // no art, no meter and no emblem. The omni crystal card always has an emblem, so
+            // every vessel draws it - locked where that hull has no omni ability yet, which is
+            // the honest state and what a locked card is for. The cards that are drawn pack
+            // against the elemental row, so a hull that binds only some of them shows no hole.
+            bool Present(CoreAbility a) =>
+                (hudView.TryGetCoreAbilityIcon(a, out var probeIcon) && probeIcon) ||
+                (hudView.TryGetCoreAbilityEmblem(a, out var probeEmblem) && probeEmblem) ||
+                (style && style.EmblemFor(a));
+
             int coreCount = 0;
             for (int i = 0; i < coreOrder.Length; i++)
             {
@@ -383,10 +393,6 @@ namespace CosmicShore.UI
                 var emblemSprite = style ? style.EmblemFor(ability) : null;
                 hudView.TryGetCoreAbilityEmblem(ability, out var emblem);
 
-                // A core card is DROPPED entirely only when the fleet has nothing to say about it:
-                // no art, no meter and no emblem. The omni crystal card always has an emblem, so
-                // every vessel draws it - locked where that hull has no omni ability yet, which is
-                // the honest state and what a locked card is for.
                 bool hasIcon = hudView.TryGetCoreAbilityIcon(ability, out var icon) && icon;
                 if (!hasIcon && !emblem && !emblemSprite) continue;
 
@@ -395,8 +401,11 @@ namespace CosmicShore.UI
                     : ResolveLockedHost(row, ability.ToString());
                 if (!host || host == row) continue;
 
-                // The LAST entry in the display order sits nearest Charge: index -1, then -2 leftward.
-                PlaceHost(row, host, -(coreOrder.Length - i), order.Length);
+                // The LAST drawn entry in the display order sits nearest Charge: index -1, then -2 leftward.
+                int drawnAfter = 0;
+                for (int j = i + 1; j < coreOrder.Length; j++)
+                    if (Present(coreOrder[j])) drawnAfter++;
+                PlaceHost(row, host, -(drawnAfter + 1), order.Length);
 
                 var slot = BuildSlot($"AbilityLockup_{ability}", host, hasIcon ? icon : null,
                                      Element.None, emblem, emblemSprite);
