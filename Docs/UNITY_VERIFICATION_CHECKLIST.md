@@ -65,6 +65,44 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Orca round 5: a gun per gunner seat, a missile magazine per seat, a shield that drops; crew cameras get post-processing (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-21. Design: `Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md` ("The three guns"); lab round 5
+(`Docs/Studios/CREW_OF_FOUR_LAB.md` §4). No Unity Editor or `unity` CLI in the session, so `/verify-unity` did not run.
+What did run:
+- the reference compile (player: no project errors; editor: none in changed files);
+- the lab parity gate (now with 1500 fast-gun steps);
+- `author_orca_assets.py --check` / `--self-test`;
+- 17 core tests under .NET;
+- the static gate battery.
+
+Affects Garrett's crew vessels (the Wrasse's kite camera).
+
+**Verify in editor:**
+1. **Post-processing.** Fly the **Wrasse** and take the kite seat (2). The kite view now has bloom and the game's
+   colour, as the pilot view does. Fly the **Orca** and take seat 2: the turret and missile views have bloom too.
+2. **Shield.** At the Orca's helm, the left trigger (or E, pad B) raises a ring of **white super-shielded** prisms that
+   ride with the hull, open ahead.
+   - About 4 s later each turns red (a **danger prism**) where it stands, and stays about 20 s, then goes.
+   - A rival's missile or rounds burst on the carried ring without breaking it.
+   - No prisms are left behind after a seat change or a Vessel Changer swap away from the Orca.
+3. **Sniper (seat 2 key, gunner 1).** Fire (left click / Space / RT) draws a long domain-coloured beam.
+   - Every hostile prism in its thin cone dies, including a super-shielded one (try a Skim Race track wall).
+   - A rival hull in the cone sheds crystals.
+   - The seat line shows a 12 s countdown.
+4. **Fast gun (key 3, gunner 2).** Hold Fire: Sparrow rounds stream at 30/s and break hostile prisms. Our own trail
+   and shield are spared.
+   - After ~6 s the seat line says "overheated"; firing stops for ~5 s.
+5. **Bomb (key 4, gunner 3).** Fire throws a red spiked bomb that cruises.
+   - Fire again bursts it, as does a hostile prism or a rival hull. It also bursts on its own after 4 s.
+   - **Our own hull is never pushed.**
+6. **Missiles per seat.** Missile (right click / F / A) launches one of that seat's missiles; the Charge card shows
+   the seat's count (all three seats' at the helm).
+   - Fly a missile through an omni crystal: every seat gains one, up to 4.
+7. Clean console in play mode: no NRE from `OrcaCrew`, and no pool errors from `OrcaFastGun` / `OrcaBombGun`.
+
+---
+
 ### 🔴 The Orca, the 4-seat vessel: helm, three stabilized gunner turrets, flown missiles (`cece/happy-noether-m54hz6`, 2026-10-20) — NOT EDITOR-VERIFIED
 
 `VesselClassType.Orca = 20`, card "Orca · 4 seat" (`Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md`). No Unity

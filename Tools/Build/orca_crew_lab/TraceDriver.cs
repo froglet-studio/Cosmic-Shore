@@ -73,6 +73,22 @@ public static class TraceDriver
         OrcaCrewCore.ShieldDirections(144, openDeg, dirs);
         Sb.Append("\"shield\":[");
         for (int i = 0; i < dirs.Count; i++) { if (i > 0) Sb.Append(','); Vec(dirs[i]); }
+        Sb.Append("],");
+
+        // E. the fast gun's rate and heat over a scripted trigger (held 7 s, off 1 s, held 9 s, off 6 s, held 2 s)
+        var rapidArgs = (Environment.GetEnvironmentVariable("ORCA_RAPID") ?? "30,6,5").Split(',');
+        float rate = float.Parse(rapidArgs[0], CultureInfo.InvariantCulture), heat = float.Parse(rapidArgs[1], CultureInfo.InvariantCulture),
+              cool = float.Parse(rapidArgs[2], CultureInfo.InvariantCulture);
+        var gun = new OrcaFastGun();
+        Sb.Append("\"rapid\":[");
+        for (int i = 0; i < 25 * 60; i++)
+        {
+            float sec = i * Dt;
+            bool hold = sec < 7f || (sec >= 8f && sec < 17f) || sec >= 23f;
+            int n = gun.Step(hold, Dt, rate, heat, cool);
+            if (i > 0) Sb.Append(',');
+            Sb.Append('['); Sb.Append(n); Sb.Append(','); Num(gun.Heat); Sb.Append(','); Sb.Append(gun.Hot ? 1 : 0); Sb.Append(']');
+        }
         Sb.Append("]}");
         Console.WriteLine(Sb.ToString());
         return 0;

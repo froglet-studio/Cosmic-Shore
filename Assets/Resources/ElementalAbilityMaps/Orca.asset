@@ -16,7 +16,7 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: 'Flown Missiles'
-    AbilityDescription: 'Three gunners launch missiles from one shared magazine and fly them by hand; Charge makes them faster and sharper. Omni crystals refill the magazine. The card counts the missiles left.'
+    AbilityDescription: 'Each gunner launches missiles from its own magazine and flies them by hand; Charge makes them faster and sharper. An omni crystal gives every gunner a missile. The card counts your missiles.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -25,7 +25,7 @@ MonoBehaviour:
     UpgradeDescription: 
   - Element: 3
     AbilityLabel: 'Burst'
-    AbilityDescription: 'A missile bursts on contact, after five seconds, or when its gunner presses Release again; Space widens the blast. The card flashes on every burst.'
+    AbilityDescription: 'A missile bursts on contact, after five seconds, or when its gunner presses Missile again, and the third gunner''s bomb bursts the same way; Space widens both blasts. The card flashes on every burst.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -34,7 +34,7 @@ MonoBehaviour:
     UpgradeDescription: 
   - Element: 2
     AbilityLabel: 'Danger Shield'
-    AbilityDescription: 'The helm rings the hull in danger prisms, open ahead, on the left trigger; Mass holds the ring longer. The card shows its recharge.'
+    AbilityDescription: 'The helm rings the hull in super-shielded prisms, open ahead, on the left trigger; they ride with the hull, then drop where they are as danger prisms. Mass carries the ring longer. The card shows its recharge.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4

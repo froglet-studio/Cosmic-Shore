@@ -15,13 +15,17 @@ namespace CosmicShore.Gameplay
     /// every other (Garrett, 2026-10-20: "this vessel always has 4 players (AI if not people)").
     /// <list type="bullet">
     /// <item><b>Helm</b> (seat 0): flies the hull with two thumbs (the hull's own <c>VesselTransformer</c>), boosts on the
-    /// right trigger while a tank lasts, and raises a <b>shield</b> on the left trigger: danger prisms on a shell round
-    /// the hull with the forward cone open, riding with it for a few seconds.</item>
+    /// right trigger while a tank lasts, and raises a <b>shield</b> on the left trigger: prisms on a shell round the hull
+    /// with the forward cone open, riding with it as SUPER-SHIELDED prisms for a few seconds, then each turning into a
+    /// danger prism where it is and staying (round 5, Garrett 2026-10-21).</item>
     /// <item><b>Gunners</b> (seats 1-3): first-person turrets on outriggers, gyro-stabilized (round 4: the aim lives in
-    /// the world, the view's horizon is held and eased back to the hull's up). Release launches a missile from the
-    /// hull's shared magazine and hands the gunner its controls; it bursts on contact, at its 5 s fuse or on a second
-    /// Release (<c>AOEExplosion</c>), and collects any crystal it flies through for the hull. Omni crystals refill the
-    /// magazine (<see cref="OrcaOmniCrystalEffectSO"/>).</item>
+    /// the world, the view's horizon is held and eased back to the hull's up). Each seat has a <b>gun</b> and its own
+    /// <b>missiles</b> (round 5). Fire shoots the seat's gun: gunner 1 the Serpent's sniper shot (every hostile prism in a
+    /// thin cone dies, super-shielded ones included), gunner 2 the Brittle Star's rounds (overheats), gunner 3 the
+    /// Grizzly's bomb without its self-launch. Missile launches one of the seat's missiles and hands the gunner its
+    /// controls; it bursts on contact, at its 5 s fuse or on a second press (<c>AOEExplosion</c>), and collects any
+    /// crystal it flies through for the hull. An omni crystal gives every seat a missile
+    /// (<see cref="OrcaOmniCrystalEffectSO"/>).</item>
     /// </list>
     /// The rules are <see cref="OrcaCrewCore"/>'s, held to the lab page by <c>Tools/Build/orca_crew_lab/parity.cjs</c>;
     /// this is the glue to the scene.
@@ -41,6 +45,12 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Every number of the crew; each field names the Crew of Four Lab key it came from.")]
         [SerializeField] OrcaCrewConfigSO config;
+        [Tooltip("Gunner 2's fast gun: a Gun with its own pool of the Sparrow's rounds (OrcaFastGun on the prefab). The rounds' own impact container damages prisms and scores bullet hits.")]
+        [SerializeField] Gun fastGun;
+        [Tooltip("Gunner 3's bomb gun: a Gun with its own pool of the Grizzly's bombs (OrcaBombGun on the prefab).")]
+        [SerializeField] Gun bombGun;
+
+        public const int SniperSeat = 1, FastGunSeat = 2, BombSeat = 3;
 
         /// <summary>Every crew live this frame, so a helm can see rival missiles closing and missiles can meet.</summary>
         static readonly List<OrcaCrew> Live = new();
@@ -72,7 +82,19 @@ namespace CosmicShore.Gameplay
         readonly Target[] _targets = new Target[Seats];
         readonly float[] _retargetAt = new float[Seats];
         OrcaFrame _pod;
-        OrcaMagazine _mag;
+        readonly OrcaMagazine[] _mags = new OrcaMagazine[Seats];
+        readonly float[] _gunCd = new float[Seats];
+        readonly OrcaFastGun _fast = new();
+        Projectile _bomb;
+        float _bombAge;
+        Vector3 _bombPrev;
+        bool _bombStruck;
+        readonly List<Transform> _vesselScratch = new();
+        readonly List<int> _virtualIds = new();
+        readonly List<Prism> _dropped = new();
+        readonly List<float> _droppedBorn = new();
+        readonly List<float> _droppedUntil = new();
+        float _droppedCheckAt;
 
         readonly List<Prism> _shield = new();
         readonly List<float> _shieldBorn = new();
@@ -86,6 +108,8 @@ namespace CosmicShore.Gameplay
         float _touchStart;
         Vector2 _touchFrom;
         bool _touchMoved;
+        float _lastTapAt = -9f;
+        Vector2 _lastTapAt2;
 
         // ------------------------------------------------------------------ read by the HUD and the view
 
@@ -93,10 +117,31 @@ namespace CosmicShore.Gameplay
         /// <summary>True while the local person rides this hull (and the HUD should read it).</summary>
         public bool HumanAboard => _mode == Mode.LocalHuman;
         public int HumanSeat => _humanSeat;
-        public int Missiles => _mag?.Count ?? 0;
+        /// <summary>The missiles the HUD shows: the person's own seat's, or all three seats' at the helm.</summary>
+        public int Missiles => _humanSeat > Helm ? MissilesAt(_humanSeat) : MissilesAt(1) + MissilesAt(2) + MissilesAt(3);
+        public int MissilesAt(int seat) => seat > Helm && seat < Seats ? _mags[seat]?.Count ?? 0 : 0;
         public float BoostTank01 => _cfg && _cfg.BoostTank > 0f ? Mathf.Clamp01(_tank / _cfg.BoostTank) : 0f;
         public float ShieldCooldown01 => _cfg && _cfg.ShieldCooldown > 0f ? Mathf.Clamp01((_shieldReadyAt - Time.time) / _cfg.ShieldCooldown) : 0f;
         public bool ShieldUp => _shield.Count > 0;
+
+        /// <summary>A seat's gun, named and with its state, from the config's authored words (the HUD's {gun}).</summary>
+        public string GunLine(int seat)
+        {
+            var cfg = Config;
+            if (!cfg || !cfg.GunsOn || seat <= Helm || seat >= Seats || string.IsNullOrEmpty(cfg.GunLineTemplate)) return string.Empty;
+            string state = seat == FastGunSeat ? (_fast.Hot ? cfg.GunHotText : cfg.GunReadyText)
+                : seat == BombSeat && _bomb ? cfg.BombOutText
+                : _gunCd[seat] > 0f ? cfg.GunCooldownTemplate.Replace("{seconds}", Mathf.CeilToInt(_gunCd[seat]).ToString())
+                : cfg.GunReadyText;
+            return cfg.GunLineTemplate.Replace("{name}", cfg.GunName(seat)).Replace("{state}", state);
+        }
+        /// <summary>A number that changes exactly when <see cref="GunLine"/>'s text would, so the HUD rebuilds the line only
+        /// then (no per-frame strings): -1 overheated, -2 a bomb out, else the whole seconds left to cool (0 = ready).</summary>
+        public int GunStateKey(int seat) => seat == FastGunSeat ? (_fast.Hot ? -1 : 0)
+            : seat == BombSeat && _bomb ? -2
+            : seat > Helm && seat < Seats && _gunCd[seat] > 0f ? Mathf.CeilToInt(_gunCd[seat]) : 0;
+        /// <summary>The fast gun's heat (0-1) and whether it is locked out, for the HUD.</summary>
+        public float FastGunHeat01 => _fast.Heat;
         /// <summary>When a missile last burst / the shield was last raised (Time.time), for the HUD's flashes.</summary>
         public float LastBurstAt { get; private set; } = -99f;
         public float ShieldRaisedAt { get; private set; } = -99f;
@@ -107,11 +152,13 @@ namespace CosmicShore.Gameplay
         internal OrcaTurret TurretOf(int seat) => _turrets[seat];
         internal OrcaMissile MissileOf(int seat) => _missiles[seat];
 
-        /// <summary>The hull collected an Omni crystal (its own contact, or a missile's): the magazine refills.</summary>
+        /// <summary>The hull collected an Omni crystal (its own contact, or a missile's): every gunner seat gets a missile.</summary>
         public void OnOmniCrystal()
         {
-            if (_mag == null || !_cfg) return;
-            if (_mag.AddOmni(_cfg.OmniMissiles) > 0) Play(_cfg.OmniRefillSound, transform.position);
+            if (!_cfg) return;
+            int added = 0;
+            for (int s = 1; s < Seats; s++) if (_mags[s] != null) added += _mags[s].AddOmni(_cfg.OmniMissiles);
+            if (added > 0) Play(_cfg.OmniRefillSound, transform.position);
         }
 
         // ------------------------------------------------------------------ lifecycle
@@ -154,7 +201,11 @@ namespace CosmicShore.Gameplay
                 _targets[s] = default;
                 _retargetAt[s] = 0f;
             }
-            _mag = new OrcaMagazine(_cfg.StartMissiles, _cfg.MaxMissiles);
+            for (int s = 1; s < Seats; s++) { _mags[s] = new OrcaMagazine(_cfg.StartMissiles, _cfg.MaxMissiles); _gunCd[s] = 0f; }
+            _fast.Reset();
+            _bomb = null; _bombStruck = false;
+            if (fastGun) fastGun.Initialize(_status);
+            if (bombGun) bombGun.Initialize(_status);
             _tank = _cfg.BoostTank;
             _humanSeat = Helm;
             _weTookHull = _boosting = _shieldTriggerHeld = false;
@@ -170,6 +221,8 @@ namespace CosmicShore.Gameplay
             if (_humanSeat != Helm) SetHumanSeat(Helm);
             StopBoost();
             RetireShield();
+            RetireDropped();
+            RetireBomb();
             for (int s = 1; s < Seats; s++) _missiles[s] = null;
             _view?.Dispose();
             _view = null;
@@ -201,6 +254,8 @@ namespace CosmicShore.Gameplay
             _pod.Follow(HullFrame(), dt, _s.MountSmooth);
             for (int s = 1; s < Seats; s++) StepSeat(s, dt);
             for (int s = 1; s < Seats; s++) if (_missiles[s] != null) StepMissile(s, dt);
+            StepBomb(dt);
+            if (_dropped.Count > 0 && Time.time >= _droppedCheckAt) { _droppedCheckAt = Time.time + 0.5f; ExpireDropped(); }
         }
 
         // after the hull has moved: the shield rides with it, and the view follows and draws
@@ -298,8 +353,6 @@ namespace CosmicShore.Gameplay
 
         bool HumanAt(int seat) => _mode == Mode.LocalHuman && _humanSeat == seat;
 
-        int HumanGunnersAboard() => _mode == Mode.LocalHuman && _humanSeat != Helm ? 1 : 0;
-
         // ------------------------------------------------------------------ helm: boost and shield
 
         void StepHelm(float dt)
@@ -315,6 +368,8 @@ namespace CosmicShore.Gameplay
                     shieldEdge = held && !_shieldTriggerHeld;
                     _shieldTriggerHeld = held;
                 }
+                // the lab's other shield keys: E, and the pad's B
+                shieldEdge |= (Keyboard.current?.eKey.wasPressedThisFrame ?? false) || (Gamepad.current?.buttonEast.wasPressedThisFrame ?? false);
             }
             else shieldEdge = HelmAIWantsShield();
 
@@ -331,7 +386,7 @@ namespace CosmicShore.Gameplay
                 _tank = Mathf.Min(_cfg.BoostTank, _tank + _cfg.BoostRefillAt(_status) * dt);
             }
 
-            if (_shield.Count > 0 && Time.time >= _shieldEndsAt) RetireShield();
+            if (_shield.Count > 0 && Time.time >= _shieldEndsAt) EndCarry();
             if (shieldEdge && Time.time >= _shieldReadyAt) RaiseShield();
         }
 
@@ -363,7 +418,7 @@ namespace CosmicShore.Gameplay
 
         void RaiseShield()
         {
-            RetireShield();
+            EndCarry();
             var channel = _status.VesselPrismController ? _status.VesselPrismController.PrismSpawnChannel : null;
             if (!channel)
             {
@@ -379,7 +434,7 @@ namespace CosmicShore.Gameplay
                 var local = U(_dirs[k]) * radius;
                 var world = hull.TransformDirection(local);
                 var prism = BoostRingBuilder.LayOne(channel, hull.position + world, Quaternion.LookRotation(world, hull.up),
-                    _cfg.ShieldBlockScale, PrismKind.Danger, _status.Domain, _status.PlayerName, owner + k);
+                    _cfg.ShieldBlockScale, _cfg.ShieldSuper ? PrismKind.SuperShielded : PrismKind.Danger, _status.Domain, _status.PlayerName, owner + k);
                 if (!prism) continue;
                 _shield.Add(prism);
                 _shieldBorn.Add(prism.prismProperties.TimeCreated);
@@ -393,13 +448,12 @@ namespace CosmicShore.Gameplay
 
         // A shield prism is still ours only while it is alive, active, unrecycled and named for this shield (the
         // pooled-prism identity test: ShrikeExecutor.PrismAlive, SquirrelTubeActionExecutor.IsStillOurTubePrism).
-        bool StillOurs(int i)
-        {
-            var p = _shield[i];
-            return p && !p.destroyed && p.gameObject.activeInHierarchy && p.prismProperties != null
-                   && Mathf.Approximately(p.prismProperties.TimeCreated, _shieldBorn[i])
-                   && p.ownerID != null && p.ownerID.Contains("::OrcaShield::");
-        }
+        bool StillOurs(int i) => StillOurs(_shield[i], _shieldBorn[i]);
+
+        static bool StillOurs(Prism p, float born) =>
+            p && !p.destroyed && p.gameObject.activeInHierarchy && p.prismProperties != null
+            && Mathf.Approximately(p.prismProperties.TimeCreated, born)
+            && p.ownerID != null && p.ownerID.Contains("::OrcaShield::");
 
         // The shield rides with the hull (lab shieldAttached): the mover contract of vessel skill 4.x1.
         void PoseShield()
@@ -427,6 +481,40 @@ namespace CosmicShore.Gameplay
             _shield.Clear(); _shieldBorn.Clear(); _shieldLocal.Clear();
         }
 
+        // The carry ends (round 5): each prism turns into a danger prism where it stands and stays for shieldLinger
+        // (PrismKinds.Retheme, the reversible re-theme), or, with shieldSuper off, round 4's shell simply goes.
+        void EndCarry()
+        {
+            if (_shield.Count == 0) return;
+            if (!_cfg.ShieldSuper) { RetireShield(); return; }
+            float until = _cfg.ShieldLinger > 0f ? Time.time + _cfg.ShieldLinger : float.PositiveInfinity;
+            for (int i = 0; i < _shield.Count; i++)
+            {
+                if (!StillOurs(i)) continue;
+                PrismKinds.Retheme(_shield[i], PrismKind.Danger);
+                _dropped.Add(_shield[i]); _droppedBorn.Add(_shieldBorn[i]); _droppedUntil.Add(until);
+            }
+            _shield.Clear(); _shieldBorn.Clear(); _shieldLocal.Clear();
+        }
+
+        void ExpireDropped()
+        {
+            for (int i = _dropped.Count - 1; i >= 0; i--)
+            {
+                bool ours = StillOurs(_dropped[i], _droppedBorn[i]);
+                if (ours && Time.time < _droppedUntil[i]) continue;
+                if (ours) { PrismKinds.Clear(_dropped[i]); _dropped[i].ReturnToPool(); }
+                _dropped.RemoveAt(i); _droppedBorn.RemoveAt(i); _droppedUntil.RemoveAt(i);
+            }
+        }
+
+        void RetireDropped()
+        {
+            for (int i = 0; i < _dropped.Count; i++)
+                if (StillOurs(_dropped[i], _droppedBorn[i])) { PrismKinds.Clear(_dropped[i]); _dropped[i].ReturnToPool(); }
+            _dropped.Clear(); _droppedBorn.Clear(); _droppedUntil.Clear();
+        }
+
         // ------------------------------------------------------------------ gunners
 
         void StepSeat(int s, float dt)
@@ -446,22 +534,22 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            bool fire;
+            bool fire, gunHold, gunEdge;
             if (human)
             {
-                var aim = ReadTurretAim(dt, out fire);
+                var aim = ReadTurretAim(dt, out fire, out gunHold, out gunEdge);
                 t.TurnBy(aim.x, aim.y);
             }
-            else fire = TurretAI(s, t, dt);
+            else { fire = TurretAI(s, t, dt, out gunHold); gunEdge = false; }
             t.HoldHorizon(N(transform.up), dt, _s.HorizonSmooth);
+            if (_cfg.GunsOn) StepGun(s, dt, gunHold, gunEdge, human);
 
-            int reserve = human ? 0 : _s.AiReserve * HumanGunnersAboard();
             if (fire)
             {
                 t.Release(human, dt);
-                if (human && _mag.Count <= 0) Play(_cfg.EmptyMagazineSound, transform.position);
+                if (human && _mags[s].Count <= 0) Play(_cfg.EmptyMagazineSound, transform.position);
             }
-            if (t.Step(dt, _mag.CanTake(reserve))) Launch(s);
+            if (t.Step(dt, _mags[s].CanTake)) Launch(s);
         }
 
         void Launch(int s)
@@ -470,7 +558,7 @@ namespace CosmicShore.Gameplay
             var mount = OrcaCrewCore.MountPosition(N(transform.position), _pod, s, _s.HullRadius);
             var m = new OrcaMissile();
             m.Launch(mount, t.Aim, _pod.U, N(transform.right));
-            _mag.Take();
+            _mags[s].Take();
             _missiles[s] = m;
             t.React = 0f;
             _retargetAt[s] = 0f;
@@ -582,25 +670,265 @@ namespace CosmicShore.Gameplay
             Play(_cfg.MissileBurstSound, at);
         }
 
+        // ------------------------------------------------------------------ the guns (round 5: one per seat, each different)
+
+        bool GunReady(int s) => s == FastGunSeat ? !_fast.Hot : _gunCd[s] <= 0f && (s != BombSeat || !_bomb);
+
+        float GunRange(int s) => s == SniperSeat ? Mathf.Min(_cfg.SniperRange, 600f)
+            : s == FastGunSeat ? _cfg.FastGunRoundSpeed * 2f * _cfg.FastGunRoundSeconds / Mathf.PI * 0.8f
+            : _cfg.BombSpeed * _cfg.BombFuse * 0.6f;
+
+        /// <summary>The lab's <c>stepGun</c>: the sniper fires when ready; the fast gun fires while held until it
+        /// overheats; the bomb is thrown on a press and a person's second press bursts it.</summary>
+        void StepGun(int s, float dt, bool hold, bool edge, bool human)
+        {
+            if (_gunCd[s] > 0f) _gunCd[s] -= dt;
+            Vector3 mount = U(OrcaCrewCore.MountPosition(N(transform.position), _pod, s, _s.HullRadius));
+            Vector3 aim = U(_turrets[s].Aim);
+            switch (s)
+            {
+                case SniperSeat:
+                    if ((hold || edge) && _gunCd[s] <= 0f) { Snipe(mount, aim); _gunCd[s] = _cfg.SniperCooldown; }
+                    break;
+                case FastGunSeat:
+                    int n = _fast.Step(hold, dt, _cfg.FastGunRate, _cfg.FastGunHeatSeconds, _cfg.FastGunCoolSeconds);
+                    for (int k = 0; k < n && k < 4; k++) FireRound(mount, aim);   // a hitch never discharges as a burst (vessel rule 17)
+                    break;
+                case BombSeat:
+                    if (edge && _bomb && human) DetonateBomb();
+                    else if ((human ? edge : hold) && _gunCd[s] <= 0f && !_bomb) { ThrowBomb(mount, aim); _gunCd[s] = _cfg.BombCooldown; }
+                    break;
+            }
+        }
+
+        Vector3 HullVelocity => _status.Course * _status.Speed;
+
+        // The sniper: the Serpent's sniper shot (SniperShotActionExecutor.ResolveShot) fired from the turret along its aim.
+        // Every hostile prism in the cone dies (pierce unlimited), super-shielded ones included (the sanctioned order:
+        // DeactivateShields, then a devastating Damage); every rival hull in the cone is stripped, a scored hit.
+        void Snipe(Vector3 origin, Vector3 direction)
+        {
+            float range = _cfg.SniperRange, cone = _cfg.SniperConeDeg, minR = _cfg.SniperMinPathRadius;
+            Vector3 stop = origin + direction * range;
+            bool hit = false;
+            var index = PrismSpatialIndex.EnsureInstance();
+            if (index != null && index.IsAvailable)
+            {
+                _query.Clear();
+                index.QueryCone(origin, direction, range, cone, minR, _query);
+                float far = -1f;
+                for (int i = 0; i < _query.Count; i++)
+                {
+                    var p = _query[i];
+                    if (!p || p.destroyed || p.Domain == _status.Domain) continue;
+                    float along = Vector3.Dot(p.transform.position - origin, direction);
+                    if (along > far) { far = along; stop = p.transform.position; }
+                    DestroyPrism(p, direction);
+                    hit = true;
+                }
+                if (index.VirtualCount > 0)   // swarm members that are only data (Docs/SWARM_FAUNA.md §19), as the Serpent does
+                {
+                    index.QueryConeVirtualIds(origin, direction, range, cone, minR, _virtualIds);
+                    for (int i = 0; i < _virtualIds.Count; i++)
+                    {
+                        if (!index.TryGetVirtualEntry(_virtualIds[i], out _, out var domain, out _) || domain == _status.Domain) continue;
+                        var p = index.ResolvePrism(_virtualIds[i], materialise: true);
+                        if (!p || p.destroyed || p.Domain == _status.Domain) continue;
+                        DestroyPrism(p, direction);
+                        hit = true;
+                    }
+                }
+            }
+            StripVessels(origin, direction, range);
+            var colorSet = _cfg.GameData && _cfg.GameData.ThemeManagerData ? _cfg.GameData.ThemeManagerData.ColorSet : null;
+            var colour = colorSet != null ? colorSet.GetDomainSignalColor(_status.Domain) : Color.white;
+            float distance = Vector3.Distance(origin, stop);
+            float endRadius = Mathf.Max(minR, distance * Mathf.Tan(cone * Mathf.Deg2Rad));
+            SniperBeam.Fire(origin, stop, _cfg.SniperBeamStartWidth, endRadius * 2f, colour, _cfg.SniperBeamSeconds,
+                _cfg.SniperFlareRadius, _cfg.SniperFlareSeconds, hit);
+            Play(_cfg.SniperShotSound, origin);
+        }
+
+        void DestroyPrism(Prism prism, Vector3 direction)
+        {
+            Vector3 impact = direction * _cfg.SniperDebrisSpeed;
+            if (prism.prismProperties is { IsSuperShielded: true }) prism.DeactivateShields(impact, _cfg.SniperDebrisSpeedLimit);
+            prism.Damage(impact, _status.Domain, _status.PlayerName, devastate: true, debrisSpeedLimit: _cfg.SniperDebrisSpeedLimit);
+        }
+
+        // The Serpent's StripVessels: every opposing pilot in the cone loses sniperStripPerElement of each element, ejected
+        // as crystals, a scored hit - decided on this crew's machine, settled by the victim's owner.
+        void StripVessels(Vector3 origin, Vector3 direction, float reach)
+        {
+            if (_cfg.SniperStripPerElement <= 0f) return;
+            float tanHalf = Mathf.Tan(Mathf.Deg2Rad * Mathf.Clamp(_cfg.SniperConeDeg, 0f, 89f));
+            bool decidedHere = ElementalTransfer.IsDecidedHere(_status);
+            VesselVisionShading.CollectStampedVessels(_vesselScratch);
+            for (int i = 0; i < _vesselScratch.Count; i++)
+            {
+                var candidate = _vesselScratch[i];
+                if (candidate == null) continue;
+                var component = candidate.GetComponentInChildren<VesselStatus>();
+                if (component == null) continue;
+                IVesselStatus victim = component;
+                if (ReferenceEquals(victim, _status) || victim.Domain == _status.Domain) continue;
+                if (!PrismSpatialIndex.ConeContains(component.transform.position, origin, direction, reach, tanHalf, _cfg.SniperMinPathRadius)) continue;
+                if (!decidedHere || !CombatHitDrain.TryAdmit(victim, _status, CombatHitClass.Debuff, _cfg.SniperSameVictimCooldown,
+                        ElementalDebuffSources.Other, out int supersededRank))
+                    continue;
+                ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Eject, victim, _status, _cfg.SniperStripPerElement,
+                    direction * _cfg.SniperEjectSpeed, ElementalDebuffSources.Other);
+                if (_cfg.OnCombatHitLanded)
+                    _cfg.OnCombatHitLanded.Raise(new CombatHitStats
+                    {
+                        ShooterName = _status.PlayerName,
+                        VictimName = victim.PlayerName,
+                        HitClass = CombatHitClass.Debuff,
+                        SupersededRank = supersededRank,
+                    });
+            }
+            _vesselScratch.Clear();
+        }
+
+        // The fast gun: the Brittle Star's round (BrittleStarExecutor.FireAlong) from the turret along its aim. The round's
+        // own impact container damages prisms and scores bullet hits on rival hulls; our own domain's prisms (the trail,
+        // the shield) are spared.
+        void FireRound(Vector3 mount, Vector3 aim)
+        {
+            if (!fastGun) return;
+            var muzzle = fastGun.transform;
+            muzzle.SetPositionAndRotation(mount + aim * 3f, Quaternion.LookRotation(aim, transform.up));
+            fastGun.FireGun(muzzle, _cfg.FastGunRoundSpeed, HullVelocity, _cfg.FastGunRoundScale, true, _cfg.FastGunRoundSeconds, 0f,
+                FiringPatterns.Default, 0, detachAfterSpawn: true, stopOnFirstPrismImpact: true, spareOwnDomain: true,
+                aimDirection: aim, flightGrowthFactor: _cfg.FastGunRoundGrowth);
+        }
+
+        // The bomb: the Grizzly's trigger bomb, cruising (Projectile.Cruises) from the turret along its aim. It bursts on a
+        // rival hull or a hostile prism, on a person's second press, or at its fuse - and never knocks our own hull about:
+        // the Grizzly's self-launch is GrizzlyTriggerBombExecutor.LaunchSelf, which is never called, and the blast spares
+        // its owner (AffectSelfOverride off).
+        void ThrowBomb(Vector3 mount, Vector3 aim)
+        {
+            if (!bombGun) return;
+            var muzzle = bombGun.transform;
+            muzzle.SetPositionAndRotation(mount + aim * 4f, Quaternion.LookRotation(aim, transform.up));
+            bombGun.FireGun(muzzle, _cfg.BombSpeed, HullVelocity, _cfg.BombScale, true, 1f, 0.5f, FiringPatterns.Default, 0,
+                detachAfterSpawn: true, stopOnFirstPrismImpact: false, spareOwnDomain: true, aimDirection: aim);
+            var shot = bombGun.LastProjectile;
+            if (!shot) return;
+            shot.Cruises = true;   // after FireGun: the loop's first step runs inside the fire call (vessel rule 34)
+            if (shot.TryGetComponent(out GrizzlyBombVisual visual)) visual.Arm(_cfg.BombColor, _status.Domain);
+            shot.VesselStruck += OnBombStruck;
+            shot.FlightEnded += OnBombFlightEnded;
+            _bomb = shot;
+            _bombAge = 0f;
+            _bombPrev = shot.transform.position;
+            _bombStruck = false;
+            Play(_cfg.BombThrowSound, mount);
+        }
+
+        // A hull the bomb swept into: a rival's freezes it there to burst next step (never from inside the sweep).
+        void OnBombStruck(Projectile shot, VesselImpactor hit)
+        {
+            if (shot != _bomb || hit == null) return;
+            var victim = hit.Vessel?.VesselStatus;
+            if (victim == null || ReferenceEquals(victim, _status) || victim.Domain == _status.Domain) return;
+            shot.Freeze();
+            _bombStruck = true;
+        }
+
+        // The pool took the bomb back (a turn end, a teardown): no blast.
+        void OnBombFlightEnded(Projectile shot, bool _)
+        {
+            if (shot != _bomb) return;
+            Unhook(shot);
+            _bomb = null;
+        }
+
+        void StepBomb(float dt)
+        {
+            if (!_bomb) return;
+            if (!_bomb.gameObject.activeInHierarchy) { Unhook(_bomb); _bomb = null; return; }
+            _bombAge += dt;
+            var pos = _bomb.transform.position;
+            if (_bombStruck || _bombAge >= _cfg.BombFuse || Contact(_bombPrev, pos)) { DetonateBomb(); return; }
+            _bombPrev = pos;
+        }
+
+        void DetonateBomb()
+        {
+            var shot = _bomb;
+            if (!shot) return;
+            _bomb = null;
+            Unhook(shot);
+            Vector3 at = shot.transform.position;
+            Quaternion rot = shot.transform.rotation;
+            shot.ReturnToFactory();
+            var explosions = _cfg.BombExplosions;
+            if (explosions is { Length: > 0 })
+            {
+                var init = new AOEExplosion.InitializeStruct
+                {
+                    OwnDomain = _status.Domain,
+                    Vessel = _vessel,
+                    AnnonymousExplosion = false,
+                    OverrideMaterial = _status.AOEExplosionMaterial,
+                    MaxScale = 2f * _cfg.BombBlastRadiusAt(_status),
+                    SpawnPosition = at,
+                    SpawnRotation = rot,
+                    AffectSelfOverride = false,
+                };
+                ExplosionHelper.CreateExplosion(explosions, init, _impactor ? _impactor.DIContainer : null);
+            }
+            LastBurstAt = Time.time;
+            Play(_cfg.BombBurstSound, at);
+        }
+
+        void RetireBomb()
+        {
+            var shot = _bomb;
+            _bomb = null;
+            if (!shot) return;
+            Unhook(shot);
+            if (shot.gameObject.activeInHierarchy) shot.ReturnToFactory();
+        }
+
+        void Unhook(Projectile shot)
+        {
+            if (!shot) return;
+            shot.VesselStruck -= OnBombStruck;
+            shot.FlightEnded -= OnBombFlightEnded;
+        }
+
         // ------------------------------------------------------------------ AI gunners (the lab's gunnerAI, inputs only)
 
-        bool TurretAI(int s, OrcaTurret t, float dt)
+        // Round 5: the gun when the target is in its range and it is ready, else a missile (always for a crystal, which only a
+        // missile collects). Returns whether to launch a missile; gunHold whether to fire the gun.
+        bool TurretAI(int s, OrcaTurret t, float dt, out bool gunHold)
         {
+            gunHold = false;
             var mount = OrcaCrewCore.MountPosition(N(transform.position), _pod, s, _s.HullRadius);
-            var tg = TargetFor(s, U(mount));
+            float reach = _s.MissileSpeed * _s.MissileLife * 0.8f, gr = _cfg.GunsOn ? GunRange(s) : 0f;
+            var tg = TargetFor(s, U(mount), Mathf.Max(reach, gr), _mags[s].Count);
             if (tg.Kind == TargetKind.None) { t.React = 0f; return false; }
-            if (_rng.NextDouble() < 1.5 * dt)   // the lab re-rolls its aim error 5% of its 30 Hz steps
-                t.Noise = RandDir() * (Gauss() * _skill.AimNoiseDeg * OrcaCrewCore.Deg2Rad);
-            var aim = OrcaCrewCore.LeadAim(mount, N(transform.position), N(tg.Position), N(tg.Velocity), _s.MissileSpeed, _skill.Lead, t.Noise);
+            if (_rng.NextDouble() < 1.5 * dt)   // the lab re-rolls its aim error 5% of its 30 Hz steps; a sniper steadies its aim
+                t.Noise = RandDir() * (Gauss() * _skill.AimNoiseDeg * OrcaCrewCore.Deg2Rad * (s == SniperSeat ? 0.4f : 1f));
+            float dm = Vector3.Distance(U(mount), tg.Position);
+            bool crystal = tg.Kind == TargetKind.Omni || tg.Kind == TargetKind.Crystal;
+            bool useGun = _cfg.GunsOn && !crystal && dm < gr && GunReady(s);
+            float speed = useGun ? (s == FastGunSeat ? _cfg.FastGunRoundSpeed : s == BombSeat ? _cfg.BombSpeed : 1e9f) : _s.MissileSpeed;
+            var aim = OrcaCrewCore.LeadAim(mount, N(transform.position), N(tg.Position), N(tg.Velocity), speed, _skill.Lead, t.Noise);
             t.React += dt;
-            bool aligned = V3.Dot(aim, t.Aim) > Mathf.Cos(15f * Mathf.Deg2Rad);
+            float tol = useGun && s == SniperSeat ? 4f : useGun && s == FastGunSeat ? 8f : 15f;
+            bool ok = V3.Dot(aim, t.Aim) > Mathf.Cos(tol * Mathf.Deg2Rad) && t.React > _skill.ReactSeconds;
             t.SlewToward(aim, dt, _s.TurretTurnDeg);
-            return aligned && t.React > _skill.ReactSeconds;
+            gunHold = useGun && ok;
+            return !useGun && ok && _mags[s].Count > 0 && dm < reach && (crystal || !_cfg.GunsOn || dm >= gr * 0.6f || !GunReady(s));
         }
 
         void MissileAI(int s, OrcaMissile m)
         {
-            var tg = TargetFor(s, U(m.Position));
+            var tg = TargetFor(s, U(m.Position), _s.MissileSpeed * _s.MissileLife * 0.8f, _mags[s].Count + 1);
             if (tg.Kind == TargetKind.None) { m.StickYaw = m.StickPitch = m.StickRoll = 0f; return; }
             var pos = U(m.Position);
             float d = Vector3.Distance(pos, tg.Position), lt = d / Mathf.Max(1f, MissileSpeed) * _skill.Lead;
@@ -612,24 +940,24 @@ namespace CosmicShore.Gameplay
             if (burst && m.CanBurstByHand) Burst(s);
         }
 
-        // The lab's bestTarget: an omni crystal when the magazine runs low, else the nearest rival hull or hostile prism,
-        // else any crystal. Re-picked every aiRetargetSeconds.
-        Target TargetFor(int s, Vector3 from)
+        // The lab's bestTarget: an omni crystal when the seat's magazine runs low, else the nearest rival hull or hostile
+        // prism, else any crystal. Re-picked every aiRetargetSeconds.
+        Target TargetFor(int s, Vector3 from, float reach, int mag)
         {
             if (Time.time < _retargetAt[s] && _targets[s].Kind != TargetKind.None) return Refresh(_targets[s]);
             _retargetAt[s] = Time.time + _cfg.AiRetargetSeconds;
-            float reach = _s.MissileSpeed * _s.MissileLife * 0.8f, best = float.MaxValue;
+            float best = float.MaxValue;
             var pick = default(Target);
             void Offer(TargetKind kind, Vector3 p, Vector3 v, float cost, Transform follow = null) { if (cost < best) { best = cost; pick = new Target { Kind = kind, Position = p, Velocity = v, Follow = follow }; } }
 
             var crystals = Crystal.Active;
-            if (_mag.Count < 4)
+            if (mag > 0 && mag < 2)
                 for (int i = 0; i < crystals.Count; i++)
                 {
                     var c = crystals[i];
                     if (!c || c.IsEmbedded || c.crystalProperties.Element != Element.Omni) continue;
                     float d = Vector3.Distance(from, c.transform.position);
-                    if (d < reach) Offer(TargetKind.Omni, c.transform.position, Vector3.zero, d * (_mag.Count <= 1 ? 0.3f : 0.7f));
+                    if (d < reach) Offer(TargetKind.Omni, c.transform.position, Vector3.zero, d * 0.5f);
                 }
             var players = _cfg.GameData ? _cfg.GameData.Players : null;
             if (players != null)
@@ -645,7 +973,7 @@ namespace CosmicShore.Gameplay
             if (index && index.IsAvailable)
             {
                 _query.Clear();
-                index.QuerySphere(from, Mathf.Min(reach, 250f), _query);
+                index.QuerySphere(from, Mathf.Min(reach, 250f), _query);   // the sniper also reaches past this; prisms beyond come in its cone
                 foreach (var p in _query)
                 {
                     if (!p || p.destroyed || p.Domain == _status.Domain || p.prismProperties is { IsSuperShielded: true }) continue;
@@ -686,63 +1014,73 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ a person's input in a gunner seat
 
-        // The turret's turn this frame (az right, el up, radians) and whether Release was pressed: mouse look, a pad's
-        // sticks or W A S D at the turret rate, a touch drag; Space, the left mouse button, A or the right trigger, a tap.
-        Vector2 ReadTurretAim(float dt, out bool release)
+        // The turret's turn this frame (az right, el up, radians), and the two buttons: Fire (the seat's gun: the left mouse
+        // button, Space, the right trigger; on a touch screen a finger down) and Missile (the right mouse button, F, A; on
+        // a touch screen a double tap). Aim with mouse look, a pad's sticks or W A S D at the turret rate, a touch drag.
+        Vector2 ReadTurretAim(float dt, out bool missile, out bool gunHold, out bool gunEdge)
         {
             var aim = Vector2.zero;
-            release = false;
+            missile = gunHold = gunEdge = false;
             float rate = _s.TurretTurnDeg * Mathf.Deg2Rad * dt;
             var mouse = Mouse.current;
             if (mouse != null)
             {
                 aim += mouse.delta.ReadValue() * _cfg.MouseAimRadiansPerPixel;
-                release |= mouse.leftButton.wasPressedThisFrame;
+                gunHold |= mouse.leftButton.isPressed;
+                gunEdge |= mouse.leftButton.wasPressedThisFrame;
+                missile |= mouse.rightButton.wasPressedThisFrame;
             }
             var pad = Gamepad.current;
             if (pad != null)
             {
                 aim += (pad.leftStick.ReadValue() + pad.rightStick.ReadValue()) * rate;
-                release |= pad.buttonSouth.wasPressedThisFrame || pad.rightTrigger.wasPressedThisFrame;
+                gunHold |= pad.rightTrigger.ReadValue() > 0.3f;
+                gunEdge |= pad.rightTrigger.wasPressedThisFrame;
+                missile |= pad.buttonSouth.wasPressedThisFrame;
             }
             var kb = Keyboard.current;
             if (kb != null)
             {
                 aim += KeyAxes(kb) * rate;
-                release |= kb.spaceKey.wasPressedThisFrame;
+                gunHold |= kb.spaceKey.isPressed;
+                gunEdge |= kb.spaceKey.wasPressedThisFrame;
+                missile |= kb.fKey.wasPressedThisFrame;
             }
-            aim += ReadTouch(out bool tap, out _) * 0.006f;
-            release |= tap;
+            aim += ReadTouch(out _, out _, out bool began, out bool held, out bool doubleTap) * 0.006f;
+            gunHold |= held;
+            gunEdge |= began && !doubleTap;
+            missile |= doubleTap;
             return aim;
         }
 
-        // A flown missile's stick (yaw right, pitch up, each -1..1) and whether Release was pressed again.
-        Vector2 ReadMissileStick(out bool release)
+        // A flown missile's stick (yaw right, pitch up, each -1..1) and whether Missile was pressed again (on a touch
+        // screen, a tap).
+        Vector2 ReadMissileStick(out bool burst)
         {
             var stick = Vector2.zero;
-            release = false;
+            burst = false;
             var pad = Gamepad.current;
             if (pad != null)
             {
                 stick = Bigger(stick, pad.leftStick.ReadValue());
                 stick = Bigger(stick, pad.rightStick.ReadValue());
-                release |= pad.buttonSouth.wasPressedThisFrame || pad.rightTrigger.wasPressedThisFrame;
+                burst |= pad.buttonSouth.wasPressedThisFrame;
             }
             var kb = Keyboard.current;
             if (kb != null)
             {
                 stick = Bigger(stick, KeyAxes(kb));
-                release |= kb.spaceKey.wasPressedThisFrame;
+                burst |= kb.fKey.wasPressedThisFrame;
             }
             var mouse = Mouse.current;
             if (mouse != null)
             {
                 stick = Bigger(stick, Vector2.ClampMagnitude(mouse.delta.ReadValue() * 0.05f, 1f));
-                release |= mouse.leftButton.wasPressedThisFrame;
+                burst |= mouse.rightButton.wasPressedThisFrame;
             }
-            ReadTouch(out bool tap, out var drag);
+            ReadTouch(out bool tap, out var drag, out _, out _, out _);
             stick = Bigger(stick, Vector2.ClampMagnitude(drag / Mathf.Max(1f, Screen.height * 0.08f), 1f));
-            release |= tap;
+            burst |= tap;
             return Vector2.ClampMagnitude(stick, 1f);
         }
 
@@ -752,11 +1090,11 @@ namespace CosmicShore.Gameplay
             (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1f : 0f),
             (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1f : 0f) - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1f : 0f));
 
-        // The primary touch: its movement this frame (px), whether it was a short tap that just ended, and its offset from
-        // where it started (the missile's stick).
-        Vector2 ReadTouch(out bool tap, out Vector2 drag)
+        // The primary touch: its movement this frame (px); whether a short tap just ended; its offset from where it started
+        // (the missile's stick); whether it began this frame, is down, or began as the second of a double tap.
+        Vector2 ReadTouch(out bool tap, out Vector2 drag, out bool began, out bool held, out bool doubleTap)
         {
-            tap = false;
+            tap = began = held = doubleTap = false;
             drag = Vector2.zero;
             var ts = Touchscreen.current;
             if (ts == null) return Vector2.zero;
@@ -764,9 +1102,17 @@ namespace CosmicShore.Gameplay
             if (ts.touches.Count > 1 && ts.touches[1].press.isPressed) { _touchId = int.MinValue; return Vector2.zero; }
             if (touch.press.isPressed)
             {
+                held = true;
                 int id = touch.touchId.ReadValue();
                 var p = touch.position.ReadValue();
-                if (id != _touchId) { _touchId = id; _touchStart = Time.unscaledTime; _touchFrom = p; _touchMoved = false; return Vector2.zero; }
+                if (id != _touchId)
+                {
+                    _touchId = id; _touchStart = Time.unscaledTime; _touchFrom = p; _touchMoved = false;
+                    began = true;
+                    doubleTap = Time.unscaledTime - _lastTapAt < 0.35f && (p - _lastTapAt2).sqrMagnitude < 60f * 60f;
+                    if (doubleTap) _lastTapAt = -9f;
+                    return Vector2.zero;
+                }
                 drag = p - _touchFrom;
                 if (drag.sqrMagnitude > 20f * 20f) _touchMoved = true;
                 return touch.delta.ReadValue();
@@ -774,6 +1120,7 @@ namespace CosmicShore.Gameplay
             if (_touchId != int.MinValue)
             {
                 tap = !_touchMoved && Time.unscaledTime - _touchStart < 0.25f;
+                if (tap) { _lastTapAt = Time.unscaledTime; _lastTapAt2 = _touchFrom; }
                 _touchId = int.MinValue;
             }
             return Vector2.zero;

@@ -77,6 +77,9 @@ namespace CosmicShore.Gameplay
             _cam.orthographic = true;
             _cam.nearClipPlane = 0.1f;
             _cam.enabled = false;
+            // a bare AddComponent<Camera> is URP's default: no post-processing (no bloom, no tonemapper), the wrong volume
+            // mask, SDR. Draw the way the game's camera draws (OffscreenCameraSetup; Garrett, 2026-10-21)
+            OffscreenCameraSetup.AdoptGameCameraImage(_cam, postProcessing: true, antiAliasing: true, shadows: true);
             RenderPipelineManager.beginCameraRendering += BeginRender;
             RenderPipelineManager.endCameraRendering += EndRender;
 

@@ -98,6 +98,10 @@ namespace CosmicShore.Gameplay
                 RestorePilot();
                 _pilot = pilot;
                 if (_pilot) { _pilotRect = _pilot.rect; _pilotDepth = _pilot.depth; }
+                // a bare AddComponent<Camera> is URP's default: no post-processing (no bloom, no tonemapper), the wrong
+                // volume mask, SDR, no anti-aliasing or shadows. The turret view is the full screen, so it takes all of
+                // the game camera's image (OffscreenCameraSetup; Garrett, 2026-10-21: "don't have the bloom")
+                OffscreenCameraSetup.AdoptGameCameraImage(_cam, postProcessing: true, antiAliasing: true, shadows: true);
             }
 
             var m = _crew.MissileOf(humanSeat);
@@ -167,7 +171,11 @@ namespace CosmicShore.Gameplay
                 var mount = OrcaCrew.U(OrcaCrewCore.MountPosition(OrcaCrew.N(hullPos), podFrame, s, cfg.HullRadius));
                 var t = _crew.TurretOf(s);
                 var aim = Quaternion.LookRotation(OrcaCrew.U(t.Aim), OrcaCrew.U(t.Up));
-                Graphics.RenderMesh(rp, _octa, 0, Matrix4x4.TRS(mount, aim, new Vector3(pod, pod, pod * 1.8f)));
+                // each gun reads at a glance (round 5): the sniper long and thin, the fast gun middling, the bomb short and fat
+                var podScale = s == OrcaCrew.SniperSeat ? new Vector3(pod * 0.8f, pod * 0.8f, pod * 3.2f)
+                    : s == OrcaCrew.BombSeat ? new Vector3(pod * 1.4f, pod * 1.4f, pod * 1.3f)
+                    : new Vector3(pod, pod, pod * 1.8f);
+                Graphics.RenderMesh(rp, _octa, 0, Matrix4x4.TRS(mount, aim, podScale));
                 // the strut: from a hull-skin point toward the mount, in the lagged frame
                 var root = hullPos + (mount - hullPos) * 0.35f;
                 var span = mount - root;

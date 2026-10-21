@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // parity.cjs - holds the Crew of Four Lab's crew rules (Docs/Studios/CrewOfFourLab.html: turnBody, followFrame,
-// rotateToward, steerToward, holdHorizon, shieldDirs, flyMissile, exposed as window.__lab.parity) to the SHIPPED C#
+// rotateToward, steerToward, holdHorizon, shieldDirs, flyMissile, rapidStep, exposed as window.__lab.parity) to the SHIPPED C#
 // OrcaCrewCore, step by step, over scripted inputs.
 //
 //   node Tools/Build/orca_crew_lab/parity.cjs
@@ -11,7 +11,7 @@
 //    (the shield's directions, the AI's stick) need no mirror.
 // 3. Compares every step within TOL.
 // 4. Negative controls: the page re-run with a planted change (horizonSmooth 3 -> 2.7, missileTurn 150 -> 140,
-//    shieldOpenDeg 45 -> 44) MUST fail. A gate that cannot see a few-percent dial change is not a gate.
+//    shieldOpenDeg 45 -> 44, rapidHeatTime 6 -> 5.7) MUST fail. A gate that cannot see a few-percent dial change is not a gate.
 // 5. The shipped asset (OrcaCrewConfig.asset) against the page's SHIPPED numbers, key by key, with a planted control.
 'use strict';
 const fs = require('fs');
@@ -28,7 +28,11 @@ const ASSET_KEYS = {
   hullRadius: 'hullRadius', mountSmooth: 'mountSmooth', horizonSmooth: 'horizonSmooth', turretTurn: 'turretTurn',
   missileSpeed: 'missileSpeed', missileTurn: 'missileTurn', missileLife: 'missileLife', launchCooldown: 'launchCd',
   blastSeconds: 'blastTime', startMissiles: 'startMissiles', maxMissiles: 'maxMissiles',
-  omniMissiles: 'omniMissiles', aiReserve: 'aiReserve', shieldBlocks: 'shieldBlocks', shieldMinRadius: 'shieldMinR',
+  omniMissiles: 'omniMissiles', shieldBlocks: 'shieldBlocks', shieldMinRadius: 'shieldMinR', shieldLinger: 'shieldLinger',
+  shieldSuper: 'shieldSuper', gunsOn: 'gunsOn', sniperCooldown: 'sniperCd', sniperRange: 'sniperRange', sniperConeDeg: 'sniperCone',
+  sniperMinPathRadius: 'sniperMinR', fastGunRate: 'rapidRate', fastGunRoundSpeed: 'rapidSpeed', fastGunRoundSeconds: 'rapidLife',
+  fastGunHeatSeconds: 'rapidHeatTime', fastGunCoolSeconds: 'rapidCoolTime', bombSpeed: 'bombSpeed', bombFuse: 'bombLife',
+  bombCooldown: 'bombCd',
   shieldMaxRadius: 'shieldMaxR', shieldOpenDeg: 'shieldOpenDeg', shieldCooldown: 'shieldCd', boostTank: 'boostTank',
   turretFov: 'turretFov', missileCamBack: 'missileCamBack', missileCamUp: 'missileCamUp',
 };
@@ -36,10 +40,12 @@ const ASSET_KEYS = {
 // The element channels: an ElementalFloat (Min at rest, Max at level 10) holds the lab's 1 + k x level / 15, the line
 // through 1 and 1 + 2k/3 at level 10. Each is [asset field, lab base key (null = a pure multiplier), lab k key].
 const ELEMENTAL = [['boostRefill', 'boostRefill', 'kTime'], ['shieldSeconds', 'shieldTime', 'kMass'],
-  ['blastRadius', 'blastR', 'kSpace'], ['missileScale', null, 'kCharge']];
+  ['blastRadius', 'blastR', 'kSpace'], ['missileScale', null, 'kCharge'], ['bombBlastRadius', 'bombBlastR', 'kSpace']];
+// numbers the asset states in the game's own units: [asset field, its lab key, asset value -> lab value]
+const DERIVED = [['sniperStripPerElement', 'sniperPetals', (v) => v * 40]];   // 0.1 of each of four elements = 4 petals
 
 function csTrace() {
-  const out = execFileSync('bash', [path.join(__dirname, 'trace.sh')], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  const out = execFileSync('bash', [path.join(__dirname, 'trace.sh')], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], env: Object.assign({}, process.env, { ORCA_RAPID: '30,6,5' }) });
   return JSON.parse(out.trim().split('\n').pop());
 }
 
@@ -49,7 +55,7 @@ function pageTrace(par) {
   const V = (x, y, z) => ({ x, y, z }), M = (v) => V(-v.x, v.y, v.z), A = (v) => [-v.x, v.y, v.z];
   const norm = (v) => { const l = Math.hypot(v.x, v.y, v.z) || 1; return V(v.x / l, v.y / l, v.z / l); };
   const add = (a, b) => V(a.x + b.x, a.y + b.y, a.z + b.z), scale = (a, s) => V(a.x * s, a.y * s, a.z * s), dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
-  const out = { turret: [], missile: [], steer: [], shield: [] };
+  const out = { turret: [], missile: [], steer: [], shield: [], rapid: [] };
   // A. the turrets and the pod
   const hull = { f: V(0, 0, 1), u: V(0, 1, 0) }, pod = { f: V(0, 0, 1), u: V(0, 1, 0) };
   const person = { aimW: M(norm(V(0.3, 0.1, 1))), upW: V(0, 1, 0) }, ai = { aimW: V(0, 0, 1), upW: V(0, 1, 0) };
@@ -82,13 +88,23 @@ function pageTrace(par) {
   }
   // D. the shield (hull-local)
   out.shield = F.shieldDirs(144, par.openDeg).map((d) => [d.x, d.y, d.z]);
+  // E. the fast gun's rate and heat over a scripted trigger (held 7 s, off 1 s, held 9 s, off 6 s, held 2 s), at the page's
+  // own P (rapidRate 30, rapidHeatTime 6, rapidCoolTime 5; the planted control moves rapidHeatTime)
+  const P = window.__lab.P, saved = P.rapidHeatTime; P.rapidHeatTime = par.heat;
+  const t = { heat: 0, hot: false, fireT: 0 };
+  for (let i = 0; i < 25 * 60; i++) {
+    const sec = i * DT, hold = sec < 7 || (sec >= 8 && sec < 17) || sec >= 23;
+    const n = F.rapidStep(t, hold, DT);
+    out.rapid.push([n, t.heat, t.hot ? 1 : 0]);
+  }
+  P.rapidHeatTime = saved;
   return out;
 }
 
 function flat(x, acc = []) { if (Array.isArray(x)) for (const y of x) flat(y, acc); else acc.push(x); return acc; }
 function compare(cs, pg) {
   const bad = [];
-  for (const k of ['turret', 'missile', 'steer', 'shield']) {
+  for (const k of ['turret', 'missile', 'steer', 'shield', 'rapid']) {
     if (cs[k].length !== pg[k].length) { bad.push(`${k}: ${cs[k].length} steps in C#, ${pg[k].length} on the page`); continue; }
     for (let i = 0; i < cs[k].length; i++) {
       const a = flat(cs[k][i]), b = flat(pg[k][i]);
@@ -123,6 +139,10 @@ function assetDiff(asset, shipped) {
     if (Math.abs(asset[field + '.Max'] - full) > 1e-4) bad.push(`${field}.Max ${asset[field + '.Max']} != lab ${baseKey || '1'} x (1 + 2 ${kKey} / 3) = ${full.toFixed(5)}`);
     if (asset[field + '.Enabled'] !== 1) bad.push(`${field} is not enabled (the element would change nothing)`);
   }
+  for (const [field, key, toLab] of DERIVED) {
+    if (!(field in asset)) { bad.push(`${field} missing from the asset`); continue; }
+    if (Math.abs(toLab(asset[field]) - shipped[key]) > 1e-6) bad.push(`${field} ${asset[field]} -> ${toLab(asset[field])} != lab ${key} ${shipped[key]}`);
+  }
   return bad;
 }
 
@@ -134,11 +154,11 @@ function assetDiff(asset, shipped) {
   const errors = []; page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('file://' + PAGE); await page.waitForTimeout(600);
   const run = (par) => page.evaluate(pageTrace, par);
-  const base = { horizon: 3, missileTurn: 150, openDeg: 45 };
+  const base = { horizon: 3, missileTurn: 150, openDeg: 45, heat: 6 };
   const diff = compare(cs, await run(base));
   if (diff.length) { failed = true; console.log('FAIL core vs page:\n  ' + diff.join('\n  ')); }
-  else console.log(`PASS core vs page: ${cs.turret.length} turret steps, ${cs.missile.length} missile steps, ${cs.steer.length} AI sticks, ${cs.shield.length} shield directions within ${TOL}`);
-  for (const [name, plant] of [['horizonSmooth 3 -> 2.7', { horizon: 2.7 }], ['missileTurn 150 -> 140', { missileTurn: 140 }], ['shieldOpenDeg 45 -> 44', { openDeg: 44 }]]) {
+  else console.log(`PASS core vs page: ${cs.turret.length} turret steps, ${cs.missile.length} missile steps, ${cs.steer.length} AI sticks, ${cs.shield.length} shield directions, ${cs.rapid.length} fast-gun steps within ${TOL}`);
+  for (const [name, plant] of [['horizonSmooth 3 -> 2.7', { horizon: 2.7 }], ['missileTurn 150 -> 140', { missileTurn: 140 }], ['shieldOpenDeg 45 -> 44', { openDeg: 44 }], ['rapidHeatTime 6 -> 5.7', { heat: 5.7 }]]) {
     const d = compare(cs, await run(Object.assign({}, base, plant)));
     if (d.length) console.log(`PASS planted control caught (${name}): ${d[0]}`);
     else { failed = true; console.log(`FAIL planted control NOT caught (${name})`); }

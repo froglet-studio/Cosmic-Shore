@@ -10,7 +10,8 @@ namespace CosmicShore.Tests
     /// <summary>
     /// The Orca's crew rules (the 4-seat vessel, Crew of Four Lab round 4; <c>Docs/Studios/CREW_OF_FOUR_LAB.md</c> §4): a
     /// stabilized turret holds its aim while the hull turns, its view's horizon eases back to the hull's up, a missile flies
-    /// where its thumb turns it, the magazine takes and refills, and the shield leaves its forward cone open. The same core
+    /// where its thumb turns it, each seat's magazine takes and refills, the fast gun fires at its rate and overheats, and
+    /// the shield leaves its forward cone open. The same core
     /// is held to the lab page step by step by <c>Tools/Build/orca_crew_lab/parity.cjs</c>; these tests pin the rules a
     /// reader can state in a sentence.
     /// </summary>
@@ -130,17 +131,50 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Magazine_TakesAboveTheReserve_OmniRefillsToItsSize()
+        public void Magazine_PerSeat_TakesToEmpty_OmniAddsOneUpToItsSize()
         {
-            var mag = new OrcaMagazine(start: 2, max: 12);
-            Assert.IsTrue(mag.CanTake(reserve: 1));
-            mag.Take();
-            Assert.IsFalse(mag.CanTake(reserve: 1), "AI gunners leave one missile for each human gunner aboard");
-            Assert.IsTrue(mag.CanTake(reserve: 0), "a person may take the last one");
-            Assert.AreEqual(3, mag.AddOmni(3));
-            mag.Count = 11;
-            Assert.AreEqual(1, mag.AddOmni(3), "an omni crystal fills only up to the magazine's size");
-            Assert.AreEqual(12, mag.Count);
+            var mag = new OrcaMagazine(start: 2, max: 4);   // round 5: each gunner seat's own ("not a shared pool")
+            mag.Take(); mag.Take();
+            Assert.IsFalse(mag.CanTake, "an empty seat cannot launch");
+            Assert.AreEqual(1, mag.AddOmni(1), "an omni crystal gives the seat one missile");
+            Assert.IsTrue(mag.CanTake);
+            mag.Count = 4;
+            Assert.AreEqual(0, mag.AddOmni(1), "a full seat takes none");
+        }
+
+        [Test]
+        public void FastGun_FiresAtItsRate_WhileHeld()
+        {
+            var gun = new OrcaFastGun();
+            int rounds = 0;
+            for (int i = 0; i < 60; i++) rounds += gun.Step(hold: true, Dt, rate: 30f, heatSeconds: 6f, coolSeconds: 5f);
+            Assert.AreEqual(30, rounds, 1, "30 rounds a second");
+            Assert.IsFalse(gun.Hot);
+        }
+
+        [Test]
+        public void FastGun_Overheats_ThenLocksOutUntilCool()
+        {
+            var gun = new OrcaFastGun();
+            int i = 0;
+            for (; i < 60 * 10 && !gun.Hot; i++) gun.Step(true, Dt, 30f, 6f, 5f);
+            Assert.AreEqual(6f, i * Dt, 0.05f, "it overheats after six seconds of fire");
+            int locked = 0, steps = 0;
+            for (; gun.Hot && steps < 60 * 10; steps++) locked += gun.Step(true, Dt, 30f, 6f, 5f);
+            Assert.AreEqual(0, locked, "no rounds while overheated, even held");
+            Assert.AreEqual(5f, steps * Dt, 0.05f, "it cools from hot in five seconds");
+            Assert.Greater(gun.Step(true, 0.1f, 30f, 6f, 5f), 0, "a press after the lockout fires at once");
+        }
+
+        [Test]
+        public void FastGun_Released_CoolsAndTheNextPressFiresAtOnce()
+        {
+            var gun = new OrcaFastGun();
+            for (int i = 0; i < 60; i++) gun.Step(true, Dt, 30f, 6f, 5f);
+            float warm = gun.Heat;
+            gun.Step(false, 1f, 30f, 6f, 5f);
+            Assert.Less(gun.Heat, warm, "released, it cools");
+            Assert.AreEqual(1, gun.Step(true, Dt, 30f, 6f, 5f), "the first frame of a press fires");
         }
 
         [Test]

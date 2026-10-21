@@ -95,6 +95,15 @@ Grouper · 2 seat".
   - 14 core tests pass under .NET.
   - All static gates pass.
 - **Not checked: it has not been flown in the Unity editor.** It also runs on one machine only, like the Wrasse.
+- **Round 5 (2026-10-21).**
+  - Each gunner seat has **its own gun**: gunner 1 the Serpent's sniper (12 s cooldown; every hostile prism in a thin
+    cone dies, super-shielded ones included), gunner 2 the Brittle Star's rounds (overheats), gunner 3 the Grizzly's
+    bomb (it never pushes the Orca).
+  - Each seat has **its own missiles**, and an omni crystal gives every seat one.
+  - The helm's shield **rides with the hull super-shielded, then drops in place as danger prisms**. That shield is the
+    round's biggest measured gain: 120 against 77 in Anchorage.
+  - Both crew cameras (the Orca's gunner view, the Wrasse's kite view) now have the game camera's post-processing.
+  - Same status: compiled and parity-checked, not flown in the editor.
 
 ## 4. Open items, and what is asked of you
 

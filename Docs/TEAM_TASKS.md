@@ -1212,3 +1212,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (vessels, product decisions)
 - **Added:** 2026-10-20 by a Claude session (`cece/happy-noether-m54hz6`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md#follow-ups
+
+### T-20261021-9ef8 · open · test · Crew vessels
+- **Task:** Fly the Orca's round 5 in the Unity editor on cece/happy-noether-m54hz6, and check the crew cameras' post-processing: the Wrasse's kite view and the Orca's turret view should have bloom like the pilot view; the helm shield rides white (super-shielded) then drops red (danger) ~4 s later and stays ~20 s; seat 2 sniper beam kills a super-shielded wall and counts down 12 s; seat 3 fast gun overheats after ~6 s; seat 4 bomb bursts on a second press and never pushes the Orca; an omni crystal gives every seat a missile. Steps: Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 5'.
+- **Done when:** Every step of the round-5 checklist entry ticked (or a bug filed per failure), console clean in play mode
+- **Who can take it:** Garrett (owner), Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/happy-noether-m54hz6`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md

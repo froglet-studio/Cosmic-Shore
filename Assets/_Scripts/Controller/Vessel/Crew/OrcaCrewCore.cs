@@ -22,8 +22,8 @@ namespace CosmicShore.Gameplay
         public float MissileLife;
         /// <summary>lab launchCd: a turret's reload after its missile ends (s).</summary>
         public float LaunchCooldown;
-        /// <summary>lab maxMissiles / omniMissiles / aiReserve.</summary>
-        public int MaxMissiles, OmniMissiles, AiReserve;
+        /// <summary>lab maxMissiles / omniMissiles: each gunner seat's own magazine (round 5).</summary>
+        public int MaxMissiles, OmniMissiles;
         /// <summary>lab shieldBlocks, shieldOpenDeg, shieldMinR, shieldMaxR.</summary>
         public int ShieldBlocks;
         public float ShieldOpenDeg, ShieldMinRadius, ShieldMaxRadius;
@@ -263,7 +263,7 @@ namespace CosmicShore.Gameplay
         public bool CanBurstByHand => Age > OrcaCrewCore.MinBurstAge;
     }
 
-    /// <summary>The hull's shared magazine: the three gunners fire from it, omni crystals refill it.</summary>
+    /// <summary>One gunner seat's magazine (round 5: "not a shared pool"); an omni crystal gives every seat one more.</summary>
     public sealed class OrcaMagazine
     {
         public int Count;
@@ -271,12 +271,43 @@ namespace CosmicShore.Gameplay
 
         public OrcaMagazine(int start, int max) { Max = Math.Max(1, max); Count = Math.Clamp(start, 0, Max); }
 
-        /// <summary>Take one if more than <paramref name="reserve"/> remain (AI gunners leave a reserve for each human
-        /// gunner aboard, lab aiReserve).</summary>
-        public bool CanTake(int reserve) => Count > reserve;
+        public bool CanTake => Count > 0;
         public void Take() { if (Count > 0) Count--; }
 
         /// <summary>An omni crystal: add <paramref name="missiles"/> up to the magazine's size; returns how many fitted.</summary>
         public int AddOmni(int missiles) { int was = Count; Count = Math.Min(Max, Count + Math.Max(0, missiles)); return Count - was; }
+    }
+
+    /// <summary>The fast gun's rate and heat (the lab's <c>rapidStep</c>, round 5): rounds owed while held, heat rising
+    /// while it fires, and once hot a lockout until it has cooled all the way.</summary>
+    public sealed class OrcaFastGun
+    {
+        public float Heat, Owed;
+        public bool Hot;
+
+        /// <summary>How many rounds to fire this step at <paramref name="rate"/> rounds/s, overheating after
+        /// <paramref name="heatSeconds"/> of fire and cooling over <paramref name="coolSeconds"/>. A press after a release
+        /// fires at once.</summary>
+        public int Step(bool hold, float dt, float rate, float heatSeconds, float coolSeconds)
+        {
+            int n = 0;
+            float interval = 1f / MathF.Max(0.01f, rate);
+            if (hold && !Hot)
+            {
+                Owed += dt;
+                while (Owed >= interval) { Owed -= interval; n++; }
+                Heat += dt / MathF.Max(0.05f, heatSeconds);
+                if (Heat >= 1f) { Heat = 1f; Hot = true; }
+            }
+            else
+            {
+                Owed = interval;
+                Heat = MathF.Max(0f, Heat - dt / MathF.Max(0.05f, coolSeconds));
+                if (Hot && Heat <= 0f) Hot = false;
+            }
+            return n;
+        }
+
+        public void Reset() { Heat = 0f; Hot = false; Owed = 0f; }
     }
 }

@@ -76,6 +76,14 @@ AOE_EXPLOSION_REF = "{fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac
 GAME_DATA_GUID = "b35f33752bb10a44cb5033b5670f50aa"
 ROOT_GO, ROOT_TRANSFORM_ID, NETWORK_OBJECT_ID = W.ROOT_GO, W.ROOT_TRANSFORM_ID, W.NETWORK_OBJECT_ID
 SEAT_ID = "6420517381209347020"              # OrcaCrew on the root
+# Round 5: two gun objects under the root, each a Gun + ProjectileFactory + ProjectilePoolManager (the Brittle Star's
+# BrittleStarTurrets block and the Grizzly's bomb pool, cloned with the Orca's own capacities)
+FAST_GO, FAST_TF, FAST_GUN, FAST_FACTORY, FAST_POOL = (str(6420517381209347100 + k) for k in range(1, 6))
+BOMB_GO, BOMB_TF, BOMB_GUN, BOMB_FACTORY, BOMB_POOL = (str(6420517381209347110 + k) for k in range(1, 6))
+SPARROW_ROUND_REF = "{fileID: 7632677803272750685, guid: 1bdcea9e9329dd141af7ab874a4d31a2, type: 3}"   # SparrowProjectile.prefab
+GRIZZLY_BOMB_REF = "{fileID: 7632677803272750685, guid: d6e1fe636eb02bb73852e896ccb0532e, type: 3}"   # GrizzlyBomb.prefab
+AOE_GRIZZLY_REF = "{fileID: 3479271500403630839, guid: 8713aea50e6b47119e57afc2ce603771, type: 3}"   # AOEGrizzlyExplosion.prefab
+COMBAT_HIT_GUID = "45fb43a0cddb5cc3cc4dc448df994152"   # Event_CombatHitStats.asset (the scoreboard's channel)
 
 
 # ----------------------------------------------------------------------------- the prefab
@@ -92,7 +100,9 @@ def seat_block(script_guid: str) -> str:
             f"  m_Script: {{fileID: 11500000, guid: {script_guid}, type: 3}}\n"
             "  m_Name: \n"
             "  m_EditorClassIdentifier: \n"
-            f"  config: {{fileID: 11400000, guid: {CONFIG_GUID}, type: 2}}\n")
+            f"  config: {{fileID: 11400000, guid: {CONFIG_GUID}, type: 2}}\n"
+            f"  fastGun: {{fileID: {FAST_GUN}}}\n"
+            f"  bombGun: {{fileID: {BOMB_GUN}}}\n")
 
 
 def build_clone(donor: str, script_guid: str) -> str:
@@ -110,7 +120,7 @@ def build_clone(donor: str, script_guid: str) -> str:
     text = text[:root.end(1)] + f"  - component: {{fileID: {SEAT_ID}}}\n" + text[root.end(1):]
     if not text.endswith("\n"):
         text += "\n"
-    return retrofit(text + seat_block(script_guid))
+    return retrofit(text + seat_block(script_guid).replace(f"  fastGun: {{fileID: {FAST_GUN}}}\n  bombGun: {{fileID: {BOMB_GUN}}}\n", ""))
 
 
 def hud_retrofit(text: str) -> str:
@@ -148,14 +158,62 @@ def tuning_retrofit(text: str) -> str:
     return head + "".join(out)
 
 
+def gun_docs(go, tf, gun, factory, pool, name, prefab_ref, capacity, max_size, rate):
+    """One gun object under the root: GameObject, Transform, Gun, ProjectileFactory (Normal -> the pool), and a
+    ProjectilePoolManager of `prefab_ref` (the pool is injected with the hull's Container at spawn)."""
+    head = "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n"
+    mono = lambda anchor, script: (f"--- !u!114 &{anchor}\nMonoBehaviour:\n" + head + f"  m_GameObject: {{fileID: {go}}}\n"
+                                   "  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+                                   f"  m_Script: {{fileID: 11500000, guid: {script}, type: 3}}\n  m_Name: \n  m_EditorClassIdentifier: \n")
+    return (f"--- !u!1 &{go}\nGameObject:\n" + head + "  serializedVersion: 6\n  m_Component:\n"
+            f"  - component: {{fileID: {tf}}}\n  - component: {{fileID: {gun}}}\n  - component: {{fileID: {factory}}}\n"
+            f"  - component: {{fileID: {pool}}}\n  m_Layer: 0\n  m_Name: {name}\n  m_TagString: Untagged\n  m_Icon: {{fileID: 0}}\n"
+            "  m_NavMeshLayer: 0\n  m_StaticEditorFlags: 0\n  m_IsActive: 1\n"
+            f"--- !u!4 &{tf}\nTransform:\n" + head + f"  m_GameObject: {{fileID: {go}}}\n  serializedVersion: 2\n"
+            "  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}\n  m_LocalPosition: {x: 0, y: 0, z: 0}\n  m_LocalScale: {x: 1, y: 1, z: 1}\n"
+            f"  m_ConstrainProportionsScale: 0\n  m_Children: []\n  m_Father: {{fileID: {ROOT_TRANSFORM_ID}}}\n"
+            "  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\n"
+            + mono(gun, GUN_SCRIPT) + f"  firePeriod: 0.2\n  sideLength: 2\n  projectileFactory: {{fileID: {factory}}}\n"
+            + mono(factory, FACTORY_SCRIPT) + f"  poolEntries:\n  - type: 0\n    poolManager: {{fileID: {pool}}}\n"
+            + mono(pool, POOL_SCRIPT) + f"  prefab: {prefab_ref}\n  defaultCapacity: {capacity}\n  maxSize: {max_size}\n"
+            f"  enableBufferMaintenance: 1\n  bufferSizeTarget: {capacity}\n  maxInstantiateRate: {rate}\n"
+            f"  baseInstantiateRate: {max(1, rate // 3)}\n  maxAddsPerFrame: {max(1, rate // 10)}\n")
+
+
+GUN_SCRIPT, FACTORY_SCRIPT, POOL_SCRIPT = ("35a4e5dfc7064254cb27fc78eefb05a0", "a9b3080b23e64bba93ece7a3dece3463",
+                                           "b5daed71d21246db9fdb15a9d495e1ec")
+
+
+def gun_retrofit(text: str) -> str:
+    """Round 5: the fast gun's and the bomb's objects under the root, and the crew wired to them. Idempotent.
+    Pools: the fast gun keeps rate x flight = 30 x 4.5 = 135 rounds alive (vessel skill 4.ab3), so 160 / 320; one bomb
+    at a time, so 2 / 4."""
+    if f"--- !u!1 &{FAST_GO}\n" in text:
+        return text
+    m = re.search(r"(--- !u!4 &%s\nTransform:\n(?:.*\n)*?  m_Children:\n)((?:  - \{fileID: -?\d+\}\n)*)" % ROOT_TRANSFORM_ID, text)
+    if not m:
+        raise RuntimeError("Orca.prefab: the root Transform's m_Children list was not found")
+    text = text[:m.end(2)] + f"  - {{fileID: {FAST_TF}}}\n  - {{fileID: {BOMB_TF}}}\n" + text[m.end(2):]
+    seat = re.search(r"(--- !u!114 &%s\n(?:.*\n)*?  config: \{[^}]*\}\n)" % SEAT_ID, text)
+    if not seat:
+        raise RuntimeError("Orca.prefab: the OrcaCrew document's config line was not found")
+    if "  fastGun:" not in text[seat.start():seat.end() + 200]:
+        text = text[:seat.end()] + f"  fastGun: {{fileID: {FAST_GUN}}}\n  bombGun: {{fileID: {BOMB_GUN}}}\n" + text[seat.end():]
+    if not text.endswith("\n"):
+        text += "\n"
+    return (text + gun_docs(FAST_GO, FAST_TF, FAST_GUN, FAST_FACTORY, FAST_POOL, "OrcaFastGun", SPARROW_ROUND_REF, 160, 320, 200)
+            + gun_docs(BOMB_GO, BOMB_TF, BOMB_GUN, BOMB_FACTORY, BOMB_POOL, "OrcaBombGun", GRIZZLY_BOMB_REF, 2, 4, 5))
+
+
 def retrofit(text: str) -> str:
-    """No buttons, no Sparrow kit, two thumbs, the lab's hull, the Orca HUD and container. Idempotent."""
+    """No buttons, no Sparrow kit, two thumbs, the lab's hull, the Orca HUD and container, the round-5 guns. Idempotent."""
     text = W.BINDINGS.sub(lambda m: m.group(1) + " []\n", text, count=1)
     text = W.strip_sparrow_kit(text)
     text = hud_retrofit(text)
     text = text.replace(f"guid: {W.SINGLE_STICK_TRANSFORMER_GUID},", f"guid: {W.TWO_STICK_TRANSFORMER_GUID},")
     text = tuning_retrofit(text)
-    return text.replace(f"guid: {W.DONOR_CONTAINER_GUID},", f"guid: {ORCA_CONTAINER_GUID},")
+    text = text.replace(f"guid: {W.DONOR_CONTAINER_GUID},", f"guid: {ORCA_CONTAINER_GUID},")
+    return gun_retrofit(text) if f"--- !u!114 &{SEAT_ID}\n" in text else text
 
 
 def prefab_meta() -> str:
@@ -185,31 +243,47 @@ def elemental(rest: str, full: str, element: int, floor: str) -> str:
 
 
 CHARGE, MASS, SPACE, TIME = 1, 2, 3, 4
-# The lab's SHIPPED numbers (Docs/Studios/CrewOfFourLab.html, round 4), in OrcaCrewConfigSO's field order. Seeded ONCE:
-# from then on the lab owns them and parity.cjs holds the asset to the page.
+# The lab's SHIPPED numbers (Docs/Studios/CrewOfFourLab.html, round 5), in OrcaCrewConfigSO's field order. Seeded from the
+# lab: the lab owns them and parity.cjs holds the asset to the page. A round that changes them deletes the asset and
+# re-runs this tool (the guid is kept, so no reference moves).
 CONFIG_NUMBERS = [
     ("hullRadius", "9"), ("boostTank", "3"), ("boostRefill", elemental("0.25", "0.35", TIME, "0.05")), ("shieldBlocks", "144"),
     ("shieldMinRadius", "50"), ("shieldMaxRadius", "70"), ("shieldOpenDeg", "45"),
     ("shieldSeconds", elemental("4", "6.1333333", MASS, "0.5")), ("shieldCooldown", "9"),
-    ("shieldBlockScale", "{x: 10, y: 1, z: 1}"), ("mountSmooth", "0.35"), ("horizonSmooth", "3"), ("turretTurn", "160"),
+    ("shieldBlockScale", "{x: 10, y: 1, z: 1}"), ("shieldSuper", "1"), ("shieldLinger", "20"), ("mountSmooth", "0.35"), ("horizonSmooth", "3"), ("turretTurn", "160"),
     ("mouseAimRadiansPerPixel", "0.0035"), ("missileSpeed", "180"), ("missileTurn", "150"),
     ("missileScale", elemental("1", "1.4", CHARGE, "0.5")), ("missileLife", "5"),
     ("launchCooldown", "0.6"), ("blastRadius", elemental("30", "46", SPACE, "5")), ("blastSeconds", "0.5"),
-    ("missileCollectRadius", "9"), ("missileContactRadius", "3.46"), ("startMissiles", "6"), ("maxMissiles", "12"),
-    ("omniMissiles", "3"), ("aiReserve", "1"), ("aiSkill", "2"),
+    ("missileCollectRadius", "9"), ("missileContactRadius", "3.46"), ("startMissiles", "2"), ("maxMissiles", "4"),
+    ("omniMissiles", "1"), ("gunsOn", "1"),
+    ("sniperCooldown", "12"), ("sniperRange", "3000"), ("sniperConeDeg", "1.5"), ("sniperMinPathRadius", "6"),
+    ("sniperStripPerElement", "0.1"), ("sniperEjectSpeed", "45"), ("sniperSameVictimCooldown", "0.5"),
+    ("sniperDebrisSpeed", "90"), ("sniperDebrisSpeedLimit", "120"), ("sniperBeamStartWidth", "1.5"),
+    ("sniperBeamSeconds", "0.35"), ("sniperFlareRadius", "18"), ("sniperFlareSeconds", "0.3"),
+    ("fastGunRate", "30"), ("fastGunRoundSpeed", "135"), ("fastGunRoundSeconds", "4.5"), ("fastGunRoundScale", "1"),
+    ("fastGunRoundGrowth", "3"), ("fastGunHeatSeconds", "6"), ("fastGunCoolSeconds", "5"),
+    ("bombSpeed", "90"), ("bombFuse", "4"), ("bombBlastRadius", elemental("50", "76.666667", SPACE, "10")),
+    ("bombCooldown", "2.5"), ("bombScale", "3.75"), ("bombColor", "{r: 1, g: 0.072, b: 0.105, a: 1}"),
+    ("aiSkill", "2"),
     ("aiRetargetSeconds", "0.4"), ("turretFov", "75"), ("missileCamBack", "14"), ("missileCamUp", "3"),
 ]
-SOUNDS = ["missileLaunchSound", "missileBurstSound", "shieldRaiseSound", "omniRefillSound", "emptyMagazineSound"]
+SOUNDS = ["missileLaunchSound", "missileBurstSound", "shieldRaiseSound", "omniRefillSound", "emptyMagazineSound",
+          "sniperShotSound", "bombThrowSound", "bombBurstSound"]
 
 
 def config_asset(script_guid: str) -> str:
     text = so_header(script_guid, "OrcaCrewConfig")
     text += "".join(f"  {k}: {v}\n" for k, v in CONFIG_NUMBERS)
     text += f"  explosions:\n  - {AOE_EXPLOSION_REF}\n"
+    text += f"  bombExplosions:\n  - {AOE_GRIZZLY_REF}\n"
     text += f"  gameData: {{fileID: 11400000, guid: {GAME_DATA_GUID}, type: 2}}\n"
+    text += f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_GUID}, type: 2}}\n"
     text += "".join(empty_event(s) for s in SOUNDS)
-    text += '  seatLineTemplate: "{seat}  \\xB7  {count} missiles  \\xB7  1-4 to change seat"\n'
+    text += '  seatLineTemplate: "{seat}  \\xB7  {gun}  \\xB7  {count} missiles  \\xB7  1-4 to change seat"\n'
     text += "  seatNames:\n  - Helm\n  - Gunner 1\n  - Gunner 2\n  - Gunner 3\n"
+    text += "  gunNames:\n  - \n  - Sniper\n  - Fast gun\n  - Bomb\n"
+    text += "  gunLineTemplate: '{name} {state}'\n  gunReadyText: ready\n  gunCooldownTemplate: '{seconds}s'\n"
+    text += "  gunHotText: overheated\n  bombOutText: bomb out\n"
     return text
 
 
@@ -308,12 +382,13 @@ def register_network(text: str) -> str:
 # Release is the crew's. No level-5 upgrades: none is designed yet (vessel skill §3, the design-approval gate), so every
 # UpgradeLabel is empty. The words are authored data the team edits; written once.
 ORCA_MAP_ENTRIES = [
-    (1, "Flown Missiles", "Three gunners launch missiles from one shared magazine and fly them by hand; Charge makes them "
-        "faster and sharper. Omni crystals refill the magazine. The card counts the missiles left."),
-    (3, "Burst", "A missile bursts on contact, after five seconds, or when its gunner presses Release again; Space "
-        "widens the blast. The card flashes on every burst."),
-    (2, "Danger Shield", "The helm rings the hull in danger prisms, open ahead, on the left trigger; Mass holds the ring "
-        "longer. The card shows its recharge."),
+    (1, "Flown Missiles", "Each gunner launches missiles from its own magazine and flies them by hand; Charge makes them "
+        "faster and sharper. An omni crystal gives every gunner a missile. The card counts your missiles."),
+    (3, "Burst", "A missile bursts on contact, after five seconds, or when its gunner presses Missile again, and the "
+        "third gunner's bomb bursts the same way; Space widens both blasts. The card flashes on every burst."),
+    (2, "Danger Shield", "The helm rings the hull in super-shielded prisms, open ahead, on the left trigger; they ride "
+        "with the hull, then drop where they are as danger prisms. Mass carries the ring longer. The card shows its "
+        "recharge."),
     (4, "Boost Tank", "The helm boosts on the right trigger while the tank lasts; it refills on its own, faster with "
         "Time. The card shows the tank."),
 ]
@@ -383,6 +458,12 @@ def check_prefab(text: str, script_guid: str):
     hud = re.search(r"guid: %s, type: 3\}\n((?:.*\n)*?)(?=--- !u!|\Z)" % W.guid_of_script("OrcaHUDController"), text)
     want(hud and f"  crew: {{fileID: {SEAT_ID}}}\n" in hud.group(1) and W.guid_of_script("SparrowHUDController") not in text,
          "Orca.prefab: the HUD is not OrcaHUDController wired to the crew (the cards would not read the magazine)")
+    for go, gun, pool, name, ref in ((FAST_GO, FAST_GUN, FAST_POOL, "OrcaFastGun", SPARROW_ROUND_REF),
+                                     (BOMB_GO, BOMB_GUN, BOMB_POOL, "OrcaBombGun", GRIZZLY_BOMB_REF)):
+        want(f"--- !u!1 &{go}\n" in text and f"  m_Name: {name}\n" in text, f"Orca.prefab: no {name} object under the root (round 5)")
+        want(seat and f"{{fileID: {gun}}}" in seat.group(1), f"Orca.prefab: OrcaCrew is not wired to {name}'s Gun")
+        pd = re.search(r"--- !u!114 &%s\n((?:.*\n)*?)(?=--- !u!|\Z)" % pool, text)
+        want(pd and f"  prefab: {ref}" in pd.group(1), f"Orca.prefab: {name}'s pool does not hold its projectile prefab")
     dangling = W.dangling_local_refs(text)
     want(not dangling, f"Orca.prefab: dangling local fileID reference(s) {dangling[:5]}")
     return errs
@@ -396,6 +477,8 @@ def check_assets(config: str, container: str, effect: str, material: str, config
     want(f"guid: {config_script}, type: 3" in config, "OrcaCrewConfig.asset: does not name OrcaCrewConfigSO")
     want(AOE_EXPLOSION_REF in config, "OrcaCrewConfig.asset: explosions is not AOEExplosion.prefab (a missile would burst into nothing)")
     want(f"guid: {GAME_DATA_GUID}" in config, "OrcaCrewConfig.asset: gameData is unwired (no rival hulls for the gunners or the missiles)")
+    want(AOE_GRIZZLY_REF in config, "OrcaCrewConfig.asset: bombExplosions is not AOEGrizzlyExplosion.prefab (a bomb would burst into nothing)")
+    want(f"guid: {COMBAT_HIT_GUID}" in config, "OrcaCrewConfig.asset: onCombatHitLanded is unwired (sniper hits would not score)")
     want(f"  - {{fileID: 11400000, guid: {OMNI_EFFECT_GUID}, type: 2}}\n" in container.split("  vesselElementalCrystalEffects:")[0],
          "OrcaImpactorDataContainer: OrcaOmniCrystalEffect is not in its omni (vesselCrystalEffects) list")
     want(W.SPARROW_WARD_EFFECT_GUID not in container, "OrcaImpactorDataContainer: still carries the Sparrow's Omni ward")
@@ -510,6 +593,10 @@ def self_test():
     expect(check_prefab(good.replace(W.TWO_STICK_TRANSFORMER_GUID, W.SINGLE_STICK_TRANSFORMER_GUID), script_guid), 1, "the one-thumb transformer")
     expect(check_prefab(read(DONOR).replace("  m_Name: Sparrow\n", "  m_Name: Orca\n"), script_guid), 3, "the Sparrow's kit, untouched")
     expect(check_prefab(good + "  stray: {fileID: 987654321}\n", script_guid), 1, "a dangling local reference")
+    expect(check_prefab(good.replace(f"  fastGun: {{fileID: {FAST_GUN}}}\n", "  fastGun: {fileID: 0}\n"), script_guid), 1, "the fast gun unwired")
+    expect(check_prefab(good.replace(GRIZZLY_BOMB_REF, SPARROW_ROUND_REF), script_guid), 1, "the bomb pool holding rounds")
+    if gun_retrofit(good) != good:
+        fails.append("the gun retrofit is not idempotent")
     if "\n  RollScaler: 16.5\n" not in good or "\n  DefaultThrottleScaler: 21.25\n" not in good:
         fails.append("a fresh clone does not get the lab's hull (speed x0.85, turn x0.55)")
     tuned = good.replace("\n  RollScaler: 16.5\n", "\n  RollScaler: 40\n")
@@ -522,6 +609,8 @@ def self_test():
     expect(check_assets(cfg, cont, eff, mat, cfg_script, omni_script), 0, "the crew's assets pass")
     expect(check_assets(cfg.replace(AOE_EXPLOSION_REF, "{fileID: 0}"), cont, eff, mat, cfg_script, omni_script), 1, "no explosion")
     expect(check_assets(cfg.replace(GAME_DATA_GUID, "0" * 32), cont, eff, mat, cfg_script, omni_script), 1, "no game data")
+    expect(check_assets(cfg.replace(AOE_GRIZZLY_REF, "{fileID: 0}"), cont, eff, mat, cfg_script, omni_script), 1, "no bomb blast")
+    expect(check_assets(cfg.replace(COMBAT_HIT_GUID, "0" * 32), cont, eff, mat, cfg_script, omni_script), 1, "no scoreboard channel")
     expect(check_assets(cfg, read(W.DONOR_CONTAINER), eff, mat, cfg_script, omni_script), 2, "the Sparrow's container")
     expect(check_assets(cfg, cont, eff.replace(omni_script, "0" * 32), mat, cfg_script, omni_script), 1, "the effect names another script")
     expect(check_assets(cfg, cont, eff, mat.replace("m_EnableInstancingVariants: 1", "m_EnableInstancingVariants: 0"), cfg_script, omni_script), 1, "no instancing")

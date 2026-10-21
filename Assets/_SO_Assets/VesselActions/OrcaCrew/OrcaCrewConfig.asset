@@ -36,6 +36,8 @@ MonoBehaviour:
     Floor: 0.5
   shieldCooldown: 9
   shieldBlockScale: {x: 10, y: 1, z: 1}
+  shieldSuper: 1
+  shieldLinger: 20
   mountSmooth: 0.35
   horizonSmooth: 3
   turretTurn: 160
@@ -63,10 +65,43 @@ MonoBehaviour:
   blastSeconds: 0.5
   missileCollectRadius: 9
   missileContactRadius: 3.46
-  startMissiles: 6
-  maxMissiles: 12
-  omniMissiles: 3
-  aiReserve: 1
+  startMissiles: 2
+  maxMissiles: 4
+  omniMissiles: 1
+  gunsOn: 1
+  sniperCooldown: 12
+  sniperRange: 3000
+  sniperConeDeg: 1.5
+  sniperMinPathRadius: 6
+  sniperStripPerElement: 0.1
+  sniperEjectSpeed: 45
+  sniperSameVictimCooldown: 0.5
+  sniperDebrisSpeed: 90
+  sniperDebrisSpeedLimit: 120
+  sniperBeamStartWidth: 1.5
+  sniperBeamSeconds: 0.35
+  sniperFlareRadius: 18
+  sniperFlareSeconds: 0.3
+  fastGunRate: 30
+  fastGunRoundSpeed: 135
+  fastGunRoundSeconds: 4.5
+  fastGunRoundScale: 1
+  fastGunRoundGrowth: 3
+  fastGunHeatSeconds: 6
+  fastGunCoolSeconds: 5
+  bombSpeed: 90
+  bombFuse: 4
+  bombBlastRadius: 
+    Enabled: 1
+    Value: 50
+    Min: 50
+    Max: 76.666667
+    element: 3
+    UseFloor: 1
+    Floor: 10
+  bombCooldown: 2.5
+  bombScale: 3.75
+  bombColor: {r: 1, g: 0.072, b: 0.105, a: 1}
   aiSkill: 2
   aiRetargetSeconds: 0.4
   turretFov: 75
@@ -74,7 +109,10 @@ MonoBehaviour:
   missileCamUp: 3
   explosions:
   - {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792, type: 3}
+  bombExplosions:
+  - {fileID: 3479271500403630839, guid: 8713aea50e6b47119e57afc2ce603771, type: 3}
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
   missileLaunchSound:
     Guid:
       Data1: 0
@@ -110,9 +148,40 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
-  seatLineTemplate: "{seat}  \xB7  {count} missiles  \xB7  1-4 to change seat"
+  sniperShotSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  bombThrowSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  bombBurstSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  seatLineTemplate: "{seat}  \xB7  {gun}  \xB7  {count} missiles  \xB7  1-4 to change seat"
   seatNames:
   - Helm
   - Gunner 1
   - Gunner 2
   - Gunner 3
+  gunNames:
+  - 
+  - Sniper
+  - Fast gun
+  - Bomb
+  gunLineTemplate: '{name} {state}'
+  gunReadyText: ready
+  gunCooldownTemplate: '{seconds}s'
+  gunHotText: overheated
+  bombOutText: bomb out

@@ -9,13 +9,14 @@ namespace CosmicShore.UI
     /// <summary>
     /// The Orca's four ability cards read its crew (the 4-seat vessel; <c>Controller/Vessel/Crew/ORCA_CREW.md</c>):
     /// <list type="bullet">
-    /// <item><b>Charge</b> — the missiles in the shared magazine, as a number on the card.</item>
-    /// <item><b>Space</b> — a flash each time one of the crew's missiles bursts.</item>
+    /// <item><b>Charge</b> — missiles, as a number on the card: the person's own seat's, or all three seats' at the helm
+    /// (round 5: each gunner seat has its own magazine).</item>
+    /// <item><b>Space</b> — a flash each time one of the crew's missiles or bombs bursts.</item>
     /// <item><b>Mass</b> — the helm's shield: a flash when it goes up, its recharge on the card's veil.</item>
     /// <item><b>Time</b> — the boost tank, emptying on the card's veil as the helm boosts.</item>
     /// </list>
-    /// Plus one line naming the seat the person holds (the config's <c>seatLineTemplate</c>, so the words are the
-    /// team's). The view is the Sparrow's HUD (the hull is a Sparrow clone, as the Wrasse is), whose Initialize hides the
+    /// Plus one line naming the seat the person holds and its gun's state (the config's <c>seatLineTemplate</c> and gun
+    /// words, so the words are the team's). The view is the Sparrow's HUD (the hull is a Sparrow clone, as the Wrasse is), whose Initialize hides the
     /// Charge and Space icons until its guns report; the Orca has no Sparrow guns, so this controller shows them. The
     /// count and the line are GENERATED at runtime (the Wrasse's and the Shrike's counts are the pattern). Polled from
     /// this hull's own crew, a serialized reference (vessel rule 14), behind the fleet's pilot gate (rule 5).
@@ -46,7 +47,7 @@ namespace CosmicShore.UI
         const string CountName = "OrcaCount", SeatLineName = "OrcaSeatLine";
 
         TMP_Text _count, _seatLine;
-        int _shownCount = -1, _shownSeat = -1, _shownLineCount = -1;
+        int _shownCount = -1, _shownSeat = int.MinValue, _shownLineCount = -1, _shownGunKey = int.MinValue;
         bool _isLocalPilotHud;
         float _burstAt, _shieldAt;
 
@@ -67,7 +68,8 @@ namespace CosmicShore.UI
                 if (view.TryGetAbilityIcon(e, out var icon)) icon.enabled = true;   // the Sparrow's view hides them until its guns report
             if (view.TryGetAbilityIcon(Element.Charge, out var charge)) _count = EnsureCount(charge);
             _seatLine = EnsureSeatLine(view.transform as RectTransform);
-            _shownCount = _shownSeat = _shownLineCount = -1;
+            _shownCount = -1;
+            _shownSeat = _shownGunKey = int.MinValue;
             _burstAt = crew ? crew.LastBurstAt : 0f;
             _shieldAt = crew ? crew.ShieldRaisedAt : 0f;
         }
@@ -76,7 +78,7 @@ namespace CosmicShore.UI
         {
             if (!_isLocalPilotHud || !crew) return;
             PaintCount(crew.Missiles);
-            PaintSeatLine(crew.HumanAboard ? crew.HumanSeat : -1, crew.Missiles);
+            PaintSeatLine(crew.HumanAboard ? crew.HumanSeat : -1);
 
             var view = View;
             if (!view) return;
@@ -138,16 +140,19 @@ namespace CosmicShore.UI
             _count.color = count > 0 ? countLiveColor : countEmptyColor;
         }
 
-        /// <summary>The seat line: the config's authored template, or nothing when no person is aboard.</summary>
-        void PaintSeatLine(int seat, int count)
+        /// <summary>The seat line: the config's authored template, or nothing when no person is aboard. Rebuilt only when the
+        /// seat, the missiles or the gun's state change (no per-frame strings).</summary>
+        void PaintSeatLine(int seat)
         {
-            if (!_seatLine || (seat == _shownSeat && count == _shownLineCount)) return;
-            _shownSeat = seat; _shownLineCount = count;
+            if (!_seatLine) return;
+            int count = crew.Missiles, gunKey = seat > 0 ? crew.GunStateKey(seat) : 0;
+            if (seat == _shownSeat && count == _shownLineCount && gunKey == _shownGunKey) return;
+            _shownSeat = seat; _shownLineCount = count; _shownGunKey = gunKey;
             var cfg = crew.Config;
             string template = cfg ? cfg.SeatLineTemplate : string.Empty;
             _seatLine.text = seat < 0 || string.IsNullOrEmpty(template)
                 ? string.Empty
-                : template.Replace("{seat}", cfg.SeatName(seat)).Replace("{count}", count.ToString());
+                : template.Replace("{seat}", cfg.SeatName(seat)).Replace("{gun}", crew.GunLine(seat)).Replace("{count}", count.ToString());
         }
     }
 }
