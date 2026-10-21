@@ -813,11 +813,6 @@ namespace CosmicShore.Gameplay
             22f * Mathf.Sin(a * 3f + ring * 1.7f)
             + 9f * N01(Mathf.Cos(a) * 4f + 9f, ring * 5f, Mathf.Sin(a) * 4f, 3);
 
-        /// <summary>The top of the deck plates of ring <paramref name="ri"/> (lanes
-        /// <paramref name="w0"/>..<paramref name="w1"/>) under a footprint at radius
-        /// <paramref name="r"/> +- <paramref name="halfR"/> and angle <paramref name="a"/>
-        /// +- <paramref name="halfArc"/> (the odd lanes' 0.5 rise and the thickest jitter
-        /// counted), or -inf off the deck.</summary>
         /// <summary>The vertical span (bottom, top) of every deck plate of ring
         /// <paramref name="ri"/> under a footprint at radius <paramref name="r"/> +-
         /// <paramref name="halfR"/> and angle <paramref name="a"/> +- <paramref name="halfArc"/>,
@@ -867,6 +862,11 @@ namespace CosmicShore.Gameplay
 
         readonly List<Vector2> _bands = new List<Vector2>(32);
 
+        /// <summary>The top of the deck plates of ring <paramref name="ri"/> (lanes
+        /// <paramref name="w0"/>..<paramref name="w1"/>) under a footprint at radius
+        /// <paramref name="r"/> +- <paramref name="halfR"/> and angle <paramref name="a"/>
+        /// +- <paramref name="halfArc"/> (the odd lanes' 0.5 rise and the thickest jitter
+        /// counted), or -inf off the deck.</summary>
         float DeckTopAt(int ri, float r, float halfR, float a, float halfArc, int w0 = 0, int w1 = 4)
         {
             float R = Rings[ri].R;
