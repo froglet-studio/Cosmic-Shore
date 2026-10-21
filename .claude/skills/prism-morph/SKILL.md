@@ -250,6 +250,21 @@ These are not stylistic. Each one is a specific artefact somebody saw on screen.
 - **Guard the degenerate inputs explicitly**: zero-length normal, vertex at the source centre,
   zero reach, non-finite matrix. Each guard returns pass-through, which is always a legal frame.
 
+- **A displacement read off a vertex ATTRIBUTE tears every seam; one read off POSITION cannot.** UV seams
+  and hard edges split vertices, so a push along the normal or a weight from a UV moves the two copies of a
+  seam vertex apart. On a mesh you did not author (a creature's FBX, skinned or not) that is every seam.
+  `IncorporealDepthBloom` (Docs/SPINDLE_LOD.md §8) is a field of position alone, so the two copies stay
+  together. The harness proves it with a seam test: two copies, different normal and UV, the same output.
+  Its pulse in the fragment stage then needs the REST radius, so the bloom must be invertible: cap the
+  travel by the wave's steepness so the radius's derivative stays >= 0.2, and Newton-invert it.
+
+- **Pixels per unit from `UNITY_MATRIX_P._m11` need `abs()`.** URP renders into an intermediate texture on
+  D3D, Metal and Vulkan and FLIPS the projection's y there, so `_m11` is negative. A width hold that read
+  the on-screen width as negative clamped every strand to its 32x inflation cap. The spindles "blew up to
+  very large proportions" across the band where the hold ramped in, from round 1 until 2026-10-21. A
+  clang harness and Amoebius both use an upright projection and cannot see it. Test with the sign
+  flipped, and keep removing the `abs()` as a mutant (`verify_spindle_lod.py`).
+
 - **Composition across two morph nodes is legal but is not free.** Normals compose correctly by
   the chain rule (each node applies its own inverse-transpose to the normal it received), and
   positions compose as fields applied in sequence. But **the no-fold guarantee is per-node and

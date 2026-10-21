@@ -92,6 +92,7 @@ VESSELS = {
     "Shrike": {"fbx": MODELS + "Shrike.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_shrike_assets.py"},
     "Stoat": {"fbx": MODELS + "Stoat.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_stoat_assets.py"},
     "Thresher": {"fbx": MODELS + "Thresher.fbx", "roles": FLEET_SLOTS},
+    "Marlin": {"fbx": MODELS + "Marlin.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_marlin_assets.py"},
     # the artist hulls: rendered in place over the files their class assets (and other UI) already reference
     "Squirrel": {"fbx": MODELS + "SquirrelVessel_CosmicShoresTest1.fbx", "roles": FLEET_SLOTS},
     "Dolphin": {"fbx": MODELS + "dolphin_shapekey_with_animations.fbx", "roles": ARTIST_SLOTS,
