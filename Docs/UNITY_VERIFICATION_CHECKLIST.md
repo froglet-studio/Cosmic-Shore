@@ -65,7 +65,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Microgame preview flies a card whose hull differs from the menu's (`claude/training-ftue-mbxf1o`, 2026-10-20) — NOT EDITOR-VERIFIED
+### 🟢 Microgame preview flies a card whose hull differs from the menu's (`claude/training-ftue-mbxf1o`, 2026-10-20) — VERIFIED IN EDITOR by Caleb, 2026-10-21 (all four steps)
 
 Caleb's play test (Bug Ledger E-1eea72bc60): Waystation's FLY showed "LEVEL PREVIEW NOT AVAILABLE",
 then a black window; console `[ModePreview] Could not enter flight: no gameplay camera to lend.`
