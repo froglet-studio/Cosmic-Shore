@@ -845,3 +845,11 @@ Rows only, from `/ship` §3.6. Each one names what was measured and what is stil
   - The warp and shard passes are ported line for line from the lab's GLSL, but only compile-checked.
   - A `verify_black_hole_lens.py`-style pixel parity (HLSL and GLSL both translated to C++) would cover them.
 - **[walked past] Amoebius does not build on bleeding-edge.** `TouchTilt.cs` (from `f9c8d70aba`, the flight branch) uses `GravitySensor`, which the engine's Unity shim lacks: CS0103 at lines 29 and 77. It reproduces on a clean bleeding-edge worktree (2026-10-21). It is not this branch's to fix (`Port/` is Shombith's). The fix is a shim stub, or keeping the `GravitySensor` read out of the Amoebius variant (`Docs/CONDITIONAL_COMPILATION.md`, "The Amoebius variant").
+- **[made visible] New vessels bring new harm paths, and nothing flags an ungated one.**
+  - The merge of bleeding-edge brought the Starlings' shield bite, a direct `DeactivateShields` on a rival's prism that ignored silence. It was found only by diffing the call sites before and after the merge, and is fixed in the merge commit.
+  - Branches in flight that add vessels: `claude/project-thread-xrej29` (Marlin), `claude/honeyguide-ratel`, and `grizzly-v3` (plasma claw). Each must route pilot harm through `Prism.Damage`/`Steal`/`Consume`/`Vanish` (gated inside) or ask `DeflectsSilenced` before a direct `DeactivateShields`.
+  - A text gate was measured and NOT built. Of 24 `DeactivateShields(` sites on 2026-10-21:
+    - 9 act for a pilot and are gated;
+    - 2 of those 9 are gated further up the method than a 14-line window sees (Astro League ball, Rhino skimmer);
+    - the rest act for nobody: flora, fauna, managers and spawners.
+  - So a window rule cries wolf. The sound version tags the pilot-harm sites (an attribute or a `// silence-gated:` marker) and gates the TAGGED set.
