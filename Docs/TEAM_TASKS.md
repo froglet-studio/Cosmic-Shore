@@ -1212,6 +1212,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner's eye); Yash (offered) for the Editor run
 - **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Docs/LIT.md (Contact acknowledgement row); ThresherExecutor.PublishAcknowledged
+- **Progress:** 2026-10-21, Garrett: the cord on own shielded mass lights up (PC). Still to see: a super-shielded rival prism jiggling under the cord, and the same on a phone
 
 ### T-20261020-8fd0 · open · decision · Vessels
 - **Task:** Dynamic contact never does nothing - the remaining silent pass-throughs: own-domain mass a friendly-fire-off round flies through (Urchin spikes, explodable/energised spikes), the Serpent sniper through own mass and through super-shielded mass below Charge 5, the Kite navigator head through own mass, Butterfly dust on own super-shielded mass, and the own-fresh-trail grace window (every hull and skimmer, ~1 s). Decide which should light (risk: always-on lights crowd the 8 LIT slots)
@@ -1265,7 +1266,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 
 ### T-20261020-ad7e · open · test · ecology
 - **Task:** The cell environments now load from offline-baked layouts (Assets/Resources/PrismLayouts, made by Tools/Build/bake_prism_layouts.py) instead of generating while the game loads. In the Unity Editor: run the EditMode tests PrismLayoutBakeTests (4 tests). The first two prove what only Unity can: every baked prefab, as Unity loads it, finds its bake, and each bake is the layout Unity's own math generates (the test log prints the worst position, scale and rotation difference per world). Then enter Menu_Main freestyle and swap through the Cell Selector worlds, and play Dog Fight and Cleave I1: the console must show no [PrismLayoutBake] warning, and each world must look as it did before
-- **Done when:** PrismLayoutBakeTests pass in the Editor; no [PrismLayoutBake] warning in Menu_Main, Dog Fight or Cleave; the veiled builds of Atlantis, Yggdra and Ourobor are visibly faster than on bleeding-edge on PC (note a phone number if you have one)
+- **Done when:** PrismLayoutBakeTests pass in the Editor; no [PrismLayoutBake] warning in Menu_Main, Dog Fight or Cleave; each world looks as it did before. (The bake removes only generation, 0.1-0.3 s on the heaviest worlds and ~0.1 s on the Orrery, so a swap is not expected to feel much faster; T-20261021-ffcf measures where a swap's time goes)
 - **Who can take it:** Yash (offered), or Garrett
 - **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Docs/ECOSYSTEM.md §62.2b; Assets/_Scripts/Tests/Editor/PrismLayoutBakeTests.cs
+
+### T-20261021-ffcf · open · test · ecology
+- **Task:** Measure where a world swap's time goes. In the Editor open FrogletTools > Performance > Performance Benchmark, tab Load Time Insights, and arm Record Insight Mode. Enter Play in Menu_Main and use the Cell Selector to swap to the Orrery (then Atlantis, if you can). Each swap now records like a game load: spans for the suction, the release of the old world, the layout bake, the streamed lay and the settle (creation + grow-in), ending when the veil lifts. Press Copy on the report and paste it into a Claude session
+- **Done when:** A Load Time Insights report of an Orrery swap is pasted into a session, which names the stage that dominates and fixes that stage
+- **Who can take it:** Garrett, or Yash (offered)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b (What the bake does NOT speed up); Cell.SwapCellConfigRoutine

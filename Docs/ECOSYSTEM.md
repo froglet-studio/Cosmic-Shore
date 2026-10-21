@@ -11893,6 +11893,23 @@ Timings are one run each, as `Tools/Build/prism_layout_bakes.json` records them.
 tens of percent from run to run, and a phone running IL2CPP will be several times slower on both
 sides.
 
+**What the bake does NOT speed up** (Garrett, 2026-10-21: "i loaded the orrery in the toybox and
+it wasn't any faster"). The bake removes GENERATION, and for most worlds that was never the bulk of
+a load. The Orrery generated in 22 ms in the harness and 97 ms in Amoebius's debug build, against
+8 ms to read its bake. A Cell Selector swap then spends its time elsewhere:
+- the retiring world suctions away for a fixed 1.1 s (the continuity law);
+- it is released at 500 prisms a frame, ~70 frames for a 35k world;
+- 34.5k prisms are laid in 80 ms slices behind the veil;
+- each laid prism finishes creation at most 512 a frame, ~68 frames. Every prism still waiting
+  is a coroutine resumed each frame only to find no budget left.
+- the grow-in, a stable all-clear, and the veil's 0.65 s of fades.
+
+Two of those stages are capped by count per frame, not by time, so a faster machine does not
+shorten them. Which one dominates in Unity has not been measured. **A swap now records in Load
+Time Insights**: arm Record Insight Mode, then swap. The report has a span for the suction, the
+release, the layout bake, the streamed lay and the settle, and it ends when the veil lifts. Fix
+the stage that report names, not a guess.
+
 **The cost is size.** Exact float32 is ~40 bytes per prism, and deduplication buys almost nothing:
 the fits make nearly every scale and rotation unique. The bakes are 22.3 MB on disk, about 13 MB
 once a build compresses them (11 MB with a byte-shuffle). Quantizing would roughly halve that,
