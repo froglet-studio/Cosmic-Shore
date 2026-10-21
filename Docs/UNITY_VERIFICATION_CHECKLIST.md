@@ -13620,6 +13620,22 @@ prefab container and `DefaultNetworkPrefabs`. Reference compile clean; `author_s
    petal hits only. The swarm never drops below 6.
 6. Console: no errors and no per-frame logs while the Starlings flies.
 
+## 🔴 2026-10-21 — The Starlings round 3: a murmuration, browsable ability details, flight-sense camera (`cece/quirky-gates-skplxp`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session. Changed `StarlingRules` (`StarlingPickPress` browsing, `StarlingPilotControls.StickRoll` /
+`SpinRoll`), `StarlingVesselTransformer`, `StarlingSwarmExecutor` (separation grid), `StarlingHUDController`,
+`StarlingHUDView`, `StarlingConfig.asset` (start 120, cap 200, minimum 30), `SO_Class_Starling` (Name: Starlings).
+Reference compile: 0 errors in changed files; `author_starling_assets.py --check` OK; `starling_rules_parity/run.sh`
+19/19, `--self-test` fires.
+1. Test Runner: `StarlingRulesTests` pass.
+2. Toybox > Vessel Changer > Starlings (the card reads "Starlings"): about 120 starlings roam as one murmuration.
+3. Pad: y-diff rolls the world the way flight rolls a hull. Phone: a two-finger spin turns the world with the fingers,
+   and two thumbs keep turning the view while they pinch.
+4. Pick a few cards, then with no hand dealt hold A: every Mass card held shows its name, level, text, numbers and reached
+   jolts. While holding, press B / X / Y: the card turns to Time / Charge / Space and nothing is picked; letting go of
+   all buttons closes it, and a quick press afterwards picks again.
+5. Profiler: the swarm executor's Update and the member renderers at 120-200 members (team task T-20261021-d6dc).
+
 ## 🔴 2026-10-21 — The Thresher spawns in Mass Mode (`cece/youthful-johnson-hccyzf`) - NOT EDITOR-VERIFIED
 
 Garrett: "the default mode for thresher should be mass mode." `ThresherExecutor.Initialize` now sets `_massMode = true`

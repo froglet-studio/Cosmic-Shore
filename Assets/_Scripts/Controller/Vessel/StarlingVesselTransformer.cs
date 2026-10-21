@@ -13,8 +13,8 @@ namespace CosmicShore.Gameplay
     /// <para><b>The controls</b> are the fleet's stick mix (Garrett, 2026-10-21): the sums turn the view (yaw about its own up,
     /// pitch about its own right, stopping the moment the sticks are let go - the lab's <c>turnView</c>), <b>x-diff zooms</b>
     /// (sticks spread apart = in, squeezed = out) and <b>y-diff rolls</b> the camera about the view's axis. On a phone one
-    /// thumb turns the view, and two fingers <b>pinch</b> to zoom and <b>spin</b> to roll, 1:1 with the fingers; while two
-    /// fingers are down the view does not turn. The numbers are <see cref="StarlingConfigSO"/>'s, pushed by the executor.</para>
+    /// thumb turns the view, and two fingers <b>pinch</b> to zoom and <b>spin</b> to roll, 1:1 with the fingers, while the
+    /// sums keep turning the view as they turn a hull in flight. The numbers are <see cref="StarlingConfigSO"/>'s, pushed by the executor.</para>
     ///
     /// <para>Its reported speed is always 0: the carrier must lay no trail (<see cref="VesselPrismController"/> lays only
     /// above 3 u/s) and must not drive the speed-tunnel FOV. The camera is written only while this hull is the camera's
@@ -56,14 +56,23 @@ namespace CosmicShore.Gameplay
             Quaternion rotation = transform.rotation;
             float zoomAxis = 0f, rollDegrees = 0f, pinchRatio = 0f;
 
+            // The sums turn the view with one thumb or two, as they turn a hull in flight (Garrett, 2026-10-21).
+            if (InputStatus != null)
+            {
+                float step = viewTurnRate * dt;
+                float yaw = InputStatus.XSum, pitch = InputStatus.YSum;
+                if (Mathf.Abs(yaw) > 1e-3f) rotation = Quaternion.AngleAxis(yaw * step, rotation * Vector3.up) * rotation;
+                if (Mathf.Abs(pitch) > 1e-3f) rotation = Quaternion.AngleAxis(pitch * step, rotation * Vector3.right) * rotation;
+            }
+
             if (TwoFingers(out var a, out var b))
             {
-                // A phone: pinch zooms and spin rolls, 1:1 with the fingers. The view does not turn meanwhile.
+                // A phone: pinch zooms and spin rolls, 1:1 with the fingers, on top of the turn.
                 Vector2 v = b - a;
                 if (_pinching)
                 {
                     pinchRatio = v.magnitude > 1e-3f ? _pinchVector.magnitude / v.magnitude : 0f;
-                    rollDegrees = StarlingPilotControls.Spun(_pinchVector.x, _pinchVector.y, v.x, v.y);
+                    rollDegrees = StarlingPilotControls.SpinRoll(_pinchVector.x, _pinchVector.y, v.x, v.y);
                 }
                 _pinching = true;
                 _pinchVector = v;
@@ -71,20 +80,12 @@ namespace CosmicShore.Gameplay
             else
             {
                 _pinching = false;
-                if (InputStatus != null)
+                // x-diff and y-diff are thumb SPREAD on a phone, which the pinch above already reads (and which the
+                // touch mix holds after a thumb lifts), so only a pad, keyboard or mouse drives them as rates.
+                if (InputStatus != null && _controls && InputStatus.ActiveInputDevice != InputDeviceType.Touch)
                 {
-                    float step = viewTurnRate * dt;
-                    float yaw = InputStatus.XSum, pitch = InputStatus.YSum;
-                    if (Mathf.Abs(yaw) > 1e-3f) rotation = Quaternion.AngleAxis(yaw * step, rotation * Vector3.up) * rotation;
-                    if (Mathf.Abs(pitch) > 1e-3f) rotation = Quaternion.AngleAxis(pitch * step, rotation * Vector3.right) * rotation;
-
-                    // x-diff and y-diff are thumb SPREAD on a phone, which the pinch above already reads (and which the
-                    // touch mix holds after a thumb lifts), so only a pad, keyboard or mouse drives them as rates.
-                    if (_controls && InputStatus.ActiveInputDevice != InputDeviceType.Touch)
-                    {
-                        zoomAxis = StarlingPilotControls.SpreadAxis(InputStatus.XDiff, _controls.DiffDeadZone);
-                        rollDegrees = StarlingPilotControls.Axis(InputStatus.YDiff, _controls.DiffDeadZone) * _controls.RollRate * dt;
-                    }
+                    zoomAxis = StarlingPilotControls.SpreadAxis(InputStatus.XDiff, _controls.DiffDeadZone);
+                    rollDegrees = StarlingPilotControls.StickRoll(InputStatus.YDiff, _controls.DiffDeadZone) * _controls.RollRate * dt;
                 }
             }
 
