@@ -118,6 +118,11 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `KiteNavigatorView.Unlit` and its comment; `KITE_NAVIGATOR.md` "Round 4b".
 - Promoted: no
 
+### L-GEN-18 — When dotnet-install is blocked, build the SDK from api.nuget.org packages
+- Lab: Honeyguide Lab → the Dynamo C# parity gate · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-20
+- What happened: the cloud proxy refused builds.dotnet.microsoft.com and www.nuget.org (403), so the parity gate had no compiler. api.nuget.org/v3-flatcontainer was open, and its packages carry everything a headless compile needs.
+- Do instead: assemble `~/.dotnet` from the flat-container packages (the runtime pack, `Microsoft.NETCore.App.Ref` and `Microsoft.Net.Compilers.Toolset` for csc) and compile with csc against the reference pack. The Kite and Dynamo parity gates both pass on that layout. Details in `Docs/Studios/HONEYGUIDE_LAB.md` "Port notes".
+- Evidence: `Tools/Build/dynamo_lab/trace.sh`.
 ### L-GEN-19 — Trace a few runs' state every ten seconds before reading any aggregate
 - Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
 - What happened: the first scorecard looked plausible (Gate Run points 81, 62 boardings, 8 cast-offs). A 10-second state trace of one run showed the crew's skiff holding the Artifact from 20 s to the 180 s limit, chasing its old boarding target instead of flying home, and rival boarders re-boarding a fully drained hull every second. Both bugs had produced numbers that looked like a strong boarding meta.
@@ -792,6 +797,25 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `KiteNavigatorView.PetalCentreOut` / `PetalScale`; `KITE_NAVIGATOR.md` "Round 4f" table.
 - Promoted: no
 
+### L-STU-114 — Score each event's signed gain toward the goal; a coarse race column hides the mechanic
+- Lab: Honeyguide Lab · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-20
+- What happened: the first scorecard counted whole destinations per minute. Slips (teleports along a trail) moved the hull a long way, but most runs reached the same whole number of destinations, so every variant read alike and the always-armed brief looked harmless. Counting the share of the last leg flown and recording each slip's signed gain toward the destination showed always-armed lifting the race 2% with 32% of slips going the wrong way, against 25% for hold-to-arm.
+- Do instead: when a mechanic acts in discrete events, score every event's signed contribution to the goal (and the share that went backwards), and make the race column continuous (partial legs), before reading any variant.
+- Evidence: `HoneyguideLab.html` score columns `slipGain`, `badSlips`, `destsPerMin`; `HONEYGUIDE_LAB.md` Found 1.
+- Promoted: no
+
+### L-STU-115 — An ordering control is only caught by a scenario where the order matters
+- Lab: Honeyguide Lab → the Dynamo C# parity gate · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-20
+- What happened: a planted control reversed the placement scan in the C# core. Every scenario still matched, because the shipped patterns never offered two legal placements at once. Adding synthetic tiny patterns (two or three cells, many legal placements) made the control fire.
+- Do instead: for each planted control, name the scenario that makes it observable; if none exists, build one (a synthetic input that forces the ambiguity) rather than calling the control a pass.
+- Evidence: `Tools/Build/dynamo_lab/parity.cjs` variant 2 (synthetic patterns) and the reversed-scan plant.
+- Promoted: no
+
+### L-STU-116 — A greedy puzzle AI must lock in help that is about to move, and keep its plan
+- Lab: Honeyguide Lab round 2 · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-21
+- What happened: round 2 let an empty injection port count as a prism. The Ratel AI (cheapest placement first) leaned on those ports, the spin turned them away before it could finish, and it made patterns 35% slower with the help than without (4.8 against 7.4 a minute). With few prisms on the board it also flipped between two equally cheap placements and moved the same prism back and forth (38 reversals in one seed).
+- Do instead: when a plan uses something that expires (a port before the spin, a buff before its timer), cost it as permanent only if the plan finishes in time; otherwise spend the action that makes it permanent. Keep the placement being built until another is clearly cheaper. Measure a rule that "should help" with the AI before reading its scorecard row.
+- Evidence: `HoneyguideLab.html` `placementCost` (`onPorts`, `durable`) and `aiPlan(..., memo)`; `HONEYGUIDE_LAB.md` round 2 Found 4.
 ### L-STU-125 — URP's Vignette multiplies: a coloured vignette over dark space is invisible, and a lab yardstick must score that cut near zero
 - Lab: Silence Vignette Lab (`Docs/Studios/SilenceVignetteLab.html`) · Branch: `cece/sleepy-shannon-9qk646` · By: session_01PEp87yJAmoDHUn7QvRdtkg · Date: 2026-10-21
 - What happened: the silence feedback's first cut drove the gameplay profile's URP Vignette in the palette's danger colour (intensity 0.26). Garrett played Dog Fight twice and never saw it. URP's `ApplyVignette` lerps the frame toward `frame × colour`, so red can only darken, and the arena's sky is (0, 0, 0.1): red times near-black is near-black. The driver was proven to reach weight 1.0 in Amoebius, so "the code runs" said nothing about "the player sees it". The lab's scorecard (OKLab ΔE ×100 over the edge band, 480×270, seeds 1-3) reads that cut at 2.8 on open space, about the just-noticeable difference, against 45 for an alpha-blended overlay at 0.75.
@@ -1121,6 +1145,39 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `Tools/Build/converter_round5_harness` section 9; `OMNI_COMBINE_LAB.md` revision 8.
 - Promoted: no
 
+### L-STU-139 — A baseline that can reach the payoff another way measures nothing; and a negative control must be shown to fire
+- Lab: Goby & Pistol Studio (`Docs/Studios/VesselStudio/goby.html`) · Branch: `cece/sharp-tesla-j0kd7z` · By: session 01KpzppLj3ETY5c6jEP7HuyA · Date: 2026-10-14
+- What happened: two yardstick bugs, both caught only because the table looked odd. (1) The "No Pistol" baseline (the Goby alone) scored 17 CHAIN kills, a column meant to be the Pistol's alone: the Goby's flares were killing primed blocks, and every kill of a primed block set off the chain. The baseline was not "without the Pistol"; it was "with a Pistol built into the flares", and the pair's advantage was understated by the whole column. (2) The Unroll test's first negative control, a hairpin, reported 0% ambiguous in every unroll: its two legs part along the ribbon faster than the screen window that the mapping searches, so the fold it was meant to show never entered the search. A flat circle (every lap lies on the last) reads 100%.
+- Do instead: for every baseline, list the paths by which the effect it removes could still happen, and close them (a flare now takes only its own block; a prime is the Pistol's to detonate). Run every negative control once and check that it FIRES before reading any other row; a control that passes clean proves only that the test cannot see the fault.
+- Evidence: `goby.html` `kill()` (`by !== 'flare'`), `PATHS` (`circling (control)`); README § "Goby & Pistol, round 1".
+- Promoted: no
+
+### L-STU-140 — A warped view keeps rendering parity by warping only TRANSFORMS; rotate the infinitely far sky by the frame
+- Lab: Goby & Pistol Studio (`Docs/Studios/VesselStudio/goby.html`) · Branch: `cece/sharp-tesla-j0kd7z` · By: session 01KpzppLj3ETY5c6jEP7HuyA · Date: 2026-10-14
+- What happened: the Pistol's sidescroller (a 3D world unrolled into 2.5D) was first drawn as flat 2D rectangles, and read as a different game from the 3D view beside it. Redrawing it in three.js with the SAME geometry and material objects as the 3D view (shared across the two renderers), and warping only each object's position and rotation (flat = Mᵀ · world, with M the ribbon's frame [T U R] where the object maps), gave parity at no art cost. The sky and stars needed one rotation, the frame at the viewer, because only direction matters for something infinitely far. A side camera on the +R side, looking along -R with up U, puts the path's +T to the right (the -R side mirrors it, a trap: T × U = R).
+- Do instead: for any remapped or warped view of a lab's world, reuse the world's meshes and materials and move only transforms. Turn sky, stars and lights by the frame at the viewer. Check the handedness of the frame before placing the camera.
+- Evidence: `goby.html` `renderSide3D`, `flatFrame`, `ribFrame`.
+- Promoted: no
+### L-STU-138 — A 2.5D character on a tangent plane needs its plane pinned to the path in depth, and a ground that steps off folds instead of snapping
+- Lab: Goby & Pistol Studio (`Docs/Studios/VesselStudio/goby.html`, the Tangent plane) · Branch: `cece/sharp-tesla-j0kd7z` · By: session 01KpzppLj3ETY5c6jEP7HuyA · Date: 2026-10-21
+- What happened: replacing an unrolled sidescroller with a plane tangent to a 3D path (no warp, a real camera), the first build kept the plane through the Pistol, turned it toward the path's normal and projected the trail's hinges onto it as the ground, dropping hinges whose screen x went backwards. Traced over a 60 s run, an airborne Pistol drifted 100-1000 u off its trail and then rode a phantom flat ground, because nothing held the plane on the trail in DEPTH while the path turned under it; and the monotonic filter emptied the ground at folds. Fixed in three parts, each measured: pin the plane's depth to the trail point under the Pistol (moves the plane, never the world); keep the projected ground in path order and pick, at an x, the stretch nearest the Pistol ALONG the path; treat a step in that ground as a ledge to run off (and pull a Pistol under its line back up), never a snap. The grounded Pistol then stays within 15 u of its trail. Also: the "along" direction from a plain chord flips at a hairpin (its far leg is out of plane); weight each tangent by how much of it lies in the plane.
+- Do instead: before tuning anything, trace the character's distance to the thing it is meant to stand on, every step of a long seeded run, and fix every jump before judging the look. A per-step slope or turn statistic hid this: the averages looked fine while the Pistol rode nothing.
+- Also paid twice here: an `old_str -> new_str` replacement that appends a `// comment` to a line whose CODE continues after the matched text swallows that code (a loop body, a clamp). The page still parses; the symptom is a quiet wrong number. Put new comments on their own line.
+- Evidence: `goby.html` `planeStep` (the depth pin), `planeGround` / `groundAtPlane`, `pistolStep` (`ledge`, `under`), `planeTarget` (weighted tangents), `planeMeasure`; the session's run traces.
+- Promoted: no
+
+### L-STU-117 — To hide a projection's warp, draw objects rigid and fade the bend in only where the stretch shows; smoothing the path's positions makes it worse
+- Lab: Goby & Pistol Studio (`Docs/Studios/VesselStudio/goby.html`, the Settled unroll) · Branch: `cece/sharp-tesla-j0kd7z` · By: session 01KpzppLj3ETY5c6jEP7HuyA · Date: 2026-10-18
+- What happened: asked to make the Pistol's warp "only where necessary and as invisible as possible", the first try eased the unroll's SPINE (a gaussian over the path's positions where it curved tighter than a radius). Measured over the same 3000 world points on seven scripted paths it did not help: drawn-bent prisms stayed at 98-100 % on curving paths, and climbs gained bends. Smoothing a curve's POSITIONS pulls a sustained arc toward its centre, which TIGHTENS it. What did help: every prism near any curve had been drawn BEND (stretched through the unroll by 1 + d x curvature, ~1.5x at d 45 on an 80 u turn); drawing each prism RIGID and blending toward the bend only where its stretch exceeds 12 % (full by 35 %) cut drawn-bent prisms to 48 % on the weave and 57 % on the roll, folds unchanged. A height PROFILE over distance smooths without tightening, so the ground's sharp vertical curves are eased that way, settling ahead of the rider and frozen once reached (measured: no settled sample moved, the ground under the rider never moved).
+- Do instead: measure what the viewer sees (how many objects are drawn distorted) before choosing an operator, never a proxy like the path's tightest radius. Ease a graph (height over distance), not a curve's positions. To hide a map projection's distortion, keep objects their true shape and fade the warp in by the local stretch.
+- Evidence: `goby.html` `softAdd` / `softPoint` / `softBend`, `drawPrism` (the rigid blend), `unrollMeasure` (`bentPct`, `bendMax`, `lateMove`); the session's warp, unroll and freeze measures.
+- Promoted: no
+### L-STU-141 — A blank panel in a headless full-page screenshot of a two-WebGL-canvas lab is the capture, not the page
+- Lab: Goby & Pistol Studio (`Docs/Studios/VesselStudio/goby.html`) · Branch: `cece/sharp-tesla-j0kd7z` · By: session 01KpzppLj3ETY5c6jEP7HuyA · Date: 2026-10-18
+- What happened: `verify_lab.cjs`'s desktop and phone screenshots showed a white-and-black panel, the size of the Pistol's inset, in the lower right of the main view. `elementsFromPoint` found no element there and no code draws there. A CLIPPED capture of the same region (`page.screenshot({ clip })`) was dark and correct, and hiding either inset canvas changed nothing: headless SwiftShader mis-composites the second WebGL canvas's layer in a full-viewport capture.
+- Do instead: before chasing a panel that only a full screenshot shows, capture the region with `clip` and ask `elementsFromPoint` what is there. A defect the clipped capture does not show is the harness's.
+- Evidence: this ship pass's probes (scratchpad `probe3.cjs`, `probe4.cjs`); `verify_lab.cjs` PASS.
+- Promoted: no
 ### L-STU-64 — A studio built from a design doc beside a game build from the same doc: add the game as a selectable "ships" set
 - Lab: Brittle Star Studio round 2 · Branch: `cece/gallant-lamport-sc3khe` (studio from `cece/brave-galileo-d95fpj`) · Date: 2026-10-14
 - What happened: two sessions built the Brittle Star on one day from one Notion document without seeing each other, a
@@ -1442,6 +1499,22 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   `KITE_NAVIGATOR.md` round 10.
 - Promoted: no
 
+### L-STU-131 — Measure how often a reward is ON THE BUTTON, not only whether it helps
+- Lab: Honeyguide Lab round 5 (timed actives) · Branch: `claude/honeyguide-ratel` · By: Claude session for Garrett · Date: 2026-10-21
+- What happened: the first build dealt an active only when one of the seven weapon cards was made (7 of 39). Each active
+  measured well alone, but an "Active up %" column showed a button held an active 23-27% of the time, about one a minute.
+  Garrett's ask ("new ones come") was not met, and no lift column would have said so. Dealing a random active on every
+  pattern took the buttons to 85% and the race from +51% to +68%.
+- A second check came from the rookie row: a pilot that presses whatever is ready scored the same as the skilled AI. That
+  backs "not so hard to use". The first skilled AI was too picky and scored BELOW the rookie, and the gap pointed at the
+  AI's thresholds, not at the design.
+- Do instead:
+  - For any granted, timed ability, add columns for its presence (the share of time it is available) and its uses a
+    minute beside the lift.
+  - Run a rookie pilot next to the skilled one. If the rookie wins, fix the skilled AI before reading any number.
+- Evidence: `Docs/Studios/HONEYGUIDE_LAB.md` round 5 scorecard; `activeUp`, `usesPerMin`, PSKILL `actSense`.
+- Promoted: no
+
 ### L-STU-136 — A drawing mechanic must write where the aim's sweep matches the stroke's spacing
 - Lab: Crew of Four Lab, round 6 (the Orca's fast gun "writes prisms like a pen") · Branch: `cece/happy-noether-m54hz6` · Date: 2026-10-21
 - What happened: the first pen laid a prism where each pen round's flight ended, 387 u out. A turret slewing at its
@@ -1503,3 +1576,22 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   `OrcaMissileVisual`; `Docs/claude/SHADERS_AND_PERFORMANCE.md` "In the world, not on the screen"; `CREW_OF_FOUR_LAB.md`
   §4 round 8.
 - Promoted: yes (the LOCKED rule in `SHADERS_AND_PERFORMANCE.md`)
+
+### L-STU-142 — Scaling a lab's population baseline leaves every card written in absolute counts behind
+- Lab: Starlings Lab (round 1 numbers, raised in Unity's round 3) · Branch: `cece/quirky-gates-skplxp` · Date: 2026-10-21
+- What happened: Garrett asked for 5x the starlings ("a small pack not a group of starlings in a murmuration"). The
+  baselines moved (start 24 → 120, cap 40 → 200, minimum 6 → 30) in one line of `SHIPPED`, but the card list states
+  some numbers as absolute member counts (Big Family: "Swarm cap 46" at L1, read as `cap + value - 40`) and others
+  per member (Hole Punch, Annex, Danger Drip, the base bite and nip). The first now adds a negligible +6 to a cap of
+  200; the second multiplies the swarm's output by about 5. The lab scorecard still ran green, because nothing in it
+  compares a card's effect to the baseline it was written against. The game's flocking loop was also all-pairs, fine
+  at 24 and about 70x the work at 200 (fixed with a separation grid).
+- Do instead:
+  - When a population baseline moves, list every card or stat written in absolute counts or per member, and decide
+    each with the owner (keep, scale, or restate relative to the baseline). Do not let the scorecard's green stand in
+    for that decision.
+  - Write population cards relative to the baseline (`+15% cap`) when the baseline is still being tuned.
+  - Before raising a count, find any loop over pairs of members in the lab and the game.
+- Evidence: `StarlingsLab.html` `SHIPPED`, `minNow`; `StarlingRules.CapNow`; `StarlingSwarmExecutor.Separation`; team
+  task T-20261021-729e (the card decision).
+- Promoted: no

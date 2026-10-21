@@ -510,6 +510,22 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
       and `Tools/Build/merge_unity_scene.py`. Rebuilding it skipped two of those assertions (byte-exact
       round-trip, every addition survives) until the review ran them. They then found one trimmed blank line.
 
+48. **The Goby (2026-10-18): a NEW hull on a BORROWED rig binds a cloned prefab by a guid swap alone.** The Goby's
+    prefab is a Squirrel clone: 46 references into the Squirrel's model (the skinned renderer, the Animator, the root
+    bone, six bones holding the four jets) and the Squirrel's Animator controller. A new hull built from the fleet
+    convention (nodes `mesh` / `rig`) would have needed the editor to re-point all of them. Instead `specs/goby.py`
+    imports the Squirrel's armature and takes, builds new geometry skinned to its bones, and keeps EVERY name the
+    prefab hashes (mesh node, geometry `Plane.011`, armature, all 42 bones at rest 0.0000, slot names and order, shape
+    names, take names), under its own guid with a `.meta` copied from the Squirrel's. Evidence that type + name is the
+    whole id: one mesh id is shared by thirteen TriBlock FBX files and a node id by the two Manta files (measured over
+    every model reference in `Assets/`); the root Animator id is the same in the Serpent, Sparrow and Squirrel models.
+    Traps paid for: the donor's mesh DATABLOCK keeps its name after its object is removed, so the new geometry came
+    out `Plane.001` until the datablock was freed too (`assert mesh.data.name == GEOMETRY` now); and a generator that
+    owns the cloned prefab (`author_goby_assets.py`) must make the same swap, or its `--check` would call the new
+    model drift. Use it for any vessel that is a clone of another: the clone gets its own look with no editor step.
+    What it cannot do: change a bone's rest (jets hang in bone space) or add a take the donor's controller does not
+    play.
+
 49. **A vessel is a hovering assembly; "nothing floats" was a misreading (2026-10-21).** Garrett flew the first Orca and
     said the original vessels "are based largely around the idea of free floating parts that are associated and animated
     together but clearly distinct parts of a hovering assembly", and that this "will also help keep the guns associated
@@ -531,3 +547,35 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
       outrigger plates as a chain between the hull and the lagged turret frame, bobs every part on its own phase and
       leans the engines into turns. And a rig must read REST from the skin's bind poses, never from the bones as found:
       a crew that re-bound to a hull it had already posed took an aimed turret as rest and drew it off its aim for good.
+
+50. **Giving a CLONED hull its own model leaves three Sparrow-shaped references behind (2026-10-21, `claude/honeyguide-ratel`,
+    the Honeyguide).** A crew vessel cloned from `Sparrow.prefab` (the Wrasse, the Honeyguide) keeps the Sparrow's bones,
+    jets and colliders when its own model is nested in (`author_honeyguide_assets.model_retrofit`, after the Wrasse's
+    `bodies_retrofit`). Retargeting `_shipGeometries` and switching the Sparrow's SMR off is not the whole swap:
+    - **The fusion bakes.** `CrystalHullFusionConfig` entries copied from the Sparrow name bakes OF THE SPARROW'S MESH. Once
+      the Sparrow mesh is off, `FindHullRenderer` picks the new model and the bake lands the crystal off it. Drop the
+      copied bakes (`{fileID: 0}`: the fusion solves at runtime) and leave a team task to run the editor baker. The
+      generator must keep a bake the baker writes later, so it drops only the bakes that equal the Sparrow's.
+    - **The flare renderer.** `VesselAnimation.SkinnedMeshRenderer` is serialized on the hidden Sparrow mesh, and an FBX
+      sub-object id cannot be written offline, so boost lights nothing. Hand it the drawn mesh at runtime
+      (`HoneyguideBody.Awake`). The Wrasse has neither fix yet.
+    - **The rule that landed while you built.** The model was built welded the morning `/vessel-model` §0.5 (hovering
+      assembly) landed on bleeding-edge; only the `/ship` merge showed it. After merging the base, run
+      `assembly_report.py` on every model the branch made, not only on the ones made after the rule.
+
+51. **The first take is the hull's rest pose in Unity (2026-10-21, Garrett: "the shrike is turning left by default. the
+    grouper's tail fin is wagging to the left").** Every hull built from scratch shipped takes that were ALL deflections
+    (`bankleft`, `beatleft`, `dive`, `aimright` ...), Blender writes actions in NAME order, and it writes the FBX's
+    `Takes.Current` empty. Unity then imports the model's default pose (the bone Transforms every prefab instance starts
+    from) from the FIRST take, so the Shrike's hull rested in `bankleft` (24 degrees) and the Grouper's tail in `beatleft`.
+    Code puppetry captures that pose as "rest" at Awake (`ShrikeAnimation._hullRestRot`, `WrasseCrewBodies.Bone.Rest`),
+    so the bias was permanent and the beat swung around it. Measured on 14 hulls: Angler `dive`, Brittle Star / Honeyguide
+    / Shrike `bankleft`, Butterfly `beatdown`, Grouper / Jack / Marlin / Thresher / Wrasse Kite `beatleft`, Orca
+    `aimright`, Scarab `aim`, Starling `flap`, Stoat `arch`. None of the gates saw it, because every take was right; only
+    their ORDER was wrong. The fix is in the pipeline, not the specs: `build.run` adds `takes.rest_take` to a hull of
+    our own whose first take deflects anything, `export.lead_with_take` makes it the first stack and `Takes.Current`, and
+    `export.verify` fails a hull of our own whose first take moves a bone (`--check` compares `first_take`). The artist
+    files keep their order (the Animator or the code drives every bone they have, and the gates prove they reproduce).
+    General rule: **a file's default pose is an output.** Gate it like the takes and morphs.
+    (The Unity side is inferred from the symptom: all 14 hulls rest in their first take. The reimport check in
+    `Docs/UNITY_VERIFICATION_CHECKLIST.md` confirms it; if a hull still leans, capture rest from the bind poses in code.)

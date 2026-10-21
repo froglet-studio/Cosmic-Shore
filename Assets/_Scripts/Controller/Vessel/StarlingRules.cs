@@ -328,6 +328,16 @@ namespace CosmicShore.Gameplay
             return (float)(a * 180.0 / System.Math.PI);
         }
 
+        /// <summary>
+        /// y-diff as a camera roll axis. Rolling the CAMERA turns the world the other way on screen, so the camera rolls
+        /// against y-diff: the world then turns the way a hull rolls under the same sticks in flight (Garrett, 2026-10-21:
+        /// "it is currently rotating the flipped directions").
+        /// </summary>
+        public static float StickRoll(float yDiff, float deadZone) => -Axis(yDiff, deadZone);
+
+        /// <summary>A two-finger spin as a camera roll (degrees): against the fingers, so the world turns WITH them.</summary>
+        public static float SpinRoll(float fromX, float fromY, float toX, float toY) => -Spun(fromX, fromY, toX, toY);
+
         static float Clamp(float distance, float neutral, float nearest, float farthest)
         {
             if (neutral >= 0f) return distance;                       // not a chase camera: leave it alone
@@ -341,10 +351,16 @@ namespace CosmicShore.Gameplay
     /// the card. a long press on mobile should do the same"). A press that is let go quickly PICKS on release; a press held
     /// past the hold time, or made while a trigger is pulled, shows the card's details instead and picks nothing. Pure, so
     /// <c>StarlingRulesTests</c> holds it; <see cref="StarlingSwarmExecutor"/> owns one.
+    ///
+    /// <para><b>Browsing</b> (Garrett, 2026-10-21: "when you hold an element while you have no cards you should be able to
+    /// peruse all your abilities"): while the details are open, pressing another element's button turns them to that
+    /// element and picks nothing. They stay open while any pick button is still down, and close when the last one is let
+    /// go.</para>
     /// </summary>
     public sealed class StarlingPickPress
     {
         float _since;
+        int _down;   // a bit per element whose button is down
 
         /// <summary>The element whose button is down; <see cref="Element.None"/> when none is.</summary>
         public Element Pressed { get; private set; } = Element.None;
@@ -354,7 +370,9 @@ namespace CosmicShore.Gameplay
 
         public void Begin(Element element, float now, bool triggerHeld)
         {
+            _down |= Bit(element);
             Pressed = element;
+            if (Details != Element.None) { Details = element; return; }   // browsing: the open details turn to this element
             _since = now;
             Details = triggerHeld ? element : Element.None;
         }
@@ -369,12 +387,32 @@ namespace CosmicShore.Gameplay
         /// <summary>The button came up. True when it was a quick press, i.e. pick the card.</summary>
         public bool End(Element element)
         {
+            _down &= ~Bit(element);
+            if (Details != Element.None)
+            {
+                // Browsing: the details stay open on a button still down, and close with the last one.
+                if (_down == 0) Pressed = Details = Element.None;
+                else if (Details == element) Pressed = Details = AnyDown();
+                return false;
+            }
             if (Pressed != element) return false;
-            bool pick = Details == Element.None;
-            Pressed = Details = Element.None;
-            return pick;
+            Pressed = Element.None;
+            return true;
         }
 
-        public void Clear() => Pressed = Details = Element.None;
+        public void Clear()
+        {
+            _down = 0;
+            Pressed = Details = Element.None;
+        }
+
+        static int Bit(Element element) => 1 << (int)element;
+
+        Element AnyDown()
+        {
+            foreach (var element in StarlingRules.HandOrder)
+                if ((_down & Bit(element)) != 0) return element;
+            return Element.None;
+        }
     }
 }

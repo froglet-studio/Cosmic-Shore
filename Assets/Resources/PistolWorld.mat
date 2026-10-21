@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: PistolWorld
+  m_Shader: {fileID: 4800000, guid: dfb7d671144447bf9f43b640fc2a3ed5, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: 2450
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _Ambient: 0.42
+    - _DstBlend: 0
+    - _Rim: 0.9
+    - _SrcBlend: 1
+    - _ZWrite: 1
+    m_Colors:
+    - _FogColor: {r: 0.05, g: 0.06, b: 0.12, a: 1}
+    - _KeyDir: {r: -0.45, g: 0.8, b: -0.4, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocalizedText: 1

@@ -72,7 +72,7 @@ gesture or card.
 | Stoat | ✅ | **none** (no touch bindings) | Steam-only by design | 🧩 ship on phone? |
 | Brittle Star | ✅ | all, guns always at full rate | one-thumb mirror splays the guns; pool size | 🔧 + 🧩 |
 | Angler | ✅ (good fit) | Lure, Dash ✅; **Paint, Erase, Squad, Recall ❌** | the core verb (paint) is impossible | 🔧 + 🧩 |
-| Wrasse | ✅ | crew boost by lifting both thumbs, but it **slows** the hull | second base camera every frame | 🔧 |
+| Wrasse | ✅ | crew boost by lifting the left thumb (RT), named on the Time card (third round, §8) | second base camera every frame | ✅ boost; perf open |
 
 ## 2. Fixable now (🔧), ordered by impact
 
@@ -169,6 +169,8 @@ The rows are in order of how much of the fleet they unblock.
 - The black-hole lens needs a mobile tier first (§4).
 
 **D7. Face-button abilities with no card (Angler Squad and Recall).**
+
+*Resolved 2026-10-21 by removal: the Angler's school is two groups the throw alternates, so there is no squad pick or recall to bind (`ANGLER.md` §1m).*
 - The four-card row is LOCKED, so Button3 and Button4 have no tap target on a phone.
 - Options: make the squad label over the Mass card tappable to cycle the squad, or a long-press on the Mass card for
   Recall.
@@ -304,7 +306,7 @@ touch scheme in `Docs/ABILITY_LOCKUP.md` "On a phone".
 | Manta: "fly ultra fast when you lift both thumbs and then steer with the gyro" | Both thumbs off = Soar at full throttle (720 u/s), steered by tilt. |
 | Rhino: "energize by lifting both thumbs ... go quicker" | Both thumbs off pulls both trigger mirrors (energize); the touch energize is twice as fast. A single lift now swings that side's blade (the pad's mapping). |
 | "The stoat should join the mobile fleet" | Touch bindings mirror the pad; Space card, Dipole Right and Hold discs, Mode card. |
-| Angler: "work with 1 thumb controls ... while painting or erasing" | Paint and erase now work from the held Space and Charge cards (a press counts as a full pull); squad and recall discs. |
+| Angler: "work with 1 thumb controls ... while painting or erasing" | Paint and erase now work from the held Space and Charge cards (a press counts as a full pull); squad and recall discs (both retired 2026-10-21, `ANGLER.md` §1m: the four cards are the whole cluster). |
 | "the serpent's scope should open to max zoom" | Full zoom on touch; the Scope card latches (tap on, tap off) so the Charge card can shoot. |
 | "the shrike's zoom should be a toggle button on mobile" | Zoom disc toggles; Trigger disc fires the mode. |
 | "the thresher's aimed launch should be both thumbs off and aimed with gyro" | Planted, lift the other thumb too: the launch view comes up, tilt aims the crosshair, a thumb back launches. |
@@ -338,3 +340,9 @@ shader (§2 row 15).
 | "... and inconsistent y-inversions that are not left to the settings" | **One Invert Y rule** (`BaseInputStrategy.ApplyInvertSettings`): the setting turns the vertical axis over everywhere flight reads it, on every device. It used to flip only the two-stick pitch and roll, so on a pad or keyboard it did nothing on the nine one-thumb hulls; touch never read it (nor Invert Throttle); dual mouse pitched the other way by default; and the tilt carried its own "forward dives" switch. Now a push up pitches every hull the same way by default, the setting flips all of it, and tipping the phone forward is a pushed-up thumb. `InputInversionTests` holds it (and fails on the old dual-mouse line). Not changed: dual mouse's throttle runs the other way from the pad's (an X inversion, reported, not touched). |
 | "wrasse and grouper, are two seats. players can select, change seats etc. both can be played on mobile or pc." | **D10 decided.** For one human, both seats are now playable on every device, and the seat is picked, not toggled: keys 1 / 2 pick the Grouper / the Wrasse, the D-pad and the phone's double tap change seat, and the pick is remembered (`CrewSeatChoice`). A phone's both-thumbs-off boost now really speeds the Grouper up (idle parity), and never spends a boost on the frames after a seat change. In an arena the seat owns the swap keys; the top-bar tiles swap hulls. **Two humans in one hull (either device) is planned, not built**: `KITE_NAVIGATOR.md` "Two humans, two seats", task T-20261021-aa19 (Yash with Garrett, on `cece/sharp-tesla-j0kd7z`'s `CrewSeat`). |
 | "why can't the scarab just record a swipe with the right thumb for the snap dash?" | It does: a quick upward flick that starts on the throttle slider fires the Snap Dash (Time 5), and the slider goes back to where it was set. On the slider rather than open glass because the juke already owns every right-thumb push past 35 %. |
+
+### Third round (Garrett, 2026-10-21, same day)
+
+| Garrett | Built |
+|---|---|
+| "The grouper can not use boost on mobile. Fix this oversight and others" | **The Grouper boosts on a phone by lifting the left thumb** and flying on with the right, the fleet's touch twin of RT, and the Wrasse's Time card shows that glyph (a new Wrasse row in `TouchControlProfiles`). The cause: `KiteNavigator` read `InputStatus.RightTriggerAnalog`, which no phone writes, so a phone had only "both thumbs off", which dropped the steering for every boost and was named on no card. RT is now an input binding like every other hull's (`CrewTriggerActionSO`, shared by the crew hulls), one path through `R_VesselActionHandler` on every device. **The others:** a sweep of every analog-trigger reader in vessel code found one more with no phone path, the **Orca's helm** (boost on RT, shield on LT), now on the same bindings (lift left = boost, lift right = shield); the **Honeyguide**'s RT Peck and LT Flit already worked by lift but their cards named nothing, so it gets glyphs too. The **Goby & Pistol** has no touch path at all (primer and flares on keys 3 / 4 and the D-pad, the Pistol on the mouse); it is under active development, so it is a task, not a change (`T-20261021-2d13`); the phone playtest of the three is `T-20261021-723e`. `author_touch_profiles.py --check` now also fails a card whose glyph names a thumb lift that nothing is bound to. |

@@ -137,6 +137,21 @@ def run(spec_mod, out_path, sheet_dir=None, render=True, samples=20, committed=N
                 mats_remapped = _re.findall(r"first:\s*\{[^}]*type:\s*UnityEngine:Material[^}]*name:\s*([^,}\s]+)", txt)
                 vspec.setdefault("meta_takes", takes_pinned)
                 vspec.setdefault("meta_materials", mats_remapped)
+    # a hull of our own whose first take (Blender writes them in name order) deflects anything gets a REST take,
+    # written first: Unity imports the default pose from the first take (export.lead_with_take, LESSONS 51)
+    if not vspec.get("artist_path") and vspec.get("lead_rest_take", True):
+        import bpy
+        acts = sorted(a.name for a in bpy.data.actions if a.use_fake_user)
+        if acts and T.AUTHORED.get(acts[0]):
+            arm_name = vspec.get("armature") or arm.name
+            T.rest_take(arm, T.REST_TAKE)
+            T.clear_pose(arm)
+            lead = arm_name + "|" + T.REST_TAKE
+            vspec["lead_take"] = lead
+            vspec["expected_moving"][T.REST_TAKE] = []
+            if "takes" in vspec and lead not in vspec["takes"]:   # not pose_takes: a pose take must deflect something
+                vspec["takes"] = [lead] + list(vspec["takes"])
+            ctx.log("first take %r deflects %s: leading with a rest take %r" % (acts[0], T.AUTHORED[acts[0]][:4], lead))
     # the slot materials carry the ARTIST file's colours in the FILE, by name (Unity generates the model's
     # materials from DiffuseColor and remaps only the slots the .meta names, so an un-remapped slot wears
     # this colour in the game); a slot the artist file lacks takes the canonical palette. Read from the FBX
@@ -183,6 +198,7 @@ def summary_of(probe):
         "bones": sorted(b["name"] for b in probe["bones"]),
         "skin": {b["name"]: b.get("skinned_verts", 0) for b in probe["bones"]},
         "takes": sorted(t["name"] for t in probe["takes"]),
+        "first_take": probe["takes"][0]["name"] if probe["takes"] else None,   # the default pose Unity imports
         "take_deflections": {t["name"]: {node: {prop: round(v["offset"], 2) for prop, v in props.items()}
                                          for node, props in t["moving_detail"].items()} for t in probe["takes"]},
         "shapes": sorted((s["name"], round(s["travel_fraction"], 3)) for s in m["shapes"]),

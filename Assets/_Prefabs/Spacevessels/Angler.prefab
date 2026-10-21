@@ -973,12 +973,6 @@ MonoBehaviour:
   - InputEvent: 7
     ShipActions:
     - {fileID: 11400000, guid: f48cae469c285f3aa844be6e33917d48, type: 2}
-  - InputEvent: 8
-    ShipActions:
-    - {fileID: 11400000, guid: aeec7ad641cc8f24400c9343d1b2d6cc, type: 2}
-  - InputEvent: 14
-    ShipActions:
-    - {fileID: 11400000, guid: 36d37122f9bd2f22af1f855da9289f99, type: 2}
   _resourceEventClassActions: []
   _touchActionOverrides:
   - InputEvent: 1
@@ -1093,7 +1087,6 @@ MonoBehaviour:
   view: {fileID: 5137264980012345622}
   angler: {fileID: 4417001122334455001}
   lureEaseRate: 6
-  squadLabelTemplate: '{squad} x{count}'
 --- !u!114 &8755860699239805343
 MonoBehaviour:
   m_ObjectHideFlags: 0

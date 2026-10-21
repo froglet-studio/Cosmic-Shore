@@ -160,6 +160,19 @@ def pose_take(arm, name, pose, frame=1, key_all=True, world=True):
     return act
 
 
+REST_TAKE = "rest"
+
+
+def rest_take(arm, name=REST_TAKE):
+    """
+    A take that keys every bone at its rest pose. A hull whose takes are all deflections needs one, and it must be
+    the file's FIRST take (`export.lead_with_take`): Unity imports a model's default pose, which is the rest that
+    code puppetry captures at Awake, from the first take of the file, so a hull whose first take was `bankleft`
+    or `beatleft` flew leaning or wagging left (measured 2026-10-21 on the Shrike and Grouper, LESSONS 51).
+    """
+    return pose_take(arm, name, {})
+
+
 def motion_take(arm, name, keyframes, key_all=True, world=True):
     """
     Bake a motion: `keyframes` is a list of (frame, pose) where pose is as in pose_take. Bones

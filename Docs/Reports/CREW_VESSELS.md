@@ -52,8 +52,10 @@ change seats etc. both can be played on mobile or pc." This closes `T-20261017-b
 that one phone runs one human plus an AI.
 - **Today, one human:** keys 1 / 2 pick the Grouper or the Wrasse, and the D-pad or a double tap on the small view
   steps to the other seat. The pick is remembered per hull class (`CrewSeatChoice`).
-- **The phone boost:** lifting both thumbs now really speeds the Grouper up (idle reads a released pad, 72.5 against
-  35 u/s at a full spread). It is spent only after a thumb has touched in the pilot seat.
+- **The phone boost:** ~~lifting both thumbs~~ (superseded the same day: Garrett, "The grouper can not use boost on
+  mobile"). The Grouper boosts on RT on every device: the pad's trigger, right Shift, or on a phone **lifting the left
+  thumb** while the right flies on; the Time card shows that glyph. The Orca's helm had the same gap (boost and shield
+  read only the analog triggers) and is fixed the same way. `KITE_NAVIGATOR.md` "The phone boost". Not flown on a phone.
 - **The online plan:** `KITE_NAVIGATOR.md` "Two humans, two seats (plan, 2026-10-21)":
   - the hull is owned by the pilot seat's machine;
   - the Wrasse is simulated on its holder's machine, which sends each decided effect through a server-checked relay;
@@ -178,8 +180,11 @@ Grouper · 2 seat".
   `T-20261017-aca2` is the original playtest task.
 - **Build the two human seats** (`T-20261021-aa19`, Yash with Garrett). The decision (`T-20261017-b06e`) was made on
   2026-10-21: two seats, either device. The plan is in `KITE_NAVIGATOR.md`.
-- **Register the seat as a duo design** when your duo-vessel branch (`cece/sharp-tesla-j0kd7z`) lands
-  (`T-20261017-efca`, Garrett). The Goby there still uses enum value 16 and has to move; 18 is left for it.
+- **Register the seat as a duo design** (`T-20261017-efca`, open again). `cece/sharp-tesla-j0kd7z` moved the Goby to 18,
+  its card reads "Goby and Pistol", and the Goby runs on the shared crew pieces (`ICrewSeat`, `CrewSeat`,
+  `CrewPictureInPicture`, `CrewViewRender`, `check_crew_vessels.py`). That branch's move of the Wrasse onto them was
+  withdrawn when it merged bleeding-edge again (2026-10-21): the Wrasse joins at step 2 of `KITE_NAVIGATOR.md`'s work
+  order, after the branch lands.
 - **Card icons:** the Wrasse still shows the Sparrow's four ability icons (`T-20261018-8ff7`).
 - **Sounds:** eight empty FMOD slots (`T-20261017-3cbe`).
 - **Catch the lab up** to rounds 4-4f (`T-20261018-3247`).
@@ -227,7 +232,7 @@ _Generated 2026-10-21 from git (last 14 days), who_works_where.py and Docs/TEAM_
 - T-20261017-efca [open] dev: When the duo-vessel system (cece/sharp-tesla-j0kd7z) reaches bleeding-edge, register the Kite Navigator as a duo design so a hull can carry it from a mode or a menu, not only from the play-mode FrogletTools menu; keep its one swap (PilotSwapGesture) and its AI-in-every-empty-seat rule. (who: Garrett (duo-vessel owner))
 - T-20261017-3cbe [open] content: Author FMOD events for the Kite Navigator's eight empty EventReference slots on KiteNavigatorConfig.asset: loop closed, loop fizzled, prism popped, Mass cluster, Time boost, Charge, steal, fauna struck. (who: anyone who does audio)
 - T-20261017-aca2 [open] test: Playtest the Wrasse in the Unity Editor: open the Toybox, fly the Wrasse station in the Vessel Changer, then the 9 verify steps of its checklist entry (board draws, AI loops, 2/D-pad right swaps to the kite, each element's loop fires, a charged ram steals and scores, 1 swaps back with no stuck input or boost, the changer swaps cleanly in and out of the Wrasse). It has only been compiled headlessly. (who: Yash (offered), anyone with the Editor)
-- T-20261018-3247 [open] dev: Bring the Crew Vessel Lab up to the Wrasse's rounds 4-4f, which were directed in Unity on 2026-10-18 (KITE_NAVIGATOR.md "Where it stands"). They cover: the kite view and the pilot view swapping (the small view lower left); the kite following the mouse or stick with no click; a two-stick pilot who spends saved Time boosts on the right trigger (2 s cooldown, none at Time L5); lime five-petal motes in the totem's proportions, each moving like its element; mote frequency weighted by the hull's petals; Charge rams on fauna; Eject below Charge L5 and Steal at it; shielded Mass clusters at Mass L5; Space L5 blasts through shields and super shields; the Omni crystal's burst of motes; and out-of-plane prisms seen with depth from the plane. Then re-run parity.cjs and verify_lab.cjs and republish. (who: any session; Garrett to sign off)
+- T-20261018-3247 [open] dev: Bring the Crew Vessel Lab up to the Wrasse's rounds 4-4f, which were directed in Unity on 2026-10-18 (KITE_NAVIGATOR.md "Where it stands"). They cover: the kite view and the pilot view swapping (the small view lower left); the kite following the mouse or stick with no click; a two-stick pilot who spends saved Time boosts on the right trigger (no cooldown since 2026-10-21; Time L5 is an open slot); lime five-petal motes in the totem's proportions, each moving like its element; mote frequency weighted by the hull's petals; Charge rams on fauna; Eject below Charge L5 and Steal at it; shielded Mass clusters at Mass L5; Space L5 blasts through shields and super shields; the Omni crystal's burst of motes; and out-of-plane prisms seen with depth from the plane. Then re-run parity.cjs and verify_lab.cjs and republish. (who: any session; Garrett to sign off)
 - T-20261018-8ff7 [open] content: Draw the Wrasse's four ability-card icons. Since round 4d the cards read the navigator (WrasseHUDController: Time = saved boosts, Charge = kite rams, Space = last blast's kills, Mass = flash on a cluster) and ElementalAbilityMaps/Wrasse.asset names them Space Blast, Saved Boosts, Mass Cluster and Kite Ram, but the sprites on the HUD (SparrowHUDVariant) are still the Sparrow's gun, missile and stance icons. (who: Garrett (vessels, icons); any session for the variant wiring)
 - T-20261018-5c29 [open] test: Fly the Wrasse's round 4d in the Unity Editor: let BlockGraph and the swarm member shaders re-import with the new PrismDepthPlane.hlsl include, confirm the pilot's own view of prisms is unchanged, then run Docs/UNITY_VERIFICATION_CHECKLIST.md's Wrasse steps 2-4 (two-thumb flight, the HUD counts, the five-petal motes, out-of-plane prisms opening with distance from the plane and dithering above it). (who: Garrett (sign-off); Yash can run the editor pass)
 - T-20261020-d102 [open] test: Playtest the Crew of Four Lab (round 4, the 4-seat vessel) by hand, on PC and phone: take the helm and a gunner seat in each of the four games at I2, compare the Round 4 preset (stabilized turrets on outriggers) with the Hull-locked turrets control from a gunner seat, and record on the Decisions tab which seats felt like a job, which felt like waiting, and whether the turret view feels steady enough. The AI cannot feel sway (its points are the same with and without stabilization), and the shield's worth is within noise, so a person at the helm decides both. (who: Yash (offered), Garrett, anyone)

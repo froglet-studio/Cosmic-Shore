@@ -43,6 +43,7 @@ touching before editing; read all of it when creating or completing a vessel.
 | Prefab construction, model swaps, deleting a model | — | **`Docs/VESSEL_CONSTRUCTION.md`** (guid ownership, nested-instance parenting, what the unreferenced rigs carry) |
 | The MODEL itself: the FBX hull, its armature, element shape keys, puppetry takes, material slots; "the procedural model looks terrible" | — | **`/vessel-model`** (the Squirrel passed the owner's Editor test on 2026-10-18 by keeping the artist's hull and takes and adding the framework on top; its section 4 is the loop) (`.claude/skills/vessel-model/SKILL.md`): Blender-as-a-module specs under `Tools/Build/vessel_model/specs/`, verified and rendered before an in-place write; dossiers in `Docs/VesselModels/` |
 | Tails, jets, vessel FX mounts | — | `Docs/VESSEL_TAIL_AND_JETS.md` |
+| A **duo vessel** (two craft in one squad slot, D-pad / phone-flip swap between halves) | — | **`/duo-vessel`** skill (contract, code anchors, one brief per duo) |
 | Collisions, crystals, skimmers, jousting | §9 Impact effects | CLAUDE.md ▸ Impact Effects; `RHINO_SHIELD_SWIPE.md` |
 | Docs, shipping, verification | §10 Paper trail | `GIT_RULES.md`, `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
 
@@ -868,7 +869,21 @@ applies to new abilities, new resources on the meter list, and anything that add
     card; tilt (`tiltRollOnOneThumb`, `tiltSteersWhileIdle`) stands in for the axis a lifted thumb gave up. The gate:
     `author_touch_profiles.py --check` fails when a TotemButtons hull shows a card or button whose input resolves to
     no action on touch (it caught the Stoat, whose only bindings were the pad overrides, and the Angler, whose paint and
-    erase read only trigger depth). Run `Tools/Build/touch_controls_harness/run.sh` after touching the layout or tilt.
+    erase read only trigger depth), and a ThumbLifts card whose lift glyph names a lift nothing is bound to. **A
+    component that reads a trigger itself (a crew seat, an executor) is the same question with no card to catch it:**
+    the Wrasse's and the Orca's seats read only `RightTriggerAnalog` / `LeftTriggerAnalog`, so a phone pilot had no
+    boost and no shield until the triggers became bindings (`CrewTriggerActionSO`, 2026-10-21: "The grouper can not use
+    boost on mobile"). **Bind the stick events, not the "only" ones:** a lift raises OnlyRight/OnlyLeftStickAction at
+    once AND `RightStickAction` / `LeftStickAction` for the thumb that flies on (`TouchInputStrategy.HandleRightStick`),
+    the pair a pad raises, so one shared `RightStickAction` binding already reaches a phone (the Dolphin, Rhino and
+    Honeyguide work that way); a touch override on 11 / 12 is only for an ability that must differ on a phone.
+    Run `Tools/Build/touch_controls_harness/run.sh` after touching the layout or tilt.
+    **A seat whose hull the AI flies cannot take its phone buttons through `InputStatus`**: while a person aims a crew
+    turret the hull is under autopilot and `R_VesselActionHandler` drops the press. Bind the `TouchButtonView` to a
+    sink instead (`Bind(Action<bool>)`, the Orca's gunner Fire / Missile, `OrcaHUDController`), lay it out with
+    `TouchButtonLayout` + `TouchControlsHud.LayoutSettings`, and have the aiming finger skip any touch that STARTED on a
+    claimed region (`FlightTouchClaims.Claims(startPosition)`), or the thumb on the button also aims and also counts as
+    half of a two-finger gesture (2026-10-21).
     Two fleet rules ride with it (2026-10-21): **a human pilot's nose has no lag** - every transformer's RotateShip
     goes through `VesselTransformer.NoseFollowFraction` (never write `LERP_AMOUNT * dt` into a new override; read
     `NoseFollowRate` to predict a hull) - and **Invert Y is the setting's alone** (`ApplyInvertSettings` in every

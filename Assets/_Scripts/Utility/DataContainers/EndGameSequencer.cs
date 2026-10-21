@@ -280,12 +280,14 @@ namespace CosmicShore.Utility
             // vessel would stay uncontrollable in the next tournament round. SetPause(true)
             // is the proven menu-autopilot pattern and is reset every round by
             // Player.StartPlayer() -> SetPause(false).
+            CrewSeat.ReturnHumansToHull(player.Vessel);   // a crew seat stops reading input too (it took the hull itself)
             if (player.InputController != null)
                 player.InputController.SetPause(true);
             player.Vessel.ToggleAIPilot(true);
 
-            // Sparrow keeps laying prisms forever otherwise (the Wrasse is a Sparrow hull with a navigator seat).
-            if (status.VesselType is VesselClassType.Sparrow or VesselClassType.Wrasse && status.VesselPrismController != null)
+            // Sparrow keeps laying prisms forever otherwise (the Wrasse and the Honeyguide are Sparrow hulls with a crew seat).
+            if (status.VesselType is VesselClassType.Sparrow or VesselClassType.Wrasse or VesselClassType.Honeyguide
+                && status.VesselPrismController != null)
                 status.VesselPrismController.StopSpawn();
 
             var behavior = status.AICinematicBehavior;

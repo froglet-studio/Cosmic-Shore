@@ -15,8 +15,8 @@ MonoBehaviour:
   Class: 17
   Name: Angler
   Description: The fleet's strategist. Hold the lure light out to draw wild fauna, tame the ones you hold,
-    and lead them as a school. Paint the prisms you want gone with RT, erase mistakes with LT, and let go to
-    throw the squad at what you painted.
+    and lead them as a school of two halves. Paint the prisms you want gone with RT, erase mistakes with LT,
+    and let go to throw one half at what you painted; the next paint sends the other half.
   PrimaryElement: 0
   Element: {fileID: 0}
   InitialResourceLevels: {Mass: 0, Charge: 0, Space: 0, Time: 0}

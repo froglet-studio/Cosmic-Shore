@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
     /// crew is a follow-up (ORCA_CREW.md), as it is for the Wrasse.</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class OrcaCrew : MonoBehaviour
+    public sealed class OrcaCrew : MonoBehaviour, ICrewTriggers, IHullParkAware
     {
         public const int Helm = 0, Seats = 4;
 
@@ -76,6 +76,8 @@ namespace CosmicShore.Gameplay
 
         int _humanSeat = Helm;
         bool _weTookHull, _boosting, _shieldTriggerHeld;
+        // the hull's triggers as CrewTriggerActionSO reports them (a pad's, the keyboard's shifts, a phone's thumb lifts)
+        bool _rtHeld, _ltHeld;
         float _swapReadyAt, _tank, _shieldEndsAt, _shieldReadyAt, _twoFingerAt = -1f;
         CursorLockMode _cursorBefore;
         bool _cursorLocked;
@@ -118,13 +120,11 @@ namespace CosmicShore.Gameplay
         readonly List<Prism> _query = new();
         readonly Dictionary<int, float> _crystalTakenAt = new();
 
-        // touch: a short tap releases, a drag aims (or steers a missile from where it started)
+        // touch: the aiming finger (the left thumb; any touch that did not start on a button) turns the turret, or
+        // steers a missile from where it landed; the right thumb has the seat's two buttons (OrcaHUDController)
         int _touchId = int.MinValue;
-        float _touchStart;
         Vector2 _touchFrom;
-        bool _touchMoved;
-        float _lastTapAt = -9f;
-        Vector2 _lastTapAt2;
+        bool _fireButtonHeld, _fireButtonPressed, _missileButtonPressed;
 
         // ------------------------------------------------------------------ read by the HUD and the view
 
@@ -132,29 +132,13 @@ namespace CosmicShore.Gameplay
         /// <summary>True while the local person rides this hull (and the HUD should read it).</summary>
         public bool HumanAboard => _mode == Mode.LocalHuman;
         public int HumanSeat => _humanSeat;
-        /// <summary>The missiles the HUD shows: the person's own seat's, or all three seats' at the helm.</summary>
-        public int Missiles => _humanSeat > Helm ? MissilesAt(_humanSeat) : MissilesAt(1) + MissilesAt(2) + MissilesAt(3);
         public int MissilesAt(int seat) => seat > Helm && seat < Seats ? _mags[seat]?.Count ?? 0 : 0;
         public float BoostTank01 => _cfg && _cfg.BoostTank > 0f ? Mathf.Clamp01(_tank / _cfg.BoostTank) : 0f;
         public float ShieldCooldown01 => _cfg && _cfg.ShieldCooldown > 0f ? Mathf.Clamp01((_shieldReadyAt - Time.time) / _cfg.ShieldCooldown) : 0f;
         public bool ShieldUp => _shield.Count > 0;
 
-        /// <summary>A seat's gun, named and with its state, from the config's authored words (the HUD's {gun}).</summary>
-        public string GunLine(int seat)
-        {
-            var cfg = Config;
-            if (!cfg || !cfg.GunsOn || seat <= Helm || seat >= Seats || string.IsNullOrEmpty(cfg.GunLineTemplate)) return string.Empty;
-            string state = seat == FastGunSeat ? (_fast.Hot ? cfg.GunHotText : cfg.GunReadyText)
-                : seat == BombSeat ? (_bomb ? cfg.BombOutText : cfg.GunReadyText)
-                : _gunCd[seat] > 0f ? cfg.GunCooldownTemplate.Replace("{seconds}", Mathf.CeilToInt(_gunCd[seat]).ToString())
-                : cfg.GunReadyText;
-            return cfg.GunLineTemplate.Replace("{name}", cfg.GunName(seat)).Replace("{state}", state);
-        }
-        /// <summary>A number that changes exactly when <see cref="GunLine"/>'s text would, so the HUD rebuilds the line only
-        /// then (no per-frame strings): -1 overheated, -2 a bomb out, else the whole seconds left to cool (0 = ready).</summary>
-        public int GunStateKey(int seat) => seat == FastGunSeat ? (_fast.Hot ? -1 : 0)
-            : seat == BombSeat && _bomb ? -2
-            : seat > Helm && seat < Seats && _gunCd[seat] > 0f ? Mathf.CeilToInt(_gunCd[seat]) : 0;
+        /// <summary>True while the seat flies a missile (its Fire button stands down; Missile bursts it).</summary>
+        public bool MissileInFlight(int seat) => seat > Helm && seat < Seats && _missiles[seat] != null;
         /// <summary>The fast gun's heat (0-1) and whether it is locked out, for the HUD.</summary>
         public float FastGunHeat01 => _fast.Heat;
         /// <summary>When a missile last burst / the shield was last raised (Time.time), for the HUD's flashes.</summary>
@@ -264,7 +248,7 @@ namespace CosmicShore.Gameplay
             if (bombGun) bombGun.Initialize(_status);
             _tank = _cfg.BoostTank;
             _humanSeat = Helm;
-            _weTookHull = _boosting = _shieldTriggerHeld = false;
+            _weTookHull = _boosting = _shieldTriggerHeld = _rtHeld = _ltHeld = false;
             _shieldEndsAt = _shieldReadyAt = 0f;
             _crystalTakenAt.Clear();
             if (!Live.Contains(this)) Live.Add(this);
@@ -321,6 +305,7 @@ namespace CosmicShore.Gameplay
                 _pod.Follow(HullFrame(), dt, _s.MountSmooth);
                 for (int s = 1; s < Seats; s++) StepSeat(s, dt);
                 for (int s = 1; s < Seats; s++) if (_missiles[s] != null) StepMissile(s, dt);
+                _fireButtonPressed = _missileButtonPressed = false;   // a button press is read by this frame's seat only
                 StepBomb(dt);
                 StepPen();
                 if (_dropped.Count > 0 && Time.time >= _droppedCheckAt) { _droppedCheckAt = Time.time + 0.5f; ExpireDropped(); }
@@ -362,16 +347,33 @@ namespace CosmicShore.Gameplay
             if (ts == null) return false;
             if (ts.touches.Count > 1 && ts.touches[1].press.wasPressedThisFrame) _twoFingerAt = Time.unscaledTime;
             if (_twoFingerAt < 0f) return false;
+            // the left thumb aiming while the right presses Fire or Missile is not a seat swap
+            for (int i = 0; i < ts.touches.Count; i++)
+                if (ts.touches[i].press.isPressed && FlightTouchClaims.Claims(ts.touches[i].startPosition.ReadValue()))
+                {
+                    _twoFingerAt = -1f;
+                    return false;
+                }
             for (int i = 0; i < ts.touches.Count; i++) if (ts.touches[i].press.isPressed) return false;
             bool quick = Time.unscaledTime - _twoFingerAt < 0.35f;
             _twoFingerAt = -1f;
             return quick;
         }
 
+        /// <inheritdoc cref="IHullParkAware.ReturnHumanToHull"/>
+        public void ReturnHumanToHull()
+        {
+            if (_humanSeat == Helm) return;
+            _weTookHull = false;   // the autopilot is the parker's now: SetHumanSeat(Helm) must not stop it
+            SetHumanSeat(Helm);
+        }
+
         void SetHumanSeat(int seat)
         {
             int was = _humanSeat;
             _humanSeat = seat;
+            // a release made while the AI flies the hull never arrives (R_VesselActionHandler ignores input under autopilot)
+            _rtHeld = _ltHeld = false;
             if (was == Helm && seat != Helm)
             {
                 SetFlightInputPaused(true);
@@ -389,6 +391,7 @@ namespace CosmicShore.Gameplay
             }
             if (seat != Helm) _turrets[seat].React = 0f;
             _touchId = int.MinValue;
+            _fireButtonPressed = _missileButtonPressed = false;
         }
 
         void SetFlightInputPaused(bool paused)
@@ -423,14 +426,11 @@ namespace CosmicShore.Gameplay
             bool wantBoost = false, shieldEdge = false;
             if (HumanAt(Helm))
             {
-                var input = _player?.InputStatus;
-                if (input != null)
-                {
-                    wantBoost = input.RightTriggerAnalog > 0.5f;
-                    bool held = input.LeftTriggerAnalog > 0.5f;
-                    shieldEdge = held && !_shieldTriggerHeld;
-                    _shieldTriggerHeld = held;
-                }
+                // RT boosts, LT raises the shield, read from the trigger action rather than InputStatus's analog triggers,
+                // which no phone writes: on a phone the helm lifts the left thumb to boost and the right to shield
+                wantBoost = _rtHeld;
+                shieldEdge = _ltHeld && !_shieldTriggerHeld;
+                _shieldTriggerHeld = _ltHeld;
                 // the lab's other shield keys: E, and the pad's B
                 shieldEdge |= (Keyboard.current?.eKey.wasPressedThisFrame ?? false) || (Gamepad.current?.buttonEast.wasPressedThisFrame ?? false);
             }
@@ -451,6 +451,28 @@ namespace CosmicShore.Gameplay
 
             if (_shield.Count > 0 && Time.time >= _shieldEndsAt) EndCarry();
             if (shieldEdge && Time.time >= _shieldReadyAt) RaiseShield();
+        }
+
+        /// <summary>The hull's trigger, pressed or released (<see cref="CrewTriggerActionSO"/>): RT the helm's boost, LT
+        /// its shield.</summary>
+        public void SetTrigger(int trigger, bool down)
+        {
+            if (trigger == 0) _rtHeld = down;
+            else _ltHeld = down;
+        }
+
+        public const int FireButton = 0, MissileButton = 1;
+
+        /// <summary>A gunner seat's phone button, pressed or released (<c>OrcaHUDController</c>, round the right thumb):
+        /// Fire holds the seat's gun, Missile launches one (or bursts the one in flight).</summary>
+        public void SetGunnerButton(int button, bool down)
+        {
+            if (button == FireButton)
+            {
+                if (down && !_fireButtonHeld) _fireButtonPressed = true;
+                _fireButtonHeld = down;
+            }
+            else if (button == MissileButton && down) _missileButtonPressed = true;
         }
 
         void StopBoost()
@@ -1174,9 +1196,11 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ a person's input in a gunner seat
 
-        // The turret's turn this frame (az right, el up, radians), and the two buttons: Fire (the seat's gun: the left mouse
-        // button, Space, the right trigger; on a touch screen a finger down) and Missile (the right mouse button, F, A; on
-        // a touch screen a double tap). Aim with mouse look, a pad's sticks or W A S D at the turret rate, a touch drag.
+        // The turret's turn this frame (az right, el up, radians), and the two buttons, both under the right thumb (Garrett,
+        // 2026-10-21: "fire gun, fire missiles. it does these with the right thumb and aims with the left"): Fire (the
+        // seat's gun: the left mouse button, Space, the pad's X or right trigger, the phone's Fire button) and Missile (the
+        // right mouse button, F, the pad's A, the phone's Missile button). Aim with mouse look, the pad's left stick (the
+        // right also turns it), W A S D at the turret rate, or the left thumb's drag on a phone.
         Vector2 ReadTurretAim(float dt, out bool missile, out bool gunHold, out bool gunEdge)
         {
             var aim = Vector2.zero;
@@ -1194,8 +1218,8 @@ namespace CosmicShore.Gameplay
             if (pad != null)
             {
                 aim += (pad.leftStick.ReadValue() + pad.rightStick.ReadValue()) * rate;
-                gunHold |= pad.rightTrigger.ReadValue() > 0.3f;
-                gunEdge |= pad.rightTrigger.wasPressedThisFrame;
+                gunHold |= pad.rightTrigger.ReadValue() > 0.3f || pad.buttonWest.isPressed;
+                gunEdge |= pad.rightTrigger.wasPressedThisFrame || pad.buttonWest.wasPressedThisFrame;
                 missile |= pad.buttonSouth.wasPressedThisFrame;
             }
             var kb = Keyboard.current;
@@ -1206,15 +1230,15 @@ namespace CosmicShore.Gameplay
                 gunEdge |= kb.spaceKey.wasPressedThisFrame;
                 missile |= kb.fKey.wasPressedThisFrame;
             }
-            aim += ReadTouch(out _, out _, out bool began, out bool held, out bool doubleTap) * 0.006f;
-            gunHold |= held;
-            gunEdge |= began && !doubleTap;
-            missile |= doubleTap;
+            aim += ReadTouch(out _) * 0.006f;
+            gunHold |= _fireButtonHeld;
+            gunEdge |= _fireButtonPressed;
+            missile |= _missileButtonPressed;
             return aim;
         }
 
-        // A flown missile's stick (yaw right, pitch up, each -1..1) and whether Missile was pressed again (on a touch
-        // screen, a tap).
+        // A flown missile's stick (yaw right, pitch up, each -1..1) and whether Missile was pressed again (on a phone, the
+        // Missile button; the left thumb's drag from where it landed is the stick).
         Vector2 ReadMissileStick(out bool burst)
         {
             var stick = Vector2.zero;
@@ -1238,9 +1262,9 @@ namespace CosmicShore.Gameplay
                 stick = Bigger(stick, Vector2.ClampMagnitude(mouse.delta.ReadValue() * 0.05f, 1f));
                 burst |= mouse.rightButton.wasPressedThisFrame;
             }
-            ReadTouch(out bool tap, out var drag, out _, out _, out _);
+            ReadTouch(out var drag);
             stick = Bigger(stick, Vector2.ClampMagnitude(drag / Mathf.Max(1f, Screen.height * 0.08f), 1f));
-            burst |= tap;
+            burst |= _missileButtonPressed;
             return Vector2.ClampMagnitude(stick, 1f);
         }
 
@@ -1250,38 +1274,33 @@ namespace CosmicShore.Gameplay
             (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1f : 0f),
             (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1f : 0f) - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1f : 0f));
 
-        // The primary touch: its movement this frame (px); whether a short tap just ended; its offset from where it started
-        // (the missile's stick); whether it began this frame, is down, or began as the second of a double tap.
-        Vector2 ReadTouch(out bool tap, out Vector2 drag, out bool began, out bool held, out bool doubleTap)
+        // The aiming finger: its movement this frame (px) and its offset from where it landed (the missile's stick). It is the
+        // first touch that did not start on a claimed region (the Fire and Missile buttons, the cards; FlightTouchClaims),
+        // so the right thumb pressing a button never turns the turret, and it stays the aiming finger until it lifts.
+        Vector2 ReadTouch(out Vector2 drag)
         {
-            tap = began = held = doubleTap = false;
             drag = Vector2.zero;
             var ts = Touchscreen.current;
             if (ts == null) return Vector2.zero;
-            var touch = ts.primaryTouch;
-            if (ts.touches.Count > 1 && ts.touches[1].press.isPressed) { _touchId = int.MinValue; return Vector2.zero; }
-            if (touch.press.isPressed)
-            {
-                held = true;
-                int id = touch.touchId.ReadValue();
-                var p = touch.position.ReadValue();
-                if (id != _touchId)
-                {
-                    _touchId = id; _touchStart = Time.unscaledTime; _touchFrom = p; _touchMoved = false;
-                    began = true;
-                    doubleTap = Time.unscaledTime - _lastTapAt < 0.35f && (p - _lastTapAt2).sqrMagnitude < 60f * 60f;
-                    if (doubleTap) _lastTapAt = -9f;
-                    return Vector2.zero;
-                }
-                drag = p - _touchFrom;
-                if (drag.sqrMagnitude > 20f * 20f) _touchMoved = true;
-                return touch.delta.ReadValue();
-            }
+            var touches = ts.touches;
             if (_touchId != int.MinValue)
             {
-                tap = !_touchMoved && Time.unscaledTime - _touchStart < 0.25f;
-                if (tap) { _lastTapAt = Time.unscaledTime; _lastTapAt2 = _touchFrom; }
-                _touchId = int.MinValue;
+                for (int i = 0; i < touches.Count; i++)
+                {
+                    var t = touches[i];
+                    if (!t.press.isPressed || t.touchId.ReadValue() != _touchId) continue;
+                    drag = t.position.ReadValue() - _touchFrom;
+                    return t.delta.ReadValue();
+                }
+                _touchId = int.MinValue;   // it lifted
+            }
+            for (int i = 0; i < touches.Count; i++)
+            {
+                var t = touches[i];
+                if (!t.press.isPressed || FlightTouchClaims.Claims(t.startPosition.ReadValue())) continue;
+                _touchId = t.touchId.ReadValue();
+                _touchFrom = t.position.ReadValue();
+                break;
             }
             return Vector2.zero;
         }

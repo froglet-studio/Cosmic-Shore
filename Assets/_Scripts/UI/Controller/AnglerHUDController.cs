@@ -21,15 +21,10 @@ namespace CosmicShore.UI
         [SerializeField] AnglerCommandExecutor angler;
         [Tooltip("How fast the Lure card eases on and off (1/s).")]
         [SerializeField, Min(0f)] float lureEaseRate = 6f;
-        [Tooltip("The Squad card's label while one kind is picked (X). Tokens: {squad} the kind's name, {count} how many of it " +
-                 "the school holds. Empty shows nothing. The whole school (no kind picked) shows no label.")]
-        [SerializeField] string squadLabelTemplate = "{squad} x{count}";
 
         bool _isLocalPilotHud;
         float _lure01;
         int _seeds;
-        int _squadCount = -2;   // the squad label last written (-1 = the whole school)
-        string _squadName;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -43,8 +38,6 @@ namespace CosmicShore.UI
                                && vesselStatus.IsLocalUser;
             _lure01 = 0f;
             _seeds = 0;
-            _squadCount = -2;   // forces the first write
-            _squadName = null;
         }
 
         void Update()
@@ -55,13 +48,6 @@ namespace CosmicShore.UI
             _lure01 = Mathf.MoveTowards(_lure01, angler.Luring ? 1f : 0f, lureEaseRate * Time.unscaledDeltaTime);
             view.SetMass(Mathf.Max(angler.StrongestTame01, _lure01 * 0.15f), angler.Luring);
             view.SetFaunaCount(angler.TamedCount);
-            int squad = angler.SquadPicked ? angler.SquadCount : -1;
-            if (squad != _squadCount || (squad >= 0 && angler.SquadName != _squadName))   // the label is rebuilt only on a change
-            {
-                _squadCount = squad;
-                _squadName = squad >= 0 ? angler.SquadName : null;
-                view.SetSquad(squad >= 0 ? TemplateText.Fill(squadLabelTemplate, "squad", _squadName, "count", squad.ToString()) : "");
-            }
             view.SetSpace(angler.Hunting / school, angler.Painting && angler.PaintedCount > 0);
             view.SetFloraSeeds(angler.FloraSeedCount);
             if (angler.FloraSeedCount > _seeds) view.PlayOmniCrystalCollected();   // a crystal just left a seed

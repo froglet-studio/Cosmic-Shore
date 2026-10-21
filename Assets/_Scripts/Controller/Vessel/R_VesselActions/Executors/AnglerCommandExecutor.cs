@@ -11,12 +11,13 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The Angler's command system (design: <c>R_VesselActions/ANGLER.md</c>; decided in the Angler Command Lab,
     /// <c>Docs/Studios/ANGLER_COMMAND_LAB.md</c> round 2): it LURES wild fauna with the esca, TAMES the ones it holds in
-    /// the light, leads them as a school, and sends a picked squad at particular prisms with the <b>Sling painter</b>.
+    /// the light, leads them as a school split into TWO GROUPS, and sends one group at a time at particular prisms with
+    /// the <b>Sling painter</b> (round 8, 2026-10-21; <c>ANGLER.md</c> §1m).
     ///
     /// <list type="bullet">
     /// <item><b>RT, held</b> (read as analog depth, <see cref="IInputStatus.RightTriggerAnalog"/>): paints prisms with a beam
-    /// from the nose — the squeeze sets the brush (<see cref="AnglerCommandMath.BrushScale"/>) — while the picked squad
-    /// balls up ahead of the nose.</item>
+    /// from the nose — the squeeze sets the brush (<see cref="AnglerCommandMath.BrushScale"/>) — while the group whose
+    /// turn it is balls up ahead of the nose.</item>
     /// <item><b>LT, held</b>: erases paint with a narrower beam. While LT is held RT does not paint.</item>
     /// <item><b>On a phone</b> there is no trigger depth: the Space card (Paint, RightStickAction) and the Charge card
     /// (Erase / Lock-on, LeftStickAction) are held buttons bound in the prefab's TOUCH overrides to
@@ -24,12 +25,13 @@ namespace CosmicShore.Gameplay
     /// <see cref="SetErasePressed"/>. A held press reads as a full pull (the Thresher's <c>PollTriggers</c> shape), so the
     /// brush is always full width on touch. A pad never sets them (its triggers are not bound), so an analog pilot's
     /// half-pull, brush width and 0.5 thresholds are exactly as before.</item>
-    /// <item><b>RT, let go</b>: the throw. Each creature in the ball is given its own painted prism
+    /// <item><b>RT, let go</b>: the throw, and the turn passes to the other group. Each creature in the ball is given its own painted prism
     /// (<see cref="AnglerCommandMath.PickTarget"/>) and launched at it at throw speed, homing; inside its mouth's reach
     /// the throw ends and it eats by its own mouthful rule, with the painted set as its order. Nothing painted: it throws
     /// like a plain sling, and each creature latches onto the first enemy prism it passes.</item>
-    /// <item><b>A</b> (held): the lure (<see cref="BeginLure"/>); <b>B</b>: the dash (<see cref="Dash"/>); <b>X</b>: pick the
-    /// squad (<see cref="CycleSquad"/>); <b>Y</b>: recall (<see cref="Recall"/>).</item>
+    /// <item><b>A</b> (held): the lure (<see cref="BeginLure"/>); <b>B</b>: the dash to one group, then the other
+    /// (<see cref="Dash"/>). No squad pick, no recall and no boost (the designer, 2026-10-21): the throw alternates the
+    /// groups, and the dash carries the hull between them.</item>
     /// </list>
     ///
     /// <para><b>Who decides what.</b> Every peer runs this executor from the vessel's REPLICATED inputs (trigger depths
@@ -80,7 +82,7 @@ namespace CosmicShore.Gameplay
             public float FlightTime;
             public bool Homing;
             public Vector3 ThrowDirection;
-            public string Species;
+            public int Group;      // 0 or 1: which half of the school it is (JoinSchool, Rebalance)
             public int Slot;
             public float Phase;
             public bool Recent;    // a Sling-painter order: pick the newest paint first, regardless of distance
@@ -93,7 +95,6 @@ namespace CosmicShore.Gameplay
         readonly List<Member> _tamed = new();               // tamed creatures in taming order (the formation's order)
         readonly List<Member> _lured = new();
         readonly Dictionary<Fauna, float> _slipped = new(); // taming left on creatures that slipped out of the light
-        readonly List<string> _species = new();             // the squad pick's order: the order kinds were first tamed
         readonly List<Prism> _painted = new();
         readonly HashSet<Prism> _paintedSet = new();
         readonly HashSet<Prism> _ordered = new();            // thrown at, not yet eaten or erased: the lab's `marked`
@@ -112,7 +113,8 @@ namespace CosmicShore.Gameplay
         readonly List<Member> _memberScratch = new();
         readonly List<Prism> _scratchPrisms = new();
         AnglerWorldMarks _marks;
-        int _squad = -1;           // -1 = the whole school, else an index into _species
+        int _sendGroup;            // the group the next paint gathers and throws; the throw passes the turn to the other
+        int _dashGroup;            // the group the next dash goes to; each dash passes it to the other
         bool _luring;
         bool _cmdHeld;
         float _cmdDepth, _eraseDepth;
@@ -138,24 +140,14 @@ namespace CosmicShore.Gameplay
         public bool Luring => _luring;
         public bool Painting => _cmdHeld && _eraseDepth <= 0.5f;
         public bool Erasing => _eraseDepth > 0.5f;
-        public int SquadIndex => _squad;
-        public int SpeciesCount => _species.Count;
-        /// <summary>The picked squad's name ("School" for all of them).</summary>
-        public string SquadName => _squad < 0 || _squad >= _species.Count ? "School" : _species[_squad];
-
-        /// <summary>True while X has picked one kind: only that kind gathers and is thrown, the rest keep their orders.</summary>
-        public bool SquadPicked => _squad >= 0 && _squad < _species.Count;
-
-        /// <summary>How many creatures the picked squad holds (the whole school while none is picked).</summary>
-        public int SquadCount
+        /// <summary>The group the next paint sends (0 or 1).</summary>
+        public int SendGroup => ResolveGroup(_sendGroup);
+        /// <summary>How many creatures the group holds.</summary>
+        public int GroupCount(int group)
         {
-            get
-            {
-                if (!SquadPicked) return _tamed.Count;
-                int n = 0;
-                for (int i = 0; i < _tamed.Count; i++) if (_tamed[i].Species == _species[_squad]) n++;
-                return n;
-            }
+            int n = 0;
+            for (int i = 0; i < _tamed.Count; i++) if (_tamed[i].Group == group) n++;
+            return n;
         }
         public int InBall => Count(LeashOrder.Gather);
         public int Hunting => Count(LeashOrder.Attack) + Count(LeashOrder.Thrown);
@@ -186,7 +178,7 @@ namespace CosmicShore.Gameplay
             DropCameraLift();   // before the status moves on, while the rig can still be told it framed the old one
             _status = shipStatus;
             _transformer = _status != null ? _status.VesselTransformer as AnglerVesselTransformer : null;
-            _squad = -1;
+            _sendGroup = _dashGroup = 0;
             _luring = false;
             _cmdHeld = false;
             _cmdDepth = _eraseDepth = 0f;
@@ -198,7 +190,6 @@ namespace CosmicShore.Gameplay
             _vesselScanAt = -1f;
             _dashUntil = 0f;
             _throwSerial = 0;
-            _species.Clear();
             if (config) PaintedPrey.Preference = config.PaintedPreference;
             if (!config)
                 CSDebug.LogError($"[Angler] {name}: AnglerCommandExecutor has no AnglerConfig - the Angler cannot lure, tame or " +
@@ -254,23 +245,15 @@ namespace CosmicShore.Gameplay
         /// LT fully pulled while held. See <see cref="SetPaintPressed"/>.</summary>
         public void SetErasePressed(bool pressed) => _erasePressed = pressed;
 
-        /// <summary>The whole school, then each kind in the order it was first tamed, then the school again.</summary>
-        public void CycleSquad() => _squad = _squad >= _species.Count - 1 ? -1 : _squad + 1;
-
-        /// <summary>The picked squad drops its order and comes back to the school. Spent hunters are no longer the
-        /// school's: a recall does not reach them.</summary>
-        public void Recall()
-        {
-            for (int i = 0; i < _tamed.Count; i++)
-                if (InSquad(_tamed[i])) ToFollow(_tamed[i]);
-        }
-
         /// <summary>
-        /// The TIME ability (the lab's <c>startDash</c>): the hull dashes <c>dashFrac</c> of the way to the centroid of every
-        /// creature it leads, measured now (<see cref="AnglerCommandMath.DashPoint"/>), over <c>dashTime</c>. Moved by one
-        /// velocity displacement (<see cref="VesselTransformer.ModifyVelocity(Vector3, float, bool, float)"/>: its weight
-        /// averages exactly 1 over its life, so it carries the hull the whole distance) on the machine that owns the hull,
-        /// whose transform replicates. No school, no dash.
+        /// The TIME ability (the lab's <c>startDash</c>): the hull dashes <c>dashFrac</c> of the way to the centroid of ONE
+        /// group, measured now (<see cref="AnglerCommandMath.DashPoint"/>), over <c>dashTime</c>, and the next dash goes to
+        /// the other group (the designer, 2026-10-21: "time can also alternate which group it is attracted to, and it
+        /// doesn't need a boost because it just fly between its two groups"). A group that is empty, or already round the
+        /// hull, is passed over for the other. Moved by one velocity displacement
+        /// (<see cref="VesselTransformer.ModifyVelocity(Vector3, float, bool, float)"/>: its weight averages exactly 1 over
+        /// its life, so it carries the hull the whole distance) on the machine that owns the hull, whose transform
+        /// replicates. No school, no dash.
         /// </summary>
         public void Dash()
         {
@@ -278,24 +261,36 @@ namespace CosmicShore.Gameplay
             if (!ElementalTransfer.IsDecidedHere(_status)) return;   // the hull's transform is its owner's to move
             var transformer = _status.VesselTransformer;
             if (!transformer) return;
-            Vector3 centroid = Vector3.zero;
+            Vector3 from = _status.Transform.position;
+            for (int tries = 0; tries < 2; tries++)
+            {
+                int group = tries == 0 ? _dashGroup : 1 - _dashGroup;
+                if (!TryGroupCentroid(group, out Vector3 centroid)) continue;
+                Vector3 delta = AnglerCommandMath.DashPoint(from, centroid, config.DashFrac) - from;
+                if (delta.sqrMagnitude < 1f) continue;
+                float time = config.DashTime;
+                Vector3 velocity = delta / time;
+                transformer.ModifyVelocity(velocity, time, true, velocity.magnitude * 1.6f);
+                _dashUntil = Time.time + time;
+                _dashGroup = 1 - group;
+                return;
+            }
+        }
+
+        bool TryGroupCentroid(int group, out Vector3 centroid)
+        {
+            centroid = Vector3.zero;
             int n = 0;
             for (int i = 0; i < _tamed.Count; i++)
             {
                 var c = _tamed[i].Creature;
-                if (!c) continue;
+                if (!c || _tamed[i].Group != group) continue;
                 centroid += c.transform.position;
                 n++;
             }
-            if (n == 0) return;
+            if (n == 0) return false;
             centroid /= n;
-            Vector3 from = _status.Transform.position;
-            Vector3 delta = AnglerCommandMath.DashPoint(from, centroid, config.DashFrac) - from;
-            if (delta.sqrMagnitude < 1f) return;
-            float time = config.DashTime;
-            Vector3 velocity = delta / time;
-            transformer.ModifyVelocity(velocity, time, true, velocity.magnitude * 1.6f);
-            _dashUntil = Time.time + time;
+            return true;
         }
 
         /// <summary>
@@ -321,7 +316,7 @@ namespace CosmicShore.Gameplay
             if (cell.FaunaExclusionRadius > 0f || cell.FaunaContainmentRadius > 0f) at = cell.ClampToFaunaContainment(at, at);
             var f = CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, cfg.FaunaPrefab, at, cell.ControllingDomain, at, cfg);
             if (!f || !f.TryLeash(this)) return false;
-            var m = new Member { Creature = f, Species = SpeciesOf(f), Phase = f.GetInstanceID() * 0.137f };
+            var m = new Member { Creature = f, Phase = f.GetInstanceID() * 0.137f };
             _members[f] = m;
             JoinSchool(m);
             return true;
@@ -525,14 +520,35 @@ namespace CosmicShore.Gameplay
             _floraSeeds.Clear();
         }
 
-        /// <summary>Tamed: the creature follows the school (the lab's state IDLE) and its kind becomes a squad.</summary>
+        /// <summary>Tamed: the creature follows the school (the lab's state IDLE) and joins the smaller group.</summary>
         void JoinSchool(Member m)
         {
             m.Tame = 1f;
             m.Order = LeashOrder.Follow;
+            m.Group = GroupCount(0) <= GroupCount(1) ? 0 : 1;
             _tamed.Add(m);
-            if (!_species.Contains(m.Species)) _species.Add(m.Species);
         }
+
+        /// <summary>
+        /// Keeps the two groups half the school each: when a creature dies, is spent on a lock or is let go, the larger
+        /// group hands its newest member to the smaller one, so a throw always sends half the school (the designer,
+        /// 2026-10-21: "each painting alternates between sending half the total"). A moved creature keeps the order it
+        /// has; it answers its new group's next throw.
+        /// </summary>
+        void Rebalance()
+        {
+            int g0 = GroupCount(0), g1 = _tamed.Count - g0;
+            while (g0 - g1 > 1 || g1 - g0 > 1)
+            {
+                int from = g0 > g1 ? 0 : 1;
+                for (int i = _tamed.Count - 1; i >= 0; i--)
+                    if (_tamed[i].Group == from) { _tamed[i].Group = 1 - from; break; }
+                if (from == 0) { g0--; g1++; } else { g0++; g1--; }
+            }
+        }
+
+        /// <summary>The group whose turn it is, or the other when that one is empty (a school of one has one group).</summary>
+        int ResolveGroup(int group) => GroupCount(group) > 0 ? group : 1 - group;
 
         // ------------------------------------------------------------------ the step
 
@@ -542,6 +558,8 @@ namespace CosmicShore.Gameplay
             float dt = Time.deltaTime;
             PruneDead();
             EnsureKeeper();
+            Rebalance();
+            int send = ResolveGroup(_sendGroup);
 
             var input = _status.InputStatus;
             // A trigger's depth, or a held touch card as a full pull (no depth on glass). The cards are bound on touch
@@ -568,12 +586,13 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < _tamed.Count; i++)
                 {
                     var m = _tamed[i];
-                    // Every creature of the squad comes to the ball, one still in flight from the last throw included (the
-                    // lab's round-4 fix: a homing throw never gives up, so one left in flight ignored every new paint).
-                    if (InSquad(m) && (m.Order == LeashOrder.Follow || m.Order == LeashOrder.Attack || m.Order == LeashOrder.Thrown))
+                    // Every creature of the group whose turn it is comes to the ball, one still in flight from its last
+                    // throw included (the lab's round-4 fix: a homing throw never gives up, so one left in flight ignored
+                    // every new paint). The other group keeps eating its own orders.
+                    if (m.Group == send && (m.Order == LeashOrder.Follow || m.Order == LeashOrder.Attack || m.Order == LeashOrder.Thrown))
                     { ReleaseClaim(m); m.Set = null; m.Homing = false; m.Order = LeashOrder.Gather; }
                 }
-            if (released) ThrowAtPaint();
+            if (released) ThrowAtPaint(send);
 
             if (_transformer) _transformer.LureSpeedCap = _luring ? config.LureCruise : AnglerVesselTransformer.NoCap;
             UpdateLure(dt);
@@ -660,8 +679,10 @@ namespace CosmicShore.Gameplay
 
         // ---- the throw (the lab's throwAtPaint) ----
 
-        void ThrowAtPaint()
+        /// <summary>The throw: <paramref name="group"/> goes at the paint, and the next paint is the other group's turn.</summary>
+        void ThrowAtPaint(int group)
         {
+            if (GroupCount(group) > 0) _sendGroup = 1 - group;
             _candidates.Clear();
             for (int i = 0; i < _painted.Count; i++)
                 if (_painted[i] && !_painted[i].destroyed) _candidates.Add(_painted[i]);
@@ -676,7 +697,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _tamed.Count; i++)
             {
                 var m = _tamed[i];
-                if (!InSquad(m) || m.Order == LeashOrder.Lured) continue;
+                if (m.Group != group || m.Order == LeashOrder.Lured) continue;
                 bool gathered = m.Order == LeashOrder.Gather || m.Order == LeashOrder.Thrown;   // one in flight is re-thrown
                 ReleaseClaim(m);
                 m.Set = order;
@@ -819,7 +840,7 @@ namespace CosmicShore.Gameplay
             if (cell.FaunaExclusionRadius > 0f || cell.FaunaContainmentRadius > 0f) at = cell.ClampToFaunaContainment(at, at);
             var f = CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, cfg.FaunaPrefab, at, cell.ControllingDomain, at, cfg);
             if (!f || !f.TryLeash(this)) return;   // born wild: an ordinary creature of the cell from here on
-            var m = new Member { Creature = f, Species = SpeciesOf(f), Phase = f.GetInstanceID() * 0.137f };
+            var m = new Member { Creature = f, Phase = f.GetInstanceID() * 0.137f };
             _members[f] = m;
             JoinSchool(m);
         }
@@ -981,7 +1002,7 @@ namespace CosmicShore.Gameplay
                         if (f.IsLeashed && !steal) continue;   // someone else's: only the Mass upgrade steals it
                         if ((f.transform.position - lure).sqrMagnitude > reach2) continue;
                         if (!f.TryLeash(this, steal)) continue;   // a predator, or a puppet on this peer
-                        var m = new Member { Creature = f, Order = LeashOrder.Lured, Species = SpeciesOf(f), Phase = f.GetInstanceID() * 0.137f };
+                        var m = new Member { Creature = f, Order = LeashOrder.Lured, Phase = f.GetInstanceID() * 0.137f };
                         if (_slipped.TryGetValue(f, out float left)) { m.Tame = left; _slipped.Remove(f); }
                         _members[f] = m;
                         _lured.Add(m);
@@ -1116,22 +1137,11 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ bookkeeping
 
-        bool InSquad(Member m) => _squad < 0 || _squad >= _species.Count || m.Species == _species[_squad];
-
         int Count(LeashOrder order)
         {
             int n = 0;
-            for (int i = 0; i < _tamed.Count; i++) if (_tamed[i].Order == order && InSquad(_tamed[i])) n++;
+            for (int i = 0; i < _tamed.Count; i++) if (_tamed[i].Order == order) n++;
             return n;
-        }
-
-        /// <summary>A kind's squad name: its prefab's name ("Clawfish", "QuadFish", "TadPoleFauna"), so the four element
-        /// configs of one species are one squad.</summary>
-        static string SpeciesOf(Fauna f)
-        {
-            var config = f.SourceConfig;
-            string n = config && config.FaunaPrefab ? config.FaunaPrefab.name : f.name.Replace("(Clone)", "").Trim();
-            return string.IsNullOrEmpty(n) ? "Fauna" : n;
         }
 
         void AssignSlots()
@@ -1174,7 +1184,6 @@ namespace CosmicShore.Gameplay
                     PaintedPrey.Unmark(p);
                 }
             }
-            if (_species.Count > 0 && _squad >= _species.Count) _squad = -1;
         }
 
         void ReleaseAll()

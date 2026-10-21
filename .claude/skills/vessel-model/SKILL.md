@@ -241,6 +241,7 @@ What "beats the shipped model" has meant on each hull, so the next one knows the
 | Stoat | 1 | new hull (`specs/stoat.py`): five overlapping armour segments, sensor-fin ears, nacelles, a domain-tipped tail beacon |
 | Angler | 1 | new hull (`specs/angler.py`): its own model and `AnglerAnimation` (it wore the Stoat's); ram-scoop jaw, a lure mast with an Engine-slot esca bulb that swells while luring |
 | Brittle Star | 1 | new hull (`specs/brittlestar.py`): a five-lobed core, five segmented gun/thruster booms, the halo as a structural beam (Time turns it from a pentagon to a circle); muzzles, nozzles and ring numbers exact |
+| Goby | 1 | new hull on a BORROWED rig (2026-10-18, `specs/goby.py`, LESSONS 48): the Goby wore the Squirrel's model, so the new hull keeps the Squirrel's armature, bones (rest 0.0000), node, geometry, slot, shape and take names, and `Goby.prefab` binds it by a guid swap alone; the Squirrel's controller and takes still drive it (the tail chain swims the goby's banded body). Lookout sensor turrets, framed pectoral fans with tip pods, a gill-louvred head, a sail, a swept stub wing carrying the rear nacelles, a rounded caudal fan. Awaiting the owner's flight |
 | Orca | 1 | new hull (2026-10-21, `specs/orca.py`): the 4-seat crew vessel (one helm, three gunner turrets) and the first hull rigged for CODE-AIMED turrets: per seat a `<Seat>Yaw` bone exactly at `OrcaCrewCore.Mounts[s] * hullRadius`, a `Pitch` child, and `Muzzle` / `Missile` leaves that skin their tip parts so `optimizeBones` keeps them. Three bespoke guns (railgun, six-barrel "pen" rotary, mortar), each built at unit size and scaled about its pivot, which never moves. The orca's white became CONFORMAL domain armour plates (a smooth outline on the hull surface instead of a stair of painted faces) and the eye patch became a lens part. Round 1 was a blimp under a pole: grow the hull until the pylon stops reading as a neck. Not wired yet: the prefab still draws the Sparrow |
 | Shrike | 1 | new hull (`specs/shrike.py`): hooked ram prow over the lance barrel, the eye-mask as a visor band, talon docking clamps (a new grip while docked). The likeliest of the fleet to read as a generic jet: the owner's eye decides |
 | Grouper | 2 | new hull (2026-10-20, `specs/grouper.py`): the Wrasse's carrier, sized to the Sparrow it replaces in `Wrasse.prefab` (span 11.9 / length 12.4 against 12.5 / 12.2); ram-scoop mouth over a hinged `jaw`, a sensor / heat-sink crest (`dorsal`), stubby wings with thruster pods, a vectoring tail `tail.1` -> `tail.2`. Round 1's crest read as needles: fins whose chords overlap their spacing read as ONE serrated crest |
@@ -269,6 +270,9 @@ What "beats the shipped model" has meant on each hull, so the next one knows the
   with axes - a morph that grabs the whole mesh reads as a scale, not an element.
 - **Clear the pose and unassign the action before export** (`export_fbx` does): a live pose
   leaks into every baked take (the dirty-pose leak, LESSONS 2026-10-17).
+- **The first take is the rest pose Unity imports.** A hull whose takes are all deflections leads with a `rest`
+  take (the build adds it, verify refuses a moving first take). The Shrike rested banked left and the Grouper's tail
+  wagged about a left offset until it did (LESSONS 51).
 - **Do not bake a driver's bug into the model.** The Squirrel's blend tree halves every pose
   and the Sparrow artist's PitchUp was inverted as flown: author the pose by its meaning
   (pitchup = nose up, big enough to read) and file the controller fix as a team task; a

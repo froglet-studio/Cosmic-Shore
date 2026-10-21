@@ -26,12 +26,12 @@ MonoBehaviour:
   - Element: 4
     AbilityLabel: 'Saved Boosts'
     AbilityDescription: 'Every loop of Time motes the kite closes saves boosts for the pilot. The pilot spends them on the trigger; the card counts how many are saved.'
-    Input: 0
+    Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 'No Cooldown'
-    UpgradeDescription: 'Saved boosts chain back to back with no cooldown.'
+    UpgradeLabel: ''
+    UpgradeDescription: ''
   - Element: 2
     AbilityLabel: 'Mass Cluster'
     AbilityDescription: 'A loop of Mass motes lays a cluster of prisms on the kite''s plane. The card flashes when one is laid.'

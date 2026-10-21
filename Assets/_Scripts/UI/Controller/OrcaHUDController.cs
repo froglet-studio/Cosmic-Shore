@@ -16,11 +16,20 @@ namespace CosmicShore.UI
     /// </list>
     /// The person's own seat's card is LIT (the fleet's press signal, re-asserted every frame like the Rhino's), and each
     /// gunner card carries its own seat's missiles as a number; a card flashes when its seat's missile or bomb bursts.
-    /// Plus one line naming the seat the person holds and its gun's state (the config's <c>seatLineTemplate</c> and gun
-    /// words, so the words are the team's). The view is the Sparrow's HUD (the hull is a Sparrow clone, as the Wrasse is), whose Initialize hides the
-    /// Charge and Space icons until its guns report; the Orca has no Sparrow guns, so this controller shows them. The
-    /// count and the line are GENERATED at runtime (the Wrasse's and the Shrike's counts are the pattern). Polled from
-    /// this hull's own crew, a serialized reference (vessel rule 14), behind the fleet's pilot gate (rule 5).
+    /// That is everything a seat needs (Garrett, 2026-10-21: "it has all the info it needs now"), so the Orca's own line
+    /// of text across the top of the HUD is retired. The view is the Sparrow's HUD (the hull is a Sparrow clone, as the
+    /// Wrasse is), whose Initialize hides the Charge and Space icons until its guns report; the Orca has no Sparrow guns,
+    /// so this controller shows them. The counts are GENERATED at runtime (the Wrasse's and the Shrike's counts are the
+    /// pattern). Polled from this hull's own crew, a serialized reference (vessel rule 14), behind the fleet's pilot gate
+    /// (rule 5).
+    ///
+    /// <para><b>A gunner on a phone</b> (Garrett, 2026-10-21: "each of the orca turrets needs two buttons: fire gun, fire
+    /// missiles. it does these with the right thumb and aims with the left"): while the person holds a gunner seat and no
+    /// pad is connected, two buttons sit round the right thumb, Fire (held; the seat's element colour) and Missile
+    /// (launch, or burst the one in flight), laid out by the fleet's <see cref="TouchButtonLayout"/> in millimetres. They
+    /// press the crew directly (<see cref="OrcaCrew.SetGunnerButton"/>), because the AI flies the hull while a person
+    /// aims and an InputStatus press would be dropped; a touch that starts on them never aims (FlightTouchClaims). Fire
+    /// stands down while the seat flies a missile, as in the lab.</para>
     /// </summary>
     public class OrcaHUDController : VesselHUDController
     {
@@ -39,23 +48,22 @@ namespace CosmicShore.UI
         [Tooltip("A count of zero.")]
         [SerializeField] Color countEmptyColor = new(0.59f, 0.65f, 0.76f, 1f);
 
-        [Header("Seat line (generated at the top of the HUD)")]
-        [SerializeField, Min(8f)] float seatLineFontSize = 26f;
-        [Tooltip("Pixels below the top of the HUD.")]
-        [SerializeField] float seatLineTop = 24f;
-        [SerializeField] Color seatLineColor = new(0.86f, 0.92f, 1f, 0.9f);
-
-        const string CountName = "OrcaCount", SeatLineName = "OrcaSeatLine";
+        const string CountName = "OrcaCount";
         const int Seats = OrcaCrew.Seats;
+        static readonly float[] ButtonAspects = { 1f, 1f };   // Fire first: it takes the easiest reach
 
         readonly TMP_Text[] _counts = new TMP_Text[Seats];
         readonly int[] _shownCounts = new int[Seats];
         readonly bool[] _lit = new bool[Seats];
         readonly float[] _burstAt = new float[Seats];
-        TMP_Text _seatLine;
-        int _shownSeat = int.MinValue, _shownLineCount = -1, _shownGunKey = int.MinValue;
         bool _isLocalPilotHud;
         float _shieldAt;
+
+        // a gunner's phone buttons (OrcaCrew.FireButton, OrcaCrew.MissileButton)
+        readonly TouchButtonView[] _buttons = new TouchButtonView[2];
+        AbilityLockupView _lockup;
+        int _buttonSeat = -1, _screenWidth, _screenHeight;
+        Rect _safeArea;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -83,9 +91,14 @@ namespace CosmicShore.UI
                 view.SetAbilityPressed(e, false);
                 _burstAt[s] = crew ? crew.BurstAt(s) : 0f;
             }
-            _seatLine = EnsureSeatLine(view.transform as RectTransform);
-            _shownSeat = _shownGunKey = int.MinValue;
             _shieldAt = crew ? crew.ShieldRaisedAt : 0f;
+            BuildButtons(view);
+        }
+
+        // the buttons live under the view's row and die with it; a disabled HUD hides them, which lets go of a held Fire
+        void OnDisable()
+        {
+            for (int i = 0; i < _buttons.Length; i++) if (_buttons[i]) SetShown(_buttons[i], false);
         }
 
         Element SeatElement(int seat) => crew ? crew.SeatElement(seat) : seat switch
@@ -97,7 +110,7 @@ namespace CosmicShore.UI
         {
             if (!_isLocalPilotHud || !crew) return;
             int held = crew.HumanAboard ? crew.HumanSeat : -1;
-            PaintSeatLine(held);
+            PaintButtons(held);
 
             var view = View;
             if (!view) return;
@@ -129,20 +142,6 @@ namespace CosmicShore.UI
             return text;
         }
 
-        TMP_Text EnsureSeatLine(RectTransform parent)
-        {
-            if (!parent) return null;
-            var text = FindOrMake(parent, SeatLineName);
-            var rt = text.rectTransform;
-            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 1f);
-            rt.sizeDelta = new Vector2(900f, seatLineFontSize * 1.4f);
-            rt.anchoredPosition = new Vector2(0f, -seatLineTop);
-            text.alignment = TextAlignmentOptions.Center;
-            text.fontSize = seatLineFontSize;
-            text.color = seatLineColor;
-            return text;
-        }
-
         static TMP_Text FindOrMake(RectTransform parent, string name)
         {
             var existing = parent.Find(name);
@@ -169,19 +168,92 @@ namespace CosmicShore.UI
             text.color = count > 0 ? countLiveColor : countEmptyColor;
         }
 
-        /// <summary>The seat line: the config's authored template, or nothing when no person is aboard. Rebuilt only when the
-        /// seat, the missiles or the gun's state change (no per-frame strings).</summary>
-        void PaintSeatLine(int seat)
+        // ------------------------------------------------------------------ a gunner's phone buttons
+
+        void BuildButtons(VesselHUDView view)
         {
-            if (!_seatLine) return;
-            int count = crew.Missiles, gunKey = seat > 0 ? crew.GunStateKey(seat) : 0;
-            if (seat == _shownSeat && count == _shownLineCount && gunKey == _shownGunKey) return;
-            _shownSeat = seat; _shownLineCount = count; _shownGunKey = gunKey;
+            ClearButtons();
+            _buttonSeat = -1;
+            if (!_isLocalPilotHud || !crew || !KitInputDevice.IsTouchPrimary) return;
+            _lockup = view.GetComponent<AbilityLockupView>();
+            var row = _lockup ? _lockup.Row : null;
             var cfg = crew.Config;
-            string template = cfg ? cfg.SeatLineTemplate : string.Empty;
-            _seatLine.text = seat < 0 || string.IsNullOrEmpty(template)
-                ? string.Empty
-                : template.Replace("{seat}", cfg.SeatName(seat)).Replace("{gun}", crew.GunLine(seat)).Replace("{count}", count.ToString());
+            if (!row || !cfg) return;
+
+            var library = TouchControlProfileLibrarySO.Instance;
+            var disc = library ? library.ButtonDisc : null;
+            var rim = library ? library.ButtonRim : null;
+            _buttons[OrcaCrew.FireButton] = MakeButton(row, cfg.FireButtonIcon, cfg.FireButtonLabel, disc, rim, OrcaCrew.FireButton);
+            _buttons[OrcaCrew.MissileButton] = MakeButton(row, cfg.MissileButtonIcon, cfg.MissileButtonLabel, disc, rim, OrcaCrew.MissileButton);
+            _screenWidth = -1;   // lay out on the first frame they show
+        }
+
+        TouchButtonView MakeButton(RectTransform row, Sprite icon, string label, Sprite disc, Sprite rim, int button)
+        {
+            var definition = new TouchExtraButton { icon = icon, label = label, primary = true };
+            var view = TouchButtonView.Create(row, definition, _lockup.NeutralColour, disc, rim, _lockup.CardWidth);
+            var target = crew;
+            view.Bind(down => { if (target) target.SetGunnerButton(button, down); });
+            view.gameObject.SetActive(false);
+            return view;
+        }
+
+        void ClearButtons()
+        {
+            for (int i = 0; i < _buttons.Length; i++)
+            {
+                if (_buttons[i]) Destroy(_buttons[i].gameObject);
+                _buttons[i] = null;
+            }
+        }
+
+        /// <summary>Shows the two buttons while the person holds a gunner seat on a phone with no pad, tinted for the seat
+        /// and re-laid when the screen or the safe area changes.</summary>
+        void PaintButtons(int held)
+        {
+            var fire = _buttons[OrcaCrew.FireButton];
+            var missile = _buttons[OrcaCrew.MissileButton];
+            if (!fire || !missile) return;
+            bool show = held > OrcaCrew.Helm && !KitInputDevice.ShowsControlHints;
+            SetShown(missile, show);
+            SetShown(fire, show && !crew.MissileInFlight(held));
+            if (!show) return;
+
+            if (held != _buttonSeat)
+            {
+                _buttonSeat = held;
+                fire.SetTint(_lockup.ColourFor(SeatElement(held)));
+            }
+            if (Screen.width != _screenWidth || Screen.height != _screenHeight || Screen.safeArea != _safeArea)
+                LayOutButtons();
+        }
+
+        static void SetShown(TouchButtonView button, bool shown)
+        {
+            if (button.gameObject.activeSelf != shown) button.gameObject.SetActive(shown);
+        }
+
+        void LayOutButtons()
+        {
+            _screenWidth = Screen.width;
+            _screenHeight = Screen.height;
+            _safeArea = Screen.safeArea;
+            var row = _lockup ? _lockup.Row : null;
+            if (!row) return;
+            var canvas = row.GetComponentInParent<Canvas>();
+            var root = canvas ? canvas.rootCanvas : null;
+            Camera cam = root && root.renderMode != RenderMode.ScreenSpaceOverlay ? root.worldCamera : null;
+
+            float dpi = Screen.dpi > 1f ? Screen.dpi : 160f;
+            var layout = TouchButtonLayout.Arrange(ButtonAspects, new Vector2(Screen.width, Screen.height), _safeArea, dpi,
+                TouchControlsHud.LayoutSettings(TouchControlProfileLibrarySO.Instance));
+            float scale = layout.ButtonWidthPixels * TouchControlsHud.UnitsPerPixel(row, cam) / Mathf.Max(1f, _lockup.CardWidth);
+            for (int i = 0; i < _buttons.Length && i < layout.Centres.Count; i++)
+            {
+                if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(row, layout.Centres[i], cam, out var local)) continue;
+                ((RectTransform)_buttons[i].transform).anchoredPosition = local;
+                _buttons[i].SetBaseScale(scale);
+            }
         }
     }
 }

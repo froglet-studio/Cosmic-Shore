@@ -18,18 +18,23 @@ Everything below is generated or checked by `python3 Tools/Build/author_starling
 ## 1. Controls
 
 Round 2 (Garrett, 2026-10-21): zoom and roll on the stick diffs, pinch and spin on a phone, and card details on a held
-trigger or a long press.
+trigger or a long press. Round 3 (Garrett, 2026-10-21): the camera follows flight's sense (the sums keep turning the view
+with two thumbs down; the roll was flipped), the details list what every held card does and can be browsed across the
+four elements, and the swarm is a murmuration: 5x the members (start 120, cap 200, protected minimum 30, the lab's
+SHIPPED too), with the flock's separation on a grid so its cost stays linear in the members. The class is named
+**Starlings** on its card.
 
 | Input | Pad | Phone | What it does |
 |---|---|---|---|
 | Both sticks together (the sums) | LS + RS | one thumb | **Turns the view** about its own up and right axes (`viewTurnRate`, 90°/s at full tilt). It stops when you let go. The view follows the swarm's centroid (`followRate`). |
 | x-diff (sticks spread apart / squeezed) | LS-x vs RS-x | **pinch** | **Zooms**: spread = in, squeezed = out, at `zoomRate`; a pinch zooms 1:1 with the fingers. Held between `zoomNearest` (0.35) and `zoomFarthest` (2.5) times the camera's authored distance. |
-| y-diff (one stick up, the other down) | LS-y vs RS-y | **two-finger spin** | **Rolls the camera** about the view's axis at `rollRate` (90°/s); a spin rolls 1:1 with the fingers. While two fingers are down the view does not turn. |
+| y-diff (one stick up, the other down) | LS-y vs RS-y | **two-finger spin** | **Rolls the camera** about the view's axis at `rollRate` (90°/s); a spin rolls 1:1 with the fingers. The camera rolls AGAINST y-diff and the spin, so the world turns the way a hull rolls in flight and with the fingers (Garrett, 2026-10-21: the first cut turned it the flipped way). The sums keep turning the view while two thumbs are down, as in flight. |
 | Pick the Mass card | A | tap the Mass card | Takes the hand's Mass card, on RELEASE. |
 | Pick the Time card | B | tap the Time card | Takes the hand's Time card. |
 | Pick the Charge card | X | tap the Charge card | Takes the hand's Charge card. |
 | Pick the Space card | Y | tap the Space card | Takes the hand's Space card. |
 | Card details | a trigger held + A/B/X/Y, or hold A/B/X/Y | **long press** on a card | Shows that card's details (§5) for as long as it is held, and picks nothing. A press held past `detailsHoldTime` (0.45 s) or made with a trigger past `detailsTrigger` opens them. |
+| Browse the details | while they are open, press another of A/B/X/Y | touch another card | Turns the open details to that element and picks nothing (Garrett, 2026-10-21: "peruse all your abilities"). They stay open while any pick button is down and close with the last one. |
 
 Mass on A and Time on B are the Sparrow's and the Angler's layout. A pick with no hand dealt does nothing. Boost does
 nothing: the carrier has speed 0, so it lays no trail. x-diff and y-diff inside `diffDeadZone` do nothing, so a resting
@@ -89,9 +94,12 @@ the Squirrel's drift and omni cards sit where they always did.
 **The card details** (a trigger held while picking, or a long press) show a **large card in the middle of the screen**
 (on the root canvas, so no HUD layout can push it off screen; round 2 placed a panel above the header and Garrett did not
 see it): the element's glyph in its colour, the card's name large, the level it arrives at, then its text, each number
-at that level, and its next jolt above the level you hold. With no hand dealt it lists the cards you hold of that
-element. Every line is an authored template on the view (`detailsTitleTemplate`, `detailsLevelTemplate`,
-`detailsStatTemplate`, `detailsMilestoneTemplate`, `detailsHeldTemplate`, `detailsNothingHeld`); the card words are the
+at that level, and its next jolt above the level you hold. With no hand dealt it lists every card you hold of that
+element with what it does: its heading and level, its text, each number at the held level and the jolts it has reached
+(Garrett, 2026-10-21: "list what each ability does not just the ability name and level"). Pressing another element's
+button while the card is open turns it to that element, so every ability can be perused without letting go. Every line is an authored template on the view (`detailsTitleTemplate`, `detailsLevelTemplate`,
+`detailsStatTemplate`, `detailsMilestoneTemplate`, `detailsHeldTemplate`, `detailsReachedTemplate`, `detailsNothingHeld`,
+`detailsBrowseHint`); the card words are the
 deck's.
 
 ## 6. Files

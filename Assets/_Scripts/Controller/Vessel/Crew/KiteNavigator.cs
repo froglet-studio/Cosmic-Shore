@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// the AI are per-viewer, and the effects are this machine's. Networking the seat is a follow-up (KITE_NAVIGATOR.md).</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class KiteNavigator : MonoBehaviour, IRingThreadProbe
+    public sealed class KiteNavigator : MonoBehaviour, IRingThreadProbe, ICrewTriggers, IHullParkAware
     {
         internal struct Mote
         {
@@ -125,8 +125,8 @@ namespace CosmicShore.Gameplay
         bool _humanNavigates, _weTookHull, _down, _boosting, _clickOnPip;
         // the seat the person last picked (CrewSeatChoice) is still to be taken on this bind
         bool _seatChoicePending;
-        // a phone's "both thumbs lifted" boost is armed once a thumb has touched in the pilot seat (see PilotWantsBoost)
-        bool _idleArmed;
+        // the pilot's RT is held (CrewTriggerActionSO: a pad's trigger, right Shift, a phone's left-thumb lift; see PilotWantsBoost)
+        bool _boostHeld;
         // this frame's aim is a thumb or a mouse holding the kite's rope (KiteControl.Sling), not a point it flies to
         bool _sling;
         // the kite as a SWITCH THREADER (IRingThreadProbe): bumped whenever the kite is re-placed rather than flown, so a
@@ -136,7 +136,7 @@ namespace CosmicShore.Gameplay
         // the rings) - the AI squad mate flies the kite through it before anything else
         bool _ringOnBoard;
         KiteVec _ringAt, _ringVel, _ringCentre;
-        float _swapReadyAt, _boostReadyAt;
+        float _swapReadyAt;
         int _omniPending;
         KiteVec _aim;
         enum Pointer { Mouse = 0, Touch = 1, Stick = 2 }
@@ -157,9 +157,6 @@ namespace CosmicShore.Gameplay
         public int LastBlastDestroyed => _lastBlastDestroyed;
         /// <summary>Time.time of the last Mass cluster laid (the HUD flashes the Mass icon).</summary>
         public float MassFlashAt => _massFlashAt;
-        /// <summary>The boost's recharge veil, 1 while a boost runs and falling to 0 when the next can fire.</summary>
-        public float BoostCooldown01 => _boosting ? 1f
-            : config && config.BoostCooldownSeconds > 0f ? Mathf.Clamp01((_boostReadyAt - Time.time) / config.BoostCooldownSeconds) : 0f;
         /// <summary>The most boosts the pilot can hold: timeBoostCap seconds of 1.5 s boosts.</summary>
         int MaxSavedBoosts => Mathf.Max(1, Mathf.FloorToInt(_cfg.TimeBoostCap / Mathf.Max(0.05f, _cfg.TimeBoostSeconds)));
         internal bool Down => _down;
@@ -275,10 +272,10 @@ namespace CosmicShore.Gameplay
             _ai.Reset(_kite.Position);
             _aim = _kite.Position;
             _snapped = false;
-            _humanNavigates = _weTookHull = _down = _boosting = _idleArmed = false;
+            _humanNavigates = _weTookHull = _down = _boosting = _boostHeld = false;
             _seatChoicePending = !_aiCrew;
             Motes.Clear(); Loops.Clear(); DropBursts(); _massQueue.Clear(); _lastRam.Clear(); Prisms.Clear(); Rivals.Clear();
-            _charge = 0f; _savedBoosts = 0; _lastBlastDestroyed = 0; _blastWatch.Clear(); _blastCounted.Clear(); _massFlashAt = -99f; _boostReadyAt = 0f; _omniPending = 0;
+            _charge = 0f; _savedBoosts = 0; _lastBlastDestroyed = 0; _blastWatch.Clear(); _blastCounted.Clear(); _massFlashAt = -99f; _omniPending = 0;
             // the views, the swap and the static handle belong to the local pilot's seat; an AI crew draws nothing
             if (_aiCrew) return;
             if (_active && _active != this) Destroy(_active);
@@ -497,11 +494,21 @@ namespace CosmicShore.Gameplay
             return doubled;
         }
 
+        /// <inheritdoc cref="IHullParkAware.ReturnHumanToHull"/>
+        public void ReturnHumanToHull()
+        {
+            if (!_humanNavigates) return;
+            _weTookHull = false;   // the autopilot is the parker's now: SetHumanNavigates(false) must not stop it
+            SetHumanNavigates(false);
+        }
+
         void SetHumanNavigates(bool navigate)
         {
             if (_humanNavigates == navigate) return;
             _humanNavigates = navigate;
             _down = false;
+            // a release made while the AI flies the hull never arrives (R_VesselActionHandler ignores input under autopilot)
+            _boostHeld = false;
 
             // The hull's own AI flies while the human navigates; its flight input is paused so the pointer and the
             // sticks belong to the board - the order the lava lamp and the mode preview hand a hull to its AI in
@@ -517,7 +524,6 @@ namespace CosmicShore.Gameplay
             {
                 if (_weTookHull && UnityLiveness.Alive(_vessel.Transform)) _vessel.ToggleAIPilot(false);
                 _weTookHull = false;
-                _idleArmed = false;
                 SetFlightInputPaused(false);
                 _ai.Reset(_kite.Position);
             }
@@ -1236,9 +1242,10 @@ namespace CosmicShore.Gameplay
             Play(_cfg.TimeBoostSfx, at);
         }
 
-        // The pilot spends a saved boost on the trigger (PilotWantsBoost): it runs timeBoostSeconds, the next waits
-        // boostCooldown after it ends (none at Time L5), and holding the trigger chains them. With the AI on the hull (the
-        // human navigating), it spends them as they come.
+        // The pilot spends a saved boost on the trigger (PilotWantsBoost): it runs timeBoostSeconds and the next can start
+        // the moment it ends, so holding the trigger chains them. No cooldown: the boost is already limited by the Time
+        // loops the navigator closes (Garrett, 2026-10-21). With the AI on the hull (the human navigating), it spends them
+        // as they come.
         void StepBoost(float dt)
         {
             if (_boosting)
@@ -1248,7 +1255,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
             bool want = _aiCrew || _humanNavigates ? AIPilotWantsBoost() : PilotWantsBoost();
-            if (want && _savedBoosts > 0 && Time.time >= _boostReadyAt)
+            if (want && _savedBoosts > 0)
             {
                 _savedBoosts--;
                 _boosting = true;
@@ -1257,10 +1264,11 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // The pilot boosts (Garrett, 2026-10-18: "the pilot should be in control of the boost, use the trigger on gamepad"):
-        // the right trigger on a pad, right Shift on the keyboard (both are RightTriggerAnalog), and on a touch screen,
-        // where there is no trigger, lifting both thumbs (the touch strategy's Idle). The hull flies on two sticks since
-        // round 4d, so the pilot can steer the hull's plane through the mass the kite wants.
+        // The pilot boosts (Garrett, 2026-10-18: "the pilot should be in control of the boost, use the trigger on gamepad")
+        // on RT, the hull's RightStickAction (Wrasse.prefab maps it to CrewTriggerActionSO, which calls SetTrigger): the
+        // pad's right trigger, right Shift on the keyboard, and on a phone lifting the LEFT thumb while the right one keeps
+        // flying - the fleet's touch twin of RT (TouchInputStrategy), named on the Time card by its glyph. The hull flies on
+        // two sticks since round 4d, so the pilot can steer the hull's plane through the mass the kite wants.
         // The AI Grouper's boost (the hull's AI flies whenever the human navigates, and in an AI crew): spend a saved boost
         // while the next race ring is far and roughly ahead, so a boost is not thrown into a turn; outside a race, as they
         // come (the AI pilot has no trigger of its own).
@@ -1272,18 +1280,16 @@ namespace CosmicShore.Gameplay
             return d >= _cfg.AIBoostRingDistance && Vector3.Dot(_vessel.Transform.forward, to / Mathf.Max(1e-3f, d)) > 0.7f;
         }
 
-        // On a phone, both thumbs off the glass (Idle) is the trigger only once a thumb has touched in the pilot seat: the
-        // touch strategy reads Idle on every frame with no thumb down, including the frames right after a double tap on the
-        // small view brought the person back to the hull, and before a newly bound hull is first touched. Neither is a pilot
-        // letting go to boost, so neither spends a saved boost. Since 2026-10-21 an idle phone reads the pad's released
-        // sticks (XDiff 0.5, TouchInputStrategy.ResetInput), so the boost multiplies cruise instead of the old 0 (which left
-        // a "boost" at the minimum speed).
-        bool PilotWantsBoost()
+        // Read from the trigger action, not InputStatus.RightTriggerAnalog: no phone writes the analog triggers, so a phone's
+        // pilot was left only "lift both thumbs", which let go of the steering for the length of every boost and showed on
+        // no card (Garrett, 2026-10-21: "The grouper can not use boost on mobile").
+        bool PilotWantsBoost() => _boostHeld;
+
+        /// <summary>The hull's trigger, pressed or released (<see cref="CrewTriggerActionSO"/>). RT is the pilot's boost;
+        /// the Wrasse binds no LT.</summary>
+        public void SetTrigger(int trigger, bool down)
         {
-            var input = _player?.InputStatus;
-            if (input == null) return false;
-            if (!input.Idle) _idleArmed = true;
-            return input.RightTriggerAnalog > 0.5f || (input.Idle && _idleArmed);
+            if (trigger == 0) _boostHeld = down;
         }
 
         // The hull's level-5 upgrade in an element: the fleet's replicated gate (the Wrasse's ElementalAbilityMap lists all four
@@ -1298,7 +1304,6 @@ namespace CosmicShore.Gameplay
         {
             if (!_boosting) return;
             _boosting = false;
-            _boostReadyAt = Time.time + (Upgraded(Element.Time) ? 0f : _cfg.BoostCooldownSeconds);
             if (UnityLiveness.Alive(_status)) _status.IsBoosting = false;
         }
 

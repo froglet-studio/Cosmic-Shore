@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ee0afb79228b640506111c7b91a694fe, type: 3}
-  m_Name: AnglerSquad
+  m_Script: {fileID: 11500000, guid: f77c66f7dde2477ab38c5f147d6d0fc6, type: 3}
+  m_Name: HoneyguideLTAction
   m_EditorClassIdentifier: 
-  control: 1
+  trigger: 1

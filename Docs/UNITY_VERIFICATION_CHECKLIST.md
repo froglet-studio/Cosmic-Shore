@@ -100,6 +100,102 @@ No editor in the session, so `/verify-unity` did not run; offline gates listed i
    Mentor's tips follow when the Lesson ends or is skipped.
 3. The Quest Graph Editor shows MainQuest without "(off)".
 
+### 🔴 New hulls rest at REST, not in their first take: the Shrike's left bank, the Grouper's left wag (`cece/quirky-brown-lkhhx9`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett: "the shrike is turning left by default. the grouper's tail fin is wagging to the left". Every hull the
+`/vessel-model` pipeline built from scratch led its FBX with a deflection take (Blender writes takes in name order:
+`bankleft`, `beatleft`, `dive`, `aimright` ...), and Unity imports the default pose from the first take, so the code
+puppetry captured a left lean or left fin as "rest" (vessel-model LESSONS 51). The pipeline now writes a `rest` take
+first (and as `Takes.Current`), and verify refuses a moving first take. Rebuilt with nothing else changed (`build.py
+--check` drift is the added take only; every bone, node, shape, slot and take deflection is identical): Angler, Brittle
+Star, Butterfly, Grouper, Honeyguide, Jack, Marlin, Orca, Scarab, Shrike, Starling, Stoat, Thresher, Wrasse Kite. No C#
+changed. The artist reproductions (Squirrel, Goby, Dolphin, Sparrow, Serpent, Manta, Urchin, Rhino) are untouched.
+
+1. Let Unity reimport the 14 FBXs. In each model's Animation tab the clip list starts with `rest`.
+2. Fly the Shrike with the stick centred: the hull sits level (no left bank) and banks the same amount each way.
+3. Fly the Wrasse: the Grouper's tail beats evenly about the centre line, and the Wrasse Kite swims straight. Then the
+   Marlin and its Jacks: the tails and spines are centred.
+4. Spot-check the rest at the centre stick: Angler fins not dived, Brittle Star level, Butterfly wings not beaten down,
+   Honeyguide level, Orca guns facing forward (not aimed right), Scarab antennae at rest, Starling not mid-flap,
+   Stoat not arched, Thresher tail centred.
+5. If any hull still leans, Unity is not taking the default pose from the first take: report it, the fallback is to
+   capture rest from the SkinnedMeshRenderer's bind poses in code.
+
+### 🔴 Honeyguide and Ratel: round 6 triggers and its own hull model (`claude/honeyguide-ratel`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett: "Get everything including models etc. Together so we are ready to /ship". Lab round 6 in the game: RT **Peck**
+(`HoneyguidePeckAction.asset`, the Sparrow's full-auto at 2.5/s, 45 u, no spread) and LT **Flit**, each taken over for
+20 s by the 13 upgrade cards (`HoneyguideCrew.Triggers.cs`, `HoneyguideTriggerActionSO`). The hull now draws its own model,
+`Honeyguide.fbx` (`Docs/VesselModels/Honeyguide.md`): nested under the root, the domain paint on it, the Sparrow's mesh off,
+`HoneyguideBody` posing its bones; the class card is rendered from it (`render_cards.py Honeyguide`). The four fusion entries
+are bake-free. The class is now `VesselClassType.Honeyguide = 23` (21 went to the Starling on bleeding-edge). `/verify-unity` was unavailable (no Editor, no `unity` binary); the headless editor reference compile shows
+only the 3 errors already on bleeding-edge (0 in changed files). Green: `author_honeyguide_assets.py --check` /
+`--self-test`, `build.py specs/honeyguide.py --check`, `render_cards.py Honeyguide --check`, console-logging and
+conditional-compilation gates.
+
+1. Vessel Changer → Honeyguide and Ratel: the hull is the bird scout (swept wings, fanned tail, hex turret), in your domain
+   colour on the saddle and wing panels, with NO Sparrow inside it. No console errors on the swap.
+2. Element pickups morph it: Charge juts the beak, Mass swells the body, Space stretches the wings, Time sweeps them back.
+3. The wings bank into turns and flare when you brake; the tail steers; the turret turns a sixth when the Dynamo spins.
+   Boost lights the hull's engines (`HoneyguideBody` hands the flare to the drawn mesh).
+4. RT pecks (short-range bolts); LT flits (a short ride). Make an upgrade card: the toast names the trigger it took and the
+   chip counts down 20 s; a repeat raises its level. The AI Honeyguide uses its triggers.
+5. `HoneyguideTests` (incl. `HoneyguideHull_DrawsItsOwnModel_…`, `Triggers_ArePeckAndFlit_…`) pass in the Test Runner.
+6. Run **FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions** for vessel 23 (until then the fusion solves at
+   runtime), and check the crystal lands on the new hull.
+
+### 🔴 Honeyguide and Ratel: the lab's round 4 in the game (`claude/honeyguide-ratel`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett: "lets play it in unity". This adds a new hull class, `VesselClassType.Honeyguide` (21 then, 23 since the bleeding-edge merge that gave 21 to the Starling; the Sparrow hull plus the
+Ratel's Dynamo seat; `Controller/Vessel/Crew/HONEYGUIDE.md`). The C# (`DynamoCore`, `HoneyguideConfigSO`, `HoneyguideCrew`,
+`HoneyguideCrew.Pilot`, `HoneyguideDynamoView`) and every asset (`Honeyguide.prefab`, `HoneyguideConfig.asset`,
+`SO_Class_Honeyguide`, `ElementalAbilityMaps/Honeyguide`, the container, network, class-list and fusion entries) were written
+from the lab by `Tools/Build/author_honeyguide_assets.py`. `/verify-unity` was unavailable (no Editor, no `unity`
+binary). The headless reference compile is clean on the player config; the editor config shows only the 3 errors that
+are already on bleeding-edge. Also green: the Dynamo parity gate (16,824 steps, AI included),
+`author_honeyguide_assets.py --check` / `--self-test` and the three vessel gates.
+
+Toy Box > Vessel Changer → **Honeyguide and Ratel**:
+1. The station's card reads "Honeyguide and Ratel", and the swap spawns a Sparrow-bodied hull with no console errors.
+   The small Dynamo board shows at the left, and the AI Ratel makes patterns on it (cards light, flash and count uses;
+   the battery fills).
+2. Fly along a trail of a domain the battery holds, with the nose within 45° of it: the hull jumps to the trail's far end
+   and a charge is spent. A 2-D bed of prisms never slips. Your own fresh trail does not slip you.
+3. D-pad left / right (or 1 / 2, or a double tap on the small board): the board fills the right half, the AIPilot flies,
+   and touch or mouse plays the Ratel. Drag a prism to move it, tap a port to inject, tap a lit card to make it.
+   Swap back: flight input returns.
+4. Every 15 s the bar across the top empties and the ports turn 60°. After 4 patterns, the clock stops, the new ability
+   is shown (about 3.5 s) and then the new ports (about 2 s).
+5. Blink Drive / Rosen Bridge / Monte Cannon made: the Jump chip appears; R or pad Y jumps. FTL swaps with a prism ahead.
+6. The `HoneyguideConfig` asset shows no missing-field warnings after a reimport; `HoneyguideTests` and
+   `EnumIntegrityTests` pass in the Test Runner.
+7. Round of 2026-10-21 (`e41f4d494` and after): the small board sits at the left; after a swap the board covers the
+   centre. A slip zips along the trail (no jump cut) and leaves boosted. Toasts (top right, under Settings) name the
+   Ratel's ability and each pattern made. Right-click a card: its details; right-click a prism: deleted, 1 AP. A free
+   prism shows on the cursor in its domain.
+8. Things to watch for: the board overlay's sorting (19000) above the HUD; the TMP labels' size on a phone; the frame time
+   with the AI Ratel on several AI hulls (`aiCrewEngineers`).
+### 🔴 Orca gunner buttons: Fire and Missile under the right thumb, the seat line retired (`cece/fervent-goodall-8cihle`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-21: "each of the orca turrets needs two buttons: fire gun, fire missiles. it does these with the right
+thumb and aims with the left. it has all the info it needs now. it no longer needs the ui breaking top row of text, unique
+to that vessel." Design: `ORCA_CREW.md` ("Two buttons per gunner, no seat line"). `/verify-unity` did not run: no Unity
+Editor or `unity` CLI in this session. What did run: the reference compile (player: no errors in project code), `parity.cjs`, `author_orca_assets.py --check` /
+`--self-test` (with a negative control on the new icon check), `touch_glyph_art.py --check`,
+`author_touch_profiles.py --check`, the console-logging and conditional-compilation gates. Affects the fleet's
+`TouchButtonView` (a sink and a tint setter, both additive) and `TouchControlsHud` (its layout settings and units-per-pixel
+made public static, no behaviour change).
+
+**Verify in editor** (the Orca in the Toybox Vessel Changer):
+1. **Desktop.** Take a gunner seat (2, 3, 4): no line of text across the top of the HUD in any seat. The four cards still
+   light the seat, veil the gun's recharge and count the seat's missiles. No phone buttons on a desktop.
+2. **Pad.** In a gunner seat, X fires the gun (RT still does), A launches a missile and bursts it; the left stick aims.
+3. **Phone (Android dev build, no pad)** — `T-20261021-876d`: in a gunner seat two buttons sit round the right thumb,
+   Fire (the seat's colour) and Missile (a rocket). The left thumb's drag aims while the right holds Fire. Missile
+   launches; the left thumb steers it; Missile bursts it; Fire hides while it flies. A thumb on a button while the left
+   aims never swaps seats; a two-finger tap elsewhere still does. On the helm the buttons are gone. Connect a pad: they
+   hide.
+
 ### 🔴 Orca round 9: rocket missiles with a faceted plume, the bomb's blast lit in the world (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-21, after flying round 8: "increase the fidelity on the fly by wire missiles. they feel cheap. the bomb
@@ -318,6 +414,28 @@ Low (restart between): GPU ms should fall at each step. Record the numbers in th
 First-pass values (all fields on the asset): Medium: baked sky, wormhole view 0.75. Low: AA Off, render scale ≤ 80%,
 HDR off, bloom at quarter resolution with 3 levels, membrane level 3, a quarter of the cytoplasm shards, wormhole view 0.5. Very Low: Low,
 with render scale ≤ 70%.
+
+### 🔴 Crew hulls' triggers on every device: the Grouper's boost, the Orca's helm (`ccr-e2247aad-06cnzl`, 2026-10-21) — NOT EDITOR-VERIFIED, NOT PHONE-VERIFIED
+
+Garrett: "The grouper can not use boost on mobile. Fix this oversight and others." The Wrasse's and the Orca's seats read
+`InputStatus`'s analog triggers, which no phone writes. Both now take RT / LT from input bindings
+(`CrewTriggerActionSO`, `Common Vessel Action/CrewTriggerRT|LT.asset`): `KiteNavigator.SetTrigger`, `OrcaCrew.SetTrigger`.
+Offline proof only: the headless reference compile, `author_wrasse_assets.py` / `author_orca_assets.py` /
+`author_touch_profiles.py` `--check` and `--self-test`. No Unity CLI in the session.
+
+In the Editor (Toybox > Vessel Changer):
+1. **Wrasse and Grouper**, pad: wait for the Time card to count a saved boost, hold RT: the Grouper boosts; held, the
+   boosts chain with the 2 s cooldown between. Right Shift on the keyboard does the same. The Time card shows RT.
+2. Press 2 (the Wrasse), then 1 back: no boost is stuck on, and RT still boosts.
+3. **Orca**, pad: RT boosts while the tank lasts; LT (and left Shift, E, pad B) raises the shield once per pull.
+4. Console: no errors from `CrewTriggerActionSO`, `KiteNavigator` or `OrcaCrew`.
+
+On a phone (development build; task `T-20261021-723e`):
+5. Grouper: lift the LEFT thumb and steer with the right: it boosts; the Time card shows the lift-left glyph and is not
+   a button. Both thumbs off does NOT boost.
+6. Orca helm: lift the left thumb to boost, the right thumb to shield. The Boost Tank and Danger Shield cards show
+   the lift glyphs.
+7. Honeyguide: the Charge and Mass cards show the lift glyphs (Peck and Flit fired by lift before this change too).
 
 ### 🔴 Phone controls for the whole fleet, idle parity, arena swap tiles (`cece/admiring-hamilton-gyzzh8`, 2026-10-21) — NOT EDITOR-VERIFIED, NOT PHONE-VERIFIED
 
@@ -1374,6 +1492,247 @@ two-label toggle and the slider prefab arrive with the items that need them (3 a
 
 ---
 
+### 🔴 The Goby flies its own hull, `Goby.fbx` (`cece/sharp-tesla-j0kd7z`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`/vessel-model` new hull on the Squirrel's rig (`Tools/Build/vessel_model/specs/goby.py`; LESSONS 48). `Goby.prefab`'s 46
+references into the Squirrel's model now name `Goby.fbx` (same node / bone / slot / shape / take names, so the same ids);
+the Squirrel's Animator controller still drives it. No C# changed. **Verified here:** three FBX readers (codec, assimp,
+Blender re-import), `rest_compare.py` Squirrel vs Goby 0.0000 on every bone (both readers), `build.py goby --check`
+(and it fails on a changed spec), `render_cards.py Goby --check`, `author_goby_assets.py --check` / `--self-test` (a new
+control fails a prefab that still draws the Squirrel), `check_crew_vessels.py`, `vessel_colors.py --check`. Sheets:
+`Docs/VesselModels/sheets/goby_after.jpg`, `goby_cards.jpg`. **Not imported or flown in the editor.**
+
+- [ ] Let Unity import `Assets/_Models/Vessel Models/Goby.fbx`; open `Goby.prefab`: the hull is the goby (two cyan
+  sensor turrets on the head, fans with pods, a banded body and a rounded tail fan), no missing-reference warnings.
+- [ ] **FrogletTools > Vessels > Audits**: Audit Vessel Elemental Morphs (Goby: four REAL shapes), Audit Vessel
+  Construction, Audit Vessel Tails and Jets (the four jets resolve, at the rear nacelle mouths and the pod tips).
+- [ ] **FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions** (the Goby's four entries read stale until then;
+  the game solves them on a worker thread meanwhile).
+- [ ] Toybox, freestyle Vessel Changer, **Goby and Pistol**: pitch, yaw and roll - the body swims (the tail chain
+  bends), the fans bank, nothing floats or tears; boost - the nacelle and pod mouths and the intake glow.
+- [ ] Raise each element: Time sweeps the fans back, Mass swells the head and body, Space spreads the fans, sail and tail
+  fan, Charge raises the turrets and flares the gill scoops.
+- [ ] Hangar and arcade: the Goby's card, inactive icon, silhouette, squad image and hangar preview show the goby.
+
+### 🔴 The Goby's vortex ring and flares are lit faceted volumes (`cece/sharp-tesla-j0kd7z`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+**Why:** nothing in the world looks flat (LOCKED 2026-10-18, `Docs/claude/SHADERS_AND_PERFORMANCE.md`). The vortex
+ring was a smooth unlit torus and the flares unlit cubes; the ring in the Pistol's view was an unlit glow.
+**Changed:** `PistolWarp.VortexRingFacets` (a faceted unit torus, tube 0.16 of its radius, 24 x 6 facets, flat normals,
+wound outward), `GobyPistolDuo.Lit` (URP Lit with a faint emission) for the ring and the flares, and the view's ring on
+`PistolWorldMesh`'s SOLID pass with glow 0 (lit facets), thinning as it fades. The lab does the same (v11 of the
+private prototype). **Verified here:** `PistolViewMathTests.VortexRing_IsAFacetedVolume_NotAFlatSheet` in the stand-in
+harness (54/54; a flattened copy and a reversed winding both fail it), `unity_refcompile` player 0 errors and editor 0
+in changed files, Amoebius builds, `verify_lab.cjs` and `check_studio.cjs` PASS. **Not compiled in the editor.**
+
+- [ ] Edit mode: `PistolViewMathTests.VortexRing_IsAFacetedVolume_NotAFlatSheet` passes.
+- [ ] Toybox, freestyle Vessel Changer, pick **Goby and Pistol**. Press 2 (or D-pad right) to take the Pistol, press
+  Q or E (Snap). In the Pistol's view the vortex ring is a shaded ring with visible facets, lit from one side, not a
+  flat glowing band; it thins as it fades.
+- [ ] Press 1 to take the Goby back. In the main view the vortex rings (the AI Pistol's Snaps) and the flares (4 or
+  D-pad down) are lit faceted shapes that take the scene's light, not flat colour; nothing renders pink (a missing URP
+  Lit shader would).
+
+### 🔴 One notion of a crew vessel: the Goby and Pistol beside the Wrasse and Grouper (`cece/sharp-tesla-j0kd7z`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-18: "learn what you can from [the Wrasse and Grouper] ... unify what you can so we have a consistent
+notion of multiplayer vessels. and apply it here." After merging bleeding-edge: the Goby is `VesselClassType` **18**
+(16 is the Brittle Star) and its card reads **Goby and Pistol**; both seats implement `ICrewSeat` and run on the shared
+`CrewSeat` (wake, swap, hand-over), `CrewPictureInPicture` (the two views' layout) and `CrewViewRender` (a seat camera's
+look: prism depth from its plane, the occlusion corridor re-aimed). The Goby's code moved to
+`Controller/Vessel/Crew/GobyPistol/`. No editor and no `unity` CLI, so `/verify-unity` did NOT run. Headless: refcompile
+player 0 errors, editor 3 (`AuthenticationServiceFacade`, identical to bleeding-edge); Amoebius builds;
+`check_crew_vessels.py` ok with 7 negative controls; both generators' `--check`; the Kite's `parity.cjs` (core and asset
+unchanged); 53/53 stand-in tests.
+**Not flown, even in Amoebius:** the scripted flight that proved every earlier round could not reach freestyle this
+time - bleeding-edge's new first-time guided path ("Your first race is waiting. Open the Arcade.", `MenuSpotlight`)
+dims and blocks the Toybox and the menu crystal on the test profile. The run itself logged zero crew exceptions with
+the seat idle, so the shared seat, layout and render code is compile-verified only (both seats).
+**Superseded in part (2026-10-21):** merging bleeding-edge again withdrew the Wrasse half. `KiteNavigator` is
+bleeding-edge's (its own crew pieces, no `ICrewSeat`), and its move onto `ICrewSeat` is step 2 of the work order in
+`KITE_NAVIGATOR.md`. Check the **Goby** half of every step below; the Wrasse's station still reads **Wrasse and Grouper**
+(`CrewNames` is on bleeding-edge too), but its view and swap are bleeding-edge's own, not these shared pieces.
+
+1. **Toybox ▸ Vessel Changer:** the stations read **Goby and Pistol** and **Wrasse and Grouper**; so do the hangar card,
+   its detail and abilities views and the arcade launch panel for either.
+2. **Fly the Goby:** the Pistol's view is now a **square in the lower left** (it was a lower-right inset), the same
+   size and place as the Wrasse's kite view.
+3. **Press 2:** the Pistol's view fills the screen and **the Goby's chase view drops into the lower-left square**; press
+   1: both return, and the main camera's rect is whole again (no stuck square after leaving the Goby either).
+4. **The foreground:** a prism between the side camera and the Pistol now **dithers** (the game's screen-door, as
+   prisms between your own camera and your hull do), instead of vanishing. Prisms on the Pistol's plane read crisp;
+   their faces part with distance from the plane, not from the camera.
+5. **The Wrasse, unchanged:** fly it, press 2 / 1, watch the kite view's square, the pilot view swapped into it, the
+   dither cone above the board - all as before this change (its code now calls the shared pieces).
+6. **Never:** a crew seat waking on an AI hull or a hull the changer just spawned on autopilot; the player's sticks
+   still flying the hull while they are in a seat; the pilot camera left in the small square after a swap back, a
+   hull change or leaving freestyle.
+
+### 🔴 The Pistol's view drawn as the game draws it (`cece/sharp-tesla-j0kd7z`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-18: "render the shrimp view as true to the game as possible; err on the side of being too true to the game."
+The side camera is now a REAL perspective camera whose off-axis frustum (`PistolWarp.Frustum`, `Matrix4x4.Frustum` set on
+`projectionMatrix` every frame) IS the lab's parallax about the Pistol, and `PistolTrueDraw` draws every prism, every trail
+block and the Goby's own hull with their OWN meshes and materials (`MeshRenderer.sharedMaterials`; a skinned renderer baked
+in its pose), lit by the scene under the real skybox, instanced per (mesh, submesh, material) - only positions and
+orientations go through the unroll (`PistolWarp.FlatTransform` / `TileTransform`), and a lapped prism's own mesh is deformed
+into its bar (a pooled mesh, uv kept, normals recomputed). Gone: the fog, the glass, the depth fades, the tints and the custom
+prism look (`PistolWorld.shader` now draws only the MARKS: the ground line, the Pistol's tube and trail, the rings, the aim,
+the pops). Primed / hot / held are rings about the prism. The one concession: a foreground prism (between the eye and the
+plane) that would cover the Pistol is not drawn. The lab's side view follows the same principles (its 3D view's prism
+material, lit, the same camera). No editor and no `unity` CLI, so `/verify-unity` did NOT run. Headless: 53/53 outside Unity
+(the frustum equals the parallax; `FlatTransform` lands where `RigidCorners` did; `TileTransform` where `TileCorners` did; the
+lab's frustum golden), refcompile player + editor 0 errors in project code, Amoebius builds with a `Graphics.RenderMesh` shim.
+NOT proven here: that URP lights the instanced draws at the stage as it lights the scene (directional light: yes by
+construction; probes/reflections: no), nor the skinned bake's scale on the Goby's rigged model.
+
+1. **Vessel Changer ▸ Goby, look at the inset:** the prisms look EXACTLY like the ones around you (same material, same colour
+   animation state, lit from the same side, the same skybox behind them turning with your heading), only laid out along your
+   path; the trail's blocks are your trail's blocks; the Goby at the end of the line is the Goby (its model, its jets).
+2. **Depth:** nearer layers bigger, farther smaller, by perspective; nothing fogs, nothing is see-through; prisms beyond
+   ~3 × pParallax are not drawn.
+3. **The stretch:** circle a cluster twice at ~29 u: the lapped prisms stretch (their own mesh, their own material) and the
+   centre one is a bar across the screen; its shading follows the stretched geometry.
+4. **Press 2:** a prism in front of the plane that would sit on top of you is skipped; everything else in front is opaque.
+   Prime from the Goby (3) first: primed prisms wear a violet ring; broken ones' neighbours an orange ring; carried ones a
+   light-blue ring. The prisms themselves never change colour.
+5. **Never:** a prism in the inset with a different material than its twin in the world; a lit prism with a black face
+   (a normal problem on a warped mesh); the Goby model missing or mis-scaled at the line's end; the dev box's `draws` over
+   ~500 or the frame rate dropping with the inset on (say the counts).
+
+### 🔴 The Goby zips, the Pistol's launch is a commitment (`cece/sharp-tesla-j0kd7z`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-16: "make the shrimp launch have a significant cooldown; make the goby zip around crazy fast so it is
+almost impossible to catch up with." Decided in the lab (the private prototype artifact v8) and cloned: `pLaunchCharges`
+2 → **1**, `pLaunchCd` 4 → **9** s; `gCruise` 60 → **160** (now mapped to `Goby.prefab` `DefaultThrottleScaler`, the first
+number the Goby does not share with the Squirrel; `author_goby_assets.py` writes and checks it from the lab's SHIPPED block);
+the closeness speed is now in the game — `gCloseMax` 1.8 → **2.4**, `gCloseRange` 320 — and so is the AI Goby's easing,
+`aiMaxGap` 260 (`GobyMath.Closeness` / `AiGapThrottle`, the lab's `closeness` / `aiGapThrottle` line for line; the duo
+scales the transformer's live `ThrottleScaler` by them every step and restores it on unbind). No editor, no `unity` CLI, so
+`/verify-unity` did NOT run. Headless: 49/49 outside Unity (the new `GobySpeed_ClosenessAndAiGap_MatchTheLab` golden),
+refcompile player + editor 0 errors in project code, `studio_to_unity --check` 45 mapped 0 drift, `author_goby_assets --check`
+ok (negative control: the donor's 60 fails), gates green.
+
+1. **Vessel Changer ▸ Goby, fly it:** it is FAST — 160 u/s at full throttle against the Squirrel's 60 (watch the speed read-out
+   or race a Squirrel); the turn rates are still the Squirrel's.
+2. **Press 2 (the Pistol):** the HUD reads **Launch 1/1**. Launch once: it reads 0/1 and takes **9 s** to come back. Dive and
+   the vortex ring are unchanged.
+3. **Catch-up:** as the Pistol closes on the Goby (gap under 320 u on the line) the Goby pulls away harder — up to x2.4 right
+   on its tail — so you cannot ride up its back; the AI-flown Goby eases to 0.3 throttle when the Pistol falls more than 260 u
+   behind, so a run never leaves you in empty forecast fog for long.
+4. **Swap back to the Goby (1) and leave the vessel (Vessel Changer station or quit):** the hull's cruise is its own again (no
+   lingering multiplier on the next hull).
+
+### 🔴 The Pistol's world: warped prisms, 2.5D depth, the trail as the ground (`cece/sharp-tesla-j0kd7z`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`GobyPistolDuo`'s side view rebuilt as one mesh a frame in two passes (`PistolWorldMesh`; `CosmicShore/PistolWorld` via
+`Resources/PistolWorld.mat` solid + `Resources/PistolWorldGlass.mat` glass; `PistolWarp`, `PistolTargets`, `PistolRibbon.MapFast /
+MapNear / LapExtent / Curvature`), then corrected by a three-design review (the brief's decisions log, 2026-10-15). No editor and no
+`unity` CLI here, so `/verify-unity` did NOT run, and the shader has NOT been compiled by Unity (hand-written URP; `ddx/ddy` flat shading
+in view space, Cull Off, material-driven ZWrite/Blend). Headless proof: `unity_refcompile` player 0 errors; Amoebius built AND ran it
+(the Goby as the menu hull, into freestyle, the Pistol taken, Q / F / a dive pressed): prisms mapped, warped, boxed and tiled every
+frame. That flight CAUGHT one crash - `PistolRibbon.FrameAt` read `X(k + 1)` on the one-sample ribbon of the first frames after
+the Goby spawned (three `ArgumentOutOfRange` from `LateUpdate`) - fixed on both sides (the lab's `ribFrameAt` had the same hole)
+and the flight re-run clean: zero exceptions from the duo (3618 prisms mapped, 31 warped, 600 boxes, 383 tiles on the last
+frame). An adversarial audit (four lenses, three refuters per finding) then fixed: a teleport/respawn keeping the old `_tail`
+(a streak across the screen); the bar's start times run through `Expire` every 2 s (every bar re-grew from half length);
+`showSideView` off also hiding the 3D rings and flares; the ring's `LookRotation` with an exactly-up axis; a sample gap of 0
+laying forever; the GobyUp frame swinging past the ribbon's end; a re-bind (menu round trip) keeping the old clock's primer /
+flare deadlines. The audited code (`ced821c4`) was then flown again by hand from screenshots (the Toybox's Vessel Changer,
+NAVIGATE, the Pistol taken, Q / F / a dive): bound on the Goby, 2206-3741 prisms mapped a frame, 28 warped, up to 367 boxes
+and 115 tiles, one ring fired and collapsed, 14 prisms primed by the AI Goby, zero exceptions from the duo. A scripted
+flight in between ended as the Sparrow: the AI-flown Goby crossed the Sparrow's station and the Vessel Changer swapped the
+hull mid-flight - the duo unbound without an exception (worth knowing: in that toy the pair can lose its hull to a
+station). The menu round trip (Y, Y) did not unbind the duo in Amoebius, so the re-bind fix is covered by the audit's
+reading and by the code, not by a flight. `PistolWorldMathTests` (18) + `PistolViewMathTests` (11) + `PistolTargetsTests` (1) + `GobyPistolMathTests`
+(17: the 10 sim goldens plus 7 VIEW goldens the lab's own `window.__lab.view` emitted - the lap's extent, three bend boxes'
+corners, the bar's extent, the zones and the parallax, so Unity's warp is held to the LAB's numbers as the ribbon and the AI
+already are): 48/48 outside Unity. Amoebius cannot composite the side camera, so the PICTURE is unseen.
+
+1. **Vessel Changer ▸ Goby, look at the inset:** no green, no curtain. A domain-coloured LINE rides the hills (warm orange on the
+   downslopes) with the trail's blocks sitting on it in two rails; the orange Pistol end on (a cone: its near cap big, its far cap
+   small, both on one screen point, the facets slowly turning, a bright eye) with a thin trail behind; a domain-coloured diamond
+   with a white dot is the Goby at the line's end. The sky yaws as the Goby turns.
+2. **Depth:** prisms beside the path are vivid with a rim; further to the Goby's side they draw smaller and sink into dark-blue fog
+   (past ~135 u they are plain boxes); on the near side they draw bigger and see-through. Fly past a cluster: layers slide at
+   different rates. Nothing pops at the window's edges harder than a fade. Ahead of the Goby the world is fogged (the forecast).
+3. **The stretch (the point of it):** circle a prism cluster twice at the Squirrel's radius (~29 u). The prisms inside the circle
+   STRETCH along the line into bars; the one at the circle's centre becomes ONE bar across most of the screen (growing in over a
+   quarter second), and they relax as you fly on. Prisms outside the circle compress slightly. No slivers tearing across the screen
+   (a prism caught on a fold draws as a plain box instead).
+4. **Press 2 (the Pistol), full screen:** a prism drawn inside the cone's cross-section at its depth is hit (a pop in its colour, a
+   small shake); one outside is not. Airborne, a short dash marks the ground under you. Land: the tube squashes and a ring puffs;
+   a hard landing shakes. Q: the ring flies out; carried prisms turn light blue; its collapse flashes a light-blue disc and shakes.
+   G: the body goes translucent. The Goby off screen: a domain-coloured arrow at the right edge.
+5. **Prime from the Goby (3), then take the Pistol:** primed prisms pulse VIOLET at any depth (the lab's colour); after the Pistol
+   breaks one, its neighbours burn ORANGE (hot). A friendly block just ahead pulses faintly while ghost is ready.
+6. **While the AI flies the Pistol (you on the Goby):** its launch aim is a line — green, amber while it has not noticed its target
+   yet, red while it misjudges (Easy / Medium).
+7. **Never:** the Pistol breaking the Goby's own trail; a tile drawn off the line; a prism drawn twice; the dev box's `view` line
+   over ~400 warped / 120 000 segTests, or the frame rate dropping with the inset on (say the counts if it does).
+
+### 🔴 The Goby (VesselClassType 16): the Goby & Pistol duo as a vessel you fly from the Vessel Changer (`cece/sharp-tesla-j0kd7z`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`Tools/Build/author_goby_assets.py` cloned `Squirrel.prefab` into `Goby.prefab` (fresh Netcode hash, `vesselType: 16`,
+`GobyPistolDuo` on the root wired to `GobyPistolConfig.asset`) and registered it: Vessel Prefab Container, DefaultNetworkPrefabs,
+`SO_Class_Goby` + both class lists, `ElementalAbilityMaps/Goby` (the Squirrel's map), four CrystalHullFusion entries (the
+Squirrel's bakes); `ToyVesselRoster.Default` and `EnumIntegrityTests` by hand. The dev harness became the runtime
+`GobyPistolDuo` (no longer `#if`-guarded: it ships on the prefab). No editor and no `unity` CLI here, so `/verify-unity` did NOT
+run. Headless proof: `unity_refcompile` player + editor (0 project errors); Amoebius built and RAN it (menu hull set to the Goby,
+then reverted): the Goby spawned with `GobyPistolDuo`, the Vessel Changer listed "Goby · flying", in freestyle the duo bound, key
+2 gave the human the Pistol (the Goby's AI on, its input paused), Q fired a vortex ring, key 1 gave the Goby back. Amoebius cannot
+show the side view (no second-camera viewports, no `OnGUI`) - Unity has to. The tool's `--check` and `--self-test`; network-hash,
+prefab-container, class-icon, shared-channel and far-clip gates OK.
+
+1. **Test Runner ▸ EditMode:** `EnumIntegrityTests`, `ToyVesselRosterCoverageTests`, `CrystalHullFusionConfigTests`,
+   `GobyPistolMathTests` pass.
+2. **Menu_Main ▸ TOYBOX ▸ Vessel Changer:** the list ends with **Goby**. NAVIGATE, fly into the hangar and pick the Goby station
+   (or in the window). You swap into a Squirrel-looking hull named Goby(Clone).
+3. **Flying it:** a bottom-right inset shows the Pistol's world (teal ground with hills, the orange Pistol riding it, the teal
+   cube = the Goby at its right end) and a box top left says `you fly: GOBY`. Prisms near your path appear in the inset with
+   their own look. **3 / D-pad up** primes what is ahead (amber markers); **4 / D-pad down** fires flares at hot (red) prisms.
+4. **D-pad right / 2:** the inset goes full screen and the Goby flies itself; **Space / mouse / A** dives, drag-release or **F**
+   launches, **G** ghosts, **Q / E** fires the vortex ring (prisms circle it in the 3D view too, and break when it collapses).
+   **D-pad left / 1** takes the Goby back; your sticks steer it again at once (the AI let go, the input is not left paused).
+5. **Swap to another hull in the Vessel Changer while flying the Pistol:** the side view goes away, nothing stays paused, the new
+   hull flies. **Main menu:** the Goby as the menu hull shows NO inset (it only wakes for a human pilot).
+6. Expected console lines: four `[HullFusion] 'Squirrel_*_HullFusionBake' is STALE` warnings (the Squirrel has them too; the
+   fusion solves at runtime). Anything else from `GobyPistolDuo` is a bug.
+
+### 🔴 Goby & Pistol duo: the lab cloned into Unity, playable through a Play-mode harness (`cece/sharp-tesla-j0kd7z`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`.claude/skills/duo-vessel/references/designs/goby-and-pistol.md` §9-§10. The Goby & Pistol lab
+(`Docs/Studios/VesselStudio/goby.html`) ported line for line: `PistolRibbon` (the unrolled path and the Pistol's ground),
+`PistolBodyMath` + `VortexRing` (the ride, launch, ghost, the vortex-ring Snap), `PistolAI` (Easy / Medium / Hard), all in
+`Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/`; `GobyPistolConfigSO` + `Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset`
+(40 numbers written by `studio_to_unity.py --vessel goby`); the Play-mode harness (since 2026-10-15 the runtime `GobyPistolDuo`, see the Goby vessel entry above).
+No editor and no `unity` CLI in this session, so `/verify-unity` did NOT run. Headless proof: `unity_refcompile` player,
+player-dev and editor configs (0 project errors); `GobyPistolMathTests` (10 tests) run OUTSIDE Unity against a float
+`Vector3`/`Mathf` stand-in, 10/10 green, and a perturbed constant in the port fails 2 of them; `studio_to_unity.py --check`
+0 drift (a hand-edited value reports drift); conditional-compilation, console-logging and using-directive gates.
+
+1. **Test Runner ▸ EditMode ▸ `GobyPistolMathTests`**: all 10 pass in the editor too (they ran only against the stand-in).
+2. **Open a free-flight mode (not an arena match), fly the Squirrel**, then in Play mode **FrogletTools ▸ Vessels ▸ Goby
+   and Pistol (Play mode)**. An inset appears bottom right: a teal ground line with hills, an orange cylinder (the
+   Pistol) riding it end on, a teal cube (the Goby) at its right end. A text box top left says `you fly: GOBY`.
+3. **Fly on.** The Pistol keeps up but never passes the cube; the ground keeps being laid at the cube. Prisms near your
+   path appear in the inset with their own mesh and colours; ones far to the side do not.
+4. **Press D-pad right (or 2).** The side view goes full screen, the box says `you fly: PISTOL`, and the Squirrel keeps
+   flying on its own (its AI). Your WASD no longer steers it.
+5. **As the Pistol:** hold Space (or the mouse, or A) going downhill and let go uphill: it launches off the crests.
+   Drag the mouse across the view and let go: a white dotted arc shows the aim and the Pistol flies it (or F for a
+   preset launch; RT + right stick on a pad). Hitting prisms breaks them with the game's own explosion, in the 3D world
+   too. G ghosts (the cylinder darkens; nothing breaks for 2.5 s). Q or E fires the Snap: a light-blue ring flies out,
+   prisms it passes start circling its core (watch them in the 3D view as well), and after 2.6 s it collapses and they break.
+6. **Press D-pad left (or 1).** Back to flying the Squirrel; the Pistol AI rides, launches into clusters and fires the
+   Snap on its own. **3 / D-pad up** fires the primer at what is ahead (primed prisms get an amber marker in the
+   inset); when the Pistol breaks one, nearby primed prisms go with it and the ring round turns hot (red markers);
+   **4 / D-pad down** sends a flare to each hot prism.
+7. **Look for:** no prism popping in or out in the 3D world; no console errors; a super-shielded prism is never carried or
+   broken; the frame rate holds with the inset on.
+
+---
+
 ### 🔴 The fleet colour scheme: shared vessel materials, slot fixes, every card re-rendered (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
 
 `/verify-unity` was unavailable (no Editor, no `unity` binary). No C# changed. What ran:
@@ -1738,6 +2097,19 @@ prism, Sparrow and Grizzly containers) is deleted; the Grizzly now carries the f
 the Rhino; combos have 24 empty FMOD slots, no HUD callout, and the AI never combos.
 
 ---
+
+### 🔴 Angler round 8: two groups take turns; no squad pick, no recall, no boost (`cece/wizardly-ride-0c1axn`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Offline only: `unity_refcompile` player config 0 errors (editor config: 3 errors, none in changed files);
+`author_angler_assets.py --check` / `--self-test` 25/25; `author_touch_profiles.py --check`; angler parity 6/6;
+`studio_to_unity.py --vessel Angler --check` 0 drift. No Unity editor in the session (`/verify-unity` not run).
+
+1. **Half goes.** Tame 4+ creatures. Hold RT on a field and let go: about half the school flies at it, the rest stay with the hull.
+2. **The other half goes next.** Hold RT on a second field and let go: the half that stayed flies at it; the first half keeps eating the first field.
+3. **Alternates back.** A third paint sends the first half again, called back from wherever it is.
+4. **Dash between them.** With both halves out on far fields, press B: the hull dashes toward one half. Press B again: toward the other.
+5. **Gone.** X (Q) and Y (F) do nothing on the Angler; the Mass card shows no squad label; on a phone the cluster is the four cards only (no Squad or Recall disc).
+6. **Rebalance.** Spend creatures with LT on a rival until the groups are uneven: the next throw still sends about half.
 
 ### 🔴 Angler round 7: A lures and B dashes (the Sparrow's buttons); "the QuadFish don't always listen" fixed (`cece/zealous-feynman-po8k8d`, 2026-10-18) — NOT EDITOR-VERIFIED
 
@@ -13340,6 +13712,22 @@ prefab container and `DefaultNetworkPrefabs`. Reference compile clean; `author_s
    petal hits only. The swarm never drops below 6.
 6. Console: no errors and no per-frame logs while the Starlings flies.
 
+## 🔴 2026-10-21 — The Starlings round 3: a murmuration, browsable ability details, flight-sense camera (`cece/quirky-gates-skplxp`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session. Changed `StarlingRules` (`StarlingPickPress` browsing, `StarlingPilotControls.StickRoll` /
+`SpinRoll`), `StarlingVesselTransformer`, `StarlingSwarmExecutor` (separation grid), `StarlingHUDController`,
+`StarlingHUDView`, `StarlingConfig.asset` (start 120, cap 200, minimum 30), `SO_Class_Starling` (Name: Starlings).
+Reference compile: 0 errors in changed files; `author_starling_assets.py --check` OK; `starling_rules_parity/run.sh`
+19/19, `--self-test` fires.
+1. Test Runner: `StarlingRulesTests` pass.
+2. Toybox > Vessel Changer > Starlings (the card reads "Starlings"): about 120 starlings roam as one murmuration.
+3. Pad: y-diff rolls the world the way flight rolls a hull. Phone: a two-finger spin turns the world with the fingers,
+   and two thumbs keep turning the view while they pinch.
+4. Pick a few cards, then with no hand dealt hold A: every Mass card held shows its name, level, text, numbers and reached
+   jolts. While holding, press B / X / Y: the card turns to Time / Charge / Space and nothing is picked; letting go of
+   all buttons closes it, and a quick press afterwards picks again.
+5. Profiler: the swarm executor's Update and the member renderers at 120-200 members (team task T-20261021-d6dc).
+
 ## 🔴 2026-10-21 — The Thresher spawns in Mass Mode (`cece/youthful-johnson-hccyzf`) - NOT EDITOR-VERIFIED
 
 Garrett: "the default mode for thresher should be mass mode." `ThresherExecutor.Initialize` now sets `_massMode = true`
@@ -13374,6 +13762,14 @@ files). No editor or `unity` CLI in the session, so `/verify-unity` did not run.
    every time. With RT held it slows hard and the ball overtakes and leads; with RT released the ball swings round
    like a pendulum. Neither may turn the ship. If a 180 still happens, note the Time level, RT, and whether the
    crosshair was up when LT was let go.
+
+## 🔴 2026-10-20 — Honeyguide Dynamo core (`claude/honeyguide-ratel`) - NOT EDITOR-VERIFIED
+
+Docs/Studios/HONEYGUIDE_LAB.md. Added `Assets/_Scripts/Controller/Vessel/Crew/DynamoCore.cs` (engine-free, no
+MonoBehaviour, nothing references it yet). Compiled headlessly with Roslyn on .NET 8 and held step for step to the lab's
+core by `Tools/Build/dynamo_lab/parity.cjs` (PASS, four planted controls caught). `/verify-unity` could not run here.
+1. Open the project: the Console shows no compile error or warning from `DynamoCore.cs`.
+2. Nothing else to check until the Honeyguide is ported (phase 2): no scene, prefab or enum member uses it.
 
 ## 🔴 2026-10-21 — The Starlings: objective card, zoom/roll, card details (`claude/project-thread-ytyab2`) - NOT EDITOR-VERIFIED
 
@@ -13474,10 +13870,11 @@ Files: `Cytoplasm/SnowChanger.cs` (`AddMorphedShard`, `CondenseTick`, growable s
 (player config, 0 errors in project code). No `unity` CLI in the session, so `/verify-unity` did not run.
 Team task: T-20261021-6fa4.
 
-1. Play Menu_Main (or any freestyle cell with flora). Joust or starve a plant and watch its spindles: each limb fades
+1. Play Menu_Main (or any freestyle cell with flora). Joust or starve a plant and watch its spindles: every fifth
+   limb (`SnowChanger.limbsPerMorphedShard`, toned down from every limb on 2026-10-21) fades
    while a new cytoplasm shard grows where it stood and turns to point at the crystal, in the order the limbs go. No
    limb pops out and no shard pops in.
-2. Kill a creature with spindles (a tadpole): each body limb leaves a shard too.
+2. Kill a creature with spindles (a tadpole): its body limbs leave shards too, one per five.
 3. Console stays clean. The `renderers` line still shows the snow as one instanced family.
-4. Low preset: shards still appear, until `SnowChanger.maxMorphedShards x 0.25` limbs have made one; after that limbs
+4. Low preset: shards still appear, until `SnowChanger.maxMorphedShards x 0.25` (800 x 0.25 = 200) limbs have made one; after that limbs
    only fade.

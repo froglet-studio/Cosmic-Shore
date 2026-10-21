@@ -31,7 +31,8 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Kinds:** `test` (run something and report pass or fail), `dev` (code), `content` (words, tips, art),
   `setup` (a dashboard, a service, a key), `decision` (the owner or the core four decide), `docs`.
 - Ids are `T-<date>-<hash>`, never "the next number", so two branches cannot collide. If two branches both
-  append a task, git conflicts at the end of the file: keep both. `team_tasks.py --check` validates the board.
+  append a task, git conflicts at the end of the file: keep both. `team_tasks.py --check` validates the board, and fails on
+  any conflict marker left in it (a half-resolved merge still parses, so it used to pass).
 - QA's own failures stay in `Docs/QA/DEV_TASKS.md` (written by `/qa-backlog`); vessel and AI test scripts stay
   in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. A task here may point at either.
 
@@ -607,6 +608,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (duo-vessel owner)
 - **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; .claude/skills/duo-vessel/SKILL.md on cece/sharp-tesla-j0kd7z
+- **Reopened:** 2026-10-21 by a Claude session (`cece/sharp-tesla-j0kd7z`): the 2026-10-18 close was withdrawn when that branch merged bleeding-edge again (bleeding-edge's `KiteNavigator` has its own crew pieces). Step 2 of `KITE_NAVIGATOR.md`'s "Two humans, two seats" work order does it once the branch lands. The earlier note said: 2026-10-18, Done on cece/sharp-tesla-j0kd7z (2026-10-18): the Wrasse is the duo-vessel skill's second design, and both crew seats (KiteNavigator, GobyPistolDuo) implement ICrewSeat and share CrewSeat (wake, PilotSwapGesture swap, AI hand-over), CrewPictureInPicture and CrewViewRender; check_crew_vessels.py holds every crew hull to the card / roster / container rules. The Wrasse already reaches the game from the Toybox Vessel Changer; a mode carrying a crew hull is the networking decision (T-20261017-b06e).
 
 ### T-20261017-3cbe · open · content · Crew vessels
 - **Task:** Author FMOD events for the Kite Navigator's eight empty EventReference slots on KiteNavigatorConfig.asset: loop closed, loop fizzled, prism popped, Mass cluster, Time boost, Charge, steal, fauna struck.
@@ -1045,7 +1047,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/ElementalAbilitySystem/BACKLOG.md '[gate false positive] check_vessel_on_vessel_motion.py'
 
 ### T-20261018-3247 · open · dev · Crew vessels
-- **Task:** Bring the Crew Vessel Lab up to the Wrasse's rounds 4-4f, which were directed in Unity on 2026-10-18 (KITE_NAVIGATOR.md "Where it stands"). They cover: the kite view and the pilot view swapping (the small view lower left); the kite following the mouse or stick with no click; a two-stick pilot who spends saved Time boosts on the right trigger (2 s cooldown, none at Time L5); lime five-petal motes in the totem's proportions, each moving like its element; mote frequency weighted by the hull's petals; Charge rams on fauna; Eject below Charge L5 and Steal at it; shielded Mass clusters at Mass L5; Space L5 blasts through shields and super shields; the Omni crystal's burst of motes; and out-of-plane prisms seen with depth from the plane. Then re-run parity.cjs and verify_lab.cjs and republish.
+- **Task:** Bring the Crew Vessel Lab up to the Wrasse's rounds 4-4f, which were directed in Unity on 2026-10-18 (KITE_NAVIGATOR.md "Where it stands"). They cover: the kite view and the pilot view swapping (the small view lower left); the kite following the mouse or stick with no click; a two-stick pilot who spends saved Time boosts on the right trigger (no cooldown since 2026-10-21; Time L5 is an open slot); lime five-petal motes in the totem's proportions, each moving like its element; mote frequency weighted by the hull's petals; Charge rams on fauna; Eject below Charge L5 and Steal at it; shielded Mass clusters at Mass L5; Space L5 blasts through shields and super shields; the Omni crystal's burst of motes; and out-of-plane prisms seen with depth from the plane. Then re-run parity.cjs and verify_lab.cjs and republish.
 - **Done when:** The lab's SHIPPED block and scorecard carry round 4 and parity.cjs still passes
 - **Who can take it:** any session; Garrett to sign off
 - **Added:** 2026-10-18 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
@@ -1080,6 +1082,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-18 by a Claude session (`cece/charming-wright-4ayoce`)
 - **See:** Docs/ANDROID_BUILD.md §8, Assets/_Scripts/Utility/DevDiagnostics.cs
 
+### T-20261018-8b32 · open · test · Crew vessels
+- **Task:** Fly the Goby and Pistol (VesselClassType 18) in the Unity Editor on the shared crew pieces (cece/sharp-tesla-j0kd7z, 2026-10-18; the Wrasse half was withdrawn on 2026-10-21, so the Wrasse is checked only for its card name), from the Toybox Vessel Changer. Check the six steps of Docs/UNITY_VERIFICATION_CHECKLIST.md 'One notion of a crew vessel': both cards name both subvessels, the seat view is a lower-left square while flying the hull and swaps with the pilot view on 2 / 1, the Pistol's foreground dithers instead of vanishing, and the Wrasse behaves exactly as before. Then the three steps of 'The Goby's vortex ring and flares are lit faceted volumes' (the ring shaded and faceted in both views, the flares lit, nothing pink).
+- **Done when:** Both crew vessels flown in the editor, the checklist entry marked green or its failures filed
+- **Who can take it:** Yash (offered), Garrett (sign-off), anyone with the Editor
+- **Added:** 2026-10-18 by a Claude session (`cece/sharp-tesla-j0kd7z`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261018-7c2d · done · decision · Crew vessels
+- **Task:** Decide whether the Pistol's view keeps its flat marks (primed/hot/held rings round prisms, the aim ring and line, the contact dot, the pops) as the view's own markings, or makes them lit volumes like the vortex ring
+- **Done when:** Garrett's call is recorded in .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log) and, if they stay flat, as an owner's-call exception under 'Nothing in the world looks flat' in Docs/claude/SHADERS_AND_PERFORMANCE.md
+- **Who can take it:** Garrett (the rule's and the vessel's owner)
+- **Added:** 2026-10-18 by Claude session on cece/sharp-tesla-j0kd7z (`cece/sharp-tesla-j0kd7z`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md; Docs/claude/SHADERS_AND_PERFORMANCE.md
+- **Done:** 2026-10-21, Answered by Garrett's LOCKED rule of 2026-10-21 (SHADERS_AND_PERFORMANCE.md 'In the world, not on the screen'): no flat marks. The lab (v14 of the prototype) lights primed / hot / held / ghost-cue prisms and what an aimed fling will break on the prisms themselves, lights the trail tile under a falling Pistol instead of the contact dot, and draws flares as small lit volumes; the aim's dotted arc stays as the aim mark. Unity's PistolWarp still draws the rings until the clone (T-20261018-675f).
+
 ### T-20261018-2c7e · open · dev · Vessel models
 - **Task:** Work the nine follow-ups the ship review of the vessel-model branch left (Docs/VesselModels/README.md 'Follow-ups from the ship review'): one Editor check (BakeMesh scale), the Shrike beam origin under the Space morph, a Thresher pectoral sign question, two latent Rhino/VesselCustomization nits, two deletion proposals (GhostAction, the six procedural hull builders: check Amoebius first) and two per-spawn/per-frame perf trims.
 - **Done when:** each row is fixed, filed or answered in the README's table
@@ -1093,6 +1110,20 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith; Yash (offered)
 - **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §56 play-test round, §58
+
+### T-20261018-0201 · open · test · Crew vessels
+- **Task:** Import and fly the Goby's own hull (Goby.fbx, built by /vessel-model on the Squirrel's rig) in the Unity Editor: the audits, the crystal-hull-fusion bake, a Toybox flight and the cards, per Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Goby flies its own hull'
+- **Done when:** the checklist entry's six steps are green, or each failure is filed; Garrett has said whether it reads as the Goby
+- **Who can take it:** Yash (offered), Garrett (sign-off: the owner's flight is the bar), anyone with the Editor
+- **Added:** 2026-10-18 by Claude session on cece/sharp-tesla-j0kd7z (`cece/sharp-tesla-j0kd7z`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/VesselModels/sheets/goby_after.jpg
+
+### T-20261018-675f · open · decision · Crew vessels
+- **Task:** Play the Goby and Pistol lab's round 13 (prototype v14: the Pistol as a 2.5D character on a plane tangent to the Goby's path, no warp, the camera turning as little as it can; round 12's slingshot, tiny Pistol, lean toward the Goby and real hull kept) on phone and PC, answer the round's three [open] questions, then say whether to clone it into Unity
+- **Done when:** Garrett's verdict is in the goby-and-pistol.md decisions log; on a yes, /artifact-to-unity clones the 10 drifted numbers and ports the lean, the slingshot, the tangent-plane view with its depth look (or whichever unroll he picks) and the in-world marks that replace PistolWarp's rings (the LOCKED 'In the world, not on the screen' rule), and studio_to_unity.py --vessel goby --check is back to 0 drift
+- **Who can take it:** Garrett (the call); any session for the clone
+- **Added:** 2026-10-18 by Claude session on cece/sharp-tesla-j0kd7z (`cece/sharp-tesla-j0kd7z`)
+- **See:** https://claude.ai/artifact/6hGNJz2AKFYY5gHvYJa9Up; .claude/skills/duo-vessel/references/designs/goby-and-pistol.md
 
 ### T-20261018-fde3 · open · dev · Quick fixes
 - **Task:** Re-apply five small fixes stranded on old branches, in one PR into bleeding-edge: Time crystal sounds through muted SFX (c30040ec96), recycled shielded prisms play the shield-off effect in Microscene (bbb47c111b, + the Port copy), the /ab-test skill (691cd25d6e), the detect-competing-changes skill (7380381338), the session-branch triage tool (13834d5584); plus two stale doc rows (BRANCH_PARTS_STATUS A/C/M landed, ECOSYSTEM_MASTERPLAN Phase B item 6 done)
@@ -1663,6 +1694,48 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a 'Known feel cost'
 
+### T-20261021-2574 · open · test · Crew vessels
+- **Task:** Playtest the Honeyguide and Ratel in the Unity Editor: Toybox Vessel Changer station, then the 7 steps of its checklist entry. It has only been compiled headlessly.
+- **Done when:** the steps in Docs/UNITY_VERIFICATION_CHECKLIST.md 'Honeyguide and Ratel' pass and HoneyguideTests is green
+- **Who can take it:** Yash (offered), anyone with the Editor
+- **Added:** 2026-10-21 by Garrett (Claude session) (`claude/honeyguide-ratel`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+
+### T-20261021-1b13 · open · content · Crew vessels
+- **Task:** Author FMOD events for the Honeyguide's five empty EventReference slots on HoneyguideConfig.asset: pattern made, slip, jump, spin, reveal.
+- **Done when:** all five slots are wired
+- **Who can take it:** anyone who does audio
+- **Added:** 2026-10-21 by Garrett (Claude session) (`claude/honeyguide-ratel`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+
+### T-20261021-f05e · open · decision · Crew vessels
+- **Task:** Decide how the Ratel seat goes online (today the Dynamo, its AI and the effects run on the hull's local machine). (Round 6 parks no card: the trigger cards are the upgrades of Peck and Flit.)
+- **Done when:** Garrett picks a networking plan and a plan for the parked cards
+- **Who can take it:** Garrett with Yash (multiplayer)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`claude/honeyguide-ratel`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+
+### T-20261021-2dd0 · open · test · Crew vessels
+- **Task:** Playtest the Honeyguide's round 6 triggers and its new hull model in the Unity Editor: the 6 steps of its round-6 checklist entry (Peck/Flit, upgrades, the model's paint, morphs and puppetry).
+- **Done when:** The round-6 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md is ticked or its failures are filed.
+- **Who can take it:** Yash (offered), anyone with the Editor
+- **Added:** 2026-10-21 by Garrett's session (`claude/honeyguide-ratel`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, Docs/VesselModels/Honeyguide.md
+
+### T-20261021-2d1a · open · setup · Crew vessels
+- **Task:** Bake the Honeyguide's crystal hull fusions (vessel 23) with FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions, now that it draws Honeyguide.fbx; commit the four bakes.
+- **Done when:** CrystalHullFusionConfig's four vessel-21 entries name bakes and CrystalHullFusionBakeTests passes without an inconclusive for them.
+- **Who can take it:** anyone with the Editor
+- **Added:** 2026-10-21 by Garrett's session (`claude/honeyguide-ratel`)
+- **See:** Docs/VesselModels/Honeyguide.md
+
+### T-20261021-7e6f · open · content · Crew vessels
+- **Task:** Give the Honeyguide's upgrade effects their own visuals: the grenade, the drone, the lasso rope and the lance beam show no effect of their own yet; and wire the two new empty FMOD slots (flitSfx, upgradeSfx) and each upgrade's sfx.
+- **Done when:** Each of the four effects reads on screen and the slots play a sound.
+- **Who can take it:** Garrett (owner), anyone who does VFX or audio
+- **Added:** 2026-10-21 by Garrett's session (`claude/honeyguide-ratel`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+
 ### T-20261021-18a1 · open · test · vessels
 - **Task:** Fly Marlin and Jacks in the editor (UNITY_VERIFICATION_CHECKLIST 2026-10-21, steps 1-10: the models and the host-client crew included) and the Frenzy shield-food rule
 - **Done when:** Every step of the checklist entry passes, or each failure is written up on the PR
@@ -1785,7 +1858,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/PLATFORM_UNIFICATION.md §3.10; Docs/WEBGL_TOYBOX.md 'Web profile'
 
 ### T-20261021-6fa4 · open · test · Ecology
-- **Task:** Dying limbs become shards (Docs/ECOSYSTEM.md section 63, branch cece/awesome-faraday-7fsppt): Play Menu_Main (or any freestyle cell with flora), joust or starve a plant, and watch its spindles. Each limb should fade while a new cytoplasm shard grows where it stood and turns to point at the crystal, in the same outside-in order the limbs go. No limb pops out and no shard pops in. Then check the Console is clean and the Renderer census still shows the snow as one instanced family. On a Low preset fewer limbs should leave shards once the cap (SnowChanger.maxMorphedShards x 0.25) is reached.
+- **Task:** Dying limbs become shards (Docs/ECOSYSTEM.md section 63, branch cece/awesome-faraday-7fsppt): Play Menu_Main (or any freestyle cell with flora), joust or starve a plant, and watch its spindles. Every fifth limb (SnowChanger.limbsPerMorphedShard = 5, toned down 2026-10-21) should fade while a new cytoplasm shard grows where it stood and turns to point at the crystal, in the same outside-in order the limbs go. No limb pops out and no shard pops in. Then check the Console is clean and the Renderer census still shows the snow as one instanced family. On a Low preset fewer limbs should leave shards once the cap (SnowChanger.maxMorphedShards x 0.25) is reached.
 - **Done when:** Seen in Unity: limbs condense into shards in order, no pop, no errors; or the failure is written here and a dev task added
 - **Who can take it:** Garrett (the look), Yash (offered)
 - **Added:** 2026-10-21 by a Claude session (`cece/awesome-faraday-7fsppt`)
@@ -1797,3 +1870,101 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (the look and feel); Yash (offered: editor, phone and host-client steps)
 - **Added:** 2026-10-21 by Garrett (`cece/sharp-faraday-gq7m65`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Marlin and Jacks, steps 11-14); R_VesselActions/MARLIN_JACKS.md
+
+### T-20261021-362a · open · setup · Crew vessels
+- **Task:** The Wrasse draws Grouper.fbx but keeps the Sparrow's four crystal-fusion bakes (vessel 19 in CrystalHullFusionConfig) and its VesselAnimation flare still names the hidden Sparrow mesh, so boost lights nothing. Apply the Honeyguide's two fixes (drop the copied bakes, hand the flare to the drawn mesh) or re-bake in the editor.
+- **Done when:** Wrasse fusion entries name Grouper bakes or none, and boost lights the Grouper.
+- **Who can take it:** Garrett (Wrasse owner), anyone with the Editor
+- **Added:** 2026-10-21 by Garrett's session (/ship of claude/honeyguide-ratel) (`claude/honeyguide-ratel`)
+- **See:** .claude/skills/vessel-model/references/LESSONS.md lesson 50
+
+### T-20261021-723e · open · test · Crew vessels
+- **Task:** Phone playtest of the crew hulls' triggers (Android dev build): Toybox > Vessel Changer > Wrasse and Grouper - fly the Grouper with two thumbs, let the AI Wrasse save a Time boost (the Time card counts it), then lift the LEFT thumb and keep steering with the right: the hull boosts, holding the thumb up chains boosts, and the Time card shows the lift-left glyph. Then the Orca helm: lift the left thumb to boost (tank drains), lift the right thumb to raise the shield. Then the Honeyguide: its Charge / Mass cards show the lift glyphs. Also on a pad: RT boosts the Grouper and the Orca, LT shields the Orca.
+- **Done when:** Each step behaves as written on a phone and on a pad; any miss is filed as a dev task with what happened
+- **Who can take it:** Yash (offered) or Garrett
+- **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md 'The phone boost'; ORCA_CREW.md follow-ups
+
+### T-20261021-2d13 · open · dev · Crew vessels
+- **Task:** The Goby & Pistol has no touch path: GobyPistolDuo reads the Goby's primer and flares from keys 3 / 4 and the pad's D-pad up / down only, and the Pistol's dive and launch from the mouse, keyboard and pad (no Touchscreen read anywhere in Crew/GobyPistol). On a phone neither seat's abilities can be used. Give them touch controls (cards that name inputs bound on the hull, as the Wrasse and Orca now do with CrewTriggerActionSO, or the Goby's own touch overrides) in the Goby's next round.
+- **Done when:** On a phone, the Goby can fire its primer and flares and the Pistol can dive and launch; author_touch_profiles.py has a Goby row whose glyphs/buttons resolve
+- **Who can take it:** Garrett (the Goby's owner) with the session driving the Goby lab
+- **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md section 8 'Third round'; Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs GobyAbilities / HumanPistol
+
+### T-20261021-110d · open · test · Vessel models
+- **Task:** Reimport the 14 rebuilt hull FBXs (cece/quirky-brown-lkhhx9) and fly the Shrike, the Wrasse (Grouper + Kite) and the Marlin with the stick centred: no left bank, the tails beat about the centre. Spot-check the other 11 at rest (Docs/UNITY_VERIFICATION_CHECKLIST.md, 'New hulls rest at REST')
+- **Done when:** Every rebuilt hull rests level and centred at a centred stick, and each model's clip list starts with 'rest'
+- **Who can take it:** Garrett (reported it); Yash (offered) can run the reimport and spot-checks
+- **Added:** 2026-10-21 by a Claude session (`cece/quirky-brown-lkhhx9`)
+- **See:** .claude/skills/vessel-model/references/LESSONS.md #51
+
+### T-20261021-5d4e · open · decision · Crew vessels
+- **Task:** Pick the Wrasse's Time L5 upgrade: its old one (No Cooldown) is gone with the Grouper's boost cooldown, so the Time card's L5 slot is open (blank in ElementalAbilityMaps/Wrasse.asset).
+- **Done when:** Time L5 names an upgrade and KiteNavigator gates it with Upgraded(Element.Time)
+- **Who can take it:** Garrett (owner)
+- **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md
+
+### T-20261021-308e · open · test · Crew vessels
+- **Task:** Fly the Wrasse and hold the Grouper's boost trigger (RT, right Shift, or the phone's left-thumb lift) with several saved boosts: they chain back to back with no gap, and the Time card shows no cooldown veil.
+- **Done when:** Saved boosts chain with no wait in the editor and on a phone
+- **Who can take it:** Yash (offered), Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md
+
+### T-20261021-90a6 · open · test · Crew vessels
+- **Task:** Android dev build, branch cece/compassionate-rubin-baeyvi: (1) Toybox > Vessel Changer > Honeyguide and Ratel, swap to the Ratel: hold a finger still on a prism ~0.5 s and it is deleted (1 AP); a drag that leaves the cell still moves it; the Fly button left of the big board swaps back to flying. (2) Fly the Wrasse kite seat, go back to the app shell (HOME): touching or using a pad in the menu must not steer the kite or swap seats; re-enter freestyle and you are seated where you were. Repeat (2) for the Orca gunner, the Ratel, the Pistol and the Marlin jacks.
+- **Done when:** Both steps pass on a phone, or the failure is filed as a dev task
+- **Who can take it:** Garrett (found the bugs) or Yash (offered: playtests)
+- **Added:** 2026-10-21 by a Claude session (`cece/compassionate-rubin-baeyvi`)
+- **See:** 29315a060, 77ead5f41
+
+### T-20261021-2bb3 · open · test · Vessels on a phone
+- **Task:** Reproduce 'the vessel selector UI broke on mobile' (Garrett's Android playtest, 2026-10-21): say which screen (Toybox Vessel Changer matrix, its Toy window, the Hangar, the HUD after a swap), send a screenshot and adb logcat -s Unity. Quick check: connect a pad - if the problem goes away, it is the phone ability-row layout (TouchControlsHud) not re-laying after a swap.
+- **Done when:** The screen and a screenshot/log are on this task, so a session can fix the root cause
+- **Who can take it:** Garrett (saw it) or Yash
+- **Added:** 2026-10-21 by a Claude session (`cece/compassionate-rubin-baeyvi`)
+- **See:** PR for cece/compassionate-rubin-baeyvi
+
+### T-20261021-227a · open · test · Starling vessel
+- **Task:** Fly the Starlings (class 21) from the Toybox Vessel Changer on branch cece/quirky-gates-skplxp: the 120-member murmuration reads as one, the camera roll turns the world the way flight rolls (pad y-diff and phone spin), two thumbs keep turning the view while pinching, holding a pick with no hand lists each held card with its text, numbers and reached jolts, and pressing another pick while the details are open browses to that element
+- **Done when:** Each item passes in Play mode, or the failures are reported
+- **Who can take it:** Garrett (feel), Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/quirky-gates-skplxp`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
+
+### T-20261021-d6dc · open · test · Starling vessel
+- **Task:** Profiler capture of the Starlings at 120 and 200 members on a phone build and in the editor: the swarm executor's Update (separation now on a grid) and the 120-230 SkinnedMeshRenderers (one per member, updateWhenOffscreen) against the frame budget
+- **Done when:** A capture is filed and either fits the budget or names the hot path to cut (e.g. GPU-instanced members instead of skinned copies)
+- **Who can take it:** Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/quirky-gates-skplxp`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StarlingSwarmExecutor.cs
+
+### T-20261021-729e · open · decision · Starling vessel
+- **Task:** With 5x the members, decide whether the per-member cards (Hole Punch, Annex, Danger Drip, Lasers and the base bite and nip) should keep their per-member rates, which now give about 5x the swarm's output, and whether Big Family's numbers (+6 cap at L1, read as cap + value - 40) should scale to the new 200 cap
+- **Done when:** cards.json carries the decided numbers (author_starling_assets.py re-run) or the decision to keep them is logged in STARLINGS_LAB.md
+- **Who can take it:** Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/quirky-gates-skplxp`)
+- **See:** Docs/Studios/SwarmCardVessel/cards.json
+
+### T-20261021-2f67 · open · test · Angler
+- **Task:** Fly the Angler's round 8 (two groups take turns; no squad pick, recall or boost) in the editor and on a phone: Docs/UNITY_VERIFICATION_CHECKLIST.md 'Angler round 8', steps 1-6.
+- **Done when:** All six steps pass, or the failures are filed as dev tasks
+- **Who can take it:** Yash (offered), Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md §1m
+
+### T-20261021-e29a · open · dev · Angler
+- **Task:** Bring the Angler Command Lab (Docs/Studios/AnglerCommandLab.html) to round 8: drop the squad pick and recall, split the school into two groups that throws and dashes alternate, re-run parity and verify_lab.cjs, republish.
+- **Done when:** The lab models two alternating groups and verify_lab.cjs passes
+- **Who can take it:** any session; Garrett to sign off
+- **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md §1m
+
+### T-20261021-876d · open · test · Crew vessels
+- **Task:** Phone playtest of the Orca gunner buttons (Android dev build, no pad): Toybox > Vessel Changer > Orca · 4 seat, two-finger tap (or the D-pad) to a gunner seat. Two buttons sit round the right thumb: Fire (seat colour) and Missile (rocket icon); the top line of seat text is gone. Left-thumb drag aims the turret while the right thumb holds Fire; Missile launches, the left thumb steers it, Missile again bursts it, and Fire hides while it flies. A thumb resting on a button while the left aims never swaps seats. On the bomb seat Fire throws, Fire again bursts. Buttons hide on the helm and when a pad connects. On a pad: X or RT fires, A launches/bursts, left stick aims.
+- **Done when:** Each step behaves as written on a phone and a pad; buttons sit inside the safe area and don't cover the ability row; any miss is filed as a dev task
+- **Who can take it:** Yash (offered) or Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/fervent-goodall-8cihle`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md 'Two buttons per gunner'; Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca gunner buttons'
