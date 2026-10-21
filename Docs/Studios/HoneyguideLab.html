@@ -118,7 +118,9 @@
  * Round 2: the injection ports turn as one rigid pattern, 60 degrees clockwise a spin; an empty port counts as a prism of
  * its colour for completing a pattern (a real prism must still be in it, for the battery); patterns match in any of the
  * six rotations; a pattern made for the third time is replaced by a random one; every 4 patterns the Ratel draws a new
- * random ability and a new port pattern. */
+ * random ability and a new port pattern.
+ * Round 3: a made pattern sends a random one of its real prisms to the battery (no pick); the new ability and the new
+ * port pattern are revealed one after the other while the spin clock stands still (st.reveal), then the clock restarts. */
 (function (root) {
   'use strict';
   const RADIUS = 3;
@@ -169,7 +171,7 @@
   function create(S, seed) {
     const st = {
       cells: new Array(N).fill(0), ports: [], portSet: -1, ap: S.apPerTick < S.apBank ? S.apPerTick : S.apBank, bonusAp: 0,
-      clock: 0, ticks: 0, battery: [], slots: [], uses: [], made: 0, pick: null, freePlace: 0, ability: '',
+      clock: 0, ticks: 0, battery: [], slots: [], uses: [], made: 0, reveal: null, freePlace: 0, ability: '',
       rng: seed | 0, wasted: 0, events: [], shapes: S.patterns.map((p) => shapes(p.cells, S.allowRotatedMatches)),
     };
     for (let k = 0; k < S.slotCount; k++) { st.slots.push(S.loadout && S.loadout[k] != null ? S.loadout[k] : drawPattern(st, S)); st.uses.push(0); }
@@ -222,11 +224,11 @@
     st.events.push({ k: 'charge', colour });
   }
 
-  function pickCell(st, S, cell, auto) {
-    const pk = st.pick, colour = st.cells[cell];
+  // A made pattern sends one of its real prisms, drawn at random, to the battery.
+  function takeRandom(st, S, slot, pid, cells) {
+    const real = cells.filter((c) => st.cells[c] !== 0), cell = real[Math.floor(rng(st) * real.length)], colour = st.cells[cell];
     st.cells[cell] = 0;
-    st.pick = null;
-    st.events.push({ k: 'pick', slot: pk.slot, pid: pk.pid, cell, colour, auto });
+    st.events.push({ k: 'pick', slot, pid, cell, colour });
     charge(st, S, colour);
   }
   // Empty cells reachable from `from` through empty cells (the Long Reach ability's move).
@@ -239,9 +241,10 @@
 
   // One seat input. Returns true when it was legal and applied; an illegal input changes nothing.
   function apply(st, S, inp) {
+    if (st.reveal) return false;   // the clock is stopped while the new ability and ports are shown
     switch (inp.k) {
       case 'tinker': {
-        if (st.pick || inp.from < 0 || inp.from >= N || inp.to < 0 || inp.to >= N || inp.from === inp.to || st.cells[inp.from] === 0) return false;
+        if (inp.from < 0 || inp.from >= N || inp.to < 0 || inp.to >= N || inp.from === inp.to || st.cells[inp.from] === 0) return false;
         const full = st.cells[inp.to] !== 0;
         if (full && !(st.ability === 'swap' && isNeighbour(inp.from, inp.to))) return false;
         if (!full && !isNeighbour(inp.from, inp.to) && !(st.ability === 'longReach' && reach(st, inp.from)[inp.to])) return false;
@@ -251,7 +254,7 @@
         return true;
       }
       case 'refuel': {
-        if (st.pick || inp.cell < 0 || inp.cell >= N || st.cells[inp.cell] !== 0) return false;
+        if (inp.cell < 0 || inp.cell >= N || st.cells[inp.cell] !== 0) return false;
         if (st.freePlace > 0 && inp.colour >= 1 && inp.colour <= 3) {   // the Printer: any empty cell, any colour, no AP
           st.freePlace--; st.cells[inp.cell] = inp.colour;
           st.events.push({ k: 'place', cell: inp.cell, colour: inp.colour });
@@ -264,31 +267,28 @@
         return true;
       }
       case 'activate': {
-        if (st.pick || inp.slot < 0 || inp.slot >= st.slots.length || st.slots[inp.slot] < 0) return false;
+        if (inp.slot < 0 || inp.slot >= st.slots.length || st.slots[inp.slot] < 0) return false;
         const pid = st.slots[inp.slot], cells = match(st, S, pid), cost = st.ability === 'freeFire' ? 0 : 1;
         if (!cells || st.ap + st.bonusAp < cost) return false;
         spendAp(st, cost);
         st.uses[inp.slot]++; st.made++;
         st.events.push({ k: 'ability', slot: inp.slot, pid, use: st.uses[inp.slot] });
         if (st.ability === 'refund') st.bonusAp = st.bonusAp + 1 > S.bonusApCap ? S.bonusApCap : st.bonusAp + 1;
-        st.pick = { slot: inp.slot, pid, cells: cells.filter((c) => st.cells[c] !== 0), timer: S.pickTimeout };
+        takeRandom(st, S, inp.slot, pid, cells);
         if (S.usesPerPattern > 0 && st.uses[inp.slot] >= S.usesPerPattern) {   // made for the third time: a new pattern
           const old = st.slots[inp.slot]; st.slots[inp.slot] = -1;
           st.slots[inp.slot] = drawPattern(st, S); st.uses[inp.slot] = 0;
           if (st.slots[inp.slot] < 0) st.slots[inp.slot] = old;
           st.events.push({ k: 'retire', slot: inp.slot, old, pid: st.slots[inp.slot] });
         }
-        if (S.patternsPerShuffle > 0 && st.made % S.patternsPerShuffle === 0) {   // a new ability and a new port pattern
+        if (S.patternsPerShuffle > 0 && st.made % S.patternsPerShuffle === 0) {   // a new ability, then a new port pattern
           if (!S.fixedAbility) { const k = pickOther(st, ABILITIES.length, ABILITIES.indexOf(st.ability)); st.ability = ABILITIES[k]; }
-          if (S.portSets.length > 1) setPorts(st, S, pickOther(st, S.portSets.length, st.portSet));
           if (st.ability === 'printer' && st.freePlace < 1) st.freePlace = 1;
-          st.events.push({ k: 'shuffle', ability: st.ability, portSet: st.portSet });
+          const next = S.portSets.length > 1 ? pickOther(st, S.portSets.length, st.portSet) : st.portSet;
+          st.events.push({ k: 'shuffle', ability: st.ability, portSet: next });
+          st.reveal = { stage: 1, t: S.revealAbility, portSet: next };
+          if (!(S.revealAbility > 0)) revealStep(st, S);
         }
-        return true;
-      }
-      case 'pick': {
-        if (!st.pick || st.pick.cells.indexOf(inp.cell) < 0 || st.cells[inp.cell] === 0) return false;
-        pickCell(st, S, inp.cell, false);
         return true;
       }
     }
@@ -310,16 +310,25 @@
     st.events.push({ k: 'tick', n: st.ticks, ap: gain });
   }
 
-  // The clock: seconds of match time.
+  // The reveal: stage 1 shows the new ability (the old ports stay), stage 2 the new ports; then the spin clock restarts.
+  function revealStep(st, S) {
+    const rv = st.reveal;
+    if (rv.stage === 1) {
+      setPorts(st, S, rv.portSet);
+      st.events.push({ k: 'ports', portSet: rv.portSet });
+      rv.stage = 2; rv.t = S.revealPorts;
+      if (rv.t > 0) return;
+    }
+    st.reveal = null; st.clock = 0;
+    st.events.push({ k: 'resume' });
+  }
+
+  // The clock: seconds of match time. It stands still during a reveal.
   function advance(st, S, dt) {
-    if (st.pick) {
-      st.pick.timer -= dt;
-      if (st.pick.timer <= 0) {
-        const fam = S.patterns[st.pick.pid].family;
-        let cell = st.pick.cells[0];
-        for (const c of st.pick.cells) if (st.cells[c] === fam) { cell = c; break; }
-        pickCell(st, S, cell, true);
-      }
+    if (st.reveal) {
+      st.reveal.t -= dt;
+      while (st.reveal && st.reveal.t <= 0) revealStep(st, S);
+      return;
     }
     st.clock += dt;
     while (st.clock >= S.tickSeconds) { st.clock -= S.tickSeconds; tick(st, S); }
@@ -329,13 +338,13 @@
   function built(st, S) { return st.slots.map((pid) => (pid >= 0 ? match(st, S, pid) : null)); }
   function digest(st) {
     return st.cells.join('') + '|' + st.ports.map((p) => p[0] + ':' + p[1]).join(',') + '|' + st.ap + '+' + st.bonusAp + '|' + st.battery.join('') +
-      '|' + st.slots.join(',') + '/' + st.uses.join(',') + '|' + (st.pick ? st.pick.slot + ':' + st.pick.cells.join('.') : '-') + '|' + st.freePlace + '|' + st.ability +
+      '|' + st.slots.join(',') + '/' + st.uses.join(',') + '|' + (st.reveal ? st.reveal.stage + ':' + st.reveal.portSet : '-') + '|' + st.freePlace + '|' + st.ability +
       '|' + st.ticks + '|' + st.made + '|' + st.wasted + '|' + (st.rng >>> 0);
   }
 
   // ---- The Engineer AI: input-only. It returns ONE input (or null) from the state it sees; the caller paces it. ----
-  // colourScore[c] (c = 1..3) is how much the pilot can use a charge of colour c right now. Difficulty changes belief and
-  // pace, never the rules.
+  // colourScore[c] (c = 1..3) is how much the pilot can use a charge of colour c right now (kept for the caller; since
+  // round 3 the battery prism is drawn at random, so nothing reads it). Difficulty changes belief and pace, never the rules.
   function placementCost(st, S, shape, a, locked) {
     const cells = [], need = [];
     for (let c = 0; c < shape.length; c++) {
@@ -422,19 +431,11 @@
     for (const p of st.ports) if (st.cells[p[0]] === 0) out.push({ k: 'refuel', cell: p[0] });
     return out;
   }
-  function aiPick(st, colourScore, noise, rnd) {
-    let best = -1, bestV = -1e9;
-    for (const c of st.pick.cells) {
-      const v = (colourScore[st.cells[c]] || 0) + (noise > 0 ? (rnd() - 0.5) * 2 * noise : 0);
-      if (v > bestV) { bestV = v; best = c; }
-    }
-    return { k: 'pick', cell: best };
-  }
   // prm: { top, blunder, noise }. top = how many placements it weighs (1 = the cheapest only), blunder = chance of a
   // random legal move, noise = how blurred its read of colourScore is. `memo` (optional, the caller's) keeps the
   // placement it is building, so it does not swap plans (and move the same prism back and forth) over a small saving.
   function aiPlan(st, S, prm, colourScore, rnd, memo) {
-    if (st.pick) return aiPick(st, colourScore, prm.noise, rnd);
+    if (st.reveal) return null;
     const free = st.ability === 'freeFire';
     if (st.ap + st.bonusAp < 1 && st.freePlace < 1 && !free) return null;
     if (free || st.ap + st.bonusAp >= 1) for (let s = 0; s < st.slots.length; s++) if (st.slots[s] >= 0 && match(st, S, st.slots[s])) return { k: 'activate', slot: s };
@@ -487,7 +488,7 @@
   // ================= (1) LAB meta + the shipped numbers =================
   // A READER of the shipped numbers. The pilot hull is the Sparrow (the donor airframe, as the Wrasse's is); the Dynamo,
   // Slip, weapon and passive numbers are proposals: nothing in the game has them yet.
-  const LAB = { name: 'Honeyguide Lab', branch: 'claude/honeyguide-ratel', round: 2, doc: 'Docs/Studios/HONEYGUIDE_LAB.md' };
+  const LAB = { name: 'Honeyguide Lab', branch: 'claude/honeyguide-ratel', round: 3, doc: 'Docs/Studios/HONEYGUIDE_LAB.md' };
   const SHIPPED = {
     // The Honeyguide's airframe: the Sparrow (Assets/_Prefabs/Spacevessels/Sparrow.prefab), as in the Crew Vessel Lab
     minSpeed: 10,          // VesselTransformer.DefaultMinimumSpeed
@@ -508,12 +509,13 @@
     destRadius: 25,        // lab: reach a destination ring by passing within this (u)
     destMin: 280,          // lab: a new destination spawns at least this far away (u)
     // The Dynamo (round 2 rules)
-    tickSeconds: 8,        // proposal: seconds per spin (the port pattern turns 60 degrees; AP refill)
+    tickSeconds: 15,       // Garrett 2026-10-21: seconds per spin (the port pattern turns 60 degrees; AP refill)
     apPerTick: 3,          // proposal: action points each spin
     apBank: 3,             // proposal: most AP held
     bonusApCap: 2,         // proposal: banked extra AP (the Refund ability)
     batteryCap: 3,         // proposal: battery charges held
-    pickTimeout: 4,        // proposal: seconds to choose the battery prism before the Dynamo picks one of the family colour
+    revealAbility: 3.5,    // proposal: seconds the spin clock stops to show the Ratel's new ability (Garrett: time to read it)
+    revealPorts: 2,        // proposal: then seconds the new port pattern is shown before the spin clock restarts
     usesPerPattern: 3,     // Garrett 2026-10-21: a pattern made for the third time is replaced
     patternsPerShuffle: 4, // Garrett 2026-10-21: every 4 patterns, a new Ratel ability and a new port pattern
     spinAnim: 0.6,         // lab: seconds the port pattern takes to turn on screen
@@ -541,11 +543,12 @@
     swapOrient: 1,         // lab: a human proxy's seconds to find their bearings after a swap
   };
   const SPEC = [
-    ['Dynamo', 'tickSeconds', 3, 20, 0.5, 'Spin every (s)', 'Every spin the port pattern turns 60 degrees clockwise and the AP refill. Time scales it in the game.'],
+    ['Dynamo', 'tickSeconds', 3, 30, 0.5, 'Spin every (s)', 'Every spin the port pattern turns 60 degrees clockwise and the AP refill. Time scales it in the game.'],
     ['Dynamo', 'apPerTick', 1, 6, 1, 'AP per spin', 'Action points the Ratel gets each spin (move, inject and make cost 1).'],
     ['Dynamo', 'apBank', 1, 9, 1, 'AP bank', 'Most AP held. Above this a spin\'s AP are wasted (the idle column counts them).'],
     ['Dynamo', 'batteryCap', 1, 12, 1, 'Battery', 'Slip charges held. A new charge replaces the oldest when full. Mass scales it in the game.'],
-    ['Dynamo', 'pickTimeout', 1, 10, 0.5, 'Pick time (s)', 'After a pattern is made, time to choose the battery prism before the Dynamo picks the family colour.'],
+    ['Dynamo', 'revealAbility', 0, 8, 0.5, 'New ability shown (s)', 'When the ability and ports change, the spin clock stops and the new ability is shown this long.'],
+    ['Dynamo', 'revealPorts', 0, 6, 0.5, 'New ports shown (s)', 'Then the new port pattern is shown this long before the spin clock starts again.'],
     ['Dynamo', 'usesPerPattern', 0, 6, 1, 'Uses before a pattern is replaced', 'Made this many times, a pattern is swapped for a random one (0 = never).'],
     ['Dynamo', 'patternsPerShuffle', 0, 10, 1, 'Patterns per new ability', 'Every this many patterns the Ratel draws a new ability and a new port pattern (0 = never).'],
     ['Dynamo', 'spinAnim', 0, 2, 0.05, 'Spin animation (s)', 'How long the ports take to turn on screen.'],
@@ -614,7 +617,7 @@
     overdrive: { name: 'Overdrive', kind: 'hull', text: '+15% speed a level.' },
     shield: { name: 'Shield', kind: 'hull', text: 'Hostile prisms slow you 40% less a level.' },
     agile: { name: 'Agile', kind: 'hull', text: 'Turn 30% faster a level.' },
-    afterburner: { name: 'Afterburner', kind: 'hull', text: 'Boost refills 0.4 s a second a level (two fingers, W or A to boost).' },
+    afterburner: { name: 'Afterburner', kind: 'hull', text: 'Boost refills 0.4 s a second a level.' },
     magnet: { name: 'Magnet', kind: 'slip', text: 'Slips catch trails 3 u farther away a level.' },
     longSlip: { name: 'Long Slip', kind: 'slip', text: 'Slip reach +35% a level.' },
     echo: { name: 'Echo', kind: 'slip', text: 'The next slip keeps its charge (one a level).' },
@@ -674,7 +677,9 @@
       cells: c[2].split(' ').map((t) => { const col = { M: 1, C: 2, S: 3 }[t[0]]; const [q, r] = t.slice(1).split(',').map(Number); return [q, r, col]; }) };
   });
 
-  // ================= Port patterns: the four designed engines (Appendix B) turned and recoloured, plus random scatters =================
+  // ================= Port patterns: the four designed engines (Appendix B), turned and recoloured =================
+  // Garrett 2026-10-21: only three-fold colour-symmetric patterns (a 120 degree turn maps the ports onto the ports, each
+  // colour onto one other colour). The random scatters were dropped; symmetricPorts() is the gate (and __lab.portCheck()).
   function parseEngine(rows) {
     const ports = [];
     rows.forEach((row, ri) => {
@@ -686,20 +691,26 @@
   const ENGINES = {
     board2021: { label: '2020-22 player board', ports: parseEngine(['. . . .', '. M C C .', '. S . . C .', '. S . . . S .', '. S . . M .', '. C M M .', '. . . .']) },
     heimdall: { label: 'Heimdall-13', ports: parseEngine(['. . . .', '. S S S .', '. C . . M .', '. M . X . C .', '. M . . C .', '. M S C .', '. . . .']) },
-    claw: { label: 'Claw that rends the sky', ports: parseEngine(['. M . .', '. M . . .', '. M . . S .', '. . S X . S .', '. . . M . S', 'C C C . .', '. . . .']) },
+    // the print missed one port (1, -1); without it the engine is not three-fold colour symmetric (Garrett 2026-10-21)
+    claw: { label: 'Claw that rends the sky', ports: parseEngine(['. M . .', '. M . . .', '. M . C S .', '. . S X . S .', '. . . M . S', 'C C C . .', '. . . .']) },
     coop: { label: 'Apr 2021 co-op engine', ports: parseEngine(['C . . .', '. . C . .', '. C . M S .', '. . S . . . S', '. M . C S .', '. . M . .', 'M . . .']) },
   };
   const PERMS = [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]];
-  const PORT_SETS = (() => {
-    const out = [], r = mulberry32(2021);
-    for (const e of Object.values(ENGINES)) for (let k = 0; k < 6; k++) for (const pm of PERMS) {
-      out.push(e.ports.map((p) => { let c = p[0]; for (let j = 0; j < k; j++) c = D.rot60(c); return [c, pm[p[1] - 1]]; }));
+  function symmetricPorts(ports) {
+    const at = new Map(ports.map((p) => [p[0], p[1]])), map = {};
+    for (const [c, col] of ports) {
+      const t = at.get(D.rot60(D.rot60(c)));
+      if (!t || t === col || (map[col] && map[col] !== t)) return false;
+      map[col] = t;
     }
-    for (let n = 0; n < 72; n++) {   // scatters: 12 ports, 4 of each colour, anywhere off the centre
-      const cells = []; for (let i = 0; i < D.N; i++) if (i !== D.CENTRE) cells.push(i);
-      const ports = [];
-      for (let k = 0; k < 12; k++) { const j = Math.floor(r() * cells.length); ports.push([cells.splice(j, 1)[0], 1 + (k % 3)]); }
-      out.push(ports);
+    return true;
+  }
+  const PORT_SETS = (() => {
+    const out = [], seen = new Set();
+    for (const e of Object.values(ENGINES)) for (let k = 0; k < 6; k++) for (const pm of PERMS) {
+      const ports = e.ports.map((p) => { let c = p[0]; for (let j = 0; j < k; j++) c = D.rot60(c); return [c, pm[p[1] - 1]]; });
+      const key = ports.map((p) => p[0] + ':' + p[1]).sort().join(',');
+      if (!seen.has(key) && symmetricPorts(ports)) { seen.add(key); out.push(ports); }
     }
     return out;
   })();
@@ -710,7 +721,7 @@
     exit: { align: 'Exit aligned to the trail (the brief)', keep: 'Exit keeps your facing' },
   };
 
-  const LS = 'lab:' + LAB.name + ':r2:';
+  const LS = 'lab:' + LAB.name + ':r3:';
   const lsGet = (k, d) => { try { const v = localStorage.getItem(LS + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) { /* private window */ } };
   const P = Object.assign({}, SHIPPED, lsGet('P', {}));
@@ -742,7 +753,7 @@
     const o = cfg.opts, Pw = cfg.P;
     return {
       tickSeconds: Pw.tickSeconds, apPerTick: Pw.apPerTick, apBank: Pw.apBank, bonusApCap: Pw.bonusApCap, batteryCap: Pw.batteryCap,
-      pickTimeout: Pw.pickTimeout, allowRotatedMatches: !!o.rotatable, portsCount: !!o.portsCount, slotCount: 3, startFilled: true,
+      revealAbility: Pw.revealAbility, revealPorts: Pw.revealPorts, allowRotatedMatches: !!o.rotatable, portsCount: !!o.portsCount, slotCount: 3, startFilled: true,
       usesPerPattern: o.replace ? Pw.usesPerPattern : 0, patternsPerShuffle: o.shuffle ? Pw.patternsPerShuffle : 0,
       fixedAbility: o.ability === 'random' ? '' : o.ability, portSets: PORT_SETS, patterns: PATTERNS,
     };
@@ -1029,7 +1040,8 @@
       }
     } else if (e.k === 'charge') w.m.charges++;
     else if (e.k === 'tick') { w.m.apGiven += e.ap; w.spinAt = w.t; }
-    else if (e.k === 'shuffle') { w.m.shuffles++; w.shuffleAt = w.t; w.effects.push({ k: 'dynBanner', text: 'New ability: ' + ABILITY_TEXT[e.ability][0] + ' · new ports', t: 2.2 }); }
+    else if (e.k === 'shuffle') { w.m.shuffles++; w.abilityAt = w.t; }
+    else if (e.k === 'ports') w.shuffleAt = w.t;
     else if (e.k === 'retire') { w.m.retired++; w.effects.push({ k: 'retire', slot: e.slot, t: 1.0 }); }
   }
   const roman = (n) => ['', 'I', 'II', 'III', 'IV', 'V'][n] || String(n);
@@ -1181,8 +1193,9 @@
     { name: 'Hold to arm (round 1)', opts: { arming: 'hold' } },
     { name: 'Always armed (the brief)', opts: { arming: 'always' } },
     { name: 'Arming cone 30°', opts: {}, P: { aimCone: 30 } },
-    { name: 'Spin every 6 s', opts: {}, P: { tickSeconds: 6 } },
-    { name: 'Spin every 12 s', opts: {}, P: { tickSeconds: 12 } },
+    { name: 'Spin every 8 s (round 2)', opts: {}, P: { tickSeconds: 8 } },
+    { name: 'Spin 15 s, 6 AP (round 2\'s AP rate)', opts: {}, P: { apPerTick: 6, apBank: 6 } },
+    { name: 'No reveal pause', opts: {}, P: { revealAbility: 0, revealPorts: 0 } },
   ];
   const COLS = [
     ['destsPerMin', 'Legs/min', 'Race legs a minute: destinations reached, plus the share of the last leg flown. Higher is better.'],
@@ -1197,7 +1210,7 @@
     ['hitsPerMin', 'Hostile hits/min', 'Hostile prisms flown into (each slows the hull for a second).'],
     ['engIdle', 'Eng idle %', 'AP the Ratel let go to waste (the bank was full at a spin).'],
     ['waiting', 'Waiting %', 'Time the battery held no charge: the pilot waiting for a charge.'],
-    ['hitRate', 'Hit rate %', 'Charges that were slipped on, of all charges made: the Ratel\'s domain choice.'],
+    ['hitRate', 'Hit rate %', 'Charges that were slipped on, of all charges made (the battery prism is drawn at random).'],
     ['clipped', 'Clipped %', 'Slips the reach cap cut short.'],
     ['shufflesPerMin', 'New abilities/min', 'How often the Ratel drew a new ability and port pattern.'],
   ];
@@ -1346,22 +1359,25 @@
       ctx.beginPath(); ctx.arc(x, L.y + 15, 6.5, 0, 7);
       if (c) { ctx.fillStyle = colourOf(c); ctx.fill(); } else { ctx.strokeStyle = '#3c4654'; ctx.lineWidth = 1.5; ctx.stroke(); }
     }
-    // header row 2: the Ratel's ability, and the time to the next spin
-    const left = w.S.tickSeconds - st.clock, soon = left < 1.5;
+    // header row 2: the Ratel's ability (it flashes while a new one is shown)
+    const rv = st.reveal, left = w.S.tickSeconds - st.clock, soon = !rv && left < 1.5;
+    const abAge = w.t - (w.abilityAt != null ? w.abilityAt : -99), abFlash = abAge < w.P.revealAbility + 1 ? 0.5 + 0.5 * Math.sin(abAge * 8) : 0;
     if (!small) {
       const ab = ABILITY_TEXT[st.ability] || ['', ''], sfs = Math.max(10, fs - 1);
-      ctx.font = '600 ' + sfs + 'px system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.fillStyle = soon ? '#ffb21f' : '#aab6c4';
-      const sp = 'spin ' + left.toFixed(1) + ' s'; ctx.fillText(sp, L.x + L.w - 10, L.y + 36); const spw = ctx.measureText(sp).width;
+      ctx.font = '600 ' + sfs + 'px system-ui, sans-serif';
+      const nw = ctx.measureText(ab[0]).width;
+      if (abFlash) { ctx.fillStyle = hexA('#9fe6ff', 0.15 + 0.25 * abFlash); ctx.fillRect(L.x + 4, L.y + 27, nw + 12, 18); }
       ctx.textAlign = 'left'; ctx.fillStyle = '#9fe6ff'; ctx.fillText(ab[0], L.x + 10, L.y + 36);
-      const nw = ctx.measureText(ab[0]).width; ctx.font = sfs - 1 + 'px system-ui, sans-serif'; ctx.fillStyle = '#8a96a6';
-      ctx.fillText(fitText(ab[1], L.w - 34 - nw - spw), L.x + 18 + nw, L.y + 36);
-    } else { ctx.textAlign = 'right'; ctx.fillStyle = soon ? '#ffb21f' : '#aab6c4'; ctx.font = '600 11px system-ui, sans-serif'; ctx.fillText(left.toFixed(1) + ' s', L.x + L.w - 8, L.y + L.h - 8); ctx.textAlign = 'left'; }
-    // countdown arc around the board
-    const R = G.size * 4.25, frac = st.clock / w.S.tickSeconds;
-    ctx.beginPath(); ctx.arc(G.cx, G.cy, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - frac)); ctx.strokeStyle = soon ? '#ffb21f' : '#4a5566'; ctx.lineWidth = 3; ctx.stroke();
+      ctx.font = sfs - 1 + 'px system-ui, sans-serif'; ctx.fillStyle = '#8a96a6';
+      ctx.fillText(fitText(ab[1], L.w - 30 - nw), L.x + 18 + nw, L.y + 36);
+    }
+    // the time to the next spin: a bar across the top that shrinks (no number). It stands still during a reveal.
+    const barH = small ? 3 : 5, frac = clamp(1 - st.clock / w.S.tickSeconds, 0, 1);
+    ctx.fillStyle = '#1c232d'; ctx.fillRect(L.x, L.y, L.w, barH);
+    ctx.fillStyle = rv ? '#4a5566' : soon ? '#ffb21f' : '#6fa8c8'; ctx.fillRect(L.x, L.y, L.w * frac, barH);
     const builtCells = new Set(); const built = D.built(st, w.S);
     built.forEach((b) => { if (b) for (const c of b) builtCells.add(c); });
-    const pickSet = new Set(st.pick ? st.pick.cells : []), pulse = 0.5 + 0.5 * Math.sin(w.t * 6);
+    const pulse = 0.5 + 0.5 * Math.sin(w.t * 6);
     for (let i = 0; i < D.N; i++) {
       const [x, y] = cellPx(G, i);
       hexPath(x, y, G.size * 0.95);
@@ -1382,14 +1398,13 @@
       const c = st.cells[i]; if (!c) continue;
       if (ui.drag && ui.drag.from === i) continue;
       const [x, y] = cellPx(G, i);
-      drawPrism(x, y, G.size * 0.62, c, builtCells.has(i) ? pulse : 0, pickSet.has(i), small);
+      drawPrism(x, y, G.size * 0.62, c, builtCells.has(i) ? pulse : 0, small);
     }
-    if (ui.drag && st.cells[ui.drag.from]) drawPrism(ui.drag.x, ui.drag.y, G.size * 0.7, st.cells[ui.drag.from], 0, false, small);
+    if (ui.drag && st.cells[ui.drag.from]) drawPrism(ui.drag.x, ui.drag.y, G.size * 0.7, st.cells[ui.drag.from], 0, small);
     if (!small) {
       ctx.fillStyle = '#fff3cf'; ctx.font = '600 ' + fs + 'px system-ui, sans-serif'; ctx.textAlign = 'center';
       const y = G.cy + G.size * 5.05;
-      if (st.pick) ctx.fillText('Pick the prism for the battery (' + Math.max(0, st.pick.timer).toFixed(1) + ' s)', G.cx, y);
-      else if (st.freePlace > 0) ctx.fillText(fitText('Printer: ' + st.freePlace + ' free prism' + (st.freePlace > 1 ? 's' : '') + ', tap an empty cell (' + DOM[COLOUR_DOM[ui.freeColour || 1]].name + '; tap the AP row to change)', L.w - 16), G.cx, y);
+      if (st.freePlace > 0 && !rv) ctx.fillText(fitText('Printer: ' + st.freePlace + ' free prism' + (st.freePlace > 1 ? 's' : '') + ', tap an empty cell (' + DOM[COLOUR_DOM[ui.freeColour || 1]].name + '; tap the AP row to change)', L.w - 16), G.cx, y);
       ctx.textAlign = 'left';
     }
     // the slot cards: the pilot's passive, the pattern, its uses
@@ -1409,20 +1424,51 @@
       const head = small ? 2 : tfs + 4, s = Math.min(r.w / 12, (r.h - head - 6) / 6.5), ox = r.x + r.w / 2, oy = r.y + head + (r.h - head) / 2;
       let mq = 0, mr = 0; for (const c of pat.cells) { mq += c[0] + c[1] / 2; mr += c[1]; } mq /= pat.cells.length; mr /= pat.cells.length;
       for (const c of pat.cells) { const x = ox + s * Math.sqrt(3) * (c[0] + c[1] / 2 - mq), y = oy + s * 1.5 * (c[1] - mr); hexPath(x, y, s * 0.92); ctx.fillStyle = colourOf(c[2]); ctx.fill(); }
-      if (lit && !st.pick && !small) { ctx.fillStyle = '#fff'; ctx.font = '700 ' + tfs + 'px system-ui, sans-serif'; ctx.fillText('TAP', r.x + 5, r.y + r.h - 7); }
+      if (lit && !rv && !small) { ctx.fillStyle = '#fff'; ctx.font = '700 ' + tfs + 'px system-ui, sans-serif'; ctx.fillText('TAP', r.x + 5, r.y + r.h - 7); }
     });
-    for (const fx of w.effects) if (fx.k === 'dynBanner' && !small) {
-      ctx.globalAlpha = clamp(fx.t, 0, 1); ctx.fillStyle = 'rgba(8,12,18,.9)'; const bw = Math.min(L.w - 20, 320); ctx.fillRect(G.cx - bw / 2, G.cy - 16, bw, 32);
-      ctx.strokeStyle = '#9fe6ff'; ctx.strokeRect(G.cx - bw / 2 + 0.5, G.cy - 15.5, bw - 1, 31); ctx.fillStyle = '#e6fbff'; ctx.font = '700 13px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(fitText(fx.text, bw - 12), G.cx, G.cy); ctx.textAlign = 'left'; ctx.globalAlpha = 1; break;
-    }
+    if (rv) drawReveal(w, st, rv, G, L, small);
     ui.dynG = G; ui.slotRects = rects;
     ctx.restore();
   }
+  // The reveal, step 1: the board dims and a card names the new ability and what it does, with a line that runs down while
+  // there is time to read it. Step 2: the card goes, the new ports grow in, and a label names them.
+  function drawReveal(w, st, rv, G, L, small) {
+    const tot = rv.stage === 1 ? w.P.revealAbility : w.P.revealPorts, prog = tot > 0 ? clamp(rv.t / tot, 0, 1) : 0;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (rv.stage === 1) {
+      ctx.fillStyle = 'rgba(6,9,14,.72)'; ctx.fillRect(L.x, L.y + 48, L.w, G.slots.y - L.y - 52);
+      const ab = ABILITY_TEXT[st.ability] || ['', ''], cw = Math.min(L.w - 24, 340), big = small ? 13 : Math.max(18, Math.min(26, L.w / 16)), body = small ? 0 : Math.max(12, big * 0.6);
+      ctx.font = body + 'px system-ui, sans-serif';
+      const lines = small ? [] : wrapText(ab[1], cw - 28).slice(0, 4);
+      const ch = (small ? 40 : big + 44) + lines.length * (body + 5), cy = G.cy - ch / 2;
+      ctx.fillStyle = '#0e1620'; ctx.fillRect(G.cx - cw / 2, cy, cw, ch);
+      ctx.strokeStyle = '#9fe6ff'; ctx.lineWidth = 2; ctx.strokeRect(G.cx - cw / 2 + 1, cy + 1, cw - 2, ch - 2);
+      ctx.fillStyle = '#9fe6ff'; ctx.font = '700 ' + (small ? 9 : 11) + 'px system-ui, sans-serif'; ctx.fillText('NEW RATEL ABILITY', G.cx, cy + (small ? 10 : 14));
+      ctx.fillStyle = '#ffffff'; ctx.font = '700 ' + big + 'px system-ui, sans-serif'; ctx.fillText(fitText(ab[0], cw - 12), G.cx, cy + (small ? 25 : 22 + big * 0.7));
+      ctx.fillStyle = '#c8d4e2'; ctx.font = body + 'px system-ui, sans-serif';
+      lines.forEach((ln, k) => ctx.fillText(ln, G.cx, cy + big + 34 + k * (body + 5)));
+      ctx.fillStyle = '#9fe6ff'; ctx.fillRect(G.cx - (cw - 16) / 2, cy + ch - 6, (cw - 16) * prog, 2);
+    } else {
+      const lab = 'NEW INJECTION PORTS', y = L.y + 58;
+      ctx.font = '700 ' + (small ? 10 : 13) + 'px system-ui, sans-serif';
+      const tw = ctx.measureText(lab).width + 20;
+      ctx.fillStyle = 'rgba(8,12,18,.88)'; ctx.fillRect(G.cx - tw / 2, y - 11, tw, 22);
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(G.cx - tw / 2 + 0.5, y - 10.5, tw - 1, 21);
+      ctx.fillStyle = '#ffffff'; ctx.fillText(lab, G.cx, y);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(G.cx - tw / 2, y + 9, tw * prog, 2);
+    }
+    ctx.textAlign = 'left';
+  }
+  function wrapText(t, w) {
+    const out = []; let line = '';
+    for (const word of t.split(' ')) { const tryL = line ? line + ' ' + word : word; if (line && ctx.measureText(tryL).width > w) { out.push(line); line = word; } else line = tryL; }
+    if (line) out.push(line);
+    return out;
+  }
   function fitText(t, w) { if (w <= 10) return ''; if (ctx.measureText(t).width <= w) return t; while (t.length > 3 && ctx.measureText(t + '…').width > w) t = t.slice(0, -1); return t + '…'; }
-  function drawPrism(x, y, r, c, glow, pick, small) {
+  function drawPrism(x, y, r, c, glow, small) {
     if (glow) { ctx.beginPath(); ctx.arc(x, y, r * (1.15 + 0.2 * glow), 0, 7); ctx.fillStyle = hexA(colourOf(c), 0.25 + 0.25 * glow); ctx.fill(); }
     ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fillStyle = colourOf(c); ctx.fill();
-    if (pick) { ctx.lineWidth = 3; ctx.strokeStyle = '#ffffff'; ctx.stroke(); }
     if (OPT.letters && !small) { ctx.fillStyle = PRISM_INK[c]; ctx.font = '700 ' + Math.round(r * 0.95) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(COLOUR_LETTER[c], x, y + 1); ctx.textAlign = 'left'; }
   }
   // The slip the hull would take right now, if it touched the held trail ahead (what "armed" means, shown to the pilot)
@@ -1578,7 +1624,7 @@
     for (let k = 0; k < (ui.slotRects || []).length; k++) if (inRect(ui.slotRects[k], x, y)) { engInput({ k: 'activate', slot: k }); return; }
     const c = pxCell(G, x, y);
     if (c < 0) return;
-    if (st.pick) { if (st.pick.cells.indexOf(c) >= 0) engInput({ k: 'pick', cell: c }); return; }
+    if (st.reveal) return;
     if (st.cells[c]) { ui.drag = { from: c, x, y }; return; }
     if (st.freePlace > 0) { engInput({ k: 'refuel', cell: c, colour: ui.freeColour || 1 }); return; }
     if (D.portAt(st, c)) engInput({ k: 'refuel', cell: c });
@@ -1595,7 +1641,6 @@
     if (p && p.card) ui.cardDown[p.card] = false;
     if (ui.drag) {
       const d = ui.drag; ui.drag = null;
-      if (world.dyn.pick && world.dyn.pick.cells.indexOf(d.from) >= 0) { engInput({ k: 'pick', cell: d.from }); return; }
       const to = pxCell(ui.dynG, x, y);
       if (to >= 0 && to !== d.from) {
         if (world.dyn.cells[to] === 0) for (const inp of pathTinkers(d.from, to)) engInput(inp);
@@ -1617,7 +1662,7 @@
     $('diff').textContent = n ? n + ' setting' + (n > 1 ? 's differ' : ' differs') + ' from the candidate' : 'candidate settings';
     for (const [, key, , , step] of SPEC) { const o = outputs[key]; if (!o || !o.out.isConnected) continue; o.out.textContent = fmt(P[key], step); o.out.classList.toggle('changed', Math.abs(P[key] - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + SHIPPED[key] + ' · yours ' + P[key]; }
   }
-  const RESTART_KEYS = ['others', 'arenaRadius', 'tickSeconds', 'apPerTick', 'apBank', 'batteryCap', 'pickTimeout', 'bonusApCap', 'usesPerPattern', 'patternsPerShuffle', 'patchCount', 'patchSize'];
+  const RESTART_KEYS = ['others', 'arenaRadius', 'tickSeconds', 'apPerTick', 'apBank', 'batteryCap', 'revealAbility', 'revealPorts', 'bonusApCap', 'usesPerPattern', 'patternsPerShuffle', 'patchCount', 'patchSize'];
   function setParam(key, v) { P[key] = v; lsSet('P', diffOnly()); if (RESTART_KEYS.includes(key)) reset(); else if (world) world.P[key] = v; refreshDiff(); }
   function setOpt(key, v) { OPT[key] = v; lsSet('opt', OPT); reset(); refreshDiff(); }
   function makeTabs(barId, bodyId, tabs, storeKey) {
@@ -1673,7 +1718,7 @@
     const s = f.querySelector('select'); s.value = crew.mate; s.onchange = () => { crew.mate = s.value; lsSet('mate', crew.mate); applyCrew(); };
     box.appendChild(f);
     const h = document.createElement('div'); h.className = 'hint';
-    h.innerHTML = '<b>Ratel (Engineer):</b> drag a prism to move it (1 AP a cell). Tap an empty injection port to inject a prism of its colour (1 AP). An empty port already counts as a prism of its colour in a pattern, but a pattern needs at least one real prism. When a card lights, tap it (1 AP), then tap one of the outlined prisms: it goes to the battery, and its domain is a slip charge. The ports turn 60 degrees every spin (the countdown is top right). Each card shows the passive the pilot gets; its pips count the makes before it is replaced. Your ability is under the AP row; it changes, with the ports, every 4 patterns.<br><b>Pilot (Honeyguide):</b> A/D or ←/→ steer; E or K fires the Bolt (RT), Q or J the Burst (LT); W or Space boosts when you have boost. On touch, hold a finger on the flight view and the hull turns toward it (two fingers boost); the four cards bottom right are buttons. The Slip is your Time ability: fly onto a trail of a domain you hold, nose within 45 degrees of its line, and you jump to the end you point at. The dashed line shows where it would take you.';
+    h.innerHTML = '<b>Ratel (Engineer):</b> drag a prism to move it (1 AP a cell). Tap an empty injection port to inject a prism of its colour (1 AP). An empty port already counts as a prism of its colour in a pattern, but a pattern needs at least one real prism. When a card lights, tap it (1 AP): one of its real prisms, drawn at random, goes to the battery, and its domain is a slip charge. The ports turn 60 degrees every spin; the bar across the top shrinks until the next one. Every 4 patterns the clock stops: first your new ability is shown, then the new ports, then the bar starts again. Each card shows the passive the pilot gets; its pips count the makes before it is replaced. Your ability is under the AP row; it changes, with the ports, every 4 patterns.<br><b>Pilot (Honeyguide):</b> A/D or ←/→ steer; E or K fires the Bolt (RT), Q or J the Burst (LT); W or Space boosts when you have boost. On touch, hold a finger on the flight view and the hull turns toward it (two fingers boost); the four cards bottom right are buttons. The Slip is your Time ability: fly onto a trail of a domain you hold, nose within 45 degrees of its line, and you jump to the end you point at. The dashed line shows where it would take you.';
     box.appendChild(h);
     return box;
   }
@@ -1695,7 +1740,7 @@
       case 'Slip arming': return OPT_LABELS.arming[o.arming] + ', cone ' + P.aimCone + ' deg';
       case 'The spin': return 'The port pattern turns 60 degrees every ' + P.tickSeconds + ' s, animated over ' + P.spinAnim + ' s';
       case 'Ports count as prisms': return o.portsCount ? 'An empty port counts as a prism; a real prism must still be in the pattern' : 'Ports do not count';
-      case 'Ratel abilities': return o.ability === 'random' ? 'Random, redrawn with the ports every ' + P.patternsPerShuffle + ' patterns' : 'Always ' + ABILITY_TEXT[o.ability][0];
+      case 'Ratel abilities': return o.ability === 'random' ? 'Random, redrawn with the ports every ' + P.patternsPerShuffle + ' patterns; the clock stops ' + P.revealAbility + ' s to show the ability, then ' + P.revealPorts + ' s for the ports' : 'Always ' + ABILITY_TEXT[o.ability][0];
       case 'Pattern replacement': return o.replace ? 'Replaced after ' + P.usesPerPattern + ' makes' : 'Never replaced';
       case 'Passives': return 'Each pattern gives a passive for ' + P.passiveSeconds + ' s, stacking to level ' + P.passiveMaxLevel;
       case 'The two triggers': return 'RT Bolt ' + P.boltRate + '/s, ' + P.boltRange + ' u; LT Burst ' + P.burstRate + '/s, ' + P.burstPellets + ' pellets, ' + P.burstRange + ' u';
@@ -1770,7 +1815,7 @@
   function aboutPanel() {
     const box = document.createElement('div');
     box.innerHTML = '<p id="aboutHead"></p>' +
-      '<p><b>The question.</b> Is the handoff fun? The Ratel builds patterns on a hex Dynamo whose injection ports turn 60 degrees every spin. Making a pattern sends one prism of the Ratel\'s choice to the battery (a slip charge in its domain) and gives the Honeyguide a passive upgrade. The Honeyguide flies the Sparrow hull with two triggers, and its Time ability is the Slip: touch a trail of a domain you hold, nose within 45 degrees of the trail\'s line, and jump to the end you point at. Round 2 plays Garrett\'s rules from his first session. Sign off on a phone, as the Engineer, on the Decisions tab ("this is fun").</p>' +
+      '<p><b>The question.</b> Is the handoff fun? The Ratel builds patterns on a hex Dynamo whose injection ports turn 60 degrees every spin. Making a pattern sends one of its prisms, drawn at random, to the battery (a slip charge in its domain) and gives the Honeyguide a passive upgrade. The Honeyguide flies the Sparrow hull with two triggers, and its Time ability is the Slip: touch a trail of a domain you hold, nose within 45 degrees of the trail\'s line, and jump to the end you point at. Round 3 plays Garrett\'s rules from his first two sessions: three-fold colour-symmetric port patterns only, a 15 s spin shown as a shrinking bar, the new ability and then the new ports revealed while the clock stands still, and a random battery prism. Sign off on a phone, as the Engineer, on the Decisions tab ("this is fun").</p>' +
       '<p><b>What this lab does NOT model.</b></p><ul class="plain">' +
       '<li>The world is a flat 2D disc, not the 3D cell. A prism\'s z axis is its trail\'s direction in the plane; "1-D" is measured locally (at most two neighbours within 1.5 prism spacings), so a crossing of two trails is 2-D where they cross. The 2-D beds stand in for walls, flora and the cell\'s structures.</li>' +
       '<li>The race (reach the next destination ring) is the lab\'s yardstick; no game mode is modelled. Kills count hostile prisms destroyed; nothing scores them.</li>' +
@@ -1814,6 +1859,7 @@
   // ================= the test surface =================
   window.__lab = {
     LAB, SHIPPED, SPEC, P, OPT, PLATFORM, VARIANTS, PATTERNS, PASSIVES, PORT_SETS, core: D,
+    portCheck: () => Object.fromEntries(Object.entries(ENGINES).map(([k, e]) => [k, symmetricPorts(e.ports)])),
     set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
     tick(dt, n) { dt = dt || DT; n = n || 1; for (let i = 0; i < n; i++) { livePilot(); simStepWorld(world, dt, live); } resize(); render(); },
     reset, score: () => score(world), runBatch, setParam, setOpt, record, swap: () => requestSwap('hook'),

@@ -4,7 +4,7 @@ A `/labmaker` browser studio for the **Honeyguide and Ratel**, the two-seat crew
 tabletop game Garrett and friends designed and played from 2019 to 2022). The question it puts to the designer:
 
 > Is the handoff fun? The **Ratel** (the Engineer seat) plays a hex pattern-building puzzle, the **Dynamo**, whose
-> injection ports turn 60 degrees every spin. Making a pattern sends one prism of the Ratel's choice to the battery,
+> injection ports turn 60 degrees every spin. Making a pattern sends one of its prisms, drawn at random, to the battery,
 > where its domain is a slip charge, and gives the **Honeyguide** (the Pilot seat) a temporary passive upgrade. The
 > Honeyguide flies with two triggers, and its Time ability is the **Slip**: touch a trail of a domain you hold with the
 > nose near the trail's line, and the hull jumps to the end of the trail it is pointing at.
@@ -46,7 +46,44 @@ mate, decision log, platform detection) is the Crew Vessel Lab's, rebuilt around
 - **Rules tab:** Garrett's round 2 rules, each a box you can turn off (a control). **Patterns tab:** all 39 patterns and
   the passive each gives.
 
-## Round 2 (2026-10-21): Garrett's rules from his first play
+## Round 3 (2026-10-21): Garrett's second set of notes
+
+| Garrett's note | What the lab does |
+|---|---|
+| Only port patterns that are three-fold colour symmetric; one was close but missing an injection point | `symmetricPorts()` keeps a port set only if a 120° turn maps ports onto ports and each colour onto the next. All four designed engines pass. *Claw that rends the sky* had 11 ports: the Jade port at (1, −1) was missing (now added, so 4 / 4 / 4). The 72 random scatters failed the test and are gone. 48 distinct port patterns remain (each engine's 6 turns × 6 colourings, de-duplicated). `__lab.portCheck()` reports each engine. |
+| When the pattern and engineer change, stop the time; first the ability with time to read it, then the pattern with a couple more seconds, then start anew | The core enters `st.reveal`. Stage 1 lasts `revealAbility` (3.5 s): the board dims, a card names the new ability and what it does, and the header's ability flashes. Stage 2 lasts `revealPorts` (2 s): the new ports grow in under a NEW INJECTION PORTS label. Then the spin clock restarts at a full 15 s. The spin clock stands still and Ratel inputs are refused throughout. The pilot keeps flying. |
+| 15 seconds per spin | `tickSeconds` 15 (was 8). AP per spin is unchanged at 3. |
+| No numerical time; a bar that shrinks, across the top | A 5 px bar runs across the top of the Dynamo panel and shrinks to the spin. It turns amber in the last 1.5 s and grey while a reveal holds it. The number and the ring round the board are gone. |
+| Don't have them pick the slip prism; take one at random | `activate` draws one of the made pattern's real prisms with the core's own seeded stream. The pick step, `pickTimeout` and the AI's pick are gone. |
+
+The full list of patterns, passives, abilities and engines is `HONEYGUIDE_PATTERNS.md`. Garrett asked for it on
+2026-10-21 ahead of the port.
+
+### Scorecard (round 3, 24 seeds × 180 s, hard pilot AI)
+
+| Variant | Legs/min | Lift | Patterns/min | Hit rate |
+|---|---|---|---|---|
+| Solo (no Engineer) | 4.49 ± 0.06 | 0 | 0 | 0 |
+| **Candidate** (hard Ratel) | 5.62 ± 0.24 | +25% | 4.1 | 74% |
+| Spin every 8 s (round 2's clock) | 5.54 ± 0.25 | +23% | 6.6 | 65% |
+| Spin 15 s, 6 AP (round 2's AP rate) | 5.33 ± 0.17 | +19% | 6.8 | 57% |
+| No reveal pause | 5.54 ± 0.28 | +23% | 4.3 | 78% |
+| Hold to arm | 5.98 ± 0.26 | +33% | 4.1 | 82% |
+| Passives off (slip only) | 4.53 ± 0.11 | +1% | 4.1 | 75% |
+| Slip off (passives only) | 5.57 ± 0.33 | +24% | 4.1 | 0 |
+
+### Found (round 3)
+
+1. The 15 s spin drops the AI Ratel from 6.6 to 4.1 patterns a minute (same 3 AP a spin), but the race lift is the
+   same within noise (+25% against +23%). Fewer charges are made, and more of them get used: the hit rate rises from
+   65% to 74%. Giving 6 AP a spin restores the pattern rate and does not raise the lift. AP per spin is open.
+2. The reveal pause costs nothing measurable (+25% with it, +23% without).
+3. A random battery prism leaves the lift where the AI's chosen prism had it. In round 2 the AI chose the colour with
+   the best slip toward the destination, and that choice was worth less than the noise.
+4. The slip alone is still worth about nothing under axis arming (+1%); the passives carry the race (+24%). Hold to arm
+   is again the best arming (+33%).
+
+## Round 2 (2026-10-21): Garrett's rules from his first play (superseded by round 3 where they differ)
 
 Garrett's notes after playing round 1 (thread, 2026-10-21), all built:
 
