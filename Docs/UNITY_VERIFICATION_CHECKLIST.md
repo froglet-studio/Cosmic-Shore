@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 New hulls rest at REST, not in their first take: the Shrike's left bank, the Grouper's left wag (`cece/quirky-brown-lkhhx9`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett: "the shrike is turning left by default. the grouper's tail fin is wagging to the left". Every hull the
+`/vessel-model` pipeline built from scratch led its FBX with a deflection take (Blender writes takes in name order:
+`bankleft`, `beatleft`, `dive`, `aimright` ...), and Unity imports the default pose from the first take, so the code
+puppetry captured a left lean or left fin as "rest" (vessel-model LESSONS 51). The pipeline now writes a `rest` take
+first (and as `Takes.Current`), and verify refuses a moving first take. Rebuilt with nothing else changed (`build.py
+--check` drift is the added take only; every bone, node, shape, slot and take deflection is identical): Angler, Brittle
+Star, Butterfly, Grouper, Honeyguide, Jack, Marlin, Orca, Scarab, Shrike, Starling, Stoat, Thresher, Wrasse Kite. No C#
+changed. The artist reproductions (Squirrel, Goby, Dolphin, Sparrow, Serpent, Manta, Urchin, Rhino) are untouched.
+
+1. Let Unity reimport the 14 FBXs. In each model's Animation tab the clip list starts with `rest`.
+2. Fly the Shrike with the stick centred: the hull sits level (no left bank) and banks the same amount each way.
+3. Fly the Wrasse: the Grouper's tail beats evenly about the centre line, and the Wrasse Kite swims straight. Then the
+   Marlin and its Jacks: the tails and spines are centred.
+4. Spot-check the rest at the centre stick: Angler fins not dived, Brittle Star level, Butterfly wings not beaten down,
+   Honeyguide level, Orca guns facing forward (not aimed right), Scarab antennae at rest, Starling not mid-flap,
+   Stoat not arched, Thresher tail centred.
+5. If any hull still leans, Unity is not taking the default pose from the first take: report it, the fallback is to
+   capture rest from the SkinnedMeshRenderer's bind poses in code.
+
 ### 🔴 Honeyguide and Ratel: round 6 triggers and its own hull model (`claude/honeyguide-ratel`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett: "Get everything including models etc. Together so we are ready to /ship". Lab round 6 in the game: RT **Peck**

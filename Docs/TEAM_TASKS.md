@@ -1884,3 +1884,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (the Goby's owner) with the session driving the Goby lab
 - **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 8 'Third round'; Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs GobyAbilities / HumanPistol
+
+### T-20261021-110d · open · test · Vessel models
+- **Task:** Reimport the 14 rebuilt hull FBXs (cece/quirky-brown-lkhhx9) and fly the Shrike, the Wrasse (Grouper + Kite) and the Marlin with the stick centred: no left bank, the tails beat about the centre. Spot-check the other 11 at rest (Docs/UNITY_VERIFICATION_CHECKLIST.md, 'New hulls rest at REST')
+- **Done when:** Every rebuilt hull rests level and centred at a centred stick, and each model's clip list starts with 'rest'
+- **Who can take it:** Garrett (reported it); Yash (offered) can run the reimport and spot-checks
+- **Added:** 2026-10-21 by a Claude session (`cece/quirky-brown-lkhhx9`)
+- **See:** .claude/skills/vessel-model/references/LESSONS.md #51

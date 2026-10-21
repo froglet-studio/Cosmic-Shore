@@ -23,6 +23,8 @@ no Blender GUI, no OpenGL. If `import bpy` fails: `pip download bpy` then
 
 ## The verify gate (what `export.verify` refuses)
 
+- a hull of our own whose FIRST take moves a bone: Unity imports the default pose from the first take, so the
+  build leads with a `rest` take (`takes.rest_take`, `export.lead_with_take`; LESSONS 51)
 - a bone / armature / mesh node named by the spec that the file lacks
 - more than one mesh, an unskinned mesh, a slot with no polygons or under 0.5% of the SURFACE
   (area on the re-import; `min_slot_share`, default 0.3%), a missing material name, a slot colour that differs

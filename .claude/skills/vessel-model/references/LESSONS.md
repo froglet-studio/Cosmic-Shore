@@ -562,3 +562,18 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     - **The rule that landed while you built.** The model was built welded the morning `/vessel-model` §0.5 (hovering
       assembly) landed on bleeding-edge; only the `/ship` merge showed it. After merging the base, run
       `assembly_report.py` on every model the branch made, not only on the ones made after the rule.
+
+51. **The first take is the hull's rest pose in Unity (2026-10-21, Garrett: "the shrike is turning left by default. the
+    grouper's tail fin is wagging to the left").** Every hull built from scratch shipped takes that were ALL deflections
+    (`bankleft`, `beatleft`, `dive`, `aimright` ...), Blender writes actions in NAME order, and it writes the FBX's
+    `Takes.Current` empty. Unity then imports the model's default pose (the bone Transforms every prefab instance starts
+    from) from the FIRST take, so the Shrike's hull rested in `bankleft` (24 degrees) and the Grouper's tail in `beatleft`.
+    Code puppetry captures that pose as "rest" at Awake (`ShrikeAnimation._hullRestRot`, `WrasseCrewBodies.Bone.Rest`),
+    so the bias was permanent and the beat swung around it. Measured on 14 hulls: Angler `dive`, Brittle Star / Honeyguide
+    / Shrike `bankleft`, Butterfly `beatdown`, Grouper / Jack / Marlin / Thresher / Wrasse Kite `beatleft`, Orca
+    `aimright`, Scarab `aim`, Starling `flap`, Stoat `arch`. None of the gates saw it, because every take was right; only
+    their ORDER was wrong. The fix is in the pipeline, not the specs: `build.run` adds `takes.rest_take` to a hull of
+    our own whose first take deflects anything, `export.lead_with_take` makes it the first stack and `Takes.Current`, and
+    `export.verify` fails a hull of our own whose first take moves a bone (`--check` compares `first_take`). The artist
+    files keep their order (the Animator or the code drives every bone they have, and the gates prove they reproduce).
+    General rule: **a file's default pose is an output.** Gate it like the takes and morphs.
