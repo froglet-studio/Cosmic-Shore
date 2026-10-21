@@ -582,8 +582,10 @@ namespace CosmicShore.Gameplay
 
         void StampEvaporate(float delay)
         {
-            StampDeathFade(PrismClock.Now + delay, DeathFadeDuration, DeathDirectionEvaporate, OnEvaporateSettled);
-            MorphIntoShard(PrismClock.Now + delay);
+            // One start time for both: the shard grows exactly while the limb fades.
+            float start = PrismClock.Now + delay;
+            StampDeathFade(start, DeathFadeDuration, DeathDirectionEvaporate, OnEvaporateSettled);
+            MorphIntoShard(start);
         }
 
         /// <summary>

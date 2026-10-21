@@ -12108,8 +12108,10 @@ one new shard in its cell's cytoplasm, the `SnowChanger` field whose shards poin
 
 ### 63.3 Not done, and not seen
 
-- **Nothing has been run in the Unity editor.** The hand test is on the team board (Ecology, "dying
-  limbs become shards").
+- **Nothing has been run in the Unity editor.** The hand test is on the team board (T-20261021-6fa4).
+  The headless reference compile passes, and the edit-mode test
+  `PrismSpindleDeathClockTests.EvaporatingLimb_BecomesAShardOnItsOwnFadeClock` pins the shared start
+  time and that the field draws its live count, not its array capacity.
 - Amoebius's own `Port/` copy of `SnowChanger` and `Spindle` is the engine's to follow (Shombith). It was
   not changed here.
 - The shard condenses by scale and turn, not by shape: it does not start as the limb's silhouette. A

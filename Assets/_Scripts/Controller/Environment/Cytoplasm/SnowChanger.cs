@@ -65,7 +65,7 @@ namespace CosmicShore.Gameplay
         Vector3 origin = Vector3.zero;
         Vector3 targetAxis;
 
-        // Reorientation cursor: index of the next shard to process, or >= shards.Length
+        // Reorientation cursor: index of the next shard to process, or >= ShardCount
         // when idle. OnCellItemsUpdated only rewinds the cursor; Update does the work.
         int _reorientCursor = int.MaxValue;
 
