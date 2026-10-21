@@ -44,6 +44,21 @@ players know it supports four players or brings in 4 AI" (Garrett, 2026-10-20). 
 - **Better gunner views**: the fast gun and the bomb look **over their turret** (behind and above it, at the gun's line
   180 u out), so the rounds stream away instead of filling the eye.
 - **Bespoke crosshairs**: a scope, a pen nib, a blast ring (`OrcaCrosshairGraphic`).
+
+**Two buttons per gunner, no seat line (Garrett, 2026-10-21):** "each of the orca turrets needs two buttons: fire gun,
+fire missiles. it does these with the right thumb and aims with the left. it has all the info it needs now. it no longer
+needs the ui breaking top row of text, unique to that vessel."
+- **On a phone**, a gunner seat shows two buttons round the right thumb: **Fire** (held; it wears the seat's element
+  colour) and **Missile** (launch, or burst the one in flight). Fire stands down while the seat flies a missile, as the
+  lab's Fire button does. The left thumb's drag aims the turret, or steers the missile from where it landed. The buttons
+  use the fleet's `TouchButtonView` and `TouchButtonLayout` (millimetres, inside the safe area) and press the crew
+  directly (`OrcaCrew.SetGunnerButton`), because the AI flies the hull while a person aims and an `InputStatus` press is
+  dropped under autopilot. A touch that starts on a button never aims (`FlightTouchClaims`), and a thumb on a button is
+  never half of the two-finger seat swap. The finger-down fire and double-tap missile are gone.
+- **On a pad**, both buttons are under the right thumb too: **X** fires the gun (RT still does), **A** launches and
+  bursts the missile. The left stick aims (the right stick still turns the turret too).
+- **The seat line is retired**: the four seat cards already show the seat (lit), its gun's state (the veil), and its
+  missiles (the count). The config's `seatLineTemplate`, seat names and gun words went with it.
 - **Its own hull** ("use the vessel modeling tools and really step up the vessel"): `Orca.fbx`, built by `/vessel-model`
   (see *The model* below). It replaces the drawn Sparrow and the faceted pods.
 
@@ -83,7 +98,7 @@ task in "Try it"). The crew runs on one machine, as the Wrasse's seat does (see 
 | Seat | What it does | Controls |
 |---|---|---|
 | **Helm** (1) | Flies the hull with two thumbs: the Sparrow's hull on its base `VesselTransformer`, at the lab's share of the Sparrow's numbers (below). **Boost**: held on the right trigger while a tank lasts; the tank refills by itself. **Shield**: 144 prisms (`DangerHemisphereConfig`'s 12 × 12) stand on a 50–70 u shell round the hull, with the forward cone left open so the helm can see and fly out. It works in two phases (round 5): (1) **carried**, the prisms ride with the hull as **super-shielded** prisms for `shieldSeconds` (4 s × Mass), a wall that only a sniper breaks; (2) **dropped**, each turns into a **danger prism where it stands** (`PrismKinds.Retheme`) and stays for `shieldLinger` (20 s). | Two sticks (or the keyboard); right trigger / right Shift to boost; left trigger / left Shift, E or pad B to shield. On a phone: lift the left thumb to boost (held while the tank lasts), the right thumb to shield |
-| **Sniper, Fast gun, Bomb** (2–4) | Each gunner has a turret on an outrigger: the sniper (Space) on a dorsal mast, the fast gun (Mass) on the port boom and the bomb (Charge) on the starboard boom. The turrets are **gyro-stabilized** (lab round 4). Each seat has **a gun** (the table below) **and its own magazine** of missiles: 2 to start, 4 at most, and an omni crystal gives every seat one (`OrcaOmniCrystalEffectSO`). **Missile** launches one and hands the gunner its controls; the gunner flies it with one thumb. It bursts on contact, after 5 s, or on a second Missile press. A burst is the game's `AOEExplosion`, which spares our domain; its own vessel effect (`VesselCombatHitByMissileBlast`) takes a rival hull's petals and scores the hit. A missile **collects crystals** it flies through for the hull: elemental crystals through the hull's skimmer, as a hull contact does, and omni crystals through the race ring's sweep entry. | Turret: mouse look (the cursor locks), a pad's sticks, or W A S D. **Fire** (the gun): left mouse, Space, RT, or a finger down. **Missile**: right mouse, F, A, or a double tap. In flight: the left stick, W A S D, the mouse, or a drag; Missile again (or a tap) bursts it |
+| **Sniper, Fast gun, Bomb** (2–4) | Each gunner has a turret on an outrigger: the sniper (Space) on a dorsal mast, the fast gun (Mass) on the port boom and the bomb (Charge) on the starboard boom. The turrets are **gyro-stabilized** (lab round 4). Each seat has **a gun** (the table below) **and its own magazine** of missiles: 2 to start, 4 at most, and an omni crystal gives every seat one (`OrcaOmniCrystalEffectSO`). **Missile** launches one and hands the gunner its controls; the gunner flies it with one thumb. It bursts on contact, after 5 s, or on a second Missile press. A burst is the game's `AOEExplosion`, which spares our domain; its own vessel effect (`VesselCombatHitByMissileBlast`) takes a rival hull's petals and scores the hit. A missile **collects crystals** it flies through for the hull: elemental crystals through the hull's skimmer, as a hull contact does, and omni crystals through the race ring's sweep entry. | Turret: mouse look (the cursor locks), a pad's left stick, W A S D, or the left thumb's drag on a phone. Two buttons under the right thumb: **Fire** (the gun): left mouse, Space, pad X or RT, the phone's Fire button. **Missile**: right mouse, F, pad A, the phone's Missile button. In flight: the left stick, W A S D, the mouse, or the left thumb's drag; Missile again bursts it |
 
 ### The three guns (round 5; round 6 made each an element)
 
@@ -263,7 +278,7 @@ the explosion's effect are the game's.
 | `OrcaHullRig.cs` | The model posed by the crew: the three turrets aimed (rest read from the skin's bind poses, stood at the lagged mounts), the floating plates swung as a chain between the hull and the lagged turret frame, every part's hover bob, the engines' lean, and the prefab's jets remounted on the engine mouths. Barrel tips and missile tubes are where the guns fire from. |
 | `Assets/_Models/Vessel Models/Orca.fbx`, `Tools/Build/vessel_model/specs/orca.py` | The hull model and its spec (`build.py specs/orca.py --check` is its drift gate). |
 | `UI/View/OrcaCrosshairGraphic.cs` | The bespoke crosshairs as generated uGUI geometry (nib, bomb chevron, missile ring), feathered and haloed. The sniper's is the Serpent's `SniperScopeOverlay`, which gained an explicit-eye `Tick` (eye, rotation, flight camera) for it. |
-| `UI/Controller/OrcaHUDController.cs` | The four cards are the four seats (round 6): the person's seat's card is lit (re-asserted every frame), each card's veil is its seat's recharge, each gunner card counts its own seat's missiles, and a card flashes when its seat's missile or bomb bursts (Time also when the shield goes up). Plus the seat line (`seatLineTemplate`: the seat, its gun and state, its missiles; rebuilt only when one changes). |
+| `UI/Controller/OrcaHUDController.cs` | The four cards are the four seats (round 6): the person's seat's card is lit (re-asserted every frame), each card's veil is its seat's recharge, each gunner card counts its own seat's missiles, and a card flashes when its seat's missile or bomb bursts (Time also when the shield goes up). On a phone with no pad, a gunner seat's Fire and Missile buttons round the right thumb (`TouchButtonView`, laid out by `TouchButtonLayout`). The seat line across the top was retired 2026-10-21. |
 | `ImpactEffects/.../OrcaOmniCrystalEffectSO.cs` | An Omni crystal gives every seat a missile (asset `OrcaOmniCrystalEffect`, in `OrcaImpactorDataContainer`). |
 | `Assets/_Prefabs/Spacevessels/Orca.prefab`, `Tools/Build/author_orca_assets.py` | The hull and the tool that authors and registers it. The hull is the Sparrow with no Sparrow kit, two sticks and this crew, plus `OrcaFastGun` and `OrcaBombGun`: a `Gun`, `ProjectileFactory` and `ProjectilePoolManager` each, cloned from the Brittle Star's and the Grizzly's. Pools: 160 / 320 rounds (rate × flight = 135 alive) and 2 / 4 bombs. The tool imports `author_wrasse_assets.py`'s helpers and never edits the Wrasse. |
 | `Assets/_Scripts/Tests/Editor/OrcaCrewCoreTests.cs` | The core's rules, stated as sentences. |
@@ -287,16 +302,16 @@ the explosion's effect are the game's.
    - Three AI gunners fire their guns and missiles at whatever is near.
 3. Press **2**, **3** or **4** (or the D-pad) to take a gunner seat. You look out of the turret, the hull's view drops
    to the lower left, and the AI flies the hull.
-   - Aim with the mouse or a stick; turn the hull under you and the aim holds.
+   - Aim with the mouse, the left stick, or (on a phone) the left thumb; turn the hull under you and the aim holds.
    - Your seat's icon in the ability row lights (2 Space, 3 Mass, 4 Charge) and shows your missiles.
-   - **Fire** (left click, Space, RT) shoots your seat's gun:
+   - **Fire** (left click, Space, pad X or RT, the phone's Fire button) shoots your seat's gun:
      - seat 2, the sniper: you look over the turret, and the pip scope stays open in the upper left; a long beam, then
        12 s of cooldown round the scope and on the Space icon;
      - seat 3, the fast gun: you look over the turret; hold it and sweep slowly: a clean line of prisms draws itself
-       120 u out. Hold until "overheated";
+       120 u out. Hold until the Mass card's veil fills (overheated);
      - seat 4, the bomb: press to throw; the prisms its blast will break glow lit round it as it flies; press again to
        burst it, then throw the next.
-   - **Missile** (right click, F, A) launches one of your seat's missiles: a rocket whose motor lights up and whose
+   - **Missile** (right click, F, pad A, the phone's Missile button) launches one of your seat's missiles: a rocket whose motor lights up and whose
      plume trails behind it. Fly it with W A S D or the stick (it banks into your turns); Missile again bursts it.
    - Fly a missile through an omni crystal: every seat's count goes up by one.
 4. Press **1** to take the helm back.
@@ -342,10 +357,10 @@ python3 Tools/Build/element_ability_table.py Orca  # four cards, four channels
   the design-approval gate).
 - **Sounds:** all eight `EventReference` slots ship empty: launch, burst, shield, omni refill, empty magazine, sniper
   shot, bomb throw, bomb burst. (The fast gun's rounds and the bomb carry their prefabs' own sounds, if any.)
-- **Touch:** the Orca has no phone-scheme row in `Tools/Build/author_touch_profiles.py` (vessel skill rule 58), like the
-  Wrasse and the Starlings: the crew reads touch itself. A finger down fires the gun and a double tap launches a missile. On the bomb seat, the first tap of a
-  double tap also throws (or bursts) a bomb. This needs a phone playtest; the cleaner shape is a card tap, which needs the hull to
-  bind an action to the card's input (`R_VesselActionHandler.HasAction`).
+- **Touch:** the helm's lifts are the Orca's ThumbLifts row in `Tools/Build/author_touch_profiles.py`; a gunner seat's
+  Fire and Missile buttons are the crew's own (`OrcaHUDController`), since a profile's scheme is per hull and not per
+  seat. Not flown on a phone yet (`T-20261021-723e` covers the Orca's phone playtest). On a gunner seat the Time and
+  Mass cards still show the helm's lift glyphs, which do nothing there.
 - **Super-shielded prisms are 3× their box** (`/vessel` 4.x): the carried shell's 144 prisms look denser and wider
   than the danger shell they become. If it reads as too solid, shrink `shieldBlockScale` (a lab dial).
 - **The HUD is the Sparrow's view under an Orca controller**, as the Wrasse's was. A prefab variant with the crew's four

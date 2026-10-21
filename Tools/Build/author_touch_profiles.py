@@ -102,9 +102,9 @@ PROFILES = [
     profile("Stoat", "TotemButtons", extras=[
         button("RightStick", "TouchIcon_Dipole", primary=True, tint="Space"),
         button("A", "TouchIcon_Hold", tint="Mass")]),
-    profile("Angler", "TotemButtons", extras=[
-        button("X", "TouchIcon_Squad", tint="Mass"),
-        button("Y", "TouchIcon_Recall", tint="Time")]),
+    # The Angler's squad pick and recall were retired on 2026-10-21 (two alternating groups, ANGLER.md §1m): its four cards
+    # are everything, so it takes no extra buttons.
+    profile("Angler", "TotemButtons"),
 ]
 
 

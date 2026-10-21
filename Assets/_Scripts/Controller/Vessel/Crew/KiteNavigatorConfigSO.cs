@@ -154,9 +154,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.05f)] float timeBoostSeconds = 1.5f;
         [Tooltip("lab timeCap: the most boost the pilot can hold from the navigator (s): timeCap / timeBoost saved boosts.")]
         [SerializeField, Min(0.5f)] float timeBoostCap = 30f;
-        [Tooltip("Seconds after a boost ends before the next can start. Time L5 removes the wait. The pilot boosts on the " +
-                 "right trigger (right Shift on a keyboard; lifting both thumbs on a touch screen).")]
-        [SerializeField, Min(0f)] float boostCooldownSeconds = 2f;
         [Tooltip("lab chargePetals: kite power one Charge mote gives: petals the next ram on a rival hull steals.")]
         [SerializeField, Min(0.05f)] float chargePetals = 1f;
         [Tooltip("lab chargeCap: the most kite power held.")]
@@ -330,7 +327,6 @@ namespace CosmicShore.Gameplay
         public float RaceTimeLoopPreference => raceTimeLoopPreference;
         public float MoteBaseWeight => moteBaseWeight;
         public float MoteWeightPerLevel => moteWeightPerLevel;
-        public float BoostCooldownSeconds => boostCooldownSeconds;
         public int OmniMotesPerElement => omniMotesPerElement;
         public float OmniClusterRadius => omniClusterRadius;
         public float PipSize => pipSize;

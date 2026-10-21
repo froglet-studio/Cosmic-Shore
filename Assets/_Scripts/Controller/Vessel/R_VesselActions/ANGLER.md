@@ -2,7 +2,7 @@
 
 The Angler is the fleet's strategist. It does not fight prisms itself. It **lures** wild fauna with the light hanging
 ahead of its nose (the *esca*), **tames** the creatures it holds in that light, leads them as a school, and **sends a
-picked squad at the prisms it chooses**.
+school's two groups, one at a time, at the prisms it chooses**.
 
 The command scheme is the **Sling painter**, picked in round 2 of the Angler Command Lab. Round 3 (2026-10-16) set its
 reach to 3200 u and gave the four elements their abilities (§7).
@@ -26,6 +26,10 @@ Round 6 (2026-10-17): the school keeps eating **every lit prism, newest first**,
 
 Round 7 (2026-10-18): the Sparrow's buttons. **A lures** (Mass) and **B dashes** (Time); X picks the squad and Y recalls. The fix for "the QuadFish don't always listen" (§1k).
 
+Round 8 (2026-10-21): **two groups, no squad pick, no recall, no boost.** Each throw sends half the school and the next
+throw sends the other half; each dash goes to one group and the next to the other (§1m). The Angler is down to its four
+cards.
+
 Sources:
 
 - The lab page: `Docs/Studios/AnglerCommandLab.html` (artifact https://claude.ai/artifact/CwuwJcgaGkJqBYC5UHfdE6).
@@ -41,22 +45,20 @@ through `Tools/Build/studio_to_unity/angler.json`. Every formula comes from the 
 
 | Input | Pad | Keyboard | What it does |
 |---|---|---|---|
-| Right trigger, held | RT (analog) | Right Shift | **Paint** (Space). A beam from the nose, reaching `paintRange` (3200 u) and never narrower than `brushNear` (6 u) at the nose, so close-up prisms paint too. Every enemy prism inside it lights up, and every creature prefers it (§1c). The **whole** picked squad balls up `slingAhead` ahead of the nose, any creature still in flight from the last throw included. How far you squeeze sets the brush width: just past halfway paints `brushMin` of the full brush, and a full pull paints all of it. **Level 5 (Paint Shields):** shielded prisms paint too, and the squad cracks the shield off when it arrives. |
+| Right trigger, held | RT (analog) | Right Shift | **Paint** (Space). A beam from the nose, reaching `paintRange` (3200 u) and never narrower than `brushNear` (6 u) at the nose, so close-up prisms paint too. Every enemy prism inside it lights up, and every creature prefers it (§1c). The group whose turn it is (half the school, §1m) balls up `slingAhead` ahead of the nose, any of it still in flight from its last throw included; the other group keeps eating its own orders. How far you squeeze sets the brush width: just past halfway paints `brushMin` of the full brush, and a full pull paints all of it. **Level 5 (Paint Shields):** shielded prisms paint too, and the squad cracks the shield off when it arrives. |
 | Left trigger, held | LT (analog) | Left Shift | **Erase / Lock-on** (Charge). A narrower beam (`eraseCone`, same reach and close-up rule) unmarks paint, and unmarks an already-ordered prism too: it leaves every order, and a creature heading for it picks again. Each time the beam comes onto a rival vessel (another one, or the same one again) it **locks, and spends one creature** on it (§1e). RT does not paint while LT is held. |
-| Right trigger, let go | RT | Right Shift | **Throw.** Each creature in the ball (one still in flight is re-thrown) goes for the **most recently painted** prisms first, regardless of distance (`PickRecent`: the fewest claims, then the newest paint). It is launched at its prism at `slingSpeed`, homing at `homeTurn`, and a homing throw never gives up: it reaches its prism at any distance, limited only by speed. With nothing painted, it is a plain sling: the creature latches onto the first enemy prism it passes within `slingCatch`. |
+| Right trigger, let go | RT | Right Shift | **Throw**, and the turn passes to the other group (§1m). Each creature in the ball (one still in flight is re-thrown) goes for the **most recently painted** prisms first, regardless of distance (`PickRecent`: the fewest claims, then the newest paint). It is launched at its prism at `slingSpeed`, homing at `homeTurn`, and a homing throw never gives up: it reaches its prism at any distance, limited only by speed. With nothing painted, it is a plain sling: the creature latches onto the first enemy prism it passes within `slingCatch`. |
 | Lure, held | A | Space | **Lure, Tame & Grow** (Mass). The esca lights and the hull **stops** (`lureCruise` 0; boost overrides it). Wild herbivores within `lureRadius` turn toward it; a creature held within `tameRadius` tames over `tameTime` and joins the school, whose size is the **number on the Mass card**. Plants in the light grow `lureGrowth` (3x) as often. **Letting go plants every seed** an omni crystal left (§1g). **Level 5 (Steal Fauna):** the lure takes other Anglers' creatures too. |
-| Pick squad | X | Q | Cycles through the whole school, then each kind of creature in the order it was first tamed, then back to the whole school. A picked kind is shown over the Mass card ("QuadFish x3"); while it shows, only that kind gathers and is thrown (§1k). |
-| Recall | Y | F | The picked squad drops its order and returns to the school (lit prisms stay lit until eaten or erased). |
-| Dash to the School | B | T | **Time.** The hull dashes `dashFrac` (75%) of the way to the centroid of every creature it leads, measured when pressed, in `dashTime` (0.35 s) (§1f). Time also **speeds your tamed fauna**: `faunaSpeed` x1 at Time 0 to x2 at Time 10. |
-| Boost | RB | E | The vessel's ordinary boost. |
+| Dash to the School | B | T | **Time.** The hull dashes `dashFrac` (75%) of the way to the centroid of **one group**, measured when pressed, in `dashTime` (0.35 s); the next dash goes to the other group (§1f, §1m). Time also **speeds your tamed fauna**: `faunaSpeed` x1 at Time 0 to x2 at Time 10. |
 | Omni crystal (pickup) | — | — | **One creature and one plant.** The crystal morphs into a random creature that joins the school, and leaves a **flora seed**, shown on the HUD's omni card and planted the next time the lure is let go (§1g). |
 
-On a phone the triggers are held CARDS (the Space card paints, the Charge card erases) and the squad pick and recall are
-extra on-screen buttons: §1l.
+On a phone the triggers are held CARDS (the Space card paints, the Charge card erases): §1l. There is no squad pick,
+recall or boost on any device since round 8 (§1m); X and Y are free.
 
 The round-2 write-up first proposed the lure on RB. The game's RB is already throttle and boost, and LB raises no
 input event, so the lure went on X (Button3). Since 2026-10-18 the Angler uses the Sparrow's layout: Mass (Lure) on A
-(Button1) and Time (Dash) on B (Button2); the squad pick and recall took the freed X (Button3) and Y (Button4Action).
+(Button1) and Time (Dash) on B (Button2); the squad pick and recall took the freed X (Button3) and Y (Button4Action) until
+round 8 retired both (§1m).
 
 ### 1a. What paint looks like: the prism's LIT state
 
@@ -155,12 +157,12 @@ back.
 
 ### 1f. Time: dash to the school
 
-The press finds the centroid of every creature the Angler leads, then `AnglerCommandMath.DashPoint` takes `dashFrac` of
+The press finds the centroid of one group (round 8: the groups take turns, §1m), then `AnglerCommandMath.DashPoint` takes `dashFrac` of
 the way there. One velocity displacement (`VesselTransformer.ModifyVelocity`) carries the hull there over `dashTime`. Its
 weight averages exactly 1 over its life, so it covers the whole distance, plus the hull's own cruise. It runs on the
 machine that owns the hull, whose transform replicates.
 
-- No school, no dash.
+- No school, no dash. A group that is empty, or already round the hull, is passed over for the other.
 - A second press during a dash is ignored.
 - **Time's scaling** (round 4): `faunaSpeed`, an `ElementalFloat` on `AnglerConfigSO` (x1 at Time 0 to x2 at Time 10), multiplies every speed the leash gives a tamed creature: following, gathering, thrown, eating an order, hunting. A creature still being lured is not affected.
 - The lab moves its hull on a smoothstep; the endpoint is the same.
@@ -223,6 +225,8 @@ Collecting an omni crystal (`AnglerTameByCrystalEffectSO`) gives the Angler two 
 
 ### 1k. "The QuadFish don't always listen" (round 7)
 
+*Round 8 retired the squad pick and its label (§1m); the diet and latch fixes below stand.*
+
 Three causes, each fixed:
 
 - **An invisible squad pick.** A used to cycle the squad, and nothing on the HUD showed it. A pilot pressing A for the lure (the Sparrow's Mass button) picked the first kind tamed, usually the keeper's Clawfish. From then on only Clawfish gathered and were thrown, and the QuadFish kept their old orders. Now:
@@ -249,8 +253,6 @@ left thumb flies (one stick, §1h); the right thumb works the cards:
 | the **Charge card** (Erase / Lock-on), held | `LeftStickAction` | erases, and locks on a rival vessel in the beam (§1e); RT does not paint while it is held |
 | the **Mass card** (Lure), held | `Button1Action` | the lure (shared binding, as on a pad) |
 | the **Time card** (Dash) | `Button2Action` | the dash (shared binding) |
-| the extra button **Squad** | `Button3Action` | pick the squad (shared binding) |
-| the extra button **Recall** | `Button4Action` | recall (shared binding) |
 
 **How a held card paints** (the Thresher's `PollTriggers` shape). Two control assets, `AnglerPaint` (`AnglerControl.Paint
 = 4`, guid `bd6112250ed58175f0d1625ef4c1483c`) and `AnglerErase` (`Erase = 5`, guid `7f98a4f05e03ee9a413e54706ded661b`),
@@ -276,7 +278,44 @@ pilot's analog mirrors are 0 everywhere, so every peer reads the same full pull.
 drops both flags; a hidden HUD releases a held card (`AbilityCardPress.OnDisable`).
 
 **What only a phone can test:** hold the Space card while the left thumb flies, see the prisms light, let go and see the
-squad thrown at them; hold the Charge card to erase and to lock on a rival; Squad and Recall from their buttons.
+squad thrown at them; hold the Charge card to erase and to lock on a rival. Since round 8 the four cards are the whole
+cluster: no extra buttons (§1m).
+
+### 1m. Two groups, taking turns (round 8, 2026-10-21)
+
+**The decision.** Garrett, 2026-10-21: *"lets simplify the Angler so it doesn't need recall or squad buttons. or even
+the boost. it doesn't need to recall when it can send. if each painting alternates between sending half the total then
+half stays behind and the next painting sends it out. so you always have two groups and you just alternate which group
+gets sent out by paint. then time can also alternate which group it is attracted to, and it doesn't need a boost because
+it just fly between its to groups and send them where it needs to go."*
+
+**The groups.** Every tamed creature is in group 0 or group 1 (`Member.Group`).
+
+- A new creature joins the **smaller** group (`JoinSchool`), so the keeper starts group 0 and the next tame starts group 1.
+- **Half each, always.** When a creature dies, is spent on a Charge lock or is let go, the larger group hands its newest
+  member to the smaller (`Rebalance`, every frame, allocation-free). A moved creature keeps its order and answers its new
+  group's next throw.
+- A group with nobody in it is passed over (`ResolveGroup`): a school of one has one group.
+
+**Paint sends one group.** Holding RT (or the Space card) gathers only the group whose turn it is (`SendGroup`); the other
+keeps eating its orders or following. Letting go throws that group exactly as before (the lit queue, the plain sling),
+then the turn passes to the other group (`ThrowAtPaint(group)`). So paint, throw, paint, throw sends A, B, A, B: there is
+nothing to recall, because the group at home is the one the next paint sends.
+
+**Time goes to one group.** Each dash goes to one group's centroid, and the next dash to the other (`_dashGroup`). Both
+counters start on group 0, so a pilot who paints and then dashes flies after the group just sent.
+
+**No boost.** The Angler never had a boost binding of its own (single-stick flight has full throttle built in, and the
+pad's RB throttle is not read). Round 8 drops it from the design: the dash between the two groups is how the Angler
+travels. `MaxBoostMultiplier` (2.75) stays on the transformer for the shared prism effects that set `IsBoosting`.
+
+**What went.** `AnglerControl.CycleSquad` (1) and `Recall` (2) (retired values, never reused), the `AnglerSquad` /
+`AnglerRecall` control assets and their X / Y bindings, the touch profile's two extra buttons, and the Mass card's squad
+label (`AnglerHUDController.squadLabelTemplate`, `AnglerHUDView.SetSquad`). `author_angler_assets.py --check` fails if
+any comes back (its self-test plants the Y binding and the label).
+
+**Not in the lab yet.** The Angler Command Lab still models the squad pick and the recall; bringing it to round 8 is a
+board task. No `CORE` formula changed, so the parity gate still holds.
 
 ## 2. What a leash is (and is not)
 
@@ -322,9 +361,9 @@ The creature-side hooks:
 | File | Role |
 |---|---|
 | `Controller/Vessel/AnglerCommandMath.cs` | The lab's `CORE` block, line for line: `BrushScale`, `InBrush`, `PickTarget`, `PickRecent`, `FormationSlot`, `FollowSpeed`, `LightFollowCap`, `TadFollowCap`, `GatherSpeed`, `TameStep`, `LurePoint`, `DashPoint`. Pure. |
-| `R_VesselActions/Executors/AnglerCommandExecutor.cs` | Everything that changes: the paint set, the lure, taming, the school, squads, orders, the throw. Implements `IFaunaLeash`. The per-frame order is BrushStroke → UpdateLure → UpdateFlights → UpdateOrders → AssignSlots → DrawMarks. |
+| `R_VesselActions/Executors/AnglerCommandExecutor.cs` | Everything that changes: the paint set, the lure, taming, the school and its two groups, orders, the throw. Implements `IFaunaLeash`. The per-frame order is BrushStroke → UpdateLure → UpdateFlights → UpdateOrders → AssignSlots → DrawMarks. |
 | `R_VesselActions/Data Containers/AnglerConfigSO.cs` | The tuning. Each field is named after its lab key, and each tooltip is the lab's label. |
-| `R_VesselActions/Data Containers/AnglerActionSO.cs` | `AnglerControl { Lure = 0, CycleSquad = 1, Recall = 2, Dash = 3, Paint = 4, Erase = 5 }`. Lure, Paint and Erase are holds (Paint and Erase: a phone's triggers, §1l); the others act on press only. |
+| `R_VesselActions/Data Containers/AnglerActionSO.cs` | `AnglerControl { Lure = 0, Dash = 3, Paint = 4, Erase = 5 }` (1 and 2, the squad pick and the recall, retired in round 8). Lure, Paint and Erase are holds (Paint and Erase: a phone's triggers, §1l); the dash acts on press only. |
 | `R_VesselActions/AnglerWorldMarks.cs` | Camera-facing dots and rings drawn as one mesh: the brush and eraser rims, the ball, the esca, the hold ring and the taming dots. Painted prisms are lit instead (§1a). |
 | `Controller/Vessel/Prism.cs` (`SetColorLift`, `ColorLift`), `ECS/Rendering/PrismRenderService.cs` (`ApplyColorShade` lift, `StampShadeTransition`) | The per-prism lit state (§1a). |
 | `ImpactEffects/EffectsSO/Vessel Crystal Effects/AnglerTameByCrystalEffectSO.cs` + `_SO_Assets/Effects/Vessel Crystal Effects/AnglerTameByCrystalEffect.asset` | The omni crystal's mass tame. |
@@ -339,7 +378,7 @@ The creature-side hooks:
 | `_Prefabs/Spacevessels/Angler.prefab`, `_Prefabs/UI Elements/VesselHUD/AnglerHUDVariant.prefab` | Cloned from the Stoat by `Tools/Build/author_angler_assets.py`; its `patch_prefab` gives the committed prefab its own hull (§9). |
 | `_Models/Vessel Models/Angler.fbx`, `Tools/Build/vessel_model/specs/angler.py` | The hull model and the spec that builds it (§9); `build.py angler --check` is its drift gate. |
 | `Controller/Animation/AnglerAnimation.cs` | The hull's motion: the swim, the stabilisers, the mast's bob, and the jaw and the lure bulb while the lure is held (§9). |
-| `_SO_Assets/VesselActions/Angler/` | `AnglerConfig`, plus the `AnglerLure`, `AnglerSquad`, `AnglerRecall` and `AnglerDash` control assets, and `AnglerPaint` / `AnglerErase` (touch only, §1l). |
+| `_SO_Assets/VesselActions/Angler/` | `AnglerConfig`, plus the `AnglerLure` and `AnglerDash` control assets, and `AnglerPaint` / `AnglerErase` (touch only, §1l). |
 | `_SO_Assets/Classes/SO_Class_Angler.asset`, `_SO_Assets/Camera/AnglerCameraSettingsSO.asset` | The class entry and the camera. |
 | `_Graphics/Icons/AbilityIcons/Angler/`, `_Graphics/CardImages/Angler*.png` | Drawn by `Tools/Build/author_angler_icons.py`. The icon FILES keep round 1's names (their guids are wired); each draws its slot's approved ability: `Angler_Command` = Charge (lock-on), `Angler_Leash` = Mass (lure and grow), `Angler_Lure` = Space (paint), `Angler_Tame` = Time (dash). |
 
@@ -427,9 +466,9 @@ The Editor test steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md` under "Angle
   | Element | Ability | Input | Level 5 |
   |---|---|---|---|
   | Charge | Erase / Lock-on | LT | open |
-  | Mass | Lure, Tame & Grow | X | Steal Fauna |
-  | Space | Paint | RT | Paint Shields |
-  | Time | Dash to the School (scales: tamed fauna speed) | Y | open |
+  | Mass | Lure, Tame & Grow | A | Steal Fauna |
+  | Space | Paint (one group per throw, §1m) | RT | Paint Shields |
+  | Time | Dash to the School (one group per dash; scales: tamed fauna speed) | B | open |
 
 - **Not yet designed:**
   - the Charge and Time level-5 upgrades (their labels are empty, per the `/vessel` design gate);

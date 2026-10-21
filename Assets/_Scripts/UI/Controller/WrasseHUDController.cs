@@ -80,7 +80,6 @@ namespace CosmicShore.UI
 
             var view = View;
             if (!view) return;
-            view.SetAbilityCooldown(Element.Time, navigator.BoostCooldown01);
             if (navigator.MassFlashAt != _flashedAt)
             {
                 _flashedAt = navigator.MassFlashAt;

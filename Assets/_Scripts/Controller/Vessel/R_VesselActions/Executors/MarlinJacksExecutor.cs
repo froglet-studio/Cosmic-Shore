@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
     /// leash them) by the owner's real jacks. The views and the marks are the owner's alone.</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class MarlinJacksExecutor : ShipActionExecutorBase, IFaunaHerd
+    public sealed class MarlinJacksExecutor : ShipActionExecutorBase, IFaunaHerd, IHullParkAware
     {
         [Header("Wiring (serialized on the prefab so a missing wire shows in the inspector)")]
         [Tooltip("Every number (MarlinJacksConfig.asset, the Swarm Vessel Lab's shipped values).")]
@@ -277,7 +277,9 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                if (IsLocalHuman) PollSwap();
+                // the local human's seat, unless something else has parked the hull on its AI (the app shell): the same
+                // wake rule as every crew seat (CrewSeat.ShouldWake), so the pad and the touchscreen are not read under a menu
+                if (IsLocalHuman && (_weTookHull || !_status.AutoPilotEnabled)) PollSwap();
                 else if (_humanRunsJacks) LeaveJackSeat();
 
                 if (_humanRunsJacks) ReadHumanJacks(dt, ring);
@@ -533,6 +535,14 @@ namespace CosmicShore.Gameplay
             SetFlightInputPaused(true);
             _weTookHull = !_status.AutoPilotEnabled;
             if (_weTookHull) _vessel.ToggleAIPilot(true);
+        }
+
+        /// <inheritdoc cref="IHullParkAware.ReturnHumanToHull"/>
+        public void ReturnHumanToHull()
+        {
+            if (!_humanRunsJacks) return;
+            _weTookHull = false;   // the autopilot is the parker's now: LeaveJackSeat must not stop it
+            LeaveJackSeat();
         }
 
         void LeaveJackSeat()

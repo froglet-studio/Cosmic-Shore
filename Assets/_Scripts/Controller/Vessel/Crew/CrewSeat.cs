@@ -23,6 +23,21 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// A crew seat that can hand its human back to the hull seat when something else parks the hull on its AI (the app
+    /// shell, the mode preview's exit and ghost demo, the end-of-match flourish). Once a seat has taken the hull, a menu's
+    /// park looks exactly like the seat's own (input paused, autopilot on), so the seat cannot tell them apart and kept
+    /// reading the touchscreen and pad under the menu (Garrett 2026-10-21: "the wrasse is controllable after going back to
+    /// the app shell in freestyle"). The parker says so instead, through <see cref="CrewSeat.ReturnHumansToHull"/>.
+    /// </summary>
+    public interface IHullParkAware
+    {
+        /// <summary>The human leaves this seat for the hull's seat WITHOUT the seat stopping the autopilot it started (the
+        /// caller keeps it on); the seat's wake rule then unbinds it. The remembered seat choice is left as it is, so the
+        /// next freestyle entry seats the person where they were.</summary>
+        void ReturnHumanToHull();
+    }
+
+    /// <summary>
     /// The seat rules every crew vessel shares, in one place so the seats cannot drift apart (they had: the Kite paused
     /// the player's input through its <c>InputController</c>, the Goby through its <c>InputStatus</c>, in the opposite
     /// order). Engine state only through the hull and the player: no seat-specific knowledge.
@@ -45,6 +60,18 @@ namespace CosmicShore.Gameplay
         /// The swap is the arena's gesture (<see cref="PilotSwapGesture"/>: D-pad left / right, keys 1 / 2) on the arena's
         /// cooldown (<see cref="PilotSwap.CooldownSeconds"/>, unscaled time). True on a swap this frame.
         /// </summary>
+        /// <summary>
+        /// Call FIRST wherever a hull is parked on its AI (before the caller's <c>SetPause(true)</c> and
+        /// <c>ToggleAIPilot(true)</c>): every crew seat on it sends its human back to the hull's seat and forgets that it
+        /// took the hull, so none keeps reading raw input under a menu. A seat's own hand-back may unpause the player's
+        /// input for that moment; the caller's pause right after restores it. A null or destroyed hull is skipped.
+        /// </summary>
+        public static void ReturnHumansToHull(IVessel hull)
+        {
+            if (hull == null || !UnityLiveness.Alive(hull.Transform)) return;
+            foreach (var seat in hull.Transform.GetComponentsInChildren<IHullParkAware>(true)) seat.ReturnHumanToHull();
+        }
+
         public static bool PollSwap(ref float readyAt)
         {
             if (PilotSwapGesture.DirectionThisFrame() == 0 || Time.unscaledTime < readyAt) return false;

@@ -56,7 +56,6 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1f, c.StealCooldown);
             Assert.AreEqual(KiteNavigatorAI.Skill.Hard, c.AISkill);
             // Garrett's 2026-10-18 direction, built in Unity first (KITE_NAVIGATOR.md "Round 4")
-            Assert.AreEqual(2f, c.BoostCooldownSeconds, "a boost waits 2 s after the last, none at Time L5");
             Assert.AreEqual(6, c.OmniMotesPerElement, "round 4e: an Omni crystal drops a cluster of each element, not a zoom");
             Assert.AreEqual(0.5f, c.OmniClusterRadius, 1e-6f);
             Assert.AreEqual(1f, c.MoteBaseWeight);

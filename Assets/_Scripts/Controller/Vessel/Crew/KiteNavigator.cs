@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// the AI are per-viewer, and the effects are this machine's. Networking the seat is a follow-up (KITE_NAVIGATOR.md).</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class KiteNavigator : MonoBehaviour, IRingThreadProbe, ICrewTriggers
+    public sealed class KiteNavigator : MonoBehaviour, IRingThreadProbe, ICrewTriggers, IHullParkAware
     {
         internal struct Mote
         {
@@ -136,7 +136,7 @@ namespace CosmicShore.Gameplay
         // the rings) - the AI squad mate flies the kite through it before anything else
         bool _ringOnBoard;
         KiteVec _ringAt, _ringVel, _ringCentre;
-        float _swapReadyAt, _boostReadyAt;
+        float _swapReadyAt;
         int _omniPending;
         KiteVec _aim;
         enum Pointer { Mouse = 0, Touch = 1, Stick = 2 }
@@ -157,9 +157,6 @@ namespace CosmicShore.Gameplay
         public int LastBlastDestroyed => _lastBlastDestroyed;
         /// <summary>Time.time of the last Mass cluster laid (the HUD flashes the Mass icon).</summary>
         public float MassFlashAt => _massFlashAt;
-        /// <summary>The boost's recharge veil, 1 while a boost runs and falling to 0 when the next can fire.</summary>
-        public float BoostCooldown01 => _boosting ? 1f
-            : config && config.BoostCooldownSeconds > 0f ? Mathf.Clamp01((_boostReadyAt - Time.time) / config.BoostCooldownSeconds) : 0f;
         /// <summary>The most boosts the pilot can hold: timeBoostCap seconds of 1.5 s boosts.</summary>
         int MaxSavedBoosts => Mathf.Max(1, Mathf.FloorToInt(_cfg.TimeBoostCap / Mathf.Max(0.05f, _cfg.TimeBoostSeconds)));
         internal bool Down => _down;
@@ -278,7 +275,7 @@ namespace CosmicShore.Gameplay
             _humanNavigates = _weTookHull = _down = _boosting = _boostHeld = false;
             _seatChoicePending = !_aiCrew;
             Motes.Clear(); Loops.Clear(); DropBursts(); _massQueue.Clear(); _lastRam.Clear(); Prisms.Clear(); Rivals.Clear();
-            _charge = 0f; _savedBoosts = 0; _lastBlastDestroyed = 0; _blastWatch.Clear(); _blastCounted.Clear(); _massFlashAt = -99f; _boostReadyAt = 0f; _omniPending = 0;
+            _charge = 0f; _savedBoosts = 0; _lastBlastDestroyed = 0; _blastWatch.Clear(); _blastCounted.Clear(); _massFlashAt = -99f; _omniPending = 0;
             // the views, the swap and the static handle belong to the local pilot's seat; an AI crew draws nothing
             if (_aiCrew) return;
             if (_active && _active != this) Destroy(_active);
@@ -495,6 +492,14 @@ namespace CosmicShore.Gameplay
             _pipLastTapAt = doubled ? -99f : now;
             _pipLastTapPos = _pipPressPos;
             return doubled;
+        }
+
+        /// <inheritdoc cref="IHullParkAware.ReturnHumanToHull"/>
+        public void ReturnHumanToHull()
+        {
+            if (!_humanNavigates) return;
+            _weTookHull = false;   // the autopilot is the parker's now: SetHumanNavigates(false) must not stop it
+            SetHumanNavigates(false);
         }
 
         void SetHumanNavigates(bool navigate)
@@ -1237,9 +1242,10 @@ namespace CosmicShore.Gameplay
             Play(_cfg.TimeBoostSfx, at);
         }
 
-        // The pilot spends a saved boost on the trigger (PilotWantsBoost): it runs timeBoostSeconds, the next waits
-        // boostCooldown after it ends (none at Time L5), and holding the trigger chains them. With the AI on the hull (the
-        // human navigating), it spends them as they come.
+        // The pilot spends a saved boost on the trigger (PilotWantsBoost): it runs timeBoostSeconds and the next can start
+        // the moment it ends, so holding the trigger chains them. No cooldown: the boost is already limited by the Time
+        // loops the navigator closes (Garrett, 2026-10-21). With the AI on the hull (the human navigating), it spends them
+        // as they come.
         void StepBoost(float dt)
         {
             if (_boosting)
@@ -1249,7 +1255,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
             bool want = _aiCrew || _humanNavigates ? AIPilotWantsBoost() : PilotWantsBoost();
-            if (want && _savedBoosts > 0 && Time.time >= _boostReadyAt)
+            if (want && _savedBoosts > 0)
             {
                 _savedBoosts--;
                 _boosting = true;
@@ -1298,7 +1304,6 @@ namespace CosmicShore.Gameplay
         {
             if (!_boosting) return;
             _boosting = false;
-            _boostReadyAt = Time.time + (Upgraded(Element.Time) ? 0f : _cfg.BoostCooldownSeconds);
             if (UnityLiveness.Alive(_status)) _status.IsBoosting = false;
         }
 

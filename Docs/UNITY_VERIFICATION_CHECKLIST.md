@@ -119,6 +119,27 @@ Toy Box > Vessel Changer → **Honeyguide and Ratel**:
    prism shows on the cursor in its domain.
 8. Things to watch for: the board overlay's sorting (19000) above the HUD; the TMP labels' size on a phone; the frame time
    with the AI Ratel on several AI hulls (`aiCrewEngineers`).
+### 🔴 Orca gunner buttons: Fire and Missile under the right thumb, the seat line retired (`cece/fervent-goodall-8cihle`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-21: "each of the orca turrets needs two buttons: fire gun, fire missiles. it does these with the right
+thumb and aims with the left. it has all the info it needs now. it no longer needs the ui breaking top row of text, unique
+to that vessel." Design: `ORCA_CREW.md` ("Two buttons per gunner, no seat line"). `/verify-unity` did not run: no Unity
+Editor or `unity` CLI in this session. What did run: the reference compile (player: no errors in project code), `parity.cjs`, `author_orca_assets.py --check` /
+`--self-test` (with a negative control on the new icon check), `touch_glyph_art.py --check`,
+`author_touch_profiles.py --check`, the console-logging and conditional-compilation gates. Affects the fleet's
+`TouchButtonView` (a sink and a tint setter, both additive) and `TouchControlsHud` (its layout settings and units-per-pixel
+made public static, no behaviour change).
+
+**Verify in editor** (the Orca in the Toybox Vessel Changer):
+1. **Desktop.** Take a gunner seat (2, 3, 4): no line of text across the top of the HUD in any seat. The four cards still
+   light the seat, veil the gun's recharge and count the seat's missiles. No phone buttons on a desktop.
+2. **Pad.** In a gunner seat, X fires the gun (RT still does), A launches a missile and bursts it; the left stick aims.
+3. **Phone (Android dev build, no pad)** — `T-20261021-876d`: in a gunner seat two buttons sit round the right thumb,
+   Fire (the seat's colour) and Missile (a rocket). The left thumb's drag aims while the right holds Fire. Missile
+   launches; the left thumb steers it; Missile bursts it; Fire hides while it flies. A thumb on a button while the left
+   aims never swaps seats; a two-finger tap elsewhere still does. On the helm the buttons are gone. Connect a pad: they
+   hide.
+
 ### 🔴 Orca round 9: rocket missiles with a faceted plume, the bomb's blast lit in the world (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-21, after flying round 8: "increase the fidelity on the fly by wire missiles. they feel cheap. the bomb
@@ -2018,6 +2039,19 @@ prism, Sparrow and Grizzly containers) is deleted; the Grizzly now carries the f
 the Rhino; combos have 24 empty FMOD slots, no HUD callout, and the AI never combos.
 
 ---
+
+### 🔴 Angler round 8: two groups take turns; no squad pick, no recall, no boost (`cece/wizardly-ride-0c1axn`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Offline only: `unity_refcompile` player config 0 errors (editor config: 3 errors, none in changed files);
+`author_angler_assets.py --check` / `--self-test` 25/25; `author_touch_profiles.py --check`; angler parity 6/6;
+`studio_to_unity.py --vessel Angler --check` 0 drift. No Unity editor in the session (`/verify-unity` not run).
+
+1. **Half goes.** Tame 4+ creatures. Hold RT on a field and let go: about half the school flies at it, the rest stay with the hull.
+2. **The other half goes next.** Hold RT on a second field and let go: the half that stayed flies at it; the first half keeps eating the first field.
+3. **Alternates back.** A third paint sends the first half again, called back from wherever it is.
+4. **Dash between them.** With both halves out on far fields, press B: the hull dashes toward one half. Press B again: toward the other.
+5. **Gone.** X (Q) and Y (F) do nothing on the Angler; the Mass card shows no squad label; on a phone the cluster is the four cards only (no Squad or Recall disc).
+6. **Rebalance.** Spend creatures with LT on a rival until the groups are uneven: the next throw still sends about half.
 
 ### 🔴 Angler round 7: A lures and B dashes (the Sparrow's buttons); "the QuadFish don't always listen" fixed (`cece/zealous-feynman-po8k8d`, 2026-10-18) — NOT EDITOR-VERIFIED
 
