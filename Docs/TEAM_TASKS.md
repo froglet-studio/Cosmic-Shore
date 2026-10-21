@@ -1177,6 +1177,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-19 by Garrett's session (`cece/elegant-goldberg-eanwgx`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
 
+### T-20261020-3bfe · open · test · vessels
+- **Task:** Fly the Sparrow (Toybox Vessel Changer or any mode): flying, the camera sits level directly behind the hull; press the turret/MASS stance and it eases up to the old elevated view; leave the stance (press again, or a turn end) and it drops back. Check the Serpent and the Stoat cameras are unchanged in and out of their stance.
+- **Done when:** All three behave as described in Play mode, or the failure is noted with the camera height seen
+- **Who can take it:** Yash or Garrett
+- **Added:** 2026-10-20 by a Claude session (`cece/youthful-johnson-7c8xh2`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_TURRET_STANCE.md
+
 ### T-20261020-41eb · open · test · Thresher
 - **Task:** Fly the Thresher on cece/tender-hamilton-qcd1hi (Editor and phone): the chain never turns lime, the launch crosshair stays white the whole lap, and a charged ball's rim burns toward white (not lime) as the Space gauge fills
 - **Done when:** All four steps of the 2026-10-20 'no lime' entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, and the charged ball reads as explosive (energyRimTint tuned if not)
