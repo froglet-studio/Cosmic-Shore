@@ -232,6 +232,7 @@ a terminal approach that lands on it.**
 | `_SO_Assets/VesselActions/Squirrel/SquirrelDriftAction.asset` | the one drift action — ×1.8 / grip 0.25 at full pull |
 | `_SO_Assets/VesselActions/Squirrel/SquirrelSharpDriftAction.asset` | unbound since 2026-09-23 (safe to delete) |
 | `Controller/Vessel/DriftJet.cs` | the four jets: plume along Course while drifting, along `FlightAxis` (the mount bone's ±right) otherwise |
+| `Controller/FX/DriftAudioController.cs` | the drift loop (`event:/SFX/Drift`) and the release one-shot; §13 slip-angle volume (`DriftSlipVolumeTests`) |
 | `Controller/Vessel/DriftEngineSwivel.cs` | §12 — the drift animation: the four engine pods swing onto Course, parallel with their jets |
 
 `DriftDamping` was renamed to **`Grip`** (`[FormerlySerializedAs]` migrates the prefabs). It is what
@@ -264,6 +265,10 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 | `minimumThrottleBrakeSeconds` | every vessel | 2 | §3.5. Seconds to shed one cruise once the target is ZERO. 0 restores the legacy exponential tail |
 | `swivelRate` | Squirrel.prefab, `DriftEngineSwivel` | 3.7 /s | §12. How fast the engine pods ease onto Course and back; 3.7 matches the jets' own 0.06-per-frame ease at 60 fps |
 | `maxSwivelDegreesPerSecond` | Squirrel.prefab, `DriftEngineSwivel` | 360 | §12. Slew limit on the pods' swing (the Dolphin cage's number) |
+| `scaleVolumeBySlipAngle` | Squirrel.prefab, `DriftAudioController` | on | §13. Drift loop volume follows the slip angle (off by default in code, so the Dolphin's loop is unchanged) |
+| `quietSlipDegrees` / `fullSlipDegrees` | Squirrel.prefab, `DriftAudioController` | 5 / 45 | §13. Quiet at or below 5 degrees of slip, full (today's volume) at or above 45, smoothstep between |
+| `quietVolume01` | Squirrel.prefab, `DriftAudioController` | 0.15 | §13. Volume multiplier at a small slip; 0 = silent |
+| `slipVolumeSmoothing` | Squirrel.prefab, `DriftAudioController` | 10 /s | §13. Smoothing on the slip volume |
 | `engines[].driftOffset` | Squirrel.prefab, `DriftEngineSwivel` | 0 | §12. Per-pod slide while drifting (vessel frame); the dial if the swung pods read as clipping the wing slats |
 
 ---
@@ -606,3 +611,41 @@ own `DriftJet` steering and the tails.
 **Follow-ups.** None required. If the wings should also hold Course the way the Dolphin's do, they
 are six floating slats per side (`bbone_WholeWing.L/R` parents them) and fit the same component as a
 fifth and sixth "pod"; not done, because the ask named the engines.
+
+---
+
+## 13. The drift loop's volume follows the slip angle (2026-10-21)
+
+**The ask** (Garrett): scale the drift sound's amplitude by the difference between the drift angle and
+the return angle: a small angle is quiet, a large angle is what we hear now.
+
+**What it measures.** The slip angle: `Vector3.Angle(Course, nose)`, the angle between the direction the
+drift is carrying the Squirrel and the direction it returns to when the drift lets go (Grip rotates the
+momentum back onto the nose, §3). It is 0 when a drift begins and opens as the nose swings off the slide.
+
+**What it changes.** Only the looping drift event's volume (`event:/SFX/Drift`, on `DriftAudioController`),
+as a multiplier on top of the SFX slider and `baseVolumeMultiplier`:
+
+| Slip | Volume multiplier |
+|---|---|
+| 0-5 degrees | 0.15 |
+| 25 degrees | 0.575 |
+| 45 degrees and more | 1 (today's volume) |
+
+The curve is a smoothstep between the two angles (`DriftAudioController.SlipVolume`, held by
+`DriftSlipVolumeTests`), smoothed at 10 /s so a twitchy nose does not make the loop flutter. The
+`Drift Amount` parameter (trigger depth) is untouched, as is the release one-shot (`Squirel boost`),
+which still plays at full volume. The switch is OFF by default in code because the Dolphin uses the
+same controller for its own drift loop; only the Squirrel prefab turns it on. Local pilot only, as before.
+
+**In-editor verification.**
+1. Toy Box > Vessel Changer > Squirrel. Tap into a drift and keep the nose on the slide: the loop is
+   quiet.
+2. Hold the drift and swing the nose well off the slide (45 degrees or more): the loop rises smoothly to
+   the volume it has today.
+3. Swing back onto the slide while still drifting: it falls again, without fluttering.
+4. Release: the release one-shot plays at its usual volume.
+5. Fly the Dolphin and drift: its drift sound is unchanged.
+
+If the quiet end is too quiet or the swell comes too late, `quietVolume01` and `fullSlipDegrees` are the
+dials (first-pass numbers, not play-tuned).

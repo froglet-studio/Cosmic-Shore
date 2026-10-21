@@ -1204,3 +1204,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (Squirrel / vessel feel); Yash (offered)
 - **Added:** 2026-10-21 by a Claude session (`cece/eloquent-pasteur-fes2ni`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md#12
+
+### T-20261021-9843 · open · test · Squirrel
+- **Task:** Listen to the Squirrel's drift loop: quiet on a shallow slide, rising to today's volume as the nose swings 45+ degrees off the slide; run DriftSlipVolumeTests
+- **Done when:** SQUIRREL_DRIFT.md section 13 steps 1-5 pass, or quietVolume01 / fullSlipDegrees retuned by ear
+- **Who can take it:** Garrett (Squirrel feel); Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/eloquent-pasteur-fes2ni`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md#13

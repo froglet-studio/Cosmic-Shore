@@ -1329,6 +1329,11 @@ MonoBehaviour:
   amountSmoothing: 10
   releaseSmoothing: 20
   releaseHoldSeconds: 0.4
+  scaleVolumeBySlipAngle: 1
+  quietSlipDegrees: 5
+  fullSlipDegrees: 45
+  quietVolume01: 0.15
+  slipVolumeSmoothing: 10
   onlyAudibleToController: 1
   forceAttachToListener: 0
   tieVolumeToSFXSlider: 1
