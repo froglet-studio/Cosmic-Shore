@@ -65,6 +65,105 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Phone controls for the whole fleet, idle parity, arena swap tiles (`cece/admiring-hamilton-gyzzh8`, 2026-10-21) — NOT EDITOR-VERIFIED, NOT PHONE-VERIFIED
+
+Garrett's decisions after the mobile audit (`Docs/Reports/MOBILE_VESSELS.md` §8; the touch scheme in
+`Docs/ABILITY_LOCKUP.md` "On a phone"). Every hull has a row in `Resources/TouchControlProfiles`
+(`Tools/Build/author_touch_profiles.py`): ThumbLifts hulls keep their lifts and show lift glyphs; TotemButtons hulls
+press only cards and extra buttons laid out round the right thumb. Idle parity (both thumbs off = a released pad),
+tilt (gravity sensor), the arena pilot-swap tiles, the idle-animation fixes. `/verify-unity` was unavailable (no Editor,
+no `unity` binary); the headless reference compile (player + editor configs), the static gates,
+`touch_controls_harness`, `thresher_chain_harness`, `peer_press_harness` and every touched `author_*_assets --check` ran
+green (commit messages carry the results).
+
+Editor (Device Simulator, a phone model selected - it reports a touch-first device):
+1. Toy Box > Vessel Changer, each hull: the HUD builds with no console error. A TotemButtons hull (Sparrow, Grizzly,
+   Brittle Star) shows its cards and discs in an arc in the bottom-right, the passive cards small along the bottom edge;
+   a ThumbLifts hull (Squirrel, Dolphin) keeps the row and shows a thumb glyph under each lift card.
+2. Connect a pad (or leave Device Simulator): the row returns to the fleet layout, keycaps return, the discs hide.
+3. Edit-mode tests: `TouchControlsTests`, `PilotSwapIndicatorTests`, `ScarabTouchThrottleTests`, the six
+   `ThresherAnalogTriggerTests.Touch_*`, `StoatSlingTests` all green.
+
+On an Android development build (the real test - tilt, millimetre sizes and thumbs cannot be simulated):
+4. Urchin: let go of the glass - it holds course at half throttle, it does NOT back away.
+5. Scarab: the slider on the right sets speed and holds it; Drift button; Switch card; a second right-hand touch jukes,
+   the steering thumb never does.
+6. Brittle Star: six buttons reachable with the right thumb; drag from the held Fire disc aims while firing; a touch
+   elsewhere on the right aims without firing; a hard turn no longer splays the guns.
+7. Dolphin: lift either thumb - drift, charge and Echo together; turn the phone like a wheel - it rolls.
+8. Manta: lift both thumbs - flat-out soar (720 u/s), steered by tilt; a thumb back ends it; nothing soars on the
+   start line before the first touch.
+9. Rhino: a lift swings that side's blade; both thumbs off drops the blade into the chop and ignites in ~0.5 s.
+10. Thresher: right lift plants; then the left lift too - the launch view comes up, tilt aims the crosshair, a thumb
+    back down launches along it. The Mass Mode card toggles without planting.
+11. Stoat: the Space card lays a pair, Dipole Right and Hold buttons, the Mode card. Angler: hold the Space card with
+    the right thumb while the left flies - it paints, release throws; the Charge card erases; Squad and Recall buttons.
+12. Serpent: tap the Scope card - full zoom, latched; tap the Charge card to shoot; tap the Scope card again to drop it.
+    Shrike: the Zoom disc toggles the eyepiece; the Trigger disc fires the mode.
+13. Every hull: lift the last thumb mid-turn - the pose eases back, it never snaps (Squirrel and Serpent especially).
+14. Arena (Brood Rush or Broadside, 2+ AI teammates): the swap tiles sit between the goal stack and the score bar; a
+    tap swaps hulls and does not steer.
+15. Turn the phone upside down mid-flight: nothing toggles (orientation no longer raises FlipAction).
+16. No steering lag, every device (pad, keyboard, mouse, phone), every hull: the nose answers the stick the same frame and
+    stops when it centres - no swing after the input. AI hulls still fly as before.
+17. Invert Y in Settings: on a pad, the keyboard and a phone, flip it and fly a two-stick hull (Squirrel) and a one-thumb
+    hull (Sparrow): both invert; with it off, a push up pitches both the same way. On a phone, tipping the top edge away
+    pitches like a pushed-up thumb (Manta soar, Thresher launch aim).
+18. Scarab with Time 5: flick up on the throttle slider - Snap Dash, and the slider stays where it was set.
+19. Wrasse and Grouper (one human): keys 1 / 2 PICK the Grouper / the Wrasse (no longer toggle); the D-pad and the
+    phone's double tap on the small view change seat; the pick is remembered across a Vessel Changer swap and a
+    respawn. On a phone, lifting both thumbs as the Grouper speeds it up (a saved boost), and a double tap back to the
+    Grouper spends none. In an arena, keys 1 / 2 and the D-pad change seat only; the top-bar tiles swap hulls.
+
+First-pass tuning (`Resources/TouchControlProfiles`): buttons 10 mm (floor 7 mm), gap 1.5 mm, inner arc 22 mm, arc step
+12 mm, corner box 36 % x 55 %; tilt full scale 25°, dead zone 2.5°, smoothing 12/s, forward tilt dives; slider 9 x 32 mm;
+Thresher lift delay 0.12 s; Rhino touch energize x2 (`ShieldSkimmerScaleConfig.touchEnergizeRateMultiplier`).
+
+### 🔴 Squirrel: drift loop volume follows the slip angle (`cece/eloquent-pasteur-fes2ni`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett: "modify the amplitude of the squirrel's drift sound effect based on the difference between the drift angle
+and the return angle, so small angle is quiet, large angle is what we hear now." `DriftAudioController` scales the
+looping `event:/SFX/Drift` by the angle between Course and the nose (`R_VesselActions/SQUIRREL_DRIFT.md` §13); on for
+the Squirrel only. `/verify-unity` was unavailable; the headless reference compile ran (player OK; editor config: the
+new `DriftSlipVolumeTests` compiles, 3 unrelated pre-existing errors in `AuthenticationServiceFacade.cs`).
+
+Toy Box > Vessel Changer → Squirrel:
+1. Run `DriftSlipVolumeTests` (4) in the Test Runner.
+2. Drift with the nose on the slide: the loop is quiet. Swing the nose further off the slide: it rises linearly,
+   reaching the pre-change volume at 180 degrees (nose back along the slide); swing back: it falls, no flutter.
+3. Release one-shot: quiet when the drift ends with the nose on the slide, louder the further off it ended (same
+   linear curve, angle taken on the last drifting frame). Dolphin drift and release sounds unchanged.
+
+| Knob | First pass |
+|---|---|
+| `quietSlipDegrees` / `fullSlipDegrees` | 0 / 180 (linear) |
+| `quietVolume01` | 0.15 |
+| `slipVolumeSmoothing` | 10 /s |
+
+### 🔴 Squirrel: engine pods swing onto Course while drifting (`cece/eloquent-pasteur-fes2ni`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett: "the squirrel should have a drift animation similar to the dolphin's ... it would be nice if the model
+engines also aligned so they were parallel with the jets and the jets remained coming out the back of the rotated
+engines." New `DriftEngineSwivel` on the Squirrel root (`R_VesselActions/SQUIRREL_DRIFT.md` §12): after the
+Animator, each of the four pods turns about its centre until its jet's flight axis (`DriftJet.FlightAxis`) lies on
+Course; the jets ride their pod bones, so they stay seated. `/verify-unity` was unavailable (no Editor, no `unity`
+binary); the headless reference compile ran (result in the commit message).
+
+Toy Box > Vessel Changer → Squirrel:
+1. Hold LT into a hard drift and aim well off the slide: all four pods lie along the travel direction, parallel with
+   their plumes, plumes leaving from the same spot on each pod. Hull, wings, crest and tail keep aiming with the nose.
+2. Release: pods ease back with the plumes, no snap. Fly without drifting: the pods animate exactly as before.
+3. Aim fully backwards mid-drift: pods hold their swing, no flicker.
+4. Beyond ~30 degrees of aim the pods pass within ~0.01 u of the wing slats (measured on the FBX). If that reads as
+   clipping, try `engines[].driftOffset` outward on the front pods (x -0.4 on L, +0.4 on R) and report the back pods.
+5. Console clean (no `could not find engine bone(s)` warning).
+
+| Knob | First pass |
+|---|---|
+| `swivelRate` | 3.7 /s (the jets' own ease at 60 fps) |
+| `maxSwivelDegreesPerSecond` | 360 |
+| `engines[].driftOffset` | 0 on all four pods |
+
 ### 🔴 Thresher: no lime on the chain, the crosshair or the ball (`cece/tender-hamilton-qcd1hi`, 2026-10-20) — NOT EDITOR-VERIFIED
 
 Garrett: "remove the lime from the chain and the crosshair. we can let players get a feel for that. the lime on the
@@ -12980,5 +13079,21 @@ pack against the elemental row). Reference compile clean (player; editor: the 3 
    card in the middle of the screen shows the element glyph, the card's name, level, text, numbers and next jolt; letting
    go hides it and picks nothing. Long-press a card on a phone: same. (Round 3, 2026-10-21: it was a panel above the
    header that never showed on Garrett's screen.)
-7. The objective glyphs: the game's omnicrystal icon, the four petals as a flower, the crosshair, prism blocks with an X.
 6. Swap to another vessel after zooming: its camera is back at its own distance.
+7. The objective glyphs: the game's omnicrystal icon, the four petals as a flower, the crosshair, prism blocks with an X.
+
+## 🔴 2026-10-21 — App shell pad buttons: Select toggles freestyle, Start opens Settings (`claude/project-thread-i9ydba`) - NOT EDITOR-VERIFIED
+
+Garrett's remap. `ScreenSwitcher` toggles freestyle on Select / View (was Y) and opens Settings on Start (was X).
+`OverviewGesture` (freestyle exit, in-game overview, spectator close) moved from Start to Select with it, and so did
+`ModePreviewWindow`'s focus release, so Start on Home never fights a focused preview. The screenshot capture moved
+off Select to a right-stick click (R3). `/verify-unity` was not run (no editor; the reference compile could not run:
+no .NET in the container).
+
+1. **Home with a pad:** Select flies into the cell. After the 3 s cooldown, Select brings you back. Y and X do
+   nothing on Home.
+2. **Start on Home** opens Settings once. Start does nothing while a window is open or in freestyle.
+3. **A game scene:** Select opens the overview (Volume / Pause). Start no longer does.
+4. **A mode preview with focus:** Select releases it; Start does not open Settings underneath.
+5. **Screenshot:** clicking the right stick in flight takes a capture; Select does not.
+6. **Spectating:** Select leaves.

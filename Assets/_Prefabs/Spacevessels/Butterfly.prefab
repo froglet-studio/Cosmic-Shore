@@ -325,7 +325,6 @@ MonoBehaviour:
   RollScaler: 70
   RotationThrottleScaler: 0
   restrictedTurnMultiplier: 0
-  touchNoseResponse: 5
 --- !u!114 &7179641600799439939
 MonoBehaviour:
   m_ObjectHideFlags: 0

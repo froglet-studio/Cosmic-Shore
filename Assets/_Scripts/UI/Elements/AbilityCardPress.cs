@@ -38,7 +38,47 @@ namespace CosmicShore.UI
         int _pointerId;
         InputEvents _held;
 
+        // Phone controls (TouchControlsHud): a card can be LATCHED (a tap presses, the next releases) or
+        // BLOCKED (the hull's touch scheme presses this ability another way - a thumb lift, a slider).
+        bool _wantPressable;
+        bool _toggle;
+        bool _blocked;
+
         public bool Pressable => _pressable;
+
+        /// <summary>The card's input as last seeded, pressable or not.</summary>
+        public InputEvents BoundInput => _bound;
+
+        /// <summary>A tap presses and the next tap releases, so the thumb that pressed it is free again.</summary>
+        public void SetToggle(bool toggle)
+        {
+            if (_toggle == toggle) return;
+            if (_holding) Release();
+            _toggle = toggle;
+        }
+
+        /// <summary>Not a button on this device, whatever its input (see the class's phone notes).</summary>
+        public void SetBlocked(bool blocked)
+        {
+            if (_blocked == blocked) return;
+            _blocked = blocked;
+            RefreshPressable();
+        }
+
+        /// <summary>
+        /// Re-decides whether the card is a button: it has an input, is not blocked, and that input (or a
+        /// sibling of its control) presses something on the device the pilot is holding NOW. A card that
+        /// would press nothing must not claim the finger either - it used to, leaving a dead patch of
+        /// glass under the right thumb (the Rhino's sword cards, the Stoat's, the Scarab's throttle).
+        /// Called when the input, the pilot or the device changes.
+        /// </summary>
+        public void RefreshPressable()
+        {
+            bool pressable = _wantPressable && !_blocked && TryResolveInput(out _);
+            if (_holding && !pressable) Release();
+            _pressable = pressable;
+            RefreshClaim();
+        }
 
         /// <summary>The rect that owns touches starting on it - the card, so both plates count.</summary>
         public void SetRegion(RectTransform region)
@@ -55,18 +95,24 @@ namespace CosmicShore.UI
             if (_holding && _input != input) Release();
             _input = input;
             _actions = actions;
+            RefreshPressable();
         }
 
         public void SetInput(InputEvents input, bool pressable)
         {
             if (_holding && (!pressable || input != _bound)) Release();
             _bound = input;
-            _pressable = pressable && input != InputEvents.FullSpeedStraightAction;
-            RefreshClaim();
+            _wantPressable = pressable && input != InputEvents.FullSpeedStraightAction;
+            RefreshPressable();
         }
 
         public void OnPointerDown(PointerEventData eventData)
         {
+            if (_toggle && _holding)
+            {
+                Release();
+                return;
+            }
             if (_holding || !_pressable || _input == null || !isActiveAndEnabled) return;
             if (!TryResolveInput(out var ie)) return;
 
@@ -78,6 +124,7 @@ namespace CosmicShore.UI
 
         public void OnPointerUp(PointerEventData eventData)
         {
+            if (_toggle) return;
             if (_holding && eventData.pointerId == _pointerId) Release();
         }
 
@@ -107,6 +154,7 @@ namespace CosmicShore.UI
         bool TryResolveInput(out InputEvents ie)
         {
             ie = _bound;
+            if (!_wantPressable && _bound == InputEvents.FullSpeedStraightAction) return false;
             if (!_actions || _actions.ResolvesOnActiveDevice(_bound)) return true;
 
             // The same control's other events, pad table first (the keyboard's shifts name the same pair).

@@ -405,6 +405,9 @@ namespace CosmicShore.Content
                 ".prefab" => MainObjectOfPrefab(guid),
                 ".asset" or ".mat" => MainObjectOfAsset(guid),
                 ".png" or ".jpg" or ".jpeg" or ".tga" or ".psd" => typeof(Sprite).IsAssignableFrom(type) ? 21300000 : 2800000,
+                // A TextAsset's main object (the cell environments' layout bakes are .bytes, read
+                // with Resources.Load<TextAsset>); LoadTextAsset reads the file by its guid.
+                _ when TextAsset.IsTextAssetExtension(ext) => 4900000,
                 _ => 0,
             };
             if (fileId == 0) return null;

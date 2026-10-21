@@ -68,6 +68,33 @@ namespace CosmicShore.Gameplay
         /// <summary>Bar cross-section, both in-plane and across the port plane.</summary>
         const float BarCross = 3f;
 
+        // ── Flush: no prism of a station passes through another ──────────────────────────────
+        // NO PRISM MAY INTERPENETRATE ANOTHER (Docs/ECOSYSTEM.md §49.10), held here at authoring
+        // time by geometry rather than by any pass at load. Three things used to cross, measured
+        // by Tools/Build/audit_prism_clipping.py (6,015 pairs at intensity 1, all in the plug):
+        //
+        //   1. The three rakes lay in ONE plane, so every bar of one rake cut straight through
+        //      every bar of the other two where their lines crossed. No scale fixes a crossing,
+        //      so the rakes are LAYERED along the axis, one cross-section apart (RakeLayer): the
+        //      weave a pilot sees down the axis is identical, the bars of two rakes now lie face
+        //      to face, and every bar keeps its full 3 x 3 section and its length.
+        //   2. The bars of the two innermost lines ran in to the eye THROUGH the collar's
+        //      blocks. They now start on the circle that just contains the collar
+        //      (CollarClearRadius), so the eye's rim between 18 and 26.3 is the collar's alone -
+        //      the Plain aim point the collar's remarks already describe, with Danger beyond it.
+        //   3. Every line ran out to the port rim and into the dish's innermost ring, whose
+        //      plates sit ON the rim. The bars now stop at that ring's inner reach
+        //      (DishInnerReach).
+        //
+        // Neither trim changes a COUNT: a run is still cut into as many bars as the eye-to-rim
+        // run always took, so the prism count, and with it Tools/Build/breakwater_arena.py, holds
+        // at every intensity; only the bar LENGTHS shrink, and the model prices the new ones.
+
+        /// <summary>Axial offset of rake <paramref name="rake"/> in the layered weave: one
+        /// <see cref="BarCross"/> per rake, centred on the port plane (-3 / 0 / +3), so two rakes'
+        /// bars meet face to face instead of passing through each other.</summary>
+        static float RakeLayer(int rake) => (rake - (RakeAngles.Length - 1) * 0.5f) * BarCross;
+
         // ── The keystone collar ─────────────────────────────────────────────────────────────
 
         const int CollarCount = 12;
@@ -80,6 +107,16 @@ namespace CosmicShore.Gameplay
         /// eye can never leave a collar floating off the rim it is supposed to draw.
         /// </summary>
         public const float CollarRadius = BreakwaterCourseSettings.EyeRadius + CollarCube * 0.5f;
+
+        /// <summary>
+        /// The radius of the smallest circle in the port plane that contains every collar block:
+        /// a block's outer corners stand at (CollarRadius + half a block) out and half a block
+        /// round, so sqrt(26^2 + 4^2) = 26.31. A plug bar that starts on this circle cannot touch
+        /// a block at any of the twelve bearings.
+        /// </summary>
+        static readonly float CollarClearRadius = Mathf.Sqrt(
+            (CollarRadius + CollarCube * 0.5f) * (CollarRadius + CollarCube * 0.5f) +
+            CollarCube * 0.5f * (CollarCube * 0.5f));
 
         // ── The dish ────────────────────────────────────────────────────────────────────────
 
@@ -176,6 +213,21 @@ namespace CosmicShore.Gameplay
         /// shoal clearance), so the horn and the rubble cannot overlap by drift.</summary>
         public static float DishRadius(float portRadius) => DishRatio * portRadius;
 
+        /// <summary>
+        /// How close to the axis the dish's innermost ring reaches. Its plates are centred ON the
+        /// port rim, and a plate's half-width down the slope (sin a of it) plus its half-thickness
+        /// across the shell (cos a of it) bring its inner edge in toward the axis; at the top of the
+        /// jitter that is 1.18 x (3.5 sin 22 + 0.75 cos 22) = 2.37 units inside the rim. Going
+        /// round the ring only moves a point AWAY from the axis, so nothing of the ring is closer.
+        /// The plug's bars end inside this radius.
+        /// </summary>
+        static float DishInnerReach(float portRadius)
+        {
+            float a = DishHalfAngleDegrees * Mathf.Deg2Rad;
+            return portRadius - (1f + DishJitter) *
+                   (DishPlateWidth * 0.5f * Mathf.Sin(a) + DishPlateThickness * 0.5f * Mathf.Cos(a));
+        }
+
         // ────────────────────────────────────────────────────────────────────────────────────
 
         /// <summary>
@@ -203,7 +255,10 @@ namespace CosmicShore.Gameplay
         /// sit at exactly 18, so the station advertised a mouth 1.5 units wider than it had.
         /// Clipping the near edge (<c>d - BarCross / 2</c>) and taking the eye's half-chord THERE
         /// puts the nearest corner of the nearest bar at exactly the eye radius - which is what
-        /// makes the documented 1.46x hull clearance true rather than 1.34x.</para>
+        /// makes the documented 1.46x hull clearance true rather than 1.34x. Since the flush pass
+        /// (see "Flush" above) that eye-to-rim run sets only how many bars a run is cut into: the
+        /// bars themselves are laid from the collar's clear circle to the dish's inner reach, in
+        /// their rake's own layer.</para>
         /// </summary>
         static void EmitPlug(Vector3 centre, Vector3 axis, Vector3 u, Vector3 v, float port,
                              Action<Vector3, Quaternion, Vector3, PrismKind> emit)
@@ -211,6 +266,9 @@ namespace CosmicShore.Gameplay
             const float eye = BreakwaterCourseSettings.EyeRadius;
             float eyeSq = eye * eye;
             float portSq = port * port;
+            float collarSq = CollarClearRadius * CollarClearRadius;
+            float reach = DishInnerReach(port);
+            float reachSq = reach * reach;
 
             for (int a = 0; a < RakeAngles.Length; a++)
             {
@@ -220,55 +278,72 @@ namespace CosmicShore.Gameplay
                 Vector3 dir = c * u + s * v;        // along the bars
                 Vector3 perp = -s * u + c * v;      // across them, still in the port plane
 
-                // The bars lie in the port plane, so local Y (the axis) is perpendicular to local
-                // Z (the bar) by construction and the bar's 3-unit cross-section straddles the
-                // plane symmetrically.
+                // The bars lie in a plane parallel to the port plane, so local Y (the axis) is
+                // perpendicular to local Z (the bar) by construction; each rake's plane is
+                // RakeLayer off the port plane (see "Flush" above).
                 Quaternion rot = Quaternion.LookRotation(dir, axis);
+                Vector3 layer = axis * RakeLayer(a);
 
                 for (int k = 0; (k + 0.5f) * RakePitch < port - RakeEdgeMargin; k++)
                 {
                     float d = (k + 0.5f) * RakePitch;
                     float near = Mathf.Max(0f, d - BarCross * 0.5f);  // the bar's inner FACE
+                    float far = d + BarCross * 0.5f;                   // ...and its outer face
                     float half = Mathf.Sqrt(portSq - d * d);          // half-chord at the rim
+
+                    // Where the laid bars END: the bar's outer corner - at (perp = far, along =
+                    // end) - stops on the dish's inner reach. Never below zero; no shipped port
+                    // puts a line's outer face outside that reach (breakwater_arena.py asserts it).
+                    float end = Mathf.Sqrt(Mathf.Max(0f, reachSq - far * far));
 
                     for (int sign = -1; sign <= 1; sign += 2)
                     {
-                        Vector3 lineOrigin = centre + perp * (sign * d);
+                        Vector3 lineOrigin = centre + perp * (sign * d) + layer;
 
                         if (near < eye)
                         {
-                            // Half-chord measured at the NEAR FACE, so the bar's nearest corner
-                            // - at (perp = near, along = inner) - lands exactly on the eye.
+                            // The COUNT is still the eye-to-rim run's: the half-chord measured at
+                            // the NEAR FACE, so the run is the one whose nearest corner - at (perp
+                            // = near, along = inner) - would land on the eye.
                             float inner = Mathf.Sqrt(eyeSq - near * near);
-                            float run = half - inner;
-                            EmitBarRun(lineOrigin, dir, rot, inner, run, emit);
-                            EmitBarRun(lineOrigin, dir, rot, -half, run, emit);
+                            int bars = BarsFor(half - inner);
+
+                            // The LAID run starts on the collar's clear circle (its nearest corner
+                            // lands there) and stops on the dish's inner reach.
+                            float start = Mathf.Sqrt(collarSq - near * near);
+                            float laid = Mathf.Max(0f, end - start);
+                            EmitBarRun(lineOrigin, dir, rot, start, laid, bars, emit);
+                            EmitBarRun(lineOrigin, dir, rot, -end, laid, bars, emit);
                         }
                         else
                         {
-                            EmitBarRun(lineOrigin, dir, rot, -half, 2f * half, emit);
+                            EmitBarRun(lineOrigin, dir, rot, -end, 2f * end, BarsFor(2f * half), emit);
                         }
                     }
                 }
             }
         }
 
+        /// <summary>How many equal bars a run of <paramref name="length"/> is cut into: as few as
+        /// keep each one no longer than <see cref="MaxBarLength"/>. Taken from the full eye-to-rim
+        /// run, never the trimmed laid one, so the flush trims change no count.</summary>
+        static int BarsFor(float length) => Mathf.Max(1, Mathf.CeilToInt(length / MaxBarLength));
+
         /// <summary>
         /// Cut one run - the interval [<paramref name="start"/>, start + <paramref name="length"/>]
-        /// measured along <paramref name="dir"/> from <paramref name="origin"/> - into equal bars
-        /// no longer than <see cref="MaxBarLength"/>, and emit them.
+        /// measured along <paramref name="dir"/> from <paramref name="origin"/> - into
+        /// <paramref name="bars"/> equal bars laid end to end (face to face, so flush), and emit
+        /// them.
         ///
-        /// <para>The ceiling division is the whole reason the prism clamp never bites this arena:
-        /// the longest bar the shipped ladder produces is 58.79 units (intensity 4, the 30-unit
-        /// offset line), against a clamp at 100 that would have swallowed the difference in
-        /// silence.</para>
+        /// <para>The ceiling division in <see cref="BarsFor"/> is the whole reason the prism clamp
+        /// never bites this arena: every bar is shorter than <see cref="MaxBarLength"/>, against a
+        /// clamp at 100 that would have swallowed the difference in silence.</para>
         /// </summary>
         static void EmitBarRun(Vector3 origin, Vector3 dir, Quaternion rot, float start,
-                               float length, Action<Vector3, Quaternion, Vector3, PrismKind> emit)
+                               float length, int bars, Action<Vector3, Quaternion, Vector3, PrismKind> emit)
         {
             if (length <= 0f) return;
 
-            int bars = Mathf.Max(1, Mathf.CeilToInt(length / MaxBarLength));
             float barLength = length / bars;
             Vector3 scale = new Vector3(BarCross, BarCross, barLength);
 

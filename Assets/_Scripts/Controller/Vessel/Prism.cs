@@ -859,6 +859,8 @@ namespace CosmicShore.Gameplay
             var handle = RenderHandle;
             if (!PrismRenderService.IsHandleUsable(in handle))
             {
+                CosmicShore.Utility.PerformanceBenchmark.LoadInsights.Count(
+                    "Suction: prisms with no render entity (they snap instead of suctioning)");
                 PrismClockDiagnostics.WarnNoRenderEntity("cellSwapSuction", this,
                     PrismRenderService.StatusLine());
                 return;
@@ -1204,6 +1206,7 @@ namespace CosmicShore.Gameplay
             // spatial registration) rather than one block of it - a slice that only counts
             // part of the work it is meant to bound is not a bound.
             long creationT0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            long insightT0 = CosmicShore.Utility.PerformanceBenchmark.LoadInsights.AccumulateStart();
 
             using (s_createVisibilityMarker.Auto())
             {
@@ -1268,6 +1271,8 @@ namespace CosmicShore.Gameplay
             }
 
             s_creationSpentMs += (System.Diagnostics.Stopwatch.GetTimestamp() - creationT0) * s_creationMsPerTick;
+            CosmicShore.Utility.PerformanceBenchmark.LoadInsights.AccumulateSample(
+                "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)", insightT0);
         }
 
         /// <summary>
