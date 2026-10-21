@@ -244,9 +244,23 @@ def config_asset(script_guid: str) -> str:
         "  dogSpeed: 520\n  padDogSpeed: 1\n  aiNoise: 0.15\n  callTime: 2.5\n  callCooldown: 20\n  decoyCooldown: 4\n"
         "  teleportGuard: 0.6\n  pooEvery: 6\n  pooCount: 7\n  pooSpread: 22\n  pooPrismScale: {x: 2, y: 2, z: 5}\n"
         "  attackRange: 200\n  contactReach: 8\n  strikeCooldown: 1.2\n  pipSize: 0.32\n  viewMargin: 0.02\n  viewDepth: 600\n"
+        + STABILITY_FIELDS +
         f"  callSfx:\n    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n"
         f"  decoySfx:\n    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n"
         f"  teleportSfx:\n    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n")
+
+
+# The jacks' player's stability (Garrett, 2026-10-21: "the marlin makes the jacks player sick with its movement"). Added to a
+# committed config once, at the C# initializers, so a value tuned after is never overwritten.
+STABILITY_FIELDS = ("  jackSeatPlaneEase: 0.25\n  pilotSeatPlaneEase: 3\n  jackSeatMarlinWeight: 0\n  pilotSeatMarlinWeight: 0.45\n"
+                    "  viewPanEase: 1.2\n")
+
+
+def config_retrofit(text: str) -> str:
+    """The stability fields after viewDepth, once. Idempotent."""
+    if "  jackSeatPlaneEase:" in text:
+        return text
+    return re.sub(r"^(  viewDepth: .*\n)", lambda m: m.group(1) + STABILITY_FIELDS, text, count=1, flags=re.M)
 
 
 def control_asset(script_guid: str, name: str, value: int) -> str:
@@ -409,6 +423,8 @@ def check_assets(config: str, controls, container: str):
     errs = []
     if f"guid: {guid_of_script('MarlinJacksConfigSO')}, type: 3" not in config:
         errs.append("MarlinJacksConfig.asset: does not name MarlinJacksConfigSO")
+    if "  jackSeatPlaneEase:" not in config or "  viewPanEase:" not in config:
+        errs.append("MarlinJacksConfig.asset: no jacks'-seat stability fields (run the tool)")
     action = guid_of_script("MarlinJacksActionSO")
     for name, value, text in controls:
         if f"guid: {action}, type: 3" not in text or f"  control: {value}\n" not in text:
@@ -482,6 +498,10 @@ def author():
                                  "DefaultImporter:\n  externalObjects: {}\n  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
     if not os.path.exists(CONFIG):
         write(CONFIG, config_asset(guid_of_script("MarlinJacksConfigSO"))); write(CONFIG + ".meta", native_meta(CONFIG_GUID))
+    else:
+        old = read(CONFIG); new = config_retrofit(old)
+        if new != old:
+            write(CONFIG, new)
     action = guid_of_script("MarlinJacksActionSO")
     for name, value, guid in CONTROLS:
         if not os.path.exists(control_path(name)):
@@ -525,6 +545,9 @@ def self_test():
     controls = [(n, v, control_asset(guid_of_script("MarlinJacksActionSO"), n, v)) for n, v, _ in CONTROLS]
     cfg, cont = config_asset(guid_of_script("MarlinJacksConfigSO")), container_asset()
     expect(check_assets(cfg, controls, cont), 0, "fresh assets pass")
+    expect(check_assets(cfg.replace("  jackSeatPlaneEase: 0.25\n", ""), controls, cont), 1, "no stability fields")
+    if config_retrofit(cfg) != cfg or "jackSeatPlaneEase" not in config_retrofit(cfg.replace(STABILITY_FIELDS, "")):
+        fails.append("the config retrofit is not idempotent or does not add the stability fields")
     expect(check_assets(cfg, [(n, v, t.replace("  control: ", "  control: 9")) for n, v, t in controls], cont), 1, "a wrong control")
     expect(check_assets(cfg, controls, cont.replace(CONTAINER_PRISM[1], "0" * 32)), 1, "a missing effect")
     container, network, fusion = register_container(read(CONTAINER)), register_network(read(NETWORK_PREFABS)), register_fusion(read(FUSION))

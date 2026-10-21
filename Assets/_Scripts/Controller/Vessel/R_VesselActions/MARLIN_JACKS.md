@@ -39,7 +39,17 @@ the old); the pilot can teleport to it.
   `MarlinJacksAI` for the jacks, which plays through aim points only, as thumbs do.
 - **The view.** Running the jacks, an orthographic camera looks straight down the marlin's plane, `viewSpan` across the
   screen's short side, and never turns with the marlin (the lab's Steady camera); the game camera is the small square.
-  Flying the marlin, the game camera has the screen and the jacks' view is the small square.
+  Flying the marlin, the game camera has the screen and the jacks' view is the small square. It draws the way the game
+  camera does: post-processing (bloom), anti-aliasing, HDR and the same volumes, copied from the game camera every frame
+  (`MarlinJacksView.AdoptPilotLook`).
+- **Stability for the jacks' player** (Garrett, 2026-10-21: "the marlin makes the jacks player sick with its movement. we
+  need to make things as stable for the jack player as we can"). While a human runs the jacks:
+  - the board (the jacks' plane, and what the view looks down) turns toward the marlin's plane at `jackSeatPlaneEase`
+    (0.25/s, against `pilotSeatPlaneEase` 3/s when the jacks are the AI), so the marlin's roll and pitch barely tilt the view;
+    0 holds it still;
+  - the view frames the herd alone (`jackSeatMarlinWeight` 0), or the jacks with no herd, so the marlin's flight never pans it;
+  - the pan, once the herd leaves the slack box, eases at `viewPanEase` (1.2/s, the lab's 1.6).
+  The marlin's height above or below the plane never moves the picture: the view is orthographic along the plane's normal.
 
 ## 2. Elements (Garrett, 2026-10-20)
 

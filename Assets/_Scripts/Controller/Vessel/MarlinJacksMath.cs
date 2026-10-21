@@ -169,11 +169,12 @@ namespace CosmicShore.Gameplay
         /// The Steady view's pan (the lab's <c>camUpdate</c>, <c>steady</c>): only the part of the offset to the goal that lies
         /// outside a slack box of half-size (<paramref name="halfWidth"/>, <paramref name="halfHeight"/>) moves the view,
         /// eased at 1.6/s. <paramref name="offsetRight"/> and <paramref name="offsetForward"/> are the goal's offset from the
-        /// view's centre along the view's right and forward.
+        /// view's centre along the view's right and forward. <paramref name="ease"/> is the lab's 1.6/s by default.
         /// </summary>
-        public static Vector2 SteadyPan(float offsetRight, float offsetForward, float halfWidth, float halfHeight, float dt)
+        public static Vector2 SteadyPan(float offsetRight, float offsetForward, float halfWidth, float halfHeight, float dt,
+                                        float ease = 1.6f)
         {
-            float a = Mathf.Min(1f, dt * 1.6f);
+            float a = Mathf.Min(1f, dt * ease);
             float pr = offsetRight - Mathf.Clamp(offsetRight, -halfWidth, halfWidth);
             float pf = offsetForward - Mathf.Clamp(offsetForward, -halfHeight, halfHeight);
             return new Vector2(pr * a, pf * a);
@@ -191,9 +192,12 @@ namespace CosmicShore.Gameplay
             return nf.sqrMagnitude > 1e-8f ? nf.normalized : boardForward;
         }
 
-        /// <summary>The goal the view frames: the herd's centre weighted toward the marlin (0.25 while the human runs the
-        /// jacks, 0.45 while they fly the marlin), or the marlin alone with no herd.</summary>
-        public static Vector3 FrameGoal(Vector3 herdCentre, int herdCount, Vector3 marlin, bool humanFliesMarlin) =>
-            herdCount > 0 ? Vector3.Lerp(herdCentre, marlin, humanFliesMarlin ? 0.45f : 0.25f) : marlin;
+        /// <summary>The goal the view frames: the herd's centre weighted toward the marlin by <paramref name="marlinWeight"/>
+        /// (0 = the herd alone), or <paramref name="noHerd"/> with no herd.</summary>
+        public static Vector3 FrameGoal(Vector3 herdCentre, int herdCount, Vector3 marlin, float marlinWeight, Vector3 noHerd) =>
+            herdCount > 0 ? Vector3.Lerp(herdCentre, marlin, Mathf.Clamp01(marlinWeight)) : noHerd;
+
+        /// <summary>The board's ease toward the hull's frame this frame (1 - e^(-rate dt)): 0 holds it still.</summary>
+        public static float Ease(float rate, float dt) => rate > 0f ? 1f - Mathf.Exp(-rate * dt) : 0f;
     }
 }

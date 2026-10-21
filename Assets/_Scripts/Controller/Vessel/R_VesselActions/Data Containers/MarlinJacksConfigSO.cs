@@ -92,6 +92,22 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far above and below the plane the jacks' camera sees (game units).")]
         [SerializeField, Min(10f)] float viewDepth = 600f;
 
+        [Header("Stability for the jacks' player (Garrett, 2026-10-21: \"the marlin makes the jacks player sick with its " +
+                "movement. we need to make things as stable for the jack player as we can\")")]
+        [Tooltip("While a human runs the jacks: how fast the board (the plane the jacks run on, and the view looks down) " +
+                 "turns toward the marlin's own plane (1/s). Low = the marlin's roll and pitch barely move the view; 0 holds " +
+                 "the plane still until the human flies the marlin again.")]
+        [SerializeField, Min(0f)] float jackSeatPlaneEase = 0.25f;
+        [Tooltip("While the human flies the marlin (the jacks are the AI): how fast the board follows the marlin's plane (1/s).")]
+        [SerializeField, Min(0f)] float pilotSeatPlaneEase = 3f;
+        [Tooltip("While a human runs the jacks: how much the view's framing leans toward the marlin (0 = the herd alone, " +
+                 "so the marlin's flight never pans the view). With no herd the view frames the jacks.")]
+        [SerializeField, Range(0f, 1f)] float jackSeatMarlinWeight = 0f;
+        [Tooltip("While the human flies the marlin: how much the small view's framing leans toward the marlin.")]
+        [SerializeField, Range(0f, 1f)] float pilotSeatMarlinWeight = 0.45f;
+        [Tooltip("How fast the view pans once its goal leaves the slack box (1/s; the lab's 1.6). Lower is calmer.")]
+        [SerializeField, Min(0.01f)] float viewPanEase = 1.2f;
+
         [Header("Audio (FMOD; empty until sound design wires them)")]
         [Tooltip("The marlin calls the herd.")]
         [SerializeField] EventReference callSfx;
@@ -131,6 +147,11 @@ namespace CosmicShore.Gameplay
         public float PipSize => pipSize;
         public float ViewMargin => viewMargin;
         public float ViewDepth => viewDepth;
+        public float JackSeatPlaneEase => jackSeatPlaneEase;
+        public float PilotSeatPlaneEase => pilotSeatPlaneEase;
+        public float JackSeatMarlinWeight => jackSeatMarlinWeight;
+        public float PilotSeatMarlinWeight => pilotSeatMarlinWeight;
+        public float ViewPanEase => viewPanEase;
         public EventReference CallSfx => callSfx;
         public EventReference DecoySfx => decoySfx;
         public EventReference TeleportSfx => teleportSfx;

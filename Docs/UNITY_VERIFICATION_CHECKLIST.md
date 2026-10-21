@@ -12981,5 +12981,8 @@ session, so `/verify-unity` did not run.
    the herd eats shielded prisms. Mass 5: clusters of your prisms appear in the herd every 6 s. Time 5: X drops a decoy
    under the marlin.
 6. Let the herd go hungry: it never falls below 12.
+8. (Round 2, Garrett: "the jacks view needs post processing for bloom at least" and "the marlin makes the jacks player
+   sick") On the jacks' seat, the view blooms like the game camera. Let the AI marlin roll, loop and boost: the view barely
+   tilts and does not pan with it; it pans only when the herd drifts near the edge.
 7. Frenzy: in a cell that reaches Frenzy, wild grazers eat SHIELDED prisms (the shield goes with the prism); super-shielded
    prisms are never eaten; when the cell calms, they stop.

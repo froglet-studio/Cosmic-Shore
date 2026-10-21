@@ -119,6 +119,24 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void JacksSeat_FramesTheHerdAlone_SoTheMarlinNeverPansTheView()
+        {
+            // Garrett, 2026-10-21: "the marlin makes the jacks player sick with its movement"
+            var herd = new Vector3(10f, 0f, 0f);
+            var marlin = new Vector3(500f, 0f, 0f);
+            Assert.AreEqual(herd, MarlinJacksMath.FrameGoal(herd, 5, marlin, 0f, Vector3.zero));
+            Assert.AreEqual(new Vector3(-3f, 0f, 0f), MarlinJacksMath.FrameGoal(herd, 0, marlin, 0f, new Vector3(-3f, 0f, 0f)),
+                            "no herd: the given fallback (the jacks), not the marlin");
+        }
+
+        [Test]
+        public void PlaneEase_ZeroHoldsTheBoardStill()
+        {
+            Assert.AreEqual(0f, MarlinJacksMath.Ease(0f, 0.016f));
+            Assert.Less(MarlinJacksMath.Ease(0.25f, 0.016f), MarlinJacksMath.Ease(3f, 0.016f));
+        }
+
+        [Test]
         public void SteadyView_NeverTurnsWithTheMarlinsHeading()
         {
             var f = MarlinJacksMath.SteadyForward(Vector3.forward, Vector3.up, Vector3.right);

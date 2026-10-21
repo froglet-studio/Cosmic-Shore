@@ -88,10 +88,10 @@ namespace CosmicShore.Gameplay
         bool _seeding;
         uint _pooSerial;
 
-        // the board: the marlin's x-z plane, eased toward the hull's (the Wrasse's Eased frame, KiteBoardFrame.Eased)
+        // the board: the marlin's x-z plane, eased toward the hull's (the Wrasse's Eased frame, KiteBoardFrame.Eased) - fast
+        // while the human flies the marlin, slow while they run the jacks so the marlin's roll and pitch barely move their view
         Vector3 _r = Vector3.right, _f = Vector3.forward, _u = Vector3.up;
         bool _snapped;
-        const float BoardEaseRate = 3f;
 
         // the jacks and the decoy
         readonly Vector3[] _jack = new Vector3[2];
@@ -292,7 +292,8 @@ namespace CosmicShore.Gameplay
                 _snapped = true;
                 return;
             }
-            float a = 1f - Mathf.Exp(-BoardEaseRate * dt);
+            float a = MarlinJacksMath.Ease(_humanRunsJacks ? config.JackSeatPlaneEase : config.PilotSeatPlaneEase, dt);
+            if (a <= 0f) return;
             _f += (t.forward - _f) * a;
             _u += (t.up - _u) * a;
             _f.Normalize();

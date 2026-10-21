@@ -42,6 +42,11 @@ MonoBehaviour:
   pipSize: 0.32
   viewMargin: 0.02
   viewDepth: 600
+  jackSeatPlaneEase: 0.25
+  pilotSeatPlaneEase: 3
+  jackSeatMarlinWeight: 0
+  pilotSeatMarlinWeight: 0.45
+  viewPanEase: 1.2
   callSfx:
     Guid:
       Data1: 0

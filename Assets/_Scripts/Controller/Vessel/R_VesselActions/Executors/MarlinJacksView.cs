@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering.Universal;
 
 namespace CosmicShore.Gameplay
 {
@@ -52,12 +53,7 @@ namespace CosmicShore.Gameplay
             if (pilot != _pilot) { RestorePilot(); _pilot = pilot; if (_pilot) { _pilotRect = _pilot.rect; _pilotDepth = _pilot.depth; } }
 
             _cam.enabled = true;
-            if (_pilot)
-            {
-                _cam.cullingMask = _pilot.cullingMask;
-                _cam.clearFlags = _pilot.clearFlags;
-                _cam.backgroundColor = _pilot.backgroundColor;
-            }
+            if (_pilot) AdoptPilotLook(_pilot);
 
             float baseDepth = _pilot ? _pilotDepth : 0f;
             float m = cfg.ViewMargin, h = cfg.PipSize, aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 1.78f;
@@ -86,7 +82,11 @@ namespace CosmicShore.Gameplay
             _cam.farClipPlane = 2f * cfg.ViewDepth + 1f;
 
             Vector3 up = _ex.BoardUp;
-            var goal = _ex.OnPlane(MarlinJacksMath.FrameGoal(_ex.HerdCentre, _ex.HerdCount, _ex.MarlinPosition, !humanRunsJacks));
+            // Running the jacks, the view frames the herd alone (or the jacks with no herd), so the marlin's flight never pans
+            // it (Garrett, 2026-10-21: "the marlin makes the jacks player sick with its movement")
+            var noHerd = humanRunsJacks ? 0.5f * (_ex.JackWorld(0) + _ex.JackWorld(1)) : _ex.MarlinPosition;
+            float lean = humanRunsJacks ? cfg.JackSeatMarlinWeight : cfg.PilotSeatMarlinWeight;
+            var goal = _ex.OnPlane(MarlinJacksMath.FrameGoal(_ex.HerdCentre, _ex.HerdCount, _ex.MarlinPosition, lean, noHerd));
             if (!_placed)
             {
                 _centre = goal;
@@ -98,11 +98,41 @@ namespace CosmicShore.Gameplay
             var right = Vector3.Cross(up, _forward).normalized;
             float halfH = _cam.orthographicSize, halfW = halfH * camAspect, slack = cfg.CamSlack;
             var off = goal - _centre;
-            var pan = MarlinJacksMath.SteadyPan(Vector3.Dot(off, right), Vector3.Dot(off, _forward), halfW * slack, halfH * slack, dt);
+            var pan = MarlinJacksMath.SteadyPan(Vector3.Dot(off, right), Vector3.Dot(off, _forward), halfW * slack, halfH * slack, dt,
+                                                cfg.ViewPanEase);
             _centre += right * pan.x + _forward * pan.y;
 
             _cam.transform.SetPositionAndRotation(_centre + up * cfg.ViewDepth, Quaternion.LookRotation(-up, _forward));
         }
+
+        /// <summary>
+        /// Draw the way the game camera draws (Garrett, 2026-10-21: "the jacks view needs post processing for bloom at
+        /// least"). A bare <c>AddComponent&lt;Camera&gt;</c> comes up with URP's defaults - no post-processing, no
+        /// anti-aliasing - and image quality lives on <see cref="UniversalAdditionalCameraData"/>, not on the
+        /// <see cref="UnityEngine.Camera"/> (<c>MaelstromPreviewHost.AdoptGameCameraSettings</c> is the pattern). Read every
+        /// frame, so a graphics setting that turns post-processing off for the game camera turns it off here too. The volume
+        /// trigger is the game camera, so this view blends exactly the volumes the pilot's view does even though its lens
+        /// sits far above the plane.
+        /// </summary>
+        void AdoptPilotLook(Camera pilot)
+        {
+            _cam.cullingMask = pilot.cullingMask;
+            _cam.clearFlags = pilot.clearFlags;
+            _cam.backgroundColor = pilot.backgroundColor;
+            _cam.allowHDR = pilot.allowHDR;
+            _cam.allowMSAA = pilot.allowMSAA;
+            if (!pilot.TryGetComponent(out UniversalAdditionalCameraData from)) return;
+            _data ??= _cam.GetUniversalAdditionalCameraData();
+            if (!_data) return;
+            _data.renderPostProcessing = from.renderPostProcessing;
+            _data.antialiasing = from.antialiasing;
+            _data.antialiasingQuality = from.antialiasingQuality;
+            _data.renderShadows = from.renderShadows;
+            _data.volumeLayerMask = from.volumeLayerMask;
+            _data.volumeTrigger = from.volumeTrigger ? from.volumeTrigger : pilot.transform;
+        }
+
+        UniversalAdditionalCameraData _data;
 
         void RestorePilot()
         {
