@@ -108,5 +108,13 @@ namespace CosmicShore.UI
         }
 
         void OnDisable() => FlightTouchClaims.Remove(_region);
+
+        // The slider is the only writer while it shows - but a pad's bumper writes Throttle every frame it
+        // flies, and InputStatus.ResetForReplay zeroes it, so the set value is re-asserted rather than
+        // trusted to have stuck. Equal writes do not dirty the replicated field.
+        void Update()
+        {
+            if (_input != null && !Mathf.Approximately(_input.Throttle, _value)) _input.Throttle = _value;
+        }
     }
 }

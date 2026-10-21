@@ -118,13 +118,36 @@ namespace CosmicShore.Gameplay
 
         // ------------------- The integrator -------------------
         /// <summary>Live throttle 0..1: the right trigger's analog depth (the keyboard strategy
-        /// writes RightTriggerAnalog binary from RShift, so desktop works unchanged). Autopilot
-        /// reads as fully held — AIPilot produces no trigger input.</summary>
+        /// writes RightTriggerAnalog binary from RShift, so desktop works unchanged), or on a phone
+        /// the set-and-hold slider (<see cref="PilotThrottle01"/>). Autopilot reads as fully held —
+        /// AIPilot produces no trigger input.</summary>
         float ReadThrottle01()
         {
             if (VesselStatus != null && VesselStatus.AutoPilotEnabled) return 1f;
-            return InputStatus != null ? Mathf.Clamp01(InputStatus.RightTriggerAnalog) : 0f;
+            return PilotThrottle01(InputStatus);
         }
+
+        /// <summary>
+        /// A human pilot's throttle 0..1, by the device they fly with. A phone has no analog trigger
+        /// (touch writes <c>RightTriggerAnalog</c> 0), so on <see cref="InputDeviceType.Touch"/> the
+        /// throttle is <c>InputStatus.Throttle</c>, which the phone HUD's set-and-hold slider writes
+        /// (Garrett, 2026-10-21: "scarab can have a throttle appear on mobile as a slider that is
+        /// set"; SCARAB.md §3.11). Every other device keeps the right trigger's depth. Both values
+        /// and the device are owner-write NetworkVariables, so every peer reads the same throttle.
+        /// Shared with <c>ScarabAnimation</c> so the wing cases sweep off the throttle the hull flies on.
+        /// </summary>
+        public static float PilotThrottle01(IInputStatus input)
+        {
+            if (input == null) return 0f;
+            return Mathf.Clamp01(input.ActiveInputDevice == InputDeviceType.Touch
+                ? input.Throttle
+                : input.RightTriggerAnalog);
+        }
+
+        /// <summary>True when the pilot's throttle is SET rather than held (the phone slider): it stays
+        /// where it was left with no finger on the glass, so an idle frame is not a released throttle.</summary>
+        public static bool ThrottleIsSetAndHold(IInputStatus input)
+            => input != null && input.ActiveInputDevice == InputDeviceType.Touch;
 
         /// <summary>The Time-scaled throttle ceiling. ThrottleScalerMultiplier is the base
         /// class's existing ElementalFloat (dormant fleet-wide until now) — authored on the
@@ -141,7 +164,11 @@ namespace CosmicShore.Gameplay
         /// <summary>Double-tap detector for the TIME-5 dash. A rising edge is the analog value
         /// crossing the same deadzone the input strategy uses for its own trigger edges; two
         /// rising edges inside the window fire the dash. The upgrade gate is read at the moment
-        /// of the second tap (per-use snapshot), never cached.</summary>
+        /// of the second tap (per-use snapshot), never cached.
+        /// On a phone the value is the slider (<see cref="PilotThrottle01"/>), unchanged here: two
+        /// jumps up from the bottom 5% of the slider inside the window are the double tap (from a
+        /// stop: tap high, tap the bottom, tap high). Two taps at the SAME height are not, because the
+        /// slider holds its value between them and so never crosses the deadzone (SCARAB.md §3.11).</summary>
         void DetectSnapDash(float throttle01)
         {
             bool held = throttle01 > TriggerDeadzone;

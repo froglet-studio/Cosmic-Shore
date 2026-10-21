@@ -221,6 +221,27 @@ camera, weapons, zoom, etc. need to be aligned".
 - The cruising trail is thin long blocks: 0.6 × 0.6 × 7, one per wavelength (8 u, 4 u at Mass 10).
 - Cruise is the design ship's 18 u/s.
 
+### 3.7 On a phone (2026-10-21, Garrett: "the shrike's zoom should be a toggle button on mobile")
+
+The Shrike flies the **TotemButtons** scheme (`Tools/Build/author_touch_profiles.py`, `Resources/TouchControlProfiles.asset`):
+lifting a thumb raises nothing; the left thumb (or any single thumb) steers, and the controls are buttons round the
+right thumb. The prefab has no touch overrides, so every button reaches the shared bindings above.
+
+| Button | Raises | What it does |
+|---|---|---|
+| The four cards | `Button3Action` (Space mode), `FlipAction` (Charge mode), `Button2Action` (Time mode), `Button1Action` (Mass) | Pick the mode; Mass detaches from a dock |
+| **Trigger** (extra, primary, held) | `RightStickAction` (RT) | The mode's action while held: the lance fires, the paint holds, the sling shoots on the press |
+| **Zoom** (extra, **toggle**) | `LeftStickAction` (LT) | A tap raises the eyepiece and it stays up; the next tap lowers it |
+
+- **The zoom is a latch.** The button presses `LeftStickAction` on one tap and releases it on the next, and
+  `ShrikeExecutor` keeps the eyepiece up for exactly as long as the event is held (`BeginZoom` / `EndZoom`). A phone has
+  no trigger depth (`LeftTriggerAnalog` stays 0), and `UpdateZoom` reads a held zoom with no depth as the full zoom, so
+  the window always opens to its narrowest field of view (22°) at the 12/s chase. The pad's analog zoom dial has no
+  phone equivalent.
+- **Known edge**: the turn's end clears the zoom (`ClearAll`) while the button may still show latched; the next tap then
+  releases nothing and a second tap raises it again.
+- **Not reachable on a phone**: a partial zoom (above).
+
 ## 4. HUD
 
 The four cards follow the element map: Charge (Targeting Array) · Mass (Nest) · Space (Void Lance) · Time (Void Sling).

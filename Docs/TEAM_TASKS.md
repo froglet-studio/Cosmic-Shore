@@ -520,6 +520,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Docs/Studios/BRITTLE_STAR.md 5.4; Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 1 and 3.5
+- **Progress (2026-10-21, cece/admiring-hamilton-gyzzh8):** the phone half of the Charge Mode question is settled: turning the phone no longer raises FlipAction (DeviceOrientationHandler), and on a phone Charge Mode is its card (Garrett's six-button layout, BRITTLE_STAR.md §1 'On a phone'). Still Garrett's: the starting spare ring, Overdrive, and whether Charge Mode stays on RB / E for pad and keyboard.
 
 ### T-20261016-5ed6 · open · dev · Brittle Star
 - **Task:** Replicate the Brittle Star's analog RT depth (two bytes a frame) so remote copies fire, heat, overheat (and lay the danger trail) and stiffen the Charge cords at the owner's real pull; today a remote copy reads a press as a full pull, so its heat state can differ by peer (vessel rule 48). The Thresher has the same gap.
@@ -1162,6 +1163,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** any session; Yash (offered) to check on a phone
 - **Added:** 2026-10-19 by a Claude session (`cece/charming-wright-4ayoce`)
 - **See:** KITE_NAVIGATOR.md Round 5; Assets/Resources/KiteNavigatorUnlit.mat
+- **Progress (2026-10-21, cece/admiring-hamilton-gyzzh8):** GrizzlyClawConeVisual done: it copies Resources/KiteNavigatorUnlit.mat (set additive), falls back to Shader.Find, and with neither logs one error and draws no cone instead of throwing. BrittleStarExecutor (cord fallback) and ShrikeExecutor (missile trail) already return null rather than throw, but still need the referenced material to draw on a phone.
 
 ### T-20261019-6778 · open · test · preview
 - **Task:** Find what makes the cursor briefly reappear during one-thumb mouse flight in the Breakwater microgame window (Sparrow). Control is no longer lost, but Caleb saw the cursor pop out for a moment and suspects a particular screen position triggers it.
@@ -1239,6 +1241,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** any session; Yash (offered)
 - **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md §5
+- **Progress (2026-10-21, cece/admiring-hamilton-gyzzh8):** fixed BRITTLE_STAR F1 and :35 (plus R2's flip line), SCARAB §3.1 / §3.2 / §15 item 9 (new §3.11 'On a phone'), and annotated T-20261016-3e80. The rest of the list is open.
 
 ### T-20261021-edc0 · open · test · Thresher
 - **Task:** Fly the Thresher on cece/youthful-johnson-hccyzf: it spawns in Mass Mode (lit ball, steals rival prisms, lays a trail, no blasts); A leaves it and the ball breaks again; a vessel swap back puts it in Mass Mode; AI Threshers in Thresher Time stay in Mass Mode

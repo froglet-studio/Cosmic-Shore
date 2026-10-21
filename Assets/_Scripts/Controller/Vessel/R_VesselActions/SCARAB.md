@@ -501,15 +501,16 @@ stick pinned at the perimeter for a juke perturbs nothing.)
 | LT | `InputStatus.LeftTriggerAnalog` + `LeftStickAction (2)` edges | `LeftStickAction (2)` → `[ScarabSharpDriftAction, ScarabDriftAction, DriftTrailAction]` — the Squirrel stack |
 | Right stick | `RightNormalizedJoystickPosition` (polled) | `ScarabJukeController` (§3.4) |
 | A (`buttonSouth`) / Space | `Button1Action (6)` | `PlaceSwitchAction` (§5) |
-| RB | raises `FlipAction` + feeds binary `InputStatus.Throttle` | unbound (RB's `Throttle` feed is ignored — §3.2) |
+| RB | raises `FlipAction` + feeds binary `InputStatus.Throttle` | unbound (RB's `Throttle` feed is ignored on a pad — §3.2; `Throttle` is read only on touch, §3.11) |
 | B / X / Y, LB, D-pad | `Button2Action` / `Button3Action` / — | unbound |
 
 Combo events (`OnlyLeftStickAction (12)` / `OnlyRightStickAction (11)` / `BothSticksAction (13)`)
 fire constantly under a two-analog-trigger scheme — all three stay unbound on gamepad. Touch: the
-drift stack mirrors the Squirrel's touch overrides (`OnlyLeftStickAction` → drift). ⚠ **Touch has
-no raise site for `Button1Action`** (the "Onscreen UI buttons" the enum comments promise don't
-exist in code) — switch placement is gamepad/desktop-only until an on-screen button raising the
-shared `OnButtonPressed` SOAP event is added (open item, §15).
+prefab carries no touch overrides, and since 2026-10-21 the Scarab's phone controls are on-screen
+buttons that raise the shared events above (the Switch card raises `Button1Action`, a Drift button
+`LeftStickAction`) plus a throttle slider writing `InputStatus.Throttle` — §3.11. *(Superseded: this
+paragraph used to say touch had no raise site for `Button1Action`; the ability cards became buttons
+in 9718a382, `AbilityCardPress`.)*
 
 ### 3.2 Throttle — continuous analog acceleration (a different model from the fleet)
 
@@ -561,8 +562,9 @@ Notes and consequences, all of which are design decisions worth marking up:
 - The analog read is per-frame in the transformer (the `ShieldSwipeActionExecutor` /
   `MantaAnalogTurnBoostExecutor` precedent: continuous behaviours poll `InputStatus`, they do not
   ride events). `InputStatus.Throttle` — the binary right-**bumper** feed ("this is just the boost
-  button", GamepadInputStrategy.cs:47) — is ignored entirely; repointing it would be a global
-  input change affecting every vessel.
+  button", GamepadInputStrategy.cs:47) — is ignored on every device but touch; repointing it would
+  be a global input change affecting every vessel. **On touch** it is the throttle: no touch
+  strategy writes it, and the phone HUD's set-and-hold slider does (`ScarabVesselTransformer.PilotThrottle01`, §3.11).
 - `ThrottleScalerMultiplier` is the **existing** `ElementalFloat` on `VesselTransformer` (the
   Squirrel ships it disabled) — the Scarab enables it as its Time scaling. Double-dipping is now
   impossible by construction rather than by authoring: the map's generic per-element multiplier
@@ -1030,6 +1032,46 @@ closure on a slow sample clock. Nothing changes for a human pilot.
 and an `ExplosionWitherLifeformByCrystalEffectSO` (fauna only, own-domain not spared), beside the
 debuff and the ball forge it always had. Counted everywhere, paid only by Undertow's rule.
 Record: `Arcade/UNDERTOW.md`.
+
+### 3.11 On a phone (2026-10-21)
+
+Garrett, 2026-10-21: *"scarab can have a throttle appear on mobile as a slider that is set. the juke
+can be done from anywhere with the right thumb. drift becomes a button, and the ring is another
+button."* The Scarab flies the **TotemButtons** scheme (`Tools/Build/author_touch_profiles.py`,
+`Resources/TouchControlProfiles.asset`): lifting a thumb raises nothing, the left thumb (or any single
+thumb) steers, and the rest is on screen.
+
+| Control | Raises / writes | What it does |
+|---|---|---|
+| **Throttle slider** (set and hold, starts at half) | `InputStatus.Throttle` 0..1 (owner-write, replicated) | The throttle (§3.2). Drag it to a speed and let go: it stays there, so no thumb is spent holding it. The bottom is the brake (coast below the 0.05 deadzone) |
+| **Drift** button (held) | `LeftStickAction` (LT) | `ScarabSharpDriftAction` + `ScarabDriftAction` + `DriftTrailAction` |
+| Switch card (Mass) — "the ring" | `Button1Action` (A) | Place the switch (§5) |
+| Throttle card (Time) | — | Display only on touch (the slider is the throttle) |
+| Cavitation Blast / Ball Forge cards | — | Not buttons on any device (the juke and flying through a crystal are their controls) |
+| **Juke** | the right stick | A second finger on the right side of the glass, anywhere |
+
+- **The throttle read.** `ScarabVesselTransformer.PilotThrottle01` reads `InputStatus.Throttle` when the
+  pilot's device (`ActiveInputDevice`, replicated) is Touch and `RightTriggerAnalog` otherwise; the
+  autopilot still reads a full throttle. `ScarabAnimation` reads the same value, and on touch an idle
+  frame (no thumb on the glass) does not drop it to zero, because the slider still holds it.
+- **Snap Dash (Time 5).** The double-tap detector is unchanged and now reads the slider: two rises
+  from the bottom 5% of the slider inside 0.3 s fire it (from a stop: tap high, tap the bottom, tap
+  high). Two taps at the same height do not, because the slider holds its value between them and never
+  crosses the deadzone. Reachable, but not a natural double tap: a phone test decides whether it needs
+  a gesture of its own.
+- **The juke.** `ScarabJukeController` polls `RightNormalizedJoystickPosition`. With one flight thumb
+  the touch strategy writes the right stick as zero on a single-stick hull (it used to mirror the
+  steering thumb onto it, so every hard turn was also a juke). A second flight finger is the right
+  stick, measured from where it landed, so a flick from anywhere on the right is a juke and a flick to
+  the rim is the plate. Of two flight fingers the left one steers and the right one jukes, by
+  position: a juke finger that lands LEFT of the steering thumb swaps them for that touch.
+- **The drift's depth.** A phone has no analog LT, so `VesselTransformer.GetTriggerSum` reads the
+  button as binary: both drift actions are active, the sum is 2, and the button is always the
+  **sharp** tier (eased in at the non-pad ramp, passing through the single tier on the way). The
+  single-only drift (a half pull on a pad) has no phone equivalent.
+- **Not reachable on a phone**: the single (half-pull) drift; a natural double-tap Snap Dash (above).
+- **If the HUD builds no slider** (a mode without the phone HUD), `Throttle` stays 0 and a touch
+  Scarab does not move — as before this change, when touch wrote no trigger depth at all.
 
 ## 4. The ball
 
@@ -2649,8 +2691,9 @@ implementation time.
    as energy-scoring rings alongside the mode's fixed goals. Confirm.
 8. **Right-stick hint address** (§12): approve a hint-only `InputEvents` member + a
    `PadRightStick` glyph, or accept a hint-less juke icon (the audit will flag it).
-9. **Touch** (§3.1): no `Button1Action` raise site exists on touch — on-screen switch button, or
-   gamepad/desktop-only at v1?
+9. **Touch** (§3.1): **CLOSED 2026-10-21** — Garrett: "scarab can have a throttle appear on mobile as
+   a slider that is set. the juke can be done from anywhere with the right thumb. drift becomes a
+   button, and the ring is another button." The Switch card is its button; §3.11 has the whole scheme.
 9a. **AI and a held modifier** (§3.8): **CLOSED — the mechanic it described is retired.** Kept for
    the trap. While the ball reversal rode a held drift, an AI drift was BINARY — the non-gamepad
    trigger sum reports 1 or 2 for the whole ability, so the drift hold read as FULLY HELD for a
