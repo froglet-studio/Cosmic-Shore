@@ -53,12 +53,14 @@ public static class Driver
                     break;
                 case "layout":
                 {
-                    // layout shape count seed size reach spin weight pulse time aspect fov
-                    var s = new SilencePerimeter.Settings { Shape = I(1), Count = I(2), Seed = I(3), Size = F(4), Reach = F(5), Spin = F(6) };
+                    // layout shape count seed size reach spin pullDrift weight pulse time aspect fov
+                    var s = new SilencePerimeter.Settings { Shape = I(1), Count = I(2), Seed = I(3), Size = F(4), Reach = F(5), Spin = F(6), PullDrift = F(7) };
                     sb.Append("layout");
+                    var pull = SilencePerimeter.PullPoint(s, F(10));
+                    Add(sb, pull.x); Add(sb, pull.y);
                     for (int i = 0; i < s.Count; i++)
                     {
-                        var p = SilencePerimeter.Layout(i, s, F(7), F(8), F(9), F(10), F(11));
+                        var p = SilencePerimeter.Layout(i, s, F(8), F(9), F(10), F(11), F(12));
                         Add(sb, p.Position); Add(sb, p.Right); Add(sb, p.Up); Add(sb, p.Forward); Add(sb, p.Presence); Add(sb, p.Seed);
                     }
                     sb.AppendLine();

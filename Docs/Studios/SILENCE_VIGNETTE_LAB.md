@@ -21,7 +21,63 @@ The question: what should the danger-coloured edge look like so that a silenced 
 
 Each column is averaged over seeds 1 to 3 at full strength, measured at the breath's peak. Breathing is not scored and is judged by eye.
 
-## Round 2 (2026-10-21): the 3D perimeter
+## Round 3 (2026-10-21): the pull
+
+**What changed.** Garrett's feedback on round 2: "more overlap, show only half the faceted object that is poking into the screen. there should be so much overlap, and distortions, and it should be high enough resolution that it isn't recognizable as any one effect. it doesn't read as crystals coming in from the edge it read reality trying to pull you somewhere you don't want to be."
+- **Half-buried:** each shard's centre sits on the screen's edge, so half of it is beyond. `perimeterReach` is now how far a centre may sink in. The shards grow in rather than sliding in from outside.
+- **Overlap:** 110 shards, up to 160, at depths from 0.6 to 1.6 times the old one, so they overlap in layers. The game now draws all of them in one dynamic mesh: one draw call.
+- **Resolution:** a crystal has 6 to 10 sides cut by three rings (36 to 60 facets, up from 20 to 28).
+- **The pull:**
+  - a point wanders slowly around the screen (`perimeterPullDrift`);
+  - near the edges, the frame is dragged toward it in slow waves (`perimeterPull`), and so is every facet's picture;
+  - each facet's picture is smeared toward the pull (`perimeterStreak`);
+  - the shards on the pull's side grow longer and sink deeper: a maw that moves.
+  - The middle of the screen stays still. A first cut let the pull shift the middle too, and the centre column jumped from 0.07 to 3.5.
+- **Not recognisable as crystals:**
+  - each shard fades toward its inward tip (`perimeterTipFade`);
+  - facets vary in how solid they are;
+  - edge lines are nearly off (0.05), and the fill, rim and tint are low.
+  - On their own, more and larger shards still read as an ice-cave mouth of red crystals. The tip fade is what dissolved them.
+- New looks: Undertow (strong pull), Shattered mirror, Broken trail, Negative space, Tear. Round 2's look is kept as "Round 2: crystals from the edge", approximated on round 3's layout.
+
+**Scorecard.** Produced by the lab's `runBatch`, re-run by `verify_lab.cjs` on this commit. A perimeter row goes through the WebGL passes at t = 0, at full silence, with no hit.
+
+| Look | Edge · space | Edge · bright | Edge · danger | Centre | Red · space |
+|---|---|---|---|---|---|
+| Off (control) | 0 | 0 | 0 | 0 | 0 |
+| Round 0: URP red multiply | 2.78 | 5.01 | 2.92 | 0.62 | 0.045 |
+| Round 1: 2D edge (overtuned) | 45.1 | 30.6 | 44.34 | 1.59 | 0.797 |
+| **Shipped: the pull (round 3)** | **10.15** | 7.92 | 11.81 | **0.07** | 0.127 |
+| Undertow (strong pull) | 10.25 | 7.88 | 11.83 | 0.1 | 0.128 |
+| Shattered mirror | 13.83 | 11.43 | 15.47 | 0.08 | 0.181 |
+| Broken trail (prism slabs) | 10.48 | 8.33 | 12.06 | 1.1 | 0.134 |
+| Negative space (inverted) | 48.61 | 32.92 | 48.46 | 0.12 | 0.531 |
+| Tear (warp + glitch) | 10.26 | 8.28 | 11.99 | 0.1 | 0.127 |
+| Round 2: crystals from the edge | 8.68 | 7.16 | 10.13 | 0.13 | 0.117 |
+| Pull + 2D edge | 28.32 | 20.44 | 28.61 | 0.07 | 0.449 |
+
+- The scorecard is still a still frame. The pull, drift, streak and maw are motion, so judge them by eye (L-STU-127).
+
+**Checked.**
+- `verify_lab.cjs` passes. Screenshots over the three scenes were looked at, twice, and the look was changed between them.
+- `bash Tools/Build/silence_vignette_parity/run.sh` passes:
+  - 37 cases and 19452 values, now including the pull point; the worst difference is 1e-5;
+  - all 46 asset fields equal;
+  - seven planted controls are each caught, including "the maw turned off".
+- `python3 Tools/Shaders/verify_silence_perimeter.py` passes.
+- `SilencePerimeterTests` was rewritten but not run here (no Unity). Its claims were checked against the twin:
+  - with no silence, nothing is drawn;
+  - at full silence, every centre sits at 0.79 to 1.00 of the half-screen;
+  - every hit sinks every shard inward;
+  - the pull's side is 2.25 times longer than the far side.
+- The unity reference compile is OK, and the Amoebius player builds.
+
+**Found.**
+- Amoebius's shim has no `Mesh.Clear(bool)`. The pass uses `Clear()`, which is the same call.
+
+**Decision needed (designer).** How strong the pull is, how fast it drifts, how thick the band is, and crystal or slab.
+
+## Round 2 (2026-10-21): the 3D perimeter, superseded by round 3
 
 **What changed.**
 - Garrett's direction for this round:

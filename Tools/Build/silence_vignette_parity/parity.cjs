@@ -36,9 +36,10 @@ function evalCases(MASK, lines, PERIM) {
     } else if (f[0] === 'breathe') out.push(['breathe', [MASK.breathe(n[1], n[2], n[3])]]);
     else if (f[0] === 'opacity') out.push(['opacity', [MASK.opacity(n[1], n[2], n[3], n[4], n[5])]]);
     else if (f[0] === 'layout') {
-      const s = { shape: n[1], count: n[2], seed: n[3], size: n[4], reach: n[5], spin: n[6] }, vals = [];
+      const s = { shape: n[1], count: n[2], seed: n[3], size: n[4], reach: n[5], spin: n[6], pullDrift: n[7] }, vals = [];
+      vals.push(...PERIM.pullPoint(s, n[10]));
       for (let i = 0; i < s.count; i++) {
-        const q = PERIM.layout(i, s, n[7], n[8], n[9], n[10], n[11]);
+        const q = PERIM.layout(i, s, n[8], n[9], n[10], n[11], n[12]);
         vals.push(...q.position, ...q.right, ...q.up, ...q.forward, q.presence, q.seed);
       }
       out.push(['layout', vals]);
@@ -118,6 +119,7 @@ for (const [name, from, to] of MUTANTS) {
 }
 const PMUTANTS = [
   ['presence stagger changed', '- 0.35 * r(2)', '- 0.3 * r(2)'],
+  ['the maw turned off', '(0.55 + 0.9 * maw)', '(0.55 + 0.9 * 0)'],
   ['a facet wound inward', 'if (nx * mx + ny * my + nz * mz < 0)', 'if (nx * mx + ny * my + nz * mz > 0)'],
 ];
 for (const [name, from, to] of PMUTANTS) {

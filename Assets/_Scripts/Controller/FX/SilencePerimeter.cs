@@ -4,10 +4,12 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The SHAPE of the silence perimeter (Docs/ElementalAbilitySystem/SILENCE.md §5): a ring of faceted 3D
-    /// shards on the silenced pilot's screen edge, where a vignette would sit, each facet showing the frame
-    /// behind it bent (reality breaking down). This holds where each shard sits and how it is cut; the
-    /// drawing is <see cref="SilencePerimeterPass"/> and <c>SilencePerimeter.shader</c>.
+    /// The SHAPE of the silence perimeter (Docs/ElementalAbilitySystem/SILENCE.md §5): a dense, overlapping
+    /// band of faceted 3D shards on the silenced pilot's screen edge, where a vignette would sit, each one half
+    /// buried beyond the edge and each facet showing the frame behind it bent and dragged toward a PULL that
+    /// wanders around the screen, so it reads as reality trying to pull you somewhere you don't want to be
+    /// (Garrett, 2026-10-21), not as crystals coming in. This holds where each shard sits, how it is cut and
+    /// where the pull is; the drawing is <see cref="SilencePerimeterPass"/> and <c>SilencePerimeter.shader</c>.
     ///
     /// <para>Pure and deterministic, so the Silence Vignette Lab (<c>Docs/Studios/SilenceVignetteLab.html</c>)
     /// runs a line-for-line JavaScript twin of it (between its <c>&lt;perimeter-twin&gt;</c> markers) and
@@ -23,7 +25,7 @@ namespace CosmicShore.Gameplay
         public const int ShapeCrystal = 0;
         public const int ShapeSlab = 1;
         public const float Depth = 4f;
-        public const int MaxShards = 40;
+        public const int MaxShards = 160;
 
         /// <summary>Everything that decides where the shards sit and how they are cut. Copied from
         /// <c>VesselSilenceConfigSO</c>; the lab's keys are its fields' names.</summary>
@@ -35,6 +37,7 @@ namespace CosmicShore.Gameplay
             public float Size;   // shard length, x the screen's height
             public float Reach;  // how far in from the edge at full silence, x half the height
             public float Spin;   // radians a second about the long axis
+            public float PullDrift; // radians a second the pull wanders around the screen
         }
 
         /// <summary>One shard: its centre and its three axes, each scaled by its length (the geometry is
@@ -72,28 +75,39 @@ namespace CosmicShore.Gameplay
         static float Clamp01(float x) => x < 0f ? 0f : x > 1f ? 1f : x;
         static float Smooth(float x) => x * x * (3f - 2f * x);
 
-        /// <summary>Shard <paramref name="i"/>'s pose for a silence at <paramref name="weight"/> (0 hidden
-        /// beyond the edge, 1 fully in), a hit flare <paramref name="pulse"/> (jolts it inward), at
+        /// <summary>The pull's direction around the screen at <paramref name="time"/>, in radians.</summary>
+        public static float PullAngle(in Settings s, float time) => s.PullDrift * time + Rand(s.Seed, 0, 99) * 6.2831855f;
+
+        /// <summary>The point near the screen's edge in the pull's direction, in screen uv (0..1).</summary>
+        public static Vector2 PullPoint(in Settings s, float time)
+        {
+            float a = PullAngle(s, time);
+            return new Vector2(0.5f + 0.42f * Mathf.Cos(a), 0.5f + 0.42f * Mathf.Sin(a));
+        }
+
+        /// <summary>Shard <paramref name="i"/>'s pose for a silence at <paramref name="weight"/> (0 none: the
+        /// shard is not drawn, 1 full: grown in), a hit flare <paramref name="pulse"/> (sinks it inward), at
         /// <paramref name="time"/> seconds, on a screen of width / height <paramref name="aspect"/> seen
         /// through a vertical field of view of <paramref name="fovDeg"/>.</summary>
         public static Pose Layout(int i, in Settings s, float weight, float pulse, float time, float aspect, float fovDeg)
         {
             int n = Mathf.Max(1, s.Count);
-            float theta = 2f * Mathf.PI * (i + 0.8f * (Rand(s.Seed, i, 0) - 0.5f)) / n;
-            float depth = Depth * (0.85f + 0.3f * Rand(s.Seed, i, 1));
+            float theta = 2f * Mathf.PI * (i + 0.9f * (Rand(s.Seed, i, 0) - 0.5f)) / n;
+            float depth = Depth * (0.6f + Rand(s.Seed, i, 1));
             float h = depth * Mathf.Tan(fovDeg * 0.5f * Mathf.PI / 180f), w = h * aspect;
             float cx = Mathf.Cos(theta), cy = Mathf.Sin(theta);
             float tx = Mathf.Abs(cx) > 1e-4f ? w / Mathf.Abs(cx) : 1e9f, ty = Mathf.Abs(cy) > 1e-4f ? h / Mathf.Abs(cy) : 1e9f;
             float edge = Mathf.Min(tx, ty);
             float presence = Smooth(Clamp01(Clamp01(weight) * 1.35f - 0.35f * Rand(s.Seed, i, 2)));
-            float len = s.Size * 2f * h * (0.6f + 0.8f * Rand(s.Seed, i, 3));
-            float jolt = 1f + 0.6f * Mathf.Max(0f, pulse) * (0.5f + Rand(s.Seed, i, 4));
-            float reach = s.Reach * h * presence * jolt;
-            float sway = 0.04f * h * Mathf.Sin(time * (0.6f + Rand(s.Seed, i, 5)) + Rand(s.Seed, i, 6) * 6.2831855f);
-            float along = edge + 0.6f * len * (1f - presence) - reach;
+            // The maw: on the pull's side the shards grow longer and sink deeper, so the mouth wanders with the pull.
+            float toward = 0.5f + 0.5f * Mathf.Cos(theta - PullAngle(s, time)), maw = toward * toward;
+            float len = s.Size * 2f * h * (0.5f + Rand(s.Seed, i, 3)) * (0.25f + 0.75f * presence) * (0.55f + 0.9f * maw);
+            float sink = h * presence * (s.Reach * (Rand(s.Seed, i, 13) + 0.8f * maw) + 0.15f * Mathf.Max(0f, pulse) * (0.5f + Rand(s.Seed, i, 4)));
+            float sway = 0.05f * h * Mathf.Sin(time * (0.6f + Rand(s.Seed, i, 5)) + Rand(s.Seed, i, 6) * 6.2831855f);
+            float along = edge - sink;
             float px = cx * along - cy * sway, py = cy * along + cx * sway;
-            // The long axis points inward, turned a little in the screen's plane and tilted toward or away from you.
-            float turn = (Rand(s.Seed, i, 7) - 0.5f) * 0.9f, tilt = (Rand(s.Seed, i, 8) - 0.5f) * 1.6f;
+            // The long axis points inward, turned in the screen's plane and tilted toward or away from you.
+            float turn = (Rand(s.Seed, i, 7) - 0.5f) * 1.2f, tilt = (Rand(s.Seed, i, 8) - 0.5f) * 2.0f;
             float ax = -(cx * Mathf.Cos(turn) - cy * Mathf.Sin(turn)), ay = -(cx * Mathf.Sin(turn) + cy * Mathf.Cos(turn)), az = tilt;
             float al = Mathf.Sqrt(ax * ax + ay * ay + az * az); ax /= al; ay /= al; az /= al;
             float x0x = ay, x0y = -ax;                                    // cross(axis, forward), forward = (0, 0, 1)
@@ -132,24 +146,29 @@ namespace CosmicShore.Gameplay
                 g.Quad(V(-1, -1, -1), V(-1, -1, 1), V(1, -1, 1), V(1, -1, -1));
                 return;
             }
-            int k = 5 + Mathf.FloorToInt(R(0) * 3f);
+            // A crystal of k sides cut by three rings: 6k facets, irregular enough that no two read alike.
+            int k = 6 + Mathf.FloorToInt(R(0) * 5f);
             float rad = 0.16f * (0.8f + 0.4f * R(1));
             var top = new Vector3((R(2) - 0.5f) * 0.1f, 0.5f, (R(3) - 0.5f) * 0.1f);
             var bottom = new Vector3((R(4) - 0.5f) * 0.1f, -0.5f * (0.6f + 0.4f * R(5)), (R(6) - 0.5f) * 0.1f);
-            var lo = new Vector3[k];
-            var hi = new Vector3[k];
-            for (int j = 0; j < k; j++)
+            var ring = new Vector3[3, k];
+            for (int m = 0; m < 3; m++)
             {
-                float ang = 2f * Mathf.PI * (j + 0.3f * (R(7 + j) - 0.5f)) / k, rr = rad * (0.8f + 0.4f * R(14 + j));
-                lo[j] = new Vector3(Mathf.Cos(ang) * rr, -0.18f, Mathf.Sin(ang) * rr);
-                hi[j] = new Vector3(Mathf.Cos(ang) * rr * 0.9f, 0.18f, Mathf.Sin(ang) * rr * 0.9f);
+                float y = m == 0 ? -0.22f : m == 1 ? 0f : 0.22f;
+                float scale = m == 0 ? 0.9f : m == 1 ? 1f : 0.8f;
+                for (int j = 0; j < k; j++)
+                {
+                    float ang = 2f * Mathf.PI * (j + 0.3f * (R(7 + j) - 0.5f)) / k, rr = rad * scale * (0.8f + 0.4f * R(17 + m * 10 + j));
+                    ring[m, j] = new Vector3(Mathf.Cos(ang) * rr, y, Mathf.Sin(ang) * rr);
+                }
             }
             for (int j = 0; j < k; j++)
             {
                 int j1 = (j + 1) % k;
-                g.Quad(lo[j], lo[j1], hi[j1], hi[j]);
-                g.Tri(hi[j], hi[j1], top, -1);
-                g.Tri(lo[j1], lo[j], bottom, -1);
+                g.Quad(ring[0, j], ring[0, j1], ring[1, j1], ring[1, j]);
+                g.Quad(ring[1, j], ring[1, j1], ring[2, j1], ring[2, j]);
+                g.Tri(ring[2, j], ring[2, j1], top, -1);
+                g.Tri(ring[0, j1], ring[0, j], bottom, -1);
             }
         }
 

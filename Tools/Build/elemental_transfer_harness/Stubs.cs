@@ -8,6 +8,11 @@ using System.Collections.Generic;
 
 namespace UnityEngine
 {
+    public struct Vector2
+    {
+        public float x, y;
+        public Vector2(float x, float y) { this.x = x; this.y = y; }
+    }
     public struct Vector3
     {
         public float x, y, z;

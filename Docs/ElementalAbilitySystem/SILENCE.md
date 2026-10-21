@@ -137,18 +137,28 @@ Thresher's red ball still breaks its own trail and an explosion still shields it
     0.18 world units at chase distance is under a degree;
   - a **3D perimeter** for the whole window (Garrett, 2026-10-21: "instead of a 2d effect we just
     have a client side perimeter of 3d craziness on the perimeter where vignettes typically use 2d
-    effects"). Faceted shards ring the screen's edge, each facet showing the frame behind it bent:
-    refracted by the facet's normal, turned by the shard's own twist, colour-split, faintly tinted
-    toward the danger colour, with a lit danger fill, a danger fresnel rim and danger lines along the
-    facet edges. The frame itself swirls and ripples near the edges. The shards slide in from beyond
-    the edge as the silence lands (each a little after the last), spin slowly, **jolt inward and tear
-    their picture into sliding bands on every hit** (the hit flare, +0.35 decaying over 0.35 s), and
-    draw back out over 0.6 s when it ends. Where the shards sit and how each is cut is
-    `SilencePerimeter` (pure, deterministic); `SilencePerimeterPass` draws them on the LOCAL pilot's
-    camera only, after URP's transparents: copy the frame, warp it, then each shard back to front from
-    that copy (`SilencePerimeter.shader`, injected from script like the black hole lens, so no asset
-    changes and no other camera or machine pays). The shards are drawn over everything: they belong to
-    the screen. Shipped: 22 crystal shards, size 0.26 of the screen's height, reach 0.26, fill 0.4.
+    effects"; and then "more overlap, show only half the faceted object that is poking into the screen
+    ... it doesn't read as crystals coming in from the edge it read reality trying to pull you somewhere
+    you don't want to be").
+    - **The shards:** 110 faceted crystal shards (6 to 10 sides, three rings, so 36 to 60 facets each)
+      overlap in depth layers on the screen's edge. Each shard's centre sits ON the edge, so half of it is
+      beyond the screen.
+    - **The facets:** each one shows the frame behind it refracted, twisted, colour-split and smeared. Facets
+      vary in how solid they are, and each shard fades toward its inward tip, so none ends in a point you
+      could name.
+    - **The pull:** a point wanders slowly around the screen (`perimeterPullDrift`). Near the edges, the
+      frame and every facet's picture are dragged toward it in slow waves. The shards on its side grow
+      longer and sink deeper: a maw that moves. The middle of the screen stays still.
+    - **Hits:** each hit sinks the shards inward, tears their picture into sliding bands and sends a ripple
+      through the edges (the hit flare, +0.35 decaying over 0.35 s).
+    - **Timing:** the shards grow in as the silence lands, each a little after the last, and fade out
+      over 0.6 s when it ends.
+    - **The code:** `SilencePerimeter` (pure, deterministic) decides where the shards sit, how each is cut and
+      where the pull is. `SilencePerimeterPass` draws on the LOCAL pilot's camera only, after URP's
+      transparents: it copies the frame, warps it, then draws every shard far to near in ONE dynamic mesh
+      (one draw call) from that copy (`SilencePerimeter.shader`, injected from script like the black hole
+      lens, so no asset changes and no other camera or machine pays). The shards are drawn over everything:
+      they belong to the screen.
   - the **2D edge** of round 1 is still there and off (`vignetteIntensity` 0): an alpha-blended
     overlay whose image is a mask baked from `SilenceVignetteMask`, in the danger colour. **The first
     cut of all was invisible**: it drove URP's Vignette in the danger colour at 0.26, and URP
@@ -157,9 +167,9 @@ Thresher's red ball still breaks its own trail and an explosion still shields it
 
   The look is explored in the **Silence Vignette Lab**:
   https://claude.ai/artifact/Hequw1VLdwXi2ztrDeuXQC (`Docs/Studios/SilenceVignetteLab.html`, write-up
-  `Docs/Studios/SILENCE_VIGNETTE_LAB.md`). Round 2 draws the perimeter in WebGL the way the game does
-  (its layout and geometry are the game's code, under a parity gate), with six perimeter looks and the
-  round-1 2D edges in an archive.
+  `Docs/Studios/SILENCE_VIGNETTE_LAB.md`). It draws the perimeter in WebGL the way the game does (its
+  layout, geometry and pull are the game's code, under a parity gate). Round 3 is the pull; round 2's
+  crystals and round 1's 2D edges are kept as looks to compare.
 
   Every number is on `VesselSilenceConfig.asset` under *Feedback*. It plays for the local human pilot
   only: a rival's or an AI's silence changes nothing on your screen. On top of that their hits still
@@ -286,9 +296,10 @@ In the editor (no petals needed - any scored hit silences):
 5. MPPM host + client: silence the client's pilot from the host; on BOTH windows the client's shots
    deflect for the same window (within a frame or two), and the client's flowers agree.
 6. Silence a human pilot (any hull; `silence test` in the console does it without a fight): a camera
-   shake as it lands, a lighter one on every further hit while it lasts, a ring of red crystal shards slides in on the screen's edge, each
-   facet showing the world behind it bent; they jolt inward and glitch on each further hit and slide back
-   out over about half a second when it ends. If they are missing, `silence` in the console says whether
+   shake as it lands, a lighter one on every further hit while it lasts, a thick, overlapping band of half-buried shards on the screen's edge,
+   every facet showing the world behind it bent and dragged toward a point that wanders around the screen
+   (a maw on that side); hits sink them inward and tear their picture; they fade out over about half a
+   second when it ends. If they are missing, `silence` in the console says whether
    the perimeter is drawing, on which camera, or that its shader is missing. An AI or a rival being silenced shows nothing on your screen. Tune it on
    `VesselSilenceConfig.asset` > *Feedback*. In Dog Fight, the first AI hit on you should start it;
    `silence` in the console then shows the hits decided against you and the windows that began.

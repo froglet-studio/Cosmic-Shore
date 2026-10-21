@@ -22,9 +22,11 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>The perimeter</b> (Garrett, 2026-10-21: "instead of a 2d effect we just have a client side
     /// perimeter of 3d craziness on the perimeter where vignettes typically use 2d effects"). Where the
-    /// shards sit and how they are cut is <see cref="SilencePerimeter"/>; this component builds their meshes
-    /// once per arrangement and hands the frame to <see cref="SilencePerimeterPass"/>, which draws them on the
-    /// local pilot's camera only. The 2D edge below is still here, off by default (strength 0).</para>
+    /// shards sit and how they are cut is <see cref="SilencePerimeter"/>; this component cuts their facets
+    /// once per arrangement and hands the frame to <see cref="SilencePerimeterPass"/>, which draws them all in
+    /// one mesh on the local pilot's camera only. Round 3 (Garrett, 2026-10-21: "it doesn't read as crystals
+    /// coming in from the edge it read reality trying to pull you somewhere you don't want to be"): 110 shards
+    /// half buried on the edge, overlapping, their pictures dragged toward a pull that wanders the screen. The 2D edge below is still here, off by default (strength 0).</para>
     ///
     /// <para><b>The 2D edge is an OVERLAY, not URP's Vignette.</b> URP's Vignette multiplies the frame by
     /// its colour, so a red one can only darken, and over the arena's near-black space it showed
@@ -64,8 +66,8 @@ namespace CosmicShore.Gameplay
         SilenceVignetteMask.Shape _maskShape;
         float _maskAspect;
 
-        // The perimeter: one mesh per shard, rebuilt when the arrangement changes; one material for the session.
-        Mesh[] _shards;
+        // The perimeter: each shard's facets, rebuilt when the arrangement changes; one material for the session.
+        SilencePerimeterPass.ShardGeometry[] _shards;
         SilencePerimeter.Settings _shardSettings;
         Material _perimeterMaterial;
         bool _warnedNoShader;
@@ -91,7 +93,6 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             if (_mask) Destroy(_mask);
-            DestroyShards();
             if (_perimeterMaterial) Destroy(_perimeterMaterial);
         }
 
@@ -200,7 +201,7 @@ namespace CosmicShore.Gameplay
                 Active = true,
                 Camera = camera,
                 Material = _perimeterMaterial,
-                Meshes = _shards,
+                Shards = _shards,
                 Settings = settings,
                 Drive = weight,
                 Pulse = _pulse * weight,
@@ -209,6 +210,9 @@ namespace CosmicShore.Gameplay
                 Opacity = config.PerimeterOpacity,
                 Glitch = config.PerimeterGlitch,
                 Warp = config.PerimeterWarp,
+                Pull = config.PerimeterPull,
+                Streak = config.PerimeterStreak,
+                TipFade = config.PerimeterTipFade,
                 Look = new Vector4(config.PerimeterRefraction, config.PerimeterTwist, config.PerimeterAberration, config.PerimeterTint),
                 Look2 = new Vector4(config.PerimeterRimGlow, config.PerimeterEdgeGlow, config.PerimeterFill, config.PerimeterInvert),
                 Danger = DangerColor(config),
@@ -235,8 +239,7 @@ namespace CosmicShore.Gameplay
         {
             if (_shards != null && _shards.Length == settings.Count && _shardSettings.Shape == settings.Shape &&
                 _shardSettings.Seed == settings.Seed) return;
-            DestroyShards();
-            _shards = new Mesh[settings.Count];
+            _shards = new SilencePerimeterPass.ShardGeometry[settings.Count];
             var positions = new List<Vector3>();
             var normals = new List<Vector3>();
             var barycentrics = new List<Vector3>();
@@ -244,24 +247,14 @@ namespace CosmicShore.Gameplay
             {
                 positions.Clear(); normals.Clear(); barycentrics.Clear();
                 SilencePerimeter.Geometry(settings, i, positions, normals, barycentrics);
-                var triangles = new int[positions.Count];
-                for (int t = 0; t < triangles.Length; t++) triangles[t] = t;
-                var mesh = new Mesh { name = "SilenceShard" + i, hideFlags = HideFlags.DontSave };
-                mesh.SetVertices(positions);
-                mesh.SetNormals(normals);
-                mesh.SetUVs(0, barycentrics);
-                mesh.SetTriangles(triangles, 0);
-                mesh.RecalculateBounds();
-                _shards[i] = mesh;
+                _shards[i] = new SilencePerimeterPass.ShardGeometry
+                {
+                    Positions = positions.ToArray(),
+                    Normals = normals.ToArray(),
+                    Barycentrics = barycentrics.ToArray(),
+                };
             }
             _shardSettings = settings;
-        }
-
-        void DestroyShards()
-        {
-            if (_shards == null) return;
-            foreach (var mesh in _shards) if (mesh) Destroy(mesh);
-            _shards = null;
         }
 
         static Camera PilotCamera()

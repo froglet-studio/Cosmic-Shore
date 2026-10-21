@@ -22,22 +22,26 @@ MonoBehaviour:
   hitShakeSeconds: 0.15
   perimeterAmount: 1
   perimeterShape: 0
-  perimeterCount: 22
+  perimeterCount: 110
   perimeterSeed: 7
-  perimeterSize: 0.26
-  perimeterReach: 0.26
-  perimeterSpin: 0.5
-  perimeterRefraction: 0.06
-  perimeterTwist: 0.5
-  perimeterAberration: 0.006
-  perimeterTint: 0.15
-  perimeterRimGlow: 1.2
-  perimeterEdgeGlow: 0.8
-  perimeterFill: 0.4
+  perimeterSize: 0.34
+  perimeterReach: 0.12
+  perimeterSpin: 0.35
+  perimeterRefraction: 0.14
+  perimeterTwist: 0.9
+  perimeterAberration: 0.02
+  perimeterTint: 0.25
+  perimeterRimGlow: 0.6
+  perimeterEdgeGlow: 0.05
+  perimeterFill: 0.1
   perimeterInvert: 0
-  perimeterOpacity: 0.9
-  perimeterWarp: 0.03
-  perimeterGlitch: 0.05
+  perimeterOpacity: 0.95
+  perimeterWarp: 0.08
+  perimeterGlitch: 0.06
+  perimeterPull: 0.08
+  perimeterStreak: 0.012
+  perimeterTipFade: 0.85
+  perimeterPullDrift: 0.12
   perimeterShader: {fileID: 4800000, guid: b7392ddcfaa64f5186fdd1a7e0150004, type: 3}
   vignetteIntensity: 0
   vignetteStyle: 0

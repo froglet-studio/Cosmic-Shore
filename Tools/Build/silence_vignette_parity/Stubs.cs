@@ -19,6 +19,11 @@ namespace UnityEngine
         public static int FloorToInt(float v) => (int)System.Math.Floor(v);
     }
 
+    public struct Vector2
+    {
+        public float x, y;
+        public Vector2(float x, float y) { this.x = x; this.y = y; }
+    }
     public struct Vector3
     {
         public float x, y, z;

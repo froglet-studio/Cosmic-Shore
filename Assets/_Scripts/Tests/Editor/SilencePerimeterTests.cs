@@ -8,8 +8,9 @@ namespace CosmicShore.Tests
     /// <summary>
     /// The silence perimeter's layout and shard geometry (Docs/ElementalAbilitySystem/SILENCE.md §5). The lab's
     /// JavaScript twin is held to the same code by Tools/Build/silence_vignette_parity; these pin what the
-    /// perimeter must DO: hidden beyond the edge until a silence lands, in on the edge (and out of the middle)
-    /// while it holds, jolted inward by a hit, and every shard a closed, outward-wound, solid volume.
+    /// perimeter must DO: nothing drawn until a silence lands; while it holds, every shard's centre on the
+    /// screen's edge (half of it beyond) and none in the middle; a hit sinks them inward; the shards on the
+    /// pull's side are the longest (the maw); and every shard a closed, outward-wound, solid volume.
     /// </summary>
     public class SilencePerimeterTests
     {
@@ -18,7 +19,7 @@ namespace CosmicShore.Tests
 
         static SilencePerimeter.Settings Shipped(int shape = SilencePerimeter.ShapeCrystal) => new()
         {
-            Shape = shape, Count = 22, Seed = 7, Size = 0.26f, Reach = 0.26f, Spin = 0.5f,
+            Shape = shape, Count = 110, Seed = 7, Size = 0.34f, Reach = 0.12f, Spin = 0.35f, PullDrift = 0.12f,
         };
 
         // The shard's centre on screen, -1..1 on both axes (0 = the middle, |1| = the screen's edge).
@@ -31,19 +32,16 @@ namespace CosmicShore.Tests
         static float EdgeDistance(Vector2 ndc) => Mathf.Max(Mathf.Abs(ndc.x), Mathf.Abs(ndc.y));
 
         [Test]
-        public void WithNoSilenceEveryShardWaitsBeyondTheScreenEdge()
+        public void WithNoSilenceNoShardIsDrawn()
         {
             var s = Shipped();
             for (int i = 0; i < s.Count; i++)
-            {
-                var p = SilencePerimeter.Layout(i, s, 0f, 0f, 0f, Wide, Fov);
-                Assert.AreEqual(0f, p.Presence, "shard " + i);
-                Assert.GreaterOrEqual(EdgeDistance(Ndc(p)), 1f, "shard " + i + "'s centre is on screen with no silence");
-            }
+                Assert.AreEqual(0f, SilencePerimeter.Layout(i, s, 0f, 0f, 0f, Wide, Fov).Presence, "shard " + i);
         }
 
+        // Garrett, 2026-10-21: "show only half the faceted object that is poking into the screen".
         [Test]
-        public void AtFullSilenceEveryShardIsInOnTheEdgeAndOutOfTheMiddle()
+        public void AtFullSilenceEveryShardSitsHalfBuriedOnTheEdge()
         {
             var s = Shipped();
             for (int i = 0; i < s.Count; i++)
@@ -51,13 +49,34 @@ namespace CosmicShore.Tests
                 var p = SilencePerimeter.Layout(i, s, 1f, 0f, 0f, Wide, Fov);
                 Assert.AreEqual(1f, p.Presence, 1e-5f, "shard " + i);
                 float e = EdgeDistance(Ndc(p));
-                Assert.Less(e, 1f, "shard " + i + "'s centre is still off screen");
-                Assert.Greater(e, 0.55f, "shard " + i + " sits in the middle of the screen");
+                Assert.Less(e, 1.08f, "shard " + i + "'s centre is beyond the edge: none of it pokes in");
+                Assert.Greater(e, 0.6f, "shard " + i + " sits in the middle of the screen, not on its edge");
             }
         }
 
         [Test]
-        public void AHitJoltsTheShardsInward()
+        public void TheShardsOnThePullsSideAreTheLongest()
+        {
+            var s = Shipped();
+            float pull = SilencePerimeter.PullAngle(s, 0f);
+            float near = 0f, far = 0f;
+            int nearCount = 0, farCount = 0;
+            for (int i = 0; i < s.Count; i++)
+            {
+                var p = SilencePerimeter.Layout(i, s, 1f, 0f, 0f, Wide, Fov);
+                var ndc = Ndc(p);
+                float closeness = Mathf.Cos(Mathf.Atan2(ndc.y, ndc.x) - pull);
+                float length = p.Up.magnitude / p.Position.z;
+                if (closeness > 0.7f) { near += length; nearCount++; }
+                else if (closeness < -0.7f) { far += length; farCount++; }
+            }
+            Assert.Greater(nearCount, 0);
+            Assert.Greater(farCount, 0);
+            Assert.Greater(near / nearCount, 1.5f * (far / farCount), "the maw does not follow the pull");
+        }
+
+        [Test]
+        public void AHitSinksTheShardsInward()
         {
             var s = Shipped();
             for (int i = 0; i < s.Count; i++)

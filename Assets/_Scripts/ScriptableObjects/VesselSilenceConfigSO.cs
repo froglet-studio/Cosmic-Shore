@@ -76,9 +76,10 @@ namespace CosmicShore.ScriptableObjects
         [Range(0, 1)]
         [SerializeField] int perimeterShape = 0;
 
-        [Tooltip("How many shards ring the screen.")]
-        [Range(4, 40)]
-        [SerializeField] int perimeterCount = 22;
+        [Tooltip("How many shards ring the screen: many, so they overlap in layers and no one of them reads as a " +
+                 "crystal (Garrett, 2026-10-21: \"there should be so much overlap, and distortions\").")]
+        [Range(4, 160)]
+        [SerializeField] int perimeterCount = 110;
 
         [Tooltip("The arrangement: reshuffles where the shards sit and how each is cut.")]
         [Range(1, 99)]
@@ -86,44 +87,46 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Shard length, as a share of the screen's height.")]
         [Range(0.05f, 0.6f)]
-        [SerializeField] float perimeterSize = 0.26f;
+        [SerializeField] float perimeterSize = 0.34f;
 
-        [Tooltip("How far the shards push in from the edge at full silence, as a share of half the height.")]
+        [Tooltip("Each shard's centre sits ON the screen's edge, half of it beyond (Garrett: \"show only half the " +
+                 "faceted object that is poking into the screen\"); this is how far in a centre may sink, as a share " +
+                 "of half the height. The pull's side sinks further.")]
         [Range(0f, 0.6f)]
-        [SerializeField] float perimeterReach = 0.26f;
+        [SerializeField] float perimeterReach = 0.12f;
 
         [Tooltip("How fast each shard turns about its long axis, radians a second.")]
         [Range(0f, 3f)]
-        [SerializeField] float perimeterSpin = 0.5f;
+        [SerializeField] float perimeterSpin = 0.35f;
 
         [Tooltip("How far each facet bends the frame it shows, along the facet's normal.")]
         [Range(0f, 0.3f)]
-        [SerializeField] float perimeterRefraction = 0.06f;
+        [SerializeField] float perimeterRefraction = 0.14f;
 
         [Tooltip("How much each shard turns and scales the reality it shows.")]
         [Range(0f, 1f)]
-        [SerializeField] float perimeterTwist = 0.5f;
+        [SerializeField] float perimeterTwist = 0.9f;
 
         [Tooltip("Red and blue pulled apart inside the facets.")]
         [Range(0f, 0.04f)]
-        [SerializeField] float perimeterAberration = 0.006f;
+        [SerializeField] float perimeterAberration = 0.02f;
 
         [Tooltip("How much the bent frame inside a facet takes the danger colour.")]
         [Range(0f, 1f)]
-        [SerializeField] float perimeterTint = 0.15f;
+        [SerializeField] float perimeterTint = 0.25f;
 
         [Tooltip("Danger light where a facet turns away from you (fresnel), as every prism's rim does.")]
         [Range(0f, 3f)]
-        [SerializeField] float perimeterRimGlow = 1.2f;
+        [SerializeField] float perimeterRimGlow = 0.6f;
 
         [Tooltip("Danger lines along the shards' facet edges.")]
         [Range(0f, 3f)]
-        [SerializeField] float perimeterEdgeGlow = 0.8f;
+        [SerializeField] float perimeterEdgeGlow = 0.05f;
 
         [Tooltip("A lit danger glow inside every facet, brighter where it faces the light, so a shard reads " +
                  "as a solid volume even over black space.")]
         [Range(0f, 1f)]
-        [SerializeField] float perimeterFill = 0.4f;
+        [SerializeField] float perimeterFill = 0.1f;
 
         [Tooltip("Turns the reality inside a facet into its negative.")]
         [Range(0f, 1f)]
@@ -131,15 +134,34 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("How solid the shards are.")]
         [Range(0f, 1f)]
-        [SerializeField] float perimeterOpacity = 0.9f;
+        [SerializeField] float perimeterOpacity = 0.95f;
 
         [Tooltip("The frame swirls and ripples near the edges while silenced; each hit sends a ring through it.")]
         [Range(0f, 0.15f)]
-        [SerializeField] float perimeterWarp = 0.03f;
+        [SerializeField] float perimeterWarp = 0.08f;
 
         [Tooltip("Each hit tears the facets' picture into sliding bands, decaying with the hit flare.")]
         [Range(0f, 0.2f)]
-        [SerializeField] float perimeterGlitch = 0.05f;
+        [SerializeField] float perimeterGlitch = 0.06f;
+
+        [Tooltip("The pull: near the edges, the frame and every facet's picture are dragged, in slow waves, toward " +
+                 "a point that wanders around the screen, and the shards on that side grow longer and sink deeper - " +
+                 "reality trying to pull you somewhere you don't want to be. The middle of the screen stays still.")]
+        [Range(0f, 0.3f)]
+        [SerializeField] float perimeterPull = 0.08f;
+
+        [Tooltip("Each facet's picture is smeared toward the pull, so light streams into it.")]
+        [Range(0f, 0.05f)]
+        [SerializeField] float perimeterStreak = 0.012f;
+
+        [Tooltip("Each shard fades toward its inward tip, so none ends in a point you could name: it dissolves " +
+                 "into the distortion.")]
+        [Range(0f, 1f)]
+        [SerializeField] float perimeterTipFade = 0.85f;
+
+        [Tooltip("How fast the pull wanders around the screen, radians a second.")]
+        [Range(0f, 1f)]
+        [SerializeField] float perimeterPullDrift = 0.12f;
 
         [Tooltip("CosmicShore/SilencePerimeter. Referenced here so a build includes it. Empty = no perimeter " +
                  "(a warning names this field once).")]
@@ -253,6 +275,9 @@ namespace CosmicShore.ScriptableObjects
         public float PerimeterOpacity => perimeterOpacity;
         public float PerimeterWarp => perimeterWarp;
         public float PerimeterGlitch => perimeterGlitch;
+        public float PerimeterPull => perimeterPull;
+        public float PerimeterStreak => perimeterStreak;
+        public float PerimeterTipFade => perimeterTipFade;
         public Shader PerimeterShader => perimeterShader;
         public float VignetteIntensity => vignetteIntensity;
         public float VignetteColorStrength => vignetteColorStrength;
@@ -276,6 +301,7 @@ namespace CosmicShore.ScriptableObjects
             Size = perimeterSize,
             Reach = perimeterReach,
             Spin = perimeterSpin,
+            PullDrift = perimeterPullDrift,
         };
 
         /// <summary>The mask's shape, as <see cref="CosmicShore.Gameplay.SilenceVignetteMask"/> takes it.</summary>

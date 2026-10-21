@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  SILENCE VIGNETTE LAB — a /labmaker browser lab (round 2: the 3D perimeter).
+  SILENCE VIGNETTE LAB — a /labmaker browser lab (round 3: the pull, a dense half-buried 3D perimeter).
   Question: what should the silenced pilot's danger-coloured screen edge look like, so it is noticed for
   sure and still fits the game (Docs/ElementalAbilitySystem/SILENCE.md §5)?
   The mask is a line-for-line twin of Assets/_Scripts/Controller/FX/SilenceVignetteMask.cs (between the
@@ -129,7 +129,7 @@
   const $ = (id) => document.getElementById(id);
 
   // ================= (1) LAB meta + the shipped numbers =================
-  const LAB = { name: 'Silence Vignette Lab', branch: 'cece/sleepy-shannon-9qk646', round: 2, doc: 'Docs/Studios/SILENCE_VIGNETTE_LAB.md' };
+  const LAB = { name: 'Silence Vignette Lab', branch: 'cece/sleepy-shannon-9qk646', round: 3, doc: 'Docs/Studios/SILENCE_VIGNETTE_LAB.md' };
   // Every key is a VesselSilenceConfigSO field, read off Assets/Resources/VesselSilenceConfig.asset
   // (the "overtuned" first cut of the overlay, 2026-10-21). Lab-only knobs carry the lab* prefix.
   const SHIPPED = {
@@ -159,22 +159,26 @@
     maxSeconds: 8,                // .maxSeconds
     perimeterAmount: 1,           // .perimeterAmount (the 3D perimeter: 0 off .. 1 full)
     perimeterShape: 0,            // .perimeterShape (0 crystal shards, 1 prism slabs)
-    perimeterCount: 22,           // .perimeterCount
+    perimeterCount: 110,          // .perimeterCount
     perimeterSeed: 7,             // .perimeterSeed
-    perimeterSize: 0.26,          // .perimeterSize (shard length, x the screen's height)
-    perimeterReach: 0.26,         // .perimeterReach (how far in from the edge, x half the height)
-    perimeterSpin: 0.5,           // .perimeterSpin (radians a second)
-    perimeterRefraction: 0.06,    // .perimeterRefraction
-    perimeterTwist: 0.5,          // .perimeterTwist
-    perimeterAberration: 0.006,   // .perimeterAberration
-    perimeterTint: 0.15,          // .perimeterTint
-    perimeterRimGlow: 1.2,        // .perimeterRimGlow
-    perimeterEdgeGlow: 0.8,       // .perimeterEdgeGlow
-    perimeterFill: 0.4,           // .perimeterFill
+    perimeterSize: 0.34,          // .perimeterSize (shard length, x the screen's height)
+    perimeterReach: 0.12,         // .perimeterReach (how far a shard's centre may sink in from the edge, x half the height)
+    perimeterSpin: 0.35,          // .perimeterSpin (radians a second)
+    perimeterRefraction: 0.14,    // .perimeterRefraction
+    perimeterTwist: 0.9,          // .perimeterTwist
+    perimeterAberration: 0.02,    // .perimeterAberration
+    perimeterTint: 0.25,          // .perimeterTint
+    perimeterRimGlow: 0.6,        // .perimeterRimGlow
+    perimeterEdgeGlow: 0.05,      // .perimeterEdgeGlow
+    perimeterFill: 0.1,           // .perimeterFill
     perimeterInvert: 0,           // .perimeterInvert
-    perimeterOpacity: 0.9,        // .perimeterOpacity
-    perimeterWarp: 0.03,          // .perimeterWarp
-    perimeterGlitch: 0.05,        // .perimeterGlitch
+    perimeterOpacity: 0.95,       // .perimeterOpacity
+    perimeterWarp: 0.08,          // .perimeterWarp
+    perimeterGlitch: 0.06,        // .perimeterGlitch
+    perimeterPull: 0.08,          // .perimeterPull
+    perimeterStreak: 0.012,       // .perimeterStreak
+    perimeterTipFade: 0.85,       // .perimeterTipFade
+    perimeterPullDrift: 0.12,     // .perimeterPullDrift (radians a second around the screen)
     labHitsPerSecond: 1.2,        // lab: how often the stand-in rival lands a hit while firing
   };
   // OriginalColorSetSO.asset (the live palette, Docs/PALETTE.md §1).
@@ -192,10 +196,10 @@
   const SPEC = [
     ['Perimeter', 'perimeterAmount',      0, 1, 0.01, 'Amount', '0 = off. The 3D perimeter: faceted shards on the screen\'s edge, each facet showing the frame behind it bent - reality breaking. Drawn only for the silenced pilot.'],
     ['Perimeter', 'perimeterShape',       0, 1, 1,    'Shape (0 crystal, 1 prism slab)', 'Crystal: pointed shards. Prism slab: broken pieces of a trail, the prisms\' own boxes.'],
-    ['Perimeter', 'perimeterCount',       4, 40, 1,   'Shards', 'How many shards ring the screen.'],
+    ['Perimeter', 'perimeterCount',       4, 160, 1,  'Shards', 'How many shards ring the screen. Many, so they overlap in layers and no one of them reads as a crystal.'],
     ['Perimeter', 'perimeterSeed',        1, 99, 1,   'Arrangement', 'Reshuffles where the shards sit and how each is cut.'],
     ['Perimeter', 'perimeterSize',     0.05, 0.6, 0.01, 'Size', 'Shard length, as a share of the screen\'s height.'],
-    ['Perimeter', 'perimeterReach',       0, 0.6, 0.01, 'Reach', 'How far the shards push in from the edge at full silence (share of half the height).'],
+    ['Perimeter', 'perimeterReach',       0, 0.6, 0.01, 'Sink', 'Each shard\'s centre sits on the screen\'s edge, half of it beyond; this is how far in a centre may sink (share of half the height).'],
     ['Perimeter', 'perimeterSpin',        0, 3, 0.05, 'Spin', 'How fast each shard turns about its long axis (radians a second).'],
     ['Perimeter', 'perimeterRefraction',  0, 0.3, 0.005, 'Refraction', 'How far each facet bends the frame it shows (by the facet\'s normal).'],
     ['Perimeter', 'perimeterTwist',       0, 1, 0.01, 'Twist', 'How much each shard turns and scales the reality it shows.'],
@@ -208,6 +212,10 @@
     ['Perimeter', 'perimeterOpacity',     0, 1, 0.01, 'Opacity', 'How solid the shards are.'],
     ['Perimeter', 'perimeterWarp',        0, 0.15, 0.005, 'Warp', 'The frame swirls and ripples near the edges while silenced; hits send a ring through it.'],
     ['Perimeter', 'perimeterGlitch',      0, 0.2, 0.005, 'Hit glitch', 'Each hit tears the facets\' picture into sliding bands (decays with the hit flare).'],
+    ['Perimeter', 'perimeterPull',        0, 0.3, 0.005, 'Pull', 'Reality is dragged, in slow waves, toward a point near the edge: the frame and every facet\'s picture stream toward it.'],
+    ['Perimeter', 'perimeterStreak',      0, 0.05, 0.001, 'Streak', 'Each facet\'s picture is smeared toward the pull, so light streams into the maw.'],
+    ['Perimeter', 'perimeterTipFade',     0, 1, 0.01, 'Tip fade', 'Each shard fades toward its inward tip, so none ends in a point you could name: it dissolves into the distortion.'],
+    ['Perimeter', 'perimeterPullDrift',   0, 1, 0.01, 'Pull drift', 'How fast that point wanders around the screen (radians a second).'],
     ['Edge',   'vignetteIntensity',      0, 1, 0.01, 'Strength', 'Peak opacity of the danger-coloured edge while silenced. The overlay ADDS colour, so it shows on black space.'],
     ['Edge',   'vignetteColorStrength',  0, 1, 0.01, 'Danger colour', '1 = the palette\'s danger signal colour (the rim every danger prism wears); toward 0 it darkens to black.'],
     ['Edge',   'vignetteDarken',         0, 1, 0.01, 'Darken under it', 'URP Vignette, black, under the colour: helps the edge read over a bright scene. On its own it is invisible on black space.'],
@@ -301,26 +309,35 @@
       const h = hash((Math.imul(seed, 0x9e3779b1) ^ Math.imul(shard + 1, 0x85ebca77) ^ Math.imul(k + 1, 0xc2b2ae3d)) >>> 0);
       return (h >>> 8) / 16777216;
     }
+    // Where reality is being pulled: an angle around the screen that drifts slowly, and the point near the
+    // screen's edge in that direction (screen uv, 0..1).
+    function pullAngle(s, time) { return s.pullDrift * time + rand(s.seed, 0, 99) * 6.2831855; }
+    function pullPoint(s, time) {
+      const a = pullAngle(s, time);
+      return [0.5 + 0.42 * Math.cos(a), 0.5 + 0.42 * Math.sin(a)];
+    }
     // Shard i's pose in the camera's own space (+x right, +y up, +z forward, as Unity's camera transform): its
-    // centre and its three axes, scaled by its length (the geometry is one unit long along +y).
+    // centre ON the screen's edge (half of it pokes in, half is beyond), sunk a little inward, and its three axes
+    // scaled by its length (the geometry is one unit long along +y). It grows in as the silence lands.
     function layout(i, s, weight, pulse, time, aspect, fovDeg) {
       const n = Math.max(1, s.count);
       const r = (k) => rand(s.seed, i, k);
-      const theta = 2 * Math.PI * (i + 0.8 * (r(0) - 0.5)) / n;
-      const depth = Depth * (0.85 + 0.3 * r(1));
+      const theta = 2 * Math.PI * (i + 0.9 * (r(0) - 0.5)) / n;
+      const depth = Depth * (0.6 + r(1));
       const h = depth * Math.tan(fovDeg * 0.5 * Math.PI / 180), w = h * aspect;
       const cx = Math.cos(theta), cy = Math.sin(theta);
       const tx = Math.abs(cx) > 1e-4 ? w / Math.abs(cx) : 1e9, ty = Math.abs(cy) > 1e-4 ? h / Math.abs(cy) : 1e9;
       const edge = Math.min(tx, ty);
       const presence = smooth(clamp01(clamp01(weight) * 1.35 - 0.35 * r(2)));
-      const len = s.size * 2 * h * (0.6 + 0.8 * r(3));
-      const jolt = 1 + 0.6 * Math.max(0, pulse) * (0.5 + r(4));
-      const reach = s.reach * h * presence * jolt;
-      const sway = 0.04 * h * Math.sin(time * (0.6 + r(5)) + r(6) * 6.2831855);
-      const along = edge + 0.6 * len * (1 - presence) - reach;
+      // The maw: on the pull's side the shards grow longer and sink deeper, so the mouth wanders with the pull.
+      const toward = 0.5 + 0.5 * Math.cos(theta - pullAngle(s, time)), maw = toward * toward;
+      const len = s.size * 2 * h * (0.5 + r(3)) * (0.25 + 0.75 * presence) * (0.55 + 0.9 * maw);
+      const sink = h * presence * (s.reach * (r(13) + 0.8 * maw) + 0.15 * Math.max(0, pulse) * (0.5 + r(4)));
+      const sway = 0.05 * h * Math.sin(time * (0.6 + r(5)) + r(6) * 6.2831855);
+      const along = edge - sink;
       const px = cx * along - cy * sway, py = cy * along + cx * sway;
-      // The long axis points inward, turned a little in the screen's plane and tilted toward or away from you.
-      const turn = (r(7) - 0.5) * 0.9, tilt = (r(8) - 0.5) * 1.6;
+      // The long axis points inward, turned in the screen's plane and tilted toward or away from you.
+      const turn = (r(7) - 0.5) * 1.2, tilt = (r(8) - 0.5) * 2.0;
       let ax = -(cx * Math.cos(turn) - cy * Math.sin(turn)), ay = -(cx * Math.sin(turn) + cy * Math.cos(turn)), az = tilt;
       const al = Math.sqrt(ax * ax + ay * ay + az * az); ax /= al; ay /= al; az /= al;
       let x0x = ay, x0y = -ax;                                   // cross(axis, forward), forward = (0, 0, 1)
@@ -365,33 +382,39 @@
         quad(v(-1, 1, -1), v(1, 1, -1), v(1, 1, 1), v(-1, 1, 1));
         quad(v(-1, -1, -1), v(-1, -1, 1), v(1, -1, 1), v(1, -1, -1));
       } else {
-        const k = 5 + Math.floor(r(0) * 3);
+        // A crystal of k sides cut by three rings: 6k facets, irregular enough that no two read alike.
+        const k = 6 + Math.floor(r(0) * 5);
         const rad = 0.16 * (0.8 + 0.4 * r(1));
         const top = [(r(2) - 0.5) * 0.1, 0.5, (r(3) - 0.5) * 0.1];
         const bottom = [(r(4) - 0.5) * 0.1, -0.5 * (0.6 + 0.4 * r(5)), (r(6) - 0.5) * 0.1];
-        const lo = [], hi = [];
-        for (let j = 0; j < k; j++) {
-          const ang = 2 * Math.PI * (j + 0.3 * (r(7 + j) - 0.5)) / k, rr = rad * (0.8 + 0.4 * r(14 + j));
-          lo.push([Math.cos(ang) * rr, -0.18, Math.sin(ang) * rr]);
-          hi.push([Math.cos(ang) * rr * 0.9, 0.18, Math.sin(ang) * rr * 0.9]);
+        const rings = [[-0.22, 0.9], [0, 1], [0.22, 0.8]];
+        const ring = [];
+        for (let m = 0; m < 3; m++) {
+          const out = [];
+          for (let j = 0; j < k; j++) {
+            const ang = 2 * Math.PI * (j + 0.3 * (r(7 + j) - 0.5)) / k, rr = rad * rings[m][1] * (0.8 + 0.4 * r(17 + m * 10 + j));
+            out.push([Math.cos(ang) * rr, rings[m][0], Math.sin(ang) * rr]);
+          }
+          ring.push(out);
         }
         for (let j = 0; j < k; j++) {
           const j1 = (j + 1) % k;
-          quad(lo[j], lo[j1], hi[j1], hi[j]);
-          tri(hi[j], hi[j1], top, -1);
-          tri(lo[j1], lo[j], bottom, -1);
+          quad(ring[0][j], ring[0][j1], ring[1][j1], ring[1][j]);
+          quad(ring[1][j], ring[1][j1], ring[2][j1], ring[2][j]);
+          tri(ring[2][j], ring[2][j1], top, -1);
+          tri(ring[0][j1], ring[0][j], bottom, -1);
         }
       }
       return { pos, nor, bar };
     }
-    return { rand, layout, geometry };
+    return { rand, pullAngle, pullPoint, layout, geometry };
   })();
   // </perimeter-twin>
 
   // The perimeter's settings, from the lab's (VesselSilenceConfigSO.PerimeterSettings).
   function perimOf(p) {
     return { shape: Math.round(p.perimeterShape), count: Math.round(p.perimeterCount), seed: Math.round(p.perimeterSeed),
-      size: p.perimeterSize, reach: p.perimeterReach, spin: p.perimeterSpin };
+      size: p.perimeterSize, reach: p.perimeterReach, spin: p.perimeterSpin, pullDrift: p.perimeterPullDrift };
   }
 
   // ---- the 3D perimeter, drawn in WebGL2 the way SilencePerimeterPass draws it in the game: copy the frame, warp
@@ -403,30 +426,37 @@ void main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2
   // <warp-shader> SilencePerimeter.shader, pass "SilencePerimeterWarp"
   const FS_WARP = `#version 300 es
 precision highp float;
-uniform sampler2D uScene; uniform float uWarp, uTime, uShock, uAspect;
+uniform sampler2D uScene; uniform float uWarp, uTime, uShock, uAspect, uPull; uniform vec2 uPullPoint;
 in vec2 vUv; out vec4 o;
 void main() {
   vec2 q = (vUv - 0.5) * 2.0;
-  float edge = smoothstep(0.6, 1.3, length(q));
+  float edge = smoothstep(0.45, 1.25, length(q));
   vec2 p = vec2(q.x * uAspect, q.y);
   float r = length(p);
   float ang = uWarp * edge * (2.0 + 1.5 * sin(r * 9.0 - uTime * 2.3));
   float s = sin(ang), c = cos(ang);
   p = vec2(c * p.x - s * p.y, s * p.x + c * p.y);
   p *= 1.0 + uShock * 0.06 * sin(r * 14.0 - uTime * 20.0) * edge;
-  o = vec4(texture(uScene, vec2(p.x / uAspect, p.y) * 0.5 + 0.5).rgb, 1.0);
+  vec2 uv = vec2(p.x / uAspect, p.y) * 0.5 + 0.5;
+  // The pull: the frame near the edges is dragged toward the pull point in slow waves; the middle stays still.
+  vec2 toP = (uPullPoint - vUv) * vec2(uAspect, 1.0);
+  float dP = length(toP) + 1e-4;
+  float wave = 0.5 + 0.5 * sin(dP * 14.0 - uTime * 3.0);
+  uv -= (toP / dP) * uPull * edge * (0.35 + 0.65 * wave) / vec2(uAspect, 1.0);
+  o = vec4(texture(uScene, uv).rgb, 1.0);
 }`;
   const VS_SHARD = `#version 300 es
 in vec3 aPos; in vec3 aNor; in vec3 aBar;
 uniform mat4 uModel; uniform mat4 uProj;
-out vec3 vN; out vec3 vV; out vec3 vBar;
-void main() { vec4 w = uModel * vec4(aPos, 1.0); vN = mat3(uModel) * aNor; vV = -w.xyz; vBar = aBar; gl_Position = uProj * w; }`;
+out vec3 vN; out vec3 vV; out vec3 vBar; out float vAlong;
+void main() { vec4 w = uModel * vec4(aPos, 1.0); vN = mat3(uModel) * aNor; vV = -w.xyz; vBar = aBar; vAlong = aPos.y; gl_Position = uProj * w; }`;
   // <shard-shader> SilencePerimeter.shader, pass "SilencePerimeter"
   const FS_SHARD = `#version 300 es
 precision highp float;
 uniform sampler2D uScene; uniform vec2 uRes; uniform vec3 uDanger; uniform vec2 uCenter;
-uniform float uRefract, uTwist, uAberr, uRim, uEdge, uAlpha, uGlitch, uTime, uSeed, uTint, uFill, uInvert;
-in vec3 vN; in vec3 vV; in vec3 vBar; out vec4 o;
+uniform float uRefract, uTwist, uAberr, uRim, uEdge, uAlpha, uGlitch, uTime, uSeed, uTint, uFill, uInvert, uPull, uStreak, uTipFade;
+uniform vec2 uPullPoint;
+in vec3 vN; in vec3 vV; in vec3 vBar; in float vAlong; out vec4 o;
 float hash1(float n) { return fract(sin(n) * 43758.5453); }
 void main() {
   vec3 n = normalize(vN); vec3 v = normalize(vV);
@@ -439,9 +469,18 @@ void main() {
   d *= 1.0 + 0.35 * uTwist * (fract(uSeed * 7.31) - 0.5);
   d.x /= aspect;
   vec2 suv = uCenter + d + n.xy * uRefract;
+  vec2 toP = (uPullPoint - uv) * vec2(aspect, 1.0);
+  vec2 pullDir = toP / (length(toP) + 1e-4) / vec2(aspect, 1.0);
+  suv -= pullDir * uPull * 0.6;
   suv.x += (hash1(floor(uv.y * 180.0) + floor(uTime * 24.0)) - 0.5) * uGlitch;
   vec2 ab = n.xy * uAberr;
-  vec3 col = vec3(texture(uScene, suv + ab).r, texture(uScene, suv).g, texture(uScene, suv - ab).b);
+  // The picture is smeared toward the pull: light streams into the maw.
+  vec3 col = vec3(0.0);
+  for (int k = 0; k < 6; k++) {
+    vec2 tuv = suv - pullDir * uStreak * float(k);
+    col += vec3(texture(uScene, tuv + ab).r, texture(uScene, tuv).g, texture(uScene, tuv - ab).b);
+  }
+  col /= 6.0;
   col = mix(col, vec3(1.0) - col, uInvert);
   float shade = max(0.0, dot(n, normalize(vec3(0.35, 0.6, 0.7))));
   float lit = 0.8 + 0.3 * shade;
@@ -449,7 +488,11 @@ void main() {
   float e = min(min(vBar.x, vBar.y), vBar.z);
   float edgeLine = 1.0 - smoothstep(0.0, max(fwidth(e) * 1.5, 1e-4), e);
   col = mix(col * lit, uDanger * dot(col, vec3(0.3, 0.59, 0.11)) * 2.0, uTint) + uDanger * (uFill * (0.35 + 0.65 * shade) + fres * uRim + edgeLine * uEdge);
-  o = vec4(col * uAlpha, uAlpha);
+  // Facets differ in how solid they are, so overlapping shards dissolve into each other.
+  // ... and each fades toward its inward tip, so no shard ends in a point: it dissolves into the distortion.
+  float facetAlpha = uAlpha * (0.6 + 0.4 * hash1(dot(n, vec3(12.9898, 78.233, 37.719)) * 9.0))
+                   * (1.0 - uTipFade * smoothstep(-0.1, 0.5, vAlong));
+  o = vec4(col * facetAlpha, facetAlpha);
 }`;
   function perspective(fovDeg, aspect, near, far) {
     const f = 1 / Math.tan(fovDeg * Math.PI / 360), nf = 1 / (near - far);
@@ -510,6 +553,8 @@ void main() {
       gl.useProgram(warp.pr); gl.bindVertexArray(emptyVao);
       gl.uniform1i(warp.u.uScene, 0); gl.uniform1f(warp.u.uWarp, p.perimeterWarp * st.drive * amount);
       gl.uniform1f(warp.u.uTime, st.t); gl.uniform1f(warp.u.uShock, pulse * amount); gl.uniform1f(warp.u.uAspect, aspect);
+      const sp = perimOf(p), pp = PERIM.pullPoint(sp, st.t);
+      gl.uniform1f(warp.u.uPull, p.perimeterPull * st.drive * amount); gl.uniform2f(warp.u.uPullPoint, pp[0], pp[1]);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       if (amount <= 0 || st.drive <= 0.0001) return;
       const s = perimOf(p);
@@ -528,6 +573,8 @@ void main() {
       gl.uniform1f(shard.u.uEdge, p.perimeterEdgeGlow); gl.uniform1f(shard.u.uGlitch, p.perimeterGlitch * pulse);
       gl.uniform1f(shard.u.uTime, st.t); gl.uniform1f(shard.u.uTint, p.perimeterTint);
       gl.uniform1f(shard.u.uFill, p.perimeterFill); gl.uniform1f(shard.u.uInvert, p.perimeterInvert);
+      gl.uniform1f(shard.u.uPull, p.perimeterPull * st.drive); gl.uniform2f(shard.u.uPullPoint, pp[0], pp[1]);
+      gl.uniform1f(shard.u.uStreak, p.perimeterStreak); gl.uniform1f(shard.u.uTipFade, p.perimeterTipFade);
       for (const i of order) {
         const q = poses[i];
         if (q.presence <= 0.001) continue;
@@ -812,13 +859,14 @@ void main() {
     { name: 'Off (control)', v: OFF },
     { name: 'Round 0: URP red multiply', v: OFF, legacy: { intensity: 0.26, smoothness: 0.55, color: [0.75, 0, 0] } },
     { name: 'Round 1: 2D edge (overtuned)', v: R1_EDGE },
-    { name: 'Shipped: 3D perimeter', v: {} },
-    { name: 'Crystal crown', v: { perimeterCount: 24, perimeterSize: 0.18, perimeterReach: 0.22, perimeterTwist: 0.3, perimeterRimGlow: 1.6, perimeterEdgeGlow: 1.0 } },
-    { name: 'Broken trail (prism slabs)', v: { perimeterShape: 1, perimeterCount: 16, perimeterSize: 0.2, perimeterReach: 0.2, perimeterSpin: 0.9, perimeterTwist: 0.8 } },
-    { name: 'Negative space (inverted)', v: { perimeterInvert: 1, perimeterFill: 0.1, perimeterTint: 0.5, perimeterRimGlow: 0.8 } },
-    { name: 'Tear (warp + glitch)', v: { perimeterCount: 10, perimeterSize: 0.4, perimeterReach: 0.35, perimeterWarp: 0.09, perimeterGlitch: 0.12, perimeterAberration: 0.02, perimeterTwist: 1 } },
-    { name: 'Swarm (many small)', v: { perimeterCount: 40, perimeterSize: 0.1, perimeterReach: 0.18, perimeterSpin: 1.6 } },
-    { name: 'Perimeter + 2D edge', v: { vignetteIntensity: 0.4, vignetteInner: 0.7 } },
+    { name: 'Shipped: the pull (round 3)', v: {} },
+    { name: 'Undertow (strong pull)', v: { perimeterPull: 0.18, perimeterPullDrift: 0.25, perimeterWarp: 0.12, perimeterTwist: 1 } },
+    { name: 'Shattered mirror', v: { perimeterCount: 150, perimeterSize: 0.28, perimeterRefraction: 0.22, perimeterTwist: 1, perimeterEdgeGlow: 0.35, perimeterTint: 0.15 } },
+    { name: 'Broken trail (prism slabs)', v: { perimeterShape: 1, perimeterCount: 90, perimeterSize: 0.3, perimeterSpin: 0.6 } },
+    { name: 'Negative space (inverted)', v: { perimeterInvert: 1, perimeterFill: 0.05, perimeterTint: 0.5 } },
+    { name: 'Tear (warp + glitch)', v: { perimeterWarp: 0.14, perimeterGlitch: 0.15, perimeterAberration: 0.03 } },
+    { name: 'Round 2: crystals from the edge', v: { perimeterTipFade: 0, perimeterStreak: 0, perimeterCount: 22, perimeterSize: 0.26, perimeterReach: 0.26, perimeterSpin: 0.5, perimeterRefraction: 0.06, perimeterTwist: 0.5, perimeterAberration: 0.006, perimeterTint: 0.15, perimeterRimGlow: 1.2, perimeterEdgeGlow: 0.8, perimeterFill: 0.4, perimeterOpacity: 0.9, perimeterWarp: 0.03, perimeterGlitch: 0.05, perimeterPull: 0 } },
+    { name: 'Pull + 2D edge', v: { vignetteIntensity: 0.4, vignetteInner: 0.7 } },
     { name: 'Yours (current settings)', v: null },
     // Archive: round 1's 2D looks, one click away (not scored).
     { name: 'Ember (subtle)', archive: true, v: Object.assign({}, R1_EDGE, { vignetteIntensity: 0.45, vignetteInner: 0.7, vignetteFeather: 0.45, vignetteRimStrength: 0, vignetteDarken: 0.2 }) },
