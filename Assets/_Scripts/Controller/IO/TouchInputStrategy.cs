@@ -140,6 +140,42 @@ namespace CosmicShore.Gameplay
         private bool onlyLeftActive;
         private bool onlyRightActive;
 
+        // ── The vessel's phone controls (Docs/Reports/MOBILE_VESSELS.md, Garrett 2026-10-21) ─────
+        /// <summary>The flown hull's profile, handed in every frame by <see cref="InputController"/>.
+        /// Null flies the default: thumb lifts are abilities, no tilt, no extras.</summary>
+        public TouchControlProfile Profile { get; set; }
+
+        /// <summary>The flown hull steers off the left stick alone (<c>IsSingleStickControls</c>).</summary>
+        public bool SingleStickHull { get; set; }
+
+        bool LiftsAreAbilities => Profile == null || Profile.UsesThumbLifts;
+
+        /// <summary>The current lift's events were raised (or a deferred one has since fired). A lift on a
+        /// TotemButtons hull, or one a card tap cancelled, holds the throttle but raises nothing.</summary>
+        private bool liftRaised;
+
+        // A deferred lift (TouchControlProfile.liftDeferSeconds): waiting to see whether the finger that
+        // left lands on a card.
+        private bool liftPending;
+        private float liftPendingSince;
+        private int claimedAtLift;
+        private int claimedTouchCount;
+
+        /// <summary>No thumb has touched since this strategy took over: the idle state at spawn is not a
+        /// pilot letting go, so it presses nothing (a Manta must not soar off the start line).</summary>
+        private bool everTouched;
+
+        /// <summary>IdleAction is held. Tracked here because <see cref="BaseInputStrategy.ResetInput"/>
+        /// clears <c>InputStatus.Idle</c> every idle frame, which used to re-press IdleAction every frame.</summary>
+        private bool idlePressed;
+
+        private bool triggersPulledByIdle;
+        private readonly TouchTilt tilt = new();
+
+        // A held AIM button's finger (FlightTouchClaims.AddAim): its drag is the right stick.
+        private bool hasAimTouch;
+        private Touch aimTouch;
+
         public override void Initialize(IInputStatus inputStatus)
         {
             base.Initialize(inputStatus);
@@ -185,9 +221,11 @@ namespace CosmicShore.Gameplay
         {
             CollectFlightTouches();
             var touchCount = flightTouches.Count;
+            if (touchCount > 0 || hasAimTouch || claimedTouchCount > 0) everTouched = true;
 
             // Detect transitions that start or stop drift
             HandleDriftTransitions(touchCount);
+            ResolvePendingLift();
 
             if (touchCount >= 3)
             {
@@ -215,16 +253,20 @@ namespace CosmicShore.Gameplay
                 StopStickEffects();
                 ReleaseSpeedEffects();
                 ResetInput();
-                if (!inputStatus.Idle)
+                inputStatus.Idle = true;
+                ApplyIdleControls();
+                if (!idlePressed && everTouched)
                 {
-                    inputStatus.Idle = true;
+                    idlePressed = true;
                     inputStatus.OnButtonPressed.Raise(InputEvents.IdleAction);
                 }
             }
 
             if (touchCount > 0)
             {
+                EndIdleControls();
                 Reparameterize();
+                ApplyOneThumbTiltRoll();
 
                 // Hold the throttle the pilot had when they lifted the thumb (see heldXDiff), and
                 // carry it back into two-thumb flight when the thumb returns (see throttleCarry).
@@ -238,14 +280,147 @@ namespace CosmicShore.Gameplay
 
 
                 PerformSpeedAndDirectionalEffects();
-                if (inputStatus.Idle)
+                inputStatus.Idle = false;
+                if (idlePressed)
                 {
-                    inputStatus.Idle = false;
+                    idlePressed = false;
                     inputStatus.OnButtonReleased.Raise(InputEvents.IdleAction);
                 }
             }
 
+            ApplyAimTouch();
             prevTouchCount = touchCount;
+        }
+
+        /// <summary>
+        /// IDLE PARITY (Garrett, 2026-10-21: "idle should have parity with controller idle"). A pad with
+        /// its sticks let go reads XDiff = (0 - 0 + 2) / 4 = 0.5 - neutral throttle. Touch used to read 0,
+        /// which a thumb-spread throttle takes as "fully squeezed" (dual-stick hulls slowed to their
+        /// minimum) and the Urchin's signed throttle took as FULL REVERSE, so letting go of the glass
+        /// backed it away at 65 u/s. Both thumbs off now reads exactly what both sticks released do.
+        /// </summary>
+        ///
+        /// <para>Written out rather than calling the base, which also clears <c>Idle</c> and both triggers:
+        /// an idle frame would then write them false/0 and straight back, and every such write to a
+        /// replicated field marks it dirty for the next network tick.</para>
+        protected override void ResetInput()
+        {
+            inputStatus.XSum = 0;
+            inputStatus.YSum = 0;
+            inputStatus.XDiff = 0.5f;
+            inputStatus.YDiff = 0;
+            inputStatus.EasedLeftJoystickPosition = Vector2.zero;
+            inputStatus.EasedRightJoystickPosition = Vector2.zero;
+            inputStatus.RightJoystickStart = Vector2.zero;
+            inputStatus.LeftJoystickStart = Vector2.zero;
+            inputStatus.RightNormalizedJoystickPosition = Vector2.zero;
+            inputStatus.LeftNormalizedJoystickPosition = Vector2.zero;
+            if (!triggersPulledByIdle)
+            {
+                inputStatus.LeftTriggerAnalog = 0f;
+                inputStatus.RightTriggerAnalog = 0f;
+            }
+        }
+
+        /// <summary>What a hull's profile does with no thumb on the glass: tilt steers (a virtual thumb,
+        /// mirrored like one-thumb flight) and/or both triggers read fully pulled.</summary>
+        private void ApplyIdleControls()
+        {
+            bool steer = everTouched && Profile != null && Profile.tiltSteersWhileIdle;
+            SetTiltMode(steer ? TiltMode.Steer : TiltMode.None);
+            if (!everTouched || Profile == null) return;
+
+            if (steer)
+            {
+                oneThumbActive = true;
+                oneThumbStick = TiltToStick(tilt.Sample(Time.deltaTime, TouchControlProfileLibrarySO.Instance));
+                Reparameterize();
+                inputStatus.XDiff = 0.5f;
+            }
+
+            if (Profile.idlePullsBothTriggers)
+            {
+                inputStatus.LeftTriggerAnalog = 1f;
+                inputStatus.RightTriggerAnalog = 1f;
+                triggersPulledByIdle = true;
+            }
+        }
+
+        private void EndIdleControls()
+        {
+            if (!triggersPulledByIdle) return;
+            triggersPulledByIdle = false;
+            inputStatus.LeftTriggerAnalog = 0f;
+            inputStatus.RightTriggerAnalog = 0f;
+        }
+
+        private enum TiltMode { None, Roll, Steer }
+        private TiltMode tiltMode;
+
+        /// <summary>Tilt is measured from where the phone was when it took over, so every change of what
+        /// it drives starts from a fresh neutral.</summary>
+        private void SetTiltMode(TiltMode mode)
+        {
+            if (mode == tiltMode) return;
+            tiltMode = mode;
+            if (mode == TiltMode.None) tilt.Disengage();
+            else tilt.Engage();
+        }
+
+        /// <summary>The Dolphin's one-thumb roll: with one thumb flying, the axis the second thumb gave
+        /// (roll, <c>YDiff</c>) comes from turning the phone like a wheel - clockwise banks right.</summary>
+        private void ApplyOneThumbTiltRoll()
+        {
+            bool wanted = Profile != null && Profile.tiltRollOnOneThumb && oneThumbActive;
+            SetTiltMode(wanted ? TiltMode.Roll : TiltMode.None);
+            if (!wanted) return;
+            var stick = tilt.Sample(Time.deltaTime, TouchControlProfileLibrarySO.Instance);
+            inputStatus.YDiff = Mathf.Clamp(stick.x, -1f, 1f);
+        }
+
+        /// <summary>Tilt as a thumb: wheel-turn is the stick's x, and tipping the top edge away dives
+        /// (this game's thumb-up is nose-up, so forward tilt is a DOWN stick) unless the library says otherwise.</summary>
+        private static Vector2 TiltToStick(Vector2 tiltStick)
+        {
+            var library = TouchControlProfileLibrarySO.Instance;
+            bool forwardDives = !library || library.TiltForwardDives;
+            return new Vector2(tiltStick.x, forwardDives ? -tiltStick.y : tiltStick.y);
+        }
+
+        /// <summary>A held AIM button's drag from where it landed is the right stick (single-stick hulls
+        /// only - a two-stick hull flies on it). Written after the flight mix so it wins over the mirror.</summary>
+        private void ApplyAimTouch()
+        {
+            if (!hasAimTouch || !SingleStickHull) return;
+            Vector2 offset = Vector2.ClampMagnitude(aimTouch.screenPosition - aimTouch.startScreenPosition, joystickRadius);
+            float magnitude = offset.magnitude;
+            Vector2 stick = magnitude <= deadZone
+                ? Vector2.zero
+                : offset / magnitude * ((magnitude - deadZone) / (joystickRadius - deadZone));
+            inputStatus.RightNormalizedJoystickPosition = stick;
+            inputStatus.EasedRightJoystickPosition = new Vector2(Ease(2 * stick.x), Ease(2 * stick.y));
+        }
+
+        /// <summary>A deferred lift fires once its window passes, or is dropped if a finger landed on a card.</summary>
+        private void ResolvePendingLift()
+        {
+            if (!liftPending) return;
+            if (claimedTouchCount > claimedAtLift)
+            {
+                liftPending = false;     // the lifted thumb went to a card: no lift ability
+                return;
+            }
+            float window = Profile != null ? Profile.liftDeferSeconds : 0f;
+            if (Time.unscaledTime - liftPendingSince < window) return;
+            liftPending = false;
+            RaiseLiftEvent();
+        }
+
+        private void RaiseLiftEvent()
+        {
+            liftRaised = true;
+            if (onlyLeftActive) inputStatus.OnButtonPressed.Raise(InputEvents.OnlyLeftStickAction);
+            if (onlyRightActive) inputStatus.OnButtonPressed.Raise(InputEvents.OnlyRightStickAction);
         }
 
         /// <summary>
@@ -279,17 +454,27 @@ namespace CosmicShore.Gameplay
                 var remainingPosition = flightTouches[0].screenPosition;
                 bool remainingIsLeft = remainingPosition.x < Screen.width * 0.5f;
 
-                if (remainingIsLeft)
+                // Right thumb lifted, only left remains -> OnlyLeftStickAction (the pad's LT alone);
+                // left thumb lifted -> OnlyRightStickAction (RT alone). The flags also hold the
+                // throttle, so they are set whether or not the lift is an ability on this hull.
+                onlyLeftActive = remainingIsLeft;
+                onlyRightActive = !remainingIsLeft;
+                liftRaised = false;
+                liftPending = false;
+
+                if (!LiftsAreAbilities)
                 {
-                    // Right thumb was lifted, only left remains → OnlyLeftStickAction
-                    onlyLeftActive = true;
-                    inputStatus.OnButtonPressed.Raise(InputEvents.OnlyLeftStickAction);
+                    // TotemButtons: a lift is a thumb going to a card. It raises nothing.
+                }
+                else if (Profile != null && Profile.liftDeferSeconds > 0f)
+                {
+                    liftPending = true;
+                    liftPendingSince = Time.unscaledTime;
+                    claimedAtLift = claimedTouchCount;
                 }
                 else
                 {
-                    // Left thumb was lifted, only right remains → OnlyRightStickAction
-                    onlyRightActive = true;
-                    inputStatus.OnButtonPressed.Raise(InputEvents.OnlyRightStickAction);
+                    RaiseLiftEvent();
                 }
             }
 
@@ -314,6 +499,8 @@ namespace CosmicShore.Gameplay
             StopDrift();
             StopStickEffects();
             ReleaseSpeedEffects();
+            ReleaseIdle();
+            everTouched = false;
         }
 
         public override void OnPaused()
@@ -321,6 +508,27 @@ namespace CosmicShore.Gameplay
             StopDrift();
             StopStickEffects();
             ReleaseSpeedEffects();
+            ReleaseIdle();
+        }
+
+        /// <summary>A new hull is being flown: what the last one's idle held is let go, and the new one
+        /// waits for a first touch before its idle presses anything (InputController, on a hull change).</summary>
+        public void OnVesselChanged()
+        {
+            StopDrift();
+            StopStickEffects();
+            ReleaseSpeedEffects();
+            ReleaseIdle();
+            everTouched = false;
+        }
+
+        private void ReleaseIdle()
+        {
+            EndIdleControls();
+            SetTiltMode(TiltMode.None);
+            if (!idlePressed) return;
+            idlePressed = false;
+            inputStatus.OnButtonReleased.Raise(InputEvents.IdleAction);
         }
 
         private void ReleaseSpeedEffects()
@@ -342,13 +550,15 @@ namespace CosmicShore.Gameplay
             if (onlyLeftActive)
             {
                 onlyLeftActive = false;
-                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyLeftStickAction);
+                if (liftRaised) inputStatus.OnButtonReleased.Raise(InputEvents.OnlyLeftStickAction);
             }
             if (onlyRightActive)
             {
                 onlyRightActive = false;
-                inputStatus.OnButtonReleased.Raise(InputEvents.OnlyRightStickAction);
+                if (liftRaised) inputStatus.OnButtonReleased.Raise(InputEvents.OnlyRightStickAction);
             }
+            liftRaised = false;
+            liftPending = false;
         }
 
         private void ProcessMultiTouch(bool threeFingerFumble)
@@ -441,7 +651,7 @@ namespace CosmicShore.Gameplay
 
         private void HandleLeftStick(Vector2 position)
         {
-            if (!leftStickEffectsStarted && singleThumbFromLift)
+            if (!leftStickEffectsStarted && singleThumbFromLift && liftRaised)
             {
                 leftStickEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
@@ -455,7 +665,7 @@ namespace CosmicShore.Gameplay
 
         private void HandleRightStick(Vector2 position)
         {
-            if (!rightStickEffectsStarted && singleThumbFromLift)
+            if (!rightStickEffectsStarted && singleThumbFromLift && liftRaised)
             {
                 rightStickEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);
@@ -527,7 +737,11 @@ namespace CosmicShore.Gameplay
             if (oneThumbActive)
             {
                 left = oneThumbStick;
-                right = left;
+                // A ONE-STICK hull steers off the left stick only, and its RIGHT stick aims or
+                // jukes (the Brittle Star's ring and gun splay, the Scarab's juke). Mirroring the
+                // steering thumb onto it turned every hard turn into an aim and a juke, so on those
+                // hulls one thumb is steering alone. Flight is unchanged: the hull never reads it.
+                right = SingleStickHull ? Vector2.zero : left;
             }
 
             inputStatus.EasedRightJoystickPosition = new Vector2(Ease(2 * right.x), Ease(2 * right.y));
@@ -592,10 +806,24 @@ namespace CosmicShore.Gameplay
         private void CollectFlightTouches()
         {
             flightTouches.Clear();
+            claimedTouchCount = 0;
+            hasAimTouch = false;
             var touches = Touch.activeTouches;
             for (int i = 0; i < touches.Count; i++)
-                if (!FlightTouchClaims.Claims(touches[i].startScreenPosition))
+            {
+                var start = touches[i].startScreenPosition;
+                if (!FlightTouchClaims.Claims(start))
+                {
                     flightTouches.Add(touches[i]);
+                    continue;
+                }
+                claimedTouchCount++;
+                if (!hasAimTouch && FlightTouchClaims.IsAimRegion(start))
+                {
+                    hasAimTouch = true;
+                    aimTouch = touches[i];
+                }
+            }
         }
 
         private int GetClosestTouch(Vector2 target)

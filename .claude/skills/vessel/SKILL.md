@@ -811,7 +811,10 @@ applies to new abilities, new resources on the meter list, and anything that add
     rest in one frame - invisible on a pad (it rarely goes idle mid-turn), a "glitch" on mobile. The eased stick
     (`EasedLeftJoystickPosition`) does not help: `Idle()` never sees it. Keep `_yaw = Lerp(_yaw, yaw, 1 - Exp(-10 dt))`
     in the animation (Thresher, Shrike, Brittle Star do; Stoat and Angler did not, `Docs/REFACTOR_BACKLOG.md` S29).
-    Garrett's Thresher mobile run, 2026-10-19 (`cece/elegant-goldberg-eanwgx`).
+    Garrett's Thresher mobile run, 2026-10-19 (`cece/elegant-goldberg-eanwgx`). The Squirrel/Serpent's
+    `MantaAnimationContoller` snapped the other way, by writing `Idle()` at a different scale and sign than its
+    puppetry (`Pitch = currentPitch` against `-currentPitch * 2`; the Sparrow's controller halved the same way) -
+    `Idle()` and puppetry must share ONE setter (`WriteAnimatorPose`, 2026-10-21; S29 lists the audit).
 54. **Secondary motion (a tail, a cord, a fin) is driven by STATE, never by a clock - and must be frame-rate proof.**
     A sine "beat" is a wiggle the pilot did not cause; it reads as noise, and worse at 30 fps. The Thresher's tail
     (2026-10-19, `ThresherSwimMath`) is the shape: aim at something real (a point down its own chain), give each
@@ -839,6 +842,19 @@ applies to new abilities, new resources on the meter list, and anything that add
     RPC; `PerformShipControllerActionsReplicated` is the AI's path and skips the gates. And a touch that starts on
     such a control must be kept out of touch flight (`FlightTouchClaims`), or the same finger also steers and fires
     the one-thumb drift edges.
+
+57. **Every vessel has a PHONE SCHEME, and a new one needs a row in `Tools/Build/author_touch_profiles.py`.** A phone
+    has no trigger depth, can never hold LT+RT (lifting the second thumb is "let go of everything"), and a thumb that
+    leaves its stick to reach a card fires that thumb's lift ability on the way (Garrett, 2026-10-21,
+    `Docs/Reports/MOBILE_VESSELS.md` §8). So each hull picks one: **ThumbLifts** (abilities on thumb lifts, cards show a
+    lift glyph and are not buttons) or **TotemButtons** (lifts raise nothing; cards plus `extraButtons` are the
+    controls, laid out round the right thumb in millimetres). Ask of every new ability: *how does a phone press it?*
+    A trigger-depth read needs a press fallback (`max(analog, held)`, the Thresher and Angler pattern) or a hold-time
+    ramp (the Stoat's `Hold01`); an LT+RT ability needs a both-thumbs-off form (`idlePullsBothTriggers`, the Rhino) or a
+    card; tilt (`tiltRollOnOneThumb`, `tiltSteersWhileIdle`) stands in for the axis a lifted thumb gave up. The gate:
+    `author_touch_profiles.py --check` fails when a TotemButtons hull shows a card or button whose input resolves to
+    no action on touch (it caught the Stoat, whose only bindings were the pad overrides, and the Angler, whose paint and
+    erase read only trigger depth). Run `Tools/Build/touch_controls_harness/run.sh` after touching the layout or tilt.
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 

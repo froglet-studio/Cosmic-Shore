@@ -99,6 +99,12 @@ namespace CosmicShore.UI
             _iconSetSwitcher.OnSetChanged += HandleControlDeviceChanged;
             baseView?.SetControlDevice(_iconSetSwitcher.IsKeyboard);
 
+            // Phone controls (Docs/Reports/MOBILE_VESSELS.md): on a touch-first device the cards follow
+            // the hull's TouchControlProfile - glyphs for thumb lifts, or the cards and extra buttons laid
+            // out round the right thumb. A no-op anywhere else. After the press source and the chips, both
+            // of which it builds on.
+            TouchControlsHud.Attach(baseView, vesselStatus);
+
 #if UNITY_EDITOR
             // Structural contract: four ability icons, charge/mass/space/time, left to right.
             baseView?.ValidateAbilityIconRow(vesselStatus.VesselType);

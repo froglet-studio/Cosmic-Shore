@@ -134,9 +134,30 @@ namespace CosmicShore.Gameplay
             UpdateActiveDeviceFamily();
 
             UpdateInputStrategy();
+            if (currentStrategy == touchStrategy) HandTouchStrategyItsHull();
             currentStrategy?.ProcessInput();
             orientationHandler.Update();
         }
+
+        /// <summary>
+        /// The touch strategy flies by the hull's phone profile (TouchControlProfileLibrarySO): which
+        /// gestures are abilities, tilt, idle controls. Asked every frame because a vessel swap
+        /// (the Toybox changer, an arena pilot swap) changes the hull under the same controller, and a
+        /// changed hull lets go of whatever the last one's touch controls were holding.
+        /// </summary>
+        private void HandTouchStrategyItsHull()
+        {
+            var status = ownerPlayer != null && ownerPlayer.Vessel != null ? ownerPlayer.Vessel.VesselStatus : null;
+            if (!ReferenceEquals(status, touchProfileVessel))
+            {
+                touchProfileVessel = status;
+                touchStrategy.OnVesselChanged();
+            }
+            touchStrategy.Profile = status != null ? TouchControlProfileLibrarySO.For(status.VesselType) : null;
+            touchStrategy.SingleStickHull = status != null && status.IsSingleStickControls;
+        }
+
+        private IVesselStatus touchProfileVessel;
 
         private void UpdateDualMouseEngagement()
         {
