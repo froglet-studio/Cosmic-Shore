@@ -948,6 +948,8 @@ namespace CosmicShore.Gameplay
         /// <c>devastate</c> stops the prism restoring its armour instead of dying.</summary>
         void BreakPrism(Prism prism, Vector3 impact, bool devastate)
         {
+            // A silenced Shrike breaks nothing it does not own (VesselSilence) - asked before the shield drop.
+            if (prism.DeflectsSilenced(_status.PlayerName, impact.magnitude)) return;
             if (prism.prismProperties is { IsSuperShielded: true })
             {
                 prism.DeactivateShields(impact);

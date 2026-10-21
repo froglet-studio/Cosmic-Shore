@@ -695,7 +695,8 @@ namespace CosmicShore.Gameplay
                 float debrisLimit = config ? config.DebrisSpeedLimit : 200f;
                 // Space L5 "Breaker": a red ball's direct hit breaks super-shielded mass, through the
                 // sanctioned sequence (shields off, then a devastating hit - Prism.Damage's own doc).
-                if (hot && breaker && prism.prismProperties is { IsSuperShielded: true })
+                if (hot && breaker && prism.prismProperties is { IsSuperShielded: true }
+                    && !prism.DeflectsSilenced(_status.PlayerName, impact.magnitude))   // VesselSilence
                 {
                     prism.DeactivateShields(impact, debrisLimit);
                     prism.Damage(impact, _status.Domain, _status.PlayerName, devastate: true, debrisSpeedLimit: debrisLimit);
