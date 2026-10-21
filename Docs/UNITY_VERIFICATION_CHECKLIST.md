@@ -65,6 +65,36 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Orca round 6: seats are elements, an always-scoped sniper, a one-at-a-time bomb, the fast gun's pen, over-the-turret views and bespoke crosshairs (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-21. Design: `Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md` (round 6, "The pen", "The views and
+the crosshairs"); lab round 6 (`Docs/Studios/CREW_OF_FOUR_LAB.md` §4). No Unity Editor or `unity` CLI in the session, so
+`/verify-unity` did not run. What did run:
+- the reference compile (player: no project errors; editor: none in changed files);
+- the lab parity gate, now with 400 pen landings and a planted pen control;
+- `author_orca_assets.py --check` / `--self-test`;
+- 21 core tests under .NET (four new pen tests);
+- the static gate battery.
+
+**Verify in editor** (Toybox Vessel Changer, the Orca):
+1. **Seat icons.** At the helm the **Time** card is lit. Keys 2 / 3 / 4 light **Space** / **Mass** / **Charge** instead.
+   Each gunner card shows its own seat's missile count. Space's veil is the sniper's 12 s; Mass's is the fast gun's
+   heat (full while overheated); Charge has none.
+2. **Sniper (key 2).** The view is **always scoped** (narrow, ~22°). A dark surround, cross wires, a small ring (the
+   cone) and a lime ring round the eyepiece. Fire: the ring turns red and refills over 12 s, the label counts down, then
+   says READY.
+3. **Fast gun (key 3).** The view sits **behind and above the turret**; the rounds stream away from the eye. The
+   crosshair is a slanted nib with a dot; a lime tip shows when the next round is a pen round; an amber arc fills with
+   heat. Hold Fire and sweep slowly: a **clean line of thin prisms** draws itself about 120 u out, one every 5 u, each
+   along the line. Hold still: no pile of prisms. Release and pause: at most one slanted dot.
+4. **Bomb (key 4).** The view sits farther back. A dashed lime ring (the blast's size) with a chevron. Fire throws a bomb;
+   an amber ring pulses round it with BURST. Fire again bursts it; then the next press throws another at once (no
+   cooldown). Our hull is never pushed.
+5. AI bomb gunners burst their own bombs (they do not sit with a bomb out forever).
+6. Clean console: no NRE from `OrcaCrew` / `OrcaCrewView` / `OrcaCrosshairGraphic`, no pool errors.
+
+---
+
 ### 🔴 Orca round 5: a gun per gunner seat, a missile magazine per seat, a shield that drops; crew cameras get post-processing (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-21. Design: `Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md` ("The three guns"); lab round 5

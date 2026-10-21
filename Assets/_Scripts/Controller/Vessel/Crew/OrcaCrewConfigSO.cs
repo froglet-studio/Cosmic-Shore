@@ -7,7 +7,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Every number of the Orca's crew (the 4-seat vessel: one helm, three gunner seats; Crew of Four Lab round 5,
+    /// Every number of the Orca's crew (the 4-seat vessel: one helm, three gunner seats, each seat an element; Crew of Four Lab round 6,
     /// <c>Docs/Studios/CREW_OF_FOUR_LAB.md</c>). The lab is the record: each field names the lab key it came from, and
     /// <c>Tools/Build/orca_crew_lab/parity.cjs</c> holds the shipped asset to the lab's SHIPPED block. Read by
     /// <see cref="OrcaCrew"/>; see <c>Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md</c>.
@@ -88,7 +88,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("lab gunsOn: off = missiles only (round 4).")]
         [SerializeField] bool gunsOn = true;
 
-        [Header("Gunner 1: the sniper (the Serpent's sniper shot, SniperShotAction.asset)")]
+        [Header("Seats (round 6: each seat is an element, and the person's seat lights its ability icon)")]
+        [Tooltip("The element each seat owns, helm first: its ability icon on the HUD lights for the person in that seat and shows its recharge (and a gunner seat's missiles). Lab EL by seat: Time, Space, Mass, Charge.")]
+        [SerializeField] Element[] seatElements = { Element.Time, Element.Space, Element.Mass, Element.Charge };
+
+        [Header("The Space seat: the sniper (the Serpent's sniper shot, SniperShotAction.asset), always scoped")]
         [Tooltip("lab sniperCd: seconds between shots (the Serpent's 12).")]
         [SerializeField, Min(0.1f)] float sniperCooldown = 12f;
         [Tooltip("lab sniperRange: the cone's length (u).")]
@@ -112,7 +116,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float sniperFlareRadius = 18f;
         [SerializeField, Min(0f)] float sniperFlareSeconds = 0.3f;
 
-        [Header("Gunner 2: the fast gun (the Brittle Star's rounds, BrittleStarConfig)")]
+        [Header("The Mass seat: the fast gun (the Brittle Star's rounds, BrittleStarConfig), and its pen")]
         [Tooltip("lab rapidRate: rounds per second while held (the Brittle Star's gun fires 90; the lab's 30).")]
         [SerializeField, Min(0.1f)] float fastGunRate = 30f;
         [Tooltip("lab rapidSpeed: round speed (u/s), plus the hull's velocity (the Brittle Star's 135).")]
@@ -126,16 +130,28 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.05f)] float fastGunHeatSeconds = 6f;
         [Tooltip("lab rapidCoolTime: seconds it is locked out once overheated (it fires again only when cool).")]
         [SerializeField, Min(0.05f)] float fastGunCoolSeconds = 5f;
+        [Tooltip("lab rapidPenRate: at most this many rounds a second also leave a prism where they reach the pen's paper (round 6, Garrett 2026-10-21: \"shoot prisms like a sparrow does when stopped but less than a sparrow does\"; the Sparrow's turret makes every round a prism). 0 = no pen.")]
+        [SerializeField, Min(0f)] float fastGunPenRate = 10f;
+        [Tooltip("lab rapidPenReach: the pen's paper, how far out a pen round leaves its prism (u). Rounds go 387 u; nearer, a sweep of the turret is a steady stroke instead of 100 u jumps.")]
+        [SerializeField, Min(1f)] float fastGunPenReach = 120f;
+        [Tooltip("lab rapidPenSpacing: one prism per this many units along a stroke (the Sparrow turret prism's 5 u length, so a stroke reads unbroken).")]
+        [SerializeField, Min(0.5f)] float fastGunPenSpacing = 5f;
+        [Tooltip("lab rapidPenFill: prisms one landing may lay to keep a quick stroke unbroken; a longer jump starts a new stroke.")]
+        [SerializeField, Min(1)] int fastGunPenFill = 2;
+        [Tooltip("lab rapidPenGap: a pause longer than this lifts the pen (s).")]
+        [SerializeField, Min(0.01f)] float fastGunPenGap = 0.35f;
+        [Tooltip("lab rapidPenCap: pen prisms this hull keeps; the oldest goes first.")]
+        [SerializeField, Min(1)] int fastGunPenCap = 150;
+        [Tooltip("A pen prism's size (u): FullAutoBlockShootAction blockScale 0.8 x 0.5 x 5, its length 92% of the spacing so each prism reads in the line.")]
+        [SerializeField] Vector3 fastGunPenScale = new(0.8f, 0.5f, 4.6f);
 
-        [Header("Gunner 3: the bomb (the Grizzly's trigger bomb, without its self-launch)")]
+        [Header("The Charge seat: the bomb (the Grizzly's trigger bomb, without its self-launch). No cooldown: one bomb at a time")]
         [Tooltip("lab bombSpeed: u/s, plus the hull's velocity (GrizzlyTriggerBombConfig's 90).")]
         [SerializeField, Min(1f)] float bombSpeed = 90f;
-        [Tooltip("lab bombLife: the fuse (s). It bursts on a rival hull or a hostile prism, on a second press, or at the fuse. It never knocks our own hull about.")]
-        [SerializeField, Min(0.1f)] float bombFuse = 4f;
+        [Tooltip("lab bombLife: a safety (s). The bomb cruises until its gunner presses again (Garrett 2026-10-21: \"it never goes on cooldown it can just only have one bomb at a time so it must blow up a bomb to fire another\"); it also bursts on a rival hull or a hostile prism, and at this. It never knocks our own hull about.")]
+        [SerializeField, Min(0.1f)] float bombFuse = 10f;
         [Tooltip("lab bombBlastR x Space: the blast radius (u). 50 at rest (the Grizzly's mid-charge MaxScale 100); the lab's kSpace 0.8 is 76.7 at level 10.")]
         [SerializeField] ElementalFloat bombBlastRadius = ElementalFloat.Multiplier(50f, 76.666667f, Element.Space, 10f);
-        [Tooltip("lab bombCd: seconds between bombs, from the throw.")]
-        [SerializeField, Min(0f)] float bombCooldown = 2.5f;
         [Tooltip("The bomb's projectile scale (GrizzlyTriggerBombConfig 2.5-5 by charge; the middle).")]
         [SerializeField, Min(0.1f)] float bombScale = 3.75f;
         [Tooltip("The bomb's colour (the Grizzly's danger red).")]
@@ -147,9 +163,19 @@ namespace CosmicShore.Gameplay
         [Tooltip("How often an AI gunner re-picks its target (s; the lab's 0.4).")]
         [SerializeField, Min(0.05f)] float aiRetargetSeconds = 0.4f;
 
-        [Header("Cameras")]
-        [Tooltip("lab turretFov: the first-person turret camera's field of view (deg).")]
+        [Header("Cameras (round 6: the sniper looks down its scope; the fast gun and the bomb look over their turret)")]
+        [Tooltip("lab turretFov: the fast gun's and the bomb's views (deg).")]
         [SerializeField, Range(20f, 120f)] float turretFov = 75f;
+        [Tooltip("lab sniperFov: the sniper is ALWAYS scoped (Garrett 2026-10-21: \"the scope should always be out for the sniper\"); SniperScopeAction fieldOfViewAtFullZoom, the Serpent's 22.")]
+        [SerializeField, Range(2f, 90f)] float sniperScopeFov = 22f;
+        [Tooltip("lab rapidCamBack / rapidCamUp: the fast gun's view sits this far behind its turret and above it (u), so its rounds stream away from the eye instead of filling it.")]
+        [SerializeField, Min(0f)] float fastGunCamBack = 14f;
+        [SerializeField, Min(0f)] float fastGunCamUp = 8f;
+        [Tooltip("lab bombCamBack / bombCamUp: the bomb's view, farther back and higher to see the blast (u).")]
+        [SerializeField, Min(0f)] float bombCamBack = 22f;
+        [SerializeField, Min(0f)] float bombCamUp = 10f;
+        [Tooltip("lab gunCamAim: an over-the-turret view looks at the gun's line this far out (u), where its crosshair sits on that line.")]
+        [SerializeField, Min(1f)] float gunCamAim = 180f;
         [Tooltip("lab missileCamBack: the camera behind a flown missile (u).")]
         [SerializeField, Min(0f)] float missileCamBack = 14f;
         [Tooltip("lab missileCamUp: and above it (u).")]
@@ -179,7 +205,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("The seat line on screen while you hold a seat. Tokens: {seat} the seat's name, {gun} its gun's name and state, {count} its missiles.")]
         [SerializeField] string seatLineTemplate = "{seat}  ·  {gun}  ·  {count} missiles  ·  1-4 to change seat";
         [Tooltip("The seats' names, helm first.")]
-        [SerializeField] string[] seatNames = { "Helm", "Gunner 1", "Gunner 2", "Gunner 3" };
+        [SerializeField] string[] seatNames = { "Helm", "Sniper", "Fast gun", "Bomb" };
         [Tooltip("The guns' names, by seat (the helm's is unused).")]
         [SerializeField] string[] gunNames = { "", "Sniper", "Fast gun", "Bomb" };
         [Tooltip("{gun} for a gun: {name} and {state}.")]
@@ -189,6 +215,23 @@ namespace CosmicShore.Gameplay
         [SerializeField] string gunCooldownTemplate = "{seconds}s";
         [SerializeField] string gunHotText = "overheated";
         [SerializeField] string bombOutText = "bomb out";
+        [Tooltip("Inside the sniper's scope: ready, and its recharge ({seconds}).")]
+        [SerializeField] string scopeReadyText = "READY";
+        [SerializeField] string scopeCooldownTemplate = "{seconds} s";
+        [Tooltip("Over a bomb in flight: what a press would do.")]
+        [SerializeField] string bombBurstText = "BURST";
+
+        [Header("Crosshairs (round 6: each weapon's own; drawn as UI, flat by design)")]
+        [Tooltip("A crosshair's lines.")]
+        [SerializeField] Color crosshairColor = new(0.95f, 0.97f, 0.98f, 1f);
+        [Tooltip("Ready to fire: the palette's CTA lime.")]
+        [SerializeField] Color crosshairReadyColor = new(157f / 255f, 1f, 46f / 255f, 1f);
+        [Tooltip("Recharging, overheated: the palette's danger red.")]
+        [SerializeField] Color crosshairHotColor = new(1f, 0.302f, 0.427f, 1f);
+        [Tooltip("The fast gun's heat and a bomb in flight: amber.")]
+        [SerializeField] Color crosshairWarmColor = new(1f, 0.655f, 0f, 1f);
+        [Tooltip("The scope's dark surround (alpha is how dark).")]
+        [SerializeField] Color scopeSurroundColor = new(0f, 0f, 0f, 0.82f);
 
         public float HullRadius => hullRadius;
         public float BoostTank => boostTank;
@@ -244,7 +287,6 @@ namespace CosmicShore.Gameplay
         public float BombSpeed => bombSpeed;
         public float BombFuse => bombFuse;
         public float BombBlastRadiusAt(IVesselStatus status) => bombBlastRadius.EvaluateLive(status);
-        public float BombCooldown => bombCooldown;
         public float BombScale => bombScale;
         public Color BombColor => bombColor;
         public AOEExplosion[] BombExplosions => bombExplosions;
@@ -271,6 +313,30 @@ namespace CosmicShore.Gameplay
         public EventReference OmniRefillSound => omniRefillSound;
         public EventReference EmptyMagazineSound => emptyMagazineSound;
         public string SeatLineTemplate => seatLineTemplate;
+        /// <summary>The element a seat owns (its ability icon); Time for the helm when unset.</summary>
+        public Element SeatElement(int seat) => seatElements != null && seat >= 0 && seat < seatElements.Length ? seatElements[seat]
+            : seat switch { 1 => Element.Space, 2 => Element.Mass, 3 => Element.Charge, _ => Element.Time };
+        public float FastGunPenRate => fastGunPenRate;
+        public float FastGunPenReach => fastGunPenReach;
+        public float FastGunPenSpacing => fastGunPenSpacing;
+        public int FastGunPenFill => fastGunPenFill;
+        public float FastGunPenGap => fastGunPenGap;
+        public int FastGunPenCap => fastGunPenCap;
+        public Vector3 FastGunPenScale => fastGunPenScale;
+        public float SniperScopeFov => sniperScopeFov;
+        public float FastGunCamBack => fastGunCamBack;
+        public float FastGunCamUp => fastGunCamUp;
+        public float BombCamBack => bombCamBack;
+        public float BombCamUp => bombCamUp;
+        public float GunCamAim => gunCamAim;
+        public string ScopeReadyText => scopeReadyText;
+        public string ScopeCooldownTemplate => scopeCooldownTemplate;
+        public string BombBurstText => bombBurstText;
+        public Color CrosshairColor => crosshairColor;
+        public Color CrosshairReadyColor => crosshairReadyColor;
+        public Color CrosshairHotColor => crosshairHotColor;
+        public Color CrosshairWarmColor => crosshairWarmColor;
+        public Color ScopeSurroundColor => scopeSurroundColor;
         public string SeatName(int seat) => seatNames != null && seat >= 0 && seat < seatNames.Length ? seatNames[seat] : string.Empty;
 
         /// <summary>The core's numbers, as a plain struct.</summary>

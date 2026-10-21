@@ -7,14 +7,15 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Orca's four ability cards read its crew (the 4-seat vessel; <c>Controller/Vessel/Crew/ORCA_CREW.md</c>):
+    /// The Orca's four ability cards are its four SEATS (round 6, Garrett 2026-10-21; the config's seatElements; lab EL):
     /// <list type="bullet">
-    /// <item><b>Charge</b> — missiles, as a number on the card: the person's own seat's, or all three seats' at the helm
-    /// (round 5: each gunner seat has its own magazine).</item>
-    /// <item><b>Space</b> — a flash each time one of the crew's missiles or bombs bursts.</item>
-    /// <item><b>Mass</b> — the helm's shield: a flash when it goes up, its recharge on the card's veil.</item>
-    /// <item><b>Time</b> — the boost tank, emptying on the card's veil as the helm boosts.</item>
+    /// <item><b>Time</b> — the helm: the boost tank emptying on the card's veil, a flash when the shield goes up.</item>
+    /// <item><b>Space</b> — the sniper: its long cooldown on the veil.</item>
+    /// <item><b>Mass</b> — the fast gun: its heat on the veil (full while it is locked out).</item>
+    /// <item><b>Charge</b> — the bomb: no veil (it has no cooldown, one bomb at a time).</item>
     /// </list>
+    /// The person's own seat's card is LIT (the fleet's press signal, re-asserted every frame like the Rhino's), and each
+    /// gunner card carries its own seat's missiles as a number; a card flashes when its seat's missile or bomb bursts.
     /// Plus one line naming the seat the person holds and its gun's state (the config's <c>seatLineTemplate</c> and gun
     /// words, so the words are the team's). The view is the Sparrow's HUD (the hull is a Sparrow clone, as the Wrasse is), whose Initialize hides the
     /// Charge and Space icons until its guns report; the Orca has no Sparrow guns, so this controller shows them. The
@@ -27,7 +28,7 @@ namespace CosmicShore.UI
         [Tooltip("This hull's crew: the magazine, the boost tank, the shield and the bursts.")]
         [SerializeField] OrcaCrew crew;
 
-        [Header("Count (generated into the Charge card)")]
+        [Header("Counts (generated into each gunner seat's card)")]
         [Tooltip("The count's text. {count} is the number; empty shows nothing.")]
         [SerializeField] string countTemplate = "{count}";
         [SerializeField, Min(8f)] float countFontSize = 30f;
@@ -45,11 +46,16 @@ namespace CosmicShore.UI
         [SerializeField] Color seatLineColor = new(0.86f, 0.92f, 1f, 0.9f);
 
         const string CountName = "OrcaCount", SeatLineName = "OrcaSeatLine";
+        const int Seats = OrcaCrew.Seats;
 
-        TMP_Text _count, _seatLine;
-        int _shownCount = -1, _shownSeat = int.MinValue, _shownLineCount = -1, _shownGunKey = int.MinValue;
+        readonly TMP_Text[] _counts = new TMP_Text[Seats];
+        readonly int[] _shownCounts = new int[Seats];
+        readonly bool[] _lit = new bool[Seats];
+        readonly float[] _burstAt = new float[Seats];
+        TMP_Text _seatLine;
+        int _shownSeat = int.MinValue, _shownLineCount = -1, _shownGunKey = int.MinValue;
         bool _isLocalPilotHud;
-        float _burstAt, _shieldAt;
+        float _shieldAt;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -64,28 +70,50 @@ namespace CosmicShore.UI
 
             var view = View;
             if (!view) return;
-            foreach (var e in new[] { Element.Charge, Element.Space })
-                if (view.TryGetAbilityIcon(e, out var icon)) icon.enabled = true;   // the Sparrow's view hides them until its guns report
-            if (view.TryGetAbilityIcon(Element.Charge, out var charge)) _count = EnsureCount(charge);
+            for (int s = 0; s < Seats; s++)
+            {
+                var e = SeatElement(s);
+                if (view.TryGetAbilityIcon(e, out var icon))
+                {
+                    icon.enabled = true;   // the Sparrow's view hides Charge and Space until its guns report
+                    _counts[s] = s == OrcaCrew.Helm ? null : EnsureCount(icon);
+                }
+                _shownCounts[s] = -1;
+                _lit[s] = false;
+                view.SetAbilityPressed(e, false);
+                _burstAt[s] = crew ? crew.BurstAt(s) : 0f;
+            }
             _seatLine = EnsureSeatLine(view.transform as RectTransform);
-            _shownCount = -1;
             _shownSeat = _shownGunKey = int.MinValue;
-            _burstAt = crew ? crew.LastBurstAt : 0f;
             _shieldAt = crew ? crew.ShieldRaisedAt : 0f;
         }
+
+        Element SeatElement(int seat) => crew ? crew.SeatElement(seat) : seat switch
+        {
+            1 => Element.Space, 2 => Element.Mass, 3 => Element.Charge, _ => Element.Time,
+        };
 
         void Update()
         {
             if (!_isLocalPilotHud || !crew) return;
-            PaintCount(crew.Missiles);
-            PaintSeatLine(crew.HumanAboard ? crew.HumanSeat : -1);
+            int held = crew.HumanAboard ? crew.HumanSeat : -1;
+            PaintSeatLine(held);
 
             var view = View;
             if (!view) return;
-            view.SetAbilityCooldown(Element.Time, 1f - crew.BoostTank01);
-            view.SetAbilityCooldown(Element.Mass, crew.ShieldCooldown01);
-            if (crew.LastBurstAt != _burstAt) { _burstAt = crew.LastBurstAt; view.PlayAbilityFlash(Element.Space); }
-            if (crew.ShieldRaisedAt != _shieldAt) { _shieldAt = crew.ShieldRaisedAt; view.PlayAbilityFlash(Element.Mass); }
+            for (int s = 0; s < Seats; s++)
+            {
+                var e = SeatElement(s);
+                if (s > OrcaCrew.Helm) PaintCount(s, crew.MissilesAt(s));
+                view.SetAbilityCooldown(e, crew.SeatVeil01(s));
+                // the person's own seat is lit, re-asserted every frame: the base press path darkens a card whenever an
+                // input bound to it is let go
+                bool on = s == held;
+                if (on || on != _lit[s]) { _lit[s] = on; view.SetAbilityPressed(e, on); }
+                float burst = crew.BurstAt(s);
+                if (burst != _burstAt[s]) { _burstAt[s] = burst; view.PlayAbilityFlash(e); }
+            }
+            if (crew.ShieldRaisedAt != _shieldAt) { _shieldAt = crew.ShieldRaisedAt; view.PlayAbilityFlash(SeatElement(OrcaCrew.Helm)); }
         }
 
         TMP_Text EnsureCount(Image icon)
@@ -131,13 +159,14 @@ namespace CosmicShore.UI
             return text;
         }
 
-        /// <summary>Repaints the magazine count only when it changes.</summary>
-        void PaintCount(int count)
+        /// <summary>Repaints a seat's missile count only when it changes.</summary>
+        void PaintCount(int seat, int count)
         {
-            if (!_count || count == _shownCount) return;
-            _shownCount = count;
-            _count.text = string.IsNullOrEmpty(countTemplate) ? string.Empty : countTemplate.Replace("{count}", count.ToString());
-            _count.color = count > 0 ? countLiveColor : countEmptyColor;
+            var text = _counts[seat];
+            if (!text || count == _shownCounts[seat]) return;
+            _shownCounts[seat] = count;
+            text.text = TemplateText.Fill(countTemplate, "count", count.ToString());
+            text.color = count > 0 ? countLiveColor : countEmptyColor;
         }
 
         /// <summary>The seat line: the config's authored template, or nothing when no person is aboard. Rebuilt only when the

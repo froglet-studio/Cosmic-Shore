@@ -4,7 +4,7 @@ The Orca (`VesselClassType.Orca = 20`, card **Orca · 4 seat**) is a multiplayer
 One **helm** flies it and three **gunners** fight from it. The seats are always full: a person takes one, and an AI
 flies each of the others (Garrett, 2026-10-20: "this vessel always has 4 players (AI if not people)").
 
-The design is the Crew of Four Lab, rounds 3 to 5: `Docs/Studios/CrewOfFourLab.html`, written up in
+The design is the Crew of Four Lab, rounds 3 to 6: `Docs/Studios/CrewOfFourLab.html`, written up in
 `Docs/Studios/CREW_OF_FOUR_LAB.md` (artifact https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb). Garrett asked for
 the port on 2026-10-20: "stabilize the gunners guns as best you can. you can place them outside the vessel to do this.
 then bring this into unity".
@@ -26,6 +26,19 @@ players know it supports four players or brings in 4 AI" (Garrett, 2026-10-20). 
 - The gunner camera (and the Wrasse's kite camera) now draws with the game camera's post-processing (bloom, tonemap,
   volume, anti-aliasing, shadows).
 
+**Round 6 (Garrett, 2026-10-21):**
+- **Every seat is an element**, and the person's seat **lights its ability icon**: the helm is Time, the sniper Space,
+  the fast gun Mass, the bomb Charge (`seatElements`). Each gunner icon shows **its own seat's missiles**; its veil is
+  its seat's recharge (the boost tank, the sniper's cooldown, the fast gun's heat; the bomb has none).
+- **The sniper is always scoped** (`sniperScopeFov` 22, the Serpent's full zoom).
+- **The bomb has no cooldown, one at a time**: a press throws it, the next press bursts it (the AI bursts its own when a
+  rival is inside the blast or the bomb has reached or passed its target). The fuse is only a 10 s safety now.
+- **The fast gun writes prisms like a pen** ("like a sparrow does when stopped but less than a sparrow does, and with a
+  clean precision of calligraphy"): see *The pen* below.
+- **Better gunner views**: the fast gun and the bomb look **over their turret** (behind and above it, at the gun's line
+  180 u out), so the rounds stream away instead of filling the eye.
+- **Bespoke crosshairs**: a scope, a pen nib, a blast ring (`OrcaCrosshairGraphic`).
+
 **Unverified:** nothing has been flown in the Unity Editor yet (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, and the team
 task in "Try it"). The crew runs on one machine, as the Wrasse's seat does (see Follow-ups).
 
@@ -34,28 +47,61 @@ task in "Try it"). The crew runs on one machine, as the Wrasse's seat does (see 
 | Seat | What it does | Controls |
 |---|---|---|
 | **Helm** (1) | Flies the hull with two thumbs: the Sparrow's hull on its base `VesselTransformer`, at the lab's share of the Sparrow's numbers (below). **Boost**: held on the right trigger while a tank lasts; the tank refills by itself. **Shield**: 144 prisms (`DangerHemisphereConfig`'s 12 × 12) stand on a 50–70 u shell round the hull, with the forward cone left open so the helm can see and fly out. It works in two phases (round 5): (1) **carried**, the prisms ride with the hull as **super-shielded** prisms for `shieldSeconds` (4 s × Mass), a wall that only a sniper breaks; (2) **dropped**, each turns into a **danger prism where it stands** (`PrismKinds.Retheme`) and stays for `shieldLinger` (20 s). | Two sticks (or the keyboard); right trigger / right Shift to boost; left trigger / left Shift, E or pad B to shield |
-| **Gunner 1–3** (2–4) | Each gunner has a first-person turret on an outrigger: G1 on a dorsal mast, G2 and G3 on port and starboard booms. The turrets are **gyro-stabilized** (lab round 4). Each seat has **a gun** (the table below) **and its own magazine** of missiles: 2 to start, 4 at most, and an omni crystal gives every seat one (`OrcaOmniCrystalEffectSO`). **Missile** launches one and hands the gunner its controls; the gunner flies it with one thumb. It bursts on contact, after 5 s, or on a second Missile press. A burst is the game's `AOEExplosion`, which spares our domain; its own vessel effect (`VesselCombatHitByMissileBlast`) takes a rival hull's petals and scores the hit. A missile **collects crystals** it flies through for the hull: elemental crystals through the hull's skimmer, as a hull contact does, and omni crystals through the race ring's sweep entry. | Turret: mouse look (the cursor locks), a pad's sticks, or W A S D. **Fire** (the gun): left mouse, Space, RT, or a finger down. **Missile**: right mouse, F, A, or a double tap. In flight: the left stick, W A S D, the mouse, or a drag; Missile again (or a tap) bursts it |
+| **Sniper, Fast gun, Bomb** (2–4) | Each gunner has a turret on an outrigger: the sniper (Space) on a dorsal mast, the fast gun (Mass) on the port boom and the bomb (Charge) on the starboard boom. The turrets are **gyro-stabilized** (lab round 4). Each seat has **a gun** (the table below) **and its own magazine** of missiles: 2 to start, 4 at most, and an omni crystal gives every seat one (`OrcaOmniCrystalEffectSO`). **Missile** launches one and hands the gunner its controls; the gunner flies it with one thumb. It bursts on contact, after 5 s, or on a second Missile press. A burst is the game's `AOEExplosion`, which spares our domain; its own vessel effect (`VesselCombatHitByMissileBlast`) takes a rival hull's petals and scores the hit. A missile **collects crystals** it flies through for the hull: elemental crystals through the hull's skimmer, as a hull contact does, and omni crystals through the race ring's sweep entry. | Turret: mouse look (the cursor locks), a pad's sticks, or W A S D. **Fire** (the gun): left mouse, Space, RT, or a finger down. **Missile**: right mouse, F, A, or a double tap. In flight: the left stick, W A S D, the mouse, or a drag; Missile again (or a tap) bursts it |
 
-### The three guns (round 5)
+### The three guns (round 5; round 6 made each an element)
 
 | Seat | Gun | Copies | Numbers |
 |---|---|---|---|
-| Gunner 1 (dorsal mast) | **Sniper** | The Serpent's sniper shot (`SniperShotActionExecutor.ResolveShot`), from the turret along its aim. | **Everything hostile in the cone dies**: a 1.5° cone at least 6 u wide, 3000 u long, with unlimited pierce. **Super-shielded prisms included** (`DeactivateShields`, then a devastating `Damage`, the sanctioned order). Every rival hull in the cone loses 0.1 of each element, ejected as crystals (`ElementalTransfer.ApplyAllAuthoritative`), a scored hit (`CombatHitDrain`, `onCombatHitLanded`). The tracer is `SniperBeam.Fire`. The cooldown is **12 s**, the Serpent's. |
-| Gunner 2 (port boom) | **Fast gun** | The Brittle Star's rounds: a real `Gun` firing the Sparrow's projectile from its own pool (`OrcaFastGun` on the prefab). | **30 rounds/s** while held (the Brittle Star's gun fires 90; the lab uses 30). Rounds fly at 135 u/s plus the hull's velocity for 4.5 s, slowing as they go (387 u range), and grow ×3 in flight. The round's own impact container damages prisms and scores bullet hits; our own domain's prisms are spared (`spareOwnDomain`). It **overheats after 6 s** of fire and is locked out for 5 s (`OrcaFastGun`). |
-| Gunner 3 (starboard boom) | **Bomb** | The Grizzly's trigger bomb: a real `Gun` firing `GrizzlyBomb.prefab` from its own pool (`OrcaBombGun`), cruising (`Projectile.Cruises`), with `GrizzlyBombVisual.Arm`. | 90 u/s plus the hull's velocity. It bursts on a rival hull (`VesselStruck`, frozen there), on a hostile prism, on a second Fire press, or at a **4 s fuse**. The blast is `AOEGrizzlyExplosion.prefab`, radius **50 u** at rest × Space; its own vessel effect takes a rival's petals. One bomb at a time, 2.5 s between throws. **It never knocks our own hull about**: the Grizzly's self-launch is `GrizzlyTriggerBombExecutor.LaunchSelf`, which the Orca never calls, and the blast spares its owner (`AffectSelfOverride` off). |
+| Sniper · Space (dorsal mast) | **Sniper**, always scoped | The Serpent's sniper shot (`SniperShotActionExecutor.ResolveShot`), from the turret along its aim. | **Everything hostile in the cone dies**: a 1.5° cone at least 6 u wide, 3000 u long, with unlimited pierce. **Super-shielded prisms included** (`DeactivateShields`, then a devastating `Damage`, the sanctioned order). Every rival hull in the cone loses 0.1 of each element, ejected as crystals (`ElementalTransfer.ApplyAllAuthoritative`), a scored hit (`CombatHitDrain`, `onCombatHitLanded`). The tracer is `SniperBeam.Fire`. The cooldown is **12 s**, the Serpent's, on the Space icon's veil and as a ring round the scope. |
+| Fast gun · Mass (port boom) | **Fast gun**, and its pen | The Brittle Star's rounds: a real `Gun` firing the Sparrow's projectile from its own pool (`OrcaFastGun` on the prefab). | **30 rounds/s** while held (the Brittle Star's gun fires 90; the lab uses 30). Rounds fly at 135 u/s plus the hull's velocity for 4.5 s, slowing as they go (387 u range), and grow ×3 in flight. The round's own impact container damages prisms and scores bullet hits; our own domain's prisms are spared (`spareOwnDomain`). It **overheats after 6 s** of fire and is locked out for 5 s (`OrcaFastGun`); the heat is the Mass icon's veil. Up to 10 rounds a second also **lay prisms like a pen** (below). |
+| Bomb · Charge (starboard boom) | **Bomb**, one at a time | The Grizzly's trigger bomb: a real `Gun` firing `GrizzlyBomb.prefab` from its own pool (`OrcaBombGun`), cruising (`Projectile.Cruises`), with `GrizzlyBombVisual.Arm`. | 90 u/s plus the hull's velocity. **No cooldown, one bomb at a time** (round 6): a Fire press throws it and the next press bursts it, so the gunner must burst a bomb to throw another. It also bursts on a rival hull (`VesselStruck`, frozen there) or a hostile prism, and at a 10 s safety. The blast is `AOEGrizzlyExplosion.prefab`, radius **50 u** at rest × Space; its own vessel effect takes a rival's petals. **It never knocks our own hull about**: the Grizzly's self-launch is `GrizzlyTriggerBombExecutor.LaunchSelf`, which the Orca never calls, and the blast spares its owner (`AffectSelfOverride` off). |
+
+### The pen (round 6)
+
+The fast gun "shoots prisms like a Sparrow does when stopped, but less, and with a clean precision of calligraphy". The
+Sparrow's turret stance makes every round a prism that stops where its flight ends (`FullAutoBlockShootActionSO`). The
+Orca's pen makes **at most 10 rounds a second** (`fastGunPenRate`; a third of the rounds) leave a prism where they reach
+the pen's **paper**, 120 u out (`fastGunPenReach`), and lays those prisms as **strokes** (`OrcaPen`, the lab's `penLay`):
+- one prism every **5 u** along the stroke (`fastGunPenSpacing`, the Sparrow turret prism's length), each laid **along**
+  the stroke, so a sweep reads as one unbroken line. Prisms are 0.8 × 0.5 × 4.6 (the Sparrow's turret prism);
+- a stroke's first landing waits for the second, so it lies along the stroke too;
+- a landing nearer than the spacing lays nothing (a pen never blots), and a quick sweep fills up to 2 prisms per landing;
+- a longer jump, or a 0.35 s pause, lifts the pen. A stroke with one landing is a dot, laid at the nib's 45°;
+- the hull keeps 150 pen prisms (`fastGunPenCap`); the oldest goes first.
+
+Where and when a pen round lays is fixed at the press, on the round's own eased path (`OrcaPen.Landing`), so the stroke
+is the gunner's sweep whatever the round meets. The prisms are ordinary prisms of our domain, one `Trail` per stroke.
+Measured in the lab (12 seeds, I2, Hard): 105–187 pen prisms a minute.
+
+**Why the paper is 120 u, not the round's end.** At 387 u a turret sweep moves a landing ~100 u between pen rounds, so
+every landing started a new stroke and the pen drew loose sticks. At 120 u a deliberate sweep is a steady stroke.
+
+### The views and the crosshairs (round 6)
+
+| Seat | View | Crosshair |
+|---|---|---|
+| Sniper | Down the scope, **always** (`sniperScopeFov` 22) | A dark surround round a round eyepiece, fine wires with mil ticks, the cone at its true size, the recharge as a ring (lime when ready) and "READY" / the seconds |
+| Fast gun | Over the turret: 14 u behind, 8 u up, looking at the gun's line 180 u out | A pen nib: a dot, a slanted 45° stroke, a lime tip while the next round is a pen round, the heat as an arc under it |
+| Bomb | Over the turret: 22 u behind, 10 u up | A dashed ring the size of the blast where the view meets the gun's line; with a bomb in the air, the ring round the live bomb, pulsing, and "BURST" |
+| Any, flying a missile | Behind the missile | A small ring |
+
+The crosshair sits where the gun's line meets the view (projected, not the screen centre), on a screen-space canvas under
+the HUD. Its words and colours are config fields.
 
 **Changing seat.** Keys **1–4** pick a seat. The **D-pad** (the arena's `PilotSwapGesture`) steps through them, and so
 does a **two-finger tap** on a touch screen. While the person holds a gunner seat:
 - the hull's own `AIPilot` flies the hull;
 - the person's flight input is paused (`InputController.SetPause`), as the Wrasse's navigator seat does;
-- the camera looks out of the turret, or from behind the flying missile;
+- the camera looks down the scope or over the turret, or from behind the flying missile;
 - the hull's chase camera shrinks to a square in the lower left, so the gunner always sees where the helm is going.
 
 **The AI seats** are the lab's, and they press only inputs:
 - **AI gunners** turn toward a target (`OrcaCrewCore.LeadAim`, with the skill's aim error and lead at the chosen
   weapon's speed).
   - They fire the **gun** when the target is within its range and the gun is ready: aligned within 4° for the sniper,
-    8° for the fast gun and 15° for the bomb. A sniper steadies its aim error to 0.4 ×.
+    8° for the fast gun and 15° for the bomb. A sniper steadies its aim error to 0.4 ×. The bomb seat bursts its bomb
+    when a rival hull is inside the blast, or the bomb has reached (half the blast radius) or passed its target.
   - Otherwise they launch a **missile**: always for a crystal (only a missile collects), and beyond 60% of the gun's
     range.
   - They fly the missile at the target and burst it close enough.
@@ -66,7 +112,7 @@ does a **two-finger tap** on a touch screen. While the person holds a gunner sea
 
 ## How the guns are stabilized (lab round 4)
 
-The order matters: each step removes what the one before leaves (`CREW_OF_FOUR_LAB.md` §4a).
+The order matters: each step removes what the one before leaves (`CREW_OF_FOUR_LAB.md` §4b).
 1. **The aim lives in the world** (`OrcaTurret.Aim`). The gunner's input turns it; the hull's turns never reach it.
 2. **The horizon is held, then eased** (`OrcaTurret.HoldHorizon`). The view keeps its own up, square to the aim, and
    drifts to the hull's up over `horizonSmooth` (3 s). A roll does not spin the picture, and a long inverted run still
@@ -118,22 +164,23 @@ blast (`GrizzlyTriggerBombConfig`, mid-charge). The parity gate also checks `sni
 `sniperPetals` (4).
 
 **Lab only** (no game source): the boost tank, shield timing, opening and linger, missile speed, turn and fuse, the
-per-seat magazines, the fast gun's rate (30) and heat, the bomb's fuse and cooldown, turret rates, cameras and AI skill. The flight formulas, the danger shell's count and size, the blast radius at rest and
+per-seat magazines, the fast gun's rate (30), heat and pen, the bomb's safety fuse, turret rates, cameras, crosshairs and AI skill. The flight formulas, the danger shell's count and size, the blast radius at rest and
 the explosion's effect are the game's.
 
 ## Files
 
 | File | What |
 |---|---|
-| `OrcaCrewCore.cs` | The rules with no engine: `OrcaFrame` (turn, follow), `OrcaTurret` (stabilized aim, held horizon, buffered Release), `OrcaMissile` (fly-by-wire step, fuse), `OrcaMagazine` (one per seat), `OrcaFastGun` (rate and heat, the lab's `rapidStep`), the shield's shape (Fibonacci sphere, forward cone open), the AI's stick and lead. Ported line for line from the lab, using `System.Numerics`. |
+| `OrcaCrewCore.cs` | The rules with no engine: `OrcaFrame` (turn, follow), `OrcaTurret` (stabilized aim, held horizon, buffered Release), `OrcaMissile` (fly-by-wire step, fuse), `OrcaMagazine` (one per seat), `OrcaFastGun` (rate and heat, the lab's `rapidStep`), `OrcaPen` (the pen's strokes and where a pen round lands, the lab's `penLay` / `penFlush` / `penLanding`), the shield's shape (Fibonacci sphere, forward cone open), the AI's stick and lead. Ported line for line from the lab, using `System.Numerics`. |
 | `OrcaCrewConfigSO.cs` | Every number; each tooltip names its lab key. Asset: `Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset`. |
-| `OrcaCrew.cs` | The crew on the hull. The seats and the swap. The helm's boost tank and shield: laid super-shielded with `BoostRingBuilder.LayOne`, posed every frame by the prism mover contract, re-themed to danger at the drop, retired by the pooled-prism identity test. The gunners' input and AI, the three guns, the missiles' contacts, crystal collection and bursts. |
-| `OrcaCrewView.cs` | The gunner's turret and missile camera (with the game camera's post-processing, `OffscreenCameraSetup.AdoptGameCameraImage`), the picture-in-picture chase view, and the faceted lit pods, struts and missiles (`Graphics.RenderMesh`, `Resources/OrcaCrewLit.mat`). Each gun's pod has its own shape. |
-| `UI/Controller/OrcaHUDController.cs` | The four cards: Charge counts missiles (your seat's, or all three at the helm), Space flashes on a burst, Mass shows the shield's recharge and flashes when it goes up, Time shows the tank. Plus the seat line (`seatLineTemplate`: the seat, its gun and state, its missiles; rebuilt only when one changes). |
+| `OrcaCrew.cs` | The crew on the hull. The seats and the swap. The helm's boost tank and shield: laid super-shielded with `BoostRingBuilder.LayOne`, posed every frame by the prism mover contract, re-themed to danger at the drop, retired by the pooled-prism identity test. The gunners' input and AI, the three guns (the bomb with no cooldown and the AI's burst; the pen's queued landings, laid with `BoostRingBuilder.LayOne`), the missiles' contacts, crystal collection and bursts. Readers for the HUD: `SeatElement`, `SeatVeil01`, `BurstAt`, `MissilesAt`, `PenReady`. |
+| `OrcaCrewView.cs` | The gunner's camera (the scoped sniper, the over-the-turret fast gun and bomb, the missile) and the crosshair canvas (with the game camera's post-processing, `OffscreenCameraSetup.AdoptGameCameraImage`), the picture-in-picture chase view, and the faceted lit pods, struts and missiles (`Graphics.RenderMesh`, `Resources/OrcaCrewLit.mat`). Each gun's pod has its own shape. |
+| `UI/View/OrcaCrosshairGraphic.cs` | The bespoke crosshairs as generated uGUI geometry (scope, nib, bomb ring, missile ring), feathered and haloed. |
+| `UI/Controller/OrcaHUDController.cs` | The four cards are the four seats (round 6): the person's seat's card is lit (re-asserted every frame), each card's veil is its seat's recharge, each gunner card counts its own seat's missiles, and a card flashes when its seat's missile or bomb bursts (Time also when the shield goes up). Plus the seat line (`seatLineTemplate`: the seat, its gun and state, its missiles; rebuilt only when one changes). |
 | `ImpactEffects/.../OrcaOmniCrystalEffectSO.cs` | An Omni crystal gives every seat a missile (asset `OrcaOmniCrystalEffect`, in `OrcaImpactorDataContainer`). |
 | `Assets/_Prefabs/Spacevessels/Orca.prefab`, `Tools/Build/author_orca_assets.py` | The hull and the tool that authors and registers it. The hull is the Sparrow with no Sparrow kit, two sticks and this crew, plus `OrcaFastGun` and `OrcaBombGun`: a `Gun`, `ProjectileFactory` and `ProjectilePoolManager` each, cloned from the Brittle Star's and the Grizzly's. Pools: 160 / 320 rounds (rate × flight = 135 alive) and 2 / 4 bombs. The tool imports `author_wrasse_assets.py`'s helpers and never edits the Wrasse. |
 | `Assets/_Scripts/Tests/Editor/OrcaCrewCoreTests.cs` | The core's rules, stated as sentences. |
-| `Tools/Build/orca_crew_lab/parity.cjs` (+ `TraceDriver.cs`, `trace.sh`) | Compiles the shipped C# core and diffs it against the lab page's own functions step by step: 600 turret steps, 300 missile steps, 60 AI sticks, the shield, 1500 fast-gun steps. Also diffs the asset against the page. Planted controls must be caught. |
+| `Tools/Build/orca_crew_lab/parity.cjs` (+ `TraceDriver.cs`, `trace.sh`) | Compiles the shipped C# core and diffs it against the lab page's own functions step by step: 600 turret steps, 300 missile steps, 60 AI sticks, the shield, 1500 fast-gun steps, 400 pen landings and 21 pen reaches. Also diffs the asset against the page. Planted controls must be caught. |
 
 **Registrations:**
 - `SO_Class_Orca`: owned from the start, `SeatCount` 4, in both class lists.
@@ -154,10 +201,13 @@ the explosion's effect are the game's.
 3. Press **2**, **3** or **4** (or the D-pad) to take a gunner seat. You look out of the turret, the hull's view drops
    to the lower left, and the AI flies the hull.
    - Aim with the mouse or a stick; turn the hull under you and the aim holds.
+   - Your seat's icon in the ability row lights (2 Space, 3 Mass, 4 Charge) and shows your missiles.
    - **Fire** (left click, Space, RT) shoots your seat's gun:
-     - seat 2, the sniper: a long beam, then 12 s of cooldown on the seat line;
-     - seat 3, the fast gun: hold it until "overheated";
-     - seat 4, the bomb: press to throw, press again to burst.
+     - seat 2, the sniper: you are always in the scope; a long beam, then 12 s of cooldown round the scope and on the
+       Space icon;
+     - seat 3, the fast gun: you look over the turret; hold it and sweep slowly: a clean line of prisms draws itself
+       120 u out. Hold until "overheated";
+     - seat 4, the bomb: press to throw, watch the ring round the bomb, press again to burst it, then throw the next.
    - **Missile** (right click, F, A) launches one of your seat's missiles. Fly it with W A S D or the stick; Missile
      again bursts it.
    - Fly a missile through an omni crystal: every seat's count goes up by one.
@@ -199,12 +249,14 @@ python3 Tools/Build/element_ability_table.py Orca  # four cards, four channels
 - **Sounds:** all eight `EventReference` slots ship empty: launch, burst, shield, omni refill, empty magazine, sniper
   shot, bomb throw, bomb burst. (The fast gun's rounds and the bomb carry their prefabs' own sounds, if any.)
 - **Touch:** a finger down fires the gun and a double tap launches a missile. On the bomb seat, the first tap of a
-  double tap also throws a bomb. This needs a phone playtest; the cleaner shape is a card tap, which needs the hull to
+  double tap also throws (or bursts) a bomb. This needs a phone playtest; the cleaner shape is a card tap, which needs the hull to
   bind an action to the card's input (`R_VesselActionHandler.HasAction`).
 - **Super-shielded prisms are 3× their box** (`/vessel` 4.x): the carried shell's 144 prisms look denser and wider
   than the danger shell they become. If it reads as too solid, shrink `shieldBlockScale` (a lab dial).
 - **The HUD is the Sparrow's view under an Orca controller**, as the Wrasse's was. A prefab variant with the crew's four
-  icons would replace the Sparrow's art.
+  icons would replace the Sparrow's art (the seats are elements now, so each card could carry its gun's own art).
+- **Anchorage scores lower in round 6** (73 ± 16 against round 5's 119.5 ± 7.6, 12 seeds): the no-cooldown bomb trades
+  about twice the hits both ways, and every crew's blasts break the other's trail. Mass-game balance is a lab question.
 - **The shield on a touch screen:** the left trigger has no touch equivalent yet. A tap on the Mass card would need
   that card to name an input AND the hull to bind an action to it (`AbilityCardPress` presses only bound inputs).
 - **The duo-vessel system** (`cece/sharp-tesla-j0kd7z`, `/duo-vessel`) moves seat swapping into `CrewSeat`. Fold the

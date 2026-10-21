@@ -10,7 +10,7 @@ using V3 = System.Numerics.Vector3;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Orca's crew: the 4-seat vessel (Crew of Four Lab round 4; <c>Docs/Studios/CREW_OF_FOUR_LAB.md</c>, design
+    /// The Orca's crew: the 4-seat vessel (Crew of Four Lab round 6; <c>Docs/Studios/CREW_OF_FOUR_LAB.md</c>, design
     /// <c>ORCA_CREW.md</c> beside this file). Four seats on one hull, always filled: a person takes one and an AI flies
     /// every other (Garrett, 2026-10-20: "this vessel always has 4 players (AI if not people)").
     /// <list type="bullet">
@@ -20,9 +20,12 @@ namespace CosmicShore.Gameplay
     /// danger prism where it is and staying (round 5, Garrett 2026-10-21).</item>
     /// <item><b>Gunners</b> (seats 1-3): first-person turrets on outriggers, gyro-stabilized (round 4: the aim lives in
     /// the world, the view's horizon is held and eased back to the hull's up). Each seat has a <b>gun</b> and its own
-    /// <b>missiles</b> (round 5). Fire shoots the seat's gun: gunner 1 the Serpent's sniper shot (every hostile prism in a
-    /// thin cone dies, super-shielded ones included), gunner 2 the Brittle Star's rounds (overheats), gunner 3 the
-    /// Grizzly's bomb without its self-launch. Missile launches one of the seat's missiles and hands the gunner its
+    /// <b>missiles</b> (round 5). Each seat is an element (round 6): the helm Time, the sniper Space, the fast gun Mass,
+    /// the bomb Charge, and the person's seat lights that ability icon. Fire shoots the seat's gun: the sniper is the
+    /// Serpent's sniper shot, always scoped (every hostile prism in a thin cone dies, super-shielded ones included); the
+    /// fast gun is the Brittle Star's rounds (overheats), and some of them leave a prism where they reach the pen's paper,
+    /// laid as clean strokes (<see cref="OrcaPen"/>); the bomb is the Grizzly's without its self-launch, with no cooldown
+    /// but one at a time: a press throws it, the next bursts it. Missile launches one of the seat's missiles and hands the gunner its
     /// controls; it bursts on contact, at its 5 s fuse or on a second press (<c>AOEExplosion</c>), and collects any
     /// crystal it flies through for the hull. An omni crystal gives every seat a missile
     /// (<see cref="OrcaOmniCrystalEffectSO"/>).</item>
@@ -45,9 +48,9 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Every number of the crew; each field names the Crew of Four Lab key it came from.")]
         [SerializeField] OrcaCrewConfigSO config;
-        [Tooltip("Gunner 2's fast gun: a Gun with its own pool of the Sparrow's rounds (OrcaFastGun on the prefab). The rounds' own impact container damages prisms and scores bullet hits.")]
+        [Tooltip("The Mass seat's fast gun: a Gun with its own pool of the Sparrow's rounds (OrcaFastGun on the prefab). The rounds' own impact container damages prisms and scores bullet hits.")]
         [SerializeField] Gun fastGun;
-        [Tooltip("Gunner 3's bomb gun: a Gun with its own pool of the Grizzly's bombs (OrcaBombGun on the prefab).")]
+        [Tooltip("The Charge seat's bomb gun: a Gun with its own pool of the Grizzly's bombs (OrcaBombGun on the prefab).")]
         [SerializeField] Gun bombGun;
 
         public const int SniperSeat = 1, FastGunSeat = 2, BombSeat = 3;
@@ -86,7 +89,7 @@ namespace CosmicShore.Gameplay
         readonly float[] _gunCd = new float[Seats];
         readonly OrcaFastGun _fast = new();
         Projectile _bomb;
-        float _bombAge;
+        float _bombAge, _bombLastD = -1f;
         Vector3 _bombPrev;
         bool _bombStruck;
         readonly List<Transform> _vesselScratch = new();
@@ -95,6 +98,18 @@ namespace CosmicShore.Gameplay
         readonly List<float> _droppedBorn = new();
         readonly List<float> _droppedUntil = new();
         float _droppedCheckAt;
+        readonly float[] _burstAt = { -99f, -99f, -99f, -99f };
+
+        // the fast gun's pen (round 6): rounds that will reach the paper, the stroke, and the prisms it has laid
+        struct PenShot { public Vector3 At, Aim, Across, Up; public float Due; }
+        readonly List<PenShot> _penShots = new();
+        readonly OrcaPen _pen = new();
+        readonly List<OrcaPenMark> _penMarks = new();
+        readonly List<Prism> _penned = new();
+        readonly List<float> _pennedBorn = new();
+        float _penReadyAt;
+        int _penLaid, _penStrokeSeen = -1;
+        Trail _penTrail;
 
         readonly List<Prism> _shield = new();
         readonly List<float> _shieldBorn = new();
@@ -130,7 +145,7 @@ namespace CosmicShore.Gameplay
             var cfg = Config;
             if (!cfg || !cfg.GunsOn || seat <= Helm || seat >= Seats || string.IsNullOrEmpty(cfg.GunLineTemplate)) return string.Empty;
             string state = seat == FastGunSeat ? (_fast.Hot ? cfg.GunHotText : cfg.GunReadyText)
-                : seat == BombSeat && _bomb ? cfg.BombOutText
+                : seat == BombSeat ? (_bomb ? cfg.BombOutText : cfg.GunReadyText)
                 : _gunCd[seat] > 0f ? cfg.GunCooldownTemplate.Replace("{seconds}", Mathf.CeilToInt(_gunCd[seat]).ToString())
                 : cfg.GunReadyText;
             return cfg.GunLineTemplate.Replace("{name}", cfg.GunName(seat)).Replace("{state}", state);
@@ -144,6 +159,23 @@ namespace CosmicShore.Gameplay
         public float FastGunHeat01 => _fast.Heat;
         /// <summary>When a missile last burst / the shield was last raised (Time.time), for the HUD's flashes.</summary>
         public float LastBurstAt { get; private set; } = -99f;
+        /// <summary>When a seat's missile (or the bomb seat's bomb) last burst (Time.time): its own icon flashes.</summary>
+        public float BurstAt(int seat) => seat >= 0 && seat < Seats ? _burstAt[seat] : -99f;
+        /// <summary>The element a seat owns (round 6): its ability icon.</summary>
+        public Element SeatElement(int seat) => Config ? Config.SeatElement(seat) : Element.Time;
+        /// <summary>A seat's recharge on its icon's veil (1 just spent, 0 ready): the helm's boost tank, the sniper's
+        /// cooldown, the fast gun's heat (full while locked out); the bomb has none.</summary>
+        public float SeatVeil01(int seat) => seat switch
+        {
+            Helm => 1f - BoostTank01,
+            SniperSeat => _cfg && _cfg.SniperCooldown > 0f ? Mathf.Clamp01(_gunCd[SniperSeat] / _cfg.SniperCooldown) : 0f,
+            FastGunSeat => _fast.Hot ? 1f : _fast.Heat,
+            _ => 0f,
+        };
+        /// <summary>A bomb is in the air (the bomb seat's next press bursts it).</summary>
+        public bool BombOut => _bomb;
+        /// <summary>The fast gun's next round is a pen round.</summary>
+        public bool PenReady => _cfg && _cfg.FastGunPenRate > 0f && !_fast.Hot && Time.time >= _penReadyAt;
         public float ShieldRaisedAt { get; private set; } = -99f;
 
         internal IVesselStatus Status => _status;
@@ -151,6 +183,9 @@ namespace CosmicShore.Gameplay
         internal OrcaFrame Pod => _pod;
         internal OrcaTurret TurretOf(int seat) => _turrets[seat];
         internal OrcaMissile MissileOf(int seat) => _missiles[seat];
+        internal Transform BombTransform => _bomb ? _bomb.transform : null;
+        internal float BombBlastRadius => _cfg && _status != null ? _cfg.BombBlastRadiusAt(_status) : 0f;
+        internal float SniperCooldownLeft => _gunCd[SniperSeat];
 
         /// <summary>The hull collected an Omni crystal (its own contact, or a missile's): every gunner seat gets a missile.</summary>
         public void OnOmniCrystal()
@@ -204,6 +239,8 @@ namespace CosmicShore.Gameplay
             for (int s = 1; s < Seats; s++) { _mags[s] = new OrcaMagazine(_cfg.StartMissiles, _cfg.MaxMissiles); _gunCd[s] = 0f; }
             _fast.Reset();
             _bomb = null; _bombStruck = false;
+            _penShots.Clear(); _pen.Reset(); _penned.Clear(); _pennedBorn.Clear(); _penReadyAt = 0f; _penStrokeSeen = -1; _penTrail = null;
+            for (int s = 0; s < Seats; s++) _burstAt[s] = -99f;
             if (fastGun) fastGun.Initialize(_status);
             if (bombGun) bombGun.Initialize(_status);
             _tank = _cfg.BoostTank;
@@ -255,6 +292,7 @@ namespace CosmicShore.Gameplay
             for (int s = 1; s < Seats; s++) StepSeat(s, dt);
             for (int s = 1; s < Seats; s++) if (_missiles[s] != null) StepMissile(s, dt);
             StepBomb(dt);
+            StepPen();
             if (_dropped.Count > 0 && Time.time >= _droppedCheckAt) { _droppedCheckAt = Time.time + 0.5f; ExpireDropped(); }
         }
 
@@ -426,7 +464,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
             OrcaCrewCore.ShieldDirections(_cfg.ShieldBlocks, _cfg.ShieldOpenDeg, _dirs);
-            string owner = $"{_status.PlayerName}::OrcaShield::";
+            string owner = _status.PlayerName + ShieldTag;
             var hull = transform;
             for (int k = 0; k < _dirs.Count; k++)
             {
@@ -450,10 +488,12 @@ namespace CosmicShore.Gameplay
         // pooled-prism identity test: ShrikeExecutor.PrismAlive, SquirrelTubeActionExecutor.IsStillOurTubePrism).
         bool StillOurs(int i) => StillOurs(_shield[i], _shieldBorn[i]);
 
-        static bool StillOurs(Prism p, float born) =>
+        const string ShieldTag = "::OrcaShield::", PenTag = "::OrcaPen::";
+
+        static bool StillOurs(Prism p, float born, string tag = ShieldTag) =>
             p && !p.destroyed && p.gameObject.activeInHierarchy && p.prismProperties != null
             && Mathf.Approximately(p.prismProperties.TimeCreated, born)
-            && p.ownerID != null && p.ownerID.Contains("::OrcaShield::");
+            && p.ownerID != null && p.ownerID.Contains(tag);
 
         // The shield rides with the hull (lab shieldAttached): the mover contract of vessel skill 4.x1.
         void PoseShield()
@@ -666,20 +706,21 @@ namespace CosmicShore.Gameplay
                 };
                 ExplosionHelper.CreateExplosion(explosions, init, _impactor ? _impactor.DIContainer : null);
             }
-            LastBurstAt = Time.time;
+            LastBurstAt = _burstAt[s] = Time.time;
             Play(_cfg.MissileBurstSound, at);
         }
 
         // ------------------------------------------------------------------ the guns (round 5: one per seat, each different)
 
-        bool GunReady(int s) => s == FastGunSeat ? !_fast.Hot : _gunCd[s] <= 0f && (s != BombSeat || !_bomb);
+        bool GunReady(int s) => s == FastGunSeat ? !_fast.Hot : s == BombSeat ? !_bomb : _gunCd[s] <= 0f;   // round 6: the bomb has no cooldown, one in the air
 
         float GunRange(int s) => s == SniperSeat ? Mathf.Min(_cfg.SniperRange, 600f)
             : s == FastGunSeat ? _cfg.FastGunRoundSpeed * 2f * _cfg.FastGunRoundSeconds / Mathf.PI * 0.8f
             : _cfg.BombSpeed * _cfg.BombFuse * 0.6f;
 
         /// <summary>The lab's <c>stepGun</c>: the sniper fires when ready; the fast gun fires while held until it
-        /// overheats; the bomb is thrown on a press and a person's second press bursts it.</summary>
+        /// overheats; the bomb has no cooldown but one at a time: a press throws it, the next press bursts it (an AI bursts
+        /// its own, <see cref="AIBurstsBomb"/>).</summary>
         void StepGun(int s, float dt, bool hold, bool edge, bool human)
         {
             if (_gunCd[s] > 0f) _gunCd[s] -= dt;
@@ -695,8 +736,8 @@ namespace CosmicShore.Gameplay
                     for (int k = 0; k < n && k < 4; k++) FireRound(mount, aim);   // a hitch never discharges as a burst (vessel rule 17)
                     break;
                 case BombSeat:
-                    if (edge && _bomb && human) DetonateBomb();
-                    else if ((human ? edge : hold) && _gunCd[s] <= 0f && !_bomb) { ThrowBomb(mount, aim); _gunCd[s] = _cfg.BombCooldown; }
+                    if (_bomb) { if (human ? edge : AIBurstsBomb()) DetonateBomb(); }
+                    else if (human ? edge : hold) ThrowBomb(mount, aim);
                     break;
             }
         }
@@ -798,9 +839,63 @@ namespace CosmicShore.Gameplay
             if (!fastGun) return;
             var muzzle = fastGun.transform;
             muzzle.SetPositionAndRotation(mount + aim * 3f, Quaternion.LookRotation(aim, transform.up));
-            fastGun.FireGun(muzzle, _cfg.FastGunRoundSpeed, HullVelocity, _cfg.FastGunRoundScale, true, _cfg.FastGunRoundSeconds, 0f,
+            var velocity = HullVelocity;
+            fastGun.FireGun(muzzle, _cfg.FastGunRoundSpeed, velocity, _cfg.FastGunRoundScale, true, _cfg.FastGunRoundSeconds, 0f,
                 FiringPatterns.Default, 0, detachAfterSpawn: true, stopOnFirstPrismImpact: true, spareOwnDomain: true,
                 aimDirection: aim, flightGrowthFactor: _cfg.FastGunRoundGrowth);
+            QueuePen(muzzle.position, aim, aim * _cfg.FastGunRoundSpeed + velocity);
+        }
+
+        // The pen (round 6): at most fastGunPenRate rounds a second also leave a prism where they reach the paper. Where and
+        // when is fixed at the press (the round's own cosine-eased path, OrcaPen.Landing), so the stroke is the gunner's
+        // sweep whatever the round meets - and it needs nothing from the pooled round, which may be reissued before then.
+        void QueuePen(Vector3 from, Vector3 aim, Vector3 velocity)
+        {
+            if (_cfg.FastGunPenRate <= 0f || Time.time < _penReadyAt || velocity.sqrMagnitude < 1e-4f) return;
+            _penReadyAt = Time.time + 1f / _cfg.FastGunPenRate;
+            var (distance, seconds) = OrcaPen.Landing(velocity.magnitude, _cfg.FastGunRoundSeconds, _cfg.FastGunPenReach);
+            var up = U(_turrets[FastGunSeat].Up);
+            var right = Vector3.Cross(up, aim);
+            _penShots.Add(new PenShot { At = from + velocity.normalized * distance, Aim = aim, Across = (right + up).normalized, Up = up, Due = Time.time + seconds });
+        }
+
+        // Lay the strokes the pen rounds that reached their paper this frame make (the lab's stepPens), and the dot a pause
+        // leaves. Ordinary prisms of our domain, one Trail per stroke; the oldest goes once the hull keeps fastGunPenCap.
+        void StepPen()
+        {
+            int due = 0;
+            for (int i = 0; i < _penShots.Count; i++) if (_penShots[i].Due <= Time.time) due++;
+            if (due > 0)
+            {
+                _penShots.Sort((a, b) => a.Due.CompareTo(b.Due));   // a round that inherits more speed reaches its paper sooner
+                for (int i = 0; i < due; i++)
+                {
+                    var shot = _penShots[i];
+                    _pen.Lay(N(shot.At), N(shot.Aim), N(shot.Across), Time.time, _cfg.FastGunPenSpacing, _cfg.FastGunPenGap, _cfg.FastGunPenFill, _penMarks);
+                    for (int k = 0; k < _penMarks.Count; k++) PenPrism(_penMarks[k], shot.Up);
+                }
+                _penShots.RemoveRange(0, due);
+            }
+            if (_pen.Flush(Time.time, _cfg.FastGunPenGap, out var dot)) PenPrism(dot, transform.up);
+        }
+
+        void PenPrism(OrcaPenMark mark, Vector3 up)
+        {
+            var channel = _status.VesselPrismController ? _status.VesselPrismController.PrismSpawnChannel : null;
+            if (!channel) return;
+            if (_pen.Strokes != _penStrokeSeen) { _penStrokeSeen = _pen.Strokes; _penTrail = new Trail(); }
+            var along = U(mark.Along);
+            var rotation = Vector3.Cross(along, up).sqrMagnitude > 1e-6f ? Quaternion.LookRotation(along, up) : Quaternion.LookRotation(along);
+            var prism = BoostRingBuilder.LayOne(channel, U(mark.Position), rotation, _cfg.FastGunPenScale, PrismKind.Plain, _status.Domain,
+                _status.PlayerName, _status.PlayerName + PenTag + _penLaid++, _penTrail);
+            if (!prism) return;
+            _penned.Add(prism);
+            _pennedBorn.Add(prism.prismProperties.TimeCreated);
+            while (_penned.Count > _cfg.FastGunPenCap)
+            {
+                if (StillOurs(_penned[0], _pennedBorn[0], PenTag)) _penned[0].ReturnToPool();
+                _penned.RemoveAt(0); _pennedBorn.RemoveAt(0);
+            }
         }
 
         // The bomb: the Grizzly's trigger bomb, cruising (Projectile.Cruises) from the turret along its aim. It bursts on a
@@ -822,6 +917,7 @@ namespace CosmicShore.Gameplay
             shot.FlightEnded += OnBombFlightEnded;
             _bomb = shot;
             _bombAge = 0f;
+            _bombLastD = -1f;
             _bombPrev = shot.transform.position;
             _bombStruck = false;
             Play(_cfg.BombThrowSound, mount);
@@ -855,6 +951,29 @@ namespace CosmicShore.Gameplay
             _bombPrev = pos;
         }
 
+        // The bomb seat's AI bursts its bomb (the lab's aiBurst): a rival hull inside the blast, the bomb at its target, or
+        // past it - a bomb nobody bursts would hold the seat's only throw.
+        bool AIBurstsBomb()
+        {
+            var at = _bomb.transform.position;
+            float radius = _cfg.BombBlastRadiusAt(_status);
+            var players = _cfg.GameData ? _cfg.GameData.Players : null;
+            if (players != null)
+                foreach (var player in players)
+                {
+                    var vessel = player?.Vessel;
+                    var st = vessel?.VesselStatus;
+                    if (player == _player || st == null || !UnityLiveness.Alive(vessel.Transform) || st.Domain == _status.Domain) continue;
+                    if (Vector3.Distance(vessel.Transform.position, at) < radius * _skill.Detonate + _s.HullRadius) return true;
+                }
+            var tg = _targets[BombSeat];
+            if (tg.Kind == TargetKind.None) return _bombAge > 2f;
+            float d = Vector3.Distance(at, Refresh(tg).Position);
+            bool passed = _bombLastD >= 0f && d > _bombLastD + 0.01f;
+            _bombLastD = d;
+            return d < radius * 0.5f || passed || _bombAge > 4f;
+        }
+
         void DetonateBomb()
         {
             var shot = _bomb;
@@ -880,7 +999,7 @@ namespace CosmicShore.Gameplay
                 };
                 ExplosionHelper.CreateExplosion(explosions, init, _impactor ? _impactor.DIContainer : null);
             }
-            LastBurstAt = Time.time;
+            LastBurstAt = _burstAt[BombSeat] = Time.time;
             Play(_cfg.BombBurstSound, at);
         }
 

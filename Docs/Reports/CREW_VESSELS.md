@@ -95,6 +95,15 @@ Grouper · 2 seat".
   - 14 core tests pass under .NET.
   - All static gates pass.
 - **Not checked: it has not been flown in the Unity editor.** It also runs on one machine only, like the Wrasse.
+- **Round 6 (2026-10-21).**
+  - **Every seat is an element**: Helm Time, Sniper Space, Fast gun Mass, Bomb Charge. The person's seat lights its
+    ability card, and each gunner card shows its own missiles and its gun's recharge.
+  - The **sniper is always scoped**; the **bomb** has no cooldown but one at a time (burst it to throw the next).
+  - The **fast gun writes prisms like a pen**: clean strokes of thin prisms, 5 u apart, 120 u out, up to 10 pen rounds
+    a second.
+  - The fast gun and the bomb look **over their turret**; every gun has a **bespoke crosshair** (scope, nib, blast ring).
+  - Lab cost: the no-cooldown bomb doubles the hits both ways, and Anchorage falls to 73 (from 120).
+  - Same status: compiled and parity-checked, not flown in the editor.
 - **Round 5 (2026-10-21).**
   - Each gunner seat has **its own gun**: gunner 1 the Serpent's sniper (12 s cooldown; every hostile prism in a thin
     cone dies, super-shielded ones included), gunner 2 the Brittle Star's rounds (overheats), gunner 3 the Grizzly's

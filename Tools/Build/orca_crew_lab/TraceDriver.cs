@@ -89,6 +89,36 @@ public static class TraceDriver
             if (i > 0) Sb.Append(',');
             Sb.Append('['); Sb.Append(n); Sb.Append(','); Num(gun.Heat); Sb.Append(','); Sb.Append(gun.Hot ? 1 : 0); Sb.Append(']');
         }
+        Sb.Append("],");
+
+        // F. the fast gun's pen (round 6): 400 landings along a scripted sweep with a jump every 37 and a 1 s pause at 150
+        // (the pause flushes a waiting dot first), then where a pen round reaches its paper for 21 speeds
+        float spacing = float.Parse(Environment.GetEnvironmentVariable("ORCA_PEN_SPACING") ?? "5", CultureInfo.InvariantCulture);
+        var pen = new OrcaPen();
+        var marks = new List<OrcaPenMark>();
+        Sb.Append("\"pen\":[");
+        for (int i = 0; i < 400; i++)
+        {
+            float now = i * 0.1f + (i >= 150 ? 1f : 0f), sw = i * 1.5f + (i / 37) * 25f;
+            var at = new V3(120f * MathF.Sin(sw * 0.02f), 40f * MathF.Cos(sw * 0.031f), 120f + 30f * MathF.Sin(sw * 0.017f));
+            var aim = V3.Normalize(at);
+            var across = V3.Normalize(V3.Cross(V3.UnitY, aim) + V3.UnitY);
+            if (i > 0) Sb.Append(',');
+            Sb.Append('[');
+            bool flushed = pen.Flush(now, 0.35f, out var dot);
+            Sb.Append(flushed ? 1 : 0); Sb.Append(','); Vec(flushed ? dot.Position : V3.Zero); Sb.Append(','); Vec(flushed ? dot.Along : V3.Zero);
+            pen.Lay(at, aim, across, now, spacing, 0.35f, 2, marks);
+            Sb.Append(','); Sb.Append(marks.Count);
+            foreach (var mk in marks) { Sb.Append(','); Vec(mk.Position); Sb.Append(','); Vec(mk.Along); }
+            Sb.Append(']');
+        }
+        Sb.Append("],\"landing\":[");
+        for (int k = 0; k <= 20; k++)
+        {
+            var (d, t) = OrcaPen.Landing(50f + k * 20f, 4.5f, 120f);
+            if (k > 0) Sb.Append(',');
+            Sb.Append('['); Num(d); Sb.Append(','); Num(t); Sb.Append(']');
+        }
         Sb.Append("]}");
         Console.WriteLine(Sb.ToString());
         return 0;

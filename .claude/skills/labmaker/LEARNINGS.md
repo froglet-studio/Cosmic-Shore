@@ -1328,3 +1328,21 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `BrittleStarBlastForm`, `BrittleStarTests.Blast_IsAVolume_NotAFlatSheet` (with its flatten control), the
   LOCKED rule in `Docs/claude/SHADERS_AND_PERFORMANCE.md`, and `/vessel` §4.ab5.
 
+
+### L-STU-125 — A drawing mechanic must write where the aim's sweep matches the stroke's spacing
+- Lab: Crew of Four Lab, round 6 (the Orca's fast gun "writes prisms like a pen") · Branch: `cece/happy-noether-m54hz6` · Date: 2026-10-21
+- What happened: the first pen laid a prism where each pen round's flight ended, 387 u out. A turret slewing at its
+  normal rate moved that point about 100 u between pen rounds, against a 5 u stroke spacing. Every landing lifted the pen,
+  so the "calligraphy" was a scatter of loose sticks, each pointing along the aim. Moving the paper to 120 u turned the
+  same sweep into one stroke: 20 prisms, every gap exactly 5.0 u. A first screenshot also showed a radial fan of sticks,
+  which looked like the pen; it was a rival's dropped shield (danger prisms laid along rays).
+- Do instead:
+  - For anything the player draws with an aimed weapon, compute the landing point's speed: the aim's angular rate times
+    the distance. Set the distance (the paper) so that speed between samples is about one spacing.
+  - Hold the first point of a stroke until the second says which way the stroke runs. Otherwise every stroke starts
+    with a prism pointing at the shooter.
+  - Measure a stroke from the world (gaps and turn angles between consecutive marks under a scripted sweep), not from a
+    screenshot, before judging it. Name what each shape in a screenshot is before blaming the new feature.
+- Evidence: `CrewOfFourLab.html` `penLay`, `penLanding`, `SHIPPED.rapidPenReach`; C# `OrcaPen` held to it by
+  `Tools/Build/orca_crew_lab/parity.cjs` (400 landings); `CREW_OF_FOUR_LAB.md` §4 round 6.
+- Promoted: no

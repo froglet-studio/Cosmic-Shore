@@ -1219,3 +1219,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner), Yash (offered)
 - **Added:** 2026-10-21 by a Claude session (`cece/happy-noether-m54hz6`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
+
+### T-20261021-a73f · open · test · Crew vessels
+- **Task:** Fly the Orca's round 6 in the Unity editor on cece/happy-noether-m54hz6: the person's seat lights its ability card (helm Time, 2 Space, 3 Mass, 4 Charge) and each gunner card shows its own missiles; the sniper is always scoped with its ring and countdown; the fast gun's view sits over the turret and a slow sweep draws a clean line of thin prisms ~120 u out; the bomb has no cooldown, one at a time (Fire throws, Fire bursts, the next press throws again); every gun has its own crosshair.
+- **Done when:** Every step of 'Orca round 6' in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or each failure is filed as a dev task.
+- **Who can take it:** Garrett (owner), Yash (offered)
+- **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 6'; Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md

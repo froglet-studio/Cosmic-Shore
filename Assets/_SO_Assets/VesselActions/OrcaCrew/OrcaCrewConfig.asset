@@ -69,6 +69,11 @@ MonoBehaviour:
   maxMissiles: 4
   omniMissiles: 1
   gunsOn: 1
+  seatElements: 
+  - 4
+  - 3
+  - 2
+  - 1
   sniperCooldown: 12
   sniperRange: 3000
   sniperConeDeg: 1.5
@@ -89,8 +94,15 @@ MonoBehaviour:
   fastGunRoundGrowth: 3
   fastGunHeatSeconds: 6
   fastGunCoolSeconds: 5
+  fastGunPenRate: 10
+  fastGunPenReach: 120
+  fastGunPenSpacing: 5
+  fastGunPenFill: 2
+  fastGunPenGap: 0.35
+  fastGunPenCap: 150
+  fastGunPenScale: {x: 0.8, y: 0.5, z: 4.6}
   bombSpeed: 90
-  bombFuse: 4
+  bombFuse: 10
   bombBlastRadius: 
     Enabled: 1
     Value: 50
@@ -99,12 +111,17 @@ MonoBehaviour:
     element: 3
     UseFloor: 1
     Floor: 10
-  bombCooldown: 2.5
   bombScale: 3.75
   bombColor: {r: 1, g: 0.072, b: 0.105, a: 1}
   aiSkill: 2
   aiRetargetSeconds: 0.4
   turretFov: 75
+  sniperScopeFov: 22
+  fastGunCamBack: 14
+  fastGunCamUp: 8
+  bombCamBack: 22
+  bombCamUp: 10
+  gunCamAim: 180
   missileCamBack: 14
   missileCamUp: 3
   explosions:
@@ -172,9 +189,9 @@ MonoBehaviour:
   seatLineTemplate: "{seat}  \xB7  {gun}  \xB7  {count} missiles  \xB7  1-4 to change seat"
   seatNames:
   - Helm
-  - Gunner 1
-  - Gunner 2
-  - Gunner 3
+  - Sniper
+  - Fast gun
+  - Bomb
   gunNames:
   - 
   - Sniper
@@ -185,3 +202,11 @@ MonoBehaviour:
   gunCooldownTemplate: '{seconds}s'
   gunHotText: overheated
   bombOutText: bomb out
+  scopeReadyText: READY
+  scopeCooldownTemplate: '{seconds} s'
+  bombBurstText: BURST
+  crosshairColor: {r: 0.95, g: 0.97, b: 0.98, a: 1}
+  crosshairReadyColor: {r: 0.6156863, g: 1, b: 0.18039216, a: 1}
+  crosshairHotColor: {r: 1, g: 0.302, b: 0.427, a: 1}
+  crosshairWarmColor: {r: 1, g: 0.655, b: 0, a: 1}
+  scopeSurroundColor: {r: 0, g: 0, b: 0, a: 0.82}

@@ -310,4 +310,82 @@ namespace CosmicShore.Gameplay
 
         public void Reset() { Heat = 0f; Hot = false; Owed = 0f; }
     }
+
+    /// <summary>One prism a pen stroke lays: where, and the direction it lies along.</summary>
+    public readonly struct OrcaPenMark
+    {
+        public readonly V3 Position, Along;
+        public OrcaPenMark(V3 position, V3 along) { Position = position; Along = along; }
+    }
+
+    /// <summary>
+    /// The fast gun's pen (the lab's <c>penLay</c> / <c>penFlush</c> / <c>penLanding</c>, round 6; Garrett, 2026-10-21:
+    /// "shoot prisms like a sparrow does when stopped but less than a sparrow does, and with a clean precision of
+    /// calligraphy"). A stroke is a line of prisms <c>spacing</c> apart, each laid ALONG the stroke:
+    /// <list type="bullet">
+    /// <item>a stroke's first landing waits until the next one says which way the stroke runs, then lays along it;</item>
+    /// <item>a landing too near the last prism lays nothing (a pen never blots);</item>
+    /// <item>a farther one lays up to <c>fill</c> prisms walking from the last one toward it, so the spacing stays exact
+    /// and a quick sweep stays unbroken;</item>
+    /// <item>a longer jump, or a pause longer than <c>gap</c>, lifts the pen. A stroke that never got a second landing is
+    /// a dot, laid across the view at the nib's 45 degrees.</item>
+    /// </list>
+    /// </summary>
+    public sealed class OrcaPen
+    {
+        V3 _last, _pendPos, _pendAcross;
+        bool _hasLast, _hasPend;
+        float _seen = -1e9f;
+
+        /// <summary>How many strokes the pen has begun (each lift starts one): one Trail per stroke.</summary>
+        public int Strokes { get; private set; }
+
+        public void Reset() { _hasLast = _hasPend = false; _seen = -1e9f; Strokes = 0; }
+
+        /// <summary>One pen round reached its paper at <paramref name="at"/>; the prisms to lay go into
+        /// <paramref name="into"/> (cleared first).</summary>
+        public void Lay(V3 at, V3 aim, V3 across, float now, float spacing, float gap, int fill, List<OrcaPenMark> into)
+        {
+            into.Clear();
+            bool hasAnchor = _hasPend || _hasLast;
+            V3 anchor = _hasPend ? _pendPos : _last;
+            bool lifted = !hasAnchor || now - _seen > gap || V3.Distance(anchor, at) > spacing * (fill + 1);
+            _seen = now;
+            if (lifted)
+            {
+                if (_hasPend) into.Add(new OrcaPenMark(_pendPos, _pendAcross));
+                _pendPos = at; _pendAcross = across; _hasPend = true; _hasLast = false;
+                Strokes++;
+                return;
+            }
+            float d = V3.Distance(anchor, at);
+            if (d < spacing * 0.9f) return;
+            var f = V3.Normalize(at - anchor);
+            int n = Math.Max(1, Math.Min(fill, (int)MathF.Floor(d / spacing + 0.1f)));
+            if (_hasPend) { into.Add(new OrcaPenMark(_pendPos, f)); _hasPend = false; }
+            for (int k = 1; k <= n; k++) into.Add(new OrcaPenMark(anchor + f * (spacing * k), f));
+            _last = into[into.Count - 1].Position;
+            _hasLast = true;
+        }
+
+        /// <summary>A pause lifts the pen: a stroke still waiting on its second landing is laid as a dot.</summary>
+        public bool Flush(float now, float gap, out OrcaPenMark mark)
+        {
+            mark = default;
+            if (!_hasPend || now - _seen <= gap) return false;
+            mark = new OrcaPenMark(_pendPos, _pendAcross);
+            _hasPend = _hasLast = false;
+            return true;
+        }
+
+        /// <summary>Where and when a pen round reaches its paper: a round covers v x (2T / pi) x sin(pi t / 2T) by time t
+        /// (Projectile's cosine ease), so it reaches <paramref name="reach"/> at t = (2T / pi) asin(reach pi / 2Tv), or
+        /// ends short of it at T.</summary>
+        public static (float distance, float seconds) Landing(float speed, float seconds, float reach)
+        {
+            float full = speed * 2f * seconds / MathF.PI;
+            if (reach >= full) return (full, seconds);
+            return (reach, 2f * seconds / MathF.PI * MathF.Asin(reach / full));
+        }
+    }
 }

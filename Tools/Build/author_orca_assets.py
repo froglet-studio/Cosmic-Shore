@@ -243,7 +243,7 @@ def elemental(rest: str, full: str, element: int, floor: str) -> str:
 
 
 CHARGE, MASS, SPACE, TIME = 1, 2, 3, 4
-# The lab's SHIPPED numbers (Docs/Studios/CrewOfFourLab.html, round 5), in OrcaCrewConfigSO's field order. Seeded from the
+# The lab's SHIPPED numbers (Docs/Studios/CrewOfFourLab.html, round 6), in OrcaCrewConfigSO's field order. Seeded from the
 # lab: the lab owns them and parity.cjs holds the asset to the page. A round that changes them deletes the asset and
 # re-runs this tool (the guid is kept, so no reference moves).
 CONFIG_NUMBERS = [
@@ -255,17 +255,21 @@ CONFIG_NUMBERS = [
     ("missileScale", elemental("1", "1.4", CHARGE, "0.5")), ("missileLife", "5"),
     ("launchCooldown", "0.6"), ("blastRadius", elemental("30", "46", SPACE, "5")), ("blastSeconds", "0.5"),
     ("missileCollectRadius", "9"), ("missileContactRadius", "3.46"), ("startMissiles", "2"), ("maxMissiles", "4"),
-    ("omniMissiles", "1"), ("gunsOn", "1"),
+    ("omniMissiles", "1"), ("gunsOn", "1"), ("seatElements", f"\n  - {TIME}\n  - {SPACE}\n  - {MASS}\n  - {CHARGE}"),
     ("sniperCooldown", "12"), ("sniperRange", "3000"), ("sniperConeDeg", "1.5"), ("sniperMinPathRadius", "6"),
     ("sniperStripPerElement", "0.1"), ("sniperEjectSpeed", "45"), ("sniperSameVictimCooldown", "0.5"),
     ("sniperDebrisSpeed", "90"), ("sniperDebrisSpeedLimit", "120"), ("sniperBeamStartWidth", "1.5"),
     ("sniperBeamSeconds", "0.35"), ("sniperFlareRadius", "18"), ("sniperFlareSeconds", "0.3"),
     ("fastGunRate", "30"), ("fastGunRoundSpeed", "135"), ("fastGunRoundSeconds", "4.5"), ("fastGunRoundScale", "1"),
     ("fastGunRoundGrowth", "3"), ("fastGunHeatSeconds", "6"), ("fastGunCoolSeconds", "5"),
-    ("bombSpeed", "90"), ("bombFuse", "4"), ("bombBlastRadius", elemental("50", "76.666667", SPACE, "10")),
-    ("bombCooldown", "2.5"), ("bombScale", "3.75"), ("bombColor", "{r: 1, g: 0.072, b: 0.105, a: 1}"),
+    ("fastGunPenRate", "10"), ("fastGunPenReach", "120"), ("fastGunPenSpacing", "5"), ("fastGunPenFill", "2"),
+    ("fastGunPenGap", "0.35"), ("fastGunPenCap", "150"), ("fastGunPenScale", "{x: 0.8, y: 0.5, z: 4.6}"),
+    ("bombSpeed", "90"), ("bombFuse", "10"), ("bombBlastRadius", elemental("50", "76.666667", SPACE, "10")),
+    ("bombScale", "3.75"), ("bombColor", "{r: 1, g: 0.072, b: 0.105, a: 1}"),
     ("aiSkill", "2"),
-    ("aiRetargetSeconds", "0.4"), ("turretFov", "75"), ("missileCamBack", "14"), ("missileCamUp", "3"),
+    ("aiRetargetSeconds", "0.4"), ("turretFov", "75"), ("sniperScopeFov", "22"), ("fastGunCamBack", "14"),
+    ("fastGunCamUp", "8"), ("bombCamBack", "22"), ("bombCamUp", "10"), ("gunCamAim", "180"),
+    ("missileCamBack", "14"), ("missileCamUp", "3"),
 ]
 SOUNDS = ["missileLaunchSound", "missileBurstSound", "shieldRaiseSound", "omniRefillSound", "emptyMagazineSound",
           "sniperShotSound", "bombThrowSound", "bombBurstSound"]
@@ -280,10 +284,14 @@ def config_asset(script_guid: str) -> str:
     text += f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_GUID}, type: 2}}\n"
     text += "".join(empty_event(s) for s in SOUNDS)
     text += '  seatLineTemplate: "{seat}  \\xB7  {gun}  \\xB7  {count} missiles  \\xB7  1-4 to change seat"\n'
-    text += "  seatNames:\n  - Helm\n  - Gunner 1\n  - Gunner 2\n  - Gunner 3\n"
+    text += "  seatNames:\n  - Helm\n  - Sniper\n  - Fast gun\n  - Bomb\n"
     text += "  gunNames:\n  - \n  - Sniper\n  - Fast gun\n  - Bomb\n"
     text += "  gunLineTemplate: '{name} {state}'\n  gunReadyText: ready\n  gunCooldownTemplate: '{seconds}s'\n"
     text += "  gunHotText: overheated\n  bombOutText: bomb out\n"
+    text += "  scopeReadyText: READY\n  scopeCooldownTemplate: '{seconds} s'\n  bombBurstText: BURST\n"
+    text += "  crosshairColor: {r: 0.95, g: 0.97, b: 0.98, a: 1}\n  crosshairReadyColor: {r: 0.6156863, g: 1, b: 0.18039216, a: 1}\n"
+    text += "  crosshairHotColor: {r: 1, g: 0.302, b: 0.427, a: 1}\n  crosshairWarmColor: {r: 1, g: 0.655, b: 0, a: 1}\n"
+    text += "  scopeSurroundColor: {r: 0, g: 0, b: 0, a: 0.82}\n"
     return text
 
 

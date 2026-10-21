@@ -6,14 +6,14 @@ A `/labmaker` browser studio for a **four-seat multiplayer vessel** that capture
 > Look up the game Wildgate and make an artifact lab that can explore concepts for a 4 player multiplayer vessel
 > that captures the magic of that game. (Garrett, 2026-10-20)
 
-- **Source (the page is published from it):** `Docs/Studios/CrewOfFourLab.html` (round 5: the 4-seat vessel; a gun and missiles on every gunner seat; a shield carried super-shielded, then dropped as danger prisms).
+- **Source (the page is published from it):** `Docs/Studios/CrewOfFourLab.html` (round 6: the 4-seat vessel; every seat an element; a gun and missiles on every gunner seat, an always-scoped sniper, a fast gun that writes prisms like a pen, a one-at-a-time bomb; a shield carried super-shielded, then dropped as danger prisms).
   Rounds 1 (2D) and 2 (3D) are kept as `CrewOfFourLab.round1.html` and `.round2.html`, and their numbers are on the
   page's Archive tab. Open it in Chrome to use a gamepad (the
   claude.ai viewer can block the Gamepad API).
 - **Live page:** https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb (private to the owner until shared from its Share
   menu; decisions recorded there land in the shared log, collection `decisions`, that Claude reads at the start of each
   round).
-- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewOfFourLab.html` (PASS, round 5).
+- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewOfFourLab.html` (PASS, round 6).
 - **Nearest lab:** the Crew Vessel Lab (`Docs/Studios/CrewVesselLab.html`, `CREW_VESSEL_LAB.md`), the two-seat
   "Maverick and Goose" lab that graduated as the Wrasse (`VesselClassType` 19). This lab does not replace it or touch
   it: the Wrasse is a pilot plus a 2D navigator; this lab asks what a crew of **four** on one hull should be. Round 1 of
@@ -63,7 +63,7 @@ petals, so the lab leaves them out. Every vessel-on-vessel effect here moves pet
 
 The ward is a petal ward, the way `CombatHitDrain`'s wards are: a bolt it absorbs scores nothing.
 
-## 2. The concepts (rounds 1–2; round 3 replaced them with one vessel, §4b)
+## 2. The concepts (rounds 1–2; round 3 replaced them with one vessel, §4c)
 
 Each concept is a seat set plus rules; the card writes the rules into the dials so they can be mixed.
 
@@ -90,7 +90,145 @@ Rivals: Easy / Medium / Hard AI crews (aim error 9° / 5° / 2.5°, lead 0 / ½ 
 ward tolerance 3 / 1.5 / 0.5 threats). Your own crew's AI has the same three levels. Every AI writes the same input
 objects a person does (`/labmaker` §2.4).
 
-## 4. Round 5 (2026-10-21): a gun on every seat, a missile per seat, and a shield that drops
+## 4. Round 6 (2026-10-21): every seat an element, a scoped sniper, a pen, and bespoke crosshairs
+
+**Input this round** (Garrett):
+- "the space ability icon should display the number of missiles in the current seat. the sniper should be the space seat
+  and the space ability should show the snipers cooldown. the scope should always be out for the sniper. the bomb seat is
+  the space seat it never goes on cooldown it can just only have one bomb at a time so it must blow up a bomb to fire
+  another. the ability icon for the seat lights up for the player in that seat. the fast gun is the mass seat it should
+  shoot prisms like a sparrow does in when stopped but less than a sparrow does, and with a clean precision of
+  calligraphy. also the camera is in a terrible position for that gunner and all gunners need crosshairs. that are
+  bespoke to their weapon. also it is time use the vessel modeling tools and really step up the vessel"
+
+**How the input was read.** The sniper is the Space seat and the fast gun the Mass seat, as written. "The bomb seat is the
+space seat" cannot also hold (two seats on one element), so the bomb is the **Charge** seat, the one element left, and
+the helm keeps **Time** (its boost). Seat s owns element s, in the lab's order Time, Space, Mass, Charge. "The space
+ability icon should display the number of missiles in the current seat": each gunner seat's icon shows **its own
+seat's** missiles, so the Space icon shows the sniper's; the occupant's icon is the lit one.
+
+### What changed
+
+- **Seats are elements, and the HUD shows it.** A four-icon ability row (Time, Space, Mass, Charge), one icon per seat:
+  - the person's seat's icon is **lit**;
+  - each icon's veil is its seat's recharge: the boost tank, the sniper's 12 s, the fast gun's heat; the bomb has none;
+  - each gunner icon carries its seat's missiles as a number.
+- **The sniper is always scoped**: `sniperFov` 22, the Serpent's full zoom (`SniperScopeAction`).
+- **The bomb has no cooldown, one at a time.** A press throws it and the next press bursts it. It also bursts on a rival
+  hull, and `bombLife` (now 10 s) is only a safety. The AI bursts its own bomb (`aiBurst`): when a rival hull is inside
+  the blast, or the bomb has reached (half the blast radius) or passed its target.
+- **The fast gun writes prisms like a pen** (`penLay`, `penFlush`, `penLanding`):
+  - at most `rapidPenRate` 10 rounds a second are pen rounds, a third of the rounds; the Sparrow's turret makes every
+    round a prism;
+  - a pen round leaves a prism where it reaches the paper, `rapidPenReach` 120 u out;
+  - the prisms are laid as **strokes**: one every `rapidPenSpacing` (5 u, the Sparrow turret prism's length), each
+    along the stroke; a stroke's first landing waits for the second; a landing nearer than the spacing lays nothing; a
+    quick sweep fills up to `rapidPenFill` 2 prisms per landing; a longer jump or a `rapidPenGap` 0.35 s pause lifts the
+    pen, and a lone landing becomes a dot at the nib's 45°;
+  - `rapidPenCap` 150 prisms per hull, the oldest first. Pen prisms do not count toward Anchorage (only the trail does).
+- **The paper was 387 u first, and it drew sticks.** At the round's full reach a turret sweep moved a landing ~100 u
+  between pen rounds, so every landing started a new stroke. At 120 u a scripted human sweep (34°/s for 3 s) lays one
+  stroke of 20 prisms, every gap exactly 5.0 u.
+- **Over-the-turret views** for the fast gun (14 u back, 8 up) and the bomb (22 back, 10 up), looking at the gun's line
+  `gunCamAim` 180 u out. Before, the fast gun's eye sat at its muzzle and its own rounds filled the view. Our own turret
+  now shows in those views; only the scoped sniper hides its own.
+- **Bespoke crosshairs**, drawn where the gun's line meets the view: a scope (dark surround, wires with mil ticks, the
+  cone at its true size, the recharge as a ring); a pen nib (dot, 45° nib stroke, a lime tip while the next round is a
+  pen round, the heat as an arc); a bomb sight (a dashed ring the size of the blast at the aim; with a bomb out, the
+  ring round the live bomb, pulsing, and BURST).
+- **Seat names** are Helm, Sniper, Fast gun, Bomb. A **No pen** control is new.
+
+### Scorecard (I2, Hard rivals, mirror matches, every dial at its round-6 value, 12 seeds)
+
+`runBatch({ game, intensity: 1, diff: 2, seeds: [1..12], seats: true, rookie: true })`; 13–43 s per game. Baked into
+the page as `ROUND6`. Seat values are Helm / Sniper / Fast gun / Bomb.
+
+**Ring Race**
+
+| Preset | Points | ± | Win % | Seat value H/S/F/B | Gun shots/min | Gun kills/min | Gun hull hits | Pen prisms/min | Missiles/min | Dry % | Stops/min |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Round 6 | 218.99 | 2.57 | 50 | 100/-1/1/6 | 680.61 | 21.67 | 11.25 | 187.16 | 40.47 | 46.3 | 76.84 |
+| No pen (control) | 220.35 | 2.35 | 58 | (control) | 711.9 | 19.12 | 12.92 | 0 | 43.43 | 43.46 | 61.88 |
+| Fast darts | 220.7 | 2.57 | 58 | 100/1/3/6 | 653.75 | 25.45 | 15.83 | 183.92 | 47.98 | 42.04 | 47.63 |
+| Heavy shells | 221.43 | 2.56 | 58 | 100/3/4/5 | 596.68 | 27.03 | 11.25 | 178.1 | 35.17 | 46.02 | 57.06 |
+| Long linger | 218.95 | 2.59 | 50 | 100/-1/1/5 | 683.16 | 21.74 | 11.25 | 187.84 | 40.7 | 45.41 | 76.39 |
+| Scarce omnis | 223.69 | 2.24 | 50 | 100/2/3/7 | 734.36 | 23.24 | 19.08 | 198.36 | 32.77 | 54.43 | 49.37 |
+| Hull-locked turrets (control) | 220.96 | 2.5 | 67 | (control) | 673.19 | 28.72 | 14.92 | 179.64 | 35.08 | 49.43 | 81.99 |
+| Round 4 shield (control) | 223.25 | 2.44 | 75 | (control) | 707.52 | 28.24 | 18.75 | 191.51 | 39.22 | 44.2 | 13.07 |
+| No guns (control) | 209.66 | 1.96 | 0 | (control) | 0 | 0 | 0 | 0 | 22.2 | 79.9 | 4.19 |
+| No shield (control) | 220.96 | 2.83 | 50 | (control) | 664.6 | 24.15 | 21.42 | 183.32 | 42.54 | 40.44 | 0 |
+| One gunner (control) | 203.54 | 1.71 | 0 | (control) | 2.12 | 3.15 | 1.25 | 0 | 8.11 | 25.36 | 58.82 |
+
+**Breach**
+
+| Preset | Points | ± | Win % | Seat value H/S/F/B | Gun shots/min | Gun kills/min | Gun hull hits | Pen prisms/min | Missiles/min | Dry % | Stops/min |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Round 6 | 193.42 | 11.94 | 75 | -14/18/7/42 | 967.03 | 71.22 | 0.5 | 164.88 | 43.21 | 53.43 | 79.56 |
+| No pen (control) | 193.42 | 11.94 | 75 | (control) | 967.03 | 64.57 | 0.5 | 0 | 43.21 | 53.43 | 80.17 |
+| Fast darts | 205.83 | 11.68 | 75 | -24/9/9/52 | 1003.49 | 68.36 | 0 | 165.39 | 39.08 | 63.42 | 62.72 |
+| Heavy shells | 189.58 | 9.52 | 67 | -18/11/20/26 | 1054.59 | 82.1 | 0.33 | 195.98 | 44.18 | 45.07 | 83.92 |
+| Long linger | 193.42 | 11.94 | 75 | -14/18/7/42 | 967.03 | 71.22 | 0.5 | 164.88 | 43.21 | 53.43 | 79.56 |
+| Scarce omnis | 178.33 | 12.52 | 42 | -24/19/5/42 | 1007.96 | 71.78 | 0.08 | 168.1 | 33.21 | 66.58 | 65.38 |
+| Hull-locked turrets (control) | 186.17 | 13.94 | 58 | (control) | 943.01 | 73.54 | 0.17 | 172.17 | 41.79 | 52.44 | 68.26 |
+| Round 4 shield (control) | 201.5 | 9.82 | 83 | (control) | 960.68 | 91.89 | 0.17 | 161.53 | 45.28 | 52.13 | 25.34 |
+| No guns (control) | 182.08 | 17.08 | 58 | (control) | 0 | 0 | 0 | 0 | 33.04 | 78.97 | 1.56 |
+| No shield (control) | 190.58 | 12.38 | 67 | (control) | 954.78 | 78.66 | 0 | 165.89 | 45.71 | 50.74 | 0 |
+| One gunner (control) | 72.58 | 7.49 | 0 | (control) | 4.62 | 21.52 | 0 | 0 | 13.02 | 23.67 | 55.34 |
+
+**Anchorage**
+
+| Preset | Points | ± | Win % | Seat value H/S/F/B | Gun shots/min | Gun kills/min | Gun hull hits | Pen prisms/min | Missiles/min | Dry % | Stops/min |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Round 6 | 73 | 15.56 | 50 | 43/78/63/70 | 472.88 | 14.72 | 24.92 | 104.96 | 49.7 | 39.83 | 59.42 |
+| No pen (control) | 65.08 | 15.15 | 50 | (control) | 433.23 | 10.61 | 16.75 | 0 | 50.7 | 37.8 | 43.48 |
+| Fast darts | 75.42 | 14.38 | 50 | 57/63/67/69 | 531.86 | 13.61 | 23.92 | 106.63 | 56.53 | 43.76 | 52.54 |
+| Heavy shells | 89.33 | 16.35 | 75 | 54/51/58/80 | 443.28 | 10.33 | 21.67 | 102.13 | 44.04 | 38.9 | 46.26 |
+| Long linger | 78 | 17.22 | 58 | 53/66/79/61 | 419.74 | 21.55 | 10.83 | 92.47 | 53.59 | 36.07 | 53.42 |
+| Scarce omnis | 63.58 | 14.31 | 42 | 12/10/34/63 | 784.54 | 21.66 | 25.08 | 153.66 | 23.77 | 78.11 | 33.38 |
+| Hull-locked turrets (control) | 98.42 | 13.71 | 75 | (control) | 408.35 | 11.72 | 15.33 | 86.25 | 52.76 | 32.06 | 40.93 |
+| Round 4 shield (control) | 56.67 | 13.57 | 58 | (control) | 442.78 | 13.27 | 14.83 | 98.85 | 50.43 | 41.58 | 9.11 |
+| No guns (control) | 91.58 | 15.52 | 58 | (control) | 0 | 0 | 0 | 0 | 54.26 | 38.43 | 4.88 |
+| No shield (control) | 79 | 15.35 | 67 | (control) | 458.05 | 7.16 | 7.33 | 91.8 | 53.2 | 38.18 | 0 |
+| One gunner (control) | 14.42 | 1.59 | 0 | (control) | 3.39 | 4.17 | 2.58 | 0 | 9.5 | 22.44 | 56.98 |
+
+**Broadside**
+
+| Preset | Points | ± | Win % | Seat value H/S/F/B | Gun shots/min | Gun kills/min | Gun hull hits | Pen prisms/min | Missiles/min | Dry % | Stops/min |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Round 6 | 48.7 | 1.49 | 33 | -4/7/9/19 | 781.49 | 18.6 | 38.42 | 173.55 | 37.76 | 61.52 | 85.41 |
+| No pen (control) | 47.02 | 1.88 | 33 | (control) | 683.08 | 14.61 | 15.08 | 0 | 40.76 | 58.95 | 90.02 |
+| Fast darts | 50.93 | 1.62 | 58 | 6/12/8/19 | 770.55 | 21.38 | 19.58 | 174.33 | 49.43 | 57.87 | 127.45 |
+| Heavy shells | 48.91 | 1.23 | 33 | -6/10/5/11 | 777.16 | 18.33 | 51.58 | 184.26 | 29.6 | 67.64 | 86.36 |
+| Long linger | 50.08 | 1.97 | 58 | -1/8/8/20 | 739.45 | 25.82 | 26.33 | 164.33 | 42.87 | 57.27 | 93.13 |
+| Scarce omnis | 48.52 | 0.97 | 33 | -4/6/6/18 | 927.1 | 18.94 | 45.42 | 210.81 | 21.44 | 82.61 | 99.24 |
+| Hull-locked turrets (control) | 47.97 | 1.03 | 33 | (control) | 755.67 | 20.72 | 39.92 | 174.66 | 33.65 | 65.82 | 66.14 |
+| Round 4 shield (control) | 46.65 | 1.25 | 25 | (control) | 802.32 | 28.82 | 35.58 | 188.04 | 37.1 | 64.8 | 15.94 |
+| No guns (control) | 49.47 | 7.12 | 50 | (control) | 0 | 0 | 0 | 0 | 36.76 | 67.75 | 6.94 |
+| No shield (control) | 50.77 | 1.22 | 58 | (control) | 717.62 | 11.44 | 35.08 | 167.16 | 42.71 | 58.76 | 0 |
+| One gunner (control) | 33.5 | 0.22 | 0 | (control) | 4.22 | 3.61 | 6.08 | 0 | 7 | 26.81 | 71.31 |
+
+### Found
+
+1. **The no-cooldown bomb turns every game more violent.** Hits dealt and taken roughly double (Anchorage 138 / 132
+   against round 5's 72 / 45), because every crew now throws a bomb as soon as the last one bursts. In Anchorage this
+   costs everyone trail: 73 ± 16 against round 5's 119.5 ± 7.6, and below "No guns" (91.6, the same in both rounds).
+   It is the design asked for; Mass-game balance (a bomb that spares prisms, or a longer reload after a burst) is the
+   designer's call.
+2. **The pen is worth a little where mass counts.** Anchorage 73 with it against 65 without; elsewhere within noise.
+   It lays 105–187 prisms a minute.
+3. **Breach is unchanged in points** (193 ± 12): the bomb seat is still worth the most there (42%).
+4. **Every gunner seat still matters in the fights**: Anchorage 43 / 78 / 63 / 70%, Broadside -4 / 7 / 9 / 19%. The Ring
+   Race is still the helm's alone.
+
+### Checked
+
+- `verify_lab.cjs` PASS. Seat screenshots (scope, nib, bomb sight, ability row) looked at. A scripted human sweep
+  measured the pen's stroke (20 prisms, every gap 5.0 u). The radial fan of magenta sticks in the first screenshot was a
+  rival's dropped shield, not the pen.
+- `parity.cjs` PASS with the pen: 400 scripted landings and 21 reaches, C# `OrcaPen` against the page, plus a planted
+  `rapidPenSpacing` 5 -> 4.8 control caught.
+
+## 4a. Round 5 (2026-10-21): a gun on every seat, a missile per seat, and a shield that drops
 
 **Input this round** (Garrett):
 - "each gun seat should still have missile launcher (guided missile) and gun. getting the omnicrystal should give each
@@ -224,7 +362,7 @@ feature removed".
 - `verify_lab.cjs` PASS. Before baking, single race seeds were traced to tell an AI fault (the orbit) from a design
   finding.
 
-## 4a. Round 4 (2026-10-20): stabilized turrets on outriggers, and "4 seat"
+## 4b. Round 4 (2026-10-20): stabilized turrets on outriggers, and "4 seat"
 
 **Input this round** (Garrett): "stabilize the gunners guns as best you can. you can place them outside the vessel to do
 this. then bring this into unity", and "we can start referring to multiplayer vessels by their seats. this is a 4 seat
@@ -321,14 +459,14 @@ page's Scorecard tab (`ROUND4`).
    against 46%; in Breach 131 against 171. The race is still the helm's alone (seat value 100 / 0 / 0 / 0 within noise).
 4. **The shield's value is not resolved.** Round 3 measured +17 points of Broadside share; round 4's No shield control
    scores within one standard error of Round 4 in every game. Both rounds are within noise of each other, so the
-   designer's decision on the shield (§4b) stays open and needs a person at the helm, not more seeds.
+   designer's decision on the shield (§4c) stays open and needs a person at the helm, not more seeds.
 
 ### Checked
 
 - `verify_lab.cjs` PASS. Chase and turret screenshots read: the outrigger struts and pods show on the hull; the
   turret's view holds level while the helm turns under it.
 
-## 4b. Round 3 (2026-10-20): one helm, three gunner seats, flown missiles
+## 4c. Round 3 (2026-10-20): one helm, three gunner seats, flown missiles
 
 **Input this round** (Garrett, in substance; the decision log was empty):
 - The guns get a first-person camera. The skiff was glitchy, as if it controlled both at once.
@@ -459,7 +597,7 @@ rings); Breach and Anchorage prisms; Broadside your share of petal hits (%).
 - **What gives gunners a job in the race.**
 - **What a blast takes from a hull** (2 petals proposed).
 
-## 4c. Round 2 (2026-10-20): 3D with the game's chase camera (superseded)
+## 4d. Round 2 (2026-10-20): 3D with the game's chase camera (superseded)
 
 > **Superseded by the designer (2026-10-20)** by round 3 ("1 helm, 3 guns/skiffs ... we don't need other parts of
 > wildgate gameplay like the artifact"). The page is kept as `Docs/Studios/CrewOfFourLab.round2.html`.
@@ -578,7 +716,7 @@ game.
   first, or should charges be smaller and repeatable?
 - **What the other three crew see.** Only the helm's chase camera exists; a gunner's or a skiff pilot's own view is open.
 
-## 4d. Round 1 (2026-10-20): 2D top-down (superseded)
+## 4e. Round 1 (2026-10-20): 2D top-down (superseded)
 
 > **Superseded by the designer (2026-10-20):** "make it 3D with a chase camera like the game". The page is kept as
 > `Docs/Studios/CrewOfFourLab.round1.html` and its numbers are on the live page's Archive tab.

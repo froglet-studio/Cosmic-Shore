@@ -10,8 +10,8 @@ namespace CosmicShore.Tests
     /// <summary>
     /// The Orca's crew rules (the 4-seat vessel, Crew of Four Lab round 4; <c>Docs/Studios/CREW_OF_FOUR_LAB.md</c> §4): a
     /// stabilized turret holds its aim while the hull turns, its view's horizon eases back to the hull's up, a missile flies
-    /// where its thumb turns it, each seat's magazine takes and refills, the fast gun fires at its rate and overheats, and
-    /// the shield leaves its forward cone open. The same core
+    /// where its thumb turns it, each seat's magazine takes and refills, the fast gun fires at its rate and overheats, its
+    /// pen lays clean strokes (round 6), and the shield leaves its forward cone open. The same core
     /// is held to the lab page step by step by <c>Tools/Build/orca_crew_lab/parity.cjs</c>; these tests pin the rules a
     /// reader can state in a sentence.
     /// </summary>
@@ -175,6 +175,68 @@ namespace CosmicShore.Tests
             gun.Step(false, 1f, 30f, 6f, 5f);
             Assert.Less(gun.Heat, warm, "released, it cools");
             Assert.AreEqual(1, gun.Step(true, Dt, 30f, 6f, 5f), "the first frame of a press fires");
+        }
+
+        // a pen landing every 0.1 s at x = 0, step, 2 step, ... along +x at 120 u out
+        static List<OrcaPenMark> Sweep(OrcaPen pen, int landings, float step, float spacing = 5f, float start = 0f, float t0 = 0f)
+        {
+            var laid = new List<OrcaPenMark>();
+            var marks = new List<OrcaPenMark>();
+            var up = V3.UnitY;
+            for (int i = 0; i < landings; i++)
+            {
+                pen.Lay(new V3(start + i * step, 0f, 120f), V3.UnitZ, V3.Normalize(V3.UnitX + up), t0 + i * 0.1f, spacing, 0.35f, 2, marks);
+                laid.AddRange(marks);
+            }
+            return laid;
+        }
+
+        [Test]
+        public void Pen_Sweep_LaysOneUnbrokenStroke_ExactlySpacedAlongIt()
+        {
+            var laid = Sweep(new OrcaPen(), 20, 3f);   // 3 u per landing: slower than the 5 u spacing
+            Assert.Greater(laid.Count, 8, "a 57 u sweep lays a stroke");
+            for (int k = 1; k < laid.Count; k++)
+            {
+                Assert.AreEqual(5f, V3.Distance(laid[k - 1].Position, laid[k].Position), 1e-3f, "every prism one spacing from the last");
+                Assert.Greater(laid[k].Along.X, 0.999f, "laid along the stroke, not along the aim");
+            }
+            Assert.Greater(laid[0].Along.X, 0.999f, "the first prism waited for the second landing and lies along the stroke too");
+        }
+
+        [Test]
+        public void Pen_StillAim_NeverBlots()
+        {
+            var laid = Sweep(new OrcaPen(), 30, 0f);
+            Assert.AreEqual(0, laid.Count, "a pen held still lays nothing while the first landing waits for a direction");
+            var pen = new OrcaPen();
+            Sweep(pen, 30, 0f);
+            Assert.IsTrue(pen.Flush(3f + 1f, 0.35f, out var dot), "a pause lays the waiting landing as one dot");
+            Assert.AreEqual(1f, V3.Dot(dot.Along, V3.Normalize(V3.UnitX + V3.UnitY)), 1e-4f, "a dot lies across the view at the nib's 45 degrees");
+            Assert.IsFalse(pen.Flush(5f, 0.35f, out _), "and only once");
+        }
+
+        [Test]
+        public void Pen_LongJump_LiftsThePen_QuickStrokeFillsUpToItsFill()
+        {
+            var pen = new OrcaPen();
+            var laid = Sweep(pen, 3, 12f);   // 12 u per landing: two prisms fill each gap (fill 2), the stroke stays unbroken
+            Assert.AreEqual(5, laid.Count, "the first landing plus two per step");
+            int strokes = pen.Strokes;
+            Sweep(pen, 2, 0f, start: 100f, t0: 0.3f);   // 76 u away: more than (fill + 1) spacings
+            Assert.AreEqual(strokes + 1, pen.Strokes, "a long jump starts a new stroke");
+        }
+
+        [Test]
+        public void Pen_Landing_ReachesThePaperOnTheRoundsEasedPath()
+        {
+            var (d, t) = OrcaPen.Landing(135f, 4.5f, 120f);
+            Assert.AreEqual(120f, d, 1e-4f);
+            float covered = 135f * 2f * 4.5f / MathF.PI * MathF.Sin(MathF.PI * t / (2f * 4.5f));
+            Assert.AreEqual(120f, covered, 1e-2f, "v x (2T / pi) x sin(pi t / 2T) is 120 u at that time");
+            var (dFar, tFar) = OrcaPen.Landing(10f, 4.5f, 120f);
+            Assert.AreEqual(10f * 2f * 4.5f / MathF.PI, dFar, 1e-3f, "a round that never reaches the paper lays at its end");
+            Assert.AreEqual(4.5f, tFar, 1e-6f);
         }
 
         [Test]
