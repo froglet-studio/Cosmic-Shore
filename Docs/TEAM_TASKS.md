@@ -1197,3 +1197,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (asked for it) or Yash
 - **Added:** 2026-10-20 by a Claude session (`cece/dreamy-hypatia-eni0w5`)
 - **See:** Assets/_Scripts/UI/Modals/ToyConfigureModal.cs arrivalDistanceFactor
+
+### T-20261021-6632 · open · test · Squirrel
+- **Task:** Fly the Squirrel's new drift animation: while drifting the four engine pods swing onto the travel direction, parallel with the jets, jets still seated in the pods; check the pods against the wing slats past ~30 degrees of aim
+- **Done when:** SQUIRREL_DRIFT.md section 12 steps 1-6 pass in Toy Box > Vessel Changer > Squirrel, and the clipping question has an answer (fine, or a driftOffset value)
+- **Who can take it:** Garrett (Squirrel / vessel feel); Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/eloquent-pasteur-fes2ni`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md#12

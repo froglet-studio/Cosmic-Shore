@@ -231,6 +231,8 @@ a terminal approach that lands on it.**
 | `_Prefabs/Spacevessels/Squirrel.prefab` | `vectorFlightModel: 1`, `driftOvershootCeiling: 1.25`, `driftThrottlePolicy: 0` (Live) |
 | `_SO_Assets/VesselActions/Squirrel/SquirrelDriftAction.asset` | the one drift action — ×1.8 / grip 0.25 at full pull |
 | `_SO_Assets/VesselActions/Squirrel/SquirrelSharpDriftAction.asset` | unbound since 2026-09-23 (safe to delete) |
+| `Controller/Vessel/DriftJet.cs` | the four jets: plume along Course while drifting, along `FlightAxis` (the mount bone's ±right) otherwise |
+| `Controller/Vessel/DriftEngineSwivel.cs` | §12 — the drift animation: the four engine pods swing onto Course, parallel with their jets |
 
 `DriftDamping` was renamed to **`Grip`** (`[FormerlySerializedAs]` migrates the prefabs). It is what
 the field has always meant: the rate at which momentum rotates back onto the nose. It is a
@@ -260,6 +262,9 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 | `DefaultThrottleScaler` | Squirrel.prefab | 60 | Scissor throttle's speed scale |
 | `RotationThrottleScaler` | Squirrel.prefab | 0 | Turn rate vs speed — **deliberately 0** |
 | `minimumThrottleBrakeSeconds` | every vessel | 2 | §3.5. Seconds to shed one cruise once the target is ZERO. 0 restores the legacy exponential tail |
+| `swivelRate` | Squirrel.prefab, `DriftEngineSwivel` | 3.7 /s | §12. How fast the engine pods ease onto Course and back; 3.7 matches the jets' own 0.06-per-frame ease at 60 fps |
+| `maxSwivelDegreesPerSecond` | Squirrel.prefab, `DriftEngineSwivel` | 360 | §12. Slew limit on the pods' swing (the Dolphin cage's number) |
+| `engines[].driftOffset` | Squirrel.prefab, `DriftEngineSwivel` | 0 | §12. Per-pod slide while drifting (vessel frame); the dial if the swung pods read as clipping the wing slats |
 
 ---
 
@@ -528,3 +533,76 @@ Device Simulator overrides only `UnityEngine.Device.SystemInfo`):
 executor that reads the local machine's hardware directly (`Gamepad.current`, as
 `ShieldSwipeActionExecutor` does for the local pilot) is a separate question and is gated correctly
 today.
+
+---
+
+## 12. The drift animation: the engine pods swing onto Course (2026-10-21)
+
+**The ask** (Garrett): the Squirrel should have a drift animation like the Dolphin's. The jets already
+show the drift (`DriftJet` turns each plume onto Course); the engines should turn with them, so the
+pods are parallel with the jets and the jets still come out of the back of the turned pods.
+
+**What it does.** While drifting, each of the four engine pods turns rigidly about the centre of its
+bone heads until its jet's flight axis lies on Course, and turns back when the drift ends. The hull,
+cockpit, crest, wings and tail keep aiming with the nose. It is the Dolphin's split
+(`RiptideAnimation`: the wings and engines go on flying straight down Course while the fuselage aims
+through them), applied to the parts the Squirrel's request names.
+
+| Pod | Bones (turned together) | Jet it carries |
+|---|---|---|
+| Front L / R | `bbone_FrontEngineBase`, `Trim`, `Tip` `.L/.R` (siblings) | `VesselJet (2)` / `(3)`, `flip 1` |
+| Back L / R | `bbone_BackEngineFrame` `.L/.R` (`BackEngineInner` is its child and rides it) | `VesselJet` / `(1)`, `flip 0` |
+
+The jet of each pod is found at runtime (a `DriftJet` whose parent is one of the pod's bones or under
+one), so the table's jet column is a measurement, not wiring: on the shipped FBX the `flip 0` jets
+point nose-wards only on the back-engine bones and the `flip 1` jets only on the front-engine bones.
+
+**How, and the three things it had to get right.**
+
+1. **After the Animator.** The Squirrel's model is driven by an Animator (`MantaAnimationContoller`,
+   nine single-frame poses in blend trees), which rewrites every bone between `Update` and
+   `LateUpdate`. The swing is applied in `LateUpdate` on top of the animated pose, so the pods keep
+   every pitch / yaw / roll take while turned. A bone the Animator did NOT write this frame still
+   holds last frame's swing; it is detected (its local pose is exactly what was written) and put
+   back to its animated pose before the next swing, so the swing cannot compound.
+2. **Parallel with the jet, exactly.** The swing is the hull's shortest arc onto Course (the
+   Dolphin's appendage frame: no roll of its own, held inside the antipode cone where the arc is
+   undefined, slew-limited at 360 deg/s) followed by a small per-pod correction from the pod's own
+   cant onto Course. The pod's axis is `DriftJet.FlightAxis`, the very vector the jet points along
+   outside a drift, so a pod at full swing and its plume share one direction by construction.
+3. **Jets stay in the back of the pods.** Each jet is a child of a pod bone, so it rides the pod
+   rigidly: wherever it sat on the pod before the swing, it sits there after. Its direction is still
+   `DriftJet`'s own; outside a drift `DriftJet` now aims along `FlightAxis` (unchanged behaviour), which
+   on the frames after a drift is the turned pod's axis, so the plumes follow the pods home.
+
+**Measured clearance (not yet seen in the editor).** Swinging the shipped FBX's pod vertices (dominant
+skin weight) about their centres and measuring the closest non-pod vertex: at rest the front pod sits
+0.09 u and the back pod 0.04 u from the hull; past about 30 degrees of drift aim both come within
+~0.01 u of the wing slats (`bbone_WingPiece1` for the front pod, `WingPiece4-6` for the back pod).
+Vertex distance is not penetration, so whether that reads as clipping at 17 u is for the flight to
+say. A slide clears the front pod for most angles (0.4 u outward: 0.31-0.37 u clearance at +30..+90,
+0.04-0.17 u at -45..-90); no single slide cleared the back pod, which sits inside the slat stack.
+`engines[].driftOffset` (default 0) is the dial if it does read as clipping.
+
+**What it does not touch.** Gameplay: it reads `IsDrifting` and `Course` (every peer has both) and
+writes only bone transforms. The flight model, the hull's colliders (on other nodes), the jets'
+own `DriftJet` steering and the tails.
+
+**In-editor verification.**
+1. Menu freestyle (or the Toybox Vessel Changer) on the Squirrel. Hold LT into a hard drift and aim
+   the nose well off the slide: all four engine pods turn to lie along the direction of travel,
+   parallel with their plumes, and the plumes still leave from the same spot on each pod. The hull,
+   wings, crest and tail keep aiming with the nose.
+2. Release the drift: the pods ease back onto the hull with the plumes, no snap.
+3. Aim fully backwards mid-drift (nose opposite the slide): the pods hold their last swing rather
+   than flicking; leaving that cone they swing smoothly (at most 360 deg/s).
+4. Fly without drifting: the pods animate exactly as before (the swivel writes nothing at rest).
+5. Look for the pods passing through the wing slats beyond ~30 degrees of aim. If they visibly clip,
+   try `driftOffset` on the front pods first (e.g. x = -0.4 on L / +0.4 on R in the vessel frame,
+   i.e. outward), and report what the back pods do.
+6. An AI Squirrel drifting (any mode where the AIPilot drifts it) shows the same swing; nothing in
+   the console.
+
+**Follow-ups.** None required. If the wings should also hold Course the way the Dolphin's do, they
+are six floating slats per side (`bbone_WholeWing.L/R` parents them) and fit the same component as a
+fifth and sixth "pod"; not done, because the ask named the engines.
