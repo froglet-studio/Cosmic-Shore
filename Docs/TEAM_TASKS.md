@@ -1240,3 +1240,45 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (feel: is it bespoke, unique, dynamic and polished?); Yash (offered) can run it
 - **Added:** 2026-10-21 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 10); bash Tools/Build/kite_navigator_lab/juice_sheet.sh
+
+### T-20261020-3bfe · open · test · vessels
+- **Task:** Fly the Sparrow (Toybox Vessel Changer or any mode): flying, the camera sits level directly behind the hull; press the turret/MASS stance and it eases up to the old elevated view; leave the stance (press again, or a turn end) and it drops back. Check the Serpent and the Stoat cameras are unchanged in and out of their stance.
+- **Done when:** All three behave as described in Play mode, or the failure is noted with the camera height seen
+- **Who can take it:** Yash or Garrett
+- **Added:** 2026-10-20 by a Claude session (`cece/youthful-johnson-7c8xh2`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_TURRET_STANCE.md
+
+### T-20261020-41eb · open · test · Thresher
+- **Task:** Fly the Thresher on cece/tender-hamilton-qcd1hi (Editor and phone): the chain never turns lime, the launch crosshair stays white the whole lap, and a charged ball's rim burns toward white (not lime) as the Space gauge fills
+- **Done when:** All four steps of the 2026-10-20 'no lime' entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, and the charged ball reads as explosive (energyRimTint tuned if not)
+- **Who can take it:** Garrett (owner's eye on how the charged ball reads); Yash (offered) can run the Editor steps
+- **Added:** 2026-10-20 by a Claude session (`cece/tender-hamilton-qcd1hi`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b; Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261020-13f4 · open · test · Menu_Main
+- **Task:** Play-test Toy Box Navigate's new stand-off: open the Toy Box, pick a toy (e.g. the Vessel Changer), press Navigate - the vessel should land about 3x further from the switch than before (7.2 ring radii), facing it, with time to steer around it instead of flying into it; repeat once while already flying
+- **Done when:** Navigate lands well clear of the switch from both the menu and mid-freestyle, and the toy still sits ahead on arrival
+- **Who can take it:** Garrett (asked for it) or Yash
+- **Added:** 2026-10-20 by a Claude session (`cece/dreamy-hypatia-eni0w5`)
+- **See:** Assets/_Scripts/UI/Modals/ToyConfigureModal.cs arrivalDistanceFactor
+
+### T-20261021-edc0 · open · test · Thresher
+- **Task:** Fly the Thresher on cece/youthful-johnson-hccyzf: it spawns in Mass Mode (lit ball, steals rival prisms, lays a trail, no blasts); A leaves it and the ball breaks again; a vessel swap back puts it in Mass Mode; AI Threshers in Thresher Time stay in Mass Mode
+- **Done when:** All four steps of the 2026-10-21 Thresher Mass Mode entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass in the Editor
+- **Who can take it:** Yash (offered) can run the Editor steps; Garrett decides whether AI Threshers should stay in Mass Mode
+- **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §2b
+
+### T-20261021-7967 · open · test · Thresher
+- **Task:** Fly the Thresher launch view on cece/youthful-johnson-hccyzf with a gamepad: the crosshair starts on what you pointed at when you planted, a brief trigger sag no longer drops the view, and a release with RT held flies straight down the crosshair
+- **Done when:** All five steps (step 5 is round 2's Time-raised launch) of the 2026-10-21 Thresher launch-view entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass in the Editor
+- **Who can take it:** Garrett (owner's feel on the launch); Yash (offered) can run the Editor steps
+- **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a
+
+### T-20261021-49d3 · open · decision · Thresher
+- **Task:** Decide whether an aimed Thresher launch should keep its x4.8 boost when RT is held: the rigid chain now spends it in under half a second (1 263 to 42 u/s at a Time-raised spin), the ball overtakes and leads the ship; with RT released the boost carries. The heading holds either way since 2026-10-21
+- **Done when:** Garrett picks: keep (the pilot chose a rigid chain), or let the launch line also hold the ship's speed until the ball can follow; recorded in THRESHER.md §5a
+- **Who can take it:** Garrett (owner, the launch feel)
+- **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a 'Known feel cost'

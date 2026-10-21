@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Thresher: no lime on the chain, the crosshair or the ball (`cece/tender-hamilton-qcd1hi`, 2026-10-20) — NOT EDITOR-VERIFIED
+
+Garrett: "remove the lime from the chain and the crosshair. we can let players get a feel for that. the lime on the
+ball isn't necessary either because the information is on the icon. the ball should still indicate its explosiveness
+but not with lime." `R_VesselActions/THRESHER.md` §3, §4, §5a, §5b. Removed: the chain's READY rim
+(`IsReady`, `chainRimReady`, `readyMargin`, `ThresherChainSolver.PredictReelCrackSpeed`) and the crosshair's timing
+cue (`IsLaunchImminent`, `launchCueSeconds`). The banked-energy rim now burns toward WHITE in the ball's own hue
+(`energyRimTint` 0.6 at a full bank). The Space card's energy gauge still fills toward lime; it is the only lime left.
+Also supersedes the "lime" steps of the older Thresher entries below. `/verify-unity` was unavailable (no Editor, no
+`unity` binary); the headless reference compile ran (result in the commit message).
+
+Toy Box > Vessel Changer → Thresher:
+1. Whip (hold RT, turn hard, release): the chain's rim is the ball's hue, dim slack and brighter taut. It never turns lime.
+2. Plant and spin until the launch view comes up: the crosshair stays white the whole lap, including just before
+   the launch point. A release still leaves boosted (×4.8).
+3. Slice rival prisms with the chain: the ball's rim brightens toward white as the Space gauge fills. A charged ball
+   looks clearly hotter than an uncharged one. Hit a rival prism: the blast spends the bank, and the rim and gauge
+   ease back. If the white reads too weakly (or like the red-hot ball's white rim), raise or lower `energyRimTint`.
+4. Console clean; the `ThresherConfig` asset shows no missing-field warnings after a reimport.
+
 ### 🔴 Tutorial off, Spectate label, configure preview visible, opaque configure veil (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Section 29 of `Docs/MENU_REDESIGN_B.md`. Affects Yash's FTUE quest and Lesson (switched off in data).
@@ -12889,3 +12909,38 @@ compile clean; Amoebius builds.
 3. If a title stays generic, the Console has no error: the sound FMOD reported matched no `soundName` - check its name
    against `Assets/_SO_Assets/Audio/Soundtrack.asset`.
 4. Arena: every card's hull chips show the vessel icons, no white squares.
+
+## 🔴 2026-10-21 — The Thresher spawns in Mass Mode (`cece/youthful-johnson-hccyzf`) - NOT EDITOR-VERIFIED
+
+Garrett: "the default mode for thresher should be mass mode." `ThresherExecutor.Initialize` now sets `_massMode = true`
+(it ran `false`); A still toggles. No editor or `unity` CLI in the session, so `/verify-unity` did not run.
+`THRESHER.md` §2b and its hand tests updated.
+1. Toy Box > Vessel Changer → Thresher: the ball wears your **lit** colour at once. Tow it through a rival trail:
+   prisms flip to your domain, no blasts; it lays a trail of your prisms.
+2. Press A: the ball takes your plain domain colour; whip it red into a rival trail - blasts. Press A: lit again.
+3. Swap to another hull and back to the Thresher: it is in Mass Mode again.
+4. Thresher Time with an AI Thresher: the AI's ball is lit and never explodes (the AI never presses A).
+
+## 🔴 2026-10-21 — Thresher launch view: aim from where you pointed, grip-sag grace, the shot follows the crosshair (`cece/youthful-johnson-hccyzf`) - NOT EDITOR-VERIFIED
+
+Garrett: the both-triggers launch view entered and left with camera jank, each entry needed realigning, and a
+release with RT held "doesn't always shoot me at the cross hair". `THRESHER.md` §5a has the cause and the numbers.
+Changed: `ThresherChainSolver` (launch line + LT let-go latch), `ThresherExecutor` (aim seeded from the pre-plant
+camera facing and kept through the plant; `spectateDropSeconds` grace), `ThresherConfigSO` + `ThresherConfig.asset`
+(`spectateDropSeconds: 0.25`), the plant lab's JS port, `ThresherAnalogTriggerTests` (+5 over two rounds). Chain harness
+70/70 (the new tests fail on the old solver: 177° off the aim, 55° on the round-1 solver at a Time-raised spin); lab
+parity PASS (10 scenarios) with negative controls; `verify_lab.cjs` PASS;
+`unity_refcompile` player: 0 project errors (editor: the 3 known `AuthenticationServiceFacade` errors, none in changed
+files). No editor or `unity` CLI in the session, so `/verify-unity` did not run.
+1. Toy Box > Vessel Changer → Thresher, gamepad. Fly at a landmark, LT full, RT full: the launch view's crosshair sits
+   in line with the landmark, no realigning.
+2. In the view, let either trigger sag for an instant: the view holds (no camera re-ease). Ease RT off and hold it off
+   ~1/2 s: the view drops; pull it back: it returns on the same aim.
+3. Ease LT only to about 3/4 with RT still full: the ship leaves at the launch point straight down the crosshair, the
+   ball hauled behind; it is not swung back round the ball. Repeat with LT snapped off and with RT released.
+4. Right after a launch, squeeze LT halfway: no brake until LT has come back near rest; a full squeeze plants at once.
+5. (Round 2, Garrett: "still getting launch at 180 sometimes") Raise TIME (crystals or the element tools), plant until
+   the spin is at its fastest, launch with RT held, then again with RT released: the ship flies the crosshair's line
+   every time. With RT held it slows hard and the ball overtakes and leads; with RT released the ball swings round
+   like a pendulum. Neither may turn the ship. If a 180 still happens, note the Time level, RT, and whether the
+   crosshair was up when LT was let go.
