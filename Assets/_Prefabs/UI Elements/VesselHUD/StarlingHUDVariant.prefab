@@ -208,7 +208,7 @@ MonoBehaviour:
   detailsLevelTemplate: 'Level {level}'
   detailsStatTemplate: '{label}: {value}{unit}'
   detailsMilestoneTemplate: 'At Lv {level}: {text}'
-  detailsHeldTemplate: '{name}  Lv {level}'
+  detailsHeldTemplate: '<b>{name}</b>  Lv {level}'
   detailsNothingHeld: Nothing held yet
   detailsTitleFontSize: 40
   detailsLevelFontSize: 26

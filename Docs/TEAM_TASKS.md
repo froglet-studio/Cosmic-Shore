@@ -1884,3 +1884,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (the Goby's owner) with the session driving the Goby lab
 - **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 8 'Third round'; Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs GobyAbilities / HumanPistol
+
+### T-20261021-227a · open · test · Starling vessel
+- **Task:** Fly the Starlings (class 21) from the Toybox Vessel Changer on branch cece/quirky-gates-skplxp: the 120-member murmuration reads as one, the camera roll turns the world the way flight rolls (pad y-diff and phone spin), two thumbs keep turning the view while pinching, holding a pick with no hand lists each held card with its text, numbers and reached jolts, and pressing another pick while the details are open browses to that element
+- **Done when:** Each item passes in Play mode, or the failures are reported
+- **Who can take it:** Garrett (feel), Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/quirky-gates-skplxp`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
+
+### T-20261021-d6dc · open · test · Starling vessel
+- **Task:** Profiler capture of the Starlings at 120 and 200 members on a phone build and in the editor: the swarm executor's Update (separation now on a grid) and the 120-230 SkinnedMeshRenderers (one per member, updateWhenOffscreen) against the frame budget
+- **Done when:** A capture is filed and either fits the budget or names the hot path to cut (e.g. GPU-instanced members instead of skinned copies)
+- **Who can take it:** Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/quirky-gates-skplxp`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StarlingSwarmExecutor.cs
+
+### T-20261021-729e · open · decision · Starling vessel
+- **Task:** With 5x the members, decide whether the per-member cards (Hole Punch, Annex, Danger Drip, Lasers and the base bite and nip) should keep their per-member rates, which now give about 5x the swarm's output, and whether Big Family's numbers (+6 cap at L1, read as cap + value - 40) should scale to the new 200 cap
+- **Done when:** cards.json carries the decided numbers (author_starling_assets.py re-run) or the decision to keep them is logged in STARLINGS_LAB.md
+- **Who can take it:** Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/quirky-gates-skplxp`)
+- **See:** Docs/Studios/SwarmCardVessel/cards.json

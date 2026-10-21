@@ -32,11 +32,11 @@ namespace CosmicShore.Gameplay
 
         [Header("Swarm (the Starlings Lab's SHIPPED)")]
         [Tooltip("Members the swarm starts with.")]
-        [SerializeField, Min(1)] int startSize = 24;
+        [SerializeField, Min(1)] int startSize = 120;
         [Tooltip("Most members the swarm can hold before Big Family.")]
-        [SerializeField, Min(1)] int cap = 40;
+        [SerializeField, Min(1)] int cap = 200;
         [Tooltip("The protected minimum: at or below this many members nothing can harm the swarm.")]
-        [SerializeField, Min(0)] int minSize = 6;
+        [SerializeField, Min(0)] int minSize = 30;
         [Tooltip("Member cruise speed before Time cards (u/s).")]
         [SerializeField, Min(1f)] float cruise = 120f;
         [Tooltip("How fast a member can swing round before Agility (deg/s).")]
