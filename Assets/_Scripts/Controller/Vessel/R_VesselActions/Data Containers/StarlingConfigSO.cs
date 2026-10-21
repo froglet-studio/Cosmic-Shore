@@ -4,7 +4,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Every number the Starlings reads (design: <c>R_VesselActions/STARLING.md</c>). The first block is the Starlings Lab's
-    /// <c>SHIPPED</c> (<c>Docs/Studios/StarlingLab.html</c>), field for field under the lab's own names so
+    /// <c>SHIPPED</c> (<c>Docs/Studios/StarlingsLab.html</c>), field for field under the lab's own names so
     /// <c>Tools/Build/studio_to_unity.py</c> can clone them; the second block is the game's own contact and
     /// presentation numbers, each copied from the lab's model where the lab has one (named in its tooltip).
     /// Seeded once by <c>Tools/Build/author_starling_assets.py</c>; tune in the lab, never here by hand.

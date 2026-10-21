@@ -60,7 +60,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The Starlings' phase cycle and card hand, with no world in it (design: <c>R_VesselActions/STARLING.md</c>). A line-for-line
     /// port of the Starlings Lab's <c>endPhase</c>, <c>dealHand</c>, <c>pick</c>, <c>phaseLen</c>, <c>capNow</c> and
-    /// <c>minNow</c> (<c>Docs/Studios/StarlingLab.html</c>), so <see cref="StarlingSwarmExecutor"/> only reports what happened in
+    /// <c>minNow</c> (<c>Docs/Studios/StarlingsLab.html</c>), so <see cref="StarlingSwarmExecutor"/> only reports what happened in
     /// the world and these rules decide what it means. Pure, so <c>StarlingRulesTests</c> holds it to the lab.
     ///
     /// <para><b>The cycle.</b> Omnicrystal, then Elemental crystals, then Opposing vessels, then Opposing mass, then round

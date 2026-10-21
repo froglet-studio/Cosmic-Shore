@@ -6,7 +6,7 @@
     python3 Tools/Build/author_starling_assets.py --self-test # prove every check fires (negative controls)
 
 Design: Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md, from Docs/Studios/SWARM_CARD_VESSEL.md and the Starlings
-Lab (Docs/Studios/StarlingLab.html, Docs/Studios/STARLING_LAB.md). The Starlings is the passive swarm card vessel: the pilot turns
+Lab (Docs/Studios/StarlingsLab.html, Docs/Studios/STARLINGS_LAB.md). The Starlings is the passive swarm card vessel: the pilot turns
 a viewing plane and picks one card from each hand; the swarm roams the cell on its own.
 
 WHAT IT MAKES
@@ -82,7 +82,7 @@ DOC = os.path.join(SCRIPTS, "Controller", "Vessel", "R_VesselActions", "STARLING
 EFFECTS = A("_SO_Assets", "Effects")
 IMPACT_CONTAINER = os.path.join(EFFECTS, "Effect Containers", "VesselContainers", "StarlingImpactorDataContainer.asset")
 CARDS_JSON = os.path.join(ROOT, "Docs", "Studios", "SwarmCardVessel", "cards.json")
-LAB = os.path.join(ROOT, "Docs", "Studios", "StarlingLab.html")
+LAB = os.path.join(ROOT, "Docs", "Studios", "StarlingsLab.html")
 
 CLASS_ID = 21
 ANGLER_CLASS_ID = AA.CLASS_ID   # 17
@@ -143,7 +143,7 @@ SKIM_RING_POLICY = AA.SKIM_RING_POLICY
 ANGLER_REFS = tuple(AA.SCRIPT.values()) + (AA.MODEL_GUID, AA.HUD_VARIANT, AA.CAMERA_GUID, AA.IMPACT_CONTAINER_GUID,
                                            AA.CONFIG) + tuple(AA.CONTROL_GUID.values())
 
-# The lab's view (StarlingLab.html SHIPPED viewSpan 1400): a 60 degree frame 1200 u back spans 2 x 1200 x tan 30 = 1386 u.
+# The lab's view (StarlingsLab.html SHIPPED viewSpan 1400): a 60 degree frame 1200 u back spans 2 x 1200 x tan 30 = 1386 u.
 VIEW_BACK, VIEW_FOV = 1200, 60
 CAMERA_SCRIPT = AA.CAMERA_SCRIPT
 SO_VESSEL_SCRIPT = AA.SO_VESSEL_SCRIPT
@@ -178,7 +178,7 @@ def wired_ids():
     text = open(LAB, encoding="utf-8").read()
     m = re.search(r"const IMPL = \{(.*?)\n\s*\};", text, re.S)
     if not m:
-        raise RuntimeError("StarlingLab.html: const IMPL not found")
+        raise RuntimeError("StarlingsLab.html: const IMPL not found")
     return re.findall(r"'([a-z]+-[a-z-]+)'", m.group(1))
 
 

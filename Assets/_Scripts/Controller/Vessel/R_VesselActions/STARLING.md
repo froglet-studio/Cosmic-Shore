@@ -8,7 +8,7 @@ level you hold.
 Sources (the lab is the source of truth; this vessel is its clone):
 
 - The cards: `Docs/Studios/SWARM_CARD_VESSEL.md` and `Docs/Studios/SwarmCardVessel/cards.json` (80 cards, 24 wired).
-- The lab: `Docs/Studios/STARLING_LAB.md`, page `Docs/Studios/StarlingLab.html` (artifact
+- The lab: `Docs/Studios/STARLINGS_LAB.md`, page `Docs/Studios/StarlingsLab.html` (artifact
   https://claude.ai/artifact/QsSVVTcxL4PxXsrK2MBeVY). Its `SHIPPED` block is `StarlingConfigSO`'s first section, and its
   `simStep` is `StarlingSwarmExecutor`, step for step.
 

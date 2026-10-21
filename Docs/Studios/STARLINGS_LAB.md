@@ -1,11 +1,13 @@
-# Starling Lab: round 1 (2026-10-20)
+# Starlings Lab: round 1 (2026-10-20)
 
-**The Starlings** is the passive swarm card vessel (cards: [SWARM_CARD_VESSEL.md](SWARM_CARD_VESSEL.md)). This lab is where it is first played. It was called the Krill until 2026-10-20; the published lab page still carries that name.
+*Renamed from the Krill on 2026-10-20 (Garrett: the swarm is a swarm of vessels, so it becomes the Starlings; the Jacks and the Marlin will herd actual fauna). Same lab, same link.*
+
+**The Starlings** is the passive swarm card vessel (cards: [SWARM_CARD_VESSEL.md](SWARM_CARD_VESSEL.md)). This lab is where it is first played.
 
 **Live page:** https://claude.ai/artifact/QsSVVTcxL4PxXsrK2MBeVY (private to Garrett until shared)
-**Source:** `Docs/Studios/StarlingLab/src/lab.html` → `python3 Docs/Studios/StarlingLab/build.py` → `Docs/Studios/StarlingLab.html`. The card numbers are read from `Docs/Studios/SwarmCardVessel/cards.json`, the same source as the [deck page](https://claude.ai/artifact/QB2oYkL8P8Cv7KPGyhdHp2).
-**Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/StarlingLab.html` (PASS on desktop and phone)
-**Status (2026-10-20):** in Unity on `claude/project-thread-ytyab2`, not yet editor-verified. Class 21, `Starling.fbx`, `Starling.prefab`, in the Toybox Vessel Changer. Design and files: `Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md`; generator `Tools/Build/author_starling_assets.py`.
+**Source:** `Docs/Studios/StarlingsLab/src/lab.html` → `python3 Docs/Studios/StarlingsLab/build.py` → `Docs/Studios/StarlingsLab.html`. The card numbers are read from `Docs/Studios/SwarmCardVessel/cards.json`, the same source as the [deck page](https://claude.ai/artifact/QB2oYkL8P8Cv7KPGyhdHp2).
+**Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/StarlingsLab.html` (PASS on desktop and phone)
+**Status:** lab only. Nothing is in Unity. There is no class id, prefab or model yet.
 
 ## What you do in it
 
@@ -32,7 +34,7 @@ You never steer the starlings. They roam the whole cell in 3D on their own.
 
 - Phase timers are 30 / 25 / 25 / 25 s. Y = 5 elemental crystals and X = 30 enemy prisms.
 - The swarm starts at 24 members, with a cap of 40 and a protected minimum of 6.
-- Starling cruise at 120 u/s, double the cards' 60 u/s baseline, so a phase can cross the 900 u cell. They turn at 70°/s.
+- Starlings cruise at 120 u/s, double the cards' 60 u/s baseline, so a phase can cross the 900 u cell. They turn at 70°/s.
 - **Bare-swarm verbs** (what the swarm does with no cards):
   - Touching a crystal collects it, and each elemental crystal hatches one starling.
   - Touching a plain enemy prism breaks it at 0.5 per second within 25 u.
@@ -40,7 +42,7 @@ You never steer the starlings. They roam the whole cell in 3D on their own.
 - **Rivals:**
   - They cruise at 90 u/s, wander, and lay their own prisms.
   - They pick up crystals.
-  - They shoot the nearest starlings within 220 u, which hits half the time.
+  - They shoot the nearest starling within 220 u, which hits half the time.
   - EMP silences their shooting. Nothing stuns them.
 - Fauna graze your prisms.
 
@@ -58,7 +60,7 @@ You never steer the starlings. They roam the whole cell in 3D on their own.
 - **Mass:** your prisms standing. A shielded one counts twice.
 - **Charge:** petals taken + 3 per knockout + 0.25 per fauna.
 
-| Build | Time (s) | Space | Mass | Charge | Hands | Starling at end |
+| Build | Time (s) | Space | Mass | Charge | Hands | Starlings at end |
 |---|---|---|---|---|---|---|
 | No cards | 15.7 | 73.7 | 0 | 0.1 | 4.7 | 18 |
 | Random picks | 16.3 | 90.3 | 160.7 | 0.8 | 4.7 | 28.3 |

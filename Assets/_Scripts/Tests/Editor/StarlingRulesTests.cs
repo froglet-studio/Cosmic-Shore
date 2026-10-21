@@ -7,7 +7,7 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// <see cref="StarlingRules"/> and <see cref="StarlingCardStat.ValueAt"/> against the Starlings Lab (<c>Docs/Studios/StarlingLab.html</c>:
+    /// <see cref="StarlingRules"/> and <see cref="StarlingCardStat.ValueAt"/> against the Starlings Lab (<c>Docs/Studios/StarlingsLab.html</c>:
     /// <c>sv</c>, <c>endPhase</c>, <c>dealHand</c>, <c>pick</c>, <c>phaseLen</c>, <c>capNow</c>, <c>minNow</c>) and the card list
     /// (<c>Docs/Studios/SwarmCardVessel/cards.json</c>). The golden table is GENERATED from cards.json: every number of the
     /// 24 wired cards at levels 1, 5, 10 and 15 as the deck page prints it (its <c>key</c>), so a formula drift on either

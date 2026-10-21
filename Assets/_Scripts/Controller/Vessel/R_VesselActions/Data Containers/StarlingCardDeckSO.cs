@@ -129,7 +129,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The Starlings' 80 cards (design: <c>Docs/Studios/SWARM_CARD_VESSEL.md</c>). GENERATED from
     /// <c>Docs/Studios/SwarmCardVessel/cards.json</c> by <c>Tools/Build/author_starling_assets.py</c>, whose <c>--check</c> is
-    /// the drift gate, and the wired set is the Starlings Lab's (<c>Docs/Studios/StarlingLab.html</c>, <c>IMPL</c>). Edit the card
+    /// the drift gate, and the wired set is the Starlings Lab's (<c>Docs/Studios/StarlingsLab.html</c>, <c>IMPL</c>). Edit the card
     /// list (<c>cards.py</c>) and re-run the tool; never hand-edit a number here.
     /// </summary>
     [CreateAssetMenu(fileName = "StarlingCardDeck", menuName = "ScriptableObjects/Vessel Actions/Starling Card Deck")]

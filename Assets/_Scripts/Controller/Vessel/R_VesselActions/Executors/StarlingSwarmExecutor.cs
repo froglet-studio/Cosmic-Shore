@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Starlings: a passive swarm card vessel (design: <c>R_VesselActions/STARLING.md</c>, <c>Docs/Studios/SWARM_CARD_VESSEL.md</c>;
-    /// played first in the Starlings Lab, <c>Docs/Studios/STARLING_LAB.md</c>). The pilot never flies anything. The swarm of starlings
+    /// played first in the Starlings Lab, <c>Docs/Studios/STARLINGS_LAB.md</c>). The pilot never flies anything. The swarm of starlings
     /// roams the cell on its own after the objective of the moment, the phase cycle (<see cref="StarlingRules"/>) moves the
     /// objective on, and the pilot turns the viewing plane and picks one card from each hand that is dealt. The cards are
     /// the build: every rule below that is not the bare swarm is a card, and every number is the card's own at its held

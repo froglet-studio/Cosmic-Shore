@@ -2,7 +2,7 @@
 starling - a NEW body (no artist file) for one MEMBER of the Starlings swarm (VesselClassType.Starling = 21). The
 Starlings are a swarm, not a hull: every member is drawn with this one model, so it is small, cheap (one skinned mesh,
 five bones) and reads at swarm distance. Design: Docs/Studios/SWARM_CARD_VESSEL.md (the cards), Docs/Studios/
-STARLING_LAB.md (the lab), Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md (the Unity vessel).
+STARLINGS_LAB.md (the lab), Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md (the Unity vessel).
 
 Named by Garrett, 2026-10-20: "the krill will be a swarm of vessels lets change the to the starlings" - a murmuration.
 What it must read as: a starling, as a spaceship (Garrett, 2026-10-18: "don't forget they are spaceships inspired by
