@@ -6,7 +6,8 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The jacks' view (the lab's Steady camera, <c>camUpdate</c>): a second, orthographic camera looking straight down the
-    /// marlin's plane, <c>viewSpan</c> across the screen's short side, rendering the real world. It does not turn with the
+    /// marlin's plane, <see cref="MarlinJacksConfigSO.ViewSpan"/> across the screen's short side (framed so a big thumb
+    /// barely covers the smallest ring on a full-size phone), rendering the real world. It does not turn with the
     /// marlin: its heading is the last one laid onto the new plane (<see cref="MarlinJacksMath.SteadyForward"/>), and it pans
     /// only when the framed goal (the herd, weighted toward the marlin) leaves a slack box (<see cref="MarlinJacksMath.SteadyPan"/>).
     ///
@@ -76,7 +77,7 @@ namespace CosmicShore.Gameplay
                 _cam.depth = baseDepth + 1f;
             }
 
-            // viewSpan across the view's SHORT side
+            // ViewSpan (the thumb-framed span) across the view's SHORT side
             float half = 0.5f * cfg.ViewSpan, camAspect = Mathf.Max(1e-3f, _cam.aspect);
             _cam.orthographicSize = camAspect >= 1f ? half : half / camAspect;
             _cam.farClipPlane = 2f * cfg.ViewDepth + 1f;

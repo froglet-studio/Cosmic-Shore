@@ -149,3 +149,12 @@ units and multiplied by `labScale` (0.4).
   ring, not the hull. The Wrasse's kite has the same shape today; the fix is one shared crew-exclusion rule in the
   sweep, for the owner of that utility, not a Marlin special case. Vision shading and Echo Sight tinting the jacks
   with the hull is intended.
+- **The herd's step is O(n²) over its members** (round 4, `cece/sharp-faraday-gq7m65`). `StepHerd`'s neighbour loop
+  visits every pair each frame: 150 x 149 = 22,350 pair tests at the new cap (3,540 at the old 60). Not measured in
+  Unity yet (checklist step 13). If it shows in a capture, bucket the herd on the board (a cell grid of
+  `neighbourRadius`) rather than lowering the cap.
+- **The jack models were sized for the old view.** `jackModelScale` 2.5 (40 u long) was chosen to read at 720 u across;
+  the thumb-framed view is about 1,147 u, so a jack now draws about 63% as large on screen. A look call: raise the scale
+  (rivals see the bigger fish too) or leave it, since a thumb covers the jack it runs anyway.
+- **`AnglerWorldMarks` is now shared** by the Angler and Marlin and Jacks, under the Angler's name. A rename to a
+  vessel-neutral name is a guid-safe `git mv` plus two call sites; not done here, to keep this branch to its subject.
