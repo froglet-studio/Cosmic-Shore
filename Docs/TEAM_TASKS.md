@@ -1379,6 +1379,20 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-20 by a Claude session (`cece/dreamy-hypatia-eni0w5`)
 - **See:** Assets/_Scripts/UI/Modals/ToyConfigureModal.cs arrivalDistanceFactor
 
+### T-20261021-6632 · open · test · Squirrel
+- **Task:** Fly the Squirrel's new drift animation: while drifting the four engine pods swing onto the travel direction, parallel with the jets, jets still seated in the pods; check the pods against the wing slats past ~30 degrees of aim
+- **Done when:** SQUIRREL_DRIFT.md section 12 steps 1-6 pass in Toy Box > Vessel Changer > Squirrel, and the clipping question has an answer (fine, or a driftOffset value)
+- **Who can take it:** Garrett (Squirrel / vessel feel); Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/eloquent-pasteur-fes2ni`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md#12
+
+### T-20261021-9843 · open · test · Squirrel
+- **Task:** Listen to the Squirrel's drift loop: quiet on a shallow slide, rising linearly to the pre-change volume at 180 degrees of slip; the release one-shot follows the angle the drift ended at; run DriftSlipVolumeTests
+- **Done when:** SQUIRREL_DRIFT.md section 13 steps 1-5 pass, or quietVolume01 / fullSlipDegrees retuned by ear
+- **Who can take it:** Garrett (Squirrel feel); Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/eloquent-pasteur-fes2ni`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md#13
+
 ### T-20261021-edc0 · open · test · Thresher
 - **Task:** Fly the Thresher on cece/youthful-johnson-hccyzf: it spawns in Mass Mode (lit ball, steals rival prisms, lays a trail, no blasts); A leaves it and the ball breaks again; a vessel swap back puts it in Mass Mode; AI Threshers in Thresher Time stay in Mass Mode
 - **Done when:** All four steps of the 2026-10-21 Thresher Mass Mode entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass in the Editor
