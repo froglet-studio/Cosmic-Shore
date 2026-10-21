@@ -251,6 +251,49 @@
         "Press 2 (or D-pad right) to take the kite: its view fills the screen and the hull's shrinks to the corner. The kite follows the mouse or stick; loop motes of one petal shape. Press 1 to fly again.",
         "Run the steps of the Kite Navigator entry in Docs/UNITY_VERIFICATION_CHECKLIST.md."
       ]
+    },
+    "mobile-vessels": {
+      "title": "Vessels on a phone",
+      "aliases": [
+        "mobile",
+        "mobile audit",
+        "phone",
+        "touch",
+        "touch controls",
+        "mobile vessels",
+        "vessels on mobile",
+        "mobile friendly"
+      ],
+      "owner": "Garrett",
+      "people": [
+        "Shombith",
+        "Yash"
+      ],
+      "audience": [
+        "Garrett",
+        "the core four"
+      ],
+      "branch": "bleeding-edge",
+      "branchNote": "audit only (2026-10-21); no code changed",
+      "summary": "A read-only audit of all 18 vessels on touch: what a phone pilot can trigger, what does not translate (thumb lift to reach a card fires an ability, no trigger depth, no LT+RT, FlipAction dead), 18 bounded fixes (Urchin reverses on let-go, Scarab cannot thrust) and 12 design decisions, plus the unmeasured phone performance risks.",
+      "paths": [
+        "Assets/_Scripts/Controller/IO/TouchInputStrategy.cs",
+        "Assets/_Scripts/Controller/IO/FlightTouchClaims.cs",
+        "Assets/_Scripts/Controller/IO/DeviceOrientationHandler.cs",
+        "Assets/_Scripts/UI/Elements/AbilityCardPress.cs"
+      ],
+      "docs": [
+        "Docs/ABILITY_LOCKUP.md",
+        "Docs/ANDROID_BUILD.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/MOBILE_VESSELS.md",
+      "taskAreas": [
+        "vessels"
+      ],
+      "test": [
+        "Build an Android development APK (Docs/ANDROID_BUILD.md) and run Docs/Reports/MOBILE_VESSELS.md section 6 in the Toybox Vessel Changer."
+      ]
     }
   }
 }

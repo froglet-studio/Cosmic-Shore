@@ -1197,3 +1197,45 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (asked for it) or Yash
 - **Added:** 2026-10-20 by a Claude session (`cece/dreamy-hypatia-eni0w5`)
 - **See:** Assets/_Scripts/UI/Modals/ToyConfigureModal.cs arrivalDistanceFactor
+
+### T-20261021-2d87 · open · dev · vessels
+- **Task:** Phone movement bugs: the Urchin flies full reverse whenever no thumb is on the glass (GunVesselTransformer.ReadThrottle reads XDiff 0 as -1; return 0 while InputStatus.Idle), and the Scarab never thrusts on touch (ScarabVesselTransformer.ReadThrottle01 reads only RightTriggerAnalog; treat Touch && !Idle like autopilot as a stopgap)
+- **Done when:** On an Android build the Urchin stops (not reverses) when both thumbs lift, and the Scarab flies in Scarab Scramble
+- **Who can take it:** Garrett (vessels), any session; Yash (offered) to check on a phone
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §2 rows 1-2
+
+### T-20261021-985e · open · dev · vessels
+- **Task:** Touch card fixes: (a) a card whose input does not resolve on touch must not be pressable or claim the touch (AbilityLockupView.SetSlotPressInput vs AbilityCardPress.TryResolveInput); (b) R_VesselActionHandler.StartPressedActions ignores a press of an input already held (a lift + a card started toggles twice)
+- **Done when:** Rhino sword, Stoat and Angler Space/Charge cards no longer eat right-thumb touches; the Butterfly Dust card toggles once when the left thumb is also lifted
+- **Who can take it:** Garrett (touch input), any session
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §2 rows 3-4
+
+### T-20261021-bb9f · open · dev · vessels
+- **Task:** Touch feel pass: fix the Squirrel/Serpent idle snap (MantaAnimationContoller Idle writes +p,x against puppetry's -2p,2x), ease the stick in StoatAnimation, AnglerAnimation and ButterflyAnimation (rule 53), set touchNoseResponse 9 on Dolphin, Manta, Rhino, Urchin and route it through SingleStickVesselTransformer.RotateShip, and honour Invert Y on touch
+- **Done when:** On a phone, lifting the last thumb eases every hull to rest and the dual-stick hulls answer the thumb without the 0.67 s nose lag
+- **Who can take it:** Garrett (vessels), any session; Yash (offered) to check on a phone
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §2 rows 5-7, 14
+
+### T-20261021-9708 · open · decision · vessels
+- **Task:** Mobile vessel decisions D1-D12: lift-to-reach-a-card fires abilities (grace window recommended), card size/placement on touch, gesture hints, two-trigger abilities (Rhino sword, Manta Soar, Shrike, Thresher launch), no trigger depth (hold-time ramp as fleet standard?), Stoat on phones, Angler Squad/Recall with no card, Scarab throttle, Butterfly re-grip Fold, Wrasse on two phones, Termite/Falcon retire, retire phone-flip FlipAction
+- **Done when:** Each D row in the report carries a decision (or 'later') and the follow-up dev rows exist
+- **Who can take it:** Garrett (vessel owner); Shombith for D2/D3 (UI)
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §3
+
+### T-20261021-d476 · open · test · vessels
+- **Task:** First phone captures of the vessels with a second render or full-screen pass: Stoat dropping a dipole (black-hole lens), Wrasse in either seat, Thresher launch view, Serpent scoped, Brittle Star at full fire, Butterfly by a wormhole; plus the D1 check (move the right thumb to a card on Grizzly, Sparrow, Squirrel) and a ruler on a card
+- **Done when:** One Profiler capture per hull is on the perf record and the D1/D2 observations are written into MOBILE_VESSELS.md §6
+- **Who can take it:** Yash (offered, phone tests), Garrett
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §4, §6
+
+### T-20261021-4a95 · open · docs · vessels
+- **Task:** Correct the mobile doc drift found by the audit: BRITTLE_STAR F1 and SCARAB §3.1/§15 (cards reach face buttons since 9718a382), BRITTLE_STAR:35 + T-20261016-3e80 (phone flip does nothing), ABILITY_LOCKUP:346-348, SQUIRREL_DRIFT:519, BUTTERFLY_FOLD ghost, InputEvents.cs comments, InputHintBindingMap Button2 key, REFACTOR_BACKLOG S29 scope, T-20261019-41bb list, T-20261016-5ed6 (depth does replicate)
+- **Done when:** Each listed line matches the code
+- **Who can take it:** any session; Yash (offered)
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §5
