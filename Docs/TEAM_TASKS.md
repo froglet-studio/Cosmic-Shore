@@ -1180,6 +1180,84 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-19 by Garrett's session (`cece/elegant-goldberg-eanwgx`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
 
+### T-20261020-50d2 · done · decision · Crew vessels
+- **Task:** Pick the four-seat crew vessel concept from the Crew of Four Lab round 1 (Galleon, Corsair, Lantern, Ironclad, or a mix) and rule on its open questions: should your own ward block your guns (the shield-drop gamble), should boarders work under the ward, and does the cast-off (a defender takes the bag back and the boarder's own recall fires) count as petals-only under the LOCKED PvP rule.
+- **Done when:** A decision is recorded on the lab's Decisions tab (shared log) and copied into Docs/Studios/CREW_OF_FOUR_LAB.md
+- **Who can take it:** Garrett (vessels, product decisions)
+- **Added:** 2026-10-20 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
+- **See:** https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb, Docs/Studios/CREW_OF_FOUR_LAB.md
+- **Done:** 2026-10-20, Garrett chose in round 3 (2026-10-20): one Helm and three unified gunner/skiff seats, always four crew; no Artifact. The ward/boarding/cast-off questions no longer apply. Round 3's open questions are in T-20261020 (new decision task) and Docs/Studios/CREW_OF_FOUR_LAB.md §4.
+
+### T-20261020-d102 · open · test · Crew vessels
+- **Task:** Playtest the Crew of Four Lab (round 4, the 4-seat vessel) by hand, on PC and phone: take the helm and a gunner seat in each of the four games at I2, compare the Round 4 preset (stabilized turrets on outriggers) with the Hull-locked turrets control from a gunner seat, and record on the Decisions tab which seats felt like a job, which felt like waiting, and whether the turret view feels steady enough. The AI cannot feel sway (its points are the same with and without stabilization), and the shield's worth is within noise, so a person at the helm decides both.
+- **Done when:** At least one Decisions entry from a person for the helm and one for a gunner seat, with the game it came from
+- **Who can take it:** Yash (offered), Garrett, anyone
+- **Added:** 2026-10-20 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
+- **See:** https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb
+
+### T-20261020-1607 · open · decision · Crew vessels
+- **Task:** Rule on the Crew of Four Lab round 3 questions: the ammo economy (missiles per omni crystal and the omni share; 3 and 40% proposed because 2 and 25% left magazines empty 70-80% of a match), a shared magazine for the three gunners or one per seat, whether AI gunners keep a missile for a human gunner, the helm's shield riding with the hull or dropped in place (its 50-70 u radius is the DangerHemisphereConfig asset's), what gives gunners a job in the Ring Race (they are worth nothing there today), and how many petals a blast takes from a hull (2 proposed).
+- **Done when:** Decisions recorded on the lab's Decisions tab and copied into Docs/Studios/CREW_OF_FOUR_LAB.md
+- **Who can take it:** Garrett (vessels, product decisions)
+- **Added:** 2026-10-20 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
+- **See:** https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb, Docs/Studios/CREW_OF_FOUR_LAB.md section 4
+
+### T-20261020-440c · open · test · Crew vessels
+- **Task:** Fly the Orca (the 4-seat vessel) in the Unity editor from the Toybox Vessel Changer on cece/happy-noether-m54hz6: the helm (two thumbs, right-trigger boost tank, left-trigger danger shield), then keys 2-4 for each gunner turret (stabilized aim while the AI turns the hull, Release launches a missile you fly, a second Release bursts it, an omni crystal through a missile adds 3 to the Charge card's count), then 1 back to the helm. Steps and expected results: Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Orca'.
+- **Done when:** Every step of the checklist entry ticked (or a bug filed per failure), and the console clean in play mode
+- **Who can take it:** Garrett (owner), Yash (offered)
+- **Added:** 2026-10-20 by a Claude session (`cece/happy-noether-m54hz6`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
+
+### T-20261020-3967 · open · decision · Crew vessels
+- **Task:** Orca design calls the port left open: (1) the four level-5 upgrades (Charge missiles, Space burst, Mass shield, Time boost tank - none designed, every UpgradeLabel is empty), (2) the hull's turn rates (the lab's 0.55 x Sparrow gives roll 16.5, likely slow - the Wrasse went to 120), (3) the shield on a touch screen (the left trigger has no touch equivalent), (4) which machine decides bursts once the crew is networked.
+- **Done when:** Decisions recorded on the Crew of Four Lab's Decisions tab or in ORCA_CREW.md, and the lab re-seeded where a number changed
+- **Who can take it:** Garrett (vessels, product decisions)
+- **Added:** 2026-10-20 by a Claude session (`cece/happy-noether-m54hz6`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md#follow-ups
+
+### T-20261021-9ef8 · open · test · Crew vessels
+- **Task:** Fly the Orca's round 5 in the Unity editor on cece/happy-noether-m54hz6, and check the crew cameras' post-processing: the Wrasse's kite view and the Orca's turret view should have bloom like the pilot view; the helm shield rides white (super-shielded) then drops red (danger) ~4 s later and stays ~20 s; seat 2 sniper beam kills a super-shielded wall and counts down 12 s; seat 3 fast gun overheats after ~6 s; seat 4 bomb bursts on a second press and never pushes the Orca; an omni crystal gives every seat a missile. Steps: Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 5'.
+- **Done when:** Every step of the round-5 checklist entry ticked (or a bug filed per failure), console clean in play mode
+- **Who can take it:** Garrett (owner), Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/happy-noether-m54hz6`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
+
+### T-20261021-a73f · open · test · Crew vessels
+- **Task:** Fly the Orca's round 6 in the Unity editor on cece/happy-noether-m54hz6: the person's seat lights its ability card (helm Time, 2 Space, 3 Mass, 4 Charge) and each gunner card shows its own missiles; the sniper is always scoped with its ring and countdown; the fast gun's view sits over the turret and a slow sweep draws a clean line of thin prisms ~120 u out; the bomb has no cooldown, one at a time (Fire throws, Fire bursts, the next press throws again); every gun has its own crosshair.
+- **Done when:** Every step of 'Orca round 6' in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or each failure is filed as a dev task.
+- **Who can take it:** Garrett (owner), Yash (offered)
+- **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 6'; Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
+
+### T-20261021-8afe · open · dev · Crew vessels
+- **Task:** Fit the Orca prefab to its new model (Orca.fbx, 36 u long, 49 u across): the hit box, skimmer, jets (move them to the model's jet.L.mouth / jet.R.mouth, z -14.75) and flare are still the Sparrow's, sized for a 12 u hull; decide the chase camera distance (the convention says ~113 u back, the lab's camBack is 50: change it in the lab first).
+- **Done when:** The jets burn from the model's engine mouths, the hit box covers the hull and wings, and the chase camera distance is decided in the lab and on the prefab.
+- **Who can take it:** Garrett (owner, the feel), Yash (offered)
+- **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md 'Follow-ups'; Docs/VesselModels/Orca.md
+
+### T-20261021-3fbb · open · test · Crew vessels
+- **Task:** Fly the Orca's round 7 in the Unity editor on cece/happy-noether-m54hz6, boosting and turning hard: the fast gun's rounds and the bomb leave the barrel tips and fly straight through their crosshairs (not sideways with the hull); the sniper's view is normal with the Serpent's pip scope always open in the upper left and the beam passing through both reticles; missiles leave the turret tubes; the Serpent's own scope is unchanged.
+- **Done when:** Every step of 'Orca round 7' in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or each failure is filed as a dev task.
+- **Who can take it:** Garrett (owner), Yash (offered)
+- **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 7'
+
+### T-20261021-ab48 · open · dev · Vessel models
+- **Task:** Rebuild the from-scratch hulls as HOVERING ASSEMBLIES (Garrett 2026-10-21: the original vessels are 'free floating parts that are associated and animated together but clearly distinct parts of a hovering assembly'; vessel-model SKILL 0.5, LESSONS 49). Measured with Tools/Build/vessel_model/assembly_report.py (parts that float >= 0.4% of the diagonal): Butterfly 0/5, Thresher 0/8, Brittle Star 0/37, Scarab 3/16, Stoat 4/15, Shrike 3/10, Angler 5/8 (Grouper and WrasseKite on cece/loving-fermat-ntdnbu not measured here); the artist hulls float most of theirs (Manta 7/7, Squirrel 28/39, Serpent 22/27). One hull per round per the skill's loop, Garrett flies each. This also answers item (1) of T-20261018-2070 (Scarab: floating parts, not connected modules).
+- **Done when:** Each listed hull passes assembly_report.py --floating with its major parts named in its spec, and Garrett has flown it.
+- **Who can take it:** Garrett (judges each hull), the session that built it, Yash (offered: editor checks)
+- **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
+- **See:** .claude/skills/vessel-model/SKILL.md 0.5; .claude/skills/vessel-model/references/LESSONS.md 49
+
+### T-20261021-07cd · open · test · Crew vessels
+- **Task:** Fly the Orca's round 9 in the Unity editor on cece/happy-noether-m54hz6: launch a missile from any gunner seat (F): it is the skyburst rocket with an igniting, flickering motor, it banks into your turns, and a lit faceted plume trail swells behind it and stays after the burst; in seat 4 the bomb has no ring and no BURST text, and while a bomb is out the prisms its blast will break (not yours) glow in your colour.
+- **Done when:** Every step of Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 9' passes with a clean console, or the failures are filed.
+- **Who can take it:** Garrett (owner), Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/happy-noether-m54hz6`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 9'; Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
+
 ### T-20261020-86b5 · open · test · Performance
 - **Task:** Open cece/gallant-keller-6mr1u4 in Unity: let SpindleLodMidGraph / SpindleLodFarGraph import (no magenta), run the EditMode test SpindleLodTests (ShippedProfile_IsSaneAndMeasured checks the LOD meshes against the braid Unity imported), then Play Menu_Main > Cell Selector > Lattice and fly in and out of a plant: no pop as limbs cross ~140 / ~590 / ~2,660 units, and the HUD console 'renderers' line shows far limbs as instanced. If a graph imports magenta, untick lodEnabled on Resources/SpindleLodProfile and report it.
 - **Done when:** Both graphs import clean, SpindleLodTests pass, and a fly-through shows no visible swap

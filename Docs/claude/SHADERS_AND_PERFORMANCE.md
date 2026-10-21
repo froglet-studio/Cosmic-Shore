@@ -26,6 +26,23 @@ sticker.
   that (2026-10-18, `cece/compassionate-babbage-gc13io`, "the prisms that go out of plane for the kite should be unlit
   but not disappear"). Ask before applying this rule to someone else's deliberate look.
 
+### In the world, not on the screen (LOCKED, Garrett 2026-10-21)
+
+> "always go for the 3d in world solution over the 2d flat text solution."
+
+When a player needs to see something about the world (what a blast will catch, where a shot will land, which thing is
+targeted, what state a thing is in), show it **on the thing itself, in 3D**: light it, colour it, change its shape or
+motion, give it a volume. A screen-space ring, a label or a word over it is the last resort, not the first.
+- **Worked example: the Orca's bomb seat** (round 9). The crosshair drew a ring the size of the blast and "BURST" over
+  the live bomb. Now the prisms the blast will break are lit through PrismLit's bank (a sphere gated to each domain the
+  blast breaks, `OrcaCrewView.LightBomb`) and the crosshair keeps only its aim mark.
+- **Reach for the world's own channels first**: PrismLit (`Docs/LIT.md`) for "this mass is about to be acted on",
+  the hull's element morphs and petals for a vessel's state, faceted lit volumes for effects (the rule above).
+- **The crosshair itself stays UI**: an aim mark has no world thing to sit on. Keep it small and leave the facts to
+  the world.
+- **It holds in labs and studios too**: a page that decides a look draws it in its 3D view, so what is decided is what
+  the game shows.
+
 ### HLSL / Shader Graph
 
 - Custom Function nodes use HLSL files stored in a consistent location

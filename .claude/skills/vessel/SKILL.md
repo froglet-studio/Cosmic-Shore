@@ -880,6 +880,15 @@ applies to new abilities, new resources on the meter list, and anything that add
     **`AddComponent` runs `OnEnable` before a factory sets the fields `OnEnable` reads**, so a UI control that registers
     a `FlightTouchClaims` region in `OnEnable` must register again at the end of its `Create`.
 
+59. **Show what an ability will hit IN THE WORLD, and light exactly what it will break** (Garrett, 2026-10-21: "always go
+    for the 3d in world solution over the 2d flat text solution"; LOCKED in `Docs/claude/SHADERS_AND_PERFORMANCE.md`).
+    A pending blast, a target or a range is shown on the mass itself through PrismLit (`Docs/LIT.md`), not as a screen
+    ring or a word. Two traps the Orca's bomb seat paid for (`OrcaCrewView.LightBomb`): **`PrismLit.PublishAimed` is
+    CONE-ONLY** (it is the Echo Sight's channel; a sphere published there is read as a cone), so any other shape goes
+    to the light bank (`PublishLight(sourceId, LitVolume.Sphere(...), ...)`); and **a bank light gates to ONE domain**,
+    so a blast that spares its own domain publishes one light per domain it breaks (each fielded rival from
+    `GameDataSO.RequestedDomainCount`, plus neutral Blue), never one ungated light that also lights the pilot's own mass.
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
