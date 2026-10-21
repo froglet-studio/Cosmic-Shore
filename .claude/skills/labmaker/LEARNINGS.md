@@ -792,6 +792,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `SilenceVignetteMask.cs`, `SilenceScreenFeedback.EnsureOverlay`; the lab's scorecard and yardstick check; `Tools/Build/silence_vignette_parity/run.sh`.
 - Promoted: no
 
+### L-STU-126 — Verify the version you published, after the last edit, not the one before it
+- Lab: Silence Vignette Lab (`Docs/Studios/SilenceVignetteLab.html`) · Branch: `cece/sleepy-shannon-9qk646` · By: session_01PEp87yJAmoDHUn7QvRdtkg · Date: 2026-10-21
+- What happened: `verify_lab.cjs` passed, then a one-line wording edit was published straight through the Artifact tool's `edits`. The new text, "the breath's peak", put an apostrophe inside a single-quoted `innerHTML` string, so the whole script failed to parse (`Unexpected identifier 's'`). Garrett opened a page with no lab in it ("the lab seems broken").
+- Do instead: re-run `verify_lab.cjs` after EVERY edit to the page, however small, and before you report it. Once it is live, download the published page (`Artifact read` with `path: index.html`) and load it headless; any `pageerror` fails it. Keep apostrophes out of single-quoted HTML-in-JS strings, or build that text with `textContent`.
+- Evidence: the published version 2 against version 3 of https://claude.ai/artifact/Hequw1VLdwXi2ztrDeuXQC.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

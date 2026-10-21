@@ -614,7 +614,7 @@
 
   function scorecardPanel() {
     const box = document.createElement('div');
-    box.innerHTML = '<div class="flex"><button class="btn primary" id="runBatch" type="button">Score the looks</button><span class="hint">Edge = how much the edge changes the picture (OKLab difference x100, higher reads more). Centre = how much it touches the middle of the screen (lower keeps play clear). Seeds 1-3, full strength, at the breath's peak (breathing is judged by eye).</span></div><p class="hint" id="yard"></p><div class="tablewrap"><table id="scoreTable"></table></div>';
+    box.innerHTML = '<div class="flex"><button class="btn primary" id="runBatch" type="button">Score the looks</button><span class="hint">Edge = how much the edge changes the picture (OKLab difference x100, higher reads more). Centre = how much it touches the middle of the screen (lower keeps play clear). Seeds 1-3, full strength, at the peak of each breath (breathing is judged by eye).</span></div><p class="hint" id="yard"></p><div class="tablewrap"><table id="scoreTable"></table></div>';
     box.querySelector('#runBatch').onclick = () => {
       const rows = runBatch(), t = box.querySelector('#scoreTable');
       const best = (k, hi) => (hi ? Math.max : Math.min)(...rows.filter((r) => !/control|Round 0/.test(r.variant)).map((r) => r[k]));
