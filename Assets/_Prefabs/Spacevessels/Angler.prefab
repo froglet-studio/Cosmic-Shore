@@ -981,7 +981,13 @@ MonoBehaviour:
     ShipActions:
     - {fileID: 11400000, guid: 36d37122f9bd2f22af1f855da9289f99, type: 2}
   _resourceEventClassActions: []
-  _touchActionOverrides: []
+  _touchActionOverrides:
+  - InputEvent: 1
+    ShipActions:
+    - {fileID: 11400000, guid: bd6112250ed58175f0d1625ef4c1483c, type: 2}
+  - InputEvent: 2
+    ShipActions:
+    - {fileID: 11400000, guid: 7f98a4f05e03ee9a413e54706ded661b, type: 2}
   _gamepadActionOverrides: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
@@ -1088,6 +1094,7 @@ MonoBehaviour:
   view: {fileID: 5137264980012345622}
   angler: {fileID: 4417001122334455001}
   lureEaseRate: 6
+  squadLabelTemplate: '{squad} x{count}'
 --- !u!114 &8755860699239805343
 MonoBehaviour:
   m_ObjectHideFlags: 0

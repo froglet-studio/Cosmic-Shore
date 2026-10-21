@@ -5,6 +5,10 @@
 > (`STOAT_DIPOLE.md` §1b). §1–§2 below are the round-4 orbit's own record; what they say about where the pair is laid,
 > `orbitHorizons` and the circular-orbit GM no longer ships.
 >
+> **2026-10-21 — ON A PHONE TOO.** "The stoat should join the mobile fleet" (Garrett). The touch overrides now carry the
+> gamepad's four bindings, so a phone pilot (and an AI Stoat on a phone) lays pairs, flies the orbit, holds and
+> switches modes. "Steam is the target" (§4, §7 until today) is superseded. See §4a.
+>
 > **2026-10-13 — ITS OWN VESSEL.** B switches Mass and Time (`STOAT_DIPOLE.md` §1a). Mass mode flies the round-15
 > **field dipole** (`STOAT_DIPOLE.md`). The Squirrel prefab this was cloned from is gone from it: §4's "kept as
 > prototype debt" paragraph is resolved (stage 6 of the generator), and §6's open slots are designed and shipped
@@ -231,8 +235,9 @@ eight pairs fleet-wide since 2026-10-12; it was 4, and two AIs holding pairs ref
   nothing. `InScenePlacedSourceGlobalObjectIdHash` is 0.
 - Gamepad bindings: 2 → `StoatSlingLeftAction`, 1 → `StoatSlingRightAction`, 6 → `StoatHoldAction`.
   Keyboard, dual-mouse and mouse-keyboard share the gamepad map (`R_VesselActionHandler`: Left/Right
-  Shift are the triggers). **Touch overrides are cleared** — there is no touch design yet, so a touch
-  Stoat has no abilities (the Gibbon's call, same reason).
+  Shift are the triggers). ~~**Touch overrides are cleared** — there is no touch design yet, so a touch
+  Stoat has no abilities (the Gibbon's call, same reason).~~ Superseded 2026-10-21: the touch overrides carry the
+  same four entries (§4a).
 - The Squirrel's `DriftActionSO`s are NOT bound, so the transformer's `singleTriggerDrift: 1` is
   inert: `ApplyAnalogDrift` acts only after a drift action's `BeginDrift`, which nothing calls.
 - `StoatSlingExecutor` (config wired) and `ToggleTranslationModeActionExecutor` (the hull's own
@@ -255,6 +260,65 @@ hips, `StoatHUDVariant`, `StoatCameraSettingsSO` (the same chase, clean keys: th
 docstring and `check_stage6`. **The clone is a spent one-shot once committed**:
 `author_stoat_assets.py` clones only while `Stoat.prefab` is absent and otherwise stands down and
 validates the shipped file, so Squirrel drift can never silently re-author the Stoat.
+
+## 4a. On a phone (2026-10-21)
+
+**The decision.** Garrett, 2026-10-21: "The stoat should join the mobile fleet." Until then the Stoat's shared map and
+touch overrides were both EMPTY and only `_gamepadActionOverrides` was filled ("Steam is the target"), so on a phone
+every press resolved to nothing.
+
+**The bindings.** `Stoat.prefab` `_touchActionOverrides` = the gamepad overrides, entry for entry, the same assets:
+
+| Input (`InputEvents`) | Actions (same guids as the pad's) |
+|---|---|
+| `LeftStickAction` (2) | `StoatDipoleLeftAction` (`9eacf723…`) + `StoatSlingLeftAction` (`5c382e0d…`) |
+| `RightStickAction` (1) | `StoatDipoleRightAction` (`62ce60a3…`) + `StoatSlingRightAction` (`012d65ba…`) |
+| `Button1Action` (6) | `StoatHoldAction` (`9b50ea11…`) |
+| `Button2Action` (7) | `StoatModeAction` (`f05e7ded…`) |
+
+The shared map stays empty, so nothing changes for any other device. Owned by `Tools/Build/author_stoat_assets.py`
+(`bindings()`, `--check`); `StoatSlingTests.Prefab_BindsEachTriggerToBothModesXToTheHoldAndBToTheSwitch` asserts the
+touch block equals the pad block.
+
+**The controls** (`TotemButtons`: lifting a thumb raises nothing; profile `Tools/Build/author_touch_profiles.py`):
+
+| On the glass | Presses | Mass mode | Time mode |
+|---|---|---|---|
+| the **Space card** (Field Dipole), held | `LeftStickAction` | the left dipole: a pair laid ahead, black hole on the left | the left sling: the light pair, the catch, release to slingshot |
+| the extra button **Dipole Right**, held | `RightStickAction` | the right dipole (with the Space card held too: the pair the two squeezes make) | the right sling |
+| the extra button **Hold** | `Button1Action` | the Sparrow's stop: a tap stops, the next tap moves (`ToggleTranslationModeActionSO`, no release semantics) | same |
+| the **Mass card** (Mode) | `Button2Action` | switch to Time | switch to Mass |
+
+The Charge (Ripple) and Time (Pathfinder) cards are passive, so they press nothing.
+
+**The squeeze on glass.** There is no trigger depth on a phone: `InputStatus.Left/RightTriggerAnalog` stay 0 and the
+device is not `Gamepad`, so both executors take their no-analog path, the one the keyboard already uses:
+- **Mass (dipole):** `StoatDipoleExecutor.Track` squeezes to `keySqueeze` (0.5, the studio's `dpKeySqueeze`) the
+  moment the button is pressed and holds it there (`STOAT_DIPOLE.md` §3b). A one-button pair is 70 u apart sideways
+  at once, exactly as on keys.
+- **Time (sling):** `StoatSlingMath.Hold01` ramps by HOLD TIME over `StoatSlingConfig.holdRampSeconds` (3 s): a
+  fresh press circles wide, holding tightens the orbit, and the deepest squeeze (`Peak`) sets the kick.
+
+**A held button is the pad's trigger.** The pad raises `LeftStickAction` / `RightStickAction` when the trigger crosses
+its deadzone (0.05) and releases them below it. The card (`AbilityCardPress`) and the extra button (`TouchButtonView`)
+raise the SAME events on finger down / up, on the pilot's `InputStatus` (vessel rule 56), so the press goes through the
+same handler, the same `BeginHold` / `Release`, and the same replicated path. Letting go closes the dipole or slings
+the orbit, exactly as letting go of a trigger does. A hidden HUD or a vessel swap releases a held card
+(`AbilityCardPress.OnDisable`), so nothing stays pressed.
+
+**The autopilot.** On a handheld every `InputController` reports `Touch`, the AI's and the menu's included
+(`VesselTransformer.IsLocalHumanTouchPilot`'s note). So until this change an AI Stoat on a phone (the lava lamp, the
+Slingshot AIs) also resolved every press against the empty touch map and never laid a pair or switched mode. It now
+does. The hand-back (vessel skill §4.ad item 3, `StoatDipoleExecutor.HandBackAiHold`) is unchanged: `ResolveBoundInput`
+reads every map (`CollectBoundActions`), and the release carries the device its press was resolved with
+(`R_VesselActionHandler.PressedDevice`), so a press made against the touch map is released against it.
+
+**Multiplayer.** A press carries its device byte, so a PC peer resolves a phone pilot's press against the touch
+overrides: the same entries, the same actions on every peer.
+
+**What only a phone can test:** a pair from the Space card, a pair from both buttons together,
+the Time-mode orbit tightening over 3 s and slinging on release, the Hold tap, the mode switch from the Mass card,
+and the lava lamp's AI Stoat using its pairs on a phone and letting go when you take the hull.
 
 ## 5. Proof (all offline — no `/verify-unity` in the session that built this)
 
@@ -287,6 +351,7 @@ mechanics in `STOAT_DIPOLE.md` §1a–§1e and §5.
 ## 7. Not yet
 
 The pair's network replication (the press/release edges round-trip, so a peer lays its OWN copy of an orbit pair at
-the replicated pose, but the two copies are not one object); a touch binding (Steam is the target; the executors answer
-the autopilot's squeeze, nothing presses for a touch pilot); the mode as replicated STATE rather than replicated presses
+the replicated pose, but the two copies are not one object); ~~a touch binding (Steam is the target; the executors answer
+the autopilot's squeeze, nothing presses for a touch pilot)~~ done 2026-10-21 (§4a), an analog squeeze on a phone (a
+held button is a key: the dipole at `keySqueeze`, the orbit by hold time); the mode as replicated STATE rather than replicated presses
 (`STOAT_DIPOLE.md` §8 D6); final art for the four ability icons (placeholders) and FMOD events (every slot ships empty).

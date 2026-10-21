@@ -51,6 +51,9 @@ through `Tools/Build/studio_to_unity/angler.json`. Every formula comes from the 
 | Boost | RB | E | The vessel's ordinary boost. |
 | Omni crystal (pickup) | — | — | **One creature and one plant.** The crystal morphs into a random creature that joins the school, and leaves a **flora seed**, shown on the HUD's omni card and planted the next time the lure is let go (§1g). |
 
+On a phone the triggers are held CARDS (the Space card paints, the Charge card erases) and the squad pick and recall are
+extra on-screen buttons: §1l.
+
 The round-2 write-up first proposed the lure on RB. The game's RB is already throttle and boost, and LB raises no
 input event, so the lure went on X (Button3). Since 2026-10-18 the Angler uses the Sparrow's layout: Mass (Lure) on A
 (Button1) and Time (Dash) on B (Button2); the squad pick and recall took the freed X (Button3) and Y (Button4Action).
@@ -224,11 +227,56 @@ Three causes, each fixed:
 
 - **An invisible squad pick.** A used to cycle the squad, and nothing on the HUD showed it. A pilot pressing A for the lure (the Sparrow's Mass button) picked the first kind tamed, usually the keeper's Clawfish. From then on only Clawfish gathered and were thrown, and the QuadFish kept their old orders. Now:
   - the pick is on X, not A;
-  - a picked kind shows over the Mass card (`AnglerHUDView.SetSquad`, "QuadFish x3"), blank while the whole school answers.
+  - a picked kind shows over the Mass card (`AnglerHUDView.SetSquad`, "QuadFish x3"), blank while the whole school answers. The label is the authored `AnglerHUDController.squadLabelTemplate` (`{squad} x{count}`, filled by `TemplateText.Fill`; empty shows nothing) since 2026-10-21, no longer a C# string literal.
 - **An order the creature's own diet refused.** The executor gave orders without asking the creature. A creature sent to a prism it may not eat (its own domain in a cell with no nucleus, the nucleus claim, outside its pen) hovered there for good, holding its claim and skipping the queue. Now `PickTarget` asks `Fauna.LeashCanEat` (the same predicate the creature applies to its meal: `LightFauna.IsEdibleForHerbivore`, `Boid.IsEdibleForForager`) and skips a refused prism. A shielded prism stays a candidate, because Space 5 painted it and the squad cracks the shield on arrival.
 - **A latch onto a creature's body.** The plain sling's latch cluster could include another creature's body prism, which no herbivore eats. That cluster now skips body prisms, as the latch itself already did.
 
 The lab's world is domain-blind, so the diet filter is game-only, like the shield and body filters on the brush.
+
+### 1l. On a phone (2026-10-21)
+
+**The decision.** Garrett, 2026-10-21: "the angler should work with 1 thumb controls like the other vessels while
+painting or erasing." Until then the executor read paint and erase ONLY from `InputStatus.RightTriggerAnalog` /
+`LeftTriggerAnalog`, which a phone never writes (0), and the prefab bound nothing to `RightStickAction` /
+`LeftStickAction`, so on a phone paint, the throw and erase were impossible.
+
+**The controls** (`TotemButtons`: lifting a thumb raises nothing; profile `Tools/Build/author_touch_profiles.py`). The
+left thumb flies (one stick, §1h); the right thumb works the cards:
+
+| On the glass | Presses | What it does |
+|---|---|---|
+| the **Space card** (Paint), held | `RightStickAction` | paints, and the squad balls up ahead of the nose; **let go to throw** |
+| the **Charge card** (Erase / Lock-on), held | `LeftStickAction` | erases, and locks on a rival vessel in the beam (§1e); RT does not paint while it is held |
+| the **Mass card** (Lure), held | `Button1Action` | the lure (shared binding, as on a pad) |
+| the **Time card** (Dash) | `Button2Action` | the dash (shared binding) |
+| the extra button **Squad** | `Button3Action` | pick the squad (shared binding) |
+| the extra button **Recall** | `Button4Action` | recall (shared binding) |
+
+**How a held card paints** (the Thresher's `PollTriggers` shape). Two control assets, `AnglerPaint` (`AnglerControl.Paint
+= 4`, guid `bd6112250ed58175f0d1625ef4c1483c`) and `AnglerErase` (`Erase = 5`, guid `7f98a4f05e03ee9a413e54706ded661b`),
+`AnglerActionSO` like the other four: the press calls `AnglerCommandExecutor.SetPaintPressed(true)` /
+`SetErasePressed(true)` and the release sets it false (the executor holds the state; the SO is stateless, vessel rule 1).
+The executor then reads `rt = max(RightTriggerAnalog, paintPressed ? 1 : 0)` and the same for `lt`, so a held card is a
+FULL pull: `held = rt > 0.5` paints, letting go is the throw (`released = !held && _cmdHeld`), and `lt > 0.5` erases.
+
+**The brush on a phone is always full width.** `AnglerCommandMath.BrushScale(1, brushMin)` is 1: there is no half-pull
+on glass, so the light brush (`brushMin` just past halfway) is a pad's alone.
+
+**Bound in the TOUCH overrides only.** `Angler.prefab` `_touchActionOverrides`: `RightStickAction` -> `AnglerPaint`,
+`LeftStickAction` -> `AnglerErase`; the shared map keeps its four buttons and still binds no trigger. Binding them in the
+shared map would have changed what a pad pilot gets: the pad raises `RightStickAction` when the trigger crosses its 0.05
+deadzone, so a light squeeze would read as a full pull - it would paint below the 0.5 threshold, at full brush width,
+and lock on with a barely-touched LT. On the touch map only, a pad, keyboard or mouse never sets the flags and its
+analog reading is untouched. `author_angler_assets.py --check` fails if a trigger lands in the shared map, if the gamepad
+overrides are not empty, or if the touch overrides are not exactly these two (its self-test plants each).
+
+**Every peer agrees.** The press replicates with the device it was resolved against (`R_VesselActionHandler`), so every
+peer resolves a phone pilot's card against the touch overrides and sets the same flag on its copy of the executor; that
+pilot's analog mirrors are 0 everywhere, so every peer reads the same full pull. A disabled executor (a vessel swap)
+drops both flags; a hidden HUD releases a held card (`AbilityCardPress.OnDisable`).
+
+**What only a phone can test:** hold the Space card while the left thumb flies, see the prisms light, let go and see the
+squad thrown at them; hold the Charge card to erase and to lock on a rival; Squad and Recall from their buttons.
 
 ## 2. What a leash is (and is not)
 
@@ -258,7 +306,7 @@ The creature-side hooks:
 
 ## 3. Who decides what (multiplayer)
 
-- **Every peer runs the executor**, from the vessel's REPLICATED inputs: `InputStatus.RightTriggerAnalog`, `LeftTriggerAnalog`, the button presses, and the pose. So paint is drawn on every screen, but the marks show only to the local pilot (`DrawMarks`).
+- **Every peer runs the executor**, from the vessel's REPLICATED inputs: `InputStatus.RightTriggerAnalog`, `LeftTriggerAnalog`, the button presses (on a phone the Paint and Erase cards too, §1l), and the pose. So paint is drawn on every screen, but the marks show only to the local pilot (`DrawMarks`).
 - **Consequences happen only on the creature's sim authority:** which creature is leashed, where it swims, and what it eats. They replicate as the creature's own state always has.
 - With the server simulating the cell's fauna, a client pilot's commands work through its replicated triggers.
 
@@ -269,7 +317,7 @@ The creature-side hooks:
 | `Controller/Vessel/AnglerCommandMath.cs` | The lab's `CORE` block, line for line: `BrushScale`, `InBrush`, `PickTarget`, `PickRecent`, `FormationSlot`, `FollowSpeed`, `LightFollowCap`, `TadFollowCap`, `GatherSpeed`, `TameStep`, `LurePoint`, `DashPoint`. Pure. |
 | `R_VesselActions/Executors/AnglerCommandExecutor.cs` | Everything that changes: the paint set, the lure, taming, the school, squads, orders, the throw. Implements `IFaunaLeash`. The per-frame order is BrushStroke → UpdateLure → UpdateFlights → UpdateOrders → AssignSlots → DrawMarks. |
 | `R_VesselActions/Data Containers/AnglerConfigSO.cs` | The tuning. Each field is named after its lab key, and each tooltip is the lab's label. |
-| `R_VesselActions/Data Containers/AnglerActionSO.cs` | `AnglerControl { Lure = 0, CycleSquad = 1, Recall = 2, Dash = 3 }`. Lure is a hold; the others act on press only. |
+| `R_VesselActions/Data Containers/AnglerActionSO.cs` | `AnglerControl { Lure = 0, CycleSquad = 1, Recall = 2, Dash = 3, Paint = 4, Erase = 5 }`. Lure, Paint and Erase are holds (Paint and Erase: a phone's triggers, §1l); the others act on press only. |
 | `R_VesselActions/AnglerWorldMarks.cs` | Camera-facing dots and rings drawn as one mesh: the brush and eraser rims, the ball, the esca, the hold ring and the taming dots. Painted prisms are lit instead (§1a). |
 | `Controller/Vessel/Prism.cs` (`SetColorLift`, `ColorLift`), `ECS/Rendering/PrismRenderService.cs` (`ApplyColorShade` lift, `StampShadeTransition`) | The per-prism lit state (§1a). |
 | `ImpactEffects/EffectsSO/Vessel Crystal Effects/AnglerTameByCrystalEffectSO.cs` + `_SO_Assets/Effects/Vessel Crystal Effects/AnglerTameByCrystalEffect.asset` | The omni crystal's mass tame. |
@@ -284,7 +332,7 @@ The creature-side hooks:
 | `_Prefabs/Spacevessels/Angler.prefab`, `_Prefabs/UI Elements/VesselHUD/AnglerHUDVariant.prefab` | Cloned from the Stoat by `Tools/Build/author_angler_assets.py`; its `patch_prefab` gives the committed prefab its own hull (§9). |
 | `_Models/Vessel Models/Angler.fbx`, `Tools/Build/vessel_model/specs/angler.py` | The hull model and the spec that builds it (§9); `build.py angler --check` is its drift gate. |
 | `Controller/Animation/AnglerAnimation.cs` | The hull's motion: the swim, the stabilisers, the mast's bob, and the jaw and the lure bulb while the lure is held (§9). |
-| `_SO_Assets/VesselActions/Angler/` | `AnglerConfig`, plus the `AnglerLure`, `AnglerSquad`, `AnglerRecall` and `AnglerDash` control assets. |
+| `_SO_Assets/VesselActions/Angler/` | `AnglerConfig`, plus the `AnglerLure`, `AnglerSquad`, `AnglerRecall` and `AnglerDash` control assets, and `AnglerPaint` / `AnglerErase` (touch only, §1l). |
 | `_SO_Assets/Classes/SO_Class_Angler.asset`, `_SO_Assets/Camera/AnglerCameraSettingsSO.asset` | The class entry and the camera. |
 | `_Graphics/Icons/AbilityIcons/Angler/`, `_Graphics/CardImages/Angler*.png` | Drawn by `Tools/Build/author_angler_icons.py`. The icon FILES keep round 1's names (their guids are wired); each draws its slot's approved ability: `Angler_Command` = Charge (lock-on), `Angler_Leash` = Mass (lure and grow), `Angler_Lure` = Space (paint), `Angler_Tame` = Time (dash). |
 
