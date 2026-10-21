@@ -12,8 +12,8 @@ namespace CosmicShore.UI
     /// <list type="bullet">
     /// <item><b>Nib</b> (the fast gun, a pen): a fine dot, a slanted nib stroke at the pen's 45 degrees, a lime tip while
     /// the next round is a pen round, and the heat as an arc under it.</item>
-    /// <item><b>Bomb</b>: before the throw, a dashed ring the size of the blast where the view converges, with a chevron;
-    /// with a bomb in the air, the same ring round the live bomb, pulsing, so the gunner sees what a press would catch.</item>
+    /// <item><b>Bomb</b>: a chevron where the bomb will fly, dimmed while a bomb is out. What a press would catch is not
+    /// drawn here: the prisms inside the live bomb's blast are LIT in the world (round 9).</item>
     /// <item><b>Missile</b>: a small ring (the missile's own view steers by its nose).</item>
     /// </list>
     /// The sniper's sight is the Serpent's own pip scope (<c>SniperScopeOverlay</c>, round 7), not drawn here.
@@ -28,15 +28,9 @@ namespace CosmicShore.UI
         public Style Kind = Style.None;
         /// <summary>Where the weapon's line meets the view (canvas px from the centre).</summary>
         public Vector2 Aim;
-        /// <summary>Bomb: the blast ring's radius at the aim (px).</summary>
-        public float Radius;
         /// <summary>Nib: the heat (0-1).</summary>
         public float Value01;
         public bool Hot, PenReady, BombOut;
-        /// <summary>A bomb in the air: where it is on screen, whether it is in front of the camera, and its blast ring (px).</summary>
-        public Vector2 BombAt;
-        public bool BombVisible;
-        public float BombRadius, Pulse01;
         /// <summary>Line widths scale with the screen (1 at 1080 px tall).</summary>
         public float Scale = 1f;
         public Color LineColor = Color.white, ReadyColor = Color.green, HotColor = Color.red, WarmColor = new(1f, 0.65f, 0f, 1f);
@@ -82,23 +76,15 @@ namespace CosmicShore.UI
 
         void Bomb(VertexHelper vh, Vector2 c, float s)
         {
-            if (BombOut)
-            {
-                if (BombVisible)
-                {
-                    var col = WarmColor; col.a = 0.6f + 0.4f * Pulse01;
-                    Arc(vh, c + BombAt, Mathf.Max(8f * s, BombRadius), 0f, 360f, 2f * s, col, true);
-                }
-                Arc(vh, c + Aim, 6f * s, 0f, 360f, 1f * s, new Color(1f, 1f, 1f, 0.35f), false);
-                return;
-            }
+            // the aim mark only: a chevron where the bomb will fly. What a live bomb's blast will catch is LIT in the
+            // world (PrismLit), never drawn here (round 9, Garrett 2026-10-21: "the bomb should not have a ring that says
+            // burst. it should use a lit state to show what it will destroy")
             var at = c + Aim;
-            float rr = Mathf.Max(10f * s, Radius);
-            for (int k = 0; k < 24; k++) if ((k & 1) == 0) Arc(vh, at, rr, k * 15f, k * 15f + 9f, 1.5f * s, ReadyColor, true);   // dashed
-            Line(vh, at + new Vector2(-9f, 6f) * s, at + new Vector2(0f, -3f) * s, 2f * s, ReadyColor, true);
-            Line(vh, at + new Vector2(0f, -3f) * s, at + new Vector2(9f, 6f) * s, 2f * s, ReadyColor, true);
-            Line(vh, at + Vector2.left * (rr + 8f * s), at + Vector2.left * (rr - 4f * s), 2f * s, ReadyColor, true);
-            Line(vh, at + Vector2.right * (rr - 4f * s), at + Vector2.right * (rr + 8f * s), 2f * s, ReadyColor, true);
+            var col = BombOut ? new Color(ReadyColor.r, ReadyColor.g, ReadyColor.b, 0.45f) : ReadyColor;
+            Line(vh, at + new Vector2(-9f, 6f) * s, at + new Vector2(0f, -3f) * s, 2f * s, col, true);
+            Line(vh, at + new Vector2(0f, -3f) * s, at + new Vector2(9f, 6f) * s, 2f * s, col, true);
+            Line(vh, at + Vector2.left * 22f * s, at + Vector2.left * 12f * s, 2f * s, col, true);
+            Line(vh, at + Vector2.right * 12f * s, at + Vector2.right * 22f * s, 2f * s, col, true);
         }
 
         // ------------------------------------------------------------------ primitives

@@ -113,11 +113,32 @@ every landing started a new stroke and the pen drew loose sticks. At 120 u a del
 |---|---|---|
 | Sniper | Over the turret: 12 u behind, 6 u up (round 7), plus the Serpent's **pip scope always open** in the upper left (`sniperScopeFov` 22, from the barrel tip) | The Serpent's own two reticles (`SniperScopeOverlay`): the cone at its true size with posts and a dot inside the pip, the recharge ring round it, and the same cone over the main view at the shot's point |
 | Fast gun | Over the turret: 14 u behind, 8 u up, looking at the gun's line 180 u out | A pen nib: a dot, a slanted 45° stroke, a lime tip while the next round is a pen round, the heat as an arc under it |
-| Bomb | Over the turret: 22 u behind, 10 u up | A dashed ring the size of the blast where the view meets the gun's line; with a bomb in the air, the ring round the live bomb, pulsing, and "BURST" |
+| Bomb | Over the turret: 22 u behind, 10 u up | A chevron and two side ticks where the gun's line meets the view, dimmed while a bomb is out. No ring: what the live bomb will break is **lit in the world** (round 9, below) |
 | Any, flying a missile | Behind the missile | A small ring |
 
 The crosshair sits where the gun's line meets the view: projected from the barrel tip along the aim, not the screen
 centre (round 7), on a screen-space canvas under the HUD. Its words and colours are config fields.
+
+### The missiles and the bomb's lit blast (round 9)
+
+Garrett, 2026-10-21, after flying round 8: "increase the fidelity on the fly by wire missiles. they feel cheap. the bomb
+should not have a ring that says burst. it should use a lit state to show what it will destroy. always go for the 3d in
+world solution over the 2d flat text solution." Lab round 8 (`Docs/Studios/CREW_OF_FOUR_LAB.md` §4) drew it first.
+
+- **A flown missile** (`OrcaMissileVisual`, one per gunner seat) is the Sparrow's skyburst rocket (`Sparrow
+  Missile.fbx` and its materials, as `SkyBurstProjectile.prefab` draws it), 7 u long. A lit, faceted motor cone in the
+  domain's colour ignites over 0.15 s with a bright pulse, then flickers, and a point light throws the colour on the
+  mass it passes. The body **banks** into the turn its gunner's stick asks for (45° at full yaw, eased over 0.12 s).
+- **Its trail is a plume**: a lit, faceted six-sided tube in the firing pilot's trail colours, nothing at the nozzle,
+  1.4 u across half way through its 3 s life, nothing again at the end. It keeps tapering after a burst. It is a volume
+  because nothing in the world looks flat (LOCKED), so not the fleet's `TrailRenderer` ribbon. Its numbers are the
+  config's "Missiles: the look" header: game-side, not held by parity, mirrored in the lab's `MLOOK`.
+- **The bomb's pending blast is lit** (`OrcaCrewView.LightBomb`). While the person holds the bomb seat and a bomb is
+  out, PrismLit's light bank lights a sphere of the blast's radius round the bomb in the gunner's colour, gated to each
+  domain the blast breaks: each fielded rival (`GameDataSO.RequestedDomainCount`) and the neutral Blue mass, never
+  the gunner's own. That is two bank slots in a two-domain match and three in a three-domain one, only while a bomb is
+  out. It cannot use the aimed channel: that channel is cone-only (the Echo Sight's). `bombLitStrength` (1) scales it;
+  0 turns it off.
 
 **Changing seat.** Keys **1–4** pick a seat. The **D-pad** (the arena's `PilotSwapGesture`) steps through them, and so
 does a **two-finger tap** on a touch screen. While the person holds a gunner seat:
@@ -169,7 +190,7 @@ float 1.55-2.26 % of the diagonal clear (`assembly_report.py --floating`). 49 ×
 
 ## How the guns are stabilized (lab round 4)
 
-The order matters: each step removes what the one before leaves (`CREW_OF_FOUR_LAB.md` §4c).
+The order matters: each step removes what the one before leaves (`CREW_OF_FOUR_LAB.md` §4d).
 1. **The aim lives in the world** (`OrcaTurret.Aim`). The gunner's input turns it; the hull's turns never reach it.
 2. **The horizon is held, then eased** (`OrcaTurret.HoldHorizon`). The view keeps its own up, square to the aim, and
    drifts to the hull's up over `horizonSmooth` (3 s). A roll does not spin the picture, and a long inverted run still
@@ -231,10 +252,11 @@ the explosion's effect are the game's.
 | `OrcaCrewCore.cs` | The rules with no engine: `OrcaFrame` (turn, follow), `OrcaTurret` (stabilized aim, held horizon, buffered Release), `OrcaMissile` (fly-by-wire step, fuse), `OrcaMagazine` (one per seat), `OrcaFastGun` (rate and heat, the lab's `rapidStep`), `OrcaPen` (the pen's strokes and where a pen round lands, the lab's `penLay` / `penFlush` / `penLanding`), the shield's shape (Fibonacci sphere, forward cone open), the AI's stick and lead. Ported line for line from the lab, using `System.Numerics`. |
 | `OrcaCrewConfigSO.cs` | Every number; each tooltip names its lab key. Asset: `Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset`. |
 | `OrcaCrew.cs` | The crew on the hull. The seats and the swap. The helm's boost tank and shield: laid super-shielded with `BoostRingBuilder.LayOne`, posed every frame by the prism mover contract, re-themed to danger at the drop, retired by the pooled-prism identity test. The gunners' input and AI, the three guns (the bomb with no cooldown and the AI's burst; the pen's queued landings, laid with `BoostRingBuilder.LayOne`), the missiles' contacts, crystal collection and bursts. Readers for the HUD: `SeatElement`, `SeatVeil01`, `BurstAt`, `MissilesAt`, `PenReady`. |
-| `OrcaCrewView.cs` | The gunner's camera (the scoped sniper, the over-the-turret fast gun and bomb, the missile) and the crosshair canvas (with the game camera's post-processing, `OffscreenCameraSetup.AdoptGameCameraImage`), the picture-in-picture chase view, and the faceted lit pods, struts and missiles (`Graphics.RenderMesh`, `Resources/OrcaCrewLit.mat`). Each gun's pod has its own shape. |
+| `OrcaCrewView.cs` | The gunner's camera (the scoped sniper, the over-the-turret fast gun and bomb, the missile) and the crosshair canvas (with the game camera's post-processing, `OffscreenCameraSetup.AdoptGameCameraImage`), the picture-in-picture chase view, the bomb's lit blast (`LightBomb`, round 9), and, when the model has no rig, the faceted lit pods and struts (`Graphics.RenderMesh`, `Resources/OrcaCrewLit.mat`). |
+| `OrcaMissileVisual.cs` | One seat's flown missile (round 9): the skyburst rocket, the igniting motor and its light, the bank into the stick, and the faceted plume trail rebuilt from a ring buffer each frame. A look only. |
 | `OrcaHullRig.cs` | The model posed by the crew: the three turrets aimed (rest read from the skin's bind poses, stood at the lagged mounts), the floating plates swung as a chain between the hull and the lagged turret frame, every part's hover bob, the engines' lean, and the prefab's jets remounted on the engine mouths. Barrel tips and missile tubes are where the guns fire from. |
 | `Assets/_Models/Vessel Models/Orca.fbx`, `Tools/Build/vessel_model/specs/orca.py` | The hull model and its spec (`build.py specs/orca.py --check` is its drift gate). |
-| `UI/View/OrcaCrosshairGraphic.cs` | The bespoke crosshairs as generated uGUI geometry (nib, bomb ring, missile ring), feathered and haloed. The sniper's is the Serpent's `SniperScopeOverlay`, which gained an explicit-eye `Tick` (eye, rotation, flight camera) for it. |
+| `UI/View/OrcaCrosshairGraphic.cs` | The bespoke crosshairs as generated uGUI geometry (nib, bomb chevron, missile ring), feathered and haloed. The sniper's is the Serpent's `SniperScopeOverlay`, which gained an explicit-eye `Tick` (eye, rotation, flight camera) for it. |
 | `UI/Controller/OrcaHUDController.cs` | The four cards are the four seats (round 6): the person's seat's card is lit (re-asserted every frame), each card's veil is its seat's recharge, each gunner card counts its own seat's missiles, and a card flashes when its seat's missile or bomb bursts (Time also when the shield goes up). Plus the seat line (`seatLineTemplate`: the seat, its gun and state, its missiles; rebuilt only when one changes). |
 | `ImpactEffects/.../OrcaOmniCrystalEffectSO.cs` | An Omni crystal gives every seat a missile (asset `OrcaOmniCrystalEffect`, in `OrcaImpactorDataContainer`). |
 | `Assets/_Prefabs/Spacevessels/Orca.prefab`, `Tools/Build/author_orca_assets.py` | The hull and the tool that authors and registers it. The hull is the Sparrow with no Sparrow kit, two sticks and this crew, plus `OrcaFastGun` and `OrcaBombGun`: a `Gun`, `ProjectileFactory` and `ProjectilePoolManager` each, cloned from the Brittle Star's and the Grizzly's. Pools: 160 / 320 rounds (rate × flight = 135 alive) and 2 / 4 bombs. The tool imports `author_wrasse_assets.py`'s helpers and never edits the Wrasse. |
@@ -266,9 +288,10 @@ the explosion's effect are the game's.
        12 s of cooldown round the scope and on the Space icon;
      - seat 3, the fast gun: you look over the turret; hold it and sweep slowly: a clean line of prisms draws itself
        120 u out. Hold until "overheated";
-     - seat 4, the bomb: press to throw, watch the ring round the bomb, press again to burst it, then throw the next.
-   - **Missile** (right click, F, A) launches one of your seat's missiles. Fly it with W A S D or the stick; Missile
-     again bursts it.
+     - seat 4, the bomb: press to throw; the prisms its blast will break glow lit round it as it flies; press again to
+       burst it, then throw the next.
+   - **Missile** (right click, F, A) launches one of your seat's missiles: a rocket whose motor lights up and whose
+     plume trails behind it. Fly it with W A S D or the stick (it banks into your turns); Missile again bursts it.
    - Fly a missile through an omni crystal: every seat's count goes up by one.
 4. Press **1** to take the helm back.
 
@@ -300,6 +323,11 @@ python3 Tools/Build/element_ability_table.py Orca  # four cards, four channels
 ```
 
 ## Follow-ups
+
+- **The bomb's lit blast shows prisms, not hulls.** PrismLit lights prisms only, so a rival hull inside the blast is not
+  lit; marking it needs a vessel highlight of its own (`BlastVolume` is cone-only today).
+- **The missile's look and the bomb's light are the local machine's.** The look follows the crew's own missiles, so it
+  goes wherever the crew runs (see Networking).
 
 - **Networking.** The crew runs on one machine: the local person's hull, or an AI hull on the authority. Missiles, the
   shield's poses and the AI gunners are that machine's. The burst is an `AOEExplosion` spawned there only, and prism

@@ -76,6 +76,28 @@ namespace CosmicShore.Gameplay
         [Tooltip("lab: a hostile prism within this of a missile's path bursts it (u; the lab's 12 = 3.46 squared).")]
         [SerializeField, Min(0.5f)] float missileContactRadius = 3.46f;
 
+        [Header("Missiles: the look (game-side; Garrett 2026-10-21: \"increase the fidelity on the fly by wire missiles\")")]
+        [Tooltip("The flown missile's body: the Sparrow's skyburst rocket (Sparrow Missile.fbx), as SkyBurstProjectile.prefab draws it.")]
+        [SerializeField] Mesh missileMesh;
+        [Tooltip("Its materials (SkyBurstProjectile's MissileVisual).")]
+        [SerializeField] Material[] missileMaterials;
+        [Tooltip("The drawn missile's length (u).")]
+        [SerializeField, Min(0.5f)] float missileLength = 7f;
+        [Tooltip("The exhaust trail: a lit, faceted tube in the firing pilot's trail colours (nothing in the world looks flat: LOCKED), a plume that swells from nothing behind the motor and tapers away over this many seconds. It outlives the burst.")]
+        [SerializeField, Min(0.1f)] float missileTrailSeconds = 3f;
+        [Tooltip("The trail tube's diameter where it is widest, half way through its life (u).")]
+        [SerializeField, Min(0.05f)] float missileTrailWidth = 1.4f;
+        [Tooltip("Distance between the trail's rings (u): smaller is smoother and costs more vertices.")]
+        [SerializeField, Min(0.5f)] float missileTrailSpacing = 6f;
+        [Tooltip("The motor's point light: its range (u) and intensity at full burn.")]
+        [SerializeField, Min(0f)] float missileLightRange = 30f;
+        [SerializeField, Min(0f)] float missileLightIntensity = 3f;
+        [Tooltip("Seconds the motor takes to ignite after the launch (a bright pulse, settling to a flicker).")]
+        [SerializeField, Min(0.01f)] float missileIgnitionSeconds = 0.15f;
+        [Tooltip("Fly-by-wire: how far the missile banks into a full-stick turn (deg), and how fast it eases there (s).")]
+        [SerializeField, Range(0f, 90f)] float missileBankDeg = 45f;
+        [SerializeField, Min(0.01f)] float missileBankSmooth = 0.12f;
+
         [Header("Magazines (one per gunner seat: \"not a shared pool\", Garrett 2026-10-21)")]
         [Tooltip("lab startMissiles: each gunner seat's missiles at spawn.")]
         [SerializeField, Min(0)] int startMissiles = 2;
@@ -160,6 +182,8 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.1f)] float bombScale = 3.75f;
         [Tooltip("The bomb's colour (the Grizzly's danger red).")]
         [SerializeField] Color bombColor = new(1f, 0.072f, 0.105f, 1f);
+        [Tooltip("While the bomb gunner's bomb is in the air, every prism its blast would reach is LIT (PrismLit, the Echo Sight's \"pending blast\" light; Garrett 2026-10-21: \"it should use a lit state to show what it will destroy\"). How strongly (0 = off).")]
+        [SerializeField, Range(0f, 1f)] float bombLitStrength = 1f;
 
         [Header("AI seats")]
         [Tooltip("The AI crew's skill (lab SKILL): 0 Easy, 1 Medium, 2 Hard. Every seat no person holds is flown by it.")]
@@ -222,8 +246,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] string gunCooldownTemplate = "{seconds}s";
         [SerializeField] string gunHotText = "overheated";
         [SerializeField] string bombOutText = "bomb out";
-        [Tooltip("Over a bomb in flight: what a press would do.")]
-        [SerializeField] string bombBurstText = "BURST";
 
         [Header("Crosshairs (round 6: each weapon's own; drawn as UI, flat by design)")]
         [Tooltip("A crosshair's lines.")]
@@ -326,6 +348,18 @@ namespace CosmicShore.Gameplay
         public int FastGunPenCap => fastGunPenCap;
         public Vector3 FastGunPenScale => fastGunPenScale;
         public float SniperScopeFov => sniperScopeFov;
+        public Mesh MissileMesh => missileMesh;
+        public Material[] MissileMaterials => missileMaterials;
+        public float MissileLength => missileLength;
+        public float MissileTrailSeconds => missileTrailSeconds;
+        public float MissileTrailWidth => missileTrailWidth;
+        public float MissileTrailSpacing => missileTrailSpacing;
+        public float MissileLightRange => missileLightRange;
+        public float MissileLightIntensity => missileLightIntensity;
+        public float MissileIgnitionSeconds => missileIgnitionSeconds;
+        public float MissileBankDeg => missileBankDeg;
+        public float MissileBankSmooth => missileBankSmooth;
+        public float BombLitStrength => bombLitStrength;
         public float SniperCamBack => sniperCamBack;
         public float SniperCamUp => sniperCamUp;
         public bool ShotInherit => shotInherit;
@@ -334,7 +368,6 @@ namespace CosmicShore.Gameplay
         public float BombCamBack => bombCamBack;
         public float BombCamUp => bombCamUp;
         public float GunCamAim => gunCamAim;
-        public string BombBurstText => bombBurstText;
         public Color CrosshairColor => crosshairColor;
         public Color CrosshairReadyColor => crosshairReadyColor;
         public Color CrosshairHotColor => crosshairHotColor;

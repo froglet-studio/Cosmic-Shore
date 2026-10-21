@@ -144,7 +144,7 @@
   // ================= (1) LAB meta + the shipped numbers =================
   // A READER of the shipped numbers: every constant names the asset / class field it was copied from.
   // "lab" marks a proposal with no game field yet (the four-seat hull does not exist in the game).
-  const LAB = { name: 'Crew of Four Lab', branch: 'cece/happy-noether-m54hz6', round: 7, doc: 'Docs/Studios/CREW_OF_FOUR_LAB.md' };
+  const LAB = { name: 'Crew of Four Lab', branch: 'cece/happy-noether-m54hz6', round: 8, doc: 'Docs/Studios/CREW_OF_FOUR_LAB.md' };
   const SHIPPED = {
     // Helm flight: VesselTransformer (Sparrow.prefab) driven by DualStickMix (Assets/_Scripts/Controller/IO/DualStickMix.cs)
     minSpeed: 10,        // VesselTransformer.DefaultMinimumSpeed
@@ -344,6 +344,8 @@
   const HAZ = '#6680ff';   // Blue, the neutral domain
   const LIME = '#c6ff3d', OMNI = '#f6ffe8';
   const SEAT_NAMES = ['Helm', 'Sniper', 'Fast gun', 'Bomb'];   // round 6: seat s owns element s (EL): Time, Space, Mass, Charge
+  // round 8: the flown missile's LOOK, the game's OrcaCrewConfigSO "Missiles: the look" defaults (a look only; the flight is P's)
+  const MLOOK = { length: 7, bankDeg: 45, bankSmooth: 0.12, ignition: 0.15, trailSeconds: 3, trailWidth: 1.4, trailSpacing: 6, lightRange: 30 };
   const GUN = [null, 'sniper', 'rapid', 'bomb'];   // round 5: each gunner seat's gun; round 6: the Space, Mass and Charge seats
   const GUN_NAMES = { sniper: 'Sniper', rapid: 'Fast gun', bomb: 'Bomb' };
   // turret mounts in the hull's frame: [right, up, forward] x hullRadius
@@ -1138,8 +1140,26 @@
     v.roundMesh = DOMS.map((d) => { const m = new T.InstancedMesh(new T.IcosahedronGeometry(0.7, 0), lit(d.c, d.c, 1.4), 600); m.count = 0; m.frustumCulled = false; root.add(m); return m; });
     v.bombMesh = DOMS.map((d) => { const m = new T.InstancedMesh(new T.DodecahedronGeometry(2.4, 0), lit('#2b1d22', d.c, 0.9, { metalness: 0.5, roughness: 0.35 }), 30); m.count = 0; m.frustumCulled = false; root.add(m); return m; });
     v.beams = [];
-    const mg = new T.ConeGeometry(1.1, 5, 6); mg.rotateX(Math.PI / 2);
-    v.missileMesh = DOMS.map((d) => { const m = new T.InstancedMesh(mg, lit('#ffffff', d.c, 1.1), 40); m.count = 0; m.frustumCulled = false; root.add(m); return m; });
+    // round 8: a flown missile is a rocket, not a dart (Garrett 2026-10-21: "they feel cheap"): a body, an ogive nose, a
+    // domain band, four fins, a nozzle and a lit, flickering motor flame, a faceted tube trail that outlives the burst, and a bank
+    // into the turn its gunner's stick asks for. The game draws the Sparrow's skyburst rocket (OrcaMissileVisual).
+    { const L = MLOOK.length, r = L * 0.075, g = {};
+      const along = (geo, z) => { geo.rotateX(Math.PI / 2); geo.translate(0, 0, z); return geo; };
+      g.body = along(new T.CylinderGeometry(r, r, L * 0.62, 8), -L * 0.5 + L * 0.08 + L * 0.31);
+      g.band = along(new T.CylinderGeometry(r * 1.04, r * 1.04, L * 0.07, 8), L * 0.5 - L * 0.26 - L * 0.06);
+      g.nose = along(new T.ConeGeometry(r, L * 0.26, 8), L * 0.5 - L * 0.13);
+      g.nozzle = along(new T.CylinderGeometry(r * 0.75, r * 0.95, L * 0.08, 8), -L * 0.5 + L * 0.04);
+      g.fin = new T.BoxGeometry(r * 0.14, r * 1.3, L * 0.15); g.fin.translate(0, r + r * 0.65, -L * 0.5 + L * 0.16);
+      g.flame = new T.ConeGeometry(r * 0.85, 1, 8); g.flame.translate(0, 0.5, 0); g.flame.rotateX(-Math.PI / 2);   // base at the nozzle, tip aft (length 1, scaled)
+      g.core = new T.ConeGeometry(r * 0.45, 1, 8); g.core.translate(0, 0.5, 0); g.core.rotateX(-Math.PI / 2);
+      v.mGeo = g; v.mLen = L; }
+    v.mViews = new Map();
+    // round 8: the bomb seat's pending blast, LIT in the world (PrismLit's bank light, a sphere, in the gunner's colour):
+    // prisms inside the live bomb's blast are drawn by these instead of their own meshes
+    // (one mesh per shape x owner colour: a lit prism glows hot in its OWN colour, so it reads as lit, not as changed team)
+    const hot = (col, base) => lit(new T.Color(base || col).lerp(new T.Color('#ffffff'), 0.35).getStyle(), col, 1.6);
+    v.lit = [[v.prismGeo, 3000, null], [v.penGeo, 1200, null], [v.dangerGeo, 400, '#ff4d6d']].map(([geo, cap, base]) => pcols.map((col) => {
+      const m = new T.InstancedMesh(geo, hot(col, base), cap); m.count = 0; m.frustumCulled = false; root.add(m); return m; }));
     const R = P.hullRadius;
     for (const c of w.crews) {
       const g = new T.Group(); root.add(g);
@@ -1205,9 +1225,15 @@
     // prisms, minus those in the corridor between a chase camera and its target (the game's PrismOcclusionCorridor, Docs/PRISM_ANIMATION.md 4.7)
     const cnt = [0, 0, 0, 0], dc = [0, 0, 0], pc = [0, 0, 0], kind = CAM.kind, useCorr = kind === 'chase' || kind === 'missile';
     const F = kind === 'missile' ? camTarget().m.pos : us.hull.pos, C = CAM.pos, CF = sub(F, C), cf2 = Math.max(1, dot(CF, CF)), corr2 = (kind === 'missile' ? 4 : P.hullRadius + 6) ** 2, lcf = len(CF);
+    const lb = bombLight(w), lc = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]];
     for (const p of w.prisms) {
       if (p.dead) continue;
       if (useCorr) { const t = clamp(dot(sub(p.pos, C), CF) / cf2, 0, 1.15); if (d2(p.pos, add(C, scale(CF, t))) < corr2 && dist(p.pos, C) < lcf * 1.2) continue; }
+      if (lb && p.dom !== us.dom && d2(p.pos, lb.pos) < lb.r2) {   // what the pending blast will break (it spares its own domain): drawn lit, pulled toward white under the gunner's light
+        const k = p.kind === 'pen' ? 1 : p.kind === 'danger' ? 2 : 0, m = v.lit[k][p.dom];
+        if (lc[k][p.dom] < m.instanceMatrix.count) { _q.setFromUnitVectors(_z, tv(p.f)); _m.compose(tv(p.pos), _q, _s); m.setMatrixAt(lc[k][p.dom]++, _m); }
+        continue;
+      }
       if (p.kind === 'pen') { if (pc[p.dom] < 1200) { if (!p._m) { p._m = new T.Matrix4(); _q.setFromUnitVectors(_z, tv(p.f)); p._m.compose(tv(p.pos), _q, _s); } v.penMesh[p.dom].setMatrixAt(pc[p.dom]++, p._m); } continue; }
       if (p.kind === 'danger') { const m = v.dangerMesh[p.dom]; if (dc[p.dom] < 400) { _q.setFromUnitVectors(_z, tv(p.f)); _m.compose(tv(p.pos), _q, _s); m.setMatrixAt(dc[p.dom]++, _m); } continue; }
       const m = v.prismMesh[p.dom]; if (cnt[p.dom] >= 6000) continue;
@@ -1220,6 +1246,7 @@
       if (b.sup) { if (sc[c.dom] < 400) v.supMesh[c.dom].setMatrixAt(sc[c.dom]++, _m); } else if (dc[c.dom] < 400) v.dangerMesh[c.dom].setMatrixAt(dc[c.dom]++, _m);
     }
     v.supMesh.forEach((m, d) => { m.count = sc[d]; m.instanceMatrix.needsUpdate = true; });
+    v.lit.forEach((row, k) => row.forEach((m, d) => { m.count = lc[k][d]; m.instanceMatrix.needsUpdate = true; if (lb) m.material.emissiveIntensity = 0.4 + 1.6 * lb.k; }));
     v.penMesh.forEach((m, d) => { m.count = pc[d]; m.instanceMatrix.needsUpdate = true; });
     const rc = [0, 0, 0], bc = [0, 0, 0];
     for (const r of w.rounds) { if (rc[r.crew] >= 600) continue; _m.compose(_p.set(r.pos.x, r.pos.y, r.pos.z), _q.identity(), _s); v.roundMesh[r.crew].setMatrixAt(rc[r.crew]++, _m); }
@@ -1233,9 +1260,7 @@
     const cc = [0, 0, 0, 0, 0];
     for (const cr of w.crystals) { if (!cr.alive) continue; const m = v.cryMesh[cr.e]; _q.setFromAxisAngle(_d.set(0.3, 1, 0.2).normalize(), w.t * 1.2 + cr.pos.x * 0.1); _m.compose(_p.set(cr.pos.x, cr.pos.y, cr.pos.z), _q, _s); m.setMatrixAt(cc[cr.e]++, _m); }
     v.cryMesh.forEach((m, e) => { m.count = cc[e]; m.instanceMatrix.needsUpdate = true; });
-    const mc = [0, 0, 0];
-    for (const mi of w.missiles) { if (mc[mi.crew] >= 40) continue; _q.setFromUnitVectors(_z, tv(mi.f)); _m.compose(_p.set(mi.pos.x, mi.pos.y, mi.pos.z), _q, _s); v.missileMesh[mi.crew].setMatrixAt(mc[mi.crew]++, _m); }
-    v.missileMesh.forEach((m, i) => { m.count = mc[i]; m.instanceMatrix.needsUpdate = true; });
+    drawMissiles(w, v);
     const turretSeat = kind === 'turret' ? camTarget().s : -1;
     w.crews.forEach((c, i) => {
       const cv = v.crews[i], h = c.hull; setOrient(cv.g, h.pos, h.f, h.u);
@@ -1249,6 +1274,78 @@
     if (v.core) { v.core.visible = w.fort.alive > 0; v.core.rotation.set(w.t * 0.5, w.t * 0.3, 0); }
     while (v.blasts.length < w.blasts.length) { const m = new T.Mesh(v.blastGeo, lit('#ffffff', '#ffffff', 0.9, { transparent: true, opacity: 0.35, depthWrite: false })); v.root.add(m); v.blasts.push(m); }
     v.blasts.forEach((m, i) => { const bl = w.blasts[i]; m.visible = !!bl && bl.r > 0; if (!m.visible) return; const col = DOMS[w.crews[bl.crew].dom].c; m.position.set(bl.pos.x, bl.pos.y, bl.pos.z); m.scale.setScalar(bl.r); m.material.color.set(col); m.material.emissive.set(col); m.material.opacity = 0.22 * (1 - Math.min(1, bl.t / (P.blastTime + 0.25))); });
+  }
+  // round 8: the live bomb of OUR person's bomb seat, as the lights the game publishes for it (OrcaCrewView.LightBomb): a sphere
+  // of the blast's radius round the bomb, on every domain's mass but our own (the blast spares it), fading in over a quarter
+  // second. Only the seat's person sees it; an AI's bomb is unlit.
+  function bombLight(w) {
+    const c = w.crews[0], hm = c.members.find((m) => m.human);
+    if (!P.gunsOn || !hm || GUN[hm.seat] !== 'bomb') return null;
+    const t = c.turrets[hm.seat]; if (!t.bomb || t.missile) return null;
+    const r = P.bombBlastR * mul(c, 1, P.kSpace);
+    return { pos: t.bomb.pos, r2: r * r, k: clamp(t.bomb.t / 0.25, 0, 1) * (0.85 + 0.15 * Math.sin(world.t * 6)) };
+  }
+  // round 8: every flown missile as a rocket (the parts kit built in buildView), banked into its stick, its motor igniting and
+  // flickering, its tube trail tapering over MLOOK.trailSeconds, after a burst too (the game's does the same)
+  function missileView(v, mi) {
+    const g = v.mGeo, col = DOMS[mi.dom].c, root = new T.Group(), body = new T.Group();
+    const hull = lit('#dfe8ee', col, 0.12, { metalness: 0.6, roughness: 0.3 }), dark = lit('#26333d', col, 0.18, { metalness: 0.4, roughness: 0.45 });
+    body.add(new T.Mesh(g.body, hull)); body.add(new T.Mesh(g.nose, hull)); body.add(new T.Mesh(g.band, lit(col, col, 0.8))); body.add(new T.Mesh(g.nozzle, dark));
+    for (let k = 0; k < 4; k++) { const f = new T.Mesh(g.fin, dark); f.rotation.z = Math.PI / 4 + k * Math.PI / 2; body.add(f); }
+    const flameMat = lit(col, col, 2.2, { transparent: true, opacity: 0.8, depthWrite: false }), flame = new T.Mesh(g.flame, flameMat), core = new T.Mesh(g.core, lit('#ffffff', '#ffffff', 2.5, { transparent: true, opacity: 0.9, depthWrite: false }));
+    flame.position.z = core.position.z = -v.mLen * 0.5; body.add(flame); body.add(core);
+    let light = null; if (mi.crew === 0) { light = new T.PointLight(col, 0, MLOOK.lightRange, 2); light.position.z = -v.mLen * 0.7; body.add(light); }
+    root.add(body);
+    // the trail: a lit, faceted six-sided tube (a volume, never a ribbon: nothing in the world looks flat, LOCKED)
+    const N = 96, tg = new T.BufferGeometry(); tg.setAttribute('position', new T.BufferAttribute(new Float32Array((N - 1) * TUBE_SIDES * 6 * 3), 3));
+    const trail = new T.Mesh(tg, lit(col, col, 0.9, { metalness: 0.2, roughness: 0.5 }));
+    trail.frustumCulled = false; v.root.add(trail); v.root.add(root);
+    return { root, body, flame, core, flameMat, light, trail, pts: [], N, bank: 0, gone: false };
+  }
+  function drawMissiles(w, v) {
+    const now = w.t, seen = new Set(), dt = Math.min(0.1, Math.max(0, now - (v.mLast == null ? now : v.mLast))); v.mLast = now;
+    for (const mi of w.missiles) {
+      if (mi.dead) continue;
+      mi.dom = w.crews[mi.crew].dom;
+      let mv = v.mViews.get(mi); if (!mv) { mv = missileView(v, mi); v.mViews.set(mi, mv); }
+      seen.add(mi);
+      setOrient(mv.root, mi.pos, mi.f, mi.u);
+      const want = clamp(mi.stick ? mi.stick.yaw : 0, -1, 1) * MLOOK.bankDeg * D2R;   // yaw turns toward f x u; a +Z roll lifts the left wing: the bank into the turn
+      mv.bank += (want - mv.bank) * (1 - Math.exp(-dt / MLOOK.bankSmooth)); mv.body.rotation.z = mv.bank;
+      const lt = clamp(mi.t / MLOOK.ignition, 0, 1), flick = 0.85 + 0.15 * Math.sin(now * 53) * Math.sin(now * 31 + 1.3), flare = 1 + 6 * (1 - lt) * lt;
+      const fl = (0.05 + 0.95 * lt) * flick * v.mLen * 0.9; mv.flame.scale.set(1, 1, fl); mv.core.scale.set(1, 1, fl * 0.6);
+      mv.flameMat.emissiveIntensity = 2.2 * flare * flick; if (mv.light) mv.light.intensity = 3 * lt * flare * flick;
+      const tail = add(mi.pos, scale(mi.f, -v.mLen * 0.5)), last = mv.pts[mv.pts.length - 1];
+      if (!last || d2(last.p, tail) >= MLOOK.trailSpacing ** 2) mv.pts.push({ p: tail, t: now });
+      mv.head = tail;
+    }
+    for (const [mi, mv] of v.mViews) {
+      if (!seen.has(mi) && !mv.gone) { mv.gone = true; mv.root.visible = false; mv.head = null; }   // burst: body and motor out at once, the trail fades where it flew
+      while (mv.pts.length && (now - mv.pts[0].t > MLOOK.trailSeconds || mv.pts.length > mv.N)) mv.pts.shift();
+      if (mv.gone && !mv.pts.length) { v.root.remove(mv.root); v.root.remove(mv.trail); mv.trail.geometry.dispose(); v.mViews.delete(mi); continue; }
+      tube(mv, now);
+    }
+  }
+  // the tube through the trail's rings (oldest first) and the live nozzle: six flat faces per span (flatShading gives each
+  // its own normal, the prism-cut read), the radius a plume's (nothing at the nozzle so a chase camera is not inside it,
+  // widest at half the trail's life, nothing at its end), the ring frame carried
+  // along the path so the facets do not twist (OrcaMissileVisual.BuildTrail)
+  const TUBE_SIDES = 6;
+  function tube(mv, now) {
+    const pts = mv.head ? mv.pts.concat([{ p: mv.head, t: now }]) : mv.pts, n = pts.length, arr = mv.trail.geometry.attributes.position.array;
+    let up = V(0, 1, 0), prev = null, o = 0;
+    for (let i = 0; i < n; i++) {
+      const p = pts[i].p, d0 = norm(sub(pts[Math.min(i + 1, n - 1)].p, pts[Math.max(i - 1, 0)].p)), d = len(d0) > 0 ? d0 : V(0, 0, 1);
+      up = sub(up, scale(d, dot(up, d))); if (len(up) < 1e-4) up = cross(d, Math.abs(d.y) < 0.9 ? V(0, 1, 0) : V(1, 0, 0)); up = norm(up);
+      const side = cross(d, up), x = clamp((now - pts[i].t) / MLOOK.trailSeconds, 0, 1), r = MLOOK.trailWidth * 0.5 * 4 * x * (1 - x), ring = [];   // a plume: nothing at the nozzle, widest at half its life
+      for (let k = 0; k < TUBE_SIDES; k++) { const a = k * TAU / TUBE_SIDES; ring.push(add(p, add(scale(up, Math.cos(a) * r), scale(side, Math.sin(a) * r)))); }
+      if (prev) for (let k = 0; k < TUBE_SIDES; k++) {
+        const k1 = (k + 1) % TUBE_SIDES;
+        for (const q of [prev[k], ring[k1], ring[k], prev[k], prev[k1], ring[k1]]) { arr[o++] = q.x; arr[o++] = q.y; arr[o++] = q.z; }   // counter-clockwise seen from outside
+      }
+      prev = ring;
+    }
+    mv.trail.geometry.setDrawRange(0, o / 3); mv.trail.geometry.attributes.position.needsUpdate = true;
   }
   // round 7: the sniper's PIP scope, the Serpent's eyepiece (SniperScopeOverlay): a second camera looking down the turret's
   // aim at sniperFov, drawn into a square in the upper left (CSS px), always open while a person holds the sniper seat
@@ -1356,7 +1453,7 @@
       else { ctx.strokeStyle = t.mag > 0 && t.cd <= 0 ? LIME : '#ff4d6d'; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.arc(cx, cy, 14 * dpr, 0, TAU); ctx.stroke(); }
       const ty = cy + 46 * dpr;
       ctx.fillStyle = '#ffffff'; ctx.font = (11 * dpr) + 'px IBM Plex Mono, monospace';
-      if (gk) ctx.fillText(SEAT_NAMES[s].toUpperCase() + ' · ' + EL[s].toUpperCase() + ' · ' + gunState(t, gk) + ' · FIRE: click / Space / RT' + (gk === 'bomb' ? (t.bomb ? ' to BURST' : ' to throw') : gk === 'rapid' ? ' (hold)' : ''), W / 2, Math.min(H - 96 * dpr, ty));
+      if (gk) ctx.fillText(SEAT_NAMES[s].toUpperCase() + ' · ' + EL[s].toUpperCase() + ' · ' + gunState(t, gk) + ' · FIRE: click / Space / RT' + (gk === 'bomb' ? (t.bomb ? ' to burst it' : ' to throw') : gk === 'rapid' ? ' (hold)' : ''), W / 2, Math.min(H - 96 * dpr, ty));
       ctx.fillText('MISSILES ' + t.mag + '/' + P.maxMissiles + ' · ' + (t.mag > 0 ? (t.cd > 0 ? 'reloading' : 'MISSILE: right-click / F / A') : 'no missiles: an omni crystal gives each seat one'), W / 2, Math.min(H - 80 * dpr, ty + 16 * dpr));
     } else if (kind === 'missile') {
       const m = camTarget().m, left = Math.max(0, P.missileLife - m.t), bw = 160 * dpr, cx = W / 2, by = H - 40 * dpr;
@@ -1403,20 +1500,13 @@
     ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 3 * dpr; ctx.beginPath(); ctx.arc(cx, cy, r + 9 * dpr, Math.PI * 0.2, Math.PI * 0.8); ctx.stroke();
     if (t.heat > 0) { ctx.strokeStyle = hot ? '#ff4d6d' : '#ffa700'; ctx.beginPath(); ctx.arc(cx, cy, r + 9 * dpr, Math.PI * 0.8 - Math.PI * 0.6 * t.heat, Math.PI * 0.8); ctx.stroke(); }
   }
-  // the bomb: before the throw, the blast drawn at its true size where the view converges; with a bomb out, the same ring
-  // around the live bomb, so the gunner sees what a press would catch
+  // the bomb: the aim mark only, a chevron and two side ticks where the bomb will fly, dimmed while a bomb is out. What a press
+  // would catch is LIT in the world (bombLight, round 8; Garrett 2026-10-21: "the bomb should not have a ring that says burst.
+  // it should use a lit state to show what it will destroy. always go for the 3d in world solution over the 2d flat text solution")
   function drawBombSight(w, c, t, s, cx, cy, dpr) {
-    const W = overlay.width, H = overlay.height, R = P.bombBlastR * mul(c, 1, P.kSpace), fpx = H / 2 / Math.tan(camera.fov * D2R / 2);
-    if (t.bomb) {
-      const q = proj(t.bomb.pos), dcam = Math.max(1, dist(CAM.pos, t.bomb.pos)), rr = R / dcam * fpx, pulse = 0.6 + 0.4 * Math.sin(world.t * 10);
-      if (q.on) { ctx.strokeStyle = 'rgba(255,167,0,' + pulse.toFixed(2) + ')'; ctx.lineWidth = 2 * dpr; ctx.beginPath(); ctx.arc(q.x, q.y, Math.max(8 * dpr, rr), 0, TAU); ctx.stroke(); ctx.fillStyle = '#ffa700'; ctx.font = '700 ' + (11 * dpr) + 'px IBM Plex Mono, monospace'; ctx.textAlign = 'center'; ctx.fillText('BURST', q.x, q.y - Math.max(8 * dpr, rr) - 6 * dpr); }
-      ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1 * dpr; ctx.beginPath(); ctx.arc(cx, cy, 6 * dpr, 0, TAU); ctx.stroke();
-      return;
-    }
-    const rr = Math.max(10 * dpr, R / Math.max(1, P.gunCamAim + P.bombCamBack) * fpx);
-    ctx.strokeStyle = LIME; ctx.lineWidth = 1.5 * dpr; ctx.setLineDash([6 * dpr, 5 * dpr]); ctx.beginPath(); ctx.arc(cx, cy, rr, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
-    ctx.lineWidth = 2 * dpr; ctx.beginPath(); ctx.moveTo(cx - 9 * dpr, cy - 6 * dpr); ctx.lineTo(cx, cy + 3 * dpr); ctx.lineTo(cx + 9 * dpr, cy - 6 * dpr); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx - rr - 8 * dpr, cy); ctx.lineTo(cx - rr + 4 * dpr, cy); ctx.moveTo(cx + rr - 4 * dpr, cy); ctx.lineTo(cx + rr + 8 * dpr, cy); ctx.stroke();
+    ctx.strokeStyle = t.bomb ? 'rgba(198,255,61,0.45)' : LIME; ctx.lineWidth = 2 * dpr;
+    ctx.beginPath(); ctx.moveTo(cx - 9 * dpr, cy - 6 * dpr); ctx.lineTo(cx, cy + 3 * dpr); ctx.lineTo(cx + 9 * dpr, cy - 6 * dpr); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - 22 * dpr, cy); ctx.lineTo(cx - 12 * dpr, cy); ctx.moveTo(cx + 12 * dpr, cy); ctx.lineTo(cx + 22 * dpr, cy); ctx.stroke();
   }
   // ---- round 6: the four-icon ability row, one icon per seat in element order (Time, Space, Mass, Charge). The person's own
   // seat's icon is lit; each icon's veil is its seat's recharge (the boost tank, the sniper, the fast gun's heat; the bomb has
@@ -1819,7 +1909,9 @@
     reset, score, runBatch, runOne, setParam, record, applyPreset, takeSeat, toggleCam, get camKind() { return CAM.kind; },
     setGame(g, i, d) { if (g != null) G.game = g; if (i != null) G.intensity = i; if (d != null) G.diff = d; fillHeader(); restart(); },
     state: () => { const w = world; return { t: w.t, seed, over: w.over, winner: w.winner, missiles: w.missiles.length, prisms: w.prisms.filter((p) => !p.dead).length, crews: w.crews.map((c) => ({ dom: DOMS[c.dom].name, lv: c.lv.slice(), mags: [1, 2, 3].map((s) => c.turrets[s].mag), score: c.score, ring: c.ringIdx, shield: +c.shield.t.toFixed(2), human: c.members.map((m) => m.human), turrets: [1, 2, 3].map((s) => !!c.turrets[s].missile), hull: { f: c.hull.f, v: +c.hull.v.toFixed(1) } })) }; },
-    humanIn, world: () => world,
+    humanIn, world: () => world, view: () => view, bombLight: () => bombLight(world),
+    // a still from any viewpoint (a close look at a missile or a lit blast for the round's screenshots; the seat camera resumes next frame)
+    still(pos, look) { if (!renderer) return; camera.position.set(pos.x, pos.y, pos.z); camera.lookAt(look.x, look.y, look.z); camera.updateMatrixWorld(); renderer.render(scene, camera); },
     // the pure functions Tools/Build/orca_crew_lab/parity.cjs holds the shipped C# OrcaCrewCore to
     parity: { turnBody, followFrame, rotateToward, steerToward, holdHorizon, shieldDirs, flyMissile, rapidStep, penLay, penFlush, penLanding, shotVel },
   };

@@ -63,7 +63,7 @@ petals, so the lab leaves them out. Every vessel-on-vessel effect here moves pet
 
 The ward is a petal ward, the way `CombatHitDrain`'s wards are: a bolt it absorbs scores nothing.
 
-## 2. The concepts (rounds 1–2; round 3 replaced them with one vessel, §4d)
+## 2. The concepts (rounds 1–2; round 3 replaced them with one vessel, §4e)
 
 Each concept is a seat set plus rules; the card writes the rules into the dials so they can be mixed.
 
@@ -90,7 +90,48 @@ Rivals: Easy / Medium / Hard AI crews (aim error 9° / 5° / 2.5°, lead 0 / ½ 
 ward tolerance 3 / 1.5 / 0.5 threats). Your own crew's AI has the same three levels. Every AI writes the same input
 objects a person does (`/labmaker` §2.4).
 
-## 4. Round 7 (2026-10-21): every shot flies down the aim, and the sniper's pip scope
+## 4. Round 8 (2026-10-21): rockets with a lit plume, and a bomb that lights what it will break
+
+**Input this round** (Garrett, after flying round 7 in Unity):
+- "increase the fidelity on the fly by wire missiles. they feel cheap. the bomb should not have a ring that says burst.
+  it should use a lit state to show what it will destroy. always go for the 3d in world solution over the 2d flat text
+  solution."
+
+The last sentence is now a LOCKED rule for every surface (`Docs/claude/SHADERS_AND_PERFORMANCE.md`, "In the world, not
+on the screen"). No number that decides play changed: the scorecard is round 7's (`ROUND7` on the page).
+
+### What changed
+
+- **A flown missile is a rocket** (`MLOOK`, `missileView`). Round 7 drew a six-sided cone. Now each missile has a body,
+  an ogive nose, a band in the crew's colour, four fins, a nozzle, and a lit, faceted motor flame with a white core.
+  The flame ignites over 0.15 s with a bright pulse, then flickers; our crew's missiles also carry a point light. The
+  body **banks into the turn** its gunner's stick asks for (45° at full yaw, eased over 0.12 s), so the thumb's input
+  shows on the missile. In Unity the body is the Sparrow's skyburst rocket (`OrcaMissileVisual`).
+- **The trail is a plume, not a ribbon.** A lit, faceted six-sided tube runs through the path: nothing at the nozzle,
+  widest (1.4 u) half way through its 3 s life, then nothing again. It keeps tapering after a burst. A first try drew an
+  additive ribbon and a TrailRenderer, which the LOCKED "nothing in the world looks flat" rule names as wrong; the plume
+  shape also keeps the missile's chase camera out of its own trail.
+- **The bomb's crosshair is a chevron and two ticks**, dimmed while a bomb is out. The dashed blast ring and the
+  "BURST" ring are gone.
+- **What the live bomb will break is lit** (`bombLight`). While our person holds the bomb seat and a bomb is out, every
+  prism inside its blast that is not ours is drawn glowing hot in its own colour, fading in over a quarter second. Our
+  own prisms stay unlit: the blast spares them. An AI's bomb lights nothing. In Unity this is PrismLit's light bank: a
+  sphere gated to each domain the blast breaks (`OrcaCrewView.LightBomb`).
+
+### Checked
+
+- `verify_lab.cjs` PASS; `parity.cjs` PASS (the asset's new look fields are game-side and not compared).
+- Looked at: a missile from three sides (body, fins, flame, plume) and from its chase camera, ignition and bank; the
+  bomb seat's lit prisms against the same frame unlit, found by a scripted throw-and-search through `__lab`.
+  `__lab.still(eye, look)` renders any viewpoint for such checks.
+
+### Not modelled
+
+- PrismLit's own look: the page approximates a lit prism as its colour lifted and glowing. The game adds the gunner's
+  light colour pulled toward white.
+- Rival hulls inside the blast are not lit, in the page or the game: PrismLit lights prisms only.
+
+## 4a. Round 7 (2026-10-21): every shot flies down the aim, and the sniper's pip scope
 
 **Input this round** (Garrett, after flying round 6 in Unity):
 - "the sniper should always have the pip scope open like the serpent does when holding the left trigger, not have the
@@ -139,7 +180,7 @@ Baked into the page as `ROUND7`; the full tables are on the page's Scorecard tab
 - `parity.cjs` PASS with 40 shot velocities (C# `OrcaCrewCore.ShotVelocity` against the page's `shotVel`) and a planted
   `shotInherit` 1 -> 0 control caught.
 
-## 4a. Round 6 (2026-10-21): every seat an element, a scoped sniper, a pen, and bespoke crosshairs
+## 4b. Round 6 (2026-10-21): every seat an element, a scoped sniper, a pen, and bespoke crosshairs
 
 **Input this round** (Garrett):
 - "the space ability icon should display the number of missiles in the current seat. the sniper should be the space seat
@@ -277,7 +318,7 @@ the page as `ROUND6`. Seat values are Helm / Sniper / Fast gun / Bomb.
 - `parity.cjs` PASS with the pen: 400 scripted landings and 21 reaches, C# `OrcaPen` against the page, plus a planted
   `rapidPenSpacing` 5 -> 4.8 control caught.
 
-## 4b. Round 5 (2026-10-21): a gun on every seat, a missile per seat, and a shield that drops
+## 4c. Round 5 (2026-10-21): a gun on every seat, a missile per seat, and a shield that drops
 
 **Input this round** (Garrett):
 - "each gun seat should still have missile launcher (guided missile) and gun. getting the omnicrystal should give each
@@ -411,7 +452,7 @@ feature removed".
 - `verify_lab.cjs` PASS. Before baking, single race seeds were traced to tell an AI fault (the orbit) from a design
   finding.
 
-## 4c. Round 4 (2026-10-20): stabilized turrets on outriggers, and "4 seat"
+## 4d. Round 4 (2026-10-20): stabilized turrets on outriggers, and "4 seat"
 
 **Input this round** (Garrett): "stabilize the gunners guns as best you can. you can place them outside the vessel to do
 this. then bring this into unity", and "we can start referring to multiplayer vessels by their seats. this is a 4 seat
@@ -508,14 +549,14 @@ page's Scorecard tab (`ROUND4`).
    against 46%; in Breach 131 against 171. The race is still the helm's alone (seat value 100 / 0 / 0 / 0 within noise).
 4. **The shield's value is not resolved.** Round 3 measured +17 points of Broadside share; round 4's No shield control
    scores within one standard error of Round 4 in every game. Both rounds are within noise of each other, so the
-   designer's decision on the shield (§4d) stays open and needs a person at the helm, not more seeds.
+   designer's decision on the shield (§4e) stays open and needs a person at the helm, not more seeds.
 
 ### Checked
 
 - `verify_lab.cjs` PASS. Chase and turret screenshots read: the outrigger struts and pods show on the hull; the
   turret's view holds level while the helm turns under it.
 
-## 4d. Round 3 (2026-10-20): one helm, three gunner seats, flown missiles
+## 4e. Round 3 (2026-10-20): one helm, three gunner seats, flown missiles
 
 **Input this round** (Garrett, in substance; the decision log was empty):
 - The guns get a first-person camera. The skiff was glitchy, as if it controlled both at once.
@@ -646,7 +687,7 @@ rings); Breach and Anchorage prisms; Broadside your share of petal hits (%).
 - **What gives gunners a job in the race.**
 - **What a blast takes from a hull** (2 petals proposed).
 
-## 4e. Round 2 (2026-10-20): 3D with the game's chase camera (superseded)
+## 4f. Round 2 (2026-10-20): 3D with the game's chase camera (superseded)
 
 > **Superseded by the designer (2026-10-20)** by round 3 ("1 helm, 3 guns/skiffs ... we don't need other parts of
 > wildgate gameplay like the artifact"). The page is kept as `Docs/Studios/CrewOfFourLab.round2.html`.
@@ -765,7 +806,7 @@ game.
   first, or should charges be smaller and repeatable?
 - **What the other three crew see.** Only the helm's chase camera exists; a gunner's or a skiff pilot's own view is open.
 
-## 4f. Round 1 (2026-10-20): 2D top-down (superseded)
+## 4g. Round 1 (2026-10-20): 2D top-down (superseded)
 
 > **Superseded by the designer (2026-10-20):** "make it 3D with a chase camera like the game". The page is kept as
 > `Docs/Studios/CrewOfFourLab.round1.html` and its numbers are on the live page's Archive tab.

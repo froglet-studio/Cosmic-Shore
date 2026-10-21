@@ -1247,3 +1247,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (judges each hull), the session that built it, Yash (offered: editor checks)
 - **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
 - **See:** .claude/skills/vessel-model/SKILL.md 0.5; .claude/skills/vessel-model/references/LESSONS.md 49
+
+### T-20261021-07cd · open · test · Crew vessels
+- **Task:** Fly the Orca's round 9 in the Unity editor on cece/happy-noether-m54hz6: launch a missile from any gunner seat (F): it is the skyburst rocket with an igniting, flickering motor, it banks into your turns, and a lit faceted plume trail swells behind it and stays after the burst; in seat 4 the bomb has no ring and no BURST text, and while a bomb is out the prisms its blast will break (not yours) glow in your colour.
+- **Done when:** Every step of Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 9' passes with a clean console, or the failures are filed.
+- **Who can take it:** Garrett (owner), Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/happy-noether-m54hz6`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 9'; Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md

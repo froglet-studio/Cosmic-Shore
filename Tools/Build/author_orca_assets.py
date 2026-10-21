@@ -83,6 +83,11 @@ BOMB_GO, BOMB_TF, BOMB_GUN, BOMB_FACTORY, BOMB_POOL = (str(6420517381209347110 +
 SPARROW_ROUND_REF = "{fileID: 7632677803272750685, guid: 1bdcea9e9329dd141af7ab874a4d31a2, type: 3}"   # SparrowProjectile.prefab
 GRIZZLY_BOMB_REF = "{fileID: 7632677803272750685, guid: d6e1fe636eb02bb73852e896ccb0532e, type: 3}"   # GrizzlyBomb.prefab
 AOE_GRIZZLY_REF = "{fileID: 3479271500403630839, guid: 8713aea50e6b47119e57afc2ce603771, type: 3}"   # AOEGrizzlyExplosion.prefab
+# the flown missile's look (round 9): the Sparrow's skyburst rocket, as SkyBurstProjectile.prefab draws it
+MISSILE_MESH_REF = "{fileID: -3416553540687559647, guid: 98d8cb0114a1ad04e9682869849be719, type: 3}"   # Sparrow Missile.fbx
+MISSILE_MATERIAL_REFS = ["{fileID: 2236194519873700097, guid: 98d8cb0114a1ad04e9682869849be719, type: 3}",
+                         "{fileID: 2100000, guid: f5a1f1d453134cc4193ba1adbdd49d7a, type: 2}",
+                         "{fileID: 2100000, guid: f5a1f1d453134cc4193ba1adbdd49d7a, type: 2}"]
 COMBAT_HIT_GUID = "45fb43a0cddb5cc3cc4dc448df994152"   # Event_CombatHitStats.asset (the scoreboard's channel)
 
 
@@ -326,7 +331,7 @@ def elemental(rest: str, full: str, element: int, floor: str) -> str:
 
 
 CHARGE, MASS, SPACE, TIME = 1, 2, 3, 4
-# The lab's SHIPPED numbers (Docs/Studios/CrewOfFourLab.html, round 7), in OrcaCrewConfigSO's field order. Seeded from the
+# The lab's SHIPPED numbers (Docs/Studios/CrewOfFourLab.html, round 8; the missile look is game-side), in OrcaCrewConfigSO's field order. Seeded from the
 # lab: the lab owns them and parity.cjs holds the asset to the page. A round that changes them deletes the asset and
 # re-runs this tool (the guid is kept, so no reference moves).
 CONFIG_NUMBERS = [
@@ -337,7 +342,12 @@ CONFIG_NUMBERS = [
     ("mouseAimRadiansPerPixel", "0.0035"), ("missileSpeed", "180"), ("missileTurn", "150"),
     ("missileScale", elemental("1", "1.4", CHARGE, "0.5")), ("missileLife", "5"),
     ("launchCooldown", "0.6"), ("blastRadius", elemental("30", "46", SPACE, "5")), ("blastSeconds", "0.5"),
-    ("missileCollectRadius", "9"), ("missileContactRadius", "3.46"), ("startMissiles", "2"), ("maxMissiles", "4"),
+    ("missileCollectRadius", "9"), ("missileContactRadius", "3.46"),
+    ("missileMesh", MISSILE_MESH_REF), ("missileMaterials", "\n  - " + "\n  - ".join(MISSILE_MATERIAL_REFS)),
+    ("missileLength", "7"), ("missileTrailSeconds", "3"), ("missileTrailWidth", "1.4"), ("missileTrailSpacing", "6"),
+    ("missileLightRange", "30"), ("missileLightIntensity", "3"), ("missileIgnitionSeconds", "0.15"),
+    ("missileBankDeg", "45"), ("missileBankSmooth", "0.12"),
+    ("startMissiles", "2"), ("maxMissiles", "4"),
     ("omniMissiles", "1"), ("gunsOn", "1"), ("shotInherit", "1"), ("seatElements", f"\n  - {TIME}\n  - {SPACE}\n  - {MASS}\n  - {CHARGE}"),
     ("sniperCooldown", "12"), ("sniperRange", "3000"), ("sniperConeDeg", "1.5"), ("sniperMinPathRadius", "6"),
     ("sniperStripPerElement", "0.1"), ("sniperEjectSpeed", "45"), ("sniperSameVictimCooldown", "0.5"),
@@ -348,7 +358,7 @@ CONFIG_NUMBERS = [
     ("fastGunPenRate", "10"), ("fastGunPenReach", "120"), ("fastGunPenSpacing", "5"), ("fastGunPenFill", "2"),
     ("fastGunPenGap", "0.35"), ("fastGunPenCap", "150"), ("fastGunPenScale", "{x: 0.8, y: 0.5, z: 4.6}"),
     ("bombSpeed", "90"), ("bombFuse", "10"), ("bombBlastRadius", elemental("50", "76.666667", SPACE, "10")),
-    ("bombScale", "3.75"), ("bombColor", "{r: 1, g: 0.072, b: 0.105, a: 1}"),
+    ("bombScale", "3.75"), ("bombColor", "{r: 1, g: 0.072, b: 0.105, a: 1}"), ("bombLitStrength", "1"),
     ("aiSkill", "2"),
     ("aiRetargetSeconds", "0.4"), ("turretFov", "75"), ("sniperScopeFov", "22"), ("sniperCamBack", "12"),
     ("sniperCamUp", "6"), ("fastGunCamBack", "14"),
@@ -372,7 +382,6 @@ def config_asset(script_guid: str) -> str:
     text += "  gunNames:\n  - \n  - Sniper\n  - Fast gun\n  - Bomb\n"
     text += "  gunLineTemplate: '{name} {state}'\n  gunReadyText: ready\n  gunCooldownTemplate: '{seconds}s'\n"
     text += "  gunHotText: overheated\n  bombOutText: bomb out\n"
-    text += "  bombBurstText: BURST\n"
     text += "  crosshairColor: {r: 0.95, g: 0.97, b: 0.98, a: 1}\n  crosshairReadyColor: {r: 0.6156863, g: 1, b: 0.18039216, a: 1}\n"
     text += "  crosshairHotColor: {r: 1, g: 0.302, b: 0.427, a: 1}\n  crosshairWarmColor: {r: 1, g: 0.655, b: 0, a: 1}\n"
     return text

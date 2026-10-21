@@ -1366,3 +1366,27 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   Broadside with the fix); C# `OrcaCrewCore.ShotVelocity` held to it by `parity.cjs`; `OrcaHullRig.PoseSeat`;
   `CREW_OF_FOUR_LAB.md` §4 round 7.
 - Promoted: no
+
+### L-STU-132 — Show a world fact on the world, and check every new world effect against the flat rule before drawing it
+- Lab: Crew of Four Lab, round 8 (the Orca, after Garrett flew round 7 in Unity) · Branch: `cece/happy-noether-m54hz6` · Date: 2026-10-21
+- What happened: the bomb seat showed "what a press would catch" as a dashed screen ring round the live bomb with
+  "BURST" over it. The owner: "the bomb should not have a ring that says burst. it should use a lit state to show what
+  it will destroy. always go for the 3d in world solution over the 2d flat text solution." The first redraw of the
+  missiles then gave them an additive ribbon trail (and the game the fleet's `TrailRenderer`), which the LOCKED
+  "nothing in the world looks flat" rule names by shape. Two more traps on the way: PrismLit's aimed channel is
+  cone-only, so a sphere published there is read as a cone; and lighting "every prism in the sphere" lit the gunner's
+  own mass, which the blast spares, so the light said the wrong thing.
+- Do instead:
+  - For any "what will this hit / what state is it in" readout, first ask which world channel can carry it (PrismLit
+    for mass about to be acted on, morphs and petals for a hull, a faceted lit volume for an effect). Draw it there,
+    in the lab's 3D view first. Keep the screen for the aim mark only.
+  - Light exactly what the action will do: gate a light to the domains it breaks (one bank light per domain), never the
+    whole volume.
+  - Before drawing a trail, a beam or a marker, read the flat rule's list. A plume tube that is thin at the source
+    also keeps a chase camera out of its own trail.
+  - Check a look by rendering the same frame with the effect on and off (`__lab.still(eye, look)` from a scripted
+    search), not by finding it in a busy seat screenshot.
+- Evidence: `CrewOfFourLab.html` `bombLight`, `missileView`, `tube`, `MLOOK`, `__lab.still`; C# `OrcaCrewView.LightBomb`,
+  `OrcaMissileVisual`; `Docs/claude/SHADERS_AND_PERFORMANCE.md` "In the world, not on the screen"; `CREW_OF_FOUR_LAB.md`
+  §4 round 8.
+- Promoted: yes (the LOCKED rule in `SHADERS_AND_PERFORMANCE.md`)

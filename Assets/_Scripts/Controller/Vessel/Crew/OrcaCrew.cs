@@ -186,6 +186,16 @@ namespace CosmicShore.Gameplay
         internal Transform BombTransform => _bomb ? _bomb.transform : null;
         internal float BombBlastRadius => _cfg && _status != null ? _cfg.BombBlastRadiusAt(_status) : 0f;
         internal float SniperCooldownLeft => _gunCd[SniperSeat];
+        /// <summary>This hull's trail pair (the head and core a vessel's tail wears), for the missiles' trails.</summary>
+        internal bool TryTrailColours(out Color head, out Color core)
+        {
+            head = core = Color.white;
+            var colorSet = _cfg && _cfg.GameData && _cfg.GameData.ThemeManagerData ? _cfg.GameData.ThemeManagerData.ColorSet : null;
+            if (colorSet == null || _status == null || !colorSet.TryGetColorSetByDomain(_status.Domain, out var set)) return false;
+            head = set.TrailHighlightColor; core = set.TrailCoreColor;
+            return true;
+        }
+
         /// <summary>This hull's domain signal colour (the sniper's tracer and its scope share it).</summary>
         internal Color DomainSignalColour
         {

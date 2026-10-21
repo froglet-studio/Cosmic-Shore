@@ -1,7 +1,7 @@
 using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.UI;
 using CosmicShore.Utility;
-using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -39,10 +39,10 @@ namespace CosmicShore.Gameplay
         readonly Camera _cam;
         readonly Material _mat;
         readonly OrcaCrosshairGraphic _crosshair;
-        readonly TMP_Text _crossLabel;
         Canvas _crossCanvas;
-        int _crossKey = int.MinValue;
         SniperScopeOverlay _scope;
+        readonly OrcaMissileVisual[] _missileVisuals = new OrcaMissileVisual[OrcaCrew.Seats];
+        bool _bombLit;
         Camera _pilot;
         /// <summary>The model's turrets, when the hull draws the Orca model (else the view draws pods).</summary>
         public OrcaHullRig Rig { get; }
@@ -63,12 +63,17 @@ namespace CosmicShore.Gameplay
             _mat = LitMaterial(DomainColor());
             _octa ??= Octahedron();
             _box ??= Box();
-            (_crosshair, _crossLabel) = CrosshairCanvas(_root.transform, out _crossCanvas);
+            _crosshair = CrosshairCanvas(_root.transform, out _crossCanvas);
             Rig = new OrcaHullRig(crew.Hull, crew.Config ? crew.Config.HullRadius : 9f);
+            var litTemplate = Resources.Load<Material>(LitTemplateResource);
+            if (crew.Config)
+                for (int s = 1; s < OrcaCrew.Seats; s++) _missileVisuals[s] = new OrcaMissileVisual(crew.Config, litTemplate, $"OrcaMissile{s}");
         }
 
-        // A screen-space canvas under the HUD (the GameCanvas sorts at 1) holding the crosshair and its one word.
-        static (OrcaCrosshairGraphic, TMP_Text) CrosshairCanvas(Transform parent, out Canvas canvas)
+        // A screen-space canvas under the HUD (the GameCanvas sorts at 1) holding the crosshair. No words: a weapon's
+        // state is shown in the world where it can be (Garrett 2026-10-21: "always go for the 3d in world solution over
+        // the 2d flat text solution").
+        static OrcaCrosshairGraphic CrosshairCanvas(Transform parent, out Canvas canvas)
         {
             var go = new GameObject("OrcaCrosshairs", typeof(RectTransform));
             go.transform.SetParent(parent, false);
@@ -81,17 +86,7 @@ namespace CosmicShore.Gameplay
             var graphic = g.AddComponent<OrcaCrosshairGraphic>();
             Stretch(graphic.rectTransform);
             graphic.raycastTarget = false;
-            var t = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer));
-            t.transform.SetParent(go.transform, false);
-            var label = t.AddComponent<TextMeshProUGUI>();
-            label.alignment = TextAlignmentOptions.Center;
-            label.enableWordWrapping = false;
-            label.raycastTarget = false;
-            label.fontStyle = FontStyles.Bold;
-            var rt = label.rectTransform;
-            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(400f, 40f);
-            return (graphic, label);
+            return graphic;
         }
 
         static void Stretch(RectTransform rt)
@@ -104,6 +99,8 @@ namespace CosmicShore.Gameplay
         {
             RestorePilot();
             Rig?.Restore();   // the next crew to bind this hull finds its turrets at rest
+            LightBomb(false, default, 0f, 0f);
+            for (int s = 1; s < OrcaCrew.Seats; s++) _missileVisuals[s]?.Dispose();
             if (_scope) Object.Destroy(_scope.gameObject);
             if (_root) Object.Destroy(_root);
             if (_mat) Object.Destroy(_mat);
@@ -143,6 +140,7 @@ namespace CosmicShore.Gameplay
                 _cam.enabled = false;
                 if (_crossCanvas) _crossCanvas.enabled = false;
                 if (_scope) _scope.Hide();
+                LightBomb(false, default, 0f, 0f);
                 RestorePilot();
                 return;
             }
@@ -216,6 +214,38 @@ namespace CosmicShore.Gameplay
             DrawCrosshair(humanSeat, m != null, aimPoint, cfg);
         }
 
+        // The bomb gunner's pending blast (round 9): what the live bomb's blast will break is LIT in the gunner's domain
+        // colour (PrismLit, Docs/LIT.md), so the gunner sees it in the world, never as a ring on the screen (Garrett
+        // 2026-10-21). It rides the light BANK, not the aimed channel: the aimed channel is cone-only (the Echo Sight's),
+        // and the bank carries a sphere as the Shrike's lock already does. A bank light is gated to ONE domain's mass, and
+        // the blast spares its own, so it is one light per domain the blast breaks: each fielded rival and the neutral
+        // (Blue) mass - two bank slots in a two-domain match, three in a three-domain one, only while a bomb is out. Only
+        // the machine whose person holds the bomb seat publishes them; they fade on the bank's afterglow when it bursts.
+        static readonly Domains[] BlastDomains = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+
+        void LightBomb(bool on, Vector3 centre, float radius, float strength)
+        {
+            bool lit = on && radius > 0f && strength > 0f;
+            if (!lit && !_bombLit) return;
+            var own = _crew.Status != null ? _crew.Status.Domain : Domains.Blue;
+            var gameData = _crew.Config ? _crew.Config.GameData : null;
+            int fielded = gameData ? gameData.RequestedDomainCount : GameDataSO.ActiveDomains.Length;
+            var tint = _crew.DomainSignalColour;
+            for (int k = 0; k < BlastDomains.Length; k++)
+            {
+                var d = BlastDomains[k];
+                int id = BombLightId(d);
+                bool fieldedHere = d == Domains.Blue || System.Array.IndexOf(GameDataSO.ActiveDomains, d) < fielded;
+                if (lit && d != own && fieldedHere)
+                    PrismLit.PublishLight(id, LitVolume.Sphere(centre, radius), strength, tint, restrictTo: d);
+                else
+                    PrismLit.ClearLight(id);
+            }
+            _bombLit = lit;
+        }
+
+        int BombLightId(Domains d) => (_crew.GetInstanceID() * 31) ^ (0x0B0B0000 + (int)d);
+
         // ------------------------------------------------------------------ the sniper's pip scope (round 7)
 
         // The Serpent's eyepiece, open for as long as the person holds the sniper seat (Garrett 2026-10-21: "always have the
@@ -254,10 +284,6 @@ namespace CosmicShore.Gameplay
             g.WarmColor = cfg.CrosshairWarmColor;
             var sp = _cam.WorldToScreenPoint(aimPoint);
             g.Aim = sp.z > 0f ? (Vector2)sp - half : Vector2.zero;
-            float focal = h * 0.5f / Mathf.Tan(_cam.fieldOfView * 0.5f * Mathf.Deg2Rad);   // px per unit of tangent
-            int key = -3;   // which words the label shows: -3 none, -2 the bomb's
-            Vector2 textAt = Vector2.zero;
-            Color textColor = cfg.CrosshairColor;
 
             if (missileFlying || !cfg.GunsOn) g.Kind = OrcaCrosshairGraphic.Style.Missile;
             else if (seat == OrcaCrew.SniperSeat) g.Kind = OrcaCrosshairGraphic.Style.None;   // the Serpent's scope draws both of its reticles
@@ -270,38 +296,13 @@ namespace CosmicShore.Gameplay
             }
             else
             {
+                // the bomb: the aim mark only; with a bomb in the air, what its blast will catch is LIT in the world
                 g.Kind = OrcaCrosshairGraphic.Style.Bomb;
-                float blast = _crew.BombBlastRadius;
-                var bomb = _crew.BombTransform;
-                g.BombOut = bomb;
-                g.Radius = blast / Mathf.Max(1f, Vector3.Distance(_cam.transform.position, aimPoint)) * focal;
-                if (bomb)
-                {
-                    var bp = _cam.WorldToScreenPoint(bomb.position);
-                    g.BombVisible = bp.z > 0f;
-                    g.BombAt = (Vector2)bp - half;
-                    g.BombRadius = blast / Mathf.Max(1f, bp.z) * focal;
-                    g.Pulse01 = 0.5f + 0.5f * Mathf.Sin(Time.time * 10f);
-                    if (g.BombVisible)
-                    {
-                        key = -2;
-                        textAt = g.BombAt + new Vector2(0f, Mathf.Max(8f * scale, g.BombRadius) + 14f * scale);
-                        textColor = cfg.CrosshairWarmColor;
-                    }
-                }
+                g.BombOut = _crew.BombTransform;
             }
+            var bomb = !missileFlying && cfg.GunsOn && seat == OrcaCrew.BombSeat ? _crew.BombTransform : null;
+            LightBomb(bomb, bomb ? bomb.position : default, _crew.BombBlastRadius, cfg.BombLitStrength);
             g.Refresh();
-
-            if (!_crossLabel) return;
-            if (key != _crossKey)   // the words change only with the key: no per-frame strings
-            {
-                _crossKey = key;
-                _crossLabel.text = key == -2 ? cfg.BombBurstText : string.Empty;
-            }
-            _crossLabel.enabled = !string.IsNullOrEmpty(_crossLabel.text);
-            _crossLabel.color = textColor;
-            _crossLabel.fontSize = 22f * scale;
-            _crossLabel.rectTransform.anchoredPosition = textAt;
         }
 
         void RestorePilot()
@@ -329,6 +330,8 @@ namespace CosmicShore.Gameplay
                 worldBounds = new Bounds(hull.position, Vector3.one * 100000f),
             };
             if (Rig.Bound) Rig.Pose(_crew);
+            var domain = _crew.DomainSignalColour;
+            if (!_crew.TryTrailColours(out var trailHead, out var trailCore)) { trailHead = domain; trailCore = domain; }
             float pod = PodSize(cfg);
             var hullPos = hull.position;
             var podFrame = _crew.Pod;
@@ -339,9 +342,12 @@ namespace CosmicShore.Gameplay
                 var t = _crew.TurretOf(s);
                 var aim = Quaternion.LookRotation(OrcaCrew.U(t.Aim), OrcaCrew.U(t.Up));
                 var m = _crew.MissileOf(s);
-                if (m != null)
-                    Graphics.RenderMesh(rp, _octa, 0, Matrix4x4.TRS(OrcaCrew.U(m.Position),
-                        Quaternion.LookRotation(OrcaCrew.U(m.Frame.F), OrcaCrew.U(m.Frame.U)), new Vector3(1.4f, 1.4f, 5f)));
+                var mv = _missileVisuals[s];
+                if (mv != null)
+                {
+                    if (m != null) mv.Fly(m, domain, trailHead, trailCore, Time.deltaTime);
+                    else mv.Idle();
+                }
                 if (Rig.Bound) continue;   // the model draws its own turrets
                 // each gun reads at a glance (round 5): the sniper long and thin, the fast gun middling, the bomb short and fat
                 var podScale = s == OrcaCrew.SniperSeat ? new Vector3(pod * 0.8f, pod * 0.8f, pod * 3.2f)

@@ -65,6 +65,32 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Orca round 9: rocket missiles with a faceted plume, the bomb's blast lit in the world (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-21, after flying round 8: "increase the fidelity on the fly by wire missiles. they feel cheap. the bomb
+should not have a ring that says burst. it should use a lit state to show what it will destroy." Design: `ORCA_CREW.md`
+("The missiles and the bomb's lit blast"); lab round 8 (`Docs/Studios/CREW_OF_FOUR_LAB.md` §4). `/verify-unity` did not
+run: no Unity Editor or `unity` CLI in this session. What did run: the reference compile (player: no project errors;
+editor: no errors in changed files), 22 core tests under .NET, `parity.cjs`, `author_orca_assets.py --check` /
+`--self-test` (the config re-seeded, guid kept), the console-logging, conditional-compilation, using-directive and
+canvas-renderer gates. Affects PrismLit's bank (a new producer, up to three slots while a bomb is out).
+
+**Verify in editor** (the Orca in the Toybox Vessel Changer; take each gunner seat):
+1. **Missile (any gunner seat, F / right click).** The missile is the skyburst rocket, nose forward, not a cone. Its
+   motor flares on launch then flickers in the domain colour, and lights nearby prisms. Steer hard left and right: the
+   body banks into each turn. Behind it a lit, faceted tube trail swells from the nozzle and tapers away over ~3 s,
+   and stays where the missile flew after it bursts. The missile's own chase camera is not inside its trail.
+2. **Bomb (key 4).** No ring and no "BURST" text: only a chevron with two ticks, dimmed while a bomb is out. With a bomb
+   out, the prisms inside its blast that are not yours glow in your colour as it flies, and your own trail inside the
+   blast does not. Burst it: the glow fades out at once. Swap seats with a bomb out: the glow goes.
+3. Fly 2 minutes with all seats firing: no console errors, no frame hitch when three missiles fly at once (each trail
+   rebuilds a mesh of at most ~2,300 vertices a frame).
+
+**First-pass numbers:** `missileLength` 7, `missileTrailSeconds` 3, `missileTrailWidth` 1.4, `missileTrailSpacing` 6,
+`missileBankDeg` 45, `missileIgnitionSeconds` 0.15, `missileLightIntensity` 3 / range 30, `bombLitStrength` 1.
+
+---
+
 ### 🔴 Orca round 8: the turret rest-pose fix, the hovering-assembly model, jets on its engine mouths (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-21, after flying round 7: the minigun's model sat at an odd angle to its shot, and the new models were not

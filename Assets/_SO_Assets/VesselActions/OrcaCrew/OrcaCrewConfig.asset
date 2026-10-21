@@ -65,6 +65,20 @@ MonoBehaviour:
   blastSeconds: 0.5
   missileCollectRadius: 9
   missileContactRadius: 3.46
+  missileMesh: {fileID: -3416553540687559647, guid: 98d8cb0114a1ad04e9682869849be719, type: 3}
+  missileMaterials: 
+  - {fileID: 2236194519873700097, guid: 98d8cb0114a1ad04e9682869849be719, type: 3}
+  - {fileID: 2100000, guid: f5a1f1d453134cc4193ba1adbdd49d7a, type: 2}
+  - {fileID: 2100000, guid: f5a1f1d453134cc4193ba1adbdd49d7a, type: 2}
+  missileLength: 7
+  missileTrailSeconds: 3
+  missileTrailWidth: 1.4
+  missileTrailSpacing: 6
+  missileLightRange: 30
+  missileLightIntensity: 3
+  missileIgnitionSeconds: 0.15
+  missileBankDeg: 45
+  missileBankSmooth: 0.12
   startMissiles: 2
   maxMissiles: 4
   omniMissiles: 1
@@ -114,6 +128,7 @@ MonoBehaviour:
     Floor: 10
   bombScale: 3.75
   bombColor: {r: 1, g: 0.072, b: 0.105, a: 1}
+  bombLitStrength: 1
   aiSkill: 2
   aiRetargetSeconds: 0.4
   turretFov: 75
@@ -205,7 +220,6 @@ MonoBehaviour:
   gunCooldownTemplate: '{seconds}s'
   gunHotText: overheated
   bombOutText: bomb out
-  bombBurstText: BURST
   crosshairColor: {r: 0.95, g: 0.97, b: 0.98, a: 1}
   crosshairReadyColor: {r: 0.6156863, g: 1, b: 0.18039216, a: 1}
   crosshairHotColor: {r: 1, g: 0.302, b: 0.427, a: 1}
