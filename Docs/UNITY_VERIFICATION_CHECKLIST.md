@@ -110,6 +110,10 @@ On an Android development build (the real test - tilt, millimetre sizes and thum
     hull (Sparrow): both invert; with it off, a push up pitches both the same way. On a phone, tipping the top edge away
     pitches like a pushed-up thumb (Manta soar, Thresher launch aim).
 18. Scarab with Time 5: flick up on the throttle slider - Snap Dash, and the slider stays where it was set.
+19. Wrasse and Grouper (one human): keys 1 / 2 PICK the Grouper / the Wrasse (no longer toggle); the D-pad and the
+    phone's double tap on the small view change seat; the pick is remembered across a Vessel Changer swap and a
+    respawn. On a phone, lifting both thumbs as the Grouper speeds it up (a saved boost), and a double tap back to the
+    Grouper spends none. In an arena, keys 1 / 2 and the D-pad change seat only; the top-bar tiles swap hulls.
 
 First-pass tuning (`Resources/TouchControlProfiles`): buttons 10 mm (floor 7 mm), gap 1.5 mm, inner arc 22 mm, arc step
 12 mm, corner box 36 % x 55 %; tilt full scale 25°, dead zone 2.5°, smoothing 12/s, forward tilt dives; slider 9 x 32 mm;

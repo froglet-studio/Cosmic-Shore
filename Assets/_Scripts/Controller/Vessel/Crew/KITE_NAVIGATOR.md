@@ -26,8 +26,12 @@ it**; see "Round 4" below. The rounds after 3 are not in the lab yet (task `T-20
   on a cluster (`WrasseHUDController`).
 - **L5s:** Mass clusters arrive shielded, Charge steals instead of knocking crystals loose, Space breaks shields and
   super shields, and Time drops the boost cooldown. An **Omni crystal** drops a cluster of each element on the board.
+- **Seats (2026-10-21):** keys 1 / 2 pick the Grouper or the Wrasse, the D-pad and a double tap on the small view step
+  to the other seat, and the pick is remembered per hull class (`CrewSeatChoice`), so the person starts where they last
+  chose. Online it is two human seats on any mix of phones and PCs: decided by Garrett 2026-10-21, planned in "Two
+  humans, two seats" below, not built yet.
 - **Unverified:** nothing has been played in the editor yet (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, task
-  `T-20261018-5c29`), and the seat runs on one machine (`T-20261017-b06e`).
+  `T-20261018-5c29`), and the seat still runs on one machine (the plan below).
 
 One player flies the hull. The **navigator** plays a one-thumb 2D game on a **board**, which is the hull's own x-z plane
 with the world projected onto it. The navigator flies a **kite**:
@@ -334,8 +338,12 @@ How it was checked:
 ## Seats: the swap is the arena's
 
 The swap uses the arena's pilot-swap gesture (`PilotSwapGesture`: D-pad left / right, keys 1 / 2), with
-`PilotSwap.CooldownSeconds` as its cooldown. It moves the local human between the hull and the kite. An AI squad mate
-always flies the empty seat:
+`PilotSwap.CooldownSeconds` as its cooldown. It moves the local human between the hull and the kite. Since 2026-10-21
+(Garrett: "players can select, change seats"), **keys pick** (1 the Grouper, 2 the Wrasse; picking the seat you are in
+does nothing) and **the D-pad and the double tap step** to the other seat, as the Orca's keys 1-4 pick its seats. Every
+pick is remembered on the device per hull class (`CrewSeatChoice`, PlayerPrefs). On the next bind the seat is taken once
+the hull is the person's with live input (not parked on its AI, no countdown, modal or pause), so a respawn, a match or
+the Vessel Changer starts them in the seat they chose. An AI squad mate always flies the empty seat:
 
 - **The human navigates.** The hull's own `AIPilot` flies the hull (`IVessel.ToggleAIPilot(true)`). The human's flight
   input is paused (`InputController.SetPause(true)`), so the pointer and the sticks belong to the board.
@@ -343,6 +351,115 @@ always flies the empty seat:
   presses it. It never writes the kite (the input-only rule).
   - Each think, it rams if charged, else loops the fattest one-element cluster, else pops the nearest hostile prism.
   - The default skill is Hard (`aiSkill`).
+
+## Two humans, two seats (plan, 2026-10-21)
+
+Garrett, 2026-10-21: **"wrasse and grouper, are two seats. players can select, change seats etc. both can be played on
+mobile or pc."** This answers `T-20261017-b06e`. It also corrects the audit line "one phone runs one human plus an AI;
+two phones not supported": the target is one human per seat, on any mix of phones and PCs. The plan holds for every crew
+vessel (the Goby and Pistol, the Orca's four seats, the Honeyguide and Ratel). It builds on `cece/sharp-tesla-j0kd7z`'s
+`ICrewSeat`, `CrewSeat` and `CrewPictureInPicture`, and on the duo contract (`/duo-vessel` §2.1-2.2): a swap between
+two humans is an offer both accept, and a human who leaves falls to the AI on the same frame.
+
+**One human today, by device (read from the code on 2026-10-21; nothing editor-run):**
+
+| | Keyboard + mouse | Gamepad | Phone |
+|---|---|---|---|
+| Pick / change seat | 1 Grouper, 2 Wrasse | D-pad steps | double tap the small view |
+| Grouper | WASD + P ; L ' (`KeyboardInputStrategy`); right Shift boosts | two sticks; right trigger boosts | two thumbs (no profile row: ThumbLifts, no extras); lift both to boost |
+| Wrasse | the mouse is the hand; a held click lets go | the left stick places the hand; a held trigger lets go | the first thumb is the hand; lifting it lets go |
+| While on the Wrasse | flight input paused (`InputController.SetPause`), the hull's `AIPilot` flies | same | same; the paused touch strategy lets go of IdleAction |
+
+The phone boost works since the idle-parity change: both thumbs off read XDiff 0.5, so a boost runs at 0.5 × 25 × 5 + 10
+= 72.5 u/s, against 35 at a full thumb spread. Before it, idle read XDiff 0, and a "boost" held the hull at its minimum
+of 10. The seat reads the `Idle` STATE, not the once-only IdleAction press; the Wrasse binds no IdleAction. A boost
+counts only after a thumb has touched in the pilot seat (`_idleArmed`), so the frames after a double tap back to the
+Grouper spend nothing. The Wrasse's cards press nothing, so they claim no touches (`AbilityCardPress`), and the hand stops
+at the line above them. The kite reads the raw primary touch (flight input is paused), so a touch that starts on a
+control that owns it (`FlightTouchClaims`: a pressable card, the arena's swap tiles) is now skipped, as flight skips it.
+
+**Who owns what:**
+- **The hull's `NetworkObject` is owned by the machine of whoever holds the PILOT seat**: the human pilot's client, or
+  the server for an AI pilot. `PilotSwap.TransferOwnershipServer` moves ownership today. Flight, trail, crystals,
+  `IsBoosting` and the saved-boost bank stay there, so every existing owner gate is unchanged.
+- **The navigator seat is simulated on the machine of whoever holds it**: the human navigator's client, else the hull's
+  owner (today's solo and AI-crew rule). The board, motes, kite, tail and loop detection run there with no network hop,
+  because the Sling's feel is a thumb's latency. Motes stay per-viewer and are never replicated (`/duo-vessel` §2.4).
+- **The server owns occupancy.** A new `CrewSeatOccupancy` NetworkBehaviour on the Player prefab holds:
+  - server-write `NetSeatHullId` (0 = none) and `NetSeatIndex`;
+  - the owner-write kite pose, the three NetworkVariables of `WrasseCrewBodies` (flags, offset, rotation). They are used
+    when a remote human navigates; the hull's own copies keep serving solo and AI crews.
+- **The navigator's Player:** its `Player.Vessel` is the hull it rides (camera, HUD, `VesselVisionShading.LocalVessel`).
+  Its `InputController` stays paused, and `IsLocalPilot` is false.
+- **Audit first:** every system that assumes one Player per Vessel (`/duo-vessel` ANCHORS §3).
+- **Rejected:**
+  - a nested NetworkObject per seat: Netcode 2.13.3 allows it, but nothing here uses child ownership;
+  - streaming the navigator's raw hand to the hull owner: every pull of the rope would wait a round trip.
+
+**Which machine decides each effect.** Vessel rule 48: no consequence keyed on state only one machine has. Rule 52:
+owner-decided state goes through a relay. §4.ac: an AOE is spawned on every peer. The navigator's machine decides, and
+sends the decision as a `ServerRpc` on its `CrewSeatOccupancy`. Ownership is required (a player acts only for the seat
+they hold), and the server checks the seat is theirs, then fans the decision out:
+
+| Effect | Decided on | Applied |
+|---|---|---|
+| Pop (the head on a hostile prism) | navigator | `ClientRpc` to every peer with the head's swept segments and radius, batched per frame. Each peer damages its own prisms along them (prism destruction never replicates) |
+| Space blast | navigator | `ClientRpc` with the centre, n and the L5 flag. Each peer spawns the `AOEExplosion`; its hits on networked objects no-op off the server |
+| Mass cluster | navigator | `ClientRpc` with the centre, n, a seed and the shield flag. Each peer lays the same cluster (`FireMass` takes the seed, not `_rng`) |
+| Saved boosts (Time) | navigator | a targeted `ClientRpc` to the hull owner, which banks and spends them. The count is replicated (owner-write, on the hull) for the navigator's HUD |
+| Charge and steals | navigator (it holds the charge and detects the ram) | a ram request to the hull owner, which runs today's gate as the attacker's owner: `ElementalTransfer.IsDecidedHere`, `CombatHitDrain.TryAdmit`, `ApplyAuthoritative`, `OnCombatHitLanded` |
+| Creature struck | navigator | `ServerRpc`; the server calls `Fauna.Jousted` (sim authority) |
+| Race rings | the hull owner, as `GateRaceController` decides today | the kite probe answers from the replicated pose and epoch on a machine that does not simulate the seat |
+| Omni crystal | the crystal's owner, as today | forwarded to the navigator's machine, which drops the motes |
+
+**A gap in today's solo online play:** pops, blasts and Mass clusters happen only on the Wrasse's own machine, so the
+other peers' prisms differ. Step 1 closes this before a second human sits down.
+
+**Seats with two humans:**
+- **A pick is a request.** A key, the D-pad, a double tap or a menu's seat card sends `RequestSeat(hull, seat)` to the
+  server:
+  - an empty or AI-held seat is granted at once, and the AI steps out;
+  - a seat another human holds becomes an OFFER to them. They accept with the same gesture within a few seconds, and
+    then both move or neither does. A swap is never forced.
+  - When the pilot seat changes hands, the server moves the hull's ownership.
+- **Leaving:** a human who leaves, disconnects or changes hull vacates the seat on the same frame. The AI takes it: the AI
+  pilot on the server, or the AI navigator on the hull owner.
+- **The remembered seat:** `CrewSeatChoice` is what a person ASKS for at spawn; the server places them.
+
+**Phone vs PC:** no difference in authority, occupancy or offers. Only the input mapping differs (the table above), and
+every effect crosses the network as a decision, never as device input.
+
+**The arena swap conflict:**
+- **The conflict:** on a pad or keyboard, `InputController` sends 1 / 2 and the D-pad to `Player.RequestPilotSwap` while
+  the human pilots, and the seat reads the same keys. In an arena match, one press moves seats AND asks for a teammate's
+  hull.
+- **No conflict on a phone:** the arena's swap is the top-bar tiles (`PilotSwapIndicator`); the seat's is the double tap.
+- **Resolution: one owner for the gesture.** On a crew hull the seat consumes it:
+  - keys pick a seat on your own hull;
+  - the D-pad steps through your hull's seats, then on round the team's ring. This answers the duo skill's open "ring"
+    question: seats first, then teammates.
+  - `InputController` asks `CrewSeat.TryConsumeSwap(dir)` and calls the arena only when the seat passes the step on.
+
+**Work order:**
+1. **Prism parity for one human online.** `KiteNavigator.cs`, with the effects split into `KiteNavigatorEffects.cs`
+   (Follow-ups), and `WrasseCrewBodies.cs`, which gets the hull owner's pop, blast and Mass-seed RPCs. A seeded-cluster
+   test. Check in MPPM: two players, one flies the Wrasse, and both see the same prisms go.
+2. **Land `cece/sharp-tesla-j0kd7z`** (`T-20261017-efca`): the seat on `ICrewSeat`; `CrewSeat.PollSwap` returns the
+   picked seat (keys pick, the D-pad steps, as here and on the Orca); the double tap into `CrewPictureInPicture`;
+   `CrewSeatChoice` into `CrewSeat`.
+3. **Occupancy:** `CrewSeatOccupancy` on the Player prefab (its Netcode hash changes: check the in-flight branches
+   first); `Player.cs` `RequestSeat_ServerRpc`; `PilotSwap.cs` `TryValidateSeatServer` (same team, a crew hull, the seat
+   free, AI-held or offered); `ICrewSeat` gains `SeatCount`, `Occupant(i)` and `IsSimulatedHere`.
+4. **Authority:** `KiteNavigator.ShouldRun` becomes "this machine simulates the navigator seat"; effects go through the
+   occupant, boosts and rams to the hull owner; `WrasseCrewBodies` reads the occupant's pose.
+5. **The gesture owner:** `InputController.cs` asks `CrewSeat.TryConsumeSwap`; `PilotSwapIndicator.cs` shows the other
+   seat as a tile on a crew hull. Affects: the arena's swap.
+6. **The pick in menus:** `VesselChangerToy.BuildOptions` offers one station per seat on a class with `CrewNames`
+   ("Grouper", "Wrasse"; Apply = `SelectVessel` plus `CrewSeatChoice.Set`). Two party members taking one crew hull is the
+   generic "two players, one seat" piece (`PartySessionService`, the squad card).
+7. **Hand tests** (MPPM with two players, then a phone and a PC): each human picks a seat and an offer swaps them; a
+   leaver's seat falls to the AI; pops, blasts and clusters match on both screens; saved boosts reach the pilot; a ram
+   steals once.
 
 ## Files
 
@@ -352,6 +469,7 @@ always flies the empty seat:
 | `KiteNavigatorAI.cs` | The AI navigator (the lab's `navAI` / `planLoop`). Engine-free. |
 | `KiteNavigatorConfigSO.cs` | Every number; each tooltip names its lab key. Asset: `Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset`. |
 | `KiteNavigator.cs` | The seat on the hull: board frame, motes, prism and rival shadows, thumb, head contacts, effects, swap. |
+| `CrewSeatChoice.cs` | The seat a person picked on a crew hull, remembered on the device per hull class (2026-10-21). |
 | `Assets/_Prefabs/Spacevessels/Wrasse.prefab`, `Tools/Build/author_wrasse_assets.py` | The Wrasse hull (the Sparrow plus this seat) and the tool that authors and registers it. |
 | `WrasseCrewBodies.cs` | The two bodies (round 7): places, swims and replicates the Wrasse model where the kite flies; puppets the Grouper from the hull's measured motion. Finds both models and their bones by name. |
 | `KiteNavigatorJuice.cs`, `KiteBurst.cs` | The juice (round 10): every loop, pop, steal and Omni drop as a `KiteBurst`, its motes' petals choreographed per effect. Rendered offline by `Tools/Build/kite_navigator_lab/juice_sheet.sh`. |
@@ -473,8 +591,8 @@ python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' sprea
   carry the double-tap and the Resources material there when it merges.
 
 - **Networking.** The Wrasse's BODY is replicated (round 7, `WrasseCrewBodies`). Everything else still runs on the
-  machine that flies the hull: the board, the motes, the AI and the effects. A second human on another machine needs
-  the seat replicated, plus a decision on which machine decides the effects.
+  machine that flies the hull: the board, the motes, the AI and the effects. Decided 2026-10-21 (two human seats, either
+  device); the plan and its work order are in "Two humans, two seats" above.
 - **The Grouper still wears the Sparrow's colliders, jets and engine flare** (round 7). The hit box is the Sparrow's
   flat 10.3 × 0.46 × 4.4 box, but the Grouper is ~5.6 u tall. The jets ride the Sparrow's bones. `FlareEngine`
   flashes the hidden Sparrow's slot 3, not the Grouper's Engine slot. `CrystalHullFusionConfig`'s Wrasse bakes are the
@@ -484,8 +602,8 @@ python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' sprea
 - **The Wrasse body's puppetry signs are first-cut.** Jaw / dorsal open on +pitch and the tail bends out of a turn by
   reasoning from Unity's axes, not from a flight. Each is a signed inspector number on `WrasseCrewBodies`.
 - **Arena swap.** In an arena match, the swap gesture also asks the arena to swap hulls while the human flies.
-  `InputController` polls it, and is paused only while the human navigates. A crew hull in an arena needs one owner
-  for the gesture.
+  `InputController` polls it, and is paused only while the human navigates. The resolution (the seat consumes the
+  gesture; the D-pad steps through the seats, then the team's ring) is in "Two humans, two seats" above.
 - **Duo vessels.** When the duo-vessel system lands (branch `cece/sharp-tesla-j0kd7z`, skill `/duo-vessel`), fold the
   Wrasse into it as a duo design. It already follows the same shape: one hull class, the seat on the root, the
   arena's swap.

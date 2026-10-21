@@ -593,12 +593,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
 - **See:** .claude/skills/ship/SKILL.md section 2 (inserting a member above a method)
 
-### T-20261017-b06e · open · decision · Crew vessels
+### T-20261017-b06e · done · decision · Crew vessels
 - **Task:** Decide how the Kite Navigator seat goes online: today the board, motes, AI and every effect run on the hull's local human's machine. A second human on another machine needs the seat replicated, and a choice of which machine decides pops, blasts, Mass clusters, boost and steals (vessel rule 48). Also decide the arena case: the seat's swap uses PilotSwapGesture, which in an arena match also asks the arena to swap hulls while the human flies.
 - **Done when:** A written plan in KITE_NAVIGATOR.md that names the deciding machine per effect and the gesture owner in arenas
 - **Who can take it:** Garrett with Yash (party / multiplayer)
 - **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Follow-ups)
+- **Done:** 2026-10-21, Decided by Garrett, 2026-10-21: "wrasse and grouper, are two seats. players can select, change seats etc. both can be played on mobile or pc." Two human seats on any mix of phones and PCs: the hull is owned by the pilot seat's machine, the navigator seat is simulated on its holder's machine and sends its decided effects through a server-checked relay; the seat consumes the swap gesture on a crew hull (seats first, then the team ring). Plan and work order: KITE_NAVIGATOR.md "Two humans, two seats (plan, 2026-10-21)".
 
 ### T-20261017-efca · open · dev · Crew vessels
 - **Task:** When the duo-vessel system (cece/sharp-tesla-j0kd7z) reaches bleeding-edge, register the Kite Navigator as a duo design so a hull can carry it from a mode or a menu, not only from the play-mode FrogletTools menu; keep its one swap (PilotSwapGesture) and its AI-in-every-empty-seat rule.
@@ -1367,3 +1368,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-21 by Garrett's session (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 2 rows 7 and 14
 - **Done:** 2026-10-21, Done wider than the task (Garrett: 'get rid of all steering lag, and inconsistent y-inversions that are not left to the settings'): no nose lag for any human pilot on any device/hull (NoseFollowFraction), touchNoseResponse retired; one Invert Y rule in every strategy (ApplyInvertSettings), touch reads both invert settings. MOBILE_VESSELS.md section 8, second round.
+
+### T-20261021-aa19 · open · dev · Crew vessels
+- **Task:** Build two human seats on the Wrasse and Grouper (Garrett, 2026-10-21: "wrasse and grouper, are two seats. players can select, change seats etc. both can be played on mobile or pc"), in the plan's order: (1) prism parity for one human online - pops, Space blasts and Mass clusters (seeded) applied on every peer, which today happen only on the Wrasse's machine; (2) land cece/sharp-tesla-j0kd7z and put the seat on ICrewSeat; (3) seat occupancy on the Player (CrewSeatOccupancy, RequestSeat_ServerRpc, PilotSwap.TryValidateSeatServer, offers between two humans, AI fills an empty seat); (4) the navigator seat simulated on its holder's machine, boosts and rams sent to the hull owner; (5) one owner for the swap gesture on a crew hull (seats first, then the arena ring); (6) seat stations in the Vessel Changer and two party members on one crew hull.
+- **Done when:** In MPPM with two players, and then on a phone plus a PC, each human picks a seat and an offer swaps them, a leaver's seat falls to the AI, pops / blasts / Mass clusters match on both screens, saved boosts reach the pilot, a ram steals once, and in an arena match 1 / 2 / the D-pad move seats without also swapping hulls.
+- **Who can take it:** Yash (multiplayer) with Garrett; builds on cece/sharp-tesla-j0kd7z's CrewSeat
+- **Added:** 2026-10-21 by Claude (cece/admiring-hamilton-gyzzh8) (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Two humans, two seats)
