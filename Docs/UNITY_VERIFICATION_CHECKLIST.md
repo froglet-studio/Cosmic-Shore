@@ -12780,9 +12780,14 @@ the shipped HLSL compiled and checked by `Tools/Shaders/verify_spindle_lod.py`.
 10. (Round 5, Docs/SPINDLE_LOD.md section 8) `SpindleDepthGraph` imports with no error and previews without
    magenta. In Play, find a shark (Menu_Main / Blob cell) or brittlestar: from ~200 units out it blooms
    outward from its middle with a pulse running out to its fins/arms, widest around ~450 units, settling
-   back by ~2,000; nothing tears at a seam; the HUD console `renderers` line ends `· bodies N` with N > 0.
+   back by ~700 (round 5); nothing tears at a seam; the HUD console `renderers` line ends `· bodies N` with N > 0.
    Any toybox toy, race gate or Scarab switch: the ring is spindle lace in its signal colour (Domain
    Changer slots in their domain colour, Switchback's next gate lime), it does not sway, its facets open
    from afar with a pulse running round it, and it stays readable far away. EditMode
    `ShippedProfile_CarriesTheDepthTemplate`, `BodyReach_IsAHalfOctaveCeiling`,
    `BloomTravel_IsTheDangerFaceCappedByReach` and `ToySwitchVocabularyTests` pass.
+11. (Round 5) Fly away from a Lattice plant: fully open 316 - 474 units (a Charge plant's tips ~2.7 units out,
+   others ~0.8), settled back onto a single line by ~700 with no visible step, then still a thin line through
+   ~1,000 (72-tri braid) and ~1,000 - 1,500 (12-tri thread, glowing up then fading), gone past ~1,500. A shark
+   or brittlestar fades out over the same ~1,250 - 1,500; a switch ring settles back by ~700 and stays visible.
+   The `renderers` line splits the far limbs into braid / low / thread.

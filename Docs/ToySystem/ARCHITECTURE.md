@@ -1176,7 +1176,7 @@ signal colour, rim = it 37% toward white, as `SpindleMaterial` pairs them), in t
 afar each flat facet of the ring opens along its own normal, prism-exact, on the prisms' own depth
 ramp, a wave and its light pulse run round the ring, and it settles back with distance
 (`Docs/SPINDLE_LOD.md` §8). The tuning is on `Resources/SpindleLodProfile`: `switchRingStrength`
-(0.1, ~1.5 units at the peak), `switchRingDistance` (the lace's fade, ~14,000 units, so a ring you
+(0.05, ~0.76 units at the peak), `switchRingDistance` (the lace's fade, ~14,000 units, so a ring you
 fly toward stays readable) and `switchRingSway` (0: a ring is a trigger volume and does not sway).
 Where the graph cannot run (no profile, `lodEnabled` off, edit mode) the ring is the signal's prism,
 as before. Hubs and cones beside a ring stay prisms. The ring mesh carries UVs for the lace (u runs

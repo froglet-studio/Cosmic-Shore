@@ -15,7 +15,7 @@ MonoBehaviour:
   tierMaterialSet: {fileID: 11400000, guid: 2cc7d7c117bfd194eb0377c17b230c14, type: 2}
   strength: 1
   recedeStartNorm: 2.25
-  recedeEndNorm: 42.25
+  recedeEndNorm: 4.9
   flowAmplitude: 0.35
   flowWaves: 1.5
   flowSpeed: 0.6

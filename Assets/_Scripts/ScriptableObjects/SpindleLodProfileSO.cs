@@ -72,19 +72,22 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("...and is gone here, where it stops being drawn at all (zero cost).")]
         [Min(1f)] public float farFadeEndGirths = 1900f;
 
-        [Header("Overt fade (the prisms' normalised squared distance: 1 = fully open, ~316 units)")]
-        [Tooltip("OVERT: where the minimal thread (what the braid settles back to, Resources/IncorporealDepth's recede) starts fading out, in units of the prisms' ramp (d^2 / _SqrDistance). 46 = ~6.8x the ramp's distance, ~2,145 units.")]
-        [Min(1.01f)] public float overtFadeStartNorm = 46f;
+        [Header("Overt ladder past the peak (the prisms' normalised squared distance d^2 / _SqrDistance: 1 = fully open, ~316 units)")]
+        [Tooltip("OVERT: where the settled braid (72 triangles, from the end of Resources/IncorporealDepth's recede) hands over to the 12-triangle thread. 10 = ~3.2x the ramp's distance, ~1,000 units.")]
+        [Min(1.01f)] public float overtThreadStartNorm = 10f;
 
-        [Tooltip("OVERT: where it is gone and stops being drawn. 100 = 10x the ramp's distance, ~3,160 units.")]
-        [Min(1.02f)] public float overtFadeEndNorm = 100f;
+        [Tooltip("OVERT: where the thread starts fading out (and every other spindle body with it). 15.625 = 1.25x 1,000 units, ~1,250 units.")]
+        [Min(1.01f)] public float overtFadeStartNorm = 15.625f;
+
+        [Tooltip("OVERT: where it is gone; it stops being drawn just past here. 22.5 = 1.5x 1,000 units, ~1,500 units.")]
+        [Min(1.02f)] public float overtFadeEndNorm = 22.5f;
 
         [Header("Overt strength (share of the danger prisms' spread, Resources/IncorporealDepth)")]
-        [Tooltip("OVERT: how far a CHARGE lifeform's limbs fan open, as a share of the danger prisms' face travel (0.35 = a tip travels ~5.3 units at the peak).")]
-        [Range(0f, 2f)] public float chargeStrength = 0.35f;
+        [Tooltip("OVERT: how far a CHARGE lifeform's limbs fan open, as a share of the danger prisms' face travel (0.175 = a tip travels ~2.7 units at the peak).")]
+        [Range(0f, 2f)] public float chargeStrength = 0.175f;
 
-        [Tooltip("OVERT: how far every other lifeform's limbs fan open (Mass, Space, Time, Omni and none). 0.1 = ~1.5 units at the peak.")]
-        [Range(0f, 2f)] public float otherStrength = 0.1f;
+        [Tooltip("OVERT: how far every other lifeform's limbs fan open (Mass, Space, Time, Omni and none). 0.05 = ~0.76 units at the peak.")]
+        [Range(0f, 2f)] public float otherStrength = 0.05f;
 
         [Header("The thread's look")]
         [Tooltip("The narrowest a thread is ever DRAWN, in screen pixels. Thinner geometry rasterises as broken, sparkling dots; past this width the thread is drawn wider and its alpha pays for the difference (coverage), so it reads as a continuous line of the right brightness.")]
@@ -106,8 +109,8 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("OVERT: every spindle-material renderer that is NOT the braid - a creature's own model (the shark, brittlestar, worm and quadfish) - wears the same depth effect, blooming outward from its pivot (its element sets its strength, as for a limb). Off: those keep their authored material.")]
         public bool depthOnBodies = true;
 
-        [Tooltip("OVERT: how far a switch ring's facets open, as a share of the danger prisms' face travel (0.1 = ~1.5 units at the peak, the same as a non-Charge limb). Rings are drawn in SpindleDepthGraph (ToyFactory.AddSwitchRing).")]
-        [Range(0f, 2f)] public float switchRingStrength = 0.1f;
+        [Tooltip("OVERT: how far a switch ring's facets open, as a share of the danger prisms' face travel (0.05 = ~0.76 units at the peak, the same as a non-Charge limb). Rings are drawn in SpindleDepthGraph (ToyFactory.AddSwitchRing).")]
+        [Range(0f, 2f)] public float switchRingStrength = 0.05f;
 
         [Tooltip("SpindleGraph's _Distance on the switch rings: the squared distance its lace fades out by. A branch fades by 2,000,000 (~1,400 units); a switch is a signal you fly toward, so 200,000,000 keeps it readable ~14,000 units out.")]
         [Min(1f)] public float switchRingDistance = 200000000f;
@@ -178,14 +181,16 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>The bands are in the order the tiers need them. A profile that is not falls
         /// back to the authored braid everywhere rather than drawing a tier out of its range.</summary>
         /// <summary>The overt ladder against the shared recede: the peak must hold past the far tier's
-        /// band, and the thread must only fade once the braid has settled back to it.</summary>
+        /// band, the 72-triangle braid only take over once the recede has ended, the thread only once
+        /// that braid's band is behind it, and the fade only once the thread has taken over.</summary>
         public bool OvertBandsAreSane(Vector4 recede, out string why)
         {
             why = null;
             float keep = 1f - hysteresis;
             if (!(recede.x > 1f / keep)) why = "IncorporealDepth.recedeStart must lie past the over-distance band (1 / (1 - hysteresis))";
             else if (!(recede.y > recede.x / keep)) why = "IncorporealDepth.recedeEnd must lie past recedeStart's band";
-            else if (!(overtFadeStartNorm >= recede.y / keep)) why = "overtFadeStart must not begin before the braid has settled back into the thread";
+            else if (!(overtThreadStartNorm * keep > recede.y / keep)) why = "overtThreadStart's band must lie past the 72-triangle braid's (recedeEnd / (1 - hysteresis))";
+            else if (!(overtFadeStartNorm >= overtThreadStartNorm)) why = "overtFadeStart must not begin before the thread has taken over";
             return why == null;
         }
 

@@ -40,8 +40,9 @@ DULL = (0.0, 0.027586222, 1.0)
 BRIGHT = (0.36976376, 0.39671606, 0.9559748)
 SWAY_AMPLITUDE, SWAY_FREQUENCY = 0.1625, 1.4     # GyroidSpindleMaterial
 DANGER = (0.09, 0.29, 0.8)
-RECEDE = (2.25, 42.25)           # Resources/IncorporealDepth
+RECEDE = (2.25, 4.9)            # Resources/IncorporealDepth
 KEEP = 1.0 - 0.08                # SpindleLodProfile.hysteresis
+THREAD_START = 10.0              # SpindleLodProfile.overtThreadStartNorm (~1,000 units)
 SQR = 100000.0
 LIMBS = 8
 
@@ -58,7 +59,7 @@ int main() {
     _IncorporealRecede = float4{%RS%f, %RE%f, 0, 0};
     _IncorporealSpread = float4{%DX%f, %DY%f, %DZ%f, %SQR%f};
     _IncorporealFlow = float4{0.35f, 1.5f, 0.6f, 0.8f};
-    if (style > 0.5f) { _SpindleLodBands = float4{%RS%f, %RE%f, 46, 100}; }
+    if (style > 0.5f) { _SpindleLodBands = float4{%RS%f, %RE%f, 15.625f, 22.5f}; }
     else { _SpindleLodBands = float4{110, 386.4f, 1300, 1900}; }
     _SpindleLodLook = float4{minpx, 0.35f, 0.55f, 1.35f};
     _SpindleLodLook2 = float4{0.85f, style, 0, 0};
@@ -203,9 +204,9 @@ def tier_mesh(meshes, style, n):
     by the mid braid: the lace is a Shader Graph node with no HLSL here)."""
     if style != "overt":
         return ("mid", meshes["mid"]) if n < 420 else ("thread", meshes["thread"])
-    if n < 1.0 / KEEP or n < RECEDE[0]:
-        return ("braid 144", meshes["mid"])
     if n < RECEDE[1] / KEEP:
+        return ("braid 144", meshes["mid"])
+    if n < THREAD_START:
         return ("braid 72", meshes["low"])
     return ("thread 12", meshes["thread"])
 
@@ -224,7 +225,7 @@ def main():
         t0 = min((s + 7) / (s * g + 7) for s, g in zip(DANGER, (50, 35, 20)))
         if style == "overt":
             stops = [(0.15, "at rest"), (0.6, "opening"), (1.0, "fully open"), (2.25, "peak ends"),
-                     (8.0, "settling back"), (42.25, "settled: the thread"), (70.0, "thread fading")]
+                     (3.4, "settling back"), (7.0, "settled: braid 72"), (12.0, "the thread"), (19.0, "thread fading")]
             dist_of = lambda n: math.sqrt(n * SQR)
         else:
             stops = [(60, "braid"), (200, "drawing together"), (300, "drawing together"), (420, "one thread"), (1200, "far thread")]

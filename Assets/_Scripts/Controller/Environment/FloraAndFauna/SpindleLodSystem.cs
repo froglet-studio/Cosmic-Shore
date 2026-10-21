@@ -26,9 +26,9 @@ namespace CosmicShore.Gameplay
     /// <item><b>Far / Low / Min</b> - on SpindleLodFarGraph, and while still, not a renderer at all:
     /// its renderer is switched off and it is drawn in ONE <c>Graphics.RenderMeshInstanced</c> call
     /// per material and mesh, which is what removes the per-limb culling and submission cost that grew
-    /// with the forest. OVERT steps the mesh down as the effect settles back with distance - the 144-
-    /// triangle braid at the peak, the 72-triangle braid while it recedes, the 12-triangle thread once
-    /// it has (the cheapest form that still draws a spindle); COVERT goes straight to the thread.</item>
+    /// with the forest. OVERT steps the mesh down once the effect has settled back - the 144-triangle
+    /// braid through the peak and the recede, the 72-triangle braid once settled, then the 12-triangle
+    /// thread (the cheapest form that still draws a spindle); COVERT goes straight to the thread.</item>
     /// <item><b>Culled</b> - past the fade's end, where the thread's alpha has reached zero: nothing.</item>
     /// </list>
     ///
@@ -415,16 +415,17 @@ namespace CosmicShore.Gameplay
         internal static TierBounds BoundsFor(SpindleLodProfileSO p, bool overt, Vector4 spread, Vector4 recede)
         {
             float keep = 1f - p.hysteresis;
-            // OVERT: the 144 -> 72 step comes as the recede STARTS (the two braids differ by their
-            // decimation alone, 0.19 units, a third of a pixel there), and the 72 -> thread step's
-            // inward edge is the recede's END, where the braid has converged into the thread's own
-            // construction. COVERT goes straight from the converging braid to the thread.
+            // OVERT: the 144-triangle braid carries the whole recede, and the 144 -> 72 step's inward
+            // edge is the recede's END, where both braids have converged into the thread's own
+            // construction (they differ by their decimation alone, under a pixel there); the
+            // 72 -> thread step comes at overtThreadStart, and the cull's inward edge is the fade's
+            // end. COVERT goes straight from the converging braid to the thread.
             return overt
                 ? new TierBounds
                 {
                     overt = true, sqrDistance = Mathf.Max(spread.w, 1f), keep = keep,
                     nearEnd = IncorporealDepth.OpeningStartNorm(spread), midEnd = 1f / keep,
-                    lowStart = recede.x, minStart = recede.y / keep, cull = p.overtFadeEndNorm / keep,
+                    lowStart = recede.y / keep, minStart = p.overtThreadStartNorm, cull = p.overtFadeEndNorm / keep,
                 }
                 : new TierBounds
                 {
@@ -449,8 +450,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The mesh a tier draws. OVERT: Far is the SAME braid the mid tier draws (the peak, where the
-        /// fan is widest and the two must open identically), Low the 72-triangle braid while the fan
-        /// closes, Min the 12-triangle thread. COVERT never uses Far or Low (zero-width bands).
+        /// fan is widest and the two must open identically, and the recede that closes it), Low the
+        /// 72-triangle braid once it has settled, Min the 12-triangle thread. COVERT never uses Far or
+        /// Low (zero-width bands).
         /// </summary>
         Mesh TierMesh(SpindleLodProfileSO.MeshSet set, Tier tier) => tier switch
         {

@@ -27,7 +27,8 @@ pass-through), which SpindleLodSystem copies onto each runtime LOD material from
 profile. The bands and look are GLOBALS declared in SpindleLod.hlsl, not graph properties.
 
 SpindleDepthGraph (Docs/SPINDLE_LOD.md §8) is the third: SpindleGraph + SpindleDepthVertex between Position
-and SpindleSway + SpindleDepthGlow between the lace colour and BaseColor (alpha untouched). It carries the
+and SpindleSway + SpindleDepthGlow between the lace and the BaseColor / Alpha blocks (a body's alpha fades
+out on the thread's band; a ring's is untouched). It carries the
 overt depth effect onto every spindle-material surface that is NOT the braid - the creatures' own models
 (form 0, bloom) and the switch rings (form 1, facets) - with three per-material floats,
 `_SpindleLodStrength`, `_SpindleDepthReach` and `_SpindleDepthForm` (all 0 by default = pass-through).
@@ -123,9 +124,9 @@ DEPTH_VERTEX_SLOTS = [
     (6, "Phase", "v1", False), (7, "Clock", "v1", False), (8, "Out", "v3", True),
 ]
 DEPTH_GLOW_SLOTS = [
-    (0, "Color", "v3", False), (1, "PositionWS", "v3", False), (2, "UV", "v3", False),
-    (3, "Reach", "v1", False), (4, "Form", "v1", False), (5, "Strength", "v1", False),
-    (6, "Phase", "v1", False), (7, "Clock", "v1", False), (8, "Out", "v3", True),
+    (0, "Color", "v3", False), (1, "Alpha", "v1", False), (2, "PositionWS", "v3", False), (3, "UV", "v3", False),
+    (4, "Reach", "v1", False), (5, "Form", "v1", False), (6, "Strength", "v1", False),
+    (7, "Phase", "v1", False), (8, "Clock", "v1", False), (9, "OutColor", "v3", True), (10, "OutAlpha", "v1", True),
 ]
 FUNCTIONS = {"SpindleLodVertex": VERTEX_SLOTS, "SpindleLodSurface": SURFACE_SLOTS, "SpindleLodThread": THREAD_SLOTS,
              "SpindleDepthVertex": DEPTH_VERTEX_SLOTS, "SpindleDepthGlow": DEPTH_GLOW_SLOTS}
@@ -363,7 +364,7 @@ def _build_depth(docs, graph, idx, seed, add, new_docs, prop_oids, phase_pn, don
         graph["m_Edges"].append(edge(src["m_ObjectId"], 0, vcf["m_ObjectId"], slot))
     graph["m_Edges"].append(edge(vcf["m_ObjectId"], 8, sway["m_ObjectId"], 0))
 
-    # Fragment: the lace colour -> SpindleDepthGlow -> BaseColor. Alpha is SpindleGraph's own.
+    # Fragment: the lace colour and alpha -> SpindleDepthGlow -> BaseColor / Alpha.
     fx, fy = -3300.0, 2600.0
     pos_ws = add(_simple_node(docs, "PositionNode", f"{seed}/positionWS", fx, fy, m_Space=SPACE_WORLD))
     fuv0 = add(_simple_node(uv_docs, "UVNode", f"{seed}/fuv0", fx, fy + 140.0, m_OutputChannel=0))
@@ -371,18 +372,24 @@ def _build_depth(docs, graph, idx, seed, add, new_docs, prop_oids, phase_pn, don
     fphase = add(_property_node(phase_pn, donor_v1, phase["m_ObjectId"], "Phase", f"{seed}/f/phase", fx, fy + 500.0))
     fclock = add(_property_node(phase_pn, donor_v1, clock["m_ObjectId"], "PrismClock", f"{seed}/f/clock", fx, fy + 560.0))
     base_block = _block(docs, "SurfaceDescription.BaseColor")
+    alpha_block = _block(docs, "SurfaceDescription.Alpha")
     base_slot = _block_slot(idx, base_block)
+    alpha_slot = _block_slot(idx, alpha_block)
     base_edge = _feeder(graph, base_block["m_ObjectId"], base_slot)
-    assert base_edge, "SpindleGraph's BaseColor block is unfed"
+    alpha_edge = _feeder(graph, alpha_block["m_ObjectId"], alpha_slot)
+    assert base_edge and alpha_edge, "SpindleGraph's BaseColor / Alpha blocks are unfed"
     graph["m_Edges"].remove(base_edge)
+    graph["m_Edges"].remove(alpha_edge)
     gcf = add(_cf(death, donor_v1, donor_v3, "SpindleDepthGlow", seed, fx + 460.0, fy))
     feeds = [((base_edge["m_OutputSlot"]["m_Node"]["m_Id"], base_edge["m_OutputSlot"]["m_SlotId"]), 0),
-             ((pos_ws["m_ObjectId"], 0), 1), ((fuv0["m_ObjectId"], 0), 2), ((freach["m_ObjectId"], 0), 3),
-             ((fform["m_ObjectId"], 0), 4), ((fk["m_ObjectId"], 0), 5), ((fphase["m_ObjectId"], 0), 6),
-             ((fclock["m_ObjectId"], 0), 7)]
+             ((alpha_edge["m_OutputSlot"]["m_Node"]["m_Id"], alpha_edge["m_OutputSlot"]["m_SlotId"]), 1),
+             ((pos_ws["m_ObjectId"], 0), 2), ((fuv0["m_ObjectId"], 0), 3), ((freach["m_ObjectId"], 0), 4),
+             ((fform["m_ObjectId"], 0), 5), ((fk["m_ObjectId"], 0), 6), ((fphase["m_ObjectId"], 0), 7),
+             ((fclock["m_ObjectId"], 0), 8)]
     for (src, src_slot), dst_slot in feeds:
         graph["m_Edges"].append(edge(src, src_slot, gcf["m_ObjectId"], dst_slot))
-    graph["m_Edges"].append(edge(gcf["m_ObjectId"], 8, base_block["m_ObjectId"], base_slot))
+    graph["m_Edges"].append(edge(gcf["m_ObjectId"], 9, base_block["m_ObjectId"], base_slot))
+    graph["m_Edges"].append(edge(gcf["m_ObjectId"], 10, alpha_block["m_ObjectId"], alpha_slot))
 
     docs.extend(new_docs)
     return docs
@@ -437,10 +444,8 @@ def validate(docs, tier):
         for sid, name, _k, out in FUNCTIONS[fn]:
             if not out and feeders.get((cf["m_ObjectId"], sid)) != 1:
                 errs.append(f"{fn}.{name} is unfed")
-    # The blocks read the LOD function, and SpindleSway reads the converged position. The depth
-    # graph's glow feeds BaseColor only; its Alpha stays SpindleGraph's lace.
-    blocks = (("SurfaceDescription.BaseColor", "Out"),) if tier == "depth" else \
-        (("SurfaceDescription.BaseColor", "Color"), ("SurfaceDescription.Alpha", "Alpha"))
+    # The blocks read the LOD (or depth) function, and SpindleSway reads the converged position.
+    blocks = (("SurfaceDescription.BaseColor", "Color"), ("SurfaceDescription.Alpha", "Alpha"))
     for block_name, out_name in blocks:
         block = find_node(docs, block_name, "BlockNode")
         e = _feeder(graph, block["m_ObjectId"], _block_slot(idx, block))

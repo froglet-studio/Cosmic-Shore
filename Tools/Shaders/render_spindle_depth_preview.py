@@ -41,13 +41,13 @@ FAUNA = os.path.join(REPO, "Assets", "_Models", "Fauna")
 BODIES = {"shark": "Shark_model.fbx", "brittlestar": "Brittlestar_Export.fbx", "worm": "wormbody.fbx",
           "fish": "mediumfish.fbx"}
 DANGER = (0.09, 0.29, 0.8)
-RECEDE = (2.25, 42.25)           # Resources/IncorporealDepth
+RECEDE = (2.25, 4.9)            # Resources/IncorporealDepth
 FLOW = (0.35, 1.5, 0.6, 0.8)
 SQR = 100000.0
 DULL = (0.0, 0.027586222, 1.0)   # SpindleMaterial
 RING_RADIUS = 20.0
-STOPS = [(0.15, "at rest"), (0.6, "opening"), (2.0, "the peak"), (5.0, "settling back"), (16.0, "settling"),
-         (30.0, "nearly settled"), (42.25, "settled")]
+STOPS = [(0.15, "at rest"), (0.6, "opening"), (2.0, "the peak"), (3.4, "settling back"), (4.9, "settled"),
+         (15.625, "fading"), (19.0, "nearly gone")]
 
 PROGRAM = r'''
 #include <cstdio>
@@ -61,17 +61,18 @@ int main() {
     _IncorporealSpread = float4{%DX%f, %DY%f, %DZ%f, %SQR%f};
     _IncorporealFlow = float4{%FA%f, %FW%f, %FS%f, %FG%f};
     _SpindleLodLook2 = float4{0.85f, 1.f, 0, 0};                 // overt
+    _SpindleLodBands = float4{%RS%f, %RE%f, 15.625f, 22.5f};       // the shipped overt ladder
     g_model = f4x4{sx,0,0,0, 0,sy,0,0, 0,0,sz,0, 0,0,0,1};
     _WorldSpaceCameraPos = float4{0, 0, -dist, 0};
     for (int i = 0; i < nv; i++) {
         float d[8];
         for (int k = 0; k < 8; k++) if (std::scanf("%f", &d[k]) != 1) return 2;
         float3 p = mk3(d[0], d[1], d[2]), n = mk3(d[3], d[4], d[5]), uv = mk3(d[6], d[7], 0);
-        float3 o, g;
+        float3 o, g; float ga;
         SpindleDepthVertex_float(p, n, uv, reach, form, strength, 0.f, clock, o);
         float3 w = mk3(o.x * sx, o.y * sy, o.z * sz);
-        SpindleDepthGlow_float(mk3(1, 1, 1), w, uv, reach, form, strength, 0.f, clock, g);
-        std::printf("%g %g %g %g\n", w.x, w.y, w.z, g.x);
+        SpindleDepthGlow_float(mk3(1, 1, 1), 1.f, w, uv, reach, form, strength, 0.f, clock, g, ga);
+        std::printf("%g %g %g %g\n", w.x, w.y, w.z, g.x * ga);
     }
     return 0;
 }

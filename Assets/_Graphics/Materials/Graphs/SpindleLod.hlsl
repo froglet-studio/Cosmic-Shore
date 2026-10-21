@@ -261,7 +261,9 @@ void SpindleLodThread_float(float3 Dull, float3 Bright, float DeathState, float3
 //   Form 0  BLOOM (creatures: the shark, brittlestar, worm and quadfish models, skinned or not).
 //           Outward from the object's pivot by position alone (IncorporealDepthBloom), reaching the
 //           full travel at Reach world units (_SpindleDepthReach, measured per renderer by
-//           SpindleLodSystem from its bounds); the wave runs heart -> extremities.
+//           SpindleLodSystem from its bounds); the wave runs heart -> extremities. And it LEAVES with
+//           the limbs: its alpha fades out on the thread's own band (_SpindleLodBands z -> w), so every
+//           spindle in the sea is gone at the same distance.
 //   Form 1  FACETS (the switch rings). Prism-exact: every flat facet opens along its own normal
 //           (IncorporealDepthOpen), and the wave runs along UV.x, round the ring.
 //
@@ -282,15 +284,21 @@ void SpindleDepthVertex_float(float3 PositionOS, float3 NormalOS, float3 UV, flo
 #endif
 }
 
-void SpindleDepthGlow_float(float3 Color, float3 PositionWS, float3 UV, float Reach, float Form, float Strength,
-    float Phase, float Clock, out float3 Out)
+void SpindleDepthGlow_float(float3 Color, float Alpha, float3 PositionWS, float3 UV, float Reach, float Form,
+    float Strength, float Phase, float Clock, out float3 OutColor, out float OutAlpha)
 {
-    Out = Color;
+    OutColor = Color;
+    OutAlpha = Alpha;
 #if !defined(SHADERGRAPH_PREVIEW)
     if (!SpindleLod_Overt()) return;
-    float pulse = Form > 0.5 ? IncorporealDepth_Pulse(UV.x, Phase, Clock, Strength)
-                             : IncorporealDepth_BloomPulse(PositionWS, Reach, Phase, Clock, Strength);
-    Out = Color * (1.0 + pulse);
+    if (Form > 0.5)
+    {
+        OutColor = Color * (1.0 + IncorporealDepth_Pulse(UV.x, Phase, Clock, Strength));
+        return;
+    }
+    OutColor = Color * (1.0 + IncorporealDepth_BloomPulse(PositionWS, Reach, Phase, Clock, Strength));
+    float norm = IncorporealDepth_Norm(IncorporealDepth_Origin());
+    OutAlpha = Alpha * (1.0 - SpindleLod_Ramp(_SpindleLodBands.z, _SpindleLodBands.w, norm));
 #endif
 }
 

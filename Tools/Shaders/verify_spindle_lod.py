@@ -304,12 +304,13 @@ int main() {
         CHECK(std::fabs(length(tip - held) - 15.2f) < 1e-3f, "overt: the tip fanned %g, not the danger face's 15.2", length(tip - held));
         CHECK(length(normalize(tip - held) - splay) < 1e-5f, "overt: the tip fanned off its splay");
     }
-    // R. The far side (rounds 3-4): the effect settles back with distance, and a limb's Strength scales it.
-    //    The shipped recede (Resources/IncorporealDepth): 2.25 -> 42.25, ~474 -> ~2,056 units.
-    _IncorporealRecede = float4{2.25f, 42.25f, 0, 0};
+    // R. The far side (rounds 3-5): the effect settles back with distance, and a limb's Strength scales it.
+    //    The shipped recede (Resources/IncorporealDepth): 2.25 -> 4.9, ~474 -> ~700 units (round 5).
+    const float RE = 4.9f;
+    _IncorporealRecede = float4{2.25f, RE, 0, 0};
     {
-        // R1. the recede is 1 to its start, 0 from its end, monotone and SMOOTH in distance between (no
-        //     step bigger than 1.5% of the effect per 1% of distance: the onset eases in over a long way)
+        // R1. the recede is 1 to its start, 0 from its end, monotone and SMOOTH in distance between (an
+        //     eased curve, never a step: no more than 5% of the effect per 1% of distance)
         float prevR = 2.f, worstStep = 0.f;
         for (float d = 200.f; d < 3000.f; d *= 1.01f) {
             float r = IncorporealDepth_Recede(d * d / SQR);
@@ -317,19 +318,20 @@ int main() {
             if (prevR <= 1.f) worstStep = std::max(worstStep, prevR - r);
             prevR = r;
         }
-        // ... measured against the NEAR side, the prisms' own ramp (the part Garrett called great): the far
-        //     side must ease in more gently than the near side opens, per step of distance.
+        // ... reported against the NEAR side, the prisms' own ramp (the part Garrett called great). Round 3
+        //     asked for a far side gentler than it; round 5 asked for the recede to end by ~700 units,
+        //     which makes it a little steeper - so this is a figure to read, and the guard is the 5%.
         float prevO = -1.f, nearWorst = 0.f;
         for (float d = 100.f; d < 400.f; d *= 1.01f) {
             float o = IncorporealDepth_RampOpenness(d * d / SQR, danger);
             if (prevO >= 0.f) nearWorst = std::max(nearWorst, o - prevO);
             prevO = o;
         }
-        CHECK(worstStep < nearWorst, "far side steps %g per 1%% of distance, the near ramp only %g: the onset is the abrupt side", worstStep, nearWorst);
+        CHECK(worstStep < 0.05f, "far side steps %g of the effect per 1%% of distance: the recede is a step, not an ease", worstStep);
         std::printf("onset: far side %.4f, near ramp %.4f per 1%% of distance\n", worstStep, nearWorst);
-        CHECK(IncorporealDepth_Recede(2.25f) == 1.f && IncorporealDepth_Recede(42.25f) == 0.f, "recede band edges");
+        CHECK(IncorporealDepth_Recede(2.25f) == 1.f && IncorporealDepth_Recede(RE) == 0.f, "recede band edges");
         // R2. at the recede's end the braid IS the thread's construction: no fan, strands on the centreline
-        place(std::sqrt(42.25f * SQR), 1.f);
+        place(std::sqrt(RE * SQR), 1.f);
         SpindleLodView v = SpindleLod_View(G);
         float3 o;
         SpindleLodVertex_float(pos, nrmOS, mk3(0.8f, 0.5f, 0.f), toAxis, radial, splay, G, R, 1.f, 0.3f, 1.7f, o);
@@ -338,7 +340,7 @@ int main() {
         // ... and past the peak the lace stays closed (progress 1) while it recedes
         CHECK(std::fabs(v.progress - 1.f) < 1e-5f, "the lace came back on the far side");
         // R3. Strength: at the peak a limb's tip travels Strength x the danger face's 15.2 units
-        for (float S : {0.35f, 0.1f}) {
+        for (float S : {0.175f, 0.05f}) {
             place(std::sqrt(2.f * SQR), 1.f);
             SpindleLodView vp = SpindleLod_View(G);
             float3 tip;
@@ -438,8 +440,8 @@ int main() {
             for (float rr = 0.5f; rr < 2.f * rch; rr += 0.37f) {
                 float3 pO = normalize(mk3(0.2f, 0.9f, -0.4f)) * rr;
                 SpindleDepthVertex_float(pO, nrmOS, uvf, rch, 0.f, S, ph, clk, o);
-                float3 g;
-                SpindleDepthGlow_float(mk3(1, 1, 1), worldOf(o), uvf, rch, 0.f, S, ph, clk, g);
+                float3 g; float ga;
+                SpindleDepthGlow_float(mk3(1, 1, 1), 1.f, worldOf(o), uvf, rch, 0.f, S, ph, clk, g, ga);
                 float crest = saturate(IncorporealDepth_Wave(rr / rch, ph, clk));
                 float want = 1.f + 0.8f * opns * crest * crest;
                 worst = std::max(worst, std::fabs(g.x - want));
@@ -462,8 +464,24 @@ int main() {
         // a facet's corners move together (same normal, same flow coordinate): the facet stays flat
         SpindleDepthVertex_float(p0 / 40.f + mk3(0.01f, 0, 0), fn, uvf, 0.f, 1.f, 0.1f, 0.2f, 0.3f, o2);
         CHECK(length((o2 - o) - mk3(0.01f, 0, 0)) < 1e-6f, "a ring facet sheared");
-        float3 g; SpindleDepthGlow_float(mk3(1, 1, 1), worldOf(o), uvf, 0.f, 1.f, 0.1f, 0.2f, 0.3f, g);
+        float3 g; float ga;
+        SpindleDepthGlow_float(mk3(1, 1, 1), 0.6f, worldOf(o), uvf, 0.f, 1.f, 0.1f, 0.2f, 0.3f, g, ga);
         CHECK(std::fabs(g.x - (1.f + IncorporealDepth_Pulse(uvf.x, 0.2f, 0.3f, 0.1f))) < 1e-6f, "form 1's pulse is not along u");
+        // B8. every spindle leaves at the same distance: a BODY's alpha fades on the thread's band
+        //     (_SpindleLodBands z -> w), a RING's never does (a switch you fly toward stays readable).
+        for (float n : {10.f, 16.f, 26.f, 36.f, 50.f}) {
+            pose(1, 1, 1, std::sqrt(n * SQR));
+            SpindleDepthGlow_float(mk3(1, 1, 1), 0.6f, mk3(1, 2, 3), uvf, reach, 0.f, 0.35f, 0.f, 0.f, g, ga);
+            float want = 0.6f * (1.f - smoothstep(16.f, 36.f, n));
+            CHECK(std::fabs(ga - want) < 1e-6f, "norm %g: a body's alpha %g, not the thread's fade %g", n, ga, want);
+            SpindleDepthGlow_float(mk3(1, 1, 1), 0.6f, mk3(1, 2, 3), uvf, 0.f, 1.f, 0.05f, 0.f, 0.f, g, ga);
+            CHECK(ga == 0.6f, "norm %g: a ring faded (%g)", n, ga);
+        }
+        globals(0, 1, 16, 36, minPx, 0.f);
+        pose(1, 1, 1, std::sqrt(50.f * SQR));
+        SpindleDepthGlow_float(mk3(1, 1, 1), 0.6f, mk3(1, 2, 3), uvf, reach, 0.f, 0.35f, 0.f, 0.f, g, ga);
+        CHECK(ga == 0.6f && g.x == 1.f, "covert: a body's look changed");
+        globals(0, 1, 16, 36, minPx, 1.f);
     }
 
     _IncorporealRecede = float4{0, 0, 0, 0};
@@ -532,6 +550,9 @@ def self_test():
         "the depth graph ignores the style": ("    Out = PositionOS;\n#if !defined(SHADERGRAPH_PREVIEW)\n    if (!SpindleLod_Overt()) return;\n    float openness;",
                                               "    Out = PositionOS;\n#if !defined(SHADERGRAPH_PREVIEW)\n    float openness;"),
         "the ring's facet form is ignored": ("    if (Form > 0.5)\n        IncorporealDepthOpen_float", "    if (Form > 1.5)\n        IncorporealDepthOpen_float"),
+        "bodies never leave": ("    OutAlpha = Alpha * (1.0 - SpindleLod_Ramp(_SpindleLodBands.z, _SpindleLodBands.w, norm));", "    OutAlpha = Alpha;"),
+        "rings fade with the bodies": ("        OutColor = Color * (1.0 + IncorporealDepth_Pulse(UV.x, Phase, Clock, Strength));\n        return;",
+                                       "        OutColor = Color * (1.0 + IncorporealDepth_Pulse(UV.x, Phase, Clock, Strength));\n        OutAlpha = 0.0;\n        return;"),
     }
     failures = 0
     for name, (old, new) in mutants.items():

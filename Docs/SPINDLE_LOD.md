@@ -244,15 +244,41 @@ Garrett: *"Grade them in over twice the distance and cut both the charge and nor
   Amoebius, Garland, the last of six samples: 910 limbs - braid 24, low 886, thread 0, 889 of them instanced (round 3:
   low 799, thread 87). Garrett's call if the frame-time A/B shows it: pull `recedeEndNorm` back in.
 
-The numbers in §7.2b are round 3's; the table below is round 4's.
+### 7.2d Round 5: a short settle on the full braid, then down the ladder, gone by 1,500
+
+Garrett: *"Have the settling back phase go from 474 to circa 700 but still use the 144. Then have it use
+72 till circa 1000, then 12 till 1500 and gone after that. Then cut the amount of opening value at peak in
+half for both the base and charge. Then apply these effects to all spindles."*
+
+- **The recede** is `recedeEndNorm` 42.25 -> **4.9** (~474 -> ~700 units), and the **144-triangle braid
+  carries all of it**: the 144 -> 72 step now waits for the recede's END (`lowStart = recedeEnd / keep`), where
+  both braids are fully converged into the thread's construction. Its steepest rate is now 3.9% of the effect
+  per 1% of distance (the near ramp: 3.2%), so the settle is quicker than round 4's 1.3% and a little steeper
+  than the opening side; the harness guards it as an ease (under 5%), not a step.
+- **The 72-triangle braid** holds ~700 -> ~1,000 units; **the 12-triangle thread** takes over at the new
+  `overtThreadStartNorm` (**10**, ~1,000 units), glows up to 1.35x until ~1,250, and **fades out
+  ~1,250 -> 1,500** (`overtFadeStartNorm` 15.625, `overtFadeEndNorm` 22.5); it stops being drawn at
+  ~1,564 (the cull's outward edge).
+- **Strength halves again**: `chargeStrength` **0.175** (a tip travels ~2.7 units at the peak),
+  `otherStrength` **0.05** (~0.76), and `switchRingStrength` **0.05** with them (it is the non-Charge
+  value).
+- **Every spindle**: the creatures' bodies already ride the same ramp and recede (§8), so they settle by
+  ~700 at the halved strength; they now also **leave on the thread's own band**, their alpha fading
+  ~1,250 -> 1,500 (`SpindleDepthGlow`), so every spindle in the sea is gone at the same distance. The
+  switch rings take the same ramp, recede and strength but do NOT fade: they are signals you fly toward.
+
+Amoebius, Garland, the last of six samples: 910 limbs - braid 168, low 298, thread 444, 889 instanced, 49 bodies
+(round 4: braid 24, low 886, thread 0).
+
+The numbers in §7.2b and §7.2c are earlier rounds'; the table below is round 5's.
 
 | tier | overt range (norm, ~units) | mesh | draws |
 |---|---|---|---|
 | Near | < 0.34 (184) | authored braid, 432 | own renderer, SpindleGraph |
 | Mid | 0.34 – 1.09 (330) | braid, 144 | own renderer, opening ramp |
-| Far | 1.09 – 2.25 (474) | braid, 144 | instanced, the peak |
-| Low | 2.25 – 45.9 (2,143) | braid, 72 | instanced, settling back |
-| Min | 45.9 – 108.7 (3,297) | thread, 12 | instanced, fading from norm 46 |
+| Far | 1.09 – 5.33 (730) | braid, 144 | instanced, the peak (to 474) and the recede (to 700) |
+| Low | 5.33 – 10 (1,000) | braid, 72 | instanced, settled |
+| Min | 10 – 24.5 (1,564) | thread, 12 | instanced, glowing to 1,250, fading out 1,250 -> 1,500 |
 | Culled | beyond | — | nothing |
 
 (Each boundary moves outward at the value shown and back inward at value × (1 − hysteresis); every band sits where
@@ -261,7 +287,7 @@ last of six samples: 910 limbs - braid 24, low 799, thread 87, 890 of them insta
 
 ### 7.3 Seeing it without Unity
 
-`python3 Tools/Shaders/render_spindle_lod_preview.py OUT --style overt|covert [--strength 0.35]` compiles the SHIPPED
+`python3 Tools/Shaders/render_spindle_lod_preview.py OUT --style overt|covert [--strength 0.175]` compiles the SHIPPED
 `SpindleLod.hlsl` + `IncorporealDepth.hlsl` + `SpindleSway.hlsl` with clang, runs them on the real mid braid posed
 as the Branch prefab poses it (a star of 8 limbs, like one lattice node), drawing the tier's own mesh at each
 distance, and writes a sheet (seven points from rest through the peak to the fading thread:
@@ -320,7 +346,7 @@ by a function of its POSITION ALONE, so it can never tear a mesh. It is the brai
 creature's heart for the root: anchored at the pivot, a point's travel grows linearly with its radius
 and reaches the full travel (the danger face's 15.2 world units x strength) at the body's REACH; the
 wave runs heart -> extremities along the same radius, and its pulse of light rides the crest. Same
-ramp, same recede, same strength by element (a Charge shark blooms 0.35, every other creature 0.1),
+ramp, same recede, same strength by element (a Charge shark blooms 0.175, every other creature 0.05),
 in world units whatever the object's scale.
 
 - **Reach** is measured per renderer when it registers (`SpindleLodSystem.ReachOf`: the bounds'
@@ -358,7 +384,7 @@ becomes the spindle's body colour, with its rim 37% toward white as `SpindleMate
 
 | profile field | value | why |
 |---|---|---|
-| `switchRingStrength` | 0.1 | ~1.5 units at the peak, as a non-Charge limb |
+| `switchRingStrength` | 0.05 (round 5; was 0.1) | ~0.76 units at the peak, as a non-Charge limb |
 | `switchRingDistance` | 200,000,000 | SpindleGraph's `_Distance` (the lace's fade): a branch fades by ~1,400 units, a ring you fly toward stays readable to ~14,000 |
 | `switchRingSway` | 0 | a ring is a trigger volume drawn at its own radius; a swaying ring would draw it where it is not |
 

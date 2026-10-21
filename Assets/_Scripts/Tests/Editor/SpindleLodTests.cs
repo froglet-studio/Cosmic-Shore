@@ -32,8 +32,8 @@ namespace CosmicShore.Tests
 
         static SpindleLodSystem.TierBounds Covert(SpindleLodProfileSO p) => SpindleLodSystem.BoundsFor(p, false, default, default);
 
-        // Resources/IncorporealDepth's far side: hold the peak to norm 2.25, settled back by 42.25.
-        static readonly Vector4 Recede = new(2.25f, 42.25f, 0f, 0f);
+        // Resources/IncorporealDepth's far side: hold the peak to norm 2.25 (~474 u), settled back by 4.9 (~700 u).
+        static readonly Vector4 Recede = new(2.25f, 4.9f, 0f, 0f);
 
         static SpindleLodSystem.TierBounds Overt(SpindleLodProfileSO p) => SpindleLodSystem.BoundsFor(p, true, Danger, Recede);
 
@@ -140,15 +140,19 @@ namespace CosmicShore.Tests
         [Test]
         public void Overt_StepsDownAsTheEffectSettlesBack()
         {
-            // Far side: the 144 -> 72 step comes as the recede starts; the 72 -> thread step's inward edge
-            // is the recede's END (the braid fully converged into the thread's own construction); the
-            // thread fades and is culled only after that.
+            // Far side (round 5): the 144-triangle braid carries the whole recede, and the 144 -> 72 step's
+            // inward edge is the recede's END (both braids fully converged into the thread's own
+            // construction); the 72 -> thread step comes at overtThreadStart (~1,000 u), after the
+            // 72-braid's band; the thread fades only once it has taken over and is gone by ~1,500 u.
             var p = Profile();
             var b = Overt(p);
-            Assert.AreEqual(Recede.x, b.lowStart, 1e-5f);
-            Assert.AreEqual(Recede.y, b.minStart * b.keep, 1e-4f, "the thread takes over before the braid has settled back");
-            Assert.Less(b.midEnd, b.lowStart * b.keep, "the peak's band overlaps the recede's");
-            Assert.Greater(p.overtFadeStartNorm, b.minStart, "the thread fades before it has taken over");
+            Assert.AreEqual(Recede.y, b.lowStart * b.keep, 1e-4f, "the 72-triangle braid takes over before the recede has ended");
+            Assert.AreEqual(p.overtThreadStartNorm, b.minStart, 1e-5f);
+            Assert.Greater(b.minStart * b.keep, b.lowStart, "the thread's band overlaps the 72-braid's");
+            Assert.Less(b.midEnd, b.lowStart * b.keep, "the peak's band overlaps the 72-braid's");
+            Assert.GreaterOrEqual(p.overtFadeStartNorm, b.minStart, "the thread fades before it has taken over");
+            Assert.AreEqual(1500f, Mathf.Sqrt(p.overtFadeEndNorm * Danger.w), 1f, "the spindles are not gone by ~1,500 units");
+            Assert.IsFalse(p.OvertBandsAreSane(new Vector4(2.25f, 9.5f, 0, 0), out _), "a thread band inside the 72-braid's");
             Assert.IsTrue(p.OvertBandsAreSane(Recede, out string why), why);
             Assert.IsFalse(p.OvertBandsAreSane(new Vector4(1.02f, 16f, 0, 0), out _), "a recede inside the over-distance band");
             Object.DestroyImmediate(p);
@@ -183,8 +187,8 @@ namespace CosmicShore.Tests
         public void ChargeLimbsPartHardest()
         {
             var p = Profile();
-            Assert.AreEqual(0.35f, p.StrengthFor(true), 1e-6f);
-            Assert.AreEqual(0.1f, p.StrengthFor(false), 1e-6f);
+            Assert.AreEqual(0.175f, p.StrengthFor(true), 1e-6f);
+            Assert.AreEqual(0.05f, p.StrengthFor(false), 1e-6f);
             Assert.Greater(p.StrengthFor(true), p.StrengthFor(false));
             Object.DestroyImmediate(p);
         }

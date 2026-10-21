@@ -419,17 +419,18 @@ MonoBehaviour:
   convergeStartGirths: 110
   farFadeStartGirths: 1300
   farFadeEndGirths: 1900
-  overtFadeStartNorm: 46
-  overtFadeEndNorm: 100
-  chargeStrength: 0.35
-  otherStrength: 0.1
+  overtThreadStartNorm: 10
+  overtFadeStartNorm: 15.625
+  overtFadeEndNorm: 22.5
+  chargeStrength: 0.175
+  otherStrength: 0.05
   minThreadPixels: 1.25
   threadBase: 0.35
   threadFacet: 0.55
   threadGlow: 1.35
   threadAlpha: 0.85
   depthOnBodies: 1
-  switchRingStrength: 0.1
+  switchRingStrength: 0.05
   switchRingDistance: 200000000
   switchRingSway: 0
 """
