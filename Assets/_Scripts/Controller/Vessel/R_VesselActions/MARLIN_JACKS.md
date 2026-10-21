@@ -125,3 +125,9 @@ units and multiplied by `labScale` (0.4).
   `Marlin.fbx` is made in the editor.
 - `element_ability_table.py Marlin` reads the Rhino's ForceFieldSkimmer for Space and the ramp for Time; the marlin's real
   bindings are in code (`MarlinJacksExecutor.Ring`, `MarlinJacksMath.SpeedMultiplier`).
+- **Hull-radius sweeps see the jacks.** The two jack models are children of the vessel root flown up to the herd ring
+  away from the hull, and `PrismOcclusionCorridor.MeasureCircumscribedRadius` (scope pip, Echo Sight, occlusion
+  corridor, crystal ejector) counts every active child renderer, so a measure taken while the crew is seated reads the
+  ring, not the hull. The Wrasse's kite has the same shape today; the fix is one shared crew-exclusion rule in the
+  sweep, for the owner of that utility, not a Marlin special case. Vision shading and Echo Sight tinting the jacks
+  with the hull is intended.
