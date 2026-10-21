@@ -457,7 +457,7 @@ schema rows are permanent and capped (`Docs/Analytics/DATA_ARCHITECTURE.md`).
 | 3 **(landed)** | The Mentor: TipListSOs for the gate-race family, race Moment conditions, resume (§10.4) | the curated tutor |
 | 4 **(landed, re-cut)** | Quest Graph P0 first-login guide; the Game of the Week source (§10.5, §10.6) | first login → Lesson, end to end |
 | 5 | Remaining races; tip lists for non-racing families; relevance-gated leaderboards (§6); practice-lap result | coverage |
-| 6 | Authoring window, coverage test, analytics (genre already read from `ModeGenre`, §8) | the "every vessel ever" guarantee |
+| 6 | Authoring window, coverage test **(report landed, §10.8)**, analytics (genre already read from `ModeGenre`, §8) | the "every vessel ever" guarantee |
 | later **(landed, §10.7)** | `GhostDemo` cue (the preview's own autopilot flies a step once before handing over) | show, don't tell |
 
 ### 10.1 Phase 1a - what landed
@@ -666,6 +666,21 @@ Skip mid-demo, demos off at 0 s (131 checks; a mutant that baselines the step be
 - The autopilot flies at the ARENA's objectives during the demo (the session retargeted it at tap-in), so
   where it goes is whatever the mode's autopilot chases; watch that it reads as "the ship showing you".
 - Whether 3 s reads as "watch this" or as a delay is a playtest call (`ghostDemoSeconds`).
+
+### 10.8 Phase 6 - the coverage report (2026-10-21)
+
+`Tools/Build/training_coverage.py` reads every Arcade and Arena card and writes
+`Docs/ModePreview/TRAINING_COVERAGE.md`: whether its preview flies, whether every hull it seats has an
+ability map (what the Lesson's ability steps and the Mentor's derived tips read), and whether the Mentor
+has authored tips for it (a mode list, or a metric list on the preview's `ObjectiveMetric`). It is a
+reader. `--check` fails when the report is stale or when a Game of the Week card is not fully covered,
+because first login lands on that card. `--self-test` has 4 negative controls.
+
+First reading: 12 of 35 cards are fully covered. Every hull has an ability map and every card but
+Maelstrom (its own preview host, no drill) has a flyable preview, so phase 5's gap is authored Mentor
+tips. **`--check` is red on one card: Skim Race**, in the rotation and its fallback, with no tips
+(its metric is `Crystals`, which has no list). The script is not named `check_*`, so it does not
+redden the repo-wide sweep until that list exists.
 
 ## 11. Still open
 
