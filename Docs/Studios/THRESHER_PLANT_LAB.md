@@ -346,6 +346,17 @@ Fly them in the lab, then **Decisions ▸ Record decision**. The next round star
   ranks worst on the stop.
 - Hard pin ranks worst on Ball stop (50.6), the control's job.
 - Decision log: published with `db` + `user`; `ArtifactData list decisions` reads the empty log.
+- 2026-10-21: the shipped solver's **launch line** and **LT let-go latch** (`ThresherChainSolver.OnLaunchLine`,
+  `LeftTriggerLetGo`; `THRESHER.md` §5a) are ported line for line into the page's `Solver` on the shipped path.
+  parity.cjs passes (9 scenarios, 2 733 frames, worst 0.80 × tolerance), and dropping either rule from the page
+  fails `analog-armed-lead` (211× and 3 733×), so that scenario does reach the launch's following frames.
+  Round 2 the same day (the line's along-line phase, `KeepOnLine`): the page's `armLaunch` gained the shipped
+  launch boost argument (it predated `launchBoost`; the lab's own vessel still passes 1), the scenarios gained an
+  optional `boost`, and the new `analog-armed-line-steer` arms at ×4.8, flies straight, then steers. Without the
+  boost no scenario reached that phase: three mutations of it passed parity until the scenario existed. Now 10
+  scenarios, 3 183 frames, worst 0.80 ×; dropping `keepOnLine` from the page fails at 2.56 ×. Dropping the "ball
+  not closing" clause stays under tolerance (0.84 ×), so that clause is held by the C# test
+  `AimedLaunch_OffATimeRaisedSpin_StaysOnTheLine_WhenTheShipOutrunsTheBall` instead (30.6° without it).
 
 ### What this lab does NOT model
 

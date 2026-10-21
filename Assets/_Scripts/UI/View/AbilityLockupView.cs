@@ -166,6 +166,50 @@ namespace CosmicShore.UI
             return Mathf.Max(size.x, size.y);
         }
 
+        static readonly Vector3[] s_corners = new Vector3[4];
+
+        /// <summary>
+        /// The screen rectangle, in pixels, that the built cards cover together AT REST - so a view or an input can keep
+        /// clear of the totems (the Wrasse's hand line sits just above it). Each card is measured without its own scale and
+        /// rotation, so its press and upgrade tweens do not move the answer. False before <see cref="Build"/>, or while no
+        /// card is showing. A question, not a demand: a miss is an answer.
+        /// </summary>
+        public bool TryGetCardsScreenRect(out Rect rect)
+        {
+            rect = default;
+            if (!_built) return false;
+            var canvas = GetComponentInParent<Canvas>();
+            var root = canvas ? canvas.rootCanvas : null;
+            Camera cam = root && root.renderMode != RenderMode.ScreenSpaceOverlay ? root.worldCamera : null;
+            bool any = false;
+            float xMin = float.MaxValue, yMin = float.MaxValue, xMax = float.MinValue, yMax = float.MinValue;
+            foreach (var slot in _slots.Values) Grow(slot.Card, cam, ref any, ref xMin, ref yMin, ref xMax, ref yMax);
+            foreach (var slot in _coreSlots.Values) Grow(slot.Card, cam, ref any, ref xMin, ref yMin, ref xMax, ref yMax);
+            if (any) rect = Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+            return any;
+        }
+
+        static void Grow(RectTransform card, Camera cam, ref bool any, ref float xMin, ref float yMin, ref float xMax, ref float yMax)
+        {
+            if (!card || !card.gameObject.activeInHierarchy) return;
+            // the card's rect placed at its pivot in its parent, leaving out its own (tweened) scale and rotation
+            var r = card.rect;
+            var at = card.localPosition;
+            var parent = card.parent;
+            s_corners[0] = at + new Vector3(r.xMin, r.yMin, 0f);
+            s_corners[1] = at + new Vector3(r.xMin, r.yMax, 0f);
+            s_corners[2] = at + new Vector3(r.xMax, r.yMax, 0f);
+            s_corners[3] = at + new Vector3(r.xMax, r.yMin, 0f);
+            for (int i = 0; i < 4; i++)
+            {
+                var world = parent ? parent.TransformPoint(s_corners[i]) : s_corners[i];
+                var p = RectTransformUtility.WorldToScreenPoint(cam, world);
+                xMin = Mathf.Min(xMin, p.x); xMax = Mathf.Max(xMax, p.x);
+                yMin = Mathf.Min(yMin, p.y); yMax = Mathf.Max(yMax, p.y);
+            }
+            any = true;
+        }
+
         /// <summary>The flower socket for an element, if a card was built for it.</summary>
         public RectTransform GetFlowerSocket(Element element)
             => _slots.TryGetValue(element, out var slot) ? slot.FlowerSocket : null;

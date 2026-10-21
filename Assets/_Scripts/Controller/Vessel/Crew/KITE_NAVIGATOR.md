@@ -6,12 +6,17 @@ round 3 candidate, which Garrett signed off on 2026-10-17 (`Docs/Studios/CrewVes
 `Docs/Studios/CREW_VESSEL_LAB.md`), then **rounds 4 to 4f (2026-10-18), which Garrett directed in Unity after flying
 it**; see "Round 4" below. The rounds after 3 are not in the lab yet (task `T-20261018-3247`).
 
-**Where it stands (after round 4f)**, in one place; the rounds below say why each part is the way it is:
+**Where it stands (after round 6, 2026-10-20)**, in one place; the rounds below say why each part is the way it is:
 - **The Grouper (pilot):** the Sparrow's hull with its guns, missiles and buttons removed, flown on two sticks
   (`VesselTransformer`; pitch / yaw 100, roll 120). The right trigger (right Shift; both thumbs lifted on a phone)
   spends a boost the Wrasse saved.
-- **The Wrasse (navigator):** a kite on the hull's x-z plane that follows the mouse or stick with no click. Its head
-  pops hostile prisms and rams rivals and creatures. Its tail lassos motes of one element, drawn as lime five-petal
+- **The Wrasse (navigator):** a kite on the hull's x-z plane, held on an invisible rope by EVERY input (**the Sling**,
+  round 6): a thumb (drag and it trails, small circles whirl it round in big ones, lift to let it fly), the mouse and
+  a thumbstick (hands that never let go; the stick places the hand on the board) and the AI squad mate. Its head
+  pops hostile prisms and rams rivals and creatures, and threads every race's rings (round 6). It does not trip
+  Toybox toys; the Thresher's ball does.
+- **AI crews:** an AI-flown Wrasse is two AIs, the hull's `AIPilot` for the Grouper and the navigator AI for the
+  Wrasse (round 6b). Its tail lassos motes of one element, drawn as lime five-petal
   flowers in the totem's proportions, each moving like its element.
 - **The views:** the kite view is a second, top-down orthographic camera drawn by the game. It is a small square in the
   lower left while you pilot and full screen while you navigate, with the pilot camera swapped into the square. Out of
@@ -214,6 +219,118 @@ the other vessel it should switch."
 - **The ability cards are buttons now** for every vessel, the Wrasse included (`Docs/ABILITY_LOCKUP.md`, "Tap a card").
   All four Wrasse map entries are `Input: 0`, so its cards are not pressable until they name an input.
 
+## Round 6: the Sling, switches and Wrasse Run (Garrett, 2026-10-20)
+
+| Asked | In the game |
+|---|---|
+| "Sling is excellent. bring it to unity" (the Wrasse Lasso Lab, `Docs/Studios/WRASSE_LASSO_LAB.md`) | `KiteNavigatorCore.Sling`, the lab's `stepKite` 'sling' + `ropeForce` + `rimBounce` line for line: the pointer is a hand on a `slingRope` 42 u rope that pulls back only when stretched (`slingStiffness` 260, `slingDamping` 5 on the stretch rate measured against the moving hand), `slingDrag` 0.35 while held, `slingFreeDrag` 0.9 once let go, `slingMaxSpeed` 520, bouncing off the board's rim (×1.4 of the outward speed). `pointerControl` (Sling, the asset's value) picks it for a touch and the mouse; no thumb offset (the rope keeps the kite off the thumb). A lifted thumb lets go; the mouse is a hand that never lets go (the no-click rule). A thumbstick leans the kite as before (Follow), and the AI squad mate aims (Follow). Held to the page by `Tools/Build/kite_navigator_lab/sling_parity.cjs` (3 240 frames, 10 loops, worst 0.002 × tolerance; three planted dial changes caught; the asset's 9 sling fields equal the lab's). |
+| "make it so the wrasse can hit switches" | The kite is the hull's `IRingThreadProbe` (the Thresher ball's interface): `TryGetRingProbe` returns the kite's world point and an epoch bumped whenever the kite is re-placed. So it threads **every gate race's rings** (`GateRaceController`), the Skim Race's (`CrystalRaceRing`) and a mode preview's (`ModePreviewGateCourse`). (It tripped Toybox toys too until round 6b flipped that to the Thresher's ball.) False while no navigator is seated, so a remote hull threads with the hull alone. |
+| Round 6b, the same day: "AI vessels should be controlled by two AI, one for the wrasse, and one for the grouper" | An AI-flown Wrasse that THIS machine simulates (`ShouldRun`: not the local pilot's hull, on autopilot, `Player.IsNetworkOwner`, not a local user) seats its kite too, flown by `KiteNavigatorAI`, with no view, swap, static handle or human input (`IsAICrew`). The hull's `AIPilot` is the Grouper's AI; it spends a saved boost while the next race ring is ≥ `aiBoostRingDistance` (180 u) away and ahead (`AIPilotWantsBoost`; outside a race, as they come) - the same rule now applies whenever the human navigates. `aiCrewNavigates` (on) switches it. |
+| Round 6b: "lets flip things so the wrasse does not activate toys, but the thresher flail does" | The kite is an `IRingThreadProbe` only (race rings); `ThresherExecutor` is the `ISwitchThreadProbe` (the ball trips toys, `Toy.Update`). |
+| Round 6b: "the gamepad and AI should be consistent with mouse and touch" | `control` (was `pointerControl`, `FormerlySerializedAs`) applies to every input. With Sling a thumbstick is a hand that never lets go, placed on the board as the mouse is: centred = the board's centre, a full lean `slingStickReach` (0.6) board radii out. The AI's aim is the hand on the rope (`KiteNavigatorAI.Control`): a loop is whirled with a hand circle `aiSlingLead` (0.25) × the rope that leads the kite a quarter turn round the cluster (the lab's sling pilot), a ring / rival / prism is reached by pulling the hand 0.6 ropes past it, and a loop plan ends when the kite closes a loop (`OnLoopClosed`). `KiteNavigatorSlingTests` runs the AI on the core: it whirls a loop round a cluster and drags the kite through a goal; planted defects fail both. |
+| A Wrasse and Grouper race | **Wrasse Run** (`GameModes.WrasseRun = 68`, `Assets/_Scripts/Controller/Arcade/WRASSERUN.md`): a ring counts only when the kite threads it. While a gate race has a next ring for this hull (`GateRaceController.TryGetNextRing`): Time motes come more often (`raceTimeMoteBonus` 2 added to their weight), the AI squad mate values a Time loop ×`raceTimeLoopPreference` 3, and it flies the kite through the lit ring first whenever the board plane cuts its mouth (the ring's centre within 0.85 of its radius of the plane, its axis at least 0.35 in the plane), aiming a point just past the mouth along the ring's axis. |
+
+## Round 7: two real bodies, the whole screen, the cord (Garrett, 2026-10-20)
+
+| Asked | In the game |
+|---|---|
+| "use the new model building capabilities to give the wrasse and grouper proper 3d vessels with animations etc." | Two `/vessel-model` hulls: `Grouper.fbx` (`specs/grouper.py`, ~12 u, the Sparrow's span and length within 5%, a deep body with a serrated crest, wing-pod engines and a fan tail; bones `hull jaw fin.L fin.R dorsal tail.1 tail.2`) and `WrasseKite.fbx` (`specs/wrassekite.py`, 16 u, slim with two long vanes; bones `hull spine.1 spine.2 tail fin.L fin.R`). Both have four real element morphs, which the hull's `VesselAnimation` drives with no new code. Dossiers: `Docs/VesselModels/Grouper.md`, `WrasseKite.md`. `author_wrasse_assets.py` nests both under the root by name. The Grouper is the ship geometry, so the domain paint lands on its slot 0. The Sparrow's mesh renderer is off; its bones, jets, colliders and Animator stay. `WrasseCrewBodies` (on the root) animates them from measured motion. The **Grouper**'s tail beats faster with speed and bends out of a turn, its fins scull and bank, and its jaw opens and dorsal rises above cruise (a boost). The **Wrasse** swims a wave down its spine, paced by its speed across the board, and flaps its fins. The flat kite diamond is gone once the model draws (`BodyDrawsKite`). |
+| "the wrasse and grouper should be visible to others" | The Grouper is the networked hull. The Wrasse is published by the machine that flies it (the pilot's, or the host for an AI crew) through `WrasseCrewBodies`' owner-write NetworkVariables: a seated flag, the kite's offset from the hull (0.05 u steps) and its rotation (1° steps). Every other peer places the model there, eased (`remoteSmoothing` 14/s), riding the hull's interpolated transform. The board, motes and effects stay local (Follow-ups). |
+| "slow down the max speed of the wrasse to 70% of current" | `slingMaxSpeed` 520 → **364**. |
+| "double the max length of the lasso" | `tailLength` 2.4 → **4.8** board radii (768 u). Both labs follow (`SHIPPED` / `tailLen`; the slider now reaches 8). The Crew Vessel Lab's "Long tail" preset moves to 7.2. |
+| "Let the wrasse travel the whole screen space" | `wholeScreen` (on): the kite's bounds are the kite view's rectangle, not the 160 u disc. They are half depth R × `viewScale`, half width × the screen's aspect, less the kite's radius (`KiteNavigator.ScreenSettings`). `KiteNavigatorCore` clamps, bounces per axis (each edge reverses its own axis, ×1.4) and answers `InBounds` / `BoundsReach` on the rectangle; mote spawns, prism and creature queries, rival shadows and the AI's loop plans read the same bounds. |
+| "zoom out 30% more and center the grouper in the wrasses camera" | `viewScale` **1.352** (1.04 × 1.3): the kite camera's `orthographicSize` is R × viewScale, centred on the hull (`ViewCentreZ` 0) instead of the board's old forward anchor. |
+| "when the grouper yaws ... it should rotate in place instead of dragging all the crystals around. the wrasse camera can slowly move toward the groupers so it aligns after medium distances, but doesn't disturb the wrasse" | `KiteBoardFrame.Heading` (3, the default): the board's up follows the hull's at the old ease rate. Its forward turns toward the hull's heading by `1 − exp(−|speed| · dt / headingAlignDistance)` (220 u), so it catches up over distance flown, not time. A yaw in place leaves the board, its motes and the kite where they are. |
+| "make the wrasse cord visible to the wrasse player" | While the rope is held (`CordHeld`), `KiteNavigatorView` draws it from the hand to the kite, `cordWidth` 0.6 u, `cordAlpha` 0.75. It shows in the kite view only; other players do not see it. |
+| "holding a trigger pulled, lifting a thumb, or holding a mouse click should still make the cord disappear and fling the wrasse. releasing the trigger/click or touching back down reattached the tether" | Touch: lifting the thumb lets go and touching down grabs again (unchanged). Mouse: holding either button lets go (a press that starts on the small view is the swap's, not a let-go). Gamepad: holding either trigger lets go. Releasing grabs again, with the hand where the cursor or stick puts it. |
+
+Gates this round:
+- `sling_parity.cjs` passes at worst 0.006 × tolerance, and all four planted controls are caught.
+  - Its "tow" scenario's hand swing moved 60 → 64 u. At the new top speed, the 60 u swing grazed the 42 u rope at 41.97 u for one frame. Float32 C# and the page's doubles disagree on "taut" at that edge, so the gate was comparing rounding.
+  - It now reports its first structural mismatch apart from its worst one.
+- `parity.cjs` passes, and so do both labs' `verify_lab.cjs`.
+- `KiteNavigatorSlingTests` gained three whole-screen tests. Its tow test's settle window is 90 frames (at 364 u/s, the opening 100 u yank takes ~1.5 s).
+- `author_wrasse_assets.py --self-test` holds the bodies, with six negative controls.
+- Wrasse Run's detection clamp is 3800, twice the kite's new worst world speed of ~1 860 u/s at a 2.4:1 screen's corner (`WRASSERUN.md` §5).
+
+## Round 8: the hand line and the Grouper's corner (Garrett, 2026-10-20)
+
+| Asked | In the game |
+|---|---|
+| "pick a nice horizontal line just above the ability totems and don't let the cursor travel below that line" | The **hand line** sits `handLineGap` (1.2% of the screen) above the top of the HUD's ability cards. `AbilityLockupView.TryGetCardsScreenRect` gives the cards' screen rect, read live, so the line follows the HUD's layout and the screen's shape. With no cards it sits at `handLineFallback` (20%). While the human navigates, the hand (a thumb, the cursor, the stick's point) is clamped to the line or above (`KiteNavigator.TryHandFloor`). A full stick lean now spans the screen above the line, not the whole screen. |
+| "but allow the wrasse to extend across that line and off the screen" | (Superseded by round 8b, below: the kite may now pass every edge, held only by the cord.) The first cut ran the bottom edge 40 u past the screen (`offscreenOverhang`). |
+| "to the left of the totem fill the space below that line with the grouper's view and don't let that view go above that line" | While navigating, the pilot camera's rect runs from the screen's lower-left margin to the cards' left edge and up to the hand line, each less `viewMargin`. A tap or click that starts in it is still the swap's. With no cards to fit beside, it falls back to the old square. While piloting, the kite's small view is unchanged. |
+| "The grouper can keep a larger representative view of the wrasse" | The pilot view's faint kite stays drawn even when the Wrasse model draws, at `pilotKiteScale` (2.5) × the kite's radius. |
+
+Also fixed: `KiteNavigatorConfigTests` still asserted the board frame was `Eased` after round 7 set `Heading`, so it would have failed in the Editor. It now asserts `Heading` and pins the round-7 and round-8 screen numbers.
+
+## Round 8b and 9: only the cord holds the Wrasse; four limes (Garrett, 2026-10-21)
+
+| Asked | In the game |
+|---|---|
+| "the edges of the screen on the sides and top are still backwards with the mouse able to go past where it should and the wrasse not able to go where it should. the wrasse should only be limited by the tether. the mouse should be limited by a small margin significantly less than the cord length." | The screen's rectangle (`_s`) is no longer a wall for the kite. It stays the board's CONTENT (mote spawns, prism and rival queries, the AI's plans), and the kite flies `FlightSettings()`: that rectangle plus `kiteOffscreenReach` (240 u) on every side. The cord holds the kite; only a long fling meets the far wall. Round 8's bottom-only `offscreenOverhang` is gone. While the human navigates, the hand is clamped to `TryHandRect`: `handEdgeMargin` (10 u, under a quarter of the 42 u cord) inside the screen's sides and top, with the hand line as its bottom. A stick spans that whole rectangle, the way the mouse does. Wrasse Run's clamp is 5200, sized to the kite's far corner (~890 u out). |
+| "make all four of the lasso elements different hues, saturations and values within the lime green color family" ... "the largest tetrahedron within that space" | Each element's motes (kite view) and faint dots (pilot view) wear their own lime, `KiteNavigatorConfig.elementColors`. The first cut was Charge `#ffff00`, Mass `#a1c417`, Space `#00ff00`, Time `#c0fb93`; round 9b replaced it. They are derived and checked by `Tools/Build/kite_mote_colors.py`; the boundary, the tetrahedron and the assignment are in `Docs/VesselModels/COLOR.md` §5b. The tail and the saved-boost dots keep the palette's lime. The Wrasse Lasso Lab draws the same four (`LIME_E`). |
+
+### Round 9b: green-yellow only (Garrett, 2026-10-21)
+
+"pull time [and] space away from jade and charge away from gold" - "it has to have green in the yellow and yellow in the
+green. it can not have any blue or orange at all." The boundary keeps only red + green: blue 0, green leading, and red a
+quarter to three quarters of green (an HSV hue of 75–105°). The four are now:
+
+| Element | Colour | Character |
+|---|---|---|
+| Charge | `#a0ff00` | bright yellow-green |
+| Mass | `#5ec600` | the darkest, a deep green |
+| Space | `#40ff00` | the greenest, with a quarter of yellow |
+| Time | `#9bcf00` | the yellowest, a mid-value chartreuse |
+
+All four are 0.02 apart (one just-noticeable difference) in value, saturation and hue, the most the blue-free sheet
+allows. `Docs/VesselModels/COLOR.md` §5b has the numbers.
+
+## Round 10: the juice, and a steady small view (Garrett, 2026-10-21)
+
+"when playing a the wrasse the pip view of the grouper sometimes resizes into and out of its designated region." The
+box came from the totem cards' live screen rect. That rect moved with every card press or upgrade tween, and dropped to
+the fallback square on any frame the cards could not be read.
+- `AbilityLockupView.TryGetCardsScreenRect` now measures each card AT REST, leaving out its own scale and rotation.
+- `KiteNavigatorView.LatchCards` takes a new measurement only once it has held for 0.5 s (or the screen changed), and a
+  failed read keeps the last good layout.
+
+"lets loose as many of the flat ring effects as we can and juice up each effect. when more than one is lassoed it should
+fizzle with no ring. space symbols should explode with explosion. mass symbols should look like they are morphing into
+the 3d mass. time should morph on to the grouper. charge should morph onto the wrasse. this should be the juice. it
+should be bespoke, unique, dynamic, and polished."
+
+Every flat ring is gone: the Space blast ring, the pop, Mass, Time, Charge and steal rings, and the fizzle ring.
+- **The lasso:** it cinches shut on what it caught: its outline is drawn in to the centre and thins over 0.4 s. A fizzle
+  has no outline at all.
+- **The motes become the effect:** the seat raises a `KiteBurst` (pooled, no allocation per pop) carrying the lassoed
+  motes. `KiteNavigatorJuice` spawns each mote's five petals exactly where its flower drew them, then:
+
+| Effect | The juice |
+|---|---|
+| Fizzle (more than one element) | The petals sputter in place, drain to grey, wilt and droop down the view, flickering out (`fizzleSeconds` 0.95). |
+| Space | The petals spiral into the centre through the blast's 0.2 s fuse. As the real AOEExplosion fires, a white-hot five-petal star flares at the core, and 18 white shards and the petals leave on the evenly spread spokes of one radial burst. They ride the shock front (plus a kick out of the detonation), streaking and cooling back to Space's lime as they fade (`spaceRideSeconds` 1.1). |
+| Mass | Each petal folds into its mote as a lit block appears. Each block (one per prism, up to 64) then rises out of the plane on an arc, grows to the prism's (2, 2, 5) with an overshoot, turns into the prism's attitude and lands in its exact place, flashing white. The seat lays the real prisms as the blocks arrive (`massMorphSeconds` 0.75, which is now also the Mass loop's delay). |
+| Time | The petals wait in place for a stagger, then spiral onto the Grouper as accelerating streaks, lifting a little out of the plane so they read from the chase camera. They land on points over its hull as glinting chips that flash and fade (`timeFlightSeconds` 0.7). The saved-boost dots on the board show when they land. |
+| Charge | The petals home onto the Wrasse on curved paths, swing into orbit at the charge pips' radius, and warm from lime to the pips' gold as they settle (`chargeFlightSeconds` 0.55). The pips and the kite's gold show when they arrive. |
+| Pop | A popped prism bursts into six white shards that streak out and fade. |
+| Steal / creature struck | Gold shards stream from the rival into the Wrasse. |
+| Omni drop | Each new cluster blooms open, its petals bursting out unevenly and fading. |
+
+How it draws: one vertex-coloured mesh per camera per frame, so every bit has its own colour, fade and flash. In the
+kite view the petals lie flat just under the lens. In the pilot view they face the camera, and the Mass blocks are
+shaded per face, so both read in 3D.
+
+How it was checked:
+- `KiteNavigatorJuice` reads a `KiteJuiceFrame` snapshot and `KiteJuiceSettings`, never the seat itself.
+- `Tools/Build/kite_navigator_lab/juice_sheet.sh [out.png] [pilot]` compiles the shipped file outside Unity and renders
+  every effect as a contact sheet, from above or from the chase camera. It fails on a non-finite vertex or an effect
+  that draws nothing.
+- `KiteNavigatorJuiceTests` (4 tests) check that every effect draws, stays finite and ends; that the Mass blocks are gone
+  when the prisms take over; that a fizzle is petals only; and that the charge and boosts wait for their petals. Planted
+  defects fail them.
+
 ## Seats: the swap is the arena's
 
 The swap uses the arena's pilot-swap gesture (`PilotSwapGesture`: D-pad left / right, keys 1 / 2), with
@@ -236,6 +353,8 @@ always flies the empty seat:
 | `KiteNavigatorConfigSO.cs` | Every number; each tooltip names its lab key. Asset: `Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset`. |
 | `KiteNavigator.cs` | The seat on the hull: board frame, motes, prism and rival shadows, thumb, head contacts, effects, swap. |
 | `Assets/_Prefabs/Spacevessels/Wrasse.prefab`, `Tools/Build/author_wrasse_assets.py` | The Wrasse hull (the Sparrow plus this seat) and the tool that authors and registers it. |
+| `WrasseCrewBodies.cs` | The two bodies (round 7): places, swims and replicates the Wrasse model where the kite flies; puppets the Grouper from the hull's measured motion. Finds both models and their bones by name. |
+| `KiteNavigatorJuice.cs`, `KiteBurst.cs` | The juice (round 10): every loop, pop, steal and Omni drop as a `KiteBurst`, its motes' petals choreographed per effect. Rendered offline by `Tools/Build/kite_navigator_lab/juice_sheet.sh`. |
 | `KiteNavigatorView.cs` | The two views: the kite camera, the picture-in-picture swap, every kite, tail, mote and ring draw (the game's renderer, `Graphics.RenderMeshInstanced`). |
 | `UI/Controller/WrasseHUDController.cs` | The four ability cards read the seat: saved boosts, charges, the last blast, the Mass flash. |
 | `Utility/PrismDepthPlane.cs`, `_Graphics/Materials/Graphs/PrismDepthPlane.hlsl` | Prism depth from a plane, for one camera's render (the kite view). |
@@ -333,19 +452,37 @@ back, as well as any menu that parks the hull on its AI. On an AI hull or a remo
 ```
 node Tools/Build/kite_navigator_lab/parity.cjs        # core vs page, asset vs page, planted controls
 bash Tools/Build/unity_refcompile/run.sh              # the player compile
-python3 Tools/Build/author_wrasse_assets.py --check     # the hull: no Sparrow kit, two sticks, the Wrasse HUD, the map
+python3 Tools/Build/author_wrasse_assets.py --check     # the hull: no Sparrow kit, two sticks, the Wrasse HUD, the map, both bodies
+node Tools/Build/kite_navigator_lab/sling_parity.cjs  # the Sling vs the Wrasse Lasso Lab, asset vs page
+bash Tools/Build/kite_navigator_lab/juice_sheet.sh out.png [pilot]   # every effect's juice, rendered; fails on NaN or an empty effect
+python3 Tools/Build/vessel_model/build.py grouper --check && python3 Tools/Build/vessel_model/build.py wrassekite --check
 python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' spread with the depth-plane include
 ```
 
 ## Follow-ups
+
+- **The Sling is not in the Crew Vessel Lab** (it came from the Wrasse Lasso Lab, which models the board alone). The
+  thumb-travel and loop numbers there are the lab's AI; a phone playtest decides the feel (`T-20261020-bbc3` closed
+  with the pick, playtest task on the board).
+- **An AI crew's kite runs where its hull is simulated** (the host): its loops' effects are the host's, as a human
+  crew's are its own machine's (the seat's networking follow-up).
 
 - **Other runtime `Shader.Find("Universal Render Pipeline/Unlit")` calls** (ToyFactory, ToyModelBuilder, AstroLeagueArena, AstroLeagueBall, BlackHole, ThresherExecutor, SniperBeam, BrittleStarExecutor, ShrikeExecutor, GrizzlyClawConeVisual, ArcLightningFallback, SegmentSpawnerPreview: 12, counted 2026-10-19) carry
   the same build-stripping risk; each should get a Resources material for the variant it uses (T-20261019-41bb).
 - **`cece/sharp-tesla-j0kd7z`** moves the swap into `CrewSeat.PollSwap` and the small view into `CrewPictureInPicture`:
   carry the double-tap and the Resources material there when it merges.
 
-- **Networking.** Everything runs on the hull's local human's machine: the board, the motes, the AI and the effects.
-  A second human on another machine needs the seat replicated, plus a decision on which machine decides the effects.
+- **Networking.** The Wrasse's BODY is replicated (round 7, `WrasseCrewBodies`). Everything else still runs on the
+  machine that flies the hull: the board, the motes, the AI and the effects. A second human on another machine needs
+  the seat replicated, plus a decision on which machine decides the effects.
+- **The Grouper still wears the Sparrow's colliders, jets and engine flare** (round 7). The hit box is the Sparrow's
+  flat 10.3 × 0.46 × 4.4 box, but the Grouper is ~5.6 u tall. The jets ride the Sparrow's bones. `FlareEngine`
+  flashes the hidden Sparrow's slot 3, not the Grouper's Engine slot. `CrystalHullFusionConfig`'s Wrasse bakes are the
+  Sparrow mesh's, so a collected crystal's faces land on the Sparrow's surface inside the Grouper. Each needs an Editor
+  pass: a collider sized to `Grouper.md`, jets re-homed to the engine mouths (±0.78, −0.30, −2.62), the flare pointed at
+  the Grouper's renderer, and a re-bake.
+- **The Wrasse body's puppetry signs are first-cut.** Jaw / dorsal open on +pitch and the tail bends out of a turn by
+  reasoning from Unity's axes, not from a flight. Each is a signed inspector number on `WrasseCrewBodies`.
 - **Arena swap.** In an arena match, the swap gesture also asks the arena to swap hulls while the human flies.
   `InputController` polls it, and is paused only while the human navigates. A crew hull in an arena needs one owner
   for the gesture.
@@ -365,10 +502,12 @@ python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' sprea
   `SO_Vessel.CardName` and falls back to `VesselClassType.ToString()` when the definition has no `vesselArt` list or
   the list misses a class. The shipped `Toy_VesselChanger.asset` wires `SO_Classlist_All`, which holds every rostered
   class, so the fallback does not show today.
-- **`KiteNavigator.cs` is 967 lines and owns seven jobs**: board frame, motes, prism / rival / creature shadows, input,
-  head contacts, loop effects (with L5s and the Omni burst), and boosts. The effects and the boost bank are the natural
-  split: they read the config and the hull, never the board. Measured: the "tail: loops and their effects"
-  section runs lines 709-941 (233 of 967). Before splitting, list every field only those methods touch.
+- **`KiteNavigator.cs` is 1308 lines and owns seven jobs** (re-measured 2026-10-21, `wc -l`; it was 967 before rounds 6-10):
+  board frame, motes, prism / rival / creature shadows, input, head contacts, loop effects (with L5s, the Omni burst
+  and the bursts for the juice), and boosts. The effects and the boost bank are the natural split: they read the config
+  and the hull, never the board. Measured: the "tail: loops and their effects" section runs lines 1011-1264 (254 of
+  1308); the juice itself already lives apart (`KiteNavigatorJuice.cs`). Before splitting, list every field only those
+  methods touch.
 - **The plane depth reaches two shader paths**: `PrismFlightSqrDistance` (every BlockGraph prism) and the swarm
   members' spread. `ExplodingBlockGraph` (debris; constant distance) and `UnstablePrismGraph` (camera distance used
   only for its flicker) keep the camera's distance in the kite view, which is incompleteness, not a defect. The kite

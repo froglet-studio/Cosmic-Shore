@@ -209,6 +209,8 @@ What "beats the shipped model" has meant on each hull, so the next one knows the
 | Angler | 1 | new hull (`specs/angler.py`): its own model and `AnglerAnimation` (it wore the Stoat's); ram-scoop jaw, a lure mast with an Engine-slot esca bulb that swells while luring |
 | Brittle Star | 1 | new hull (`specs/brittlestar.py`): a five-lobed core, five segmented gun/thruster booms, the halo as a structural beam (Time turns it from a pentagon to a circle); muzzles, nozzles and ring numbers exact |
 | Shrike | 1 | new hull (`specs/shrike.py`): hooked ram prow over the lance barrel, the eye-mask as a visor band, talon docking clamps (a new grip while docked). The likeliest of the fleet to read as a generic jet: the owner's eye decides |
+| Grouper | 2 | new hull (2026-10-20, `specs/grouper.py`): the Wrasse's carrier, sized to the Sparrow it replaces in `Wrasse.prefab` (span 11.9 / length 12.4 against 12.5 / 12.2); ram-scoop mouth over a hinged `jaw`, a sensor / heat-sink crest (`dorsal`), stubby wings with thruster pods, a vectoring tail `tail.1` -> `tail.2`. Round 1's crest read as needles: fins whose chords overlap their spacing read as ONE serrated crest |
+| Wrasse Kite | 2 | new body (2026-10-20, `specs/wrassekite.py`): the navigator's 16-unit kite, the first hull whose body is WEIGHTED along a spine (`spine.1` -> `spine.2` -> `tail`, smoothstep hat weights over a 41-station loft) so it swims without a hinge kink; one domain stripe snout to tail. Round 1's long vanes read as planks: ramp a long fin's height in from its front |
 
 ## 5. Modelling rules that keep being relearned
 

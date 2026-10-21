@@ -201,6 +201,13 @@ namespace CosmicShore.ScriptableObjects
         /// turn monitor for the finish line, so the two cannot drift.</summary>
         public const int DefaultThresherTimeGateTarget = 24;
 
+        /// <summary>Wrasse Run RACE length used when <see cref="wrasseRunGateTarget"/> is 0 - gate
+        /// threadings, i.e. laps x rings. 16 = two laps of an eight-ring circuit: a ring counts only when
+        /// the Wrasse's kite threads it, at the Grouper's 60 u/s cruise plus the boosts Time loops save.
+        /// Read by <c>WrasseRunController</c> both to size the circuit and (through it) by the turn
+        /// monitor for the finish line, so the two cannot drift.</summary>
+        public const int DefaultWrasseRunGateTarget = 16;
+
         /// <summary>Regatta RACE length used when <see cref="regattaGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 24 = three laps of the eight-ring circuit. The rings
         /// per lap are a property of the ARENA (RegattaCourse.RingsPerLap - the rails are laid
@@ -345,6 +352,11 @@ namespace CosmicShore.ScriptableObjects
                  "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
         [Min(0)] public int thresherTimeGateTarget = 24;
 
+        [Tooltip("Wrasse Run: gate threadings that win the race - LAPS x RINGS, not rings. The " +
+                 "controller lays target/laps rings, so this one number is both the finish line " +
+                 "and the size of the circuit. 16 = two laps of eight. 0 uses the default.")]
+        [Min(0)] public int wrasseRunGateTarget = 16;
+
         [Tooltip("Regatta: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "arena lays eight rings a lap with the rails threaded through them, so this " +
                  "must be a multiple of eight; the controller races laps = target / 8. 24 = " +
@@ -418,6 +430,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int slingshotGateTargetBuild = 16;
         [Min(0)] public int warplineGateTargetBuild = 10;
         [Min(0)] public int thresherTimeGateTargetBuild = 24;
+        [Min(0)] public int wrasseRunGateTargetBuild = 16;
         [Min(0)] public int regattaGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 750;
         [Min(0)] public int tollwayTollTargetBuild = 8;
@@ -669,6 +682,14 @@ namespace CosmicShore.ScriptableObjects
             thresherTimeGateTarget > 0 ? thresherTimeGateTarget : DefaultThresherTimeGateTarget;
 
         /// <summary>
+        /// Wrasse Run race length ("thread N gates", i.e. laps x rings): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultWrasseRunGateTarget"/>. Read by
+        /// <c>WrasseRunCourseSource.AuthoredGateTarget</c>, which the turn monitor asks in turn.
+        /// </summary>
+        public int GetWrasseRunGateTarget() =>
+            wrasseRunGateTarget > 0 ? wrasseRunGateTarget : DefaultWrasseRunGateTarget;
+
+        /// <summary>
         /// Regatta race length ("thread N gates", i.e. laps x rings): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultRegattaGateTarget"/>. Read by
         /// <c>RegattaController.AuthoredGateTarget</c>, which the turn monitor asks in turn.
@@ -792,6 +813,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Slingshot                 => GetSlingshotGateTarget(),
                 GameModes.Warpline                  => GetWarplineGateTarget(),
                 GameModes.ThresherTime              => GetThresherTimeGateTarget(),
+                GameModes.WrasseRun                 => GetWrasseRunGateTarget(),
                 GameModes.Regatta                   => regattaGateTarget > 0 ? regattaGateTarget : DefaultRegattaGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
@@ -851,6 +873,7 @@ namespace CosmicShore.ScriptableObjects
             slingshotGateTarget == slingshotGateTargetBuild &&
             warplineGateTarget == warplineGateTargetBuild &&
             thresherTimeGateTarget == thresherTimeGateTargetBuild &&
+            wrasseRunGateTarget == wrasseRunGateTargetBuild &&
             regattaGateTarget == regattaGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
             tollwayTollTarget == tollwayTollTargetBuild &&
@@ -889,6 +912,7 @@ namespace CosmicShore.ScriptableObjects
             slingshotGateTarget = slingshotGateTargetBuild;
             warplineGateTarget = warplineGateTargetBuild;
             thresherTimeGateTarget = thresherTimeGateTargetBuild;
+            wrasseRunGateTarget = wrasseRunGateTargetBuild;
             regattaGateTarget = regattaGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
@@ -928,6 +952,7 @@ namespace CosmicShore.ScriptableObjects
             slingshotGateTargetBuild = slingshotGateTarget;
             warplineGateTargetBuild = warplineGateTarget;
             thresherTimeGateTargetBuild = thresherTimeGateTarget;
+            wrasseRunGateTargetBuild = wrasseRunGateTarget;
             regattaGateTargetBuild = regattaGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;
