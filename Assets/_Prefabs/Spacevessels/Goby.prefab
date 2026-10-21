@@ -1126,7 +1126,13 @@ MonoBehaviour:
   NetEchoSightShape:
     m_InternalValue: {x: 0, y: 0, z: 0}
   _executors: {fileID: 9105512684531825410}
-  _inputEventShipActions: []
+  _inputEventShipActions:
+  - InputEvent: 8
+    ShipActions:
+    - {fileID: 11400000, guid: ff32ad613c6545e6b07b792aad55ff3c, type: 2}
+  - InputEvent: 14
+    ShipActions:
+    - {fileID: 11400000, guid: a78d39c97374404a9a4e1bd8620d884f, type: 2}
   _resourceEventClassActions: []
   _touchActionOverrides:
   - InputEvent: 12

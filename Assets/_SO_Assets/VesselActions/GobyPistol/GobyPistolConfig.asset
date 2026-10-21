@@ -37,6 +37,15 @@ MonoBehaviour:
   pipSize: 0.32
   viewMargin: 0.015
   depthFullSpreadAt: 60
+  primerButtonIcon: {fileID: 21300000, guid: 1c5a2b2a3c90183cb3e6b26765c45079, type: 3}
+  primerButtonLabel: 
+  flaresButtonIcon: {fileID: 21300000, guid: 1a49ea5c6ef9350406ebff1f60c1a6b1, type: 3}
+  flaresButtonLabel: 
+  ghostButtonIcon: {fileID: 21300000, guid: 0ede362233e2585f1e553dd9fce30f65, type: 3}
+  ghostButtonLabel: 
+  snapButtonIcon: {fileID: 21300000, guid: 7d491aeb1d6f0f586b33d62074240027, type: 3}
+  snapButtonLabel: 
+  buttonCountTemplate: '{count}'
   pLaunchRange: 240
   pLaunchSpeed: 280
   pLaunchCharges: 1

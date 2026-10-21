@@ -16,7 +16,12 @@ WHAT IT MAKES (the duo brief: .claude/skills/duo-vessel/references/designs/goby-
           swap (Unity derives a model's sub-object ids from type + name); the Squirrel's Animator controller drives it
       DefaultThrottleScaler = the lab's gCruise (the Goby zips, Garrett 2026-10-16; studio_to_unity maps the same line);
       everything else is the Squirrel's: the Goby turns on its numbers and has its abilities [stated, 2026-10-14];
-      the duo's own element row (primer, flares) is an open design question, not filled here.
+      the duo's own element row (primer, flares) is an open design question, not filled here;
+        - the hull's shared input bindings: Button3Action -> CrewButtonPrimer, Button4Action -> CrewButtonFlares
+          (CrewButtonActionSO, button 0 / 1), so the Goby's primer and flares are its own inputs on every device - a pad's
+          X / Y, keys Q / F and the Goby's phone buttons (Garrett, 2026-10-21: "each seat has its own ui and controls. no
+          need to use the dpad in a weird way"). Retrofitted onto the committed prefab, idempotently.
+    Assets/_SO_Assets/VesselActions/Common Vessel Action/CrewButtonPrimer.asset, CrewButtonFlares.asset (+ .meta).
     SO_Class_Goby (owned from the start, the Squirrel's icons as placeholders) + its entry in
     SO_Classlist_All / _Classes; one entry each in `Vessel Prefab Container.asset` (the root TRANSFORM) and
     `DefaultNetworkPrefabs.asset` (the root GAMEOBJECT); Resources/ElementalAbilityMaps/Goby.asset (the
@@ -82,6 +87,13 @@ CARD_LARGE = _model_card("Assets/_Graphics/CardImages/Goby_large.png")
 CARD_PREVIEW = _model_card("Assets/_Graphics/Design Assests/Hangar/Goby_Hangar_Preview.png")
 AI_LEVEL_HARD = 3                            # AIDifficulty.Hard
 
+# The Goby's own buttons (CrewButtonActionSO): one stateless asset per button, sent to the seat on the hull.
+CREW_BUTTON_SCRIPT_META = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "Vessel", "Crew", "CrewButtonActionSO.cs.meta")
+COMMON_ACTIONS = os.path.join(ROOT, "Assets", "_SO_Assets", "VesselActions", "Common Vessel Action")
+CREW_BUTTONS = ((os.path.join(COMMON_ACTIONS, "CrewButtonPrimer.asset"), "ff32ad613c6545e6b07b792aad55ff3c", "CrewButtonPrimer", 0),
+                (os.path.join(COMMON_ACTIONS, "CrewButtonFlares.asset"), "a78d39c97374404a9a4e1bd8620d884f", "CrewButtonFlares", 1))
+BUTTON3_ACTION, BUTTON4_ACTION = 8, 14       # InputEvents: a pad's X / Y, keys Q / F
+
 
 def guid_of(meta_path: str) -> str:
     with open(meta_path, encoding="utf-8") as fh:
@@ -89,6 +101,54 @@ def guid_of(meta_path: str) -> str:
     if not m:
         raise RuntimeError(f"{os.path.relpath(meta_path, ROOT)}: no guid")
     return m.group(1)
+
+
+# ----------------------------------------------------------------------------- the seat's buttons
+def crew_button_asset(script_guid: str, name: str, k: int) -> str:
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+            "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {script_guid}, type: 3}}\n"
+            f"  m_Name: {name}\n  m_EditorClassIdentifier: \n  button: {k}\n")
+
+
+# primer on Button3Action (X / Q), flares on Button4Action (Y / F); the touch and pad overrides keep the Squirrel's lifts
+GOBY_BINDINGS = "  _inputEventShipActions:\n" + "".join(
+    f"  - InputEvent: {ie}\n    ShipActions:\n    - {{fileID: 11400000, guid: {guid}, type: 2}}\n"
+    for ie, guid in ((BUTTON3_ACTION, CREW_BUTTONS[0][1]), (BUTTON4_ACTION, CREW_BUTTONS[1][1])))
+ANY_BINDINGS = re.compile(r"  _inputEventShipActions:(?: \[\])?\n(?:  [- ] .*\n)*")
+
+
+def bind_buttons(text: str) -> str:
+    """The hull's shared input bindings are the Goby's two buttons. Idempotent."""
+    return ANY_BINDINGS.sub(lambda m: GOBY_BINDINGS, text, count=1)
+
+
+def bindings_of(text: str) -> str:
+    m = ANY_BINDINGS.search(text)
+    return m.group(0) if m else ""
+
+
+def author_crew_buttons():
+    script_guid = guid_of(CREW_BUTTON_SCRIPT_META)
+    for path, guid, name, k in CREW_BUTTONS:
+        if not os.path.exists(path):
+            write(path, crew_button_asset(script_guid, name, k)); write(path + ".meta", native_meta(guid))
+
+
+def check_crew_buttons():
+    errs = []
+    script_guid = guid_of(CREW_BUTTON_SCRIPT_META)
+    for path, guid, name, k in CREW_BUTTONS:
+        rel = os.path.relpath(path, ROOT)
+        if not os.path.exists(path) or not os.path.exists(path + ".meta"):
+            errs.append(f"{rel} (+ .meta) is missing: run Tools/Build/author_goby_assets.py")
+            continue
+        if guid_of(path + ".meta") != guid:
+            errs.append(f"{rel}.meta: guid is not the one Goby.prefab binds")
+        if read(path) != crew_button_asset(script_guid, name, k):
+            errs.append(f"{rel}: not CrewButtonActionSO button {k}")
+    return errs
 
 
 # ----------------------------------------------------------------------------- the prefab
@@ -129,7 +189,7 @@ def build_clone(donor: str, script_guid: str, config_guid: str) -> str:
     text = text[:root.end(1)] + f"  - component: {{fileID: {DUO_ID}}}\n" + text[root.end(1):]
     if not text.endswith("\n"):
         text += "\n"
-    return swap_model(text) + duo_block(script_guid, config_guid)
+    return bind_buttons(swap_model(text)) + duo_block(script_guid, config_guid)
 
 
 def swap_model(text: str) -> str:
@@ -273,6 +333,9 @@ def check_prefab(text: str, script_guid: str, config_guid: str):
     want(f"m_SourcePrefab: {{fileID: 100100000, guid: {gb}, type: 3}}" in text, "Goby.prefab: the nested model is not Goby.fbx")
     want(duo and f"  config: {{fileID: 11400000, guid: {config_guid}, type: 2}}" in duo.group(1),
          "Goby.prefab: GobyPistolDuo.config is not GobyPistolConfig.asset (a null config runs the SHIPPED defaults, not the clone)")
+    want(bindings_of(text) == GOBY_BINDINGS,
+         "Goby.prefab: the shared bindings are not Button3Action -> CrewButtonPrimer and Button4Action -> CrewButtonFlares "
+         "(the Goby's primer and flares would have no pad, keyboard or phone input)")
     return errs
 
 
@@ -317,6 +380,7 @@ def check_all():
         return ["Goby.prefab (+ .meta) is missing: run Tools/Build/author_goby_assets.py"]
     errs += [] if guid_of(PREFAB + ".meta") == PREFAB_GUID else ["Goby.prefab.meta: guid is not PREFAB_GUID"]
     errs += check_prefab(read(PREFAB), script_guid, config_guid)
+    errs += check_crew_buttons()
     for path in (CLASS_ASSET, MAP):
         if not os.path.exists(path) or not os.path.exists(path + ".meta"):
             return errs + [f"{os.path.relpath(path, ROOT)} (+ .meta) is missing: run the tool"]
@@ -331,10 +395,11 @@ def author():
     if not os.path.exists(PREFAB):   # the spent one-shot stands down once the prefab is committed
         write(PREFAB, build_clone(read(DONOR), script_guid, config_guid))
         write(PREFAB + ".meta", prefab_meta())
-    else:                            # but the model swap applies to the committed prefab, once
-        old = read(PREFAB); new = swap_model(old)
+    else:                            # but the model swap and the seat's buttons apply to the committed prefab, once
+        old = read(PREFAB); new = bind_buttons(swap_model(old))
         if new != old:
             write(PREFAB, new)
+    author_crew_buttons()
     if not os.path.exists(CLASS_ASSET):
         write(CLASS_ASSET, class_asset()); write(CLASS_ASSET + ".meta", native_meta(CLASS_GUID))
     if not os.path.exists(MAP):
@@ -361,6 +426,9 @@ def self_test():
     expect(check_prefab(good.replace(f"  - component: {{fileID: {DUO_ID}}}\n", ""), script_guid, config_guid), 1, "the duo off the root")
     expect(check_prefab(good.replace(f"guid: {config_guid}, type: 2", "guid: 00000000000000000000000000000000, type: 2"), script_guid, config_guid), 1, "the duo's config unwired")
     expect(check_prefab(good.replace(f"guid: {guid_of(GOBY_MODEL_META)},", f"guid: {guid_of(SQUIRREL_MODEL_META)},"), script_guid, config_guid), 1, "the Squirrel's model")
+    expect(check_prefab(good.replace(GOBY_BINDINGS, "  _inputEventShipActions: []\n"), script_guid, config_guid), 1, "the seat's buttons unbound")
+    if bind_buttons(good) != good:
+        fails.append("bind_buttons is not idempotent")
     container, network, fusion = register_container(read(CONTAINER)), register_network(read(NETWORK_PREFABS)), register_fusion(read(FUSION))
     lists = [(os.path.basename(p), register_class_list(read(p))) for p in CLASS_LISTS]
     cls, gmap = class_asset(), build_map(read(DONOR_MAP))

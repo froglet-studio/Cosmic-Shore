@@ -1878,12 +1878,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md 'The phone boost'; ORCA_CREW.md follow-ups
 
-### T-20261021-2d13 · open · dev · Crew vessels
+### T-20261021-2d13 · done · dev · Crew vessels
 - **Task:** The Goby & Pistol has no touch path: GobyPistolDuo reads the Goby's primer and flares from keys 3 / 4 and the pad's D-pad up / down only, and the Pistol's dive and launch from the mouse, keyboard and pad (no Touchscreen read anywhere in Crew/GobyPistol). On a phone neither seat's abilities can be used. Give them touch controls (cards that name inputs bound on the hull, as the Wrasse and Orca now do with CrewTriggerActionSO, or the Goby's own touch overrides) in the Goby's next round.
 - **Done when:** On a phone, the Goby can fire its primer and flares and the Pistol can dive and launch; author_touch_profiles.py has a Goby row whose glyphs/buttons resolve
 - **Who can take it:** Garrett (the Goby's owner) with the session driving the Goby lab
 - **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 8 'Third round'; Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs GobyAbilities / HumanPistol
+- **Done:** 2026-10-21, Built on cece/elegant-maxwell-q8vqoh: the Goby's primer/flares are input bindings (CrewButtonActionSO, pad X/Y, keys Q/F), each seat shows its own phone buttons (GobyPistolButtons), the Pistol dives/launches by finger, Goby row in TouchControlProfiles. Phone test: T-20261021-52b0 + the seat-buttons test task.
 
 ### T-20261021-5d4e · open · decision · Crew vessels
 - **Task:** Pick the Wrasse's Time L5 upgrade: its old one (No Cooldown) is gone with the Grouper's boost cooldown, so the Time card's L5 slot is open (blank in ElementalAbilityMaps/Wrasse.asset).
@@ -1959,5 +1960,12 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Task:** On a phone, fly the Goby & Pistol: double tap the small (Pistol) view to fly the Pistol, hold to dive and drag to launch, double tap the small (Goby) view to come back. Check a planted left thumb in that corner never swaps.
 - **Done when:** Both swaps work on a phone build and flying thumbs never swap by accident
 - **Who can take it:** Yash or Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md §11 (2026-10-21)
+
+### T-20261021-cd1e · open · test · Crew vessels
+- **Task:** Phone playtest of the Goby & Pistol seat buttons (Android dev build, no pad): Toybox > Vessel Changer > Goby and Pistol. Flying the Goby, two buttons sit round the right thumb: Primer (fires at what is ahead, its count drops) and Flares (fires only once a prime has been set off by the Pistol and blocks are hot); the Squirrel's lifts (left = ring, right = drift) still work. Double tap the small view: now Ghost and Snap sit there instead, dimmed while cooling; a finger on the Pistol's view dives (hold) and launches (drag and let go), also while another finger holds Ghost. On a pad: X primer, Y flares; on a keyboard: Q primer, F flares; the D-pad up/down does nothing.
+- **Done when:** Every step behaves as written; buttons sit inside the safe area and don't cover the ability row; misses filed as dev tasks
+- **Who can take it:** Yash (offered) or Garrett
 - **Added:** 2026-10-21 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
 - **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md §11 (2026-10-21)

@@ -494,7 +494,18 @@ the line it settled.
   (`CrewSeat.PollSwap`), which a phone has neither of, and the Pistol's own pointer read `Mouse.current`, which a phone
   does not have. Now a **double tap on the small view swaps**, as on the Wrasse, the Marlin and the Honeyguide (one
   shared detector, `CrewSmallViewDoubleTap` in `CrewViews.cs`, the Wrasse's numbers), on the arena cooldown; the Pistol
-  reads `Pointer.current` (mouse or finger), and a press in the small view is the swap's, never a dive. The lab's ⇄ Swap
+  reads a mouse or a finger, and a press in the small view is the swap's, never a dive. The lab's ⇄ Swap
   button stays the lab's stand-in. **[read] for Garrett:** on a phone, double tap the Pistol's square to fly it, double
-  tap the Goby's square to come back; hold to dive and drag to launch on the Pistol. Not yet on a phone: the Goby's
-  primer and flares (3 / 4, D-pad up / down) have no touch input.
+  tap the Goby's square to come back; hold to dive and drag to launch on the Pistol.
+- 2026-10-21, Garrett: "these should made consistent with other vessels. each seat has its own ui and controls. no need
+  to use the dpad in a weird way". The Goby's primer and flares left keys 3 / 4 and the D-pad's up / down: they are the
+  hull's own inputs now, bound like every hull ability (`CrewButtonActionSO`; Button3Action = pad X / key Q the primer,
+  Button4Action = pad Y / key F the flares; `author_goby_assets.py` binds and checks them). On a phone each seat shows
+  its own two buttons round the right thumb, only while the person is in it, as the Orca's gunners do
+  (`GobyPistolButtons`): the Goby's Primer and Flares with their charges (they press the pilot's input, so the phone
+  takes the same path as the pad), the Pistol's Ghost (held) and Snap, dimmed while cooling (they press the seat
+  directly: the AI flies the hull meanwhile). The Pistol's finger is tracked by touch id, so a thumb on Ghost never
+  steals the drag that launches. The Goby gets a `TouchControlProfiles` row (the Squirrel's lift glyphs). Icons:
+  `touch_glyph_art.py` (TouchIcon_Primer / _Flares / _Ghost / _Snap). **[open], unchanged:** the duo's element row
+  (§8 q6): the primer and flares are buttons, not cards, until the element mappings are decided. With a pad the buttons
+  hide (the Orca's rule), so a pad shows no primer / flare count yet.

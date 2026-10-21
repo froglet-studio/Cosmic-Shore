@@ -24,7 +24,7 @@ ASSET = "Assets/Resources/TouchControlProfiles.asset"
 SCRIPT_META = "Assets/_Scripts/Controller/IO/TouchControls/TouchControlProfileLibrarySO.cs.meta"
 
 VESSEL = dict(Manta=1, Dolphin=2, Rhino=3, Urchin=4, Grizzly=5, Squirrel=6, Serpent=7, Shrike=10, Sparrow=11,
-              Scarab=12, Butterfly=13, Thresher=14, Stoat=15, BrittleStar=16, Angler=17, Wrasse=19, Orca=20, Honeyguide=23)
+              Scarab=12, Butterfly=13, Thresher=14, Stoat=15, BrittleStar=16, Angler=17, Goby=18, Wrasse=19, Orca=20, Honeyguide=23)
 INPUT = dict(RightStick=1, LeftStick=2, Flip=3, Idle=4, A=6, B=7, X=8, Y=14)
 ELEMENT = dict(none=0, Charge=1, Mass=2, Space=3, Time=4)
 SCHEME = dict(ThumbLifts=0, TotemButtons=1)
@@ -81,6 +81,11 @@ PROFILES = [
     profile("Wrasse", "ThumbLifts", glyphs=[("Time", "LiftLeftThumb")]),
     # The Orca's helm: RT boosts while the tank lasts, LT raises the shield.
     profile("Orca", "ThumbLifts", glyphs=[("Time", "LiftLeftThumb"), ("Mass", "LiftRightThumb")]),
+    # The Goby flies on the Squirrel's two thumbs and lifts (its four cards are the Squirrel's). Its primer and flares, and the
+    # Pistol seat's ghost and snap, are each seat's own two buttons round the right thumb, drawn by the seat
+    # (GobyPistolButtons), not profile extras: only the seat the person is in shows them (Garrett, 2026-10-21).
+    profile("Goby", "ThumbLifts",
+            glyphs=[("Mass", "LiftLeftThumb")], coreGlyphs=[("Drift", "LiftRightThumb")]),
     # The Honeyguide's RT Peck and LT Flit; its Time card (B, the boost) is a button.
     profile("Honeyguide", "ThumbLifts", glyphs=[("Charge", "LiftLeftThumb"), ("Mass", "LiftRightThumb")]),
 

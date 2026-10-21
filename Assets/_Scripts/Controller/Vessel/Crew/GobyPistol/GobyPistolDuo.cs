@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
 using Unity.Profiling;
@@ -14,7 +15,10 @@ namespace CosmicShore.Gameplay
     /// and the Pistol rides the ground its trail's hinges make, seen side on through a second camera. The Pistol's body,
     /// its launch, ghost and Snap (the vortex ring) act on the scene's REAL prisms; the Goby's primer and flares do too.
     /// One human flies one half and the AI flies the other; the swap is the arena's gesture (D-pad left / right, keyboard
-    /// 1 / 2, <see cref="PilotSwapGesture"/>) or, on a phone, a double tap on the small view (<see cref="CrewSmallViewDoubleTap"/>). The design: <c>.claude/skills/duo-vessel/references/designs/goby-and-pistol.md</c>.
+    /// 1 / 2, <see cref="PilotSwapGesture"/>) or, on a phone, a double tap on the small view (<see cref="CrewSmallViewDoubleTap"/>).
+    /// Each seat has its own controls (Garrett, 2026-10-21): the Goby's primer and flares are the hull's own inputs
+    /// (<see cref="CrewButtonActionSO"/> on Button3Action / Button4Action: pad X / Y, keys Q / F), and each seat shows its own
+    /// two buttons round the right thumb on a phone (<see cref="GobyPistolButtons"/>). The design: <c>.claude/skills/duo-vessel/references/designs/goby-and-pistol.md</c>.
     ///
     /// <para>It lives on <c>Goby.prefab</c> and wakes only on the LOCAL pilot's hull while a human flies it (not on an AI
     /// or remote copy, not while the menu's autopilot flies it): the Pistol is simulated on that one machine, so its
@@ -31,7 +35,7 @@ namespace CosmicShore.Gameplay
     /// explosion), so mass is conserved and nothing pops. The side view draws each prism's own mesh and material at its
     /// unrolled place, turned by the ribbon there: the Pistol's world, not a copy of it.</para>
     /// </summary>
-    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, IHullParkAware
+    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, ICrewButtons, IHullParkAware
     {
         enum Half { Goby = 0, Pistol = 1 }
         enum By { Body = 0, Vortex = 1, Chain = 2, Flare = 3 }
@@ -67,7 +71,11 @@ namespace CosmicShore.Gameplay
         readonly List<Flare> _flares = new();
 
         // the human Pistol's pointer and pad (the lab's humanPistol)
-        bool _mouseDown, _aiming; Vector2 _mouseFrom; Vector2? _mouseAim, _padAim;
+        bool _mouseDown, _aiming; Vector2 _mouseFrom, _pointerAt; Vector2? _mouseAim, _padAim; int _fingerId = -1;
+
+        // each seat's own buttons: the Goby's primer and flares (its bound inputs), the Pistol's ghost and snap on a phone
+        bool _primerHeld, _flaresHeld, _touchGhost, _touchSnap;
+        readonly GobyPistolButtons _buttons = new();
 
         // the side view (what the Pistol sees: the section below)
         const int ViewSides = 24;                 // the Pistol's tube (the lab's cylinder)
@@ -152,6 +160,7 @@ namespace CosmicShore.Gameplay
         {
             if (_goby == null) return;
             if (_human == Half.Pistol) SetHuman(Half.Goby);
+            _buttons.Dispose(); _primerHeld = _flaresHeld = _touchGhost = _touchSnap = false;
             ReleaseAllRings(); _flares.Clear(); _primed.Clear(); _hot.Clear();
             _render?.Dispose(); _render = null; _pip.Restore();
             if (_view) Destroy(_view);
@@ -201,6 +210,7 @@ namespace CosmicShore.Gameplay
             if (_tf) _tf.ThrottleScaler = _tf.DefaultThrottleScaler * GobyMath.SpeedScale(_rb.GobyX - _p.x, Config.CloseMax, Config.CloseRange, _human == Half.Pistol, Config.AiMaxGap);
 
             PollSwap();
+            PaintButtons();
             var inp = _human == Half.Pistol ? HumanPistol() : _ai.Think(_p, _rb, _t, Level(), _ais, Scan);
             var ev = PistolBodyMath.Step(_p, _rb, _rb.GobyX, gobySpeed, _t, dt, inp, _body);
             if (ev.FireSnap) _rings.Add(new RingRun { Ring = VortexRing.Fire(_rb, _p, ev.SnapAim, _vs.pVortexLife) });
@@ -401,9 +411,9 @@ namespace CosmicShore.Gameplay
             bool primer, flares;
             if (_human == Half.Goby)
             {
-                var kb = Keyboard.current; var pad = Gamepad.current;
-                primer = (kb != null && kb.digit3Key.isPressed) || (pad != null && pad.dpad.up.isPressed);
-                flares = (kb != null && kb.digit4Key.isPressed) || (pad != null && pad.dpad.down.isPressed);
+                // the hull's own inputs (CrewButtonActionSO: pad X / Y, keys Q / F, the Goby's phone buttons)
+                primer = _primerHeld;
+                flares = _flaresHeld;
             }
             else
             {
@@ -516,28 +526,56 @@ namespace CosmicShore.Gameplay
             _human = half;
             // a press carried across the swap is not a press (the lab's swap)
             _ai.ReleaseAll(); _p.prevGhost = _p.prevVortex = false; _prevPrimer = _prevFlare = false;
-            _mouseDown = _aiming = false; _mouseAim = _padAim = null;
+            _mouseDown = _aiming = false; _mouseAim = _padAim = null; _fingerId = -1;
+            _primerHeld = _flaresHeld = _touchGhost = _touchSnap = false;
         }
 
-        // the lab's humanPistol: hold to dive; drag (or RT + right stick) to aim a launch; G / B ghost; Q / E / X / Y Snap.
-        // The pointer is the mouse or a finger (Pointer.current: a phone has no Mouse); a press in the small view is the
-        // touch swap's, never a dive.
+        /// <summary>The Goby's own buttons, from the hull's bindings (<see cref="CrewButtonActionSO"/>): 0 primer, 1 flares.
+        /// The autopilot gate drops them while the Goby's AI flies, so they only ever come from the person flying it.</summary>
+        public void SetButton(int button, bool down)
+        {
+            if (_goby == null || _human != Half.Goby) return;
+            if (button == 0) _primerHeld = down;
+            else if (button == 1) _flaresHeld = down;
+        }
+
+        /// <summary>The Pistol's phone buttons (<see cref="GobyPistolButtons"/>): 0 ghost (held), 1 snap. Pressed on the seat
+        /// directly: the Goby's AI flies the hull meanwhile, and an InputStatus press would be dropped by its gate.</summary>
+        void SetPistolButton(int button, bool down)
+        {
+            if (_goby == null || _human != Half.Pistol) return;
+            if (button == 0) _touchGhost = down;
+            else if (button == 1) _touchSnap = down;
+        }
+
+        // each seat's buttons on a phone: built once the hull's HUD row is, painted for the seat the person is in
+        void PaintButtons()
+        {
+            if (!_buttons.Built)
+            {
+                var input = _goby?.VesselStatus?.Player?.InputStatus;
+                if (!_buttons.TryBuild(_gt, Config, input, SetPistolButton)) return;
+            }
+            _buttons.Paint(HumanInSeat, Config.ButtonCountTemplate, _primer, _flare, _t >= _p.ghostAt, _t >= _p.vortexAt);
+        }
+
+        // the lab's humanPistol: hold to dive; drag (or RT + right stick) to aim a launch; G / B ghost; Q / E / X / Y Snap;
+        // on a phone, a finger on the Pistol's view dives and drags, and the seat's own Ghost and Snap buttons sit round
+        // the right thumb (GobyPistolButtons).
         PistolBodyMath.Input HumanPistol()
         {
             var inp = new PistolBodyMath.Input();
-            var kb = Keyboard.current; var pointer = Pointer.current; var pad = Gamepad.current;
+            var kb = Keyboard.current; var pad = Gamepad.current;
             float dive = 0f;
-            if (pointer != null && _cam)
+            if (_cam && ReadPointer(out var mp, out bool began, out bool held))
             {
-                Vector2 mp = pointer.position.ReadValue();
-                if (pointer.press.wasPressedThisFrame && _cam.pixelRect.Contains(mp) && !_pip.SmallViewContains(_cam, HumanInSeat, mp))
-                { _mouseDown = true; _aiming = false; _mouseFrom = mp; }
+                if (began) { _mouseDown = true; _aiming = false; _mouseFrom = mp; }
                 if (_mouseDown)
                 {
                     if ((mp - _mouseFrom).magnitude > 12f) _aiming = true;
                     if (_aiming && PlanePoint(mp, out var w)) _mouseAim = new Vector2(w.x - (_p.x - _scX), w.y - _p.y);
                     if (!_aiming) dive = 1f;
-                    if (!pointer.press.isPressed)
+                    if (!held)
                     {
                         if (_aiming && _mouseAim.HasValue) { inp.HasLaunch = true; inp.Launch = _mouseAim.Value; }
                         _mouseDown = _aiming = false; _mouseAim = null;
@@ -560,10 +598,52 @@ namespace CosmicShore.Gameplay
                 inp.Ghost |= kb.gKey.isPressed;
                 inp.Snap |= kb.qKey.isPressed || kb.eKey.isPressed;
             }
+            inp.Ghost |= _touchGhost;
+            inp.Snap |= _touchSnap;
             inp.Dive = dive;
             if (inp.Snap) inp.SnapAim = _mouseAim ?? _padAim ?? new Vector2(1f, 0f);
             return inp;
         }
+
+        // The Pistol's pointer: the mouse, or the ONE finger that started on the Pistol's view (by touch id, so a second
+        // finger on the Ghost button never steals the drag). A press on the small view (the touch swap's) or on a seat
+        // button (FlightTouchClaims) is never the Pistol's. True when there is a pointer; began on the frame a press
+        // starts on the view; held while it stays down.
+        bool ReadPointer(out Vector2 at, out bool began, out bool held)
+        {
+            at = _pointerAt; began = held = false;
+            var touchscreen = Touchscreen.current;
+            if (touchscreen != null)
+            {
+                var touches = touchscreen.touches;
+                for (int i = 0; i < touches.Count; i++)
+                {
+                    var t = touches[i];
+                    int id = t.touchId.ReadValue();
+                    if (_fingerId >= 0 ? id != _fingerId : !t.press.wasPressedThisFrame) continue;
+                    var p = t.position.ReadValue();
+                    if (_fingerId < 0)
+                    {
+                        if (!OnPistolView(p)) continue;
+                        _fingerId = id; began = true;
+                    }
+                    at = _pointerAt = p;
+                    held = t.press.isPressed;
+                    if (!held) _fingerId = -1;
+                    return true;
+                }
+                if (_fingerId >= 0) { _fingerId = -1; return true; }   // the finger is gone: a release where it last was
+            }
+            var mouse = Mouse.current;
+            if (mouse == null) return false;
+            at = _pointerAt = mouse.position.ReadValue();
+            held = mouse.leftButton.isPressed;
+            began = mouse.leftButton.wasPressedThisFrame && OnPistolView(at);
+            return true;
+        }
+
+        bool OnPistolView(Vector2 screen) =>
+            _cam.pixelRect.Contains(screen) && !_pip.SmallViewContains(_cam, HumanInSeat, screen) && !FlightTouchClaims.Claims(screen);
 
         // a screen point on the side view's plane (d = 0), in the flat world relative to the camera's x
         bool PlanePoint(Vector2 screen, out Vector3 w)
@@ -1069,7 +1149,7 @@ namespace CosmicShore.Gameplay
                             $"primed {_primed.Count}   hot {_hot.Count}   rings {_rings.Count}");
             GUILayout.Label(_human == Half.Pistol
                 ? "Pistol: hold Space / mouse / finger / A to dive; drag (or RT + right stick) and let go to launch; F launch; G / B ghost; Q E / X Y Snap"
-                : "Goby: fly the vessel as usual; 3 / D-pad up primer; 4 / D-pad down flares");
+                : "Goby: fly the vessel as usual; Q / X primer; F / Y flares (phone: the two buttons by the right thumb)");
             GUILayout.Label($"view    mapped {_cntMapped}   warped {_cntWarped}   bars {_cntBars}   rigid {_cntBoxes}   tiles {_cntTiles}   segTests {_rb.SegTests}   draws {_true.Draws}   marks {_world.VertexCount} v");
             GUILayout.EndArea();
 #endif

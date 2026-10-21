@@ -103,6 +103,28 @@ namespace CosmicShore.ScriptableObjects
                  "out of it reads as far as the Goby's view's most distant mass; one on the plane reads near.")]
         [SerializeField, Min(1f)] float depthFullSpreadAt = 60f;
 
+        [Header("Each seat's buttons (game-side, not in the artifact: the Orca's gunner buttons are the pattern)")]
+        [Tooltip("The Goby's Primer button: on a phone round the right thumb, on a pad X, on a keyboard Q (the hull binds " +
+                 "Button3Action to CrewButtonPrimer).")]
+        [SerializeField] Sprite primerButtonIcon;
+        [Tooltip("Player-facing caption under the Primer button. Empty shows none.")]
+        [SerializeField] string primerButtonLabel = "";
+        [Tooltip("The Goby's Flares button: on a phone round the right thumb, on a pad Y, on a keyboard F (Button4Action " +
+                 "to CrewButtonFlares).")]
+        [SerializeField] Sprite flaresButtonIcon;
+        [Tooltip("Player-facing caption under the Flares button. Empty shows none.")]
+        [SerializeField] string flaresButtonLabel = "";
+        [Tooltip("The Pistol's Ghost button (held), round the right thumb on a phone while you fly the Pistol.")]
+        [SerializeField] Sprite ghostButtonIcon;
+        [Tooltip("Player-facing caption under the Ghost button. Empty shows none.")]
+        [SerializeField] string ghostButtonLabel = "";
+        [Tooltip("The Pistol's Snap button (the vortex ring), round the right thumb on a phone while you fly the Pistol.")]
+        [SerializeField] Sprite snapButtonIcon;
+        [Tooltip("Player-facing caption under the Snap button. Empty shows none.")]
+        [SerializeField] string snapButtonLabel = "";
+        [Tooltip("A button's charge count. {count} is the number; empty shows none.")]
+        [SerializeField] string buttonCountTemplate = "{count}";
+
         [Header("Pistol: launch and ghost (the artifact's Pistol section)")]
         [Tooltip("Launch range")]
         [SerializeField] float pLaunchRange = 240f;
@@ -197,6 +219,15 @@ namespace CosmicShore.ScriptableObjects
         public float Parallax => pParallax;
         public float PipSize => pipSize;
         public float ViewMargin => viewMargin;
+        public Sprite PrimerButtonIcon => primerButtonIcon;
+        public string PrimerButtonLabel => primerButtonLabel;
+        public Sprite FlaresButtonIcon => flaresButtonIcon;
+        public string FlaresButtonLabel => flaresButtonLabel;
+        public Sprite GhostButtonIcon => ghostButtonIcon;
+        public string GhostButtonLabel => ghostButtonLabel;
+        public Sprite SnapButtonIcon => snapButtonIcon;
+        public string SnapButtonLabel => snapButtonLabel;
+        public string ButtonCountTemplate => buttonCountTemplate;
         public float DepthFullSpreadAt => depthFullSpreadAt;
         public float Chain => pChain;
         public float HotRing => pHotRing;
