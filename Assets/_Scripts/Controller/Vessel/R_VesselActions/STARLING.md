@@ -17,16 +17,25 @@ Everything below is generated or checked by `python3 Tools/Build/author_starling
 
 ## 1. Controls
 
-| Input | Pad | What it does |
-|---|---|---|
-| Left stick | LS | **Turns the view** about its own up and right axes (`viewTurnRate`, 90°/s at full tilt). It stops when you let go. The view follows the swarm's centroid (`followRate`). |
-| Pick the Mass card | A | Takes the hand's Mass card. |
-| Pick the Time card | B | Takes the hand's Time card. |
-| Pick the Charge card | X | Takes the hand's Charge card. |
-| Pick the Space card | Y | Takes the hand's Space card. |
+Round 2 (Garrett, 2026-10-21): zoom and roll on the stick diffs, pinch and spin on a phone, and card details on a held
+trigger or a long press.
 
-Mass on A and Time on B are the Sparrow's and the Angler's layout. A pick with no hand dealt does nothing. Throttle and
-boost do nothing: the carrier has speed 0, so it lays no trail.
+| Input | Pad | Phone | What it does |
+|---|---|---|---|
+| Both sticks together (the sums) | LS + RS | one thumb | **Turns the view** about its own up and right axes (`viewTurnRate`, 90°/s at full tilt). It stops when you let go. The view follows the swarm's centroid (`followRate`). |
+| x-diff (sticks spread apart / squeezed) | LS-x vs RS-x | **pinch** | **Zooms**: spread = in, squeezed = out, at `zoomRate`; a pinch zooms 1:1 with the fingers. Held between `zoomNearest` (0.35) and `zoomFarthest` (2.5) times the camera's authored distance. |
+| y-diff (one stick up, the other down) | LS-y vs RS-y | **two-finger spin** | **Rolls the camera** about the view's axis at `rollRate` (90°/s); a spin rolls 1:1 with the fingers. While two fingers are down the view does not turn. |
+| Pick the Mass card | A | tap the Mass card | Takes the hand's Mass card, on RELEASE. |
+| Pick the Time card | B | tap the Time card | Takes the hand's Time card. |
+| Pick the Charge card | X | tap the Charge card | Takes the hand's Charge card. |
+| Pick the Space card | Y | tap the Space card | Takes the hand's Space card. |
+| Card details | a trigger held + A/B/X/Y, or hold A/B/X/Y | **long press** on a card | Shows that card's details (§5) for as long as it is held, and picks nothing. A press held past `detailsHoldTime` (0.45 s) or made with a trigger past `detailsTrigger` opens them. |
+
+Mass on A and Time on B are the Sparrow's and the Angler's layout. A pick with no hand dealt does nothing. Boost does
+nothing: the carrier has speed 0, so it lays no trail. x-diff and y-diff inside `diffDeadZone` do nothing, so a resting
+pad never drifts. On a phone the diffs are read only from the pinch and spin (the touch mix holds x-diff after a thumb
+lifts, which as a rate would keep zooming). The camera is written only by the local pilot while this hull is the
+camera's target, and handed back to its authored distance only if nobody else moved it since.
 
 ## 2. The phase cycle
 
@@ -68,12 +77,25 @@ while it is offered. With no hand, the icons dim and the label shows what you ho
 phase and its seconds left, and the swarm's size. Every word is an authored field on the view (`phaseNames` and five
 templates; tokens `{name}` `{level}` `{phase}` `{seconds}` `{count}` `{cap}`); the card names are the deck's.
 
+**The objective card** (2026-10-21) sits directly left of the omnicrystal's card: a core card,
+`CoreAbility.Objective`, with no control chip. Its glyph is the phase's target (`objectiveIcons`, drawn by
+`author_starling_icons.py`: a faceted gem, three shards, a crosshair on a hull, a wall of prism blocks), and it **drains
+from the top** as the phase timer runs out, over a faint copy of itself (`objectiveSpentColor`). The lockup packs the
+core cards it draws against the elemental row, so a hull with the objective and the omnicrystal card shows no gap, and
+the Squirrel's drift and omni cards sit where they always did.
+
+**The card details** (a trigger held while picking, or a long press) open a panel above the header: the hand's card of
+that element with the level it arrives at, its text, each number at that level, and its next jolt above the level you
+hold. With no hand dealt it lists the cards you hold of that element. Every line is an authored template on the view
+(`detailsTitleTemplate`, `detailsStatTemplate`, `detailsMilestoneTemplate`, `detailsHeldTemplate`,
+`detailsNothingHeld`); the card words are the deck's.
+
 ## 6. Files
 
 | What | Where |
 |---|---|
 | Class id | `VesselClassType.Starling = 21` (20 is the Orca's, in flight on `cece/happy-noether-m54hz6`) |
-| Rules (pure C#, tested) | `Controller/Vessel/StarlingRules.cs`; tests `Tests/Editor/StarlingRulesTests.cs` (132 card goldens from `cards.json`); offline harness `Tools/Build/starling_rules_parity/run.sh` (`--self-test`) |
+| Rules (pure C#, tested) | `Controller/Vessel/StarlingRules.cs` (also `StarlingPilotControls`, `StarlingPickPress`); tests `Tests/Editor/StarlingRulesTests.cs` (132 card goldens from `cards.json`); offline harness `Tools/Build/starling_rules_parity/run.sh` (`--self-test`) |
 | The swarm | `R_VesselActions/Executors/StarlingSwarmExecutor.cs` |
 | Config and deck | `StarlingConfigSO.cs`, `StarlingCardDeckSO.cs`; assets under `Assets/_SO_Assets/VesselActions/Starling/` |
 | Picks | `StarlingActionSO.cs`; `StarlingPick{Charge,Mass,Space,Time}.asset` |

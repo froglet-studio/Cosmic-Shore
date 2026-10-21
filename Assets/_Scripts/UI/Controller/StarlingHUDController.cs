@@ -1,4 +1,7 @@
+using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 
@@ -22,6 +25,10 @@ namespace CosmicShore.UI
         [SerializeField] StarlingSwarmExecutor starlings;
 
         bool _isLocalPilotHud;
+        Element _detailsShown = Element.None;
+        int _detailsLevel = -1;
+        readonly StringBuilder _lines = new();
+        readonly List<StarlingCard> _scratch = new();
         int _secondsShown = -1, _countShown = -1, _capShown = -1;
         StarlingPhase _phaseShown = (StarlingPhase)(-1);
 
@@ -37,6 +44,8 @@ namespace CosmicShore.UI
                                && vesselStatus.IsLocalUser;
             _secondsShown = _countShown = _capShown = -1;
             _phaseShown = (StarlingPhase)(-1);
+            _detailsShown = Element.None;
+            _detailsLevel = -1;
         }
 
         void Update()
@@ -54,6 +63,9 @@ namespace CosmicShore.UI
                     "phase", view.PhaseName((int)rules.Phase),
                     "seconds", seconds.ToString(CultureInfo.InvariantCulture)));
             }
+
+            view.SetObjective((int)rules.Phase, rules.PhaseRemaining01);
+            UpdateDetails(rules);
 
             int count = starlings.MemberCount, cap = rules.CapNow;
             if (count != _countShown || cap != _capShown)
@@ -80,6 +92,69 @@ namespace CosmicShore.UI
                         held > 0 ? TemplateText.Fill(view.HeldTemplate, "level", held.ToString(CultureInfo.InvariantCulture)) : string.Empty,
                         false, held / (float)StarlingRules.MaxLevel);
             }
+        }
+            /// <summary>The card details while a pick is held open (a trigger held, or a long press): the hand's card of that
+        /// element at the level it arrives at, else the cards held of it. Rebuilt only when what it shows changes.</summary>
+        void UpdateDetails(StarlingRules rules)
+        {
+            var element = starlings.DetailsElement;
+            int slot = element == Element.None ? -1 : StarlingRules.SlotOf(element);
+            var card = slot >= 0 ? rules.HandCard(slot) : default;
+            int level = card.IsEmpty ? -1 : card.Level;
+            if (element == _detailsShown && level == _detailsLevel) return;
+            _detailsShown = element;
+            _detailsLevel = level;
+            if (element == Element.None) { view.SetDetails(string.Empty); return; }
+
+            _lines.Clear();
+            if (!card.IsEmpty)
+            {
+                var c = card.Card;
+                Line(TemplateText.Fill(view.DetailsTitleTemplate, "name", c.DisplayName, "level", Num(card.Level)));
+                Line(c.Text);
+                foreach (var stat in c.Stats)
+                    Line(TemplateText.Fill(view.DetailsStatTemplate, "label", stat.Label, "value", StatValue(stat, card.Level),
+                                           "unit", stat.Unit));
+                int held = rules.Level(c.Id);
+                foreach (var m in c.Milestones)
+                {
+                    if (m.Level <= held) continue;
+                    Line(TemplateText.Fill(view.DetailsMilestoneTemplate, "level", Num(m.Level), "text", m.Text));
+                    break;
+                }
+            }
+            else if (starlings.Config && starlings.Config.Deck)
+            {
+                starlings.Config.Deck.Wired(element, _scratch);
+                foreach (var c in _scratch)
+                {
+                    int held = rules.Level(c.Id);
+                    if (held > 0) Line(TemplateText.Fill(view.DetailsHeldTemplate, "name", c.DisplayName, "level", Num(held)));
+                }
+                if (_lines.Length == 0) Line(view.DetailsNothingHeld);
+            }
+            view.SetDetails(_lines.ToString());
+        }
+
+        void Line(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            if (_lines.Length > 0) _lines.Append('\n');
+            _lines.Append(text);
+        }
+
+        static string Num(int n) => n.ToString(CultureInfo.InvariantCulture);
+
+        /// <summary>A number as the deck page prints it, or a stepped stat's text at the highest step at or below the level.</summary>
+        static string StatValue(StarlingCardStat stat, int level)
+        {
+            if (stat.Kind == StarlingStatKind.Steps)
+            {
+                var steps = stat.Steps;
+                int index = level >= 15 ? 3 : level >= 10 ? 2 : level >= 5 ? 1 : 0;
+                return steps.Count == 0 ? string.Empty : steps[System.Math.Min(index, steps.Count - 1)];
+            }
+            return stat.ValueAt(level).ToString("F" + System.Math.Max(0, stat.Decimals), CultureInfo.InvariantCulture);
         }
     }
 }

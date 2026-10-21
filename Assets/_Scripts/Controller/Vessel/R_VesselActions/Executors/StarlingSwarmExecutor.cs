@@ -117,8 +117,13 @@ namespace CosmicShore.Gameplay
         public StarlingPhase Phase => _rules?.Phase ?? StarlingPhase.Omnicrystal;
         public StarlingConfigSO Config => config;
 
+        /// <summary>The element whose card details the pilot is holding open (a trigger held, or a long press), else None.</summary>
+        public Element DetailsElement => _press.Details;
+
         /// <summary>Raised on every peer when a pick lands: the element picked.</summary>
         public event System.Action<Element> Picked;
+
+        readonly StarlingPickPress _press = new();
 
         public override void Initialize(IVesselStatus shipStatus)
         {
@@ -136,7 +141,7 @@ namespace CosmicShore.Gameplay
             if (_status != null && !_transformer)
                 CSDebug.LogWarning($"[Starling] {name}: the vessel's transformer is not a StarlingVesselTransformer, so the view " +
                                    "will not follow the swarm.");
-            if (_transformer) _transformer.Configure(config.ViewTurnRate, config.FollowRate);
+            if (_transformer) _transformer.Configure(config);
             _rules ??= new StarlingRules(config);
             _vesselImpactor = _status?.Transform ? _status.Transform.GetComponentInChildren<VesselImpactor>(true) : null;
             var skimmer = _status?.NearFieldSkimmer;
@@ -153,6 +158,23 @@ namespace CosmicShore.Gameplay
         }
 
         void OnTurnEnd() => StopSwarm();
+
+        /// <summary>A pick button went down (A = Mass, B = Time, X = Charge, Y = Space). Nothing is picked yet: a quick
+        /// release picks, a long hold or a pulled trigger shows the card's details instead (<see cref="StarlingPickPress"/>).</summary>
+        public void PressPick(Element element) => _press.Begin(element, Time.unscaledTime, TriggerHeld());
+
+        /// <summary>The pick button came up: pick the card unless its details were shown.</summary>
+        public void ReleasePick(Element element)
+        {
+            if (_press.End(element)) Pick(element);
+        }
+
+        bool TriggerHeld()
+        {
+            var input = _status?.Player != null ? _status.InputStatus : null;
+            float threshold = config ? config.DetailsTrigger : 0.5f;
+            return input != null && Mathf.Max(input.LeftTriggerAnalog, input.RightTriggerAnalog) >= threshold;
+        }
 
         /// <summary>Pick the hand's card of <paramref name="element"/> (A = Mass, B = Time, X = Charge, Y = Space).</summary>
         public void Pick(Element element)
@@ -204,6 +226,7 @@ namespace CosmicShore.Gameplay
             if (hullVisual) hullVisual.gameObject.SetActive(true);
             foreach (var c in carrierColliders) if (c) c.enabled = true;
             if (_transformer) _transformer.FollowTarget = null;
+            _press.Clear();
         }
 
         void AddMember(Vector3 p)
@@ -254,6 +277,7 @@ namespace CosmicShore.Gameplay
         {
             if (_status == null || !config || _rules == null || !config.Deck) return;
             if (!_started) StartSwarm();
+            if (config) _press.Tick(Time.unscaledTime, TriggerHeld(), config.DetailsHoldTime);
             float dt = Time.deltaTime;
             if (dt <= 0f) return;
 

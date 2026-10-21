@@ -198,6 +198,20 @@ MonoBehaviour:
   cardNameTemplate: '{name}'
   cardLevelTemplate: 'Lv {level}'
   heldTemplate: '{level}'
+  objectiveIcons:
+  - {fileID: 21300000, guid: 6844dcfd6490726ea68ce7e92935d52e, type: 3}
+  - {fileID: 21300000, guid: 576677f840e007e1a0a577562edc91a0, type: 3}
+  - {fileID: 21300000, guid: 5df4c6c7f6567a835bcf0a85247440f9, type: 3}
+  - {fileID: 21300000, guid: 0f447150c561c26f16da4a8752280dae, type: 3}
+  objectiveSpentColor: {r: 1, g: 1, b: 1, a: 0.22}
+  detailsTitleTemplate: '{name}  Lv {level}'
+  detailsStatTemplate: '{label}: {value}{unit}'
+  detailsMilestoneTemplate: 'At Lv {level}: {text}'
+  detailsHeldTemplate: '{name}  Lv {level}'
+  detailsNothingHeld: Nothing held yet
+  detailsFontSize: 20
+  detailsBacking: {r: 0.04, g: 0.06, b: 0.12, a: 0.88}
+  detailsWidth: 520
   cardFontSize: 18
   headerFontSize: 24
   idleIconColor: {r: 1, g: 1, b: 1, a: 0.35}

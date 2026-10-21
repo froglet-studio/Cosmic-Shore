@@ -11,6 +11,9 @@ element (R_VesselActions/STARLING.md), so each icon is a CARD with its element's
 
   Charge  a lightning bolt      Mass  a prism (hexagon)      Space  a ring round a black hole      Time  an hourglass
 
+and the objective card (left of the omnicrystal's) draws the phase's target with no card frame: a faceted gem (Omnicrystal),
+three shards (Elemental crystals), a crosshair on a hull (Opposing vessels), a wall of prism blocks (Opposing mass).
+
 The card images (SO_Class_Starling) are rendered from the model by Tools/Build/vessel_model/render_cards.py, not here.
 Deterministic guids (starling_icon_ids.py); each .meta is the house sprite meta with the guid swapped. --check compares pixels
 (tolerance 2/255), not bytes.
@@ -76,7 +79,40 @@ def time(d):
     poly(d, [(54, 40), (74, 40), (64, 58)], fill=0)   # the sand has run out of the top
 
 
-DRAW = dict(zip(("Starling_Charge.png", "Starling_Mass.png", "Starling_Space.png", "Starling_Time.png"), (charge, mass, space, time)))
+# ---- the objective card (the core card left of the omnicrystal's): what the swarm is going for in this phase, no card frame
+
+def obj_omni(d):
+    """Omnicrystal: a big faceted gem."""
+    poly(d, [(64, 14), (102, 52), (64, 114), (26, 52)])
+    for a, b in (((26, 52), (102, 52)), ((48, 52), (64, 114)), ((80, 52), (64, 114)), ((48, 52), (64, 14)), ((80, 52), (64, 14))):
+        line(d, [a, b], 3.5, fill=0)
+
+
+def obj_crystals(d):
+    """Elemental crystals: a cluster of three shards."""
+    poly(d, [(64, 16), (80, 48), (72, 104), (56, 104), (48, 48)])
+    poly(d, [(34, 46), (46, 66), (42, 106), (30, 106), (24, 66)])
+    poly(d, [(94, 46), (104, 66), (98, 106), (86, 106), (82, 66)])
+
+
+def obj_vessels(d):
+    """Opposing vessels: a crosshair on a hull's arrowhead."""
+    ring(d, 64, 64, 44, 6.0)
+    for a, b in (((64, 8), (64, 30)), ((64, 98), (64, 120)), ((8, 64), (30, 64)), ((98, 64), (120, 64))):
+        line(d, [a, b], 6.0)
+    poly(d, [(64, 40), (84, 84), (64, 74), (44, 84)])
+
+
+def obj_mass(d):
+    """Opposing mass: a wall of prism blocks."""
+    for (x, y) in ((28, 80), (64, 80), (100, 80), (46, 48), (82, 48), (64, 16)):
+        poly(d, [(x - 16, y), (x + 16, y), (x + 16, y + 28), (x - 16, y + 28)])
+        line(d, [(x - 16, y + 9), (x + 16, y + 9)], 3.0, fill=0)
+
+
+DRAW = dict(zip(("Starling_Charge.png", "Starling_Mass.png", "Starling_Space.png", "Starling_Time.png",
+                 "Starling_ObjOmni.png", "Starling_ObjCrystals.png", "Starling_ObjVessels.png", "Starling_ObjMass.png"),
+                (charge, mass, space, time, obj_omni, obj_crystals, obj_vessels, obj_mass)))
 
 
 def render(draw_fn):

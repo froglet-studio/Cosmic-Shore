@@ -12963,3 +12963,19 @@ files). No editor or `unity` CLI in the session, so `/verify-unity` did not run.
    every time. With RT held it slows hard and the ball overtakes and leads; with RT released the ball swings round
    like a pendulum. Neither may turn the ship. If a 180 still happens, note the Time level, RT, and whether the
    crosshair was up when LT was let go.
+
+## 🔴 2026-10-21 — The Starlings: objective card, zoom/roll, card details (`claude/project-thread-ytyab2`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session. `R_VesselActions/STARLING.md` §1 and §5. Changed `StarlingVesselTransformer`, `StarlingSwarmExecutor`,
+`StarlingActionSO`, `StarlingRules` (`StarlingPilotControls`, `StarlingPickPress`), `StarlingConfigSO`, `StarlingHUDView`,
+`StarlingHUDController`, `CoreAbility` (`Objective = 3`), `VesselHUDView.CoreAbilityDisplayOrder`, `AbilityLockupView` (core cards
+pack against the elemental row). Reference compile clean (player; editor: the 3 known errors only); rules harness 17/17.
+1. Toybox > Vessel Changer > Starlings: a card LEFT of the omnicrystal card shows a gem in the Omnicrystal phase, and it
+   drains from the top as the phase counts down. The glyph changes each phase (shards, crosshair, blocks).
+2. Squirrel and any other hull: the ability row looks exactly as before (the drift and omni cards in the same places).
+3. Pad: both sticks the same way turn the view; spread the sticks apart (x) to zoom in, squeeze to zoom out; one stick up
+   and the other down rolls the camera. A resting pad does not drift. Zoom stops at near/far limits.
+4. Phone: one thumb turns the view; pinch zooms with the fingers; two-finger spin rolls with the fingers.
+5. When a hand is dealt: tap A/B/X/Y picks on release. Hold a trigger and press a pick, or hold a pick ~0.5 s: a panel
+   shows the card's name, level, text, numbers and next jolt; letting go picks nothing. Long-press a card on a phone: same.
+6. Swap to another vessel after zooming: its camera is back at its own distance.

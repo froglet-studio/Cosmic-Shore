@@ -341,5 +341,84 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(v >= 0f && v < 1f, $"draw {n} is {v}");
             }
         }
+            // ---- the pilot's controls (Garrett, 2026-10-21) ----
+
+        [Test]
+        public void Diffs_RestInsideTheDeadBand_AndRampToFull()
+        {
+            Assert.AreEqual(0f, StarlingPilotControls.SpreadAxis(0.5f, 0.12f), 1e-6f, "a resting pad (x-diff 0.5) zooms");
+            Assert.AreEqual(0f, StarlingPilotControls.SpreadAxis(0.52f, 0.12f), 1e-6f, "a hair of spread zooms");
+            Assert.AreEqual(1f, StarlingPilotControls.SpreadAxis(1f, 0.12f), 1e-6f);
+            Assert.AreEqual(-1f, StarlingPilotControls.SpreadAxis(0f, 0.12f), 1e-6f);
+            Assert.AreEqual(0.5f, StarlingPilotControls.Axis(0.56f, 0.12f), 1e-4f);
+        }
+
+        [Test]
+        public void Spread_ZoomsIn_Squeeze_ZoomsOut_WithinTheBounds()
+        {
+            const float neutral = -1200f;
+            float inward = StarlingPilotControls.Zoomed(neutral, neutral, 1f, 1.2f, 0.1f, 0.35f, 2.5f);
+            float outward = StarlingPilotControls.Zoomed(neutral, neutral, -1f, 1.2f, 0.1f, 0.35f, 2.5f);
+            Assert.Greater(inward, neutral, "spread apart should bring the camera closer (less negative)");
+            Assert.Less(outward, neutral, "squeezed should push the camera away");
+            Assert.AreEqual(neutral * 0.35f, StarlingPilotControls.Zoomed(neutral, neutral, 1f, 1.2f, 100f, 0.35f, 2.5f), 1e-3f);
+            Assert.AreEqual(neutral * 2.5f, StarlingPilotControls.Zoomed(neutral, neutral, -1f, 1.2f, 100f, 0.35f, 2.5f), 1e-3f);
+        }
+
+        [Test]
+        public void Pinch_IsOneToOne_AndSpin_IsTheFingersAngle()
+        {
+            const float neutral = -1200f;
+            Assert.AreEqual(-600f, StarlingPilotControls.Pinched(neutral, neutral, 100f, 200f, 0.35f, 2.5f), 1e-3f,
+                "fingers twice as far apart halve the distance");
+            Assert.AreEqual(-2400f, StarlingPilotControls.Pinched(neutral, neutral, 200f, 100f, 0.35f, 2.5f), 1e-3f);
+            Assert.AreEqual(90f, StarlingPilotControls.Spun(1f, 0f, 0f, 1f), 1e-3f, "a quarter turn counter-clockwise");
+            Assert.AreEqual(-90f, StarlingPilotControls.Spun(1f, 0f, 0f, -1f), 1e-3f);
+        }
+
+        [Test]
+        public void AQuickPress_Picks_OnRelease()
+        {
+            var press = new StarlingPickPress();
+            press.Begin(Element.Mass, 0f, triggerHeld: false);
+            press.Tick(0.2f, false, 0.45f);
+            Assert.AreEqual(Element.None, press.Details);
+            Assert.IsTrue(press.End(Element.Mass), "a quick press picks");
+            Assert.AreEqual(Element.None, press.Pressed);
+        }
+
+        [Test]
+        public void ALongPress_ShowsDetails_AndPicksNothing()
+        {
+            var press = new StarlingPickPress();
+            press.Begin(Element.Time, 0f, triggerHeld: false);
+            press.Tick(0.5f, false, 0.45f);
+            Assert.AreEqual(Element.Time, press.Details, "a long press opens the card's details");
+            Assert.IsFalse(press.End(Element.Time), "letting go of a long press picks nothing");
+            Assert.AreEqual(Element.None, press.Details);
+        }
+
+        [Test]
+        public void ATriggerHeld_ShowsDetails_AtOnce()
+        {
+            var press = new StarlingPickPress();
+            press.Begin(Element.Charge, 0f, triggerHeld: true);
+            Assert.AreEqual(Element.Charge, press.Details);
+            Assert.IsFalse(press.End(Element.Charge));
+
+            press.Begin(Element.Space, 1f, triggerHeld: false);
+            press.Tick(1.05f, true, 0.45f);
+            Assert.AreEqual(Element.Space, press.Details, "pulling a trigger mid-press opens the details too");
+            Assert.IsFalse(press.End(Element.Space));
+        }
+
+        [Test]
+        public void AReleaseOfAnotherButton_DoesNotPick()
+        {
+            var press = new StarlingPickPress();
+            press.Begin(Element.Mass, 0f, false);
+            Assert.IsFalse(press.End(Element.Time));
+            Assert.IsTrue(press.End(Element.Mass));
+        }
     }
 }

@@ -345,6 +345,17 @@ VIEW_WORDS = ("  phaseNames:\n  - Omnicrystal\n  - Elemental crystals\n  - Oppos
               "  cardNameTemplate: '{name}'\n"
               "  cardLevelTemplate: 'Lv {level}'\n"
               "  heldTemplate: '{level}'\n"
+              "  objectiveIcons:\n" +
+              "".join(f"  - {{fileID: 21300000, guid: {I.guid_for(icon)}, type: 3}}\n" for icon in I.OBJECTIVE_ICONS) +
+              "  objectiveSpentColor: {r: 1, g: 1, b: 1, a: 0.22}\n"
+              "  detailsTitleTemplate: '{name}  Lv {level}'\n"
+              "  detailsStatTemplate: '{label}: {value}{unit}'\n"
+              "  detailsMilestoneTemplate: 'At Lv {level}: {text}'\n"
+              "  detailsHeldTemplate: '{name}  Lv {level}'\n"
+              "  detailsNothingHeld: Nothing held yet\n"
+              "  detailsFontSize: 20\n"
+              "  detailsBacking: {r: 0.04, g: 0.06, b: 0.12, a: 0.88}\n"
+              "  detailsWidth: 520\n"
               "  cardFontSize: 18\n"
               "  headerFontSize: 24\n"
               "  idleIconColor: {r: 1, g: 1, b: 1, a: 0.35}\n")
@@ -377,7 +388,9 @@ def config_asset() -> str:
             "  slab: 260\n  viewSpan: 1400\n"
             "  contactHz: 10\n  crystalReach: 28\n  omniReach: 20\n  prismReach: 25\n  baseBite: 0.5\n"
             "  rivalReach: 16\n  nipRate: 0.05\n  petalsPerHit: 0.33333334\n  hitCooldown: 0.5\n  fallbackCellRadius: 900\n"
-            "  memberScale: 3\n  viewTurnRate: 90\n  followRate: 3\n")
+            "  memberScale: 3\n  viewTurnRate: 90\n  followRate: 3\n"
+            "  zoomRate: 1.2\n  zoomNearest: 0.35\n  zoomFarthest: 2.5\n  rollRate: 90\n  diffDeadZone: 0.12\n"
+            "  detailsHoldTime: 0.45\n  detailsTrigger: 0.5\n")
 
 
 def impact_container_asset() -> str:
@@ -612,7 +625,7 @@ def check(files: "dict[str, str]") -> "list[str]":
          "CrystalHullFusionConfig does not carry exactly four Starling entries")
     need(f"guid: {MODEL_GUID}" in files.get(A("_Models", "Vessel Models", "Starling.fbx.meta"), ""),
          "Starling.fbx.meta is missing or does not carry the model guid (vessel_model/build.py starling)")
-    for icon in I.ICONS:
+    for icon in I.ICONS + I.OBJECTIVE_ICONS:
         need(f"guid: {I.guid_for(icon)}" in files.get(A("_Graphics", "Icons", "AbilityIcons", "Starling", icon + ".meta"), ""),
              f"{icon} missing (author_starling_icons.py)")
     for rel, guid in (("CardImages/Starling.png", CARD_ACTIVE), ("CardImages/Starling_Inactive.png", CARD_INACTIVE)):
@@ -628,7 +641,7 @@ def read_all() -> "dict[str, str]":
     paths = {PREFAB, HUD_VARIANT_PATH, CONTAINER, IMPACT_CONTAINER, NETWORK_PREFABS, FUSION, MAP, *CLASS_LISTS, *owned_files(), *SEEDED,
              A("_Models", "Vessel Models", "Starling.fbx.meta"),
              A("_Graphics", "CardImages", "Starling.png.meta"), A("_Graphics", "CardImages", "Starling_Inactive.png.meta"),
-             *(A("_Graphics", "Icons", "AbilityIcons", "Starling", icon + ".meta") for icon in I.ICONS),
+             *(A("_Graphics", "Icons", "AbilityIcons", "Starling", icon + ".meta") for icon in I.ICONS + I.OBJECTIVE_ICONS),
              os.path.join(SCRIPTS, "Data/Enums/VesselClassType.cs"),
              os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs")}
     out = {}

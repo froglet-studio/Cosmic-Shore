@@ -5,6 +5,9 @@ import hashlib
 # One icon per element of the four-icon row (charge, mass, space, time): the button on it picks that element's card.
 ICONS = ("Starling_Charge.png", "Starling_Mass.png", "Starling_Space.png", "Starling_Time.png")
 
+# The objective card's four glyphs, in StarlingPhase order (Omnicrystal, Elemental crystals, Opposing vessels, Opposing mass).
+OBJECTIVE_ICONS = ("Starling_ObjOmni.png", "Starling_ObjCrystals.png", "Starling_ObjVessels.png", "Starling_ObjMass.png")
+
 
 def guid_for(name: str) -> str:
     return hashlib.md5(f"CosmicShore/StarlingIcons/{name}".encode()).hexdigest()

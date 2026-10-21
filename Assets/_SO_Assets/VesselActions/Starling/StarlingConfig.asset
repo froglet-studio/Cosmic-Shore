@@ -43,3 +43,10 @@ MonoBehaviour:
   memberScale: 3
   viewTurnRate: 90
   followRate: 3
+  zoomRate: 1.2
+  zoomNearest: 0.35
+  zoomFarthest: 2.5
+  rollRate: 90
+  diffDeadZone: 0.12
+  detailsHoldTime: 0.45
+  detailsTrigger: 0.5

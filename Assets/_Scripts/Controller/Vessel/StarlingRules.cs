@@ -290,4 +290,91 @@ namespace CosmicShore.Gameplay
             return (h >> 8) / 16777216f;
         }
     }
+    /// <summary>
+    /// The Starlings pilot's camera arithmetic (Garrett, 2026-10-21: "x-diff should control zoom and y-diff should control
+    /// camera roll. this should be pinch and two finger spin on mobile"). Pure, so <c>StarlingRulesTests</c> holds it;
+    /// <see cref="StarlingVesselTransformer"/> feeds it the input and writes the camera.
+    /// </summary>
+    public static class StarlingPilotControls
+    {
+        /// <summary>A centred axis (-1..1) with a dead band: zero inside <paramref name="deadZone"/>, then a ramp to ±1.</summary>
+        public static float Axis(float centred, float deadZone)
+        {
+            float magnitude = System.Math.Abs(centred);
+            if (magnitude <= deadZone || deadZone >= 1f) return 0f;
+            return System.Math.Sign(centred) * System.Math.Min(1f, (magnitude - deadZone) / (1f - deadZone));
+        }
+
+        /// <summary>x-diff (0..1, 0.5 at rest) as a centred axis: sticks spread apart is +1 (zoom in), squeezed is -1.</summary>
+        public static float SpreadAxis(float xDiff, float deadZone) => Axis((xDiff - 0.5f) * 2f, deadZone);
+
+        /// <summary>
+        /// The camera distance (negative, behind the view) after <paramref name="dt"/> s of zooming at <paramref name="axis"/>:
+        /// exponential in the distance, so a zoom feels the same near and far, and held between <paramref name="nearest"/> and
+        /// <paramref name="farthest"/> times <paramref name="neutral"/>, the camera's authored distance.
+        /// </summary>
+        public static float Zoomed(float distance, float neutral, float axis, float rate, float dt, float nearest, float farthest)
+            => Clamp(distance * (float)System.Math.Exp(-axis * rate * dt), neutral, nearest, farthest);
+
+        /// <summary>A pinch, 1:1: fingers twice as far apart halve the distance.</summary>
+        public static float Pinched(float distance, float neutral, float previousSpan, float span, float nearest, float farthest)
+            => span <= 1e-3f || previousSpan <= 1e-3f ? Clamp(distance, neutral, nearest, farthest)
+                                                       : Clamp(distance * previousSpan / span, neutral, nearest, farthest);
+
+        /// <summary>The signed angle (degrees, counter-clockwise positive) from one finger-to-finger vector to the next.</summary>
+        public static float Spun(float fromX, float fromY, float toX, float toY)
+        {
+            double a = System.Math.Atan2(fromX * toY - fromY * toX, fromX * toX + fromY * toY);
+            return (float)(a * 180.0 / System.Math.PI);
+        }
+
+        static float Clamp(float distance, float neutral, float nearest, float farthest)
+        {
+            if (neutral >= 0f) return distance;                       // not a chase camera: leave it alone
+            float near = neutral * nearest, far = neutral * farthest;  // both negative; far is the more negative
+            return distance > near ? near : distance < far ? far : distance;
+        }
+    }
+
+    /// <summary>
+    /// One pick button's press (Garrett, 2026-10-21: "holding a trigger when selecting an element should give details about
+    /// the card. a long press on mobile should do the same"). A press that is let go quickly PICKS on release; a press held
+    /// past the hold time, or made while a trigger is pulled, shows the card's details instead and picks nothing. Pure, so
+    /// <c>StarlingRulesTests</c> holds it; <see cref="StarlingSwarmExecutor"/> owns one.
+    /// </summary>
+    public sealed class StarlingPickPress
+    {
+        float _since;
+
+        /// <summary>The element whose button is down; <see cref="Element.None"/> when none is.</summary>
+        public Element Pressed { get; private set; } = Element.None;
+
+        /// <summary>The element whose card details show; <see cref="Element.None"/> when none do.</summary>
+        public Element Details { get; private set; } = Element.None;
+
+        public void Begin(Element element, float now, bool triggerHeld)
+        {
+            Pressed = element;
+            _since = now;
+            Details = triggerHeld ? element : Element.None;
+        }
+
+        /// <summary>Every frame while a button is down: a held press or a trigger pulled mid-press opens the details.</summary>
+        public void Tick(float now, bool triggerHeld, float holdTime)
+        {
+            if (Pressed == Element.None || Details != Element.None) return;
+            if (triggerHeld || now - _since >= holdTime) Details = Pressed;
+        }
+
+        /// <summary>The button came up. True when it was a quick press, i.e. pick the card.</summary>
+        public bool End(Element element)
+        {
+            if (Pressed != element) return false;
+            bool pick = Details == Element.None;
+            Pressed = Details = Element.None;
+            return pick;
+        }
+
+        public void Clear() => Pressed = Details = Element.None;
+    }
 }

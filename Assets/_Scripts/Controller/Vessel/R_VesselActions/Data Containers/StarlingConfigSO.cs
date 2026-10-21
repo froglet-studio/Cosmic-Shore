@@ -84,6 +84,23 @@ namespace CosmicShore.Gameplay
         [Tooltip("How fast the view's centre eases onto the swarm (1/s).")]
         [SerializeField, Min(0.01f)] float followRate = 3f;
 
+        [Header("Pilot controls (game only; Garrett, 2026-10-21)")]
+        [Tooltip("Zoom speed at full x-diff (both sticks spread apart = in, squeezed = out), in e-folds of the camera " +
+                 "distance per second. A pinch on a phone zooms 1:1 instead.")]
+        [SerializeField, Min(0f)] float zoomRate = 1.2f;
+        [Tooltip("The nearest the camera zooms, as a share of its authored distance (StarlingCameraSettingsSO).")]
+        [SerializeField, Range(0.05f, 1f)] float zoomNearest = 0.35f;
+        [Tooltip("The farthest the camera zooms, as a multiple of its authored distance.")]
+        [SerializeField, Min(1f)] float zoomFarthest = 2.5f;
+        [Tooltip("Camera roll speed at full y-diff (deg/s). A two-finger spin on a phone rolls 1:1 instead.")]
+        [SerializeField, Min(0f)] float rollRate = 90f;
+        [Tooltip("x-diff and y-diff inside this band (of their full range) do nothing, so a resting pad never drifts.")]
+        [SerializeField, Range(0f, 0.9f)] float diffDeadZone = 0.12f;
+        [Tooltip("Holding a pick button (or a finger on its card) this long shows the card's details instead of picking (s).")]
+        [SerializeField, Min(0.05f)] float detailsHoldTime = 0.45f;
+        [Tooltip("A trigger pulled past this (0..1) while a pick is pressed shows the card's details at once.")]
+        [SerializeField, Range(0.05f, 1f)] float detailsTrigger = 0.5f;
+
         public StarlingCardDeckSO Deck => deck;
         public float TOmni => tOmni;
         public float TElem => tElem;
@@ -111,6 +128,13 @@ namespace CosmicShore.Gameplay
         public float MemberScale => memberScale;
         public float ViewTurnRate => viewTurnRate;
         public float FollowRate => followRate;
+        public float ZoomRate => zoomRate;
+        public float ZoomNearest => zoomNearest;
+        public float ZoomFarthest => zoomFarthest;
+        public float RollRate => rollRate;
+        public float DiffDeadZone => diffDeadZone;
+        public float DetailsHoldTime => detailsHoldTime;
+        public float DetailsTrigger => detailsTrigger;
 
         /// <summary>The level a drawn card of <paramref name="element"/> arrives at.</summary>
         public int LevelFor(Data.Element element) => element switch
