@@ -1851,7 +1851,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/PLATFORM_UNIFICATION.md §3.10; Docs/WEBGL_TOYBOX.md 'Web profile'
 
 ### T-20261021-6fa4 · open · test · Ecology
-- **Task:** Dying limbs become shards (Docs/ECOSYSTEM.md section 63, branch cece/awesome-faraday-7fsppt): Play Menu_Main (or any freestyle cell with flora), joust or starve a plant, and watch its spindles. Each limb should fade while a new cytoplasm shard grows where it stood and turns to point at the crystal, in the same outside-in order the limbs go. No limb pops out and no shard pops in. Then check the Console is clean and the Renderer census still shows the snow as one instanced family. On a Low preset fewer limbs should leave shards once the cap (SnowChanger.maxMorphedShards x 0.25) is reached.
+- **Task:** Dying limbs become shards (Docs/ECOSYSTEM.md section 63, branch cece/awesome-faraday-7fsppt): Play Menu_Main (or any freestyle cell with flora), joust or starve a plant, and watch its spindles. Every fifth limb (SnowChanger.limbsPerMorphedShard = 5, toned down 2026-10-21) should fade while a new cytoplasm shard grows where it stood and turns to point at the crystal, in the same outside-in order the limbs go. No limb pops out and no shard pops in. Then check the Console is clean and the Renderer census still shows the snow as one instanced family. On a Low preset fewer limbs should leave shards once the cap (SnowChanger.maxMorphedShards x 0.25) is reached.
 - **Done when:** Seen in Unity: limbs condense into shards in order, no pop, no errors; or the failure is written here and a dev task added
 - **Who can take it:** Garrett (the look), Yash (offered)
 - **Added:** 2026-10-21 by a Claude session (`cece/awesome-faraday-7fsppt`)
@@ -1891,3 +1891,45 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (reported it); Yash (offered) can run the reimport and spot-checks
 - **Added:** 2026-10-21 by a Claude session (`cece/quirky-brown-lkhhx9`)
 - **See:** .claude/skills/vessel-model/references/LESSONS.md #51
+
+### T-20261021-90a6 · open · test · Crew vessels
+- **Task:** Android dev build, branch cece/compassionate-rubin-baeyvi: (1) Toybox > Vessel Changer > Honeyguide and Ratel, swap to the Ratel: hold a finger still on a prism ~0.5 s and it is deleted (1 AP); a drag that leaves the cell still moves it; the Fly button left of the big board swaps back to flying. (2) Fly the Wrasse kite seat, go back to the app shell (HOME): touching or using a pad in the menu must not steer the kite or swap seats; re-enter freestyle and you are seated where you were. Repeat (2) for the Orca gunner, the Ratel, the Pistol and the Marlin jacks.
+- **Done when:** Both steps pass on a phone, or the failure is filed as a dev task
+- **Who can take it:** Garrett (found the bugs) or Yash (offered: playtests)
+- **Added:** 2026-10-21 by a Claude session (`cece/compassionate-rubin-baeyvi`)
+- **See:** 29315a060, 77ead5f41
+
+### T-20261021-2bb3 · open · test · Vessels on a phone
+- **Task:** Reproduce 'the vessel selector UI broke on mobile' (Garrett's Android playtest, 2026-10-21): say which screen (Toybox Vessel Changer matrix, its Toy window, the Hangar, the HUD after a swap), send a screenshot and adb logcat -s Unity. Quick check: connect a pad - if the problem goes away, it is the phone ability-row layout (TouchControlsHud) not re-laying after a swap.
+- **Done when:** The screen and a screenshot/log are on this task, so a session can fix the root cause
+- **Who can take it:** Garrett (saw it) or Yash
+- **Added:** 2026-10-21 by a Claude session (`cece/compassionate-rubin-baeyvi`)
+- **See:** PR for cece/compassionate-rubin-baeyvi
+
+### T-20261021-227a · open · test · Starling vessel
+- **Task:** Fly the Starlings (class 21) from the Toybox Vessel Changer on branch cece/quirky-gates-skplxp: the 120-member murmuration reads as one, the camera roll turns the world the way flight rolls (pad y-diff and phone spin), two thumbs keep turning the view while pinching, holding a pick with no hand lists each held card with its text, numbers and reached jolts, and pressing another pick while the details are open browses to that element
+- **Done when:** Each item passes in Play mode, or the failures are reported
+- **Who can take it:** Garrett (feel), Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/quirky-gates-skplxp`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
+
+### T-20261021-d6dc · open · test · Starling vessel
+- **Task:** Profiler capture of the Starlings at 120 and 200 members on a phone build and in the editor: the swarm executor's Update (separation now on a grid) and the 120-230 SkinnedMeshRenderers (one per member, updateWhenOffscreen) against the frame budget
+- **Done when:** A capture is filed and either fits the budget or names the hot path to cut (e.g. GPU-instanced members instead of skinned copies)
+- **Who can take it:** Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/quirky-gates-skplxp`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StarlingSwarmExecutor.cs
+
+### T-20261021-729e · open · decision · Starling vessel
+- **Task:** With 5x the members, decide whether the per-member cards (Hole Punch, Annex, Danger Drip, Lasers and the base bite and nip) should keep their per-member rates, which now give about 5x the swarm's output, and whether Big Family's numbers (+6 cap at L1, read as cap + value - 40) should scale to the new 200 cap
+- **Done when:** cards.json carries the decided numbers (author_starling_assets.py re-run) or the decision to keep them is logged in STARLINGS_LAB.md
+- **Who can take it:** Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/quirky-gates-skplxp`)
+- **See:** Docs/Studios/SwarmCardVessel/cards.json
+
+### T-20261021-876d · open · test · Crew vessels
+- **Task:** Phone playtest of the Orca gunner buttons (Android dev build, no pad): Toybox > Vessel Changer > Orca · 4 seat, two-finger tap (or the D-pad) to a gunner seat. Two buttons sit round the right thumb: Fire (seat colour) and Missile (rocket icon); the top line of seat text is gone. Left-thumb drag aims the turret while the right thumb holds Fire; Missile launches, the left thumb steers it, Missile again bursts it, and Fire hides while it flies. A thumb resting on a button while the left aims never swaps seats. On the bomb seat Fire throws, Fire again bursts. Buttons hide on the helm and when a pad connects. On a pad: X or RT fires, A launches/bursts, left stick aims.
+- **Done when:** Each step behaves as written on a phone and a pad; buttons sit inside the safe area and don't cover the ability row; any miss is filed as a dev task
+- **Who can take it:** Yash (offered) or Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/fervent-goodall-8cihle`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md 'Two buttons per gunner'; Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca gunner buttons'

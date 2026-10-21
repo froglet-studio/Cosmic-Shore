@@ -12085,8 +12085,12 @@ one new shard in its cell's cytoplasm, the `SnowChanger` field whose shards poin
   read the count, so a new shard is drawn and reoriented like the field's own. Only shards that are
   still condensing are touched every frame (`SnowChanger.CondenseTick`), so the cost is a handful per
   dying plant.
-- **A backstop, not a lifespan.** `SnowChanger.maxMorphedShards` (4000 by default, about the size of a
-  cell's own field) is the most shards limbs may add. It is thinned by `GraphicsCuts.CytoplasmDensity` like
+- **One shard per five limbs.** Garrett, 2026-10-21, after the first look: *"tone down the number of
+  shards created from spindles by a factor 5."* `SnowChanger.limbsPerMorphedShard` (5) counts the cell's
+  dying limbs and only every fifth one condenses into a shard; the rest evaporate as they always did.
+  The count is per cell and in death order, so an ordered wither still leaves its shards outside-in.
+- **A backstop, not a lifespan.** `SnowChanger.maxMorphedShards` (800 by default, cut from 4000 with the
+  rate so both are a fifth) is the most shards limbs may add. It is thinned by `GraphicsCuts.CytoplasmDensity` like
   the field (§3.10 of `Docs/PLATFORM_UNIFICATION.md`: a quarter on Low / Very Low / MobileLow / Web).
   Past it a limb just evaporates, as before. No shard is ever removed to make room: that would be an
   imposed death.

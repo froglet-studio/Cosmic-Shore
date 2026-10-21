@@ -134,9 +134,9 @@
     tMass: 25,        // lab proposal: Opposing mass phase timer (s)
     goalY: 5,         // lab proposal: Y, elemental crystals that end that phase early
     goalX: 30,        // lab proposal: X, opposing prisms removed that end that phase early
-    startSize: 24,    // lab proposal: members at the start                    (card baseline)
-    cap: 40,          // lab proposal: swarm cap                               (card baseline; Big Family raises it)
-    minSize: 6,       // lab proposal: protected minimum, below which nothing harms the swarm (Garrett: "just like other vessels")
+    startSize: 120,   // members at the start: 5x the card baseline's 24 for a murmuration (Garrett, 2026-10-21)
+    cap: 200,         // swarm cap: 5x the card baseline's 40 (Garrett, 2026-10-21; Big Family raises it)
+    minSize: 30,      // protected minimum, below which nothing harms the swarm (Garrett: "just like other vessels"); 5x the 6
     cruise: 120,      // lab: member cruise speed (u/s); faster than the cards' 60 u/s baseline so a phase can be crossed
     turn: 70,         // lab: member turn rate (°/s) before Agility
     lvMass: 1,        // lab: the Mass element's upgrade level (drawn Mass cards arrive at it)
@@ -153,9 +153,9 @@
     ['Phases', 'tMass', 10, 60, 1, 'Opposing mass timer (s)', 'How long the swarm goes after enemy prisms.'],
     ['Phases', 'goalY', 1, 15, 1, 'Y: crystals to end early', 'Elemental crystals collected in the phase that end it before its timer.'],
     ['Phases', 'goalX', 5, 100, 5, 'X: prisms to end early', 'Enemy prisms destroyed or stolen in the phase that end it before its timer.'],
-    ['Swarm', 'startSize', 6, 60, 1, 'Start size', 'Members the swarm starts with.'],
-    ['Swarm', 'cap', 20, 80, 1, 'Cap', 'Most members the swarm can hold before Big Family.'],
-    ['Swarm', 'minSize', 0, 20, 1, 'Protected minimum', 'At or below this many members nothing can harm the swarm.'],
+    ['Swarm', 'startSize', 6, 300, 1, 'Start size', 'Members the swarm starts with.'],
+    ['Swarm', 'cap', 20, 400, 1, 'Cap', 'Most members the swarm can hold before Big Family.'],
+    ['Swarm', 'minSize', 0, 100, 1, 'Protected minimum', 'At or below this many members nothing can harm the swarm.'],
     ['Swarm', 'cruise', 40, 240, 5, 'Cruise (u/s)', 'Member cruise speed before Time cards.'],
     ['Swarm', 'turn', 20, 200, 5, 'Turn rate (°/s)', 'How fast a member can swing round before Agility.'],
     ['Elements', 'lvMass', 1, 15, 1, 'Mass upgrade level', 'Your between-runs Mass level: every Mass card you draw arrives at this level.'],

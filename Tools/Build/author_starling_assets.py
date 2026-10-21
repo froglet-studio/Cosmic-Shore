@@ -353,7 +353,7 @@ VIEW_WORDS = ("  phaseNames:\n  - Omnicrystal\n  - Elemental crystals\n  - Oppos
               "  detailsLevelTemplate: 'Level {level}'\n"
               "  detailsStatTemplate: '{label}: {value}{unit}'\n"
               "  detailsMilestoneTemplate: 'At Lv {level}: {text}'\n"
-              "  detailsHeldTemplate: '{name}  Lv {level}'\n"
+              "  detailsHeldTemplate: '<b>{name}</b>  Lv {level}'\n"
               "  detailsNothingHeld: Nothing held yet\n"
               "  detailsTitleFontSize: 40\n"
               "  detailsLevelFontSize: 26\n"
@@ -388,7 +388,7 @@ def config_asset() -> str:
     return (S.so_header(SCRIPT["StarlingConfigSO"], "StarlingConfig") +
             f"  deck: {{fileID: 11400000, guid: {DECK}, type: 2}}\n"
             "  tOmni: 30\n  tElem: 25\n  tVessel: 25\n  tMass: 25\n  goalY: 5\n  goalX: 30\n"
-            "  startSize: 24\n  cap: 40\n  minSize: 6\n  cruise: 120\n  turn: 70\n"
+            "  startSize: 120\n  cap: 200\n  minSize: 30\n  cruise: 120\n  turn: 70\n"
             "  lvMass: 1\n  lvTime: 1\n  lvSpace: 1\n  lvCharge: 1\n"
             "  slab: 260\n  viewSpan: 1400\n"
             "  contactHz: 10\n  crystalReach: 28\n  omniReach: 20\n  prismReach: 25\n  baseBite: 0.5\n"
@@ -453,7 +453,7 @@ def class_asset() -> str:
     return (S.so_header(SO_VESSEL_SCRIPT, "SO_Class_Starling").replace("  m_EditorClassIdentifier: \n",
                                                                    "  m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel\n") +
             f"  Class: {CLASS_ID}\n"
-            "  Name: Starling\n"
+            "  Name: Starlings\n"
             "  Description: A swarm, not a ship. The starlings roam the cell on their own after each objective in turn -\n"
             "    the omnicrystal, elemental crystals, rival vessels, rival mass. You turn the view and pick one card\n"
             "    from every hand; the cards you pick are what your swarm becomes.\n"

@@ -33,7 +33,7 @@ You never steer the starlings. They roam the whole cell in 3D on their own.
 ## The lab's proposals, not Garrett's numbers
 
 - Phase timers are 30 / 25 / 25 / 25 s. Y = 5 elemental crystals and X = 30 enemy prisms.
-- The swarm starts at 24 members, with a cap of 40 and a protected minimum of 6.
+- The swarm starts at 120 members, with a cap of 200 and a protected minimum of 30 (5x the first round's 24, 40 and 6, Garrett 2026-10-21: "the swarm feels like a small pack not a group of starlings in a murmuration"). Big Family still adds its card numbers (+6 cap at L1) on top.
 - Starlings cruise at 120 u/s, double the cards' 60 u/s baseline, so a phase can cross the 900 u cell. They turn at 70°/s.
 - **Bare-swarm verbs** (what the swarm does with no cards):
   - Touching a crystal collects it, and each elemental crystal hatches one starling.

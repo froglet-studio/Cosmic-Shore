@@ -204,22 +204,10 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
-  seatLineTemplate: "{seat}  \xB7  {gun}  \xB7  {count} missiles  \xB7  1-4 to change seat"
-  seatNames:
-  - Helm
-  - Sniper
-  - Fast gun
-  - Bomb
-  gunNames:
-  - 
-  - Sniper
-  - Fast gun
-  - Bomb
-  gunLineTemplate: '{name} {state}'
-  gunReadyText: ready
-  gunCooldownTemplate: '{seconds}s'
-  gunHotText: overheated
-  bombOutText: bomb out
+  fireButtonIcon: {fileID: 21300000, guid: 191541c7648260cd1a1207a1a287eedf, type: 3}
+  missileButtonIcon: {fileID: 21300000, guid: 77e8ca07a5f9255848e2a102857f9d0b, type: 3}
+  fireButtonLabel: 
+  missileButtonLabel: 
   crosshairColor: {r: 0.95, g: 0.97, b: 0.98, a: 1}
   crosshairReadyColor: {r: 0.6156863, g: 1, b: 0.18039216, a: 1}
   crosshairHotColor: {r: 1, g: 0.302, b: 0.427, a: 1}

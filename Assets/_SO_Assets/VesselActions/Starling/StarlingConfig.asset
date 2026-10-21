@@ -19,9 +19,9 @@ MonoBehaviour:
   tMass: 25
   goalY: 5
   goalX: 30
-  startSize: 24
-  cap: 40
-  minSize: 6
+  startSize: 120
+  cap: 200
+  minSize: 30
   cruise: 120
   turn: 70
   lvMass: 1

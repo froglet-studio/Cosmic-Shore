@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
     /// explosion), so mass is conserved and nothing pops. The side view draws each prism's own mesh and material at its
     /// unrolled place, turned by the ribbon there: the Pistol's world, not a copy of it.</para>
     /// </summary>
-    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat
+    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, IHullParkAware
     {
         enum Half { Goby = 0, Pistol = 1 }
         enum By { Body = 0, Vortex = 1, Chain = 2, Flare = 3 }
@@ -480,6 +480,14 @@ namespace CosmicShore.Gameplay
             // while the human is on the Pistol (and RequestPilotSwap is a no-op outside an arena match, so the two never
             // both act)
             if (CrewSeat.PollSwap(ref _swapReadyAt)) SetHuman(_human == Half.Goby ? Half.Pistol : Half.Goby);
+        }
+
+        /// <inheritdoc cref="IHullParkAware.ReturnHumanToHull"/>
+        public void ReturnHumanToHull()
+        {
+            if (_human != Half.Pistol) return;
+            _weTookGoby = false;   // the autopilot is the parker's now: SetHuman(Goby) must not stop it
+            SetHuman(Half.Goby);
         }
 
         void SetHuman(Half half)

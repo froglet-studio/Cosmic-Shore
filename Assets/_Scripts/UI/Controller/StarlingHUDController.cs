@@ -93,8 +93,10 @@ namespace CosmicShore.UI
                         false, held / (float)StarlingRules.MaxLevel);
             }
         }
-            /// <summary>The card details while a pick is held open (a trigger held, or a long press): the hand's card of that
-        /// element at the level it arrives at, else the cards held of it. Rebuilt only when what it shows changes.</summary>
+        /// <summary>The card details while a pick is held open (a trigger held, or a long press): the hand's card of that
+        /// element at the level it arrives at, else every card held of it with what it does. Another pick button pressed
+        /// meanwhile turns the details to its element (<see cref="StarlingPickPress"/>). Rebuilt only when what it shows
+        /// changes.</summary>
         void UpdateDetails(StarlingRules rules)
         {
             var element = starlings.DetailsElement;
@@ -127,7 +129,8 @@ namespace CosmicShore.UI
             }
             else
             {
-                // No hand: the cards held of this element, under the element's glyph.
+                // No hand: every card held of this element, each with what it does at the level held (Garrett, 2026-10-21:
+                // "list what each ability does not just the ability name and level").
                 title = levelLine = string.Empty;
                 if (starlings.Config && starlings.Config.Deck)
                 {
@@ -135,11 +138,22 @@ namespace CosmicShore.UI
                     foreach (var c in _scratch)
                     {
                         int held = rules.Level(c.Id);
-                        if (held > 0) Line(TemplateText.Fill(view.DetailsHeldTemplate, "name", c.DisplayName, "level", Num(held)));
+                        if (held <= 0) continue;
+                        if (_lines.Length > 0) _lines.Append('\n');   // a blank line between cards
+                        Line(TemplateText.Fill(view.DetailsHeldTemplate, "name", c.DisplayName, "level", Num(held)));
+                        Line(c.Text);
+                        foreach (var stat in c.Stats)
+                            Line(TemplateText.Fill(view.DetailsStatTemplate, "label", stat.Label, "value", StatValue(stat, held),
+                                                   "unit", stat.Unit));
+                        foreach (var m in c.Milestones)
+                            if (m.Level <= held)
+                                Line(TemplateText.Fill(view.DetailsReachedTemplate, "level", Num(m.Level), "text", m.Text));
                     }
                 }
                 if (_lines.Length == 0) Line(view.DetailsNothingHeld);
             }
+            if (_lines.Length > 0 && !string.IsNullOrEmpty(view.DetailsBrowseHint)) _lines.Append('\n');
+            Line(view.DetailsBrowseHint);
             view.SetDetails(element, title, levelLine, _lines.ToString());
         }
 
