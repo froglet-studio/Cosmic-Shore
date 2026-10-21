@@ -160,7 +160,7 @@
   <header class="top">
     <a class="back" href="index.html">&larr; Vessel Studio</a>
     <h1>Goby &amp; Pistol</h1>
-    <span class="round">Duo lab · round 12</span>
+    <span class="round">Duo lab · round 13</span>
     <span class="diffchip" id="diffChip" hidden></span>
     <p class="sub">The first duo vessel: one squad slot, two craft. The <b>Goby</b> flies the 3D world on two thumbs like the Squirrel and lays the path; the <b>Pistol</b> (a pistol shrimp) plays a 2D sidescroller unrolled from that path, rides its hills Tiny Wings style and blows things up. Fly either half while the AI flies the other, and swap with D-pad left / right or keys 1 / 2, the same swap as the arena's. A design lab: the brief is <code>.claude/skills/duo-vessel/references/designs/goby-and-pistol.md</code>.</p>
   </header>
@@ -314,6 +314,7 @@
             <li>Everything else is lab-only: the straight boost, the primer, heat and flares, the Pistol's gravity, dive, launch, Snap (the vortex ring) and ghost, its vision band and body, the hills, and the world (clusters of flora, fauna, enemy walls and friendly blocks, seeded per intensity).</li>
             <li>Not modelled: rival ships (the brief says ships are hot by default), the element meter and its mappings, network ownership of the two halves, co-op (two humans: the offer / accept swap), death and respawn, sound, the real game's prisms and their shields, the phone flip (a Swap button stands in).</li>
             <li>The Pistol's world is drawn by the same rules as the game's side view (<code>GobyPistolDuo</code>, <code>PistolWarp</code>, <code>PistolWorldMesh</code>, <code>PistolWorld.shader</code>; the artifact is the source of truth, Unity its clone): every prism in a depth window of &minus;0.5 to 3 &times; the parallax depth is drawn <b>as the game draws it</b> (Garrett, 2026-10-18: as true to the game as possible): its own mesh and material, lit under the same sky, through a real perspective camera whose off-axis frustum IS the parallax; what the Pistol can reach is <b>warped</b> through the unroll (its eight corners mapped through the ribbon round its own segment, as far along the path as the bend there stretches it); the deep background is rigid; the foreground is real and opaque (it may only not cover the Pistol); no fog, no tint, no glass - the primed / hot / held marks are rings; a prism the Goby loops round holds the loop's centre and is drawn as the <b>bar</b> of the whole run of path it is beside; the forecast past the Goby extrapolates the ribbon's last segment. Everything is laid on an orthographic screen with 2.5D parallax about the Pistol. The Goby's trail is the ground: its line (downslopes warm) and its tiles, rigid on the line at their own depth (no floor, no curtain); the sky and stars are turned by the frame at the Pistol. Not mapped: the drifting background field. The Snap is a vortex ring (the self-explosion was dropped, Garrett 2026-10-15): prisms near its core are pulled into a toroidal flow and carried, then broken when it collapses (lab-only, a setting). The world keeps seeding clusters just ahead of the Goby (lab-only, Trail and hills).</li>
+            <li><b>The Tangent plane (round 13, the default).</b> Nothing is unrolled or warped: the Pistol is in the real 3D world and its sidescroller is a plane through it that holds the Goby's path where the Pistol is, seen by a real camera from the plane's side. The plane's normal is the path's own carried along it without twisting, so the path bending within the plane is a real hill or dip and the camera only yaws as far as the path leaves the plane (eased over <i>Plane turn s</i>); which way is "along" follows the chord of the path round the Pistol, eased over <i>Camera roll s</i>, so the camera moves as little as it can. The trail's hills are real in 3D (the hinges lifted along the path's up) and the Pistol rides their projection onto the plane, exact where the plane touches the path; far ahead the projection and the drawn trail part where the path leaves the plane (the Unroll test's "Trail off plane"). Prisms near the plane are their true boxes; out of it their faces part and fade (the game's <code>PrismDepthPlane</code> look, the Wrasse's and the Starlings'). Not modelled: the dither corridor in front of the plane.</li>
             <li>The lab's prisms are plain boxes, so the warped box is the warped prism; the game deforms each prism's own mesh inside the same box. Near tight turns two passes of the path compete for a point: the Unroll test counts how often (the view's fast map may pick the other pass at such a fold; the sim's map never does).</li>
           </ul>
         </details>
@@ -395,6 +396,11 @@
     pSoftRadius: 80,      // lab-only (the Settled unroll): a curve tighter than this radius is softened for the Pistol's 2D view; gentler ones are
                           // left exactly as flown. The softening is spread over pSoftReach either side and settles before the Pistol arrives
     pSoftReach: 48,       // lab-only: u either side a softened curve is eased over; the path this close behind the Goby is still settling
+    pPlaneEase: 0.12,     // lab-only (the Tangent plane, round 13): seconds the plane takes to turn and hold the path where the Pistol is
+    pRollEase: 0.9,       // lab-only: seconds the camera takes to roll level with the path's run (slow: the camera moves as little as it can)
+    pChord: 140,          // lab-only: u of path either side of the Pistol whose run says which way is "along" (its fast wiggles stay hills)
+    pMaxLean: 40,         // lab-only: the steepest the path under the Pistol may stand on screen; past it the camera rolls (fast) just enough
+    pDepthSpread: 160,    // lab-only: u out of the plane at which a prism's faces are fully parted and faded (PrismDepthPlane's fullSpreadAt)
     wStreamGap: 140,      // lab-only: every this many u the Goby flies, the world may seed a cluster ahead of it
     wStreamChance: 0.75,  // lab-only (scaled by intensity)
     wStreamAhead: 300,    // lab-only: how far ahead of the Goby it seeds
@@ -450,6 +456,11 @@
     ['Pistol', 'pVortexMax', 1, 80, 1, 'Vortex carries', 'Lab-only. Prisms one ring can carry.'],
     ['Pistol', 'pVortexCd', 0.5, 15, 0.5, 'Vortex cooldown', 'Lab-only.'],
     ['Pistol', 'pVortexCollapse', 0, 1, 1, 'Vortex collapses', 'Lab-only. 1: the ring collapses and breaks what it carries. 0: it lets them go where they are.'],
+    ['Trail', 'pPlaneEase', 0.02, 1, 0.01, 'Plane turn s', 'Lab-only (Tangent plane). How fast the plane turns to keep the path where the Pistol is. Short: the ground under the Pistol stays exact.'],
+    ['Trail', 'pRollEase', 0.1, 4, 0.05, 'Camera roll s', 'Lab-only (Tangent plane). How slowly the camera rolls level with the path\'s run. Long: the camera moves as little as it can; short climbs stay hills.'],
+    ['Trail', 'pMaxLean', 10, 80, 1, 'Steepest path °', 'Lab-only (Tangent plane). The path under the Pistol never stands steeper than this on screen: past it the camera rolls, quickly, just enough. Below it the camera stays still.'],
+    ['Trail', 'pChord', 20, 400, 5, 'Along = run of u', 'Lab-only (Tangent plane). The path this far either side of the Pistol sets which way is along the screen.'],
+    ['Trail', 'pDepthSpread', 20, 600, 10, 'Depth spread u', 'Lab-only (Tangent plane). A prism this far out of the plane has its faces fully parted and faded (the game\'s PrismDepthPlane look).'],
     ['Trail', 'pSoftRadius', 20, 300, 5, 'Soften below radius', 'Lab-only (Settled unroll). Curves tighter than this are eased for the Pistol; gentler ones stay exactly as flown.'],
     ['Trail', 'pSoftReach', 12, 120, 4, 'Soften over u', 'Lab-only. How far either side a sharp curve is eased; the path this close behind the Goby is still settling.'],
     ['Trail', 'wStreamGap', 40, 600, 10, 'Seed every u', 'Lab-only. The world keeps seeding clusters ahead of the Goby, so the Pistol always has things to hit.'],
@@ -466,7 +477,7 @@
   ];
   const DIFF = { Hard: { late: 0, mis: 0 }, Medium: { late: 0.25, mis: 0.045 }, Easy: { late: 0.5, mis: 0.099 } };   // SkimRaceDifficulty.asset
   const INTENSITY = { 1: { clusters: 8, crystals: 2, note: '8 clusters, 2 crystals' }, 2: { clusters: 14, crystals: 3, note: '14 clusters, 3 crystals' }, 3: { clusters: 22, crystals: 3, note: '22 clusters, 3 crystals' }, 4: { clusters: 30, crystals: 4, note: '30 clusters, 4 crystals' } };
-  const MODES = { soft: 'Settled (eases only sharp curves)', world: 'World up (exact unroll)', arc: 'Arc length', goby: "Goby's up (twisting)" };
+  const MODES = { plane: 'Tangent plane (2.5D, no warp)', soft: 'Settled (eases only sharp curves)', world: 'World up (exact unroll)', arc: 'Arc length', goby: "Goby's up (twisting)" };
   const KINDS = ['flora', 'fauna', 'enemy', 'friendly'];
 
   const LS = 'goby-studio-v1';
@@ -475,7 +486,8 @@
   const saved = lsGet(LS, {});
   const P = Object.assign({}, SHIPPED);
   for (const k in (saved.diff || {})) if (k in SHIPPED && typeof saved.diff[k] === 'number') P[k] = saved.diff[k];
-  const S = Object.assign({ course: 2, you: 'You', fly: 'goby', partner: 'Hard', cam: 'Chase', speed: 1, thinking: true, autoRestart: false, mode: 'soft', views: 'inset', ribbon3d: true, idleHold: true, domain: 'jade' }, saved.S || {});
+  const S = Object.assign({ course: 2, you: 'You', fly: 'goby', partner: 'Hard', cam: 'Chase', speed: 1, thinking: true, autoRestart: false, mode: 'plane', views: 'inset', ribbon3d: true, idleHold: true, domain: 'jade' }, saved.S || {});
+  if (!S.r13) { S.mode = 'plane'; S.r13 = true; }   // round 13: everyone starts on the tangent plane once (Garrett, 2026-10-21)
   function save() { const diff = {}; for (const k in SHIPPED) if (P[k] !== SHIPPED[k]) diff[k] = P[k]; lsSet(LS, { S, diff }); }
 
   // ================= vectors (plain objects: the sim never touches THREE) =================
@@ -504,8 +516,12 @@
   //           (drawPrism: rigid below 12 % stretch, fully bent by 35 %, the fold's bar as before).
   //         Sideways the spine is the path exactly: smoothing a curve's POSITIONS tightens a sustained turn (the
   //         2026-10-18 measure: it bent more prisms, not fewer), so the sideways answer is in how prisms are drawn.
+  //  plane: NOTHING unrolled (round 13, Garrett 2026-10-21: "bring the sidescroller plane to the tangent plane of the pistol
+  //         and the goby path"). x is distance flown; each sample carries the path's own frame, its normal R carried along
+  //         without twist (parallel transport), and the hinges are lifted IN 3D along its up (rb.hp). The Pistol's world is
+  //         the real one, seen on a plane through the Pistol: see "the tangent plane" below.
   function makeRibbon(mode, P) {
-    const rb = { mode, n: 0, px: [], py: [], pz: [], s: [], sig: [], hx: [], hz: [], ux: [], uy: [], uz: [], rx: [], ry: [], rz: [], upF: V(0, 1, 0), cx: [], cy: [] };
+    const rb = { mode, n: 0, px: [], py: [], pz: [], s: [], sig: [], hx: [], hz: [], ux: [], uy: [], uz: [], rx: [], ry: [], rz: [], upF: V(0, 1, 0), cx: [], cy: [], hp: [], hk: [] };
     if (mode === 'soft') {
       const gap = (P && P.tSampleGap) || 4;
       Object.assign(rb, { qx: [], qy: [], qz: [], qu: [], qf: [], dyv: [], ci: [], cs: [], blocks: [],
@@ -576,10 +592,17 @@
       if (l3 > 1e-6) t = V(dx / l3, dy / l3, dz / l3);
       if (lh > 1e-3) { hx = dx / lh; hz = dz / lh; } else { hx = rb.hx[n - 1]; hz = rb.hz[n - 1]; }
     } else { const lh = Math.hypot(fwd.x, fwd.z); if (lh > 1e-3) { hx = fwd.x / lh; hz = fwd.z / lh; } else { hx = 0; hz = -1; } }
-    const f = rb.upF; rb.upF = vnorm(V(lerp(f.x, gUp.x, 0.2), lerp(f.y, gUp.y, 0.2), lerp(f.z, gUp.z, 0.2)));
-    let up = vsub(rb.upF, vscl(t, vdot(rb.upF, t)));
-    if (vlen(up) < 1e-4) up = n > 0 ? V(rb.ux[n - 1], rb.uy[n - 1], rb.uz[n - 1]) : V(0, 1, 0);
-    up = vnorm(up); const right = vnorm(vcross(t, up));
+    let up, right;
+    if (rb.mode === 'plane') {   // the path's normal carried along it without twisting: the smallest turn that keeps it square to the path
+      const R0 = n > 0 ? V(rb.rx[n - 1], rb.ry[n - 1], rb.rz[n - 1]) : vcross(t, gUp);
+      let Rv = vsub(R0, vscl(t, vdot(R0, t))); if (vlen(Rv) < 1e-6) Rv = n > 0 ? R0 : V(1, 0, 0);
+      right = vnorm(Rv); up = vcross(right, t);
+    } else {
+      const f = rb.upF; rb.upF = vnorm(V(lerp(f.x, gUp.x, 0.2), lerp(f.y, gUp.y, 0.2), lerp(f.z, gUp.z, 0.2)));
+      up = vsub(rb.upF, vscl(t, vdot(rb.upF, t)));
+      if (vlen(up) < 1e-4) up = n > 0 ? V(rb.ux[n - 1], rb.uy[n - 1], rb.uz[n - 1]) : V(0, 1, 0);
+      up = vnorm(up); right = vnorm(vcross(t, up));
+    }
     rb.px.push(p.x); rb.py.push(p.y); rb.pz.push(p.z); rb.s.push(s); rb.sig.push(sig); rb.hx.push(hx); rb.hz.push(hz);
     rb.ux.push(up.x); rb.uy.push(up.y); rb.uz.push(up.z); rb.rx.push(right.x); rb.ry.push(right.y); rb.rz.push(right.z); rb.n++;
   }
@@ -738,11 +761,13 @@
 
   // ---- the ground: a Catmull-Rom curve through the hinge blocks, ending at the Goby (it is still being laid) ----
   let GS = 0;   // the slope at the last groundAt() call
-  const cpX = (W, i) => (i < W.rb.cx.length ? W.rb.cx[i] : W.endX);
-  const cpY = (W, i) => (i < W.rb.cx.length ? W.rb.cy[i] : W.endY);
-  function cpCount(W) { const n = W.rb.cx.length; return n && W.endX > W.rb.cx[n - 1] + 1 ? n + 1 : n; }
+  const CP = (W) => W.cpSet || W.rb;   // the tangent plane projects its own control points each step (planeGround)
+  const cpX = (W, i) => (i < CP(W).cx.length ? CP(W).cx[i] : W.endX);
+  const cpY = (W, i) => (i < CP(W).cx.length ? CP(W).cy[i] : W.endY);
+  function cpCount(W) { const C = CP(W), n = C.cx.length; return n && W.endX > C.cx[n - 1] + 1 ? n + 1 : n; }
   function cpTan(W, i, m) { const a = Math.max(0, i - 1), b = Math.min(m - 1, i + 1), dx = cpX(W, b) - cpX(W, a); return dx > 1e-6 ? (cpY(W, b) - cpY(W, a)) / dx : 0; }
   function groundAt(W, x) {
+    if (W.cpSet) return groundAtPlane(W, x);
     const m = cpCount(W);
     if (m === 0) { GS = 0; return W.endY; }
     if (m === 1 || x <= cpX(W, 0)) { GS = 0; return cpY(W, 0); }
@@ -754,6 +779,139 @@
     GS = ((6 * t2 - 6 * t) * ya + (3 * t2 - 4 * t + 1) * h * ma + (-6 * t2 + 6 * t) * yb + (3 * t2 - 2 * t) * h * mb) / h;
     return (2 * t3 - 3 * t2 + 1) * ya + (t3 - 2 * t2 + t) * h * ma + (-2 * t3 + 3 * t2) * yb + (t3 - t2) * h * mb;
   }
+
+  // ================= the tangent plane: the Pistol as a 2.5D character (round 13) =================
+  // Garrett, 2026-10-21: "we have developed some 2.5 d characters recently that don't need to distort the world at all. this
+  // character need only bring the sidescroller plane to the tangent plane of the pistol and the goby path, then move the
+  // camera around minimally so we dont jerk things about any more than needed". So, in 'plane': nothing is unrolled or
+  // warped. The Pistol is in the real 3D world, and its sidescroller is a PLANE through it that holds the Goby's path where
+  // the Pistol is (the path's tangent lies in it), seen by a real camera from the plane's side. What is near the plane is
+  // drawn sharp; what is out of it parts and fades (the Wrasse's and the Starlings' 2.5D look, PrismDepthPlane). The plane
+  // turns only as far as it must, and smoothly (W.pl, stepped by the sim so the view and the forces agree):
+  //  - its NORMAL is the path's own, carried along it without twisting (ribPush): the path bending WITHIN the plane never
+  //    turns the camera (it is a real hill or dip on screen); the camera yaws only as far as the path leaves the plane,
+  //    eased over pPlaneEase;
+  //  - its ROLL (which way is "along") follows the chord of pChord of path either side of the Pistol, eased over
+  //    pRollEase: fast wiggles stay hills and a long climb is levelled slowly;
+  //  - the Pistol's physics are the 2D ones, in the plane (down is the plane's down, leaning pDownTilt toward the Goby, the
+  //    camera rolled with it as before). The frame turns about the Pistol and carries its velocity, so a turn never kicks it.
+  // The GROUND is the Goby's real trail: its hinges are lifted and dropped in 3D along the path's up (addBlock), and the
+  // Pistol rides their projection onto the plane, exact where the plane touches the path.
+  const isPlane = (W) => W.rb.mode === 'plane';
+  function arcPoint(rb, s, out) {   // the path at distance flown s, held at both ends of what is laid
+    out = out || V(0, 0, 0); const n = rb.n;
+    if (n < 2 || s <= 0) { out.x = rb.px[0] || 0; out.y = rb.py[0] || 0; out.z = rb.pz[0] || 0; return out; }
+    if (s >= rb.s[n - 1]) { out.x = rb.px[n - 1]; out.y = rb.py[n - 1]; out.z = rb.pz[n - 1]; return out; }
+    let lo = 0, hi = n - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (rb.s[m] <= s) lo = m; else hi = m; }
+    const L = rb.s[lo + 1] - rb.s[lo], f = L > 1e-9 ? (s - rb.s[lo]) / L : 0;
+    out.x = lerp(rb.px[lo], rb.px[lo + 1], f); out.y = lerp(rb.py[lo], rb.py[lo + 1], f); out.z = lerp(rb.pz[lo], rb.pz[lo + 1], f); return out;
+  }
+  function makePlane() { return { X: V(0, 0, -1), Y: V(0, 1, 0), R: V(1, 0, 0), O: V(0, 0, 0), k: 0, t: 0, s: 0, h0: 0, turn: 0 }; }
+  function planeNearest(W, q) {   // where the Pistol is on the path: the nearest segment in a window round the last (it only moves on)
+    const rb = W.rb, pl = W.pl, n = rb.n; if (n < 2) { pl.k = 0; pl.t = 0; pl.s = 0; return; }
+    let bk = Math.min(pl.k, n - 2), bt = 0, bd = Infinity;
+    // a step moves it a few u: a wider window jumps to another lap of a folded path
+    for (let k = Math.max(0, pl.k - 4), ke = Math.min(n - 2, pl.k + 12); k <= ke; k++) { const d2 = segD2(rb, k, q, true); if (d2 < bd) { bd = d2; bk = k; bt = SD_T; } }
+    pl.k = bk; pl.t = bt; pl.s = lerp(rb.s[bk], rb.s[bk + 1], bt);
+  }
+  const PL_TG = {};
+  function planeTarget(W, out) {   // where the plane wants to be: the path's normal at the Pistol, and "along" = the path's run round it
+    const rb = W.rb, pl = W.pl, k = pl.k, f = clamp(pl.t, 0, 1);
+    const T = vnorm(V(rb.px[k + 1] - rb.px[k], rb.py[k + 1] - rb.py[k], rb.pz[k + 1] - rb.pz[k]));
+    let R = V(lerp(rb.rx[k], rb.rx[k + 1], f), lerp(rb.ry[k], rb.ry[k + 1], f), lerp(rb.rz[k], rb.rz[k + 1], f));
+    R = vsub(R, vscl(T, vdot(R, T))); R = vlen(R) > 1e-6 ? vnorm(R) : pl.R;
+    // "along": the path's tangents within pChord either side, laid in the plane and averaged, each weighted by its distance
+    // (gaussian) and by how much of it lies IN the plane (a stretch turning out of the plane, the far leg of a hairpin, has no
+    // say in which way the screen runs). On a straight it is the tangent; on fast wiggles, their mean.
+    const L = Math.max(1, W.P.pChord), sig = 0.5 * L, step = Math.max(1, Math.round(L / 12 / Math.max(1, W.P.tSampleGap)));
+    let sx = 0, sy = 0, sz = 0;
+    for (let j = Math.max(0, k - Math.ceil(L / W.P.tSampleGap)), je = Math.min(rb.n - 2, k + Math.ceil(L / W.P.tSampleGap)); j <= je; j += step) {
+      const ds = rb.s[j] - pl.s; if (Math.abs(ds) > L) continue;
+      let tx = rb.px[j + 1] - rb.px[j], ty = rb.py[j + 1] - rb.py[j], tz = rb.pz[j + 1] - rb.pz[j]; const tl = Math.hypot(tx, ty, tz); if (tl < 1e-9) continue;
+      tx /= tl; ty /= tl; tz /= tl; const tr = tx * R.x + ty * R.y + tz * R.z, inPlane = 1 - tr * tr, w = Math.exp(-(ds * ds) / (2 * sig * sig)) * inPlane * inPlane;
+      sx += (tx - R.x * tr) * w; sy += (ty - R.y * tr) * w; sz += (tz - R.z * tr) * w;
+    }
+    let X = V(sx, sy, sz); X = vlen(X) > 1e-6 ? vnorm(X) : T;
+    out.R = R; out.X = X; out.T = T; return out;
+  }
+  // One step of the plane: the smallest turn of the whole frame that brings its normal toward the path's (eased over
+  // pPlaneEase), then a roll about the normal toward the chord (eased over pRollEase), then re-based on the Pistol so it
+  // keeps its (x, h) and its velocity in the plane. pl.turn is how far the frame turned this step (radians): the measure.
+  function planeStep(W, dt, snap) {
+    const pl = W.pl, P = W.P, p = W.p, q = p.wpos, R0 = pl.R, X0 = pl.X;
+    if (W.rb.n >= 2) {
+      planeNearest(W, q); const tg = planeTarget(W, PL_TG);
+      const ax = vcross(pl.R, tg.R), sn = vlen(ax);
+      if (sn > 1e-9) { const a = Math.atan2(sn, vdot(pl.R, tg.R)) * (snap ? 1 : 1 - Math.exp(-dt / Math.max(1e-3, P.pPlaneEase))), k = vscl(ax, 1 / sn); pl.R = vnorm(vrot(pl.R, k, a)); pl.X = vrot(pl.X, k, a); }
+      pl.X = vnorm(vsub(pl.X, vscl(pl.R, vdot(pl.X, pl.R))));
+      const a2 = Math.atan2(vdot(vcross(pl.X, tg.X), pl.R), vdot(pl.X, tg.X)) * (snap ? 1 : 1 - Math.exp(-dt / Math.max(1e-3, P.pRollEase)));
+      if (Math.abs(a2) > 1e-12) pl.X = vnorm(vrot(pl.X, pl.R, a2));
+      // the one roll that is NEEDED: the path under the Pistol standing steeper than pMaxLean on screen would be a wall, so
+      // the camera rolls (over pPlaneEase) just enough to bring it back to pMaxLean, and not at all below it
+      const Tp = vnorm(vsub(tg.T, vscl(pl.R, vdot(tg.T, pl.R)))), aT = Math.atan2(vdot(vcross(pl.X, Tp), pl.R), vdot(pl.X, Tp)), lim = (P.pMaxLean || 40) * DEG;
+      if (Math.abs(aT) > lim) pl.X = vnorm(vrot(pl.X, pl.R, (aT - Math.sign(aT) * lim) * (snap ? 1 : 1 - Math.exp(-dt / Math.max(1e-3, P.pPlaneEase)))));
+      pl.Y = vcross(pl.R, pl.X);
+    }
+    pl.turn = Math.max(Math.acos(clamp(vdot(R0, pl.R), -1, 1)), Math.acos(clamp(vdot(X0, pl.X), -1, 1)));
+    // the plane holds the trail where the Pistol is: the Pistol's depth is the trail's there (it moves the PLANE toward or
+    // away from the camera, never the world), so the ground under it is exact however the path turns while it flies
+    if (W.rb.n >= 2) { const k = pl.k, f = clamp(pl.t, 0, 1), rb = W.rb, dd = (lerp(rb.px[k], rb.px[k + 1], f) - q.x) * pl.R.x + (lerp(rb.py[k], rb.py[k + 1], f) - q.y) * pl.R.y + (lerp(rb.pz[k], rb.pz[k + 1], f) - q.z) * pl.R.z; q.x += pl.R.x * dd; q.y += pl.R.y * dd; q.z += pl.R.z * dd; }
+    pl.O = V(q.x - pl.X.x * p.x - pl.Y.x * p.y, q.y - pl.X.y * p.x - pl.Y.y * p.y, q.z - pl.X.z * p.x - pl.Y.z * p.y);
+    planeGround(W);
+  }
+  // the ground in the plane: the trail's hinges from a screen behind the Pistol to the Goby, projected, IN PATH ORDER (cs:
+  // their distance flown), ending at the Goby. Where the projection folds (the path doubles back across the screen), the
+  // ground at an x is the stretch of it nearest the Pistol along the path (groundAtPlane), so the ground under the Pistol
+  // is always the trail it is on
+  function planeGround(W) {
+    const rb = W.rb, pl = W.pl, C = W.cpSet, O = pl.O, X = pl.X, Y = pl.Y, back = 1.2 * W.P.pViewWidth;
+    C.cx.length = 0; C.cy.length = 0; C.cs.length = 0;
+    while (pl.h0 < rb.hk.length - 2 && rb.s[rb.hk[pl.h0 + 1]] < pl.s - back) pl.h0++;
+    for (let i = pl.h0; i < rb.hp.length; i++) {
+      const h = rb.hp[i], dx = h.x - O.x, dy = h.y - O.y, dz = h.z - O.z;
+      C.cx.push(dx * X.x + dy * X.y + dz * X.z); C.cy.push(dx * Y.x + dy * Y.y + dz * Y.z); C.cs.push(rb.s[rb.hk[i]]);
+    }
+    const g = W.g.pos, gx = g.x - O.x, gy = g.y - O.y, gz = g.z - O.z;
+    W.endX = gx * X.x + gy * X.y + gz * X.z; W.endY = gx * Y.x + gy * Y.y + gz * Y.z; W.gx = W.endX;
+    C.cx.push(W.endX); C.cy.push(W.endY); C.cs.push(W.sEnd != null ? W.sEnd : rb.s[rb.n - 1]);   // the Goby is the ground's last point
+  }
+  // groundAt on the plane: the Catmull-Rom through the projected hinges, on the forward stretch (x increasing) that holds x
+  // and is nearest the Pistol along the path; off every stretch, the nearest point's height, flat
+  function groundAtPlane(W, x) {
+    const C = W.cpSet, m = C.cx.length, s0 = W.pl.s;
+    if (m === 0) { GS = 0; return W.endY; }
+    if (m === 1) { GS = 0; return C.cy[0]; }
+    let lo = -1, bs = Infinity;
+    for (let i = 0; i < m - 1; i++) {
+      const xa = C.cx[i], xb = C.cx[i + 1]; if (xb - xa < 1e-3 || x < xa || x > xb) continue;
+      const ds = Math.abs(0.5 * (C.cs[i] + C.cs[i + 1]) - s0); if (ds < bs) { bs = ds; lo = i; }
+    }
+    if (lo < 0) {
+      let bi = 0, bd = Infinity; for (let i = 0; i < m; i++) { const d = Math.abs(C.cx[i] - x) + 0.25 * Math.abs(C.cs[i] - s0); if (d < bd) { bd = d; bi = i; } }
+      GS = 0; return C.cy[bi];
+    }
+    const xa = C.cx[lo], xb = C.cx[lo + 1], ya = C.cy[lo], yb = C.cy[lo + 1], h = xb - xa;
+    const tan = (i) => { const a = Math.max(0, i - 1), b = Math.min(m - 1, i + 1), dx = C.cx[b] - C.cx[a]; return dx > 1e-6 ? (C.cy[b] - C.cy[a]) / dx : (yb - ya) / h; };   // a neighbour that doubles back: the stretch's own slope
+    const ma = tan(lo), mb = tan(lo + 1), u = (x - xa) / h, u2 = u * u, u3 = u2 * u;
+    GS = ((6 * u2 - 6 * u) * ya + (3 * u2 - 4 * u + 1) * h * ma + (-6 * u2 + 6 * u) * yb + (3 * u2 - 2 * u) * h * mb) / h;
+    return (2 * u3 - 3 * u2 + 1) * ya + (u3 - 2 * u2 + u) * h * ma + (-2 * u3 + 3 * u2) * yb + (u3 - u2) * h * mb;
+  }
+  function planeMap(W, q, out) {   // a world point in the plane's frame: x along, h up, d out of the plane (toward the camera)
+    const pl = W.pl, dx = q.x - pl.O.x, dy = q.y - pl.O.y, dz = q.z - pl.O.z;
+    out.x = dx * pl.X.x + dy * pl.X.y + dz * pl.X.z; out.h = dx * pl.Y.x + dy * pl.Y.y + dz * pl.Y.z; out.d = dx * pl.R.x + dy * pl.R.y + dz * pl.R.z;
+    out.k = pl.k; out.t = pl.t; out.amb = false; out.ok = true; return out;
+  }
+  // the one place each map is asked: the plane's rigid frame, or the ribbon's unroll
+  const viewMap = (W, q, xLo, xHi, out) => (isPlane(W) ? planeMap(W, q, out) : ribMap(W.rb, q, xLo, xHi, out));
+  const viewMapFast = (W, q, xLo, xHi, beyond, out) => (isPlane(W) ? planeMap(W, q, out || {}) : ribMapFast(W.rb, q, xLo, xHi, beyond, out));
+  function viewFrameAt(W, x, out) { if (!isPlane(W)) return ribFrameAt(W.rb, x, out); out.T = W.pl.X; out.U = W.pl.Y; out.R = W.pl.R; return out; }
+  function viewUnmap(W, x, h, d, out) {
+    if (!isPlane(W)) return ribUnmap(W.rb, x, h, d, out);
+    out = out || V(0, 0, 0); const pl = W.pl;
+    out.x = pl.O.x + pl.X.x * x + pl.Y.x * h + pl.R.x * d; out.y = pl.O.y + pl.X.y * x + pl.Y.y * h + pl.R.y * d; out.z = pl.O.z + pl.X.z * x + pl.Y.z * h + pl.R.z * d; return out;
+  }
+  // the gap the Goby's closeness and the AIs read: distance along the path in the plane (the screen's x can fold), else the ribbon's x
+  const gapOf = (W) => (isPlane(W) && W.pl ? W.sEnd - W.pl.s : W.gx - W.p.x);
 
   // ================= the world =================
   function makeWorld(o) {
@@ -779,7 +937,11 @@
     W.blocks = [];
     ribAdd(W.rb, W.g.pos, W.g.u, W.g.f); addBlock(W, W.g.pos);
     const start = V(0, 0, -160); layPath(W, W.g.pos, start); W.g.pos = start; gobyEnds(W);
-    if (!o.noPistol) {
+    if (!o.noPistol && o.mode === 'plane') {
+      W.cpSet = { cx: [], cy: [], cs: [] }; W.pl = makePlane();
+      W.p = { x: 0, y: 0, vx: 0, vy: 0, v: PP.pMinSpeed + 25, grounded: true, vortexAt: 0, prevVortex: false, launch: PP.pLaunchCharges, launchT: 0, lastLaunchAt: -9, ghostAt: 0, ghostUntil: -1, freeBoom: false, prevGhost: false, wpos: V(0, 0, 0) };
+      planeStep(W, 0, true); W.p.y = groundAt(W, 0); viewUnmap(W, 0, W.p.y, 0, W.p.wpos); gobyEnds(W);
+    } else if (!o.noPistol) {
       const y0 = groundAt(W, 0);
       W.p = { x: 0, y: y0, vx: 0, vy: 0, v: PP.pMinSpeed + 25, grounded: true, vortexAt: 0, prevVortex: false, launch: PP.pLaunchCharges, launchT: 0, lastLaunchAt: -9, ghostAt: 0, ghostUntil: -1, freeBoom: false, prevGhost: false, wpos: V(0, y0, 0) };
       ribUnmap(W.rb, 0, y0, 0, W.p.wpos);
@@ -838,7 +1000,7 @@
   function fireVortex(W, aim) {   // aim: {dx, dy} in the Pistol's plane; straight ahead along the path when none is given
     const p = W.p; let dx = 1, dy = 0;
     if (aim && typeof aim === 'object' && Math.hypot(aim.dx, aim.dy) > 1) { const l = Math.hypot(aim.dx, aim.dy); dx = aim.dx / l; dy = aim.dy / l; }
-    const F = ribFrameAt(W.rb, p.x, {}), n = vnorm(vadd(vscl(F.T, dx), vscl(F.U, dy)));
+    const F = viewFrameAt(W, p.x, {}), n = vnorm(vadd(vscl(F.T, dx), vscl(F.U, dy)));
     const e1 = vnorm(vcross(n, Math.abs(n.y) < 0.9 ? V(0, 1, 0) : V(1, 0, 0))), e2 = vcross(n, e1);
     W.vortices.push({ c: V(p.wpos.x, p.wpos.y, p.wpos.z), n, e1, e2, life: P.pVortexLife, age: 0, cap: [] });
     W.stats.vortexShots++;
@@ -881,9 +1043,13 @@
   function addBlock(W, p) {
     const g = W.g, P = W.P, rb = W.rb, idx = g.blockN++, hinge = idx % Math.max(1, Math.round(P.tHillEvery)) === 0;
     const x = RX(rb, rb.n - 1), sign = Math.floor(idx / Math.max(1, Math.round(P.tHillEvery))) % 2 === 0 ? 1 : -1;
-    const soft = rb.mode === 'soft', idx0 = rb.n - 1;
-    if (hinge) { const n = rb.cx.length, H = rb.mode === 'goby' ? 0 : soft ? rb.py[idx0] : p.y; if (!n || x - rb.cx[n - 1] >= 2) { rb.cx.push(x); rb.cy.push(H + sign * P.tHillAmp); if (soft) { rb.ci.push(idx0); rb.cs.push(sign); } } }
-    const blk = { x, hinge, sign, pos: V(p.x, p.y, p.z), f: g.f, u: g.u, r: g.r, idx: idx0 };
+    const soft = rb.mode === 'soft', plane = rb.mode === 'plane', idx0 = rb.n - 1;
+    // on the tangent plane the trail lies in the path's own frame and a hinge is lifted or dropped IN 3D along its up, so the
+    // hills are where the trail really is (both views see them) instead of being made by an unroll
+    let pos = V(p.x, p.y, p.z), bf = g.f, bu = g.u, br = g.r;
+    if (plane) { bu = V(rb.ux[idx0], rb.uy[idx0], rb.uz[idx0]); br = V(rb.rx[idx0], rb.ry[idx0], rb.rz[idx0]); bf = vcross(bu, br); if (hinge) pos = vadd(pos, vscl(bu, sign * P.tHillAmp)); }
+    if (hinge) { const n = rb.cx.length, H = rb.mode === 'goby' ? 0 : soft ? rb.py[idx0] : p.y; if (!n || x - rb.cx[n - 1] >= 2) { rb.cx.push(x); rb.cy.push(H + sign * P.tHillAmp); if (soft) { rb.ci.push(idx0); rb.cs.push(sign); } if (plane) { rb.hp.push(pos); rb.hk.push(idx0); } } }
+    const blk = { x, hinge, sign, pos, f: bf, u: bu, r: br, idx: idx0 };
     W.blocks.push(blk); if (soft) { rb.blocks.push(blk); if (rb.blocks.length > 64) rb.blocks.shift(); }
     if (W.blocks.length > 2600) W.blocks.shift();
   }
@@ -899,6 +1065,7 @@
   }
   function gobyEnds(W) {   // where the Goby is on the ribbon: the end of the Pistol's ground
     const rb = W.rb, g = W.g, n = rb.n - 1;
+    if (rb.mode === 'plane') { W.sEnd = rb.s[n] + g.acc; if (W.pl && W.cpSet) planeGround(W); else { W.gx = W.endX = W.sEnd; W.endY = g.pos.y; } return; }
     W.gx = RX(rb, n) + g.acc * (CURTAIN(rb) ? Math.hypot(g.f.x, g.f.z) : 1);
     W.endX = W.gx; W.endY = rb.mode === 'goby' ? 0 : g.pos.y;
   }
@@ -939,7 +1106,7 @@
     const straight = 1 - Math.max(Math.abs(it.yaw), Math.abs(it.pitch));
     const target = W.o.noStraight ? 1 : 1 + (P.gStraightMax - 1) * clamp((straight - 0.85) / 0.15, 0, 1);
     g.sm = target > g.sm ? Math.min(target, g.sm + P.gStraightAccel / P.gCruise * dt) : Math.max(target, g.sm - P.gStraightBleed / P.gCruise * dt);
-    const gap = W.p ? W.gx - W.p.x : Infinity;
+    const gap = W.p ? gapOf(W) : Infinity;
     g.cm = W.o.noClose || !W.p ? 1 : closeness(P, gap);
     const want = Math.max(P.gMinSpeed, P.gCruise * g.thr) * g.sm * g.cm;
     g.speed += (want - g.speed) * (1 - Math.exp(-1.5 * dt));   // the Squirrel's speed ease
@@ -995,18 +1162,25 @@
   }
   function pistolStep(W, dt, inp) {
     const p = W.p, P = W.P; if (!p) return;
+    if (isPlane(W)) { planeStep(W, dt, false); const tr = W.pl.turn / DEG / Math.max(1e-6, dt); W.stats.turnSum = (W.stats.turnSum || 0) + tr; W.stats.turnMax = Math.max(W.stats.turnMax || 0, tr); (W.turns || (W.turns = [])).push(tr); }   // the plane first: the Pistol's 2D step runs in the frame it will be drawn in
     const dive = clamp(inp.dive || 0, 0, 1), g = P.pGravity * (1 + (P.pDiveMul - 1) * dive), G = gravDir(P), gx = g * G.x, gy = g * G.y;
     if (p.grounded) {
       groundAt(W, p.x); const m = GS, c = 1 / Math.sqrt(1 + m * m), s = m * c;
       p.v += (gx * c - gy * s - P.pDrag * p.v) * dt; if (p.v < P.pMinSpeed) p.v = P.pMinSpeed;
       const nx = p.x + p.v * c * dt, yb = p.y + p.v * s * dt - 0.5 * gy * dt * dt, yg = groundAt(W, nx);
-      if (dive < 0.5 && yb > yg + 0.05) { p.grounded = false; p.vx = p.v * c; p.vy = p.v * s; p.x = nx; p.y = yb; }
+      // on the plane, a step in the ground under the Pistol (its projection folding where the path doubles back across the
+      // screen) is a ledge, never a lift: it runs off it, and lands only on ground it comes down onto (below)
+      const ledge = isPlane(W) && Math.abs(yg - yb) > 8 + Math.abs(p.v * s * dt);
+      if (ledge || (dive < 0.5 && yb > yg + 0.05)) { p.grounded = false; p.vx = p.v * c; p.vy = p.v * s; p.x = nx; p.y = yb; }
       else { p.x = nx; p.y = yg; }
     } else {
-      // ballistic in the air (launchVel's flight), the lean included
-      p.vx += gx * dt; p.vy -= gy * dt; p.x += p.vx * dt; p.y += p.vy * dt; W.stats.air += dt;
+      // ballistic in the air (launchVel's flight), the lean included. On the plane a Pistol that ended up UNDER its ground
+      // line (the projection folded over it) is pulled up to it by the same magnet, and lands on it from below
+      const under = isPlane(W) && p.y < groundAt(W, p.x) - 8;
+      if (under) { p.vx += gx * dt; p.vy += gy * dt; W.stats.under = (W.stats.under || 0) + dt; } else { p.vx += gx * dt; p.vy -= gy * dt; }
+      p.x += p.vx * dt; p.y += p.vy * dt; W.stats.air += dt;
       const yg = groundAt(W, p.x);
-      if (p.y <= yg) {
+      if (under ? p.y >= yg : p.y <= yg && (!isPlane(W) || yg - p.y <= 8 + Math.abs(p.vy) * dt)) {
         const m = GS, c = 1 / Math.sqrt(1 + m * m), s = m * c, sp = Math.hypot(p.vx, p.vy), vt = p.vx * c + p.vy * s;
         const ang = sp > 1e-6 ? Math.acos(clamp(vt / sp, -1, 1)) / DEG : 0;
         if (ang <= P.pGoodLand) { p.v = Math.max(vt, sp * 0.98) * 1.04; W.stats.goodLand++; } else { p.v = Math.max(P.pMinSpeed, vt * 0.55); W.stats.badLand++; }
@@ -1014,15 +1188,16 @@
       }
     }
     // the Pistol cannot pass the Goby: there is no ground ahead of it yet
+    // (on the plane only near the Goby: a path that folds back can put the Goby's x behind the Pistol's)
     const lim = W.gx - 6;
-    if (p.x > lim) { p.x = lim; if (p.grounded) { p.v = Math.min(p.v, W.g.speed); p.y = groundAt(W, p.x); } else p.vx = Math.min(p.vx, W.g.speed); }
+    if (p.x > lim && (!isPlane(W) || W.sEnd - W.pl.s < 80)) { p.x = lim; if (p.grounded) { p.v = Math.min(p.v, W.g.speed); p.y = groundAt(W, p.x); } else p.vx = Math.min(p.vx, W.g.speed); }
     // abilities
     if (p.launch < P.pLaunchCharges) { p.launchT += dt; if (p.launchT >= P.pLaunchCd) { p.launch++; p.launchT = 0; } } else p.launchT = 0;
     if (inp.launch && p.launch > 0) {
       const lv = launchVel(P, inp.launch.dx, inp.launch.dy);
       p.vx = lv.vx; p.vy = lv.vy; p.grounded = false; p.launch--; p.lastLaunchAt = W.t; W.stats.launches++;
     }
-    ribUnmap(W.rb, p.x, p.y, 0, p.wpos);
+    viewUnmap(W, p.x, p.y, 0, p.wpos);
     if (W.rb.mode === 'soft') W.rb.freezeX = Math.max(W.rb.freezeX == null ? -Infinity : W.rb.freezeX, p.x + 3 * P.tBlockGap * Math.max(1, Math.round(P.tHillEvery)) + 8);   // three hinges ahead: the ground curve under it reads two hinges past its own span   // the Settled unroll never moves what the Pistol is on or about to be on
     if (inp.ghost && !p.prevGhost && W.t >= p.ghostAt) { p.ghostUntil = W.t + P.pGhostTime; p.ghostAt = W.t + P.pGhostCd; }
     p.prevGhost = !!inp.ghost;
@@ -1032,7 +1207,7 @@
     const half = P.pVision + 4, reach = half + P.pBodyR + 16, r2 = reach * reach, q = p.wpos;
     if (W.t >= p.ghostUntil) for (let i = 0; i < W.N; i++) {
       if (!W.alive[i]) continue; if ((W.px[i] - q.x) ** 2 + (W.py[i] - q.y) ** 2 + (W.pz[i] - q.z) ** 2 > r2) continue;
-      const m = ribMap(W.rb, ppos(W, i), p.x - reach - 30, p.x + reach + 30, MP); if (!m.ok) continue;
+      const m = viewMap(W, ppos(W, i), p.x - reach - 30, p.x + reach + 30, MP); if (!m.ok) continue;
       if (Math.abs(m.d) > half || Math.hypot(m.x - p.x, m.h - p.y) > P.pBodyR + 3) continue;
       if (p.freeBoom) { p.freeBoom = false; fireVortex(W, null); W.fx.push({ kind: 'collapse', w: V(q.x, q.y, q.z), t: W.t }); }   // the crystal's free Snap: a vortex ring on the next hit, no cooldown
       kill(W, i, 'body');
@@ -1065,7 +1240,7 @@
       if ((c.p.x - g.pos.x) ** 2 + (c.p.y - g.pos.y) ** 2 + (c.p.z - g.pos.z) ** 2 < 18 * 18) { takeCrystal(W, c, 'goby'); continue; }
       if (!p) continue; const half = P.pVision + 4, q = p.wpos;
       if ((c.p.x - q.x) ** 2 + (c.p.y - q.y) ** 2 + (c.p.z - q.z) ** 2 > (half + 30) ** 2) continue;
-      const m = ribMap(W.rb, c.p, p.x - half - 60, p.x + half + 60, MP2);
+      const m = viewMap(W, c.p, p.x - half - 60, p.x + half + 60, MP2);
       if (m.ok && Math.abs(m.d) <= half && Math.hypot(m.x - p.x, m.h - p.y) <= P.pBodyR + 8) takeCrystal(W, c, 'pistol');
     }
   }
@@ -1074,7 +1249,7 @@
     gobyStep(W, dt, inG);
     if (W.p) pistolStep(W, dt, inP || {});
     flareStep(W, dt); vortexStep(W, dt); faunaStep(W, dt); streamStep(W, dt); crystalStep(W);
-    if (W.p) { W.stats.gapSum += W.gx - W.p.x; W.stats.pSpeedSum = (W.stats.pSpeedSum || 0) + (W.p.grounded ? W.p.v : Math.hypot(W.p.vx, W.p.vy)); }
+    if (W.p) { W.stats.gapSum += gapOf(W); W.stats.pSpeedSum = (W.stats.pSpeedSum || 0) + (W.p.grounded ? W.p.v : Math.hypot(W.p.vx, W.p.vy)); }
     W.stats.speedSum += W.g.speed;
     if (W.fx.length > 80) W.fx.splice(0, W.fx.length - 80);
   }
@@ -1117,7 +1292,7 @@
     B.want = want;
     const dir = vnorm(vsub(want, g.pos)), lx = vdot(dir, g.r), ly = vdot(dir, g.u), lz = vdot(dir, g.f);
     const yaw = clamp(Math.atan2(lx, lz) * 1.6, -1, 1), pitch = clamp(Math.atan2(ly, lz) * 1.6, -1, 1), roll = clamp(g.r.y * 2, -1, 1);
-    const gap = W.p ? W.gx - W.p.x : 0, thr = aiGapThrottle(P, gap);
+    const gap = W.p ? gapOf(W) : 0, thr = aiGapThrottle(P, gap);
     const pt = g.primer > 0 && t - g.lastPrimerAt > 0.8 && !W.o.noPrimer ? primerTarget(W) : -1;
     const wantPrimer = pt >= 0 && W.kind[pt] !== 3 && !(W.primed[pt] > t);
     let hot = 0; if (g.flare > 0) for (let i = 0; i < W.N; i++) if (isHot(W, i) && (W.px[i] - g.pos.x) ** 2 + (W.py[i] - g.pos.y) ** 2 + (W.pz[i] - g.pos.z) ** 2 <= P.gFlareRange ** 2) hot++;
@@ -1130,7 +1305,7 @@
     const p = W.p, P = W.P, q = p.wpos, reach = P.pLaunchRange + P.pVision + 60, r2 = reach * reach; B.vis.length = 0;
     for (let i = 0; i < W.N; i++) {
       if (!W.alive[i]) continue; if ((W.px[i] - q.x) ** 2 + (W.py[i] - q.y) ** 2 + (W.pz[i] - q.z) ** 2 > r2) continue;
-      const m = ribMap(W.rb, ppos(W, i), p.x - 80, p.x + P.pLaunchRange + 60, MP); if (!m.ok) continue;
+      const m = viewMap(W, ppos(W, i), p.x - 80, p.x + P.pLaunchRange + 60, MP); if (!m.ok) continue;
       const primed = W.primed[i] > W.t; if (Math.abs(m.d) > P.pVision && !primed) continue;
       B.vis.push({ i, x: m.x, h: m.h, d: m.d, primed, friendly: W.kind[i] === 3 });
     }
@@ -1174,7 +1349,8 @@
     const W = makeWorld(Object.assign({ P: Object.assign({}, P), mode: S.mode, intensity: 2, seed: 1 }, o)), dt = 1 / 30, steps = Math.round((o.secs || 60) / dt);
     for (let k = 0; k < steps; k++) stepWorld(W, dt, gobyAI(W, o.gl || 'Hard'), W.p ? pistolAI(W, o.pl || 'Hard') : null);
     const st = W.stats;
-    return { pistol: st.pistolKills, chain: st.chainKills, flares: st.flareKills, vortex: st.vortexKills, total: st.pistolKills + st.chainKills + st.flareKills + st.vortexKills, friendly: st.friendly, crystals: st.crystals, gap: W.p ? Math.round(st.gapSum / st.steps) : null, pspeed: W.p ? Math.round((st.pSpeedSum || 0) / st.steps) : 0, air: W.p ? Math.round(st.air / (st.steps * dt) * 100) : null, speed: Math.round(st.speedSum / st.steps), landings: st.goodLand + '/' + (st.goodLand + st.badLand) };
+    return { pistol: st.pistolKills, chain: st.chainKills, flares: st.flareKills, vortex: st.vortexKills, total: st.pistolKills + st.chainKills + st.flareKills + st.vortexKills, friendly: st.friendly, crystals: st.crystals, gap: W.p ? Math.round(st.gapSum / st.steps) : null, pspeed: W.p ? Math.round((st.pSpeedSum || 0) / st.steps) : 0, air: W.p ? Math.round(st.air / (st.steps * dt) * 100) : null, speed: Math.round(st.speedSum / st.steps), landings: st.goodLand + '/' + (st.goodLand + st.badLand),
+      turn: st.turnSum != null ? Math.round(st.turnSum / st.steps) : null, turn95: W.turns ? Math.round(W.turns.slice().sort((a, b) => a - b)[Math.floor(W.turns.length * 0.95)]) : null };
   }
   // The unroll test (brief 4.1): fly scripted paths, build each unroll, then ask it questions that can say NO.
   const PATHS = [
@@ -1193,7 +1369,26 @@
     const dt = 1 / 30; for (let t = 0; t < 16; t += dt) { turnGoby(W.g, fn(t), PP, dt); const a = W.g.pos; W.g.pos = vadd(a, vscl(W.g.f, 60 * dt)); layPath(W, a, W.g.pos); gobyEnds(W); }
     return W;
   }
+  // The tangent plane has no unroll to test (its map is rigid: every point comes back exactly where it was put), so it is
+  // asked what it promises instead: a virtual Pistol rides the path at 60 u/s and the plane says how fast the camera turned
+  // (degrees a second, the larger of its yaw and its roll), how far the trail on screen leaves the plane, and how steep the
+  // ground under the Pistol got.
+  function planeMeasure(W, PP) {
+    const rb = W.rb, n = rb.n, dt = 1 / 30, v = 60, sEnd = rb.s[n - 1] - 40;
+    W.cpSet = { cx: [], cy: [], cs: [] }; W.pl = makePlane(); W.p = { x: 0, y: 0, wpos: V(0, 0, 0) };
+    let turnMax = 0, turnSum = 0, steps = 0, offMax = 0, maxSlope = 0, steep = 0;
+    for (let s = 0; s < sEnd; s += v * dt) {
+      arcPoint(rb, s, W.p.wpos); W.p.x = 0; W.p.y = 0; planeStep(W, dt, s === 0);
+      if (s > 0) { const tr = W.pl.turn / DEG / dt; turnMax = Math.max(turnMax, tr); turnSum += tr; steps++; }
+      const pl = W.pl, half = 0.5 * PP.pViewWidth;
+      for (let i = pl.h0; i < rb.hp.length; i++) { const sh = rb.s[rb.hk[i]]; if (sh > pl.s + half) break; if (sh < pl.s - half) continue; const h = rb.hp[i]; offMax = Math.max(offMax, Math.abs((h.x - pl.O.x) * pl.R.x + (h.y - pl.O.y) * pl.R.y + (h.z - pl.O.z) * pl.R.z)); }
+      groundAt(W, 0); const a = Math.atan(Math.abs(GS)) / DEG; maxSlope = Math.max(maxSlope, a); if (a > 60) steep++;
+    }
+    return { maxSlope: Math.round(maxSlope), steepPct: steps ? Math.round(steep / steps * 100) : 0, ambPct: 0, offPct: 0, err95: 0, xPerU: 1,
+      turnMax: Math.round(turnMax), turnMean: steps ? Math.round(turnSum / steps) : 0, offMax: Math.round(offMax) };
+  }
   function unrollMeasure(W, PP) {
+    if (W.rb.mode === 'plane') return planeMeasure(W, PP);
     const rb = W.rb, n = rb.n, rng = mulberry32(4242), m = cpCount(W);
     let maxSlope = 0, steep = 0, total = 0;
     const x0 = cpX(W, 0), x1 = cpX(W, m - 1);
@@ -1310,7 +1505,7 @@
     // the Pistol in 3D: a cylinder lying ACROSS the ribbon, as long as its band (everyone but its pilot sees this)
     const p = W.p; pistolMesh.visible = !!p;
     if (p) {
-      const half = W.P.pVision + 4, a = ribUnmap(W.rb, p.x, p.y, -half), b = ribUnmap(W.rb, p.x, p.y, half);
+      const half = W.P.pVision + 4, a = viewUnmap(W, p.x, p.y, -half), b = viewUnmap(W, p.x, p.y, half);
       tv.set(b.x - a.x, b.y - a.y, b.z - a.z); const L = tv.length() || 1; tv.multiplyScalar(1 / L);
       pistolMesh.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2); pistolMesh.quaternion.setFromUnitVectors(tv2.set(0, 1, 0), tv); pistolMesh.scale.set(W.P.pBodyR, L, W.P.pBodyR);
       pistolMat.opacity = W.t < p.ghostUntil ? 0.2 : 0.55;
@@ -1324,7 +1519,7 @@
         const dd = lane === 0 ? 0 : (lane === 1 ? -W.P.pVision : W.P.pVision), segs = RIBN / 2;
         for (let j = 0; j < segs; j++) {
           const x0 = lerp(xa, xb, j / segs), x1 = lerp(xa, xb, (j + 1) / segs);
-          ribUnmap(W.rb, x0, groundAt(W, x0), dd, pt); ribUnmap(W.rb, x1, groundAt(W, x1), dd, pt2);
+          viewUnmap(W, x0, groundAt(W, x0), dd, pt); viewUnmap(W, x1, groundAt(W, x1), dd, pt2);
           arr[o++] = pt.x; arr[o++] = pt.y; arr[o++] = pt.z; arr[o++] = pt2.x; arr[o++] = pt2.y; arr[o++] = pt2.z;
         }
       }
@@ -1570,6 +1765,9 @@
   //      Fixed arrays, filled each frame. (x, h, d) in, with d INTO the screen (Unity's sign); three.js's -z is into it. ----
   const BOX01 = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]];   // PistolWorldMesh.s_box
   const BOX_TRIS = [0, 2, 1, 1, 2, 3, 4, 5, 6, 5, 7, 6, 0, 4, 2, 2, 4, 6, 1, 3, 5, 3, 7, 5, 0, 1, 4, 1, 5, 4, 2, 6, 3, 3, 6, 7];
+  // BOX_TRIS as six faces: each face's four corners and its two triangles over them (the same winding)
+  const BOX_FACES = [[[0, 2, 1, 3], [[0, 1, 2], [2, 1, 3]]], [[4, 5, 6, 7], [[0, 1, 2], [1, 3, 2]]], [[0, 4, 2, 6], [[0, 1, 2], [2, 1, 3]]],
+    [[1, 3, 5, 7], [[0, 1, 2], [1, 3, 2]]], [[0, 1, 4, 5], [[0, 1, 2], [1, 3, 2]]], [[2, 6, 3, 7], [[0, 1, 2], [2, 1, 3]]]];
   const PW_VERT = [
     'attribute vec4 aColor; attribute float aFog;',
     'varying vec3 vPos; varying vec4 vColor; varying vec2 vGR; varying float vFog;',
@@ -1634,6 +1832,20 @@
         const b = n;
         for (let i = 0; i < 8; i++) { const l = BOX01[i]; trilinear(xhd8, l[0], l[1], l[2], Q); push(Q.x, Q.y, Q.z, c, glow, reach, fog); }
         for (let i = 0; i < 36; i += 3) tri(b + BOX_TRIS[i], b + BOX_TRIS[i + 1], b + BOX_TRIS[i + 2], solid);
+      },
+      // the box with its six faces parted from its centre by part (0: the box itself), each face shrunk a little: the game's
+      // face spread with distance (PrismDepthPlane), here the distance out of the Pistol's plane
+      addPartedBox(xhd8, c, part, solid) {
+        if (part <= 1e-3) { this.addBox(xhd8, c, 0, 0, 0, solid); return; }
+        if (!hasRoom(24, 36, solid)) return;
+        let bx = 0, by = 0, bz = 0; for (let i = 0; i < 8; i++) { bx += xhd8[i].x; by += xhd8[i].y; bz += xhd8[i].z; } bx /= 8; by /= 8; bz /= 8;
+        const shrink = 1 - 0.3 * Math.min(1, part);
+        for (const [ids, tris] of BOX_FACES) {
+          let fx = 0, fy = 0, fz = 0; for (const i of ids) { fx += xhd8[i].x; fy += xhd8[i].y; fz += xhd8[i].z; } fx /= 4; fy /= 4; fz /= 4;
+          const ox = (fx - bx) * part, oy = (fy - by) * part, oz = (fz - bz) * part, b = n;
+          for (const i of ids) { const q = xhd8[i]; push(fx + (q.x - fx) * shrink + ox, fy + (q.y - fy) * shrink + oy, fz + (q.z - fz) * shrink + oz, c, 0, 0, 0); }
+          for (const k of tris) tri(b + k[0], b + k[1], b + k[2], solid);
+        }
       },
       addDot(x, h, d, rx, ry, c, glow, fog, solid) {   // a screen-facing rectangle of half-sizes (rx, ry) at (x, h, d): a dot of the aim, a spark, the contact dash
         if (!hasRoom(4, 6, solid)) return; glow = glow == null ? 1 : glow; fog = fog || 0;
@@ -1718,11 +1930,11 @@
   function sideList(W) {
     const p = W.p, rb = W.rb, Wd = P.pViewWidth, D = Math.max(20, P.pParallax), aspect = Math.max(0.2, SC.w / Math.max(1, SC.h));
     const band = P.pVision + 4, near = 3 * P.pVision, dHi = BG_DEPTH * D, xLo = SC.x - 2 * Wd, xHi = SC.x + 2 * Wd, cy = SC.y - SC.lift;   // the ribbon the far background can still show
-    const c = ribUnmap(rb, SC.x, SC.y, 0, VC), rad = Math.max(0.8 * Wd, dHi) + 80, rr = rad * rad; vis2d.length = 0; nearSet.length = 0; farSet.length = 0;
+    const c = viewUnmap(W, SC.x, SC.y, 0, VC), rad = Math.max(0.8 * Wd, dHi) + 80, rr = rad * rad; vis2d.length = 0; nearSet.length = 0; farSet.length = 0;
     if (!p) return;
     for (let i = 0; i < W.N; i++) {
       if (!W.alive[i]) continue; if ((W.px[i] - c.x) ** 2 + (W.py[i] - c.y) ** 2 + (W.pz[i] - c.z) ** 2 > rr) continue;
-      const m = ribMapFast(rb, ppos(W, i), xLo, xHi, true, MPR); if (!m.ok) continue;
+      const m = viewMapFast(W, ppos(W, i), xLo, xHi, true, MPR); if (!m.ok) continue;
       const dU = -m.d, primed = W.primed[i] > W.t, z = zoneOf(dU, band, P.pVision, D, primed); if (!z.drawn) continue;
       if (!onScreen(m.x, m.h, z.d, SC.x, SC.y, p.x, cy, D, Wd, aspect, 60)) continue;
       (z.d <= near ? nearSet : farSet).push({ i, x: m.x, h: m.h, d: m.d, dU, dz: z.d, k: m.k, t: m.t, primed });
@@ -1754,10 +1966,10 @@
     // its zone by depth, then the forecast
     const z = zoneOf(v.dU, band, P.pVision, D, v.primed); if (!z.drawn) return;
     if (v.x > W.gx + 2) forecast(z);
-    const F = ribFrame(rb, v.k, v.t, FR);   // the frame at its segment (T, U, R: the lab's R)
+    const plane = isPlane(W), F = plane ? viewFrameAt(W, 0, FR) : ribFrame(rb, v.k, v.t, FR);   // the frame at its segment (T, U, R: the lab's R); the plane's own on the tangent plane
     PCT.x = v.x; PCT.y = v.h; PCT.z = -z.d; const centre = PCT;   // (x, h, d) in the lab's sign; z.d is clamped to the window for a primed prism beyond it
     let drawn = false;
-    if (z.warped) {
+    if (z.warped && !plane) {   // the tangent plane warps nothing: every prism is its true box, seen by a real camera
       boxCorners(PCB, PAX, PAY, PAZ, PC8);
       const kap = ribCurvature(rb, v.k);
       let cls = classify(hd, kap, v.d, gap, kSpan);
@@ -1788,7 +2000,8 @@
     const primed = v.primed, hot = W.hot[i] > W.t;
     if (W.kind[i] === 0 && !primed) tintC(c, C_HOT4, 0.25 + 0.15 * Math.sin(now * 3 + i));   // flora is hot by default: it glows (drawWorld3D: the 3D view's own look)
     c[3] = 1;
-    PW.addBox(PX8, c, 0, 0, 0, true);   // the prism as the 3D view draws it: its own colour, lit, opaque - no fog, no tint, no glass
+    if (plane) depthBox(PX8, c, v.dU, band);   // the 2.5D look: sharp on the plane, parting and fading out of it
+    else PW.addBox(PX8, c, 0, 0, 0, true);   // the prism as the 3D view draws it: its own colour, lit, opaque - no fog, no tint, no glass
     // the marks (the lab's own) are RINGS about the prism, unlit, pulsing; the prism keeps its look
     const mx = v.x, mh = v.h, md = -z.d;
     if (primed) PW.addRing(mx, mh, md, 0, 0, 1, hd + 1.5, 0.5, 24, 4, alphaC(cMark, C_PRIMED4, 0.55 + 0.3 * Math.sin(now * 6)), 1, false);
@@ -1800,6 +2013,17 @@
   // ---- the ground (GobyPistolDuo.DrawGround): the line through the hinge hills, downslopes warm, and the trail's tiles rigid on it at their own depth ----
   const GXS = new Float32Array(GN), GYS = new Float32Array(GN), GCS = new Float32Array(GN * 4), C_DIVE = [1, 0x8a / 255, 0x3d / 255, 1];
   const BAX = V(0, 0, 0), BAY = V(0, 0, 0), BAZ = V(0, 0, 0), BH = [blockMesh.geometry.parameters.width / 2, blockMesh.geometry.parameters.height / 2, blockMesh.geometry.parameters.depth / 2];
+  // The tangent plane's depth look (PrismDepthPlane, the Wrasse's and the Starlings' 2.5D): a prism within the Pistol's band
+  // of the plane is its true box; out of it, its six faces part from its centre and its colour sinks toward the fog, fully at
+  // pDepthSpread. Lit, on the solid pass: nothing in the world looks flat.
+  const DEPTH_FOG = [0.05, 0.06, 0.12], cDepth = [0, 0, 0, 1];
+  function depthBox(xhd8, c, dU, band) {
+    const s = clamp((Math.abs(dU) - band) / Math.max(1, P.pDepthSpread), 0, 1);
+    if (s <= 0) { PW.addBox(xhd8, c, 0, 0, 0, true); return; }
+    const k = 0.7 * s; setC(cDepth, c[0] + (DEPTH_FOG[0] - c[0]) * k, c[1] + (DEPTH_FOG[1] - c[1]) * k, c[2] + (DEPTH_FOG[2] - c[2]) * k, 1);
+    PW.addPartedBox(xhd8, cDepth, 1.4 * s, true);
+  }
+  const BU2 = V(0, 0, 0), BF2 = V(0, 0, 0), TILE_C = V(0, 0, 0);
   function drawGround(W, Wd, xLo, xHi) {
     const xa = Math.max(cpX(W, 0), SC.x - Wd * 0.6), xb = Math.min(W.gx, SC.x + Wd * 0.6);
     if (xb > xa) {
@@ -1811,6 +2035,18 @@
     }
     const ta = Math.max(cpX(W, 0), SC.x - Wd * 0.75), tb = Math.min(W.gx, SC.x + Wd * 0.75);
     let nb = 0;
+    if (isPlane(W)) {   // the trail's tiles where they really are, each its true box with its hinge's tilt, in the depth look
+      const pl = W.pl, s0 = pl.s - Wd, s1 = pl.s + 1.5 * Wd, band = P.pVision + 4;
+      for (let j = W.blocks.length - 1; j >= 0 && nb < 600; j--) {
+        const b = W.blocks[j], sb = W.rb.s[b.idx]; if (sb < s0) break; if (sb > s1) continue;
+        const m = planeMap(W, b.pos, MPB); if (!zoneOf(-m.d, band, P.pVision, Math.max(20, P.pParallax), false).drawn) continue;
+        const a = b.hinge ? b.sign * P.tAngle * DEG : 0, u = a ? vrot(b.u, b.r, a) : b.u, f = a ? vrot(b.f, b.r, a) : b.f, sx = BH[0] * (b.hinge ? 1.5 : 1);
+        BAX.x = b.r.x * sx; BAX.y = b.r.y * sx; BAX.z = b.r.z * sx; BAY.x = u.x * BH[1]; BAY.y = u.y * BH[1]; BAY.z = u.z * BH[1]; BAZ.x = -f.x * BH[2]; BAZ.y = -f.y * BH[2]; BAZ.z = -f.z * BH[2];
+        TILE_C.x = m.x; TILE_C.y = m.h; TILE_C.z = m.d;
+        rigidCorners(TILE_C, BAX, BAY, BAZ, pl.X, pl.Y, pl.R, PX8); flipDepth(PX8); depthBox(PX8, blockCol, -m.d, band); nb++;
+      }
+      return;
+    }
     for (let j = W.blocks.length - 1; j >= 0 && nb < 600; j--) {
       const b = W.blocks[j]; if (b.x < ta - 20) break; if (b.x > tb + 20) continue;
       const m = ribMapFast(W.rb, b.pos, xLo, xHi, true, MPB); if (!m.ok) continue;
@@ -1839,15 +2075,15 @@
     if (!p.grounded) { const gy = groundAt(W, p.x); PW.addDot(p.x, gy, 0, 1.3 * zf, 0.25 * zf, alphaC(cA, domCol, 0.6 * (1 - clamp(Math.abs(p.y - gy) / 300, 0, 1))), 1, 0, false); }
     // vortex rings, mapped into the Pistol's world with their axis unrolled (its R component into the screen: the section note)
     for (const v of W.vortices) {
-      const m = ribMapFast(W.rb, v.c, xLo, xHi, true, MPR); if (!m.ok) continue;
-      const F = ribFrameAt(W.rb, m.x, FR), fade = clamp(v.life / 0.35, 0, 1);
+      const m = viewMapFast(W, v.c, xLo, xHi, true, MPR); if (!m.ok) continue;
+      const F = viewFrameAt(W, m.x, FR), fade = clamp(v.life / 0.35, 0, 1);
       PW.addRing(m.x, m.h, -m.d, vdot(v.n, F.T), vdot(v.n, F.U), -vdot(v.n, F.R), P.pVortexR, 0.16 * P.pVortexR * (0.35 + 0.65 * fade), 28, 6, alphaC(cA, C_RING, 1), 0, true);   // a lit faceted volume on the solid pass (nothing in the world looks flat); it thins as it fades
     }
     for (const F of W.flares) {
-      const m = ribMapFast(W.rb, F.p, xLo, xHi, true, MPR); if (!m.ok) continue;
+      const m = viewMapFast(W, F.p, xLo, xHi, true, MPR); if (!m.ok) continue;
       PW.addDot(m.x, m.h, -m.d, 2.5, 2.5, C_FLARE, 1, 0, true);
       FV.x = F.p.x - F.v.x * 0.05; FV.y = F.p.y - F.v.y * 0.05; FV.z = F.p.z - F.v.z * 0.05;
-      const b = ribMapFast(W.rb, FV, xLo, xHi, true, MPB); if (b.ok) PW.addDot(b.x, b.h, -b.d, 1.5, 1.5, C_FLARE_BACK, 1, 0, false);
+      const b = viewMapFast(W, FV, xLo, xHi, true, MPB); if (b.ok) PW.addDot(b.x, b.h, -b.d, 1.5, 1.5, C_FLARE_BACK, 1, 0, false);
     }
     // the launch aim: yours while you drag (or hold RT); the AI's is the Show-AI-thinking line on the HUD canvas
     const aim = aimNow(W); if (!aim) return;
@@ -1866,7 +2102,7 @@
     pcam.projectionMatrix.makePerspective(fr.left, fr.right, fr.top, fr.bottom, near, far); rollClip(pcam, w, h);
     pSkyCam.aspect = aspect; pSkyCam.updateProjectionMatrix(); rollClip(pSkyCam, w, h); pSkyCam.position.set(0, 0, 0); pSkyCam.up.set(0, 1, 0); pSkyCam.lookAt(0, 0, -1);
     // the sky and lights, turned by the frame at the Pistol (they are infinitely far: a rotation is exact), eased so the per-sample heading steps do not jerk it
-    const Fq = flatFrame(ribFrameAt(W.rb, p.x, FR));
+    const Fq = flatFrame(viewFrameAt(W, p.x, FR));
     if (skySnap) { skyQ.copy(Fq); skySnap = false; } else skyQ.slerp(Fq, clamp(sideDt * 6, 0, 1));
     PENV.sky.quaternion.copy(skyQ); PENV.stars.quaternion.copy(skyQ);
     if (pSun) pSun.position.set(0.4, 1, 0.3).applyQuaternion(skyQ); if (pHemi) pHemi.position.set(0, 1, 0).applyQuaternion(skyQ);
@@ -1880,11 +2116,12 @@
     drawActors(W, xLo, xHi);
     PW.end();
     // the Goby at the end of the ground, turned by the frame there
-    const g = W.g, gq = flatFrame(ribFrameAt(W.rb, W.gx, FR)); pGoby.position.set(W.gx - SC.x, W.endY, 0);
+    const g = W.g, gq = flatFrame(viewFrameAt(W, W.gx, FR));
+    if (isPlane(W)) { const m = planeMap(W, g.pos, MPR); pGoby.position.set(m.x - SC.x, m.h, m.d); } else pGoby.position.set(W.gx - SC.x, W.endY, 0);   // on the plane: where the Goby really is
     tm.makeBasis(tv.set(g.r.x, g.r.y, g.r.z), tv2.set(g.u.x, g.u.y, g.u.z), tv3.set(-g.f.x, -g.f.y, -g.f.z)); tq.setFromRotationMatrix(tm); pGoby.quaternion.copy(gq).multiply(tq);
     // crystals and the collapse blasts (lab-only): at their parallax place and size
     const dLo = -FG_DEPTH * D, dHi = BG_DEPTH * D;
-    const win = (pt) => { const m = ribMapFast(W.rb, pt, xLo, xHi, true, MPR); const dU = -m.d; return m.ok && dU >= dLo && dU <= dHi ? m : null; };
+    const win = (pt) => { const m = viewMapFast(W, pt, xLo, xHi, true, MPR); const dU = -m.d; return m.ok && dU >= dLo && dU <= dHi ? m : null; };
     W.crystals.forEach((c, i) => { const m = pCrystals[i]; if (!m) return; const mm = win(c.p); m.visible = !!mm; if (mm) { m.position.copy(PW.project(mm.x, mm.h, -mm.d, PV)); m.scale.setScalar(PW.scaleAt(-mm.d)); VesselStudioLook.spinCrystal(m, now + i); } });
     let bi = 0;
     for (const f of W.fx) { const age = W.t - f.t; if (f.kind === 'collapse' && age < 0.5 && bi < pBooms.length) { const mm = win(f.w); if (!mm) continue; const m = pBooms[bi++]; m.visible = true; m.position.copy(PW.project(mm.x, mm.h, -mm.d, PV)); m.scale.setScalar(PW.scaleAt(-mm.d) * Math.max(1, P.pVortexR * (0.3 + age / 0.5))); m.material.opacity = 0.5 * (1 - age / 0.5); m.material.color.setHex(0x9fe8ff); } }
@@ -2136,12 +2373,15 @@
   let lastScore = lsGet(LS + '.score', null);
   function renderUnroll(all) {
     const t = $('unrollTbl'); t.textContent = ''; if (!all) return;
-    const hd = elx('tr'); for (const h of ['Path', 'Max slope °', '> 60° %', 'Ambiguous %', 'Lands elsewhere %', 'Error p95 u', 'x per u (min)']) hd.appendChild(elx('th', null, h)); t.appendChild(hd);
+    const hd = elx('tr'); for (const h of ['Path', 'Max slope °', '> 60° %', 'Ambiguous %', 'Lands elsewhere %', 'Error p95 u', 'x per u (min)', 'Camera turn °/s max', 'mean', 'Trail off plane u']) hd.appendChild(elx('th', null, h)); t.appendChild(hd);
     for (const mode in all) {
-      const g = elx('tr', 'grp'), td = elx('td', null, MODES[mode]); td.colSpan = 7; g.appendChild(td); t.appendChild(g);
+      if (!MODES[mode]) continue;
+      const g = elx('tr', 'grp'), td = elx('td', null, MODES[mode]); td.colSpan = 10; g.appendChild(td); t.appendChild(g);
       for (const r of all[mode]) {
         const tr = elx('tr'), ctrl = /control/.test(r.path); tr.appendChild(elx('td', null, r.path));
-        const cells = [[r.maxSlope, r.maxSlope > 75], [r.steepPct, r.steepPct > 5], [r.ambPct, ctrl ? r.ambPct === 0 : r.ambPct > 5], [r.offPct, ctrl ? r.offPct === 0 : r.offPct > 5], [r.err95, r.err95 > 5], [r.xPerU, r.xPerU < 0.3]];
+        const plane = r.turnMax != null;   // the plane's map is rigid: the circling control has nothing to catch there
+        const cells = [[r.maxSlope, r.maxSlope > 75], [r.steepPct, r.steepPct > 5], [r.ambPct, !plane && (ctrl ? r.ambPct === 0 : r.ambPct > 5)], [r.offPct, !plane && (ctrl ? r.offPct === 0 : r.offPct > 5)], [r.err95, r.err95 > 5], [r.xPerU, r.xPerU < 0.3],
+          [plane ? r.turnMax : '·', plane && r.turnMax > 90], [plane ? r.turnMean : '·', plane && r.turnMean > 30], [plane ? r.offMax : '·', false]];
         for (const [v, bad] of cells) tr.appendChild(elx('td', bad ? 'bad' : '', String(v)));
         t.appendChild(tr);
       }
@@ -2164,7 +2404,7 @@
   $('unrollBtn').addEventListener('click', () => {
     $('unrollBtn').disabled = true; $('scoreNote').textContent = 'Flying six scripted paths in each unroll…';
     setTimeout(() => { const all = {}; for (const m in MODES) all[m] = unrollTest(m); renderUnroll(all); lastScore = Object.assign({}, lastScore, { unroll: all }); lsSet(LS + '.score', lastScore); $('unrollBtn').disabled = false;
-      $('scoreNote').textContent = 'Unroll test: 300 points per path, each placed in the Pistol\'s band and mapped back. "Lands elsewhere" = it comes back more than 5 u from where it was put. Red = a problem; circling is the control (each lap lies on the last): it MUST show ambiguity, or the test cannot see a fold.'; }, 30);
+      $('scoreNote').textContent = 'Unroll test: 300 points per path, each placed in the Pistol\'s band and mapped back. "Lands elsewhere" = it comes back more than 5 u from where it was put. Red = a problem; circling is the control (each lap lies on the last): it MUST show ambiguity, or the test cannot see a fold. Tangent plane rows have no unroll to test (nothing is mapped: the world is seen as it is): a Pistol rides each path at 60 u/s and the last three columns say how fast the camera turned (degrees a second) and how far the trail within half a screen of the Pistol strays out of its plane.'; }, 30);
   });
   $('duoBtn').addEventListener('click', () => {
     $('duoBtn').disabled = true; $('scoreNote').textContent = 'Flying every variant on three seeds…';
@@ -2204,7 +2444,7 @@
   function hud() {
     if (!W) return; const g = W.g, st = W.stats;
     $('gSpeed').textContent = Math.round(g.speed) + ' u/s' + (halfIsAI('goby') ? ' · AI ' + levelOf('goby') : ' · you');
-    $('gClose').textContent = '×' + g.cm.toFixed(2) + (W.p ? ' · gap ' + Math.round(W.gx - W.p.x) + ' u' : ''); $('mClose').style.width = ((g.cm - 1) / Math.max(0.01, P.gCloseMax - 1) * 100) + '%';
+    $('gClose').textContent = '×' + g.cm.toFixed(2) + (W.p ? ' · gap ' + Math.round(gapOf(W)) + ' u' : ''); $('mClose').style.width = ((g.cm - 1) / Math.max(0.01, P.gCloseMax - 1) * 100) + '%';
     $('gStraight').textContent = '×' + g.sm.toFixed(2); $('mStraight').style.width = ((g.sm - 1) / Math.max(0.01, P.gStraightMax - 1) * 100) + '%';
     pips($('pPrimer'), g.primer, P.gPrimerCharges, 'Primer'); pips($('pFlare'), g.flare, P.gFlareCharges, 'Flares');
     const b = $('board'); b.textContent = '';
@@ -2283,7 +2523,7 @@
   // ================= the test surface (D14, /labmaker 2.2) =================
   function tick(dt, n) { dt = dt || STEP; n = n || 1; if (race === 'ready') { race = 'running'; $('overlay').hidden = true; } for (let i = 0; i < n && race === 'running'; i++) stepOnce(dt); drawWorld3D(W, W.t); placeCamera(W, dt, false); drawSide(W, dt, false); renderSide3D(W, W.t); hud(); }
   function reset(seed) { if (seed != null) seedN = seed; newRace(); race = 'running'; $('overlay').hidden = true; }
-  function runBatch() { return { unroll: unrollTest(S.mode).map((r) => [r.path, r.maxSlope, r.ambPct, r.offPct].concat(r.bentPct != null ? [r.bentPct, r.bendMax, r.lateMove] : [])), duo: runDuo({ intensity: 2, seed: 3, secs: 20, gl: 'Hard', pl: 'Hard' }) }; }
+  function runBatch() { return { unroll: unrollTest(S.mode).map((r) => [r.path, r.maxSlope, r.ambPct, r.offPct].concat(r.bentPct != null ? [r.bentPct, r.bendMax, r.lateMove] : r.turnMax != null ? [r.turnMax, r.turnMean, r.offMax] : [])), duo: runDuo({ intensity: 2, seed: 3, secs: 20, gl: 'Hard', pl: 'Hard' }) }; }
   function score() { return lastScore || runBatch(); }
   const hook = {
     get race() { return race; },
@@ -2293,7 +2533,7 @@
     get manualClock() { return manualClock; }, set manualClock(v) { manualClock = !!v; },
     startRace, stopRace, swap: () => { lastSwapAt = -9; swap(); }, tick, reset, score, runBatch, runDuo, unrollTest, duoScorecard,
     world: () => W, ribbon: { makeRibbon, ribAdd, ribMap, ribUnmap, groundAt },
-    core: { mulberry32, gobyAI, gravDir, launchVel, softShear, makeRibbon, ribAdd, ribMap, ribUnmap, ribFrame, ribFrameAt, groundAt, cpCount, layPath, addBlock, gobyEnds, flyScripted, closeness, aiGapThrottle, PATHS, makeWorld, stepWorld, pistolStep, fireVortex, vortexStep, pistolAI, mix, unmix, get GS() { return GS; } },   // the golden source for the Unity port (Tools/Build/goby_pistol_goldens.cjs)
+    core: { mulberry32, gobyAI, gravDir, launchVel, softShear, planeStep, planeMap, planeMeasure, arcPoint, viewUnmap, gapOf, makeRibbon, ribAdd, ribMap, ribUnmap, ribFrame, ribFrameAt, groundAt, cpCount, layPath, addBlock, gobyEnds, flyScripted, closeness, aiGapThrottle, PATHS, makeWorld, stepWorld, pistolStep, fireVortex, vortexStep, pistolAI, mix, unmix, get GS() { return GS; } },   // the golden source for the Unity port (Tools/Build/goby_pistol_goldens.cjs)
     view: { frustumOf, ribMapFast, ribMapNear, ribCurvature, ribLapExtent, boxCorners, classify, cornerWindow, centreDistance, warpBox, tearBound, xRange, rigidCorners, barCorners, barExtent, trilinear, scale: pScale, parallax, onScreen, zoneOf, zone, forecast, tileCorners, diveTint, list: () => vis2d.map((v) => ({ i: v.i, x: v.x, h: v.h, d: v.d, k: v.k, dz: v.dz })), get mesh() { return { vertices: PW.vertexCount, indices: PW.indexCount, solid: PW.solidIndexCount, glass: PW.glassIndexCount }; } },   // the side view's drawing-only maths (PistolWarp.cs, PistolRibbon.MapFast / MapNear / Curvature / LapExtent): the view golden's source
     SHIPPED, SPEC, P, PLATFORM, ide: IDE,
   };

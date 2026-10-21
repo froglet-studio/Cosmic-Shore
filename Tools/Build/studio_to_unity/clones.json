@@ -24,7 +24,7 @@
   },
   "Goby & Pistol": {
     "artifactVersion": "private prototype https://claude.ai/artifact/6hGNJz2AKFYY5gHvYJa9Up v11 (the lab is not on the shared Vessel Studio artifact yet)",
-    "labAhead": "v12 (2026-10-18): the lab moved past Unity - 10 mapped numbers (pGravity, pDiveMul, pMinSpeed, pDrag, pBodyR, pViewWidth, pLaunchRange, pLaunchSpeed, tHillEvery, tHillAmp) plus the downhill lean and camera roll, the slingshot, the Settled unroll and the rigid prism blend. Clone after Garrett plays v12 (team task).",
+    "labAhead": "v13 (2026-10-21): the default view is the Tangent plane (a 2.5D Pistol on a plane tangent to the Goby's path, no warp, the PrismDepthPlane depth look) with five lab-only numbers (pPlaneEase, pRollEase, pChord, pMaxLean, pDepthSpread). v12 (2026-10-18): 10 mapped numbers (pGravity, pDiveMul, pMinSpeed, pDrag, pBodyR, pViewWidth, pLaunchRange, pLaunchSpeed, tHillEvery, tHillAmp) plus the downhill lean and camera roll, the slingshot, the Settled unroll and the rigid prism blend. Clone after Garrett plays v13 (team task T-20261018-675f).",
     "pageSha": "aa5c28a1",
     "decisionsThrough": "none (the prototype's decision log is empty)",
     "clonedAt": "2026-10-18",

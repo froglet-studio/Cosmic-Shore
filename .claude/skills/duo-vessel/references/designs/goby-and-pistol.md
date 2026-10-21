@@ -447,3 +447,34 @@ the line it settled.
     `Tools/Build/vessel_model/lab_mesh.py`, `--check`), in the fleet's colour scheme.
   **Unity is behind the lab** until Garrett has played it: `studio_to_unity.py --vessel goby --check` reports the 10
   changed numbers as drift, and the tilt / roll, the slingshot, the settled unroll and the rigid blend are lab-only.
+- 2026-10-21, **round 13 in the lab: the Pistol is a 2.5D character, nothing is warped** (Garrett: "we have developed
+  some 2.5 d characters recently that don't need to distort the world at all. this character need only bring the
+  sidescroller plane to the tangent plane of the pistol and the goby path, then move the camera around minimally so we
+  dont jerk things about any more than needed"). The lab, v13 of the prototype, a new default unroll **Tangent plane**
+  (`plane`; Settled and the others stay selectable to compare):
+  - **[stated] No world distortion.** The Pistol lives in the real 3D world. Its sidescroller is a plane through it that
+    holds the Goby's path where the Pistol is (the path's tangent lies in it), seen by a real perspective camera from
+    the plane's side. Prisms are their true boxes; out of the plane their faces part and fade (`pDepthSpread` 160 u),
+    the game's `PrismDepthPlane` look that the Wrasse's kite and the Starlings use.
+  - **[read] "Move the camera minimally"**, as three rules. The plane's normal is the path's own, carried along it
+    without twisting, so bends within the plane are real hills and dips and the camera only yaws as far as the path
+    leaves the plane (eased over `pPlaneEase` 0.12 s). "Along" follows the path's run round the Pistol (`pChord` 140 u,
+    each tangent weighted by how much of it lies in the plane), eased slowly (`pRollEase` 0.9 s). The one fast roll is
+    the needed one: past `pMaxLean` 40 deg the path under the Pistol would be a wall, so the camera rolls just enough.
+  - **The Pistol's physics stay the 2D ones, in the plane** (down is the plane's down, leaning `pDownTilt` toward the
+    Goby). The frame turns about the Pistol and carries its velocity; the plane's depth is pinned to the trail under the
+    Pistol (it moves the plane, never the world). The ground is the real trail: hinges are lifted IN 3D along the path's
+    up, and the Pistol rides their projection, exact where the plane touches the path. Where the projection folds, the
+    ground is the stretch nearest the Pistol along the path; a step in it is a ledge the Pistol runs off, and a Pistol
+    under its line is pulled back up by the same magnet.
+  - **Measured** (60 s duo runs, Hard / Hard, intensity 2, seeds 11 / 22 / 33, against Settled): grounded time on ground
+    steeper than 60 deg 7 / 5 / 9 % (Settled 29 / 53 / 17 %); breaks 188 / 286 / 202 (Settled 136 / 159 / 243); the
+    grounded Pistol is within 15 u of its trail point (77 u once, after a fold). The camera turns 24-54 deg/s on
+    average, mostly yaw (19-39 deg/s, the plane following the path out of plane, which tangency requires); roll 5-15.
+    The Unroll test's new columns give the same per scripted flight. Every golden of the other unrolls is unchanged
+    (`goby_pistol_goldens.cjs` before and after differ only by the five new SHIPPED keys).
+  - **[open] for Garrett:** play v13. Is the yaw on a turning path acceptable, or should the plane lag more and let the
+    path run into depth? Is the 1050 u view with the parallax camera right for a real-world view, or should it be
+    orthographic like the Wrasse's kite? The trail's fine zigzag (round 12's hills) now reads as real 3D hills; keep it?
+  **Unity is further behind**: the tangent plane, its five numbers (`--unmapped`) and the depth look are lab-only until
+  Garrett has played it.

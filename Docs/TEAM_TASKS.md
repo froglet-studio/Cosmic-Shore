@@ -1118,8 +1118,8 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/VesselModels/sheets/goby_after.jpg
 
 ### T-20261018-675f · open · decision · Crew vessels
-- **Task:** Play the Goby and Pistol lab's round 12 (prototype v12: slingshot, tiny Pistol on a wide view, gravity leaning toward the Goby, the Settled unroll, the Goby's real hull) on phone and PC, then say whether to clone it into Unity
-- **Done when:** Garrett's verdict is in the goby-and-pistol.md decisions log; on a yes, /artifact-to-unity clones the 10 drifted numbers and ports the lean + camera roll, the slingshot, the Settled unroll and the rigid prism blend (studio_to_unity.py --vessel goby --check back to 0 drift)
+- **Task:** Play the Goby and Pistol lab's round 13 (prototype v13: the Pistol as a 2.5D character on a plane tangent to the Goby's path, no warp, the camera turning as little as it can; round 12's slingshot, tiny Pistol, lean toward the Goby and real hull kept) on phone and PC, answer the round's three [open] questions, then say whether to clone it into Unity
+- **Done when:** Garrett's verdict is in the goby-and-pistol.md decisions log; on a yes, /artifact-to-unity clones the 10 drifted numbers and ports the lean, the slingshot and the tangent-plane view with its depth look (or whichever unroll he picks), and studio_to_unity.py --vessel goby --check is back to 0 drift
 - **Who can take it:** Garrett (the call); any session for the clone
 - **Added:** 2026-10-18 by Claude session on cece/sharp-tesla-j0kd7z (`cece/sharp-tesla-j0kd7z`)
 - **See:** https://claude.ai/artifact/6hGNJz2AKFYY5gHvYJa9Up; .claude/skills/duo-vessel/references/designs/goby-and-pistol.md
