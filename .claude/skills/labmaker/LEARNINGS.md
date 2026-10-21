@@ -1373,3 +1373,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `KiteNavigatorJuice.cs` (`KiteJuiceFrame`, `KiteJuiceSettings`); `juice_sheet.sh [out.png] [pilot]`;
   `KITE_NAVIGATOR.md` round 10.
 - Promoted: no
+
+### L-STU-131 — Measure how often a reward is ON THE BUTTON, not only whether it helps
+- Lab: Honeyguide Lab round 5 (timed actives) · Branch: `claude/honeyguide-ratel` · By: Claude session for Garrett · Date: 2026-10-21
+- What happened: the first build dealt an active only when one of the seven weapon cards was made (7 of 39). Each active
+  measured well alone, but an "Active up %" column showed a button held an active 23-27% of the time, about one a minute.
+  Garrett's ask ("new ones come") was not met, and no lift column would have said so. Dealing a random active on every
+  pattern took the buttons to 85% and the race from +51% to +68%.
+- A second check came from the rookie row: a pilot that presses whatever is ready scored the same as the skilled AI. That
+  backs "not so hard to use". The first skilled AI was too picky and scored BELOW the rookie, and the gap pointed at the
+  AI's thresholds, not at the design.
+- Do instead:
+  - For any granted, timed ability, add columns for its presence (the share of time it is available) and its uses a
+    minute beside the lift.
+  - Run a rookie pilot next to the skilled one. If the rookie wins, fix the skilled AI before reading any number.
+- Evidence: `Docs/Studios/HONEYGUIDE_LAB.md` round 5 scorecard; `activeUp`, `usesPerMin`, PSKILL `actSense`.
+- Promoted: no
+

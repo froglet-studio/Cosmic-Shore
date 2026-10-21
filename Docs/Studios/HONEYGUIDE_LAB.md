@@ -6,7 +6,7 @@ tabletop game Garrett and friends designed and played from 2019 to 2022). The qu
 > Is the handoff fun? The **Ratel** (the Engineer seat) plays a hex pattern-building puzzle, the **Dynamo**, whose
 > injection ports turn 60 degrees every spin. Making a pattern sends one of its prisms, drawn at random, to the battery,
 > where its domain is a slip charge, and fires that tabletop card's own effect for the **Honeyguide** (the Pilot seat). The
-> Honeyguide flies with two triggers, and its Time ability is the **Slip**: touch a trail of a domain you hold with the
+> Honeyguide flies with no guns (round 5): weapon abilities land on its open buttons, time out and are replaced. Its Time ability is the **Slip**: touch a trail of a domain you hold with the
 > nose near the trail's line, and the hull jumps to the end of the trail it is pointing at.
 
 **The acceptance gate for phase 1:** Garrett plays the Engineer on a phone and records *Sign-off* ("this is fun") on
@@ -17,7 +17,7 @@ the Decisions tab. The Unity port (phase 2) starts only after that.
 - **Live page:** https://claude.ai/artifact/4B7oZwb5aYxFJR7XKyWx7v (private to the owner until shared; decisions recorded
   there land in the shared log Claude reads at the start of each round).
 - **Round 1** (the brief's rules) is kept as `Docs/Studios/HoneyguideLab.round1.html`.
-- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html` (PASS, round 2).
+- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html` (PASS, round 5).
 - **Parity:** `node Tools/Build/dynamo_lab/parity.cjs` holds `DynamoCore.cs` to the **round 4** core, the Engineer AI
   included (PASS 2026-10-21: 16,824 steps over 24 rule sets, 1,501 AI moves chosen alike, 48 port sets, 400 slips).
 - **In Unity (phase 2, started 2026-10-21 on Garrett's "lets play it in unity"):** `VesselClassType.Honeyguide = 21`,
@@ -40,13 +40,133 @@ mate, decision log, platform detection) is the Crew Vessel Lab's, rebuilt around
   ports turn 60 degrees every spin; the countdown is top right, and in the last 1.5 s rings show where they will land.
   Each card names the passive the pilot gets, and its pips count the makes before it is replaced. Your ability is under
   the AP row and changes, with the port pattern, every 4 patterns.
-- **The Honeyguide (Pilot).** A/D or ←/→ steer; E or K fires the Bolt (RT), Q or J the Burst (LT); W or Space boosts
-  when you have boost. On touch, hold a finger on the flight view and the hull turns toward it (two fingers boost); the
-  four cards bottom right (Bolt, Burst, Boost, Slip) are the buttons. The Slip arms itself: a grey wedge on the nose
+- **The Honeyguide (Pilot).** A/D or ←/→ steer; W or Space boosts when you have boost. An active on RT is used with E or
+  K, one on LT with Q or J (round 5). On touch, hold a finger on the flight view and the hull turns toward it (two
+  fingers boost); the four cards bottom right (RT, LT, Boost, Slip) are the buttons. The Slip arms itself: a grey wedge on the nose
   shows the 45-degree cone, it lights in the trail's colour when a slip is armed, and a dashed line shows where it
   would land.
 - **Rules tab:** Garrett's round 2 rules, each a box you can turn off (a control). **Patterns tab:** all 39 patterns and
   the passive each gives.
+
+## Round 5 (2026-10-21): timed actives on the open buttons, no guns
+
+Garrett, after flying the Unity port: "lets not have a sparrow clone. lets make a vessel that is super fun to play because
+you never know what buffs are coming next", then "lets do a lab round, but lets have actives too. so it is gaining fun
+abilities that are not so hard to use like a dolphin combo but fun like a rhino sword but a different weapon. we can stick
+an ability on an open button. and the abilities time out and then go away. and new ones come." The decision log was
+empty at the start of the round.
+
+### What changed
+
+- **The guns are gone.** The candidate has no Bolt or Burst. LT and RT are the open buttons. Round 4's guns stay only as
+  a control (`opts.guns`, the "Round 4" row).
+- **Seven actives, one per weapon card.** These are the seven cards that were parked in the port because they upgraded
+  the guns. Each is now a weapon of its own (`ACTIVES` in the page), and each is one button with no combo:
+
+  | Card | Active | Use |
+  |---|---|---|
+  | Hard Light Lasso | A rope hooks the nearest hostile prism ahead (90 u, 30°) and reels the hull to it at 220 u/s. The hull ploughs through what it crosses, and the prism and everything hostile within 10 u shatter on arrival. | press |
+  | Genesis Lance | A lance 120 u straight ahead shatters every hostile prism on its line. It leaves a trail of the newest charge's domain along it to slip on. | press |
+  | Little Bang Grenade | Lobbed 55 u ahead. It bursts 0.6 s later and shatters everything hostile within 22 u. | press |
+  | Eyelet Jet | Jets 50 u ahead in 0.25 s, ploughing through what it crosses. | press |
+  | Sepia Drone | Circles the hull for 8 s, zapping the nearest hostile prism within 50 u three times a second. | press |
+  | Particle Harmonizer | A beam turns hostile prisms in a 40° cone up to 55 u ahead to the newest charge's domain, 8 a second. This makes slip lanes from rivals' trails. | hold |
+  | Fugacity Discharger | Hold to charge for up to 1.2 s, then let go. Everything hostile within 12 to 40 u shatters, and each prism gives 0.05 s of boost (up to 1.5 s). | hold, let go |
+
+- **Each active stays on its button for `activeSeconds` (20 s), then goes away.** Its time runs down the card's bottom
+  edge and flashes for the last 4 s. A new active takes the first open button. When both buttons are full, it replaces
+  the one with the least time left. The same active again refreshes it and raises its level (reach +25% a level, up to
+  III).
+- **"New ones come": every pattern made also deals a random active** (`opts.deal` = `every`, the candidate). The seven
+  weapon cards deal their own. Dealing only on the weapon cards (`cards`) leaves an active on a button 27% of the time
+  (table), so the buttons would mostly sit empty.
+- **The pilot AI uses actives through its buttons.** Press actives get one step down, then up. It holds the Harmonizer
+  and holds the Discharger to 1 s of charge, then lets go. A skilled pilot (`actSense` 1) judges the moment:
+  - a target ahead lying toward the destination (Lasso);
+  - the destination ahead (Lance, Jet);
+  - hostile prisms where the grenade lands (Grenade), near the hull (Drone, Discharger), or in the beam (Harmonizer).
+
+  It also uses a press active with 2 s left rather than lose it. A rookie (`actSense` 0.35) often just presses whatever
+  is ready.
+- **Page.**
+  - New Actives slider group (`activeSlots`, `activeSeconds`, `activeLevelGain`).
+  - New rule boxes.
+  - The four HUD cards are RT, LT, Boost and Slip.
+  - New effects: rope, lance beam, grenade arc, drone, harmonizer cone, discharge ring.
+  - `__lab.grant(key)` and `state().actives` are the test hooks.
+  - The localStorage prefix is `r5`.
+- **The Dynamo core did not change.** Parity still PASSES (16,824 steps, 1,540 AI moves alike, all controls caught).
+
+### Scorecard (round 5, 24 seeds × 180 s)
+
+| Variant | Legs/min | Lift | Active up % | Uses/min | Shattered/min |
+|---|---|---|---|---|---|
+| Solo | 3.06 ± 0.12 | 0 | 0 | 0 | 0 |
+| **Candidate** (hard Ratel, hard pilot) | **5.15 ± 0.16** | **+68%** | 85 | 19.4 | 67 |
+| Candidate, rookie pilot | 5.15 ± 0.10 | +68% | 85 | 25.2 | 50 |
+| Candidate, easy Ratel | 4.67 ± 0.13 | +53% | 71 | 14.0 | 49 |
+| Actives off (no guns either) | 4.05 ± 0.17 | +32% | 0 | 0 | 3 |
+| Round 4: the guns, no actives | 5.03 ± 0.13 | +64% | 0 | 0 | 46 |
+| Only the 7 weapon cards deal an active | 4.61 ± 0.15 | +51% | 27 | 4.6 | 19 |
+| One open button | 4.95 ± 0.13 | +62% | 85 | 13.1 | 48 |
+| Actives last 10 s | 4.78 ± 0.13 | +56% | 55 | 14.2 | 45 |
+| Actives last 40 s | 5.45 ± 0.15 | +78% | 96 | 22.0 | 87 |
+| Spin 15 s, 6 AP | 6.21 ± 0.16 | +103% | 95 | 25.9 | 83 |
+
+The 24-seed solo baseline is 3.06; the round 4 table's 4.49 was the older arena's. Lifts here are against 3.06.
+
+**Each active alone** (every deal is that active; 12 seeds × 180 s; the actives-off row is 4.11 on these seeds):
+
+| Active | Legs/min | Uses/min | Shattered/min |
+|---|---|---|---|
+| Fugacity Discharger (after the boost cut below) | 5.92 | 11.4 | 133 |
+| Eyelet Jet | 6.15 | 18.6 | 10 |
+| Hard Light Lasso | 5.40 | 15.3 | 60 |
+| Particle Harmonizer | 4.66 | 10.9 | 2 (24 turned) |
+| Little Bang Grenade | 4.60 | 19.3 | 114 |
+| Genesis Lance | 4.42 | 4.1 | 9 |
+| Sepia Drone | 3.90 | 5.7 | 96 |
+
+### Checked
+
+- `verify_lab.cjs`: PASS (desktop and phone; deterministic batch).
+- `parity.cjs`: PASS (the Dynamo core is unchanged).
+- I looked at screenshots of the HUD with two actives on the buttons (time bar, level pip, banner "Fugacity Discharger on
+  RT") and of the phone layout.
+
+### Found (round 5)
+
+1. **Removing the guns cost nothing.** The candidate (+68%) matches round 4's guns (+64%) within the error. It shatters
+   more (67 a minute against 46).
+2. **The actives are easy to use.** A rookie pilot who often presses whatever is ready scores the same as the skilled AI
+   (5.15 both). The skill shows only in how much it shatters (50 against 67).
+3. **"New ones come" needs every pattern to deal.** With only the seven weapon cards dealing, an active is on a button
+   27% of the time, about one a minute. With every pattern dealing, an active is on a button 85% of the time, 4.6 a
+   minute.
+4. **20 s is about right.** At 10 s the buttons are empty half the time (+56%). 40 s scores more (+78%), but the buttons
+   are almost never open, so fewer new ones are seen.
+5. **The first Fugacity Discharger was too strong** (+171% alone, from 0.15 s of boost a prism). I cut it to 0.05 s a
+   prism (up to 1.5 s), which gives +105%. The boost lesson from round 4 holds: boost carries the race.
+6. **Sepia Drone and Genesis Lance score low in the race.** The drone shatters 96 a minute, but the race does not value
+   that. The lance's lane is in the newest charge's domain. After the hull has slipped down it, the lane is hostile and
+   slows it (hits rise to 10 a minute). Both would read better in a mode that scores destruction, or with the lane in the
+   hull's own domain.
+7. The second button matters: one open button drops uses from 19 to 13 a minute (+62% against +68%).
+
+### What round 5 does not model
+
+These are on the page's About tab.
+- The actives only shatter, recolour or lay prisms, in 2D.
+- There is no aiming in 3D, no camera, no sound, and no effects beyond lines and rings.
+- A shattered prism simply vanishes.
+- The reaches, cooldowns and the 20 s life are proposals.
+
+### Decisions needed (Garrett), on the Decisions tab
+
+1. **The actives.** Should every pattern deal one (the candidate), or only the seven weapon cards?
+2. **Two open buttons, and a life of 20 s.** Are these right?
+3. **Which actives feel like the Rhino's sword.** Cut or rework the ones that don't (the Drone and the Lance score lowest).
+4. **Sign-off,** then port round 5 to Unity.
 
 ## Round 4 (2026-10-21): every pattern has its own card's effect
 
