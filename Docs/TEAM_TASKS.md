@@ -1180,6 +1180,20 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-19 by Garrett's session (`cece/elegant-goldberg-eanwgx`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
 
+### T-20261020-26a6 · open · test · Starling vessel
+- **Task:** Fly the Starlings (class 21) from the Toybox Vessel Changer and run its edit-mode tests; branch claude/project-thread-ytyab2
+- **Done when:** Every step of the Starlings entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or the failures are reported
+- **Who can take it:** Garrett or Yash
+- **Added:** 2026-10-20 by a Claude session (`claude/project-thread-ytyab2`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
+
+### T-20261020-4e20 · open · decision · Starling vessel
+- **Task:** Decide the Starlings' L5 upgrades and Starling-specific crystal fusion entries (now none, and the Angler's copied)
+- **Done when:** ElementalAbilityMaps/Starling.asset and the fusion config carry the decided entries
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by a Claude session (`claude/project-thread-ytyab2`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
+
 ### T-20261020-74d8 · open · test · ecology
 - **Task:** Fly the freestyle cells (Orrery, Yggdra, Daedala, Caldera, Geode, Zephyr, Ourobor, Hesperides) and Scurry's Atlantis after the generator fixes. Their prisms are now sized flush with their neighbours at authoring time, and every prism is kept. Look for any prism inside another and for gaps that read as broken structure. The Orrery keeps 35% of its volume, Yggdra 63% and Daedala 66%. Also time the veiled build against bleeding-edge: the worlds now load from baked layouts (T-20261020-ad7e), so each should build faster than before, not slower
 - **Done when:** Each world shows no interpenetrating prisms, still reads as its own shape, and its build time is within a second of bleeding-edge on PC (note the phone number too)
