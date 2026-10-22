@@ -3,7 +3,8 @@
 **Status:** research and proposed design, 2026-10-22. Nothing here is built. Asked for by Shombith ("a good
 anticheat custom made for Cosmic Shore", like Valorant's Vanguard; isolate bad actors instead of banning them).
 **Not legal advice.** The legal findings, with their sources, are in [`LEGAL.md`](LEGAL.md); counsel signs off
-before any of it ships (the same rule as `Docs/Legal/README.md`).
+before any of it ships (the same rule as `Docs/Legal/README.md`). The same design, with two diagrams, is the doc
+"Cosmic Shore Fair Play" (https://claude.ai/artifact/Q526NwB3r7uY2GoFwMGVn2, private until shared).
 
 Who else works here: **Yash** owns the UGS party/presence layer, authentication and the leaderboard service this
 design changes (`who_works_where.py`, 2026-10-22: six of his merges touch them in the last 30 days, nothing in
@@ -54,7 +55,30 @@ a separate pool will usually hold zero to two real people, which is why the Unde
 
 Full research with sources: [`LEGAL.md`](LEGAL.md). The parts that shape the design:
 
-PLATFORM_AND_LAW_SUMMARY
+Every platform lets us isolate cheaters, and none lets us hide that we do. Phones forbid watching the hardware at
+all, and each offers a sanctioned way to remember a device instead.
+
+| | Steam (PC) | iOS | Android |
+|---|---|---|---|
+| Isolate instead of ban | Allowed: Valve's own docs describe "secure" and "insecure" servers that separate cheaters "while still letting them play the game" | Allowed | Allowed |
+| Tell players it exists | Valve: "give your customers proper warning that such a system exists" | Privacy label and the law | Data safety and the law |
+| Remember a device | The Steam account (a new one costs a game purchase) | DeviceCheck: 2 bits per device, survives reinstall and erase; fingerprinting banned | Play Integrity device recall (beta): 3 bits, survives reinstall and reset; persistent hardware IDs banned |
+| Prove the app is genuine | User-mode checks; later, Windows runtime attestation or Easy Anti-Cheat | App Attest | Play Integrity verdicts |
+| Kernel-level watching | Possible but costly; breaks on Steam Deck; must be declared on the store page | Impossible | Impossible; `QUERY_ALL_PACKAGES` not allowed for anti-cheat |
+| Use other games' bans | No (Valve FAQ) | n/a | n/a |
+| Report and block | Expected | Required once players see each other's content (guideline 1.2) | Required (UGC policy) |
+
+The law adds four rules on every store ([`LEGAL.md`](LEGAL.md) §1):
+
+1. **Disclose the program, not the method** (GDPR Art. 13; the FTC's Sony BMG and DesignerWare cases).
+2. **Notify at once for anything a player wrote** (DSA Art. 17(2), which names shadow-banning in Recital 55).
+3. **A person, not only a model, before a significant penalty**, and never a solely automated one for a child
+   (GDPR Art. 22 and Recital 71; UK Arts. 22A-22D).
+4. **Never cut off paid content without a way to contest it** (EU CPC principles, Mar 2025; the FTC's Epic order).
+
+Precedent: Call of Duty's published enforcement policy places flagged accounts "in limited matchmaking lobbies
+with other accounts in a similar state". Fall Guys ran an undisclosed "Cheater Island" and closed it when its
+40-player matches could not fill; AI backfill is our answer to that.
 
 ## 4. The design
 
@@ -81,13 +105,17 @@ A pool of their own means nothing if leaving it costs one reinstall (T1).
   loses progress. Offline and solo play stay anonymous.
 - **Remember the device the way each platform allows**, never by fingerprinting:
   - **PC:** the Steam account is the identity. A new Steam account costs a game purchase, which is the real
-    deterrent. The Steam Web API's ban record (VAC and game bans on other games) and account age feed the trust
-    prior, as Valve's own Trust Factor does.
-  - **iOS:** **App Attest** proves the request comes from our unmodified app on a real Apple device, and
-    **DeviceCheck's two per-device bits**, which Apple stores server-side and which survive a reinstall, mark the
-    device itself. That is exactly the "hardware memory" asked for, without reading any hardware.
+    deterrent. We do **not** use other games' bans: Valve's anti-cheat FAQ answers "Can I use bans in other
+    games to block users from playing in my game?" with "No", and the Web API terms allow reading a player's
+    data only "as requested by the end user" ([`LEGAL.md`](LEGAL.md) §P1).
+  - **iOS:** **App Attest** proves the request comes from our unmodified app on a real Apple device (its keys do
+    not survive a reinstall), and **DeviceCheck's two per-device bits**, which Apple stores server-side and which
+    persist across reinstall, device transfer and even "Erase all contents and settings", mark the device itself.
+    That is exactly the "hardware memory" asked for, without reading any hardware. Fingerprinting is banned with
+    no fraud exception.
   - **Android:** **Play Integrity** verdicts (genuine app, genuine device, Play-licensed, risky apps running
-    alongside, recent device activity for bot farms) and its device-recall bits.
+    alongside, recent device activity for bot farms) and **device recall** (beta, apply by form): 3 bits per
+    device that survive reinstall and factory reset, not on emulators, and "not to fingerprint or track".
 - Hardware identifiers we read ourselves are **never** sent raw; anything device-derived is a salted hash, kept
   only as long as the restriction it supports (data minimisation, [`LEGAL.md`](LEGAL.md) §L1).
 
@@ -115,8 +143,10 @@ Enough to make casual memory editing expensive, nothing that needs ring-0:
 - Obscured values for the handful of numbers worth editing (boost charge, element levels, score) and a speed-hack
   check (wall clock against `Time.realtimeSinceStartup`), as in CodeStage's Anti-Cheat Toolkit.
 - Mobile: App Attest assertions and Play Integrity tokens on every Cloud Code call that writes something.
-- PC: **Easy Anti-Cheat** is free through Epic Online Services and is the fallback if, after launch, the data shows
-  client cheats the server layer cannot see. It is a decision for then, not now (§5).
+- PC: if, after launch, the data shows client cheats the server layer cannot see, two steps come before any
+  driver: Windows' `GetRuntimeAttestationReport` (a user-mode, Secure-Kernel-signed list of loaded drivers, used
+  by Riot's Vanguard On-Demand) and **Easy Anti-Cheat** (free through Epic Online Services, Unity via the EOS
+  plugin, runs on Steam Deck when enabled per build). A decision for then, not now (§5).
 
 ### 4.4 Detection: the watcher
 
@@ -134,13 +164,14 @@ stick axes, triggers, rates, situation) and already has AI pilots that fly the s
 That is a labelled dataset of *human* and *our-AI* flights for free, so the classifier learns to tell them apart
 before the first bot farm exists. (The recorder is editor and development builds only today, and the team already
 decided players get their own consent question before it ships; the release-build anti-cheat sample is a smaller,
-separate stream, §4.7.)
+separate stream, §4.7. It never replaces or trims the AI training flights, which stay whole under
+`Docs/AI_SYSTEM/AI_DATA_IN_UGS.md`; ask Yash or Garrett before the classifier reads them.)
 
 What each behaviour looks like to the watcher:
 
 | Behaviour | Signals | Goes to |
 |---|---|---|
-| **Cheating** | Rules violations; host results that disagree with guests; plausibility reports; integrity verdicts; Steam ban history (prior only) | Undertow |
+| **Cheating** | Rules violations; host results that disagree with guests; plausibility reports; integrity verdicts | Undertow |
 | **Bot farming** | Input regularity and the human/AI classifier; play around the clock; identical routes across accounts; many accounts per device (DeviceCheck / Play Integrity device activity); emulators | Undertow plus no earnings (farming pays nothing) |
 | **Racist or provocative names / chat** | The name filter (server-side); player reports; a text classifier on any future chat | Name reset immediately; Undertow for repeats; EU/UK: told at once (§4.6) |
 | **Quitting and AFK** | Leave rate per match; idle input while the vessel is human-held | Quitters' pool: quitters meet quitters, for a number of matches, as Dota does |
@@ -153,7 +184,7 @@ nor write it):
 
 ```
 trust: {
-  score: 0..1000,            // starts from priors: platform identity, account age, Steam ban history
+  score: 0..1000,            // starts from priors: platform identity linked, account age in our game
   stage: shore | watch | undertow | restricted | review,
   reasons: [ { kind: "rules.skimrace.split", at, evidence_ref, confidence } ],
   device_marks: [ "<salted hash>" ],
@@ -164,7 +195,14 @@ trust: {
 ```
 
 Every reason carries an evidence reference (the match, the samples) so a human reviewer and an appeal can see
-exactly what was found.
+exactly what was found. (A UK small-claims judge restored an account Activision banned because Activision showed
+no evidence of cheating; `LEGAL.md` §P5.)
+
+**Routing reads the record on the server.** The game has no stranger matchmaking (parties form inside the presence
+lobby), so a Cloud Code call at sign-in tells the client which presence lobby to join. If UGS Matchmaker is adopted
+later, note that its *rules* read Cloud Save's **protected** class (player-readable, server-written), while its
+pool *filters* read ticket attributes the client sets and can forge. Route on a rule, and store only an opaque pool
+key there, never the stage or reasons.
 
 ### 4.6 The ladder: what happens to a flagged account
 
@@ -220,8 +258,9 @@ exactly what was found.
 | **In the game** | Nothing until the notice. No pool indicator, no "under review" badge, no change to the UI |
 | **Privacy policy** (`Docs/Legal/PRIVACY_POLICY_TEMPLATE.md`) | A new "Fair play and security" section: we collect gameplay telemetry, integrity results and platform account standing to keep play fair; we use automated systems with human review; we may place accounts in separate matchmaking; how long we keep it; your rights. Legal basis: legitimate interests (security and fair play), not analytics consent. Section 4 already lists "maintain security and prevent abuse" |
 | **Code of Conduct / Terms** | The rules, the possible measures (separate matchmaking, restricted modes, reward withholding), that they can happen without prior notice, and the appeal route |
-| **Steam store page** | The anti-cheat disclosure only if we add client-side anti-cheat (EAC); nothing for server-side detection |
-| **App Store privacy label / Play Data safety** | "Gameplay content", "Device or other IDs" (attestation), purpose "Fraud prevention, security and compliance" |
+| **Steam store page** | The Anti-Cheat section is required only for kernel-level anti-cheat and optional otherwise. Valve's anti-cheat guidance still says to "give your customers proper warning that such a system exists" |
+| **App Store privacy label** | Gameplay Content and Device ID under "App Functionality", which covers preventing fraud. Data an SDK sends counts |
+| **Play Data safety** | Device or other IDs and gameplay data, for "Fraud prevention, security, and compliance". Data an SDK sends counts |
 | **On request** | A player who asks (GDPR Art. 15, UK GDPR, CCPA) gets their data, including their trust stage and reasons. We may withhold the detection methods (trade secrets), not the fact of the flag |
 
 The release-build telemetry for detection is a **separate stream from analytics**: analytics is opt-in consent and
@@ -230,7 +269,26 @@ movement sample), is never used for anything else, and is deleted on a schedule.
 
 ## 5. Why not a Vanguard-style kernel driver
 
-KERNEL_SECTION
+A kernel driver would cost months, cover only the PC build, and stop none of T1-T9. Sources in
+[`LEGAL.md`](LEGAL.md) §P1-P4.
+
+- **It cannot exist on two of our three stores.** iOS and Android give apps no kernel access; Easy Anti-Cheat
+  itself "does not support … Android, iOS". Android's `QUERY_ALL_PACKAGES` (seeing other installed apps) is not a
+  permitted use for anti-cheat.
+- **It is expensive to ship.** Windows loads new kernel drivers only when Microsoft signs them. Attestation signing
+  is now "for testing purposes only", so a retail driver needs WHQL (HLK-tested) signing plus an EV certificate.
+  The vulnerable-driver blocklist and HVCI are on by default on most new Windows 11 machines.
+- **It drops players.** Steam's Proton layer (Steam Deck, Linux): "Kernel-space solutions are not currently
+  supported and are not recommended." The store page must declare kernel-level anti-cheat (since 30 Oct 2024).
+- **It is a permanent security liability.** Genshin Impact's driver (`mhyprot2.sys`) was used by ransomware to
+  kill antivirus on PCs that did not even have the game installed (Trend Micro, 2022). Capcom pulled its
+  Street Fighter V driver in 2016.
+- **It needs consent in the EU** unless "strictly necessary" (ePrivacy Art. 5(3)); a system-wide scan is the
+  hardest case to defend ([`LEGAL.md`](LEGAL.md) §L1).
+- **It misses our cheats.** A fake leaderboard post, an edited balance or a modded host never touch the kernel.
+
+Microsoft has said it is moving third-party drivers out of the kernel (Nov 2025, May 2026) but has announced no
+rule for anti-cheat. If PC client cheating appears after launch, the cheaper steps are in §4.3.
 
 ## 6. Build order
 
@@ -238,26 +296,38 @@ Each phase stands on its own and is worth doing even if the next never happens.
 
 | Phase | What | Touches | Owner to check with |
 |---|---|---|---|
-| **A. Before launch** | Platform sign-in and account linking (T1); Access Control + Cloud Code for the weekly-challenge board and currency (T2, T3); server-side name check (T7); compile `PilotControl` out of release (T6); a Report button beside Block (T8); the privacy policy section and a Code of Conduct (§4.7) | `AuthenticationServiceFacade`, `WeeklyChallengeLeaderboardService`, `UGSCloudSaveProvider`, `DisplayNameRegistry`, `FriendsServiceFacade`, `Docs/Legal/` | Yash (auth, UGS), Shombith (UI), counsel |
+| **A. Before launch** | Platform sign-in and account linking (T1); Access Control + Cloud Code for the weekly-challenge board and currency (T2, T3); server-side name check (T7); compile `PilotControl` out of release (T6); a Report button beside Block, through the UGS Moderation SDK (T8); the privacy policy section and a Code of Conduct (§4.7) | `AuthenticationServiceFacade`, `WeeklyChallengeLeaderboardService`, `UGSCloudSaveProvider`, `DisplayNameRegistry`, `FriendsServiceFacade`, `Docs/Legal/` | Yash (auth, UGS), Shombith (UI), counsel |
 | **B. First patch** | Every participant reports the match result; the rules tier in Cloud Code; the trust record; the Undertow as a second presence lobby plus AI backfill; the shadow leaderboard; the notice-and-appeal screen; a review queue (a simple dashboard or the board) | Party/presence layer, `ServerPlayerVesselInitializerWithAI`, Cloud Code | Yash (party), Shombith (UI) |
 | **C. Mobile and bots** | App Attest + DeviceCheck, Play Integrity; the statistics tier; the human/AI flight classifier trained on recorder data | iOS/Android plugins, `HumanFlightRecorder` data | Yash (recorder), Garrett (store builds) |
-| **D. Only if the data demands** | Easy Anti-Cheat on PC; dedicated servers or distributed authority for ranked play | Build pipeline, Netcode topology | Garrett |
+| **D. Only if the data demands** | Windows runtime attestation or Easy Anti-Cheat on PC; dedicated servers or distributed authority for ranked play (Unity's Multiplay hosting was deprecated on 1 Apr 2026) | Build pipeline, Netcode topology | Garrett |
 | **E. If chat is ever added** | Moderation (filter, report, block, review), Apple 1.2 / Play UGC compliance, DSA/OSA notices | New | Garrett, counsel |
 
 ## 7. What it costs
 
 | Item | Cost |
 |---|---|
-| Cloud Code, Access Control, Cloud Save private keys | UGS free tier at launch scale |
-| App Attest, DeviceCheck, Play Integrity | Free (Play Integrity has a daily quota; see `LEGAL.md` §P3) |
-| Steam sign-in, Steam Web API | Free |
-| Easy Anti-Cheat (only if phase D) | Free through Epic Online Services |
-| A custom kernel driver | Months of specialist work, an EV certificate, Microsoft attestation signing, permanent security liability (§5) |
+| Cloud Code, Access Control, Cloud Save private keys | Usage-priced; launch scale (10-40 concurrent) should sit in UGS's free allowance. Not verified: check Unity's pricing page |
+| App Attest, DeviceCheck, Play Integrity | No charge from Apple or Google |
+| Steam sign-in | Free |
+| Easy Anti-Cheat (only if phase D) | "The anti-cheat service is free" (Epic); paid support is optional |
+| A custom kernel driver | Months of specialist work, an EV certificate, WHQL signing for every release, permanent security liability (§5) |
 | Human review | Minutes a week at launch scale; the real cost is having one named person who does it |
 
 ## 8. Decisions for the owner, and questions for counsel
 
-DECISIONS_SECTION
+**For Garrett (product owner):**
+
+1. No custom kernel driver. Server authority first; Windows attestation or Easy Anti-Cheat only if post-launch data
+   shows client cheats.
+2. Online play requires a platform sign-in (Steam, Apple, Google); offline and solo stay anonymous.
+3. Paid content is never locked by a fair-play measure.
+4. One named person reviews flagged accounts and appeals.
+
+**For counsel:** the eight questions at the end of [`LEGAL.md`](LEGAL.md) §4. The two that change the design most:
+whether the 3-match delay can stand for EU and UK players flagged for cheating (question 4), and whether the
+Undertow itself is a "similarly significant" automated decision (question 1).
+
+All of these are on the team board (`Docs/TEAM_TASKS.md`, area "Fair play").
 
 ## 9. Sources
 

@@ -2028,3 +2028,38 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** any session; Garrett to sign off
 - **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
 - **See:** goby-and-pistol.md top section; Tools/Build/studio_to_unity/clones.json 'Goby & Pistol'.retired
+
+### T-20261022-d688 · open · decision · Fair play
+- **Task:** Decide the four fair-play product calls: no custom kernel driver (server authority first); platform sign-in required for online play; paid content never locked by a fair-play measure; one named person reviews flagged accounts and appeals
+- **Done when:** Each of the four is answered yes or no in Docs/AntiCheat/README.md section 8
+- **Who can take it:** Garrett (product owner)
+- **Added:** 2026-10-22 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Docs/AntiCheat/README.md, https://claude.ai/artifact/Q526NwB3r7uY2GoFwMGVn2
+
+### T-20261022-3075 · open · decision · Fair play
+- **Task:** Send Docs/AntiCheat/LEGAL.md to counsel and get the eight questions in its section 4 answered, first the 3-match notice delay for EU/UK players (q4) and whether the isolated pool is an Art. 22 automated decision (q1)
+- **Done when:** Counsel's answers are recorded in LEGAL.md section 4 and the design updated to match
+- **Who can take it:** Garrett (engages counsel)
+- **Added:** 2026-10-22 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Docs/AntiCheat/LEGAL.md
+
+### T-20261022-9bbd · open · dev · Fair play
+- **Task:** Server authority for scores and currency: UGS Access Control denies players' direct Leaderboards and Cloud Save writes; Cloud Code validates the weekly-challenge time against the course and applies currency earn/spend (today the client posts any time >= 0 and writes its own balance)
+- **Done when:** A direct AddPlayerScoreAsync or Cloud Save balance write from a client returns 403, and a valid run still posts through Cloud Code
+- **Who can take it:** Yash (UGS, leaderboards)
+- **Added:** 2026-10-22 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Docs/AntiCheat/README.md section 4.2
+
+### T-20261022-6151 · open · dev · Fair play
+- **Task:** Platform sign-in and account linking: implement the Steam, Apple and Google sign-ins (AuthenticationController.cs:124-128 are stubs) and link them to the existing anonymous account, so a fair-play record survives a reinstall
+- **Done when:** A Steam player who clears the session token signs back into the same UGS player id
+- **Who can take it:** Yash (authentication)
+- **Added:** 2026-10-22 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Docs/AntiCheat/README.md section 4.1
+
+### T-20261022-7708 · open · dev · Fair play
+- **Task:** Close the cheap holes before launch: compile PilotControl (host test tool that hands any hull to the AI) out of release builds; run DisplayNameValidator in Cloud Code before the public name write; add a Report button beside Block through the UGS Moderation SDK
+- **Done when:** A release build has no PilotControl, a slur written straight to the name API is refused, and a report reaches the UGS Moderation dashboard
+- **Who can take it:** Yash (PilotControl, UGS), Shombith (Report button UI)
+- **Added:** 2026-10-22 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Docs/AntiCheat/README.md section 2 (T6-T8)

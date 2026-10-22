@@ -299,7 +299,174 @@ Art. 28 protection of minors and the statements-of-reasons database. Transparenc
 - Interpretation: notify promptly, state the real reason category, offer an appeal to a human, and keep paid
   content playable while it runs.
 
-PLATFORM_PART
+---
+
+## Part P: the platforms
+
+Checked 2026-10-22. "Undated" means the page has no date and we read it on 2026-10-22.
+
+### P1. Steam / Valve
+
+- **Kernel disclosure.**
+  - A game that "installs a client side, kernel mode anti-cheat" must fill in the store page's Anti-Cheat section:
+    the provider, a "Kernel-level Integration" box, and whether files stay after uninstall.
+  - Release review checks it. It is optional for non-kernel or server-only anti-cheat.
+  - Source (30 Oct 2024):
+    https://steamcommunity.com/groups/steamworks/announcements/detail/4547038620960934857
+- **Steamworks anti-cheat guidance** (undated): https://partner.steamgames.com/doc/features/anticheat
+  - "Give your customers proper warning that such a system exists."
+  - Banned or kicked players "should receive clear messaging in-game".
+  - In peer-to-peer games "each user should validate the others".
+  - FAQ: "Can I use bans in other games to block users from playing in my game? A: No."
+- **Separate servers.** Valve's VAC page describes "secure" and "insecure" servers: "This separates the cheaters
+  from the rest of your community while still letting them play the game."
+  https://partner.steamgames.com/doc/features/anticheat/vac_integration
+- **Game bans** (opt in; calls come from your server with a publisher key):
+  - `ReportPlayerCheating` data "is treated as hearsay".
+  - `RequestPlayerGameBan`: under a year "is a suspension and not visible on profile"; longer bans are public and
+    remove automatic refunds.
+  - `RemovePlayerGameBan` undoes false positives.
+  - https://partner.steamgames.com/doc/webapi/ICheatReportingService
+- **Reading account signals.**
+  - `GetPlayerBans`, `GetSteamLevel` and client calls such as `BIsPhoneVerified` exist.
+  - The Web API terms (2010) allow retrieving data about a user only "as requested by the end user".
+    https://steamcommunity.com/dev/apiterms
+  - Interpretation: do not build trust priors from them without counsel.
+- **Steam Deck / Proton** (undated): https://partner.steamgames.com/doc/steamdeck/proton
+  - "Kernel-space solutions are not currently supported and are not recommended."
+  - Easy Anti-Cheat works when enabled per build.
+- **VAC detection for new titles:** UNVERIFIED.
+
+### P2. Apple iOS
+
+- **Fingerprinting is banned.** "You may not derive data from a device for the purpose of uniquely identifying it."
+  There is no fraud exception. https://developer.apple.com/app-store/user-privacy-and-data-use/
+- **Required-reason APIs:** "fingerprinting is not allowed" regardless of tracking permission. Uploads without
+  declared reasons have been refused since 1 May 2024.
+- **App Attest.** Keys "don't survive app reinstallation, device migration, or restoration of a device from a
+  backup". https://developer.apple.com/documentation/devicecheck
+- **DeviceCheck.**
+  - Two bits per device, plus the month they were last set, stored by Apple.
+  - "The state persists across app reinstallation, device transfer between users, and even 'Erase all contents and
+    settings.'" Shared by all of one developer's apps (WWDC21 session 10244).
+- **What an app can see.**
+  - `canOpenURL` works only for declared schemes, up to 50.
+  - Guideline 5.1.2(iv) bars collecting installed apps for analytics or advertising.
+  - Guideline 2.5.4 limits background services.
+  - No way to watch the system.
+- **Guideline 1.2** (user content and chat): filtering, reporting with "timely responses", blocking, and published
+  contact information. https://developer.apple.com/app-store/review/guidelines/
+- **Privacy label.**
+  - Third-party SDK data counts.
+  - The "App Functionality" purpose covers "prevent fraud, implement security measures".
+  - Relevant data types: "Device ID", "Gameplay Content", and "Emails or Text Messages" for in-app messaging.
+- **Age ratings:** 4+/9+/13+/16+/18+. The new questions (including "Messaging and Chat" and "User-Generated
+  Content") were due 31 Jan 2026.
+
+### P3. Google Play / Android
+
+- **Play Integrity verdicts** (6 Oct 2026): https://developer.android.com/google/play/integrity/verdicts
+  - App integrity, device integrity (basic and strong are opt-in) and licensing.
+  - Recent device activity, levels 1-4 (opt-in).
+  - App access risk (opt-in): apps capturing the screen, controlling the device or drawing overlays.
+  - Play Protect verdict.
+- **Device recall** (beta, apply by form, 8 Jun 2026):
+  https://developer.android.com/google/play/integrity/device-recall
+  - 3 bits per device, readable "even after your app is reinstalled or the device is reset", kept 3 years.
+  - "You may not use device recall to fingerprint or track individual users or devices."
+  - Needs a Play-licensed copy; not on emulators.
+- **Device identifiers.** Play bans linking persistent device identifiers (such as IMEI), with no fraud exception.
+  Google points to Play Integrity for abuse protection.
+- **`QUERY_ALL_PACKAGES`:** permitted only for "device search, antivirus apps, file managers, and browsers".
+  Developers are pointed to "alternative security or fraud prevention solutions".
+  https://support.google.com/googleplay/android-developer/answer/10158779
+- **Data safety:** SDK data counts. "Fraud prevention, security, and compliance" is a listed purpose and "Device or
+  other IDs" a listed data type.
+- **User-generated content policy:** users accept terms first, then get in-app reporting and blocking, and the
+  content gets "robust, effective, and ongoing" moderation.
+  https://support.google.com/googleplay/android-developer/answer/9876937
+- **Families policy** (if children are in the audience): an online-safety reminder, adult management of social
+  features, and no advertising ID.
+
+### P4. Windows and kernel drivers
+
+- **Signing.** New kernel drivers load only when Microsoft signs them through the Dev Portal; an EV certificate is
+  needed. Attestation signing is now "For testing purposes only" and is not Windows Certified. Microsoft recommends
+  HLK-tested (WHQL) signing.
+  https://learn.microsoft.com/en-us/windows-hardware/drivers/dashboard/driver-signing-offerings
+- **Vulnerable-driver blocklist:** on by default since the Windows 11 2022 update, and enforced with HVCI, which is
+  "on by-default for most new Windows 11 devices".
+- **`GetRuntimeAttestationReport`** (21 Jan 2026): a user-mode call that returns a Secure-Kernel-signed list of
+  loaded drivers, "for enforcing anti-cheat policies". It needs TPM 2.0, Secure Boot, VBS, HVCI and IOMMU.
+  https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getruntimeattestationreport
+- **Riot Vanguard On-Demand** (24 Jun 2026) uses that call; Riot estimates about 35% of players qualify.
+  https://www.riotgames.com/en/news/vanguard-on-demand
+- **Microsoft's plans after the CrowdStrike outage.**
+  - Nov 2024: security tools able to run outside the kernel.
+  - Nov 2025: an endpoint-security API in private preview.
+  - May 2026: moving third-party kernel drivers to user mode or Microsoft class drivers.
+  - No announcement that anti-cheat must leave the kernel was found (UNVERIFIED negative).
+- **Security record.**
+  - Genshin Impact's `mhyprot2.sys` was abused by ransomware to kill antivirus, with the game not installed. Its
+    signature was still valid at the time (Trend Micro, 24 Aug 2022).
+    https://www.trendmicro.com/de_de/research/22/h/ransomware-actor-abuses-genshin-impact-anti-cheat-driver-to-kill-antivirus.html
+  - Capcom pulled its Street Fighter V driver in 2016.
+  - Vanguard's League of Legends launch drew boot-loop reports. Riot said "fewer than 0.03% of players have reported
+    issues" (Kotaku, 2024, secondary).
+
+### P5. Off-the-shelf tools and precedents
+
+**Tools:**
+
+| Tool | Platforms | Cost | Note |
+|---|---|---|---|
+| Easy Anti-Cheat | Windows, Mac, Linux; not Android, iOS or consoles | "The anti-cheat service is free" | Unity via the EOS plugin (https://github.com/EOS-Contrib/eos_plugin_for_unity) |
+| Code Stage Anti-Cheat Toolkit | All Unity targets | $80 | Obscured values and speed/time/injection detectors; "No client-side tool makes a game 100% cheat-proof" |
+| Talsec freeRASP | Unity 6+, Android, iOS | Free up to 100,000 devices | — |
+| Guardsquare DexGuard / iXGuard | Android and iOS | Price not public | Hides IL2CPP metadata |
+| BattlEye, Denuvo Anti-Cheat, Promon, AppSealing | — | — | Unity support or pricing UNVERIFIED |
+
+**Precedents:**
+
+| Game | Disclosed? | How a flagged player learns |
+|---|---|---|
+| Call of Duty | Yes. Its enforcement policy (31 Jul 2026) places flagged accounts "in limited matchmaking lobbies with other accounts in a similar state", with no progression there; "Only permanent bans may be appealed". https://support.activision.com/articles/call-of-duty-security-and-enforcement-policy | Failed TPM/Secure Boot checks get a "Failed Attestation Status" notice. Mitigations such as Hallucinations (decoys only cheaters see) are published. https://www.callofduty.com/blog/2023/06/call-of-duty-ricochet-anti-cheat-season-04-update |
+| CS:GO / CS2 Trust Factor | Yes | Not told: "We don't plan to display your Trust Factor." |
+| Dota 2 low priority | Yes | Told in game, with the way out (win 5 Single Draft games) |
+| Fall Guys "Cheater Island" | Only after it closed | Endless loading screens. It shut down because 40-player matches could not fill (Game Developer, 14 Sep 2020) |
+
+**Court cases:**
+
+- A UK small-claims judge restored an account Activision banned, because Activision presented no evidence of
+  cheating (DualShockers, 29 Jan 2025, secondary).
+- A reported US shadowban suit was not found (UNVERIFIED).
+
+**Voice moderation:**
+
+- Call of Duty's ToxMod was announced publicly (beta Aug 2023).
+- Riot updated its privacy notice and terms before testing voice evaluation (2022).
+
+### P6. Unity Gaming Services
+
+- **Access Control** can deny players' direct writes to Leaderboards and Cloud Save, so Cloud Code writes them.
+  Blocked calls return 403. (docs.unity.com: Cloud Code > Server access control; Services > Access control.)
+- **Authentication.**
+  - Supports Steam (a ticket from `GetAuthTicketForWebApi`), Apple Game Center, Sign in with Apple, Google Play
+    Games, Google and Unity Player Accounts, with linking.
+  - Anonymous accounts "cannot recover … if they uninstall and then reinstall", and `ClearSessionToken` plus
+    `SignInAnonymouslyAsync` makes a new player at will.
+- **Matchmaker.**
+  - Pool filters use ticket attributes the client sets, so they can be forged.
+  - Rules can read `Players.CustomData.ExternalData.CloudSave.*`. That data is in the Protected class by default:
+    the player can read it, only a server can write it.
+- **Moderation and DSA.**
+  - The Moderation SDK takes player reports into a dashboard.
+  - Safe Text adds filtering on Vivox text chat. Safe Voice is discontinued (Moderation 1.1.0, Mar 2025).
+  - Projects using Unity Authentication are told to integrate its DSA notification API.
+- **No server hook on match results.** Triggers cover Authentication, Leaderboards, Cloud Save, Moderation and
+  Scheduler only, with no Lobby or Relay events. So Cloud Code, or our own webhook, is the only place to check a
+  host-reported result.
+- **Multiplay Game Server Hosting** was deprecated on 1 Apr 2026. https://status.unity.com/info_notices/362941
 
 ---
 
