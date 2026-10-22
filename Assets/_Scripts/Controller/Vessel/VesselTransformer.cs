@@ -935,10 +935,51 @@ public class VesselTransformer : MonoBehaviour
 
         protected virtual void Roll()
         {
-            if (InputStatus == null || BankIntoTurnSuppressed) return;
+            if (InputStatus == null || ApplyHeldRoll() || BankIntoTurnSuppressed) return;
             accumulatedRotation = Quaternion.AngleAxis(
                 InputStatus.YDiff * (speed * RotationThrottleScaler + RollScaler) * RollScalar * FlightDeltaTime,
                 transform.forward) * accumulatedRotation;
+        }
+
+        bool _heldRollActive;
+        float _heldRollApplied;
+
+        /// <summary>
+        /// Roll as an ANGLE (<see cref="IInputStatus.HoldsRollAngle"/>): the Dolphin's aim on a phone, where
+        /// the phone is an augmented-reality window and the hull rolls exactly as far as the phone has turned
+        /// since the aim began (Garrett, 2026-10-22: "1 to 1 roll like augmented reality not a control that
+        /// sends the vessel into a roll"). Each frame applies the change in the held angle to the command
+        /// AND to the hull, so the nose catch-up cap (<see cref="NoseFollowFraction"/>) never trails a fast
+        /// wrist: one to one means no lag at any speed. Letting go keeps the roll where it is. Returns true
+        /// while the angle is held, so the rate roll stands down.
+        /// </summary>
+        bool ApplyHeldRoll()
+        {
+            if (!InputStatus.HoldsRollAngle)
+            {
+                _heldRollActive = false;
+                return false;
+            }
+
+            // The angle is measured from where the phone was when the hold began, so the hull's roll at
+            // that moment is zero on the same scale.
+            if (!_heldRollActive)
+            {
+                _heldRollActive = true;
+                _heldRollApplied = 0f;
+            }
+
+            float step = Mathf.DeltaAngle(_heldRollApplied, InputStatus.HeldRollDegrees);
+            _heldRollApplied += step;
+
+            // An ability that owns the roll axis still owns it; the phone's turn is consumed, not stored.
+            if (BankIntoTurnSuppressed || step == 0f) return true;
+
+            // Clockwise from behind is a negative angle about forward (Euler(0, 0, 90) * up = left).
+            var turn = Quaternion.AngleAxis(-step, transform.forward);
+            accumulatedRotation = turn * accumulatedRotation;
+            transform.rotation = turn * transform.rotation;
+            return true;
         }
 
         protected float CurrentBoostAmount()

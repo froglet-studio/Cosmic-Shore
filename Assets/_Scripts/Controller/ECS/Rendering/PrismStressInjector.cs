@@ -130,6 +130,9 @@ namespace CosmicShore.ECS
         ///   prismpath off      force the legacy MeshRenderer path
         ///   prismpath on       force the instanced BatchRendererGroup path
         ///   prismpath auto     drop the override, back to the PrismRenderConfig asset
+        ///   prismpath mpb      the legacy path WITH the no-compute MeshRenderer stamp path forced
+        ///                      (Docs/PRISM_ANIMATION.md §4.11) — what a WebGL2 browser draws, on this
+        ///                      desktop. on / off / auto drop the force.
         ///
         /// SetRuntimeOverride alone gates only entity CREATION, so every prism already
         /// holding a companion entity would keep drawing through it and the A/B would
@@ -141,19 +144,27 @@ namespace CosmicShore.ECS
         string HandlePrismPathCommand(string[] args)
         {
             if (args.Length == 0)
-                return $"prism render path: {PrismRenderService.StatusLine()} " +
-                       $"| usage: {PathCommandName} on | off | auto";
+                return $"prism render path: {PathSummary()} " +
+                       $"| usage: {PathCommandName} on | off | auto | mpb";
 
             switch (args[0].ToLowerInvariant())
             {
-                case "on":   PrismRenderService.SetRuntimeOverride(true);  break;
-                case "off":  PrismRenderService.SetRuntimeOverride(false); break;
-                case "auto": PrismRenderService.SetRuntimeOverride(null);  break;
-                default:     return $"usage: {PathCommandName} on | off | auto";
+                case "on":   PrismRenderService.SetMeshRendererStampsForced(false); PrismRenderService.SetRuntimeOverride(true);  break;
+                case "off":  PrismRenderService.SetMeshRendererStampsForced(false); PrismRenderService.SetRuntimeOverride(false); break;
+                case "auto": PrismRenderService.SetMeshRendererStampsForced(false); PrismRenderService.SetRuntimeOverride(null);  break;
+                case "mpb":
+                    // Entities off first, so the re-sync below releases every live prism's entity and no
+                    // prism created while forced gets one — the stamps would otherwise land there first.
+                    PrismRenderService.SetRuntimeOverride(false);
+                    PrismRenderService.SetMeshRendererStampsForced(true);
+                    break;
+                default:     return $"usage: {PathCommandName} on | off | auto | mpb";
             }
 
             int moved = ResyncLivePrisms();
-            return $"prism render path: {PrismRenderService.StatusLine()} ({moved:N0} live prisms re-synced)";
+            return $"prism render path: {PathSummary()} ({moved:N0} live prisms re-synced; " +
+                   "a stamp is one-shot, so one made before the switch is not re-made: a lifeform's sway " +
+                   "shows on the path it was grown on - grow a new cell to compare)";
         }
 
         /// <summary>
@@ -163,6 +174,15 @@ namespace CosmicShore.ECS
         /// and the next Get() re-introduces the path the toggle just switched off.
         /// Debug tool fired from a console command; the object scan is not a hot path.
         /// </summary>
+        static string PathSummary() =>
+            PrismRenderService.StatusLine() +
+            (PrismRenderService.UsesMeshRendererStamps
+                ? $" · MeshRenderer stamp path {(PrismRenderService.MeshRendererStampsForced ? "FORCED" : "(device)")}" +
+                  $" · prisms with a stamp block {PrismMeshRendererStamps.RenderersWithBlock:N0}" +
+                  $" · debris live {CosmicShore.Utility.PrismMeshRendererDebris.LiveCount}" +
+                  $", skipped {CosmicShore.Utility.PrismMeshRendererDebris.SkippedOverCap}"
+                : "");
+
         static int ResyncLivePrisms()
         {
             var prisms = FindObjectsByType<Prism>(FindObjectsInactive.Include, FindObjectsSortMode.None);

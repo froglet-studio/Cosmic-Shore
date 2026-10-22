@@ -26,8 +26,7 @@ namespace CosmicShore.Editor
     /// (compression, memory, template, file hashing) are committed in <c>ProjectSettings.asset</c>
     /// and only read here, into the manifest.</para>
     ///
-    /// <para><b>Nothing persists.</b> <c>-buildVersion</c> and the editor's Development checkbox are put
-    /// back after the build. A BUILD tool, not an asset writer: it writes no assets and records
+    /// <para><b>Nothing persists.</b> <c>-buildVersion</c> is put back after the build. A BUILD tool, not an asset writer: it writes no assets and records
     /// nothing in the tool ledger. Its only output is under the git-ignored <c>Builds/</c>, so it
     /// draws no ship panel (<c>Docs/TOOLING.md</c> §6).</para>
     ///
@@ -123,7 +122,6 @@ namespace CosmicShore.Editor
             bool batch = Application.isBatchMode;
             bool ok = false;
             string savedVersion = PlayerSettings.bundleVersion;
-            bool savedDevelopment = EditorUserBuildSettings.development;
 
             try
             {
@@ -149,11 +147,6 @@ namespace CosmicShore.Editor
 
                 if (!string.IsNullOrWhiteSpace(version))
                     PlayerSettings.bundleVersion = version;
-
-                // The release guards (UnityPipelineReleaseGuard, CreditsReleaseGuard, ...) exempt a build
-                // when EITHER the report options or this editor checkbox say Development, so a ticked
-                // checkbox would wave a release build through them. Make the checkbox agree with the build.
-                EditorUserBuildSettings.development = development;
 
                 Directory.CreateDirectory(outputFolder);
                 var options = new BuildPlayerOptions
@@ -192,7 +185,6 @@ namespace CosmicShore.Editor
             finally
             {
                 PlayerSettings.bundleVersion = savedVersion;
-                EditorUserBuildSettings.development = savedDevelopment;
             }
 
             if (batch) EditorApplication.Exit(ok ? 0 : 1);

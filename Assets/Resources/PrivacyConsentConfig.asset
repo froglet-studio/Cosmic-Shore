@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8f8eaec790646b1934e57c9364e84dd, type: 3}
   m_Name: PrivacyConsentConfig
   m_EditorClassIdentifier: 
-  privacyPolicyUrl: 
+  privacyPolicyUrl: https://www.froglet.games/privacy
   ageTitle: Before you fly
   ageBody: What year were you born?
   consentTitle: Help us improve Cosmic Shore

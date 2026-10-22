@@ -28,6 +28,11 @@ namespace CosmicShore.Gameplay
                  "accelerometer carries every jolt of the hand. A gravity sensor is read unsmoothed (no lag).")]
         [SerializeField, Range(1f, 40f)] float tiltSmoothingPerSecond = 12f;
 
+        [Tooltip("The phone-as-window roll (the Dolphin's aim, TouchControlProfile.tiltRollOnOneThumb): the hull " +
+                 "rolls one to one with the phone up to this many degrees either side of where the phone was " +
+                 "held when the aim began, and holds there past it.")]
+        [SerializeField, Range(30f, 180f)] float tiltRollMaxDegrees = 90f;
+
         [Header("Button layout (millimetres on the glass)")]
         [Tooltip("Width of one totem or button on the glass. Platform guidance is 7-9 mm minimum.")]
         [SerializeField, Range(6f, 16f)] float buttonMillimetres = 10f;
@@ -80,6 +85,7 @@ namespace CosmicShore.Gameplay
         public float TiltFullScaleDegrees => tiltFullScaleDegrees;
         public float TiltDeadZoneDegrees => tiltDeadZoneDegrees;
         public float TiltSmoothingPerSecond => tiltSmoothingPerSecond;
+        public float TiltRollMaxDegrees => tiltRollMaxDegrees;
         public float ButtonMillimetres => buttonMillimetres;
         public float ButtonGapMillimetres => buttonGapMillimetres;
         public float InnerArcMillimetres => innerArcMillimetres;

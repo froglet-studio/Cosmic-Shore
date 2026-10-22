@@ -148,7 +148,7 @@ namespace CosmicShore.Gameplay
             _buttons.Dispose();
             ReleaseAllRings();
             Pin(false); HoldPen(false);
-            _render?.Dispose(); _render = null; _pip.Restore();
+            _render?.Dispose(); _render = null; _pip.Dispose();
             if (_view) Destroy(_view);
             if (_bodyGo) Destroy(_bodyGo);
             foreach (var o in new Object[] { _torus, _ringMat, _lockMat, _bodyMat }) if (o) Destroy(o);

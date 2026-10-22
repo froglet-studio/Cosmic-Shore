@@ -2050,3 +2050,37 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-22 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
 - **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (top section, Time)
+### T-20261022-a669 · open · test · Dolphin
+- **Task:** Phone-test the Dolphin's 1:1 AR roll on an Android dev build: lift either thumb to aim, turn the phone like a wheel - the hull rolls exactly as far as the phone (stops when the phone stops), holds at 90 degrees either side, and keeps its roll when the thumb returns
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Phone controls for the whole fleet' step 7 passes on a phone; the horizon stays level in the room while turning
+- **Who can take it:** Yash (has offered to take tests) or Garrett (Dolphin design owner)
+- **Added:** 2026-10-22 by a Claude session (`cece/exciting-fermat-khf8vn`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md section 8, Dolphin row; Assets/_Scripts/Controller/IO/TouchControls/TouchAttitudeRoll.cs
+
+### T-20261022-ae99 · open · test · Menu_Main
+- **Task:** Verify no entry into freestyle behind the boot veil, and the browser Toybox opens on the menu (#1146)
+- **Done when:** Pressing Select / Enter / Space while the LOADING veil is up launches nothing; after the reveal a double tap or Select flies at once; a WebGL Toybox build boots to the home menu
+- **Who can take it:** Shombith (Menu_Main owner) or Yash
+- **Added:** 2026-10-22 by Claude (claude/menu-click-through-kg5qx7) (`claude/menu-click-through-kg5qx7`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, entry 'Menu_Main: no entry into freestyle behind the boot veil'
+
+### T-20261022-a4ab · open · test · crew
+- **Task:** Play the Wrasse in Unity (Toybox Vessel Changer > Wrasse) and navigate: the lasso motes, kite, tail and cord in the kite view keep their distinct limes against crystals (no bloom/tonemap on them), and the view's straight edges, the lower bar included, stay straight while the speed tunnel's Panini is on
+- **Done when:** Marks read crisp and distinct from crystals; no bowed edges in the kite view; pilot view unchanged
+- **Who can take it:** Garrett (Wrasse owner), Yash (offered)
+- **Added:** 2026-10-22 by a Claude session (`cece/dazzling-volta-apzw2m`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md Round 11
+
+### T-20261022-70b1 · open · test · crew
+- **Task:** In Unity, fly each picture-in-picture view and check the new frame sits exactly on the small view's edge, does not block taps or the double-tap swap, and sits under the HUD: Wrasse (both seats), Goby & Pistol (both seats), Orca (turret seat, lifted pilot view), Jacks (herding and flying). Also check that the Jacks' rings and dots keep their colours (no bloom on them) and that no orthographic view bows
+- **Done when:** Frame is aligned on all four vessels at 16:9, 4:3 and a phone; taps and swaps still work; Jacks marks read crisp
+- **Who can take it:** Yash (offered), Garrett (crew vessels)
+- **Added:** 2026-10-22 by a Claude session (`cece/dazzling-volta-apzw2m`)
+- **See:** Docs/claude/SHADERS_AND_PERFORMANCE.md § Orthographic views and picture-in-picture frames
+
+### T-20261022-a9fa · open · decision · ui
+- **Task:** Sign off the picture-in-picture frame's look: 1px Light (E6E9FF, 85%) hairline on a slivered outline, 2px Neutral (Dark) (222645) chrome band to a square edge, large 14px sliver on top-left/bottom-right. Tune it in Resources/PipFrameStyle.asset (tokens from UITheme.asset)
+- **Done when:** Shombith approves or retunes PipFrameStyle.asset
+- **Who can take it:** Shombith (UI, style guide)
+- **Added:** 2026-10-22 by a Claude session (`cece/dazzling-volta-apzw2m`)
+- **See:** Assets/_Scripts/UI/Elements/PipViewFrame.cs

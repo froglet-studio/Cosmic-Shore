@@ -599,7 +599,9 @@ Implementation constraints (verified by the capability audit):
   transition — silent where that is a normal transient (fresh spawn paint, morph
   overlay windows), screaming via `PrismClockDiagnostics.WarnNoRenderEntity` where the
   render path is genuinely down. There are no MaterialPropertyBlock twins and no CPU
-  animation tier; the former managers are DELETED (tracker D2, 2026-08-02).
+  animation tier; the former managers are DELETED (tracker D2, 2026-08-02). **One exception
+  (2026-10-15, §4.11): on a device where Entities Graphics cannot run at all (no compute — a
+  WebGL2 browser), the same one-shot stamps go to the prism's property block.**
 - Currently NON-instanced properties that must not be driven per-instance without
   flipping the flag first: `_SqrDistance`, `_Alpha` (BlockGraph),
   `_ExplosiveRotation`/`_ExplosiveSpead` (ExplodingBlockGraph), `_Move` (SuctionGraph),
@@ -2616,6 +2618,78 @@ slice is the playtest's answer; the numbers say only that the map is the map. Kn
 halves' fresnel and flesh shading is the prism look approximated, not the BlockGraph composition;
 `UNITY_DOTS_INSTANCED_PROP` / `DOTS.hlsl` are the documented Entities-Graphics custom-shader surface
 and were compiled against a mock, not the package.
+
+### 4.11 The no-compute MeshRenderer stamp path (shipped 2026-10-15, the browser Toybox)
+
+**Why.** A WebGL2 browser (the browser Toybox, `Docs/WEBGL_TOYBOX.md`) has no compute shaders, so
+Entities Graphics is unsupported, `PrismRenderService` never creates a companion entity, and every prism
+draws through its own MeshRenderer. Strict mode then had nothing to stamp: in the shipped browser build
+NOTHING animated — no grow-in, no colour lerp, no sway, no shield bloom, no turret flight, no jiggle, no
+cell-swap suction — and no death had a visual (`PrismDebris` queued batches that could never spawn, held
+for 5 s, and `PrismFactory` reported "this death has no visual"). The owner asked for the animations back.
+
+**The ruling.** On a device where Entities Graphics CANNOT run — and only there — the "no MPB twins" clause
+of §4.4 is reversed. The law's core is untouched: one write at the stamp, nothing per frame, one write at
+the analytic end, GPU runs the course off `_PrismClock`. Only the CARRIER of the initial conditions changes:
+the prism's `MaterialPropertyBlock` instead of its entity's per-instance components. Every other strict-mode
+case (tool scenes, pre-first-show, exotic morph windows, a misconfigured `PrismRenderConfig` on a desktop)
+still snaps and screams through `PrismClockDiagnostics.WarnNoRenderEntity`, exactly as before.
+
+- **The predicate:** `PrismRenderService.UsesMeshRendererStamps` = `!EntitiesGraphicsSupportProbe.IsSupported`
+  (no SRP, no compute, or compute kernels that fail to load) or the dev A/B force. Device-keyed, never the
+  `FROGLET_WEB_TOYBOX` define. `PrismMeshRendererStamps.Active` adds `Application.isPlaying` (edit-mode tooling
+  keeps settling to the end state). Every new branch is gated on it, so a device with Entities Graphics runs
+  bit-for-bit as before.
+- **Why it works on the GPU side.** Every clock property the prism graphs read is exposed and Hybrid Per
+  Instance (`hlslDeclarationOverride: 3`). In a variant without `DOTS_INSTANCING_ON` — the only variant a
+  no-compute device has — Shader Graph declares those properties in the `UnityPerMaterial` cbuffer, which a
+  property block overrides. `PrismMeshRendererStampsTests` pins every name the block writes as exposed + Hybrid
+  Per Instance in BlockGraph, ExplodingBlockGraph and SuctionGraph, and as the `[MaterialProperty]` name of the
+  component the entity stamp writes, with the same float / vector packing. The settled defaults the materials
+  carry (`_GrowStartFrac` 1, every duration/rate 0, sway spans 0) are what a REMOVED property falls back to.
+- **One writer, mirroring the service.** `Controller/ECS/Rendering/PrismMeshRendererStamps.cs`: `StampGrow`,
+  `StampColorTransition`, `StampFlight`, `StampShieldMorph`, `StampJiggle`, `StampSuctionClock`, `StampSway`, the
+  super-shield mark, `ClearPrismStamps`, and the culling-envelope twins (`ExpandBounds`, `EncapsulateBoundsPoint`,
+  `ResetBounds` on `Renderer.localBounds`). Same arguments as the `PrismRenderService.Stamp*` they mirror;
+  colours go through `PrismRenderService.ApplyColorSpace` and `SetVector`, i.e. the entity write's own
+  conversion. Get-modify-set, so grow + colour + sway + shield on one renderer coexist.
+- **Clearing is removal.** A block takes a renderer out of the SRP Batcher, so a settled prism must end with
+  NO block. Unity has no per-property remove: a clear rebuilds the block from the families still present and
+  sets `null` when none are (and resets the local bounds). Timed families clear THEMSELVES at the analytic end
+  through `PrismTimerManager`, guarded by their stamp time (a re-stamp or pooled reuse makes the stale clear a
+  no-op): colour at `t0+dur`, flight at arrival, shield morph at t = 1, jiggle at its end, and grow when the
+  largest per-axis remainder is under 0.5% of final size (`GrowClearDelay`: ln(dev/0.005)/k — 4.2 s for a
+  from-zero bloom at the default k = 1.25, 2.1 s for boost prisms at k = 2.5; the entity path never clears a grow
+  at all, it has no batcher to lose). Sway is permanent while the lifeform lives (cleared at death and on pool
+  release); cell-swap suction ends in a pool return (`ClearPrismStamps`), because clearing it would pop the
+  collapsed prism back.
+- **Population (estimate, not measured).** At steady state the prisms carrying a block are: every LIVING health
+  prism on a swaying limb (permanent — the lifeform mass in the cell and the Wanderway belt), plus trail prisms
+  for ~4.2 s after they are laid (lay rate × 4.2 s; at a vessel's wavelength 4 and ~50 u/s, ≈ 50), plus a
+  Wanderway scene arrival's prisms (≤ 600 per arrival, two concurrent) for ~4.2 s. Trail and environment mass
+  that has settled carries none. Read the real number from `prismpath` in a Development WebGL build
+  (`prisms with a stamp block N`; `PrismMeshRendererStamps.RenderersWithBlock`).
+- **Death visuals.** `Utility/Effects/PrismMeshRendererDebris.cs`: a capped pool (`PrismRenderConfigSO.
+  MeshRendererDebrisCap`, 96) of plain MeshRenderer pieces, created on first need and never destroyed. One
+  pose + one block write per death (the same `ExplosionDebrisSpawn` / `ImplosionDebrisSpawn` values, computed by
+  `PrismDebris` / `PrismShieldShatter` with their own arithmetic), a flat end-time sweep, and for a suction the
+  §1 moving-target exception (one `_Location` write per live suction per frame). Past half the cap pieces
+  shorten toward 0.33 s (the retired pooled path's pressure reading); past the cap a death has no visual and
+  the request still reports success, so the factory's "no visual" error stays for real faults. The Rhino slice
+  refuses on these devices (its hand-written DOTS shader has no carrier), so a blade kill explodes instead. The
+  pooled `PrismExplosion` / `PrismImplosion` (Grow — the Sparrow's ReverseSuction) stamp their own block too.
+- **Diagnostics.** On these devices the strict-mode screams are replaced by ONE `CSDebug.LogVerbose(
+  PrismRuntime)` line at first use ("MeshRenderer stamp path (no Entities Graphics)"). The render service's
+  one-time "Entities Graphics is unsupported on this device" warning stays.
+- **Dev A/B.** `prismpath mpb` (DiagnosticsHUD, editor + development builds): entities off, MeshRenderer stamp
+  path forced, live prisms re-synced. `prismpath on|off|auto` drops the force. A stamp made before the switch is
+  not re-made (a lifeform's sway shows on the path it was grown on), so compare on a cell grown after it.
+- **Not covered.** `ThreatGrove.StampGlow` writes its danger palette with `PrismRenderService.SetColors`, a
+  direct colour STATE on the entity, not a stamp; on these devices the glow's colour lerp still does not show.
+  `Prism.SetColorShade` is entity-only, as it always was.
+- **Verified so far:** compiles in the `webgl`, `player` and `editor` refcompile configs; the edit-mode tests
+  above. NOT verified: nothing has run in a browser or in the editor — see `Docs/WEBGL_TOYBOX.md` §4 for the
+  in-browser checks.
 
 ### 4.12 The prism's interaction DETAIL LEVELS — destruction and stealing (shipped 2026-10-14, C20, C21)
 

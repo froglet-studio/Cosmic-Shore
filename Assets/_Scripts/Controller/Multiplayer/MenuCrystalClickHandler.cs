@@ -161,6 +161,14 @@ namespace CosmicShore.Gameplay
         {
             if (_isTransitioning) return;
 
+            // Entering is refused while the boot veil still covers the menu; leaving never is.
+            if (!_isInFreestyle && !EntryAllowed(EnvironmentLoadVeil.IsCovering))
+            {
+                CSDebug.LogVerbose(CSLogChannel.MenuUI,
+                    "[MenuCrystalClickHandler] Enter freestyle ignored: the boot veil is still up.");
+                return;
+            }
+
             var localPlayer = gameData.LocalPlayer;
             if (localPlayer?.Vessel == null) return;
 
@@ -174,6 +182,15 @@ namespace CosmicShore.Gameplay
             else
                 TransitionToFreestyle().Forget();
         }
+
+        /// <summary>
+        /// Whether freestyle may be ENTERED now. The boot world builds behind
+        /// <see cref="EnvironmentLoadVeil"/>'s opaque cover before the menu is revealed, and Home's full-screen
+        /// surface flies only on a double tap (<c>DoubleTapRelay</c>); this closes the routes that bypass both
+        /// (the pad's Select, Submit, the toybox modals), so a press during the Garland intro cannot launch the
+        /// player into the HyperSea before the menu has appeared. Nothing is gated once the menu is revealed.
+        /// </summary>
+        internal static bool EntryAllowed(bool bootVeilCovering) => !bootVeilCovering;
 
         #region Transitions
 
