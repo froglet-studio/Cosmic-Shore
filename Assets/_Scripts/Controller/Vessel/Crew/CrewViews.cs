@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -13,7 +14,8 @@ namespace CosmicShore.Gameplay
     /// and the pilot's camera (<see cref="CameraManager.ViewCamera"/>) is lifted into the same small square. The pilot
     /// camera's rect and depth are restored the moment the human flies the hull again, the camera changes, or the seat
     /// lets go (<see cref="Restore"/>). The seat camera draws what the pilot camera draws (its culling mask, clear flags
-    /// and background), so it is the game's renderer, not a picture of it.
+    /// and background), so it is the game's renderer, not a picture of it. The small square wears the style guide's
+    /// frame (<see cref="PipViewFrame"/>).
     /// </summary>
     public sealed class CrewPictureInPicture
     {
@@ -21,6 +23,7 @@ namespace CosmicShore.Gameplay
         Rect _pilotRect;
         float _pilotDepth;
         bool _pilotLifted;
+        readonly PipViewFrame _frame = new();
 
         /// <summary>The pilot's camera the layout last saw.</summary>
         public Camera Pilot => _pilot;
@@ -34,7 +37,7 @@ namespace CosmicShore.Gameplay
         {
             if (!seat) return;
             var pilot = CameraManager.ViewCamera;
-            if (pilot != _pilot) { Restore(); _pilot = pilot; if (_pilot) { _pilotRect = _pilot.rect; _pilotDepth = _pilot.depth; } }
+            if (pilot != _pilot) { RestorePilot(); _pilot = pilot; if (_pilot) { _pilotRect = _pilot.rect; _pilotDepth = _pilot.depth; } }
 
             seat.enabled = true;
             if (_pilot)
@@ -60,14 +63,28 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                Restore();
+                RestorePilot();
                 seat.rect = square;
                 seat.depth = baseDepth + 1f;
             }
+            _frame.Show(SmallView(seat, humanInSeat));
         }
 
-        /// <summary>Give the pilot's camera back its own rect and depth.</summary>
+        /// <summary>Give the pilot's camera back its own rect and depth, and take the small square's frame down.</summary>
         public void Restore()
+        {
+            RestorePilot();
+            _frame.Hide();
+        }
+
+        /// <summary><see cref="Restore"/>, and destroy the frame (a later <see cref="Layout"/> builds a new one).</summary>
+        public void Dispose()
+        {
+            Restore();
+            _frame.Dispose();
+        }
+
+        void RestorePilot()
         {
             if (_pilotLifted && _pilot)
             {

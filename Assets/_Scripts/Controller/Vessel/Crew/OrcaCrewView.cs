@@ -98,6 +98,7 @@ namespace CosmicShore.Gameplay
         public void Dispose()
         {
             RestorePilot();
+            _frame.Dispose();
             Rig?.Restore();   // the next crew to bind this hull finds its turrets at rest
             LightBomb(false, default, 0f, 0f);
             for (int s = 1; s < OrcaCrew.Seats; s++) _missileVisuals[s]?.Dispose();
@@ -211,6 +212,7 @@ namespace CosmicShore.Gameplay
             _cam.rect = new Rect(0f, 0f, 1f, 1f);
             _cam.depth = baseDepth + 1f;
             _cam.enabled = true;
+            _frame.Show(_pilotLifted ? _pilot : null);   // the style guide's frame round the small view
             DrawCrosshair(humanSeat, m != null, aimPoint, cfg);
         }
 
@@ -305,8 +307,11 @@ namespace CosmicShore.Gameplay
             g.Refresh();
         }
 
+        readonly PipViewFrame _frame = new();
+
         void RestorePilot()
         {
+            _frame.Hide();
             if (!_pilotLifted) return;
             _pilotLifted = false;
             if (!_pilot) return;

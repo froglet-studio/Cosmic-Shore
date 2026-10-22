@@ -35,6 +35,12 @@ namespace CosmicShore.Gameplay
     /// and far mass opens up as it does in the pilot's view; and the occlusion corridor is re-shaped into a cone from this
     /// lens down to the plane, sized to the view (<see cref="PrismOcclusionCorridor.BeginViewOverride"/>), so the mass
     /// above the board dithers instead of hiding it. Both are restored before any other camera draws.</para>
+    ///
+    /// <para><b>The kite view's marks are UI</b> (Garrett, 2026-10-22: "treat them like UI and not post process them").
+    /// The world under the lens keeps the game's post-processing, but the kite, its tail, the cord, the motes, the lasso and
+    /// the juice are drawn through an <see cref="UnprocessedOverlay"/> (post-processing off), so bloom and the tonemapper no
+    /// longer mute the limes into the crystals. No Panini bows the map's straight edges: <see cref="OrthographicLens"/>
+    /// keeps it off every orthographic camera. The small view wears the style guide's frame (<see cref="PipViewFrame"/>).</para>
     /// </summary>
     sealed class KiteNavigatorView
     {
@@ -45,6 +51,9 @@ namespace CosmicShore.Gameplay
         readonly KiteNavigator _nav;
         readonly GameObject _root;
         readonly Camera _cam;
+        // the kite view's marks, drawn after the kite camera's post-processing
+        readonly UnprocessedOverlay _marks;
+        readonly PipViewFrame _frame = new();
         readonly Mesh _kiteMesh, _dotMesh;
         readonly Mesh[] _petals = new Mesh[4];
         readonly Vector3[][] _outlines = new Vector3[4][];   // each petal's outline in its mesh's own space
@@ -94,6 +103,7 @@ namespace CosmicShore.Gameplay
             // a bare AddComponent<Camera> is URP's default: no post-processing (no bloom, no tonemapper), the wrong volume
             // mask, SDR. Draw the way the game's camera draws (OffscreenCameraSetup; Garrett, 2026-10-21)
             OffscreenCameraSetup.AdoptGameCameraImage(_cam, postProcessing: true, antiAliasing: true, shadows: true);
+            _marks = new UnprocessedOverlay(_cam, "KiteNavigatorMarks");
             RenderPipelineManager.beginCameraRendering += BeginRender;
             RenderPipelineManager.endCameraRendering += EndRender;
 
@@ -207,6 +217,8 @@ namespace CosmicShore.Gameplay
             RenderPipelineManager.endCameraRendering -= EndRender;
             EndRender(default, _cam);
             RestorePilot();
+            _frame.Dispose();
+            _marks.Dispose();
             if (_root) Object.Destroy(_root);
             foreach (var o in _petals) if (o) Object.Destroy(o);
             foreach (var o in _moteMats) if (o) Object.Destroy(o);
@@ -270,6 +282,8 @@ namespace CosmicShore.Gameplay
                 _cam.rect = new Rect(m / aspect, m, h / aspect, h);       // a square in the lower left
                 _cam.depth = baseDepth + 1f;
             }
+            _marks.Sync();
+            _frame.Show(humanNavigates ? (_pilotLifted ? _pilot : null) : _cam);
         }
 
         /// <summary>The hand line, as a fraction of the screen's height: just above the ability cards (handLineGap), or
@@ -385,7 +399,7 @@ namespace CosmicShore.Gameplay
             var cfg = _nav.Config;
             var s = _nav.Settings;
             var basis = Quaternion.LookRotation(_nav.BoardForward, _nav.BoardUp);
-            Camera kite = _cam, pilot = _pilot;
+            Camera kite = _marks.Camera, pilot = _pilot;   // the kite view's marks skip its post-processing
             float lift = cfg.ViewDepth - 2f;   // just under the lens: in front of every prism the view sees
             float now = Time.time;
             var juiceFrame = JuiceFrame(now, pilot);
@@ -615,11 +629,12 @@ namespace CosmicShore.Gameplay
             foreach (var kv in _batches) if (kv.Value.N > 0) DrawBatch(kv.Key.Item1, kv.Value);
         }
 
-        static void DrawBatch(Material mat, Batch b)
+        void DrawBatch(Material mat, Batch b)
         {
             var rp = new RenderParams(mat)
             {
                 camera = b.Camera,
+                layer = LayerFor(b.Camera),
                 shadowCastingMode = ShadowCastingMode.Off,
                 receiveShadows = false,
                 worldBounds = new Bounds(b.Camera.transform.position, Vector3.one * 100000f),
@@ -628,12 +643,16 @@ namespace CosmicShore.Gameplay
             b.N = 0;
         }
 
+        // the marks camera sees only its own layer; every other camera draws on Default, as before
+        int LayerFor(Camera cam) => cam == _marks.Camera ? _marks.Layer : 0;
+
         void DrawDynamic(Mesh mesh, Material mat, Camera cam)
         {
             if (!cam || mesh.vertexCount == 0) return;
             var rp = new RenderParams(mat)
             {
                 camera = cam,
+                layer = LayerFor(cam),
                 shadowCastingMode = ShadowCastingMode.Off,
                 receiveShadows = false,
                 worldBounds = new Bounds(cam.transform.position, Vector3.one * 100000f),

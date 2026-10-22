@@ -13955,3 +13955,23 @@ Team task: T-20261021-6fa4.
 3. Console stays clean. The `renderers` line still shows the snow as one instanced family.
 4. Low preset: shards still appear, until `SnowChanger.maxMorphedShards x 0.25` (800 x 0.25 = 200) limbs have made one; after that limbs
    only fade.
+
+## 🔴 2026-10-22 — PiP view frame; no Panini or bloom on orthographic 2D marks (`cece/dazzling-volta-apzw2m`) - NOT EDITOR-VERIFIED
+
+Files: `Utility/OrthographicLens.cs`, `Utility/UnprocessedOverlay.cs`, `UI/Elements/PipViewFrame.cs`,
+`PipFrameGraphic.cs`, `PipFrameStyleSO.cs`, `Resources/PipFrameStyle.asset`; wired into `KiteNavigatorView`, `JacksView`
+(+ `JacksExecutor`, `AnglerWorldMarks`), `CrewViews.cs` (`CrewPictureInPicture`, used by `GobyPistolDuo`) and
+`OrcaCrewView`. Rules: `Docs/claude/SHADERS_AND_PERFORMANCE.md` § Orthographic views and picture-in-picture frames.
+The headless reference compile passes (player config, 0 errors in project code) and `check_generated_assets.py` passes
+on the hand-written asset (negative-controlled). No `unity` CLI in the session, so `/verify-unity` did not run.
+Team tasks: T-20261022-a4ab, T-20261022-70b1 (tests), T-20261022-a9fa (Shombith signs off the look).
+
+1. Toybox Vessel Changer > Wrasse, navigate. The lasso motes, kite, tail and cord keep their limes against the crystals
+   (no bloom or tonemap on them); the world under them is still post-processed. Boost into the speed tunnel: the
+   map's straight edges, the lower bar included, stay straight.
+2. Same for the Jacks while herding: rings and dots crisp, world still bloomed, no bowing.
+3. Every PiP small view (Wrasse both seats, Goby & Pistol both seats, Orca turret seat's lifted pilot view, Jacks
+   herding and flying) wears the frame: Light hairline on a slivered outline (top-left, bottom-right cut), dark chrome
+   band out to a square edge. It sits exactly on the view, under the HUD, and double-tap swaps still work through it.
+4. Resize the Game view (16:9, 4:3, a phone): the frame follows. Leave the crew vessel: no frame is left behind.
+5. Console stays clean (no `UpdateVolumeStack must not be called before ...` error, no missing-layer error).

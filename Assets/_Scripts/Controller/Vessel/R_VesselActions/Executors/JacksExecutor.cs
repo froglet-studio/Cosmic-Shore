@@ -1145,14 +1145,15 @@ namespace CosmicShore.Gameplay
         {
             if (!IsLocalHuman) return;
             var board = _view != null ? _view.Camera : null;
-            if (board && board.enabled) DrawMarks(_marks ??= new AnglerWorldMarks(), board, false);
+            // the herding view's marks draw after its post-processing, like UI (UnprocessedOverlay)
+            if (board && board.enabled) DrawMarks(_marks ??= new AnglerWorldMarks(), _view.MarksCamera, _view.MarksLayer, false);
             var flight = ResolveCamera();
-            if (flight && flight != board) DrawMarks(_flightMarks ??= new AnglerWorldMarks(), flight, true);
+            if (flight && flight != board) DrawMarks(_flightMarks ??= new AnglerWorldMarks(), flight, 0, true);
         }
 
-        void DrawMarks(AnglerWorldMarks marks, Camera cam, bool flightView)
+        void DrawMarks(AnglerWorldMarks marks, Camera cam, int layer, bool flightView)
         {
-            if (!marks.Begin(cam, onlyThisCamera: true)) return;
+            if (!marks.Begin(cam, onlyThisCamera: true, layer)) return;
             float ring = Ring, dot = Mathf.Max(1.5f, ring * 0.02f);
             float ringDot = flightView ? dot * flightRingDotScale : dot, ringPixels = flightView ? flightRingDotPixels : 3f;
             int ringDots = flightView ? flightRingDots : 48;

@@ -1085,6 +1085,14 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   `IndexError: list index out of range` after the full ten-minute fetch. Any SDK from 8.0 works now
   (8.0 and 10.0 verified). Install a channel per-user (above) and point `DOTNET_ROOT` at it;
   `TMPDIR` decides where the ~550 MB cache lands.
+  **`run.sh` falls back to `$HOME/.dotnet`, but `check_generated_assets.py` does NOT**: it looks under
+  `/usr/lib/dotnet/sdk` and exits **2** with `csc.dll not found` (2026-10-22, `cece/dazzling-volta-apzw2m`).
+  Pass `DOTNET_ROOT=$HOME/.dotnet` to it explicitly; exit 2 is "called wrong", not a finding.
+- **It catches URP API drift that reads fine from memory.** On URP 17, `UniversalAdditionalCameraData
+  .volumeFrameworkUpdateMode` is `internal` (use the `Camera.SetVolumeFrameworkUpdateMode` extension) and
+  `clearDepth` has no setter (overlays already clear depth). Both failed this compile on 2026-10-22. The URP
+  source it compiled against is under the cache's `graphics/Packages/com.unity.render-pipelines.universal/`:
+  read it rather than guessing an API.
 - **A warm run takes ~30 s, and the `cached` lines are the evidence.** Count them
   (`grep -c ' cached$'`): about 86 package assemblies should come from the cache. Until 2026-10-08
   NONE ever did, so every run recompiled them all. A stub DLL rebuilt each run sat in every
