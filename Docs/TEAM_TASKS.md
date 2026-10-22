@@ -2037,12 +2037,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log, 2026-10-22 view pass)
 - **Done:** 2026-10-22, Garrett flew it: zoom in, smaller shrimp, more wiggles, 15-30 s journeys, no perch launch, short launches, no aimed jump - built in the next pass; its own playtest is the follow-up task
 
-### T-20261022-1788 · open · test · Crew vessels
+### T-20261022-1788 · done · test · Crew vessels
 - **Task:** Fly the Pistol at shrimp scale (Toybox > Vessel Changer > Goby and Pistol, double tap the small view). Dart 300-600 u with the Goby, then ride: a stretch should take 15-30 s, the Pistol sets off from the perch without flying off it, hold to dive on downslopes and let go on upslopes - each flight clears only a few of the 10 u humps; there is no drag-to-aim jump. Check the trail (a block every 3 u) holds frame rate on a phone.
 - **Done when:** Garrett says the journey, the humps and the flights feel right, or names the numbers to change on GobyPistolConfig; phone frame rate noted
 - **Who can take it:** Garrett (feel call); Yash (offered) for the phone run
 - **Added:** 2026-10-22 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
 - **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log, second 2026-10-22 pass)
+- **Done:** 2026-10-22, Garrett gave the reference (Tiny Wings) instead of a feel verdict; the Tiny Wings pass replaces the shrimp-scale tuning - its own playtest is the follow-up task
 
 ### T-20261022-0351 · open · decision · Crew vessels
 - **Task:** The Pistol's aimed jump is off (aimedJump on GobyPistolConfig), so Time's base card 'Quick Jump' (the jump's cooldown) drives nothing. Decide what Time does on the Pistol, or turn the jump back on; then refresh the class card's description in author_goby_assets.py (it still says the Goby flies on two thumbs and the Pistol launches into clusters).
@@ -2050,6 +2051,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-22 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
 - **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (top section, Time)
+
 ### T-20261022-a669 · open · test · Dolphin
 - **Task:** Phone-test the Dolphin's 1:1 AR roll on an Android dev build: lift either thumb to aim, turn the phone like a wheel - the hull rolls exactly as far as the phone (stops when the phone stops), holds at 90 degrees either side, and keeps its roll when the thumb returns
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Phone controls for the whole fleet' step 7 passes on a phone; the horizon stays level in the room while turning
@@ -2084,3 +2086,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (UI, style guide)
 - **Added:** 2026-10-22 by a Claude session (`cece/dazzling-volta-apzw2m`)
 - **See:** Assets/_Scripts/UI/Elements/PipViewFrame.cs
+
+### T-20261022-0ac8 · open · test · Crew vessels
+- **Task:** Fly the Pistol as Tiny Wings (Toybox > Vessel Changer > Goby and Pistol, double tap the small view; dart 300-600 u with the Goby first). Hold to dive down each slope, let go in the valley: the crest should throw the shrimp and a landing on the back of the next hill should slide it faster. The camera: close at rest with the ground low on screen and the shrimp a third in; it zooms out as you speed up and fly, and eases back in after landing. Try it on a phone (30 fps) and in the editor: the ride should feel the same.
+- **Done when:** Garrett says the base movement reads as Tiny Wings, or names what to change (GobyPistolConfig: hill height/wavelength/swell, pGravity, pDiveMul, pDrag, pGoodLand, the view* numbers)
+- **Who can take it:** Garrett (feel call); Yash (offered) for the phone run
+- **Added:** 2026-10-22 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log, Tiny Wings pass)

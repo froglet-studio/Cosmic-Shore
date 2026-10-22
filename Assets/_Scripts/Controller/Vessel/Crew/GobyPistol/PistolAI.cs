@@ -4,8 +4,9 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Pistol's AI: inputs only (it presses what a player presses). Tiny Wings dives (heavy on the way down, light on
-    /// the way up), jumps at the densest mass ahead in its plane, fires the Snap (the vortex ring) into a crowd, and fires
+    /// The Pistol's AI: inputs only (it presses what a player presses). Tiny Wings dives (<see cref="TinyWingsDive"/>: down
+    /// the slopes, let go up them, and in the air dive only when that lands it smoother on the back of a hill), jumps (only
+    /// with the aimed jump on) at the densest mass ahead in its plane, fires the Snap (the vortex ring) into a crowd, and fires
     /// it at once when the Goby's locked rival is on its screen (the ring then homes on it). Easy / Medium / Hard are the
     /// Vessel Studio's universal levels (late notice and a misjudged height, <c>SkimRaceDifficulty.asset</c>). No scene: the
     /// caller supplies what the Pistol sees in <see cref="Vis"/>.
@@ -24,7 +25,7 @@ namespace CosmicShore.Gameplay
         public struct Seen { public float X, Y, D; }
 
         /// <summary>The numbers this AI reads.</summary>
-        public struct Settings { public float pLaunchRange, pVortexR, pVortexCapture, aiHighDive, bodyHalfDepth; public bool aimedJump; }
+        public struct Settings { public float pLaunchRange, pVortexR, pVortexCapture, bodyHalfDepth, pGravity, pDiveMul; public bool aimedJump; }
 
         /// <summary>The lab's <c>mulberry32</c>, bit for bit.</summary>
         public sealed class Mulberry32
@@ -49,6 +50,33 @@ namespace CosmicShore.Gameplay
 
         public PistolAI(uint seed) { _rng = new Mulberry32(seed); }
 
+        /// <summary>
+        /// How a Tiny Wings player dives (1) or lets go (0). On the ground: dive down every slope, let go up every slope, so
+        /// the valley's speed carries it up and the crest throws it. In the air: dive only if falling faster lands it at a
+        /// smaller angle to the ground (the back of a hill: a smooth slide) than falling as it is.
+        /// </summary>
+        public static float TinyWingsDive(PistolBodyMath.State p, in PistolPlane.Frame f, float gravity, float diveMul)
+        {
+            if (p.grounded) { PistolPlane.Ground(f, p.x, out float slope); return slope < -0.02f ? 1f : 0f; }
+            return LandingAngle(f, p.x, p.y, p.vx, p.vy, gravity * diveMul) < LandingAngle(f, p.x, p.y, p.vx, p.vy, gravity) ? 1f : 0f;
+        }
+
+        /// <summary>The angle, degrees, between the velocity and the ground where a fall from (x, y) at (vx, vy) under
+        /// <paramref name="gravity"/> lands (90 if it does not land within four seconds).</summary>
+        static float LandingAngle(in PistolPlane.Frame f, float x, float y, float vx, float vy, float gravity)
+        {
+            const float h = 1f / 60f;
+            for (int i = 0; i < 240; i++)
+            {
+                vy -= gravity * h; x += vx * h; y += vy * h;
+                float yg = PistolPlane.Ground(f, x, out float m);
+                if (y > yg) continue;
+                float c = 1f / Mathf.Sqrt(1f + m * m), sp = Mathf.Sqrt(vx * vx + vy * vy), vt = vx * c + vy * m * c;
+                return sp > 1e-6f ? Mathf.Acos(Mathf.Clamp(vt / sp, -1f, 1f)) * Mathf.Rad2Deg : 0f;
+            }
+            return 90f;
+        }
+
         /// <summary>Forget held presses (a press carried across a seat change is not a press).</summary>
         public void ReleaseAll() { _outVortex = false; }
 
@@ -56,11 +84,7 @@ namespace CosmicShore.Gameplay
         public PistolBodyMath.Input Think(PistolBodyMath.State p, in PistolPlane.Frame f, float t, Difficulty lvl, in Settings s, bool lockedInView)
         {
             var inp = new PistolBodyMath.Input();
-            float gy = PistolPlane.Ground(f, p.x, out float slope);
-            // a look a moment ahead, in the ride's own scale (the humps are 10 u: a fixed 25 u look would see past them)
-            PistolPlane.Ground(f, p.x + Mathf.Max(2f, (p.grounded ? p.v : p.vx) * 0.15f), out float ahead);
-            // Tiny Wings: heavy on the way down, light on the way up
-            inp.Dive = p.grounded ? (slope < -0.02f ? 1f : 0f) : ((p.vy < 0f && ahead < -0.02f) || p.y - gy > s.aiHighDive ? 1f : 0f);
+            inp.Dive = TinyWingsDive(p, f, s.pGravity, s.pDiveMul);
 
             // the jump (only with the aimed jump on): at the densest mass ahead in reach. Otherwise the AI flies as a player
             // does, off the hills, by letting go of the dive on an upslope

@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
         readonly CrewSmallViewDoubleTap _pipTap = new();
         readonly GobyPistolButtons _buttons = new();
         CrewViewRender _render;
-        GameObject _view, _bodyGo; Camera _cam; bool _camLive; Quaternion _camRot; Vector3 _camPos, _camWindow;
+        GameObject _view, _bodyGo; Camera _cam; bool _camLive; Quaternion _camRot; Vector3 _camPos, _camWindow; float _camWidth;
         Mesh _torus; Material _ringMat, _lockMat, _bodyMat;
 
         GobyPistolConfigSO Config => config;
@@ -946,25 +946,27 @@ namespace CosmicShore.Gameplay
             if (!_cam) return;
             if (!showSideView) { _cam.enabled = false; _pip.Restore(); Draw3D(); return; }
             _pip.Layout(_cam, HumanInSeat, Config.PipSize, Config.ViewMargin);
-            // the side camera (the lab's sideCam, goby.html rounds 12-13): viewDistance from the plane, square to it and
-            // looking along +M from its back (so the frame's x runs left to right), BESIDE the Pistol; its lens is off-axis,
-            // so the screen shows viewWidth of the plane with the Pistol viewPistolAt from the centre and the downhill ahead,
-            // and the Pistol is never stretched at the edge of the wide lens a close camera needs. Eased, so a new
-            // stretch's frame turns in rather than cuts, and a jump lifts the view gently.
-            float W = Config.ViewWidth, D = Mathf.Max(20f, Config.ViewDistance);
-            float aspect = Mathf.Max(0.2f, _cam.pixelHeight > 0 ? (float)_cam.pixelWidth / _cam.pixelHeight : 1f), H = W / aspect;
-            float ahead = -Config.ViewPistolAt * W, top = Mathf.Max(_p.y, PistolPlane.Ground(_f, _p.x));
-            float cy = Mathf.Clamp(0.5f * (top + PistolPlane.Ground(_f, _p.x + ahead)) + 0.08f * H, _p.y - 0.4f * H, _p.y + 0.4f * H);
-            Vector3 wantPos = _f.ToWorld(_p.x, cy) - _f.M * D, wantWindow = _f.ToWorld(_p.x + ahead, cy);
+            // the side camera, Tiny Wings' (Garrett, 2026-10-22): square to the plane and looking along +M from its back (so
+            // the frame's x runs left to right), BESIDE the Pistol with an off-axis lens that looks ahead. It frames the
+            // ground near the bottom with the Pistol a third of the way in, and zooms out as the Pistol speeds up and flies
+            // high so the ground below never leaves the screen (PistolPlane.TinyWingsView); the camera pulls back with the
+            // zoom, so the lens never changes. Zooming out is quick and back in slow, so a landing never snaps the view.
+            float aspect = Mathf.Max(0.2f, _cam.pixelHeight > 0 ? (float)_cam.pixelWidth / _cam.pixelHeight : 1f);
+            float speed = _p.grounded ? _p.v : Mathf.Sqrt(_p.vx * _p.vx + _p.vy * _p.vy);
+            Vector2 centre = PistolPlane.TinyWingsView(_f, _p.x, _p.y, speed, Config.ViewWidth, Config.ViewMaxWidth, Config.ViewSpeedWiden,
+                Config.ViewPistolAt, Config.ViewGroundedAt, Config.ViewHeadroom, aspect, out float wantW);
+            _camWidth = !_camLive ? wantW : Mathf.Lerp(_camWidth, wantW, Mathf.Clamp01(Time.deltaTime * (wantW > _camWidth ? 3f : 0.8f)));
+            float W = _camWidth, H = W / aspect, D = Mathf.Max(20f, Config.ViewDistance) * W / Mathf.Max(1f, Config.ViewWidth);
+            Vector3 wantPos = _f.ToWorld(_p.x, centre.y) - _f.M * D, wantWindow = _f.ToWorld(centre.x, centre.y);
             var wantRot = Quaternion.LookRotation(_f.M, _f.Up);
-            float k = Mathf.Clamp01(Time.deltaTime * 4f), kp = Mathf.Clamp01(Time.deltaTime * 8f);
+            float k = Mathf.Clamp01(Time.deltaTime * 4f), kp = Mathf.Clamp01(Time.deltaTime * 6f);
             _camRot = _camLive ? Quaternion.Slerp(_camRot, wantRot, k) : wantRot;
             _camPos = _camLive ? Vector3.Lerp(_camPos, wantPos, kp) : wantPos;
             _camWindow = _camLive ? Vector3.Lerp(_camWindow, wantWindow, kp) : wantWindow;
             _camLive = true;
             Vector3 w = Quaternion.Inverse(_camRot) * (_camWindow - _camPos);
             float near = _cam.nearClipPlane;
-            PistolPlane.OffAxis(new Vector2(w.x, w.y), Mathf.Max(20f, w.z), W, H, near, out float fl, out float fr, out float fb, out float ft);
+            PistolPlane.OffAxis(new Vector2(w.x, w.y), Mathf.Max(5f, w.z), W, H, near, out float fl, out float fr, out float fb, out float ft);
             _cam.projectionMatrix = Matrix4x4.Frustum(fl, fr, fb, ft, near, _cam.farClipPlane);
             _cam.transform.SetPositionAndRotation(_camPos, _camRot);
             Draw3D();

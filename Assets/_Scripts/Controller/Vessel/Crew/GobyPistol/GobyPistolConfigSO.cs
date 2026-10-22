@@ -2,7 +2,6 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -54,32 +53,37 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(1f)] float lockKeepScale = 1.6f;
 
         [Header("The Pistol's ground (the dart's own trail on a flat plane)")]
-        [Tooltip("Degrees the travel from perch to perch runs downhill on the Pistol's screen, either way it rides. Past 33 " +
-                 "the hills could fold the ground back on itself (PistolPlane.MaxHillSlope).")]
-        [SerializeField, Range(0f, 33f)] float slopeDegrees = 22f;
-        [Tooltip("The rolling hills, u either side of the dart's line along the Goby's up: the long hills a dive and a " +
-                 "release are played on. A whole number of half-waves per dart, so zero at both perches. The Pistol's world is " +
-                 "shrimp-sized (Garrett, 2026-10-22: \"zoom in, make the shrimp smaller and make more wiggles\").")]
-        [SerializeField, Min(0f)] float rollAmplitude = 3.5f;
-        [Tooltip("The rolling hills' wavelength, u.")]
-        [SerializeField, Min(5f)] float rollWavelength = 60f;
-        [Tooltip("The humps on top of the rolls, u high. A flight off one clears a few of them.")]
-        [SerializeField, FormerlySerializedAs("hillAmplitude"), Min(0f)] float fineAmplitude = 1.6f;
-        [Tooltip("The humps' wavelength, u: a few humps are a small share of a 300-600 u journey.")]
-        [SerializeField, FormerlySerializedAs("hillWavelength"), Min(5f)] float fineWavelength = 10f;
+        [Tooltip("Degrees the travel from perch to perch runs downhill on the Pistol's screen, either way it rides: a gentle " +
+                 "lean, so the speed is the rider's to build (Tiny Wings' hills are level). Past 33 the hills could fold the " +
+                 "ground back on itself (PistolPlane.MaxHillSlope).")]
+        [SerializeField, Range(0f, 33f)] float slopeDegrees = 6f;
+        [Tooltip("Tiny Wings' hills (Garrett, 2026-10-22: \"the reference for the pistol is the game tiny wings\"): one train of " +
+                 "smooth hills along the Goby's up, this high, u, at their tallest. A whole number of half-waves per dart, so " +
+                 "the ground meets both perches.")]
+        [SerializeField, Min(0f)] float hillHeight = 1.8f;
+        [Tooltip("The hills' wavelength, crest to crest, u. A good flight clears one or two.")]
+        [SerializeField, Min(5f)] float hillWavelength = 18f;
+        [Tooltip("How much the hills' heights swell and fall along a dart (0: all alike; 0.5: down to half height between " +
+                 "runs of tall ones, like Tiny Wings' islands).")]
+        [SerializeField, Range(0f, 1f)] float hillSwell = 0.5f;
+        [Tooltip("The length of one swell, u: a run of tall hills to the next.")]
+        [SerializeField, Min(5f)] float swellWavelength = 108f;
         [Tooltip("A trail block every this many u along the dart.")]
         [SerializeField, Min(2f)] float trailBlockGap = 3f;
         [Tooltip("A trail block's size (x across, y thick, z along the dart).")]
         [SerializeField] Vector3 trailBlockScale = new(1.4f, 0.4f, 2.8f);
 
-        [Header("Pistol: the ride (Tiny Wings at shrimp scale: a 300-600 u dart is a 15-30 s journey for a rider who dives " +
-                "on the downslopes, and a flight off a hump clears a few humps)")]
-        [SerializeField, Min(1f)] float pGravity = 30f;
-        [SerializeField, Min(1f)] float pDiveMul = 2.2f;
+        [Header("Pistol: the ride (Tiny Wings: hold to dive down the slopes, let go and the crest throws it, land on the back " +
+                "of a hill to slide faster; a 300-600 u dart is a 15-30 s journey for a rider who plays it)")]
+        [SerializeField, Min(1f)] float pGravity = 18f;
+        [SerializeField, Min(1f)] float pDiveMul = 4f;
         [SerializeField, Min(0f)] float pMinSpeed = 4f;
-        [SerializeField, Min(0f)] float pDrag = 0.45f;
+        [SerializeField, Min(0f)] float pDrag = 0.15f;
         [Tooltip("Degrees between the velocity and the slope that still count as a smooth landing.")]
         [SerializeField, Min(0f)] float pGoodLand = 28f;
+        [Tooltip("Seconds in the air before a landing counts as a landing (smooth: the slide's speed; hard: a thud). A " +
+                 "shorter hop off a crest is a skip that keeps its speed.")]
+        [SerializeField, Min(0f)] float pMinAir = 0.25f;
         [Tooltip("The Pistol's body radius in its plane, u.")]
         [SerializeField, Min(0.5f)] float pBodyR = 0.5f;
         [Tooltip("How far either side of its plane the Pistol's body reaches, u (pulled-in mass lands inside it).")]
@@ -164,11 +168,19 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0.15f, 0.6f)] float pipSize = 0.32f;
         [Tooltip("The small view's gap from the screen's edges, as a fraction of the screen height.")]
         [SerializeField, Range(0f, 0.1f)] float viewMargin = 0.015f;
-        [Tooltip("How much of the plane the Pistol's screen shows across, u, at the plane.")]
-        [SerializeField, Min(50f)] float viewWidth = 120f;
-        [Tooltip("How far the Pistol's camera sits from its plane, u: close, so the world either side of the plane reads " +
-                 "in depth (the lab's and the first Unity side view's 160). Its lens is off-axis: the camera stays beside the " +
-                 "Pistol and the screen looks ahead, so the Pistol is never stretched at the edge of a wide lens.")]
+        [Tooltip("How much of the plane the Pistol's screen shows across at rest, u (Tiny Wings' close view, a few hills).")]
+        [SerializeField, Min(20f)] float viewWidth = 80f;
+        [Tooltip("The widest the Pistol's screen zooms out to, u, as it speeds up and flies high.")]
+        [SerializeField, Min(20f)] float viewMaxWidth = 240f;
+        [Tooltip("Width the screen adds per u/s of the Pistol's speed, u: faster shows further.")]
+        [SerializeField, Min(0f)] float viewSpeedWiden = 1f;
+        [Tooltip("Where the ground under a grounded Pistol sits on its screen, as a share of the height from the bottom.")]
+        [SerializeField, Range(0.05f, 0.6f)] float viewGroundedAt = 0.35f;
+        [Tooltip("The space kept above a flying Pistol, as a share of the screen's height: fly higher and the screen zooms out.")]
+        [SerializeField, Range(0.05f, 0.4f)] float viewHeadroom = 0.15f;
+        [Tooltip("How far the Pistol's camera sits from its plane at rest (viewWidth), u; it pulls back in step as the screen " +
+                 "zooms out, so the lens never changes. Its lens is off-axis: the camera stays beside the Pistol and the " +
+                 "screen looks ahead, so the Pistol is never stretched at the edge of the lens.")]
         [SerializeField, Min(20f)] float viewDistance = 160f;
         [Tooltip("Where the Pistol sits across its screen, as a share of the width from the centre (minus: left of it, so " +
                  "more of the downhill ahead shows).")]
@@ -185,8 +197,6 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(100f)] float aiHomeRadius = 1600f;
         [Tooltip("The Pistol AI heads back to an old den after waiting this long at the head perch, s.")]
         [SerializeField, Min(0f)] float aiBackAfter = 4f;
-        [Tooltip("The Pistol AI dives when this far above its ground, u.")]
-        [SerializeField, Min(0f)] float aiHighDive = 30f;
 
         [Header("Each seat's buttons on a phone (the Orca's gunner buttons are the pattern)")]
         [Tooltip("The Goby's Dart button (held to charge, let go to dart). A pad's RT, the keyboard's Q.")]
@@ -223,7 +233,7 @@ namespace CosmicShore.ScriptableObjects
         public float LockCone => lockCone;
         public float LockKeepScale => lockKeepScale;
         public float SlopeDegrees => slopeDegrees;
-        public PistolPlane.Hills Hills => new(rollAmplitude, rollWavelength, fineAmplitude, fineWavelength);
+        public PistolPlane.Hills Hills => new(hillHeight, hillWavelength, hillSwell, swellWavelength);
         public float TrailBlockGap => trailBlockGap;
         public Vector3 TrailBlockScale => trailBlockScale;
         public float BodyR => pBodyR;
@@ -257,6 +267,10 @@ namespace CosmicShore.ScriptableObjects
         public float ViewMargin => viewMargin;
         public float ViewWidth => viewWidth;
         public float ViewDistance => viewDistance;
+        public float ViewMaxWidth => viewMaxWidth;
+        public float ViewSpeedWiden => viewSpeedWiden;
+        public float ViewGroundedAt => viewGroundedAt;
+        public float ViewHeadroom => viewHeadroom;
         public float ViewPistolAt => viewPistolAt;
         public float DepthFullSpreadAt => depthFullSpreadAt;
         public float AiDartLength => aiDartLength;
@@ -277,7 +291,7 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>The ride's numbers; <c>pLaunchCd</c> is filled by the caller from <see cref="JumpCooldown"/>.</summary>
         public PistolBodyMath.Settings Body => new()
         {
-            pGravity = pGravity, pDiveMul = pDiveMul, pMinSpeed = pMinSpeed, pDrag = pDrag, pGoodLand = pGoodLand,
+            pGravity = pGravity, pDiveMul = pDiveMul, pMinSpeed = pMinSpeed, pDrag = pDrag, pGoodLand = pGoodLand, pMinAir = pMinAir,
             pLaunchRange = pLaunchRange, pLaunchSpeed = pLaunchSpeed, pLaunchCharges = pLaunchCharges, pLaunchCd = jumpCooldown.Value,
             pGhostTime = pGhostTime, pGhostCd = pGhostCd, pVortexCd = pVortexCd,
         };
@@ -290,7 +304,7 @@ namespace CosmicShore.ScriptableObjects
 
         public PistolAI.Settings AI => new()
         {
-            pLaunchRange = pLaunchRange, pVortexR = pVortexR, pVortexCapture = pVortexCapture, aiHighDive = aiHighDive, bodyHalfDepth = pBodyHalfDepth, aimedJump = aimedJump,
+            pLaunchRange = pLaunchRange, pVortexR = pVortexR, pVortexCapture = pVortexCapture, bodyHalfDepth = pBodyHalfDepth, pGravity = pGravity, pDiveMul = pDiveMul, aimedJump = aimedJump,
         };
     }
 }

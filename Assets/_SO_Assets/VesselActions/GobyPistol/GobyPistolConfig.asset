@@ -24,18 +24,19 @@ MonoBehaviour:
   lockRange: 1400
   lockCone: 12
   lockKeepScale: 1.6
-  slopeDegrees: 22
-  rollAmplitude: 3.5
-  rollWavelength: 60
-  fineAmplitude: 1.6
-  fineWavelength: 10
+  slopeDegrees: 6
+  hillHeight: 1.8
+  hillWavelength: 18
+  hillSwell: 0.5
+  swellWavelength: 108
   trailBlockGap: 3
   trailBlockScale: {x: 1.4, y: 0.4, z: 2.8}
-  pGravity: 30
-  pDiveMul: 2.2
+  pGravity: 18
+  pDiveMul: 4
   pMinSpeed: 4
-  pDrag: 0.45
+  pDrag: 0.15
   pGoodLand: 28
+  pMinAir: 0.25
   pBodyR: 0.5
   pBodyHalfDepth: 10
   pLaunchRange: 35
@@ -106,7 +107,11 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   pipSize: 0.32
   viewMargin: 0.015
-  viewWidth: 120
+  viewWidth: 80
+  viewMaxWidth: 240
+  viewSpeedWiden: 1
+  viewGroundedAt: 0.35
+  viewHeadroom: 0.15
   viewDistance: 160
   viewPistolAt: -0.2
   depthFullSpreadAt: 60
@@ -114,7 +119,6 @@ MonoBehaviour:
   aiWaitForPistol: 25
   aiHomeRadius: 1600
   aiBackAfter: 4
-  aiHighDive: 30
   dartButtonIcon: {fileID: 21300000, guid: 173cce5c2e60d5fe47fe15cfb2bfa249, type: 3}
   dartButtonLabel: 
   lockButtonIcon: {fileID: 21300000, guid: 13d97730f43e8a72a2b175f57a747ffe, type: 3}

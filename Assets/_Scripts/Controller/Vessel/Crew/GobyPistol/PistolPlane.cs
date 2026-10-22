@@ -61,43 +61,42 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The trail's two scales of hill, the two the lab's Pistol rode (<c>goby.html</c> rounds 12-13, Garrett: "lower
-        /// amplitude and higher frequency wiggles"): the ROLLS, which the Goby AI's weave in height laid there (18 u at
-        /// 0.55 Hz behind a 160 u/s Goby: about 290 u from crest to crest), the long hills a Tiny Wings dive and release
-        /// is played on; and the FINE zigzag of the trail's alternating hinges (every second 16 u block, 10 u up then
-        /// down: 64 u), the texture under the Pistol. A dart is straight, so neither comes from its flight any more; both
-        /// are laid along the Goby's up.
+        /// The trail's hills, Tiny Wings' (Garrett, 2026-10-22: "the reference for the pistol is the game tiny wings"): ONE
+        /// train of smooth hills, <see cref="Height"/> high and <see cref="Wavelength"/> from crest to crest, whose heights
+        /// swell and fall by <see cref="Swell"/> over <see cref="SwellWavelength"/> - runs of big hills and runs of small
+        /// ones, like the game's islands, and every hill a clean slope to dive down and a clean crest to fly off. Laid along
+        /// the Goby's up. (Rolls plus a fine zigzag, the shape before, left no slope a landing could be smooth on.)
         /// </summary>
         public struct Hills
         {
-            public float RollAmplitude, RollWavelength, FineAmplitude, FineWavelength;
+            public float Height, Wavelength, Swell, SwellWavelength;
 
-            public Hills(float rollAmplitude, float rollWavelength, float fineAmplitude, float fineWavelength)
+            public Hills(float height, float wavelength, float swell, float swellWavelength)
             {
-                RollAmplitude = rollAmplitude; RollWavelength = rollWavelength; FineAmplitude = fineAmplitude; FineWavelength = fineWavelength;
+                Height = height; Wavelength = wavelength; Swell = swell; SwellWavelength = swellWavelength;
             }
 
-            public bool IsFlat => RollAmplitude == 0f && FineAmplitude == 0f;
+            public bool IsFlat => Height == 0f;
         }
 
         /// <summary>Whole half-waves of <paramref name="wavelength"/> that fit a stretch <paramref name="length"/> long (at
         /// least one), so a hill of that scale is zero at both perches without fading: every dart, short or long, keeps
-        /// its wiggles right up to each perch.</summary>
+        /// its hills right up to each perch.</summary>
         public static int HalfWaves(float length, float wavelength) => Mathf.Max(1, Mathf.RoundToInt(2f * length / Mathf.Max(1f, wavelength)));
 
-        /// <summary>The steepest the trail's hills may climb or fall, dHill/ds. Under cot(slope) (2.5 at 22 deg) the ground
-        /// never folds back on the Pistol's screen; the two scales at full size reach about 1.4.</summary>
+        /// <summary>The steepest the trail's hills may climb or fall, dHill/ds. Under cot(slope) the ground never folds
+        /// back on the Pistol's screen.</summary>
         public const float MaxHillSlope = 1.5f;
 
-        /// <summary>The hill at <paramref name="s"/> along a line <paramref name="length"/> long: the rolls plus the fine
-        /// zigzag, each a whole number of half-waves (<see cref="HalfWaves"/>), so the ground meets both perches. A dart so
-        /// short that its hills would pass <see cref="MaxHillSlope"/> gets lower hills.</summary>
+        /// <summary>The hill at <paramref name="s"/> along a line <paramref name="length"/> long: whole half-waves
+        /// (<see cref="HalfWaves"/>), so the ground meets both perches, under the swell's envelope (1 at each perch, down to
+        /// 1 - swell between). A dart so short that its hills would pass <see cref="MaxHillSlope"/> gets lower hills.</summary>
         public static float Hill(float s, float length, in Hills h)
         {
             if (length <= 1e-4f || h.IsFlat || s <= 0f || s >= length) return 0f;
             float q = Mathf.PI * s / length;
-            int n = HalfWaves(length, h.RollWavelength), m = HalfWaves(length, h.FineWavelength);
-            return Calm(length, h, n, m) * (h.RollAmplitude * Mathf.Sin(n * q) + h.FineAmplitude * Mathf.Sin(m * q));
+            int m = HalfWaves(length, h.Wavelength), n = HalfWaves(length, h.SwellWavelength);
+            return Calm(length, h, n, m) * h.Height * Envelope(h.Swell, n * q) * Mathf.Sin(m * q);
         }
 
         /// <summary>dHill/ds.</summary>
@@ -105,15 +104,65 @@ namespace CosmicShore.Gameplay
         {
             if (length <= 1e-4f || h.IsFlat || s < 0f || s > length) return 0f;
             float k = Mathf.PI / length, q = k * s;
-            int n = HalfWaves(length, h.RollWavelength), m = HalfWaves(length, h.FineWavelength);
-            return Calm(length, h, n, m) * k * (h.RollAmplitude * n * Mathf.Cos(n * q) + h.FineAmplitude * m * Mathf.Cos(m * q));
+            int m = HalfWaves(length, h.Wavelength), n = HalfWaves(length, h.SwellWavelength);
+            float dEnv = -0.5f * h.Swell * n * k * Mathf.Sin(n * q);
+            return Calm(length, h, n, m) * h.Height * (dEnv * Mathf.Sin(m * q) + Envelope(h.Swell, n * q) * m * k * Mathf.Cos(m * q));
         }
 
-        /// <summary>1, or less where both scales together would climb steeper than <see cref="MaxHillSlope"/>.</summary>
+        static float Envelope(float swell, float phase) => 1f - 0.5f * Mathf.Clamp01(swell) * (1f - Mathf.Cos(phase));
+
+        /// <summary>1, or less where the hills would climb steeper than <see cref="MaxHillSlope"/>.</summary>
         static float Calm(float length, in Hills h, int n, int m)
         {
-            float steepest = Mathf.PI / length * (Mathf.Abs(h.RollAmplitude) * n + Mathf.Abs(h.FineAmplitude) * m);
+            float steepest = Mathf.PI / length * Mathf.Abs(h.Height) * (m + 0.5f * Mathf.Clamp01(h.Swell) * n);
             return steepest > MaxHillSlope ? MaxHillSlope / steepest : 1f;
+        }
+
+        /// <summary>The ground's signed curvature under frame-x <paramref name="x"/> (negative over a crest), and its slope.
+        /// The ride's liftoff reads it: a crest throws the Pistol when its speed needs more pull round the curve than
+        /// gravity gives (<c>PistolBodyMath.Step</c>).</summary>
+        public static float Curvature(in Frame f, float x, out float slope)
+        {
+            const float d = 0.25f;
+            Ground(f, x - d, out float a); Ground(f, x + d, out float b); Ground(f, x, out slope);
+            float ypp = (b - a) / (2f * d), w = 1f + slope * slope;
+            return ypp / (w * Mathf.Sqrt(w));
+        }
+
+        /// <summary>
+        /// Tiny Wings' camera on the Pistol's plane: the window of the plane the screen shows. The Pistol sits
+        /// <paramref name="pistolAt"/> of the width from the centre (left of it), the ground near the bottom; the window
+        /// widens with speed (<paramref name="speedWiden"/> u of width per u/s), and when the Pistol flies high the window
+        /// widens further, up to <paramref name="maxWidth"/>, so the ground below it never leaves the screen; past that it
+        /// rises with the Pistol. Frame (x, y) in, frame (x, y) of the window's centre and its width out.
+        /// </summary>
+        public static Vector2 TinyWingsView(in Frame f, float px, float py, float speed, float baseWidth, float maxWidth, float speedWiden,
+            float pistolAt, float groundedAt, float headroom, float aspect, out float width)
+        {
+            aspect = Mathf.Max(0.2f, aspect);
+            float lo = Mathf.Max(1f, baseWidth), hi = Mathf.Max(lo, maxWidth);
+            float W = Mathf.Clamp(lo + Mathf.Max(0f, speedWiden) * Mathf.Max(0f, speed), lo, hi);
+            float bottom = ViewBottom(f, px, W, aspect, pistolAt, groundedAt);
+            for (int pass = 0; pass < 4; pass++)
+            {
+                float need = (py - bottom) / Mathf.Max(0.05f, 1f - headroom);   // the height that keeps the Pistol under the headroom
+                if (need <= W / aspect || W >= hi) break;
+                W = Mathf.Min(hi, need * aspect);
+                bottom = ViewBottom(f, px, W, aspect, pistolAt, groundedAt);
+            }
+            float h = W / aspect;
+            if (py > bottom + (1f - headroom) * h) bottom = py - (1f - headroom) * h;   // at the widest: rise with it
+            width = W;
+            return new Vector2(px - pistolAt * W, bottom + 0.5f * h);
+        }
+
+        /// <summary>The bottom of a <paramref name="W"/> wide window: the ground under the Pistol at
+        /// <paramref name="groundedAt"/> of the height, or lower if the ground across the window falls further.</summary>
+        static float ViewBottom(in Frame f, float px, float W, float aspect, float pistolAt, float groundedAt)
+        {
+            float H = W / aspect, left = px - pistolAt * W - 0.5f * W, lowest = float.MaxValue;
+            for (int i = 0; i <= 12; i++) lowest = Mathf.Min(lowest, Ground(f, left + W * i / 12f));
+            return Mathf.Min(Ground(f, px) - groundedAt * H, lowest - 0.04f * H);
         }
 
         /// <summary>

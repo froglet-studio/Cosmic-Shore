@@ -296,6 +296,11 @@ enum before taking a value.
   fleet's restricted stance), moves it only with `TranslateShip`, and turns it for its own AI with `ApplyRotation`
   while the player's input is paused. Starting the platform `AIPilot` instead flies the hull like its donor.
 
+- **A ride that leaves the ground by comparing one frame's fall with the ground** (the Pistol, 2026-10-22). Its liftoff
+  then depends on the frame's length: at 120 steps a second the Pistol never flew, at 30 and 60 it flew at random points
+  and crashed onto hump fronts, so none of its landings was ever the smooth slide its whole ride was built round. Leave a
+  crest by curvature (v^2 times the curvature > g cos), step the ride at a fixed substep whatever the frame, and gate any
+  landing reward on real airtime. Measure a sidescroller's ride headless at 30, 60 and 120 fps before tuning it.
 - **A pilotless half.** Any path that takes a human off a half (swap, disconnect, pause, death of
   the partner) must hand the half to its AI in the same frame.
 - **Counting the seat twice.** Team size, backfill and scoreboards that count `IVessel`s, rather

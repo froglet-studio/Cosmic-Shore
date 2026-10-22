@@ -14,12 +14,14 @@
 > - "the goby may shoot into open space and make its own perch" **[stated]**. **[read]:** a dart that reaches nothing
 >   lays a small pad of its own blocks under the Goby there.
 > - "the slope from one perch to another should be a fun downhill for the shrimp" **[stated]**. **[read]:** each dart
->   lays its trail as the Pistol's ground at SHRIMP scale (second 2026-10-22 pass below): humps (`fineAmplitude` 1.6 /
->   `fineWavelength` 10) on rolls (`rollAmplitude` 3.5 / `rollWavelength` 60), each a whole number of half-waves per
->   dart so both meet both perches, and the Pistol's frame leans the stretch `slopeDegrees` 22 downhill whichever way
->   it rides (`PistolPlane`). A 300-600 u dart is a 15-30 s journey; flights off the humps clear a few of them; the
->   aimed jump is off (`aimedJump`). The side camera sits `viewDistance` 160 u off the plane with an off-axis lens and
->   shows `viewWidth` 120 u.
+>   lays its trail as the Pistol's ground, and the Pistol rides it as **Tiny Wings** (Garrett, 2026-10-22: "the
+>   reference for the pistol is the game tiny wings"; third pass below): one train of smooth hills (`hillHeight` 1.8,
+>   `hillWavelength` 18) whose heights swell and fall like the game's islands (`hillSwell` 0.5 over `swellWavelength`
+>   108), whole half-waves per dart so the ground meets both perches; a gentle `slopeDegrees` 6 lean downhill whichever
+>   way it rides (`PistolPlane`). Hold to dive down a slope, let go and the crest throws it, land on the back of a hill
+>   to slide faster; a 300-600 u dart is a 12-25 s journey for a rider who plays it; the aimed jump is off
+>   (`aimedJump`). The camera is Tiny Wings' (`PistolPlane.TinyWingsView`): close at rest (`viewWidth` 80 u), the
+>   ground low on the screen and the Pistol a third in, zooming out to `viewMaxWidth` 240 as it speeds up and flies.
 > - "the non-danger mass on either side of the pistol's plane (which no longer needs to bend at all) is pulled into that
 >   plane based on the pair's space. Space L5 pulls in shielded prisms too." **[stated]** The plane is FLAT: the
 >   unrolled ribbon and its warped view are retired. **[read]:** super-shielded and the pair's own prisms never move.
@@ -618,3 +620,40 @@ the line it settled.
   `GobyPistolTests.Ride_IsAFifteenToThirtySecondJourney_WithShortFlights` rides the SHIPPED asset over the shortest and
   the longest dart (12-32 s, longest flight under 15 % of the journey and six humps; control: the kit's first numbers
   under 12 s).
+- 2026-10-22, Garrett: "the reference for the pistol is the game tiny wings. Tune the camera etc. to get us closer to that
+  gameplay for the base movement of the pistol." Measured first, in a headless port of the ride (`PistolBodyMath.Step`)
+  with Tiny Wings' loop as the scorecard (dive the slope, let go in the valley, the crest throws it, land on a back
+  slope to slide faster, build speed over a run):
+  - **The ride never flew.** Its liftoff compared one frame's free fall with the ground (`yb > yg + 0.05`), so it
+    depended on the frame: at 120 steps a second the shrimp never left the ground, at 30 and 60 it left at random
+    points. The same rider took 16.5 s at 60 fps and 19.9 s at 30. And **no landing was ever smooth** (0 %): it fell
+    steeply onto the fronts of humps, so every flight cost 45 % of its speed. Tiny Wings' reward never happened.
+  - **The physics now (`PistolBodyMath.Ride`).** A crest throws the Pistol when its speed needs more pull round the
+    curve than gravity gives (v^2 times the curvature > g cos), so holding the dive keeps it down and letting go over a
+    crest flies it. Every frame is ridden in 1/120 s steps (`Substep`): a never-diving and an always-diving rider are
+    identical at 30 and 60 fps. A hop shorter than `pMinAir` 0.25 s is a skip (keeps its speed, earns nothing): before
+    that, frame-long hops each counted as a smooth landing's x1.04.
+  - **The hills (`PistolPlane.Hills`).** One train of smooth hills, heights swelling and falling, replaces rolls plus a
+    fine zigzag (which left no slope a landing could be smooth on). The lean is 6 deg (was 22): Tiny Wings' hills are
+    level, so speed is the rider's to build, and 22 deg of free speed drowned it.
+  - **The ride's numbers**, chosen by sweeping lean, hill size, gravity, dive and drag against the scorecard and then
+    checking 30 and 60 fps: `pGravity` 18, `pDiveMul` 4 (Tiny Wings' heavy dive), `pDrag` 0.15. Measured in the C#
+    (300 / 600 u darts, 60 fps): the rider who dives the slopes and lets go up them takes 11.4 / 24.6 s, flies 11 / 22
+    times, lands 10 / 17 of them as smooth slides, and its longest flight is ~36 u (two hills, 6-12 % of the journey);
+    one who never dives takes 29.7 / 56.9 s and never flies; one who never lets go takes 17.3 / 34.2 s and flies 2 / 5.
+  - **The Pistol AI** plays it the same way (`PistolAI.TinyWingsDive`): dive down slopes, let go up them, and in the
+    air dive only when that lands it at a smaller angle (the back of a hill). Its old "dive when high" rule
+    (`aiHighDive`) is gone.
+  - **The camera (`PistolPlane.TinyWingsView`).** Tiny Wings frames the ground, not the bird: the ground under the
+    Pistol sits `viewGroundedAt` 0.35 up the screen, the Pistol `viewPistolAt` a fifth left of centre (a third in);
+    the view widens by `viewSpeedWiden` 1 u per u/s, and when the Pistol flies high it zooms out to keep `viewHeadroom`
+    0.15 above it with the ground still on screen, up to `viewMaxWidth` 240 (then it rises with it). Out quickly, back
+    in slowly. The camera pulls back with the zoom (`viewDistance` 160 at the rest width of 80), so the lens never
+    changes (28 deg across: nearly flat, as Tiny Wings is 2D).
+  - Kept: the shrimp (`pBodyR` 0.5), `dartMinRange` 300, no aimed jump, no launch off the perch.
+  `GobyPistolTests`: `Ride_IsTinyWings_DiveLetGoFlySlide` (with the never-dive and never-let-go controls),
+  `Ride_IsTheSame_AtThirtyAndSixtyFps`, `TinyWingsView_KeepsTheGroundOnScreen_AndZoomsOutToFly`,
+  `Ground_IsATrainOfTinyWingsHills` (the control: no swell, hills alike). Their logic was run in .NET against the
+  three pure files (all pass); the editor run is T-20261022-bc36. **[read] for Garrett:** the never-diving rider takes
+  ~57 s on a full dart, Tiny Wings' penalty for not playing; at 30 fps a skilled run's longest flight reached 81 u once
+  (4.5 hills, 14 % of the journey).
