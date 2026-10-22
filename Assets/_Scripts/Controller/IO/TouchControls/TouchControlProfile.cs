@@ -117,6 +117,11 @@ namespace CosmicShore.Gameplay
                  "back pitches. The Manta's soar, the Thresher's launch aim.")]
         public bool tiltSteersWhileIdle;
 
+        [Tooltip("Turns the idle tilt steer over on both axes: wheel-turn right yaws left, tipping the top edge " +
+                 "away pitches as a pulled-back thumb. Invert Y still applies on top. The Manta (Garrett, " +
+                 "2026-10-22: both left/right and up/down were the opposite of his expectation).")]
+        public bool flipTiltSteer;
+
         [Header("Both thumbs off")]
         [Tooltip("With no thumb on the glass, both analog triggers read fully pulled - the Rhino energizes " +
                  "its sword the way two held triggers do on a pad.")]
