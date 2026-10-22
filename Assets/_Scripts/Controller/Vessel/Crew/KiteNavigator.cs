@@ -435,9 +435,10 @@ namespace CosmicShore.Gameplay
             if (_status != null) CrewSeatChoice.Set(_status.VesselType, want);
         }
 
-        // The seat last picked on this hull class (on the lowest preset, always the Wrasse) is taken once the hull is really the person's: flown by them (not parked
-        // on its AI by a menu or the Vessel Changer's hand-over, which ShouldRun already waits out) with live input (not a
-        // countdown, a modal or the pause menu), so taking the seat never fights whatever holds the hull at a bind.
+        // The seat last picked on this hull class (on the lowest preset, always the Wrasse) is taken once the hull is really
+        // the person's: flown by them (not parked on its AI by a menu or the Vessel Changer's hand-over, which ShouldRun
+        // already waits out) with live input (not a countdown, a modal or the pause menu), so taking the seat never fights
+        // whatever holds the hull at a bind.
         void ApplySeatChoice()
         {
             if (!_seatChoicePending) return;
