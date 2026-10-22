@@ -3,8 +3,8 @@
 
 A crew vessel is one hull class whose prefab carries a second seat: a component that implements ICrewSeat
 (Assets/_Scripts/Controller/Vessel/Crew/CrewSeat.cs). Today: the Goby (GobyPistolDuo, card "Goby and Pistol"). The
-Wrasse ("Wrasse and Grouper"), the Marlin ("Marlin and Jacks") and the Honeyguide ("Honeyguide and Ratel") name a crew
-but their seats (bleeding-edge's KiteNavigator, MarlinCrewBodies, HoneyguideCrew) move onto ICrewSeat in KITE_NAVIGATOR.md's "Two humans, two seats" work order, step 2;
+Wrasse ("Wrasse and Grouper") and the Honeyguide ("Honeyguide and Ratel") name a crew
+but their seats (bleeding-edge's KiteNavigator, HoneyguideCrew) move onto ICrewSeat in KITE_NAVIGATOR.md's "Two humans, two seats" work order, step 2;
 until then they are PENDING below, and the gate fails the day one of them carries a seat so the entry is removed. The contract is .claude/skills/duo-vessel/SKILL.md "One notion of a
 crew vessel"; this gate holds the parts of it a file can show:
 
@@ -39,7 +39,6 @@ ENUM = os.path.join(SCRIPTS, "Data", "Enums", "VesselClassType.cs")
 # crew work on bleeding-edge: never re-home their seats from this gate).
 PENDING = {
     "Wrasse": "KiteNavigator joins ICrewSeat: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md, work order step 2",
-    "Marlin": "MarlinCrewBodies joins ICrewSeat with the Wrasse (the same work order)",
     "Honeyguide": "HoneyguideCrew joins ICrewSeat in the same work order (KITE_NAVIGATOR.md names the Honeyguide and Ratel)",
 }
 

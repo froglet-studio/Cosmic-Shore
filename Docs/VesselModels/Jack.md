@@ -1,8 +1,8 @@
-# Jack: the herders of Marlin and Jacks
+# Jack: the two fish of the Jacks (Marlin and Jacks until 2026-10-21)
 
 > A NEW body (2026-10-21), built by `/vessel-model` from `Tools/Build/vessel_model/specs/jack.py`, which started from
-> the Wrasse kite's spec so one swim drives both (`WrasseCrewBodies`, `MarlinCrewBodies`). There is no artist file.
-> Until now the jacks were rings and dots (`R_VesselActions/MARLIN_JACKS.md` §5).
+> the Wrasse kite's spec so one swim drives both (`WrasseCrewBodies`, `JacksBodies`). There is no artist file.
+> Until now the jacks were rings and dots (`R_VesselActions/JACKS.md` §5).
 
 ## Brief
 
@@ -25,8 +25,9 @@ thumbs, seen mostly from straight above in the jacks' view:
 - **Nodes**: mesh `mesh` and armature `rig`; root bone `hull`.
 - **Bones**: the kite's: `hull`; `spine.1` -> `spine.2` -> `tail`; `fin.L` / `fin.R`. The body and its two vanes are
   weighted along the spine; every other part is rigid.
-- **Size**: 16 units snout to fork, centred on its origin. Two instances in `Marlin.prefab` ('Jack A', 'Jack B'),
-  scaled by `MarlinCrewBodies.jackModelScale` (2.5: 40 units long).
+- **Size**: 16 units snout to fork, centred on its origin. Two instances in `Jacks.prefab` ('Jack A', 'Jack B'),
+  scaled by `JacksBodies.jackModelScale` while herding (2.5: 40 units long) and `flightModelScale` while flying (1: 16
+  units), when they ARE the hull. Also the class card (`render_cards.py Jacks`).
 - **Shape keys**: Charge (the head juts, the dorsal lobe stands) 4.2%; Mass (the body deepens) 10.3%; Space (the fins
   reach, the fork spreads) 12.7%; Time (the vanes sweep, the fork stretches) 10.7%.
 - **Takes**: three documentation poses, `beatleft` / `beatright`, `flare`.

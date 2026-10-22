@@ -1,8 +1,12 @@
-# Marlin: the hull of Marlin and Jacks
+# Marlin: saved for a swordsman (was the hull of Marlin and Jacks)
+
+> **Not drawn by any prefab since 2026-10-21.** Garrett reduced Marlin and Jacks to the Jacks ("save the marlin as a
+> proper swordsmen, not overshadowed by the jacks"; `R_VesselActions/JACKS.md`). The model and its spec stay for a
+> rapier vessel of its own, which takes a new class id. Everything below describes the model as it was built and drawn.
 
 > A NEW hull (2026-10-21), built by `/vessel-model` from `Tools/Build/vessel_model/specs/marlin.py` to the fleet
 > convention (`.claude/skills/vessel-model/references/FLEET_CONVENTION.md` 1-4). There is no artist file. It replaces
-> the Rhino rig that `Marlin.prefab` drew (`Assets/_Scripts/Controller/Vessel/R_VesselActions/MARLIN_JACKS.md` §5).
+> the Rhino rig that `Marlin.prefab` drew (`Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md` §5).
 
 ## Brief
 
@@ -30,7 +34,7 @@ Rhino's rig (two sticks and the ramp):
 - **Bones**: `hull`; `sail`; `fin.L` / `fin.R`; `tail.1` -> `tail.2`. Rigid skinning, one bone per part.
 - **In the prefab**: nested under `Rhino_Test (1)` (the fuselage part `RhinoAnimation` turns) at local z -2, so the
   Rhino's five hull colliders still cover the body (the spear reaches about 4 units past them). The Rhino's rig stays,
-  inactive. `MarlinCrewBodies` poses the bones by name.
+  inactive. `MarlinCrewBodies` (retired 2026-10-21) posed the bones by name.
 - **Slots**: 0 Domain, 1 Body, 2 Window, 3 Engine.
 - **Shape keys**, as travel in % of the diagonal:
 

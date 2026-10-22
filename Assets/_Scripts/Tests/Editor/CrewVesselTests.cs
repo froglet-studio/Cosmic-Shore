@@ -12,7 +12,7 @@ namespace CosmicShore.Tests
     /// vessel"): one hull class that carries ONE seat (an <see cref="ICrewSeat"/>), a card that names both subvessels
     /// (SO_Vessel.CrewNames joined by CrewNameTemplate) while Name stays the one-word key, and a place on the Vessel
     /// Changer's roster. Tools/Build/check_crew_vessels.py holds the same from the files, with negative controls. The Wrasse
-    /// and the Marlin join when their seats move onto ICrewSeat (KITE_NAVIGATOR.md, "Two humans, two seats", step 2).
+    /// and the Honeyguide join when their seats move onto ICrewSeat (KITE_NAVIGATOR.md, "Two humans, two seats", step 2).
     /// </summary>
     public class CrewVesselTests
     {
