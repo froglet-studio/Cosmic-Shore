@@ -171,6 +171,7 @@ namespace CosmicShore.Gameplay
 
         private bool triggersPulledByIdle;
         private readonly TouchTilt tilt = new();
+        private readonly TouchAttitudeRoll attitudeRoll = new();
 
         // A held AIM button's finger (FlightTouchClaims.AddAim): its drag is the right stick.
         private bool hasAimTouch;
@@ -252,6 +253,7 @@ namespace CosmicShore.Gameplay
                 // and charging, or a Sparrow kept firing, with the pilot's hands off the screen.
                 StopStickEffects();
                 ReleaseSpeedEffects();
+                ReleaseHeldRoll();
                 ResetInput();
                 inputStatus.Idle = true;
                 ApplyIdleControls();
@@ -356,7 +358,7 @@ namespace CosmicShore.Gameplay
             inputStatus.RightTriggerAnalog = 0f;
         }
 
-        private enum TiltMode { None, Roll, Steer }
+        private enum TiltMode { None, Steer }
         private TiltMode tiltMode;
 
         /// <summary>Tilt is measured from where the phone was when it took over, so every change of what
@@ -369,15 +371,42 @@ namespace CosmicShore.Gameplay
             else tilt.Engage();
         }
 
-        /// <summary>The Dolphin's one-thumb roll: with one thumb flying, the axis the second thumb gave
-        /// (roll, <c>YDiff</c>) comes from turning the phone like a wheel - clockwise banks right.</summary>
+        /// <summary>
+        /// The Dolphin's aim (one thumb flying, the other lifted): the phone is an augmented-reality window
+        /// on the roll axis. The hull rolls exactly as far as the phone has turned like a wheel since the
+        /// aim began, clockwise banks right, up to the library's limit either side (Garrett, 2026-10-22:
+        /// "1 to 1 roll like augmented reality not a control that sends the vessel into a roll"). It used
+        /// to write the tilt into <c>YDiff</c>, a roll RATE, so a held tilt kept the hull rolling. The angle
+        /// goes to the transformer as is; <c>YDiff</c> reads zero so nothing else sees a roll stick.
+        /// </summary>
         private void ApplyOneThumbTiltRoll()
         {
-            bool wanted = Profile != null && Profile.tiltRollOnOneThumb && oneThumbActive;
-            SetTiltMode(wanted ? TiltMode.Roll : TiltMode.None);
-            if (!wanted) return;
-            var stick = tilt.Sample(Time.deltaTime, TouchControlProfileLibrarySO.Instance);
-            inputStatus.YDiff = Mathf.Clamp(stick.x, -1f, 1f);
+            // A thumb is down, so idle's tilt steer (Manta, Thresher) stands down and re-takes its
+            // neutral next time.
+            SetTiltMode(TiltMode.None);
+
+            bool rollHull = Profile != null && Profile.tiltRollOnOneThumb;
+            if (rollHull) TouchAttitudeRoll.Warm();
+            if (!rollHull || !oneThumbActive)
+            {
+                ReleaseHeldRoll();
+                return;
+            }
+
+            if (!attitudeRoll.Engaged) attitudeRoll.Engage();
+            var tuning = TouchControlProfileLibrarySO.Instance;
+            inputStatus.HeldRollDegrees = attitudeRoll.Sample(tuning ? tuning.TiltRollMaxDegrees : 90f);
+            inputStatus.HoldsRollAngle = true;
+            inputStatus.YDiff = 0f;
+        }
+
+        /// <summary>Ends the held roll; the hull keeps the roll it was left at.</summary>
+        private void ReleaseHeldRoll()
+        {
+            if (attitudeRoll.Engaged) attitudeRoll.Disengage();
+            if (!inputStatus.HoldsRollAngle) return;
+            inputStatus.HoldsRollAngle = false;
+            inputStatus.HeldRollDegrees = 0f;
         }
 
         /// <summary>Tilt as a thumb: wheel-turn is the stick's x, and tipping the top edge away is the
@@ -524,6 +553,7 @@ namespace CosmicShore.Gameplay
         {
             EndIdleControls();
             SetTiltMode(TiltMode.None);
+            ReleaseHeldRoll();
             if (!idlePressed) return;
             idlePressed = false;
             inputStatus.OnButtonReleased.Raise(InputEvents.IdleAction);
