@@ -21,7 +21,8 @@ it**; see "Round 4" below. The rounds after 3 are not in the lab yet (task `T-20
 - **The views:** the kite view is a second, top-down orthographic camera drawn by the game. It is a small square in the
   lower left while you pilot and full screen while you navigate, with the pilot camera swapped into the square. Out of
   the plane, prisms open with distance FROM the plane and dither in a cone above it. The pilot sees a faint kite and
-  faint dots.
+  faint dots. The kite view's marks (kite, tail, cord, motes, lasso, juice) skip its post-processing, like UI, and
+  its orthographic lens carries no Panini (round 11).
 - **The HUD:** the Time card counts saved boosts, Charge the kite's rams, Space the last blast's kills, and Mass flashes
   on a cluster (`WrasseHUDController`).
 - **L5s:** Mass clusters arrive shielded, Charge steals instead of knocking crystals loose, Space breaks shields and
@@ -359,6 +360,20 @@ How it was checked:
 - `KiteNavigatorJuiceTests` (4 tests) check that every effect draws, stays finite and ends; that the Mass blocks are gone
   when the prisms take over; that a fizzle is petals only; and that the charge and boosts wait for their petals. Planted
   defects fail them.
+
+## Round 11: the marks are UI, no Panini on the map (Garrett, 2026-10-22)
+
+"the wrasse view has the post processing applied to the lasso icons which mutes their color distinguishment and causes
+their icons to blend in with the environment crystals. so lets treat them like UI and not post process them. furthermore
+we should not be applying the panini transform to an orthographic view. that is causing the lower horizontal bar to get
+bowed into a curve."
+- **Marks without post:** an overlay camera (`KiteNavigatorMarks`, a child of the kite camera, on its URP camera stack)
+  has post-processing off and sees only the `3D UI` layer, which nothing in a scene or prefab uses. Every kite-view
+  mark is drawn for it on that layer, so it lands after the world's bloom and tonemapper and keeps its true limes. The
+  world under the lens keeps the game's post-processing. The pilot view's faint marks are unchanged.
+- **No Panini:** the kite camera updates its own volume stack each frame (`VolumeFrameworkUpdateMode.ViaScripting`) and
+  holds `PaniniProjection.distance` at 0 in it. Panini is a perspective lens (the speed tunnel drives it on the shared
+  profile), and on the orthographic map it bowed straight edges into curves. The pilot camera still gets it.
 
 ## Seats: the swap is the arena's
 

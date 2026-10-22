@@ -2028,3 +2028,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** any session; Garrett to sign off
 - **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
 - **See:** goby-and-pistol.md top section; Tools/Build/studio_to_unity/clones.json 'Goby & Pistol'.retired
+
+### T-20261022-a4ab · open · test · crew
+- **Task:** Play the Wrasse in Unity (Toybox Vessel Changer > Wrasse) and navigate: the lasso motes, kite, tail and cord in the kite view keep their distinct limes against crystals (no bloom/tonemap on them), and the view's straight edges, the lower bar included, stay straight while the speed tunnel's Panini is on
+- **Done when:** Marks read crisp and distinct from crystals; no bowed edges in the kite view; pilot view unchanged
+- **Who can take it:** Garrett (Wrasse owner), Yash (offered)
+- **Added:** 2026-10-22 by a Claude session (`cece/dazzling-volta-apzw2m`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md Round 11
