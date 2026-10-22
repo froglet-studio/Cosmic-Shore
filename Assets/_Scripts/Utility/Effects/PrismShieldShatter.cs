@@ -149,16 +149,19 @@ namespace CosmicShore.Utility
         {
             if (sharedShieldMesh == null || host == null)
                 return Refuse("the shield mesh or its host was null");
-            if (!PrismRenderService.Enabled)
+            // No Entities Graphics on this device (a WebGL2 browser): the same shards, computed below with the
+            // same arithmetic, are drawn by the capped MeshRenderer carrier (Docs/PRISM_ANIMATION.md §4.11).
+            bool meshRendererPath = PrismMeshRendererStamps.Active;
+            if (!meshRendererPath && !PrismRenderService.Enabled)
                 return Refuse($"PrismRenderService is off [{PrismRenderService.StatusLine()}]");
             // Play-mode exit / quit: a shield broken by the teardown cascade must not re-create
             // the DontDestroyOnLoad host (it would leak as [PrismShieldShatter]).
             if (PrismRenderService.IsQuitting)
                 return Refuse("the session is shutting down (play-mode exit / quit)");
-            if (Time.unscaledTime < s_suspendedUntil)
+            if (!meshRendererPath && Time.unscaledTime < s_suspendedUntil)
                 return Refuse($"a batch spawn failed within the last {SuspendSeconds:F0}s, so " +
                               "shatter overlays are on a cooling-off hold");
-            if (!PrismDebris.TryGetExplosionConfig(out _, out float minSpeed, out float maxSpeed))
+            if (!PrismDebris.TryGetExplosionConfig(out var debrisMaterial, out float minSpeed, out float maxSpeed))
                 return Refuse("the explosion-debris pipeline is unconfigured — PrismFactory has " +
                               "not come up with an explosionPool prefab yet, so there is no mesh, " +
                               "material or clamp band to shed against");
@@ -186,6 +189,17 @@ namespace CosmicShore.Utility
                 flight.y / Mathf.Max(1e-4f, Mathf.Abs(scale.y)),
                 flight.z / Mathf.Max(1e-4f, Mathf.Abs(scale.z)));
             float pad = 4f + 0.25f * Unity.Mathematics.math.length(objDisp);
+
+            if (meshRendererPath)
+            {
+                // A shield face is one triangle with its centroid baked into TEXCOORD1 — the same
+                // FacePivotFromCentroid the entity shards carry below.
+                if (PrismMeshRendererDebris.TrySpawnExplosion(sharedShieldMesh, debrisMaterial, layer,
+                        position, rotation, scale, bright, dark, velocity, speed, duration, in objDisp, pad,
+                        facePivotFromCentroid: 1f))
+                    return true;
+                return Refuse("the MeshRenderer debris carrier could not be created (quitting, or no debris material)");
+            }
 
             GetOrCreateGroup(sharedShieldMesh, layer).Spawns.Add(
                 new PrismRenderService.ExplosionDebrisSpawn

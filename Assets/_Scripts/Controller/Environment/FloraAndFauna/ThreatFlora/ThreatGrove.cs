@@ -125,7 +125,9 @@ namespace CosmicShore.Gameplay
             Vector3 delta = end - start;
             if (duration <= 1e-3f || delta.sqrMagnitude < 1e-4f) return;
             Vector3 v = delta * (Mathf.PI / (2f * duration));
-            PrismRenderService.StampFlight(in prism.RenderHandle, PrismClock.Now, duration, new float3(v.x, v.y, v.z));
+            var fv = new float3(v.x, v.y, v.z);
+            if (!PrismRenderService.StampFlight(in prism.RenderHandle, PrismClock.Now, duration, fv))
+                PrismMeshRendererStamps.StampFlight(prism.StampRenderer, PrismClock.Now, duration, in fv); // §4.11 twin
         }
 
         /// <summary>Glow a prism into (or out of) its domain's DANGER palette over duration, without making it

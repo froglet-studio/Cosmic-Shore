@@ -124,7 +124,10 @@ namespace CosmicShore.Utility
         public static bool TryRequest(Vector3 position, Quaternion rotation, Vector3 scale,
             Color bright, Color dark, Vector3 velocity, Vector3 cutPoint, Vector3 cutNormal)
         {
-            if (s_quitting || !PrismRenderService.Enabled) return false;
+            // A device without Entities Graphics (Docs/PRISM_ANIMATION.md §4.11) has no carrier for the cut's
+            // hand-written DOTS shader, so it refuses and the factory explodes the prism — which that device
+            // does draw — instead of queueing halves that could never spawn.
+            if (s_quitting || !PrismRenderService.Enabled || PrismMeshRendererStamps.Active) return false;
             if (Time.unscaledTime < s_suspendedUntil) return false;
             // The halves render on the explosion debris' layer, so a slice is only as available
             // as the explosion it replaces (PrismFactory configures that first).

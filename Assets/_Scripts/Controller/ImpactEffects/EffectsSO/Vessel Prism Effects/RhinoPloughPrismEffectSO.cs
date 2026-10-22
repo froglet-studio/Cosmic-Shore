@@ -118,12 +118,23 @@ namespace CosmicShore.Gameplay
             if (flight.sqrMagnitude < 1e-4f) return;
             // StampFlight's full vector is v * 2T / pi, so v = flight * pi / (2T).
             Vector3 v = flight * (Mathf.PI / (2f * seconds));
-            if (!PrismRenderService.StampFlight(in prism.RenderHandle, PrismClock.Now, seconds,
-                    new float3(v.x, v.y, v.z)))
+            var fv = new float3(v.x, v.y, v.z);
+            Vector3 local;
+            if (!PrismRenderService.StampFlight(in prism.RenderHandle, PrismClock.Now, seconds, fv))
+            {
+                // No Entities Graphics on this device (Docs/PRISM_ANIMATION.md §4.11): the same stamp and
+                // envelope on the MeshRenderer, which clears itself at arrival. False everywhere else.
+                if (!PrismMeshRendererStamps.StampFlight(prism.StampRenderer, PrismClock.Now, seconds, in fv))
+                    return;
+                local = prism.transform.InverseTransformPoint(start);
+                PrismMeshRendererStamps.ResetBounds(prism.StampRenderer);
+                PrismMeshRendererStamps.EncapsulateBoundsPoint(prism.StampRenderer,
+                    new float3(local.x, local.y, local.z), 1f);
                 return;
+            }
             // The render bounds sit on the new anchor; cover the start too, or the sliding visual
             // frustum-culls against its resting box (BuilderPrismWorld.Settle does the same).
-            Vector3 local = prism.transform.InverseTransformPoint(start);
+            local = prism.transform.InverseTransformPoint(start);
             PrismRenderService.EncapsulateBoundsPoint(in prism.RenderHandle,
                 new float3(local.x, local.y, local.z), 1f);
         }
