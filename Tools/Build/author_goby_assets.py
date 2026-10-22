@@ -14,13 +14,23 @@ WHAT IT MAKES (the duo brief: .claude/skills/duo-vessel/references/designs/goby-
         - the model: the Goby's own hull, Assets/_Models/Vessel Models/Goby.fbx (specs/goby.py, /vessel-model), built on
           the Squirrel's rig and names, so every reference the clone makes into the Squirrel's model binds it by a guid
           swap (Unity derives a model's sub-object ids from type + name); the Squirrel's Animator controller drives it
-      DefaultThrottleScaler = the lab's gCruise (the Goby zips, Garrett 2026-10-16; studio_to_unity maps the same line);
-      everything else is the Squirrel's: the Goby turns on its numbers and has its abilities [stated, 2026-10-14];
-      the duo's own element row (primer, flares) is an open design question, not filled here.
+      DefaultThrottleScaler = 160 (the Goby's own number; it never cruises now: the seat pins it, see below);
+        - THE GOBY'S OWN KIT, not the Squirrel's (Garrett, 2026-10-22: "it should not have the squirrels abilities or be
+          anything like the squirrel. it should be a goby with its own kit that represents a goby and synergizes with
+          the pistol and its kit"). Retrofitted onto the committed prefab, idempotently:
+            * the Squirrel's active kit is stripped: the tube (boost ring) and drift executors' subtrees and the drift
+              audio (strip_squirrel_kit; nothing may dangle);
+            * the hull's input bindings are the Goby's two buttons (CrewButtonActionSO): Dart on Button3Action and Lock
+              on Button4Action (a pad's X / Y, keys Q / F, the Goby's phone buttons), and on a pad also RT (Dart) and LT
+              (Lock); the Squirrel's thumb-lift overrides are gone, so lifting a thumb while aiming fires nothing;
+            * Resources/ElementalAbilityMaps/Goby.asset is the Goby & Pistol's own four cards (GOBY_MAP).
+          NOT stripped (it needs the editor): the Squirrel's skimmer, which still collects crystals and carries the
+          Squirrel's passive skimmer effects (team task in Docs/TEAM_TASKS.md).
+    Assets/_SO_Assets/VesselActions/Common Vessel Action/CrewButton0.asset, CrewButton1.asset (+ .meta).
     SO_Class_Goby (owned from the start, the Squirrel's icons as placeholders) + its entry in
     SO_Classlist_All / _Classes; one entry each in `Vessel Prefab Container.asset` (the root TRANSFORM) and
-    `DefaultNetworkPrefabs.asset` (the root GAMEOBJECT); Resources/ElementalAbilityMaps/Goby.asset (the
-    Squirrel's map, unchanged but for its name and class); and four CrystalHullFusionConfig entries
+    `DefaultNetworkPrefabs.asset` (the root GAMEOBJECT); Resources/ElementalAbilityMaps/Goby.asset (the Goby's
+    own map, above); and four CrystalHullFusionConfig entries
     (copied from the Squirrel's: their bakes read STALE against the Goby's own hull, so the game solves them on a worker
     thread until FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions writes the Goby's own; one per element).
     The toybox roster (ToyVesselRoster.Default) is CODE and is not written here (vessel skill rule 40).
@@ -82,6 +92,122 @@ CARD_LARGE = _model_card("Assets/_Graphics/CardImages/Goby_large.png")
 CARD_PREVIEW = _model_card("Assets/_Graphics/Design Assests/Hangar/Goby_Hangar_Preview.png")
 AI_LEVEL_HARD = 3                            # AIDifficulty.Hard
 
+# The Goby's own buttons (CrewButtonActionSO): one stateless asset per button, sent to the seat on the hull.
+CREW_BUTTON_SCRIPT_META = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "Vessel", "Crew", "CrewButtonActionSO.cs.meta")
+COMMON_ACTIONS = os.path.join(ROOT, "Assets", "_SO_Assets", "VesselActions", "Common Vessel Action")
+CREW_BUTTONS = ((os.path.join(COMMON_ACTIONS, "CrewButton0.asset"), "ff32ad613c6545e6b07b792aad55ff3c", "CrewButton0", 0),
+                (os.path.join(COMMON_ACTIONS, "CrewButton1.asset"), "a78d39c97374404a9a4e1bd8620d884f", "CrewButton1", 1))
+BUTTON3_ACTION, BUTTON4_ACTION = 8, 14       # InputEvents: a pad's X / Y, keys Q / F
+MAP_SCRIPT_GUID = "4b3f2a8c8f344355b16a4d4296ae3f98"   # ElementalAbilityMapSO
+RIGHT_STICK_ACTION, LEFT_STICK_ACTION = 1, 2 # InputEvents: a pad's RT / LT (and a phone's thumb lifts, left unbound on touch)
+SQUIRREL_SUBTREES = ["SquirrelTubeActionExecutor", "DriftTrailActionExecutor"]
+SQUIRREL_COMPONENTS = ["DriftAudioController"]
+
+# The Goby's own impact containers: the Squirrel's, minus the Squirrel's kit (Garrett, 2026-10-22). The hull keeps the
+# fleet's prism damage, danger debuff and haptics; the skimmer keeps only its haptics and forcefield crackle (it still
+# collects crystals: that is the crystal's impactor, not these lists).
+CONTAINERS = os.path.join(ROOT, "Assets", "_SO_Assets", "Effects", "Effect Containers")
+GOBY_CONTAINERS = [
+    # (squirrel container, goby container, goby guid, effects dropped)
+    (os.path.join(CONTAINERS, "VesselContainers", "SquirrelImpactorDataContainer.asset"),
+     os.path.join(CONTAINERS, "VesselContainers", "GobyImpactorDataContainer.asset"), "93b182e9a1994f0b9afdfd8120ab00ad",
+     ["SquirrelVesselHapticsByPrismEffect", "VesselResetBoostPrismEffect", "SquirrelVesselChangeSpeedByPrism",
+      "SquirrelVesselExplosionByCrystalEffect", "SquirrelVesselWitherLifeformByCrystalEffect", "SquirrelCrystalMorphByCrystal"]),
+    (os.path.join(CONTAINERS, "SkimmerContainers", "SquirrelSkimmerImpactorDataContainer.asset"),
+     os.path.join(CONTAINERS, "SkimmerContainers", "GobySkimmerImpactorDataContainer.asset"), "69e574b928414a7f98965dbccb9473d1",
+     ["VesselExplosionBySkimmerEffect", "VesselOvertakeBySkimmerEffect", "VesselCombatHitByJoust", "SkimmerBoostPrismEffect",
+      "SkimmerStealPrismEffect"]),
+]
+
+
+def asset_guid(name: str) -> str:
+    for dirpath, _, files in os.walk(os.path.join(ROOT, "Assets")):
+        if name + ".asset.meta" in files:
+            return guid_of(os.path.join(dirpath, name + ".asset.meta"))
+    raise RuntimeError(f"no asset named {name}")
+
+
+def goby_container(squirrel_text: str, drop) -> str:
+    """The Squirrel's container without the effects in `drop`, named for the Goby, its omni retirement cleared."""
+    guids = {asset_guid(n) for n in drop}
+    out = []
+    for line in squirrel_text.splitlines(keepends=True):
+        m = re.search(r"guid: (\w+)", line)
+        if m and m.group(1) in guids:
+            if line.startswith("  omniCrystalRetirement:"):
+                out.append("  omniCrystalRetirement: {fileID: 0}\n")
+            continue
+        out.append(line)
+    text = "".join(out).replace("m_Name: Squirrel", "m_Name: Goby", 1)
+    return re.sub(r"^(  \w+):\n(?=  [a-zA-Z_])", r"\1: []\n", text, flags=re.M)   # an emptied list prints as []
+
+
+def swap_containers(text: str) -> str:
+    """Goby.prefab's references to the Squirrel's containers point at the Goby's. Idempotent."""
+    for squirrel, _, goby_guid, _ in GOBY_CONTAINERS:
+        text = text.replace(f"guid: {guid_of(squirrel + '.meta')},", f"guid: {goby_guid},")   # YAML may wrap before "type"
+    return text
+
+
+def author_containers():
+    for squirrel, goby, guid, drop in GOBY_CONTAINERS:
+        want = goby_container(read(squirrel), drop)
+        if not os.path.exists(goby) or read(goby) != want:
+            write(goby, want)
+        if not os.path.exists(goby + ".meta"):
+            write(goby + ".meta", native_meta(guid))
+
+
+def check_containers(prefab_text: str):
+    errs = []
+    for squirrel, goby, guid, drop in GOBY_CONTAINERS:
+        rel = os.path.relpath(goby, ROOT)
+        if not os.path.exists(goby) or not os.path.exists(goby + ".meta"):
+            errs.append(f"{rel} (+ .meta) is missing: run Tools/Build/author_goby_assets.py"); continue
+        if guid_of(goby + ".meta") != guid:
+            errs.append(f"{rel}.meta: guid is not the one Goby.prefab names")
+        if read(goby) != goby_container(read(squirrel), drop):
+            errs.append(f"{rel}: not the Squirrel's container minus the Squirrel's kit (run the tool)")
+        if f"guid: {guid_of(squirrel + '.meta')}," in prefab_text:
+            errs.append(f"Goby.prefab: still names {os.path.basename(squirrel)} (the Squirrel's skimmer and crystal effects)")
+        if f"guid: {guid}," not in prefab_text:
+            errs.append(f"Goby.prefab: does not name {os.path.basename(goby)}")
+    return errs
+
+# The Goby & Pistol's four cards (Garrett, 2026-10-22). Passive cards (Input 0): what each element scales happens in the
+# seat (GobyPistolDuo), read from GobyPistolConfig.asset's ElementalFloats and gated by IsUpgradeActive at level 5.
+GOBY_KIT = [
+    (1, "Vortex Sting", "A vortex ring from the Pistol's Snap that hits a rival hull takes petals from each of its elements; Charge "
+        "raises how many (GobyPistolConfig ringPetals, 1 at rest -> 3 at level 10). While the Goby holds a lock on a rival that "
+        "is on the Pistol's screen, the ring flies at it.", "", ""),
+    (2, "Dens", "At each perch the Pistol rests and builds a den of prisms and shielded prisms, as many as the distance it travelled "
+        "since its last den and Mass make (denMassScale, x1 at rest -> x2.5 at level 10). It can ride back to an old den to add "
+        "to it.", "Fortress", "Dens also grow danger prisms and super-shielded prisms."),
+    (3, "Undertow", "Mass either side of the Pistol's plane is pulled into it, from further with Space (pullReach, 40 u at rest -> "
+        "200 u at level 10). Danger, super-shielded and the pair's own prisms never move.", "Deep Undertow",
+        "Shielded prisms are pulled in too."),
+    (4, "Quick Jump", "Time shortens the cooldown of the Pistol's jump, the burst of speed that flings it off its ground "
+        "(jumpCooldown, 9 s at rest -> 3 s at level 10).", "Phase Dart",
+        "The Goby's darts pass through prisms."),
+]
+
+
+def yaml_quote(text: str) -> str:
+    return "'" + text.replace("'", "''") + "'"
+
+
+def goby_map() -> str:
+    """Resources/ElementalAbilityMaps/Goby.asset: the Goby & Pistol's own four cards."""
+    head = ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n"
+            "  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n"
+            "  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {MAP_SCRIPT_GUID}, type: 3}}\n"
+            f"  m_Name: Goby\n  m_EditorClassIdentifier:\n  vesselClass: {GOBY_CLASS_ID}\n  entries:\n")
+    return head + "".join(
+        f"  - Element: {e}\n    AbilityLabel: {yaml_quote(label)}\n    AbilityDescription: {yaml_quote(desc)}\n    Input: 0\n"
+        f"    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n    UpgradeLabel: {yaml_quote(ul)}\n"
+        f"    UpgradeDescription: {yaml_quote(ud)}\n" for e, label, desc, ul, ud in GOBY_KIT)
+
 
 def guid_of(meta_path: str) -> str:
     with open(meta_path, encoding="utf-8") as fh:
@@ -89,6 +215,132 @@ def guid_of(meta_path: str) -> str:
     if not m:
         raise RuntimeError(f"{os.path.relpath(meta_path, ROOT)}: no guid")
     return m.group(1)
+
+
+# ----------------------------------------------------------------------------- the seat's buttons
+def crew_button_asset(script_guid: str, name: str, k: int) -> str:
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+            "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {script_guid}, type: 3}}\n"
+            f"  m_Name: {name}\n  m_EditorClassIdentifier: \n  button: {k}\n")
+
+
+def _binding_block(key: str, pairs) -> str:
+    if not pairs:
+        return f"  {key}: []\n"
+    return f"  {key}:\n" + "".join(
+        f"  - InputEvent: {ie}\n    ShipActions:\n    - {{fileID: 11400000, guid: {guid}, type: 2}}\n" for ie, guid in pairs)
+
+
+DART, LOCK = CREW_BUTTONS[0][1], CREW_BUTTONS[1][1]
+# Dart on Button3Action (X / Q), Lock on Button4Action (Y / F); a pad's RT / LT too; nothing on a phone's thumb lifts
+GOBY_BINDINGS = {
+    "_inputEventShipActions": _binding_block("_inputEventShipActions", [(BUTTON3_ACTION, DART), (BUTTON4_ACTION, LOCK)]),
+    "_touchActionOverrides": _binding_block("_touchActionOverrides", []),
+    "_gamepadActionOverrides": _binding_block("_gamepadActionOverrides", [(RIGHT_STICK_ACTION, DART), (LEFT_STICK_ACTION, LOCK)]),
+}
+
+
+def _block_re(key: str):
+    return re.compile(r"  %s:(?: \[\])?\n(?:  [- ] .*\n)*" % key)
+
+
+def bind_buttons(text: str) -> str:
+    """The hull's three binding lists are the Goby's two buttons. Idempotent."""
+    for key, block in GOBY_BINDINGS.items():
+        text = _block_re(key).sub(lambda m: block, text, count=1)
+    return text
+
+
+def bindings_of(text: str) -> dict:
+    out = {}
+    for key in GOBY_BINDINGS:
+        m = _block_re(key).search(text)
+        out[key] = m.group(0) if m else ""
+    return out
+
+
+def strip_squirrel_kit(text: str) -> str:
+    """The Squirrel's active kit off the Goby: the subtrees in SQUIRREL_SUBTREES and the components in SQUIRREL_COMPONENTS,
+    every reference to them dropped from lists (the Wrasse generator's strip, generic). Idempotent."""
+    from author_wrasse_assets import split_docs, guid_of_script
+    head, docs = split_docs(text)
+    go_name = {a: (re.search(r"^  m_Name: (.*)$", d, re.M) or [None, None])[1] for k, a, d in docs if k == "1"}
+    transform_of, children = {}, {}
+    for k, a, d in docs:
+        if k in ("4", "224") and " stripped" not in d.split("\n", 1)[0]:
+            go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", d)
+            if go:
+                transform_of[go.group(1)] = a
+            ch = re.search(r"  m_Children:\n((?:  - \{fileID: -?\d+\}\n)*)", d)
+            children[a] = re.findall(r"fileID: (-?\d+)", ch.group(1)) if ch else []
+    go_of_transform = {t: g for g, t in transform_of.items()}
+    gos = set()
+
+    def take(go):
+        if go in gos:
+            return
+        gos.add(go)
+        for child in children.get(transform_of.get(go), []):
+            if child in go_of_transform:
+                take(go_of_transform[child])
+    for go, name in go_name.items():
+        if name in SQUIRREL_SUBTREES:
+            take(go)
+    kill = {guid_of_script(n) for n in SQUIRREL_COMPONENTS}
+    removed = set(gos) | {transform_of[g] for g in gos if g in transform_of}
+    for k, a, d in docs:
+        go = re.search(r"^  m_GameObject: \{fileID: (-?\d+)\}", d, re.M)
+        if go and go.group(1) in gos:
+            removed.add(a)
+        sc = re.search(r"^  m_Script: \{fileID: 11500000, guid: (\w+)", d, re.M)
+        if k == "114" and sc and sc.group(1) in kill:
+            removed.add(a)
+    if not removed:
+        return text
+    out = []
+    for k, a, d in docs:
+        if a in removed:
+            continue
+        for r in removed:
+            d = re.sub(r"^  - component: \{fileID: %s\}\n" % r, "", d, flags=re.M)
+            d = re.sub(r"^  - \{fileID: %s\}\n" % r, "", d, flags=re.M)
+        out.append(d)
+    text = head + "".join(out)
+    return re.sub(r"^(  (?:m_Children|_executors|m_Component)):\n(?=  [a-zA-Z_<]|--- |\Z)", r"\1: []\n", text, flags=re.M)
+
+
+def squirrel_kit_left(text: str):
+    """What of the Squirrel's active kit is still on the prefab (names), and any local reference that names nothing."""
+    from author_wrasse_assets import dangling_local_refs, guid_of_script
+    left = [n for n in SQUIRREL_SUBTREES if re.search(r"^  m_Name: %s$" % n, text, re.M)]
+    left += [n for n in SQUIRREL_COMPONENTS + SQUIRREL_SUBTREES if f"guid: {guid_of_script(n)}, type: 3" in text]
+    return sorted(set(left)), dangling_local_refs(text)
+
+
+def author_crew_buttons():
+    script_guid = guid_of(CREW_BUTTON_SCRIPT_META)
+    for path, guid, name, k in CREW_BUTTONS:
+        if not os.path.exists(path) or read(path) != crew_button_asset(script_guid, name, k):
+            write(path, crew_button_asset(script_guid, name, k))
+        if not os.path.exists(path + ".meta"):
+            write(path + ".meta", native_meta(guid))
+
+
+def check_crew_buttons():
+    errs = []
+    script_guid = guid_of(CREW_BUTTON_SCRIPT_META)
+    for path, guid, name, k in CREW_BUTTONS:
+        rel = os.path.relpath(path, ROOT)
+        if not os.path.exists(path) or not os.path.exists(path + ".meta"):
+            errs.append(f"{rel} (+ .meta) is missing: run Tools/Build/author_goby_assets.py")
+            continue
+        if guid_of(path + ".meta") != guid:
+            errs.append(f"{rel}.meta: guid is not the one Goby.prefab binds")
+        if read(path) != crew_button_asset(script_guid, name, k):
+            errs.append(f"{rel}: not CrewButtonActionSO button {k}")
+    return errs
 
 
 # ----------------------------------------------------------------------------- the prefab
@@ -129,7 +381,12 @@ def build_clone(donor: str, script_guid: str, config_guid: str) -> str:
     text = text[:root.end(1)] + f"  - component: {{fileID: {DUO_ID}}}\n" + text[root.end(1):]
     if not text.endswith("\n"):
         text += "\n"
-    return swap_model(text) + duo_block(script_guid, config_guid)
+    return retrofit(swap_model(text)) + duo_block(script_guid, config_guid)
+
+
+def retrofit(text: str) -> str:
+    """The Goby's own kit onto a Squirrel-derived prefab (the strip, then the bindings). Idempotent."""
+    return swap_containers(bind_buttons(strip_squirrel_kit(text)))
 
 
 def swap_model(text: str) -> str:
@@ -215,11 +472,6 @@ def register_network(text: str) -> str:
                    "    OverridingTargetPrefab: {fileID: 0}\n")
 
 
-def build_map(donor_map: str) -> str:
-    text = replace_once(donor_map, "  m_Name: Squirrel\n", "  m_Name: Goby\n", "map name")
-    return replace_once(text, f"  vesselClass: {SQUIRREL_CLASS_ID}\n", f"  vesselClass: {GOBY_CLASS_ID}\n", "map vesselClass")
-
-
 def fusion_entries(text: str, vessel: int):
     """Every `  - vessel: N` entry block of the fusion config's list, in order."""
     return re.findall(r"  - vessel: %d\n(?:    .*\n)+" % vessel, text)
@@ -273,6 +525,12 @@ def check_prefab(text: str, script_guid: str, config_guid: str):
     want(f"m_SourcePrefab: {{fileID: 100100000, guid: {gb}, type: 3}}" in text, "Goby.prefab: the nested model is not Goby.fbx")
     want(duo and f"  config: {{fileID: 11400000, guid: {config_guid}, type: 2}}" in duo.group(1),
          "Goby.prefab: GobyPistolDuo.config is not GobyPistolConfig.asset (a null config runs the SHIPPED defaults, not the clone)")
+    want(bindings_of(text) == GOBY_BINDINGS,
+         "Goby.prefab: the bindings are not the Goby's: Dart on Button3Action / RT, Lock on Button4Action / LT, nothing on "
+         "a phone's thumb lifts (the Squirrel's drift and boost ring would still fire, or the Goby could not dart or lock)")
+    left, dangling = squirrel_kit_left(text)
+    want(not left, f"Goby.prefab: the Squirrel's kit is still on it: {left}")
+    want(not dangling, f"Goby.prefab: local references that name no object: {dangling[:5]}")
     return errs
 
 
@@ -291,7 +549,7 @@ def check_registrations(container: str, network: str, lists, cls: str, gmap: str
     want(CREW in cls, "SO_Class_Goby: the card does not name both subvessels (CrewNames Goby, Pistol: SO_Vessel.CardName)")
     want(all(f"guid: {g}, type: 3" in cls for g in (CARD_ICON, CARD_INACTIVE, CARD_SILHOUETTE, CARD_LARGE, CARD_PREVIEW)),
          "SO_Class_Goby: the card images are not the renders of the Goby's own model (vessel_model/render_cards.py Goby)")
-    want(f"  vesselClass: {GOBY_CLASS_ID}\n" in gmap and "  m_Name: Goby\n" in gmap, "ElementalAbilityMaps/Goby: wrong class or name")
+    want(gmap == goby_map(), "ElementalAbilityMaps/Goby: not the Goby & Pistol's own four cards (GOBY_KIT; run the tool)")
     goby, squirrel = fusion_entries(fusion, GOBY_CLASS_ID), fusion_entries(fusion, SQUIRREL_CLASS_ID)
     want(len(goby) == 4, f"CrystalHullFusionConfig: {len(goby)} Goby entries, not 4 (CrystalHullFusionConfigTests needs one per element)")
     want(sorted(re.search(r"    element: (\d+)", e).group(1) for e in goby) == sorted(re.search(r"    element: (\d+)", e).group(1) for e in squirrel),
@@ -317,6 +575,8 @@ def check_all():
         return ["Goby.prefab (+ .meta) is missing: run Tools/Build/author_goby_assets.py"]
     errs += [] if guid_of(PREFAB + ".meta") == PREFAB_GUID else ["Goby.prefab.meta: guid is not PREFAB_GUID"]
     errs += check_prefab(read(PREFAB), script_guid, config_guid)
+    errs += check_crew_buttons()
+    errs += check_containers(read(PREFAB))
     for path in (CLASS_ASSET, MAP):
         if not os.path.exists(path) or not os.path.exists(path + ".meta"):
             return errs + [f"{os.path.relpath(path, ROOT)} (+ .meta) is missing: run the tool"]
@@ -331,14 +591,18 @@ def author():
     if not os.path.exists(PREFAB):   # the spent one-shot stands down once the prefab is committed
         write(PREFAB, build_clone(read(DONOR), script_guid, config_guid))
         write(PREFAB + ".meta", prefab_meta())
-    else:                            # but the model swap applies to the committed prefab, once
-        old = read(PREFAB); new = swap_model(old)
+    else:                            # but the model swap and the seat's buttons apply to the committed prefab, once
+        old = read(PREFAB); new = retrofit(swap_model(old))
         if new != old:
             write(PREFAB, new)
+    author_crew_buttons()
+    author_containers()
     if not os.path.exists(CLASS_ASSET):
         write(CLASS_ASSET, class_asset()); write(CLASS_ASSET + ".meta", native_meta(CLASS_GUID))
-    if not os.path.exists(MAP):
-        write(MAP, build_map(read(DONOR_MAP))); write(MAP + ".meta", native_meta(MAP_GUID))
+    if not os.path.exists(MAP) or read(MAP) != goby_map():
+        write(MAP, goby_map())
+        if not os.path.exists(MAP + ".meta"):
+            write(MAP + ".meta", native_meta(MAP_GUID))
     for path, fn in [(CONTAINER, register_container), (NETWORK_PREFABS, register_network), (FUSION, register_fusion)] + \
                     [(p, register_class_list) for p in CLASS_LISTS]:
         old = read(path); new = fn(old)
@@ -361,9 +625,16 @@ def self_test():
     expect(check_prefab(good.replace(f"  - component: {{fileID: {DUO_ID}}}\n", ""), script_guid, config_guid), 1, "the duo off the root")
     expect(check_prefab(good.replace(f"guid: {config_guid}, type: 2", "guid: 00000000000000000000000000000000, type: 2"), script_guid, config_guid), 1, "the duo's config unwired")
     expect(check_prefab(good.replace(f"guid: {guid_of(GOBY_MODEL_META)},", f"guid: {guid_of(SQUIRREL_MODEL_META)},"), script_guid, config_guid), 1, "the Squirrel's model")
+    expect(check_prefab(good.replace(GOBY_BINDINGS["_inputEventShipActions"], "  _inputEventShipActions: []\n"), script_guid, config_guid), 1, "the seat's buttons unbound")
+    expect(check_prefab(good.replace(GOBY_BINDINGS["_touchActionOverrides"], "  _touchActionOverrides:\n  - InputEvent: 12\n    ShipActions:\n    - {fileID: 11400000, guid: aa095c07c8cd0374698884d1a44dbdec, type: 2}\n"), script_guid, config_guid), 1, "the Squirrel's drift on a thumb lift")
+    expect(check_prefab(bind_buttons(swap_model(read(DONOR))) + duo_block(script_guid, config_guid), script_guid, config_guid), 1, "the Squirrel's executors left on")
+    if not check_containers(read(DONOR)):
+        fails.append("the containers check did not fire on the Squirrel's own prefab")
+    if bind_buttons(good) != good:
+        fails.append("bind_buttons is not idempotent")
     container, network, fusion = register_container(read(CONTAINER)), register_network(read(NETWORK_PREFABS)), register_fusion(read(FUSION))
     lists = [(os.path.basename(p), register_class_list(read(p))) for p in CLASS_LISTS]
-    cls, gmap = class_asset(), build_map(read(DONOR_MAP))
+    cls, gmap = class_asset(), goby_map()
     expect(check_registrations(container, network, lists, cls, gmap, fusion), 0, "a registered set passes")
     expect(check_registrations(read(CONTAINER).replace(PREFAB_GUID, "x"), network, lists, cls, gmap, fusion), 1, "no container entry")
     expect(check_registrations(container, read(NETWORK_PREFABS).replace(PREFAB_GUID, "x"), lists, cls, gmap, fusion), 1, "no network entry")

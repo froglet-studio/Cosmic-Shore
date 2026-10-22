@@ -1880,12 +1880,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md 'The phone boost'; ORCA_CREW.md follow-ups
 
-### T-20261021-2d13 · open · dev · Crew vessels
+### T-20261021-2d13 · done · dev · Crew vessels
 - **Task:** The Goby & Pistol has no touch path: GobyPistolDuo reads the Goby's primer and flares from keys 3 / 4 and the pad's D-pad up / down only, and the Pistol's dive and launch from the mouse, keyboard and pad (no Touchscreen read anywhere in Crew/GobyPistol). On a phone neither seat's abilities can be used. Give them touch controls (cards that name inputs bound on the hull, as the Wrasse and Orca now do with CrewTriggerActionSO, or the Goby's own touch overrides) in the Goby's next round.
 - **Done when:** On a phone, the Goby can fire its primer and flares and the Pistol can dive and launch; author_touch_profiles.py has a Goby row whose glyphs/buttons resolve
 - **Who can take it:** Garrett (the Goby's owner) with the session driving the Goby lab
 - **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 8 'Third round'; Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs GobyAbilities / HumanPistol
+- **Done:** 2026-10-21, Built on cece/elegant-maxwell-q8vqoh: the Goby's primer/flares are input bindings (CrewButtonActionSO, pad X/Y, keys Q/F), each seat shows its own phone buttons (GobyPistolButtons), the Pistol dives/launches by finger, Goby row in TouchControlProfiles. Phone test: T-20261021-52b0 + the seat-buttons test task.
 
 ### T-20261021-110d · open · test · Vessel models
 - **Task:** Reimport the 14 rebuilt hull FBXs (cece/quirky-brown-lkhhx9) and fly the Shrike, the Wrasse (Grouper + Kite) and the Marlin with the stick centred: no left bank, the tails beat about the centre. Spot-check the other 11 at rest (Docs/UNITY_VERIFICATION_CHECKLIST.md, 'New hulls rest at REST')
@@ -1977,3 +1978,53 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner)
 - **Added:** 2026-10-21 by a Claude session (`cece/lucid-turing-zndmgf`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md §5-6
+
+### T-20261021-52b0 · open · test · vessels
+- **Task:** On a phone, fly the Goby & Pistol: double tap the small (Pistol) view to fly the Pistol, hold to dive and drag to launch, double tap the small (Goby) view to come back. Check a planted left thumb in that corner never swaps.
+- **Done when:** Both swaps work on a phone build and flying thumbs never swap by accident
+- **Who can take it:** Yash or Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md §11 (2026-10-21)
+
+### T-20261021-cd1e · done · test · Crew vessels
+- **Task:** Phone playtest of the Goby & Pistol seat buttons (Android dev build, no pad): Toybox > Vessel Changer > Goby and Pistol. Flying the Goby, two buttons sit round the right thumb: Primer (fires at what is ahead, its count drops) and Flares (fires only once a prime has been set off by the Pistol and blocks are hot); the Squirrel's lifts (left = ring, right = drift) still work. Double tap the small view: now Ghost and Snap sit there instead, dimmed while cooling; a finger on the Pistol's view dives (hold) and launches (drag and let go), also while another finger holds Ghost. On a pad: X primer, Y flares; on a keyboard: Q primer, F flares; the D-pad up/down does nothing.
+- **Done when:** Every step behaves as written; buttons sit inside the safe area and don't cover the ability row; misses filed as dev tasks
+- **Who can take it:** Yash (offered) or Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md §11 (2026-10-21)
+- **Done:** 2026-10-22, Superseded 2026-10-22: the Goby's Primer and Flares were retired with its new kit (Dart / Lock; Ghost / Snap / Back). The new kit's playtest is its own task.
+
+### T-20261022-adee · open · test · Crew vessels
+- **Task:** Playtest the Goby & Pistol's new kit (Android dev build AND a pad, Toybox > Vessel Changer > Goby and Pistol). Goby: it never cruises; aim with one thumb (or the sticks), hold Dart (phone button / RT / Q) and let go - a tap darts ~140 u, a full charge ~600 u in 1 s; it stops on the first block and perches there; into empty space it lays its own small perch. Lock (button / LT / F) a rival or fauna in front: a lit ring marks it. Double tap the small view to fly the Pistol: it rides the dart's trail downhill to the next perch, rests ~1 s and a den of prisms grows round the perch (more the further it travelled, and with Mass); Back (button / LB / B) at a perch turns it toward older dens. Mass beside its plane drifts into it (further with Space). With a rival locked and on the Pistol's screen, Snap fires a ring that flies at it and takes petals. Check: lifting a thumb never fires anything; the D-pad up/down does nothing; buttons sit inside the safe area.
+- **Done when:** Every step behaves as written on a phone and a pad, or the misses are filed as dev tasks; Garrett has the feel notes for the next round
+- **Who can take it:** Yash (offered) or Garrett
+- **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (top section)
+
+### T-20261022-bc36 · open · dev · Crew vessels
+- **Task:** Run GobyPistolTests in the Unity editor (EditMode) and fix any failure; then open Goby.prefab once and save it (the generator stripped the Squirrel's tube and drift executors and swapped its impact containers by YAML: let Unity re-serialize and confirm no missing-script or missing-reference warnings).
+- **Done when:** GobyPistolTests green in the editor and Goby.prefab saves clean
+- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** Assets/_Scripts/Tests/Editor/GobyPistolTests.cs; Tools/Build/author_goby_assets.py
+
+### T-20261022-aeff · open · content · Crew vessels
+- **Task:** The Goby is still the Squirrel underneath in three places: its hull model (Goby.fbx is on the Squirrel's rig and bones), its HUD controller (SquirrelVesselHUDController: the Squirrel's boost and drift gauges) and its nested skimmer prefab (stripped of the Squirrel's effects through GobySkimmerImpactorDataContainer, still the Squirrel's skimmer, which collects crystals). Decide which to replace: a real goby model by /vessel-model (eyes on top, two dorsal fins, the sucker disc it perches with, a flicking tail) and a Goby HUD whose cards count dens, pulled mass and the lock.
+- **Done when:** Garrett's call recorded in goby-and-pistol.md; the chosen replacements built
+- **Who can take it:** Garrett (the design call), then a /vessel-model session
+- **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** goby-and-pistol.md top section 'Still the Squirrel's'
+
+### T-20261022-0e2f · open · dev · Crew vessels
+- **Task:** The Goby & Pistol's kit runs only on the local human's own hull (CrewSeat.ShouldWake). An AI-flown Goby (arena backfill, the menu's autopilot) and every other machine's copy fly the platform AIPilot with none of the kit (no darts, perches, dens or Pistol), and the dens, pulled mass and rings are local. Give an AI Goby the seat's own AI on every hull it flies, then network the crew (the open decision T-20261017-b06e).
+- **Done when:** An AI Goby perches and darts with its Pistol in an arena match; the networking plan is agreed
+- **Who can take it:** Garrett with Yash (multiplayer)
+- **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs; .claude/skills/duo-vessel/references/ANCHORS.md
+
+### T-20261022-b3de · open · dev · Crew vessels
+- **Task:** Bring the Goby lab (Docs/Studios/VesselStudio/goby.html, round 13) level with the Unity kit of 2026-10-22: dart and perch, the flat plane downhill both ways, dens, the undertow, lock and homing rings, the four cards. Unity is ahead (built straight in Unity at Garrett's call); studio_to_unity no longer maps the Goby until the lab catches up.
+- **Done when:** The lab models the Unity kit and verify_lab.cjs passes
+- **Who can take it:** any session; Garrett to sign off
+- **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** goby-and-pistol.md top section; Tools/Build/studio_to_unity/clones.json 'Goby & Pistol'.retired

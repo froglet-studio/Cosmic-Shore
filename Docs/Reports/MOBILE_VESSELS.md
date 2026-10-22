@@ -346,3 +346,15 @@ shader (§2 row 15).
 | Garrett | Built |
 |---|---|
 | "The grouper can not use boost on mobile. Fix this oversight and others" | **The Grouper boosts on a phone by lifting the left thumb** and flying on with the right, the fleet's touch twin of RT, and the Wrasse's Time card shows that glyph (a new Wrasse row in `TouchControlProfiles`). The cause: `KiteNavigator` read `InputStatus.RightTriggerAnalog`, which no phone writes, so a phone had only "both thumbs off", which dropped the steering for every boost and was named on no card. RT is now an input binding like every other hull's (`CrewTriggerActionSO`, shared by the crew hulls), one path through `R_VesselActionHandler` on every device. **The others:** a sweep of every analog-trigger reader in vessel code found one more with no phone path, the **Orca's helm** (boost on RT, shield on LT), now on the same bindings (lift left = boost, lift right = shield); the **Honeyguide**'s RT Peck and LT Flit already worked by lift but their cards named nothing, so it gets glyphs too. The **Goby & Pistol** has no touch path at all (primer and flares on keys 3 / 4 and the D-pad, the Pistol on the mouse); it is under active development, so it is a task, not a change (`T-20261021-2d13`); the phone playtest of the three is `T-20261021-723e`. `author_touch_profiles.py --check` now also fails a card whose glyph names a thumb lift that nothing is bound to. |
+
+### Fourth round (Garrett, 2026-10-21, same day)
+
+| Garrett | Built |
+|---|---|
+| "i can not switch to the pistol on mobile" / "these should made consistent with other vessels. each seat has its own ui and controls. no need to use the dpad in a weird way" | **The Goby & Pistol on a phone** (closes `T-20261021-2d13`). A double tap on the small view swaps seats, as on the Wrasse. The Goby's primer and flares are input bindings now (`CrewButtonActionSO`: pad X / Y, keys Q / F; the D-pad's up / down and keys 3 / 4 are gone), and each seat shows its own two buttons round the right thumb while the person is in it (`GobyPistolButtons`, the Orca gunner pattern): Primer and Flares with their charges, Ghost and Snap dimmed while cooling. The Pistol dives and launches by finger (tracked by touch id). The Goby has a `TouchControlProfiles` row with the Squirrel's lift glyphs. Phone playtest: `T-20261021-52b0` and the seat-buttons task. |
+
+### Fifth round (Garrett, 2026-10-22)
+
+| Garrett | Built |
+|---|---|
+| "it should not have the squirrels abilities ... it should be a goby with its own kit" | **The Goby & Pistol's own kit** replaces the fourth round's Primer and Flares (`goby-and-pistol.md`, top section). On a phone the Goby perches and aims with one thumb and its seat shows **Dart** (hold to charge, let go) and **Lock**; the Pistol's seat shows **Ghost**, **Snap** and **Back** (`GobyPistolButtons`). Nothing is bound to the Goby's thumb lifts, so lifting a thumb while aiming fires nothing (its `TouchControlProfiles` row has no glyphs). Pad: RT dart, LT lock (X / Y too). Phone test: `T-20261021-52b0` and the kit's test task. |

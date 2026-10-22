@@ -3229,6 +3229,12 @@ signature of one prefab instanced in all of them, and it is the evidence.
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
+- **Unity wraps a long reference line AFTER the guid, so `"guid: X, type: 2"` is not how every reference looks.**
+  `vesselImpactorDataContainerSO: {fileID: 11400000, guid: 769c…,\n    type: 2}` and the same in a nested-prefab
+  `objectReference:` override. A guid swap or a presence check written as the one-line form silently matches nothing
+  (it did, 2026-10-22, `author_goby_assets.py`'s container swap; its `--check` caught it). Match `guid: X,` alone:
+  guids are unique, the `type` adds nothing.
+
 ### Trap: a guid sweep written as `for f in $(git ls-tree ...)` silently drops every path with a SPACE
 
 `for f in $(...)` word-splits on whitespace, so `Assets/Shift - Complete Sci-Fi UI/Textures/...`

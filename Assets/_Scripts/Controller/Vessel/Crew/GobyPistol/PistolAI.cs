@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,15 +5,14 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Pistol's AI: inputs only (it presses what a player presses). Tiny Wings dives (heavy on the way down, light on
-    /// the way up), launches at the densest cluster it can see (primed blocks count triple), ghosts through the Goby's
-    /// trail, and fires the Snap (the vortex ring) into a crowd. Ported LINE FOR LINE from the lab's <c>pistolAI</c>
-    /// (<c>Docs/Studios/VesselStudio/goby.html</c>), with the lab's Easy / Medium / Hard levels (late notice, misjudged
-    /// height: the Skim Race's <c>SkimRaceDifficulty.asset</c> numbers). No scene: the caller supplies what the Pistol
-    /// sees (the lab's <c>pistolScan</c>) through the scan callback.
+    /// the way up), jumps at the densest mass ahead in its plane, fires the Snap (the vortex ring) into a crowd, and fires
+    /// it at once when the Goby's locked rival is on its screen (the ring then homes on it). Easy / Medium / Hard are the
+    /// Vessel Studio's universal levels (late notice and a misjudged height, <c>SkimRaceDifficulty.asset</c>). No scene: the
+    /// caller supplies what the Pistol sees in <see cref="Vis"/>.
     /// </summary>
     public sealed class PistolAI
     {
-        /// <summary>The lab's <c>DIFF</c>: how late the AI notices a new target, and how often it misjudges its height.</summary>
+        /// <summary>How late the AI notices a new target, and how often it misjudges its height.</summary>
         public readonly struct Difficulty
         {
             public readonly float Late, Mis;
@@ -22,13 +20,13 @@ namespace CosmicShore.Gameplay
             public static readonly Difficulty Hard = new(0f, 0f), Medium = new(0.25f, 0.045f), Easy = new(0.5f, 0.099f);
         }
 
-        /// <summary>One prism the Pistol can see, in its plane (the lab's <c>B.vis</c> entries).</summary>
-        public struct Seen { public int Id; public float X, H, D; public bool Primed, Friendly; }
+        /// <summary>One prism the Pistol can see, in its frame (x along, y up, d out of the plane).</summary>
+        public struct Seen { public float X, Y, D; }
 
-        /// <summary>The lab's numbers this AI reads.</summary>
-        public struct Settings { public float pLaunchRange, pVision, pVortexR, pVortexCapture, aiHighDive; }
+        /// <summary>The numbers this AI reads.</summary>
+        public struct Settings { public float pLaunchRange, pVortexR, pVortexCapture, aiHighDive, bodyHalfDepth; }
 
-        /// <summary>The lab's <c>mulberry32</c>, bit for bit (so a seed plays the same run in both).</summary>
+        /// <summary>The lab's <c>mulberry32</c>, bit for bit.</summary>
         public sealed class Mulberry32
         {
             uint _a;
@@ -47,90 +45,64 @@ namespace CosmicShore.Gameplay
 
         public readonly List<Seen> Vis = new();
         readonly Mulberry32 _rng;
-        float _scanAt, _noticeAt, _misDy; int _key = -1; bool _mis, _outGhost, _outVortex;
-
-        /// <summary>For the harness's readout: the AI is still "noticing" its target, or has misjudged it.</summary>
-        public bool Unnoticed { get; private set; }
-        public bool Misjudged { get; private set; }
-        /// <summary>Where the AI aimed its last launch in the plane (x, h), or null.</summary>
-        public Vector2? LaunchAim { get; private set; }
+        float _noticeAt, _misDy; int _key = -1; bool _mis, _outVortex;
 
         public PistolAI(uint seed) { _rng = new Mulberry32(seed); }
 
-        /// <summary>Forget held presses (the lab does this on a swap: a press carried across the swap is not a press).</summary>
-        public void ReleaseAll() { _outGhost = _outVortex = false; }
+        /// <summary>Forget held presses (a press carried across a seat change is not a press).</summary>
+        public void ReleaseAll() { _outVortex = false; }
 
-        /// <summary>The lab's <c>pistolAI</c>. <paramref name="scan"/> fills the list it is handed with what the Pistol
-        /// sees (it is called at most every 0.1 s, on an emptied list).</summary>
-        public PistolBodyMath.Input Think(PistolBodyMath.State p, PistolRibbon rb, float t, in Difficulty D, in Settings s, Action<List<Seen>> scan)
+        /// <summary>One step's input. <paramref name="lockedInView"/>: the Goby's locked rival is on the Pistol's screen.</summary>
+        public PistolBodyMath.Input Think(PistolBodyMath.State p, in PistolPlane.Frame f, float t, Difficulty lvl, in Settings s, bool lockedInView)
         {
-            float gy = rb.Ground(p.x, out float slope);
-            rb.Ground(p.x + Mathf.Max(25f, (p.grounded ? p.v : p.vx) * 0.3f), out float aSlope);
+            var inp = new PistolBodyMath.Input();
+            float gy = PistolPlane.Ground(f, p.x, out float slope);
+            PistolPlane.Ground(f, p.x + Mathf.Max(25f, (p.grounded ? p.v : p.vx) * 0.3f), out float ahead);
             // Tiny Wings: heavy on the way down, light on the way up
-            bool dive = p.grounded ? slope < -0.02f : (p.vy < 0f && aSlope < -0.02f) || p.y - gy > s.aiHighDive;
-            if (t >= _scanAt) { _scanAt = t + 0.1f; Vis.Clear(); scan(Vis); }
-            var inp = new PistolBodyMath.Input { Dive = dive ? 1f : 0f };
-            LaunchAim = null;
+            inp.Dive = p.grounded ? (slope < -0.02f ? 1f : 0f) : ((p.vy < 0f && ahead < -0.02f) || p.y - gy > s.aiHighDive ? 1f : 0f);
+
+            // the jump: at the densest mass ahead in reach
             if (p.launch > 0 && t - p.lastLaunchAt > 1.2f)
             {
-                int best = -1, bs = 0;
-                for (int j = 0; j < Vis.Count; j++)
+                int best = -1, bestScore = 0;
+                for (int i = 0; i < Vis.Count; i++)
                 {
-                    var v = Vis[j];
-                    if (v.Friendly || v.X < p.x + 30f || v.X > p.x + s.pLaunchRange || Mathf.Abs(v.H - p.y) > 160f) continue;
-                    int sc = v.Primed ? 3 : 0;
-                    for (int o = 0; o < Vis.Count; o++) { var w = Vis[o]; if (!w.Friendly && Hypot(w.X - v.X, w.H - v.H) < 30f) sc++; }
-                    if (sc > bs) { bs = sc; best = j; }
+                    var v = Vis[i];
+                    if (Mathf.Abs(v.D) > s.bodyHalfDepth || v.X < p.x + 30f || v.X > p.x + s.pLaunchRange || Mathf.Abs(v.Y - p.y) > 160f) continue;
+                    int score = 0;
+                    for (int j = 0; j < Vis.Count; j++) if (Mathf.Abs(Vis[j].X - v.X) < 30f && Mathf.Abs(Vis[j].Y - v.Y) < 30f) score++;
+                    if (score > bestScore) { bestScore = score; best = i; }
                 }
-                if (best >= 0 && bs >= 3)
+                if (best >= 0 && bestScore >= 3)
                 {
-                    var b = Vis[best];
-                    if (b.Id != _key) { _key = b.Id; _noticeAt = t + (D.Late > 0f ? D.Late * (0.5f + _rng.Next()) : 0f); _mis = _rng.Next() < D.Mis; _misDy = (_rng.Next() < 0.5f ? -1f : 1f) * 45f; }
-                    Unnoticed = t < _noticeAt; Misjudged = _mis;
-                    if (!Unnoticed) { float ay = b.H + (_mis ? _misDy : 0f); inp.HasLaunch = true; inp.Launch = new Vector2(b.X - p.x, ay - p.y); LaunchAim = new Vector2(b.X, ay); }
+                    if (best != _key) { _key = best; _noticeAt = t + (lvl.Late > 0f ? lvl.Late * (0.5f + _rng.Next()) : 0f); _mis = _rng.Next() < lvl.Mis; _misDy = (_rng.Next() < 0.5f ? -1f : 1f) * 45f; }
+                    if (t >= _noticeAt) { var v = Vis[best]; inp.HasLaunch = true; inp.Launch = new Vector2(v.X - p.x, v.Y + (_mis ? _misDy : 0f) - p.y); }
                 }
             }
-            bool ghost = false;
-            if (t >= p.ghostAt)
-                foreach (var v in Vis)
-                    if (v.Friendly && Mathf.Abs(v.D) <= s.pVision && v.X > p.x && v.X - p.x < 60f && Mathf.Abs(v.H - p.y) < 25f) { ghost = true; break; }
-            bool vortex = false; Vector2 aim = default;
+
+            // the Snap: at once at a locked rival on screen (the ring homes), else into a crowd ahead
+            bool vortex = false; Vector2 aim = new(1f, 0f);
             if (t >= p.vortexAt)
             {
-                int best = -1, bs = 0;
-                for (int j = 0; j < Vis.Count; j++)
+                if (lockedInView) vortex = true;
+                else
                 {
-                    var v = Vis[j];
-                    if (v.Friendly || v.X < p.x + 20f || v.X > p.x + 200f || Mathf.Abs(v.H - p.y) > 120f) continue;
-                    int sc = 0;
-                    for (int o = 0; o < Vis.Count; o++) { var w = Vis[o]; if (!w.Friendly && Hypot(w.X - v.X, w.H - v.H) < s.pVortexR + s.pVortexCapture) sc++; }
-                    if (sc > bs) { bs = sc; best = j; }
+                    int bs = 0;
+                    for (int i = 0; i < Vis.Count; i++)
+                    {
+                        var v = Vis[i];
+                        if (v.X < p.x + 20f || v.X > p.x + 200f || Mathf.Abs(v.Y - p.y) > 120f) continue;
+                        int sc = 0;
+                        for (int j = 0; j < Vis.Count; j++)
+                            if (Mathf.Abs(Vis[j].X - v.X) < s.pVortexR + s.pVortexCapture && Mathf.Abs(Vis[j].Y - v.Y) < s.pVortexR + s.pVortexCapture) sc++;
+                        if (sc > bs) { bs = sc; aim = new Vector2(v.X - p.x, v.Y - p.y); }
+                    }
+                    vortex = bs >= 4;
                 }
-                if (best >= 0 && bs >= 4) { vortex = true; aim = new Vector2(Vis[best].X - p.x, Vis[best].H - p.y); }
             }
-            // a press is a press: the AI lets go between shots
-            inp.Ghost = ghost && !_outGhost;
-            inp.Snap = vortex && !_outVortex; inp.SnapAim = inp.Snap ? aim : default;
-            _outGhost = ghost; _outVortex = vortex;
+            inp.Snap = vortex && !_outVortex; inp.SnapAim = aim;
+            _outVortex = vortex;
             return inp;
         }
-
-        /// <summary>How far (3D) from the Pistol the lab's scan looks before mapping a prism onto the ribbon.</summary>
-        public static float ScanReach(in Settings s) => s.pLaunchRange + s.pVision + 60f;
-
-        /// <summary>The lab's <c>pistolScan</c> for one prism: in <paramref name="reach"/> of the Pistol, on its screen
-        /// (the ribbon from 80 u behind it to its launch range ahead), in its band, or primed (primed blocks show anywhere
-        /// on the screen).</summary>
-        public static bool TrySee(PistolRibbon rb, PistolBodyMath.State p, int id, Vector3 w, bool primed, bool friendly, float reach, in Settings s, out Seen seen)
-        {
-            seen = default;
-            if ((w - p.wpos).sqrMagnitude > reach * reach) return false;
-            var m = rb.Map(w, p.x - 80f, p.x + s.pLaunchRange + 60f); if (!m.Ok) return false;
-            if (Mathf.Abs(m.D) > s.pVision && !primed) return false;
-            seen = new Seen { Id = id, X = m.X, H = m.H, D = m.D, Primed = primed, Friendly = friendly };
-            return true;
-        }
-
-        static float Hypot(float a, float b) => Mathf.Sqrt(a * a + b * b);
     }
 }

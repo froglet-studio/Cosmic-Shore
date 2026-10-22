@@ -33,7 +33,7 @@ Say *crew vessel* in new code and docs; each half is a **subvessel**, the extra 
 | Crew vessel | Card | Hull (`VesselClassType`) | Seat on its root | The seat's view | Brief |
 |---|---|---|---|---|---|
 | **Wrasse** | Wrasse and Grouper | Wrasse = 19 (the Sparrow without its kit, two thumbs) | `KiteNavigator`: a one-thumb kite on the hull's x-z plane | top-down orthographic, the real world projected onto the plane | `references/designs/wrasse-and-grouper.md` → `Controller/Vessel/Crew/KITE_NAVIGATOR.md` |
-| **Goby** | Goby and Pistol | Goby = 18 (the Squirrel, its own cruise) | `GobyPistolDuo`: the Pistol, a 2D side view unrolled from the Goby's path | side-on perspective whose frustum is the parallax, the real prisms laid out along the unroll | `references/designs/goby-and-pistol.md` |
+| **Goby** | Goby and Pistol | Goby = 18 (a Squirrel-derived prefab stripped of the Squirrel's kit; pinned: it perches and darts like the Shrike slings, 2026-10-22) | `GobyPistolDuo`: the Pistol, riding a FLAT plane through each dart from perch to perch, downhill either way | side-on perspective square to the plane | `references/designs/goby-and-pistol.md` (its top section is the kit as it is now) |
 
 **The shape both chose** (call it **C** beside §3.1's A and B): **one hull class and one prefab** - a clone of a donor
 hull, authored and registered by `Tools/Build/author_<hull>_assets.py` (`author_wrasse_assets.py` is the fuller
@@ -49,12 +49,13 @@ defect):
 | **The card names both subvessels**: `CrewNames` (two entries) joined by `CrewNameTemplate` (`{0} and {1}`) is `SO_Vessel.CardName`, which every card, station and panel shows. `Name` stays the one-word key (the hangar's unlocks are keyed by it). | `SO_Class_<Hull>.asset`, written and checked by the generator |
 | **The way in is the Toybox's Vessel Changer** ("bring it to Unity" = fly it from there, CLAUDE.md). The hull is on `ToyVesselRoster.Default`, the Vessel Prefab Container, `DefaultNetworkPrefabs`, both class lists, and has its four `CrystalHullFusionConfig` entries. Claim the enum value after checking bleeding-edge AND the in-flight branches. | the generator `--check`; `EnumIntegrityTests` |
 | **The seat wakes** only on the local pilot's own hull while a human flies it, or while the seat itself handed the hull to its AI. | `CrewSeat.ShouldWake` |
-| **ONE swap, the arena's**: `PilotSwapGesture` (D-pad left / right, keys 1 / 2) on `PilotSwap.CooldownSeconds`. | `CrewSeat.PollSwap` |
+| **ONE swap, the arena's**: `PilotSwapGesture` (D-pad left / right, keys 1 / 2) on `PilotSwap.CooldownSeconds`; on a phone, a double tap on the small view (`CrewSmallViewDoubleTap`; the Orca's two-finger tap is the four-seat variant). | `CrewSeat.PollSwap` |
 | **The empty seat is never pilotless.** Into the seat: the player's flight input paused, then the hull's `AIPilot` flies it; back: the opposite order, and only an autopilot the seat started is stopped. The seat has its own input-only AI for when the human flies the hull (`/vessel-ai`). | `CrewSeat.HandHullToAI` / `GiveHullBack`; `KiteNavigatorAI`, `PistolAI` |
 | **Two views, one layout**: flying the hull, the seat's view is a square in the lower left (`pipSize` 0.32 of the screen height, `viewMargin` 0.015); flying the seat, it fills the screen and the pilot's camera (`CameraManager.ViewCamera`) is lifted into the same square. The pilot camera's rect and depth are always restored. | `CrewPictureInPicture` |
 | **The seat camera renders the game** (Garrett, 2026-10-18, for both: "use the game's rendering", "as true to the game as possible"): the real prisms, hulls and materials under the game's lights and sky, never a re-styled copy, fog or tint. For its render only, the prisms' depth look measures distance **from the seat's plane** (`PrismDepthPlane`, `depthFullSpreadAt` 60), and the game's occlusion corridor (the screen-door dither) is **re-aimed for the seat's view** so mass in front of what the seat must see dithers instead of hiding it: the Kite's is a cone from its lens down to the board; the Pistol's is the game's own vessel corridor aimed from its lens at the Pistol. | `CrewViewRender` |
 | **The seat's own marks** (the kite, motes, rings; the Pistol's tube, aim, primed / hot / held rings) are drawn for the seat's camera only (`RenderParams.camera`), instanced with URP/Unlit set transparent - never `Sprites/Default`, whose instanced path draws at zero alpha. | each seat's view code |
 | **A seat takes its triggers from input bindings, never from `InputStatus`'s analog triggers** (Garrett, 2026-10-21: "The grouper can not use boost on mobile"). The hull binds `RightStickAction` / `LeftStickAction` to `CrewTriggerRT` / `CrewTriggerLT` (`CrewTriggerActionSO`) and the seat implements `ICrewTriggers.SetTrigger`; a pad's triggers, the keyboard's shifts and a phone's thumb lifts (lift left = RT, right = LT) all raise those events, while the analog triggers are written by no phone. The card the trigger drives names its input, and the hull's `TouchControlProfiles` row shows the lift glyph. A held trigger is cleared on every seat change: the handler drops releases while the AI flies the hull. | `CrewTriggerActionSO` (Wrasse, Orca); `HoneyguideTriggerActionSO` is the same shape; `author_touch_profiles.py --check` |
+| **A seat's own abilities are its own controls, never spare D-pad directions** (Garrett, 2026-10-21). A hull ability is an input the hull binds (`CrewTriggerActionSO` for the triggers, `CrewButtonActionSO` for face buttons); on a phone each seat shows its own buttons round the right thumb while the person is in it (`TouchButtonView`, `TouchButtonLayout`), and a seat whose hull the AI flies presses itself directly (an `InputStatus` press is dropped under autopilot). | `OrcaHUDController`, `GobyPistolButtons` |
 | **One machine today.** The seat runs on the hull's local human's machine; replicating it is the open networking decision (`T-20261017-b06e`). | `ANCHORS.md` |
 
 **Gates:** `python3 Tools/Build/check_crew_vessels.py` (and `--self-test`; in `/to-bleeding-edge`'s gates) holds every
@@ -62,10 +63,15 @@ hull that carries an `ICrewSeat` to the card, roster and container rules (its `S
 `CrewNames`), and every class that names a crew to having a seat. `CrewVesselTests` holds the same in the editor. Each hull's generator `--check` holds its own assets.
 
 **Where the two still differ, on purpose or not yet:**
-- The Wrasse has its own HUD controller (`WrasseHUDController`, the cards read the seat); the Goby still shows the
-  Squirrel's HUD. A Goby HUD that reads the Pistol is the next consistency step (no task yet).
-- The Wrasse's hull is stripped of its donor's kit (`author_wrasse_assets.py` round 4c); the Goby keeps the Squirrel's
-  abilities, by design ([stated], the brief).
+- The Wrasse has its own HUD controller (`WrasseHUDController`, the cards read the seat); the Goby has its own four
+  cards (Vortex Sting, Dens, Undertow, Quick Jump, 2026-10-22) but still the Squirrel's HUD controller. Each Goby seat
+  has its own controls (Garrett, 2026-10-21: "each seat has its own ui and controls. no need to use the dpad in a weird
+  way"): the Goby's Dart and Lock are the hull's own inputs (`CrewButtonActionSO` on Button3 / Button4, a pad's RT / LT
+  too, keys Q / F), and on a phone each seat shows its own buttons round the right thumb (`GobyPistolButtons`: Dart and
+  Lock; Ghost, Snap and Back), the Orca gunner buttons' pattern. The D-pad is only the swap.
+- Both hulls are stripped of their donor's kit (`author_wrasse_assets.py` round 4c; `author_goby_assets.py`
+  `strip_squirrel_kit` and the Goby's own impact containers, 2026-10-22: "it should not have the squirrels abilities or
+  be anything like the squirrel"). The Goby's model is still on the Squirrel's rig (team task).
 - The Kite's lab is behind the game (`T-20261018-3247`); the Goby's lab IS the source (`/artifact-to-unity`).
 
 ## 0. Read first
@@ -73,8 +79,9 @@ hull that carries an `ICrewSeat` to the card, roster and container rules (its `S
 - **`references/designs/<duo>.md`**: the brief for the duo you are working on. Read every
   **[open]**, **[read]** and **[proposed]** tag before building. An [open] item is a question for
   Garrett, never a gap to fill. Briefs today:
-  - `goby-and-pistol.md`: the **Goby**, a two-thumb path-layer (it flies like the Squirrel) with primer and flares, and the
-    **Pistol**, a pistol shrimp that plays a warped 2D sidescroller unrolled from the Goby's path.
+  - `goby-and-pistol.md`: the **Goby**, a watchman that perches, darts like the Shrike slings and locks rivals, and the
+    **Pistol**, a pistol shrimp that rides a flat plane from perch to perch, builds dens, pulls mass into its plane and
+    fires homing vortex rings (2026-10-22; its top section is the current kit, built straight in Unity).
     (Garrett first called them the Flier and the Bird.)
     Its lab is `Docs/Studios/VesselStudio/goby.html` (round 1, 2026-10-14). It is the template for
     the next duo's lab.
@@ -270,6 +277,20 @@ enum before taking a value.
 8. Ship through `/ship`. Every C# commit passes `/verify-unity` (CLAUDE.md).
 
 ## 6. Traps (fill this as duos teach them)
+
+- **A donor's kit is not only its executors** (the Goby, 2026-10-22). Stripping a hull you cloned from another means
+  four places: the executor subtrees, the hull's three binding lists (shared, touch overrides, pad overrides), its
+  ability map, and its two impact containers (`VesselImpactorDataContainerSO` on the hull, the skimmer's
+  `vesselSkimmerEffectsSO` / `skimmerPrismEffectsSO`). The last is the one missed: the Squirrel's skimmer kept stealing
+  prisms and jousting through the Squirrel's container, and its level-5 gates fired off the NEW map's levels. Give
+  the hull its own containers (the donor's minus its kit) - never disable the skimmer, which is also what collects
+  crystals (`ElementalCrystalImpactor` answers only a `SkimmerImpactor`). `author_goby_assets.py` is the pattern.
+- **A card's words are a contract.** `HangarAbilityKindsTests` fails any designed ability whose label and description
+  contain none of `HangarAbilityKinds`' words (it would show no stage move). "Quick Jump: Time shortens the jump
+  cooldown" is Passive; "... the burst of speed that flings it" is Boost. Classify every new card before shipping.
+- **A pinned hull still turns.** A seat that must not let its hull cruise pins it (`SetTranslationRestricted`: the
+  fleet's restricted stance), moves it only with `TranslateShip`, and turns it for its own AI with `ApplyRotation`
+  while the player's input is paused. Starting the platform `AIPilot` instead flies the hull like its donor.
 
 - **A pilotless half.** Any path that takes a human off a half (swap, disconnect, pause, death of
   the partner) must hand the half to its AI in the same frame.

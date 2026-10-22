@@ -114,7 +114,7 @@ one-Player-one-Vessel assumption. Do not start A without Garrett's call.
   its warped world, which `CameraMode` has no mode for.
 
 ### Flight references
-- **Squirrel (the Goby's flight, Garrett 2026-10-14):** the dual-stick `VesselTransformer` on `Squirrel.prefab` (throttle 60, pitch / yaw 120, roll 130); the lab mirrors the Squirrel studio's `stepPilot` mix.
+- **Squirrel (the Goby's flight until 2026-10-22; the Goby now perches and darts, pinned, `GobyPistolDuo`):** the dual-stick `VesselTransformer` on `Squirrel.prefab` (throttle 60, pitch / yaw 120, roll 130); the lab mirrors the Squirrel studio's `stepPilot` mix.
 - **Serpent:** `C/Vessel/SingleStickVesselTransformer.cs` (one stick, stationary stance). It was the brief's first reading of the Goby; it is one-stick, so it is not the Goby's flight.
   - Its impactor container has no skimmer effects, so it rams through prisms.
   - Docs: `R_VesselActions/SERPENT_*.md`.
@@ -187,10 +187,10 @@ one-Player-one-Vessel assumption. Do not start A without Garrett's call.
 | Per-viewer rendering of prisms or a curve | **generic** | the Serpent cloak's `IsLocalUser` alpha |
 | Speed gauge on the HUD | generic | `ThresherHUDView` fill |
 | Speed from distance to another object | per duo (Goby) | `StoatPathfinderExecutor` `FlightTimeScale`, `SkimmerModifyThrotleByPrismEffectSO` |
-| The unrolled-ribbon world: map world points to (s, h, d) and back, constrain the Pistol to the plane, draw parallax depth layers and distorted prisms, on the Pistol's client only | per duo (Pistol) | **The maths exists** (2026-10-15): `PistolRibbon`, `PistolBodyMath`, `VortexRing`, `PistolAI` in `Controller/Vessel/Crew/GobyPistol/`; `GobyPistolDuo` (on `Goby.prefab`, `VesselClassType.Goby`) draws the warped world through a second camera on the local pilot's machine. Still no seat, no networking |
+| ~~The unrolled-ribbon world~~ RETIRED 2026-10-22: the Pistol's plane is flat (`PistolPlane`), so nothing is unrolled | - | - |
 | A side-on sidescroller camera mode | generic | `CameraSettingsSO.CameraMode` |
 | Alternating-angle trail blocks | per duo (Goby) | `VesselPrismController.CreateBlock` |
 | Drag-to-aim launch on mobile | generic | `ThresherLaunchSight` (stick aim only) |
-| Prime / hot prism states and their decay | per duo (Goby & Pistol), maybe fleet | `PrismProperties` flags, `MakeDangerous` |
+| ~~Prime / hot prism states~~ RETIRED 2026-10-22 with the primer and flares | per duo (Goby & Pistol), maybe fleet | `PrismProperties` flags, `MakeDangerous` |
 | Homing ("heat-seeking") projectiles, one per hot target | generic | `Projectile`, `Gun`; Sparrow missiles are unguided |
 | An "ignore collision" flight for a whole hull | per duo (Goby) | the Urchin slip ghost |
