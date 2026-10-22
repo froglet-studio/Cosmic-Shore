@@ -8,7 +8,7 @@ The decisions are Garrett's, 2026-10-21 (Docs/Reports/MOBILE_VESSELS.md section 
   * thumb-lift hulls keep their lifts and show a glyph on the card the lift drives;
   * a hull that needs its cards gets TotemButtons: no thumb-lift abilities, the cards (plus the extra
     buttons below) laid out round the right thumb;
-  * the Dolphin rolls by tilt on one thumb; the Manta soars and the Thresher aims its launch with no
+  * the Dolphin's one-thumb aim rolls one to one with the phone (2026-10-22: "like augmented reality"); the Manta soars and the Thresher aims its launch with no
     thumb down, steering by tilt; the Rhino energizes with no thumb down;
   * the Scarab has a set-and-hold throttle slider and a drift button, the Brittle Star two fire buttons
     whose drag aims, the Shrike a fire button and a zoom toggle, the Serpent's scope latches.
@@ -58,7 +58,8 @@ PROFILES = [
     # ---- Thumb lifts: lift the RIGHT thumb = the pad's LT, the LEFT = RT, both = IdleAction.
     profile("Squirrel", "ThumbLifts",
             glyphs=[("Mass", "LiftLeftThumb")], coreGlyphs=[("Drift", "LiftRightThumb")]),
-    # Lift EITHER thumb: drift and Echo Sight together (touch overrides on the prefab); tilt rolls.
+    # Lift EITHER thumb: drift and Echo Sight together (touch overrides on the prefab); the phone rolls
+    # the hull one to one while that thumb aims (TouchAttitudeRoll).
     profile("Dolphin", "ThumbLifts", tiltRoll=True,
             glyphs=[("Charge", "LiftEitherThumb"), ("Time", "LiftEitherThumb")]),
     # Yastri on either lift; both thumbs off soars (IdleAction -> the boost) steered by tilt.
@@ -164,6 +165,7 @@ MonoBehaviour:
     tail = """  tiltFullScaleDegrees: 25
   tiltDeadZoneDegrees: 2.5
   tiltSmoothingPerSecond: 12
+  tiltRollMaxDegrees: 90
   buttonMillimetres: 10
   buttonGapMillimetres: 1.5
   innerArcMillimetres: 22

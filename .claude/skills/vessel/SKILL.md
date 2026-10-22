@@ -866,7 +866,8 @@ applies to new abilities, new resources on the meter list, and anything that add
     controls, laid out round the right thumb in millimetres). Ask of every new ability: *how does a phone press it?*
     A trigger-depth read needs a press fallback (`max(analog, held)`, the Thresher and Angler pattern) or a hold-time
     ramp (the Stoat's `Hold01`); an LT+RT ability needs a both-thumbs-off form (`idlePullsBothTriggers`, the Rhino) or a
-    card; tilt (`tiltRollOnOneThumb`, `tiltSteersWhileIdle`) stands in for the axis a lifted thumb gave up. The gate:
+    card; tilt (`tiltRollOnOneThumb`, `tiltSteersWhileIdle`) stands in for the axis a lifted thumb gave up (the roll one
+    is an ANGLE, one to one with the phone like an AR window, `IInputStatus.HoldsRollAngle`; the steer is a stick). The gate:
     `author_touch_profiles.py --check` fails when a TotemButtons hull shows a card or button whose input resolves to
     no action on touch (it caught the Stoat, whose only bindings were the pad overrides, and the Angler, whose paint and
     erase read only trigger depth), and a ThumbLifts card whose lift glyph names a lift nothing is bound to. **A

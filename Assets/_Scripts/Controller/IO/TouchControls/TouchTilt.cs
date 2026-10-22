@@ -69,9 +69,11 @@ namespace CosmicShore.Gameplay
             return _stick;
         }
 
-        static bool LandscapeRight => Screen.orientation == ScreenOrientation.LandscapeRight;
+        internal static bool LandscapeRight => Screen.orientation == ScreenOrientation.LandscapeRight;
 
-        static bool TryReadGravity(out Vector3 gravity, out bool fused)
+        /// <summary>The OS's fused gravity, else the raw accelerometer (<paramref name="fused"/> false), in the
+        /// device frame. Enables the sensor it reads on first use.</summary>
+        internal static bool TryReadGravity(out Vector3 gravity, out bool fused)
         {
             fused = true;
             var sensor = GravitySensor.current;
