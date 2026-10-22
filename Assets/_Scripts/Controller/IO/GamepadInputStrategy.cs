@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using CosmicShore.Utility;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 
 
 namespace CosmicShore.Gameplay
@@ -115,6 +116,9 @@ namespace CosmicShore.Gameplay
             ProcessButtonInput();
             Reparameterize();
             PerformSpeedAndDirectionalEffects();
+            // Last, so the straight-line gestures above keep judging the sticks as they always
+            // did. The curve is odd (sign kept), so it commutes with Invert Y.
+            ApplySteeringResponse();
         }
 
         private void ProcessStickInput()
@@ -250,6 +254,22 @@ namespace CosmicShore.Gameplay
                           $"  XDiff: {xDiffBefore:F2} -> {inputStatus.XDiff:F2} (InvertThrottle: {inputStatus.InvertThrottleEnabled})");
             }
             #endif
+        }
+
+        // The pad's sensitivity, given back through the response curve instead of the nose lag
+        // human pilots no longer have (GamepadFlightConfigSO). Steering readings only: throttle
+        // (XDiff) and the raw stick positions are left as they are.
+        private void ApplySteeringResponse()
+        {
+            var config = GamepadFlightConfigSO.Instance;
+            inputStatus.XSum = config.Shape(inputStatus.XSum);
+            inputStatus.YSum = config.Shape(inputStatus.YSum);
+            inputStatus.YDiff = config.Shape(inputStatus.YDiff);
+
+            var left = inputStatus.EasedLeftJoystickPosition;
+            inputStatus.EasedLeftJoystickPosition = new Vector2(config.Shape(left.x), config.Shape(left.y));
+            var right = inputStatus.EasedRightJoystickPosition;
+            inputStatus.EasedRightJoystickPosition = new Vector2(config.Shape(right.x), config.Shape(right.y));
         }
 
         private void PerformSpeedAndDirectionalEffects()

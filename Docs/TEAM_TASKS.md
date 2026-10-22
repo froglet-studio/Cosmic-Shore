@@ -2091,3 +2091,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (product), Shombith (UI / orientation)
 - **Added:** 2026-10-22 by a Claude session (`cece/keen-edison-3c6pvz`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/CrewViews.cs SeatOrientation
+
+### T-20261022-accb · open · test · Input
+- **Task:** Fly two or three hulls (a two-stick hull like the Squirrel, a one-thumb hull like the Sparrow) on a gamepad on this branch and judge whether small corrections feel like the old pad (before 2026-10-21) while the nose still has no lag. Tune Resources/GamepadFlightConfig live in Play: responseExponent (centre softness, 1.5) and steeringSensitivity (full-stick rate, 0.85); 1 / 1 is the uncurved pad.
+- **Done when:** Garrett signs off on the values, or new values are committed to Resources/GamepadFlightConfig.asset
+- **Who can take it:** Garrett (the feel), Yash (offered)
+- **Added:** 2026-10-22 by a Claude session (`cece/serene-galileo-t77xt3`)
+- **See:** Docs/claude/ARCHITECTURE_CORE.md (Input Strategy), Assets/_Scripts/ScriptableObjects/GamepadFlightConfigSO.cs
