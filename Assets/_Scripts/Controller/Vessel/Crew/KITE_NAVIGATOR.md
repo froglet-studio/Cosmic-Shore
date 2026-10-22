@@ -367,13 +367,16 @@ How it was checked:
 their icons to blend in with the environment crystals. so lets treat them like UI and not post process them. furthermore
 we should not be applying the panini transform to an orthographic view. that is causing the lower horizontal bar to get
 bowed into a curve."
-- **Marks without post:** an overlay camera (`KiteNavigatorMarks`, a child of the kite camera, on its URP camera stack)
-  has post-processing off and sees only the `3D UI` layer, which nothing in a scene or prefab uses. Every kite-view
-  mark is drawn for it on that layer, so it lands after the world's bloom and tonemapper and keeps its true limes. The
-  world under the lens keeps the game's post-processing. The pilot view's faint marks are unchanged.
-- **No Panini:** the kite camera updates its own volume stack each frame (`VolumeFrameworkUpdateMode.ViaScripting`) and
-  holds `PaniniProjection.distance` at 0 in it. Panini is a perspective lens (the speed tunnel drives it on the shared
-  profile), and on the orthographic map it bowed straight edges into curves. The pilot camera still gets it.
+- **Marks without post:** an `UnprocessedOverlay` (`KiteNavigatorMarks`, an overlay camera on the kite camera's URP
+  stack) has post-processing off and sees only the `3D UI` layer, which nothing in a scene or prefab uses. Every
+  kite-view mark is drawn for it on that layer, so it lands after the world's bloom and tonemapper and keeps its true
+  limes. The world under the lens keeps the game's post-processing. The pilot view's faint marks are unchanged.
+- **No Panini:** `OrthographicLens` holds `PaniniProjection.distance` at 0 for every orthographic camera. Panini is a
+  perspective lens (the speed tunnel drives it on the shared profile), and on the orthographic map it bowed straight
+  edges into curves. The pilot camera still gets it.
+- **The frame (round 11b):** the small view, the kite's square or the lifted Grouper box, wears the style guide's frame
+  (`PipViewFrame`). These rules now hold for every orthographic view and every PiP view in the game
+  (`Docs/claude/SHADERS_AND_PERFORMANCE.md` § Orthographic views and picture-in-picture frames).
 
 ## Seats: the swap is the arena's
 

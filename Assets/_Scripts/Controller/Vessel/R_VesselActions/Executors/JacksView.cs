@@ -1,3 +1,5 @@
+using CosmicShore.UI;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
@@ -15,12 +17,18 @@ namespace CosmicShore.Gameplay
     /// the game's own camera is lifted into the small square in the lower left; flying, the game's camera has the screen and
     /// this view is the small square. The game camera's rect and depth are restored the moment the jacks fly again, the
     /// camera changes, or the view is disposed.</para>
+    ///
+    /// <para>The rings and dots it shows are 2D marks, drawn through an <see cref="UnprocessedOverlay"/> so the view's bloom
+    /// does not smear them (the world under them keeps it), and no Panini bows it (<see cref="OrthographicLens"/>). The small
+    /// view wears the style guide's frame (<see cref="PipViewFrame"/>).</para>
     /// </summary>
     sealed class JacksView
     {
         readonly JacksExecutor _ex;
         readonly GameObject _root;
         readonly Camera _cam;
+        readonly UnprocessedOverlay _marks;
+        readonly PipViewFrame _frame = new();
         Vector3 _centre, _forward;
         bool _placed;
 
@@ -37,13 +45,20 @@ namespace CosmicShore.Gameplay
             _cam.orthographic = true;
             _cam.nearClipPlane = 0.1f;
             _cam.enabled = false;
+            _marks = new UnprocessedOverlay(_cam, "JacksMarks");
         }
 
         internal Camera Camera => _cam;
 
+        /// <summary>The camera, and the layer, the view's 2D marks are drawn for: after its post-processing.</summary>
+        internal Camera MarksCamera => _marks.Camera;
+        internal int MarksLayer => _marks.Layer;
+
         internal void Dispose()
         {
             RestorePilot();
+            _frame.Dispose();
+            _marks.Dispose();
             if (_root) Object.Destroy(_root);
         }
 
@@ -104,6 +119,8 @@ namespace CosmicShore.Gameplay
             _centre += right * pan.x + _forward * pan.y;
 
             _cam.transform.SetPositionAndRotation(_centre + up * cfg.ViewDepth, Quaternion.LookRotation(-up, _forward));
+            _marks.Sync();
+            _frame.Show(herding ? (_pilotLifted ? _pilot : null) : _cam);
         }
 
         /// <summary>

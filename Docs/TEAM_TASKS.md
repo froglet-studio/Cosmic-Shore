@@ -2035,3 +2035,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (Wrasse owner), Yash (offered)
 - **Added:** 2026-10-22 by a Claude session (`cece/dazzling-volta-apzw2m`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md Round 11
+
+### T-20261022-70b1 · open · test · crew
+- **Task:** In Unity, fly each picture-in-picture view and check the new frame sits exactly on the small view's edge, does not block taps or the double-tap swap, and sits under the HUD: Wrasse (both seats), Goby & Pistol (both seats), Orca (turret seat, lifted pilot view), Jacks (herding and flying). Also check that the Jacks' rings and dots keep their colours (no bloom on them) and that no orthographic view bows
+- **Done when:** Frame is aligned on all four vessels at 16:9, 4:3 and a phone; taps and swaps still work; Jacks marks read crisp
+- **Who can take it:** Yash (offered), Garrett (crew vessels)
+- **Added:** 2026-10-22 by a Claude session (`cece/dazzling-volta-apzw2m`)
+- **See:** Docs/claude/SHADERS_AND_PERFORMANCE.md § Orthographic views and picture-in-picture frames
+
+### T-20261022-a9fa · open · decision · ui
+- **Task:** Sign off the picture-in-picture frame's look: 1px Light (E6E9FF, 85%) hairline on a slivered outline, 2px Neutral (Dark) (222645) chrome band to a square edge, large 14px sliver on top-left/bottom-right. Tune it in Resources/PipFrameStyle.asset (tokens from UITheme.asset)
+- **Done when:** Shombith approves or retunes PipFrameStyle.asset
+- **Who can take it:** Shombith (UI, style guide)
+- **Added:** 2026-10-22 by a Claude session (`cece/dazzling-volta-apzw2m`)
+- **See:** Assets/_Scripts/UI/Elements/PipViewFrame.cs

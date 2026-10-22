@@ -5,7 +5,6 @@ using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
 
 namespace CosmicShore.Gameplay
 {
@@ -39,10 +38,9 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>The kite view's marks are UI</b> (Garrett, 2026-10-22: "treat them like UI and not post process them").
     /// The world under the lens keeps the game's post-processing, but the kite, its tail, the cord, the motes, the lasso and
-    /// the juice are drawn by an overlay camera stacked on the kite camera with post-processing off, on the otherwise empty
-    /// "3D UI" layer, so bloom and the tonemapper no longer mute the limes into the crystals. And the kite camera's volume
-    /// stack is its own, with the Panini projection held at zero: Panini is a perspective lens and bowed the orthographic
-    /// view's straight edges (the hand line) into curves.</para>
+    /// the juice are drawn through an <see cref="UnprocessedOverlay"/> (post-processing off), so bloom and the tonemapper no
+    /// longer mute the limes into the crystals. No Panini bows the map's straight edges: <see cref="OrthographicLens"/>
+    /// keeps it off every orthographic camera. The small view wears the style guide's frame (<see cref="PipViewFrame"/>).</para>
     /// </summary>
     sealed class KiteNavigatorView
     {
@@ -53,10 +51,9 @@ namespace CosmicShore.Gameplay
         readonly KiteNavigator _nav;
         readonly GameObject _root;
         readonly Camera _cam;
-        // the kite view's marks, drawn after the kite camera's post-processing; the kite camera itself when the layer is missing
-        readonly Camera _marks;
-        readonly int _marksLayer;
-        const string MarksLayerName = "3D UI";
+        // the kite view's marks, drawn after the kite camera's post-processing
+        readonly UnprocessedOverlay _marks;
+        readonly PipViewFrame _frame = new();
         readonly Mesh _kiteMesh, _dotMesh;
         readonly Mesh[] _petals = new Mesh[4];
         readonly Vector3[][] _outlines = new Vector3[4][];   // each petal's outline in its mesh's own space
@@ -106,9 +103,7 @@ namespace CosmicShore.Gameplay
             // a bare AddComponent<Camera> is URP's default: no post-processing (no bloom, no tonemapper), the wrong volume
             // mask, SDR. Draw the way the game's camera draws (OffscreenCameraSetup; Garrett, 2026-10-21)
             OffscreenCameraSetup.AdoptGameCameraImage(_cam, postProcessing: true, antiAliasing: true, shadows: true);
-            // its own volume stack, updated each frame in Frame with the Panini zeroed: no perspective lens on an orthographic view
-            _cam.SetVolumeFrameworkUpdateMode(VolumeFrameworkUpdateMode.ViaScripting);
-            _marks = BuildMarksCamera(_cam, _cam.GetUniversalAdditionalCameraData(), out _marksLayer);
+            _marks = new UnprocessedOverlay(_cam, "KiteNavigatorMarks");
             RenderPipelineManager.beginCameraRendering += BeginRender;
             RenderPipelineManager.endCameraRendering += EndRender;
 
@@ -155,33 +150,6 @@ namespace CosmicShore.Gameplay
         }
 
         internal Camera Camera => _cam;
-
-        // An overlay camera on the kite camera's stack, post-processing off, seeing only the marks' layer: everything drawn
-        // for it lands after the world's bloom and tonemapper, and over the world (an overlay clears depth), as the HUD does.
-        static Camera BuildMarksCamera(Camera kite, UniversalAdditionalCameraData kiteData, out int layer)
-        {
-            layer = LayerMask.NameToLayer(MarksLayerName);
-            if (layer < 0)
-            {
-                CSDebug.LogError($"[KiteNavigatorView] The \"{MarksLayerName}\" layer is missing from the Tag Manager, so the kite " +
-                                 "view's marks are drawn through its post-processing.");
-                layer = 0;
-                return kite;
-            }
-            var go = new GameObject("KiteNavigatorMarks");
-            go.transform.SetParent(kite.transform, false);
-            var cam = go.AddComponent<Camera>();
-            cam.orthographic = true;
-            cam.cullingMask = 1 << layer;
-            cam.clearFlags = CameraClearFlags.Nothing;
-            var data = cam.GetUniversalAdditionalCameraData();
-            data.renderType = CameraRenderType.Overlay;
-            data.renderPostProcessing = false;
-            data.renderShadows = false;
-            data.antialiasing = AntialiasingMode.None;
-            kiteData.cameraStack.Add(cam);
-            return cam;
-        }
 
         // Instanced draws: URP/Unlit set up as a transparent, double-sided surface (the shader GobyPistolDuo draws with).
         // NOT Sprites/Default: its instanced path reads the colour from unity_SpriteRendererColorArray, which only a
@@ -249,8 +217,9 @@ namespace CosmicShore.Gameplay
             RenderPipelineManager.endCameraRendering -= EndRender;
             EndRender(default, _cam);
             RestorePilot();
-            if (_cam) _cam.DestroyVolumeStack();
-            if (_root) Object.Destroy(_root);   // the marks camera with it
+            _frame.Dispose();
+            _marks.Dispose();
+            if (_root) Object.Destroy(_root);
             foreach (var o in _petals) if (o) Object.Destroy(o);
             foreach (var o in _moteMats) if (o) Object.Destroy(o);
             foreach (var o in _moteFaintMats) if (o) Object.Destroy(o);
@@ -286,7 +255,6 @@ namespace CosmicShore.Gameplay
                                                   Quaternion.LookRotation(-up, fwd));
             _cam.orthographicSize = s.BoardRadius * cfg.ViewScale;
             _cam.farClipPlane = 2f * cfg.ViewDepth + 1f;
-            UpdateVolumes();
 
             float baseDepth = _pilot ? _pilotDepth : 0f;
             float m = cfg.ViewMargin, h = cfg.PipSize, aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 1.78f;
@@ -314,25 +282,8 @@ namespace CosmicShore.Gameplay
                 _cam.rect = new Rect(m / aspect, m, h / aspect, h);       // a square in the lower left
                 _cam.depth = baseDepth + 1f;
             }
-            if (_marks != _cam)
-            {
-                // an orthographic overlay takes its aspect from its own rect, so it follows the kite camera's exactly
-                _marks.rect = _cam.rect;
-                _marks.orthographicSize = _cam.orthographicSize;
-                _marks.nearClipPlane = _cam.nearClipPlane;
-                _marks.farClipPlane = _cam.farClipPlane;
-            }
-        }
-
-        // The kite camera's own volume stack, from the game's volumes at its lens, with the Panini projection held at zero:
-        // it is a perspective lens, and on this orthographic view it bowed the straight edges into curves.
-        void UpdateVolumes()
-        {
-            _cam.UpdateVolumeStack();
-            var stack = _cam.GetUniversalAdditionalCameraData().volumeStack;
-            if (stack == null) return;
-            var panini = stack.GetComponent<PaniniProjection>();
-            if (panini) panini.distance.value = 0f;
+            _marks.Sync();
+            _frame.Show(humanNavigates ? (_pilotLifted ? _pilot : null) : _cam);
         }
 
         /// <summary>The hand line, as a fraction of the screen's height: just above the ability cards (handLineGap), or
@@ -448,7 +399,7 @@ namespace CosmicShore.Gameplay
             var cfg = _nav.Config;
             var s = _nav.Settings;
             var basis = Quaternion.LookRotation(_nav.BoardForward, _nav.BoardUp);
-            Camera kite = _marks, pilot = _pilot;   // the kite view's marks skip its post-processing
+            Camera kite = _marks.Camera, pilot = _pilot;   // the kite view's marks skip its post-processing
             float lift = cfg.ViewDepth - 2f;   // just under the lens: in front of every prism the view sees
             float now = Time.time;
             var juiceFrame = JuiceFrame(now, pilot);
@@ -693,7 +644,7 @@ namespace CosmicShore.Gameplay
         }
 
         // the marks camera sees only its own layer; every other camera draws on Default, as before
-        int LayerFor(Camera cam) => cam == _marks ? _marksLayer : 0;
+        int LayerFor(Camera cam) => cam == _marks.Camera ? _marks.Layer : 0;
 
         void DrawDynamic(Mesh mesh, Material mat, Camera cam)
         {
