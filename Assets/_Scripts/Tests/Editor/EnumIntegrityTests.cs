@@ -60,7 +60,7 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.Wrasse, 19)]
         [TestCase(VesselClassType.Orca, 20)]
         [TestCase(VesselClassType.Starling, 21)]
-        [TestCase(VesselClassType.Marlin, 22)]
+        [TestCase(VesselClassType.Jacks, 22)]
         [TestCase(VesselClassType.Honeyguide, 23)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {

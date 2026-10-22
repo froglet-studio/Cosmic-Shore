@@ -1,117 +1,97 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
-using Unity.Profiling;
 using UnityEngine.InputSystem;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Goby &amp; Pistol duo (VesselClassType.Goby): the hull you fly is the GOBY (a two-thumb flier on the Squirrel's
-    /// numbers, the Squirrel's own abilities); its path is unrolled into the PISTOL's 2D world (<see cref="PistolRibbon"/>)
-    /// and the Pistol rides the ground its trail's hinges make, seen side on through a second camera. The Pistol's body,
-    /// its launch, ghost and Snap (the vortex ring) act on the scene's REAL prisms; the Goby's primer and flares do too.
-    /// One human flies one half and the AI flies the other; the swap is the arena's gesture (D-pad left / right, keyboard
-    /// 1 / 2, <see cref="PilotSwapGesture"/>). The design: <c>.claude/skills/duo-vessel/references/designs/goby-and-pistol.md</c>.
+    /// The Goby &amp; Pistol crew vessel (VesselClassType.Goby). Garrett, 2026-10-22: "it should be a goby with its own kit
+    /// that represents a goby and synergizes with the pistol and its kit" - the watchman goby and the near-blind pistol
+    /// shrimp that share a burrow. The design: <c>.claude/skills/duo-vessel/references/designs/goby-and-pistol.md</c> §11.
+    /// <list type="bullet">
+    /// <item><b>The Goby</b> never cruises. It perches, aims, and DARTS like the Shrike slings itself: hold Dart to charge
+    /// the distance, let go, and it flies there in <c>dartSeconds</c>, stopping on the first block on its line (Time 5: it
+    /// passes through prisms). A dart into open space makes its own perch. Each dart lays the Pistol's ground. It LOCKS
+    /// rival vessels (then fauna) in its nose's cone.</item>
+    /// <item><b>The Pistol</b> rides the ground from perch to perch on a FLAT plane through the dart, downhill whichever
+    /// way it goes (<see cref="PistolPlane"/>), Tiny Wings style. At each perch it rests and builds a DEN of prisms and
+    /// shielded prisms (Mass 5: danger and super-shielded too), as many as the distance it travelled since its last den
+    /// and Mass make; it may ride back to an old den to add to it. Mass beside its plane is pulled into it (Space; Space
+    /// 5: shielded too). Its Snap fires a vortex ring; with the Goby locked on a rival that is on the Pistol's screen, the
+    /// ring homes on it and takes petals (Charge). Time is its jump's cooldown.</item>
+    /// </list>
     ///
-    /// <para>It lives on <c>Goby.prefab</c> and wakes only on the LOCAL pilot's hull while a human flies it (not on an AI
-    /// or remote copy, not while the menu's autopilot flies it): the Pistol is simulated on that one machine, so its
-    /// breaks are local until the duo is networked (§8 of the brief). <c>FrogletTools ▸ Vessels ▸ Goby and Pistol (Play
-    /// mode)</c> adds the same component to any vessel you are flying.</para>
+    /// <para>One human flies one half and the seat's AI the other; the swap is the arena's gesture (D-pad left / right,
+    /// keys 1 / 2, <see cref="PilotSwapGesture"/>) or a double tap on the small view. Each seat has its own controls: the
+    /// Goby's Dart and Lock are the hull's own inputs (<see cref="CrewButtonActionSO"/>: Button3 / Button4, a pad's RT /
+    /// LT), and on a phone each seat shows its own buttons (<see cref="GobyPistolButtons"/>).</para>
     ///
-    /// <para>Everything it computes is the lab's arithmetic, ported line for line and held to the lab's numbers by
-    /// <c>GobyPistolMathTests</c>; every number is <see cref="GobyPistolConfigSO"/>, cloned from the Vessel Studio artifact
-    /// (<c>Docs/Studios/VesselStudio/goby.html</c>). This file is only the glue to the scene: which prisms, which camera,
-    /// which buttons.</para>
-    ///
-    /// <para>Prisms are moved the sanctioned way (transform, then <see cref="Prism.NotifyPositionChanged"/>; never a
-    /// super-shielded or growing one) and broken only by an active force (<see cref="Prism.Damage"/>, the game's own
-    /// explosion), so mass is conserved and nothing pops. The side view draws each prism's own mesh and material at its
-    /// unrolled place, turned by the ribbon there: the Pistol's world, not a copy of it.</para>
+    /// <para>It lives on <c>Goby.prefab</c> and wakes only on the LOCAL pilot's hull while a human flies it (CrewSeat):
+    /// the Pistol, the dens, the pull and the rings are simulated on that one machine until the crew is networked.</para>
     /// </summary>
-    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, IHullParkAware
+    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, ICrewButtons, IHullParkAware
     {
         enum Half { Goby = 0, Pistol = 1 }
-        enum By { Body = 0, Vortex = 1, Chain = 2, Flare = 3 }
 
-        [Tooltip("The duo's numbers, cloned from the artifact. Empty: the artifact's SHIPPED values.")]
+        [Tooltip("The crew's numbers. Empty: the config's defaults.")]
         [SerializeField] GobyPistolConfigSO config;
 
-        [Tooltip("The AI's level on whichever half the human is not flying (the lab's Easy / Medium / Hard).")]
+        [Tooltip("The AI's level on whichever half the human is not flying.")]
         [SerializeField] AIDifficulty aiLevel = AIDifficulty.Hard;
 
-        [Tooltip("Draw the Pistol's side view (full screen while you fly the Pistol, an inset while you fly the Goby).")]
+        [Tooltip("Draw the Pistol's view (full screen while you fly the Pistol, the small square while you fly the Goby).")]
         [SerializeField] bool showSideView = true;
 
-        const float TeleportU = 400f;           // the Goby moved further than this in a frame: a respawn, start a new ribbon
-        static readonly Vector3 Stage = new(0f, -40000f, 0f);   // where the flat world is drawn, far from the real one
+        sealed class Den { public Vector3 Pos, Up; public readonly List<Prism> Prisms = new(); public int Placed; }
+        sealed class RingRun { public VortexRing Ring; public readonly List<Prism> Prisms = new(); public IVesselStatus Target; }
 
-        sealed class RingRun { public VortexRing Ring; public readonly List<Prism> Prisms = new(); }
-        struct Flare { public Vector3 P, V; public Prism Target; public float Life; }
+        IVessel _goby; IVesselStatus _status; Transform _gt; IPlayer _seatPlayer;
+        Half _human = Half.Goby;
+        float _t, _swapReadyAt;
+        bool _pinned, _penHeld;
+        Vector3 _home;
+        readonly List<Den> _perches = new();                 // perch k: where the Goby sat, and the den the Pistol builds there
+        readonly List<PlaneSegment> _segments = new();       // segment k: the dart from perch k to perch k + 1
+        readonly Trail _trail = new();
 
-        IVessel _goby; Transform _gt;   // bound while this is the local pilot's hull, flown by a human
-        PistolRibbon _rb; PistolBodyMath.State _p; PistolAI _ai;
-        PistolBodyMath.Settings _body; VortexRing.Settings _vs; PistolAI.Settings _ais; PistolRibbon.LaySettings _lay;
-        float _t, _swapReadyAt; Vector3 _lastPos; Half _human = Half.Goby; bool _weTookGoby; IPlayer _seatPlayer;
+        // the Goby: its dart and its lock
+        bool _dartHeld, _lockHeld, _prevLockHeld, _charging, _darting;
+        float _chargeT, _dartReadyAt, _dartDist, _dartWent, _dartSpeed;
+        Vector3 _dartDir, _dartUp;
+        bool _dartPhase;
+        Transform _lockTarget; IVesselStatus _lockVessel; bool _lockIsVessel;
+
+        // the Goby's own AI (while the human flies the Pistol): it aims the hull and darts by the same calls the buttons make
+        Vector3 _aiDir; float _aiDecideAt, _aiLandedAt; bool _aiHasDir;
+        PistolAI.Mulberry32 _aiRng;
+
+        // the Pistol
+        PistolBodyMath.State _p; PistolBodyMath.Settings _body; VortexRing.Settings _vs;
+        PistolPlane.Frame _f; PistolAI _ai;
+        int _seg = -1, _dir = 1, _at, _travelDir = 1;
+        bool _resting = true; float _restT, _waitT, _travelled; int _restQueue, _restSpawned;
+        bool _touchGhost, _touchSnap, _backPressed;
+        bool _mouseDown, _aiming; Vector2 _mouseFrom, _pointerAt; Vector2? _mouseAim, _padAim; int _fingerId = -1;
+        float _scanAt;
         readonly List<RingRun> _rings = new();
         readonly HashSet<Prism> _held = new();
-        readonly Dictionary<Prism, float> _primed = new(), _hot = new();
-        readonly List<Prism> _qBody = new(), _qRing = new(), _qChain = new(), _qScan = new(), _qView = new(), _qGoby = new();
-        readonly List<Prism> _expired = new();
-        readonly Stack<Vector3> _chain = new();
+        readonly List<Prism> _q = new(), _q2 = new();
 
-        // the Goby's primer and flares (the lab's g.primer / g.flare)
-        int _primer, _flare; float _primerT, _flareT, _lastPrimerAt = -9f, _lastFlareAt = -9f; bool _prevPrimer, _prevFlare;
-        readonly List<Flare> _flares = new();
-
-        // the human Pistol's pointer and pad (the lab's humanPistol)
-        bool _mouseDown, _aiming; Vector2 _mouseFrom; Vector2? _mouseAim, _padAim;
-
-        // the side view (what the Pistol sees: the section below)
-        const int ViewSides = 24;                 // the Pistol's tube (the lab's cylinder)
-        const int MaxWarped = 400, MaxBoxes = 600, MaxBars = 16, MaxTiles = 400, MaxSegTests = 120000, LineSamples = 220;
-        struct Seen { public Prism Prism; public PistolRibbon.MapResult M; public PistolWarp.Zone Z; public bool Ground; public int Class; public float Key; public int Id; }
-        struct Fx { public Vector3 At; public float T0, Life, R0, R1; public Color32 Color; public bool Disc; }
-        readonly List<Seen> _seen = new(2048), _foreground = new(256);
-        static readonly System.Comparison<Seen> s_order = (a, b) =>
-        {
-            int c = a.Class.CompareTo(b.Class); if (c != 0) return c;
-            c = a.Key.CompareTo(b.Key); if (c != 0) return c;
-            return a.Id.CompareTo(b.Id);
-        };
-        static readonly System.Comparison<Seen> s_farFirst = (a, b) => { int c = b.M.D.CompareTo(a.M.D); return c != 0 ? c : a.Id.CompareTo(b.Id); };
-        static readonly ProfilerMarker s_viewMarker = new("GobyPistol.SideView");
-        static readonly Color32 C_Primed = new(185, 139, 255, 255), C_Hot = new(255, 106, 42, 255), C_Held = new(159, 232, 255, 255);   // the lab's own marks
-        static readonly Color32 C_Body = new(255, 138, 61, 255), C_AimGreen = new(75, 227, 143, 255), C_AimAmber = new(255, 180, 84, 255), C_AimRed = new(255, 92, 108, 255);
-        readonly List<Fx> _fx = new();
-        readonly List<Vector3> _tail = new(32), _linePts = new(LineSamples);
-        readonly List<Color32> _lineCols = new(LineSamples);
-        readonly Vector3[] _corners = new Vector3[8], _xhd = new Vector3[8];
-        readonly Dictionary<Domains, Color32> _domainColor = new();
-        readonly Dictionary<Prism, int> _lastK = new(2048);        // where each prism mapped last frame (the coherence cache)
-        VesselTransformer _tf;                                      // the Goby's transformer: its ThrottleScaler is ours while bound
-        readonly Dictionary<Prism, float> _barSince = new();         // when a prism became a bar (hysteresis, grow-in)
-        readonly List<Prism> _expiredK = new();
-        readonly PistolWorldMesh _world = new();
-        readonly CrewPictureInPicture _pip = new();                 // the crew vessels' one layout of the two views
-        CrewViewRender _render;                                      // and their one look for a seat camera's render
-        readonly PistolTrueDraw _true = new();                      // the world drawn as itself: real meshes, real materials, lit, under the sky
-        readonly Dictionary<Prism, Renderer> _renderers = new(2048); // each prism's renderer (its live sharedMaterials)
-        readonly List<Renderer> _gobyRenderers = new();              // the hull's own renderers, drawn at the end of the ground
-        readonly List<Mesh> _baked = new();                          // a SkinnedMeshRenderer's pose, baked each frame
-        static readonly Material[] s_oneMaterial = new Material[1];
-        GameObject _view; Camera _cam; float _scX, _scY; bool _scLive;
-        Quaternion _frame = Quaternion.identity; bool _frameLive;
-        float _squash, _shake, _nextSweep;
-        int _cntMapped, _cntWarped, _cntBars, _cntBoxes, _cntTiles;
-        // the 3D world's share of the Pistol's effects: the rings and flares the Goby pilot sees, instanced
-        Mesh _cube, _torus; Material _ringMat, _flareMat;
+        // the views
+        readonly CrewPictureInPicture _pip = new();
+        readonly CrewSmallViewDoubleTap _pipTap = new();
+        readonly GobyPistolButtons _buttons = new();
+        CrewViewRender _render;
+        GameObject _view, _bodyGo; Camera _cam; bool _camLive; Quaternion _camRot; Vector3 _camPos;
+        Mesh _torus; Material _ringMat, _lockMat, _bodyMat;
 
         GobyPistolConfigSO Config => config;
 
-        /// <summary>Add the duo to the vessel you are flying (it then stands in for the Goby). False when no local
+        /// <summary>Add the crew to the vessel you are flying (it then stands in for the Goby). False when no local
         /// vessel is flying. A hull that already carries it (the Goby) is left as it is.</summary>
         public static bool AttachToLocalVessel(GobyPistolConfigSO cfg)
         {
@@ -125,411 +105,528 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The seat's subvessel on the card ("Goby and Pistol").</summary>
         public string SeatName => "Pistol";
-        /// <summary>True while the local human flies the Pistol and the Goby's own AI flies the hull.</summary>
+        /// <summary>True while the local human flies the Pistol and the seat's AI flies the Goby.</summary>
         public bool HumanInSeat => _human == Half.Pistol;
 
-        // the local pilot's own hull, flown by a human (or handed to the AI by this component's own swap): the crew seat
-        // rule every crew vessel shares (CrewSeat.ShouldWake; the Wrasse's KiteNavigator follows the same one)
-        bool ShouldRun(out IVessel vessel) => CrewSeat.ShouldWake(this, _weTookGoby, out vessel);
+        // ---- readouts for the HUD and the tests
+        public int PerchCount => _perches.Count;
+        public int DenPrisms { get { int n = 0; foreach (var d in _perches) n += d.Placed; return n; } }
+        public bool PistolResting => _resting;
+        public bool HasLock => _lockTarget;
+        public bool DartReady => !_darting && _t >= _dartReadyAt;
+        public bool HeadingBack => _travelDir < 0;
+
+        // the local pilot's own hull, flown by a human: the crew seat rule every crew vessel shares
+        bool ShouldRun(out IVessel vessel) => CrewSeat.ShouldWake(this, false, out vessel);
+
+        // ================================ binding ================================
 
         void Bind(IVessel vessel)
         {
-            _goby = vessel; _gt = transform; _tf = vessel.VesselStatus != null ? vessel.VesselStatus.VesselTransformer : null;
-            _gobyRenderers.Clear(); _gt.GetComponentsInChildren(true, _gobyRenderers);
+            _goby = vessel; _status = vessel.VesselStatus; _gt = transform;
             if (!config) config = ScriptableObject.CreateInstance<GobyPistolConfigSO>();
-            _body = Config.Body; _vs = Config.Vortex; _ais = Config.AI; _lay = Config.Lay;
-            _primer = Mathf.RoundToInt(Config.PrimerCharges); _flare = Mathf.RoundToInt(Config.FlareCharges);
+            _body = Config.Body; _vs = Config.Vortex;
             _t = 0f; _swapReadyAt = 0f; _human = Half.Goby;
-            // every clock the step reads against _t restarts with it: a re-bind (the menu round trip hands the hull to the
-            // autopilot and back) otherwise held the AI Goby's primer and flares until the OLD clock's last fire had passed
-            _nextSweep = 0f; _lastPrimerAt = _lastFlareAt = -9f; _primerT = _flareT = 0f; _prevPrimer = _prevFlare = false;
+            _perches.Clear(); _segments.Clear(); _rings.Clear(); _held.Clear();
+            _darting = _charging = false; _dartReadyAt = 0f; ClearLock();
+            _aiRng = new PistolAI.Mulberry32(20261022u); _ai = new PistolAI(31337u + 17u);
+            _home = _gt.position; _aiHasDir = false; _aiLandedAt = 0f;
+            Pin(true); HoldPen(true);
+            // the Goby starts perched where it is, on a pad of its own
+            AddPerch(_gt.position, _gt.up, ownPad: true);
+            _p = new PistolBodyMath.State { launch = Mathf.RoundToInt(_body.pLaunchCharges) };
+            _f = WaitingFrame();
+            PistolBodyMath.PlaceAtStart(_p, _f, _body.pMinSpeed);
+            _seg = -1; _at = 0; _travelDir = 1; _resting = true; _restT = 0f; _restQueue = _restSpawned = 0; _travelled = 0f; _waitT = 0f;
             BuildView();
-            ResetWorld();
         }
 
         void Unbind()
         {
             if (_goby == null) return;
             if (_human == Half.Pistol) SetHuman(Half.Goby);
-            ReleaseAllRings(); _flares.Clear(); _primed.Clear(); _hot.Clear();
+            _buttons.Dispose();
+            ReleaseAllRings();
+            Pin(false); HoldPen(false);
             _render?.Dispose(); _render = null; _pip.Restore();
             if (_view) Destroy(_view);
-            _world.Dispose(); _fx.Clear(); _tail.Clear(); _seen.Clear(); _foreground.Clear(); _lastK.Clear(); _barSince.Clear();
-            _true.Dispose(); _renderers.Clear(); _gobyRenderers.Clear();
-            foreach (var m in _baked) if (m) Destroy(m);
-            _baked.Clear();
-            foreach (var o in new UnityEngine.Object[] { _torus, _ringMat, _flareMat })
-                if (o) Destroy(o);
-            if (_tf) _tf.ThrottleScaler = _tf.DefaultThrottleScaler;   // the Goby's cruise is its own again
-            _goby = null; _gt = null; _rb = null; _cam = null; _view = null; _tf = null;
-        }
-
-        void ResetWorld()
-        {
-            ReleaseAllRings();
-            _rb = new PistolRibbon(Config.Unroll);
-            Vector3 pos = _gt.position, f = _gt.forward, u = _gt.up;
-            _rb.Begin(pos, f, u, Vector3.Cross(f, u).normalized, _lay);
-            _lastPos = pos;
-            _p = PistolBodyMath.Spawn(_rb, 0f, _body.pMinSpeed + 25f, _body);   // the lab's makeWorld: the Pistol at x = 0
-            _ai = new PistolAI(31337u + 17u);
-            _scLive = false; _frameLive = false; _lastK.Clear(); _barSince.Clear();
-            _tail.Clear(); _fx.Clear();   // the old ribbon's marks: a tail kept here streaks across the new screen
+            if (_bodyGo) Destroy(_bodyGo);
+            foreach (var o in new Object[] { _torus, _ringMat, _lockMat, _bodyMat }) if (o) Destroy(o);
+            _perches.Clear(); _segments.Clear(); ClearLock();
+            _goby = null; _status = null; _gt = null; _cam = null; _view = null; _bodyGo = null; _camLive = false;
         }
 
         void OnDisable() => Unbind();
 
-        // ================================ the step (the lab's stepWorld) ================================
+        void OnDestroy() => Unbind();
+
+        /// <summary>Translation pinned (the fleet's restricted stance): the Goby never cruises; it only aims and darts.</summary>
+        void Pin(bool on)
+        {
+            if (_pinned == on || _status == null) return;
+            _pinned = on;
+            if (_status.Vessel is VesselController controller) controller.SetTranslationRestricted(on);
+            else _status.IsTranslationRestricted = on;
+        }
+
+        /// <summary>The fleet spawner's pen is up: the Goby's only trail is the ground its darts lay.</summary>
+        void HoldPen(bool on)
+        {
+            if (_penHeld == on || _status == null) return;
+            var prisms = _status.VesselPrismController;
+            if (!prisms) return;
+            prisms.SetSpawnerPaused(on);
+            _penHeld = on;
+        }
+
+        bool IsAuthority()
+        {
+            var player = _status?.Player;
+            if (player != null && player.IsNetworkOwner) return true;
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            return nm == null || !nm.IsListening;
+        }
+
+        // ================================ the step ================================
 
         void Update()
         {
-            bool run = ShouldRun(out var vessel);
-            if (!run) { Unbind(); return; }
+            if (!ShouldRun(out var vessel)) { Unbind(); return; }
             if (_goby == null) Bind(vessel);
             float dt = Time.deltaTime; if (dt <= 0f) return;
             _t += dt;
-
-            Vector3 pos = _gt.position, f = _gt.forward, u = _gt.up, r = Vector3.Cross(f, u).normalized;
-            float moved = (pos - _lastPos).magnitude;
-            if (moved > TeleportU) { ResetWorld(); return; }
-            _rb.Lay(_lastPos, pos, f, u, r, _lay);
-            _lastPos = pos;
-            float gobySpeed = moved / dt;
-            // the lab's closeness (and the AI's easing beyond aiMaxGap when the duo's AI flies the Goby) scale the Goby's cruise:
-            // ThrottleScaler is the transformer's live copy of DefaultThrottleScaler and nothing else writes it in play
-            if (_tf) _tf.ThrottleScaler = _tf.DefaultThrottleScaler * GobyMath.SpeedScale(_rb.GobyX - _p.x, Config.CloseMax, Config.CloseRange, _human == Half.Pistol, Config.AiMaxGap);
+            _body.pLaunchCd = Mathf.Max(0.1f, Config.JumpCooldown.EvaluateReplicated(_status));
 
             PollSwap();
-            var inp = _human == Half.Pistol ? HumanPistol() : _ai.Think(_p, _rb, _t, Level(), _ais, Scan);
-            var ev = PistolBodyMath.Step(_p, _rb, _rb.GobyX, gobySpeed, _t, dt, inp, _body);
-            if (ev.FireSnap) _rings.Add(new RingRun { Ring = VortexRing.Fire(_rb, _p, ev.SnapAim, _vs.pVortexLife) });
-            Feel(ev, dt);
+            PaintButtons();
+
+            if (_human == Half.Goby) HumanGoby(dt); else GobyAI(dt);
+            StepDart(dt);
+            HoldLock();
+
+            StepPistol(dt);
+            Undertow(dt);
             BodyHits();
             StepRings(dt);
-            GobyAbilities(dt, pos, f, u, r);
-            StepFlares(dt);
-            Expire(_primed); Expire(_hot);
-            if (_t >= _nextSweep) { _nextSweep = _t + 2f; SweepDead(_lastK); SweepDead(_barSince); }   // _barSince holds start times: never Expire it
         }
 
-        void SweepDead<T>(Dictionary<Prism, T> marks)
+        // the level-5 upgrades, each read where it acts (named literally so the element ability table finds every gate)
+        R_VesselElementalAbilityHandler Abilities => _status?.ElementalAbilityHandler;
+
+        // ================================ the Goby: dart and perch ================================
+
+        /// <summary>The Goby's own buttons from the hull's bindings (<see cref="CrewButtonActionSO"/>): 0 dart (hold to
+        /// charge, let go to dart), 1 lock. The autopilot gate drops them while the seat's AI flies, so they come only from
+        /// the person flying the Goby.</summary>
+        public void SetButton(int button, bool down)
         {
-            _expiredK.Clear();
-            foreach (var kv in marks) if (!Live(kv.Key)) _expiredK.Add(kv.Key);
-            foreach (var k in _expiredK) marks.Remove(k);
+            if (_goby == null || _human != Half.Goby) return;
+            if (button == 0) _dartHeld = down;
+            else if (button == 1) _lockHeld = down;
         }
 
-        PistolAI.Difficulty Level() => aiLevel switch
+        void HumanGoby(float dt)
+        {
+            if (_dartHeld && !_charging && DartReady) { _charging = true; _chargeT = 0f; }
+            if (_charging)
+            {
+                _chargeT += dt;
+                if (!_dartHeld) { _charging = false; FireDart(Mathf.Lerp(Config.DartMinRange, Config.DartRange, Mathf.Clamp01(_chargeT / Config.DartChargeSeconds))); }
+            }
+            if (_lockHeld && !_prevLockHeld) TryLock();
+            _prevLockHeld = _lockHeld;
+        }
+
+        /// <summary>The charge the dart button holds, 0..1 (for the HUD).</summary>
+        public float DartCharge01 => _charging ? Mathf.Clamp01(_chargeT / Config.DartChargeSeconds) : 0f;
+
+        /// <summary>Dart along the nose, <paramref name="dist"/> u at most. It stops on the first block on its line (not the
+        /// pair's own); with the Time upgrade it passes through prisms and stops at the full distance, on a block there if
+        /// there is one. A dart that reaches nothing makes its own perch.</summary>
+        public void FireDart(float dist)
+        {
+            if (_goby == null || !DartReady || dist < 20f) return;
+            Vector3 o = _gt.position, f = _gt.forward;
+            _dartPhase = (Abilities && Abilities.IsUpgradeActive(Element.Time));
+            float go = dist;
+            if (!_dartPhase && FirstOnLine(o, f, dist, out float along)) go = Mathf.Max(0f, along);
+            if (go < 6f) return;
+            _darting = true; _dartDir = f; _dartUp = _gt.up; _dartDist = go; _dartWent = 0f;
+            _dartSpeed = go / Mathf.Max(0.05f, Config.DartSeconds);
+            _aiHasDir = false;
+        }
+
+        /// <summary>The first block (not the pair's own) the hull's padded line meets within <paramref name="len"/>.</summary>
+        bool FirstOnLine(Vector3 o, Vector3 f, float len, out float along)
+        {
+            along = float.MaxValue;
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return false;
+            index.QuerySegment(o, o + f * len, Config.HullRadius + Config.QueryReach, _q);
+            for (int i = 0; i < _q.Count; i++)
+            {
+                var prism = _q[i];
+                if (!Perchable(prism)) continue;
+                if (RayHits(prism, o, f, Config.HullRadius, len, out float t) && t < along) along = t;
+            }
+            _q.Clear();
+            return along < float.MaxValue;
+        }
+
+        bool Perchable(Prism prism) => prism && !prism.destroyed && prism.prismProperties != null && prism.ownerID != _status.PlayerName;
+
+        void StepDart(float dt)
+        {
+            if (!_darting) return;
+            float move = Mathf.Min(_dartSpeed * dt, _dartDist - _dartWent);
+            // without the Time upgrade, anything that moves into the line stops the dart there (the Shrike docks on the
+            // first block it touches)
+            if (!_dartPhase && move > 0f && FirstOnLine(_gt.position, _dartDir, move, out float hit)) { move = Mathf.Max(0f, hit); _dartDist = _dartWent + move; }
+            if (IsAuthority()) _status.VesselTransformer.TranslateShip(_dartDir * move);
+            _dartWent += move;
+            if (_dartWent < _dartDist - 0.01f) return;
+            _darting = false;
+            _dartReadyAt = _t + Config.DartCooldown;
+            _aiLandedAt = _t;
+            Vector3 at = _gt.position;
+            bool onBlock = NearBlock(at, Config.HullRadius + 4f);
+            var prev = _perches[_perches.Count - 1];
+            AddPerch(at, _dartUp, ownPad: !onBlock);
+            var seg = new PlaneSegment(prev.Pos, at, (prev.Up + _dartUp).normalized);
+            _segments.Add(seg);
+            LayGround(seg);
+        }
+
+        bool NearBlock(Vector3 at, float r)
+        {
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return false;
+            index.QuerySphere(at, r + Config.QueryReach, _q2);
+            bool near = false;
+            for (int i = 0; i < _q2.Count && !near; i++)
+                if (Perchable(_q2[i]) && BoxDistance(_q2[i], at) <= r) near = true;
+            _q2.Clear();
+            return near;
+        }
+
+        void AddPerch(Vector3 at, Vector3 up, bool ownPad)
+        {
+            var den = new Den { Pos = at, Up = up.sqrMagnitude > 1e-6f ? up.normalized : Vector3.up };
+            _perches.Add(den);
+            if (!ownPad) return;
+            // its own perch in open space: a small ring of blocks under the Goby
+            var channel = _status?.VesselPrismController ? _status.VesselPrismController.PrismSpawnChannel : null;
+            if (!channel) return;
+            int n = Mathf.Max(1, Config.OwnPerchBlocks);
+            Vector3 side = Vector3.Cross(den.Up, Mathf.Abs(Vector3.Dot(den.Up, Vector3.forward)) < 0.9f ? Vector3.forward : Vector3.right).normalized;
+            float r = Config.PerchBlockSize * 1.6f;
+            Vector3 under = at - den.Up * (Config.HullRadius + Config.PerchBlockSize * 0.6f);
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 dir = Quaternion.AngleAxis(360f * i / n, den.Up) * side;
+                if (!SafeLookRotation.TryGet(dir, den.Up, out var rot, this, logError: false)) continue;
+                BoostRingBuilder.LayOne(channel, under + dir * r, rot, Vector3.one * Config.PerchBlockSize, PrismKind.Plain,
+                    _status.Domain, _status.PlayerName, _status.PlayerName);
+            }
+        }
+
+        /// <summary>The dart's ground: a trail block every <c>trailBlockGap</c> along the line, on the hills the Pistol rides.</summary>
+        void LayGround(in PlaneSegment seg)
+        {
+            var prisms = _status.VesselPrismController;
+            var channel = prisms ? prisms.PrismSpawnChannel : null;
+            if (!channel || seg.L < 1f) return;
+            float gap = Mathf.Max(2f, Config.TrailBlockGap), amp = Config.HillAmplitude, wave = Config.HillWavelength;
+            Vector3 scale = Config.TrailBlockScale;
+            for (float s = gap * 0.5f; s < seg.L; s += gap)
+            {
+                Vector3 pos = seg.Ground(s, amp, wave);
+                Vector3 along = seg.S + seg.N * PistolPlane.HillSlope(s, seg.L, amp, wave);
+                if (!SafeLookRotation.TryGet(along, seg.N, out var rot, this, logError: false)) continue;
+                var ret = channel.RaiseEvent(new PrismEventData
+                {
+                    ownDomain = _status.Domain, Rotation = rot, SpawnPosition = pos, Scale = scale, PrismType = prisms.SpawnPrismType,
+                });
+                if (!ret.SpawnedObject || !ret.SpawnedObject.TryGetComponent(out Prism prism)) continue;
+                prism.TargetScale = scale;
+                prism.ownerID = _status.PlayerName;
+                prism.ChangeTeam(_status.Domain);
+                _trail.Add(prism);
+                prism.prismProperties.Index = (ushort)Mathf.Min(_trail.TrailList.Count - 1, ushort.MaxValue);
+                prism.Initialize(_status.PlayerName);
+                prism.AdmitTargetScale(scale);
+                prism.TargetScale = scale;
+                prism.AssignTrail(_trail);   // AFTER Initialize: pool reuse clears trail membership
+            }
+        }
+
+        // ================================ the Goby: lock ================================
+
+        /// <summary>Lock the best target in the nose's cone: a rival vessel first, then fauna (the Shrike's order), the one
+        /// nearest the aim within its class. Nothing in the cone clears the lock.</summary>
+        void TryLock()
+        {
+            Vector3 pos = _gt.position, f = _gt.forward;
+            float cone = Config.LockCone * Mathf.Deg2Rad, best = cone;
+            Transform target = null; IVesselStatus vessel = null;
+            var players = Config.GameData ? Config.GameData.Players : null;
+            if (players != null)
+                foreach (var player in players)
+                {
+                    var v = EnemyStatus(player);
+                    if (v == null) continue;
+                    float a = Angle(pos, f, v.Transform.position, Config.LockRange);
+                    if (a < best) { best = a; target = v.Transform; vessel = v; }
+                }
+            if (!target)
+            {
+                var cells = Cell.ActiveCellsSnapshot;
+                for (int c = 0; c < cells.Count; c++)
+                {
+                    var cell = cells[c];
+                    if (!cell) continue;
+                    var fauna = cell.LiveFauna;
+                    for (int i = fauna.Count - 1; i >= 0; i--)
+                    {
+                        var creature = fauna[i];
+                        if (!creature || creature.IsDying || !creature.isActiveAndEnabled) continue;
+                        float a = Angle(pos, f, creature.transform.position, Config.LockRange);
+                        if (a < best) { best = a; target = creature.transform; }
+                    }
+                }
+            }
+            _lockTarget = target; _lockVessel = vessel; _lockIsVessel = vessel != null;
+        }
+
+        void HoldLock()
+        {
+            if (!_lockTarget) { ClearLock(); return; }
+            if (_lockIsVessel && (_lockVessel == null || !UnityLiveness.Alive(_lockVessel.Transform))) { ClearLock(); return; }
+            if ((_lockTarget.position - _gt.position).sqrMagnitude > Config.LockRange * Config.LockKeepScale * Config.LockRange * Config.LockKeepScale) ClearLock();
+        }
+
+        void ClearLock() { _lockTarget = null; _lockVessel = null; _lockIsVessel = false; }
+
+        IVesselStatus EnemyStatus(IPlayer player)
+        {
+            var victim = player?.Vessel?.VesselStatus;
+            if (victim == null || ReferenceEquals(victim, _status)) return null;
+            if (victim.Domain == _status.Domain || !UnityLiveness.Alive(victim.Transform)) return null;
+            return victim;
+        }
+
+        static float Angle(Vector3 pos, Vector3 fwd, Vector3 at, float range)
+        {
+            Vector3 d = at - pos; float l = d.magnitude;
+            if (l > range || l < 1f) return 9f;
+            return Mathf.Acos(Mathf.Clamp(Vector3.Dot(d, fwd) / l, -1f, 1f));
+        }
+
+        // ================================ the Goby's AI (while the human flies the Pistol) ================================
+
+        /// <summary>The seat's Goby: locks the nearest rival in reach, picks a perch about <c>aiDartLength</c> away (toward a
+        /// locked rival, within reach of home), turns the hull onto it and darts once the Pistol has caught up (or after
+        /// <c>aiWaitForPistol</c>). It acts through the same calls the Goby's buttons make.</summary>
+        void GobyAI(float dt)
+        {
+            if (_darting) return;
+            var lvl = Difficulty();
+            if (!_lockTarget || !_lockIsVessel) AiLockNearestRival();
+            if (!_aiHasDir && _t >= _aiDecideAt) { _aiDir = AiChooseDirection(lvl); _aiHasDir = true; }
+            if (!_aiHasDir) return;
+            float maxDeg = 140f * dt;
+            Quaternion.FromToRotation(_gt.forward, _aiDir).ToAngleAxis(out float deg, out var axis);
+            if (deg > 0.05f && axis.sqrMagnitude > 1e-8f && IsAuthority()) _status.VesselTransformer.ApplyRotation(Mathf.Min(deg, maxDeg), axis);
+            bool pistolHere = _resting && _at == _perches.Count - 1;
+            if (deg < 4f && DartReady && (pistolHere || _t - _aiLandedAt > Config.AiWaitForPistol))
+            {
+                FireDart(Config.AiDartLength);
+                _aiDecideAt = _t + lvl.Late * (0.5f + _aiRng.Next());
+            }
+        }
+
+        void AiLockNearestRival()
+        {
+            var players = Config.GameData ? Config.GameData.Players : null;
+            if (players == null) return;
+            float best = Config.LockRange; IVesselStatus pick = null;
+            foreach (var player in players)
+            {
+                var v = EnemyStatus(player);
+                if (v == null) continue;
+                float d = Vector3.Distance(v.Transform.position, _gt.position);
+                if (d < best) { best = d; pick = v; }
+            }
+            if (pick != null) { _lockTarget = pick.Transform; _lockVessel = pick; _lockIsVessel = true; }
+        }
+
+        Vector3 AiChooseDirection(PistolAI.Difficulty lvl)
+        {
+            Vector3 pos = _gt.position, bestDir = _gt.forward; float bestScore = float.MinValue, L = Config.AiDartLength;
+            for (int k = 0; k < 12; k++)
+            {
+                Vector3 dir;
+                if (k == 0 && _lockTarget) dir = (_lockTarget.position - pos).normalized;
+                else if (k == 1 && (pos - _home).magnitude > Config.AiHomeRadius * 0.5f) dir = (_home - pos).normalized;
+                else dir = Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 140f, _gt.up) * Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 90f, _gt.right) * _gt.forward;
+                float go = L; bool hit = FirstOnLine(pos, dir, L * 1.4f, out float along);
+                if (hit) go = along;
+                float score = -Mathf.Abs(go - L) * (hit ? 0.6f : 1f) - Mathf.Max(0f, (pos + dir * go - _home).magnitude - Config.AiHomeRadius) * 2f;
+                if (go < 60f) score -= 1000f;
+                if (k == 0 && _lockTarget) score += 120f;
+                score += _aiRng.Next() * 30f;
+                if (score > bestScore) { bestScore = score; bestDir = dir; }
+            }
+            // a misjudged perch: the aim off by a few degrees (Easy / Medium)
+            if (_aiRng.Next() < lvl.Mis * 4f) bestDir = Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 20f, _gt.up) * bestDir;
+            return bestDir.normalized;
+        }
+
+        PistolAI.Difficulty Difficulty() => aiLevel switch
         {
             AIDifficulty.Easy => PistolAI.Difficulty.Easy,
             AIDifficulty.Medium => PistolAI.Difficulty.Medium,
             _ => PistolAI.Difficulty.Hard,
         };
 
-        static PrismSpatialIndex Index()
+        // ================================ the Pistol: perch to perch ================================
+
+        /// <summary>The frame the Pistol waits in before the first dart: straight ahead of the Goby's nose.</summary>
+        PistolPlane.Frame WaitingFrame()
         {
-            var idx = PrismSpatialIndex.Instance;
-            return idx != null && idx.IsAvailable ? idx : null;
+            Vector3 a = _perches[_perches.Count - 1].Pos;
+            return PistolPlane.For(new PlaneSegment(a, a + _gt.forward * 100f, _gt.up), 1, Config.SlopeDegrees, 0f, Config.HillWavelength);
         }
 
-        bool Live(Prism prism) => prism && !prism.destroyed;
-        bool IsPrimed(Prism prism) => _primed.TryGetValue(prism, out float until) && until > _t;
-        bool IsHot(Prism prism) => _hot.TryGetValue(prism, out float until) && until > _t;
-        bool Friendly(Prism prism) => prism.Domain == _goby.VesselStatus.Domain;
-
-        /// <summary>The Goby's OWN trail is the ground the Pistol rides, never a target: not seen, not hit, not primed, not
-        /// carried (the lab keeps its trail blocks out of the prism arrays for the same reason). Identity of the Trail, not
-        /// the player name: the hull's other lay sites (the Squirrel's tube) are friendly prisms like any other.</summary>
-        bool IsGround(Prism prism)
+        void StepPistol(float dt)
         {
-            var pc = _goby?.VesselStatus?.VesselPrismController;
-            return pc != null && PistolTargets.IsOwnTrail(prism.Trail, pc.Trail, pc.SecondaryTrail);
+            if (_resting) { Rest(dt); return; }
+            var inp = _human == Half.Pistol ? HumanPistol() : AIPistol();
+            var ev = PistolBodyMath.Step(_p, _f, _t, dt, inp, _body);
+            _travelled += ev.Travelled;
+            if (ev.FireSnap) FireRing(ev.SnapAim);
+            if (_p.x >= _f.EndX - Config.ArriveDistance) Arrive(_dir > 0 ? _seg + 1 : _seg);
         }
 
-        void Expire(Dictionary<Prism, float> marks)
+        /// <summary>The Pistol reaches perch <paramref name="perch"/>: it rests there and builds its den, as many prisms as
+        /// the distance it travelled since its last den and the pair's Mass make (GobyDen).</summary>
+        void Arrive(int perch)
         {
-            _expired.Clear();
-            foreach (var kv in marks) if (!Live(kv.Key) || kv.Value <= _t) _expired.Add(kv.Key);
-            foreach (var k in _expired) marks.Remove(k);
+            _resting = true; _at = Mathf.Clamp(perch, 0, _perches.Count - 1); _restT = 0f; _waitT = 0f; _restSpawned = 0;
+            var den = _perches[_at];
+            _restQueue = GobyDen.PrismsFor(_travelled, Config.DenUnitsPerPrism, Config.DenMassScale.EvaluateReplicated(_status), den.Placed, Config.DenMax);
+            _travelled = 0f;
+            _p.x = _f.EndX; _p.y = PistolPlane.Ground(_f, _p.x); _p.wpos = den.Pos; _p.grounded = true;
         }
 
-        // the lab's pistolScan: what the Pistol AI can see
-        void Scan(List<PistolAI.Seen> into)
+        void Rest(float dt)
         {
-            var idx = Index(); if (idx == null) return;
-            float reach = PistolAI.ScanReach(_ais);
-            idx.QuerySphere(_p.wpos, reach, _qScan);
-            foreach (var prism in _qScan)
-                if (Live(prism) && !IsGround(prism) && PistolAI.TrySee(_rb, _p, prism.GetInstanceID(), prism.transform.position, IsPrimed(prism), Friendly(prism), reach, _ais, out var seen))
-                    into.Add(seen);
+            _restT += dt;
+            var den = _perches[_at];
+            _p.wpos = den.Pos;
+            // the den grows over the rest, one prism at a time
+            int due = Config.RestSeconds > 0f ? Mathf.CeilToInt(_restQueue * Mathf.Clamp01(_restT / Config.RestSeconds)) : _restQueue;
+            while (_restSpawned < due) { LayDenPrism(den); _restSpawned++; }
+            if (_restT < Config.RestSeconds) return;
+
+            // the Pistol's choice at a perch: on toward the Goby, or back toward the older dens (Back; the AI goes back after
+            // waiting at the head)
+            if (_human == Half.Pistol) { if (_backPressed) { _backPressed = false; _travelDir = -_travelDir; } }
+            else if (_at == _perches.Count - 1 && _at > 0) { _waitT += dt; if (_waitT > Config.AiBackAfter) { _travelDir = -1; _waitT = 0f; } }
+            else if (_travelDir < 0 && _restT > Config.RestSeconds) _travelDir = 1;   // the AI turns for the head at the den it went back to
+
+            if (_travelDir < 0 && _at == 0) _travelDir = 1;
+            if (_travelDir > 0 && _at < _segments.Count) Ride(_at, 1);
+            else if (_travelDir < 0 && _at > 0) Ride(_at - 1, -1);
+            // else: at the head perch, waiting for the Goby's next dart
         }
 
-        // the lab's body test: a cylinder across the band, breaking everything it touches (friendly fire ON) unless ghosting
-        void BodyHits()
+        void Ride(int seg, int dir)
         {
-            if (_t < _p.ghostUntil) return;
-            var idx = Index(); if (idx == null) return;
-            float half = Config.Vision + 4f, reach = half + Config.BodyR + 16f;
-            idx.QuerySphere(_p.wpos, reach, _qBody);
-            foreach (var prism in _qBody)
+            _seg = seg; _dir = dir; _resting = false;
+            _f = PistolPlane.For(_segments[seg], dir, Config.SlopeDegrees, Config.HillAmplitude, Config.HillWavelength);
+            PistolBodyMath.PlaceAtStart(_p, _f, Mathf.Max(_body.pMinSpeed, _p.v));
+        }
+
+        void LayDenPrism(Den den)
+        {
+            if (den.Placed >= Config.DenMax) return;
+            var channel = _status?.VesselPrismController ? _status.VesselPrismController.PrismSpawnChannel : null;
+            if (!channel) return;
+            float spacing = GobyDen.Spacing(Config.DenBlockSize, Config.DenClearance);
+            Vector3 local = GobyDen.Local(den.Placed, Config.DenFirstRadius, spacing);
+            Quaternion basis = Quaternion.FromToRotation(Vector3.up, den.Up);
+            Vector3 outward = basis * local;
+            var kind = GobyDen.KindFor(den.Placed, (Abilities && Abilities.IsUpgradeActive(Element.Mass)), Config.DenShieldedShare, Config.DenDangerShare, Config.DenSuperShare);
+            den.Placed++;
+            if (!SafeLookRotation.TryGet(outward, den.Up, out var rot, this, logError: false)) rot = basis;
+            var prism = BoostRingBuilder.LayOne(channel, den.Pos + outward, rot, Vector3.one * Config.DenBlockSize, kind,
+                _status.Domain, _status.PlayerName, _status.PlayerName);
+            if (prism) den.Prisms.Add(prism);
+        }
+
+        PistolBodyMath.Input AIPistol()
+        {
+            if (_t >= _scanAt) { _scanAt = _t + 0.1f; ScanForAI(); }
+            return _ai.Think(_p, _f, _t, Difficulty(), Config.AI, LockedInView());
+        }
+
+        void ScanForAI()
+        {
+            _ai.Vis.Clear();
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return;
+            index.QuerySphere(_p.wpos, Config.AI.pLaunchRange + 60f, _q);
+            for (int i = 0; i < _q.Count; i++)
             {
-                if (!Live(prism) || IsGround(prism)) continue;
-                var m = _rb.Map(prism.transform.position, _p.x - reach - 30f, _p.x + reach + 30f);
-                if (!PistolBodyMath.Touches(_p, m, Config.Vision, Config.BodyR)) continue;
-                Break(prism, By.Body, PistolVelocity());
-                Pop(new Vector3(m.X, m.H, m.D), PrismColor(prism), 3f, 14f, 0.3f); _shake = Mathf.Max(_shake, 0.12f);
-                if (_p.grounded) _p.v *= 0.97f; else _p.vx *= 0.97f;
+                var prism = _q[i];
+                if (!Breakable(prism)) continue;
+                Vector3 fr = _f.ToFrame(prism.transform.position);
+                if (Mathf.Abs(fr.z) > Config.BodyHalfDepth * 2f) continue;
+                _ai.Vis.Add(new PistolAI.Seen { X = fr.x, Y = fr.y, D = fr.z });
             }
+            _q.Clear();
         }
 
-        Vector3 PistolVelocity()
+        /// <summary>The Goby's locked RIVAL VESSEL is on the Pistol's screen: a ring fired now homes on it.</summary>
+        public bool LockedInView()
         {
-            _rb.FrameAt(_p.x, out var T, out var U, out _);
-            return _p.grounded ? T * _p.v : T * _p.vx + U * _p.vy;
-        }
-
-        // the lab's kill: the game's own damage, then a primed block goes up (unless a flare took it)
-        void Break(Prism prism, By by, Vector3 impact)
-        {
-            if (!Live(prism) || prism.prismProperties is { IsSuperShielded: true }) return;
-            bool primed = IsPrimed(prism); Vector3 at = prism.transform.position;
-            prism.Damage(impact, _goby.VesselStatus.Domain, _goby.VesselStatus.PlayerName);
-            if (primed && by != By.Flare) Detonate(prism, at);
-        }
-
-        // the lab's detonate: the primed blocks it touches go with it; the ring round it turns hot
-        void Detonate(Prism first, Vector3 at)
-        {
-            var idx = Index(); if (idx == null) return;
-            float c2 = Config.Chain * Config.Chain, h2 = Config.HotRing * Config.HotRing;
-            _primed.Remove(first); _chain.Clear(); _chain.Push(at);
-            while (_chain.Count > 0)
+            if (!_lockIsVessel || !_lockTarget) return false;
+            if (_cam && _cam.enabled)
             {
-                Vector3 c = _chain.Pop();
-                idx.QuerySphere(c, Mathf.Max(Config.Chain, Config.HotRing), _qChain);
-                foreach (var prism in _qChain)
-                {
-                    if (!Live(prism) || IsGround(prism)) continue;
-                    Vector3 w = prism.transform.position; float d2 = (w - c).sqrMagnitude;
-                    if (IsPrimed(prism) && d2 <= c2)
-                    {
-                        _primed.Remove(prism);
-                        if (prism.prismProperties is { IsSuperShielded: true }) continue;
-                        prism.Damage((w - c).normalized * 40f, _goby.VesselStatus.Domain, _goby.VesselStatus.PlayerName);
-                        _chain.Push(w);
-                    }
-                    else if (d2 <= h2) _hot[prism] = _t + Config.HotLife;
-                }
+                Vector3 v = _cam.WorldToViewportPoint(_lockTarget.position);
+                return v.z > 0f && v.x >= 0f && v.x <= 1f && v.y >= 0f && v.y <= 1f;
             }
+            Vector3 fr = _f.ToFrame(_lockTarget.position);
+            return Mathf.Abs(fr.x - _p.x) <= Config.ViewWidth * 0.5f && Mathf.Abs(fr.y - _p.y) <= Config.ViewWidth * 0.35f;
         }
 
-        // the lab's vortexStep: the ring travels, pulls prisms near its core into its toroidal flow, and collapses
-        void StepRings(float dt)
+        // ---- the Pistol's buttons on a phone (GobyPistolButtons): 0 ghost (held), 1 snap, 2 back. Pressed on the seat
+        // directly: the seat's AI flies the hull meanwhile, and an InputStatus press would be dropped by its gate.
+        void SetPistolButton(int button, bool down)
         {
-            var idx = Index();
-            for (int i = _rings.Count - 1; i >= 0; i--)
-            {
-                var run = _rings[i]; var ring = run.Ring;
-                bool alive = ring.Advance(dt, _vs);
-                if (idx != null && !ring.Full(_vs))
-                {
-                    idx.QuerySphere(ring.C, _vs.pVortexR + _vs.pVortexCapture, _qRing);
-                    foreach (var prism in _qRing)
-                    {
-                        if (ring.Full(_vs)) break;
-                        if (!Live(prism) || IsGround(prism) || _held.Contains(prism) || prism.IsGrowing || prism.prismProperties is { IsSuperShielded: true }) continue;
-                        if (ring.TryCapture(run.Prisms.Count, prism.transform.position, _vs)) { run.Prisms.Add(prism); _held.Add(prism); }
-                    }
-                }
-                for (int j = 0; j < ring.Caps.Count; j++)
-                {
-                    var prism = run.Prisms[ring.Caps[j].Id]; if (!Live(prism)) continue;
-                    var tr = prism.transform;
-                    tr.position = ring.Flow(j, dt, _vs);
-                    tr.Rotate(ring.N, 4f * dt * Mathf.Rad2Deg, Space.World);
-                    prism.NotifyPositionChanged();
-                }
-                if (alive) continue;
-                if (_vs.pVortexCollapse >= 0.5f)
-                {   // the lab's collapse boom: a disc that swells and fades, and a shake
-                    var m = _rb.MapFast(ring.C, _scX - 2f * Config.ViewWidth, _scX + 2f * Config.ViewWidth, true);
-                    if (m.Ok) Boom(new Vector3(m.X, m.H, m.D), Alpha(C_Held, 0.5f), Mathf.Max(1f, _vs.pVortexR * 0.3f), _vs.pVortexR * 1.3f, 0.5f);
-                    _shake = Mathf.Max(_shake, 0.35f);
-                }
-                foreach (var prism in run.Prisms)
-                {
-                    _held.Remove(prism);
-                    if (_vs.pVortexCollapse >= 0.5f) Break(prism, By.Vortex, ring.N * _vs.pVortexSpeed);
-                }
-                _rings.RemoveAt(i);
-            }
+            if (_goby == null || _human != Half.Pistol) return;
+            if (button == 0) _touchGhost = down;
+            else if (button == 1) _touchSnap = down;
+            else if (button == 2 && down) _backPressed = true;
         }
 
-        void ReleaseAllRings()
-        {
-            _rings.Clear(); _held.Clear();   // carried prisms stay where the ring left them
-        }
-
-        // ---- the Goby's primer and flares (the lab's gobyStep abilities; its AI's choice when the AI flies the Goby) ----
-        Prism PrimerTarget(Vector3 pos, Vector3 f)
-        {
-            var idx = Index(); if (idx == null) return null;
-            float cosMax = Mathf.Cos(10f * Mathf.Deg2Rad), bd = float.PositiveInfinity; Prism best = null;
-            idx.QuerySphere(pos, Config.PrimerRange, _qGoby);
-            foreach (var prism in _qGoby)
-            {
-                if (!Live(prism) || IsGround(prism)) continue;
-                Vector3 d = prism.transform.position - pos; float dist = d.magnitude;
-                if (dist > Config.PrimerRange || dist < 1e-6f || Vector3.Dot(d, f) / dist < cosMax) continue;
-                if (dist < bd) { bd = dist; best = prism; }
-            }
-            return best;
-        }
-
-        int HotInRange(Vector3 pos, List<Prism> into)
-        {
-            into.Clear();
-            foreach (var kv in _hot)
-                if (Live(kv.Key) && kv.Value > _t && (kv.Key.transform.position - pos).sqrMagnitude <= Config.FlareRange * Config.FlareRange)
-                    into.Add(kv.Key);
-            return into.Count;
-        }
-
-        void GobyAbilities(float dt, Vector3 pos, Vector3 f, Vector3 u, Vector3 r)
-        {
-            bool primer, flares;
-            if (_human == Half.Goby)
-            {
-                var kb = Keyboard.current; var pad = Gamepad.current;
-                primer = (kb != null && kb.digit3Key.isPressed) || (pad != null && pad.dpad.up.isPressed);
-                flares = (kb != null && kb.digit4Key.isPressed) || (pad != null && pad.dpad.down.isPressed);
-            }
-            else
-            {
-                // the lab's gobyAI: prime what is ahead, fire the flares at three hot blocks (or one, with a full rack)
-                var pt = _primer > 0 && _t - _lastPrimerAt > 0.8f ? PrimerTarget(pos, f) : null;
-                bool wantPrimer = pt && !Friendly(pt) && !IsPrimed(pt);
-                int hot = _flare > 0 ? HotInRange(pos, _qGoby) : 0;
-                bool wantFlares = hot >= 3 || (hot >= 1 && _flare >= Config.FlareCharges && _t - _lastFlareAt > 3f);
-                primer = wantPrimer && !_prevPrimer; flares = wantFlares && !_prevFlare;
-            }
-            if (primer && !_prevPrimer && _primer > 0)
-            {
-                var target = PrimerTarget(pos, f); _primer--; _lastPrimerAt = _t;
-                var idx = Index();
-                if (target && idx != null)
-                {
-                    idx.QuerySphere(target.transform.position, Config.PrimeSplash, _qGoby);
-                    foreach (var prism in _qGoby) if (Live(prism) && !IsGround(prism)) _primed[prism] = _t + Config.PrimeLife;
-                }
-            }
-            _prevPrimer = primer;
-            if (flares && !_prevFlare && _flare > 0 && HotInRange(pos, _qGoby) > 0)
-            {
-                _qGoby.Sort((a, b) => (a.transform.position - pos).sqrMagnitude.CompareTo((b.transform.position - pos).sqrMagnitude));
-                int n = Mathf.Min(_qGoby.Count, Mathf.RoundToInt(Config.FlareMax));
-                for (int j = 0; j < n; j++)
-                {
-                    float a2 = j / (float)n * Mathf.PI * 2f;
-                    var dir = (f + u * (Mathf.Cos(a2) * 0.7f) + r * (Mathf.Sin(a2) * 0.7f)).normalized;
-                    _flares.Add(new Flare { P = pos, V = dir * Config.FlareSpeed, Target = _qGoby[j], Life = 4f });
-                }
-                _flare--; _lastFlareAt = _t;
-            }
-            _prevFlare = flares;
-            if (_primer < Config.PrimerCharges) { _primerT += dt; if (_primerT >= Config.PrimerCd) { _primer++; _primerT = 0f; } } else _primerT = 0f;
-            if (_flare < Config.FlareCharges) { _flareT += dt; if (_flareT >= Config.FlareCd) { _flare++; _flareT = 0f; } } else _flareT = 0f;
-        }
-
-        // the lab's flareStep: heat-seeking, one per hot block; a flare whose block went finds the nearest unchased one
-        void StepFlares(float dt)
-        {
-            for (int i = _flares.Count - 1; i >= 0; i--)
-            {
-                var F = _flares[i];
-                if (!Live(F.Target))
-                {
-                    Prism best = null; float bd = 160f * 160f;
-                    foreach (var kv in _hot)
-                    {
-                        if (!Live(kv.Key) || kv.Value <= _t || Chased(kv.Key, i)) continue;
-                        float d2 = (kv.Key.transform.position - F.P).sqrMagnitude; if (d2 < bd) { bd = d2; best = kv.Key; }
-                    }
-                    if (!best) { _flares.RemoveAt(i); continue; }
-                    F.Target = best;
-                }
-                Vector3 T = F.Target.transform.position; float sp = Config.FlareSpeed, k = Mathf.Clamp01(5f * dt);
-                F.V = Vector3.LerpUnclamped(F.V, (T - F.P).normalized * sp, k).normalized * sp;
-                F.P += F.V * dt; F.Life -= dt;
-                if ((T - F.P).sqrMagnitude < 49f) { Break(F.Target, By.Flare, F.V); F.Life = 0f; }
-                if (F.Life <= 0f) _flares.RemoveAt(i); else _flares[i] = F;
-            }
-        }
-
-        bool Chased(Prism prism, int except)
-        {
-            for (int i = 0; i < _flares.Count; i++) if (i != except && _flares[i].Target == prism) return true;
-            return false;
-        }
-
-        // ================================ who flies what (the arena's swap) ================================
-
-        void PollSwap()
-        {
-            // the arena's gesture on the arena's cooldown (CrewSeat.PollSwap), read here because the Goby's input is paused
-            // while the human is on the Pistol (and RequestPilotSwap is a no-op outside an arena match, so the two never
-            // both act)
-            if (CrewSeat.PollSwap(ref _swapReadyAt)) SetHuman(_human == Half.Goby ? Half.Pistol : Half.Goby);
-        }
-
-        /// <inheritdoc cref="IHullParkAware.ReturnHumanToHull"/>
-        public void ReturnHumanToHull()
-        {
-            if (_human != Half.Pistol) return;
-            _weTookGoby = false;   // the autopilot is the parker's now: SetHuman(Goby) must not stop it
-            SetHuman(Half.Goby);
-        }
-
-        void SetHuman(Half half)
-        {
-            // the hand-over every crew seat shares (CrewSeat): to the Pistol, the player's flight input paused and the
-            // Goby's own AI flying it; back, the opposite order, and only an autopilot this seat started is stopped again.
-            // The player is captured on the way out: it outlives the hull (a swap re-homes it), so it is the one restored.
-            if (half == Half.Pistol)
-            {
-                if (_human != Half.Pistol)
-                {
-                    _seatPlayer = _goby != null && _gt ? _goby.VesselStatus?.Player : null;
-                    _weTookGoby = _goby != null && _gt && CrewSeat.HandHullToAI(_goby, _seatPlayer);
-                }
-            }
-            else if (_human == Half.Pistol)
-            {
-                CrewSeat.GiveHullBack(_goby != null && _gt ? _goby : null, _seatPlayer, _weTookGoby);
-                _weTookGoby = false; _seatPlayer = null;
-            }
-            _human = half;
-            // a press carried across the swap is not a press (the lab's swap)
-            _ai.ReleaseAll(); _p.prevGhost = _p.prevVortex = false; _prevPrimer = _prevFlare = false;
-            _mouseDown = _aiming = false; _mouseAim = _padAim = null;
-        }
-
-        // the lab's humanPistol: hold to dive; drag (or RT + right stick) to aim a launch; G / B ghost; Q / E / X / Y Snap
+        // hold to dive; drag (or RT + right stick) to aim a jump and let go; G / B ghost; Q / E / X / Y Snap; B key or LB
+        // to head back at a perch; on a phone a finger on the Pistol's view dives and drags
         PistolBodyMath.Input HumanPistol()
         {
             var inp = new PistolBodyMath.Input();
-            var kb = Keyboard.current; var mouse = Mouse.current; var pad = Gamepad.current;
+            var kb = Keyboard.current; var pad = Gamepad.current;
             float dive = 0f;
-            if (mouse != null && _cam)
+            if (_cam && ReadPointer(out var mp, out bool began, out bool held))
             {
-                Vector2 mp = mouse.position.ReadValue();
-                if (mouse.leftButton.wasPressedThisFrame && _cam.pixelRect.Contains(mp)) { _mouseDown = true; _aiming = false; _mouseFrom = mp; }
+                if (began) { _mouseDown = true; _aiming = false; _mouseFrom = mp; }
                 if (_mouseDown)
                 {
                     if ((mp - _mouseFrom).magnitude > 12f) _aiming = true;
-                    if (_aiming && PlanePoint(mp, out var w)) _mouseAim = new Vector2(w.x - (_p.x - _scX), w.y - _p.y);
+                    if (_aiming && PlanePoint(mp, out var w)) _mouseAim = new Vector2(w.x - _p.x, w.y - _p.y);
                     if (!_aiming) dive = 1f;
-                    if (!mouse.leftButton.isPressed)
+                    if (!held)
                     {
                         if (_aiming && _mouseAim.HasValue) { inp.HasLaunch = true; inp.Launch = _mouseAim.Value; }
                         _mouseDown = _aiming = false; _mouseAim = null;
@@ -544,6 +641,7 @@ namespace CosmicShore.Gameplay
                 dive = Mathf.Max(dive, pad.leftTrigger.ReadValue());
                 inp.Ghost |= pad.buttonEast.isPressed;
                 inp.Snap |= pad.buttonWest.isPressed || pad.buttonNorth.isPressed;
+                if (pad.leftShoulder.wasPressedThisFrame) _backPressed = true;
             }
             if (kb != null)
             {
@@ -551,55 +649,353 @@ namespace CosmicShore.Gameplay
                 if (kb.fKey.wasPressedThisFrame && !inp.HasLaunch) { inp.HasLaunch = true; inp.Launch = new Vector2(0.7f * _body.pLaunchRange, 0.45f * _body.pLaunchRange); }
                 inp.Ghost |= kb.gKey.isPressed;
                 inp.Snap |= kb.qKey.isPressed || kb.eKey.isPressed;
+                if (kb.bKey.wasPressedThisFrame) _backPressed = true;
             }
+            inp.Ghost |= _touchGhost;
+            inp.Snap |= _touchSnap;
             inp.Dive = dive;
             if (inp.Snap) inp.SnapAim = _mouseAim ?? _padAim ?? new Vector2(1f, 0f);
             return inp;
         }
 
-        // a screen point on the side view's plane (d = 0), in the flat world relative to the camera's x
-        bool PlanePoint(Vector2 screen, out Vector3 w)
+        // The Pistol's pointer: the mouse, or the ONE finger that started on the Pistol's view (by touch id, so a second
+        // finger on the Ghost button never steals the drag). A press on the small view (the touch swap's) or on a seat
+        // button (FlightTouchClaims) is never the Pistol's.
+        bool ReadPointer(out Vector2 at, out bool began, out bool held)
         {
-            w = default;
-            var ray = _cam.ScreenPointToRay(screen);
-            var inv = Quaternion.Inverse(_frame);   // the plane is the flat frame's z = 0, placed in the world by _frame
-            Vector3 o = inv * (ray.origin - Stage), dir = inv * ray.direction;
-            if (Mathf.Abs(dir.z) < 1e-5f) return false;
-            float s = -o.z / dir.z; if (s <= 0f) return false;
-            w = o + dir * s; return true;
+            at = _pointerAt; began = held = false;
+            var touchscreen = Touchscreen.current;
+            if (touchscreen != null)
+            {
+                var touches = touchscreen.touches;
+                for (int i = 0; i < touches.Count; i++)
+                {
+                    var t = touches[i];
+                    int id = t.touchId.ReadValue();
+                    if (_fingerId >= 0 ? id != _fingerId : !t.press.wasPressedThisFrame) continue;
+                    var p = t.position.ReadValue();
+                    if (_fingerId < 0)
+                    {
+                        if (!OnPistolView(p)) continue;
+                        _fingerId = id; began = true;
+                    }
+                    at = _pointerAt = p;
+                    held = t.press.isPressed;
+                    if (!held) _fingerId = -1;
+                    return true;
+                }
+                if (_fingerId >= 0) { _fingerId = -1; return true; }   // the finger is gone: a release where it last was
+            }
+            var mouse = Mouse.current;
+            if (mouse == null) return false;
+            at = _pointerAt = mouse.position.ReadValue();
+            held = mouse.leftButton.isPressed;
+            began = mouse.leftButton.wasPressedThisFrame && OnPistolView(at);
+            return true;
         }
 
-        // ================================ the side view (the lab's renderSide3D, grown up) ================================
-        // What the Pistol SEES. Every prism in a wide depth window, warped through the unroll (PistolWarp: a prism the
-        // Goby circles stretches out, as the unroll says it must; one holding a lap's centre is the bar of the whole lap)
-        // and drawn AS THE GAME DRAWS IT (Garrett, 2026-10-18: as true to the game as possible): a real perspective camera
-        // whose off-axis frustum IS the lab's parallax about the Pistol (the lab's pParallax: a layer that deep draws at
-        // half size), every prism with its own mesh and material under the scene's lights and sky (PistolTrueDraw), the
-        // deep background rigid, the foreground real and opaque (it may only not cover the Pistol), no fog, no glass, no
-        // tint. The Goby's own trail is the GROUND it rides: its blocks sit on the hinge hills, under a thin domain-coloured
-        // line, warm on the downslopes; the Goby is its own hull at the end of it. The Pistol end on (a cone), its tiny
-        // trail, the rings, the flares, the aim, the primed / hot / held rings and the pops, puffs and shakes are the MARKS
-        // over the world (PistolWorldMesh, one mesh a frame); the frame at the Pistol turns the sky with the Goby's heading.
+        bool OnPistolView(Vector2 screen) =>
+            _cam.pixelRect.Contains(screen) && !_pip.SmallViewContains(_cam, HumanInSeat, screen) && !FlightTouchClaims.Claims(screen);
+
+        /// <summary>A screen point on the Pistol's plane, in its frame (x, y).</summary>
+        bool PlanePoint(Vector2 screen, out Vector2 frame)
+        {
+            frame = default;
+            var ray = _cam.ScreenPointToRay(screen);
+            float den = Vector3.Dot(ray.direction, _f.M);
+            if (Mathf.Abs(den) < 1e-5f) return false;
+            float s = Vector3.Dot(_f.O - ray.origin, _f.M) / den;
+            if (s <= 0f) return false;
+            Vector3 fr = _f.ToFrame(ray.origin + ray.direction * s);
+            frame = new Vector2(fr.x, fr.y);
+            return true;
+        }
+
+        // ================================ the undertow, the body, the rings ================================
+
+        /// <summary>Space: mass either side of the Pistol's plane is pulled into it - never danger, super-shielded, a
+        /// lifeform's body or the pair's own prisms; shielded ones only with the Space upgrade.</summary>
+        void Undertow(float dt)
+        {
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return;
+            float reach = Mathf.Max(0f, Config.PullReach.EvaluateReplicated(_status)), window = Config.PullWindow;
+            if (reach <= 0.5f) return;
+            bool shielded = (Abilities && Abilities.IsUpgradeActive(Element.Space));
+            index.QuerySphere(_p.wpos, Mathf.Sqrt(window * window + reach * reach), _q);
+            int moved = 0;
+            for (int i = 0; i < _q.Count && moved < Config.PullMaxPerFrame; i++)
+            {
+                var prism = _q[i];
+                if (!Pullable(prism, shielded)) continue;
+                var tr = prism.transform;
+                Vector3 fr = _f.ToFrame(tr.position);
+                if (Mathf.Abs(fr.x - _p.x) > window || Mathf.Abs(fr.z) > reach || Mathf.Abs(fr.z) < 0.5f) continue;
+                float step = Mathf.Min(Mathf.Abs(fr.z), Config.PullSpeed * dt);
+                tr.position -= _f.M * (Mathf.Sign(fr.z) * step);
+                prism.NotifyPositionChanged();
+                moved++;
+            }
+            _q.Clear();
+        }
+
+        bool Pullable(Prism prism, bool shieldedToo)
+        {
+            // a creature's or a plant's own body (a HealthPrism) is the ecosystem's to move, never the undertow's
+            if (!Breakable(prism) || prism is HealthPrism || _held.Contains(prism) || prism.IsGrowing) return false;
+            var props = prism.prismProperties;
+            if (props.IsDangerous || props.IsSuperShielded) return false;
+            return shieldedToo || !props.IsShielded;
+        }
+
+        /// <summary>A prism the Pistol may break: alive, not the pair's own (its ground, its dens, its perches).</summary>
+        bool Breakable(Prism prism) => prism && !prism.destroyed && prism.prismProperties != null && prism.ownerID != _status.PlayerName;
+
+        void BodyHits()
+        {
+            if (_resting || _t < _p.ghostUntil) return;
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return;
+            index.QuerySphere(_p.wpos, Config.BodyR + Config.BodyHalfDepth + 6f, _q);
+            Vector3 vel = PistolVelocity();
+            for (int i = 0; i < _q.Count; i++)
+            {
+                var prism = _q[i];
+                if (!Breakable(prism) || prism.prismProperties.IsSuperShielded) continue;
+                if (!PistolBodyMath.Touches(_p, _f.ToFrame(prism.transform.position), Config.BodyHalfDepth, Config.BodyR)) continue;
+                if (prism.DeflectsSilenced(_status.PlayerName, vel.magnitude)) continue;
+                prism.Damage(vel, _status.Domain, _status.PlayerName);
+                if (_p.grounded) _p.v *= 0.97f; else _p.vx *= 0.97f;
+            }
+            _q.Clear();
+        }
+
+        Vector3 PistolVelocity() => _p.grounded ? _f.R * _p.v : _f.R * _p.vx + _f.Up * _p.vy;
+
+        void FireRing(Vector2 aim)
+        {
+            Vector3 n = aim.sqrMagnitude > 1f ? (_f.R * aim.x + _f.Up * aim.y).normalized : _f.R;
+            var run = new RingRun { Ring = new VortexRing(_p.wpos, n, _vs.pVortexLife) };
+            if (LockedInView()) run.Target = _lockVessel;   // the Goby's lock, on the Pistol's screen: the ring homes on it
+            _rings.Add(run);
+        }
+
+        void StepRings(float dt)
+        {
+            var index = PrismSpatialIndex.Instance;
+            var players = Config.GameData ? Config.GameData.Players : null;
+            for (int i = _rings.Count - 1; i >= 0; i--)
+            {
+                var run = _rings[i]; var ring = run.Ring;
+                if (run.Target != null && UnityLiveness.Alive(run.Target.Transform)) ring.Steer(run.Target.Transform.position, Config.HomingTurnRate * Mathf.Deg2Rad * dt);
+                bool alive = ring.Advance(dt, _vs);
+                if (index && index.IsAvailable && !ring.Full(_vs))
+                {
+                    index.QuerySphere(ring.C, _vs.pVortexR + _vs.pVortexCapture, _q);
+                    foreach (var prism in _q)
+                    {
+                        if (ring.Full(_vs)) break;
+                        if (!Breakable(prism) || _held.Contains(prism) || prism.IsGrowing || prism.prismProperties.IsSuperShielded) continue;
+                        if (ring.TryCapture(run.Prisms.Count, prism.transform.position, _vs)) { run.Prisms.Add(prism); _held.Add(prism); }
+                    }
+                    _q.Clear();
+                }
+                for (int j = 0; j < ring.Caps.Count; j++)
+                {
+                    var prism = run.Prisms[ring.Caps[j].Id]; if (!prism || prism.destroyed) continue;
+                    var tr = prism.transform;
+                    tr.position = ring.Flow(j, dt, _vs);
+                    tr.Rotate(ring.N, 4f * dt * Mathf.Rad2Deg, Space.World);
+                    prism.NotifyPositionChanged();
+                }
+                // a rival hull the ring passes through is a scored hit, and the ring collapses on it
+                if (players != null)
+                    foreach (var player in players)
+                    {
+                        var victim = EnemyStatus(player);
+                        if (victim == null) continue;
+                        float r = _vs.pVortexR + Config.RingHitPad;
+                        if ((victim.Transform.position - ring.C).sqrMagnitude > r * r) continue;
+                        ScoreRingHit(victim, ring.N * _vs.pVortexSpeed);
+                        alive = false;
+                        break;
+                    }
+                if (alive) continue;
+                foreach (var prism in run.Prisms)
+                {
+                    _held.Remove(prism);
+                    if (_vs.pVortexCollapse >= 0.5f && prism && !prism.destroyed && !prism.DeflectsSilenced(_status.PlayerName, 40f))
+                        prism.Damage((prism.transform.position - ring.C).normalized * 40f, _status.Domain, _status.PlayerName);
+                }
+                _rings.RemoveAt(i);
+            }
+        }
+
+        /// <summary>A ring on a rival hull under the LOCKED PvP rule (petals only): admitted through the one gate every
+        /// scored hit passes, it takes <c>ringPetals</c> (Charge) from each of the victim's elements, and raises the score.</summary>
+        void ScoreRingHit(IVesselStatus victim, Vector3 velocity)
+        {
+            if (!ElementalTransfer.IsDecidedHere(_status)) return;
+            var hitClass = Config.RingHitClass;
+            if (!CombatHitDrain.TryAdmit(victim, _status, hitClass, Config.HitCooldown, ElementalDebuffSources.Other, out int superseded)) return;
+            float petals = Mathf.Max(0f, Config.RingPetals.EvaluateReplicated(_status));
+            ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Eject, victim, _status, petals * CombatHitDrain.NormalizedPerLevel,
+                velocity, ElementalDebuffSources.Other);
+            if (Config.OnCombatHitLanded)
+                Config.OnCombatHitLanded.Raise(new CombatHitStats
+                {
+                    ShooterName = _status.PlayerName, VictimName = victim.PlayerName, HitClass = hitClass, SupersededRank = superseded,
+                });
+        }
+
+        void ReleaseAllRings()
+        {
+            foreach (var run in _rings) foreach (var prism in run.Prisms) _held.Remove(prism);
+            _rings.Clear(); _held.Clear();
+        }
+
+        // ================================ who flies what (the arena's swap) ================================
+
+        void PollSwap()
+        {
+            // the arena's gesture on the arena's cooldown, or on a phone a double tap on the small view (every crew vessel's
+            // touch swap)
+            bool tapped = _pipTap.Poll(showSideView ? _pip.SmallView(_cam, HumanInSeat) : null);
+            if (tapped && Time.unscaledTime >= _swapReadyAt) _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
+            else if (!CrewSeat.PollSwap(ref _swapReadyAt)) return;
+            SetHuman(_human == Half.Goby ? Half.Pistol : Half.Goby);
+        }
+
+        /// <inheritdoc cref="IHullParkAware.ReturnHumanToHull"/>
+        public void ReturnHumanToHull()
+        {
+            if (_human != Half.Pistol) return;
+            SetHuman(Half.Goby);
+        }
+
+        void SetHuman(Half half)
+        {
+            // to the Pistol: the player's flight input paused, the seat's own Goby AI aiming and darting the hull; back: the
+            // input given back. The player is captured on the way out: it outlives the hull (a swap re-homes it).
+            if (half == Half.Pistol && _human != Half.Pistol)
+            {
+                _seatPlayer = _status?.Player;
+                CrewSeat.SetFlightInputPaused(_seatPlayer, true);
+            }
+            else if (half == Half.Goby && _human == Half.Pistol)
+            {
+                CrewSeat.SetFlightInputPaused(_seatPlayer, false);
+                _seatPlayer = null;
+            }
+            _human = half;
+            // a press carried across the swap is not a press
+            _ai?.ReleaseAll(); if (_p != null) { _p.prevGhost = _p.prevVortex = false; }
+            _mouseDown = _aiming = false; _mouseAim = _padAim = null; _fingerId = -1;
+            _dartHeld = _lockHeld = _prevLockHeld = _charging = false;
+            _touchGhost = _touchSnap = _backPressed = false;
+            _aiHasDir = false;
+        }
+
+        // each seat's buttons on a phone: built once the hull's HUD row is, painted for the seat the person is in
+        void PaintButtons()
+        {
+            if (!_buttons.Built)
+            {
+                var input = _status?.Player?.InputStatus;
+                if (!_buttons.TryBuild(_gt, Config, input, SetPistolButton)) return;
+            }
+            _buttons.Paint(HumanInSeat, DartReady, HasLock, _t >= _p.ghostAt, _t >= _p.vortexAt, HeadingBack);
+        }
+
+        // ================================ the views ================================
 
         void BuildView()
         {
-            _view = new GameObject("PistolSideView");   // at the scene root: the hull's scale and pose are not the view's
+            _view = new GameObject("PistolView");   // at the scene root: the hull's scale and pose are not the view's
             _cam = _view.AddComponent<Camera>();
-            // a real perspective camera: its off-axis frustum (PistolWarp.Frustum) IS the lab's parallax, so the world is drawn as itself
-            _cam.clearFlags = CameraClearFlags.Skybox; _cam.orthographic = false; _cam.nearClipPlane = 0.5f; _cam.cullingMask = 1;
-            _cube = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
-            _torus = BuildVortexRing(PistolWarp.VortexTube, 24, 6);
-            // lit and flat-shaded, as the lab draws them (the vortex ring 0x9fe8ff, a flare 0xffd28a, each with a faint emission)
+            _cam.clearFlags = CameraClearFlags.Skybox; _cam.orthographic = false; _cam.nearClipPlane = 0.5f; _cam.farClipPlane = 6000f;
+            _cam.fieldOfView = Config.ViewFov;
+            _torus = BuildRingMesh(VortexRing.Tube, 24, 6);
+            // lit and flat-shaded volumes (nothing in the world looks flat): the ring 0x9fe8ff, the lock a warm ring, the
+            // Pistol a small orange body
             _ringMat = Lit(new Color32(159, 232, 255, 255), new Color32(18, 58, 68, 255), 0.65f);
-            _flareMat = Lit(new Color32(255, 210, 138, 255), new Color32(58, 42, 8, 255), 0.6f);
+            _lockMat = Lit(new Color32(255, 92, 108, 255), new Color32(80, 16, 22, 255), 0.5f);
+            _bodyMat = Lit(new Color32(255, 138, 61, 255), new Color32(90, 34, 5, 255), 0.45f);
+            _bodyGo = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            _bodyGo.name = "Pistol";
+            if (_bodyGo.TryGetComponent(out Collider col)) Destroy(col);
+            if (_bodyGo.TryGetComponent(out MeshRenderer mr)) mr.sharedMaterial = _bodyMat;
             _render = new CrewViewRender(_cam, RenderLook);
-            _scLive = false; _frameLive = false; _squash = _shake = 0f; _tail.Clear(); _fx.Clear();
+            _camLive = false;
         }
 
-        /// <summary>
-        /// A lit material for a world effect (nothing in the world looks flat, LOCKED 2026-10-18,
-        /// <c>Docs/claude/SHADERS_AND_PERFORMANCE.md</c>): URP Lit with the colour, a faint emission and the smoothness given.
-        /// </summary>
+        void LateUpdate()
+        {
+            if (_goby == null) return;
+            // the Pistol's body: a capsule lying along its travel (its long axis on the frame's x), smaller while ghosting
+            if (_bodyGo)
+            {
+                float r = Config.BodyR;
+                _bodyGo.transform.SetPositionAndRotation(_p.wpos, Quaternion.LookRotation(_f.M, _f.R));
+                _bodyGo.transform.localScale = new Vector3(r * 2f, r * 1.6f, r * 2f) * (_t < _p.ghostUntil ? 0.6f : 1f);
+            }
+            if (!_cam) return;
+            if (!showSideView) { _cam.enabled = false; _pip.Restore(); Draw3D(); return; }
+            _pip.Layout(_cam, HumanInSeat, Config.PipSize, Config.ViewMargin);
+            _cam.fieldOfView = Config.ViewFov;
+            // the side camera: square to the plane, looking along +M from its back (so the frame's x runs left to right), a
+            // little ahead of the Pistol, eased so a new stretch's frame turns in rather than cuts
+            float aspect = Mathf.Max(0.2f, _cam.aspect), D = Config.ViewWidth / (2f * Mathf.Tan(0.5f * Config.ViewFov * Mathf.Deg2Rad) * aspect);
+            Vector3 centre = _p.wpos + _f.R * (Config.ViewWidth * 0.15f);
+            Vector3 wantPos = centre - _f.M * D; var wantRot = Quaternion.LookRotation(_f.M, _f.Up);
+            float k = _camLive ? Mathf.Clamp01(Time.deltaTime * 4f) : 1f;
+            _camRot = _camLive ? Quaternion.Slerp(_camRot, wantRot, k) : wantRot;
+            _camPos = _camLive ? Vector3.Lerp(_camPos, wantPos, Mathf.Clamp01(Time.deltaTime * 8f)) : wantPos;
+            _camLive = true;
+            _cam.transform.SetPositionAndRotation(_camPos, _camRot);
+            Draw3D();
+        }
+
+        void Draw3D()
+        {
+            foreach (var run in _rings)
+                Draw(_torus, Matrix4x4.TRS(run.Ring.C, Quaternion.LookRotation(run.Ring.N, Mathf.Abs(run.Ring.N.y) < 0.9f ? Vector3.up : Vector3.right), Vector3.one * _vs.pVortexR), _ringMat);
+            // the lock is a fact in the world, so it is drawn there: a lit ring round the locked target, facing the Goby
+            if (_lockTarget)
+            {
+                Vector3 to = _gt.position - _lockTarget.position;
+                if (to.sqrMagnitude > 1e-4f) Draw(_torus, Matrix4x4.TRS(_lockTarget.position, Quaternion.LookRotation(to.normalized), Vector3.one * 9f), _lockMat);
+            }
+        }
+
+        static void Draw(Mesh mesh, Matrix4x4 m, Material material)
+        {
+            if (!mesh || !material) return;
+            var rp = new RenderParams(material) { shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off, receiveShadows = false };
+            Graphics.RenderMesh(rp, mesh, 0, m);
+        }
+
+        // ---- how the Pistol's camera sees the game's prisms, for its render only (CrewViewRender, the crew vessels' one
+        // look): their depth look measured from the Pistol's plane, and the occlusion corridor aimed from this lens at the
+        // Pistol, so mass in front of it dithers instead of hiding it
+        CrewViewRender.Look RenderLook()
+        {
+            var look = new CrewViewRender.Look { PlanePoint = _p.wpos, PlaneNormal = _f.M, FullSpreadAt = Config.DepthFullSpreadAt };
+            var corridor = PrismOcclusionCorridor.Config;
+            if (_gt && corridor && corridor.Enabled)
+            {
+                float r = Mathf.Clamp(Config.BodyR, corridor.MinVesselRadius, corridor.MaxVesselRadius);
+                look.Hull = _gt;
+                look.CorridorTarget = _p.wpos;
+                look.OuterRadius = r * corridor.OuterRadiusScale;
+                look.InnerRadius = r * corridor.InnerRadiusScale;
+                look.CoreAlpha = corridor.CoreAlpha;
+                look.NearRadius = corridor.NearRadius(r);
+            }
+            return look;
+        }
+
+        /// <summary>A lit material for a world effect (nothing in the world looks flat, LOCKED 2026-10-18).</summary>
         static Material Lit(Color32 color, Color32 emission, float smoothness)
         {
             var shader = Shader.Find("Universal Render Pipeline/Lit");
@@ -616,457 +1012,48 @@ namespace CosmicShore.Gameplay
         static readonly int s_baseColor = Shader.PropertyToID("_BaseColor"), s_smoothness = Shader.PropertyToID("_Smoothness"),
                             s_metallic = Shader.PropertyToID("_Metallic"), s_emission = Shader.PropertyToID("_EmissionColor");
 
-        /// <summary>The vortex ring as a faceted, flat-shaded mesh (<see cref="PistolWarp.VortexRingFacets"/>).</summary>
-        static Mesh BuildVortexRing(float tube, int seg, int side)
+        static Mesh BuildRingMesh(float tube, int seg, int side)
         {
-            var v = new Vector3[PistolWarp.VortexRingVertexCount(seg, side)]; var n = new Vector3[v.Length]; var tri = new int[v.Length];
-            PistolWarp.VortexRingFacets(tube, seg, side, v, n);
+            var v = new Vector3[VortexRing.FacetVertexCount(seg, side)]; var n = new Vector3[v.Length]; var tri = new int[v.Length];
+            VortexRing.Facets(tube, seg, side, v, n);
             for (int k = 0; k < tri.Length; k++) tri[k] = k;
             var m = new Mesh { name = "VortexRing", vertices = v, normals = n, triangles = tri };
             m.RecalculateBounds();
             return m;
         }
 
-        Color32 DomainColor(Domains domain)
+        // ================================ geometry (ShrikeRules on the prism's box) ================================
+
+        static Vector3 HalfExtents(Prism prism) => prism.transform.lossyScale * 0.5f;
+
+        static float BoxDistance(Prism prism, Vector3 world)
         {
-            if (!_domainColor.TryGetValue(domain, out var c)) { c = PrismLit.DomainTint(domain); _domainColor[domain] = c; }
-            return c;
+            var t = prism.transform;
+            return ShrikeRules.BoxDistance(Quaternion.Inverse(t.rotation) * (world - t.position), HalfExtents(prism));
         }
 
-        /// <summary>The colour the prism is DRAWN in (parity with the 3D view): its material animator's bright colour,
-        /// brought down from HDR to a peak of 1; the domain's signal colour when it has none.</summary>
-        Color32 PrismColor(Prism prism)
+        static bool RayHits(Prism prism, Vector3 origin, Vector3 dir, float pad, float maxT, out float entry)
         {
-            if (prism.TryGetComponent(out MaterialPropertyAnimator mpa))
-            {
-                var b = mpa.TargetBrightColor; float peak = Mathf.Max(b.r, Mathf.Max(b.g, b.b));
-                if (peak > 0.001f) return new Color(b.r / peak, b.g / peak, b.b / peak, 1f);
-            }
-            return DomainColor(prism.Domain);
-        }
-
-        static Color32 Tint(Color32 c, Color32 toward, float k) => Color.Lerp(c, toward, k);
-        static Color32 Alpha(Color32 c, float a) { c.a = (byte)Mathf.Clamp(Mathf.RoundToInt(a * 255f), 0, 255); return c; }
-
-        // ---- feel: what the step did, drawn and felt (a squash on landing, a puff, a shake on a hard one)
-        void Feel(in PistolBodyMath.Events ev, float dt)
-        {
-            if (ev.Landed)
-            {
-                _squash = 1f;
-                var ground = DomainColor(_goby.VesselStatus.Domain);
-                Pop(new Vector3(_p.x, _p.y - Config.BodyR, 0f), Alpha(ground, 0.8f), 2f, ev.SmoothLanding ? 10f : 18f, ev.SmoothLanding ? 0.3f : 0.45f);
-                if (!ev.SmoothLanding) _shake = Mathf.Max(_shake, 0.5f);
-            }
-            if (ev.Launched) Pop(new Vector3(_p.x, _p.y, 0f), new Color32(255, 255, 255, 200), 2f, 9f, 0.25f);
-            if (ev.GhostStarted) Pop(new Vector3(_p.x, _p.y, 0f), Alpha(C_Body, 0.63f), Config.BodyR, Config.BodyR * 3f, 0.4f);
-            _squash = Mathf.Max(0f, _squash - dt * 4f);
-            _shake = Mathf.Max(0f, _shake - dt * 2.5f);
-            // the tiny trail: where the Pistol has just been
-            if (_tail.Count == 0 || (new Vector3(_p.x, _p.y, 0f) - _tail[_tail.Count - 1]).sqrMagnitude > 1f) _tail.Add(new Vector3(_p.x, _p.y, 0f));
-            if (_tail.Count > 26) _tail.RemoveAt(0);
-        }
-
-        /// <summary>A ring that grows from r0 to r1 over <paramref name="life"/> s and fades, at (x, h, d).</summary>
-        void Pop(Vector3 at, Color32 color, float r0, float r1, float life)
-        {
-            if (_fx.Count < 64) _fx.Add(new Fx { At = at, T0 = _t, Life = life, R0 = r0, R1 = r1, Color = color });
-        }
-
-        /// <summary>A disc that swells from r0 to r1 over <paramref name="life"/> s and fades (the lab's collapse boom).</summary>
-        void Boom(Vector3 at, Color32 color, float r0, float r1, float life)
-        {
-            if (_fx.Count < 64) _fx.Add(new Fx { At = at, T0 = _t, Life = life, R0 = r0, R1 = r1, Color = color, Disc = true });
-        }
-
-        void LateUpdate()
-        {
-            if (!_cam || _rb == null) return;
-            if (!showSideView)
-            {
-                _cam.enabled = false; _pip.Restore();
-                Draw3D();   // the rings and flares live in the 3D world: drawn with or without the side view
-                return;
-            }
-            using (s_viewMarker.Auto())
-            {
-                // the Pistol's view a square in the lower left while the human flies the Goby; full screen, with the Goby's
-                // view in the square, while the human flies the Pistol (CrewPictureInPicture: the crew vessels' one layout)
-                _pip.Layout(_cam, HumanInSeat, Config.PipSize, Config.ViewMargin);
-                float W = Config.ViewWidth, aspect = Mathf.Max(0.2f, _cam.aspect), D = Mathf.Max(20f, Config.Parallax), lift = 0.08f * (W / aspect);
-                // the lab's sideCam: a fifth of a screen ahead of the Pistol, easing in height
-                PistolWarp.SideCamTarget(_p.x, _p.y, _rb.Ground(_p.x), W, aspect, out float tx, out float ty);
-                _scX = tx; _scY = _scLive ? Mathf.LerpUnclamped(_scY, ty, Mathf.Clamp01(Time.deltaTime * 4f)) : ty; _scLive = true;
-                float cx = _p.x, cy = _scY - lift;   // the parallax centre: the Pistol's x, the camera's height less its lift
-                // the flat frame at the Pistol places the picture in the world: the sky turns with the Goby's heading (eased:
-                // the frame steps every sample)
-                _rb.FrameAt(_p.x, out var fT, out var fU, out var fR);
-                var target = PistolWarp.FlatFrame(fT, fU, fR);
-                _frame = _frameLive ? Quaternion.Slerp(_frame, target, Mathf.Clamp01(Time.deltaTime * 6f)) : target; _frameLive = true;
-                // the eye at (cx, cy, -D) in the flat frame, the plane d = 0 showing W across centred on (scX, scY): the lab's parallax
-                float near = _cam.nearClipPlane, far = 3f * D + 80f;
-                _cam.farClipPlane = far;
-                PistolWarp.Frustum(_scX, _scY, cx, cy, D, W, aspect, near, out float fl, out float fr, out float fb, out float ft);
-                _cam.projectionMatrix = Matrix4x4.Frustum(fl, fr, fb, ft, near, far);
-                var shake = _shake > 0f ? new Vector3(Mathf.Sin(_t * 47f), Mathf.Cos(_t * 31f), 0f) * (_shake * _shake * 3f) : Vector3.zero;
-                _cam.transform.SetPositionAndRotation(Stage + _frame * (new Vector3(cx, cy, -D) + shake), _frame);
-
-                var stage = Matrix4x4.TRS(Stage, _frame, Vector3.one);
-                _true.Begin(stage, new Bounds(_cam.transform.position, Vector3.one * (2f * far)), _cam);
-                _world.Begin(_scX, _scY, cx, cy, D);
-                _rb.SegTests = 0; _cntMapped = _cntWarped = _cntBars = _cntBoxes = _cntTiles = 0;
-                float xLo = _scX - 2f * W, xHi = _scX + 2f * W;   // the ribbon the far background can still show
-                DrawGroundLine(W);
-                DrawPrisms(W, aspect, D, cx, cy, xLo, xHi);
-                DrawActors(W, aspect, D, xLo, xHi);
-                DrawForeground(W, D, xLo, xHi);
-                DrawFx();
-                _true.End();
-                _world.End(_cam, stage);
-            }
-            Draw3D();
-        }
-
-        // ---- the ground line: the hinge hills the Pistol rides, in the domain colour, warm where they fall away
-        void DrawGroundLine(float W)
-        {
-            if (_rb.ControlPointCount == 0 || _rb.CX.Count == 0) return;
-            float xa = Mathf.Max(_rb.CX[0], _scX - 0.6f * W), xb = Mathf.Min(_rb.GobyX, _scX + 0.6f * W);
-            if (xb <= xa) return;
-            var domain = DomainColor(_goby.VesselStatus.Domain);
-            _linePts.Clear(); _lineCols.Clear();
-            for (int i = 0; i < LineSamples; i++)
-            {
-                float x = Mathf.LerpUnclamped(xa, xb, i / (float)(LineSamples - 1)), y = _rb.Ground(x, out float slope);
-                _linePts.Add(new Vector3(x, y, 0f));
-                _lineCols.Add(Tint(domain, C_Body, PistolWarp.DiveTint(slope)));
-            }
-            _world.AddLine(_linePts, _lineCols, 0.45f, 1f, false);   // a mark over the world, unlit
-        }
-
-        // ---- the prisms: gathered, mapped (through last frame's segment when it still fits), zoned, chosen, then
-        // drawn far to near — the deep background as boxes, the near field warped, the foreground after the actors
-        void DrawPrisms(float W, float aspect, float D, float cx, float cy, float xLo, float xHi)
-        {
-            var idx = Index(); if (idx == null) return;
-            float band = Config.Vision + 4f, vision = Config.Vision, near = 3f * vision;
-            Vector3 centre = _rb.Unmap(_scX, _scY, 0f);
-            idx.QuerySphere(centre, 0.75f * W + 260f, _qView);
-            _seen.Clear(); _foreground.Clear();
-            foreach (var prism in _qView)
-            {
-                if (!Live(prism)) continue;
-                Vector3 q = prism.transform.position;
-                PistolRibbon.MapResult m; bool hit = false;
-                if (_lastK.TryGetValue(prism, out int lk))
-                {
-                    m = _rb.MapNear(q, lk, 6, xLo, xHi, true);
-                    hit = m.Ok && m.K > lk - 6 && m.K < lk + 6;
-                }
-                else m = default;
-                if (!hit) m = _rb.MapFast(q, xLo, xHi, true);
-                if (!m.Ok) continue;
-                _lastK[prism] = m.K; _cntMapped++;
-                bool ground = IsGround(prism);
-                var z = ground ? new PistolWarp.Zone { Drawn = true, Warped = false, Solid = true, Reach = 1f, Alpha = 1f, D = m.D } : PistolWarp.ZoneOf(m.D, band, vision, D, IsPrimed(prism));
-                if (!z.Drawn) continue;
-                if (!PistolWarp.OnScreen(m.X, m.H, z.D, _scX, _scY, cx, cy, D, W, aspect, 60f)) continue;
-                int cls = ground ? 0 : Mathf.Abs(m.D) <= near ? 1 : 2;
-                _seen.Add(new Seen { Prism = prism, M = m, Z = z, Ground = ground, Class = cls, Key = cls == 2 ? m.D : Mathf.Abs(m.X - _p.x), Id = prism.GetInstanceID() });
-            }
-            _seen.Sort(s_order);
-            int kSpan = Mathf.Max(2, _rb.Index(xHi) - _rb.Index(xLo));
-            // the far set: the nearest 600 by depth, drawn deepest first
-            int farStart = _seen.Count; while (farStart > 0 && _seen[farStart - 1].Class == 2) farStart--;
-            int farEnd = Mathf.Min(_seen.Count, farStart + MaxBoxes);
-            for (int i = farEnd - 1; i >= farStart; i--) DrawPrism(_seen[i], D, xLo, xHi, kSpan);
-            // the ground tiles, then the near set by distance along the path (the foreground waits for the actors)
-            int tiles = 0, nears = 0;
-            for (int i = 0; i < farStart; i++)
-            {
-                var e = _seen[i];
-                if (e.Class == 0) { if (tiles++ < MaxTiles) DrawPrism(e, D, xLo, xHi, kSpan); continue; }
-                if (nears++ >= MaxWarped) continue;
-                if (e.M.D < -band) _foreground.Add(e); else DrawPrism(e, D, xLo, xHi, kSpan);
-            }
-        }
-
-        void DrawForeground(float W, float D, float xLo, float xHi)
-        {
-            if (_foreground.Count == 0) return;
-            _foreground.Sort(s_farFirst);
-            int kSpan = Mathf.Max(2, _rb.Index(xHi) - _rb.Index(xLo));
-            foreach (var e in _foreground) DrawPrism(e, D, xLo, xHi, kSpan);
-        }
-
-        Material[] MaterialsOf(Prism prism)
-        {
-            if (!_renderers.TryGetValue(prism, out var r) || !r) { prism.TryGetComponent(out r); _renderers[prism] = r; }
-            return r ? r.sharedMaterials : null;
-        }
-
-        void DrawPrism(in Seen e, float D, float xLo, float xHi, int kSpan)
-        {
-            var prism = e.Prism; var tr = prism.transform; var m = e.M; var z = e.Z;
-            var mesh = prism.EffectiveRenderMesh();
-            var mats = MaterialsOf(prism);
-            if (!mesh || mats == null) return;
-            var data = PistolWorldMesh.DataOf(mesh);
-            Bounds b = mesh.bounds;
-            Vector3 c = tr.TransformPoint(b.center);
-            Vector3 ax = tr.TransformVector(new Vector3(b.extents.x, 0f, 0f)), ay = tr.TransformVector(new Vector3(0f, b.extents.y, 0f)), az = tr.TransformVector(new Vector3(0f, 0f, b.extents.z));
-            _rb.Frame(m.K, m.T, out var T, out var U, out var R);
-            float hd = Mathf.Sqrt(ax.sqrMagnitude + ay.sqrMagnitude + az.sqrMagnitude);
-
-            if (e.Ground)
-            {
-                // the trail is the ground: each block, its own mesh and material, rigid on the line at its x, tilted to the slope, at its depth
-                float gy = _rb.Ground(m.X, out float slope);
-                _true.Rigid(mesh, mats, PistolWarp.TileTransform(m.X, gy, slope, m.D, ax, ay, az, T, U, R, b.extents, b.center));
-                _cntTiles++;
-                return;
-            }
-
-            // the marks (the lab's own): rings about the prism, unlit, pulsing - the prism itself keeps its own look
-            Vector3 at = new(m.X, m.H, z.D);
-            if (IsPrimed(prism)) _world.AddRing(at, Vector3.forward, hd + 1.5f, 0.5f, 24, 4, Alpha(C_Primed, 0.55f + 0.3f * Mathf.Sin(_t * 6f)), 1f);
-            else if (IsHot(prism)) _world.AddRing(at, Vector3.forward, hd + 1.5f, 0.5f, 24, 4, Alpha(C_Hot, 0.5f + 0.3f * Mathf.Sin(_t * 9f)), 1f);
-            if (_held.Contains(prism)) _world.AddRing(at, Vector3.forward, hd + 2.5f, 0.6f, 24, 4, Alpha(C_Held, 0.7f), 1f);
-            // the ghost cue: a friendly block the AI would ghost through, while ghost is ready (PistolAI's own rule)
-            if (_t >= _p.ghostAt && Friendly(prism) && Mathf.Abs(m.D) <= Config.Vision && m.X > _p.x && m.X - _p.x < 60f && Mathf.Abs(m.H - _p.y) < 25f)
-                _world.AddRing(at, Vector3.forward, hd + 1f, 0.35f, 20, 4, Alpha(C_Held, 0.25f * (0.5f + 0.5f * Mathf.Sin(_t * 8f))), 1f);
-
-            if (!z.Warped || data == null)
-            {
-                // rigid: the prism's own mesh, its orientation seen from the ribbon's frame, at its unrolled place (the window's depth beyond it)
-                _true.Rigid(mesh, mats, PistolWarp.FlatTransform(tr.localToWorldMatrix, T, U, R, new Vector3(m.X, m.H, z.D)));
-                _cntBoxes++;
-                return;
-            }
-
-            float kappa = _rb.Curvature(m.K), gap = _lay.SampleGap;
-            var kind = PistolWarp.Classify(hd, kappa, m.D, gap, kSpan, out int window);
-            // the bar: a prism holding the bend's centre is beside the whole lap (hysteresis so a wobbling lap cannot flicker it)
-            float r = PistolWarp.CentreDistance(kappa, m.D);
-            bool wasBar = _barSince.TryGetValue(prism, out float since), isBar = wasBar ? r <= hd + 6f : r <= hd + 2f;
-            if (isBar && !wasBar) { since = _t; _barSince[prism] = since; }
-            if (!isBar && wasBar) _barSince.Remove(prism);
-            if (isBar && _cntBars < MaxBars)
-            {
-                PistolWarp.BoxCorners(c, ax, ay, az, _corners);
-                PistolWarp.BarExtent(_rb, c, m.K, 1f / Mathf.Max(1e-6f, Mathf.Abs(kappa)), hd, _corners, xLo, xHi, out float xA, out float xB);
-                float grow = 0.5f + 0.5f * Mathf.Clamp01((_t - since) / 0.25f);
-                PistolWarp.BarCorners(xA, xB, new Vector3(m.X, m.H, m.D), ax, ay, az, U, R, grow, _xhd);
-                _true.Warped(data, _xhd, mats);
-                _cntBars++;
-                return;
-            }
-            if (kind == PistolWarp.Kind.Bar) window = 24;                 // over the bar budget: a wide bend instead
-            if (_rb.SegTests > MaxSegTests) window = 2;                   // over the frame's budget: drawn straight, never dropped
-            PistolWarp.BoxCorners(c, ax, ay, az, _corners);
-            bool warped = PistolWarp.WarpBox(_rb, m.K, _corners, xLo, xHi, window, _xhd, true)
-                          && PistolWarp.XRange(_xhd) <= PistolWarp.TearBound(hd, kappa, m.D, gap);
-            if (!warped) { _true.Rigid(mesh, mats, PistolWarp.FlatTransform(tr.localToWorldMatrix, T, U, R, new Vector3(m.X, m.H, m.D))); _cntBoxes++; return; }   // a fold: a corner landed on another pass
-            _true.Warped(data, _xhd, mats);
-            _cntWarped++;
-        }
-
-        // ---- how the side camera sees the game's prisms, for its render only (CrewViewRender, the crew vessels' one look):
-        // their depth look measured from the Pistol's plane (d = 0 at the stage), and the game's own occlusion corridor
-        // aimed from this lens at the Pistol, the vessel this camera is for - so the foreground in front of it dithers, as
-        // the mass in front of any vessel does for the game's own camera, instead of hiding it
-        CrewViewRender.Look RenderLook()
-        {
-            var look = new CrewViewRender.Look
-            {
-                PlanePoint = Stage, PlaneNormal = _frame * Vector3.forward, FullSpreadAt = Config.DepthFullSpreadAt,
-            };
-            var corridor = PrismOcclusionCorridor.Config;
-            if (_gt && corridor && corridor.Enabled)
-            {
-                float r = Mathf.Clamp(Config.BodyR, corridor.MinVesselRadius, corridor.MaxVesselRadius);
-                look.Hull = _gt;
-                look.CorridorTarget = Stage + _frame * new Vector3(_p.x, _p.y, -(Config.Vision + 4f));   // the tube's near cap
-                look.OuterRadius = r * corridor.OuterRadiusScale;
-                look.InnerRadius = r * corridor.InnerRadiusScale;
-                look.CoreAlpha = corridor.CoreAlpha;
-                look.NearRadius = corridor.NearRadius(r);
-            }
-            return look;
-        }
-
-        // ---- the Pistol, its trail, the Goby, the rings, the flares, the aim
-        void DrawActors(float W, float aspect, float D, float xLo, float xHi)
-        {
-            float half = Config.Vision + 4f, r = Config.BodyR * (1f + 0.3f * _squash);
-            bool ghost = _t < _p.ghostUntil;
-            var body = Alpha(C_Body, ghost ? 0.35f : 1f);
-            var vel = PlaneVelocity(); var lean = vel.sqrMagnitude > 1f ? vel.normalized * 0.12f : Vector2.zero;
-            var domain = DomainColor(_goby.VesselStatus.Domain);
-            // the contact marker while airborne: where the ground is under you
-            if (!_p.grounded)
-            {
-                float gy = _rb.Ground(_p.x);
-                _world.AddDash(new Vector3(_p.x, gy, 0f), 1.3f, 0.25f, Alpha(domain, 0.6f * (1f - Mathf.Clamp01(Mathf.Abs(_p.y - gy) / 300f))));
-            }
-            // the tiny trail, then the tube END ON (its length runs into the screen, across the band), its facets turning, capped, with a glowing eye
-            _world.AddStrip(_tail, 1.1f, Alpha(C_Body, ghost ? 0.3f : 0.75f), Alpha(C_Body, 0f), 0.6f);
-            _world.AddTube(_p.x, _p.y, -half, half, r, r * 0.92f, ViewSides, body, 0.1f, 1f, lean, _t * 2f, !ghost);
-            _world.AddDisc(new Vector3(_p.x - lean.x * half, _p.y - lean.y * half, -half + 0.05f), r, ViewSides, body, Tint(body, new Color32(0, 0, 0, body.a), 0.25f), 0.1f, !ghost, _t * 2f);
-            _world.AddDisc(new Vector3(_p.x - lean.x * half, _p.y - lean.y * half, -half - 0.3f), r * 0.42f, 12, new Color32(255, 250, 230, 255), Alpha(C_Body, 1f), 1f, false);
-            // the Goby, at the end of the ground: its OWN hull (every renderer under it, a skinned one baked in its pose), turned by
-            // the frame at its x and seen from it, so it noses along the line as it does in the world; an arrow at the edge when it is off screen
-            {
-                float gx = _rb.GobyX, gyEnd = _rb.EndY;
-                _rb.FrameAt(gx, out var T, out var U, out var R);
-                Vector3 gobyPos = _gt.position; int baked = 0;
-                foreach (var rend in _gobyRenderers)
-                {
-                    if (!rend || !rend.enabled || !rend.gameObject.activeInHierarchy) continue;
-                    Mesh mesh = null;
-                    if (rend is SkinnedMeshRenderer skin)
-                    {
-                        if (baked == _baked.Count) _baked.Add(new Mesh { name = "GobyBaked", hideFlags = HideFlags.DontSave });
-                        mesh = _baked[baked++]; skin.BakeMesh(mesh);
-                    }
-                    else if (rend.TryGetComponent(out MeshFilter mf)) mesh = mf.sharedMesh;
-                    if (!mesh) continue;
-                    Vector3 off = rend.transform.position - gobyPos;
-                    var at = new Vector3(gx + Vector3.Dot(off, T), gyEnd + Vector3.Dot(off, U), Vector3.Dot(off, R));
-                    _true.Rigid(mesh, rend.sharedMaterials, PistolWarp.FlatTransform(rend.transform.localToWorldMatrix, T, U, R, at));
-                }
-                if (PistolWarp.ArrowPlace(gx, gyEnd, _scX, _scY, W, aspect, out float arrowX, out float arrowY))
-                    _world.AddDisc(new Vector3(arrowX, arrowY, 0f), 4f, 3, domain, domain, 1f, false);
-            }
-            // vortex rings, mapped into the Pistol's world with their axis unrolled
-            foreach (var run in _rings)
-            {
-                var ring = run.Ring; var m = _rb.MapFast(ring.C, xLo, xHi, true);
-                if (!m.Ok) continue;
-                _rb.FrameAt(m.X, out var T, out var U, out var R);
-                var axis = new Vector3(Vector3.Dot(ring.N, T), Vector3.Dot(ring.N, U), Vector3.Dot(ring.N, R));
-                float fade = Mathf.Clamp01(ring.Life / 0.35f);
-                // a lit faceted volume on the solid pass (nothing in the world looks flat), thinning as it fades (the lab's)
-                _world.AddRing(new Vector3(m.X, m.H, m.D), axis, _vs.pVortexR, PistolWarp.VortexTube * _vs.pVortexR * (0.35f + 0.65f * fade), 28, 6, C_Held, 0f, true);
-            }
-            foreach (var F in _flares)
-            {
-                var m = _rb.MapFast(F.P, xLo, xHi, true); if (!m.Ok) continue;
-                _world.AddDot(new Vector3(m.X, m.H, m.D), 2.5f, new Color32(255, 230, 128, 255));
-                var back = _rb.MapFast(F.P - F.V * 0.05f, xLo, xHi, true); if (back.Ok) _world.AddDot(new Vector3(back.X, back.H, back.D), 0.8f, new Color32(255, 200, 90, 140));
-            }
-            // the launch aim: yours while you drag (or hold RT) as the arc; the AI's as the lab's line, coloured by its state
-            if (_human == Half.Pistol)
-            {
-                Vector2? aim = _mouseAim ?? _padAim;
-                if (!aim.HasValue) return;
-                float dx = aim.Value.x, dy = aim.Value.y, L = Mathf.Sqrt(dx * dx + dy * dy);
-                if (L > _body.pLaunchRange) { dx *= _body.pLaunchRange / L; dy *= _body.pLaunchRange / L; }
-                float Tt = Mathf.Max(0.35f, Mathf.Sqrt(dx * dx + dy * dy) / _body.pLaunchSpeed), vx = dx / Tt, vy = dy / Tt + 0.5f * _body.pGravity * Tt;
-                for (float s = 0f; s <= 1.0001f; s += 0.08f)
-                {
-                    float tt = s * Tt;
-                    _world.AddDot(new Vector3(_p.x + vx * tt, _p.y + vy * tt - 0.5f * _body.pGravity * tt * tt, 0f), 1.1f, new Color32(255, 255, 255, 230));
-                }
-                _world.AddRing(new Vector3(_p.x + dx, _p.y + dy, 0f), Vector3.forward, 5f, 0.5f, 16, 4, new Color32(255, 255, 255, 230), 1f);
-            }
-            else if (_ai.LaunchAim.HasValue)
-            {
-                var to = _ai.LaunchAim.Value; var colour = _ai.Misjudged ? C_AimRed : _ai.Unnoticed ? C_AimAmber : C_AimGreen;
-                Vector3 a = new(_p.x, _p.y, 0f), bb = new(to.x, to.y, 0f), dir = bb - a;
-                if (dir.sqrMagnitude > 1f)
-                {
-                    Vector3 n = new Vector3(-dir.y, dir.x, 0f).normalized * 0.3f;
-                    _world.AddQuad(a + n, bb + n, bb - n, a - n, Alpha(colour, 0.85f), 1f, 0f, false);
-                }
-            }
-        }
-
-        Vector2 PlaneVelocity() => _p.grounded ? new Vector2(_p.v, 0f) : new Vector2(_p.vx, _p.vy);
-
-        void DrawFx()
-        {
-            for (int i = _fx.Count - 1; i >= 0; i--)
-            {
-                var f = _fx[i]; float age = _t - f.T0, k = age / f.Life;
-                if (k >= 1f) { _fx.RemoveAt(i); continue; }
-                float e = 1f - (1f - k) * (1f - k);   // ease out
-                var col = Alpha(f.Color, (1f - k) * f.Color.a / 255f);
-                float rad = Mathf.LerpUnclamped(f.R0, f.R1, e);
-                if (f.Disc) _world.AddDisc(f.At, rad, 20, col, col, 1f, false);
-                else _world.AddRing(f.At, Vector3.forward, rad, 0.5f + 0.5f * (1f - k), 20, 4, col, 1f);
-            }
-        }
-
-        // ---- the 3D world's share: one instanced submission per (mesh, material), the one draw API Unity and Amoebius share.
-        // (The flat world is drawn at Stage, 40 000 u below the real one: past every vessel camera's far plane,
-        // check_vessel_camera_farclip.py; only the side camera looks there.)
-        sealed class Batch { public Mesh Mesh; public Material Material; public Matrix4x4[] M = new Matrix4x4[32]; public int N; public Bounds Bounds; }
-        readonly List<Batch> _batches = new();
-        int _batchesUsed;
-
-        void Draw3D()
-        {
-            foreach (var run in _rings) Draw(_torus, Matrix4x4.TRS(run.Ring.C, Quaternion.LookRotation(run.Ring.N, Mathf.Abs(run.Ring.N.y) < 0.9f ? Vector3.up : Vector3.right), Vector3.one * _vs.pVortexR), _ringMat);
-            foreach (var F in _flares) Draw(_cube, Matrix4x4.TRS(F.P, Quaternion.identity, Vector3.one * 1.5f), _flareMat);
-            FlushDraws();
-        }
-
-        void Draw(Mesh mesh, Matrix4x4 m, Material material)
-        {
-            if (!mesh || !material) return;
-            Batch b = null;
-            for (int i = 0; i < _batchesUsed; i++) if (_batches[i].Mesh == mesh && _batches[i].Material == material) { b = _batches[i]; break; }
-            if (b == null)
-            {
-                if (_batchesUsed == _batches.Count) _batches.Add(new Batch());
-                b = _batches[_batchesUsed++]; b.Mesh = mesh; b.Material = material; b.N = 0;
-            }
-            if (b.N == b.M.Length)
-            {
-                if (b.N >= 1023) return;   // one call's instance cap; the view never needs more of one kind
-                System.Array.Resize(ref b.M, Mathf.Min(1023, b.N * 2));
-            }
-            // what the instance covers (its mesh's bounds at its largest scale), for culling
-            Vector3 c = m.GetColumn(3);
-            float scale = Mathf.Max(((Vector3)m.GetColumn(0)).magnitude, Mathf.Max(((Vector3)m.GetColumn(1)).magnitude, ((Vector3)m.GetColumn(2)).magnitude));
-            var box = new Bounds(c, Vector3.one * (2f * scale * (mesh.bounds.extents.magnitude + mesh.bounds.center.magnitude)));
-            if (b.N == 0) b.Bounds = box; else b.Bounds.Encapsulate(box);
-            b.M[b.N++] = m;
-        }
-
-        void FlushDraws()
-        {
-            for (int i = 0; i < _batchesUsed; i++)
-            {
-                var b = _batches[i]; if (b.N == 0) continue;
-                var rp = new RenderParams(b.Material) { shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off, receiveShadows = false, worldBounds = b.Bounds };
-                Graphics.RenderMeshInstanced(rp, b.Mesh, 0, b.M, b.N);
-                b.N = 0;
-            }
-            _batchesUsed = 0;
+            var t = prism.transform;
+            var inv = Quaternion.Inverse(t.rotation);
+            return ShrikeRules.TryRayBox(inv * (origin - t.position), inv * dir, HalfExtents(prism), pad, maxT, out entry);
         }
 
         void OnGUI()
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (_rb == null) return;
-            var box = new Rect(10f, 10f, 560f, 150f);
+            if (_goby == null) return;
+            var box = new Rect(10f, 10f, 520f, 96f);
             GUI.Box(box, string.Empty);
             GUILayout.BeginArea(new Rect(box.x + 8f, box.y + 6f, box.width - 16f, box.height - 12f));
-            GUILayout.Label($"GOBY & PISTOL   you fly: {(_human == Half.Goby ? "GOBY" : "PISTOL")}   AI: {aiLevel}   swap: D-pad left/right or 1/2");
-            GUILayout.Label($"Pistol  launch {_p.launch}/{Mathf.RoundToInt(_body.pLaunchCharges)}   ghost {Ready(_p.ghostAt)}   snap {Ready(_p.vortexAt)}   " +
-                            $"{(_p.grounded ? "on the ground" : "in the air")}   {_rb.GobyX - _p.x:0} u behind the Goby");
-            GUILayout.Label($"Goby    primer {_primer}/{Mathf.RoundToInt(Config.PrimerCharges)}   flares {_flare}/{Mathf.RoundToInt(Config.FlareCharges)}   " +
-                            $"primed {_primed.Count}   hot {_hot.Count}   rings {_rings.Count}");
+            GUILayout.Label($"GOBY & PISTOL   you fly: {(_human == Half.Goby ? "GOBY" : "PISTOL")}   AI: {aiLevel}   swap: D-pad left/right, 1/2 or double tap the small view");
+            GUILayout.Label($"Goby    perches {_perches.Count}   dart {(DartReady ? "ready" : "...")}{(_charging ? $" charging {DartCharge01:0.00}" : "")}   lock {(_lockTarget ? (_lockIsVessel ? "vessel" : "fauna") : "none")}");
+            GUILayout.Label($"Pistol  {(_resting ? $"resting at perch {_at}" : $"riding {_seg} {(_dir > 0 ? "on" : "back")}")}   jump {_p.launch}   den prisms {DenPrisms}   heading {(_travelDir > 0 ? "on" : "back")}   rings {_rings.Count}");
             GUILayout.Label(_human == Half.Pistol
-                ? "Pistol: hold Space / mouse / A to dive; drag (or RT + right stick) and let go to launch; F launch; G / B ghost; Q E / X Y Snap"
-                : "Goby: fly the vessel as usual; 3 / D-pad up primer; 4 / D-pad down flares");
-            GUILayout.Label($"view    mapped {_cntMapped}   warped {_cntWarped}   bars {_cntBars}   rigid {_cntBoxes}   tiles {_cntTiles}   segTests {_rb.SegTests}   draws {_true.Draws}   marks {_world.VertexCount} v");
+                ? "Pistol: hold Space / mouse / finger / A to dive; drag (or RT + right stick) and let go to jump; G / B ghost; Q E / X Y Snap; B key / LB back"
+                : "Goby: aim the hull; hold Q / RT to charge a dart, let go to dart; F / LT lock");
             GUILayout.EndArea();
 #endif
         }
-
-        string Ready(float at) => _t >= at ? "ready" : $"{at - _t:0.0}s";
     }
 }

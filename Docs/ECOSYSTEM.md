@@ -11713,10 +11713,10 @@ cracks the shield off (`Prism.DeactivateShields`, the same call a vessel's impac
 
 The designer, 2026-10-21: "these are a special swarm that can be upgraded to break rules and should only starve down to a minimum size and break other rules if need be. in general shielded prisms should be food during a frenzy when the cell has too many prism."
 
-- **A HERD is a leash whose creatures may break rules** (`IFaunaHerd : IFaunaLeash`; Marlin and Jacks, `R_VesselActions/MARLIN_JACKS.md`). Every break is one method with one reader in `Fauna`, so the exceptions stay fenced:
+- **A HERD is a leash whose creatures may break rules** (`IFaunaHerd : IFaunaLeash`; the Jacks, `R_VesselActions/JACKS.md`). Every break is one method with one reader in `Fauna`, so the exceptions stay fenced:
   - `Sustains` (the second sign-off after the keeper, §61.4): the herd's first `minHerd` creatures do not starve, and an empty herd has that many born to it. Predation and jousts still kill.
-  - `EatsShields`: shielded (never super-shielded) mass is food for the herd (Marlin and Jacks' Space level 5).
-  - `FeedsPerOffspringScale`: the holder scales the feeds a birth takes (Marlin and Jacks' Mass).
+  - `EatsShields`: shielded (never super-shielded) mass is food for the herd (the Jacks' Space level 5).
+  - `FeedsPerOffspringScale`: the holder scales the feeds a birth takes (the Jacks' Mass).
   - `Born`: a herded creature's offspring joins the herd.
 - **Shielded mass is food during a FRENZY**, for every grazer: `Cell.ShieldedMassIsFood` is `phase == CellPhase.Frenzy` (the phase a cell enters when it holds too much mass). `Cell.IsInedibleShield` drives the targeting grids, and every shielded prism is re-filed on the Frenzy edge (`SyncShieldFoodFiling`), so a Frenzy steers fauna onto shields and the Calm that follows takes them off again. Super-shielded mass is never food.
 - **One predicate.** `Fauna.IsInedibleShield(prism)` replaced `IsShieldedMass` in every grazer's edibility test (`Boid`, `LightFauna`, `WormFauna`, `SubstrateFauna`, `NcaCreatureFauna`, `SwarmFauna`). `IsShieldedMass` stays the fact ("is this armoured"), now read only to pass `devastate: true` to `Prism.Consume`, so an edible shield is eaten with its prism instead of shed. `ThreatGrove` keeps the strict rule.

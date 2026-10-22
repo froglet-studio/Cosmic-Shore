@@ -4,6 +4,10 @@ All of it runs with the plain `python3` that has **bpy 5.2** installed (`python3
 no Blender GUI, no OpenGL. If `import bpy` fails: `pip download bpy` then
 `pip install bpy-*.whl --break-system-packages` (a 400 MB wheel; Blender-as-a-module). `assimp`
 (`apt-get install assimp-utils`) is the second reader; the third is Blender's own importer.
+**A bpy wheel is built for ONE Python minor version.** On a container whose `python3` is 3.13 there is no wheel to
+download; `python3.11 -m venv <scratch>/bpyenv && <scratch>/bpyenv/bin/pip install bpy numpy pillow` (bpy 5.0.1,
+about 5 min) works, and every script must then be RUN with that interpreter, because `render_cards.py` launches its
+Blender half through `sys.executable` (`cece/lucid-turing-zndmgf`, 2026-10-21: the Jacks' card).
 
 | module | what it is | the one thing to remember |
 |---|---|---|

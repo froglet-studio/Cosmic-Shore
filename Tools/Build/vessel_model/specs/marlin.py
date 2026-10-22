@@ -1,6 +1,10 @@
 """
 marlin - a NEW hull with no artist file: the marlin of Marlin and Jacks (vessel class 22,
-Assets/_Scripts/Controller/Vessel/R_VesselActions/MARLIN_JACKS.md), which flew the Rhino's drawn rig until now.
+
+SAVED FOR A SWORDSMAN (Garrett, 2026-10-21): "save the marlin as a proper swordsmen, not overshadowed by the jacks".
+Marlin and Jacks became the Jacks (R_VesselActions/JACKS.md); no prefab draws this model now. A rapier vessel of its
+own will take it, with its own class id (22 is the Jacks').
+Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md), which flew the Rhino's drawn rig until now.
 Built to the fleet convention and the fleet's look (Garrett, 2026-10-18: "don't forget they are spaceships
 inspired by earth clades"; 2026-10-21: "lets give it some models and get it ready to ship").
 
@@ -35,7 +39,7 @@ Contract (FLEET_CONVENTION sections 1-4 for a NEW vessel):
             Mass (volume):   the hull deepens and the engines swell;
             Space (reach):   the fins reach along their span and the crescent spreads;
             Time (speed):    the sail folds down and back, the fins sweep, the crescent rakes
-  takes     none drive it (code poses the bones by name, MarlinCrewBodies); four documentation poses for the sheet:
+  takes     none drive it (code posed the bones by name: MarlinCrewBodies, retired with the marlin's seat on 2026-10-21); four documentation poses for the sheet:
             beatleft / beatright (the tail), sailup (the sail raised), flare (the fins brake)
 """
 

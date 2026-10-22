@@ -4,13 +4,15 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Pistol's body on its ground: the Tiny Wings ride (heavy on the way down, light on the way up, a smooth or a
-    /// hard landing), the aimed launch, and its two triggers (Snap = the vortex ring, and Ghost). Ported LINE FOR LINE
-    /// from the lab's <c>pistolStep</c> (<c>Docs/Studios/VesselStudio/goby.html</c>), minus its body collisions, which
-    /// need the scene (the harness does them with <c>PrismSpatialIndex</c>). No scene, no time, no device.
+    /// hard landing), the aimed jump, and its two triggers (Snap = the vortex ring, and Ghost), in the flat frame of the
+    /// stretch it rides (<see cref="PistolPlane.Frame"/>: x along the stretch, y up, gravity minus y). The ride is the
+    /// lab's (<c>Docs/Studios/VesselStudio/goby.html</c> round 13); the ground is now the dart's own trail on a flat plane
+    /// (Garrett, 2026-10-22), so there is nothing to unroll. No scene, no time, no device.
     /// </summary>
     public static class PistolBodyMath
     {
-        /// <summary>The lab's Pistol numbers this step reads (the lab's keys, verbatim).</summary>
+        /// <summary>The Pistol numbers this step reads. <c>pLaunchCd</c> is the jump's cooldown at the pair's Time level,
+        /// evaluated by the caller (Time is the jump's cooldown, Garrett 2026-10-22).</summary>
         public struct Settings
         {
             public float pGravity, pDiveMul, pMinSpeed, pDrag, pGoodLand;
@@ -18,48 +20,51 @@ namespace CosmicShore.Gameplay
             public float pGhostTime, pGhostCd, pVortexCd;
         }
 
-        /// <summary>The Pistol's state on the ribbon (the lab's <c>W.p</c>).</summary>
+        /// <summary>The Pistol's state in the frame it rides.</summary>
         public sealed class State
         {
             public float x, y, vx, vy, v; public bool grounded = true;
             public int launch; public float launchT, lastLaunchAt = -9f;
-            public float ghostAt, ghostUntil = -1f, vortexAt; public bool prevGhost, prevVortex, freeSnap;
+            public float ghostAt, ghostUntil = -1f, vortexAt; public bool prevGhost, prevVortex;
             public Vector3 wpos;
         }
 
-        /// <summary>One step's input (the lab's Pistol input object). <c>Launch</c> and <c>Snap</c> carry an aim in the
-        /// Pistol's plane (dx along the path, dy up); <c>Snap</c> with a zero aim fires straight ahead.</summary>
+        /// <summary>One step's input. <c>Launch</c> and <c>SnapAim</c> are in the frame (dx along, dy up); a zero
+        /// <c>SnapAim</c> fires straight ahead.</summary>
         public struct Input
         {
             public float Dive; public bool HasLaunch; public Vector2 Launch; public bool Ghost; public bool Snap; public Vector2 SnapAim;
         }
 
         /// <summary>What the step did that the caller must act on.</summary>
-        public struct Events { public bool Landed, SmoothLanding, Launched, FireSnap; public Vector2 SnapAim; public bool GhostStarted; }
+        public struct Events { public bool Landed, SmoothLanding, Launched, FireSnap; public Vector2 SnapAim; public bool GhostStarted; public float Travelled; }
 
-        public static State Spawn(PistolRibbon rb, float x, float v, in Settings s)
+        /// <summary>A Pistol standing at the start of <paramref name="f"/> with speed <paramref name="v"/>.</summary>
+        public static void PlaceAtStart(State p, in PistolPlane.Frame f, float v)
         {
-            var p = new State { x = x, y = rb.Ground(x), v = v, launch = Mathf.RoundToInt(s.pLaunchCharges) };
-            p.wpos = rb.Unmap(p.x, p.y, 0f); return p;
+            p.x = 0f; p.y = PistolPlane.Ground(f, 0f); p.v = v; p.vx = p.vy = 0f; p.grounded = true;
+            p.wpos = f.ToWorld(p.x, p.y);
         }
 
-        /// <summary>The lab's <c>pistolStep</c> (motion, the clamp at the Goby, launch, ghost, snap).</summary>
-        public static Events Step(State p, PistolRibbon rb, float gobyX, float gobySpeed, float t, float dt, in Input inp, in Settings s)
+        /// <summary>The ride, the jump, ghost and Snap for one step.</summary>
+        public static Events Step(State p, in PistolPlane.Frame f, float t, float dt, in Input inp, in Settings s)
         {
             var ev = new Events();
+            float x0 = p.x, y0 = p.y;
             float dive = Mathf.Clamp01(inp.Dive), g = s.pGravity * (1f + (s.pDiveMul - 1f) * dive);
             if (p.grounded)
             {
-                rb.Ground(p.x, out float m); float c = 1f / Mathf.Sqrt(1f + m * m), sn = m * c;
+                PistolPlane.Ground(f, p.x, out float m); float c = 1f / Mathf.Sqrt(1f + m * m), sn = m * c;
                 p.v += (-g * sn - s.pDrag * p.v) * dt; if (p.v < s.pMinSpeed) p.v = s.pMinSpeed;
-                float nx = p.x + p.v * c * dt, yb = p.y + p.v * sn * dt - 0.5f * g * dt * dt, yg = rb.Ground(nx);
+                float nx = p.x + p.v * c * dt, yb = p.y + p.v * sn * dt - 0.5f * g * dt * dt, yg = PistolPlane.Ground(f, nx);
                 if (dive < 0.5f && yb > yg + 0.05f) { p.grounded = false; p.vx = p.v * c; p.vy = p.v * sn; p.x = nx; p.y = yb; }
                 else { p.x = nx; p.y = yg; }
             }
             else
             {
                 p.vy -= g * dt; p.x += p.vx * dt; p.y += p.vy * dt;
-                float yg = rb.Ground(p.x, out float m);
+                if (p.x < 0f) { p.x = 0f; if (p.vx < 0f) p.vx = 0f; }   // the perch it left is behind it: never off the start
+                float yg = PistolPlane.Ground(f, p.x, out float m);
                 if (p.y <= yg)
                 {
                     float c = 1f / Mathf.Sqrt(1f + m * m), sn = m * c, sp = Mathf.Sqrt(p.vx * p.vx + p.vy * p.vy), vt = p.vx * c + p.vy * sn;
@@ -69,39 +74,45 @@ namespace CosmicShore.Gameplay
                     p.grounded = true; p.y = yg;
                 }
             }
-            // the Pistol cannot pass the Goby: there is no ground ahead of it yet
-            float lim = gobyX - 6f;
-            if (p.x > lim) { p.x = lim; if (p.grounded) { p.v = Mathf.Min(p.v, gobySpeed); p.y = rb.Ground(p.x); } else p.vx = Mathf.Min(p.vx, gobySpeed); }
-            // abilities
+            // the jump: one charge on Time's cooldown
             if (p.launch < s.pLaunchCharges) { p.launchT += dt; if (p.launchT >= s.pLaunchCd) { p.launch++; p.launchT = 0f; } } else p.launchT = 0f;
             if (inp.HasLaunch && p.launch > 0)
             {
-                float dx = inp.Launch.x, dy = inp.Launch.y, L = Mathf.Sqrt(dx * dx + dy * dy);
-                if (L > s.pLaunchRange) { dx *= s.pLaunchRange / L; dy *= s.pLaunchRange / L; }
-                float T = Mathf.Max(0.35f, Mathf.Sqrt(dx * dx + dy * dy) / s.pLaunchSpeed);
-                p.vx = dx / T; p.vy = dy / T + 0.5f * s.pGravity * T; p.grounded = false; p.launch--; p.lastLaunchAt = t; ev.Launched = true;
+                Vector2 lv = LaunchVelocity(inp.Launch, s);
+                p.vx = lv.x; p.vy = lv.y; p.grounded = false; p.launch--; p.lastLaunchAt = t; ev.Launched = true;
             }
-            p.wpos = rb.Unmap(p.x, p.y, 0f);
+            p.wpos = f.ToWorld(p.x, p.y);
             if (inp.Ghost && !p.prevGhost && t >= p.ghostAt) { p.ghostUntil = t + s.pGhostTime; p.ghostAt = t + s.pGhostCd; ev.GhostStarted = true; }
             p.prevGhost = inp.Ghost;
             if (inp.Snap && !p.prevVortex && t >= p.vortexAt) { ev.FireSnap = true; ev.SnapAim = inp.SnapAim; p.vortexAt = t + s.pVortexCd; }
             p.prevVortex = inp.Snap;
+            ev.Travelled = Mathf.Sqrt((p.x - x0) * (p.x - x0) + (p.y - y0) * (p.y - y0));
             return ev;
         }
 
-        /// <summary>The lab's body test: does a point mapped to (x, h, d) touch the Pistol's cylinder?</summary>
-        public static bool Touches(State p, in PistolRibbon.MapResult m, float pVision, float pBodyR)
+        /// <summary>The jump that lands the Pistol <paramref name="aim"/> away (capped at <c>pLaunchRange</c>).</summary>
+        public static Vector2 LaunchVelocity(Vector2 aim, in Settings s)
         {
-            float half = pVision + 4f;
-            return m.Ok && Mathf.Abs(m.D) <= half && Mathf.Sqrt((m.X - p.x) * (m.X - p.x) + (m.H - p.y) * (m.H - p.y)) <= pBodyR + 3f;
+            float dx = aim.x, dy = aim.y, L = Mathf.Sqrt(dx * dx + dy * dy);
+            if (L > s.pLaunchRange) { dx *= s.pLaunchRange / L; dy *= s.pLaunchRange / L; }
+            float T = Mathf.Max(0.35f, Mathf.Sqrt(dx * dx + dy * dy) / Mathf.Max(1f, s.pLaunchSpeed));
+            return new Vector2(dx / T, dy / T + 0.5f * s.pGravity * T);
+        }
+
+        /// <summary>Does a point at frame (x, y, d) touch the Pistol's body (a short cylinder across its plane)?</summary>
+        public static bool Touches(State p, Vector3 frame, float halfDepth, float bodyR)
+        {
+            float dx = frame.x - p.x, dy = frame.y - p.y;
+            return Mathf.Abs(frame.z) <= halfDepth && dx * dx + dy * dy <= (bodyR + 3f) * (bodyR + 3f);
         }
     }
 
     /// <summary>
     /// The Snap: a vortex ring. Prisms near its core are pulled into a toroidal flow (round the core, drifting round
-    /// the ring), carried with it, and broken when it collapses (or let go). Ported LINE FOR LINE from the lab's
-    /// <c>fireVortex</c> and <c>vortexStep</c>; the caller owns the prisms (it asks <see cref="TryCapture"/> and moves
-    /// each captured one to <see cref="Flow"/>'s answer).
+    /// the ring), carried with it, and broken when it collapses (or let go). A ring fired while the Goby holds a lock on
+    /// a rival vessel that is on the Pistol's screen HOMES on it (Garrett, 2026-10-22): it turns toward the target each
+    /// step (<see cref="Steer"/>). The caller owns the prisms (it asks <see cref="TryCapture"/> and moves each captured one
+    /// to <see cref="Flow"/>'s answer).
     /// </summary>
     public sealed class VortexRing
     {
@@ -109,22 +120,19 @@ namespace CosmicShore.Gameplay
 
         public struct Capture { public int Id; public float th, ph, rho; }
 
-        public Vector3 C; public readonly Vector3 N, E1, E2; public float Life, Age;
+        public Vector3 C; public Vector3 N, E1, E2; public float Life, Age;
         public readonly System.Collections.Generic.List<Capture> Caps = new();
 
         public VortexRing(Vector3 c, Vector3 n, float life)
         {
-            C = c; N = n.normalized; Life = life;
-            E1 = Vector3.Cross(N, Mathf.Abs(N.y) < 0.9f ? Vector3.up : Vector3.right).normalized; E2 = Vector3.Cross(N, E1);
+            C = c; Life = life;
+            SetAxis(n);
         }
 
-        /// <summary>The lab's <c>fireVortex</c>: the ring leaves the Pistol along its aim in the plane (straight ahead
-        /// along the path when the aim is zero).</summary>
-        public static VortexRing Fire(PistolRibbon rb, PistolBodyMath.State p, Vector2 aim, float life)
+        void SetAxis(Vector3 n)
         {
-            float dx = 1f, dy = 0f, l = aim.magnitude; if (l > 1f) { dx = aim.x / l; dy = aim.y / l; }
-            rb.FrameAt(p.x, out Vector3 T, out Vector3 U, out _);
-            return new VortexRing(p.wpos, (T * dx + U * dy).normalized, life);
+            N = n.sqrMagnitude > 1e-8f ? n.normalized : Vector3.forward;
+            E1 = Vector3.Cross(N, Mathf.Abs(N.y) < 0.9f ? Vector3.up : Vector3.right).normalized; E2 = Vector3.Cross(N, E1);
         }
 
         public bool Full(in Settings s) => Caps.Count >= s.pVortexMax;
@@ -132,7 +140,16 @@ namespace CosmicShore.Gameplay
         /// <summary>The ring travels; true while it lives.</summary>
         public bool Advance(float dt, in Settings s) { C += N * (s.pVortexSpeed * dt); Life -= dt; Age += dt; return Life > 0f; }
 
-        /// <summary>The lab's capture test: a prism within <c>pVortexCapture</c> of the ring's core joins its flow.</summary>
+        /// <summary>Turn the ring's heading toward <paramref name="target"/> by at most <paramref name="maxRadians"/>.
+        /// Captured prisms keep their place in the flow (their angles are about the axis).</summary>
+        public void Steer(Vector3 target, float maxRadians)
+        {
+            Vector3 want = target - C;
+            if (want.sqrMagnitude < 1e-6f) return;
+            SetAxis(Vector3.RotateTowards(N, want.normalized, Mathf.Max(0f, maxRadians), 0f));
+        }
+
+        /// <summary>A prism within <c>pVortexCapture</c> of the ring's core joins its flow.</summary>
         public bool TryCapture(int id, Vector3 pos, in Settings s)
         {
             if (Full(s)) return false;
@@ -143,7 +160,7 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        /// <summary>The lab's toroidal flow for capture <paramref name="i"/>: advance it and return where it now is.</summary>
+        /// <summary>The toroidal flow for capture <paramref name="i"/>: advance it and return where it now is.</summary>
         public Vector3 Flow(int i, float dt, in Settings s)
         {
             var c = Caps[i];
@@ -151,6 +168,42 @@ namespace CosmicShore.Gameplay
             Caps[i] = c;
             float ct = Mathf.Cos(c.th), st = Mathf.Sin(c.th), rad = s.pVortexR + c.rho * Mathf.Cos(c.ph), ax = c.rho * Mathf.Sin(c.ph);
             return C + N * ax + (E1 * ct + E2 * st) * rad;
+        }
+
+        /// <summary>The tube's radius as a share of the ring's (the lab's <c>TorusGeometry(1, 0.16, ...)</c>).</summary>
+        public const float Tube = 0.16f;
+
+        /// <summary>Vertices <see cref="Facets"/> writes: three per triangle, two triangles per facet.</summary>
+        public static int FacetVertexCount(int seg, int side) => seg * side * 6;
+
+        /// <summary>
+        /// The vortex ring as a FACETED volume (nothing in the world looks flat, LOCKED 2026-10-18,
+        /// <c>Docs/claude/SHADERS_AND_PERFORMANCE.md</c>): a unit torus in the xy plane, its axis +z, <paramref name="seg"/>
+        /// facets round the ring and <paramref name="side"/> round the tube; every triangle has its own vertices and its
+        /// face normal, so it shades flat.
+        /// </summary>
+        public static void Facets(float tube, int seg, int side, Vector3[] v, Vector3[] n)
+        {
+            int k = 0;
+            for (int i = 0; i < seg; i++)
+                for (int j = 0; j < side; j++)
+                {
+                    Vector3 p00 = RingPoint(tube, seg, side, i, j), p10 = RingPoint(tube, seg, side, i + 1, j);
+                    Vector3 p11 = RingPoint(tube, seg, side, i + 1, j + 1), p01 = RingPoint(tube, seg, side, i, j + 1);
+                    Face(v, n, ref k, p00, p10, p11); Face(v, n, ref k, p00, p11, p01);
+                }
+        }
+
+        static Vector3 RingPoint(float tube, int seg, int side, int i, int j)
+        {
+            float a = i / (float)seg * Mathf.PI * 2f, b = j / (float)side * Mathf.PI * 2f, rr = 1f + tube * Mathf.Cos(b);
+            return new Vector3(rr * Mathf.Cos(a), rr * Mathf.Sin(a), tube * Mathf.Sin(b));
+        }
+
+        static void Face(Vector3[] v, Vector3[] n, ref int k, Vector3 a, Vector3 b, Vector3 c)
+        {
+            var f = Vector3.Cross(b - a, c - a).normalized;
+            v[k] = a; v[k + 1] = b; v[k + 2] = c; n[k] = n[k + 1] = n[k + 2] = f; k += 3;
         }
     }
 }

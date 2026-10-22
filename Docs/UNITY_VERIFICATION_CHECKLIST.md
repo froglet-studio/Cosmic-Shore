@@ -13810,7 +13810,7 @@ no .NET in the container).
 
 Garrett: "these are a special swarm that can be upgraded to break rules and should only starve down to a minimum size
 and break other rules if need be. in general shielded prisms should be food during a frenzy when the cell has too many
-prism. lets bring this into unity". Design: `R_VesselActions/MARLIN_JACKS.md`; platform: `Docs/ECOSYSTEM.md` §61.8.
+prism. lets bring this into unity". Design: `R_VesselActions/JACKS.md`; platform: `Docs/ECOSYSTEM.md` §61.8.
 `unity_refcompile` player: 0 project errors; editor: the 3 known `AuthenticationServiceFacade` errors, none in changed
 files. `author_marlin_assets.py --check` and `--self-test` pass, the vessel gates pass. No editor or `unity` CLI in the
 session, so `/verify-unity` did not run.
@@ -13862,6 +13862,36 @@ session, so `/verify-unity` did not run.
    colour. The Angler's tamed school wears the same mark. Host plus one client: the client sees the host's herd marked,
    and a client joining mid-herd sees it marked. Spindle draw calls do not rise beyond one batch per mark (the marks
    are shared materials). Two builds must both be protocol 11 to join.
+
+## 🔴 2026-10-21 — Marlin and Jacks becomes the Jacks: one player, herd or fly (`cece/lucid-turing-zndmgf`) - NOT EDITOR-VERIFIED
+
+Garrett: "reduce the 'marlin and jacks' to just the jacks ... they can switch to 3d flight mode and use two thumb flight
+controls". Design: `Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md`. Supersedes the marlin steps of the
+entry above (1-4, 7-10, 12); its herd steps (5, 6, 11, 13, 14) still apply, read "the jacks" for "the marlin". No editor
+or `unity` CLI in the session: the C# compiles headless (`unity_refcompile` player: OK; editor: 0 errors in changed
+files), `author_jacks_assets.py --check` / `--self-test`, `author_jacks_icons.py --check`, `check_crew_vessels.py` and the
+vessel gates pass. Classes, files and assets were renamed with their `.meta` (every guid kept); reimport once.
+
+1. Toy Box > Vessel Changer → **Jacks** (the card: one jack, "Jacks", no crew line). The hull spawns FLYING: two jacks
+   side by side at the chase camera, no marlin and no Rhino between them.
+2. Flying, on a phone (and on a pad): each fish sits under its thumb. One thumb up and the other down: the fish split
+   up and down and the hull rolls. Both up / both sideways: the fish move together and the hull pitches / yaws. Apart:
+   the fish spread and the hull speeds up; together: they close (they never cross) and it slows. The ramp boost works.
+3. Switch (D-pad left / right, keys 1 / 2, or a double tap on the small square): the top-down herding view takes the
+   screen; the hull STOPS where it was (no drift, no roll) and the board does not move under the thumbs. Run the jacks
+   with two thumbs, lift one: the decoy drops. The pad's sticks run the jacks; the bumper lifts.
+4. Switch back: the hull jumps to halfway between the jacks, facing the board's forward, and the jacks swim into
+   formation beside it within about half a second. The chase camera carries over without a lurch.
+5. Flying: A calls the herd to the jacks (no rings round them while it lasts); with a decoy down, the trigger or
+   lifting a thumb jumps the hull and jacks to it. At Time 5, X drops the decoy where the jacks fly.
+6. Start a round while herding (a mode with a countdown): the hull stays put until the round starts and flies after a
+   switch; it is never left stuck after a round starts.
+7. An AI Jacks (Arena roster or an AI seat): it herds ~14 s with the hull still, then flies ~6 s (calling the herd as
+   it takes off), and repeats. Its fish look the same on a client.
+8. Host plus one client, the client on the Jacks: the host sees the client's jacks herd on the board and fly beside
+   the hull (the formation turns with the hull, no lag swing); the herd on the host follows the client's jacks.
+9. Look calls (numbers on `JacksConfig` / `JacksBodies`): `flightGap` 14, `flightReach` 10, `flightModelScale` 1 at the
+   Rhino's chase camera; the parked hull keeps its colliders invisibly while herding (switching them off would be code).
 
 ## 🔴 2026-10-21 — Dying limbs become cytoplasm shards (`cece/awesome-faraday-7fsppt`) - NOT EDITOR-VERIFIED
 

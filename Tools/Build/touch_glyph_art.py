@@ -7,7 +7,8 @@
 Thumb-lift glyphs name the touch gesture a card's ability is on (Docs/Reports/MOBILE_VESSELS.md):
 a landscape phone with two thumbs at its bottom corners; a lifted thumb is hollow with an arrow up.
 The button icons are for TouchControlProfile.extraButtons (fire, ring, zoom, drift, bomb, squad,
-recall, hold, dipole, missile) and the disc and rim every button is drawn on. GUIDs are derived from the file name, so a re-run never re-keys an asset.
+recall, hold, dipole, missile) and the crew seats' own buttons (the Goby's dart and lock, the
+Pistol's ghost and snap) and the disc and rim every button is drawn on. GUIDs are derived from the file name, so a re-run never re-keys an asset.
 """
 import hashlib
 import io
@@ -289,6 +290,38 @@ def i_missile(d):
         circle(d, ax - dx * 24 * i, ay - dy * 24 * i, r)
 
 
+def i_dart(d):
+    # the Goby's dart: a short, fast arrow with speed lines behind it
+    d.polygon([(s(214), s(128)), (s(150), s(84)), (s(150), s(172))], fill=(W, W, W, 255))
+    line(d, [(70, 128), (156, 128)], 26)
+    for y, x0 in ((84, 40), (172, 40), (128, 20)):
+        line(d, [(x0, y), (x0 + 36, y)], 10)
+
+
+def i_lock(d):
+    # the Goby's lock: four corner brackets round a dot
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            cx, cy = 128 + sx * 78, 128 + sy * 78
+            line(d, [(cx, cy - sy * 40), (cx, cy), (cx - sx * 40, cy)], 14)
+    circle(d, 128, 128, 18)
+
+
+def i_ghost(d):
+    # the Pistol's ghost: its outline dashed, passing through
+    for i in range(12):
+        a0, a1 = i * math.pi / 6, i * math.pi / 6 + math.pi / 10
+        line(d, [(128 + 84 * math.cos(a0 + (a1 - a0) * k / 4), 128 + 84 * math.sin(a0 + (a1 - a0) * k / 4))
+                 for k in range(5)], 14)
+    circle(d, 128, 128, 22)
+
+
+def i_snap(d):
+    # the Pistol's Snap: a vortex ring leaving the claw
+    d.ellipse([s(118), s(58), s(214), s(198)], outline=(W, W, W, 255), width=s(22))
+    d.pieslice([s(26), s(70), s(126), s(186)], 300, 60, fill=(W, W, W, 255))
+
+
 def i_disc(d):
     circle(d, 128, 128, 122)
 
@@ -315,6 +348,10 @@ ART = {
     "TouchIcon_Hold": i_hold,
     "TouchIcon_Dipole": i_dipole,
     "TouchIcon_Missile": i_missile,
+    "TouchIcon_Dart": i_dart,
+    "TouchIcon_Lock": i_lock,
+    "TouchIcon_Ghost": i_ghost,
+    "TouchIcon_Snap": i_snap,
 }
 
 

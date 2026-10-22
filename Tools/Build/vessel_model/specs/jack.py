@@ -1,8 +1,8 @@
 """
-jack - a NEW body with no artist file: one of the two JACKS of Marlin and Jacks (vessel class 22,
-Assets/_Scripts/Controller/Vessel/R_VesselActions/MARLIN_JACKS.md), the thumb-run herders that drive the cell's real
+jack - a NEW body with no artist file: one of the two JACKS (vessel class 22, the Jacks; Marlin and Jacks until 2026-10-21,
+Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md), the thumb-run herders that drive the cell's real
 fauna. Until now the jacks were drawn as rings and dots. Built to the fleet convention, from the Wrasse kite's
-rig (specs/wrassekite.py), so MarlinCrewBodies swims it the way WrasseCrewBodies swims the kite (Garrett,
+rig (specs/wrassekite.py), so JacksBodies swims it the way WrasseCrewBodies swims the kite (Garrett,
 2026-10-21: "lets give it some models and get it ready to ship").
 
 THE READ: seen from the jacks' top-down view, a short, deep, silver-dark dart with a deeply forked tail and a bright
@@ -23,7 +23,7 @@ Contract (FLEET_CONVENTION sections 1-4 for a NEW body):
   nodes     mesh `mesh`, armature `rig`; root bone `hull`
   bones     hull; spine.1 -> spine.2 -> tail; fin.L / fin.R (the kite's, so one swim drives both)
   size      16 units snout to fork tip, centred on its own origin (y -8 .. +8 in the Blender frame); the game scales it
-            to the jacks' board (MarlinCrewBodies.jackModelScale)
+            to the jacks' board (JacksBodies.jackModelScale)
   slots     0 Domain, 1 Body, 2 Window, 3 Engine
   shapes    Charge: the dorsal lobe stands up and the head juts; Mass: the body deepens; Space: the fins reach and
             the fork spreads; Time: the vanes sweep and the fork stretches

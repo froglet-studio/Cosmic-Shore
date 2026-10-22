@@ -1,6 +1,7 @@
 using System;
 using CosmicShore.Utility;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 
 namespace CosmicShore.Gameplay
@@ -74,6 +75,83 @@ namespace CosmicShore.Gameplay
                 _pilot.depth = _pilotDepth;
             }
             _pilotLifted = false;
+        }
+
+        /// <summary>The camera drawn in the small square for the seat the human is in, or null when none is.</summary>
+        public Camera SmallView(Camera seat, bool humanInSeat)
+        {
+            var small = humanInSeat ? (_pilotLifted ? _pilot : null) : seat;
+            return small && small.enabled ? small : null;
+        }
+
+        /// <summary>True when <paramref name="screen"/> (pixels) falls inside the small square.</summary>
+        public bool SmallViewContains(Camera seat, bool humanInSeat, Vector2 screen)
+        {
+            var small = SmallView(seat, humanInSeat);
+            return small && small.pixelRect.Contains(screen);
+        }
+    }
+
+    /// <summary>
+    /// A double tap on a crew vessel's small view: the touch swap (Garrett, 2026-10-19: "when I double tap the pip window to
+    /// the other vessel it should switch"). Two SHORT taps, the second starting soon after the first and near it, both
+    /// inside the small view. Short is what keeps a flying thumb out: the left thumb lands in that corner, and re-planting
+    /// it quickly is a drift, not a swap - but a planted thumb stays down, so it never counts as a tap. The numbers are the
+    /// Wrasse's (<c>KiteNavigator.PipDoubleTapped</c>). Poll it every frame: it tracks presses and releases across frames.
+    /// </summary>
+    public sealed class CrewSmallViewDoubleTap
+    {
+        const float TapMaxSeconds = 0.3f, DoubleTapWindowSeconds = 0.45f, DoubleTapMaxPixels = 120f;
+        int _pressId = int.MinValue;
+        float _pressAt, _lastTapAt = -99f;
+        Vector2 _pressPos, _lastTapPos;
+
+        /// <summary>True on the frame the second tap of a double tap on <paramref name="small"/> lifts. Null = no small view.</summary>
+        public bool Poll(Camera small)
+        {
+            bool doubled = false;
+
+            var touchscreen = Touchscreen.current;
+            if (touchscreen != null)
+            {
+                var touches = touchscreen.touches;
+                for (int i = 0; i < touches.Count; i++)
+                {
+                    var t = touches[i];
+                    if (t.press.wasPressedThisFrame) Press(small, t.touchId.ReadValue(), t.position.ReadValue());
+                    if (t.press.wasReleasedThisFrame) doubled |= Release(t.touchId.ReadValue());
+                }
+            }
+
+            var mouse = Mouse.current;
+            if (mouse != null)
+            {
+                if (mouse.leftButton.wasPressedThisFrame) Press(small, -1, mouse.position.ReadValue());
+                if (mouse.leftButton.wasReleasedThisFrame) doubled |= Release(-1);
+            }
+            return doubled;
+        }
+
+        void Press(Camera small, int id, Vector2 at)
+        {
+            if (!small || !small.pixelRect.Contains(at)) return;
+            _pressId = id;
+            _pressAt = Time.unscaledTime;
+            _pressPos = at;
+        }
+
+        bool Release(int id)
+        {
+            if (id != _pressId) return false;
+            _pressId = int.MinValue;
+            float now = Time.unscaledTime;
+            if (now - _pressAt > TapMaxSeconds) return false;
+
+            bool doubled = _pressAt - _lastTapAt <= DoubleTapWindowSeconds
+                           && (_pressPos - _lastTapPos).sqrMagnitude <= DoubleTapMaxPixels * DoubleTapMaxPixels;
+            _lastTapAt = doubled ? -99f : now;
+            _lastTapPos = _pressPos;
+            return doubled;
         }
     }
 

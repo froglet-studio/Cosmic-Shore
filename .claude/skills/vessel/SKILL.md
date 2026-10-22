@@ -909,7 +909,7 @@ applies to new abilities, new resources on the meter list, and anything that add
     `RenderParams.camera` draws in EVERY camera. So one set faced at the pilot's camera also shows, edge-on and at the
     pilot's strength, in the crew's top-down view, and a per-view look (full in one, faint in the other) is impossible.
     Keep one `AnglerWorldMarks` per view and call `Begin(cam, onlyThisCamera: true)` on each. And a vessel whose view is
-    sized for a THUMB (a touch-run crew) frames it from a reference phone (`MarlinJacksMath.ThumbViewSpan`), the same
+    sized for a THUMB (a touch-run crew) frames it from a reference phone (`JacksMath.ThumbViewSpan`), the same
     span on every device, keeping the gameplay length (the ring) independent of the view: a span the ring is derived
     from cannot be zoomed without changing the game.
 

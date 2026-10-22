@@ -15,63 +15,38 @@ MonoBehaviour:
   vesselClass: 18
   entries:
   - Element: 1
-    AbilityLabel: Crystal Joust
-    AbilityDescription: BASE (no upgrade needed) - joust a lifeform's crystal while
-      moving faster than it to wither opposing-domain creatures, freeing the heart
-      and auto-collecting it; overtake an opposing PILOT and you steal elemental
-      petals off them. Charge scales how many petals each steal takes
-      (VesselOvertakeBySkimmerEffectSO.stealScale, x1 at rest -> x2.5 at level 10,
-      read from the thief's replicated level so every peer moves the same petals).
-      At level 5 the joust also SHEPHERDS allies - an own-domain lifeform is
-      NOURISHED instead (ILifeFormEntity.Nourish - its starvation clock resets and
-      its birth counter advances).
+    AbilityLabel: 'Vortex Sting'
+    AbilityDescription: 'A vortex ring from the Pistol''s Snap that hits a rival hull takes petals from each of its elements; Charge raises how many (GobyPistolConfig ringPetals, 1 at rest -> 3 at level 10). While the Goby holds a lock on a rival that is on the Pistol''s screen, the ring flies at it.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Shepherd
-    UpgradeDescription: Jousting an OWN-domain lifeform's crystal nourishes it
-      instead of doing nothing.
+    UpgradeLabel: ''
+    UpgradeDescription: ''
   - Element: 2
-    AbilityLabel: Boost Ring
-    AbilityDescription: Deploy a ring of conserved prism mass ahead of the vessel -
-      the Squirrel's mass-creation ability, which is why it sits on Mass. Mass
-      shortens the deploy cooldown (SquirrelTubeActionSO.cooldownMultiplierAtFullMass,
-      x1 at rest -> x0.5 at level 10, floored), so a heavier pilot lays rings more
-      often. At level 5 each deploy lays a second ring.
-    Input: 11
+    AbilityLabel: 'Dens'
+    AbilityDescription: 'At each perch the Pistol rests and builds a den of prisms and shielded prisms, as many as the distance it travelled since its last den and Mass make (denMassScale, x1 at rest -> x2.5 at level 10). It can ride back to an old den to add to it.'
+    Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Twin Rings
-    UpgradeDescription: The boost ring deploys with a second ring.
+    UpgradeLabel: 'Fortress'
+    UpgradeDescription: 'Dens also grow danger prisms and super-shielded prisms.'
   - Element: 3
-    AbilityLabel: Steal
-    AbilityDescription: Skim a prism to STEAL it into your own domain. Space grows
-      the skimmer sphere (authored on the skimmer's Scale ElementalFloat, 15 -> 30
-      at level 10, evaluated live), and the sphere IS the steal reach - a bigger
-      skimmer converts more mass per pass. BASE - an opposing SHIELDED prism only
-      loses its shield and keeps its domain. At level 5 the steal goes through the
-      shield - the prism changes hands AND keeps its armour. Super-shielded mass
-      stays invulnerable at every level.
+    AbilityLabel: 'Undertow'
+    AbilityDescription: 'Mass either side of the Pistol''s plane is pulled into it, from further with Space (pullReach, 40 u at rest -> 200 u at level 10). Danger, super-shielded and the pair''s own prisms never move.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Iron Grip
-    UpgradeDescription: Shielded prisms are stolen outright and keep their shield,
-      instead of merely being stripped of it.
+    UpgradeLabel: 'Deep Undertow'
+    UpgradeDescription: 'Shielded prisms are pulled in too.'
   - Element: 4
-    AbilityLabel: Skimming
-    AbilityDescription: Time raises the boost energy gained per prism-skimmer
-      collision (SkimmerBoostPrismEffectSO.energyMultiplier, x1 -> x2 at level 10
-      floored at x0.25, read live per hit). Skim energy is the Squirrel's speed, so
-      the element that makes the pilot faster owns it. At level 5 danger prisms
-      grant the 10x energy bonus (below it they pay base energy - the bonus is
-      earned, no longer always on).
+    AbilityLabel: 'Quick Jump'
+    AbilityDescription: 'Time shortens the cooldown of the Pistol''s jump, the burst of speed that flings it off its ground (jumpCooldown, 9 s at rest -> 3 s at level 10).'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Live Wire
-    UpgradeDescription: Danger prisms grant 10x boost energy when skimmed.
+    UpgradeLabel: 'Phase Dart'
+    UpgradeDescription: 'The Goby''s darts pass through prisms.'

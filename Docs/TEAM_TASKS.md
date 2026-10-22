@@ -1736,20 +1736,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-21 by Garrett's session (`claude/honeyguide-ratel`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
 
-### T-20261021-18a1 · open · test · vessels
+### T-20261021-18a1 · done · test · vessels
 - **Task:** Fly Marlin and Jacks in the editor (UNITY_VERIFICATION_CHECKLIST 2026-10-21, steps 1-10: the models and the host-client crew included) and the Frenzy shield-food rule
 - **Done when:** Every step of the checklist entry passes, or each failure is written up on the PR
 - **Who can take it:** Garrett or Yash
 - **Added:** 2026-10-21 by Garrett's session (`claude/project-thread-xrej29`)
-- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/MARLIN_JACKS.md
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md
+- **Done:** 2026-10-21, Superseded 2026-10-21 by the Jacks (cece/lucid-turing-zndmgf): the marlin seat is gone; the herd and Frenzy steps carry into the Jacks test task
 
 ### T-20261021-1844 · done · content · vessels
 - **Task:** Give Marlin and Jacks its own model, icons and card art (it wears the Rhino's)
 - **Done when:** The marlin hull and jacks have /vessel-model bodies and the class card has its own icons
 - **Who can take it:** Garrett
 - **Added:** 2026-10-21 by Garrett's session (`claude/project-thread-xrej29`)
-- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/MARLIN_JACKS.md §5
-- **Done:** 2026-10-21, Marlin.fbx and Jack.fbx built by /vessel-model (specs/marlin.py, specs/jack.py), drawn by MarlinCrewBodies; class card rendered from the model (render_cards.py Marlin)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md §5
+- **Done:** 2026-10-21, Marlin.fbx and Jack.fbx built by /vessel-model (specs/marlin.py, specs/jack.py), drawn by JacksBodies; class card rendered from the model (render_cards.py Marlin)
 
 ### T-20261021-8190 · open · test · In-game UI / arena pilot swap
 - **Task:** Play an arena match (Brood Rush or Broadside) with 2+ AI teammates on PC, pad and a phone: the pilot-swap tiles sit between the goal stack and the score bar (16:9, 4:3, notched phone), tapping a tile swaps hulls and does not also steer, keycaps read 1/2 on keyboard and nothing on a phone
@@ -1864,12 +1865,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-21 by a Claude session (`cece/awesome-faraday-7fsppt`)
 - **See:** Docs/ECOSYSTEM.md section 63; Assets/_Scripts/Controller/Environment/Cytoplasm/SnowChanger.cs AddMorphedShard; Spindle.MorphIntoShard
 
-### T-20261021-249e · open · test · vessels
+### T-20261021-249e · done · test · vessels
 - **Task:** Fly Marlin and Jacks round 4 on cece/sharp-faraday-gq7m65: the thumb-framed jacks' view on a full-size phone, the faint rings in the marlin's view, the 30-150 herd and its frame time, and the domain hue mark on herded and Angler-tamed creatures (host + client too)
 - **Done when:** UNITY_VERIFICATION_CHECKLIST 2026-10-21 Marlin and Jacks steps 11-14 pass, or the failures are dev tasks
 - **Who can take it:** Garrett (the look and feel); Yash (offered: editor, phone and host-client steps)
 - **Added:** 2026-10-21 by Garrett (`cece/sharp-faraday-gq7m65`)
-- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Marlin and Jacks, steps 11-14); R_VesselActions/MARLIN_JACKS.md
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Marlin and Jacks, steps 11-14); R_VesselActions/JACKS.md
+- **Done:** 2026-10-21, Superseded 2026-10-21 by the Jacks (cece/lucid-turing-zndmgf): the marlin-view steps are gone; the thumb view, herd size and hue mark carry into the Jacks test task
 
 ### T-20261021-362a · open · setup · Crew vessels
 - **Task:** The Wrasse draws Grouper.fbx but keeps the Sparrow's four crystal-fusion bakes (vessel 19 in CrystalHullFusionConfig) and its VesselAnimation flare still names the hidden Sparrow mesh, so boost lights nothing. Apply the Honeyguide's two fixes (drop the copied bakes, hand the flare to the drawn mesh) or re-bake in the editor.
@@ -1885,12 +1887,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md 'The phone boost'; ORCA_CREW.md follow-ups
 
-### T-20261021-2d13 · open · dev · Crew vessels
+### T-20261021-2d13 · done · dev · Crew vessels
 - **Task:** The Goby & Pistol has no touch path: GobyPistolDuo reads the Goby's primer and flares from keys 3 / 4 and the pad's D-pad up / down only, and the Pistol's dive and launch from the mouse, keyboard and pad (no Touchscreen read anywhere in Crew/GobyPistol). On a phone neither seat's abilities can be used. Give them touch controls (cards that name inputs bound on the hull, as the Wrasse and Orca now do with CrewTriggerActionSO, or the Goby's own touch overrides) in the Goby's next round.
 - **Done when:** On a phone, the Goby can fire its primer and flares and the Pistol can dive and launch; author_touch_profiles.py has a Goby row whose glyphs/buttons resolve
 - **Who can take it:** Garrett (the Goby's owner) with the session driving the Goby lab
 - **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 8 'Third round'; Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs GobyAbilities / HumanPistol
+- **Done:** 2026-10-21, Built on cece/elegant-maxwell-q8vqoh: the Goby's primer/flares are input bindings (CrewButtonActionSO, pad X/Y, keys Q/F), each seat shows its own phone buttons (GobyPistolButtons), the Pistol dives/launches by finger, Goby row in TouchControlProfiles. Phone test: T-20261021-52b0 + the seat-buttons test task.
 
 ### T-20261021-110d · open · test · Vessel models
 - **Task:** Reimport the 14 rebuilt hull FBXs (cece/quirky-brown-lkhhx9) and fly the Shrike, the Wrasse (Grouper + Kite) and the Marlin with the stick centred: no left bank, the tails beat about the centre. Spot-check the other 11 at rest (Docs/UNITY_VERIFICATION_CHECKLIST.md, 'New hulls rest at REST')
@@ -1968,3 +1971,67 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered) or Garrett
 - **Added:** 2026-10-21 by a Claude session (`cece/fervent-goodall-8cihle`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md 'Two buttons per gunner'; Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca gunner buttons'
+
+### T-20261021-003c · open · test · vessels
+- **Task:** Fly the Jacks (was Marlin and Jacks): one player, two modes - herd on the top-down board with the hull parked, or fly the two fish as the hull with the two-thumb flight (one fish per thumb); switch with D-pad / 1-2 / double tap. Include the herd steps carried over from the Marlin and Jacks tests (thumb-framed view, 30-150 herd and its frame time, domain hue mark) and host + client
+- **Done when:** UNITY_VERIFICATION_CHECKLIST 2026-10-21 'Marlin and Jacks becomes the Jacks' steps 1-9 pass on PC, pad and a phone, or the failures are dev tasks
+- **Who can take it:** Garrett (the look and feel); Yash (offered: editor, phone and host-client steps)
+- **Added:** 2026-10-21 by a Claude session (`cece/lucid-turing-zndmgf`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md; Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261021-ec42 · open · decision · vessels
+- **Task:** The Jacks while herding: the hull is parked where the fish landed, invisible but with the Rhino's colliders still on (a rival can hit it, it still takes prisms). Keep it, switch its colliders off while herding, or have it follow the jacks?
+- **Done when:** Garrett picks one; switching off or following is a small JacksExecutor change
+- **Who can take it:** Garrett (owner)
+- **Added:** 2026-10-21 by a Claude session (`cece/lucid-turing-zndmgf`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md §5-6
+
+### T-20261021-52b0 · open · test · vessels
+- **Task:** On a phone, fly the Goby & Pistol: double tap the small (Pistol) view to fly the Pistol, hold to dive and drag to launch, double tap the small (Goby) view to come back. Check a planted left thumb in that corner never swaps.
+- **Done when:** Both swaps work on a phone build and flying thumbs never swap by accident
+- **Who can take it:** Yash or Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md §11 (2026-10-21)
+
+### T-20261021-cd1e · done · test · Crew vessels
+- **Task:** Phone playtest of the Goby & Pistol seat buttons (Android dev build, no pad): Toybox > Vessel Changer > Goby and Pistol. Flying the Goby, two buttons sit round the right thumb: Primer (fires at what is ahead, its count drops) and Flares (fires only once a prime has been set off by the Pistol and blocks are hot); the Squirrel's lifts (left = ring, right = drift) still work. Double tap the small view: now Ghost and Snap sit there instead, dimmed while cooling; a finger on the Pistol's view dives (hold) and launches (drag and let go), also while another finger holds Ghost. On a pad: X primer, Y flares; on a keyboard: Q primer, F flares; the D-pad up/down does nothing.
+- **Done when:** Every step behaves as written; buttons sit inside the safe area and don't cover the ability row; misses filed as dev tasks
+- **Who can take it:** Yash (offered) or Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md §11 (2026-10-21)
+- **Done:** 2026-10-22, Superseded 2026-10-22: the Goby's Primer and Flares were retired with its new kit (Dart / Lock; Ghost / Snap / Back). The new kit's playtest is its own task.
+
+### T-20261022-adee · open · test · Crew vessels
+- **Task:** Playtest the Goby & Pistol's new kit (Android dev build AND a pad, Toybox > Vessel Changer > Goby and Pistol). Goby: it never cruises; aim with one thumb (or the sticks), hold Dart (phone button / RT / Q) and let go - a tap darts ~140 u, a full charge ~600 u in 1 s; it stops on the first block and perches there; into empty space it lays its own small perch. Lock (button / LT / F) a rival or fauna in front: a lit ring marks it. Double tap the small view to fly the Pistol: it rides the dart's trail downhill to the next perch, rests ~1 s and a den of prisms grows round the perch (more the further it travelled, and with Mass); Back (button / LB / B) at a perch turns it toward older dens. Mass beside its plane drifts into it (further with Space). With a rival locked and on the Pistol's screen, Snap fires a ring that flies at it and takes petals. Check: lifting a thumb never fires anything; the D-pad up/down does nothing; buttons sit inside the safe area.
+- **Done when:** Every step behaves as written on a phone and a pad, or the misses are filed as dev tasks; Garrett has the feel notes for the next round
+- **Who can take it:** Yash (offered) or Garrett
+- **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (top section)
+
+### T-20261022-bc36 · open · dev · Crew vessels
+- **Task:** Run GobyPistolTests in the Unity editor (EditMode) and fix any failure; then open Goby.prefab once and save it (the generator stripped the Squirrel's tube and drift executors and swapped its impact containers by YAML: let Unity re-serialize and confirm no missing-script or missing-reference warnings).
+- **Done when:** GobyPistolTests green in the editor and Goby.prefab saves clean
+- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** Assets/_Scripts/Tests/Editor/GobyPistolTests.cs; Tools/Build/author_goby_assets.py
+
+### T-20261022-aeff · open · content · Crew vessels
+- **Task:** The Goby is still the Squirrel underneath in three places: its hull model (Goby.fbx is on the Squirrel's rig and bones), its HUD controller (SquirrelVesselHUDController: the Squirrel's boost and drift gauges) and its nested skimmer prefab (stripped of the Squirrel's effects through GobySkimmerImpactorDataContainer, still the Squirrel's skimmer, which collects crystals). Decide which to replace: a real goby model by /vessel-model (eyes on top, two dorsal fins, the sucker disc it perches with, a flicking tail) and a Goby HUD whose cards count dens, pulled mass and the lock.
+- **Done when:** Garrett's call recorded in goby-and-pistol.md; the chosen replacements built
+- **Who can take it:** Garrett (the design call), then a /vessel-model session
+- **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** goby-and-pistol.md top section 'Still the Squirrel's'
+
+### T-20261022-0e2f · open · dev · Crew vessels
+- **Task:** The Goby & Pistol's kit runs only on the local human's own hull (CrewSeat.ShouldWake). An AI-flown Goby (arena backfill, the menu's autopilot) and every other machine's copy fly the platform AIPilot with none of the kit (no darts, perches, dens or Pistol), and the dens, pulled mass and rings are local. Give an AI Goby the seat's own AI on every hull it flies, then network the crew (the open decision T-20261017-b06e).
+- **Done when:** An AI Goby perches and darts with its Pistol in an arena match; the networking plan is agreed
+- **Who can take it:** Garrett with Yash (multiplayer)
+- **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs; .claude/skills/duo-vessel/references/ANCHORS.md
+
+### T-20261022-b3de · open · dev · Crew vessels
+- **Task:** Bring the Goby lab (Docs/Studios/VesselStudio/goby.html, round 13) level with the Unity kit of 2026-10-22: dart and perch, the flat plane downhill both ways, dens, the undertow, lock and homing rings, the four cards. Unity is ahead (built straight in Unity at Garrett's call); studio_to_unity no longer maps the Goby until the lab catches up.
+- **Done when:** The lab models the Unity kit and verify_lab.cjs passes
+- **Who can take it:** any session; Garrett to sign off
+- **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
+- **See:** goby-and-pistol.md top section; Tools/Build/studio_to_unity/clones.json 'Goby & Pistol'.retired
