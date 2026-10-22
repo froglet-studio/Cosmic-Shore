@@ -569,7 +569,7 @@ namespace CosmicShore.Gameplay
             // The cap is the CELL's, not the config's: a biome that scales its population
             // (SpawnProfileSO.FaunaPopulationScale) has to scale what reproduction may fill to,
             // or the seeder and the food web would be working to two different ceilings.
-            // A herd's holder scales the feeds a birth takes (IFaunaHerd: Marlin and Jacks' Mass element).
+            // A herd's holder scales the feeds a birth takes (IFaunaHerd: the Jacks' Mass element).
             int feedsPerOffspring = Leash is IFaunaHerd herd
                 ? Mathf.Max(1, Mathf.RoundToInt(cfg.FeedsPerOffspring * Mathf.Max(0f, herd.FeedsPerOffspringScale(this))))
                 : cfg.FeedsPerOffspring;
@@ -831,7 +831,7 @@ namespace CosmicShore.Gameplay
         /// <list type="bullet">
         /// <item>its cell is in a <b>Frenzy</b> (<see cref="Cell.ShieldedMassIsFood"/>; the designer, 2026-10-21: "in general
         /// shielded prisms should be food during a frenzy when the cell has too many prism");</item>
-        /// <item>its herd's holder lets it eat shields (<see cref="IFaunaHerd.EatsShields"/>: Marlin and Jacks at Space 5).</item>
+        /// <item>its herd's holder lets it eat shields (<see cref="IFaunaHerd.EatsShields"/>: the Jacks at Space 5).</item>
         /// </list>
         /// Super-shielded mass is never food. A shielded prism that is food is eaten whole: the grazer consumes it with
         /// <c>devastate</c> (<see cref="Prism.Consume"/> otherwise only sheds the shield).

@@ -1729,20 +1729,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-21 by Garrett's session (`claude/honeyguide-ratel`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
 
-### T-20261021-18a1 · open · test · vessels
+### T-20261021-18a1 · done · test · vessels
 - **Task:** Fly Marlin and Jacks in the editor (UNITY_VERIFICATION_CHECKLIST 2026-10-21, steps 1-10: the models and the host-client crew included) and the Frenzy shield-food rule
 - **Done when:** Every step of the checklist entry passes, or each failure is written up on the PR
 - **Who can take it:** Garrett or Yash
 - **Added:** 2026-10-21 by Garrett's session (`claude/project-thread-xrej29`)
-- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/MARLIN_JACKS.md
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md
+- **Done:** 2026-10-21, Superseded 2026-10-21 by the Jacks (cece/lucid-turing-zndmgf): the marlin seat is gone; the herd and Frenzy steps carry into the Jacks test task
 
 ### T-20261021-1844 · done · content · vessels
 - **Task:** Give Marlin and Jacks its own model, icons and card art (it wears the Rhino's)
 - **Done when:** The marlin hull and jacks have /vessel-model bodies and the class card has its own icons
 - **Who can take it:** Garrett
 - **Added:** 2026-10-21 by Garrett's session (`claude/project-thread-xrej29`)
-- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/MARLIN_JACKS.md §5
-- **Done:** 2026-10-21, Marlin.fbx and Jack.fbx built by /vessel-model (specs/marlin.py, specs/jack.py), drawn by MarlinCrewBodies; class card rendered from the model (render_cards.py Marlin)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md §5
+- **Done:** 2026-10-21, Marlin.fbx and Jack.fbx built by /vessel-model (specs/marlin.py, specs/jack.py), drawn by JacksBodies; class card rendered from the model (render_cards.py Marlin)
 
 ### T-20261021-8190 · open · test · In-game UI / arena pilot swap
 - **Task:** Play an arena match (Brood Rush or Broadside) with 2+ AI teammates on PC, pad and a phone: the pilot-swap tiles sit between the goal stack and the score bar (16:9, 4:3, notched phone), tapping a tile swaps hulls and does not also steer, keycaps read 1/2 on keyboard and nothing on a phone
@@ -1857,12 +1858,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-21 by a Claude session (`cece/awesome-faraday-7fsppt`)
 - **See:** Docs/ECOSYSTEM.md section 63; Assets/_Scripts/Controller/Environment/Cytoplasm/SnowChanger.cs AddMorphedShard; Spindle.MorphIntoShard
 
-### T-20261021-249e · open · test · vessels
+### T-20261021-249e · done · test · vessels
 - **Task:** Fly Marlin and Jacks round 4 on cece/sharp-faraday-gq7m65: the thumb-framed jacks' view on a full-size phone, the faint rings in the marlin's view, the 30-150 herd and its frame time, and the domain hue mark on herded and Angler-tamed creatures (host + client too)
 - **Done when:** UNITY_VERIFICATION_CHECKLIST 2026-10-21 Marlin and Jacks steps 11-14 pass, or the failures are dev tasks
 - **Who can take it:** Garrett (the look and feel); Yash (offered: editor, phone and host-client steps)
 - **Added:** 2026-10-21 by Garrett (`cece/sharp-faraday-gq7m65`)
-- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Marlin and Jacks, steps 11-14); R_VesselActions/MARLIN_JACKS.md
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Marlin and Jacks, steps 11-14); R_VesselActions/JACKS.md
+- **Done:** 2026-10-21, Superseded 2026-10-21 by the Jacks (cece/lucid-turing-zndmgf): the marlin-view steps are gone; the thumb view, herd size and hue mark carry into the Jacks test task
 
 ### T-20261021-362a · open · setup · Crew vessels
 - **Task:** The Wrasse draws Grouper.fbx but keeps the Sparrow's four crystal-fusion bakes (vessel 19 in CrystalHullFusionConfig) and its VesselAnimation flare still names the hidden Sparrow mesh, so boost lights nothing. Apply the Honeyguide's two fixes (drop the copied bakes, hand the flare to the drawn mesh) or re-bake in the editor.
@@ -1962,6 +1964,20 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered) or Garrett
 - **Added:** 2026-10-21 by a Claude session (`cece/fervent-goodall-8cihle`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md 'Two buttons per gunner'; Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca gunner buttons'
+
+### T-20261021-003c · open · test · vessels
+- **Task:** Fly the Jacks (was Marlin and Jacks): one player, two modes - herd on the top-down board with the hull parked, or fly the two fish as the hull with the two-thumb flight (one fish per thumb); switch with D-pad / 1-2 / double tap. Include the herd steps carried over from the Marlin and Jacks tests (thumb-framed view, 30-150 herd and its frame time, domain hue mark) and host + client
+- **Done when:** UNITY_VERIFICATION_CHECKLIST 2026-10-21 'Marlin and Jacks becomes the Jacks' steps 1-9 pass on PC, pad and a phone, or the failures are dev tasks
+- **Who can take it:** Garrett (the look and feel); Yash (offered: editor, phone and host-client steps)
+- **Added:** 2026-10-21 by a Claude session (`cece/lucid-turing-zndmgf`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md; Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261021-ec42 · open · decision · vessels
+- **Task:** The Jacks while herding: the hull is parked where the fish landed, invisible but with the Rhino's colliders still on (a rival can hit it, it still takes prisms). Keep it, switch its colliders off while herding, or have it follow the jacks?
+- **Done when:** Garrett picks one; switching off or following is a small JacksExecutor change
+- **Who can take it:** Garrett (owner)
+- **Added:** 2026-10-21 by a Claude session (`cece/lucid-turing-zndmgf`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md §5-6
 
 ### T-20261021-52b0 · open · test · vessels
 - **Task:** On a phone, fly the Goby & Pistol: double tap the small (Pistol) view to fly the Pistol, hold to dive and drag to launch, double tap the small (Goby) view to come back. Check a planted left thumb in that corner never swaps.

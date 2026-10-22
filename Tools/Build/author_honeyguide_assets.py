@@ -66,7 +66,7 @@ CONFIG = os.path.join(CONFIG_DIR, "HoneyguideConfig.asset")
 LAB = os.path.join(ROOT, "Docs", "Studios", "HoneyguideLab.html")
 GAME_DATA_GUID = "b35f33752bb10a44cb5033b5670f50aa"   # GameData.asset (KiteNavigatorConfig wires the same)
 
-# 19 is the Wrasse, 20 the Orca, 21 the Starling, 22 the Marlin (all on bleeding-edge, 2026-10-21): the Honeyguide is 23.
+# 19 is the Wrasse, 20 the Orca, 21 the Starling, 22 the Marlin, now the Jacks (all on bleeding-edge, 2026-10-21): the Honeyguide is 23.
 HONEYGUIDE_CLASS_ID = 23
 SPARROW_CLASS_ID = 11
 PREFAB_GUID = "f6abe5afafae41909d25da175bc23493"

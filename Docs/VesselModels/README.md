@@ -36,8 +36,8 @@ How every vessel is coloured (the colour language, the shared materials' scheme,
 | Grouper | [Grouper.md](Grouper.md) | `Grouper.fbx` (new, 2026-10-20), the Wrasse's carrier hull, drawn by `Wrasse.prefab` in place of the Sparrow's model | the same | `specs/grouper.py` |
 | Wrasse Kite | [WrasseKite.md](WrasseKite.md) | `WrasseKite.fbx` (new, 2026-10-20), the navigator's kite, drawn where the kite flies (`WrasseCrewBodies`) | the same | `specs/wrassekite.py` |
 | Honeyguide | [Honeyguide.md](Honeyguide.md) | `Honeyguide.fbx` (new, 2026-10-21), the Honeyguide and Ratel's hull, drawn by `Honeyguide.prefab` in place of the Sparrow's model and puppeted by `HoneyguideBody` | the same | `specs/honeyguide.py` |
-| Marlin | [Marlin.md](Marlin.md) | `Marlin.fbx` (new, 2026-10-21), Marlin and Jacks' hull, drawn by `Marlin.prefab` in place of the Rhino's rig | the same | `specs/marlin.py` |
-| Jack | [Jack.md](Jack.md) | `Jack.fbx` (new, 2026-10-21), the two herders, drawn where the jacks run (`MarlinCrewBodies`) | the same | `specs/jack.py` |
+| Marlin | [Marlin.md](Marlin.md) | `Marlin.fbx` (new, 2026-10-21), saved for a swordsman: no prefab draws it since Marlin and Jacks became the Jacks | the same | `specs/marlin.py` |
+| Jack | [Jack.md](Jack.md) | `Jack.fbx` (new, 2026-10-21), the two herders, drawn where the jacks run (`JacksBodies`) | the same | `specs/jack.py` |
 | Rhino | [Rhino.md](Rhino.md) | `Rhino_Test.fbx` (part-per-mesh placeholder) | `rhino_shapekey_with_animations.fbx`, the rig-swap target, with four REAL morphs | `specs/rhino.py` |
 
 **2026-10-18, withdrawn after the owner's Editor test:** the rebuilt Sparrow flew backwards, the Urchin did not
