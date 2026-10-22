@@ -2070,3 +2070,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (Honeyguide owner), Yash (offered)
 - **Added:** 2026-10-22 by Garrett (`cece/nifty-dirac-2dmclm`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md step 4; HoneyguideDynamoView.cs
+
+### T-20261022-856c · open · test · vessels
+- **Task:** On a phone, fly the Manta and lift both thumbs to soar: turning the phone right should now yaw left and tipping the top away should pitch the other way from before (both axes flipped). Also confirm the Thresher's both-thumbs-off launch aim is unchanged, and run TouchControlsTests in the editor.
+- **Done when:** Garrett confirms the Manta's soar steers the way he expects, and TouchControlsTests passes
+- **Who can take it:** Garrett (asked for it); Yash can run the editor tests
+- **Added:** 2026-10-22 by a Claude session (`cece/upbeat-volta-oj7bhg`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md (Manta row), Tools/Build/author_touch_profiles.py
