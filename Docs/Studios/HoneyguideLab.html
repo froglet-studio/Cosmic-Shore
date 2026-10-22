@@ -168,6 +168,9 @@
   }
   function setPorts(st, S, k) { st.portSet = k; st.ports = S.portSets[k].map((p) => [p[0], p[1]]); }
 
+  // The abilities a random draw picks from: S.abilities (keys), or every ability.
+  function abilityPool(S) { return S.abilities && S.abilities.length ? S.abilities : ABILITIES; }
+
   function create(S, seed) {
     const st = {
       cells: new Array(N).fill(0), ports: [], portSet: -1, ap: S.apPerTick < S.apBank ? S.apPerTick : S.apBank, bonusAp: 0,
@@ -176,7 +179,8 @@
     };
     for (let k = 0; k < S.slotCount; k++) { st.slots.push(S.loadout && S.loadout[k] != null ? S.loadout[k] : drawPattern(st, S)); st.uses.push(0); }
     setPorts(st, S, S.firstPortSet != null ? S.firstPortSet : Math.floor(rng(st) * S.portSets.length));
-    st.ability = S.fixedAbility || ABILITIES[Math.floor(rng(st) * ABILITIES.length)];
+    const pool = abilityPool(S);
+    st.ability = S.fixedAbility || pool[Math.floor(rng(st) * pool.length)];
     if (st.ability === 'printer') grantFree(st, 1);
     if (S.startFilled) for (const p of st.ports) st.cells[p[0]] = p[1];
     return st;
@@ -293,7 +297,7 @@
           st.events.push({ k: 'retire', slot: inp.slot, old, pid: st.slots[inp.slot] });
         }
         if (S.patternsPerShuffle > 0 && st.made % S.patternsPerShuffle === 0) {   // a new ability, then a new port pattern
-          if (!S.fixedAbility) { const k = pickOther(st, ABILITIES.length, ABILITIES.indexOf(st.ability)); st.ability = ABILITIES[k]; }
+          if (!S.fixedAbility) { const pool = abilityPool(S); st.ability = pool[pickOther(st, pool.length, pool.indexOf(st.ability))]; }
           if (st.ability === 'printer' && st.free.length < 1) grantFree(st, 1);
           const next = S.portSets.length > 1 ? pickOther(st, S.portSets.length, st.portSet) : st.portSet;
           st.events.push({ k: 'shuffle', ability: st.ability, portSet: next });
@@ -652,6 +656,11 @@
   const COLOUR_DOM = ['', 'ruby', 'jade', 'gold'];
   const COLOUR_LETTER = ['', 'R', 'J', 'G'];
 
+  // Abilities a random draw never picks, for now (Garrett 2026-10-22: Printer, a free prism at the start of every spin, "is too
+  // confusing to players on mobile"). A fixed ability can still name one. The game's config carries the same list
+  // (retiredAbilities, held to this one by Tools/Build/author_honeyguide_assets.py).
+  const RETIRED_ABILITIES = ['printer'];
+
   // The Ratel's abilities (core keys; the words are the lab's, as an authored table would be in the game)
   const ABILITY_TEXT = {
     overclock: ['Overclock', '+1 AP every spin; the bank holds 1 more.'],
@@ -884,7 +893,8 @@
       tickSeconds: Pw.tickSeconds, apPerTick: Pw.apPerTick, apBank: Pw.apBank, bonusApCap: Pw.bonusApCap, batteryCap: Pw.batteryCap,
       revealAbility: Pw.revealAbility, revealPorts: Pw.revealPorts, allowRotatedMatches: !!o.rotatable, portsCount: !!o.portsCount, slotCount: 3, startFilled: true,
       usesPerPattern: o.replace ? Pw.usesPerPattern : 0, patternsPerShuffle: o.shuffle ? Pw.patternsPerShuffle : 0,
-      fixedAbility: o.ability === 'random' ? '' : o.ability, portSets: PORT_SETS, patterns: PATTERNS,
+      fixedAbility: o.ability === 'random' ? '' : o.ability, abilities: D.ABILITIES.filter((a) => RETIRED_ABILITIES.indexOf(a) < 0),
+      portSets: PORT_SETS, patterns: PATTERNS,
     };
   }
   const OTHER_DOMAINS = ['ruby', 'gold', 'jade'];
@@ -2263,7 +2273,7 @@
       case 'Slip arming': return OPT_LABELS.arming[o.arming] + ', cone ' + P.aimCone + ' deg';
       case 'The spin': return 'The port pattern turns 60 degrees every ' + P.tickSeconds + ' s, animated over ' + P.spinAnim + ' s';
       case 'Ports count as prisms': return o.portsCount ? 'An empty port counts as a prism; a real prism must still be in the pattern' : 'Ports do not count';
-      case 'Ratel abilities': return o.ability === 'random' ? 'Random, redrawn with the ports every ' + P.patternsPerShuffle + ' patterns; the clock stops ' + P.revealAbility + ' s to show the ability, then ' + P.revealPorts + ' s for the ports' : 'Always ' + ABILITY_TEXT[o.ability][0];
+      case 'Ratel abilities': return o.ability === 'random' ? 'Random (never ' + RETIRED_ABILITIES.map((a) => ABILITY_TEXT[a][0]).join(', ') + '), redrawn with the ports every ' + P.patternsPerShuffle + ' patterns; the clock stops ' + P.revealAbility + ' s to show the ability, then ' + P.revealPorts + ' s for the ports' : 'Always ' + ABILITY_TEXT[o.ability][0];
       case 'Pattern replacement': return o.replace ? 'Replaced after ' + P.usesPerPattern + ' makes' : 'Never replaced';
       case 'Pattern effects': return 'Each pattern fires its own effect, converted from its tabletop card; timed ones last ' + P.passiveSeconds + ' s and stack to level ' + P.passiveMaxLevel + '; the thirteen upgrade cards take over RT or LT for ' + P.activeSeconds + ' s';
       case 'The triggers': return (o.base ? 'RT Peck (' + P.peckRate + '/s, ' + P.peckRange + ' u), LT Flit (' + P.flitDistance + ' u every ' + P.flitCooldown + ' s). ' : 'No base powers. ') + (o.actives ? OPT_LABELS.deal[o.deal] + '; an upgrade holds its trigger ' + P.activeSeconds + ' s' : o.guns ? 'Round 4: the guns' : 'No upgrades');
