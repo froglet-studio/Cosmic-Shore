@@ -1,5 +1,46 @@
 # Goby & Pistol: the first duo vessel
 
+> **THE KIT AS IT IS NOW (Garrett, 2026-10-22) - read this first; it supersedes §3, §5, §6, §9-§10 and the earlier log
+> entries wherever they disagree.** Built straight in Unity ("given that we already have the pair in the game we should
+> be able to save the time and go straight to unity"); the lab (`goby.html`, round 13/14) is BEHIND the game until a lab
+> round ports this kit, and `studio_to_unity` no longer maps the Goby (`clones.json` records the retirement).
+>
+> - "it should not have the squirrels abilities or be anything like the squirrel. it should be a goby with its own kit
+>   that represents a goby and synergizes with the pistol and its kit" **[stated]**
+> - "The goby should dart and perch similar to the way the shrike shoots itself" **[stated]**. **[read]:** the Goby is
+>   always pinned (the fleet's restricted stance): it aims while perched and DARTS - hold Dart to charge the distance
+>   (`dartMinRange` 140 -> `dartRange` 600 over 0.8 s), let go, and it flies there in `dartSeconds` 1 (the Shrike's
+>   distance / 1 s), stopping on the first block on its line, where it perches.
+> - "the goby may shoot into open space and make its own perch" **[stated]**. **[read]:** a dart that reaches nothing
+>   lays a small pad of its own blocks under the Goby there.
+> - "the slope from one perch to another should be a fun downhill for the shrimp" **[stated]**. **[read]:** each dart
+>   lays its trail as the Pistol's ground, with low hills (`hillAmplitude` 10, `hillWavelength` 70) that meet both
+>   perches, and the Pistol's frame leans the stretch `slopeDegrees` 22 downhill whichever way it rides
+>   (`PistolPlane`).
+> - "the non-danger mass on either side of the pistol's plane (which no longer needs to bend at all) is pulled into that
+>   plane based on the pair's space. Space L5 pulls in shielded prisms too." **[stated]** The plane is FLAT: the
+>   unrolled ribbon and its warped view are retired. **[read]:** super-shielded and the pair's own prisms never move.
+> - "once the shrimp gets to a perch it spends a moment resting and building a den of prisms and shielded prisms. if the
+>   goby has moved on to a new perch the pistol can choose to travel backward to an old den and it will add prisms to a
+>   den based on the distance traveled between perches and mass the pair has collected, L5 mass produces danger prisms
+>   and a supershielded prisms." **[stated]** **[read]:** "mass the pair has collected" = the pair's Mass level; a rest
+>   adds one prism per 40 u travelled since the last den, x1 -> x2.5 with Mass, at most 80 per den (`GobyDen`); the
+>   Pistol's Back button turns it toward the older dens at a perch.
+> - "The goby can lock on to vessels and fauna. if a locked vessel enters the pistols view, a fired vortex ring will be
+>   fired at the locked target. the number of petals lost from a vortex ring hit scales with charge." **[stated]**
+>   **[read]:** Lock takes the best target in the nose's cone (vessels first, then fauna, the Shrike's order); a ring
+>   homes at 240 °/s; a hit is one scored PvP hit taking 1 -> 3 petals from each element with Charge.
+> - "time is the cooldown on the pistol's jump. time L5 allows the goby to phase through prisms when darting."
+>   **[stated]** (jump 9 s -> 3 s).
+> - The primer, heat and flares are RETIRED (they were the Goby's old kit). Charge has no level-5 upgrade yet **[open]**.
+> - Controls: Goby Dart = pad RT / X, key Q, phone Dart button (hold, let go); Lock = pad LT / Y, key F, phone Lock.
+>   Pistol: dive / drag-to-jump / Ghost / Snap as before, plus Back (key B, pad LB, phone Back).
+> - The four cards: Charge **Vortex Sting**, Mass **Dens** (L5 Fortress), Space **Undertow** (L5 Deep Undertow), Time
+>   **Quick Jump** (L5 Phase Dart). `Tools/Build/author_goby_assets.py` writes and checks them.
+> - Still the Squirrel's: the hull MODEL (on the Squirrel's rig), the HUD controller, the nested skimmer prefab (its
+>   Squirrel effects are stripped through the Goby's own containers; it still collects crystals), and an AI-flown Goby
+>   that the seat does not run on (backfill, other machines) flies the platform AIPilot without the kit. Team tasks.
+
 **Status (2026-10-18):** in the game as a prototype, not yet flown in the editor. The Goby is vessel class 18 (card
 "Goby and Pistol"), flyable from the Toybox's Vessel Changer, built from the shared crew pieces (SKILL.md "One notion
 of a crew vessel"); its numbers are cloned from the lab (`studio_to_unity.py --vessel goby`). The editor playtest is
@@ -509,3 +550,13 @@ the line it settled.
   `touch_glyph_art.py` (TouchIcon_Primer / _Flares / _Ghost / _Snap). **[open], unchanged:** the duo's element row
   (§8 q6): the primer and flares are buttons, not cards, until the element mappings are decided. With a pad the buttons
   hide (the Orca's rule), so a pad shows no primer / flare count yet.
+- 2026-10-22, Garrett: the Goby's own kit, straight in Unity (the summary at the top of this file). Unity:
+  `GobyPistolDuo` rewritten (dart / perch / lock, the Goby's seat AI, the Pistol perch to perch on a flat plane, dens,
+  the undertow, homing rings scored as PvP petal hits), `PistolPlane` and `GobyDen` new and pure, `PistolBodyMath`,
+  `PistolAI` and `VortexRing` moved onto the flat frame; `PistolRibbon`, `PistolWarp`, `PistolWorldMesh`,
+  `PistolTrueDraw`, `GobyMath`, `PistolTargets`, `PistolWorld.shader` and their golden tests retired with the
+  unroll. `Goby.prefab` loses the Squirrel's tube and drift executors, its thumb-lift bindings and its impact
+  containers (`GobyImpactorDataContainer`, `GobySkimmerImpactorDataContainer`); `GobyPistolTests` holds the rules.
+  **[read] for Garrett:** fly it on a phone and a pad: perch, aim, dart (short tap vs full charge), dart into space,
+  watch the Pistol ride down, rest and build, press Back to an old den, lock a rival and Snap when it is on the
+  Pistol's screen.

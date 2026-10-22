@@ -81,11 +81,10 @@ PROFILES = [
     profile("Wrasse", "ThumbLifts", glyphs=[("Time", "LiftLeftThumb")]),
     # The Orca's helm: RT boosts while the tank lasts, LT raises the shield.
     profile("Orca", "ThumbLifts", glyphs=[("Time", "LiftLeftThumb"), ("Mass", "LiftRightThumb")]),
-    # The Goby flies on the Squirrel's two thumbs and lifts (its four cards are the Squirrel's). Its primer and flares, and the
-    # Pistol seat's ghost and snap, are each seat's own two buttons round the right thumb, drawn by the seat
-    # (GobyPistolButtons), not profile extras: only the seat the person is in shows them (Garrett, 2026-10-21).
-    profile("Goby", "ThumbLifts",
-            glyphs=[("Mass", "LiftLeftThumb")], coreGlyphs=[("Drift", "LiftRightThumb")]),
+    # The Goby perches and aims, then darts (Garrett, 2026-10-22): its Dart and Lock, and the Pistol seat's Ghost, Snap and
+    # Back, are each seat's own buttons round the right thumb, drawn by the seat (GobyPistolButtons), not profile extras
+    # (only the seat the person is in shows them). Nothing is bound to its thumb lifts, so lifting a thumb fires nothing.
+    profile("Goby", "ThumbLifts"),
     # The Honeyguide's RT Peck and LT Flit; its Time card (B, the boost) is a button.
     profile("Honeyguide", "ThumbLifts", glyphs=[("Charge", "LiftLeftThumb"), ("Mass", "LiftRightThumb")]),
 

@@ -10,6 +10,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 097bd5054b3c4d8f85f0f11937eda887, type: 3}
-  m_Name: CrewButtonFlares
+  m_Name: CrewButton0
   m_EditorClassIdentifier: 
-  button: 1
+  button: 0

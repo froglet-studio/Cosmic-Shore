@@ -171,12 +171,8 @@ MonoBehaviour:
     extraButtons: []
     throttleSlider: 0
     throttleSliderStart: 0.5
-    glyphs:
-    - element: 2
-      glyph: 1
-    coreGlyphs:
-    - core: 1
-      glyph: 2
+    glyphs: []
+    coreGlyphs: []
   - vessel: 23
     scheme: 0
     liftDeferSeconds: 0

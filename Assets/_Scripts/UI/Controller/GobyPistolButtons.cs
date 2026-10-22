@@ -1,7 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
-using TMPro;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -11,41 +10,39 @@ namespace CosmicShore.UI
     /// round the right thumb, laid out by the fleet's <see cref="TouchButtonLayout"/> in millimetres inside the safe area -
     /// the Orca's gunner buttons (<see cref="OrcaHUDController"/>) are the pattern:
     /// <list type="bullet">
-    /// <item><b>The Goby</b> (the hull, flown on two thumbs like the Squirrel; its four cards are the Squirrel's): Primer and
-    /// Flares, each with its charges as a number. They press the pilot's <see cref="IInputStatus"/> with the inputs the
-    /// hull binds to <see cref="CrewButtonActionSO"/> (Button3Action, Button4Action: a pad's X and Y, keys Q and F), so a
-    /// phone, a pad and a keyboard reach the seat by one path.</item>
-    /// <item><b>The Pistol</b> (the seat; the left thumb's drag launches, a held finger dives): Ghost (held) and Snap. They
-    /// press the seat directly, because the hull's AI flies the Goby while a person flies the Pistol and an InputStatus
-    /// press is dropped under autopilot. A button that is cooling down is dimmed.</item>
+    /// <item><b>The Goby</b> (the hull; one thumb aims it while it perches): Dart (hold to charge the distance, let go to
+    /// dart; dimmed while it cannot) and Lock (lit while a lock is held). They press the pilot's <see cref="IInputStatus"/>
+    /// with the inputs the hull binds to <see cref="CrewButtonActionSO"/> (Button3Action, Button4Action: a pad's RT / LT and
+    /// X / Y, keys Q and F), so a phone, a pad and a keyboard reach the seat by one path.</item>
+    /// <item><b>The Pistol</b> (the seat; a finger on its view dives and drags to jump): Ghost (held), Snap (dimmed while
+    /// cooling) and Back (at a perch, head back toward the older dens; lit while heading back). They press the seat
+    /// directly, because the seat's AI flies the hull while a person flies the Pistol and an InputStatus press is dropped
+    /// under autopilot.</item>
     /// </list>
     /// Only the seat the person is in shows its buttons, and none show while a pad is connected. A touch that starts on a
     /// button never flies (<see cref="FlightTouchClaims"/>). Owned by the seat (<see cref="GobyPistolDuo"/>), so the
-    /// Play-mode menu that adds the duo to any hull gets them too. The buttons live under the hull HUD's ability row and
+    /// Play-mode menu that adds the crew to any hull gets them too. The buttons live under the hull HUD's ability row and
     /// die with it.
     /// </summary>
     public sealed class GobyPistolButtons
     {
-        public const int Primer = 0, Flares = 1, Ghost = 2, Snap = 3;
-        const int Count = 4;
-        const string CountName = "SeatCount";
-        static readonly float[] Aspects = { 1f, 1f };   // two per seat: the first takes the easiest reach
+        public const int Dart = 0, Lock = 1, Ghost = 2, Snap = 3, Back = 4;
+        const int Count = 5;
+        static readonly float[] GobyAspects = { 1f, 1f }, PistolAspects = { 1f, 1f, 1f };   // the first takes the easiest reach
 
         readonly TouchButtonView[] _buttons = new TouchButtonView[Count];
-        readonly TMP_Text[] _counts = new TMP_Text[Count];
-        readonly int[] _shownCount = new int[Count];
-        readonly int[] _shownReady = new int[Count];
+        readonly int[] _shown = new int[Count];
         readonly Color[] _tints = new Color[Count];
         AbilityLockupView _lockup;
         int _laidSeat = -1, _screenWidth, _screenHeight;
         Rect _safeArea;
 
         /// <summary>True once the buttons exist (the hull's HUD row is built and this is a touch device).</summary>
-        public bool Built => _buttons[Primer];
+        public bool Built => _buttons[Dart];
 
         /// <summary>
-        /// Builds the four buttons under the ability row of <paramref name="hull"/>'s HUD. False (and nothing built) when
-        /// the device is not touch-first or the row is not built yet; the seat tries again on a later frame.
+        /// Builds the buttons under the ability row of <paramref name="hull"/>'s HUD. False (and nothing built) when the
+        /// device is not touch-first or the row is not built yet; the seat tries again on a later frame.
         /// </summary>
         public bool TryBuild(Transform hull, GobyPistolConfigSO cfg, IInputStatus pilotInput, System.Action<int, bool> pistolSink)
         {
@@ -59,19 +56,17 @@ namespace CosmicShore.UI
             var library = TouchControlProfileLibrarySO.Instance;
             var disc = library ? library.ButtonDisc : null;
             var rim = library ? library.ButtonRim : null;
-            _buttons[Primer] = Make(Primer, row, InputEvents.Button3Action, cfg.PrimerButtonIcon, cfg.PrimerButtonLabel, disc, rim, Element.Mass);
-            _buttons[Flares] = Make(Flares, row, InputEvents.Button4Action, cfg.FlaresButtonIcon, cfg.FlaresButtonLabel, disc, rim, Element.Charge);
+            _buttons[Dart] = Make(Dart, row, InputEvents.Button3Action, cfg.DartButtonIcon, cfg.DartButtonLabel, disc, rim, Element.Time);
+            _buttons[Lock] = Make(Lock, row, InputEvents.Button4Action, cfg.LockButtonIcon, cfg.LockButtonLabel, disc, rim, Element.Charge);
             _buttons[Ghost] = Make(Ghost, row, InputEvents.Button3Action, cfg.GhostButtonIcon, cfg.GhostButtonLabel, disc, rim, Element.Space);
-            _buttons[Snap] = Make(Snap, row, InputEvents.Button4Action, cfg.SnapButtonIcon, cfg.SnapButtonLabel, disc, rim, Element.Time);
-            _buttons[Primer].Bind(pilotInput);
-            _buttons[Flares].Bind(pilotInput);
+            _buttons[Snap] = Make(Snap, row, InputEvents.Button4Action, cfg.SnapButtonIcon, cfg.SnapButtonLabel, disc, rim, Element.Charge);
+            _buttons[Back] = Make(Back, row, InputEvents.Button2Action, cfg.BackButtonIcon, cfg.BackButtonLabel, disc, rim, Element.Mass);
+            _buttons[Dart].Bind(pilotInput);
+            _buttons[Lock].Bind(pilotInput);
             _buttons[Ghost].Bind(down => pistolSink?.Invoke(0, down));
             _buttons[Snap].Bind(down => pistolSink?.Invoke(1, down));
-            for (int i = 0; i < Count; i++)
-            {
-                _counts[i] = i == Primer || i == Flares ? MakeCount((RectTransform)_buttons[i].transform, _lockup.CardWidth) : null;
-                _shownCount[i] = _shownReady[i] = -1;
-            }
+            _buttons[Back].Bind(down => pistolSink?.Invoke(2, down));
+            for (int i = 0; i < Count; i++) _shown[i] = -1;
             _laidSeat = -1;
             return true;
         }
@@ -85,28 +80,12 @@ namespace CosmicShore.UI
             return view;
         }
 
-        static TMP_Text MakeCount(RectTransform button, float size)
-        {
-            var go = new GameObject(CountName, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-            var text = go.GetComponent<TextMeshProUGUI>();
-            var rt = text.rectTransform;
-            rt.SetParent(button, false);
-            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(size * 0.5f, size * 0.3f);
-            rt.anchoredPosition = new Vector2(size * 0.36f, size * 0.36f);   // the upper right of the disc
-            text.alignment = TextAlignmentOptions.Center;
-            text.fontSize = size * 0.24f;
-            text.enableWordWrapping = false;
-            text.overflowMode = TextOverflowModes.Overflow;
-            text.raycastTarget = false;
-            return text;
-        }
-
         /// <summary>
-        /// Shows the seat's two buttons (none while a pad is connected), with the Goby's charges as numbers and a cooling
-        /// Pistol button dimmed; re-laid when the seat, the screen or the safe area changes.
+        /// Shows the seat's buttons (none while a pad is connected): the Goby's Dart dimmed while it cannot dart and its Lock
+        /// bright while locked; the Pistol's Ghost and Snap dimmed while cooling and its Back bright while heading back.
+        /// Re-laid when the seat, the screen or the safe area changes.
         /// </summary>
-        public void Paint(bool humanInSeat, string countTemplate, int primers, int flares, bool ghostReady, bool snapReady)
+        public void Paint(bool humanInSeat, bool dartReady, bool locked, bool ghostReady, bool snapReady, bool headingBack)
         {
             if (!Built) return;
             bool show = !KitInputDevice.ShowsControlHints;
@@ -120,15 +99,14 @@ namespace CosmicShore.UI
 
             if (humanInSeat)
             {
-                PaintReady(Ghost, ghostReady);
-                PaintReady(Snap, snapReady);
+                PaintBright(Ghost, ghostReady);
+                PaintBright(Snap, snapReady);
+                PaintBright(Back, headingBack);
             }
             else
             {
-                PaintCount(Primer, countTemplate, primers);
-                PaintCount(Flares, countTemplate, flares);
-                PaintReady(Primer, primers > 0);
-                PaintReady(Flares, flares > 0);
+                PaintBright(Dart, dartReady);
+                PaintBright(Lock, locked);
             }
 
             int seat = humanInSeat ? 1 : 0;
@@ -136,21 +114,13 @@ namespace CosmicShore.UI
                 LayOut(seat);
         }
 
-        void PaintCount(int i, string template, int count)
+        void PaintBright(int i, bool bright)
         {
-            var text = _counts[i];
-            if (!text || count == _shownCount[i]) return;
-            _shownCount[i] = count;
-            text.text = TemplateText.Fill(template, "count", count.ToString());
-        }
-
-        void PaintReady(int i, bool ready)
-        {
-            int r = ready ? 1 : 0;
-            if (r == _shownReady[i]) return;
-            _shownReady[i] = r;
+            int b = bright ? 1 : 0;
+            if (b == _shown[i]) return;
+            _shown[i] = b;
             var c = _tints[i];
-            _buttons[i].SetTint(ready ? c : new Color(c.r * 0.45f, c.g * 0.45f, c.b * 0.45f, c.a));
+            _buttons[i].SetTint(bright ? c : new Color(c.r * 0.45f, c.g * 0.45f, c.b * 0.45f, c.a));
         }
 
         void LayOut(int seat)
@@ -165,12 +135,13 @@ namespace CosmicShore.UI
             var root = canvas ? canvas.rootCanvas : null;
             Camera cam = root && root.renderMode != RenderMode.ScreenSpaceOverlay ? root.worldCamera : null;
 
+            var aspects = seat == 1 ? PistolAspects : GobyAspects;
             float dpi = Screen.dpi > 1f ? Screen.dpi : 160f;
-            var layout = TouchButtonLayout.Arrange(Aspects, new Vector2(Screen.width, Screen.height), _safeArea, dpi,
+            var layout = TouchButtonLayout.Arrange(aspects, new Vector2(Screen.width, Screen.height), _safeArea, dpi,
                 TouchControlsHud.LayoutSettings(TouchControlProfileLibrarySO.Instance));
             float scale = layout.ButtonWidthPixels * TouchControlsHud.UnitsPerPixel(row, cam) / Mathf.Max(1f, _lockup.CardWidth);
-            int first = seat == 1 ? Ghost : Primer;
-            for (int k = 0; k < 2 && k < layout.Centres.Count; k++)
+            int first = seat == 1 ? Ghost : Dart;
+            for (int k = 0; k < aspects.Length && k < layout.Centres.Count; k++)
             {
                 var button = _buttons[first + k];
                 if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(row, layout.Centres[k], cam, out var local)) continue;
@@ -186,7 +157,6 @@ namespace CosmicShore.UI
             {
                 if (_buttons[i]) Object.Destroy(_buttons[i].gameObject);
                 _buttons[i] = null;
-                _counts[i] = null;
             }
             _lockup = null;
             _laidSeat = -1;

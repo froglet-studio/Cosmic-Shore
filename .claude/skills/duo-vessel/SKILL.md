@@ -31,7 +31,7 @@ Say *crew vessel* in new code and docs; each half is a **subvessel**, the extra 
 | Crew vessel | Card | Hull (`VesselClassType`) | Seat on its root | The seat's view | Brief |
 |---|---|---|---|---|---|
 | **Wrasse** | Wrasse and Grouper | Wrasse = 19 (the Sparrow without its kit, two thumbs) | `KiteNavigator`: a one-thumb kite on the hull's x-z plane | top-down orthographic, the real world projected onto the plane | `references/designs/wrasse-and-grouper.md` → `Controller/Vessel/Crew/KITE_NAVIGATOR.md` |
-| **Goby** | Goby and Pistol | Goby = 18 (the Squirrel, its own cruise) | `GobyPistolDuo`: the Pistol, a 2D side view unrolled from the Goby's path | side-on perspective whose frustum is the parallax, the real prisms laid out along the unroll | `references/designs/goby-and-pistol.md` |
+| **Goby** | Goby and Pistol | Goby = 18 (a Squirrel-derived prefab stripped of the Squirrel's kit; pinned: it perches and darts like the Shrike slings, 2026-10-22) | `GobyPistolDuo`: the Pistol, riding a FLAT plane through each dart from perch to perch, downhill either way | side-on perspective square to the plane | `references/designs/goby-and-pistol.md` (its top section is the kit as it is now) |
 
 **The shape both chose** (call it **C** beside §3.1's A and B): **one hull class and one prefab** - a clone of a donor
 hull, authored and registered by `Tools/Build/author_<hull>_assets.py` (`author_wrasse_assets.py` is the fuller
@@ -61,14 +61,15 @@ hull that carries an `ICrewSeat` to the card, roster and container rules (its `S
 `CrewNames`), and every class that names a crew to having a seat. `CrewVesselTests` holds the same in the editor. Each hull's generator `--check` holds its own assets.
 
 **Where the two still differ, on purpose or not yet:**
-- The Wrasse has its own HUD controller (`WrasseHUDController`, the cards read the seat); the Goby's four cards are
-  still the Squirrel's. Each Goby seat has its own controls (Garrett, 2026-10-21: "each seat has its own ui and
-  controls. no need to use the dpad in a weird way"): the Goby's primer and flares are the hull's own inputs
-  (`CrewButtonActionSO` on Button3 / Button4: pad X / Y, keys Q / F), and on a phone each seat shows its own two buttons
-  round the right thumb (`GobyPistolButtons`: Primer / Flares with their charges, Ghost / Snap dimmed while cooling),
-  the Orca gunner buttons' pattern. The D-pad is only the swap.
-- The Wrasse's hull is stripped of its donor's kit (`author_wrasse_assets.py` round 4c); the Goby keeps the Squirrel's
-  abilities, by design ([stated], the brief).
+- The Wrasse has its own HUD controller (`WrasseHUDController`, the cards read the seat); the Goby has its own four
+  cards (Vortex Sting, Dens, Undertow, Quick Jump, 2026-10-22) but still the Squirrel's HUD controller. Each Goby seat
+  has its own controls (Garrett, 2026-10-21: "each seat has its own ui and controls. no need to use the dpad in a weird
+  way"): the Goby's Dart and Lock are the hull's own inputs (`CrewButtonActionSO` on Button3 / Button4, a pad's RT / LT
+  too, keys Q / F), and on a phone each seat shows its own buttons round the right thumb (`GobyPistolButtons`: Dart and
+  Lock; Ghost, Snap and Back), the Orca gunner buttons' pattern. The D-pad is only the swap.
+- Both hulls are stripped of their donor's kit (`author_wrasse_assets.py` round 4c; `author_goby_assets.py`
+  `strip_squirrel_kit` and the Goby's own impact containers, 2026-10-22: "it should not have the squirrels abilities or
+  be anything like the squirrel"). The Goby's model is still on the Squirrel's rig (team task).
 - The Kite's lab is behind the game (`T-20261018-3247`); the Goby's lab IS the source (`/artifact-to-unity`).
 
 ## 0. Read first
@@ -76,8 +77,9 @@ hull that carries an `ICrewSeat` to the card, roster and container rules (its `S
 - **`references/designs/<duo>.md`**: the brief for the duo you are working on. Read every
   **[open]**, **[read]** and **[proposed]** tag before building. An [open] item is a question for
   Garrett, never a gap to fill. Briefs today:
-  - `goby-and-pistol.md`: the **Goby**, a two-thumb path-layer (it flies like the Squirrel) with primer and flares, and the
-    **Pistol**, a pistol shrimp that plays a warped 2D sidescroller unrolled from the Goby's path.
+  - `goby-and-pistol.md`: the **Goby**, a watchman that perches, darts like the Shrike slings and locks rivals, and the
+    **Pistol**, a pistol shrimp that rides a flat plane from perch to perch, builds dens, pulls mass into its plane and
+    fires homing vortex rings (2026-10-22; its top section is the current kit, built straight in Unity).
     (Garrett first called them the Flier and the Bird.)
     Its lab is `Docs/Studios/VesselStudio/goby.html` (round 1, 2026-10-14). It is the template for
     the next duo's lab.

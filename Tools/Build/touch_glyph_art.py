@@ -7,7 +7,7 @@
 Thumb-lift glyphs name the touch gesture a card's ability is on (Docs/Reports/MOBILE_VESSELS.md):
 a landscape phone with two thumbs at its bottom corners; a lifted thumb is hollow with an arrow up.
 The button icons are for TouchControlProfile.extraButtons (fire, ring, zoom, drift, bomb, squad,
-recall, hold, dipole, missile) and the crew seats' own buttons (the Goby's primer and flares, the
+recall, hold, dipole, missile) and the crew seats' own buttons (the Goby's dart and lock, the
 Pistol's ghost and snap) and the disc and rim every button is drawn on. GUIDs are derived from the file name, so a re-run never re-keys an asset.
 """
 import hashlib
@@ -290,24 +290,21 @@ def i_missile(d):
         circle(d, ax - dx * 24 * i, ay - dy * 24 * i, r)
 
 
-def i_primer(d):
-    # the Goby's primer, an oil bomb: a drop, with a splash ring under it
-    cx, cy, r, tip = 128, 140, 64, 26
-    a = math.acos(r / (cy - tip))   # where the drop's sides leave the round, from straight up
-    circle(d, cx, cy, r)
-    d.polygon([(s(cx), s(tip)), (s(cx + r * math.sin(a)), s(cy - r * math.cos(a))),
-               (s(cx - r * math.sin(a)), s(cy - r * math.cos(a)))], fill=(W, W, W, 255))
-    d.ellipse([s(58), s(218), s(198), s(240)], outline=(W, W, W, 255), width=s(8))
+def i_dart(d):
+    # the Goby's dart: a short, fast arrow with speed lines behind it
+    d.polygon([(s(214), s(128)), (s(150), s(84)), (s(150), s(172))], fill=(W, W, W, 255))
+    line(d, [(70, 128), (156, 128)], 26)
+    for y, x0 in ((84, 40), (172, 40), (128, 20)):
+        line(d, [(x0, y), (x0 + 36, y)], 10)
 
 
-def i_flares(d):
-    # heat-seeking flares: three trails fanning out from one point, each ending in a spark
-    for ang in (-40, 0, 40):
-        a = math.radians(ang - 90)
-        pts = [(128 + math.cos(a) * r + 12 * math.sin(r / 30) * math.cos(a + math.pi / 2),
-                214 + math.sin(a) * r + 12 * math.sin(r / 30) * math.sin(a + math.pi / 2)) for r in range(0, 151, 10)]
-        line(d, pts, 10)
-        circle(d, pts[-1][0], pts[-1][1], 18)
+def i_lock(d):
+    # the Goby's lock: four corner brackets round a dot
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            cx, cy = 128 + sx * 78, 128 + sy * 78
+            line(d, [(cx, cy - sy * 40), (cx, cy), (cx - sx * 40, cy)], 14)
+    circle(d, 128, 128, 18)
 
 
 def i_ghost(d):
@@ -351,8 +348,8 @@ ART = {
     "TouchIcon_Hold": i_hold,
     "TouchIcon_Dipole": i_dipole,
     "TouchIcon_Missile": i_missile,
-    "TouchIcon_Primer": i_primer,
-    "TouchIcon_Flares": i_flares,
+    "TouchIcon_Dart": i_dart,
+    "TouchIcon_Lock": i_lock,
     "TouchIcon_Ghost": i_ghost,
     "TouchIcon_Snap": i_snap,
 }

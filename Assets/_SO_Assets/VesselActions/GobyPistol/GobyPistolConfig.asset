@@ -12,49 +12,73 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7bc9e5bc966d4d6a99ca80a7b057d717, type: 3}
   m_Name: GobyPistolConfig
   m_EditorClassIdentifier: 
-  unroll: 0
-  gPrimerCharges: 6
-  gPrimerCd: 1.5
-  gPrimerRange: 380
-  gPrimeSplash: 34
-  gPrimeLife: 12
-  gFlareCharges: 2
-  gFlareCd: 10
-  gFlareRange: 420
-  gFlareMax: 10
-  gFlareSpeed: 240
-  gCloseMax: 2.4
-  gCloseRange: 320
-  pGravity: 140
-  pDiveMul: 3.2
-  pMinSpeed: 35
-  pDrag: 0.04
+  dartRange: 600
+  dartMinRange: 140
+  dartChargeSeconds: 0.8
+  dartSeconds: 1
+  dartCooldown: 1.2
+  hullRadius: 3
+  queryReach: 6
+  ownPerchBlocks: 5
+  perchBlockSize: 4
+  lockRange: 1400
+  lockCone: 12
+  lockKeepScale: 1.6
+  slopeDegrees: 22
+  hillAmplitude: 10
+  hillWavelength: 70
+  trailBlockGap: 10
+  trailBlockScale: {x: 4, y: 0.9, z: 9}
+  pGravity: 95
+  pDiveMul: 2.6
+  pMinSpeed: 22
+  pDrag: 0.35
   pGoodLand: 28
-  pVision: 45
-  pBodyR: 5
-  pViewWidth: 460
-  pParallax: 160
-  pipSize: 0.32
-  viewMargin: 0.015
-  depthFullSpreadAt: 60
-  primerButtonIcon: {fileID: 21300000, guid: 1c5a2b2a3c90183cb3e6b26765c45079, type: 3}
-  primerButtonLabel: 
-  flaresButtonIcon: {fileID: 21300000, guid: 1a49ea5c6ef9350406ebff1f60c1a6b1, type: 3}
-  flaresButtonLabel: 
-  ghostButtonIcon: {fileID: 21300000, guid: 0ede362233e2585f1e553dd9fce30f65, type: 3}
-  ghostButtonLabel: 
-  snapButtonIcon: {fileID: 21300000, guid: 7d491aeb1d6f0f586b33d62074240027, type: 3}
-  snapButtonLabel: 
-  buttonCountTemplate: '{count}'
-  pLaunchRange: 240
-  pLaunchSpeed: 280
+  pBodyR: 2.5
+  pBodyHalfDepth: 10
+  pLaunchRange: 220
+  pLaunchSpeed: 160
   pLaunchCharges: 1
-  pLaunchCd: 9
+  jumpCooldown:
+    Enabled: 1
+    Value: 9
+    Min: 9
+    Max: 3
+    element: 4
+    UseFloor: 1
+    Floor: 1
   pGhostTime: 2.5
   pGhostCd: 8
-  pChain: 40
-  pHotRing: 80
-  pHotLife: 10
+  pSlingPull: 0.22
+  arriveDistance: 8
+  restSeconds: 1.2
+  denUnitsPerPrism: 40
+  denMassScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.5
+    element: 2
+    UseFloor: 1
+    Floor: 0.25
+  denMax: 80
+  denShieldedShare: 0.4
+  denDangerShare: 0.15
+  denSuperShare: 0.12
+  denBlockSize: 4
+  denFirstRadius: 10
+  denClearance: 1.1
+  pullReach:
+    Enabled: 1
+    Value: 40
+    Min: 40
+    Max: 200
+    element: 3
+    UseFloor: 1
+    Floor: 10
+  pullSpeed: 60
+  pullWindow: 320
+  pullMaxPerFrame: 96
   pVortexR: 22
   pVortexSpeed: 120
   pVortexLife: 2.6
@@ -63,9 +87,37 @@ MonoBehaviour:
   pVortexMax: 30
   pVortexCd: 4
   pVortexCollapse: 1
-  tSampleGap: 4
-  tBlockGap: 16
-  tHillEvery: 4
-  tHillAmp: 26
+  homingTurnRate: 240
+  ringPetals:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 3
+    element: 1
+    UseFloor: 1
+    Floor: 1
+  ringHitPad: 4
+  ringHitClass: 1
+  hitCooldown: 0.25
+  onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  pipSize: 0.32
+  viewMargin: 0.015
+  viewWidth: 700
+  viewFov: 40
+  depthFullSpreadAt: 60
+  aiDartLength: 380
+  aiWaitForPistol: 7
+  aiHomeRadius: 1600
+  aiBackAfter: 4
   aiHighDive: 120
-  aiMaxGap: 260
+  dartButtonIcon: {fileID: 21300000, guid: 173cce5c2e60d5fe47fe15cfb2bfa249, type: 3}
+  dartButtonLabel: 
+  lockButtonIcon: {fileID: 21300000, guid: 13d97730f43e8a72a2b175f57a747ffe, type: 3}
+  lockButtonLabel: 
+  ghostButtonIcon: {fileID: 21300000, guid: 0ede362233e2585f1e553dd9fce30f65, type: 3}
+  ghostButtonLabel: 
+  snapButtonIcon: {fileID: 21300000, guid: 7d491aeb1d6f0f586b33d62074240027, type: 3}
+  snapButtonLabel: 
+  backButtonIcon: {fileID: 21300000, guid: ca1ac713c24158d9f2895b8311bac0cb, type: 3}
+  backButtonLabel: 
