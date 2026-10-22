@@ -2028,3 +2028,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** any session; Garrett to sign off
 - **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
 - **See:** goby-and-pistol.md top section; Tools/Build/studio_to_unity/clones.json 'Goby & Pistol'.retired
+
+### T-20261022-963b · open · test · Crew vessels
+- **Task:** Fly the Pistol after its view pass (Toybox > Vessel Changer > Goby and Pistol, double tap the small view). Full screen and in the small square: the camera is 160 u off the plane again with the lab's off-axis lens (Pistol left of centre, the downhill ahead); every dart's ground has rolls (~290 u, to ~27 u high) under the fine zigzag (64 u), right up to both perches. Try a tap dart (~140 u), a full one (600 u) and one blocked a few u out (no fold, no jitter on landing).
+- **Done when:** Garrett says the view is close enough and the rolls give a dive and a release on every dart, or names the numbers to change (viewDistance, viewWidth, viewPistolAt, roll/fine amplitude and wavelength on GobyPistolConfig)
+- **Who can take it:** Garrett (feel call); Yash (offered) for the run itself
+- **Added:** 2026-10-22 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log, 2026-10-22 view pass)

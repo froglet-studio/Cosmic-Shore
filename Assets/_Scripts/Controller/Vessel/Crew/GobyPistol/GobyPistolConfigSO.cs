@@ -2,6 +2,7 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -53,12 +54,18 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(1f)] float lockKeepScale = 1.6f;
 
         [Header("The Pistol's ground (the dart's own trail on a flat plane)")]
-        [Tooltip("Degrees the travel from perch to perch runs downhill on the Pistol's screen, either way it rides.")]
-        [SerializeField, Range(0f, 45f)] float slopeDegrees = 22f;
-        [Tooltip("The trail's hills, u either side of the dart's line, along the Goby's up (zero at both perches).")]
-        [SerializeField, Min(0f)] float hillAmplitude = 10f;
-        [Tooltip("The hills' wavelength along the dart, u.")]
-        [SerializeField, Min(5f)] float hillWavelength = 70f;
+        [Tooltip("Degrees the travel from perch to perch runs downhill on the Pistol's screen, either way it rides. Past 33 " +
+                 "the hills could fold the ground back on itself (PistolPlane.MaxHillSlope).")]
+        [SerializeField, Range(0f, 33f)] float slopeDegrees = 22f;
+        [Tooltip("The rolling hills, u either side of the dart's line along the Goby's up: the long hills a dive and a " +
+                 "release are played on (the lab's Goby weave, 18 u). A whole number of half-waves per dart, so zero at both perches.")]
+        [SerializeField, Min(0f)] float rollAmplitude = 18f;
+        [Tooltip("The rolling hills' wavelength, u (the lab's weave: 0.55 Hz behind a 160 u/s Goby, about 290).")]
+        [SerializeField, Min(5f)] float rollWavelength = 290f;
+        [Tooltip("The fine zigzag on top of the rolls, u (the lab's alternating hinges, 10 u).")]
+        [SerializeField, FormerlySerializedAs("hillAmplitude"), Min(0f)] float fineAmplitude = 10f;
+        [Tooltip("The fine zigzag's wavelength, u (the lab's hinge every second 16 u block: 64).")]
+        [SerializeField, FormerlySerializedAs("hillWavelength"), Min(5f)] float fineWavelength = 64f;
         [Tooltip("A trail block every this many u along the dart.")]
         [SerializeField, Min(2f)] float trailBlockGap = 10f;
         [Tooltip("A trail block's size (x across, y thick, z along the dart).")]
@@ -151,10 +158,15 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0.15f, 0.6f)] float pipSize = 0.32f;
         [Tooltip("The small view's gap from the screen's edges, as a fraction of the screen height.")]
         [SerializeField, Range(0f, 0.1f)] float viewMargin = 0.015f;
-        [Tooltip("How much of the plane the Pistol's screen shows across, u.")]
+        [Tooltip("How much of the plane the Pistol's screen shows across, u, at the plane.")]
         [SerializeField, Min(50f)] float viewWidth = 700f;
-        [Tooltip("The Pistol's camera's field of view, degrees (vertical).")]
-        [SerializeField, Range(10f, 90f)] float viewFov = 40f;
+        [Tooltip("How far the Pistol's camera sits from its plane, u: close, so the world either side of the plane reads " +
+                 "in depth (the lab's and the first Unity side view's 160). Its lens is off-axis: the camera stays beside the " +
+                 "Pistol and the screen looks ahead, so the Pistol is never stretched at the edge of a wide lens.")]
+        [SerializeField, Min(20f)] float viewDistance = 160f;
+        [Tooltip("Where the Pistol sits across its screen, as a share of the width from the centre (minus: left of it, so " +
+                 "more of the downhill ahead shows).")]
+        [SerializeField, Range(-0.45f, 0.45f)] float viewPistolAt = -0.2f;
         [Tooltip("For the Pistol's view only, a prism this far out of its plane reads as far as the Goby's view's most distant mass.")]
         [SerializeField, Min(1f)] float depthFullSpreadAt = 60f;
 
@@ -205,8 +217,7 @@ namespace CosmicShore.ScriptableObjects
         public float LockCone => lockCone;
         public float LockKeepScale => lockKeepScale;
         public float SlopeDegrees => slopeDegrees;
-        public float HillAmplitude => hillAmplitude;
-        public float HillWavelength => hillWavelength;
+        public PistolPlane.Hills Hills => new(rollAmplitude, rollWavelength, fineAmplitude, fineWavelength);
         public float TrailBlockGap => trailBlockGap;
         public Vector3 TrailBlockScale => trailBlockScale;
         public float BodyR => pBodyR;
@@ -238,7 +249,8 @@ namespace CosmicShore.ScriptableObjects
         public float PipSize => pipSize;
         public float ViewMargin => viewMargin;
         public float ViewWidth => viewWidth;
-        public float ViewFov => viewFov;
+        public float ViewDistance => viewDistance;
+        public float ViewPistolAt => viewPistolAt;
         public float DepthFullSpreadAt => depthFullSpreadAt;
         public float AiDartLength => aiDartLength;
         public float AiWaitForPistol => aiWaitForPistol;

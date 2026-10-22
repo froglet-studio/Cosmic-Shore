@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
         readonly CrewSmallViewDoubleTap _pipTap = new();
         readonly GobyPistolButtons _buttons = new();
         CrewViewRender _render;
-        GameObject _view, _bodyGo; Camera _cam; bool _camLive; Quaternion _camRot; Vector3 _camPos;
+        GameObject _view, _bodyGo; Camera _cam; bool _camLive; Quaternion _camRot; Vector3 _camPos, _camWindow;
         Mesh _torus; Material _ringMat, _lockMat, _bodyMat;
 
         GobyPistolConfigSO Config => config;
@@ -336,12 +336,13 @@ namespace CosmicShore.Gameplay
             var prisms = _status.VesselPrismController;
             var channel = prisms ? prisms.PrismSpawnChannel : null;
             if (!channel || seg.L < 1f) return;
-            float gap = Mathf.Max(2f, Config.TrailBlockGap), amp = Config.HillAmplitude, wave = Config.HillWavelength;
+            float gap = Mathf.Max(2f, Config.TrailBlockGap);
+            var hills = Config.Hills;
             Vector3 scale = Config.TrailBlockScale;
             for (float s = gap * 0.5f; s < seg.L; s += gap)
             {
-                Vector3 pos = seg.Ground(s, amp, wave);
-                Vector3 along = seg.S + seg.N * PistolPlane.HillSlope(s, seg.L, amp, wave);
+                Vector3 pos = seg.Ground(s, hills);
+                Vector3 along = seg.S + seg.N * PistolPlane.HillSlope(s, seg.L, hills);
                 if (!SafeLookRotation.TryGet(along, seg.N, out var rot, this, logError: false)) continue;
                 var ret = channel.RaiseEvent(new PrismEventData
                 {
@@ -495,7 +496,7 @@ namespace CosmicShore.Gameplay
         PistolPlane.Frame WaitingFrame()
         {
             Vector3 a = _perches[_perches.Count - 1].Pos;
-            return PistolPlane.For(new PlaneSegment(a, a + _gt.forward * 100f, _gt.up), 1, Config.SlopeDegrees, 0f, Config.HillWavelength);
+            return PistolPlane.For(new PlaneSegment(a, a + _gt.forward * 100f, _gt.up), 1, Config.SlopeDegrees, default);
         }
 
         void StepPistol(float dt)
@@ -544,7 +545,7 @@ namespace CosmicShore.Gameplay
         void Ride(int seg, int dir)
         {
             _seg = seg; _dir = dir; _resting = false;
-            _f = PistolPlane.For(_segments[seg], dir, Config.SlopeDegrees, Config.HillAmplitude, Config.HillWavelength);
+            _f = PistolPlane.For(_segments[seg], dir, Config.SlopeDegrees, Config.Hills);
             PistolBodyMath.PlaceAtStart(_p, _f, Mathf.Max(_body.pMinSpeed, _p.v));
         }
 
@@ -914,7 +915,6 @@ namespace CosmicShore.Gameplay
             _view = new GameObject("PistolView");   // at the scene root: the hull's scale and pose are not the view's
             _cam = _view.AddComponent<Camera>();
             _cam.clearFlags = CameraClearFlags.Skybox; _cam.orthographic = false; _cam.nearClipPlane = 0.5f; _cam.farClipPlane = 6000f;
-            _cam.fieldOfView = Config.ViewFov;
             _torus = BuildRingMesh(VortexRing.Tube, 24, 6);
             // lit and flat-shaded volumes (nothing in the world looks flat): the ring 0x9fe8ff, the lock a warm ring, the
             // Pistol a small orange body
@@ -942,16 +942,26 @@ namespace CosmicShore.Gameplay
             if (!_cam) return;
             if (!showSideView) { _cam.enabled = false; _pip.Restore(); Draw3D(); return; }
             _pip.Layout(_cam, HumanInSeat, Config.PipSize, Config.ViewMargin);
-            _cam.fieldOfView = Config.ViewFov;
-            // the side camera: square to the plane, looking along +M from its back (so the frame's x runs left to right), a
-            // little ahead of the Pistol, eased so a new stretch's frame turns in rather than cuts
-            float aspect = Mathf.Max(0.2f, _cam.aspect), D = Config.ViewWidth / (2f * Mathf.Tan(0.5f * Config.ViewFov * Mathf.Deg2Rad) * aspect);
-            Vector3 centre = _p.wpos + _f.R * (Config.ViewWidth * 0.15f);
-            Vector3 wantPos = centre - _f.M * D; var wantRot = Quaternion.LookRotation(_f.M, _f.Up);
-            float k = _camLive ? Mathf.Clamp01(Time.deltaTime * 4f) : 1f;
+            // the side camera (the lab's sideCam, goby.html rounds 12-13): viewDistance from the plane, square to it and
+            // looking along +M from its back (so the frame's x runs left to right), BESIDE the Pistol; its lens is off-axis,
+            // so the screen shows viewWidth of the plane with the Pistol viewPistolAt from the centre and the downhill ahead,
+            // and the Pistol is never stretched at the edge of the wide lens a close camera needs. Eased, so a new
+            // stretch's frame turns in rather than cuts, and a jump lifts the view gently.
+            float W = Config.ViewWidth, D = Mathf.Max(20f, Config.ViewDistance);
+            float aspect = Mathf.Max(0.2f, _cam.pixelHeight > 0 ? (float)_cam.pixelWidth / _cam.pixelHeight : 1f), H = W / aspect;
+            float ahead = -Config.ViewPistolAt * W, top = Mathf.Max(_p.y, PistolPlane.Ground(_f, _p.x));
+            float cy = Mathf.Clamp(0.5f * (top + PistolPlane.Ground(_f, _p.x + ahead)) + 0.08f * H, _p.y - 0.4f * H, _p.y + 0.4f * H);
+            Vector3 wantPos = _f.ToWorld(_p.x, cy) - _f.M * D, wantWindow = _f.ToWorld(_p.x + ahead, cy);
+            var wantRot = Quaternion.LookRotation(_f.M, _f.Up);
+            float k = Mathf.Clamp01(Time.deltaTime * 4f), kp = Mathf.Clamp01(Time.deltaTime * 8f);
             _camRot = _camLive ? Quaternion.Slerp(_camRot, wantRot, k) : wantRot;
-            _camPos = _camLive ? Vector3.Lerp(_camPos, wantPos, Mathf.Clamp01(Time.deltaTime * 8f)) : wantPos;
+            _camPos = _camLive ? Vector3.Lerp(_camPos, wantPos, kp) : wantPos;
+            _camWindow = _camLive ? Vector3.Lerp(_camWindow, wantWindow, kp) : wantWindow;
             _camLive = true;
+            Vector3 w = Quaternion.Inverse(_camRot) * (_camWindow - _camPos);
+            float near = _cam.nearClipPlane;
+            PistolPlane.OffAxis(new Vector2(w.x, w.y), Mathf.Max(20f, w.z), W, H, near, out float fl, out float fr, out float fb, out float ft);
+            _cam.projectionMatrix = Matrix4x4.Frustum(fl, fr, fb, ft, near, _cam.farClipPlane);
             _cam.transform.SetPositionAndRotation(_camPos, _camRot);
             Draw3D();
         }

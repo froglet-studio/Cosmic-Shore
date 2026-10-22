@@ -19,8 +19,11 @@ namespace CosmicShore.Tests
     {
         static readonly Vector3 A = new(10f, -20f, 30f), B = new(310f, 60f, -170f);
 
-        static PistolPlane.Frame Frame(int dir, float slope = 22f, float amp = 10f, float wave = 70f)
-            => PistolPlane.For(new PlaneSegment(A, B, Vector3.up), dir, slope, amp, wave);
+        static readonly PistolPlane.Hills Shipped = new(18f, 290f, 10f, 64f);
+
+        static PistolPlane.Frame Frame(int dir, float slope = 22f, float amp = 1f)
+            => PistolPlane.For(new PlaneSegment(A, B, Vector3.up), dir, slope,
+                new PistolPlane.Hills(Shipped.RollAmplitude * amp, Shipped.RollWavelength, Shipped.FineAmplitude * amp, Shipped.FineWavelength));
 
         [Test]
         public void Ground_MeetsBothPerches([Values(1, -1)] int dir)
@@ -51,15 +54,74 @@ namespace CosmicShore.Tests
             var seg = new PlaneSegment(A, B, Vector3.up);
             foreach (int dir in new[] { 1, -1 })
             {
-                var f = PistolPlane.For(seg, dir, 22f, 10f, 70f);
+                var f = PistolPlane.For(seg, dir, 22f, Shipped);
                 for (float u = 0f; u <= seg.L; u += seg.L / 23f)
                 {
                     Vector2 g = PistolPlane.GroundPoint(f, u);
-                    Vector3 world = f.ToWorld(g.x, g.y), trail = seg.Ground(PistolPlane.LineS(f, u), 10f, 70f);
+                    Vector3 world = f.ToWorld(g.x, g.y), trail = seg.Ground(PistolPlane.LineS(f, u), Shipped);
                     Assert.That(Vector3.Distance(world, trail), Is.LessThan(0.01f));
                     Assert.That(PistolPlane.Ground(f, g.x), Is.EqualTo(g.y).Within(0.05f), "the ground's inverse finds the same point");
                 }
             }
+        }
+
+        [Test]
+        public void Ground_KeepsTheLabsWiggles([Values(140f, 380f, 600f)] float length)
+        {
+            // the lab's Pistol rode two scales of hill (Garrett, 2026-10-18: "lower amplitude and higher frequency wiggles"):
+            // the fine zigzag (64 u) and the Goby weave's rolls (290 u). Count the crests the ground has along a dart: the
+            // fine zigzag gives one per 64 u right up to the perches, where the old single wave faded out over the dart
+            int crests = 0;
+            float prev = PistolPlane.HillSlope(0f, length, Shipped);
+            for (float s = 0.5f; s <= length; s += 0.5f)
+            {
+                float m = PistolPlane.HillSlope(s, length, Shipped);
+                if (prev > 0f && m <= 0f) crests++;
+                prev = m;
+            }
+            Assert.That(crests, Is.GreaterThanOrEqualTo(Mathf.FloorToInt(length / 64f) - 1), $"a {length} u dart keeps its fine zigzag");
+            float hi = 0f;
+            for (float s = 0f; s <= length; s += 1f) hi = Mathf.Max(hi, Mathf.Abs(PistolPlane.Hill(s, length, Shipped)));
+            Assert.That(hi, Is.GreaterThan(Shipped.FineAmplitude + 0.5f * Shipped.RollAmplitude), "the rolls stand above the zigzag");
+            Assert.That(PistolPlane.Hill(0f, length, Shipped), Is.EqualTo(0f).Within(1e-4f));
+            Assert.That(PistolPlane.Hill(length - 1e-3f, length, Shipped), Is.EqualTo(0f).Within(0.05f), "both perches are met");
+            // the control: a flat ground has none
+            Assert.That(PistolPlane.Hill(length * 0.37f, length, default), Is.EqualTo(0f));
+        }
+
+        [Test]
+        public void Ground_NeverFolds_EvenOnAShortDart([Values(6f, 20f, 60f, 300f)] float length)
+        {
+            // a dart blocked a few u out fits one half-wave of each scale: the hills calm down so the ground still runs
+            // left to right on the Pistol's screen, and the inverse finds every point
+            var seg = new PlaneSegment(Vector3.zero, Vector3.forward * length, Vector3.up);
+            var f = PistolPlane.For(seg, 1, 22f, Shipped);
+            float steepest = 0f, lastX = -1f;
+            for (float u = 0f; u <= length; u += length / 200f)
+            {
+                steepest = Mathf.Max(steepest, Mathf.Abs(PistolPlane.HillSlope(u, length, Shipped)));
+                Vector2 g = PistolPlane.GroundPoint(f, u);
+                Assert.That(g.x, Is.GreaterThan(lastX), "the ground never folds back");
+                lastX = g.x;
+                Assert.That(PistolPlane.Ground(f, g.x), Is.EqualTo(g.y).Within(0.05f));
+            }
+            Assert.That(steepest, Is.LessThanOrEqualTo(PistolPlane.MaxHillSlope + 1e-3f));
+        }
+
+        [Test]
+        public void SideLens_LooksAheadOfTheCameraBeside()
+        {
+            // the camera sits beside the Pistol, 160 u off the plane; its window is 700 u across and 140 u ahead: the
+            // frustum's near-plane bounds, scaled back to the plane, are exactly that window
+            PistolPlane.OffAxis(new Vector2(140f, 30f), 160f, 700f, 700f, 0.5f, out float l, out float r, out float b, out float t);
+            float k = 160f / 0.5f;
+            Assert.That(l * k, Is.EqualTo(140f - 350f).Within(1e-3f));
+            Assert.That(r * k, Is.EqualTo(140f + 350f).Within(1e-3f));
+            Assert.That(b * k, Is.EqualTo(30f - 350f).Within(1e-3f));
+            Assert.That(t * k, Is.EqualTo(30f + 350f).Within(1e-3f));
+            // the control: a centred window is symmetric
+            PistolPlane.OffAxis(Vector2.zero, 160f, 700f, 400f, 0.5f, out l, out r, out b, out t);
+            Assert.That(l, Is.EqualTo(-r).Within(1e-6f)); Assert.That(b, Is.EqualTo(-t).Within(1e-6f));
         }
 
         [Test]

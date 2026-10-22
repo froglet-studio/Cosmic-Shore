@@ -14,9 +14,11 @@
 > - "the goby may shoot into open space and make its own perch" **[stated]**. **[read]:** a dart that reaches nothing
 >   lays a small pad of its own blocks under the Goby there.
 > - "the slope from one perch to another should be a fun downhill for the shrimp" **[stated]**. **[read]:** each dart
->   lays its trail as the Pistol's ground, with low hills (`hillAmplitude` 10, `hillWavelength` 70) that meet both
->   perches, and the Pistol's frame leans the stretch `slopeDegrees` 22 downhill whichever way it rides
->   (`PistolPlane`).
+>   lays its trail as the Pistol's ground, with the lab's two scales of hill (the rolls, `rollAmplitude` 18 /
+>   `rollWavelength` 290, and the fine zigzag, `fineAmplitude` 10 / `fineWavelength` 64, each a whole number of
+>   half-waves per dart so both meet both perches; 2026-10-22 pass below), and the Pistol's frame leans the stretch
+>   `slopeDegrees` 22 downhill whichever way it rides (`PistolPlane`). The side camera sits `viewDistance` 160 u off
+>   the plane with an off-axis lens, the lab's.
 > - "the non-danger mass on either side of the pistol's plane (which no longer needs to bend at all) is pulled into that
 >   plane based on the pair's space. Space L5 pulls in shielded prisms too." **[stated]** The plane is FLAT: the
 >   unrolled ribbon and its warped view are retired. **[read]:** super-shielded and the pair's own prisms never move.
@@ -560,3 +562,29 @@ the line it settled.
   **[read] for Garrett:** fly it on a phone and a pad: perch, aim, dart (short tap vs full charge), dart into space,
   watch the Pistol ride down, rest and build, press Back to an old den, lock a rival and Snap when it is on the
   Pistol's screen.
+- 2026-10-22, Garrett: "the pistol view needs updating. it was getting pretty fun, but with the recent change its camera
+  is too far away, the number of wiggles in the path is too small. its needs a pass that preserves what is fun about the
+  mechanics we are after and brings them back into the progress that we have made since they were tuned for fun."
+  **[read]:** "tuned for fun" is the lab's rounds 12-13 (the ride numbers the kit already carries), against which the
+  kit's flat plane lost two things. Measured:
+  - **The camera.** The lab's and the first Unity side view's camera sat `pParallax` 160 u off the plane with an off-axis
+    lens (`frustumOf` / `PistolWarp.Frustum`), so the world either side of the plane read in depth. The kit's sat
+    `viewWidth / (2 tan(fov/2) aspect)` away at `viewFov` 40: 961 u in the small square, 541 u full screen on 16:9.
+    Now `viewDistance` 160 again (replaces `viewFov`), the camera BESIDE the Pistol and the lens looking ahead
+    (`viewPistolAt` -0.2: the Pistol a fifth of the width left of centre, the lab's), so the Pistol sits on the lens's
+    axis and is never stretched; its height eases between the Pistol and the ground ahead (`PistolPlane.OffAxis`,
+    `GobyPistolDuo.LateUpdate`). `viewWidth` 700 is kept.
+  - **The wiggles.** The lab's ground had two scales: the fine zigzag of the alternating hinges (every second 16 u
+    block, ±10 u: 64 u) and the rolls the Goby AI's height weave laid (18 u at 0.55 Hz behind a 160 u/s Goby: ~290 u),
+    on top of the Goby's own climbs and dives. A dart is straight, so the kit kept only one wave (10 u at 70 u) and
+    faded it to nothing over the dart (`sin(pi s / L)`), so the hills only stood up mid-dart and peaked at 10 u. Now
+    both scales are laid along the Goby's up, each a whole number of half-waves per dart (`PistolPlane.HalfWaves`),
+    so neither needs a fade and both meet each perch: a 380 u dart has 6 crests and hills to ~27 u (was 10); a dart so
+    short that the hills would climb steeper than `MaxHillSlope` 1.5 gets lower ones, so the ground never folds
+    (`slopeDegrees` is capped at 33 for the same reason). The ground's inverse is Newton's method now (exact to
+    1e-4 u on every dart length measured, 6 to 600 u).
+  - Kept as the kit has them: the ride (round 12's numbers), the 22 deg downhill, the dens, the undertow, the rings.
+  `GobyPistolTests`: `Ground_KeepsTheLabsWiggles`, `Ground_NeverFolds_EvenOnAShortDart`,
+  `SideLens_LooksAheadOfTheCameraBeside`. **[read] for Garrett:** fly the Pistol full screen and in the small square:
+  is 160 u close enough (the lens is wide: 700 u across at 160 u is ~130 deg in the square), and do the rolls give a
+  dive and a release on every dart?
