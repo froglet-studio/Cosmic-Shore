@@ -278,6 +278,20 @@ enum before taking a value.
 
 ## 6. Traps (fill this as duos teach them)
 
+- **A donor's kit is not only its executors** (the Goby, 2026-10-22). Stripping a hull you cloned from another means
+  four places: the executor subtrees, the hull's three binding lists (shared, touch overrides, pad overrides), its
+  ability map, and its two impact containers (`VesselImpactorDataContainerSO` on the hull, the skimmer's
+  `vesselSkimmerEffectsSO` / `skimmerPrismEffectsSO`). The last is the one missed: the Squirrel's skimmer kept stealing
+  prisms and jousting through the Squirrel's container, and its level-5 gates fired off the NEW map's levels. Give
+  the hull its own containers (the donor's minus its kit) - never disable the skimmer, which is also what collects
+  crystals (`ElementalCrystalImpactor` answers only a `SkimmerImpactor`). `author_goby_assets.py` is the pattern.
+- **A card's words are a contract.** `HangarAbilityKindsTests` fails any designed ability whose label and description
+  contain none of `HangarAbilityKinds`' words (it would show no stage move). "Quick Jump: Time shortens the jump
+  cooldown" is Passive; "... the burst of speed that flings it" is Boost. Classify every new card before shipping.
+- **A pinned hull still turns.** A seat that must not let its hull cruise pins it (`SetTranslationRestricted`: the
+  fleet's restricted stance), moves it only with `TranslateShip`, and turns it for its own AI with `ApplyRotation`
+  while the player's input is paused. Starting the platform `AIPilot` instead flies the hull like its donor.
+
 - **A pilotless half.** Any path that takes a human off a half (swap, disconnect, pause, death of
   the partner) must hand the half to its AI in the same frame.
 - **Counting the seat twice.** Team size, backfill and scoreboards that count `IVessel`s, rather
