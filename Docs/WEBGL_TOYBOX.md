@@ -119,6 +119,26 @@ renderers choose it from `SystemInfo`, not the define; `memberdraw sm35|auto` fo
 arc lightning's two strands as LineRenderers (the Rhino's arc is switched off on every platform today, so nothing
 shows there yet).
 
+**Prism animation without Entities Graphics.** Entities Graphics needs compute too, so in a browser
+`PrismRenderService` stays off and every prism draws through its MeshRenderer. The clock-material stamps (grow-in,
+colour lerp, sway, shield bloom, jiggle, turret/builder/plough flight, cell-swap suction) go to each prism's
+MaterialPropertyBlock instead of its entity, through `PrismMeshRendererStamps`, and deaths (explosion, suction,
+shield shards) are drawn by a capped pool of MeshRenderer pieces (`PrismMeshRendererDebris`, 96 at once,
+`PrismRenderConfig.meshRendererDebrisCap`). Same values, same shader properties, one write at the stamp and one at
+the end; a settled prism drops its block so it rejoins the SRP Batcher. The choice comes from the device probe
+(`PrismRenderService.UsesMeshRendererStamps`), not the define; `prismpath mpb` forces it in the editor for an A/B,
+and `prismpath` reports how many prisms hold a block and how many debris pieces are live
+(`PRISM_ANIMATION.md` §4.11). Not covered: the Rhino slice (a blade kill explodes instead) and ThreatGrove's danger
+glow colour.
+
+In-browser checks (a Development WebGL build, F7 console): prisms laid by the vessel bloom in rather than pop;
+a domain change and a fresh Wanderway scene fade their colours; living flora and fauna mass sways with its limbs and
+a skeleton stops; a shield blooms on and sheds shards when it breaks; ramming or blasting prisms shows flying,
+fading debris and fauna feeding shows suction toward the eater; the console carries no `[PrismClock] STRICT MODE`,
+`[PrismDebris] ... batch spawn failed` or `[PrismFactory] ... declined` lines; `prismpath` shows the block count
+falling back after laying stops (only swaying mass should keep one), and frame time with a full freestyle cell is
+not worse than before.
+
 **Painting SHARE** downloads the viewer `.html` (`Plugins/WebGL/FrogletDownload.jslib`); a WebGL player has no share
 sheet, and its files live in IndexedDB.
 

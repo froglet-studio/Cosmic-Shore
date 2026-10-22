@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Prism animations in the browser: a MeshRenderer stamp path where Entities Graphics cannot run (`claude/webgl-prism-animations-kg5qx7`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed:** on devices without Entities Graphics (every WebGL2 browser; also GPUs whose compute kernels fail to
+load) the clock-material stamps — grow, colour transition, flight, shield morph, jiggle, suction, sway, super-shield
+mark — are written once into a MaterialPropertyBlock on the prism's MeshRenderer (`PrismMeshRendererStamps`) instead
+of being dropped, and cleared at their analytic end so settled mass rejoins the SRP Batcher. Deaths (explosion,
+implosion, shield shatter) draw through a capped pool of MeshRenderer debris (`PrismMeshRendererDebris`, cap
+`PrismRenderConfigSO.meshRendererDebrisCap` = 96). Devices with Entities Graphics never reach the new code.
+`Docs/PRISM_ANIMATION.md` §4.11.
+
+**Verified without the editor:** `unity_refcompile` webgl and player 0 errors, editor 0 in changed files; logging and
+conditional-compilation gates pass. `PrismMeshRendererStampsTests` (property names/packing vs the entity
+`[MaterialProperty]` structs, graph exposure, clear arithmetic) compile, not run.
+
+**Verify (Development WebGL build, F7 console; or `prismpath mpb` in the editor on a cell grown after the switch):**
+1. Trail prisms bloom in; a domain change and a new Wanderway scene fade their colours.
+2. Living flora/fauna mass sways with its limbs; a skeleton stops.
+3. Shields bloom on and shed shards; super-shield jiggles; Sparrow turret flight and ReverseSuction animate.
+4. Rammed or blasted prisms leave debris that flies and fades; feeding fauna pull suction debris.
+5. No `[PrismClock] STRICT MODE`, `[PrismDebris] ...batch spawn failed` or `[PrismFactory] ...declined` lines.
+6. `prismpath`: the property-block count falls once laying stops (only swaying mass keeps one); debris live ≤ 96.
+7. Frame time in a full 10k freestyle cell — every MPB'd renderer is its own draw; swaying lifeform mass is the
+   unknown. On desktop with Entities Graphics: nothing changes.
+
 ### 🔴 Release guards judge a build by its own options, not the Development checkbox (`claude/release-guard-dev-checkbox-kg5qx7`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 **What landed:** `UnityPipelineReleaseGuard`, `CreditsReleaseGuard` and `WeeklyChallengeTestModeBuildGuard` exempted a

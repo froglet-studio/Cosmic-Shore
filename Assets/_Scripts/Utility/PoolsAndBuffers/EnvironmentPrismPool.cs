@@ -194,6 +194,7 @@ namespace CosmicShore.Gameplay
             prism.ClearSuctionClockStamp();
             if (PrismRenderService.IsHandleUsable(in prism.RenderHandle))
                 PrismRenderService.ClearPrismStamps(in prism.RenderHandle);
+            PrismMeshRendererStamps.ClearPrismStamps(prism.StampRenderer); // §4.11 twin (no-op where entities run)
 
             // worldPositionStays: false so a suctioned localScale is not baked in
             // (same as vessel pooled returns).
