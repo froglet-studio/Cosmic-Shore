@@ -14,11 +14,12 @@
 > - "the goby may shoot into open space and make its own perch" **[stated]**. **[read]:** a dart that reaches nothing
 >   lays a small pad of its own blocks under the Goby there.
 > - "the slope from one perch to another should be a fun downhill for the shrimp" **[stated]**. **[read]:** each dart
->   lays its trail as the Pistol's ground, with the lab's two scales of hill (the rolls, `rollAmplitude` 18 /
->   `rollWavelength` 290, and the fine zigzag, `fineAmplitude` 10 / `fineWavelength` 64, each a whole number of
->   half-waves per dart so both meet both perches; 2026-10-22 pass below), and the Pistol's frame leans the stretch
->   `slopeDegrees` 22 downhill whichever way it rides (`PistolPlane`). The side camera sits `viewDistance` 160 u off
->   the plane with an off-axis lens, the lab's.
+>   lays its trail as the Pistol's ground at SHRIMP scale (second 2026-10-22 pass below): humps (`fineAmplitude` 1.6 /
+>   `fineWavelength` 10) on rolls (`rollAmplitude` 3.5 / `rollWavelength` 60), each a whole number of half-waves per
+>   dart so both meet both perches, and the Pistol's frame leans the stretch `slopeDegrees` 22 downhill whichever way
+>   it rides (`PistolPlane`). A 300-600 u dart is a 15-30 s journey; flights off the humps clear a few of them; the
+>   aimed jump is off (`aimedJump`). The side camera sits `viewDistance` 160 u off the plane with an off-axis lens and
+>   shows `viewWidth` 120 u.
 > - "the non-danger mass on either side of the pistol's plane (which no longer needs to bend at all) is pulled into that
 >   plane based on the pair's space. Space L5 pulls in shielded prisms too." **[stated]** The plane is FLAT: the
 >   unrolled ribbon and its warped view are retired. **[read]:** super-shielded and the pair's own prisms never move.
@@ -34,6 +35,8 @@
 >   homes at 240 °/s; a hit is one scored PvP hit taking 1 -> 3 petals from each element with Charge.
 > - "time is the cooldown on the pistol's jump. time L5 allows the goby to phase through prisms when darting."
 >   **[stated]** (jump 9 s -> 3 s).
+>   **[open] since 2026-10-22:** the aimed jump is off ("launching intentionally was wierd"), so Time's base card has
+>   nothing to drive until Garrett names what Time does on the Pistol (or turns `aimedJump` back on).
 > - The primer, heat and flares are RETIRED (they were the Goby's old kit). Charge has no level-5 upgrade yet **[open]**.
 > - Controls: Goby Dart = pad RT / X, key Q, phone Dart button (hold, let go); Lock = pad LT / Y, key F, phone Lock.
 >   Pistol: dive / drag-to-jump / Ghost / Snap as before, plus Back (key B, pad LB, phone Back).
@@ -588,3 +591,30 @@ the line it settled.
   `SideLens_LooksAheadOfTheCameraBeside`. **[read] for Garrett:** fly the Pistol full screen and in the small square:
   is 160 u close enough (the lens is wide: 700 u across at 160 u is ~130 deg in the square), and do the rolls give a
   dive and a release on every dart?
+- 2026-10-22, Garrett, on that pass: "we should zoom in, make the shrimp smaller and make more wiggles along the path.
+  it should have a 15 to 30 second journey from perch to perch. it should not launch from the perch each time, and
+  launching should only get big enough to clear a few humps that are a small fraction of the journey. launching
+  intentionally was wierd." Built (`GobyPistolConfig`):
+  - **Shrimp scale.** The ride's physics has no scale of its own (lengths and gravity scale together), so the Pistol's
+    world is shrunk round the same darts: humps 10 u long, ±1.6 u (were 64 u, ±10), on rolls 60 u, ±3.5 u (were 290,
+    ±18); trail blocks every 3 u, 1.4 x 0.4 x 2.8 (were 10 u, 4 x 0.9 x 9); the shrimp `pBodyR` 0.5 (was 2.5); the
+    view `viewWidth` 120 u across (was 700), about twelve humps.
+  - **The journey.** Tuned in a headless port of `PistolBodyMath.Step` against the Pistol AI's Tiny Wings rider:
+    `pGravity` 30, `pDiveMul` 2.2, `pDrag` 0.45, `pMinSpeed` 4 (were 95 / 2.6 / 0.35 / 22). A rider who dives on the
+    downslopes crosses 300 / 450 / 600 u in 16.5 / 24 / 30 s; one who never dives takes 20 / 27 / 37 s; the kit's
+    first numbers took 4-9 s. **[read]:** a journey is 15-30 s only for darts of 300-600 u, so `dartMinRange` is
+    300 (was 140: a tap now darts 300 u) and the Goby AI darts 450 (was 380) and waits up to 25 s for the Pistol
+    (was 7).
+  - **No launch off the perch.** Each stretch starts from a standstill at `pMinSpeed`; the Pistol used to carry its
+    arrival speed into the first hump, and the Pistol AI aimed its jump at the den it had just built.
+  - **Short flights.** Flights come only off the humps (let go of the dive on an upslope): ~5-9 a stretch, the longest
+    ~29 u, three humps and 5-10 % of the journey.
+  - **The aimed jump is off** (`aimedJump` false: no drag-to-aim, no RT + stick, no F, and the AI does not jump). With
+    it on it reaches `pLaunchRange` 35 u (was 220). **[open] for Garrett:** Time's base card ("Quick Jump", the jump's
+    cooldown) has nothing to drive; say what Time does on the Pistol, or turn the jump back on.
+  - **[read] for Garrett, side effects:** the homing ring fires only when the locked rival is on the Pistol's screen,
+    which is now 120 u across, so it homes far less often; and a 600 u dart lays 200 trail prisms (was 60). The class
+    card's description ("flies the Goby ... on two thumbs", "launching into clusters") predates the kit and is stale.
+  `GobyPistolTests.Ride_IsAFifteenToThirtySecondJourney_WithShortFlights` rides the SHIPPED asset over the shortest and
+  the longest dart (12-32 s, longest flight under 15 % of the journey and six humps; control: the kit's first numbers
+  under 12 s).

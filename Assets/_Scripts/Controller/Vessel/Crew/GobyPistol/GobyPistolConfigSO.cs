@@ -29,7 +29,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The farthest a full-charged dart goes, u.")]
         [SerializeField, Min(10f)] float dartRange = 600f;
         [Tooltip("How far a tap darts, u. Holding the dart button charges it up to dartRange over dartChargeSeconds.")]
-        [SerializeField, Min(5f)] float dartMinRange = 140f;
+        [SerializeField, Min(5f)] float dartMinRange = 300f;
         [Tooltip("Seconds of holding the dart button to reach full range.")]
         [SerializeField, Min(0.05f)] float dartChargeSeconds = 0.8f;
         [Tooltip("Seconds a dart takes, whatever its length (the Shrike's slingSeconds).")]
@@ -58,33 +58,39 @@ namespace CosmicShore.ScriptableObjects
                  "the hills could fold the ground back on itself (PistolPlane.MaxHillSlope).")]
         [SerializeField, Range(0f, 33f)] float slopeDegrees = 22f;
         [Tooltip("The rolling hills, u either side of the dart's line along the Goby's up: the long hills a dive and a " +
-                 "release are played on (the lab's Goby weave, 18 u). A whole number of half-waves per dart, so zero at both perches.")]
-        [SerializeField, Min(0f)] float rollAmplitude = 18f;
-        [Tooltip("The rolling hills' wavelength, u (the lab's weave: 0.55 Hz behind a 160 u/s Goby, about 290).")]
-        [SerializeField, Min(5f)] float rollWavelength = 290f;
-        [Tooltip("The fine zigzag on top of the rolls, u (the lab's alternating hinges, 10 u).")]
-        [SerializeField, FormerlySerializedAs("hillAmplitude"), Min(0f)] float fineAmplitude = 10f;
-        [Tooltip("The fine zigzag's wavelength, u (the lab's hinge every second 16 u block: 64).")]
-        [SerializeField, FormerlySerializedAs("hillWavelength"), Min(5f)] float fineWavelength = 64f;
+                 "release are played on. A whole number of half-waves per dart, so zero at both perches. The Pistol's world is " +
+                 "shrimp-sized (Garrett, 2026-10-22: \"zoom in, make the shrimp smaller and make more wiggles\").")]
+        [SerializeField, Min(0f)] float rollAmplitude = 3.5f;
+        [Tooltip("The rolling hills' wavelength, u.")]
+        [SerializeField, Min(5f)] float rollWavelength = 60f;
+        [Tooltip("The humps on top of the rolls, u high. A flight off one clears a few of them.")]
+        [SerializeField, FormerlySerializedAs("hillAmplitude"), Min(0f)] float fineAmplitude = 1.6f;
+        [Tooltip("The humps' wavelength, u: a few humps are a small share of a 300-600 u journey.")]
+        [SerializeField, FormerlySerializedAs("hillWavelength"), Min(5f)] float fineWavelength = 10f;
         [Tooltip("A trail block every this many u along the dart.")]
-        [SerializeField, Min(2f)] float trailBlockGap = 10f;
+        [SerializeField, Min(2f)] float trailBlockGap = 3f;
         [Tooltip("A trail block's size (x across, y thick, z along the dart).")]
-        [SerializeField] Vector3 trailBlockScale = new(4f, 0.9f, 9f);
+        [SerializeField] Vector3 trailBlockScale = new(1.4f, 0.4f, 2.8f);
 
-        [Header("Pistol: the ride (the lab's Tiny Wings numbers)")]
-        [SerializeField, Min(1f)] float pGravity = 95f;
-        [SerializeField, Min(1f)] float pDiveMul = 2.6f;
-        [SerializeField, Min(0f)] float pMinSpeed = 22f;
-        [SerializeField, Min(0f)] float pDrag = 0.35f;
+        [Header("Pistol: the ride (Tiny Wings at shrimp scale: a 300-600 u dart is a 15-30 s journey for a rider who dives " +
+                "on the downslopes, and a flight off a hump clears a few humps)")]
+        [SerializeField, Min(1f)] float pGravity = 30f;
+        [SerializeField, Min(1f)] float pDiveMul = 2.2f;
+        [SerializeField, Min(0f)] float pMinSpeed = 4f;
+        [SerializeField, Min(0f)] float pDrag = 0.45f;
         [Tooltip("Degrees between the velocity and the slope that still count as a smooth landing.")]
         [SerializeField, Min(0f)] float pGoodLand = 28f;
         [Tooltip("The Pistol's body radius in its plane, u.")]
-        [SerializeField, Min(0.5f)] float pBodyR = 2.5f;
+        [SerializeField, Min(0.5f)] float pBodyR = 0.5f;
         [Tooltip("How far either side of its plane the Pistol's body reaches, u (pulled-in mass lands inside it).")]
         [SerializeField, Min(0.5f)] float pBodyHalfDepth = 10f;
         [Tooltip("The jump's farthest reach in the plane, u.")]
-        [SerializeField, Min(10f)] float pLaunchRange = 220f;
-        [SerializeField, Min(10f)] float pLaunchSpeed = 160f;
+        [SerializeField, Min(10f)] float pLaunchRange = 35f;
+        [Tooltip("Off: the Pistol has no aimed jump; it flies only off the hills, by letting go of the dive on an upslope " +
+                 "(Garrett, 2026-10-22: \"launching intentionally was wierd\"). On: drag (RT + right stick, F) aims a jump on " +
+                 "Time's cooldown, up to pLaunchRange.")]
+        [SerializeField] bool aimedJump;
+        [SerializeField, Min(10f)] float pLaunchSpeed = 30f;
         [SerializeField, Min(1f)] float pLaunchCharges = 1f;
         [Tooltip("Time: the jump's cooldown, s (9 at rest -> 3 at level 10).")]
         [SerializeField] ElementalFloat jumpCooldown = ElementalFloat.Multiplier(9f, 3f, Element.Time, 1f);
@@ -95,7 +101,7 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Pistol: perches and dens")]
         [Tooltip("The Pistol arrives at a perch within this many u of it.")]
-        [SerializeField, Min(1f)] float arriveDistance = 8f;
+        [SerializeField, Min(1f)] float arriveDistance = 2f;
         [Tooltip("Seconds the Pistol rests at a perch, building its den.")]
         [SerializeField, Min(0.1f)] float restSeconds = 1.2f;
         [Tooltip("One den prism per this many u travelled since the last den (before Mass).")]
@@ -159,7 +165,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The small view's gap from the screen's edges, as a fraction of the screen height.")]
         [SerializeField, Range(0f, 0.1f)] float viewMargin = 0.015f;
         [Tooltip("How much of the plane the Pistol's screen shows across, u, at the plane.")]
-        [SerializeField, Min(50f)] float viewWidth = 700f;
+        [SerializeField, Min(50f)] float viewWidth = 120f;
         [Tooltip("How far the Pistol's camera sits from its plane, u: close, so the world either side of the plane reads " +
                  "in depth (the lab's and the first Unity side view's 160). Its lens is off-axis: the camera stays beside the " +
                  "Pistol and the screen looks ahead, so the Pistol is never stretched at the edge of a wide lens.")]
@@ -172,15 +178,15 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("AI")]
         [Tooltip("The Goby AI darts this far, u, when it can choose.")]
-        [SerializeField, Min(10f)] float aiDartLength = 380f;
+        [SerializeField, Min(10f)] float aiDartLength = 450f;
         [Tooltip("The Goby AI waits this long for the Pistol to reach its perch before it darts on anyway, s.")]
-        [SerializeField, Min(0f)] float aiWaitForPistol = 7f;
+        [SerializeField, Min(0f)] float aiWaitForPistol = 25f;
         [Tooltip("The Goby AI keeps within this distance of where it started, u.")]
         [SerializeField, Min(100f)] float aiHomeRadius = 1600f;
         [Tooltip("The Pistol AI heads back to an old den after waiting this long at the head perch, s.")]
         [SerializeField, Min(0f)] float aiBackAfter = 4f;
         [Tooltip("The Pistol AI dives when this far above its ground, u.")]
-        [SerializeField, Min(0f)] float aiHighDive = 120f;
+        [SerializeField, Min(0f)] float aiHighDive = 30f;
 
         [Header("Each seat's buttons on a phone (the Orca's gunner buttons are the pattern)")]
         [Tooltip("The Goby's Dart button (held to charge, let go to dart). A pad's RT, the keyboard's Q.")]
@@ -223,6 +229,7 @@ namespace CosmicShore.ScriptableObjects
         public float BodyR => pBodyR;
         public float BodyHalfDepth => pBodyHalfDepth;
         public float SlingPull => pSlingPull;
+        public bool AimedJump => aimedJump;
         public ElementalFloat JumpCooldown => jumpCooldown;
         public float ArriveDistance => arriveDistance;
         public float RestSeconds => restSeconds;
@@ -283,7 +290,7 @@ namespace CosmicShore.ScriptableObjects
 
         public PistolAI.Settings AI => new()
         {
-            pLaunchRange = pLaunchRange, pVortexR = pVortexR, pVortexCapture = pVortexCapture, aiHighDive = aiHighDive, bodyHalfDepth = pBodyHalfDepth,
+            pLaunchRange = pLaunchRange, pVortexR = pVortexR, pVortexCapture = pVortexCapture, aiHighDive = aiHighDive, bodyHalfDepth = pBodyHalfDepth, aimedJump = aimedJump,
         };
     }
 }

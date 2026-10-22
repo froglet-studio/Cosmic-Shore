@@ -546,7 +546,10 @@ namespace CosmicShore.Gameplay
         {
             _seg = seg; _dir = dir; _resting = false;
             _f = PistolPlane.For(_segments[seg], dir, Config.SlopeDegrees, Config.Hills);
-            PistolBodyMath.PlaceAtStart(_p, _f, Mathf.Max(_body.pMinSpeed, _p.v));
+            // from a standstill: the Pistol rested at the perch, so it sets off at the ride's least speed and gathers it on
+            // the way down, never carrying its arrival speed into the first hump and flying off the perch (Garrett,
+            // 2026-10-22: "it should not launch from the perch each time")
+            PistolBodyMath.PlaceAtStart(_p, _f, _body.pMinSpeed);
         }
 
         void LayDenPrism(Den den)
@@ -577,7 +580,7 @@ namespace CosmicShore.Gameplay
             _ai.Vis.Clear();
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return;
-            index.QuerySphere(_p.wpos, Config.AI.pLaunchRange + 60f, _q);
+            index.QuerySphere(_p.wpos, Mathf.Max(Config.AI.pLaunchRange, 200f) + 60f, _q);   // the Snap's reach ahead (PistolAI)
             for (int i = 0; i < _q.Count; i++)
             {
                 var prism = _q[i];
@@ -612,8 +615,9 @@ namespace CosmicShore.Gameplay
             else if (button == 2 && down) _backPressed = true;
         }
 
-        // hold to dive; drag (or RT + right stick) to aim a jump and let go; G / B ghost; Q / E / X / Y Snap; B key or LB
-        // to head back at a perch; on a phone a finger on the Pistol's view dives and drags
+        // hold to dive (let go on an upslope and the hill throws it, Tiny Wings); G / B ghost; Q / E / X / Y Snap; B key or
+        // LB to head back at a perch; on a phone a finger on the Pistol's view dives. Only with aimedJump on: drag (or RT +
+        // right stick, or F) aims a jump and letting go flings it (Garrett, 2026-10-22: "launching intentionally was wierd")
         PistolBodyMath.Input HumanPistol()
         {
             var inp = new PistolBodyMath.Input();
@@ -624,7 +628,7 @@ namespace CosmicShore.Gameplay
                 if (began) { _mouseDown = true; _aiming = false; _mouseFrom = mp; }
                 if (_mouseDown)
                 {
-                    if ((mp - _mouseFrom).magnitude > 12f) _aiming = true;
+                    if (Config.AimedJump && (mp - _mouseFrom).magnitude > 12f) _aiming = true;
                     if (_aiming && PlanePoint(mp, out var w)) _mouseAim = new Vector2(w.x - _p.x, w.y - _p.y);
                     if (!_aiming) dive = 1f;
                     if (!held)
@@ -636,7 +640,7 @@ namespace CosmicShore.Gameplay
             }
             if (pad != null)
             {
-                if (pad.rightTrigger.ReadValue() > 0.5f) _padAim = pad.rightStick.ReadValue() * _body.pLaunchRange;
+                if (Config.AimedJump && pad.rightTrigger.ReadValue() > 0.5f) _padAim = pad.rightStick.ReadValue() * _body.pLaunchRange;
                 else if (_padAim.HasValue) { if (_padAim.Value.magnitude > 10f) { inp.HasLaunch = true; inp.Launch = _padAim.Value; } _padAim = null; }
                 if (pad.buttonSouth.isPressed) dive = 1f;
                 dive = Mathf.Max(dive, pad.leftTrigger.ReadValue());
@@ -647,7 +651,7 @@ namespace CosmicShore.Gameplay
             if (kb != null)
             {
                 if (kb.spaceKey.isPressed || kb.sKey.isPressed || kb.downArrowKey.isPressed) dive = 1f;
-                if (kb.fKey.wasPressedThisFrame && !inp.HasLaunch) { inp.HasLaunch = true; inp.Launch = new Vector2(0.7f * _body.pLaunchRange, 0.45f * _body.pLaunchRange); }
+                if (Config.AimedJump && kb.fKey.wasPressedThisFrame && !inp.HasLaunch) { inp.HasLaunch = true; inp.Launch = new Vector2(0.7f * _body.pLaunchRange, 0.45f * _body.pLaunchRange); }
                 inp.Ghost |= kb.gKey.isPressed;
                 inp.Snap |= kb.qKey.isPressed || kb.eKey.isPressed;
                 if (kb.bKey.wasPressedThisFrame) _backPressed = true;

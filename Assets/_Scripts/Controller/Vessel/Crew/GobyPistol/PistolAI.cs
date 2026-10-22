@@ -24,7 +24,7 @@ namespace CosmicShore.Gameplay
         public struct Seen { public float X, Y, D; }
 
         /// <summary>The numbers this AI reads.</summary>
-        public struct Settings { public float pLaunchRange, pVortexR, pVortexCapture, aiHighDive, bodyHalfDepth; }
+        public struct Settings { public float pLaunchRange, pVortexR, pVortexCapture, aiHighDive, bodyHalfDepth; public bool aimedJump; }
 
         /// <summary>The lab's <c>mulberry32</c>, bit for bit.</summary>
         public sealed class Mulberry32
@@ -57,12 +57,14 @@ namespace CosmicShore.Gameplay
         {
             var inp = new PistolBodyMath.Input();
             float gy = PistolPlane.Ground(f, p.x, out float slope);
-            PistolPlane.Ground(f, p.x + Mathf.Max(25f, (p.grounded ? p.v : p.vx) * 0.3f), out float ahead);
+            // a look a moment ahead, in the ride's own scale (the humps are 10 u: a fixed 25 u look would see past them)
+            PistolPlane.Ground(f, p.x + Mathf.Max(2f, (p.grounded ? p.v : p.vx) * 0.15f), out float ahead);
             // Tiny Wings: heavy on the way down, light on the way up
             inp.Dive = p.grounded ? (slope < -0.02f ? 1f : 0f) : ((p.vy < 0f && ahead < -0.02f) || p.y - gy > s.aiHighDive ? 1f : 0f);
 
-            // the jump: at the densest mass ahead in reach
-            if (p.launch > 0 && t - p.lastLaunchAt > 1.2f)
+            // the jump (only with the aimed jump on): at the densest mass ahead in reach. Otherwise the AI flies as a player
+            // does, off the hills, by letting go of the dive on an upslope
+            if (s.aimedJump && p.launch > 0 && t - p.lastLaunchAt > 1.2f)
             {
                 int best = -1, bestScore = 0;
                 for (int i = 0; i < Vis.Count; i++)

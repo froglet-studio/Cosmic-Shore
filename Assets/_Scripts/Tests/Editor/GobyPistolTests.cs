@@ -19,7 +19,7 @@ namespace CosmicShore.Tests
     {
         static readonly Vector3 A = new(10f, -20f, 30f), B = new(310f, 60f, -170f);
 
-        static readonly PistolPlane.Hills Shipped = new(18f, 290f, 10f, 64f);
+        static readonly PistolPlane.Hills Shipped = new(3.5f, 60f, 1.6f, 10f);
 
         static PistolPlane.Frame Frame(int dir, float slope = 22f, float amp = 1f)
             => PistolPlane.For(new PlaneSegment(A, B, Vector3.up), dir, slope,
@@ -68,9 +68,9 @@ namespace CosmicShore.Tests
         [Test]
         public void Ground_KeepsTheLabsWiggles([Values(140f, 380f, 600f)] float length)
         {
-            // the lab's Pistol rode two scales of hill (Garrett, 2026-10-18: "lower amplitude and higher frequency wiggles"):
-            // the fine zigzag (64 u) and the Goby weave's rolls (290 u). Count the crests the ground has along a dart: the
-            // fine zigzag gives one per 64 u right up to the perches, where the old single wave faded out over the dart
+            // two scales of hill (Garrett, 2026-10-22: "make more wiggles along the path"): the humps (10 u) and the rolls
+            // (60 u). Count the crests the ground has along a dart: the humps give one per 10 u right up to the perches,
+            // where the kit's first single wave faded out over the dart
             int crests = 0;
             float prev = PistolPlane.HillSlope(0f, length, Shipped);
             for (float s = 0.5f; s <= length; s += 0.5f)
@@ -79,7 +79,7 @@ namespace CosmicShore.Tests
                 if (prev > 0f && m <= 0f) crests++;
                 prev = m;
             }
-            Assert.That(crests, Is.GreaterThanOrEqualTo(Mathf.FloorToInt(length / 64f) - 1), $"a {length} u dart keeps its fine zigzag");
+            Assert.That(crests, Is.GreaterThanOrEqualTo(Mathf.FloorToInt(length / Shipped.FineWavelength) - 1), $"a {length} u dart keeps its humps");
             float hi = 0f;
             for (float s = 0f; s <= length; s += 1f) hi = Mathf.Max(hi, Mathf.Abs(PistolPlane.Hill(s, length, Shipped)));
             Assert.That(hi, Is.GreaterThan(Shipped.FineAmplitude + 0.5f * Shipped.RollAmplitude), "the rolls stand above the zigzag");
@@ -144,6 +144,48 @@ namespace CosmicShore.Tests
             for (int i = 0; i < 120; i++) travelled += PistolBodyMath.Step(p, f, i / 60f, 1f / 60f, new PistolBodyMath.Input { Dive = 1f }, s).Travelled;
             Assert.That(p.v, Is.GreaterThan(s.pMinSpeed + 20f), "two seconds of diving downhill builds speed");
             Assert.That(travelled, Is.GreaterThan(30f));
+        }
+
+        /// <summary>
+        /// Garrett, 2026-10-22: "it should have a 15 to 30 second journey from perch to perch ... launching should only get
+        /// big enough to clear a few humps that are a small fraction of the journey". The SHIPPED config, ridden from a
+        /// standstill by the Tiny Wings rider the Pistol AI is (dive on the downslopes, let go on the upslopes), over the
+        /// shortest and the longest dart; the control: the same rider at the kit's first numbers took 4 to 9 s.
+        /// </summary>
+        [TestCase(true)]
+        [TestCase(false)]
+        public void Ride_IsAFifteenToThirtySecondJourney_WithShortFlights(bool shipped)
+        {
+            var config = AssetDatabase.LoadAssetAtPath<CosmicShore.ScriptableObjects.GobyPistolConfigSO>("Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset");
+            Assert.That(config, Is.Not.Null);
+            var s = config.Body;
+            var hills = config.Hills;
+            if (!shipped)
+            {
+                s.pGravity = 95f; s.pDiveMul = 2.6f; s.pMinSpeed = 22f; s.pDrag = 0.35f;
+                hills = new PistolPlane.Hills(18f, 290f, 10f, 64f);
+            }
+            foreach (float length in new[] { config.DartMinRange, config.DartRange })
+            {
+                var f = PistolPlane.For(new PlaneSegment(Vector3.zero, Vector3.forward * length, Vector3.up), 1, config.SlopeDegrees, hills);
+                var p = new PistolBodyMath.State();
+                PistolBodyMath.PlaceAtStart(p, f, s.pMinSpeed);
+                float t = 0f, dt = 1f / 60f, takeoff = 0f, longest = 0f; bool wasGrounded = true;
+                while (p.x < f.EndX - 1f && t < 120f)
+                {
+                    PistolPlane.Ground(f, p.x, out float slope);
+                    PistolPlane.Ground(f, p.x + 2f, out float ahead);
+                    float dive = p.grounded ? (slope < -0.02f ? 1f : 0f) : (p.vy < 0f && ahead < -0.02f ? 1f : 0f);
+                    PistolBodyMath.Step(p, f, t, dt, new PistolBodyMath.Input { Dive = dive }, s);
+                    if (wasGrounded && !p.grounded) takeoff = p.x;
+                    if (!wasGrounded && p.grounded) longest = Mathf.Max(longest, p.x - takeoff);
+                    wasGrounded = p.grounded; t += dt;
+                }
+                if (!shipped) { Assert.That(t, Is.LessThan(12f), $"the control: the kit's first ride crossed {length} u in {t:F1} s"); continue; }
+                Assert.That(t, Is.InRange(12f, 32f), $"a {length} u dart is a {t:F1} s journey");
+                Assert.That(longest, Is.LessThan(0.15f * length), $"the longest flight, {longest:F0} u, is a small share of {length} u");
+                Assert.That(longest, Is.LessThan(6f * hills.FineWavelength), "a flight clears a few humps, not a stretch");
+            }
         }
 
         [Test]

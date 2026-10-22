@@ -2029,9 +2029,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-22 by a Claude session (`cece/elegant-maxwell-q8vqoh`)
 - **See:** goby-and-pistol.md top section; Tools/Build/studio_to_unity/clones.json 'Goby & Pistol'.retired
 
-### T-20261022-963b · open · test · Crew vessels
+### T-20261022-963b · done · test · Crew vessels
 - **Task:** Fly the Pistol after its view pass (Toybox > Vessel Changer > Goby and Pistol, double tap the small view). Full screen and in the small square: the camera is 160 u off the plane again with the lab's off-axis lens (Pistol left of centre, the downhill ahead); every dart's ground has rolls (~290 u, to ~27 u high) under the fine zigzag (64 u), right up to both perches. Try a tap dart (~140 u), a full one (600 u) and one blocked a few u out (no fold, no jitter on landing).
 - **Done when:** Garrett says the view is close enough and the rolls give a dive and a release on every dart, or names the numbers to change (viewDistance, viewWidth, viewPistolAt, roll/fine amplitude and wavelength on GobyPistolConfig)
 - **Who can take it:** Garrett (feel call); Yash (offered) for the run itself
 - **Added:** 2026-10-22 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
 - **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log, 2026-10-22 view pass)
+- **Done:** 2026-10-22, Garrett flew it: zoom in, smaller shrimp, more wiggles, 15-30 s journeys, no perch launch, short launches, no aimed jump - built in the next pass; its own playtest is the follow-up task
+
+### T-20261022-1788 · open · test · Crew vessels
+- **Task:** Fly the Pistol at shrimp scale (Toybox > Vessel Changer > Goby and Pistol, double tap the small view). Dart 300-600 u with the Goby, then ride: a stretch should take 15-30 s, the Pistol sets off from the perch without flying off it, hold to dive on downslopes and let go on upslopes - each flight clears only a few of the 10 u humps; there is no drag-to-aim jump. Check the trail (a block every 3 u) holds frame rate on a phone.
+- **Done when:** Garrett says the journey, the humps and the flights feel right, or names the numbers to change on GobyPistolConfig; phone frame rate noted
+- **Who can take it:** Garrett (feel call); Yash (offered) for the phone run
+- **Added:** 2026-10-22 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log, second 2026-10-22 pass)
+
+### T-20261022-0351 · open · decision · Crew vessels
+- **Task:** The Pistol's aimed jump is off (aimedJump on GobyPistolConfig), so Time's base card 'Quick Jump' (the jump's cooldown) drives nothing. Decide what Time does on the Pistol, or turn the jump back on; then refresh the class card's description in author_goby_assets.py (it still says the Goby flies on two thumbs and the Pistol launches into clusters).
+- **Done when:** Time's card names a live mechanic and the class description matches the kit
+- **Who can take it:** Garrett
+- **Added:** 2026-10-22 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (top section, Time)

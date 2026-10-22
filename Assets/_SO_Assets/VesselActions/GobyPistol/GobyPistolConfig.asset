@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: GobyPistolConfig
   m_EditorClassIdentifier: 
   dartRange: 600
-  dartMinRange: 140
+  dartMinRange: 300
   dartChargeSeconds: 0.8
   dartSeconds: 1
   dartCooldown: 1.2
@@ -25,21 +25,22 @@ MonoBehaviour:
   lockCone: 12
   lockKeepScale: 1.6
   slopeDegrees: 22
-  rollAmplitude: 18
-  rollWavelength: 290
-  fineAmplitude: 10
-  fineWavelength: 64
-  trailBlockGap: 10
-  trailBlockScale: {x: 4, y: 0.9, z: 9}
-  pGravity: 95
-  pDiveMul: 2.6
-  pMinSpeed: 22
-  pDrag: 0.35
+  rollAmplitude: 3.5
+  rollWavelength: 60
+  fineAmplitude: 1.6
+  fineWavelength: 10
+  trailBlockGap: 3
+  trailBlockScale: {x: 1.4, y: 0.4, z: 2.8}
+  pGravity: 30
+  pDiveMul: 2.2
+  pMinSpeed: 4
+  pDrag: 0.45
   pGoodLand: 28
-  pBodyR: 2.5
+  pBodyR: 0.5
   pBodyHalfDepth: 10
-  pLaunchRange: 220
-  pLaunchSpeed: 160
+  pLaunchRange: 35
+  aimedJump: 0
+  pLaunchSpeed: 30
   pLaunchCharges: 1
   jumpCooldown:
     Enabled: 1
@@ -52,7 +53,7 @@ MonoBehaviour:
   pGhostTime: 2.5
   pGhostCd: 8
   pSlingPull: 0.22
-  arriveDistance: 8
+  arriveDistance: 2
   restSeconds: 1.2
   denUnitsPerPrism: 40
   denMassScale:
@@ -105,15 +106,15 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   pipSize: 0.32
   viewMargin: 0.015
-  viewWidth: 700
+  viewWidth: 120
   viewDistance: 160
   viewPistolAt: -0.2
   depthFullSpreadAt: 60
-  aiDartLength: 380
-  aiWaitForPistol: 7
+  aiDartLength: 450
+  aiWaitForPistol: 25
   aiHomeRadius: 1600
   aiBackAfter: 4
-  aiHighDive: 120
+  aiHighDive: 30
   dartButtonIcon: {fileID: 21300000, guid: 173cce5c2e60d5fe47fe15cfb2bfa249, type: 3}
   dartButtonLabel: 
   lockButtonIcon: {fileID: 21300000, guid: 13d97730f43e8a72a2b175f57a747ffe, type: 3}
