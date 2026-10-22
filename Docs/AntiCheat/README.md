@@ -194,16 +194,24 @@ exactly what was found.
   how to appeal and how long it lasts. It does **not** reveal the detection method. "We detected something in your
   system" should become "our systems detected play that breaks rule 3 of the Code of Conduct": we only claim what we
   can show, and we do not imply we scanned their computer when we did not.
-- **Two exceptions to the 3-match delay:**
-  - restrictions imposed over **what a player wrote** (a name, a chat line) are notified **when imposed** for EU
-    players (DSA Art. 17 statement of reasons) and UK players (Online Safety Act complaints duties);
+- **The 3-match delay applies only to cheat and bot signals.** Two exceptions:
+  - restrictions imposed over **what a player wrote** (a name, a chat line) are notified **when imposed**, because
+    DSA Art. 17(2) requires the statement of reasons "at the latest from the date that the restriction is imposed"
+    and names shadow-banning (Recital 55). The UK Online Safety Act's complaints duty also covers it. The simplest
+    rule is to do this for every player, not only EU and UK ones;
   - **threats to life or safety** in any text go to a human at once, and to the authorities where the law requires
     (DSA Art. 18).
+  Whether the delay can stand for EU and UK players flagged for cheating is counsel's question 4. The fallback, if
+  it cannot, is a short notice when an account enters the Undertow, while the methods stay hidden.
 - **Exit:** an upheld appeal clears the record; otherwise trust decays back with clean play (marks expire), except
   for repeat offenders. A false positive is fixed by a person, recorded, and fed back into the thresholds.
-- **Children:** the age screen already exists. An under-13 account gets the same security treatment (COPPA permits
-  persistent identifiers for security and integrity without parental consent) but never chat, and an Undertow that
-  mixes children with toxic adults is a child-safety problem: the Undertow is chat-free by design.
+- **Minors are never sent to the Undertow automatically.** The age screen already records a birth year
+  (`PrivacyConsentOverlay`), so we know who is under 13 and under 18. For them a signal opens a human review
+  instead: EU Recital 71 says solely automated decisions "should not concern a child", the UK Children's Code keeps
+  profiling off unless there is a compelling reason, and India bans "behavioural monitoring" of under-18s from about
+  May 2027 ([`LEGAL.md`](LEGAL.md) §1.5). Security checks themselves still run. COPPA allows persistent identifiers
+  for "security or integrity" without parental consent, but only with notice and only for that purpose. The Undertow
+  is chat-free by design, because a pool that mixes children with toxic adults would be a child-safety problem.
 
 ### 4.7 What the player sees, and what we publish
 
