@@ -65,6 +65,69 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Prism animations in the browser: a MeshRenderer stamp path where Entities Graphics cannot run (`claude/webgl-prism-animations-kg5qx7`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed:** on devices without Entities Graphics (every WebGL2 browser; also GPUs whose compute kernels fail to
+load) the clock-material stamps — grow, colour transition, flight, shield morph, jiggle, suction, sway, super-shield
+mark — are written once into a MaterialPropertyBlock on the prism's MeshRenderer (`PrismMeshRendererStamps`) instead
+of being dropped, and cleared at their analytic end so settled mass rejoins the SRP Batcher. Deaths (explosion,
+implosion, shield shatter) draw through a capped pool of MeshRenderer debris (`PrismMeshRendererDebris`, cap
+`PrismRenderConfigSO.meshRendererDebrisCap` = 96). Devices with Entities Graphics never reach the new code.
+`Docs/PRISM_ANIMATION.md` §4.11.
+
+**Verified without the editor:** `unity_refcompile` webgl and player 0 errors, editor 0 in changed files; logging and
+conditional-compilation gates pass. `PrismMeshRendererStampsTests` (property names/packing vs the entity
+`[MaterialProperty]` structs, graph exposure, clear arithmetic) compile, not run.
+
+**Verify (Development WebGL build, F7 console; or `prismpath mpb` in the editor on a cell grown after the switch):**
+1. Trail prisms bloom in; a domain change and a new Wanderway scene fade their colours.
+2. Living flora/fauna mass sways with its limbs; a skeleton stops.
+3. Shields bloom on and shed shards; super-shield jiggles; Sparrow turret flight and ReverseSuction animate.
+4. Rammed or blasted prisms leave debris that flies and fades; feeding fauna pull suction debris.
+5. No `[PrismClock] STRICT MODE`, `[PrismDebris] ...batch spawn failed` or `[PrismFactory] ...declined` lines.
+6. `prismpath`: the property-block count falls once laying stops (only swaying mass keeps one); debris live ≤ 96.
+7. Frame time in a full 10k freestyle cell — every MPB'd renderer is its own draw; swaying lifeform mass is the
+   unknown. On desktop with Entities Graphics: nothing changes.
+
+### 🔴 Release guards judge a build by its own options, not the Development checkbox (`claude/release-guard-dev-checkbox-kg5qx7`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed:** `UnityPipelineReleaseGuard`, `CreditsReleaseGuard` and `WeeklyChallengeTestModeBuildGuard` exempted a
+build when `EditorUserBuildSettings.development` OR `BuildOptions.Development` said "development". A scripted build
+never reads the checkbox, so a Windows release build from `CosmicShoreBuildPipeline` made while the checkbox happened
+to be ticked was waved through all three guards. They now ask `ReleaseBuildKind.IsDevelopment(report)`, which reads
+only the build's own options. `WebToyboxBuild` no longer forces and restores the checkbox (its workaround).
+
+**Verified without the editor:** `unity_refcompile --config editor`, 0 errors in the six changed files (a planted
+typo in `ReleaseBuildKind.cs` was reported, tagged as changed). `ReleaseBuildKindTests` not run.
+
+**Verify in editor:**
+1. Edit-mode tests: `ReleaseBuildKindTests` pass.
+2. The assumption this rests on: a Build Profiles window build with **Development ticked** passes
+   `BuildOptions.Development` in its options. Tick it, put the weekly challenge in TEST MODE, build from the window:
+   the build must NOT be refused (development is exempt). If it is refused, the window does not pass the flag and
+   this change must be reverted.
+3. Leave the checkbox ticked and run **FrogletTools > Build > Windows x64 (Release)** with weekly TEST MODE on: the
+   build must now FAIL with the weekly-challenge message. Switch TEST MODE off afterwards.
+
+### 🔴 Menu_Main: no entry into freestyle behind the boot veil; the browser Toybox opens on the menu (`claude/menu-click-through-kg5qx7`, 2026-10-22) — NOT EDITOR-VERIFIED
+
+**What landed:** builds on the base's fix for a click launching freestyle during the Garland intro (the boot world
+now builds behind `EnvironmentLoadVeil`'s cover, `dc023d00d`, and Home flies on a double tap, `01403d976`).
+`MenuCrystalClickHandler.ToggleTransition` refuses to ENTER freestyle while `EnvironmentLoadVeil.IsCovering`, which
+covers the routes the cover and the double tap do not: the pad's Select, Submit and the toybox modals. Nothing is
+gated once the menu is revealed, and leaving freestyle is never gated. The browser Toybox no longer enters freestyle
+by itself at the first menu-ready (`MainMenuController`).
+
+**Verified without the editor:** `unity_refcompile` player, webgl and editor: 0 errors in changed files.
+`MenuFreestyleEntryGateTests` compile, not run.
+
+**Verify in editor and in a build:**
+1. Boot to Menu_Main and press the pad's Select / Enter / Space repeatedly while the LOADING veil is up: the menu
+   reveals, nothing launches.
+2. After the reveal, double-tap Home (or press Select): freestyle starts at once, no extra delay.
+3. The browser Toybox boots to the home menu; double-tap flies.
+4. MenuUI log channel on: "Enter freestyle ignored: the boot veil is still up" for the early presses.
+
 ### 🔴 New hulls rest at REST, not in their first take: the Shrike's left bank, the Grouper's left wag (`cece/quirky-brown-lkhhx9`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett: "the shrike is turning left by default. the grouper's tail fin is wagging to the left". Every hull the
@@ -3203,7 +3266,7 @@ best for the catch against 59.6 s for the field.
 ### 🔴 The browser Toybox: a WebGL build of Menu_Main's freestyle for www.froglet.games/play (`claude/webgl-toybox-kg5qx7`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 **What landed:** everything in `Docs/WEBGL_TOYBOX.md`. The `FROGLET_WEB_TOYBOX` define (read through
-`WebToybox.IsBuild`); a boot with no UGS, an in-memory `SinglePlayerTransport` host and straight into freestyle; a
+`WebToybox.IsBuild`); a boot with no UGS, an in-memory `SinglePlayerTransport` host and the home menu (no longer straight into freestyle, 2026-10-15); a
 menu with only the toybox, settings and credits; the build entry point `FrogletTools > Build > WebGL Toybox` and UBA's
 `WebToyboxBuild.PreExport`; WebGL player settings (Brotli, hashed names, 256 MB / 4 GB memory, the FrogletToybox
 template); `PlatformProfile_Web`; inline solves where threads were used; a browser download for painting SHARE; a
@@ -3231,7 +3294,7 @@ compiler, any build, any browser.
 
 **Verify in a browser** (`python3 Tools/Build/publish_toybox.py serve --build-dir Builds/WebGLToybox`, then
 http://localhost:8000 in Chrome or Edge):
-1. It boots past "Starting the Toybox…" (and "Loading sound…" while the banks download) straight into freestyle.
+1. It boots past "Starting the Toybox…" (and "Loading sound…" while the banks download) to the home menu, not into freestyle.
    No sign-in, no age gate, no online indicator or reconnect button.
 2. Every screen but HOME, and the Arcade / Arena / Mission entries, read "In the full game". The toybox, its
    configure modal, settings and credits open.
@@ -3262,6 +3325,27 @@ in `Unity.Multiplayer.PlayMode`. Not compiled: the offline refcompile has no 6.3
 2. MPPM with one clone: the clone still signs in on its own auth profile (`mppm-<tags>` or `mppm-clone`) and
    hosts on its own local port (the `[MultiplayerSetup] MPPM clone ...` line on the `NetworkFlow` channel).
 3. If anyone on the team clicked "Yes" before pulling, discard their local rewrite of these two files first.
+
+### 🔴 Store-release URLs: settings links and the consent screen point at www.froglet.games (`claude/store-page-urls-kg5qx7`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+No editor and no `unity` CLI in this session, so `/verify-unity` did NOT run. The change is three serialized
+string values, one consent-config string and the matching three C# field defaults; no structure changed (the edit
+script asserted one owning document, an unchanged document count and exactly three changed lines in the prefab).
+**Merge only once the pages are live** on www.froglet.games (website repo `froglet-studio/cosmic-shore-landing-page`);
+until then the old values point at cosmicshore.com, which currently shows a domain-for-sale page.
+
+**What landed:** `SettingsModal.prefab` `privacyPolicyUrl` / `deleteDataUrl` / `bugReportUrl` →
+`https://www.froglet.games/privacy`, `/delete-my-data`, `/support` (the prefab values override the code defaults; no
+scene overrides them). `GameSettingsPanelController` defaults match. `Resources/PrivacyConsentConfig.asset`
+`privacyPolicyUrl` was EMPTY, so the first-run consent screen showed no policy link; it is now the privacy URL.
+
+1. **Main menu → Settings → General.** Press Privacy Policy: the browser opens `https://www.froglet.games/privacy`.
+   Press Delete my data: `/delete-my-data`. Press the bug-report row: `/support`.
+2. **Pause menu in a match → Settings.** The same three rows open the same three URLs (the prefab is shared).
+3. **First-run consent.** Clear PlayerPrefs (`AnalyticsConsent`, `AnalyticsAgeEligible`), relaunch, enter a birth year
+   13+ years ago: the consent screen now shows a privacy-policy link, and it opens `/privacy`.
+4. **Inspector.** Select the SettingsModal prefab's `GameSettingsPanelController`: the Links header shows the three
+   froglet.games URLs (not cosmicshore.com).
 
 ### 🔴 Stoat play fixes: no flash at the poles' birth, a subtle ripple, the path drawn again, Time mode is the catch-sling (`cece/admiring-cannon-lhmv6t`, 2026-10-14) — NOT EDITOR-VERIFIED
 

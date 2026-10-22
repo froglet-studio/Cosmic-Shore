@@ -44,11 +44,8 @@ namespace CosmicShore.Editor
 
         public void OnPreprocessBuild(BuildReport report)
         {
-            // EditorUserBuildSettings.development covers editor-driven builds; the report options
-            // cover scripted builds. Either one marks the build as development → allowed.
-            bool development = EditorUserBuildSettings.development ||
-                               (report.summary.options & BuildOptions.Development) != 0;
-            if (development)
+            // The build's own options decide, never the Build Settings checkbox (ReleaseBuildKind).
+            if (ReleaseBuildKind.IsDevelopment(report))
                 return;
 
             // Load through the same Resources path the RUNTIME uses, not by asset path: that is
