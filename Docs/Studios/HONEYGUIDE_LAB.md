@@ -48,6 +48,23 @@ mate, decision log, platform detection) is the Crew Vessel Lab's, rebuilt around
 - **Rules tab:** Garrett's round 2 rules, each a box you can turn off (a control). **Patterns tab:** all 39 patterns and
   the passive each gives.
 
+## 2026-10-22: Printer retired from the draw; the Ratel's board in portrait on a phone
+
+Garrett: "the ratel dynamo should assume the player is holding the phone in portrait mode. it should size text and
+buttons appropriate to mobile. for now remove the engineer ability that gives players a free prism at the start of the
+spin, the experience is too confusing to players on mobile."
+
+- **Printer is out of the random draw.** The core takes the pool a draw picks from (`S.abilities`; `abilityPool`, null =
+  all nine), and the page's shipped settings pass every ability but `RETIRED_ABILITIES` (`['printer']`). With the full pool
+  the draw is the same arithmetic as before, so every old seed plays the same. A fixed ability (the Rules tab's
+  "Ratel ability") can still pick Printer, and the cards that grant free prisms still do. The game's config carries the
+  same list (`retiredAbilities`), held to the page by `author_honeyguide_assets.py --check`. `parity.cjs` plays rule sets
+  with the full pool, the shipped pool, two abilities and one, and catches a core that ignores the pool (a new negative
+  control).
+- **Portrait is a Unity-side layout only.** The game's screen is locked to landscape, so the board is drawn a quarter turn
+  round with millimetre-sized text and cards (`HoneyguideDynamoView`, `Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md`
+  step 4). The page's own board is unchanged.
+
 ## Round 6 (2026-10-21): RT always attacks, LT always moves, and every card is its own
 
 Garrett, after round 5: "the right trigger should always be a weak attack power that gets upgraded sometimes. the left
@@ -356,7 +373,7 @@ Garrett's notes after playing round 1 (thread, 2026-10-21), all built:
 | Two versatile weapons on the triggers that take upgrades as patterns complete | RT Bolt (5/s, 160 u/s, 110 u) and LT Burst (1.5/s, 5 pellets in 40°, 60 u). Shots destroy prisms not of your domain. Every weapon passive shapes both |
 
 **The Ratel's abilities** (one at a time): Overclock (+1 AP a spin, bank +1), Long Reach (a drag of any length through
-empty cells is 1 AP), Printer (a free prism of any colour each spin, hold 2), Swap (drag a prism onto a neighbour to swap,
+empty cells is 1 AP), Printer (a free prism of any colour each spin, hold 2; retired from the draw 2026-10-22), Swap (drag a prism onto a neighbour to swap,
 1 AP), Free Fire (making a pattern is free), Wild Core (the centre counts as any colour), Capacitor (battery +2), Mirror
 (patterns also match mirrored), Refund (each pattern banks 1 AP, hold 2).
 

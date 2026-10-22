@@ -101,12 +101,14 @@ namespace CosmicShore.Tests
         [Test]
         public void Config_PlaysTheLabsGame_StepForStep()
         {
-            // Golden from the lab's own core (seed 777, the shipped rules, the hard Engineer AI with dice seeded 1000 + k,
-            // a half-second clock step between its moves): the asset, read through ToSettings, plays the same game.
+            // Golden from the lab's own core (seed 777, the shipped rules - Printer retired from the draw - the hard Engineer AI
+            // with dice seeded 1000 + k, a half-second clock step between its moves): the asset, read through ToSettings, plays
+            // the same game. Re-measured 2026-10-22 from the page and from DynamoCore.cs on this asset (the two agree); the
+            // golden before it still had a start slot of 27, from before round 6 unparked every card.
             var s = Load().ToSettings();
             var core = new DynamoCore(s, 777);
             var memo = new DynamoCore.AIMemo();
-            Assert.AreEqual("0000032200100200100010010030023300000|5:3,6:2,7:2,10:1,13:2,16:1,20:1,23:1,26:3,29:2,30:3,31:3|3+0||27,1,8/0,0,0|-||wildCore|0|0|0|567895250",
+            Assert.AreEqual("0000032200100200100010010030023300000|5:3,6:2,7:2,10:1,13:2,16:1,20:1,23:1,26:3,29:2,30:3,31:3|3+0||26,1,8/0,0,0|-||capacitor|0|0|0|567895250",
                 core.Digest());
             int made = 0;
             for (int k = 0; k < 400; k++)
@@ -121,9 +123,39 @@ namespace CosmicShore.Tests
                 made += core.Events.Count(e => e.Kind == DynamoEventKind.Pick);
                 core.Events.Clear();
             }
-            Assert.AreEqual(8, made, "patterns the AI Ratel made");
-            Assert.AreEqual("0000000010001200020000000100000300000|9:3,16:3,23:3,11:1,6:2,24:2,7:2,19:3,8:2,35:1,31:1,26:1|0+0|123|27,3,36/1,1,0|1:44||overclock|6|8|0|440012856",
+            Assert.AreEqual(7, made, "patterns the AI Ratel made");
+            Assert.AreEqual("0020000200000021000000003000020000300|36:1,30:1,26:1,24:3,23:2,19:2,15:2,13:3,11:1,10:2,6:3,3:3|0+0|132|30,1,8/2,1,1|-||wildCore|6|7|0|1703684196",
                 core.Digest());
+        }
+
+        [Test]
+        public void Ratel_NeverDrawsPrinter_WhileItIsRetired()
+        {
+            // Garrett 2026-10-22: "remove the engineer ability that gives players a free prism at the start of the spin, the
+            // experience is too confusing to players on mobile" (for now: the config's retiredAbilities, the lab's RETIRED_ABILITIES)
+            var s = Load().ToSettings();
+            Assert.IsNotNull(s.Abilities, "the config retires no ability");
+            CollectionAssert.DoesNotContain(s.Abilities, (int)DynamoAbility.Printer);
+            Assert.AreEqual(DynamoCore.AbilityCount - 1, s.Abilities.Length, "only Printer is retired");
+            s.PatternsPerShuffle = 1;   // a new ability after every pattern, to see many draws
+            for (int seed = 1; seed <= 60; seed++)
+            {
+                var core = new DynamoCore(s, seed);
+                var memo = new DynamoCore.AIMemo();
+                for (int k = 0; k < 300; k++)
+                {
+                    Assert.AreNotEqual(DynamoAbility.Printer, core.Ability, $"seed {seed}, step {k}: the Ratel drew Printer");
+                    Assert.AreEqual(0, core.FreePlace, $"seed {seed}, step {k}: a free prism (the core grants them only for Printer; cards grant theirs through the crew)");
+                    if (k % 2 == 0) core.Advance(s, 1.0);
+                    else
+                    {
+                        var inp = core.AIPlan(s, new DynamoAISkill { Top = 1, Blunder = 0 }, DynamoCore.Mulberry32(seed * 1000 + k), memo);
+                        if (inp != null && inp.Value.Kind == DynamoInputKind.Activate) memo.Key = "";
+                        if (inp != null) core.Apply(s, inp.Value);
+                    }
+                    core.Events.Clear();
+                }
+            }
         }
 
         [Test]

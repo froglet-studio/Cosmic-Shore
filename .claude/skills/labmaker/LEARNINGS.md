@@ -1595,3 +1595,10 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `StarlingsLab.html` `SHIPPED`, `minNow`; `StarlingRules.CapNow`; `StarlingSwarmExecutor.Separation`; team
   task T-20261021-729e (the card decision).
 - Promoted: no
+
+### L-STU-143 — Take a mechanic out of a random draw with a POOL that defaults to everything, so every old seed still plays
+- Lab: Honeyguide Lab (`Docs/Studios/HoneyguideLab.html`) · Branch: `cece/nifty-dirac-2dmclm` · By: the 2026-10-22 Ratel-portrait session · Date: 2026-10-22
+- What happened: Garrett asked to remove Printer (a free prism every spin) "for now". The draw was `ABILITIES[floor(rng * 9)]`, held step for step to `DynamoCore.cs` by `parity.cjs`. Deleting the key would have renumbered the serialized `DynamoAbility` enum and changed every seed. Instead the core draws from `S.abilities` (null = all, so the arithmetic is identical), and the shipped settings pass all but `RETIRED_ABILITIES`. Parity stayed green on every old rule set, and new rule sets (the shipped pool, two abilities, one) plus a planted "ignore the pool" control (caught, 4,431 steps) cover the change. One Unity golden did need re-measuring: it plays the shipped config, and it was already stale from round 6 (start slot 27 against the page's 26), which nobody had seen because no CI runs the edit-mode tests. The page and `DynamoCore.cs` on the shipped asset agreed on the new values.
+- Do instead: retire a drawn option with a list next to the lab's shipped settings and a matching list on the game's config, held equal by the generator's `--check`. Never delete the key or the enum member. When a game test plays the shipped config, recompute its golden by running the real C# core on the real asset as well as the page, and the two must agree.
+- Evidence: `abilityPool` in the page's dynamo-core block; `DynamoSettings.Abilities`, `HoneyguideConfigSO.retiredAbilities`; `author_honeyguide_assets.py` check "retiredAbilities is not the lab's RETIRED_ABILITIES"; `HoneyguideTests.Ratel_NeverDrawsPrinter_WhileItIsRetired`.
+- Promoted: no
