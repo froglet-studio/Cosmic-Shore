@@ -2035,3 +2035,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (has offered to take tests) or Garrett (Dolphin design owner)
 - **Added:** 2026-10-22 by a Claude session (`cece/exciting-fermat-khf8vn`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 8, Dolphin row; Assets/_Scripts/Controller/IO/TouchControls/TouchAttitudeRoll.cs
+
+### T-20261022-ae99 · open · test · Menu_Main
+- **Task:** Verify no entry into freestyle behind the boot veil, and the browser Toybox opens on the menu (#1146)
+- **Done when:** Pressing Select / Enter / Space while the LOADING veil is up launches nothing; after the reveal a double tap or Select flies at once; a WebGL Toybox build boots to the home menu
+- **Who can take it:** Shombith (Menu_Main owner) or Yash
+- **Added:** 2026-10-22 by Claude (claude/menu-click-through-kg5qx7) (`claude/menu-click-through-kg5qx7`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, entry 'Menu_Main: no entry into freestyle behind the boot veil'
