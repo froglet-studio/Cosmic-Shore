@@ -395,6 +395,11 @@ the Sparrow's root collider (`center (0,0,-3.5)`), the jet mounts (`b_Tail*` bon
    `VesselAnimation.cs:527-548`).
 10. No polygon with a repeated/zero-length corner (Unity discards it, §4.7); after writing, verify with three readers
     (`fbx_probe`, `assimp`, a Blender re-import) AND compare Blender-world AABB / centre / window centroid to HEAD.
+11. The FIRST take is the hull's default pose in Unity: with `Takes.Current` empty (what Blender writes) the bone
+    Transforms import in the first take's pose, and code puppetry captures that as rest. A hull of our own leads with a
+    `rest` take (`export.lead_with_take`; verify refuses a moving first take). The Shrike rested in `bankleft` and the
+    Grouper's tail in `beatleft` until it did (vessel-model LESSONS 51, 2026-10-21). Inferred from the symptom on 14
+    hulls, each resting in its first take; not yet confirmed by a reimport.
 
 ## Open questions (not measurable in this checkout)
 

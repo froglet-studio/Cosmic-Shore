@@ -270,6 +270,9 @@ What "beats the shipped model" has meant on each hull, so the next one knows the
   with axes - a morph that grabs the whole mesh reads as a scale, not an element.
 - **Clear the pose and unassign the action before export** (`export_fbx` does): a live pose
   leaks into every baked take (the dirty-pose leak, LESSONS 2026-10-17).
+- **The first take is the rest pose Unity imports.** A hull whose takes are all deflections leads with a `rest`
+  take (the build adds it, verify refuses a moving first take). The Shrike rested banked left and the Grouper's tail
+  wagged about a left offset until it did (LESSONS 51).
 - **Do not bake a driver's bug into the model.** The Squirrel's blend tree halves every pose
   and the Sparrow artist's PitchUp was inverted as flown: author the pose by its meaning
   (pitchup = nose up, big enough to read) and file the controller fix as a team task; a

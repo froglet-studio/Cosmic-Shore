@@ -1886,6 +1886,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 8 'Third round'; Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs GobyAbilities / HumanPistol
 - **Done:** 2026-10-21, Built on cece/elegant-maxwell-q8vqoh: the Goby's primer/flares are input bindings (CrewButtonActionSO, pad X/Y, keys Q/F), each seat shows its own phone buttons (GobyPistolButtons), the Pistol dives/launches by finger, Goby row in TouchControlProfiles. Phone test: T-20261021-52b0 + the seat-buttons test task.
 
+### T-20261021-110d · open · test · Vessel models
+- **Task:** Reimport the 14 rebuilt hull FBXs (cece/quirky-brown-lkhhx9) and fly the Shrike, the Wrasse (Grouper + Kite) and the Marlin with the stick centred: no left bank, the tails beat about the centre. Spot-check the other 11 at rest (Docs/UNITY_VERIFICATION_CHECKLIST.md, 'New hulls rest at REST')
+- **Done when:** Every rebuilt hull rests level and centred at a centred stick, and each model's clip list starts with 'rest'
+- **Who can take it:** Garrett (reported it); Yash (offered) can run the reimport and spot-checks
+- **Added:** 2026-10-21 by a Claude session (`cece/quirky-brown-lkhhx9`)
+- **See:** .claude/skills/vessel-model/references/LESSONS.md #51
+
 ### T-20261021-5d4e · open · decision · Crew vessels
 - **Task:** Pick the Wrasse's Time L5 upgrade: its old one (No Cooldown) is gone with the Grouper's boost cooldown, so the Time card's L5 slot is open (blank in ElementalAbilityMaps/Wrasse.asset).
 - **Done when:** Time L5 names an upgrade and KiteNavigator gates it with Upgraded(Element.Time)
