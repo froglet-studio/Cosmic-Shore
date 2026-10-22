@@ -1,0 +1,1172 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-22 12:56:02 (next editor launch after the abnormal exit)
+session:        20261021-224755598  (pid 23044, Unity 6000.3.17f1)
+started:        2026-10-21T22:47:55.598Z UTC
+last heartbeat: 2026-10-22T00:08:49.104Z UTC
+last state:     EditMode
+main thread:    unresponsive for ~4854s at the last heartbeat — likely a hang / freeze that was then killed
+hang dump:      C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261021-224755598.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261020-171702068
+started: 2026-10-20T17:17:02.068Z UTC
+unity:   6000.3.17f1
+pid:     69992
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[11:01:20.785] ---- domain reload begins (script compilation / play-mode transition) ----
+e\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261020-173610987.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[11:02:33.046] ---- entering play mode ----
+[11:02:36.412] ---- play mode running ----
+[11:03:59.652] [PlayMode] Error: [ModePreview] Could not enter flight: no gameplay camera to lend.
+        0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffe8[11:58:32.760] ---- domain reload begins (script compilation / play-mode transition) ----
+ile
+        0x00007ffe8d8d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000233c958fdad (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000233c958fc73 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000233c958f8ab (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[11:04:36.288] ---- leaving play mode ----
+[11:04:37.364] ---- edit mode restored ----
+[11:04:49.936] ---- entering play mode ----
+[11:04:51.810] ---- play mode running ----
+[11:05:11.441] [PlayMode] Error: [ModePreview] Could not enter flight: no gameplay camera to lend.
+        0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffe8da1587f (Unity) DebugStringToFile
+        0x00007ffe8d8d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000233c958fdad (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000233c958fc73 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000233c958f8ab (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[11:05:45.469] ---- leaving play mode ----
+[11:05:46.705] ---- edit mode restored ----
+[11:05:57.027] ---- entering play mode ----
+[11:05:58.869] ---- play mode running ----
+[11:06:47.502] [PlayMode] Error: [ModePreview] Could not enter flight: no gameplay camera to lend.
+        0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffe8da1587f (Unity) DebugStringToFile
+        0x00007ffe8d8d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000233c958fdad (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000233c958fc73 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000233c958f8ab (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[11:07:46.350] [PlayMode] Error: [ModePreview] Could not enter flight: no gameplay camera to lend.
+        0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffe8da1587f (Unity) DebugStringToFile
+        0x00007ffe8d8d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000233c958fdad (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000233c958fc73 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000233c958f8ab (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[11:07:55.061] [PlayMode] Error: [ModePreview] Could not enter flight: no gameplay camera to lend.
+        0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffe8da1587f (Unity) DebugStringToFile
+        0x00007ffe8d8d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000233c958fdad (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000233c958fc73 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000233c958f8ab (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[11:08:31.129] ---- leaving play mode ----
+[11:08:32.480] ---- edit mode restored ----
+[11:25:05.811] ---- entering play mode ----
+[11:25:07.899] ---- play mode running ----
+[11:25:17.664] ---- leaving play mode ----
+[11:25:19.453] ---- edit mode restored ----
+[11:58:21.595] ---- domain reload begins (script compilation / play-mode transition) ----
+[13:33:55.684] ---- entering play mode ----
+[13:33:58.487] ---- play mode running ----
+[14:11:29.900] ---- leaving play mode ----
+[14:11:34.315] ---- edit mode restored ----
+[16:06:19.860] ---- domain reload begins (script compilation / play-m[16:06:52.304] ---- do[16:08:10.919] ---- entering play mode ----
+[16:08:13.940] ---- play mode running ----
+[16:09:36.613] ---- leaving play mode ----
+[16:09:38.526] ---- edit mode restored ----
+[16:40:22.324] ---- entering play mode ----
+[16:40:24.348] ---- play mode running ----
+[16:40:45.124] ---- leaving play mode ----
+[16:4[12:10:28.747] ---- domain reload begins (script compilation / play-mode transition) ----
+:05.785] ---- play mode running ----
+[16:42:25.809] [PlayMode] Error: Screen position out of view frustum (screen pos 0.000000, 0.000000, 12000.000000) (Camera rect 0 0 288 288)
+        0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffe8da1587f (Unity) DebugStringToFile
+        0x00007ffe8dc6fe1e (Unity) Camera::ScreenToWorldPoint
+        0x00007ffe8dc61e08 (Unity) Camera::CalculateFarPlaneWorldSpaceLength
+        0x00007ffe8e0a658f (Unity) GetScriptableCullingParameters
+        0x00007ffe8d88df80 (Unity) Camera_CUSTOM_GetCullingParameters_Internal
+        ...
+[16:45:46.390] [PlayMode] Error: Screen position out of view frustum (screen pos 320.000000, 0.000000, 12000.000000) (Camera rect 0 0 320 192)
+        0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffe8da1587f (Unity) DebugStringToFile
+        0x00007ffe8dc6fe1e (Unity) Camera::ScreenToWorldPoint
+        0x00007ffe8dc61e44 (Unity) Camera::CalculateFarPlaneWorldSpaceLength
+        0x00007ffe8e0a658f (Unity) GetScriptableCullingParameters
+        0x00007ffe8d88df80 (Unity) Camera_CUSTOM_GetCullingParameters_Internal
+        ...
+[16:46:05.307] [PlayMode] Error: Screen position out of view frustum (screen pos 64.000000, 0.000000, 12000.000000) (Camera rect 0 0 64 192)
+        0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffe8da1587f (Unity) DebugStringToFile
+        0x00007ffe8dc6fe1e (Unity) Camera::ScreenToWorldPoint
+        0x00007ffe8dc61e44 (Unity) Camera::CalculateFarPlaneWorldSpaceLength
+        0x00007ffe8e0a658f (Unity) GetScriptableCullingParameters
+        0x00007ffe8d88df80 (Unity) Camera_CUSTOM_GetCullingParameters_Internal
+        ...
+[16:46:12.383] ---- leaving play mode ----
+[16:46:13.602] ---- edit mode restored ----
+[09:42:17.534] ---- main thread unresponsive ~30704s — wrote hang dump: C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261020-230647029.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[09:42:17.535] ---- main thread stalled ~30705s and RECOVERED — slow, not hung ----
+[09:42:21.573] [EditMode] Error: Token refresh failed or was not needed.
+        0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffe8da1587f (Unity) DebugStringToFile
+        0x00007ffe8d8d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000232b462f97d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000232b462f803 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000232b462f41b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[09:42:30.748] [EditMode] Exception: RequestFailedException: Exception of type 'Unity.Services.Core.RequestFailedException' was thrown.
+        Unity.Services.Core.Editor.TokenExchange.ExchangeServicesGatewayTokenAsync (System.String genesisToken) (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/Networking/TokenExchange.cs:102)
+        Unity.Services.Core.Editor.GatewayTokens.GetGatewayTokenAsync (System.String genesisToken) (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/Utils/GatewayTokens.cs:36)
+        Unity.Services.Core.Editor.AccessTokensSingleton.GetServicesGatewayTokenAsync () (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/Utils/AccessTokensSingleton.cs:47)
+        Rethrow as AggregateException: One or more errors occurred. (Exception of type 'Unity.Services.Core.RequestFailedException' was thrown.)
+        System.Threading.Tasks.Task.ThrowIfExceptional (System.Boolean includeTaskCanceledExceptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.Threading.Tasks.Task`1[TResult].GetResultCore (System.Boolean waitCompletionNotification) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.Threading.Tasks.Task`1[TResult].get_Result () (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        Unity.Services.Core.Editor.UserRoleRequest.OnTokenReceived (System.Threading.Tasks.Task`1[TResult] tokenOperation, Unity.Services.Core.Internal.AsyncOperation`1[T] resultAsyncOp) (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/UserRoleManagement/UserRoleRequest.cs:40)
+        ...
+[09:42:31.443] [EditMode] Exception: RequestFailedException: Exception of type 'Unity.Services.Core.RequestFailedException' was thrown.
+        Unity.Services.Core.Editor.TokenExchange.ExchangeServicesGatewayTokenAsync (System.String genesisToken) (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/Networking/TokenExchange.cs:102)
+        Unity.Services.Core.Editor.GatewayTokens.GetGatewayTokenAsync (System.String genesisToken) (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/Utils/GatewayTokens.cs:36)
+        Unity.Services.Core.Editor.AccessTokensSingleton.GetServicesGatewayTokenAsync () (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/Utils/AccessTokensSingleton.cs:47)
+        Rethrow as AggregateException: One or more errors occurred. (Exception of type 'Unity.Services.Core.RequestFailedException' was thrown.)
+        System.Threading.Tasks.Task.ThrowIfExceptional (System.Boolean includeTaskCanceledExceptions) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.Threading.Tasks.Task`1[TResult].GetResultCore (System.Boolean waitCompletionNotification) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        System.Threading.Tasks.Task`1[TResult].get_Result () (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        Unity.Services.Core.Editor.UserRoleRequest.OnTokenReceived (System.Threading.Tasks.Task`1[TResult] tokenOperation, Unity.Services.Core.Internal.AsyncOperation`1[T] resultAsyncOp) (at ./Library/PackageCache/com.unity.services.core@3464cb68d709/Editor/Core/UserRoleManagement/UserRoleRequest.cs:40)
+        ...
+[12:09:44.707] ---- domain reload begins (script compilation / play-mode transition) ----
+[15:20:56.375] ---- entering play mode ----
+[15:20:59.717] ---- play mode running ----
+[15:21:21.747] ---- leaving play mode ----
+[15:21:23.548] ---- edit mode restored ----
+[15:24:26.409] ---- entering play mode ----
+[15:24:27.680] ---- play[15:47:49.436] ---- domain reload begins (script compilation / play-mode transition) ----
+creen pos 224.000000, 0.000000, 12000.000000) (Camera rect 0 0 224 256)
+        0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffe8da1587f (Unity) DebugStringToFile
+        0x00007ffe8dc6fe1e (Unity) Camera::ScreenToWorldPoint
+        0x00007ffe8dc61e44 (Unity) Camera::CalculateFarPlaneWorldSpaceLength
+        0x00007ffe8e0a658f (Unity) GetScriptableCullingParameters
+        0x00007ffe8d88df80 (Unity) Camera_CUSTOM_GetCullingParameters_Internal
+        ...
+[15:31:26.356] [PlayMode] Error: Screen position out of view frustum (screen pos 544.000000, 0.000000, 12000.000000) (Camera rect 0 0 544 128)
+        0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffe8da1587f (Unity) DebugStringToFile
+        0x00007ffe8dc6fe1e (Unity) Camera::ScreenToWorldPoint
+        0x00007ffe8dc61e44 (Unity) Camera::CalculateFarPlaneWorldSpaceLength
+        0x00007ffe8e0a658f (Unity) GetScriptableCullingParameters
+        0x00007ffe8d88df80 (Unity) Camera_CUSTOM_GetCullingParameters_Internal
+        ...
+[15:32:27.115] [PlayMode] Error: Screen position out of view frustum (screen pos 0.000000, 0.000000, 12000.000000) (Camera rect 0 0 352 192)
+        0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffe8da1587f (Unity) DebugStringToFile
+        0x00007ffe8dc6fe1e (Unity) Camera::ScreenToWorldPoint
+        0x00007ffe8dc61e08 (Unity) Camera::CalculateFarPlaneWorldSpaceLength
+        0x00007ffe8e0a658f (Unity) GetScriptableCullingParameters
+        0x00007ffe8d88df80 (Unity) Camera_CUSTOM_GetCullingParameters_Internal
+        ...
+[15:39:16.997] ---- leaving play mode ----
+[15:39:18.461] ---- edit mode restored ----
+[15:47:12.137] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261021-191014605.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[15:47:12.499] ---- domain reload begins (script compilation / play-mode transition) ----
+[17:08:47.764] ---- editor quitting (clean exit) ----
+rote hang dump: C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261021-224755598.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+Model 'Marlin' contains animation clip 'rig|sailup' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+ -> (artifact id: '1d228601a4e8c9fdefa2a11a3323aa2d') in 0.0549241 seconds
+Start importing Assets/_Models/Vessel Models/Stoat.fbx using Guid(0ef0b84d93774ac39ddc699c59d0821a) (FBXImporter)Keyframe reduction: Ratio: 100.000000%;
+Keyframe reduction: Ratio: 100.000000%;
+Keyframe reduction: Ratio: 100.000000%;
+Keyframe reduction: Ratio: 100.000000%;
+Keyframe reduction: Ratio: 100.000000%;
+Model 'Stoat' contains animation clip 'rig|rest' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+Model 'Stoat' contains animation clip 'rig|arch' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+Model 'Stoat' contains animation clip 'rig|land' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+Model 'Stoat' contains animation clip 'rig|turnleft' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+Model 'Stoat' contains animation clip 'rig|turnright' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+ -> (artifact id: '657c9c43598ae901b39bcf138b945ff6') in 0.0833139 seconds
+Start importing Assets/_Models/Vessel Models/Angler.fbx using Guid(ae96d7fa1c094f7eb5a9c0c92d679b5e) (FBXImporter)Keyframe reduction: Ratio: 100.000000%;
+Keyframe reduction: Ratio: 100.000000%;
+Keyframe reduction: Ratio: 100.000000%;
+Keyframe reduction: Ratio: 100.000000%;
+Keyframe reduction: Ratio: 100.000000%;
+Model 'Angler' contains animation clip 'rig|rest' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+Model 'Angler' contains animation clip 'rig|dive' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+Model 'Angler' contains animation clip 'rig|lure' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+Model 'Angler' contains animation clip 'rig|turnleft' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+Model 'Angler' contains animation clip 'rig|turnright' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+ -> (artifact id: '304d5d73f0be6c9cb316f03cd8778383') in 0.0654611 seconds
+Start importing Assets/_Models/Vessel Models/Honeyguide.fbx using Guid(4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b) (FBXImporter)Keyframe reduction: Ratio: 100.000000%;
+Keyframe reduction: Ratio: 100.000000%;
+Keyframe reduction: Ratio: 100.000000%;
+Keyframe reduction: Ratio: 100.000000%;
+Keyframe reduction: Ratio: 100.000000%;
+Model 'Honeyguide' contains animation clip 'rig|rest' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+Model 'Honeyguide' contains animation clip 'rig|bankleft' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+Model 'Honeyguide' contains animation clip 'rig|bankright' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+Model 'Honeyguide' contains animation clip 'rig|fan' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+Model 'Honeyguide' contains animation clip 'rig|flare' which has length of 0 frames (start=0, end=0). It will result in empty animation. 
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8fe4e202 (Unity) ModelImporter::CreateAnimClipFromSourceClip
+0x00007ffe8fe65a96 (Unity) ModelImporter::SplitAnimationClips
+0x00007ffe8fe5513f (Unity) ModelImporter::GenerateAll
+0x00007ffe8fe57712 (Unity) ModelImporter::GenerateAssetData
+0x00007ffe901bf88e (Unity) ImportToObjects
+0x00007ffe901be712 (Unity) ImportAsset
+0x00007ffe901e22d9 (Unity) AssetImportWorker::Import
+0x00007ffe90214b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffe902136b3 (Unity) AssetImportManager::Import
+0x00007ffe902155d2 (Unity) ImportOutOfDateAssets
+0x00007ffe9021e3fa (Unity) RefreshInternalV2
+0x00007ffe90226f17 (Unity) StopAssetImportingV2Internal
+0x00007ffe9021f51c (Unity) RefreshV2
+0x00007ffe90191073 (Unity) AssetDatabase::Refresh
+0x00007ffe8eac2951 (Unity) Application::AutoRefresh
+0x00007ffe8e8f4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354dac (USER32) CallWindowProcW
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473ece08 (COMCTL32) DefSubclassProc
+0x00007ffeef4933f3 (AppUINativePlugin) 
+0x00007fff473eced8 (COMCTL32) DefSubclassProc
+0x00007fff473eccaf (COMCTL32) GetWindowSubclass
+0x00007fff653552e6 (USER32) CallWindowProcW
+0x00007fff65354b6c (USER32) GetFocus
+0x00007fff6537f593 (USER32) GetWindowDpiAwarenessContext
+0x00007fff667e5d94 (ntdll) KiUserCallbackDispatcher
+0x00007fff63f91304 (win32u) NtUserPeekMessage
+0x00007fff653519df (USER32) PeekMessageW
+0x00007fff65351968 (USER32) PeekMessageW
+0x00007ffe8e8b9b24 (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+ -> (artifact id: '806f8437b497d9f1480a58ee83b06a1c') in 0.0538275 seconds
+Start importing Assets/Resources/ElementalAbilityMaps/Wrasse.asset using Guid(007a16964bc0490a937e8384d4e27eec) (NativeFormatImporter) -> (artifact id: '974ba8d19bc43b492b50db062d292906') in 0.0081052 seconds
+Start importing Assets/Resources/ElementalAbilityMaps/Orca.asset using Guid(210e70a432684f2d96a0194df8c9a9c3) (NativeFormatImporter) -> (artifact id: '951b61489425fbbfbc1d3834e204d60a') in 0.0062629 seconds
+Start importing Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset using Guid(71805f184cdc41f9b24ecba240f477c8) (NativeFormatImporter) -> (artifact id: 'a92b08cee88e09c4fde64588ee3f4b6c') in 0.0057365 seconds
+Start importing Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset using Guid(f39120e072fe4d5e9de0ca6e6180d575) (NativeFormatImporter) -> (artifact id: '372d6f92684151adb83cdca584e0db9f') in 0.0036297 seconds
+Start importing Assets/_SO_Assets/Vessel Prefab Container.asset using Guid(05f8f1205bd90e14b8e59cf78da1a6f2) (NativeFormatImporter) -> (artifact id: '4fb9412a331bc7cb49882776b895d148') in 0.0069982 seconds
+Start importing Assets/_SO_Assets/Classes/SO_Class_Starling.asset using Guid(35c8c86490eefdb90b1fb666c9e2ee01) (NativeFormatImporter) -> (artifact id: '8c2161fb59be6534d0ca6abdc9e9e6f2') in 0.0059632 seconds
+Start importing Assets/_SO_Assets/Classes/SO_Class_Goby.asset using Guid(b569f215d5ca452d9e4ab28af3ee55ab) (NativeFormatImporter) -> (artifact id: '31f174ed1bf36958a3f8e2e55a89346a') in 0.001522 seconds
+Start importing Assets/_SO_Assets/Classes/SO_Classlist_Classes.asset using Guid(17dcd58a38dad2a498afe518e6a0bb58) (NativeFormatImporter) -> (artifact id: 'cc1960b4cd918911db72d05d7b7f9a00') in 0.0060704 seconds
+Start importing Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset using Guid(b7fecd5491684f24916c7be61b8ac4ec) (NativeFormatImporter) -> (artifact id: '086bf70c73271d31379ec8aff52fe71d') in 0.0015322 seconds
+Start importing Assets/_SO_Assets/VesselActions/Starling/StarlingConfig.asset using Guid(b76f176d5da5c0a11358f9ec5a92c144) (NativeFormatImporter) -> (artifact id: '57f2b29fa13f33bd40bac37e9998d0b5') in 0.0058063 seconds
+Start importing Assets/Resources/CrystalHullFusionConfig.asset using Guid(28667c3a393a462985c7e8b246ec05cc) (NativeFormatImporter) -> (artifact id: 'b39ffcaf0c3473d73f6bb99e06d84c52') in 0.0073406 seconds
+Start importing Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset using Guid(38d89b6853e84f91b05c4a334256e3bb) (NativeFormatImporter) -> (artifact id: 'fa05223d6d4764ae0404bc4eeca948e3') in 0.0058188 seconds
+Start importing Assets/Resources/TouchControlProfiles.asset using Guid(a8f12c18f05f86c77afa921677e8f2ff) (NativeFormatImporter) -> (artifact id: '6b5908cb842ed10e3cd03ec2ce13cbde') in 0.0679337 seconds
+Start importing Assets/_SO_Assets/Classes/SO_Classlist_All.asset using Guid(49c7c10ad2901c74589c28317a4eb17b) (NativeFormatImporter) -> (artifact id: 'c7ab2b7a675004fbf74b633103c3579e') in 0.0061449 seconds
+Start importing Assets/_SO_Assets/Classes/SO_Class_Angler.asset using Guid(ea422bbe0d1aef61993692999cee50ea) (NativeFormatImporter) -> (artifact id: 'bc7cb3e12fa2bb32472524c980a0eb30') in 0.0054364 seconds
+Start importing Assets/_SO_Assets/VesselActions/Common Vessel Action/CrewTriggerLT.asset using Guid(faa23ae712ea4dfa8079891caf4586d8) (NativeFormatImporter) -> (artifact id: '7ce93f6d7a2a0551d18ae81230f85ed2') in 0.0015282 seconds
+Start importing Assets/DefaultNetworkPrefabs.asset using Guid(0becb7bcd48c98c4797fa76cfd181437) (NativeFormatImporter) -> (artifact id: '48bde2d1a14b8fa49f6d5b575cf47cf5') in 0.0063601 seconds
+Start importing Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguidePeckAction.asset using Guid(0b7f3c1e5a2d4e6f8a9b1c2d3e4f5a6b) (NativeFormatImporter) -> (artifact id: '933f8030bba05d8c935fd2e2766dbe33') in 0.0014345 seconds
+Start importing Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideRTAction.asset using Guid(1c8e4d2f6b3e4f7a9b0c2d3e4f5a6b7c) (NativeFormatImporter) -> (artifact id: '4a098e9531d036d8b5c6e4df347d5b67') in 0.0013939 seconds
+Start importing Assets/_SO_Assets/VesselActions/Common Vessel Action/CrewTriggerRT.asset using Guid(fc5e219bd3ed49f4b8a4414c06c4e836) (NativeFormatImporter) -> (artifact id: '23df2587d647bc349476f20178a5efea') in 0.0012784 seconds
+Start importing Assets/Resources/ElementalAbilityMaps/Goby.asset using Guid(0d9a12bec1e54418b13d4c3d5ad0fb77) (NativeFormatImporter) -> (artifact id: '5b1972a498b737d333938104435da565') in 0.0012908 seconds
+Start importing Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideLTAction.asset using Guid(2d9f5e3a7c4f4a8b8c1d3e4f5a6b7c8d) (NativeFormatImporter) -> (artifact id: 'b4c294d2ab76b3696c0e9764369184a1') in 0.0012747 seconds
+Start importing Assets/Resources/ElementalAbilityMaps/Angler.asset using Guid(3d50d998a28b391fc8f1213beb97300c) (NativeFormatImporter) -> (artifact id: '66c7477d93a6c79230fbb3e6fe175535') in 0.0060606 seconds
+Start importing Assets/Resources/ElementalAbilityMaps/Honeyguide.asset using Guid(ad162ad2c1c9459592213a738c424fb8) (NativeFormatImporter) -> (artifact id: '2a0cb7a2f82c4761402897186eb3485a') in 0.0015035 seconds
+Start importing Assets/_SO_Assets/Classes/SO_Class_Honeyguide.asset using Guid(7fcf1c753fc8440198a6dc26e5d5d63a) (NativeFormatImporter) -> (artifact id: '0beb148bf91c1553dff38cb1c011e2b6') in 0.0011795 seconds
+Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md using Guid(512bab7042e9e67f0b214b25f23046c0) (TextScriptImporter) -> (artifact id: 'daac311b29eddd96dfeed41ac44b201f') in 0.0066698 seconds
+Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md using Guid(95f286e9864c4986067bbd5a1cc6b88d) (TextScriptImporter) -> (artifact id: '14b68942f18179a02cfbf0e1a23dd426') in 0.0067198 seconds
+Start importing Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md using Guid(097017a110614f78ab03dc498e440b0d) (TextScriptImporter) -> (artifact id: '374d3fb6d35e71e90f8ff3799287880d') in 0.0067587 seconds
+Start importing Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md using Guid(dd26686ea2ea4e368fd81d8b7b0c1f56) (TextScriptImporter) -> (artifact id: '2db3e0f76393e4da49b8740e9d35e2ef') in 0.0016896 seconds
+Start importing Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md using Guid(3e7e197c258a457b87f6547b83604d1d) (TextScriptImporter) -> (artifact id: '60145e7b4449941111c54eb05ef9a5b8') in 0.0069508 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/StarlingHUDVariant.prefab using Guid(31700dc4c04545cb445d0a088417e352) (PrefabImporter) -> (artifact id: '4d1fc8194de89f69b867507e108cfc10') in 0.0582581 seconds
+Start importing Assets/_Prefabs/Environment/Cytoplasm/CosmicSnow.prefab using Guid(41222ebb42ad82c4ca52a729935c79d3) (PrefabImporter) -> (artifact id: 'ee55740a08bf23a650a5606adbec8ea9') in 0.008478 seconds
+Start importing Assets/_Prefabs/Spacevessels/Falcon.prefab using Guid(633ae27c43a2006459b22e655df7ab4f) (PrefabImporter) -> (artifact id: '2d273890885be83cafdd25abd0d6f9f9') in 0.0335918 seconds
+Start importing Assets/_Prefabs/Spacevessels/Grizzly.prefab using Guid(73c8fd79b947fef4f80df7c233451d3c) (PrefabImporter) -> (artifact id: '4d20be0a0149f81207a538844dcf19f5') in 0.033453 seconds
+Start importing Assets/_Prefabs/UI Elements/Main Menu Screens/Hangar/HangarView.prefab using Guid(24cf0b9b98ced5510a3eb6c490779ba5) (PrefabImporter) -> (artifact id: 'dad74e3d0904938ba432fde173c1b464') in 0.0802485 seconds
+Start importing Assets/_Prefabs/Spacevessels/Squirrel.prefab using Guid(84755e5175a641e0bff6b47d35746cff) (PrefabImporter) -> (artifact id: '44a0ec251d5defff82c776f15a35fb9f') in 0.0245279 seconds
+Start importing Assets/_Prefabs/Spacevessels/Scarab.prefab using Guid(945f7384d7042607da0b61b8d18f3f9b) (PrefabImporter) -> (artifact id: 'f5a02959367bf4b64cb45c787c7149a7') in 0.0240919 seconds
+Start importing Assets/_Prefabs/Spacevessels/Serpent.prefab using Guid(c4488e14125bf4a4ebc9f4ee60939f9b) (PrefabImporter) -> (artifact id: 'd7949172670d345ad266cc3d7c04712a') in 0.052937 seconds
+Start importing Assets/_Prefabs/Environment/Cytoplasm/RacingCytoplasm.prefab using Guid(e46bb81d153963040a406f62eb8abb46) (PrefabImporter) -> (artifact id: 'eda38cb742bdfc361d2b8baf5ef81c83') in 0.0133168 seconds
+Start importing Assets/_Prefabs/Spacevessels/Honeyguide.prefab using Guid(f6abe5afafae41909d25da175bc23493) (PrefabImporter) -> (artifact id: '3ee9b5bdb4487467f599198abb588e21') in 0.0224768 seconds
+Start importing Assets/_Prefabs/Spacevessels/Goby.prefab using Guid(982ad3e4c35f4421ae0424bf7bb1ee47) (PrefabImporter) -> (artifact id: '54abe0553ab691a36c919972439b64c6') in 0.023164 seconds
+Start importing Assets/_Prefabs/Spacevessels/Rhino.prefab using Guid(b8c185f31f5b4add8202df2e3efeacce) (PrefabImporter) -> (artifact id: '90cfec84d5ac32baad9444961e48e928') in 0.049255 seconds
+Start importing Assets/_Prefabs/Spacevessels/Wrasse.prefab using Guid(c81d6c43058343b796fee1128ce6ccda) (PrefabImporter) -> (artifact id: '738557b4564b8fb2ac575d5535cba77a') in 0.0239029 seconds
+Start importing Assets/_Prefabs/Spacevessels/Thresher.prefab using Guid(291d45422a244f3ab14f4e592c941c8d) (PrefabImporter) -> (artifact id: '6a5697b1d35292928c306313b806feb0') in 0.018543 seconds
+Start importing Assets/_Prefabs/Spacevessels/Stoat.prefab using Guid(599b396ff054448db5bccc9307dfb4c9) (PrefabImporter) -> (artifact id: 'cded3a39ea56db3e6a70f93360bb740a') in 0.0177296 seconds
+Start importing Assets/_Prefabs/MIgration_Prefabs (DELETE LATER)/ModalWindows.prefab using Guid(89507b9e210c9c84881e20e2c77b89fc) (PrefabImporter) -> (artifact id: '82dac48f9bb7610b7b0aabf93e007fbe') in 0.3992725 seconds
+Start importing Assets/_Prefabs/Spacevessels/BrittleStar.prefab using Guid(c905ec6b1a740194b8cf888ffee149f7) (PrefabImporter) -> (artifact id: '2f4cdb4338cf1d79b142396f14a0ec06') in 0.0185554 seconds
+Start importing Assets/_Prefabs/CORE/Player.prefab using Guid(0a8653be5d331c5449d3130cef596493) (PrefabImporter) -> (artifact id: 'b08c8fb01b6a0f4fbcebda218db62ae8') in 0.0099519 seconds
+Start importing Assets/_Prefabs/Spacevessels/Butterfly.prefab using Guid(aa59576a85f7b4746a63849ba535c74d) (PrefabImporter) -> (artifact id: 'f723b5183adf00f7993652b46d6de0fa') in 0.0223489 seconds
+Start importing Assets/_Prefabs/Spacevessels/Orca.prefab using Guid(db757691ec7343cc9decf08f3fd8c8cc) (PrefabImporter) -> (artifact id: '55cfc49b05be294cb90692f3a28aa897') in 0.023583 seconds
+Start importing Assets/_Prefabs/Spacevessels/Manta.prefab using Guid(0cf574eea9a5c404d93969f2befd9c73) (PrefabImporter) -> (artifact id: '3fe45fe305fcb39f688bdd361087478d') in 0.0219064 seconds
+Start importing Assets/_Prefabs/Spacevessels/Dolphin.prefab using Guid(3cc1c31e8138b6448ae4264dd90d24ac) (PrefabImporter) -> (artifact id: 'e1cd27193bd3c8cce99fa577d9ac6bab') in 0.0210153 seconds
+Start importing Assets/_Prefabs/Spacevessels/Angler.prefab using Guid(7c567527c09c5ea6e632b9186484fc68) (PrefabImporter) -> (artifact id: 'c5eb76eb0ef93d532c130d08c8ae0c4c') in 0.0180276 seconds
+Start importing Assets/_Prefabs/Environment/Cytoplasm/SnowChanger.prefab using Guid(9cacd903fcf4643459f5f14ac811bb20) (PrefabImporter) -> (artifact id: '612c48553daeaf3f7b94346dbb615923') in 0.0083943 seconds
+Start importing Assets/_Prefabs/Spacevessels/Urchin.prefab using Guid(cc90998ce81596a49be5dba224e2d7a6) (PrefabImporter) -> (artifact id: '0bcf5fdc7b32c98c202e18a1cba17eab') in 0.0234971 seconds
+Start importing Assets/_Prefabs/Spacevessels/Termite.prefab using Guid(2d5833ab632135248959e37cc8aef2be) (PrefabImporter) -> (artifact id: 'd4d3f48ec4c5513f4cb540b64abd4100') in 0.0290924 seconds
+Start importing Assets/_Prefabs/Spacevessels/Marlin.prefab using Guid(5d7f0a3c9e2b4f61a8c47e1b2d9f6a03) (PrefabImporter) -> (artifact id: '9a78163bde57b6b413325fa8ac0ad8ee') in 0.0330577 seconds
+Start importing Assets/_Prefabs/Spacevessels/Starling.prefab using Guid(1e5ceb8a48f583eabb3d3bfc5d277a15) (PrefabImporter) -> (artifact id: '6fa2b26d9be510c9e2116ebf51635a7e') in 0.0180911 seconds
+Start importing Assets/_Prefabs/Spacevessels/Shrike.prefab using Guid(ae83e6dd3b718654db0175585a46edb2) (PrefabImporter) -> (artifact id: '4d85ee57127389ad1dbd95301f85f261') in 0.0166183 seconds
+Start importing Assets/_Prefabs/Spacevessels/Sparrow.prefab using Guid(ce4d2e03456b4b508af88b54f396d76e) (PrefabImporter) -> (artifact id: '7350905a7cc523854640e35f6efea7b1') in 0.0217705 seconds
+Refreshing native plugins compatible for Editor in 16.67 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=023588c400adfff46bfffd25d9751c23): Total: 82.730 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+	Summary:
+		Imports: total=112 (actual=92, local cache=20, cache server=0)
+		Asset DB Process Time: managed=52 ms, native=10059 ms
+		Asset DB Callback time: managed=1119 ms, native=252 ms
+		Scripting: domain reloads=1, domain reload time=24632 ms, compile time=46613 ms, other=0 ms
+		Project Asset Count: scripts=4463, non-scripts=11898
+		Asset File Changes: new=62, changed=139, moved=0, deleted=2
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.002ms
+	InvokePackagesCallback: 2.589ms
+	ApplyChangesToAssetFolders: 1.361ms
+	Scan: 65.038ms
+	OnSourceAssetsModified: 0.591ms
+	CategorizeAssetsWithTransientArtifact: 1.610ms
+	ProcessAssetsWithTransientArtifactChanges: 22.698ms
+	UnregisterDeletedAssets: 0.003ms
+	CategorizeAssets: 189.046ms
+	ImportOutOfDateAssets: 9586.976ms (-41292.765ms without children)
+		ImportManagerImport: 3589.325ms (459.477ms without children)
+			ImportInProcess: 3128.570ms
+			UpdateCategorizedAssets: 1.278ms
+		CompileScripts: 46613.078ms
+		CollectScriptTypesHashes: 4.824ms
+		ReloadNativeAssets: 361.795ms
+		UnloadImportedAssets: 34.925ms
+		ReloadImportedAssets: 270.115ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 2.922ms
+		InitializingProgressBar: 0.002ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.003ms
+		OnDemandSchedulerStart: 2.752ms
+	PostProcessAllAssets: 1343.829ms
+	Hotreload: 27.663ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.927ms
+	UnloadStreamsBegin: 0.003ms
+	PersistCurrentRevisions: 1.739ms
+	UnloadStreamsEnd: 0.002ms
+	GenerateScriptTypeHashes: 20.422ms
+	Untracked: 71485.937ms
+
+Unloading 238 Unused Serialized files (Serialized files now loaded: 0)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Start importing ProjectSettings/EditorBuildSettings.asset using Guid(0000000000000000b000000000000000) (LibraryAssetImporter) -> (artifact id: '57b99a09a33f7eadde6f8816c4338cda') in 0.0022018 seconds
+Start importing Assets/Resources/KiteNavigatorUnlit.mat using Guid(323de18569534686969203279163666f) (NativeFormatImporter) -> (artifact id: 'c2b802779eec81be627be1c7688c2bab') in 0.0014662 seconds
+Start importing Assets/Resources/OrcaCrewLit.mat using Guid(ca4c63633add406ba5732231ca75f4e5) (NativeFormatImporter) -> (artifact id: 'cd347d2b5b6559b46ac37bf8b1b650c3') in 0.0014429 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedPlayerCount.asset using Guid(15256dcf0be30b4489190913d1f305db) (NativeFormatImporter) -> (artifact id: '0a06f472a8a92a02e09c75f594e15deb') in 0.005856 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedVesselClass.asset using Guid(669b1e817c2158c40940e62d07c68356) (NativeFormatImporter) -> (artifact id: '1e9a63e6f97a8dedb377269ef18f3c37') in 0.0052077 seconds
+Start importing Assets/_SO_Assets/NetworkMonitor Data/Network Monitor Data.asset using Guid(c656ab83067d26846b449b637e43320a) (NativeFormatImporter) -> (artifact id: '8a8284666ee8321dc5847bb03390a104') in 0.0055351 seconds
+Start importing Assets/_SO_Assets/Authentication Data/AuthenticationData.asset using Guid(875bcedfcf3335047b416297732cba15) (NativeFormatImporter) -> (artifact id: 'eb75e3607d0a06349de565c8887ea19b') in 0.0051389 seconds
+Start importing Assets/_SO_Assets/Application State/ApplicationStateData.asset using Guid(18ceced7226bbe51dd9542bc4cad3203) (NativeFormatImporter) -> (artifact id: '40b01a0bd1e34b5c07791a2f58c32c43') in 0.005441 seconds
+Refreshing native plugins compatible for Editor in 14.89 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=4c7302ca6f9d341428ba1dc25f673e4a): Total: 0.145 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[BuildSceneListReconciler] the build-scene list this Editor session is holding was missing 1 scene(s) an arcade card names, so those cards could not be launched. Added:
+  Assets/_Scenes/Multiplayer Scenes/ArcadeGameMultiplayer2v2CoOpVsAI.unity
+
+This happens because ProjectSettings/EditorBuildSettings.asset is not in the AssetDatabase: a headless generator's write to it is invisible to an Editor that is already open. Commit the change (FrogletTools > Build > Pending Tool Changes).
+0x00007ffe8da64e2e (Unity) StackWalker::ShowCallstack
+0x00007ffe8f29f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffe8f29fbee (Unity) Stacktrace::GetStacktrace
+0x00007ffe8da1587f (Unity) DebugStringToFile
+0x00007ffe8d8d1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000233c81bcfdd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000233c81bcea3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000233c81bcadb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000233c81bc860 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000233c81bc728 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000234387257f3 (Mono JIT Code) CosmicShore.Editor.BuildSceneListReconciler:AutoRepair () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Editor/Build/BuildSceneListReconciler.cs:85)
+0x0000023438723cc8 (Mono JIT Code) UnityEditor.EditorApplication:Internal_CallDelayFunctions ()
+0x000002361f2c6f95 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffe8a236c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffe8a178984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffe8a178a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffe8e29fdd4 (Unity) scripting_method_invoke
+0x00007ffe8e2a6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffe8e2a2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffe8e88b10b (Unity) Scripting::UnityEditor::EditorApplicationProxy::Internal_CallDelayFunctions
+0x00007ffe8ead859a (Unity) Application::TickTimer
+0x00007ffe8e8b9f7c (Unity) MainMessageLoop
+0x00007ffe8e8c1a12 (Unity) UnityMain
+0x00007ff62bf62f2a (Unity) __scrt_common_main_seh
+0x00007fff655ddda7 (KERNEL32) BaseThreadInitThunk
+0x00007fff666fee4c (ntdll) RtlUserThreadStart
+
+[INFO ] [relay] log Unity client connected with ID: editor-69992-sfhsgs (relay 1.0.12-build.96)
+[INFO ] [relay] connection.established clientId=editor-69992-sfhsgs port=9001
+Unloading 1616 unused Assets / (12.1 MB). Loaded Objects now: 50777.
+Memory consumption went from 2.24 GB to 2.23 GB.
+Total: 80.795600 ms (FindLiveObjects: 4.844700 ms CreateObjectMapping: 5.088100 ms MarkObjects: 65.630300 ms  DeleteObjects: 5.231500 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "Ep1Xkgg8"... (expires: 2026-10-22T00:47:52Z)
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "Ep1Xkgg8"... (expires: 2026-10-22T00:47:53Z)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Refreshing native plugins compatible for Editor in 15.14 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.09 ms.
+Asset Pipeline Refresh (id=7c1540d023f45534c922bbcf50d9c07f): Total: 0.470 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+	Summary:
+		Imports: total=2 (actual=0, local cache=2, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=288 ms
+		Asset DB Callback time: managed=68 ms, native=113 ms
+		Scripting: domain reloads=0, domain reload time=0 ms, compile time=0 ms, other=0 ms
+		Project Asset Count: scripts=4463, non-scripts=11898
+		Asset File Changes: new=0, changed=2, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.008ms
+	InvokePackagesCallback: 1.671ms
+	ApplyChangesToAssetFolders: 2.235ms
+	Scan: 40.428ms
+	OnSourceAssetsModified: 0.249ms
+	CategorizeAssetsWithTransientArtifact: 0.069ms
+	ProcessAssetsWithTransientArtifactChanges: 1.935ms
+	CategorizeAssets: 56.101ms
+	ImportOutOfDateAssets: 10.284ms (0.737ms without children)
+		CompileScripts: 0.049ms
+		ReloadNativeAssets: 1.442ms
+		UnloadImportedAssets: 0.442ms
+		ReloadImportedAssets: 0.000ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 2.088ms
+		InitializingProgressBar: 0.000ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.001ms
+		OnDemandSchedulerStart: 5.525ms
+	PostProcessAllAssets: 144.892ms
+	Hotreload: 34.781ms
+	GatherAllCurrentPrimaryArtifactRevisions: 6.692ms
+	UnloadStreamsBegin: 45.672ms
+	PersistCurrentRevisions: 0.630ms
+	UnloadStreamsEnd: 0.002ms
+	Untracked: 124.144ms
+
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Scanning for USB devices : 23.678ms
+Scanning for USB devices : 23.540ms
+[LAYOUT] About to save layout C:\Users\belac\source\repos\Cosmic-Shore\UserSettings\Layouts\default-6000.dwlt
+[LAYOUT] About to save layout C:/Users/belac/AppData/Roaming/Unity/Editor-5.x/Preferences\Layouts\current\default-6000.dwlt
+[BugLedger] Validated & closed: "ObjectDisposedException: Cannot access a disposed object." — silent across 2 clean EditMode sessions (last: 1851min editor session). Archived to BugLedger/resolved/.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CosmicShore.Editor.BugLedger:CreditCleanSessions (string,System.Collections.Generic.HashSet`1<string>,bool,string) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:508)
+CosmicShore.Editor.BugLedger:CreditEditorSessionEnd () (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:457)
+CosmicShore.Editor.BugLedger:OnQuitting () (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:255)
+UnityEditor.EditorApplication:Internal_EditorApplicationQuit ()
+
+(Filename: Assets/_Scripts/Editor/Diagnostics/BugLedger.cs Line: 508)
+
+Pipeline Server stopped
+Unloading 20 Unused Serialized files (Serialized files now loaded: 0)
+[INFO ] [relay] log Shutdown request received from client editor-69992-sfhsgs
+[INFO ] [relay] log Unity client requested immediate shutdown - shutting down now, reason: Shutdown requested by client
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Shutdown requested by client
+SUCCESS: The process with PID 13824 (child process of PID 48532) has been terminated.
+SUCCESS: The process with PID 48532 (child process of PID 69992) has been terminated.
+Killing ADB server in 0.0429679 seconds.
+Refreshing native plugins compatible for Editor in 15.92 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=1403b8d56d17165409e973f9ec874c72): Total: 0.163 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 15.37 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=05b9769a394f0634fb06dfbae81f08dd): Total: 0.127 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 15.83 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=e1ceb9917c126ae469e19a0e3a29feeb): Total: 0.153 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 14.62 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.06 ms.
+Asset Pipeline Refresh (id=5a8f3fd000190474cb0b78ffea80d25c): Total: 0.160 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing ProjectSettings/EditorBuildSettings.asset using Guid(0000000000000000b000000000000000) (LibraryAssetImporter) -> (artifact id: '9bd1d8192247f6311edc8b85add0a7e6') in 0.0043971 seconds
+Start importing Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold SDF.asset using Guid(9f6e2fcf98f99f3ed5ff96934bb43d6d) (NativeFormatImporter) -> (artifact id: 'be551c7a1f6fb1c9472b46fd81af8c15') in 0.0130819 seconds
+Refreshing native plugins compatible for Editor in 16.31 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=f4a66b2415aebd6448bd7990e9da0521): Total: 0.145 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Unloading 7898 unused Assets / (1.1 MB). Loaded Objects now: 43287.
+Memory consumption went from 1.96 GB to 1.96 GB.
+Total: 132.139100 ms (FindLiveObjects: 2.575500 ms CreateObjectMapping: 1.611700 ms MarkObjects: 116.648900 ms  DeleteObjects: 11.302100 ms)
+
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread stopped.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+[Licensing::IpcConnector] LicenseClient-belac-6000.3.17-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-belac-6000.3.17 channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+Shut down.
+abort_threads: Failed aborting id: 0000000000000B94, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000000B94, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 5164
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1792627735153,"processId":69992,"allocatedMemory":37888729,"memoryLabels":[{"Default":29317},{"Permanent":15236},{"NewDelete":128521},{"Thread":4254344},{"Manager":3114101},{"VertexData":8},{"Geometry":816},{"Texture":2472},{"Shader":97909},{"Material":5392},{"GfxDevice":58112},{"GfxThread":49152},{"Audio":3040},{"FreeType":8},{"FontEngine":736},{"Physics":2090},{"Physics2D":16},{"Serialization":567680},{"Input":14984},{"JobScheduler":33024},{"TextLib":38488},{"Mono":32},{"MonoCode":7104},{"ScriptingNativeRuntime":155060},{"BaseObject":1656992},{"Resource":1336},{"Renderer":3008},{"Transform":4685},{"File":56595},{"WebCam":616},{"Culling":32},{"Terrain":11394},{"Wind":24},{"STL":40},{"String":13009},{"DynamicArray":2159802},{"HashMap":430715},{"Utility":2662102},{"PoolAlloc":10792},{"AI":80},{"TypeTree":1552665},{"ScriptManager":512},{"RuntimeInitializeOnLoadManager":64},{"SpriteAtlas":112},{"GI":7792},{"Director":8240},{"CloudService":8208},{"WebRequest":11926},{"VR":47994},{"SceneManager":504},{"Video":208},{"LazyScriptCache":32},{"NativeArray":3936},{"Camera":17},{"Secure":4929},{"SerializationCache":1576},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":560},{"Hierarchy":608},{"CoreStats":13112},{"Identifiers":12960},{"Gui":1091},{"EditorUtility":704684},{"VersionControl":4},{"Undo":947},{"AssetDatabase":19486962},{"EditorGi":328},{"UnityConnect":29472},{"Upm":1972},{"AssetCompliance":64},{"DrivenProperties":72},{"ChannelService":384},{"LocalIPC":211},{"ProfilerEditor":9746},{"CoreBusinessMetrics":2867},{"TLS":48242},{"Licensing":792},{"AssetReference":32},{"IPCStream":32}]}
+
