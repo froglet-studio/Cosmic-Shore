@@ -33,10 +33,10 @@ namespace CosmicShore.ECS
     /// </summary>
     public enum PrismRenderOverrideSet
     {
-        Prism,
-        Explosion,
-        Implosion,
-        Slice,
+        Prism = 0,
+        Explosion = 1,
+        Implosion = 2,
+        Slice = 3,
     }
 
     /// <summary>
@@ -1176,26 +1176,43 @@ namespace CosmicShore.ECS
         }
 
         /// <summary>
-        /// Re-writes the entity's bright/dark overrides as a DARKER shade of <paramref name="material"/>'s authored
-        /// colours: scaled by <paramref name="gain"/> (0-1). The hue stays the material's (a prism's colour is its
-        /// DOMAIN, and a shade must never read as another team or as a lit state). Inputs are authored-space; the
-        /// colour-space transform is applied here, as in <see cref="SetMaterial"/>. Spread is left as the material
-        /// set it. Called by <c>Prism.ApplyColorShade</c> after every material sync, so a domain or state change
-        /// keeps the shade.
+        /// Re-writes the entity's bright/dark overrides as a SHADE of <paramref name="material"/>'s authored colours:
+        /// scaled by <paramref name="gain"/> (0-1, darker), then lifted toward white by <paramref name="lift"/> (0-1,
+        /// the LIT state). The hue stays the material's, so neither reads as another team. Inputs are authored-space;
+        /// the colour-space transform is applied here, as in <see cref="SetMaterial"/>. Spread is left as the material
+        /// set it. Called by <c>Prism.ApplyColorShade</c> after every material sync, so a domain or state change keeps
+        /// the shade.
         /// </summary>
-        public static void ApplyColorShade(in PrismRenderHandle handle, Material material, float gain)
+        public static void ApplyColorShade(in PrismRenderHandle handle, Material material, float gain, float lift = 0f)
         {
             if (material == null || !IsUsable(in handle)) return;
             var em = _world.EntityManager;
-            em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = ReadShadedColor(material, BrightColorId, gain) });
-            em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = ReadShadedColor(material, DarkColorId, gain) });
+            em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = ApplyColorSpace(ShadedColor(material, BrightColorId, gain, lift)) });
+            em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = ApplyColorSpace(ShadedColor(material, DarkColorId, gain, lift)) });
         }
 
-        static float4 ReadShadedColor(Material material, int propertyId, float gain)
+        /// <summary>
+        /// Fades the entity INTO its current shade (<see cref="ApplyColorShade"/>, already written) from the shade it
+        /// showed at <paramref name="fromGain"/> / <paramref name="fromLift"/>, over <paramref name="duration"/>: one
+        /// <see cref="StampColorTransition"/>, so the GPU runs the fade and nothing is written per frame. False when
+        /// the clock path is off; the prism then shows its new shade at once.
+        /// </summary>
+        public static bool StampShadeTransition(in PrismRenderHandle handle, Material material, float startTime,
+            float duration, float fromGain, float fromLift)
+        {
+            if (material == null) return false;
+            return StampColorTransition(in handle, startTime, duration,
+                ShadedColor(material, BrightColorId, fromGain, fromLift),
+                ShadedColor(material, DarkColorId, fromGain, fromLift),
+                ReadVector3(material, SpreadId));
+        }
+
+        // Authored-space: the caller applies the colour-space transform (StampColorTransition does it itself).
+        static float4 ShadedColor(Material material, int propertyId, float gain, float lift)
         {
             Color c = material.HasProperty(propertyId) ? material.GetColor(propertyId) : Color.white;
-            float k = Mathf.Clamp01(gain);
-            return ApplyColorSpace(new float4(c.r * k, c.g * k, c.b * k, c.a));
+            float k = Mathf.Clamp01(gain), l = Mathf.Clamp01(lift);
+            return new float4(Mathf.Lerp(c.r * k, 1f, l), Mathf.Lerp(c.g * k, 1f, l), Mathf.Lerp(c.b * k, 1f, l), c.a);
         }
 
         /// <summary>

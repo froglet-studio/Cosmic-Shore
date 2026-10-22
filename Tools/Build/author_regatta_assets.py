@@ -19,8 +19,8 @@ their teammates pick on the launch panel. See Assets/_Scripts/Controller/Arcade/
 
 WHAT IS FORKED AND WHY. Four cell configs, because the arena is an AUTHORED environment (the
 rails, one SpawnableRegattaRails prefab variant per intensity) and its volume ladder has to
-sit above ~2,000 super-shielded (6,6,8) prisms - 288 volume each - that the count x 16
-derivation would price at a seventeenth. The spawn profile is the Barren cell's, REFERENCED:
+sit above ~2,000 super-shielded (6,6,8) prisms - up to 288 volume each, every length fitted flush
+to its neighbours - that the count x 16 derivation would price at a seventeenth. The spawn profile is the Barren cell's, REFERENCED:
 no flora, no fauna (shielded mass is never food anyway, and fauna are per-peer).
 
 WHAT IS REFERENCED. The scene is a clone of MinigameRedline (itself Headlong's): the gate-race
@@ -139,13 +139,20 @@ def prisms_at(i: int) -> int:
     return int(COURSE["intensities"][str(i)]["prismCount"])
 
 
-def phase_thresholds(prisms: int) -> dict:
+def rail_volume_at(i: int) -> int:
+    """The rails' LAID volume, measured by the harness: every prism at the length
+    RegattaCourse.FlushRailLengths fits it to (flush with its neighbours, so a bend's prisms are a
+    little shorter than 8 u). Never count x PRISM_VOLUME - that prices the overlap the fit removed."""
+    return int(COURSE["intensities"][str(i)]["railVolume"])
+
+
+def phase_thresholds(prisms: int, volume: int) -> dict:
     """Ride the rails' own measured volume plus a trail band. Nearly inert in a cell with no
     flora and no fauna (the ladder gates production, and nothing here produces), but a cell
     whose prisms are 18x nominal volume must never inherit the count x 16 derivation, which
     would pin it at Frenzy from frame one. Restless +60,000 / Frenzy +400,000 volume above the
     rails: a four-hull grid laying trail for a ninety-second race, with room."""
-    v = prisms * int(PRISM_VOLUME)
+    v = volume
     return {
         "RestlessEnter": prisms + 700, "RestlessExit": prisms + 500,
         "FrenzyEnter": prisms + 3600, "FrenzyExit": prisms + 3000,
@@ -243,11 +250,12 @@ for _i in range(1, 5):
 # ── 4. Cell configs, one per intensity ──────────────────────────────────────
 for _i in range(1, 5):
     c = COURSE["intensities"][str(_i)]
-    t = phase_thresholds(prisms_at(_i))
+    t = phase_thresholds(prisms_at(_i), rail_volume_at(_i))
     desc = lib.wrap_yaml_scalar(
         f"Regatta at intensity {_i} of 4 (CellTypeChoiceOptions.IntensityWise, list order = "
         f"intensity): a closed circuit of {c['rings']} rings with three super-shielded rails - one "
-        f"per playable domain - braided along it, {c['prismCount']} (6,6,8) prisms on a "
+        f"per playable domain - braided along it, {c['prismCount']} (6,6,8) prisms (each length fitted "
+        f"flush to its neighbours, {c['railVolume']:,} volume) on a "
         f"{c['spineLength']:.0f}u spine, mouths {c['ringRadius']:.0f}u, no corner under "
         f"{c['cornerFloor']:.0f}u. The standard nucleus is the crystal respawn volume and the "
         f"inner shell; the spawn profile is the Barren cell's (no flora, no fauna - shielded mass "
@@ -278,7 +286,7 @@ for _i in range(1, 5):
 # one speed source a gate-following autopilot reaches by flying the racing line. Retire this when
 # the racing AI drives every hull (clear OpponentAIVessel and drop the assert below).
 OPPONENT_AI_HULL = "Squirrel"
-HULL_ORDER = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab"]
+HULL_ORDER = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab", "Stoat"]
 VESSEL_ROWS = "".join(f"  - {{fileID: 11400000, guid: {EXISTING[f'Vessel_{h}']}, type: 2}}\n" for h in HULL_ORDER)
 
 
@@ -514,13 +522,19 @@ for i in range(1, 5):
         errors.append(f"intensity {i}: lane lengths spread {(hi - lo) / lo:.1%} (> 3%) - a domain races shorter")
     if c["minLaneSeparation"] < 3 * PRISM_SCALE[0]:
         errors.append(f"intensity {i}: lanes come within {c['minLaneSeparation']:.1f}u - fused super-shield cables")
-    t = phase_thresholds(prisms_at(i))
+    t = phase_thresholds(prisms_at(i), rail_volume_at(i))
     if not (t["RestlessExit"] < t["RestlessEnter"] < t["FrenzyExit"] < t["FrenzyEnter"]):
         errors.append(f"intensity {i}: count ladder is not ordered")
     if not (t["RestlessExitVolume"] < t["RestlessEnterVolume"] < t["FrenzyExitVolume"] < t["FrenzyEnterVolume"]):
         errors.append(f"intensity {i}: volume ladder is not ordered")
-    if t["RestlessEnterVolume"] <= prisms_at(i) * PRISM_VOLUME:
+    if t["RestlessEnterVolume"] <= rail_volume_at(i):
         errors.append(f"intensity {i}: Restless sits under the rails' own volume")
+    # The flush fit only ever SHORTENS a prism, and only on a bend: the laid volume sits under the
+    # nominal count x 288 and within a few percent of it. Outside that band the fit (or the
+    # harness's copy of the prism scale) has drifted.
+    if not (0.95 * prisms_at(i) * PRISM_VOLUME <= rail_volume_at(i) <= prisms_at(i) * PRISM_VOLUME):
+        errors.append(f"intensity {i}: measured rail volume {rail_volume_at(i):,} is outside "
+                      f"[95%, 100%] of {prisms_at(i)} x {PRISM_VOLUME:.0f} - the flush fit has drifted")
 
 # The balance the model reaches, asserted so a vessel retune that breaks it is caught here.
 for i in range(1, 5):

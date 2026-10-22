@@ -4,6 +4,8 @@
 > pilot flies **three laps** of it in order; the first **domain** whose **lead runner** threads the
 > last gate of the last lap wins, on finish **time** (golf). Grizzly Time's shape (itself Redline's
 > on Headlong's solver), cut against the Thresher's sling. The hull: `R_VesselActions/THRESHER.md`.
+> **A gate is threaded by the hull OR the ball** (Garrett, 2026-10-19; `IRingThreadProbe`, THRESHER.md
+> §5b): the same mouth test on the ball's segment, so a chain swung through the lit ring counts.
 
 ## 1. What the mode is asking
 
@@ -203,6 +205,8 @@ circuits' recipe in `render_card_backgrounds.py`.
 7. **MPPM two clients.** Both see the same circuit; a client's gate reports are credited once; a
    sling at the ceiling is not read as a respawn (`maxPlausibleSpeed` 1600).
 8. **Regressions.** Grizzly Time, Redline and Headlong unchanged.
+9. **The ball threads (2026-10-19).** Fly past the lit ring just outside its mouth and swing the ball
+   through it: the ring counts once and the next one lights. A respawn beside a ring threads nothing.
 
 ## 8. Known limitations / follow-ups
 

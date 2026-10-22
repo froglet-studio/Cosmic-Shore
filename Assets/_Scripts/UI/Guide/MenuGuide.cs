@@ -31,6 +31,18 @@ namespace CosmicShore.UI
         /// <summary>Raised when a guide begins or ends.</summary>
         public static event Action Changed;
 
+        /// <summary>
+        /// Raised when the player presses Skip on the spotlight: whoever drives the guide ends its
+        /// whole tutorial (the Quest Graph's runner marks the quest done). A guide is never a cage.
+        /// </summary>
+        public static event Action SkipRequested;
+
+        /// <summary>The player asked to skip the tutorial. No-op while no guide runs.</summary>
+        public static void RequestSkip()
+        {
+            if (IsActive) SkipRequested?.Invoke();
+        }
+
         /// <summary>Start a guide. <paramref name="targetMode"/> is the card the path ends on, if any.</summary>
         public static void Begin(GameModes? targetMode)
         {
@@ -105,6 +117,7 @@ namespace CosmicShore.UI
             IsActive = false;
             TargetMode = null;
             Changed = null;
+            SkipRequested = null;
         }
     }
 }

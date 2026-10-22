@@ -2401,7 +2401,6 @@ GameObject:
   - component: {fileID: 5449330502335562717}
   - component: {fileID: 5534725627831807525}
   - component: {fileID: 6073276934763354894}
-  - component: {fileID: 8719051424814094672}
   m_Layer: 5
   m_Name: Explore
   m_TagString: Untagged
@@ -2454,25 +2453,10 @@ MonoBehaviour:
   GameList: {fileID: 11400000, guid: 25a98002ea18f5d45b5e8b2098a06c57, type: 2}
   GameSelectionView: {fileID: 5724495326365645875}
   GameSelectionGrid: {fileID: 3644297790223743565}
-  ArcadeDPadNav: {fileID: 8719051424814094672}
   DailyChallengeCard: {fileID: 5792839079620010645}
   ArcadeGameConfigureModal: {fileID: 0}
   selectedVesselClassType: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,
     type: 2}
---- !u!114 &8719051424814094672
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3424591064242204011}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9c7d37f119377f34cbc93e5833d5a3b3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ScreenSwitcher: {fileID: 0}
-  scrollRect: {fileID: 1662294437800513722}
 --- !u!1 &3474476729125602707
 GameObject:
   m_ObjectHideFlags: 0

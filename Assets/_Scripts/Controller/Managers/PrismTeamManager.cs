@@ -13,9 +13,15 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] private ScriptableEventPrismStats onPrismStolen;
 
+        private static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
+
         private Prism prism;
         private MaterialPropertyAnimator materialAnimator;
         private Domains currentDomain = Domains.Blue;
+
+        // The length of the NEXT team change's colour grade. A steal that sheds (PrismInteractionLod) sets it
+        // to 0 for its one change — the skin is the transition — and HandleTeamChange restores the default.
+        private float nextGradeSeconds = MaterialPropertyAnimator.DefaultTransitionSeconds;
 
         public Domains Domain
         {
@@ -82,8 +88,12 @@ namespace CosmicShore.Gameplay
 
             // Super-shielded prisms are fully invulnerable: no team change,
             // no shield decay. Ways to break super-shields will be added
-            // later as targeted opt-in mechanics.
-            if (prism.prismProperties.IsSuperShielded) return;
+            // later as targeted opt-in mechanics. The refusal is still SEEN: the
+            // deflection jiggle every other hit on super-shielded mass gets, so a
+            // steal attempt never reads as passing through (Docs/LIT.md, "dynamic
+            // contact never does nothing"). One place covers every steal source -
+            // hull, skimmer, Urchin spike, black hole, the Thresher's Mass Mode.
+            if (prism.AbsorbSuperShieldHit(0f)) return;
 
             if (!superSteal && prism.prismProperties.IsShielded)
             {
@@ -106,6 +116,11 @@ namespace CosmicShore.Gameplay
                 AttackerName = prism.PlayerName
             };
 
+            // The steal's DETAIL LEVEL (Docs/PRISM_ANIMATION.md §4.12): close to the viewer and within the
+            // budget, the old colours SHED off the prism as a skin and the prism takes its new colour at
+            // once; otherwise the ordinary grade. Squinted at, the two are the same transition.
+            if (TryShed(newDomain)) nextGradeSeconds = 0f;
+
             ChangeTeam(newDomain);
 
             onPrismStolen.Raise(stolenStats);
@@ -113,12 +128,28 @@ namespace CosmicShore.Gameplay
 
         private void HandleTeamChange(Domains oldDomain, Domains newDomain)
         {
+            float gradeSeconds = nextGradeSeconds;
+            nextGradeSeconds = MaterialPropertyAnimator.DefaultTransitionSeconds;
             if (!TryResolveMaterials(newDomain, out var trans, out var opaque))
             {
                 CSDebug.LogError($"No materials found for team {newDomain}", this);
                 return;
             }
-            materialAnimator.UpdateMaterial(trans, opaque);
+            materialAnimator.UpdateMaterial(trans, opaque, gradeSeconds);
+        }
+
+        // A shed needs a solid, standing prism on screen, the colours it shows now, and the colour it is about
+        // to wear; any gap and the steal grades as usual.
+        bool TryShed(Domains newDomain)
+        {
+            if (!prism || !materialAnimator || prism.destroyed || !prism.isActiveAndEnabled) return false;
+            if (prism.prismProperties == null || prism.prismProperties.IsTransparent) return false;
+            if (!TryResolveMaterials(newDomain, out _, out var opaque) || !opaque.HasProperty(BrightColorId)) return false;
+            if (!materialAnimator.TryGetDisplayedColors(out var oldBright, out var oldDark)) return false;
+
+            var t = transform;
+            return PrismInteractionLod.TryShed(t.position, t.rotation, t.lossyScale, oldBright, oldDark,
+                opaque.GetColor(BrightColorId), MaterialPropertyAnimator.DefaultTransitionSeconds);
         }
 
         bool TryResolveMaterials(Domains domain, out Material transparent, out Material opaque)

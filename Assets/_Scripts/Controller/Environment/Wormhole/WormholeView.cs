@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Utility;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -113,8 +114,13 @@ namespace CosmicShore.Gameplay
             void LateUpdate() => Tick();
         }
 
+        // Named so diag / prof attribute the driver's frame (see BlackHoleRegistry's markers, 2026-10-18).
+        static readonly ProfilerMarker s_tickMarker = new("Wormhole.Tick");
+        static readonly ProfilerMarker s_renderMarker = new("Wormhole.SelectAndRender");
+
         static void Tick()
         {
+            using var tick = s_tickMarker.Auto();
             // A borrowed pose never outlives the render it was borrowed for.
             RestoreMainPose();
             _carriedMouth = null;
@@ -139,7 +145,7 @@ namespace CosmicShore.Gameplay
             {
                 Shader.SetGlobalFloat(ClearanceId, WormholeGeometry.Clearance(_mainView.nearClipPlane));
                 ResolveSubject(controller);
-                SelectAndRender(_mainView, controller);
+                using (s_renderMarker.Auto()) SelectAndRender(_mainView, controller);
             }
 
             for (int i = 0; i < live.Count; i++)
@@ -405,15 +411,8 @@ namespace CosmicShore.Gameplay
             return manager.GetActiveController() as CustomCameraController;
         }
 
-        /// <summary>The device tier's ceiling on an exact view's render scale —
-        /// <c>PlatformProfileSO.FoldGateWindowMaxRenderScale</c> (1 = none).</summary>
-        static float TierMaxRenderScale
-        {
-            get
-            {
-                var profile = CosmicShore.Core.PlatformProfile.Current;
-                return profile ? profile.FoldGateWindowMaxRenderScale : 1f;
-            }
-        }
+        /// <summary>The device tier's and quality preset's ceiling on an exact view's render scale —
+        /// <c>GraphicsCuts.OffscreenViewMaxRenderScale</c> (1 = none).</summary>
+        static float TierMaxRenderScale => CosmicShore.Core.GraphicsCuts.OffscreenViewMaxRenderScale;
     }
 }

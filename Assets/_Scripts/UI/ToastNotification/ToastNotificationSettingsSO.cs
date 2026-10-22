@@ -49,6 +49,12 @@ namespace CosmicShore.UI
         [Tooltip("Spacing between stacked toasts (in canvas units).")]
         public float stackSpacing = 10f;
 
+        [Tooltip("Put each new toast at the top of the stack (first sibling). Off: at the bottom (last sibling).")]
+        public bool newestOnTop = true;
+
+        [Tooltip("How far a toast drops in from above as it fades in (canvas units). 0: it only fades.")]
+        public float dropDistance = 16f;
+
         [Header("Capacity")]
         [Tooltip("Maximum number of toasts visible at the same time. Oldest is dismissed when exceeded.")]
         public int maxVisible = 3;

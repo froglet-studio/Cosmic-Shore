@@ -30,6 +30,11 @@ namespace CosmicShore.Gameplay
     ///             which is the whole scoring event of The Bends, a mode in which every pilot is
     ///             a Dolphin: the trailing pilot's comeback buff handed them a hard counter to
     ///             the only way they could be scored on).
+    ///   Rhino   — <see cref="Condition.WhileAboveTopSpeedFraction"/> (70% of the ramp's top
+    ///             speed) gated on <see cref="Element.Time"/>, warding
+    ///             <see cref="ElementalDebuffSources.DangerPrism"/> ALONE (the TIME level-5
+    ///             upgrade, <b>Momentum</b>: flat out, the arena's danger mass cannot drain it -
+    ///             the Dolphin's scoping, for the Dolphin's reason).
     ///
     /// The grant is keyed on THIS component (the grantor — not to be confused with the debuff
     /// SOURCE class it wards), so a second holder (another ability, a game mode) can hold immunity
@@ -55,6 +60,10 @@ namespace CosmicShore.Gameplay
 
             /// <summary>Held while the vessel is drifting (<c>IVesselStatus.IsDrifting</c>).</summary>
             WhileDrifting = 3,
+
+            /// <summary>Held while the vessel travels at or above <see cref="topSpeedFraction"/> of
+            /// its TOP speed (an <see cref="ITopSpeedSource"/> on the vessel - the Rhino's ramp).</summary>
+            WhileAboveTopSpeedFraction = 4,
         }
 
         [Header("Immunity window")]
@@ -74,7 +83,19 @@ namespace CosmicShore.Gameplay
                  "stopped only by a ward that covers everything.")]
         [SerializeField] ElementalDebuffSources wardedSources = ElementalDebuffSources.All;
 
+        [Tooltip("WhileAboveTopSpeedFraction only: the fraction of the hull's top speed (its " +
+                 "ITopSpeedSource) at and above which the ward holds.")]
+        [SerializeField, Range(0f, 1f)] float topSpeedFraction = 0.7f;
+
         IVesselStatus _status;
+        ITopSpeedSource _topSpeed;
+        bool _warnedNoTopSpeed;
+
+        /// <summary>True while this window currently holds its grant - the HUD's indicator.</summary>
+        public bool IsHolding => _granted != ElementalDebuffSources.None;
+
+        /// <summary>Which element's level-5 upgrade gates this window (None = ungated).</summary>
+        public Element UpgradeGate => upgradeGate;
 
         // What is currently granted, so an inspector edit to wardedSources mid-play re-grants
         // rather than leaving the vessel warded against the old set.
@@ -116,9 +137,31 @@ namespace CosmicShore.Gameplay
                 Condition.WhileBoosting              => _status.IsBoosting,
                 Condition.WhileTranslationRestricted => _status.IsTranslationRestricted,
                 Condition.WhileDrifting              => _status.IsDrifting,
+                Condition.WhileAboveTopSpeedFraction => IsAboveTopSpeedFraction(),
                 Condition.Always                     => true,
                 _                                    => false,
             };
+        }
+
+        // Speed is the replicated status speed, so the ward reads the same on every peer that
+        // simulates this hull; the top speed is the hull's own authored ceiling.
+        bool IsAboveTopSpeedFraction()
+        {
+            _topSpeed ??= GetComponentInChildren<ITopSpeedSource>(true);
+            if (_topSpeed == null)
+            {
+                if (!_warnedNoTopSpeed)
+                {
+                    _warnedNoTopSpeed = true;
+                    Debug.LogWarning($"[VesselElementalImmunity] {name} holds its ward above a fraction of top " +
+                                     "speed, but nothing under it reports a top speed (ITopSpeedSource - the " +
+                                     "Rhino's RampBoostActionExecutor). The ward can never hold.", this);
+                }
+                return false;
+            }
+
+            float top = _topSpeed.TopSpeed;
+            return top > 0f && _status.Speed >= topSpeedFraction * top;
         }
 
         void Grant(bool immune)

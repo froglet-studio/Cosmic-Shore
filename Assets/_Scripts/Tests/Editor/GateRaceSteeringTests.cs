@@ -8,7 +8,7 @@ namespace CosmicShore.Tests
     /// <summary>
     /// The Regatta AI studio's steering fix, ported into <see cref="GateRaceController"/>: commit no
     /// earlier than the approach point, and treat a plane crossing outside the mouth as a miss. The
-    /// expected numbers are the studio's own (<c>Docs/Studios/RegattaAI/index.html</c>, <c>aiInput</c>:
+    /// expected numbers are the studio's own (the deleted Regatta AI page, <c>Docs/Studios/RegattaAI/index.html</c> in git history, <c>aiInput</c>:
     /// <c>Math.min(commit, lead + 0.5 * speed / turnRate)</c>), so the page and the game cannot drift.
     /// </summary>
     public class GateRaceSteeringTests

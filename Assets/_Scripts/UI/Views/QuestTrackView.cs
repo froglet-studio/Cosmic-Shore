@@ -48,6 +48,10 @@ namespace CosmicShore.UI
         [Tooltip("World-space distance from viewport center at which min values are reached")]
         [SerializeField] private float parallaxFalloff = 400f;
 
+        [Header("Summary (optional)")]
+        [Tooltip("\"1 of 5 complete\": quests claimed out of the list.")]
+        [SerializeField] private TMP_Text summaryText;
+
         private readonly List<QuestItemCard> _cards = new();
         private readonly List<CanvasGroup> _descriptionLabels = new();
         private ScreenSwitcher _screenSwitcher;
@@ -143,6 +147,7 @@ namespace CosmicShore.UI
 
                 card.Configure(questList.Quests[i]);
                 card.SetState(GetCardState(i));
+                card.SetContext(i, MaxIntensityOf(questList.Quests[i]), PreviousQuestName(i));
 
                 int cardIndex = i;
                 card.BindClaimAction(() => HandleClaimPressed(cardIndex));
@@ -181,46 +186,43 @@ namespace CosmicShore.UI
 
         // ── Card State ────────────────────────────────────────────────────────
 
-        QuestItemState GetCardState(int questIndex)
-        {
-            var quest = questList.Quests[questIndex];
-            var service = GameModeProgressionService.Instance;
-            bool isUnlocked = questIndex == 0 || (service != null && service.IsGameModeUnlocked(quest.GameMode));
-            if (!isUnlocked) return QuestItemState.Locked;
-
-            if (questIndex + 1 < questList.Quests.Count && service != null
-                && service.IsGameModeUnlocked(questList.Quests[questIndex + 1].GameMode))
-                return QuestItemState.Claimed;
-
-            if (quest.IsPlaceholder)
-                return QuestItemState.ReadyToClaim;
-
-            if (service != null && service.IsQuestCompleted(quest.GameMode))
-                return QuestItemState.ReadyToClaim;
-
-            return QuestItemState.Unlocked;
-        }
+        QuestItemState GetCardState(int questIndex) =>
+            QuestFrontier.StateOf(questList, questIndex, GameModeProgressionService.Instance);
 
         void RefreshAllCards()
         {
+            int claimed = 0;
             for (int i = 0; i < _cards.Count && i < questList.Quests.Count; i++)
-                _cards[i].SetState(GetCardState(i));
+            {
+                var state = GetCardState(i);
+                _cards[i].SetState(state);
+                _cards[i].SetContext(i, MaxIntensityOf(questList.Quests[i]), PreviousQuestName(i));
+                if (state == QuestItemState.Claimed) claimed++;
+            }
+            if (summaryText && questList != null)
+                summaryText.text = $"{claimed} of {questList.Quests.Count} complete";
         }
+
+        /// <summary>The highest intensity the player has unlocked on a quest's mode (0 while locked,
+        /// and for a quest that is not a game mode - the hangar node has no intensities).</summary>
+        static int MaxIntensityOf(SO_UnlockData quest)
+        {
+            var service = GameModeProgressionService.Instance;
+            if (service == null || quest == null || quest.FeatureKind != FeatureKind.GameMode) return 0;
+            return service.GetMaxUnlockedIntensity(quest.GameMode);
+        }
+
+        string PreviousQuestName(int index) =>
+            index > 0 && questList != null && index - 1 < questList.Quests.Count && questList.Quests[index - 1]
+                ? questList.Quests[index - 1].DisplayName
+                : null;
 
         /// <summary>
         /// Returns the index of the first quest that is Unlocked or ReadyToClaim (the frontier).
         /// Falls back to the last card if all are claimed.
         /// </summary>
-        int GetActiveQuestIndex()
-        {
-            for (int i = 0; i < questList.Quests.Count; i++)
-            {
-                var state = GetCardState(i);
-                if (state == QuestItemState.Unlocked || state == QuestItemState.ReadyToClaim)
-                    return i;
-            }
-            return _cards.Count > 0 ? _cards.Count - 1 : -1;
-        }
+        int GetActiveQuestIndex() =>
+            _cards.Count > 0 ? QuestFrontier.FrontierIndex(questList, GameModeProgressionService.Instance) : -1;
 
         void UpdateActivePulse()
         {

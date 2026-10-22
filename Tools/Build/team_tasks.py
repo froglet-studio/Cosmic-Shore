@@ -11,7 +11,16 @@ a playtest, a dashboard to set up, content to write, a decision to take. Yash ha
     team_tasks.py done ID [--note N]                                 close it
     team_tasks.py pr-section [--base origin/bleeding-edge]           tasks this branch added or changed,
                                                                      as markdown for a PR body (/ship)
+    team_tasks.py gh-sync [--dry-run] [--repo OWNER/NAME]            mirror the board to GitHub issues
     team_tasks.py --check | --self-test
+
+GitHub issues mirror the board (gh-sync, run by .github/workflows/team-tasks-sync.yml on every push of the board to
+bleeding-edge or Ys-bleeding-edge, or by hand). One issue per task, titled "[<id>] <task>", labelled team-task,
+kind:<kind>, area:<area> and taken when someone took it. The board is the source: edit it, not the issue body (the
+next sync rewrites the body); comment on the issue freely. The sync is MONOTONIC, because several branches carry
+copies of the board: it creates, updates and closes (when a task is done), never reopens, and never moves an issue
+backwards (open < taken < done). A task closed on GitHub but open on this board is reported, so its board copy can
+be closed with `done`.
 
 Ids are T-<date>-<4 hex of the task text>, never "the next number": two branches adding a task on the same
 day must not both take T-012 (Docs/TEAM.md, "What happened without this"). Every task is a level-3 heading
@@ -21,6 +30,7 @@ script still reads it.
 import argparse
 import datetime
 import hashlib
+import json
 import os
 import re
 import subprocess
@@ -81,12 +91,25 @@ def render(pre, tasks):
     return pre + "\n\n" + "\n\n".join(t.markdown() for t in tasks) + "\n"
 
 
+# git's conflict markers (diff3's base marker included). Every branch appends to the end of the board, so two branches
+# that each add a task conflict there, and a half-resolved merge still PARSES - each side's tasks are well formed - so
+# the field checks alone passed a board with the markers in it (measured 2026-10-18, twice on one branch).
+CONFLICT = re.compile(r"^(<{7}|\|{7}|>{7})( |$)|^={7}$")
+
+
+def conflict_lines(text):
+    """(line number, line) of every unresolved merge conflict marker in the board."""
+    return [(n, line) for n, line in enumerate(text.split("\n"), 1) if CONFLICT.match(line)]
+
+
 def errors(text):
+    markers = [f"line {n}: unresolved merge conflict marker {line[:40]!r} (keep both sides' tasks, then delete the markers)"
+               for n, line in conflict_lines(text)]
     try:
         _, tasks = parse(text)
     except ValueError as e:
-        return [str(e)]
-    out, seen = [], set()
+        return markers + [str(e)]
+    out, seen = markers, set()
     for t in tasks:
         if t.id in seen:
             out.append(f"{t.id}: id used twice")
@@ -183,6 +206,132 @@ def git_show(ref):
         return ""
 
 
+# --- GitHub issues --------------------------------------------------------------------------------------------
+
+LABEL = "team-task"
+LABEL_COLORS = {LABEL: "5319e7", "taken": "fbca04", "kind": "0e8a16", "area": "1d76db"}
+RANK = {"open": 0, "taken": 1, "done": 2}
+
+
+def rank(status):
+    return RANK["done"] if status == "done" else RANK["taken"] if status.startswith("taken") else RANK["open"]
+
+
+def slug(text):
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:40] or "general"
+
+
+def issue_title(t):
+    task = t.fields.get("Task", "")
+    return f"[{t.id}] " + (task if len(task) <= 100 else task[:97].rstrip() + "...")
+
+
+def issue_labels(t):
+    labels = [LABEL, f"kind:{t.kind}", f"area:{slug(t.area)}"]
+    if t.status.startswith("taken"):
+        labels.append("taken")
+    return labels
+
+
+def issue_body(t, repo, ref):
+    rows = "\n".join(f"- **{k}:** {v}" for k, v in t.fields.items())
+    return (f"**Status on the board:** {t.status}\n\n{rows}\n\n---\n"
+            f"Mirrored from [`Docs/TEAM_TASKS.md`](https://github.com/{repo}/blob/{ref}/Docs/TEAM_TASKS.md) by "
+            f"`Tools/Build/team_tasks.py gh-sync`. **Edit the board, not this body** (the next sync rewrites it); "
+            f"comment here freely. Take it with `team_tasks.py take {t.id} --who <you>`, close it with "
+            f"`team_tasks.py done {t.id} --note ...` (Docs/TEAM.md rule 9).\n<!-- team-task:{t.id} -->")
+
+
+def body_core(body):
+    """The body up to and including its task marker. GitHub-side tooling may append to a body (an attribution
+    footer, seen on the first sync), and that must not read as a change, or every sync rewrites every issue."""
+    body = (body or "").replace("\r\n", "\n")
+    m = re.search(r"<!-- team-task:T-\d{8}-[0-9a-f]{4} -->", body)
+    return body[:m.end()] if m else body
+
+
+def plan_sync(tasks, issues, repo, ref):
+    """The GitHub calls that make `issues` mirror `tasks`, as (action, task id, payload, issue number) tuples, plus
+    the ids closed on GitHub that this board still has open. Pure, so --self-test proves it without a network."""
+    by_id = {}
+    for i in issues:
+        m = re.match(r"\[(T-\d{8}-[0-9a-f]{4})\]", i.get("title", ""))
+        if m:
+            by_id[m.group(1)] = i
+    actions, behind = [], []
+    for t in tasks:
+        want = {"title": issue_title(t), "body": issue_body(t, repo, ref), "labels": issue_labels(t)}
+        i = by_id.get(t.id)
+        if i is None:
+            actions.append(("create", t.id, dict(want, state="closed" if t.status == "done" else "open"), None))
+            continue
+        on_gh_closed = i.get("state") == "closed"
+        gh_rank = RANK["done"] if on_gh_closed else RANK["taken"] if "taken" in i.get("labels", []) else RANK["open"]
+        if rank(t.status) < gh_rank:
+            if on_gh_closed:
+                behind.append(t.id)
+            continue   # monotonic: an older copy of the board never moves an issue backwards
+        patch = {k: v for k, v in want.items()
+                 if (sorted(i.get(k) or []) != sorted(v) if k == "labels" else
+                     body_core(i.get(k)) != body_core(v) if k == "body" else i.get(k) != v)}
+        if t.status == "done" and not on_gh_closed:
+            patch["state"] = "closed"
+            patch["state_reason"] = "completed"
+        if patch:
+            actions.append(("update", t.id, patch, i["number"]))
+    return actions, behind
+
+
+def gh(args, payload=None):
+    r = subprocess.run(["gh", "api"] + args + (["--input", "-"] if payload is not None else []),
+                       input=json.dumps(payload) if payload is not None else None, capture_output=True, text=True)
+    if r.returncode != 0:
+        raise SystemExit(f"gh api {' '.join(args)} failed: {r.stderr.strip()[:400]}")
+    return r.stdout
+
+
+def repo_name():
+    if os.environ.get("GITHUB_REPOSITORY"):
+        return os.environ["GITHUB_REPOSITORY"]
+    url = subprocess.run(["git", "remote", "get-url", "origin"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    m = re.search(r"github\.com[/:]([^/]+/[^/.]+)", url)
+    if not m:
+        raise SystemExit(f"cannot tell the GitHub repository from origin ({url!r}); pass --repo OWNER/NAME")
+    return m.group(1)
+
+
+def gh_sync(repo, dry_run):
+    tasks = parse(load())[1]
+    ref = os.environ.get("GITHUB_REF_NAME") or branch()
+    lines = gh(["--paginate", f"repos/{repo}/issues?labels={LABEL}&state=all&per_page=100",
+                "--jq", ".[] | select(.pull_request == null) | {number, title, state, body, labels: [.labels[].name]}"])
+    issues = [json.loads(l) for l in lines.splitlines() if l.strip()]
+    actions, behind = plan_sync(tasks, issues, repo, ref)
+    if not dry_run and actions:
+        have = set(gh(["--paginate", f"repos/{repo}/labels?per_page=100", "--jq", ".[].name"]).split("\n"))
+        need = sorted({l for _, _, p, _ in actions for l in p.get("labels", [])} - have)
+        for name in need:
+            color = LABEL_COLORS.get(name.split(":")[0], "ededed")
+            gh(["--method", "POST", f"repos/{repo}/labels"], {"name": name, "color": color})
+    for action, tid, payload, number in actions:
+        what = f"{action} {tid}" + (f" (#{number})" if number else "") + ": " + ", ".join(sorted(payload))
+        print(("would " if dry_run else "") + what)
+        if dry_run:
+            continue
+        if action == "create":
+            state = payload.pop("state")
+            created = json.loads(gh(["--method", "POST", f"repos/{repo}/issues"], payload))
+            if state == "closed":
+                gh(["--method", "PATCH", f"repos/{repo}/issues/{created['number']}"],
+                   {"state": "closed", "state_reason": "completed"})
+        else:
+            gh(["--method", "PATCH", f"repos/{repo}/issues/{number}"], payload)
+    for tid in behind:
+        print(f"closed on GitHub, still open on this board: {tid} - close it here with `team_tasks.py done {tid}`")
+    print(f"gh-sync: {len(actions)} change(s) {'planned' if dry_run else 'made'}, {len(tasks)} tasks, "
+          f"{len(issues)} issues on {repo}")
+
+
 def self_test():
     bad = []
     seed = "# Board\n\n" + MARK + "\n"
@@ -213,9 +362,39 @@ def self_test():
     for broken, what in ((t2.replace("- **Done when:** It draws.\n", ""), "a missing field"),
                          (t2 + "\n" + t2.split(MARK)[1].strip() + "\n", "a duplicate id"),
                          (t2.replace(" · test · ", " · testing · "), "an unknown kind"),
-                         (t2.replace(MARK, ""), "a missing marker")):
+                         (t2.replace(MARK, ""), "a missing marker"),
+                         (t2.replace("### ", "<<<<<<< HEAD\n### ", 1) + "=======\n>>>>>>> origin/bleeding-edge\n", "a conflict block"),
+                         (t2 + ">>>>>>> origin/bleeding-edge\n", "a lone closing conflict marker"),
+                         (t2 + "|||||||\n", "a diff3 base marker")):
         if not errors(broken):
             bad.append(f"--check missed {what}")
+    tk = parse(t4)[1]   # tasks[0] (a) done, tasks[1] (b) open
+    acts, behind = plan_sync(tk, [], "o/r", "main")
+    if [x[0] for x in acts] != ["create", "create"] or acts[0][2]["state"] != "closed" or LABEL not in acts[1][2]["labels"]:
+        bad.append(f"gh-sync did not create one issue per task with its state and label: {acts}")
+    mirrored = [dict(number=n, title=a2[2]["title"], body=a2[2]["body"], labels=a2[2]["labels"], state=a2[2]["state"])
+                for n, a2 in enumerate(acts, 1)]
+    if plan_sync(tk, mirrored, "o/r", "main") != ([], []):
+        bad.append("gh-sync is not idempotent on a mirrored board")
+    footed = [dict(m, body=m["body"].replace("\n", "\r\n") + "\r\n\n---\n_Generated by a bot_") for m in mirrored]
+    if plan_sync(tk, footed, "o/r", "main") != ([], []):
+        bad.append("a footer GitHub appended to a body read as a change")
+    older = parse(t2)[1]   # the same two tasks, both still open: an older copy of the board
+    acts2, behind2 = plan_sync(older, mirrored, "o/r", "main")
+    if any(x[1] == a for x in acts2) or behind2 != [a]:
+        bad.append(f"an older board moved a closed issue backwards or did not report it: {acts2} {behind2}")
+    taken = parse(t3)[1]
+    acts3, _ = plan_sync(taken, [dict(m, state="open") if m["title"].startswith(f"[{a}]") else m for m in mirrored],
+                         "o/r", "main")
+    if not any(x[1] == a and "taken" in x[2].get("labels", []) for x in acts3):
+        bad.append(f"taking a task did not label its issue: {acts3}")
+    if errors(t2 + "\n=========\n") or errors(t2 + "\nSee <<<<<<< in the merge notes.\n"):
+        bad.append("--check called a line that is not a conflict marker one")
+    try:
+        save(t2 + "=======\n", path=os.devnull)
+        bad.append("save wrote a board with a conflict marker in it")
+    except SystemExit:
+        pass
     if os.path.exists(BOARD):
         shipped = errors(load())
         if shipped:
@@ -253,6 +432,9 @@ def main(argv):
     dn = sub.add_parser("done")
     dn.add_argument("id")
     dn.add_argument("--note")
+    gs = sub.add_parser("gh-sync")
+    gs.add_argument("--dry-run", action="store_true")
+    gs.add_argument("--repo")
     pr = sub.add_parser("pr-section")
     pr.add_argument("--base", default="origin/bleeding-edge")
     a = ap.parse_args(argv)
@@ -279,6 +461,8 @@ def main(argv):
     elif a.cmd == "done":
         save(set_status(text, a.id, "done", "Done", a.note))
         print(f"{a.id} done")
+    elif a.cmd == "gh-sync":
+        gh_sync(a.repo or repo_name(), a.dry_run)
     elif a.cmd == "pr-section":
         print(pr_section(text, git_show(a.base)))
     return 0

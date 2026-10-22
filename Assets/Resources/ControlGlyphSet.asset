@@ -16,27 +16,46 @@ MonoBehaviour:
   - binding: 7
     padGlyph: {fileID: 21300000, guid: c95309a43960ed84a81eff57febc4856, type: 3}
     padGlyphHeld: {fileID: 21300000, guid: c2741432e6bd68046bbd1a7bf7623a29, type: 3}
+    padLabel: LT
     keyboardLabel: LSHIFT
   - binding: 8
     padGlyph: {fileID: 21300000, guid: f8a4939355545f7409216ea81225cbfb, type: 3}
     padGlyphHeld: {fileID: 21300000, guid: 6ce06e2ec681ac742956d0e46079a199, type: 3}
+    padLabel: RT
     keyboardLabel: RSHIFT
   - binding: 1
     padGlyph: {fileID: 21300000, guid: d3455f0a03e57f0429707897e7e0b49d, type: 3}
     padGlyphHeld: {fileID: 0}
+    padLabel: A
     keyboardLabel: SPACE
   - binding: 3
     padGlyph: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}
     padGlyphHeld: {fileID: 0}
+    padLabel: B
     keyboardLabel: T
   - binding: 4
     padGlyph: {fileID: 21300000, guid: 10b26c3d0d51d9c46bc5fe94b93bde08, type: 3}
     padGlyphHeld: {fileID: 0}
+    padLabel: X
     keyboardLabel: Q
+  - binding: 2
+    padGlyph: {fileID: 21300000, guid: fcefb9acdf631b349b1d6af33878b73b, type: 3}
+    padGlyphHeld: {fileID: 0}
+    padLabel: Y
+    keyboardLabel: F
   - binding: 6
     padGlyph: {fileID: 21300000, guid: f8a4939355545f7409216ea81225cbfb, type: 3}
     padGlyphHeld: {fileID: 21300000, guid: 6ce06e2ec681ac742956d0e46079a199, type: 3}
+    padLabel: RB
     keyboardLabel: E
+  - binding: 13
+    padGlyph: {fileID: 21300000, guid: 0106a9eea13181f807ff937cf45bf6d8, type: 3}
+    padGlyphHeld: {fileID: 21300000, guid: 1d4f34d640adbc068c9bc5e3d444aaf7, type: 3}
+    keyboardLabel: L+R SHIFT
+  - binding: 14
+    padGlyph: {fileID: 21300000, guid: c467dcc480de42f1838baef9b9e74692, type: 3}
+    padGlyphHeld: {fileID: 0}
+    keyboardLabel: A + '
   restColor: {r: 0.65, g: 0.65, b: 0.7, a: 1}
   heldColor: {r: 1, g: 1, b: 1, a: 1}
   keyboardLabelSize: 14

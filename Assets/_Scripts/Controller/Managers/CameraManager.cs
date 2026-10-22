@@ -119,8 +119,7 @@ namespace CosmicShore.Gameplay
             Transform t = transform.Find(name);
             if (t)
             {
-                var ctrl = t.GetComponent<ICameraController>();
-                if (ctrl == null)
+                if (!t.TryGetComponent(out ICameraController ctrl))
                 {
                     ctrl = t.gameObject.AddComponent<CustomCameraController>();
                 }
@@ -163,8 +162,7 @@ namespace CosmicShore.Gameplay
             _themeManagerData.SetBackgroundColor(activeCam != null ? activeCam : Camera.main);
 
             var shipGO = _playerFollowTarget.gameObject;
-            var shipCustomizer = shipGO.GetComponent<VesselCameraCustomizer>();
-            if (shipCustomizer != null)
+            if (shipGO.TryGetComponent(out VesselCameraCustomizer shipCustomizer))
                 shipCustomizer.Configure(_playerCamera);
 
             // Snap camera to correct initial position to prevent retaining
@@ -282,6 +280,17 @@ namespace CosmicShore.Gameplay
                 if (_deathCamera != null) _deathCamera.Deactivate();
                 if (endCamera != null) endCamera.Deactivate();
 
+            // The player rig becoming the SCREEN view takes it back from a mode-preview loan. A loan that is still
+            // running here (the preview's stop races the freestyle entry, or a stop never came) left the rig drawing
+            // into the preview's RenderTexture while the scene camera stood down for freestyle - Display 1 with no
+            // camera, the vessel HUD over a frozen frame (the owner's play test, 2026-10-19). The loan bookkeeping
+            // stays, so the preview's End still restores the follow target; it just has no texture left to clear.
+            if (controller == _playerCamera && _windowedCamera)
+            {
+                _windowedCamera.targetTexture = null;
+                _windowedCamera = null;
+            }
+
             controller?.Activate();
             _activeController = controller;
             if (mainMenuCamera != null)
@@ -320,6 +329,15 @@ namespace CosmicShore.Gameplay
         public Camera BeginWindowedPlayerCamera(Transform target, RenderTexture renderTexture)
         {
             if (_playerCamera == null || renderTexture == null) return null;
+
+            // Never lend the rig while it IS the screen (freestyle, a gameplay scene): pointing its output at a
+            // texture leaves Display 1 with no camera at all. The preview shows its unavailable face instead.
+            if (_activeController == _playerCamera)
+            {
+                CSDebug.LogWarning("[CameraManager] A windowed camera was asked for while the player camera draws the " +
+                                   "screen; refused so the screen keeps its camera.");
+                return null;
+            }
             if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
 
             // Capture the target to give back only on the FIRST Begin of a loan: a re-Begin while

@@ -200,6 +200,23 @@ namespace CosmicShore.Gameplay
             transform.SetParent(bone, false);
         }
 
+        /// <summary>
+        /// Move this jet onto another engine at runtime, keeping where it points RELATIVE TO THE HULL, and adopt its new
+        /// pose as the rest the reverse flip turns from. For a hull whose drawn model is not the one the prefab's
+        /// <see cref="MountBone"/> names: the Orca flies on a hidden Sparrow's bones while drawing its own model, so
+        /// <c>OrcaHullRig</c> moves each jet to the Orca's engine mouth. The plume's direction is kept, because the new
+        /// bone's local axes are the model's business (the same reason <see cref="Awake"/> takes the rest after mounting).
+        /// </summary>
+        public void Remount(Transform bone, Vector3 worldPosition)
+        {
+            if (bone == null) return;
+            var rotation = transform.rotation;
+            transform.SetParent(bone, true);
+            transform.SetPositionAndRotation(worldPosition, rotation);
+            _restRotation = transform.localRotation;
+            _flip01 = 0f;
+        }
+
         static Transform FindDescendant(Transform root, string childName)
         {
             if (root.name == childName) return root;

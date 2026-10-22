@@ -23,10 +23,7 @@ namespace CosmicShore.Gameplay
             currentRoll = Mathf.Lerp(currentRoll, roll, animationSpeed * Time.deltaTime);
             currentThrottle = Mathf.Lerp(currentThrottle, throttle, animationSpeed * Time.deltaTime);
 
-            animator.SetFloat("Pitch", -currentPitch * 2);
-            animator.SetFloat("Yaw", currentYaw * 2);
-            animator.SetFloat("Roll", currentRoll * 2);
-            animator.SetFloat("Throttle", currentThrottle * 2);
+            WriteAnimatorPose();
         }
 
         protected override void Idle()
@@ -39,10 +36,18 @@ namespace CosmicShore.Gameplay
             currentRoll = Mathf.Lerp(currentRoll, 0, animationSpeed * Time.deltaTime);
             currentThrottle = Mathf.Lerp(currentThrottle, 0, animationSpeed * Time.deltaTime);
 
-            animator.SetFloat("Pitch", currentPitch);
-            animator.SetFloat("Yaw", currentYaw);
-            animator.SetFloat("Roll", currentRoll);
-            animator.SetFloat("Throttle", currentThrottle);
+            WriteAnimatorPose();
+        }
+
+        /// <summary>The ONE writer of the animator's stick floats, for puppetry and Idle alike. Idle used to write the
+        /// eased terms unscaled and with pitch unflipped, so on a phone (where lifting the thumb is an instant Idle)
+        /// the pose jumped on the first idle frame: pitch flipped sign and the rest halved (vessel skill rule 53).</summary>
+        void WriteAnimatorPose()
+        {
+            animator.SetFloat("Pitch", -currentPitch * 2);
+            animator.SetFloat("Yaw", currentYaw * 2);
+            animator.SetFloat("Roll", currentRoll * 2);
+            animator.SetFloat("Throttle", currentThrottle * 2);
         }
 
         protected override void AssignTransforms() { /* NOOP Abstract Implementation */ }

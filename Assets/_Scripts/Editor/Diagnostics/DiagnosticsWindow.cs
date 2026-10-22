@@ -17,7 +17,7 @@ namespace CosmicShore.Editor
     /// machine-local settings.</para>
     ///
     /// <para>The Bug Ledger has NO tab (removed 2026-10-15): it runs unseen, and its only UI is the
-    /// after-play "Send to Claude?" question (<see cref="BugHuntAutoSend"/>).</para>
+    /// automatic after-play send (<see cref="BugHuntAutoSend"/>).</para>
     ///
     /// <para><b>Compile Timing</b> — opt-in recorder of compile + domain-reload seconds per edit
     /// (the measurement behind Docs/ASSEMBLY_SPLIT.md).</para>

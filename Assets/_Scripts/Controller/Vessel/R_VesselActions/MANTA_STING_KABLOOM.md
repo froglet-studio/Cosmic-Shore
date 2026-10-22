@@ -182,6 +182,30 @@ shift) — the banked wall the spec draws. The executor clears the flare in its 
 (`turnUpgradeShieldsTrail` on Manta.prefab, gated per-spawn on `IsUpgradeActive(Mass)` — the
 Squirrel Heavy Trail condition, one more OR term).
 
+### On a phone (2026-10-21)
+
+Garrett, 2026-10-21: *"the manta can fly ultra fast when you lift both thumbs and then steer with the gyro."*
+
+- **Lift both thumbs = Soar.** `Manta.prefab` `_touchActionOverrides`: `IdleAction (4)` → `BoostAction`
+  (`8346bd7c…`, the asset the shared `BothSticksAction` entry runs). `TouchInputStrategy` presses `IdleAction` once
+  when the last thumb leaves the glass (only after the pilot has touched at least once, so a Manta never soars off the
+  start line) and releases it when a thumb lands. `BoostActionSO.StartAction` sets `IsBoosting` (+ the boost SFX),
+  `StopAction` clears it.
+- **Why `BoostAction` and not `MantaAnalogTurnBoostAction`.** The pad's Soar is `MantaAnalogTurnBoostExecutor`, and
+  `MantaAnalogTurnBoostAction` is a deliberate NO-OP SO: the executor reads the analog triggers per frame and returns
+  early on any device but Gamepad/Keyboard, so on a phone binding it does nothing. Top speed is the same either way:
+  both triggers flat on a pad set `BoostMultiplier` to the executor's base (`boostMultiplierOverride` 0 → the hull's
+  `boostMultiplier` 4), and `BoostAction` boosts at that same multiplier (`decayBoost` is off). With no thumbs the
+  Manta's throttle reads FULL (`TouchControlProfile.idleFullThrottle`; every other hull reads a released pad's
+  neutral 0.5), so the phone Soar is 1 × 180 × 4 = **720 u/s** - "ultra fast", the pad's flat-out Soar with the sticks
+  spread - against 90 u/s at neutral thumbs. Time's boost multiplier applies on both.
+- **Steer with the gyro.** With no thumb down, phone tilt is the stick (`TouchControlProfile.tiltSteersWhileIdle`):
+  wheel-turn yaws, tipping forward/back pitches.
+- **The lifts are unchanged**: one thumb lifted is still Yastri (`OnlyLeft/OnlyRightStickAction` → the shared
+  `YawsteryAction-Left/Right`). Lifting the second thumb releases the Yastri, then presses the Soar.
+- An autopilot Manta Soars through `MantaAnalogTurnBoostExecutor`'s autopilot drive (checked before the device gate,
+  so on any device), never through a press, so it is unaffected by this binding.
+
 ## 6. HUD
 
 `MantaVesselHUDController` / `MantaVesselHUDView` were rewritten around the bomb bay. The old

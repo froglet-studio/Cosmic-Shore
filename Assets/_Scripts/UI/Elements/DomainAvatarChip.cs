@@ -1,4 +1,7 @@
+using DG.Tweening;
+using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
@@ -17,12 +20,25 @@ namespace CosmicShore.UI
     /// local pilot's own team is tappable, and a tap steps its hull. Wire
     /// <see cref="hullPickButton"/> for authored art; unwired, the chip itself becomes the button
     /// (the avatar image is its hit area).</para>
+    ///
+    /// <para>A chip showing a hull also NAMES it - see <see cref="SetHullInfo"/>: hovering grows
+    /// the chip and shows the vessel's name in a pill beneath it, and an (i) badge in the top-right
+    /// corner opens the vessel's info card (the ✕, when the chip has both, moves to the top-left).
+    /// The hull icons are small at strip size; this is how a host tells their picks apart. Wire
+    /// <see cref="infoButton"/> / <see cref="hoverLabel"/> for authored art; unwired, both are
+    /// generated from primitives like the ✕.</para>
     /// </summary>
-    public class DomainAvatarChip : MonoBehaviour
+    public class DomainAvatarChip : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         [SerializeField] Image avatarImage;
         [Tooltip("Optional outline / ring GameObject enabled only for the local player's chip.")]
         [SerializeField] GameObject localPlayerOutline;
+
+        [Header("Seat Row (optional)")]
+        [Tooltip("The pilot's name. Optional: an avatar-only chip leaves it empty.")]
+        [SerializeField] TMPro.TMP_Text nameText;
+        [Tooltip("\"You / Host\", \"Pilot\", \"AI\" and so on. Optional.")]
+        [SerializeField] TMPro.TMP_Text roleText;
 
         [Header("Kick")]
         [Tooltip("Optional ✕ shown on a kickable AI chip (Add AI placements, host only). Leave " +
@@ -34,6 +50,25 @@ namespace CosmicShore.UI
                  "becomes the button, with the avatar image as its hit area.")]
         [SerializeField] Button hullPickButton;
 
+        [Header("Hull info")]
+        [Tooltip("Optional (i) badge that opens the hull's info card. Leave empty and a small " +
+                 "generated badge stands in, in the chip's top-right corner.")]
+        [SerializeField] Button infoButton;
+
+        [Tooltip("Optional label that shows the hull's name while the pointer is over the chip. " +
+                 "Leave empty and a generated pill beneath the chip stands in.")]
+        [SerializeField] TMP_Text hoverLabel;
+
+        [Tooltip("Scale the chip grows to while hovered, so the hull icon can be read.")]
+        [SerializeField, Min(1f)] float hoverScale = 1.35f;
+
+        [SerializeField, Min(0f)] float hoverSeconds = 0.12f;
+
+        [Tooltip("A seat ROW's hover: the authored hover label takes the place of the name and role while it " +
+                 "shows (the configure window's rows are too narrow to show all three). Off keeps them, for a " +
+                 "round chip whose label sits under it.")]
+        [SerializeField] bool hoverReplacesText;
+
         System.Action _onKick;
         Button _generatedKick;
         bool _kickWired;
@@ -41,6 +76,14 @@ namespace CosmicShore.UI
         System.Action _onPickHull;
         Button _generatedHullPick;
         bool _hullPickWired;
+
+        string _hullName;
+        System.Action _onInfo;
+        Button _generatedInfo;
+        bool _infoWired;
+        GameObject _generatedLabelRoot;
+        TMP_Text _generatedLabel;
+        Tween _hoverTween;
 
         public void Set(Sprite sprite, bool isLocal)
         {
@@ -61,8 +104,19 @@ namespace CosmicShore.UI
             // from the previous occupant is stale until the owner re-asks for one.
             SetKickable(false);
             SetHullPickable(false);
+            SetHullInfo(null, null);
 
             gameObject.SetActive(true);
+        }
+
+        /// <summary>
+        /// The seat row's words: who sits here and in what role. A chip with no name or role label
+        /// ignores it, so the avatar-only chip keeps working.
+        /// </summary>
+        public void SetLabel(string displayName, string role)
+        {
+            if (nameText) nameText.text = displayName ?? string.Empty;
+            if (roleText) roleText.text = role ?? string.Empty;
         }
 
         /// <summary>
@@ -85,6 +139,18 @@ namespace CosmicShore.UI
             }
 
             button.gameObject.SetActive(kickable);
+            PlaceGeneratedKick();
+        }
+
+        /// <summary>The generated ✕ sits top-right, unless the (i) badge is showing there: then it
+        /// moves to the top-left so the two never overlap. An authored ✕ is left where it was put.</summary>
+        void PlaceGeneratedKick()
+        {
+            if (!_generatedKick) return;
+            bool infoShown = _onInfo != null;
+            var rect = (RectTransform)_generatedKick.transform;
+            rect.anchorMin = rect.anchorMax = new Vector2(infoShown ? 0f : 1f, 1f);
+            rect.pivot = new Vector2(infoShown ? 0.25f : 0.75f, 0.75f);
         }
 
         void HandleKickClicked() => _onKick?.Invoke();
@@ -127,6 +193,164 @@ namespace CosmicShore.UI
         }
 
         void HandleHullPickClicked() => _onPickHull?.Invoke();
+
+        /// <summary>
+        /// Name the hull this chip shows. <paramref name="hullName"/> is drawn in the hover label
+        /// (null: the chip shows an avatar, not a hull, and hovering does nothing).
+        /// <paramref name="onInfo"/> non-null shows the (i) badge, and a tap on it raises it; the
+        /// caller owns what the badge OPENS (the modal's vessel info card).
+        /// </summary>
+        public void SetHullInfo(string hullName, System.Action onInfo)
+        {
+            _hullName = string.IsNullOrWhiteSpace(hullName) ? null : hullName;
+            _onInfo = _hullName != null ? onInfo : null;
+            if (_hullName == null) ShowHover(false);
+
+            bool showBadge = _onInfo != null;
+            var button = infoButton ? infoButton : _generatedInfo;
+            if (!button && showBadge)
+                button = _generatedInfo = BuildFallbackInfo();
+            if (button)
+            {
+                if (!_infoWired)
+                {
+                    button.onClick.AddListener(HandleInfoClicked);
+                    _infoWired = true;
+                }
+                button.gameObject.SetActive(showBadge);
+            }
+
+            PlaceGeneratedKick();
+        }
+
+        void HandleInfoClicked()
+        {
+            ShowHover(false);
+            _onInfo?.Invoke();
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (_hullName != null) ShowHover(true);
+        }
+
+        public void OnPointerExit(PointerEventData eventData) => ShowHover(false);
+
+        void OnDisable()
+        {
+            _hoverTween?.Kill();
+            transform.localScale = Vector3.one;
+            if (hoverLabel) hoverLabel.gameObject.SetActive(false);
+            if (_generatedLabelRoot) _generatedLabelRoot.SetActive(false);
+            if (nameText) nameText.enabled = true;
+            if (roleText) roleText.enabled = true;
+        }
+
+        void ShowHover(bool show)
+        {
+            if (show)
+            {
+                var label = hoverLabel ? hoverLabel : _generatedLabel ? _generatedLabel : BuildFallbackLabel();
+                label.text = _hullName.ToUpperInvariant();
+                (hoverLabel ? hoverLabel.gameObject : _generatedLabelRoot).SetActive(true);
+            }
+            else
+            {
+                if (hoverLabel) hoverLabel.gameObject.SetActive(false);
+                if (_generatedLabelRoot) _generatedLabelRoot.SetActive(false);
+            }
+            if (hoverReplacesText && hoverLabel)
+            {
+                if (nameText) nameText.enabled = !show;
+                if (roleText) roleText.enabled = !show;
+            }
+
+            if (!isActiveAndEnabled) return;
+            _hoverTween?.Kill();
+            float target = show ? hoverScale : 1f;
+            if (hoverSeconds <= 0f) transform.localScale = Vector3.one * target;
+            else _hoverTween = transform.DOScale(target, hoverSeconds)
+                .SetEase(show ? Ease.OutBack : Ease.OutQuad)
+                .SetUpdate(true);
+        }
+
+        /// <summary>
+        /// A small round (i) badge in the chip's top-right corner, so the info card works before any
+        /// art is authored. Never built while <see cref="infoButton"/> is wired.
+        /// </summary>
+        Button BuildFallbackInfo()
+        {
+            var go = new GameObject("InfoBadge (generated)", typeof(RectTransform), typeof(Image), typeof(Button));
+            var rect = (RectTransform)go.transform;
+            rect.SetParent(transform, false);
+            rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);   // top-right corner
+            rect.pivot = new Vector2(0.75f, 0.75f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = new Vector2(18f, 18f);
+
+            var bg = go.GetComponent<Image>();
+            bg.color = new Color(0.16f, 0.45f, 0.85f, 0.95f);
+
+            var glyph = new GameObject("Glyph", typeof(RectTransform), typeof(TextMeshProUGUI));
+            var glyphRect = (RectTransform)glyph.transform;
+            glyphRect.SetParent(rect, false);
+            glyphRect.anchorMin = Vector2.zero;
+            glyphRect.anchorMax = Vector2.one;
+            glyphRect.offsetMin = glyphRect.offsetMax = Vector2.zero;
+            var text = glyph.GetComponent<TextMeshProUGUI>();
+            text.text = "i";
+            text.fontSize = 14f;
+            text.fontStyle = FontStyles.Bold;
+            text.alignment = TextAlignmentOptions.Center;
+            text.color = Color.white;
+            text.raycastTarget = false;
+
+            return go.GetComponent<Button>();
+        }
+
+        /// <summary>
+        /// A dark pill under the chip holding the hull's name. It carries its own sorting canvas so
+        /// the neighbouring chips and tiles never draw over it, and it takes no raycasts so it never
+        /// steals the hover from the chip. Never built while <see cref="hoverLabel"/> is wired.
+        /// </summary>
+        TMP_Text BuildFallbackLabel()
+        {
+            var root = new GameObject("HoverLabel (generated)", typeof(RectTransform), typeof(Image));
+            var rect = (RectTransform)root.transform;
+            rect.SetParent(transform, false);
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);   // under the chip
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = new Vector2(0f, -4f);
+
+            var canvas = root.AddComponent<Canvas>();
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = 500;
+
+            var bg = root.GetComponent<Image>();
+            bg.color = new Color(0.05f, 0.06f, 0.1f, 0.92f);
+            bg.raycastTarget = false;
+
+            var fitter = root.AddComponent<ContentSizeFitter>();
+            fitter.horizontalFit = fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            var layout = root.AddComponent<HorizontalLayoutGroup>();
+            layout.padding = new RectOffset(8, 8, 3, 3);
+            layout.childControlWidth = layout.childControlHeight = true;
+
+            var label = new GameObject("Name", typeof(RectTransform), typeof(TextMeshProUGUI));
+            ((RectTransform)label.transform).SetParent(rect, false);
+            var text = label.GetComponent<TextMeshProUGUI>();
+            text.fontSize = 13f;
+            text.fontStyle = FontStyles.Bold;
+            text.alignment = TextAlignmentOptions.Center;
+            text.color = Color.white;
+            text.textWrappingMode = TextWrappingModes.NoWrap;
+            text.raycastTarget = false;
+
+            _generatedLabelRoot = root;
+            _generatedLabel = text;
+            root.SetActive(false);
+            return text;
+        }
 
         /// <summary>The chip itself as the hull-pick button: clicks on the avatar image bubble up
         /// to it. Never built while <see cref="hullPickButton"/> is wired.</summary>
@@ -178,6 +402,7 @@ namespace CosmicShore.UI
         {
             SetKickable(false);
             SetHullPickable(false);
+            SetHullInfo(null, null);
             gameObject.SetActive(false);
         }
     }

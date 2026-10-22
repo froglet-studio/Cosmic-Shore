@@ -1,0 +1,818 @@
+<!doctype html>
+<!--
+  STARLINGS LAB — the passive swarm card vessel (Garrett, 2026-10-20). Source of Docs/Studios/StarlingsLab.html:
+    python3 Docs/Studios/StarlingsLab/build.py     (injects Docs/Studios/SwarmCardVessel/cards.json)
+    node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/StarlingsLab.html
+  Built from .claude/skills/labmaker/template/lab.html (the lab contract: SHIPPED, SPEC, seeded runs,
+  manual clock, window.__lab, headless scorecard, decision log, an honest not-modelled list).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Starlings Lab</title>
+<style>
+  :root {
+    --bg: #eef2f6; --panel: #ffffff; --ink: #142030; --muted: #586579; --line: #d6dde6;
+    --accent: #1f7fa8; --warn: #b4560b; --ok: #1f7a43; --stage: #04101c; --changed: #1f7fa8;
+    --mass: #2f6fe0; --time: #0f9488; --space: #7a4fd8; --charge: #b07a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b121b; --panel: #121c28; --ink: #e4ebf3; --muted: #93a2b6; --line: #24324a;
+      --accent: #58b8de; --warn: #f0a050; --ok: #5cc98a; --stage: #02080f; --changed: #58b8de;
+      --mass: #6aa0ff; --time: #3fd6c5; --space: #a988ff; --charge: #f2c14e; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b121b; --panel: #121c28; --ink: #e4ebf3; --muted: #93a2b6; --line: #24324a;
+    --accent: #58b8de; --warn: #f0a050; --ok: #5cc98a; --stage: #02080f; --changed: #58b8de;
+    --mass: #6aa0ff; --time: #3fd6c5; --space: #a988ff; --charge: #f2c14e; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; overflow: hidden; }
+  #app { display: grid; height: 100vh; grid-template-columns: minmax(0, 1fr) 330px; grid-template-rows: auto minmax(0, 1fr) 210px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 8px 12px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font-size: 15px; margin: 0; }
+  header .meta { color: var(--muted); }
+  header .spacer { flex: 1; }
+  header select { width: auto; }
+  #diff { color: var(--changed); }
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: var(--stage); overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #stage { width: 100%; height: 100%; display: block; }
+  #hud { position: absolute; left: 10px; top: 8px; right: 10px; color: #cfe0ee; font: 12px/1.45 ui-monospace, Menlo, monospace; pointer-events: none; }
+  #phases { display: flex; gap: 4px; margin-bottom: 4px; }
+  #phases div { flex: 1; border: 1px solid #2c4560; border-radius: 4px; padding: 2px 6px; background: rgba(4,16,28,.6); overflow: hidden; position: relative; white-space: nowrap; text-overflow: ellipsis; }
+  #phases div.on { border-color: #9fe3ff; color: #fff; }
+  #phases div i { position: absolute; left: 0; bottom: 0; height: 3px; background: #9fe3ff; }
+  #hand { position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; gap: 6px; justify-content: center; }
+  #hand button { flex: 1 1 0; max-width: 210px; min-width: 0; text-align: left; border: 1px solid var(--c); border-radius: 8px; background: rgba(6,18,30,.92); color: #e7f0f8; padding: 6px 8px; cursor: pointer; font: 12px/1.3 system-ui, sans-serif; }
+  #hand button b { display: block; color: var(--c); font-size: 13px; }
+  #hand button small { display: block; color: #a7b6c6; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+  #hand button:focus-visible { outline: 2px solid #fff; }
+  #handNote { position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: 4px; text-align: center; color: #cfe0ee; font: 12px system-ui, sans-serif; pointer-events: none; }
+  #stick { position: absolute; width: 90px; height: 90px; margin: -45px 0 0 -45px; border: 2px solid rgba(160,220,255,.35); border-radius: 50%; pointer-events: none; }
+  #stick i { position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: rgba(160,220,255,.5); }
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px 16px; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button, .btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; }
+  .tabs button[aria-selected="true"], .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .row { display: grid; grid-template-columns: 1fr 64px; gap: 2px 8px; margin: 8px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; }
+  .row label .key { color: var(--muted); font: 11px ui-monospace, monospace; }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; }
+  .row output { text-align: right; font-variant-numeric: tabular-nums; }
+  .row output.changed { color: var(--changed); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .hint { color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); }
+  .best { font-weight: 700; color: var(--ok); }
+  .status-ok { color: var(--ok); } .status-warn { color: var(--warn); }
+  textarea, select, input[type=text] { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+  .held { display: grid; gap: 4px; }
+  .held div { border-left: 3px solid var(--c); padding: 2px 8px; }
+  .held div span { color: var(--muted); }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { height: 78vh; min-height: 320px; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); }
+    header, #dock, #bottom { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    #hand button small { -webkit-line-clamp: 2; }
+  }
+  /* a phone held sideways: one header row, the stage fills the rest of the screen so the hand is in view */
+  @media (max-height: 520px) {
+    header { padding-top: 4px; padding-bottom: 4px; flex-wrap: nowrap; overflow-x: auto; }
+    header .meta, #diff, #resetAll { display: none; }
+    #stageWrap { height: calc(100vh - 46px); height: calc(100svh - 46px); }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 id="title"></h1>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <label class="meta" for="intensity">Intensity</label>
+    <select id="intensity"><option value="1">I1</option><option value="2" selected>I2</option><option value="3">I3</option><option value="4">I4</option></select>
+    <label class="meta" for="picker">Cards</label>
+    <select id="picker"><option value="you">You pick</option><option value="random">AI: random</option><option value="Mass">AI: Mass first</option><option value="Time">AI: Time first</option><option value="Space">AI: Space first</option><option value="Charge">AI: Charge first</option></select>
+    <span class="meta" id="platform"></span>
+    <button class="btn" id="speed">×1</button>
+    <button class="btn" id="pause">Pause</button>
+    <button class="btn" id="restart">Restart</button>
+    <button class="btn" id="resetAll">Lab defaults</button>
+  </header>
+  <div id="stageWrap"><canvas id="stage"></canvas>
+    <div id="hud"><div id="phases"></div><div id="hudText"></div></div>
+    <div id="stick" hidden><i></i></div>
+    <div id="hand" hidden><div id="handNote"></div></div>
+  </div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const CARDS = {"revision":3,"roles":{"Mass":"Prism production (danger or base), shielding, supershielding","Time":"Your maneuverability, speed, positioning and movement","Space":"More range or more prisms you can destroy, steal or shrink","Charge":"Silencing other vessels' Charge and Space abilities, killing fauna, stripping elemental crystals from other vessels"},"date":"2026-10-20","meanings":{"Mass":"Weight, gravity and matter: the swarm lays your prisms, shields them and turns heavy.","Time":"Speed, tempo and second chances: the swarm moves faster, turns sharper and gets where it needs to be.","Space":"Reach and geometry: the swarm reaches further and takes apart, steals or shrinks more of the enemy's prisms.","Charge":"Current, fields and lightning: the swarm silences rivals, kills fauna and knocks the crystals out of other vessels."},"cards":[{"id":"mass-mound-builders","n":1,"element":"Mass","name":"Mound Builders","kind":"Build","objective":"Any","text":"The swarm lays your team's prisms along its path.","stats":[{"label":"Prisms laid","kind":"lin","a":0.5,"b":0.25,"unit":"/s","dec":2,"key":["0.50/s","1.50/s","2.75/s","4.00/s"]}],"role":"Prism production","phys":null,"rev":null,"milestones":[{"level":5,"text":"Laid prisms join into a solid wall with no gaps"},{"level":15,"text":"Laid prisms are shielded"}]},{"id":"mass-danger-drip","n":2,"element":"Mass","name":"Danger Drip","kind":"Build","objective":"Opposing vessels","text":"Members drip danger prisms behind them. A rival that flies through one is slowed and loses a petal, as any danger prism does.","stats":[{"label":"Danger prisms","kind":"lin","a":0.3,"b":0.15,"unit":"/s","dec":2,"key":["0.30/s","0.90/s","1.65/s","2.40/s"]}],"role":"Danger prism production","phys":null,"rev":null,"milestones":[{"level":10,"text":"Drips fall in short lines across the swarm's wake"}]},{"id":"mass-conservation-of-mass","n":3,"element":"Mass","name":"Conservation of Mass","kind":"Build","objective":"Any","text":"Mass is never lost. A member that dies becomes your prisms where it fell.","stats":[{"label":"Prisms per death","kind":"lin","a":1,"b":0.5,"unit":"","dec":0,"key":["1","3","5","8"]}],"role":"Prism production","phys":"Conservation of mass","rev":null,"milestones":[{"level":10,"text":"The prisms are shielded"}]},{"id":"mass-inertial-wall","n":4,"element":"Mass","name":"Inertial Wall","kind":"Build","objective":"Opposing vessels","text":"Every few seconds the swarm drops a straight wall of your prisms along its line of travel. The faster it flies, the longer the wall, because momentum carries the bricks.","stats":[{"label":"Wall length at cruise","kind":"lin","a":4,"b":1,"unit":" prisms","dec":0,"key":["4 prisms","8 prisms","13 prisms","18 prisms"]},{"label":"Every","kind":"geo","a":10,"b":0.95,"unit":"s","dec":1,"key":["10.0 s","8.1 s","6.3 s","4.9 s"]}],"role":"Prism production","phys":"Inertia and momentum","rev":null,"milestones":[{"level":10,"text":"The wall is laid as danger prisms"}]},{"id":"mass-accretion-disk","n":5,"element":"Mass","name":"Accretion Disk","kind":"Build","objective":"Omnicrystal","text":"Members circling the objective lay a ring of your prisms round it, the way matter collects in orbit round a heavy body.","stats":[{"label":"Ring size","kind":"lin","a":8,"b":2,"unit":" prisms","dec":0,"key":["8 prisms","16 prisms","26 prisms","36 prisms"]},{"label":"Build time","kind":"geo","a":4,"b":0.9,"unit":"s","dec":1,"key":["4.0 s","2.6 s","1.5 s","0.9 s"]}],"role":"Prism production and shielding","phys":"Accretion in orbit","rev":null,"milestones":[{"level":10,"text":"The ring is shielded"},{"level":15,"text":"The ring is supershielded"}]},{"id":"mass-snowball","n":6,"element":"Mass","name":"Snowball","kind":"Form","objective":"Any","text":"Every 20 s the swarm rolls into one ball. It packs on a layer of your prisms each second, and when it breaks they land as a mound.","stats":[{"label":"Ball lasts","kind":"lin","a":3,"b":0.5,"unit":"s","dec":1,"key":["3.0 s","5.0 s","7.5 s","10.0 s"]},{"label":"Prisms per second","kind":"lin","a":2,"b":1,"unit":"","dec":0,"key":["2","6","11","16"]}],"role":"Prism production","phys":"Accretion","rev":null,"milestones":[{"level":10,"text":"The mound lands shielded"}]},{"id":"mass-density","n":7,"element":"Mass","name":"Density","kind":"Build","objective":"Any","text":"Your prisms laid close together compress into fewer, bigger prisms, so the same mass holds more volume and takes more to break.","stats":[{"label":"Merge radius","kind":"lin","a":10,"b":3,"unit":"u","dec":0,"key":["10 u","22 u","37 u","52 u"]},{"label":"Volume per merge","kind":"lin","a":1.2,"b":0.1,"unit":"×","dec":1,"key":["1.2×","1.6×","2.1×","2.6×"]}],"role":"Prism production","phys":"Density and compression","rev":null,"milestones":[{"level":15,"text":"Merged prisms are supershielded"}]},{"id":"mass-neutron-star","n":8,"element":"Mass","name":"Neutron Star","kind":"Form","objective":"Any","text":"Every 30 s the swarm crushes into one dense star that cannot be hurt. When it ends it leaves a supershielded core of your prisms.","stats":[{"label":"Star lasts","kind":"lin","a":1.5,"b":0.35,"unit":"s","dec":1,"key":["1.5 s","2.9 s","4.7 s","6.4 s"]},{"label":"Core size","kind":"lin","a":3,"b":1,"unit":" prisms","dec":0,"key":["3 prisms","7 prisms","12 prisms","17 prisms"]}],"role":"Supershielding","phys":"Degenerate matter","rev":null,"milestones":[]},{"id":"mass-golem","n":9,"element":"Mass","name":"Golem","kind":"Form","objective":"Opposing vessels","text":"Every 25 s the swarm stacks into a giant walking golem. Each stomp leaves a footprint of your prisms, and its own body is shielded.","stats":[{"label":"Golem lasts","kind":"lin","a":4,"b":0.5,"unit":"s","dec":1,"key":["4.0 s","6.0 s","8.5 s","11.0 s"]},{"label":"Prisms per footprint","kind":"lin","a":2,"b":0.5,"unit":"","dec":0,"key":["2","4","6","9"]}],"role":"Prism production and shielding","phys":"Weight","rev":null,"milestones":[{"level":10,"text":"Footprints are danger prisms"},{"level":15,"text":"The golem is supershielded"}]},{"id":"mass-supershield-core","n":10,"element":"Mass","name":"Supershield Core","kind":"Shield","objective":"Any","text":"Your prisms near the swarm's centroid are supershielded while the swarm stays close.","stats":[{"label":"Core radius","kind":"lin","a":40,"b":10,"unit":"u","dec":0,"key":["40 u","80 u","130 u","180 u"]}],"role":"Supershielding","phys":null,"rev":null,"milestones":[{"level":10,"text":"The shield lasts a few seconds after the swarm leaves"}]},{"id":"mass-carapace","n":11,"element":"Mass","name":"Carapace","kind":"Shield","objective":"Opposing vessels","text":"Members grow shells. A shell soaks one hit, then regrows.","stats":[{"label":"Shell regrows in","kind":"geo","a":12,"b":0.88,"unit":"s","dec":1,"key":["12.0 s","7.2 s","3.8 s","2.0 s"]}],"role":"Shielding","phys":null,"rev":null,"milestones":[{"level":8,"text":"Two shells per member"},{"level":15,"text":"Three shells per member"}]},{"id":"mass-gravity-well","n":12,"element":"Mass","name":"Gravity Well","kind":"Pull","objective":"Elemental crystals","text":"The centroid's gravity pulls loose crystals toward the swarm, and your prisms inside the well pack into a shielded clump.","stats":[{"label":"Pull radius","kind":"lin","a":50,"b":15,"unit":"u","dec":0,"key":["50 u","110 u","185 u","260 u"]}],"role":"Shielding","phys":"Gravity","rev":null,"milestones":[{"level":10,"text":"Enemy vessels inside the well are dragged (25% slow)"}]},{"id":"mass-bulk-up","n":13,"element":"Mass","name":"Bulk Up","kind":"Body","objective":"Opposing vessels","text":"Members grow bigger and heavier. Heavy members take more to kill and do not get knocked about.","stats":[{"label":"Member size","kind":"lin","a":1.05,"b":0.05,"unit":"×","dec":2,"key":["1.05×","1.25×","1.50×","1.75×"]},{"label":"Toughness","kind":"lin","a":1,"b":0.2,"unit":"×","dec":1,"key":["1.0×","1.8×","2.8×","3.8×"]}],"role":null,"phys":"Inertia","rev":"No stuns: its L10 shoved vessels aside; it now takes a third of a petal on a ram.","milestones":[{"level":10,"text":"A heavy member that rams a vessel takes a third of a petal"}]},{"id":"mass-mass-tug","n":14,"element":"Mass","name":"Mass Tug","kind":"Hook","objective":"Opposing vessels","text":"Members latch onto enemy vessels and weigh them down.","stats":[{"label":"Most slow on one vessel","kind":"lin","a":15,"b":4,"unit":"%","dec":0,"key":["15%","31%","51%","71%"]}],"role":null,"phys":"Added mass","rev":null,"milestones":[{"level":10,"text":"A weighed-down vessel drops a petal every 5 s"}]},{"id":"mass-brood","n":15,"element":"Mass","name":"Brood","kind":"Growth","objective":"Any","text":"The swarm breeds: a new member hatches at the centroid every few seconds, up to the swarm cap.","stats":[{"label":"Hatch every","kind":"geo","a":6,"b":0.88,"unit":"s","dec":1,"key":["6.0 s","3.6 s","1.9 s","1.0 s"]}],"role":null,"phys":null,"rev":null,"milestones":[{"level":10,"text":"Hatchlings arrive full size"},{"level":15,"text":"Twins: two members per hatch"}]},{"id":"mass-big-family","n":16,"element":"Mass","name":"Big Family","kind":"Growth","objective":"Any","text":"Raises the swarm cap and the protected minimum size.","stats":[{"label":"Swarm cap","kind":"lin","a":46,"b":6,"unit":"","dec":0,"key":["46","70","100","130"]},{"label":"Minimum size","kind":"lin","a":6,"b":0.5,"unit":"","dec":0,"key":["6","8","10","13"]}],"role":null,"phys":null,"rev":"Also raises the new minimum size, below which nothing can harm the swarm.","milestones":[{"level":10,"text":"Members over the cap wait in a reserve and refill losses at once"}]},{"id":"mass-queen","n":17,"element":"Mass","name":"Queen","kind":"Growth","objective":"Any","text":"One member is crowned. While she lives the swarm breeds faster and her guards are shielded. If she falls, the crown passes after a delay.","stats":[{"label":"Breeding bonus","kind":"lin","a":20,"b":10,"unit":"%","dec":0,"key":["20%","60%","110%","160%"]},{"label":"Crown passes in","kind":"geo","a":15,"b":0.85,"unit":"s","dec":1,"key":["15.0 s","7.8 s","3.5 s","1.5 s"]}],"role":"Shielding","phys":null,"rev":null,"milestones":[{"level":15,"text":"Two queens"}]},{"id":"mass-clutch","n":18,"element":"Mass","name":"Clutch","kind":"Growth","objective":"Elemental crystals","text":"Each crystal the swarm collects lays eggs that hatch a few seconds later.","stats":[{"label":"Eggs per crystal","kind":"lin","a":1,"b":0.5,"unit":"","dec":0,"key":["1","3","5","8"]}],"role":null,"phys":null,"rev":null,"milestones":[{"level":10,"text":"Eggs hatch at once"}]},{"id":"mass-pack-mules","n":19,"element":"Mass","name":"Pack Mules","kind":"Economy","objective":"Elemental crystals","text":"Elemental crystals the swarm carries home count for more element.","stats":[{"label":"Extra element per crystal","kind":"lin","a":10,"b":10,"unit":"%","dec":0,"key":["10%","50%","100%","150%"]}],"role":null,"phys":null,"rev":null,"milestones":[]},{"id":"mass-critical-mass","n":20,"element":"Mass","name":"Critical Mass","kind":"Burst","objective":"Opposing mass","text":"When the swarm passes a size, it throws off a shell of your prisms all round it in one go, then has to grow back past the size to do it again.","stats":[{"label":"Swarm size needed","kind":"geo","a":36,"b":0.95,"unit":"","dec":0,"key":["36","29","22","17"]},{"label":"Prisms thrown","kind":"lin","a":8,"b":3,"unit":"","dec":0,"key":["8","20","35","50"]}],"role":"Prism production","phys":"Critical mass","rev":null,"milestones":[{"level":10,"text":"The shell is shielded"}]},{"id":"time-dragonfly","n":1,"element":"Time","name":"Dragonfly","kind":"Form","objective":"Elemental crystals","text":"Every 15 s the swarm morphs into a giant dragonfly and darts at the objective in fast straight hops, collecting crystals on the way.","stats":[{"label":"Dart speed","kind":"lin","a":2,"b":0.15,"unit":"×","dec":2,"key":["2.00×","2.60×","3.35×","4.10×"]},{"label":"Dragonfly lasts","kind":"lin","a":3,"b":0.4,"unit":"s","dec":1,"key":["3.0 s","4.6 s","6.6 s","8.6 s"]}],"role":"Speed and movement","phys":null,"rev":null,"milestones":[{"level":10,"text":"Each hop leaves a slipstream lane"}]},{"id":"time-quickening","n":2,"element":"Time","name":"Quickening","kind":"Speed","objective":"Any","text":"The swarm cruises faster.","stats":[{"label":"Cruise speed","kind":"lin","a":4,"b":4,"unit":"%","dec":0,"key":["4%","20%","40%","60%"]}],"role":"Speed","phys":null,"rev":null,"milestones":[]},{"id":"time-slipstream","n":3,"element":"Time","name":"Slipstream","kind":"Speed","objective":"Any","text":"Members drafting behind other members fly faster, so a long thin swarm is a fast one.","stats":[{"label":"Draft bonus","kind":"lin","a":5,"b":3,"unit":"%","dec":0,"key":["5%","17%","32%","47%"]}],"role":"Speed","phys":null,"rev":null,"milestones":[]},{"id":"time-skim-rush","n":4,"element":"Time","name":"Skim Rush","kind":"Speed","objective":"Opposing mass","text":"Members that skim close past enemy prisms gain speed, like a vessel's skim.","stats":[{"label":"Speed per skim","kind":"lin","a":3,"b":1,"unit":"%","dec":0,"key":["3%","7%","12%","17%"]}],"role":"Speed","phys":null,"rev":null,"milestones":[{"level":10,"text":"Skims also refill card cooldowns a little"}]},{"id":"time-agility","n":5,"element":"Time","name":"Agility","kind":"Turn","objective":"Any","text":"The swarm turns tighter, so it whips round to a new target instead of looping wide.","stats":[{"label":"Turn rate","kind":"lin","a":90,"b":15,"unit":"°/s","dec":0,"key":["90°/s","150°/s","225°/s","300°/s"]}],"role":"Maneuverability","phys":null,"rev":"Was Reflexes, which settled the swarm onto your turned plane. You no longer steer, so it now sharpens the swarm's own turns.","milestones":[{"level":10,"text":"Members bank like starlings: the whole swarm turns as one"}]},{"id":"time-hummingbird","n":6,"element":"Time","name":"Hummingbird","kind":"Form","objective":"Elemental crystals","text":"At the objective the swarm becomes a hummingbird: it holds dead still, turns on the spot and sips nearby crystals in.","stats":[{"label":"Sip radius","kind":"lin","a":60,"b":8,"unit":"u","dec":0,"key":["60 u","92 u","132 u","172 u"]},{"label":"Turn rate","kind":"lin","a":180,"b":30,"unit":"°/s","dec":0,"key":["180°/s","300°/s","450°/s","600°/s"]}],"role":"Maneuverability and positioning","phys":null,"rev":null,"milestones":[]},{"id":"time-lead-time","n":7,"element":"Time","name":"Lead Time","kind":"Aim","objective":"Opposing vessels","text":"The swarm flies to where its objective will be in a moment, not where it is now, so it meets moving targets head on.","stats":[{"label":"Looks ahead","kind":"lin","a":0.2,"b":0.1,"unit":"s","dec":1,"key":["0.2 s","0.6 s","1.1 s","1.6 s"]}],"role":"Positioning","phys":"Prediction along a worldline","rev":"Its L10 led your plane turns; it now leads the phase change.","milestones":[{"level":10,"text":"Sets off toward the next phase's objective in the last seconds of the timer"}]},{"id":"time-skip-ahead","n":8,"element":"Time","name":"Skip Ahead","kind":"Teleport","objective":"Omnicrystal","text":"Every few seconds the swarm skips a moment of travel and arrives further along its path toward the objective.","stats":[{"label":"Cooldown","kind":"geo","a":24,"b":0.89,"unit":"s","dec":1,"key":["24.0 s","15.1 s","8.4 s","4.7 s"]},{"label":"Distance skipped","kind":"lin","a":300,"b":50,"unit":"u","dec":0,"key":["300 u","500 u","750 u","1000 u"]}],"role":"Positioning","phys":"Skipping time","rev":null,"milestones":[]},{"id":"time-blink-step","n":9,"element":"Time","name":"Blink Step","kind":"Dodge","objective":"Opposing vessels","text":"A member about to be hit skips a fraction of a second ahead and is not there when the shot lands.","stats":[{"label":"Chance","kind":"lin","a":10,"b":4,"unit":"%","dec":0,"key":["10%","26%","46%","66%"]}],"role":"Movement","phys":"Skipping time","rev":null,"milestones":[]},{"id":"time-out-of-phase","n":10,"element":"Time","name":"Out of Phase","kind":"Pass","objective":"Any","text":"Every 15 s the swarm slips out of phase with the world and passes through prisms and vessels.","stats":[{"label":"Phase lasts","kind":"lin","a":1,"b":0.3,"unit":"s","dec":1,"key":["1.0 s","2.2 s","3.7 s","5.2 s"]}],"role":"Movement","phys":"Phase","rev":null,"milestones":[]},{"id":"time-slingshot","n":11,"element":"Time","name":"Slingshot","kind":"Launch","objective":"Omnicrystal","text":"When the objective is far, the swarm draws back and flings itself at it.","stats":[{"label":"Fling distance","kind":"lin","a":200,"b":40,"unit":"u","dec":0,"key":["200 u","360 u","560 u","760 u"]},{"label":"Cooldown","kind":"geo","a":12,"b":0.93,"unit":"s","dec":1,"key":["12.0 s","9.0 s","6.2 s","4.3 s"]}],"role":"Movement","phys":null,"rev":null,"milestones":[]},{"id":"time-save-point","n":12,"element":"Time","name":"Save Point","kind":"Rewind","objective":"Any","text":"Once per cycle, when the swarm is knocked down to its minimum size, it rewinds to where it was and how big it was a few seconds ago.","stats":[{"label":"Rewinds","kind":"lin","a":3,"b":0.5,"unit":"s","dec":1,"key":["3.0 s","5.0 s","7.5 s","10.0 s"]}],"role":"Positioning","phys":"Rewind","rev":"It fired when the swarm was nearly wiped; with the minimum size the swarm cannot be wiped, so it fires at the floor.","milestones":[{"level":10,"text":"The rewind also returns the petals you lost"}]},{"id":"time-fast-forward","n":13,"element":"Time","name":"Fast Forward","kind":"Speed","objective":"Any","text":"Every 20 s the swarm runs on double time (speed, breeding, cooldowns) for a few seconds.","stats":[{"label":"Double time lasts","kind":"lin","a":2,"b":0.4,"unit":"s","dec":1,"key":["2.0 s","3.6 s","5.6 s","7.6 s"]}],"role":"Speed","phys":"Faster clock","rev":null,"milestones":[]},{"id":"time-metronome","n":14,"element":"Time","name":"Metronome","kind":"Rhythm","objective":"Any","text":"The swarm surges forward on a beat, then glides. The beat quickens as the card levels.","stats":[{"label":"Beat every","kind":"geo","a":2,"b":0.95,"unit":"s","dec":2,"key":["2.00 s","1.63 s","1.26 s","0.98 s"]},{"label":"Surge speed","kind":"lin","a":1.5,"b":0.1,"unit":"×","dec":1,"key":["1.5×","1.9×","2.4×","2.9×"]}],"role":"Speed","phys":"Period and frequency","rev":"Its L10 followed your plane flicks; it now fires on each phase change.","milestones":[{"level":10,"text":"A big surge as each new phase starts"}]},{"id":"time-synchrony","n":15,"element":"Time","name":"Synchrony","kind":"Rhythm","objective":"Opposing vessels","text":"Members fall into sync like fireflies. Each synced flash bursts the whole swarm forward at once.","stats":[{"label":"Flash every","kind":"geo","a":6,"b":0.92,"unit":"s","dec":1,"key":["6.0 s","4.3 s","2.8 s","1.9 s"]},{"label":"Burst speed","kind":"lin","a":1.3,"b":0.05,"unit":"×","dec":2,"key":["1.30×","1.50×","1.75×","2.00×"]}],"role":"Movement","phys":"Coupled oscillators","rev":"No stuns: the flash no longer blinds enemies.","milestones":[]},{"id":"time-mayfly-couriers","n":16,"element":"Time","name":"Mayfly Couriers","kind":"Fetch","objective":"Elemental crystals","text":"Short-lived mayflies hatch, race to the nearest crystals and bring them back.","stats":[{"label":"Couriers","kind":"lin","a":1,"b":0.5,"unit":"","dec":0,"key":["1","3","5","8"]},{"label":"Courier speed","kind":"lin","a":150,"b":15,"unit":"u/s","dec":0,"key":["150 u/s","210 u/s","285 u/s","360 u/s"]}],"role":"Speed","phys":null,"rev":null,"milestones":[]},{"id":"time-rewind","n":17,"element":"Time","name":"Rewind","kind":"Survive","objective":"Opposing vessels","text":"A member that is killed may rewind 2 s and come back.","stats":[{"label":"Chance","kind":"lin","a":10,"b":5,"unit":"%","dec":0,"key":["10%","30%","55%","80%"]}],"role":null,"phys":"Rewind","rev":null,"milestones":[]},{"id":"time-echo-swarm","n":18,"element":"Time","name":"Echo Swarm","kind":"Copy","objective":"Elemental crystals","text":"A ghost of the swarm replays its path a moment behind it, collecting crystals the real swarm missed.","stats":[{"label":"Ghost strength","kind":"lin","a":20,"b":4,"unit":"%","dec":0,"key":["20%","36%","56%","76%"]}],"role":null,"phys":"Echo of the past","rev":null,"milestones":[{"level":8,"text":"Two ghosts"},{"level":15,"text":"Three ghosts"}]},{"id":"time-stopwatch","n":19,"element":"Time","name":"Stopwatch","kind":"Field","objective":"Opposing vessels","text":"Shots and vessels near the swarm move slower in its time bubble, so it can slip past them.","stats":[{"label":"Slow","kind":"lin","a":10,"b":3,"unit":"%","dec":0,"key":["10%","22%","37%","52%"]},{"label":"Radius","kind":"lin","a":80,"b":10,"unit":"u","dec":0,"key":["80 u","120 u","170 u","220 u"]}],"role":null,"phys":"Time dilation","rev":null,"milestones":[]},{"id":"time-hurry-up","n":20,"element":"Time","name":"Hurry Up","kind":"Phase","objective":"Any","text":"Every phase timer runs shorter, so the cycle comes round and new hands arrive sooner.","stats":[{"label":"Phase time cut","kind":"lin","a":3,"b":2,"unit":"%","dec":0,"key":["3%","11%","21%","31%"]}],"role":null,"phys":"A faster clock","rev":"Was Second Look (reroll a hand). A reroll adds a choice with stakes; you asked for no tension when picking.","milestones":[{"level":15,"text":"A phase whose goal is met early gives its leftover time to the next phase"}]},{"id":"space-annex","n":1,"element":"Space","name":"Annex","kind":"Steal","objective":"Opposing mass","text":"Enemy prisms a member touches change hands and become yours.","stats":[{"label":"Steals per member","kind":"lin","a":0.1,"b":0.05,"unit":"/s","dec":2,"key":["0.10/s","0.30/s","0.55/s","0.80/s"]}],"role":"Steal","phys":null,"rev":null,"milestones":[{"level":10,"text":"Shielded prisms can be stolen and keep their shield"}]},{"id":"space-tesseract","n":2,"element":"Space","name":"Tesseract","kind":"Steal","objective":"Opposing mass","text":"The swarm folds space and steals enemy prisms from a distance, as if they were right next to it.","stats":[{"label":"Steal reach","kind":"lin","a":30,"b":10,"unit":"u","dec":0,"key":["30 u","70 u","120 u","170 u"]}],"role":"Steal range","phys":"Folded space","rev":null,"milestones":[{"level":10,"text":"Two prisms per fold"}]},{"id":"space-hole-punch","n":3,"element":"Space","name":"Hole Punch","kind":"Breaker","objective":"Opposing mass","text":"Each member bursts enemy prisms it flies through.","stats":[{"label":"Prisms per member","kind":"lin","a":0.2,"b":0.1,"unit":"/s","dec":1,"key":["0.2/s","0.6/s","1.1/s","1.6/s"]}],"role":"Destroy","phys":null,"rev":null,"milestones":[]},{"id":"space-wide-bite","n":4,"element":"Space","name":"Wide Bite","kind":"Reach","objective":"Opposing mass","text":"Members reach further when they break, steal or shrink a prism.","stats":[{"label":"Member reach","kind":"lin","a":106,"b":6,"unit":"%","dec":0,"key":["106%","130%","160%","190%"]}],"role":"Destroy and steal range","phys":null,"rev":null,"milestones":[]},{"id":"space-shield-eaters","n":5,"element":"Space","name":"Shield Eaters","kind":"Breaker","objective":"Opposing mass","text":"Members can bite through shielded prisms.","stats":[{"label":"Bites per shield","kind":"geo","a":6,"b":0.88,"unit":"","dec":0,"key":["6","3","1","1"]}],"role":"Destroy","phys":null,"rev":null,"milestones":[{"level":10,"text":"One bite breaks a whole cluster of shielded prisms"}]},{"id":"space-shrink-ray","n":6,"element":"Space","name":"Shrink Ray","kind":"Shrink","objective":"Opposing mass","text":"Enemy prisms the swarm passes shrink, and so do enemy vessels it touches.","stats":[{"label":"Shrink","kind":"lin","a":5,"b":2.5,"unit":"%","dec":0,"key":["5%","15%","27%","40%"]},{"label":"Vessel shrink lasts","kind":"lin","a":2,"b":0.5,"unit":"s","dec":1,"key":["2.0 s","4.0 s","6.5 s","9.0 s"]}],"role":"Shrink","phys":"Scale","rev":null,"milestones":[]},{"id":"space-hubble-flow","n":7,"element":"Space","name":"Hubble Flow","kind":"Shrink","objective":"Opposing mass","text":"Space expands round the swarm. Nearby enemy prisms drift apart and shrink the longer they stay close.","stats":[{"label":"Radius","kind":"lin","a":80,"b":12,"unit":"u","dec":0,"key":["80 u","128 u","188 u","248 u"]},{"label":"Shrink rate","kind":"lin","a":2,"b":1,"unit":"%/s","dec":0,"key":["2%/s","6%/s","11%/s","16%/s"]}],"role":"Shrink","phys":"Expanding space","rev":null,"milestones":[]},{"id":"space-curvature","n":8,"element":"Space","name":"Curvature","kind":"Territory","objective":"Omnicrystal","text":"Where the swarm lingers, space curves. Enemy prisms inside slide toward the centre and shrink.","stats":[{"label":"Zone radius","kind":"lin","a":100,"b":20,"unit":"u","dec":0,"key":["100 u","180 u","280 u","380 u"]},{"label":"Shrink rate","kind":"lin","a":1,"b":0.5,"unit":"%/s","dec":1,"key":["1.0%/s","3.0%/s","5.5%/s","8.0%/s"]}],"role":"Shrink range","phys":"Curved spacetime","rev":null,"milestones":[]},{"id":"space-black-hole","n":9,"element":"Space","name":"Black Hole","kind":"Ultimate","objective":"Any","text":"Once per omnicrystal the swarm collapses into a black hole that pulls in and eats every enemy prism near it.","stats":[{"label":"Black hole lasts","kind":"lin","a":2,"b":0.4,"unit":"s","dec":1,"key":["2.0 s","3.6 s","5.6 s","7.6 s"]},{"label":"Pull radius","kind":"lin","a":150,"b":25,"unit":"u","dec":0,"key":["150 u","250 u","375 u","500 u"]}],"role":"Destroy range","phys":"Event horizon","rev":null,"milestones":[]},{"id":"space-meteor-drop","n":10,"element":"Space","name":"Meteor Drop","kind":"Slam","objective":"Opposing mass","text":"Every few seconds one member climbs high above the swarm and slams down on the objective, bursting enemy prisms round where it lands.","stats":[{"label":"Every","kind":"geo","a":8,"b":0.92,"unit":"s","dec":1,"key":["8.0 s","5.7 s","3.8 s","2.5 s"]},{"label":"Blast radius","kind":"lin","a":30,"b":6,"unit":"u","dec":0,"key":["30 u","54 u","84 u","114 u"]}],"role":"Destroy range","phys":"Impact","rev":"Now climbs above the swarm instead of leaving your plane.","milestones":[{"level":10,"text":"Two meteors at a time"}]},{"id":"space-shockwave","n":11,"element":"Space","name":"Shockwave","kind":"Burst","objective":"Opposing vessels","text":"Every 10 s the swarm flares into an expanding ring that bursts enemy prisms.","stats":[{"label":"Ring radius","kind":"lin","a":80,"b":15,"unit":"u","dec":0,"key":["80 u","140 u","215 u","290 u"]}],"role":"Destroy range","phys":"Pressure wave","rev":"No stuns: the ring no longer shoves vessels.","milestones":[]},{"id":"space-orbital-scythe","n":12,"element":"Space","name":"Orbital Scythe","kind":"Orbit","objective":"Opposing mass","text":"A share of members orbit the centroid at speed and cut every enemy prism on their circle.","stats":[{"label":"Members in orbit","kind":"lin","a":10,"b":2,"unit":"%","dec":0,"key":["10%","18%","28%","38%"]},{"label":"Orbit radius","kind":"lin","a":60,"b":6,"unit":"u","dec":0,"key":["60 u","84 u","114 u","144 u"]}],"role":"Destroy range","phys":"Orbits","rev":null,"milestones":[]},{"id":"space-manta-sheet","n":13,"element":"Space","name":"Manta Sheet","kind":"Form","objective":"Opposing mass","text":"Every 20 s the swarm flattens into one wide manta that sweeps through the cell, bursting every enemy prism under its wings.","stats":[{"label":"Wingspan","kind":"lin","a":150,"b":25,"unit":"u","dec":0,"key":["150 u","250 u","375 u","500 u"]},{"label":"Manta lasts","kind":"lin","a":3,"b":0.3,"unit":"s","dec":1,"key":["3.0 s","4.2 s","5.7 s","7.2 s"]}],"role":"Destroy range","phys":null,"rev":null,"milestones":[]},{"id":"space-whale-gulp","n":14,"element":"Space","name":"Whale Gulp","kind":"Form","objective":"Opposing mass","text":"Every 20 s the swarm becomes a whale mouth and gulps a cone of enemy prisms in one bite. Gulped prisms feed breeding.","stats":[{"label":"Cone length","kind":"lin","a":120,"b":20,"unit":"u","dec":0,"key":["120 u","200 u","300 u","400 u"]},{"label":"Most prisms per gulp","kind":"lin","a":10,"b":6,"unit":"","dec":0,"key":["10","34","64","94"]}],"role":"Destroy amount","phys":null,"rev":null,"milestones":[]},{"id":"space-spaghettify","n":15,"element":"Space","name":"Spaghettify","kind":"Breaker","objective":"Opposing mass","text":"Near the swarm's densest point, tidal pull stretches enemy prisms long and thin until they snap.","stats":[{"label":"Tidal radius","kind":"lin","a":40,"b":15,"unit":"u","dec":0,"key":["40 u","100 u","175 u","250 u"]},{"label":"Snap after","kind":"geo","a":3,"b":0.9,"unit":"s","dec":1,"key":["3.0 s","2.0 s","1.2 s","0.7 s"]}],"role":"Destroy range","phys":"Tidal forces","rev":"New. Replaces Depth Dive: the swarm already roams the whole cell, so leaving the plane meant nothing.","milestones":[]},{"id":"space-mirror-swarm","n":16,"element":"Space","name":"Mirror Swarm","kind":"Copy","objective":"Opposing mass","text":"A mirror-image swarm flies point-reflected through the real swarm's centroid and breaks enemy prisms for real.","stats":[{"label":"Mirror strength","kind":"lin","a":25,"b":5,"unit":"%","dec":0,"key":["25%","45%","70%","95%"]}],"role":"Destroy amount","phys":"Reflection","rev":"It reflected across your camera's centre line; the camera no longer touches the swarm, so it reflects through the centroid.","milestones":[]},{"id":"space-split","n":17,"element":"Space","name":"Split","kind":"Split","objective":"Any","text":"The swarm splits. Each extra swarm works the next objective in the cycle at the same time, so a later phase can be met before its timer starts.","stats":[{"label":"Swarms","kind":"pts","pts":["2 for 8 s, every 30 s","2, for good","3","4 (one per objective)"]}],"role":null,"phys":null,"rev":"Extra swarms follow the phase cycle instead of the toggle.","milestones":[{"level":5,"text":"The split is permanent"},{"level":10,"text":"Three swarms"},{"level":15,"text":"Four swarms, one per objective"}]},{"id":"space-murmuration","n":18,"element":"Space","name":"Murmuration","kind":"Decoy","objective":"Opposing vessels","text":"The swarm swirls a huge shifting ghost cloud round itself. Enemy aim and AI lock onto the cloud instead of the swarm.","stats":[{"label":"Shots fooled","kind":"lin","a":10,"b":4,"unit":"%","dec":0,"key":["10%","26%","46%","66%"]}],"role":null,"phys":null,"rev":null,"milestones":[]},{"id":"space-scouts","n":19,"element":"Space","name":"Scouts","kind":"Vision","objective":"Elemental crystals","text":"Scouts fly ahead and mark crystals and enemies on the map.","stats":[{"label":"Reveal radius","kind":"lin","a":300,"b":50,"unit":"u","dec":0,"key":["300 u","500 u","750 u","1000 u"]}],"role":null,"phys":null,"rev":null,"milestones":[{"level":10,"text":"Marked crystals pull the swarm a little even off-objective"}]},{"id":"space-wide-lens","n":20,"element":"Space","name":"Wide Lens","kind":"Camera","objective":"Any","text":"Your view pulls back so you see more of the cell round the swarm.","stats":[{"label":"View span","kind":"lin","a":1460,"b":60,"unit":"u","dec":0,"key":["1460 u","1700 u","2000 u","2300 u"]}],"role":null,"phys":null,"rev":"Reworded for the free view.","milestones":[{"level":10,"text":"An edge arrow points to the current objective"}]},{"id":"charge-emp","n":1,"element":"Charge","name":"EMP","kind":"Silence","objective":"Opposing vessels","text":"Every 20 s the swarm pulses an EMP that silences enemy Charge and Space abilities in range.","stats":[{"label":"Silenced for","kind":"lin","a":0.5,"b":0.2,"unit":"s","dec":1,"key":["0.5 s","1.3 s","2.3 s","3.3 s"]},{"label":"Radius","kind":"lin","a":120,"b":15,"unit":"u","dec":0,"key":["120 u","180 u","255 u","330 u"]}],"role":"Silence","phys":"Electromagnetic pulse","rev":null,"milestones":[]},{"id":"charge-lightning-rod","n":2,"element":"Charge","name":"Lightning Rod","kind":"Silence","objective":"Opposing vessels","text":"One member stands as a lightning rod. Enemy Charge abilities fired near the swarm are drawn into it and fizzle.","stats":[{"label":"Draw radius","kind":"lin","a":60,"b":12,"unit":"u","dec":0,"key":["60 u","108 u","168 u","228 u"]},{"label":"Rods","kind":"lin","a":1,"b":0.2,"unit":"","dec":0,"key":["1","1","2","3"]}],"role":"Silence","phys":"Grounding","rev":null,"milestones":[]},{"id":"charge-plasma-net","n":3,"element":"Charge","name":"Plasma Net","kind":"Silence","objective":"Opposing vessels","text":"Members link into a plasma net. An enemy that crosses a strand keeps flying, but its Charge and Space abilities go quiet.","stats":[{"label":"Silenced for","kind":"lin","a":0.5,"b":0.2,"unit":"s","dec":1,"key":["0.5 s","1.3 s","2.3 s","3.3 s"]},{"label":"Strand length","kind":"lin","a":40,"b":8,"unit":"u","dec":0,"key":["40 u","72 u","112 u","152 u"]}],"role":"Silence","phys":"Plasma","rev":"No stuns: crossing a strand silences abilities instead of stunning the vessel.","milestones":[]},{"id":"charge-thorns","n":4,"element":"Charge","name":"Thorns","kind":"Silence","objective":"Opposing vessels","text":"An enemy that kills a member may get a shock back that silences its Charge and Space abilities for a moment.","stats":[{"label":"Chance","kind":"lin","a":5,"b":5,"unit":"%","dec":0,"key":["5%","25%","50%","75%"]},{"label":"Silenced for","kind":"lin","a":0.5,"b":0.1,"unit":"s","dec":1,"key":["0.5 s","0.9 s","1.4 s","1.9 s"]}],"role":"Silence","phys":"Static discharge","rev":"No stuns: the shock silences abilities and the vessel keeps flying.","milestones":[]},{"id":"charge-static-members","n":5,"element":"Charge","name":"Static Members","kind":"Drain","objective":"Opposing vessels","text":"Members carry static. A rival that brushes one has its Charge element drained.","stats":[{"label":"Charge drained per touch","kind":"lin","a":2,"b":1,"unit":"%","dec":0,"key":["2%","6%","11%","16%"]}],"role":"Strip elements","phys":"Static charge","rev":null,"milestones":[{"level":10,"text":"The drained charge feeds your other Charge cards"}]},{"id":"charge-short-circuit","n":6,"element":"Charge","name":"Short Circuit","kind":"Strip","objective":"Opposing vessels","text":"A vessel swarmed by enough members sparks and drops elemental crystals, which your swarm can collect. It keeps full control of its flight.","stats":[{"label":"Members needed","kind":"geo","a":16,"b":0.92,"unit":"","dec":0,"key":["16","11","7","4"]},{"label":"Crystals knocked loose","kind":"lin","a":1,"b":0.25,"unit":"","dec":0,"key":["1","2","3","4"]}],"role":"Strip crystals","phys":"Short circuit","rev":null,"milestones":[]},{"id":"charge-polarity","n":7,"element":"Charge","name":"Polarity","kind":"Strip","objective":"Opposing vessels","text":"The swarm's magnetic field tugs elemental crystals off enemy vessels that fly near it, without pushing the vessels themselves.","stats":[{"label":"Field radius","kind":"lin","a":60,"b":10,"unit":"u","dec":0,"key":["60 u","100 u","150 u","200 u"]},{"label":"Crystals tugged off","kind":"lin","a":0.2,"b":0.1,"unit":"/s","dec":1,"key":["0.2/s","0.6/s","1.1/s","1.6/s"]}],"role":"Strip crystals","phys":"Magnetism","rev":"No stuns: it shoved vessels off their path, taking control from the pilot. The field now pulls crystals, not hulls.","milestones":[]},{"id":"charge-dragon","n":8,"element":"Charge","name":"Dragon","kind":"Form","objective":"Opposing vessels","text":"Every 25 s the swarm becomes a long serpent dragon that breathes a cone of plasma. Vessels it scorches lose elemental crystals; fauna in it burn.","stats":[{"label":"Breath length","kind":"lin","a":100,"b":20,"unit":"u","dec":0,"key":["100 u","180 u","280 u","380 u"]},{"label":"Dragon lasts","kind":"lin","a":3,"b":0.4,"unit":"s","dec":1,"key":["3.0 s","4.6 s","6.6 s","8.6 s"]}],"role":"Strip crystals and kill fauna","phys":null,"rev":null,"milestones":[{"level":15,"text":"The breath takes a petal a second"}]},{"id":"charge-chain-lightning","n":9,"element":"Charge","name":"Chain Lightning","kind":"Weapon","objective":"Any","text":"The swarm's hits arc on from target to target through fauna and vessels.","stats":[{"label":"Jumps","kind":"lin","a":1,"b":0.5,"unit":"","dec":0,"key":["1","3","5","8"]}],"role":"Kill fauna","phys":"Arc discharge","rev":null,"milestones":[]},{"id":"charge-tesla-coil","n":10,"element":"Charge","name":"Tesla Coil","kind":"Weapon","objective":"Any","text":"Every few seconds the centroid zaps the nearest fauna.","stats":[{"label":"Zaps per pulse","kind":"lin","a":1,"b":0.5,"unit":"","dec":0,"key":["1","3","5","8"]},{"label":"Every","kind":"geo","a":3,"b":0.93,"unit":"s","dec":1,"key":["3.0 s","2.2 s","1.6 s","1.1 s"]}],"role":"Kill fauna","phys":"Resonant coil","rev":null,"milestones":[]},{"id":"charge-thunderhead","n":11,"element":"Charge","name":"Thunderhead","kind":"Form","objective":"Any","text":"Every 25 s the swarm puffs into a storm cloud that rains lightning on the fauna and vessels under it.","stats":[{"label":"Cloud lasts","kind":"lin","a":3,"b":0.4,"unit":"s","dec":1,"key":["3.0 s","4.6 s","6.6 s","8.6 s"]},{"label":"Strikes","kind":"lin","a":2,"b":0.6,"unit":"/s","dec":1,"key":["2.0/s","4.4/s","7.4/s","10.4/s"]}],"role":"Kill fauna","phys":"Storm charge separation","rev":null,"milestones":[]},{"id":"charge-lasers","n":12,"element":"Charge","name":"Lasers","kind":"Weapon","objective":"Opposing vessels","text":"Members fire lasers at the nearest fauna or enemy vessel.","stats":[{"label":"Members armed","kind":"lin","a":9,"b":6.5,"unit":"%","dec":0,"key":["9%","35%","67%","100%"]},{"label":"Range","kind":"lin","a":120,"b":15,"unit":"u","dec":0,"key":["120 u","180 u","255 u","330 u"]}],"role":"Kill fauna","phys":null,"rev":null,"milestones":[{"level":10,"text":"Beams pierce"},{"level":15,"text":"Beams on one vessel merge into one big beam"}]},{"id":"charge-overcharge","n":13,"element":"Charge","name":"Overcharge","kind":"Burst","objective":"Elemental crystals","text":"Each crystal collected charges the swarm. At full charge it lets out a blast that kills fauna round it and silences vessels.","stats":[{"label":"Crystals to full","kind":"geo","a":10,"b":0.88,"unit":"","dec":0,"key":["10","5","3","1"]},{"label":"Blast radius","kind":"lin","a":100,"b":20,"unit":"u","dec":0,"key":["100 u","180 u","280 u","380 u"]}],"role":"Kill fauna and silence","phys":"Capacitor","rev":null,"milestones":[]},{"id":"charge-spark-trail","n":14,"element":"Charge","name":"Spark Trail","kind":"Trap","objective":"Opposing vessels","text":"The swarm leaves a crackling trail. An enemy that crosses it is slowed and its abilities sputter.","stats":[{"label":"Trail lasts","kind":"lin","a":2,"b":0.5,"unit":"s","dec":1,"key":["2.0 s","4.0 s","6.5 s","9.0 s"]},{"label":"Slow","kind":"lin","a":10,"b":3,"unit":"%","dec":0,"key":["10%","22%","37%","52%"]}],"role":"Silence","phys":"Live current","rev":null,"milestones":[]},{"id":"charge-kamikaze","n":15,"element":"Charge","name":"Kamikaze","kind":"Burst","objective":"Opposing vessels","text":"Members that hit an enemy vessel or fauna explode in a spark that kills fauna and silences a vessel's Charge and Space abilities. Members never explode below the swarm's minimum size.","stats":[{"label":"Blast radius","kind":"lin","a":20,"b":5,"unit":"u","dec":0,"key":["20 u","40 u","65 u","90 u"]},{"label":"Chance the member lives","kind":"lin","a":0,"b":5,"unit":"%","dec":0,"key":["0%","20%","45%","70%"]}],"role":"Silence and kill fauna","phys":null,"rev":"Stops at the minimum size.","milestones":[]},{"id":"charge-sting","n":16,"element":"Charge","name":"Sting","kind":"Weapon","objective":"Opposing vessels","text":"Members within reach dive at enemy vessels. Enough stings take a petal.","stats":[{"label":"Stings per petal","kind":"geo","a":12,"b":0.86,"unit":"","dec":0,"key":["12","6","3","1"]},{"label":"Reach","kind":"lin","a":80,"b":10,"unit":"u","dec":0,"key":["80 u","120 u","170 u","220 u"]}],"role":null,"phys":null,"rev":null,"milestones":[]},{"id":"charge-wasp","n":17,"element":"Charge","name":"Wasp","kind":"Form","objective":"Opposing vessels","text":"Every 20 s the swarm fuses into a giant wasp that lunges at the nearest enemy vessel with its stinger.","stats":[{"label":"Lunge range","kind":"lin","a":200,"b":30,"unit":"u","dec":0,"key":["200 u","320 u","470 u","620 u"]}],"role":null,"phys":null,"rev":null,"milestones":[{"level":1,"text":"Lunge takes 1 petal"},{"level":8,"text":"Lunge takes 2 petals"},{"level":15,"text":"Lunge takes 3 petals"}]},{"id":"charge-missiles","n":18,"element":"Charge","name":"Missiles","kind":"Weapon","objective":"Opposing vessels","text":"Every few seconds members launch as homing missiles at enemy vessels.","stats":[{"label":"Missiles per volley","kind":"lin","a":1,"b":0.5,"unit":"","dec":0,"key":["1","3","5","8"]},{"label":"Every","kind":"geo","a":8,"b":0.95,"unit":"s","dec":1,"key":["8.0 s","6.5 s","5.0 s","3.9 s"]}],"role":null,"phys":null,"rev":null,"milestones":[]},{"id":"charge-frenzy","n":19,"element":"Charge","name":"Frenzy","kind":"Hunt","objective":"Opposing vessels","text":"When an enemy vessel is under half its petals, the swarm smells it and hits harder near it.","stats":[{"label":"Bonus","kind":"lin","a":10,"b":5,"unit":"%","dec":0,"key":["10%","30%","55%","80%"]}],"role":null,"phys":null,"rev":null,"milestones":[]},{"id":"charge-electroreception","n":20,"element":"Charge","name":"Electroreception","kind":"Hunt","objective":"Any","text":"Like sharks, members sense the electric fields of living things and hunt fauna anywhere in range, killing it.","stats":[{"label":"Sensing range","kind":"lin","a":100,"b":25,"unit":"u","dec":0,"key":["100 u","200 u","325 u","450 u"]},{"label":"Members hunting","kind":"lin","a":10,"b":3,"unit":"%","dec":0,"key":["10%","22%","37%","52%"]}],"role":"Kill fauna","phys":"Bioelectric fields","rev":"New. Replaces Mind Control: a hijack takes the pilot's control away, which the fun economy rules out.","milestones":[{"level":10,"text":"A killed fauna drops an elemental crystal"}]}]};   // Docs/Studios/SwarmCardVessel/cards.json, injected by build.py
+
+  // ================= (1) LAB meta + the numbers =================
+  // Nothing of this vessel is in the game yet, so almost every number is the lab's PROPOSAL. Card numbers are
+  // read from cards.json (the card list is their source). Game rules the lab copies are named.
+  const LAB = { name: 'Starlings Lab', branch: 'claude/project-thread-pkoq70', round: 1, doc: 'Docs/Studios/STARLINGS_LAB.md', cards: 'revision ' + CARDS.revision };
+  const SHIPPED = {
+    tOmni: 30,        // lab proposal: Omnicrystal phase timer (s)            (SWARM_CARD_VESSEL.md, the phase table)
+    tElem: 25,        // lab proposal: Elemental crystals phase timer (s)
+    tVessel: 25,      // lab proposal: Opposing vessels phase timer (s)
+    tMass: 25,        // lab proposal: Opposing mass phase timer (s)
+    goalY: 5,         // lab proposal: Y, elemental crystals that end that phase early
+    goalX: 30,        // lab proposal: X, opposing prisms removed that end that phase early
+    startSize: 120,   // members at the start: 5x the card baseline's 24 for a murmuration (Garrett, 2026-10-21)
+    cap: 200,         // swarm cap: 5x the card baseline's 40 (Garrett, 2026-10-21; Big Family raises it)
+    minSize: 30,      // protected minimum, below which nothing harms the swarm (Garrett: "just like other vessels"); 5x the 6
+    cruise: 120,      // lab: member cruise speed (u/s); faster than the cards' 60 u/s baseline so a phase can be crossed
+    turn: 70,         // lab: member turn rate (°/s) before Agility
+    lvMass: 1,        // lab: the Mass element's upgrade level (drawn Mass cards arrive at it)
+    lvTime: 1,        // lab: the Time element's upgrade level
+    lvSpace: 1,       // lab: the Space element's upgrade level
+    lvCharge: 1,      // lab: the Charge element's upgrade level
+    slab: 260,        // lab: half-thickness of the viewing plane's sharp slice (u), the 2.5D stand-in
+    viewSpan: 1400,   // lab: world units across the short side of the screen   (the Shepherd lab's view)
+  };
+  const SPEC = [
+    ['Phases', 'tOmni', 10, 60, 1, 'Omnicrystal timer (s)', 'How long the swarm hunts the omnicrystal. A hand is dealt when this phase ends, crystal or not.'],
+    ['Phases', 'tElem', 10, 60, 1, 'Elemental crystals timer (s)', 'How long the swarm chases elemental crystals before the cycle moves on.'],
+    ['Phases', 'tVessel', 10, 60, 1, 'Opposing vessels timer (s)', 'How long the swarm goes after rival vessels.'],
+    ['Phases', 'tMass', 10, 60, 1, 'Opposing mass timer (s)', 'How long the swarm goes after enemy prisms.'],
+    ['Phases', 'goalY', 1, 15, 1, 'Y: crystals to end early', 'Elemental crystals collected in the phase that end it before its timer.'],
+    ['Phases', 'goalX', 5, 100, 5, 'X: prisms to end early', 'Enemy prisms destroyed or stolen in the phase that end it before its timer.'],
+    ['Swarm', 'startSize', 6, 300, 1, 'Start size', 'Members the swarm starts with.'],
+    ['Swarm', 'cap', 20, 400, 1, 'Cap', 'Most members the swarm can hold before Big Family.'],
+    ['Swarm', 'minSize', 0, 100, 1, 'Protected minimum', 'At or below this many members nothing can harm the swarm.'],
+    ['Swarm', 'cruise', 40, 240, 5, 'Cruise (u/s)', 'Member cruise speed before Time cards.'],
+    ['Swarm', 'turn', 20, 200, 5, 'Turn rate (°/s)', 'How fast a member can swing round before Agility.'],
+    ['Elements', 'lvMass', 1, 15, 1, 'Mass upgrade level', 'Your between-runs Mass level: every Mass card you draw arrives at this level.'],
+    ['Elements', 'lvTime', 1, 15, 1, 'Time upgrade level', 'Every Time card you draw arrives at this level.'],
+    ['Elements', 'lvSpace', 1, 15, 1, 'Space upgrade level', 'Every Space card you draw arrives at this level.'],
+    ['Elements', 'lvCharge', 1, 15, 1, 'Charge upgrade level', 'Every Charge card you draw arrives at this level.'],
+    ['View', 'slab', 60, 900, 20, 'Slice half-thickness (u)', 'Things within this distance of your viewing plane draw sharp; the rest fade. A stand-in for the Wrasse 2.5D look.'],
+    ['View', 'viewSpan', 600, 3000, 50, 'View span (u)', 'World units across the short side of the screen.'],
+  ];
+  const LS_KEY = 'lab:' + LAB.name + ':P';
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const P = Object.assign({}, SHIPPED, lsGet(LS_KEY, {}));
+  for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
+
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  // ================= cards: which of the 80 the lab runs, and their numbers =================
+  const ELS = ['Mass', 'Time', 'Space', 'Charge'];
+  const IMPL = {
+    Mass: ['mass-mound-builders', 'mass-danger-drip', 'mass-carapace', 'mass-brood', 'mass-big-family', 'mass-snowball'],
+    Time: ['time-quickening', 'time-agility', 'time-dragonfly', 'time-skip-ahead', 'time-hurry-up', 'time-blink-step'],
+    Space: ['space-hole-punch', 'space-wide-bite', 'space-annex', 'space-shield-eaters', 'space-black-hole', 'space-split'],
+    Charge: ['charge-lasers', 'charge-emp', 'charge-tesla-coil', 'charge-short-circuit', 'charge-sting', 'charge-chain-lightning'],
+  };
+  const CARD = {}; for (const c of CARDS.cards) CARD[c.id] = c;
+  for (const el of ELS) for (const id of IMPL[el]) if (!CARD[id]) throw new Error('Starlings Lab: card ' + id + ' is not in cards.json');
+  function sv(id, i, L) {           // stat i of card id at level L, by the card's own formula (same rule as the deck page)
+    const s = CARD[id].stats[i];
+    const v = s.kind === 'lin' ? s.a + s.b * (L - 1) : s.a * Math.pow(s.b, L - 1);
+    return s.dec === 0 ? Math.floor(v + 1e-9) : v;
+  }
+
+  // ================= (3) THE MODEL =================
+  const PHASES = [
+    { key: 'omni', name: 'Omnicrystal', t: 'tOmni' },
+    { key: 'elem', name: 'Elemental crystals', t: 'tElem' },
+    { key: 'vessel', name: 'Opposing vessels', t: 'tVessel' },
+    { key: 'mass', name: 'Opposing mass', t: 'tMass' },
+  ];
+  const INT = {   // the intensity ladder (lab proposal)
+    1: { rivals: 1, clusters: 3, shielded: 0.0, fire: 4.0, fauna: 4 },
+    2: { rivals: 2, clusters: 5, shielded: 0.15, fire: 3.0, fauna: 6 },
+    3: { rivals: 3, clusters: 7, shielded: 0.3, fire: 2.2, fauna: 9 },
+    4: { rivals: 4, clusters: 9, shielded: 0.45, fire: 1.6, fauna: 12 },
+  };
+  const R = 900;            // lab: the cell's radius (u)
+  const CLUSTER = 30;       // lab: enemy prisms per cluster
+  let W = null, seed = 7, intensity = 2, picker = 'you';
+
+  const v3 = (x, y, z) => [x, y, z];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const len = (a) => Math.hypot(a[0], a[1], a[2]);
+  const d2 = (a, b) => { const x = a[0] - b[0], y = a[1] - b[1], z = a[2] - b[2]; return x * x + y * y + z * z; };
+  function inBall(rnd, r) { for (;;) { const p = [rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1]; if (len(p) <= 1) return [p[0] * r, p[1] * r, p[2] * r]; } }
+
+  function lv(id) { return W.held[id] || 0; }
+  function has(id) { return (W.held[id] || 0) > 0; }
+
+  function reset(s) {
+    if (s != null) seed = s >>> 0;
+    const rnd = mulberry32(seed), I = INT[intensity];
+    W = { t: 0, rnd, members: [], prisms: [], crystals: [], omni: null, omniRespawn: 0, rivals: [], fauna: [], held: {}, hand: null, hands: 0,
+      phase: 0, phaseT: 0, phaseCount: { omni: 0, elem: 0, vessel: 0, mass: 0 }, early: { omni: 0, elem: 0, vessel: 0, mass: 0 },
+      elemTimes: [], gotY: 0, removedX: 0, debuffed: false, cd: {}, form: null, formT: 0, stats: { removed: 0, stolen: 0, laid: 0, petals: 0, kos: 0, debuffs: 0, fauna: 0, crystals: 0, omnis: 0, lost: 0 },
+      events: [], nextId: 1, splitT: 0, blackHoleUsed: false };
+    const n = Math.round(P.startSize);
+    for (let i = 0; i < n; i++) addMember(inBall(rnd, 60));
+    for (let c = 0; c < I.clusters; c++) {
+      const at = inBall(rnd, R * 0.75);
+      for (let i = 0; i < CLUSTER; i++) { const p = inBall(rnd, 70); W.prisms.push({ p: [at[0] + p[0], at[1] + p[1], at[2] + p[2]], team: 'E', shield: rnd() < I.shielded ? 1 : 0, danger: false, alive: true, bites: 0 }); }
+    }
+    for (let i = 0; i < 12; i++) W.crystals.push({ p: inBall(rnd, R * 0.85), el: ELS[i % 4], alive: true });
+    spawnOmni();
+    for (let i = 0; i < I.rivals; i++) W.rivals.push(newRival());
+    for (let i = 0; i < I.fauna; i++) W.fauna.push({ p: inBall(rnd, R * 0.8), v: [0, 0, 0], alive: true, eatT: 0, respawn: 0 });
+  }
+  function addMember(p) { W.members.push({ id: W.nextId++, p: p.slice(), v: [W.rnd() - 0.5, W.rnd() - 0.5, W.rnd() - 0.5].map((x) => x * 40), shells: 0, shellT: 0, alive: true, sw: 0, laserT: W.rnd() }); }
+  function spawnOmni() { W.omni = { p: inBall(W.rnd, R * 0.8) }; }
+  function newRival() { return { p: inBall(W.rnd, R * 0.7), v: [0, 0, 0], way: inBall(W.rnd, R * 0.8), petals: 12, crystals: 3, silenced: 0, slowT: 0, slow: 0, fireT: W.rnd() * 2, layT: 0, nip: 0, stingN: 0, scT: 0, ko: 0 }; }
+  const alive = () => W.members.filter((m) => m.alive);
+  function capNow() { return Math.round(P.cap) + (has('mass-big-family') ? sv('mass-big-family', 0, lv('mass-big-family')) - 40 : 0); }
+  function minNow() { return Math.round(P.minSize) + (has('mass-big-family') ? sv('mass-big-family', 1, lv('mass-big-family')) - 6 : 0); }
+
+  function centroidOf(list) {   // a SAMPLE of members, as the brief asks: at most 12, evenly strided
+    if (!list.length) return [0, 0, 0];
+    const step = Math.max(1, Math.floor(list.length / 12)), c = [0, 0, 0]; let k = 0;
+    for (let i = 0; i < list.length; i += step) { const p = list[i].p; c[0] += p[0]; c[1] += p[1]; c[2] += p[2]; k++; }
+    return [c[0] / k, c[1] / k, c[2] / k];
+  }
+  function nearest(list, at, ok) { let best = null, bd = Infinity; for (const o of list) { if (ok && !ok(o)) continue; const d = d2(o.p, at); if (d < bd) { bd = d; best = o; } } return best; }
+  function enemyPrisms() { return W.prisms.filter((q) => q.alive && q.team === 'E'); }
+
+  function swarmCount() { const L = lv('space-split'); if (!L) return 1; if (L >= 15) return 4; if (L >= 10) return 3; if (L >= 5) return 2; return W.splitT > 0 ? 2 : 1; }
+  function targetFor(phaseIdx, at) {
+    const k = PHASES[phaseIdx % 4].key;
+    if (k === 'omni') return W.omni ? W.omni.p : at;
+    if (k === 'elem') { const c = nearest(W.crystals, at, (c) => c.alive); return c ? c.p : at; }
+    if (k === 'vessel') { const r = nearest(W.rivals, at, (r) => !r.ko); return r ? r.p : at; }
+    const q = W.massTarget && W.massTarget.alive ? W.massTarget : (W.massTarget = nearest(enemyPrisms(), at));
+    return q ? q.p : at;
+  }
+
+  // a debuff on a rival: what ends the Opposing vessels phase early
+  function debuff(r, what) { W.stats.debuffs++; W.debuffed = true; W.events.push({ t: W.t, kind: 'debuff', what }); }
+  function hurtRival(r, petals, what) {
+    if (r.ko) return;
+    r.petals -= petals; W.stats.petals += petals; r.nip += petals;
+    if (r.nip >= 1 / 3) { r.nip = 0; debuff(r, what); }
+    if (r.petals <= 0) { r.ko = 8; W.stats.kos++; r.petals = 0; }
+  }
+  function removePrism(q, how) {
+    q.alive = false;
+    if (how === 'steal') { W.prisms.push({ p: q.p.slice(), team: 'Y', shield: q.shield, danger: false, alive: true, bites: 0 }); W.stats.stolen++; }
+    W.stats.removed++; W.removedX++;
+  }
+  function layPrism(p, opt) { W.prisms.push(Object.assign({ p: p.slice(), team: 'Y', shield: 0, danger: false, alive: true, bites: 0 }, opt || {})); W.stats.laid++; }
+  function killFauna(f) { if (!f.alive) return false; f.alive = false; f.respawn = 12; W.stats.fauna++; return true; }
+
+  // grid for prism contact queries, rebuilt every step (a few hundred inserts)
+  const CELL = 40; let GRID = new Map();
+  const gk = (x, y, z) => ((x + 512) * 1024 + (y + 512)) * 1024 + (z + 512);
+  function buildGrid() { GRID = new Map(); for (const q of W.prisms) { if (!q.alive) continue; const k = gk(Math.floor(q.p[0] / CELL), Math.floor(q.p[1] / CELL), Math.floor(q.p[2] / CELL)); let a = GRID.get(k); if (!a) GRID.set(k, a = []); a.push(q); } }
+  function near(p, r, fn) { const r2 = r * r, x0 = Math.floor((p[0] - r) / CELL), x1 = Math.floor((p[0] + r) / CELL), y0 = Math.floor((p[1] - r) / CELL), y1 = Math.floor((p[1] + r) / CELL), z0 = Math.floor((p[2] - r) / CELL), z1 = Math.floor((p[2] + r) / CELL);
+    for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) { const a = GRID.get(gk(x, y, z)); if (!a) continue; for (const q of a) if (q.alive && d2(q.p, p) <= r2) fn(q); } }
+
+  function cooldown(key, every, dt) { W.cd[key] = (W.cd[key] == null ? every : W.cd[key]) - dt; if (W.cd[key] <= 0) { W.cd[key] += every; return true; } return false; }
+
+  function dealHand() {
+    W.hands++;
+    const hand = ELS.map((el) => { const ids = IMPL[el]; const id = ids[Math.floor(W.rnd() * ids.length)]; return { id, el, level: Math.round(P['lv' + el]) }; });
+    W.hand = hand;
+    if (picker !== 'you') autoPick();
+  }
+  function pick(i) {
+    if (!W.hand || !W.hand[i]) return;
+    const c = W.hand[i]; W.held[c.id] = Math.min(15, (W.held[c.id] || 0) + c.level);
+    W.events.push({ t: W.t, kind: 'pick', id: c.id, level: W.held[c.id] });
+    W.hand = null;
+  }
+  function autoPick() {
+    if (picker === 'none') { W.hand = null; return; }
+    let i = 0;
+    if (ELS.includes(picker)) i = ELS.indexOf(picker);
+    else i = Math.floor(W.rnd() * 4);
+    pick(i);
+  }
+  function endPhase(early) {
+    const ph = PHASES[W.phase];
+    W.phaseCount[ph.key]++; if (early) W.early[ph.key]++;
+    if (ph.key === 'elem') W.elemTimes.push(W.phaseT);
+    if (ph.key === 'omni') dealHand();
+    W.phase = (W.phase + 1) % 4; W.phaseT = 0; W.gotY = 0; W.removedX = 0; W.debuffed = false;
+    if (PHASES[W.phase].key === 'mass') W.blackHoleUsed = false;
+  }
+  function phaseLen(i) { const cut = has('time-hurry-up') ? sv('time-hurry-up', 0, lv('time-hurry-up')) / 100 : 0; return P[PHASES[i].t] * (1 - cut); }
+
+  function simStep(dt) {
+    const rnd = W.rnd, I = INT[intensity];
+    W.t += dt; W.phaseT += dt;
+    buildGrid();
+    let ms = alive();
+    const cap = capNow(), minS = minNow();
+    const quick = has('time-quickening') ? sv('time-quickening', 0, lv('time-quickening')) / 100 : 0;
+    const turn = Math.max(P.turn, has('time-agility') ? sv('time-agility', 0, lv('time-agility')) : 0) * Math.PI / 180;
+    const reach = 25 * (has('space-wide-bite') ? sv('space-wide-bite', 0, lv('space-wide-bite')) / 100 : 1);
+
+    // ---- forms (one at a time): Dragonfly, Snowball ----
+    if (W.form) { W.formT -= dt; if (W.formT <= 0) { if (W.form === 'Snowball' && lv('mass-snowball') >= 10) for (const q of W.prisms) if (q.ball) { q.shield = 1; q.ball = false; } W.form = null; } }
+    if (!W.form && has('time-dragonfly') && cooldown('dragonfly', 15, dt)) { W.form = 'Dragonfly'; W.formT = sv('time-dragonfly', 1, lv('time-dragonfly')); }
+    else if (!W.form && has('mass-snowball') && cooldown('snowball', 20, dt)) { W.form = 'Snowball'; W.formT = sv('mass-snowball', 0, lv('mass-snowball')); }
+    const dart = W.form === 'Dragonfly' ? sv('time-dragonfly', 0, lv('time-dragonfly')) : 1;
+
+    // ---- split ----
+    const sL = lv('space-split');
+    if (sL > 0 && sL < 5) { if (W.splitT > 0) W.splitT -= dt; else if (cooldown('split', 30, dt)) W.splitT = sv('space-split', 0, 1) === null ? 8 : 8 + 4 * (sL - 1); }
+    const nSw = swarmCount();
+    ms.forEach((m, i) => { m.sw = i % nSw; });
+    const groups = []; for (let s = 0; s < nSw; s++) groups.push(ms.filter((m) => m.sw === s));
+    const cents = groups.map(centroidOf), targets = groups.map((g, s) => targetFor(W.phase + s, cents[s]));
+    W.centroid = centroidOf(ms);
+
+    // ---- Skip Ahead: the swarm skips a moment of travel toward its objective ----
+    if (has('time-skip-ahead') && cooldown('skip', sv('time-skip-ahead', 0, lv('time-skip-ahead')), dt)) {
+      const dist = sv('time-skip-ahead', 1, lv('time-skip-ahead'));
+      for (let s = 0; s < nSw; s++) { const dv = sub(targets[s], cents[s]), L = len(dv); if (L < 30) continue; const k = Math.min(dist, L - 20) / L; for (const m of groups[s]) { m.p[0] += dv[0] * k; m.p[1] += dv[1] * k; m.p[2] += dv[2] * k; } }
+    }
+
+    // ---- members move: seek the objective, flock, wander; turn-rate limited ----
+    for (const m of ms) {
+      const s = m.sw, c = cents[s];
+      let goal = targets[s];
+      if (has('charge-sting')) { const r = nearest(W.rivals, m.p, (r) => !r.ko); if (r && d2(r.p, m.p) < Math.pow(sv('charge-sting', 1, lv('charge-sting')), 2)) goal = r.p; }
+      const want = [0, 0, 0];
+      const toG = sub(goal, m.p), lg = len(toG) || 1;
+      for (let a = 0; a < 3; a++) want[a] += toG[a] / lg * 1.0;
+      const toC = sub(c, m.p), lc = len(toC) || 1;
+      const tight = W.form === 'Snowball' ? 3 : W.form === 'Dragonfly' ? 1.5 : 0.35;
+      for (let a = 0; a < 3; a++) want[a] += toC[a] / lc * tight * Math.min(1, lc / 80);
+      for (const o of groups[s]) { if (o === m) continue; const dd = d2(o.p, m.p); if (dd < 400 && dd > 0) { const k = (W.form === 'Snowball' ? 0.3 : 1) / Math.sqrt(dd); for (let a = 0; a < 3; a++) want[a] += (m.p[a] - o.p[a]) * k; } }
+      for (let a = 0; a < 3; a++) want[a] += (rnd() - 0.5) * 0.6;
+      const r0 = len(m.p); if (r0 > R * 0.95) for (let a = 0; a < 3; a++) want[a] -= m.p[a] / r0 * 2;
+      const arrive = Math.min(1, 0.35 + lg / 150);   // members ease in at the objective instead of overshooting it
+      const speed = P.cruise * (1 + quick) * dart * arrive;
+      const lw = len(want) || 1, dir = want.map((x) => x / lw), vl = len(m.v) || 1, cur = m.v.map((x) => x / vl);
+      const dot = Math.max(-1, Math.min(1, cur[0] * dir[0] + cur[1] * dir[1] + cur[2] * dir[2])), ang = Math.acos(dot), maxA = turn * dt * (W.form ? 2 : 1);
+      let nd = dir;
+      if (ang > maxA) { const t = maxA / ang; nd = [cur[0] + (dir[0] - cur[0]) * t, cur[1] + (dir[1] - cur[1]) * t, cur[2] + (dir[2] - cur[2]) * t]; const l = len(nd) || 1; nd = nd.map((x) => x / l); }
+      m.v = nd.map((x) => x * speed);
+      for (let a = 0; a < 3; a++) m.p[a] += m.v[a] * dt;
+    }
+
+    // ---- contacts: crystals, omnicrystal, enemy prisms, rivals ----
+    const holeRate = has('space-hole-punch') ? sv('space-hole-punch', 0, lv('space-hole-punch')) : 0;
+    const stealRate = has('space-annex') ? sv('space-annex', 0, lv('space-annex')) : 0;
+    const bitesNeed = has('space-shield-eaters') ? Math.max(1, sv('space-shield-eaters', 0, lv('space-shield-eaters'))) : Infinity;
+    const baseBite = 0.5;    // lab: a bare member's chance per second to break a plain enemy prism it touches
+    for (const m of ms) {
+      for (const c of W.crystals) if (c.alive && d2(c.p, m.p) < 28 * 28) { c.alive = false; c.respawn = 6; W.stats.crystals++; if (PHASES[W.phase].key === 'elem' || (nSw > 1)) W.gotY++; if (alive().length < cap) addMember(c.p); }   // lab: each elemental crystal hatches one starling
+      if (W.omni && d2(W.omni.p, m.p) < 20 * 20) { W.omni = null; W.omniRespawn = 4; W.stats.omnis++; if (PHASES[W.phase].key === 'omni') endPhase(true); else dealHand(); }
+      near(m.p, reach, (q) => {
+        if (q.team !== 'E') return;
+        if (q.shield) { if (bitesNeed < Infinity && rnd() < dt * 2) { q.bites++; if (q.bites >= bitesNeed) { q.shield = 0; q.bites = 0; } } return; }
+        if (stealRate && rnd() < stealRate * dt) { removePrism(q, 'steal'); return; }
+        if (rnd() < (baseBite + holeRate) * dt) removePrism(q, 'break');
+      });
+      for (const r of W.rivals) if (!r.ko && d2(r.p, m.p) < 16 * 16) {
+        if (has('charge-sting')) { r.stingN += dt * 2; const need = Math.max(1, sv('charge-sting', 0, lv('charge-sting'))); if (r.stingN >= need) { r.stingN = 0; hurtRival(r, 1, 'sting'); } }
+        else hurtRival(r, 0.05 * dt, 'nip');   // lab: a bare member's nip, a twentieth of a petal a second
+      }
+    }
+
+    // ---- Mass cards: lay prisms, danger drip, shells, breeding ----
+    if (has('mass-mound-builders') && ms.length && rnd() < sv('mass-mound-builders', 0, lv('mass-mound-builders')) * dt) layPrism(ms[Math.floor(rnd() * ms.length)].p, { shield: lv('mass-mound-builders') >= 15 ? 1 : 0 });
+    if (has('mass-danger-drip') && ms.length && rnd() < sv('mass-danger-drip', 0, lv('mass-danger-drip')) * dt) layPrism(ms[Math.floor(rnd() * ms.length)].p, { danger: true });
+    if (W.form === 'Snowball' && rnd() < sv('mass-snowball', 1, lv('mass-snowball')) * dt) layPrism(W.centroid, { ball: true });
+    if (has('mass-carapace')) { const L = lv('mass-carapace'), maxS = L >= 15 ? 3 : L >= 8 ? 2 : 1, regrow = sv('mass-carapace', 0, L); for (const m of ms) if (m.shells < maxS) { m.shellT += dt; if (m.shellT >= regrow) { m.shellT = 0; m.shells++; } } }
+    if (has('mass-brood') && ms.length < cap && cooldown('brood', sv('mass-brood', 0, lv('mass-brood')), dt)) { const n = lv('mass-brood') >= 15 ? 2 : 1; for (let i = 0; i < n && alive().length < cap; i++) addMember(W.centroid); }
+
+    // ---- Charge cards ----
+    const liveFauna = W.fauna.filter((f) => f.alive);
+    const jumps = has('charge-chain-lightning') ? sv('charge-chain-lightning', 0, lv('charge-chain-lightning')) : 0;
+    function zap(target, from) {   // a Charge hit on fauna, arcing on through Chain Lightning
+      let hit = target, n = jumps;
+      if (hit.petals != null) hurtRival(hit, 0.1, 'laser'); else killFauna(hit);
+      while (n-- > 0) { const nx = nearest(W.fauna, hit.p, (f) => f.alive && d2(f.p, hit.p) < 120 * 120); if (!nx) break; killFauna(nx); hit = nx; }
+    }
+    if (has('charge-lasers')) {
+      const L = lv('charge-lasers'), armed = Math.min(1, sv('charge-lasers', 0, L) / 100), rng = sv('charge-lasers', 1, L);
+      ms.forEach((m, i) => {
+        if (i / ms.length >= armed) return;
+        m.laserT -= dt; if (m.laserT > 0) return; m.laserT = 1;
+        const f = nearest(W.fauna, m.p, (f) => f.alive && d2(f.p, m.p) < rng * rng);
+        const r = nearest(W.rivals, m.p, (r) => !r.ko && d2(r.p, m.p) < rng * rng);
+        const t = f && (!r || d2(f.p, m.p) < d2(r.p, m.p)) ? f : r;
+        if (t) { zap(t, m); W.events.push({ t: W.t, kind: 'laser', a: m.p.slice(), b: t.p.slice() }); }
+      });
+    }
+    if (has('charge-tesla-coil') && cooldown('tesla', sv('charge-tesla-coil', 1, lv('charge-tesla-coil')), dt)) {
+      const n = sv('charge-tesla-coil', 0, lv('charge-tesla-coil'));
+      const list = liveFauna.filter((f) => d2(f.p, W.centroid) < 300 * 300).sort((a, b) => d2(a.p, W.centroid) - d2(b.p, W.centroid)).slice(0, n);
+      for (const f of list) { zap(f); W.events.push({ t: W.t, kind: 'laser', a: W.centroid.slice(), b: f.p.slice() }); }
+    }
+    if (has('charge-emp') && cooldown('emp', 20, dt)) {
+      const dur = sv('charge-emp', 0, lv('charge-emp')), rad = sv('charge-emp', 1, lv('charge-emp'));
+      W.events.push({ t: W.t, kind: 'emp', p: W.centroid.slice(), r: rad });
+      for (const r of W.rivals) if (!r.ko && d2(r.p, W.centroid) < rad * rad) { r.silenced = Math.max(r.silenced, dur); debuff(r, 'emp'); }
+    }
+    if (has('charge-short-circuit')) {
+      const need = sv('charge-short-circuit', 0, lv('charge-short-circuit')), drop = Math.max(1, sv('charge-short-circuit', 1, lv('charge-short-circuit')));
+      for (const r of W.rivals) {
+        if (r.ko) continue; r.scT -= dt; if (r.scT > 0) continue;
+        let n = 0; for (const m of ms) if (d2(m.p, r.p) < 40 * 40) n++;
+        if (n >= need && r.crystals > 0) { r.scT = 3; const k = Math.min(drop, r.crystals); r.crystals -= k; for (let i = 0; i < k; i++) W.crystals.push({ p: [r.p[0] + (rnd() - 0.5) * 40, r.p[1] + (rnd() - 0.5) * 40, r.p[2] + (rnd() - 0.5) * 40], el: ELS[Math.floor(rnd() * 4)], alive: true, dropped: true }); debuff(r, 'short circuit'); }
+      }
+    }
+
+    // ---- Space: Black Hole, once per cycle in the mass phase when prisms are near ----
+    if (has('space-black-hole')) {
+      const L = lv('space-black-hole'), rad = sv('space-black-hole', 1, L);
+      if (W.bh) { W.bh.t -= dt; near(W.bh.p, rad, (q) => { if (q.team === 'E' && rnd() < dt * 3) removePrism(q, 'break'); }); if (W.bh.t <= 0) W.bh = null; }
+      else if (!W.blackHoleUsed && PHASES[W.phase].key === 'mass') { let n = 0; near(W.centroid, rad, (q) => { if (q.team === 'E') n++; }); if (n >= 10) { W.bh = { p: W.centroid.slice(), t: sv('space-black-hole', 0, L) }; W.blackHoleUsed = true; } }
+    }
+
+    // ---- rivals: wander, lay their mass, collect crystals, shoot members ----
+    const dodge = has('time-blink-step') ? sv('time-blink-step', 0, lv('time-blink-step')) / 100 : 0;
+    for (const r of W.rivals) {
+      if (r.ko) { r.ko -= dt; if (r.ko <= 0) Object.assign(r, newRival()); continue; }
+      r.silenced = Math.max(0, r.silenced - dt); r.slowT = Math.max(0, r.slowT - dt);
+      if (d2(r.p, r.way) < 60 * 60) r.way = inBall(rnd, R * 0.8);
+      const to = sub(r.way, r.p), l = len(to) || 1, sp = 90 * (r.slowT > 0 ? 0.6 : 1);   // lab: rivals cruise 90 u/s, slower than the starlings
+      r.v = to.map((x) => x / l * sp); for (let a = 0; a < 3; a++) r.p[a] += r.v[a] * dt;
+      r.layT += dt; if (r.layT > 1.5) { r.layT = 0; W.prisms.push({ p: r.p.slice(), team: 'E', shield: 0, danger: false, alive: true, bites: 0 }); }
+      for (const c of W.crystals) if (c.alive && d2(c.p, r.p) < 20 * 20) { c.alive = false; c.respawn = 6; r.crystals++; }
+      near(r.p, 14, (q) => { if (q.team === 'Y' && q.danger) { q.alive = false; r.slowT = 2; hurtRival(r, 1, 'danger prism'); } });
+      r.fireT -= dt;
+      if (r.fireT <= 0 && r.silenced <= 0) {
+        r.fireT = I.fire;
+        const tgt = nearest(ms, r.p, (m) => d2(m.p, r.p) < 220 * 220);
+        if (tgt) {
+          W.events.push({ t: W.t, kind: 'shot', a: r.p.slice(), b: tgt.p.slice() });
+          const nowAlive = alive().length;
+          if (nowAlive > minS && rnd() < 0.5 && rnd() >= dodge) { if (tgt.shells > 0) tgt.shells--; else { tgt.alive = false; W.stats.lost++; } }
+        }
+      }
+    }
+
+    // ---- fauna: graze your prisms; respawn ----
+    for (const f of W.fauna) {
+      if (!f.alive) { f.respawn -= dt; if (f.respawn <= 0) { f.alive = true; f.p = inBall(rnd, R * 0.8); } continue; }
+      const food = nearest(W.prisms, f.p, (q) => q.alive && q.team === 'Y' && d2(q.p, f.p) < 250 * 250);
+      const goal = food ? food.p : f.way || (f.way = inBall(rnd, R * 0.8));
+      if (!food && d2(f.p, goal) < 50 * 50) f.way = null;
+      const to = sub(goal, f.p), l = len(to) || 1; for (let a = 0; a < 3; a++) f.p[a] += to[a] / l * 50 * dt;
+      if (food && d2(food.p, f.p) < 12 * 12) { f.eatT += dt; if (f.eatT > 6) { f.eatT = 0; if (food.shield) food.shield--; else food.alive = false; } }
+    }
+
+    // ---- respawns and tidy ----
+    for (const c of W.crystals) if (!c.alive && !c.dropped) { c.respawn -= dt; if (c.respawn <= 0) { c.alive = true; c.p = inBall(rnd, R * 0.85); } }
+    W.crystals = W.crystals.filter((c) => c.alive || !c.dropped);
+    if (!W.omni) { W.omniRespawn -= dt; if (W.omniRespawn <= 0) spawnOmni(); }
+    if (W.t % 5 < dt) { W.prisms = W.prisms.filter((q) => q.alive); W.members = W.members.filter((m) => m.alive); }
+    if (W.events.length > 200) W.events.splice(0, W.events.length - 200);
+
+    // ---- the phase cycle ----
+    const k = PHASES[W.phase].key;
+    const met = (k === 'elem' && W.gotY >= P.goalY) || (k === 'vessel' && W.debuffed) || (k === 'mass' && W.removedX >= P.goalX);
+    if (met) endPhase(true); else if (W.phaseT >= phaseLen(W.phase)) endPhase(false);
+  }
+
+  // One number per element's game (the /labmaker element rule): Time = race, Space = destruction, Mass = creation, Charge = vs vessels.
+  function score() {
+    const yours = W.prisms.filter((q) => q.alive && q.team === 'Y');
+    const elemT = W.elemTimes.length ? W.elemTimes.reduce((a, b) => a + b, 0) / W.elemTimes.length : phaseLen(1);
+    return {
+      t: +W.t.toFixed(1),
+      timeRace: +elemT.toFixed(1),                                   // Time: seconds the Elemental crystals phase took (lower wins)
+      spaceRemoved: W.stats.removed,                                 // Space: enemy prisms destroyed or stolen
+      massStanding: yours.length + yours.filter((q) => q.shield).length,   // Mass: your prisms standing (a shielded one counts twice)
+      chargeScore: +(W.stats.petals + 3 * W.stats.kos + W.stats.fauna * 0.25).toFixed(1),  // Charge: petals taken + 3 per knockout + a quarter per fauna
+      hands: W.hands, members: alive().length, debuffs: W.stats.debuffs, fauna: W.stats.fauna,
+      early: Object.assign({}, W.early),
+    };
+  }
+
+  // ================= headless batch: the scorecard =================
+  const VARIANTS = [
+    { name: 'No cards', picker: 'none' },
+    { name: 'Random picks', picker: 'random' },
+    { name: 'Mass first', picker: 'Mass' },
+    { name: 'Time first', picker: 'Time' },
+    { name: 'Space first', picker: 'Space' },
+    { name: 'Charge first', picker: 'Charge' },
+  ];
+  function runBatch(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2, 3], seconds = opts.seconds || 300, dt = 0.1, level = opts.level || 5, savedSeed = seed, savedPicker = picker, rows = [];
+    const savedLv = ELS.map((el) => P['lv' + el]); ELS.forEach((el) => { P['lv' + el] = level; });
+    for (const va of VARIANTS) {
+      picker = va.picker; const acc = { timeRace: 0, spaceRemoved: 0, massStanding: 0, chargeScore: 0, hands: 0, members: 0 };
+      for (const s of seeds) { reset(s); for (let i = 0; i < seconds / dt; i++) simStep(dt); const sc = score(); for (const k in acc) acc[k] += sc[k]; }
+      const row = { variant: va.name }; for (const k in acc) row[k] = +(acc[k] / seeds.length).toFixed(1); rows.push(row);
+    }
+    ELS.forEach((el, i) => { P['lv' + el] = savedLv[i]; });
+    picker = savedPicker; reset(savedSeed);
+    return rows;
+  }
+
+  // ================= view: a plane through the cell the player turns =================
+  // The view never touches the swarm. It follows the sampled centroid and is turned like a joystick: hold and
+  // push to spin it about its own right and up axes; let go and it stops (each turn is relative and resets).
+  let view = { r: [1, 0, 0], u: [0, 1, 0], f: [0, 0, 1] }, cam = [0, 0, 0], spin = { yaw: 0, pitch: 0 };
+  function rotAxis(v, ax, a) { const c = Math.cos(a), s = Math.sin(a), d = v[0] * ax[0] + v[1] * ax[1] + v[2] * ax[2], x = [ax[1] * v[2] - ax[2] * v[1], ax[2] * v[0] - ax[0] * v[2], ax[0] * v[1] - ax[1] * v[0]]; return [0, 1, 2].map((i) => v[i] * c + x[i] * s + ax[i] * d * (1 - c)); }
+  function turnView(yaw, pitch) {
+    if (yaw) { const ax = view.u; view.r = rotAxis(view.r, ax, yaw); view.f = rotAxis(view.f, ax, yaw); }
+    if (pitch) { const ax = view.r; view.u = rotAxis(view.u, ax, pitch); view.f = rotAxis(view.f, ax, pitch); }
+    const n = (v) => { const l = len(v) || 1; return v.map((x) => x / l); };
+    view.f = n(view.f); view.r = n([view.u[1] * view.f[2] - view.u[2] * view.f[1], view.u[2] * view.f[0] - view.u[0] * view.f[2], view.u[0] * view.f[1] - view.u[1] * view.f[0]]); view.u = n([view.f[1] * view.r[2] - view.f[2] * view.r[1], view.f[2] * view.r[0] - view.f[0] * view.r[2], view.f[0] * view.r[1] - view.f[1] * view.r[0]]);
+  }
+
+  const canvas = $('stage'), ctx = canvas.getContext('2d');
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  let COL = {};
+  function readColors() { COL = { mass: css('--mass') || '#6aa0ff', time: css('--time') || '#3fd6c5', space: css('--space') || '#a988ff', charge: css('--charge') || '#f2c14e', stage: css('--stage') || '#02080f' }; }
+  const elColor = (el) => COL[el.toLowerCase()];
+  function render() {
+    const w = canvas.width, h = canvas.height, dpr = w / Math.max(1, canvas.clientWidth || w);
+    ctx.fillStyle = COL.stage; ctx.fillRect(0, 0, w, h);
+    const c = W.centroid || centroidOf(alive());
+    for (let a = 0; a < 3; a++) cam[a] += (c[a] - cam[a]) * 0.12;
+    const sc = Math.min(w, h) / P.viewSpan, cx = w / 2, cy = h / 2;
+    const proj = (p) => { const d = sub(p, cam); return [cx + (d[0] * view.r[0] + d[1] * view.r[1] + d[2] * view.r[2]) * sc, cy - (d[0] * view.u[0] + d[1] * view.u[1] + d[2] * view.u[2]) * sc, d[0] * view.f[0] + d[1] * view.f[1] + d[2] * view.f[2]]; };
+    const fade = (z) => Math.max(0.12, 1 - Math.abs(z) / (P.slab * 2.2)) * (Math.abs(z) < P.slab ? 1 : 0.55);
+    // the cell wall
+    const cc = proj([0, 0, 0]); ctx.strokeStyle = 'rgba(120,180,220,.25)'; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.arc(cc[0], cc[1], R * sc, 0, 7); ctx.stroke();
+    // prisms
+    for (const q of W.prisms) {
+      if (!q.alive) continue; const s = proj(q.p), a = fade(s[2]); if (a < 0.13) continue;
+      const z = Math.max(2, 7 * sc * 3) * dpr * 0.5;
+      ctx.globalAlpha = a; ctx.fillStyle = q.team === 'E' ? '#e0675a' : COL.mass; ctx.fillRect(s[0] - z, s[1] - z, z * 2, z * 2);
+      if (q.shield) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = dpr; ctx.strokeRect(s[0] - z - 1.5, s[1] - z - 1.5, z * 2 + 3, z * 2 + 3); }
+      if (q.danger) { ctx.strokeStyle = '#ff3355'; ctx.lineWidth = 1.5 * dpr; ctx.strokeRect(s[0] - z - 1, s[1] - z - 1, z * 2 + 2, z * 2 + 2); }
+    }
+    // crystals + omnicrystal
+    for (const k of W.crystals) { if (!k.alive) continue; const s = proj(k.p); ctx.globalAlpha = fade(s[2]); diamond(s[0], s[1], 6 * dpr, elColor(k.el)); }
+    if (W.omni) { const s = proj(W.omni.p); ctx.globalAlpha = Math.max(0.5, fade(s[2])); const g = 9 * dpr; diamond(s[0] - g * 0.7, s[1], g * 0.6, COL.mass); diamond(s[0] + g * 0.7, s[1], g * 0.6, COL.time); diamond(s[0], s[1] - g * 0.7, g * 0.6, COL.space); diamond(s[0], s[1] + g * 0.7, g * 0.6, COL.charge); }
+    // fauna
+    for (const f of W.fauna) { if (!f.alive) continue; const s = proj(f.p); ctx.globalAlpha = fade(s[2]); ctx.fillStyle = '#7fd38a'; ctx.beginPath(); ctx.arc(s[0], s[1], 5 * dpr, 0, 7); ctx.fill(); }
+    // rivals
+    for (const r of W.rivals) {
+      if (r.ko) continue; const s = proj(r.p), t = proj([r.p[0] + r.v[0], r.p[1] + r.v[1], r.p[2] + r.v[2]]), ang = Math.atan2(t[1] - s[1], t[0] - s[0]);
+      ctx.globalAlpha = Math.max(0.35, fade(s[2])); ctx.save(); ctx.translate(s[0], s[1]); ctx.rotate(ang); ctx.fillStyle = r.silenced > 0 ? '#8a8f99' : '#ff8a5c';
+      ctx.beginPath(); ctx.moveTo(12 * dpr, 0); ctx.lineTo(-8 * dpr, 7 * dpr); ctx.lineTo(-8 * dpr, -7 * dpr); ctx.closePath(); ctx.fill(); ctx.restore();
+      ctx.fillStyle = '#ffd6c8'; ctx.font = (10 * dpr) + 'px system-ui'; ctx.fillText(r.petals.toFixed(1) + '✿' + (r.silenced > 0 ? ' silenced' : ''), s[0] + 12 * dpr, s[1] - 8 * dpr);
+    }
+    // the swarm: one starling per member, oriented along its motion
+    const ms = alive();
+    for (const m of ms) {
+      const s = proj(m.p), t = proj([m.p[0] + m.v[0] * 0.1, m.p[1] + m.v[1] * 0.1, m.p[2] + m.v[2] * 0.1]), ang = Math.atan2(t[1] - s[1], t[0] - s[0]);
+      ctx.globalAlpha = Math.max(0.4, fade(s[2])); starling(s[0], s[1], ang, dpr * (W.form === 'Snowball' ? 0.8 : 1.15), m.shells, W.t * 14 + m.id);
+    }
+    ctx.globalAlpha = 1;
+    // events: shots, lasers, EMP rings, black hole
+    for (const e of W.events) {
+      const age = W.t - e.t; if (age > 0.35) continue; ctx.globalAlpha = 1 - age / 0.35;
+      if (e.kind === 'shot' || e.kind === 'laser') { const a = proj(e.a), b = proj(e.b); ctx.strokeStyle = e.kind === 'shot' ? '#ff9a7a' : COL.charge; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+      if (e.kind === 'emp') { const a = proj(e.p); ctx.strokeStyle = COL.charge; ctx.lineWidth = 2 * dpr; ctx.beginPath(); ctx.arc(a[0], a[1], e.r * sc * (age / 0.35), 0, 7); ctx.stroke(); }
+    }
+    ctx.globalAlpha = 1;
+    if (W.bh) { const a = proj(W.bh.p); ctx.strokeStyle = COL.space; ctx.lineWidth = 2 * dpr; ctx.beginPath(); ctx.arc(a[0], a[1], sv('space-black-hole', 1, lv('space-black-hole')) * sc, 0, 7); ctx.stroke(); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(a[0], a[1], 10 * dpr, 0, 7); ctx.fill(); }
+    if (W.form) { ctx.fillStyle = '#e8f6ff'; ctx.font = (12 * dpr) + 'px system-ui'; ctx.textAlign = 'center'; ctx.fillText(W.form, cx, cy - 40 * dpr); ctx.textAlign = 'left'; }
+    hud();
+  }
+  function diamond(x, y, r, col) { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath(); ctx.fill(); }
+  function starling(x, y, ang, k, shells, flap) {   // a starling seen from above: swept wings that beat, a short tail, a sharp beak
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(k, k);
+    const w = 5 + 2.5 * Math.sin(flap);
+    ctx.fillStyle = '#b9c8ff'; ctx.beginPath(); ctx.moveTo(2, 0); ctx.lineTo(-3, w); ctx.lineTo(-1, 0); ctx.lineTo(-3, -w); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#e4ebff'; ctx.beginPath(); ctx.ellipse(0, 0, 4.5, 1.8, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-4, 0); ctx.lineTo(-7, 1.6); ctx.lineTo(-7, -1.6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#f2c14e'; ctx.beginPath(); ctx.moveTo(4.2, -0.5); ctx.lineTo(6.5, 0); ctx.lineTo(4.2, 0.5); ctx.closePath(); ctx.fill();
+    if (shells) { ctx.strokeStyle = COL.mass; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(0, 0, 7.5, 4, 0, 0, 7); ctx.stroke(); }
+    ctx.restore();
+  }
+
+
+  function hud() {
+    const ph = $('phases'); if (ph.children.length !== 4) ph.innerHTML = PHASES.map(() => '<div><span></span><i></i></div>').join('');
+    PHASES.forEach((p, i) => {
+      const d = ph.children[i], on = i === W.phase, L = phaseLen(i);
+      d.className = on ? 'on' : '';
+      const goal = p.key === 'omni' ? 'collect it' : p.key === 'elem' ? (on ? W.gotY : 0) + '/' + P.goalY : p.key === 'vessel' ? (on && W.debuffed ? 'debuffed' : 'debuff one') : (on ? W.removedX : 0) + '/' + P.goalX;
+      d.firstChild.textContent = p.name + ' · ' + (on ? Math.max(0, L - W.phaseT).toFixed(0) + ' s · ' : '') + goal;
+      d.lastChild.style.width = on ? (100 * Math.min(1, W.phaseT / L)) + '%' : '0';
+    });
+    const s = score(), held = Object.keys(W.held).length;
+    $('hudText').textContent = 'Starlings ' + s.members + ' / cap ' + capNow() + ' (safe at ' + minNow() + ')' + '  ·  hands ' + s.hands + '  ·  cards held ' + held + '  ·  enemy prisms removed ' + s.spaceRemoved + '  ·  your prisms ' + W.prisms.filter((q) => q.alive && q.team === 'Y').length + '  ·  petals taken ' + W.stats.petals.toFixed(1) + (paused ? '  [paused]' : '');
+    drawHand();
+  }
+  let handShown = null;
+  function drawHand() {
+    const box = $('hand');
+    if (!W.hand) { box.hidden = true; handShown = null; return; }
+    if (handShown === W.hand) return;
+    handShown = W.hand; box.hidden = false;
+    box.querySelectorAll('button').forEach((b) => b.remove());
+    $('handNote').textContent = 'New hand. Pick one; the swarm keeps going while you read.';
+    W.hand.forEach((c, i) => {
+      const card = CARD[c.id], b = document.createElement('button'), cur = W.held[c.id] || 0;
+      b.style.setProperty('--c', elColor(c.el));
+      b.innerHTML = '<b></b><small></small>';
+      b.querySelector('b').textContent = card.name + ' · L' + Math.min(15, cur + c.level) + (cur ? ' (+' + c.level + ')' : '');
+      b.querySelector('small').textContent = card.text;
+      b.onclick = () => { pick(i); drawHand(); refreshHeld(); };
+      box.appendChild(b);
+    });
+  }
+
+  // ================= platform =================
+  function detectPlatform() {
+    const host = window.__labHost || {};
+    const ua = navigator.userAgent || '';
+    const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+    return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+  }
+  const PLATFORM = detectPlatform();
+  $('platform').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+
+  // ================= input: the view joystick (touch, mouse) and arrow keys =================
+  const wrap = $('stageWrap'), stick = $('stick'); let drag = null;
+  wrap.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('#hand')) return;
+    const r = wrap.getBoundingClientRect(); drag = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    stick.hidden = false; stick.style.left = (e.clientX - r.left) + 'px'; stick.style.top = (e.clientY - r.top) + 'px'; stick.firstChild.style.transform = '';
+    wrap.setPointerCapture(e.pointerId);
+  });
+  wrap.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = Math.max(-45, Math.min(45, e.clientX - drag.x)), dy = Math.max(-45, Math.min(45, e.clientY - drag.y));
+    spin.yaw = dx / 45 * 1.6; spin.pitch = dy / 45 * 1.6;   // lab: up to 1.6 rad/s at full stick
+    stick.firstChild.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+  });
+  const endDrag = (e) => { if (!drag || e.pointerId !== drag.id) return; drag = null; spin.yaw = 0; spin.pitch = 0; stick.hidden = true; };
+  wrap.addEventListener('pointerup', endDrag); wrap.addEventListener('pointercancel', endDrag);
+  const keys = {};
+  addEventListener('keydown', (e) => { if (e.target.matches && e.target.matches('input,textarea,select')) return; keys[e.key] = true; });
+  addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+  // ================= UI: settings, tabs =================
+  const outputs = {};
+  function fmt(v, step) { const dec = step < 1 ? Math.min(3, String(step).split('.')[1].length) : 0; return Number(v).toFixed(dec); }
+  function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+  function refreshDiff() {
+    const changed = Object.keys(diffOnly());
+    $('diff').textContent = changed.length ? changed.length + ' setting' + (changed.length > 1 ? 's differ' : ' differs') + ' from the lab defaults' : 'lab defaults (all proposals)';
+    for (const [, key, , , step] of SPEC) { const o = outputs[key]; if (!o) continue; o.out.textContent = fmt(P[key], step); o.out.classList.toggle('changed', Math.abs(P[key] - SHIPPED[key]) > 1e-9); o.out.title = 'lab default ' + SHIPPED[key]; }
+  }
+  function setParam(key, v) { P[key] = v; lsSet(LS_KEY, diffOnly()); if (key === 'startSize') reset(); refreshDiff(); }
+  function makeTabs(barId, bodyId, tabs, storeKey) {
+    const bar = $(barId), body = $(bodyId), sel = lsGet(storeKey, tabs[0].name);
+    function show(name) { for (const b of bar.children) b.setAttribute('aria-selected', String(b.dataset.name === name)); body.replaceChildren(tabs.find((t) => t.name === name).build()); lsSet(storeKey, name); }
+    for (const t of tabs) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
+    show(tabs.some((t) => t.name === sel) ? sel : tabs[0].name);
+    return show;
+  }
+  function sliderGroup(group) {
+    const box = document.createElement('div');
+    for (const [g, key, lo, hi, step, label, tip] of SPEC) {
+      if (g !== group) continue;
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div>';
+      row.querySelector('label span').textContent = label; row.querySelector('.key').textContent = key; row.querySelector('.tip').textContent = tip;
+      const inp = row.querySelector('input'); Object.assign(inp, { min: lo, max: hi, step, value: P[key], id: 'p-' + key });
+      inp.oninput = () => setParam(key, parseFloat(inp.value));
+      outputs[key] = { out: row.querySelector('output'), inp };
+      box.appendChild(row);
+    }
+    queueMicrotask(refreshDiff);
+    return box;
+  }
+  function heldPanel() {
+    const box = document.createElement('div'); box.id = 'heldBox';
+    fillHeld(box); return box;
+  }
+  function fillHeld(box) {
+    const ids = Object.keys(W.held);
+    let h = '<p class="hint">The lab runs 24 of the 80 cards (6 per element); a hand only draws from these. The deck page has all 80.</p>';
+    h += ids.length ? '<div class="held">' + ids.map((id) => '<div style="--c:' + elColor(CARD[id].element) + '"><b></b> <span></span></div>').join('') + '</div>' : '<p>No cards yet. The first hand comes when the Omnicrystal phase ends.</p>';
+    h += '<p><b>In the lab:</b></p><div class="held">' + ELS.map((el) => '<div style="--c:' + elColor(el) + '"><b>' + el + '</b> <span></span></div>').join('') + '</div>';
+    box.innerHTML = h;
+    const rows = box.querySelectorAll('.held')[0];
+    if (ids.length) ids.forEach((id, i) => { rows.children[i].querySelector('b').textContent = CARD[id].name + ' L' + W.held[id]; rows.children[i].querySelector('span').textContent = CARD[id].text; });
+    const impl = box.querySelectorAll('.held')[ids.length ? 1 : 0];
+    ELS.forEach((el, i) => { impl.children[i].querySelector('span').textContent = IMPL[el].map((id) => CARD[id].name).join(', '); });
+  }
+  function refreshHeld() { const b = $('heldBox'); if (b) fillHeld(b); }
+  readColors(); reset();
+  const groups = [...new Set(SPEC.map((r) => r[0]))];
+  makeTabs('dockTabs', 'dockBody', [{ name: 'Cards', build: heldPanel }].concat(groups.map((g) => ({ name: g, build: () => sliderGroup(g) }))), 'lab:' + LAB.name + ':dock');
+
+  // ================= the decision log =================
+  let db = null, me = '', remote = [], localLog = lsGet('lab:' + LAB.name + ':log', []);
+  function snapshot() { return { round: LAB.round, seed, intensity, picker, held: Object.assign({}, W.held), changed: diffOnly() }; }
+  async function record(topic, choice, note) {
+    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+    if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
+    localLog.push(doc); lsSet('lab:' + LAB.name + ':log', localLog); return 'local';
+  }
+  function logPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint" id="logStatus"></p><input type="text" id="logTopic" placeholder="Topic (e.g. phase timers, a card)"><textarea id="logChoice" rows="2" placeholder="What you decided or felt"></textarea><p><button class="btn primary" id="logSave">Record</button> <button class="btn" id="logCopy">Copy log</button></p><table id="logTable"></table>';
+    const status = box.querySelector('#logStatus');
+    status.textContent = db ? 'Shared log: saved with the lab, readable by Claude.' : 'Kept in this browser (Copy log to send it).';
+    status.className = db ? 'status-ok' : 'status-warn';
+    box.querySelector('#logSave').onclick = async () => { const where = await record(box.querySelector('#logTopic').value || 'General', box.querySelector('#logChoice').value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; renderLog(box); };
+    box.querySelector('#logCopy').onclick = () => { const t = remote.concat(localLog).map((d) => new Date(d.createdAt).toISOString() + ' · ' + d.topic + ': ' + d.choice + ' ' + JSON.stringify(d.settings)).join('\n'); try { navigator.clipboard.writeText(t).catch(() => {}); } catch (e) { /* no clipboard */ } };
+    renderLog(box);
+    return box;
+  }
+  function renderLog(box) {
+    const t = (box || document).querySelector('#logTable'); if (!t) return;
+    const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    t.innerHTML = '<tr><th>When</th><th>Topic</th><th>Decision</th></tr>';
+    for (const d of rows) { const tr = document.createElement('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice]) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); } t.appendChild(tr); }
+  }
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) return;
+    db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; });
+  })();
+
+  const COLS = [['timeRace', 'Time: crystal race (s, lower wins)', -1], ['spaceRemoved', 'Space: enemy prisms removed', 1], ['massStanding', 'Mass: your prisms standing', 1], ['chargeScore', 'Charge: petals + KOs + fauna', 1], ['hands', 'Hands', 0], ['members', 'Starlings at end', 0]];
+  function scorecardPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p><button class="btn primary" id="runBatch">Run the scorecard</button> <span class="hint">headless, seeds 1–3, 300 s each at the current intensity, with every element\'s upgrade level at 5 so a few picks show; the AI picks cards by the rule in each row. Each "X first" build should win its own element\'s column.</span></p><div style="overflow-x:auto"><table id="scoreTable"></table></div>';
+    box.querySelector('#runBatch').onclick = () => {
+      const rows = runBatch(), t = box.querySelector('#scoreTable');
+      t.innerHTML = '<tr><th>Build</th>' + COLS.map((c) => '<th>' + c[1] + '</th>').join('') + '</tr>';
+      for (const r of rows) {
+        const tr = document.createElement('tr'); tr.innerHTML = '<td></td>' + COLS.map(() => '<td></td>').join(''); tr.children[0].textContent = r.variant;
+        COLS.forEach(([k, , dir], i) => { const td = tr.children[i + 1]; td.textContent = r[k]; if (dir) { const vals = rows.map((x) => x[k]), best = dir > 0 ? Math.max(...vals) : Math.min(...vals); if (r[k] === best) td.className = 'best'; } });
+        t.appendChild(tr);
+      }
+    };
+    return box;
+  }
+  function aboutPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p id="aboutHead"></p>' +
+      '<p><b>How to play.</b> You do not steer the starlings. Drag anywhere on the stage to turn your view (it works like a joystick and stops when you let go; arrow keys work too). The swarm works four objectives in turn on timers; each phase ends early when its goal is met. When the Omnicrystal phase ends, crystal or not, you get four cards, one per element. Pick one; the swarm keeps going while you read. A card you already hold adds its level, up to 15.</p>' +
+      '<p class="hint"><b>What this lab does NOT model.</b> The view is a 2D canvas projection with a depth fade, a stand-in for the Wrasse\'s 2.5D look. Rivals are scripted wanderers that lay prisms, take crystals and shoot starlings; they are not players and they do not use abilities. Fauna only graze your prisms. A prism is a point with no volume. Only 24 of the 80 cards are wired, and their side effects are simplified. Every number is a proposal: nothing of this vessel exists in the game yet. No networking, no frame-time measurement on a phone GPU, no collider budget.</p>';
+    box.querySelector('#aboutHead').textContent = LAB.name + ' · round ' + LAB.round + ' · cards ' + LAB.cards + ' · ' + LAB.branch + ' · write-up: ' + LAB.doc;
+    return box;
+  }
+  makeTabs('bottomTabs', 'bottomBody', [{ name: 'About', build: aboutPanel }, { name: 'Scorecard', build: scorecardPanel }, { name: 'Decisions', build: logPanel }], 'lab:' + LAB.name + ':bottom');
+
+  $('title').textContent = LAB.name; $('meta').textContent = 'round ' + LAB.round + ' · the Starlings';
+  let paused = false, mult = 1;
+  $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; };
+  $('speed').onclick = () => { mult = mult === 1 ? 4 : 1; $('speed').textContent = '×' + mult; };
+  $('restart').onclick = () => { reset(seed + 1); refreshHeld(); };
+  $('resetAll').onclick = () => { Object.assign(P, SHIPPED); lsSet(LS_KEY, {}); for (const k in outputs) outputs[k].inp.value = P[k]; reset(); refreshDiff(); refreshHeld(); };
+  $('intensity').onchange = (e) => { intensity = +e.target.value; reset(); refreshHeld(); };
+  $('picker').onchange = (e) => { picker = e.target.value; if (W.hand && picker !== 'you') { autoPick(); refreshHeld(); } };
+
+  function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } }
+  addEventListener('resize', resize);
+  let manualClock = false, last = performance.now(), acc = 0, lastHeld = '';
+  function frame(now) {
+    const real = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
+    if (!manualClock) {
+      resize();
+      const ky = (keys.ArrowRight ? 1 : 0) - (keys.ArrowLeft ? 1 : 0), kp = (keys.ArrowDown ? 1 : 0) - (keys.ArrowUp ? 1 : 0);
+      turnView((spin.yaw + ky * 1.2) * real, (spin.pitch + kp * 1.2) * real);
+      if (!paused) { acc += real * mult; while (acc >= 1 / 30) { simStep(1 / 30); acc -= 1 / 30; } }
+      render();
+      const hk = JSON.stringify(W.held); if (hk !== lastHeld) { lastHeld = hk; refreshHeld(); }
+    }
+    requestAnimationFrame(frame);
+  }
+  try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors); } catch (e) { /* old browser */ }
+  turnView(0.5, 0.35);
+  resize(); refreshDiff(); render(); requestAnimationFrame(frame);
+
+  window.__lab = {
+    LAB, SHIPPED, SPEC, P, PLATFORM, VARIANTS, CARDS, IMPL,
+    set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+    tick(dt, n) { dt = dt || 1 / 30; n = n || 1; for (let i = 0; i < n; i++) simStep(dt); resize(); render(); },
+    reset, score, runBatch, setParam, record, pick, turnView,
+    setIntensity(i) { intensity = i; reset(); }, setPicker(p) { picker = p; },
+    state: () => ({ t: W.t, seed, intensity, picker, phase: PHASES[W.phase].key, phaseT: W.phaseT, members: alive().length, hand: W.hand && W.hand.map((c) => c.id), held: Object.assign({}, W.held), form: W.form }),
+  };
+})();
+</script>
+</body>
+</html>

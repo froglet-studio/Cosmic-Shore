@@ -152,6 +152,21 @@ never enters a player build, and no guard is needed at all.
 
 ---
 
+## The Amoebius variant — `DEVELOPMENT_BUILD` without any player platform
+
+Amoebius (`Port/src/CosmicShore.Live`) compiles the real `Assets/_Scripts` as a DEBUG build, which defines
+`DEVELOPMENT_BUILD`, and defines **no** `UNITY_*` platform symbol. So `#if !UNITY_EDITOR && DEVELOPMENT_BUILD`
+is compiled by Amoebius as well as by every development player, against a `UnityEngine` shim that lacks some player
+APIs. `DevDiagnostics` called `Debug.developerConsoleEnabled` there and broke `dotnet build
+Port/src/CosmicShore.Live` with CS0117 (2026-10-19), while `unity_refcompile` (real Unity references) stayed green.
+
+What to do: a player-only Unity API inside a development guard also needs a player platform,
+`#if !UNITY_EDITOR && (UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE || UNITY_WEBGL)`. Every real player defines
+one; Amoebius defines none. Prove both halves: build Amoebius (.NET 10 SDK), and plant an error inside the block to
+see `unity_refcompile --config player-dev` still compile it.
+
+---
+
 ## The platform-player variant — `#if UNITY_IOS && !UNITY_EDITOR`
 
 **Selecting a platform in the editor does NOT compile that platform's player code.** With iOS

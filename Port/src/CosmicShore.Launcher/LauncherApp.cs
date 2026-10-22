@@ -77,7 +77,9 @@ namespace CosmicShore.Launcher
             });
             _updater = new LauncherUpdater(_s, _tools, _ws);
             // A play session that ends is folded into the tracks, and Amoebius says what it found.
-            _jobs.GameExited += () => Task.Run(async () => { await Task.Delay(2000); IngestSessions(notify: true); });
+            _jobs.GameExited += () => Task.Run(async () => { await Task.Delay(2000); IngestSessions(notify: true); OfferNetLogs(); });
+            // An online test's players each write a log as they close; once the last one has, offer to send them.
+            _jobs.SecondPlayerExited += () => Task.Run(async () => { await Task.Delay(1000); OfferNetLogs(); });
             // The last run ended in an exception nothing caught: say what it was.
             if (CrashLog.TakeLast(LauncherSettings.DataDir) is { } crash)
                 Notify("Amoebius closed unexpectedly last time", crash.Summary, NoteKind.Error,

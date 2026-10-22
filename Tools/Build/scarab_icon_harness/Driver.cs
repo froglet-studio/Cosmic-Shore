@@ -7,7 +7,8 @@ using UnityEngine;
 
 /// <summary>
 /// Runs the SHIPPED ScarabHullForm.Generate at the settings passed on the command line (the
-/// prefab's authored proportions, read off Scarab.prefab by render_scarab_card_icons.py) and
+/// prefab's authored proportions; render_scarab_card_icons.py read them off Scarab.prefab until it was
+/// retired 2026-10-18, when the card moved to Scarab.fbx via vessel_model/render_cards.py) and
 /// prints the parts as JSON: name, pivot, hull-space vertices, normals, and the two submesh
 /// triangle lists. Nothing here is a model OF the hull; it is the hull.
 /// </summary>

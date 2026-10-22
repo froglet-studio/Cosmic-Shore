@@ -17,6 +17,11 @@ namespace CosmicShore.Editor
     /// <item><b>crash</b> — the Crash Detector's abnormal-exit reports (<c>Logs/CrashDetector/Crash-*.log</c>).</item>
     /// <item><b>perf</b> — the DiagnosticsHUD's JSON reports and captures
     /// (<c>Documents/CosmicShore Diagnostics/*.json</c>).</item>
+    /// <item><b>flights</b> — human Regatta flights the Squirrel AI learns from
+    /// (<c>Documents/CosmicShore Diagnostics/Flights/flight_*.json</c>, <c>HumanFlightRecorder</c>).</item>
+    /// <item><b>net</b> — the logs of a multiplayer play test, one file per player (the main editor and each
+    /// MPPM virtual player): its session record and console (<c>Logs/NetSessions/net_*.json</c>,
+    /// <see cref="NetTestLogs"/>; read with <c>Tools/Build/net_logs.py</c>).</item>
     /// </list>
     ///
     /// Each lands at <c>BugLedger/shared/reports/&lt;user&gt;/&lt;kind&gt;/&lt;file&gt;</c> on the sender's
@@ -27,6 +32,7 @@ namespace CosmicShore.Editor
     public static class BugHuntReports
     {
         const long MaxFileBytes = 512 * 1024;
+        const long MaxFlightBytes = 8L * 1024 * 1024;
         const int MaxFilesPerSend = 12;
         const int MaxAgeDays = 14;
 
@@ -62,6 +68,21 @@ namespace CosmicShore.Editor
             string perfDir = null;
             try { perfDir = DiagnosticsHUD.OutputDirectory; } catch { /* no Documents folder */ }
             if (perfDir != null) Collect(candidates, perfDir, "*.json", "perf", cutoff);
+            // Human Regatta flights for the Squirrel AI to learn from (HumanFlightRecorder, learn_from_flights.py).
+            // A flight is ~130 bytes a sample at 10 Hz plus its rail, so a long race passes the 512 KB report cap; a
+            // flight over it was skipped SILENTLY (no file sent, no question asked). Flights get their own cap.
+            if (perfDir != null) Collect(candidates, Path.Combine(perfDir, "Flights"), "flight_*.json", "flights", cutoff, MaxFlightBytes);
+            // Multiplayer test logs (NetTestLogs). Virtual players write into the main project's folder; the
+            // Library/VP scan is the fallback for a layout where one could not tell it was a virtual player.
+            Collect(candidates, Path.Combine(projectRoot, "Logs", NetTestLogs.FolderName), "net_*.json", "net", cutoff);
+            try
+            {
+                var vp = Path.Combine(projectRoot, "Library", "VP");
+                if (Directory.Exists(vp))
+                    foreach (var dir in Directory.GetDirectories(vp))
+                        Collect(candidates, Path.Combine(dir, "Logs", NetTestLogs.FolderName), "net_*.json", "net", cutoff);
+            }
+            catch { /* unreadable VP folder contributes nothing */ }
 
             candidates.Sort((a, b) => b.file.LastWriteTimeUtc.CompareTo(a.file.LastWriteTimeUtc));
             var reports = new List<Report>(candidates.Count);
@@ -83,7 +104,8 @@ namespace CosmicShore.Editor
             return new string(chars);
         }
 
-        static void Collect(List<(FileInfo, string)> into, string dir, string pattern, string kind, DateTime cutoff)
+        static void Collect(List<(FileInfo, string)> into, string dir, string pattern, string kind, DateTime cutoff,
+                            long maxBytes = MaxFileBytes)
         {
             try
             {
@@ -91,7 +113,7 @@ namespace CosmicShore.Editor
                 foreach (var path in Directory.GetFiles(dir, pattern))
                 {
                     var info = new FileInfo(path);
-                    if (info.Length == 0 || info.Length > MaxFileBytes) continue;
+                    if (info.Length == 0 || info.Length > maxBytes) continue;
                     if (info.LastWriteTimeUtc < cutoff) continue;
                     into.Add((info, kind));
                 }

@@ -64,8 +64,8 @@ namespace CosmicShore.Gameplay
             // lay still in progress is "not yet".
             if (PrismTrailBuilder.IsLayingInProgress) return false;
 
-            var rails = Object.FindAnyObjectByType<SpawnableRegattaRails>();
-            if (rails == null) return false;
+            // Never FindAnyObjectByType: the rails are laid off the config's prefab ASSET (TryResolveLiveRails says why).
+            if (!RegattaCourseSource.TryResolveLiveRails(out var rails, out _)) return false;
 
             var lane = FindLane(rails.GetTrails(), status.Domain);
             if (lane == null) return false;

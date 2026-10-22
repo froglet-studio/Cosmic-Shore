@@ -19,7 +19,11 @@ into the lobby". So whoever changes a payload also raises `NetworkConfig.Protoco
 `Assets/_Prefabs/CORE/NetworkManager.prefab` (no scene overrides it; nothing sets it at runtime). Netcode
 then refuses a mismatched build at the connection request, and the HOST's console names it -
 `NetworkConfig mismatch`. History: **9** (2026-10-05) - `LobbySnapshot.AIDifficulty`, the lobby's AI
-difficulty (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3). Two players testing a join must run the same build.
+difficulty (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3). **10** (2026-10-20) - `NetworkVesselImpactor`'s
+`PublishSilence` RPC pair, the owner telling every peer how long its pilot is silenced
+(`Docs/ElementalAbilitySystem/SILENCE.md`). **11** (2026-10-21) - `FaunaNetworkSync`'s `_netLeashMark`, the
+mark a tamed creature wears (its spindles lean toward its holder's domain hue; `R_VesselActions/JACKS.md` §3).
+Two players testing a join must run the same build.
 
 - `ServerPlayerVesselInitializer` — core server-side vessel spawner. Listens for `OnPlayerNetworkSpawnedUlong` SOAP events, waits for NetworkVariables to sync (`preSpawnDelayMs`), spawns the vessel prefab via `VesselPrefabContainer`, injects DI with `GameObjectInjector.InjectRecursive()`, then delegates initialization to `ClientPlayerVesselInitializer`. Tracks processed players by `NetworkObjectId` (not `OwnerClientId`, since AI shares the host's). Uses `NetcodeHooks` (not direct `NetworkBehaviour` inheritance) for spawn/despawn hooks. `ProcessPreExistingPlayers()` catches host Player objects spawned before the initializer loaded. The spawner never shuts down the NetworkManager on despawn — under the eager-Relay design the network/Relay persists across all scene transitions and is torn down only by explicit party-leave (`PartyInviteController`) or transport failure (`MultiplayerSetup.OnTransportFailure`).
 - `ClientPlayerVesselInitializer` — common player-vessel pair initialization (extends `NetworkBehaviour`). Server path: called directly by `ServerPlayerVesselInitializer`. Client path: receives RPCs (`InitializeAllPlayersAndVessels_ClientRpc` for new clients, `InitializeNewPlayerAndVessel_ClientRpc` for existing clients). Queues pending `(playerNetId, vesselNetId)` pairs when RPCs arrive before objects replicate — resolved reactively via `OnPlayerNetworkSpawnedUlong` + `OnVesselNetworkSpawned` SOAP events (zero `WaitUntil` polling). `InitializePair()` calls `player.InitializeForMultiplayerMode(vessel)`, `vessel.Initialize(player)`, `ShipHelper.SetShipProperties()`, `gameData.AddPlayer()`, and fires `gameData.InvokeClientReady()` for the local user.
@@ -330,6 +334,17 @@ for party members; Invite/cancel/kick share an anti-spam cooldown),
 and `PartyInviteNotificationPanel` (the
 bottom-left **global invite popup** in Menu_Main — avatar + name + Accept/Decline,
 3s auto-hide, latest-wins).
+
+**Style-B party panel (menu redesign item 3, 2026-10-14).** In the Arcade the two panels above are
+one prefab, `_Prefabs/UI Elements/Main Menu Screens/Party/PartyPanel.prefab`: `ArcadeLobbyList` and
+an `embedded` `FriendsListPanel` on one root, four `KitPartySlot` seats (a `FriendInfoSlot` drawn in
+the kit: the domain halo becomes an octagon ring in the pilot's domain colour, and each seat reads
+"You / Host", "You", "Host" or "Pilot"), Leave (hidden while solo), then INVITES (`KitRequestRow`) and
+ONLINE (`KitOnlineRow`) in one scroll. Your own party's members are left out of ONLINE
+(`listPartyMembers` off) because they sit in the seats; an open seat moves focus into the list
+instead of opening an overlay. Seating, invite, join, spectate, kick, leave and expiry behave exactly
+as above - the kit rows only override how a state is drawn. Arena, Toy Box and Mission keep the
+legacy pair until item 8.
 
 **The party panel's SEATING is synced, not local** — `PartyRoster` puts the host in the
 first slot and the clients behind it in join order, the same on every device, by ordering on

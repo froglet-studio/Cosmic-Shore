@@ -197,8 +197,12 @@ namespace CosmicShore.Player
         public readonly Dictionary<string, int> Unique = new();
         public bool Quiet;
 
+        /// <summary>Sees every line before the de-duplication (an online test's log keeps them all: <see cref="NetTestLog"/>).</summary>
+        public Action<LogType, string, Exception> Tap;
+
         public void Write(LogType type, string message, CosmicShore.Engine.Object context, Exception exception = null)
         {
+            Tap?.Invoke(type, message, exception);
             switch (type)
             {
                 case LogType.Error: case LogType.Assert: Errors++; break;

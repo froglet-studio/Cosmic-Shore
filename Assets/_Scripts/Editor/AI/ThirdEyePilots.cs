@@ -267,6 +267,24 @@ namespace CosmicShore.Editor.AI
                 string boost = ai.BoostStatus;
                 t.Detail = $"{lap}{objective}steering at a point {Vector3.Distance(pilot.Hull.position, ai.TargetPosition):F0} u away" +
                            (boost != null ? $" | boost {boost}" : "");
+
+                // The lobby difficulty's mistakes (AIPilotBelief), in the studio colours.
+                var belief = ai.Belief;
+                if (belief != null)
+                {
+                    if (belief.Misjudging)
+                    {
+                        t.State = "Misjudged target";
+                        t.Color = FrogletEditorPalette.Ruby;
+                    }
+                    else if (belief.Unnoticed)
+                    {
+                        t.State = "Not noticed yet";
+                        t.Color = FrogletEditorPalette.Gold;
+                    }
+                    t.Detail += $" | reaction {belief.Level.ReactionSeconds:F2} s, mistake chance " +
+                                $"{belief.Level.MistakeChance:P1}, mistakes {belief.Mistakes}";
+                }
             }
             return t;
         }

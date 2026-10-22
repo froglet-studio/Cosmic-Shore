@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
 
         private enum ZoomDir
         {
-            None, Out, In
+            None = 0, Out = 1, In = 2
         }
 
         private const float EPS = 1e-4f;

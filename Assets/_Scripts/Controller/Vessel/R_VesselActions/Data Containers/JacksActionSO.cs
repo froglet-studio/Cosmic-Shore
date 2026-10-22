@@ -1,0 +1,41 @@
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>The jacks' button controls (values are serialized on the control assets - never renumber).</summary>
+    public enum JacksControl
+    {
+        Call = 0,
+        Teleport = 1,
+        Decoy = 2,
+    }
+
+    /// <summary>
+    /// One of the jacks' button controls, read while they fly (design: <c>R_VesselActions/JACKS.md</c>). Stateless and shared: every
+    /// press goes straight to the hull's own <see cref="JacksExecutor"/>, which owns all state. All three are
+    /// press-and-forget (vessel rule 37): the CALL (a long cooldown), the JUMP to the decoy (Garrett: "a trigger or lift
+    /// a thumb"), and the flying jacks' own DECOY (the Time level-5 upgrade; nothing without it).
+    /// </summary>
+    [CreateAssetMenu(fileName = "JacksAction", menuName = "ScriptableObjects/Vessel Actions/Jacks Control")]
+    public sealed class JacksActionSO : ShipActionSO
+    {
+        [Tooltip("Which of the jacks' button controls this asset is.")]
+        [SerializeField] JacksControl control;
+
+        public JacksControl Kind => control;
+
+        public override void StartAction(ActionExecutorRegistry executors, IVesselStatus vesselStatus)
+        {
+            var crew = executors ? executors.Get<JacksExecutor>() : null;
+            if (!crew) return;
+            switch (control)
+            {
+                case JacksControl.Call: crew.Call(); break;
+                case JacksControl.Teleport: crew.Teleport(); break;
+                case JacksControl.Decoy: crew.DropJacksDecoy(); break;
+            }
+        }
+
+        public override void StopAction(ActionExecutorRegistry executors, IVesselStatus vesselStatus) { }
+    }
+}

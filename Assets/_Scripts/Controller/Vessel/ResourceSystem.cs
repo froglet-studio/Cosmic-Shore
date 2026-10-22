@@ -49,7 +49,7 @@ namespace CosmicShore.Gameplay
                     if (!Mathf.Approximately(prev, r.CurrentAmount))
                         EmitResourceChanged(i);
                 }
-                yield return new WaitForSeconds(1);
+                yield return CosmicShore.Utility.WaitCache.Seconds(1);
             }
         }
 

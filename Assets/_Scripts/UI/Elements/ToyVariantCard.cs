@@ -176,8 +176,7 @@ namespace CosmicShore.UI
             {
                 if (nameText) nameText.text = "";
                 if (detailText) detailText.text = "";
-                if (selectedMarker) selectedMarker.SetActive(false);
-                ApplySelection(false, Color.white);
+                Draw(null, false);
                 Button.interactable = false;
                 return;
             }
@@ -187,6 +186,27 @@ namespace CosmicShore.UI
             // toy's own Label, which is the station's name and is read by the world too.
             if (nameText) nameText.text = option.IsBranch ? $"{option.Label}  >" : option.Label;
             if (detailText) detailText.text = option.Detail;
+
+            Draw(option, selected);
+
+            // A row with neither an action nor a layer under it is there to be READ - the hull you
+            // are already flying, the domain you already wear. It stays drawn and stops responding.
+            Button.interactable = option.Apply != null || option.IsBranch;
+        }
+
+        /// <summary>
+        /// The card's look for <paramref name="option"/> (null: an empty card). This class draws the
+        /// lab look - the fill and rim tinted from the option's accent, the CTA glow and lift on the
+        /// selected row; the style-B card (<see cref="KitToyVariantCard"/>) draws through its tile.
+        /// </summary>
+        protected virtual void Draw(ToyShellOption option, bool selected)
+        {
+            if (option == null)
+            {
+                if (selectedMarker) selectedMarker.SetActive(false);
+                ApplySelection(false, Color.white);
+                return;
+            }
 
             var accent = option.Accent;
             float fill = selected ? Mathf.Max(restFill, selectedFill) : restFill;
@@ -199,17 +219,8 @@ namespace CosmicShore.UI
             if (border) border.color = selected ? WithAlpha(Cta, _borderAlpha.a) : Tint(accent, rim, _borderAlpha.a);
             if (selectedMarker) selectedMarker.SetActive(selected);
             ApplySelection(selected, accent);
-
-            // A row with neither an action nor a layer under it is there to be READ - the hull you
-            // are already flying, the domain you already wear. It stays drawn and stops responding.
-            Button.interactable = option.Apply != null || option.IsBranch;
         }
 
-        /// <summary>
-        /// Light and lift the selected card. Idempotent: re-binding the same state re-tints the
-        /// glow (the accent can change under it when a domain is re-picked) without restarting the
-        /// tweens, so a redraw cannot make a settled card flicker.
-        /// </summary>
         void ApplySelection(bool selected, Color accent)
         {
             var style = ToyCardStyle;

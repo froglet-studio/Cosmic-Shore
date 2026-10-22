@@ -119,9 +119,9 @@ MonoBehaviour:
   m_Name: ToyboxDailyActivityConfig
   m_EditorClassIdentifier: 
   rewardCrystals: 10
-  activityTitle: TODAY'S ACTIVITY
-  shuffleTitle: SHUFFLE THE TOY BOX
-  shuffleDetail: NEW WORLD, NEW COLOURS, NEW HULL
+  activityTitle: Today's activity
+  shuffleTitle: Shuffle the toy box
+  shuffleDetail: New world, new colours, new hull
 """.replace("__SO_GUID__", CONFIG_SO_GUID)
 
 CONFIG_META = """fileFormatVersion: 2
@@ -517,7 +517,22 @@ def author(sc):
 
 
 # ---------------------------------------------------------------------------------------------
+# The style-B Toy Box (Tools/Build/author_menu_toybox.py, Docs/MENU_REDESIGN_B.md section 17.3) replaced
+# the Explore tree these buttons were cloned into with one ToyboxView instance whose own Daily / Shuffle
+# cards are these two. Once that view is in the scene the scene half of this tool STANDS DOWN - re-
+# authoring would rebuild a TopButtons band under a deleted Explore - and only the config asset, which
+# the new cards still read, stays this tool's.
+STYLE_B_VIEW = hashlib.md5(b"CosmicShore/MenuB/assets/ToyboxView").hexdigest()
+
+
+def stood_down(text):
+    return f"guid: {STYLE_B_VIEW}, type: 3" in text
+
+
 def render(path):
+    raw = open(path, errors="ignore").read()
+    if stood_down(raw):
+        return raw, []
     sc = Scene(path)
     author(sc)
     out = [sc.preamble]
@@ -560,8 +575,22 @@ def main():
     args = ap.parse_args()
 
     if args.self_test:
-        text, _ = render(SCENE)
         on_disk = open(SCENE, errors="ignore").read()
+        if stood_down(on_disk):
+            # The scene half is retired; prove the guard is what keeps it quiet, not luck: with the
+            # style-B marker gone the tool must try to author again (and find its Explore tree gone).
+            unmarked = on_disk.replace(f"guid: {STYLE_B_VIEW}, type: 3", "guid: 00000000000000000000000000000000, type: 3")
+            try:
+                woke = render_differs(unmarked)
+            except (SystemExit, Exception):
+                woke = True
+            print("self-test: stood down (the style-B Toy Box is mounted); without its marker the tool "
+                  "re-engages ->", "DETECTED" if woke else "MISSED")
+            bad = check_config()
+            for b in bad:
+                print("  -", b)
+            return 0 if woke and not bad else 1
+        text, _ = render(SCENE)
         if text != on_disk:
             print("self-test: the scene is not authored yet, so --check would already fail - run "
                   "the script first, then --self-test")

@@ -110,6 +110,7 @@ static class Program
             case "grizzlytime":
             case "slingshot":
             case "threshertime":
+            case "wrasserun":
             case "regattaGates":
             {
                 int intensity = layer.GetProperty("intensity").GetInt32();
@@ -122,6 +123,7 @@ static class Program
                     "grizzlytime" => HeadlongCircuit.Generate(seed, Apply(GrizzlyTimeCourse.ForIntensity(intensity), layer)),
                     "slingshot" => HeadlongCircuit.Generate(seed, Apply(SlingshotCourse.ForIntensity(intensity), layer)),
                     "threshertime" => HeadlongCircuit.Generate(seed, Apply(ThresherTimeCourse.ForIntensity(intensity), layer)),
+                    "wrasserun" => HeadlongCircuit.Generate(seed, Apply(WrasseRunCourse.ForIntensity(intensity), layer)),
                     _ => RegattaCourse.BuildGates(seed, intensity),
                 };
                 if (gates == null || gates.Count == 0) { UnityEngine.Debug.LogError($"{kind}: course generator returned no gates"); return 0; }
@@ -132,6 +134,7 @@ static class Program
                 if (layer.TryGetProperty("path", out var pe) && pe.GetBoolean())
                     DrawPath(scene, gates.Select(g => ToV(g.Position)).ToList(), kind != "switchback", pal, layer);
                 if (kind == "threshertime") StageSling(scene, gates);
+                if (kind == "wrasserun") StageKite(scene, gates);
                 return 0;
             }
             case "breakwater":
@@ -330,6 +333,48 @@ static class Program
         for (int j = 1; j < 12; j++)
             scene.Box(ball + a * (orbit * j / 12.0), a * 2.4, r1 * 1.3, u1 * 1.3, iron, false);
         scene.Sphere(ship, 6, new Material { Base = new V3(0.15, 0.4, 0.38), Rim = new V3(0.6, 1.6, 1.5), Emissive = new V3(0.2, 0.6, 0.55), EdgeGlow = 0.2 }, 12, 24, false);
+    }
+
+    /// <summary>
+    /// Wrasse Run's signature act, STAGED (not simulated): the Wrasse's kite threading a ring, its tail a lasso
+    /// that has just closed round a cluster of Time motes (the boosts the Grouper needs), the Grouper below
+    /// carrying the kite's plane to the ring. Card-scale sizes (the real kite is 8 u, invisible at 313x208);
+    /// the ring is the shipped course's own.
+    /// </summary>
+    static void StageKite(Scene scene, List<RaceGate> gates)
+    {
+        int n = gates.Count, k = 1 % n;
+        V3 g = ToV(gates[k].Position), axis = ToV(gates[k].Axis).Norm, prev = ToV(gates[(k - 1 + n) % n].Position);
+        V3 up = Math.Abs(axis.y) < 0.9 ? new V3(0, 1, 0) : new V3(1, 0, 0);
+        V3 side = V3.Cross(up, axis).Norm, lift = V3.Cross(axis, side).Norm;
+        var lime = new Material { Base = new V3(0.25, 0.4, 0.05), Rim = new V3(1.2, 1.9, 0.4), Emissive = new V3(0.75, 1.15, 0.2), EdgeGlow = 0.3 };
+        var teal = new Material { Base = new V3(0.05, 0.25, 0.25), Rim = new V3(0.4, 1.7, 1.6), Emissive = new V3(0.2, 0.95, 0.9), EdgeGlow = 0.2 };
+        // the kite in the ring's mouth, flying through it
+        V3 kite = g + axis * 6;
+        scene.Box(kite, axis * 30, side * 15, lift * 4, lime, false);
+        // the lasso: a closed loop of dots beside the approach, round five Time motes
+        V3 loopC = g - axis * 200 + side * 120;
+        for (int j = 0; j < 30; j++)
+        {
+            double t = 2 * Math.PI * j / 30;
+            scene.Sphere(loopC + (axis * Math.Cos(t) + side * Math.Sin(t)) * 90, 6.0, lime, 8, 16, false);
+        }
+        var rng = new System.Random(7);
+        for (int j = 0; j < 5; j++)
+        {
+            V3 m = loopC + axis * (rng.NextDouble() * 90 - 45) + side * (rng.NextDouble() * 90 - 45);
+            scene.Box(m, axis * 10, side * 18, lift * 4, teal, false);
+        }
+        // the tail from the loop to the kite, and the Grouper below the kite's plane on its way to the ring
+        for (int j = 1; j < 18; j++)
+        {
+            double t = j / 18.0;
+            V3 p = loopC + side * 90 * (1 - t) * Math.Cos(t * 2.0) + (g - loopC) * t;
+            scene.Sphere(p, 4.0, lime, 6, 12, false);
+        }
+        V3 hull = g - axis * 150 - lift * 40;
+        scene.Sphere(hull, 16, new Material { Base = new V3(0.15, 0.4, 0.38), Rim = new V3(0.6, 1.6, 1.5), Emissive = new V3(0.2, 0.6, 0.55), EdgeGlow = 0.2 }, 12, 24, false);
+        _ = prev;
     }
 
     static Material GateMaterial(JsonElement layer)

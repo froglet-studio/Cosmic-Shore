@@ -21,28 +21,22 @@
       ],
       "branch": "Ys-bleeding-edge",
       "branchNote": "for testing; nothing goes to bleeding-edge until Yash has tested it",
-      "summary": "Five hulls racing Regatta with working AIs (Squirrel, Manta, Rhino, Urchin, Dolphin), the host picking every AI seat's hull, the Third Eye showing each AI's path and what it is doing, a steering fix found in the browser lab and ported to Unity, and the Training AI for Regatta artifact where every hull's AI is raced, watched and trained.",
+      "summary": "Five hulls racing Regatta with working AIs (Squirrel, Manta, Rhino, Urchin, Dolphin), the host picking every AI seat's hull, the Third Eye showing each AI's path and what it is doing, and a steering fix found in a browser lab and ported to Unity. Tested in the Unity editor only (the lab artifact was deleted 2026-10-16).",
       "paths": [
         "Assets/_Scripts/Controller/Arcade/Regatta",
         "Assets/_Scripts/Controller/Arcade/Racing",
         "Assets/_Scripts/Controller/Arcade/REGATTA.md",
         "Assets/_Scripts/Controller/AI",
         "Assets/_Scripts/Editor/AI",
-        "Docs/Studios/RegattaAI",
         "Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md",
         "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md"
       ],
       "docs": [
         "Assets/_Scripts/Controller/Arcade/REGATTA.md",
         "Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md",
-        "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md",
-        "Docs/Studios/RegattaAI/README.md"
+        "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md"
       ],
       "artifacts": [
-        {
-          "name": "Training AI for Regatta",
-          "url": "https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4"
-        },
         {
           "name": "Regatta AI Report (the page for Garrett)",
           "url": "https://claude.ai/artifact/RmxWBLGfSsAXsUeubFXkUm"
@@ -80,24 +74,18 @@
         "the core four"
       ],
       "branch": "Ys-bleeding-edge",
-      "summary": "Training every vessel's AI: the genetic trainer in Unity (studyholic, Garrett, Shombith), the Training AI for Regatta prototype, and the plan to an AI Lab scene, Regatta in the trainer, a consented flight recorder and behaviour cloning.",
+      "summary": "Training every vessel's AI: the genetic trainer in Unity (studyholic, Garrett, Shombith), situations learned from Unity editor flights (the browser prototype was deleted 2026-10-16), and the plan to an AI Lab scene, Regatta in the trainer, a consented flight recorder and behaviour cloning.",
       "paths": [
         "Assets/_Scripts/Utility/AITraining",
         "Assets/_SO_Assets/AI Training",
         "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md",
-        "Docs/Studios/RegattaAI",
         "Tools/Build/skimrace_sim_harness"
       ],
       "docs": [
         "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md",
         "Assets/_Scripts/Utility/AITraining/README.md"
       ],
-      "artifacts": [
-        {
-          "name": "Training AI for Regatta",
-          "url": "https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4"
-        }
-      ],
+      "artifacts": [],
       "report": "Docs/Reports/REGATTA_AI.md",
       "taskAreas": [
         "AI training",
@@ -140,7 +128,8 @@
       "report": "",
       "taskAreas": [
         "Team tools"
-      ]
+      ],
+      "artifacts": []
     },
     "performance": {
       "title": "Performance",
@@ -194,9 +183,137 @@
       "test": [
         "Pull Ys-bleeding-edge, open Unity, Code Optimization = Release, close the Third Eye window.",
         "Play, Cell Selector > Lattice, wait 8 minutes.",
-        "On the Bug Hunt & Performance badge (bottom-left of the Scene view) press Capture S2; wait until it says Saved.",
-        "Stop playing and press Send to Claude when Unity asks.",
+        "Keep playing: the editor captures S2 by itself at 8 minutes (the Scene view badge counts down and says Saved).",
+        "Stop playing: the capture goes to Claude by itself.",
         "python3 Tools/Build/perf_hunt.py sweep --write shows the capture judged against its baseline in Docs/Reports/PERFORMANCE.md."
+      ]
+    },
+    "crew-vessels": {
+      "title": "Crew vessels",
+      "aliases": [
+        "crew vessel",
+        "crew vessels",
+        "multiplayer vessel",
+        "multiplayer vessels",
+        "kite navigator",
+        "kite and tail",
+        "kite & tail",
+        "navigator",
+        "maverick and goose",
+        "crew vessel lab",
+        "wrasse",
+        "wrasse and grouper",
+        "grouper"
+      ],
+      "owner": "Garrett",
+      "people": [],
+      "audience": [
+        "Garrett",
+        "the core four"
+      ],
+      "branch": "cece/compassionate-babbage-gc13io",
+      "branchNote": "not on bleeding-edge yet; nothing has been played in the Unity editor",
+      "summary": "The first multiplayer vessel, the Wrasse (card: Wrasse and Grouper): one hull, two seats. The pilot flies the Grouper, the hull, on two sticks; the navigator flies the Wrasse, a kite on the hull's x-z plane whose head pops hostile prisms and rams rivals and whose tail lassos navigator-only motes into exponential Space / Mass / Time / Charge effects. Designed in the Crew Vessel Lab (signed off 2026-10-17), ported to Unity with a parity gate, then directed by play in rounds 4-4f; compiled against Unity reference assemblies, not yet played in the editor.",
+      "paths": [
+        "Assets/_Scripts/Controller/Vessel/Crew",
+        "Assets/_Scripts/Editor/Studios/KiteNavigatorHarnessMenu.cs",
+        "Assets/_SO_Assets/VesselActions/KiteNavigator",
+        "Assets/_Scripts/Tests/Editor/KiteNavigatorCoreTests.cs",
+        "Assets/_Scripts/Tests/Editor/KiteNavigatorConfigTests.cs",
+        "Tools/Build/kite_navigator_lab",
+        "Docs/Studios/CrewVesselLab.html",
+        "Docs/Studios/CREW_VESSEL_LAB.md",
+        "Assets/_Prefabs/Spacevessels/Wrasse.prefab",
+        "Tools/Build/author_wrasse_assets.py",
+        "Assets/_Scripts/UI/Controller/WrasseHUDController.cs",
+        "Assets/_Scripts/Utility/PrismDepthPlane.cs",
+        "Assets/_Graphics/Materials/Graphs/PrismDepthPlane.hlsl",
+        "Assets/_SO_Assets/Classes/SO_Class_Wrasse.asset",
+        "Assets/Resources/ElementalAbilityMaps/Wrasse.asset",
+        "Assets/_Prefabs/Spacevessels/Orca.prefab",
+        "Tools/Build/author_orca_assets.py",
+        "Tools/Build/orca_crew_lab",
+        "Assets/_SO_Assets/VesselActions/OrcaCrew",
+        "Assets/_Scripts/UI/Controller/OrcaHUDController.cs",
+        "Assets/_Scripts/Tests/Editor/OrcaCrewCoreTests.cs",
+        "Assets/_SO_Assets/Classes/SO_Class_Orca.asset",
+        "Assets/Resources/ElementalAbilityMaps/Orca.asset",
+        "Docs/Studios/CrewOfFourLab.html",
+        "Docs/Studios/CREW_OF_FOUR_LAB.md"
+      ],
+      "docs": [
+        "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md",
+        "Docs/Studios/CREW_VESSEL_LAB.md",
+        "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md",
+        "Docs/Studios/CREW_OF_FOUR_LAB.md"
+      ],
+      "artifacts": [
+        {
+          "name": "Crew Vessel Lab (round 3, signed off)",
+          "url": "https://claude.ai/artifact/JtQptDHQhNdC2CxPmspfct"
+        }
+      ],
+      "report": "Docs/Reports/CREW_VESSELS.md",
+      "taskAreas": [
+        "Crew vessels"
+      ],
+      "test": [
+        "Check out cece/compassionate-babbage-gc13io, open Unity, wait for the compile and the shader import.",
+        "Open the Toybox, fly into the Vessel Changer and fly the Wrasse and Grouper station (a Sparrow body): the kite view is a small square in the lower left and the AI flies the kite.",
+        "Press 2 (or D-pad right) to take the kite: its view fills the screen and the hull's shrinks to the corner. The kite follows the mouse or stick; loop motes of one petal shape. Press 1 to fly again.",
+        "Run the steps of the Kite Navigator entry in Docs/UNITY_VERIFICATION_CHECKLIST.md."
+      ]
+    },
+    "mobile-vessels": {
+      "title": "Vessels on a phone",
+      "aliases": [
+        "mobile",
+        "mobile audit",
+        "phone",
+        "touch",
+        "touch controls",
+        "mobile vessels",
+        "vessels on mobile",
+        "mobile friendly"
+      ],
+      "owner": "Garrett",
+      "people": [
+        "Shombith",
+        "Yash"
+      ],
+      "audience": [
+        "Garrett",
+        "the core four"
+      ],
+      "branch": "cece/admiring-hamilton-gyzzh8",
+      "branchNote": "audit 2026-10-21, then Garrett's decisions built the same day; not on bleeding-edge, not flown on a phone or opened in the Editor",
+      "summary": "The fleet on a phone: an audit of all 18 hulls, then Garrett's decisions built - every hull has a touch profile (thumb lifts with glyphs, or totems as buttons laid out round the right thumb in millimetres), idle parity, tilt steering/roll, per-hull phone controls (Scarab slider, Brittle Star aim discs, Dolphin lift-either, Manta/Rhino/Thresher both-thumbs-off), the idle-animation fixes and the arena pilot-swap tiles.",
+      "paths": [
+        "Assets/Resources/TouchControlProfiles.asset",
+        "Assets/_Scripts/Controller/IO/DeviceOrientationHandler.cs",
+        "Assets/_Scripts/Controller/IO/FlightTouchClaims.cs",
+        "Assets/_Scripts/Controller/IO/TouchControls",
+        "Assets/_Scripts/Controller/IO/TouchInputStrategy.cs",
+        "Assets/_Scripts/UI/Elements/AbilityCardPress.cs",
+        "Assets/_Scripts/UI/Elements/PilotSwapIndicator.cs",
+        "Assets/_Scripts/UI/TouchControls",
+        "Tools/Build/author_touch_profiles.py",
+        "Tools/Build/touch_controls_harness",
+        "Tools/Build/touch_glyph_art.py"
+      ],
+      "docs": [
+        "Docs/ABILITY_LOCKUP.md",
+        "Docs/ANDROID_BUILD.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/MOBILE_VESSELS.md",
+      "taskAreas": [
+        "vessels"
+      ],
+      "test": [
+        "Check out cece/admiring-hamilton-gyzzh8 and build an Android development APK (Docs/ANDROID_BUILD.md).",
+        "Run Docs/UNITY_VERIFICATION_CHECKLIST.md \"Phone controls for the whole fleet\" steps 4-15 in the Toybox Vessel Changer and an arena match.",
+        "In the Editor, Device Simulator with a phone selected shows the button layouts (steps 1-3)."
       ]
     }
   }

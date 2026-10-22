@@ -32,7 +32,7 @@ namespace CosmicShore.Tests
             // If someone adds or removes a vessel, this test forces them to
             // update the test suite - ensuring new vessels get tested too.
             var values = Enum.GetValues(typeof(VesselClassType));
-            Assert.AreEqual(18, values.Length,
+            Assert.AreEqual(25, values.Length,
                 "VesselClassType member count changed. Update tests if a vessel was added/removed.");
         }
 
@@ -55,6 +55,13 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.Thresher, 14)]
         [TestCase(VesselClassType.Stoat, 15)]
         [TestCase(VesselClassType.BrittleStar, 16)]
+        [TestCase(VesselClassType.Angler, 17)]
+        [TestCase(VesselClassType.Goby, 18)]
+        [TestCase(VesselClassType.Wrasse, 19)]
+        [TestCase(VesselClassType.Orca, 20)]
+        [TestCase(VesselClassType.Starling, 21)]
+        [TestCase(VesselClassType.Jacks, 22)]
+        [TestCase(VesselClassType.Honeyguide, 23)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {
             // Locks the serialized integer value so Unity assets don't drift.
@@ -164,8 +171,10 @@ namespace CosmicShore.Tests
             // retired; both IDs stay reserved. 59 -> 60 the same day: Slingshot (64), the Stoat's.
             // 60 -> 61 on 2026-10-09: Warpline (65), the Stoat's time race.
             // 61 -> 62 on 2026-10-13: ThresherTime (66), the Thresher's circuit race.
+            // 62 -> 63 on 2026-10-20: WrasseRun (68), the Wrasse and Grouper's race (67 is SerpentCharge's,
+            // in flight on another branch: when it lands this becomes 64).
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(62, values.Length,
+            Assert.AreEqual(63, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -206,6 +215,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Slingshot, 64)]
         [TestCase(GameModes.Warpline, 65)]
         [TestCase(GameModes.ThresherTime, 66)]
+        [TestCase(GameModes.WrasseRun, 68)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,
@@ -223,9 +233,11 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void GameModes_MultiplayerModes_AllContainMultiplayerInName()
+        public void GameModes_MultiplayerModes_AreFlaggedMultiplayerOnTheirCards()
         {
-            // Convention check: multiplayer modes should be identifiable by name.
+            // A multiplayer mode is marked by its card's SO_Game.IsMultiplayer, not by its name:
+            // the domain modes were named Joust and Scurry when they replaced the Multiplayer*
+            // prototypes, so the old "name contains Multiplayer" convention no longer holds.
             var multiplayerModes = new[]
             {
                 GameModes.Multiplayer2v2CoOpVsAI,
@@ -234,10 +246,19 @@ namespace CosmicShore.Tests
                 GameModes.Scurry
             };
 
+            var cards = UnityEditor.AssetDatabase.FindAssets("t:SO_Game")
+                .Select(UnityEditor.AssetDatabase.GUIDToAssetPath)
+                .Select(UnityEditor.AssetDatabase.LoadAssetAtPath<CosmicShore.ScriptableObjects.SO_Game>)
+                .Where(card => card)
+                .ToList();
+
             foreach (var mode in multiplayerModes)
             {
-                Assert.IsTrue(mode.ToString().Contains("Multiplayer"),
-                    $"Multiplayer mode {mode} should contain 'Multiplayer' in its name.");
+                var forMode = cards.Where(card => card.Mode == mode).ToList();
+                Assert.IsNotEmpty(forMode, $"Multiplayer mode {mode} has no SO_Game card.");
+                foreach (var card in forMode)
+                    Assert.IsTrue(card.IsMultiplayer,
+                        $"{UnityEditor.AssetDatabase.GetAssetPath(card)} is the {mode} card and must set IsMultiplayer.");
             }
         }
 

@@ -41,6 +41,7 @@ In `Menu_Main.unity` the `ScreenSwitcher.disabledScreens` list = **{ PORT }** (A
 The grid-based Hangar (`HangarVesselGridCard` + `HangarVesselDetailView` + `VesselUnlockSystem`) **originated on `development` and is already present on this branch** — the two branches share no history, but the Hangar C# is ~90–97% identical. The only behavioral difference has been restored:
 
 - `HangarScreen.RefreshGridCards()` now **re-populates** the grid on unlock (cards re-sort unlocked-first), matching development, instead of only flipping the lock overlay in place.
+- **Superseded 2026-10-14:** the grid is now the style-B three-zone Hangar (`Docs/MENU_REDESIGN_B.md` §11). `HangarScreen.RebuildList()` keeps the same contract: it re-populates on unlock, owned first. `HangarVesselGridCard` is no longer used by Menu_Main.
 
 Do **not** remove `HangarScreen : IScreen` or the `_lastLoadFrame` double-load guard — those are required by this branch's `ScreenSwitcher` and are not present on development for that reason.
 
@@ -70,11 +71,16 @@ A mode enters `UnlockedModes` only when the player **completes the previous ques
 
 | Order | Quest asset | DisplayName | GameMode | TargetType | Target |
 |---|---|---|---|---|---|
-| 0 (free) | GameModeQuest_Scurry | CRYSTAL CAPTURE | 35 | IntensityUnlocked | 4 |
-| 1 | GameModeQuest_SkimRace | HEX RACE | 33 | IntensityUnlocked | 4 |
-| 2 | GameModeQuest_Joust | JOUST | 34 | IntensityUnlocked | 4 |
-| 3 | GameModeQuest_PartyGame | PARTY GAME | 35 | Placeholder | 30 |
-| 4 | VesselHangarUnlock | VESSEL HANGAR | Screen (feature) | Placeholder | — |
+| 0 (free) | GameModeQuest_Scurry | SCURRY | 35 (Scurry) | IntensityUnlocked | 4 |
+| 1 | GameModeQuest_SkimRace | HEX RACE | 33 (SkimRace) | IntensityUnlocked | 4 |
+| 2 | GameModeQuest_Joust | JOUST | 34 (Joust) | IntensityUnlocked | 4 |
+| 5 | GameModeQuest_MaelStrom | MAELSTROM | 36 (Maelstrom) | Placeholder | 30 |
+| 6 | VesselHangarUnlock | VESSEL HANGAR | Screen (feature `Hangar`) | Placeholder | - |
+
+Corrected 2026-10-17 against the asset (T-20261015-ff1c); the earlier table listed Crystal Capture and a PartyGame
+placeholder. The asset named `GameModeQuest_SkimRace` unlocks **Hex Race** (mode 33). Maelstrom is in
+`alwaysUnlockedModes`, so its card is open from the start whatever its quest says. The `Order` numbers skip 3 and 4;
+the chain follows the list order, not `Order`.
 
 Per-quest goal type/value lives on `SO_UnlockData` (`TargetType` + `TargetValue`) — already a ScriptableObject. Unlock order = the list order in `SO_UnlockList`. **To change which game unlocks when, edit those assets** (no code). `SO_UnlockData` also carries a `FeatureKind` (GameMode/Vessel/Screen/Captain/…) and the breadcrumb fields (`CallToActionTargetID` / `CompletionUserAction` / `DependencyTargetIDs`) — see `Docs/QUEST_TRACK_AND_BREADCRUMB.md`.
 

@@ -24,7 +24,7 @@ namespace CosmicShore.Gameplay
         // strategy runs: a button held as the player switched devices, or released while the
         // window was unfocused (InputController skips unfocused frames), never sent its release,
         // so the ability (the Sparrow's boost on B / R, any held face-button ability) stayed on.
-        private bool prevButton1, prevButton2, prevButton3, prevFlip;
+        private bool prevButton1, prevButton2, prevButton3, prevButton4, prevFlip;
 
         private void EdgeFire(bool isPressed, ref bool prev, InputEvents evt)
         {
@@ -38,6 +38,7 @@ namespace CosmicShore.Gameplay
             EdgeFire(false, ref prevButton1, InputEvents.Button1Action);
             EdgeFire(false, ref prevButton2, InputEvents.Button2Action);
             EdgeFire(false, ref prevButton3, InputEvents.Button3Action);
+            EdgeFire(false, ref prevButton4, InputEvents.Button4Action);
             EdgeFire(false, ref prevFlip, InputEvents.FlipAction);
         }
 
@@ -132,6 +133,7 @@ namespace CosmicShore.Gameplay
             EdgeFire(Gamepad.current.buttonSouth.isPressed, ref prevButton1, InputEvents.Button1Action);
             EdgeFire(Gamepad.current.buttonEast.isPressed, ref prevButton2, InputEvents.Button2Action);
             EdgeFire(Gamepad.current.buttonWest.isPressed, ref prevButton3, InputEvents.Button3Action);
+            EdgeFire(Gamepad.current.buttonNorth.isPressed, ref prevButton4, InputEvents.Button4Action);
             EdgeFire(Gamepad.current.rightShoulder.isPressed, ref prevFlip, InputEvents.FlipAction);
 
             // Triggers - read analog values and use custom deadzone for edge detection.
@@ -232,17 +234,8 @@ namespace CosmicShore.Gameplay
             float yDiffBefore = inputStatus.YDiff;
             float xDiffBefore = inputStatus.XDiff;
             
-            // Apply inversions AFTER calculations
-            if (inputStatus.InvertYEnabled)
-            {
-                inputStatus.YSum *= -1f;   // Invert pitch
-                inputStatus.YDiff *= -1f;  // Invert roll
-            }
-            
-            if (inputStatus.InvertThrottleEnabled)
-            {
-                inputStatus.XDiff = 1f - inputStatus.XDiff;  // Invert throttle/speed
-            }
+            // Apply inversions AFTER calculations - the fleet's one rule (BaseInputStrategy).
+            ApplyInvertSettings();
             
             // DEBUG: Uncomment to see inversion working (press Tab key to log)
             #if UNITY_EDITOR

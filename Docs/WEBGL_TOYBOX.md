@@ -102,8 +102,10 @@ loader itself.
 tier; the tier itself is unchanged, so input is unaffected. It keeps every toy and the no-trail-cap law. It turns the
 first-run heuristic off (a browser hides the real hardware), starts at the Low preset with a 2.1 MP budget, FXAA and
 60 fps, uses the baked sky, and takes MobileLow's CPU strips: the freestyle pen waits at 10,000 and resumes at 9,700,
-a smaller Wanderway belt (8 scenes of 600 prisms) with its lifeforms and crystals, menus off while flying, no
-cytoplasm. The reason is CPU: wasm runs single-threaded, without Burst, at roughly half native speed.
+a smaller Wanderway belt (8 scenes of 600 prisms) with its lifeforms and crystals, menus off while flying, a
+quarter of the cytoplasm shards (thinned, never removed: they point at the crystal). The reason is CPU: wasm runs
+single-threaded, without Burst, at roughly half native speed. Because it starts on the Low preset, the Low preset's
+render cuts apply in the browser too (`Docs/PLATFORM_UNIFICATION.md` §3.10).
 
 **Threads.** A WebGL player has none. `CrystalHullFusion`'s fallback solve runs inline there (at vessel spawn, and only
 for a missing or stale bake); `TextureScale` scales in one slice. Swarm, Substrate and the NCA creatures already ran

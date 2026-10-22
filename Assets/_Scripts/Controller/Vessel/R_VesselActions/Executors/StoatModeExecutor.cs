@@ -36,6 +36,19 @@ namespace CosmicShore.Gameplay
                  "the B binding's asset is the same one.")]
         [SerializeField] StoatModeActionSO config;
 
+        // The autopilot's numbers: the mode's own copy when it has one (AIModeTuning, e.g. StoatModeAction_Regatta learned
+        // from people's editor flights), resolved once the pilot's mode is known; this config otherwise. Only the AI's
+        // reads go through it - a person flying this hull reads `config`.
+        StoatModeActionSO _aiConfig;
+        StoatModeActionSO AIConfig
+        {
+            get
+            {
+                if (!_aiConfig) _aiConfig = AIModeTuning.ForPilot(config, _status);
+                return _aiConfig ? _aiConfig : config;
+            }
+        }
+
         IVesselStatus _status;
         Mode _mode;
         float _thickness = 1f;
@@ -55,6 +68,7 @@ namespace CosmicShore.Gameplay
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status = shipStatus;
+            _aiConfig = null;
             _boundInput = null;
             _mode = Mode.Mass;
             _aiLastSwitch = float.NegativeInfinity;
@@ -110,8 +124,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void Autopilot()
         {
-            float threshold = config.AutopilotTimeModeDegrees;
-            if (threshold <= 0f || Time.time - _aiLastSwitch < config.AutopilotModeIntervalSeconds) return;
+            float threshold = AIConfig.AutopilotTimeModeDegrees;
+            if (threshold <= 0f || Time.time - _aiLastSwitch < AIConfig.AutopilotModeIntervalSeconds) return;
             var ai = _status.AIPilot;
             var hull = _status.Transform;
             var handler = _status.ActionHandler;

@@ -71,6 +71,15 @@ namespace CosmicShore.Core
         [Tooltip("Shown beside the preview window.")]
         [TextArea(1, 3)] public string previewCaption = "Tap the window to fly.";
 
+        [Header("Skip")]
+        [Tooltip("The Skip button's words, shown on every step of the guide. Pressing it ends the whole " +
+                 "tutorial (the quest is marked done). Empty = no Skip button.")]
+        public string skipLabel = "Skip tutorial";
+
+        [Tooltip("The pad button named on Skip's keycap (the shortcut is the pad's north face button). " +
+                 "Hidden on a device with no pad. Empty = no keycap.")]
+        public string skipKeycap = "Y";
+
         [Header("Look")]
         [Tooltip("How dark everything off the path is (0 = clear, 1 = black).")]
         [Range(0f, 1f)] public float dimAlpha = 0.7f;
@@ -116,9 +125,9 @@ namespace CosmicShore.Core
                         lostFor = 0f;
                         break;
 
-                    case Step.Arcade:  spot.Show(rect, arcadeCaption, cta, dimAlpha);  lostFor = 0f; break;
-                    case Step.Card:    spot.Show(rect, cardCaption, cta, dimAlpha);    lostFor = 0f; break;
-                    case Step.Preview: spot.Show(rect, previewCaption, cta, dimAlpha); lostFor = 0f; break;
+                    case Step.Arcade:  spot.Show(rect, arcadeCaption, cta, dimAlpha, skipLabel, skipKeycap);  lostFor = 0f; break;
+                    case Step.Card:    spot.Show(rect, cardCaption, cta, dimAlpha, skipLabel, skipKeycap);    lostFor = 0f; break;
+                    case Step.Preview: spot.Show(rect, previewCaption, cta, dimAlpha, skipLabel, skipKeycap); lostFor = 0f; break;
 
                     default:
                         lostFor += Time.unscaledDeltaTime;
@@ -161,7 +170,7 @@ namespace CosmicShore.Core
             return c.a > 0f ? c : new Color(0.55f, 1f, 0.2f, 1f);
         }
 
-        enum Step { None, StandAside, Arcade, Card, Preview }
+        enum Step { None = 0, StandAside = 1, Arcade = 2, Card = 3, Preview = 4 }
 
         /// <summary>Works out, from the live menu, which control is the next step.</summary>
         sealed class StepFinder
@@ -197,7 +206,7 @@ namespace CosmicShore.Core
                 if (session && session.IsActive && session.ActiveMode == _mode
                     && session.Window && session.Window.isActiveAndEnabled)
                 {
-                    rect = session.Window.SurfaceRect;
+                    rect = session.Window.GuideRect;   // the FLY control where the surface is full-screen
                     return Step.Preview;
                 }
 

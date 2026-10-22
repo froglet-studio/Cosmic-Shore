@@ -61,6 +61,19 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Label colour of an unlit button.")]
         Color labelUnselected = new Color32(125, 125, 125, 255);
 
+        [Header("Look - rev 7 selection (optional)")]
+        [SerializeField, Tooltip("Tint the plates with the two colours below. Off keeps each plate's own colour.")]
+        bool tintPlates;
+
+        [SerializeField, Tooltip("Plate tint of the lit button (the theme's sky-blue Selection in style B).")]
+        Color plateSelectedColor = Color.white;
+
+        [SerializeField, Tooltip("Plate tint of an unlit button.")]
+        Color plateUnselectedColor = Color.white;
+
+        [SerializeField, Tooltip("The lit plate's light (SelectionRim.mat: a sweep round it and a breath). Empty: none.")]
+        Material plateSelectedMaterial;
+
         /// <summary>A button was pressed. Raised for every press, including the lit button's -
         /// the modal compares and ignores a no-op.</summary>
         public event Action<AIDifficulty> OnPicked;
@@ -117,7 +130,19 @@ namespace CosmicShore.UI
                 bool lit = options[i].Difficulty == _selected;
 
                 var plate = lit ? plateSelected : plateUnselected;
-                if (options[i].Plate && plate) options[i].Plate.sprite = plate;
+                var image = options[i].Plate;
+                if (image && plate) image.sprite = plate;
+                if (image)
+                {
+                    if (tintPlates) image.color = lit ? plateSelectedColor : plateUnselectedColor;
+                    if (plateSelectedMaterial && Application.isPlaying)
+                    {
+                        // The light reads where each vertex sits on its rect (KitRimMesh), swapped only on a change.
+                        var want = lit ? plateSelectedMaterial : null;
+                        if (image.material != (want ? want : image.defaultMaterial)) image.material = want;
+                        if (lit && !image.TryGetComponent<KitRimMesh>(out _)) image.gameObject.AddComponent<KitRimMesh>();
+                    }
+                }
                 if (options[i].Label) options[i].Label.color = lit ? labelSelected : labelUnselected;
             }
         }
