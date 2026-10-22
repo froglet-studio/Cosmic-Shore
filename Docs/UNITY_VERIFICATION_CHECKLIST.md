@@ -149,6 +149,29 @@ changed. The artist reproductions (Squirrel, Goby, Dolphin, Sparrow, Serpent, Ma
 5. If any hull still leans, Unity is not taking the default pose from the first take: report it, the fallback is to
    capture rest from the SkinnedMeshRenderer's bind poses in code.
 
+### 🔴 Honeyguide and Ratel: the Ratel's board in portrait on a phone; Printer retired (`cece/nifty-dirac-2dmclm`, 2026-10-22) — NOT EDITOR-VERIFIED
+
+Garrett: "the ratel dynamo should assume the player is holding the phone in portrait mode. it should size text and buttons
+appropriate to mobile. for now remove the engineer ability that gives players a free prism at the start of the spin."
+`HoneyguideDynamoView` draws the big board a quarter turn round on a touch-first device (`boardOrientation`, default
+PortraitOnPhone) inside `portraitRect` of the safe area, text `portraitTextMillimetres` (2.8 mm), cards
+`portraitCardMillimetres` (20 mm), the Fly button above the board. `retiredAbilities` (Printer) keeps it out of the draw;
+`DynamoSettings.Abilities` and the lab's `abilityPool` are the same rule. `/verify-unity` was unavailable (no Editor, no
+`unity` binary). Green: the headless player reference compile (0 errors in project code) and editor config (only the 3 bleeding-edge errors, 0 in changed files), `parity.cjs` (16,824 steps, the
+new pool control caught), `author_honeyguide_assets.py --check` / `--self-test`, the console-logging, conditional-compilation
+and enum-reference gates. The new and re-measured test goldens were run through `DynamoCore.cs` on the shipped asset.
+
+1. On a phone: Toybox Vessel Changer → Honeyguide and Ratel; double-tap the small board. Hold the phone portrait: the board
+   is upright, fills the screen below the notch, the text is readable, the cells, cards and the Fly button (top left, above
+   the board) are easy thumb targets. Drag, tap a port, tap a lit card, long-press delete and Fly land under the finger.
+2. Tap Fly: the game is landscape again, with the small board at the left.
+3. On PC the board is unchanged (landscape, centre of the screen). Set the config's `boardOrientation` to Portrait to see the
+   phone layout turned in the Editor.
+4. Play several new-ability reveals: the Ratel never draws Printer, and no free prism appears at a spin (5D Printer and
+   Universal Translator cards still grant theirs).
+5. `HoneyguideTests` pass in the Test Runner, `Ratel_NeverDrawsPrinter_WhileItIsRetired` and the re-measured
+   `Config_PlaysTheLabsGame_StepForStep` included.
+
 ### 🔴 Honeyguide and Ratel: round 6 triggers and its own hull model (`claude/honeyguide-ratel`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett: "Get everything including models etc. Together so we are ready to /ship". Lab round 6 in the game: RT **Peck**

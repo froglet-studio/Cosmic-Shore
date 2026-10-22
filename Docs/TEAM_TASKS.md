@@ -2063,3 +2063,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (UI, style guide)
 - **Added:** 2026-10-22 by a Claude session (`cece/dazzling-volta-apzw2m`)
 - **See:** Assets/_Scripts/UI/Elements/PipViewFrame.cs
+
+### T-20261022-971d · open · test · crew
+- **Task:** On a phone, Toybox Vessel Changer > Honeyguide and Ratel, swap to the Ratel (tap the small board twice): hold the phone portrait and check the Dynamo board reads upright, fills the screen, its text is readable and the cards, cells and Fly button (above the board, top left) are easy thumb targets; drag, tap a port, tap a lit card, long-press delete and Fly all land where the finger is. Also check the Ratel never draws Printer (no free prism at a spin).
+- **Done when:** The portrait board plays correctly by touch on an Android or iOS phone, or the failures are filed as a dev task
+- **Who can take it:** Garrett (Honeyguide owner), Yash (offered)
+- **Added:** 2026-10-22 by Garrett (`cece/nifty-dirac-2dmclm`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md step 4; HoneyguideDynamoView.cs

@@ -132,6 +132,15 @@ namespace CosmicShore.Gameplay
         Hard = 2,
     }
 
+    /// <summary>Which way up the Ratel's big board is drawn. The screen stays locked to landscape; a portrait board is drawn
+    /// turned a quarter so it reads upright with the phone held portrait (Garrett 2026-10-22).</summary>
+    public enum HoneyguideBoardOrientation
+    {
+        PortraitOnPhone = 0,
+        Portrait = 1,
+        Landscape = 2,
+    }
+
     /// <summary>
     /// Every number, table and word of the Honeyguide and Ratel (Honeyguide Lab round 6; <c>Docs/Studios/HONEYGUIDE_LAB.md</c>,
     /// <c>HONEYGUIDE.md</c> beside this file). The lab is the record: each field names the lab key it came from, and
@@ -166,6 +175,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool portsCount = true;
         [Tooltip("lab opts.rotatable: patterns match in any of the six rotations.")]
         [SerializeField] bool rotatable = true;
+        [Tooltip("lab RETIRED_ABILITIES: abilities the Ratel never draws. Garrett 2026-10-22: Printer (a free prism at the start " +
+                 "of every spin) is out for now, \"too confusing to players on mobile\".")]
+        [SerializeField] DynamoAbility[] retiredAbilities = { DynamoAbility.Printer };
 
         [Header("The Slip (the Honeyguide's Time ability)")]
         [Tooltip("lab minSlipTrailLength: shortest trail (prisms) a slip rides.")]
@@ -336,6 +348,15 @@ namespace CosmicShore.Gameplay
         [SerializeField] Rect engineerRect = new(0.18f, 0.04f, 0.64f, 0.92f);
         [Tooltip("The board's rect while the human flies (the small view; a double tap on it swaps seats).")]
         [SerializeField] Rect pilotRect = new(0.01f, 0.30f, 0.20f, 0.42f);
+        [Tooltip("Which way up the big board is drawn. PortraitOnPhone: upright for a phone held portrait on a touch device, " +
+                 "landscape elsewhere. The screen itself stays landscape (Garrett 2026-10-22).")]
+        [SerializeField] HoneyguideBoardOrientation boardOrientation = HoneyguideBoardOrientation.PortraitOnPhone;
+        [Tooltip("The portrait board's rect (fractions of the portrait safe area: x, y, width, height). The Fly button sits above it.")]
+        [SerializeField] Rect portraitRect = new(0.03f, 0.02f, 0.94f, 0.86f);
+        [Tooltip("Portrait: the board's text size (the em height, in millimetres on the screen).")]
+        [SerializeField, Min(1f)] float portraitTextMillimetres = 2.8f;
+        [Tooltip("Portrait: the pattern cards' height, in millimetres on the screen (thumb-sized).")]
+        [SerializeField, Min(8f)] float portraitCardMillimetres = 20f;
         [Tooltip("Touch: holding a prism this long (s) without leaving its cell deletes it, for 1 AP (a phone's right-click).")]
         [SerializeField, Min(0.1f)] float longPressSeconds = 0.45f;
         [Tooltip("The Fly button's edge, in millimetres on the screen. It sits just left of the Ratel's board, at its top, and " +
@@ -473,6 +494,10 @@ namespace CosmicShore.Gameplay
         public bool AICrewEngineers => aiCrewEngineers;
         public Rect EngineerRect => engineerRect;
         public Rect PilotRect => pilotRect;
+        public HoneyguideBoardOrientation BoardOrientation => boardOrientation;
+        public Rect PortraitRect => portraitRect;
+        public float PortraitTextMillimetres => portraitTextMillimetres;
+        public float PortraitCardMillimetres => portraitCardMillimetres;
         public float LongPressSeconds => longPressSeconds;
         public float FlyButtonMillimetres => flyButtonMillimetres;
         public string RatelLabel => ratelLabel;
@@ -551,6 +576,15 @@ namespace CosmicShore.Gameplay
             return cells.ToArray();
         }
 
+        /// <summary>The abilities a random draw picks from: all but <c>retiredAbilities</c> (null when none is retired, or all are).</summary>
+        int[] AbilityPool()
+        {
+            if (retiredAbilities is not { Length: > 0 }) return null;
+            var pool = new List<int>();
+            for (int a = 0; a < DynamoCore.AbilityCount; a++) if (Array.IndexOf(retiredAbilities, (DynamoAbility)a) < 0) pool.Add(a);
+            return pool.Count > 0 ? pool.ToArray() : null;
+        }
+
         /// <summary>The core's settings from this asset (the lab's <c>dynamoSettings</c> with the shipped rule options).</summary>
         public DynamoSettings ToSettings()
         {
@@ -559,6 +593,7 @@ namespace CosmicShore.Gameplay
                 TickSeconds = tickSeconds, ApPerTick = apPerTick, ApBank = apBank, BonusApCap = bonusApCap, BatteryCap = batteryCap,
                 RevealAbility = revealAbility, RevealPorts = revealPorts, AllowRotatedMatches = rotatable, PortsCount = portsCount,
                 SlotCount = 3, StartFilled = true, UsesPerPattern = usesPerPattern, PatternsPerShuffle = patternsPerShuffle,
+                Abilities = AbilityPool(),
             };
             foreach (var p in patterns) s.Patterns.Add(new DynamoPattern { Cells = ParseShape(p.shape), Parked = p.parked });
             var parsed = new List<int[][]>();

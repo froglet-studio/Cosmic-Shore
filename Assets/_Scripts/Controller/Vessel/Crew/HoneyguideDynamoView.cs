@@ -17,6 +17,12 @@ namespace CosmicShore.Gameplay
     /// a port, tap a lit card; tap the AP row to change the free prism's colour; right-click a prism, or on a phone hold it,
     /// to delete it; the Fly button left of the board swaps back to flying). Flying: the board is the small read-only
     /// view in <c>pilotRect</c>; a double tap on it swaps seats, and a chip above it shows what RT and LT do now.</para>
+    ///
+    /// <para><b>Portrait on a phone</b> (Garrett 2026-10-22: "assume the player is holding the phone in portrait mode"). The
+    /// screen stays locked to landscape (<see cref="DeviceOrientationHandler"/>), so the big board is drawn a quarter turn
+    /// round, in a frame as wide as the screen is tall, and reads upright with the phone held portrait: turning the phone is
+    /// part of taking the Ratel's seat. Its text, cards and Fly button are sized in millimetres for a thumb
+    /// (<c>portraitTextMillimetres</c>, <c>portraitCardMillimetres</c>). The small view while flying stays landscape.</para>
     /// </summary>
     sealed class HoneyguideDynamoView
     {
@@ -40,6 +46,7 @@ namespace CosmicShore.Gameplay
 
         readonly HoneyguideCrew _crew;
         readonly GameObject _root;
+        readonly RectTransform _content;   // the board's frame: the screen, or the screen turned a quarter for portrait
         readonly HoneyguideBoardGraphic _graphic;
         readonly TMP_Text _seat, _abilityName, _abilityText, _free, _revealTitle, _revealText, _detail, _chip, _fly;
         readonly TMP_Text[] _slotNames = new TMP_Text[3], _slotTaps = new TMP_Text[3];
@@ -49,6 +56,9 @@ namespace CosmicShore.Gameplay
         readonly Rect[] _slots = new Rect[3];
         float _size, _cx, _cy;
         bool _small;
+        // the view frame (y up, canvas pixels): its size, which way it is turned, the unit every length is in and the text size
+        float _viewW, _viewH, _ui = 1f, _text = 15f, _cardHead;
+        int _turn;   // 0 landscape; +1 a quarter counter-clockwise (the screen's LandscapeLeft); -1 clockwise (LandscapeRight)
 
         // the thumb
         int _dragFrom = -1;
@@ -72,8 +82,14 @@ namespace CosmicShore.Gameplay
             canvas.sortingOrder = 19000;   // above the gameplay HUD, below the Arkway banner (20000) and the load veil (30000)
             // No GraphicRaycaster: the board reads the pointer itself, so it never eats a tap meant for the HUD.
 
+            var cGo = new GameObject("Frame", typeof(RectTransform));
+            cGo.transform.SetParent(_root.transform, false);
+            _content = (RectTransform)cGo.transform;
+            _content.anchorMin = _content.anchorMax = Vector2.zero;
+            _content.pivot = Vector2.zero;
+
             var gGo = new GameObject("Board", typeof(RectTransform));
-            gGo.transform.SetParent(_root.transform, false);
+            gGo.transform.SetParent(_content, false);
             var gRt = (RectTransform)gGo.transform;
             Stretch(gRt);
             // The mesh is built in canvas pixels from the bottom-left corner (the layout's frame, and the labels'), so the
@@ -115,7 +131,7 @@ namespace CosmicShore.Gameplay
         TMP_Text MakeText(string name, Color colour, FontStyles style, TextAlignmentOptions align)
         {
             var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(_root.transform, false);
+            go.transform.SetParent(_content, false);
             var rt = (RectTransform)go.transform;
             rt.anchorMin = rt.anchorMax = Vector2.zero;
             rt.pivot = Vector2.zero;
@@ -159,13 +175,44 @@ namespace CosmicShore.Gameplay
         void Layout()
         {
             _small = !_crew.HumanEngineers;
-            var f = _small ? _crew.Config.PilotRect : _crew.Config.EngineerRect;
+            var cfg = _crew.Config;
             float w = Screen.width, h = Screen.height;
-            _rect = new Rect(f.x * w, f.y * h, f.width * w, f.height * h);
-            float ui = Mathf.Max(0.6f, h / 900f);
-            float pad = 6f * ui, top = (_small ? 30f : 46f) * ui;
-            float slotsH = _small ? Mathf.Max(34f * ui, _rect.height * 0.2f) : Mathf.Max(64f * ui, Mathf.Min(110f * ui, _rect.height * 0.17f));
-            float bw = _rect.width - 2f * pad, bh = _rect.height - top - slotsH - 2f * pad;
+            float mm = Screen.dpi > 0f ? Screen.dpi / 25.4f : 6f;
+            _turn = !_small && Portrait(cfg) ? (Screen.orientation == ScreenOrientation.LandscapeRight ? -1 : 1) : 0;
+            float pad, top, slotsH, freeH;
+            if (_turn != 0)
+            {
+                _viewW = h;
+                _viewH = w;
+                if (Screen.dpi <= 0f) mm = _viewW / 68f;   // no dpi reported: a phone held portrait is about 68 mm wide
+                var safe = ToView(Screen.safeArea);
+                var f = cfg.PortraitRect;
+                _rect = new Rect(safe.x + f.x * safe.width, safe.y + f.y * safe.height, f.width * safe.width, f.height * safe.height);
+                _text = cfg.PortraitTextMillimetres * mm;
+                _ui = _text / 15f;   // the landscape board's text is 15 units: every length below keeps its proportion to the text
+                pad = 6f * _ui;
+                top = 28f * _ui + 4.2f * _text;   // the seat row, then the ability's name and two lines of its words
+                slotsH = Mathf.Min(cfg.PortraitCardMillimetres * mm, _rect.height * 0.25f);
+                freeH = 1.6f * _text;
+                _cardHead = 2.1f * 0.8f * _text + 4f * _ui;   // two lines of the card's name
+            }
+            else
+            {
+                _viewW = w;
+                _viewH = h;
+                var f = _small ? cfg.PilotRect : cfg.EngineerRect;
+                _rect = new Rect(f.x * w, f.y * h, f.width * w, f.height * h);
+                _ui = Mathf.Max(0.6f, h / 900f);
+                _text = Mathf.Clamp(_rect.width / 30f, 10f * _ui, 15f * _ui);
+                pad = 6f * _ui;
+                top = (_small ? 30f : 46f) * _ui;
+                slotsH = _small ? Mathf.Max(34f * _ui, _rect.height * 0.2f) : Mathf.Max(64f * _ui, Mathf.Min(110f * _ui, _rect.height * 0.17f));
+                freeH = 0f;
+                _cardHead = _small ? 2f : 18f * _ui;
+            }
+            PlaceFrame();
+            float ui = _ui;
+            float bw = _rect.width - 2f * pad, bh = _rect.height - top - slotsH - freeH - 2f * pad;
             _size = Mathf.Max(6f, Mathf.Min(bw / (7f * Mathf.Sqrt(3f)), bh / 11f));
             _cx = _rect.center.x;
             _cy = _rect.yMax - top - pad - bh / 2f;
@@ -174,9 +221,40 @@ namespace CosmicShore.Gameplay
             _apRect = new Rect(_rect.x, _rect.yMax - 28f * ui, Mathf.Max(80f * ui, _rect.width * 0.45f), 28f * ui);
             _chipRect = _small ? new Rect(_rect.x, _rect.yMax + 6f * ui, _rect.width, 52f * ui) : default;
             // The Fly button: a thumb-sized square just left of the big board, at its top (no scaler on this canvas: pixels).
-            float mm = Screen.dpi > 0f ? Screen.dpi / 25.4f : 6f, bs = Mathf.Max(44f * ui, _crew.Config.FlyButtonMillimetres * mm);
-            _flyRect = _small ? default : new Rect(Mathf.Max(4f * ui, _rect.x - bs - 8f * ui), _rect.yMax - bs, bs, bs);
+            // Portrait: just above the board, at its left (the board is as wide as the phone).
+            float bs = Mathf.Max(_turn != 0 ? 9f * mm : 44f * ui, cfg.FlyButtonMillimetres * mm);
+            _flyRect = _small ? default
+                : _turn != 0 ? new Rect(_rect.x, Mathf.Min(_rect.yMax + 8f * ui, _viewH - bs), bs, bs)
+                : new Rect(Mathf.Max(4f * ui, _rect.x - bs - 8f * ui), _rect.yMax - bs, bs, bs);
         }
+
+        static bool Portrait(HoneyguideConfigSO cfg) => cfg.BoardOrientation switch
+        {
+            HoneyguideBoardOrientation.Portrait => true,
+            HoneyguideBoardOrientation.Landscape => false,
+            _ => KitInputDevice.IsTouchPrimary,
+        };
+
+        // The frame's transform: a quarter turn counter-clockwise maps the view's (x, y) to the screen's (W - y, x), so the
+        // view's top is the screen's left edge - the phone's top when a LandscapeLeft screen is held portrait.
+        void PlaceFrame()
+        {
+            _content.sizeDelta = new Vector2(_viewW, _viewH);
+            _content.anchoredPosition = _turn > 0 ? new Vector2(Screen.width, 0f) : _turn < 0 ? new Vector2(0f, Screen.height) : Vector2.zero;
+            _content.localRotation = Quaternion.Euler(0f, 0f, 90f * _turn);
+        }
+
+        /// <summary>A screen point (pixels, y up) in the view frame.</summary>
+        internal Vector2 ToView(Vector2 p) =>
+            _turn > 0 ? new Vector2(p.y, Screen.width - p.x) : _turn < 0 ? new Vector2(Screen.height - p.y, p.x) : p;
+
+        Rect ToView(Rect r)
+        {
+            Vector2 a = ToView(r.min), b = ToView(r.max);
+            return Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
+        }
+
+        internal bool Turned => _turn != 0;
 
         internal Vector2 CellPx(int i) =>
             new(_cx + _size * Mathf.Sqrt(3f) * (DynamoCore.Q[i] + DynamoCore.R[i] / 2f), _cy - _size * 1.5f * DynamoCore.R[i]);
@@ -200,18 +278,29 @@ namespace CosmicShore.Gameplay
             if (core == null) return;
             Layout();
             var cfg = _crew.Config;
-            float ui = Mathf.Max(0.6f, Screen.height / 900f), fs = Mathf.Clamp(_rect.width / 30f, 10f * ui, 15f * ui);
+            float ui = _ui, fs = _text;
+            bool turned = _turn != 0;
 
             Place(_seat, new Rect(_rect.x + 10f * ui, _rect.yMax - 28f * ui, 120f * ui, 26f * ui), fs, _small ? "" : cfg.RatelLabel);
             var ab = cfg.AbilityText(core.Ability);
-            float abY = _rect.yMax - 46f * ui;
-            Place(_abilityName, new Rect(_rect.x + 10f * ui, abY, _rect.width * 0.3f, 18f * ui), fs * 0.9f, _small || ab == null ? "" : ab.name);
-            Place(_abilityText, new Rect(_rect.x + 12f * ui + _rect.width * 0.3f, abY, _rect.width * 0.7f - 24f * ui, 18f * ui), fs * 0.8f,
-                  _small || ab == null ? "" : ab.text);
+            if (turned)   // portrait: the ability's name on its own line under the seat row, its words wrapped below it
+            {
+                float nameY = _rect.yMax - 28f * ui - 1.4f * fs, textH = 2.5f * 0.9f * fs;
+                Place(_abilityName, new Rect(_rect.x + 10f * ui, nameY, _rect.width - 20f * ui, 1.4f * fs), fs, ab == null ? "" : ab.name);
+                Place(_abilityText, new Rect(_rect.x + 10f * ui, nameY - textH, _rect.width - 20f * ui, textH), fs * 0.9f, ab == null ? "" : ab.text);
+            }
+            else
+            {
+                float abY = _rect.yMax - 46f * ui;
+                Place(_abilityName, new Rect(_rect.x + 10f * ui, abY, _rect.width * 0.3f, 18f * ui), fs * 0.9f, _small || ab == null ? "" : ab.name);
+                Place(_abilityText, new Rect(_rect.x + 12f * ui + _rect.width * 0.3f, abY, _rect.width * 0.7f - 24f * ui, 18f * ui), fs * 0.8f,
+                      _small || ab == null ? "" : ab.text);
+            }
 
             string free = !_small && core.FreePlace > 0 && core.RevealState == null
                 ? TemplateText.Fill(cfg.FreePrismTemplate, "count", core.FreePlace.ToString(), "colour", cfg.ColourName(core.Free[0])) : "";
-            Place(_free, new Rect(_rect.x + 8f * ui, _cy - _size * 5.6f, _rect.width - 16f * ui, 20f * ui), fs * 0.85f, free);
+            Place(_free, turned ? new Rect(_rect.x + 8f * ui, _cy - _size * 5.5f - 1.6f * fs, _rect.width - 16f * ui, 1.6f * fs)
+                                : new Rect(_rect.x + 8f * ui, _cy - _size * 5.6f, _rect.width - 16f * ui, 20f * ui), fs * 0.85f, free);
 
             var built = core.Built(_crew.Settings);
             for (int k = 0; k < 3; k++)
@@ -219,8 +308,15 @@ namespace CosmicShore.Gameplay
                 int pid = k < core.Slots.Length ? core.Slots[k] : -1;
                 var r = _slots[k];
                 string name = !_small && pid >= 0 && pid < cfg.Patterns.Count ? cfg.Patterns[pid].name : "";
-                Place(_slotNames[k], new Rect(r.x + 5f * ui, r.yMax - 18f * ui, r.width - 10f * ui, 16f * ui), Mathf.Clamp(r.width / 10f, 9f * ui, 12f * ui), name);
                 bool lit = built.Length > k && built[k] != null && core.RevealState == null;
+                if (turned)   // portrait: the card's name on up to two lines, sized to the board's text
+                {
+                    float cs = 0.8f * fs;
+                    Place(_slotNames[k], new Rect(r.x + 5f * ui, r.yMax - _cardHead, r.width - 10f * ui, _cardHead - 2f * ui), cs, name);
+                    Place(_slotTaps[k], new Rect(r.x + 5f * ui, r.y + 2f * ui, r.width * 0.6f, 1.3f * cs), cs, lit ? cfg.TapToMake : "");
+                    continue;
+                }
+                Place(_slotNames[k], new Rect(r.x + 5f * ui, r.yMax - 18f * ui, r.width - 10f * ui, 16f * ui), Mathf.Clamp(r.width / 10f, 9f * ui, 12f * ui), name);
                 Place(_slotTaps[k], new Rect(r.x + 5f * ui, r.y + 2f * ui, r.width * 0.5f, 16f * ui), Mathf.Clamp(r.width / 10f, 9f * ui, 12f * ui),
                       lit && !_small ? cfg.TapToMake : "");
             }
@@ -311,7 +407,7 @@ namespace CosmicShore.Gameplay
         void ReadSmallViewTaps()
         {
             if (!TryPointer(out var at, out bool pressed, out _, out _) || !pressed) return;
-            if (!_rect.Contains(at)) return;
+            if (!_rect.Contains(ToView(at))) return;
             if (Time.unscaledTime - _lastSmallTap < 0.35f) { _smallDoubleTap = true; _lastSmallTap = -99f; }
             else _lastSmallTap = Time.unscaledTime;
         }
@@ -330,7 +426,8 @@ namespace CosmicShore.Gameplay
         // Playing the Ratel: the lab's engDown / up. Layout is last frame's (the board does not move between frames).
         internal void ReadEngineerInput(DynamoCore core, DynamoSettings s)
         {
-            if (_small || !TryPointer(out var at, out bool pressed, out bool released, out bool held, out bool touch)) return;
+            if (_small || !TryPointer(out var screenAt, out bool pressed, out bool released, out bool held, out bool touch)) return;
+            var at = ToView(screenAt);   // every rect and cell below is in the view frame (turned a quarter in portrait)
             _pointerAt = at;
             if (_dragFrom >= 0) _dragAt = at;
             var mouse = Mouse.current;
@@ -423,7 +520,7 @@ namespace CosmicShore.Gameplay
             if (core == null || _rect.width < 4f) return;
             var cfg = _crew.Config;
             var s = _crew.Settings;
-            float now = Time.time, ui = Mathf.Max(0.6f, Screen.height / 900f);
+            float now = Time.time, ui = _ui;
 
             HoneyguideMesh.Quad(vh, _rect, Panel);
             HoneyguideMesh.Outline(vh, _rect, 1f, Edge);
@@ -513,7 +610,7 @@ namespace CosmicShore.Gameplay
                         HoneyguideMesh.Disc(vh, new Vector2(r.xMax - 7f * ui - (uses - 1 - u) * 8f * ui, r.y + 7f * ui), 2.6f * ui, u < core.Uses[k] ? ApFull : UsePip);
                 var cells = HoneyguideConfigSO.ParseShape(pat.shape);
                 if (cells.Length == 0) continue;
-                float head = _small ? 2f : 18f * ui, sz = Mathf.Min(r.width / 12f, (r.height - head - 6f) / 6.5f);
+                float head = _cardHead, sz = Mathf.Min(r.width / 12f, (r.height - head - 6f) / 6.5f);
                 float ox = r.center.x, oy = r.y + (r.height - head) / 2f, mq = 0f, mr = 0f;
                 foreach (var c in cells) { mq += c[0] + c[1] / 2f; mr += c[1]; }
                 mq /= cells.Length; mr /= cells.Length;
