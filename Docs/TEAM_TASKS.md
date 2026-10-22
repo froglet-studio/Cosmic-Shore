@@ -2063,3 +2063,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (UI, style guide)
 - **Added:** 2026-10-22 by a Claude session (`cece/dazzling-volta-apzw2m`)
 - **See:** Assets/_Scripts/UI/Elements/PipViewFrame.cs
+
+### T-20261022-b932 · open · test · Crew vessels
+- **Task:** On a phone (Android and iOS) on Very Low: fly the Wrasse and Grouper and the Honeyguide and Ratel from the Toybox Vessel Changer. Check: you start on the Wrasse / Ratel; no picture-in-picture anywhere; the Wrasse turns the screen to portrait and the Grouper back to landscape; the Ratel's board sits on a plain backdrop; the Ratel button (flying) and Fly button (Ratel) swap; the app launches and every menu stays landscape. Then on Medium: the PiPs are back. Also the Goby, Orca turret and Jacks herd views on Very Low show no small view.
+- **Done when:** All checks pass on one Android and one iPhone, or failures filed as dev tasks
+- **Who can take it:** Yash (offered), Garrett
+- **Added:** 2026-10-22 by a Claude session (`cece/keen-edison-3c6pvz`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md Round 12; HONEYGUIDE.md Very Low; Docs/PLATFORM_UNIFICATION.md 3.10
+
+### T-20261022-b797 · open · decision · Crew vessels
+- **Task:** The Wrasse seat now turns a phone to portrait, so the project allows portrait (ProjectSettings allowedAutorotateToPortrait) and the game turns portrait auto-rotation off at boot. A phone held upright at launch may show the splash in portrait before the lock. Accept that, or move the Wrasse to a different portrait approach? Also: on Very Low the Wrasse has no phone gesture back to the Grouper (no small view to double-tap); add a button like the Ratel's?
+- **Done when:** Garrett decides; follow-up dev task filed if needed
+- **Who can take it:** Garrett (product), Shombith (UI / orientation)
+- **Added:** 2026-10-22 by a Claude session (`cece/keen-edison-3c6pvz`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/CrewViews.cs SeatOrientation

@@ -48,6 +48,8 @@ namespace CosmicShore.Gameplay
         System.Func<double> _aiDice;
         float _think;
         bool _humanEngineers, _weTookHull, _aiCrew;
+        // the lowest preset seats the person on the Ratel at the start of this bind (CrewSingleView), still to be done
+        bool _startSeatPending;
         float _swapReadyAt;
         HoneyguideDynamoView _view;
         VesselPrismController _laidBy;
@@ -100,6 +102,7 @@ namespace CosmicShore.Gameplay
             _memo.Key = "";
             _think = 0f;
             _humanEngineers = _weTookHull = false;
+            _startSeatPending = !_aiCrew;
             ResetPilotSide();
             _execs = null;
             _laidBy = _status?.VesselPrismController;
@@ -139,7 +142,11 @@ namespace CosmicShore.Gameplay
             if (_vessel == null) { _aiCrew = aiCrew; Bind(vessel); }
             if (!UnityLiveness.Alive(_vessel.Transform)) return;
 
-            if (!_aiCrew) PollSwap();
+            if (!_aiCrew)
+            {
+                PollSwap();
+                ApplyStartSeat();
+            }
             float dt = Time.deltaTime;
             if (dt <= 0f) return;
 
@@ -160,7 +167,22 @@ namespace CosmicShore.Gameplay
             if (dir == 0 && _view != null && _view.SmallViewDoubleTapped()) dir = 1;
             if (dir == 0 || Time.unscaledTime < _swapReadyAt) return;
             _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
+            _startSeatPending = false;
             SetHumanEngineers(!_humanEngineers);
+        }
+
+        // On the lowest preset the person starts on the Ratel (Garrett, 2026-10-22: "start the player in the wrasse and the
+        // ratel ... so the ratel should run fine on very old phones"): its board is UI, and with no picture-in-picture the
+        // world under it is not drawn at all (CrewSingleView). Taken once the hull is really the person's - flown by them,
+        // not parked on its AI by a menu or the Vessel Changer, with live input - the Wrasse's rule (KiteNavigator.ApplySeatChoice).
+        void ApplyStartSeat()
+        {
+            if (!_startSeatPending) return;
+            if (_humanEngineers || !CrewSingleView.On) { _startSeatPending = false; return; }
+            var input = _player?.InputStatus;
+            if (_status == null || _status.AutoPilotEnabled || input == null || input.Paused || PauseSystem.Paused) return;
+            _startSeatPending = false;
+            SetHumanEngineers(true);
         }
 
         /// <inheritdoc cref="IHullParkAware.ReturnHumanToHull"/>

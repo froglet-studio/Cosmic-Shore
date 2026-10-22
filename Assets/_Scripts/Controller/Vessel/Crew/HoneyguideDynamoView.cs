@@ -16,7 +16,9 @@ namespace CosmicShore.Gameplay
     /// <para><b>Which is big.</b> Playing the Ratel: the board fills <c>engineerRect</c> and takes the pointer (drag a prism, tap
     /// a port, tap a lit card; tap the AP row to change the free prism's colour; right-click a prism, or on a phone hold it,
     /// to delete it; the Fly button left of the board swaps back to flying). Flying: the board is the small read-only
-    /// view in <c>pilotRect</c>; a double tap on it swaps seats, and a chip above it shows what RT and LT do now.</para>
+    /// view in <c>pilotRect</c>; a double tap on it swaps seats, and a chip above it shows what RT and LT do now. On the
+    /// lowest preset there is no small board, and the Ratel's board sits on a plain backdrop with the world not drawn
+    /// (<see cref="CrewSingleView"/>).</para>
     /// </summary>
     sealed class HoneyguideDynamoView
     {
@@ -37,6 +39,7 @@ namespace CosmicShore.Gameplay
         static readonly Color Muted = new(0.541f, 0.588f, 0.651f, 1f);
         static readonly Color Cream = new(1f, 0.953f, 0.812f, 1f);
         static readonly Color Label = new(0.851f, 0.788f, 0.639f, 1f);
+        static readonly Color Backdrop = new(0.043f, 0.051f, 0.071f, 1f);   // the board's panel, opaque
 
         readonly HoneyguideCrew _crew;
         readonly GameObject _root;
@@ -61,6 +64,8 @@ namespace CosmicShore.Gameplay
         float _pressAt = -1f;   // touch: when the finger went down on a prism, for the long-press delete
         int _pressCell = -1;
         bool _longFired;
+        // the pilot's camera asleep under the Ratel's board on the lowest preset (CrewSingleView)
+        readonly PilotCameraPark _park = new();
 
         internal HoneyguideDynamoView(HoneyguideCrew crew)
         {
@@ -102,6 +107,7 @@ namespace CosmicShore.Gameplay
 
         internal void Dispose()
         {
+            _park.Release();
             if (_root) Object.Destroy(_root);
         }
 
@@ -199,6 +205,13 @@ namespace CosmicShore.Gameplay
             var core = _crew.Core;
             if (core == null) return;
             Layout();
+            // One view (the lowest preset, CrewSingleView): no small board while the human flies, and while the human plays
+            // the Ratel the world behind the board is not drawn - the board on a plain backdrop is all the screen shows.
+            bool single = CrewSingleView.On;
+            if (single && !_small) _park.Park(CameraManager.ViewCamera, Backdrop);
+            else _park.Release();
+            _seatButtonOnly = single && _small;
+            if (_seatButtonOnly) { FrameSeatButton(); return; }
             var cfg = _crew.Config;
             float ui = Mathf.Max(0.6f, Screen.height / 900f), fs = Mathf.Clamp(_rect.width / 30f, 10f * ui, 15f * ui);
 
@@ -269,6 +282,35 @@ namespace CosmicShore.Gameplay
         }
 
         internal bool ChipShown { get; private set; }
+
+        // One view, flying (CrewSingleView): no small board, only a thumb-sized Ratel button at the top of the board's
+        // place, the phone's way to the Ratel (the Fly button's twin; a phone has no D-pad and no 1 / 2 keys). At the TOP,
+        // above where the left thumb flies, and only a SHORT tap counts, so a flying thumb that slides over it is no swap.
+        bool _seatButtonOnly;
+        float _seatPressAt = -99f;
+        const float SeatTapMaxSeconds = 0.3f;
+
+        void FrameSeatButton()
+        {
+            var cfg = _crew.Config;
+            float ui = Mathf.Max(0.6f, Screen.height / 900f), fs = Mathf.Clamp(_rect.width / 30f, 10f * ui, 15f * ui);
+            float mm = Screen.dpi > 0f ? Screen.dpi / 25.4f : 6f, bs = Mathf.Max(44f * ui, cfg.FlyButtonMillimetres * mm);
+            _flyRect = new Rect(_rect.x, _rect.yMax - bs, Mathf.Max(bs, Mathf.Min(_rect.width, bs * 1.6f)), bs);
+            Place(_seat, default, fs, ""); Place(_abilityName, default, fs, ""); Place(_abilityText, default, fs, "");
+            Place(_free, default, fs, ""); Place(_revealTitle, default, fs, ""); Place(_revealText, default, fs, "");
+            Place(_detail, default, fs, ""); Place(_chip, default, fs, "");
+            for (int k = 0; k < 3; k++) { Place(_slotNames[k], default, fs, ""); Place(_slotTaps[k], default, fs, ""); }
+            Place(_fly, _flyRect, fs * 1.1f, cfg.RatelLabel);
+            ChipShown = ChipUpgraded = false;
+            _detailSlot = -1;
+            if (TryPointer(out var at, out bool pressed, out bool released, out _))
+            {
+                if (pressed) _seatPressAt = _flyRect.Contains(at) ? Time.unscaledTime : -99f;
+                if (released && _flyRect.Contains(at) && Time.unscaledTime - _seatPressAt <= SeatTapMaxSeconds) _flyTapped = true;
+                if (released) _seatPressAt = -99f;
+            }
+            _graphic.SetVerticesDirty();
+        }
 
         /// <summary>True while an upgrade holds either trigger (the chip lights up).</summary>
         internal bool ChipUpgraded { get; private set; }
@@ -421,6 +463,12 @@ namespace CosmicShore.Gameplay
         {
             var core = _crew.Core;
             if (core == null || _rect.width < 4f) return;
+            if (_seatButtonOnly)
+            {
+                HoneyguideMesh.Quad(vh, _flyRect, Panel);
+                HoneyguideMesh.Outline(vh, _flyRect, 2f, Ability);
+                return;
+            }
             var cfg = _crew.Config;
             var s = _crew.Settings;
             float now = Time.time, ui = Mathf.Max(0.6f, Screen.height / 900f);

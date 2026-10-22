@@ -563,7 +563,7 @@ number is a field there):
 | **Ultra / Very High / High** | nothing | nothing - render as before |
 | **Medium** | nothing | **baked sky** (the HyperSea sky's nebulae, dust and stars stop drifting and twinkling; one texture sample per pixel instead of ~20 noise octaves and two Voronoi searches); wormhole exact view at **0.75** of the camera's resolution |
 | **Low** | **AA Off**; render scale at most **80%** (Linear upscale) | everything Medium cuts, plus: **HDR off**; bloom built at **quarter** resolution with at most **3** pyramid levels; membrane at **642** capsules (level 3); **a quarter of the cytoplasm shards**; wormhole view at **0.5** |
-| **Very Low** | **AA Off**; render scale at most **70%** | the same as Low |
+| **Very Low** | **AA Off**; render scale at most **70%** | the same as Low, plus **one view at a time** (`singleView`, 2026-10-22): no crew vessel draws a picture-in-picture, the pilot camera hidden under a full-screen seat view draws nothing, and the person starts on the Wrasse or the Ratel (below) |
 
 **How it is wired.**
 - `GraphicsCuts` (`_Scripts/System/Platform/`) is the one reader: it merges the device tier's cuts
@@ -590,6 +590,19 @@ number is a field there):
   dropdowns after a pick.
 - Live on a change: sky, HDR, bloom, AA, render scale. Read when an object wakes: membrane, cytoplasm,
   and the wormhole view's cap (read per frame). The panel already shows "some changes apply after a restart".
+
+- **One view at a time on Very Low** (Garrett, 2026-10-22: "if the lowest graphics setting are selected
+  don't display pips. start the player in the wrasse and the ratel. in this setting very little of the
+  game should even need to be processed, so the ratel should run fine on very old phones"). The row's
+  `singleView` flag, read through `GraphicsCuts.SingleView` / `CrewSingleView.On` every frame, so it
+  follows a change at once. Every crew view honours it (`KiteNavigatorView`, `HoneyguideDynamoView`,
+  `CrewPictureInPicture` for the Goby, `OrcaCrewView`, `JacksView`): the camera of a seat nobody sits
+  in is off rather than a small square, and the pilot camera under a full-screen seat view is parked by
+  `PilotCameraPark` (no layers, a solid clear, no post-processing or shadows; still enabled, so
+  `Camera.main` holds). The Wrasse and the Ratel are where the person starts: the Wrasse is one top-down
+  camera, the Ratel is a UI board with the world not drawn at all behind it. Swaps still work from the
+  keys, the D-pad and the Ratel's Fly button; with no small view there is no double tap. The Orca
+  sniper's scope is gameplay, not a picture-in-picture, and stays.
 
 **Known limits.**
 - Picking a preset ABOVE Low does not put AA or render scale back. The player sets them, or presses

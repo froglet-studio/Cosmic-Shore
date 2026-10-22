@@ -378,6 +378,26 @@ bowed into a curve."
   (`PipViewFrame`). These rules now hold for every orthographic view and every PiP view in the game
   (`Docs/claude/SHADERS_AND_PERFORMANCE.md` § Orthographic views and picture-in-picture frames).
 
+## Round 12: portrait on a phone; one view on Very Low (Garrett, 2026-10-22)
+
+"assume that the wrasse is played in portrait mode on mobile. if there the lowest graphics setting are selected don't
+display pips. start the player in the wrasse and the ratel. in this setting very little of the game should even need to
+be processed, so the ratel should run fine on very old phones."
+- **Portrait.** On a phone (Android, iOS) the Wrasse's seat turns the screen upright while a human holds it and the
+  Grouper's turns it back to landscape-left (`SeatOrientation`, called from `SetHumanNavigates`, so a swap, the app
+  shell's park and an unbind all put landscape back). The project now allows portrait (`allowedAutorotateToPortrait`) so
+  iOS accepts the request; `SeatOrientation.NoPortraitAtBoot` turns portrait auto-rotation off before the first scene,
+  so every other screen stays landscape. The kite view spans viewScale board radii across the screen's SHORT side
+  (`KiteNavigator.ViewHalfHeight`): upright, the board is as wide as it was and the taller screen sees further ahead and
+  behind. The kite's bounds, the hand rect and the camera all read it. A desktop window and a browser page keep their
+  shape.
+- **One view on Very Low** (`CrewSingleView`, the preset row's `singleView`, `Docs/PLATFORM_UNIFICATION.md` §3.10): no
+  picture-in-picture. Flying the Grouper, the kite camera is off. Flying the Wrasse, the Grouper's camera is not lifted
+  into its box; it is parked under the kite view (`PilotCameraPark`: no layers, a plain clear, no post-processing or
+  shadows), so the kite camera is the only one that draws the world. The person starts on the Wrasse at every bind,
+  whatever seat they last picked. Keys and the D-pad still swap; with no small view there is no double tap, so on a
+  phone at Very Low the Wrasse is the seat.
+
 ## Seats: the swap is the arena's
 
 The swap uses the arena's pilot-swap gesture (`PilotSwapGesture`: D-pad left / right, keys 1 / 2), with
