@@ -292,7 +292,7 @@ namespace CosmicShore.Gameplay
             var s = _cfg.ToSettings();
             if (!_cfg.WholeScreen) return s;
             float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
-            float h = s.BoardRadius * _cfg.ViewScale;
+            float h = ViewHalfHeight(s.BoardRadius);
             s.HalfDepth = Mathf.Max(1f, h - _cfg.KiteRadius);
             s.HalfWidth = Mathf.Max(1f, h * aspect - _cfg.KiteRadius);
             s.BoundsCentreZ = 0f;
@@ -321,12 +321,24 @@ namespace CosmicShore.Gameplay
         {
             xMax = zLo = zHi = 0f;
             if (_view == null || !_humanNavigates) return false;
-            float h = _s.BoardRadius * _cfg.ViewScale, m = _cfg.HandEdgeMargin;
+            float h = ViewHalfHeight(_s.BoardRadius), m = _cfg.HandEdgeMargin;
             float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
             xMax = Mathf.Max(0f, h * aspect - m);
             zHi = ViewCentreZ + h - m;
             zLo = Mathf.Min(zHi, ViewCentreZ + (2f * _view.HandLine01 - 1f) * h);
             return true;
+        }
+
+        /// <summary>
+        /// The kite view's half-height (u): viewScale board radii across the screen's SHORT side. Landscape, that is its
+        /// height, as it always was; held upright (the Wrasse's seat on a phone is portrait, <see cref="SeatOrientation"/>),
+        /// it is the width, so the board is as wide as it was and the taller screen sees further ahead and behind.
+        /// </summary>
+        internal float ViewHalfHeight(float boardRadius)
+        {
+            float h = boardRadius * _cfg.ViewScale;
+            float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
+            return aspect < 1f ? h / Mathf.Max(0.1f, aspect) : h;
         }
 
         /// <summary>Where the kite view is centred on the board (u along the board's forward): the hull.</summary>
@@ -423,9 +435,10 @@ namespace CosmicShore.Gameplay
             if (_status != null) CrewSeatChoice.Set(_status.VesselType, want);
         }
 
-        // The seat last picked on this hull class is taken once the hull is really the person's: flown by them (not parked
-        // on its AI by a menu or the Vessel Changer's hand-over, which ShouldRun already waits out) with live input (not a
-        // countdown, a modal or the pause menu), so taking the seat never fights whatever holds the hull at a bind.
+        // The seat last picked on this hull class (on the lowest preset, always the Wrasse) is taken once the hull is really
+        // the person's: flown by them (not parked on its AI by a menu or the Vessel Changer's hand-over, which ShouldRun
+        // already waits out) with live input (not a countdown, a modal or the pause menu), so taking the seat never fights
+        // whatever holds the hull at a bind.
         void ApplySeatChoice()
         {
             if (!_seatChoicePending) return;
@@ -433,7 +446,8 @@ namespace CosmicShore.Gameplay
             var input = _player?.InputStatus;
             if (_status == null || _status.AutoPilotEnabled || input == null || input.Paused || PauseSystem.Paused) return;
             _seatChoicePending = false;
-            if (CrewSeatChoice.Get(_status.VesselType) == 1) SetHumanNavigates(true);
+            // the lowest preset starts the person on the Wrasse, its one cheap view (CrewSingleView)
+            if (CrewSingleView.On || CrewSeatChoice.Get(_status.VesselType) == 1) SetHumanNavigates(true);
         }
 
         // A double tap on the small view swaps seats - the touch swap (Garrett, 2026-10-19: "when I double tap the pip
@@ -507,6 +521,7 @@ namespace CosmicShore.Gameplay
             if (_humanNavigates == navigate) return;
             _humanNavigates = navigate;
             _down = false;
+            SeatOrientation.Portrait(navigate);   // a phone holds the Wrasse upright and the Grouper on its side
             // a release made while the AI flies the hull never arrives (R_VesselActionHandler ignores input under autopilot)
             _boostHeld = false;
 

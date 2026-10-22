@@ -57,6 +57,7 @@ namespace CosmicShore.Gameplay
         internal void Dispose()
         {
             RestorePilot();
+            _park.Release();
             _frame.Dispose();
             _marks.Dispose();
             if (_root) Object.Destroy(_root);
@@ -68,7 +69,9 @@ namespace CosmicShore.Gameplay
             var pilot = CameraManager.ViewCamera;
             if (pilot != _pilot) { RestorePilot(); _pilot = pilot; if (_pilot) { _pilotRect = _pilot.rect; _pilotDepth = _pilot.depth; } }
 
-            _cam.enabled = true;
+            // one view (the lowest preset, CrewSingleView): the jacks' camera draws only while the human herds
+            bool single = CrewSingleView.On;
+            _cam.enabled = herding || !single;
             if (_pilot) AdoptPilotLook(_pilot);
 
             float baseDepth = _pilot ? _pilotDepth : 0f;
@@ -78,8 +81,15 @@ namespace CosmicShore.Gameplay
             {
                 _cam.rect = new Rect(0f, 0f, 1f, 1f);
                 _cam.depth = baseDepth + 1f;
-                if (_pilot)
+                if (single)
                 {
+                    // nothing over the herd's view: the pilot's camera, hidden under it, draws nothing
+                    RestorePilot();
+                    _park.Park(_pilot, Color.black);
+                }
+                else if (_pilot)
+                {
+                    _park.Release();
                     _pilot.rect = pip;
                     _pilot.depth = baseDepth + 2f;
                     _pilotLifted = true;
@@ -88,6 +98,7 @@ namespace CosmicShore.Gameplay
             else
             {
                 RestorePilot();
+                _park.Release();
                 _cam.rect = pip;
                 _cam.depth = baseDepth + 1f;
             }
@@ -134,23 +145,25 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void AdoptPilotLook(Camera pilot)
         {
-            _cam.cullingMask = pilot.cullingMask;
-            _cam.clearFlags = pilot.clearFlags;
-            _cam.backgroundColor = pilot.backgroundColor;
+            _cam.cullingMask = _park.CullingMask(pilot);
+            _cam.clearFlags = _park.ClearFlags(pilot);
+            _cam.backgroundColor = _park.Background(pilot);
             _cam.allowHDR = pilot.allowHDR;
             _cam.allowMSAA = pilot.allowMSAA;
             if (!pilot.TryGetComponent(out UniversalAdditionalCameraData from)) return;
             _data ??= _cam.GetUniversalAdditionalCameraData();
             if (!_data) return;
-            _data.renderPostProcessing = from.renderPostProcessing;
+            _data.renderPostProcessing = _park.PostProcessing(pilot, from);
             _data.antialiasing = from.antialiasing;
             _data.antialiasingQuality = from.antialiasingQuality;
-            _data.renderShadows = from.renderShadows;
+            _data.renderShadows = _park.Shadows(pilot, from);
             _data.volumeLayerMask = from.volumeLayerMask;
             _data.volumeTrigger = from.volumeTrigger ? from.volumeTrigger : pilot.transform;
         }
 
         UniversalAdditionalCameraData _data;
+        // the pilot's camera asleep under the herd's view on the lowest preset (CrewSingleView)
+        readonly PilotCameraPark _park = new();
 
         void RestorePilot()
         {

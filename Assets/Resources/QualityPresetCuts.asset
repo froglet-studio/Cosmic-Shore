@@ -28,6 +28,7 @@ MonoBehaviour:
     membraneMaxSubdivisions: 3
     offscreenViewMaxRenderScale: 0.5
     cytoplasmDensity: 0.25
+    singleView: 1
   - preset: 1
     setsAntiAliasing: 1
     antiAliasing: 0
@@ -40,6 +41,7 @@ MonoBehaviour:
     membraneMaxSubdivisions: 3
     offscreenViewMaxRenderScale: 0.5
     cytoplasmDensity: 0.25
+    singleView: 0
   - preset: 2
     setsAntiAliasing: 0
     antiAliasing: 0
@@ -52,6 +54,7 @@ MonoBehaviour:
     membraneMaxSubdivisions: -1
     offscreenViewMaxRenderScale: 0.75
     cytoplasmDensity: 1
+    singleView: 0
   - preset: 3
     setsAntiAliasing: 0
     antiAliasing: 0
@@ -64,6 +67,7 @@ MonoBehaviour:
     membraneMaxSubdivisions: -1
     offscreenViewMaxRenderScale: 1
     cytoplasmDensity: 1
+    singleView: 0
   - preset: 4
     setsAntiAliasing: 0
     antiAliasing: 0
@@ -76,6 +80,7 @@ MonoBehaviour:
     membraneMaxSubdivisions: -1
     offscreenViewMaxRenderScale: 1
     cytoplasmDensity: 1
+    singleView: 0
   - preset: 5
     setsAntiAliasing: 0
     antiAliasing: 0
@@ -88,3 +93,4 @@ MonoBehaviour:
     membraneMaxSubdivisions: -1
     offscreenViewMaxRenderScale: 1
     cytoplasmDensity: 1
+    singleView: 0

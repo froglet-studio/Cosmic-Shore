@@ -50,6 +50,19 @@ Garrett and friends designed and played from 2019 to 2022. The design was made a
 5. **RT** pecks and **LT** flits. When the Ratel makes an upgrade card, the toast says which trigger it took, and the chip
    above the small board shows it with the seconds it has left.
 
+## Very Low: one view, the Ratel first (Garrett, 2026-10-22)
+
+"if the lowest graphics setting are selected don't display pips. start the player in the wrasse and the ratel. in this
+setting very little of the game should even need to be processed, so the ratel should run fine on very old phones."
+On the Very Low preset (`CrewSingleView`, `Docs/PLATFORM_UNIFICATION.md` §3.10):
+- the person starts on the Ratel at every bind, once the hull is theirs with live input (`HoneyguideCrew.ApplyStartSeat`,
+  the Wrasse's rule);
+- playing the Ratel, the world behind the board is not drawn: the game camera is parked (`PilotCameraPark`, a plain
+  backdrop in the board's panel colour, no post-processing or shadows), so the board's canvas is nearly all a frame
+  costs. The hull's AI still flies and the match still runs;
+- flying the Honeyguide, there is no small board (and no trigger chip with it): a thumb-sized **Ratel** button sits in its
+  corner instead, the Fly button's twin, so a phone can always get back to the Ratel. The D-pad and 1 / 2 still swap.
+
 ## Where things are
 
 | Part | File |

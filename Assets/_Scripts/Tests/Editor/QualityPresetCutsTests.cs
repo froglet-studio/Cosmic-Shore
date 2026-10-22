@@ -64,6 +64,14 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void OnlyVeryLow_DrawsOneViewAtATime()
+        {
+            // Garrett, 2026-10-22: "if the lowest graphics setting are selected don't display pips" (CrewSingleView)
+            for (var p = QualityPresetSetting.VeryLow; p <= QualityPresetSetting.Ultra; p++)
+                Assert.AreEqual(p == QualityPresetSetting.VeryLow, Row(p).SingleView, $"{p} single view");
+        }
+
+        [Test]
         public void EachLowerPreset_CutsAtLeastAsMuchAsTheOneAbove()
         {
             for (var p = QualityPresetSetting.VeryLow; p < QualityPresetSetting.Ultra; p++)

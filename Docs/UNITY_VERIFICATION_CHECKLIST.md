@@ -14002,3 +14002,12 @@ Team tasks: T-20261022-a4ab, T-20261022-70b1 (tests), T-20261022-a9fa (Shombith 
    band out to a square edge. It sits exactly on the view, under the HUD, and double-tap swaps still work through it.
 4. Resize the Game view (16:9, 4:3, a phone): the frame follows. Leave the crew vessel: no frame is left behind.
 5. Console stays clean (no `UpdateVolumeStack must not be called before ...` error, no missing-layer error).
+
+## Crew vessels on Very Low: one view, Wrasse portrait (2026-10-22, `cece/keen-edison-3c6pvz`)
+
+Not opened in Unity (no editor in the session); `unity_refcompile` player clean. Check by hand (board task `T-20261022-b932`):
+- [ ] EditMode: `QualityPresetCutsTests`, `PilotCameraParkTests` pass.
+- [ ] Settings > Very Low, Toybox Vessel Changer > Wrasse and Grouper: you start on the Wrasse; no small Grouper view; pressing 1 shows the Grouper full screen with no kite square. Medium brings both PiPs back.
+- [ ] Very Low, Honeyguide and Ratel: you start on the Ratel on a plain backdrop; Fly goes to the Honeyguide with only a "Ratel" button top-left; a short tap on it goes back.
+- [ ] Very Low: the Goby's Pistol view, the Orca's turrets and the Jacks' herd view show no small view.
+- [ ] Device Simulator or a phone: the Wrasse seat turns the screen to portrait and the board fits its width; the Grouper turns it back; the menus never go portrait.

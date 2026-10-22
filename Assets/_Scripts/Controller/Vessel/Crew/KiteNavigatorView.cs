@@ -83,6 +83,8 @@ namespace CosmicShore.Gameplay
         Rect _pilotRect;
         float _pilotDepth;
         bool _pilotLifted;
+        // the pilot's camera asleep under the kite view on the lowest preset (CrewSingleView)
+        readonly PilotCameraPark _park = new();
 
         sealed class Batch
         {
@@ -217,6 +219,7 @@ namespace CosmicShore.Gameplay
             RenderPipelineManager.endCameraRendering -= EndRender;
             EndRender(default, _cam);
             RestorePilot();
+            _park.Release();
             _frame.Dispose();
             _marks.Dispose();
             if (_root) Object.Destroy(_root);
@@ -239,21 +242,23 @@ namespace CosmicShore.Gameplay
             var pilot = CameraManager.ViewCamera;
             if (pilot != _pilot) { RestorePilot(); _pilot = pilot; if (_pilot) { _pilotRect = _pilot.rect; _pilotDepth = _pilot.depth; } }
 
-            _cam.enabled = true;
+            // one view (the lowest preset, CrewSingleView): the kite camera draws only while the human flies the kite
+            bool single = CrewSingleView.On;
+            _cam.enabled = humanNavigates || !single;
             if (_pilot)
             {
-                _cam.cullingMask = _pilot.cullingMask;
-                _cam.clearFlags = _pilot.clearFlags;
-                _cam.backgroundColor = _pilot.backgroundColor;
+                _cam.cullingMask = _park.CullingMask(_pilot);
+                _cam.clearFlags = _park.ClearFlags(_pilot);
+                _cam.backgroundColor = _park.Background(_pilot);
             }
 
             // straight down the board's up axis, centred on the HULL (Garrett, 2026-10-20: "center the grouper in the wrasses
-            // camera"), viewScale board radii high (1.04 framed the disc; 1.352 is 30% further out), seeing viewDepth either
-            // side of the plane
+            // camera"), viewScale board radii across the screen's short side (1.04 framed the disc; 1.352 is 30% further
+            // out), seeing viewDepth either side of the plane
             Vector3 up = _nav.BoardUp, fwd = _nav.BoardForward;
             _cam.transform.SetPositionAndRotation(_nav.BoardToWorld(0f, KiteNavigator.ViewCentreZ) + up * cfg.ViewDepth,
                                                   Quaternion.LookRotation(-up, fwd));
-            _cam.orthographicSize = s.BoardRadius * cfg.ViewScale;
+            _cam.orthographicSize = _nav.ViewHalfHeight(s.BoardRadius);
             _cam.farClipPlane = 2f * cfg.ViewDepth + 1f;
 
             float baseDepth = _pilot ? _pilotDepth : 0f;
@@ -263,8 +268,15 @@ namespace CosmicShore.Gameplay
             {
                 _cam.rect = new Rect(0f, 0f, 1f, 1f);
                 _cam.depth = baseDepth + 1f;
-                if (_pilot)
+                if (single)
                 {
+                    // nothing over the kite view: the pilot's camera, hidden under it, draws nothing
+                    RestorePilot();
+                    _park.Park(_pilot, Color.black);
+                }
+                else if (_pilot)
+                {
+                    _park.Release();
                     // below the hand line, left of the ability cards (Garrett, 2026-10-20: "to the left of the totem fill the
                     // space below that line with the grouper's view and don't let that view go above that line"); the old
                     // small square when there are no cards to fit beside
@@ -279,6 +291,7 @@ namespace CosmicShore.Gameplay
             else
             {
                 RestorePilot();
+                _park.Release();
                 _cam.rect = new Rect(m / aspect, m, h / aspect, h);       // a square in the lower left
                 _cam.depth = baseDepth + 1f;
             }
