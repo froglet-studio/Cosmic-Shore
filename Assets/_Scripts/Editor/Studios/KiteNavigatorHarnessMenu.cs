@@ -7,7 +7,7 @@ namespace CosmicShore.Editor.Studios
 {
     /// <summary>
     /// Seat the Kite &amp; Tail navigator on the local hull in Play mode (Crew Vessel Lab round 3). Start any match, then
-    /// run the menu: you keep the hull and an AI squad mate flies the kite; D-pad left / right or 1 / 2 moves you to the
+    /// run the menu: you keep the hull and an AI squad mate flies the kite; D-pad left / right or the left / right arrow keys moves you to the
     /// kite and the AI takes the hull. Run "Remove" to hand the hull back. A reader tool: it writes no asset.
     /// </summary>
     static class KiteNavigatorHarnessMenu

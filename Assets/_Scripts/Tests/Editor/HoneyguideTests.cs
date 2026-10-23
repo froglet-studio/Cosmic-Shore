@@ -129,6 +129,47 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void RatelBoard_CopiedToAnotherMachine_IsTheSameBoard_AndPlaysOnAlike()
+        {
+            // A Ratel played on another machine (CrewStations, HoneyguideCrew's ICrewRelay): the hull's machine runs the
+            // Dynamo and sends DynamoCore.WriteState; the rider's copy reads it. The copy must be the same board (the
+            // digest) and carry the random stream too, or the next spin's draws differ between the two screens.
+            var s = Load().ToSettings();
+            var real = new DynamoCore(s, 777);
+            var memo = new DynamoCore.AIMemo();
+            var state = new System.Collections.Generic.List<int>();
+            for (int k = 0; k < 200; k++)
+            {
+                if (k % 3 == 0) real.Advance(s, 0.7);
+                else
+                {
+                    var inp = real.AIPlan(s, new DynamoAISkill { Top = 1, Blunder = 0 }, DynamoCore.Mulberry32(k), memo);
+                    if (inp != null && inp.Value.Kind == DynamoInputKind.Activate) memo.Key = "";
+                    if (inp != null) real.Apply(s, inp.Value);
+                }
+                real.Events.Clear();
+                if (k % 20 != 0) continue;
+
+                real.WriteState(state);
+                var copy = new DynamoCore(s, 4242);
+                Assert.IsTrue(copy.ReadState(state.ToArray()), $"step {k}: the copy refused the board");
+                Assert.AreEqual(real.Digest(), copy.Digest(), $"step {k}: the copy is not the same board");
+
+                var twin = new DynamoCore(s, 1);
+                twin.ReadState(state.ToArray());
+                for (int q = 0; q < 30; q++)
+                {
+                    copy.Advance(s, 0.9);
+                    twin.Advance(s, 0.9);
+                }
+                Assert.AreEqual(twin.Digest(), copy.Digest(), $"step {k}: two copies of one board spun apart");
+
+                var cut = state.GetRange(0, state.Count - 3).ToArray();
+                Assert.IsFalse(new DynamoCore(s, 3).ReadState(cut), $"step {k}: a cut-short board was read");
+            }
+        }
+
+        [Test]
         public void Ratel_NeverDrawsPrinter_WhileItIsRetired()
         {
             // Garrett 2026-10-22: "remove the engineer ability that gives players a free prism at the start of the spin, the
@@ -203,6 +244,55 @@ namespace CosmicShore.Tests
             Assert.IsNotNull(cls);
             Assert.AreEqual("Honeyguide", cls.Name, "Name stays the vessel's key");
             Assert.AreEqual("Honeyguide and Ratel", cls.CardName);
+        }
+
+        [Test]
+        public void MadePattern_HasJuiceAndALineAboveTheCards()
+        {
+            // Garrett 2026-10-23: juice when a pattern is made, the taken prism morphing into its charge, and the effect's
+            // words always above the cards - lime when they are about the Dynamo.
+            var c = Load();
+            Assert.Greater(c.MadeJuiceSeconds, 0f);
+            Assert.Greater(c.ChargeFlightSeconds, 0f);
+            StringAssert.Contains("{text}", c.MadeLineTemplate, "the line names what the pattern does");
+            var lime = c.DynamoLineColour;
+            Assert.IsTrue(lime.g > lime.r && lime.r > lime.b && lime.a > 0.99f, $"the Dynamo line is not lime: {lime}");
+        }
+
+        [Test]
+        public void TouchesDynamo_IsTheCardsThatWorkOnTheBoard()
+        {
+            foreach (var e in new[] { HoneyguideEffect.Translator, HoneyguideEffect.Printer5D, HoneyguideEffect.Hammer, HoneyguideEffect.Triplesynth,
+                                      HoneyguideEffect.Cilia, HoneyguideEffect.Chrono, HoneyguideEffect.Vorticity, HoneyguideEffect.Anode,
+                                      HoneyguideEffect.Saddle, HoneyguideEffect.Amanita, HoneyguideEffect.BigRed })
+                Assert.IsTrue(HoneyguideConfigSO.TouchesDynamo(e), $"{e} works on the Dynamo");
+            foreach (var e in new[] { HoneyguideEffect.Plow, HoneyguideEffect.Blink, HoneyguideEffect.Gravity, HoneyguideEffect.Lasso,
+                                      HoneyguideEffect.Detangler, HoneyguideEffect.Frame })
+                Assert.IsFalse(HoneyguideConfigSO.TouchesDynamo(e), $"{e} works on the hull, the slip or a trigger");
+        }
+
+        [Test]
+        public void HexToDisc_IsTheBoardsPrismAtZeroAndTheBatterysChargeAtOne()
+        {
+            static float[] Radii(float m)
+            {
+                var vh = new UnityEngine.UI.VertexHelper();
+                HoneyguideMesh.HexToDisc(vh, Vector2.zero, 10f, 4f, m, 0f, Color.white);
+                var r = new float[vh.currentVertCount - 1];
+                var v = new UIVertex();
+                for (int k = 1; k < vh.currentVertCount; k++) { vh.PopulateUIVertex(ref v, k); r[k - 1] = ((Vector2)v.position).magnitude; }
+                vh.Dispose();
+                return r;
+            }
+            var hex = Radii(0f);
+            Assert.AreEqual(24, hex.Length);
+            for (int k = 0; k < hex.Length; k++)
+            {
+                float a = k * 15f;   // a pointy-top hexagon: corners at 30 + 60n degrees, edge midpoints at 60n
+                if (Mathf.Approximately(Mathf.Repeat(a - 30f, 60f), 0f)) Assert.AreEqual(10f, hex[k], 1e-4f, $"corner at {a}");
+                if (Mathf.Approximately(Mathf.Repeat(a, 60f), 0f)) Assert.AreEqual(10f * Mathf.Cos(Mathf.PI / 6f), hex[k], 1e-4f, $"edge at {a}");
+            }
+            foreach (float r in Radii(1f)) Assert.AreEqual(4f, r, 1e-4f, "fully morphed, it is the battery's round charge");
         }
     }
 }

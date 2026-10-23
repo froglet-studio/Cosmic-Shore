@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Seats, then hulls: any person changes seat and vessel in freestyle (`cece/relaxed-tesla-axhxzy`, 2026-10-23) — NOT EDITOR-VERIFIED
+
+**What landed:** one swap ring for every person (`CrewStations`, `Docs/CREW_STATIONS.md`): D-pad left / right, the
+left / right arrow keys and a new two-finger swipe step through the seats of your hull, then every free hull of your domain in freestyle
+and a running arena match. Taking an AI's hull, or one another person left to ride, is the arena's `PilotSwap`
+exchange. A second person rides any crew seat: an Orca gunner, the Wrasse and the Pistol run on the rider's machine (the
+Wrasse's boosts and steals, the Goby's perches and lock relayed), the Ratel is relayed to the hull's machine. An AI Goby
+now flies the seat's own Goby and Pistol AIs instead of the platform autopilot. `Player.NetStation` + four RPC pairs; protocol version 12. The crews no longer read the gesture
+(`InputController` neither).
+
+**Verified without the editor:** `unity_refcompile` player 0 errors (a planted error in a new file is caught), editor 0
+in changed files; `gates.sh` ALL OK (logging, conditional compilation, crew vessels, every generator `--check`).
+`Tools/Build/dynamo_lab/parity.cjs` PASS (DynamoCore unchanged in play); a scratch harness round-tripped the Ratel's
+board 288 times over the 24 rule sets with identical digests and identical play after (a planted Rng bug failed all
+288). The new `HoneyguideTests.RatelBoard_CopiedToAnotherMachine_IsTheSameBoard_AndPlaysOnAlike` compiles, not run.
+`/verify-unity` did not run: no Unity CLI in the session.
+
+**Verify (MPPM, two players in freestyle; then a phone and a PC):** the eleven hand tests in `Docs/CREW_STATIONS.md` (test 9 now includes a Wrasse rider threading race rings: `RingProbeReplayTests` ran headless against a stand-in for Unity's vector maths, 6/6, and a planted uncapped replay failed 2).
+This supersedes the older entries below that pick crew seats with keys 1-4 (the Orca, the Wrasse, the Jacks): the
+keyboard now cycles with the left / right arrows only.
+Watch for: the ridden hull's HUD showing on the rider's screen in freestyle (it is a remote hull's HUD, shown by
+`ShowHUD`); the camera following the ridden hull; a refused move logging `[Player] Seat move refused`.
+
 ### 🔴 Steal roll: the OLD domain curls away, the new one is only underneath (`cece/hopeful-hopper-np5527`, 2026-10-23) — NOT EDITOR-VERIFIED
 
 **What landed:** Garrett: *"the stealing effect is supposed to curl the original domain and reveal the stolen domain
@@ -128,6 +151,25 @@ typo in `ReleaseBuildKind.cs` was reported, tagged as changed). `ReleaseBuildKin
 3. Leave the checkbox ticked and run **FrogletTools > Build > Windows x64 (Release)** with weekly TEST MODE on: the
    build must now FAIL with the weekly-challenge message. Switch TEST MODE off afterwards.
 
+### 🔴 Nose lag per device: the pad keeps the fleet lag, touch gets a dial (`cece/serene-galileo-t77xt3`, 2026-10-23) — NOT EDITOR-VERIFIED
+
+**What landed:** `VesselTransformer.NoseFollowFraction` follows a local human at their device's rate
+(`PilotNoseFollowPerSecond`, also `NoseFollowRate`): pad `Resources/GamepadFlightConfig.noseFollowPerSecond` 1.5 (the
+2024-11-19 to 2026-10-21 lag, Garrett-approved by feel on 2026-10-23), touch
+`Resources/TouchControlProfiles.noseFollowPerSecond` 9 (0.11 s; lag-free 10-21 to 10-23), keyboard and mouse none. The response
+curve and the stage smoother this branch tried first are gone.
+
+**Verified without the editor:** `unity_refcompile` player: 0 errors; editor: 0 in changed files (3 in
+`AuthenticationServiceFacade.cs` from the unfetchable Playmode package). `author_touch_profiles.py --check` OK.
+`NoseFollowDialTests` compile, not run.
+
+**Verify in editor:**
+1. Run `NoseFollowDialTests` (EditMode): all pass.
+2. Pad: flies as it did before 2026-10-21. Set the pad dial to 0 in Play: the nose snaps to the stick.
+3. Touch (Device Simulator or a phone): responsive, starts and stops rounded, no glide. Compare 0 and 5 on
+   `TouchControlProfiles` and judge.
+4. AI hulls: unchanged.
+
 ### 🔴 Menu_Main: no entry into freestyle behind the boot veil; the browser Toybox opens on the menu (`claude/menu-click-through-kg5qx7`, 2026-10-22) — NOT EDITOR-VERIFIED
 
 **What landed:** builds on the base's fix for a click launching freestyle during the Garland intro (the boot world
@@ -167,6 +209,33 @@ changed. The artist reproductions (Squirrel, Goby, Dolphin, Sparrow, Serpent, Ma
    Stoat not arched, Thresher tail centred.
 5. If any hull still leans, Unity is not taking the default pose from the first take: report it, the fallback is to
    capture rest from the SkinnedMeshRenderer's bind poses in code.
+
+### 🔴 Honeyguide and Ratel: juice when the Ratel makes a pattern; the effect line above the cards (`cece/inspiring-hawking-mnzmqc`, 2026-10-23) — NOT EDITOR-VERIFIED
+
+Garrett: "the ratel needs juice when it completes a pattern. the prism that is taken and placed in the battery should have
+an animation that morphs one to the other. there should always be text showing what the ability does in the space above
+the patterns where it already says what it does if it pertains to the dynamo, but those should be signaled with lime."
+`HoneyguideCrew.RecordMade` keeps the made pattern's cells, the taken prism and its battery slot; `HoneyguideDynamoView`
+draws the cell bursts, card pop, edge flash and the hex-to-disc flight (`HoneyguideMesh.HexToDisc`), and the line in the
+band above the cards (`madeLineTemplate`, lime `dynamoLineColour` when `TouchesDynamo`). `/verify-unity` was unavailable
+(no Editor, no `unity` binary). Green: the headless player reference compile (0 errors in project code; it caught a
+shadowed local first) and editor config (only the 3 bleeding-edge errors, 0 in changed files),
+`author_honeyguide_assets.py --check` (and its from-scratch config matches the shipped asset's new keys), the
+console-logging gate.
+
+1. Toybox Vessel Changer → Honeyguide and Ratel; swap to the Ratel. Make a pattern: its cells burst in the card's colour one
+   after another, the card flashes and its outline spreads, the board's edge flashes, and the taken prism flies on an arc
+   to the battery, turning from a hex into a round charge, landing with a swell and a ring. Its slot stays empty until it
+   lands.
+2. The band above the cards now reads the made card's name and effect, and stays until the next pattern. A Dynamo card
+   (5D Printer, Square-Peg Hammer, Triplesynth, Chrono-Compressor...) is lime; a hull card (Juggernaut Plow, Blink Drive...)
+   is cream. The free-prism line (Universal Translator, 5D Printer) is lime and takes the band until the prisms are placed.
+3. Make a fourth pattern (the reveal starts): the juice still plays over the dimmed board.
+4. Make Dragon Saddle (it drains the battery): the taken prism rises off its cell and fades instead of flying to a slot.
+5. Fly (the small board, left): the juice plays there too, smaller; the band is not drawn on the small board.
+6. On a phone in portrait: the band holds two lines of text without covering the board's bottom row or the cards.
+7. `HoneyguideTests` pass in the Test Runner, `MadePattern_HasJuiceAndALineAboveTheCards`,
+   `TouchesDynamo_IsTheCardsThatWorkOnTheBoard` and `HexToDisc_IsTheBoardsPrismAtZeroAndTheBatterysChargeAtOne` included.
 
 ### 🔴 Honeyguide and Ratel: the Ratel's board in portrait on a phone; Printer retired (`cece/nifty-dirac-2dmclm`, 2026-10-22) — NOT EDITOR-VERIFIED
 
@@ -534,7 +603,9 @@ On an Android development build (the real test - tilt, millimetre sizes and thum
    elsewhere on the right aims without firing; a hard turn no longer splays the guns.
 7. Dolphin: lift either thumb - drift, charge and Echo together; turn the phone like a wheel - the hull rolls exactly as
    far as the phone, one to one like an AR window (2026-10-22): hold the phone still at 45 degrees and the roll stops
-   at 45, it does not keep rolling; turn back and it rolls back; past 90 either side it holds at 90. The horizon must
+   at 45 (it eases the last few degrees in about 0.1 s through the touch nose lag, 2026-10-23, and the slight jitter
+   the unfiltered roll showed is gone), it does not keep rolling; turn back and it rolls back; past 90 either side it
+   holds at 90. The horizon must
    stay level in the room (if it turns TWICE as fast as the phone, or against it, the sign in
    `TiltMath.RollBetween` is wrong for this device). Put the thumb back: the roll stays where it was left.
 8. Manta: lift both thumbs - flat-out soar (720 u/s), steered by tilt; a thumb back ends it; nothing soars on the

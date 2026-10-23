@@ -867,7 +867,7 @@ applies to new abilities, new resources on the meter list, and anything that add
     A trigger-depth read needs a press fallback (`max(analog, held)`, the Thresher and Angler pattern) or a hold-time
     ramp (the Stoat's `Hold01`); an LT+RT ability needs a both-thumbs-off form (`idlePullsBothTriggers`, the Rhino) or a
     card; tilt (`tiltRollOnOneThumb`, `tiltSteersWhileIdle`) stands in for the axis a lifted thumb gave up (the roll one
-    is an ANGLE, one to one with the phone like an AR window, `IInputStatus.HoldsRollAngle`; the steer is a stick). The gate:
+    is an ANGLE, one to one with the phone like an AR window, `IInputStatus.HoldsRollAngle`, applied to the command so the touch nose lag filters sensor jitter; the steer is a stick). The gate:
     `author_touch_profiles.py --check` fails when a TotemButtons hull shows a card or button whose input resolves to
     no action on touch (it caught the Stoat, whose only bindings were the pad overrides, and the Angler, whose paint and
     erase read only trigger depth), and a ThumbLifts card whose lift glyph names a lift nothing is bound to. **A
@@ -885,10 +885,19 @@ applies to new abilities, new resources on the meter list, and anything that add
     `TouchButtonLayout` + `TouchControlsHud.LayoutSettings`, and have the aiming finger skip any touch that STARTED on a
     claimed region (`FlightTouchClaims.Claims(startPosition)`), or the thumb on the button also aims and also counts as
     half of a two-finger gesture (2026-10-21).
-    Two fleet rules ride with it (2026-10-21): **a human pilot's nose has no lag** - every transformer's RotateShip
-    goes through `VesselTransformer.NoseFollowFraction` (never write `LERP_AMOUNT * dt` into a new override; read
-    `NoseFollowRate` to predict a hull) - and **Invert Y is the setting's alone** (`ApplyInvertSettings` in every
+    Two fleet rules ride with it (2026-10-21): **a human pilot's nose follows at their DEVICE's rate** - every
+    transformer's RotateShip goes through `VesselTransformer.NoseFollowFraction` (never write `LERP_AMOUNT * dt` into a
+    new override; read `NoseFollowRate` to predict a hull), which since 2026-10-23 reads one dial per device
+    (`PilotNoseFollowPerSecond`: pad `GamepadFlightConfig` 1.5, touch `TouchControlProfiles` 9, keyboard and mouse
+    none; never per hull) - and **Invert Y is the setting's alone** (`ApplyInvertSettings` in every
     input strategy; a pitch never carries a sign of its own; `InputInversionTests`).
+    **The pad's smoothness IS its one-stage nose lag; neither a curve nor a smoothing chain replaces it** (Garrett,
+    2026-10-23, `cece/serene-galileo-t77xt3`). A response curve shapes how FAR a stick turns the hull, not how the
+    turn unfolds, so it gave back none of the smoothness. A chain of 4-6 fast first-order stages is smooth to many
+    derivatives with half the mean delay, and it read as "much worse input lag", because a multi-stage chain starts
+    almost STILL (0.7% of a step on the first frame) while one stage takes its biggest step on the first frame. The
+    feel a pilot wants is "responsive, but eases into its target": answer at once, round the end. Judge any future
+    filter by its FIRST-frame response, not its settling time.
     Three traps this cost (2026-10-21): **`BaseInputStrategy.ResetInput` clears `InputStatus.Idle`**, so a strategy that
     re-tests `Idle` after resetting re-raises `IdleAction` every frame - track the edge in the strategy (`idlePressed`);
     **the Input System starts every sensor disabled, and enabling one wakes every reader of it** (tilt enabling the

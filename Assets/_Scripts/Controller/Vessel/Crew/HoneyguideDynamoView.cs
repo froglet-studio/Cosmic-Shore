@@ -55,7 +55,7 @@ namespace CosmicShore.Gameplay
         readonly TMP_Text[] _slotNames = new TMP_Text[3], _slotTaps = new TMP_Text[3];
 
         // this frame's layout, in canvas pixels (y up)
-        Rect _rect, _apRect, _chipRect, _flyRect;
+        Rect _rect, _apRect, _chipRect, _flyRect, _lineRect;
         readonly Rect[] _slots = new Rect[3];
         float _size, _cx, _cy;
         bool _small;
@@ -199,7 +199,7 @@ namespace CosmicShore.Gameplay
                 pad = 6f * _ui;
                 top = 28f * _ui + 4.2f * _text;   // the seat row, then the ability's name and two lines of its words
                 slotsH = Mathf.Min(cfg.PortraitCardMillimetres * mm, _rect.height * 0.25f);
-                freeH = 1.6f * _text;
+                freeH = 2.4f * 0.85f * _text;   // the line above the cards, two lines of it
                 _cardHead = 2.1f * 0.8f * _text + 4f * _ui;   // two lines of the card's name
             }
             else
@@ -213,7 +213,7 @@ namespace CosmicShore.Gameplay
                 pad = 6f * _ui;
                 top = (_small ? 30f : 46f) * _ui;
                 slotsH = _small ? Mathf.Max(34f * _ui, _rect.height * 0.2f) : Mathf.Max(64f * _ui, Mathf.Min(110f * _ui, _rect.height * 0.17f));
-                freeH = 0f;
+                freeH = _small ? 0f : 2.3f * 0.8f * _text;   // the line above the cards, two lines of it
                 _cardHead = _small ? 2f : 18f * _ui;
             }
             PlaceFrame();
@@ -224,6 +224,8 @@ namespace CosmicShore.Gameplay
             _cy = _rect.yMax - top - pad - bh / 2f;
             float gap = 6f * ui, sw = (_rect.width - 2f * pad - gap * 2f) / 3f;
             for (int k = 0; k < 3; k++) _slots[k] = new Rect(_rect.x + pad + k * (sw + gap), _rect.y + pad / 2f, sw, slotsH);
+            // the band between the board and the cards: what the last pattern made does, or the free prism's line
+            _lineRect = new Rect(_rect.x + 8f * ui, _slots[0].yMax + pad * 0.25f, _rect.width - 16f * ui, freeH);
             _apRect = new Rect(_rect.x, _rect.yMax - 28f * ui, Mathf.Max(80f * ui, _rect.width * 0.45f), 28f * ui);
             _chipRect = _small ? new Rect(_rect.x, _rect.yMax + 6f * ui, _rect.width, 52f * ui) : default;
             // The Fly button: a thumb-sized square just left of the big board, at its top (no scaler on this canvas: pixels).
@@ -310,10 +312,17 @@ namespace CosmicShore.Gameplay
                       _small || ab == null ? "" : ab.text);
             }
 
-            string free = !_small && core.FreePlace > 0 && core.RevealState == null
-                ? TemplateText.Fill(cfg.FreePrismTemplate, "count", core.FreePlace.ToString(), "colour", cfg.ColourName(core.Free[0])) : "";
-            Place(_free, turned ? new Rect(_rect.x + 8f * ui, _cy - _size * 5.5f - 1.6f * fs, _rect.width - 16f * ui, 1.6f * fs)
-                                : new Rect(_rect.x + 8f * ui, _cy - _size * 5.6f, _rect.width - 16f * ui, 20f * ui), fs * 0.85f, free);
+            // Above the cards, always (Garrett 2026-10-23): what the last pattern made does, until the next one; the free
+            // prism's line instead while one rides the cursor. Lime when it is about the Dynamo itself; it flashes white as
+            // the pattern is made.
+            bool freeLine = core.FreePlace > 0 && core.RevealState == null;
+            string madeLine = _small ? ""
+                : freeLine ? TemplateText.Fill(cfg.FreePrismTemplate, "count", core.FreePlace.ToString(), "colour", cfg.ColourName(core.Free[0]))
+                : _crew.MadeLine;
+            var lineColour = freeLine || _crew.MadeLineDynamo ? cfg.DynamoLineColour : Cream;
+            float lineFlash = cfg.MadeJuiceSeconds > 0f ? 1f - Mathf.Clamp01((Time.time - _crew.LastMade.At) / cfg.MadeJuiceSeconds) : 0f;
+            _free.color = Color.Lerp(lineColour, Color.white, lineFlash * lineFlash);
+            Place(_free, _lineRect, fs * (turned ? 0.85f : 0.8f), madeLine);
 
             var built = core.Built(_crew.Settings);
             for (int k = 0; k < 3; k++)
@@ -380,7 +389,7 @@ namespace CosmicShore.Gameplay
         internal bool ChipShown { get; private set; }
 
         // One view, flying (CrewSingleView): no small board, only a thumb-sized Ratel button at the top of the board's
-        // place, the phone's way to the Ratel (the Fly button's twin; a phone has no D-pad and no 1 / 2 keys). At the TOP,
+        // place, the phone's way to the Ratel (the Fly button's twin; a phone has no D-pad and no arrow keys). At the TOP,
         // above where the left thumb flies, and only a SHORT tap counts, so a flying thumb that slides over it is no swap.
         bool _seatButtonOnly;
         float _seatPressAt = -99f;
@@ -455,7 +464,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>True once after a seat swap was asked for on the board: a double tap on the small view while flying, or the
-        /// Fly button beside the big board while playing the Ratel (a phone has no D-pad and no 1 / 2 keys).</summary>
+        /// Fly button beside the big board while playing the Ratel (a phone has no D-pad and no arrow keys).</summary>
         internal bool SmallViewDoubleTapped()
         {
             bool d = _smallDoubleTap || _flyTapped;
@@ -587,11 +596,19 @@ namespace CosmicShore.Gameplay
                 HoneyguideMesh.Disc(vh, new Vector2(apX + k * 13f * ui, pipY), 4.5f * ui,
                                     k < core.Ap + core.BonusAp ? (k >= core.Ap ? ApBonus : ApFull) : ApEmpty);
             int cap = core.BatteryCap(s);
-            float bx = _rect.xMax - 12f * ui - cap * 18f * ui;
+            var made = _crew.LastMade;
+            float flight = cfg.ChargeFlightSeconds, since = now - made.At;
+            bool landing = made.BatterySlot >= 0 && made.BatterySlot < core.Battery.Count && core.Battery[made.BatterySlot] == made.Colour;
             for (int k = 0; k < Mathf.Max(cap, core.Battery.Count); k++)
             {
-                var at = new Vector2(bx + k * 18f * ui + 8f * ui, pipY);
-                if (k < core.Battery.Count) HoneyguideMesh.Disc(vh, at, 6.5f * ui, cfg.ColourOf(core.Battery[k]));
+                var at = BatterySlotPx(k, cap);
+                bool mine = landing && k == made.BatterySlot;
+                if (k < core.Battery.Count && !(mine && since < flight))
+                {
+                    // the charge the flying prism became lands with a swell that settles
+                    float swell = mine ? 1f + 0.45f * (1f - Ease(Mathf.Clamp01((since - flight) / ChargePop))) : 1f;
+                    HoneyguideMesh.Disc(vh, at, 6.5f * ui * swell, cfg.ColourOf(core.Battery[k]));
+                }
                 else HoneyguideMesh.Ring(vh, at, 5f * ui, 6.5f * ui, 16, 0f, new Color(0.235f, 0.275f, 0.329f, 1f));
             }
 
@@ -674,6 +691,9 @@ namespace CosmicShore.Gameplay
                 HoneyguideMesh.Quad(vh, new Rect(_rect.center.x - _rect.width * 0.4f * prog, _cy - _size * 2.6f, _rect.width * 0.8f * prog, 2f * ui), Ability);
             }
 
+            // over the reveal's dimming: a fourth pattern made starts the reveal, and its juice still plays
+            MadeJuice(vh, core, cfg, now, cap);
+
             if (_detailSlot >= 0)
             {
                 var d = DetailRect(ui);
@@ -695,6 +715,99 @@ namespace CosmicShore.Gameplay
                 HoneyguideMesh.Quad(vh, _flyRect, Panel);
                 HoneyguideMesh.Outline(vh, _flyRect, 2f, Ability);
             }
+        }
+
+        const float ChargePop = 0.35f;   // seconds the landed charge swells and its ring spreads
+
+        Vector2 BatterySlotPx(int k, int cap) =>
+            new(_rect.xMax - 12f * _ui - cap * 18f * _ui + k * 18f * _ui + 8f * _ui, _rect.yMax - 15f * _ui);
+
+        // A made pattern (Garrett 2026-10-23: "the ratel needs juice when it completes a pattern. the prism that is taken and
+        // placed in the battery should have an animation that morphs one to the other"). Its cells burst one after another
+        // in the card's family colour, its card pops, the board's edge flashes, and the prism it took lifts off its cell and
+        // flies on an arc to its battery slot, turning from the board's hex prism into the battery's round charge, where it
+        // lands with a ring. Drawn on both boards, the big one and the small one while flying.
+        void MadeJuice(VertexHelper vh, DynamoCore core, HoneyguideConfigSO cfg, float now, int cap)
+        {
+            var made = _crew.LastMade;
+            float since = now - made.At, juice = cfg.MadeJuiceSeconds, flight = cfg.ChargeFlightSeconds, ui = _ui;
+            if (since < 0f || since >= Mathf.Max(juice, flight + ChargePop)) return;
+            var fam = made.Pid >= 0 && made.Pid < cfg.Patterns.Count ? cfg.ColourOf(cfg.Patterns[made.Pid].family) : Color.white;
+
+            if (juice > 0f && since < juice)
+            {
+                float t = since / juice, fade = 1f - t;
+                HoneyguideMesh.Outline(vh, _rect, (1f + 3f * fade) * ui, Alpha(fam, fade));
+
+                // the cells, one after another (the taken prism's first), each a white flash and a ring spreading out
+                float step = juice * 0.35f / Mathf.Max(1, made.Cells.Count);
+                for (int n = 0, order = 0; n < made.Cells.Count; n++)
+                {
+                    int c = made.Cells[n];
+                    float u = Mathf.Clamp01((since - step * (c == made.Cell ? 0 : ++order)) / (juice * 0.65f));
+                    if (u <= 0f || u >= 1f) continue;
+                    var p = CellPx(c);
+                    HoneyguideMesh.Hex(vh, p, _size * 0.95f, 0f, Alpha(Color.white, 0.55f * (1f - u)));
+                    HoneyguideMesh.HexRing(vh, p, _size * (0.95f + 0.75f * Ease(u)), Mathf.Max(1.5f, _size * 0.14f * (1f - u)), 0f, Alpha(fam, 1f - u));
+                }
+
+                // the card: a white flash, and its outline spreading out from it
+                if (made.Slot >= 0 && made.Slot < 3)
+                {
+                    var r = _slots[made.Slot];
+                    float grow = 10f * ui * Ease(t);
+                    HoneyguideMesh.Quad(vh, r, Alpha(Color.white, 0.4f * fade * fade));
+                    HoneyguideMesh.Outline(vh, new Rect(r.x - grow, r.y - grow, r.width + 2f * grow, r.height + 2f * grow), Mathf.Max(1f, 3f * ui * fade), Alpha(fam, fade));
+                }
+            }
+
+            if (made.Cell < 0 || made.Cell >= DynamoCore.CellCount) return;
+            var col = cfg.ColourOf(made.Colour);
+            float rHex = _size * 0.62f, rDisc = 6.5f * ui;
+            var from = CellPx(made.Cell);
+            bool landed = made.BatterySlot >= 0 && made.BatterySlot < core.Battery.Count && core.Battery[made.BatterySlot] == made.Colour;
+            if (flight > 0f && since < flight)
+            {
+                float f = since / flight;
+                if (!landed)   // no slot holds it (an effect already spent it): it rises off its cell and fades
+                {
+                    var up = from + new Vector2(0f, _size * 1.5f * Ease(f));
+                    HoneyguideMesh.HexToDisc(vh, up, rHex, rDisc, Ease(f), 0f, Alpha(col, 1f - f));
+                    return;
+                }
+                var to = BatterySlotPx(made.BatterySlot, cap);
+                // a short lift (it swells on its cell), then the flight; a few fading copies trail it
+                for (int g = 3; g >= 0; g--)
+                {
+                    float fg = f - 0.07f * g;
+                    if (fg < 0f) continue;
+                    float lift = Mathf.Clamp01(fg / 0.2f), e = Ease(Mathf.Clamp01((fg - 0.12f) / 0.88f));
+                    var at = FlightPoint(from, to, e);
+                    float swell = 1f + 0.25f * Mathf.Sin(Mathf.PI * lift) * (1f - e);
+                    var body = g == 0 ? col : Alpha(col, 0.35f / g);
+                    HoneyguideMesh.HexToDisc(vh, at, rHex * swell, rDisc, e, Mathf.PI / 3f * e, body);
+                    if (g == 0)   // the prism's highlight, gone by the time it is a charge
+                        HoneyguideMesh.HexToDisc(vh, at + new Vector2(-rHex * 0.2f, rHex * 0.2f) * (1f - e), rHex * 0.35f, rDisc * 0.3f, e,
+                                                 Mathf.PI / 3f * e, new Color(1f, 1f, 1f, 0.35f * (1f - e)));
+                }
+                return;
+            }
+            float pop = (since - flight) / ChargePop;
+            if (landed && pop >= 0f && pop < 1f)
+            {
+                var at = BatterySlotPx(made.BatterySlot, cap);
+                float rOut = rDisc * (1f + 1.6f * Ease(pop));
+                HoneyguideMesh.Ring(vh, at, Mathf.Max(0f, rOut - 2.5f * ui * (1f - pop)), rOut, 20, 0f, Alpha(col, 1f - pop));
+            }
+        }
+
+        // the charge's path: an arc bowed to the side, so it reads as thrown rather than slid
+        Vector2 FlightPoint(Vector2 from, Vector2 to, float e)
+        {
+            var d = to - from;
+            var side = new Vector2(-d.y, d.x) * 0.22f;
+            if (side.y < 0f) side = -side;   // bow upward on the screen
+            return Vector2.Lerp(from, to, e) + side * Mathf.Sin(Mathf.PI * e);
         }
 
         Vector2 Rotate(Vector2 p, float a)
@@ -790,5 +903,23 @@ namespace CosmicShore.Gameplay
             Ring(vh, at, Mathf.Max(0f, r - w), r, 6, HexRot + rot, c);
 
         internal static void Disc(VertexHelper vh, Vector2 at, float r, Color c) => Poly(vh, at, r, 14, 0f, c);
+
+        // A pointy-top hexagon of radius rHex turning into a disc of radius rDisc as m runs 0 to 1: every rim point's radius
+        // blends from the hexagon's edge at that angle to the circle (24 rim points, so the corners are exact at m = 0).
+        internal static void HexToDisc(VertexHelper vh, Vector2 at, float rHex, float rDisc, float m, float rot, Color c)
+        {
+            const int sides = 24;
+            int i = vh.currentVertCount;
+            vh.AddVert(V(at, c));
+            float apothem = rHex * Mathf.Cos(HexRot), sector = Mathf.PI / 3f;
+            for (int k = 0; k < sides; k++)
+            {
+                float a = Mathf.PI * 2f * k / sides;   // from an edge's midpoint (a pointy-top hexagon's are at 0, 60, ... degrees)
+                float d = Mathf.Repeat(a + sector / 2f, sector) - sector / 2f;
+                float r = Mathf.Lerp(apothem / Mathf.Cos(d), rDisc, m);
+                vh.AddVert(V(at + new Vector2(Mathf.Cos(a + rot), Mathf.Sin(a + rot)) * r, c));
+            }
+            for (int k = 0; k < sides; k++) vh.AddTriangle(i, i + 1 + k, i + 1 + (k + 1) % sides);
+        }
     }
 }

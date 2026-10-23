@@ -171,6 +171,12 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0)] int patternsPerShuffle = 4;
         [Tooltip("lab spinAnim: seconds the ports take to turn on screen.")]
         [SerializeField, Min(0f)] float spinAnim = 0.6f;
+        [Tooltip("Seconds a made pattern's juice plays on the board: its cells burst, its card pops, the board's edge flashes in " +
+                 "the card's family colour (Garrett 2026-10-23: \"the ratel needs juice when it completes a pattern\").")]
+        [SerializeField, Min(0f)] float madeJuiceSeconds = 0.7f;
+        [Tooltip("Seconds the prism a made pattern takes flies from its cell to its battery slot, morphing from the board's hex " +
+                 "prism into the battery's round charge.")]
+        [SerializeField, Min(0f)] float chargeFlightSeconds = 0.55f;
         [Tooltip("lab opts.portsCount: an empty port counts as a prism of its colour for completing a pattern.")]
         [SerializeField] bool portsCount = true;
         [Tooltip("lab opts.rotatable: patterns match in any of the six rotations.")]
@@ -360,7 +366,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Touch: holding a prism this long (s) without leaving its cell deletes it, for 1 AP (a phone's right-click).")]
         [SerializeField, Min(0.1f)] float longPressSeconds = 0.45f;
         [Tooltip("The Fly button's edge, in millimetres on the screen. It sits just left of the Ratel's board, at its top, and " +
-                 "swaps back to flying (a phone has no D-pad and no 1 / 2 keys).")]
+                 "swaps back to flying (a phone has no D-pad and no arrow keys).")]
         [SerializeField, Min(5f)] float flyButtonMillimetres = 10f;
         [Tooltip("The colours of Ruby, Jade and Gold prisms and ports (the game's palette, studio-domains.js).")]
         [SerializeField] Color[] colours = { new(1f, 0f, 0.976f, 1f), new(0.075f, 1f, 0.949f, 1f), new(1f, 0.655f, 0f, 1f) };
@@ -376,6 +382,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] string tapToMake = "TAP";
         [Tooltip("The free-prism line. Tokens: {count}, {colour} (the domain of the prism on the cursor, placed first).")]
         [SerializeField] string freePrismTemplate = "{count} free ({colour} on your cursor): tap an empty cell";
+        [Tooltip("The line above the cards naming what the last pattern made does; it stays until the next one. Lime when the " +
+                 "effect works on the Dynamo itself (dynamoLineColour). Tokens: {name}, {level} (empty for a one-off), {text} (the " +
+                 "card's effect). Empty = no line.")]
+        [SerializeField] string madeLineTemplate = "{name}: {text}";
+        [Tooltip("The colour of that line (and of the free-prism line) when what it says is about the Dynamo: lime.")]
+        [SerializeField] Color dynamoLineColour = new(0.66f, 1f, 0.18f, 1f);
         [Tooltip("The reveal card's heading for a new ability. Tokens: {name}.")]
         [SerializeField] string revealAbilityTemplate = "New ability: {name}";
         [Tooltip("The reveal's second step.")]
@@ -422,6 +434,8 @@ namespace CosmicShore.Gameplay
 
         public float TickSeconds => tickSeconds;
         public float SpinAnim => spinAnim;
+        public float MadeJuiceSeconds => madeJuiceSeconds;
+        public float ChargeFlightSeconds => chargeFlightSeconds;
         public int MinSlipTrailLength => minSlipTrailLength;
         public float SlipReach => slipReach;
         public float ExitOffset => exitOffset;
@@ -507,6 +521,8 @@ namespace CosmicShore.Gameplay
         public string RevealAbilityTemplate => revealAbilityTemplate;
         public string RevealPortsLine => revealPortsLine;
         public string MadeToastTemplate => madeToastTemplate;
+        public string MadeLineTemplate => madeLineTemplate;
+        public Color DynamoLineColour => dynamoLineColour;
         public string AbilityToastTemplate => abilityToastTemplate;
         public string CardDetailTemplate => cardDetailTemplate;
         public float ZipSpeed => zipSpeed;
@@ -554,6 +570,17 @@ namespace CosmicShore.Gameplay
 
         /// <summary>A domain's Dynamo colour, or 0 (no prism of the Dynamo is that domain).</summary>
         public static int ColourOf(Domains domain) => domain switch { Domains.Ruby => 1, Domains.Jade => 2, Domains.Gold => 3, _ => 0 };
+
+        /// <summary>True when an effect works on the Dynamo itself - its prisms, ports, AP, spin clock or battery - so the line
+        /// naming it above the cards is lime (the Ratel-seat cards, and the hull cards that burn, purge or drain the board).</summary>
+        public static bool TouchesDynamo(HoneyguideEffect effect) => effect switch
+        {
+            HoneyguideEffect.Amanita or HoneyguideEffect.BigRed or HoneyguideEffect.Saddle or HoneyguideEffect.ZeroPoint
+                or HoneyguideEffect.Triplesynth or HoneyguideEffect.Translator or HoneyguideEffect.Anode
+                or HoneyguideEffect.Printer5D or HoneyguideEffect.Hammer or HoneyguideEffect.Cilia or HoneyguideEffect.Chrono
+                or HoneyguideEffect.Meta or HoneyguideEffect.Eti or HoneyguideEffect.Vorticity => true,
+            _ => false,
+        };
 
         public HoneyguideAbilityText AbilityText(DynamoAbility ability)
         {

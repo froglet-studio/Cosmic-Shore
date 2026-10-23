@@ -208,7 +208,9 @@ namespace CosmicShore.Gameplay
         void UpdateKite(float dt)
         {
             bool seated = false;
-            if (IsAuthority)
+            // the hull's machine places the Wrasse where its seat says (and publishes it); so does a rider's, whose kite it
+            // is (a person flying this hull's kite from another machine), so the body never lags their own kite
+            if (IsAuthority || (_nav && _nav.RidesHere))
             {
                 Vector3 pos = default;
                 Quaternion rot = Quaternion.identity;
