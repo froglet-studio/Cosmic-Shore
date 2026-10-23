@@ -13,8 +13,6 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] private ScriptableEventPrismStats onPrismStolen;
 
-        private static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
-
         private Prism prism;
         private MaterialPropertyAnimator materialAnimator;
         private Domains currentDomain = Domains.Blue;
@@ -138,18 +136,18 @@ namespace CosmicShore.Gameplay
             materialAnimator.UpdateMaterial(trans, opaque, gradeSeconds);
         }
 
-        // A shed needs a solid, standing prism on screen, the colours it shows now, and the colour it is about
-        // to wear; any gap and the steal grades as usual.
+        // A shed needs a solid, standing prism on screen, the colours it shows now (the skin wears them on both
+        // sides), and the materials it is about to wear; any gap and the steal grades as usual.
         bool TryShed(Domains newDomain)
         {
             if (!prism || !materialAnimator || prism.destroyed || !prism.isActiveAndEnabled) return false;
             if (prism.prismProperties == null || prism.prismProperties.IsTransparent) return false;
-            if (!TryResolveMaterials(newDomain, out _, out var opaque) || !opaque.HasProperty(BrightColorId)) return false;
+            if (!TryResolveMaterials(newDomain, out _, out _)) return false;
             if (!materialAnimator.TryGetDisplayedColors(out var oldBright, out var oldDark)) return false;
 
             var t = transform;
             return PrismInteractionLod.TryShed(t.position, t.rotation, t.lossyScale, oldBright, oldDark,
-                opaque.GetColor(BrightColorId), MaterialPropertyAnimator.DefaultTransitionSeconds);
+                MaterialPropertyAnimator.DefaultTransitionSeconds);
         }
 
         bool TryResolveMaterials(Domains domain, out Material transparent, out Material opaque)

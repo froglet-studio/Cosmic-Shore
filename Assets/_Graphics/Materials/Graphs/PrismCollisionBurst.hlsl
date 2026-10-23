@@ -304,8 +304,9 @@ float PrismBurstRollFade(float age, float life)
 // which the camera is furthest off the face centre, pointing away from it; the roll starts at the near edge, winds
 // the skin into an Archimedean spiral (inner radius a, a gap g between turns: r(w) = sqrt(a² + g w / π) for the
 // length w wound), and crosses the face over the grade's length — eased in, then at a constant speed. The skin goes
-// into the roll top side in, so the roll shows its inside: the NEW colour. Past the far edge the roll pivots round
-// it onto the next face — which faces away from the camera, by the choice of d — and rolls along it until its own
+// into the roll top side in, so the roll shows its underside — which a steal stamps in the OLD colour too (Garrett,
+// 2026-10-23): the old domain curls away and the new one is only ever the prism it uncovers. Past the far edge the
+// roll pivots round it onto the next face — which faces away from the camera, by the choice of d — and rolls along it until its own
 // prism hides it from the camera; it stops short of that face's far edge. Exact: an isometry of the sheet (to the
 // spiral's pitch, b²/2r²), its normal the spiral's.
 void PrismBurstRoll(PrismBurstFrame f, PrismBurstParams p, out float3 pos, out float3 nrm)

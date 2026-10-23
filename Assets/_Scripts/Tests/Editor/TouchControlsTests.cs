@@ -239,6 +239,17 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void OnlyTheMantaTurnsItsIdleTiltOver()
+        {
+            // Garrett, 2026-10-22: the Manta's soar steered the opposite way on both axes. The Thresher's
+            // launch aim reads the same tilt and keeps it as is.
+            var library = Resources.Load<TouchControlProfileLibrarySO>(TouchControlProfileLibrarySO.ResourcePath);
+            Assert.That(library, Is.Not.Null);
+            Assert.That(library.Find(VesselClassType.Manta).flipTiltSteer, Is.True);
+            Assert.That(library.Find(VesselClassType.Thresher).flipTiltSteer, Is.False);
+        }
+
+        [Test]
         public void AnUnlistedHullFliesTheDefaultThumbLiftProfile()
         {
             var library = ScriptableObject.CreateInstance<TouchControlProfileLibrarySO>();

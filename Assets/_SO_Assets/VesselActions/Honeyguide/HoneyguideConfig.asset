@@ -24,6 +24,8 @@ MonoBehaviour:
   spinAnim: 0.6
   portsCount: 1
   rotatable: 1
+  retiredAbilities:
+  - 2
   minSlipTrailLength: 6
   slipReach: 400
   exitOffset: 8
@@ -280,6 +282,15 @@ MonoBehaviour:
   - {r: 1, g: 0, b: 0.976, a: 1}
   - {r: 0.075, g: 1, b: 0.949, a: 1}
   - {r: 1, g: 0.655, b: 0, a: 1}
+  boardOrientation: 0
+  portraitRect:
+    serializedVersion: 2
+    x: 0.03
+    y: 0.02
+    width: 0.94
+    height: 0.86
+  portraitTextMillimetres: 2.8
+  portraitCardMillimetres: 20
   longPressSeconds: 0.45
   flyButtonMillimetres: 10
   ratelLabel: 'Ratel'

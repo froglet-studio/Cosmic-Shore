@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Steal roll: the OLD domain curls away, the new one is only underneath (`cece/hopeful-hopper-np5527`, 2026-10-23) — NOT EDITOR-VERIFIED
+
+**What landed:** Garrett: *"the stealing effect is supposed to curl the original domain and reveal the stolen domain
+underneath, but i am seeing it immediately change domain color and then peel the changed color"*. The roll winds
+the skin top side IN, so what the curl shows is the skin's UNDERSIDE, and `PrismCollisionBurst.TryRequestShed`
+stamped that underside (`_SlicePivot`) with the NEW domain's bright. So the new colour appeared along the curl's
+outside from the first frame. The skin is now the old domain on both sides (`_SlicePivot.w` 0: the underside is the
+old bright × `_InnerGlow`). The prism under it still takes the new colour at once, and the skin hides that until it
+rolls away. `Docs/PRISM_ANIMATION.md` §4.12 round 14.
+
+**Verified without the editor:** `unity_refcompile` player 0 errors in project code;
+`verify_prism_collision_burst.py` PASS (shader text change is comments only).
+
+**Verify (editor, any mode with steals, e.g. a Squirrel skimming another domain's trail up close):**
+1. The prism's faces you can see keep the OLD domain colour at the instant of the steal: no flash of the new one.
+2. The skin curls away from the camera in the OLD colour (its underside a lighter old), uncovering the NEW colour
+   behind the roll.
+3. Far away (below the shed line, about 8% of the screen height) the steal still grades over 0.8 s.
+
 ### 🔴 Prism animations in the browser: a MeshRenderer stamp path where Entities Graphics cannot run (`claude/webgl-prism-animations-kg5qx7`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 **What landed:** on devices without Entities Graphics (every WebGL2 browser; also GPUs whose compute kernels fail to
@@ -148,6 +167,29 @@ changed. The artist reproductions (Squirrel, Goby, Dolphin, Sparrow, Serpent, Ma
    Stoat not arched, Thresher tail centred.
 5. If any hull still leans, Unity is not taking the default pose from the first take: report it, the fallback is to
    capture rest from the SkinnedMeshRenderer's bind poses in code.
+
+### 🔴 Honeyguide and Ratel: the Ratel's board in portrait on a phone; Printer retired (`cece/nifty-dirac-2dmclm`, 2026-10-22) — NOT EDITOR-VERIFIED
+
+Garrett: "the ratel dynamo should assume the player is holding the phone in portrait mode. it should size text and buttons
+appropriate to mobile. for now remove the engineer ability that gives players a free prism at the start of the spin."
+`HoneyguideDynamoView` draws the big board a quarter turn round on a touch-first device (`boardOrientation`, default
+PortraitOnPhone) inside `portraitRect` of the safe area, text `portraitTextMillimetres` (2.8 mm), cards
+`portraitCardMillimetres` (20 mm), the Fly button above the board. `retiredAbilities` (Printer) keeps it out of the draw;
+`DynamoSettings.Abilities` and the lab's `abilityPool` are the same rule. `/verify-unity` was unavailable (no Editor, no
+`unity` binary). Green: the headless player reference compile (0 errors in project code) and editor config (only the 3 bleeding-edge errors, 0 in changed files), `parity.cjs` (16,824 steps, the
+new pool control caught), `author_honeyguide_assets.py --check` / `--self-test`, the console-logging, conditional-compilation
+and enum-reference gates. The new and re-measured test goldens were run through `DynamoCore.cs` on the shipped asset.
+
+1. On a phone: Toybox Vessel Changer → Honeyguide and Ratel; double-tap the small board. Hold the phone portrait: the board
+   is upright, fills the screen below the notch, the text is readable, the cells, cards and the Fly button (top left, above
+   the board) are easy thumb targets. Drag, tap a port, tap a lit card, long-press delete and Fly land under the finger.
+2. Tap Fly: the game is landscape again, with the small board at the left.
+3. On PC the board is unchanged (landscape, centre of the screen). Set the config's `boardOrientation` to Portrait to see the
+   phone layout turned in the Editor.
+4. Play several new-ability reveals: the Ratel never draws Printer, and no free prism appears at a spin (5D Printer and
+   Universal Translator cards still grant theirs).
+5. `HoneyguideTests` pass in the Test Runner, `Ratel_NeverDrawsPrinter_WhileItIsRetired` and the re-measured
+   `Config_PlaysTheLabsGame_StepForStep` included.
 
 ### 🔴 Honeyguide and Ratel: round 6 triggers and its own hull model (`claude/honeyguide-ratel`, 2026-10-21) — NOT EDITOR-VERIFIED
 
@@ -13979,3 +14021,12 @@ Team tasks: T-20261022-a4ab, T-20261022-70b1 (tests), T-20261022-a9fa (Shombith 
    band out to a square edge. It sits exactly on the view, under the HUD, and double-tap swaps still work through it.
 4. Resize the Game view (16:9, 4:3, a phone): the frame follows. Leave the crew vessel: no frame is left behind.
 5. Console stays clean (no `UpdateVolumeStack must not be called before ...` error, no missing-layer error).
+
+## Crew vessels on Very Low: one view, Wrasse portrait (2026-10-22, `cece/keen-edison-3c6pvz`)
+
+Not opened in Unity (no editor in the session); `unity_refcompile` player clean. Check by hand (board task `T-20261022-b932`):
+- [ ] EditMode: `QualityPresetCutsTests`, `PilotCameraParkTests` pass.
+- [ ] Settings > Very Low, Toybox Vessel Changer > Wrasse and Grouper: you start on the Wrasse; no small Grouper view; pressing 1 shows the Grouper full screen with no kite square. Medium brings both PiPs back.
+- [ ] Very Low, Honeyguide and Ratel: you start on the Ratel on a plain backdrop; Fly goes to the Honeyguide with only a "Ratel" button top-left; a short tap on it goes back.
+- [ ] Very Low: the Goby's Pistol view, the Orca's turrets and the Jacks' herd view show no small view.
+- [ ] Device Simulator or a phone: the Wrasse seat turns the screen to portrait and the board fits its width; the Grouper turns it back; the menus never go portrait.

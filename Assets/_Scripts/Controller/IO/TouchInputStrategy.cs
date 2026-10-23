@@ -335,7 +335,8 @@ namespace CosmicShore.Gameplay
             if (steer)
             {
                 oneThumbActive = true;
-                oneThumbStick = TiltToStick(tilt.Sample(Time.deltaTime, TouchControlProfileLibrarySO.Instance));
+                oneThumbStick = TiltToStick(tilt.Sample(Time.deltaTime, TouchControlProfileLibrarySO.Instance),
+                    Profile.flipTiltSteer);
                 Reparameterize();
                 inputStatus.XDiff = 0.5f;
             }
@@ -411,8 +412,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Tilt as a thumb: wheel-turn is the stick's x, and tipping the top edge away is the
         /// thumb pushed UP - so it flies exactly as a pushed-up thumb does, and the Invert Y setting turns
-        /// it over with every other stick (no inversion of its own; Garrett, 2026-10-21).</summary>
-        private static Vector2 TiltToStick(Vector2 tiltStick) => tiltStick;
+        /// it over with every other stick (no inversion of its own; Garrett, 2026-10-21). A hull whose profile
+        /// sets <c>flipTiltSteer</c> (the Manta) reads the tilt turned over on both axes, before Invert Y.</summary>
+        private static Vector2 TiltToStick(Vector2 tiltStick, bool flip) => flip ? -tiltStick : tiltStick;
 
         /// <summary>A held AIM button's drag from where it landed is the right stick (single-stick hulls
         /// only - a two-stick hull flies on it). Written after the flight mix so it wins over the mirror.</summary>

@@ -52,6 +52,9 @@ namespace CosmicShore.Gameplay
         public bool AllowRotatedMatches, PortsCount, StartFilled;
         /// <summary>-1 draws the ability at random (the shipped rule); otherwise every draw is this ability.</summary>
         public int FixedAbility = -1;
+        /// <summary>The abilities a random draw picks from (<see cref="DynamoAbility"/> values), or null for all of them (the
+        /// lab's <c>abilities</c>).</summary>
+        public int[] Abilities;
         /// <summary>-1 draws the first port pattern at random.</summary>
         public int FirstPortSet = -1;
         /// <summary>Every port pattern as (cell index, colour) pairs; <see cref="DynamoCore.BuildPortSets"/> makes them.</summary>
@@ -322,7 +325,8 @@ namespace CosmicShore.Gameplay
             for (int k = 0; k < Slots.Length; k++) Slots[k] = -1;
             for (int k = 0; k < s.SlotCount; k++) Slots[k] = s.Loadout != null && k < s.Loadout.Length ? s.Loadout[k] : DrawPattern(s);
             SetPorts(s, s.FirstPortSet >= 0 ? s.FirstPortSet : (int)Math.Floor(NextRandom() * s.PortSets.Count));
-            Ability = s.FixedAbility >= 0 ? (DynamoAbility)s.FixedAbility : (DynamoAbility)(int)Math.Floor(NextRandom() * AbilityCount);
+            var pool = Pool(s);
+            Ability = s.FixedAbility >= 0 ? (DynamoAbility)s.FixedAbility : (DynamoAbility)pool[(int)Math.Floor(NextRandom() * pool.Length)];
             if (Ability == DynamoAbility.Printer) GrantFree(1);
             if (s.StartFilled) foreach (var p in Ports) Cells[p[0]] = p[1];
         }
@@ -365,6 +369,11 @@ namespace CosmicShore.Gameplay
                 return Mulberry(a);
             };
         }
+
+        static readonly int[] AllAbilities = Enumerable.Range(0, AbilityCount).ToArray();
+
+        // the abilities a random draw picks from: the settings' list, or every ability
+        static int[] Pool(DynamoSettings s) => s.Abilities is { Length: > 0 } ? s.Abilities : AllAbilities;
 
         int PickOther(int n, int not)
         {
@@ -556,7 +565,11 @@ namespace CosmicShore.Gameplay
                     }
                     if (s.PatternsPerShuffle > 0 && Made % s.PatternsPerShuffle == 0)   // a new ability, then a new port pattern
                     {
-                        if (s.FixedAbility < 0) Ability = (DynamoAbility)PickOther(AbilityCount, (int)Ability);
+                        if (s.FixedAbility < 0)
+                        {
+                            var pool = Pool(s);
+                            Ability = (DynamoAbility)pool[PickOther(pool.Length, Array.IndexOf(pool, (int)Ability))];
+                        }
                         if (Ability == DynamoAbility.Printer && Free.Count < 1) GrantFree(1);
                         int next = s.PortSets.Count > 1 ? PickOther(s.PortSets.Count, PortSet) : PortSet;
                         Events.Add(new DynamoEvent { Kind = DynamoEventKind.Shuffle, Ability = Ability, PortSet = next });

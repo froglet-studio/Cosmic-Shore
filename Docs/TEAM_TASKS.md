@@ -2093,3 +2093,37 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (feel call); Yash (offered) for the phone run
 - **Added:** 2026-10-22 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
 - **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log, Tiny Wings pass)
+### T-20261022-971d · open · test · crew
+- **Task:** On a phone, Toybox Vessel Changer > Honeyguide and Ratel, swap to the Ratel (tap the small board twice): hold the phone portrait and check the Dynamo board reads upright, fills the screen, its text is readable and the cards, cells and Fly button (above the board, top left) are easy thumb targets; drag, tap a port, tap a lit card, long-press delete and Fly all land where the finger is. Also check the Ratel never draws Printer (no free prism at a spin).
+- **Done when:** The portrait board plays correctly by touch on an Android or iOS phone, or the failures are filed as a dev task
+- **Who can take it:** Garrett (Honeyguide owner), Yash (offered)
+- **Added:** 2026-10-22 by Garrett (`cece/nifty-dirac-2dmclm`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md step 4; HoneyguideDynamoView.cs
+
+### T-20261022-856c · open · test · vessels
+- **Task:** On a phone, fly the Manta and lift both thumbs to soar: turning the phone right should now yaw left and tipping the top away should pitch the other way from before (both axes flipped). Also confirm the Thresher's both-thumbs-off launch aim is unchanged, and run TouchControlsTests in the editor.
+- **Done when:** Garrett confirms the Manta's soar steers the way he expects, and TouchControlsTests passes
+- **Who can take it:** Garrett (asked for it); Yash can run the editor tests
+- **Added:** 2026-10-22 by a Claude session (`cece/upbeat-volta-oj7bhg`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md (Manta row), Tools/Build/author_touch_profiles.py
+
+### T-20261022-b932 · open · test · Crew vessels
+- **Task:** On a phone (Android and iOS) on Very Low: fly the Wrasse and Grouper and the Honeyguide and Ratel from the Toybox Vessel Changer. Check: you start on the Wrasse / Ratel; no picture-in-picture anywhere; the Wrasse turns the screen to portrait and the Grouper back to landscape; the Ratel's board sits on a plain backdrop; the Ratel button (flying) and Fly button (Ratel) swap; the app launches and every menu stays landscape. Then on Medium: the PiPs are back. Also the Goby, Orca turret and Jacks herd views on Very Low show no small view.
+- **Done when:** All checks pass on one Android and one iPhone, or failures filed as dev tasks
+- **Who can take it:** Yash (offered), Garrett
+- **Added:** 2026-10-22 by a Claude session (`cece/keen-edison-3c6pvz`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md Round 12; HONEYGUIDE.md Very Low; Docs/PLATFORM_UNIFICATION.md 3.10
+
+### T-20261022-b797 · open · decision · Crew vessels
+- **Task:** The Wrasse seat now turns a phone to portrait, so the project allows portrait (ProjectSettings allowedAutorotateToPortrait) and the game turns portrait auto-rotation off at boot. A phone held upright at launch may show the splash in portrait before the lock. Accept that, or move the Wrasse to a different portrait approach? Also: on Very Low the Wrasse has no phone gesture back to the Grouper (no small view to double-tap); add a button like the Ratel's?
+- **Done when:** Garrett decides; follow-up dev task filed if needed
+- **Who can take it:** Garrett (product), Shombith (UI / orientation)
+- **Added:** 2026-10-22 by a Claude session (`cece/keen-edison-3c6pvz`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/CrewViews.cs SeatOrientation
+
+### T-20261023-2f7b · open · test · prisms
+- **Task:** Look at a close-up steal in the editor: the old domain must curl away (roll in the old colour) and uncover the new colour, with no flash of the new colour first
+- **Done when:** Steps 1-3 of the 'Steal roll: the OLD domain curls away' section of Docs/UNITY_VERIFICATION_CHECKLIST.md pass
+- **Who can take it:** Garrett (asked for it) or Yash
+- **Added:** 2026-10-23 by a Claude session (`cece/hopeful-hopper-np5527`)
+- **See:** Docs/PRISM_ANIMATION.md §4.12 round 14

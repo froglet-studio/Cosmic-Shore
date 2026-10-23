@@ -136,6 +136,7 @@ def read_lab(html: str):
     """The lab's tables, as plain Python."""
     lab = {}
     lab["abilities"] = re.findall(r"'(\w+)'", re.search(r"^  const ABILITIES = \[(.*)\];", html, re.M).group(1))
+    lab["retired"] = re.findall(r"'(\w+)'", re.search(r"^  const RETIRED_ABILITIES = \[(.*)\];", html, re.M).group(1))
     lab["cardEffects"] = re.findall(r"'(\w+)'", re.search(r"^  const CARD_EFFECTS = \[((?:.|\n)*?)\];", html, re.M).group(1))
     lab["cards"] = [(js_unescape(m.group(1)), int(m.group(2)), m.group(3)) for m in re.finditer(
         r"^    \[%s, (\d), '([MCS0-9, ]+)', %s" % (JS_STR, JS_STR), lab_block(html, "CARDS"), re.M)]
@@ -168,7 +169,8 @@ def effect_members(cs: str):
 def cs_defaults(cs: str):
     """The serialized scalar fields of HoneyguideConfigSO with their C# initializers, in declaration order."""
     out = []
-    for m in re.finditer(r"^        \[SerializeField[^\]]*\] (float|int|bool|string|HoneyguideAILevel) (\w+) = (.*);$", cs, re.M):
+    for m in re.finditer(r"^        \[SerializeField[^\]]*\] (float|int|bool|string|HoneyguideAILevel|HoneyguideBoardOrientation) (\w+) = (.*);$",
+                         cs, re.M):
         t, name, v = m.groups()
         if t == "float":
             v = v.rstrip("f")
@@ -176,6 +178,8 @@ def cs_defaults(cs: str):
             v = "1" if v == "true" else "0"
         elif t == "HoneyguideAILevel":
             v = {"Easy": "0", "Medium": "1", "Hard": "2"}[v.split(".")[-1]]
+        elif t == "HoneyguideBoardOrientation":
+            v = {"PortraitOnPhone": "0", "Portrait": "1", "Landscape": "2"}[v.split(".")[-1]]
         elif t == "string":
             v = yaml_str(js_unescape(v[1:-1].replace("\\n", "\n")))
         out.append((name, t, v))
@@ -231,6 +235,10 @@ def config_asset(lab, cs: str, script_guid: str) -> str:
             text += ("  engineerRect:\n    serializedVersion: 2\n    x: 0.18\n    y: 0.04\n    width: 0.64\n    height: 0.92\n"
                      "  pilotRect:\n    serializedVersion: 2\n    x: 0.01\n    y: 0.3\n    width: 0.2\n    height: 0.42\n"
                      "  colours:\n  - {r: 1, g: 0, b: 0.976, a: 1}\n  - {r: 0.075, g: 1, b: 0.949, a: 1}\n  - {r: 1, g: 0.655, b: 0, a: 1}\n")
+        if name == "rotatable":
+            text += "  retiredAbilities:" + ("".join(f"\n  - {lab['abilities'].index(k)}" for k in lab["retired"]) or " ") + "\n"
+        if name == "boardOrientation":
+            text += "  portraitRect:\n    serializedVersion: 2\n    x: 0.03\n    y: 0.02\n    width: 0.94\n    height: 0.86\n"
         if name == "ratelLabel":
             text += "  colourNames:\n  - Ruby\n  - Jade\n  - Gold\n"
     text += "  patterns:\n"
@@ -291,6 +299,9 @@ def check_config(text: str, lab, cs: str, script_guid: str):
         a == (k, *lab["abilityText"][key]) for k, (a, key) in enumerate(zip(abilities, lab["abilities"]))),
         "HoneyguideConfig: the Ratel's ability words are not the lab's ABILITY_TEXT, in DynamoAbility order")
     want(f"  gameData: {{fileID: 11400000, guid: {GAME_DATA_GUID}, type: 2}}" in text, "HoneyguideConfig: gameData is not wired")
+    retired = re.search(r"^  retiredAbilities:((?:\n  - \d+)*)", text, re.M)
+    want(retired is not None and [int(v) for v in re.findall(r"\d+", retired.group(1))] == [lab["abilities"].index(k) for k in lab["retired"]],
+         f"HoneyguideConfig: retiredAbilities is not the lab's RETIRED_ABILITIES ({', '.join(lab['retired']) or 'none'})")
     for sfx in SFX:
         want(f"  {sfx}:\n" in text, f"HoneyguideConfig: no {sfx} slot")
     want(f"  peckAction: {{fileID: 11400000, guid: {PECK_GUID}, type: 2}}" in text,
@@ -831,6 +842,7 @@ def self_test():
     expect(check_config(cfg.replace("    - '. M C C .'\n", "    - '. M C . .'\n", 1), lab, cs, cg), 1, "an engine port dropped")
     expect(check_config(cfg.replace("name: 'Overclock'", "name: 'Overclocked'"), lab, cs, cg), 1, "an ability renamed")
     expect(check_config(cfg.replace(GAME_DATA_GUID, "0" * 32), lab, cs, cg), 1, "gameData unwired")
+    expect(check_config(cfg.replace("  retiredAbilities:\n  - 2\n", "  retiredAbilities: \n", 1), lab, cs, cg), 1, "Printer drawn again")
     for key in ("tickSeconds: 15\n", "usesPerPattern: 3\n", "patternsPerShuffle: 4\n", "aimCone: 45\n", "revealAbility: 3.5\n",
                 "peckRange: 45\n", "flitDistance: 18\n", "flitCooldown: 2\n", "activeSeconds: 20\n", "activeLevelGain: 0.25\n"):
         if f"  {key}" not in cfg:

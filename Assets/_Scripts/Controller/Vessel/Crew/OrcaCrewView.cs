@@ -98,6 +98,7 @@ namespace CosmicShore.Gameplay
         public void Dispose()
         {
             RestorePilot();
+            _park.Release();
             _frame.Dispose();
             Rig?.Restore();   // the next crew to bind this hull finds its turrets at rest
             LightBomb(false, default, 0f, 0f);
@@ -143,6 +144,7 @@ namespace CosmicShore.Gameplay
                 if (_scope) _scope.Hide();
                 LightBomb(false, default, 0f, 0f);
                 RestorePilot();
+                _park.Release();
                 return;
             }
             var cfg = _crew.Config;
@@ -200,14 +202,24 @@ namespace CosmicShore.Gameplay
             float baseDepth = 0f;
             if (_pilot)
             {
-                _cam.cullingMask = _pilot.cullingMask;
-                _cam.clearFlags = _pilot.clearFlags;
-                _cam.backgroundColor = _pilot.backgroundColor;
+                _cam.cullingMask = _park.CullingMask(_pilot);
+                _cam.clearFlags = _park.ClearFlags(_pilot);
+                _cam.backgroundColor = _park.Background(_pilot);
                 baseDepth = _pilotDepth;
-                float aspect = Mathf.Max(0.1f, (float)Screen.width / Mathf.Max(1, Screen.height));
-                _pilot.rect = new Rect(PipMargin / aspect, PipMargin, PipHeight / aspect, PipHeight);
-                _pilot.depth = baseDepth + 2f;
-                _pilotLifted = true;
+                if (CrewSingleView.On)
+                {
+                    // one view (the lowest preset): no helm square over the turret, and the helm's camera draws nothing
+                    RestorePilot();
+                    _park.Park(_pilot, Color.black);
+                }
+                else
+                {
+                    _park.Release();
+                    float aspect = Mathf.Max(0.1f, (float)Screen.width / Mathf.Max(1, Screen.height));
+                    _pilot.rect = new Rect(PipMargin / aspect, PipMargin, PipHeight / aspect, PipHeight);
+                    _pilot.depth = baseDepth + 2f;
+                    _pilotLifted = true;
+                }
             }
             _cam.rect = new Rect(0f, 0f, 1f, 1f);
             _cam.depth = baseDepth + 1f;
@@ -308,6 +320,8 @@ namespace CosmicShore.Gameplay
         }
 
         readonly PipViewFrame _frame = new();
+        // the helm's camera asleep under a turret on the lowest preset (CrewSingleView)
+        readonly PilotCameraPark _park = new();
 
         void RestorePilot()
         {
