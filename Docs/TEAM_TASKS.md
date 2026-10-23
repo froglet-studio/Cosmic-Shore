@@ -2087,12 +2087,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-22 by a Claude session (`cece/dazzling-volta-apzw2m`)
 - **See:** Assets/_Scripts/UI/Elements/PipViewFrame.cs
 
-### T-20261022-0ac8 · open · test · Crew vessels
+### T-20261022-0ac8 · done · test · Crew vessels
 - **Task:** Fly the Pistol as Tiny Wings (Toybox > Vessel Changer > Goby and Pistol, double tap the small view; dart 300-600 u with the Goby first). Hold to dive down each slope, let go in the valley: the crest should throw the shrimp and a landing on the back of the next hill should slide it faster. The camera: close at rest with the ground low on screen and the shrimp a third in; it zooms out as you speed up and fly, and eases back in after landing. Try it on a phone (30 fps) and in the editor: the ride should feel the same.
 - **Done when:** Garrett says the base movement reads as Tiny Wings, or names what to change (GobyPistolConfig: hill height/wavelength/swell, pGravity, pDiveMul, pDrag, pGoodLand, the view* numbers)
 - **Who can take it:** Garrett (feel call); Yash (offered) for the phone run
 - **Added:** 2026-10-22 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
 - **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log, Tiny Wings pass)
+- **Done:** 2026-10-23, Garrett flew it: the loop reads but the proportions were nowhere near Tiny Wings - the 2026-10-23 proportions pass follows; its playtest is the next task
+
 ### T-20261022-971d · open · test · crew
 - **Task:** On a phone, Toybox Vessel Changer > Honeyguide and Ratel, swap to the Ratel (tap the small board twice): hold the phone portrait and check the Dynamo board reads upright, fills the screen, its text is readable and the cards, cells and Fly button (above the board, top left) are easy thumb targets; drag, tap a port, tap a lit card, long-press delete and Fly all land where the finger is. Also check the Ratel never draws Printer (no free prism at a spin).
 - **Done when:** The portrait board plays correctly by touch on an Android or iOS phone, or the failures are filed as a dev task
@@ -2127,3 +2129,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (asked for it) or Yash
 - **Added:** 2026-10-23 by a Claude session (`cece/hopeful-hopper-np5527`)
 - **See:** Docs/PRISM_ANIMATION.md §4.12 round 14
+
+### T-20261023-1ff1 · open · test · Crew vessels
+- **Task:** Fly the Pistol in Tiny Wings' proportions (Toybox > Vessel Changer > Goby and Pistol; dart 300-600 u, then double tap the small view). Check against Tiny Wings side by side if you can: at rest the screen shows a little over one hill and the shrimp is about a seventeenth of its width; hills are about four shrimp tall; the ride passes about a hill a second; a stretch is 11-23 hills (about one island); a good flight clears one or two hills and the view zooms out while flying. Note which proportion still looks off.
+- **Done when:** Garrett says the scale, speed and island length read as Tiny Wings, or corrects the Tiny Wings targets in the brief (hill length/height in shrimp lengths, view width in hills, hills per island, hills per second)
+- **Who can take it:** Garrett (feel call); Yash (offered) for the phone run
+- **Added:** 2026-10-23 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log, 2026-10-23 proportions)

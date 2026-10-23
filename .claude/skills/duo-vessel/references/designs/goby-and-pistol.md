@@ -15,13 +15,15 @@
 >   lays a small pad of its own blocks under the Goby there.
 > - "the slope from one perch to another should be a fun downhill for the shrimp" **[stated]**. **[read]:** each dart
 >   lays its trail as the Pistol's ground, and the Pistol rides it as **Tiny Wings** (Garrett, 2026-10-22: "the
->   reference for the pistol is the game tiny wings"; third pass below): one train of smooth hills (`hillHeight` 1.8,
->   `hillWavelength` 18) whose heights swell and fall like the game's islands (`hillSwell` 0.5 over `swellWavelength`
->   108), whole half-waves per dart so the ground meets both perches; a gentle `slopeDegrees` 6 lean downhill whichever
->   way it rides (`PistolPlane`). Hold to dive down a slope, let go and the crest throws it, land on the back of a hill
->   to slide faster; a 300-600 u dart is a 12-25 s journey for a rider who plays it; the aimed jump is off
->   (`aimedJump`). The camera is Tiny Wings' (`PistolPlane.TinyWingsView`): close at rest (`viewWidth` 80 u), the
->   ground low on the screen and the Pistol a third in, zooming out to `viewMaxWidth` 240 as it speeds up and flies.
+>   reference for the pistol is the game tiny wings"; in Tiny Wings' PROPORTIONS since 2026-10-23, fourth pass below): one
+>   train of smooth hills (`hillHeight` 3.5, `hillWavelength` 26: about 15 Pistol lengths crest to crest and 4 tall)
+>   whose heights swell and fall like the game's islands (`hillSwell` 0.5 over `swellWavelength` 156), whole half-waves
+>   per dart so the ground meets both perches; a gentle `slopeDegrees` 5 lean downhill whichever way it rides
+>   (`PistolPlane`). A 300-600 u dart is an island of 11-23 hills, crossed in 14-25 s at about a hill a second by a rider
+>   who plays it. Hold to dive down a slope, let go and the crest throws it, land on the back of a hill to slide faster;
+>   the aimed jump is off (`aimedJump`). The camera is Tiny Wings' (`PistolPlane.TinyWingsView`): at rest a little over
+>   one hill wide (`viewWidth` 30 u, the Pistol a seventeenth of it), the ground low on the screen and the Pistol a
+>   third in, zooming out to `viewMaxWidth` 120 as it speeds up and flies.
 > - "the non-danger mass on either side of the pistol's plane (which no longer needs to bend at all) is pulled into that
 >   plane based on the pair's space. Space L5 pulls in shielded prisms too." **[stated]** The plane is FLAT: the
 >   unrolled ribbon and its warped view are retired. **[read]:** super-shielded and the pair's own prisms never move.
@@ -657,3 +659,30 @@ the line it settled.
   three pure files (all pass); the editor run is T-20261022-bc36. **[read] for Garrett:** the never-diving rider takes
   ~57 s on a full dart, Tiny Wings' penalty for not playing; at 30 fps a skilled run's longest flight reached 81 u once
   (4.5 hills, 14 % of the journey).
+- 2026-10-23, Garrett: "it should feel much closer to tiny wings in relative scale of piston and hill height, apparent
+  speed, length of level compared to perch distance. it doesn't feel there or even close in its tunings." The third pass
+  fixed Tiny Wings' LOOP but not its PROPORTIONS. Measured in the Pistol's length (d), as Tiny Wings' are in the bird's:
+  the screen showed 4.4 hills with the Pistol 1/80 of it, so the Pistol looked about 5x too small, the hills read as
+  wiggles and the ride as slow (0.3 screens a second); a hill was only 3.6 d tall; a stretch was 17-33 hills.
+  - **Tiny Wings' proportions, the targets** (**[read]**: Claude's estimates from the game, not measured from footage;
+    correct any of them and the next pass re-tunes to it): a hill about 15 d crest to crest and 3-5 d tall (taller on
+    later islands); the resting screen a little over one hill wide, the bird about 1/15-1/20 of its width, a quarter to
+    a third in, the ground in the lower third; an island about 12-20 hills, crossed at about a hill a second (about a
+    resting screen a second); a good flight clears 1-3 hills and peaks 1-3 hill heights up; the view zooms out about 4x
+    in flight.
+  - **Shipped** (`GobyPistolConfig`): `hillWavelength` 26, `hillHeight` 3.5 (a hill 15.3 d long, 4.1 d tall at the
+    tallest; `swellWavelength` 156, six hills); `pBodyR` 0.85 (d = 1.7 u); `slopeDegrees` 5; `pGravity` 14, `pDiveMul` 4,
+    `pDrag` 0.03; the view `viewWidth` 30 (1.15 hills, the Pistol 1/18 of it), `viewMaxWidth` 120, `viewSpeedWiden` 0.6,
+    `viewDistance` 60 at rest (the same 28 deg lens). Chosen by a sweep of hill size, lean, gravity, dive and drag against
+    those targets with the expert rider and both controls.
+  - **Measured in the C#** (60 fps): a 300 u stretch is 11.5 hills, played in 13.8 s (0.83 hills/s), 6 flights, 4 of them
+    smooth slides, the longest 59 u (2.3 hills); a 600 u stretch is 23 hills in 24.8 s (0.93 hills/s), 12 flights, 8
+    smooth, the longest 64 u; at 30 fps 14.6 s and 25.3 s. A rider who never dives takes 29.3 / 57.1 s (1 smooth slide);
+    one who never lets go 18.4 / 33.6 s (0 / 2). On screen the ride runs at about 0.9 resting screens a second (was 0.3).
+  - **[read] for Garrett:** with taller hills a flight is about one in two hills, and the longest is ~20 % of the shortest
+    (300 u) stretch: "a few humps" now means a few of Tiny Wings' hills, each about a twelfth of the journey. Flights
+    peak about one hill height up (two at most): higher, Tiny Wings-at-full-speed flights need more speed than one
+    stretch builds.
+  `GobyPistolTests.Proportions_AreTinyWings` pins the ratios (control: the third pass's 18 u hills under an 80 u
+  screen fail); `Ride_IsTinyWings_DiveLetGoFlySlide` now asks for a flight at least every three hills, flights under
+  three hills and the controls sliding at most half as often. Logic run in .NET against the three pure files: all pass.
