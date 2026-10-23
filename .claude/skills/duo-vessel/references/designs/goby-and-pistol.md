@@ -8,9 +8,14 @@
 > - "it should not have the squirrels abilities or be anything like the squirrel. it should be a goby with its own kit
 >   that represents a goby and synergizes with the pistol and its kit" **[stated]**
 > - "The goby should dart and perch similar to the way the shrike shoots itself" **[stated]**. **[read]:** the Goby is
->   always pinned (the fleet's restricted stance): it aims while perched and DARTS - hold Dart to charge the distance
->   (`dartMinRange` 140 -> `dartRange` 600 over 0.8 s), let go, and it flies there in `dartSeconds` 1 (the Shrike's
->   distance / 1 s), stopping on the first block on its line, where it perches.
+>   CRUISES between perches, as the Shrike does between docks (2026-10-23; it was always pinned until then, which left it
+>   "barely cruising around at all"): a person on the hull's own two-thumb flight, the seat's AI at `aiCruiseSpeed` 100.
+>   Hold Dart to charge the distance (`dartMinRange` 140 -> `dartRange` 600 over 0.8 s), let go, and it flies there in
+>   `dartSeconds` 1 (the Shrike's distance / 1 s), stopping on the first block on its line. The dart's end is a PERCH
+>   (the end of the Pistol's next island) once it is `islandMinLength` 900 from the last perch, while fewer than
+>   `islandQueue` 3 islands wait ahead of the Pistol; a longer gap is laid as islands of at most `islandMaxLength` 1800.
+>   Otherwise the dart is a dash and it cruises on. Perched, it is pinned and aims for `perchSeconds` 1.5 (longer while a
+>   dart charges), then lifts off (`GobyIslands`).
 > - "the goby may shoot into open space and make its own perch" **[stated]**. **[read]:** a dart that reaches nothing
 >   lays a small pad of its own blocks under the Goby there.
 > - "the slope from one perch to another should be a fun downhill for the shrimp" **[stated]**. **[read]:** each dart
@@ -19,10 +24,10 @@
 >   train of smooth hills (`hillHeight` 3.5, `hillWavelength` 26: about 15 Pistol lengths crest to crest and 4 tall)
 >   whose heights swell and fall like the game's islands (`hillSwell` 0.5 over `swellWavelength` 156), whole half-waves
 >   per dart so the ground meets both perches; a gentle `slopeDegrees` 5 lean downhill whichever way it rides
->   (`PistolPlane`). A 900-1800 u dart (`dartMinRange` / `dartRange`, 3x the kit's: 2026-10-23) is an island of 35-70
->   hills, crossed in 20-30 s at about two hills a second by a rider who plays it. Hold to dive down a slope, let go and
+>   (`PistolPlane`). An island of 900-1800 u from perch to perch (`islandMinLength` / `islandMaxLength`, 3x the kit's:
+>   2026-10-23) is 35-70 hills, crossed in 20-30 s at about two hills a second by a rider who plays it. Hold to dive down a slope, let go and
 >   the crest throws it, land on the back of a hill to slide faster; the ride is FLOATY and FORGIVING (`pAirGravity`
->   0.45, `pGoodLand` 65, `pHardKeep` 0.95) and its speed BUILDS (`pSmoothBoost` 1.16, `pDrag` 0.01, `pMaxSpeed` 120)
+>   0.5, `pGoodLand` 65, `pHardKeep` 0.95) and its speed BUILDS (`pSmoothBoost` 1.12, `pDrag` 0.01, `pMaxSpeed` 100)
 >   until it launches over many hills; the aimed jump is off (`aimedJump`). The camera is Tiny Wings' (`PistolPlane.TinyWingsView`): at rest a little over
 >   one hill wide (`viewWidth` 30 u, the Pistol a seventeenth of it), the ground low on the screen and the Pistol a
 >   third in, zooming out to `viewMaxWidth` 180 as it speeds up and flies.
@@ -718,3 +723,32 @@ the line it settled.
   after 1.5 hills and within the first third, a flight of at least 4 hills, speed building x1.25+, 75 % smooth, the
   sloppy rider under x1.6, the never-diver over x1.4); `Proportions_AreTinyWings` now asks for 30-75 hills a stretch at
   1.2-3 hills a second. Logic run in .NET against the three pure files: all pass.
+- 2026-10-23, Garrett: "ok now take a pass at tuning the two together. the pistol is a bit overtuned now but much closer.
+  the goby is barely cruising around at all. I coudn't get the goby to work and the AI did only a little better. there
+  is a fun pair here but they both need a lot of work lets start by tuning their movement". Measured first:
+  - **The Goby never cruised.** The kit pinned it always ([read] above), so it moved only during a dart, and a dart
+    stops on the first prism within 9 u of its line - in a cell of flora usually a few dozen u out. With the 900-1800 u
+    darts of the floaty pass that meant short islands and a Goby that hardly moved. Its AI aimed one long dart, then waited
+    up to 45 s (`aiWaitForPistol`) for the Pistol, which rides an island in 20-35 s.
+  - **The Goby now cruises** (`GobyPistolDuo`, `GobyIslands`): pinned only while perched or darting; a person flies it on
+    the hull's own two-thumb flight (`DefaultThrottleScaler` 160), the seat's AI cruises at `aiCruiseSpeed` 100, turning
+    at `aiTurnRate` 90 deg/s and re-choosing its heading every `aiRethinkSeconds` 2.5 (at a locked rival in reach, back
+    toward the last perch while the Pistol's islands are full, home when it strays, else a wander off the nose). The dart
+    is the Goby's burst again (140-600 u, `aiDartLength` 300); its end is a perch only when the island would be
+    `islandMinLength` 900 or more and fewer than `islandQueue` 3 islands wait for the Pistol; a gap longer than
+    `islandMaxLength` 1800 is laid as several islands, each ending in a perch of its own. Perched it aims for
+    `perchSeconds` 1.5, then lifts off. `aiWaitForPistol` is retired.
+  - **Together:** the wandering AI (simulated over 200 seeds: net progress median 0.88 of what it flies, one run in ten
+    0.56) makes a 1350 u island in about 22 s; the Pistol AI rides one in about 33 s. So the Pistol never waits at the
+    head perch, and the queue keeps the Goby from running away: it circles the last perch until the Pistol catches up.
+  - **The Pistol, a notch back** ("a bit overtuned"): `pAirGravity` 0.45 -> 0.5, `pSmoothBoost` 1.16 -> 1.12,
+    `pMaxSpeed` 120 -> 100; the forgiveness (`pGoodLand` 65, `pHardKeep` 0.95) kept, since a version without it made a
+    sloppy rider twice as slow on a long island. Measured: 900 u in 19.3 s (19.3 s at 30 fps too), first big flight at hill
+    8, longest 6.5 hills, speed 41 -> 76 u/s; 1800 u in 33.6 s, longest 7.3 hills; sloppy rider x1.3 / x1.2 (averaged over
+    four phases: one frame's shift moved a single run by half again), never-diver x2.7 / x2.2.
+  - **[read] for Garrett:** a person's Goby has no in-world cue yet for "this dart will perch" (900 u from the last perch,
+    queue not full): a dart that falls short just dashes. Say if it wants one (the LOCKED world-not-screen rule: a light or
+    shape in the world).
+  `GobyPistolTests`: `Islands_AreLaidAtTheirLength_AndKeepThePairTogether`, `Pair_TheGobyKeepsAheadOfThePistol` (control:
+  the waiting Goby), the ride tests on island lengths with the sloppy rider over four phases. Logic run in .NET against
+  the pure files: all pass.

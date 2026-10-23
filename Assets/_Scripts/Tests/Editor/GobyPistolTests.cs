@@ -190,12 +190,21 @@ namespace CosmicShore.Tests
             return run;
         }
 
-        /// <summary>A rider who plays it but gets it WRONG for the first 0.3 s of every second (dives up a slope, lets go down
-        /// one): the forgiveness check.</summary>
-        static System.Func<PistolBodyMath.State, float, float> Sloppy()
+        /// <summary>A rider who plays it but gets it WRONG for 0.3 s of every second (dives up a slope, lets go down one),
+        /// starting <paramref name="phase"/> s in: the forgiveness check.</summary>
+        static System.Func<PistolBodyMath.State, float, float> Sloppy(float phase)
         {
-            float t = 0f;
+            float t = phase;
             return (p, play) => { t += 1f / 60f; return t % 1f < 0.3f ? 1f - play : play; };
+        }
+
+        /// <summary>The sloppy rider's time, averaged over four phases of its mistakes: a long ride is chaotic, and one
+        /// frame's shift in when the mistakes fall moves a single run by half again.</summary>
+        static float SloppySeconds(CosmicShore.ScriptableObjects.GobyPistolConfigSO config, float length)
+        {
+            float sum = 0f;
+            for (int i = 0; i < 4; i++) sum += RideIt(config, length, 60f, Sloppy(0.25f * i)).Seconds;
+            return sum / 4f;
         }
 
         /// <summary>
@@ -210,7 +219,7 @@ namespace CosmicShore.Tests
         public void Ride_IsTinyWings_FloatyForgivingAndBuilding()
         {
             var config = ShippedConfig();
-            foreach (float length in new[] { config.DartMinRange, config.DartRange })
+            foreach (float length in new[] { config.IslandMinLength, config.IslandMaxLength })
             {
                 var play = RideIt(config, length, 60f);
                 float hills = length / config.Hills.Wavelength;
@@ -220,8 +229,7 @@ namespace CosmicShore.Tests
                 Assert.That(play.LateSpeed, Is.GreaterThan(1.25f * play.EarlySpeed), "the speed builds over the island");
                 Assert.That(play.Smooth, Is.GreaterThanOrEqualTo(Mathf.CeilToInt(0.75f * play.Flights)), "most landings are smooth slides");
 
-                var sloppy = RideIt(config, length, 60f, Sloppy());
-                Assert.That(sloppy.Seconds, Is.LessThan(1.6f * play.Seconds), "forgiving: wrong a third of the time, not much slower");
+                Assert.That(SloppySeconds(config, length), Is.LessThan(1.6f * play.Seconds), "forgiving: wrong a third of the time, not much slower");
                 var never = RideIt(config, length, 60f, (p, d) => 0f);
                 Assert.That(never.Seconds, Is.GreaterThan(1.4f * play.Seconds), "the control: never diving builds no speed");
             }
@@ -250,7 +258,7 @@ namespace CosmicShore.Tests
             Assert.That(tall / length, Is.InRange(3f, 5f), "and three to five of them tall");
             Assert.That(view / wave, Is.InRange(0.9f, 1.6f), "the resting screen shows a little over one hill");
             Assert.That(length / view, Is.InRange(1f / 25f, 1f / 12f), "the Pistol is about a seventeenth of the screen");
-            foreach (float dart in new[] { config.DartMinRange, config.DartRange })
+            foreach (float dart in new[] { config.IslandMinLength, config.IslandMaxLength })
             {
                 float hills = dart / wave;
                 Assert.That(hills, Is.InRange(30f, 75f), $"a {dart} u stretch is an island of {hills:F0} hills (Garrett: \"ride about 3 times longer before the perch\")");
@@ -267,7 +275,7 @@ namespace CosmicShore.Tests
             var config = ShippedConfig();
             foreach (System.Func<PistolBodyMath.State, float, float> rider in new System.Func<PistolBodyMath.State, float, float>[] { (p, d) => 0f, (p, d) => 1f })
             {
-                Run a = RideIt(config, config.DartRange, 60f, rider), b = RideIt(config, config.DartRange, 30f, rider);
+                Run a = RideIt(config, config.IslandMaxLength, 60f, rider), b = RideIt(config, config.IslandMaxLength, 30f, rider);
                 Assert.That(b.Seconds, Is.EqualTo(a.Seconds).Within(0.02f * a.Seconds + 1f / 30f));
                 Assert.That(b.Flights, Is.EqualTo(a.Flights));
             }
@@ -295,6 +303,44 @@ namespace CosmicShore.Tests
             c = PistolPlane.TinyWingsView(f, x, gy + 900f, 0f, 30f, 180f, 0.6f, -0.2f, 0.35f, 0.15f, 16f / 9f, out float wTop);
             Assert.That(wTop, Is.EqualTo(180f).Within(1e-3f));
             Assert.That(gy + 900f, Is.LessThanOrEqualTo(c.y + 0.5f * (wTop / (16f / 9f)) + 1e-3f));
+        }
+
+        [Test]
+        public void Islands_AreLaidAtTheirLength_AndKeepThePairTogether()
+        {
+            // Garrett, 2026-10-23: "the goby is barely cruising around at all". The Goby cruises; a dart's end is a perch only
+            // once it is an island's length from the last perch; a longer gap is several islands; and no new perch is laid
+            // while the Pistol has its islands ahead
+            Vector3 a = Vector3.zero;
+            Assert.That(GobyIslands.Reaches(a, Vector3.forward * 899f, 900f), Is.False, "the control: a dart short of an island is a dash");
+            Assert.That(GobyIslands.Reaches(a, new Vector3(600f, 0f, 700f), 900f), Is.True);
+            Assert.That(GobyIslands.Pieces(a, Vector3.forward * 1800f, 1800f), Is.EqualTo(1));
+            Assert.That(GobyIslands.Pieces(a, Vector3.forward * 1801f, 1800f), Is.EqualTo(2));
+            Assert.That(GobyIslands.Pieces(a, Vector3.forward * 4000f, 1800f), Is.EqualTo(3), "a long cruise is laid as islands the Pistol can ride");
+            Assert.That(GobyIslands.Ahead(perches: 4, resting: true, at: 3, segment: -1, dir: 1), Is.EqualTo(0), "resting at the head: nothing ahead");
+            Assert.That(GobyIslands.Ahead(perches: 4, resting: false, at: 0, segment: 0, dir: 1), Is.EqualTo(2), "riding the first: two more wait");
+            Assert.That(GobyIslands.Ahead(perches: 4, resting: false, at: 2, segment: 1, dir: -1), Is.EqualTo(2), "riding back to perch 1");
+        }
+
+        /// <summary>
+        /// The pair together (Garrett, 2026-10-23: "take a pass at tuning the two together"): the Goby AI, cruising and
+        /// wandering, makes an island faster than the Pistol AI rides one, so the Pistol never waits at the head perch; the
+        /// island queue then keeps the Goby from running away. The control: the old Goby, which only darted and waited up to
+        /// 45 s for the Pistol, kept it waiting at every perch.
+        /// </summary>
+        [TestCase(true)]
+        [TestCase(false)]
+        public void Pair_TheGobyKeepsAheadOfThePistol(bool shipped)
+        {
+            var config = ShippedConfig();
+            const float wander = 0.7f;   // net progress per u flown by the wandering AI (simulated over 200 seeds: median 0.88, one in ten 0.56)
+            float island = 0.5f * (config.IslandMinLength + config.IslandMaxLength);
+            float goby = island / (wander * config.AiCruiseSpeed) + config.PerchSeconds + config.DartSeconds;
+            float pistol = RideIt(config, island, 60f).Seconds + config.RestSeconds;
+            if (!shipped) { goby = config.PerchSeconds + 45f; Assert.That(goby, Is.GreaterThan(pistol), "the control: the waiting Goby"); return; }
+            Assert.That(goby, Is.LessThan(pistol), $"the Goby makes an island in {goby:F1} s, the Pistol rides one in {pistol:F1} s");
+            Assert.That(goby, Is.GreaterThan(0.4f * pistol), "and it is not so far ahead that it only circles");
+            Assert.That(config.IslandQueue, Is.InRange(2, 4));
         }
 
         [Test]

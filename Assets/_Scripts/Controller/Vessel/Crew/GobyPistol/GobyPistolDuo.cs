@@ -66,7 +66,9 @@ namespace CosmicShore.Gameplay
         Transform _lockTarget; IVesselStatus _lockVessel; bool _lockIsVessel;
 
         // the Goby's own AI (while the human flies the Pistol): it aims the hull and darts by the same calls the buttons make
-        Vector3 _aiDir; float _aiDecideAt, _aiLandedAt; bool _aiHasDir;
+        Vector3 _aiDir; float _aiDecideAt, _aiIslandGoal; bool _aiHasDir;
+        // perched: pinned on the end of an island, aiming, until the perch time is up (it cruises between perches)
+        bool _perched; float _perchT;
         PistolAI.Mulberry32 _aiRng;
 
         // the Pistol
@@ -164,7 +166,7 @@ namespace CosmicShore.Gameplay
             _perches.Clear(); _segments.Clear(); _rings.Clear(); _held.Clear();
             _darting = _charging = false; _dartReadyAt = 0f; ClearLock();
             _aiRng = new PistolAI.Mulberry32(20261022u); _ai = new PistolAI(31337u + 17u);
-            _home = _gt.position; _aiHasDir = false; _aiLandedAt = 0f;
+            _home = _gt.position; _aiHasDir = false; _aiIslandGoal = 0f; _perched = false; _perchT = 0f;
             _remotePistol = false; _sentPerches = -1; _sentLock = 0; _stateSendAt = 0f;
             if (_rider)
             {
@@ -175,9 +177,10 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                Pin(true); HoldPen(true);
-                // the Goby starts perched where it is, on a pad of its own
+                HoldPen(true);
+                // the Goby starts perched where it is, on a pad of its own: the first island begins here
                 AddPerch(_gt.position, _gt.up, ownPad: true);
+                _perched = true; Pin(true);
             }
             _p = new PistolBodyMath.State { launch = Mathf.RoundToInt(_body.pLaunchCharges) };
             _f = WaitingFrame();
@@ -211,7 +214,8 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy() => Unbind();
 
-        /// <summary>Translation pinned (the fleet's restricted stance): the Goby never cruises; it only aims and darts.</summary>
+        /// <summary>Translation pinned (the fleet's restricted stance) while the Goby is perched or darting: perched it only
+        /// aims, darting it is moved along the dart; between perches it cruises on its own flight.</summary>
         void Pin(bool on)
         {
             if (_pinned == on || _status == null) return;
@@ -275,6 +279,7 @@ namespace CosmicShore.Gameplay
 
             if (_human == Half.Goby && !_aiCrew) HumanGoby(dt); else GobyAI(dt);
             StepDart(dt);
+            StepPerch(dt);
             HoldLock();
 
             if (_remotePistol) { SendPerches(); return; }
@@ -327,7 +332,7 @@ namespace CosmicShore.Gameplay
             if (go < 6f) return;
             _darting = true; _dartDir = f; _dartUp = _gt.up; _dartDist = go; _dartWent = 0f;
             _dartSpeed = go / Mathf.Max(0.05f, Config.DartSeconds);
-            _aiHasDir = false;
+            _perched = false; Pin(true);
         }
 
         /// <summary>The first block (not the pair's own) the hull's padded line meets within <paramref name="len"/>.</summary>
@@ -361,14 +366,41 @@ namespace CosmicShore.Gameplay
             if (_dartWent < _dartDist - 0.01f) return;
             _darting = false;
             _dartReadyAt = _t + Config.DartCooldown;
-            _aiLandedAt = _t;
             Vector3 at = _gt.position;
-            bool onBlock = NearBlock(at, Config.HullRadius + 4f);
             var prev = _perches[_perches.Count - 1];
-            AddPerch(at, _dartUp, ownPad: !onBlock);
-            var seg = new PlaneSegment(prev.Pos, at, (prev.Up + _dartUp).normalized);
-            _segments.Add(seg);
-            LayGround(seg);
+            // a dash, not a perch: too close to the last perch for an island, or the Pistol already has its islands ahead
+            if (!GobyIslands.Reaches(prev.Pos, at, Config.IslandMinLength) || IslandsAhead >= Config.IslandQueue) { Pin(false); return; }
+            // a perch: the end of an island (a long gap is laid as several, each a perch of its own), pinned for the perch time
+            bool onBlock = NearBlock(at, Config.HullRadius + 4f);
+            int pieces = GobyIslands.Pieces(prev.Pos, at, Config.IslandMaxLength);
+            Vector3 from = prev.Pos, fromUp = prev.Up;
+            for (int i = 1; i <= pieces; i++)
+            {
+                float k = i / (float)pieces;
+                Vector3 pos = Vector3.Lerp(prev.Pos, at, k), up = Vector3.Slerp(prev.Up, _dartUp, k);
+                AddPerch(pos, up, ownPad: i < pieces || !onBlock);
+                var seg = new PlaneSegment(from, pos, (fromUp + up).normalized);
+                _segments.Add(seg);
+                LayGround(seg);
+                from = pos; fromUp = up;
+            }
+            _perched = true; _perchT = 0f; _aiHasDir = false;
+        }
+
+        /// <summary>Islands laid ahead of the one the Pistol is on (none counted while it flies on another machine).</summary>
+        int IslandsAhead => _remotePistol ? 0 : GobyIslands.Ahead(_perches.Count, _resting, _at, _seg, _dir);
+
+        /// <summary>Perched, the Goby aims for <c>perchSeconds</c> (longer while a person charges a dart from it), then lifts
+        /// off and cruises on its own flight.</summary>
+        void StepPerch(float dt)
+        {
+            if (_perched)
+            {
+                _perchT += dt;
+                bool charging = _human == Half.Goby && !_aiCrew && _charging;
+                if (_perchT >= Config.PerchSeconds && !charging) _perched = false;
+            }
+            Pin(_perched || _darting);
         }
 
         bool NearBlock(Vector3 at, float r)
@@ -499,24 +531,33 @@ namespace CosmicShore.Gameplay
 
         // ================================ the Goby's AI (while the human flies the Pistol) ================================
 
-        /// <summary>The seat's Goby: locks the nearest rival in reach, picks a perch about <c>aiDartLength</c> away (toward a
-        /// locked rival, within reach of home), turns the hull onto it and darts once the Pistol has caught up (or after
-        /// <c>aiWaitForPistol</c>). It acts through the same calls the Goby's buttons make.</summary>
+        /// <summary>The seat's Goby (Garrett, 2026-10-23: "the goby is barely cruising around at all"): it CRUISES at
+        /// <c>aiCruiseSpeed</c>, steering toward a locked rival or wandering within reach of home, and darts once its island
+        /// is as long as it planned (a length between <c>islandMinLength</c> and <c>islandMaxLength</c>), so the dart's end
+        /// is the next perch. While the Pistol already has <c>islandQueue</c> islands ahead it lays none and stays near the
+        /// last perch. Perched, it aims at where it will go next. It acts through the calls the Goby's buttons make, and
+        /// moves the hull itself (the pilot's input is paused while it flies).</summary>
         void GobyAI(float dt)
         {
             if (_darting) return;
             var lvl = Difficulty();
             if (!_lockTarget || !_lockIsVessel) AiLockNearestRival();
-            if (!_aiHasDir && _t >= _aiDecideAt) { _aiDir = AiChooseDirection(lvl); _aiHasDir = true; }
-            if (!_aiHasDir) return;
-            float maxDeg = 140f * dt;
+            if (!_aiHasDir || _t >= _aiDecideAt)
+            {
+                _aiDir = AiCruiseDirection(lvl); _aiHasDir = true;
+                _aiDecideAt = _t + Config.AiRethinkSeconds * (0.7f + 0.6f * _aiRng.Next()) + lvl.Late;
+            }
             Quaternion.FromToRotation(_gt.forward, _aiDir).ToAngleAxis(out float deg, out var axis);
-            if (deg > 0.05f && axis.sqrMagnitude > 1e-8f && IsAuthority()) _status.VesselTransformer.ApplyRotation(Mathf.Min(deg, maxDeg), axis);
-            bool pistolHere = _resting && _at == _perches.Count - 1;
-            if (deg < 4f && DartReady && (pistolHere || _t - _aiLandedAt > Config.AiWaitForPistol))
+            if (deg > 0.05f && axis.sqrMagnitude > 1e-8f && IsAuthority())
+                _status.VesselTransformer.ApplyRotation(Mathf.Min(deg, Config.AiTurnRate * dt), axis);
+            if (_perched) return;   // aims from the perch; it lifts off when the perch time is up (StepPerch)
+            if (IsAuthority()) _status.VesselTransformer.TranslateShip(_gt.forward * (Config.AiCruiseSpeed * dt));
+            if (_aiIslandGoal <= 0f) _aiIslandGoal = Mathf.Lerp(Config.IslandMinLength, Config.IslandMaxLength, _aiRng.Next());
+            float from = Vector3.Distance(_gt.position, _perches[_perches.Count - 1].Pos);
+            if (DartReady && deg < 25f && IslandsAhead < Config.IslandQueue && from + 0.5f * Config.AiDartLength >= _aiIslandGoal)
             {
                 FireDart(Config.AiDartLength);
-                _aiDecideAt = _t + lvl.Late * (0.5f + _aiRng.Next());
+                if (_darting) _aiIslandGoal = 0f;
             }
         }
 
@@ -535,26 +576,18 @@ namespace CosmicShore.Gameplay
             if (pick != null) { _lockTarget = pick.Transform; _lockVessel = pick; _lockIsVessel = true; }
         }
 
-        Vector3 AiChooseDirection(PistolAI.Difficulty lvl)
+        /// <summary>Where the cruising Goby AI heads next: at a locked rival in reach; back toward the last perch while the
+        /// Pistol's islands are full (it circles there instead of laying more); home when it strays; else a wander off the
+        /// nose. Easy and Medium misjudge it by a few degrees.</summary>
+        Vector3 AiCruiseDirection(PistolAI.Difficulty lvl)
         {
-            Vector3 pos = _gt.position, bestDir = _gt.forward; float bestScore = float.MinValue, L = Config.AiDartLength;
-            for (int k = 0; k < 12; k++)
-            {
-                Vector3 dir;
-                if (k == 0 && _lockTarget) dir = (_lockTarget.position - pos).normalized;
-                else if (k == 1 && (pos - _home).magnitude > Config.AiHomeRadius * 0.5f) dir = (_home - pos).normalized;
-                else dir = Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 140f, _gt.up) * Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 90f, _gt.right) * _gt.forward;
-                float go = L; bool hit = FirstOnLine(pos, dir, L * 1.4f, out float along);
-                if (hit) go = along;
-                float score = -Mathf.Abs(go - L) * (hit ? 0.6f : 1f) - Mathf.Max(0f, (pos + dir * go - _home).magnitude - Config.AiHomeRadius) * 2f;
-                if (go < 60f) score -= 1000f;
-                if (k == 0 && _lockTarget) score += 120f;
-                score += _aiRng.Next() * 30f;
-                if (score > bestScore) { bestScore = score; bestDir = dir; }
-            }
-            // a misjudged perch: the aim off by a few degrees (Easy / Medium)
-            if (_aiRng.Next() < lvl.Mis * 4f) bestDir = Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 20f, _gt.up) * bestDir;
-            return bestDir.normalized;
+            Vector3 pos = _gt.position, last = _perches[_perches.Count - 1].Pos, dir;
+            if (_lockTarget && (_lockTarget.position - pos).sqrMagnitude < Config.LockRange * Config.LockRange) dir = _lockTarget.position - pos;
+            else if (IslandsAhead >= Config.IslandQueue && (last - pos).magnitude > 0.5f * Config.IslandMinLength) dir = last - pos;
+            else if ((pos - _home).magnitude > 0.7f * Config.AiHomeRadius) dir = _home - pos;
+            else dir = Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 120f, _gt.up) * Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 50f, _gt.right) * _gt.forward;
+            if (_aiRng.Next() < lvl.Mis * 4f) dir = Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 20f, _gt.up) * dir;
+            return dir.sqrMagnitude > 1e-6f ? dir.normalized : _gt.forward;
         }
 
         PistolAI.Difficulty Difficulty() => aiLevel switch

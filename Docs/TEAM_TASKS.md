@@ -2184,15 +2184,31 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log, 2026-10-23 proportions)
 - **Done:** 2026-10-23, Garrett flew it: Tiny Wings is floatier, faster-building, more forgiving and 3x longer - the floaty pass follows; its playtest is the next task
 
-### T-20261023-6811 · open · test · Crew vessels
+### T-20261023-6811 · done · test · Crew vessels
 - **Task:** Fly the floaty Pistol (Toybox > Vessel Changer > Goby and Pistol). The Goby's darts are now 900-1800 u (a tap is 900): check the dart still feels right, then double tap the small view. The Pistol should: ride a few small hills from the perch, then (diving down, letting go up) fly over several; float - launch higher and fall slower; keep building speed over the island; forgive a mistimed landing (it slows a little, never stalls); take about 20-30 s per stretch. Compare with Tiny Wings if you can.
 - **Done when:** Garrett says the floatiness, the speed build, the forgiveness and the island length read as Tiny Wings, or names what to change (GobyPistolConfig: pAirGravity, pSmoothBoost, pGoodLand, pHardKeep, pMaxSpeed, pMinSpeed, dart ranges)
 - **Who can take it:** Garrett (feel call); Yash (offered) for the phone run
 - **Added:** 2026-10-23 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
 - **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log, 2026-10-23 floaty pass)
+- **Done:** 2026-10-23, Garrett flew it: the Pistol a bit overtuned, the Goby barely moving - the movement pass for the pair follows; its playtest is the next task
+
 ### T-20261023-06ac · open · test · Crew vessels
 - **Task:** Playtest the Ratel's pattern-made juice and the effect line above the cards in the Unity Editor and on a phone in portrait: the 7 steps of its checklist entry (cell bursts, card pop, the taken prism flying hex-to-disc into the battery, the lime line for Dynamo cards).
 - **Done when:** All 7 steps of the 2026-10-23 Honeyguide juice entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, or the failures are filed as dev tasks
 - **Who can take it:** Yash (offered: playtests) or Garrett
 - **Added:** 2026-10-23 by a Claude session (`cece/inspiring-hawking-mnzmqc`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Honeyguide juice, 2026-10-23); Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+
+### T-20261023-be8f · open · test · Crew vessels
+- **Task:** Fly the Goby & Pistol's movement pass (Toybox > Vessel Changer > Goby and Pistol). As the Goby: it now CRUISES on two-thumb flight; hold Dart and let go to dash 140-600 u; once you are 900+ u from your last perch a dart's end becomes a perch (the island lays out behind you) and the Goby sits 1.5 s, then flies on. Swap to the Pistol (double tap the small view) and ride: the Goby AI should keep cruising and laying islands just ahead of you, never far away and never leaving you waiting at a perch. Swap back and let the Pistol AI ride while you fly.
+- **Done when:** Garrett says both halves move well together, or names what to change (GobyPistolConfig: aiCruiseSpeed, perchSeconds, islandMinLength / islandMaxLength / islandQueue, dart ranges; the Pistol's pAirGravity, pSmoothBoost, pMaxSpeed)
+- **Who can take it:** Garrett (feel call); Yash (offered) for a phone run
+- **Added:** 2026-10-23 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log, 2026-10-23 movement pass)
+
+### T-20261023-a6e1 · open · decision · Crew vessels
+- **Task:** Should a person's Goby show, in the world, when its next dart will perch (900+ u from the last perch and the Pistol's island queue not full)? Today a dart that falls short just dashes with no cue.
+- **Done when:** Garrett decides yes (and how: a light or shape in the world, per the LOCKED world-not-screen rule) or no
+- **Who can take it:** Garrett
+- **Added:** 2026-10-23 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (2026-10-23 movement pass, [read])

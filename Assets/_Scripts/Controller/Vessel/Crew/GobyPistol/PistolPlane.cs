@@ -241,4 +241,26 @@ namespace CosmicShore.Gameplay
             return HillSlope(LineS(f, u), f.L, f.H) * f.Dir;
         }
     }
+
+    /// <summary>
+    /// Where the Pistol's islands end (Garrett, 2026-10-23: "the goby is barely cruising around at all ... lets start by
+    /// tuning their movement"). The Goby cruises between perches; a dart's end becomes a PERCH, the end of an island, only
+    /// once it is <c>islandMinLength</c> from the last perch, and a longer gap is laid as islands of at most
+    /// <c>islandMaxLength</c>, so the Pistol always rides the island length its Tiny Wings ride is tuned for. Pure.
+    /// </summary>
+    public static class GobyIslands
+    {
+        /// <summary>True when a perch at <paramref name="at"/> ends an island begun at <paramref name="from"/>.</summary>
+        public static bool Reaches(Vector3 from, Vector3 at, float minLength) => (at - from).sqrMagnitude >= minLength * minLength;
+
+        /// <summary>How many islands the gap from <paramref name="from"/> to <paramref name="at"/> is laid as.</summary>
+        public static int Pieces(Vector3 from, Vector3 at, float maxLength) =>
+            Mathf.Max(1, Mathf.CeilToInt((at - from).magnitude / Mathf.Max(1f, maxLength) - 1e-4f));
+
+        /// <summary>Islands laid ahead of the one the Pistol rides toward (or rests at): the Goby lays no new perch while
+        /// <c>islandQueue</c> wait, so the two stay together.</summary>
+        public static int Ahead(int perches, bool resting, int at, int segment, int dir) =>
+            Mathf.Max(0, perches - 1 - (resting ? at : (dir > 0 ? segment + 1 : segment)));
+    }
 }
+

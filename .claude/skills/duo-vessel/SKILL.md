@@ -33,7 +33,7 @@ Say *crew vessel* in new code and docs; each half is a **subvessel**, the extra 
 | Crew vessel | Card | Hull (`VesselClassType`) | Seat on its root | The seat's view | Brief |
 |---|---|---|---|---|---|
 | **Wrasse** | Wrasse and Grouper | Wrasse = 19 (the Sparrow without its kit, two thumbs) | `KiteNavigator`: a one-thumb kite on the hull's x-z plane | top-down orthographic, the real world projected onto the plane | `references/designs/wrasse-and-grouper.md` → `Controller/Vessel/Crew/KITE_NAVIGATOR.md` |
-| **Goby** | Goby and Pistol | Goby = 18 (a Squirrel-derived prefab stripped of the Squirrel's kit; pinned: it perches and darts like the Shrike slings, 2026-10-22) | `GobyPistolDuo`: the Pistol, riding a FLAT plane through each dart from perch to perch, downhill either way | side-on perspective square to the plane | `references/designs/goby-and-pistol.md` (its top section is the kit as it is now) |
+| **Goby** | Goby and Pistol | Goby = 18 (a Squirrel-derived prefab stripped of the Squirrel's kit; it cruises, darts and perches like the Shrike docks and slings, pinned only while perched or darting, 2026-10-23) | `GobyPistolDuo`: the Pistol, riding a FLAT plane through each dart from perch to perch, downhill either way | side-on perspective square to the plane | `references/designs/goby-and-pistol.md` (its top section is the kit as it is now) |
 
 **The shape both chose** (call it **C** beside §3.1's A and B): **one hull class and one prefab** - a clone of a donor
 hull, authored and registered by `Tools/Build/author_<hull>_assets.py` (`author_wrasse_assets.py` is the fuller
@@ -311,6 +311,11 @@ enum before taking a value.
 - **A card's words are a contract.** `HangarAbilityKindsTests` fails any designed ability whose label and description
   contain none of `HangarAbilityKinds`' words (it would show no stage move). "Quick Jump: Time shortens the jump
   cooldown" is Passive; "... the burst of speed that flings it" is Boost. Classify every new card before shipping.
+- **A hull pinned for good stops being a vessel** (the Goby, 2026-10-23: "barely cruising around at all"). Pinning a
+  seat's hull so it only darts made the Goby a turret: it moved only during a dart, a dart stopped at the first prism
+  near its line, and its AI then waited for the other seat. Pin a hull only for a stance (perched, docked, darting) and
+  let it fly between; couple the two seats by what one lays for the other (the Goby's islands, `GobyIslands`), not by
+  making one wait.
 - **A pinned hull still turns.** A seat that must not let its hull cruise pins it (`SetTranslationRestricted`: the
   fleet's restricted stance), moves it only with `TranslateShip`, and turns it for its own AI with `ApplyRotation`
   while the player's input is paused. Starting the platform `AIPilot` instead flies the hull like its donor.
