@@ -119,16 +119,9 @@ namespace CosmicShore.Gameplay
             if (RearViewGesture.RequestedThisFrame())
                 VesselRearView.Toggle();
 
-            // Take over an AI teammate's hull (D-pad left/right, keyboard 1/2) - ARENA matches
-            // only; RequestPilotSwap is a no-op anywhere else. Polled here for the rear view's
-            // reasons: local-human-pilot and pause gated already, and it moves the PILOT between
-            // hulls, so it is not an ability a hull could fail to author. See PilotSwap.
-            // A crew hull (the Wrasse) spends the same gesture on changing SEAT (KiteNavigator), so on
-            // one it is the seat's alone: the press used to change seat AND ask the arena for a
-            // teammate's hull. The arena's tiles (PilotSwapIndicator) still swap hulls by a tap.
-            int pilotSwap = PilotSwapGesture.DirectionThisFrame();
-            if (pilotSwap != 0 && ownerPlayer != null && !FliesACrewSeat())
-                ownerPlayer.RequestPilotSwap(pilotSwap);
+            // The swap gesture (D-pad left/right, keyboard 1/2, a two-finger swipe) is not read here: it must work while
+            // this controller is paused - a person at a crew seat or riding another hull has their flight input paused -
+            // so the person's own Player reads it (CrewStations, LocalCrewStation), seats first, then hulls.
 
             // Tick once per frame here so engagement detection and the
             // strategy itself read the same per-frame snapshot.
@@ -161,11 +154,6 @@ namespace CosmicShore.Gameplay
         }
 
         private IVesselStatus touchProfileVessel;
-
-        /// <summary>The hull this player flies carries a crew seat, whose seat change owns the swap gesture.</summary>
-        private bool FliesACrewSeat() =>
-            ownerPlayer != null && ownerPlayer.Vessel is Component hull && hull
-            && hull.TryGetComponent<KiteNavigator>(out _);
 
         private void UpdateDualMouseEngagement()
         {

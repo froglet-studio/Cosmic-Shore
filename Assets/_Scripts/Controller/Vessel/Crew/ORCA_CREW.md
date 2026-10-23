@@ -95,6 +95,10 @@ task in "Try it"). The crew runs on one machine, as the Wrasse's seat does (see 
 
 ## The seats
 
+The swap gesture (D-pad left / right, keys 1 / 2, a two-finger swipe) steps helm -> gunners -> the next hull
+(`Docs/CREW_STATIONS.md`); keys 3 / 4 pick the Mass and Charge seats outright. A free gunner seat can be manned by a
+second person (a rider) while someone else flies.
+
 | Seat | What it does | Controls |
 |---|---|---|
 | **Helm** (1) | Flies the hull with two thumbs: the Sparrow's hull on its base `VesselTransformer`, at the lab's share of the Sparrow's numbers (below). **Boost**: held on the right trigger while a tank lasts; the tank refills by itself. **Shield**: 144 prisms (`DangerHemisphereConfig`'s 12 × 12) stand on a 50–70 u shell round the hull, with the forward cone left open so the helm can see and fly out. It works in two phases (round 5): (1) **carried**, the prisms ride with the hull as **super-shielded** prisms for `shieldSeconds` (4 s × Mass), a wall that only a sniper breaks; (2) **dropped**, each turns into a **danger prism where it stands** (`PrismKinds.Retheme`) and stays for `shieldLinger` (20 s). | Two sticks (or the keyboard); right trigger / right Shift to boost; left trigger / left Shift, E or pad B to shield. On a phone: lift the left thumb to boost (held while the tank lasts), the right thumb to shield |
@@ -161,8 +165,9 @@ world solution over the 2d flat text solution." Lab round 8 (`Docs/Studios/CREW_
   out. It cannot use the aimed channel: that channel is cone-only (the Echo Sight's). `bombLitStrength` (1) scales it;
   0 turns it off.
 
-**Changing seat.** Keys **1–4** pick a seat. The **D-pad** (the arena's `PilotSwapGesture`) steps through them, and so
-does a **two-finger tap** on a touch screen. While the person holds a gunner seat:
+**Changing seat.** The **D-pad**, keys **1 / 2** and a **two-finger swipe** on a touch screen (`PilotSwapGesture`) step
+helm -> gunners -> the next hull (`Docs/CREW_STATIONS.md`, 2026-10-23; the two-finger tap and keys 1 / 2 as direct picks
+went then). Keys **3 / 4** still pick the Mass and Charge seats outright. While the person holds a gunner seat:
 - the hull's own `AIPilot` flies the hull;
 - the person's flight input is paused (`InputController.SetPause`), as the Wrasse's navigator seat does;
 - the camera looks down the scope or over the turret, or from behind the flying missile;
@@ -351,8 +356,10 @@ python3 Tools/Build/element_ability_table.py Orca  # four cards, four channels
   goes wherever the crew runs (see Networking).
 - **Networking.** The crew runs on one machine: the local person's hull, or an AI hull on the authority. Missiles, the
   shield's poses and the AI gunners are that machine's. The burst is an `AOEExplosion` spawned there only, and prism
-  destruction does not replicate. A second human on another machine needs the seats replicated, plus a decision on
-  which machine decides the bursts (the Wrasse's `T-20261017-b06e` is the same question).
+  destruction does not replicate. **Since 2026-10-23 a person on another machine can man a free gunner seat**
+  (`Docs/CREW_STATIONS.md`): that seat runs on THEIR machine (`OrcaCrew` `Mode.Rider`: turret, gun, missiles, bomb), and
+  the hull's machine leaves it alone. What their rounds do is seen on their machine only, and nobody else sees their
+  turret turn; replicating the turrets' aim and deciding the bursts on one machine for everyone is the open part.
 - **Level-5 upgrades:** none is designed. The map's four `UpgradeLabel`s are empty, waiting on Garrett (vessel skill §3,
   the design-approval gate).
 - **Sounds:** all eight `EventReference` slots ship empty: launch, burst, shield, omni refill, empty magazine, sniper

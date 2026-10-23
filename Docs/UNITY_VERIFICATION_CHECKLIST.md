@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Seats, then hulls: any person changes seat and vessel in freestyle (`cece/relaxed-tesla-axhxzy`, 2026-10-23) — NOT EDITOR-VERIFIED
+
+**What landed:** one swap ring for every person (`CrewStations`, `Docs/CREW_STATIONS.md`): D-pad left / right, keys
+1 / 2 and a new two-finger swipe step through the seats of your hull, then every free hull of your domain in freestyle
+and a running arena match. Taking an AI's hull, or one another person left to ride, is the arena's `PilotSwap`
+exchange. A second person rides a free Orca gunner seat (run on their machine) or the Ratel (relayed to the hull's
+machine). `Player.NetStation` + four RPC pairs; protocol version 12. The crews no longer read the gesture
+(`InputController` neither).
+
+**Verified without the editor:** `unity_refcompile` player 0 errors (a planted error in a new file is caught), editor 0
+in changed files; `gates.sh` ALL OK (logging, conditional compilation, crew vessels, every generator `--check`).
+`Tools/Build/dynamo_lab/parity.cjs` PASS (DynamoCore unchanged in play); a scratch harness round-tripped the Ratel's
+board 288 times over the 24 rule sets with identical digests and identical play after (a planted Rng bug failed all
+288). The new `HoneyguideTests.RatelBoard_CopiedToAnotherMachine_IsTheSameBoard_AndPlaysOnAlike` compiles, not run.
+`/verify-unity` did not run: no Unity CLI in the session.
+
+**Verify (MPPM, two players in freestyle; then a phone and a PC):** the six hand tests in `Docs/CREW_STATIONS.md`.
+Watch for: the ridden hull's HUD showing on the rider's screen in freestyle (it is a remote hull's HUD, shown by
+`ShowHUD`); the camera following the ridden hull; a refused move logging `[Player] Seat move refused`.
+
 ### 🔴 Prism animations in the browser: a MeshRenderer stamp path where Entities Graphics cannot run (`claude/webgl-prism-animations-kg5qx7`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 **What landed:** on devices without Entities Graphics (every WebGL2 browser; also GPUs whose compute kernels fail to

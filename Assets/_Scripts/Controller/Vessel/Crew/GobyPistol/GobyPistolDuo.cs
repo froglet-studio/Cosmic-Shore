@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
     /// <para>It lives on <c>Goby.prefab</c> and wakes only on the LOCAL pilot's hull while a human flies it (CrewSeat):
     /// the Pistol, the dens, the pull and the rings are simulated on that one machine until the crew is networked.</para>
     /// </summary>
-    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, ICrewButtons, IHullParkAware
+    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, ICrewButtons, IHullParkAware, ICrewStations
     {
         enum Half { Goby = 0, Pistol = 1 }
 
@@ -858,12 +858,29 @@ namespace CosmicShore.Gameplay
 
         void PollSwap()
         {
-            // the arena's gesture on the arena's cooldown, or on a phone a double tap on the small view (every crew vessel's
-            // touch swap)
+            // on a phone a double tap on the small view (every crew vessel's touch swap); the swap gesture (D-pad, keys
+            // 1 / 2, a two-finger swipe) is the person's, and CrewStations moves them here through TakeSeat
             bool tapped = _pipTap.Poll(showSideView ? _pip.SmallView(_cam, HumanInSeat) : null);
-            if (tapped && Time.unscaledTime >= _swapReadyAt) _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
-            else if (!CrewSeat.PollSwap(ref _swapReadyAt)) return;
-            SetHuman(_human == Half.Goby ? Half.Pistol : Half.Goby);
+            if (!tapped || Time.unscaledTime < _swapReadyAt) return;
+            TakeSeat(_human == Half.Goby ? 1 : 0);
+        }
+
+        /// <inheritdoc cref="ICrewStations.SeatCount"/>
+        public int SeatCount => 2;
+
+        /// <inheritdoc cref="ICrewStations.LocalSeat"/>
+        public int LocalSeat => _goby != null ? (_human == Half.Pistol ? 1 : 0) : -1;
+
+        /// <inheritdoc cref="ICrewStations.HostsRiders"/>: not yet - the Pistol runs on the hull's machine.
+        public bool HostsRiders => false;
+
+        /// <inheritdoc cref="ICrewStations.TakeSeat"/>
+        public void TakeSeat(int seat)
+        {
+            var half = seat == 1 ? Half.Pistol : Half.Goby;
+            if (_goby == null || half == _human) return;
+            _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
+            SetHuman(half);
         }
 
         /// <inheritdoc cref="IHullParkAware.ReturnHumanToHull"/>

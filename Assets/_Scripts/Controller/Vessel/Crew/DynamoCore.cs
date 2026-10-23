@@ -711,6 +711,93 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // ------------------------------------------------------------------ state copy (a Ratel on another machine)
+
+        /// <summary>
+        /// Every field that is the board's state, as ints (a double as its two halves), for a Ratel played on another
+        /// machine: the hull's machine runs the Dynamo and sends this; the rider's copy reads it with
+        /// <see cref="ReadState"/>. The events and the pattern shapes are not state (shapes come from the settings).
+        /// </summary>
+        public void WriteState(List<int> into)
+        {
+            into.Clear();
+            into.Add(Cells.Length);
+            into.AddRange(Cells);
+            into.Add(Ports.Length);
+            foreach (var p in Ports) { into.Add(p[0]); into.Add(p[1]); }
+            into.Add(PortSet); into.Add(Ap); into.Add(BonusAp); into.Add(Ticks); into.Add(Made); into.Add(Wasted);
+            into.Add(Free.Count); into.AddRange(Free);
+            AddDouble(into, Clock);
+            into.Add(Battery.Count); into.AddRange(Battery);
+            into.Add(Slots.Length); into.AddRange(Slots);
+            into.Add(Uses.Length); into.AddRange(Uses);
+            into.Add(RevealState != null ? 1 : 0);
+            if (RevealState != null) { into.Add(RevealState.Stage); into.Add(RevealState.PortSet); AddDouble(into, RevealState.T); }
+            into.Add((int)Ability);
+            into.Add(Rng);
+        }
+
+        /// <summary>Overwrite this board with a state <see cref="WriteState"/> wrote. False (and the board untouched past
+        /// the point it failed) when the data is not one: a copy from another build.</summary>
+        public bool ReadState(int[] d)
+        {
+            int i = 0;
+            bool Has(int n) => d != null && i + n <= d.Length;
+            if (!Has(1) || d[i] != Cells.Length || !Has(1 + Cells.Length)) return false;
+            i++;
+            Array.Copy(d, i, Cells, 0, Cells.Length); i += Cells.Length;
+            if (!Has(1)) return false;
+            int ports = d[i++];
+            if (ports < 0 || !Has(ports * 2 + 6)) return false;
+            Ports = new int[ports][];
+            for (int p = 0; p < ports; p++) { Ports[p] = new[] { d[i], d[i + 1] }; i += 2; }
+            PortSet = d[i++]; Ap = d[i++]; BonusAp = d[i++]; Ticks = d[i++]; Made = d[i++]; Wasted = d[i++];
+            if (!ReadList(d, ref i, Free) || !Has(2)) return false;
+            Clock = ReadDouble(d, ref i);
+            if (!ReadList(d, ref i, Battery)) return false;
+            if (!Has(1) || d[i] != Slots.Length || !Has(1 + Slots.Length)) return false;
+            i++; Array.Copy(d, i, Slots, 0, Slots.Length); i += Slots.Length;
+            if (!Has(1) || d[i] != Uses.Length || !Has(1 + Uses.Length)) return false;
+            i++; Array.Copy(d, i, Uses, 0, Uses.Length); i += Uses.Length;
+            if (!Has(1)) return false;
+            if (d[i++] == 1)
+            {
+                if (!Has(4)) return false;
+                RevealState ??= new Reveal();
+                RevealState.Stage = d[i++]; RevealState.PortSet = d[i++]; RevealState.T = ReadDouble(d, ref i);
+            }
+            else RevealState = null;
+            if (!Has(2)) return false;
+            Ability = (DynamoAbility)d[i++];
+            Rng = d[i++];
+            return true;
+        }
+
+        static void AddDouble(List<int> into, double v)
+        {
+            long bits = BitConverter.DoubleToInt64Bits(v);
+            into.Add((int)(bits & 0xffffffffL));
+            into.Add((int)(bits >> 32));
+        }
+
+        static double ReadDouble(int[] d, ref int i)
+        {
+            long bits = (uint)d[i] | ((long)d[i + 1] << 32);
+            i += 2;
+            return BitConverter.Int64BitsToDouble(bits);
+        }
+
+        static bool ReadList(int[] d, ref int i, List<int> into)
+        {
+            if (i >= d.Length) return false;
+            int n = d[i++];
+            if (n < 0 || i + n > d.Length) return false;
+            into.Clear();
+            for (int k = 0; k < n; k++) into.Add(d[i + k]);
+            i += n;
+            return true;
+        }
+
         /// <summary>The same digest the lab's <c>DynamoCore.digest</c> prints; the parity gate compares the two.</summary>
         public string Digest()
         {

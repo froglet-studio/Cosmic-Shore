@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// the AI are per-viewer, and the effects are this machine's. Networking the seat is a follow-up (KITE_NAVIGATOR.md).</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class KiteNavigator : MonoBehaviour, IRingThreadProbe, ICrewTriggers, IHullParkAware
+    public sealed class KiteNavigator : MonoBehaviour, IRingThreadProbe, ICrewTriggers, IHullParkAware, ICrewStations
     {
         internal struct Mote
         {
@@ -412,27 +412,36 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ seats
 
-        // Keys PICK a seat - 1 the hull (the Grouper), 2 the kite (the Wrasse) - and the D-pad and a double tap on the small
-        // view STEP to the other one (Garrett, 2026-10-21: "players can select, change seats etc. both can be played on
-        // mobile or pc"; the Orca's keys 1-4 pick its seats the same way). Picking the seat you are in does nothing and
-        // spends no cooldown. Every pick is remembered (CrewSeatChoice), so the next bind starts there.
+        // The swap gesture (D-pad, keys 1 / 2, a two-finger swipe) is the person's, not the seat's: CrewStations steps them
+        // through this hull's two seats and on to the next hull, and moves them here through TakeSeat. A double tap on
+        // the small view still swaps the two seats here (Garrett, 2026-10-21: "players can select, change seats etc. both
+        // can be played on mobile or pc"). Every pick is remembered (CrewSeatChoice), so the next bind starts there.
         void PollSwap()
         {
             // read every frame: the double tap tracks presses and releases across frames
-            bool pipDoubleTap = PipDoubleTapped();
-            var keyboard = Keyboard.current;
-            int want;
-            if (keyboard != null && keyboard.digit1Key.wasPressedThisFrame) want = 0;
-            else if (keyboard != null && keyboard.digit2Key.wasPressedThisFrame) want = 1;
-            else if (pipDoubleTap || PilotSwapGesture.DirectionThisFrame() != 0) want = _humanNavigates ? 0 : 1;
-            else return;
+            if (!PipDoubleTapped() || Time.unscaledTime < _swapReadyAt) return;
+            TakeSeat(_humanNavigates ? 0 : 1);
+        }
 
-            bool navigate = want == 1;
-            if (navigate == _humanNavigates || Time.unscaledTime < _swapReadyAt) return;
+        /// <inheritdoc cref="ICrewStations.SeatCount"/>
+        public int SeatCount => 2;
+
+        /// <inheritdoc cref="ICrewStations.LocalSeat"/>
+        public int LocalSeat => _vessel != null && !_aiCrew ? (_humanNavigates ? 1 : 0) : -1;
+
+        /// <inheritdoc cref="ICrewStations.HostsRiders"/>: not yet - the kite runs on the hull's machine
+        /// (KITE_NAVIGATOR.md, "Two humans, two seats", work order step 4).
+        public bool HostsRiders => false;
+
+        /// <inheritdoc cref="ICrewStations.TakeSeat"/>
+        public void TakeSeat(int seat)
+        {
+            bool navigate = seat == 1;
+            if (_vessel == null || _aiCrew || navigate == _humanNavigates) return;
             _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
             _seatChoicePending = false;
             SetHumanNavigates(navigate);
-            if (_status != null) CrewSeatChoice.Set(_status.VesselType, want);
+            if (_status != null) CrewSeatChoice.Set(_status.VesselType, navigate ? 1 : 0);
         }
 
         // The seat last picked on this hull class (on the lowest preset, always the Wrasse) is taken once the hull is really

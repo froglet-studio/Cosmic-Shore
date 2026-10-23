@@ -501,6 +501,15 @@ every effect crosses the network as a decision, never as device input.
     question: seats first, then teammates.
   - `InputController` asks `CrewSeat.TryConsumeSwap(dir)` and calls the arena only when the seat passes the step on.
 
+**Where it stands (2026-10-23, `Docs/CREW_STATIONS.md`):** steps 3 and 5 are built for every crew, generically:
+`Player.NetStation` (one `CrewStation` per person, server-write) instead of a `CrewSeatOccupancy` behaviour, the
+server's check `CrewStations.Classify`, `ICrewStations` (`SeatCount`, `LocalSeat`, `HostsRiders`, `TakeSeat`) on every
+crew, and the gesture owned by the person's `LocalCrewStation`: seats first, then the domain's hulls, in freestyle and a
+running arena match. A pick is a request, but a seat another person holds is skipped rather than offered (no offer /
+accept yet). The Orca's gunners and the Ratel take a second person; **the Wrasse still takes one person at a time**
+(`KiteNavigator.HostsRiders` is false) until steps 1 and 4 land, and its keys 1 / 2 now step the ring rather than pick a
+seat outright.
+
 **Work order:**
 1. **Prism parity for one human online.** `KiteNavigator.cs`, with the effects split into `KiteNavigatorEffects.cs`
    (Follow-ups), and `WrasseCrewBodies.cs`, which gets the hull owner's pop, blast and Mass-seed RPCs. A seeded-cluster

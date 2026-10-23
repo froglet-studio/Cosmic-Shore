@@ -2091,3 +2091,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (product), Shombith (UI / orientation)
 - **Added:** 2026-10-22 by a Claude session (`cece/keen-edison-3c6pvz`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/CrewViews.cs SeatOrientation
+
+### T-20261023-d445 · open · test · Crew vessels
+- **Task:** Hand-test seats then hulls in freestyle with two players (MPPM, then a phone and a PC): the six hand tests in Docs/CREW_STATIONS.md - stepping Squirrel -> AI Orca helm -> gunners -> next hull, a second person in an Orca gunner seat and on the Ratel, taking a hull another person left, the two-finger swipe, leaving freestyle mid-ride
+- **Done when:** All six pass, or each failure is a dev task on this board
+- **Who can take it:** Yash (MPPM and a phone), or Garrett
+- **Added:** 2026-10-23 by Claude (cece/relaxed-tesla-axhxzy) (`cece/relaxed-tesla-axhxzy`)
+- **See:** Docs/CREW_STATIONS.md; Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261023-7dca · open · dev · Crew vessels
+- **Task:** Let a second person ride the Wrasse and the Pistol seats (ICrewStations.HostsRiders is false on KiteNavigator and GobyPistolDuo): run or relay the seat for a rider, as the Orca (seat on the rider's machine) and the Ratel (ICrewRelay) do
+- **Done when:** Two people fly the Grouper and the Wrasse (and the Goby and the Pistol) from two machines in freestyle
+- **Who can take it:** Garrett with Yash (multiplayer)
+- **Added:** 2026-10-23 by Claude (cece/relaxed-tesla-axhxzy) (`cece/relaxed-tesla-axhxzy`)
+- **See:** Docs/CREW_STATIONS.md; Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Two humans, two seats, steps 1 and 4)
+
+### T-20261023-d13a · open · dev · Crew vessels
+- **Task:** Show a crew rider's effects to everyone: an Orca rider's turret aim, rounds, missiles and bomb are seen only on the rider's machine, and the Ratel copy does not show the Honeyguide's trigger upgrades
+- **Done when:** Both machines see the same turret aim and the same prisms go
+- **Who can take it:** Garrett with Yash (multiplayer)
+- **Added:** 2026-10-23 by Claude (cece/relaxed-tesla-axhxzy) (`cece/relaxed-tesla-axhxzy`)
+- **See:** Docs/CREW_STATIONS.md (Known limits); Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md (Networking)
