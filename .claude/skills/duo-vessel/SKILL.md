@@ -49,14 +49,14 @@ defect):
 | **The card names both subvessels**: `CrewNames` (two entries) joined by `CrewNameTemplate` (`{0} and {1}`) is `SO_Vessel.CardName`, which every card, station and panel shows. `Name` stays the one-word key (the hangar's unlocks are keyed by it). | `SO_Class_<Hull>.asset`, written and checked by the generator |
 | **The way in is the Toybox's Vessel Changer** ("bring it to Unity" = fly it from there, CLAUDE.md). The hull is on `ToyVesselRoster.Default`, the Vessel Prefab Container, `DefaultNetworkPrefabs`, both class lists, and has its four `CrystalHullFusionConfig` entries. Claim the enum value after checking bleeding-edge AND the in-flight branches. | the generator `--check`; `EnumIntegrityTests` |
 | **The seat wakes** only on the local pilot's own hull while a human flies it, or while the seat itself handed the hull to its AI. | `CrewSeat.ShouldWake` |
-| **ONE swap, the arena's**: `PilotSwapGesture` (D-pad left / right, keys 1 / 2) on `PilotSwap.CooldownSeconds`; on a phone, a double tap on the small view (`CrewSmallViewDoubleTap`; the Orca's two-finger tap is the four-seat variant). | `CrewSeat.PollSwap` |
+| **ONE swap, seats then hulls** (Garrett, 2026-10-23): `PilotSwapGesture` (D-pad left / right, the left / right arrow keys, a two-finger swipe; no key picks a seat outright) steps the PERSON round one list of the domain's seats, the same for everyone on it - the seats of the hull they are on, then the next hull's - on `PilotSwap.CooldownSeconds`. A crew never reads the gesture itself: it implements `ICrewStations` (`SeatCount`, `LocalSeat`, `HostsRiders`, `TakeSeat`) and `CrewStations` moves the person through `TakeSeat`. A double tap on the small view (`CrewSmallViewDoubleTap`) still swaps a crew's two seats. `Docs/CREW_STATIONS.md`. | `CrewStations`, `LocalCrewStation` |
 | **The empty seat is never pilotless.** Into the seat: the player's flight input paused, then the hull's `AIPilot` flies it; back: the opposite order, and only an autopilot the seat started is stopped. The seat has its own input-only AI for when the human flies the hull (`/vessel-ai`). | `CrewSeat.HandHullToAI` / `GiveHullBack`; `KiteNavigatorAI`, `PistolAI` |
 | **Two views, one layout**: flying the hull, the seat's view is a square in the lower left (`pipSize` 0.32 of the screen height, `viewMargin` 0.015); flying the seat, it fills the screen and the pilot's camera (`CameraManager.ViewCamera`) is lifted into the same square. The pilot camera's rect and depth are always restored. | `CrewPictureInPicture` (it frames the small square with the style guide's `PipViewFrame`; `Dispose` it when the seat lets go) |
 | **The seat camera renders the game** (Garrett, 2026-10-18, for both: "use the game's rendering", "as true to the game as possible"): the real prisms, hulls and materials under the game's lights and sky, never a re-styled copy, fog or tint. For its render only, the prisms' depth look measures distance **from the seat's plane** (`PrismDepthPlane`, `depthFullSpreadAt` 60), and the game's occlusion corridor (the screen-door dither) is **re-aimed for the seat's view** so mass in front of what the seat must see dithers instead of hiding it: the Kite's is a cone from its lens down to the board; the Pistol's is the game's own vessel corridor aimed from its lens at the Pistol. | `CrewViewRender` |
 | **The seat's own marks** (the kite, motes, rings; the Pistol's tube, aim, primed / hot / held rings) are drawn for the seat's camera only (`RenderParams.camera`), instanced with URP/Unlit set transparent - never `Sprites/Default`, whose instanced path draws at zero alpha. | each seat's view code |
 | **A seat takes its triggers from input bindings, never from `InputStatus`'s analog triggers** (Garrett, 2026-10-21: "The grouper can not use boost on mobile"). The hull binds `RightStickAction` / `LeftStickAction` to `CrewTriggerRT` / `CrewTriggerLT` (`CrewTriggerActionSO`) and the seat implements `ICrewTriggers.SetTrigger`; a pad's triggers, the keyboard's shifts and a phone's thumb lifts (lift left = RT, right = LT) all raise those events, while the analog triggers are written by no phone. The card the trigger drives names its input, and the hull's `TouchControlProfiles` row shows the lift glyph. A held trigger is cleared on every seat change: the handler drops releases while the AI flies the hull. | `CrewTriggerActionSO` (Wrasse, Orca); `HoneyguideTriggerActionSO` is the same shape; `author_touch_profiles.py --check` |
 | **A seat's own abilities are its own controls, never spare D-pad directions** (Garrett, 2026-10-21). A hull ability is an input the hull binds (`CrewTriggerActionSO` for the triggers, `CrewButtonActionSO` for face buttons); on a phone each seat shows its own buttons round the right thumb while the person is in it (`TouchButtonView`, `TouchButtonLayout`), and a seat whose hull the AI flies presses itself directly (an `InputStatus` press is dropped under autopilot). | `OrcaHUDController`, `GobyPistolButtons` |
-| **One machine today.** The seat runs on the hull's local human's machine; replicating it is the open networking decision (`T-20261017-b06e`). | `ANCHORS.md` |
+| **A second person on another machine** (2026-10-23): the server holds each person's station (`Player.NetStation`). A crew that `HostsRiders` runs a rider's seat on the rider's machine (the Orca's gunners) or relays it to the hull's machine (`ICrewRelay`: the Ratel's board); the hull's machine leaves a seat a rider holds alone (`CrewStations.HeldByRemoteHuman`). Every crew takes a rider (2026-10-23): the Orca's gunners, the Wrasse and the Pistol run on the rider's machine, with what belongs to the hull relayed to the hull's machine (the Wrasse's banked boosts and steals; the Goby's perches and lock come back); the Ratel is relayed to the hull's machine. A seat with no person in it is always the AI's: an own hull parked while its person rides another runs as an AI crew (`CrewStations.IsParkedHere`), and an AI Goby flies the seat's own Goby and Pistol AIs, not the platform autopilot. | `CrewStations`, `Docs/CREW_STATIONS.md` |
 
 **Gates:** `python3 Tools/Build/check_crew_vessels.py` (and `--self-test`; in `/to-bleeding-edge`'s gates) holds every
 hull that carries an `ICrewSeat` to the card, roster and container rules (its `SeatName` is one of the card's
@@ -139,9 +139,14 @@ experience the world. When designing a duo, ask what player each half is for.
 
 ### 2.2 Switching: ONE swap, the arena's (LOCKED, Garrett 2026-10-14)
 
-**The duo swap is the arena pilot swap, unified with it, never a second mechanic.**
+**The duo swap is the arena pilot swap, unified with it, never a second mechanic.** Since 2026-10-23 it is one ring of
+STATIONS for every person in freestyle and in a running arena match - the seats of the hull you are on, then the next
+hull's (`CrewStations`, `Docs/CREW_STATIONS.md`); the open "ring" question below is answered: seats first, then hulls. A
+hull without a person at its helm (an AI's, or one a person left to ride another) is taken by the arena's exchange, and
+a free seat on a hull a person flies is ridden. The mobile swap is a two-finger swipe (the phone flip below was not
+built).
 
-- Same gesture: **D-pad left/right**, keyboard **1/2** (`PilotSwapGesture`).
+- Same gesture: **D-pad left/right**, the keyboard's **left / right arrows** (`PilotSwapGesture`; keys 1 / 2 until 2026-10-23).
 - Same path: `Player.RequestPilotSwap` → server validation → ownership transfer → `ApplyLocal`
   (`PilotSwap`).
 - What differs is only **which hulls are in the ring**:
@@ -281,6 +286,20 @@ enum before taking a value.
 8. Ship through `/ship`. Every C# commit passes `/verify-unity` (CLAUDE.md).
 
 ## 6. Traps (fill this as duos teach them)
+
+- **A crew that lets go of a hull after it changed hands** (2026-10-23). A crew whose person sits at a seat has handed
+  the hull to its AI; if the hull is then exchanged, the crew unbinds on the frame after and stops "its" autopilot -
+  which is now the autopilot of whoever took the hull. `LocalCrewStation` returns the person to the helm (`TakeSeat(0)`)
+  before asking for any move off their own hull. Any new path that moves a person off a hull does the same.
+- **A pose relay is not a path** (2026-10-23, the Wrasse rider). Anything decided on the hull's machine from where a
+  seat's body went - race rings, crystal rings, a sweep - must get the PATH the body flew, in the world the rider saw, not
+  a pose sampled a few times a second and placed on the hull machine's own, later frame. A relayed pose lands late and
+  off the line, and a batch that arrives at once is one step the ring guard refuses, so the ring is simply missed (the
+  negative control in `RingProbeReplayTests` shows it). Send world points; replay them under the guard
+  (`RingProbeReplay`).
+- **Two readers of one gesture in a frame.** The swap gesture was read by `InputController` AND by each crew, so one
+  press could change seat and hull at once. It is now cached per frame (`PilotSwapGesture.DirectionThisFrame`) and read
+  by the person's `LocalCrewStation` only.
 
 - **A donor's kit is not only its executors** (the Goby, 2026-10-22). Stripping a hull you cloned from another means
   four places: the executor subtrees, the hull's three binding lists (shared, touch overrides, pad overrides), its

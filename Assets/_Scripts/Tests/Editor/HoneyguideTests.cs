@@ -129,6 +129,47 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void RatelBoard_CopiedToAnotherMachine_IsTheSameBoard_AndPlaysOnAlike()
+        {
+            // A Ratel played on another machine (CrewStations, HoneyguideCrew's ICrewRelay): the hull's machine runs the
+            // Dynamo and sends DynamoCore.WriteState; the rider's copy reads it. The copy must be the same board (the
+            // digest) and carry the random stream too, or the next spin's draws differ between the two screens.
+            var s = Load().ToSettings();
+            var real = new DynamoCore(s, 777);
+            var memo = new DynamoCore.AIMemo();
+            var state = new System.Collections.Generic.List<int>();
+            for (int k = 0; k < 200; k++)
+            {
+                if (k % 3 == 0) real.Advance(s, 0.7);
+                else
+                {
+                    var inp = real.AIPlan(s, new DynamoAISkill { Top = 1, Blunder = 0 }, DynamoCore.Mulberry32(k), memo);
+                    if (inp != null && inp.Value.Kind == DynamoInputKind.Activate) memo.Key = "";
+                    if (inp != null) real.Apply(s, inp.Value);
+                }
+                real.Events.Clear();
+                if (k % 20 != 0) continue;
+
+                real.WriteState(state);
+                var copy = new DynamoCore(s, 4242);
+                Assert.IsTrue(copy.ReadState(state.ToArray()), $"step {k}: the copy refused the board");
+                Assert.AreEqual(real.Digest(), copy.Digest(), $"step {k}: the copy is not the same board");
+
+                var twin = new DynamoCore(s, 1);
+                twin.ReadState(state.ToArray());
+                for (int q = 0; q < 30; q++)
+                {
+                    copy.Advance(s, 0.9);
+                    twin.Advance(s, 0.9);
+                }
+                Assert.AreEqual(twin.Digest(), copy.Digest(), $"step {k}: two copies of one board spun apart");
+
+                var cut = state.GetRange(0, state.Count - 3).ToArray();
+                Assert.IsFalse(new DynamoCore(s, 3).ReadState(cut), $"step {k}: a cut-short board was read");
+            }
+        }
+
+        [Test]
         public void Ratel_NeverDrawsPrinter_WhileItIsRetired()
         {
             // Garrett 2026-10-22: "remove the engineer ability that gives players a free prism at the start of the spin, the

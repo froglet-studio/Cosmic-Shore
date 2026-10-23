@@ -503,7 +503,7 @@ sized to "the largest Urchin/Dolphin roster" (`PrismCradle.Slots` 4, `PrismLit.S
 untouched by the six-seat cards.
 
 **3. A human can swap into an AI teammate's hull mid-match** - **D-pad left / right**, keyboard
-**1 / 2** (`PilotSwapGesture`, polled by `InputController`, so local-pilot and pause gated like the
+**1 / 2** (the **left / right arrow keys** and a two-finger swipe since 2026-10-23, read by the person's `LocalCrewStation` round the domain's seats: `Docs/CREW_STATIONS.md`) (`PilotSwapGesture`, polled by `InputController`, so local-pilot and pause gated like the
 rear view). Left/1 = previous, right/2 = next, round a ring of the pilot's own hull plus every AI
 teammate's, ordered by vessel NetworkObjectId so every peer walks it identically
 (`PilotSwap.TryPickRingTarget`). Human teammates' hulls are never in the ring.

@@ -1787,6 +1787,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (multiplayer) with Garrett; builds on cece/sharp-tesla-j0kd7z's CrewSeat
 - **Added:** 2026-10-21 by Claude (cece/admiring-hamilton-gyzzh8) (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Two humans, two seats)
+- **Progress:** 2026-10-23 on `cece/relaxed-tesla-axhxzy` (Garrett's ask, Docs/CREW_STATIONS.md): steps 3, 4 and 5 are built for every crew, not only the Wrasse - one station per person on the Player (`Player.NetStation`, server-checked by `CrewStations.Classify`), the Wrasse seat run on its rider's machine with boosts and steals sent to the hull's machine and its kite's path replayed for race rings, and one swap ring (seats first, then the domain's hulls). Garrett replaced the offers: "players pass over seats with other players", and AI fills every empty seat. Still open: step 1 (pops, blasts and Mass clusters on every peer, T-20261023-d13a) and step 6 (seat stations in the Vessel Changer; two party members picking one crew hull from a menu). Untested in the Editor (T-20261023-d445).
 
 ### T-20261021-a2b3 · open · dev · Performance
 - **Task:** Prism creation is per-prism polling. Every laid prism starts its own CreateBlockCoroutine, and while the per-frame budget is spent, each waiting prism is resumed every frame only to yield again. Under the menu veil the budget is a fixed 512 completions a frame. Measured in the second Orrery capture: 34,770 completions at 0.07 ms each (2.5 s of real work), metered over ~68+ frames. Measure first (the third capture, T-20261021-a96c, shows the settle with the grow-in snapped). If the creation queue is then the floor, replace the polling with one queue the gate drains on a time slice, so a waiting prism costs nothing per frame
@@ -2091,6 +2092,28 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (product), Shombith (UI / orientation)
 - **Added:** 2026-10-22 by a Claude session (`cece/keen-edison-3c6pvz`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/CrewViews.cs SeatOrientation
+
+### T-20261023-d445 · open · test · Crew vessels
+- **Task:** Hand-test seats then hulls in freestyle with two players (MPPM, then a phone and a PC): the eleven hand tests in Docs/CREW_STATIONS.md - stepping Squirrel -> AI Orca helm -> gunners -> next hull, a second person in an Orca gunner seat and on the Ratel, taking a hull another person left, the two-finger swipe, leaving freestyle mid-ride
+- **Done when:** All eleven pass, or each failure is a dev task on this board
+- **Who can take it:** Yash (MPPM and a phone), or Garrett
+- **Added:** 2026-10-23 by Claude (cece/relaxed-tesla-axhxzy) (`cece/relaxed-tesla-axhxzy`)
+- **See:** Docs/CREW_STATIONS.md; Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261023-7dca · done · dev · Crew vessels
+- **Task:** Let a second person ride the Wrasse and the Pistol seats (ICrewStations.HostsRiders is false on KiteNavigator and GobyPistolDuo): run or relay the seat for a rider, as the Orca (seat on the rider's machine) and the Ratel (ICrewRelay) do
+- **Done when:** Two people fly the Grouper and the Wrasse (and the Goby and the Pistol) from two machines in freestyle
+- **Who can take it:** Garrett with Yash (multiplayer)
+- **Added:** 2026-10-23 by Claude (cece/relaxed-tesla-axhxzy) (`cece/relaxed-tesla-axhxzy`)
+- **See:** Docs/CREW_STATIONS.md; Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Two humans, two seats, steps 1 and 4)
+- **Done:** 2026-10-23, Built 2026-10-23 on cece/relaxed-tesla-axhxzy: the Wrasse and the Pistol take a rider (KiteNavigator, GobyPistolDuo ICrewRelay); untested in the Editor - hand tests 9-11 in Docs/CREW_STATIONS.md are on T-20261023-d445
+
+### T-20261023-d13a · open · dev · Crew vessels
+- **Task:** Show a crew rider's effects to everyone: an Orca rider's turret aim, rounds, missiles and bomb are seen only on the rider's machine, and the Ratel copy does not show the Honeyguide's trigger upgrades
+- **Done when:** Both machines see the same turret aim and the same prisms go
+- **Who can take it:** Garrett with Yash (multiplayer)
+- **Added:** 2026-10-23 by Claude (cece/relaxed-tesla-axhxzy) (`cece/relaxed-tesla-axhxzy`)
+- **See:** Docs/CREW_STATIONS.md (Known limits); Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md (Networking)
 
 ### T-20261022-accb · done · test · Input
 - **Task:** Fly two or three hulls (a two-stick hull like the Squirrel, a one-thumb hull like the Sparrow) on a gamepad on this branch and judge whether small corrections feel like the old pad (before 2026-10-21) while the nose still has no lag. Tune Resources/GamepadFlightConfig live in Play: responseExponent (centre softness, 1.5) and steeringSensitivity (full-stick rate, 0.85); 1 / 1 is the uncurved pad.

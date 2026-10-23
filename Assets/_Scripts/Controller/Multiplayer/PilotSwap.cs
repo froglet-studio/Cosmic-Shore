@@ -209,7 +209,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Exchange the two pilots' hulls on THIS machine. Runs on every peer, server included.
+        /// Exchange the two pilots' hulls on THIS machine. Runs on every peer, server included. <paramref name="ai"/> is
+        /// the pilot of the hull being taken: an AI, or a person who abandoned it to ride another hull
+        /// (<see cref="CrewStations"/>).
         /// </summary>
         public static void ApplyLocal(Player human, Player ai, GameDataSO gameData)
         {
@@ -247,7 +249,10 @@ namespace CosmicShore.Gameplay
             humanHull.VesselStatus.VesselTransformer.AdoptCurrentMotion();
             aiHull.VesselStatus.VesselTransformer.AdoptCurrentMotion();
 
-            if (server)
+            // The other pilot is usually an AI. It is a PERSON when the hull was abandoned by one who now rides another
+            // hull (CrewStations): the hull they are handed is parked on its AI by their own machine
+            // (LocalCrewStation), which owns it from here, so the server configures nothing for them.
+            if (server && ai.NetIsAI.Value)
             {
                 // The hull the human left is now the AI's: configure it the way a backfill bot is
                 // configured (mode-aware seeking, skill from intensity), hand it the MODE's
@@ -256,15 +261,19 @@ namespace CosmicShore.Gameplay
                 // pilot in it.
                 var leftPilot = humanHull.VesselStatus.AIPilot;
                 var takenPilot = aiHull.VesselStatus.AIPilot;
+                // In freestyle the hull flies as a Spawn Matrix companion does (CrewStations.ConfigureFreestyleAI): no
+                // match to configure it for, and the menu's game data still names the last match's mode.
+                var freestyleAI = CrewStations.MenuLive ? CrewStations.ConfigureFreestyleAI : null;
                 if (leftPilot)
                 {
-                    ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode(leftPilot, gameData);
+                    if (freestyleAI != null) freestyleAI(leftPilot);
+                    else ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode(leftPilot, gameData);
                     leftPilot.TakeModeHooksFrom(takenPilot);
                 }
                 // A Squirrel left to the AI in Skim Race or Regatta flies the racing pilot, as a backfill Squirrel does
                 // (ServerPlayerVesselInitializerWithAI.ConfigureAIPilot). Without it the swapped-in AI flew the platform
                 // autopilot's ring waypoints, which threaded no rings at all (Regatta playtest 2026-10-06; audit 2026-10-14).
-                if (humanHull.Transform)
+                if (humanHull.Transform && !CrewStations.MenuLive)
                     SkimRaceAIDeployment.TryInstall(humanHull.Transform.gameObject, humanHull, gameData);
                 humanHull.ToggleAIPilot(true);
             }

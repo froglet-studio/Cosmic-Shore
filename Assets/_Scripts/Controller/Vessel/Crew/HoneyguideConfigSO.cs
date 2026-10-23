@@ -366,7 +366,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Touch: holding a prism this long (s) without leaving its cell deletes it, for 1 AP (a phone's right-click).")]
         [SerializeField, Min(0.1f)] float longPressSeconds = 0.45f;
         [Tooltip("The Fly button's edge, in millimetres on the screen. It sits just left of the Ratel's board, at its top, and " +
-                 "swaps back to flying (a phone has no D-pad and no 1 / 2 keys).")]
+                 "swaps back to flying (a phone has no D-pad and no arrow keys).")]
         [SerializeField, Min(5f)] float flyButtonMillimetres = 10f;
         [Tooltip("The colours of Ruby, Jade and Gold prisms and ports (the game's palette, studio-domains.js).")]
         [SerializeField] Color[] colours = { new(1f, 0f, 0.976f, 1f), new(0.075f, 1f, 0.949f, 1f), new(1f, 0.655f, 0f, 1f) };

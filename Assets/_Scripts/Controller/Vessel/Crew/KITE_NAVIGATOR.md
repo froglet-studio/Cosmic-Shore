@@ -27,7 +27,7 @@ it**; see "Round 4" below. The rounds after 3 are not in the lab yet (task `T-20
   on a cluster (`WrasseHUDController`).
 - **L5s:** Mass clusters arrive shielded, Charge steals instead of knocking crystals loose, Space breaks shields and
   super shields, and Time drops the boost cooldown. An **Omni crystal** drops a cluster of each element on the board.
-- **Seats (2026-10-21):** keys 1 / 2 pick the Grouper or the Wrasse, the D-pad and a double tap on the small view step
+- **Seats (2026-10-21; 2026-10-23 `Docs/CREW_STATIONS.md`):** the D-pad and the left / right arrow keys step round the domain's seats (no key picks one outright), and a double tap on the small view step
   to the other seat, and the pick is remembered per hull class (`CrewSeatChoice`), so the person starts where they last
   chose. Online it is two human seats on any mix of phones and PCs: decided by Garrett 2026-10-21, planned in "Two
   humans, two seats" below, not built yet.
@@ -400,7 +400,7 @@ be processed, so the ratel should run fine on very old phones."
 
 ## Seats: the swap is the arena's
 
-The swap uses the arena's pilot-swap gesture (`PilotSwapGesture`: D-pad left / right, keys 1 / 2), with
+The swap uses the arena's pilot-swap gesture (`PilotSwapGesture`: D-pad left / right, the left / right arrow keys since 2026-10-23), with
 `PilotSwap.CooldownSeconds` as its cooldown. It moves the local human between the hull and the kite. Since 2026-10-21
 (Garrett: "players can select, change seats"), **keys pick** (1 the Grouper, 2 the Wrasse; picking the seat you are in
 does nothing) and **the D-pad and the double tap step** to the other seat, as the Orca's keys 1-4 pick its seats. Every
@@ -500,6 +500,19 @@ every effect crosses the network as a decision, never as device input.
   - the D-pad steps through your hull's seats, then on round the team's ring. This answers the duo skill's open "ring"
     question: seats first, then teammates.
   - `InputController` asks `CrewSeat.TryConsumeSwap(dir)` and calls the arena only when the seat passes the step on.
+
+**Where it stands (2026-10-23, `Docs/CREW_STATIONS.md`):** steps 3 and 5 are built for every crew, generically:
+`Player.NetStation` (one `CrewStation` per person, server-write) instead of a `CrewSeatOccupancy` behaviour, the
+server's check `CrewStations.Classify`, `ICrewStations` (`SeatCount`, `LocalSeat`, `HostsRiders`, `TakeSeat`) on every
+crew, and the gesture owned by the person's `LocalCrewStation`: seats first, then the domain's hulls, in freestyle and a
+running arena match. A pick is a request, but a seat another person holds is skipped rather than offered (no offer /
+accept yet). Every crew takes a second person, the Wrasse included (step 4, 2026-10-23): the kite runs on the rider's machine, a
+Time loop's boosts are banked on the hull's machine and a ram's steal is decided there (`ICrewRelay`), and the kite's
+pose is relayed so the hull's machine draws it and publishes the Wrasse's body. Race and crystal rings are threaded on the
+hull's machine from the path the rider's kite flew in the world, replayed through the kite's ring probe
+(`RingProbeReplay`, `RingProbeReplayTests`). Pops, blasts and Mass clusters stay on
+the kite's machine (step 1 is still open). No key picks its seats outright any more: the arrow keys step the domain's
+seats.
 
 **Work order:**
 1. **Prism parity for one human online.** `KiteNavigator.cs`, with the effects split into `KiteNavigatorEffects.cs`

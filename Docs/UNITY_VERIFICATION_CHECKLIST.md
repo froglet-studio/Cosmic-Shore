@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Seats, then hulls: any person changes seat and vessel in freestyle (`cece/relaxed-tesla-axhxzy`, 2026-10-23) — NOT EDITOR-VERIFIED
+
+**What landed:** one swap ring for every person (`CrewStations`, `Docs/CREW_STATIONS.md`): D-pad left / right, the
+left / right arrow keys and a new two-finger swipe step through the seats of your hull, then every free hull of your domain in freestyle
+and a running arena match. Taking an AI's hull, or one another person left to ride, is the arena's `PilotSwap`
+exchange. A second person rides any crew seat: an Orca gunner, the Wrasse and the Pistol run on the rider's machine (the
+Wrasse's boosts and steals, the Goby's perches and lock relayed), the Ratel is relayed to the hull's machine. An AI Goby
+now flies the seat's own Goby and Pistol AIs instead of the platform autopilot. `Player.NetStation` + four RPC pairs; protocol version 12. The crews no longer read the gesture
+(`InputController` neither).
+
+**Verified without the editor:** `unity_refcompile` player 0 errors (a planted error in a new file is caught), editor 0
+in changed files; `gates.sh` ALL OK (logging, conditional compilation, crew vessels, every generator `--check`).
+`Tools/Build/dynamo_lab/parity.cjs` PASS (DynamoCore unchanged in play); a scratch harness round-tripped the Ratel's
+board 288 times over the 24 rule sets with identical digests and identical play after (a planted Rng bug failed all
+288). The new `HoneyguideTests.RatelBoard_CopiedToAnotherMachine_IsTheSameBoard_AndPlaysOnAlike` compiles, not run.
+`/verify-unity` did not run: no Unity CLI in the session.
+
+**Verify (MPPM, two players in freestyle; then a phone and a PC):** the eleven hand tests in `Docs/CREW_STATIONS.md` (test 9 now includes a Wrasse rider threading race rings: `RingProbeReplayTests` ran headless against a stand-in for Unity's vector maths, 6/6, and a planted uncapped replay failed 2).
+This supersedes the older entries below that pick crew seats with keys 1-4 (the Orca, the Wrasse, the Jacks): the
+keyboard now cycles with the left / right arrows only.
+Watch for: the ridden hull's HUD showing on the rider's screen in freestyle (it is a remote hull's HUD, shown by
+`ShowHUD`); the camera following the ridden hull; a refused move logging `[Player] Seat move refused`.
+
 ### 🔴 Steal roll: the OLD domain curls away, the new one is only underneath (`cece/hopeful-hopper-np5527`, 2026-10-23) — NOT EDITOR-VERIFIED
 
 **What landed:** Garrett: *"the stealing effect is supposed to curl the original domain and reveal the stolen domain

@@ -80,4 +80,85 @@ namespace CosmicShore.Gameplay
             return flew;
         }
     }
+
+    /// <summary>
+    /// A probe body flown on ANOTHER machine, replayed where the rings are tested: the path it flew, in the world, played
+    /// back one step a frame (a crew seat a person rides from another machine - the Wrasse's kite, <c>KiteNavigator</c>).
+    /// The rings are static and the same on every machine, so the segment a ring tests is one the body really flew. The
+    /// replay never runs ahead of what has arrived, keeps each step under the ring systems' own guard
+    /// (<see cref="RingThreadProbeSample"/>'s max step), catches up at that speed when it falls behind, and moves the
+    /// epoch on a re-seed or a jump, which therefore threads nothing.
+    /// </summary>
+    public sealed class RingProbeReplay
+    {
+        /// <summary>The ring systems refuse a step longer than maxPlausibleSpeed x dt x 2 + 5; 400 u/s is their default
+        /// (GateRaceController, CrystalRaceRing). The replay keeps to 90% of it. Measured 2026-10-23: no shipped scene sets
+        /// a guard below the default (five at 400, one at 600, four at 1400, one at 4600, one at 5200), so the replay is
+        /// always inside it; a scene that lowers one below 400 would refuse the replay's steps.</summary>
+        public const float PlausibleSpeed = 400f;
+        /// <summary>A recorded step longer than this is the body being re-placed, not flying.</summary>
+        public const float JumpDistance = 300f;
+        /// <summary>The most points held; past it the oldest go (the body is then far ahead, and the jump re-seeds).</summary>
+        public const int MaxQueued = 256;
+
+        readonly System.Collections.Generic.Queue<Vector3> _path = new();
+        int _sourceEpoch = int.MinValue, _frame = int.MinValue;
+        Vector3 _at;
+        bool _has;
+
+        /// <summary>Where the replayed body is (valid while <see cref="Has"/>).</summary>
+        public Vector3 Position => _at;
+        /// <summary>True once the replay has a point to stand on.</summary>
+        public bool Has => _has;
+        /// <summary>Changes on every re-seed and every jump: a segment across it threads nothing.</summary>
+        public int Epoch { get; private set; }
+        /// <summary>Points received and not yet played.</summary>
+        public int Queued => _path.Count;
+
+        /// <summary>Start again with nothing (the body changed: a different rider, or the local one again).</summary>
+        public void Reset()
+        {
+            _path.Clear();
+            _has = false;
+            _sourceEpoch = int.MinValue;
+            Epoch++;
+        }
+
+        /// <summary>Points the body flew, in order. <paramref name="sourceEpoch"/> is the flying machine's own epoch: when it
+        /// changes the body was seated afresh there, and the path starts again.</summary>
+        public void Enqueue(int sourceEpoch, Vector3 point)
+        {
+            if (sourceEpoch != _sourceEpoch)
+            {
+                Reset();
+                _sourceEpoch = sourceEpoch;
+            }
+            _path.Enqueue(point);
+            while (_path.Count > MaxQueued) _path.Dequeue();
+        }
+
+        /// <summary>Play one frame (<paramref name="frame"/> is the frame count: a second call in one frame does
+        /// nothing, so every ring system that samples the probe this frame sees the same point).</summary>
+        public void Step(int frame, float dt)
+        {
+            if (frame == _frame) return;
+            _frame = frame;
+            if (!_has)
+            {
+                if (_path.Count == 0) return;
+                _at = _path.Dequeue();
+                _has = true;
+                return;
+            }
+            float budget = 0.9f * (PlausibleSpeed * dt * 2f + 5f);
+            while (budget > 0f && _path.Count > 0)
+            {
+                var next = _path.Peek();
+                float d = Vector3.Distance(_at, next);
+                if (d > JumpDistance) { _at = _path.Dequeue(); Epoch++; break; }
+                if (d <= budget) { _at = _path.Dequeue(); budget -= d; }
+                else { _at = Vector3.MoveTowards(_at, next, budget); budget = 0f; }
+            }
+        }
+    }
 }

@@ -28,7 +28,7 @@ Garrett and friends designed and played from 2019 to 2022. The design was made a
 
 1. Open the Toybox and use the **Vessel Changer**. Pick **Honeyguide and Ratel**.
 2. Fly it. Ram trails of the domains the battery holds, with the nose along the trail, to slip.
-3. Press **D-pad left / right** or **1 / 2**, double-tap the small board, or tap **Fly** (left of the Ratel's big board) to swap seats. The AI takes the empty seat:
+3. Press **D-pad left / right** or the **left / right arrow keys** (a two-finger swipe on a phone), double-tap the small board, or tap **Fly** (left of the Ratel's big board) to swap seats; past the Ratel the gesture goes on to the next hull (`Docs/CREW_STATIONS.md`). A second person can play the Ratel from their own machine while you fly: their moves are applied to your board and the board is sent back to them. The AI takes the empty seat:
    - the hull's own `AIPilot` flies while you play the Ratel;
    - the Ratel AI (the lab's `aiPlan`, input-only, Hard by default) plays while you fly.
 4. To play the Ratel (the board covers the centre of the screen; **on a phone, turn the phone to portrait**):
@@ -71,7 +71,7 @@ On the Very Low preset (`CrewSingleView`, `Docs/PLATFORM_UNIFICATION.md` §3.10)
   backdrop in the board's panel colour, no post-processing or shadows), so the board's canvas is nearly all a frame
   costs. The hull's AI still flies and the match still runs;
 - flying the Honeyguide, there is no small board (and no trigger chip with it): a thumb-sized **Ratel** button sits in its
-  corner instead, the Fly button's twin, so a phone can always get back to the Ratel. The D-pad and 1 / 2 still swap.
+  corner instead, the Fly button's twin, so a phone can always get back to the Ratel. The D-pad and the arrow keys still swap.
 
 ## Where things are
 
