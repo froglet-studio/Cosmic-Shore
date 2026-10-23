@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
     /// <para>It lives on <c>Goby.prefab</c> and wakes only on the LOCAL pilot's hull while a human flies it (CrewSeat):
     /// the Pistol, the dens, the pull and the rings are simulated on that one machine until the crew is networked.</para>
     /// </summary>
-    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, ICrewButtons, IHullParkAware, ICrewStations
+    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, ICrewButtons, IHullParkAware, ICrewStations, ICrewRelay
     {
         enum Half { Goby = 0, Pistol = 1 }
 
@@ -91,6 +91,22 @@ namespace CosmicShore.Gameplay
 
         GobyPistolConfigSO Config => config;
 
+        // _rider: the person on this machine flies the Pistol of a Goby another machine flies (the Pistol, its dens, undertow
+        // and rings run here, on the perches and the lock the hull's machine sends); _remotePistol: on the hull's machine, a
+        // person on another machine flies the Pistol, so the Pistol does not run here
+        bool _rider, _remotePistol;
+        // _aiCrew: no person aboard (a hull an AI flies, or the person's own hull parked while they ride another): the
+        // seat's own Goby AI and Pistol AI fly both halves, and the platform autopilot, which would fly the hull like its
+        // donor Squirrel, stands down for them (_stoppedAutopilot: this crew stopped it, and starts it again on unbind)
+        bool _aiCrew, _stoppedAutopilot;
+        float _stateSendAt;
+        int _sentPerches = -1;
+        ulong _sentLock;
+        readonly List<int> _stateScratch = new();
+
+        /// <summary>True while the person on this machine flies this hull's Pistol from another machine than the hull's.</summary>
+        public bool RidesHere => _rider;
+
         /// <summary>Add the crew to the vessel you are flying (it then stands in for the Goby). False when no local
         /// vessel is flying. A hull that already carries it (the Goby) is left as it is.</summary>
         public static bool AttachToLocalVessel(GobyPistolConfigSO cfg)
@@ -116,8 +132,26 @@ namespace CosmicShore.Gameplay
         public bool DartReady => !_darting && _t >= _dartReadyAt;
         public bool HeadingBack => _travelDir < 0;
 
-        // the local pilot's own hull, flown by a human: the crew seat rule every crew vessel shares
-        bool ShouldRun(out IVessel vessel) => CrewSeat.ShouldWake(this, false, out vessel);
+        // the local pilot's own hull, flown by a human: the crew seat rule every crew vessel shares; or the Pistol seat of a
+        // Goby another machine flies, which the person here rides (CrewStations)
+        bool ShouldRun(out IVessel vessel, out bool rider, out bool aiCrew)
+        {
+            aiCrew = false;
+            rider = CrewStations.LocalRiderSeat(this) == 1;
+            if (rider) return TryGetComponent(out vessel);
+            if (!TryGetComponent(out vessel)) return false;
+            if (IsAICrewHere(vessel)) { aiCrew = true; return true; }
+            return CrewSeat.ShouldWake(this, false, out vessel);
+        }
+
+        // An AI crew runs where the hull is simulated: the server for an AI's hull, the person's own machine for their own
+        // hull parked while they ride another (CrewStations) - every seat without a person in it is the AI's.
+        bool IsAICrewHere(IVessel vessel)
+        {
+            if (CrewStations.IsParkedHere(vessel)) return true;
+            var st = vessel.VesselStatus;
+            return st?.Player != null && st.IsInitializedAsAI && st.Player.IsNetworkOwner && (st.AutoPilotEnabled || _stoppedAutopilot);
+        }
 
         // ================================ binding ================================
 
@@ -131,20 +165,37 @@ namespace CosmicShore.Gameplay
             _darting = _charging = false; _dartReadyAt = 0f; ClearLock();
             _aiRng = new PistolAI.Mulberry32(20261022u); _ai = new PistolAI(31337u + 17u);
             _home = _gt.position; _aiHasDir = false; _aiLandedAt = 0f;
-            Pin(true); HoldPen(true);
-            // the Goby starts perched where it is, on a pad of its own
-            AddPerch(_gt.position, _gt.up, ownPad: true);
+            _remotePistol = false; _sentPerches = -1; _sentLock = 0; _stateSendAt = 0f;
+            if (_rider)
+            {
+                // a rider's Pistol: the hull is the other machine's (no pin, no pen, no pad of its own); the Goby perches
+                // where it is until the hull's machine sends its perches
+                _human = Half.Pistol;
+                AddPerch(_gt.position, _gt.up, ownPad: false);
+            }
+            else
+            {
+                Pin(true); HoldPen(true);
+                // the Goby starts perched where it is, on a pad of its own
+                AddPerch(_gt.position, _gt.up, ownPad: true);
+            }
             _p = new PistolBodyMath.State { launch = Mathf.RoundToInt(_body.pLaunchCharges) };
             _f = WaitingFrame();
             PistolBodyMath.PlaceAtStart(_p, _f, _body.pMinSpeed);
             _seg = -1; _at = 0; _travelDir = 1; _resting = true; _restT = 0f; _restQueue = _restSpawned = 0; _travelled = 0f; _waitT = 0f;
-            BuildView();
+            if (!_aiCrew) BuildView();   // an AI crew draws nothing: no person here watches it
         }
 
         void Unbind()
         {
             if (_goby == null) return;
-            if (_human == Half.Pistol) SetHuman(Half.Goby);
+            if (_human == Half.Pistol && !_rider) SetHuman(Half.Goby);
+            _human = Half.Goby;
+            // the platform autopilot this AI crew stood down flies the hull again, while it is still an AI's (a person
+            // who has just taken the hull flies it themselves)
+            if (_stoppedAutopilot && UnityLiveness.Alive(_goby.Transform) && IsAICrewHere(_goby) && !_goby.VesselStatus.AutoPilotEnabled)
+                _goby.ToggleAIPilot(true);
+            _stoppedAutopilot = false;
             _buttons.Dispose();
             ReleaseAllRings();
             Pin(false); HoldPen(false);
@@ -191,19 +242,42 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!ShouldRun(out var vessel)) { Unbind(); return; }
-            if (_goby == null) Bind(vessel);
+            if (!ShouldRun(out var vessel, out bool rider, out bool aiCrew)) { Unbind(); return; }
+            if (_goby != null && (rider != _rider || aiCrew != _aiCrew)) Unbind();   // the seat changed hands: seat it afresh
+            if (_goby == null) { _rider = rider; _aiCrew = aiCrew; Bind(vessel); }
+            // the platform autopilot would fly the pinned Goby like its donor; the AI crew's own Goby AI flies it instead
+            if (_aiCrew && _status.AutoPilotEnabled) { _goby.ToggleAIPilot(false); _stoppedAutopilot = true; }
             float dt = Time.deltaTime; if (dt <= 0f) return;
             _t += dt;
             _body.pLaunchCd = Mathf.Max(0.1f, Config.JumpCooldown.EvaluateReplicated(_status));
 
-            PollSwap();
-            PaintButtons();
+            if (_rider)
+            {
+                // the Pistol alone: the Goby is the hull machine's, its perches and lock arrive by OnCrewState
+                PaintButtons();
+                StepPistol(dt);
+                Undertow(dt);
+                BodyHits();
+                StepRings(dt);
+                return;
+            }
 
-            if (_human == Half.Goby) HumanGoby(dt); else GobyAI(dt);
+            // a person on another machine flies the Pistol: the Goby's human keeps the Goby, and the Pistol runs there
+            bool remote = CrewStations.HeldByRemoteHuman(this, 1);
+            if (remote != _remotePistol) { _remotePistol = remote; _sentPerches = -1; ReleaseAllRings(); }   // this machine's rings let go: the Pistol is theirs now
+            if (remote && _human == Half.Pistol) SetHuman(Half.Goby);
+
+            if (!_aiCrew)
+            {
+                PollSwap();
+                PaintButtons();
+            }
+
+            if (_human == Half.Goby && !_aiCrew) HumanGoby(dt); else GobyAI(dt);
             StepDart(dt);
             HoldLock();
 
+            if (_remotePistol) { SendPerches(); return; }
             StepPistol(dt);
             Undertow(dt);
             BodyHits();
@@ -869,18 +943,81 @@ namespace CosmicShore.Gameplay
         public int SeatCount => 2;
 
         /// <inheritdoc cref="ICrewStations.LocalSeat"/>
-        public int LocalSeat => _goby != null ? (_human == Half.Pistol ? 1 : 0) : -1;
+        public int LocalSeat => _goby != null && !_rider && !_aiCrew ? (_human == Half.Pistol ? 1 : 0) : -1;
 
-        /// <inheritdoc cref="ICrewStations.HostsRiders"/>: not yet - the Pistol runs on the hull's machine.
-        public bool HostsRiders => false;
+        /// <inheritdoc cref="ICrewStations.HostsRiders"/>: the Pistol seat. It runs on the rider's machine, on the perches
+        /// and the lock the hull's machine sends (<see cref="ICrewRelay"/>).
+        public bool HostsRiders => true;
 
         /// <inheritdoc cref="ICrewStations.TakeSeat"/>
         public void TakeSeat(int seat)
         {
             var half = seat == 1 ? Half.Pistol : Half.Goby;
-            if (_goby == null || half == _human) return;
+            if (_goby == null || _rider || _aiCrew || half == _human) return;
+            if (half == Half.Pistol && CrewStations.HeldByRemoteHuman(this, 1)) return;   // a person on another machine flies it
             _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
             SetHuman(half);
+        }
+
+        // ================================ the Pistol on another machine (ICrewRelay) ================================
+
+        static int FloatBits(float v) => System.BitConverter.SingleToInt32Bits(v);
+        static float BitsFloat(int v) => System.BitConverter.Int32BitsToSingle(v);
+
+        // the hull's machine: every perch the Goby has made (where it sat, which way was up) and the rival it holds locked,
+        // whenever either changes and once a second - the Pistol's ground and its rings' target on the rider's machine
+        void SendPerches()
+        {
+            ulong lockId = _lockIsVessel && _lockVessel?.Vessel is { } v ? v.VesselNetId : 0;
+            if (_perches.Count == _sentPerches && lockId == _sentLock && Time.time < _stateSendAt) return;
+            _sentPerches = _perches.Count;
+            _sentLock = lockId;
+            _stateSendAt = Time.time + 1f;
+            _stateScratch.Clear();
+            _stateScratch.Add(_perches.Count);
+            _stateScratch.Add((int)(lockId & 0xffffffffUL));
+            _stateScratch.Add((int)(lockId >> 32));
+            foreach (var den in _perches)
+            {
+                _stateScratch.Add(FloatBits(den.Pos.x)); _stateScratch.Add(FloatBits(den.Pos.y)); _stateScratch.Add(FloatBits(den.Pos.z));
+                _stateScratch.Add(FloatBits(den.Up.x)); _stateScratch.Add(FloatBits(den.Up.y)); _stateScratch.Add(FloatBits(den.Up.z));
+            }
+            CrewRelay.SendState(this, _stateScratch.ToArray());
+        }
+
+        /// <inheritdoc cref="ICrewRelay.OnRiderInput"/>: the Pistol sends nothing the hull needs (its dens, undertow and
+        /// rings act on this machine's prisms where it flies).
+        public void OnRiderInput(int seat, int[] data) { }
+
+        /// <inheritdoc cref="ICrewRelay.OnCrewState"/>: the Goby's perches and lock, from the hull's machine. Perches the
+        /// rider already has keep their dens; new ones, and the darts between them, are added.
+        public void OnCrewState(int[] data)
+        {
+            if (!_rider || _goby == null || data == null || data.Length < 3) return;
+            int count = data[0];
+            if (count < 1 || data.Length < 3 + count * 6) return;
+            for (int k = 0; k < count; k++)
+            {
+                int i = 3 + k * 6;
+                var pos = new Vector3(BitsFloat(data[i]), BitsFloat(data[i + 1]), BitsFloat(data[i + 2]));
+                var up = new Vector3(BitsFloat(data[i + 3]), BitsFloat(data[i + 4]), BitsFloat(data[i + 5]));
+                if (k < _perches.Count) { _perches[k].Pos = pos; _perches[k].Up = up; }
+                else _perches.Add(new Den { Pos = pos, Up = up.sqrMagnitude > 1e-6f ? up.normalized : Vector3.up });
+            }
+            if (_perches.Count > count) _perches.RemoveRange(count, _perches.Count - count);
+            // the darts between them; the one the Pistol rides keeps its frame
+            if (_segments.Count > count - 1) _segments.RemoveRange(count - 1, _segments.Count - (count - 1));
+            for (int k = _segments.Count; k < count - 1; k++)
+                _segments.Add(new PlaneSegment(_perches[k].Pos, _perches[k + 1].Pos, (_perches[k].Up + _perches[k + 1].Up).normalized));
+            if (_at >= _perches.Count) _at = _perches.Count - 1;
+            if (_seg >= _segments.Count) { _seg = -1; _resting = true; }
+
+            ulong lockId = (uint)data[1] | ((ulong)(uint)data[2] << 32);
+            if (lockId != 0 && CrewStations.TryFindHull(lockId, out var target))
+            {
+                _lockTarget = target.Transform; _lockVessel = target.VesselStatus; _lockIsVessel = true;
+            }
+            else ClearLock();
         }
 
         /// <inheritdoc cref="IHullParkAware.ReturnHumanToHull"/>

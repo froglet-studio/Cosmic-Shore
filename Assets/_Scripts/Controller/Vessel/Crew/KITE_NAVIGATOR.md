@@ -506,9 +506,11 @@ every effect crosses the network as a decision, never as device input.
 server's check `CrewStations.Classify`, `ICrewStations` (`SeatCount`, `LocalSeat`, `HostsRiders`, `TakeSeat`) on every
 crew, and the gesture owned by the person's `LocalCrewStation`: seats first, then the domain's hulls, in freestyle and a
 running arena match. A pick is a request, but a seat another person holds is skipped rather than offered (no offer /
-accept yet). The Orca's gunners and the Ratel take a second person; **the Wrasse still takes one person at a time**
-(`KiteNavigator.HostsRiders` is false) until steps 1 and 4 land, and no key picks its seats outright any more: the
-arrow keys step the domain's seats.
+accept yet). Every crew takes a second person, the Wrasse included (step 4, 2026-10-23): the kite runs on the rider's machine, a
+Time loop's boosts are banked on the hull's machine and a ram's steal is decided there (`ICrewRelay`), and the kite's
+pose is relayed so the hull's machine draws it and publishes the Wrasse's body. Pops, blasts and Mass clusters stay on
+the kite's machine (step 1 is still open). No key picks its seats outright any more: the arrow keys step the domain's
+seats.
 
 **Work order:**
 1. **Prism parity for one human online.** `KiteNavigator.cs`, with the effects split into `KiteNavigatorEffects.cs`

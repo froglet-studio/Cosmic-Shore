@@ -52,9 +52,14 @@ Your own hull, parked while you ride, runs its crew as an **AI crew**, exactly l
 |---|---|---|---|
 | Orca (`OrcaCrew`) | helm + 3 gunners | **yes**, any free gunner seat | The rider's seat runs on the rider's machine (`Mode.Rider`): their turret, gun, missiles and bomb on the hull's copy there. The hull's machine leaves that seat alone (`RunsHere`). |
 | Honeyguide (`HoneyguideCrew`) | Honeyguide + Ratel | **yes**, the Ratel | The Dynamo stays on the hull's machine. The rider's board is a copy: its moves go to the hull's machine (`ICrewRelay.OnRiderInput`), which applies them and sends the board back 5 times a second and after every move (`DynamoCore.WriteState` / `ReadState`). The Ratel AI stands down. |
-| Wrasse (`KiteNavigator`) | Grouper + Wrasse | not yet: while a person is aboard, the other seat is passed over | Its kite decides pops, blasts, clusters and boosts on one machine (`KITE_NAVIGATOR.md`, "Two humans, two seats", step 4) |
-| Goby (`GobyPistolDuo`) | Goby + Pistol | not yet | The Pistol rides the Goby's plane on the hull's machine |
+| Wrasse (`KiteNavigator`) | Grouper + Wrasse | **yes**, the Wrasse | The kite runs on the rider's machine: its board, motes, pops, blasts and Mass clusters. What belongs to the hull goes to the hull's machine (`ICrewRelay`): a Time loop's boosts are banked there for the Grouper to spend, a ram's steal is decided there (the attacker's owner gates every elemental transfer), and the kite's pose is sent ten times a second, so the hull's machine draws the kite and publishes the Wrasse's body (`WrasseCrewBodies`; the rider's own machine places the body at its own kite). The hull's machine sends back the saved boosts (the rider's Time card) and the Omni crystals the hull collects (the rider's board drops their motes). |
+| Goby (`GobyPistolDuo`) | Goby + Pistol | **yes**, the Pistol | The Pistol runs on the rider's machine: its ride from perch to perch, dens, undertow and rings. The hull's machine sends the Goby's perches and the rival it holds locked whenever either changes and once a second, and its own Pistol stands down. |
 | Jacks (`JacksExecutor`) | fly + herd | no | One person flies or herds |
+
+**Every seat no person holds is the AI's, on every crew.** A hull an AI flies, or a person's own hull parked while they
+ride another, runs its crew as an AI crew on the machine that simulates the hull: the Orca's AI gunners, the Ratel AI,
+the navigator AI, and (since 2026-10-23) the Goby's own AI and Pistol AI, which fly the pinned Goby in place of the
+platform autopilot (that flew it like its donor Squirrel, with no darts and no Pistol).
 
 A crew joins by implementing `ICrewStations` (`SeatCount`, `LocalSeat`, `HostsRiders`, `TakeSeat`) and, when it hosts
 riders, by running the rider's seat (`CrewStations.LocalRiderSeat`) and leaving it alone on the hull's machine
@@ -76,9 +81,15 @@ riders, by running the rider's seat (`CrewStations.LocalRiderSeat`) and leaving 
 
 ## Known limits (stated, not hidden)
 
-- **A rider's effects are seen on the rider's machine.** An Orca rider's rounds hit prisms on their machine, as an AI
-  gunner's do on the hull's machine today; nobody else sees the turret turn. Networking a crew's effects is each crew's
-  follow-up (`ORCA_CREW.md`; `KITE_NAVIGATOR.md` work order steps 1 and 4).
+- **A rider's effects are seen on the rider's machine.** An Orca rider's rounds, a Wrasse rider's pops, blasts and Mass
+  clusters, and a Pistol rider's dens, pulled mass and rings act on the prisms of the rider's machine, as an AI crew's
+  do on the hull's machine today (prism changes do not replicate). Nobody else sees an Orca rider's turret turn; the
+  hull's machine sees a Wrasse rider's kite (not its tail or motes) and does not see a Pistol rider's Pistol. Networking
+  a crew's effects is each crew's follow-up (`ORCA_CREW.md`; `KITE_NAVIGATOR.md` work order steps 1 and 4).
+- **A Wrasse rider's kite does not thread race rings** on the hull's machine (`IRingThreadProbe` reads the hull
+  machine's own kite).
+- **An AI Goby flies the seat's own AI, not the mode's**: it perches, darts and fires rings, but follows no race line or
+  mode objective.
 - **The Ratel copy does not show the Honeyguide's trigger upgrades** (they are the pilot side's, not the board's).
 - **A hull exchange starts the crew afresh**: a Honeyguide handed to its rider starts a new Dynamo.
 - **Score follows the pilot**, as in the arena: the AI flying your parked hull earns for you.
@@ -101,3 +112,8 @@ riders, by running the rider's seat (`CrewStations.LocalRiderSeat`) and leaving 
    stays in the gunner seat (now riding), and A's own hull is the one B left, flown by its AI.
 8. Keyboard: the left / right arrows cycle exactly as the D-pad does, for both players, in the same order; keys 1-4 do
    nothing; the Orca's turret turns on A / D.
+9. Wrasse: A flies the Grouper, B flies the Wrasse from another machine: B's Time loops show on A's Time card and A's
+   boost spends them; B's ram on a rival steals; A sees the Wrasse body follow B's kite.
+10. Goby: A flies the Goby, B flies the Pistol: each dart A makes is a new stretch of B's plane; B's rings home on the
+    rival A locks.
+11. An AI Goby (released from the Spawn Matrix, or one you left): it perches and darts, and its Pistol rides the plane.

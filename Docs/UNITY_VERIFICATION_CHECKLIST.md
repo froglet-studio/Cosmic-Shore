@@ -70,8 +70,9 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 **What landed:** one swap ring for every person (`CrewStations`, `Docs/CREW_STATIONS.md`): D-pad left / right, the
 left / right arrow keys and a new two-finger swipe step through the seats of your hull, then every free hull of your domain in freestyle
 and a running arena match. Taking an AI's hull, or one another person left to ride, is the arena's `PilotSwap`
-exchange. A second person rides a free Orca gunner seat (run on their machine) or the Ratel (relayed to the hull's
-machine). `Player.NetStation` + four RPC pairs; protocol version 12. The crews no longer read the gesture
+exchange. A second person rides any crew seat: an Orca gunner, the Wrasse and the Pistol run on the rider's machine (the
+Wrasse's boosts and steals, the Goby's perches and lock relayed), the Ratel is relayed to the hull's machine. An AI Goby
+now flies the seat's own Goby and Pistol AIs instead of the platform autopilot. `Player.NetStation` + four RPC pairs; protocol version 12. The crews no longer read the gesture
 (`InputController` neither).
 
 **Verified without the editor:** `unity_refcompile` player 0 errors (a planted error in a new file is caught), editor 0
@@ -81,7 +82,7 @@ board 288 times over the 24 rule sets with identical digests and identical play 
 288). The new `HoneyguideTests.RatelBoard_CopiedToAnotherMachine_IsTheSameBoard_AndPlaysOnAlike` compiles, not run.
 `/verify-unity` did not run: no Unity CLI in the session.
 
-**Verify (MPPM, two players in freestyle; then a phone and a PC):** the eight hand tests in `Docs/CREW_STATIONS.md`.
+**Verify (MPPM, two players in freestyle; then a phone and a PC):** the eleven hand tests in `Docs/CREW_STATIONS.md`.
 This supersedes the older entries below that pick crew seats with keys 1-4 (the Orca, the Wrasse, the Jacks): the
 keyboard now cycles with the left / right arrows only.
 Watch for: the ridden hull's HUD showing on the rider's screen in freestyle (it is a remote hull's HUD, shown by
