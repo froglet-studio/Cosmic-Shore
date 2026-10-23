@@ -291,6 +291,12 @@ enum before taking a value.
   the hull to its AI; if the hull is then exchanged, the crew unbinds on the frame after and stops "its" autopilot -
   which is now the autopilot of whoever took the hull. `LocalCrewStation` returns the person to the helm (`TakeSeat(0)`)
   before asking for any move off their own hull. Any new path that moves a person off a hull does the same.
+- **A pose relay is not a path** (2026-10-23, the Wrasse rider). Anything decided on the hull's machine from where a
+  seat's body went - race rings, crystal rings, a sweep - must get the PATH the body flew, in the world the rider saw, not
+  a pose sampled a few times a second and placed on the hull machine's own, later frame. A relayed pose lands late and
+  off the line, and a batch that arrives at once is one step the ring guard refuses, so the ring is simply missed (the
+  negative control in `RingProbeReplayTests` shows it). Send world points; replay them under the guard
+  (`RingProbeReplay`).
 - **Two readers of one gesture in a frame.** The swap gesture was read by `InputController` AND by each crew, so one
   press could change seat and hull at once. It is now cached per frame (`PilotSwapGesture.DirectionThisFrame`) and read
   by the person's `LocalCrewStation` only.

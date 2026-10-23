@@ -92,7 +92,9 @@ namespace CosmicShore.Gameplay
     public sealed class RingProbeReplay
     {
         /// <summary>The ring systems refuse a step longer than maxPlausibleSpeed x dt x 2 + 5; 400 u/s is their default
-        /// (GateRaceController, CrystalRaceRing). The replay keeps to 90% of it.</summary>
+        /// (GateRaceController, CrystalRaceRing). The replay keeps to 90% of it. Measured 2026-10-23: no shipped scene sets
+        /// a guard below the default (five at 400, one at 600, four at 1400, one at 4600, one at 5200), so the replay is
+        /// always inside it; a scene that lowers one below 400 would refuse the replay's steps.</summary>
         public const float PlausibleSpeed = 400f;
         /// <summary>A recorded step longer than this is the body being re-placed, not flying.</summary>
         public const float JumpDistance = 300f;
