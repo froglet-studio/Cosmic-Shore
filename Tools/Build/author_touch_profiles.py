@@ -168,6 +168,7 @@ MonoBehaviour:
   tiltDeadZoneDegrees: 2.5
   tiltSmoothingPerSecond: 12
   tiltRollMaxDegrees: 90
+  noseFollowPerSecond: 9
   buttonMillimetres: 10
   buttonGapMillimetres: 1.5
   innerArcMillimetres: 22

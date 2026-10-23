@@ -47,6 +47,16 @@ Garrett and friends designed and played from 2019 to 2022. The design was made a
      empty cell.
    - The Ratel's ability (at the start and each new one) and every pattern made are announced in the game's toast, top
      right under Settings (`ToastNotificationAPI`), worded for both seats.
+   - Making a pattern has juice (Garrett 2026-10-23): its cells burst one after another in the card's family colour, the
+     card pops and the board's edge flashes (`madeJuiceSeconds`, 0.7 s). The prism it takes lifts off its cell and flies on
+     an arc to its battery slot, turning from the board's hex prism into the battery's round charge, and lands with a ring
+     (`chargeFlightSeconds`, 0.55 s; `HoneyguideMesh.HexToDisc`). Both boards draw it, the small one while flying too.
+   - The band between the board and the cards always says what the last pattern made does (`madeLineTemplate`), until
+     the next one. It is **lime** (`dynamoLineColour`) when the effect works on the Dynamo itself - its prisms, ports, AP,
+     spin clock or battery (`HoneyguideConfigSO.TouchesDynamo`: Amanita Furnace, Big Red Button, Dragon Saddle, Zero Point
+     Amplifier, Triplesynth, Universal Translator, Anode Ray, 5D Printer, Square-Peg Hammer, Reactor Cilia,
+     Chrono-Compressor, Meta Machine, Mystic Eti, Vorticity Module), cream otherwise. While a free prism rides the cursor
+     the free-prism line takes the band, in lime.
 5. **RT** pecks and **LT** flits. When the Ratel makes an upgrade card, the toast says which trigger it took, and the chip
    above the small board shows it with the seconds it has left.
 

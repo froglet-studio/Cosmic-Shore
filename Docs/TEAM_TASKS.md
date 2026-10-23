@@ -2030,7 +2030,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** goby-and-pistol.md top section; Tools/Build/studio_to_unity/clones.json 'Goby & Pistol'.retired
 
 ### T-20261022-a669 · open · test · Dolphin
-- **Task:** Phone-test the Dolphin's 1:1 AR roll on an Android dev build: lift either thumb to aim, turn the phone like a wheel - the hull rolls exactly as far as the phone (stops when the phone stops), holds at 90 degrees either side, and keeps its roll when the thumb returns
+- **Task:** Phone-test the Dolphin's 1:1 AR roll on an Android dev build: lift either thumb to aim, turn the phone like a wheel - the hull rolls exactly as far as the phone (stops when the phone stops, easing the last degrees in ~0.1 s through the touch nose lag since 2026-10-23, with no sensor jitter), holds at 90 degrees either side, and keeps its roll when the thumb returns
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Phone controls for the whole fleet' step 7 passes on a phone; the horizon stays level in the room while turning
 - **Who can take it:** Yash (has offered to take tests) or Garrett (Dolphin design owner)
 - **Added:** 2026-10-22 by a Claude session (`cece/exciting-fermat-khf8vn`)
@@ -2094,7 +2094,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 
 ### T-20261023-d445 · open · test · Crew vessels
 - **Task:** Hand-test seats then hulls in freestyle with two players (MPPM, then a phone and a PC): the hand tests in Docs/CREW_STATIONS.md (eight since the arrow-key cycle) - stepping Squirrel -> AI Orca helm -> gunners -> next hull, a second person in an Orca gunner seat and on the Ratel, taking a hull another person left, the two-finger swipe, leaving freestyle mid-ride
-- **Done when:** All six pass, or each failure is a dev task on this board
+- **Done when:** All eleven pass, or each failure is a dev task on this board
 - **Who can take it:** Yash (MPPM and a phone), or Garrett
 - **Added:** 2026-10-23 by Claude (cece/relaxed-tesla-axhxzy) (`cece/relaxed-tesla-axhxzy`)
 - **See:** Docs/CREW_STATIONS.md; Docs/UNITY_VERIFICATION_CHECKLIST.md
@@ -2113,3 +2113,40 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett with Yash (multiplayer)
 - **Added:** 2026-10-23 by Claude (cece/relaxed-tesla-axhxzy) (`cece/relaxed-tesla-axhxzy`)
 - **See:** Docs/CREW_STATIONS.md (Known limits); Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md (Networking)
+
+### T-20261022-accb · done · test · Input
+- **Task:** Fly two or three hulls (a two-stick hull like the Squirrel, a one-thumb hull like the Sparrow) on a gamepad on this branch and judge whether small corrections feel like the old pad (before 2026-10-21) while the nose still has no lag. Tune Resources/GamepadFlightConfig live in Play: responseExponent (centre softness, 1.5) and steeringSensitivity (full-stick rate, 0.85); 1 / 1 is the uncurved pad.
+- **Done when:** Garrett signs off on the values, or new values are committed to Resources/GamepadFlightConfig.asset
+- **Who can take it:** Garrett (the feel), Yash (offered)
+- **Added:** 2026-10-22 by a Claude session (`cece/serene-galileo-t77xt3`)
+- **See:** Docs/claude/ARCHITECTURE_CORE.md (Input Strategy), Assets/_Scripts/ScriptableObjects/GamepadFlightConfigSO.cs
+- **Done:** 2026-10-23, Superseded: Garrett flew the response curve and it lost the smoothness; replaced by the gamepad steering smoother (CascadeSmoother), retested under the new task.
+
+### T-20261023-70a9 · done · test · Input
+- **Task:** Fly the Squirrel and the Sparrow on a gamepad on cece/serene-galileo-t77xt3: do turns build and settle smoothly (no jolt) while the nose still answers at once? Resources/GamepadFlightConfig now ships legacyNoseLag ON (the old 1.5/s nose lag, exactly) with the smoother off (delay 0): fly it, then untick legacyNoseLag and try the smoother (smoothingStages 6, smoothingDelaySeconds 0.12-0.35 s) to compare; decide which ships. Also run the EditMode CascadeSmootherTests.
+- **Done when:** Garrett signs off on the feel and the values (committed to Resources/GamepadFlightConfig.asset), and CascadeSmootherTests pass
+- **Who can take it:** Garrett (the feel), Yash (offered, tests)
+- **Added:** 2026-10-23 by a Claude session (`cece/serene-galileo-t77xt3`)
+- **See:** Docs/claude/ARCHITECTURE_CORE.md (Input Strategy), Assets/_Scripts/Controller/IO/CascadeSmoother.cs, Docs/UNITY_VERIFICATION_CHECKLIST.md
+- **Done:** 2026-10-23, Garrett flew the pad 2026-10-23: the old 1.5/s nose lag wins ('responsive, but eases into its target ... keep this on gamepad'); the stage smoother lost (reads as input lag) and was removed. Pad dial now Resources/GamepadFlightConfig.noseFollowPerSecond = 1.5.
+
+### T-20261023-27e8 · open · test · Input
+- **Task:** Find the touch nose lag: on a phone (or the Device Simulator) on cece/serene-galileo-t77xt3, fly the Squirrel and the Sparrow with Resources/TouchControlProfiles.noseFollowPerSecond at 9 (shipped 2026-10-23, best judgement), 0 (10-21 to 10-23) and 5; pick the one that is responsive and eases into its target like the pad. Also run the EditMode NoseFollowDialTests (and update their touch expectation if the value changes).
+- **Done when:** Garrett picks a touch value and it is committed to TouchControlProfiles (through Tools/Build/author_touch_profiles.py, which owns the asset)
+- **Who can take it:** Garrett (the feel), Yash (offered: tests, phone playtest)
+- **Added:** 2026-10-23 by a Claude session (`cece/serene-galileo-t77xt3`)
+- **See:** Docs/claude/ARCHITECTURE_CORE.md (Input Strategy), Assets/_Scripts/Controller/Vessel/VesselTransformer.cs PilotNoseFollowPerSecond
+
+### T-20261023-2f7b · open · test · prisms
+- **Task:** Look at a close-up steal in the editor: the old domain must curl away (roll in the old colour) and uncover the new colour, with no flash of the new colour first
+- **Done when:** Steps 1-3 of the 'Steal roll: the OLD domain curls away' section of Docs/UNITY_VERIFICATION_CHECKLIST.md pass
+- **Who can take it:** Garrett (asked for it) or Yash
+- **Added:** 2026-10-23 by a Claude session (`cece/hopeful-hopper-np5527`)
+- **See:** Docs/PRISM_ANIMATION.md §4.12 round 14
+
+### T-20261023-06ac · open · test · Crew vessels
+- **Task:** Playtest the Ratel's pattern-made juice and the effect line above the cards in the Unity Editor and on a phone in portrait: the 7 steps of its checklist entry (cell bursts, card pop, the taken prism flying hex-to-disc into the battery, the lime line for Dynamo cards).
+- **Done when:** All 7 steps of the 2026-10-23 Honeyguide juice entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, or the failures are filed as dev tasks
+- **Who can take it:** Yash (offered: playtests) or Garrett
+- **Added:** 2026-10-23 by a Claude session (`cece/inspiring-hawking-mnzmqc`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Honeyguide juice, 2026-10-23); Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
