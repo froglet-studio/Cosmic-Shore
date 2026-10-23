@@ -22,6 +22,8 @@ MonoBehaviour:
   usesPerPattern: 3
   patternsPerShuffle: 4
   spinAnim: 0.6
+  madeJuiceSeconds: 0.7
+  chargeFlightSeconds: 0.55
   portsCount: 1
   rotatable: 1
   retiredAbilities:
@@ -301,6 +303,8 @@ MonoBehaviour:
   flyButtonLabel: 'Fly'
   tapToMake: 'TAP'
   freePrismTemplate: '{count} free ({colour} on your cursor): tap an empty cell'
+  madeLineTemplate: '{name}: {text}'
+  dynamoLineColour: {r: 0.66, g: 1, b: 0.18, a: 1}
   revealAbilityTemplate: 'New ability: {name}'
   revealPortsLine: 'New injection ports'
   madeToastTemplate: '{name} {level}: {text}'

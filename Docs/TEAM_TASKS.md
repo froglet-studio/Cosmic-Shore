@@ -2098,3 +2098,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (asked for it) or Yash
 - **Added:** 2026-10-23 by a Claude session (`cece/hopeful-hopper-np5527`)
 - **See:** Docs/PRISM_ANIMATION.md §4.12 round 14
+
+### T-20261023-06ac · open · test · Crew vessels
+- **Task:** Playtest the Ratel's pattern-made juice and the effect line above the cards in the Unity Editor and on a phone in portrait: the 7 steps of its checklist entry (cell bursts, card pop, the taken prism flying hex-to-disc into the battery, the lime line for Dynamo cards).
+- **Done when:** All 7 steps of the 2026-10-23 Honeyguide juice entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, or the failures are filed as dev tasks
+- **Who can take it:** Yash (offered: playtests) or Garrett
+- **Added:** 2026-10-23 by a Claude session (`cece/inspiring-hawking-mnzmqc`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Honeyguide juice, 2026-10-23); Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
