@@ -26,8 +26,8 @@ namespace CosmicShore.Utility
     /// smaller a little faster; and shrinks away to its centre at its own end, the smallest first — on the
     /// explosion's own flight (<see cref="PrismDebris.ResolveExplosionFlight"/>) for the explosion's own life, in the
     /// explosion's palette. A continuous gradient noise keeps neighbours alike and never in step.</item>
-    /// <item><b>Shed</b> (<see cref="TryRequestShed"/>): a skin in the prism's OLD colours, a hair outside it,
-    /// coming off as a ROLL (the game's one shed since round 7; <see cref="Bloom"/>, <see cref="Unravel"/> and
+    /// <item><b>Shed</b> (<see cref="TryRequestShed"/>): a skin in the prism's OLD colours on both sides, a hair outside
+    /// it, coming off as a ROLL (the game's one shed since round 7; <see cref="Bloom"/>, <see cref="Unravel"/> and
     /// <see cref="Flake"/> stay in the shader for the lab) while the prism underneath already wears the new colour:
     /// each face's skin rolls up AWAY from where the camera was at the steal, over the grade's length, then over the
     /// edge and round until its own prism hides it — the mass crystal's trick: nothing changes where it is seen.</item>
@@ -393,14 +393,14 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Queues a SHED of <paramref name="kind"/> (<see cref="Roll"/>, <see cref="Bloom"/>, <see cref="Unravel"/> or
         /// <see cref="Flake"/>): a skin in the prism's OLD colours (<paramref name="oldBright"/>,
-        /// <paramref name="oldDark"/>), inside already <paramref name="newBright"/>, a hair outside the prism at
+        /// <paramref name="oldDark"/>) on BOTH sides, a hair outside the prism at
         /// (<paramref name="position"/>, <paramref name="rotation"/>, <paramref name="scale"/>), over a grade of
         /// <paramref name="gradeSeconds"/> (<see cref="ShedLife(float, int)"/>). A roll peels away from
         /// <paramref name="cameraPosition"/> on a mesh of <paramref name="subdivision"/> cells a face edge. The caller
         /// then gives the prism its new colour AT ONCE. Returns false — the caller grades as usual — on any refusal.
         /// </summary>
         public static bool TryRequestShed(Vector3 position, Quaternion rotation, Vector3 scale,
-            Color oldBright, Color oldDark, Color newBright, float gradeSeconds, int kind, Mesh mesh,
+            Color oldBright, Color oldDark, float gradeSeconds, int kind, Mesh mesh,
             Vector3 cameraPosition, int subdivision)
         {
             var cfg = PrismInteractionLodConfigSO.Instance;
@@ -408,8 +408,6 @@ namespace CosmicShore.Utility
 
             Vector3 skin = SkinScale(scale, cfg.ShedInflate);
             BuildBounds(rotation, skin, Vector3.zero, cfg.Spread, out var centre, out var extents);
-            var inside = PrismRenderService.ToFloat4(newBright);
-            inside.w = 1f;
 
             Queue(new PrismRenderService.SliceDebrisSpawn
             {
@@ -419,9 +417,11 @@ namespace CosmicShore.Utility
                 Timing = new float4(0f, ShedLife(gradeSeconds, kind), StealSeed(position, PrismClock.Now), kind),
                 Plane = new float4(1f, 0f, 0f, 0f),     // fade curve 1: the grade's smoothstep
                 Centre = new float4(0f, 0f, 0f, 1f),
-                // The inside wears the NEW colour; the stamp is raw, so it takes the colour-space conversion
-                // the bright and dark stamps get inside the render service.
-                Pivot = PrismRenderService.ApplyColorSpace(in inside),
+                // The skin is the OLD domain through and through (Garrett, 2026-10-23: "curl the original domain and
+                // reveal the stolen domain underneath"): its underside wears the old bright (w 0), so a roll - which
+                // winds top side in and shows that underside - reads as the old colour curling away, and the only
+                // new colour on screen is the prism it uncovers.
+                Pivot = float4.zero,
                 // A roll peels AWAY from where the camera was at the steal, on cells this fine.
                 Axis = new float4(cameraPosition.x, cameraPosition.y, cameraPosition.z, subdivision),
                 Drift = float4.zero,                    // the prism stays where it is
