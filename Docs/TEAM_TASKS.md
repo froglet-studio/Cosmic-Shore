@@ -2030,7 +2030,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** goby-and-pistol.md top section; Tools/Build/studio_to_unity/clones.json 'Goby & Pistol'.retired
 
 ### T-20261022-a669 · open · test · Dolphin
-- **Task:** Phone-test the Dolphin's 1:1 AR roll on an Android dev build: lift either thumb to aim, turn the phone like a wheel - the hull rolls exactly as far as the phone (stops when the phone stops), holds at 90 degrees either side, and keeps its roll when the thumb returns
+- **Task:** Phone-test the Dolphin's 1:1 AR roll on an Android dev build: lift either thumb to aim, turn the phone like a wheel - the hull rolls exactly as far as the phone (stops when the phone stops, easing the last degrees in ~0.1 s through the touch nose lag since 2026-10-23, with no sensor jitter), holds at 90 degrees either side, and keeps its roll when the thumb returns
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Phone controls for the whole fleet' step 7 passes on a phone; the horizon stays level in the room while turning
 - **Who can take it:** Yash (has offered to take tests) or Garrett (Dolphin design owner)
 - **Added:** 2026-10-22 by a Claude session (`cece/exciting-fermat-khf8vn`)
