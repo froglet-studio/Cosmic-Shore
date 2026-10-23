@@ -62,6 +62,11 @@ namespace CosmicShore.Gameplay
                  "our domain's hue, so the herd reads as ours (Garrett, 2026-10-21: \"a slight hue shift in your domain\"). " +
                  "0 = no mark.")]
         [SerializeField, Range(0f, 1f)] float herdHueLean = 0.35f;
+        [Tooltip("The herd lights up (Garrett, 2026-10-23: \"fauna that get herded should light up when in herding mode. " +
+                 "fauna that get called should light up when flying\"): while the jacks herd, and while a call lasts in " +
+                 "flight, a herded creature's spindle colours are multiplied by 1 + this (HDR, so the bloom catches them). " +
+                 "0 = they never light up.")]
+        [SerializeField, Range(0f, 7.9f)] float herdGlow = 1.5f;
 
         [Header("The jacks")]
         [Tooltip("dogSpeed: how fast a jack runs to its thumb (lab units/s).")]
@@ -171,6 +176,7 @@ namespace CosmicShore.Gameplay
         public float FloorBirthSeconds => floorBirthSeconds;
         public FaunaConfigurationSO CompanionFauna => companionFauna;
         public float HerdHueLean => herdHueLean;
+        public float HerdGlow => herdGlow;
         public float DogSpeed => dogSpeed * labScale;
         public float PadDogSpeed => padDogSpeed;
         public float AINoise => aiNoise;

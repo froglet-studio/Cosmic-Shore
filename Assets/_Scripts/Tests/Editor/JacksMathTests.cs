@@ -177,5 +177,56 @@ namespace CosmicShore.Tests
             var f = JacksMath.SteadyForward(Vector3.forward, Vector3.up, Vector3.right);
             Assert.AreEqual(Vector3.forward, f);
         }
+
+        [Test]
+        public void Jack_LaysItsDiagonalOnTheLineBetweenTheFish_ThreeSquareArms()
+        {
+            // Garrett, 2026-10-23: "spin it about the (1,1,1) axis and place that axis ... the same axis that draws a line
+            // between the two fish"
+            var axis = new Vector3(3f, -1f, 2f).normalized;
+            foreach (float spin in new[] { 0f, 37f, 200f })
+            {
+                var q = JacksMath.JackRotation(axis, Vector3.up, spin);
+                Assert.Less(Vector3.Distance(axis, q * JacksMath.JackDiagonal), Eps, $"spin {spin}");
+                var x = q * Vector3.right; var y = q * Vector3.up; var z = q * Vector3.forward;
+                Assert.AreEqual(0f, Vector3.Dot(x, y), Eps);
+                Assert.AreEqual(0f, Vector3.Dot(y, z), Eps);
+                Assert.AreEqual(0f, Vector3.Dot(z, x), Eps);
+                // every arm leans the same way off the axis (that is what (1,1,1) means)
+                Assert.AreEqual(1f / Mathf.Sqrt(3f), Vector3.Dot(x, axis), Eps);
+                Assert.AreEqual(1f / Mathf.Sqrt(3f), Vector3.Dot(y, axis), Eps);
+                Assert.AreEqual(1f / Mathf.Sqrt(3f), Vector3.Dot(z, axis), Eps);
+            }
+        }
+
+        [Test]
+        public void Jack_SpinsAboutTheDiagonal_AndATurnOfAThirdSwapsItsArms()
+        {
+            var axis = Vector3.right;
+            var q0 = JacksMath.JackRotation(axis, Vector3.up, 0f);
+            var q1 = JacksMath.JackRotation(axis, Vector3.up, 90f);
+            // the spin is a turn about the axis, nothing else
+            var turn = q1 * Quaternion.Inverse(q0);
+            turn.ToAngleAxis(out float deg, out var about);
+            Assert.AreEqual(90f, deg, 0.05f);
+            Assert.Less(Vector3.Distance(axis, about), Eps);
+            // a third of a turn maps the jack onto itself: x goes where y was (or z), so it reads as one spinning toy
+            var q120 = JacksMath.JackRotation(axis, Vector3.up, 120f);
+            var x120 = q120 * Vector3.right;
+            Assert.IsTrue(Vector3.Distance(x120, q0 * Vector3.up) < Eps || Vector3.Distance(x120, q0 * Vector3.forward) < Eps);
+            // no flip at zero spin as the axis swings a little: the twist follows the up
+            var nudged = JacksMath.JackRotation(Quaternion.AngleAxis(2f, Vector3.up) * axis, Vector3.up, 0f);
+            Assert.Less(Quaternion.Angle(q0, nudged), 3f);
+        }
+
+        [Test]
+        public void JackArm_TipsReachTheFishPlanes_Clamped()
+        {
+            // flight formation: the fish 2 x flightGap (14) apart
+            Assert.AreEqual(14f * Mathf.Sqrt(3f), JacksMath.JackArm(28f, 1f, 4f, 40f), Eps);
+            Assert.AreEqual(14f, JacksMath.JackArm(28f, 1f, 4f, 40f) / Mathf.Sqrt(3f), Eps);
+            Assert.AreEqual(4f, JacksMath.JackArm(0f, 1f, 4f, 40f), Eps);
+            Assert.AreEqual(40f, JacksMath.JackArm(900f, 1f, 4f, 40f), Eps);
+        }
     }
 }

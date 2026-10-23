@@ -24,8 +24,12 @@ WHAT IT MAKES (the design: Assets/_Scripts/Controller/Vessel/R_VesselActions/JAC
           / a lifted thumb) and Input 4 (both thumbs lifted); CALL on Input 7 (A); the jacks' own DECOY on Input 6 (X; the
           Time level-5 upgrade). The Rhino's gamepad overrides (the shield swipes) are emptied
         - NO SWORD: the sword driver and its afterimages (ScaleSkimmerObject), the shield swipes (ShieldSwipeActionRegistry),
-          the sword relay, the sword autopilot and the Momentum ward are stripped (RHINO_SUBTREES, RHINO_COMPONENTS). The
-          ForceFieldSkimmer stays: it is the hull's near-field skimmer and its trail (its blade FX rests unlit)
+          the sword relay, the sword autopilot, the Momentum ward, the sword's look (RhinoSwordFXController) and its five
+          streaks are stripped (RHINO_SUBTREES, RHINO_COMPONENTS). The ForceFieldSkimmer stays: it is the hull's skimmer,
+          made THE JACK (Garrett, 2026-10-23: three orthogonal axes spun about (1,1,1) on the line between the fish) - two
+          more trigger capsules (X, Z) beside its own Y one (jack_retrofit); JacksBodies poses and draws it
+        - NO JETS: the Rhino's vestigial jets (the ten VesselJets, JetFX, the arc lightning, JetTest, the two jet particle
+          systems; RHINO_JET_PREFABS, RHINO_SUBTREES) are stripped (Garrett, 2026-10-23)
         - RhinoVesselHUDController becomes JacksHUDController, wired to the executor
         - its VesselImpactor on JacksImpactorDataContainer: haptics, the danger debuff and the prism damage; the Rhino's
           plough and its surge / explosion crystals are the Rhino's alone
@@ -122,8 +126,22 @@ WANT_BINDINGS = (
     f"  - InputEvent: 6\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksDecoy']}, type: 2}}\n"
     f"  - InputEvent: 7\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksCall']}, type: 2}}\n")
 
-RHINO_SUBTREES = ["ScaleSkimmerObject", "ShieldSwipeActionRegistry"]
-RHINO_COMPONENTS = ["RhinoSwordNetworkRelay", "VesselElementalImmunity", "RhinoSwordAutopilot"]
+# the sword's five streaks and the legacy jet objects are Rhino parts too (Garrett, 2026-10-23: "the vestigal jets from the
+# rhino should be gone"; "instead of a sword (1 axis) make it all three orthogonal axes")
+RHINO_SUBTREES = ["ScaleSkimmerObject", "ShieldSwipeActionRegistry", "LeftJetParticle", "RightJetParticle", "JetTest"] + [
+    f"RhinoSwordBladeTracer{i}" for i in range(5)]
+RHINO_COMPONENTS = ["RhinoSwordNetworkRelay", "VesselElementalImmunity", "RhinoSwordAutopilot", "RhinoSwordFXController"]
+# the Rhino's nested jets: the ten VesselJets (two pods, eight body nozzles), the pods' JetFX and the arc lightning
+RHINO_JET_PREFABS = {"55ceca573be662744948afc745f8840b": "VesselJet", "f2d613e7ff9874744baa70c5dc697310": "JetFX",
+                     "304ca7b3152755c4885ea01bcc7183a6": "VfxArcLightning"}
+# THE JACK (Garrett, 2026-10-23): the sword skimmer's capsule is the Y arm; two more capsule colliders on it are X and Z.
+# JacksBodies poses it (uniform scale, radius, the spin about (1,1,1) on the line between the fish) and draws the arms.
+SKIMMER_INSTANCE = "1660592348679971898"           # ForceFieldSkimmer Variant nested under the fuselage
+SKIMMER_GO = "2695624631939139826"                 # its root GameObject (stripped)
+SKIMMER_VARIANT_GUID = "c8d5df1098821194eb69eec4c965548e"
+SKIMMER_SOURCE_GO = "3630837686170528968"          # the variant's root GameObject, the added components' target
+SKIMMER_Y_COLLIDER = "4880931740909781519"         # the sword's own capsule (direction 1)
+JACK_ARM_COLLIDERS = (("2200000000000000061", 0), ("2200000000000000062", 2))   # (id, CapsuleCollider direction)
 RHINO_HUD_KEYS = ["view", "swordDriver", "afterimage", "speedWard"]
 
 
@@ -193,6 +211,13 @@ def strip_rhino_kit(text: str) -> str:
         sc = re.search(r"^  m_Script: \{fileID: 11500000, guid: (\w+)", d, re.M)
         if k == "114" and sc and sc.group(1) in kill_scripts:
             removed.add(a)
+    # the nested jets: their PrefabInstance and its stripped stubs
+    jets = {a for k, a, d in docs if k == "1001" and any(f"m_SourcePrefab: {{fileID: 100100000, guid: {g}," in d
+                                                          for g in RHINO_JET_PREFABS)}
+    for k, a, d in docs:
+        pi = re.search(r"^  m_PrefabInstance: \{fileID: (-?\d+)\}", d, re.M)
+        if a in jets or (" stripped" in d.split("\n", 1)[0] and pi and pi.group(1) in jets):
+            removed.add(a)
     out = []
     for k, a, d in docs:
         if a in removed:
@@ -201,9 +226,61 @@ def strip_rhino_kit(text: str) -> str:
             d = re.sub(r"^  - component: \{fileID: %s\}\n" % r, "", d, flags=re.M)
             d = re.sub(r"^  - \{fileID: %s\}\n" % r, "", d, flags=re.M)
             d = re.sub(r"\{fileID: %s\}" % r, "{fileID: 0}", d)
+        # an added component that was removed leaves its entry naming nothing
+        d = re.sub(r"^    - targetCorrespondingSourceObject: \{[^}]*\}\n      insertIndex: -?\d+\n      addedObject: \{fileID: 0\}\n",
+                   "", d, flags=re.M)
         out.append(d)
     text = head + "".join(out)
     return re.sub(r"^(  (?:m_Children|_executors|m_Component)):\n(?=  [a-zA-Z_<]|--- |\Z)", r"\1: []\n", text, flags=re.M)
+
+
+def capsule_block(cid: str, direction: int) -> str:
+    return (f"--- !u!136 &{cid}\nCapsuleCollider:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
+            f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {SKIMMER_GO}}}\n"
+            "  m_Material: {fileID: 0}\n  m_IncludeLayers:\n    serializedVersion: 2\n    m_Bits: 0\n  m_ExcludeLayers:\n"
+            "    serializedVersion: 2\n    m_Bits: 0\n  m_LayerOverridePriority: 0\n  m_IsTrigger: 1\n  m_ProvidesContacts: 0\n"
+            "  m_Enabled: 1\n  serializedVersion: 2\n  m_Radius: 0.5\n  m_Height: 1.98\n"
+            f"  m_Direction: {direction}\n  m_Center: {{x: 0, y: 0, z: 0}}\n")
+
+
+def added_component(cid: str) -> str:
+    return (f"    - targetCorrespondingSourceObject: {{fileID: {SKIMMER_SOURCE_GO}, guid: {SKIMMER_VARIANT_GUID},\n"
+            f"        type: 3}}\n      insertIndex: -1\n      addedObject: {{fileID: {cid}}}\n")
+
+
+def jack_retrofit(text: str) -> str:
+    """The sword skimmer's two more arms: capsule colliders along X and Z beside its own Y capsule, added to the nested
+    skimmer (so its impactor's probe set holds all three from the start). Idempotent."""
+    for cid, direction in JACK_ARM_COLLIDERS:
+        if f"--- !u!136 &{cid}\n" in text:
+            continue
+        inst = re.search(r"--- !u!1001 &%s\nPrefabInstance:\n(?:.*\n)*?    m_AddedComponents:\n(?:    - .*\n|      .*\n|        .*\n)*"
+                         % SKIMMER_INSTANCE, text)
+        if not inst:
+            continue
+        text = text[:inst.end()] + added_component(cid) + text[inst.end():]   # after the sword's own capsule
+        text = text.rstrip("\n") + "\n" + capsule_block(cid, direction)
+    return text
+
+
+def check_jack(text: str):
+    """No Rhino jet, no sword streak, and the sword skimmer carries the jack's three square arms."""
+    errs = []
+    for guid, name in RHINO_JET_PREFABS.items():
+        if f"m_SourcePrefab: {{fileID: 100100000, guid: {guid}," in text:
+            errs.append(f"Jacks.prefab: the Rhino's {name} is still on the hull (the vestigial jets)")
+    inst = re.search(r"--- !u!1001 &%s\n((?:.*\n)*?)(?=--- !u!|\Z)" % SKIMMER_INSTANCE, text)
+    dirs = set()
+    for cid in [SKIMMER_Y_COLLIDER] + [c for c, _ in JACK_ARM_COLLIDERS]:
+        cap = re.search(r"--- !u!136 &%s\nCapsuleCollider:\n((?:.*\n)*?)(?=--- !u!|\Z)" % cid, text)
+        if cap and f"  m_GameObject: {{fileID: {SKIMMER_GO}}}\n" in cap.group(1) and "  m_IsTrigger: 1\n" in cap.group(1) \
+                and inst and f"addedObject: {{fileID: {cid}}}" in inst.group(1):
+            dirs.add(re.search(r"  m_Direction: (\d)", cap.group(1)).group(1))
+    if dirs != {"0", "1", "2"}:
+        errs.append(f"Jacks.prefab: the jack's arms are not three trigger capsules (X, Y, Z) on the sword skimmer (have {sorted(dirs)})")
+    if inst and re.search(r"addedObject: \{fileID: 0\}", inst.group(1)):
+        errs.append("Jacks.prefab: the sword skimmer lists an added component that names nothing")
+    return errs
 
 
 def executor_retrofit(text: str) -> str:
@@ -430,7 +507,7 @@ def retrofit(text: str) -> str:
     text = text.replace(f"guid: {DONOR_CONTAINER_GUID},", f"guid: {CONTAINER_GUID},")
     text = text.replace(f"  settings: {{fileID: 11400000, guid: {RHINO_CAMERA_GUID}, type: 2}}",
                         f"  settings: {{fileID: 11400000, guid: {CAMERA_GUID}, type: 2}}")
-    return icons_retrofit(bodies_retrofit(text))
+    return jack_retrofit(icons_retrofit(bodies_retrofit(text)))
 
 
 def prefab_meta() -> str:
@@ -477,7 +554,7 @@ FLIGHT_FIELDS = ("  flightGap: 14\n  flightReach: 10\n  flightFormationEase: 8\n
 # average sized thumb barely covers the smallest jack repulsion radius") and the herd's mark ("a slight hue shift in your
 # domain"). Added once, like the stability fields.
 THUMB_VIEW_FIELDS = "  phoneShortMm: 71\n  thumbCover: 0.9\n"
-HERD_MARK_FIELDS = "  herdHueLean: 0.35\n"
+HERD_MARK_FIELDS = "  herdHueLean: 0.35\n  herdGlow: 1.5\n"   # the glow: "fauna that get herded should light up" (2026-10-23)
 
 
 def config_retrofit(text: str) -> str:
@@ -494,6 +571,8 @@ def config_retrofit(text: str) -> str:
         text = re.sub(r"^(  viewSpan: .*\n)", lambda m: m.group(1) + THUMB_VIEW_FIELDS, text, count=1, flags=re.M)
     if "  herdHueLean:" not in text:
         text = re.sub(r"^(  companionFauna: .*\n)", lambda m: m.group(1) + HERD_MARK_FIELDS, text, count=1, flags=re.M)
+    elif "  herdGlow:" not in text:
+        text = re.sub(r"^(  herdHueLean: .*\n)", lambda m: m.group(1) + "  herdGlow: 1.5\n", text, count=1, flags=re.M)
     return text
 
 
@@ -694,7 +773,7 @@ def check_prefab(text: str, script_guid: str):
     want(not dangling, f"Jacks.prefab: dangling local fileID reference(s) {dangling[:5]}")
     want(f"  settings: {{fileID: 11400000, guid: {CAMERA_GUID}, type: 2}}" in text and RHINO_CAMERA_GUID not in text,
          "Jacks.prefab: the camera settings are not JacksCameraSettingsSO (a tune would move the Rhino's camera)")
-    return errs + check_bodies(text)
+    return errs + check_bodies(text) + check_jack(text)
 
 
 def check_assets(config: str, controls, container: str):
@@ -711,6 +790,8 @@ def check_assets(config: str, controls, container: str):
         errs.append("JacksConfig.asset: no thumb-framed view fields (run the tool)")
     if "  herdHueLean:" not in config:
         errs.append("JacksConfig.asset: no herd mark field (run the tool)")
+    if "  herdGlow:" not in config:
+        errs.append("JacksConfig.asset: no herd glow field (run the tool)")
     action = guid_of_script("JacksActionSO")
     for name, value, text in controls:
         if f"guid: {action}, type: 3" not in text or f"  control: {value}\n" not in text:
@@ -864,6 +945,14 @@ def self_test():
     expect(check_prefab(good.replace(f"  - component: {{fileID: {TELEMETRY_ID}}}\n", ""), script_guid), 1, "no telemetry")
     expect(check_prefab(good.replace(icon_override(*ICON_SPRITES[2]), ""), script_guid), 1, "the Rhino's Space icon")
     expect(check_prefab(good.replace(f"  - component: {{fileID: {BODIES_ID}}}\n", ""), script_guid), 1, "no bodies component")
+    expect(check_prefab(good.replace(f"  m_Direction: 2\n", "  m_Direction: 1\n"), script_guid), 1, "the jack missing its Z arm")
+    expect(check_prefab(good.replace(added_component(JACK_ARM_COLLIDERS[0][0]), ""), script_guid), 1,
+           "an arm collider the skimmer does not list")
+    jets = read(DONOR).split("--- !u!1001 &3901220500000001\n", 1)
+    expect(check_jack("--- !u!1001 &3901220500000001\n" + jets[1]), 2, "a Rhino jet left on the hull")
+    rhino = build_clone(read(DONOR), script_guid)
+    if any(f"guid: {g}," in rhino for g in RHINO_JET_PREFABS) or "RhinoSwordBladeTracer" in rhino:
+        fails.append("the strip leaves a Rhino jet or a sword streak on the clone")
     expect(check_prefab(good.replace(f"  _shipGeometries:\n  - {{fileID: {FUSE_GO}}}\n",
                                      f"  _shipGeometries:\n  - {{fileID: {MARLIN_GO_ID}}}\n"), script_guid), 1, "the marlin's ship geometry")
     marlin = good + model_instance(MARLIN_INSTANCE_ID, MARLIN_TRANSFORM_ID, FUSE_TRANSFORM, MARLIN_FBX_GUID, "Marlin", "-2", MARLIN_GO_ID)
@@ -892,6 +981,9 @@ def self_test():
         fails.append("the config retrofit does not rename the marlin-era fields or put the flight fields back")
     expect(check_assets(cfg.replace(THUMB_VIEW_FIELDS, ""), controls, cont), 1, "no thumb-framed view fields")
     expect(check_assets(cfg.replace(HERD_MARK_FIELDS, ""), controls, cont), 1, "no herd mark field")
+    expect(check_assets(cfg.replace("  herdGlow: 1.5\n", ""), controls, cont), 1, "no herd glow field")
+    if config_retrofit(cfg.replace("  herdGlow: 1.5\n", "")) != cfg:
+        fails.append("the config retrofit does not put the herd glow back after herdHueLean")
     if config_retrofit(cfg) != cfg or "herdPlaneEase" not in config_retrofit(cfg.replace(STABILITY_FIELDS, "")):
         fails.append("the config retrofit is not idempotent or does not add the stability fields")
     if config_retrofit(cfg.replace(THUMB_VIEW_FIELDS, "").replace(HERD_MARK_FIELDS, "")) != cfg:

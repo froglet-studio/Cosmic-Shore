@@ -96,9 +96,9 @@ namespace CosmicShore.Gameplay
         readonly NetworkVariable<byte> _netLifeState = new((byte)LifeState.Alive);
         readonly NetworkVariable<byte> _netDeathStyle = new((byte)LifeformDeathStyle.Withered);
 
-        // The leash's MARK (Fauna.ApplyLeashMark), server-write: the holder's domain in the high byte and the lean x 255
-        // in the low byte, 0 = wild. A NetworkVariable so a peer that joins mid-herd sees the marked creatures marked.
-        readonly NetworkVariable<ushort> _netLeashMark = new(0);
+        // The leash's MARK (Fauna.ApplyLeashMark), server-write: the holder's domain, the glow and the lean x 255, a byte
+        // each (PackLeashMark), 0 = wild. A NetworkVariable so a peer that joins mid-herd sees the marked creatures marked.
+        readonly NetworkVariable<uint> _netLeashMark = new(0);
 
         bool _appliedReplicatedDeath;
 
@@ -410,30 +410,33 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Server: publish the creature's leash mark (<see cref="Fauna.ApplyLeashMark"/>); a no-op off the server
         /// and when never network-spawned.</summary>
-        public void PublishLeashMark(Domains domain, float lean)
+        public void PublishLeashMark(Domains domain, float lean, float glow)
         {
             if (!IsSpawned || !IsServer) return;
-            ushort packed = PackLeashMark(domain, lean);
+            uint packed = PackLeashMark(domain, lean, glow);
             if (_netLeashMark.Value != packed) _netLeashMark.Value = packed;
         }
 
-        void OnLeashMarkChanged(ushort _, ushort next)
+        void OnLeashMarkChanged(uint _, uint next)
         {
             if (IsServer || !fauna) return;
-            UnpackLeashMark(next, out var domain, out float lean);
-            fauna.ApplyLeashMark(domain, lean);
+            UnpackLeashMark(next, out var domain, out float lean, out float glow);
+            fauna.ApplyLeashMark(domain, lean, glow);
         }
 
-        /// <summary>The mark on the wire: the domain in the high byte, the lean x 255 in the low byte; no lean is 0.</summary>
-        public static ushort PackLeashMark(Domains domain, float lean)
+        /// <summary>The mark on the wire: the domain in bits 16-23, the glow in <see cref="Spindle.GlowQuantum"/> steps in
+        /// bits 8-15, the lean x 255 in bits 0-7; no lean and no glow is 0 (wild).</summary>
+        public static uint PackLeashMark(Domains domain, float lean, float glow)
         {
-            int amount = Mathf.RoundToInt(Mathf.Clamp01(lean) * 255f);
-            return amount == 0 ? (ushort)0 : (ushort)(((int)domain & 0xFF) << 8 | amount);
+            uint amount = (uint)Mathf.RoundToInt(Mathf.Clamp01(lean) * 255f);
+            uint lit = Spindle.QuantizeGlow(glow);
+            return amount == 0 && lit == 0 ? 0u : ((uint)domain & 0xFF) << 16 | lit << 8 | amount;
         }
 
-        public static void UnpackLeashMark(ushort packed, out Domains domain, out float lean)
+        public static void UnpackLeashMark(uint packed, out Domains domain, out float lean, out float glow)
         {
-            domain = (Domains)(packed >> 8);
+            domain = (Domains)((packed >> 16) & 0xFF);
+            glow = ((packed >> 8) & 0xFF) * Spindle.GlowQuantum;
             lean = (packed & 0xFF) / 255f;
         }
 

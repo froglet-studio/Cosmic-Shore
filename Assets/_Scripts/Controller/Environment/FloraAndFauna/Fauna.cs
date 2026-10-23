@@ -204,11 +204,22 @@ namespace CosmicShore.Gameplay
         void ShowLeashMark()
         {
             Domains markDomain = default;
-            float lean = 0f;
-            if (Leash == null || !Leash.TryGetLeashMark(out markDomain, out lean)) lean = 0f;
-            ApplyLeashMark(markDomain, lean);
+            float lean = 0f, glow = 0f;
+            if (Leash == null || !Leash.TryGetLeashMark(out markDomain, out lean, out glow)) lean = glow = 0f;
+            ApplyLeashMark(markDomain, lean, glow);
             var sync = NetSync;
-            if (sync) sync.PublishLeashMark(markDomain, lean);
+            if (sync) sync.PublishLeashMark(markDomain, lean, glow);
+        }
+
+        /// <summary>
+        /// Re-read the holder's mark: its holder calls this when the mark changes while it holds the creature (the Jacks'
+        /// herd lights up while herding and while called, <see cref="IFaunaLeash.TryGetLeashMark"/>). A no-op on a puppet,
+        /// on a wild creature and on a dying one (it keeps the mark it died in).
+        /// </summary>
+        public void RefreshLeashMark()
+        {
+            if (Leash == null || !IsSimAuthority || _diedThisLife) return;
+            ShowLeashMark();
         }
 
         static readonly List<Spindle> s_markSpindles = new();
@@ -216,17 +227,17 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The leash's mark (Garrett, 2026-10-21: "distinguish them by giving their spindles a slight hue shift in your
         /// domain"): every spindle's colours lean <paramref name="lean"/> of the way toward <paramref name="markDomain"/>'s
-        /// prism hue; 0 takes the mark off. Presentation only. Called by the leash on the simulating peer and by
-        /// <see cref="FaunaNetworkSync"/> on a puppet.
+        /// prism hue; 0 takes the mark off. <paramref name="glow"/> lights them up (colours x (1 + glow), HDR); 0 = unlit.
+        /// Presentation only. Called by the leash on the simulating peer and by <see cref="FaunaNetworkSync"/> on a puppet.
         /// </summary>
-        public void ApplyLeashMark(Domains markDomain, float lean)
+        public void ApplyLeashMark(Domains markDomain, float lean, float glow)
         {
             var colors = PrismLit.ColorSet;
             Color hue = default;
             bool on = lean > 0f && colors && colors.TryGetPrismKindColors(markDomain, PrismKind.Plain, out hue, out _);
             GetComponentsInChildren(true, s_markSpindles);
             for (int i = 0; i < s_markSpindles.Count; i++)
-                if (s_markSpindles[i]) s_markSpindles[i].SetHueLean(hue, on ? lean : 0f);
+                if (s_markSpindles[i]) s_markSpindles[i].SetHueLean(hue, on ? lean : 0f, glow);
             s_markSpindles.Clear();
         }
 

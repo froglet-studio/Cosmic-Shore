@@ -126,6 +126,8 @@ namespace CosmicShore.Gameplay
 
         // the mode: herding (the hull holds, the jacks run on its plane) or flying (the jacks fly the hull)
         bool _herding, _inputPaused, _holding, _heldWasStationary;
+        bool _remoteHerding;   // another machine owns the hull: its jacks are herding (JacksBodies' flags)
+        bool _lit;             // the herd is lit (TryGetLeashMark's glow): herding, or called in flight
         float _swapReadyAt, _aiModeAt;
         JacksAI _ai;
         JacksView _view;
@@ -285,7 +287,8 @@ namespace CosmicShore.Gameplay
             PruneDead();
             UpdateBoard(dt);
             float ring = Ring;
-            if (FollowRemoteCrew())
+            bool remote = FollowRemoteCrew();
+            if (remote)
             {
                 // another machine owns the hull: its jacks, decoy and call (JacksBodies) herd here
                 StopHerding();
@@ -309,6 +312,7 @@ namespace CosmicShore.Gameplay
                 if (_status.AutoPilotEnabled) StepAIButtons();
             }
 
+            SetLit((remote ? _remoteHerding : _herding) || Calling);
             EnsureFloor();
             Recruit(ring);
             StepHerd(dt, ring);
@@ -334,7 +338,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool FollowRemoteCrew()
         {
-            if (!_bodies || !_bodies.TryGetRemoteCrew(out var a, out var b, out bool decoy, out var at, out bool calling)) return false;
+            if (!_bodies || !_bodies.TryGetRemoteCrew(out var a, out var b, out bool decoy, out var at, out bool calling,
+                                                       out bool flying)) return false;
+            _remoteHerding = !flying;
             _jack[0] = a;
             _jack[1] = b;
             _hasDecoy = decoy;
@@ -1100,12 +1106,28 @@ namespace CosmicShore.Gameplay
         /// <summary>MASS: the herd's birth rate (<see cref="JacksMath.FeedsPerOffspringScale"/>).</summary>
         public float FeedsPerOffspringScale(Fauna creature) => JacksMath.FeedsPerOffspringScale(Level(Element.Mass));
 
-        /// <summary>The herd's mark: its spindles lean toward our domain's hue (<c>herdHueLean</c>).</summary>
-        public bool TryGetLeashMark(out Domains domain, out float lean)
+        /// <summary>The herd's mark: its spindles lean toward our domain's hue (<c>herdHueLean</c>), and light up
+        /// (<c>herdGlow</c>) while the jacks herd or the call lasts in flight (<see cref="SetLit"/>).</summary>
+        public bool TryGetLeashMark(out Domains domain, out float lean, out float glow)
         {
             domain = _status != null ? _status.Domain : default;
             lean = config ? config.HerdHueLean : 0f;
-            return _status != null && lean > 0f;
+            glow = _lit && config ? config.HerdGlow : 0f;
+            return _status != null && (lean > 0f || glow > 0f);
+        }
+
+        /// <summary>
+        /// The herd lights up (Garrett, 2026-10-23: "fauna that get herded should light up when in herding mode. fauna
+        /// that get called should light up when flying"): lit while the jacks herd, and while a call lasts in flight. Every
+        /// creature in the herd re-reads its mark on a change; one joining later reads the mark as it is then. On the peer
+        /// that simulates the creatures (a puppet takes the mark from FaunaNetworkSync).
+        /// </summary>
+        void SetLit(bool lit)
+        {
+            if (lit == _lit) return;
+            _lit = lit;
+            for (int i = 0; i < _herd.Count; i++)
+                if (_herd[i].Creature) _herd[i].Creature.RefreshLeashMark();
         }
 
         public void Born(Fauna parent, Fauna child)

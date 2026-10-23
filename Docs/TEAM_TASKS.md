@@ -2151,3 +2151,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered: playtests) or Garrett
 - **Added:** 2026-10-23 by a Claude session (`cece/inspiring-hawking-mnzmqc`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Honeyguide juice, 2026-10-23); Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+
+### T-20261023-2368 · open · test · Jacks
+- **Task:** Fly the Jacks in Unity on cece/optimistic-rubin-t46tzs (Toybox Vessel Changer > Jacks): no Rhino jets or sword streaks anywhere; a three-armed jack spins about the line between the two fish (flying and herding); the herd lights up (bloom) while herding and while a call lasts in flight, and goes dark again; host + client: the client sees the same glow. Then call the look: toyJack* on JacksBodies (size, spin 120/s, skims while herding off) and herdGlow 1.5 on JacksConfig
+- **Done when:** UNITY_VERIFICATION_CHECKLIST 2026-10-23 Jacks jack/glow steps pass, or the failures are dev tasks
+- **Who can take it:** Yash (offered), Garrett (vessel owner, the look calls)
+- **Added:** 2026-10-23 by a Claude session (`cece/optimistic-rubin-t46tzs`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md §5; Docs/UNITY_VERIFICATION_CHECKLIST.md

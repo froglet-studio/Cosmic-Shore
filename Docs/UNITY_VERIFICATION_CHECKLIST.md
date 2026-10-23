@@ -14101,3 +14101,30 @@ Not opened in Unity (no editor in the session); `unity_refcompile` player clean.
 - [ ] Very Low, Honeyguide and Ratel: you start on the Ratel on a plain backdrop; Fly goes to the Honeyguide with only a "Ratel" button top-left; a short tap on it goes back.
 - [ ] Very Low: the Goby's Pistol view, the Orca's turrets and the Jacks' herd view show no small view.
 - [ ] Device Simulator or a phone: the Wrasse seat turns the screen to portrait and the board fits its width; the Grouper turns it back; the menus never go portrait.
+
+## 🔴 2026-10-23 — The Jacks: a spinning jack between the fish, no Rhino jets, the herd lights up (`cece/optimistic-rubin-t46tzs`) - NOT EDITOR-VERIFIED
+
+Garrett: "fauna that get herded should light up when in herding mode. fauna that get called should light up when flying.
+the vestigal jets from the rhino should be gone. instead of a sword (1 axis) make it all three orthogonal axes (like a jack
+in the game of jacks) ... spin it about the (1,1,1) axis and place that axis ... the same axis that draws a line between the
+two fish." Design: `R_VesselActions/JACKS.md` §5. No editor or `unity` CLI in the session, so `/verify-unity` did not run:
+the C# compiles headless (`unity_refcompile` player: 0 errors in project code; editor: 0 errors in changed files),
+`author_jacks_assets.py --check` / `--self-test` pass (the check failed on the old prefab first: jets, one
+arm). `NetworkConfig.ProtocolVersion` is now 13: host and client must run the same build. Team task: T-20261023-2368.
+
+1. Toy Box > Vessel Changer → **Jacks**, flying. No Rhino jets, plumes or sword streaks anywhere on the hull. Between the
+   two fish a three-armed jack (the old sword's white material) spins about the line through the fish; its arm tips turn
+   round each fish. Roll, pitch, spread and close the fish: the jack's axis stays on the line between them, it grows as
+   they spread and shrinks as they close, and it never flips.
+2. Fly the jack through a trail and past crystals: it skims (the Jacks' skim feedback and crystal vacuum) on all three
+   arms, not only one.
+3. Switch to herding: the jack is drawn on the board halfway between the two jacks (at most 40 u an arm) and does NOT
+   skim or vacuum crystals there. The whole herd lights up (bloom) while you herd, and goes back to its marked colours
+   when you switch to flying.
+4. Flying: press A (call). The herd lights up while the call lasts (2.5 s), then goes dark.
+5. Host plus one client, the client on the Jacks: on both machines the herd lights up herding and during a call, and the
+   jack spins between the client's fish.
+6. Console clean; the `renderers` line does not jump when the herd lights up (a lit herd shares one material per mark).
+7. Look calls: `toyJackReach` 1, `toyJackMinArm` / `toyJackMaxArm` 4 / 40, `toyJackArmRadius` 1.2,
+   `toyJackSpinDegreesPerSecond` 120, `toyJackSkimsWhileHerding` off (all on `JacksBodies`), `herdGlow` 1.5 on
+   `JacksConfig`.

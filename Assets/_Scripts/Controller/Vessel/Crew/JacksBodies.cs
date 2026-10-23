@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -68,6 +69,25 @@ namespace CosmicShore.Gameplay
         [Tooltip("A herding jack slower than this (u/s) keeps its heading instead of turning to its drift.")]
         [SerializeField, Min(0f)] float jackHeadingMinSpeed = 6f;
 
+        [Header("The jack between the fish (the Rhino's sword, made three axes)")]
+        [Tooltip("Name of the skimmer under the hull that becomes the jack: the Rhino's sword capsule (its collider is the " +
+                 "Y arm; the prefab adds the X and Z arms' colliders beside it).")]
+        [SerializeField] string toyJackName = "ForceFieldSkimmer";
+        [Tooltip("How far the arms reach toward the fish: at 1 the arm tips turn in the planes the two fish swim in (each " +
+                 "fish at the centre of the triangle three tips draw round it); below 1 the jack sits inside the pair.")]
+        [SerializeField, Min(0f)] float toyJackReach = 1f;
+        [Tooltip("Shortest arm, centre to tip (u), however close the fish come.")]
+        [SerializeField, Min(0.1f)] float toyJackMinArm = 4f;
+        [Tooltip("Longest arm, centre to tip (u): herding, the fish are a board apart, and the jack stops growing here.")]
+        [SerializeField, Min(0.1f)] float toyJackMaxArm = 40f;
+        [Tooltip("Radius of each arm (u): the sword's capsule, made round.")]
+        [SerializeField, Min(0.05f)] float toyJackArmRadius = 1.2f;
+        [Tooltip("How fast the jack spins about its (1,1,1) diagonal, the line between the fish (degrees per second).")]
+        [SerializeField] float toyJackSpinDegreesPerSecond = 120f;
+        [Tooltip("Whether the jack skims while the jacks herd. Off: it is drawn between the fish on the board, but its " +
+                 "colliders are off, so a parked hull does not skim (or vacuum crystals) in the middle of the board.")]
+        [SerializeField] bool toyJackSkimsWhileHerding;
+
         [Header("Network")]
         [Tooltip("How fast another peer's copy of the jacks closes on the published places (per second).")]
         [SerializeField, Min(0.1f)] float remoteSmoothing = 10f;
@@ -90,6 +110,7 @@ namespace CosmicShore.Gameplay
         IVesselStatus _status;
 
         readonly Jack[] _jacks = new Jack[2];
+        ToyJack _toy;
         bool _jacksShown, _snap = true, _flying;
         Vector3 _decoyOffset, _prevHullPosition;
         float _hullSpeed;
@@ -106,6 +127,17 @@ namespace CosmicShore.Gameplay
             public Vector3 Heading = Vector3.forward;
             public float Phase, Scale;
             public Material Painted;
+        }
+
+        /// <summary>The jack between the fish: the sword skimmer's own transform, its three colliders and three arms.</summary>
+        sealed class ToyJack
+        {
+            public Transform T;
+            public readonly List<CapsuleCollider> Colliders = new();
+            public Behaviour Impactor;
+            public readonly List<Renderer> Arms = new();
+            public float Spin;
+            public bool? Shown, Skims;
         }
 
         struct Bone
@@ -143,6 +175,7 @@ namespace CosmicShore.Gameplay
             if (TryGetComponent(out IVessel vessel)) _status = vessel.VesselStatus;
             int layer = HideReplacedRig();
             ResolveJacks(layer);
+            BuildToyJack();
         }
 
         /// <summary>The Rhino's rig is switched off (its bones stay: the puppetry still turns them). Returns its renderer's
@@ -188,14 +221,15 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ read by the executor on a non-owning peer
 
         /// <summary>
-        /// The owner's jacks, decoy and call, as world positions on this peer. False where this machine decides the jacks
-        /// itself (the owner, or unspawned), or before the owner has published them.
+        /// The owner's jacks, decoy, call and mode, as world positions on this peer. False where this machine decides the
+        /// jacks itself (the owner, or unspawned), or before the owner has published them.
         /// </summary>
-        internal bool TryGetRemoteCrew(out Vector3 jackA, out Vector3 jackB, out bool hasDecoy, out Vector3 decoy, out bool calling)
+        internal bool TryGetRemoteCrew(out Vector3 jackA, out Vector3 jackB, out bool hasDecoy, out Vector3 decoy, out bool calling,
+                                       out bool flying)
         {
             byte flags = n_flags.Value;
             var p = transform.position;
-            bool flying = (flags & FlyingBit) != 0;
+            flying = (flags & FlyingBit) != 0;
             jackA = flying ? p + transform.rotation * n_jackA.Value : p + n_jackA.Value;
             jackB = flying ? p + transform.rotation * n_jackB.Value : p + n_jackB.Value;
             decoy = p + n_decoy.Value;
@@ -263,12 +297,100 @@ namespace CosmicShore.Gameplay
                 foreach (var j in _jacks) if (j != null) j.T.gameObject.SetActive(seated);
                 _snap = true;
             }
-            if (!seated) return;
+            if (!seated)
+            {
+                ShowToyJack(false, false);
+                return;
+            }
 
             var up = _flying ? transform.up : _crew && _crew.Config ? _crew.BoardUp : transform.up;
             for (int k = 0; k < _jacks.Length; k++)
                 if (_jacks[k] != null) Swim(_jacks[k], up, dt);
+            PoseToyJack(up, dt);
             _snap = false;
+        }
+
+        // ------------------------------------------------------------------ the jack between the fish
+        //
+        // Garrett, 2026-10-23: "instead of a sword (1 axis) make it all three orthogonal axes (like a jack in the game of
+        // jacks). then if it was a coordinate system, spin it about the (1,1,1) axis and place that axis dynamically so it
+        // the same axis that draws a line between the two fish." The Rhino's sword capsule stays the hull's skimmer (its
+        // impactor, its kinematics); it becomes the jack: a uniform scale of one arm's length, three capsule colliders
+        // (X, Y, Z; the prefab carries the two new ones, so the impactor's probe set holds all three from its first
+        // OnEnable), three arms drawn with the blade's own material, posed on every peer from the drawn jacks.
+
+        static readonly Quaternion[] ArmTurns =
+            { Quaternion.Euler(0f, 0f, -90f), Quaternion.identity, Quaternion.Euler(90f, 0f, 0f) };   // capsule Y -> X, Y, Z
+
+        void BuildToyJack()
+        {
+            var t = FindDeep(transform, toyJackName);
+            if (!t) return;
+            _toy = new ToyJack { T = t };
+            if (t.TryGetComponent(out Skimmer skimmer)) skimmer.HasExternalScaleDriver = true;   // the jack owns its scale
+            if (t.TryGetComponent(out SkimmerImpactor impactor)) _toy.Impactor = impactor;
+            t.GetComponents(_toy.Colliders);
+            // the blade's own renderer and its crackle overlay stand down; the jack draws three arms in the blade's material
+            t.TryGetComponent(out MeshRenderer blade);
+            t.TryGetComponent(out MeshFilter bladeMesh);
+            foreach (var r in t.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
+            if (!blade || !bladeMesh || !bladeMesh.sharedMesh) return;
+            for (int axis = 0; axis < 3; axis++)
+            {
+                var arm = new GameObject($"Jack arm {"XYZ"[axis]}") { layer = t.gameObject.layer };
+                arm.transform.SetParent(t, false);
+                arm.transform.localRotation = ArmTurns[axis];
+                arm.AddComponent<MeshFilter>().sharedMesh = bladeMesh.sharedMesh;
+                var r = arm.AddComponent<MeshRenderer>();
+                r.sharedMaterial = blade.sharedMaterial;
+                r.shadowCastingMode = blade.shadowCastingMode;
+                r.receiveShadows = blade.receiveShadows;
+                _toy.Arms.Add(r);
+            }
+        }
+
+        void PoseToyJack(Vector3 up, float dt)
+        {
+            if (_toy == null || _jacks[0] == null || _jacks[1] == null) return;
+            var a = transform.position + _jacks[0].Offset;
+            var b = transform.position + _jacks[1].Offset;
+            float arm = JacksMath.JackArm(Vector3.Distance(a, b), toyJackReach, toyJackMinArm, toyJackMaxArm);
+            _toy.Spin = Mathf.Repeat(_toy.Spin + toyJackSpinDegreesPerSecond * dt, 360f);
+
+            var t = _toy.T;
+            t.SetPositionAndRotation(0.5f * (a + b), JacksMath.JackRotation(b - a, up, _toy.Spin));
+            float parentScale = t.parent ? Mathf.Max(1e-4f, t.parent.lossyScale.x) : 1f;
+            t.localScale = Vector3.one * (arm / parentScale);
+
+            // in the jack's own frame (one unit = one arm): the built-in capsule spans y -1..1 with radius 0.5
+            float radius = Mathf.Min(toyJackArmRadius / arm, 0.5f);
+            for (int i = 0; i < _toy.Colliders.Count; i++)
+            {
+                var c = _toy.Colliders[i];
+                c.center = Vector3.zero;
+                c.radius = radius;
+                c.height = 2f;
+            }
+            var armScale = new Vector3(2f * radius, 1f, 2f * radius);
+            for (int i = 0; i < _toy.Arms.Count; i++) _toy.Arms[i].transform.localScale = armScale;
+            ShowToyJack(true, _flying || toyJackSkimsWhileHerding);
+        }
+
+        void ShowToyJack(bool shown, bool skims)
+        {
+            if (_toy == null) return;
+            if (_toy.Shown != shown)
+            {
+                _toy.Shown = shown;
+                for (int i = 0; i < _toy.Arms.Count; i++) _toy.Arms[i].enabled = shown;
+            }
+            if (_toy.Skims != skims)
+            {
+                // colliders off and the impactor bounced, so it forgets what it was touching (no exit fires for an off collider)
+                _toy.Skims = skims;
+                for (int i = 0; i < _toy.Colliders.Count; i++) _toy.Colliders[i].enabled = skims;
+                if (_toy.Impactor) _toy.Impactor.enabled = skims;
+            }
         }
 
         /// <summary>A change of mode: a flying place and a herding offset are different frames, so the eased copies restart

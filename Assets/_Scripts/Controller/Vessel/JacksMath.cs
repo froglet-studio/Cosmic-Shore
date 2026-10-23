@@ -222,5 +222,41 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The board's ease toward the hull's frame this frame (1 - e^(-rate dt)): 0 holds it still.</summary>
         public static float Ease(float rate, float dt) => rate > 0f ? 1f - Mathf.Exp(-rate * dt) : 0f;
+
+        // ---- the jack between the fish (Garrett, 2026-10-23: "instead of a sword (1 axis) make it all three orthogonal
+        // axes (like a jack in the game of jacks). then if it was a coordinate system, spin it about the (1,1,1) axis and
+        // place that axis dynamically so it the same axis that draws a line between the two fish") ----
+
+        /// <summary>The jack's (1,1,1) diagonal in its own frame: the axis it spins about, laid on the line between the fish.</summary>
+        public static readonly Vector3 JackDiagonal = new Vector3(1f, 1f, 1f).normalized;
+
+        // a unit vector square to the diagonal in the jack's frame: the twist reference the hull's up is matched to
+        static readonly Vector3 JackDiagonalUp = new Vector3(-1f, -1f, 2f).normalized;
+
+        /// <summary>
+        /// The jack's rotation: its three arms are its local x, y and z, its (1,1,1) diagonal lies along
+        /// <paramref name="axis"/> (jack A toward jack B), and it is turned <paramref name="spinDegrees"/> about that axis.
+        /// The twist at zero spin is fixed by <paramref name="up"/> (the hull's or the board's up), so the jack does not
+        /// flip as the axis swings. A zero axis falls back to <paramref name="up"/>'s right.
+        /// </summary>
+        public static Quaternion JackRotation(Vector3 axis, Vector3 up, float spinDegrees)
+        {
+            var a = axis.sqrMagnitude > 1e-10f ? axis.normalized : Vector3.right;
+            var reference = Vector3.ProjectOnPlane(up, a);
+            if (reference.sqrMagnitude < 1e-8f) reference = Vector3.ProjectOnPlane(Vector3.up, a);
+            if (reference.sqrMagnitude < 1e-8f) reference = Vector3.ProjectOnPlane(Vector3.forward, a);
+            var world = Quaternion.LookRotation(a, reference);
+            var local = Quaternion.LookRotation(JackDiagonal, JackDiagonalUp);
+            return Quaternion.AngleAxis(spinDegrees, a) * world * Quaternion.Inverse(local);
+        }
+
+        /// <summary>
+        /// The length of one arm (centre to tip) for fish <paramref name="gap"/> apart: an arm's tip lies 1/sqrt(3) of its
+        /// length along the diagonal, so at <paramref name="reach"/> 1 the tips reach the planes the fish swim in (each
+        /// fish sits at the centre of the triangle three tips turn round it). Clamped to [<paramref name="min"/>,
+        /// <paramref name="max"/>].
+        /// </summary>
+        public static float JackArm(float gap, float reach, float min, float max) =>
+            Mathf.Clamp(0.5f * Mathf.Sqrt(3f) * Mathf.Max(0f, gap) * Mathf.Max(0f, reach), min, Mathf.Max(min, max));
     }
 }

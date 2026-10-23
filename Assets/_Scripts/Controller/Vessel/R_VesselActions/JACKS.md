@@ -30,7 +30,7 @@ Code:
 | Every number | `Data Containers/JacksConfigSO.cs`, `Assets/_SO_Assets/VesselActions/Jacks/JacksConfig.asset` |
 | The four cards | `UI/Controller/JacksHUDController.cs`, `Resources/ElementalAbilityMaps/Jacks.asset` |
 | The herd's rule breaks (platform) | `Environment/FloraAndFauna/IFaunaHerd.cs`, read by `Fauna` |
-| The bodies: two jacks drawn, swum and replicated; the owner's jacks on other peers | `Controller/Vessel/Crew/JacksBodies.cs` |
+| The bodies: two jacks drawn, swum and replicated; the owner's jacks on other peers; the spinning jack between them | `Controller/Vessel/Crew/JacksBodies.cs` |
 | The model | `Assets/_Models/Vessel Models/Jack.fbx` (`/vessel-model`, `Tools/Build/vessel_model/specs/jack.py`; dossier `Docs/VesselModels/Jack.md`) |
 | The prefab and its registrations | `Tools/Build/author_jacks_assets.py` (`--check`, `--self-test`); icons `author_jacks_icons.py`; card `render_cards.py Jacks` |
 
@@ -134,6 +134,33 @@ units and multiplied by `labScale` (0.4).
   they landed, colliders and all (a look and feel call for the playtest: see §6).
 - **The marlin's model is out of the prefab** (`author_jacks_assets.py` `drop_marlin`), and its puppetry (tail, fins,
   sail) went with `MarlinCrewBodies`. `Marlin.fbx` stays for the swordsman.
+- **The jack between the fish** (Garrett, 2026-10-23: "instead of a sword (1 axis) make it all three orthogonal axes
+  (like a jack in the game of jacks). then if it was a coordinate system, spin it about the (1,1,1) axis and place that
+  axis dynamically so it the same axis that draws a line between the two fish"). The Rhino's sword capsule (the nested
+  `ForceFieldSkimmer`) is still the hull's skimmer; `JacksBodies` makes it a jack: three round arms along its own x, y
+  and z (drawn in the blade's material; the blade's own renderer and crackle overlay stand down), its (1,1,1) diagonal
+  laid on the line from jack A to jack B, centred halfway between them and spun about that line
+  (`toyJackSpinDegreesPerSecond`, 120). The twist at zero spin follows the hull's up (the board's while herding), so it
+  never flips (`JacksMath.JackRotation`). Each arm is long enough that its tip turns in the plane a fish swims in
+  (`JacksMath.JackArm`: sqrt(3)/2 x the gap x `toyJackReach`; about 24 u at the flight formation), clamped to
+  `toyJackMinArm`..`toyJackMaxArm` (4..40 u). The prefab carries the three trigger capsules (the sword's own Y one plus X
+  and Z, `author_jacks_assets.py` `jack_retrofit`), so the impactor's probe set holds all three; the jack owns the
+  skimmer's scale (`Skimmer.HasExternalScaleDriver`), so Space no longer lengthens a blade. It is posed on every peer
+  from the drawn jacks. While herding it is drawn between the fish on the board, but its colliders are off (and the
+  impactor bounced, so it forgets its overlaps): a parked hull does not skim or vacuum crystals in the middle of the
+  board (`toyJackSkimsWhileHerding`). The sword's look (`RhinoSwordFXController`) and its five streaks
+  (`RhinoSwordBladeTracer0..4`) are stripped.
+- **No jets.** The Rhino's vestigial jets are stripped (Garrett, 2026-10-23: "the vestigal jets from the rhino should be
+  gone"): the ten `VesselJet`s (two pods, eight body nozzles), the pods' `JetFX`, the arc lightning, `JetTest` and the two
+  legacy jet particle systems. `VesselTailAndJets` stays on the root for the tail.
+- **The herd lights up** (Garrett, 2026-10-23: "fauna that get herded should light up when in herding mode. fauna that
+  get called should light up when flying"): while the jacks herd, and while a call lasts in flight, every herded
+  creature's spindle colours are multiplied by 1 + `herdGlow` (1.5, HDR, so the bloom catches them). It rides the
+  leash's mark (`IFaunaLeash.TryGetLeashMark`'s `glow`; `Spindle.SetHueLean` mints a shared material per mark and glow,
+  so a lit herd still batches); the executor calls `Fauna.RefreshLeashMark` on each member when the state changes
+  (`JacksExecutor.SetLit`, on the peer that simulates the creatures; on the host the mode of a client-owned hull comes
+  from `JacksBodies`' flying flag). The mark goes to puppets in one `uint` (domain, glow, lean; protocol 13). The
+  Angler's school does not glow (`glow` 0).
 - **The rings and dots** are the local player's instruments. Each view draws its own set for its own camera
   (`AnglerWorldMarks.Begin(cam, onlyThisCamera)`): the herding view at full strength, the flight view much more subtle
   (Garrett, 2026-10-21: "make the dots that form the radius much more subtle"): 24 dots a ring instead of 48, half the
@@ -154,6 +181,10 @@ units and multiplied by `labScale` (0.4).
 
 ## 6. Follow-ups
 
+- **Playtest the jack and the glow** (2026-10-23, no playtest yet): the jack's size and spin against the chase camera
+  and in the herding view (`toyJack*` on `JacksBodies`), whether the herd glow (`herdGlow` 1.5) reads without washing
+  the herd out, and whether the jack should skim while herding. The skim region moved: the sword reached 60 u ahead of
+  the nose; the jack surrounds the hull, so the Jacks' skim and crystal-vacuum feel changes.
 - **Playtest the two modes** (the decisions made without one, 2026-10-21): the flight formation (`flightGap` 14,
   `flightReach` 10, `flightModelScale` 1) against the Rhino's chase camera; whether the take-off jump to the jacks reads
   well; whether the parked hull's colliders (invisible, where the jacks landed) should switch off while herding; the AI's

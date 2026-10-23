@@ -28,6 +28,7 @@ MonoBehaviour:
   floorBirthSeconds: 0.12
   companionFauna: {fileID: 11400000, guid: 0e87f3117e7141a7b5bce66b0385a2d0, type: 2}
   herdHueLean: 0.35
+  herdGlow: 1.5
   dogSpeed: 520
   padDogSpeed: 1
   aiNoise: 0.15
