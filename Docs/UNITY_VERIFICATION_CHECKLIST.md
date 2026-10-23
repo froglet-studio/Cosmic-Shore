@@ -82,7 +82,7 @@ board 288 times over the 24 rule sets with identical digests and identical play 
 288). The new `HoneyguideTests.RatelBoard_CopiedToAnotherMachine_IsTheSameBoard_AndPlaysOnAlike` compiles, not run.
 `/verify-unity` did not run: no Unity CLI in the session.
 
-**Verify (MPPM, two players in freestyle; then a phone and a PC):** the eleven hand tests in `Docs/CREW_STATIONS.md`.
+**Verify (MPPM, two players in freestyle; then a phone and a PC):** the eleven hand tests in `Docs/CREW_STATIONS.md` (test 9 now includes a Wrasse rider threading race rings: `RingProbeReplayTests` ran headless against a stand-in for Unity's vector maths, 6/6, and a planted uncapped replay failed 2).
 This supersedes the older entries below that pick crew seats with keys 1-4 (the Orca, the Wrasse, the Jacks): the
 keyboard now cycles with the left / right arrows only.
 Watch for: the ridden hull's HUD showing on the rider's screen in freestyle (it is a remote hull's HUD, shown by

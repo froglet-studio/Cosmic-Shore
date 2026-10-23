@@ -508,7 +508,9 @@ crew, and the gesture owned by the person's `LocalCrewStation`: seats first, the
 running arena match. A pick is a request, but a seat another person holds is skipped rather than offered (no offer /
 accept yet). Every crew takes a second person, the Wrasse included (step 4, 2026-10-23): the kite runs on the rider's machine, a
 Time loop's boosts are banked on the hull's machine and a ram's steal is decided there (`ICrewRelay`), and the kite's
-pose is relayed so the hull's machine draws it and publishes the Wrasse's body. Pops, blasts and Mass clusters stay on
+pose is relayed so the hull's machine draws it and publishes the Wrasse's body. Race and crystal rings are threaded on the
+hull's machine from the path the rider's kite flew in the world, replayed through the kite's ring probe
+(`RingProbeReplay`, `RingProbeReplayTests`). Pops, blasts and Mass clusters stay on
 the kite's machine (step 1 is still open). No key picks its seats outright any more: the arrow keys step the domain's
 seats.
 

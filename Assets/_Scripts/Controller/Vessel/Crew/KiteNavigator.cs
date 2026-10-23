@@ -276,7 +276,17 @@ namespace CosmicShore.Gameplay
         public bool RidesHere => _rider;
 
         // what a rider sends the hull's machine (ICrewRelay)
-        const int RelayPose = 1, RelayBoosts = 2, RelayRam = 3;
+        const int RelayPose = 1, RelayBoosts = 2, RelayRam = 3, RelayPath = 4;
+
+        // The race rings (and the crystal rings) are threaded on the hull's machine, which tests the kite through
+        // IRingThreadProbe. A rider's kite is not there, so the rider sends the PATH its kite flew, in the world it saw
+        // (every frame's position, a few times a second), and the hull's machine replays it through the probe: a ring is
+        // static and the same on both machines, so the crossing the ring tests is the one the rider flew - not a pose
+        // taken late and placed on the hull's own, later frame.
+        readonly RingProbeReplay _riderPath = new();
+        readonly List<int> _pathOut = new();
+        float _pathSendAt;
+        const int MaxPathPerSend = 32;
 
         void Bind(IVessel vessel)
         {
@@ -412,6 +422,9 @@ namespace CosmicShore.Gameplay
                 Motes.Clear(); Loops.Clear(); _massQueue.Clear();   // the motes and loops are the rider's now, or ours again
                 _remotePos = _kite.Position;
                 if (!remote) { _kite.Reset(_kite.Position); _ai.Reset(_kite.Position); }
+                // the probe changes bodies: the kite here, or the rider's replayed path
+                _probeEpoch++;
+                _riderPath.Reset();
             }
             if (dt <= 0f) return;
 
@@ -458,6 +471,7 @@ namespace CosmicShore.Gameplay
         {
             if (_view == null || _vessel == null || !UnityLiveness.Alive(_vessel.Transform)) return;
             UpdateBoard(0f);
+            if (_rider && Time.deltaTime > 0f) RecordRiderPath();
             _view.Frame(_humanNavigates);
             _view.Draw();
         }
@@ -781,10 +795,31 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool TryGetRingProbe(out Vector3 position, out int epoch)
         {
+            if (_vessel == null || !UnityLiveness.Alive(_vessel.Transform)) { position = default; epoch = _probeEpoch; return false; }
+            if (_remoteKite)
+            {
+                // the rider's path (RingProbeReplay), its epoch kept apart from this kite's by an offset that never meets it
+                _riderPath.Step(Time.frameCount, Time.deltaTime);
+                position = _riderPath.Position;
+                epoch = _probeEpoch + 1_000_000 + _riderPath.Epoch;
+                return _riderPath.Has;
+            }
             epoch = _probeEpoch;
-            if (_vessel == null || !UnityLiveness.Alive(_vessel.Transform)) { position = default; return false; }
             position = BoardToWorld(_kite.Position.X, _kite.Position.Z);
             return true;
+        }
+
+        // The rider: this frame's kite in the world, after the hull moved (what the rider's screen shows), sent in batches.
+        void RecordRiderPath()
+        {
+            var at = BoardToWorld(_kite.Position.X, _kite.Position.Z);
+            if (_pathOut.Count == 0) { _pathOut.Add(RelayPath); _pathOut.Add(_probeEpoch); _pathOut.Add(0); }
+            _pathOut.Add(FloatBits(at.x)); _pathOut.Add(FloatBits(at.y)); _pathOut.Add(FloatBits(at.z));
+            _pathOut[2]++;
+            if (_pathOut[2] < MaxPathPerSend && Time.time < _pathSendAt) return;
+            _pathSendAt = Time.time + 0.05f;
+            CrewRelay.SendInput(this, 1, _pathOut.ToArray());
+            _pathOut.Clear();
         }
 
         // The ring a gate race has lit for this pilot (this hull's next ring, whoever flies it), as the board sees it. The human navigator sees it in the kite view
@@ -1376,6 +1411,13 @@ namespace CosmicShore.Gameplay
                 case RelayPose when data.Length >= 5:
                     _remotePos = new KiteVec(BitsFloat(data[1]), BitsFloat(data[2]));
                     _remoteHeading = new KiteVec(BitsFloat(data[3]), BitsFloat(data[4]));
+                    break;
+                case RelayPath when data.Length >= 3 && data[2] >= 0 && data.Length >= 3 + data[2] * 3:
+                    for (int k = 0; k < data[2]; k++)
+                    {
+                        int i = 3 + k * 3;
+                        _riderPath.Enqueue(data[1], new Vector3(BitsFloat(data[i]), BitsFloat(data[i + 1]), BitsFloat(data[i + 2])));
+                    }
                     break;
                 case RelayBoosts when data.Length >= 2:
                     BankBoosts(Mathf.Clamp(data[1], 0, MaxSavedBoosts));
