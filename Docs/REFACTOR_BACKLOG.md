@@ -66,7 +66,7 @@ which is `#if false`).
   nested `enum Placement` in the editor-only `CrystalFlipWaveBenchmarkWindow.cs:42` (2026-10-08).
   A permanently red gate stops being read.
 
-## 1. Quick wins — S (47)
+## 1. Quick wins — S (57)
 
 | # | Refactor | Kind | Evidence | Notes |
 |---|---|---|---|---|
@@ -126,6 +126,7 @@ which is `#if false`).
 | S54 | Four copies of one gesture: the double tap on a crew vessel's small view | Inconsistency (four ways) | `CrewSmallViewDoubleTap` (`Crew/CrewViews.cs`, added 2026-10-21 for the Goby) is the shared one; `KiteNavigator.PipDoubleTapped`, `JacksView`/`MarlinJacksView.PipDoubleTapped` and `HoneyguideDynamoView.SmallViewDoubleTapped` each carry their own (`rg -n "DoubleTap" Assets/_Scripts/Controller/Vessel`; the Honeyguide's has a different window, 0.35 s and no tap-length limit) | Added 2026-10-22 (`cece/elegant-maxwell-q8vqoh`). Move the three onto `CrewSmallViewDoubleTap`. Blocking question for the owners (Garrett; Yash for the Wrasse seat work): is the Honeyguide's looser window a choice or drift? |
 | S55 | Two seats lay out phone buttons with the same 30 lines | Inconsistency (two ways) | `OrcaHUDController.LayOutButtons` and `GobyPistolButtons.LayOut` (2026-10-22) are the same `TouchButtonLayout.Arrange` + `ScreenPointToLocalPointInRectangle` + base-scale block, and both re-lay on the same screen / safe-area triggers | Added 2026-10-22 (`cece/elegant-maxwell-q8vqoh`). Extract a `SeatButtons` helper (build, show for a seat, lay out) beside `TouchButtonView`; the Honeyguide's and any next crew's buttons use it. |
 | S56 | `GobyPistolDuo` is about 1,040 lines and holds the Goby's dart and lock, its seat AI, the Pistol's ride and dens, the undertow, the rings and both views | Size (one class, five jobs) | `wc -l Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs` (2026-10-22). The pure parts are already out (`PistolPlane`, `GobyDen`, `PistolBodyMath`, `PistolAI`); the scene glue is not | Added 2026-10-22 (`cece/elegant-maxwell-q8vqoh`). Split the Goby (dart, perch, lock, its AI) from the Pistol (ride, dens, undertow, rings) once the kit has been flown (T-20261022-adee); splitting before the first playtest would move code the playtest is about to change. |
+| S57 | `VesselTransformer.LERP_AMOUNT` (1.5/s) is both the AI / autopilot / remote nose lag AND every hull's cruise-speed smoothing, so a retune of one moves the other; the pad's copy of the lag now lives in `GamepadFlightConfig.noseFollowPerSecond` and is discretised as `1 - e^(-rate*dt)` while the AI's stays `rate*dt` | Consistency | `grep -n LERP_AMOUNT Assets/_Scripts/Controller/Vessel/VesselTransformer.cs`: nose `NoseFollowFraction` ~:620, speed ~:1148; history `311b07d4` (2024-11-19) changed the shared constant 2 -> 1.5 in a Sparrow retune, speed and nose together | Added 2026-10-23 by `cece/serene-galileo-t77xt3` (debt this branch made visible). Split into a nose rate and a speed rate with today's value each, and move the AI to the exact exponential; behaviour-neutral within 1.2% at 60 fps. Garrett's area (vessels) |
 
 ## 2. Bounded — M (20)
 

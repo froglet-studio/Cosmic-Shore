@@ -320,9 +320,10 @@ public class VesselTransformer : MonoBehaviour
         public static float RotationFollowRate => LERP_AMOUNT;
 
         /// <summary>This hull's nose follow rate per second, as <see cref="NoseFollowFraction"/>
-        /// applies it: <see cref="RotationFollowRate"/> for an AI, autopilot or remote hull, and
-        /// <see cref="float.PositiveInfinity"/> (the nose IS the command) for this machine's human
-        /// pilot. For a predictor of this hull's path (the Stoat's foresight).</summary>
+        /// applies it: <see cref="RotationFollowRate"/> for an AI, autopilot or remote hull; for this
+        /// machine's human pilot, their device's rate (<see cref="PilotNoseFollowPerSecond"/>: the pad
+        /// 1.5, touch 9), or <see cref="float.PositiveInfinity"/> (the nose IS the command) on a device
+        /// with no lag. For a predictor of this hull's path (the Stoat's foresight).</summary>
         public float NoseFollowRate
         {
             get
