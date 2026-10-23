@@ -70,8 +70,9 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>The ring.</b> Every hull on the person's domain, ordered by vessel NetworkObjectId (every peer agrees),
     /// each expanded into its seats (<see cref="ICrewStations.SeatCount"/>; a plain hull has one). The swap gesture
-    /// (<see cref="PilotSwapGesture"/>: D-pad left / right, keys 1 / 2, a two-finger swipe) steps round it, skipping
-    /// every station that is not free for this person (<see cref="Classify"/>). Outside freestyle and a running arena
+    /// (<see cref="PilotSwapGesture"/>: D-pad left / right, the left / right arrow keys, a two-finger swipe) steps round
+    /// it, skipping every station that is not free for this person (<see cref="Classify"/>). It is one list per domain:
+    /// every person on the domain cycles through the same seats in the same order. Outside freestyle and a running arena
     /// match the ring is the person's own hull only, so a crew vessel still changes seats in any mode.</para>
     ///
     /// <para><b>One rule for every hull without a human at its helm.</b> A hull is <i>abandoned</i> when its pilot is an
@@ -80,10 +81,11 @@ namespace CosmicShore.Gameplay
     /// so the hull you leave goes to whoever flew the one you took, and is abandoned in its turn. Nothing is spawned and
     /// nothing is destroyed, so a hull you left is exactly as free as a companion the spawner released.</para>
     ///
-    /// <para><b>Riding.</b> A free seat other than the helm on a hull a human flies (or sits aboard) is taken as a
+    /// <para><b>Riding.</b> A free seat other than the helm on a hull a person flies (or sits aboard) is taken as a
     /// <i>rider</i>: the person's own hull is parked on its AI on their machine, their camera and HUD follow the ridden
-    /// hull, and the crew runs their seat on their machine (<see cref="ICrewStations.HostsRiders"/>). The helm of a hull
-    /// whose own pilot is aboard is theirs: it is never offered.</para>
+    /// hull, and the crew runs their seat on their machine (<see cref="ICrewStations.HostsRiders"/>). A free helm on such
+    /// a hull - its pilot sits at one of its seats - is taken by the exchange, and the pilot rides their seat on. Every
+    /// seat no person holds is flown by its AI; a seat another person holds is passed over.</para>
     ///
     /// <para><b>Authority.</b> The server writes every <see cref="Player.NetStation"/> and re-checks every move against its
     /// own state (<see cref="Classify"/>); a person's own-hull seat is decided on their machine (the crew moves them at
@@ -235,7 +237,12 @@ namespace CosmicShore.Gameplay
 
             bool abandoned = pilot.NetIsAI.Value || !OwnerAboard(pilot, id);
             if (abandoned) return Move.TakeHull;
-            return seat > 0 && CrewOf(hull) is { HostsRiders: true } ? Move.Ride : Move.None;
+            // The pilot is aboard, so this seat is one they are not in (HumanAt above): its AI fills it. On a crew that
+            // takes riders, a free gunner seat is ridden, and a free helm - its pilot sits at one of its seats - is taken
+            // by the exchange, after which they ride their seat on as before. A crew that cannot take a rider yet keeps
+            // its one person, and every other seat of it is passed over.
+            if (CrewOf(hull) is not { HostsRiders: true }) return Move.None;
+            return seat == 0 ? Move.TakeHull : Move.Ride;
         }
 
         /// <summary>

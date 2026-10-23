@@ -33,9 +33,9 @@ namespace CosmicShore.Gameplay
     /// The rules are <see cref="OrcaCrewCore"/>'s, held to the lab page by <c>Tools/Build/orca_crew_lab/parity.cjs</c>;
     /// this is the glue to the scene.
     ///
-    /// <para><b>Seats.</b> The swap gesture (<see cref="PilotSwapGesture"/>: D-pad left / right, keys 1 / 2, a two-finger
-    /// swipe) steps through them and on to the next hull (<see cref="CrewStations"/>); keys 3 / 4 pick the Mass and Charge
-    /// seats outright. While the person holds a gunner seat the hull's own <c>AIPilot</c>
+    /// <para><b>Seats.</b> The swap gesture (<see cref="PilotSwapGesture"/>: D-pad left / right, the left / right arrow
+    /// keys, a two-finger swipe) steps round the domain's seats, these and every other hull's (<see cref="CrewStations"/>).
+    /// While the person holds a gunner seat the hull's own <c>AIPilot</c>
     /// flies it and the person's flight input is paused, exactly as the Wrasse's navigator seat does.</para>
     ///
     /// <para><b>Where it runs.</b> On the local pilot's own hull while a person flies it, and on an AI hull on the
@@ -83,7 +83,7 @@ namespace CosmicShore.Gameplay
         bool _weTookHull, _boosting, _shieldTriggerHeld;
         // the hull's triggers as CrewTriggerActionSO reports them (a pad's, the keyboard's shifts, a phone's thumb lifts)
         bool _rtHeld, _ltHeld;
-        float _swapReadyAt, _tank, _shieldEndsAt, _shieldReadyAt;
+        float _tank, _shieldEndsAt, _shieldReadyAt;
         CursorLockMode _cursorBefore;
         bool _cursorLocked;
 
@@ -302,8 +302,7 @@ namespace CosmicShore.Gameplay
             if (_vessel == null) Bind(vessel, mode);
             float dt = Time.deltaTime;
 
-            if (_mode == Mode.LocalHuman) PollSeat();
-            else if (_mode == Mode.Rider) FollowRiderSeat();
+            if (_mode == Mode.Rider) FollowRiderSeat();
             if (dt <= 0f) return;
             _s = _cfg.ToSettings();
 
@@ -334,15 +333,9 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ seats
 
-        // The swap gesture (D-pad, keys 1 / 2, a two-finger swipe) is the person's, not the crew's: CrewStations steps them
-        // helm -> gunners -> the next hull, and moves them here through TakeSeat. Keys 3 and 4 still pick the Mass and
-        // Charge seats outright.
-        void PollSeat()
-        {
-            var kb = Keyboard.current;
-            int pick = kb == null ? -1 : kb.digit3Key.wasPressedThisFrame ? FastGunSeat : kb.digit4Key.wasPressedThisFrame ? BombSeat : -1;
-            if (pick >= 0 && Time.unscaledTime >= _swapReadyAt) TakeSeat(pick);
-        }
+        // The swap gesture (D-pad, the left / right arrow keys, a two-finger swipe) is the person's, not the crew's:
+        // CrewStations steps them round the domain's seats (helm -> gunners -> the next hull) and moves them here through
+        // TakeSeat. The crew picks no seat itself, so every control cycles the same way.
 
         /// <inheritdoc cref="ICrewStations.SeatCount"/>: the helm and three gunners.
         public int SeatCount => Seats;
@@ -358,7 +351,6 @@ namespace CosmicShore.Gameplay
         {
             if (_mode != Mode.LocalHuman || seat < Helm || seat >= Seats || seat == _humanSeat) return;
             if (seat > Helm && CrewStations.HeldByRemoteHuman(this, seat)) return;   // a person on another machine mans it
-            _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
             SetHumanSeat(seat);
         }
 
@@ -1288,7 +1280,8 @@ namespace CosmicShore.Gameplay
         static Vector2 Bigger(Vector2 a, Vector2 b) => b.sqrMagnitude > a.sqrMagnitude ? b : a;
 
         static Vector2 KeyAxes(Keyboard kb) => new(
-            (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1f : 0f),
+            // left / right arrows are the seat cycle (PilotSwapGesture), so the turret turns on A / D only
+            (kb.dKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed ? 1f : 0f),
             (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1f : 0f) - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1f : 0f));
 
         // The aiming finger: its movement this frame (px) and its offset from where it landed (the missile's stick). It is the

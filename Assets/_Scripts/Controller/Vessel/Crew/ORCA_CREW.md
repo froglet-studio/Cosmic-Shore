@@ -95,8 +95,8 @@ task in "Try it"). The crew runs on one machine, as the Wrasse's seat does (see 
 
 ## The seats
 
-The swap gesture (D-pad left / right, keys 1 / 2, a two-finger swipe) steps helm -> gunners -> the next hull
-(`Docs/CREW_STATIONS.md`); keys 3 / 4 pick the Mass and Charge seats outright. A free gunner seat can be manned by a
+The swap gesture (D-pad left / right, the left / right arrow keys, a two-finger swipe) steps helm -> gunners -> the next hull
+(`Docs/CREW_STATIONS.md`). A free gunner seat can be manned by a
 second person (a rider) while someone else flies.
 
 | Seat | What it does | Controls |
@@ -165,9 +165,10 @@ world solution over the 2d flat text solution." Lab round 8 (`Docs/Studios/CREW_
   out. It cannot use the aimed channel: that channel is cone-only (the Echo Sight's). `bombLitStrength` (1) scales it;
   0 turns it off.
 
-**Changing seat.** The **D-pad**, keys **1 / 2** and a **two-finger swipe** on a touch screen (`PilotSwapGesture`) step
-helm -> gunners -> the next hull (`Docs/CREW_STATIONS.md`, 2026-10-23; the two-finger tap and keys 1 / 2 as direct picks
-went then). Keys **3 / 4** still pick the Mass and Charge seats outright. While the person holds a gunner seat:
+**Changing seat.** The **D-pad**, the **left / right arrow keys** and a **two-finger swipe** on a touch screen
+(`PilotSwapGesture`) step helm -> gunners -> the next hull, round the domain's one list of seats (`Docs/CREW_STATIONS.md`,
+2026-10-23; the two-finger tap and keys 1-4 as direct picks went then, and the turret turns on A / D, not the arrows).
+While the person holds a gunner seat:
 - the hull's own `AIPilot` flies the hull;
 - the person's flight input is paused (`InputController.SetPause`), as the Wrasse's navigator seat does;
 - the camera looks down the scope or over the turret, or from behind the flying missile;

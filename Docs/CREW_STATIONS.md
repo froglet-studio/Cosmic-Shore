@@ -14,15 +14,18 @@ Code: `Assets/_Scripts/Controller/Multiplayer/CrewStations.cs` (the ring, the ru
 
 | Control | Does |
 |---|---|
-| D-pad left / right, keys 1 / 2, a two-finger swipe left / right | Step to the previous / next **station**: the seats of the hull you are on, then the next hull's seats |
+| D-pad left / right, the left / right arrow keys, a two-finger swipe left / right | Step to the previous / next seat in the **domain's list of seats**: the seats of the hull you are on, then the next hull's. Every person on the domain cycles the same list in the same order; a seat another person holds is passed over, and every seat no person holds is flown by its AI |
 
 The ring is every hull on your domain, ordered by vessel NetworkObjectId (every machine agrees), each expanded into its
 seats (helm first). A step skips every station that is not free for you. Where hulls change hands - **freestyle**
 (Menu_Main) and a **running arena match** - the ring holds every hull of the domain; anywhere else it is your own hull's
 seats only, so a crew vessel still changes seats in every mode.
 
-A **double tap on the small view** (Wrasse, Goby, Honeyguide, Jacks) still swaps a crew's two seats, and keys **3 / 4**
-still pick the Orca's Mass and Charge seats. The arena's swap tiles (`PilotSwapIndicator`) still swap hulls by a tap.
+The keyboard mirrors the pad (Garrett, 2026-10-23: "the keyboard controls should mirror the others and just have a
+consistent cycle left and right"): no key picks a seat outright any more (the Orca's 1-4 and the Wrasse's 1 / 2 are
+gone, and the Orca's turret turns on A / D only, the arrows being the cycle). A **double tap on the small view** (Wrasse,
+Goby, Honeyguide, Jacks) still swaps a crew's two seats on a phone. The arena's swap tiles (`PilotSwapIndicator`) still
+swap hulls by a tap.
 
 ## One rule for every hull without a person at its helm
 
@@ -36,7 +39,8 @@ OTHER hull. Both are the same kind of seat:
 - **A free seat other than the helm, on a hull a person flies** (or sits aboard), is taken as a **rider**: your own hull is
   parked on its AI on your machine, your camera, occlusion corridor, speed tunnel, rear view and HUD follow the ridden
   hull, and its crew runs your seat. Only crews that say `HostsRiders` offer this (below).
-- **The helm of a hull whose own pilot is aboard** (at its helm or one of its seats) is theirs and never offered.
+- **A free helm on a hull whose pilot sits at one of its seats** (the Orca's helm while its pilot mans a gunner seat)
+  is taken by the exchange too: you fly it, and its pilot rides their seat on, their own hull now the one you left.
 - **Another person's seat** is never offered; a person's own crew skips a seat a rider holds.
 
 Your own hull, parked while you ride, runs its crew as an **AI crew**, exactly like a hull an AI flies
@@ -48,7 +52,7 @@ Your own hull, parked while you ride, runs its crew as an **AI crew**, exactly l
 |---|---|---|---|
 | Orca (`OrcaCrew`) | helm + 3 gunners | **yes**, any free gunner seat | The rider's seat runs on the rider's machine (`Mode.Rider`): their turret, gun, missiles and bomb on the hull's copy there. The hull's machine leaves that seat alone (`RunsHere`). |
 | Honeyguide (`HoneyguideCrew`) | Honeyguide + Ratel | **yes**, the Ratel | The Dynamo stays on the hull's machine. The rider's board is a copy: its moves go to the hull's machine (`ICrewRelay.OnRiderInput`), which applies them and sends the board back 5 times a second and after every move (`DynamoCore.WriteState` / `ReadState`). The Ratel AI stands down. |
-| Wrasse (`KiteNavigator`) | Grouper + Wrasse | not yet | Its kite decides pops, blasts, clusters and boosts on one machine (`KITE_NAVIGATOR.md`, "Two humans, two seats", step 4) |
+| Wrasse (`KiteNavigator`) | Grouper + Wrasse | not yet: while a person is aboard, the other seat is passed over | Its kite decides pops, blasts, clusters and boosts on one machine (`KITE_NAVIGATOR.md`, "Two humans, two seats", step 4) |
 | Goby (`GobyPistolDuo`) | Goby + Pistol | not yet | The Pistol rides the Goby's plane on the hull's machine |
 | Jacks (`JacksExecutor`) | fly + herd | no | One person flies or herds |
 
@@ -93,3 +97,7 @@ riders, by running the rider's seat (`CrewStations.LocalRiderSeat`) and leaving 
    patterns B makes fire their effects on A's hull.
 5. On a phone: a two-finger swipe steps seats and hulls; flying with two thumbs never fires it.
 6. Leave freestyle while riding: the ride ends, the menu parks your own hull.
+7. A flies the Orca and steps to a gunner seat (the helm goes to its AI); B steps onto the Orca's helm: B flies it, A
+   stays in the gunner seat (now riding), and A's own hull is the one B left, flown by its AI.
+8. Keyboard: the left / right arrows cycle exactly as the D-pad does, for both players, in the same order; keys 1-4 do
+   nothing; the Orca's turret turns on A / D.

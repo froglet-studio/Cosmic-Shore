@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
     /// The <b>Slip</b>: touch a 1-D trail of a domain the battery holds with the nose within <c>aimCone</c> of the prism's long
     /// axis, and the hull rides it to the end of the trail it points at (<c>HoneyguideCrew.Zip.cs</c>).
     ///
-    /// <para><b>Seats.</b> The swap is the arena's gesture (<see cref="PilotSwapGesture"/>: D-pad left / right, keys 1 / 2) or
+    /// <para><b>Seats.</b> The swap is the arena's gesture (<see cref="PilotSwapGesture"/>: D-pad left / right, the left / right arrow keys) or
     /// a double tap on the small board. Whichever seat is empty is played by an AI: the hull's own <c>AIPilot</c>, or the
     /// Ratel AI (<see cref="DynamoCore.AIPlan"/>, input-only, the lab's own planner).</para>
     ///
@@ -195,7 +195,7 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ seats
 
-        // a double tap on the small board; the swap gesture (D-pad, keys 1 / 2, a two-finger swipe) is the person's, and
+        // a double tap on the small board; the swap gesture (D-pad, the left / right arrow keys, a two-finger swipe) is the person's, and
         // CrewStations moves them here through TakeSeat, seats first, then hulls
         void PollSwap()
         {

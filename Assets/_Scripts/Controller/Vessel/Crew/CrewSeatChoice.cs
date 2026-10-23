@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
     /// The seat a person picked on a crew vessel, remembered on this device per hull class (Garrett, 2026-10-21: "wrasse
     /// and grouper, are two seats. players can select, change seats etc. both can be played on mobile or pc"). Seat 0 is
     /// the hull (the Grouper), seat 1 the crew seat (the Wrasse). A seat writes it whenever the person picks or swaps
-    /// (keys 1 / 2, the D-pad, a double tap on the small view), and reads it when the person next takes the hull, so they
+    /// (the D-pad, the left / right arrow keys, a double tap on the small view), and reads it when the person next takes the hull, so they
     /// start where they last chose to be. A seat picker in a menu (the Vessel Changer's stations, a launch card) writes the
     /// same value (KITE_NAVIGATOR.md, "Two humans, two seats").
     ///

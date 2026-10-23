@@ -18,8 +18,9 @@ namespace CosmicShore.Gameplay
     /// prisms, Time hands the pilot boost, Charge powers the kite so its next ram steals that many petals (a scored
     /// Strike, <c>CombatHitDrain.TryAdmit</c>). Motes are the navigator's own and are drawn only on its board.
     ///
-    /// <para><b>Seats.</b> Keys 1 / 2 pick the hull (the Grouper) or the kite (the Wrasse); the D-pad (the arena's
-    /// <see cref="PilotSwapGesture"/>) and a double tap on the small view step to the other seat. The pick is remembered per
+    /// <para><b>Seats.</b> The swap gesture (<see cref="PilotSwapGesture"/>: the D-pad, the left / right arrow keys, a
+    /// two-finger swipe) steps round the domain's seats, the Grouper's and the Wrasse's among them (<see cref="CrewStations"/>);
+    /// a double tap on the small view steps to the other seat. The pick is remembered per
     /// hull class (<see cref="CrewSeatChoice"/>), so the person starts in the seat they last chose. Whichever seat is empty
     /// is flown by an AI squad mate - the hull's own <c>AIPilot</c>, or <see cref="KiteNavigatorAI"/>, which drives the
     /// kite only through an aim point, as a thumb does.</para>
@@ -412,7 +413,7 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ seats
 
-        // The swap gesture (D-pad, keys 1 / 2, a two-finger swipe) is the person's, not the seat's: CrewStations steps them
+        // The swap gesture (D-pad, the left / right arrow keys, a two-finger swipe) is the person's, not the seat's: CrewStations steps them
         // through this hull's two seats and on to the next hull, and moves them here through TakeSeat. A double tap on
         // the small view still swaps the two seats here (Garrett, 2026-10-21: "players can select, change seats etc. both
         // can be played on mobile or pc"). Every pick is remembered (CrewSeatChoice), so the next bind starts there.
@@ -460,7 +461,7 @@ namespace CosmicShore.Gameplay
         }
 
         // A double tap on the small view swaps seats - the touch swap (Garrett, 2026-10-19: "when I double tap the pip
-        // window to the other vessel it should switch"); 1 / 2 and the D-pad stay the pad and keyboard swap. Two SHORT
+        // window to the other vessel it should switch"); the D-pad and the arrow keys stay the pad and keyboard swap. Two SHORT
         // taps, the second starting soon after the first and near it, both inside the small view. Short is what keeps a
         // flying thumb out: the left thumb lands in that corner, and re-planting it quickly is a drift, not a swap - but
         // a planted thumb stays down, so it never counts as a tap.

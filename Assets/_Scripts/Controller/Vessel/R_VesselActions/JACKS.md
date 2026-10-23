@@ -36,7 +36,7 @@ Code:
 
 ## 1. What the player does
 
-One player, two thumbs, two modes. The switch is the old seat swap: D-pad left / right, keys 1 / 2, or a double tap on
+One player, two thumbs, two modes. The switch is the seat swap: D-pad left / right, the left / right arrow keys (`Docs/CREW_STATIONS.md`: fly -> herd -> the next hull), or a double tap on
 the small view (the Wrasse's gesture, `PilotSwapGesture`).
 
 - **Herding.** The hull holds still (`IVesselStatus.IsStationary`, held every frame and given back as the round left it)

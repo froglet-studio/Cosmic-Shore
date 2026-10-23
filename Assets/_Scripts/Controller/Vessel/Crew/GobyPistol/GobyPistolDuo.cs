@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
     /// </list>
     ///
     /// <para>One human flies one half and the seat's AI the other; the swap is the arena's gesture (D-pad left / right,
-    /// keys 1 / 2, <see cref="PilotSwapGesture"/>) or a double tap on the small view. Each seat has its own controls: the
+    /// the left / right arrow keys, <see cref="PilotSwapGesture"/>) or a double tap on the small view. Each seat has its own controls: the
     /// Goby's Dart and Lock are the hull's own inputs (<see cref="CrewButtonActionSO"/>: Button3 / Button4, a pad's RT /
     /// LT), and on a phone each seat shows its own buttons (<see cref="GobyPistolButtons"/>).</para>
     ///
@@ -858,8 +858,8 @@ namespace CosmicShore.Gameplay
 
         void PollSwap()
         {
-            // on a phone a double tap on the small view (every crew vessel's touch swap); the swap gesture (D-pad, keys
-            // 1 / 2, a two-finger swipe) is the person's, and CrewStations moves them here through TakeSeat
+            // on a phone a double tap on the small view (every crew vessel's touch swap); the swap gesture (D-pad, the
+            // left / right arrow keys, a two-finger swipe) is the person's, and CrewStations moves them here through TakeSeat
             bool tapped = _pipTap.Poll(showSideView ? _pip.SmallView(_cam, HumanInSeat) : null);
             if (!tapped || Time.unscaledTime < _swapReadyAt) return;
             TakeSeat(_human == Half.Goby ? 1 : 0);

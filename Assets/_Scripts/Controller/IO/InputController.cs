@@ -119,7 +119,7 @@ namespace CosmicShore.Gameplay
             if (RearViewGesture.RequestedThisFrame())
                 VesselRearView.Toggle();
 
-            // The swap gesture (D-pad left/right, keyboard 1/2, a two-finger swipe) is not read here: it must work while
+            // The swap gesture (D-pad left/right, the left / right arrow keys, a two-finger swipe) is not read here: it must work while
             // this controller is paused - a person at a crew seat or riding another hull has their flight input paused -
             // so the person's own Player reads it (CrewStations, LocalCrewStation), seats first, then hulls.
 

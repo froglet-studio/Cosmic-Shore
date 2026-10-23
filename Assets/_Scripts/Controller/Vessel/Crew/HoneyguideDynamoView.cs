@@ -380,7 +380,7 @@ namespace CosmicShore.Gameplay
         internal bool ChipShown { get; private set; }
 
         // One view, flying (CrewSingleView): no small board, only a thumb-sized Ratel button at the top of the board's
-        // place, the phone's way to the Ratel (the Fly button's twin; a phone has no D-pad and no 1 / 2 keys). At the TOP,
+        // place, the phone's way to the Ratel (the Fly button's twin; a phone has no D-pad and no arrow keys). At the TOP,
         // above where the left thumb flies, and only a SHORT tap counts, so a flying thumb that slides over it is no swap.
         bool _seatButtonOnly;
         float _seatPressAt = -99f;
@@ -455,7 +455,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>True once after a seat swap was asked for on the board: a double tap on the small view while flying, or the
-        /// Fly button beside the big board while playing the Ratel (a phone has no D-pad and no 1 / 2 keys).</summary>
+        /// Fly button beside the big board while playing the Ratel (a phone has no D-pad and no arrow keys).</summary>
         internal bool SmallViewDoubleTapped()
         {
             bool d = _smallDoubleTap || _flyTapped;

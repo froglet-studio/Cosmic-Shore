@@ -7,9 +7,10 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// "Put me in the next seat." The one swap gesture (<see cref="CrewStations"/>): <b>D-pad left / right</b> on a pad,
-    /// <b>1 / 2</b> on the keyboard, a <b>two-finger swipe</b> left / right on a touch screen (Garrett, 2026-10-23). Left
-    /// steps to the PREVIOUS station, right to the NEXT, round a ring every person on the domain sees in the same order:
-    /// the seats of the hull you are on, then the next hull's.
+    /// the <b>left / right arrow keys</b> on the keyboard, a <b>two-finger swipe</b> left / right on a touch screen
+    /// (Garrett, 2026-10-23: "the keyboard controls should mirror the others and just have a consistent cycle left and
+    /// right"). Left steps to the PREVIOUS seat, right to the NEXT, round one list of every seat of the domain, which every
+    /// person on it sees in the same order.
     ///
     /// <para>One predicate, in one place, for the same reason <see cref="RearViewGesture"/> is. It is read here rather
     /// than routed through <c>InputEvents</c> on purpose: it moves the PERSON between seats and hulls, it is not an
@@ -19,8 +20,8 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>Why these controls.</b> The D-pad is unread in flight - no strategy binds it and no vessel ability map
     /// names it - which is what makes it a free shelf. On the keyboard the flight scheme eats WASD, P ; L ', QWER,
-    /// Space, both Shifts and C; the number row is the shelf nothing flies with, and 1 / 2 sit where the left hand
-    /// already is. On a phone the two thumbs fly, so the swipe is two fingers of ONE hand: both land together, close
+    /// Space, both Shifts and C; the arrow keys are read by no flight strategy, and left / right mirror the D-pad. On a
+    /// phone the two thumbs fly, so the swipe is two fingers of ONE hand: both land together, close
     /// to each other, and travel the same way quickly (<see cref="TwoFingerSwipe"/>); two flying thumbs land apart in
     /// time and space and never read as one.</para>
     /// </summary>
@@ -45,8 +46,8 @@ namespace CosmicShore.Gameplay
             var keyboard = Keyboard.current;
             if (keyboard != null)
             {
-                if (keyboard.digit1Key.wasPressedThisFrame) return -1;
-                if (keyboard.digit2Key.wasPressedThisFrame) return +1;
+                if (keyboard.leftArrowKey.wasPressedThisFrame) return -1;
+                if (keyboard.rightArrowKey.wasPressedThisFrame) return +1;
             }
 
             var pad = Gamepad.current;

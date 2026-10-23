@@ -27,7 +27,7 @@ it**; see "Round 4" below. The rounds after 3 are not in the lab yet (task `T-20
   on a cluster (`WrasseHUDController`).
 - **L5s:** Mass clusters arrive shielded, Charge steals instead of knocking crystals loose, Space breaks shields and
   super shields, and Time drops the boost cooldown. An **Omni crystal** drops a cluster of each element on the board.
-- **Seats (2026-10-21):** keys 1 / 2 pick the Grouper or the Wrasse, the D-pad and a double tap on the small view step
+- **Seats (2026-10-21; 2026-10-23 `Docs/CREW_STATIONS.md`):** the D-pad and the left / right arrow keys step round the domain's seats (no key picks one outright), and a double tap on the small view step
   to the other seat, and the pick is remembered per hull class (`CrewSeatChoice`), so the person starts where they last
   chose. Online it is two human seats on any mix of phones and PCs: decided by Garrett 2026-10-21, planned in "Two
   humans, two seats" below, not built yet.
@@ -400,7 +400,7 @@ be processed, so the ratel should run fine on very old phones."
 
 ## Seats: the swap is the arena's
 
-The swap uses the arena's pilot-swap gesture (`PilotSwapGesture`: D-pad left / right, keys 1 / 2), with
+The swap uses the arena's pilot-swap gesture (`PilotSwapGesture`: D-pad left / right, the left / right arrow keys since 2026-10-23), with
 `PilotSwap.CooldownSeconds` as its cooldown. It moves the local human between the hull and the kite. Since 2026-10-21
 (Garrett: "players can select, change seats"), **keys pick** (1 the Grouper, 2 the Wrasse; picking the seat you are in
 does nothing) and **the D-pad and the double tap step** to the other seat, as the Orca's keys 1-4 pick its seats. Every
@@ -507,8 +507,8 @@ server's check `CrewStations.Classify`, `ICrewStations` (`SeatCount`, `LocalSeat
 crew, and the gesture owned by the person's `LocalCrewStation`: seats first, then the domain's hulls, in freestyle and a
 running arena match. A pick is a request, but a seat another person holds is skipped rather than offered (no offer /
 accept yet). The Orca's gunners and the Ratel take a second person; **the Wrasse still takes one person at a time**
-(`KiteNavigator.HostsRiders` is false) until steps 1 and 4 land, and its keys 1 / 2 now step the ring rather than pick a
-seat outright.
+(`KiteNavigator.HostsRiders` is false) until steps 1 and 4 land, and no key picks its seats outright any more: the
+arrow keys step the domain's seats.
 
 **Work order:**
 1. **Prism parity for one human online.** `KiteNavigator.cs`, with the effects split into `KiteNavigatorEffects.cs`

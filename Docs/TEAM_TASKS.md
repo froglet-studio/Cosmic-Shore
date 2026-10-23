@@ -2093,7 +2093,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/CrewViews.cs SeatOrientation
 
 ### T-20261023-d445 · open · test · Crew vessels
-- **Task:** Hand-test seats then hulls in freestyle with two players (MPPM, then a phone and a PC): the six hand tests in Docs/CREW_STATIONS.md - stepping Squirrel -> AI Orca helm -> gunners -> next hull, a second person in an Orca gunner seat and on the Ratel, taking a hull another person left, the two-finger swipe, leaving freestyle mid-ride
+- **Task:** Hand-test seats then hulls in freestyle with two players (MPPM, then a phone and a PC): the hand tests in Docs/CREW_STATIONS.md (eight since the arrow-key cycle) - stepping Squirrel -> AI Orca helm -> gunners -> next hull, a second person in an Orca gunner seat and on the Ratel, taking a hull another person left, the two-finger swipe, leaving freestyle mid-ride
 - **Done when:** All six pass, or each failure is a dev task on this board
 - **Who can take it:** Yash (MPPM and a phone), or Garrett
 - **Added:** 2026-10-23 by Claude (cece/relaxed-tesla-axhxzy) (`cece/relaxed-tesla-axhxzy`)
