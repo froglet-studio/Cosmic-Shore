@@ -2091,3 +2091,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (product), Shombith (UI / orientation)
 - **Added:** 2026-10-22 by a Claude session (`cece/keen-edison-3c6pvz`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/CrewViews.cs SeatOrientation
+
+### T-20261023-2f7b · open · test · prisms
+- **Task:** Look at a close-up steal in the editor: the old domain must curl away (roll in the old colour) and uncover the new colour, with no flash of the new colour first
+- **Done when:** Steps 1-3 of the 'Steal roll: the OLD domain curls away' section of Docs/UNITY_VERIFICATION_CHECKLIST.md pass
+- **Who can take it:** Garrett (asked for it) or Yash
+- **Added:** 2026-10-23 by a Claude session (`cece/hopeful-hopper-np5527`)
+- **See:** Docs/PRISM_ANIMATION.md §4.12 round 14

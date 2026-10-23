@@ -2710,6 +2710,15 @@ effect) and by the shared budget (`PrismInteractionLod`, config `Resources/Prism
 | **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION — depth 0 of the Sierpinski cut | DEPTH 1 (≥ 5%) → DEPTH 2 (≥ 10%) | DEPTH 3 (≥ 16%) → DEPTH 4 (≥ 24%) |
 | **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ 8%): the ROLL (round 7; bloom, unravel and flake ship at weight 0), on 12 subdivisions | the same shed on 18 (≥ 16%), then 24 (≥ 28%) subdivisions |
 
+**Round 14 (Garrett, 2026-10-23) — the skin is the OLD domain on both sides:** *"the stealing effect is supposed to
+curl the original domain and reveal the stolen domain underneath, but i am seeing it immediately change domain color
+and the peel the changed color to have the changed color also underneath"*; *"the abrupt change on the outside is
+wrong"*. The roll winds the skin top side in, so the curl shows its UNDERSIDE, and the steal stamped that underside
+with the NEW colour (round 2's "molting reveals the new colour inside"). The new colour showed along the curl from
+the first frame, and the curl read as new peeling off new. `TryRequestShed` now stamps no inside colour
+(`_SlicePivot.w` 0): the underside is the old bright × `_InnerGlow`. The only new colour on screen is the prism the
+roll uncovers. The Collision Burst Lab still draws the round-7 inside colour; it is not yet updated.
+
 **Round 13 (the designer, 2026-10-17): *"triple the amount that they spread"*.** Fragment burst 0.12 → 0.36, drift
 0.072 → 0.216: every fragment travels three times as far; level 0's cloud at 2 s is 2.57 R against the old explosion
 graph's 1.78 R. Lab round 13: `Docs/Studios/COLLISION_BURST_LAB.md`.
@@ -2858,7 +2867,8 @@ great, but these should have even higher resolution versions that also grade LOD
   round 1 below describes, so squinted at it is meant to read as the explosion.
 - **A SHED is the grade, squinted at.** On an accepted shed the prism takes its new colour AT ONCE
   (`UpdateMaterial` with duration 0) and a skin in its OLD on-screen colours, a hair outside it
-  (`shedInflate` radii), comes off it; the skin's inside wears the NEW colour (the `_SlicePivot` stamp).
+  (`shedInflate` radii), comes off it; since round 14 the skin's inside is the OLD colour too (no `_SlicePivot`
+  stamp), so only the prism it uncovers wears the new one.
   Its coverage falls on the grade's own smoothstep over the grade's own length (`_SlicePlane.x` = 1:
   `PrismBurstProgress` returns `smoothstep(age / (life/(1+overshoot)))`, the life stamped as
   `DefaultTransitionSeconds × (1 + overshoot)`), so the mean colour runs the grade's course exactly —
