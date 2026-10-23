@@ -2109,7 +2109,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Done:** 2026-10-23, Garrett flew the pad 2026-10-23: the old 1.5/s nose lag wins ('responsive, but eases into its target ... keep this on gamepad'); the stage smoother lost (reads as input lag) and was removed. Pad dial now Resources/GamepadFlightConfig.noseFollowPerSecond = 1.5.
 
 ### T-20261023-27e8 · open · test · Input
-- **Task:** Find the touch nose lag: on a phone (or the Device Simulator) on cece/serene-galileo-t77xt3, fly the Squirrel and the Sparrow with Resources/TouchControlProfiles.noseFollowPerSecond at 0 (today), 5 and 9 (the retired per-hull touch values) and maybe 3; pick the one that is responsive and eases into its target like the pad. Also run the EditMode NoseFollowDialTests (and update their touch expectation if the value changes).
+- **Task:** Find the touch nose lag: on a phone (or the Device Simulator) on cece/serene-galileo-t77xt3, fly the Squirrel and the Sparrow with Resources/TouchControlProfiles.noseFollowPerSecond at 9 (shipped 2026-10-23, best judgement), 0 (10-21 to 10-23) and 5; pick the one that is responsive and eases into its target like the pad. Also run the EditMode NoseFollowDialTests (and update their touch expectation if the value changes).
 - **Done when:** Garrett picks a touch value and it is committed to TouchControlProfiles (through Tools/Build/author_touch_profiles.py, which owns the asset)
 - **Who can take it:** Garrett (the feel), Yash (offered: tests, phone playtest)
 - **Added:** 2026-10-23 by a Claude session (`cece/serene-galileo-t77xt3`)

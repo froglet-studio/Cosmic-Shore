@@ -601,7 +601,8 @@ public class VesselTransformer : MonoBehaviour
         /// <para><b>Except where a device's dial asks for a lag</b> (<see cref="PilotNoseFollowPerSecond"/>):
         /// the pad keeps the fleet lag, 1.5/s (Garrett, 2026-10-23: "it is responsive, but eases into its
         /// target from the repeated lerp. we want to keep this on gamepad"); touch has its own dial,
-        /// shipped at 0 (no lag) until a phone playtest picks a value.</para>
+        /// shipped at 9 (0.11 s), short enough that a thumb on glass, already damped by friction, only
+        /// loses its hard starts and stops.</para>
         ///
         /// <para>Two things keep it smooth. The command itself is integrated from eased stick rates,
         /// so it never jumps; and a LEFTOVER gap - one a discontinuous command left behind (a 180
@@ -633,7 +634,7 @@ public class VesselTransformer : MonoBehaviour
         /// <summary>
         /// The local human pilot's nose follow rate per second for the device they fly with, or 0 for
         /// no lag: the pad's <see cref="GamepadFlightConfigSO.NoseFollowPerSecond"/> (1.5, the fleet lag),
-        /// touch's <see cref="TouchControlProfileLibrarySO.NoseFollowPerSecond"/> (0); keyboard and mouse
+        /// touch's <see cref="TouchControlProfileLibrarySO.NoseFollowPerSecond"/> (9); keyboard and mouse
         /// have none. One dial per device, never per hull.
         /// </summary>
         float PilotNoseFollowPerSecond => InputStatus.ActiveInputDevice switch

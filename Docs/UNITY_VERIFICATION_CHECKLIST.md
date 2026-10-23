@@ -114,7 +114,7 @@ typo in `ReleaseBuildKind.cs` was reported, tagged as changed). `ReleaseBuildKin
 **What landed:** `VesselTransformer.NoseFollowFraction` follows a local human at their device's rate
 (`PilotNoseFollowPerSecond`, also `NoseFollowRate`): pad `Resources/GamepadFlightConfig.noseFollowPerSecond` 1.5 (the
 2024-11-19 to 2026-10-21 lag, Garrett-approved by feel on 2026-10-23), touch
-`Resources/TouchControlProfiles.noseFollowPerSecond` 0 (unchanged: lag-free), keyboard and mouse none. The response
+`Resources/TouchControlProfiles.noseFollowPerSecond` 9 (0.11 s; lag-free 10-21 to 10-23), keyboard and mouse none. The response
 curve and the stage smoother this branch tried first are gone.
 
 **Verified without the editor:** `unity_refcompile` player: 0 errors; editor: 0 in changed files (3 in
@@ -124,7 +124,8 @@ curve and the stage smoother this branch tried first are gone.
 **Verify in editor:**
 1. Run `NoseFollowDialTests` (EditMode): all pass.
 2. Pad: flies as it did before 2026-10-21. Set the pad dial to 0 in Play: the nose snaps to the stick.
-3. Touch (Device Simulator or a phone): unchanged at 0. Try 5 and 9 on `TouchControlProfiles` and judge.
+3. Touch (Device Simulator or a phone): responsive, starts and stops rounded, no glide. Compare 0 and 5 on
+   `TouchControlProfiles` and judge.
 4. AI hulls: unchanged.
 
 ### 🔴 Menu_Main: no entry into freestyle behind the boot veil; the browser Toybox opens on the menu (`claude/menu-click-through-kg5qx7`, 2026-10-22) — NOT EDITOR-VERIFIED
