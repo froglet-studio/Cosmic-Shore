@@ -2092,6 +2092,29 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-22 by a Claude session (`cece/keen-edison-3c6pvz`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/CrewViews.cs SeatOrientation
 
+### T-20261022-accb · done · test · Input
+- **Task:** Fly two or three hulls (a two-stick hull like the Squirrel, a one-thumb hull like the Sparrow) on a gamepad on this branch and judge whether small corrections feel like the old pad (before 2026-10-21) while the nose still has no lag. Tune Resources/GamepadFlightConfig live in Play: responseExponent (centre softness, 1.5) and steeringSensitivity (full-stick rate, 0.85); 1 / 1 is the uncurved pad.
+- **Done when:** Garrett signs off on the values, or new values are committed to Resources/GamepadFlightConfig.asset
+- **Who can take it:** Garrett (the feel), Yash (offered)
+- **Added:** 2026-10-22 by a Claude session (`cece/serene-galileo-t77xt3`)
+- **See:** Docs/claude/ARCHITECTURE_CORE.md (Input Strategy), Assets/_Scripts/ScriptableObjects/GamepadFlightConfigSO.cs
+- **Done:** 2026-10-23, Superseded: Garrett flew the response curve and it lost the smoothness; replaced by the gamepad steering smoother (CascadeSmoother), retested under the new task.
+
+### T-20261023-70a9 · done · test · Input
+- **Task:** Fly the Squirrel and the Sparrow on a gamepad on cece/serene-galileo-t77xt3: do turns build and settle smoothly (no jolt) while the nose still answers at once? Resources/GamepadFlightConfig now ships legacyNoseLag ON (the old 1.5/s nose lag, exactly) with the smoother off (delay 0): fly it, then untick legacyNoseLag and try the smoother (smoothingStages 6, smoothingDelaySeconds 0.12-0.35 s) to compare; decide which ships. Also run the EditMode CascadeSmootherTests.
+- **Done when:** Garrett signs off on the feel and the values (committed to Resources/GamepadFlightConfig.asset), and CascadeSmootherTests pass
+- **Who can take it:** Garrett (the feel), Yash (offered, tests)
+- **Added:** 2026-10-23 by a Claude session (`cece/serene-galileo-t77xt3`)
+- **See:** Docs/claude/ARCHITECTURE_CORE.md (Input Strategy), Assets/_Scripts/Controller/IO/CascadeSmoother.cs, Docs/UNITY_VERIFICATION_CHECKLIST.md
+- **Done:** 2026-10-23, Garrett flew the pad 2026-10-23: the old 1.5/s nose lag wins ('responsive, but eases into its target ... keep this on gamepad'); the stage smoother lost (reads as input lag) and was removed. Pad dial now Resources/GamepadFlightConfig.noseFollowPerSecond = 1.5.
+
+### T-20261023-27e8 · open · test · Input
+- **Task:** Find the touch nose lag: on a phone (or the Device Simulator) on cece/serene-galileo-t77xt3, fly the Squirrel and the Sparrow with Resources/TouchControlProfiles.noseFollowPerSecond at 9 (shipped 2026-10-23, best judgement), 0 (10-21 to 10-23) and 5; pick the one that is responsive and eases into its target like the pad. Also run the EditMode NoseFollowDialTests (and update their touch expectation if the value changes).
+- **Done when:** Garrett picks a touch value and it is committed to TouchControlProfiles (through Tools/Build/author_touch_profiles.py, which owns the asset)
+- **Who can take it:** Garrett (the feel), Yash (offered: tests, phone playtest)
+- **Added:** 2026-10-23 by a Claude session (`cece/serene-galileo-t77xt3`)
+- **See:** Docs/claude/ARCHITECTURE_CORE.md (Input Strategy), Assets/_Scripts/Controller/Vessel/VesselTransformer.cs PilotNoseFollowPerSecond
+
 ### T-20261023-2f7b · open · test · prisms
 - **Task:** Look at a close-up steal in the editor: the old domain must curl away (roll in the old colour) and uncover the new colour, with no flash of the new colour first
 - **Done when:** Steps 1-3 of the 'Steal roll: the OLD domain curls away' section of Docs/UNITY_VERIFICATION_CHECKLIST.md pass
