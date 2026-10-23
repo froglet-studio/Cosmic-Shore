@@ -553,7 +553,9 @@ On an Android development build (the real test - tilt, millimetre sizes and thum
    elsewhere on the right aims without firing; a hard turn no longer splays the guns.
 7. Dolphin: lift either thumb - drift, charge and Echo together; turn the phone like a wheel - the hull rolls exactly as
    far as the phone, one to one like an AR window (2026-10-22): hold the phone still at 45 degrees and the roll stops
-   at 45, it does not keep rolling; turn back and it rolls back; past 90 either side it holds at 90. The horizon must
+   at 45 (it eases the last few degrees in about 0.1 s through the touch nose lag, 2026-10-23, and the slight jitter
+   the unfiltered roll showed is gone), it does not keep rolling; turn back and it rolls back; past 90 either side it
+   holds at 90. The horizon must
    stay level in the room (if it turns TWICE as fast as the phone, or against it, the sign in
    `TiltMath.RollBetween` is wrong for this device). Put the thumb back: the roll stays where it was left.
 8. Manta: lift both thumbs - flat-out soar (720 u/s), steered by tilt; a thumb back ends it; nothing soars on the

@@ -981,10 +981,14 @@ public class VesselTransformer : MonoBehaviour
         /// Roll as an ANGLE (<see cref="IInputStatus.HoldsRollAngle"/>): the Dolphin's aim on a phone, where
         /// the phone is an augmented-reality window and the hull rolls exactly as far as the phone has turned
         /// since the aim began (Garrett, 2026-10-22: "1 to 1 roll like augmented reality not a control that
-        /// sends the vessel into a roll"). Each frame applies the change in the held angle to the command
-        /// AND to the hull, so the nose catch-up cap (<see cref="NoseFollowFraction"/>) never trails a fast
-        /// wrist: one to one means no lag at any speed. Letting go keeps the roll where it is. Returns true
-        /// while the angle is held, so the rate roll stands down.
+        /// sends the vessel into a roll"). Each frame applies the change in the held angle to the COMMAND
+        /// only; the hull follows through the touch nose lag (<see cref="NoseFollowFraction"/>,
+        /// <c>TouchControlProfiles.noseFollowPerSecond</c>, 9/s: 0.11 s), which filters the attitude
+        /// sensor's jitter and still settles on exactly the phone's angle (Garrett, 2026-10-23: "have the
+        /// dolphin's 1:1 roll accept a bit of this smoothing since i did notice a slight jitter"). It
+        /// first wrote the step into the hull too, for zero lag, and the sensor noise reached the
+        /// hard-attached camera unfiltered. Letting go keeps the roll where it is. Returns true while the
+        /// angle is held, so the rate roll stands down.
         /// </summary>
         bool ApplyHeldRoll()
         {
@@ -1011,7 +1015,6 @@ public class VesselTransformer : MonoBehaviour
             // Clockwise from behind is a negative angle about forward (Euler(0, 0, 90) * up = left).
             var turn = Quaternion.AngleAxis(-step, transform.forward);
             accumulatedRotation = turn * accumulatedRotation;
-            transform.rotation = turn * transform.rotation;
             return true;
         }
 
