@@ -13,10 +13,25 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 
 - **Add** a task whenever your work leaves something another person can do or test. Claude sessions do
   this before they finish (a hook reminds them), and tell the person what they added:
-  `python3 Tools/Build/team_tasks.py add --area Activation --kind test --task "..." --done-when "..." --who "Yash (offered), anyone with the Editor" --see "Docs/..."`
+  `python3 Tools/Build/team_tasks.py add --area Activation --kind test --task "..." --done-when "..." --who "anyone" --see "Docs/..."`
 - **Find** work: `python3 Tools/Build/team_tasks.py list` (open tasks), `--for Yash`, `--area Activation`,
   `--kind test`.
-- **Take** one, so nobody does it twice: `team_tasks.py take <id> --who <you>`. **Close** it:
+- **The team hub** ([Froglet Team Hub](https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f)) is the board's page: Open,
+  Live and Done tabs, Take (with your branch), Release, Mark done, New task. It keeps its own copy of the tasks, and a
+  Claude session syncs it with this file: read the hub's `tasks` into a JSON file (ArtifactData `list`), run
+  `team_tasks.py hub-import <file> --since <meta/sync.at>`, then `team_tasks.py sweep`, then
+  `team_tasks.py hub-export --probe` and write the changed tasks and a new `meta/sync` back. Commit the board.
+- **One task per branch.** Put every hand test or step your branch leaves into one task (its "Done when" can list
+  them), never one task each. The team hub groups open tasks by the branch that filed them.
+- **The board holds only what is open or live.** `sweep` archives an open task nobody took in 14 days, and moves done
+  and archived tasks to [`TEAM_TASKS_ARCHIVE.md`](TEAM_TASKS_ARCHIVE.md). `team_tasks.py archive <id>...` archives by
+  hand, `team_tasks.py revive <id>` brings one back (open, nobody's, 14 more days), and `list --all` reads both files.
+- **Nobody is assigned.** A task names nobody (`--who anyone`, or `"anyone with ..."` for what the work needs) until
+  someone takes it. `sweep` strips any name left on an open task.
+- **Take** one by naming your branch: `team_tasks.py take <id> --who <you> --branch <branch>`. It stays live while
+  that branch does: `team_tasks.py sweep` (it fetches with `--prune` first; `--dry-run` previews) closes it when the
+  branch merges into `bleeding-edge`, and puts it back to open, nobody's, when the branch is deleted unmerged or has
+  had no commit for 14 days. `team_tasks.py release <id>` gives it back by hand. **Close** one by hand:
   `team_tasks.py done <id> --note "what happened, commit or result"`. A test that FAILS is not done: write
   what failed in the note and add the fix as a new `dev` task.
 - **On GitHub**: every task is mirrored to an issue (issues #1105-#1144 hold the first 40), titled `[<id>] <task>`

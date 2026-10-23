@@ -47,7 +47,7 @@
         "shombith@froglet.studio"
       ],
       "branch_prefixes": [],
-      "role": "UI (Menu_Main, UI prefabs, colour tokens, Codex), multiplayer scenes; drives the Amoebius ENGINE milestones (Port/src/CosmicShore.Engine, Player, tests) and merges those pull requests.",
+      "role": "Heads tooling: the Amoebius engine, editor tools, the Claude skills (/ship and the rest) and the hooks (Shombith, 2026-10-23). Owns cloud and backend services and data (UGS). UI (Menu_Main, UI prefabs, colour tokens, Codex), multiplayer scenes; drives the Amoebius ENGINE milestones (Port/src/CosmicShore.Engine, Player, tests) and merges those pull requests.",
       "confirmed": true
     },
     {

@@ -10,7 +10,7 @@ When a task spans multiple files or systems, complete ALL of them in a single pa
 
 This file holds only the rules every session needs. Everything else moved verbatim into topic files under `Docs/claude/`. Each entry lists the section headings the file contains, so a reference like "CLAUDE.md § Anti-Patterns" can be found by grepping this index. To find a passage quoted from the old single-file CLAUDE.md, search both places: `grep -rn '<phrase>' CLAUDE.md Docs/claude/`.
 
-- [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **The shared to-do board** - tests, playtests, setup, content and decisions one collaborator's session leaves for another (`Tools/Build/team_tasks.py`). Yash has offered to take tasks.
+- [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **The shared to-do board** - tests, playtests, setup, content and decisions one collaborator's session leaves for another (`Tools/Build/team_tasks.py`). Tasks are nobody's until someone takes one.
   Sections: How to use it; The board
 - [`Docs/TEAM.md`](Docs/TEAM.md): **Read before working anywhere.** Who works where (Garrett, Caleb, Shombith, Yash and others, measured from git), the collaboration rules, what doing work twice cost, and the generated map (`Tools/Build/who_works_where.py`).
   Sections: The people; The rules for every session; What happened without this; The map (generated); Decisions about our tools
@@ -85,16 +85,20 @@ the engine renamed twice, retired tools brought back. **Every session:**
   `Docs/Reports/`, never from memory (`Docs/TEAM.md` rule 10; the `report_request.py` hook reminds you).
 - **Hand off what others can do** on the shared to-do board, [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md)
   (`python3 Tools/Build/team_tasks.py add | list | take | done`): every editor test, playtest, setup step, content gap
-  or decision your work leaves for someone else. Name who can take it (**Yash has offered to take tasks**; name the
-  area's owner, e.g. Shombith for Menu_Main), tell the person what you added, and close the tasks your work finishes.
-  `.claude/hooks/team_tasks_nudge.py` reminds every session; activation / onboarding prompts also get that area's open
-  tasks.
+  or decision your work leaves for someone else. **Never assign it**: add it with `--who anyone`, never a person
+  and never a volunteer (Shombith, 2026-10-23). A task is nobody's until someone takes it, and taking it names their
+  branch. **One task per branch**: put every hand test your branch leaves into one task's "Done when" list, never one
+  task each (49 branches had filed 242 open tasks in 9 days). Tell the person what you added, and close the tasks your
+  work finishes. A task nobody takes in 14 days is archived (`team_tasks.py sweep`).
+- **No favourites among the core four.** Garrett, Caleb, Shombith and Yash carry equal weight. Never assign a task
+  to anyone, and do not let one person's request override another's area without whoever decides there. **Shombith heads tooling** (the Amoebius engine, editor tools, the Claude skills such as `/ship`, and the
+  hooks; Shombith, 2026-10-23): changes to those go through him.
 
 Who is who, the measured map and the full rules: [`Docs/TEAM.md`](Docs/TEAM.md) (identities in `Docs/TEAM.json`).
-**The person is told too, not only Claude** (Yash, 2026-10-15: "let them know of all these whenever they query the
-engine or anything"). On a session's first prompt, whatever it is about, `.claude/hooks/team_context.py` shows them a
-one-line team notice. Claude's first reply then says who else works in the area the task touches, or that nobody
-does. `team_activity.py` lists what the others pushed since the last prompt.
+The per-prompt team hooks (`team_context.py`, `team_activity.py`, `team_tasks_nudge.py`) were switched off on
+2026-10-23 (Shombith: too noisy, and they slowed every chat). Ask for what the others pushed when you need it:
+`python3 .claude/hooks/team_activity.py --peek 12`. The team hub page (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f)
+is the task board's interface; `Docs/TEAM_TASKS.md` says how a Claude session syncs it with the board.
 
 ## Amoebius and the Vessel Studio (DECIDED 2026-10-19, `Docs/TOOLING_DECISIONS.md` §6)
 
