@@ -1,0 +1,632 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-23 15:57:54 (next editor launch after the abnormal exit)
+session:        20261023-225353626  (pid 51748, Unity 6000.3.17f1)
+started:        2026-10-23T22:53:53.634Z UTC
+last heartbeat: 2026-10-23T22:56:22.843Z UTC
+last state:     EditMode
+main thread:    unresponsive for ~149s at the last heartbeat — likely a hang / freeze that was then killed
+hang dump:      C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261023-225353626.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261023-155608553
+started: 2026-10-23T15:56:08.559Z UTC
+unity:   6000.3.17f1
+pid:     40536
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[08:57:41.017] ---- domain reload begins (script compilation / play-mode transition) ----
+[08:57:47.229] ---- domain reload complete — session re-adopted ----
+[15:52:56.903] ---- entering play mode ----
+[15:53:02.432] ---- play mode running ----
+[15:54:30.022] ---- leaving play mode ----
+[15:54:32.037] ---- edit mode restored ----
+[15:55:04.453] ---- entering play mode ----
+[15:55:06.811] ---- play mode running ----
+[15:56:10.254] ---- leaving play mode ----
+[15:56:11.576] ---- edit mode restored ----
+[15:56:22.387] ---- editor quitting (clean exit) ----
+.IO.FileShare share, System.Int32 bufferSize, System.Boolean anonymous, System.IO.FileOptions options) [0x0019e] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.IO.FileStream..ctor (System.String path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, System.Int32 bufferSize, System.IO.FileOptions options) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at (wrapper remoting-invoke-with-check) System.IO.FileStream..ctor(string,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,int,System.IO.FileOptions)
+  at System.IO.StreamWriter..ctor (System.String path, System.Boolean append, System.Text.Encoding encoding, System.Int32 bufferSize) [0x00055] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.IO.StreamWriter..ctor (System.String path, System.Boolean append, System.Text.Encoding encoding) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at (wrapper remoting-invoke-with-check) System.IO.StreamWriter..ctor(string,bool,System.Text.Encoding)
+  at System.IO.File.WriteAllText (System.String path, System.String contents, System.Text.Encoding encoding) [0x00034] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.StateCache`1[T].SaveJsonState (System.String filePath, T value) [0x00014] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+  at UnityEditor.StateCache`1[T].SetState (UnityEngine.Hash128 key, T obj) [0x00059] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007ffecde94e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffecf6cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffecf6cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffecde4587f (Unity) DebugStringToFile
+        0x00007ffecdd01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001992f8704dd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001992f8703a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001992f86ff8b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[08:59:20.525] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261023-155834615.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[15:54:39.008] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261023-225353627.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+Settings\9e\9ecc5c3c162a7aba29bafa64c8b94b7c.json
+  at System.IO.FileStream..ctor (System.String path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, System.Int32 bufferSize, System.Boolean anonymous, System.IO.FileOptions options) [0x0019e] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.IO.FileStream..ctor (System.String path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share, System.Int32 bufferSize, System.IO.FileOptions options) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at (wrapper remoting-invoke-with-check) System.IO.FileStream..ctor(string,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,int,System.IO.FileOptions)
+  at System.IO.StreamWriter..ctor (System.String path, System.Boolean append, System.Text.Encoding encoding, System.Int32 bufferSize) [0x00055] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.IO.StreamWriter..ctor (System.String path, System.Boolean append, System.Text.Encoding encoding) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at (wrapper remoting-invoke-with-check) System.IO.StreamWriter..ctor(string,bool,System.Text.Encoding)
+  at System.IO.File.WriteAllText (System.String path, System.String contents, System.Text.Encoding encoding) [0x00034] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.StateCache`1[T].SaveJsonState (System.String filePath, T value) [0x00014] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+  at UnityEditor.StateCache`1[T].SetState (UnityEngine.Hash128 key, T obj) [0x00059] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007ffecde94e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffecf6cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffecf6cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffecde4587f (Unity) DebugStringToFile
+        0x00007ffecdd01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001f33bd004dd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001f33bd003a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001f33bcfff8b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:54:39.157] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261023-225353626.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023ce94fcc73 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageTwo ()
+0x0000023ce94fc43b (Mono JIT Code) System.Threading.Tasks.Task:Finish (bool)
+0x0000023dfef9e1eb (Mono JIT Code) System.Threading.Tasks.Task:TrySetException (object)
+0x0000023dfefa378b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Threading.Tasks.VoidTaskResult>:SetException (System.Exception)
+0x0000023dfefa34a3 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)
+0x0000023e741e29d3 (Mono JIT Code) Unity.Services.Multiplayer.LobbyHandler/<RefreshLobbyAsync>d__87:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:436)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023ce94fcc73 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageTwo ()
+0x0000023ce94fc43b (Mono JIT Code) System.Threading.Tasks.Task:Finish (bool)
+0x0000023dfef9e1eb (Mono JIT Code) System.Threading.Tasks.Task:TrySetException (object)
+0x0000023dfefa2b5b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetException (System.Exception)
+0x0000023e741e30a3 (Mono JIT Code) Unity.Services.Lobbies.Internal.WrappedLobbyService/<GetLobbyAsync>d__22:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/WrappedLobbyService.cs:178)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023ce94fcc73 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageTwo ()
+0x0000023ce94fc43b (Mono JIT Code) System.Threading.Tasks.Task:Finish (bool)
+0x0000023dfef9e1eb (Mono JIT Code) System.Threading.Tasks.Task:TrySetException (object)
+0x0000023dfefa2b5b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetException (System.Exception)
+0x0000023e7416b933 (Mono JIT Code) Unity.Services.Lobbies.Internal.WrappedLobbyService/<TryCatchRequest>d__42`2<TRequest_REF, TReturn_REF>:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/WrappedLobbyService.cs:601)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023ce94fcc73 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageTwo ()
+0x0000023ce94fc43b (Mono JIT Code) System.Threading.Tasks.Task:Finish (bool)
+0x0000023dfef9e1eb (Mono JIT Code) System.Threading.Tasks.Task:TrySetException (object)
+0x0000023dfefa2b5b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetException (System.Exception)
+0x0000023e741d28cb (Mono JIT Code) Unity.Services.Lobbies.Apis.Lobby.LobbyApiClient/<GetLobbyAsync>d__13:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Apis/LobbyApi.cs:434)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023d13a83b43 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x0000023d2ddeec53 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x0000023e74170663 (Mono JIT Code) Unity.Services.Lobbies.Http.HttpClient/<MakeRequestAsync>d__1:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Http/HttpClient.cs:41)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023d13a83b43 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x0000023d2ddeec53 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x0000023e74170cfb (Mono JIT Code) Unity.Services.Lobbies.Http.HttpClient/<CreateWebRequestAsync>d__3:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Http/HttpClient.cs:56)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023d13a83b43 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x0000023d2ddeec53 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x0000023e74171653 (Mono JIT Code) Unity.Services.Lobbies.Http.HttpClient/<CreateHttpClientResponse>d__4:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Http/HttpClient.cs:84)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023d13a83b43 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x0000023d2ddeec53 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x0000023e74191ed3 (Mono JIT Code) Unity.Services.Lobbies.Http.HttpClient/<>c__DisplayClass4_0/<<CreateHttpClientResponse>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Http/HttpClient.cs:81)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023d13a83b43 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x0000023d2de00b73 (Mono JIT Code) System.Threading.Tasks.TaskCompletionSource`1<TResult_REF>:TrySetResult (TResult_REF)
+0x0000023dfdb09913 (Mono JIT Code) System.Threading.Tasks.TaskCompletionSource`1<TResult_REF>:SetResult (TResult_REF)
+0x0000023e741a5053 (Mono JIT Code) Unity.Services.Lobbies.Http.UnityWebRequestHelpers/<>c__DisplayClass0_0:<GetAwaiter>b__0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Http/UnityWebRequestHelpers.cs:35)
+0x0000023dfdb047eb (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x0000023dff2572b8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffec9896c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffec97d8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffec97d8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffece6cfdd4 (Unity) scripting_method_invoke
+0x00007ffece6d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffece6d2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffecdbab129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffece592657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffed0000bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffed0000dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffece5128ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffece59b65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffece57abef (Unity) ExecutePlayerLoop
+0x00007ffece57ad65 (Unity) ExecutePlayerLoop
+0x00007ffece57fc0f (Unity) PlayerLoop
+0x00007ffeceef56da (Unity) EditorPlayerLoop::Execute
+0x00007ffecef0c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffecef0e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffecef0866d (Unity) Application::TickTimer
+0x00007ffecece9f7c (Unity) MainMessageLoop
+0x00007ffececf1a12 (Unity) UnityMain
+0x00007ff63c002f2a (Unity) __scrt_common_main_seh
+0x00007fffe013dda7 (KERNEL32) BaseThreadInitThunk
+0x00007fffe20bee4c (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007ffecde94e2e (Unity) StackWalker::ShowCallstack
+0x00007ffecf6cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffecf6cfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffecde4587f (Unity) DebugStringToFile
+0x00007ffecdd01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000023cc82ac49d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000023cc82ac363 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000023cc82abf9b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000023e3b91da95 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x0000023cc82abd20 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000023cc82abbe8 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000023ededa0363 (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:110)
+0x0000023eded8fe4b (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x0000023eded9fd1b (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:171)
+0x0000023ededf2d4b (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:616)
+0x0000023ededf255b (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:592)
+0x0000023ededf1ffb (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:402)
+0x0000023ededdaffb (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:907)
+0x0000023ededa92e3 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:865)
+0x0000023ededa7f8b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1118)
+0x0000023dff27a298 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffec9896c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffec97d8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffec97d8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffece6cfdd4 (Unity) scripting_method_invoke
+0x00007ffece6d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffece5e1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffece5e1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffece18308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ffece189f1a (Unity) BehaviourManager::Update
+0x00007ffece59c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ffece57abef (Unity) ExecutePlayerLoop
+0x00007ffece57ad65 (Unity) ExecutePlayerLoop
+0x00007ffece57fc0f (Unity) PlayerLoop
+0x00007ffeceef56da (Unity) EditorPlayerLoop::Execute
+0x00007ffecef0c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffecef0e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffecef0866d (Unity) Application::TickTimer
+0x00007ffecece9f7c (Unity) MainMessageLoop
+0x00007ffececf1a12 (Unity) UnityMain
+0x00007ff63c002f2a (Unity) __scrt_common_main_seh
+0x00007fffe013dda7 (KERNEL32) BaseThreadInitThunk
+0x00007fffe20bee4c (ntdll) RtlUserThreadStart
+
+[HostConnectionService] Party session refresh rate-limited - backing off
+0x00007ffecde94e2e (Unity) StackWalker::ShowCallstack
+0x00007ffecf6cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffecf6cfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffecde4587f (Unity) DebugStringToFile
+0x00007ffecdd01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000023cc82ac49d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000023cc82ac363 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000023cc82abf9b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000023e3b91da95 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x0000023cc82abd20 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000023cc82abbe8 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000023ed3795273 (Mono JIT Code) CosmicShore.Gameplay.HostConnectionService/<RefreshPartyMembersAsync>d__139:MoveNext () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Party/HostConnectionService.cs:2070)
+0x0000023edbc0507b (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`1<CosmicShore.Gameplay.HostConnectionService/<RefreshPartyMembersAsync>d__139>:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:190)
+0x0000023e3ba3aa8a (Mono JIT Code) Cysharp.Threading.Tasks.AwaiterActions:Continuation (object) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTask.cs:25)
+0x0000023e741fb626 (Mono JIT Code) Cysharp.Threading.Tasks.UniTaskCompletionSourceCore`1<Cysharp.Threading.Tasks.AsyncUnit>:TrySetException (System.Exception) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTaskCompletionSource.cs:167)
+0x0000023edbc05013 (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`1<CosmicShore.Gameplay.PartySessionService/<RefreshAsync>d__30>:SetException (System.Exception) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:211)
+0x0000023edbc03875 (Mono JIT Code) CosmicShore.Gameplay.PartySessionService/<RefreshAsync>d__30:MoveNext () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Party/Services/PartySessionService.cs:268)
+0x0000023edbc04f9b (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`1<CosmicShore.Gameplay.PartySessionService/<RefreshAsync>d__30>:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:190)
+0x0000023e3ba3aa8a (Mono JIT Code) Cysharp.Threading.Tasks.AwaiterActions:Continuation (object) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTask.cs:25)
+0x0000023e741fb626 (Mono JIT Code) Cysharp.Threading.Tasks.UniTaskCompletionSourceCore`1<Cysharp.Threading.Tasks.AsyncUnit>:TrySetException (System.Exception) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTaskCompletionSource.cs:167)
+0x0000023e741fb483 (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`1<CosmicShore.Utility.UniTaskExtensions/<AsMainThread>d__2>:SetException (System.Exception) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:211)
+0x0000023e3ba6aded (Mono JIT Code) CosmicShore.Utility.UniTaskExtensions/<AsMainThread>d__2:MoveNext () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/ClassExtensions/UniTaskExtensions.cs:61)
+0x0000023e740d28eb (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`1<CosmicShore.Utility.UniTaskExtensions/<AsMainThread>d__2>:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:190)
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023ce94fcc73 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageTwo ()
+0x0000023ce94fc43b (Mono JIT Code) System.Threading.Tasks.Task:Finish (bool)
+0x0000023dfef9e1eb (Mono JIT Code) System.Threading.Tasks.Task:TrySetException (object)
+0x0000023dfefa378b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Threading.Tasks.VoidTaskResult>:SetException (System.Exception)
+0x0000023dfefa34a3 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)
+0x0000023e741e29d3 (Mono JIT Code) Unity.Services.Multiplayer.LobbyHandler/<RefreshLobbyAsync>d__87:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:436)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023ce94fcc73 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageTwo ()
+0x0000023ce94fc43b (Mono JIT Code) System.Threading.Tasks.Task:Finish (bool)
+0x0000023dfef9e1eb (Mono JIT Code) System.Threading.Tasks.Task:TrySetException (object)
+0x0000023dfefa2b5b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetException (System.Exception)
+0x0000023e741e30a3 (Mono JIT Code) Unity.Services.Lobbies.Internal.WrappedLobbyService/<GetLobbyAsync>d__22:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/WrappedLobbyService.cs:178)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023ce94fcc73 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageTwo ()
+0x0000023ce94fc43b (Mono JIT Code) System.Threading.Tasks.Task:Finish (bool)
+0x0000023dfef9e1eb (Mono JIT Code) System.Threading.Tasks.Task:TrySetException (object)
+0x0000023dfefa2b5b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetException (System.Exception)
+0x0000023e7416b933 (Mono JIT Code) Unity.Services.Lobbies.Internal.WrappedLobbyService/<TryCatchRequest>d__42`2<TRequest_REF, TReturn_REF>:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/WrappedLobbyService.cs:601)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023ce94fcc73 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageTwo ()
+0x0000023ce94fc43b (Mono JIT Code) System.Threading.Tasks.Task:Finish (bool)
+0x0000023dfef9e1eb (Mono JIT Code) System.Threading.Tasks.Task:TrySetException (object)
+0x0000023dfefa2b5b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetException (System.Exception)
+0x0000023e741d28cb (Mono JIT Code) Unity.Services.Lobbies.Apis.Lobby.LobbyApiClient/<GetLobbyAsync>d__13:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Apis/LobbyApi.cs:434)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023d13a83b43 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x0000023d2ddeec53 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x0000023e74170663 (Mono JIT Code) Unity.Services.Lobbies.Http.HttpClient/<MakeRequestAsync>d__1:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Http/HttpClient.cs:41)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023d13a83b43 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x0000023d2ddeec53 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x0000023e74170cfb (Mono JIT Code) Unity.Services.Lobbies.Http.HttpClient/<CreateWebRequestAsync>d__3:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Http/HttpClient.cs:56)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023d13a83b43 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x0000023d2ddeec53 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x0000023e74171653 (Mono JIT Code) Unity.Services.Lobbies.Http.HttpClient/<CreateHttpClientResponse>d__4:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Http/HttpClient.cs:84)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023d13a83b43 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x0000023d2ddeec53 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x0000023e74191ed3 (Mono JIT Code) Unity.Services.Lobbies.Http.HttpClient/<>c__DisplayClass4_0/<<CreateHttpClientResponse>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Http/HttpClient.cs:81)
+0x0000023d2c8a2822 (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000023ce20b9aee (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023ce20b98eb (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000023d2c8a26db (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x0000023dda85d77a (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x0000023d17bc57d5 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x0000023d17bc5583 (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000023ce94fe1d3 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000023ce94fdb13 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000023d13a83b43 (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x0000023d2de00b73 (Mono JIT Code) System.Threading.Tasks.TaskCompletionSource`1<TResult_REF>:TrySetResult (TResult_REF)
+0x0000023dfdb09913 (Mono JIT Code) System.Threading.Tasks.TaskCompletionSource`1<TResult_REF>:SetResult (TResult_REF)
+0x0000023e741a5053 (Mono JIT Code) Unity.Services.Lobbies.Http.UnityWebRequestHelpers/<>c__DisplayClass0_0:<GetAwaiter>b__0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Http/UnityWebRequestHelpers.cs:35)
+0x0000023dfdb047eb (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x0000023dff2572b8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffec9896c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffec97d8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffec97d8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffece6cfdd4 (Unity) scripting_method_invoke
+0x00007ffece6d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffece6d2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffecdbab129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ffece592657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ffed0000bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ffed0000dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ffece5128ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ffece59b65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ffece57abef (Unity) ExecutePlayerLoop
+0x00007ffece57ad65 (Unity) ExecutePlayerLoop
+0x00007ffece57fc0f (Unity) PlayerLoop
+0x00007ffeceef56da (Unity) EditorPlayerLoop::Execute
+0x00007ffecef0c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffecef0e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffecef0866d (Unity) Application::TickTimer
+0x00007ffecece9f7c (Unity) MainMessageLoop
+0x00007ffececf1a12 (Unity) UnityMain
+0x00007ff63c002f2a (Unity) __scrt_common_main_seh
+0x00007fffe013dda7 (KERNEL32) BaseThreadInitThunk
+0x00007fffe20bee4c (ntdll) RtlUserThreadStart
+
+Analytics Dispatcher is already flushing.
+0x00007ffecde94e2e (Unity) StackWalker::ShowCallstack
+0x00007ffecf6cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffecf6cfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffecde4587f (Unity) DebugStringToFile
+0x00007ffecdd01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000023cc82ac49d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000023cc82ac363 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000023cc82abf9b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000023e3b91da95 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x0000023cc82abd20 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000023cc82abbe8 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000023e7407ff93 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x0000023e7407fece (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x0000023edf0ee236 (Mono JIT Code) CosmicShore.Core.UgsAnalyticsSink:Flush () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/UgsAnalyticsSink.cs:121)
+0x0000023edf0ee167 (Mono JIT Code) CosmicShore.Core.AnalyticsServiceFacade:Flush () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs:605)
+0x0000023edf0eaecb (Mono JIT Code) CosmicShore.Core.AnalyticsServiceFacade:HandleAppQuitting () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs:809)
+0x0000023d392ae8a2 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x0000023e3ba2a2f0 (Mono JIT Code) Obvious.Soap.ScriptableEventNoParam:Raise () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEventNoParam.cs:75)
+0x0000023edf0eae1b (Mono JIT Code) CosmicShore.Core.ApplicationLifecycleManager:OnApplicationQuit () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/System/Bootstrap/ApplicationLifecycleManager.cs:86)
+0x0000023dff27a298 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffec9896c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffec97d8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffec97d8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffece6cfdd4 (Unity) scripting_method_invoke
+0x00007ffece6d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffece5e6f51 (Unity) MonoBehaviour::HandleNotifications
+0x00007ffece045010 (Unity) GameObject::SendMessageAny
+0x00007ffece56bc42 (Unity) SendMessageToEveryone
+0x00007ffece59f65a (Unity) NotifyPlayerQuit
+0x00007ffecef0b7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffecef0d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffecef0896c (Unity) Application::TickTimer
+0x00007ffecece9f7c (Unity) MainMessageLoop
+0x00007ffececf1a12 (Unity) UnityMain
+0x00007ff63c002f2a (Unity) __scrt_common_main_seh
+0x00007fffe013dda7 (KERNEL32) BaseThreadInitThunk
+0x00007fffe20bee4c (ntdll) RtlUserThreadStart
+
+Container Menu_Main (-2100765595) disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:57)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Container RootContainer disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Analytics Dispatcher is already flushing.
+0x00007ffecde94e2e (Unity) StackWalker::ShowCallstack
+0x00007ffecf6cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffecf6cfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffecde4587f (Unity) DebugStringToFile
+0x00007ffecdd01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000023cc82ac49d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000023cc82ac363 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000023cc82abf9b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000023e3b91da95 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x0000023cc82abd20 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000023cc82abbe8 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000023e7407ff93 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x0000023e7407fece (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x0000023edf0ef5db (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:ApplicationQuit () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:326)
+0x0000023edf0ef4ab (Mono JIT Code) Unity.Services.Analytics.AnalyticsContainer:CleanUp () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/AnalyticsContainer.cs:111)
+0x0000023d392ae8a2 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x0000023edf0ee8b3 (Mono JIT Code) UnityEngine.Application:Internal_ApplicationQuit ()
+0x0000023dff5e1de5 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffec9896c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffec97d8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffec97d8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffece6cfdd4 (Unity) scripting_method_invoke
+0x00007ffece6d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffece6d2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffecdbaab4b (Unity) Scripting::UnityEngine::ApplicationProxy::Internal_ApplicationQuit
+0x00007ffece59f689 (Unity) NotifyPlayerQuit
+0x00007ffecef0b7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffecef0d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffecef0896c (Unity) Application::TickTimer
+0x00007ffecece9f7c (Unity) MainMessageLoop
+0x00007ffececf1a12 (Unity) UnityMain
+0x00007ff63c002f2a (Unity) __scrt_common_main_seh
+0x00007fffe013dda7 (KERNEL32) BaseThreadInitThunk
+0x00007fffe20bee4c (ntdll) RtlUserThreadStart
+
+[Multiplayer]: NetworkManagerSession.StopAsync: Called after dispose.
+0x00007ffecde94e2e (Unity) StackWalker::ShowCallstack
+0x00007ffecf6cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffecf6cfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffecde4587f (Unity) DebugStringToFile
+0x00007ffecdd01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x0000023cc82ac49d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000023cc82ac363 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000023cc82abf9b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000023e3b91da95 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x0000023edf0f818c (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,string,object,UnityEngine.Object)
+0x0000023edf0f808f (Mono JIT Code) Unity.Services.Multiplayer.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:19)
+0x0000023edf0f7ffb (Mono JIT Code) Unity.Services.Multiplayer.Logger:LogWarning (object,UnityEngine.Object) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:39)
+0x0000023edf0f7f8b (Mono JIT Code) Unity.Services.Multiplayer.Logger:LogCallWarning (string,string,UnityEngine.Object,string) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:49)
+0x0000023edf0f7e1b (Mono JIT Code) Unity.Services.Multiplayer.Logger:LogCallWarning (string,string,string) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:44)
+0x0000023edf0f75d3 (Mono JIT Code) Unity.Services.Multiplayer.NetworkManagerSession/<StopAsync>d__29:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/Handlers/NetworkHandler/NetworkManagerSession.cs:251)
+0x0000023edf0f7463 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.Services.Multiplayer.NetworkManagerSession/<StopAsync>d__29> (Unity.Services.Multiplayer.NetworkManagerSession/<StopAsync>d__29&)
+0x0000023edf0f732b (Mono JIT Code) Unity.Services.Multiplayer.NetworkManagerSession:StopAsync (System.Threading.CancellationToken)
+0x0000023edf0f7223 (Mono JIT Code) Unity.Services.Multiplayer.GameObjectsNetcodeNetworkHandler:StopAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/Handlers/NetworkHandler/GameObjectsNetcodeNetworkHandler.cs:121)
+0x0000023edf0f34e7 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule/<ResetAsync>d__83:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/NetworkModule.cs:727)
+0x0000023edf0f33bb (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.Services.Multiplayer.NetworkModule/<ResetAsync>d__83> (Unity.Services.Multiplayer.NetworkModule/<ResetAsync>d__83&)
+0x0000023edf0f3283 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule:ResetAsync ()
+0x0000023edf0f2fb3 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule/<Unity-Services-Multiplayer-IModule-LeaveAsync>d__59:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/NetworkModule.cs:129)
+0x0000023edf0f2ebb (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.Services.Multiplayer.NetworkModule/<Unity-Services-Multiplayer-IModule-LeaveAsync>d__59> (Unity.Services.Multiplayer.NetworkModule/<Unity-Services-Multiplayer-IModule-LeaveAsync>d__59&)
+0x0000023edf0f2d83 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule:Unity.Services.Multiplayer.IModule.LeaveAsync ()
+0x0000023edf0f27b1 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler/<LeaveModulesAsync>d__132:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:776)
+0x0000023edf0f245b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.Services.Multiplayer.SessionHandler/<LeaveModulesAsync>d__132> (Unity.Services.Multiplayer.SessionHandler/<LeaveModulesAsync>d__132&)
+0x0000023edf0f2313 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler:LeaveModulesAsync ()
+0x0000023edf0f0fcb (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler/<LeaveAsync>d__133:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:818)
+0x0000023edf0f04bb (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.Services.Multiplayer.SessionHandler/<LeaveAsync>d__133> (Unity.Services.Multiplayer.SessionHandler/<LeaveAsync>d__133&)
+0x0000023edf0f0383 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler:LeaveAsync ()
+0x0000023edf0f0063 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler/<OnQuitting>d__166:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:1234)
+0x0000023edef0fdf3 (Mono JIT Code) System.Runtime.CompilerServices.AsyncVoidMethodBuilder:Start<Unity.Services.Multiplayer.SessionHandler/<OnQuitting>d__166> (Unity.Services.Multiplayer.SessionHandler/<OnQuitting>d__166&)
+0x0000023edef0fce3 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler:OnQuitting ()
+0x0000023d392ae8a2 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x0000023edf0ee8b3 (Mono JIT Code) UnityEngine.Application:Internal_ApplicationQuit ()
+0x0000023dff5e1de5 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffec9896c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffec97d8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffec97d8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffece6cfdd4 (Unity) scripting_method_invoke
+0x00007ffece6d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffece6d2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffecdbaab4b (Unity) Scripting::UnityEngine::ApplicationProxy::Internal_ApplicationQuit
+0x00007ffece59f689 (Unity) NotifyPlayerQuit
+0x00007ffecef0b7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffecef0d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffecef0896c (Unity) Application::TickTimer
+0x00007ffecece9f7c (Unity) MainMessageLoop
+0x00007ffececf1a12 (Unity) UnityMain
+0x00007ff63c002f2a (Unity) __scrt_common_main_seh
+0x00007fffe013dda7 (KERNEL32) BaseThreadInitThunk
+0x00007fffe20bee4c (ntdll) RtlUserThreadStart
+
+Unloading 28 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            3.645 ms
+	Integration:            598.003 ms
+	Integration of assets:  0.003 ms
+	Thread Wait Time:       0.010 ms
+	Total Operation Time:   601.661 ms
+Unloading 24534 unused Assets / (46.0 MB). Loaded Objects now: 35476.
+Memory consumption went from 0.74 GB to 0.70 GB.
+Total: 108.853700 ms (FindLiveObjects: 3.433400 ms CreateObjectMapping: 3.919500 ms MarkObjects: 83.688300 ms  DeleteObjects: 17.811300 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[LAYOUT] About to save layout C:\Users\belac\source\repos\Cosmic-Shore\UserSettings\Layouts\default-6000.dwlt
+[LAYOUT] About to save layout C:/Users/belac/AppData/Roaming/Unity/Editor-5.x/Preferences\Layouts\current\default-6000.dwlt
+Pipeline Server stopped
+Unloading 136 Unused Serialized files (Serialized files now loaded: 0)
+[INFO ] [relay] log Shutdown request received from client editor-40536-70op9g
+[INFO ] [relay] log Unity client requested immediate shutdown - shutting down now, reason: Shutdown requested by client
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Shutdown requested by client
+SUCCESS: The process with PID 46504 (child process of PID 48132) has been terminated.
+SUCCESS: The process with PID 48132 (child process of PID 40536) has been terminated.
+Killing ADB server in 0.0447545 seconds.
+Start importing ProjectSettings/EditorBuildSettings.asset using Guid(0000000000000000b000000000000000) (LibraryAssetImporter) -> (artifact id: '57b99a09a33f7eadde6f8816c4338cda') in 0.0021473 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime VesselClassTypeSelectedVesselClass.asset using Guid(2d283def54f402042be238144cb9428d) (NativeFormatImporter) -> (artifact id: 'd66219ff6f8aa67e2d57c9fc1e4c9fd3') in 0.0025383 seconds
+Refreshing native plugins compatible for Editor in 17.79 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.08 ms.
+Asset Pipeline Refresh (id=0f574a928566b6c40851d6735810f666): Total: 0.100 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Unloading 193 unused Assets / (60.9 KB). Loaded Objects now: 35638.
+Memory consumption went from 0.76 GB to 0.76 GB.
+Total: 84.160200 ms (FindLiveObjects: 1.974400 ms CreateObjectMapping: 2.867000 ms MarkObjects: 79.006900 ms  DeleteObjects: 0.310800 ms)
+
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread stopped.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+[Licensing::IpcConnector] LicenseClient-belac-6000.3.17-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-belac-6000.3.17 channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+Shut down.
+abort_threads: Failed aborting id: 00000000000022C8, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 00000000000022C8, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 5164
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1792796185592,"processId":40536,"allocatedMemory":34143617,"memoryLabels":[{"Default":29317},{"Permanent":15236},{"NewDelete":77161},{"Thread":4239496},{"Manager":3114064},{"VertexData":8},{"Geometry":816},{"Texture":840},{"Shader":89461},{"Material":24},{"GfxDevice":57952},{"GfxThread":4608},{"Animation":392},{"Audio":2664},{"FreeType":8},{"FontEngine":736},{"Physics":2090},{"Physics2D":16},{"Serialization":272528},{"Input":14984},{"JobScheduler":33024},{"TextLib":38488},{"Mono":32},{"MonoCode":704},{"ScriptingNativeRuntime":155060},{"BaseObject":1621072},{"Resource":1336},{"Renderer":3008},{"Transform":4685},{"File":18570},{"WebCam":616},{"Culling":32},{"Terrain":11394},{"Wind":24},{"STL":40},{"String":11813},{"DynamicArray":699742},{"HashMap":207407},{"Utility":2662034},{"PoolAlloc":10792},{"AI":80},{"TypeTree":305841},{"ScriptManager":512},{"RuntimeInitializeOnLoadManager":64},{"SpriteAtlas":112},{"GI":7792},{"Director":8240},{"CloudService":7056},{"WebRequest":4626},{"VR":47994},{"SceneManager":504},{"Video":208},{"LazyScriptCache":32},{"NativeArray":1312},{"Camera":17},{"Secure":1057},{"SerializationCache":1576},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":560},{"Hierarchy":608},{"CoreStats":13112},{"Identifiers":12960},{"Gui":220},{"EditorUtility":440411},{"VersionControl":4},{"Undo":947},{"AssetDatabase":19486868},{"EditorGi":328},{"UnityConnect":29472},{"Upm":1972},{"AssetCompliance":64},{"DrivenProperties":72},{"ChannelService":384},{"LocalIPC":211},{"ProfilerEditor":9746},{"CoreBusinessMetrics":2867},{"TLS":10338},{"Licensing":792},{"AssetReference":32},{"IPCStream":32}]}
+
