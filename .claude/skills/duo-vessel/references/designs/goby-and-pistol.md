@@ -19,11 +19,13 @@
 >   train of smooth hills (`hillHeight` 3.5, `hillWavelength` 26: about 15 Pistol lengths crest to crest and 4 tall)
 >   whose heights swell and fall like the game's islands (`hillSwell` 0.5 over `swellWavelength` 156), whole half-waves
 >   per dart so the ground meets both perches; a gentle `slopeDegrees` 5 lean downhill whichever way it rides
->   (`PistolPlane`). A 300-600 u dart is an island of 11-23 hills, crossed in 14-25 s at about a hill a second by a rider
->   who plays it. Hold to dive down a slope, let go and the crest throws it, land on the back of a hill to slide faster;
->   the aimed jump is off (`aimedJump`). The camera is Tiny Wings' (`PistolPlane.TinyWingsView`): at rest a little over
+>   (`PistolPlane`). A 900-1800 u dart (`dartMinRange` / `dartRange`, 3x the kit's: 2026-10-23) is an island of 35-70
+>   hills, crossed in 20-30 s at about two hills a second by a rider who plays it. Hold to dive down a slope, let go and
+>   the crest throws it, land on the back of a hill to slide faster; the ride is FLOATY and FORGIVING (`pAirGravity`
+>   0.45, `pGoodLand` 65, `pHardKeep` 0.95) and its speed BUILDS (`pSmoothBoost` 1.16, `pDrag` 0.01, `pMaxSpeed` 120)
+>   until it launches over many hills; the aimed jump is off (`aimedJump`). The camera is Tiny Wings' (`PistolPlane.TinyWingsView`): at rest a little over
 >   one hill wide (`viewWidth` 30 u, the Pistol a seventeenth of it), the ground low on the screen and the Pistol a
->   third in, zooming out to `viewMaxWidth` 120 as it speeds up and flies.
+>   third in, zooming out to `viewMaxWidth` 180 as it speeds up and flies.
 > - "the non-danger mass on either side of the pistol's plane (which no longer needs to bend at all) is pulled into that
 >   plane based on the pair's space. Space L5 pulls in shielded prisms too." **[stated]** The plane is FLAT: the
 >   unrolled ribbon and its warped view are retired. **[read]:** super-shielded and the pair's own prisms never move.
@@ -686,3 +688,33 @@ the line it settled.
   `GobyPistolTests.Proportions_AreTinyWings` pins the ratios (control: the third pass's 18 u hills under an 80 u
   screen fail); `Ride_IsTinyWings_DiveLetGoFlySlide` now asks for a flight at least every three hills, flights under
   three hills and the controls sliding at most half as often. Logic run in .NET against the three pure files: all pass.
+- 2026-10-23, Garrett: "the tiny wings character gets really floaty and can launch over many hills after just riding a
+  few. it gets to quicker speeds launches higher falls slower. you gotta get a handle on their physics which is very
+  forgiving and lets you ride about 3 times longer before the perch/den." The previous ride was the opposite: as heavy in
+  the air as on the ground, a hard landing kept 55 % of the speed, drag held the speed flat, and a stretch was 11-23
+  hills. The physics now (`PistolBodyMath.Ride`, four new numbers):
+  - **Floaty** (`pAirGravity` 0.45): gravity in the air while the Pistol lets go is 0.45 of the slide's, so it launches
+    higher and falls slower; the dive still pulls it down at x4. A crest throws it when its speed beats the AIR's
+    gravity round the curve, so a floatier Pistol leaves crests sooner.
+  - **Builds speed** (`pSmoothBoost` 1.16 per smooth landing, `pDrag` 0.01, `pMaxSpeed` 120, `pMinSpeed` 9): chained
+    slides keep adding speed, so after a few hills it flies over many.
+  - **Forgiving** (`pGoodLand` 65: a landing within 65 deg of the slope is smooth; `pHardKeep` 0.95: a hard one keeps
+    95 % of its speed along the slope).
+  - **3x longer** (`dartMinRange` 900, `dartRange` 1800, `aiDartLength` 1350; was 300 / 600 / 450): the Pistol's ground
+    is the Goby's dart, so the darts are what got longer. Kept with it: `aiHomeRadius` 4000 (was 1600, so the Goby AI's
+    1350 u darts have room), `aiWaitForPistol` 45, a trail block every 6 u (5.5 u long; was 3) so a full dart lays 300
+    prisms, not 600. **[read] for Garrett:** a full dart now covers 1800 u in `dartSeconds` 1 - the Goby's own feel
+    changed with it; and the island starts on SMALL hills by each perch, rising to tall ones between (`hillSwell` now
+    lowers the hills at the perches), so nothing flies off the first crest.
+  - The view zooms out to `viewMaxWidth` 180 (was 120) for the higher flights.
+  - Chosen by a C# sweep (gravity, dive, float, boost, landing window and keep, floor and top speed, drag) over four
+    dart lengths and three seeds, scored on: the first big flight after a few hills, flights over many hills, speed
+    building, flight height, smooth landings, a sloppy rider (wrong a third of the time) not much slower, and a
+    never-diver clearly slower. **Measured in the C#** (60 fps): 900 u (35 hills) in 20.2 s, the first 3-hill flight at
+    hill 2.3, the longest 5.4 hills, speed 32 -> 92 u/s, 10 of 10 landings smooth; 1800 u (69 hills) in 30.4 s, first big
+    flight at hill 4.1, the longest 9.4 hills, 58 -> 83 u/s, 12 of 12 smooth. The sloppy rider takes 20.0 / 44.9 s, the
+    never-diver 61.9 / 60.5 s. At 30 fps one 1800 u run threw a 20-hill flight. About 1.7-2.3 hills a second.
+  `GobyPistolTests.Ride_IsTinyWings_FloatyForgivingAndBuilding` replaces the dive-let-go test (the first big flight
+  after 1.5 hills and within the first third, a flight of at least 4 hills, speed building x1.25+, 75 % smooth, the
+  sloppy rider under x1.6, the never-diver over x1.4); `Proportions_AreTinyWings` now asks for 30-75 hills a stretch at
+  1.2-3 hills a second. Logic run in .NET against the three pure files: all pass.

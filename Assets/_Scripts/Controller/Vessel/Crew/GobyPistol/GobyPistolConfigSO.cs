@@ -26,9 +26,9 @@ namespace CosmicShore.ScriptableObjects
     {
         [Header("Goby: dart and perch (the Shrike's sling: distance / dartSeconds, docks on the first block it touches)")]
         [Tooltip("The farthest a full-charged dart goes, u.")]
-        [SerializeField, Min(10f)] float dartRange = 600f;
+        [SerializeField, Min(10f)] float dartRange = 1800f;
         [Tooltip("How far a tap darts, u. Holding the dart button charges it up to dartRange over dartChargeSeconds.")]
-        [SerializeField, Min(5f)] float dartMinRange = 300f;
+        [SerializeField, Min(5f)] float dartMinRange = 900f;
         [Tooltip("Seconds of holding the dart button to reach full range.")]
         [SerializeField, Min(0.05f)] float dartChargeSeconds = 0.8f;
         [Tooltip("Seconds a dart takes, whatever its length (the Shrike's slingSeconds).")]
@@ -63,7 +63,7 @@ namespace CosmicShore.ScriptableObjects
                  "meets both perches.")]
         [SerializeField, Min(0f)] float hillHeight = 3.5f;
         [Tooltip("The hills' wavelength, crest to crest, u: about fifteen of the Pistol's lengths, so a 300-600 u dart is a " +
-                 "Tiny Wings island of 11-23 hills. A good flight clears one or two.")]
+                 "Tiny Wings island of 35-70 hills (Garrett, 2026-10-23: \"ride about 3 times longer before the perch\").")]
         [SerializeField, Min(5f)] float hillWavelength = 26f;
         [Tooltip("How much the hills' heights swell and fall along a dart (0: all alike; 0.5: down to half height between " +
                  "runs of tall ones, like Tiny Wings' islands).")]
@@ -71,21 +71,31 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The length of one swell, u: a run of tall hills to the next.")]
         [SerializeField, Min(5f)] float swellWavelength = 156f;
         [Tooltip("A trail block every this many u along the dart.")]
-        [SerializeField, Min(2f)] float trailBlockGap = 3f;
+        [SerializeField, Min(2f)] float trailBlockGap = 6f;
         [Tooltip("A trail block's size (x across, y thick, z along the dart).")]
-        [SerializeField] Vector3 trailBlockScale = new(1.4f, 0.4f, 2.8f);
+        [SerializeField] Vector3 trailBlockScale = new(1.4f, 0.4f, 5.5f);
 
         [Header("Pistol: the ride (Tiny Wings: hold to dive down the slopes, let go and the crest throws it, land on the back " +
-                "of a hill to slide faster; a 300-600 u dart is a 15-30 s journey for a rider who plays it)")]
-        [SerializeField, Min(1f)] float pGravity = 14f;
+                "of a hill to slide faster; floaty and forgiving, the speed builds until it launches over many hills)")]
+        [SerializeField, Min(1f)] float pGravity = 12f;
         [SerializeField, Min(1f)] float pDiveMul = 4f;
-        [SerializeField, Min(0f)] float pMinSpeed = 4f;
-        [SerializeField, Min(0f)] float pDrag = 0.03f;
+        [SerializeField, Min(0f)] float pMinSpeed = 9f;
+        [SerializeField, Min(0f)] float pDrag = 0.01f;
         [Tooltip("Degrees between the velocity and the slope that still count as a smooth landing.")]
-        [SerializeField, Min(0f)] float pGoodLand = 28f;
+        [SerializeField, Min(0f)] float pGoodLand = 65f;
         [Tooltip("Seconds in the air before a landing counts as a landing (smooth: the slide's speed; hard: a thud). A " +
                  "shorter hop off a crest is a skip that keeps its speed.")]
         [SerializeField, Min(0f)] float pMinAir = 0.25f;
+        [Tooltip("Tiny Wings' float (Garrett, 2026-10-23: \"really floaty ... launches higher falls slower\"): gravity in the " +
+                 "air while the Pistol lets go, as a share of pGravity. The dive still pulls it down at pDiveMul.")]
+        [SerializeField, Range(0.1f, 1f)] float pAirGravity = 0.45f;
+        [Tooltip("A smooth landing's speed, times this: chained slides build the speed that launches it over many hills.")]
+        [SerializeField, Range(1f, 1.5f)] float pSmoothBoost = 1.16f;
+        [Tooltip("The share of its speed along the slope a hard landing keeps (Tiny Wings forgives: a bad landing slows it, " +
+                 "never stops it).")]
+        [SerializeField, Range(0f, 1f)] float pHardKeep = 0.95f;
+        [Tooltip("The fastest the Pistol goes, u/s.")]
+        [SerializeField, Min(1f)] float pMaxSpeed = 120f;
         [Tooltip("The Pistol's body radius in its plane, u.")]
         [SerializeField, Min(0.1f)] float pBodyR = 0.85f;
         [Tooltip("How far either side of its plane the Pistol's body reaches, u (pulled-in mass lands inside it).")]
@@ -174,7 +184,7 @@ namespace CosmicShore.ScriptableObjects
                  "than one hill, with the Pistol about a seventeenth of the width.")]
         [SerializeField, Min(5f)] float viewWidth = 30f;
         [Tooltip("The widest the Pistol's screen zooms out to, u, as it speeds up and flies high.")]
-        [SerializeField, Min(5f)] float viewMaxWidth = 120f;
+        [SerializeField, Min(5f)] float viewMaxWidth = 180f;
         [Tooltip("Width the screen adds per u/s of the Pistol's speed, u: faster shows further.")]
         [SerializeField, Min(0f)] float viewSpeedWiden = 0.6f;
         [Tooltip("Where the ground under a grounded Pistol sits on its screen, as a share of the height from the bottom.")]
@@ -193,11 +203,11 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("AI")]
         [Tooltip("The Goby AI darts this far, u, when it can choose.")]
-        [SerializeField, Min(10f)] float aiDartLength = 450f;
+        [SerializeField, Min(10f)] float aiDartLength = 1350f;
         [Tooltip("The Goby AI waits this long for the Pistol to reach its perch before it darts on anyway, s.")]
-        [SerializeField, Min(0f)] float aiWaitForPistol = 25f;
+        [SerializeField, Min(0f)] float aiWaitForPistol = 45f;
         [Tooltip("The Goby AI keeps within this distance of where it started, u.")]
-        [SerializeField, Min(100f)] float aiHomeRadius = 1600f;
+        [SerializeField, Min(100f)] float aiHomeRadius = 4000f;
         [Tooltip("The Pistol AI heads back to an old den after waiting this long at the head perch, s.")]
         [SerializeField, Min(0f)] float aiBackAfter = 4f;
 
@@ -295,6 +305,7 @@ namespace CosmicShore.ScriptableObjects
         public PistolBodyMath.Settings Body => new()
         {
             pGravity = pGravity, pDiveMul = pDiveMul, pMinSpeed = pMinSpeed, pDrag = pDrag, pGoodLand = pGoodLand, pMinAir = pMinAir,
+            pAirGravity = pAirGravity, pSmoothBoost = pSmoothBoost, pHardKeep = pHardKeep, pMaxSpeed = pMaxSpeed,
             pLaunchRange = pLaunchRange, pLaunchSpeed = pLaunchSpeed, pLaunchCharges = pLaunchCharges, pLaunchCd = jumpCooldown.Value,
             pGhostTime = pGhostTime, pGhostCd = pGhostCd, pVortexCd = pVortexCd,
         };
@@ -307,7 +318,7 @@ namespace CosmicShore.ScriptableObjects
 
         public PistolAI.Settings AI => new()
         {
-            pLaunchRange = pLaunchRange, pVortexR = pVortexR, pVortexCapture = pVortexCapture, bodyHalfDepth = pBodyHalfDepth, pGravity = pGravity, pDiveMul = pDiveMul, aimedJump = aimedJump,
+            pLaunchRange = pLaunchRange, pVortexR = pVortexR, pVortexCapture = pVortexCapture, bodyHalfDepth = pBodyHalfDepth, body = Body, aimedJump = aimedJump,
         };
     }
 }

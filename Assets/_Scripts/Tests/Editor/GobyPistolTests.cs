@@ -160,64 +160,79 @@ namespace CosmicShore.Tests
         }
 
         /// <summary>What one rider did over one stretch.</summary>
-        struct Run { public float Seconds, Longest; public int Flights, Smooth; }
+        struct Run { public float Seconds, Longest, FirstBigAt, EarlySpeed, LateSpeed; public int Flights, Smooth; }
 
         /// <summary>Ride the SHIPPED config over a <paramref name="length"/> u dart from a standstill at
         /// <paramref name="fps"/>, the rider choosing the dive each frame (null: the Tiny Wings rider the Pistol AI is).</summary>
-        static Run RideIt(CosmicShore.ScriptableObjects.GobyPistolConfigSO config, float length, float fps, System.Func<PistolBodyMath.State, float> rider = null)
+        static Run RideIt(CosmicShore.ScriptableObjects.GobyPistolConfigSO config, float length, float fps, System.Func<PistolBodyMath.State, float, float> rider = null)
         {
             var s = config.Body;
             var f = PistolPlane.For(new PlaneSegment(Vector3.zero, Vector3.forward * length, Vector3.up), 1, config.SlopeDegrees, config.Hills);
             var p = new PistolBodyMath.State();
             PistolBodyMath.PlaceAtStart(p, f, s.pMinSpeed);
-            var run = new Run();
-            float dt = 1f / fps, takeoff = 0f; bool wasGrounded = true;
-            while (p.x < f.EndX - 1f && run.Seconds < 120f)
+            var run = new Run { FirstBigAt = -1f };
+            float dt = 1f / fps, takeoff = 0f, wave = config.Hills.Wavelength, early = 0f, late = 0f; int nEarly = 0, nLate = 0; bool wasGrounded = true;
+            while (p.x < f.EndX - 1f && run.Seconds < 240f)
             {
-                float dive = rider != null ? rider(p) : PistolAI.TinyWingsDive(p, f, s.pGravity, s.pDiveMul);
+                float play = PistolAI.TinyWingsDive(p, f, s), dive = rider != null ? rider(p, play) : play;
                 var ev = PistolBodyMath.Step(p, f, run.Seconds, dt, new PistolBodyMath.Input { Dive = dive }, s);
                 if (wasGrounded && !p.grounded) takeoff = p.x;
-                if (ev.Landed) { run.Flights++; run.Longest = Mathf.Max(run.Longest, p.x - takeoff); if (ev.SmoothLanding) run.Smooth++; }
+                if (ev.Landed)
+                {
+                    run.Flights++; run.Longest = Mathf.Max(run.Longest, p.x - takeoff); if (ev.SmoothLanding) run.Smooth++;
+                    if (run.FirstBigAt < 0f && p.x - takeoff >= 3f * wave) run.FirstBigAt = takeoff / wave;
+                }
+                float speed = p.grounded ? p.v : Mathf.Sqrt(p.vx * p.vx + p.vy * p.vy), at = p.x / f.EndX;
+                if (at > 0.05f && at < 0.33f) { early += speed; nEarly++; } else if (at > 0.67f) { late += speed; nLate++; }
                 wasGrounded = p.grounded; run.Seconds += dt;
             }
+            run.EarlySpeed = nEarly > 0 ? early / nEarly : 0f; run.LateSpeed = nLate > 0 ? late / nLate : 0f;
             return run;
+        }
+
+        /// <summary>A rider who plays it but gets it WRONG for the first 0.3 s of every second (dives up a slope, lets go down
+        /// one): the forgiveness check.</summary>
+        static System.Func<PistolBodyMath.State, float, float> Sloppy()
+        {
+            float t = 0f;
+            return (p, play) => { t += 1f / 60f; return t % 1f < 0.3f ? 1f - play : play; };
         }
 
         /// <summary>
         /// Tiny Wings' loop on the SHIPPED config (Garrett, 2026-10-22: "the reference for the pistol is the game tiny wings";
-        /// earlier the same day: "a 15 to 30 second journey ... launching should only get big enough to clear a few humps
-        /// that are a small fraction of the journey"). The rider who dives the slopes and lets go up them flies off the
-        /// crests again and again, lands most of them as smooth slides, and crosses the shortest and the longest dart in a
-        /// journey; the controls, a rider who never dives and one who never lets go, are far slower and slide far less.
+        /// 2026-10-23: "the tiny wings character gets really floaty and can launch over many hills after just riding a few. it
+        /// gets to quicker speeds launches higher falls slower ... very forgiving"). The rider who dives the slopes and lets go
+        /// up them rides a few hills, then flies over many; its speed builds over the island; most landings are smooth
+        /// slides. Forgiving: a rider who gets it wrong a third of the time is not much slower. The control: one
+        /// who never dives builds no speed.
         /// </summary>
         [Test]
-        public void Ride_IsTinyWings_DiveLetGoFlySlide()
+        public void Ride_IsTinyWings_FloatyForgivingAndBuilding()
         {
             var config = ShippedConfig();
             foreach (float length in new[] { config.DartMinRange, config.DartRange })
             {
                 var play = RideIt(config, length, 60f);
                 float hills = length / config.Hills.Wavelength;
-                Assert.That(play.Seconds, Is.InRange(10f, 30f), $"a {length} u dart is a {play.Seconds:F1} s journey");
-                Assert.That(play.Flights, Is.GreaterThanOrEqualTo(hills / 3f), "a crest throws it at least every three hills");
-                Assert.That(play.Smooth, Is.GreaterThanOrEqualTo(Mathf.CeilToInt(0.6f * play.Flights)), "most landings are smooth slides on the back of a hill");
-                Assert.That(play.Longest, Is.LessThan(3f * config.Hills.Wavelength), "a flight clears a few hills, each a small share of the journey");
+                Assert.That(play.Seconds, Is.InRange(10f, 45f), $"a {length} u dart ({hills:F0} hills) is a {play.Seconds:F1} s ride");
+                Assert.That(play.FirstBigAt, Is.InRange(1.5f, hills / 3f), "it rides a few hills, then flies over several (never off the perch)");
+                Assert.That(play.Longest, Is.GreaterThanOrEqualTo(4f * config.Hills.Wavelength), "a launch over many hills");
+                Assert.That(play.LateSpeed, Is.GreaterThan(1.25f * play.EarlySpeed), "the speed builds over the island");
+                Assert.That(play.Smooth, Is.GreaterThanOrEqualTo(Mathf.CeilToInt(0.75f * play.Flights)), "most landings are smooth slides");
 
-                var never = RideIt(config, length, 60f, _ => 0f);
-                Assert.That(never.Seconds, Is.GreaterThan(1.8f * play.Seconds), "never diving: the speed is never built");
-                Assert.That(never.Smooth, Is.LessThanOrEqualTo(play.Smooth / 2), "and few smooth slides");
-                var always = RideIt(config, length, 60f, _ => 1f);
-                Assert.That(always.Seconds, Is.GreaterThan(1.2f * play.Seconds), "never letting go: no flights to slide out of");
-                Assert.That(always.Smooth, Is.LessThanOrEqualTo(play.Smooth / 2));
+                var sloppy = RideIt(config, length, 60f, Sloppy());
+                Assert.That(sloppy.Seconds, Is.LessThan(1.6f * play.Seconds), "forgiving: wrong a third of the time, not much slower");
+                var never = RideIt(config, length, 60f, (p, d) => 0f);
+                Assert.That(never.Seconds, Is.GreaterThan(1.4f * play.Seconds), "the control: never diving builds no speed");
             }
         }
 
         /// <summary>
         /// Tiny Wings' proportions on the SHIPPED config (Garrett, 2026-10-23: "it should feel much closer to tiny wings in
         /// relative scale of piston and hill height, apparent speed, length of level compared to perch distance"), in the
-        /// Pistol's own length as Tiny Wings' are in the bird's (estimates from the game, the brief's 2026-10-23 entry): a
+        /// Pistol's own length as Tiny Wings' are in the bird's (estimates from the game, the brief's 2026-10-23 entries): a
         /// hill about 15 lengths crest to crest and 3-5 tall, a resting screen a little over one hill wide, and a stretch
-        /// from perch to perch an island of 10-25 hills crossed at about a hill a second. The control: the numbers before
+        /// from perch to perch an island of 30-75 hills crossed at one to three hills a second. The control: the numbers before
         /// this pass (18 u hills under an 80 u screen) fail the screen and the hill-height checks.
         /// </summary>
         [TestCase(true)]
@@ -238,9 +253,9 @@ namespace CosmicShore.Tests
             foreach (float dart in new[] { config.DartMinRange, config.DartRange })
             {
                 float hills = dart / wave;
-                Assert.That(hills, Is.InRange(10f, 25f), $"a {dart} u stretch is an island of {hills:F0} hills");
+                Assert.That(hills, Is.InRange(30f, 75f), $"a {dart} u stretch is an island of {hills:F0} hills (Garrett: \"ride about 3 times longer before the perch\")");
                 float rate = hills / RideIt(config, dart, 60f).Seconds;
-                Assert.That(rate, Is.InRange(0.6f, 1.6f), $"crossed at {rate:F2} hills a second");
+                Assert.That(rate, Is.InRange(1.2f, 3f), $"crossed at {rate:F2} hills a second");
             }
         }
 
@@ -250,7 +265,7 @@ namespace CosmicShore.Tests
             // the ride steps at 1/120 s whatever the frame (the liftoff and the landing used to depend on it: at 120 steps a
             // second the old rule never left the ground at all)
             var config = ShippedConfig();
-            foreach (System.Func<PistolBodyMath.State, float> rider in new System.Func<PistolBodyMath.State, float>[] { _ => 0f, _ => 1f })
+            foreach (System.Func<PistolBodyMath.State, float, float> rider in new System.Func<PistolBodyMath.State, float, float>[] { (p, d) => 0f, (p, d) => 1f })
             {
                 Run a = RideIt(config, config.DartRange, 60f, rider), b = RideIt(config, config.DartRange, 30f, rider);
                 Assert.That(b.Seconds, Is.EqualTo(a.Seconds).Within(0.02f * a.Seconds + 1f / 30f));
@@ -264,21 +279,21 @@ namespace CosmicShore.Tests
             var f = PistolPlane.For(new PlaneSegment(Vector3.zero, Vector3.forward * 400f, Vector3.up), 1, 6f, Shipped);
             float x = 120f, gy = PistolPlane.Ground(f, x);
             // grounded and slow: the close view, the ground under the Pistol near the bottom, the Pistol a third of the way in
-            Vector2 c = PistolPlane.TinyWingsView(f, x, gy, 0f, 30f, 120f, 0.6f, -0.2f, 0.35f, 0.15f, 16f / 9f, out float w);
+            Vector2 c = PistolPlane.TinyWingsView(f, x, gy, 0f, 30f, 180f, 0.6f, -0.2f, 0.35f, 0.15f, 16f / 9f, out float w);
             float h = w / (16f / 9f);
             Assert.That(w, Is.EqualTo(30f).Within(1e-3f));
             Assert.That((gy - (c.y - 0.5f * h)) / h, Is.InRange(0.05f, 0.4f), "the ground sits in the screen's lower part");
             Assert.That((x - (c.x - 0.5f * w)) / w, Is.EqualTo(0.3f).Within(1e-3f));
             // high in the air: wider, the Pistol under the headroom and the ground under it still on screen
             float high = gy + 25f;   // a big flight: over three hill heights up
-            c = PistolPlane.TinyWingsView(f, x, high, 26f, 30f, 120f, 0.6f, -0.2f, 0.35f, 0.15f, 16f / 9f, out float wHigh);
+            c = PistolPlane.TinyWingsView(f, x, high, 26f, 30f, 180f, 0.6f, -0.2f, 0.35f, 0.15f, 16f / 9f, out float wHigh);
             h = wHigh / (16f / 9f);
             Assert.That(wHigh, Is.GreaterThan(2f * w), "it zooms out to fly");
             Assert.That(high, Is.LessThanOrEqualTo(c.y + 0.5f * h - 0.15f * h + 1e-3f), "the Pistol stays under the headroom");
             Assert.That(gy, Is.GreaterThanOrEqualTo(c.y - 0.5f * h), "the ground below it is still on screen");
             // the control: far above the widest view, the window rises with the Pistol instead
-            c = PistolPlane.TinyWingsView(f, x, gy + 900f, 0f, 30f, 120f, 0.6f, -0.2f, 0.35f, 0.15f, 16f / 9f, out float wTop);
-            Assert.That(wTop, Is.EqualTo(120f).Within(1e-3f));
+            c = PistolPlane.TinyWingsView(f, x, gy + 900f, 0f, 30f, 180f, 0.6f, -0.2f, 0.35f, 0.15f, 16f / 9f, out float wTop);
+            Assert.That(wTop, Is.EqualTo(180f).Within(1e-3f));
             Assert.That(gy + 900f, Is.LessThanOrEqualTo(c.y + 0.5f * (wTop / (16f / 9f)) + 1e-3f));
         }
 

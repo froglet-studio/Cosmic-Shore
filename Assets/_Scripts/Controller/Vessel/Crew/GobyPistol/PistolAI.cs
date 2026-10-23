@@ -25,7 +25,7 @@ namespace CosmicShore.Gameplay
         public struct Seen { public float X, Y, D; }
 
         /// <summary>The numbers this AI reads.</summary>
-        public struct Settings { public float pLaunchRange, pVortexR, pVortexCapture, bodyHalfDepth, pGravity, pDiveMul; public bool aimedJump; }
+        public struct Settings { public float pLaunchRange, pVortexR, pVortexCapture, bodyHalfDepth; public PistolBodyMath.Settings body; public bool aimedJump; }
 
         /// <summary>The lab's <c>mulberry32</c>, bit for bit.</summary>
         public sealed class Mulberry32
@@ -55,18 +55,19 @@ namespace CosmicShore.Gameplay
         /// the valley's speed carries it up and the crest throws it. In the air: dive only if falling faster lands it at a
         /// smaller angle to the ground (the back of a hill: a smooth slide) than falling as it is.
         /// </summary>
-        public static float TinyWingsDive(PistolBodyMath.State p, in PistolPlane.Frame f, float gravity, float diveMul)
+        public static float TinyWingsDive(PistolBodyMath.State p, in PistolPlane.Frame f, in PistolBodyMath.Settings body)
         {
             if (p.grounded) { PistolPlane.Ground(f, p.x, out float slope); return slope < -0.02f ? 1f : 0f; }
-            return LandingAngle(f, p.x, p.y, p.vx, p.vy, gravity * diveMul) < LandingAngle(f, p.x, p.y, p.vx, p.vy, gravity) ? 1f : 0f;
+            float diving = PistolBodyMath.AirGravity(body, 1f), floating = PistolBodyMath.AirGravity(body, 0f);
+            return LandingAngle(f, p.x, p.y, p.vx, p.vy, diving) < LandingAngle(f, p.x, p.y, p.vx, p.vy, floating) ? 1f : 0f;
         }
 
         /// <summary>The angle, degrees, between the velocity and the ground where a fall from (x, y) at (vx, vy) under
-        /// <paramref name="gravity"/> lands (90 if it does not land within four seconds).</summary>
+        /// <paramref name="gravity"/> lands (90 if it does not land within six seconds).</summary>
         static float LandingAngle(in PistolPlane.Frame f, float x, float y, float vx, float vy, float gravity)
         {
             const float h = 1f / 60f;
-            for (int i = 0; i < 240; i++)
+            for (int i = 0; i < 360; i++)
             {
                 vy -= gravity * h; x += vx * h; y += vy * h;
                 float yg = PistolPlane.Ground(f, x, out float m);
@@ -84,7 +85,7 @@ namespace CosmicShore.Gameplay
         public PistolBodyMath.Input Think(PistolBodyMath.State p, in PistolPlane.Frame f, float t, Difficulty lvl, in Settings s, bool lockedInView)
         {
             var inp = new PistolBodyMath.Input();
-            inp.Dive = TinyWingsDive(p, f, s.pGravity, s.pDiveMul);
+            inp.Dive = TinyWingsDive(p, f, s.body);
 
             // the jump (only with the aimed jump on): at the densest mass ahead in reach. Otherwise the AI flies as a player
             // does, off the hills, by letting go of the dive on an upslope

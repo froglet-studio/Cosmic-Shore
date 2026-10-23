@@ -89,8 +89,8 @@ namespace CosmicShore.Gameplay
         public const float MaxHillSlope = 1.5f;
 
         /// <summary>The hill at <paramref name="s"/> along a line <paramref name="length"/> long: whole half-waves
-        /// (<see cref="HalfWaves"/>), so the ground meets both perches, under the swell's envelope (1 at each perch, down to
-        /// 1 - swell between). A dart so short that its hills would pass <see cref="MaxHillSlope"/> gets lower hills.</summary>
+        /// (<see cref="HalfWaves"/>), so the ground meets both perches, under the swell's envelope (1 - swell at each perch,
+        /// up to 1 between). A dart so short that its hills would pass <see cref="MaxHillSlope"/> gets lower hills.</summary>
         public static float Hill(float s, float length, in Hills h)
         {
             if (length <= 1e-4f || h.IsFlat || s <= 0f || s >= length) return 0f;
@@ -105,11 +105,13 @@ namespace CosmicShore.Gameplay
             if (length <= 1e-4f || h.IsFlat || s < 0f || s > length) return 0f;
             float k = Mathf.PI / length, q = k * s;
             int m = HalfWaves(length, h.Wavelength), n = HalfWaves(length, h.SwellWavelength);
-            float dEnv = -0.5f * h.Swell * n * k * Mathf.Sin(n * q);
+            float dEnv = 0.5f * Mathf.Clamp01(h.Swell) * n * k * Mathf.Sin(n * q);
             return Calm(length, h, n, m) * h.Height * (dEnv * Mathf.Sin(m * q) + Envelope(h.Swell, n * q) * m * k * Mathf.Cos(m * q));
         }
 
-        static float Envelope(float swell, float phase) => 1f - 0.5f * Mathf.Clamp01(swell) * (1f - Mathf.Cos(phase));
+        /// <summary>The swell: 1 - swell at each perch (the island starts on small hills, as Tiny Wings' do, so nothing flies
+        /// off the first crest), rising to 1 between.</summary>
+        static float Envelope(float swell, float phase) => 1f - 0.5f * Mathf.Clamp01(swell) * (1f + Mathf.Cos(phase));
 
         /// <summary>1, or less where the hills would climb steeper than <see cref="MaxHillSlope"/>.</summary>
         static float Calm(float length, in Hills h, int n, int m)

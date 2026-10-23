@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7bc9e5bc966d4d6a99ca80a7b057d717, type: 3}
   m_Name: GobyPistolConfig
   m_EditorClassIdentifier: 
-  dartRange: 600
-  dartMinRange: 300
+  dartRange: 1800
+  dartMinRange: 900
   dartChargeSeconds: 0.8
   dartSeconds: 1
   dartCooldown: 1.2
@@ -29,14 +29,18 @@ MonoBehaviour:
   hillWavelength: 26
   hillSwell: 0.5
   swellWavelength: 156
-  trailBlockGap: 3
-  trailBlockScale: {x: 1.4, y: 0.4, z: 2.8}
-  pGravity: 14
+  trailBlockGap: 6
+  trailBlockScale: {x: 1.4, y: 0.4, z: 5.5}
+  pGravity: 12
   pDiveMul: 4
-  pMinSpeed: 4
-  pDrag: 0.03
-  pGoodLand: 28
+  pMinSpeed: 9
+  pDrag: 0.01
+  pGoodLand: 65
   pMinAir: 0.25
+  pAirGravity: 0.45
+  pSmoothBoost: 1.16
+  pHardKeep: 0.95
+  pMaxSpeed: 120
   pBodyR: 0.85
   pBodyHalfDepth: 10
   pLaunchRange: 35
@@ -108,16 +112,16 @@ MonoBehaviour:
   pipSize: 0.32
   viewMargin: 0.015
   viewWidth: 30
-  viewMaxWidth: 120
+  viewMaxWidth: 180
   viewSpeedWiden: 0.6
   viewGroundedAt: 0.35
   viewHeadroom: 0.15
   viewDistance: 60
   viewPistolAt: -0.2
   depthFullSpreadAt: 60
-  aiDartLength: 450
-  aiWaitForPistol: 25
-  aiHomeRadius: 1600
+  aiDartLength: 1350
+  aiWaitForPistol: 45
+  aiHomeRadius: 4000
   aiBackAfter: 4
   dartButtonIcon: {fileID: 21300000, guid: 173cce5c2e60d5fe47fe15cfb2bfa249, type: 3}
   dartButtonLabel: 

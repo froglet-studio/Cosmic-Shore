@@ -19,6 +19,14 @@ namespace CosmicShore.Gameplay
             /// <summary>Seconds in the air a flight needs before its landing counts (a smooth one earns the slide's speed,
             /// a hard one costs it); a shorter hop off a ripple is a skip that keeps its speed along the ground.</summary>
             public float pMinAir;
+            /// <summary>Tiny Wings' float: gravity in the air while the Pistol lets go, as a share of <c>pGravity</c> (it
+            /// launches higher and falls slower than it slides; the dive still pulls it down at <c>pDiveMul</c>).</summary>
+            public float pAirGravity;
+            /// <summary>A smooth landing's speed, times this; a hard one keeps this share of its speed along the slope
+            /// (Tiny Wings forgives: a bad landing slows it, it never stops it).</summary>
+            public float pSmoothBoost, pHardKeep;
+            /// <summary>The fastest the Pistol goes, u/s.</summary>
+            public float pMaxSpeed;
             public float pLaunchRange, pLaunchSpeed, pLaunchCharges, pLaunchCd;
             public float pGhostTime, pGhostCd, pVortexCd;
         }
@@ -58,10 +66,11 @@ namespace CosmicShore.Gameplay
         {
             var ev = new Events();
             float x0 = p.x, y0 = p.y;
-            float dive = Mathf.Clamp01(inp.Dive), g = s.pGravity * (1f + (s.pDiveMul - 1f) * dive);
+            float dive = Mathf.Clamp01(inp.Dive);
+            float g = s.pGravity * (1f + (s.pDiveMul - 1f) * dive), gAir = AirGravity(s, dive);
             int n = Mathf.Max(1, Mathf.CeilToInt(dt / Substep));
             float h = dt / n;
-            for (int i = 0; i < n; i++) Ride(p, f, h, g, s, ref ev);
+            for (int i = 0; i < n; i++) Ride(p, f, h, g, gAir, s, ref ev);
             // the jump: one charge on Time's cooldown
             if (p.launch < s.pLaunchCharges) { p.launchT += dt; if (p.launchT >= s.pLaunchCd) { p.launch++; p.launchT = 0f; } } else p.launchT = 0f;
             if (inp.HasLaunch && p.launch > 0)
@@ -78,33 +87,44 @@ namespace CosmicShore.Gameplay
             return ev;
         }
 
+        /// <summary>Gravity in the air at <paramref name="dive"/> (0 let go: <c>pAirGravity</c> of <c>pGravity</c>, the float;
+        /// 1 diving: <c>pDiveMul</c> of it).</summary>
+        public static float AirGravity(in Settings s, float dive) =>
+            s.pGravity * Mathf.Lerp(s.pAirGravity > 0f ? s.pAirGravity : 1f, s.pDiveMul, Mathf.Clamp01(dive));
+
         /// <summary>
-        /// One substep of Tiny Wings' ride. On the ground the Pistol slides under gravity (heavier while it dives) and the
-        /// water's drag; a CREST throws it when its speed needs more pull round the curve than gravity gives
-        /// (v^2 times the curvature over g cos), so holding the dive keeps it down and letting go over a crest flies it.
-        /// In the air it falls; a landing within <c>pGoodLand</c> of the slope is a smooth slide that keeps and adds speed,
-        /// a steeper one is a thud that loses it, and a hop shorter than <c>pMinAir</c> is neither.
+        /// One substep of Tiny Wings' ride. On the ground the Pistol slides under gravity <paramref name="g"/> (heavier while
+        /// it dives) and the water's drag; a CREST throws it when its speed needs more pull round the curve than the air's
+        /// gravity <paramref name="gAir"/> gives (v^2 times the curvature over g cos), so holding the dive keeps it down and
+        /// letting go over a crest flies it. In the air it floats (the air's gravity is lighter than the slide's while it
+        /// lets go); a landing within <c>pGoodLand</c> of the slope is a smooth slide that adds speed, a steeper one keeps
+        /// <c>pHardKeep</c> of its speed, and a hop shorter than <c>pMinAir</c> is neither. Never faster than <c>pMaxSpeed</c>.
         /// </summary>
-        static void Ride(State p, in PistolPlane.Frame f, float h, float g, in Settings s, ref Events ev)
+        static void Ride(State p, in PistolPlane.Frame f, float h, float g, float gAir, in Settings s, ref Events ev)
         {
+            float vMax = s.pMaxSpeed > 0f ? s.pMaxSpeed : float.MaxValue;
             if (p.grounded)
             {
                 float k = PistolPlane.Curvature(f, p.x, out float m), c = 1f / Mathf.Sqrt(1f + m * m), sn = m * c;
-                p.v += (-g * sn - s.pDrag * p.v) * h; if (p.v < s.pMinSpeed) p.v = s.pMinSpeed;
-                if (-k * p.v * p.v > g * c) { p.grounded = false; p.vx = p.v * c; p.vy = p.v * sn; p.airT = 0f; }
+                p.v = Mathf.Clamp(p.v + (-g * sn - s.pDrag * p.v) * h, s.pMinSpeed, vMax);
+                if (-k * p.v * p.v > gAir * c) { p.grounded = false; p.vx = p.v * c; p.vy = p.v * sn; p.airT = 0f; }
                 else { p.x += p.v * c * h; p.y = PistolPlane.Ground(f, p.x); return; }
             }
-            p.vy -= g * h; p.x += p.vx * h; p.y += p.vy * h; p.airT += h;
+            p.vy -= gAir * h;
+            float drag = 1f - s.pDrag * h; p.vx *= drag; p.vy *= drag;
+            float sp2 = p.vx * p.vx + p.vy * p.vy;
+            if (sp2 > vMax * vMax) { float k2 = vMax / Mathf.Sqrt(sp2); p.vx *= k2; p.vy *= k2; }
+            p.x += p.vx * h; p.y += p.vy * h; p.airT += h;
             if (p.x < 0f) { p.x = 0f; if (p.vx < 0f) p.vx = 0f; }   // the perch it left is behind it: never off the start
             float yg = PistolPlane.Ground(f, p.x, out float slope);
             if (p.y > yg) return;
             float cl = 1f / Mathf.Sqrt(1f + slope * slope), sl = slope * cl, sp = Mathf.Sqrt(p.vx * p.vx + p.vy * p.vy), vt = p.vx * cl + p.vy * sl;
             p.grounded = true; p.y = yg;
-            if (p.airT < s.pMinAir) { p.v = Mathf.Max(s.pMinSpeed, vt); return; }   // a skip
+            if (p.airT < s.pMinAir) { p.v = Mathf.Clamp(vt, s.pMinSpeed, vMax); return; }   // a skip
             float ang = sp > 1e-6f ? Mathf.Acos(Mathf.Clamp(vt / sp, -1f, 1f)) * Mathf.Rad2Deg : 0f;
             ev.Landed = true;
-            if (ang <= s.pGoodLand) { p.v = Mathf.Max(vt, sp * 0.98f) * 1.04f; ev.SmoothLanding = true; }
-            else p.v = Mathf.Max(s.pMinSpeed, vt * 0.55f);
+            if (ang <= s.pGoodLand) { p.v = Mathf.Min(vMax, Mathf.Max(vt, sp * 0.98f) * (s.pSmoothBoost > 0f ? s.pSmoothBoost : 1f)); ev.SmoothLanding = true; }
+            else p.v = Mathf.Clamp(vt * s.pHardKeep, s.pMinSpeed, vMax);
         }
 
         /// <summary>The jump that lands the Pistol <paramref name="aim"/> away (capped at <c>pLaunchRange</c>).</summary>

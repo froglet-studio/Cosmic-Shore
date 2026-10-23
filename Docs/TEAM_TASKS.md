@@ -2130,9 +2130,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-23 by a Claude session (`cece/hopeful-hopper-np5527`)
 - **See:** Docs/PRISM_ANIMATION.md §4.12 round 14
 
-### T-20261023-1ff1 · open · test · Crew vessels
+### T-20261023-1ff1 · done · test · Crew vessels
 - **Task:** Fly the Pistol in Tiny Wings' proportions (Toybox > Vessel Changer > Goby and Pistol; dart 300-600 u, then double tap the small view). Check against Tiny Wings side by side if you can: at rest the screen shows a little over one hill and the shrimp is about a seventeenth of its width; hills are about four shrimp tall; the ride passes about a hill a second; a stretch is 11-23 hills (about one island); a good flight clears one or two hills and the view zooms out while flying. Note which proportion still looks off.
 - **Done when:** Garrett says the scale, speed and island length read as Tiny Wings, or corrects the Tiny Wings targets in the brief (hill length/height in shrimp lengths, view width in hills, hills per island, hills per second)
 - **Who can take it:** Garrett (feel call); Yash (offered) for the phone run
 - **Added:** 2026-10-23 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
 - **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log, 2026-10-23 proportions)
+- **Done:** 2026-10-23, Garrett flew it: Tiny Wings is floatier, faster-building, more forgiving and 3x longer - the floaty pass follows; its playtest is the next task
+
+### T-20261023-6811 · open · test · Crew vessels
+- **Task:** Fly the floaty Pistol (Toybox > Vessel Changer > Goby and Pistol). The Goby's darts are now 900-1800 u (a tap is 900): check the dart still feels right, then double tap the small view. The Pistol should: ride a few small hills from the perch, then (diving down, letting go up) fly over several; float - launch higher and fall slower; keep building speed over the island; forgive a mistimed landing (it slows a little, never stalls); take about 20-30 s per stretch. Compare with Tiny Wings if you can.
+- **Done when:** Garrett says the floatiness, the speed build, the forgiveness and the island length read as Tiny Wings, or names what to change (GobyPistolConfig: pAirGravity, pSmoothBoost, pGoodLand, pHardKeep, pMaxSpeed, pMinSpeed, dart ranges)
+- **Who can take it:** Garrett (feel call); Yash (offered) for the phone run
+- **Added:** 2026-10-23 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log, 2026-10-23 floaty pass)
