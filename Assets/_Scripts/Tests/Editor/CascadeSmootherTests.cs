@@ -115,7 +115,8 @@ namespace CosmicShore.Tests
         {
             var config = ScriptableObject.CreateInstance<GamepadFlightConfigSO>();
             Assert.That(config.SmoothingStages, Is.EqualTo(6));
-            Assert.That(config.SmoothingDelaySeconds, Is.EqualTo(0.35f));
+            Assert.That(config.SmoothingDelaySeconds, Is.EqualTo(0f));
+            Assert.That(config.LegacyNoseLag, Is.True);
             Object.DestroyImmediate(config);
         }
     }

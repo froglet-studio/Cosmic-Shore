@@ -38,6 +38,14 @@ namespace CosmicShore.ScriptableObjects
         menuName = "ScriptableObjects/Input/Gamepad Flight Config")]
     public class GamepadFlightConfigSO : ScriptableObject
     {
+        [Header("Nose lag")]
+        [Tooltip("ON: a pad pilot's nose chases the stick's command through the fleet's one-stage lag " +
+                 "(LERP_AMOUNT 1.5/s, a 0.67 s time constant) - exactly how every pad flew from 2024-11-19 " +
+                 "until 2026-10-21. OFF: the nose is the command each frame, as on touch, and only the " +
+                 "smoother below shapes it. Turn the smoother's delay to 0 while this is on, or the two stack. " +
+                 "Live in Play, for A/B (Garrett, 2026-10-23).")]
+        [SerializeField] bool legacyNoseLag = true;
+
         [Header("Steering smoother")]
         [Tooltip("How many smoothing stages the pad's steering runs through. Each stage makes one more " +
                  "derivative of the nose's motion continuous (6: no jump in turn rate or its next five " +
@@ -47,10 +55,11 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("The smoother's total mean delay, in seconds (each stage gets this / stages). This is " +
                  "the lag dial: 0.35 s reaches 90% of a new turn rate in ~0.53 s (0.12 s: ~0.2 s; 0.6 s: " +
-                 "~0.9 s). 0 turns the smoother off. The old nose lag was one stage of 0.67 s (~1.5 s to 90%).")]
+                 "~0.9 s). 0 turns the smoother off (shipped 0 while Legacy Nose Lag is on; 6 / 0.35 was the last try). The old nose lag was one stage of 0.67 s (~1.5 s to 90%).")]
         [Range(0f, 1f)]
-        [SerializeField] float smoothingDelaySeconds = 0.35f;
+        [SerializeField] float smoothingDelaySeconds = 0f;
 
+        public bool LegacyNoseLag => legacyNoseLag;
         public int SmoothingStages => Mathf.Clamp(smoothingStages, 1, 8);
         public float SmoothingDelaySeconds => Mathf.Clamp(smoothingDelaySeconds, 0f, 1f);
 

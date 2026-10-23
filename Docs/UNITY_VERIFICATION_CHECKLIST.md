@@ -109,6 +109,17 @@ typo in `ReleaseBuildKind.cs` was reported, tagged as changed). `ReleaseBuildKin
 3. Leave the checkbox ticked and run **FrogletTools > Build > Windows x64 (Release)** with weekly TEST MODE on: the
    build must now FAIL with the weekly-challenge message. Switch TEST MODE off afterwards.
 
+### 🔴 Gamepad: the old nose lag back behind a switch, for an A/B (`cece/serene-galileo-t77xt3`, 2026-10-23) — NOT EDITOR-VERIFIED
+
+**What landed:** `GamepadFlightConfigSO.legacyNoseLag` (shipped ON in `Resources/GamepadFlightConfig`) makes a local
+pad pilot's nose follow through the fleet lag again (`VesselTransformer.FollowsWithFleetLag`, 1.5/s, the 2024-11-19
+to 2026-10-21 value) on every transformer; the stage smoother below ships with delay 0 (off).
+
+**Verify in editor:**
+1. Fly the Squirrel on a pad: it feels as it did before 2026-10-21.
+2. In Play, untick `legacyNoseLag`: the nose snaps to the stick (lag-free). Tick it again: the lag is back at once.
+3. Touch (or a phone): unchanged, lag-free. AI hulls: unchanged.
+
 ### 🔴 Gamepad steering smoother: smooth to the 4th derivative without the old nose lag (`cece/serene-galileo-t77xt3`, 2026-10-23) — NOT EDITOR-VERIFIED
 
 **What landed:** `GamepadInputStrategy` ends each frame by running `XSum`, `YSum`, `YDiff` and the eased sticks

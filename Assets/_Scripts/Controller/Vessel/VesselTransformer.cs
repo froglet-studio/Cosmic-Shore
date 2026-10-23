@@ -323,7 +323,7 @@ public class VesselTransformer : MonoBehaviour
         /// applies it: <see cref="RotationFollowRate"/> for an AI, autopilot or remote hull, and
         /// <see cref="float.PositiveInfinity"/> (the nose IS the command) for this machine's human
         /// pilot. For a predictor of this hull's path (the Stoat's foresight).</summary>
-        public float NoseFollowRate => IsLocalHumanPilot ? float.PositiveInfinity : LERP_AMOUNT;
+        public float NoseFollowRate => FollowsWithFleetLag ? LERP_AMOUNT : float.PositiveInfinity;
 
         /// <summary>The boost ceiling this hull's skim boost saturates at. Read-only.</summary>
         public float MaxBoost => MaxBoostMultiplier;
@@ -590,6 +590,10 @@ public class VesselTransformer : MonoBehaviour
         /// pads, keyboards and mice too. The steady turn RATE is unchanged; only the lag behind it
         /// is gone.</para>
         ///
+        /// <para><b>Except a pad, while <see cref="GamepadFlightConfigSO.LegacyNoseLag"/> is on</b>
+        /// (shipped on, 2026-10-23): the pad gets the fleet lag back, exactly as it flew before, so the
+        /// lag-free pad and the old one can be compared (<see cref="FollowsWithFleetLag"/>).</para>
+        ///
         /// <para>Two things keep it smooth. The command itself is integrated from eased stick rates,
         /// so it never jumps; and a LEFTOVER gap - one a discontinuous command left behind (a 180
         /// degree flip, an ability that rotates the command, a pad handing over mid-turn) - is closed
@@ -604,7 +608,7 @@ public class VesselTransformer : MonoBehaviour
         protected float NoseFollowFraction(Quaternion target, float dt)
         {
             float fleet = LERP_AMOUNT * dt;
-            if (!IsLocalHumanPilot) return fleet;
+            if (FollowsWithFleetLag) return fleet;
 
             float t = 1f;
             float gap = Quaternion.Angle(transform.rotation, target);
@@ -613,6 +617,16 @@ public class VesselTransformer : MonoBehaviour
 
             return Mathf.Max(t, fleet);
         }
+
+        /// <summary>
+        /// True when the nose chases its command through the fleet lag: every AI, autopilot and remote
+        /// hull, and a local human on a gamepad while <see cref="GamepadFlightConfigSO.LegacyNoseLag"/>
+        /// is on (Garrett, 2026-10-23: "restore that to the longstanding settings to the gamepad just so
+        /// i can feel the difference"). Touch, keyboard and mouse pilots never have it.
+        /// </summary>
+        bool FollowsWithFleetLag =>
+            !IsLocalHumanPilot
+            || (InputStatus.ActiveInputDevice == InputDeviceType.Gamepad && GamepadFlightConfigSO.Instance.LegacyNoseLag);
 
         /// <summary>
         /// True only while THIS machine's human flies the hull. A handheld selects the touch strategy
