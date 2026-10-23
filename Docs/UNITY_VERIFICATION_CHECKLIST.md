@@ -128,6 +128,25 @@ typo in `ReleaseBuildKind.cs` was reported, tagged as changed). `ReleaseBuildKin
 3. Leave the checkbox ticked and run **FrogletTools > Build > Windows x64 (Release)** with weekly TEST MODE on: the
    build must now FAIL with the weekly-challenge message. Switch TEST MODE off afterwards.
 
+### 🔴 Nose lag per device: the pad keeps the fleet lag, touch gets a dial (`cece/serene-galileo-t77xt3`, 2026-10-23) — NOT EDITOR-VERIFIED
+
+**What landed:** `VesselTransformer.NoseFollowFraction` follows a local human at their device's rate
+(`PilotNoseFollowPerSecond`, also `NoseFollowRate`): pad `Resources/GamepadFlightConfig.noseFollowPerSecond` 1.5 (the
+2024-11-19 to 2026-10-21 lag, Garrett-approved by feel on 2026-10-23), touch
+`Resources/TouchControlProfiles.noseFollowPerSecond` 9 (0.11 s; lag-free 10-21 to 10-23), keyboard and mouse none. The response
+curve and the stage smoother this branch tried first are gone.
+
+**Verified without the editor:** `unity_refcompile` player: 0 errors; editor: 0 in changed files (3 in
+`AuthenticationServiceFacade.cs` from the unfetchable Playmode package). `author_touch_profiles.py --check` OK.
+`NoseFollowDialTests` compile, not run.
+
+**Verify in editor:**
+1. Run `NoseFollowDialTests` (EditMode): all pass.
+2. Pad: flies as it did before 2026-10-21. Set the pad dial to 0 in Play: the nose snaps to the stick.
+3. Touch (Device Simulator or a phone): responsive, starts and stops rounded, no glide. Compare 0 and 5 on
+   `TouchControlProfiles` and judge.
+4. AI hulls: unchanged.
+
 ### 🔴 Menu_Main: no entry into freestyle behind the boot veil; the browser Toybox opens on the menu (`claude/menu-click-through-kg5qx7`, 2026-10-22) — NOT EDITOR-VERIFIED
 
 **What landed:** builds on the base's fix for a click launching freestyle during the Garland intro (the boot world

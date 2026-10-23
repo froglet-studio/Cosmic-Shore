@@ -33,6 +33,17 @@ namespace CosmicShore.Gameplay
                  "held when the aim began, and holds there past it.")]
         [SerializeField, Range(30f, 180f)] float tiltRollMaxDegrees = 90f;
 
+        [Header("Nose")]
+        [Tooltip("How fast a touch pilot's nose closes on the thumbs' command, per second (the frame closes " +
+                 "1 - e^(-rate * dt) of the gap): a first-order lag that answers at once and eases into the " +
+                 "target. 0 is no lag (2026-10-21 to 10-23). The pad flies 1.5 (GamepadFlightConfig). Before " +
+                 "2026-10-21 the Squirrel, Stoat, Thresher and Angler flew touch at 9 and the Butterfly at 5; " +
+                 "every other hull at 1.5. A thumb on glass stops dead and lifts off in a frame, so a short " +
+                 "lag (5-9) rounds those edges without the pad's long glide. One value for every hull; " +
+                 "shipped 9 (a 0.11 s time constant), the value the touch controls flew on four hulls " +
+                 "2026-10-05 to 10-21.")]
+        [SerializeField, Range(0f, 20f)] float noseFollowPerSecond = 9f;
+
         [Header("Button layout (millimetres on the glass)")]
         [Tooltip("Width of one totem or button on the glass. Platform guidance is 7-9 mm minimum.")]
         [SerializeField, Range(6f, 16f)] float buttonMillimetres = 10f;
@@ -86,6 +97,7 @@ namespace CosmicShore.Gameplay
         public float TiltDeadZoneDegrees => tiltDeadZoneDegrees;
         public float TiltSmoothingPerSecond => tiltSmoothingPerSecond;
         public float TiltRollMaxDegrees => tiltRollMaxDegrees;
+        public float NoseFollowPerSecond => Mathf.Max(0f, noseFollowPerSecond);
         public float ButtonMillimetres => buttonMillimetres;
         public float ButtonGapMillimetres => buttonGapMillimetres;
         public float InnerArcMillimetres => innerArcMillimetres;
