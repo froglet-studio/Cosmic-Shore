@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Steal roll: the OLD domain curls away, the new one is only underneath (`cece/hopeful-hopper-np5527`, 2026-10-23) — NOT EDITOR-VERIFIED
+
+**What landed:** Garrett: *"the stealing effect is supposed to curl the original domain and reveal the stolen domain
+underneath, but i am seeing it immediately change domain color and then peel the changed color"*. The roll winds
+the skin top side IN, so what the curl shows is the skin's UNDERSIDE, and `PrismCollisionBurst.TryRequestShed`
+stamped that underside (`_SlicePivot`) with the NEW domain's bright. So the new colour appeared along the curl's
+outside from the first frame. The skin is now the old domain on both sides (`_SlicePivot.w` 0: the underside is the
+old bright × `_InnerGlow`). The prism under it still takes the new colour at once, and the skin hides that until it
+rolls away. `Docs/PRISM_ANIMATION.md` §4.12 round 14.
+
+**Verified without the editor:** `unity_refcompile` player 0 errors in project code;
+`verify_prism_collision_burst.py` PASS (shader text change is comments only).
+
+**Verify (editor, any mode with steals, e.g. a Squirrel skimming another domain's trail up close):**
+1. The prism's faces you can see keep the OLD domain colour at the instant of the steal: no flash of the new one.
+2. The skin curls away from the camera in the OLD colour (its underside a lighter old), uncovering the NEW colour
+   behind the roll.
+3. Far away (below the shed line, about 8% of the screen height) the steal still grades over 0.8 s.
+
 ### 🔴 Prism animations in the browser: a MeshRenderer stamp path where Entities Graphics cannot run (`claude/webgl-prism-animations-kg5qx7`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 **What landed:** on devices without Entities Graphics (every WebGL2 browser; also GPUs whose compute kernels fail to

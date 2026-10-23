@@ -165,7 +165,7 @@ namespace CosmicShore.Utility
         /// give the prism its new colour AT ONCE (the skin is the transition); false means the caller grades as usual.
         /// </summary>
         public static bool TryShed(Vector3 position, Quaternion rotation, Vector3 scale,
-            Color oldBright, Color oldDark, Color newBright, float gradeSeconds)
+            Color oldBright, Color oldDark, float gradeSeconds)
         {
             var cfg = PrismInteractionLodConfigSO.Instance;
             if (cfg == null || !cfg.ShedEnabled || !PrismCollisionBurst.CanAccept(cfg)) return false;
@@ -181,7 +181,7 @@ namespace CosmicShore.Utility
             {
                 var mesh = MeshOf(level, cfg, kind);
                 if (!PrismCollisionBurst.FitsTriangles(cfg, PrismCollisionBurst.TrianglesOf(mesh))) continue;
-                return PrismCollisionBurst.TryRequestShed(position, rotation, scale, oldBright, oldDark, newBright,
+                return PrismCollisionBurst.TryRequestShed(position, rotation, scale, oldBright, oldDark,
                     gradeSeconds, kind, mesh, eye, cfg.ShedSubdivisionOf((int)level));
             }
             return false;

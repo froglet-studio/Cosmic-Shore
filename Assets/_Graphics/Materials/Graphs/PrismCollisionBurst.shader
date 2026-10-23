@@ -12,8 +12,8 @@
 //                                                 5 fragment (the destruction), 6 roll (the steal)
 //     _SliceDrift  = (flight velocity, world xyz; explosion speed w) — zero for a shed
 //     _SlicePlane  = (fade curve, -, -, -)      — 0 destruction (linear), 1 shed (the grade's smoothstep)
-//     _SlicePivot  = (inside colour rgb, set w) — w 1: the inside wears this (a shed: the NEW colour);
-//                                                 w 0: the domain's own bright
+//     _SlicePivot  = (inside colour rgb, set w) — w 1: the inside wears this;
+//                                                 w 0: the domain's own bright (a shed: the OLD domain's)
 //     _SliceAxis   = (camera world position at the steal, shed subdivision) — the ROLL peels away from it
 // Their Properties-block defaults are the UNSTAMPED state — age 0, zero flight — which renders the
 // plain prism: an unstamped material is inert, never broken.
@@ -338,7 +338,7 @@ Shader "CosmicShore/PrismCollisionBurst"
                 float3 color = lerp(input.dark.rgb, input.bright.rgb, fres);
 
                 // The inside, on show once a shard turns, a petal curls, a ribbon lifts or a scale
-                // tips: the brighter inside colour (a shed's is the NEW colour) — the only accent.
+                // tips: the brighter inside colour (a shed's is its OLD bright) — the only accent.
                 if (!front)
                     color = lerp(color, input.inside.rgb * _InnerGlow, 0.6);
 

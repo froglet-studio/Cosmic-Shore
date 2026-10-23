@@ -2114,3 +2114,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (the feel), Yash (offered: tests, phone playtest)
 - **Added:** 2026-10-23 by a Claude session (`cece/serene-galileo-t77xt3`)
 - **See:** Docs/claude/ARCHITECTURE_CORE.md (Input Strategy), Assets/_Scripts/Controller/Vessel/VesselTransformer.cs PilotNoseFollowPerSecond
+
+### T-20261023-2f7b · open · test · prisms
+- **Task:** Look at a close-up steal in the editor: the old domain must curl away (roll in the old colour) and uncover the new colour, with no flash of the new colour first
+- **Done when:** Steps 1-3 of the 'Steal roll: the OLD domain curls away' section of Docs/UNITY_VERIFICATION_CHECKLIST.md pass
+- **Who can take it:** Garrett (asked for it) or Yash
+- **Added:** 2026-10-23 by a Claude session (`cece/hopeful-hopper-np5527`)
+- **See:** Docs/PRISM_ANIMATION.md §4.12 round 14
