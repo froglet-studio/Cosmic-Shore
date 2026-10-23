@@ -61,6 +61,21 @@ namespace CosmicShore.Gameplay
         internal float AbilityAt { get; private set; } = -99f;
         internal readonly float[] RetiredAt = { -99f, -99f, -99f };
 
+        /// <summary>The last pattern made, for the board's juice: when, which card, the cells it matched, and the prism it
+        /// sent to the battery - the cell it left, its colour and the battery slot it landed in (-1 if none held it).</summary>
+        internal sealed class MadePattern
+        {
+            public float At = -99f;
+            public int Slot = -1, Pid = -1, Cell = -1, Colour, BatterySlot = -1;
+            public readonly List<int> Cells = new();
+        }
+
+        internal readonly MadePattern LastMade = new();
+        /// <summary>The line above the cards naming what the last pattern made does (madeLineTemplate), and whether that
+        /// effect works on the Dynamo itself (drawn lime).</summary>
+        internal string MadeLine { get; private set; } = "";
+        internal bool MadeLineDynamo { get; private set; }
+
         internal HoneyguideConfigSO Config => _cfg;
         internal DynamoSettings Settings => _s;
         internal DynamoCore Core => _core;
@@ -109,6 +124,9 @@ namespace CosmicShore.Gameplay
             if (_laidBy) _laidBy.OnBlockSpawned += OnTrailPrismLaid;
             SpinAt = PortsAt = AbilityAt = -99f;
             for (int k = 0; k < RetiredAt.Length; k++) RetiredAt[k] = -99f;
+            LastMade.At = -99f;
+            MadeLine = "";
+            MadeLineDynamo = false;
             // the view, the swap and the static handle belong to the local pilot's seat; an AI crew draws nothing
             if (_aiCrew) return;
             if (_active && _active != this) Destroy(_active);
@@ -260,6 +278,7 @@ namespace CosmicShore.Gameplay
             switch (e.Kind)
             {
                 case DynamoEventKind.Pick:   // the battery prism is taken: the pattern's effect happens now
+                    if (!_aiCrew) RecordMade(e);
                     ApplyEffect(e.Pid, e.Colour, 0);
                     _lastMade = e.Pid;
                     Play(_cfg.PatternMadeSfx);
@@ -282,6 +301,36 @@ namespace CosmicShore.Gameplay
                     if (e.Slot >= 0 && e.Slot < RetiredAt.Length) RetiredAt[e.Slot] = Time.time;
                     break;
             }
+        }
+
+        // Before the effect runs (it may burn, scatter or drain): the pattern's cells, found again with the taken prism put
+        // back for the look, and the battery slot the charge went to - the last one, when the battery's newest is its colour.
+        void RecordMade(DynamoEvent e)
+        {
+            var m = LastMade;
+            m.At = Time.time;
+            m.Slot = e.Slot;
+            m.Pid = e.Pid;
+            m.Cell = e.Cell;
+            m.Colour = e.Colour;
+            m.Cells.Clear();
+            if (e.Cell >= 0 && e.Cell < DynamoCore.CellCount && _core.Cells[e.Cell] == 0 && e.Pid >= 0 && e.Pid < _s.Patterns.Count)
+            {
+                _core.Cells[e.Cell] = e.Colour;
+                var cells = _core.Match(_s, e.Pid);
+                _core.Cells[e.Cell] = 0;
+                if (cells != null) m.Cells.AddRange(cells);
+            }
+            if (!m.Cells.Contains(e.Cell)) m.Cells.Add(e.Cell);
+            var bat = _core.Battery;
+            m.BatterySlot = bat.Count > 0 && bat[bat.Count - 1] == e.Colour ? bat.Count - 1 : -1;
+        }
+
+        // The line above the cards: what the pattern just made does, lime when it works on the Dynamo.
+        void SetMadeLine(HoneyguidePattern pat, string level)
+        {
+            MadeLine = TemplateText.Fill(_cfg.MadeLineTemplate, "name", pat.name, "level", level, "text", pat.effectText);
+            MadeLineDynamo = HoneyguideConfigSO.TouchesDynamo(pat.effect);
         }
 
         void Play(EventReference evt)

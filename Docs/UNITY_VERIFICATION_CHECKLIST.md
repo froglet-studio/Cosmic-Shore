@@ -187,6 +187,33 @@ changed. The artist reproductions (Squirrel, Goby, Dolphin, Sparrow, Serpent, Ma
 5. If any hull still leans, Unity is not taking the default pose from the first take: report it, the fallback is to
    capture rest from the SkinnedMeshRenderer's bind poses in code.
 
+### 🔴 Honeyguide and Ratel: juice when the Ratel makes a pattern; the effect line above the cards (`cece/inspiring-hawking-mnzmqc`, 2026-10-23) — NOT EDITOR-VERIFIED
+
+Garrett: "the ratel needs juice when it completes a pattern. the prism that is taken and placed in the battery should have
+an animation that morphs one to the other. there should always be text showing what the ability does in the space above
+the patterns where it already says what it does if it pertains to the dynamo, but those should be signaled with lime."
+`HoneyguideCrew.RecordMade` keeps the made pattern's cells, the taken prism and its battery slot; `HoneyguideDynamoView`
+draws the cell bursts, card pop, edge flash and the hex-to-disc flight (`HoneyguideMesh.HexToDisc`), and the line in the
+band above the cards (`madeLineTemplate`, lime `dynamoLineColour` when `TouchesDynamo`). `/verify-unity` was unavailable
+(no Editor, no `unity` binary). Green: the headless player reference compile (0 errors in project code; it caught a
+shadowed local first) and editor config (only the 3 bleeding-edge errors, 0 in changed files),
+`author_honeyguide_assets.py --check` (and its from-scratch config matches the shipped asset's new keys), the
+console-logging gate.
+
+1. Toybox Vessel Changer → Honeyguide and Ratel; swap to the Ratel. Make a pattern: its cells burst in the card's colour one
+   after another, the card flashes and its outline spreads, the board's edge flashes, and the taken prism flies on an arc
+   to the battery, turning from a hex into a round charge, landing with a swell and a ring. Its slot stays empty until it
+   lands.
+2. The band above the cards now reads the made card's name and effect, and stays until the next pattern. A Dynamo card
+   (5D Printer, Square-Peg Hammer, Triplesynth, Chrono-Compressor...) is lime; a hull card (Juggernaut Plow, Blink Drive...)
+   is cream. The free-prism line (Universal Translator, 5D Printer) is lime and takes the band until the prisms are placed.
+3. Make a fourth pattern (the reveal starts): the juice still plays over the dimmed board.
+4. Make Dragon Saddle (it drains the battery): the taken prism rises off its cell and fades instead of flying to a slot.
+5. Fly (the small board, left): the juice plays there too, smaller; the band is not drawn on the small board.
+6. On a phone in portrait: the band holds two lines of text without covering the board's bottom row or the cards.
+7. `HoneyguideTests` pass in the Test Runner, `MadePattern_HasJuiceAndALineAboveTheCards`,
+   `TouchesDynamo_IsTheCardsThatWorkOnTheBoard` and `HexToDisc_IsTheBoardsPrismAtZeroAndTheBatterysChargeAtOne` included.
+
 ### 🔴 Honeyguide and Ratel: the Ratel's board in portrait on a phone; Printer retired (`cece/nifty-dirac-2dmclm`, 2026-10-22) — NOT EDITOR-VERIFIED
 
 Garrett: "the ratel dynamo should assume the player is holding the phone in portrait mode. it should size text and buttons

@@ -241,6 +241,8 @@ def config_asset(lab, cs: str, script_guid: str) -> str:
             text += "  portraitRect:\n    serializedVersion: 2\n    x: 0.03\n    y: 0.02\n    width: 0.94\n    height: 0.86\n"
         if name == "ratelLabel":
             text += "  colourNames:\n  - Ruby\n  - Jade\n  - Gold\n"
+        if name == "madeLineTemplate":
+            text += "  dynamoLineColour: {r: 0.66, g: 1, b: 0.18, a: 1}\n"
     text += "  patterns:\n"
     for (cname, family, shape), key in zip(lab["cards"], lab["cardEffects"]):
         text += (f"  - name: {yaml_str(cname)}\n    family: {family}\n    shape: {shape}\n    effect: {effects[key]}\n"
