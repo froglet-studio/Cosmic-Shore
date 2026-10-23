@@ -112,7 +112,7 @@ typo in `ReleaseBuildKind.cs` was reported, tagged as changed). `ReleaseBuildKin
 ### 🔴 Gamepad steering smoother: smooth to the 4th derivative without the old nose lag (`cece/serene-galileo-t77xt3`, 2026-10-23) — NOT EDITOR-VERIFIED
 
 **What landed:** `GamepadInputStrategy` ends each frame by running `XSum`, `YSum`, `YDiff` and the eased sticks
-through `CascadeSmoother` (`Resources/GamepadFlightConfig`: 4 stages, 0.12 s total delay, 240 Hz substeps).
+through `CascadeSmoother` (`Resources/GamepadFlightConfig`: 6 stages, 0.35 s total delay, 240 Hz substeps; first shipped at 4 / 0.12 s).
 Throttle, the raw stick positions and the straight-line gestures are unchanged. Touch, keyboard and mouse do not
 read it. The human nose stays lag-free (`NoseFollowFraction`). Replaces the response curve this branch first
 tried (2026-10-22), which shaped stick position and could not give back the smoothness.
@@ -124,10 +124,10 @@ at 30, 60 and 144 fps; first-frame rise 0.007; ramp trails by 0.110 s at 120 fps
 
 **Verify in editor:**
 1. Run `CascadeSmootherTests` (EditMode): all pass.
-2. Fly the Squirrel and the Sparrow on a pad: turns build and settle without a jolt, the nose answers a push at
-   once, and stops within ~0.2 s of the stick centring (no long glide).
+2. Fly the Squirrel and the Sparrow on a pad: turns build and settle without a jolt, and settle within ~0.5 s of
+   the stick centring (the old lag took ~1.5 s).
 3. In Play, set `smoothingDelaySeconds` to 0 on `Resources/GamepadFlightConfig`: the pad flies unsmoothed. Try
-   2 and 6 stages at 0.12 s for the feel of the order alone. Restore 4 / 0.12 or commit what you prefer.
+   2 and 6 stages at 0.12 s for the feel of the order alone. Restore 6 / 0.35 or commit what you prefer.
 4. On a phone (or touch in the editor): steering is unchanged.
 
 ### 🔴 Menu_Main: no entry into freestyle behind the boot veil; the browser Toybox opens on the menu (`claude/menu-click-through-kg5qx7`, 2026-10-22) — NOT EDITOR-VERIFIED

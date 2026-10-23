@@ -114,8 +114,8 @@ namespace CosmicShore.Tests
         public void ShippedDefaults_AreTheDocumentedOnes()
         {
             var config = ScriptableObject.CreateInstance<GamepadFlightConfigSO>();
-            Assert.That(config.SmoothingStages, Is.EqualTo(4));
-            Assert.That(config.SmoothingDelaySeconds, Is.EqualTo(0.12f));
+            Assert.That(config.SmoothingStages, Is.EqualTo(6));
+            Assert.That(config.SmoothingDelaySeconds, Is.EqualTo(0.35f));
             Object.DestroyImmediate(config);
         }
     }

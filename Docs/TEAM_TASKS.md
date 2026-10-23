@@ -2101,7 +2101,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Done:** 2026-10-23, Superseded: Garrett flew the response curve and it lost the smoothness; replaced by the gamepad steering smoother (CascadeSmoother), retested under the new task.
 
 ### T-20261023-70a9 · open · test · Input
-- **Task:** Fly the Squirrel and the Sparrow on a gamepad on cece/serene-galileo-t77xt3: do turns build and settle smoothly (no jolt) while the nose still answers at once? Tune Resources/GamepadFlightConfig live in Play: smoothingStages (4; more = rounder) and smoothingDelaySeconds (0.12 s; the lag dial, 0 = off). Also run the EditMode CascadeSmootherTests.
+- **Task:** Fly the Squirrel and the Sparrow on a gamepad on cece/serene-galileo-t77xt3: do turns build and settle smoothly (no jolt) while the nose still answers at once? Tune Resources/GamepadFlightConfig live in Play: smoothingStages (6; more = rounder) and smoothingDelaySeconds (0.35 s since 2026-10-23, first 0.12 s; the lag dial, 0 = off, up to 1 s). Also run the EditMode CascadeSmootherTests.
 - **Done when:** Garrett signs off on the feel and the values (committed to Resources/GamepadFlightConfig.asset), and CascadeSmootherTests pass
 - **Who can take it:** Garrett (the feel), Yash (offered, tests)
 - **Added:** 2026-10-23 by a Claude session (`cece/serene-galileo-t77xt3`)

@@ -16,10 +16,13 @@ namespace CosmicShore.ScriptableObjects
     /// derivative continuous.</para>
     ///
     /// <para><b>What it does instead.</b> Smoothness comes from the filter's ORDER and lag from its
-    /// TIME, so this smooths the stick's steering readings through several fast stages: four 30 ms
-    /// stages make the nose continuous to its fourth derivative for 0.12 s of mean delay (~0.2 s to 90%
-    /// of a new rate, ~14 degrees behind at 120 deg/s). The nose itself stays lag-free; it integrates
-    /// the smoothed rates.</para>
+    /// TIME, so this smooths the stick's steering readings through several stages: six stages sharing
+    /// 0.35 s make the nose continuous to its sixth derivative and reach 90% of a new rate in ~0.53 s,
+    /// ~42 degrees behind at 120 deg/s (the old lag: ~1.5 s, 80 degrees). The nose itself stays
+    /// lag-free; it integrates the smoothed rates. (First shipped at 4 / 0.12 s, ~0.2 s to 90%; Garrett,
+    /// 2026-10-23: "needs more smoothing ... it still feels like it turns too fast and moves too jerky".)
+    /// A sustained turn's RATE is the hull's either way; the smoother only shapes how a turn starts
+    /// and stops.</para>
     ///
     /// <para><b>What it smooths.</b> Pitch (<c>YSum</c>), yaw (<c>XSum</c>), roll (<c>YDiff</c>) and the eased
     /// sticks the one-thumb hulls steer by, after Invert Y and after the straight-line gestures (which
@@ -37,19 +40,19 @@ namespace CosmicShore.ScriptableObjects
     {
         [Header("Steering smoother")]
         [Tooltip("How many smoothing stages the pad's steering runs through. Each stage makes one more " +
-                 "derivative of the nose's motion continuous (4: no jump in turn rate, acceleration, jerk " +
-                 "or snap). More stages at the same total delay feel heavier and rounder, not slower.")]
+                 "derivative of the nose's motion continuous (6: no jump in turn rate or its next five " +
+                 "derivatives). More stages at the same total delay feel heavier and rounder, not slower.")]
         [Range(1, 8)]
-        [SerializeField] int smoothingStages = 4;
+        [SerializeField] int smoothingStages = 6;
 
         [Tooltip("The smoother's total mean delay, in seconds (each stage gets this / stages). This is " +
-                 "the lag dial: 0.12 s reaches 90% of a new turn rate in ~0.2 s. 0 turns the smoother " +
-                 "off. The old nose lag was one stage of 0.67 s.")]
-        [Range(0f, 0.5f)]
-        [SerializeField] float smoothingDelaySeconds = 0.12f;
+                 "the lag dial: 0.35 s reaches 90% of a new turn rate in ~0.53 s (0.12 s: ~0.2 s; 0.6 s: " +
+                 "~0.9 s). 0 turns the smoother off. The old nose lag was one stage of 0.67 s (~1.5 s to 90%).")]
+        [Range(0f, 1f)]
+        [SerializeField] float smoothingDelaySeconds = 0.35f;
 
         public int SmoothingStages => Mathf.Clamp(smoothingStages, 1, 8);
-        public float SmoothingDelaySeconds => Mathf.Clamp(smoothingDelaySeconds, 0f, 0.5f);
+        public float SmoothingDelaySeconds => Mathf.Clamp(smoothingDelaySeconds, 0f, 1f);
 
         // ------------------------------------------------------------------------------------
         // Instance
