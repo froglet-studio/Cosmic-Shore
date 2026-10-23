@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using CosmicShore.Utility;
 using CosmicShore.Data;
-using CosmicShore.ScriptableObjects;
 
 
 namespace CosmicShore.Gameplay
@@ -19,10 +18,6 @@ namespace CosmicShore.Gameplay
 
         private bool prevLeftTriggerActive;
         private bool prevRightTriggerActive;
-
-        // XSum, YSum, YDiff, eased left x/y, eased right x/y.
-        private readonly float[] steering = new float[7];
-        private readonly CascadeSmoother steeringSmoother = new(7);
 
         // Face-button held state, edge-detected from isPressed rather than the frame flags
         // (SingleStickMouseInputStrategy's shape). wasReleasedThisFrame is only seen while this
@@ -75,7 +70,6 @@ namespace CosmicShore.Gameplay
         public override void OnPaused()
         {
             ReleaseHeldTriggers();
-            steeringSmoother.ResetToZero();
             leftStickRaw = Vector2.zero;
             rightStickRaw = Vector2.zero;
             inputStatus.LeftTriggerAnalog = 0f;
@@ -105,7 +99,6 @@ namespace CosmicShore.Gameplay
 
         private void ResetStrategyState()
         {
-            steeringSmoother.ResetToZero();
             leftStickRaw = Vector2.zero;
             rightStickRaw = Vector2.zero;
             prevLeftTriggerActive = false;
@@ -122,8 +115,6 @@ namespace CosmicShore.Gameplay
             ProcessButtonInput();
             Reparameterize();
             PerformSpeedAndDirectionalEffects();
-            // Last, so the straight-line gestures above keep judging the raw sticks.
-            SmoothSteering();
         }
 
         private void ProcessStickInput()
@@ -259,31 +250,6 @@ namespace CosmicShore.Gameplay
                           $"  XDiff: {xDiffBefore:F2} -> {inputStatus.XDiff:F2} (InvertThrottle: {inputStatus.InvertThrottleEnabled})");
             }
             #endif
-        }
-
-        // The pad's smoothness, from the filter's order rather than a slow nose (GamepadFlightConfigSO,
-        // CascadeSmoother). Steering readings only: throttle (XDiff) and the raw stick positions are
-        // left as they are.
-        private void SmoothSteering()
-        {
-            var config = GamepadFlightConfigSO.Instance;
-            var left = inputStatus.EasedLeftJoystickPosition;
-            var right = inputStatus.EasedRightJoystickPosition;
-            steering[0] = inputStatus.XSum;
-            steering[1] = inputStatus.YSum;
-            steering[2] = inputStatus.YDiff;
-            steering[3] = left.x;
-            steering[4] = left.y;
-            steering[5] = right.x;
-            steering[6] = right.y;
-
-            steeringSmoother.Step(steering, Time.deltaTime, config.SmoothingStages, config.SmoothingDelaySeconds);
-
-            inputStatus.XSum = steering[0];
-            inputStatus.YSum = steering[1];
-            inputStatus.YDiff = steering[2];
-            inputStatus.EasedLeftJoystickPosition = new Vector2(steering[3], steering[4]);
-            inputStatus.EasedRightJoystickPosition = new Vector2(steering[5], steering[6]);
         }
 
         private void PerformSpeedAndDirectionalEffects()

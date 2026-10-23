@@ -2100,9 +2100,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/claude/ARCHITECTURE_CORE.md (Input Strategy), Assets/_Scripts/ScriptableObjects/GamepadFlightConfigSO.cs
 - **Done:** 2026-10-23, Superseded: Garrett flew the response curve and it lost the smoothness; replaced by the gamepad steering smoother (CascadeSmoother), retested under the new task.
 
-### T-20261023-70a9 · open · test · Input
+### T-20261023-70a9 · done · test · Input
 - **Task:** Fly the Squirrel and the Sparrow on a gamepad on cece/serene-galileo-t77xt3: do turns build and settle smoothly (no jolt) while the nose still answers at once? Resources/GamepadFlightConfig now ships legacyNoseLag ON (the old 1.5/s nose lag, exactly) with the smoother off (delay 0): fly it, then untick legacyNoseLag and try the smoother (smoothingStages 6, smoothingDelaySeconds 0.12-0.35 s) to compare; decide which ships. Also run the EditMode CascadeSmootherTests.
 - **Done when:** Garrett signs off on the feel and the values (committed to Resources/GamepadFlightConfig.asset), and CascadeSmootherTests pass
 - **Who can take it:** Garrett (the feel), Yash (offered, tests)
 - **Added:** 2026-10-23 by a Claude session (`cece/serene-galileo-t77xt3`)
 - **See:** Docs/claude/ARCHITECTURE_CORE.md (Input Strategy), Assets/_Scripts/Controller/IO/CascadeSmoother.cs, Docs/UNITY_VERIFICATION_CHECKLIST.md
+- **Done:** 2026-10-23, Garrett flew the pad 2026-10-23: the old 1.5/s nose lag wins ('responsive, but eases into its target ... keep this on gamepad'); the stage smoother lost (reads as input lag) and was removed. Pad dial now Resources/GamepadFlightConfig.noseFollowPerSecond = 1.5.
+
+### T-20261023-27e8 · open · test · Input
+- **Task:** Find the touch nose lag: on a phone (or the Device Simulator) on cece/serene-galileo-t77xt3, fly the Squirrel and the Sparrow with Resources/TouchControlProfiles.noseFollowPerSecond at 0 (today), 5 and 9 (the retired per-hull touch values) and maybe 3; pick the one that is responsive and eases into its target like the pad. Also run the EditMode NoseFollowDialTests (and update their touch expectation if the value changes).
+- **Done when:** Garrett picks a touch value and it is committed to TouchControlProfiles (through Tools/Build/author_touch_profiles.py, which owns the asset)
+- **Who can take it:** Garrett (the feel), Yash (offered: tests, phone playtest)
+- **Added:** 2026-10-23 by a Claude session (`cece/serene-galileo-t77xt3`)
+- **See:** Docs/claude/ARCHITECTURE_CORE.md (Input Strategy), Assets/_Scripts/Controller/Vessel/VesselTransformer.cs PilotNoseFollowPerSecond

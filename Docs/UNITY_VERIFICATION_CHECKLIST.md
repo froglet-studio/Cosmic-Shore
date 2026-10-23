@@ -109,37 +109,23 @@ typo in `ReleaseBuildKind.cs` was reported, tagged as changed). `ReleaseBuildKin
 3. Leave the checkbox ticked and run **FrogletTools > Build > Windows x64 (Release)** with weekly TEST MODE on: the
    build must now FAIL with the weekly-challenge message. Switch TEST MODE off afterwards.
 
-### 🔴 Gamepad: the old nose lag back behind a switch, for an A/B (`cece/serene-galileo-t77xt3`, 2026-10-23) — NOT EDITOR-VERIFIED
+### 🔴 Nose lag per device: the pad keeps the fleet lag, touch gets a dial (`cece/serene-galileo-t77xt3`, 2026-10-23) — NOT EDITOR-VERIFIED
 
-**What landed:** `GamepadFlightConfigSO.legacyNoseLag` (shipped ON in `Resources/GamepadFlightConfig`) makes a local
-pad pilot's nose follow through the fleet lag again (`VesselTransformer.FollowsWithFleetLag`, 1.5/s, the 2024-11-19
-to 2026-10-21 value) on every transformer; the stage smoother below ships with delay 0 (off).
+**What landed:** `VesselTransformer.NoseFollowFraction` follows a local human at their device's rate
+(`PilotNoseFollowPerSecond`, also `NoseFollowRate`): pad `Resources/GamepadFlightConfig.noseFollowPerSecond` 1.5 (the
+2024-11-19 to 2026-10-21 lag, Garrett-approved by feel on 2026-10-23), touch
+`Resources/TouchControlProfiles.noseFollowPerSecond` 0 (unchanged: lag-free), keyboard and mouse none. The response
+curve and the stage smoother this branch tried first are gone.
 
-**Verify in editor:**
-1. Fly the Squirrel on a pad: it feels as it did before 2026-10-21.
-2. In Play, untick `legacyNoseLag`: the nose snaps to the stick (lag-free). Tick it again: the lag is back at once.
-3. Touch (or a phone): unchanged, lag-free. AI hulls: unchanged.
-
-### 🔴 Gamepad steering smoother: smooth to the 4th derivative without the old nose lag (`cece/serene-galileo-t77xt3`, 2026-10-23) — NOT EDITOR-VERIFIED
-
-**What landed:** `GamepadInputStrategy` ends each frame by running `XSum`, `YSum`, `YDiff` and the eased sticks
-through `CascadeSmoother` (`Resources/GamepadFlightConfig`: 6 stages, 0.35 s total delay, 240 Hz substeps; first shipped at 4 / 0.12 s).
-Throttle, the raw stick positions and the straight-line gestures are unchanged. Touch, keyboard and mouse do not
-read it. The human nose stays lag-free (`NoseFollowFraction`). Replaces the response curve this branch first
-tried (2026-10-22), which shaped stick position and could not give back the smoothness.
-
-**Verified without the editor:** `unity_refcompile` player: 0 errors in project code; editor: 0 errors in changed
-files (3 in `AuthenticationServiceFacade.cs` from the unfetchable Playmode package). `CascadeSmootherTests`
-compile, not run; their numbers were checked against a Python model of the same filter (90% of a step at 0.200 s
-at 30, 60 and 144 fps; first-frame rise 0.007; ramp trails by 0.110 s at 120 fps).
+**Verified without the editor:** `unity_refcompile` player: 0 errors; editor: 0 in changed files (3 in
+`AuthenticationServiceFacade.cs` from the unfetchable Playmode package). `author_touch_profiles.py --check` OK.
+`NoseFollowDialTests` compile, not run.
 
 **Verify in editor:**
-1. Run `CascadeSmootherTests` (EditMode): all pass.
-2. Fly the Squirrel and the Sparrow on a pad: turns build and settle without a jolt, and settle within ~0.5 s of
-   the stick centring (the old lag took ~1.5 s).
-3. In Play, set `smoothingDelaySeconds` to 0 on `Resources/GamepadFlightConfig`: the pad flies unsmoothed. Try
-   2 and 6 stages at 0.12 s for the feel of the order alone. Restore 6 / 0.35 or commit what you prefer.
-4. On a phone (or touch in the editor): steering is unchanged.
+1. Run `NoseFollowDialTests` (EditMode): all pass.
+2. Pad: flies as it did before 2026-10-21. Set the pad dial to 0 in Play: the nose snaps to the stick.
+3. Touch (Device Simulator or a phone): unchanged at 0. Try 5 and 9 on `TouchControlProfiles` and judge.
+4. AI hulls: unchanged.
 
 ### 🔴 Menu_Main: no entry into freestyle behind the boot veil; the browser Toybox opens on the menu (`claude/menu-click-through-kg5qx7`, 2026-10-22) — NOT EDITOR-VERIFIED
 

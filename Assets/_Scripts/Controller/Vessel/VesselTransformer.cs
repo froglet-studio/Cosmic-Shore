@@ -323,7 +323,15 @@ public class VesselTransformer : MonoBehaviour
         /// applies it: <see cref="RotationFollowRate"/> for an AI, autopilot or remote hull, and
         /// <see cref="float.PositiveInfinity"/> (the nose IS the command) for this machine's human
         /// pilot. For a predictor of this hull's path (the Stoat's foresight).</summary>
-        public float NoseFollowRate => FollowsWithFleetLag ? LERP_AMOUNT : float.PositiveInfinity;
+        public float NoseFollowRate
+        {
+            get
+            {
+                if (!IsLocalHumanPilot) return LERP_AMOUNT;
+                float rate = PilotNoseFollowPerSecond;
+                return rate > 0f ? rate : float.PositiveInfinity;
+            }
+        }
 
         /// <summary>The boost ceiling this hull's skim boost saturates at. Read-only.</summary>
         public float MaxBoost => MaxBoostMultiplier;
@@ -590,9 +598,10 @@ public class VesselTransformer : MonoBehaviour
         /// pads, keyboards and mice too. The steady turn RATE is unchanged; only the lag behind it
         /// is gone.</para>
         ///
-        /// <para><b>Except a pad, while <see cref="GamepadFlightConfigSO.LegacyNoseLag"/> is on</b>
-        /// (shipped on, 2026-10-23): the pad gets the fleet lag back, exactly as it flew before, so the
-        /// lag-free pad and the old one can be compared (<see cref="FollowsWithFleetLag"/>).</para>
+        /// <para><b>Except where a device's dial asks for a lag</b> (<see cref="PilotNoseFollowPerSecond"/>):
+        /// the pad keeps the fleet lag, 1.5/s (Garrett, 2026-10-23: "it is responsive, but eases into its
+        /// target from the repeated lerp. we want to keep this on gamepad"); touch has its own dial,
+        /// shipped at 0 (no lag) until a phone playtest picks a value.</para>
         ///
         /// <para>Two things keep it smooth. The command itself is integrated from eased stick rates,
         /// so it never jumps; and a LEFTOVER gap - one a discontinuous command left behind (a 180
@@ -608,7 +617,10 @@ public class VesselTransformer : MonoBehaviour
         protected float NoseFollowFraction(Quaternion target, float dt)
         {
             float fleet = LERP_AMOUNT * dt;
-            if (FollowsWithFleetLag) return fleet;
+            if (!IsLocalHumanPilot) return fleet;
+
+            float pilotRate = PilotNoseFollowPerSecond;
+            if (pilotRate > 0f) return 1f - Mathf.Exp(-pilotRate * dt);
 
             float t = 1f;
             float gap = Quaternion.Angle(transform.rotation, target);
@@ -619,14 +631,19 @@ public class VesselTransformer : MonoBehaviour
         }
 
         /// <summary>
-        /// True when the nose chases its command through the fleet lag: every AI, autopilot and remote
-        /// hull, and a local human on a gamepad while <see cref="GamepadFlightConfigSO.LegacyNoseLag"/>
-        /// is on (Garrett, 2026-10-23: "restore that to the longstanding settings to the gamepad just so
-        /// i can feel the difference"). Touch, keyboard and mouse pilots never have it.
+        /// The local human pilot's nose follow rate per second for the device they fly with, or 0 for
+        /// no lag: the pad's <see cref="GamepadFlightConfigSO.NoseFollowPerSecond"/> (1.5, the fleet lag),
+        /// touch's <see cref="TouchControlProfileLibrarySO.NoseFollowPerSecond"/> (0); keyboard and mouse
+        /// have none. One dial per device, never per hull.
         /// </summary>
-        bool FollowsWithFleetLag =>
-            !IsLocalHumanPilot
-            || (InputStatus.ActiveInputDevice == InputDeviceType.Gamepad && GamepadFlightConfigSO.Instance.LegacyNoseLag);
+        float PilotNoseFollowPerSecond => InputStatus.ActiveInputDevice switch
+        {
+            InputDeviceType.Gamepad => GamepadFlightConfigSO.Instance.NoseFollowPerSecond,
+            InputDeviceType.Touch => TouchControlProfileLibrarySO.Instance
+                ? TouchControlProfileLibrarySO.Instance.NoseFollowPerSecond
+                : 0f,
+            _ => 0f,
+        };
 
         /// <summary>
         /// True only while THIS machine's human flies the hull. A handheld selects the touch strategy
