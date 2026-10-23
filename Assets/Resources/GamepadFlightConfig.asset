@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a966993d7eb46db90a4c40b65c68958, type: 3}
   m_Name: GamepadFlightConfig
   m_EditorClassIdentifier: 
-  responseExponent: 1.5
-  steeringSensitivity: 0.85
+  smoothingStages: 4
+  smoothingDelaySeconds: 0.12
