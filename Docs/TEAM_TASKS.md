@@ -293,33 +293,37 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.3 (L13) and 2 (10-15 rows)
 - **Done:** 2026-10-17, 2026-10-17, Yash's session: AOEExplosionPool (opt-in, on for the Squirrel ring spawner: 1 miss / 7 reuses per 8 collects). The real allocator was CrystalMorphMeshBuilder.TryBuild (5.22 of 5.53 KB/frame); its per-source emit cache brought VesselImpactor.AcceptImpactee 5.53 -> 3.41 KB/frame, under the 3.83 baseline (rest is Amoebius's Mesh.Set* copy). Unity check: T-20261017-c82c / Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-17.
 
-### T-20261015-d4f5 · open · test · ui
+### T-20261015-d4f5 · done · test · ui
 - **Task:** Profiler capture on claude/new-session-76hnyc: Menu_Main Home (not flying) and the lava lamp. Canvas.BuildBatch / SendWillRenderCanvases should not fire every frame from closed windows (style-B ambient loops now sleep while hidden); compare frame time with bleeding-edge
 - **Done when:** A shared capture shows no per-frame canvas rebuild from hidden menu windows and Home/lava-lamp frame time at or better than bleeding-edge
 - **Who can take it:** Yash or Shombith
 - **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 24
+- **Done:** 2026-10-24, Closed without being run (Yash, 2026-10-24): the test named claude/new-session-76hnyc, which merged into bleeding-edge as #1153 on 2026-10-19 and went through Rev 4-10 after this was written. Re-test the merged menu on bleeding-edge as a new task if needed.
 
-### T-20261015-e890 · open · test · ui
+### T-20261015-e890 · done · test · ui
 - **Task:** Boot flow on claude/new-session-76hnyc: from Bootstrap through sign-in, Menu_Main shows only after Garland is built (black + small LOADING bar, then one fade); no GROWING GARLAND headline; game scenes' connecting screen unchanged; Toy Box Arkway/microscene loads use the subtle readout
 - **Done when:** All four checks pass in the editor, and the boot cover time is noted
 - **Who can take it:** Yash
 - **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 25
+- **Done:** 2026-10-24, Closed without being run (Yash, 2026-10-24): the test named claude/new-session-76hnyc, which merged into bleeding-edge as #1153 on 2026-10-19 and went through Rev 4-10 after this was written. Re-test the merged menu on bleeding-edge as a new task if needed.
 
-### T-20261015-e4dc · open · test · ui
+### T-20261015-e4dc · done · test · ui
 - **Task:** Style-B start flow on claude/new-session-76hnyc: Bootstrap splash (dim, LOADING bar, no spinner), Connection lost window + RETRY on A, age gate and consent (B/Esc declines), sign-in auth panel and pilot-name panel (rule ticks, count, single press on A), splash holds until Garland is built
 - **Done when:** All nine steps of the checklist entry 'Style-B start flow' pass in the editor, with a pad and with a keyboard
 - **Who can take it:** Yash
 - **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, Docs/MENU_REDESIGN_B.md section 26
+- **Done:** 2026-10-24, Closed without being run (Yash, 2026-10-24): the test named claude/new-session-76hnyc, which merged into bleeding-edge as #1153 on 2026-10-19 and went through Rev 4-10 after this was written. Re-test the merged menu on bleeding-edge as a new task if needed.
 
-### T-20261015-ef54 · open · test · ui
+### T-20261015-ef54 · done · test · ui
 - **Task:** Style-B Maelstrom game UI on claude/new-session-76hnyc: hub (chips, side-by-side round cards with the upcoming card outlined, Race to N bars, Pilots ready faces, READY on A, LB/RB scroll), stats screen (NEXT on A), summary (winner line, domain chips, ranked cards, A/Y/B)
 - **Done when:** All six steps of the checklist entry 'Style-B Maelstrom game UI' pass in the editor, solo with AI and in a two-player party
 - **Who can take it:** Yash
 - **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, Docs/MENU_REDESIGN_B.md section 27
+- **Done:** 2026-10-24, Closed without being run (Yash, 2026-10-24): the test named claude/new-session-76hnyc, which merged into bleeding-edge as #1153 on 2026-10-19 and went through Rev 4-10 after this was written. Re-test the merged menu on bleeding-edge as a new task if needed.
 
 ### T-20261015-aed4 · done · test · Activation
 - **Task:** First-login guide Skip and every-Lesson Skip on claude/new-session-76hnyc: SKIP (and pad Y) ends the quest for good; Lessons offer Skip on a fresh profile
@@ -1915,12 +1919,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Two humans, two seats)
 - **Progress:** 2026-10-23 on `cece/relaxed-tesla-axhxzy` (Garrett's ask, Docs/CREW_STATIONS.md): steps 3, 4 and 5 are built for every crew, not only the Wrasse - one station per person on the Player (`Player.NetStation`, server-checked by `CrewStations.Classify`), the Wrasse seat run on its rider's machine with boosts and steals sent to the hull's machine and its kite's path replayed for race rings, and one swap ring (seats first, then the domain's hulls). Garrett replaced the offers: "players pass over seats with other players", and AI fills every empty seat. Still open: step 1 (pops, blasts and Mass clusters on every peer, T-20261023-d13a) and step 6 (seat stations in the Vessel Changer; two party members picking one crew hull from a menu). Untested in the Editor (T-20261023-d445).
 
-### T-20261021-a2b3 · open · dev · Performance
+### T-20261021-a2b3 · done · dev · Performance
 - **Task:** Prism creation is per-prism polling. Every laid prism starts its own CreateBlockCoroutine, and while the per-frame budget is spent, each waiting prism is resumed every frame only to yield again. Under the menu veil the budget is a fixed 512 completions a frame. Measured in the second Orrery capture: 34,770 completions at 0.07 ms each (2.5 s of real work), metered over ~68+ frames. Measure first (the third capture, T-20261021-a96c, shows the settle with the grow-in snapped). If the creation queue is then the floor, replace the polling with one queue the gate drains on a time slice, so a waiting prism costs nothing per frame
 - **Done when:** A capture shows the creation queue's share of a swap, and if it is the floor, a change that drains it from one queue on a time slice lands with a before/after capture
 - **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
 - **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Docs/ECOSYSTEM.md §62.2b; Prism.CreateBlockCoroutine; Prism.MaxCreationCompletionsPerFrame / LoadGateCreationCompletionsPerFrame
+- **Done:** 2026-10-24, Prism.CreationQueue replaces per-prism polling (Bloomrush: 56k coroutines/frame, 166 ms). Unity after-capture owed (Bloomrush, Release).
 
 ### T-20261021-a743 · open · dev · Performance
 - **Task:** A Cell Selector swap releases the old world at a fixed 500 prisms a frame (Cell.ReleaseRetiredWorld). That took 1.1-1.4 s in both Orrery captures, for only 4,259 Garland prisms plus the pilot's trail, because the frames are slow, not the work. The world is already suctioned to a point, so nothing is visible. Make it a time slice (e.g. 8-16 ms a frame) instead of a count, and measure with a Load Time Insights capture
@@ -2286,7 +2291,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md §5
 
 ### T-20261024-ae82 · open · dev · Amoebius
-- **Task:** Amoebius does not compile the game since bleeding-edge 98c25995b9 (2026-10-22): Assets/_Scripts/Utility/OrthographicLens.cs uses UnityEngine.Rendering.VolumeFrameworkUpdateMode and Camera.GetVolumeFrameworkUpdateMode / SetVolumeFrameworkUpdateMode (URP extension methods), which Port/src/CosmicShore.Engine/Rendering lacks (CS0246 at OrthographicLens.cs(32,44)). Add the enum (EveryFrame, ViaScripting, UsePipelineSettings) and the two camera methods. Until then the perf-daily 'amoebius' job is red on every branch carrying that file (seen on PR #1201).
+- **Task:** Amoebius does not compile the game since bleeding-edge 98c25995b9 (2026-10-22): Assets/_Scripts/Utility/OrthographicLens.cs uses UnityEngine.Rendering.VolumeFrameworkUpdateMode and Camera.GetVolumeFrameworkUpdateMode / SetVolumeFrameworkUpdateMode (URP extension methods), which Port/src/CosmicShore.Engine/Rendering lacks (CS0246 at OrthographicLens.cs(32,44)). Add the enum (EveryFrame, ViaScripting, UsePipelineSettings) and the two camera methods. Until then the perf-daily 'amoebius' job is red on every branch carrying that file (seen on PR #1201). Measured 2026-10-24 on Ys-bleeding-edge 7c68405057: Amoebius has 9 compile errors, not 1 - also TouchControl.startTime (PilotSwapGesture.cs:114), GravitySensor (TouchTilt.cs:29,79), Vector3.RotateTowards (PistolBodyMath.cs:149), UniversalAdditionalCameraData.requiresVolumeFrameworkUpdate and .volumeStack (OrthographicLens.cs:69,77).
 - **Done when:** engine_build of the player on bleeding-edge compiles OrthographicLens.cs, and perf-daily's amoebius job is green
 - **Who can take it:** Shombith (the Amoebius engine)
 - **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
@@ -2306,6 +2311,20 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/MENU_REDESIGN_B.md §24; Docs/PERFORMANCE_OPTIMIZATION.md §2 10-24
 
+### T-20261024-3084 · open · decision · Ecology
+- **Task:** Bloomrush (and Rampage, same cactus forest) grows its ~480-plant arena DURING play: about 56,000 prisms wait for creation at the 90 s mark in both of Andrew's 10-20 captures, and at the gameplay budget (6 completions a frame for laid-world mass) the forest takes ~2.6 min to finish appearing. The per-frame cost of the wait is fixed (Prism.CreationQueue, 10-24); the growth rate is a design call: build the forest under the load gate (512/frame behind the connecting screen), or give environment mass a time slice in play.
+- **Done when:** A decision recorded, and a Bloomrush capture shows the forest's backlog drained or bounded
+- **Who can take it:** Garrett (ecology, arenas)
+- **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md §2 10-24
+
+### T-20261024-0212 · open · test · Performance
+- **Task:** Re-capture Bloomrush after the prism creation queue (Ys-bleeding-edge): Release, Third Eye closed, Arcade > Bloomrush, play past the 90 s auto-capture, stop Play. Compare with the 10-20 captures (CPU busy 130-221 ms, Prism.CreateBlockCoroutine x56k/frame, CoroutinesDelayedCalls 139 ms).
+- **Done when:** A Bloomrush capture after the fix with CoroutinesDelayedCalls near zero
+- **Who can take it:** Andrew (has the Bloomrush captures), Yash, anyone with the Unity Editor
+- **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-24 prism creation queue
+
 ### T-20261024-b06b · open · test · Multiplayer
 - **Task:** Retest B35 (joins refused with 'NetworkConfig mismatch') on two machines on Ys-bleeding-edge: one hosts a party, the other direct-joins, then once more by accepting an invite. Then press Send to Claude (automatic) and run net_logs.py show 1.
 - **Done when:** Both joins land in the party, the host logs no 'NetworkConfig mismatch', and net_logs.py show prints no 'NetworkConfig differs between players'.
@@ -2319,3 +2338,87 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (engine)
 - **Added:** 2026-10-24 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Tools/Build/prisma_edit_mode_tests/gapfill.py
+
+### T-20261024-3e3c · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part A steps 3 and 9 on GitHub Actions: run Unity CI (tier static) on Ys-bleeding-edge and confirm the skimmer audit, AI/replay gate and generator loop ran green; then check the first Bleeding-edge guard run after A landed is green at every static step
+- **Done when:** Both runs green with those steps present and not skipped; result noted in BRANCH_PARTS_STATUS.md
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-faca · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part A steps 4-6 in the Unity editor: Audit Vessel Skimmers vs audit_vessel_skimmers.py (6 faults), Validate Lifeform Crystals vs audit_lifeform_crystals.py, and an Inspector edit to SkimRaceAIConfig_I4.asset turning author_skimrace_ai_config.py --check to DRIFT (then git checkout the asset)
+- **Done when:** All three steps match their PASS lines; mismatches pasted into DT-002
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-3d2f · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part E (AI training fixes, deployed tournament genome): run its editor steps, then push it onto Ys-bleeding-edge with pick_branch_parts.py build E
+- **Done when:** Editor steps pass and E is pushed; discard any Archive/SessionState asset changes from the test session
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-e80a · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part F (Skim Race AI intensity-4 policy v2-i4): run its editor steps, then push it with pick_branch_parts.py build F
+- **Done when:** Editor steps pass and F is pushed; Skim Race AI config assets not left modified
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-e462 · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part G (load-time target, unattended load sweep R7): after E has landed, run its editor steps, then push it with pick_branch_parts.py build G
+- **Done when:** Editor steps pass and G is pushed (E and M already in)
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-d76a · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part H (parity harness, Unity side): run its editor steps (needs a throwaway returning-user account named exactly 'parity'), push H, then push part I (Port/ only) after it
+- **Done when:** H's editor steps pass, H then I pushed as separate pushes
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-e520 · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part J (multiplayer QoL: Add Friend, recently played with, ready lights, dropping out, invite inbox): run its two-account editor steps, then push it with pick_branch_parts.py build J
+- **Done when:** Two-account steps pass (or are marked 'needs two accounts'), J pushed
+- **Who can take it:** Yash; a second UGS account / machine (Caleb or Andrew)
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-5cad · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part K (leak and lifetime fixes: effect cooldowns, score trackers, delayed tasks): run its editor steps, then push it with pick_branch_parts.py build K
+- **Done when:** Editor steps pass and K is pushed
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-7c3d · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part L (heritable genome, off by default): run its editor steps and get Garrett's sign-off on the LOCKED rule 'the genome is a lean, not a level' and on worm fission as a mutating birth; then push L
+- **Done when:** Steps pass, Garrett's sign-off recorded, L pushed
+- **Who can take it:** Yash (tests); Garrett (sign-off)
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-a306 · open · setup · Branch parts (nice-brahmagupta)
+- **Task:** Part B (untrack FMOD's cache, PR template): ask the sound designer to open Cosmic Shore.fspro, settle the 'Squirel boost' track volumes, save, build and commit Metadata/ and Build/; then push B
+- **Done when:** The sound designer's commit is on Ys-bleeding-edge and B is pushed
+- **Who can take it:** Yash (push); the sound designer (FMOD save)
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-a0c4 · open · docs · Branch parts (nice-brahmagupta)
+- **Task:** Part C step 10: get Shombith and Garrett to read the Steam Playtest runbook (A4 step 6, branch model, upload block, the name step, A6 template) and confirm they can execute each step
+- **Done when:** Both confirm, or their corrections are filed
+- **Who can take it:** Yash (chase); Shombith and Garrett (read)
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-eb42 · open · docs · Branch parts (nice-brahmagupta)
+- **Task:** Part D (plans and docs) last: push it once the parts its QA items describe have landed, then run /qa-backlog once on bleeding-edge; when every part has landed or been dropped, delete the test plan, pick_branch_parts.py and BRANCH_PARTS_STATUS.md
+- **Done when:** D pushed, QA backlog refreshed, the one-off plan files deleted
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
