@@ -2391,3 +2391,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (UGS layer owner); Yash (offered)
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Tools/UGS/README.md
+
+### T-20261024-1948 · open · setup · Fair play
+- **Task:** Deploy match reports: run match-report.test.cjs, deploy Tools/UGS/CloudCode/match-report.js (development first), set MatchReportGate.Enabled = true in a test build and run the 'Match reports' editor checks, then production
+- **Done when:** Checklist entry 'Fair play: match reports' is green; a quit guest shows left 1 in FAIRPLAY_CONDUCT
+- **Who can take it:** Shombith (UGS layer owner); Yash (offered, MPPM)
+- **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Tools/UGS/README.md

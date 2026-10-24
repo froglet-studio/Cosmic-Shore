@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play: match reports from every player (quits, host results), gated off (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T9 and T4. `MatchReporter` (attached by `MultiplayerMiniGameControllerBase.OnNetworkSpawn`
+on every peer when `MatchReportGate.Enabled`) sends `start` at the first turn and `end` with the final scores (by UGS
+id) and the winner at `OnWinnerCalculated`, keyed by `gameData.MatchId`. `Tools/UGS/CloudCode/match-report.js` counts
+quits and compares reports. **Gate off:** nothing is attached and behaviour is unchanged.
+
+**Verified without the editor:** `unity_refcompile` player: 0 project errors, none in the changed files; a planted
+error in `MatchReporter.cs` was caught. Port build: no errors in the changed files. `match-report.test.cjs`: 9 passed;
+removing the quit count fails it.
+
+**Test in the editor** (after `Tools/UGS/README.md` "Switching on match reports" steps 1-3, MPPM host + 1 guest):
+1. Play a race to the end: both players' `FAIRPLAY_CONDUCT` show started 1, finished 1, left 0; the host has no
+   `FAIRPLAY_SIGNALS`.
+2. Start another race and quit the guest (close its window), then start a third: the guest shows left 1, leave
+   rate 0.5.
+3. AI backfill seats never appear in `players` or `scores`.
+4. With ArcadeMatch logging on, no `[MatchReport]` refusals in a normal match.
+
 ### 🔴 Fair play: server-checked weekly leaderboard, gated off (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
 
 **What landed:** Threat Board T2. `Tools/UGS/CloudCode/weekly-score.js` checks a weekly-challenge time (known board,

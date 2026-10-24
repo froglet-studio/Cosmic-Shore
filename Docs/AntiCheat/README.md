@@ -342,8 +342,8 @@ Set on the Threat Board artifact (https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi
 | High | T1 Anonymous accounts | 20 | T-20261022-6151 |
 | High | T2 Client-trusted leaderboard | 15 | T-20261022-9bbd. **Server check built 2026-10-24, gated off until deployed with the access policy** |
 | High | T8 No Report button | 12 | T-20261022-7708 |
-| High | T4 Host decides every result | 6 | T-20261024-af9e |
-| High | T9 Leaving costs nothing | 8 | T-20261024-9d7c |
+| High | T4 Host decides every result | 6 | T-20261024-af9e. **Match reports built 2026-10-24, gated off**: disagreeing reports flag the host; a host that lies the same to everyone is not caught |
+| High | T9 Leaving costs nothing | 8 | T-20261024-9d7c. **Quit counting built 2026-10-24, gated off**; no consequence until the Undertow |
 | High | R11 Memory editing on the device | 8 | T-20261024-bc4c |
 | Medium | T6 Shipped AI pilot as a bot (`PilotControl`) | 9 | T-20261022-7708 |
 | Medium | R10 Bot farming | 9 | later (phase C) |
