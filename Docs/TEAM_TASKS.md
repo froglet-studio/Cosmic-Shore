@@ -2291,3 +2291,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (the Amoebius engine)
 - **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
 - **See:** PR #1201 comment; .github/workflows/perf-daily.yml
+
+### T-20261024-803f · open · test · Performance
+- **Task:** Re-capture Menu_Main after the QuestTrackView fix (Ys-bleeding-edge): Release, Third Eye closed, play Menu_Main (freestyle or the hub) past the 4-minute auto-capture and stop Play. Compare ClipperRegistry.Cull with the 10-19..23 captures (3.1-7.7 ms/frame; 0.26 ms on 10-16).
+- **Done when:** A Menu_Main capture after the fix shows ClipperRegistry.Cull and CPU busy back near the 10-16 baseline, or names what still costs
+- **Who can take it:** Yash, Caleb or Andrew (anyone with the Unity Editor)
+- **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md §2 10-24
+
+### T-20261024-1a3f · open · dev · Menu_Main UI
+- **Task:** Menu_Main UI clipping cost since style-B (#1153): ClipperRegistry.Cull 3.1-7.7 ms/frame in every Menu_Main capture 10-19..23 (0.26 ms on 10-16); RectMask2D count 18 -> 59. Hidden screens and modals stay active (alpha 0), so any graphic that moves under a mask is re-clipped every frame. QuestTrackView's parallax was one such mover (fixed 10-24); find any other with a Release capture after that fix, and consider deactivating or disabling the masks of screens nobody can see (closed modals, off-strip screens, freestyle).
+- **Done when:** Menu_Main CPU busy back near the 10-16 baseline (3.8 ms) in a Release capture
+- **Who can take it:** Shombith (style-B menu)
+- **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/MENU_REDESIGN_B.md §24; Docs/PERFORMANCE_OPTIMIZATION.md §2 10-24

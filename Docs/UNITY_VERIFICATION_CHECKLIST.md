@@ -14164,3 +14164,14 @@ Not opened in Unity (no editor in the session); `unity_refcompile --config edito
 - [ ] Fly the Starlings, pick a card; on a later hand that offers it again the row reads `Lv 3 → 7` (the arrow renders, no box).
 - [ ] Open that card's details: `Level 3 → 7`, each number `now → next`, `Unlocks at Lv 5: ...` for a jolt the pick passes.
 - [ ] With no hand, open details: each held card heads `Lv N → N+1` with numbers beside the next level's and its next jolt; a card at 15 shows `Max level`.
+
+## 🔴 2026-10-24 — Quest track parallax sleeps while hidden (Menu_Main clipping cost) (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/UI/Views/QuestTrackView.cs`. What ran instead of `/verify-unity`: `unity_refcompile`
+player RESULT OK (no errors in project code); console-logging and conditional-compilation gates OK.
+Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-24.
+
+1. Release, Menu_Main, open Profile: the quest cards still shrink and fade toward the edges, and grow back when
+   scrolled to the centre, exactly as before. Claim a quest: its card animates, then settles at the right scale.
+2. Leave Profile (or enter freestyle) and play Menu_Main past the 4-minute auto-capture, then stop Play. In the
+   capture, `ClipperRegistry.Cull` should be well below the 3-7 ms of the 10-19..23 captures (0.26 ms on 10-16).
