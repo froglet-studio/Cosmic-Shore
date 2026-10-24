@@ -3088,6 +3088,22 @@ I1 43.0 s vs 48.2, I2 56.1 vs 55.4, I3 56.3 vs stalled), gates.
 4. Any other mode with an AI Rhino (Broadside): it still ramps on long straights (no next leg there: every objective is
    read as a 90° corner).
 
+### 🔴 The Rhino AI's Regatta corner speed and line set from Yash's six Rhino races (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** a Regatta-only variant `Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta` (the base asset with
+`cornerSpeed` 333, was 600) and the Rhino's race line `LaneShare` 0.676 (was 0.80; `race_lines_learned.json` →
+`author_race_lines.py`). Both are medians of all six of Yash's Rhino races (129 ring passages), set by hand because only
+two finished; the learner replaces them at the third finished race. `learn_drives_from_flights.py` now scales each ring
+crossing by its own ring's mouth (mixing I1 and I3 had read 0.815). No C# changed.
+**Verified without the editor:** `learn_drives_from_flights.py --self-test` and `--check`, `author_race_lines.py --check`.
+`rhino_drive_sim.py` (a model with no rails) is SLOWER at 333 than at 600 (I1 50.2 / 44.9 s, I3 75.1 / 50.1).
+**Verify in editor:**
+1. Arcade ▸ Regatta I1 and I3, an AI Rhino, Third Eye on it: it brakes on the ramp to about 330 u/s before sharp rings
+   and crosses about two thirds of the way out from the braid toward the rim.
+2. It scrapes rails less than before, and its lap times are no worse than before (I1 about 45 s, I3 about 50 s);
+   if it is slower, say so: the model predicted that.
+3. Broadside or any other mode with an AI Rhino: unchanged (still 600).
+
 ### 🔴 The Stoat races Regatta: on the card, its autopilot tunable per mode (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** the Stoat is on `ArcadeGameRegatta` (`author_regatta_assets.py`, `--check` OK) with a Time +10 starting row
@@ -3142,6 +3158,21 @@ puts the AI on the rail's - face, the side every ring sits on, 22 u off the rail
 3. To compare with the old AI: `git revert` this commit's asset change (one file), race again, compare.
 4. Fail = it hits the rail more, stalls at a ring, or flips faces every ring. Undo: set `SkimHeight` back to 4.346 in
    `Tools/Build/author_skimrace_ai_config.py` (`REGATTA_LEARNED`) and re-run it.
+
+### 🔴 Party: B31 fixed again - lobby reads one second apart (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B31, "The first fix did not hold"): `LobbyReadPacer` holds every
+lobby GET of ours (presence refresh, party refresh, the reads around a property save) at least 1.05 s after
+the last, waiting its turn if needed. The refresh tick reads ONE lobby: when the party session is due its read,
+that tick skips the presence read. Before: 1,061 party-read 429s in Caleb's and Gradi's 21-23 Oct tests.
+**Verified without the editor:** `PartyRefreshRecoveryTests` (13) and the party suites (185) on Amoebius;
+`unity_refcompile` player and editor (only the known AuthenticationServiceFacade errors). `/verify-unity` is
+not available in the cloud session.
+**Verify in editor:**
+1. Two machines (or MPPM main + P2) party up and stay 10 minutes in the menu. No `rate-limited - backing off`
+   on either; `net_logs.py show 1` reads `429s 0`.
+2. Invite, accept, and a member leaving still show on the other screen within about 2 s (property saves now
+   wait for their read turn, up to about a second).
 
 ### 🔴 Party: B35 fixed - direct joins no longer fail with `NetworkConfig mismatch` (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
 

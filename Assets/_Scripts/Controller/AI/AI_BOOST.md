@@ -165,8 +165,17 @@ new drive (then at `cornerReleaseDegrees` 50, `minSpeedGain` 150) raced 43.0 / 5
 drive's 48.2 / 55.4 / stalled / stalled; the retune (50 → 30, 150 → 50) is for the centre steering. `--sweep` re-runs
 the parameter grid. The editor is the measurement.
 
-Asset: `AI Boost Policies/RhinoAIBoostPolicy`, wired on `Rhino.prefab`'s `AIPilot`; a Regatta variant
-(`Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta`) appears once flights are learned. Tests:
+**Corner speed from Yash's flights (2026-10-24).** Yash threads Regatta rings at a median 333 u/s (129 ring passages,
+six Rhino races, I1 425 and I3 290-345; his top speed was about 590, never the 840 ceiling). The Regatta variant
+(`Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta`) carries `cornerSpeed` 333 and the base's every other number;
+the base asset (600) and every other mode are unchanged. It was set by hand at Yash's ask from all six races, four
+unfinished, because only two finished; `learn_drives_from_flights.py --write` rewrites the variant at the third
+finished race. The model disagrees: `rhino_drive_sim.py` at 333 is slower than at 600 (I1 50.2 / 44.9, I3 75.1 / 50.1,
+I4 61.0 / 55.4 s, I2 the same), because it flies the centre line with no rails to scrape and no rotation lag, the very
+risks a person brakes for. Yash's finished I1 was 36.5 s, faster than the model at either value. The editor decides.
+
+Asset: `AI Boost Policies/RhinoAIBoostPolicy`, wired on `Rhino.prefab`'s `AIPilot`; the Regatta variant
+(`Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta`) is loaded by `AIBoostPolicySO.ForMode`. Tests:
 `RhinoRampDriveTests`. Not editor-verified.
 
 The 2026-10-14 audit added two hooks every driver can use (`AIBoostDriver.HoldsFullThrottle`, `RotationLimit`), a
