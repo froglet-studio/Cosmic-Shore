@@ -247,18 +247,20 @@ namespace CosmicShore.Gameplay
             public Vector3 A, X, Y, Z;
             public float Width, Height, Depth;
 
-            /// <summary>The net between jack <paramref name="a"/> and jack <paramref name="b"/>, its mouth facing
-            /// <paramref name="forward"/>, standing up along <paramref name="up"/> (both the hull's).</summary>
-            public static NetFrame Between(Vector3 a, Vector3 b, Vector3 forward, Vector3 up, float height, float depth)
+            /// <summary>The net between jack <paramref name="a"/> and jack <paramref name="b"/>, moving along
+            /// <paramref name="motion"/> (its bag hangs back against it, square to the line between the fish), the mouth's
+            /// top toward <paramref name="up"/> (the hull's).</summary>
+            public static NetFrame Between(Vector3 a, Vector3 b, Vector3 motion, Vector3 up, float height, float depth)
             {
                 var ab = b - a;
                 float w = ab.magnitude;
                 var x = w > 1e-5f ? ab / w : Vector3.right;
-                var y = Vector3.ProjectOnPlane(up, x);
-                if (y.sqrMagnitude < 1e-8f) y = Vector3.ProjectOnPlane(forward, x);
-                y.Normalize();
-                var z = Vector3.Cross(x, y);
-                if (Vector3.Dot(z, forward) < 0f) { y = -y; z = -z; }
+                var z = Vector3.ProjectOnPlane(motion, x);
+                if (z.sqrMagnitude < 1e-8f) z = Vector3.ProjectOnPlane(Vector3.Cross(x, up), x);
+                if (z.sqrMagnitude < 1e-8f) z = Vector3.ProjectOnPlane(Vector3.forward, x);
+                z.Normalize();
+                var y = Vector3.Cross(z, x);
+                if (Vector3.Dot(y, up) < 0f) y = -y;
                 return new NetFrame { A = a, X = x, Y = y, Z = z, Width = w, Height = height, Depth = depth };
             }
 
@@ -288,6 +290,22 @@ namespace CosmicShore.Gameplay
                 w = bag > 1e-4f ? -z / bag : 0f;
                 return s >= -sm && s <= 1f + sm && Mathf.Abs(t) <= 1f + tm && z <= margin && -z <= bag + margin;
             }
+        }
+
+        /// <summary>
+        /// The way a net is moving, eased (Garrett, 2026-10-24: the net "seem to bend the opposite way from expected when flying
+        /// up/down or left/right"): <paramref name="trail"/> eases toward the direction of <paramref name="velocity"/>, so the
+        /// bag hangs back against the way the net actually travels and swings out behind it through a climb or a turn, as a
+        /// towed net does, instead of turning with the hull's nose. Below <paramref name="minSpeed"/> it holds; with no
+        /// direction yet it takes <paramref name="fallback"/>.
+        /// </summary>
+        public static Vector3 EaseTrail(Vector3 trail, Vector3 velocity, Vector3 fallback, float minSpeed, float rate, float dt)
+        {
+            if (trail.sqrMagnitude < 1e-8f) trail = fallback.sqrMagnitude > 1e-8f ? fallback.normalized : Vector3.forward;
+            float speed = velocity.magnitude;
+            if (speed < minSpeed) return trail;
+            var next = Vector3.Slerp(trail, velocity / speed, Ease(rate, dt));
+            return next.sqrMagnitude > 1e-8f ? next.normalized : trail;
         }
 
         /// <summary>

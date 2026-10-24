@@ -2162,7 +2162,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 
 ### T-20261024-7999 · open · test · Jacks
 - **Task:** Fly the Jacks' net in Unity on cece/optimistic-rubin-t46tzs (Toybox Vessel Changer > Jacks): the net opens with the sticks apart; it carries crystals (all five) and drops them on landing for the jacks to collect; it destroys the prisms it touches like the hull; it steals and shields creatures (they join the herd and glow); the netting call (B/T) toggles the plane pull; the herding view is closer, follows the jacks, and Y/F/the zoom button shows the whole cell; an omni crystal bears a worm in your domain; a rival in the net loses crystals; host + client agree. Run EditMode JacksMathTests and LeashMarkTests
-- **Done when:** UNITY_VERIFICATION_CHECKLIST 2026-10-24 Jacks net steps 1-9 pass, or the failures are dev tasks
+- **Done when:** UNITY_VERIFICATION_CHECKLIST 2026-10-24 Jacks net steps 1-9 and round 2 steps 11-15 pass, or the failures are dev tasks
 - **Who can take it:** Yash (offered), Garrett (vessel owner, the look calls in step 10)
 - **Added:** 2026-10-24 by a Claude session (`cece/optimistic-rubin-t46tzs`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md §1.1; Docs/UNITY_VERIFICATION_CHECKLIST.md

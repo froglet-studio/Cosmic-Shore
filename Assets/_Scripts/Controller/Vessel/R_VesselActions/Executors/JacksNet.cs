@@ -63,12 +63,40 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The net between jack <paramref name="a"/> and jack <paramref name="b"/>, opened by how far apart they
         /// are (every peer reads the same opening back from the published fish).</summary>
-        internal static JacksMath.NetFrame FrameFor(JacksConfigSO cfg, Vector3 a, Vector3 b, Vector3 forward, Vector3 up)
+        internal static JacksMath.NetFrame FrameFor(JacksConfigSO cfg, Vector3 a, Vector3 b, Vector3 motion, Vector3 up)
         {
             float open = JacksMath.NetOpenFromGap(Vector3.Distance(a, b), cfg.NetClosedGap, cfg.NetOpenGap);
             float height = Mathf.Lerp(cfg.NetMinHeight, cfg.NetMaxHeight, open);
-            return JacksMath.NetFrame.Between(a, b, forward, up, height, cfg.NetDepth);
+            return JacksMath.NetFrame.Between(a, b, motion, up, height, cfg.NetDepth);
         }
+
+        /// <summary>
+        /// The way a net between <paramref name="a"/> and <paramref name="b"/> is travelling, eased
+        /// (<see cref="JacksMath.EaseTrail"/>): its bag hangs back against it. Each net that is drawn or run keeps its own.
+        /// </summary>
+        internal struct Trail
+        {
+            Vector3 _dir, _prevCentre;
+            bool _has;
+
+            internal Vector3 Step(JacksConfigSO cfg, Vector3 a, Vector3 b, Vector3 fallback, float dt)
+            {
+                var centre = 0.5f * (a + b);
+                var velocity = _has && dt > 0f ? (centre - _prevCentre) / dt : Vector3.zero;
+                if (!_has) _dir = fallback;
+                _dir = JacksMath.EaseTrail(_dir, velocity, fallback, TrailMinSpeed, cfg.NetTrailEase, dt);
+                _prevCentre = centre;
+                _has = true;
+                return _dir;
+            }
+
+            internal void Reset() => _has = false;
+        }
+
+        // below this speed (u/s) the bag holds the way it was hanging
+        const float TrailMinSpeed = 2f;
+
+        Trail _trail;
 
         /// <summary>Whether the fish are close enough to hold a net: at take-off they swim in from the herding board, and a
         /// net strung across that whole gap would sweep the board. The net opens once they are in formation.</summary>
@@ -91,7 +119,7 @@ namespace CosmicShore.Gameplay
             }
             var status = ex.Status;
             var hull = status.Transform;
-            Frame = FrameFor(cfg, a, b, hull.forward, hull.up);
+            Frame = FrameFor(cfg, a, b, _trail.Step(cfg, a, b, hull.forward, dt), hull.up);
             Open = true;
 
             Carry(cfg, dt);
@@ -118,6 +146,7 @@ namespace CosmicShore.Gameplay
             _items.Clear();
             _touching.Clear();
             _inside.Clear();
+            _trail.Reset();
             Open = false;
         }
 
@@ -199,7 +228,8 @@ namespace CosmicShore.Gameplay
         {
             var status = ex.Status;
             var cfg = ex.Config;
-            float reach2 = cfg.JackCrystalReach * cfg.JackCrystalReach;
+            float reach2 = cfg.JackCrystalReach * cfg.JackCrystalReach, height = cfg.JackCrystalHeight;
+            var up = ex.BoardUp;
             var skimmerOwner = status.NearFieldSkimmer;
             var skimmer = skimmerOwner ? skimmerOwner.GetComponentInChildren<SkimmerImpactor>(true) : null;
             var vessel = ex.HullImpactor;
@@ -211,7 +241,8 @@ namespace CosmicShore.Gameplay
                 var c = active[i];
                 if (!c || !c.isActiveAndEnabled || c.IsExploding || c.IsEmbedded || !c.CanBeCollected(status.Domain)) continue;
                 var p = c.transform.position;
-                if ((p - ex.JackWorld(0)).sqrMagnitude > reach2 && (p - ex.JackWorld(1)).sqrMagnitude > reach2) continue;
+                // across the board, as the herding view shows it: a crystal under a jack is the jack's, however high it sits
+                if (!Under(p, ex.JackWorld(0), up, reach2, height) && !Under(p, ex.JackWorld(1), up, reach2, height)) continue;
                 if (_collectedAt.TryGetValue(c, out float at) && Time.time - at < 0.5f) continue;
                 var impactor = ImpactorOf(c);
                 if (impactor is ElementalCrystalImpactor elemental && !elemental.HasBeenCollected && skimmer)
@@ -226,6 +257,13 @@ namespace CosmicShore.Gameplay
                     c.CrystalManager.ReportRingThreaded(c.Id, p, vessel);
                 }
             }
+        }
+
+        static bool Under(Vector3 crystal, Vector3 jack, Vector3 up, float reach2, float height)
+        {
+            var d = crystal - jack;
+            float h = Vector3.Dot(d, up);
+            return Mathf.Abs(h) <= height && (d - up * h).sqrMagnitude <= reach2;
         }
 
         // ------------------------------------------------------------------ prisms: destroyed like always

@@ -14163,3 +14163,22 @@ no net or zoom fields, no worm effect), and the EditMode tests `JacksMathTests` 
 10. Look calls (numbers on `JacksConfig` and `JacksBodies`): `netSpread` 30, `netMinHeight` / `netMaxHeight` 6 / 36,
     `netDepth` 26, `netRivalTake` 0.1, `herdViewZoom` 0.75, `zoomButtonSize` 0.09, `netStrandRadius` 0.3; icons for the
     two buttons (`zoomButtonIcon`, `callButtonIcon`) are empty.
+
+### Round 2 (2026-10-24, same branch): Garrett's playtest notes
+
+"there are some angles where the net looses visibility. it also seem to bend the opposite way from expected when flying
+up/down or left/right. i had a hard time collecting crystals one i switched to the herding mode. we can remove the pip from
+both modes. at the sharks fly apart in herding mode the camera should zoom out so they never collide with the screen
+perimeter." Headless compile OK (player and editor, 0 errors in changed files); `author_jacks_assets.py --check` failed on
+the round-1 config first, then passed.
+
+11. Orbit the netting jacks with the camera (roll, loop): the net is solid from every side, in your domain's colour.
+12. Climb, dive and turn hard while netting: the bag swings out behind the way the net is travelling (below in a climb,
+    outside in a turn) and settles straight back when you fly level.
+13. Land with crystals in the net, then run a jack over each as the top-down view shows it: every one is collected, even
+    one the net left well above or below the board.
+14. No small view in either mode: herding is the top-down view alone, netting the chase view alone. The D-pad, arrows or
+    two-finger swipe still switch.
+15. Herding, run the two jacks apart toward opposite edges: the view zooms out so neither reaches the edge, and back in as
+    they come together.
+

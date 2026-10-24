@@ -549,9 +549,11 @@ THUMB_VIEW_FIELDS = "  phoneShortMm: 71\n  thumbCover: 0.9\n"
 HERD_MARK_FIELDS = "  herdHueLean: 0.35\n  herdGlow: 1.5\n"   # the glow: "fauna that get herded should light up" (2026-10-23)
 # The net (Garrett, 2026-10-24: "lets make it a net that opens wider with xdiff"), after the flight's and the AI's fields;
 # and the herding view zoomed in, following the jacks, with its whole-cell zoom and buttons, after viewPanEase.
-NET_FIELDS = ("  netSpread: 30\n  netMinHeight: 6\n  netMaxHeight: 36\n  netDepth: 26\n  netSettle: 0.75\n  netSettleEase: 3\n"
-              "  netRivalTake: 0.1\n  netRivalCooldown: 2\n  jackCrystalReach: 18\n  netCameraFill: 0.8\n  netCameraEase: 3\n")
-HERD_VIEW_FIELDS = ("  herdViewZoom: 0.75\n  herdFollowJacks: 1\n  cellViewMargin: 1.1\n  viewZoomEase: 3\n  zoomButtonSize: 0.09\n"
+NET_FIELDS = ("  netSpread: 30\n  netMinHeight: 6\n  netMaxHeight: 36\n  netDepth: 26\n  netTrailEase: 5\n  netSettle: 0.75\n"
+              "  netSettleEase: 3\n  netRivalTake: 0.1\n  netRivalCooldown: 2\n  jackCrystalReach: 32\n  jackCrystalHeight: 200\n"
+              "  netCameraFill: 0.8\n  netCameraEase: 3\n")
+HERD_VIEW_FIELDS = ("  herdViewZoom: 0.75\n  herdFollowJacks: 1\n  cellViewMargin: 1.1\n  herdJacksFill: 0.8\n  herdJacksMargin: 40\n"
+                    "  viewZoomEase: 3\n  zoomButtonSize: 0.09\n"
                     "  zoomButtonIcon: {fileID: 0}\n  callButtonIcon: {fileID: 0}\n")
 
 
@@ -573,6 +575,12 @@ def config_retrofit(text: str) -> str:
         text = re.sub(r"^(  herdHueLean: .*\n)", lambda m: m.group(1) + "  herdGlow: 1.5\n", text, count=1, flags=re.M)
     if "  netSpread:" not in text:
         text = re.sub(r"^(  aiFlightSeconds: .*\n)", lambda m: m.group(1) + NET_FIELDS, text, count=1, flags=re.M)
+    if "  netSpread:" in text and "  netTrailEase:" not in text:   # 2026-10-24 round 2: the trail, the jacks' reach, the zoom-out
+        text = re.sub(r"^(  netDepth: .*\n)", lambda m: m.group(1) + "  netTrailEase: 5\n", text, count=1, flags=re.M)
+        text = text.replace("  jackCrystalReach: 18\n", "  jackCrystalReach: 32\n  jackCrystalHeight: 200\n")
+    if "  herdViewZoom:" in text and "  herdJacksFill:" not in text:
+        text = re.sub(r"^(  cellViewMargin: .*\n)", lambda m: m.group(1) + "  herdJacksFill: 0.8\n  herdJacksMargin: 40\n", text,
+                      count=1, flags=re.M)
     if "  herdViewZoom:" not in text:
         text = re.sub(r"^(  viewPanEase: .*\n)", lambda m: m.group(1) + HERD_VIEW_FIELDS, text, count=1, flags=re.M)
     return text
@@ -795,9 +803,9 @@ def check_assets(config: str, controls, container: str):
         errs.append("JacksConfig.asset: no herd mark field (run the tool)")
     if "  herdGlow:" not in config:
         errs.append("JacksConfig.asset: no herd glow field (run the tool)")
-    if "  netSpread:" not in config or "  netCameraEase:" not in config:
+    if "  netSpread:" not in config or "  netCameraEase:" not in config or "  netTrailEase:" not in config:
         errs.append("JacksConfig.asset: no net fields (run the tool)")
-    if "  herdViewZoom:" not in config or "  callButtonIcon:" not in config:
+    if "  herdViewZoom:" not in config or "  callButtonIcon:" not in config or "  herdJacksFill:" not in config:
         errs.append("JacksConfig.asset: no herding view zoom fields (run the tool)")
     action = guid_of_script("JacksActionSO")
     for name, value, text in controls:
@@ -1024,6 +1032,11 @@ def self_test():
     expect(check_assets(cfg.replace("  herdGlow: 1.5\n", ""), controls, cont), 1, "no herd glow field")
     expect(check_assets(cfg.replace(NET_FIELDS, ""), controls, cont), 1, "no net fields")
     expect(check_assets(cfg.replace(HERD_VIEW_FIELDS, ""), controls, cont), 1, "no herding view zoom fields")
+    round1 = cfg.replace("  netTrailEase: 5\n", "").replace("  jackCrystalReach: 32\n  jackCrystalHeight: 200\n",
+                                                             "  jackCrystalReach: 18\n").replace("  herdJacksFill: 0.8\n  herdJacksMargin: 40\n", "")
+    expect(check_assets(round1, controls, cont), 1, "the net's first-round config")
+    if config_retrofit(round1) != cfg:
+        fails.append("the config retrofit does not bring the first-round net config to the second round")
     if config_retrofit(cfg.replace(NET_FIELDS, "").replace(HERD_VIEW_FIELDS, "")) != cfg:
         fails.append("the config retrofit does not put the net and herding view fields back where the asset keeps them")
     no_worm = cont.replace(f"  - {{fileID: 11400000, guid: {WORM_EFFECT_GUID}, type: 2}}\n", "")

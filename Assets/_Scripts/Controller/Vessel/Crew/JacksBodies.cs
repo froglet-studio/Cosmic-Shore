@@ -77,7 +77,8 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.1f)] float skimmerRadius = 4f;
 
         [Header("The net (Garrett, 2026-10-24: \"lets make it a net that opens wider with xdiff\")")]
-        [Tooltip("The net's strands. Empty: the sword blade's own material (the skimmer's renderer).")]
+        [Tooltip("The net's strands. Empty: the jacks' own domain material (the hull's ship material, lit and opaque, so the " +
+                 "net reads from every angle).")]
         [SerializeField] Material netMaterial;
         [Tooltip("Radius of one strand (u): each strand is a three-sided tube, a lit and faceted volume.")]
         [SerializeField, Min(0.02f)] float netStrandRadius = 0.3f;
@@ -118,6 +119,7 @@ namespace CosmicShore.Gameplay
         NetMesh _net;
         float _netGrow;
         JacksMath.NetFrame _netShown;
+        JacksNet.Trail _netTrail;
         bool _jacksShown, _snap = true, _flying;
         Vector3 _decoyOffset, _prevHullPosition;
         float _hullSpeed;
@@ -405,7 +407,6 @@ namespace CosmicShore.Gameplay
             _skimmer = FindDeep(transform, skimmerName);
             if (!_skimmer) return;
             if (_skimmer.TryGetComponent(out Skimmer skimmer)) skimmer.HasExternalScaleDriver = true;   // its size is ours
-            if (!netMaterial && _skimmer.TryGetComponent(out MeshRenderer blade)) netMaterial = blade.sharedMaterial;
             foreach (var r in _skimmer.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
         }
 
@@ -434,8 +435,14 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 a = transform.position + _jacks[0].Offset, b = transform.position + _jacks[1].Offset;
                 want = JacksNet.Formed(_crew.Config, a, b);
-                if (want) _netShown = JacksNet.FrameFor(_crew.Config, a, b, transform.forward, transform.up);
+                if (want)
+                {
+                    var motion = _netTrail.Step(_crew.Config, a, b, transform.forward, Time.deltaTime);
+                    _netShown = JacksNet.FrameFor(_crew.Config, a, b, motion, transform.up);
+                }
+                else _netTrail.Reset();
             }
+            else _netTrail.Reset();
             // grows open while it is wanted and shrinks away (where it last hung) when it is not
             _netGrow = Mathf.MoveTowards(_netGrow, want ? 1f : 0f, netGrowRate * Time.deltaTime);
             if (_netGrow <= 0f)
@@ -447,7 +454,7 @@ namespace CosmicShore.Gameplay
             float grow = Mathf.SmoothStep(0f, 1f, _netGrow);
             frame.Height *= grow;
             frame.Depth *= grow;
-            _net.Draw(frame, netMaterial, grow);
+            _net.Draw(frame, netMaterial ? netMaterial : _status?.ShipMaterial, grow);
         }
 
         /// <summary>
@@ -485,8 +492,10 @@ namespace CosmicShore.Gameplay
                         for (int k = 0; k < 3; k++)
                         {
                             int k1 = (k + 1) % 3;
-                            tris[ti++] = r0 + k; tris[ti++] = r1 + k; tris[ti++] = r1 + k1;
-                            tris[ti++] = r0 + k; tris[ti++] = r1 + k1; tris[ti++] = r0 + k1;
+                            // wound so each face's front is OUTSIDE the tube (Unity's front is Cross(b - a, c - a)); the
+                            // first cut faced in, so the net vanished wherever only its inner faces were turned to the camera
+                            tris[ti++] = r0 + k; tris[ti++] = r1 + k1; tris[ti++] = r1 + k;
+                            tris[ti++] = r0 + k; tris[ti++] = r0 + k1; tris[ti++] = r1 + k1;
                         }
                     }
                 _mesh = new Mesh { name = "JacksNet" };

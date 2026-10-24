@@ -13,10 +13,10 @@ namespace CosmicShore.Gameplay
     /// hull: its heading is the last one laid onto the new plane (<see cref="JacksMath.SteadyForward"/>), and it pans
     /// only when the framed goal (the herd, weighted toward the hull while flying) leaves a slack box (<see cref="JacksMath.SteadyPan"/>).
     ///
-    /// <para><b>Which is big</b> (the Wrasse's two views, <c>KiteNavigatorView</c>): herding, this view has the screen and
-    /// the game's own camera is lifted into the small square in the lower left; flying, the game's camera has the screen and
-    /// this view is the small square. The game camera's rect and depth are restored the moment the jacks fly again, the
-    /// camera changes, or the view is disposed.</para>
+    /// <para><b>One view at a time</b> (Garrett, 2026-10-24: "we can remove the pip from both modes"): herding, this view has
+    /// the whole screen and the game's camera sleeps under it (<see cref="PilotCameraPark"/>); netting, this view is off and
+    /// the game's camera has the screen. Herding, it zooms out as the jacks spread so neither reaches the screen's edge
+    /// (<see cref="JacksConfigSO.HerdJacksFill"/>).</para>
     ///
     /// <para><b>Herding</b> (Garrett, 2026-10-24: "the herding view should have a view that is zoomed in a bit more and
     /// follows the jacks. the player can use a button to zoom out to the whole cell if they want to have a view of more
@@ -87,39 +87,19 @@ namespace CosmicShore.Gameplay
             var pilot = CameraManager.ViewCamera;
             if (pilot != _pilot) { RestorePilot(); _pilot = pilot; if (_pilot) { _pilotRect = _pilot.rect; _pilotDepth = _pilot.depth; } }
 
-            // one view (the lowest preset, CrewSingleView): the jacks' camera draws only while the human herds
-            bool single = CrewSingleView.On;
-            _cam.enabled = herding || !single;
+            // ONE view at a time (Garrett, 2026-10-24: "we can remove the pip from both modes"): herding, the jacks' camera
+            // has the whole screen and the pilot's camera sleeps under it, drawing nothing (CrewSingleView's park);
+            // netting, the jacks' camera is off and the pilot's has the screen
+            _cam.enabled = herding;
             if (_pilot) AdoptPilotLook(_pilot);
-
-            float baseDepth = _pilot ? _pilotDepth : 0f;
-            float m = cfg.ViewMargin, h = cfg.PipSize, aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 1.78f;
-            var pip = new Rect(m / aspect, m, h / aspect, h);   // a square in the lower left
+            RestorePilot();
             if (herding)
             {
                 _cam.rect = new Rect(0f, 0f, 1f, 1f);
-                _cam.depth = baseDepth + 1f;
-                if (single)
-                {
-                    // nothing over the herd's view: the pilot's camera, hidden under it, draws nothing
-                    RestorePilot();
-                    _park.Park(_pilot, Color.black);
-                }
-                else if (_pilot)
-                {
-                    _park.Release();
-                    _pilot.rect = pip;
-                    _pilot.depth = baseDepth + 2f;
-                    _pilotLifted = true;
-                }
+                _cam.depth = (_pilot ? _pilotDepth : 0f) + 1f;
+                _park.Park(_pilot, Color.black);
             }
-            else
-            {
-                RestorePilot();
-                _park.Release();
-                _cam.rect = pip;
-                _cam.depth = baseDepth + 1f;
-            }
+            else _park.Release();
 
             // the span across the view's SHORT side: herding, the thumb-framed span zoomed in (HerdViewZoom), eased out to the
             // whole cell while the zoom button holds it there; netting, the thumb-framed span
@@ -131,7 +111,11 @@ namespace CosmicShore.Gameplay
             float cellSpan = cell ? 2f * cell.MembraneRadius * cfg.CellViewMargin : jacksSpan;
             float zoom = Mathf.SmoothStep(0f, 1f, _cell01);
             float half = 0.5f * Mathf.Lerp(jacksSpan, Mathf.Max(jacksSpan, cellSpan), zoom), camAspect = Mathf.Max(1e-3f, _cam.aspect);
-            _cam.orthographicSize = camAspect >= 1f ? half : half / camAspect;
+            float baseSize = camAspect >= 1f ? half : half / camAspect;
+            // herding, the view zooms out as the jacks spread so neither ever reaches the screen's edge (Garrett, 2026-10-24),
+            // quickly out and calmly back in; FitSize below measures what they need
+            _fitSize = Mathf.Max(_fitSize, baseSize);
+            _cam.orthographicSize = _fitSize;
             _cam.farClipPlane = 2f * Mathf.Max(cfg.ViewDepth, cell ? cell.MembraneRadius : 0f) + 1f;
 
             Vector3 up = _ex.BoardUp;
@@ -157,11 +141,35 @@ namespace CosmicShore.Gameplay
                                                 cfg.ViewPanEase);
             _centre += right * pan.x + _forward * pan.y;
 
+            float need = herding ? Mathf.Max(baseSize, FitSize(cfg, right, camAspect)) : baseSize;
+            float rate = need > _fitSize ? FitOutEase : cfg.ViewZoomEase;
+            _fitSize = Mathf.Lerp(_fitSize, need, JacksMath.Ease(rate, dt));
+            _cam.orthographicSize = _fitSize;
+
             float lift = Mathf.Max(cfg.ViewDepth, cell ? cell.MembraneRadius : 0f);
             _cam.transform.SetPositionAndRotation(_centre + up * lift, Quaternion.LookRotation(-up, _forward));
             _marks.Sync();
-            _frame.Show(herding ? (_pilotLifted ? _pilot : null) : _cam);
+            _frame.Show(null);   // no small view, so no frame round one
             PlaceButtons(cfg, herding);
+        }
+
+        // the zoom-out that keeps the jacks on screen eases out this fast (1/s): a jack flung to the edge is still in view
+        const float FitOutEase = 8f;
+        float _fitSize;
+
+        /// <summary>The orthographic half-height that keeps both jacks, and <see cref="JacksConfigSO.HerdJacksMargin"/> round
+        /// each, inside <see cref="JacksConfigSO.HerdJacksFill"/> of the view from its centre.</summary>
+        float FitSize(JacksConfigSO cfg, Vector3 right, float camAspect)
+        {
+            float fill = Mathf.Max(0.05f, cfg.HerdJacksFill), size = 0f;
+            for (int k = 0; k < 2; k++)
+            {
+                var d = _ex.JackWorld(k) - _centre;
+                float x = Mathf.Abs(Vector3.Dot(d, right)) + cfg.HerdJacksMargin;
+                float y = Mathf.Abs(Vector3.Dot(d, _forward)) + cfg.HerdJacksMargin;
+                size = Mathf.Max(size, Mathf.Max(y, x / camAspect) / fill);
+            }
+            return size;
         }
 
         /// <summary>The zoom button: ease out to the whole cell, or back to the jacks (herding only).</summary>

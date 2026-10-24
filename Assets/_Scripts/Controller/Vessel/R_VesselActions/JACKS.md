@@ -50,7 +50,9 @@ the small view (the Wrasse's gesture, `PilotSwapGesture`).
   because the flight's buttons are paused, or the view's call button on a phone): for `callTime` the herd is pulled to
   the point between the jacks, which stop repelling; then `callCooldown` (Garrett, 2026-10-24: "in herding mode it
   attracts fauna to the point between the jacks, with the plane attraction always on"). A jack that touches a crystal
-  collects it (`jackCrystalReach`), so the crystals the net let go of are the jacks' to pick up.
+  collects it, measured across the board as the top-down view shows it (`jackCrystalReach` 32 u, up to `jackCrystalHeight`
+  200 u above or below the board; round 1 measured in 3D and missed the crystals the net left off the board), so the
+  crystals the net let go of are the jacks' to pick up.
 - **Netting** (the flying mode; Garrett, 2026-10-24). The jacks take off: the hull jumps to halfway between them, facing the board's forward, and they swim into
   formation beside it (`flightFormationEase`). The hull flies on the fleet's own two-thumb flight (the Rhino's rig and
   ramp), and each jack sits under its thumb (`JacksMath.FlightOffset`: `flightGap` from the centre line, moved
@@ -83,6 +85,12 @@ the small view (the Wrasse's gesture, `PilotSwapGesture`).
   out to the whole cell (`cellViewMargin` x its diameter) and back (`viewZoomEase`); thumbs still aim the jacks at any
   zoom. The call button sits under it. Both are the style guide's PiP frame (`PipViewFrame.ShowRect`), each with an
   optional icon (`zoomButtonIcon`, `callButtonIcon`, empty for now).
+- **One view at a time** (Garrett, 2026-10-24, round 2: "we can remove the pip from both modes"): herding, the jacks'
+  view has the whole screen and the game camera sleeps under it; netting, the game camera alone. The small view and its
+  double tap are gone; the swap is the D-pad, the arrow keys or the two-finger swipe. Herding, the view also zooms out as
+  the jacks spread ("as the sharks fly apart in herding mode the camera should zoom out so they never collide with the
+  screen perimeter"): both jacks, with `herdJacksMargin` (40 u) round each, stay inside `herdJacksFill` (0.8) of the view,
+  out quickly and calmly back in.
 - **The netting view** (Garrett, 2026-10-24: "the jacks and anything in their net should be in the camera view while
   netting"): the chase camera backs off until both fish, the bag and every netted crystal fit in `netCameraFill` (0.8)
   of the view (`JacksMath.ChaseDistanceFor`), never closer than its authored distance, easing at `netCameraEase`, and goes
@@ -106,8 +114,11 @@ The net hangs between the fish while they net (`JacksMath.NetFrame`): its mouth 
 `netMinHeight`..`netMaxHeight` tall as it opens, and its bag trails `netDepth` behind, deepest in the middle. How far it
 is open is read back from how far apart the fish are (`NetOpenFromGap`), so every peer nets and draws the same net from
 the published jacks; it opens only once the fish are in formation (`JacksNet.Formed`), so a take-off from a wide board
-never strings a net across it. `JacksBodies` draws it as faceted strand tubes that grow open and shrink away
-(`netGrowRate`). What crosses the mouth (`JacksNet`, run on every peer for what that peer simulates):
+never strings a net across it. Its bag hangs back against the way the net TRAVELS (`JacksMath.EaseTrail`, `netTrailEase`),
+square to the line between the fish, so in a climb or a turn it swings out behind like a towed net; round 1 tied it to the
+hull's nose, which read as bending the wrong way. `JacksBodies` draws it as faceted strand tubes, wound outward and in the
+jacks' own domain material (round 1 wound them inward on the sword's Fresnel blade and the net vanished from some angles),
+that grow open and shrink away (`netGrowRate`). What crosses the mouth (`JacksNet`, run on every peer for what that peer simulates):
 
 - **Crystals, all five**: caught and carried, settling `netSettle` into the bag. On landing the net goes away and they
   stay where they were; the cell's omni crystal is put there on every machine by the hull's owner

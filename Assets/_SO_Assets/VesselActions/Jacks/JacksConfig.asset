@@ -41,11 +41,13 @@ MonoBehaviour:
   netMinHeight: 6
   netMaxHeight: 36
   netDepth: 26
+  netTrailEase: 5
   netSettle: 0.75
   netSettleEase: 3
   netRivalTake: 0.1
   netRivalCooldown: 2
-  jackCrystalReach: 18
+  jackCrystalReach: 32
+  jackCrystalHeight: 200
   netCameraFill: 0.8
   netCameraEase: 3
   callTime: 2.5
@@ -70,6 +72,8 @@ MonoBehaviour:
   herdViewZoom: 0.75
   herdFollowJacks: 1
   cellViewMargin: 1.1
+  herdJacksFill: 0.8
+  herdJacksMargin: 40
   viewZoomEase: 3
   zoomButtonSize: 0.09
   zoomButtonIcon: {fileID: 0}

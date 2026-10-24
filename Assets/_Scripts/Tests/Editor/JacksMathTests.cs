@@ -226,5 +226,23 @@ namespace CosmicShore.Tests
             Assert.Greater(JacksMath.ChaseDistanceFor(new Vector3(50f, 0f, 0f), tan, tan, 0.5f),
                            JacksMath.ChaseDistanceFor(new Vector3(50f, 0f, 0f), tan, tan, 1f));
         }
+
+        [Test]
+        public void Net_HangsBackAgainstItsMotion_NotTheHullsNose()
+        {
+            // Garrett, 2026-10-24: the net "seem to bend the opposite way from expected when flying up/down or left/right"
+            Vector3 a = new(-20f, 0f, 0f), b = new(20f, 0f, 0f);
+            // climbing: the bag hangs below and behind, wherever the nose points
+            var climbing = (Vector3.forward + Vector3.up).normalized;
+            var net = JacksMath.NetFrame.Between(a, b, climbing, Vector3.up, 20f, 24f);
+            var bottom = net.Point(0.5f, 0f, 1f);
+            Assert.Less(bottom.y, 0f, "a climbing net's bag hangs below its mouth");
+            Assert.Less(bottom.z, 0f, "and behind it");
+            Assert.Greater(Vector3.Dot(net.Y, Vector3.up), 0f, "its top stays up");
+            // the trail eases toward the motion and holds when the net stops
+            var trail = JacksMath.EaseTrail(Vector3.forward, Vector3.up * 100f, Vector3.forward, 2f, 5f, 10f);
+            Assert.Greater(Vector3.Dot(trail, Vector3.up), 0.99f);
+            Assert.AreEqual(Vector3.forward, JacksMath.EaseTrail(Vector3.forward, Vector3.up * 0.5f, Vector3.forward, 2f, 5f, 1f));
+        }
     }
 }
