@@ -24,7 +24,7 @@ record:** `Docs/Studios/CONCEPT_FLEET.md`. **Status:** a browser prototype; noth
 | Vessel | Where it is | Next step (task) |
 |---|---|---|
 | Gibbon | Web-slinger, round 2 done in the studio (§8.3); AI moves but finishes no course | Yash flies it and decides the feel; the Tether prototype (`cece/loving-feynman-hlgf18`) is still unmerged (T-20261017-e64b) |
-| Flea | Round 1 page; Garrett had no feedback, "bring it into the game" | Give Garrett a branch, then the Unity vessel and a small racing game (T-20261017-929b) |
+| Flea | Round 1 page; Garrett had no feedback, "bring it into the game". **Unity branch `claude/flea-vessel` (2026-10-24)**: vessel 24, flyable from the Vessel Changer, the page's maths ported with golden tests, the Stoat's body as a stand-in; not yet opened in the editor | Garrett flies the branch (T-20261024-bd25), then a small racing game (T-20261017-929b) |
 | Dragonfly | Round 1 page | Control swap, stored boosts, the mine / joust kit (T-20261017-3cc7) |
 | Marlin | Round 1 page (drifter) | Pure drifter, never grips (T-20261017-1bc9); its name now needs a decision (§1) |
 | Albatross | Round 1 page (glider, AI weak) | Nucleus-frame up/down, thermals, membrane cost (T-20261017-ba54); needs a cell stage in the studio |
@@ -43,8 +43,8 @@ Dolphin, Butterfly, Stoat, Scarab, Shrike, Thresher and Brittle Star). Garrett m
   review Joseph Zhou's pull request (T-20261017-b900).
 - Garrett: the open design questions (T-20261017-b999); the Marlin name (new, §1).
 - Any session: the AI ladders once the five settle (T-20261017-3244).
-- **The Tether's vessel id moved again:** 18 went to the Goby and 19-23 are taken, so the next free id is **24** as of
-  2026-10-24 (re-check the in-flight branches before claiming).
+- **The Tether's vessel id moved again:** 18 went to the Goby and 19-23 are taken, and the Flea claimed 24 on `claude/flea-vessel`
+  (2026-10-24), so the next free id is **25** (re-check the in-flight branches before claiming).
 
 ## 5. How to try it
 

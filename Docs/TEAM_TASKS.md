@@ -804,3 +804,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-18 by a Claude session (`cece/gallant-bell-eq7kul`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md R3
+
+### T-20261024-bd25 · open · test · Vessel Studio / Flea
+- **Task:** Fly the Unity Flea from branch claude/flea-vessel: Menu_Main freestyle, Toy Box > Vessel Changer > Flea; RT (Right Shift / LMB) timed to a prism contact is a perfect bounce, LT (Left Shift / RMB) crouches and hops
+- **Done when:** The six steps in Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Flea (vessel 24)' pass in the editor, or what failed is written down; then decide: racing game next, or tune first
+- **Who can take it:** Garrett (Yash can run the checklist first)
+- **Added:** 2026-10-24 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/FLEA.md on claude/flea-vessel; T-20261017-929b
