@@ -71,10 +71,14 @@ it; `who_works_where.py` reports a session nobody has merged as unattributed.
    tool). A session cannot open Unity, sign in to a dashboard or watch a first-timer play, so what its work leaves for
    a person (the editor test, the playtest, the UGS or PostHog step, the missing content, the decision) is a ticket on
    **Froglet Tasks**: a GitHub issue labelled `team-task`, read on the Froglet Tasks page
-   (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f) and written only through the `/team-tasks` skill (`Tools/Build/team_tasks.py`),
-   **when the person asks** (or `/ship` does): no hook files, closes or re-ranks anything. The rules:
+   (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f) and written through the page or the `/team-tasks` skill
+   (`Tools/Build/team_tasks.py`). Developers and testers file tickets themselves; a Claude session **suggests** one
+   and files it only when its person approves (no hook files, closes or re-ranks anything). People sign in with
+   claude.ai; the **approvers** (the core four and Iggy, `TEAM.json`) are the page's Editors, edit milestones and let
+   others in. Opening the page at the start of a day is recommended, never required. The rules:
    - **Nobody's until taken.** A ticket names no one (rule 11); an assignee set on GitHub is cleared by the sweep.
-   - **Taking names your branch** (`take <id> --branch <branch>`, or Take on the page). The ticket closes when that
+   - **Taking names your branch** (`take <id> --branch <branch>`, Take on the page, or "Start in a new session",
+     which opens a Claude Code session on the ticket from the base branch, `bleeding-edge` in Beta phase 1). It closes when that
      branch merges into bleeding-edge, and goes back to open, nobody's, when the branch is deleted, released or idle
      for 14 days (`.github/workflows/team-tasks.yml` runs the sweep on every merge, deletion and nightly).
    - **14 days untaken: archived** (closed as not planned, label `archived`). Done tickets close as completed. Both

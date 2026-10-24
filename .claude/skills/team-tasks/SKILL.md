@@ -1,6 +1,6 @@
 ---
 name: team-tasks
-description: Froglet Tasks from a session - the team's hand-off tickets (GitHub issues labelled team-task, kept by Tools/Build/team_tasks.py, read on the Froglet Tasks page). Use only when the person asks to list, add, take, close, release, set (re-rank) or review team tasks, to sync the page, or on `/team-tasks`. Never on every prompt, never unasked at the end of a session.
+description: Froglet Tasks from a session - the team's ticketing system (GitHub issues labelled team-task, kept by Tools/Build/team_tasks.py, worked on the Froglet Tasks page). Use when the person asks to list, add, suggest, take, close, release, set (re-rank) or review team tasks, to sync the page, or on `/team-tasks`; and in a session started from a ticket on the page. A session never files a ticket its person has not approved. Never on every prompt.
 ---
 
 # /team-tasks - the team's hand-off tickets, from a session
@@ -21,7 +21,9 @@ deletions, nightly). Owner of this tooling: Shombith.
 5. **One ticket per branch.** All of a branch's hand tests go in its one ticket's checklist (`add` appends when the
    branch has one; `step` adds a line).
 6. **No favourites.** Priority ranks tickets, milestones rank time. Nothing compares people.
-7. **Only when asked.** This skill runs when the person asks. No end-of-session filing, no re-classifying on your own.
+7. **Approved, never automatic.** A session files a ticket only when its person says yes. It may SUGGEST one
+   (`/team-tasks suggest`): the suggestion waits on the page until that person, or an approver, approves it. No
+   end-of-session filing, no re-classifying on your own.
 8. **No check-in / check-out.** Nothing tracks presence or time.
 
 ## /team-tasks - what is open (read-only)
@@ -34,7 +36,31 @@ Show it by department (Testers, Developers, Decisions, Content & docs), P1 and P
 live tickets with the person and branch. Say how many there are and give the page link. Do not print every ticket
 when there are dozens: show the P1s and P2s, then the counts per department, and offer the rest.
 
-## /team-tasks add - file what this branch leaves for someone else
+## Who uses it, and how
+
+People sign in with their **claude.ai account**: the page is a claude.ai artifact, shared from its Share menu. The
+approvers (Docs/TEAM.json `approvers`: the core four and Iggy) are its Editors: they edit milestones and the base
+branch, and let other people in as Contributors, who can take, file, suggest and give feedback. GitHub is not a login;
+the page reaches GitHub through the sync below. Developers are encouraged, not obliged, to open the page when they
+start a day; this skill does everything the page does.
+
+## A session started from a ticket
+
+The page's "Start in a new session" opens a Claude Code session on the repo, from the base branch, with the ticket as
+its prompt. Its first step is `team_tasks.py take <id> --branch "$(git branch --show-current)" --who <name>`; then the
+work; then `done <id> --note "<proof>"` when the person agrees it is done. The ticket also closes when the branch
+merges.
+
+## /team-tasks suggest - propose a ticket for the person to approve
+
+When the work leaves something for someone else and the person has not asked you to file it, suggest it instead:
+write `suggestions/<T-id>` on the page (ArtifactData `set`, url below) with `{"id", "task", "doneWhen", "area",
+"kind", "priority", "dept", "milestone", "why", "from": "<person>'s session on <branch>", "forName": "<person>",
+"filedOn": "<branch>", "status": "pending", "at": <now>}`, and tell the person it waits on the page's Suggested list.
+It becomes a ticket when they (or an approver) approve it and the next sync runs. If the person says yes in the
+conversation, `add` it directly instead.
+
+## /team-tasks add - file what this branch leaves for someone else (the person said yes)
 
 Gather from the work this session did: area, kind (`test dev content setup decision docs`), the task (one sentence a
 person can act on), the done-when steps (`; `-separated: each becomes a checklist line), and links (`--see`).
@@ -93,18 +119,22 @@ Only when the person asks (it was asked for once after the migration; any time l
 
 ## /team-tasks sync - the page's store <-> Issues (the scheduled task runs this; a person may ask for it)
 
-The page cannot reach GitHub. People's takes and overrides land in the page's store; this carries them across.
+The page cannot reach GitHub. What people do there lands in the page's store; this carries it across, and brings the
+issues, milestones, branches and the week's merges back.
 
-1. Read the page's store with ArtifactData (url above): `list` of `tasks`, `takes` and `overrides` (with `out_dir`,
-   limit 1000), and `get` of `meta/sync`.
+1. `git fetch --prune origin`, then read the page's store with ArtifactData (url above, `list` with `out_dir`, limit
+   1000): `tasks`, `takes`, `overrides`, `new` (tasks filed on the page), `suggestions`, `milestones`; and `get`
+   `meta/sync`.
 2. The page stores who acted only as an id (`byId`). Resolve them with ArtifactData `profiles` (`ids`), set each
-   take's and override's `by` to that name (the sync maps it to the team name in `Docs/TEAM.json`), and bundle the
-   documents into one JSON file: `{"tasks": [...], "takes": [...], "overrides": [...]}`.
-3. `python3 Tools/Build/team_tasks.py sync <file> --since <meta/sync.at>` applies the takes and overrides made
-   after the last sync to Issues and prints `{"at", "applied", "skipped", "write", "remove"}`.
-4. Write each document in `write` to `tasks/<id>` (ArtifactData `batch`, 50 at a time, `set`), delete each id in
-   `remove`, and update `meta/sync` with `{"at": <at>, "applied": <count>, "counts": <counts>}`.
-5. It never files, closes or re-ranks anything else.
+   document's `by` to that name (the sync maps it to the team name in `Docs/TEAM.json`), and bundle them into one JSON
+   file: `{"tasks": [...], "takes": [...], "overrides": [...], "new": [...], "suggestions": [...], "milestones": [...]}`.
+3. `python3 Tools/Build/team_tasks.py sync <file> --since <meta/sync.at>` applies, to GitHub, the takes and
+   re-ranks made after the last sync, files the page's new tasks and approved suggestions, and saves edited
+   milestones; it prints `{"at", "applied", "skipped", "store": [ops], "counts"}`.
+4. Apply `store` in order with ArtifactData `batch` (50 at a time; each op is `{op, collection, doc_id, data}`; pin
+   each write to the version you read, and create documents that do not exist yet without a pin).
+5. Run `python3 Tools/Build/team_tasks.py sweep` too when the workflow has not run (it closes merged branches'
+   tickets). Nothing else is filed, closed or re-ranked.
 
 ## Never
 

@@ -1248,14 +1248,19 @@ def file_from_page(tickets, d, who, today, person=True):
     return t
 
 
-def sync(store, data, since, dry_run, today=None, now=None, extras=True, base=BASE):
+def utc_now():
+    """The store's timestamp shape (2026-10-25T09:00:00.000Z), so the page's and the sync's times compare as text."""
+    return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+def sync(store, data, since, dry_run, today=None, now=None, extras=True, base=BASE, every=False):
     """Carry the page's changes made after `since` to Issues, then return what the page's store should hold:
     {"at", "applied", "skipped", "store": [ops], "counts"}. The page writes: takes/<id> (take, release, done, archive,
     revive), overrides/<id> (priority, dept, milestone), new/<id> (a task filed on the page), suggestions/<id> (a
     Claude session's draft; filed once a person approves it), milestones/<key> (edited by an approver). The store ops
     give back tasks/<id>, milestones/<key>, meta/branches and meta/activity, and clear what was filed."""
     today = today or datetime.date.today()
-    now = now or datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+    now = now or utc_now()
     tickets = store.fetch()
     by_id = {t.id: t for t in tickets}
     events = sorted([("take", norm(d)) for d in data.get("takes", [])] +
@@ -1337,7 +1342,7 @@ def sync(store, data, since, dry_run, today=None, now=None, extras=True, base=BA
     prev = {norm(d)["id"]: norm(d) for d in data.get("tasks", [])}
     docs = [dict(page_doc(t), syncedAt=now) for t in tickets]
     strip = lambda d: {k: v for k, v in (d or {}).items() if k not in ("syncedAt", "updatedAt", "updated", "id")}
-    ops += [store_op("set", "tasks", d["id"], d) for d in docs if strip(prev.get(d["id"])) != strip(d)]
+    ops += [store_op("set", "tasks", d["id"], d) for d in docs if every or strip(prev.get(d["id"])) != strip(d)]
     ops += [store_op("delete", "tasks", i) for i in sorted(set(prev) - {d["id"] for d in docs})]
     if extras:
         for m in (store.milestones() if not dry_run else gh_ms):
@@ -1841,6 +1846,7 @@ def main(argv):
     sy.add_argument("file", help='JSON: the page store, {"tasks": [...], "takes": [...], "overrides": [...]}')
     sy.add_argument("--since", default="", help="the last sync's time (ISO); older page changes are skipped")
     sy.add_argument("--dry-run", action="store_true")
+    sy.add_argument("--all", action="store_true", help="give back every ticket's document, not only the changed ones")
     pr = sub.add_parser("pr-section")
     pr.add_argument("--base", default=BASE)
     mg = sub.add_parser("migrate")
@@ -1949,7 +1955,7 @@ def main(argv):
             api.save()
     elif a.cmd == "sync":
         data = json.loads(read(a.file) or "{}")
-        out = sync(store, data, a.since, a.dry_run, today)
+        out = sync(store, data, a.since, a.dry_run, today, every=a.all)
         print(json.dumps(out, indent=1, ensure_ascii=False))
         if a.offline and not a.dry_run:
             api.save()

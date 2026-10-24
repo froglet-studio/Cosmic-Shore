@@ -85,8 +85,11 @@ the engine renamed twice, retired tools brought back. **Every session:**
   `Docs/Reports/`, never from memory (`Docs/TEAM.md` rule 10; the `report_request.py` hook reminds you).
 - **Hand-offs are tickets on Froglet Tasks**: GitHub issues labelled `team-task`, read on the Froglet Tasks page
   (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f). An editor test, playtest, setup step, content gap or decision your work leaves for
-  someone else goes on one, **through the `/team-tasks` skill, and only when the person asks** (or `/ship` does): no
-  hook, no end-of-session filing, no re-ranking on your own (Shombith, 2026-10-25). **Never assign one**: never a
+  someone else goes on one, **through the `/team-tasks` skill, and only once the person approves**: a session may
+  *suggest* a ticket (it waits on the page until that person or an approver approves it), never file one on its own;
+  no hook, no end-of-session filing, no re-ranking on your own (Shombith, 2026-10-25). People sign in to the page with
+  claude.ai; the approvers (the core four and Iggy, `Docs/TEAM.json`) are its Editors and let others in. Opening the
+  page at the start of a day is recommended, not required; the skill does everything it does. **Never assign one**: never a
   person, never a volunteer (Shombith, 2026-10-23). A ticket is nobody's until someone takes it; taking it names their
   branch, and it closes when that branch merges (`.github/workflows/team-tasks.yml`). **One ticket per branch**: every
   hand test your branch leaves is a checklist line on its one ticket (49 branches had filed 242 open tasks in 9 days).
