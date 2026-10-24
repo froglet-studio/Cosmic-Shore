@@ -2158,3 +2158,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered) or Garrett
 - **Added:** 2026-10-24 by a Claude session (`cece/bold-gauss-lad943`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md §5
+
+### T-20261024-c4d4 · open · decision · icons
+- **Task:** Settle the ability-icon language before the /ability-icon kit is built: angular (style foundation §5, the artist HUD glyphs) or round-capped (the Thresher set); whether element marks may appear as a secondary element on other hulls' icons; whether a hull's own silhouette is ever the right mark
+- **Done when:** Docs/Icons/ABILITY_ICON_SKILL_PLAN.md §10 has an answer for each of the three and §4 is marked confirmed
+- **Who can take it:** Garrett (product), Shombith (style)
+- **Added:** 2026-10-24 by a Claude session (`cece/loving-ptolemy-4715w4`)
+- **See:** Docs/Icons/ABILITY_ICON_SKILL_PLAN.md, Docs/Icons/ability_icons_audit_2026-10-24.png
