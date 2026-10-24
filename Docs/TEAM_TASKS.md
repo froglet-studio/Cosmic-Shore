@@ -293,33 +293,37 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.3 (L13) and 2 (10-15 rows)
 - **Done:** 2026-10-17, 2026-10-17, Yash's session: AOEExplosionPool (opt-in, on for the Squirrel ring spawner: 1 miss / 7 reuses per 8 collects). The real allocator was CrystalMorphMeshBuilder.TryBuild (5.22 of 5.53 KB/frame); its per-source emit cache brought VesselImpactor.AcceptImpactee 5.53 -> 3.41 KB/frame, under the 3.83 baseline (rest is Amoebius's Mesh.Set* copy). Unity check: T-20261017-c82c / Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-17.
 
-### T-20261015-d4f5 · open · test · ui
+### T-20261015-d4f5 · done · test · ui
 - **Task:** Profiler capture on claude/new-session-76hnyc: Menu_Main Home (not flying) and the lava lamp. Canvas.BuildBatch / SendWillRenderCanvases should not fire every frame from closed windows (style-B ambient loops now sleep while hidden); compare frame time with bleeding-edge
 - **Done when:** A shared capture shows no per-frame canvas rebuild from hidden menu windows and Home/lava-lamp frame time at or better than bleeding-edge
 - **Who can take it:** Yash or Shombith
 - **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 24
+- **Done:** 2026-10-24, Closed without being run (Yash, 2026-10-24): the test named claude/new-session-76hnyc, which merged into bleeding-edge as #1153 on 2026-10-19 and went through Rev 4-10 after this was written. Re-test the merged menu on bleeding-edge as a new task if needed.
 
-### T-20261015-e890 · open · test · ui
+### T-20261015-e890 · done · test · ui
 - **Task:** Boot flow on claude/new-session-76hnyc: from Bootstrap through sign-in, Menu_Main shows only after Garland is built (black + small LOADING bar, then one fade); no GROWING GARLAND headline; game scenes' connecting screen unchanged; Toy Box Arkway/microscene loads use the subtle readout
 - **Done when:** All four checks pass in the editor, and the boot cover time is noted
 - **Who can take it:** Yash
 - **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 25
+- **Done:** 2026-10-24, Closed without being run (Yash, 2026-10-24): the test named claude/new-session-76hnyc, which merged into bleeding-edge as #1153 on 2026-10-19 and went through Rev 4-10 after this was written. Re-test the merged menu on bleeding-edge as a new task if needed.
 
-### T-20261015-e4dc · open · test · ui
+### T-20261015-e4dc · done · test · ui
 - **Task:** Style-B start flow on claude/new-session-76hnyc: Bootstrap splash (dim, LOADING bar, no spinner), Connection lost window + RETRY on A, age gate and consent (B/Esc declines), sign-in auth panel and pilot-name panel (rule ticks, count, single press on A), splash holds until Garland is built
 - **Done when:** All nine steps of the checklist entry 'Style-B start flow' pass in the editor, with a pad and with a keyboard
 - **Who can take it:** Yash
 - **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, Docs/MENU_REDESIGN_B.md section 26
+- **Done:** 2026-10-24, Closed without being run (Yash, 2026-10-24): the test named claude/new-session-76hnyc, which merged into bleeding-edge as #1153 on 2026-10-19 and went through Rev 4-10 after this was written. Re-test the merged menu on bleeding-edge as a new task if needed.
 
-### T-20261015-ef54 · open · test · ui
+### T-20261015-ef54 · done · test · ui
 - **Task:** Style-B Maelstrom game UI on claude/new-session-76hnyc: hub (chips, side-by-side round cards with the upcoming card outlined, Race to N bars, Pilots ready faces, READY on A, LB/RB scroll), stats screen (NEXT on A), summary (winner line, domain chips, ranked cards, A/Y/B)
 - **Done when:** All six steps of the checklist entry 'Style-B Maelstrom game UI' pass in the editor, solo with AI and in a two-player party
 - **Who can take it:** Yash
 - **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, Docs/MENU_REDESIGN_B.md section 27
+- **Done:** 2026-10-24, Closed without being run (Yash, 2026-10-24): the test named claude/new-session-76hnyc, which merged into bleeding-edge as #1153 on 2026-10-19 and went through Rev 4-10 after this was written. Re-test the merged menu on bleeding-edge as a new task if needed.
 
 ### T-20261015-aed4 · done · test · Activation
 - **Task:** First-login guide Skip and every-Lesson Skip on claude/new-session-76hnyc: SKIP (and pad Y) ends the quest for good; Lessons offer Skip on a fresh profile
