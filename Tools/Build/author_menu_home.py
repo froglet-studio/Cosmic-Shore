@@ -12,8 +12,8 @@ GameObject, its fileID and its name; only its look, its rect and its children ch
     Hub row (ButtonLayouts): along the bottom, 30 apart. Each hub's Button becomes a KitButton under the
         SAME fileID (MenuHubButton requires a Button and KitButton is one; the press-sound call stays),
         with the kit's FocusRing / Fill / Border children, a hub glyph and its label - Toy Box, Arcade,
-        Arena, Mission. Arcade is the opaque Play button with the A keycap and the pad's preferred
-        focus; Mission draws Inactive (its MenuAvailabilityView stays Unavailable, no double dim). All
+        Arena, Mission. Arcade keeps the A keycap and the pad's preferred focus
+        but draws like the other three (Shombith, 2026-10-24: the four hubs share one colour, no lime); Mission draws Inactive (its MenuAvailabilityView stays Unavailable, no double dim). All
         four used to point m_TargetGraphic at the legacy, inactive ArcadeButton's Image, so none gave
         any press feedback; that legacy object is deleted.
     Pilot chip (top left): a framed plate behind the octagonal avatar (HomeScreen.avatarImage moves to
@@ -91,7 +91,7 @@ IDS = dict(
 )
 HUBS = [  # key, go, rt, root img, button, hub comp, avail comp, label go, label rt, label tmp, caption, glyph, variant
     ("Toybox", "200217508", "200217509", "200217512", "200217511", "200217515", "200217514", "1681475207", "1681475208", "1681475209", "Toy Box", "chrome_cube", "Default"),
-    ("Arcade", "1749518386", "1749518387", "1749518390", "1749518389", "1749518393", "1749518392", "466012893", "466012894", "466012895", "Arcade", "chrome_pad", "Play"),
+    ("Arcade", "1749518386", "1749518387", "1749518390", "1749518389", "1749518393", "1749518392", "466012893", "466012894", "466012895", "Arcade", "chrome_pad", "Default"),
     ("Arena", "1015093819", "1015093820", "1015093823", "1015093822", "1015093826", "1015093825", "2097070915", "2097070916", "2097070917", "Arena", "chrome_blades", "Default"),
     ("Mission", "895856520", "895856521", "895856524", "895856523", "895856527", "895856526", "25247041", "25247042", "25247043", "Mission", "chrome_target", "Inactive"),
 ]
@@ -850,6 +850,7 @@ def validate(files):
         assert S["kitbutton"] in d, f"{key}Button is not a KitButton"
         assert f"  m_TargetGraphic: {{fileID: {ctx.c(f'Hub/{key}/Fill', 'img')}}}" in d, f"{key}Button: press feedback targets another object"
         assert f"  variant: {K.VARIANTS[variant]}\n" in d, f"{key}Button: wrong variant"
+        assert variant in ("Default", "Inactive"), f"{key}: the four hubs draw alike (Default; Mission Inactive while unavailable)"
         assert "m_MethodName: PlayAudio" in d, f"{key}Button lost its press sound"
         assert f"  preferredFocus: {1 if key == 'Arcade' else 0}\n" in sc.docs[hub], f"{key}: preferredFocus wrong"
     assert re.search(r"  m_Calls: \[\]\n", sc.docs[I["lamp_btn"]]), "the lamp still opens the profile window"
@@ -984,6 +985,8 @@ def self_test(files):
         ("the double-tap surface back over the panel", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  m_Children:\n  - {{fileID: {TAP['rt']}}}\n  - {{fileID: 1769152617528871830}}\n",
             f"  m_Children:\n  - {{fileID: 1769152617528871830}}\n  - {{fileID: {TAP['rt']}}}\n", 1))),
+        ("the Arcade hub lime again", lambda f: f.__setitem__(SCENE, re.sub(
+            r"(--- !u!114 &1749518389\n(?:(?!--- ).*\n)*?  variant: )0\n", r"\g<1>5\n", f[SCENE], count=1))),
         ("the Arcade hub re-targeted away from ARCADE", lambda f: f.__setitem__(SCENE, re.sub(
             r"(--- !u!114 &1749518393\n(?:(?!--- ).*\n)*?  target: )10\n", r"\g<1>14\n", f[SCENE], count=1))),
         ("Settings left out of the guide's always-available set", lambda f: f.__setitem__(SCENE, f[SCENE].replace(

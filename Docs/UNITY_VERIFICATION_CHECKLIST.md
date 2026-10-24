@@ -14128,4 +14128,5 @@ project code; Amoebius builds. Rules: `Docs/UI_COLOR_RULES.md`. Check by hand:
 - [ ] Settings > links open www.froglet.games pages.
 - [ ] The bar under the open top-nav tab (Home / Hangar / Ark) is a still sky-blue line, like the hub strip's.
 - [ ] Hub strip: Toy Box, Arcade, Arena and Mission all read in the same blue whichever is open; only the underline moves.
+- [ ] Home: the Toy Box, Arcade and Arena buttons look the same (no lime Arcade); Mission is dimmed while unavailable.
 - [ ] EditMode suite passes.

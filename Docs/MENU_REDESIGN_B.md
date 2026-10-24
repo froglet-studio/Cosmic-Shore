@@ -2971,3 +2971,6 @@ Gates: `check_ui_colors.py` (new, 7 planted defects), every touched generator's 
   selected one to the rest blue; hover still lifts to white). Held by `author_menu_hub_nav.py` and
   `author_ui_kit_prefabs.py` validation, each with a planted defect.
 - **Friends orb polish:** pending Shombith's direction (team task).
+- **Home's four hub buttons** (Toy Box, Arcade, Arena, Mission) draw alike: Arcade was the opaque lime Play button and
+  is now Default like the others (it keeps the A keycap and the pad's first focus); Mission stays Inactive while it is
+  unavailable. `author_menu_home.py` asserts it, with a planted defect.
