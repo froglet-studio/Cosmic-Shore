@@ -10,7 +10,8 @@
 // [NonSerialized], or [SerializeField]/[SerializeReference]; auto-properties with
 // [field: SerializeField] serialize as <Name>k__BackingField), with [FormerlySerializedAs] names.
 // Assets are written and read by the EDITOR, so the field set is the union of a player parse and a
-// UNITY_EDITOR parse (e.g. FMOD's EventReference.Path exists only in the editor).
+// UNITY_EDITOR parse (e.g. FMOD's EventReference.Path exists only in the editor); for a package, of its
+// player-built DLL and a UNITY_EDITOR parse of its sources (Netcode's ShowTopMostFoldoutHeaderGroup).
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -61,9 +62,16 @@ static class Program
         var types = new Dictionary<string, Dictionary<string, object>>();
         var fieldSets = new Dictionary<string, Dictionary<string, object>>();
         var fileSets = new Dictionary<string, HashSet<string>>();
-        for (int ri = 1; ri < args.Length; ri++)
+        // rsps past the command line's are package assemblies, queued while Assembly-CSharp's references
+        // are walked: their DLLs are player builds, so each package's own sources are parsed once more
+        // with UNITY_EDITOR for the fields that exist only in the editor, which is what writes assets
+        // (Netcode's NetworkBehaviour.ShowTopMostFoldoutHeaderGroup on every NetworkBehaviour)
+        var rsps = args.ToList();
+        int projectRsps = rsps.Count;
+        for (int ri = 1; ri < rsps.Count; ri++)
         {
-        var rsp = args[ri];
+        var rsp = rsps[ri];
+        bool package = ri >= projectRsps;
         var refs = new List<string>(); var files = new List<string>(); var defines = new List<string>();
         foreach (var tok in Tokens(rsp))
         {
@@ -71,13 +79,15 @@ static class Program
             else if (tok.StartsWith("-define:")) defines.AddRange(tok.Substring(8).Split(';', StringSplitOptions.RemoveEmptyEntries));
             else if (!tok.StartsWith("-")) files.Add(tok);
         }
-        foreach (var defs in new[] { defines, defines.Concat(new[] { "UNITY_EDITOR", "UNITY_EDITOR_64", "UNITY_EDITOR_WIN" }).ToList() })
+        var editorDefines = defines.Concat(new[] { "UNITY_EDITOR", "UNITY_EDITOR_64", "UNITY_EDITOR_WIN" }).ToList();
+        foreach (var defs in package ? new[] { editorDefines } : new[] { defines, editorDefines })
         {
         var po = new CSharpParseOptions(LanguageVersion.CSharp9, preprocessorSymbols: defs);
         var trees = files.Select(f => CSharpSyntaxTree.ParseText(File.ReadAllText(f), po, f)).ToList();
         var opts = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true)
             .WithMetadataImportOptions(MetadataImportOptions.All);
-        var comp = CSharpCompilation.Create("Schema", trees, refs.Select(r => (MetadataReference)MetadataReference.CreateFromFile(r)), opts);
+        // a package rsp can name a dependency that did not compile (Purchasing.Stores): bind without it
+        var comp = CSharpCompilation.Create("Schema", trees, refs.Where(File.Exists).Select(r => (MetadataReference)MetadataReference.CreateFromFile(r)), opts);
 
         // project + package assemblies (everything unity_refcompile compiled), not the engine/BCL
         var outRoot = Path.GetFullPath(rsp);
@@ -88,7 +98,11 @@ static class Program
         foreach (var r in comp.References)
             if (r is PortableExecutableReference pe && pe.FilePath != null && Path.GetFullPath(pe.FilePath).StartsWith(outRoot)
                 && comp.GetAssemblyOrModuleSymbol(r) is IAssemblySymbol asm)
+            {
                 wanted.Add(asm.GlobalNamespace);
+                var pkgRsp = Path.ChangeExtension(Path.GetFullPath(pe.FilePath), ".rsp");
+                if (File.Exists(pkgRsp) && !rsps.Skip(1).Any(x => Path.GetFullPath(x) == pkgRsp)) rsps.Add(pkgRsp);
+            }
         // UnityEngine.UI / TMP live in the engine reference set but carry serializable project-facing types
         if (ri == 1)
         foreach (var r in comp.References)
@@ -146,7 +160,8 @@ static class Program
             if (!fieldSets.TryGetValue(key, out var fs)) fieldSets[key] = fs = new Dictionary<string, object>();
             foreach (Dictionary<string, object> f in fields) fs.TryAdd((string)f["name"], f);
             if (!fileSets.TryGetValue(key, out var fl)) fileSets[key] = fl = new HashSet<string>();
-            foreach (var l in t.Locations.Where(l => l.IsInSource)) fl.Add(l.SourceTree!.FilePath);
+            // a package's sources are not project scripts: an m_Script never resolves to one
+            if (!package) foreach (var l in t.Locations.Where(l => l.IsInSource)) fl.Add(l.SourceTree!.FilePath);
             if (types.ContainsKey(key)) return;
             types[key] = new Dictionary<string, object>
             {

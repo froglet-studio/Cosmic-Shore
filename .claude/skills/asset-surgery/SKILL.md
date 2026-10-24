@@ -1128,6 +1128,10 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   which the schema never read. `Schema/Program.cs` now reads the `UnityEngine.Events` namespace from that
   (depublicized) DLL, so persistent calls, their `ArgumentCache` and both enums are checked like any field.
   If an older checkout still reports `m_PersistentCalls`, it is this false positive, not a defect.
+  The same day, the package twin: Netcode's `#if UNITY_EDITOR [SerializeField]` foldout flags
+  (`ShowTopMostFoldoutHeaderGroup` on every `NetworkBehaviour`, `NetworkTransformExpanded`) read as dropped
+  (73 findings), because package types came only from their player-built DLLs. The schema now also parses
+  each package's sources with `UNITY_EDITOR`, so any package's editor-only field counts, on its own class only.
 - **The `editor` config is RED on bleeding-edge itself (measured 2026-10-14): 3 errors, all in
   `Assets/_Scripts/System/AuthenticationServiceFacade.cs`** (`Unity.Multiplayer.PlayMode` /
   `CurrentPlayer` — the Multiplayer Play Mode editor package, not obtainable here). A/B it on a
