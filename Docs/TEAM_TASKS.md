@@ -2338,3 +2338,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (engine)
 - **Added:** 2026-10-24 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Tools/Build/prisma_edit_mode_tests/gapfill.py
+
+### T-20261024-2979 · open · test · Regatta AI
+- **Task:** Race an AI Rhino in Regatta I1 and I3 (Third Eye on it) with the corner speed 333 and line 0.676 set from your six Rhino races: it should brake to about 330 u/s before sharp rings, fly about two thirds of the way out, and scrape rails less; note its times (before: about 45 s I1, 50 s I3; the offline model predicts slower)
+- **Done when:** The UNITY_VERIFICATION_CHECKLIST entry for 2026-10-24 Rhino corner speed and line is ticked, with the I1 and I3 times
+- **Who can take it:** Yash (has offered to take tasks)
+- **Added:** 2026-10-24 by Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Rhino corner speed and line, 2026-10-24); Assets/_Scripts/Controller/AI/AI_BOOST.md (Ramp)

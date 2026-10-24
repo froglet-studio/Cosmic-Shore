@@ -547,10 +547,17 @@ def ring_crossings(f):
     return out
 
 
+def lane_share(radius, mouth, clearance):
+    """One crossing on the style's scale, against ITS OWN ring's mouth (RaceLineStyleSO.LaneRadius run backwards): the
+    line is laid per course from that course's mouth, so an I1 crossing (110 u mouth) measured against an I3 mouth (72 u)
+    reads as flying far wider than it was."""
+    return (radius - RAIL_OFFSET) / max(1.0, mouth - clearance - RAIL_OFFSET)
+
+
 def learn_race_lines(parsed):
     """{hull: {"LaneShare": x}} from the fastest MIN_FINISHED finished races of each hull that races a line
     (author_race_lines.HULLS): its median ring-crossing radius, put on the style's own scale (0 = the rails' radius,
-    1 = the tightest mouth less the hull's room at its risk)."""
+    1 = that ring's mouth less the hull's room at its risk): the median of every crossing's own share."""
     from learn_from_flights import finished_of
     import author_race_lines as arl
     learned, report = {}, {}
@@ -564,9 +571,8 @@ def learn_race_lines(parsed):
         v = arl.values(hull)
         clearance = v["HullClearance"] * (1.5 + (0.75 - 1.5) * v["Risk"])
         tightest = min(R for _, R in cross)
-        room = max(1.0, tightest - clearance - RAIL_OFFSET)
         median = statistics.median(r for r, _ in cross)
-        share = min(1.0, max(0.0, (median - RAIL_OFFSET) / room))
+        share = min(1.0, max(0.0, statistics.median(lane_share(r, R, clearance) for r, R in cross)))
         report[hull].update({"medianCrossing": round(median, 1), "tightestMouth": tightest, "LaneShare": round(share, 3)})
         learned[hull] = {"LaneShare": round(share, 3)}
     return learned, report
@@ -688,6 +694,8 @@ def self_test():
                 "columns": ["x", "y", "z", "rings", "held"], "samples": rows}
     cr = ring_crossings(line_flight(60.0, 100))
     assert cr and abs(cr[0][0] - 60.0) < 1e-6 and cr[0][1] == 110, cr
+    # One line flown at two intensities is one share: each crossing is scaled by its own ring's mouth.
+    assert abs(lane_share(66.0, 110, 21.6) - lane_share(41.0, 72, 21.6)) < 0.02, "an I1 crossing must not read as wider"
     ctrl = learned("Rhino", "random")["learned"]
     assert ctrl["alignDegrees"] > rh["alignDegrees"] + 5, ("negative control: a pilot ignoring the rule must not look lined up", ctrl)
     do = learned("Dolphin", "policy")["learned"]
