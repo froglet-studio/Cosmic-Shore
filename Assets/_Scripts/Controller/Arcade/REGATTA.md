@@ -303,14 +303,15 @@ once, and a big hull scrapes them (a ram slows the Manta, Dolphin and Sparrow an
   rim (`HullClearance`), and its **risk**. Bold cuts more of each bend (a longer look-ahead) and keeps 0.75x the room;
   careful follows the line tightly with 1.5x. Every AI seat draws its own risk round the hull's (seeded per seat), so a
   grid has careful and bold pilots of the same hull. Starting values: Rhino 0.80 / 18 u / 0.40 (biggest, fastest:
-  out wide, safer; line set 2026-10-24 from Yash's six Rhino races: 0.676), Manta 0.70 / 16 / 0.50 (line learned 2026-10-24: 0.809), Dolphin 0.60 / 12 / 0.50, Stoat 0.55 / 10 / 0.60, Serpent 0.60 / 12 /
+  out wide, safer; line set 2026-10-24 from Yash's six Rhino races: 0.676), Manta 0.70 / 16 / 0.50 (line learned 2026-10-24: 0.809), Dolphin 0.60 / 12 / 0.50 (line set 2026-10-24 from Yash's one Dolphin race: 0.785), Stoat 0.55 / 10 / 0.60, Serpent 0.60 / 12 /
   0.50, Sparrow 0.55 / 10 / 0.50, Scarab 0.60 / 12 / 0.45.
 - **Learned from people**: `learn_drives_from_flights.py` measures where a person crosses the rings in their fastest
   three finished races of a hull and writes that hull's `LaneShare` (`race_lines_learned.json`, read by the
   generator). Each crossing is scaled by its OWN ring's mouth (an I1 crossing read against the I3 mouth looked far
   wider: the Rhino's six races read 0.815 that way and 0.676 crossing by crossing, I1 0.676 and I3 0.672). The Manta's
   line is learned (0.809). The Rhino's 0.676 was SET BY HAND on 2026-10-24 (Yash's ask) from all six of his Rhino races,
-  four of them unfinished, because only two finished; the learner replaces it at the third finished race.
+  four of them unfinished, because only two finished; the learner replaces it at the third finished race. The Dolphin's 0.785 was set by hand the same day from Yash's one
+  Dolphin race (I1, 22 crossings, unfinished); the learner replaces it at the third finished race too.
 - **Steering** (`GateRaceController.TryRaceLine`, overridden here): asked after the difficulty belief and the
   missed-mouth test, so an Easy pilot's mistakes and a missed ring are still flown the gate way (a missed ring is flown
   the gate way until threaded, or the closed line would carry the pilot a whole lap round to it). The point a second

@@ -1,5 +1,8 @@
 {
   "hulls": {
+    "Dolphin": {
+      "LaneShare": 0.785
+    },
     "Manta": {
       "LaneShare": 0.809
     },

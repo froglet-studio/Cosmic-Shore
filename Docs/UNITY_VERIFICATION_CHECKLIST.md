@@ -3088,6 +3088,18 @@ I1 43.0 s vs 48.2, I2 56.1 vs 55.4, I3 56.3 vs stalled), gates.
 4. Any other mode with an AI Rhino (Broadside): it still ramps on long straights (no next leg there: every objective is
    read as a 90° corner).
 
+### 🔴 The Dolphin AI's Regatta line set from Yash's one Dolphin race (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** the Dolphin's race line `LaneShare` 0.60 → 0.785 (`race_lines_learned.json` → `author_race_lines.py` →
+`Resources/RaceLines/Dolphin_Regatta`). Yash crossed the I1 rings a median 80.5 u out of the 110 u mouth (22 crossings,
+one unfinished race). Set by hand at his ask; the learner replaces it at the third finished Dolphin race. The discharge
+timing is unchanged (one race is too few). No C# changed.
+**Verified without the editor:** `author_race_lines.py --check`, `learn_drives_from_flights.py --check`.
+**Verify in editor:**
+1. Arcade ▸ Regatta I1 and I3, an AI Dolphin, Third Eye on it with trails: it flies further out than before (about
+   three quarters of the way to the rim), never crosses a rail and still threads every ring after a drift.
+2. Note its I1 and I3 times; if it misses rings more than before, say so.
+
 ### 🔴 The Rhino AI's Regatta corner speed and line set from Yash's six Rhino races (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
 
 **What landed:** a Regatta-only variant `Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta` (the base asset with

@@ -2437,3 +2437,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash
 - **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-c9ba · open · test · Regatta AI
+- **Task:** Race an AI Dolphin in Regatta I1 and I3 (Third Eye, trails on) with the line 0.785 set from your Dolphin race: it should fly about three quarters of the way out, never cross a rail, and still thread every ring after a drift; note its times
+- **Done when:** The UNITY_VERIFICATION_CHECKLIST entry for 2026-10-24 Dolphin line is ticked, with the I1 and I3 times
+- **Who can take it:** Yash (has offered to take tasks)
+- **Added:** 2026-10-24 by Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Dolphin line, 2026-10-24); Assets/_Scripts/Controller/Arcade/REGATTA.md 6.2
