@@ -98,7 +98,7 @@ have handed over, so the hull flies exactly as before. Shipped lists:
 the base in that mode only. A variant of a different class than the base is ignored. `learn_drives_from_flights.py`
 writes them from people's editor flights; `AIModeTuning.For` does the same for the Stoat's three configs and
 `MantaSoarAITuningSO.LoadForMode` for the Manta's Soar bands. The folder holds one variant so far, `MantaSoarAITuning_Regatta`
-(Soar bands 0.8 / 0.85 against the executor's 0.35 / 0.75, 2026-10-17, from `manta_drive_sim.py`); every boost-policy
+(Soar bands 0.8 / 0.85 against the executor's 0.35 / 0.75 (since 2026-10-24: 0.975 / 0.975, learned from Yash's 3 fastest of 9 finished Manta flights; `LEARNED_DRIVES.md`), 2026-10-17, from `manta_drive_sim.py`); every boost-policy
 drive flies its base asset. Renaming a base asset orphans its variants.
 
 ## Known limits

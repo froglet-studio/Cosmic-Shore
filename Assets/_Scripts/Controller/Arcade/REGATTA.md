@@ -263,7 +263,7 @@ and the Manta got Regatta Soar bands (`f4e35748c`, below).
 **Per-hull Regatta variants.** The Rhino, Dolphin and Manta drives and the Stoat's three configs each read a
 Regatta-only copy when one exists (`Resources/AIBoostPolicies/<asset>_Regatta`, written by
 `learn_drives_from_flights.py` from people's editor flights). Only the Manta's exists: `MantaSoarAITuning_Regatta`,
-Soar bands 0.8 / 0.85 against the executor's 0.35 / 0.75 (2026-10-17, set from `Tools/Build/manta_drive_sim.py`, which
+Soar bands 0.8 / 0.85 against the executor's 0.35 / 0.75 (since 2026-10-24: 0.975 / 0.975, learned from Yash's 3 fastest of 9 finished Manta flights; `LEARNED_DRIVES.md`) (2026-10-17, set from `Tools/Build/manta_drive_sim.py`, which
 raced three laps 1.5-2 s faster at every intensity; Manta flights replace it). So the Squirrel
 (`SkimRaceAIConfig_Regatta`) and the Manta fly Regatta numbers; the Rhino, the Dolphin and the Stoat fly their shipped
 numbers.
@@ -303,7 +303,7 @@ once, and a big hull scrapes them (a ram slows the Manta, Dolphin and Sparrow an
   rim (`HullClearance`), and its **risk**. Bold cuts more of each bend (a longer look-ahead) and keeps 0.75x the room;
   careful follows the line tightly with 1.5x. Every AI seat draws its own risk round the hull's (seeded per seat), so a
   grid has careful and bold pilots of the same hull. Starting values: Rhino 0.80 / 18 u / 0.40 (biggest, fastest:
-  out wide, safer), Manta 0.70 / 16 / 0.50, Dolphin 0.60 / 12 / 0.50, Stoat 0.55 / 10 / 0.60, Serpent 0.60 / 12 /
+  out wide, safer), Manta 0.70 / 16 / 0.50 (line learned 2026-10-24: 0.809), Dolphin 0.60 / 12 / 0.50, Stoat 0.55 / 10 / 0.60, Serpent 0.60 / 12 /
   0.50, Sparrow 0.55 / 10 / 0.50, Scarab 0.60 / 12 / 0.45.
 - **Learned from people**: `learn_drives_from_flights.py` measures where a person crosses the rings in their fastest
   three finished races of a hull and writes that hull's `LaneShare` (`race_lines_learned.json`, read by the
