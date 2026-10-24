@@ -2159,9 +2159,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-24 by a Claude session (`cece/bold-gauss-lad943`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md §5
 
-### T-20261024-c4d4 · open · decision · icons
+### T-20261024-c4d4 · done · decision · icons
 - **Task:** Settle the ability-icon language before the /ability-icon kit is built: angular (style foundation §5, the artist HUD glyphs) or round-capped (the Thresher set); whether element marks may appear as a secondary element on other hulls' icons; whether a hull's own silhouette is ever the right mark
 - **Done when:** Docs/Icons/ABILITY_ICON_SKILL_PLAN.md §10 has an answer for each of the three and §4 is marked confirmed
 - **Who can take it:** Garrett (product), Shombith (style)
 - **Added:** 2026-10-24 by a Claude session (`cece/loving-ptolemy-4715w4`)
 - **See:** Docs/Icons/ABILITY_ICON_SKILL_PLAN.md, Docs/Icons/ability_icons_audit_2026-10-24.png
+- **Done:** 2026-10-24, Garrett 2026-10-24: angular; the flower owns the element (no redundant element mark on the icon); a hull's own silhouette is fair game where appropriate (the Dolphin's jaw on its Space icon is the example)
+
+### T-20261024-893c · open · decision · icons
+- **Task:** Judge round 1 of the ability-icon kit: the Manta's and Urchin's redrawn ability icons (before/after sheets at 128/60/40). Say which read, which do not, and what the language is missing; Soar is the weakest
+- **Done when:** Garrett's feedback is folded into .claude/skills/ability-icon/references/LESSONS.md and ICON_LANGUAGE.md, and the next hull is named
+- **Who can take it:** Garrett
+- **Added:** 2026-10-24 by a Claude session (`cece/loving-ptolemy-4715w4`)
+- **See:** Docs/Icons/sheets/manta.png, Docs/Icons/sheets/urchin.png, Docs/Icons/ABILITY_ICON_SKILL_PLAN.md §8
+
+### T-20261024-aa5e · open · test · icons
+- **Task:** Fly the Manta and the Urchin in freestyle (Toybox Vessel Changer) and look at the four-icon ability row: the redrawn icons sit in the 60 px box, read under the cooldown veil and the gauge fill, and the Urchin's charge ring still draws round its Charge card
+- **Done when:** both rows checked on PC and once on a phone; anything that does not read goes to the icons board
+- **Who can take it:** Yash (has offered to take tests) or Caleb (QA)
+- **Added:** 2026-10-24 by a Claude session (`cece/loving-ptolemy-4715w4`)
+- **See:** Docs/Icons/sheets/manta.png, Docs/Icons/sheets/urchin.png

@@ -156,7 +156,11 @@ def icon_writes() -> dict:
         assert 0.08 <= c <= 0.45, f"{png}: coverage {c:.3f} outside the readable band"
     out = {ICON_DIR + ".meta": folder_meta(guid_for("Urchin.folder"))}
     for _, _, png, fn in SLOTS + [(None, None, CHARGE_RING_PNG, charge_ring)]:
-        out[f"{ICON_DIR}/{png}"] = render(fn)
+        # The four ability PNGs are owned by the icon kit since 2026-10-24 (Tools/Build/icon_kit/specs/urchin.py,
+        # the art pass that replaced these placeholders); this tool keeps the metas (same guids) and the
+        # charge-ring GAUGE sprite, which is not an ability icon.
+        if png == CHARGE_RING_PNG:
+            out[f"{ICON_DIR}/{png}"] = render(fn)
         out[f"{ICON_DIR}/{png}.meta"] = sprite_meta(guid_for(png))
     return out
 

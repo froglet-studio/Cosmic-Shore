@@ -201,6 +201,14 @@ The round, as a skill section:
 
 ## 8. Order of work
 
+**Status 2026-10-24 (round 1 landed):** rounds 0-2 done in one pass on `cece/loving-ptolemy-4715w4`
+- the language confirmed (§10), `Tools/Build/icon_kit/` (canvas, motifs, verify with self-test,
+sheet, author) and `.claude/skills/ability-icon/` written, and the **Manta (4) and Urchin (4)**
+redrawn through the kit (`Docs/Icons/sheets/manta.png`, `urchin.png`), their old generators standing
+down on the PNGs. The Thresher was not round 2's proof after all: Garrett asked for the floor to be
+raised on the worst first, so the two "does not read" hulls went first. Next: Garrett's feedback on
+the two sheets, then the eleven placeholders.
+
 | Round | What | Why first |
 |---|---|---|
 | 0 | `ICON_LANGUAGE.md` draft (section 4) to Garrett and Shombith; settle round vs angular | everything downstream draws with it |
@@ -222,11 +230,10 @@ Caleb does the card art. So: the language draft goes to Garrett (the product cal
 style call) before the kit is built; the card backgrounds (`/cardart`) and the class cards
 (`vessel_model/render_cards.py`) are not in this skill's scope and stay where they are.
 
-## 10. Decisions waiting on the owner
+## 10. Decisions (answered by Garrett, 2026-10-24; T-20261024-c4d4 closed)
 
-1. Angular (style foundation §5, the artist's HUD glyphs) or round (the Thresher set) - section 4.
-2. Whether the element marks (bolt / hexagon / black-hole ring / hourglass, the Starlings' cards) may
-   appear as a SECONDARY element on other hulls' icons, or whether an ability icon never shows its
-   element (the flower above it already does).
-3. Whether a hull's OWN silhouette is ever the right mark (Jacks, Angler, Brittle Star use theirs
-   today) or whether the generic hull pictogram is the only vessel ever drawn in an icon.
+1. **Angular.** ("Angular is probably good.")
+2. **The flower owns the element**; an ability icon never repeats its element's mark. ("I don't see
+   what value the redundancy could provide.")
+3. **A hull's own silhouette is fair game where appropriate** - the Dolphin's jaw on its Space icon
+   is the worked example.
