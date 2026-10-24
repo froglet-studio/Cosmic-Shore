@@ -2359,3 +2359,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (style-B menu)
 - **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/MENU_REDESIGN_B.md §24; Docs/PERFORMANCE_OPTIMIZATION.md §2 10-24
+
+### T-20261024-8b4b · open · test · Replays
+- **Task:** Editor-test replays inside the arena on claude/match-replays-5t3dbr: record a NEW Regatta replay, then Arcade > REPLAYS > WATCH - 'Building the arena', then the race inside Regatta's rails and rings with the ghosts on the course; cancel while building; leave and check the arena is torn down and the lava lamp's trails still work; watch back to back; next to a card preview; the dark-stage fallback; profile it.
+- **Done when:** All nine items under 'Replays inside the arena' in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, and the entry is marked verified.
+- **Who can take it:** Yash (offered), Caleb (mode previews), anyone with the Unity Editor
+- **Added:** 2026-10-24 by a Claude session (`claude/match-replays-5t3dbr`)
+- **See:** Docs/REPLAYS.md section 6.1
+
+### T-20261024-7952 · open · decision · Mode Preview
+- **Task:** Replays now stand their arena on your mode preview's satellite (ModePreviewArena.Stand + ModePreviewGateCourse, parked on -Z, ReplayArenaStage on claude/match-replays-5t3dbr). The one change in your code: Stand gained an optional prismStride parameter (0 = the library's FlightPrismStride, so the preview is unchanged) so a replay can lay every prism. Confirm that is fine, or say if replays should take a different route.
+- **Done when:** Caleb confirms (or names the change he wants), noted in Docs/REPLAYS.md section 9.
+- **Who can take it:** Caleb (mode previews owner)
+- **Added:** 2026-10-24 by a Claude session (`claude/match-replays-5t3dbr`)
+- **See:** Docs/REPLAYS.md section 6.1; Docs/ModePreview/ARCHITECTURE.md section 5

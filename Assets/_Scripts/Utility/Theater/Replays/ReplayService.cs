@@ -147,9 +147,15 @@ namespace CosmicShore.Utility
             // results are not coming: keep what there is rather than drop it.
             if (_pending != null) SavePending(withResults: false);
 
+            // The arena the match is flown in: its config names the exact cell to stand when the
+            // replay is watched, and its position is the origin the poses are recorded around.
+            var cell = Cell.FindNearestActiveCell(Vector3.zero, sceneCellsOnly: true);
+            string configName = cell && cell.Config ? cell.Config.name : string.Empty;
+
             _recorder = new TheaterRecorder();
-            _recorder.Begin(theater, ResolveSceneName(), (int)_gameData.GameMode, cellConfigName: string.Empty);
+            _recorder.Begin(theater, ResolveSceneName(), (int)_gameData.GameMode, configName);
             _pending = NewSummary();
+            _pending.ArenaOrigin = cell ? cell.transform.position : Vector3.zero;
 
             _recordCts = new CancellationTokenSource();
             RecordLoopAsync(_recorder, _recordCts.Token).Forget();

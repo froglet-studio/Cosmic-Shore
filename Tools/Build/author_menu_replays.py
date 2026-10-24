@@ -11,7 +11,9 @@ window frame of Docs/MENU_REDESIGN_B.md, built the way author_menu_credits.py bu
 
     Assets/_Prefabs/UI Elements/Panels/ReplayPlaybackHud.prefab
         The controls over a replay being watched: its OWN root canvas (sorting order 500, so it
-        draws over everything and is the one canvas ReplayCurtain leaves up), the title and when,
+        draws over everything and is the one canvas ReplayCurtain leaves up). It opens on a loading
+        panel ("Building the arena", CANCEL / B) while the replay's arena stands, then shows the
+        title and when,
         Exit (B), a scrub bar, the time and speed readouts, the transport row (skip back, pause,
         skip ahead, slower, faster, camera, next pilot), the shot and pilot readouts and a line
         naming the pad controls. Its buttons are not navigation stops: the pad drives the replay
@@ -89,6 +91,8 @@ CONFIRM_DELETE = "CONFIRM"
 EMPTY_LINE = "No replays yet. Finish a Regatta and its replay is saved here, ready to watch."
 ELSEWHERE_LINE = "Recorded on another device"
 PAD_HINT = "A pause    LB / RB skip    LT / RT speed    D-pad camera and pilot    B exit"
+LOADING_LINE = "Building the arena"
+LOADING_HINT = "The race plays in the arena it was flown in."
 TRANSPORT = (  # key, caption, component field
     ("Back", "SKIP BACK", "backButton"), ("Pause", "PAUSE", "pauseButton"), ("Forward", "SKIP AHEAD", "forwardButton"),
     ("Slower", "SLOWER", "slowerButton"), ("Faster", "FASTER", "fasterButton"), ("Shot", "CAMERA", "shotButton"),
@@ -243,13 +247,16 @@ def build_hud():
     root.add("canvas", 223, canvas_body(HUD_SORTING)).add("scaler", 114, scaler_body()) \
         .add("raycaster", 114, raycaster_body())
 
-    top = root.child(N("Top", "Top", R((0, 1), (1, 1), (0, 0), (0, TOP_H), (0.5, 1))))
+    # The two bands sit in one group, hidden while the arena builds; the loading panel shows instead.
+    controls = root.child(N("Controls", "Controls", STRETCH))
+    controls.add("cg", 225, H.canvas_group(False))
+    top = controls.child(N("Top", "Top", R((0, 1), (1, 1), (0, 0), (0, TOP_H), (0.5, 1))))
     image_node(top, "Top/Shade", "Shade", STRETCH, "SurfaceBlack", alpha=0.72)
     label(top.child(N("Top/Title", "Title", TL(PAD, 20, 1100, 36))), "Regatta", "H2", "TextLight")
     label(top.child(N("Top/When", "When", TL(PAD, 62, 1100, 22))), "1 Jan 2026, 12:00 - 3:07", "BodySmall", "NeutralLightest")
     kit_button(top, "Top/Exit", "Exit", "EXIT", place=lambda w, h: TR(PAD, 32, w, h), nav=0, keycap="B")
 
-    bot = root.child(N("Bottom", "Bottom", R((0, 0), (1, 0), (0, 0), (0, BOTTOM_H), (0.5, 0))))
+    bot = controls.child(N("Bottom", "Bottom", R((0, 0), (1, 0), (0, 0), (0, BOTTOM_H), (0.5, 0))))
     image_node(bot, "Bottom/Shade", "Shade", STRETCH, "SurfaceBlack", alpha=0.72)
     scrub(bot, "Bottom/Scrub")
     label(bot.child(N("Bottom/Time", "Time", TL(PAD, 52, 360, 26))), "0:00 / 0:00", "Data", "TextLight")
@@ -268,6 +275,17 @@ def build_hud():
     label(bot.child(N("Bottom/Hint", "Hint", R((0.5, 0), None, (0, 14), (1100, 20), (0.5, 0)))), PAD_HINT,
           "BodySmall", "NeutralLightest", align="center")
 
+    # Shown first: the replay's arena builds before anything plays (ReplayArenaStage).
+    loading = root.child(N("Loading", "Loading", STRETCH))
+    loading.add("cg", 225, H.canvas_group(True))
+    image_node(loading, "Loading/Dim", "Dim", STRETCH, "SurfaceBlack", alpha=0.9, raycast=True)
+    label(loading.child(N("Loading/Title", "Title", R((0.5, 0.5), None, (0, 40), (1100, 36)))), LOADING_LINE, "H2",
+          "TextLight", align="center")
+    label(loading.child(N("Loading/Hint", "Hint", R((0.5, 0.5), None, (0, 0), (1100, 22)))), LOADING_HINT, "BodySmall",
+          "NeutralLightest", align="center")
+    kit_button(loading, "Loading/Cancel", "Cancel", "CANCEL",
+               place=lambda w, h: R((0.5, 0.5), None, (0, -56), (w, h)), nav=0, keycap="B")
+
     root.add("hud", 114, lambda ctx, go: mono(go, S["hud"], hud_body(ctx)))
     return root
 
@@ -283,6 +301,8 @@ def hud_body(ctx):
             f"  timeText: {tmp('Bottom/Time')}\n  speedText: {tmp('Bottom/Speed')}\n  shotText: {tmp('Bottom/Shot')}\n"
             f"  followText: {tmp('Bottom/Follow/Name')}\n  followGroup: {ref(ctx.c('Bottom/Follow', 'cg'))}\n"
             f"  pauseText: {tmp('Bottom/Transport/Pause/Label')}\n  scrub: {ref(ctx.c('Bottom/Scrub', 'slider'))}\n"
+            f"  loadingGroup: {ref(ctx.c('Loading', 'cg'))}\n  controlsGroup: {ref(ctx.c('Controls', 'cg'))}\n"
+            f"  cancelButton: {ref(ctx.c('Loading/Cancel', 'button'))}\n"
             + "".join(f"  {f}: {button[f]}\n" for f in order)
             + f"  exitButton: {ref(ctx.c('Top/Exit', 'button'))}\n")
 
@@ -485,13 +505,18 @@ def validate(files):
     C.wired(hf, hud, "exitButton", S["button"], "ReplayPlaybackHud")
     C.wired(hf, hud, "scrub", SLIDER, "ReplayPlaybackHud")
     C.wired(hf, hud, "followGroup", 225, "ReplayPlaybackHud")
+    for field in ("loadingGroup", "controlsGroup"):
+        C.wired(hf, hud, field, 225, "ReplayPlaybackHud")
+    C.wired(hf, hud, "cancelButton", S["button"], "ReplayPlaybackHud")
+    assert "  m_Alpha: 1\n" in A.doc_of(hf, F(HUD)("Loading#cg"))[1] and "  m_Alpha: 0\n" in A.doc_of(hf, F(HUD)("Controls#cg"))[1], \
+        "the HUD must open on its loading panel (the arena builds before anything plays)"
     for field in ("titleText", "whenText", "timeText", "speedText", "shotText", "followText", "pauseText"):
         C.wired(hf, hud, field, K.TMP_UGUI, "ReplayPlaybackHud")
     for k, m in words_of(hud, HUD_WORDS).items():
         assert m and m.group(1).strip(), f"ReplayPlaybackHud.{k} is empty"
     shots = re.findall(r"^  - (.+)$", hud.split("  shotNames:\n")[1].split("  titleText:")[0], re.M)
     assert len(shots) == theater_shot_count(), f"ReplayPlaybackHud.shotNames has {len(shots)} names; TheaterShot has {theater_shot_count()}"
-    for node in [f"Bottom/Transport/{key}" for key, _, _ in TRANSPORT] + ["Top/Exit"]:
+    for node in [f"Bottom/Transport/{key}" for key, _, _ in TRANSPORT] + ["Top/Exit", "Loading/Cancel"]:
         _, b = A.doc_of(hf, F(HUD)(f"{node}#button"))
         assert "    m_Mode: 0\n" in b, f"HUD button {node} is a navigation stop - the D-pad belongs to the replay"
 
@@ -575,6 +600,13 @@ def self_test(files):
         ("a non-ASCII word", lambda f: f.__setitem__(rf, f[rf].replace("Recorded on another device", "Recorded · elsewhere"))),
         ("a shot without a name", lambda f: f.__setitem__(hf, f[hf].replace("  - CHASE\n", "", 1))),
         ("a HUD button the D-pad can land on", nav_on),
+        ("the HUD opening on its transport instead of the loading panel", lambda f: f.__setitem__(hf, f[hf].replace(
+            f"--- !u!225 &{F(HUD)('Loading#cg')}\nCanvasGroup:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
+            f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {F(HUD)('Loading#go')}}}\n"
+            "  m_Enabled: 1\n  m_Alpha: 1\n",
+            f"--- !u!225 &{F(HUD)('Loading#cg')}\nCanvasGroup:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
+            f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {F(HUD)('Loading#go')}}}\n"
+            "  m_Enabled: 1\n  m_Alpha: 0\n"))),
         ("the HUD drawn under the menu", lambda f: f.__setitem__(hf, f[hf].replace(f"  m_SortingOrder: {HUD_SORTING}\n", "  m_SortingOrder: 0\n"))),
     ]
     ok = all(expect(l, m) for l, m in cases)

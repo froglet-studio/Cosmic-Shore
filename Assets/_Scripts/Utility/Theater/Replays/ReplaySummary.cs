@@ -72,6 +72,14 @@ namespace CosmicShore.Utility
         public string SceneName = string.Empty;
         public int Intensity;
 
+        /// <summary>
+        /// The world position of the match scene's cell - the point every recorded pose is around.
+        /// Watching stands the arena somewhere else and shifts the poses by the difference
+        /// (<see cref="ReplayStagePlacement"/>). A summary written before this field reads zero, which
+        /// is where every arcade scene's cell sits.
+        /// </summary>
+        public Vector3 ArenaOrigin;
+
         /// <summary>When the recording started, as UTC ticks (the Theater recording's own stamp).</summary>
         public long RecordedAtUtcTicks;
 

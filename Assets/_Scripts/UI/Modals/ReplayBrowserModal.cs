@@ -5,6 +5,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
+using Reflex.Core;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -78,6 +79,10 @@ namespace CosmicShore.UI
         float stickDeadZone = 0.2f;
 
         [Inject] ReplayService replayService;
+
+        // Handed to the replay's arena: a runtime-built cell gets no injection of its own.
+        [Inject] Container container;
+        [Inject] GameDataSO gameData;
         [Inject] SO_GameList gameList;
 
         readonly List<ReplayRowView> _rows = new();
@@ -195,26 +200,24 @@ namespace CosmicShore.UI
                 return;
             }
 
-            var hud = Instantiate(playbackHudPrefab);
-            bool fromMenu = !Switcher || !Switcher.IsInFreestyle;
-            if (!hud.Play(recording, ModeName(summary), WhenLine(summary), fromMenu))
-            {
-                Destroy(hud.gameObject);
-                ShowStatus(openFailedLine);
-                return;
-            }
-
-            _hud = hud;
+            // The HUD builds the replay's arena first (its loading panel covers the wait), then plays;
+            // it closes itself on any ending and says whether it failed.
+            _hud = Instantiate(playbackHudPrefab);
             _watched = summary;
             _hud.Closed += HandleWatchClosed;
             if (windowGroup) windowGroup.interactable = false;
+            bool fromMenu = !Switcher || !Switcher.IsInFreestyle;
+            _hud.PlayAsync(recording, summary, ModeName(summary), WhenLine(summary), fromMenu, container,
+                           gameData ? gameData.ThemeManagerData : null).Forget();
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Replay] watching {summary.RecordingFile}");
         }
 
         void HandleWatchClosed()
         {
+            bool failed = _hud && _hud.Failed;
             if (_hud) _hud.Closed -= HandleWatchClosed;
             _hud = null;
+            if (failed) ShowStatus(openFailedLine);
             _watchEndedFrame = Time.frameCount;
             if (windowGroup) windowGroup.interactable = true;
             FocusFirstRow(_watched);

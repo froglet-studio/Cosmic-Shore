@@ -13120,8 +13120,9 @@ including the new Replays one); the two Menu_Main generators proven order-indepe
 2. **The list.** **Pass:** the Regatta replay is the first row, newest first: "Regatta", the date and length, "Winner:
    <name>" (or "No final results" for a race you left), pilots and intensity; the pad lands on its WATCH; D-pad down walks
    the rows and the list scrolls to follow; the right stick scrolls; with no replays the empty line shows instead.
-3. **Watch from the menu.** Press WATCH. **Pass:** the menu disappears; the race plays as ghosts on the Theater's dark
-   stage with the HUD over it (title, time counting up, scrub bar moving); no menu button reacts to the pad underneath.
+3. **Watch from the menu.** Press WATCH. **Pass:** the menu disappears; the race plays as ghosts with the HUD over it
+   (title, time counting up, scrub bar moving); no menu button reacts to the pad underneath. (Since 2026-10-24 the ghosts
+   race inside the arena - the next entry, "Replays inside the arena".)
 4. **Controls.** **Pass:** A pauses / plays (the button reads PLAY while paused); LB / RB skip 5 s; LT / RT halve /
    double the speed between x0.25 and x4; D-pad left / right change the shot (the readout says FREE, PILOT, ORBIT,
    CHASE) and up / down the pilot; on Free the pilot name hides and the sticks fly the camera; dragging the scrub bar
@@ -13138,6 +13139,38 @@ including the new Replays one); the two Menu_Main generators proven order-indepe
    a `[Replay] Cannot watch` warning names the reason.
 9. **Theater key during a replay.** While watching, press 8. **Pass:** the replay steps aside cleanly (menu back, no
    black screen), and the Theater's own playback runs.
+
+## 🔴 Replays inside the arena (2026-10-24, `claude/match-replays-5t3dbr`) - NOT EDITOR-VERIFIED
+
+WATCH now stands the race's own arena - the mode preview's satellite cell with the config the match ran (Regatta's
+rails), its rings - 120,000 units down -Z, shifts the ghosts onto it and plays there (`Docs/REPLAYS.md` §6.1). No Unity
+CLI in the session, so `/verify-unity` could not run. Checked offline: refcompile player (0 errors in project code) and
+editor (the 3 known errors, 0 in changed files); `ReplayStagePlacementTests` 4/4 run with Roslyn + NUnit (negative
+control: a flipped shift fails one), `ReplayStoreTests` 20/20, `ReplayCommandTests` 17/17; `author_menu_replays.py`
+`--self-test` 9/9 planted defects caught; the gates. Needs a Regatta replay recorded AFTER this change (the recording
+now carries its cell config and the summary its `ArenaOrigin`); an older one still plays in the arena of its
+intensity.
+
+1. **The arena builds.** Arcade > REPLAYS > WATCH. **Pass:** "Building the arena" shows over the dimmed menu for a few
+   seconds, then the race plays with the three Regatta rails and the gate rings around the ghosts; the menu's own world
+   (the lava lamp, its cell) is nowhere in shot.
+2. **The ghosts are ON the course.** Watch the start and a few corners on Chase and Orbit. **Pass:** the ghosts start on
+   the start line and thread the rings; an Urchin's ghost rides along its rail, not beside it. (A ghost offset from the
+   course by a constant distance means the arena origin is wrong - check the summary's `ArenaOrigin`.)
+3. **Full rails.** **Pass:** the rails are continuous ribbons as in the match, not dotted (Arena Prism Stride 1).
+4. **Cancel while building.** Press WATCH, then B (and again with CANCEL, and Escape) while "Building the arena" shows.
+   **Pass:** back on the list at once, no error, no status line; WATCH again works.
+5. **Leaving tears it down.** Leave a replay, open the Hierarchy. **Pass:** `ModePreviewArena` and `ReplayStage
+   (Regatta)` are gone within a few seconds; the lava lamp's trails still work (the pool survived); no frame hitch on
+   the way back worth noticing.
+6. **Back to back.** Watch, leave, watch again five times. **Pass:** each build and teardown is clean, the Console stays
+   clear, memory does not climb (Profiler > Memory, total used).
+7. **Next to the preview.** Open a card's configure window so its preview stands, close it, then watch a replay at once.
+   **Pass:** both satellites come and go without touching each other.
+8. **No arena available.** Temporarily set Arena Build Timeout Seconds to 5 on a Resources/ReplayConfig and watch.
+   **Pass:** a `[Replay] ... did not finish building` warning, and the race plays on the dark stage instead.
+9. **Performance.** Profile a replay inside the arena. **Pass:** frame time comparable to watching the Regatta match
+   itself; if the build hitches the menu, raise Arena Prism Stride and note the number.
 
 ## 🔴 2026-10-17 — Bleeding-edge merge + first-login guide on the rev-3 menu (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 

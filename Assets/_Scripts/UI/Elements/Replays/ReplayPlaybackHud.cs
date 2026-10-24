@@ -1,8 +1,11 @@
 using System;
 using System.Globalization;
+using System.Threading;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
+using Reflex.Core;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -27,6 +30,10 @@ namespace CosmicShore.UI
     /// the EventSystem's selection every frame so a clicked button can never also take an A press.
     /// Keyboard: Space pause, arrows skip, 1-4 the shots and 5 the next pilot (the Theater's keys),
     /// Escape to leave.</para>
+    ///
+    /// <para><b>The arena builds first.</b> While <see cref="ReplayPlayer"/> stands the replay's arena
+    /// the HUD shows its loading panel instead of the transport; B, Escape or EXIT cancel the build
+    /// and close the HUD.</para>
     /// </summary>
     [RequireComponent(typeof(Canvas))]
     public class ReplayPlaybackHud : MonoBehaviour
@@ -58,6 +65,16 @@ namespace CosmicShore.UI
         [SerializeField] TMP_Text pauseText;
         [SerializeField, Tooltip("Shows the position; dragging it seeks.")] Slider scrub;
 
+        [Header("Panels")]
+        [SerializeField, Tooltip("Shown while the replay's arena is being built (its words are authored on its texts).")]
+        CanvasGroup loadingGroup;
+
+        [SerializeField, Tooltip("The title band and the transport band - shown once the replay plays.")]
+        CanvasGroup controlsGroup;
+
+        [SerializeField, Tooltip("On the loading panel: stops building the arena and closes the HUD.")]
+        Button cancelButton;
+
         [Header("Controls")]
         [SerializeField] Button pauseButton;
         [SerializeField] Button backButton;
@@ -70,13 +87,20 @@ namespace CosmicShore.UI
 
         readonly ReplayPlayer _player = new();
         ReplayConfigSO _config;
+        CancellationTokenSource _loadCts;
         bool _closing;
         int _startFrame = -1;
 
-        /// <summary>Raised once, after the replay has stopped and the screen is back.</summary>
+        /// <summary>Raised once when the HUD goes away - the replay ended, the build was cancelled, or it failed.</summary>
         public event Action Closed;
 
+        /// <summary>True when the HUD closed because the replay could not be played (read it in <see cref="Closed"/>).</summary>
+        public bool Failed { get; private set; }
+
         public bool IsPlaying => _player.IsPlaying;
+
+        /// <summary>True when the replay plays inside its own arena rather than on the dark stage.</summary>
+        public bool OnArena => _player.OnArena;
 
         void Awake()
         {
@@ -88,6 +112,7 @@ namespace CosmicShore.UI
             Bind(shotButton, () => ReplayCommands.CycleShot(1));
             Bind(pilotButton, () => ReplayCommands.CycleFollow(1));
             Bind(exitButton, () => ReplayCommands.Stop);
+            if (cancelButton) cancelButton.onClick.AddListener(Close);
             if (scrub) scrub.onValueChanged.AddListener(HandleScrub);
             _player.Stopped += HandleStopped;
         }
@@ -97,26 +122,76 @@ namespace CosmicShore.UI
         IReplayCommand FasterCommand => ReplayCommands.ScaleSpeed(Config.SpeedStep, Config.MinSpeed, Config.MaxSpeed);
 
         /// <summary>
-        /// Start watching <paramref name="recording"/>. False (the caller destroys the HUD) when the
-        /// Theater refused it.
+        /// Build the replay's arena, then start watching. The HUD closes itself (raising
+        /// <see cref="Closed"/>, with <see cref="Failed"/> set when it could not play) if the build
+        /// is cancelled or the Theater refuses the recording.
         /// </summary>
-        public bool Play(TheaterRecording recording, string title, string when, bool backToMenuCamera)
+        public async UniTaskVoid PlayAsync(TheaterRecording recording, ReplaySummary summary, string title, string when,
+                                           bool backToMenuCamera, Container container, ThemeManagerDataContainerSO theme)
         {
             if (titleText) titleText.text = title;
             if (whenText) whenText.text = when;
-            var cameraManager = CameraManager.Instance;
-            if (!_player.Begin(recording, TheaterConfigSO.Resolve(), cameraManager, GetComponent<Canvas>(), backToMenuCamera))
-                return false;
+            ShowLoading(true);
+
+            _loadCts = new CancellationTokenSource();
+            var request = new ReplayWatchRequest
+            {
+                Recording = recording, Summary = summary, Theater = TheaterConfigSO.Resolve(), Replay = Config,
+                CameraManager = CameraManager.Instance, Keep = GetComponent<Canvas>(),
+                BackToMenuCamera = backToMenuCamera, Container = container, Theme = theme
+            };
+
+            bool playing;
+            bool cancelled = false;
+            try { playing = await _player.BeginAsync(request, _loadCts.Token); }
+            catch (OperationCanceledException) { playing = false; cancelled = true; }
+            finally
+            {
+                _loadCts?.Dispose();
+                _loadCts = null;
+            }
+
+            if (!this) { if (playing) _player.Stop(); return; }
+            if (!playing)
+            {
+                CloseHud(failed: !cancelled);
+                return;
+            }
+
             _startFrame = Time.frameCount;
+            ShowLoading(false);
             Refresh();
-            return true;
         }
 
-        /// <summary>Stop watching (the stage comes down, the menu comes back) and destroy the HUD.</summary>
-        public void Close() => Run(ReplayCommands.Stop);
+        /// <summary>Stop watching (or stop building the arena) and close the HUD.</summary>
+        public void Close()
+        {
+            if (_player.IsLoading) _loadCts?.Cancel();
+            else Run(ReplayCommands.Stop);
+        }
+
+        void ShowLoading(bool loading)
+        {
+            KitVisibility.SetShown(loadingGroup, loading);
+            KitVisibility.SetShown(controlsGroup, !loading);
+        }
+
+        void CloseHud(bool failed)
+        {
+            if (_closing) return;
+            _closing = true;
+            Failed = failed;
+            Closed?.Invoke();
+            Destroy(gameObject);
+        }
 
         void Update()
         {
+            if (_player.IsLoading)
+            {
+                if (LeavePressed()) Close();
+                return;
+            }
             if (!_player.IsPlaying) return;
 
             // The Theater's dev key (8) started its own playback over this one: give the stage to it.
@@ -143,8 +218,13 @@ namespace CosmicShore.UI
         void OnDestroy()
         {
             _player.Stopped -= HandleStopped;
+            _loadCts?.Cancel();
             if (_player.IsPlaying) _player.Stop();
         }
+
+        static bool LeavePressed() =>
+            (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame) ||
+            (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame);
 
         void ReadInput()
         {
@@ -180,6 +260,12 @@ namespace CosmicShore.UI
         void Run(IReplayCommand command)
         {
             if (_closing || command == null) return;
+            if (_player.IsLoading)
+            {
+                // While the arena builds, the only control that means anything is leaving.
+                if (command == ReplayCommands.Stop) Close();
+                return;
+            }
             command.Execute(_player);
         }
 
@@ -193,13 +279,7 @@ namespace CosmicShore.UI
             if (_player.IsPlaying) Run(ReplayCommands.SeekFraction(value));
         }
 
-        void HandleStopped()
-        {
-            if (_closing) return;
-            _closing = true;
-            Closed?.Invoke();
-            Destroy(gameObject);
-        }
+        void HandleStopped() => CloseHud(failed: false);
 
         void Refresh()
         {

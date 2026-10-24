@@ -59,7 +59,31 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The fastest playback rate (1 is real time).")]
         [SerializeField, Range(1f, 16f)] float maxSpeed = 4f;
 
+        [Header("The arena")]
+        [Tooltip("Watching a replay stands the arena the match was raced in - the mode's own cell and its " +
+                 "rails, and a gate race's rings - as a satellite this far from the menu world, past every " +
+                 "camera's far clip (8000 in Menu_Main). The mode preview parks its arena on +X; replays use -Z, " +
+                 "so the two never share a place.")]
+        [SerializeField, Range(20000f, 400000f)] float stageDistance = 120000f;
+
+        [Tooltip("Every Nth prism of the arena's rails and structures is laid. 1 is the arena as the match " +
+                 "laid it; the mode preview flies at 4 to keep the menu light. Raise it if standing the arena " +
+                 "hitches the menu.")]
+        [SerializeField, Range(1, 6)] int arenaPrismStride = 1;
+
+        [Tooltip("Seconds to wait for the arena to finish building. If it has not, the replay plays on the " +
+                 "Theater's dark stage instead. Real time.")]
+        [SerializeField, Range(5f, 120f)] float arenaBuildTimeoutSeconds = 45f;
+
+        [Tooltip("Prisms destroyed per frame while the arena comes down after watching. Smaller is a longer, " +
+                 "invisible drain and a lighter frame in the menu the player went back to.")]
+        [SerializeField, Range(25, 2000)] int arenaDrainPrismsPerFrame = 150;
+
         public float ResultsWaitSeconds => resultsWaitSeconds;
+        public float StageDistance => stageDistance;
+        public int ArenaPrismStride => arenaPrismStride;
+        public float ArenaBuildTimeoutSeconds => arenaBuildTimeoutSeconds;
+        public int ArenaDrainPrismsPerFrame => arenaDrainPrismsPerFrame;
         public float NudgeSeconds => nudgeSeconds;
         public float SpeedStep => speedStep;
         public float MinSpeed => minSpeed;
