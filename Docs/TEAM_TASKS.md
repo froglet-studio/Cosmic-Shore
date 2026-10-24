@@ -2063,3 +2063,38 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (PilotControl, UGS), Shombith (Report button UI)
 - **Added:** 2026-10-22 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md section 2 (T6-T8)
+
+### T-20261024-1a44 · open · docs · Fair play
+- **Task:** CRITICAL (Threat Board R12): write the 'Fair play and security' section of Docs/Legal/PRIVACY_POLICY_TEMPLATE.md, a Code of Conduct (rules, measures incl. separate matchmaking, appeal route), and the App Store / Play Data safety entries, before any fair-play telemetry ships
+- **Done when:** Drafts are in Docs/Legal/ and sent to counsel with T-20261022-3075
+- **Who can take it:** Shombith (draft), Garrett (counsel sign-off)
+- **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Docs/AntiCheat/README.md section 4.7; https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi4s2
+
+### T-20261024-1652 · open · dev · Fair play
+- **Task:** CRITICAL (Threat Board T5): host-side movement plausibility check: each vessel's speed against its hull's configured top speed, boost against charge, and jump distance per tick; violations become fair-play signals (logged with evidence), never kicks
+- **Done when:** In MPPM a client with doubled speed or a teleport produces a signal on the host with the match, vessel and sample; normal play over 10 matches produces none
+- **Who can take it:** Yash (Netcode, vessels)
+- **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Docs/AntiCheat/README.md section 4.2; https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi4s2
+
+### T-20261024-af9e · open · dev · Fair play
+- **Task:** HIGH (Threat Board T4): every player reports the match result (scores, winner, duration) to Cloud Code; a host whose result disagrees with its guests' is a signal, and no reward is granted from an unchecked result
+- **Done when:** A 4-player match writes four reports; a host-side score edit in a test build is flagged
+- **Who can take it:** Yash (party / Netcode, UGS)
+- **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Docs/AntiCheat/README.md section 4.2; https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi4s2
+
+### T-20261024-9d7c · open · dev · Fair play
+- **Task:** HIGH (Threat Board T9): count leaves per match per account (mid-match guest leave, host quit); expose a leave rate so repeat quitters can later be matched together
+- **Done when:** Leave rate is recorded server-side for a test account that quits three matches
+- **Who can take it:** Yash (party layer)
+- **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Docs/AntiCheat/README.md section 4.4; https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi4s2
+
+### T-20261024-bc4c · open · dev · Fair play
+- **Task:** HIGH (Threat Board R11): harden the few values worth editing (boost charge, element levels, score) with obscured types and add a speed-hack check (wall clock vs game time); flag, do not crash
+- **Done when:** A memory editor changing boost charge no longer sticks, and a speed hack produces a signal, on a PC release build
+- **Who can take it:** Yash; flag the new package (e.g. CodeStage ACTk) to Garrett first per CLAUDE.md
+- **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Docs/AntiCheat/README.md section 4.3; https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi4s2

@@ -329,6 +329,30 @@ Undertow itself is a "similarly significant" automated decision (question 1).
 
 All of these are on the team board (`Docs/TEAM_TASKS.md`, area "Fair play").
 
+## 8b. Priorities chosen on the Threat Board (Shombith, 2026-10-24)
+
+Set on the Threat Board artifact (https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi4s2, private until shared).
+15 of 16 threats ticked; the board's own risk score (likelihood × impact, out of 25) is shown beside each.
+
+| Importance | Threat | Board score | Team task |
+|---|---|---|---|
+| Critical | R12 Monitoring that isn't disclosed (privacy policy section, Code of Conduct, store labels) | 15 | T-20261024-1a44, T-20261022-3075 (counsel) |
+| Critical | T3 Currency, unlocks and tokens written by the client | 20 | T-20261022-9bbd |
+| Critical | T5 Ship positions trusted from each client (speed / teleport / boost) | 9 | T-20261024-1652 |
+| High | T1 Anonymous accounts | 20 | T-20261022-6151 |
+| High | T2 Client-trusted leaderboard | 15 | T-20261022-9bbd |
+| High | T8 No Report button | 12 | T-20261022-7708 |
+| High | T4 Host decides every result | 6 | T-20261024-af9e |
+| High | T9 Leaving costs nothing | 8 | T-20261024-9d7c |
+| High | R11 Memory editing on the device | 8 | T-20261024-bc4c |
+| Medium | T6 Shipped AI pilot as a bot (`PilotControl`) | 9 | T-20261022-7708 |
+| Medium | R10 Bot farming | 9 | later (phase C) |
+| Medium | R13 Automated penalties on children | 12 | design rule (§4.6) |
+| Medium | R14 Locking paid content | 8 | design rule (§4.6) |
+| Medium | R16 Reading more from the device than needed | 8 | design rule (§5) |
+| Unset | T7 Display names checked on the client only | 12 | T-20261022-7708 |
+| Not ticked | R15 False positives with no evidence or appeal | 12 | — (the ladder in §4.6 still requires evidence and appeal) |
+
 ## 9. Sources
 
 Every legal and platform claim is cited in [`LEGAL.md`](LEGAL.md). Code facts cite files above and were read on
