@@ -135,7 +135,7 @@ which is `#if false`).
 | M1 | `Renderer.material` getters → MaterialPropertyBlock | Consistency | ~14 leaking reads (VesselAnimation ×5, VesselHelper ×4, DeployTeamCrystalAction, SSU widgets) | Per-material-index MPB rules |
 | M2 | Raw `Debug.LogWarning/LogError` → `CSDebug`, extend the console gate | Consistency | 212 runtime sites | 3 batches + gate change |
 | M3 | Coroutine/async mix → UniTask | Consistency | 5 classes: Crystal, Skimmer, SpectatorController, FriendsListPanel, ProfileModal | Crystal/Skimmer hot — check allocations |
-| M4 | TODO/FIXME triage (delete stale, rest → `team_tasks.py`) | Honesty | 100 (MiniGame.cs 14, Hangar 6) | |
+| M4 | TODO/FIXME triage (delete stale, rest → `/team-tasks` tickets) | Honesty | 100 (MiniGame.cs 14, Hangar 6) | |
 | M5 | Class name ≠ file name (Ship→Vessel rename left classes behind) | Honesty | ~25 types, 13 asset-referenced (`VesselHUD.cs`→`ShipHUD`, `SlowVesselViewer.cs`→`SlowShipViewer` …) | Editor-verify each referenced one |
 | M6 | Retire the deprecated `MiniGame` cluster | Vestige | `MiniGame` (DEPRECATED) still base of unreferenced `ProtectMissionGame`; `CellControlTurnMonitor` uses it | |
 | M7 | Collapse never-placed legacy TurnMonitor bases into Network subclasses | Unification | CrystalCollision, Joust: legacy base in 0 assets | `/EndGameConditions` skill |
