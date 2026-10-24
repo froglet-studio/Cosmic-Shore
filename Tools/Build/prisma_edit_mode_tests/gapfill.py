@@ -77,6 +77,31 @@ edit("Soap/ScriptableList.cs", "public bool TryAdd(T item)",
      "\n        public bool TryAdd(T item)\n        {\n            if (_list.Contains(item)) return false;\n"
      "            Add(item);\n            return true;\n        }\n")
 
+edit("Rendering/Volumes.cs", "requiresVolumeFrameworkUpdate",
+     "        public List<Camera> cameraStack { get; } = new();\n",
+     "        public bool requiresVolumeFrameworkUpdate => false;\n        public VolumeStack volumeStack { get; set; }\n")
+edit("Math/Vector3.cs", "public static Vector3 RotateTowards",
+     "            => inDirection - 2f * Dot(inDirection, inNormal) * inNormal;\n",
+     "\n        public static Vector3 RotateTowards(Vector3 current, Vector3 target, float maxRadiansDelta, float maxMagnitudeDelta)\n"
+     "        {\n            float angle = Angle(current, target) * Mathf.Deg2Rad;\n"
+     "            if (angle < 1e-6f) return target;\n"
+     "            return Slerp(current, target, Mathf.Min(1f, maxRadiansDelta / angle));\n        }\n")
+edit("InputSystem/InputDevices.cs", "public DoubleControl startTime",
+     "        public Vector2Control startPosition { get; }\n",
+     "        public DoubleControl startTime { get; } = new DoubleControl { name = \"startTime\" };\n")
+edit("InputSystem/InputDevices.cs", "class GravitySensor",
+     "    public abstract class Sensor : InputDevice\n    {\n        protected Sensor(string n) : base(n) { }\n        public float samplingFrequency { get; set; }\n    }\n",
+     "\n    public class GravitySensor : Sensor\n    {\n        public static GravitySensor current { get; set; }\n"
+     "        public Vector3Control gravity { get; }\n"
+     "        public GravitySensor() : base(\"GravitySensor\") { gravity = AddChild(new Vector3Control { name = \"gravity\" }); }\n"
+     "        public override void MakeCurrent() => current = this;\n    }\n")
+edit("Networking/NetcodeSurface.cs", "NetworkPrefabOverrideLinks",
+     "        public List<NetworkPrefabsList> NetworkPrefabsLists = new();\n",
+     "        public readonly Dictionary<uint, NetworkPrefab> NetworkPrefabOverrideLinks = new();\n")
+edit("Networking/NetcodeSurface.cs", "public ulong GetConfig",
+     "        public bool ForceSamePrefabs = true;\n",
+     "        public ulong GetConfig(bool cache = true) => 0UL;\n")
+
 extra = ROOT / "GapFillForEditModeTests.cs"
 blocks = []
 if "OverlapBoxNonAlloc" not in "".join(f.read_text(encoding="utf-8-sig") for f in ROOT.rglob("*.cs") if "/obj/" not in str(f) and f != extra):
@@ -110,6 +135,13 @@ if "enum CullMode" not in all_src:
     rendering.append("    public enum CullMode { Off = 0, Front = 1, Back = 2 }")
 if "enum RenderQueue" not in all_src:
     rendering.append("    public enum RenderQueue { Background = 1000, Geometry = 2000, AlphaTest = 2450, GeometryLast = 2500, Transparent = 3000, Overlay = 4000 }")
+if "enum VolumeFrameworkUpdateMode" not in all_src:
+    # OrthographicLens (2026-10-22) switches a camera's volume updates; the edit-mode tests never render.
+    rendering.append("    public enum VolumeFrameworkUpdateMode { EveryFrame = 0, ViaScripting = 1, UsePipelineSettings = 2 }")
+    rendering.append("    public static class VolumeFrameworkCameraGapFill\n    {\n"
+                     "        public static VolumeFrameworkUpdateMode GetVolumeFrameworkUpdateMode(this Camera camera) => VolumeFrameworkUpdateMode.EveryFrame;\n"
+                     "        public static void SetVolumeFrameworkUpdateMode(this Camera camera, VolumeFrameworkUpdateMode mode) { }\n"
+                     "        public static void UpdateVolumeStack(this Camera camera, UniversalAdditionalCameraData data) { }\n    }")
 if rendering:
     blocks.append("namespace CosmicShore.Engine.Rendering\n{\n" + "\n".join(rendering) + "\n}")
 if blocks:
@@ -117,4 +149,4 @@ if blocks:
                      + "\n".join(blocks) + "\n", encoding="utf-8")
     print(f"  filled   GapFillForEditModeTests.cs: {len(blocks)} block(s)")
 else:
-    print("  present  OverlapBoxNonAlloc / copyTextureSupport / Rendering enums")
+    print("  present  OverlapBoxNonAlloc / copyTextureSupport / Rendering enums / VolumeFrameworkUpdateMode")
