@@ -42,6 +42,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B32 | After a guest leaves mid-match, the host's presence lobby answers `NotInLobby` and the host sits in `Reconnecting` for the rest of the session | Root-caused & fixed 2026-10-17: the leaving player hosted the shared presence lobby and its leave DELETED it; the host then never left `Reconnecting`. Needs a two-machine retest | 🟡 |
 | B33 | In the editor, a new Play starts inside the PREVIOUS Play's party session (no domain reload), so the first ~30 s fail with "lobby not found" | Root-caused & fixed 2026-10-17: `GameDataSO.ActiveSession` outlived Play and `CreateAsync` no-oped on it. Needs an editor retest | 🟡 |
 | B34 | In the editor, `ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!…'` some time after Play stops (Bug Ledger E-c523697cae, all four testers) | Root-caused 2026-10-17 in the SDK source: B33's leaked session meets Wire's Play-exit teardown. The console copy is filtered; the leak is B33 | 🟡 |
+| B35 | Every direct join fails: the host logs `NetworkConfig mismatch`, the joiner gets `NetworkManagerStartFailed` and falls back to hosting alone (Caleb and Gradi, five tests 21-23 Oct) | Root-caused & fixed 2026-10-24: 11 of the 31 network prefabs committed a wrong `GlobalObjectIdHash`, and each editor used the wrong or the right one depending on what it had opened in edit mode. Committed Unity's values; the gate fails on a wrong one; each test log records the config. Needs a two-machine retest | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -2225,4 +2226,41 @@ it fails to reset belongs to a session that no longer exists.
 
 **Still open.** The leak behind it is B33. When B33 leaves the SDK session cleanly as Play exits, this
 error has nothing left to fire on, and the filter rule can be deleted.
+
+## B35 — Every direct join fails with `NetworkConfig mismatch` 🟡 (root-caused & fixed 2026-10-24)
+
+**Seen in.** The multiplayer test logs of Caleb (`belac`) and Gradi, five two-machine tests from
+2026-10-21 to 2026-10-23, both editors on the same commit. Each time one of them direct-joins the other:
+the host logs `[Netcode] NetworkConfig mismatch. The configuration between the server and client does not
+match` (twice, once per connection attempt); the joiner logs `Received error message from Relay: not
+connected`, then `SessionException NetworkManagerStartFailed`, and its party falls back from
+`JoiningParty` to `HostingParty` alone. Later tries in the same Play add `SessionConflict: player is
+already a member` (the lobby join had succeeded; only Netcode failed). The 19-20 Oct tests had none.
+
+**Cause.** With `ForceSamePrefabs` on, the connection request carries a hash of the sorted
+`GlobalObjectIdHash` of every registered network prefab (NGO 2.13.3 `NetworkConfig.GetConfig`), and the
+host refuses any client whose hash differs. Each editor uses the hash IN MEMORY, and
+`NetworkObject.OnValidate` regenerates it from the prefab's GUID only in edit mode: it skips while
+entering Play. So a prefab first loaded as Play starts keeps its COMMITTED value, and one the editor had
+already loaded (selected it, opened a scene or a tool that holds it) carries the regenerated value.
+Eleven registered prefabs committed a value that is not the one Unity computes (AstroLeagueBall,
+Butterfly, Falcon, MassSharkFauna, NetworkVesselSpawner, Player, QuadFish, Rhino, Scarab, TadPoleFauna,
+Termite; AstroLeagueBall at 0). Two editors on the same commit therefore disagreed whenever their
+histories differed, and nothing said which prefab. Same mechanism, no logged proof of WHICH prefab
+differed in these tests: the logs carry only the host's one-line refusal.
+
+**What changed.**
+- The eleven prefabs carry the value Unity computes (`xxh32("GlobalObjectId_V1-1-<guid>-<fileID>-0")`,
+  checked against prefabs Unity regenerated itself), so every editor and every build agrees whatever it
+  loaded first. One line per prefab; no other field moved.
+- `Tools/Build/check_network_prefab_hashes.py` fails on a stale hash as well as a collision, and `--fix`
+  writes Unity's value (`--self-test` proves both fire, with negative controls).
+- Each peer's test log records `netConfig`: its config hash and the prefab keys inside it, once per
+  Netcode start (`MultiplayerSetup.MarkNetworkConfig`, pinned by `NetworkConfigMarkTests`).
+  `python3 Tools/Build/net_logs.py show <test>` prints `NetworkConfig differs between players (B35)` with
+  the keys only one player has, so a future mismatch names its prefab.
+
+**Hand test.** Two machines on this commit: one hosts a party, the other direct-joins (and once by
+accepting an invite). Pass: the joiner lands in the party, no `NetworkConfig mismatch` on the host. If it
+still fails, send the logs; `net_logs.py show` will name the prefab or setting.
 

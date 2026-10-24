@@ -2305,3 +2305,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (style-B menu)
 - **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/MENU_REDESIGN_B.md §24; Docs/PERFORMANCE_OPTIMIZATION.md §2 10-24
+
+### T-20261024-b06b · open · test · Multiplayer
+- **Task:** Retest B35 (joins refused with 'NetworkConfig mismatch') on two machines on Ys-bleeding-edge: one hosts a party, the other direct-joins, then once more by accepting an invite. Then press Send to Claude (automatic) and run net_logs.py show 1.
+- **Done when:** Both joins land in the party, the host logs no 'NetworkConfig mismatch', and net_logs.py show prints no 'NetworkConfig differs between players'.
+- **Who can take it:** Caleb, Gradi, Yash (offered)
+- **Added:** 2026-10-24 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/PartySystem/BUGS.md B35; Docs/UNITY_VERIFICATION_CHECKLIST.md 'Party: B35 fixed'
+
+### T-20261024-7309 · open · dev · Amoebius
+- **Task:** Amoebius's edit-mode test build (Tools/Build/prisma_edit_mode_tests) needed test-only gap-fills for engine APIs new game code uses: URP VolumeFrameworkUpdateMode + UniversalAdditionalCameraData.volumeStack/requiresVolumeFrameworkUpdate (OrthographicLens), TouchControl.startTime (PilotSwapGesture), Vector3.RotateTowards (PistolBodyMath), GravitySensor (TouchTilt), NetworkConfig.GetConfig + NetworkPrefabs.NetworkPrefabOverrideLinks (MultiplayerSetup, B35). The live engine build likely lacks them too; add them to the engine or confirm the gap-fill is enough.
+- **Done when:** The engine declares these, or its owner decides the gap-fill stays; gapfill.py then reports them as present.
+- **Who can take it:** Shombith (engine)
+- **Added:** 2026-10-24 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Tools/Build/prisma_edit_mode_tests/gapfill.py
