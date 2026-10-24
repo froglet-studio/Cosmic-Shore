@@ -1,0 +1,67 @@
+# Froglet Tasks (Docs/TEAM.md rule 9): the team's hand-off tickets are GitHub issues labelled team-task, kept by
+# Tools/Build/team_tasks.py. This runs its sweep on every event that can change a ticket's fate: a ticket whose
+# taker's branch merged into bleeding-edge closes; one whose branch was deleted, or had no commit for 14 days, or that
+# was taken and not started (no branch named) within 14 days, goes back to open, nobody's; one nobody took in 14 days is archived; an assignee set on GitHub is cleared; a task a branch
+# still wrote on the old markdown board is filed. The decisions are plan_sweep()'s; this only runs it. It never files,
+# closes or re-ranks anything for any other reason (Docs/TEAM.md rule 9: sessions act only when a person asks).
+name: team-tasks
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [bleeding-edge]
+  push:
+    branches: [bleeding-edge]
+  delete:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+    inputs:
+      command:
+        description: 'What to run. migrate is the one-shot move from the old board; run its dry run first.'
+        type: choice
+        options: ['sweep', 'sweep --dry-run', 'migrate --dry-run', 'migrate']
+        default: 'sweep'
+
+permissions:
+  contents: read
+  issues: write
+  actions: write   # migrate disables the old mirror workflow (team-tasks-sync.yml), which would write old bodies back
+
+concurrency:
+  group: team-tasks
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    # A fork's pull request gets a read-only token; the nightly run catches its merge instead.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Treeless: the sweep reads commit history and branch tips (merge commits on bleeding-edge, each branch's last
+      # commit date) and four small files, never the repository's gigabytes of assets.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: tree:0
+          sparse-checkout: |
+            Tools/Build/team_tasks.py
+            Docs/TEAM_TASKS.md
+            Docs/TEAM_TASKS_ARCHIVE.md
+            Docs/TEAM.json
+          sparse-checkout-cone-mode: false
+      - name: Sweep
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGED: ${{ github.event_name == 'pull_request' && github.head_ref || '' }}
+          PR: ${{ github.event.pull_request.number }}
+          COMMAND: ${{ inputs.command || 'sweep' }}
+        run: |
+          if [ -n "$MERGED" ]; then
+            python3 Tools/Build/team_tasks.py sweep --merged "$MERGED" --pr "$PR"
+          else
+            python3 Tools/Build/team_tasks.py $COMMAND
+          fi
