@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play: host measures guests' movement; PilotControl out of release builds (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T5 and T6 (`Docs/AntiCheat/README.md` §8b). `MovementPlausibilityMonitor` is attached
+by `ServerPlayerVesselInitializer.OnNetworkSpawn` on the host. Ten times a second it measures each guest-owned hull's
+path speed over a 1 s window and counts discontinuities (respawns, wormholes, warps, teleports). It only OBSERVES
+until `Resources/MovementPlausibilityConfig` (a `MovementPlausibilityConfigSO`, not authored yet) sets per-hull
+ceilings; then a sustained excess raises a `FairPlaySignal` (never a kick). The host's own hull is not judged; AI
+hulls are measured as calibration. `PilotControl` (the Third Eye's You / AI test tool) is now inside
+`#if UNITY_EDITOR || DEVELOPMENT_BUILD`, like its two callers.
+
+**Verified without the editor:** see the commit message (reference compile, logging and conditional-compilation gates).
+
+**Test in the editor (MPPM, 2 players + AI backfill, Skim Race or any race):**
+1. FrogletTools > Toolbox > Logging: turn on **ArcadeMatch**.
+2. Play one race as host + one virtual player. At the turn's end the host logs
+   `[FairPlay] movement this turn`: one line per guest hull and per AI hull, with the fastest sustained speed and
+   jumps. Expect believable numbers (no zeros for a hull that flew, no line for the host's own hull).
+3. No `[FairPlay] signal` lines appear (no ceilings authored).
+4. Create the config (Create > ScriptableObjects > Fair Play > Movement Plausibility Config) in `Assets/Resources/`
+   named `MovementPlausibilityConfig`, give the guest's hull a ceiling BELOW its logged maximum, play again: a
+   `[FairPlay] signal: SustainedSpeed ...` line appears for the guest, at most once per 30 s. Delete the test asset.
+5. Profiler: `MovementPlausibilityMonitor.Update` allocates 0 B per frame after the first samples.
+6. Third Eye's You / AI toggle still works in the editor; a release (non-development) player build compiles.
+
 ### 🔴 Seats, then hulls: any person changes seat and vessel in freestyle (`cece/relaxed-tesla-axhxzy`, 2026-10-23) — NOT EDITOR-VERIFIED
 
 **What landed:** one swap ring for every person (`CrewStations`, `Docs/CREW_STATIONS.md`): D-pad left / right, the
