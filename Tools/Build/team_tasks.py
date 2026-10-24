@@ -1009,17 +1009,30 @@ def apply_sweep(tickets, plan, today, base=BASE):
 
 
 def bridge(tickets, today, refs=BRIDGE_REFS, tasks=None):
-    """Tickets for old-board tasks no issue carries yet: a branch made before the switch that appends to
-    Docs/TEAM_TASKS.md still files its hand-off. Only open tasks, only ids GitHub has never seen."""
-    have = {t.id for t in tickets}
+    """What branches made before the switch still write on the old board (Docs/TEAM_TASKS.md): a task no issue
+    carries yet is filed (open tasks only), and a task the board closed is closed here too. Forward only, like the
+    old mirror: a stale copy of the board never reopens a ticket. Returns the tickets to write."""
+    by_id = {t.id: t for t in tickets}
     area_open = open_by_area(tickets)
     out = []
     for task in (tasks if tasks is not None else markdown_tasks(refs)).values():
-        if task.id in have or not task.is_open:
+        t = by_id.get(task.id)
+        if t is None:
+            if task.is_open:
+                t = from_task(task)
+                classify(t, today, area_open)
+                out.append(t)
             continue
-        t = from_task(task)
-        classify(t, today, area_open)
-        out.append(t)
+        if not task.is_open and t.is_open and not t.legacy:
+            note = task.fields.get("Done") or task.fields.get("Archived") or task.status
+            if task.status == "done":
+                t.state, t.done = "done", note
+            else:
+                t.state, t.archived = "archived", note
+            if t.state == "archived":
+                t.taken_by, t.branch, t.taken = "", "", ""
+            t.notes.append(f"Closed on the old board: {note}")
+            out.append(t)
     return out
 
 
@@ -1033,7 +1046,8 @@ def sweep(store, dry_run, fetch, base, idle_days, hint=None, today=None, refs=BR
     current = [t for t in tickets if not t.legacy]
     filed = bridge(tickets, today, refs, tasks)
     for t in filed:
-        print(f"{'would file' if dry_run else 'filed'} {t.id} from an old board: {t.title[:80]}")
+        verb = ("would file" if dry_run else "filed") if t.number is None else ("would close" if dry_run else "closed")
+        print(f"{verb} {t.id} from an old board: {t.title[:80]}")
     for t in (t for t in current if t.adopt):
         print(f"{'would adopt' if dry_run else 'adopted'} #{t.number} as {t.id}: {t.title[:80]}")
         classify(t, today, open_by_area(current))
@@ -1043,7 +1057,7 @@ def sweep(store, dry_run, fetch, base, idle_days, hint=None, today=None, refs=BR
             return {"exists": True, "merged": True, "pr": hint[1], "last": None}
         return (probe_fn or (lambda n, k: probe_branch(n, k, base)))(name, taken)
 
-    plan = plan_sweep([t for t in current if not t.adopt], probe, today, idle_days)
+    plan = plan_sweep([t for t in current if not t.adopt and t not in filed], probe, today, idle_days)
     listed = {p[0] for p in plan if p[1] == "unassign"}
     plan += [(t.id, "unassign", "assigned on GitHub: " + ", ".join(t.assignees)) for t in current
              if t.is_open and t.assignees and t.id not in listed and t.state == "live"]
@@ -1052,7 +1066,8 @@ def sweep(store, dry_run, fetch, base, idle_days, hint=None, today=None, refs=BR
     for tid, action, detail in plan:
         print(f"{'would ' if dry_run else ''}{tid}: {words[action].format(detail)}")
     changed = apply_sweep(current, [p for p in plan if p[1] != "no-branch"], today, base)
-    changed += [t for t in current if (t.adopt or t.assignees) and t not in changed]
+    changed += [t for t in current if (t.adopt or t.assignees) and t not in changed and t not in filed]
+    n_new = sum(1 for t in filed if t.number is None)
     if not dry_run and (filed or changed):
         store.ensure_labels({l for t in filed + changed for l in issue_labels(t)})
         for t in filed + changed:
@@ -1061,7 +1076,7 @@ def sweep(store, dry_run, fetch, base, idle_days, hint=None, today=None, refs=BR
     counts = collections.Counter(p[1] for p in plan)
     print(f"sweep: {counts['merged']} done, {counts['gone'] + counts['idle']} back to open, {counts['expire']} archived "
           f"after {idle_days} days untaken, {counts['unassign']} unassigned, {counts['no-branch']} taken without a "
-          f"branch, {len(filed)} filed from an old board" +
+          f"branch, {n_new} filed and {len(filed) - n_new} closed from an old board" +
           (f"; {len(legacy)} still in the old mirror's format, skipped until `migrate` runs" if legacy else "") +
           (" (dry run, nothing written)" if dry_run else ""))
     return plan, filed
@@ -1729,6 +1744,12 @@ def self_test():
                 "T-20261020-eeee", "open", "test", "UI", {"Task": "New on an old board.", "Done when": "x",
                                                            "Added": "2026-10-20"}, [])}))) != 1:
         bad.append("the bridge filed a task GitHub has, or missed one it lacks")
+    closed_md = {tid: Task(tid, "done", "test", "Regatta AI", {"Task": "Fly it.", "Done": "2026-10-20, ran it"}, [])
+                 for tid in ("T-20261015-aaaa",)}
+    closing = bridge(s4.fetch(), day, tasks=closed_md)
+    if [(t.id, t.state, t.done) for t in closing] != [("T-20261015-aaaa", "done", "2026-10-20, ran it")] or \
+            bridge(s4.fetch(), day, tasks={"T-20261015-cccc": Task("T-20261015-cccc", "open", "dev", "Tooling", {}, [])}):
+        bad.append("the bridge did not close what an old board closed, or reopened what it had open")
 
     # pagination past 100, pr-section, the small helpers
     api5 = FakeApi([{"number": n, "title": f"[T-20261015-{n:04x}] t{n}", "body": "", "state": "open",
