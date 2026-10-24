@@ -3159,6 +3159,21 @@ puts the AI on the rail's - face, the side every ring sits on, 22 u off the rail
 4. Fail = it hits the rail more, stalls at a ring, or flips faces every ring. Undo: set `SkimHeight` back to 4.346 in
    `Tools/Build/author_skimrace_ai_config.py` (`REGATTA_LEARNED`) and re-run it.
 
+### 🔴 Party: B31 fixed again - lobby reads one second apart (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B31, "The first fix did not hold"): `LobbyReadPacer` holds every
+lobby GET of ours (presence refresh, party refresh, the reads around a property save) at least 1.05 s after
+the last, waiting its turn if needed. The refresh tick reads ONE lobby: when the party session is due its read,
+that tick skips the presence read. Before: 1,061 party-read 429s in Caleb's and Gradi's 21-23 Oct tests.
+**Verified without the editor:** `PartyRefreshRecoveryTests` (13) and the party suites (185) on Amoebius;
+`unity_refcompile` player and editor (only the known AuthenticationServiceFacade errors). `/verify-unity` is
+not available in the cloud session.
+**Verify in editor:**
+1. Two machines (or MPPM main + P2) party up and stay 10 minutes in the menu. No `rate-limited - backing off`
+   on either; `net_logs.py show 1` reads `429s 0`.
+2. Invite, accept, and a member leaving still show on the other screen within about 2 s (property saves now
+   wait for their read turn, up to about a second).
+
 ### 🔴 Party: B35 fixed - direct joins no longer fail with `NetworkConfig mismatch` (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
 
 **What landed** (cause and fix in `Docs/PartySystem/BUGS.md` B35): 11 of the 31 registered network prefabs

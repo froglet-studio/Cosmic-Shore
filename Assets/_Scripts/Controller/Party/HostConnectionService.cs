@@ -1469,7 +1469,11 @@ namespace CosmicShore.Gameplay
             bool shouldReconnect = false;
             try
             {
-                await _lobbyService.RefreshAsync();
+                // B31: one lobby read per tick. When the party session is due its read, this tick
+                // skips the presence read and works from the presence lobby as last read; the two
+                // back to back in one second was a 429 on every party read.
+                if (!PartyReadDueThisTick())
+                    await _lobbyService.RefreshAsync();
 
                 // Periodic self-heal: if a simultaneous-create split left us in our
                 // own presence lobby while a peer sits in theirs, converge everyone
@@ -2005,6 +2009,17 @@ namespace CosmicShore.Gameplay
                 _ = ClearOutgoingInviteIfPresentAsync(joinedId, "presence-join");
         }
 
+        /// <summary>
+        /// True when this tick's <see cref="RefreshPartyMembersAsync"/> will read the party session: the
+        /// same conditions it checks, without claiming the poll.
+        /// </summary>
+        private bool PartyReadDueThisTick() =>
+            _partySessionService.ActiveSession != null
+            && connectionData.PartyMembers != null
+            && !connectionData.IsSpectating
+            && Time.unscaledTime - _partySessionService.CreatedAtUnscaledTime >= SESSION_CREATION_GRACE_PERIOD_SECONDS
+            && _scheduler.IsPartySessionPollDue(Time.unscaledTime);
+
         private async UniTask RefreshPartyMembersAsync(bool bypassGraceGate = false)
         {
             var tickSession = _partySessionService.ActiveSession;
@@ -2024,7 +2039,9 @@ namespace CosmicShore.Gameplay
             // B31: the GET runs at most every PARTY_SESSION_POLL_SECONDS (a reconcile after a leave
             // always reads). Between GETs the roster below syncs from ISession.Players, which the
             // SDK keeps current from its lobby events. Two GETs per 1.5 s tick was 1.33/s against
-            // UGS Lobby's 1 GET/s/player: a 429 about every 10 s while a party existed.
+            // UGS Lobby's 1 GET/s/player: a 429 about every 10 s while a party existed. The tick that
+            // reads here skipped its presence read (PartyReadDueThisTick), and LobbyReadPacer spaces
+            // this read from any other.
             bool poll = bypassGraceGate || _scheduler.TryTakePartySessionPoll(Time.unscaledTime, _scheduler.IsBoosted);
             try { if (poll) await _partySessionService.RefreshAsync(); }
             catch (Exception e)

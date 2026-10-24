@@ -38,7 +38,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B28 | The boot gate's in-attempt retry was unbounded, so "three attempts" was a minimum and the offline fallback could arrive minutes late | Fixed 2026-10-08 (bounded by the per-attempt timeout) | 🟡 |
 | B29 | The Join/Accept pre-flight refuses on STALE presence: a party that just shrank reads as "full", and a host that just re-created its session reads as "no longer available" | **Session case fixed 2026-10-09** (an invite and the `partySession` it names now go out in one save; this was "defect 5"); the Count case is open - its cure is Block 5 (push instead of poll) | 🟡 |
 | B30 | A party guest's swapped-in vessel never moves, and the gap throws every 250 ms | Root-caused & fixed 2026-10-13; playtest-confirmed by the owner | 🟢 |
-| B31 | While a party exists, its session refresh is rate-limited (429) about every 10 s, and the record did not count it | Root-caused & fixed 2026-10-17: two GETs per 1.5 s tick (1.33/s) against UGS's 1 GET/s/player; the party GET now runs at most every 6 s (0.83/s). Needs a two-machine retest | 🟡 |
+| B31 | While a party exists, its session refresh is rate-limited (429) about every 10 s, and the record did not count it | Fixed 2026-10-17 by averaging under 1 GET/s; that did not hold (1,061 party-read 429s, 21-23 Oct) because the presence and party reads still went out in the same second. Fixed again 2026-10-24: every read passes `LobbyReadPacer` (1.05 s apart) and a tick reads one lobby. Needs a two-machine retest | 🟡 |
 | B32 | After a guest leaves mid-match, the host's presence lobby answers `NotInLobby` and the host sits in `Reconnecting` for the rest of the session | Root-caused & fixed 2026-10-17: the leaving player hosted the shared presence lobby and its leave DELETED it; the host then never left `Reconnecting`. Needs a two-machine retest | 🟡 |
 | B33 | In the editor, a new Play starts inside the PREVIOUS Play's party session (no domain reload), so the first ~30 s fail with "lobby not found" | Root-caused & fixed 2026-10-17: `GameDataSO.ActiveSession` outlived Play and `CreateAsync` no-oped on it. Needs an editor retest | 🟡 |
 | B34 | In the editor, `ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!…'` some time after Play stops (Bug Ledger E-c523697cae, all four testers) | Root-caused 2026-10-17 in the SDK source: B33's leaked session meets Wire's Play-exit teardown. The console copy is filtered; the leak is B33 | 🟡 |
@@ -2113,6 +2113,27 @@ still Block 5 (push instead of poll).
 spacing, and the budget under 1/s with the old cadence as the negative control. **Hand test:** two
 machines party up and idle 10 minutes in the menu; `net_logs.py show` reports `429s 0` and no
 `rate-limited` line.
+
+**The first fix did not hold (measured 2026-10-24).** Caleb's and Gradi's tests of 21-23 Oct, all on code
+with the fix above: 1,061 `Party session refresh rate-limited` warnings against 12 presence-refresh ones,
+spaced 7.8 s apart (one per party poll plus its 3 s back-off). Nearly every party read was refused. The
+average was under the cap, but the tick still read the presence lobby and then the party session back to
+back, milliseconds apart, so the party read always fell in the same second as the presence read. UGS's cap
+is one GET per second, not one per second on average.
+
+**Second fix (2026-10-24).**
+- `LobbyReadPacer` (`Assets/_Scripts/Utility/`) is the one gate every lobby GET of ours passes: the
+  presence refresh, the party refresh, and `LobbyPropertyWriter` / `PartySessionService`'s reads before and
+  after a save. No two go out less than 1.05 s apart; a read that would waits its turn. It resets at Play
+  start.
+- The refresh tick makes one read: on the tick the party session is due a read
+  (`LobbyRefreshScheduler.IsPartySessionPollDue`, asked without claiming it), it skips the presence read and
+  works from the presence lobby as last read. So the tick never waits a second in the middle, and the
+  presence lobby is read every tick but one in four.
+- Held by `PartyRefreshRecoveryTests` (13): the pacer refuses a read right behind another and allows it at
+  1.05 s, a refused try claims nothing, the Play-start reset frees the slot, and the party poll can be asked
+  without claiming it. **Hand test:** same as above: `429s 0` and no `rate-limited` line in a 10-minute
+  party. If 429s remain, they come from reads outside the pacer (the SDK's own), and the next step is Block 5.
 
 ## B32 — After a guest leaves mid-match, the host sits in `Reconnecting` for the rest of the session 🟡 (observed 2026-10-16; root-caused & fixed 2026-10-17; needs a two-machine retest)
 
