@@ -2284,3 +2284,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered) or Garrett
 - **Added:** 2026-10-24 by a Claude session (`cece/bold-gauss-lad943`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md §5
+
+### T-20261024-ae82 · open · dev · Amoebius
+- **Task:** Amoebius does not compile the game since bleeding-edge 98c25995b9 (2026-10-22): Assets/_Scripts/Utility/OrthographicLens.cs uses UnityEngine.Rendering.VolumeFrameworkUpdateMode and Camera.GetVolumeFrameworkUpdateMode / SetVolumeFrameworkUpdateMode (URP extension methods), which Port/src/CosmicShore.Engine/Rendering lacks (CS0246 at OrthographicLens.cs(32,44)). Add the enum (EveryFrame, ViaScripting, UsePipelineSettings) and the two camera methods. Until then the perf-daily 'amoebius' job is red on every branch carrying that file (seen on PR #1201).
+- **Done when:** engine_build of the player on bleeding-edge compiles OrthographicLens.cs, and perf-daily's amoebius job is green
+- **Who can take it:** Shombith (the Amoebius engine)
+- **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
+- **See:** PR #1201 comment; .github/workflows/perf-daily.yml
