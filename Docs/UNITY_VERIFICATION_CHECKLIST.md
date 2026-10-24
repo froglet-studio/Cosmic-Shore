@@ -65,6 +65,24 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play: server-checked weekly leaderboard, gated off (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T2. `Tools/UGS/CloudCode/weekly-score.js` checks a weekly-challenge time (known board,
+at least 20 s, 20 s between posts, 200 a week) and posts it with the same period and avatar metadata the board reader
+uses. `WeeklyChallengeLeaderboardService.SubmitToBoardAsync` sends through it when `ServerScoreGate.Enabled`
+(`ServerScores.cs`) is true; `Tools/UGS/AccessControl/project-policy.json` then denies direct writes. **Gate off:**
+behaviour is unchanged.
+
+**Verified without the editor:** `unity_refcompile` player OK; this file sits in the Leaderboards
+unobtainable-package bucket, and every error listed for it is a Leaderboards type (none from the new method). The port
+build (with its Leaderboards and Cloud Code stubs) compiles it with no errors. `weekly-score.test.cjs`: 5 passed;
+removing the time floor fails it.
+
+**Test in the editor** (after `Tools/UGS/README.md` T2 steps 1-3 on the development environment):
+1. Complete this week's challenge: the time appears on the board as before, with your avatar.
+2. Weekly test mode, complete again within 20 s: no new row; ArcadeMatch/WeeklyChallenge log says `too_soon`.
+3. With the policy applied and the gate OFF in another build: the submit fails with a 403 warning (proves the policy).
+
 ### 🔴 Fair play: server-owned crystal wallet, gated off (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
 
 **What landed:** Threat Board T3 (`Docs/AntiCheat/README.md` §8b, `Tools/UGS/README.md`). New package

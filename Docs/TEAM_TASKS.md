@@ -2384,3 +2384,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (UGS layer owner); Yash (offered)
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Tools/UGS/README.md; Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261024-a954 · open · setup · Fair play
+- **Task:** Deploy the server-checked weekly leaderboard: run weekly-score.test.cjs, deploy Tools/UGS/CloudCode/weekly-score.js, set ServerScoreGate.Enabled = true AND apply Tools/UGS/AccessControl/project-policy.json together (development first), then production
+- **Done when:** Checklist entry 'server-checked weekly leaderboard' is green; a direct client AddPlayerScoreAsync returns 403
+- **Who can take it:** Shombith (UGS layer owner); Yash (offered)
+- **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Tools/UGS/README.md

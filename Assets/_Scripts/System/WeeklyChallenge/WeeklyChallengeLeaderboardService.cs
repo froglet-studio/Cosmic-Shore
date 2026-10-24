@@ -228,6 +228,12 @@ namespace CosmicShore.Core
         async UniTask SubmitToBoardAsync(
             string id, double seconds, AddPlayerScoreOptions options, CancellationToken ct)
         {
+            if (ServerScoreGate.Enabled)
+            {
+                await SubmitThroughServerAsync(id, seconds, ct);
+                return;
+            }
+
             try
             {
                 await LeaderboardsService.Instance.AddPlayerScoreAsync(id, seconds, options).AsMainThread();
@@ -260,6 +266,25 @@ namespace CosmicShore.Core
         /// and a field saying "nothing" read the same on the way back, and the shorter one does not
         /// have to be parsed.</para>
         /// </summary>
+        /// <summary>
+        /// The server-checked path (fair play, Threat Board T2): the <c>weekly-score</c> Cloud Code script refuses
+        /// impossible times and is the only writer once players are denied leaderboard writes. It stamps the same
+        /// period and avatar metadata this class reads back.
+        /// </summary>
+        async UniTask SubmitThroughServerAsync(string id, double seconds, CancellationToken ct)
+        {
+            int avatar = _localAvatarId?.Invoke() ?? WeeklyChallengeRanking.NoAvatar;
+            var verdict = await ServerScores.SubmitWeeklyAsync(id, seconds, CurrentPeriodKey, avatar);
+            if (ct.IsCancellationRequested || verdict == null) return;
+
+            if (verdict.ok)
+                CSDebug.LogVerbose(CSLogChannel.WeeklyChallenge,
+                    $"[WeeklyChallengeLeaderboard] Server posted {WeeklyChallengeRanking.FormatSeconds(seconds)} to '{id}'.");
+            else
+                CSDebug.LogVerbose(CSLogChannel.WeeklyChallenge,
+                    $"[WeeklyChallengeLeaderboard] Server refused {WeeklyChallengeRanking.FormatSeconds(seconds)} for '{id}': {verdict.reason}.");
+        }
+
         AddPlayerScoreOptions BuildSubmitOptions()
         {
             string period = CurrentPeriodKey;

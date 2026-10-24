@@ -8,6 +8,9 @@ player's device, so a modified game cannot change what it decides. Part of the f
 |---|---|---|
 | `CloudCode/economy.js` | Owns the crystal wallet in the protected Cloud Save key `PLAYER_ECONOMY`: earn, spend and once-only claims, each checked against `RULES` at the top of the file | T3 |
 | `CloudCode/economy.test.cjs` | Runs the real script against an in-memory Cloud Save: `node Tools/UGS/CloudCode/economy.test.cjs` | T3 |
+| `CloudCode/weekly-score.js` | The only writer of the weekly-challenge leaderboards: refuses unknown boards, times under `RULES.minSeconds` (20 s), posts closer than 20 s apart and more than 200 a week | T2 |
+| `CloudCode/weekly-score.test.cjs` | `node Tools/UGS/CloudCode/weekly-score.test.cjs` | T2 |
+| `AccessControl/project-policy.json` | Denies players any direct leaderboard write, so `weekly-score` is the only way onto a board | T2 |
 
 ## Switching on the server-owned wallet
 
@@ -31,6 +34,23 @@ works exactly as before. Turn it on in this order, development environment first
    environment, and run the editor checks in `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("Server-owned wallet").
 5. **Production:** `ugs config set environment-name production`, deploy again, then ship the build with the gate
    on. Debug crystals (the Toolbox crystal field) are refused in production by design.
+
+## Switching on the server-checked leaderboard (T2)
+
+Off in the game (`ServerScoreGate.Enabled = false` in `Assets/_Scripts/System/CloudData/ServerScores.cs`). The gate
+and the policy go on **together**: the policy alone makes every weekly time fail to post; the gate alone leaves the
+old direct write open.
+
+1. `node Tools/UGS/CloudCode/weekly-score.test.cjs` prints `5 passed`.
+2. `ugs deploy Tools/UGS/CloudCode/weekly-score.js` (development first). In the dashboard, run it with
+   `{"leaderboardId":"weekly_challenge","seconds":75,"periodKey":"test"}` for a test player: expect `ok: true` and the
+   row on the board; with `"seconds":1` expect `impossible_time` and no row.
+3. Set `ServerScoreGate.Enabled = true` in a test build, then apply the policy:
+   `ugs access upsert-project-policy Tools/UGS/AccessControl/project-policy.json`.
+4. Run the "Server-checked weekly leaderboard" editor checks in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+5. Production: deploy the script, ship the build with the gate on, then apply the policy to production.
+   Raise `RULES.minSeconds` (or add a per-board value) when a week's course needs longer; a fake time just above the
+   floor still posts until match results are checked (T4).
 
 No Access Control policy is needed for the wallet: players can never write a protected Cloud Save key, so the
 game's old client-written copy in `PLAYER_PROFILE` is only a display cache the server ignores.

@@ -340,7 +340,7 @@ Set on the Threat Board artifact (https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi
 | Critical | T3 Currency, unlocks and tokens written by the client | 20 | T-20261022-9bbd. **Crystal wallet built 2026-10-24, gated off until deployed** (`Tools/UGS/README.md`); unlock records and tokens remain |
 | Critical | T5 Ship positions trusted from each client (speed / teleport / boost) | 9 | T-20261024-1652. **Monitor built 2026-10-24, observe-only until ceilings are set** |
 | High | T1 Anonymous accounts | 20 | T-20261022-6151 |
-| High | T2 Client-trusted leaderboard | 15 | T-20261022-9bbd |
+| High | T2 Client-trusted leaderboard | 15 | T-20261022-9bbd. **Server check built 2026-10-24, gated off until deployed with the access policy** |
 | High | T8 No Report button | 12 | T-20261022-7708 |
 | High | T4 Host decides every result | 6 | T-20261024-af9e |
 | High | T9 Leaving costs nothing | 8 | T-20261024-9d7c |
