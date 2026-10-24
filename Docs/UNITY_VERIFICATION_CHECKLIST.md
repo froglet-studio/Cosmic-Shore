@@ -14240,3 +14240,11 @@ Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-24.
 2. Any arcade mode and Menu_Main: trails, flora and crystals appear as before (a 0.6 s spawn window, then visible);
    a prism shot inside that window never appears; a Cell Selector world swap still builds behind the veil.
 3. A swarm fauna (Docs/SWARM_FAUNA.md §16.2) hit right after it spawns still materialises (CompleteCreationImmediately).
+
+## 🔴 2026-10-24 — SpawnableGeode: three-value Min without the params array (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableGeode.cs` (`Mathf.Min(a, b, c)` ->
+`MathfNoAlloc.Min`, same result). What ran instead of `/verify-unity`: `unity_refcompile` player RESULT OK;
+`perf_hunt.py gates` all OK.
+
+1. Load any arena that builds a Geode (the freestyle six, Cell Selector): its band prisms lay flush, as on 10-20.
