@@ -472,6 +472,10 @@ namespace CosmicShore.Gameplay
         {
             Vector3 impact = direction * so.DebrisSpeed;
 
+            // A silenced Serpent's round breaks nothing it does not own (VesselSilence) - asked
+            // before the shield drop, which no Damage call could refuse after the fact.
+            if (prism.DeflectsSilenced(_status.PlayerName, impact.magnitude)) return;
+
             if (prism.prismProperties is { IsSuperShielded: true })
             {
                 // THE SANCTIONED SEQUENCE, IN THIS ORDER. Damage() hard-ignores super-shielded

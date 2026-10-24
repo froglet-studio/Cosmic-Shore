@@ -44,23 +44,61 @@ off the ability's own asset). See `_Scripts/Controller/Arcade/WAYSTATION.md`.
 
 ## 2. The hull
 
-Procedural, like the Scarab's — there is no Butterfly model in the project, and the three unwired
-`*_shapekey_with_animations` rigs that might have stood in carry element blend shapes that move
-**one vertex by zero** on two of the three (`Docs/VESSEL_CONSTRUCTION.md` §4), so borrowing one
-would turn the morph audit green while the hull morphed by nothing.
+**A real FBX since 2026-10-18** (`Assets/_Models/Vessel Models/Butterfly.fbx`, built by
+`/vessel-model` from `Tools/Build/vessel_model/specs/butterfly.py`; `build.py butterfly --check` is
+its drift gate; sheet `Docs/VesselModels/sheets/butterfly_after.jpg`). It replaced the procedural
+placeholder below, which the owner judged "terrible even as placeholders" (2026-10-17) along with
+every other C# runtime hull. It is the fleet's first model with NO artist file behind it, built to
+the fleet convention for a new vessel:
+
+| | |
+|---|---|
+| Nodes | mesh `mesh`, armature `rig`; bones `hull`, `wing.L` / `wing.R` (fore), `wing.2.L` / `wing.2.R` (hind), each head at the placeholder's hinge, the placeholder's dihedrals (fore +14°, hind -6.3°) built into the rest |
+| Size | the placeholder's within 6% (span 21.35, length 11.55), so the wake, the dust capsule, the catcher and the collider keep the sizes they were tuned to |
+| Slots | Domain (the wing fields, rims and body trim: 41% of the surface, deliberately above the artist hulls because the wings are where a pilot reads this vessel's domain), Body (gunmetal), Window (the eyes and the wing cells), Engine (the antenna clubs and the dust emitter) |
+| Morphs | Charge (margins scallop, antenna clubs swell) 5.1%, Mass (wings broaden, body fattens) 4.9%, Space (wings reach along their spans) 9.2%, Time (wings sweep, abdomen lengthens) 9.7% of the diagonal |
+| Takes | none drive it — `ButterflyAnimation` beats the wing bones in code; `beatup`, `beatdown`, `fold`, `spread` are documentation poses for the sheet and the studio |
+| Size budget | 13,948 triangles |
+
+The wings are built as a radial grid from each hinge so the colour follows real wing anatomy: a dark
+base, a broad domain field, a dark outer frame with cells, a domain rim, an eyespot on each hind
+wing, with the veins raised in the membrane itself (floating vein tubes read as needles from the
+camera). At 207 units only the silhouette and the colour fields read; the rest is for the menus and
+close passes.
+
+**Integration is by NAME, not by fileID** (an FBX's sub-object fileIDs cannot be derived offline):
+the prefab's `Hull` holds the model instance in place of the placeholder's MeshFilter / MeshRenderer
+/ `ButterflyHullBuilder`; `ButterflyAnimation` resolves `wing.L` … `wing.2.R` (the placeholder's
+`WingForeL` … still resolve, so either hull works) and finds the SkinnedMeshRenderer under it;
+`VesselCustomization` swaps a model geometry with no Renderer for its child SkinnedMeshRenderer;
+`FoldActionExecutor`'s ghost bakes the skinned mesh (`hullVisual`, falling back to `Hull`) instead
+of asking the builder.
+
+**One sign fix rode with it.** `ButterflyAnimation` drove the beat with the side signs reversed: the
+Fold closed the wings UNDER the belly and the glide's lift pulled them down. Nobody could see it on
+the flat placeholder; on a model with a top and a bottom it was obvious. The Fold now closes over
+the back, as §3 always described.
+
+**The procedural placeholder** (kept in the tree until the owner accepts the model, then retired —
+`Docs/TEAM_TASKS.md`):
 
 | Piece | Where |
 |---|---|
 | Pure geometry (a function of 19 authored floats + 5 integers) | `ButterflyHullForm.cs` |
-| Scene side — meshes, children, materials, morph push | `ButterflyHullBuilder.cs` |
-| Wingbeat, spread and fold poses, morph timing | `ButterflyAnimation.cs` |
+| Scene side — meshes, children, materials, morph push | `ButterflyHullBuilder.cs` (no longer on the prefab) |
+| Wingbeat, spread and fold poses, morph timing | `ButterflyAnimation.cs` (drives both hulls) |
 | Compile-and-RUN gate over the shipped form | `Tools/Build/butterfly_hull_harness/` |
 
-**Five parts, four of them wings.** A butterfly has four wings and the forewing/hindwing pair is
-most of what separates it from a bird or a manta at this range. Each wing is its own part with its
-own root hinge, because the beat rotates about that hinge and a wing welded into the body cannot
-beat. Measured at the shipped settings: **809 verts, 2,464 tris, 21.35 u span × 11.55 u long**
-(aspect 1.85).
+Its history, kept because the reasoning still holds: it was procedural because the three unwired
+`*_shapekey_with_animations` rigs that might have stood in carry element blend shapes that move
+**one vertex by zero** on two of the three (`Docs/VESSEL_CONSTRUCTION.md` §4), so borrowing one
+would have turned the morph audit green while the hull morphed by nothing.
+
+**Five parts, four of them wings** (still true of the model's rig). A butterfly has four wings and
+the forewing/hindwing pair is most of what separates it from a bird or a manta at this range. Each
+wing is its own part with its own root hinge, because the beat rotates about that hinge and a wing
+welded into the body cannot beat. The placeholder measured **809 verts, 2,464 tris, 21.35 u span ×
+11.55 u long** (aspect 1.85); the model keeps the span and length.
 
 ### 2.0 The camera — and the one field it shipped inheriting (2026-09-26)
 
@@ -443,8 +481,8 @@ screen is unchanged apart from the row itself.
 
 | Role | Path |
 |---|---|
-| Hull geometry (pure) | `Assets/_Scripts/Controller/Vessel/ButterflyHullForm.cs` |
-| Hull emitter | `Assets/_Scripts/Controller/Vessel/ButterflyHullBuilder.cs` |
+| Hull model | `Assets/_Models/Vessel Models/Butterfly.fbx` (spec `Tools/Build/vessel_model/specs/butterfly.py`, `/vessel-model`) |
+| Retired placeholder hull (until the owner accepts the model) | `Assets/_Scripts/Controller/Vessel/ButterflyHullForm.cs`, `ButterflyHullBuilder.cs` |
 | Wingbeat + morph | `Assets/_Scripts/Controller/Animation/ButterflyAnimation.cs` |
 | Fold tuning / executor | `R_VesselActions/Data Containers/FoldActionSO.cs`, `R_VesselActions/Executors/FoldActionExecutor.cs` |
 | Mode switch tuning / executor | `R_VesselActions/Data Containers/SpreadWingsActionSO.cs`, `R_VesselActions/Executors/SpreadWingsActionExecutor.cs` |
@@ -480,12 +518,13 @@ the prefab with the fleet audits under **FrogletTools ▸ Vessels ▸ Audits**.
 ## 8. In-editor verification
 
 1. **Build.** Run the tool. Expect zero `UNWIRED` lines. It is idempotent — safe to re-run.
-2. **Offline gate.** `DOTNET_ROOT=… Tools/Build/butterfly_hull_harness/run.sh` → `ALL CHECKS PASSED`.
+2. **Offline gate.** `python3 Tools/Build/vessel_model/build.py butterfly --check` → `OK` (the model; the
+   placeholder's `butterfly_hull_harness/run.sh` still gates the retired form until it is deleted).
 3. **Audits.** `FrogletTools ▸ Vessels ▸` **Audit Vessel Ability Rows** (4/4, in order),
    **Audit Vessel Skimmers** (near field = the dust capsule — the audit may flag its collider as
    disabled at rest, which is Mass mode working; far field = `ButterflyCrystalSkimmer`, reported
    `OK (crystal pickup only — no prism effects)`), **Audit Vessel Elemental Morphs**
-   (four PROCEDURAL morphs, none INERT), **Audit Ability Lockups**, **Audit Vessel Construction**.
+   (four blend shapes on the model, none INERT), **Audit Ability Lockups**, **Audit Vessel Construction**.
 4. **Fly it** in Menu_Main freestyle via the vessel-changer toy. Check: the hull is a butterfly and
    the wings BEAT visibly from the chase camera; the wake is a row of separate wide keys.
 5. **Mode switch** (RT): spawns in Mass mode with a WIDE wake (~5x the key). RT once → wings fold,
@@ -633,7 +672,7 @@ wide; Dust erodes rival rails: the owner's decision), wormhole avoidance, and th
   `4470d95b…`), wired in the registration-drift pass (#965, 2026-10) so
   `check_vessel_class_icons.py` passes (11/11 resolve, re-run 2026-10-06). The guids resolve, but
   the art is not the hull's own render and active/inactive are the same sprite. A real pair is
-  still owed; the Scarab's renderer (`Tools/Build/render_scarab_card_icons.py`) or the Urchin's
-  (`author_urchin_card_icons.py`) is the pattern.
+  still owed. **Done 2026-10-18:** the cards are rendered from `Butterfly.fbx` by
+  `Tools/Build/vessel_model/render_cards.py Butterfly`.
 - **A standing fold wormhole has no HUD marker** (its open/thread sounds now have slots, above), and an AI never threads one
   (`BUTTERFLY_FOLD.md` § Follow-ups).

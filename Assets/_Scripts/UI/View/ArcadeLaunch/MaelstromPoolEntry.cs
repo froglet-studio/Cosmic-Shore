@@ -121,7 +121,7 @@ namespace CosmicShore.UI
             if (game == null || game.Vessels == null || game.Vessels.Count != 1) return string.Empty;
             var vessel = game.Vessels[0];
             if (!vessel) return string.Empty;
-            return (string.IsNullOrEmpty(vessel.Name) ? vessel.Class.ToString() : vessel.Name)
+            return (string.IsNullOrEmpty(vessel.CardName) ? vessel.Class.ToString() : vessel.CardName)
                 .ToUpperInvariant();
         }
 

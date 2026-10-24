@@ -24,6 +24,28 @@ namespace CosmicShore.UI
     /// </summary>
     public class FriendsListPanel : MonoBehaviour
     {
+        [Header("Words (toasts; empty shows nothing)")]
+        [Tooltip("The connection service is not up yet.")]
+        [SerializeField] string serviceNotReadyLine = "Connection service not ready. Try again shortly.";
+        [Tooltip("A party that refuses a join.")]
+        [SerializeField] string partyNotJoinableLine = "That party can't be joined right now.";
+        [Tooltip("The party controller is missing (join, spectate, accept).")]
+        [SerializeField] string partyControllerMissingLine = "Party controller not available.";
+        [Tooltip("A join that failed.")]
+        [SerializeField] string joinFailedLine = "Failed to join party.";
+        [Tooltip("A match that refuses a spectator.")]
+        [SerializeField] string matchNotSpectatableLine = "That match can't be spectated right now.";
+        [Tooltip("A spectate that failed.")]
+        [SerializeField] string spectateFailedLine = "Failed to spectate.";
+        [Tooltip("The friends service is not up yet.")]
+        [SerializeField] string friendsNotReadyLine = "Friends service not ready.";
+        [Tooltip("A friend request accepted.")]
+        [SerializeField] string requestAcceptedLine = "Friend request accepted!";
+        [Tooltip("A friend request that failed to accept. {error} is the reason.")]
+        [SerializeField] string acceptFailedLine = "Failed to accept: {error}";
+        [Tooltip("A party invite that failed to accept.")]
+        [SerializeField] string inviteAcceptFailedLine = "Failed to accept party invite.";
+
         [Header("Section Content Parents (ScrollRect > Viewport > Content)")]
         [SerializeField] private Transform onlineContent;
         [SerializeField] private Transform requestsContent;
@@ -39,6 +61,15 @@ namespace CosmicShore.UI
 
         [Header("Actions")]
         [SerializeField] private Button closeButton;
+
+        [Header("Style-B Party Panel")]
+        [Tooltip("The lists sit inside the party panel, always on screen (style-B menu redesign, item 3): " +
+                 "an empty slot's add button moves focus into them instead of opening this panel. " +
+                 "Off for the legacy overlay, which opens and closes.")]
+        [SerializeField] private bool embedded;
+        [Tooltip("List members of YOUR party among the online players (\"IN YOUR PARTY\"). The style-B " +
+                 "panel shows them in its seats directly above, so it turns this off.")]
+        [SerializeField] private bool listPartyMembers = true;
 
         [Header("Audio")]
         [Tooltip("Category played when a party invite is received.")]
@@ -274,6 +305,31 @@ namespace CosmicShore.UI
         public void ShowOnlineTab() => Show();
         public void ShowRequestsTab() => Show();
 
+        /// <summary>True when the lists live inside the party panel rather than in an overlay.</summary>
+        public bool IsEmbedded => embedded;
+
+        /// <summary>
+        /// Puts gamepad / keyboard focus on the first live row control - an invite to answer first,
+        /// then someone to invite. Nothing to focus (nobody online, nothing pending) leaves focus
+        /// where it is: the empty-state line is already in view.
+        /// </summary>
+        public void FocusList()
+        {
+            var events = UnityEngine.EventSystems.EventSystem.current;
+            if (!events) return;
+
+            foreach (var content in new[] { requestsContent, onlineContent })
+            {
+                if (!content) continue;
+                foreach (var s in content.GetComponentsInChildren<Selectable>(false))
+                {
+                    if (!s.IsInteractable() || s.navigation.mode == Navigation.Mode.None) continue;
+                    events.SetSelectedGameObject(s.gameObject);
+                    return;
+                }
+            }
+        }
+
         #endregion
 
         #region Rendering
@@ -298,6 +354,7 @@ namespace CosmicShore.UI
             foreach (var player in connectionData.OnlinePlayers)
             {
                 if (player.PlayerId == localId) continue;
+                if (!listPartyMembers && IsInSameParty(player.PlayerId)) continue;
                 SpawnOnlineEntry(player);
             }
         }
@@ -444,6 +501,12 @@ namespace CosmicShore.UI
         void HandleOnlinePlayerChanged(PartyPlayerData player)
         {
             if (connectionData && player.PlayerId == connectionData.LocalPlayerId) return;
+
+            if (!listPartyMembers && IsInSameParty(player.PlayerId))
+            {
+                RemoveEntryByPlayerId(_spawnedOnline, player.PlayerId);
+                return;
+            }
 
             // Upsert: refresh existing row if present, otherwise spawn.
             var existing = FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, player.PlayerId);
@@ -648,7 +711,7 @@ namespace CosmicShore.UI
         {
             if (HostConnectionService.Instance == null)
             {
-                ToastNotificationAPI.Show("Connection service not ready. Try again shortly.");
+                ShowToast(serviceNotReadyLine, ToastKind.Error);
                 FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId)?.ResetInviteState();
                 return;
             }
@@ -717,7 +780,7 @@ namespace CosmicShore.UI
         {
             if (!TryGetOnlinePlayer(playerId, out var player) || !player.HasJoinableSession)
             {
-                ToastNotificationAPI.Show("That party can't be joined right now.");
+                ShowToast(partyNotJoinableLine, ToastKind.Refusal);
                 PopulateOnlineSection();
                 return;
             }
@@ -725,7 +788,7 @@ namespace CosmicShore.UI
             var controller = PartyInviteController.Instance;
             if (controller == null)
             {
-                ToastNotificationAPI.Show("Party controller not available.");
+                ShowToast(partyControllerMissingLine, ToastKind.Error);
                 PopulateOnlineSection();
                 return;
             }
@@ -737,7 +800,7 @@ namespace CosmicShore.UI
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Join party failed: {e.Message}");
-                ToastNotificationAPI.Show("Failed to join party.");
+                ShowToast(joinFailedLine, ToastKind.Error);
                 PopulateOnlineSection();
             }
         }
@@ -749,7 +812,7 @@ namespace CosmicShore.UI
         {
             if (!TryGetOnlinePlayer(playerId, out var player) || !player.HasJoinableSession)
             {
-                ToastNotificationAPI.Show("That match can't be spectated right now.");
+                ShowToast(matchNotSpectatableLine, ToastKind.Refusal);
                 PopulateOnlineSection();
                 return;
             }
@@ -757,7 +820,7 @@ namespace CosmicShore.UI
             var controller = PartyInviteController.Instance;
             if (controller == null)
             {
-                ToastNotificationAPI.Show("Party controller not available.");
+                ShowToast(partyControllerMissingLine, ToastKind.Error);
                 PopulateOnlineSection();
                 return;
             }
@@ -769,7 +832,7 @@ namespace CosmicShore.UI
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Spectate failed: {e.Message}");
-                ToastNotificationAPI.Show("Failed to spectate.");
+                ShowToast(spectateFailedLine, ToastKind.Error);
                 PopulateOnlineSection();
             }
         }
@@ -778,19 +841,19 @@ namespace CosmicShore.UI
         {
             if (friendsService == null || !friendsService.IsInitialized)
             {
-                ToastNotificationAPI.Show("Friends service not ready.");
+                ShowToast(friendsNotReadyLine, ToastKind.Error);
                 return;
             }
 
             try
             {
                 await friendsService.AcceptFriendRequestAsync(playerId);
-                ToastNotificationAPI.Show("Friend request accepted!");
+                ShowToast(requestAcceptedLine, ToastKind.Success);
             }
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Failed to accept request: {e.Message}");
-                ToastNotificationAPI.Show($"Failed to accept: {e.Message}");
+                ShowToast(TemplateText.Fill(acceptFailedLine, "error", e.Message), ToastKind.Error);
             }
         }
 
@@ -823,7 +886,7 @@ namespace CosmicShore.UI
             var controller = PartyInviteController.Instance;
             if (controller == null)
             {
-                ToastNotificationAPI.Show("Party controller not available.");
+                ShowToast(partyControllerMissingLine, ToastKind.Error);
                 return;
             }
 
@@ -834,7 +897,7 @@ namespace CosmicShore.UI
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Accept party invite failed: {e.Message}");
-                ToastNotificationAPI.Show("Failed to accept party invite.");
+                ShowToast(inviteAcceptFailedLine, ToastKind.Error);
             }
         }
 
@@ -962,5 +1025,10 @@ namespace CosmicShore.UI
         }
 
         #endregion
+
+        static void ShowToast(string line, ToastKind kind)
+        {
+            if (!string.IsNullOrEmpty(line)) ToastNotificationAPI.Show(line, kind);
+        }
     }
 }

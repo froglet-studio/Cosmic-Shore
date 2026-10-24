@@ -391,6 +391,15 @@ namespace CosmicShore.Tests
             StringAssert.Contains("m_Name: ElementalConverter\n", scene);
         }
 
+        [TestCase(0, "00:00")]
+        [TestCase(11, "00:11")]
+        [TestCase(65, "01:05")]
+        [TestCase(-3, "00:00")]
+        public void TheConverterClockReadsMinutesAndSeconds(int seconds, string expected)
+        {
+            Assert.AreEqual(expected, ElementalConverterView.Clock(seconds));
+        }
+
         static Vector3 Centre(float[] p)
         {
             var c = Vector3.zero;

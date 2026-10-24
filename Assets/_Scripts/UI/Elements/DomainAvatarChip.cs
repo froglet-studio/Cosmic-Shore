@@ -34,6 +34,12 @@ namespace CosmicShore.UI
         [Tooltip("Optional outline / ring GameObject enabled only for the local player's chip.")]
         [SerializeField] GameObject localPlayerOutline;
 
+        [Header("Seat Row (optional)")]
+        [Tooltip("The pilot's name. Optional: an avatar-only chip leaves it empty.")]
+        [SerializeField] TMPro.TMP_Text nameText;
+        [Tooltip("\"You / Host\", \"Pilot\", \"AI\" and so on. Optional.")]
+        [SerializeField] TMPro.TMP_Text roleText;
+
         [Header("Kick")]
         [Tooltip("Optional ✕ shown on a kickable AI chip (Add AI placements, host only). Leave " +
                  "empty and a plain generated ✕ stands in until the art is authored.")]
@@ -57,6 +63,11 @@ namespace CosmicShore.UI
         [SerializeField, Min(1f)] float hoverScale = 1.35f;
 
         [SerializeField, Min(0f)] float hoverSeconds = 0.12f;
+
+        [Tooltip("A seat ROW's hover: the authored hover label takes the place of the name and role while it " +
+                 "shows (the configure window's rows are too narrow to show all three). Off keeps them, for a " +
+                 "round chip whose label sits under it.")]
+        [SerializeField] bool hoverReplacesText;
 
         System.Action _onKick;
         Button _generatedKick;
@@ -96,6 +107,16 @@ namespace CosmicShore.UI
             SetHullInfo(null, null);
 
             gameObject.SetActive(true);
+        }
+
+        /// <summary>
+        /// The seat row's words: who sits here and in what role. A chip with no name or role label
+        /// ignores it, so the avatar-only chip keeps working.
+        /// </summary>
+        public void SetLabel(string displayName, string role)
+        {
+            if (nameText) nameText.text = displayName ?? string.Empty;
+            if (roleText) roleText.text = role ?? string.Empty;
         }
 
         /// <summary>
@@ -221,6 +242,8 @@ namespace CosmicShore.UI
             transform.localScale = Vector3.one;
             if (hoverLabel) hoverLabel.gameObject.SetActive(false);
             if (_generatedLabelRoot) _generatedLabelRoot.SetActive(false);
+            if (nameText) nameText.enabled = true;
+            if (roleText) roleText.enabled = true;
         }
 
         void ShowHover(bool show)
@@ -235,6 +258,11 @@ namespace CosmicShore.UI
             {
                 if (hoverLabel) hoverLabel.gameObject.SetActive(false);
                 if (_generatedLabelRoot) _generatedLabelRoot.SetActive(false);
+            }
+            if (hoverReplacesText && hoverLabel)
+            {
+                if (nameText) nameText.enabled = !show;
+                if (roleText) roleText.enabled = !show;
             }
 
             if (!isActiveAndEnabled) return;

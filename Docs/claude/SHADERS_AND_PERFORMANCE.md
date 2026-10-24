@@ -26,6 +26,48 @@ sticker.
   that (2026-10-18, `cece/compassionate-babbage-gc13io`, "the prisms that go out of plane for the kite should be unlit
   but not disappear"). Ask before applying this rule to someone else's deliberate look.
 
+### In the world, not on the screen (LOCKED, Garrett 2026-10-21)
+
+> "always go for the 3d in world solution over the 2d flat text solution."
+
+When a player needs to see something about the world (what a blast will catch, where a shot will land, which thing is
+targeted, what state a thing is in), show it **on the thing itself, in 3D**: light it, colour it, change its shape or
+motion, give it a volume. A screen-space ring, a label or a word over it is the last resort, not the first.
+- **Worked example: the Orca's bomb seat** (round 9). The crosshair drew a ring the size of the blast and "BURST" over
+  the live bomb. Now the prisms the blast will break are lit through PrismLit's bank (a sphere gated to each domain the
+  blast breaks, `OrcaCrewView.LightBomb`) and the crosshair keeps only its aim mark.
+- **Reach for the world's own channels first**: PrismLit (`Docs/LIT.md`) for "this mass is about to be acted on",
+  the hull's element morphs and petals for a vessel's state, faceted lit volumes for effects (the rule above).
+- **The crosshair itself stays UI**: an aim mark has no world thing to sit on. Keep it small and leave the facts to
+  the world.
+- **It holds in labs and studios too**: a page that decides a look draws it in its 3D view, so what is decided is what
+  the game shows.
+
+### Orthographic views and picture-in-picture frames (Garrett 2026-10-22)
+
+> "make sure anyone else using orthographic view never applies a panini or bloom to 2d assets by default."
+> "give the pip views a pleasant border across the game that matches our styleguide."
+
+- **No Panini on an orthographic camera, ever, with nothing to opt into.** `OrthographicLens`
+  (`Assets/_Scripts/Utility/`) hooks `beginCameraRendering` (URP raises it before it updates the camera's volumes),
+  gives every orthographic Game camera its own volume stack and holds `PaniniProjection.distance` at 0 in it. Panini is
+  a perspective lens. On a flat picture it only bows straight edges. Bloom, the tonemapper and the rest are untouched.
+  `OrthographicLens.AllowPanini(cam, true)` opts a camera out; nothing does.
+- **2D marks in an orthographic view skip its post-processing.** Icons, dots, rings, cords and petals are drawn
+  through an `UnprocessedOverlay` (`Assets/_Scripts/Utility/`): an overlay camera on the view's URP stack with
+  post-processing off, seeing only the otherwise empty `3D UI` layer. Draw with `RenderParams.camera = overlay.Camera`
+  and `layer = overlay.Layer`. The world under the marks keeps the game's bloom and tonemapper. The Wrasse
+  (`KiteNavigatorView`) and the Jacks (`JacksView`) do this.
+- **The gate:** `python3 Tools/Build/check_orthographic_views.py` (`--self-test`) fails when the lens loses its hook or
+  its Panini zeroing, and when a runtime script makes a camera orthographic without an `UnprocessedOverlay`. A view with
+  no marks says so with `// ortho-marks: <why>`.
+- **Every picture-in-picture view wears one frame.** `PipViewFrame` (`Assets/_Scripts/UI/Elements/`) draws the style
+  guide's frame round whichever camera is in a view's small rect: a 1px Light hairline on a slivered outline, then the
+  2px Neutral (Dark) chrome band out to a clean rectangle, the band filling the two cut corners (`STYLE_FOUNDATION.md`
+  §2-§5). The look is `Resources/PipFrameStyle.asset` (`PipFrameStyleSO`, colours as `UIThemeSO` tokens). The crew
+  square (`CrewPictureInPicture`), the Wrasse, the Orca's lifted pilot view and the Jacks wear it. A new PiP view owns a
+  `PipViewFrame` and calls `Show(smallCamera)` each frame (null hides it).
+
 ### HLSL / Shader Graph
 
 - Custom Function nodes use HLSL files stored in a consistent location
@@ -56,7 +98,8 @@ sticker.
 - **Read first:** `Docs/PERFORMANCE_OPTIMIZATION.md` (where the game stands, what was done, the ranked lever
   list, how to measure without fooling yourself). Then `Docs/MEMORY_AUDIT.md` (what the game HOLDS) and
   `Docs/PLATFORM_UNIFICATION.md` (device tiers: Desktop / MobileHigh / MobileLow, the trail cap, one codebase
-  for Windows, iOS and Android). The next session's brief: `Docs/prompts/PERFORMANCE_NEXT_SESSION_PROMPT.md`.
+  for Windows, iOS and Android; §3.10 is what the Medium / Low / Very Low quality presets take off the GPU, in
+  `Resources/QualityPresetCuts.asset`, read through `GraphicsCuts`). The next session's brief: `Docs/prompts/PERFORMANCE_NEXT_SESSION_PROMPT.md`.
 - **The performance system** (`/perf-hunt`, `Tools/Build/perf_hunt.py`, `.github/workflows/perf-daily.yml`): once a day
   from `bleeding-edge` the static gates run, every capture a collaborator's editor shared is judged against its baseline,
   and the game's markers are measured in Amoebius with allocations as the gate; a regression becomes a team task and

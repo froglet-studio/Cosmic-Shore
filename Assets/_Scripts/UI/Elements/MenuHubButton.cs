@@ -37,6 +37,13 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Leave empty to find the one in the scene at Start.")]
         ScreenSwitcher screenSwitcher;
 
+        [SerializeField, Tooltip("Where the pad lands on Home. One hub carries it (Arcade, the screen's primary " +
+                                 "action); with none flagged the first available hub is used.")]
+        bool preferredFocus;
+
+        /// <summary>True on the hub the pad should land on first.</summary>
+        public bool PreferredFocus => preferredFocus;
+
         [Inject] AudioSystem audioSystem;
 
         Button _button;

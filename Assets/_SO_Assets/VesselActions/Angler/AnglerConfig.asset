@@ -65,3 +65,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 62a30981533145a5b66304c04e7c50e0, type: 2}
   companionFauna: {fileID: 11400000, guid: 0e87f3117e7141a7b5bce66b0385a2d0, type: 2}
   brushInterval: 0
+  tameHueLean: 0.35

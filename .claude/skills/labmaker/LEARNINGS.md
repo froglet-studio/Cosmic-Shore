@@ -104,6 +104,32 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `verify_prism_collision_burst.py` `stretchFloor`; the failing run printed `the bend stretched a step by 0.997898` four times
 - Promoted: no
 
+### L-GEN-16 — A mechanism written into a write-up is a hypothesis until a trace shows it
+- Lab: Crew Vessel Lab round 1 (`Docs/Studios/CrewVesselLab.html`) · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-14
+- What happened: the first draft explained the weak element-buff consoles as "the pilot's crystals fill the [0,10] band within about two minutes, so buffs only reach the draining overcharge". The arithmetic looked right (4 elements × 8 petals at ~15 catches/min). A trace of the levels at 30 / 60 / 90 / 120 s showed 6–10 at the END of the 120 s scoring window, so the band was not full for most of it. The real cause, also traced, was the payout: a match board averages about 1 level of buff spread over four elements.
+- Do instead: before a "because" goes into a finding, log the quantity it names over the run (here the base levels and the summed live buff) and confirm it says what the sentence claims. An arithmetic estimate is where to look, not the evidence.
+- Evidence: `CREW_VESSEL_LAB.md` round 1, Found 2 (mean live buff 1.06 levels; base levels 7.0/10.4/10.8/7.0 at 120 s).
+- Promoted: no
+
+### L-GEN-17 — A lab's canvas draws ported to Unity's instanced meshes: never `Sprites/Default`
+- Lab: Crew Vessel Lab → the Wrasse in Unity (`Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorView.cs`) · Branch: `cece/compassionate-babbage-gc13io` · By: session_01C5GGXf6VL3oyrKAGWRtfMr · Date: 2026-10-18
+- What happened: the lab's 2D overlay (kite, motes, rings) became world meshes drawn with `Graphics.RenderMeshInstanced` and a `Sprites/Default` material. It compiled, and the batching looked right. Garrett flew it and "couldn't see any petals": on the instanced path, `Sprites/Default` takes its colour from `unity_SpriteRendererColorArray`, which only a SpriteRenderer fills, so every instance drew at zero alpha.
+- Do instead: for instanced overlay draws, use `Universal Render Pipeline/Unlit` set up as a transparent, double-sided surface (`_Surface` 1, SrcAlpha/OneMinusSrcAlpha, `_ZWrite` 0, `_Cull` Off, `_SURFACE_TYPE_TRANSPARENT`). Keep `Sprites/Default` only for single non-instanced meshes whose vertices carry their own colour. When graduating a lab's look, hand the person the one thing to check first: "can you see it at all".
+- Evidence: `KiteNavigatorView.Unlit` and its comment; `KITE_NAVIGATOR.md` "Round 4b".
+- Promoted: no
+
+### L-GEN-18 — When dotnet-install is blocked, build the SDK from api.nuget.org packages
+- Lab: Honeyguide Lab → the Dynamo C# parity gate · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-20
+- What happened: the cloud proxy refused builds.dotnet.microsoft.com and www.nuget.org (403), so the parity gate had no compiler. api.nuget.org/v3-flatcontainer was open, and its packages carry everything a headless compile needs.
+- Do instead: assemble `~/.dotnet` from the flat-container packages (the runtime pack, `Microsoft.NETCore.App.Ref` and `Microsoft.Net.Compilers.Toolset` for csc) and compile with csc against the reference pack. The Kite and Dynamo parity gates both pass on that layout. Details in `Docs/Studios/HONEYGUIDE_LAB.md` "Port notes".
+- Evidence: `Tools/Build/dynamo_lab/trace.sh`.
+### L-GEN-19 — Trace a few runs' state every ten seconds before reading any aggregate
+- Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: the first scorecard looked plausible (Gate Run points 81, 62 boardings, 8 cast-offs). A 10-second state trace of one run showed the crew's skiff holding the Artifact from 20 s to the 180 s limit, chasing its old boarding target instead of flying home, and rival boarders re-boarding a fully drained hull every second. Both bugs had produced numbers that looked like a strong boarding meta.
+- Do instead: before the first aggregate, dump `state()` every 10 s for a few seeds of each game and read it; a value pinned for a whole run (a carrier that never docks, a level stuck at its floor) is a behaviour bug, not a balance finding.
+- Evidence: `CrewOfFourLab.html` `skiffAI` (the early return for `sk.art`, the drained-victim recall); `CREW_OF_FOUR_LAB.md` §4 Found 9.
+- Promoted: no
+
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
 
 ### L-STU-1 — A lab's scripted input exposed a real game bug: the sling read the latest trigger sample, not the squeeze
@@ -715,6 +741,170 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `PrismBurstFragmentVariety`, `PrismBurstSeedWave` (HLSL); harness F11 and `PRISM_BURST_FRAGMENT_VARIETY_OFF`; `COLLISION_BURST_LAB.md` round 12
 - Promoted: no
 
+### L-STU-106 — A pursuit AI with no throttle orbits anything inside its turn circle; read the per-seed spread before the mean
+- Lab: Crew Vessel Lab round 1 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-14
+- What happened: the first scorecard said two of four navigator consoles made a crew WORSE than a solo pilot. The per-seed scores ran from 2 to 20 petals per minute. Two lab bugs: the hull flew at constant speed, so a crystal inside its 25 u turn circle (35 u/s at 80 °/s) was orbited forever; and the "nothing in sight" behaviour turned in place, so a pilot that lost sight of everything never found anything again. With the Sparrow's real throttle (minimum 10 + scaler 25, braking for a target inside 2.2 turn radii) and a roaming search point, skilled runs sat within about ±15% and both "negative" consoles turned positive.
+- Do instead: give the lab hull the game's throttle, not a constant speed, and print per-seed values for every condition before quoting a mean. A spread of 10× between seeds is a stuck agent, not noise.
+- Evidence: `CrewVesselLab.html` `pilotAI` (`turnR`, `seat.roam`); `CREW_VESSEL_LAB.md` round 1, Found 7.
+- Promoted: no
+
+### L-STU-107 — To ask "does this seat's PLAY matter", score skill in the seat separately from the seat existing
+- Lab: Crew Vessel Lab round 1 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-14
+- What happened: on crew lift alone, Power Split ranked second (+20%). Scoring a Hard against an Easy navigator in the same seat showed 4% (inside the noise): the lift came from the pips being lit at all, not from how they were routed. An actions-per-minute column showed the Hard AI clicking about 200 times a minute for it. Scope Call showed the opposite shape: small lift (+14%) and large skill (31%), so a bad navigator made a good pilot worse than flying alone.
+- Do instead: for any lab about a role or a seat, report three columns side by side: the role's lift over its absence, the skill spread inside the role (expert vs rookie in that seat, everything else fixed), and the role's action rate. Each catches a design the others miss: a chore (high rate, no skill), a crutch (lift, no skill) and a liability (skill bigger than lift).
+- Evidence: `CrewVesselLab.html` `runBatch` (`navMatters`, `navApm`); `CREW_VESSEL_LAB.md` round 1 scorecard.
+- Promoted: no
+
+### L-STU-108 — An AI's "arrived" test must measure against the point it is actually aiming at, noise included
+- Lab: Crew Vessel Lab round 2 (`Docs/Studios/CrewVesselLab.html`) · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-16
+- What happened: the navigator AI moves a thumb toward `goal + aim noise` but returned its distance to `goal`. Whenever the noise was larger than the arrival tolerance (the sling's was 0.01 board radii, about the Hard AI's noise), the thumb sat on its noisy point forever, one phase short of releasing. Pinball and Pathfinder caught almost nothing on some seeds, which read as "these controls are weak" until a frame trace showed `plan=1/0` unchanged for 10 s.
+- Do instead: an agent that aims with noise judges arrival against its own aim point, and any multi-phase gesture plan gets a trace of its phase over time before its column is quoted. A phase that never changes is a stuck agent.
+- Evidence: `CrewVesselLab.html` `moveThumb` (returns the distance to `tx, tz`); `CREW_VESSEL_LAB.md` round 2, "Fixed in the lab".
+- Promoted: no
+
+### L-STU-109 — A target outside the playfield's clamp freezes the mover forever: clamp the TARGET at input, not only the mover
+- Lab: Crew Vessel Lab round 2 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-16
+- What happened: the kite is kept on its round board every frame. A dash target or a drawn path point just past the rim was never reached (the clamp pulled the kite back each frame), so the dash and path never finished and no new one could start. Hopper seed 2 froze at 33 s and Pathfinder seed 3 at 3 s. A person tapping near the edge would have hit the same freeze; the AI found it first.
+- Do instead: clamp every target a player can set (tap, drag end, drawn point) into the reachable area when it is recorded, inside the mover's own clamp. Look for a mover whose position stops changing while it still has a target.
+- Evidence: `CrewVesselLab.html` `onBoard(x, z)` applied to `dashTo` and path points.
+- Promoted: no
+
+### L-STU-110 — When an exponent multiplies a spawned quantity, the spawner is a balance knob as strong as the exponent
+- Lab: Crew Vessel Lab round 3 (`Docs/Studios/CrewVesselLab.html`) · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-17
+- What happened: a pure loop of n motes fires `base × 2^(n − 1)`. Spreading each mote cluster 4 u wider (gaussian 14 → 18 u, a readability fix) cut the mean loop from 2.8 to 2.25 motes and Space blasts from 327 to 12 hostile prisms a minute. The exponent turned a small change in how motes arrive into a 27× change in what the effect destroyed.
+- Do instead: when a payoff is exponential in a count, put the thing that sets the count (cluster size, spread, spawn rate) beside the exponent in the sign-off questions, and re-run the scorecard after ANY change to the spawner, including a "visual" one. Quote mean and best n with every effect column.
+- Evidence: `CREW_VESSEL_LAB.md` round 3, Found 2 (two `runBatch` runs either side of the spread change).
+- Promoted: no
+
+### L-STU-111 — A pickup fixed in world space is almost never reachable by a player who lives in a tilting plane
+- Lab: Crew Vessel Lab round 3 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-17
+- What happened: the navigator plays on the flying vessel's x-z plane and can touch things within ±40 u of it. Motes placed in world space near the plane were touchable 1–4 times out of 30 within seconds, because every pitch and roll of the pilot swings a 160 u board through 150 × sin(angle) u. The AI planned loops round motes it could not take, and no loop ever fired.
+- Do instead: measure the touchable share of a plane-bound player's targets over time before tuning anything else. When it is low, give the targets an in-plane home (re-project them onto the plane each frame, so they flow with the world but stay touchable) and keep world-fixed as a deliberate option ("the pilot sweeps the slice").
+- Evidence: `CrewVesselLab.html` `stepMotes` (`motes: 'board'`), the Motes in the world preset; round 3 Found 6.
+- Promoted: no
+
+### L-STU-112 — A five-fold flower turned 72° looks unmoved: keep motion continuous, or break the symmetry
+- Lab: Crew Vessel Lab → the Wrasse's motes (`KiteNavigatorView.Flower`) · Branch: `cece/compassionate-babbage-gc13io` · By: session_01C5GGXf6VL3oyrKAGWRtfMr · Date: 2026-10-18
+- What happened: the Space motes copied the Space crystal's stepped group spin (72° in 1.1 s, then a hold). On a flower of five identical petals every rest pose is the start pose, so the spin read as a twitch. Garrett: "I didn't notice the space rotating".
+- Do instead: before porting a motion onto a symmetric shape, ask whether its rest poses are distinguishable. A step of 360°/n on an n-fold shape is invisible. Spin continuously, or mark one petal.
+- Evidence: `KITE_NAVIGATOR.md` "Round 4e" (`spaceSpinDegreesPerSecond` 150, continuous).
+- Promoted: no
+
+### L-STU-113 — To match a shipped icon's proportions, measure the shipped sprite; never shape it with free knobs
+- Lab: Crew Vessel Lab → the Wrasse's motes · Branch: `cece/compassionate-babbage-gc13io` · By: session_01C5GGXf6VL3oyrKAGWRtfMr · Date: 2026-10-18
+- What happened: to separate the petals, round 4e added `petalGap` and a non-uniform `petalWidth`. The width squashed every traced outline, so the Space dart "doesn't look the same in its proportions". The totem's flower already had the answer: each `Resources/ElementPetals/<element>_petal.png` is the whole flower, one petal at its true offset and size.
+- Do instead: trace the shipped asset (alpha bounds at 0.5 give each petal's centre offset and scale, in flower radii), scale uniformly, and delete the knobs that were standing in for that measurement.
+- Evidence: `KiteNavigatorView.PetalCentreOut` / `PetalScale`; `KITE_NAVIGATOR.md` "Round 4f" table.
+- Promoted: no
+
+### L-STU-114 — Score each event's signed gain toward the goal; a coarse race column hides the mechanic
+- Lab: Honeyguide Lab · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-20
+- What happened: the first scorecard counted whole destinations per minute. Slips (teleports along a trail) moved the hull a long way, but most runs reached the same whole number of destinations, so every variant read alike and the always-armed brief looked harmless. Counting the share of the last leg flown and recording each slip's signed gain toward the destination showed always-armed lifting the race 2% with 32% of slips going the wrong way, against 25% for hold-to-arm.
+- Do instead: when a mechanic acts in discrete events, score every event's signed contribution to the goal (and the share that went backwards), and make the race column continuous (partial legs), before reading any variant.
+- Evidence: `HoneyguideLab.html` score columns `slipGain`, `badSlips`, `destsPerMin`; `HONEYGUIDE_LAB.md` Found 1.
+- Promoted: no
+
+### L-STU-115 — An ordering control is only caught by a scenario where the order matters
+- Lab: Honeyguide Lab → the Dynamo C# parity gate · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-20
+- What happened: a planted control reversed the placement scan in the C# core. Every scenario still matched, because the shipped patterns never offered two legal placements at once. Adding synthetic tiny patterns (two or three cells, many legal placements) made the control fire.
+- Do instead: for each planted control, name the scenario that makes it observable; if none exists, build one (a synthetic input that forces the ambiguity) rather than calling the control a pass.
+- Evidence: `Tools/Build/dynamo_lab/parity.cjs` variant 2 (synthetic patterns) and the reversed-scan plant.
+- Promoted: no
+
+### L-STU-116 — A greedy puzzle AI must lock in help that is about to move, and keep its plan
+- Lab: Honeyguide Lab round 2 · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-21
+- What happened: round 2 let an empty injection port count as a prism. The Ratel AI (cheapest placement first) leaned on those ports, the spin turned them away before it could finish, and it made patterns 35% slower with the help than without (4.8 against 7.4 a minute). With few prisms on the board it also flipped between two equally cheap placements and moved the same prism back and forth (38 reversals in one seed).
+- Do instead: when a plan uses something that expires (a port before the spin, a buff before its timer), cost it as permanent only if the plan finishes in time; otherwise spend the action that makes it permanent. Keep the placement being built until another is clearly cheaper. Measure a rule that "should help" with the AI before reading its scorecard row.
+- Evidence: `HoneyguideLab.html` `placementCost` (`onPorts`, `durable`) and `aiPlan(..., memo)`; `HONEYGUIDE_LAB.md` round 2 Found 4.
+### L-STU-125 — URP's Vignette multiplies: a coloured vignette over dark space is invisible, and a lab yardstick must score that cut near zero
+- Lab: Silence Vignette Lab (`Docs/Studios/SilenceVignetteLab.html`) · Branch: `cece/sleepy-shannon-9qk646` · By: session_01PEp87yJAmoDHUn7QvRdtkg · Date: 2026-10-21
+- What happened: the silence feedback's first cut drove the gameplay profile's URP Vignette in the palette's danger colour (intensity 0.26). Garrett played Dog Fight twice and never saw it. URP's `ApplyVignette` lerps the frame toward `frame × colour`, so red can only darken, and the arena's sky is (0, 0, 0.1): red times near-black is near-black. The driver was proven to reach weight 1.0 in Amoebius, so "the code runs" said nothing about "the player sees it". The lab's scorecard (OKLab ΔE ×100 over the edge band, 480×270, seeds 1-3) reads that cut at 2.8 on open space, about the just-noticeable difference, against 45 for an alpha-blended overlay at 0.75.
+- Do instead: signal a state with an overlay that ADDS colour (a ScreenSpaceOverlay canvas with a baked mask texture), keep URP's Vignette only for black darkening, and put the shipped look in the lab as a baseline row ("Round 0") that the yardstick must score near the just-noticeable difference, or the yardstick is not measuring sight.
+- Evidence: `SilenceVignetteMask.cs`, `SilenceScreenFeedback.EnsureOverlay`; the lab's scorecard and yardstick check; `Tools/Build/silence_vignette_parity/run.sh`.
+- Promoted: no
+
+### L-STU-126 — Verify the version you published, after the last edit, not the one before it
+- Lab: Silence Vignette Lab (`Docs/Studios/SilenceVignetteLab.html`) · Branch: `cece/sleepy-shannon-9qk646` · By: session_01PEp87yJAmoDHUn7QvRdtkg · Date: 2026-10-21
+- What happened: `verify_lab.cjs` passed, then a one-line wording edit was published straight through the Artifact tool's `edits`. The new text, "the breath's peak", put an apostrophe inside a single-quoted `innerHTML` string, so the whole script failed to parse (`Unexpected identifier 's'`). Garrett opened a page with no lab in it ("the lab seems broken").
+- Do instead: re-run `verify_lab.cjs` after EVERY edit to the page, however small, and before you report it. Once it is live, download the published page (`Artifact read` with `path: index.html`) and load it headless; any `pageerror` fails it. Keep apostrophes out of single-quoted HTML-in-JS strings, or build that text with `textContent`.
+- Evidence: the published version 2 against version 3 of https://claude.ai/artifact/Hequw1VLdwXi2ztrDeuXQC.
+- Promoted: no
+
+### L-STU-133 — An edge-band average under-reads a sparse, moving 3D effect; a GLSL-to-HLSL port needs its own compile gate
+- Lab: Silence Vignette Lab, round 2 (the 3D perimeter) · Branch: `cece/sleepy-shannon-9qk646` · By: session_01PEp87yJAmoDHUn7QvRdtkg · Date: 2026-10-21
+- What happened: the round-1 yardstick averages the colour change over the outer 12% of the frame. That scored the full 2D frame at 45 and the 3D perimeter at 5 to 17, although the shards read plainly on screen. Their motion and the hits' jolt are not in a still frame at all. Separately, the HLSL port of the lab's GLSL named a variable `line`, which HLSL reserves. WebGL had compiled the GLSL happily, so the lab could not catch it.
+- Do instead: label a look's column with what it cannot see, and judge a sparse or moving effect by eye before its number. Relax the yardstick check to "beats the invisible baseline", not "beats the full frame". Give a shader port a compile gate of its own (`Tools/Shaders/verify_silence_perimeter.py`: glslang in HLSL mode against a mock of the URP calls, plus a negative control), and keep the variable names identical in both twins.
+- Evidence: `Docs/Studios/SILENCE_VIGNETTE_LAB.md` round 2; `Tools/Shaders/verify_silence_perimeter.py`.
+- Promoted: no
+
+### L-STU-134 — The lab's draw ORDER is part of the look: port the compositing, not just the per-pixel math
+- Lab: Silence Vignette Lab, round 4 · Branch: `cece/sleepy-shannon-9qk646` · By: session_01PEp87yJAmoDHUn7QvRdtkg · Date: 2026-10-21
+- What happened: Garrett picked "the pull plus the 2d edge" as "very strong". In the lab the 2D edge is painted into the frame BEFORE the WebGL shards copy it, so the pull drags the edge and every facet refracts it. The game drew the same edge as a Screen Space Overlay canvas, AFTER the camera, on top of the shards. Every per-pixel function was under a parity gate and matched, but the game would still have shown a different, flatter picture: an unwarped red frame over the distortion. Nothing measured the order the layers were composited in.
+- Do instead: when a lab composites several layers, write the order down (which layer samples which) and port it as a structure. Here the edge became pass 2 of the game's own perimeter pass, drawn before the copy, and the order is pinned by a test on the shader's pass indices. A per-function parity gate cannot see a layering difference: check it by reading the lab's render loop beside the game's pass list.
+- Evidence: `SilencePerimeterPass.RecordRenderGraph` (edge, then copy, then warp and shards); `SilencePerimeterTests.TheShaderDeclaresItsPassesInTheOrderThePassDrawsThem`; `Docs/Studios/SILENCE_VIGNETTE_LAB.md` round 4.
+
+### L-STU-118 — In a multi-team lab, step the teams in a rotating order: a fixed order decides the ties
+- Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: every crew was stepped in the order of the `crews` array, so crew 0 (the player's) moved, picked up and blasted first in every step. In mirror Breach matches the Corsair won 85% over 20 seeds: two skiff charges in one fortress core, and the first blast processed took the prisms both reached. With the crews (and the blasts) taking turns going first each step, the same run read 25%, and the other mirror matches moved by 15-30 points too.
+- Do instead: in any lab with several teams or crews, rotate the step order (`order = crews.slice(step % n).concat(crews.slice(0, step % n))`) for movement, pickups and area effects, and run a 20-seed mirror match as a fairness check before quoting win rates. A mirror match that is not near 50% is a stepping bug until shown otherwise.
+- Evidence: `CrewOfFourLab.html` `simStep` (the `order` array) and `stepBlasts`; `Docs/Studios/CREW_OF_FOUR_LAB.md` §4 Found 8.
+- Promoted: no
+
+### L-STU-135 — A "seat value" column needs a floor under its denominator, and a won-or-lost game needs more seeds
+- Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: seat value (points lost when one station is left empty, as % of the full crew's points) read −1319% and −2164% in Gate Run, where points are 100+ for an escape and a few for a loss, so a 3-seed base of 6-11 points turned one lucky escape into thousands of percent. Rookie share read 2344% the same way.
+- Do instead: divide by max(|points|, a per-game scale) (`POINT_SCALE`), give a binary-outcome game more seeds (12 against 6), print the standard error beside every points column, and say in the write-up which seat values sit inside the noise.
+- Evidence: `CrewOfFourLab.html` `POINT_SCALE`, `scoreOpts`; `CREW_OF_FOUR_LAB.md` §4 "Noise".
+- Promoted: no
+
+### L-STU-120 — Taking a lab from 2D to 3D: shrink the arena by volume, and hide the prisms between the chase camera and the hull
+- Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`, round 2) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: the round-1 2D model went to a 3D sphere at the same 420 u radius. Encounter rates collapsed (the ball holds about 560 times the disc's area in volume): Anchorage crews never met (0 hits in 90 s) and a Core waited the whole match. Separately, the chase camera at the Sparrow's followOffset (0, 10, −50) sat inside the hull's own trail, so trail prisms streamed into the lens and filled the screen.
+- Do instead: when a lab gains a dimension, re-measure the encounter columns before anything else and shrink the arena (here to the game cell's 320 u) or raise densities; give AI a reason to go where the others are (an Anchorage raid phase). Under a chase camera, skip drawing prisms inside a corridor from the camera to the hull, as the game's `PrismOcclusionCorridor` does (`Docs/PRISM_ANIMATION.md` §4.7).
+- Evidence: `CrewOfFourLab.html` `SHIPPED.arenaR`, `helmAI` (Anchorage raid), `draw3d` (the corridor test); `Docs/Studios/CREW_OF_FOUR_LAB.md` §4 round 2, Found 6.
+- Promoted: no
+
+### L-STU-121 — A respawn that keeps re-rolling a crystal's kind lets the uncollected kind crowd the sought one out
+- Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`, round 3) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: each respawned crystal rolled omni with probability 0.25. The AI collected omni crystals (they refill missiles) and ignored elemental ones, so elemental crystals sat in their slots forever and never respawned, and within a minute the arena held 13-14 crystals and 0 omni. The magazine read "empty 92% of the match" and looked like an economy-tuning problem; the fix was a slot that keeps its kind (`newCrystal(w, omni)`), after which the same settings read 69-80% and the tuned ones 31-42%.
+- Do instead: when pickups of several kinds share respawn slots, give each slot a fixed kind (or respawn on a timer whether collected or not), and dump the live counts by kind in a trace before tuning the economy around a scarcity the spawner caused.
+- Evidence: `CrewOfFourLab.html` `newCrystal`, `buildWorld` (`nOmni`); `Docs/Studios/CREW_OF_FOUR_LAB.md` §4 round 3, "What changed".
+- Promoted: no
+
+### L-STU-122 — A shared resource drained by AI teammates starves the human seat; reserve some for the person
+- Lab: Crew of Four Lab (round 3) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: the three gunner seats share one magazine. In a scripted run the human's first Release did nothing because the two AI gunners had spent the last missiles in the same second; every human gunner would meet that. A Release pressed during the 0.6 s reload was also silently lost.
+- Do instead: in any lab where AI crewmates share a pool with a person, make the AI leave a reserve for each human seat (a dial, `aiReserve`, so the designer can turn it off) and buffer a person's button press briefly across a cooldown. Test the human seat through the real key path, not only by setting the input object.
+- Evidence: `CrewOfFourLab.html` `runCrew` (`reserve`, `t.queued`); the round-3 write-up's "What changed".
+- Promoted: no
+
+### L-STU-123 — Stabilize a mounted camera in world space, then measure the sway nobody asked for
+- Lab: Crew of Four Lab (round 4) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: turrets aimed in the hull's local frame swung every gunner's view at the helm's turn rate (47–54 °/s). Moving the aim to a world-space direction the gunner turns, holding each turret's own horizon and easing it toward the hull's up over 3 s, and mounting the turrets on outriggers whose position follows a lagged copy of the hull's frame cut that to 3–6 °/s. The first sway metric also counted the AI gunner's own aiming, so it barely moved. And a 3-seed run showed a large points gain (Anchorage 126 against 54) that 12 seeds erased.
+- Do instead: for any camera or weapon mounted on a moving body, keep the aim in world space and let only the seat's own input turn it; hold the horizon and ease it, never lock it; let the mount position lag on a smoothed frame. Measure "sway" as the view's rotation minus the rotation the seat's own input commanded, and keep the hull-locked version as a control preset. Check any points gain from a feel change at 12 seeds before reporting it: an AI does not feel sway, so a feel fix should leave AI points unchanged.
+- Evidence: `CrewOfFourLab.html` `turretDir`, `mountPos`, `followFrame`, the `swayDegS` score; `CREW_OF_FOUR_LAB.md` §4.
+- Promoted: no
+
+### L-STU-124 — Porting a lab: write element factors as the game's channel, lift inline rules into named functions, and measure small angles with atan2
+- Lab: Crew of Four Lab (graduation as the Orca) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened:
+  - The lab scaled four numbers as `1 + k × level / 15`, while the game's element channel is `ElementalFloat`
+    (`LerpUnclamped(Min, Max, level / 10)`). Porting the factor as code would have left `element_ability_table.py` reading
+    "NO SCALING" on two of the hull's four elements.
+  - Three rules lived inline in the lab's step function (the horizon hold, the shield's shape, the missile step), so a
+    parity harness had nothing to call.
+  - The C# sway readout returned 0 every step: `acos(dot)` of a one-step turn rounds to zero in float32 (the page is
+    float64).
+- Do instead:
+  - A lab factor of that shape IS an `ElementalFloat`: Min = base, Max = base × (1 + 2k/3). Port it as one, and have
+    the parity gate check Min and Max against the page's SHIPPED base and k.
+  - Before porting, lift every rule the harness must hold into a named pure function, expose them on
+    `window.__lab.parity`, and prove a batch is byte-identical before and after.
+  - Measure angles in a float port with `atan2(|a × b|, a · b)`, never `acos(a · b)`.
+- Evidence: `OrcaCrewConfigSO.cs` (`boostRefill`, `shieldSeconds`, `blastRadius`, `missileScale`); `CrewOfFourLab.html`
+  `holdHorizon` / `shieldDirs` / `flyMissile`; `OrcaTurret.HoldHorizon`; `Tools/Build/orca_crew_lab/parity.cjs`.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were
@@ -955,6 +1145,39 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `Tools/Build/converter_round5_harness` section 9; `OMNI_COMBINE_LAB.md` revision 8.
 - Promoted: no
 
+### L-STU-139 — A baseline that can reach the payoff another way measures nothing; and a negative control must be shown to fire
+- Lab: Goby & Pistol Studio (`Docs/Studios/VesselStudio/goby.html`) · Branch: `cece/sharp-tesla-j0kd7z` · By: session 01KpzppLj3ETY5c6jEP7HuyA · Date: 2026-10-14
+- What happened: two yardstick bugs, both caught only because the table looked odd. (1) The "No Pistol" baseline (the Goby alone) scored 17 CHAIN kills, a column meant to be the Pistol's alone: the Goby's flares were killing primed blocks, and every kill of a primed block set off the chain. The baseline was not "without the Pistol"; it was "with a Pistol built into the flares", and the pair's advantage was understated by the whole column. (2) The Unroll test's first negative control, a hairpin, reported 0% ambiguous in every unroll: its two legs part along the ribbon faster than the screen window that the mapping searches, so the fold it was meant to show never entered the search. A flat circle (every lap lies on the last) reads 100%.
+- Do instead: for every baseline, list the paths by which the effect it removes could still happen, and close them (a flare now takes only its own block; a prime is the Pistol's to detonate). Run every negative control once and check that it FIRES before reading any other row; a control that passes clean proves only that the test cannot see the fault.
+- Evidence: `goby.html` `kill()` (`by !== 'flare'`), `PATHS` (`circling (control)`); README § "Goby & Pistol, round 1".
+- Promoted: no
+
+### L-STU-140 — A warped view keeps rendering parity by warping only TRANSFORMS; rotate the infinitely far sky by the frame
+- Lab: Goby & Pistol Studio (`Docs/Studios/VesselStudio/goby.html`) · Branch: `cece/sharp-tesla-j0kd7z` · By: session 01KpzppLj3ETY5c6jEP7HuyA · Date: 2026-10-14
+- What happened: the Pistol's sidescroller (a 3D world unrolled into 2.5D) was first drawn as flat 2D rectangles, and read as a different game from the 3D view beside it. Redrawing it in three.js with the SAME geometry and material objects as the 3D view (shared across the two renderers), and warping only each object's position and rotation (flat = Mᵀ · world, with M the ribbon's frame [T U R] where the object maps), gave parity at no art cost. The sky and stars needed one rotation, the frame at the viewer, because only direction matters for something infinitely far. A side camera on the +R side, looking along -R with up U, puts the path's +T to the right (the -R side mirrors it, a trap: T × U = R).
+- Do instead: for any remapped or warped view of a lab's world, reuse the world's meshes and materials and move only transforms. Turn sky, stars and lights by the frame at the viewer. Check the handedness of the frame before placing the camera.
+- Evidence: `goby.html` `renderSide3D`, `flatFrame`, `ribFrame`.
+- Promoted: no
+### L-STU-138 — A 2.5D character on a tangent plane needs its plane pinned to the path in depth, and a ground that steps off folds instead of snapping
+- Lab: Goby & Pistol Studio (`Docs/Studios/VesselStudio/goby.html`, the Tangent plane) · Branch: `cece/sharp-tesla-j0kd7z` · By: session 01KpzppLj3ETY5c6jEP7HuyA · Date: 2026-10-21
+- What happened: replacing an unrolled sidescroller with a plane tangent to a 3D path (no warp, a real camera), the first build kept the plane through the Pistol, turned it toward the path's normal and projected the trail's hinges onto it as the ground, dropping hinges whose screen x went backwards. Traced over a 60 s run, an airborne Pistol drifted 100-1000 u off its trail and then rode a phantom flat ground, because nothing held the plane on the trail in DEPTH while the path turned under it; and the monotonic filter emptied the ground at folds. Fixed in three parts, each measured: pin the plane's depth to the trail point under the Pistol (moves the plane, never the world); keep the projected ground in path order and pick, at an x, the stretch nearest the Pistol ALONG the path; treat a step in that ground as a ledge to run off (and pull a Pistol under its line back up), never a snap. The grounded Pistol then stays within 15 u of its trail. Also: the "along" direction from a plain chord flips at a hairpin (its far leg is out of plane); weight each tangent by how much of it lies in the plane.
+- Do instead: before tuning anything, trace the character's distance to the thing it is meant to stand on, every step of a long seeded run, and fix every jump before judging the look. A per-step slope or turn statistic hid this: the averages looked fine while the Pistol rode nothing.
+- Also paid twice here: an `old_str -> new_str` replacement that appends a `// comment` to a line whose CODE continues after the matched text swallows that code (a loop body, a clamp). The page still parses; the symptom is a quiet wrong number. Put new comments on their own line.
+- Evidence: `goby.html` `planeStep` (the depth pin), `planeGround` / `groundAtPlane`, `pistolStep` (`ledge`, `under`), `planeTarget` (weighted tangents), `planeMeasure`; the session's run traces.
+- Promoted: no
+
+### L-STU-117 — To hide a projection's warp, draw objects rigid and fade the bend in only where the stretch shows; smoothing the path's positions makes it worse
+- Lab: Goby & Pistol Studio (`Docs/Studios/VesselStudio/goby.html`, the Settled unroll) · Branch: `cece/sharp-tesla-j0kd7z` · By: session 01KpzppLj3ETY5c6jEP7HuyA · Date: 2026-10-18
+- What happened: asked to make the Pistol's warp "only where necessary and as invisible as possible", the first try eased the unroll's SPINE (a gaussian over the path's positions where it curved tighter than a radius). Measured over the same 3000 world points on seven scripted paths it did not help: drawn-bent prisms stayed at 98-100 % on curving paths, and climbs gained bends. Smoothing a curve's POSITIONS pulls a sustained arc toward its centre, which TIGHTENS it. What did help: every prism near any curve had been drawn BEND (stretched through the unroll by 1 + d x curvature, ~1.5x at d 45 on an 80 u turn); drawing each prism RIGID and blending toward the bend only where its stretch exceeds 12 % (full by 35 %) cut drawn-bent prisms to 48 % on the weave and 57 % on the roll, folds unchanged. A height PROFILE over distance smooths without tightening, so the ground's sharp vertical curves are eased that way, settling ahead of the rider and frozen once reached (measured: no settled sample moved, the ground under the rider never moved).
+- Do instead: measure what the viewer sees (how many objects are drawn distorted) before choosing an operator, never a proxy like the path's tightest radius. Ease a graph (height over distance), not a curve's positions. To hide a map projection's distortion, keep objects their true shape and fade the warp in by the local stretch.
+- Evidence: `goby.html` `softAdd` / `softPoint` / `softBend`, `drawPrism` (the rigid blend), `unrollMeasure` (`bentPct`, `bendMax`, `lateMove`); the session's warp, unroll and freeze measures.
+- Promoted: no
+### L-STU-141 — A blank panel in a headless full-page screenshot of a two-WebGL-canvas lab is the capture, not the page
+- Lab: Goby & Pistol Studio (`Docs/Studios/VesselStudio/goby.html`) · Branch: `cece/sharp-tesla-j0kd7z` · By: session 01KpzppLj3ETY5c6jEP7HuyA · Date: 2026-10-18
+- What happened: `verify_lab.cjs`'s desktop and phone screenshots showed a white-and-black panel, the size of the Pistol's inset, in the lower right of the main view. `elementsFromPoint` found no element there and no code draws there. A CLIPPED capture of the same region (`page.screenshot({ clip })`) was dark and correct, and hiding either inset canvas changed nothing: headless SwiftShader mis-composites the second WebGL canvas's layer in a full-viewport capture.
+- Do instead: before chasing a panel that only a full screenshot shows, capture the region with `clip` and ask `elementsFromPoint` what is there. A defect the clipped capture does not show is the harness's.
+- Evidence: this ship pass's probes (scratchpad `probe3.cjs`, `probe4.cjs`); `verify_lab.cjs` PASS.
+- Promoted: no
 ### L-STU-64 — A studio built from a design doc beside a game build from the same doc: add the game as a selectable "ships" set
 - Lab: Brittle Star Studio round 2 · Branch: `cece/gallant-lamport-sc3khe` (studio from `cece/brave-galileo-d95fpj`) · Date: 2026-10-14
 - What happened: two sessions built the Brittle Star on one day from one Notion document without seeing each other, a
@@ -1243,4 +1466,193 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: the generic line pilot (aim ~24 u ahead) webbed whatever was nearest (447 webs, 35 u/s, DNF). Aiming farther fixed that and exposed three more: a web on a crystal it was flying past ORBITED it for 23 s (a spring is a central pull: the sideways speed stays); an "it is not closing, let go" rule then dropped every web that was still braking the hull; and an aim point past web reach let the hull coast 700 u into empty space, where a hull with no engine is stranded. Its "nearest anchor" fallback then picked its own trail 11 u away, inside the shortest web, and it never fired again.
 - Do instead: (1) aim at the farthest point still inside reach, and off the course at the anchor nearest the course, never its own trail; (2) count a web as an orbit only while the motion is mostly sideways to it; (3) never cap a thrustless AI's speed by letting go early (it strands itself). Still open: the AI moves (32-41 u/s) but finishes no course; a racing pilot for this hull needs a plan (which anchor brakes, which redirects), not rules.
 - Evidence: `trace_web_ai.cjs` traces in the session; smoke rows I1 avg 35 / 6 / 41 across the variants.
+
+### L-STU-119 — An orbit control must fit one lap inside the tail, and closes loops only because something drifts
+- Lab: Wrasse Lasso Lab (`Docs/Studios/WrasseLassoLab.html`) · Branch: `cece/loving-fermat-ntdnbu` · By: Claude session for Garrett · Date: 2026-10-20
+- What happened: the first tether (70 u) and anchor (110 u) ropes scored 0 loops in 12 s. The shipped Wrasse tail is
+  2.4 × 160 = 384 u, and a 110 u orbit is 691 u round, so a lap never fits in the tail and the crossing test never
+  fires. Shrunk to 42 u and 22-50 u, the Plant control went to 19 loops/min. Second trap: a clean circle round a fixed
+  point retraces itself, so its segments meet tangentially and do not cross, and an inward spiral never crosses either.
+  Loops closed only because the planted anchor drifts with the world (40 u/s), which makes the orbit a self-crossing
+  trochoid. Third: a pull-only rope planted far away flings the kite straight through the anchor (a pendulum); the
+  Thresher hooks onto the orbit at once, so the lab turns radial speed into swing at a fixed speed (`plHook`).
+- Do instead: before tuning any orbit, swing or spin control for a lasso, check 2π × radius ≤ the tail length, and
+  give it a drift (world flow, a moving anchor) or a snap-shut rule. Measure on a still board too, where the drift is
+  gone. Trace the AI's thumb, the anchor and the loop counts frame by frame (`__lab.world()`) before blaming the
+  mechanic.
+- Evidence: `Docs/Studios/WRASSE_LASSO_LAB.md` round 1 "Found" 1-3; `stepKite` case `'plant'`; `advanceTail` with `labSnap`.
+
+### L-STU-127 — A parity scenario that cannot reach a new code path passes every mutation of it
+- Lab: Thresher Plant Lab (a shipped-solver port, two rounds in one day) · Branch: `cece/youthful-johnson-hccyzf` · Date: 2026-10-21
+- What happened: the shipped `ThresherChainSolver` gained a two-phase "launch line" after an aimed launch, and the
+  page's `Solver` got a line-for-line port. Parity passed. Three mutations of the second phase also passed, one at a
+  time: deleting `keepOnLine`, then two attempts at a steering scenario. That phase only exists when the launch
+  outruns the ball, i.e. with the shipped ×4.8 launch boost. The page's `armLaunch` predated the boost, so no
+  scenario could launch fast enough, and steering from the start kept the line in its first phase.
+- Do instead:
+  - After porting a rule, delete it from the page and run parity. A pass means no scenario reaches the rule; it
+    does not mean the port is right.
+  - When the lab's API lags the shipped one (a parameter the game passes and the lab never learned), port the
+    parameter with a default that keeps the lab's own vessel unchanged. Then give the scenarios a field for it
+    (here `boost`, read by `TraceDriver.cs` and `parityTrace`).
+  - A clause that still stays under tolerance (here "the ball is not closing", 0.84×) needs another owner. Name
+    the C# test that fails without it.
+- Evidence: `analog-armed-line-steer` in `Tools/Build/thresher_plant_lab/scenarios.json` (dropping `keepOnLine`
+  fails at 2.56×); `THRESHER_PLANT_LAB.md` § Checked, 2026-10-21.
+- Promoted: no
+
+### L-STU-128 — Measure the input left over AFTER an edge, and the follower at the leader's top speed
+- Lab: Thresher Plant Lab (the shipped aimed launch) · Branch: `cece/youthful-johnson-hccyzf` · Date: 2026-10-21
+- What happened: "it doesn't always shoot me at the cross hair" had two causes. Neither showed in the scenarios,
+  which fly each trigger at 0 or 1 after an edge.
+  - The launch fires as LT passes 90%, so the trigger is still most of the way down for the next frames. That
+    depth read as a partial pull: the ball became a sliding anchor and the heading went 177° off the aim.
+  - With the Time element raised, the boosted launch leaves at ~1 300 u/s against the ball's 479 u/s cap. A
+    rigid chain then brakes the ship under the ball's speed, and the ball overtakes and swings across.
+- Do instead:
+  - For any edge fired at a threshold, fly the input at the threshold's far side for a second: 0.85, not 0.
+  - Sweep the element multipliers to their maximum. A capped follower (ball, tow, wake) fails only where the
+    leader outruns the cap.
+  - Probe with the stand-in pilot WITH grip (the nose turns with the tug, as the transformer does). Without
+    grip the tug is erased every frame and the swing never shows.
+- Evidence: `ThresherAnalogTriggerTests.AimedLaunch_*` (177° on the old solver, 55° on round 1);
+  `R_VesselActions/THRESHER.md` §5a "The launch flies the crosshair's line".
+- Promoted: no
+
+### L-STU-129 — A retune can push a parity scenario onto a knife edge that float32 and doubles resolve differently
+- Lab: Wrasse Lasso Lab (`sling_parity.cjs`, C# float32 against the page's doubles) · Branch: `cece/loving-fermat-ntdnbu` · By: Claude session for Garrett · Date: 2026-10-20
+- What happened: lowering `slingMaxSpeed` 520 → 364 (a pure retune, both sides changed together) turned the parity gate
+  red: 294 structural mismatches and 2.5 × tolerance in the "tow" scenario. The first structural mismatch was a
+  one-point tail difference, and the velocities had split three frames earlier at frame 117. The kite sat 41.97 u from
+  the hand, grazing the 42 u rope. "Taut or slack" there is decided in the 5th decimal, and the damper's kick on taut
+  separated the two runs. Both implementations were the same rule; the scenario had wandered onto a discontinuity.
+- Do instead:
+  - When parity fails after a change that touched both sides identically, find the FIRST diverging frame (velocities,
+    not positions; a dump of frames 0-200 with a 0.05 threshold) and read the state there before suspecting the port.
+  - If it sits on a threshold (`d <= rope`, a crossing test, a clamp), move the scripted input off it (here the tow's
+    swing 60 → 64 u). Say why in the scenario, and keep the planted controls proving the gate still bites.
+  - Report the first structural mismatch apart from the worst numeric one (the gate now does): the worst error lands
+    after the divergence and points at the wrong frame.
+- Evidence: `Tools/Build/kite_navigator_lab/sling_parity.cjs` (the tow comment, `firstStructural`); PASS at 0.006 × after.
+- Promoted: no
+
+### L-STU-130 — Render the SHIPPED visual code offline: give it a snapshot, not the MonoBehaviour
+- Lab: the Wrasse's juice (`KiteNavigatorJuice`, no browser page) · Branch: `cece/loving-fermat-ntdnbu` · By: Claude session for Garrett · Date: 2026-10-21
+- What happened: the effects had to be "bespoke, unique, dynamic, and polished", and no session here can open Unity. The
+  first draft read the seat (a MonoBehaviour with the whole game behind it), so nothing could run it. Splitting its
+  inputs into a plain `KiteJuiceFrame` (board axes, hull, kite, pilot camera) and `KiteJuiceSettings` let
+  `Tools/Build/kite_navigator_lab/juice_sheet.sh` compile the shipped file with the card-art harness's Unity shim (four
+  members added) and rasterise every effect into a contact sheet, top-down and from the chase camera. The first sheet
+  showed three things no test would have: Space's petals left in three clumps (one per mote), not one blast; the Omni
+  bloom opened into a neat ring of dots (the very rings being removed); Time's landing chips were invisible.
+- Do instead: for any effect, camera or view code meant to be judged by eye, keep its math free of engine objects
+  (a frame snapshot in, vertex lists out, the MonoBehaviour fills the Mesh). Then render a time-sampled contact sheet
+  offline and LOOK at it before claiming polish. Make the harness fail on non-finite vertices and on an effect that
+  draws nothing, so it is also a gate.
+- Evidence: `KiteNavigatorJuice.cs` (`KiteJuiceFrame`, `KiteJuiceSettings`); `juice_sheet.sh [out.png] [pilot]`;
+  `KITE_NAVIGATOR.md` round 10.
+- Promoted: no
+
+### L-STU-131 — Measure how often a reward is ON THE BUTTON, not only whether it helps
+- Lab: Honeyguide Lab round 5 (timed actives) · Branch: `claude/honeyguide-ratel` · By: Claude session for Garrett · Date: 2026-10-21
+- What happened: the first build dealt an active only when one of the seven weapon cards was made (7 of 39). Each active
+  measured well alone, but an "Active up %" column showed a button held an active 23-27% of the time, about one a minute.
+  Garrett's ask ("new ones come") was not met, and no lift column would have said so. Dealing a random active on every
+  pattern took the buttons to 85% and the race from +51% to +68%.
+- A second check came from the rookie row: a pilot that presses whatever is ready scored the same as the skilled AI. That
+  backs "not so hard to use". The first skilled AI was too picky and scored BELOW the rookie, and the gap pointed at the
+  AI's thresholds, not at the design.
+- Do instead:
+  - For any granted, timed ability, add columns for its presence (the share of time it is available) and its uses a
+    minute beside the lift.
+  - Run a rookie pilot next to the skilled one. If the rookie wins, fix the skilled AI before reading any number.
+- Evidence: `Docs/Studios/HONEYGUIDE_LAB.md` round 5 scorecard; `activeUp`, `usesPerMin`, PSKILL `actSense`.
+- Promoted: no
+
+### L-STU-136 — A drawing mechanic must write where the aim's sweep matches the stroke's spacing
+- Lab: Crew of Four Lab, round 6 (the Orca's fast gun "writes prisms like a pen") · Branch: `cece/happy-noether-m54hz6` · Date: 2026-10-21
+- What happened: the first pen laid a prism where each pen round's flight ended, 387 u out. A turret slewing at its
+  normal rate moved that point about 100 u between pen rounds, against a 5 u stroke spacing. Every landing lifted the pen,
+  so the "calligraphy" was a scatter of loose sticks, each pointing along the aim. Moving the paper to 120 u turned the
+  same sweep into one stroke: 20 prisms, every gap exactly 5.0 u. A first screenshot also showed a radial fan of sticks,
+  which looked like the pen; it was a rival's dropped shield (danger prisms laid along rays).
+- Do instead:
+  - For anything the player draws with an aimed weapon, compute the landing point's speed: the aim's angular rate times
+    the distance. Set the distance (the paper) so that speed between samples is about one spacing.
+  - Hold the first point of a stroke until the second says which way the stroke runs. Otherwise every stroke starts
+    with a prism pointing at the shooter.
+  - Measure a stroke from the world (gaps and turn angles between consecutive marks under a scripted sweep), not from a
+    screenshot, before judging it. Name what each shape in a screenshot is before blaming the new feature.
+- Evidence: `CrewOfFourLab.html` `penLay`, `penLanding`, `SHIPPED.rapidPenReach`; C# `OrcaPen` held to it by
+  `Tools/Build/orca_crew_lab/parity.cjs` (400 landings); `CREW_OF_FOUR_LAB.md` §4 round 6.
+- Promoted: no
+
+### L-STU-137 — A turret on a moving hull must not hand its shots the hull's whole velocity
+- Lab: Crew of Four Lab, round 7 (the Orca, after Garrett flew round 6 in Unity) · Branch: `cece/happy-noether-m54hz6` · Date: 2026-10-21
+- What happened: the lab and the game both launched a turret's round at `aim × speed + hull velocity`, the rule a
+  forward-firing gun gets away with. On a turret that fires sideways from a hull flying 50–175 u/s, with rounds at
+  135, every shot slewed far off the barrel and the crosshair in the direction of flight. The lab's scorecard never
+  showed it, because the AI hit what it hit and nobody watched a crosshair. The owner saw it in the first flight: "not
+  shooting where they were aiming". A frame-old muzzle (the shot fired in `Update` before the hull moved, posed in
+  `LateUpdate` after) added up to 3 u more.
+- Do instead:
+  - Give an aimed shot only the hull velocity ALONG its aim: `aim × (speed + max(0, aim · hullVelocity))`. It flies
+    exactly down the aimed line, still outruns its hull forward, and never slows below its own speed astern.
+  - Make the barrel, the crosshair and the shot one line: pose the turret the moment it fires, fire after the hull has
+    moved that frame, spawn at the drawn barrel tip, and project the crosshair from that tip along the aim.
+  - In a lab with aimed weapons, add a check a scorecard cannot make: draw (or measure) the shot's path against the
+    crosshair while the hull flies fast and turns.
+- Evidence: `CrewOfFourLab.html` `shotVel`, `SHIPPED.shotInherit`, the Round 6 shots control (gun hull hits 38 → 64 in
+  Broadside with the fix); C# `OrcaCrewCore.ShotVelocity` held to it by `parity.cjs`; `OrcaHullRig.PoseSeat`;
+  `CREW_OF_FOUR_LAB.md` §4 round 7.
+- Promoted: no
+
+### L-STU-132 — Show a world fact on the world, and check every new world effect against the flat rule before drawing it
+- Lab: Crew of Four Lab, round 8 (the Orca, after Garrett flew round 7 in Unity) · Branch: `cece/happy-noether-m54hz6` · Date: 2026-10-21
+- What happened: the bomb seat showed "what a press would catch" as a dashed screen ring round the live bomb with
+  "BURST" over it. The owner: "the bomb should not have a ring that says burst. it should use a lit state to show what
+  it will destroy. always go for the 3d in world solution over the 2d flat text solution." The first redraw of the
+  missiles then gave them an additive ribbon trail (and the game the fleet's `TrailRenderer`), which the LOCKED
+  "nothing in the world looks flat" rule names by shape. Two more traps on the way: PrismLit's aimed channel is
+  cone-only, so a sphere published there is read as a cone; and lighting "every prism in the sphere" lit the gunner's
+  own mass, which the blast spares, so the light said the wrong thing.
+- Do instead:
+  - For any "what will this hit / what state is it in" readout, first ask which world channel can carry it (PrismLit
+    for mass about to be acted on, morphs and petals for a hull, a faceted lit volume for an effect). Draw it there,
+    in the lab's 3D view first. Keep the screen for the aim mark only.
+  - Light exactly what the action will do: gate a light to the domains it breaks (one bank light per domain), never the
+    whole volume.
+  - Before drawing a trail, a beam or a marker, read the flat rule's list. A plume tube that is thin at the source
+    also keeps a chase camera out of its own trail.
+  - Check a look by rendering the same frame with the effect on and off (`__lab.still(eye, look)` from a scripted
+    search), not by finding it in a busy seat screenshot.
+- Evidence: `CrewOfFourLab.html` `bombLight`, `missileView`, `tube`, `MLOOK`, `__lab.still`; C# `OrcaCrewView.LightBomb`,
+  `OrcaMissileVisual`; `Docs/claude/SHADERS_AND_PERFORMANCE.md` "In the world, not on the screen"; `CREW_OF_FOUR_LAB.md`
+  §4 round 8.
+- Promoted: yes (the LOCKED rule in `SHADERS_AND_PERFORMANCE.md`)
+
+### L-STU-142 — Scaling a lab's population baseline leaves every card written in absolute counts behind
+- Lab: Starlings Lab (round 1 numbers, raised in Unity's round 3) · Branch: `cece/quirky-gates-skplxp` · Date: 2026-10-21
+- What happened: Garrett asked for 5x the starlings ("a small pack not a group of starlings in a murmuration"). The
+  baselines moved (start 24 → 120, cap 40 → 200, minimum 6 → 30) in one line of `SHIPPED`, but the card list states
+  some numbers as absolute member counts (Big Family: "Swarm cap 46" at L1, read as `cap + value - 40`) and others
+  per member (Hole Punch, Annex, Danger Drip, the base bite and nip). The first now adds a negligible +6 to a cap of
+  200; the second multiplies the swarm's output by about 5. The lab scorecard still ran green, because nothing in it
+  compares a card's effect to the baseline it was written against. The game's flocking loop was also all-pairs, fine
+  at 24 and about 70x the work at 200 (fixed with a separation grid).
+- Do instead:
+  - When a population baseline moves, list every card or stat written in absolute counts or per member, and decide
+    each with the owner (keep, scale, or restate relative to the baseline). Do not let the scorecard's green stand in
+    for that decision.
+  - Write population cards relative to the baseline (`+15% cap`) when the baseline is still being tuned.
+  - Before raising a count, find any loop over pairs of members in the lab and the game.
+- Evidence: `StarlingsLab.html` `SHIPPED`, `minNow`; `StarlingRules.CapNow`; `StarlingSwarmExecutor.Separation`; team
+  task T-20261021-729e (the card decision).
+- Promoted: no
+
+### L-STU-143 — Take a mechanic out of a random draw with a POOL that defaults to everything, so every old seed still plays
+- Lab: Honeyguide Lab (`Docs/Studios/HoneyguideLab.html`) · Branch: `cece/nifty-dirac-2dmclm` · By: the 2026-10-22 Ratel-portrait session · Date: 2026-10-22
+- What happened: Garrett asked to remove Printer (a free prism every spin) "for now". The draw was `ABILITIES[floor(rng * 9)]`, held step for step to `DynamoCore.cs` by `parity.cjs`. Deleting the key would have renumbered the serialized `DynamoAbility` enum and changed every seed. Instead the core draws from `S.abilities` (null = all, so the arithmetic is identical), and the shipped settings pass all but `RETIRED_ABILITIES`. Parity stayed green on every old rule set, and new rule sets (the shipped pool, two abilities, one) plus a planted "ignore the pool" control (caught, 4,431 steps) cover the change. One Unity golden did need re-measuring: it plays the shipped config, and it was already stale from round 6 (start slot 27 against the page's 26), which nobody had seen because no CI runs the edit-mode tests. The page and `DynamoCore.cs` on the shipped asset agreed on the new values.
+- Do instead: retire a drawn option with a list next to the lab's shipped settings and a matching list on the game's config, held equal by the generator's `--check`. Never delete the key or the enum member. When a game test plays the shipped config, recompute its golden by running the real C# core on the real asset as well as the page, and the two must agree.
+- Evidence: `abilityPool` in the page's dynamo-core block; `DynamoSettings.Abilities`, `HoneyguideConfigSO.retiredAbilities`; `author_honeyguide_assets.py` check "retiredAbilities is not the lab's RETIRED_ABILITIES"; `HoneyguideTests.Ratel_NeverDrawsPrinter_WhileItIsRetired`.
 - Promoted: no

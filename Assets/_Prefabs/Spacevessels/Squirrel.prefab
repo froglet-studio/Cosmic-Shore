@@ -698,6 +698,7 @@ GameObject:
   - component: {fileID: 7219854176267508625}
   - component: {fileID: 8100000000000000081}
   - component: {fileID: 8100000000000000083}
+  - component: {fileID: 8100000000000000085}
   m_Layer: 0
   m_Name: Squirrel
   m_TagString: Player_Ship
@@ -927,7 +928,6 @@ MonoBehaviour:
   RollScaler: 130
   RotationThrottleScaler: 0
   restrictedTurnMultiplier: 3
-  touchNoseResponse: 9
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1328,6 +1328,12 @@ MonoBehaviour:
   amountSmoothing: 10
   releaseSmoothing: 20
   releaseHoldSeconds: 0.4
+  scaleVolumeBySlipAngle: 1
+  scaleReleaseBySlipAngle: 1
+  quietSlipDegrees: 0
+  fullSlipDegrees: 180
+  quietVolume01: 0.15
+  slipVolumeSmoothing: 10
   onlyAudibleToController: 1
   forceAttachToListener: 0
   tieVolumeToSFXSlider: 1
@@ -1454,6 +1460,45 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   debugLog: 0
+--- !u!114 &8100000000000000085
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5fc59596cb44ece83f68226e5cf5359, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  vesselStatus: {fileID: 6441696348568773771}
+  modelRoot: {fileID: 0}
+  engines:
+  - label: Front engine L
+    boneNames:
+    - bbone_FrontEngineBase.L
+    - bbone_FrontEngineTrim.L
+    - bbone_FrontEngineTip.L
+    driftOffset: {x: 0, y: 0, z: 0}
+  - label: Front engine R
+    boneNames:
+    - bbone_FrontEngineBase.R
+    - bbone_FrontEngineTrim.R
+    - bbone_FrontEngineTip.R
+    driftOffset: {x: 0, y: 0, z: 0}
+  - label: Back engine L
+    boneNames:
+    - bbone_BackEngineFrame.L
+    - bbone_BackEngineInner.L
+    driftOffset: {x: 0, y: 0, z: 0}
+  - label: Back engine R
+    boneNames:
+    - bbone_BackEngineFrame.R
+    - bbone_BackEngineInner.R
+    driftOffset: {x: 0, y: 0, z: 0}
+  swivelRate: 3.7
+  maxSwivelDegreesPerSecond: 360
 --- !u!1 &7446200097638982083
 GameObject:
   m_ObjectHideFlags: 0

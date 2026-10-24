@@ -19,5 +19,6 @@ MonoBehaviour:
   placementAngleDegrees: 120
   accentColor: {r: 1, g: 0.85, b: 0.2, a: 1}
   vesselCollection: []
+  vesselArt: {fileID: 11400000, guid: 49c7c10ad2901c74589c28317a4eb17b, type: 2}
   stationSpacing: 60
   matrixDistanceFactor: 6

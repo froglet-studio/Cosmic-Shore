@@ -92,8 +92,8 @@ namespace CosmicShore.Game
         Matrix4x4[] matrices;
 
         /// <summary>
-        /// Capsules actually drawn: all of them, unless the device tier caps the subdivision level
-        /// (<c>PlatformProfileSO.MembraneMaxSubdivisions</c>). The icosphere generator only ever
+        /// Capsules actually drawn: all of them, unless the device tier or quality preset caps the
+        /// subdivision level (<c>GraphicsCuts.MembraneMaxSubdivisions</c>). The icosphere generator only ever
         /// APPENDS midpoint vertices, and the jitter is drawn per vertex in index order, so the
         /// first 10*4^s+2 capsules are exactly the layout a membrane authored at level s would have,
         /// and the baked animation indexes them the same way. Drawing a prefix is therefore a
@@ -215,13 +215,13 @@ namespace CosmicShore.Game
         public static int IcosphereVertexCount(int level) => 10 * (1 << (2 * level)) + 2;
 
         /// <summary>
-        /// <paramref name="total"/> capsules, or the prefix the device tier allows. A cap at or above
-        /// this membrane's own level changes nothing.
+        /// <paramref name="total"/> capsules, or the prefix the device tier and quality preset allow
+        /// (<see cref="GraphicsCuts.MembraneMaxSubdivisions"/>). A cap at or above this membrane's own
+        /// level changes nothing.
         /// </summary>
         int TierCappedCount(int total)
         {
-            var profile = PlatformProfile.Current;
-            int cap = profile ? profile.MembraneMaxSubdivisions : -1;
+            int cap = GraphicsCuts.MembraneMaxSubdivisions;
             if (cap < 0 || cap >= subdivisions) return total;
             return Mathf.Min(total, IcosphereVertexCount(cap));
         }

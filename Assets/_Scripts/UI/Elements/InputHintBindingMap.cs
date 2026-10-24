@@ -38,6 +38,10 @@ namespace CosmicShore.UI
             [HintBinding.KeyLeftShift]    = LeftSide,
             [HintBinding.KeyRightShift]   = RightSide,
 
+            // Both triggers held: the chord the Manta's Soar and the Rhino's energize stance ride.
+            [HintBinding.PadBothTriggers] = new[] { InputEvents.BothSticksAction },
+            [HintBinding.KeyBothShifts]   = new[] { InputEvents.BothSticksAction },
+
             [HintBinding.PadButtonSouth]   = new[] { InputEvents.Button1Action },
             [HintBinding.PadButtonEast]    = new[] { InputEvents.Button2Action },
             [HintBinding.PadButtonWest]    = new[] { InputEvents.Button3Action },
@@ -89,6 +93,8 @@ namespace CosmicShore.UI
             HintBinding.KeyQ          => HintBinding.PadButtonWest,
             HintBinding.KeyE          => HintBinding.PadRightShoulder,
             HintBinding.KeyF          => HintBinding.PadButtonNorth,
+            HintBinding.KeyBothShifts    => HintBinding.PadBothTriggers,
+            HintBinding.KeySticksOutward => HintBinding.PadSticksOutward,
             _                         => binding,
         };
 

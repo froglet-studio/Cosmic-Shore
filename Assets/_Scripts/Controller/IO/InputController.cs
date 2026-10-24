@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
 using CosmicShore.Utility;
 using Reflex.Attributes;
+using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.Gameplay
 {
@@ -118,13 +119,9 @@ namespace CosmicShore.Gameplay
             if (RearViewGesture.RequestedThisFrame())
                 VesselRearView.Toggle();
 
-            // Take over an AI teammate's hull (D-pad left/right, keyboard 1/2) - ARENA matches
-            // only; RequestPilotSwap is a no-op anywhere else. Polled here for the rear view's
-            // reasons: local-human-pilot and pause gated already, and it moves the PILOT between
-            // hulls, so it is not an ability a hull could fail to author. See PilotSwap.
-            int pilotSwap = PilotSwapGesture.DirectionThisFrame();
-            if (pilotSwap != 0 && ownerPlayer != null)
-                ownerPlayer.RequestPilotSwap(pilotSwap);
+            // The swap gesture (D-pad left/right, the left / right arrow keys, a two-finger swipe) is not read here: it must work while
+            // this controller is paused - a person at a crew seat or riding another hull has their flight input paused -
+            // so the person's own Player reads it (CrewStations, LocalCrewStation), seats first, then hulls.
 
             // Tick once per frame here so engagement detection and the
             // strategy itself read the same per-frame snapshot.
@@ -133,9 +130,30 @@ namespace CosmicShore.Gameplay
             UpdateActiveDeviceFamily();
 
             UpdateInputStrategy();
+            if (currentStrategy == touchStrategy) HandTouchStrategyItsHull();
             currentStrategy?.ProcessInput();
             orientationHandler.Update();
         }
+
+        /// <summary>
+        /// The touch strategy flies by the hull's phone profile (TouchControlProfileLibrarySO): which
+        /// gestures are abilities, tilt, idle controls. Asked every frame because a vessel swap
+        /// (the Toybox changer, an arena pilot swap) changes the hull under the same controller, and a
+        /// changed hull lets go of whatever the last one's touch controls were holding.
+        /// </summary>
+        private void HandTouchStrategyItsHull()
+        {
+            var status = ownerPlayer != null && ownerPlayer.Vessel != null ? ownerPlayer.Vessel.VesselStatus : null;
+            if (!ReferenceEquals(status, touchProfileVessel))
+            {
+                touchProfileVessel = status;
+                touchStrategy.OnVesselChanged();
+            }
+            touchStrategy.Profile = status != null ? TouchControlProfileLibrarySO.For(status.VesselType) : null;
+            touchStrategy.SingleStickHull = status != null && status.IsSingleStickControls;
+        }
+
+        private IVesselStatus touchProfileVessel;
 
         private void UpdateDualMouseEngagement()
         {
@@ -218,7 +236,11 @@ namespace CosmicShore.Gameplay
 
         private void InitializeStrategies()
         {
-            multiMouseService = new MultiMouseService();
+            // The Windows raw-input half of dual-mouse is opt-in, and never for an AI or remote
+            // player: it takes mouse movement away from Unity process-wide (MultiMouseService).
+            bool localPilot = ownerPlayer == null || ownerPlayer.IsLocalPilot;
+            multiMouseService = new MultiMouseService(
+                localPilot && MouseFlightConfigSO.Instance.DualMouseRawInput);
 
             touchStrategy = new TouchInputStrategy();
             gamepadStrategy = new GamepadInputStrategy();

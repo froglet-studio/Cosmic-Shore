@@ -403,7 +403,7 @@ namespace CosmicShore.Gameplay
         bool IsEdible(Prism prism)
         {
             if (!prism || prism.destroyed || prism == _hitPrism) return false;
-            if (IsShieldedMass(prism)) return false;
+            if (IsInedibleShield(prism)) return false;
             if (prism is HealthPrism hp)
                 return hp.LifeForm && (cell != null ? IsPreyForMe(prism.transform.position, hp.LifeForm.domain)
                                                     : hp.LifeForm.domain != domain);

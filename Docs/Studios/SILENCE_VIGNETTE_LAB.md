@@ -1,0 +1,284 @@
+# Silence Vignette Lab
+
+The lab where the team picks how a **silenced pilot's screen** looks (`Docs/ElementalAbilitySystem/SILENCE.md` §5).
+
+- **Live page:** https://claude.ai/artifact/Hequw1VLdwXi2ztrDeuXQC (private to Garrett until shared from its Share menu)
+- **Source:** `Docs/Studios/SilenceVignetteLab.html`. The repo copy is the source; republish from it to the same URL.
+- **Game side:** `Assets/_Scripts/Controller/FX/SilencePerimeter.cs` (the shards' layout and geometry), `SilencePerimeterPass.cs` and `Assets/_Graphics/Materials/Graphs/SilencePerimeter.shader` (the drawing), `SilenceVignetteMask.cs` (the 2D edge's shape), `SilenceScreenFeedback.cs` (both), and `Assets/Resources/VesselSilenceConfig.asset` (every number, under *Perimeter* and *Vignette*).
+- **Parity:** `bash Tools/Build/silence_vignette_parity/run.sh` checks that the lab's mask and perimeter twins match the C# and that the lab's `SHIPPED` block matches the asset. `python3 Tools/Shaders/verify_silence_perimeter.py` compiles the shader.
+
+## The question, as columns
+
+The question: what should the danger-coloured edge look like so that a silenced pilot **sees it for sure**, while it still fits the game's art direction? The scorecard has one column per part of that question:
+
+| Column | What it measures | Want |
+|---|---|---|
+| Edge · space | How much the edge changes the picture on open space, the Dog Fight case. This is the OKLab colour difference ×100, averaged over the outer band of a 480×270 frame. | high: it is seen |
+| Edge · bright | The same over a bright, prism-filled scene | high: it is still seen |
+| Edge · danger | The same over a field of danger prisms, which are the same red | high: it does not vanish into them |
+| Centre | The same over the middle 30% of the frame | low: play stays clear |
+| Red · space | The red added over the edge band on open space | high enough to say "danger" and not just "dark" |
+
+Each column is averaged over seeds 1 to 3 at full strength, measured at the breath's peak. Breathing is not scored and is judged by eye.
+
+## Round 4 (2026-10-21): a thin pull + edge that deepens with the seconds
+
+**What changed.** Garrett: "the pull plus the 2d edge is very strong effect. lets try that on relatively thin edge around screen with high resolution. the more seconds of silence the deeper it goes in and bleeds back out as the seconds drain."
+- **Depth.**
+  - Depth = seconds of silence left / `depthFullSeconds` (8). It follows within `depthFollowSeconds` (0.25 s).
+  - The perimeter's shard length and sink move from their thin values (`perimeterSize` 0.1, `perimeterReach` 0.03) to `perimeterDeepSize` 0.38 and `perimeterDeepReach` 0.22.
+  - The edge's inner boundary moves from `vignetteInner` 0.93 to `vignetteDeepInner` 0.6.
+  - New stage button: *Silence 8 s*, to go fully deep and watch it bleed out.
+- **Thin and high resolution.**
+  - 160 small shards.
+  - The edge is a frame hugging the screen's border: faceted with 4 sides, a 0.07 feather and a 0.015 rim line.
+  - A first cut kept the round-1 soft ellipse at 0.9. Even "thin" then covered half the screen with flat red, because the ellipse loads the corners and sides.
+- **The game draws the edge where the lab does.** In the lab the edge was always drawn into the frame before the shards copy it, so the pull drags it and the facets refract it. That is the look Garrett called "very strong". The game drew it as a UI overlay on top. It now draws it in the perimeter's own pass (pass 2), before the copy, working the mask out per pixel, so it is sharp at any thickness and moves continuously. The overlay is used only when the perimeter is off.
+- **Looks.** Round 3 is kept ("the pull, no edge", and "pull + 2D edge" with its soft oval). New: Hairline (very thin, very deep) and Soft oval edge.
+
+**Scorecard.** Scored at FULL depth: the most a look ever covers. Produced by `runBatch` and re-run by `verify_lab.cjs` on this commit.
+
+| Look | Edge · space | Edge · bright | Edge · danger | Centre | Red · space |
+|---|---|---|---|---|---|
+| Off (control) | 0 | 0 | 0 | 0 | 0 |
+| Round 0: URP red multiply | 2.78 | 5.01 | 2.92 | 0.62 | 0.045 |
+| Round 1: 2D edge (overtuned) | 45.1 | 30.6 | 44.34 | 1.59 | 0.797 |
+| **Shipped: thin pull + edge, deepens with silence** | **42.18** | 29.78 | 41.9 | **1.7** | 0.724 |
+| Round 3: the pull, no edge | 10.15 | 7.92 | 11.81 | 0.07 | 0.127 |
+| Round 3: pull + 2D edge | 28.32 | 20.44 | 28.61 | 0.07 | 0.449 |
+| Hairline (very thin, very deep) | 42.84 | 30.27 | 42.51 | 4.38 | 0.738 |
+| Soft oval edge | 42.46 | 30 | 42.14 | 1.92 | 0.729 |
+
+- At full depth the shipped look reads as strongly as round 1's overtuned frame.
+- With little silence left, it is a thin band (screenshots). The scorecard does not measure that state.
+- Round 1's row is unchanged (45.1), so the archived look is reproduced exactly.
+
+**Checked.**
+- `verify_lab.cjs` passes. Screenshots were looked at at depth 0.3 and 0.95 (space) and 0.8 (bright).
+- `bash Tools/Build/silence_vignette_parity/run.sh` passes:
+  - 38 cases and 21694 values; the worst difference is 1e-5;
+  - all 51 asset fields equal;
+  - eight planted controls are each caught, including "depth ignored".
+- `python3 Tools/Shaders/verify_silence_perimeter.py` passes:
+  - all three passes compile;
+  - the edge pass's mask, lifted out of the HLSL and run as C++, matches the lab's twin on 3750 points (worst 4e-6);
+  - a doubled feather is caught.
+- `SilencePerimeterTests` adds `MoreSilenceGoesDeeper` and pins the edge pass's index. It was not run here (no Unity). Its claims were checked against the twin:
+  - at full depth, every shard is as deep as or deeper than at the thin band;
+  - the band sinks 7.4 times further and grows 3.8 times longer;
+  - the thin band's centres sit at 0.93 to 1.04 of the half-screen.
+- The elemental harness passes, the unity reference compile is OK, and the Amoebius player builds.
+
+**Decision needed (designer).** The thin band's thickness, the full depth, and how many seconds reach it.
+
+## Round 3 (2026-10-21): the pull, superseded by round 4
+
+**What changed.** Garrett's feedback on round 2: "more overlap, show only half the faceted object that is poking into the screen. there should be so much overlap, and distortions, and it should be high enough resolution that it isn't recognizable as any one effect. it doesn't read as crystals coming in from the edge it read reality trying to pull you somewhere you don't want to be."
+- **Half-buried:** each shard's centre sits on the screen's edge, so half of it is beyond. `perimeterReach` is now how far a centre may sink in. The shards grow in rather than sliding in from outside.
+- **Overlap:** 110 shards, up to 160, at depths from 0.6 to 1.6 times the old one, so they overlap in layers. The game now draws all of them in one dynamic mesh: one draw call.
+- **Resolution:** a crystal has 6 to 10 sides cut by three rings (36 to 60 facets, up from 20 to 28).
+- **The pull:**
+  - a point wanders slowly around the screen (`perimeterPullDrift`);
+  - near the edges, the frame is dragged toward it in slow waves (`perimeterPull`), and so is every facet's picture;
+  - each facet's picture is smeared toward the pull (`perimeterStreak`);
+  - the shards on the pull's side grow longer and sink deeper: a maw that moves.
+  - The middle of the screen stays still. A first cut let the pull shift the middle too, and the centre column jumped from 0.07 to 3.5.
+- **Not recognisable as crystals:**
+  - each shard fades toward its inward tip (`perimeterTipFade`);
+  - facets vary in how solid they are;
+  - edge lines are nearly off (0.05), and the fill, rim and tint are low.
+  - On their own, more and larger shards still read as an ice-cave mouth of red crystals. The tip fade is what dissolved them.
+- New looks: Undertow (strong pull), Shattered mirror, Broken trail, Negative space, Tear. Round 2's look is kept as "Round 2: crystals from the edge", approximated on round 3's layout.
+
+**Scorecard.** Produced by the lab's `runBatch`, re-run by `verify_lab.cjs` on this commit. A perimeter row goes through the WebGL passes at t = 0, at full silence, with no hit.
+
+| Look | Edge · space | Edge · bright | Edge · danger | Centre | Red · space |
+|---|---|---|---|---|---|
+| Off (control) | 0 | 0 | 0 | 0 | 0 |
+| Round 0: URP red multiply | 2.78 | 5.01 | 2.92 | 0.62 | 0.045 |
+| Round 1: 2D edge (overtuned) | 45.1 | 30.6 | 44.34 | 1.59 | 0.797 |
+| **Shipped: the pull (round 3)** | **10.15** | 7.92 | 11.81 | **0.07** | 0.127 |
+| Undertow (strong pull) | 10.25 | 7.88 | 11.83 | 0.1 | 0.128 |
+| Shattered mirror | 13.83 | 11.43 | 15.47 | 0.08 | 0.181 |
+| Broken trail (prism slabs) | 10.48 | 8.33 | 12.06 | 1.1 | 0.134 |
+| Negative space (inverted) | 48.61 | 32.92 | 48.46 | 0.12 | 0.531 |
+| Tear (warp + glitch) | 10.26 | 8.28 | 11.99 | 0.1 | 0.127 |
+| Round 2: crystals from the edge | 8.68 | 7.16 | 10.13 | 0.13 | 0.117 |
+| Pull + 2D edge | 28.32 | 20.44 | 28.61 | 0.07 | 0.449 |
+
+- The scorecard is still a still frame. The pull, drift, streak and maw are motion, so judge them by eye (L-STU-133).
+
+**Checked.**
+- `verify_lab.cjs` passes. Screenshots over the three scenes were looked at, twice, and the look was changed between them.
+- `bash Tools/Build/silence_vignette_parity/run.sh` passes:
+  - 37 cases and 19452 values, now including the pull point; the worst difference is 1e-5;
+  - all 46 asset fields equal;
+  - seven planted controls are each caught, including "the maw turned off".
+- `python3 Tools/Shaders/verify_silence_perimeter.py` passes.
+- `SilencePerimeterTests` was rewritten but not run here (no Unity). Its claims were checked against the twin:
+  - with no silence, nothing is drawn;
+  - at full silence, every centre sits at 0.79 to 1.00 of the half-screen;
+  - every hit sinks every shard inward;
+  - the pull's side is 2.25 times longer than the far side.
+- The unity reference compile is OK, and the Amoebius player builds.
+
+**Found.**
+- Amoebius's shim has no `Mesh.Clear(bool)`. The pass uses `Clear()`, which is the same call.
+
+**Decision needed (designer).** How strong the pull is, how fast it drifts, how thick the band is, and crystal or slab.
+
+## Round 2 (2026-10-21): the 3D perimeter, superseded by round 3
+
+**What changed.**
+- Garrett's direction for this round:
+  - "perhaps we bring in 3d warping structures with render textures on facets. that convey that reality is breaking down."
+  - "instead of a 2d effect we just have a client side perimeter of 3d craziness on the perimeter where vignettes typically use 2d effects."
+- The perimeter is now the look, and the 2D edge is off (`vignetteIntensity` 0, `vignetteDarken` 0).
+- Faceted shards ring the screen's edge. Each facet shows the frame behind it, and that frame is:
+  - refracted by the facet's normal;
+  - turned and scaled by the shard's own twist;
+  - colour-split.
+- Each facet also has a lit danger fill, a danger fresnel rim and danger lines along its facet edges.
+- The frame swirls and ripples near the edges.
+- Hits jolt the shards inward, tear their picture into sliding bands and send a ring through the warp.
+- **The lab draws it the way the game does**, in WebGL2:
+  - it copies the frame, warps it, then draws each shard back to front from that copy;
+  - shard layout and geometry are the `<perimeter-twin>` block, a line-for-line twin of `SilencePerimeter.cs`;
+  - the shaders are line-for-line twins of `SilencePerimeter.shader`'s two passes.
+- **The game has it:**
+  - `SilencePerimeterPass` draws on the local pilot's camera only, injected from script like the black hole lens;
+  - `SilenceScreenFeedback` builds the shard meshes and hands over each frame;
+  - every number is on `VesselSilenceConfig.asset` under *Perimeter*.
+- New looks:
+  - Crystal crown;
+  - Broken trail (prism slabs, the prisms' own boxes);
+  - Negative space (the reality inside a facet inverted);
+  - Tear (warp and glitch);
+  - Swarm (many small shards);
+  - Perimeter + 2D edge.
+- Round 1's 2D looks moved to an **Archive** section, still one click away.
+
+**Scorecard.** Produced by the lab's `runBatch`, re-run by `verify_lab.cjs` on this commit.
+- Columns and seeds are as in round 1.
+- A perimeter row goes through the WebGL passes at t = 0, at full silence, with no hit.
+
+| Look | Edge · space | Edge · bright | Edge · danger | Centre | Red · space |
+|---|---|---|---|---|---|
+| Off (control) | 0 | 0 | 0 | 0 | 0 |
+| Round 0: URP red multiply | 2.78 | 5.01 | 2.92 | 0.62 | 0.045 |
+| Round 1: 2D edge (overtuned) | 45.1 | 30.6 | 44.34 | 1.59 | 0.797 |
+| **Shipped: 3D perimeter** | **10.54** | 8.45 | 11.84 | **0** | 0.15 |
+| Crystal crown | 8.66 | 6.8 | 9.76 | 0 | 0.121 |
+| Broken trail (prism slabs) | 14.42 | 11.46 | 15.51 | 0 | 0.208 |
+| Negative space (inverted) | 16.71 | 12.2 | 17.74 | 0 | 0.164 |
+| Tear (warp + glitch) | 8.79 | 7.9 | 10.84 | 0.1 | 0.117 |
+| Swarm (many small) | 6.95 | 5.57 | 8.55 | 0 | 0.094 |
+| Perimeter + 2D edge | 29.8 | 21.12 | 29.88 | 0 | 0.468 |
+
+**Reading the scorecard.**
+- **The edge column under-reads a perimeter, and that is the yardstick, not the look.** It averages the colour change over the whole outer band. A full 2D frame changes every pixel of that band, while shards cover part of it, and the shards' motion and the hits' jolt are not scored at all. A perimeter look is judged by eye first.
+- The page's yardstick check now asks only that Shipped beat twice Round 0. It does: 10.5 against 2.8.
+- **The centre stays clear:** every perimeter look reads 0 to 0.1 in the middle, against 1.6 for the round-1 frame.
+- The first cut of the perimeter read 5.0. The facets then showed mostly black space, and the shards looked like red wireframes. The danger **fill** (lit, brighter on facets facing the light) and slightly more and larger shards brought it to 10.5, and the shards now read as solid volumes.
+
+**Checked.**
+- `verify_lab.cjs` passes (WebGL through SwiftShader). Screenshots were looked at over open space, the bright scene and the danger scene.
+- The published version was loaded headless at three widths with no page errors, and the 3D layer was active.
+- `bash Tools/Build/silence_vignette_parity/run.sh` passes:
+  - 33 cases and 10366 values; the worst |js − cs| is 3e-6;
+  - all 42 asset fields equal;
+  - six planted controls are each caught, including a shard's presence stagger changed and a facet wound inward.
+- `python3 Tools/Shaders/verify_silence_perimeter.py` passes: both passes compile in glslang's HLSL mode against a mock of the URP calls, and the negative control fails as it should.
+- `SilencePerimeterTests` was written but not run here (no Unity). Its layout claims were checked against the twin:
+  - with no silence, every shard waits beyond the edge (nearest 1.12 of the half-screen);
+  - at full silence, every shard sits between 0.74 and 0.87 of the half-screen;
+  - every hit moves every shard inward.
+- The unity reference compile is OK, and the Amoebius player builds.
+
+**Found.**
+- HLSL reserves `line`, the name the first port gave a variable. Both twins now say `edgeLine`.
+- Amoebius's Unity shim has no `Material.FindPass`. The pass draws fixed pass indices instead, and a test pins the shader's pass order.
+
+**Decision needed (designer).**
+1. Which perimeter look ships: crystal or slab, how many shards, how far in, and whether to use invert, warp and glitch.
+2. Whether any of the 2D edge comes back under the perimeter.
+
+To decide, fly the stage with *Rival firing* over all three scenes, pick in **Decisions**, and copy the lines from **To Unity**.
+
+**Not modelled (round 2).**
+- The game's camera field of view (the lab uses 60 degrees).
+- HDR and bloom on the danger lines.
+- Anything nearer the camera than the shards (the game draws them over everything).
+- The cost of the frame copy on a phone. It is the same copy the black hole lens makes, paid only while silenced.
+
+## Round 1 (2026-10-21), superseded by round 2
+
+**What changed.**
+- The first cut drove URP's Vignette in the danger colour at 0.26. Garrett did not see it in two Dog Fight runs. URP's Vignette *multiplies* the frame by its colour, and the arena's sky is (0, 0, 0.1), so red times near-black is near-black (L-STU-125).
+- The game now draws the edge as an **alpha-blended overlay**: a ScreenSpaceOverlay canvas sorted under the HUD, with a baked mask texture tinted with the palette's danger signal colour. It **breathes** while the silence holds and **flares** on every hit that extends it.
+- URP's Vignette stays only as an optional black darkening under the edge.
+- The shipped values are **overtuned on purpose** until this lab picks a look:
+  - strength 0.75, with the edge starting at 0.55 of the way to the top;
+  - rim 0.35, breathing 25% at 0.8 Hz;
+  - hit flare 0.35, darkening 0.3.
+
+**Scorecard.** Produced by the lab's `runBatch` (button *Score the looks*) and re-run by `verify_lab.cjs` on this commit:
+
+| Look | Edge · space | Edge · bright | Edge · danger | Centre | Red · space |
+|---|---|---|---|---|---|
+| Off (control) | 0 | 0 | 0 | 0 | 0 |
+| Round 0: URP red multiply (the invisible cut) | 2.78 | 5.01 | 2.92 | 0.62 | 0.045 |
+| **Shipped (overtuned)** | **45.1** | 30.6 | 44.34 | 1.59 | 0.797 |
+| Ember (subtle) | 26.45 | 17.44 | 26.01 | 0.49 | 0.432 |
+| Faceted window | 40.98 | 26.83 | 40.32 | 1.08 | 0.716 |
+| Prism rim | 13.35 | 9.75 | 13.4 | 1.08 | 0.216 |
+| Hard frame | 55.18 | 38.06 | 54.27 | 5.34 | 1.005 |
+| Breathing | 45.1 | 30.6 | 44.34 | 1.59 | 0.797 |
+
+- Breathing scores the same as Shipped because it differs only in its motion.
+- The OKLab just-noticeable difference is about 2 in these units. Round 0's 2.8 on open space matches what Garrett reported: nobody saw it.
+- Every overlay look reads at 5 to 20 times that, and all but Hard frame keep the centre under 1.6.
+
+**Checked.**
+- `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/SilenceVignetteLab.html` passes:
+  - no console errors;
+  - no page scroll at 1600×900, and no sideways scroll on an iPhone 13;
+  - every `__lab` hook works with no arguments;
+  - every `SPEC` key is in `SHIPPED` and in range;
+  - the manual clock advances;
+  - `runBatch` gives the same result within one page load and across two loads.
+- The two screenshots were looked at. On desktop the shipped edge is plainly red over open space.
+- The page runs its own yardstick check: Off must read 0, Round 0 must read under 4, and Shipped must read more than 10 times Round 0. It passes.
+- `bash Tools/Build/silence_vignette_parity/run.sh` passes:
+  - 21 cases and 5214 values; the worst |js − cs| is 4e-7;
+  - all 24 `SHIPPED` fields equal the asset;
+  - four planted controls are each caught: feather doubled, facet phase flipped, breathing inverted, and an asset value moved.
+- `SilenceVignetteMaskTests` (edit mode) pins the shape's contract:
+  - the centre is clear and the corners are full;
+  - what roundness 0 and 1 mean;
+  - a flat-topped polygon, falling back to the soft shape below three facets;
+  - the rim line drawn with no fill;
+  - the breathing's depth;
+  - opacity as weight × strength plus the flare.
+- The decision log is wired: `ArtifactData list decisions` answered and returned an empty collection.
+
+**Found.**
+- The URP Vignette path could never have worked for this colour on this sky, whatever the intensity.
+- The Amoebius run that "proved" it only proved that the driver reached weight 1.0 (L-STU-125).
+- The Amoebius renderer draws neither the URP vignette nor this overlay's look, so the look is still an editor check.
+
+**Decision needed (designer).** Which look ships, and at what strength:
+1. Fly the stage with *Rival firing*, switch looks, and change scenes.
+2. Tune any slider; a changed value is underlined against the shipped one.
+3. Log the pick in **Decisions**.
+4. **To Unity** gives the asset lines.
+
+The next round reads the log first.
+
+## What the lab does NOT model
+
+- The scenes are stand-ins: flat 2D trails and ships in the shipped palette, with no bloom, tonemapping, motion or HUD. Bloom in the game will lift the HDR danger colour, and the lab does not show that.
+- The darkening uses URP 17's `ApplyVignette` formula on the stand-in frame, not the real profile.
+- The silence timeline follows the game's rules (a hit's worth, the onset shake against the per-hit shake, the flare and the fades). The rival's hit rate is a lab knob (`labHitsPerSecond`), not a measured AI.
+- The camera shake is not drawn. Its numbers are listed for reference only.
+- Frame cost is not measured. The overlay is one full-screen alpha quad, about 256×144 texels, re-baked only when the aspect ratio or the shape changes.

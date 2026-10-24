@@ -61,6 +61,7 @@ from author_toybox_layout import Scene  # noqa: E402
 from author_arena_launch_panel_layout import solve_rect, overlaps, vec2  # noqa: E402
 from author_arena_launch_panel_layout import author as arena_select_layout  # noqa: E402
 from author_arena_launch_panel_layout import CONFIRM_SPRITE_SIZE, GAP_UNDER_ICON as SELECT_GAP_UNDER_ICON  # noqa: E402
+from author_arena_launch_panel_layout import stood_down as arena_rebuilt  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PREFAB = os.path.join(ROOT, "Assets", "_Prefabs", "ArcadeGameConfigureModal.prefab")
@@ -715,12 +716,38 @@ def negative_control(tg):
     fail("negative control: a 600px row passed the layout gate")
 
 
+# The style-B rebuild (Tools/Build/author_menu_configure.py) replaced BOTH windows' ConfigurationContent
+# with its own views - ConfigureView in the Arcade modal prefab, ConfigureArenaView in Menu_Main's Arena
+# window - and authors the AI difficulty row into them itself (step 03, Pilots). The children this
+# script clones and lays out (ConfigurationDetailView, the carousel) are gone there, so for such a
+# window this spent one-shot STANDS DOWN rather than aborting (CLAUDE.md: "a spent one-shot must
+# STAND DOWN, not abort"), and author_menu_configure.py --check is the gate for the row.
+CONFIGURE_VIEW_PREFAB = os.path.join(ROOT, "Assets", "_Prefabs", "UI Elements", "Main Menu Screens", "Configure",
+                                     "ConfigureView.prefab.meta")
+
+
+def stood_down(tg):
+    with open(tg.path, encoding="utf-8") as fh:
+        text = fh.read()
+    if tg.is_arena:
+        return arena_rebuilt(text)
+    if not os.path.exists(CONFIGURE_VIEW_PREFAB):
+        return False
+    with open(CONFIGURE_VIEW_PREFAB, encoding="utf-8") as fh:
+        guid = re.search(r"^guid: (\w+)", fh.read(), re.M).group(1)
+    return f"guid: {guid}" in text and "m_Name: ConfigurationDetailView" not in text
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
 
     for tg in TARGETS:
+        if stood_down(tg):
+            print(f"[{tg.name}] OK  stood down: the window is the style-B configure view now "
+                  "(author_menu_configure.py authors its AI difficulty row)")
+            continue
         sc, original, authored, row_rect, controls, moved_top = build(tg)
         print(f"[{tg.name}]")
         print(f"row      L={row_rect[0]:.1f} B={row_rect[1]:.1f} W={row_rect[2]:.1f} H={row_rect[3]:.1f} (canvas px)")

@@ -65,6 +65,10 @@ static class RunnerDriver
                     Condition = new DriftHeldCondition { Seconds = 0.5f } },
         });
         var lib = new DrillLibrarySO();
+        // The shipped library has the coaching switched off (tutorialsEnabled); the runner is tested with it on.
+        Set(lib, "tutorialsEnabled", true);
+        // ...and every Lesson made skippable (everyLessonSkippable); the forced-Lesson path is tested here.
+        Set(lib, "everyLessonSkippable", false);
         Set(lib, "twoThumbLesson", two);
         Set(lib, "abilityTipTemplate", "{ability:E} on {glyph:E}");
         var tips = new TipListSO();
@@ -386,6 +390,26 @@ static class RunnerDriver
 
         // ── 3b. Ghost demo (TRAINING_PLAN §10.7): the autopilot shows a step, then hands over. ──
         GhostDemo(r, v, ctx, lib, map);
+
+        // ── 3c. A Lesson composed EMPTY still ends - the first-login guide waits on that. ──
+        // This library has no one-thumb template, so every step is dropped at composition.
+        DrillProgressStore.ResetLocal();
+        DrillResume.Clear();
+        var thumb = new Vessel();
+        thumb.S.IsSingleStickControls = true;
+        thumb.S.VesselType = VesselClassType.Sparrow;
+        var oneThumb = ctx;
+        oneThumb.Vessel = thumb;
+        bool? anyEnded = null;
+        Action<bool> anyHandler = c => anyEnded = c;
+        DrillRunner.AnyLessonEnded += anyHandler;
+        r.Begin(oneThumb);
+        DrillRunner.AnyLessonEnded -= anyHandler;
+        check(anyEnded == true && r.Phase == DrillPhase.Mentor && !r.HoldsExit,
+              $"runner: an empty Lesson completes and raises AnyLessonEnded ({anyEnded}, {r.Phase})");
+        r.Stop();
+        DrillResume.Clear();
+        DrillProgressStore.ResetLocal();
 
         // ── 4. A vessel destroyed mid-run stops the runner. ──
         r.Begin(ctx);

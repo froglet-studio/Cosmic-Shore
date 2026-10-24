@@ -24,6 +24,7 @@ What each hull did before, measured off the prefabs:
 | Dolphin | `ChargeBoostActionSO` on the drift control | the commit drift banks charge, but is released only once the course has LEFT the objective — the discharge was spent in the turn |
 | Squirrel | skim energy (+0.1/contact) | never flies near mass on purpose: ~no boost |
 | Scarab | throttle ceiling (autopilot = full throttle) | already at the ceiling; the Time-5 Snap Dash is a double-tap no autopilot can make |
+| Rhino | `RampBoostActionSO`, graded ramp armed by the full-speed-straight gesture | **never ramped** — nothing raises the gesture under autopilot (added 2026-10-16) |
 
 ## The shape
 
@@ -45,6 +46,14 @@ subclass per MECHANIC, never per mode:
 | `RampBoostAIPolicySO` | `RhinoAIBoostPolicy` | ramp on a straight whose leg pays the wind-up back, brake ON the ramp to a corner speed, let go at the corner (section below) |
 | `BrittleStarSpeedModeAIPolicySO` | `BrittleStarAIBoostPolicy` | the shared straight / runway test raises a Speed Mode WISH (min hold 1.2 s, min rest 0.8 s); `BrittleStarExecutor` presses the mode itself (`R_VesselActions/BRITTLE_STAR.md` §3.1) |
 | `SkimRingAIPolicySO` (a copy) | `StoatAIBoostPolicy` | the Squirrel's asset cloned onto `Stoat.prefab`. The Stoat binds no `SquirrelTubeActionSO`, so `CreateDriver` returns null and it is a quiet no-op; the Stoat's pace comes from its own executors' autopilot (dipole / sling) |
+
+The Rhino's **sword** has an autopilot too, and it is deliberately **not** a boost policy:
+`RhinoSwordAutopilot` (Rhino root) writes the trigger mirrors (`InputStatus.LeftTriggerAnalog /
+RightTriggerAnalog`) on the machine that owns the AI's input, so the shipped sword code poses,
+swipes and energizes exactly as for a human and replicates the same way. Every `thinkSeconds`
+(0.15 s) it strokes at the nearest hostile prism in reach (stroke 0.3 s, rest 0.45 s), or holds the
+energize stance when the meter can pay (cost + 0.05) and super-shielded mass is near, or the meter
+is ≥ 0.75. It never steers and drives only while the autopilot is on. It never combos.
 
 The shared law (base class): **straight** = course within `alignDegrees` (12°) of the objective
 and stick within `stickBand` (0.35, the Manta drive's band); **runway** = distance / current speed
@@ -142,9 +151,9 @@ approach point, then the next ring after the mouth). A mode that does not say ge
 **The first cut's defect** (2026-10-14 to 10-17): it let go 0.5 s from every objective, after which the released ramp
 coasted down from 840 u/s at 120 u/s² and the Rhino overshot mouths (`REGATTA_AI_ROADMAP.md`: 67.9 s at I1 in the
 deleted page's model). It also never re-armed a ramp the grading let fall off. The re-arm (`minRearmSeconds`) and the
-explicit end are taken from the other cut of this driver on `cece/relaxed-hopper-r62hbd` (Garrett's Rhino branch, not
-merged), which this file will conflict with when that branch lands: keep this one's states and that one's executor
-changes (`TrackedSpeed`, live Time).
+explicit end are taken from the other cut of this driver on `cece/relaxed-hopper-r62hbd` (Garrett's Rhino branch). That
+branch's merge of bleeding-edge (`5b09c6896`, 2026-10-18) kept this file's driver whole, repointed `Rhino.prefab` at this
+asset's guid, and kept that branch's executor changes (`VesselTransformer.TrackedSpeed`, live Time).
 
 **Offline check** (`Tools/Build/rhino_drive_sim.py`, a point-mass model of the ramp executor and the gate steering on
 the Regatta courses; a model without break-off or rotation-follow lag, not the game). It defaults to Regatta's

@@ -130,6 +130,12 @@ of the world: it exists so a BINARY trigger (mouse, keyboard — 0 or 1) ramps i
 ships at **12/s**, up from 6: at 6 a full pull took ~167 ms to arrive, which on a pad reads as the
 scope moving on its own — the same complaint from the other end.
 
+**Touch opens at full zoom (2026-10-21, Garrett: "the serpent's scope should open to max zoom").** A
+phone has no trigger depth — `TouchInputStrategy` never writes `LeftTriggerAnalog` — so on touch the
+scope opened and sat unzoomed. When `ActiveInputDevice == Touch` the target is a full pull (1);
+`zoomResponse` still ramps it in, so it reads as raised, not snapped. Pad, mouse and keyboard are
+unchanged (`SniperScopeActionExecutor.ResolveZoomTarget`).
+
 Two terms were removed to get here, and both were defensible when written:
 
 - **The Steady-Eye stick bleed.** Below Space 5 the magnification eased back out as the pilot
@@ -1664,3 +1670,13 @@ Both graphics now declare `[RequireComponent(typeof(CanvasRenderer))]`, and
 yet confirmed in the editor for the scope:** scope in on the Serpent; the reticle ring, its posts and
 the recharge arc should now draw. If they do, this was the cause. Check the console for a
 `MissingComponentException` on a `Ring`/`Cross` object if they still do not.
+
+## Second caller: the Orca's sniper turret (2026-10-21)
+
+The Orca's sniper seat keeps this eyepiece open for as long as its gunner holds the seat (Garrett: "always have the pip
+scope open like the serpent does when holding the left trigger"). Its sight is a turret, not the hull's nose, and its
+flight view is the turret's own camera, so `SniperScopeOverlay` gained a second `Tick(eye, rotation, flightCamera, ...)`.
+It uses the pip's explicit-eye path (`ScopePipView.Tick(eye, rotation, fov)`, which the Thresher's launch sight already
+used) and projects the flight reticle through the camera it is given. The Serpent's `Tick(vessel, ...)` runs the same
+instrument code in the same order, through `CameraManager.ViewCamera`, so its behaviour is unchanged. Caller:
+`OrcaCrewView.TickScope` (`Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md`, round 7).

@@ -63,6 +63,7 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 | What each unverified Unity change needs in the editor | `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
 | A multiplayer test's logs, every player, one timeline (sent by the after-test "Send to Claude") | `python3 Tools/Build/net_logs.py collect` / `show 1`; `Docs/DIAGNOSTICS.md` § "Multiplayer test logs" |
 | Party architecture | `Docs/PartySystem/ARCHITECTURE.md`, `Docs/MultiplayerArchitecture/` |
+| Who sits where: every person's seat and hull (`Player.NetStation`), the one swap ring (seats, then the domain's hulls), riders on another person's crew vessel, the crew relay RPCs | `Docs/CREW_STATIONS.md`, `Assets/_Scripts/Controller/Multiplayer/CrewStations.cs` |
 | Five-player scenario harness (runs the real game code in Amoebius, no Unity; down until it moves to the UGS stand-ins, §4) | `Tools/Build/prisma_party_scenarios/` (README) |
 | The game's edit-mode tests, run in Amoebius | `Tools/Build/prisma_edit_mode_tests/run.sh` |
 | Amoebius online play: START ONLINE, + PLAYER 2, SETTINGS > ONLINE (UGS environment, UGS CHECK) | `Port/docs/LAUNCHER.md` § START ONLINE |

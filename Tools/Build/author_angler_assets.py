@@ -17,8 +17,11 @@ WHAT IT MAKES
         - the flight model: the Stoat's two-stick transformer block on the SAME fileID, its script swapped to
           AnglerVesselTransformer (the lure brake), cruise 40 u/s and boost x2.75 (110 u/s) - the lab's flight numbers;
         - the executors: every Stoat executor removed; AnglerCommandExecutor added (config, turn-end channel);
-        - the bindings: A (Button1) Lure, B (Button2) Dash, X (Button3) Squad, Y (Button4Action) Recall. The Sling painter reads the two
-          TRIGGERS as analog depth, so neither trigger is bound to an action;
+        - the bindings: A (Button1) Lure, B (Button2) Dash (X and Y are free since 2026-10-21: no squad pick, no recall - the
+          school is two groups the throw alternates, ANGLER.md §1m). The Sling painter reads the two
+          TRIGGERS as analog depth, so neither trigger is bound in the SHARED map; on a PHONE (no trigger depth; the owner,
+          2026-10-21: "one thumb controls like the other vessels") the TOUCH overrides bind RightStickAction to AnglerPaint and
+          LeftStickAction to AnglerErase, held cards read as a full pull (ANGLER.md "On a phone");
         - the AI: no blind ability cycle; the donor's boost policy kept (SkimRingAIPolicy, inert on a hull with no
           Squirrel tube bound - exactly as on the Stoat); no Angler autopilot yet (ANGLER.md follow-ups);
         - the HUD: AnglerHUDVariant (a copy of StoatHUDVariant: same internal fileIDs, the view swapped to
@@ -27,10 +30,14 @@ WHAT IT MAKES
         - the vessel impactor: AnglerImpactorDataContainer, a fork of the Stoat's with the omni crystal's effect swapped
           from the Stoat's Overclock to the Angler's mass tame (AnglerTameByCrystalEffect). Applied to the committed
           prefab too, as an idempotent patch (patch_prefab).
-    KEPT FROM THE DONOR ON PURPOSE (a stand-in body until the Angler has its own, ANGLER.md §5): the Stoat's procedural
-    hull (StoatHullBuilder) and its lope (StoatAnimation), the two jets, the tails, the hit box, the skimmer container
-    and the shared prism / haptics effects the vessel container keeps.
-    Assets: AnglerConfig + the four control assets (VesselActions/Angler/), the camera, SO_Class_Angler, every new
+    THE ANGLER'S OWN HULL (2026-10-18, ANGLER.md §9; patch_prefab, so the committed prefab takes it too): AnglerHull holds
+    the model Angler.fbx (Tools/Build/vessel_model/specs/angler.py) as a nested PrefabInstance in place of the Stoat's
+    procedural StoatHullBuilder + MeshFilter / MeshRenderer, the root's VesselAnimation is AnglerAnimation (same fileID)
+    in place of the Stoat's lope, and VesselCustomization repaints the model's Domain slot by material identity.
+    KEPT FROM THE DONOR ON PURPOSE: the two jets (now at the model's nacelle mouths), the tails, the hit box (StoatBody,
+    1.2 x 1.4 x 7 - narrower than the model's bow, an open decision), the skimmer container and the shared prism /
+    haptics effects the vessel container keeps.
+    Assets: AnglerConfig + the four control assets (VesselActions/Angler/: two buttons, two touch triggers), the camera, SO_Class_Angler, every new
     script's .meta, the doc's .meta. Registrations: Vessel Prefab Container (root TRANSFORM), DefaultNetworkPrefabs (root
     GAMEOBJECT), SO_Classlist_All / _Classes, four CrystalHullFusionConfig entries (copied from the Stoat's: same hull).
     NOT here (code, held by tests): the enum member, ToyVesselRoster.Default, EnumIntegrityTests.
@@ -113,11 +120,19 @@ OMNI_FAUNA = ("9a71c56e49ff4ee493c70be766f1b335", "d6d14731fd184959b837ab47e378f
               "28c9a96388684fa0b3b10b9dbea56c70", "72fa98519b534214b89e9c29c44b89da", "62a30981533145a5b66304c04e7c50e0")            # StoatOverclockByCrystalEffect.asset (the Stoat's omni effect)
 
 # (control name, AnglerControl value, InputEvents it is bound to). The InputEvents numbers: Button1=6 (A / Space),
-# Button2=7 (B / T; R until 2026-10-14), Button3=8 (X / Q), Button4Action=14 (Y / F). Mass (Lure) is on A and Time (Dash) on B, the Sparrow's
-# layout (the designer, 2026-10-18); the squad pick and recall took the freed X and Y. The triggers (RightStickAction=1, LeftStickAction=2) stay unbound: the Sling
-# painter reads their analog depth from the replicated InputStatus. LB raises no event in the game, so it is unused.
-CONTROLS = (("AnglerLure", 0, 6), ("AnglerSquad", 1, 8), ("AnglerRecall", 2, 14), ("AnglerDash", 3, 7))
-CONTROL_GUID = {name: guid_for(name + ".asset") for name, _, _ in CONTROLS}
+# Button2=7 (B / T; R until 2026-10-14). Mass (Lure) is on A and Time (Dash) on B, the Sparrow's layout (the designer,
+# 2026-10-18). X (Button3=8) and Y (Button4Action=14) carried the squad pick and the recall until 2026-10-21, when the
+# designer retired both ("it doesn't need to recall when it can send"): RETIRED_CONTROLS must stay gone. The triggers
+# (RightStickAction=1, LeftStickAction=2) stay unbound: the Sling painter reads their analog depth from the replicated
+# InputStatus. LB raises no event in the game, so it is unused.
+CONTROLS = (("AnglerLure", 0, 6), ("AnglerDash", 3, 7))
+RETIRED_CONTROLS = (("AnglerSquad", 8), ("AnglerRecall", 14))
+# The triggers held as BUTTONS on a phone (no depth on glass): bound in the TOUCH overrides only, so a pad's analog
+# depth (the brush width, the 0.5 thresholds) is never raised to a binary 1. The cards press RightStickAction (Space,
+# Paint) and LeftStickAction (Charge, Erase / Lock-on) - Tools/Build/author_touch_profiles.py.
+TOUCH_CONTROLS = (("AnglerPaint", 4, 1), ("AnglerErase", 5, 2))
+CONTROL_GUID = {name: guid_for(name + ".asset") for name, _, _ in CONTROLS + TOUCH_CONTROLS}
+CONTROL_GUID_RETIRED = {name: guid_for(name + ".asset") for name, _ in RETIRED_CONTROLS}
 
 # Every script this vessel added: (path under Assets/_Scripts, guid).
 NEW_SCRIPTS = tuple((rel, guid_for(os.path.basename(rel))) for rel in (
@@ -133,6 +148,7 @@ NEW_SCRIPTS = tuple((rel, guid_for(os.path.basename(rel))) for rel in (
     "Tests/Editor/AnglerCommandMathTests.cs",
     "Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/AnglerTameByCrystalEffectSO.cs",
     "Controller/Environment/FloraAndFauna/PaintedPrey.cs",
+    "Controller/Animation/AnglerAnimation.cs",
 ))
 SCRIPT = {os.path.basename(rel)[:-3]: guid for rel, guid in NEW_SCRIPTS}
 
@@ -149,6 +165,16 @@ SHIP_ACTIONS_GO = "7850473780452578400"
 REGISTRY_ID = "9105512684531825410"
 STOAT_EXECUTORS = tuple(f"513726498001234560{i}" for i in range(1, 7))
 HULL_GO_ID = "5137264980012345610"
+HULL_TRANSFORM_ID = "5137264980012345611"
+HULL_BUILDER_ID = "5137264980012345614"       # the Stoat's procedural hull, last of the stand-in's hull documents
+ANIMATION_ID = "5500781737155866732"          # the root's VesselAnimation
+STOAT_HULL_SCRIPTS = ("1c6aec6ea8ef44f1bef4884679d33d0a",   # StoatHullBuilder (the stand-in body)
+                      "f8734be12714484eb93134990801178a")   # StoatAnimation (the stand-in's lope)
+# The Angler's own hull model (2026-10-18): Angler.fbx nested under AnglerHull (the importer's constant root fileIDs are
+# S.MODEL_ROOT_GO / S.MODEL_ROOT_TRANSFORM; the instance and its stripped Transform are this prefab's own).
+MODEL_GUID = "ae96d7fa1c094f7eb5a9c0c92d679b5e"           # Assets/_Models/Vessel Models/Angler.fbx
+MODEL_INSTANCE_ID = "420031417031765437"
+MODEL_TRANSFORM_ID = "147994826206272918"
 HUD_INSTANCE_ID, HUD_VIEW_ID = "5137264980012345620", "5137264980012345622"
 STOAT_HUD_VARIANT = "1f9b41e6fa58494599674753191b495b"
 TWO_STICK_SCRIPT = "95baa921cf22958449a3143749d5e0e3"          # VesselTransformer (the Stoat's)
@@ -167,6 +193,13 @@ ICON_SWAP = {"ebdd346798d474b5a5ab2364683a8725": I.guid_for("Angler_Command.png"
              "586d56db81bb568c940094830cd59abb": I.guid_for("Angler_Lure.png"),
              "669089ec7ad29ed295eccc53d8615225": I.guid_for("Angler_Tame.png")}
 CARD_ACTIVE, CARD_INACTIVE = I.guid_for(I.CARD_ACTIVE), I.guid_for(I.CARD_INACTIVE)
+# the rest of the card set, rendered from the MODEL by Tools/Build/vessel_model/render_cards.py (2026-10-18), which
+# names a new PNG md5("cosmic-shore-card:" + its repo path); Angler.png / Angler_Inactive.png keep the guids above
+def _model_card(rel):
+    return hashlib.md5(("cosmic-shore-card:" + rel).encode()).hexdigest()
+CARD_SILHOUETTE = _model_card("Assets/_Graphics/CardImages/Angler_silhouette.png")
+CARD_LARGE = _model_card("Assets/_Graphics/CardImages/Angler_large.png")
+CARD_PREVIEW = _model_card("Assets/_Graphics/Design Assests/Hangar/Angler_Hangar_Preview.png")
 # Stoat-only BEHAVIOUR that must not survive the clone (the hull and the lope are kept: see the module doc).
 STOAT_SCRIPTS = ("86da9d91d4364f02ad41dd723756e970",   # StoatHUDController
                  "c120940f60a14c2aa390446ea0791b5a",   # StoatHUDView
@@ -193,12 +226,16 @@ def executor_block() -> str:
             f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_CHANNEL}, type: 2}}\n")
 
 
+def _entries(controls) -> str:
+    return "".join(f"  - InputEvent: {event}\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL_GUID[name]}, type: 2}}\n"
+                   for name, _, event in sorted(controls, key=lambda c: c[2]))
+
+
 def bindings() -> str:
-    """Shared (every device): the four buttons. The triggers are read as analog depth, never bound."""
-    out = "  _inputEventShipActions:\n"
-    for name, _, event in sorted(CONTROLS, key=lambda c: c[2]):
-        out += f"  - InputEvent: {event}\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL_GUID[name]}, type: 2}}\n"
-    return out + "  _resourceEventClassActions: []\n  _touchActionOverrides: []\n  _gamepadActionOverrides: []\n"
+    """Shared (every device): the four buttons. The triggers are read as analog depth, never bound there; on touch they
+    are held cards (TOUCH_CONTROLS) in the touch overrides."""
+    return ("  _inputEventShipActions:\n" + _entries(CONTROLS) + "  _resourceEventClassActions: []\n"
+            "  _touchActionOverrides:\n" + _entries(TOUCH_CONTROLS) + "  _gamepadActionOverrides: []\n")
 
 
 def hud_controller_block() -> str:
@@ -208,6 +245,61 @@ def hud_controller_block() -> str:
             f"  view: {{fileID: {HUD_VIEW_ID}}}\n"
             f"  angler: {{fileID: {EXECUTOR_ID}}}\n"
             "  lureEaseRate: 6\n")
+
+
+def hull_blocks() -> str:
+    """AnglerHull: the Stoat generator's hull block (a Transform holding the two jets and the model), naming the Angler's
+    own model and instance. Derived from author_stoat_assets.hull_blocks so the two cannot drift apart in shape."""
+    text = S.hull_blocks()
+    for old, new in (("  m_Name: StoatHull\n", "  m_Name: AnglerHull\n"), ("      value: Stoat\n", "      value: Angler\n"),
+                     (S.MODEL_GUID, MODEL_GUID), (S.MODEL_INSTANCE_ID, MODEL_INSTANCE_ID), (S.MODEL_TRANSFORM_ID, MODEL_TRANSFORM_ID)):
+        assert old in text, old
+        text = text.replace(old, new)
+    return text
+
+
+def animation_block() -> str:
+    """The root's VesselAnimation as AnglerAnimation (the SAME fileID, so VesselStatus's reference holds), its fields the
+    C# initializers, its hullVisual the AnglerHull."""
+    return (S.mb_header(ANIMATION_ID, ROOT_GO, SCRIPT["AnglerAnimation"]) +
+            "  SkinnedMeshRenderer: {fileID: 0}\n"
+            "  SaveNewPositions: 1\n"
+            "  brakeThreshold: 0.65\n"
+            "  lerpAmount: 2\n"
+            "  smallLerpAmount: 0.7\n"
+            f"  hullVisual: {{fileID: {HULL_TRANSFORM_ID}}}\n"
+            "  swimRate: 0.5\n"
+            "  swimDegrees: 6\n"
+            "  turnTailDegrees: 18\n"
+            "  caudalFollow: 1.6\n"
+            "  finPitchDegrees: 14\n"
+            "  finIdleDegrees: 4\n"
+            "  mastBobDegrees: 3\n"
+            "  jawOpenDegrees: 22\n"
+            "  escaLitScale: 1.6\n"
+            "  lureEaseRate: 4\n")
+
+
+def apply_own_hull(text: str) -> str:
+    """Idempotent: the Angler's own hull model in place of the Stoat's stand-in body, AnglerAnimation in place of the
+    lope, and the domain repainted by material identity."""
+    head, docs = S.split_docs(text)
+    start = S.doc_index(docs, HULL_GO_ID)
+    end = -1
+    for last in (MODEL_TRANSFORM_ID, S.MODEL_TRANSFORM_ID, HULL_BUILDER_ID):   # its own model, the donor's, the stand-in's builder
+        end = S.doc_index(docs, last)
+        if end >= 0:
+            break
+    if start < 0 or end < start:
+        raise RuntimeError("Angler.prefab drifted: the AnglerHull documents not found")
+    _, hull = S.split_docs(hull_blocks())
+    docs[start:end + 1] = hull
+    if S.get_doc(docs, ANIMATION_ID) is None:
+        raise RuntimeError("Angler.prefab drifted: the root's VesselAnimation component not found")
+    S.set_doc(docs, ANIMATION_ID, animation_block())
+    text = S.join_docs(head, docs)
+    return text.replace(f"  _shipGeometries:\n  - {{fileID: {HULL_GO_ID}}}\n  _domainMaterialSlot: 1\n  _domainReplacesMaterials: []\n",
+                        S.paint_block())
 
 
 def build_prefab(donor: str) -> str:
@@ -272,10 +364,13 @@ def build_prefab(donor: str) -> str:
 def patch_prefab(text: str) -> str:
     """Idempotent edits the committed prefab takes too (the clone itself is a spent one-shot):
     - the vessel impactor reads the Angler's own container (an omni crystal runs the Angler's effect, not the Stoat's);
-    - the executor block (its wiring, the combat-hit channel included) and the four button bindings are the generator's."""
+    - the executor block (its wiring, the combat-hit channel included) and the four button bindings are the generator's;
+    - the Angler's own hull model and AnglerAnimation (apply_own_hull)."""
+    text = apply_own_hull(text)
     text = text.replace(f"vesselImpactorDataContainerSO: {{fileID: 11400000, guid: {STOAT_IMPACT_CONTAINER}, type: 2}}",
                         f"vesselImpactorDataContainerSO: {{fileID: 11400000, guid: {IMPACT_CONTAINER_GUID}, type: 2}}")
     text = re.sub(r"  _inputEventShipActions:(?:.*\n)*?(?=  _onButtonPressed:)", lambda _: bindings(), text, count=1)
+    text = re.sub(r"  squadLabelTemplate: .*\n", "", text)   # the retired squad label (2026-10-21)
     head, docs = S.split_docs(text)
     if any(fid == EXECUTOR_ID for fid, _ in docs):
         S.set_doc(docs, EXECUTOR_ID, executor_block())
@@ -351,7 +446,8 @@ def config_asset() -> str:
             "  lockBiteReach: 6\n"
             "  omniFauna:\n" + "".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in OMNI_FAUNA) +
             f"  companionFauna: {{fileID: 11400000, guid: {KEEPER_SPECIES}, type: 2}}\n"
-            "  brushInterval: 0\n")
+            "  brushInterval: 0\n"
+            "  tameHueLean: 0.35\n")
 
 
 def omni_effect_asset() -> str:
@@ -390,16 +486,16 @@ def map_asset() -> str:
                   "kept. Gated on IsUpgradeActive(Mass).") +
             entry(3, "Paint",
                   "RT, held: a beam reaching 3200 u (and close up, at the nose) paints prisms, which light up, and every "
-                  "creature prefers them; the whole picked squad balls up ahead, any still in flight included. Let go: each "
-                  "creature flies at the most recently painted prisms first, at any distance, and eats them. Lit prisms "
-                  "stay lit until eaten or erased.", 1,
+                  "creature prefers them; half your school balls up ahead, any of that half still in flight included. Let "
+                  "go: each creature of that half flies at the most recently painted prisms first, at any distance, and "
+                  "eats them, and the next paint sends the other half. Lit prisms stay lit until eaten or erased.", 1,
                   "Paint Shields",
                   "The brush paints shielded prisms too, and the squad cracks a painted prism's shield off when it arrives, "
                   "so it can be eaten. Gated on IsUpgradeActive(Space).") +
             entry(4, "Dash to the School",
-                  "B (T on a keyboard): the hull dashes 75% of the way to the centre of every creature it leads, measured "
-                  "when pressed, in 0.35 s. Time also speeds your tamed fauna: x1 at Time 0 to x2 at Time 10 "
-                  "(AnglerConfigSO.faunaSpeed).", 7, "", ""))
+                  "B (T on a keyboard): the hull dashes 75% of the way to the centre of one half of your school, measured "
+                  "when pressed, in 0.35 s; the next dash goes to the other half, so you fly between your two groups. "
+                  "Time also speeds your tamed fauna: x1 at Time 0 to x2 at Time 10 (AnglerConfigSO.faunaSpeed).", 7, "", ""))
 
 
 def control_asset(name: str, value: int) -> str:
@@ -437,18 +533,18 @@ def class_asset() -> str:
             f"  Class: {CLASS_ID}\n"
             "  Name: Angler\n"
             "  Description: The fleet's strategist. Hold the lure light out to draw wild fauna, tame the ones you hold,\n"
-            "    and lead them as a school. Paint the prisms you want gone with RT, erase mistakes with LT, and let go to\n"
-            "    throw the squad at what you painted.\n"
+            "    and lead them as a school of two halves. Paint the prisms you want gone with RT, erase mistakes with LT,\n"
+            "    and let go to throw one half at what you painted; the next paint sends the other half.\n"
             "  PrimaryElement: 0\n"
             "  Element: {fileID: 0}\n"
             "  InitialResourceLevels: {Mass: 0, Charge: 0, Space: 0, Time: 0}\n"
             f"  IconActive: {{fileID: 21300000, guid: {CARD_ACTIVE}, type: 3}}\n"
             f"  IconInactive: {{fileID: 21300000, guid: {CARD_INACTIVE}, type: 3}}\n"
-            "  PreviewImage: {fileID: 0}\n"
-            "  SquadImage: {fileID: 0}\n"
+            f"  PreviewImage: {{fileID: 21300000, guid: {CARD_PREVIEW}, type: 3}}\n"
+            f"  SquadImage: {{fileID: 21300000, guid: {CARD_LARGE}, type: 3}}\n"
             "  TrailPreviewImage: {fileID: 0}\n"
-            "  CardSilohoutteActive: {fileID: 0}\n"
-            "  CardSilohoutteInactive: {fileID: 0}\n"
+            f"  CardSilohoutteActive: {{fileID: 21300000, guid: {CARD_ACTIVE}, type: 3}}\n"
+            f"  CardSilohoutteInactive: {{fileID: 21300000, guid: {CARD_SILHOUETTE}, type: 3}}\n"
             "  Abilities: []\n"
             "  Games: []\n"
             "  TrainingGames: []\n"
@@ -498,7 +594,7 @@ def owned_files() -> "dict[str, str]":
         IMPACT_CONTAINER + ".meta": S.asset_meta(IMPACT_CONTAINER_GUID),
         MAP: map_asset(), MAP + ".meta": S.asset_meta(MAP_GUID),
     }
-    for name, value, _ in CONTROLS:
+    for name, value, _ in CONTROLS + TOUCH_CONTROLS:
         path = os.path.join(ACTIONS_DIR, name + ".asset")
         out[path] = control_asset(name, value)
         out[path + ".meta"] = S.asset_meta(CONTROL_GUID[name])
@@ -544,7 +640,7 @@ def register_class_list(text: str) -> str:
 
 
 def register_fusion(text: str) -> str:
-    """Four entries copied from the Stoat's: the Angler wears the Stoat's procedural hull, so the fusion is the same."""
+    """Four entries copied from the Stoat's (the Angler wore the Stoat's hull when they were made; neither has a bake)."""
     if re.search(r"^  - vessel: %d\n" % CLASS_ID, text, re.M):
         return text
     blocks = re.findall(r"(  - vessel: %d\n(?:    .*\n)+)" % STOAT_CLASS_ID, text)
@@ -578,6 +674,11 @@ def check(files: "dict[str, str]") -> "list[str]":
         need(guid not in prefab, f"a Stoat-only reference survived the clone: {guid}")
     for fid in STOAT_EXECUTORS:
         need(fid not in ids, f"Stoat executor {fid} still present")
+    for guid in STOAT_HULL_SCRIPTS:
+        need(guid not in prefab, f"the Stoat's stand-in hull or lope ({guid}) is still on the prefab (the Angler has its own)")
+    need(hull_blocks() in prefab, "AnglerHull is not authored as expected (holding the Angler.fbx model)")
+    need(animation_block() in prefab, "the root's VesselAnimation is not AnglerAnimation driving the AnglerHull")
+    need(S.paint_block() in prefab, "VesselCustomization does not repaint the model's Domain slot (GreenAccentVesselMaterial)")
     ex = d.get(EXECUTOR_ID, "")
     need(f"guid: {SCRIPT['AnglerCommandExecutor']}" in ex, "AnglerCommandExecutor missing")
     need(f"  - {{fileID: {EXECUTOR_ID}}}\n" in d.get(REGISTRY_ID, ""), "AnglerCommandExecutor is not in the ActionExecutorRegistry")
@@ -604,8 +705,17 @@ def check(files: "dict[str, str]") -> "list[str]":
     for name, _, event in CONTROLS:
         need(re.search(r"  - InputEvent: %d\n    ShipActions:\n    - \{fileID: 11400000, guid: %s, type: 2\}" % (event, CONTROL_GUID[name]), handler),
              f"{name} is not bound to InputEvents {event}")
-    need(not re.search(r"  - InputEvent: [12]\n", handler), "a trigger is bound to an action (the Sling painter reads their depth)")
-    need("_gamepadActionOverrides: []" in handler and "_touchActionOverrides: []" in handler, "device overrides must be empty (shared bindings)")
+    shared = re.search(r"  _inputEventShipActions:\n((?:  - .*\n|    .*\n)*)", handler)
+    need(shared and not re.search(r"  - InputEvent: [12]\n", shared.group(1)),
+         "a trigger is bound in the SHARED map (a pad's analog depth would be raised to a full pull; bind it in the touch overrides)")
+    for name, event in RETIRED_CONTROLS:
+        need(not re.search(r"  - InputEvent: %d\n" % event, handler) and CONTROL_GUID_RETIRED[name] not in prefab,
+             f"{name} (InputEvents {event}) is bound again: the squad pick and the recall were retired on 2026-10-21")
+        need(os.path.join(ACTIONS_DIR, name + ".asset") not in files, f"the retired {name}.asset is back")
+    need("squadLabelTemplate" not in prefab, "the HUD controller still carries the retired squadLabelTemplate")
+    need("_gamepadActionOverrides: []" in handler, "the gamepad overrides must be empty (the pad reads the triggers' depth)")
+    need(f"  _touchActionOverrides:\n{_entries(TOUCH_CONTROLS)}  _gamepadActionOverrides:" in handler,
+         "the touch overrides are not RightStickAction -> AnglerPaint, LeftStickAction -> AnglerErase (a phone could not paint or erase)")
     dangling = S.dangling_refs(prefab)
     need(not dangling, f"{len(dangling)} dangling local reference(s): {dangling[:5]}")
 
@@ -628,8 +738,9 @@ def check(files: "dict[str, str]") -> "list[str]":
     need(f"  followOffset: {{x: 0, y: {CHASE_UP}, z: -{CHASE_BACK}}}\n" in files.get(CAMERA, ""),
          f"AnglerCameraSettingsSO.followOffset is not the lab's chase (0, {CHASE_UP}, -{CHASE_BACK})")
     cfg = files.get(CONFIG_PATH, "")
-    for key in ("brushNear", "dashFrac", "dashTime", "cameraLift", "cameraLiftTime", "paintedPreference", "lureGrowth", "faunaSpeed", "lockBiteCooldown", "lockBiteReach"):
-        need(re.search(r"^  %s:" % key, cfg, re.M), f"AnglerConfig has no {key} (rounds 3-4; re-seed it or add the line)")
+    for key in ("brushNear", "dashFrac", "dashTime", "cameraLift", "cameraLiftTime", "paintedPreference", "lureGrowth", "faunaSpeed", "lockBiteCooldown", "lockBiteReach",
+                "tameHueLean"):
+        need(re.search(r"^  %s:" % key, cfg, re.M), f"AnglerConfig has no {key} (rounds 3-4, the school's mark; re-seed it or add the line)")
     need(len(re.findall(r"^  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}$", cfg.split("  omniFauna:")[-1].split("  companionFauna:")[0], re.M)) > 0,
          "AnglerConfig's omniFauna is empty - an omni crystal could morph into nothing")
     for path, (_, script, name) in SEEDED.items():
@@ -661,7 +772,8 @@ def read_all() -> "dict[str, str]":
              os.path.join(ROOT, "Assets/_Graphics/CardImages/Angler.png.meta"),
              os.path.join(ROOT, "Assets/_Graphics/CardImages/Angler_Inactive.png.meta"),
              os.path.join(SCRIPTS, "Data/Enums/VesselClassType.cs"),
-             os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs")}
+             os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs"),
+             *(os.path.join(ACTIONS_DIR, name + ".asset") for name, _ in RETIRED_CONTROLS)}
     out = {}
     for p in paths:
         if os.path.exists(p):
@@ -686,7 +798,7 @@ def author() -> None:
         patched = patch_prefab(files[PREFAB])
         if patched != files[PREFAB]:
             write(PREFAB, patched)
-            print("patched Angler.prefab (impactor container, executor wiring, bindings)")
+            print("patched Angler.prefab (impactor container, executor wiring, bindings, its own hull)")
     if HUD_VARIANT_PATH not in files:
         write(HUD_VARIANT_PATH, build_hud_variant(open(HUD_DONOR, encoding="utf-8", newline="").read()))
         print("cloned StoatHUDVariant.prefab -> AnglerHUDVariant.prefab")
@@ -726,6 +838,8 @@ def self_test() -> int:
         "a Stoat executor left behind": (PREFAB, lambda t: t.replace(SCRIPT["AnglerCommandExecutor"], "6eee000b02734120a5138fb645997915")),
         "the Stoat's flight back": (PREFAB, lambda t: t.replace(f"  DefaultThrottleScaler: {CRUISE}\n", "  DefaultThrottleScaler: 60\n")),
         "a trigger bound": (PREFAB, lambda t: t.replace("  - InputEvent: 6\n", "  - InputEvent: 1\n", 1)),
+        "paint not on touch": (PREFAB, lambda t: t.replace(CONTROL_GUID["AnglerPaint"], CONTROL_GUID["AnglerErase"], 1)),
+        "touch overrides cleared": (PREFAB, lambda t: re.sub(r"  _touchActionOverrides:\n(?:  - .*\n|    .*\n)*", "  _touchActionOverrides: []\n", t, count=1)),
         "unregistered from the container": (CONTAINER, lambda t: t.replace(PREFAB_GUID, "0" * 32)),
         "Lure unbound": (PREFAB, lambda t: t.replace(CONTROL_GUID["AnglerLure"], "f" * 32)),
         "fusion entries missing": (FUSION, lambda t: t.replace(f"  - vessel: {CLASS_ID}\n", "  - vessel: 99\n")),
@@ -735,9 +849,13 @@ def self_test() -> int:
         "the seed sprite unwired": (HUD_VARIANT_PATH, lambda t: re.sub(r"  seedSprite: .*\n", "", t)),
         "the camera back in": (CAMERA, lambda t: t.replace(f"z: -{CHASE_BACK}", "z: -40")),
         "the dash unbound": (PREFAB, lambda t: t.replace("  - InputEvent: 7\n", "  - InputEvent: 13\n")),
+        "the recall bound again": (PREFAB, lambda t: t.replace("  _resourceEventClassActions:", "  - InputEvent: 14\n    ShipActions: []\n  _resourceEventClassActions:", 1)),
+        "the squad label back": (PREFAB, lambda t: t.replace("  lureEaseRate: 6\n", "  lureEaseRate: 6\n  squadLabelTemplate: x\n", 1)),
         "no keeper species": (CONFIG_PATH, lambda t: re.sub(r"  companionFauna: .*\n", "  companionFauna: {fileID: 0}\n", t)),
         "the Stoat's impactor container back": (PREFAB, lambda t: t.replace(IMPACT_CONTAINER_GUID, STOAT_IMPACT_CONTAINER)),
         "the Stoat's Overclock on the omni list": (IMPACT_CONTAINER, lambda t: t.replace(OMNI_EFFECT_GUID, STOAT_OVERCLOCK)),
+        "the Stoat's model in the hull": (PREFAB, lambda t: t.replace(MODEL_GUID, S.MODEL_GUID)),
+        "the Stoat's lope back": (PREFAB, lambda t: t.replace(SCRIPT["AnglerAnimation"], STOAT_HULL_SCRIPTS[1])),
     }
     failed = 0
     for name, (path, mutate) in mutations.items():

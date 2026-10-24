@@ -103,12 +103,27 @@ namespace CosmicShore.Gameplay
         static readonly Element[] AllElements =
             { Element.Mass, Element.Charge, Element.Space, Element.Time };
 
-        // Per-vessel anti-spam: last time an overtake effect was applied to a vessel.
+        // Per-vessel anti-spam: last time an overtake effect was applied to a vessel. Static, so it is
+        // shared by every asset of this type (the Squirrel's joust and the Rhino's sword steal) - one
+        // cooldown per victim, whoever lands it. Pruned of destroyed systems once it grows past
+        // PruneThreshold, so a long session's despawned vessels do not accumulate in it.
         private static readonly Dictionary<ResourceSystem, float> _lastEffectTime = new();
+        private static readonly List<ResourceSystem> _deadKeys = new();
+        const int PruneThreshold = 32;
 
-        // No prune path — destroyed ResourceSystem keys accumulate for the editor session.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics() => _lastEffectTime.Clear();
+
+        static void PruneDestroyedKeys()
+        {
+            if (_lastEffectTime.Count < PruneThreshold) return;
+            _deadKeys.Clear();
+            foreach (var key in _lastEffectTime.Keys)
+                if (!key) _deadKeys.Add(key);
+            for (int i = 0; i < _deadKeys.Count; i++)
+                _lastEffectTime.Remove(_deadKeys[i]);
+            _deadKeys.Clear();
+        }
 
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)
         {
@@ -136,10 +151,14 @@ namespace CosmicShore.Gameplay
             var now = Time.time;
             if (_lastEffectTime.TryGetValue(rs, out var lastTime) && now - lastTime < cooldown)
                 return;
+            PruneDestroyedKeys();
             _lastEffectTime[rs] = now;
 
-            // Haptic feedback
-            HapticController.PlayConstant(hapticAmplitude, hapticFrequency, hapticDuration);
+            // Haptic feedback - only on a machine whose local human is one of the two pilots. Every
+            // peer simulates this contact, and an ungated call rumbled every player's pad for any
+            // two vessels touching anywhere in the match.
+            if (IsLocalHuman(overtakenStatus) || IsLocalHuman(impacteeVessel.VesselStatus))
+                HapticController.PlayConstant(hapticAmplitude, hapticFrequency, hapticDuration);
 
             bool isAlly = overtakenStatus.Domain == impacteeVessel.VesselStatus.Domain;
 
@@ -189,6 +208,9 @@ namespace CosmicShore.Gameplay
 
         float StealScale(IVesselStatus thief) =>
             Mathf.Max(0f, stealScale.EvaluateReplicated(thief));
+
+        static bool IsLocalHuman(IVesselStatus status) =>
+            status != null && status.IsLocalUser && !status.AutoPilotEnabled;
 
         static GameplaySFXCategory JoustBuffCategoryForElement(Element element) => element switch
         {

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -433,34 +434,39 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Drives the three systems for this frame. Called once per frame by the driver.</summary>
-        // One marker per sub-system of the tick (2026-10-17: a Stoat session showed ~100 ms spikes every half second
-        // inside this LateUpdate and nothing below it was named).
-        static readonly Unity.Profiling.ProfilerMarker s_pairs = new("BlackHole.Pairs");
-        static readonly Unity.Profiling.ProfilerMarker s_field = new("BlackHole.GravityField");
-        static readonly Unity.Profiling.ProfilerMarker s_pull = new("BlackHole.VesselPull");
-        static readonly Unity.Profiling.ProfilerMarker s_waves = new("BlackHole.Waves");
-        static readonly Unity.Profiling.ProfilerMarker s_warp = new("BlackHole.Warp");
-        static readonly Unity.Profiling.ProfilerMarker s_lens = new("BlackHole.LensCameras");
+        // Named so diag / prof attribute the driver's frame (it read as anonymous Driver.LateUpdate self time,
+        // 2.7 ms average with 88 ms spikes, in a Menu_Main capture with the Stoat flying, 2026-10-18).
+        static readonly ProfilerMarker s_tickMarker = new("BlackHole.Tick");
+        static readonly ProfilerMarker s_pairsMarker = new("BlackHole.Pairs");
+        static readonly ProfilerMarker s_fieldMarker = new("BlackHole.Field");
+        static readonly ProfilerMarker s_pullMarker = new("BlackHole.VesselPull");
+        static readonly ProfilerMarker s_wavesMarker = new("BlackHole.Waves");
+        static readonly ProfilerMarker s_warpMarker = new("BlackHole.Warp");
+        static readonly ProfilerMarker s_lensMarker = new("BlackHole.Lens");
 
         static void Tick()
         {
+            using var tick = s_tickMarker.Auto();
             Prune();
             var config = Config;
             float dt = Time.deltaTime;
 
             // Pairs first: their holes' positions for this frame, and any annihilation, before the
             // field reads the wells.
-            using (s_pairs.Auto()) TickPairs(dt);
-            if (_pairs.Count > 0) Prune();
+            using (s_pairsMarker.Auto())
+            {
+                TickPairs(dt);
+                if (_pairs.Count > 0) Prune();
+            }
 
-            using (s_field.Auto()) BlackHoleGravityField.Tick(_holes, config, dt);
-            using (s_pull.Auto()) BlackHoleVesselPull.Tick(_holes, config, dt);
-            using (s_waves.Auto()) BlackHoleWaves.Tick(config);
-            using (s_warp.Auto()) BlackHoleWarp.Flush(_warpHoles, config);
+            using (s_fieldMarker.Auto()) BlackHoleGravityField.Tick(_holes, config, dt);
+            using (s_pullMarker.Auto()) BlackHoleVesselPull.Tick(_holes, config, dt);
+            using (s_wavesMarker.Auto()) BlackHoleWaves.Tick(config);
+            using (s_warpMarker.Auto()) BlackHoleWarp.Flush(_warpHoles, config);
             // The lens reads the camera's depth texture; keep it on for EVERY enabled game camera while any lens
             // is live (a vessel spawn, the death or end camera switch cameras). Each camera's lens pass reads the
             // holes itself (BlackHoleLens.ScreenWells).
-            using (s_lens.Auto()) BlackHoleLens.CameraSupport.Maintain();
+            using (s_lensMarker.Auto()) BlackHoleLens.CameraSupport.Maintain();
 
             if (CSDebug.IsVerbose(CSLogChannel.BlackHole) && Time.unscaledTime >= _nextReport)
             {
@@ -538,14 +544,7 @@ namespace CosmicShore.Gameplay
         [DefaultExecutionOrder(29500)]
         sealed class Driver : MonoBehaviour
         {
-            // Named so the Profiler can tell the ten nested "Driver" classes apart (they all read as
-            // "::Driver.LateUpdate"; the 2026-10-17 menu capture had an 88 ms spike there and no way to say whose).
-            static readonly Unity.Profiling.ProfilerMarker s_lateUpdate = new("BlackHoleRegistry.LateUpdate");
-
-            void LateUpdate()
-            {
-                using (s_lateUpdate.Auto()) Tick();
-            }
+            void LateUpdate() => Tick();
 
             void OnDisable()
             {

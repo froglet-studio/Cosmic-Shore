@@ -195,6 +195,13 @@ On-screen buttons mirror these (**Advanced/Simple**, **Run Ns**, **– / +** to 
 plus **Min**, which collapses the overlay to an FPS-only strip (no buttons, no console). Click
 anywhere on the collapsed strip to restore the detailed view.
 
+**Off** (on the command row) switches every development-build diagnostic off, not just the overlay:
+the HUD, the AI-training flight recorder, the load-insights host, Unity's red on-screen error console
+and `CSDebug.Log` info logging (`DevDiagnostics.cs`). The build then plays like a release build and
+stays off across relaunches and Android **Patch** builds. Turn it back on with a **four-finger hold
+for two seconds** (Shift+F7 on a keyboard). The Editor starts every Play session on.
+`Docs/ANDROID_BUILD.md` §8 has the Patch workflow.
+
 **Layout** (top-left, two side-by-side blocks, color-coded by health — green/amber/red):
 
 - **Simple:** `FPS`, `Frame Time (ms)`, `CPU (busy)`, `GPU`, and `Bound` — the live CPU-vs-GPU

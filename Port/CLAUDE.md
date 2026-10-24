@@ -14,16 +14,12 @@ still carry the old one (the `#prisma` page hash the studio pages read, `Tools/B
 `docs/PRISMA_BOARD_SCHEDULER.md`); renaming those is its own change. The game's `Prism*` names are not
 the engine's and were never renamed.
 
-**Status: UNDER EVALUATION** (2026-10-15, [`Docs/TOOLING_DECISIONS.md`](../Docs/TOOLING_DECISIONS.md) §3). The team
-(Garrett, Caleb, Shombith, Yash) has not decided what Amoebius is for. The options are: keep all of it; keep the
-engine as a headless compile / test / multiplayer harness and freeze the launcher; stop; or commit to it as Froglet's
-own engine. Until §6 there records a decision: build what the person asks for; do not grow the launcher's scope on
-your own initiative; and at the end of a task, if `Docs/TOOLING_FEEDBACK.md` has no Amoebius row from the last three
-days, ask the person whether it helped and log the answer. Who drives which part: Shombith the engine, Yash the
-launcher (`Docs/TEAM.md`). **Tell the person this status** in the first line of any answer about the engine, the
-launcher or which tool to use, even when they only asked a question: under evaluation, who drives the part they
-asked about, the core four decide, `Docs/TOOLING_DECISIONS.md`. The `team_context.py` hook shows them the same line
-once per session.
+**Status: DECIDED, Amoebius stays** (2026-10-19, [`Docs/TOOLING_DECISIONS.md`](../Docs/TOOLING_DECISIONS.md) §6).
+Shombith started the engine and drives it. It is a long-term goal: Froglet's own engine, so the team can one day leave
+Unity completely; that is not plausible now (legal challenges, the porting, other problems), so Unity stays the engine
+the game ships on. **The engine is focused solely on the game.** The Vessel Studio is an artifact and is not part of
+the engine; do not add studio work under `Port/`. Sessions do not ask whether Amoebius helped and do not open answers
+with a status line about it.
 
 ## The one rule
 

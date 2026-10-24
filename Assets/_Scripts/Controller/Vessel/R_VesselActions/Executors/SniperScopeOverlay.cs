@@ -461,9 +461,38 @@ namespace CosmicShore.Gameplay
         public void Tick(Transform vessel, float fieldOfView, float coneHalfAngleDegrees,
                          float rangeUnits, float cooldown01, Color colour)
         {
+            TickInstrument(fieldOfView, coneHalfAngleDegrees, cooldown01, colour, out float halfHeight, out bool ready);
+            _pip.Tick(vessel, fieldOfView);
+            if (vessel == null) DrawFlightReticle(false, default, default, null, coneHalfAngleDegrees, rangeUnits, ready, colour);
+            else DrawFlightReticle(true, vessel.position, vessel.forward, CameraManager.ViewCamera, coneHalfAngleDegrees, rangeUnits, ready, colour);
+            SelfCheck(halfHeight);
+        }
+
+        /// <summary>
+        /// The same instrument for a sight that is NOT the hull's nose: the eyepiece looks from
+        /// <paramref name="eye"/> along <paramref name="rotation"/>'s forward (the pip's explicit-eye
+        /// path, as the Thresher's launch sight uses), and the flight reticle is projected through
+        /// <paramref name="flightCamera"/> (null = the gameplay camera). The Orca's sniper turret
+        /// keeps this open for as long as its gunner holds the seat (Crew of Four Lab round 7).
+        /// </summary>
+        public void Tick(Vector3 eye, Quaternion rotation, Camera flightCamera, float fieldOfView,
+                         float coneHalfAngleDegrees, float rangeUnits, float cooldown01, Color colour)
+        {
+            TickInstrument(fieldOfView, coneHalfAngleDegrees, cooldown01, colour, out float halfHeight, out bool ready);
+            _pip.Tick(eye, rotation, fieldOfView);
+            DrawFlightReticle(true, eye, rotation * Vector3.forward, flightCamera ? flightCamera : CameraManager.ViewCamera,
+                              coneHalfAngleDegrees, rangeUnits, ready, colour);
+            SelfCheck(halfHeight);
+        }
+
+        // The eyepiece's furniture: its layout, the cone reticle, the posts, the dot, the probe and
+        // the recharge ring. Everything except where the eyepiece looks from and the flight reticle.
+        void TickInstrument(float fieldOfView, float coneHalfAngleDegrees, float cooldown01, Color colour,
+                            out float halfHeight, out bool ready)
+        {
             SetVisible(true);
 
-            float halfHeight = LayOutPip();
+            halfHeight = LayOutPip();
             float radius = ReticlePixels(coneHalfAngleDegrees, TanHalf(fieldOfView), halfHeight,
                                          minPixels: 6f);
             // The posts live OUTSIDE the ring, so it is the post's outer end that has to fit the
@@ -476,7 +505,7 @@ namespace CosmicShore.Gameplay
             float ringCeiling = Mathf.Max(6f, ReticleBudgetPixels(halfHeight)
                                               - CrossGapPixels - CrossArmPixels);
             radius = Mathf.Min(radius, ringCeiling);
-            bool ready = cooldown01 <= 0.0001f;
+            ready = cooldown01 <= 0.0001f;
 
             // The instant it comes back: a one-shot flash, so a pilot watching the target rather
             // than the arc still sees the weapon arrive.
@@ -539,11 +568,6 @@ namespace CosmicShore.Gameplay
                 _arc.color = WithAlpha(colour, 0.9f);
             }
 
-            _pip.Tick(vessel, fieldOfView);
-
-            DrawFlightReticle(vessel, coneHalfAngleDegrees, rangeUnits, ready, colour);
-
-            SelfCheck(halfHeight);
         }
 
         /// <summary>
@@ -632,12 +656,12 @@ namespace CosmicShore.Gameplay
         /// orthographic or absent camera stands it down too, loudly once, because neither can
         /// project an angle — while the eyepiece, which carries its own camera, keeps working.</para>
         /// </summary>
-        void DrawFlightReticle(Transform vessel, float coneHalfAngleDegrees, float rangeUnits,
-                               bool ready, Color colour)
+        void DrawFlightReticle(bool hasSight, Vector3 origin, Vector3 forward, Camera cam,
+                               float coneHalfAngleDegrees, float rangeUnits, bool ready, Color colour)
         {
             if (_flightRect == null) return;
 
-            if (vessel == null)
+            if (!hasSight)
             {
                 _flightRect.gameObject.SetActive(false);
                 return;
@@ -645,7 +669,7 @@ namespace CosmicShore.Gameplay
 
             // The flight view's camera: the reticle is projected through it. Not Camera.main, which in flight is
             // the menu's static camera, so the reticle landed where that camera would have seen the target.
-            var cam = CameraManager.ViewCamera;
+            // The caller passes CameraManager.ViewCamera unless the flight view is another camera (the Orca's turret).
             if (cam == null || cam.orthographic)
             {
                 SniperScopeDiagnostics.Decline(SniperScopeDiagnostics.Reason.NoGameCamera);
@@ -655,7 +679,7 @@ namespace CosmicShore.Gameplay
 
             // The same origin and axis SniperShotActionExecutor.ResolveShot casts along, so the
             // mark cannot drift from the round.
-            Vector3 aim = vessel.position + vessel.forward * Mathf.Max(1f, rangeUnits);
+            Vector3 aim = origin + forward * Mathf.Max(1f, rangeUnits);
             Vector3 projected = cam.WorldToScreenPoint(aim);
             if (projected.z <= 0f)
             {

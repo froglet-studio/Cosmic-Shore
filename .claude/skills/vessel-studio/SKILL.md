@@ -13,18 +13,15 @@ settled, how a new one is built, how the one artifact is published and shared, a
 reaches the real game. `/labmaker` holds the general lab craft (any lab, not only vessels): defer to
 it for the `__lab` contract and `verify_lab.cjs`, never copy it here.
 
-## Status: UNDER EVALUATION (2026-10-15)
+## Status (2026-10-19, `Docs/TOOLING_DECISIONS.md` §6)
 
-The team (Garrett, Caleb, Shombith, Yash) has not decided whether the Vessel Studio stays as it is, shrinks to a
-design lab whose pages read Unity's numbers, folds into `/labmaker`, or goes (`Docs/TOOLING_DECISIONS.md` §4). The
-measured state on 2026-10-15:
-- **The pages are used.** Garrett's sessions added the Goby & Pistol and Brittle Star studios on 2026-10-14.
-- **The shared machinery is not.** The artifact holds 1 decision, 0 requests and 0 Sync jobs.
+Shombith decided the engine's side: **the Vessel Studio is an artifact and is not part of Amoebius**; the engine is
+focused solely on the game, and studio work is its own task. Whether the artifact itself stays is still the team's
+call, and Yash drives it. Do not ask whether the studio helped, and do not open answers with a status line. The
+measured state on 2026-10-15: the pages are used (Garrett's sessions added the Goby & Pistol and Brittle Star studios);
+the shared machinery is not (1 decision, 0 requests, 0 Sync jobs).
 
-Until §6 there records a decision, the rules below stand, and:
-- **Tell the person the status** in one line whenever they ask about the studio or which tool to use: under
-  evaluation, Yash drives it, the core four decide (`Docs/TOOLING_DECISIONS.md`), and feedback goes to
-  `Docs/TOOLING_FEEDBACK.md`.
+The rules below stand, and:
 - **Offer the studio; do not require it.**
 - **Do not grow the Sync / jobs / requests / studio-server machinery unasked.**
 - **Check who else works here first.** Before changing a studio page or its numbers, run

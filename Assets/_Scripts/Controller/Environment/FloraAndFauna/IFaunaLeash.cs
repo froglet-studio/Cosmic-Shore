@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -6,8 +7,9 @@ namespace CosmicShore.Gameplay
     /// A leash: something that steers a tamed creature and names the prism it eats next. The Angler holds one
     /// (<c>R_VesselActions/ANGLER.md</c>); the lab that designed it is <c>Docs/Studios/ANGLER_COMMAND_LAB.md</c>.
     ///
-    /// <para><b>Behaviour only.</b> A leash bends where a creature swims and which edible prism its next mouthful
-    /// faces. It never kills or recolours anything, and it cannot make inedible mass edible: the creature
+    /// <para><b>Behaviour only</b>, and one mark. A leash bends where a creature swims and which edible prism its next
+    /// mouthful faces, and the creature wears its holder's MARK (<see cref="TryGetLeashMark"/>). It never kills anything
+    /// or recolours mass, and it cannot make inedible mass edible: the creature
     /// re-checks every ordered prism with its OWN edibility rule (shielded mass and the nucleus interior stay off the
     /// menu) and eats it with its OWN mouthful. A leashed creature keeps its starvation clock, so a squad that is never
     /// ordered to eat starves the way any creature does - with ONE fenced exception, <see cref="Sustains"/>.</para>
@@ -35,7 +37,19 @@ namespace CosmicShore.Gameplay
         /// <c>Docs/ECOSYSTEM.md</c> §0 and §61.4), fenced: its one reader is <see cref="Fauna"/>'s starvation test, a holder
         /// sustains at most ONE creature, and only starvation is waived - a keeper that is eaten or shot dies the ordinary
         /// way, heart and wither included. Not a precedent: a second holder that wants this needs its own sign-off.
+        /// <para>The second sign-off (the designer, 2026-10-21): a HERD (<see cref="IFaunaHerd"/>, the Jacks) "should only
+        /// starve down to a minimum size", so its holder sustains its first creatures up to that floor. Only starvation is
+        /// waived there too.</para>
         /// </summary>
         bool Sustains(Fauna creature);
+
+        /// <summary>
+        /// The MARK a leashed creature wears, so its holder's side can tell its creatures from the wild ones (Garrett,
+        /// 2026-10-21: "distinguish them by giving their spindles a slight hue shift in your domain. do the same thing for
+        /// other tamer classes like the angler"): its spindles lean <paramref name="lean"/> (0..1) of the way toward
+        /// <paramref name="domain"/>'s prism hue (<see cref="Fauna.ApplyLeashMark"/>). Presentation only: the creature's
+        /// own domain, body prisms and diet are untouched. False (or a lean of 0) = no mark.
+        /// </summary>
+        bool TryGetLeashMark(out Domains domain, out float lean);
     }
 }

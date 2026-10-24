@@ -137,6 +137,9 @@ namespace CosmicShore.Engine
             set => _bindposes = Copy(value);
         }
 
+        /// <summary>Original contract: how many bind poses the mesh holds.</summary>
+        public int bindposeCount => _bindposes.Length;
+
         // ── Blend shapes (original contract) ─────────────────────────
 
         public int blendShapeCount => _blendShapes.Count;

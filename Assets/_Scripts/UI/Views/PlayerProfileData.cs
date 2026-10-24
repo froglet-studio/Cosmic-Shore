@@ -45,6 +45,12 @@ namespace CosmicShore.UI
         public string DisplayName = "";
 
         public int AvatarId;
+
+        /// <summary>
+        /// The pilot the player picked as their favourite (Docs/MENU_REDESIGN_B.md §56): the SO_Captain asset's
+        /// name, which stays fixed while its display name may be re-authored. Empty: none picked.
+        /// </summary>
+        public string FavouritePilot = "";
     }
 
     /// <summary>Balances and entitlements. Loss here is player-visible, so writes must not be dropped.</summary>

@@ -177,8 +177,8 @@ namespace CosmicShore.UI
             _lastBeatRow = -1;
 
             if (vesselNameText)
-                vesselNameText.text = vessel && !string.IsNullOrWhiteSpace(vessel.Name)
-                    ? vessel.Name
+                vesselNameText.text = vessel && !string.IsNullOrWhiteSpace(vessel.CardName)
+                    ? vessel.CardName
                     : vesselClass is VesselClassType.Any or VesselClassType.Random
                         ? string.Empty
                         : vesselClass.ToString();

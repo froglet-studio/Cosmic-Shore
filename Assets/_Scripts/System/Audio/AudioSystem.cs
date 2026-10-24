@@ -77,7 +77,7 @@ namespace CosmicShore.Core
     }
 
     [DefaultExecutionOrder(-1)]
-    public class AudioSystem : MonoBehaviour
+    public class AudioSystem : MonoBehaviour, SoundtrackPlayer.ILegacyMusic
     {
         public static AudioSystem Instance { get; private set; }
 
@@ -112,6 +112,14 @@ namespace CosmicShore.Core
         [SerializeField, Range(0f, 2f), Tooltip(
             "Trim applied to the music instance on top of the Music slider. 1 = no change.")]
         float musicBaseVolumeMultiplier = 1f;
+
+        [SerializeField, Tooltip(
+            "The soundtrack the Audio Studio lists (Docs/MENU_REDESIGN_B.md §56). While none of its tracks has its own " +
+            "event, the music event above keeps playing at random; once any has, the player's ticked tracks play instead.")]
+        CosmicShore.ScriptableObjects.SoundtrackSO soundtrack;
+
+        /// <summary>The player's music: rotation, shuffle and transport (the Audio Studio and now-playing card).</summary>
+        public SoundtrackPlayer Soundtrack { get; private set; }
 
         [Header("FMOD VCA routing (opt-in)")]
         [SerializeField, Tooltip(
@@ -364,6 +372,15 @@ namespace CosmicShore.Core
         FMOD.Studio.EventInstance _musicInstance;
         bool _musicStarted;
 
+        // Which song the random music event started (the owner, 2026-10-19: "also show song names"). FMOD raises
+        // SOUND_PLAYED on its own thread with the sound it picked; the callback only records the name, and Update
+        // hands it to the soundtrack on the main thread. The delegate is a static field so the GC never collects it
+        // while FMOD holds it, and the handle check drops a late callback from an instance being faded out.
+        static readonly FMOD.Studio.EVENT_CALLBACK s_musicCallback = OnMusicEvent;
+        static readonly object s_heardLock = new();
+        static IntPtr s_musicHandle;
+        static string s_heardSound;
+
         // VCA routing state. The statics are what the per-instance resolvers read; they are true only
         // while driveFmodVcas is on AND the VCA actually resolved, so a missing VCA can never leave a
         // slider with no effect at all.
@@ -435,15 +452,39 @@ namespace CosmicShore.Core
             ChangeMusicEnabledStatus(musicEnabled);
 
             ApplyVcaVolumes();
-            StartMusic();
+            Soundtrack = new SoundtrackPlayer(soundtrack, this, this);
+            if (Soundtrack.CanPickTracks) Soundtrack.Begin();
+            else StartMusic();
+        }
+
+        void Update()
+        {
+            string heard = null;
+            lock (s_heardLock)
+            {
+                if (s_heardSound != null) { heard = s_heardSound; s_heardSound = null; }
+            }
+            if (heard != null) Soundtrack?.NoteLegacySound(heard);
+            Soundtrack?.Tick();
+        }
+
+        [AOT.MonoPInvokeCallback(typeof(FMOD.Studio.EVENT_CALLBACK))]
+        static FMOD.RESULT OnMusicEvent(FMOD.Studio.EVENT_CALLBACK_TYPE type, IntPtr instance, IntPtr parameters)
+        {
+            if (type != FMOD.Studio.EVENT_CALLBACK_TYPE.SOUND_PLAYED || instance != s_musicHandle) return FMOD.RESULT.OK;
+            if (new FMOD.Sound(parameters).getName(out string name, 256) == FMOD.RESULT.OK)
+                lock (s_heardLock) s_heardSound = name;
+            return FMOD.RESULT.OK;
         }
 
         void OnDestroy()
         {
             // Quit-safe: FmodSafe skips the runtime once it is tearing down, so this can never
             // resurrect the RuntimeManager mid-quit (the classic FMOD-on-exit hang).
+            s_musicHandle = IntPtr.Zero;
             FmodSafe.StopAndRelease(ref _musicInstance, _musicStarted, FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
             _musicStarted = false;
+            Soundtrack?.Dispose();
             if (Instance == this) Instance = null;
         }
 
@@ -455,6 +496,8 @@ namespace CosmicShore.Core
             if (!FmodSafe.TryCreateInstance(musicEvent, out _musicInstance, this)) return;
 
             ApplyMusicVolume();
+            s_musicHandle = _musicInstance.handle;
+            _musicInstance.setCallback(s_musicCallback, FMOD.Studio.EVENT_CALLBACK_TYPE.SOUND_PLAYED);
             var result = _musicInstance.start();
             _musicStarted = result == FMOD.RESULT.OK;
             if (!_musicStarted)
@@ -466,10 +509,33 @@ namespace CosmicShore.Core
 
         void ApplyMusicVolume()
         {
+            Soundtrack?.ApplyVolume();
             if (!_musicInstance.isValid()) return;
-            _musicInstance.setVolume(AudioVolumeMath.InstanceVolume(
-                musicEnabled, gameSetting != null ? gameSetting.MusicLevel : 1f,
-                musicBaseVolumeMultiplier, VcaDrivesMusic));
+            _musicInstance.setVolume(MusicInstanceVolume);
+        }
+
+        // ---------- The legacy random music event, driven by the soundtrack's transport ----------
+
+        public float MusicInstanceVolume => AudioVolumeMath.InstanceVolume(
+            musicEnabled, gameSetting != null ? gameSetting.MusicLevel : 1f, musicBaseVolumeMultiplier, VcaDrivesMusic);
+
+        public void SetLegacyMusicPaused(bool paused)
+        {
+            if (_musicInstance.isValid()) _musicInstance.setPaused(paused);
+        }
+
+        /// <summary>Starts the random music event again (it picks a track again): skip / back / resume in legacy mode.</summary>
+        public void RestartLegacyMusic()
+        {
+            StopLegacyMusic();
+            StartMusic();
+        }
+
+        public void StopLegacyMusic()
+        {
+            s_musicHandle = IntPtr.Zero;
+            FmodSafe.StopAndRelease(ref _musicInstance, _musicStarted, FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+            _musicStarted = false;
         }
 
         // ---------- VCA routing (opt-in, see driveFmodVcas) ----------

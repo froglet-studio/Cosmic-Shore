@@ -1477,7 +1477,7 @@ namespace CosmicShore.Gameplay
             if (!prism || prism.destroyed || prism is not HealthPrism hp) return false;
             if (hp.ResolveOwnerFauna() != null) return false;          // another creature's body
             if (hp.LifeForm is not Flora plant || !plant) return false;  // flora only
-            if (IsShieldedMass(prism)) return false;
+            if (IsInedibleShield(prism)) return false;
             if (!IsPreyForMe(prism.transform.position, prism.Domain, eater)) return false;
             element = SwarmFaunaConfigSO.ToIndex(plant.Element);
             return element >= 0;
