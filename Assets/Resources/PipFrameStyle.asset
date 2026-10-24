@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82c29789ddb048758a78629b6e1681d1, type: 3}
+  m_Name: PipFrameStyle
+  m_EditorClassIdentifier: 
+  theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
+  edgeColor: 0
+  edgeAlpha: 0.85
+  chromeColor: 5
+  chromeAlpha: 1
+  largeSliver: 1
+  flipSliver: 0
+  referenceHeight: 1080
+  sortingOrder: -10

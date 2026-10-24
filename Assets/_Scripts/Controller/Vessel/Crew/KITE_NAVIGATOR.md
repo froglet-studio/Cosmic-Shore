@@ -21,12 +21,13 @@ it**; see "Round 4" below. The rounds after 3 are not in the lab yet (task `T-20
 - **The views:** the kite view is a second, top-down orthographic camera drawn by the game. It is a small square in the
   lower left while you pilot and full screen while you navigate, with the pilot camera swapped into the square. Out of
   the plane, prisms open with distance FROM the plane and dither in a cone above it. The pilot sees a faint kite and
-  faint dots.
+  faint dots. The kite view's marks (kite, tail, cord, motes, lasso, juice) skip its post-processing, like UI, and
+  its orthographic lens carries no Panini (round 11).
 - **The HUD:** the Time card counts saved boosts, Charge the kite's rams, Space the last blast's kills, and Mass flashes
   on a cluster (`WrasseHUDController`).
 - **L5s:** Mass clusters arrive shielded, Charge steals instead of knocking crystals loose, Space breaks shields and
   super shields, and Time drops the boost cooldown. An **Omni crystal** drops a cluster of each element on the board.
-- **Seats (2026-10-21):** keys 1 / 2 pick the Grouper or the Wrasse, the D-pad and a double tap on the small view step
+- **Seats (2026-10-21; 2026-10-23 `Docs/CREW_STATIONS.md`):** the D-pad and the left / right arrow keys step round the domain's seats (no key picks one outright), and a double tap on the small view step
   to the other seat, and the pick is remembered per hull class (`CrewSeatChoice`), so the person starts where they last
   chose. Online it is two human seats on any mix of phones and PCs: decided by Garrett 2026-10-21, planned in "Two
   humans, two seats" below, not built yet.
@@ -360,9 +361,46 @@ How it was checked:
   when the prisms take over; that a fizzle is petals only; and that the charge and boosts wait for their petals. Planted
   defects fail them.
 
+## Round 11: the marks are UI, no Panini on the map (Garrett, 2026-10-22)
+
+"the wrasse view has the post processing applied to the lasso icons which mutes their color distinguishment and causes
+their icons to blend in with the environment crystals. so lets treat them like UI and not post process them. furthermore
+we should not be applying the panini transform to an orthographic view. that is causing the lower horizontal bar to get
+bowed into a curve."
+- **Marks without post:** an `UnprocessedOverlay` (`KiteNavigatorMarks`, an overlay camera on the kite camera's URP
+  stack) has post-processing off and sees only the `3D UI` layer, which nothing in a scene or prefab uses. Every
+  kite-view mark is drawn for it on that layer, so it lands after the world's bloom and tonemapper and keeps its true
+  limes. The world under the lens keeps the game's post-processing. The pilot view's faint marks are unchanged.
+- **No Panini:** `OrthographicLens` holds `PaniniProjection.distance` at 0 for every orthographic camera. Panini is a
+  perspective lens (the speed tunnel drives it on the shared profile), and on the orthographic map it bowed straight
+  edges into curves. The pilot camera still gets it.
+- **The frame (round 11b):** the small view, the kite's square or the lifted Grouper box, wears the style guide's frame
+  (`PipViewFrame`). These rules now hold for every orthographic view and every PiP view in the game
+  (`Docs/claude/SHADERS_AND_PERFORMANCE.md` § Orthographic views and picture-in-picture frames).
+
+## Round 12: portrait on a phone; one view on Very Low (Garrett, 2026-10-22)
+
+"assume that the wrasse is played in portrait mode on mobile. if there the lowest graphics setting are selected don't
+display pips. start the player in the wrasse and the ratel. in this setting very little of the game should even need to
+be processed, so the ratel should run fine on very old phones."
+- **Portrait.** On a phone (Android, iOS) the Wrasse's seat turns the screen upright while a human holds it and the
+  Grouper's turns it back to landscape-left (`SeatOrientation`, called from `SetHumanNavigates`, so a swap, the app
+  shell's park and an unbind all put landscape back). The project now allows portrait (`allowedAutorotateToPortrait`) so
+  iOS accepts the request; `SeatOrientation.NoPortraitAtBoot` turns portrait auto-rotation off before the first scene,
+  so every other screen stays landscape. The kite view spans viewScale board radii across the screen's SHORT side
+  (`KiteNavigator.ViewHalfHeight`): upright, the board is as wide as it was and the taller screen sees further ahead and
+  behind. The kite's bounds, the hand rect and the camera all read it. A desktop window and a browser page keep their
+  shape.
+- **One view on Very Low** (`CrewSingleView`, the preset row's `singleView`, `Docs/PLATFORM_UNIFICATION.md` §3.10): no
+  picture-in-picture. Flying the Grouper, the kite camera is off. Flying the Wrasse, the Grouper's camera is not lifted
+  into its box; it is parked under the kite view (`PilotCameraPark`: no layers, a plain clear, no post-processing or
+  shadows), so the kite camera is the only one that draws the world. The person starts on the Wrasse at every bind,
+  whatever seat they last picked. Keys and the D-pad still swap; with no small view there is no double tap, so on a
+  phone at Very Low the Wrasse is the seat.
+
 ## Seats: the swap is the arena's
 
-The swap uses the arena's pilot-swap gesture (`PilotSwapGesture`: D-pad left / right, keys 1 / 2), with
+The swap uses the arena's pilot-swap gesture (`PilotSwapGesture`: D-pad left / right, the left / right arrow keys since 2026-10-23), with
 `PilotSwap.CooldownSeconds` as its cooldown. It moves the local human between the hull and the kite. Since 2026-10-21
 (Garrett: "players can select, change seats"), **keys pick** (1 the Grouper, 2 the Wrasse; picking the seat you are in
 does nothing) and **the D-pad and the double tap step** to the other seat, as the Orca's keys 1-4 pick its seats. Every
@@ -462,6 +500,19 @@ every effect crosses the network as a decision, never as device input.
   - the D-pad steps through your hull's seats, then on round the team's ring. This answers the duo skill's open "ring"
     question: seats first, then teammates.
   - `InputController` asks `CrewSeat.TryConsumeSwap(dir)` and calls the arena only when the seat passes the step on.
+
+**Where it stands (2026-10-23, `Docs/CREW_STATIONS.md`):** steps 3 and 5 are built for every crew, generically:
+`Player.NetStation` (one `CrewStation` per person, server-write) instead of a `CrewSeatOccupancy` behaviour, the
+server's check `CrewStations.Classify`, `ICrewStations` (`SeatCount`, `LocalSeat`, `HostsRiders`, `TakeSeat`) on every
+crew, and the gesture owned by the person's `LocalCrewStation`: seats first, then the domain's hulls, in freestyle and a
+running arena match. A pick is a request, but a seat another person holds is skipped rather than offered (no offer /
+accept yet). Every crew takes a second person, the Wrasse included (step 4, 2026-10-23): the kite runs on the rider's machine, a
+Time loop's boosts are banked on the hull's machine and a ram's steal is decided there (`ICrewRelay`), and the kite's
+pose is relayed so the hull's machine draws it and publishes the Wrasse's body. Race and crystal rings are threaded on the
+hull's machine from the path the rider's kite flew in the world, replayed through the kite's ring probe
+(`RingProbeReplay`, `RingProbeReplayTests`). Pops, blasts and Mass clusters stay on
+the kite's machine (step 1 is still open). No key picks its seats outright any more: the arrow keys step the domain's
+seats.
 
 **Work order:**
 1. **Prism parity for one human online.** `KiteNavigator.cs`, with the effects split into `KiteNavigatorEffects.cs`

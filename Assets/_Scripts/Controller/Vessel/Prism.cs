@@ -261,6 +261,10 @@ namespace CosmicShore.Gameplay
         /// bundles it with handle usability and is the wrong test for that question.</summary>
         internal bool ExoticVisualActive => _exoticVisualActive;
 
+        /// <summary>The renderer the §4.11 MeshRenderer stamp path writes to (Docs/PRISM_ANIMATION.md) on a
+        /// device without Entities Graphics — the same renderer that draws this prism there.</summary>
+        internal MeshRenderer StampRenderer => meshRenderer;
+
         public Vector3 TargetScale
         {
             get => scaleAnimator?.TargetScale ?? transform.localScale;
@@ -684,6 +688,10 @@ namespace CosmicShore.Gameplay
         {
             if (PrismRenderService.SetSuperShieldMark(in RenderHandle, _superShieldMark)) return;
 
+            // No Entities Graphics on this device: the mark is a family of the §4.11 stamp block, so a
+            // stamp rebuild keeps it and an unmarked prism carries no block at all.
+            if (PrismMeshRendererStamps.SetSuperShieldMark(meshRenderer, _superShieldMark)) return;
+
             // Legacy MeshRenderer path (no Entities Graphics on this device): the same bit rides
             // a property block. Get-modify-set, so any other writer's properties survive.
             if (meshRenderer == null) return;
@@ -859,6 +867,19 @@ namespace CosmicShore.Gameplay
             var handle = RenderHandle;
             if (!PrismRenderService.IsHandleUsable(in handle))
             {
+                // No Entities Graphics on this device (a WebGL2 browser): the same stamp and the same
+                // culling envelope ride the MeshRenderer (Docs/PRISM_ANIMATION.md §4.11).
+                var suctionPoint = new float3(worldLocation.x, worldLocation.y, worldLocation.z);
+                if (PrismMeshRendererStamps.StampSuctionClock(meshRenderer, PrismClock.Now, duration, 1f, 0f,
+                        in suctionPoint))
+                {
+                    var local = transform.InverseTransformPoint(worldLocation);
+                    PrismMeshRendererStamps.ResetBounds(meshRenderer);
+                    PrismMeshRendererStamps.EncapsulateBoundsPoint(meshRenderer,
+                        new float3(local.x, local.y, local.z), ConvergenceBoundsPadding);
+                    return;
+                }
+
                 CosmicShore.Utility.PerformanceBenchmark.LoadInsights.Count(
                     "Suction: prisms with no render entity (they snap instead of suctioning)");
                 PrismClockDiagnostics.WarnNoRenderEntity("cellSwapSuction", this,
@@ -886,6 +907,7 @@ namespace CosmicShore.Gameplay
         public void ClearSuctionClockStamp()
         {
             PrismRenderService.ClearSuctionClockStamp(in RenderHandle);
+            PrismMeshRendererStamps.ClearSuctionClockStamp(meshRenderer);
         }
 
         /// <summary>
@@ -897,6 +919,7 @@ namespace CosmicShore.Gameplay
             ResetState();
             ClearRenderMeshOverride(); // pooled reuse: the entity must not keep a prior life's shield mesh
             PrismRenderService.ClearPrismStamps(in RenderHandle); // nor a prior life's clock-animation stamps
+            PrismMeshRendererStamps.ClearPrismStamps(meshRenderer); // §4.11 twin (no-op where entities run)
             SetSuperShieldMark(false); // nor a prior life's super-shield
             _colorShadeGain = 1f;      // nor a prior owner's colour shade (the next material sync drops it)
             _colorLift = 0f;           // nor a prior pilot's lit mark

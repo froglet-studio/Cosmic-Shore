@@ -18,8 +18,9 @@ namespace CosmicShore.Gameplay
     /// prisms, Time hands the pilot boost, Charge powers the kite so its next ram steals that many petals (a scored
     /// Strike, <c>CombatHitDrain.TryAdmit</c>). Motes are the navigator's own and are drawn only on its board.
     ///
-    /// <para><b>Seats.</b> Keys 1 / 2 pick the hull (the Grouper) or the kite (the Wrasse); the D-pad (the arena's
-    /// <see cref="PilotSwapGesture"/>) and a double tap on the small view step to the other seat. The pick is remembered per
+    /// <para><b>Seats.</b> The swap gesture (<see cref="PilotSwapGesture"/>: the D-pad, the left / right arrow keys, a
+    /// two-finger swipe) steps round the domain's seats, the Grouper's and the Wrasse's among them (<see cref="CrewStations"/>);
+    /// a double tap on the small view steps to the other seat. The pick is remembered per
     /// hull class (<see cref="CrewSeatChoice"/>), so the person starts in the seat they last chose. Whichever seat is empty
     /// is flown by an AI squad mate - the hull's own <c>AIPilot</c>, or <see cref="KiteNavigatorAI"/>, which drives the
     /// kite only through an aim point, as a thumb does.</para>
@@ -28,7 +29,7 @@ namespace CosmicShore.Gameplay
     /// the AI are per-viewer, and the effects are this machine's. Networking the seat is a follow-up (KITE_NAVIGATOR.md).</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class KiteNavigator : MonoBehaviour, IRingThreadProbe, ICrewTriggers, IHullParkAware
+    public sealed class KiteNavigator : MonoBehaviour, IRingThreadProbe, ICrewTriggers, IHullParkAware, ICrewStations, ICrewRelay
     {
         internal struct Mote
         {
@@ -209,12 +210,18 @@ namespace CosmicShore.Gameplay
         // An AI CREW is the other case that runs (Garrett, 2026-10-20: "AI vessels should be controlled by two AI, one for the
         // wrasse, and one for the grouper"): a hull that is not the local pilot's, flown by its AIPilot on THIS machine (the
         // host owns every AI). Its kite is flown by the navigator AI and has no view, swap or human input.
-        bool ShouldRun(out IVessel vessel, out bool aiCrew)
+        //
+        // Two more (CrewStations): the person here rides this hull's Wrasse seat from another machine (a rider: the kite, its
+        // board, motes and effects run here; what belongs to the hull - saved boosts, steals - goes to the hull's machine),
+        // or this is their own hull, parked on its AI while they ride another - an AI crew, as on any hull an AI flies.
+        bool ShouldRun(out IVessel vessel, out bool aiCrew, out bool rider)
         {
             vessel = null;
-            aiCrew = false;
+            aiCrew = rider = false;
             if (!config || !TryGetComponent(out vessel)) return false;
             var status = vessel.VesselStatus;
+            if (CrewStations.LocalRiderSeat(this) == 1) { rider = true; return true; }
+            if (CrewStations.IsParkedHere(vessel)) { aiCrew = true; return config.AICrewNavigates; }
             if (VesselVisionShading.LocalVessel == transform)
                 return _weTookHull || status == null || !status.AutoPilotEnabled;
             aiCrew = true;
@@ -257,6 +264,30 @@ namespace CosmicShore.Gameplay
         public bool IsAICrew => _aiCrew;
         bool _aiCrew;
 
+        // _rider: the person on this machine flies the kite of a hull another machine flies; _remoteKite: on the hull's
+        // machine, a person on another machine flies it (the board shows the kite where they report it)
+        bool _rider, _remoteKite;
+        KiteVec _remotePos, _remoteHeading = new(0f, 1f);
+        float _poseSendAt, _stateSendAt;
+        int _omniForRider;
+        readonly int[] _pose = new int[5];
+
+        /// <summary>True while the person on this machine flies this hull's kite from another machine than the hull's.</summary>
+        public bool RidesHere => _rider;
+
+        // what a rider sends the hull's machine (ICrewRelay)
+        const int RelayPose = 1, RelayBoosts = 2, RelayRam = 3, RelayPath = 4;
+
+        // The race rings (and the crystal rings) are threaded on the hull's machine, which tests the kite through
+        // IRingThreadProbe. A rider's kite is not there, so the rider sends the PATH its kite flew, in the world it saw
+        // (every frame's position, a few times a second), and the hull's machine replays it through the probe: a ring is
+        // static and the same on both machines, so the crossing the ring tests is the one the rider flew - not a pose
+        // taken late and placed on the hull's own, later frame.
+        readonly RingProbeReplay _riderPath = new();
+        readonly List<int> _pathOut = new();
+        float _pathSendAt;
+        const int MaxPathPerSend = 32;
+
         void Bind(IVessel vessel)
         {
             _cfg = config;
@@ -272,8 +303,10 @@ namespace CosmicShore.Gameplay
             _ai.Reset(_kite.Position);
             _aim = _kite.Position;
             _snapped = false;
-            _humanNavigates = _weTookHull = _down = _boosting = _boostHeld = false;
-            _seatChoicePending = !_aiCrew;
+            _humanNavigates = _weTookHull = _down = _boosting = _boostHeld = _remoteKite = false;
+            _seatChoicePending = !_aiCrew && !_rider;
+            _poseSendAt = _stateSendAt = 0f;
+            _omniForRider = 0;
             Motes.Clear(); Loops.Clear(); DropBursts(); _massQueue.Clear(); _lastRam.Clear(); Prisms.Clear(); Rivals.Clear();
             _charge = 0f; _savedBoosts = 0; _lastBlastDestroyed = 0; _blastWatch.Clear(); _blastCounted.Clear(); _massFlashAt = -99f; _omniPending = 0;
             // the views, the swap and the static handle belong to the local pilot's seat; an AI crew draws nothing
@@ -281,6 +314,12 @@ namespace CosmicShore.Gameplay
             if (_active && _active != this) Destroy(_active);
             _active = this;
             _view = new KiteNavigatorView(this);
+            if (_rider)
+            {
+                // the rider flies the kite; the hull is not this machine's to hand over
+                _humanNavigates = true;
+                SeatOrientation.Portrait(true);
+            }
         }
 
         // The settings, with the kite's bounds set to the kite view's screen when wholeScreen is on (Garrett, 2026-10-20: "Let
@@ -292,7 +331,7 @@ namespace CosmicShore.Gameplay
             var s = _cfg.ToSettings();
             if (!_cfg.WholeScreen) return s;
             float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
-            float h = s.BoardRadius * _cfg.ViewScale;
+            float h = ViewHalfHeight(s.BoardRadius);
             s.HalfDepth = Mathf.Max(1f, h - _cfg.KiteRadius);
             s.HalfWidth = Mathf.Max(1f, h * aspect - _cfg.KiteRadius);
             s.BoundsCentreZ = 0f;
@@ -321,12 +360,24 @@ namespace CosmicShore.Gameplay
         {
             xMax = zLo = zHi = 0f;
             if (_view == null || !_humanNavigates) return false;
-            float h = _s.BoardRadius * _cfg.ViewScale, m = _cfg.HandEdgeMargin;
+            float h = ViewHalfHeight(_s.BoardRadius), m = _cfg.HandEdgeMargin;
             float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
             xMax = Mathf.Max(0f, h * aspect - m);
             zHi = ViewCentreZ + h - m;
             zLo = Mathf.Min(zHi, ViewCentreZ + (2f * _view.HandLine01 - 1f) * h);
             return true;
+        }
+
+        /// <summary>
+        /// The kite view's half-height (u): viewScale board radii across the screen's SHORT side. Landscape, that is its
+        /// height, as it always was; held upright (the Wrasse's seat on a phone is portrait, <see cref="SeatOrientation"/>),
+        /// it is the width, so the board is as wide as it was and the taller screen sees further ahead and behind.
+        /// </summary>
+        internal float ViewHalfHeight(float boardRadius)
+        {
+            float h = boardRadius * _cfg.ViewScale;
+            float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
+            return aspect < 1f ? h / Mathf.Max(0.1f, aspect) : h;
         }
 
         /// <summary>Where the kite view is centred on the board (u along the board's forward): the hull.</summary>
@@ -335,7 +386,8 @@ namespace CosmicShore.Gameplay
         void Unbind()
         {
             if (_vessel == null) return;
-            if (_humanNavigates) SetHumanNavigates(false);
+            if (_humanNavigates && _rider) { _humanNavigates = false; SeatOrientation.Portrait(false); }
+            else if (_humanNavigates) SetHumanNavigates(false);
             EndBoost();
             _massQueue.Clear();
             _view?.Dispose();
@@ -350,15 +402,29 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!ShouldRun(out var vessel, out bool aiCrew)) { Unbind(); return; }
-            if (_vessel != null && aiCrew != _aiCrew) Unbind();   // the hull changed hands: seat it afresh
-            if (_vessel == null) { _aiCrew = aiCrew; Bind(vessel); }
+            if (!ShouldRun(out var vessel, out bool aiCrew, out bool rider)) { Unbind(); return; }
+            if (_vessel != null && (aiCrew != _aiCrew || rider != _rider)) Unbind();   // the hull changed hands: seat it afresh
+            if (_vessel == null) { _aiCrew = aiCrew; _rider = rider; Bind(vessel); }
             float dt = Time.deltaTime;
 
-            if (!_aiCrew)
+            if (!_aiCrew && !_rider)
             {
                 PollSwap();
                 ApplySeatChoice();
+            }
+
+            // a person on another machine flies the kite: the AI stands down, and the board shows the kite where they say
+            bool remote = !_rider && CrewStations.HeldByRemoteHuman(this, 1);
+            if (remote != _remoteKite)
+            {
+                _remoteKite = remote;
+                if (remote && _humanNavigates) SetHumanNavigates(false);
+                Motes.Clear(); Loops.Clear(); _massQueue.Clear();   // the motes and loops are the rider's now, or ours again
+                _remotePos = _kite.Position;
+                if (!remote) { _kite.Reset(_kite.Position); _ai.Reset(_kite.Position); }
+                // the probe changes bodies: the kite here, or the rider's replayed path
+                _probeEpoch++;
+                _riderPath.Reset();
             }
             if (dt <= 0f) return;
 
@@ -366,6 +432,15 @@ namespace CosmicShore.Gameplay
             UpdateBoard(dt);
             _view?.Frame(_humanNavigates);
             ShadowRaceRing(dt);
+            if (_remoteKite)
+            {
+                _kite.Position = _remotePos;
+                _kiteHeading = _remoteHeading;
+                StepBoost(dt);
+                PruneEffects();
+                if (Time.time >= _stateSendAt) SendRiderState();
+                return;
+            }
             StepMotes(dt);
             ShadowPrisms();
             ShadowRivals(dt);
@@ -383,7 +458,9 @@ namespace CosmicShore.Gameplay
             if (_kite.AdvanceTail(_s, _loop)) CloseLoop(_loop);
             EaseKiteHeading(dt);
 
-            StepBoost(dt);
+            // the boost is the hull's: a rider's Time loops are banked on the hull's machine (FireTime)
+            if (_rider) SendPose();
+            else StepBoost(dt);
             CountBlast();
             LayMassQueue();
             PruneEffects();
@@ -394,38 +471,50 @@ namespace CosmicShore.Gameplay
         {
             if (_view == null || _vessel == null || !UnityLiveness.Alive(_vessel.Transform)) return;
             UpdateBoard(0f);
+            if (_rider && Time.deltaTime > 0f) RecordRiderPath();
             _view.Frame(_humanNavigates);
             _view.Draw();
         }
 
         // ------------------------------------------------------------------ seats
 
-        // Keys PICK a seat - 1 the hull (the Grouper), 2 the kite (the Wrasse) - and the D-pad and a double tap on the small
-        // view STEP to the other one (Garrett, 2026-10-21: "players can select, change seats etc. both can be played on
-        // mobile or pc"; the Orca's keys 1-4 pick its seats the same way). Picking the seat you are in does nothing and
-        // spends no cooldown. Every pick is remembered (CrewSeatChoice), so the next bind starts there.
+        // The swap gesture (D-pad, the left / right arrow keys, a two-finger swipe) is the person's, not the seat's: CrewStations steps them
+        // through this hull's two seats and on to the next hull, and moves them here through TakeSeat. A double tap on
+        // the small view still swaps the two seats here (Garrett, 2026-10-21: "players can select, change seats etc. both
+        // can be played on mobile or pc"). Every pick is remembered (CrewSeatChoice), so the next bind starts there.
         void PollSwap()
         {
             // read every frame: the double tap tracks presses and releases across frames
-            bool pipDoubleTap = PipDoubleTapped();
-            var keyboard = Keyboard.current;
-            int want;
-            if (keyboard != null && keyboard.digit1Key.wasPressedThisFrame) want = 0;
-            else if (keyboard != null && keyboard.digit2Key.wasPressedThisFrame) want = 1;
-            else if (pipDoubleTap || PilotSwapGesture.DirectionThisFrame() != 0) want = _humanNavigates ? 0 : 1;
-            else return;
+            if (!PipDoubleTapped() || Time.unscaledTime < _swapReadyAt) return;
+            TakeSeat(_humanNavigates ? 0 : 1);
+        }
 
-            bool navigate = want == 1;
-            if (navigate == _humanNavigates || Time.unscaledTime < _swapReadyAt) return;
+        /// <inheritdoc cref="ICrewStations.SeatCount"/>
+        public int SeatCount => 2;
+
+        /// <inheritdoc cref="ICrewStations.LocalSeat"/>
+        public int LocalSeat => _vessel != null && !_aiCrew && !_rider ? (_humanNavigates ? 1 : 0) : -1;
+
+        /// <inheritdoc cref="ICrewStations.HostsRiders"/>: the Wrasse seat. The kite runs on the rider's machine; its saved
+        /// boosts and steals are decided on the hull's (<see cref="ICrewRelay"/>).
+        public bool HostsRiders => true;
+
+        /// <inheritdoc cref="ICrewStations.TakeSeat"/>
+        public void TakeSeat(int seat)
+        {
+            bool navigate = seat == 1;
+            if (_vessel == null || _aiCrew || _rider || navigate == _humanNavigates) return;
+            if (navigate && CrewStations.HeldByRemoteHuman(this, 1)) return;   // a person on another machine flies it
             _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
             _seatChoicePending = false;
             SetHumanNavigates(navigate);
-            if (_status != null) CrewSeatChoice.Set(_status.VesselType, want);
+            if (_status != null) CrewSeatChoice.Set(_status.VesselType, navigate ? 1 : 0);
         }
 
-        // The seat last picked on this hull class is taken once the hull is really the person's: flown by them (not parked
-        // on its AI by a menu or the Vessel Changer's hand-over, which ShouldRun already waits out) with live input (not a
-        // countdown, a modal or the pause menu), so taking the seat never fights whatever holds the hull at a bind.
+        // The seat last picked on this hull class (on the lowest preset, always the Wrasse) is taken once the hull is really
+        // the person's: flown by them (not parked on its AI by a menu or the Vessel Changer's hand-over, which ShouldRun
+        // already waits out) with live input (not a countdown, a modal or the pause menu), so taking the seat never fights
+        // whatever holds the hull at a bind.
         void ApplySeatChoice()
         {
             if (!_seatChoicePending) return;
@@ -433,11 +522,12 @@ namespace CosmicShore.Gameplay
             var input = _player?.InputStatus;
             if (_status == null || _status.AutoPilotEnabled || input == null || input.Paused || PauseSystem.Paused) return;
             _seatChoicePending = false;
-            if (CrewSeatChoice.Get(_status.VesselType) == 1) SetHumanNavigates(true);
+            // the lowest preset starts the person on the Wrasse, its one cheap view (CrewSingleView)
+            if (CrewSingleView.On || CrewSeatChoice.Get(_status.VesselType) == 1) SetHumanNavigates(true);
         }
 
         // A double tap on the small view swaps seats - the touch swap (Garrett, 2026-10-19: "when I double tap the pip
-        // window to the other vessel it should switch"); 1 / 2 and the D-pad stay the pad and keyboard swap. Two SHORT
+        // window to the other vessel it should switch"); the D-pad and the arrow keys stay the pad and keyboard swap. Two SHORT
         // taps, the second starting soon after the first and near it, both inside the small view. Short is what keeps a
         // flying thumb out: the left thumb lands in that corner, and re-planting it quickly is a drift, not a swap - but
         // a planted thumb stays down, so it never counts as a tap.
@@ -507,6 +597,7 @@ namespace CosmicShore.Gameplay
             if (_humanNavigates == navigate) return;
             _humanNavigates = navigate;
             _down = false;
+            SeatOrientation.Portrait(navigate);   // a phone holds the Wrasse upright and the Grouper on its side
             // a release made while the AI flies the hull never arrives (R_VesselActionHandler ignores input under autopilot)
             _boostHeld = false;
 
@@ -704,10 +795,31 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool TryGetRingProbe(out Vector3 position, out int epoch)
         {
+            if (_vessel == null || !UnityLiveness.Alive(_vessel.Transform)) { position = default; epoch = _probeEpoch; return false; }
+            if (_remoteKite)
+            {
+                // the rider's path (RingProbeReplay), its epoch kept apart from this kite's by an offset that never meets it
+                _riderPath.Step(Time.frameCount, Time.deltaTime);
+                position = _riderPath.Position;
+                epoch = _probeEpoch + 1_000_000 + _riderPath.Epoch;
+                return _riderPath.Has;
+            }
             epoch = _probeEpoch;
-            if (_vessel == null || !UnityLiveness.Alive(_vessel.Transform)) { position = default; return false; }
             position = BoardToWorld(_kite.Position.X, _kite.Position.Z);
             return true;
+        }
+
+        // The rider: this frame's kite in the world, after the hull moved (what the rider's screen shows), sent in batches.
+        void RecordRiderPath()
+        {
+            var at = BoardToWorld(_kite.Position.X, _kite.Position.Z);
+            if (_pathOut.Count == 0) { _pathOut.Add(RelayPath); _pathOut.Add(_probeEpoch); _pathOut.Add(0); }
+            _pathOut.Add(FloatBits(at.x)); _pathOut.Add(FloatBits(at.y)); _pathOut.Add(FloatBits(at.z));
+            _pathOut[2]++;
+            if (_pathOut[2] < MaxPathPerSend && Time.time < _pathSendAt) return;
+            _pathSendAt = Time.time + 0.05f;
+            CrewRelay.SendInput(this, 1, _pathOut.ToArray());
+            _pathOut.Clear();
         }
 
         // The ring a gate race has lit for this pilot (this hull's next ring, whoever flies it), as the board sees it. The human navigator sees it in the kite view
@@ -1017,13 +1129,42 @@ namespace CosmicShore.Gameplay
         {
             var victim = rival.Status;
             if (_charge < 1f || !OffRamCooldown(victim)) return;
-            if (!ElementalTransfer.IsDecidedHere(_status)) return;
+            int want = Mathf.FloorToInt(_charge);
+            if (_rider)
+            {
+                // the steal is the hull machine's to decide (every elemental transfer is gated on the attacker's owner): ask
+                // it, and spend the charge here, where the charge is
+                if (victim?.Vessel is not { } target) return;
+                ulong id = target.VesselNetId;
+                CrewRelay.SendInput(this, 1, new[]
+                {
+                    RelayRam, (int)(id & 0xffffffffUL), (int)(id >> 32), want,
+                    FloatBits(impact.x), FloatBits(impact.y), FloatBits(impact.z),
+                });
+                _lastRam[victim] = Time.time;
+                _charge = Mathf.Max(0f, _charge - want);
+                NewBurst(KiteBurstKind.Steal, rival.X, rival.Z);
+                Play(_cfg.StealSfx, BoardToWorld(rival.X, rival.Z));
+                return;
+            }
+            int got = Steal(victim, impact, want);
+            if (got < 0) return;
+            _charge = Mathf.Max(0f, _charge - got);
+            NewBurst(KiteBurstKind.Steal, rival.X, rival.Z);
+            Play(_cfg.StealSfx, BoardToWorld(rival.X, rival.Z));
+        }
+
+        // The kite's ram on the hull's machine: up to want of the victim's highest elements, ejected or stolen (Charge
+        // upgrade). -1 when the hit is not this machine's to decide or is refused.
+        int Steal(IVesselStatus victim, Vector3 impact, int want)
+        {
+            if (!ElementalTransfer.IsDecidedHere(_status)) return -1;
             if (!CombatHitDrain.TryAdmit(victim, _status, CombatHitClass.Strike, _cfg.StealCooldown,
                                          ElementalDebuffSources.VesselContact, out int supersededRank))
-                return;
+                return -1;
             _lastRam[victim] = Time.time;
 
-            int want = Mathf.FloorToInt(_charge), got = 0;
+            int got = 0;
             var rs = victim.ResourceSystem;
             var form = Upgraded(Element.Charge) ? ElementalTransferForm.Steal : ElementalTransferForm.Eject;
             while (want > 0 && rs != null)
@@ -1041,7 +1182,6 @@ namespace CosmicShore.Gameplay
                 if (moved <= 0) break;
                 got++; want--;
             }
-            _charge = Mathf.Max(0f, _charge - got);
 
             _cfg.OnCombatHitLanded.Raise(new CombatHitStats
             {
@@ -1050,8 +1190,7 @@ namespace CosmicShore.Gameplay
                 HitClass = CombatHitClass.Strike,
                 SupersededRank = supersededRank,
             });
-            NewBurst(KiteBurstKind.Steal, rival.X, rival.Z);
-            Play(_cfg.StealSfx, BoardToWorld(rival.X, rival.Z));
+            return got;
         }
 
         // ------------------------------------------------------------------ the tail: loops and their effects
@@ -1238,8 +1377,78 @@ namespace CosmicShore.Gameplay
         void FireTime(int n, Vector3 at)
         {
             int boosts = Mathf.Max(1, Mathf.RoundToInt(KiteNavigatorCore.Grow(1f, n, _cfg.Growth, MaxSavedBoosts)));
-            _savedBoosts = Mathf.Min(MaxSavedBoosts, _savedBoosts + boosts);
+            // a rider's loop banks its boosts on the hull's machine, where the pilot spends them; its count comes back
+            if (_rider) CrewRelay.SendInput(this, 1, new[] { RelayBoosts, boosts });
+            else BankBoosts(boosts);
             Play(_cfg.TimeBoostSfx, at);
+        }
+
+        void BankBoosts(int boosts) => _savedBoosts = Mathf.Min(MaxSavedBoosts, _savedBoosts + boosts);
+
+        // ------------------------------------------------------------------ the kite on another machine (ICrewRelay)
+
+        static int FloatBits(float v) => System.BitConverter.SingleToInt32Bits(v);
+        static float BitsFloat(int v) => System.BitConverter.Int32BitsToSingle(v);
+
+        // the rider: where the kite is, ten times a second, so the hull's machine draws it and the Wrasse's body follows it
+        void SendPose()
+        {
+            if (Time.time < _poseSendAt) return;
+            _poseSendAt = Time.time + 0.1f;
+            _pose[0] = RelayPose;
+            _pose[1] = FloatBits(_kite.Position.X); _pose[2] = FloatBits(_kite.Position.Z);
+            _pose[3] = FloatBits(_kiteHeading.X); _pose[4] = FloatBits(_kiteHeading.Z);
+            CrewRelay.SendInput(this, 1, (int[])_pose.Clone());
+        }
+
+        /// <inheritdoc cref="ICrewRelay.OnRiderInput"/>: the rider's kite pose, a Time loop's boosts, a ram.
+        public void OnRiderInput(int seat, int[] data)
+        {
+            if (seat != 1 || _vessel == null || _rider || data == null || data.Length < 1) return;
+            if (!CrewStations.HeldByRemoteHuman(this, 1)) return;
+            switch (data[0])
+            {
+                case RelayPose when data.Length >= 5:
+                    _remotePos = new KiteVec(BitsFloat(data[1]), BitsFloat(data[2]));
+                    _remoteHeading = new KiteVec(BitsFloat(data[3]), BitsFloat(data[4]));
+                    break;
+                case RelayPath when data.Length >= 3 && data[2] >= 0 && data.Length >= 3 + data[2] * 3:
+                    for (int k = 0; k < data[2]; k++)
+                    {
+                        int i = 3 + k * 3;
+                        _riderPath.Enqueue(data[1], new Vector3(BitsFloat(data[i]), BitsFloat(data[i + 1]), BitsFloat(data[i + 2])));
+                    }
+                    break;
+                case RelayBoosts when data.Length >= 2:
+                    BankBoosts(Mathf.Clamp(data[1], 0, MaxSavedBoosts));
+                    SendRiderState();
+                    break;
+                case RelayRam when data.Length >= 7:
+                    ulong id = (uint)data[1] | ((ulong)(uint)data[2] << 32);
+                    if (CrewStations.TryFindHull(id, out var victim) && !ReferenceEquals(victim.VesselStatus, _status))
+                        Steal(victim.VesselStatus, new Vector3(BitsFloat(data[4]), BitsFloat(data[5]), BitsFloat(data[6])),
+                              Mathf.Clamp(data[3], 0, Mathf.CeilToInt(_cfg.ChargeCap)));
+                    break;
+            }
+        }
+
+        /// <inheritdoc cref="ICrewRelay.OnCrewState"/>: the hull machine's saved boosts, and the Omni crystals it collected.
+        public void OnCrewState(int[] data)
+        {
+            if (!_rider || data == null || data.Length < 2) return;
+            _savedBoosts = data[0];
+            _omniPending += Mathf.Max(0, data[1]);
+        }
+
+        // the hull's machine: the boosts the pilot holds and the Omni crystals the rider's board should drop, on every change
+        // and a few times a second
+        void SendRiderState()
+        {
+            _stateSendAt = Time.time + 0.25f;
+            _omniForRider += _omniPending;
+            _omniPending = 0;
+            CrewRelay.SendState(this, new[] { _savedBoosts, _omniForRider });
+            _omniForRider = 0;
         }
 
         // The pilot spends a saved boost on the trigger (PilotWantsBoost): it runs timeBoostSeconds and the next can start

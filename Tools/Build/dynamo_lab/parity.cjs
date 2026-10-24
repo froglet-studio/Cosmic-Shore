@@ -46,6 +46,8 @@ function buildInPage(arg) {
     revealAbility: v % 4 === 1 ? 0 : 3.5, revealPorts: v % 7 === 2 ? 0 : 2, allowRotatedMatches: v % 8 !== 7, portsCount: v % 9 !== 8, slotCount: 3,
     startFilled: v % 3 !== 2, usesPerPattern: v % 10 === 9 ? 0 : 3, patternsPerShuffle: v % 11 === 10 ? 0 : v % 5 === 3 ? 1 : 4,
     fixedAbility: v < ABIL.length ? ABIL[v] : '', firstPortSet: v % 2 ? -1 : (v * 7) % portSets.length,
+    // the random draw's pool: every ability, all but the retired Printer (the shipped rule), two, or one
+    abilities: v < ABIL.length || v % 3 === 0 ? null : v === 23 ? ['swap'] : v === 22 ? ['mirror', 'overclock'] : ABIL.filter((a) => a !== 'printer'),
   });
   const scenarios = [], results = [];
   rules.forEach((R, n) => {
@@ -155,6 +157,7 @@ function compare(a, b) {
     ['spin 15 s -> 15.25 s', (s) => s, { tick: 15.25 }],
     ['a delete costs no AP', (s) => s.replace("st.cells[inp.cell] === 0 || !spendAp(st, 1)) return false;\n        const colour", "st.cells[inp.cell] === 0) return false;\n        const colour"), {}],
     ['a free prism places in any domain', (s) => s.replace('if (inp.colour !== st.free[0]) return false;', ''), {}],
+    ['the draw ignores the ability pool', (s) => s.replace('return S.abilities && S.abilities.length ? S.abilities : ABILITIES;', 'return ABILITIES;'), {}],
     ['the slip takes the other end', (s) => s.replace('const end = d1 >= d0 ? 1 : 0', 'const end = d1 >= d0 ? 0 : 1'), {}],
   ];
   for (const [name, plant, extra] of plants) {

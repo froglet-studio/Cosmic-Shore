@@ -79,6 +79,15 @@ one-Player-one-Vessel assumption. Do not start A without Garrett's call.
 - **`AIPilot`** (`C/AI/AIPilot.cs`): `StartAIPilot` / `StopAIPilot`, `SetExternalTargetProvider`
   (a duo AI's target, e.g. "follow the Goby's trail"), `TakeModeHooksFrom`.
 
+### Seats, then hulls (CrewStations, 2026-10-23)
+- **`C/Multiplayer/CrewStations.cs`**: `CrewStation` (hull id + seat; the default is the own helm), `ICrewStations` (a
+  crew's seats), `CrewStations` (the ring, `Classify`: own seat / ride / take the hull), `ICrewRelay` + `CrewRelay` (a
+  rider's input to the hull's machine, the crew's state back), `LocalCrewStation` (the person's own driver: the gesture,
+  own-seat reports, parking the own hull and pointing the view at a ridden one).
+- **`Player.NetStation`** (server-write) with `RequestStation_ServerRpc`, `ReportOwnSeat_ServerRpc`, `CrewInput_*`,
+  `CrewState_*`. The gesture is no longer read by `InputController`.
+- Design and limits: `Docs/CREW_STATIONS.md`.
+
 ### The swap (PilotSwap, the template)
 - **`C/Multiplayer/PilotSwap.cs`:**
   - `TryValidateServer`, `TransferOwnershipServer` (`NetworkObject.ChangeOwnership`).

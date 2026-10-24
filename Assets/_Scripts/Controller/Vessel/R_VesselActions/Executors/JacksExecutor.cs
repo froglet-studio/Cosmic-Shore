@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
     /// flight, one fish under each thumb: one up and the other down rolls, both together pitch and yaw, apart is faster
     /// and together slower. Where they fly is where the board goes. They can CALL the herd to themselves (a long cooldown)
     /// and jump to the decoy (<see cref="JacksActionSO"/>).</item>
-    /// <item><b>The switch</b>: the old seat swap (D-pad left / right, keys 1 / 2, or a double tap on the small view).
+    /// <item><b>The switch</b>: the old seat swap (D-pad left / right, the left / right arrow keys, or a double tap on the small view).
     /// An AI hull switches on its own (<see cref="JacksConfigSO.AIHerdSeconds"/>, <see cref="JacksConfigSO.AIFlightSeconds"/>):
     /// the hull's own <c>AIPilot</c> flies, and the jacks' drive-and-collect AI (<see cref="JacksAI"/>) herds through aim
     /// points only, as thumbs do.</item>
@@ -49,7 +49,7 @@ namespace CosmicShore.Gameplay
     /// leash them) by the owner's real jacks. The views and the marks are the owner's alone.</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class JacksExecutor : ShipActionExecutorBase, IFaunaHerd, IHullParkAware
+    public sealed class JacksExecutor : ShipActionExecutorBase, IFaunaHerd, IHullParkAware, ICrewStations
     {
         [Header("Wiring (serialized on the prefab so a missing wire shows in the inspector)")]
         [Tooltip("Every number (JacksConfig.asset, the Swarm Vessel Lab's shipped values).")]
@@ -566,13 +566,30 @@ namespace CosmicShore.Gameplay
 
         // ---- the mode ----
 
+        // a double tap on the small view; the swap gesture (D-pad, the left / right arrow keys, a two-finger swipe) is the person's, and
+        // CrewStations steps them fly -> herd -> the next hull through TakeSeat (the two modes are the hull's two seats)
         void PollSwap()
         {
-            int dir = PilotSwapGesture.DirectionThisFrame();
-            if (dir == 0 && _view != null && _view.PipDoubleTapped(_herding)) dir = 1;
-            if (dir == 0 || Time.unscaledTime < _swapReadyAt) return;
+            if (_view == null || !_view.PipDoubleTapped(_herding) || Time.unscaledTime < _swapReadyAt) return;
+            TakeSeat(_herding ? 0 : 1);
+        }
+
+        /// <inheritdoc cref="ICrewStations.SeatCount"/>: flying (0) and herding (1).
+        public int SeatCount => 2;
+
+        /// <inheritdoc cref="ICrewStations.LocalSeat"/>
+        public int LocalSeat => IsLocalHuman && _status != null && !_status.AutoPilotEnabled ? (_herding ? 1 : 0) : -1;
+
+        /// <inheritdoc cref="ICrewStations.HostsRiders"/>: one person flies or herds the Jacks.
+        public bool HostsRiders => false;
+
+        /// <inheritdoc cref="ICrewStations.TakeSeat"/>
+        public void TakeSeat(int seat)
+        {
+            bool herd = seat == 1;
+            if (LocalSeat < 0 || herd == _herding) return;
             _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
-            SetHerding(!_herding);
+            SetHerding(herd);
         }
 
         /// <summary>
@@ -1145,14 +1162,15 @@ namespace CosmicShore.Gameplay
         {
             if (!IsLocalHuman) return;
             var board = _view != null ? _view.Camera : null;
-            if (board && board.enabled) DrawMarks(_marks ??= new AnglerWorldMarks(), board, false);
+            // the herding view's marks draw after its post-processing, like UI (UnprocessedOverlay)
+            if (board && board.enabled) DrawMarks(_marks ??= new AnglerWorldMarks(), _view.MarksCamera, _view.MarksLayer, false);
             var flight = ResolveCamera();
-            if (flight && flight != board) DrawMarks(_flightMarks ??= new AnglerWorldMarks(), flight, true);
+            if (flight && flight != board) DrawMarks(_flightMarks ??= new AnglerWorldMarks(), flight, 0, true);
         }
 
-        void DrawMarks(AnglerWorldMarks marks, Camera cam, bool flightView)
+        void DrawMarks(AnglerWorldMarks marks, Camera cam, int layer, bool flightView)
         {
-            if (!marks.Begin(cam, onlyThisCamera: true)) return;
+            if (!marks.Begin(cam, onlyThisCamera: true, layer)) return;
             float ring = Ring, dot = Mathf.Max(1.5f, ring * 0.02f);
             float ringDot = flightView ? dot * flightRingDotScale : dot, ringPixels = flightView ? flightRingDotPixels : 3f;
             int ringDots = flightView ? flightRingDots : 48;

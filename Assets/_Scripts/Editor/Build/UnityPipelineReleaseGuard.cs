@@ -62,13 +62,8 @@ namespace CosmicShore.Editor
 
         public void OnPreprocessBuild(BuildReport report)
         {
-            // EditorUserBuildSettings.development covers editor-driven builds; the report options
-            // cover scripted builds (CosmicShoreBuildPipeline passes BuildOptions.Development
-            // explicitly and does not necessarily touch the editor setting). Either one marks the
-            // build as development → allowed.
-            bool development = EditorUserBuildSettings.development ||
-                               (report.summary.options & BuildOptions.Development) != 0;
-            if (development)
+            // The build's own options decide, never the Build Settings checkbox (ReleaseBuildKind).
+            if (ReleaseBuildKind.IsDevelopment(report))
                 return;
 
             if (!AssetDatabase.IsValidFolder(PackageRoot))
@@ -127,7 +122,7 @@ namespace CosmicShore.Editor
                 "Fix: remove the offending component / reference from the content listed above (the package " +
                 "itself may stay in Packages/manifest.json — only shipped CONTENT referencing it is blocked). " +
                 "To debug the CLI integration inside a player, make a DEVELOPMENT build instead " +
-                "(EditorUserBuildSettings.development, or BuildOptions.Development in a scripted build) — " +
+                "(Development ticked in the build profile, or BuildOptions.Development in a scripted build) — " +
                 "this guard only blocks release builds.\n" +
                 "Guard: Assets/_Scripts/Editor/Build/UnityPipelineReleaseGuard.cs");
         }

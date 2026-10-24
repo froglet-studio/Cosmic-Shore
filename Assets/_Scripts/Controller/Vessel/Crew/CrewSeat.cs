@@ -38,7 +38,9 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// The seat rules every crew vessel shares, in one place so the seats cannot drift apart (they had: the Kite paused
+    /// The seat rules every crew vessel shares, in one place so the seats cannot drift apart. Which seat a person goes to
+    /// (the swap gesture, seats then hulls, a person on another machine in a seat) is <see cref="CrewStations"/>'s; a
+    /// crew implements <see cref="ICrewStations"/> and moves them by its own rules (they had: the Kite paused
     /// the player's input through its <c>InputController</c>, the Goby through its <c>InputStatus</c>, in the opposite
     /// order). Engine state only through the hull and the player: no seat-specific knowledge.
     /// </summary>
@@ -57,10 +59,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The swap is the arena's gesture (<see cref="PilotSwapGesture"/>: D-pad left / right, keys 1 / 2) on the arena's
-        /// cooldown (<see cref="PilotSwap.CooldownSeconds"/>, unscaled time). True on a swap this frame.
-        /// </summary>
-        /// <summary>
         /// Call FIRST wherever a hull is parked on its AI (before the caller's <c>SetPause(true)</c> and
         /// <c>ToggleAIPilot(true)</c>): every crew seat on it sends its human back to the hull's seat and forgets that it
         /// took the hull, so none keeps reading raw input under a menu. A seat's own hand-back may unpause the player's
@@ -70,13 +68,8 @@ namespace CosmicShore.Gameplay
         {
             if (hull == null || !UnityLiveness.Alive(hull.Transform)) return;
             foreach (var seat in hull.Transform.GetComponentsInChildren<IHullParkAware>(true)) seat.ReturnHumanToHull();
-        }
-
-        public static bool PollSwap(ref float readyAt)
-        {
-            if (PilotSwapGesture.DirectionThisFrame() == 0 || Time.unscaledTime < readyAt) return false;
-            readyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
-            return true;
+            // a person riding ANOTHER hull from this one comes home too (CrewStations): the parker holds this hull now
+            if (hull.VesselStatus?.Player is Player pilot && pilot && pilot.IsLocalUser) pilot.ReturnStationHome();
         }
 
         /// <summary>

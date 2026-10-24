@@ -320,10 +320,19 @@ public class VesselTransformer : MonoBehaviour
         public static float RotationFollowRate => LERP_AMOUNT;
 
         /// <summary>This hull's nose follow rate per second, as <see cref="NoseFollowFraction"/>
-        /// applies it: <see cref="RotationFollowRate"/> for an AI, autopilot or remote hull, and
-        /// <see cref="float.PositiveInfinity"/> (the nose IS the command) for this machine's human
-        /// pilot. For a predictor of this hull's path (the Stoat's foresight).</summary>
-        public float NoseFollowRate => IsLocalHumanPilot ? float.PositiveInfinity : LERP_AMOUNT;
+        /// applies it: <see cref="RotationFollowRate"/> for an AI, autopilot or remote hull; for this
+        /// machine's human pilot, their device's rate (<see cref="PilotNoseFollowPerSecond"/>: the pad
+        /// 1.5, touch 9), or <see cref="float.PositiveInfinity"/> (the nose IS the command) on a device
+        /// with no lag. For a predictor of this hull's path (the Stoat's foresight).</summary>
+        public float NoseFollowRate
+        {
+            get
+            {
+                if (!IsLocalHumanPilot) return LERP_AMOUNT;
+                float rate = PilotNoseFollowPerSecond;
+                return rate > 0f ? rate : float.PositiveInfinity;
+            }
+        }
 
         /// <summary>The boost ceiling this hull's skim boost saturates at. Read-only.</summary>
         public float MaxBoost => MaxBoostMultiplier;
@@ -590,6 +599,12 @@ public class VesselTransformer : MonoBehaviour
         /// pads, keyboards and mice too. The steady turn RATE is unchanged; only the lag behind it
         /// is gone.</para>
         ///
+        /// <para><b>Except where a device's dial asks for a lag</b> (<see cref="PilotNoseFollowPerSecond"/>):
+        /// the pad keeps the fleet lag, 1.5/s (Garrett, 2026-10-23: "it is responsive, but eases into its
+        /// target from the repeated lerp. we want to keep this on gamepad"); touch has its own dial,
+        /// shipped at 9 (0.11 s), short enough that a thumb on glass, already damped by friction, only
+        /// loses its hard starts and stops.</para>
+        ///
         /// <para>Two things keep it smooth. The command itself is integrated from eased stick rates,
         /// so it never jumps; and a LEFTOVER gap - one a discontinuous command left behind (a 180
         /// degree flip, an ability that rotates the command, a pad handing over mid-turn) - is closed
@@ -606,6 +621,9 @@ public class VesselTransformer : MonoBehaviour
             float fleet = LERP_AMOUNT * dt;
             if (!IsLocalHumanPilot) return fleet;
 
+            float pilotRate = PilotNoseFollowPerSecond;
+            if (pilotRate > 0f) return 1f - Mathf.Exp(-pilotRate * dt);
+
             float t = 1f;
             float gap = Quaternion.Angle(transform.rotation, target);
             if (gap > 1e-3f)
@@ -613,6 +631,21 @@ public class VesselTransformer : MonoBehaviour
 
             return Mathf.Max(t, fleet);
         }
+
+        /// <summary>
+        /// The local human pilot's nose follow rate per second for the device they fly with, or 0 for
+        /// no lag: the pad's <see cref="GamepadFlightConfigSO.NoseFollowPerSecond"/> (1.5, the fleet lag),
+        /// touch's <see cref="TouchControlProfileLibrarySO.NoseFollowPerSecond"/> (9); keyboard and mouse
+        /// have none. One dial per device, never per hull.
+        /// </summary>
+        float PilotNoseFollowPerSecond => InputStatus.ActiveInputDevice switch
+        {
+            InputDeviceType.Gamepad => GamepadFlightConfigSO.Instance.NoseFollowPerSecond,
+            InputDeviceType.Touch => TouchControlProfileLibrarySO.Instance
+                ? TouchControlProfileLibrarySO.Instance.NoseFollowPerSecond
+                : 0f,
+            _ => 0f,
+        };
 
         /// <summary>
         /// True only while THIS machine's human flies the hull. A handheld selects the touch strategy
@@ -935,10 +968,54 @@ public class VesselTransformer : MonoBehaviour
 
         protected virtual void Roll()
         {
-            if (InputStatus == null || BankIntoTurnSuppressed) return;
+            if (InputStatus == null || ApplyHeldRoll() || BankIntoTurnSuppressed) return;
             accumulatedRotation = Quaternion.AngleAxis(
                 InputStatus.YDiff * (speed * RotationThrottleScaler + RollScaler) * RollScalar * FlightDeltaTime,
                 transform.forward) * accumulatedRotation;
+        }
+
+        bool _heldRollActive;
+        float _heldRollApplied;
+
+        /// <summary>
+        /// Roll as an ANGLE (<see cref="IInputStatus.HoldsRollAngle"/>): the Dolphin's aim on a phone, where
+        /// the phone is an augmented-reality window and the hull rolls exactly as far as the phone has turned
+        /// since the aim began (Garrett, 2026-10-22: "1 to 1 roll like augmented reality not a control that
+        /// sends the vessel into a roll"). Each frame applies the change in the held angle to the COMMAND
+        /// only; the hull follows through the touch nose lag (<see cref="NoseFollowFraction"/>,
+        /// <c>TouchControlProfiles.noseFollowPerSecond</c>, 9/s: 0.11 s), which filters the attitude
+        /// sensor's jitter and still settles on exactly the phone's angle (Garrett, 2026-10-23: "have the
+        /// dolphin's 1:1 roll accept a bit of this smoothing since i did notice a slight jitter"). It
+        /// first wrote the step into the hull too, for zero lag, and the sensor noise reached the
+        /// hard-attached camera unfiltered. Letting go keeps the roll where it is. Returns true while the
+        /// angle is held, so the rate roll stands down.
+        /// </summary>
+        bool ApplyHeldRoll()
+        {
+            if (!InputStatus.HoldsRollAngle)
+            {
+                _heldRollActive = false;
+                return false;
+            }
+
+            // The angle is measured from where the phone was when the hold began, so the hull's roll at
+            // that moment is zero on the same scale.
+            if (!_heldRollActive)
+            {
+                _heldRollActive = true;
+                _heldRollApplied = 0f;
+            }
+
+            float step = Mathf.DeltaAngle(_heldRollApplied, InputStatus.HeldRollDegrees);
+            _heldRollApplied += step;
+
+            // An ability that owns the roll axis still owns it; the phone's turn is consumed, not stored.
+            if (BankIntoTurnSuppressed || step == 0f) return true;
+
+            // Clockwise from behind is a negative angle about forward (Euler(0, 0, 90) * up = left).
+            var turn = Quaternion.AngleAxis(-step, transform.forward);
+            accumulatedRotation = turn * accumulatedRotation;
+            return true;
         }
 
         protected float CurrentBoostAmount()

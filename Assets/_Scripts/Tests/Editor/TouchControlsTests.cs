@@ -83,6 +83,60 @@ namespace CosmicShore.Tests
             Assert.That(right.y, Is.EqualTo(left.y).Within(0.01f));
         }
 
+        // ---- The Dolphin's aim: the phone as an augmented-reality window on roll ---------------
+
+        // The attitude sensor's pose is device -> world, right-handed, device z out of the glass. A
+        // turn clockwise as the player sees the glass is a NEGATIVE turn about the device's own z.
+        static Quaternion Clockwise(float degrees) => Quaternion.AngleAxis(-degrees, Vector3.forward);
+
+        static readonly Quaternion HeldPose =
+            Quaternion.AngleAxis(70f, Vector3.forward) * Quaternion.AngleAxis(-55f, Vector3.right) *
+            Quaternion.AngleAxis(12f, Vector3.up);
+
+        [TestCase(0f)]
+        [TestCase(30f)]
+        [TestCase(-45f)]
+        [TestCase(90f)]
+        [TestCase(-90f)]
+        public void TheRollIsOneToOneWithTheWheelTurn(float degrees)
+        {
+            Assert.That(TiltMath.RollBetween(HeldPose, HeldPose * Clockwise(degrees)),
+                Is.EqualTo(degrees).Within(0.01f), "clockwise reads positive, degree for degree");
+        }
+
+        [Test]
+        public void TippingTheTopOrTurningOnTheSpotIsNoRoll()
+        {
+            Assert.That(TiltMath.RollBetween(HeldPose, HeldPose * Quaternion.AngleAxis(25f, Vector3.right)),
+                Is.EqualTo(0f).Within(0.01f), "tipping the top edge back");
+            Assert.That(TiltMath.RollBetween(HeldPose, HeldPose * Quaternion.AngleAxis(40f, Vector3.up)),
+                Is.EqualTo(0f).Within(0.01f), "turning about the screen's up");
+        }
+
+        [Test]
+        public void AWheelTurnReadsTheSameWhileThePhoneIsTippedBack()
+        {
+            var tippedAndTurned = HeldPose * Quaternion.AngleAxis(30f, Vector3.right) * Clockwise(40f);
+            Assert.That(TiltMath.RollBetween(HeldPose, tippedAndTurned), Is.EqualTo(40f).Within(0.01f));
+        }
+
+        [Test]
+        public void TheRollReadsWithThePhoneLyingFlat()
+        {
+            // Gravity cannot tell a wheel turn from nothing here; the fused pose can.
+            Assert.That(TiltMath.RollBetween(Quaternion.identity, Clockwise(60f)), Is.EqualTo(60f).Within(0.01f));
+        }
+
+        [Test]
+        public void TheRollAgreesInSignWithTheGravityWheel()
+        {
+            // The fallback (no attitude sensor) reads the wheel from gravity; both call clockwise positive.
+            var reference = TiltMath.Angles(Gravity(0f, 30f));
+            float gravityWheel = Mathf.DeltaAngle(reference.x, TiltMath.Angles(Gravity(20f, 30f)).x);
+            Assert.That(gravityWheel, Is.EqualTo(20f).Within(0.5f));
+            Assert.That(TiltMath.RollBetween(HeldPose, HeldPose * Clockwise(20f)), Is.EqualTo(gravityWheel).Within(0.5f));
+        }
+
         // ---- Layout -------------------------------------------------------------------------
 
         static readonly TouchButtonLayout.Settings Shipped = new()
@@ -182,6 +236,17 @@ namespace CosmicShore.Tests
                 Assert.That(seen.Add(t), Is.True, $"hull listed twice: {t}");
             }
             Assert.That(seen.Count, Is.GreaterThan(10));
+        }
+
+        [Test]
+        public void OnlyTheMantaTurnsItsIdleTiltOver()
+        {
+            // Garrett, 2026-10-22: the Manta's soar steered the opposite way on both axes. The Thresher's
+            // launch aim reads the same tilt and keeps it as is.
+            var library = Resources.Load<TouchControlProfileLibrarySO>(TouchControlProfileLibrarySO.ResourcePath);
+            Assert.That(library, Is.Not.Null);
+            Assert.That(library.Find(VesselClassType.Manta).flipTiltSteer, Is.True);
+            Assert.That(library.Find(VesselClassType.Thresher).flipTiltSteer, Is.False);
         }
 
         [Test]

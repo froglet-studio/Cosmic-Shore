@@ -16,7 +16,15 @@ namespace CosmicShore.Gameplay
     /// <para><b>Which is big.</b> Playing the Ratel: the board fills <c>engineerRect</c> and takes the pointer (drag a prism, tap
     /// a port, tap a lit card; tap the AP row to change the free prism's colour; right-click a prism, or on a phone hold it,
     /// to delete it; the Fly button left of the board swaps back to flying). Flying: the board is the small read-only
-    /// view in <c>pilotRect</c>; a double tap on it swaps seats, and a chip above it shows what RT and LT do now.</para>
+    /// view in <c>pilotRect</c>; a double tap on it swaps seats, and a chip above it shows what RT and LT do now. On the
+    /// lowest preset there is no small board, and the Ratel's board sits on a plain backdrop with the world not drawn
+    /// (<see cref="CrewSingleView"/>).</para>
+    ///
+    /// <para><b>Portrait on a phone</b> (Garrett 2026-10-22: "assume the player is holding the phone in portrait mode"). The
+    /// screen stays locked to landscape (<see cref="DeviceOrientationHandler"/>), so the big board is drawn a quarter turn
+    /// round, in a frame as wide as the screen is tall, and reads upright with the phone held portrait: turning the phone is
+    /// part of taking the Ratel's seat. Its text, cards and Fly button are sized in millimetres for a thumb
+    /// (<c>portraitTextMillimetres</c>, <c>portraitCardMillimetres</c>). The small view while flying stays landscape.</para>
     /// </summary>
     sealed class HoneyguideDynamoView
     {
@@ -37,18 +45,23 @@ namespace CosmicShore.Gameplay
         static readonly Color Muted = new(0.541f, 0.588f, 0.651f, 1f);
         static readonly Color Cream = new(1f, 0.953f, 0.812f, 1f);
         static readonly Color Label = new(0.851f, 0.788f, 0.639f, 1f);
+        static readonly Color Backdrop = new(0.043f, 0.051f, 0.071f, 1f);   // the board's panel, opaque
 
         readonly HoneyguideCrew _crew;
         readonly GameObject _root;
+        readonly RectTransform _content;   // the board's frame: the screen, or the screen turned a quarter for portrait
         readonly HoneyguideBoardGraphic _graphic;
         readonly TMP_Text _seat, _abilityName, _abilityText, _free, _revealTitle, _revealText, _detail, _chip, _fly;
         readonly TMP_Text[] _slotNames = new TMP_Text[3], _slotTaps = new TMP_Text[3];
 
         // this frame's layout, in canvas pixels (y up)
-        Rect _rect, _apRect, _chipRect, _flyRect;
+        Rect _rect, _apRect, _chipRect, _flyRect, _lineRect;
         readonly Rect[] _slots = new Rect[3];
         float _size, _cx, _cy;
         bool _small;
+        // the view frame (y up, canvas pixels): its size, which way it is turned, the unit every length is in and the text size
+        float _viewW, _viewH, _ui = 1f, _text = 15f, _cardHead;
+        int _turn;   // 0 landscape; +1 a quarter counter-clockwise (the screen's LandscapeLeft); -1 clockwise (LandscapeRight)
 
         // the thumb
         int _dragFrom = -1;
@@ -61,6 +74,8 @@ namespace CosmicShore.Gameplay
         float _pressAt = -1f;   // touch: when the finger went down on a prism, for the long-press delete
         int _pressCell = -1;
         bool _longFired;
+        // the pilot's camera asleep under the Ratel's board on the lowest preset (CrewSingleView)
+        readonly PilotCameraPark _park = new();
 
         internal HoneyguideDynamoView(HoneyguideCrew crew)
         {
@@ -72,8 +87,14 @@ namespace CosmicShore.Gameplay
             canvas.sortingOrder = 19000;   // above the gameplay HUD, below the Arkway banner (20000) and the load veil (30000)
             // No GraphicRaycaster: the board reads the pointer itself, so it never eats a tap meant for the HUD.
 
+            var cGo = new GameObject("Frame", typeof(RectTransform));
+            cGo.transform.SetParent(_root.transform, false);
+            _content = (RectTransform)cGo.transform;
+            _content.anchorMin = _content.anchorMax = Vector2.zero;
+            _content.pivot = Vector2.zero;
+
             var gGo = new GameObject("Board", typeof(RectTransform));
-            gGo.transform.SetParent(_root.transform, false);
+            gGo.transform.SetParent(_content, false);
             var gRt = (RectTransform)gGo.transform;
             Stretch(gRt);
             // The mesh is built in canvas pixels from the bottom-left corner (the layout's frame, and the labels'), so the
@@ -102,6 +123,7 @@ namespace CosmicShore.Gameplay
 
         internal void Dispose()
         {
+            _park.Release();
             if (_root) Object.Destroy(_root);
         }
 
@@ -115,7 +137,7 @@ namespace CosmicShore.Gameplay
         TMP_Text MakeText(string name, Color colour, FontStyles style, TextAlignmentOptions align)
         {
             var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(_root.transform, false);
+            go.transform.SetParent(_content, false);
             var rt = (RectTransform)go.transform;
             rt.anchorMin = rt.anchorMax = Vector2.zero;
             rt.pivot = Vector2.zero;
@@ -159,24 +181,88 @@ namespace CosmicShore.Gameplay
         void Layout()
         {
             _small = !_crew.HumanEngineers;
-            var f = _small ? _crew.Config.PilotRect : _crew.Config.EngineerRect;
+            var cfg = _crew.Config;
             float w = Screen.width, h = Screen.height;
-            _rect = new Rect(f.x * w, f.y * h, f.width * w, f.height * h);
-            float ui = Mathf.Max(0.6f, h / 900f);
-            float pad = 6f * ui, top = (_small ? 30f : 46f) * ui;
-            float slotsH = _small ? Mathf.Max(34f * ui, _rect.height * 0.2f) : Mathf.Max(64f * ui, Mathf.Min(110f * ui, _rect.height * 0.17f));
-            float bw = _rect.width - 2f * pad, bh = _rect.height - top - slotsH - 2f * pad;
+            float mm = Screen.dpi > 0f ? Screen.dpi / 25.4f : 6f;
+            _turn = !_small && Portrait(cfg) ? (Screen.orientation == ScreenOrientation.LandscapeRight ? -1 : 1) : 0;
+            float pad, top, slotsH, freeH;
+            if (_turn != 0)
+            {
+                _viewW = h;
+                _viewH = w;
+                if (Screen.dpi <= 0f) mm = _viewW / 68f;   // no dpi reported: a phone held portrait is about 68 mm wide
+                var safe = ToView(Screen.safeArea);
+                var f = cfg.PortraitRect;
+                _rect = new Rect(safe.x + f.x * safe.width, safe.y + f.y * safe.height, f.width * safe.width, f.height * safe.height);
+                _text = cfg.PortraitTextMillimetres * mm;
+                _ui = _text / 15f;   // the landscape board's text is 15 units: every length below keeps its proportion to the text
+                pad = 6f * _ui;
+                top = 28f * _ui + 4.2f * _text;   // the seat row, then the ability's name and two lines of its words
+                slotsH = Mathf.Min(cfg.PortraitCardMillimetres * mm, _rect.height * 0.25f);
+                freeH = 2.4f * 0.85f * _text;   // the line above the cards, two lines of it
+                _cardHead = 2.1f * 0.8f * _text + 4f * _ui;   // two lines of the card's name
+            }
+            else
+            {
+                _viewW = w;
+                _viewH = h;
+                var f = _small ? cfg.PilotRect : cfg.EngineerRect;
+                _rect = new Rect(f.x * w, f.y * h, f.width * w, f.height * h);
+                _ui = Mathf.Max(0.6f, h / 900f);
+                _text = Mathf.Clamp(_rect.width / 30f, 10f * _ui, 15f * _ui);
+                pad = 6f * _ui;
+                top = (_small ? 30f : 46f) * _ui;
+                slotsH = _small ? Mathf.Max(34f * _ui, _rect.height * 0.2f) : Mathf.Max(64f * _ui, Mathf.Min(110f * _ui, _rect.height * 0.17f));
+                freeH = _small ? 0f : 2.3f * 0.8f * _text;   // the line above the cards, two lines of it
+                _cardHead = _small ? 2f : 18f * _ui;
+            }
+            PlaceFrame();
+            float ui = _ui;
+            float bw = _rect.width - 2f * pad, bh = _rect.height - top - slotsH - freeH - 2f * pad;
             _size = Mathf.Max(6f, Mathf.Min(bw / (7f * Mathf.Sqrt(3f)), bh / 11f));
             _cx = _rect.center.x;
             _cy = _rect.yMax - top - pad - bh / 2f;
             float gap = 6f * ui, sw = (_rect.width - 2f * pad - gap * 2f) / 3f;
             for (int k = 0; k < 3; k++) _slots[k] = new Rect(_rect.x + pad + k * (sw + gap), _rect.y + pad / 2f, sw, slotsH);
+            // the band between the board and the cards: what the last pattern made does, or the free prism's line
+            _lineRect = new Rect(_rect.x + 8f * ui, _slots[0].yMax + pad * 0.25f, _rect.width - 16f * ui, freeH);
             _apRect = new Rect(_rect.x, _rect.yMax - 28f * ui, Mathf.Max(80f * ui, _rect.width * 0.45f), 28f * ui);
             _chipRect = _small ? new Rect(_rect.x, _rect.yMax + 6f * ui, _rect.width, 52f * ui) : default;
             // The Fly button: a thumb-sized square just left of the big board, at its top (no scaler on this canvas: pixels).
-            float mm = Screen.dpi > 0f ? Screen.dpi / 25.4f : 6f, bs = Mathf.Max(44f * ui, _crew.Config.FlyButtonMillimetres * mm);
-            _flyRect = _small ? default : new Rect(Mathf.Max(4f * ui, _rect.x - bs - 8f * ui), _rect.yMax - bs, bs, bs);
+            // Portrait: just above the board, at its left (the board is as wide as the phone).
+            float bs = Mathf.Max(_turn != 0 ? 9f * mm : 44f * ui, cfg.FlyButtonMillimetres * mm);
+            _flyRect = _small ? default
+                : _turn != 0 ? new Rect(_rect.x, Mathf.Min(_rect.yMax + 8f * ui, _viewH - bs), bs, bs)
+                : new Rect(Mathf.Max(4f * ui, _rect.x - bs - 8f * ui), _rect.yMax - bs, bs, bs);
         }
+
+        static bool Portrait(HoneyguideConfigSO cfg) => cfg.BoardOrientation switch
+        {
+            HoneyguideBoardOrientation.Portrait => true,
+            HoneyguideBoardOrientation.Landscape => false,
+            _ => KitInputDevice.IsTouchPrimary,
+        };
+
+        // The frame's transform: a quarter turn counter-clockwise maps the view's (x, y) to the screen's (W - y, x), so the
+        // view's top is the screen's left edge - the phone's top when a LandscapeLeft screen is held portrait.
+        void PlaceFrame()
+        {
+            _content.sizeDelta = new Vector2(_viewW, _viewH);
+            _content.anchoredPosition = _turn > 0 ? new Vector2(Screen.width, 0f) : _turn < 0 ? new Vector2(0f, Screen.height) : Vector2.zero;
+            _content.localRotation = Quaternion.Euler(0f, 0f, 90f * _turn);
+        }
+
+        /// <summary>A screen point (pixels, y up) in the view frame.</summary>
+        internal Vector2 ToView(Vector2 p) =>
+            _turn > 0 ? new Vector2(p.y, Screen.width - p.x) : _turn < 0 ? new Vector2(Screen.height - p.y, p.x) : p;
+
+        Rect ToView(Rect r)
+        {
+            Vector2 a = ToView(r.min), b = ToView(r.max);
+            return Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
+        }
+
+        internal bool Turned => _turn != 0;
 
         internal Vector2 CellPx(int i) =>
             new(_cx + _size * Mathf.Sqrt(3f) * (DynamoCore.Q[i] + DynamoCore.R[i] / 2f), _cy - _size * 1.5f * DynamoCore.R[i]);
@@ -199,19 +285,44 @@ namespace CosmicShore.Gameplay
             var core = _crew.Core;
             if (core == null) return;
             Layout();
+            // One view (the lowest preset, CrewSingleView): no small board while the human flies, and while the human plays
+            // the Ratel the world behind the board is not drawn - the board on a plain backdrop is all the screen shows.
+            bool single = CrewSingleView.On;
+            if (single && !_small) _park.Park(CameraManager.ViewCamera, Backdrop);
+            else _park.Release();
+            _seatButtonOnly = single && _small;
+            if (_seatButtonOnly) { FrameSeatButton(); return; }
             var cfg = _crew.Config;
-            float ui = Mathf.Max(0.6f, Screen.height / 900f), fs = Mathf.Clamp(_rect.width / 30f, 10f * ui, 15f * ui);
+            float ui = _ui, fs = _text;
+            bool turned = _turn != 0;
 
             Place(_seat, new Rect(_rect.x + 10f * ui, _rect.yMax - 28f * ui, 120f * ui, 26f * ui), fs, _small ? "" : cfg.RatelLabel);
             var ab = cfg.AbilityText(core.Ability);
-            float abY = _rect.yMax - 46f * ui;
-            Place(_abilityName, new Rect(_rect.x + 10f * ui, abY, _rect.width * 0.3f, 18f * ui), fs * 0.9f, _small || ab == null ? "" : ab.name);
-            Place(_abilityText, new Rect(_rect.x + 12f * ui + _rect.width * 0.3f, abY, _rect.width * 0.7f - 24f * ui, 18f * ui), fs * 0.8f,
-                  _small || ab == null ? "" : ab.text);
+            if (turned)   // portrait: the ability's name on its own line under the seat row, its words wrapped below it
+            {
+                float nameY = _rect.yMax - 28f * ui - 1.4f * fs, textH = 2.5f * 0.9f * fs;
+                Place(_abilityName, new Rect(_rect.x + 10f * ui, nameY, _rect.width - 20f * ui, 1.4f * fs), fs, ab == null ? "" : ab.name);
+                Place(_abilityText, new Rect(_rect.x + 10f * ui, nameY - textH, _rect.width - 20f * ui, textH), fs * 0.9f, ab == null ? "" : ab.text);
+            }
+            else
+            {
+                float abY = _rect.yMax - 46f * ui;
+                Place(_abilityName, new Rect(_rect.x + 10f * ui, abY, _rect.width * 0.3f, 18f * ui), fs * 0.9f, _small || ab == null ? "" : ab.name);
+                Place(_abilityText, new Rect(_rect.x + 12f * ui + _rect.width * 0.3f, abY, _rect.width * 0.7f - 24f * ui, 18f * ui), fs * 0.8f,
+                      _small || ab == null ? "" : ab.text);
+            }
 
-            string free = !_small && core.FreePlace > 0 && core.RevealState == null
-                ? TemplateText.Fill(cfg.FreePrismTemplate, "count", core.FreePlace.ToString(), "colour", cfg.ColourName(core.Free[0])) : "";
-            Place(_free, new Rect(_rect.x + 8f * ui, _cy - _size * 5.6f, _rect.width - 16f * ui, 20f * ui), fs * 0.85f, free);
+            // Above the cards, always (Garrett 2026-10-23): what the last pattern made does, until the next one; the free
+            // prism's line instead while one rides the cursor. Lime when it is about the Dynamo itself; it flashes white as
+            // the pattern is made.
+            bool freeLine = core.FreePlace > 0 && core.RevealState == null;
+            string madeLine = _small ? ""
+                : freeLine ? TemplateText.Fill(cfg.FreePrismTemplate, "count", core.FreePlace.ToString(), "colour", cfg.ColourName(core.Free[0]))
+                : _crew.MadeLine;
+            var lineColour = freeLine || _crew.MadeLineDynamo ? cfg.DynamoLineColour : Cream;
+            float lineFlash = cfg.MadeJuiceSeconds > 0f ? 1f - Mathf.Clamp01((Time.time - _crew.LastMade.At) / cfg.MadeJuiceSeconds) : 0f;
+            _free.color = Color.Lerp(lineColour, Color.white, lineFlash * lineFlash);
+            Place(_free, _lineRect, fs * (turned ? 0.85f : 0.8f), madeLine);
 
             var built = core.Built(_crew.Settings);
             for (int k = 0; k < 3; k++)
@@ -219,8 +330,15 @@ namespace CosmicShore.Gameplay
                 int pid = k < core.Slots.Length ? core.Slots[k] : -1;
                 var r = _slots[k];
                 string name = !_small && pid >= 0 && pid < cfg.Patterns.Count ? cfg.Patterns[pid].name : "";
-                Place(_slotNames[k], new Rect(r.x + 5f * ui, r.yMax - 18f * ui, r.width - 10f * ui, 16f * ui), Mathf.Clamp(r.width / 10f, 9f * ui, 12f * ui), name);
                 bool lit = built.Length > k && built[k] != null && core.RevealState == null;
+                if (turned)   // portrait: the card's name on up to two lines, sized to the board's text
+                {
+                    float cs = 0.8f * fs;
+                    Place(_slotNames[k], new Rect(r.x + 5f * ui, r.yMax - _cardHead, r.width - 10f * ui, _cardHead - 2f * ui), cs, name);
+                    Place(_slotTaps[k], new Rect(r.x + 5f * ui, r.y + 2f * ui, r.width * 0.6f, 1.3f * cs), cs, lit ? cfg.TapToMake : "");
+                    continue;
+                }
+                Place(_slotNames[k], new Rect(r.x + 5f * ui, r.yMax - 18f * ui, r.width - 10f * ui, 16f * ui), Mathf.Clamp(r.width / 10f, 9f * ui, 12f * ui), name);
                 Place(_slotTaps[k], new Rect(r.x + 5f * ui, r.y + 2f * ui, r.width * 0.5f, 16f * ui), Mathf.Clamp(r.width / 10f, 9f * ui, 12f * ui),
                       lit && !_small ? cfg.TapToMake : "");
             }
@@ -270,6 +388,35 @@ namespace CosmicShore.Gameplay
 
         internal bool ChipShown { get; private set; }
 
+        // One view, flying (CrewSingleView): no small board, only a thumb-sized Ratel button at the top of the board's
+        // place, the phone's way to the Ratel (the Fly button's twin; a phone has no D-pad and no arrow keys). At the TOP,
+        // above where the left thumb flies, and only a SHORT tap counts, so a flying thumb that slides over it is no swap.
+        bool _seatButtonOnly;
+        float _seatPressAt = -99f;
+        const float SeatTapMaxSeconds = 0.3f;
+
+        void FrameSeatButton()
+        {
+            var cfg = _crew.Config;
+            float ui = Mathf.Max(0.6f, Screen.height / 900f), fs = Mathf.Clamp(_rect.width / 30f, 10f * ui, 15f * ui);
+            float mm = Screen.dpi > 0f ? Screen.dpi / 25.4f : 6f, bs = Mathf.Max(44f * ui, cfg.FlyButtonMillimetres * mm);
+            _flyRect = new Rect(_rect.x, _rect.yMax - bs, Mathf.Max(bs, Mathf.Min(_rect.width, bs * 1.6f)), bs);
+            Place(_seat, default, fs, ""); Place(_abilityName, default, fs, ""); Place(_abilityText, default, fs, "");
+            Place(_free, default, fs, ""); Place(_revealTitle, default, fs, ""); Place(_revealText, default, fs, "");
+            Place(_detail, default, fs, ""); Place(_chip, default, fs, "");
+            for (int k = 0; k < 3; k++) { Place(_slotNames[k], default, fs, ""); Place(_slotTaps[k], default, fs, ""); }
+            Place(_fly, _flyRect, fs * 1.1f, cfg.RatelLabel);
+            ChipShown = ChipUpgraded = false;
+            _detailSlot = -1;
+            if (TryPointer(out var at, out bool pressed, out bool released, out _))
+            {
+                if (pressed) _seatPressAt = _flyRect.Contains(at) ? Time.unscaledTime : -99f;
+                if (released && _flyRect.Contains(at) && Time.unscaledTime - _seatPressAt <= SeatTapMaxSeconds) _flyTapped = true;
+                if (released) _seatPressAt = -99f;
+            }
+            _graphic.SetVerticesDirty();
+        }
+
         /// <summary>True while an upgrade holds either trigger (the chip lights up).</summary>
         internal bool ChipUpgraded { get; private set; }
 
@@ -311,13 +458,13 @@ namespace CosmicShore.Gameplay
         void ReadSmallViewTaps()
         {
             if (!TryPointer(out var at, out bool pressed, out _, out _) || !pressed) return;
-            if (!_rect.Contains(at)) return;
+            if (!_rect.Contains(ToView(at))) return;
             if (Time.unscaledTime - _lastSmallTap < 0.35f) { _smallDoubleTap = true; _lastSmallTap = -99f; }
             else _lastSmallTap = Time.unscaledTime;
         }
 
         /// <summary>True once after a seat swap was asked for on the board: a double tap on the small view while flying, or the
-        /// Fly button beside the big board while playing the Ratel (a phone has no D-pad and no 1 / 2 keys).</summary>
+        /// Fly button beside the big board while playing the Ratel (a phone has no D-pad and no arrow keys).</summary>
         internal bool SmallViewDoubleTapped()
         {
             bool d = _smallDoubleTap || _flyTapped;
@@ -330,7 +477,8 @@ namespace CosmicShore.Gameplay
         // Playing the Ratel: the lab's engDown / up. Layout is last frame's (the board does not move between frames).
         internal void ReadEngineerInput(DynamoCore core, DynamoSettings s)
         {
-            if (_small || !TryPointer(out var at, out bool pressed, out bool released, out bool held, out bool touch)) return;
+            if (_small || !TryPointer(out var screenAt, out bool pressed, out bool released, out bool held, out bool touch)) return;
+            var at = ToView(screenAt);   // every rect and cell below is in the view frame (turned a quarter in portrait)
             _pointerAt = at;
             if (_dragFrom >= 0) _dragAt = at;
             var mouse = Mouse.current;
@@ -421,9 +569,15 @@ namespace CosmicShore.Gameplay
         {
             var core = _crew.Core;
             if (core == null || _rect.width < 4f) return;
+            if (_seatButtonOnly)
+            {
+                HoneyguideMesh.Quad(vh, _flyRect, Panel);
+                HoneyguideMesh.Outline(vh, _flyRect, 2f, Ability);
+                return;
+            }
             var cfg = _crew.Config;
             var s = _crew.Settings;
-            float now = Time.time, ui = Mathf.Max(0.6f, Screen.height / 900f);
+            float now = Time.time, ui = _ui;
 
             HoneyguideMesh.Quad(vh, _rect, Panel);
             HoneyguideMesh.Outline(vh, _rect, 1f, Edge);
@@ -442,11 +596,19 @@ namespace CosmicShore.Gameplay
                 HoneyguideMesh.Disc(vh, new Vector2(apX + k * 13f * ui, pipY), 4.5f * ui,
                                     k < core.Ap + core.BonusAp ? (k >= core.Ap ? ApBonus : ApFull) : ApEmpty);
             int cap = core.BatteryCap(s);
-            float bx = _rect.xMax - 12f * ui - cap * 18f * ui;
+            var made = _crew.LastMade;
+            float flight = cfg.ChargeFlightSeconds, since = now - made.At;
+            bool landing = made.BatterySlot >= 0 && made.BatterySlot < core.Battery.Count && core.Battery[made.BatterySlot] == made.Colour;
             for (int k = 0; k < Mathf.Max(cap, core.Battery.Count); k++)
             {
-                var at = new Vector2(bx + k * 18f * ui + 8f * ui, pipY);
-                if (k < core.Battery.Count) HoneyguideMesh.Disc(vh, at, 6.5f * ui, cfg.ColourOf(core.Battery[k]));
+                var at = BatterySlotPx(k, cap);
+                bool mine = landing && k == made.BatterySlot;
+                if (k < core.Battery.Count && !(mine && since < flight))
+                {
+                    // the charge the flying prism became lands with a swell that settles
+                    float swell = mine ? 1f + 0.45f * (1f - Ease(Mathf.Clamp01((since - flight) / ChargePop))) : 1f;
+                    HoneyguideMesh.Disc(vh, at, 6.5f * ui * swell, cfg.ColourOf(core.Battery[k]));
+                }
                 else HoneyguideMesh.Ring(vh, at, 5f * ui, 6.5f * ui, 16, 0f, new Color(0.235f, 0.275f, 0.329f, 1f));
             }
 
@@ -513,7 +675,7 @@ namespace CosmicShore.Gameplay
                         HoneyguideMesh.Disc(vh, new Vector2(r.xMax - 7f * ui - (uses - 1 - u) * 8f * ui, r.y + 7f * ui), 2.6f * ui, u < core.Uses[k] ? ApFull : UsePip);
                 var cells = HoneyguideConfigSO.ParseShape(pat.shape);
                 if (cells.Length == 0) continue;
-                float head = _small ? 2f : 18f * ui, sz = Mathf.Min(r.width / 12f, (r.height - head - 6f) / 6.5f);
+                float head = _cardHead, sz = Mathf.Min(r.width / 12f, (r.height - head - 6f) / 6.5f);
                 float ox = r.center.x, oy = r.y + (r.height - head) / 2f, mq = 0f, mr = 0f;
                 foreach (var c in cells) { mq += c[0] + c[1] / 2f; mr += c[1]; }
                 mq /= cells.Length; mr /= cells.Length;
@@ -528,6 +690,9 @@ namespace CosmicShore.Gameplay
                 if (rv.Stage == 1) HoneyguideMesh.Quad(vh, new Rect(_rect.x, _slots[0].yMax, _rect.width, _rect.height - _slots[0].height - barH), new Color(0f, 0f, 0f, 0.6f));
                 HoneyguideMesh.Quad(vh, new Rect(_rect.center.x - _rect.width * 0.4f * prog, _cy - _size * 2.6f, _rect.width * 0.8f * prog, 2f * ui), Ability);
             }
+
+            // over the reveal's dimming: a fourth pattern made starts the reveal, and its juice still plays
+            MadeJuice(vh, core, cfg, now, cap);
 
             if (_detailSlot >= 0)
             {
@@ -550,6 +715,99 @@ namespace CosmicShore.Gameplay
                 HoneyguideMesh.Quad(vh, _flyRect, Panel);
                 HoneyguideMesh.Outline(vh, _flyRect, 2f, Ability);
             }
+        }
+
+        const float ChargePop = 0.35f;   // seconds the landed charge swells and its ring spreads
+
+        Vector2 BatterySlotPx(int k, int cap) =>
+            new(_rect.xMax - 12f * _ui - cap * 18f * _ui + k * 18f * _ui + 8f * _ui, _rect.yMax - 15f * _ui);
+
+        // A made pattern (Garrett 2026-10-23: "the ratel needs juice when it completes a pattern. the prism that is taken and
+        // placed in the battery should have an animation that morphs one to the other"). Its cells burst one after another
+        // in the card's family colour, its card pops, the board's edge flashes, and the prism it took lifts off its cell and
+        // flies on an arc to its battery slot, turning from the board's hex prism into the battery's round charge, where it
+        // lands with a ring. Drawn on both boards, the big one and the small one while flying.
+        void MadeJuice(VertexHelper vh, DynamoCore core, HoneyguideConfigSO cfg, float now, int cap)
+        {
+            var made = _crew.LastMade;
+            float since = now - made.At, juice = cfg.MadeJuiceSeconds, flight = cfg.ChargeFlightSeconds, ui = _ui;
+            if (since < 0f || since >= Mathf.Max(juice, flight + ChargePop)) return;
+            var fam = made.Pid >= 0 && made.Pid < cfg.Patterns.Count ? cfg.ColourOf(cfg.Patterns[made.Pid].family) : Color.white;
+
+            if (juice > 0f && since < juice)
+            {
+                float t = since / juice, fade = 1f - t;
+                HoneyguideMesh.Outline(vh, _rect, (1f + 3f * fade) * ui, Alpha(fam, fade));
+
+                // the cells, one after another (the taken prism's first), each a white flash and a ring spreading out
+                float step = juice * 0.35f / Mathf.Max(1, made.Cells.Count);
+                for (int n = 0, order = 0; n < made.Cells.Count; n++)
+                {
+                    int c = made.Cells[n];
+                    float u = Mathf.Clamp01((since - step * (c == made.Cell ? 0 : ++order)) / (juice * 0.65f));
+                    if (u <= 0f || u >= 1f) continue;
+                    var p = CellPx(c);
+                    HoneyguideMesh.Hex(vh, p, _size * 0.95f, 0f, Alpha(Color.white, 0.55f * (1f - u)));
+                    HoneyguideMesh.HexRing(vh, p, _size * (0.95f + 0.75f * Ease(u)), Mathf.Max(1.5f, _size * 0.14f * (1f - u)), 0f, Alpha(fam, 1f - u));
+                }
+
+                // the card: a white flash, and its outline spreading out from it
+                if (made.Slot >= 0 && made.Slot < 3)
+                {
+                    var r = _slots[made.Slot];
+                    float grow = 10f * ui * Ease(t);
+                    HoneyguideMesh.Quad(vh, r, Alpha(Color.white, 0.4f * fade * fade));
+                    HoneyguideMesh.Outline(vh, new Rect(r.x - grow, r.y - grow, r.width + 2f * grow, r.height + 2f * grow), Mathf.Max(1f, 3f * ui * fade), Alpha(fam, fade));
+                }
+            }
+
+            if (made.Cell < 0 || made.Cell >= DynamoCore.CellCount) return;
+            var col = cfg.ColourOf(made.Colour);
+            float rHex = _size * 0.62f, rDisc = 6.5f * ui;
+            var from = CellPx(made.Cell);
+            bool landed = made.BatterySlot >= 0 && made.BatterySlot < core.Battery.Count && core.Battery[made.BatterySlot] == made.Colour;
+            if (flight > 0f && since < flight)
+            {
+                float f = since / flight;
+                if (!landed)   // no slot holds it (an effect already spent it): it rises off its cell and fades
+                {
+                    var up = from + new Vector2(0f, _size * 1.5f * Ease(f));
+                    HoneyguideMesh.HexToDisc(vh, up, rHex, rDisc, Ease(f), 0f, Alpha(col, 1f - f));
+                    return;
+                }
+                var to = BatterySlotPx(made.BatterySlot, cap);
+                // a short lift (it swells on its cell), then the flight; a few fading copies trail it
+                for (int g = 3; g >= 0; g--)
+                {
+                    float fg = f - 0.07f * g;
+                    if (fg < 0f) continue;
+                    float lift = Mathf.Clamp01(fg / 0.2f), e = Ease(Mathf.Clamp01((fg - 0.12f) / 0.88f));
+                    var at = FlightPoint(from, to, e);
+                    float swell = 1f + 0.25f * Mathf.Sin(Mathf.PI * lift) * (1f - e);
+                    var body = g == 0 ? col : Alpha(col, 0.35f / g);
+                    HoneyguideMesh.HexToDisc(vh, at, rHex * swell, rDisc, e, Mathf.PI / 3f * e, body);
+                    if (g == 0)   // the prism's highlight, gone by the time it is a charge
+                        HoneyguideMesh.HexToDisc(vh, at + new Vector2(-rHex * 0.2f, rHex * 0.2f) * (1f - e), rHex * 0.35f, rDisc * 0.3f, e,
+                                                 Mathf.PI / 3f * e, new Color(1f, 1f, 1f, 0.35f * (1f - e)));
+                }
+                return;
+            }
+            float pop = (since - flight) / ChargePop;
+            if (landed && pop >= 0f && pop < 1f)
+            {
+                var at = BatterySlotPx(made.BatterySlot, cap);
+                float rOut = rDisc * (1f + 1.6f * Ease(pop));
+                HoneyguideMesh.Ring(vh, at, Mathf.Max(0f, rOut - 2.5f * ui * (1f - pop)), rOut, 20, 0f, Alpha(col, 1f - pop));
+            }
+        }
+
+        // the charge's path: an arc bowed to the side, so it reads as thrown rather than slid
+        Vector2 FlightPoint(Vector2 from, Vector2 to, float e)
+        {
+            var d = to - from;
+            var side = new Vector2(-d.y, d.x) * 0.22f;
+            if (side.y < 0f) side = -side;   // bow upward on the screen
+            return Vector2.Lerp(from, to, e) + side * Mathf.Sin(Mathf.PI * e);
         }
 
         Vector2 Rotate(Vector2 p, float a)
@@ -645,5 +903,23 @@ namespace CosmicShore.Gameplay
             Ring(vh, at, Mathf.Max(0f, r - w), r, 6, HexRot + rot, c);
 
         internal static void Disc(VertexHelper vh, Vector2 at, float r, Color c) => Poly(vh, at, r, 14, 0f, c);
+
+        // A pointy-top hexagon of radius rHex turning into a disc of radius rDisc as m runs 0 to 1: every rim point's radius
+        // blends from the hexagon's edge at that angle to the circle (24 rim points, so the corners are exact at m = 0).
+        internal static void HexToDisc(VertexHelper vh, Vector2 at, float rHex, float rDisc, float m, float rot, Color c)
+        {
+            const int sides = 24;
+            int i = vh.currentVertCount;
+            vh.AddVert(V(at, c));
+            float apothem = rHex * Mathf.Cos(HexRot), sector = Mathf.PI / 3f;
+            for (int k = 0; k < sides; k++)
+            {
+                float a = Mathf.PI * 2f * k / sides;   // from an edge's midpoint (a pointy-top hexagon's are at 0, 60, ... degrees)
+                float d = Mathf.Repeat(a + sector / 2f, sector) - sector / 2f;
+                float r = Mathf.Lerp(apothem / Mathf.Cos(d), rDisc, m);
+                vh.AddVert(V(at + new Vector2(Mathf.Cos(a + rot), Mathf.Sin(a + rot)) * r, c));
+            }
+            for (int k = 0; k < sides; k++) vh.AddTriangle(i, i + 1 + k, i + 1 + (k + 1) % sides);
+        }
     }
 }

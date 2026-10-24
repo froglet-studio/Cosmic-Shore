@@ -1,3 +1,5 @@
+using CosmicShore.UI;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
@@ -15,12 +17,18 @@ namespace CosmicShore.Gameplay
     /// the game's own camera is lifted into the small square in the lower left; flying, the game's camera has the screen and
     /// this view is the small square. The game camera's rect and depth are restored the moment the jacks fly again, the
     /// camera changes, or the view is disposed.</para>
+    ///
+    /// <para>The rings and dots it shows are 2D marks, drawn through an <see cref="UnprocessedOverlay"/> so the view's bloom
+    /// does not smear them (the world under them keeps it), and no Panini bows it (<see cref="OrthographicLens"/>). The small
+    /// view wears the style guide's frame (<see cref="PipViewFrame"/>).</para>
     /// </summary>
     sealed class JacksView
     {
         readonly JacksExecutor _ex;
         readonly GameObject _root;
         readonly Camera _cam;
+        readonly UnprocessedOverlay _marks;
+        readonly PipViewFrame _frame = new();
         Vector3 _centre, _forward;
         bool _placed;
 
@@ -37,13 +45,21 @@ namespace CosmicShore.Gameplay
             _cam.orthographic = true;
             _cam.nearClipPlane = 0.1f;
             _cam.enabled = false;
+            _marks = new UnprocessedOverlay(_cam, "JacksMarks");
         }
 
         internal Camera Camera => _cam;
 
+        /// <summary>The camera, and the layer, the view's 2D marks are drawn for: after its post-processing.</summary>
+        internal Camera MarksCamera => _marks.Camera;
+        internal int MarksLayer => _marks.Layer;
+
         internal void Dispose()
         {
             RestorePilot();
+            _park.Release();
+            _frame.Dispose();
+            _marks.Dispose();
             if (_root) Object.Destroy(_root);
         }
 
@@ -53,7 +69,9 @@ namespace CosmicShore.Gameplay
             var pilot = CameraManager.ViewCamera;
             if (pilot != _pilot) { RestorePilot(); _pilot = pilot; if (_pilot) { _pilotRect = _pilot.rect; _pilotDepth = _pilot.depth; } }
 
-            _cam.enabled = true;
+            // one view (the lowest preset, CrewSingleView): the jacks' camera draws only while the human herds
+            bool single = CrewSingleView.On;
+            _cam.enabled = herding || !single;
             if (_pilot) AdoptPilotLook(_pilot);
 
             float baseDepth = _pilot ? _pilotDepth : 0f;
@@ -63,8 +81,15 @@ namespace CosmicShore.Gameplay
             {
                 _cam.rect = new Rect(0f, 0f, 1f, 1f);
                 _cam.depth = baseDepth + 1f;
-                if (_pilot)
+                if (single)
                 {
+                    // nothing over the herd's view: the pilot's camera, hidden under it, draws nothing
+                    RestorePilot();
+                    _park.Park(_pilot, Color.black);
+                }
+                else if (_pilot)
+                {
+                    _park.Release();
                     _pilot.rect = pip;
                     _pilot.depth = baseDepth + 2f;
                     _pilotLifted = true;
@@ -73,6 +98,7 @@ namespace CosmicShore.Gameplay
             else
             {
                 RestorePilot();
+                _park.Release();
                 _cam.rect = pip;
                 _cam.depth = baseDepth + 1f;
             }
@@ -104,6 +130,8 @@ namespace CosmicShore.Gameplay
             _centre += right * pan.x + _forward * pan.y;
 
             _cam.transform.SetPositionAndRotation(_centre + up * cfg.ViewDepth, Quaternion.LookRotation(-up, _forward));
+            _marks.Sync();
+            _frame.Show(herding ? (_pilotLifted ? _pilot : null) : _cam);
         }
 
         /// <summary>
@@ -117,23 +145,25 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void AdoptPilotLook(Camera pilot)
         {
-            _cam.cullingMask = pilot.cullingMask;
-            _cam.clearFlags = pilot.clearFlags;
-            _cam.backgroundColor = pilot.backgroundColor;
+            _cam.cullingMask = _park.CullingMask(pilot);
+            _cam.clearFlags = _park.ClearFlags(pilot);
+            _cam.backgroundColor = _park.Background(pilot);
             _cam.allowHDR = pilot.allowHDR;
             _cam.allowMSAA = pilot.allowMSAA;
             if (!pilot.TryGetComponent(out UniversalAdditionalCameraData from)) return;
             _data ??= _cam.GetUniversalAdditionalCameraData();
             if (!_data) return;
-            _data.renderPostProcessing = from.renderPostProcessing;
+            _data.renderPostProcessing = _park.PostProcessing(pilot, from);
             _data.antialiasing = from.antialiasing;
             _data.antialiasingQuality = from.antialiasingQuality;
-            _data.renderShadows = from.renderShadows;
+            _data.renderShadows = _park.Shadows(pilot, from);
             _data.volumeLayerMask = from.volumeLayerMask;
             _data.volumeTrigger = from.volumeTrigger ? from.volumeTrigger : pilot.transform;
         }
 
         UniversalAdditionalCameraData _data;
+        // the pilot's camera asleep under the herd's view on the lowest preset (CrewSingleView)
+        readonly PilotCameraPark _park = new();
 
         void RestorePilot()
         {

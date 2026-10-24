@@ -130,9 +130,9 @@ MonoBehaviour:
   fovValueText: {fileID: 422481083358316764}
   musicValueText: {fileID: 148758335131001694}
   sfxValueText: {fileID: 643267548571536718}
-  privacyPolicyUrl: https://cosmicshore.com/privacy
-  deleteDataUrl: https://cosmicshore.com/delete-my-data
-  bugReportUrl: https://cosmicshore.com/support
+  privacyPolicyUrl: https://www.froglet.games/privacy
+  deleteDataUrl: https://www.froglet.games/delete-my-data
+  bugReportUrl: https://www.froglet.games/support
   accountView: {fileID: 810805295212041137}
 --- !u!114 &908759883602811384
 MonoBehaviour:

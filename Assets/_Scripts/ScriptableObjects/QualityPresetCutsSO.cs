@@ -112,6 +112,11 @@ namespace CosmicShore.ScriptableObjects
                  "preset thins them and never removes them. Read when a cell starts.")]
         [SerializeField, Range(GraphicsCuts.MinCytoplasmDensity, 1f)] float cytoplasmDensity = 1f;
 
+        [Tooltip("One view on the screen at a time: no crew vessel draws a picture-in-picture, the camera " +
+                 "hidden under a full-screen seat view draws nothing, and the person starts in the crew " +
+                 "seat whose view is the cheapest (the Wrasse, the Ratel). Read every frame (CrewSingleView).")]
+        [SerializeField] bool singleView;
+
         public QualityPresetSetting Preset => preset;
         public bool SetsAntiAliasing => setsAntiAliasing;
         public AntiAliasingSetting AntiAliasing => antiAliasing;
@@ -124,6 +129,7 @@ namespace CosmicShore.ScriptableObjects
         public int MembraneMaxSubdivisions => membraneMaxSubdivisions;
         public float OffscreenViewMaxRenderScale => offscreenViewMaxRenderScale;
         public float CytoplasmDensity => cytoplasmDensity;
+        public bool SingleView => singleView;
 
         /// <summary>True when this row changes bloom at all.</summary>
         public bool CutsBloom => bloomAtQuarterResolution || bloomMaxIterations > 0;

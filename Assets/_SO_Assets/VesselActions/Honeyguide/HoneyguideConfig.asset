@@ -22,8 +22,12 @@ MonoBehaviour:
   usesPerPattern: 3
   patternsPerShuffle: 4
   spinAnim: 0.6
+  madeJuiceSeconds: 0.7
+  chargeFlightSeconds: 0.55
   portsCount: 1
   rotatable: 1
+  retiredAbilities:
+  - 2
   minSlipTrailLength: 6
   slipReach: 400
   exitOffset: 8
@@ -280,6 +284,15 @@ MonoBehaviour:
   - {r: 1, g: 0, b: 0.976, a: 1}
   - {r: 0.075, g: 1, b: 0.949, a: 1}
   - {r: 1, g: 0.655, b: 0, a: 1}
+  boardOrientation: 0
+  portraitRect:
+    serializedVersion: 2
+    x: 0.03
+    y: 0.02
+    width: 0.94
+    height: 0.86
+  portraitTextMillimetres: 2.8
+  portraitCardMillimetres: 20
   longPressSeconds: 0.45
   flyButtonMillimetres: 10
   ratelLabel: 'Ratel'
@@ -290,6 +303,8 @@ MonoBehaviour:
   flyButtonLabel: 'Fly'
   tapToMake: 'TAP'
   freePrismTemplate: '{count} free ({colour} on your cursor): tap an empty cell'
+  madeLineTemplate: '{name}: {text}'
+  dynamoLineColour: {r: 0.66, g: 1, b: 0.18, a: 1}
   revealAbilityTemplate: 'New ability: {name}'
   revealPortsLine: 'New injection ports'
   madeToastTemplate: '{name} {level}: {text}'

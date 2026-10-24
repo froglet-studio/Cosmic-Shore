@@ -863,6 +863,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetOrthographic(bool ortho, float size)
         {
+            // ortho-marks: the game camera draws the world and no 2D marks of its own; OrthographicLens keeps its Panini off
             Camera.orthographic = ortho;
             if (ortho) Camera.orthographicSize = size;
         }

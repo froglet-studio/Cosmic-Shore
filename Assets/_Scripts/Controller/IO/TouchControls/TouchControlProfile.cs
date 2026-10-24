@@ -107,13 +107,20 @@ namespace CosmicShore.Gameplay
         [Min(0f)] public float liftDeferSeconds;
 
         [Header("Tilt")]
-        [Tooltip("While one thumb flies, tilting the phone like a steering wheel rolls the hull (the axis " +
-                 "the second thumb gave). The Dolphin.")]
+        [Tooltip("While one thumb flies (the aim), the phone is an augmented-reality window on the roll axis: " +
+                 "turn it like a steering wheel and the hull rolls exactly as far, one to one, up to the " +
+                 "library's tilt roll limit either side. Read from the phone's fused pose (gyro and compass). " +
+                 "The Dolphin.")]
         public bool tiltRollOnOneThumb;
 
         [Tooltip("With no thumb on the glass, tilting the phone steers: wheel-turn yaws, tipping forward and " +
                  "back pitches. The Manta's soar, the Thresher's launch aim.")]
         public bool tiltSteersWhileIdle;
+
+        [Tooltip("Turns the idle tilt steer over on both axes: wheel-turn right yaws left, tipping the top edge " +
+                 "away pitches as a pulled-back thumb. Invert Y still applies on top. The Manta (Garrett, " +
+                 "2026-10-22: both left/right and up/down were the opposite of his expectation).")]
+        public bool flipTiltSteer;
 
         [Header("Both thumbs off")]
         [Tooltip("With no thumb on the glass, both analog triggers read fully pulled - the Rhino energizes " +

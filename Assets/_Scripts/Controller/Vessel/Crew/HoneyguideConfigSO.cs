@@ -132,6 +132,15 @@ namespace CosmicShore.Gameplay
         Hard = 2,
     }
 
+    /// <summary>Which way up the Ratel's big board is drawn. The screen stays locked to landscape; a portrait board is drawn
+    /// turned a quarter so it reads upright with the phone held portrait (Garrett 2026-10-22).</summary>
+    public enum HoneyguideBoardOrientation
+    {
+        PortraitOnPhone = 0,
+        Portrait = 1,
+        Landscape = 2,
+    }
+
     /// <summary>
     /// Every number, table and word of the Honeyguide and Ratel (Honeyguide Lab round 6; <c>Docs/Studios/HONEYGUIDE_LAB.md</c>,
     /// <c>HONEYGUIDE.md</c> beside this file). The lab is the record: each field names the lab key it came from, and
@@ -162,10 +171,19 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0)] int patternsPerShuffle = 4;
         [Tooltip("lab spinAnim: seconds the ports take to turn on screen.")]
         [SerializeField, Min(0f)] float spinAnim = 0.6f;
+        [Tooltip("Seconds a made pattern's juice plays on the board: its cells burst, its card pops, the board's edge flashes in " +
+                 "the card's family colour (Garrett 2026-10-23: \"the ratel needs juice when it completes a pattern\").")]
+        [SerializeField, Min(0f)] float madeJuiceSeconds = 0.7f;
+        [Tooltip("Seconds the prism a made pattern takes flies from its cell to its battery slot, morphing from the board's hex " +
+                 "prism into the battery's round charge.")]
+        [SerializeField, Min(0f)] float chargeFlightSeconds = 0.55f;
         [Tooltip("lab opts.portsCount: an empty port counts as a prism of its colour for completing a pattern.")]
         [SerializeField] bool portsCount = true;
         [Tooltip("lab opts.rotatable: patterns match in any of the six rotations.")]
         [SerializeField] bool rotatable = true;
+        [Tooltip("lab RETIRED_ABILITIES: abilities the Ratel never draws. Garrett 2026-10-22: Printer (a free prism at the start " +
+                 "of every spin) is out for now, \"too confusing to players on mobile\".")]
+        [SerializeField] DynamoAbility[] retiredAbilities = { DynamoAbility.Printer };
 
         [Header("The Slip (the Honeyguide's Time ability)")]
         [Tooltip("lab minSlipTrailLength: shortest trail (prisms) a slip rides.")]
@@ -336,10 +354,19 @@ namespace CosmicShore.Gameplay
         [SerializeField] Rect engineerRect = new(0.18f, 0.04f, 0.64f, 0.92f);
         [Tooltip("The board's rect while the human flies (the small view; a double tap on it swaps seats).")]
         [SerializeField] Rect pilotRect = new(0.01f, 0.30f, 0.20f, 0.42f);
+        [Tooltip("Which way up the big board is drawn. PortraitOnPhone: upright for a phone held portrait on a touch device, " +
+                 "landscape elsewhere. The screen itself stays landscape (Garrett 2026-10-22).")]
+        [SerializeField] HoneyguideBoardOrientation boardOrientation = HoneyguideBoardOrientation.PortraitOnPhone;
+        [Tooltip("The portrait board's rect (fractions of the portrait safe area: x, y, width, height). The Fly button sits above it.")]
+        [SerializeField] Rect portraitRect = new(0.03f, 0.02f, 0.94f, 0.86f);
+        [Tooltip("Portrait: the board's text size (the em height, in millimetres on the screen).")]
+        [SerializeField, Min(1f)] float portraitTextMillimetres = 2.8f;
+        [Tooltip("Portrait: the pattern cards' height, in millimetres on the screen (thumb-sized).")]
+        [SerializeField, Min(8f)] float portraitCardMillimetres = 20f;
         [Tooltip("Touch: holding a prism this long (s) without leaving its cell deletes it, for 1 AP (a phone's right-click).")]
         [SerializeField, Min(0.1f)] float longPressSeconds = 0.45f;
         [Tooltip("The Fly button's edge, in millimetres on the screen. It sits just left of the Ratel's board, at its top, and " +
-                 "swaps back to flying (a phone has no D-pad and no 1 / 2 keys).")]
+                 "swaps back to flying (a phone has no D-pad and no arrow keys).")]
         [SerializeField, Min(5f)] float flyButtonMillimetres = 10f;
         [Tooltip("The colours of Ruby, Jade and Gold prisms and ports (the game's palette, studio-domains.js).")]
         [SerializeField] Color[] colours = { new(1f, 0f, 0.976f, 1f), new(0.075f, 1f, 0.949f, 1f), new(1f, 0.655f, 0f, 1f) };
@@ -355,6 +382,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] string tapToMake = "TAP";
         [Tooltip("The free-prism line. Tokens: {count}, {colour} (the domain of the prism on the cursor, placed first).")]
         [SerializeField] string freePrismTemplate = "{count} free ({colour} on your cursor): tap an empty cell";
+        [Tooltip("The line above the cards naming what the last pattern made does; it stays until the next one. Lime when the " +
+                 "effect works on the Dynamo itself (dynamoLineColour). Tokens: {name}, {level} (empty for a one-off), {text} (the " +
+                 "card's effect). Empty = no line.")]
+        [SerializeField] string madeLineTemplate = "{name}: {text}";
+        [Tooltip("The colour of that line (and of the free-prism line) when what it says is about the Dynamo: lime.")]
+        [SerializeField] Color dynamoLineColour = new(0.66f, 1f, 0.18f, 1f);
         [Tooltip("The reveal card's heading for a new ability. Tokens: {name}.")]
         [SerializeField] string revealAbilityTemplate = "New ability: {name}";
         [Tooltip("The reveal's second step.")]
@@ -401,6 +434,8 @@ namespace CosmicShore.Gameplay
 
         public float TickSeconds => tickSeconds;
         public float SpinAnim => spinAnim;
+        public float MadeJuiceSeconds => madeJuiceSeconds;
+        public float ChargeFlightSeconds => chargeFlightSeconds;
         public int MinSlipTrailLength => minSlipTrailLength;
         public float SlipReach => slipReach;
         public float ExitOffset => exitOffset;
@@ -473,6 +508,10 @@ namespace CosmicShore.Gameplay
         public bool AICrewEngineers => aiCrewEngineers;
         public Rect EngineerRect => engineerRect;
         public Rect PilotRect => pilotRect;
+        public HoneyguideBoardOrientation BoardOrientation => boardOrientation;
+        public Rect PortraitRect => portraitRect;
+        public float PortraitTextMillimetres => portraitTextMillimetres;
+        public float PortraitCardMillimetres => portraitCardMillimetres;
         public float LongPressSeconds => longPressSeconds;
         public float FlyButtonMillimetres => flyButtonMillimetres;
         public string RatelLabel => ratelLabel;
@@ -482,6 +521,8 @@ namespace CosmicShore.Gameplay
         public string RevealAbilityTemplate => revealAbilityTemplate;
         public string RevealPortsLine => revealPortsLine;
         public string MadeToastTemplate => madeToastTemplate;
+        public string MadeLineTemplate => madeLineTemplate;
+        public Color DynamoLineColour => dynamoLineColour;
         public string AbilityToastTemplate => abilityToastTemplate;
         public string CardDetailTemplate => cardDetailTemplate;
         public float ZipSpeed => zipSpeed;
@@ -530,6 +571,17 @@ namespace CosmicShore.Gameplay
         /// <summary>A domain's Dynamo colour, or 0 (no prism of the Dynamo is that domain).</summary>
         public static int ColourOf(Domains domain) => domain switch { Domains.Ruby => 1, Domains.Jade => 2, Domains.Gold => 3, _ => 0 };
 
+        /// <summary>True when an effect works on the Dynamo itself - its prisms, ports, AP, spin clock or battery - so the line
+        /// naming it above the cards is lime (the Ratel-seat cards, and the hull cards that burn, purge or drain the board).</summary>
+        public static bool TouchesDynamo(HoneyguideEffect effect) => effect switch
+        {
+            HoneyguideEffect.Amanita or HoneyguideEffect.BigRed or HoneyguideEffect.Saddle or HoneyguideEffect.ZeroPoint
+                or HoneyguideEffect.Triplesynth or HoneyguideEffect.Translator or HoneyguideEffect.Anode
+                or HoneyguideEffect.Printer5D or HoneyguideEffect.Hammer or HoneyguideEffect.Cilia or HoneyguideEffect.Chrono
+                or HoneyguideEffect.Meta or HoneyguideEffect.Eti or HoneyguideEffect.Vorticity => true,
+            _ => false,
+        };
+
         public HoneyguideAbilityText AbilityText(DynamoAbility ability)
         {
             if (abilities != null) foreach (var a in abilities) if (a != null && a.ability == ability) return a;
@@ -551,6 +603,15 @@ namespace CosmicShore.Gameplay
             return cells.ToArray();
         }
 
+        /// <summary>The abilities a random draw picks from: all but <c>retiredAbilities</c> (null when none is retired, or all are).</summary>
+        int[] AbilityPool()
+        {
+            if (retiredAbilities is not { Length: > 0 }) return null;
+            var pool = new List<int>();
+            for (int a = 0; a < DynamoCore.AbilityCount; a++) if (Array.IndexOf(retiredAbilities, (DynamoAbility)a) < 0) pool.Add(a);
+            return pool.Count > 0 ? pool.ToArray() : null;
+        }
+
         /// <summary>The core's settings from this asset (the lab's <c>dynamoSettings</c> with the shipped rule options).</summary>
         public DynamoSettings ToSettings()
         {
@@ -559,6 +620,7 @@ namespace CosmicShore.Gameplay
                 TickSeconds = tickSeconds, ApPerTick = apPerTick, ApBank = apBank, BonusApCap = bonusApCap, BatteryCap = batteryCap,
                 RevealAbility = revealAbility, RevealPorts = revealPorts, AllowRotatedMatches = rotatable, PortsCount = portsCount,
                 SlotCount = 3, StartFilled = true, UsesPerPattern = usesPerPattern, PatternsPerShuffle = patternsPerShuffle,
+                Abilities = AbilityPool(),
             };
             foreach (var p in patterns) s.Patterns.Add(new DynamoPattern { Cells = ParseShape(p.shape), Parked = p.parked });
             var parsed = new List<int[][]>();

@@ -65,6 +65,130 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Seats, then hulls: any person changes seat and vessel in freestyle (`cece/relaxed-tesla-axhxzy`, 2026-10-23) — NOT EDITOR-VERIFIED
+
+**What landed:** one swap ring for every person (`CrewStations`, `Docs/CREW_STATIONS.md`): D-pad left / right, the
+left / right arrow keys and a new two-finger swipe step through the seats of your hull, then every free hull of your domain in freestyle
+and a running arena match. Taking an AI's hull, or one another person left to ride, is the arena's `PilotSwap`
+exchange. A second person rides any crew seat: an Orca gunner, the Wrasse and the Pistol run on the rider's machine (the
+Wrasse's boosts and steals, the Goby's perches and lock relayed), the Ratel is relayed to the hull's machine. An AI Goby
+now flies the seat's own Goby and Pistol AIs instead of the platform autopilot. `Player.NetStation` + four RPC pairs; protocol version 12. The crews no longer read the gesture
+(`InputController` neither).
+
+**Verified without the editor:** `unity_refcompile` player 0 errors (a planted error in a new file is caught), editor 0
+in changed files; `gates.sh` ALL OK (logging, conditional compilation, crew vessels, every generator `--check`).
+`Tools/Build/dynamo_lab/parity.cjs` PASS (DynamoCore unchanged in play); a scratch harness round-tripped the Ratel's
+board 288 times over the 24 rule sets with identical digests and identical play after (a planted Rng bug failed all
+288). The new `HoneyguideTests.RatelBoard_CopiedToAnotherMachine_IsTheSameBoard_AndPlaysOnAlike` compiles, not run.
+`/verify-unity` did not run: no Unity CLI in the session.
+
+**Verify (MPPM, two players in freestyle; then a phone and a PC):** the eleven hand tests in `Docs/CREW_STATIONS.md` (test 9 now includes a Wrasse rider threading race rings: `RingProbeReplayTests` ran headless against a stand-in for Unity's vector maths, 6/6, and a planted uncapped replay failed 2).
+This supersedes the older entries below that pick crew seats with keys 1-4 (the Orca, the Wrasse, the Jacks): the
+keyboard now cycles with the left / right arrows only.
+Watch for: the ridden hull's HUD showing on the rider's screen in freestyle (it is a remote hull's HUD, shown by
+`ShowHUD`); the camera following the ridden hull; a refused move logging `[Player] Seat move refused`.
+
+### 🔴 Steal roll: the OLD domain curls away, the new one is only underneath (`cece/hopeful-hopper-np5527`, 2026-10-23) — NOT EDITOR-VERIFIED
+
+**What landed:** Garrett: *"the stealing effect is supposed to curl the original domain and reveal the stolen domain
+underneath, but i am seeing it immediately change domain color and then peel the changed color"*. The roll winds
+the skin top side IN, so what the curl shows is the skin's UNDERSIDE, and `PrismCollisionBurst.TryRequestShed`
+stamped that underside (`_SlicePivot`) with the NEW domain's bright. So the new colour appeared along the curl's
+outside from the first frame. The skin is now the old domain on both sides (`_SlicePivot.w` 0: the underside is the
+old bright × `_InnerGlow`). The prism under it still takes the new colour at once, and the skin hides that until it
+rolls away. `Docs/PRISM_ANIMATION.md` §4.12 round 14.
+
+**Verified without the editor:** `unity_refcompile` player 0 errors in project code;
+`verify_prism_collision_burst.py` PASS (shader text change is comments only).
+
+**Verify (editor, any mode with steals, e.g. a Squirrel skimming another domain's trail up close):**
+1. The prism's faces you can see keep the OLD domain colour at the instant of the steal: no flash of the new one.
+2. The skin curls away from the camera in the OLD colour (its underside a lighter old), uncovering the NEW colour
+   behind the roll.
+3. Far away (below the shed line, about 8% of the screen height) the steal still grades over 0.8 s.
+
+### 🔴 Prism animations in the browser: a MeshRenderer stamp path where Entities Graphics cannot run (`claude/webgl-prism-animations-kg5qx7`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed:** on devices without Entities Graphics (every WebGL2 browser; also GPUs whose compute kernels fail to
+load) the clock-material stamps — grow, colour transition, flight, shield morph, jiggle, suction, sway, super-shield
+mark — are written once into a MaterialPropertyBlock on the prism's MeshRenderer (`PrismMeshRendererStamps`) instead
+of being dropped, and cleared at their analytic end so settled mass rejoins the SRP Batcher. Deaths (explosion,
+implosion, shield shatter) draw through a capped pool of MeshRenderer debris (`PrismMeshRendererDebris`, cap
+`PrismRenderConfigSO.meshRendererDebrisCap` = 96). Devices with Entities Graphics never reach the new code.
+`Docs/PRISM_ANIMATION.md` §4.11.
+
+**Verified without the editor:** `unity_refcompile` webgl and player 0 errors, editor 0 in changed files; logging and
+conditional-compilation gates pass. `PrismMeshRendererStampsTests` (property names/packing vs the entity
+`[MaterialProperty]` structs, graph exposure, clear arithmetic) compile, not run.
+
+**Verify (Development WebGL build, F7 console; or `prismpath mpb` in the editor on a cell grown after the switch):**
+1. Trail prisms bloom in; a domain change and a new Wanderway scene fade their colours.
+2. Living flora/fauna mass sways with its limbs; a skeleton stops.
+3. Shields bloom on and shed shards; super-shield jiggles; Sparrow turret flight and ReverseSuction animate.
+4. Rammed or blasted prisms leave debris that flies and fades; feeding fauna pull suction debris.
+5. No `[PrismClock] STRICT MODE`, `[PrismDebris] ...batch spawn failed` or `[PrismFactory] ...declined` lines.
+6. `prismpath`: the property-block count falls once laying stops (only swaying mass keeps one); debris live ≤ 96.
+7. Frame time in a full 10k freestyle cell — every MPB'd renderer is its own draw; swaying lifeform mass is the
+   unknown. On desktop with Entities Graphics: nothing changes.
+
+### 🔴 Release guards judge a build by its own options, not the Development checkbox (`claude/release-guard-dev-checkbox-kg5qx7`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed:** `UnityPipelineReleaseGuard`, `CreditsReleaseGuard` and `WeeklyChallengeTestModeBuildGuard` exempted a
+build when `EditorUserBuildSettings.development` OR `BuildOptions.Development` said "development". A scripted build
+never reads the checkbox, so a Windows release build from `CosmicShoreBuildPipeline` made while the checkbox happened
+to be ticked was waved through all three guards. They now ask `ReleaseBuildKind.IsDevelopment(report)`, which reads
+only the build's own options. `WebToyboxBuild` no longer forces and restores the checkbox (its workaround).
+
+**Verified without the editor:** `unity_refcompile --config editor`, 0 errors in the six changed files (a planted
+typo in `ReleaseBuildKind.cs` was reported, tagged as changed). `ReleaseBuildKindTests` not run.
+
+**Verify in editor:**
+1. Edit-mode tests: `ReleaseBuildKindTests` pass.
+2. The assumption this rests on: a Build Profiles window build with **Development ticked** passes
+   `BuildOptions.Development` in its options. Tick it, put the weekly challenge in TEST MODE, build from the window:
+   the build must NOT be refused (development is exempt). If it is refused, the window does not pass the flag and
+   this change must be reverted.
+3. Leave the checkbox ticked and run **FrogletTools > Build > Windows x64 (Release)** with weekly TEST MODE on: the
+   build must now FAIL with the weekly-challenge message. Switch TEST MODE off afterwards.
+
+### 🔴 Nose lag per device: the pad keeps the fleet lag, touch gets a dial (`cece/serene-galileo-t77xt3`, 2026-10-23) — NOT EDITOR-VERIFIED
+
+**What landed:** `VesselTransformer.NoseFollowFraction` follows a local human at their device's rate
+(`PilotNoseFollowPerSecond`, also `NoseFollowRate`): pad `Resources/GamepadFlightConfig.noseFollowPerSecond` 1.5 (the
+2024-11-19 to 2026-10-21 lag, Garrett-approved by feel on 2026-10-23), touch
+`Resources/TouchControlProfiles.noseFollowPerSecond` 9 (0.11 s; lag-free 10-21 to 10-23), keyboard and mouse none. The response
+curve and the stage smoother this branch tried first are gone.
+
+**Verified without the editor:** `unity_refcompile` player: 0 errors; editor: 0 in changed files (3 in
+`AuthenticationServiceFacade.cs` from the unfetchable Playmode package). `author_touch_profiles.py --check` OK.
+`NoseFollowDialTests` compile, not run.
+
+**Verify in editor:**
+1. Run `NoseFollowDialTests` (EditMode): all pass.
+2. Pad: flies as it did before 2026-10-21. Set the pad dial to 0 in Play: the nose snaps to the stick.
+3. Touch (Device Simulator or a phone): responsive, starts and stops rounded, no glide. Compare 0 and 5 on
+   `TouchControlProfiles` and judge.
+4. AI hulls: unchanged.
+
+### 🔴 Menu_Main: no entry into freestyle behind the boot veil; the browser Toybox opens on the menu (`claude/menu-click-through-kg5qx7`, 2026-10-22) — NOT EDITOR-VERIFIED
+
+**What landed:** builds on the base's fix for a click launching freestyle during the Garland intro (the boot world
+now builds behind `EnvironmentLoadVeil`'s cover, `dc023d00d`, and Home flies on a double tap, `01403d976`).
+`MenuCrystalClickHandler.ToggleTransition` refuses to ENTER freestyle while `EnvironmentLoadVeil.IsCovering`, which
+covers the routes the cover and the double tap do not: the pad's Select, Submit and the toybox modals. Nothing is
+gated once the menu is revealed, and leaving freestyle is never gated. The browser Toybox no longer enters freestyle
+by itself at the first menu-ready (`MainMenuController`).
+
+**Verified without the editor:** `unity_refcompile` player, webgl and editor: 0 errors in changed files.
+`MenuFreestyleEntryGateTests` compile, not run.
+
+**Verify in editor and in a build:**
+1. Boot to Menu_Main and press the pad's Select / Enter / Space repeatedly while the LOADING veil is up: the menu
+   reveals, nothing launches.
+2. After the reveal, double-tap Home (or press Select): freestyle starts at once, no extra delay.
+3. The browser Toybox boots to the home menu; double-tap flies.
+4. MenuUI log channel on: "Enter freestyle ignored: the boot veil is still up" for the early presses.
+
 ### 🔴 New hulls rest at REST, not in their first take: the Shrike's left bank, the Grouper's left wag (`cece/quirky-brown-lkhhx9`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett: "the shrike is turning left by default. the grouper's tail fin is wagging to the left". Every hull the
@@ -85,6 +209,56 @@ changed. The artist reproductions (Squirrel, Goby, Dolphin, Sparrow, Serpent, Ma
    Stoat not arched, Thresher tail centred.
 5. If any hull still leans, Unity is not taking the default pose from the first take: report it, the fallback is to
    capture rest from the SkinnedMeshRenderer's bind poses in code.
+
+### 🔴 Honeyguide and Ratel: juice when the Ratel makes a pattern; the effect line above the cards (`cece/inspiring-hawking-mnzmqc`, 2026-10-23) — NOT EDITOR-VERIFIED
+
+Garrett: "the ratel needs juice when it completes a pattern. the prism that is taken and placed in the battery should have
+an animation that morphs one to the other. there should always be text showing what the ability does in the space above
+the patterns where it already says what it does if it pertains to the dynamo, but those should be signaled with lime."
+`HoneyguideCrew.RecordMade` keeps the made pattern's cells, the taken prism and its battery slot; `HoneyguideDynamoView`
+draws the cell bursts, card pop, edge flash and the hex-to-disc flight (`HoneyguideMesh.HexToDisc`), and the line in the
+band above the cards (`madeLineTemplate`, lime `dynamoLineColour` when `TouchesDynamo`). `/verify-unity` was unavailable
+(no Editor, no `unity` binary). Green: the headless player reference compile (0 errors in project code; it caught a
+shadowed local first) and editor config (only the 3 bleeding-edge errors, 0 in changed files),
+`author_honeyguide_assets.py --check` (and its from-scratch config matches the shipped asset's new keys), the
+console-logging gate.
+
+1. Toybox Vessel Changer → Honeyguide and Ratel; swap to the Ratel. Make a pattern: its cells burst in the card's colour one
+   after another, the card flashes and its outline spreads, the board's edge flashes, and the taken prism flies on an arc
+   to the battery, turning from a hex into a round charge, landing with a swell and a ring. Its slot stays empty until it
+   lands.
+2. The band above the cards now reads the made card's name and effect, and stays until the next pattern. A Dynamo card
+   (5D Printer, Square-Peg Hammer, Triplesynth, Chrono-Compressor...) is lime; a hull card (Juggernaut Plow, Blink Drive...)
+   is cream. The free-prism line (Universal Translator, 5D Printer) is lime and takes the band until the prisms are placed.
+3. Make a fourth pattern (the reveal starts): the juice still plays over the dimmed board.
+4. Make Dragon Saddle (it drains the battery): the taken prism rises off its cell and fades instead of flying to a slot.
+5. Fly (the small board, left): the juice plays there too, smaller; the band is not drawn on the small board.
+6. On a phone in portrait: the band holds two lines of text without covering the board's bottom row or the cards.
+7. `HoneyguideTests` pass in the Test Runner, `MadePattern_HasJuiceAndALineAboveTheCards`,
+   `TouchesDynamo_IsTheCardsThatWorkOnTheBoard` and `HexToDisc_IsTheBoardsPrismAtZeroAndTheBatterysChargeAtOne` included.
+
+### 🔴 Honeyguide and Ratel: the Ratel's board in portrait on a phone; Printer retired (`cece/nifty-dirac-2dmclm`, 2026-10-22) — NOT EDITOR-VERIFIED
+
+Garrett: "the ratel dynamo should assume the player is holding the phone in portrait mode. it should size text and buttons
+appropriate to mobile. for now remove the engineer ability that gives players a free prism at the start of the spin."
+`HoneyguideDynamoView` draws the big board a quarter turn round on a touch-first device (`boardOrientation`, default
+PortraitOnPhone) inside `portraitRect` of the safe area, text `portraitTextMillimetres` (2.8 mm), cards
+`portraitCardMillimetres` (20 mm), the Fly button above the board. `retiredAbilities` (Printer) keeps it out of the draw;
+`DynamoSettings.Abilities` and the lab's `abilityPool` are the same rule. `/verify-unity` was unavailable (no Editor, no
+`unity` binary). Green: the headless player reference compile (0 errors in project code) and editor config (only the 3 bleeding-edge errors, 0 in changed files), `parity.cjs` (16,824 steps, the
+new pool control caught), `author_honeyguide_assets.py --check` / `--self-test`, the console-logging, conditional-compilation
+and enum-reference gates. The new and re-measured test goldens were run through `DynamoCore.cs` on the shipped asset.
+
+1. On a phone: Toybox Vessel Changer → Honeyguide and Ratel; double-tap the small board. Hold the phone portrait: the board
+   is upright, fills the screen below the notch, the text is readable, the cells, cards and the Fly button (top left, above
+   the board) are easy thumb targets. Drag, tap a port, tap a lit card, long-press delete and Fly land under the finger.
+2. Tap Fly: the game is landscape again, with the small board at the left.
+3. On PC the board is unchanged (landscape, centre of the screen). Set the config's `boardOrientation` to Portrait to see the
+   phone layout turned in the Editor.
+4. Play several new-ability reveals: the Ratel never draws Printer, and no free prism appears at a spin (5D Printer and
+   Universal Translator cards still grant theirs).
+5. `HoneyguideTests` pass in the Test Runner, `Ratel_NeverDrawsPrinter_WhileItIsRetired` and the re-measured
+   `Config_PlaysTheLabsGame_StepForStep` included.
 
 ### 🔴 Honeyguide and Ratel: round 6 triggers and its own hull model (`claude/honeyguide-ratel`, 2026-10-21) — NOT EDITOR-VERIFIED
 
@@ -427,7 +601,13 @@ On an Android development build (the real test - tilt, millimetre sizes and thum
    the steering thumb never does.
 6. Brittle Star: six buttons reachable with the right thumb; drag from the held Fire disc aims while firing; a touch
    elsewhere on the right aims without firing; a hard turn no longer splays the guns.
-7. Dolphin: lift either thumb - drift, charge and Echo together; turn the phone like a wheel - it rolls.
+7. Dolphin: lift either thumb - drift, charge and Echo together; turn the phone like a wheel - the hull rolls exactly as
+   far as the phone, one to one like an AR window (2026-10-22): hold the phone still at 45 degrees and the roll stops
+   at 45 (it eases the last few degrees in about 0.1 s through the touch nose lag, 2026-10-23, and the slight jitter
+   the unfiltered roll showed is gone), it does not keep rolling; turn back and it rolls back; past 90 either side it
+   holds at 90. The horizon must
+   stay level in the room (if it turns TWICE as fast as the phone, or against it, the sign in
+   `TiltMath.RollBetween` is wrong for this device). Put the thumb back: the roll stays where it was left.
 8. Manta: lift both thumbs - flat-out soar (720 u/s), steered by tilt; a thumb back ends it; nothing soars on the
    start line before the first touch.
 9. Rhino: a lift swings that side's blade; both thumbs off drops the blade into the chop and ignites in ~0.5 s.
@@ -3203,7 +3383,7 @@ best for the catch against 59.6 s for the field.
 ### 🔴 The browser Toybox: a WebGL build of Menu_Main's freestyle for www.froglet.games/play (`claude/webgl-toybox-kg5qx7`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 **What landed:** everything in `Docs/WEBGL_TOYBOX.md`. The `FROGLET_WEB_TOYBOX` define (read through
-`WebToybox.IsBuild`); a boot with no UGS, an in-memory `SinglePlayerTransport` host and straight into freestyle; a
+`WebToybox.IsBuild`); a boot with no UGS, an in-memory `SinglePlayerTransport` host and the home menu (no longer straight into freestyle, 2026-10-15); a
 menu with only the toybox, settings and credits; the build entry point `FrogletTools > Build > WebGL Toybox` and UBA's
 `WebToyboxBuild.PreExport`; WebGL player settings (Brotli, hashed names, 256 MB / 4 GB memory, the FrogletToybox
 template); `PlatformProfile_Web`; inline solves where threads were used; a browser download for painting SHARE; a
@@ -3231,7 +3411,7 @@ compiler, any build, any browser.
 
 **Verify in a browser** (`python3 Tools/Build/publish_toybox.py serve --build-dir Builds/WebGLToybox`, then
 http://localhost:8000 in Chrome or Edge):
-1. It boots past "Starting the Toybox…" (and "Loading sound…" while the banks download) straight into freestyle.
+1. It boots past "Starting the Toybox…" (and "Loading sound…" while the banks download) to the home menu, not into freestyle.
    No sign-in, no age gate, no online indicator or reconnect button.
 2. Every screen but HOME, and the Arcade / Arena / Mission entries, read "In the full game". The toybox, its
    configure modal, settings and credits open.
@@ -3262,6 +3442,27 @@ in `Unity.Multiplayer.PlayMode`. Not compiled: the offline refcompile has no 6.3
 2. MPPM with one clone: the clone still signs in on its own auth profile (`mppm-<tags>` or `mppm-clone`) and
    hosts on its own local port (the `[MultiplayerSetup] MPPM clone ...` line on the `NetworkFlow` channel).
 3. If anyone on the team clicked "Yes" before pulling, discard their local rewrite of these two files first.
+
+### 🔴 Store-release URLs: settings links and the consent screen point at www.froglet.games (`claude/store-page-urls-kg5qx7`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+No editor and no `unity` CLI in this session, so `/verify-unity` did NOT run. The change is three serialized
+string values, one consent-config string and the matching three C# field defaults; no structure changed (the edit
+script asserted one owning document, an unchanged document count and exactly three changed lines in the prefab).
+**Merge only once the pages are live** on www.froglet.games (website repo `froglet-studio/cosmic-shore-landing-page`);
+until then the old values point at cosmicshore.com, which currently shows a domain-for-sale page.
+
+**What landed:** `SettingsModal.prefab` `privacyPolicyUrl` / `deleteDataUrl` / `bugReportUrl` →
+`https://www.froglet.games/privacy`, `/delete-my-data`, `/support` (the prefab values override the code defaults; no
+scene overrides them). `GameSettingsPanelController` defaults match. `Resources/PrivacyConsentConfig.asset`
+`privacyPolicyUrl` was EMPTY, so the first-run consent screen showed no policy link; it is now the privacy URL.
+
+1. **Main menu → Settings → General.** Press Privacy Policy: the browser opens `https://www.froglet.games/privacy`.
+   Press Delete my data: `/delete-my-data`. Press the bug-report row: `/support`.
+2. **Pause menu in a match → Settings.** The same three rows open the same three URLs (the prefab is shared).
+3. **First-run consent.** Clear PlayerPrefs (`AnalyticsConsent`, `AnalyticsAgeEligible`), relaunch, enter a birth year
+   13+ years ago: the consent screen now shows a privacy-policy link, and it opens `/privacy`.
+4. **Inspector.** Select the SettingsModal prefab's `GameSettingsPanelController`: the Links header shows the three
+   froglet.games URLs (not cosmicshore.com).
 
 ### 🔴 Stoat play fixes: no flash at the poles' birth, a subtle ripple, the path drawn again, Time mode is the catch-sling (`cece/admiring-cannon-lhmv6t`, 2026-10-14) — NOT EDITOR-VERIFIED
 
@@ -13871,3 +14072,40 @@ Team task: T-20261021-6fa4.
 3. Console stays clean. The `renderers` line still shows the snow as one instanced family.
 4. Low preset: shards still appear, until `SnowChanger.maxMorphedShards x 0.25` (800 x 0.25 = 200) limbs have made one; after that limbs
    only fade.
+
+## 🔴 2026-10-22 — PiP view frame; no Panini or bloom on orthographic 2D marks (`cece/dazzling-volta-apzw2m`) - NOT EDITOR-VERIFIED
+
+Files: `Utility/OrthographicLens.cs`, `Utility/UnprocessedOverlay.cs`, `UI/Elements/PipViewFrame.cs`,
+`PipFrameGraphic.cs`, `PipFrameStyleSO.cs`, `Resources/PipFrameStyle.asset`; wired into `KiteNavigatorView`, `JacksView`
+(+ `JacksExecutor`, `AnglerWorldMarks`), `CrewViews.cs` (`CrewPictureInPicture`, used by `GobyPistolDuo`) and
+`OrcaCrewView`. Rules: `Docs/claude/SHADERS_AND_PERFORMANCE.md` § Orthographic views and picture-in-picture frames.
+The headless reference compile passes (player config, 0 errors in project code) and `check_generated_assets.py` passes
+on the hand-written asset (negative-controlled). No `unity` CLI in the session, so `/verify-unity` did not run.
+Team tasks: T-20261022-a4ab, T-20261022-70b1 (tests), T-20261022-a9fa (Shombith signs off the look).
+
+1. Toybox Vessel Changer > Wrasse, navigate. The lasso motes, kite, tail and cord keep their limes against the crystals
+   (no bloom or tonemap on them); the world under them is still post-processed. Boost into the speed tunnel: the
+   map's straight edges, the lower bar included, stay straight.
+2. Same for the Jacks while herding: rings and dots crisp, world still bloomed, no bowing.
+3. Every PiP small view (Wrasse both seats, Goby & Pistol both seats, Orca turret seat's lifted pilot view, Jacks
+   herding and flying) wears the frame: Light hairline on a slivered outline (top-left, bottom-right cut), dark chrome
+   band out to a square edge. It sits exactly on the view, under the HUD, and double-tap swaps still work through it.
+4. Resize the Game view (16:9, 4:3, a phone): the frame follows. Leave the crew vessel: no frame is left behind.
+5. Console stays clean (no `UpdateVolumeStack must not be called before ...` error, no missing-layer error).
+
+## Crew vessels on Very Low: one view, Wrasse portrait (2026-10-22, `cece/keen-edison-3c6pvz`)
+
+Not opened in Unity (no editor in the session); `unity_refcompile` player clean. Check by hand (board task `T-20261022-b932`):
+- [ ] EditMode: `QualityPresetCutsTests`, `PilotCameraParkTests` pass.
+- [ ] Settings > Very Low, Toybox Vessel Changer > Wrasse and Grouper: you start on the Wrasse; no small Grouper view; pressing 1 shows the Grouper full screen with no kite square. Medium brings both PiPs back.
+- [ ] Very Low, Honeyguide and Ratel: you start on the Ratel on a plain backdrop; Fly goes to the Honeyguide with only a "Ratel" button top-left; a short tap on it goes back.
+- [ ] Very Low: the Goby's Pistol view, the Orca's turrets and the Jacks' herd view show no small view.
+- [ ] Device Simulator or a phone: the Wrasse seat turns the screen to portrait and the board fits its width; the Grouper turns it back; the menus never go portrait.
+
+## Starlings HUD shows the next level (2026-10-24, `cece/bold-gauss-lad943`)
+
+Not opened in Unity (no editor in the session); `unity_refcompile --config editor` has 0 errors in the changed files. Check by hand (board task `T-20261024-303b`):
+- [ ] EditMode: `StarlingHUDLevelScalingTests`, `StarlingRulesTests` pass.
+- [ ] Fly the Starlings, pick a card; on a later hand that offers it again the row reads `Lv 3 → 7` (the arrow renders, no box).
+- [ ] Open that card's details: `Level 3 → 7`, each number `now → next`, `Unlocks at Lv 5: ...` for a jolt the pick passes.
+- [ ] With no hand, open details: each held card heads `Lv N → N+1` with numbers beside the next level's and its next jolt; a card at 15 shows `Max level`.
