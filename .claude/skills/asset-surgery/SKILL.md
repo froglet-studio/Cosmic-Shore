@@ -1121,6 +1121,13 @@ references, m_Script classes). What cost time on the first runs (2026-10-06 to 1
   control. If an older checkout still reports such ids missing, check the XOR before believing it —
   the old scene reference to `BigCrystalVariant`'s Crystal (`6588436222817790495`) was exactly that
   kind of id and loaded in play for months.
+- **`check_generated_assets.py` used to report every authored UnityEvent as a dropped field; it reads them
+  since 2026-10-24.** `m_OnClick: m_PersistentCalls: ...` came back as "`m_PersistentCalls` is not a
+  serialized field of UnityEngine.UI.Button.ButtonClickedEvent" (80 findings on shipped prefabs since
+  `363d153b9^`). The base chain was walked, but `UnityEventBase` is declared in `UnityEngine.CoreModule`,
+  which the schema never read. `Schema/Program.cs` now reads the `UnityEngine.Events` namespace from that
+  (depublicized) DLL, so persistent calls, their `ArgumentCache` and both enums are checked like any field.
+  If an older checkout still reports `m_PersistentCalls`, it is this false positive, not a defect.
 - **The `editor` config is RED on bleeding-edge itself (measured 2026-10-14): 3 errors, all in
   `Assets/_Scripts/System/AuthenticationServiceFacade.cs`** (`Unity.Multiplayer.PlayMode` /
   `CurrentPlayer` — the Multiplayer Play Mode editor package, not obtainable here). A/B it on a

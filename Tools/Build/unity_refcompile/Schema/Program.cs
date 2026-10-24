@@ -3,8 +3,9 @@
 //   Schema <out.json> <Assembly-CSharp.rsp> [<other project assembly>.rsp ...]
 //
 // Builds the same compilation the refcompile build hands csc (errors are irrelevant here: Roslyn
-// still binds every declaration) and writes, for every class/struct/enum declared in source or in a
-// project/package assembly compiled by unity_refcompile: its base chain, declaring files, and the
+// still binds every declaration) and writes, for every class/struct/enum declared in source, in a
+// project/package assembly compiled by unity_refcompile, in uGUI/TMP, or in the engine's
+// UnityEngine.Events namespace: its base chain, declaring files, and the
 // fields Unity would serialize (Unity's rules: instance, non-const, non-readonly; public without
 // [NonSerialized], or [SerializeField]/[SerializeReference]; auto-properties with
 // [field: SerializeField] serialize as <Name>k__BackingField), with [FormerlySerializedAs] names.
@@ -95,6 +96,17 @@ static class Program
                 && (pe.FilePath.EndsWith("UnityEngine.UI.dll") || pe.FilePath.EndsWith("Unity.TextMeshPro.dll"))
                 && comp.GetAssemblyOrModuleSymbol(r) is IAssemblySymbol asm)
                 wanted.Add(asm.GlobalNamespace);
+        // ...and so does UnityEngine.Events (CoreModule; only that namespace): UnityEventBase's private
+        // [SerializeField] m_PersistentCalls is the body of every UnityEvent field (Button.m_OnClick, a
+        // project `class FooEvent : UnityEvent<T>`). Without it every authored persistent call read as a
+        // dropped field of Button.ButtonClickedEvent.
+        if (ri == 1)
+        foreach (var r in comp.References)
+            if (r is PortableExecutableReference pe && pe.FilePath != null && pe.FilePath.EndsWith("UnityEngine.CoreModule.dll")
+                && comp.GetAssemblyOrModuleSymbol(r) is IAssemblySymbol asm
+                && asm.GlobalNamespace.GetNamespaceMembers().FirstOrDefault(n => n.Name == "UnityEngine")
+                    ?.GetNamespaceMembers().FirstOrDefault(n => n.Name == "Events") is { } events)
+                wanted.Add(events);
 
         void Walk(INamespaceOrTypeSymbol ns)
         {

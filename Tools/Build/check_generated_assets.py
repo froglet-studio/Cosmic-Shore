@@ -25,7 +25,8 @@ WHAT IT CHECKS (per changed asset; modified files report only findings their bas
     script    m_Script -> a .cs whose file name is a non-abstract, non-generic class deriving
               MonoBehaviour (on a GameObject) or ScriptableObject (in an .asset)
     field     every serialized key exists on the class or a base (recursing into [Serializable]
-              classes/structs and lists of them; [FormerlySerializedAs] names count)
+              classes/structs and lists of them, a UnityEvent's persistent calls included;
+              [FormerlySerializedAs] names count)
     enum      every enum-typed value is a declared member (not checked for [Flags])
     type      a reference in a field typed as a project class points at an object of that class
     override  PrefabInstance modifications: the target exists in the source prefab and the
@@ -876,6 +877,45 @@ def self_test(schema, base):
     hit = [f for f in found if f[0] == "field" and "`references`" in f[2]]
     print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "a plain `references` key is still a dead field", hit[0][2][:110] if hit else ""))
     ok &= bool(hit)
+    # a Button's m_OnClick: the persistent-call body is declared on the engine's UnityEventBase, which the
+    # schema reads from CoreModule. A valid call is clean; a typo or bad enum inside one is still caught.
+    # The host is a project Button subclass, because a package script's fields are never judged.
+    btn = None
+    for full, t in schema.types.items():
+        if t["kind"] == "Class" and t["files"] and "UnityEngine.UI.Button" in t["bases"] and not (t["isAbstract"] or t["isGeneric"]):
+            f = os.path.relpath(t["files"][0], ROOT)
+            if os.path.basename(f) == t["name"] + ".cs" and os.path.exists(os.path.join(ROOT, f + ".meta")):
+                btn = (full, META_GUID.search(open(os.path.join(ROOT, f + ".meta")).read()).group(1))
+                break
+    assert btn, "self-test fixture drifted: no project class derives UnityEngine.UI.Button"
+    call = "Assets/_Prefabs/SelfTestPersistentCall.prefab"
+    call_yaml = ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n"
+                 "--- !u!1 &100\nGameObject:\n  m_Component:\n  - component: {fileID: 200}\n  m_Name: Button\n"
+                 "--- !u!114 &200\nMonoBehaviour:\n  m_GameObject: {fileID: 100}\n  m_Enabled: 1\n"
+                 "  m_Script: {fileID: 11500000, guid: " + btn[1] + ", type: 3}\n"
+                 "  m_OnClick:\n    m_PersistentCalls:\n      m_Calls:\n"
+                 "      - m_Target: {fileID: 200}\n"
+                 "        m_TargetAssemblyTypeName: " + btn[0] + ", Assembly-CSharp\n"
+                 "        m_MethodName: set_interactable\n        m_Mode: 6\n        m_Arguments:\n"
+                 "          m_ObjectArgument: {fileID: 0}\n"
+                 "          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine\n"
+                 "          m_IntArgument: 0\n          m_FloatArgument: 0\n          m_StringArgument: \n"
+                 "          m_BoolArgument: 0\n        m_CallState: 2\n")
+    for kind, needle, label, text in [
+            (None, None, "a valid persistent call on a Button's m_OnClick", call_yaml),
+            ("field", "`m_MethodNam`", "misspelled key inside a persistent call", call_yaml.replace("m_MethodName:", "m_MethodNam:")),
+            ("field", "`m_PersistentCals`", "misspelled m_PersistentCalls under m_OnClick", call_yaml.replace("m_PersistentCalls:", "m_PersistentCals:")),
+            ("enum", "m_CallState = 7", "persistent call state out of range", call_yaml.replace("m_CallState: 2", "m_CallState: 7"))]:
+        found, _ = run_audit(Tree(ROOT, {call: text, call + ".meta": "fileFormatVersion: 2\nguid: " + "5e1f7e57" * 4 + "\n"}),
+                             schema, base, [call], [], [], lambda r: None)
+        mine = [f for f in found if f[1] == call]
+        if kind is None:
+            print("  [%s] %-60s %s" % ("FALSE HIT" if mine else "ok", label, mine[0][2][:110] if mine else ""))
+            ok &= not mine
+        else:
+            hit = [f for f in mine if f[0] == kind and needle in f[2]]
+            print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", label, hit[0][2][:110] if hit else ""))
+            ok &= bool(hit)
     # a deleted file still referenced
     found, _ = run_audit(Tree(ROOT, deleted=[cfg + ".meta"]), schema, base, added[2:], [],
                          [(cfg + ".meta", meta_guid(tree0, cfg))], lambda r: None)
