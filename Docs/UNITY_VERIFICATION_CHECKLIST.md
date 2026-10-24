@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play: every player's game hides offensive names it receives (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T7. `DisplayNameValidator.ForDisplay` judges a name received from another player on its words
+alone (the slur filter and the reserved team names, ignoring length and format a modified game can skip) and shows the
+authored `DisplayNameValidationConfigSO.hiddenNameReplacement` (`Pilot {tag}`, `{tag}` = 4 hex digits from the name,
+the same on every machine) instead. Applied where other players' names enter the game: `Player.Name` (from `NetName`),
+`PartyPlayerData.DisplayName` (presence lobby), `PartyInviteData.HostDisplayName`, the friends list, the weekly
+leaderboard rows. Not gated: clean names are unchanged.
+
+**Verified without the editor:** `unity_refcompile` player: 0 project errors; editor config: 3 errors, all in unchanged
+files (the unobtainable Multiplayer Play Mode package). Port build: no errors in the changed files. Four new
+`DisplayNameValidatorTests` (`ForDisplay_*`) compile; **not run**. Logging and conditional-compilation gates OK.
+
+**Test in the editor:**
+1. Test Runner > EditMode > `DisplayNameValidatorTests`: all pass, including the four `ForDisplay_*` tests.
+2. MPPM host + guest. In the guest, set `NetName` to `Admin` through the Inspector on its Player (stands in for a
+   modified game): the host's scoreboard, presence list and party UI show `Pilot ` plus four hex digits; the score still
+   attributes to that player.
+3. Normal names (yours, `Pilot9898`-style defaults, AI names) show unchanged everywhere.
+
 ### 🔴 Fair play: match reports from every player (quits, host results), gated off (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
 
 **What landed:** Threat Board T9 and T4. `MatchReporter` (attached by `MultiplayerMiniGameControllerBase.OnNetworkSpawn`

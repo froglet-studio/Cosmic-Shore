@@ -350,7 +350,7 @@ Set on the Threat Board artifact (https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi
 | Medium | R13 Automated penalties on children | 12 | design rule (§4.6) |
 | Medium | R14 Locking paid content | 8 | design rule (§4.6) |
 | Medium | R16 Reading more from the device than needed | 8 | design rule (§5) |
-| Unset | T7 Display names checked on the client only | 12 | T-20261022-7708 |
+| Unset | T7 Display names checked on the client only | 12 | T-20261022-7708. **Done 2026-10-24 on the receiving side**: every player's game hides offensive names it receives (`Pilot {tag}`); a server check of the sender adds nothing a modified game cannot skip |
 | Not ticked | R15 False positives with no evidence or appeal | 12 | — (the ladder in §4.6 still requires evidence and appeal) |
 
 ## 9. Sources

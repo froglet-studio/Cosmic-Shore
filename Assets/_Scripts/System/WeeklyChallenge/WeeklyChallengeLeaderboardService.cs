@@ -501,7 +501,7 @@ namespace CosmicShore.Core
             {
                 Rank = entry.Rank + 1,      // UGS ranks from 0; a player reads from 1
                 PlayerId = entry.PlayerId,
-                PlayerName = StripNameSuffix(entry.PlayerName),
+                PlayerName = DisplayNameValidator.ForDisplay(StripNameSuffix(entry.PlayerName)), // fair play T7
                 Seconds = entry.Score,
                 IsLocalPlayer = !string.IsNullOrEmpty(localId) && entry.PlayerId == localId,
                 AvatarId = WeeklyChallengeRanking.ReadAvatarIdFromMetadata(entry.Metadata),
