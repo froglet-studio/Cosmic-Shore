@@ -75,7 +75,9 @@ ceilings; then a sustained excess raises a `FairPlaySignal` (never a kick). The 
 hulls are measured as calibration. `PilotControl` (the Third Eye's You / AI test tool) is now inside
 `#if UNITY_EDITOR || DEVELOPMENT_BUILD`, like its two callers.
 
-**Verified without the editor:** see the commit message (reference compile, logging and conditional-compilation gates).
+**Verified without the editor:** `unity_refcompile` player (release) and player-dev: 0 errors in project code, none of the
+230 unobtainable-package errors in a changed file. The port build compiles the new bodies and caught a planted error in
+the monitor. `check_console_logging.py` and `check_conditional_compilation.py`: OK. Nothing run in Play mode.
 
 **Test in the editor (MPPM, 2 players + AI backfill, Skim Race or any race):**
 1. FrogletTools > Toolbox > Logging: turn on **ArcadeMatch**.
