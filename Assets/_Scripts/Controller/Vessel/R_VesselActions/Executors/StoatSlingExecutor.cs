@@ -479,7 +479,10 @@ namespace CosmicShore.Gameplay
             }
             if (AIConfig.AiSlingMinTurnDegrees <= 0f) return;
             if (Time.time - _aiLastSlingTime < AIConfig.AiSlingIntervalSeconds) return;
-            var local = hull.InverseTransformPoint(ai.TargetPosition);
+            // Bearing from the steering point, range from the objective: on a race line the steering point sits one
+            // look-ahead away, inside AiSlingMinDistance at cruise (StoatDipoleMath.AutopilotGauge).
+            var local = StoatDipoleMath.AutopilotGauge(hull.InverseTransformPoint(ai.TargetPosition),
+                                                       (ai.ObjectivePosition - hull.position).magnitude);
             if (!StoatSlingMath.TryAutopilotSide(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance, out bool attractorLeft))
                 return;
             var side = attractorLeft ? Side.Left : Side.Right;

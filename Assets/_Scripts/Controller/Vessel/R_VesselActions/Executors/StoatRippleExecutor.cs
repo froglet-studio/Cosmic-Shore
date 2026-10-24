@@ -77,7 +77,7 @@ namespace CosmicShore.Gameplay
             // The rivals that could be reached at all, once: anything further than the full radius plus a frame's travel
             // is out of reach for this ripple's whole life.
             s_vessels.Clear();
-            s_vessels.AddRange(Object.FindObjectsByType<VesselStatus>(FindObjectsSortMode.None));
+            s_vessels.AddRange(VesselStatus.Live);
             float reach = wave.Radius + 200f;
             for (int i = 0; i < s_vessels.Count; i++)
             {

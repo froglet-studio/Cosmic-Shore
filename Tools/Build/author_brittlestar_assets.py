@@ -260,8 +260,10 @@ def turret_blocks() -> str:
             f"    poolManager: {{fileID: {POOL_ID}}}\n" +
             mb(POOL_ID, TURRETS_GO, POOL_SCRIPT) +
             f"  prefab: {SPARROW_ROUND}\n"
-            # Space Mode's five guns (2026-10-16): up to 450 rounds/s at a full pull, overheating in ~2.4 s, each round
-            # flying 4.5-9 s (Space 0..10) - ~1,100 alive from one burst, plus the one turret's sustained 90/s x 9 s.
+            # Space Mode's five guns (2026-10-17): up to 450 rounds/s at a full pull, overheating in ~6 s at Space 0, each
+            # round flying 4.5 s - ~2,000 alive in a burst, plus the one turret's sustained 90/s. At Space 10 a burst
+            # runs ~20 s (heatCapacity x3.33) and each round flies 9 s, so ~4,000 can be alive: past maxSize the pool
+            # creates on demand (sized here for Space 0; BRITTLE_STAR.md §3.4 Cost).
             "  defaultCapacity: 1400\n"
             "  maxSize: 2400\n"
             "  enableBufferMaintenance: 1\n"
@@ -380,7 +382,7 @@ def build_prefab(donor: str, sparrow_body: str) -> str:
     # Trail: one small block from the cockpit (the class document's "single small block"), skimmer clearance on.
     pc = S.get_doc(docs, PRISM_CONTROLLER_ID)
     pc = pc.replace("guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}", f"guid: {SCRIPT['BrittleStarPrismController']}, type: 3}}", 1)
-    for key, value in (("BaseScale", "{x: 1.5, y: 1.5, z: 3}"), ("prismType", "2"), ("initialWavelength", "6"),
+    for key, value in (("BaseScale", "{x: 1, y: 1, z: 6}"), ("prismType", "2"), ("initialWavelength", "6"),
                        ("minWavelength", "6"), ("maxBlockScale", "1"), ("waitTillOutsideSkimmer", "1"),
                        ("Gap", "0"), ("MinimumGap", "0"), ("offset", "2")):
         pc = S.set_field(pc, key, value)
@@ -480,7 +482,7 @@ CONFIG_BODY = (
     "  speedModeMultiplier:\n" + ef(6, 6, 8, 4, 4) +
     "  speedModeSpacingFollow: 1\n"
     "  speedModeStretch: 1\n"
-    "  creationBlockScale:\n" + ef(1, 1, 1.8, 2, 0.6) +
+    "  prismWidthScale:\n" + ef(1, 1, 2, 2, 1) +
     "  creationSpacing: 6\n"
     "  creationRadiusScale: 1\n"
     "  creationOffset: 2\n"
@@ -498,7 +500,8 @@ CONFIG_BODY = (
     "  armSplayDegrees: 25\n"
     "  aimDeadzone: 0.25\n"
     "  ringTurnRate: 540\n"
-    "  heatPerRound: 0.0012\n"
+    "  heatPerRound: 0.000637\n"
+    "  heatCapacity:\n" + ef(1, 1, 3.3333, 3, 1) +
     "  coolRate: 0.12\n"
     "  chargeCoolRate: 0.6\n"
     "  overheatRecoverBelow: 0.35\n"
@@ -506,11 +509,12 @@ CONFIG_BODY = (
     "  cordLooseLengthScale: 1.5\n"
     "  cordLinks: 16\n"
     "  cordCutRadius: 0.6\n"
-    "  cordLooseWave: 180\n"
+    "  cordLooseWave: 144\n"
     "  cordRigidWave: 2500\n"
     "  cordLooseDamping: 0.4\n"
     "  cordRigidDamping: 14\n"
     "  cordPose: 1600\n"
+    "  cordMaxRigidity: 0.4\n"
     "  cordRigidityRate: 12\n"
     "  cordDebrisRestitution: 0.5\n"
     "  cordDebrisSpeedLimit: 200\n"
@@ -524,10 +528,19 @@ CONFIG_BODY = (
     "  ringFlightSpin: 900\n"
     "  ringBlastSeconds: 0.7\n"
     "  ringBlastFallbackRadius: 200\n"
+    "  ringBlastThicknessScale: 4\n"
     "  blastScale:\n" + ef(1, 1, 4, 1, 1) +
-    "  ringBlastBandWidth: 6\n"
+    "  ringBlastFrontWidth: 0.05\n"
+    "  ringBlastFrontHeight: 0.04\n"
+    "  ringBlastRelief: 0.12\n"
+    "  ringBlastSpinDegrees: 108\n"
+    "  ringBlastCrestDepth: 2.5\n"
+    "  ringBlastPentagonLag: 0.8\n"
+    "  ringBlastArmWidth: 0.08\n"
+    "  ringBlastArmWiggle: 0.06\n"
+    "  ringBlastArmCurlDegrees: 30\n"
     "  maxSpareRings: 2\n"
-    "  rebuildSeconds: 0.5\n"
+    "  rebuildSeconds: 3\n"
     "  ringBlastHitClass: 3\n"
     "  ringBlastHitCooldown: 0.5\n"
     "  cordHitCooldown: 0.5\n"
@@ -645,17 +658,20 @@ MAP_ENTRIES = (
      "RB. FIVE CORDS, one from each turret, slicing every prism they touch (any domain; your own fresh trail is spared) "
      "and striking rival hulls for petals. Released, RT leaves them WHIPS at 150% length: heavy, inextensible, slow - a "
      "turn, a ring flick or a sweep of the right stick sends a wave travelling down them that rings on for seconds. "
-     "Pulled, RT shortens them to 100% and stiffens them into five straight SABERS (analog: every depth in between). "
+     "Pulled, RT shortens them to 100% and stiffens them into five SABERS that keep 60% of the whip's give (analog: "
+     "every depth in between). "
      "The right stick turns them with the ring and opens them out. Using them cools the guns. "
      "LT throws the ring - only with a SPARE ring in stock (one per crystal, two at most); the mounted ring then regrows "
-     "on its own. It blows on contact or its fuse in a disk as wide as the cell's nucleus, destroying every prism in its "
+     "on its own. It blows on contact or its fuse in a disk as wide as the cell's nucleus, bursting out of the ring as "
+     "faceted volumes - five coiling arms led by crystals, five crests and the ring's own pentagon - still spinning, destroying every prism in its "
      "plane and stripping petals from every rival hull it crosses (petals only - nothing is moved). The card shows the "
      "spare stock. Charge is threat - one dial: the cords' cut width and the rounds' size x1 -> x1.8 at level 10 "
-     "(projectileScaleMultiplier), the disk's thickness x1 -> x4 (blastScale)."),
+     "(projectileScaleMultiplier), the disk's thickness x1 -> x4 on top of its x4 base, 4 to 16 times the ring's (blastScale)."),
     (2, "Creation Mode", 7,
      "B. A trail behind EACH of the ring's five corners instead of the single small block from the cockpit - the same "
-     "small block, five lines that turn with the ring's firing rotation. The SLOWEST mode: cruise x0.5. Mass is volume - "
-     "one dial: the corner trails' blocks x1 -> x1.8 at level 10 (BrittleStarConfigSO.creationBlockScale)."),
+     "small block, five lines that turn with the ring's firing rotation. The SLOWEST mode: cruise x0.5. Mass is girth - "
+     "one dial: the width and height of EVERY block you lay, the base trail's and the corner trails', x1 -> x2 at level "
+     "10, never their length (BrittleStarConfigSO.prismWidthScale)."),
     (3, "Space Mode", 8,
      "X. FIVE GUNS: RT fires every turret, its pull setting the rate (analog, up to 90 rounds/s each; the Sparrow's "
      "round at 135 u/s, swelling as it flies, 387 u reach). The right stick's direction turns the ring, and the guns with "
@@ -663,8 +679,9 @@ MAP_ENTRIES = (
      "they splay 25 degrees. In every other mode RT fires the one turret the ring has turned to the aim, the same gun "
      "with no spread. Every round HEATS the guns - heat per second is the pull x the guns firing - and overheated they "
      "cannot fire until they cool; overheated in Space Mode your trail lays DANGER prisms. The card shows the heat. "
-     "Friendly fire is on. A round on a rival hull is a scored bullet hit (petals only). Space is reach - one dial: "
-     "every gun's range x1 -> x2 at level 10 (BrittleStarConfigSO.rangeMultiplier)."),
+     "Friendly fire is on. A round on a rival hull is a scored bullet hit (petals only). Space is reach and endurance: "
+     "every gun's range x1 -> x2 at level 10 (BrittleStarConfigSO.rangeMultiplier), and the heat the guns hold x1 -> "
+     "x3.33, so a full five-gun burst runs ~6 s at level 0 and ~20 s at level 10 (BrittleStarConfigSO.heatCapacity)."),
     (4, "Speed Mode", 6,
      "A. Ignite every thruster: the hull's cruise speed x6, the base trail's spacing stretched by the same ratio so "
      "production per second does not rise, and every prism stretched with it so the trail still joins up. Time is rate - "

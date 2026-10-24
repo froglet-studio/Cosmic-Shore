@@ -426,7 +426,9 @@ the bottom-left corner of every Scene view. It opens expanded once per editor st
   push as the after-play question) and **Release** (Code Optimization is Debug, so a capture would not count).
 - **No Capture button** (Yash, 2026-10-15: "captures should happen automatic"). `PerfAutoCapture` runs
   `capture <label> 15` by itself in Play, once per scene per session, after the scene's time from the status file
-  (S2 8 min, Skim Race 90 s, S5 2 min; any other gameplay scene 90 s under its own name). It skips Debug code
+  (S2 8 min, Skim Race 90 s, S5 2 min; any other gameplay scene 90 s under its own name). A scene whose time is
+  over 4 minutes (today only S2) also gets an early capture at 4 minutes, labelled `S2-4min`, so a shorter play test
+  still sends data (Yash, 2026-10-18); the sweep keeps its baseline apart from S2's. It skips Debug code
   optimization, a paused editor and the boot scenes. While playing, the badge shows its countdown. A new capture
   then goes to Claude by itself after Play. It costs one short hitch per scene (a 180-frame Profiler recording and a
   renderer census). Turn it off on one machine with the EditorPrefs key `CosmicShore.PerfAutoCapture.Off`.

@@ -65,6 +65,433 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Angler round 7: A lures and B dashes (the Sparrow's buttons); "the QuadFish don't always listen" fixed (`cece/zealous-feynman-po8k8d`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1, §1k. No `unity` CLI was available, so `/verify-unity` did NOT run. Headless: `unity_refcompile` player OK (editor: only the 3 pre-existing `UgsRequestPolicyTests` errors); `author_angler_assets --check` and `--self-test` 19/19; `element_ability_table Angler` reads Mass A / Space and Time B / T.
+
+In the editor (Menu_Main freestyle, Vessel Changer → Angler):
+
+1. **Buttons.** Hold A (Space on keyboard): the lure lights and the hull stops. Press B (T): the dash. X (Q) picks the squad, Y (F) recalls. The Mass card's chip reads A and the Time card's reads B.
+2. **The squad shows.** Tame a mix of Clawfish and QuadFish. Press X: "Clawfish xN" appears over the Mass card, and only Clawfish gather and throw. Press X until the label is blank: the whole school answers again.
+3. **QuadFish listen.** With the label blank, paint and release several times in a row, near and far: every QuadFish in the school goes each time, and none is left circling a prism.
+4. **An inedible prism.** In a cell with no nucleus, paint a prism of the cell's own colour (the creatures' domain): no creature goes to it, and the rest of the queue is still eaten.
+
+---
+
+### 🔴 Angler round 6: the lit queue - the school eats every lit prism, newest first (`cece/zealous-feynman-po8k8d`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1j. No `unity` CLI was available, so `/verify-unity` did NOT run. Headless: `unity_refcompile` player OK; parity 189 cases, 10/10; the lab's queue check (12/12 older lit prisms eaten, 0 before).
+
+In the editor (Menu_Main freestyle, Vessel Changer → Angler, a school of 6+):
+
+1. Paint a row of prisms one at a time (sweep RT slowly) and release. The first creature heads for the LAST prism you painted, the next for the one before it, and so on: one creature per prism.
+2. Before they finish, paint a second, smaller group elsewhere and release. Those prisms get one creature each; the rest of the school goes back to the first group.
+3. Wait: every lit prism from BOTH throws is eaten, and only then does the school return to the hull. No prism is left lit.
+4. Erase (LT) one lit prism that a creature is heading for: it un-lights, and that creature takes the next prism in the queue.
+
+---
+
+### 🔴 Angler round 5: speed back to 40, a smaller accurate brush, a level camera that rises while luring or dashing (`cece/zealous-feynman-po8k8d`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1h and §5. No `unity` CLI was available, so `/verify-unity` did NOT run.
+
+Headless proof:
+
+- `unity_refcompile` player OK. Editor: only the 3 pre-existing `UgsRequestPolicyTests` errors (0 in changed files).
+- Parity: 189 cases, 10/10 planted changes caught.
+- `author_angler_assets.py --check`, with `--self-test` 19/19.
+- `studio_to_unity`: 27 mapped, 0 drift.
+- The lab: `verify_lab` PASS (87% on target, clear 10.9 s).
+
+In the editor (Menu_Main freestyle, Vessel Changer → Angler):
+
+1. **Speed.** Cruise reads 40 u/s and a full boost about 110 (half of round 4).
+2. **Level camera.** Fly straight: the camera sits directly behind the hull with no height; the hull is at the screen's centre, not below it.
+3. **Accurate brush.** Hold RT on a single far prism at the screen's centre: it, and only its near neighbours, light. The rim ring (60 u out) is small: about 3 u for paint, 1.6 u for erase. LT erases only what is under the centre.
+4. **Close up.** Fly into a cluster with RT held: prisms within 2 u of the nose still light.
+5. **Lure lift.** Hold X: the hull stops and the camera rises about 56 u over 0.4 s. Release: it eases back down to level.
+6. **Dash lift.** Press Y with a school out: the camera rises during the 0.35 s dash and comes back down after.
+7. **Not other cameras.** Die while luring: the death camera is not raised. Swap vessel while luring: the next vessel's camera is level.
+
+---
+
+### 🔴 Angler round 4: one-thumb, 2x speed, camera 4x, the lure stops, crystal seeds, lure growth, counts, Time speeds fauna, a spent creature per lock, "they didn't listen" fixed (`cece/zealous-feynman-po8k8d`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1, §1d–§1i. No `unity` CLI was available, so `/verify-unity` did NOT run.
+
+Headless proof:
+
+- `unity_refcompile` player OK. Editor: only the 3 pre-existing `UgsRequestPolicyTests` errors.
+- Parity: 189 cases, 10/10 planted changes caught.
+- `author_angler_assets.py --check`, with `--self-test` 19/19.
+- `studio_to_unity`: 25 mapped, 0 drift.
+- `element_ability_table`: Time scales `faunaSpeed` 1 → 2.
+- The lab: `verify_lab` PASS, and the listen bug reproduced and fixed headless.
+
+1. **One thumb.** Fly the Angler on a pad using the LEFT stick only: it pitches, yaws and banks. The right stick does nothing. RT / LT still paint and erase with analog depth. On a keyboard + mouse it flies on the one-thumb mouse scheme.
+2. **Speed and camera.**
+   - It cruises at about twice its old speed (80 u/s) and boosts with RB.
+   - The camera sits about four times further back and higher.
+   - The school is visible round the hull, and trails it at cruise.
+3. **The lure stops it.** Hold X: the hull eases to a stop (boost still moves it). Let go: it eases back up to cruise.
+4. **Lure growth.** Hold X near plants: the plants inside the light grow visibly faster than those outside it. They return to their own pace when you let go.
+5. **The fauna count.** The Mass card shows a number: the creatures you lead. It goes up as you tame, and down when one is spent or dies.
+6. **Omni crystal: a creature and a seed.**
+   - Fly through one: a creature blooms where it was and joins (the count goes up).
+   - The omni card (left of the four) shows a seed icon, bright, with "1", and flashes.
+   - Hold X, then let go: a plant of your domain grows in at the esca, and the seed icon dims.
+   - Two crystals before releasing: "2", and two plants on release.
+7. **"They listen."** Throw the squad at a far painted field. While they are still flying, hold RT on a near field and release: every creature turns to the new paint.
+8. **Charge spends one creature per lock.**
+   - Sweep LT onto a rival vessel: ONE creature (the nearest) leaves the school, the count drops by one, and it chases that vessel. Its bites take petals (at most one per second) and score.
+   - Move the beam off and back on (or release and press LT again on the same vessel): another creature goes, and the count drops again.
+   - Hold the beam steady on the vessel: no further creatures go.
+   - Each hunted hull wears a ring.
+   - The hunters ignore paint and recall. They keep chasing until they die, or go wild if the vessel leaves.
+   - With one creature left, locking spends it, and a keeper is born within a second.
+9. **Time speeds the fauna.** Raise Time (toolbox) to 10: the school keeps up with the cruising hull, and thrown and hunting creatures move about twice as fast.
+
+### 🔴 Angler round 3: the element map (Charge lock-on, Mass lure & grow, Space paint 3200 u, Time dash on Y), newest paint first, the omni creature, every creature prefers paint (`cece/zealous-feynman-po8k8d`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1, §1c–§1g, §7. No `unity` CLI was available, so `/verify-unity` did NOT run.
+
+Headless proof:
+
+- `unity_refcompile` player OK. Editor: only the 3 pre-existing `UgsRequestPolicyTests` errors.
+- Parity: 189 cases, 10/10 planted changes caught.
+- `author_angler_assets.py --check`, with `--self-test` 17/17.
+- `studio_to_unity`: 25 mapped, 0 drift.
+- `element_ability_table.py Angler`: 4/4 abilities; the Mass and Space level-5 gates are found.
+- The lab: `verify_lab.cjs` PASS, plus round-3 headless checks.
+
+**What landed:**
+
+- **Input:** `InputEvents.Button4Action = 14` (pad Y / keyboard F, gamepad + keyboard + single-stick-mouse strategies, hint map, glyph row).
+- **Element map:** `ElementalAbilityMaps/Angler.asset`.
+- **Fauna:** `PaintedPrey` (+ `LightFauna` / `Boid` food rank), `Fauna.TryLeash(…, steal)`.
+- **Executor:**
+  - brush 3200 u with a 6 u near radius, read as 16 spheres along the beam;
+  - `PickRecent`, and no homing give-up;
+  - shield crack;
+  - lock-on, hunt and bites;
+  - plants;
+  - dash;
+  - `OmniMorph`.
+- **Presentation:** the HUD gauges by element; four redrawn icons.
+
+1. **The map in the HUD.** Fly the Angler. The ability row reads Erase / Lock-on (LT), Lure, Tame & Grow (X), Paint (RT) and Dash to the School (Y), with a Y chip on a pad and an F chip on a keyboard. The icons are a lock ring, an esca over a sprout, the paint beam, and a hull dashing to fish.
+2. **Reach.**
+   - Squeeze RT at prisms far across the cell (well past where it used to stop): they light up.
+   - Point at prisms right in front of the nose, closer than a hull length: they light up too.
+   - LT erases at both ranges.
+3. **Newest paint first.** Paint one field, then sweep a second, far away. Let go: the squad flies at the second sweep first, however far it is, and does not give up on the way.
+4. **Everyone prefers paint.** Paint prisms near a wild herbivore school, don't throw: wild creatures in range turn to eat the lit prisms before unlit ones.
+5. **Paint Shields (Space 5).** At Space 5 (toolbox), shielded prisms light up under RT. Thrown fauna arrive, the shield breaks off, and they eat the prism. Below Space 5, shielded prisms never light.
+6. **Lure & Grow (Mass).** Hold X: every ~2 s a plant of YOUR domain grows in near the esca.
+7. **Steal Fauna (Mass 5).** Two Anglers (bots or MPPM): at Mass 5, luring near the other Angler's school takes its creatures (its leash gauge drops). Below Mass 5 they ignore your light.
+8. **Lock-on (Charge).**
+   - Hold LT on a rival vessel: a ring appears round it, and your squad chases it.
+   - Each contact takes petals (watch its flowers) and scores a Strike, at most one per second.
+   - A teammate can't be locked.
+   - Throwing a new paint, locking another vessel, or B ends the hunt.
+9. **Dash (Time).** With a school spread out, press Y (F): the hull swoops 75% of the way to the school's centre in about a third of a second, trail continuous. With no school, nothing happens.
+10. **Omni crystal.** Fly through one: a creature (Clawfish, QuadFish or Tadpole, any element) blooms where the crystal was and joins the school. The console shows no warning.
+11. **Client pilot (MPPM).** Known limit (follow-up 7): a client Angler's dash and HUD counts are empty, because its school lives on the host.
+
+### 🔴 Angler playtest 2: the keeper (always one creature, it never starves); lit prisms stay lit until eaten or erased (`cece/zealous-feynman-po8k8d`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1a, §1b; the ecology exception is in `Docs/ECOSYSTEM.md` §0 and §61.4. No `unity` CLI was
+available, so `/verify-unity` did NOT run.
+
+Headless proof:
+
+- `unity_refcompile` player + editor: no errors in changed files.
+- Parity: 8/8 planted changes caught.
+- `author_angler_assets.py --check`, with `--self-test` 15/15.
+- `studio_to_unity`: 0 drift.
+- The lab's `verify_lab.cjs`: PASS, scorecard unchanged.
+- Lab headless:
+  - free play starts with the keeper (school 0 → 1 on the first tick, once);
+  - a thrown-at prism stays marked;
+  - erasing it unmarks it and strikes it from all 24 creatures' orders.
+
+**What landed:**
+
+- **The keeper.** `IFaunaLeash.Sustains` + `Fauna.IsStarving`: the school's first creature never starves. `AnglerCommandExecutor.EnsureKeeper`: an empty school has a creature born behind the hull, already tamed.
+- **The keeper's species.** The cell's own first leashable herbivore, else `AnglerConfig.companionFauna` (Clawfish Space).
+- **Lit until eaten or erased.** Thrown-at prisms join `_ordered` and stay lit. LT erases a lit prism from paint AND from every order.
+
+1. **Keeper on spawn.** Pick the Angler in freestyle (Vessel Changer).
+   - Within a second, one creature blooms in behind the hull in the cell's fauna colour and follows. It must grow in, not pop in.
+   - The leash gauge reads 1.
+2. **It never starves.** Fly for well past the species' starvation time without ordering it to eat: it stays.
+   - A second creature tamed alongside it, and never ordered, may starve.
+   - The first one never does.
+3. **It can still die.** Throw it at prisms near a shark, or into a rival's fire. If it is eaten or shot:
+   - it withers and drops its heart as usual;
+   - within a second, a new keeper is born (or the next creature in the school becomes it).
+4. **Lit stays lit.** Paint a field, let go of RT: the painted prisms stay near-white while the squad eats them. Each one goes out only when eaten. Press B (recall): they stay lit.
+5. **Erase an order.** Hold LT over lit prisms after the throw:
+   - they fade back to their own colour;
+   - no creature goes on attacking them; any creature that was flying at one picks another lit prism.
+6. **Two clients (MPPM).**
+   - With a replicated herbivore species, only the host births the keeper, and the client sees it replicated.
+   - With an unreplicated species, every peer seeds its own, as every spawner does.
+   - Only the painting pilot sees the lit prisms.
+
+### 🔴 Angler playtest fixes: painted prisms light up; an omni crystal tames every herbivore near the hull (`cece/zealous-feynman-po8k8d`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1, §1a. The first playtest found that taming and throwing worked, but painting and
+erasing changed nothing visible. The paint marks were dots at the prisms' centres, inside the prisms. No `unity` CLI
+was available, so `/verify-unity` did NOT run.
+
+Headless proof:
+
+- `unity_refcompile` player + editor: no errors in changed files.
+- The parity gate: 179 cases, 8 out of 8 planted changes caught, including the two omni plants.
+- `author_angler_assets.py --check`, with `--self-test` 14/14.
+- `studio_to_unity --vessel Angler --check`: 23 mapped, 0 drift.
+- The lab's `verify_lab.cjs`: PASS.
+
+**What landed:**
+
+- **The lit state.** `Prism.SetColorLift` (with `PrismRenderService.StampShadeTransition`) lifts a prism toward white with one fading clock stamp.
+- **The Angler's paint uses it:**
+  - painted = 75% toward white;
+  - at the throw, 50% fading over 1.2 s;
+  - erased = a 0.12 s fade back.
+- **The omni tame.** `AnglerTameByCrystalEffectSO` sits in a forked `AnglerImpactorDataContainer`. Before this change the Angler shared the Stoat's container, so an omni crystal ran the Stoat's Overclock.
+- **Config.** The new `omniTameRadius` (300 u) is in `AnglerConfig`, and the lab gained it too (key O).
+
+1. **Paint.** Squeeze RT at enemy prisms: every prism under the beam turns near-white within a blink, and stays lit while you keep flying.
+   - Your own prisms never light.
+   - With LT, the lit ones fade back to their own colour.
+2. **Throw.** (Superseded 2026-10-16 by the entry above: the lit prisms now STAY lit until eaten or erased.) Let go of RT: the lit prisms drop to a softer glow and fade back over ~1 s while the squad flies at them.
+3. **Nothing else changed colour.** No prism you did not paint changes colour. A painted prism that a rival's hit turns dangerous or shielded still shows that state.
+4. **Omni crystal.** Fly the Angler through an omni crystal near a school of wild herbivores: every one within ~300 u falls in behind the hull at once (the leash gauge jumps), up to 24.
+   - Sharks are not tamed.
+   - The console shows no `[StoatOverclock]` warning (that was the shared container).
+5. **Two clients.** Only the painting pilot sees the lit prisms. A client Angler's omni pickup tames server-simulated fauna.
+
+### 🔴 The Angler (17): lure, tame and command fauna with the Sling painter (`cece/zealous-feynman-po8k8d`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md`; the lab `Docs/Studios/AnglerCommandLab.html` (round 2). No editor and no `unity` CLI in the
+authoring session, so `/verify-unity` did NOT run. Headless proof:
+
+- `unity_refcompile` player + editor: no errors in the Angler or fauna files. The editor config's 3 project errors are the pre-existing `UgsRequestPolicyTests` / Sessions-package ones.
+- `angler_command_parity/run.sh --self-test`: `AnglerCommandMath` equals the page's `CORE` on 169 cases, and 6 out of 6 planted changes were caught. That suite's assertions were RUN outside Unity; `AnglerCommandMathTests` itself was not run in an editor.
+- `goldens.cjs --check`.
+- `author_angler_assets.py --check` (`--self-test` 12/12) and `author_angler_icons.py --check`.
+- `studio_to_unity.py --vessel Angler --check`: 22 mapped, 0 drift.
+- The repo's C# gates.
+
+**What landed:**
+
+- `VesselClassType.Angler = 17`, registered everywhere a vessel is.
+- `Angler.prefab` / `AnglerHUDVariant.prefab`, cloned from the Stoat, with its hull as a stand-in.
+- The `AnglerCommandExecutor` (paint, erase, throw, lure, tame, squads).
+- The `AnglerVesselTransformer` lure brake.
+- `IFaunaLeash`, hooked into `Fauna` / `LightFauna` / `Boid`.
+- The HUD's four gauges.
+- No element map (design not approved).
+
+1. **Open `Angler.prefab` and `AnglerHUDVariant.prefab`.**
+   - Check:
+     - No Missing script or reference.
+     - `R_VesselActionHandler` binds X → `AnglerLure`, A → `AnglerSquad`, B → `AnglerRecall`.
+     - The executor's `config` is `AnglerConfig`.
+     - The transformer is `AnglerVesselTransformer`, with `DefaultThrottleScaler` 40.
+   - Re-save: the diff should be Unity's own key ordering only.
+2. **Spawn it.** In Menu_Main freestyle, use the Vessel Changer toy and pick the Angler (the card is the generated `Angler.png`).
+   - It flies at cruise 40, and RB / E boosts.
+   - The console stays clean.
+3. **Lure and tame.** Fly near a school of herbivores (QuadFish, Clawfish or tadpoles) and **hold X** (keyboard Q).
+   - The esca dot hangs ~14 u ahead of the nose, with the hold ring around it.
+   - The hull slows to ~12 u/s.
+   - Fauna within 70 u turn toward the light.
+   - Keep one inside the ring for ~2.5 s: the HUD's tame gauge fills, the creature tames and falls in behind the hull in a golden-angle ring, and the leash gauge counts it.
+   - Let a half-tamed one drift out: its taming fades.
+   - Sharks and other carnivores never come.
+4. **Paint.** Squeeze **RT** (keyboard Right Shift) at a field of enemy prisms.
+   - Every prism inside the beam lights up (see the playtest-fixes entry above; the first cut's dots were never visible).
+   - A light squeeze paints a thin line and a full pull a wider one.
+   - Your own domain's prisms are never painted.
+   - While RT is held, the squad balls up ~12 u ahead of the nose.
+5. **Erase.** Hold **LT** (Left Shift) over painted prisms: they unmark, under a narrower beam. RT does not paint while LT is held.
+6. **Throw.** Let go of RT. Each creature in the ball flies at its own painted prism (they spread out rather than piling onto one) and eats it by its own mouthful.
+   - A creature whose diet cannot eat a prism ignores it.
+   - With nothing painted: the ball flies along the nose, and each creature latches onto the first enemy prism it passes and eats that prism's neighbours.
+   - After the throw, creatures with nothing left return to the school.
+7. **Squads and recall.** With two kinds tamed:
+   - **A** (Space) cycles School → kind 1 → kind 2 → School. Only the picked kind balls up and throws.
+   - **B** (R) sends the picked squad back to the school mid-attack.
+8. **Death and despawn.** A leashed creature that is killed or starves leaves the squad, and the counts drop. Swapping the vessel away releases the whole school back to the wild.
+9. **Multiplayer (MPPM, host + client).**
+   - A client Angler's paint shows on its own screen.
+   - Its lure tames server-simulated fauna.
+   - Its throws are seen on both screens.
+10. **Fauna regression.** With no Angler in the scene, the herbivores graze, flee and reproduce exactly as before (the leash hooks are inert when `Leash == null`).
+
+**First-pass tuning** comes from the lab's `SHIPPED` block, and the lab is where it changes (`ANGLER.md` §5).
+
+---
+### 🔴 Shrike sight: the Serpent's eyepiece in the mode's petal, lit targets, one axis, sling needs an anchor (`cece/affectionate-clarke-s738vh`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/SHRIKE.md` §3.4 and the Void Sling bullet. **Supersedes step 2 of the entry below.**
+
+- LT is the Serpent's eyepiece (`ShrikeScopeOverlay` on `ScopePipView`), not a flight-view zoom.
+- The window is cut to the mode's element petal (`ElementPetalGeometry` / `ElementPetalImage`, new in UI/View).
+- While scoped, `PrismLit` lights the lance cylinder, the lock cone and target, or the sling's path and anchor.
+- A flight reticle sits on the hull axis and the beam is drawn from the muzzle.
+- The camera follow offset is (0, 0, −30), and docked it pulls back 5×.
+- The sling resolves its anchor at the press: no anchor means no sling and no cooldown.
+
+**Verified without the editor:**
+
+- `unity_refcompile`:
+  - `--config player`: 0 project errors.
+  - `--config editor`: 0 errors in changed files.
+- `shrike_harness --self-test`: 21/21 pass, including the petal outlines (convex, apex down, centred, aspect kept), and
+  both negative controls fire.
+- `author_shrike_assets --check` passes and `--self-test` fires 11/11.
+- `studio_to_unity --check`: 26/26 match.
+- The gates pass: shared channels, prefab container, far-clip, console logging, conditional compilation, using
+  directives, enum references (no Shrike finding).
+- Not run: Unity, Play mode.
+
+**Verify in editor** (Menu_Main ▸ Toy Box ▸ Vessel Changer ▸ Shrike):
+1. **Alignment:** fly straight. The small posts-and-dot reticle sits at screen centre, just past the nose (the camera is
+   now directly behind, with no lift). Fire the lance (X, then RT): the beam leaves the barrel and runs through the
+   reticle, and what it breaks is under the reticle.
+2. **Zoom (LT / RMB):** the flight view does NOT zoom; an eyepiece window opens top left where the Serpent's does,
+   showing the view down the nose, magnified. On a pad, LT's depth dials the magnification. The reticle in it is at the
+   window's centre, on the same line as the flight reticle.
+3. **Window shape:** X (Space): a kite. RB / E (Charge): the gem, the same as the Serpent's window. B / R (Time): a
+   tall diamond. The shape changes with the mode while scoped.
+4. **Lit:** scoped in Space mode, the mass along the beam's line glows in your colour. In Charge mode the cone ahead
+   glows faintly, and once painted the target glows strongly. In Time mode the path to the block the tether would hit,
+   and that block, glow; aimed at empty space, nothing glows.
+5. **Sling without a target (B, aim at empty space, RT):** nothing happens and the Time card's gauge stays full. Aim at
+   a block: the sling fires, the gauge empties.
+6. **Docked:** touch a block. The camera eases a long way back, about 150 u, and returns when you leave.
+7. **Crosshairs** (added after: "the zoom views needs crosshairs"): scoped in every mode, a full crosshair in your
+   colour, with a dark outline and a centre pip, crosses the eyepiece. Its centre is where the lance hits: fire at a
+   block centred in the eyepiece and that block breaks. The flight view shows a short crosshair at screen centre.
+
+### 🔴 Shrike redesign: mode-driven RT, LT zoom with per-mode scopes, missile-growing flora, non-clipping nests (`cece/affectionate-clarke-s738vh`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed:** Garrett's redesign of the Shrike, following the first port (the entry below). The record is
+`R_VesselActions/SHRIKE.md` §3 and §4. **The previous entry's controls (steps 4-7) are superseded by this one.**
+
+- New code: `ShrikeExecutor` rewritten; `ShrikeActionSO` now has six controls; new `ShrikeNestFlora` / `ShrikeMeshes`
+  and `ShrikeScopeOverlay`; `ShrikeRules` gains `NestRadiusFor`, `GrowTick`, `BetterLock` and `LanceBreaks`.
+- `ShrikeConfig` reseeded; HUD fields renamed by element; the Charge and Space icons swapped; the map's Space upgrade
+  named "Void Pierce".
+- Bindings re-applied to `Shrike.prefab`, and the four first-port control assets retired.
+
+**Verified without the editor:**
+
+- `unity_refcompile`:
+  - `--config player`: 0 project errors.
+  - `--config editor`: 0 errors in changed files. The 3 project errors are in the untouched
+    `AuthenticationServiceFacade.cs`.
+- `shrike_harness/run.sh --self-test`: 19/19 pass, and both negative controls fire (inside-out faces; nest blocks that
+  clip).
+- `author_shrike_assets.py`: `--check` passes and `--self-test` fires 11/11 negative controls. A rebuild from the donor
+  is identical to the shipped prefab.
+- `studio_to_unity.py --check`: 26/26 match.
+- These gates pass: `check_vessel_shared_channels`, `check_vessel_prefab_container`, `check_console_logging`,
+  `check_conditional_compilation`, `check_using_directives`, `check_enum_member_references` (no Shrike finding) and
+  `check_switch_label_collisions`.
+- The three scope shapes and the marker were rendered and inspected.
+- Not run: Unity, Play mode, networking.
+
+**Verify in editor** (Menu_Main ▸ Toy Box ▸ Vessel Changer ▸ Shrike):
+1. It compiles. `ShrikeTests` (19) and `ShrikeConfigTests` pass. The HUD shows four cards with no "Missing" sprite:
+   Charge (the array icon with a **0** under it), Mass, Space (the lance icon) and Time. The Space card is lit, because
+   Space is the starting mode.
+2. **Zoom (LT / RMB, held):** the view narrows smoothly to about 24° and a green ring-and-crosshair fades in. Release:
+   the FOV returns exactly to what it was. Press **RB / E**, then zoom: lock brackets round a diamond. Press **B / R**,
+   then zoom: a tether line with chevrons. The lit HUD card follows the mode.
+3. **Space mode (X / Q), RT / LMB held:** the beam breaks ordinary blocks but passes through super-shielded ones
+   (shielded blocks in a nest, for example). With the Space upgrade (Space ≥ 5, e.g. from the Element Charger), it
+   breaks them too.
+4. **Docking:** fly into any block. The hull sticks and the camera eases back noticeably. **A / Space:** the hull
+   pushes out forward, and a nest is left behind:
+   - a cup of shielded blocks, **no two touching or overlapping** (look closely, and try it at high Mass);
+   - a flora on top with **one large missile**.
+
+   The Charge card reads **1**. A second A while flying does nothing.
+5. **Crystals:** fly through a crystal. A flora sprouts where it was and visibly grows large missiles, one per 6 s, up
+   to 4, the growing one swelling. The Charge card counts up.
+6. **Charge mode (RB / E), RT held on a target:** a spinning diamond marker sits on the painted target, and each flora
+   launches a missile every 0.8 s. The missiles are large, with bright trails, home in, and blow an 18 u hole. The count
+   drops. Check the lock priority: with a rival vessel and a creature both in the cone, the vessel is painted; with a
+   creature and a plant, the creature; with a plant and mass, the plant.
+7. **Time mode (B / R), RT:** the tether flies; the hull slings to the block, docks, and the camera pulls back.
+8. Swap to another vessel while zoomed and docked: the FOV and camera distance return to normal and the scope
+   disappears.
+9. Spawn Matrix ▸ Shrike AI: it switches modes, lances mass ahead, slings, docks and detaches (leaving nests), and
+   fires missiles at you once it has some.
+
+### 🔴 The Shrike flies in freestyle: the studio's kit ported, the prefab rebuilt (`cece/affectionate-clarke-s738vh`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed:** everything in `Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md`.
+
+- `Shrike.prefab` was rebuilt from `BrittleStar.prefab` by `Tools/Build/author_shrike_assets.py`. It keeps its guid,
+  so the DefaultNetworkPrefabs entry holds.
+- New code: `ShrikeExecutor`, `ShrikeActionSO` ×4, `ShrikeConfigSO`, `ShrikeRules`, `ShrikeHullForm` /
+  `ShrikeHullBuilder`, `ShrikeAnimation`, `ShrikePrismController`, `ShrikeHUDController` / `ShrikeHUDView` /
+  `ShrikeHUDVariant`, and `ShrikeCrystalEffectSO`.
+- New assets: the containers, the camera, `SO_Class_Shrike` (unlocked), `ElementalAbilityMaps/Shrike`, the four icons
+  and the card.
+- Registered in the Vessel Prefab Container, both class lists and `ToyVesselRoster.Default`.
+- The four vessel-10 fusion entries are bake-free now.
+
+**Verified without the editor:**
+
+- `unity_refcompile`:
+  - `--config player`: 0 project errors.
+  - `--config editor`: 0 errors in changed files. The 3 project errors are in the untouched
+    `AuthenticationServiceFacade.cs`, from the unfetchable Playmode package.
+- `Tools/Build/shrike_harness/run.sh --self-test`: the 16 `ShrikeTests` compile and pass under .NET, against golden
+  numbers from the page's own functions. Both negative controls fire (a frustum wound inside out; a nest firing its
+  last block).
+- `author_shrike_assets.py`: `--check` passes and `--self-test` fires 11/11 negative controls. A rebuild from the donor
+  is byte-identical to the shipped prefab.
+- `studio_to_unity.py --vessel shrike --check`: 29/29 match.
+- `author_shrike_icons.py --check` and `render_shrike_card_icon.py --check` pass.
+- These gates pass: `check_vessel_shared_channels`, `check_vessel_prefab_container`, `check_vessel_camera_farclip`,
+  `check_vessel_class_icons`, `check_network_prefab_hashes`, `check_console_logging`, `check_conditional_compilation`,
+  `check_using_directives` and `check_elemental_floats`.
+- Not run: Unity itself, Play mode, and any network session.
+
+**Verify in editor:**
+1. Pull and let it compile: no errors. In edit mode, `ShrikeTests` and `ShrikeConfigTests` pass, and so do
+   `ToyVesselRosterCoverageTests`, `OneThumbVesselCoverageTests` and `EnumIntegrityTests`.
+2. Open `Shrike.prefab`. Right-click `ShrikeHull` ▸ Rebuild Hull. You should see a long six-sided dart, the lance's
+   barrel under the nose, forward-swept wings, a tail fin and a flame child. Check that no field is "Missing".
+3. Play `Menu_Main`. Open the Toy Box ▸ Vessel Changer (or fly into the toy) and pick **Shrike**. It spawns and flies
+   slowly (about 18 u/s) on the one-thumb mouse scheme, laying a thin trail.
+4. Docking:
+   - Touch any block: the hull stops and sticks, the flame shrinks to an ember, and the nose still aims (faster).
+   - **Space / A** undocks with a small push.
+   - In flight, **Space / A** builds a nest: a cup of shielded blocks behind and round you, with a bud on top. You
+     dock in it. A fourth nest retires the first.
+5. **LMB / RT (held)**: a domain-coloured beam 2400 u long that breaks every block on its line, shielded ones too, but
+   not your own nest while you sit in it. Cooldown 1.2 s; noticeably faster while docked.
+6. **R / B**: the tether flies ahead. When it meets a block, the hull rushes there in 1 s, laying thick blocks, and
+   docks where it lands. Cooldown 6 s.
+7. With at least one nest: hold **RMB / LT** on a mass. One missile per nest rises from the bud, homes on the mass and
+   blows an 18 u hole (a shield pops first). The Array gauge empties as nests reach 1 health. Release and hold again
+   to fire again.
+8. HUD: four cards (Lance, Nest, Array, Sling) with their gauges and icons, and no "Missing" sprite.
+9. Spawn Matrix: release a Shrike AI. It flies, lances mass ahead, docks and undocks, builds a nest and slings toward
+   far targets.
+
+**First-pass tuning:** every number is the studio's SHIPPED (lab-only proposals, `Docs/Studios/SHRIKE.md` §3). Tune in
+the artifact, Record, then clone. Never tune in the asset.
+
 ### 🔴 AI seat chips name their hull: hover label, (i) badge, vessel info card (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** the hull icons on the launch panel's AI chips (Regatta and every arena card with the ally hull
@@ -110,6 +537,25 @@ League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
+### 🔴 The AI Butterfly's fold lands in the ring in Waystation; full throttle; no autopilot on human hulls (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** `WaystationController`:
+- The fold's aim is held under asin(0.5 R / d), so it lands within half the mouth; before, a flat 12 degrees landed a
+  420 u fold 87 u off a 40-56 u ring.
+- It lets go 30 u short of the plane, so the hull flies through.
+- The AI races at full throttle (`AIThrottleFloor` 1).
+- The autopilot check uses `TryGetComponent`. It used the `VesselStatus.AIPilot` getter, which ADDS an autopilot to
+  every human's hull, every server tick.
+
+The audit and what stays open: `BUTTERFLY.md` §8a.
+**Verified without the editor:** `unity_refcompile` (player-dev clean, editor 0 errors in changed files), gates.
+`WaystationFoldTests` written, NOT run.
+**Verify in editor:**
+1. Run `WaystationFoldTests`: all pass.
+2. Arcade ▸ Waystation with AI Butterflies, Third Eye on one. It flies at ~67 u/s, and when it folds it lands just short
+   of a ring and threads it (it does not fold past or beside the mouth). Expect fewer folds from far away; each lands.
+3. Your own Butterfly, with the Inspector open on its root: no `AIPilot` component appears that was not there before.
+
 ### 🔴 Every Regatta AI hull races its own line along the sides of the braid (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** every AI hull except the Squirrel and the Urchin flies its own line through Regatta. That line is the
@@ -138,7 +584,12 @@ risk. Before, it aimed at each ring's centre, the middle of the braid and 22 u f
 4. Easy / Medium: the difficulty mistakes still show (amber "not noticed", red "misjudged"); after a missed ring the
    pilot comes back to that ring the gate way, not a whole lap round.
 5. The Squirrel and the Urchin fly as before.
-6. Time I1–I4 per hull against the roadmap table.
+6. **The Stoat** opens its field pair along the line (its path dots bend, it warps above cruise) and still lets go near
+   each ring; run `StoatDipoleTests`. Before the 2026-10-17 range fix it would have raced at cruise on the line.
+7. **The speed drives still fire on the line** (2026-10-17 fix): the Rhino ramps on the straights (Third Eye: "ramping on
+   the straight", ~840 u/s) and the Dolphin releases and re-drifts at the peak ("drifts again at the peak"). Before the
+   fix neither would ever have fired on the line.
+8. Time I1–I4 per hull against the roadmap table.
 
 ### 🔴 The Manta AI holds Soar deeper into turns in Regatta (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
@@ -9583,6 +10034,127 @@ executor edit was checked by reading only.
 4. Skein / Regatta: an AI riding a rail must keep its grind speed (the rail lead point must not
    trip the detector).
 
+## 🔴 Prism movement — a moving prism that runs into another destroys BOTH (`cece/dreamy-pascal-7xxx1m`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+Prism movement is now a fundamental (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`, design + steps:
+`Docs/PRISM_MOTION.md`). One rule, `PrismMotion`, for both movers: the Rhino's hull plough
+(`TrySweep` before the shove) and every black hole's gravity field (the Burst `ContactJob` after the
+integration). No `unity` binary in the authoring session: both headless reference-compile configs
+(`Tools/Build/unity_refcompile`, player and editor) are clean, `PrismMotionTests` compiled but not run
+in Unity, and nothing has been seen in play.
+1. **Rhino**: ram a trail that lies a few units beside a second trail. Each prism thrown into the second
+   trail stops there and both explode; a prism thrown into open space slides out and survives.
+2. **Rhino into super-shield**: the super-shielded prism jiggles and survives, the thrown one explodes.
+3. **Stoat**, once in a sparse field (≤ 256 bodies: exact boxes) and once in a dense one (spheres):
+   prisms falling in from different sides explode in pairs on the way in; a trail falling in as a ribbon
+   must NOT chain-explode from its own neighbours. A long prism struck end-on must collide at its end in
+   the sparse run.
+4. **Scoring**: both kinds of collision count for the Rhino's / Stoat's pilot.
+5. **Cost**: `prof` with a Stoat pair at ~250 bodies (`BoxContacts` on the main thread, well under 1 ms)
+   and at a full body budget (`ContactJob` a small fraction of `IntegrateJob`).
+
+### 🔴 The interaction detail levels — destruction and stealing, game-wide (same branch, 2026-10-14) — NOT EDITOR-VERIFIED
+
+`Docs/PRISM_ANIMATION.md` §4.12 (round 2). Supersedes the burst entry below where they differ: no white
+accents, every explosion death (not only collisions) picks explosion / shatter / glitter by the prism's
+size on screen, every steal picks the grade or a bloom / unravel / flake SHED. New: a Resources config
+(`PrismInteractionLodConfig`, script guid authored out of the editor), `PrismInteractionLod`,
+`MaterialPropertyAnimator.DefaultTransitionSeconds`, `PrismEventData.PlainDeath` (was `CollisionBurst`).
+Proven offline: `verify_prism_collision_burst.py` (5 kinds, 5 negative controls, the shipped grade
+executed), the lab's GPU parity gate, both reference-compile configs. **Import first**: the shader
+imports without errors (magenta = rejected), the config asset loads (not a missing-script), and
+`PrismCollisionBurstTests` passes.
+1. **Destruction up close**: any mode — ram or shoot prisms near the camera: shards (or, very close, a
+   glitter of triangles) with their brighter inside showing, no white anywhere; far ones explode plainly.
+   No pop on the first frame, nothing culled while on screen.
+2. **Stealing up close**: steal a trail close to the camera (Squirrel / Rhino overtake, Urchin): the prism
+   turns the new colour at once while a skin of the old colour peels off it (petals, ribbons or scales,
+   their insides the new colour) over ~0.8 s; no flicker of the two depths fighting. Far away the
+   ordinary 0.8 s colour change.
+3. **Mass events**: a wide AOE destroying or stealing dozens near the camera — the first 48 get detail,
+   the rest the ordinary effect, nothing vanishes, no frame spike in `prof` (`PrismCollisionBurst.Drain`).
+4. **Shielded / dangerous / transparent prisms**: a stolen transparent prism grades (no skin); a shielded
+   one sheds in its shield colours.
+5. **Rounds 3–4 — the Sierpinski cut, shed resolutions, the amount**: close up a death comes apart as the
+   Sierpinski cut of the explosion's wedges (triangles of a range of sizes); walk back and the depth gets
+   shallower until, far away, it is the ordinary explosion (no holes on the first frame at any distance). A steal very close sheds on the 24-subdivision mesh — the bloom's petals tear along straight
+   diagonals, not staircases. A wide AOE near the camera: as the budget fills, later events come out one or
+   two levels coarser, never as nothing; `prof` shows one `SpawnSliceDebrisBatch` per mesh per frame.
+6. **Round 5 — the explosion's law at every depth, the bloom alone**: ram prisms near the camera at different
+   speeds and angles: the fragments fly the way the explosion's wedges fly for the same hit (direction, spin
+   sense — round 6: the pieces of each of a face's four wedges spin in step about that wedge's axes, not each its
+   own way), never spin faster than the explosion's, and erode away on the explosion's wipe; at a distance the
+   ordinary explosion and the cut must be hard to tell apart. Check a fragment's culling: nothing pops out at the
+   screen edge late in its 7.5 s (the `WedgeReach` bounds). The burst material shows the explosion's dials copied
+   onto `_ExplosionSpread` / `_ExplosionDials` (Frame Debugger) once the explosion pool exists. Steal while
+   skimming a trail closely: only blooms, cut in small pieces that curl tight and stay near the surface; steal the
+   same prism twice — it peels differently. `PrismInteractionLodConfig` shows unravel / flake weights 0, rings 3,
+   segments 3, noise 0.6, and `IsSane` holds (a shed happens at all).
+7. **Round 7 — the silver gnomon cut, the spin noise, the ROLL**: a close death comes apart as silver triangles and
+   gnomons of many sizes, the pieces of a wedge turning nearly but not exactly together. Steal a trail close up: each
+   face's old skin rolls up into a tight new-colour roll AWAY from the camera, over the edge, and disappears behind
+   the prism without dissolving; no roll pops into view at a corner, none is seen fading (except on a very thin
+   prism). Steal from different angles — the roll always leaves away from you. Swing the camera hard during a steal:
+   note whether a roll on its way round shows (decision 1 in the lab write-up). `PrismInteractionLodConfig` shows
+   destructionCut SilverGnomon, silverDepths 4/6/8/10, rollWeight 1 and every other shed weight 0.
+8. **Round 8 — the slide noise**: the fragments of one wedge no longer leave as one sheet; each drifts a little off
+   its neighbours while the four wedges a face still read as the explosion's. `wedgeSlideNoise` 0.15 on the config;
+   nothing culled late in the 7.5 s (the widened `WedgeReach`).
+9. **Round 9 — the FRAGMENT kind (2026-10-16; supersedes the wedge motion of items 4–8)**: the shader compiles with the
+   new `_Fragment*` properties (no `_ExplosionSpread`, `_WedgeNoise` or erosion UV left) and the burst material shows
+   their defaults. A close death bursts into a FILLED cloud — big chunks near the core, fine debris flung farthest,
+   every face filling its own part of the sphere, leaning the way it was hit — tumbling at about the explosion's rate
+   with no flicker; the smallest fragments shrink away first, every fragment is gone by ~7 s of the 7.5 s life, and
+   nothing is culled while visible (`FragmentReach` bounds). `PrismInteractionLodConfig` shows the `fragment*` fields
+   (burst 0.5, drift 0.2, lift 1, aim 0.35, size speed 0.8, size spin 0.25, spin cap 1.6, smallest level 4, gone at
+   0.45 / 0.92, shrink 0.35, noise 0.15 / 3 / 0.25) — the old `wedgeSpinNoise` / `wedgeNoiseFrequency` /
+   `wedgeSlideNoise` values migrate through `FormerlySerializedAs` and the asset already carries the new keys.
+   EditMode: `TheFragmentIsTheHlslsKindAndConstants`, `TheFragmentReachIsTheProvedSum`,
+   `TheShaderDefaultsAreTheShippedFragmentShape`, `TheShaderReadsTheStampsTheCarrierWrites`.
+10. **Round 10 — the velocity (2026-10-16)**: ram prisms from several directions at a slow and a fast speed and watch a
+   close death: the whole cloud flies the way the explosion's would (the flight), the fragments lean along the hit, and
+   a fast hit's burst is visibly wider than a slow one's (about 2 × at 30 u/s of flight against 10). If the cloud does
+   NOT fly with the hit, check the burst entity's `_SliceDrift` (Entities Hierarchy: `PrismSliceDriftOverride` should
+   hold the flight, not zero) before tuning anything. Config: `fragmentAim` 0.5, `fragmentSpeedGain` 0.5,
+   `fragmentSpeedRef` 10; material `_FragmentFade.w` 0.5, `_FragmentNoise.w` 10. EditMode:
+   `TheFragmentReachIsTheProvedSum` (the boost).
+11. **Round 11 — the explosion is level 0; one program per kind; the welded roll (2026-10-17)**: (a) a FAR death (and a
+   plough collision past 64 movers, which asks for plain) is now 24 wedges flying the fragment law — leaning along the
+   hit like the close levels — not the explosion graph; set `explosionAsFragments` off and it is the graph again.
+   (b) Wipe a big trail at once (hundreds of deaths): every one draws (the level-0 cap is 4,096), the close-up levels
+   still appear on the near ones, and `prof`'s `PrismCollisionBurst.Drain` stays small. (c) Frame Debugger on a
+   destruction and a steal: the burst draws with keyword `_BURST_FRAGMENT` / `_BURST_ROLL` (runtime materials named
+   "… _BURST_FRAGMENT (runtime)" / "… _BURST_ROLL (runtime)"), and a roll's mesh is `Prism_HighPoly_<n>` (welded), not
+   `Prism_HighPoly_Shed_<n>`. (d) The steal's roll looks exactly as before. EditMode: `TheExplosionIsLevelZeroOfTheCut`,
+   `TheRollDrawsTheWeldedGrid`, `TheGameCompilesOneKindPerProgram`.
+12. **Round 12 — 20% more separation and speed; each death its own (2026-10-17)**: (a) blow up a straight run of a trail
+   with one ram (neighbours, the same hit and orientation): no two clouds play the same animation — sizes, opening
+   time, tumble plane, lean and shape differ — while each cloud stays one smooth, continuous burst (no added grain).
+   Set `fragmentVariety` to 0 on `PrismInteractionLodConfig` and the run reads as one animation repeated; back to 0.5.
+   (b) The fragments spread wide — round 13 tripled round 12's burst and drift (now 0.36 and 0.216): a far death's
+   cloud is visibly larger than the old explosion's — and nothing is culled while on screen at a hard hit (the bounds
+   grow with the burst, the drift and the variety's reach). EditMode:
+   `TheFragmentReachIsTheProvedSum`, `TheShaderDefaultsAreTheShippedFragmentShape`, the config test.
+
+### 🔴 The collision burst — level 1's high-res death (same branch, 2026-10-14) — NOT EDITOR-VERIFIED
+
+`Docs/PRISM_ANIMATION.md` §4.12, `Docs/PRISM_MOTION.md` §3a. A hand-written shader
+(`PrismCollisionBurst.shader`), a new material, a new Resources config (`PrismMotionConfig`) and an
+unwelded mesh variant were authored out of the editor. Proven offline: `verify_prism_collision_burst.py`
+(executes the shipped HLSL; four negative controls fire; glslang compiles every pass against a URP
+mock), both reference-compile configs. **Import first**: the shader must import without errors (a
+rejected shader draws magenta); `PrismCollisionBurstTests` must pass.
+1. **Up close**: plough a few prisms into a trail (level 1). Each pair comes apart as shards with a
+   white-hot crack flash, petals curling open, ribbons peeling, or a glitter of triangles. The first
+   frame must be the prism itself (no pop); nothing culled while still on screen.
+2. **The squint test**: beside an ordinary explosion at play distance, squinting, the burst must travel
+   the same way, be the same size, fade over the same 7.5 s in the same colours. A kind that reads as a
+   different effect at a glance: set its weight to 0 in `PrismMotionConfig` rather than retuning the
+   envelope.
+3. **The ladder**: a dense Stoat field — past 64 bodies collisions explode plainly, past 256 the contact
+   goes to spheres; back down at 192 and 48. Overflow of the 48-burst budget explodes plainly, never
+   vanishes.
+
 ## 🔴 Brittle Star — new vessel, round 4 (`cece/gallant-lamport-sc3khe`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 No `unity` CLI in the session that wrote it. Proved offline: player and editor `unity_refcompile` (0 errors in project
@@ -9883,6 +10455,30 @@ verification, steps 2-9. The short version:
 5. **LT** needs a spare ring (Charge card: half per crystal, two at most); the ring regrows on its own after a throw.
 6. Touch caveat: Charge Mode is `FlipAction`, which a phone raises when turned — expect a landscape flip to toggle it.
 
+## 🔴 Brittle Star tuning pass — 3 s regrow, 40% rigid sabers (70% first), softer whip, Space heat capacity, slim long blocks with Mass girth, a 4x thick five-fold ring explosion (`cece/gallant-bell-eq7kul`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+No `unity` CLI in the session (`/verify-unity` could not run). Proved offline: player `unity_refcompile` (0 errors in
+project code) and editor (3 errors, all the known `AuthenticationServiceFacade` reds, 0 in changed files); the 39
+`BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/run.sh --self-test`, five negative controls, plus a
+hand control: the new full-pull test fails with `FullPullRigidity` 1); `author_brittlestar_assets.py --check` /
+`--self-test` (11/11); `element_ability_table.py BrittleStar` (0 disagreements); `studio_to_unity.py --vessel
+BrittleStar --check` (57 mapped, 0 drift); `check_studio.cjs` and `verify_lab.cjs` on the studio page. Task
+T-20261016-e2fb. In Play mode:
+1. **LT** with a spare: the new ring blooms back over **3 s** (was 0.5 s); the modes return only when it has.
+2. **RB** Charge Mode: released, the cords whip a little slower and softer (`cordLooseWave` 144, was 180); a FULL RT
+   pull shortens them to 80 u but a ring flick still flexes them visibly (`cordMaxRigidity` 0.4: 60% of the give kept; 0.7 on 2026-10-16).
+3. **X** Space Mode, full pull: Space 0 overheats in ~6 s (was ~2.4 s; `heatPerRound` 0.000637); raise Space to 10 (the
+   Space test harness on the prefab's resource system): ~20 s (`heatCapacity` ×3.33). The Space card still fills to full; the lockout is still ~5 s.
+4. **Trails**: blocks are long and slim — the base trail 0.5 × 1 × 6 (the spawner halves x for a single trail), the
+   Creation corners 1 × 1 × 6 — meeting end to end at cruise. Raise Mass: every block widens and thickens up to ×2 at
+   Mass 10, never lengthens (`prismWidthScale`). Speed Mode still stretches them along the path.
+5. **LT** (2026-10-18): the ring explosion is four times thicker (blocks a few units off its plane now go too) and
+   looks five-fold and VOLUMETRIC (faceted, lit by the domain material: nothing flat from any angle) — five arms coiling
+   out of the ring's points led by crystals, the ring's pentagon growing with crystal knots, a faceted torus front with
+   five crests, all turning with the ring's spin and thinning as it reaches the nucleus. Check it from behind, from the
+   side and edge-on, and that it never shows past the edge where prisms stop breaking (`BrittleStarBlastForm`).
+6. Profile a Space 10 burst with 3-4 AI Brittle Stars: up to ~4,000 rounds alive (~2,000 at Space 0) against the pool's 2,400 (T-20261016-acc7).
+
 ## 🔴 2026-10-17 — Prism effect pools right-sized: implosion buffer 160 -> 24, explosion pool no longer prewarms 1,500 (unverified: no Unity CLI in the session)
 
 **Files:** `Assets/_Prefabs/Environment/PrismManagers.prefab` (data only: the PrismImplosionPoolManager's
@@ -9920,3 +10516,34 @@ confirmation and the Project Record".
    Froglet Master Tool board under Diagnostics.
 6. Pull the plug (no network) and stop Play with something new: the pill reads NOT SENT with the reason, and the next
    send carries it.
+
+## 🔴 2026-10-17 — The Stoat slowdown: a vessel registry instead of scene searches, and named Driver markers (unverified: no Unity CLI in the session)
+
+**Files:** `VesselStatus.cs` (`Live` registry), `BlackHoleVesselPull.cs`, `StoatRippleExecutor.cs`,
+`StoatPathfinderExecutor.cs`, `WarpFieldVesselScaler.cs` (read it instead of `FindObjectsByType<VesselStatus>`),
+the eight nested `Driver` classes (one named marker each), `BlackHoleRegistry.cs` / `BlackHoleGravityField.cs`
+(nested markers), `MarkerBudget.cs`. What ran instead of `/verify-unity`: Amoebius compiled the whole game and ran
+Warpline before and after (Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-17); `unity_refcompile` player-dev has no errors in
+changed files (its errors are all in UGS multiplayer/friends files whose packages this container could not fetch);
+`perf_hunt.py gates` OK.
+
+1. Release, Menu_Main, fly the Stoat for 10 minutes with the **Third Eye closed**. Frames should stay where they were
+   in minute one (no slide to 30-40 fps). Make the poles and let them annihilate: the ripple still knocks a nearby rival.
+2. Fly into a pole's pull: the hull is still pulled (and carried through a pair), as before.
+3. Warp-field mode: vessels still shrink and grow with the field.
+4. Stoat foresight: rivals' predicted paths still draw.
+5. Stop Play: the auto-capture's `diag` lists `BlackHoleRegistry.LateUpdate` and the `BlackHole.*` rows by name
+   (no anonymous `Driver.LateUpdate`).
+
+## 🔴 2026-10-18 — Early 4-minute auto-capture in Menu_Main (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/Editor/Diagnostics/PerfAutoCapture.cs`, `Docs/DIAGNOSTICS.md`. What ran instead of
+`/verify-unity`: `unity_refcompile` editor (0 errors in changed files; the standing 3 are an unfetchable package),
+`perf_hunt.py --self-test`, console-logging and conditional-compilation gates.
+
+1. Code Optimization = Release. Play Menu_Main. The Scene view badge counts down `Auto-capture: S2-4min in 3:59`.
+2. At 4:00 it reads `S2-4min running; S2 follows at 8 min`, then counts down to S2.
+3. Stop Play after about 4½ minutes: the after-play pop-up shows 1 performance capture SENT, and
+   `bugledger/<you>` gets `capture_Menu_Main_S2-4min_*.json`.
+4. Play again for 8½ minutes or more: two captures go (S2-4min and S2).
+5. Skim Race (90 s) and Wildlife Liberation (2 min) behave as before: one capture each, no early one.

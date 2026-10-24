@@ -110,7 +110,14 @@ namespace CosmicShore.Gameplay
         [DefaultExecutionOrder(10150)]
         sealed class Driver : MonoBehaviour
         {
-            void LateUpdate() => Tick();
+            // Named so the Profiler can tell the ten nested "Driver" classes apart (they all read as
+            // "::Driver.LateUpdate"; the 2026-10-17 menu capture had an 88 ms spike there and no way to say whose).
+            static readonly Unity.Profiling.ProfilerMarker s_lateUpdate = new("WormholeView.LateUpdate");
+
+            void LateUpdate()
+            {
+                using (s_lateUpdate.Auto()) Tick();
+            }
         }
 
         static void Tick()
