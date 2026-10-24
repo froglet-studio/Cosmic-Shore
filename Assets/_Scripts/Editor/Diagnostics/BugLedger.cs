@@ -264,6 +264,11 @@ namespace CosmicShore.Editor
             if (condition != null &&
                 (condition.StartsWith("[BugLedger]", StringComparison.Ordinal) ||
                  condition.StartsWith("[CrashDetector]", StringComparison.Ordinal))) return;
+            // The Test Runner judges errors raised inside a test: an expected one is declared with
+            // LogAssert.Expect, an unexpected one fails the test. Filing them made the ledger report
+            // the tests' own expectations as bugs (E-14bef8c883, E-7a0e239d28: the AppManager and
+            // GameObjectExtension tests asserting Destroy's edit-mode error).
+            if (IsTestRunnerStack(stackTrace)) return;
 
             try
             {
@@ -273,6 +278,12 @@ namespace CosmicShore.Editor
             }
             catch { /* never throw back into the log pipeline */ }
         }
+
+        static bool IsTestRunnerStack(string stack) =>
+            stack != null &&
+            (stack.Contains("NUnit.Framework.Internal") ||
+             stack.Contains("UnityEngine.TestRunner") ||
+             stack.Contains("UnityEditor.TestTools.TestRunner"));
 
         static void WorkerLoop()
         {
