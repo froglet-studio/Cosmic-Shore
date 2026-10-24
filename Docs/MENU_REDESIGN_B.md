@@ -2924,3 +2924,19 @@ still the one random event, so both showed "Cosmic Shore soundtrack". Now:
 **Arena hull icons.** The vessel chips on Arena cards drew white squares: `KitArenaGameCard` put each vessel's icon on
 the chip's FIRST child, which is the chip frame's fill (`Fill`, `Border`, `Icon`), and left the sprite-less `Icon`
 drawing a white quad on top. It now finds the `Icon` child by name.
+
+## 61. The replay browser and the Arcade's REPLAYS button (2026-10-24, awaiting Shombith's approval; T-20261024-9312)
+
+Built on `claude/match-replays-5t3dbr` for match replays (`Docs/REPLAYS.md` section 6), without a board round:
+
+- **REPLAYS** sits left of **BACK** in the Arcade header (`author_menu_arcade.py` `replays_button`), a Default
+  transparent KitButton like Back, with `OpenModalButton` opening `ModalWindows.REPLAYS = 19` by type.
+- **The Replays window** (`author_menu_replays.py`) is the Credits window's frame (1200 x 900, dim, brackets, H1 title,
+  Close B, thin ControlActive scrollbar) holding ON THIS DEVICE and ON YOUR OTHER DEVICES sections of framed rows (H3
+  mode, BodySmall date and length, Body result, WATCH as an opaque Play button, DELETE as Default), and an empty line.
+- **The playback HUD** is its own root canvas: a top and a bottom SurfaceBlack band at 0.72 over the replay, the
+  title in H2, a scrub bar, Data readouts, a row of ButtonSmall transport buttons (PAUSE opaque Play) and a BodySmall
+  line naming the pad controls.
+
+Every word is an authored field (section 50). The Menu_Main instance sits just before Credits under ModalWindows; the
+two generators run in either order. Change anything here through the two generators, never in the scene.

@@ -46,7 +46,24 @@ namespace CosmicShore.ScriptableObjects
                  "another device. Summaries only - never frames. Zero turns the mirror off.")]
         [SerializeField, Range(0, 200)] int cloudIndexSize = 50;
 
+        [Header("Watching")]
+        [Tooltip("Seconds the skip controls (shoulders, arrows, the HUD's skip buttons) jump back or forward.")]
+        [SerializeField, Range(1f, 60f)] float nudgeSeconds = 5f;
+
+        [Tooltip("Each Faster press multiplies the playback rate by this; each Slower press divides by it.")]
+        [SerializeField, Range(1.1f, 4f)] float speedStep = 2f;
+
+        [Tooltip("The slowest playback rate (1 is real time).")]
+        [SerializeField, Range(0.05f, 1f)] float minSpeed = 0.25f;
+
+        [Tooltip("The fastest playback rate (1 is real time).")]
+        [SerializeField, Range(1f, 16f)] float maxSpeed = 4f;
+
         public float ResultsWaitSeconds => resultsWaitSeconds;
+        public float NudgeSeconds => nudgeSeconds;
+        public float SpeedStep => speedStep;
+        public float MinSpeed => minSpeed;
+        public float MaxSpeed => maxSpeed;
         public int KeepNewest => keepNewest;
         public int CloudIndexSize => cloudIndexSize;
 

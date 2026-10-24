@@ -99,22 +99,30 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Play a replay in the Theater: its stage, its four shots and its transport. Works in any
-        /// scene with a <see cref="CameraManager"/> replay rig, and the ghosts fly where the match
-        /// was flown, so it is meant for the scene the match was recorded in. False when the replay
-        /// is not on this device or the Theater refused it (its overlay says why).
+        /// Load a replay's frames to watch, through a <see cref="ReplayPlayer"/> (the browser's
+        /// playback HUD). False, with the reason for the log, when the replay is not on this device,
+        /// cannot be read, or the recorder or the Theater's dev keys are using the stage right now.
         /// </summary>
-        public bool Watch(ReplaySummary summary)
+        public bool TryLoad(ReplaySummary summary, out TheaterRecording recording, out string error)
         {
-            if (summary == null || !ReplaySummary.IsBareFileName(summary.RecordingFile)) return false;
-
-            var director = TheaterDirector.Instance;
-            if (director == null)
+            recording = null;
+            if (summary == null || !ReplaySummary.IsBareFileName(summary.RecordingFile))
             {
-                CSDebug.LogWarning("[Replay] Cannot watch: no TheaterDirector is running.");
+                error = "not a replay on this device";
                 return false;
             }
-            return director.PlayFile(Store.RecordingPath(summary));
+            if (IsRecording)
+            {
+                error = "a match is being recorded";
+                return false;
+            }
+            var director = TheaterDirector.Instance;
+            if (director != null && (director.IsRecording || director.IsPlaying))
+            {
+                error = "the Theater (keys 9 / 8) is recording or playing";
+                return false;
+            }
+            return Store.TryLoadRecording(summary, out recording, out error);
         }
 
         /// <summary>Delete a replay from this device and from the Cloud Save index.</summary>

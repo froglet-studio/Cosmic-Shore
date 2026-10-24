@@ -91,6 +91,16 @@ namespace CosmicShore.Utility
         public List<ReplayPilot> Pilots = new();
         public List<ReplayResult> Results = new();
 
+        /// <summary>
+        /// Seconds as <c>m:ss</c> - a number format, not a sentence: the browser and the playback HUD
+        /// put it inside authored templates. Negative and fractional seconds floor to whole ones.
+        /// </summary>
+        public static string Clock(float seconds)
+        {
+            int whole = seconds > 0f ? (int)Math.Floor(seconds) : 0;
+            return $"{whole / 60}:{whole % 60:00}";
+        }
+
         /// <summary>When the recording started, in UTC.</summary>
         public static DateTime RecordedAt(ReplaySummary summary) =>
             new(Math.Max(0L, summary.RecordedAtUtcTicks), DateTimeKind.Utc);

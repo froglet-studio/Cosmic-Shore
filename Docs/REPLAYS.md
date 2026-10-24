@@ -20,7 +20,7 @@ Design record with diagrams: https://claude.ai/artifact/4Ykh9qZEdf81cY6hPZonaK (
 | Where do replays live? | **On the device, summaries in Cloud Save** | Frames are megabytes; a summary is about a kilobyte. A match recorded on another device can be listed, not watched. |
 | Share the AI-training recorder's sampling? | **Yes, in principle** | `HumanFlightRecorder` (local pilot's sticks, 10 Hz, editor/dev only) and the Theater recorder (every hull's pose, 30 Hz, ships) still sample separately; folding the first onto the second is a later step (`Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md` says extend, do not fork). |
 | AstroLeague's goal replay? | **Moved onto the Theater's pose and interpolation** | One definition of "where was it between two samples" for every replay in the game. |
-| Command pattern? | **For playback controls**, not for recording | Transport commands (play, pause, seek, speed, follow) are the browser's next step; recording inputs is ruled out above. |
+| Command pattern? | **For playback controls**, not for recording | Every viewer control is an `IReplayCommand` (section 6); recording inputs is ruled out above. |
 
 ## 2. How a match is recorded
 
@@ -80,33 +80,96 @@ returns the summaries that are not on this device.
 | Results Wait Seconds | 20 | Real-time wait for the end screen before saving without results |
 | Keep Newest | 20 | Replays kept on the device |
 | Cloud Index Size | 50 | Summaries mirrored to Cloud Save (0 = off) |
+| Nudge Seconds | 5 | How far the skip controls jump |
+| Speed Step | 2 | Faster multiplies the playback rate by this, Slower divides |
+| Min Speed / Max Speed | 0.25 / 4 | The playback-rate limits |
 
 Sample rate, length cap, ghosts and cameras stay on `TheaterConfigSO`.
 
-## 6. Try it now
+## 6. The browser and watching (2026-10-24)
+
+```
+Arcade header  [REPLAYS] [B BACK]          OpenModalButton (target REPLAYS = 19) -> ScreenSwitcher.OpenModal
+      |
+ReplayBrowserModal  (ModalWindowManager, ModalWindows.REPLAYS)
+      |  on open: ReplayService.ListOnDevice()  -> ReplayRowView per replay: WATCH, DELETE (asks twice)
+      |           ReplayService.ListFromOtherDevicesAsync() -> rows with "Recorded on another device", no buttons
+      |  WATCH:   ReplayService.TryLoad -> Instantiate(ReplayPlaybackHud) -> hud.Play(recording)
+      v
+ReplayPlaybackHud  (its own root canvas, sorting 500)
+      |  HUD buttons, pad, keys  --build-->  IReplayCommand  --Execute-->  IReplayTransport
+      v                                                                   |
+ReplayPlayer : IReplayTransport  -------------------------------------------
+      |  TheaterPlayback (Will's ghosts, stage, four shots - unchanged), on a runtime COPY of TheaterConfigSO:
+      |      hideGameplayUI off (the curtain does it and keeps the EventSystem), hideWorld on when the replay was
+      |      recorded in another scene (a Regatta watched from the menu flies on the Theater's dark stage)
+      |  ReplayCurtain: hides every other root screen-space canvas and every other base camera; puts them back
+      v
+Stop: TheaterPlayback.Stop -> (from the menu) CameraManager.SetMainMenuCameraActive -> curtain down -> HUD destroyed,
+      focus back on the row's WATCH
+```
+
+| Piece | File | Notes |
+|---|---|---|
+| Replays button | `Tools/Build/author_menu_arcade.py` (`replays_button`) | Left of Back in the Arcade header; `OpenModalButton` names the window by TYPE, like `MenuHubButton`. |
+| Browser window | `Assets/_Scripts/UI/Modals/ReplayBrowserModal.cs`, `ReplayBrowserModal.prefab` | B closes it back to the Arcade, except while a replay plays and on the frame one ends. The right stick scrolls the list. |
+| One row | `Assets/_Scripts/UI/Elements/Replays/ReplayRowView.cs`, `ReplayRow.prefab` | Mode name from the injected `SO_GameList` (Regatta is an Arena card), date in the invariant culture (the font is ASCII-only). |
+| Playback HUD | `Assets/_Scripts/UI/Elements/Replays/ReplayPlaybackHud.cs`, `ReplayPlaybackHud.prefab` | Title, when, scrub bar, time, speed, shot, pilot, the transport row, Exit, and a line naming the pad controls. |
+| Commands | `Assets/_Scripts/Utility/Theater/Replays/ReplayCommands.cs` | `IReplayTransport` (the receiver), `IReplayCommand`, `ReplayCommands` (TogglePause, Nudge, SeekFraction, ScaleSpeed, SetShot, CycleShot, CycleFollow, Stop). Tested without a scene in `ReplayCommandTests`. |
+| Player | `ReplayPlayer.cs`, `ReplayCurtain.cs` (same folder) | The only code that touches the Theater, the cameras and the canvases while watching. |
+| Generator | `Tools/Build/author_menu_replays.py` (`--check`, `--self-test`) | The three prefabs and the Menu_Main instance (just before Credits; it and `author_menu_credits.py` run in either order). |
+
+**Controls.** The sticks fly the free and subject cameras, so the HUD's buttons are not navigation stops and the pad
+drives the replay through shortcuts; the HUD clears the EventSystem's selection every frame so a clicked button never
+also takes an A press.
+
+| Control | Pad | Keyboard | HUD |
+|---|---|---|---|
+| Pause / play | A | Space | PAUSE |
+| Skip back / ahead (Nudge Seconds) | LB / RB | Left / Right | SKIP BACK / SKIP AHEAD |
+| Slower / faster (Speed Step) | LT / RT | - | SLOWER / FASTER |
+| Shot (Free, Pilot, Orbit, Chase) | D-pad left / right | 1-4 | CAMERA (cycles) |
+| Pilot the shot watches | D-pad up / down | 5 | NEXT PILOT |
+| Seek | - | - | drag the scrub bar |
+| Leave | B | Escape | EXIT |
+
+The pad's D-pad and A are the Theater's own transport (`TheaterGesture.ReadPadTransport`), and 1-5 are its keys, so the
+dev Theater and player replays answer the same buttons. If the Theater's dev key **8** starts its own playback while a
+replay is on screen, the replay steps aside.
+
+**Every word is authored**: the row lines (`whenTemplate`, `dateFormat`, `winnerTemplate`, `noResultLine`,
+`detailTemplate`, `openFailedLine`) are fields on `ReplayBrowserModal`; the HUD's (`timeTemplate`, `speedTemplate`,
+`pauseLabel`, `playLabel`, `shotNames`) on `ReplayPlaybackHud`; Delete's confirm word on `ReplayRowView`. The generator
+authors them and fails on an empty or non-ASCII one.
+
+## 7. Try it now
 
 1. Play Regatta to the end screen.
 2. Look in `<repo>/Recordings/` for the `.cstheater` and its `.replay.json`.
-3. Still in the Regatta scene, press **8**. The Theater plays the race; **1-4** pick Free / Pilot / Orbit / Chase,
-   **5** the next pilot, **A** / the overlay's buttons pause, seek and change speed.
+3. Back on the menu: Arcade > **REPLAYS**. The race is the first row; **WATCH** plays it on the Theater's stage with the
+   HUD over it; **B** or **EXIT** comes back to the list. (Still in the Regatta scene, the Theater's own key **8** plays
+   the newest replay too.)
 
-The full pass/fail list is in `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("Match replays on Will's Theater").
+The full pass/fail list is in `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("Match replays on Will's Theater" and "Replay
+browser").
 
-## 7. What is not built yet
+## 8. What is not built yet
 
 | Next | What | Notes |
 |---|---|---|
-| Replay browser | `ModalWindows.REPLAYS = 19` (the next free value after `CREDITS = 18`; retired values are never reused), a list of `ReplayService.ListOnDevice()` plus other-device entries, a Replays button in the Arcade modal (10), gamepad B back to Arcade | Mirrors `FriendsListPanel` / `OnlineInfoEntry`. Check in-flight branches before taking 19. |
-| Transport commands | `IReplayCommand` (Play, Pause, Seek, SetSpeed, FollowPilot, SetCameraMode) queued by the browser's buttons, keys and pad, run once a frame by the playback | The command pattern from the original ask. Today the Theater's own overlay and keys drive playback. |
-| Watching from the menu | Load the replay's scene as a stage (no match, no network spawn) and play it there | Today `ReplayService.Watch` plays in the scene you are in, so it is meant for the scene the match was recorded in. |
+| The arena in shot | Load the replay's scene additively as a stage (no match, no network spawn) and play it there | Watched from the menu today, the ghosts fly on the Theater's dark stage (`hideWorld`), because the menu's world is not the arena. |
 | The world in a replay | Prisms, fauna, crystals, projectiles | The Theater's P1 and P2 (`Docs/THEATER.md` §6). Until then the world in shot is the live one. |
 | One camera director | Spectate, replay and Third Eye on one set of shots | `SpectatorController`, `TheaterSubjectCamera` / `TheaterFreeCamera` and the editor-only `ThirdEyeRig` all pose cameras separately today; unifying them is its own refactor. |
 | Second mode | Skim Race | Add it to Auto Record Modes; its course is seeded, so a menu-side stage needs the seed (`GateRaceController`'s `RaceCourseSource`). |
 
-## 8. Ownership
+## 9. Ownership
 
 The Theater (`Assets/_Scripts/Utility/Theater/*`, `TheaterConfigSO`, `Docs/THEATER.md`) is **Will Bogen's** work,
 brought onto this branch unchanged apart from three things recorded in its landing commit: its log lines ride the
 `ArcadeMatch` channel (the `CSLogChannel` enum has no free bit), its index row moved to
 `Docs/claude/DOCUMENTATION_INDEX.md`, and `TheaterDirector` gained `PlayFile(path)`. Check with Will before changing
-anything else in it.
+anything else in it. The replay player reads `TheaterPlayback`'s public API and configures its stage through a runtime
+copy of `TheaterConfigSO`; it changes nothing in the Theater.
+
+The browser rides **Shombith's** style-B menu (`Docs/MENU_REDESIGN_B.md`): the Replays button is in his Arcade generator,
+the window is built from the same kit and frame as Credits, and the look awaits his review on the team board.

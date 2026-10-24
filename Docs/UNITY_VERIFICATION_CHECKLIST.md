@@ -13106,6 +13106,39 @@ cached NUnit (20/20; negative control: an overwrite and an open path guard fail 
 9. **Cloud index.** Signed in, after a Regatta replay: the UGS dashboard shows player data key `REPLAY_INDEX` holding
    that replay's summary (no frames).
 
+## 🔴 Replay browser, Arcade Replays button and playback HUD (2026-10-24, `claude/match-replays-5t3dbr`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session, so `/verify-unity` could not run. Checked offline only: refcompile player (0 errors in
+project code) and editor (the 3 known `AuthenticationServiceFacade` errors, 0 in changed files); `ReplayCommandTests`
+RUN outside Unity with Roslyn + the cached NUnit (17/17) and `ReplayStoreTests` re-run (20/20);
+`author_menu_replays.py --check` / `--self-test` (8 planted defects caught), `author_menu_arcade.py --self-test` (20,
+including the new Replays one); the two Menu_Main generators proven order-independent; the out-of-editor gates. Design:
+`Docs/REPLAYS.md` section 6. Needs a finished Regatta replay on the device first (the list above, item 2).
+
+1. **The button.** Open the Arcade. **Pass:** REPLAYS sits left of BACK in the header, in the same style; it opens the
+   Replays window; B closes it back to the Arcade (not to Home).
+2. **The list.** **Pass:** the Regatta replay is the first row, newest first: "Regatta", the date and length, "Winner:
+   <name>" (or "No final results" for a race you left), pilots and intensity; the pad lands on its WATCH; D-pad down walks
+   the rows and the list scrolls to follow; the right stick scrolls; with no replays the empty line shows instead.
+3. **Watch from the menu.** Press WATCH. **Pass:** the menu disappears; the race plays as ghosts on the Theater's dark
+   stage with the HUD over it (title, time counting up, scrub bar moving); no menu button reacts to the pad underneath.
+4. **Controls.** **Pass:** A pauses / plays (the button reads PLAY while paused); LB / RB skip 5 s; LT / RT halve /
+   double the speed between x0.25 and x4; D-pad left / right change the shot (the readout says FREE, PILOT, ORBIT,
+   CHASE) and up / down the pilot; on Free the pilot name hides and the sticks fly the camera; dragging the scrub bar
+   seeks; each HUD button does the same with the mouse or a touch.
+5. **Leaving.** Press B (and again with EXIT, and Escape). **Pass:** the replay ends, the menu and its camera come back
+   exactly as they were (the lava-lamp vessel visible, the music still playing), focus is on the row you watched, and
+   that same B press did NOT also close the Replays window.
+6. **Delete.** Press DELETE once: it reads CONFIRM; wait 3 s: it reads DELETE again. Press it twice. **Pass:** the row
+   and both files in `<repo>/Recordings/` are gone; the next row takes focus.
+7. **Another device.** Signed in on a second device (or after deleting the local files of a replay still in
+   `REPLAY_INDEX`). **Pass:** an ON YOUR OTHER DEVICES section lists it with "Recorded on another device" and no buttons.
+8. **A broken file.** Delete a replay's `.cstheater` but keep its `.replay.json`, reopen the window. **Pass:** the row is
+   gone (the store skips orphans); corrupt the `.cstheater` instead: WATCH shows "That replay could not be opened." and
+   a `[Replay] Cannot watch` warning names the reason.
+9. **Theater key during a replay.** While watching, press 8. **Pass:** the replay steps aside cleanly (menu back, no
+   black screen), and the Theater's own playback runs.
+
 ## 🔴 2026-10-17 — Bleeding-edge merge + first-login guide on the rev-3 menu (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 `ModePreviewWindow.guideTarget` / `GuideRect` (new, optional); `QuestGuideToMicrogameNode` asks `GuideRect`. Checked

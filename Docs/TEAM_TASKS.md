@@ -536,6 +536,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** anyone (icon art); Garrett to approve
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 4 and follow-up F12
+
 ### T-20261015-de37 · open · test · Replays
 - **Task:** Editor-test match replays on Will's Theater (claude/match-replays-5t3dbr): race Regatta to the end screen and find Regatta_*.cstheater + .replay.json in <repo>/Recordings; press 8 to watch it; leave a race mid-way; retention with a hand-made 9-key recording beside; host + guest online; and AstroLeague's goal replay after its port onto Theater poses. Nine items with pass criteria in Docs/UNITY_VERIFICATION_CHECKLIST.md ('Match replays on Will's Theater').
 - **Done when:** All nine checklist items pass in the Unity Editor, or each failure is filed as a dev task.
@@ -557,12 +558,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-15 by Claude (replay session) (`claude/match-replays-5t3dbr`)
 - **See:** Assets/_Scripts/Utility/CSDebug.cs
 
-### T-20261015-784a · open · dev · Replays
+### T-20261015-784a · done · dev · Replays
 - **Task:** Build the replay browser: ModalWindows.REPLAYS = 19 (check in-flight branches before taking it), listing ReplayService.ListOnDevice and ListFromOtherDevicesAsync, a Replays button in the Arcade modal (gamepad B back to Arcade), transport commands as IReplayCommand, and watching from the menu by loading the match's scene as a stage.
 - **Done when:** A player opens Arcade > Replays, picks a Regatta replay and watches it with play, pause, seek, speed and follow.
 - **Who can take it:** The replay session on claude/match-replays-5t3dbr; Shombith reviews the Menu_Main / Arcade modal change
 - **Added:** 2026-10-15 by Claude (replay session) (`claude/match-replays-5t3dbr`)
 - **See:** Docs/REPLAYS.md section 7
+- **Done:** 2026-10-24, Built on claude/match-replays-5t3dbr (2026-10-24): ModalWindows.REPLAYS = 19, ReplayBrowserModal + ReplayRow + ReplayPlaybackHud (author_menu_replays.py), the Arcade header's REPLAYS button (author_menu_arcade.py), IReplayCommand transport, ReplayPlayer watching from the menu on the Theater's dark stage. Loading the match's scene as a stage (the arena in shot) stays open in Docs/REPLAYS.md section 8.
 
 ### T-20261017-147f · done · test · Menu_Main / Hangar
 - **Task:** Play-test the Hangar's TRY IT FOR REAL (Abilities tab): the selected vessel flown for real in open water, its abilities firing on the real controls, the drill coach; START / Esc / STOP back; no screen paging or tab switch while flying
@@ -2185,3 +2187,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered) or Garrett
 - **Added:** 2026-10-24 by a Claude session (`cece/bold-gauss-lad943`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md §5
+
+### T-20261024-e56d · open · test · Replays
+- **Task:** Editor-test the replay browser on claude/match-replays-5t3dbr: Arcade > REPLAYS opens it, the list, WATCH from the menu (ghosts on the Theater's stage under the HUD), the pad / keyboard / HUD controls, leaving with B / EXIT / Escape back to the row, two-press DELETE, other-device rows, a broken file, the Theater's 8 key during a replay.
+- **Done when:** All nine items under 'Replay browser, Arcade Replays button and playback HUD' in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, and the entry is marked verified.
+- **Who can take it:** Yash (offered), Shombith, anyone with the Unity Editor
+- **Added:** 2026-10-24 by a Claude session (`claude/match-replays-5t3dbr`)
+- **See:** Docs/REPLAYS.md section 6
+
+### T-20261024-9312 · open · decision · Menu_Main
+- **Task:** Review the replay UI added to your style-B menu: the REPLAYS button left of BACK in the Arcade header (author_menu_arcade.py replays_button), and the Replays window and playback HUD (author_menu_replays.py, built from the Credits frame and the kit). Approve the look or say what to change; it has not been through the Menu Redesign B board.
+- **Done when:** Shombith approves the look (or the requested changes land), noted in Docs/MENU_REDESIGN_B.md.
+- **Who can take it:** Shombith (Menu_Main / style-B owner)
+- **Added:** 2026-10-24 by a Claude session (`claude/match-replays-5t3dbr`)
+- **See:** Docs/REPLAYS.md section 6; Docs/MENU_REDESIGN_B.md
+
+### T-20261024-5ecb · open · dev · Menu_Main
+- **Task:** Re-run author_menu_arcade.py and author_menu_credits.py: on bleeding-edge 68be5306a their --check already fails, because the kit's text-width measurements changed after ArcadeView, PartyPanel, PartyOnlineRow and CreditsModal were generated (Back, Close and label widths differ by 1-11 units). The replay branch spliced only its new Replays nodes into ArcadeView and left that drift for the owner.
+- **Done when:** Both generators report 'no drift' on bleeding-edge.
+- **Who can take it:** Shombith (owner), Yash (offered)
+- **Added:** 2026-10-24 by a Claude session (`claude/match-replays-5t3dbr`)
+- **See:** Tools/Build/author_menu_arcade.py --check; Tools/Build/author_menu_credits.py --check
