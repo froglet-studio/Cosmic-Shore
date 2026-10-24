@@ -113,7 +113,8 @@ NEUTRAL = (0.45490196, 0.48235294, 0.6784314)       # NeutralLightest #747BAD
 KIT_GRID = "21a4d02295ff993cb1746d4d792daa21"       # the retired blueprint grid sprite (kit_grid.png)
 SCREENS = "Assets/_Prefabs/UI Elements/Main Menu Screens"
 WINDOWS = [f"{SCREENS}/{p}" for p in ("Arcade/ArcadeView.prefab", "Arena/ArenaView.prefab", "Mission/MissionView.prefab",
-                                       "Toybox/ToyboxView.prefab", "Configure/ConfigureView.prefab")]
+                                       "Toybox/ToyboxView.prefab", "Configure/ConfigureView.prefab",
+                                       "Hangar/HangarView.prefab", "Settings/SettingsView.prefab")]
 UI_FLOATS = dict(_ColorMask=15, _Stencil=0, _StencilComp=8, _StencilOp=0, _StencilReadMask=255,
                  _StencilWriteMask=255, _UseUIAlphaClip=0)
 

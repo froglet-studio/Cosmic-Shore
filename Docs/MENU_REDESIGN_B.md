@@ -2999,8 +2999,10 @@ everywhere". Boards: the canvas's Rev 11 page (`R11HMotion` is the motion board)
   camera). Settings: `Resources/UIBackdropBlurSettings` (on, 1/4, 2 passes, off on Very Low, where windows keep their
   dark veil under the hexagons). Written by `author_ui_lattice.py`.
 - **Where:** every backdrop that had the window lattice: Arcade, Arena, Toy Box, Mission, the three configure views,
-  Profile and its pilot record, the friends drawer, the in-match scoreboard, the splash and the sign-in screens.
-  Hangar and Settings never had a lattice backdrop and are unchanged.
+  Profile and its pilot record, the friends drawer, the in-match scoreboard, the splash and the sign-in screens, and
+  (the owner, the same day) the Hangar and Settings: the Hangar gets the hub windows' three layers (nav dim, 75 % veil,
+  frosted lattice; `author_menu_hangar.py`), Settings the frosted lattice over its full-screen dim
+  (`author_menu_settings.py`). `author_ui_lattice.py` now requires the window lattice on both.
 - **Gates:** `author_ui_lattice.py` (window frosted / panel not / no material motion / Amoebius's cell / the blur
   settings name the shader / the blur shader's pass order / the motion codes match the shader / every window backdrop
   carries `KitBackdropMotion`, each with a planted defect); `lattice_preview.py --check` compiles the shader maths with

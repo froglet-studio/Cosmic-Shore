@@ -14141,5 +14141,6 @@ project code (editor config: 0 in changed files); Amoebius builds; `lattice_prev
 - [ ] Frame Debugger: "UIBackdropBlur" (downsample + 2 blur passes) runs only while a window is open; none on Home.
 - [ ] Settings > Graphics Very Low: no frost (the dark veil under the hexagons), no UIBackdropBlur passes.
 - [ ] Profile, configure, scoreboard after a match, sign-in: frosted too; the panels inside windows show hexagons only.
+- [ ] Hangar and Settings (menu and in a match): frosted too, with a random motion per open; the Hangar's vessel bay and tabs still read clearly on top.
 - [ ] Console clean (no shader errors for CosmicShore/UI/Lattice or Hidden/CosmicShore/UI/BackdropBlur).
 
