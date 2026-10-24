@@ -2151,3 +2151,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered: playtests) or Garrett
 - **Added:** 2026-10-23 by a Claude session (`cece/inspiring-hawking-mnzmqc`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Honeyguide juice, 2026-10-23); Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+
+### T-20261024-303b · open · test · vessels
+- **Task:** Starlings level scaling in the HUD (branch cece/bold-gauss-lad943): fly the Starlings, pick a card, then on the next hand check a card you already hold reads 'Lv 3 -> 7' on the row; open its details (trigger + A/B/X/Y or long press) and check 'Level 3 -> 7', each number as 'now -> next', and the jolts the pick unlocks; with no hand, the details head each held card 'Lv N -> N+1' with numbers beside the next level's; a card at 15 shows 'Max level'; the arrow glyph renders (no box)
+- **Done when:** All lines read as described in Play mode, or a failure is noted
+- **Who can take it:** Yash (offered) or Garrett
+- **Added:** 2026-10-24 by a Claude session (`cece/bold-gauss-lad943`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md §5
