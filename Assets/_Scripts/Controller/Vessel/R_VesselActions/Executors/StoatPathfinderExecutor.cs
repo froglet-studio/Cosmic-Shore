@@ -324,7 +324,7 @@ namespace CosmicShore.Gameplay
             if (!hull || _status.Player == null) return;
             var mine = _status.Domain;
             s_scan.Clear();
-            s_scan.AddRange(Object.FindObjectsByType<VesselStatus>(FindObjectsSortMode.None));
+            s_scan.AddRange(VesselStatus.Live);
             float range2 = config.ForesightRange * config.ForesightRange;
             var self = _status as Component;
             s_scan.RemoveAll(v => !v || (self && v.transform == self.transform) || v.Player == null || ((IVesselStatus)v).Domain == mine

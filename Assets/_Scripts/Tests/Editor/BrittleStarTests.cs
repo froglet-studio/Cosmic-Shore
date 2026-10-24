@@ -251,6 +251,46 @@ namespace CosmicShore.Tests
             Assert.IsFalse(heat.Overheated);
         }
 
+        // The shipped heat numbers (BrittleStarConfigSO): heatPerRound, heatCapacity at Space 10, coolRate.
+        const float HeatPerRound = 0.000637f, HeatCapacityAt10 = 3.3333f, CoolRate = 0.12f;
+
+        /// <summary>Seconds of the five guns at a full pull (450 rounds/s, the shipped heat per round and cooling) until
+        /// they overheat, and then seconds until they recover, at <paramref name="capacity"/>.</summary>
+        static void Burst(float capacity, out float toOverheat, out float lockout)
+        {
+            const float dt = 1f / 450f;
+            var heat = new BrittleStarRules.HeatState();
+            toOverheat = 0f;
+            while (!heat.Overheated && toOverheat < 60f)
+            {
+                heat.AddRounds(1, HeatPerRound, capacity);
+                heat.Cool(CoolRate, 0.35f, dt, capacity);
+                toOverheat += dt;
+            }
+            lockout = 0f;
+            while (heat.Overheated && lockout < 60f)
+            {
+                heat.Cool(CoolRate, 0.35f, dt, capacity);
+                lockout += dt;
+            }
+        }
+
+        [Test]
+        public void Heat_SpaceCapacity_BurstRunsSixToTwentySeconds_SameLockout()
+        {
+            // Garrett: "have the maximum heat scale with space" (2026-10-16); a full burst "from 6 to 20 seconds" (2026-10-17).
+            Burst(1f, out float baseRun, out float baseLockout);
+            Burst(HeatCapacityAt10, out float maxRun, out float maxLockout);
+            Assert.AreEqual(6f, baseRun, 0.05f, "Space 0: ~6 s");
+            Assert.AreEqual(20f, maxRun, 0.1f, "Space 10: ~20 s");
+            Assert.AreEqual(baseLockout, maxLockout, 0.05f, "the lockout is the same at any Space");
+            Assert.AreEqual(0.65f / 0.12f, baseLockout, 0.05f);
+
+            var full = new BrittleStarRules.HeatState();
+            full.AddRounds(1000, 0.01f, 3f);
+            Assert.AreEqual(1f, full.Heat01, 1e-5f, "Heat01 is the share of the CURRENT capacity (what the HUD draws)");
+        }
+
         [Test]
         public void Heat_TheCordsCoolTheGunsFaster()
         {
@@ -401,8 +441,11 @@ namespace CosmicShore.Tests
         // The shipped dials (BrittleStarConfigSO's Charge Mode block).
         static readonly BrittleStarCord.Settings Cord = new()
         {
-            LooseWave = 180f, RigidWave = 2500f, LooseDamping = 0.4f, RigidDamping = 14f, Pose = 1600f,
+            LooseWave = 144f, RigidWave = 2500f, LooseDamping = 0.4f, RigidDamping = 14f, Pose = 1600f,
         };
+        /// <summary>cordMaxRigidity: how rigid a FULL pull makes the cords (Garrett, 2026-10-16: "not completely rigid at
+        /// full press", 70% on 2026-10-16, then 40%).</summary>
+        const float FullPullRigidity = 0.4f;
         const int CordLinks = 16;
         const float SaberLength = 80f, WhipLength = 120f;
 
@@ -490,6 +533,20 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Cord_FullPull_KeepsSomeGive_ButHoldsItsLine()
+        {
+            // A full pull stops at cordMaxRigidity: a flick still bends the saber visibly more than the fully rigid dials
+            // would, yet far less than the whip, and the cord settles back onto its line.
+            float whip = Flick(1f / 60f, 0f, out _);
+            float rigid = Flick(1f / 60f, 1f, out _);
+            float pulled = Flick(1f / 60f, FullPullRigidity, out var cord, 6f);
+            Assert.Greater(pulled, rigid * 1.2f, "60% of the give stays: it bends more than a fully rigid cord");
+            Assert.Less(pulled * 2f, whip, "but it is a saber, not a whip");
+            for (int i = 0; i < CordLinks; i++)
+                Assert.Greater(Vector3.Dot(cord.LinkDirection(i), cord.LinkDirection(0)), 0.999f, $"link {i}: settled straight");
+        }
+
+        [Test]
         public void Cord_NeverStretches_ItsLengthIsItsLinks()
         {
             // The worst case the hull can make: flicks of the ring while the hull yaws hard at Speed Mode's pace, whip.
@@ -538,6 +595,135 @@ namespace CosmicShore.Tests
             float at30 = Flick(1f / 30f, 0f, out _), at60 = Flick(1f / 60f, 0f, out _), at144 = Flick(1f / 144f, 0f, out _);
             Assert.AreEqual(at144, at30, at144 * 0.3f, "sub-stepped: a 30 fps peer sees the same whip");
             Assert.AreEqual(at144, at60, at144 * 0.3f);
+        }
+
+        // ------------------------------------------------------------------ the ring explosion's look (2026-10-18)
+
+        /// <summary>The shipped look (BrittleStarConfigSO's "Ring Detonation: the look" block) on the standard cell: the
+        /// ring's radius 6, the nucleus 392, the disk 4 x the ring's 0.22 half-thickness; sizes are shares of the front.</summary>
+        static BrittleStarBlastForm.Settings Blast(float t01, float phase = 0.37f)
+        {
+            const float Ring = 6f, Nucleus = 392f;
+            return new BrittleStarBlastForm.Settings
+            {
+                RingRadius = Ring,
+                Front = Mathf.Lerp(Ring, Nucleus, Mathf.Sin(t01 * Mathf.PI * 0.5f)),
+                HalfThickness = 0.22f * 4f,
+                FrontWidth = 0.05f,
+                FrontHeight = 0.04f,
+                Phase = BrittleStarBlastForm.PhaseAt(phase, 108f * Mathf.Deg2Rad, t01),
+                T01 = t01,
+                CrestDepth = 2.5f,
+                PentagonLag = 0.8f,
+                ArmWidth = 0.08f,
+                ArmWiggle = 0.06f,
+                ArmCurl = 30f * Mathf.Deg2Rad,
+                Relief = 0.12f,
+            };
+        }
+
+        static readonly List<Vector3> BlastVerts = new(), BlastNormals = new();
+        static readonly List<int> BlastTris = new();
+
+        [Test]
+        public void Blast_NeverDrawnPastTheFront_AndStaysWithinItsRelief_AtEveryMoment()
+        {
+            // Honest where it counts: nothing is drawn past the edge where prisms stop breaking; the volume above and below
+            // the thin disk stays within the front's height (the front) and the relief (the arms, the ring, the crystals).
+            for (int step = 0; step <= 20; step++)
+            {
+                var s = Blast(step / 20f);
+                int frontVerts = BrittleStarBlastForm.Build(s, BlastVerts, BlastNormals, BlastTris);
+                Assert.Greater(frontVerts, 0, $"t {step / 20f}: the front is drawn");
+                float frontHalf = Mathf.Max(s.HalfThickness, 0.5f * s.FrontHeight * s.Front);
+                float relief = Mathf.Max(frontHalf, s.Relief * s.Front);
+                for (int i = 0; i < BlastVerts.Count; i++)
+                {
+                    var v = BlastVerts[i];
+                    Assert.LessOrEqual(new Vector2(v.x, v.y).magnitude, s.Front + 1e-3f, $"t {step / 20f}: inside the front");
+                    Assert.LessOrEqual(Mathf.Abs(v.z), (i < frontVerts ? frontHalf : relief) + 1e-3f, $"t {step / 20f}: within its height");
+                }
+            }
+        }
+
+        [Test]
+        public void Blast_IsAVolume_NotAFlatSheet()
+        {
+            // Garrett, 2026-10-18: "nothing in the environment should ever look flat like this, that is reserved for ui".
+            // A flat sheet's faces all look along the disk's axis; faceted beams and crystals face every way.
+            foreach (float t01 in new[] { 0.1f, 0.5f, 0.9f })
+            {
+                var s = Blast(t01);
+                BrittleStarBlastForm.Build(s, BlastVerts, BlastNormals, BlastTris);
+                int facingAxis = 0, faces = BlastTris.Count / 3;
+                float zMin = float.MaxValue, zMax = float.MinValue;
+                for (int t = 0; t < BlastTris.Count; t += 3)
+                    if (Mathf.Abs(BlastNormals[BlastTris[t]].z) > 0.99f) facingAxis++;
+                foreach (var v in BlastVerts) { zMin = Mathf.Min(zMin, v.z); zMax = Mathf.Max(zMax, v.z); }
+                Assert.Less(facingAxis, faces / 4, $"t {t01}: most facets face sideways, not along the axis");
+                Assert.Greater(zMax - zMin, 0.05f * s.Front, $"t {t01}: it stands well out of the plane");
+            }
+        }
+
+        [Test]
+        public void Blast_HasFiveFoldSymmetry()
+        {
+            BrittleStarBlastForm.Build(Blast(0.4f), BlastVerts, BlastNormals, BlastTris);
+            var turn = Quaternion.AngleAxis(72f, Vector3.forward);
+            for (int i = 0; i < BlastVerts.Count; i += 7)
+            {
+                Vector3 r = turn * BlastVerts[i];
+                float best = float.MaxValue;
+                foreach (var v in BlastVerts) best = Mathf.Min(best, (v - r).sqrMagnitude);
+                Assert.Less(best, 1e-3f, $"vertex {i} turned by a fifth of a turn lands on another");
+            }
+        }
+
+        [Test]
+        public void Blast_CrestsSitBehindTheRingsFivePoints_AndTheArmsStartAtThem()
+        {
+            const float phase = 0.37f;
+            for (int i = 0; i < BrittleStarHullForm.Points; i++)
+            {
+                float point = phase + BrittleStarHullForm.PointAngle(i);
+                Assert.AreEqual(1f, BrittleStarBlastForm.CrestAt(point, phase), 1e-4f, $"point {i}: a full crest");
+                Assert.AreEqual(0f, BrittleStarBlastForm.CrestAt(point + Mathf.PI / 5f, phase), 1e-4f, "none halfway between");
+            }
+
+            // Just after the blast every one of the ring's points has an arm's root on it.
+            var s = Blast(0.02f, phase);
+            BrittleStarBlastForm.Build(s, BlastVerts, BlastNormals, BlastTris);
+            for (int i = 0; i < BrittleStarHullForm.Points; i++)
+            {
+                float a = s.Phase + BrittleStarHullForm.PointAngle(i);
+                var point = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * s.RingRadius;
+                float best = BlastVerts.Min(v => (new Vector3(v.x, v.y, 0f) - point).magnitude);
+                Assert.Less(best, s.ArmWidth * s.Front, $"point {i}: an arm grows from the ring's point");
+            }
+        }
+
+        [Test]
+        public void Blast_KeepsTheRingsSpin_AndBrakesToAStop()
+        {
+            const float p0 = 0.37f, spin = 108f * Mathf.Deg2Rad;
+            Assert.AreEqual(p0, BrittleStarBlastForm.PhaseAt(p0, spin, 0f), 1e-6f, "starts where the ring was");
+            Assert.AreEqual(p0 + spin, BrittleStarBlastForm.PhaseAt(p0, spin, 1f), 1e-5f, "turns on by the spin in all");
+            float early = BrittleStarBlastForm.PhaseAt(p0, spin, 0.1f) - p0;
+            float late = BrittleStarBlastForm.PhaseAt(p0, spin, 1f) - BrittleStarBlastForm.PhaseAt(p0, spin, 0.9f);
+            Assert.Greater(early, late * 5f, "fast at first, braking to a stop");
+        }
+
+        [Test]
+        public void Blast_EveryTriangleFacesItsNormal()
+        {
+            BrittleStarBlastForm.Build(Blast(0.5f), BlastVerts, BlastNormals, BlastTris);
+            for (int t = 0; t < BlastTris.Count; t += 3)
+            {
+                Vector3 a = BlastVerts[BlastTris[t]], b = BlastVerts[BlastTris[t + 1]], c = BlastVerts[BlastTris[t + 2]];
+                Vector3 cross = Vector3.Cross(b - a, c - a);
+                if (cross.sqrMagnitude < 1e-12f) continue;
+                Assert.Greater(Vector3.Dot(cross, BlastNormals[BlastTris[t]]), 0f, $"tri {t / 3}");
+            }
         }
     }
 }

@@ -99,7 +99,7 @@ n_Domain/n_Name callbacks now raise `OnAnyStatChanged`; `MultiplayerHUD` rebuild
 panel set reactively (idempotent `RebuildDomainPanels` + allocation-free
 `DomainLayoutChanged`), reconciles on each stat event, and subscribes `OnPlayerAdded`
 for late roster.
-Files: `_Scripts/Data/Enums/RoundStats.cs`, `_Scripts/UI/MultiplayerHUD.cs`.
+Files: `_Scripts/Controller/Player/RoundStats.cs` (was `Data/Enums/`), `_Scripts/UI/MultiplayerHUD.cs`.
 
 ### B9 — 🟢 Client's OWN metric count frozen on its own screen (domain layout)
 After B8, domains mapped correctly but a client's OWN crystal count stayed frozen
@@ -153,7 +153,7 @@ re-rendered. **Done** in two commits:
 - `aaabc1b6` — retire `RoundStats.n_Domain`; `RoundStats.Domain` is a local mirror
   Player keeps in sync on every peer from the authoritative `NetDomain` (one source of
   truth), fixing every other `RoundStats.Domain` consumer too.
-Files: `_Scripts/UI/MultiplayerHUD.cs`, `_Scripts/Data/Enums/RoundStats.cs`,
+Files: `_Scripts/UI/MultiplayerHUD.cs`, `_Scripts/Controller/Player/RoundStats.cs` (was `Data/Enums/`),
 `_Scripts/Controller/Player/Player.cs`.
 **✅ Verified in engine** (2-human test — the client's own profile icon now sits in its
 own domain box). Broader mode coverage (Scurry / Joust) continuing.
@@ -331,7 +331,7 @@ machine; (b) same but exit the FIRST race mid-turn via pause-menu Main Menu —
 the second race must still end cleanly (the poison path); (c) repeat 2–3× per
 `../PartySystem/TESTS.md` S9.
 
-Files: `_Scripts/Data/Enums/RoundStats.cs`, `_Scripts/Controller/Player/Player.cs`,
+Files: `_Scripts/Controller/Player/RoundStats.cs` (was `Data/Enums/`), `_Scripts/Controller/Player/Player.cs`,
 `_Scripts/Controller/Arcade/TurnMonitorController.cs`,
 `_Scripts/Controller/Arcade/TurnMonitors/NetworkCrystalCollisionTurnMonitor.cs`,
 `_Scripts/Controller/Arcade/TurnMonitors/CrystalCollisionTurnMonitor.cs`,

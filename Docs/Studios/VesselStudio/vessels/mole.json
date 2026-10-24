@@ -1,0 +1,144 @@
+{
+  "id": "mole",
+  "order": 6,
+  "name": "Mole",
+  "tagline": "the burrower: the obstacle is the road",
+  "round": "concept · round 1",
+  "accent": "#c9a27a",
+  "kind": "burrow",
+  "chip": "concept · round 1",
+  "summary": "The burrower. The whole game turned inside out: in open space it is slow (40 u/s) and turns badly; inside mass (within 16 u of any prism) it is fast (150 u/s), turns on a dime, and passes straight through. The course ribbon, the mass beside it, every rival's trail is a highway, and the more others lay, the faster you are. LT digs a tunnel of your own mass for the next lap; RT as you leave mass is a timed breach for a kick.",
+  "spec": [
+    {
+      "k": "Mechanic",
+      "v": "fast inside mass, slow outside · LT dig · RT breach"
+    },
+    {
+      "k": "Speed",
+      "v": "40 open · 150 inside mass"
+    },
+    {
+      "k": "Turn",
+      "v": "90°/s open · 220°/s inside"
+    },
+    {
+      "k": "Why",
+      "v": "momentum from terrain, inverted: wall-runs, grinds, 'the wall is the fast way'"
+    }
+  ],
+  "fantasy": "Everyone else dodges the prismscape; the Mole swims in it. A crowded cell is its ocean and an empty one its desert.",
+  "why": "Titanfall taught that players use the wall when the wall is 2x faster; Mario Kart World's meta is grinding and wall-riding. The Mole makes mass the fast way on the game's own conserved prisms (a crowded cell is a valid state; this is the hull that wants one), and leaves tunnels others can follow: the Urchin rides ON prismscapes, the Mole goes THROUGH them.",
+  "flight": {
+    "cruise": 40,
+    "pitchYaw": 90,
+    "roll": 130,
+    "grip": 30,
+    "accel": 1.5,
+    "topSpeed": 220
+  },
+  "params": {},
+  "elements": {
+    "charge": {
+      "name": "Breach",
+      "param": "breachKick",
+      "range": [
+        1,
+        1.2
+      ],
+      "l5": "Eruption",
+      "tip": "Charge is the kick of a timed breach."
+    },
+    "mass": {
+      "name": "Wide Tunnel",
+      "param": "tunnelScale",
+      "range": [
+        1,
+        1.6
+      ],
+      "l5": "Armoured Tunnel",
+      "tip": "Mass is the size of the tunnel prisms it digs."
+    },
+    "space": {
+      "name": "Sense",
+      "param": "inRadius",
+      "range": [
+        1,
+        1.5
+      ],
+      "l5": "Deep Sense",
+      "tip": "Space is how far from a prism still counts as inside mass."
+    },
+    "time": {
+      "name": "Burrow Speed",
+      "param": "inCap",
+      "range": [
+        1,
+        1.3
+      ],
+      "l5": "Torrent",
+      "tip": "Time is its speed inside mass."
+    }
+  },
+  "styles": [
+    {
+      "name": "Balanced",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Every element at 0: the recipe's numbers."
+    },
+    {
+      "name": "Tunneller",
+      "lv": {
+        "charge": 0,
+        "mass": 10,
+        "space": 0,
+        "time": 10
+      },
+      "info": "Wide tunnels, fast burrowing: builds the roads it then races on."
+    },
+    {
+      "name": "Erupter",
+      "lv": {
+        "charge": 10,
+        "mass": 0,
+        "space": 10,
+        "time": 0
+      },
+      "info": "Feels mass from far and breaches hard: the straight-line gambler."
+    },
+    {
+      "name": "Maxed",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Every element at 10. A ceiling, not a match state."
+    }
+  ],
+  "players": [
+    {
+      "ai": false,
+      "domain": "jade",
+      "level": "Hard",
+      "style": "Balanced"
+    }
+  ],
+  "controls": {
+    "lt": "dig a tunnel (hold)",
+    "rt": "breach (as you leave mass)"
+  },
+  "notModelled": [
+    "Passing through mass is a sphere test round the hull; the game's cradle (the Urchin's drape) is how mass would close over it visually.",
+    "A tunnel prism is ordinary conserved mass here: what it does to rivals' hulls (a reset) is the platform rule, not a Mole choice."
+  ],
+  "sources": [
+    "Design: Docs/Studios/CONCEPT_FLEET.md (Mole). Nearest shipped relative: the Urchin's Trail Rider (URCHIN_TRAIL_RIDER.md), which rides the surface the Mole goes through."
+  ],
+  "docs": "Docs/Studios/CONCEPT_FLEET.md"
+}

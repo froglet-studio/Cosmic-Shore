@@ -445,6 +445,76 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 4 and follow-up F12
 
+### T-20261016-e2fb · open · test · Brittle Star
+- **Task:** Play the Brittle Star's 2026-10-16 tuning pass in the Editor: the ring regrows over 3 s after LT (modes off meanwhile); RT at a full pull in Charge Mode leaves the sabers flexing on a ring flick (cordMaxRigidity 0.4) and released they whip slower (cordLooseWave 144); Space Mode at a full pull overheats after ~6 s at Space 0 and ~20 s at Space 10, same ~5 s lockout; the ring explosion is 4x thicker and bursts out five-fold as lit faceted volumes (five coiling arms led by crystals, the ring's pentagon with crystal knots, a faceted torus front with five crests, turning with the ring's spin; nothing flat from any angle); the trail blocks are long and slim (1 x 1 x 6, base trail 0.5 wide) and widen in x and y with Mass.
+- **Done when:** Each item seen in Play mode and noted in Docs/UNITY_VERIFICATION_CHECKLIST.md's 'Brittle Star tuning pass' section
+- **Who can take it:** Garrett, or Yash (offered)
+- **Added:** 2026-10-16 by a Claude session (`cece/gallant-bell-eq7kul`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md
+
+### T-20261016-acc7 · open · test · Brittle Star
+- **Task:** Profile a Brittle Star Space-10 burst: heatCapacity x3.33 lets five guns fire ~20 s at 450 rounds/s with 9 s flights, so ~4,000 rounds can be alive (~2,000 at Space 0, 6 s bursts) against the turrets' pool max of 2,400 (GenericPoolManager then instantiates on demand and destroys on release). Capture with 3-4 AI Brittle Stars at Space 10 and decide: raise the pool, shorten the flight, or cap the burst.
+- **Done when:** A capture (capture console command) attached to the task, and the pool or the numbers changed, or kept with the measurement as the reason
+- **Who can take it:** Yash (offered: diagnostics), Garrett decides
+- **Added:** 2026-10-16 by a Claude session (`cece/gallant-bell-eq7kul`)
+- **See:** BRITTLE_STAR.md section 3.4 Cost and F9
+
+### T-20261017-60e9 · open · test · Prisms
+- **Task:** Editor-verify the prism destruction and steal detail levels (cece/dreamy-pascal-7xxx1m, lab rounds 9-12): a close death bursts into silver triangles that lean along the hit; neighbours on a trail rammed at once do not play the same animation, yet each cloud stays one smooth burst (round 12; fragmentVariety 0 makes them copies); a FAR death is 24 wedges on the same law (not the old explosion graph); a big trail wipe draws every death; the steal's roll looks as before. Frame Debugger: destructions draw with keyword _BURST_FRAGMENT, steals with _BURST_ROLL, the roll's mesh is Prism_HighPoly_<n>. Run EditMode PrismCollisionBurstTests.
+- **Done when:** Checklist items 9-12 in Docs/UNITY_VERIFICATION_CHECKLIST.md pass (or each failure is filed as a dev task) and PrismCollisionBurstTests are green
+- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Prism movement section, items 9-12); Docs/Studios/COLLISION_BURST_LAB.md rounds 11-13
+
+### T-20261017-9cab · open · decision · Prisms
+- **Task:** Three calls the round-11/12 burst leaves: (1) round 13 tripled the spread (burst 0.36 / drift 0.216): the level-0 cloud is now 2.57 R at 2 s against the old explosion's 1.78 R - confirm in game; (3) round 12's per-death variety (fragmentVariety 0.5): judge it on the lab's Neighbours view - lower it if the deaths read too unalike; (2) your decision set the grade length to 2.2 s, but that is MaterialPropertyAnimator.DefaultTransitionSeconds, every prism colour change in the game - not adopted; adopt or not.
+- **Done when:** All three recorded in the Collision Burst Lab decision log and the asset / animator updated to match
+- **Who can take it:** Garrett (prisms / product owner)
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** Docs/Studios/COLLISION_BURST_LAB.md round 11, https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9
+
+### T-20261017-1249 · open · dev · Tooling
+- **Task:** unity_refcompile's editor config reports 3 errors in AuthenticationServiceFacade.cs (Unity.Multiplayer.PlayMode / CurrentPlayer, from 296123a9e) as PROJECT errors on a clean bleeding-edge, so every branch's editor run reads FAILED. Unity.Multiplayer.Playmode is already an unobtainable package: map that namespace to it (note the case difference) in Tools/Build/unity_refcompile so they land in the unobtainable-package bucket. Do not change the game file.
+- **Done when:** A clean bleeding-edge editor run reads RESULT: OK with those 3 in the unobtainable bucket, and a planted typo in a changed Editor file still fails it
+- **Who can take it:** Shombith (CI), Yash (offered)
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** Tools/Build/unity_refcompile/README.md
+
+### T-20261017-75d5 · open · docs · Prisms
+- **Task:** Assets/_Scripts/Controller/Managers/PrismSpatialIndex.cs has two back-to-back summary blocks (near lines 666 and 2220 on cece/dreamy-pascal-7xxx1m; already on bleeding-edge): a member was inserted between a doc comment and its method, so the doc now sits on the wrong member. Move each onto the method it describes or delete it if superseded. Doc comments only.
+- **Done when:** A scan for '/// </summary>' followed by '/// <summary>' finds nothing in the file
+- **Who can take it:** Yash (offered), anyone
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** .claude/skills/ship/SKILL.md section 2 (inserting a member above a method)
+
+### T-20261017-cb31 · open · test · vessels
+- **Task:** Fly the Shrike in Menu_Main freestyle and run its editor checklist (modes on X/RB/B, LT eyepiece with crosshairs, RT per mode, docking, Mass detach, crystal flora, missile count)
+- **Done when:** Every step of the Shrike entries in Docs/UNITY_VERIFICATION_CHECKLIST.md is ticked or filed as a bug
+- **Who can take it:** Yash, or Garrett (vessels)
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Shrike entries); Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md
+
+### T-20261017-868c · open · test · vessels
+- **Task:** Shrike in a 2-player match: docking, nests, flora missiles and the lance agree on both machines
+- **Done when:** Two peers see the same docks, nests and missiles; scored hits land once
+- **Who can take it:** Yash (multiplayer)
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md section 5
+
+### T-20261017-114a · open · decision · vessels
+- **Task:** Shrike level-5 upgrades for Charge, Mass and Time (Space is Void Pierce)
+- **Done when:** Three upgrades named in the Shrike ability map
+- **Who can take it:** Garrett
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md section 7
+
+### T-20261017-d598 · open · dev · vessels
+- **Task:** Bring the Shrike Studio artifact up to the Unity redesign (modes on RT, LT eyepiece, crystal flora, Mass detach) and give it one minigame per element
+- **Done when:** shrike.html plays the shipped controls and has Time race, Space destruction, Mass creation, Charge dogfight
+- **Who can take it:** Garrett (vessels), any session
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Docs/Studios/SHRIKE.md section 0 and 6; .claude/skills/labmaker/SKILL.md section 1.5
+
 ### T-20261016-92b0 · done · decision · Regatta AI
 - **Task:** cece/relaxed-hopper-r62hbd carries a second, older RampBoostAIPolicySO for the Rhino than bleeding-edge's - pick one before it merges (learn_drives_from_flights.py writes only fields both share, so either works)
 - **Done when:** The choice is recorded in Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md and the other branch is reconciled
@@ -580,3 +650,157 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Caleb, Yash (offered), Andrew
 - **Added:** 2026-10-17 by Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Party: B31-B33 fixed); Docs/PartySystem/BUGS.md B31-B33
+
+### T-20261017-1154 · open · test · QA
+- **Task:** EditMode Run All on Ys-bleeding-edge (or a bleeding-edge that contains it): the 23 remaining DT-003 failures were fixed offline 2026-10-17 without an editor
+- **Done when:** Window > General > Test Runner > EditMode > Run All is fully green (or only CrystalHullFusionBakeTests.ShippedBakes_AreCurrent red, with its message pasted into DT-003)
+- **Who can take it:** Yash (offered), Caleb or Andrew (QA)
+- **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/QA/DEV_TASKS.md DT-003
+
+### T-20261018-9fcf · open · test · vessels
+- **Task:** Editor-verify the Angler (vessel 17): run the seven Angler entries in Docs/UNITY_VERIFICATION_CHECKLIST.md (rounds 1-7) in Menu_Main freestyle - lure/tame on A, paint RT, erase/lock LT, dash B, squad X, recall Y, the lit queue, the level camera
+- **Done when:** Every Angler checklist entry passes with a clean console, or each failure is filed as a dev task
+- **Who can take it:** Yash (editor tests), Garrett (vessel owner)
+- **Added:** 2026-10-18 by a Claude session (`cece/zealous-feynman-po8k8d`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md
+
+### T-20261018-bf51 · open · decision · vessels
+- **Task:** Angler design slots still open: Charge and Time level-5 upgrades, and element scaling for Charge, Mass and Space (only Time scales today)
+- **Done when:** Garrett names the four, or says they stay open
+- **Who can take it:** Garrett
+- **Added:** 2026-10-18 by a Claude session (`cece/zealous-feynman-po8k8d`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md section 7
+
+### T-20261017-3d13 · open · test · performance
+- **Task:** Re-capture Menu_Main with the Stoat for 10 minutes in a Release editor run, with the Third Eye CLOSED (it is a second camera and taints the frame time). The vessel-registry fix should keep frames flat; the diag now names each Driver.LateUpdate and the BlackHole.* rows.
+- **Done when:** A bugledger/yskha capture from after this fix shows no slide from minute 1 to minute 10, and its diag has the BlackHoleRegistry.LateUpdate row
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md §2 (10-17 Stoat slowdown); Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-17 Stoat entry
+
+### T-20261017-b227 · open · test · Vessel Studio
+- **Task:** Playtest the ten concept vessels in the Vessel Studio artifact (hub row 'New vessels - the concept fleet'): fly each on phone and PC, watch its AI, and Record Keep / Drop with a line of why on each page's Decisions tab; then pick five, then three (Docs/Studios/CONCEPT_FLEET.md section 1).
+- **Done when:** Every one of the ten pages has a Keep or Drop decision in the shared log and the owner has named the five and the three.
+- **Who can take it:** Yash (asked for them; offered playtests), Garrett (product call on the three)
+- **Added:** 2026-10-17 by Claude (concept fleet session) (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md; https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa
+
+### T-20261017-3244 · open · dev · Vessel Studio
+- **Task:** Give the picked concept vessels a clean AI difficulty ladder (Hard fastest on every course, D24): the shared belief mistakes barely cost these fast movers and the lab-only press delay punishes tempo mechanics (the Octopus's Easy DNFs; the Albatross's Easy loses the updraft). One AI round per kept vessel, scorecard before and after.
+- **Done when:** Each kept vessel's Scorecard shows Hard < Medium < Easy on all four courses, recorded in CONCEPT_FLEET.md section 4.
+- **Who can take it:** Yash (offered: follow-up fixes), any Claude session with /vessel-studio
+- **Added:** 2026-10-17 by Claude (concept fleet session) (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 4; studio-kinds.js ai() per kind
+
+### T-20261017-b999 · open · decision · Vessel Studio
+- **Task:** Decide the concept fleet's three open design questions before any port: the Albatross's own gravity (a vessel that falls in a HyperSea without gravity), the Remora's compounding slipstream (two drafters ratchet each other to the cap) and whether a tow may take petals, and the Dragonfly / Marlin second input strategy (left stick = translation, RT = throttle).
+- **Done when:** A decision per question recorded in the artifact's decision log and CONCEPT_FLEET.md section 6.
+- **Who can take it:** Garrett (vessels, product); Yash
+- **Added:** 2026-10-17 by Claude (concept fleet session) (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 6
+
+### T-20261017-479c · open · test · Refactor
+- **Task:** Settle whether Unity 6 binds a MonoBehaviour whose class name differs from its file name: open Assets/_Prefabs/Spacevessels/Squirrel.prefab (any vessel) and check the R_ShipElementStatsHandler component (file R_VesselElementStatsHandler.cs) shows its script and serialized values, not 'Missing script'. VesselStatus GetOrAdd()s it at runtime, which would hide a failed binding. 19 such mismatches exist, 13 of them on assets (Docs/REFACTOR_BACKLOG.md section 0, batch 2, M5).
+- **Done when:** Result (binds / missing) recorded in Docs/REFACTOR_BACKLOG.md M5; if missing, a dev task to rename file or class is added.
+- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-17 by Yash (session) (`Ys-bleeding-edge`)
+- **See:** Docs/REFACTOR_BACKLOG.md section 0 batch 2
+
+### T-20261017-7915 · open · dev · Stoat
+- **Task:** The Stoat's AI is paused while you configure the Stoat (Yash, 2026-10-17). When your configuration lands, say so here; the next AI session re-checks the autopilot distances against Regatta's race line, flies it and learns it (REGATTA_AI_ROADMAP.md §3.1 has where the AI stands)
+- **Done when:** Garrett notes his Stoat configuration is done, and the AI follow-up is picked up
+- **Who can take it:** Garrett (Stoat configuration)
+- **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md §3.1
+
+### T-20261017-0b70 · open · decision · Butterfly
+- **Task:** Butterfly AI audit (BUTTERFLY.md §8a), two calls in your modes: (1) the AI cruises at 0.6 throttle (~45 u/s vs a person's 67) in Dustup, Sirocco and Tapestry - give those modes a full-throttle floor like Regatta and Waystation? (2) in Dustup and Sirocco the AI never fetches crystals, so its Space and Charge stay at level 0 while people level up - add Tapestry's crystal detour?
+- **Done when:** Garrett decides both; the chosen change is made
+- **Who can take it:** Garrett (Butterfly modes owner); Yash can make the change
+- **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md §8a
+
+### T-20261017-5cf2 · open · test · Butterfly
+- **Task:** Play Waystation with AI Butterflies (Third Eye on one): each fold lands just short of a ring and threads it; the AI flies ~67 u/s; your own hull gains no AIPilot component; run WaystationFoldTests
+- **Done when:** tests pass and the folds land in the rings
+- **Who can take it:** Yash (has offered to take tasks)
+- **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The AI Butterfly's fold lands in the ring)
+
+### T-20261017-3c5d · open · dev · Vessel Studio / concept fleet
+- **Task:** Round 2 of the concept fleet: one vessel per session in the owner's order (CONCEPT_FLEET.md section 8); the Gibbon's session merges the Tether prototype (section 8.1)
+- **Done when:** each picked vessel has a studio round the owner recorded Keep on, and a kept vessel is ported with /artifact-to-unity
+- **Who can take it:** Yash (sessions), Garrett (element sign-off)
+- **Added:** 2026-10-17 by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 8
+
+### T-20261017-e64b · open · dev · Vessel / Tether
+- **Task:** Bring cece/loving-feynman-hlgf18 (the Tether prototype) onto Ys-bleeding-edge: Tether = 14 collides with Thresher = 14; take the next free id (re-check before claiming: 17 went to the Angler and the Kite's branch claims 19, so 18 as of 2026-10-18), rewrite TETHER.md section 12, run check_network_prefab_hashes.py and the edit-mode suite
+- **Done when:** the Tether flies from Toy Box > Vessel Changer on Ys-bleeding-edge with its own id and the suite green
+- **Who can take it:** Yash or the Gibbon session; Garrett merged the branch's family
+- **Added:** 2026-10-17 by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/TETHER.md on that branch; CONCEPT_FLEET.md section 8.1
+
+### T-20261017-a640 · open · dev · Vessel Studio / Gibbon
+- **Task:** Gibbon (+ the Tether; the notes' "Given" is the Gibbon): two modes from cece/loving-feynman-hlgf18: time mode = the branch's auto-tethers, space mode = two sticks + two triggers (one pair per tether), slicing by what the tethers cut, movement by 0 / 1 / 2 tethers attached; the time <-> space transition first
+- **Done when:** Garrett flies the transition and calls it natural
+- **Who can take it:** Yash (session 1 of round 2)
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-929b · open · dev · Vessel Studio / Flea
+- **Task:** Give Garrett a branch with the Flea; if good, bring it into the game as a playable vessel, then a small racing game, then push to bleeding-edge
+- **Done when:** Garrett has flown it from a branch; the Unity Flea flies from the Vessel Changer
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-ba54 · open · dev · Vessel Studio / Albatross
+- **Task:** Up/down from the nearest point on the nucleus (cytoplasm and nucleus), small strong thermals with an explosion, a membrane-crossing consequence that grows faster than linear with time avoided; qualitative before numbers
+- **Done when:** Garrett flies it and the frame reads as diving toward / falling away from the nucleus
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-3cc7 · open · dev · Vessel Studio / Dragonfly
+- **Task:** Control swap (LT held: look stick becomes roll / elevation, no A/B), long-cooldown stored boosts along the current motion, and a precision kit: grasping joust that steals an element, and geometry mines (triangle / square / kite / pentagon / rhombus)
+- **Done when:** Garrett flies the swap and one mine shape
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-1bc9 · open · dev · Vessel Studio / Marlin
+- **Task:** Pure drifter: never gets grip, less drift assist, the kit built around drifting; tune for fun
+- **Done when:** Garrett flies it and still wants the character
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-b900 · open · dev · Code review
+- **Task:** Review Joseph Zhou's pull request when it lands (Unity crashed while he prepared it); approval is required before merge
+- **Done when:** the PR is approved or sent back with notes
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-0406 · open · decision · Amoebius
+- **Task:** Decide PR #1045 (Prisma Unity Relay transport, 9 Oct, 1 commit, 817 behind bleeding-edge). bleeding-edge already has its core, built differently: Unity Relay protocol (Wire/Relay), UGS sign-in with per-profile session token (Wire/Ugs), START ONLINE through UGS Lobby + Relay (Shombith, #1089), one NetStack. #1045 is built on the shared-folder sessions and LAN fallback Shombith removed on 14 Oct. Only three things in it are missing on bleeding-edge: automatic region pick by UGS QoS (bleeding-edge only pins COSMIC_SHORE_RELAY_REGION), DTLS 1.2 via BouncyCastle (bleeding-edge uses plain UDP on purpose; a new dependency), and the 9 Oct LIVE run against real UGS Relay (2/2 passed, ~60 ms RTT, spawns/RPCs/NetVars synced; bleeding-edge's docs say nothing has talked to UGS's relay yet). Proposed plan: merge bleeding-edge into prisma-relay-transport taking Shombith's side everywhere, drop CosmicShore.Online / LAN fallback / --relay-* flags / RELAY.md, then port only the QoS region pick into Wire/Relay and record the live results in Port/docs/MULTIPLAYER.md; leave DTLS out. Or close #1045 as superseded.
+- **Done when:** Yash and Shombith choose port-the-gaps or close; #1045 is then either a small PR on Shombith's design (QoS region pick + live evidence, engine tests and unity_isolation_check green) or closed with a comment naming what bleeding-edge replaced it with.
+- **Who can take it:** Yash (author), Shombith (owns Amoebius networking)
+- **Added:** 2026-10-17 by Yash's session (work report) (`Ys-bleeding-edge`)
+- **See:** PR #1045 (prisma-relay-transport); Port/docs/MULTIPLAYER.md 6.7-6.10; Docs/TOOLING_DECISIONS.md 3
+
+### T-20261017-d3b8 · open · decision · Tools
+- **Task:** Decide PR #1030 (branch hygiene, 8 Oct, 9 commits, 1,105 behind bleeding-edge). None of it is on bleeding-edge and nobody else has built it: the Branch cleanup workflow (.github/workflows/branch-cleanup.yml + Tools/BranchJanitor/branch_cleanup.py, report / dry-run / archive / delete, tags archive/<branch> before deleting), policy.json, the browser Branch Janitor page, Docs/BranchArchive/ (one evidence doc per inactive branch) and a new Amoebius launcher BRANCHES page. The archive lists are stale (505 branches then, 545 on 2026-10-17), and a new launcher page is the growth Docs/TOOLING_DECISIONS.md asks to hold until the Amoebius decision. Options: (a) merge bleeding-edge in, keep the workflow, script, policy and docs, drop the BRANCHES page, regenerate the archive for today's branches; (b) keep it as is; (c) close it.
+- **Done when:** Yash picks a, b or c; for (a) the PR is refreshed, the archive regenerated, and the workflow's report mode run once on the real repo.
+- **Who can take it:** Yash (author); the core four for the launcher page
+- **Added:** 2026-10-17 by Yash's session (work report) (`Ys-bleeding-edge`)
+- **See:** PR #1030 (claude/trusting-curie-bn6rrn); Docs/TOOLING_DECISIONS.md 3
+
+### T-20261018-5d70 · open · decision · Brittle Star
+- **Task:** The Brittle Star's base trail lays blocks HALF as wide as its Creation corner trails (0.5 x 1 x 6 against 1 x 1 x 6): the fleet spawner halves BaseScale.x for a single trail, the corners do not. Pick: halve the corners' x, or author the base block as (2, 1, 6).
+- **Done when:** Garrett picks one and the corners and base trail lay the same block (BRITTLE_STAR.md R3)
+- **Who can take it:** Garrett
+- **Added:** 2026-10-18 by a Claude session (`cece/gallant-bell-eq7kul`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md R3

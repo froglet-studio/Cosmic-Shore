@@ -102,6 +102,18 @@ namespace CosmicShore.Gameplay
         Color _clockFromDark;
         Vector3 _clockFromSpread;
 
+        /// <summary>
+        /// The colours on screen NOW: an in-flight clock transition's analytic current, else the settled target.
+        /// False before any material was bound (nothing authored to report).
+        /// </summary>
+        internal bool TryGetDisplayedColors(out Color bright, out Color dark)
+        {
+            if (TryGetClockColorCurrent(out bright, out dark, out _)) return true;
+            bright = TargetBrightColor;
+            dark = TargetDarkColor;
+            return bright != default || dark != default;
+        }
+
         /// <summary>Analytic displayed colors of an in-flight clock transition —
         /// the interruption start-state and the exotic-handoff pin, computed on
         /// demand (never tracked per frame).</summary>
@@ -126,7 +138,14 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        public void UpdateMaterial(Material transparentMaterial, Material opaqueMaterial, float duration = 0.8f, Action onComplete = null)
+        /// <summary>
+        /// The GRADE: how long a colour transition runs when the caller names none — a steal, a team change, a
+        /// state change. A steal close to the viewer SHEDS instead (PrismInteractionLod), over this same length,
+        /// so squinted at the two are one transition.
+        /// </summary>
+        public const float DefaultTransitionSeconds = 0.8f;
+
+        public void UpdateMaterial(Material transparentMaterial, Material opaqueMaterial, float duration = DefaultTransitionSeconds, Action onComplete = null)
         {
             if (!enabled || MeshRenderer == null) return;
 

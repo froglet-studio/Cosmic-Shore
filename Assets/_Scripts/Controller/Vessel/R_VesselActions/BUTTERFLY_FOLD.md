@@ -136,8 +136,10 @@ far it may reach is a vessel in two places.
 - **Unverified** — nothing in this document has been run in the editor.
 - The ghost borrows the hull's material (opaque). A translucent domain-tinted material is intended.
 - `ghostBloomSeconds` and the wither/bloom pair are unplayed guesses.
-- An AI never folds: `AIPilot` produces no trigger input and this ability is a placement decision
-  with no obvious autopilot policy. Stated rather than stubbed.
+- An AI folds only in **Waystation** (`WaystationController`'s fold drive, `WAYSTATION.md`: aimed to land inside the
+  ring, released short of its plane). Everywhere else an AI never folds: `AIPilot` produces no trigger input, and
+  outside a ring race the fold is a placement decision with no obvious autopilot policy. (This line said "an AI never
+  folds" until 2026-10-17.)
 
 ## The camera goes with the placement
 

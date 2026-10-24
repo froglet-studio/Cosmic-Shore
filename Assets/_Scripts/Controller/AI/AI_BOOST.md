@@ -103,6 +103,14 @@ drive flies its base asset. Renaming a base asset orphans its variants.
   fires at a turn; the policy moves the FULL-meter spend onto straights, and since 2026-10-17 holds that
   corner discharge to its peak too.
 
+## What the drivers judge: the objective, not the steering point (2026-10-17)
+
+`AIBoostContext.ToTarget` is the offset to the mode's OBJECTIVE (`AIPilot.ObjectivePosition`: a gate race's ring), not
+to the point the pilot steers for, whenever the mode reports one and the pilot is not flying a difficulty mistake.
+`NextLeg` is measured from that objective too. Reason: a mode that steers along a race line (Regatta, `REGATTA.md`
+§6.2) keeps the steering point one look-ahead ahead, so `RunwaySeconds` never reached any driver's
+`engageRunwaySeconds` and no speed verb fired. A mode that reports nothing is unchanged.
+
 ## Ramp (the Rhino) — `RampBoostAIPolicySO`, 2026-10-14, rebuilt 2026-10-17
 
 Three states, ticked from `AIPilot.TickBoostPolicy`:

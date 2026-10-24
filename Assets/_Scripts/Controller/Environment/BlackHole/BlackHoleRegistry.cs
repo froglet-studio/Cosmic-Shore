@@ -433,6 +433,15 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Drives the three systems for this frame. Called once per frame by the driver.</summary>
+        // One marker per sub-system of the tick (2026-10-17: a Stoat session showed ~100 ms spikes every half second
+        // inside this LateUpdate and nothing below it was named).
+        static readonly Unity.Profiling.ProfilerMarker s_pairs = new("BlackHole.Pairs");
+        static readonly Unity.Profiling.ProfilerMarker s_field = new("BlackHole.GravityField");
+        static readonly Unity.Profiling.ProfilerMarker s_pull = new("BlackHole.VesselPull");
+        static readonly Unity.Profiling.ProfilerMarker s_waves = new("BlackHole.Waves");
+        static readonly Unity.Profiling.ProfilerMarker s_warp = new("BlackHole.Warp");
+        static readonly Unity.Profiling.ProfilerMarker s_lens = new("BlackHole.LensCameras");
+
         static void Tick()
         {
             Prune();
@@ -441,17 +450,17 @@ namespace CosmicShore.Gameplay
 
             // Pairs first: their holes' positions for this frame, and any annihilation, before the
             // field reads the wells.
-            TickPairs(dt);
+            using (s_pairs.Auto()) TickPairs(dt);
             if (_pairs.Count > 0) Prune();
 
-            BlackHoleGravityField.Tick(_holes, config, dt);
-            BlackHoleVesselPull.Tick(_holes, config, dt);
-            BlackHoleWaves.Tick(config);
-            BlackHoleWarp.Flush(_warpHoles, config);
+            using (s_field.Auto()) BlackHoleGravityField.Tick(_holes, config, dt);
+            using (s_pull.Auto()) BlackHoleVesselPull.Tick(_holes, config, dt);
+            using (s_waves.Auto()) BlackHoleWaves.Tick(config);
+            using (s_warp.Auto()) BlackHoleWarp.Flush(_warpHoles, config);
             // The lens reads the camera's depth texture; keep it on for EVERY enabled game camera while any lens
             // is live (a vessel spawn, the death or end camera switch cameras). Each camera's lens pass reads the
             // holes itself (BlackHoleLens.ScreenWells).
-            BlackHoleLens.CameraSupport.Maintain();
+            using (s_lens.Auto()) BlackHoleLens.CameraSupport.Maintain();
 
             if (CSDebug.IsVerbose(CSLogChannel.BlackHole) && Time.unscaledTime >= _nextReport)
             {
@@ -474,7 +483,8 @@ namespace CosmicShore.Gameplay
                         sb.Append($"{(h.IsSource ? "R" : "A")}#{h.Id} S{h.Strength:F1} rs {h.HorizonRadius:F1} inf {h.InfluenceRadius:F0} w {h.WarpWeight:F2} at {h.transform.position}; ");
                     }
                     sb.Append($"pairs {_pairs.Count}; bodies {BlackHoleGravityField.BodyCount} (captured {BlackHoleGravityField.CapturedThisSecond}/s, " +
-                              $"total {BlackHoleGravityField.CapturedTotal}, through the throat {BlackHoleGravityField.ThroatTransitsTotal}), " +
+                              $"total {BlackHoleGravityField.CapturedTotal}, through the throat {BlackHoleGravityField.ThroatTransitsTotal}, " +
+                              $"collided {BlackHoleGravityField.CollisionsTotal}), " +
                               $"stretching holes {BlackHoleWarp.LiveSlotCount}, vessels pulled {BlackHoleVesselPull.PulledVesselCount}");
                     CSDebug.LogVerbose(CSLogChannel.BlackHole, sb.ToString());
                 }
@@ -528,7 +538,14 @@ namespace CosmicShore.Gameplay
         [DefaultExecutionOrder(29500)]
         sealed class Driver : MonoBehaviour
         {
-            void LateUpdate() => Tick();
+            // Named so the Profiler can tell the ten nested "Driver" classes apart (they all read as
+            // "::Driver.LateUpdate"; the 2026-10-17 menu capture had an 88 ms spike there and no way to say whose).
+            static readonly Unity.Profiling.ProfilerMarker s_lateUpdate = new("BlackHoleRegistry.LateUpdate");
+
+            void LateUpdate()
+            {
+                using (s_lateUpdate.Auto()) Tick();
+            }
 
             void OnDisable()
             {

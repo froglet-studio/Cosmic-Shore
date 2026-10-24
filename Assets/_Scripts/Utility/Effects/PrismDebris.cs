@@ -284,6 +284,28 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// The explosion's FLIGHT for an impact: the debris velocity after the tier's detonation gain
+        /// and the configured (or overridden) speed clamp, and the speed the face spin reads. The one
+        /// place it is computed, so anything that must leave like the explosion — a collision burst
+        /// (<c>PrismCollisionBurst</c>, Docs/PRISM_ANIMATION.md §4.12) — leaves EXACTLY like it.
+        /// </summary>
+        internal static Vector3 ResolveExplosionFlight(Vector3 velocity, float speedLimitOverride, PrismKind kind,
+            out float speed)
+        {
+            if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
+                velocity = Vector3.up * s_minSpeed;
+
+            float gain = PrismExplosion.DetonationGain(kind, s_dangerDetonation);
+            velocity *= gain;
+
+            bool hasOverride = speedLimitOverride > 0f;
+            float ceiling = (hasOverride ? speedLimitOverride : s_maxSpeed) * gain;
+            velocity = GeometryUtils.ClampMagnitude(velocity, s_minSpeed * gain, ceiling, out speed);
+            if (hasOverride) speed = velocity.magnitude;
+            return velocity;
+        }
+
+        /// <summary>
         /// Queues one death's debris for this frame's batch. Velocity semantics are
         /// EXACTLY PrismExplosion.TriggerExplosion's: apply the tier detonation gain, clamp
         /// to the (likewise scaled) [min, ceiling] where a positive
@@ -302,16 +324,7 @@ namespace CosmicShore.Utility
             if (!s_configured || !PrismRenderService.Enabled || s_quitting) return false;
             if (Time.unscaledTime < s_suspendedUntil) return false;
 
-            if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
-                velocity = Vector3.up * s_minSpeed;
-
-            float gain = PrismExplosion.DetonationGain(kind, s_dangerDetonation);
-            velocity *= gain;
-
-            bool hasOverride = speedLimitOverride > 0f;
-            float ceiling = (hasOverride ? speedLimitOverride : s_maxSpeed) * gain;
-            velocity = GeometryUtils.ClampMagnitude(velocity, s_minSpeed * gain, ceiling, out float speed);
-            if (hasOverride) speed = velocity.magnitude;
+            velocity = ResolveExplosionFlight(velocity, speedLimitOverride, kind, out float speed);
 
             // Full length, always: on the entity path a live effect costs zero
             // per-frame CPU, so the retired pooled path's pressure model (which

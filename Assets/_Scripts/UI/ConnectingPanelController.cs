@@ -378,6 +378,11 @@ namespace CosmicShore.UI
         void SetVisible(bool visible)
         {
             _showing = visible;
+            // A load cancelled because its scene unloaded reaches Hide() from ShowAsync's finally
+            // AFTER this panel was destroyed. There is no canvas left to fade, and touching it threw
+            // a MissingReferenceException before Hide could clear the static lay-budget overrides,
+            // so the next load ran at the watched tempo.
+            if (!this) return;
             EnsureCanvasGroup();
             canvasGroup.alpha = visible ? 1f : 0f;
             canvasGroup.blocksRaycasts = visible;

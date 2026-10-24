@@ -191,6 +191,25 @@ Training runs in three stages, the same for every hull:
 
 ### 3.1 Stoat, the first one
 
+> **Status, 2026-10-17: ON HOLD for AI work. Garrett is configuring the Stoat itself** (Yash: "Stoat still needs
+> configuring, getting done by Garrett"). Do not tune its autopilot numbers or build its drive until his configuration
+> lands; read his branch first (`who_works_where.py query Assets/_SO_Assets/VesselActions/Stoat`). Where the Stoat's
+> AI stands today, all on `Ys-bleeding-edge`, none editor-verified:
+> - **On the Regatta card** (Time 10 at every intensity, 48.5 s model time at I1).
+> - **Its autopilot** is the three executors' own: the field pair (Mass mode, path-watching), the catch sling (Time
+>   mode) and the mode switch at 70 degrees off the nose. All three steer at `AIPilot.TargetPosition`.
+> - **Its race line** (`Resources/RaceLines/Stoat_Regatta`: 0.55 out, 10 u room, risk 0.6).
+> - **The range fix** (`e4fc4d266`): on the line the field and sling autopilots take the bearing from the steering
+>   point and the RANGE from the ring (`AIPilot.ObjectivePosition`), or they would never lay a pair (`StoatDipoleTests`).
+> - **Per-mode tuning** reads `<config>_Regatta` copies through `AIModeTuning` (none written yet;
+>   `learn_drives_from_flights.py` measures the Stoat from flights).
+> - **Not done, by design:** a speed model like the Rhino's, Dolphin's and Manta's (the pair's physics is too rich for a
+>   rough model to be trusted), and any retune. Its `StoatAIBoostPolicy` is a Squirrel skim-ring copy that builds no
+>   driver: harmless, and Garrett's to keep or delete.
+>
+> When Garrett's configuration lands: re-check the three autopilot distances (`autopilotLetGoNear`,
+> `autopilotMinDistance`, `aiSlingMinDistance`) against the race line's look-ahead, fly it in Regatta, and learn it.
+
 The user's brief: **better speed control and manoeuvring with the black-hole / white-hole pair.**
 
 1. **(Superseded 2026-10-16: the Regatta AIs are tested in the editor only.) Studio first** ([Vessel Studio](https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa), Stoat page). Read

@@ -41,8 +41,16 @@ namespace CosmicShore.Gameplay
             readonly List<VesselStatus> _gone = new();
             float _nextRefresh;
 
+            // Named so the Profiler can tell the ten nested "Driver" classes apart (see PrismLit's).
+            static readonly Unity.Profiling.ProfilerMarker s_lateUpdate = new("WarpFieldVesselScaler.LateUpdate");
+
             // After the vessels moved (Update), before anything renders them.
             void LateUpdate()
+            {
+                using (s_lateUpdate.Auto()) Run();
+            }
+
+            void Run()
             {
                 if (!WarpFieldRuntime.IsActive)
                 {
@@ -55,7 +63,7 @@ namespace CosmicShore.Gameplay
                 {
                     _nextRefresh = Time.unscaledTime + RefreshSeconds;
                     _vessels.Clear();
-                    _vessels.AddRange(FindObjectsByType<VesselStatus>(FindObjectsSortMode.None)); // perframe-ok: throttled to RefreshSeconds
+                    _vessels.AddRange(VesselStatus.Live);
                     Prune();
                 }
 

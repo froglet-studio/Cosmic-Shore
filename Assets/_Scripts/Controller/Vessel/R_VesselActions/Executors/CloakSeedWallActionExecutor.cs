@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading;
 using CosmicShore.Gameplay;
 using Cysharp.Threading.Tasks;
@@ -492,11 +491,7 @@ namespace CosmicShore.Gameplay
 
             CloakTrail(_controller.Trail);
 
-            // Optional second trail (like your old code)
-            var trail2Field = typeof(VesselPrismController)
-                .GetField("Trail2", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (trail2Field?.GetValue(_controller) is Trail t2)
-                CloakTrail(t2);
+            CloakTrail(_controller.SecondaryTrail);
         }
 
 

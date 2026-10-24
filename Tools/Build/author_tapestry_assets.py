@@ -35,7 +35,7 @@ SCRIPT_PATHS = {
     "TapestrySettingsSO":      "Assets/_Scripts/Controller/Arcade/Tapestry/TapestrySettingsSO.cs",
     "TapestryScoringRuleSO":   "Assets/_Scripts/Controller/Arcade/Tapestry/TapestryScoringRuleSO.cs",
     "TapestryTimeTurnMonitor": "Assets/_Scripts/Controller/Arcade/TurnMonitors/TapestryTimeTurnMonitor.cs",
-    "ButterflyAutopilotModeDriver": "Assets/_Scripts/Controller/Arcade/ButterflyGames/ButterflyAutopilotModeDriver.cs",
+    "ButterflyAutopilotModeDriver": "Assets/_Scripts/Controller/AI/Butterfly/ButterflyAutopilotModeDriver.cs",
 }
 G_SCRIPT = {k: guid(f"script/{k}") for k in SCRIPT_PATHS}
 G_ASSET = {
@@ -99,7 +99,7 @@ CARD_REL = "Assets/_SO_Assets/Games/ArcadeGameTapestry.asset"
 for k, p in SCRIPT_PATHS.items():
     g.script_meta(p, G_SCRIPT[k])
 g.folder_meta("Assets/_Scripts/Controller/Arcade/Tapestry")
-g.folder_meta("Assets/_Scripts/Controller/Arcade/ButterflyGames")
+g.folder_meta("Assets/_Scripts/Controller/AI/Butterfly")
 g.text_meta("Assets/_Scripts/Controller/Arcade/TAPESTRY.md")
 
 # ── 2. Scoring rule: metric 12 = VolumeRemaining, points mode ────────────────
@@ -239,5 +239,5 @@ print(f"wake model: key {KEY_VOLUME:.1f} vol x {KEYS_PER_SECOND:.2f}/s = {PAINT_
 g.finish(errors, referenced=EXISTING,
          minted=list(G_SCRIPT.values()) + list(G_ASSET.values())
                 + [guid("folder/Assets/_Scripts/Controller/Arcade/Tapestry"),
-                   guid("folder/Assets/_Scripts/Controller/Arcade/ButterflyGames"),
+                   guid("folder/Assets/_Scripts/Controller/AI/Butterfly"),
                    guid("text/Assets/_Scripts/Controller/Arcade/TAPESTRY.md")])
