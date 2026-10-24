@@ -179,54 +179,52 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Jack_LaysItsDiagonalOnTheLineBetweenTheFish_ThreeSquareArms()
+        public void Net_OpensWithTheSticksApart_AndReadsBackFromTheFish()
         {
-            // Garrett, 2026-10-23: "spin it about the (1,1,1) axis and place that axis ... the same axis that draws a line
-            // between the two fish"
-            var axis = new Vector3(3f, -1f, 2f).normalized;
-            foreach (float spin in new[] { 0f, 37f, 200f })
-            {
-                var q = JacksMath.JackRotation(axis, Vector3.up, spin);
-                Assert.Less(Vector3.Distance(axis, q * JacksMath.JackDiagonal), Eps, $"spin {spin}");
-                var x = q * Vector3.right; var y = q * Vector3.up; var z = q * Vector3.forward;
-                Assert.AreEqual(0f, Vector3.Dot(x, y), Eps);
-                Assert.AreEqual(0f, Vector3.Dot(y, z), Eps);
-                Assert.AreEqual(0f, Vector3.Dot(z, x), Eps);
-                // every arm leans the same way off the axis (that is what (1,1,1) means)
-                Assert.AreEqual(1f / Mathf.Sqrt(3f), Vector3.Dot(x, axis), Eps);
-                Assert.AreEqual(1f / Mathf.Sqrt(3f), Vector3.Dot(y, axis), Eps);
-                Assert.AreEqual(1f / Mathf.Sqrt(3f), Vector3.Dot(z, axis), Eps);
-            }
+            // Garrett, 2026-10-24: "a net that opens wider with xdiff"
+            Assert.AreEqual(0f, JacksMath.NetOpenFromSticks(Vector2.zero, Vector2.zero), Eps);
+            Assert.AreEqual(1f, JacksMath.NetOpenFromSticks(Vector2.left, Vector2.right), Eps);
+            Assert.AreEqual(0f, JacksMath.NetOpenFromSticks(Vector2.right, Vector2.left), Eps);   // together: closed
+            Assert.AreEqual(0.5f, JacksMath.NetOpenFromSticks(new Vector2(-0.5f, 0f), new Vector2(0.5f, 0f)), Eps);
+            Assert.AreEqual(0f, JacksMath.NetOpenFromGap(28f, 28f, 128f), Eps);
+            Assert.AreEqual(0.5f, JacksMath.NetOpenFromGap(78f, 28f, 128f), Eps);
+            Assert.AreEqual(1f, JacksMath.NetOpenFromGap(500f, 28f, 128f), Eps);
         }
 
         [Test]
-        public void Jack_SpinsAboutTheDiagonal_AndATurnOfAThirdSwapsItsArms()
+        public void Net_HoldsWhatIsBetweenTheFishAndBehindTheMouth()
         {
-            var axis = Vector3.right;
-            var q0 = JacksMath.JackRotation(axis, Vector3.up, 0f);
-            var q1 = JacksMath.JackRotation(axis, Vector3.up, 90f);
-            // the spin is a turn about the axis, nothing else
-            var turn = q1 * Quaternion.Inverse(q0);
-            turn.ToAngleAxis(out float deg, out var about);
-            Assert.AreEqual(90f, deg, 0.05f);
-            Assert.Less(Vector3.Distance(axis, about), Eps);
-            // a third of a turn maps the jack onto itself: x goes where y was (or z), so it reads as one spinning toy
-            var q120 = JacksMath.JackRotation(axis, Vector3.up, 120f);
-            var x120 = q120 * Vector3.right;
-            Assert.IsTrue(Vector3.Distance(x120, q0 * Vector3.up) < Eps || Vector3.Distance(x120, q0 * Vector3.forward) < Eps);
-            // no flip at zero spin as the axis swings a little: the twist follows the up
-            var nudged = JacksMath.JackRotation(Quaternion.AngleAxis(2f, Vector3.up) * axis, Vector3.up, 0f);
-            Assert.Less(Quaternion.Angle(q0, nudged), 3f);
+            // the fish 40 apart across the hull's x, flying +z: the bag hangs back toward -z
+            var net = JacksMath.NetFrame.Between(new Vector3(-20f, 0f, 0f), new Vector3(20f, 0f, 0f), Vector3.forward,
+                                                Vector3.up, 20f, 24f);
+            Assert.Less(Vector3.Distance(net.Z, Vector3.forward), Eps);
+            Assert.IsTrue(net.Contains(new Vector3(0f, 0f, -10f), 0f, out float s, out float t, out float w));
+            Assert.AreEqual(0.5f, s, Eps);
+            Assert.AreEqual(0f, t, Eps);
+            Assert.AreEqual(10f / 24f, w, Eps);
+            Assert.IsFalse(net.Contains(new Vector3(0f, 0f, 5f), 0f, out _, out _, out _), "ahead of the mouth");
+            Assert.IsFalse(net.Contains(new Vector3(0f, 0f, -30f), 0f, out _, out _, out _), "past the bag");
+            Assert.IsFalse(net.Contains(new Vector3(30f, 0f, -1f), 0f, out _, out _, out _), "outside the fish");
+            Assert.IsFalse(net.Contains(new Vector3(0f, 15f, -5f), 0f, out _, out _, out _), "above the mouth");
+            // a point's (s, t, w) maps back to itself
+            var p = net.Point(0.3f, -0.4f, 0.6f);
+            Assert.IsTrue(net.Contains(p, 0.01f, out s, out t, out w));
+            Assert.AreEqual(0.3f, s, Eps);
+            Assert.AreEqual(-0.4f, t, Eps);
+            Assert.AreEqual(0.6f, w, Eps);
         }
 
         [Test]
-        public void JackArm_TipsReachTheFishPlanes_Clamped()
+        public void ChaseCamera_BacksOffUntilTheNetIsInView()
         {
-            // flight formation: the fish 2 x flightGap (14) apart
-            Assert.AreEqual(14f * Mathf.Sqrt(3f), JacksMath.JackArm(28f, 1f, 4f, 40f), Eps);
-            Assert.AreEqual(14f, JacksMath.JackArm(28f, 1f, 4f, 40f) / Mathf.Sqrt(3f), Eps);
-            Assert.AreEqual(4f, JacksMath.JackArm(0f, 1f, 4f, 40f), Eps);
-            Assert.AreEqual(40f, JacksMath.JackArm(900f, 1f, 4f, 40f), Eps);
+            float tan = Mathf.Tan(30f * Mathf.Deg2Rad);
+            // a fish 50 to the side: at fill 1 the camera sits 50 / tan30 back
+            Assert.AreEqual(50f / tan, JacksMath.ChaseDistanceFor(new Vector3(50f, 0f, 0f), tan, tan, 1f), 0.01f);
+            // the bag behind the hull needs the camera further back by as much
+            Assert.AreEqual(50f / tan + 20f, JacksMath.ChaseDistanceFor(new Vector3(50f, 0f, -20f), tan, tan, 1f), 0.01f);
+            // a smaller share of the view pushes it back
+            Assert.Greater(JacksMath.ChaseDistanceFor(new Vector3(50f, 0f, 0f), tan, tan, 0.5f),
+                           JacksMath.ChaseDistanceFor(new Vector3(50f, 0f, 0f), tan, tan, 1f));
         }
     }
 }

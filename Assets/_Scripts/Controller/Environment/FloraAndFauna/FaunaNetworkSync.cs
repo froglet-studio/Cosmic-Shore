@@ -100,6 +100,10 @@ namespace CosmicShore.Gameplay
         // each (PackLeashMark), 0 = wild. A NetworkVariable so a peer that joins mid-herd sees the marked creatures marked.
         readonly NetworkVariable<uint> _netLeashMark = new(0);
 
+        // A STOLEN creature's domain (Fauna.StealInto, the Jacks' net; Garrett, 2026-10-24): 0 = still the one it was born
+        // with (the identity's), else the domain it was stolen into. Server-write, so a late joiner sees it stolen.
+        readonly NetworkVariable<byte> _netStolenDomain = new(0);
+
         bool _appliedReplicatedDeath;
 
         void Awake()
@@ -376,6 +380,7 @@ namespace CosmicShore.Gameplay
         {
             _netLifeState.OnValueChanged += OnLifeStateChanged;
             _netLeashMark.OnValueChanged += OnLeashMarkChanged;
+            _netStolenDomain.OnValueChanged += OnStolenDomainChanged;
 
             // Server: the spawner already ran the full Initialize + AssignLineage before Spawn -
             // nothing to do. Clients: puppet-ize BEFORE Initialize so the sim halves (goal
@@ -395,6 +400,7 @@ namespace CosmicShore.Gameplay
                                           ResolvePaletteConfig(host, identity),
                                           (Element)identity.Element);
             OnLeashMarkChanged(0, _netLeashMark.Value);
+            OnStolenDomainChanged(0, _netStolenDomain.Value);
 
             // Joined mid-death: run the same local death path now (crystal + wither) so the husk
             // withers instead of popping out at the server's despawn.
@@ -406,6 +412,36 @@ namespace CosmicShore.Gameplay
         {
             _netLifeState.OnValueChanged -= OnLifeStateChanged;
             _netLeashMark.OnValueChanged -= OnLeashMarkChanged;
+            _netStolenDomain.OnValueChanged -= OnStolenDomainChanged;
+        }
+
+        /// <summary>Server: the creature was stolen into <paramref name="domain"/> (<see cref="Fauna.StealInto"/>); every
+        /// client's copy takes the new domain, body prisms and all. A no-op off the server and when never spawned.</summary>
+        public void PublishStolenDomain(Domains domain)
+        {
+            if (!IsSpawned || !IsServer) return;
+            if (_netStolenDomain.Value != (byte)domain) _netStolenDomain.Value = (byte)domain;
+        }
+
+        void OnStolenDomainChanged(byte _, byte next)
+        {
+            if (IsServer || !fauna || next == 0) return;
+            fauna.ApplyStolenDomain((Domains)next);
+        }
+
+        /// <summary>Server: the creature's body prisms were shielded (<see cref="Fauna.ShieldBody"/>); every client's copy
+        /// shields its own (prism shield state is not replicated, each peer applies it). A no-op off the server.</summary>
+        public void PublishShieldBody()
+        {
+            if (!IsSpawned || !IsServer) return;
+            ShieldBody_ClientRpc();
+        }
+
+        [ClientRpc]
+        void ShieldBody_ClientRpc()
+        {
+            if (IsServer || !fauna) return;
+            fauna.ApplyShieldBody();
         }
 
         /// <summary>Server: publish the creature's leash mark (<see cref="Fauna.ApplyLeashMark"/>); a no-op off the server

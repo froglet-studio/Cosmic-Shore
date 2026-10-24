@@ -223,40 +223,85 @@ namespace CosmicShore.Gameplay
         /// <summary>The board's ease toward the hull's frame this frame (1 - e^(-rate dt)): 0 holds it still.</summary>
         public static float Ease(float rate, float dt) => rate > 0f ? 1f - Mathf.Exp(-rate * dt) : 0f;
 
-        // ---- the jack between the fish (Garrett, 2026-10-23: "instead of a sword (1 axis) make it all three orthogonal
-        // axes (like a jack in the game of jacks). then if it was a coordinate system, spin it about the (1,1,1) axis and
-        // place that axis dynamically so it the same axis that draws a line between the two fish") ----
+        // ---- the net between the fish (Garrett, 2026-10-24: "the spinning jack in the middle doesn't work. lets make it a
+        // net that opens wider with xdiff") ----
 
-        /// <summary>The jack's (1,1,1) diagonal in its own frame: the axis it spins about, laid on the line between the fish.</summary>
-        public static readonly Vector3 JackDiagonal = new Vector3(1f, 1f, 1f).normalized;
+        /// <summary>How far the net is open (0..1) from the two flying sticks: apart opens it (the fleet's XDiff), together
+        /// or at rest leaves it closed.</summary>
+        public static float NetOpenFromSticks(Vector2 left, Vector2 right) => Mathf.Clamp01(0.5f * (right.x - left.x));
 
-        // a unit vector square to the diagonal in the jack's frame: the twist reference the hull's up is matched to
-        static readonly Vector3 JackDiagonalUp = new Vector3(-1f, -1f, 2f).normalized;
+        /// <summary>How far the net is open (0..1) read back from the fish themselves (<paramref name="gap"/> apart), so
+        /// every peer draws and nets with the same opening from the published jacks alone: closed at
+        /// <paramref name="closedGap"/>, fully open at <paramref name="openGap"/>.</summary>
+        public static float NetOpenFromGap(float gap, float closedGap, float openGap) =>
+            openGap > closedGap ? Mathf.Clamp01((gap - closedGap) / (openGap - closedGap)) : 0f;
 
         /// <summary>
-        /// The jack's rotation: its three arms are its local x, y and z, its (1,1,1) diagonal lies along
-        /// <paramref name="axis"/> (jack A toward jack B), and it is turned <paramref name="spinDegrees"/> about that axis.
-        /// The twist at zero spin is fixed by <paramref name="up"/> (the hull's or the board's up), so the jack does not
-        /// flip as the axis swings. A zero axis falls back to <paramref name="up"/>'s right.
+        /// The net: its mouth is the line between the two fish (<see cref="A"/> to A + <see cref="X"/> x <see cref="Width"/>),
+        /// <see cref="Height"/> tall along <see cref="Y"/>, and its bag hangs behind the mouth (against <see cref="Z"/>, the
+        /// way the jacks fly), deepest in the middle (<see cref="DepthAt"/>). A point in the net is (s, t, w): s 0..1 along
+        /// the mouth, t -1..1 up it, w 0..1 from the mouth to the bag.
         /// </summary>
-        public static Quaternion JackRotation(Vector3 axis, Vector3 up, float spinDegrees)
+        public struct NetFrame
         {
-            var a = axis.sqrMagnitude > 1e-10f ? axis.normalized : Vector3.right;
-            var reference = Vector3.ProjectOnPlane(up, a);
-            if (reference.sqrMagnitude < 1e-8f) reference = Vector3.ProjectOnPlane(Vector3.up, a);
-            if (reference.sqrMagnitude < 1e-8f) reference = Vector3.ProjectOnPlane(Vector3.forward, a);
-            var world = Quaternion.LookRotation(a, reference);
-            var local = Quaternion.LookRotation(JackDiagonal, JackDiagonalUp);
-            return Quaternion.AngleAxis(spinDegrees, a) * world * Quaternion.Inverse(local);
+            public Vector3 A, X, Y, Z;
+            public float Width, Height, Depth;
+
+            /// <summary>The net between jack <paramref name="a"/> and jack <paramref name="b"/>, its mouth facing
+            /// <paramref name="forward"/>, standing up along <paramref name="up"/> (both the hull's).</summary>
+            public static NetFrame Between(Vector3 a, Vector3 b, Vector3 forward, Vector3 up, float height, float depth)
+            {
+                var ab = b - a;
+                float w = ab.magnitude;
+                var x = w > 1e-5f ? ab / w : Vector3.right;
+                var y = Vector3.ProjectOnPlane(up, x);
+                if (y.sqrMagnitude < 1e-8f) y = Vector3.ProjectOnPlane(forward, x);
+                y.Normalize();
+                var z = Vector3.Cross(x, y);
+                if (Vector3.Dot(z, forward) < 0f) { y = -y; z = -z; }
+                return new NetFrame { A = a, X = x, Y = y, Z = z, Width = w, Height = height, Depth = depth };
+            }
+
+            /// <summary>How deep the bag is at (s, t): <see cref="Depth"/> in the middle of the mouth, nothing at its rim.</summary>
+            public float DepthAt(float s, float t) =>
+                Depth * Mathf.Sin(Mathf.PI * Mathf.Clamp01(s)) * Mathf.Cos(0.5f * Mathf.PI * Mathf.Clamp(t, -1f, 1f));
+
+            public Vector3 Centre => A + X * (0.5f * Width) - Z * (0.5f * Depth);
+
+            /// <summary>The point (s, t, w) of the net in the world.</summary>
+            public Vector3 Point(float s, float t, float w) =>
+                A + X * (s * Width) + Y * (t * 0.5f * Height) - Z * (Mathf.Clamp01(w) * DepthAt(s, t));
+
+            /// <summary>
+            /// Whether <paramref name="p"/> is inside the net, <paramref name="margin"/> included (a thing's own size): between
+            /// the fish, inside the mouth's height, and between the mouth and the bag. Its (s, t, w) either way.
+            /// </summary>
+            public bool Contains(Vector3 p, float margin, out float s, out float t, out float w)
+            {
+                var d = p - A;
+                s = Width > 1e-5f ? Vector3.Dot(d, X) / Width : 0f;
+                float half = Mathf.Max(1e-3f, 0.5f * Height);
+                t = Vector3.Dot(d, Y) / half;
+                float z = Vector3.Dot(d, Z);
+                float sm = Width > 1e-5f ? margin / Width : 0f, tm = margin / half;
+                float bag = DepthAt(s, t);
+                w = bag > 1e-4f ? -z / bag : 0f;
+                return s >= -sm && s <= 1f + sm && Mathf.Abs(t) <= 1f + tm && z <= margin && -z <= bag + margin;
+            }
         }
 
         /// <summary>
-        /// The length of one arm (centre to tip) for fish <paramref name="gap"/> apart: an arm's tip lies 1/sqrt(3) of its
-        /// length along the diagonal, so at <paramref name="reach"/> 1 the tips reach the planes the fish swim in (each
-        /// fish sits at the centre of the triangle three tips turn round it). Clamped to [<paramref name="min"/>,
-        /// <paramref name="max"/>].
+        /// How far behind the hull the chase camera must sit (u, positive) so a point at <paramref name="local"/> in the
+        /// hull's frame (x right, y up, z forward) is inside the view: <paramref name="tanHalfV"/> / <paramref name="tanHalfH"/>
+        /// are the tangents of the camera's half angles, and <paramref name="fill"/> (0..1) the share of the view the point
+        /// may reach from its centre. A point behind the camera's plane needs the camera further back still.
         /// </summary>
-        public static float JackArm(float gap, float reach, float min, float max) =>
-            Mathf.Clamp(0.5f * Mathf.Sqrt(3f) * Mathf.Max(0f, gap) * Mathf.Max(0f, reach), min, Mathf.Max(min, max));
+        public static float ChaseDistanceFor(Vector3 local, float tanHalfV, float tanHalfH, float fill)
+        {
+            float k = Mathf.Clamp(fill, 0.05f, 1f);
+            float byX = Mathf.Abs(local.x) / Mathf.Max(1e-4f, tanHalfH * k);
+            float byY = Mathf.Abs(local.y) / Mathf.Max(1e-4f, tanHalfV * k);
+            return Mathf.Max(byX, byY) - local.z;
+        }
     }
 }

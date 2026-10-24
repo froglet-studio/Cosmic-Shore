@@ -14104,6 +14104,9 @@ Not opened in Unity (no editor in the session); `unity_refcompile` player clean.
 
 ## 🔴 2026-10-23 — The Jacks: a spinning jack between the fish, no Rhino jets, the herd lights up (`cece/optimistic-rubin-t46tzs`) - NOT EDITOR-VERIFIED
 
+**Superseded 2026-10-24 by the net (the next entry): steps 1-3 (the jack) no longer apply; "no Rhino jets", the glow
+and the host + client glow (step 5) still do, with the glow now following the plane's pull.**
+
 Garrett: "fauna that get herded should light up when in herding mode. fauna that get called should light up when flying.
 the vestigal jets from the rhino should be gone. instead of a sword (1 axis) make it all three orthogonal axes (like a jack
 in the game of jacks) ... spin it about the (1,1,1) axis and place that axis ... the same axis that draws a line between the
@@ -14128,3 +14131,35 @@ arm). `NetworkConfig.ProtocolVersion` is now 13: host and client must run the sa
 7. Look calls: `toyJackReach` 1, `toyJackMinArm` / `toyJackMaxArm` 4 / 40, `toyJackArmRadius` 1.2,
    `toyJackSpinDegreesPerSecond` 120, `toyJackSkimsWhileHerding` off (all on `JacksBodies`), `herdGlow` 1.5 on
    `JacksConfig`.
+
+## 🔴 2026-10-24 — The Jacks' net, the plane-pull call, the herding zoom, the omni crystal's worm (`cece/optimistic-rubin-t46tzs`) - NOT EDITOR-VERIFIED
+
+Garrett: "the spinning jack in the middle doesn't work. lets make it a net that opens wider with xdiff ..." Design:
+`R_VesselActions/JACKS.md` §1, §1.1. No editor or `unity` CLI in the session, so `/verify-unity` did not run: the C#
+compiles headless (`unity_refcompile` player: 0 errors in project code; editor: 0 errors in changed files),
+`author_jacks_assets.py --check` / `--self-test` pass (the check failed on the old assets first: the jack's arm colliders,
+no net or zoom fields, no worm effect), and the EditMode tests `JacksMathTests` (the net, the chase distance) and
+`LeashMarkTests` are written but not run. Protocol 13: host and client must run the same build. Team tasks: T-20261024-7999 (this test), T-20261024-c0b5 (button icons).
+
+1. Toy Box > Vessel Changer → **Jacks**, netting (flying). A net of strands hangs between the two fish, its bag trailing
+   behind. Push the sticks apart: the fish spread and the net opens wider and taller; together, it closes. It grows open
+   at take-off and shrinks away on landing (no pop). Nothing between the fish spins.
+2. Fly the net through a crystal (an omni crystal and a loose elemental one, e.g. a dropped heart): it is caught and rides
+   in the bag. The chase camera backs off so both fish and every netted crystal stay on screen, and comes home on landing.
+3. Switch to herding (D-pad): the net goes away and the crystals stay where they were. Run a jack onto each: it collects
+   it (the elemental one's level rises; the omni crystal counts and respawns elsewhere).
+4. Collecting an omni crystal (with the hull or a jack) bears a worm colony in YOUR domain behind the hull; it eats prisms
+   and creatures.
+5. Fly the net through a trail and a plant: the prisms it touches are destroyed (or shed shields) as if the hull had hit
+   them. Fly it through creatures: a rival-domain creature turns your colour (body prisms too), its plain body prisms
+   shield, and it joins the herd (it glows). Your own creatures shield and join.
+6. Netting, press B (or T): the herd stops being drawn to the plane and stops glowing; again: drawn and glowing. Herding,
+   B / T / the call button (top right, under the zoom button) pulls the herd to the point between the jacks (cooldown).
+7. Herding: the view is closer than before and follows the jacks. Y / F / the zoom button (top right) eases out to the
+   whole cell and back; the thumbs still drive the jacks while zoomed out.
+8. Two players, the rival flies into your net: they lose a crystal per element (petals), knocked into your net.
+9. Host plus one client on the Jacks: the host sees the client's net, the herd steals / shields / glows the same way, and
+   the omni crystal the client's net let go of sits in the same place on both machines.
+10. Look calls (numbers on `JacksConfig` and `JacksBodies`): `netSpread` 30, `netMinHeight` / `netMaxHeight` 6 / 36,
+    `netDepth` 26, `netRivalTake` 0.1, `herdViewZoom` 0.75, `zoomButtonSize` 0.09, `netStrandRadius` 0.3; icons for the
+    two buttons (`zoomButtonIcon`, `callButtonIcon`) are empty.

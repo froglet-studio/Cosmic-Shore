@@ -1543,14 +1543,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 4880931740909781519}
-    - targetCorrespondingSourceObject: {fileID: 3630837686170528968, guid: c8d5df1098821194eb69eec4c965548e,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2200000000000000061}
-    - targetCorrespondingSourceObject: {fileID: 3630837686170528968, guid: c8d5df1098821194eb69eec4c965548e,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2200000000000000062}
   m_SourcePrefab: {fileID: 100100000, guid: c8d5df1098821194eb69eec4c965548e, type: 3}
 --- !u!4 &282447970148362685 stripped
 Transform:
@@ -2256,49 +2248,3 @@ MonoBehaviour:
   maxBoostTimeStat: {fileID: 11400000, guid: be1a9b6401dca924585cd31ff1034c6f, type: 2}
   prismsDamagedStat: {fileID: 11400000, guid: 3ea71b2eaf0cdbb46a99ddaf04b2d999, type: 2}
   boostMultiplierThreshold: 1.5
---- !u!136 &2200000000000000061
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2695624631939139826}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 1.98
-  m_Direction: 0
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!136 &2200000000000000062
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2695624631939139826}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 1.98
-  m_Direction: 2
-  m_Center: {x: 0, y: 0, z: 0}

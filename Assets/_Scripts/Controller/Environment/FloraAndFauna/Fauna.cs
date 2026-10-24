@@ -1453,6 +1453,66 @@ namespace CosmicShore.Gameplay
             OnTeamChanged();
         }
 
+        /// <summary>
+        /// Whether a live <see cref="SetTeam"/> recolours this creature's whole body, so it can be STOLEN
+        /// (<see cref="StealInto"/>). False unless the species re-reads its colour in <see cref="OnTeamChanged"/>.
+        /// </summary>
+        public virtual bool CanBeStolen => false;
+
+        /// <summary>
+        /// STEAL this creature into <paramref name="thief"/>'s domain (Garrett, 2026-10-24: "if an opposing team's fauna is
+        /// netted it steals it"; the third sign-off on the one-colour law, <c>Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md</c>):
+        /// its domain, its body prisms and its diet's side become the thief's, and its offspring are born the thief's
+        /// (birth copies the parent's domain). Nothing is spawned or killed. On the peer that simulates it; a puppet takes
+        /// it from <see cref="FaunaNetworkSync"/>. False when it cannot be stolen, is dying, or is already the thief's.
+        /// </summary>
+        public bool StealInto(Domains thief)
+        {
+            if (!CanBeStolen || !AcceptsTeamRecolour || !IsSimAuthority || _diedThisLife || domain == thief) return false;
+            ApplyStolenDomain(thief);
+            var sync = NetSync;
+            if (sync) sync.PublishStolenDomain(thief);
+            return true;
+        }
+
+        /// <summary>The stolen domain, applied (the simulating peer's <see cref="StealInto"/>, and a puppet's replica).</summary>
+        internal void ApplyStolenDomain(Domains thief)
+        {
+            if (!CanBeStolen || !AcceptsTeamRecolour || domain == thief) return;
+            SetTeam(thief);
+        }
+
+        /// <summary>
+        /// SHIELD this creature's body (Garrett, 2026-10-24: a creature of the player's domain "goes through the net shielding
+        /// ... its prisms"): every live plain body prism takes a shield; danger prisms stay danger (danger and shield are
+        /// exclusive by locked design) and a shielded one is left as it is. On the simulating peer; the puppets shield theirs
+        /// through <see cref="FaunaNetworkSync"/>. False when nothing was shielded.
+        /// </summary>
+        public bool ShieldBody()
+        {
+            if (!IsSimAuthority || _diedThisLife) return false;
+            if (!ApplyShieldBody()) return false;
+            var sync = NetSync;
+            if (sync) sync.PublishShieldBody();
+            return true;
+        }
+
+        internal bool ApplyShieldBody()
+        {
+            var body = _bodyPrisms;
+            if (body == null) return false;
+            bool any = false;
+            for (int i = 0; i < body.Length; i++)
+            {
+                var hp = body[i];
+                if (!hp || hp.destroyed || hp.prismProperties is not { IsDangerous: false, IsShielded: false, IsSuperShielded: false })
+                    continue;
+                hp.ActivateShield();
+                any = true;
+            }
+            return any;
+        }
+
         /// <summary>False for a creature whose colours are its own history rather than its cell's controller
         /// (a MultiDomain swarm, Docs/SWARM_FAUNA.md §16.4): <see cref="Cell.SetModeControlOverride"/>'s
         /// one-colour re-colour does not apply to it.</summary>

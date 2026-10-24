@@ -86,6 +86,34 @@ namespace CosmicShore.Gameplay
         [Tooltip("Flying: how fast a jack eases to the place under its thumb (1/s), and swims into formation on take-off.")]
         [SerializeField, Min(0.1f)] float flightFormationEase = 8f;
 
+        [Header("Netting (Garrett, 2026-10-24: \"lets make it a net that opens wider with xdiff\")")]
+        [Tooltip("Netting: how much further apart the fish swim with the sticks fully apart (u per side, on top of " +
+                 "flightGap and the sticks' own reach), so the net opens wider.")]
+        [SerializeField, Min(0f)] float netSpread = 30f;
+        [Tooltip("Netting: the mouth's height with the net closed (sticks at rest or together; u).")]
+        [SerializeField, Min(0.5f)] float netMinHeight = 6f;
+        [Tooltip("Netting: the mouth's height with the net fully open (sticks fully apart; u).")]
+        [SerializeField, Min(0.5f)] float netMaxHeight = 36f;
+        [Tooltip("Netting: how deep the bag hangs behind the mouth, in its middle (u).")]
+        [SerializeField, Min(0.5f)] float netDepth = 26f;
+        [Tooltip("Netting: a crystal settles this far into the bag (0 the mouth, 1 the bottom).")]
+        [SerializeField, Range(0f, 1f)] float netSettle = 0.75f;
+        [Tooltip("Netting: how fast a netted crystal sinks to netSettle (1/s).")]
+        [SerializeField, Min(0.1f)] float netSettleEase = 3f;
+        [Tooltip("Netting: a netted rival hull loses this much of each element (normalized; 0.1 = one crystal each), " +
+                 "knocked loose into the net.")]
+        [SerializeField, Range(0f, 1f)] float netRivalTake = 0.1f;
+        [Tooltip("Netting: seconds before the same rival hull can lose crystals to the net again.")]
+        [SerializeField, Min(0.1f)] float netRivalCooldown = 2f;
+        [Tooltip("Herding: how close a jack must come to a crystal to collect it (u).")]
+        [SerializeField, Min(0f)] float jackCrystalReach = 18f;
+        [Tooltip("Netting: the chase camera backs off until the jacks and the net's catch fit inside this share of the " +
+                 "view from its centre (Garrett, 2026-10-24: \"the jacks and anything in their net should be in the camera " +
+                 "view while netting\").")]
+        [SerializeField, Range(0.2f, 1f)] float netCameraFill = 0.8f;
+        [Tooltip("Netting: how fast the chase camera eases to the distance that keeps the net in view (1/s).")]
+        [SerializeField, Min(0.1f)] float netCameraEase = 3f;
+
         [Header("The AI")]
         [Tooltip("An AI hull herds this long (s), then flies.")]
         [SerializeField, Min(1f)] float aiHerdSeconds = 14f;
@@ -93,9 +121,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float aiFlightSeconds = 6f;
 
         [Header("The call and the decoy")]
-        [Tooltip("callTime: seconds the jacks' call lasts.")]
+        [Tooltip("callTime: herding, seconds the jacks' call lasts (the herd pulled to the point between the jacks).")]
         [SerializeField, Min(0f)] float callTime = 2.5f;
-        [Tooltip("callCooldown: seconds before the call is ready again.")]
+        [Tooltip("callCooldown: herding, seconds before the call is ready again.")]
         [SerializeField, Min(0f)] float callCooldown = 20f;
         [Tooltip("decoyCooldown: Time L5, seconds between the decoys the flying jacks drop.")]
         [SerializeField, Min(0f)] float decoyCooldown = 4f;
@@ -147,6 +175,22 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 1f)] float flightHullWeight = 0.45f;
         [Tooltip("How fast the view pans once its goal leaves the slack box (1/s; the lab's 1.6). Lower is calmer.")]
         [SerializeField, Min(0.01f)] float viewPanEase = 1.2f;
+        [Tooltip("Herding: the view's span is multiplied by this (Garrett, 2026-10-24: \"the herding view should have a view " +
+                 "that is zoomed in a bit more and follows the jacks\"). 1 = the thumb-framed span.")]
+        [SerializeField, Range(0.2f, 2f)] float herdViewZoom = 0.75f;
+        [Tooltip("Herding: how much the view's framing follows the jacks rather than the herd (1 = the jacks alone).")]
+        [SerializeField, Range(0f, 1f)] float herdFollowJacks = 1f;
+        [Tooltip("Herding, zoomed out to the whole cell (the zoom button, gamepad Y, F): the cell's diameter times this " +
+                 "fills the view's short side.")]
+        [SerializeField, Min(0.5f)] float cellViewMargin = 1.1f;
+        [Tooltip("How fast the herding view eases between the jacks' zoom and the whole cell (1/s).")]
+        [SerializeField, Min(0.1f)] float viewZoomEase = 3f;
+        [Tooltip("The zoom button's size, as a share of the screen's height (top right of the herding view).")]
+        [SerializeField, Range(0.04f, 0.3f)] float zoomButtonSize = 0.09f;
+        [Tooltip("Optional icon drawn inside the zoom button (empty: the button is the style guide's frame alone).")]
+        [SerializeField] Sprite zoomButtonIcon;
+        [Tooltip("Optional icon drawn inside the herding view's call button, below the zoom button (empty: the frame alone).")]
+        [SerializeField] Sprite callButtonIcon;
 
         [Header("Audio (FMOD; empty until sound design wires them)")]
         [Tooltip("The jacks call the herd.")]
@@ -183,6 +227,28 @@ namespace CosmicShore.Gameplay
         public float FlightGap => flightGap;
         public float FlightReach => flightReach;
         public float FlightFormationEase => flightFormationEase;
+        public float NetSpread => netSpread;
+        public float NetMinHeight => netMinHeight;
+        public float NetMaxHeight => Mathf.Max(netMinHeight, netMaxHeight);
+        public float NetDepth => netDepth;
+        public float NetSettle => netSettle;
+        public float NetSettleEase => netSettleEase;
+        public float NetRivalTake => netRivalTake;
+        public float NetRivalCooldown => netRivalCooldown;
+        public float JackCrystalReach => jackCrystalReach;
+        public float NetCameraFill => netCameraFill;
+        public float NetCameraEase => netCameraEase;
+        /// <summary>The fish's distance apart with the net closed, and fully open: what <see cref="JacksMath.NetOpenFromGap"/>
+        /// reads the opening back from.</summary>
+        public float NetClosedGap => 2f * flightGap;
+        public float NetOpenGap => 2f * (flightGap + netSpread + flightReach);
+        public float HerdViewZoom => herdViewZoom;
+        public float HerdFollowJacks => herdFollowJacks;
+        public float CellViewMargin => cellViewMargin;
+        public float ViewZoomEase => viewZoomEase;
+        public float ZoomButtonSize => zoomButtonSize;
+        public Sprite ZoomButtonIcon => zoomButtonIcon;
+        public Sprite CallButtonIcon => callButtonIcon;
         public float AIHerdSeconds => aiHerdSeconds;
         public float AIFlightSeconds => aiFlightSeconds;
         public float CallTime => callTime;

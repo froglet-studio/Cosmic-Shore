@@ -19,14 +19,18 @@ namespace CosmicShore.Gameplay
     /// hull's x-z plane, the board the jacks herd on.
     ///
     /// <list type="bullet">
-    /// <item><b>Herding</b>: the hull holds still and its plane is the board. Each touch takes the nearest jack and it runs
-    /// to the point under the thumb; lifting the thumb leaves the ONE decoy where that jack stands (a new decoy replaces
-    /// the old). On a gamepad the left stick runs the left jack and the right stick the right one, and the bumper or
-    /// trigger on that side is the lift.</item>
-    /// <item><b>Flying</b>: the two jacks take off from where they stand and fly the hull with the fleet's two-thumb
-    /// flight, one fish under each thumb: one up and the other down rolls, both together pitch and yaw, apart is faster
-    /// and together slower. Where they fly is where the board goes. They can CALL the herd to themselves (a long cooldown)
-    /// and jump to the decoy (<see cref="JacksActionSO"/>).</item>
+    /// <item><b>Herding</b>: the hull holds still and its plane is the board; the herd is always drawn to it. Each touch
+    /// takes the nearest jack and it runs to the point under the thumb; lifting the thumb leaves the ONE decoy where that
+    /// jack stands (a new decoy replaces the old). On a gamepad the left stick runs the left jack and the right stick the
+    /// right one, and the bumper or trigger on that side is the lift. The CALL (B, T, or the view's call button) pulls the
+    /// herd to the point between the jacks, and a jack that touches a crystal collects it - the ones the net carried
+    /// stay where it let go of them.</item>
+    /// <item><b>Netting</b> (flying): the two jacks take off from where they stand and fly the hull with the fleet's
+    /// two-thumb flight, one fish under each thumb: one up and the other down rolls, both together pitch and yaw, apart is
+    /// faster and together slower - and apart opens the NET between them wider (<see cref="JacksNet"/>; Garrett, 2026-10-24).
+    /// Where they fly is where the board goes. The CALL toggles whether the herd is drawn to the plane (Garrett,
+    /// 2026-10-24: "in netting mode it toggles plane attraction for fauna of your domain"), and they jump to the decoy
+    /// (<see cref="JacksActionSO"/>).</item>
     /// <item><b>The switch</b>: the old seat swap (D-pad left / right, the left / right arrow keys, or a double tap on the small view).
     /// An AI hull switches on its own (<see cref="JacksConfigSO.AIHerdSeconds"/>, <see cref="JacksConfigSO.AIFlightSeconds"/>):
     /// the hull's own <c>AIPilot</c> flies, and the jacks' drive-and-collect AI (<see cref="JacksAI"/>) herds through aim
@@ -127,7 +131,19 @@ namespace CosmicShore.Gameplay
         // the mode: herding (the hull holds, the jacks run on its plane) or flying (the jacks fly the hull)
         bool _herding, _inputPaused, _holding, _heldWasStationary;
         bool _remoteHerding;   // another machine owns the hull: its jacks are herding (JacksBodies' flags)
-        bool _lit;             // the herd is lit (TryGetLeashMark's glow): herding, or called in flight
+        bool _remotePlane;     // ... and, netting, whether its herd is drawn to the plane
+        bool _lit;             // the herd is lit (TryGetLeashMark's glow): herding, or drawn to the plane while netting
+        bool _planeAttract = true;   // netting: the call toggles it (herding draws the herd to the plane always)
+        bool _planeNow = true;       // this frame: whether the herd is drawn to the plane
+        float _planeToggleReadyAt;
+
+        // the net between the fish while they net (JacksNet), the hull's impactor it hands its prisms to, and the chase
+        // camera backed off to keep the net in view
+        readonly JacksNet _net = new();
+        VesselImpactor _hullImpactor;
+        CustomCameraController _cam;
+        bool _camEngaged;
+        float _camWritten;
         float _swapReadyAt, _aiModeAt;
         JacksAI _ai;
         JacksView _view;
@@ -146,6 +162,8 @@ namespace CosmicShore.Gameplay
         public int HerdCount => _herd.Count;
         public int MinHerd => config ? config.MinHerd : 0;
         public bool Calling => Time.time < _callUntil;
+        /// <summary>Netting: whether the herd is drawn to the plane (the call toggles it; herding it always is).</summary>
+        public bool PlaneAttract => _planeAttract;
         /// <summary>0 when the call is ready, 1 just after it was used.</summary>
         public float CallCooldown01 => config && config.CallCooldown > 0f ? Mathf.Clamp01((_callReadyAt - Time.time) / config.CallCooldown) : 0f;
         public bool HasDecoy => _hasDecoy;
@@ -156,6 +174,13 @@ namespace CosmicShore.Gameplay
         /// <summary>Every herder's ring now (u).</summary>
         public float Ring => config ? JacksMath.Ring(config.RingFloor, Level(Element.Space)) : 0f;
         internal JacksConfigSO Config => config;
+        internal IVesselStatus Status => _status;
+        /// <summary>The hull's impactor: the net hands it every prism it touches, and the jacks every crystal they collect.</summary>
+        internal VesselImpactor HullImpactor => _hullImpactor;
+        /// <summary>The hulls in play (re-scanned at most once a second).</summary>
+        internal List<VesselStatus> Vessels { get { ScanVessels(); return _vessels; } }
+        /// <summary>The net between the fish while they net.</summary>
+        internal JacksNet Net => _net;
         internal Vector3 BoardUp => _u;
         internal Vector3 BoardForward => _f;
         internal Vector3 BoardRight => _r;
@@ -164,6 +189,8 @@ namespace CosmicShore.Gameplay
         /// <summary>Halfway between the two jacks: where the herd is called to, and where the jacks take off from.</summary>
         internal Vector3 JacksCentre => 0.5f * (_jack[0] + _jack[1]);
         internal Vector3 HerdCentre { get; private set; }
+        /// <summary>The cell the jacks are in (the herding view's whole-cell zoom).</summary>
+        internal Cell CellHere => NearestCell(JacksCentre);
 
         // ------------------------------------------------------------------ lifecycle
 
@@ -171,7 +198,10 @@ namespace CosmicShore.Gameplay
         {
             ReleaseAll();
             StopHerding();
+            _net.Release(this);
             _status = shipStatus;
+            _hullImpactor = _status != null && _status.Transform ? _status.Transform.GetComponentInChildren<VesselImpactor>(true) : null;
+            _planeAttract = true;
             _vessel = _status != null && _status.Transform ? _status.Transform.GetComponent<IVessel>() : null;
             _snapped = false;
             _hasDecoy = false;
@@ -201,6 +231,8 @@ namespace CosmicShore.Gameplay
             if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEnd;
             ReleaseAll();
             StopHerding();
+            _net.Release(this);
+            ReleaseCamera();
             _view?.Dispose();
             _view = null;
         }
@@ -238,10 +270,24 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ the buttons (JacksActionSO)
 
-        /// <summary>The CALL: for <c>callTime</c> the herd is pulled to the jacks, which stop repelling; then a long cooldown.</summary>
+        /// <summary>
+        /// The CALL (Garrett, 2026-10-24: "when in netting mode the player can toggle whether fauna are attracted to the
+        /// plane. this same ability is always on in herding mode and using it is what calls fauna to the player"). Herding:
+        /// for <c>callTime</c> the herd is pulled to the point between the jacks, which stop repelling; then a long cooldown.
+        /// Netting: it toggles whether the herd is drawn to the plane.
+        /// </summary>
         public void Call()
         {
-            if (!config || Time.time < _callReadyAt) return;
+            if (!config) return;
+            if (!_herding)
+            {
+                if (Time.unscaledTime < _planeToggleReadyAt) return;
+                _planeToggleReadyAt = Time.unscaledTime + PlaneToggleGuard;
+                _planeAttract = !_planeAttract;
+                Play(config.CallSfx, JacksCentre);
+                return;
+            }
+            if (Time.time < _callReadyAt) return;
             _callUntil = Time.time + config.CallTime;
             _callReadyAt = Time.time + config.CallCooldown;
             Play(config.CallSfx, JacksCentre);
@@ -267,6 +313,15 @@ namespace CosmicShore.Gameplay
             if (!config || !Upgraded(Element.Time) || Time.time < _decoyReadyAt) return;
             DropDecoy(OnPlane(JacksCentre));
             _decoyReadyAt = Time.time + config.DecoyCooldown;
+        }
+
+        // a held button or a double press toggles the plane's pull once
+        const float PlaneToggleGuard = 0.25f;
+
+        /// <summary>A creature of ours that went through the net joins the herd (<see cref="JacksNet"/>).</summary>
+        internal void TryHerd(Fauna creature)
+        {
+            if (config && creature && _herd.Count < config.HerdCap && creature.Leashable && !creature.IsLeashed) Join(creature);
         }
 
         void DropDecoy(Vector3 at)
@@ -312,7 +367,15 @@ namespace CosmicShore.Gameplay
                 if (_status.AutoPilotEnabled) StepAIButtons();
             }
 
-            SetLit((remote ? _remoteHerding : _herding) || Calling);
+            bool herdingNow = remote ? _remoteHerding : _herding;
+            _planeNow = herdingNow || (remote ? _remotePlane : _planeAttract);
+            SetLit(_planeNow);
+            if (herdingNow)
+            {
+                if (_net.Open) _net.Release(this);
+                _net.CollectByJacks(this);
+            }
+            else _net.Step(this, _jack[0], _jack[1], dt);
             EnsureFloor();
             Recruit(ring);
             StepHerd(dt, ring);
@@ -328,6 +391,8 @@ namespace CosmicShore.Gameplay
                 _view ??= new JacksView(this);
                 _view.Frame(_herding, Time.deltaTime);
             }
+            if (IsLocalHuman && !_status.AutoPilotEnabled) UpdateNetCamera(Time.deltaTime);
+            else ReleaseCamera();
             DrawMarks();
         }
 
@@ -339,8 +404,9 @@ namespace CosmicShore.Gameplay
         bool FollowRemoteCrew()
         {
             if (!_bodies || !_bodies.TryGetRemoteCrew(out var a, out var b, out bool decoy, out var at, out bool calling,
-                                                       out bool flying)) return false;
+                                                       out bool flying, out bool plane)) return false;
             _remoteHerding = !flying;
+            _remotePlane = plane;
             _jack[0] = a;
             _jack[1] = b;
             _hasDecoy = decoy;
@@ -425,9 +491,11 @@ namespace CosmicShore.Gameplay
             Vector2 left = input != null ? input.LeftNormalizedJoystickPosition : Vector2.zero;
             Vector2 right = input != null ? input.RightNormalizedJoystickPosition : Vector2.zero;
             float a = JacksMath.Ease(config.FlightFormationEase, dt);
+            // sticks apart open the net: the fish swim further apart (Garrett, 2026-10-24: "a net that opens wider with xdiff")
+            float gap = config.FlightGap + config.NetSpread * JacksMath.NetOpenFromSticks(left, right);
             for (int k = 0; k < 2; k++)
             {
-                var want = JacksMath.FlightOffset(k == 0 ? -1f : 1f, k == 0 ? left : right, config.FlightGap, config.FlightReach);
+                var want = JacksMath.FlightOffset(k == 0 ? -1f : 1f, k == 0 ? left : right, gap, config.FlightReach);
                 _flightLocal[k] = Vector3.Lerp(_flightLocal[k], want, a);
                 _jack[k] = t.position + t.rotation * _flightLocal[k];
                 _jackTarget[k] = _jack[k];
@@ -453,9 +521,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The AI's mode: it herds for <c>aiHerdSeconds</c>, then flies for <c>aiFlightSeconds</c> (the hull's own AIPilot
-        /// flies, so the board moves with the fleet's targeting and the hull collects crystals), CALLING the herd as it
-        /// takes off so the herd follows the new board.
+        /// The AI's mode: it herds for <c>aiHerdSeconds</c>, then nets for <c>aiFlightSeconds</c> (the hull's own AIPilot
+        /// flies, so the board moves with the fleet's targeting and the net sweeps what it flies through), its herd drawn to
+        /// the plane so it follows the new board.
         /// </summary>
         void StepAIMode()
         {
@@ -463,7 +531,7 @@ namespace CosmicShore.Gameplay
             bool herd = !_herding;
             _aiModeAt = Time.time + (herd ? config.AIHerdSeconds : config.AIFlightSeconds);
             SetHerding(herd);
-            if (!herd) Call();
+            _planeAttract = true;
         }
 
         /// <summary>The AI's buttons: at Time 5 it leaves a decoy where it flies every few seconds (the lab's <c>shAI</c>
@@ -491,6 +559,7 @@ namespace CosmicShore.Gameplay
                     var t = touches[i];
                     int id = t.touchId.ReadValue();
                     var at = t.position.ReadValue();
+                    if (t.press.wasPressedThisFrame && PressHerdButton(at)) continue;
                     if (t.press.wasPressedThisFrame && !_view.PipContains(at, true)) Claim(id, at);
                     if (t.press.isPressed && _pointerJack.TryGetValue(id, out int k)) { Aim(k, at); held[k] = true; }
                     if (t.press.wasReleasedThisFrame) _pointerJack.Remove(id);
@@ -501,7 +570,8 @@ namespace CosmicShore.Gameplay
             if (mouse != null)
             {
                 var at = mouse.position.ReadValue();
-                if (mouse.leftButton.wasPressedThisFrame && !_view.PipContains(at, true)) Claim(MouseId, at);
+                bool button = mouse.leftButton.wasPressedThisFrame && PressHerdButton(at);
+                if (!button && mouse.leftButton.wasPressedThisFrame && !_view.PipContains(at, true)) Claim(MouseId, at);
                 if (mouse.leftButton.isPressed && _pointerJack.TryGetValue(MouseId, out int k)) { Aim(k, at); held[k] = true; }
                 if (mouse.leftButton.wasReleasedThisFrame) _pointerJack.Remove(MouseId);
             }
@@ -509,11 +579,29 @@ namespace CosmicShore.Gameplay
             var pad = Gamepad.current;
             if (pad != null) ReadPad(pad, dt, held);
 
+            // the flight's buttons are paused while the jacks herd, so the call and the zoom are read here: B or T calls
+            // (the flying call's own Button2), Y or F zooms out to the whole cell and back (Garrett, 2026-10-24)
+            var keys = Keyboard.current;
+            if ((pad != null && pad.buttonEast.wasPressedThisFrame) || (keys != null && keys.tKey.wasPressedThisFrame)) Call();
+            if ((pad != null && pad.buttonNorth.wasPressedThisFrame) || (keys != null && keys.fKey.wasPressedThisFrame))
+                _view.ToggleCellView();
+
             for (int k = 0; k < 2; k++)
                 if (!held[k] && !_padHolds[k]) _jackDown[k] = false;
         }
 
         readonly bool[] _padHolds = new bool[2];
+
+        /// <summary>A press on the herding view's call or zoom button (a phone's way to them): true when it took the press.</summary>
+        bool PressHerdButton(Vector2 at)
+        {
+            switch (_view.ButtonAt(at))
+            {
+                case JacksView.HerdButton.Call: Call(); return true;
+                case JacksView.HerdButton.Zoom: _view.ToggleCellView(); return true;
+                default: return false;
+            }
+        }
 
         void Claim(int pointer, Vector2 at)
         {
@@ -609,6 +697,7 @@ namespace CosmicShore.Gameplay
             if (herd == _herding) return;
             _herding = herd;
             _pointerJack.Clear();
+            if (!herd && _callUntil > Time.time) _callUntil = Time.time;   // a herding call ends at take-off
             if (herd)
             {
                 for (int k = 0; k < 2; k++)
@@ -780,7 +869,8 @@ namespace CosmicShore.Gameplay
                 Vector3 want = JacksMath.Want(g, _u, cruise, panic);
                 float height = Vector3.Dot(pos - hull, _u);
                 float gn = Vector3.Dot(g, _u) + 0.6f * gz;   // the lab's (gn - 0.9 gz) x 40 + 60 gz, over 40
-                float vn = JacksMath.PlaneSpeed(height, gn, config.PlanePull, Mathf.Max(cruise, 1f) * 1.8f);
+                // netting with the plane's pull toggled off, the herd keeps its own height
+                float vn = _planeNow ? JacksMath.PlaneSpeed(height, gn, config.PlanePull, Mathf.Max(cruise, 1f) * 1.8f) : 0f;
                 m.Desired = want + _u * vn;
             }
         }
@@ -1107,7 +1197,8 @@ namespace CosmicShore.Gameplay
         public float FeedsPerOffspringScale(Fauna creature) => JacksMath.FeedsPerOffspringScale(Level(Element.Mass));
 
         /// <summary>The herd's mark: its spindles lean toward our domain's hue (<c>herdHueLean</c>), and light up
-        /// (<c>herdGlow</c>) while the jacks herd or the call lasts in flight (<see cref="SetLit"/>).</summary>
+        /// (<c>herdGlow</c>) while the herd is drawn to the plane - always while herding, by the call while netting
+        /// (<see cref="SetLit"/>).</summary>
         public bool TryGetLeashMark(out Domains domain, out float lean, out float glow)
         {
             domain = _status != null ? _status.Domain : default;
@@ -1118,7 +1209,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The herd lights up (Garrett, 2026-10-23: "fauna that get herded should light up when in herding mode. fauna
-        /// that get called should light up when flying"): lit while the jacks herd, and while a call lasts in flight. Every
+        /// that get called should light up when flying"): lit while it is drawn to the plane - always while the jacks herd,
+        /// and while netting when the call has the plane's pull on (2026-10-24: the call in netting mode is that toggle). Every
         /// creature in the herd re-reads its mark on a change; one joining later reads the mark as it is then. On the peer
         /// that simulates the creatures (a puppet takes the mark from FaunaNetworkSync).
         /// </summary>
@@ -1213,6 +1305,61 @@ namespace CosmicShore.Gameplay
                 if (JacksMath.IsDanger(_herd[i].Roll, charge))
                     marks.Dot(_herd[i].LastPos + _u * 4f, dangerColor, dot * 1.5f, 5f);
             marks.End();
+        }
+
+        /// <summary>
+        /// Netting, the chase camera backs off until the jacks and everything the net carries are in view (Garrett,
+        /// 2026-10-24: "the jacks and anything in their net should be in the camera view while netting"), never closer than
+        /// its authored distance, and goes home when the jacks land. Written only while this hull is the camera's target, and
+        /// handed back only if nobody else wrote it since (the Shrike's and the Thresher's rule).
+        /// </summary>
+        void UpdateNetCamera(float dt)
+        {
+            var manager = CameraManager.Instance;
+            var cam = manager ? manager.GetActiveController() as CustomCameraController : null;
+            var hull = _status.Transform;
+            if (!cam || !cam.FollowTarget || !(cam.FollowTarget == hull || cam.FollowTarget.IsChildOf(hull)) || !cam.Camera)
+            {
+                ReleaseCamera();
+                return;
+            }
+            _cam = cam;
+            float neutral = cam.NeutralOffsetZ;
+            if (neutral >= 0f) return;   // not a chase camera
+            if (_camEngaged && !Mathf.Approximately(cam.GetCameraDistance(), _camWritten))
+            {
+                _camEngaged = false;     // somebody else moved it: theirs now
+                return;
+            }
+            float need = -neutral;
+            if (!_herding && _net.Open)
+            {
+                var lens = cam.Camera;
+                float tanV = Mathf.Tan(0.5f * lens.fieldOfView * Mathf.Deg2Rad), tanH = tanV * lens.aspect;
+                var toLocal = Quaternion.Inverse(hull.rotation);
+                var at = hull.position;
+                float fill = config.NetCameraFill;
+                for (int k = 0; k < 2; k++)
+                    need = Mathf.Max(need, JacksMath.ChaseDistanceFor(toLocal * (_jack[k] - at), tanV, tanH, fill));
+                need = Mathf.Max(need, JacksMath.ChaseDistanceFor(toLocal * (_net.Frame.Point(0.5f, 0f, 1f) - at), tanV, tanH, fill));
+                for (int i = 0; i < _net.CrystalCount; i++)
+                    need = Mathf.Max(need, JacksMath.ChaseDistanceFor(toLocal * (_net.ItemPosition(i) - at), tanV, tanH, fill));
+            }
+            if (!_camEngaged && need <= -neutral + 0.05f) return;
+            float now = _camEngaged ? _camWritten : cam.GetCameraDistance();
+            float next = Mathf.Lerp(now, -need, JacksMath.Ease(config.NetCameraEase, dt));
+            if (need <= -neutral + 0.05f && Mathf.Abs(next - neutral) < 0.05f) next = neutral;
+            cam.SetCameraDistance(next);
+            _camWritten = next;
+            _camEngaged = !Mathf.Approximately(next, neutral);
+        }
+
+        void ReleaseCamera()
+        {
+            if (_camEngaged && _cam && Mathf.Approximately(_cam.GetCameraDistance(), _camWritten))
+                _cam.SetCameraDistance(_cam.NeutralOffsetZ);
+            _camEngaged = false;
+            _cam = null;
         }
 
         static Camera ResolveCamera()

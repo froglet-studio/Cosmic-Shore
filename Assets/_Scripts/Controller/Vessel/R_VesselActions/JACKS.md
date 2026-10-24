@@ -30,7 +30,9 @@ Code:
 | Every number | `Data Containers/JacksConfigSO.cs`, `Assets/_SO_Assets/VesselActions/Jacks/JacksConfig.asset` |
 | The four cards | `UI/Controller/JacksHUDController.cs`, `Resources/ElementalAbilityMaps/Jacks.asset` |
 | The herd's rule breaks (platform) | `Environment/FloraAndFauna/IFaunaHerd.cs`, read by `Fauna` |
-| The bodies: two jacks drawn, swum and replicated; the owner's jacks on other peers; the spinning jack between them | `Controller/Vessel/Crew/JacksBodies.cs` |
+| The bodies: two jacks drawn, swum and replicated; the owner's jacks on other peers; the net drawn between them | `Controller/Vessel/Crew/JacksBodies.cs` |
+| The net: what it catches, carries, steals, shields and takes | `Executors/JacksNet.cs` (geometry `JacksMath.NetFrame`) |
+| The omni crystal's worm | `Vessel Crystal Effects/VesselSpawnFaunaByCrystalEffectSO.cs`, `Assets/_SO_Assets/Effects/Vessel Crystal Effects/JacksOmniWormByCrystalEffect.asset` |
 | The model | `Assets/_Models/Vessel Models/Jack.fbx` (`/vessel-model`, `Tools/Build/vessel_model/specs/jack.py`; dossier `Docs/VesselModels/Jack.md`) |
 | The prefab and its registrations | `Tools/Build/author_jacks_assets.py` (`--check`, `--self-test`); icons `author_jacks_icons.py`; card `render_cards.py Jacks` |
 
@@ -44,22 +46,28 @@ the small view (the Wrasse's gesture, `PilotSwapGesture`).
   (`dogSpeed`). Lifting the thumb leaves the decoy where that jack stands (one decoy; a new one replaces the old). On a
   gamepad the left stick runs the left jack and the right stick the right one (screen-relative, `padDogSpeed`), and the
   bumper or trigger on that side is the lift. A stick never drives a jack off the screen. The flight input is paused: the
-  sticks are the jacks'.
-- **Flying.** The jacks take off: the hull jumps to halfway between them, facing the board's forward, and they swim into
+  sticks are the jacks'. The herd is always drawn to the board's plane. **Call** (B or T, read straight off the device
+  because the flight's buttons are paused, or the view's call button on a phone): for `callTime` the herd is pulled to
+  the point between the jacks, which stop repelling; then `callCooldown` (Garrett, 2026-10-24: "in herding mode it
+  attracts fauna to the point between the jacks, with the plane attraction always on"). A jack that touches a crystal
+  collects it (`jackCrystalReach`), so the crystals the net let go of are the jacks' to pick up.
+- **Netting** (the flying mode; Garrett, 2026-10-24). The jacks take off: the hull jumps to halfway between them, facing the board's forward, and they swim into
   formation beside it (`flightFormationEase`). The hull flies on the fleet's own two-thumb flight (the Rhino's rig and
   ramp), and each jack sits under its thumb (`JacksMath.FlightOffset`: `flightGap` from the centre line, moved
   `flightReach` by its stick, in the hull's frame). So the fish ARE the controls: one up and the other down is a roll,
   both the same way a pitch or a yaw, apart is faster and together slower, which is exactly what the flight reads from the
-  same sticks (YDiff, YSum, XSum, XDiff). Where they fly is where the board goes.
-  - **Call** is A (Input 7): for `callTime` the herd is pulled to the jacks, which stop repelling; then `callCooldown`.
+  same sticks (YDiff, YSum, XSum, XDiff). Where they fly is where the board goes. Sticks apart also swim the fish up to
+  `netSpread` further apart, so the **net** between them opens wider and taller (§1.1).
+  - **Call** is Button2 (B, T; Input 7): it TOGGLES whether the herd is drawn to the plane (Garrett, 2026-10-24: "in
+    netting mode it toggles plane attraction for fauna of your domain"). On at take-off; the herd glows while it is on.
   - **Jump** to the decoy is Input 1 (a trigger, or a lifted thumb) and Input 4 (both thumbs lifted): the hull and the
     jacks jump there, keeping their heading; the decoy is spent. Nothing while herding.
   - The ramp boost stays on Input 0.
 - **Landing.** Switch back: the jacks start herding where they flew, laid onto the hull's plane, and the hull holds there.
 - **The AI** (an AI hull, or a human's hull the app shell parks on its AI) herds for `aiHerdSeconds` with the jacks'
-  drive-and-collect AI (`JacksAI`, aim points only, as thumbs), then flies for `aiFlightSeconds` on the hull's own
-  `AIPilot` (so the board moves with the fleet's targeting and the hull collects crystals), calling the herd as it takes
-  off.
+  drive-and-collect AI (`JacksAI`, aim points only, as thumbs), then nets for `aiFlightSeconds` on the hull's own
+  `AIPilot` (so the board moves with the fleet's targeting and the net sweeps what it flies through), its herd drawn to
+  the plane so it follows.
 - **The views.** Herding, an orthographic camera looks straight down the board and never turns with the hull (the lab's
   Steady camera); the game camera is the small square. It is zoomed out until, on a full-size phone (`phoneShortMm` 71 mm,
   a 6.7-inch screen's short side), a big thumb (`thumbMm` 22) barely covers the smallest ring: the ring's diameter is
@@ -68,10 +76,60 @@ the small view (the Wrasse's gesture, `PilotSwapGesture`).
   camera has the screen and the herding view is the small square, framed toward the hull (`flightHullWeight`). It draws
   the way the game camera does: post-processing (bloom), anti-aliasing, HDR and the same volumes, copied from the game
   camera every frame (`JacksView.AdoptPilotLook`).
+- **The herding view, 2026-10-24** (Garrett: "the herding view should have a view that is zoomed in a bit more and
+  follows the jacks. the player can use a button to zoom out to the whole cell if they want to have a view of more
+  fauna"): the span is `herdViewZoom` (0.75) of the thumb-framed one, and the framing follows the jacks
+  (`herdFollowJacks` 1; 0 frames the herd as before). The zoom button (top right of the herding view; gamepad Y, F) eases
+  out to the whole cell (`cellViewMargin` x its diameter) and back (`viewZoomEase`); thumbs still aim the jacks at any
+  zoom. The call button sits under it. Both are the style guide's PiP frame (`PipViewFrame.ShowRect`), each with an
+  optional icon (`zoomButtonIcon`, `callButtonIcon`, empty for now).
+- **The netting view** (Garrett, 2026-10-24: "the jacks and anything in their net should be in the camera view while
+  netting"): the chase camera backs off until both fish, the bag and every netted crystal fit in `netCameraFill` (0.8)
+  of the view (`JacksMath.ChaseDistanceFor`), never closer than its authored distance, easing at `netCameraEase`, and goes
+  home on landing (the Shrike's camera rule: written only while the hull is the camera's target, handed back only if
+  nobody else wrote it).
 - **Stability while herding** (Garrett, 2026-10-21: "we need to make things as stable for the jack player as we can"):
   the hull holds still, so the board does not move under the thumbs at all; the view frames the herd alone
   (`herdHullWeight` 0), or the jacks with no herd; the pan, once the herd leaves the slack box, eases at `viewPanEase`
   (1.2/s). The board's own ease (`herdPlaneEase` 0.25/s, `flightPlaneEase` 3/s) only settles the last turn of a landing.
+
+### 1.1 The net (Garrett, 2026-10-24)
+
+> the spinning jack in the middle doesn't work. lets make it a net that opens wider with xdiff. if an opposing team's
+> fauna is netted it steals it and then goes through the net shielding or lighting its prisms like any other fauna of
+> the player's domain. all five crystals can be relocated using the net. prisms are collected by the net but when they
+> collide they are destroyed like always. when the jacks switch to hearding mode from netting mode the net goes away and
+> they can collect the crystals netted ... if an opposing vessel is netted it should remove some of their crystals which
+> remain in the net.
+
+The net hangs between the fish while they net (`JacksMath.NetFrame`): its mouth is the line from one fish to the other,
+`netMinHeight`..`netMaxHeight` tall as it opens, and its bag trails `netDepth` behind, deepest in the middle. How far it
+is open is read back from how far apart the fish are (`NetOpenFromGap`), so every peer nets and draws the same net from
+the published jacks; it opens only once the fish are in formation (`JacksNet.Formed`), so a take-off from a wide board
+never strings a net across it. `JacksBodies` draws it as faceted strand tubes that grow open and shrink away
+(`netGrowRate`). What crosses the mouth (`JacksNet`, run on every peer for what that peer simulates):
+
+- **Crystals, all five**: caught and carried, settling `netSettle` into the bag. On landing the net goes away and they
+  stay where they were; the cell's omni crystal is put there on every machine by the hull's owner
+  (`CrystalManager.RelocateCrystal`, new: a slot write on the network manager, no second bloom where it already is).
+- **Prisms**: each one the net touches goes to the hull's own impactor as a hull contact
+  (`ImpactorBase.AcceptImpacteeFromSweep`), once per entry, so it is destroyed (or sheds its shield) exactly as a hull hit
+  would. A creature's body prisms are skipped: the creature is netted, not shredded.
+- **Creatures**: one of another domain is STOLEN (`Fauna.StealInto`: its domain and body prisms become ours, replicated by
+  `FaunaNetworkSync`'s stolen domain; only species that recolour their whole body, `Fauna.CanBeStolen`, the light fauna).
+  Then, like any creature of ours that goes through the net, its plain body prisms are shielded (`Fauna.ShieldBody`,
+  replicated by an RPC; danger prisms stay danger) and it joins the herd, so it wears the herd's mark and its glow
+  ("lighting"). This is the one-colour law's third sign-off (`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`).
+- **Rival hulls**: a rival hull in the net loses `netRivalTake` of each element (a crystal each), at most once per
+  `netRivalCooldown`, knocked loose backward into the bag through `ElementalTransfer.ApplyAllAuthoritative` (the networked
+  Eject: PvP is petals only), decided where our hull is; the net then catches the crystals.
+- **The omni crystal's worm** (Garrett, 2026-10-24: "lets have the omnicrystal produce an omnivorous worm fauna in the
+  player's domain"): collecting an omni crystal (with the hull, or a jack while herding) bears the worm colony (it eats
+  prisms and creatures) in our domain through the platform's one spawn seam (`VesselSpawnFaunaByCrystalEffectSO`, in the
+  Jacks' crystal effects). The worm colony is not network-synced, so each peer bears its own, as every local species is.
+
+The near-field skimmer (the Rhino's sword capsule) is hidden and made a small sphere at the hull (`skimmerRadius` 4); the
+jack it was for a day (2026-10-23) is retired, and its two arm colliders came off the prefab (`net_retrofit`).
 
 ## 2. Elements (Garrett, 2026-10-20)
 
@@ -134,32 +192,18 @@ units and multiplied by `labScale` (0.4).
   they landed, colliders and all (a look and feel call for the playtest: see §6).
 - **The marlin's model is out of the prefab** (`author_jacks_assets.py` `drop_marlin`), and its puppetry (tail, fins,
   sail) went with `MarlinCrewBodies`. `Marlin.fbx` stays for the swordsman.
-- **The jack between the fish** (Garrett, 2026-10-23: "instead of a sword (1 axis) make it all three orthogonal axes
-  (like a jack in the game of jacks). then if it was a coordinate system, spin it about the (1,1,1) axis and place that
-  axis dynamically so it the same axis that draws a line between the two fish"). The Rhino's sword capsule (the nested
-  `ForceFieldSkimmer`) is still the hull's skimmer; `JacksBodies` makes it a jack: three round arms along its own x, y
-  and z (drawn in the blade's material; the blade's own renderer and crackle overlay stand down), its (1,1,1) diagonal
-  laid on the line from jack A to jack B, centred halfway between them and spun about that line
-  (`toyJackSpinDegreesPerSecond`, 120). The twist at zero spin follows the hull's up (the board's while herding), so it
-  never flips (`JacksMath.JackRotation`). Each arm is long enough that its tip turns in the plane a fish swims in
-  (`JacksMath.JackArm`: sqrt(3)/2 x the gap x `toyJackReach`; about 24 u at the flight formation), clamped to
-  `toyJackMinArm`..`toyJackMaxArm` (4..40 u). The prefab carries the three trigger capsules (the sword's own Y one plus X
-  and Z, `author_jacks_assets.py` `jack_retrofit`), so the impactor's probe set holds all three; the jack owns the
-  skimmer's scale (`Skimmer.HasExternalScaleDriver`), so Space no longer lengthens a blade. It is posed on every peer
-  from the drawn jacks. While herding it is drawn between the fish on the board, but its colliders are off (and the
-  impactor bounced, so it forgets its overlaps): a parked hull does not skim or vacuum crystals in the middle of the
-  board (`toyJackSkimsWhileHerding`). The sword's look (`RhinoSwordFXController`) and its five streaks
-  (`RhinoSwordBladeTracer0..4`) are stripped.
+- **The jack between the fish** (2026-10-23) was retired the next day for the net (§1.1).
 - **No jets.** The Rhino's vestigial jets are stripped (Garrett, 2026-10-23: "the vestigal jets from the rhino should be
   gone"): the ten `VesselJet`s (two pods, eight body nozzles), the pods' `JetFX`, the arc lightning, `JetTest` and the two
   legacy jet particle systems. `VesselTailAndJets` stays on the root for the tail.
 - **The herd lights up** (Garrett, 2026-10-23: "fauna that get herded should light up when in herding mode. fauna that
-  get called should light up when flying"): while the jacks herd, and while a call lasts in flight, every herded
+  get called should light up when flying"): while it is drawn to the plane - always while herding, and while netting when
+  the call has the plane's pull on (2026-10-24: the netting call is that toggle) - every herded
   creature's spindle colours are multiplied by 1 + `herdGlow` (1.5, HDR, so the bloom catches them). It rides the
   leash's mark (`IFaunaLeash.TryGetLeashMark`'s `glow`; `Spindle.SetHueLean` mints a shared material per mark and glow,
   so a lit herd still batches); the executor calls `Fauna.RefreshLeashMark` on each member when the state changes
   (`JacksExecutor.SetLit`, on the peer that simulates the creatures; on the host the mode of a client-owned hull comes
-  from `JacksBodies`' flying flag). The mark goes to puppets in one `uint` (domain, glow, lean; protocol 13). The
+  from `JacksBodies`' flying and plane flags). The mark goes to puppets in one `uint` (domain, glow, lean; protocol 13). The
   Angler's school does not glow (`glow` 0).
 - **The rings and dots** are the local player's instruments. Each view draws its own set for its own camera
   (`AnglerWorldMarks.Begin(cam, onlyThisCamera)`): the herding view at full strength, the flight view much more subtle
@@ -181,10 +225,14 @@ units and multiplied by `labScale` (0.4).
 
 ## 6. Follow-ups
 
-- **Playtest the jack and the glow** (2026-10-23, no playtest yet): the jack's size and spin against the chase camera
-  and in the herding view (`toyJack*` on `JacksBodies`), whether the herd glow (`herdGlow` 1.5) reads without washing
-  the herd out, and whether the jack should skim while herding. The skim region moved: the sword reached 60 u ahead of
-  the nose; the jack surrounds the hull, so the Jacks' skim and crystal-vacuum feel changes.
+- **Playtest the net** (2026-10-24, no playtest yet): its size against crystals and the chase camera (`netSpread`,
+  `netMinHeight`/`netMaxHeight`, `netDepth`), whether prisms should only shed shields rather than be destroyed (today a
+  hull contact), the rival take (`netRivalTake` 0.1, `netRivalCooldown` 2), the herding zoom (`herdViewZoom` 0.75), and
+  the worm colony as the omni crystal's creature (the shipped "Worm Colony Kaiju" config; a smaller worm may read better).
+  The zoom and call buttons have no icons yet (`zoomButtonIcon`, `callButtonIcon`).
+- **A netted crystal's place on other peers.** Every peer carries the crystals its own net catches; a peer whose copy of
+  the jacks lags may catch a crystal a frame later or not at all. The owner's release puts the omni crystal right for
+  everyone; a loose elemental crystal is local to each machine already.
 - **Playtest the two modes** (the decisions made without one, 2026-10-21): the flight formation (`flightGap` 14,
   `flightReach` 10, `flightModelScale` 1) against the Rhino's chase camera; whether the take-off jump to the jacks reads
   well; whether the parked hull's colliders (invisible, where the jacks landed) should switch off while herding; the AI's

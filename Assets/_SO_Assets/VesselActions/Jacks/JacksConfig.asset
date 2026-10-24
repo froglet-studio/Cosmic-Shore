@@ -37,6 +37,17 @@ MonoBehaviour:
   flightFormationEase: 8
   aiHerdSeconds: 14
   aiFlightSeconds: 6
+  netSpread: 30
+  netMinHeight: 6
+  netMaxHeight: 36
+  netDepth: 26
+  netSettle: 0.75
+  netSettleEase: 3
+  netRivalTake: 0.1
+  netRivalCooldown: 2
+  jackCrystalReach: 18
+  netCameraFill: 0.8
+  netCameraEase: 3
   callTime: 2.5
   callCooldown: 20
   decoyCooldown: 4
@@ -56,6 +67,13 @@ MonoBehaviour:
   herdHullWeight: 0
   flightHullWeight: 0.45
   viewPanEase: 1.2
+  herdViewZoom: 0.75
+  herdFollowJacks: 1
+  cellViewMargin: 1.1
+  viewZoomEase: 3
+  zoomButtonSize: 0.09
+  zoomButtonIcon: {fileID: 0}
+  callButtonIcon: {fileID: 0}
   callSfx:
     Guid:
       Data1: 0
