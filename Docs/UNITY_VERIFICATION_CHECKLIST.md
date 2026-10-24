@@ -14101,3 +14101,11 @@ Not opened in Unity (no editor in the session); `unity_refcompile` player clean.
 - [ ] Very Low, Honeyguide and Ratel: you start on the Ratel on a plain backdrop; Fly goes to the Honeyguide with only a "Ratel" button top-left; a short tap on it goes back.
 - [ ] Very Low: the Goby's Pistol view, the Orca's turrets and the Jacks' herd view show no small view.
 - [ ] Device Simulator or a phone: the Wrasse seat turns the screen to portrait and the board fits its width; the Grouper turns it back; the menus never go portrait.
+
+## Starlings HUD shows the next level (2026-10-24, `cece/bold-gauss-lad943`)
+
+Not opened in Unity (no editor in the session); `unity_refcompile --config editor` has 0 errors in the changed files. Check by hand (board task `T-20261024-303b`):
+- [ ] EditMode: `StarlingHUDLevelScalingTests`, `StarlingRulesTests` pass.
+- [ ] Fly the Starlings, pick a card; on a later hand that offers it again the row reads `Lv 3 → 7` (the arrow renders, no box).
+- [ ] Open that card's details: `Level 3 → 7`, each number `now → next`, `Unlocks at Lv 5: ...` for a jolt the pick passes.
+- [ ] With no hand, open details: each held card heads `Lv N → N+1` with numbers beside the next level's and its next jolt; a card at 15 shows `Max level`.

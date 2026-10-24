@@ -83,10 +83,16 @@ namespace CosmicShore.UI
                 int held = Mathf.Min(StarlingRules.MaxLevel, rules.HeldInElement(element));
                 var card = rules.HandCard(slot);
                 if (!card.IsEmpty)
+                {
+                    // A card you already hold reads "Lv 3 -> 7": picking it ADDS its level to yours (StarlingRules.Pick).
+                    int from = rules.Level(card.Card.Id), to = PickedLevel(from, card.Level);
                     view.SetCard(slot,
                         TemplateText.Fill(view.CardNameTemplate, "name", card.Card.DisplayName),
-                        TemplateText.Fill(view.CardLevelTemplate, "level", card.Level.ToString(CultureInfo.InvariantCulture)),
+                        from > 0 && to > from
+                            ? TemplateText.Fill(view.CardLevelUpTemplate, "from", Num(from), "to", Num(to))
+                            : TemplateText.Fill(view.CardLevelTemplate, "level", Num(to)),
                         true, held / (float)StarlingRules.MaxLevel);
+                }
                 else
                     view.SetCard(slot, string.Empty,
                         held > 0 ? TemplateText.Fill(view.HeldTemplate, "level", held.ToString(CultureInfo.InvariantCulture)) : string.Empty,
@@ -94,7 +100,8 @@ namespace CosmicShore.UI
             }
         }
         /// <summary>The card details while a pick is held open (a trigger held, or a long press): the hand's card of that
-        /// element at the level it arrives at, else every card held of it with what it does. Another pick button pressed
+        /// element at the level picking it takes it to (beside the level held, when held), else every card held of it with
+        /// what it does now and at the next level. Another pick button pressed
         /// meanwhile turns the details to its element (<see cref="StarlingPickPress"/>). Rebuilt only when what it shows
         /// changes.</summary>
         void UpdateDetails(StarlingRules rules)
@@ -112,20 +119,21 @@ namespace CosmicShore.UI
             string title, levelLine;
             if (!card.IsEmpty)
             {
+                // What picking it does: from the level held to the level it reaches, every number at both, and the jolts
+                // passed on the way (Garrett, 2026-10-24: "show what the next level will do").
                 var c = card.Card;
+                int held = rules.Level(c.Id), to = PickedLevel(held, card.Level);
+                bool up = held > 0 && to > held;
                 title = TemplateText.Fill(view.DetailsTitleTemplate, "name", c.DisplayName);
-                levelLine = TemplateText.Fill(view.DetailsLevelTemplate, "level", Num(card.Level));
+                levelLine = up
+                    ? TemplateText.Fill(view.DetailsLevelUpTemplate, "from", Num(held), "to", Num(to))
+                    : TemplateText.Fill(view.DetailsLevelTemplate, "level", Num(to));
                 Line(c.Text);
                 foreach (var stat in c.Stats)
-                    Line(TemplateText.Fill(view.DetailsStatTemplate, "label", stat.Label, "value", StatValue(stat, card.Level),
-                                           "unit", stat.Unit));
-                int held = rules.Level(c.Id);
-                foreach (var m in c.Milestones)
-                {
-                    if (m.Level <= held) continue;
-                    Line(TemplateText.Fill(view.DetailsMilestoneTemplate, "level", Num(m.Level), "text", m.Text));
-                    break;
-                }
+                    Line(up ? StatLine(stat, held, to, view.DetailsStatTemplate, view.DetailsStatUpTemplate)
+                            : StatLine(stat, to, to, view.DetailsStatTemplate, view.DetailsStatUpTemplate));
+                Milestones(c, held, to);
+                if (to >= StarlingRules.MaxLevel) Line(view.DetailsMaxLevel);
             }
             else
             {
@@ -140,14 +148,19 @@ namespace CosmicShore.UI
                         int held = rules.Level(c.Id);
                         if (held <= 0) continue;
                         if (_lines.Length > 0) _lines.Append('\n');   // a blank line between cards
-                        Line(TemplateText.Fill(view.DetailsHeldTemplate, "name", c.DisplayName, "level", Num(held)));
+                        // Each number beside the next level's, so the player sees how the card scales.
+                        int next = Mathf.Min(StarlingRules.MaxLevel, held + 1);
+                        Line(next > held
+                            ? TemplateText.Fill(view.DetailsHeldUpTemplate, "name", c.DisplayName, "level", Num(held), "next", Num(next))
+                            : TemplateText.Fill(view.DetailsHeldTemplate, "name", c.DisplayName, "level", Num(held)));
                         Line(c.Text);
                         foreach (var stat in c.Stats)
-                            Line(TemplateText.Fill(view.DetailsStatTemplate, "label", stat.Label, "value", StatValue(stat, held),
-                                                   "unit", stat.Unit));
+                            Line(StatLine(stat, held, next, view.DetailsStatTemplate, view.DetailsStatUpTemplate));
                         foreach (var m in c.Milestones)
                             if (m.Level <= held)
                                 Line(TemplateText.Fill(view.DetailsReachedTemplate, "level", Num(m.Level), "text", m.Text));
+                        NextMilestone(c, held);
+                        if (next <= held) Line(view.DetailsMaxLevel);
                     }
                 }
                 if (_lines.Length == 0) Line(view.DetailsNothingHeld);
@@ -155,6 +168,26 @@ namespace CosmicShore.UI
             if (_lines.Length > 0 && !string.IsNullOrEmpty(view.DetailsBrowseHint)) _lines.Append('\n');
             Line(view.DetailsBrowseHint);
             view.SetDetails(element, title, levelLine, _lines.ToString());
+        }
+
+        /// <summary>The jolts passed going from <paramref name="from"/> to <paramref name="to"/>, then the next one beyond.</summary>
+        void Milestones(StarlingCard c, int from, int to)
+        {
+            foreach (var m in c.Milestones)
+                if (m.Level > from && m.Level <= to)
+                    Line(TemplateText.Fill(view.DetailsUnlockTemplate, "level", Num(m.Level), "text", m.Text));
+            NextMilestone(c, to);
+        }
+
+        /// <summary>The card's first jolt above <paramref name="level"/>, if it has one.</summary>
+        void NextMilestone(StarlingCard c, int level)
+        {
+            foreach (var m in c.Milestones)
+            {
+                if (m.Level <= level) continue;
+                Line(TemplateText.Fill(view.DetailsMilestoneTemplate, "level", Num(m.Level), "text", m.Text));
+                return;
+            }
         }
 
         void Line(string text)
@@ -166,8 +199,26 @@ namespace CosmicShore.UI
 
         static string Num(int n) => n.ToString(CultureInfo.InvariantCulture);
 
+        /// <summary>The level a card reaches when picked: the level held plus the hand card's (StarlingRules.Pick), capped.</summary>
+        public static int PickedLevel(int held, int handLevel) =>
+            Mathf.Clamp(held + Mathf.Max(0, handLevel), 1, StarlingRules.MaxLevel);
+
+        /// <summary>
+        /// One number of a card at <paramref name="from"/>, beside its value at <paramref name="to"/> when the two differ
+        /// (<paramref name="upTemplate"/>, tokens <c>{label} {value} {next} {unit}</c>); otherwise the plain line
+        /// (<paramref name="plainTemplate"/>), so a count that rounds to the same number or a step not yet reached reads once.
+        /// </summary>
+        public static string StatLine(StarlingCardStat stat, int from, int to, string plainTemplate, string upTemplate)
+        {
+            string value = StatValue(stat, from);
+            string next = to > from ? StatValue(stat, to) : value;
+            return next == value
+                ? TemplateText.Fill(plainTemplate, "label", stat.Label, "value", value, "unit", stat.Unit)
+                : TemplateText.Fill(upTemplate, "label", stat.Label, "value", value, "next", next, "unit", stat.Unit);
+        }
+
         /// <summary>A number as the deck page prints it, or a stepped stat's text at the highest step at or below the level.</summary>
-        static string StatValue(StarlingCardStat stat, int level)
+        public static string StatValue(StarlingCardStat stat, int level)
         {
             if (stat.Kind == StarlingStatKind.Steps)
             {
