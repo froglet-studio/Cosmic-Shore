@@ -65,6 +65,34 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play: server-owned crystal wallet, gated off (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T3 (`Docs/AntiCheat/README.md` §8b, `Tools/UGS/README.md`). New package
+`com.unity.services.cloudcode` 2.10.4 (flagged and approved by Shombith, 2026-10-24). The Cloud Code script
+`Tools/UGS/CloudCode/economy.js` owns the wallet in the protected key `PLAYER_ECONOMY`. `ServerEconomy.cs` calls it;
+`PlayerDataService` applies every change locally, then takes the server's wallet when the last answer arrives.
+`DailyToyActivity` claims its reward through the new `PlayerDataService.ClaimReward`. **`ServerEconomyGate.Enabled` is
+false**: until the script is deployed, behaviour is unchanged and nothing calls Cloud Code.
+
+**Verified without the editor:** `unity_refcompile` player: 0 errors in project code, with the Cloud Code package
+fetched and compiled; a planted error in `ServerEconomy.cs` was caught. `node Tools/UGS/CloudCode/economy.test.cjs`:
+11 passed, and removing the balance check made it fail. The Amoebius port build (separate Port-only commit, a
+Cloud Code stub) compiles the changed files with no errors.
+
+**Test in the editor:**
+1. Open the project: Package Manager resolves Cloud Code 2.10.4 with no errors, and `packages-lock.json` gains no
+   other change.
+2. With the gate OFF: earn placement crystals, buy a hangar upgrade, start today's toy activity. The balance moves
+   exactly as before, and the Console shows no `[ServerEconomy]` lines.
+3. Deploy `economy.js` to the **development** environment (`Tools/UGS/README.md` steps 2-3), set the gate ON, and sign
+   in to that environment.
+4. First sign-in: the balance stays what it was (one-time migration, capped at 20000).
+5. Finish a match: the reward appears at once and stays after the server answer. Finish another within 30 s
+   (e.g. quit and replay fast): the second reward appears, then the balance drops back (`too_soon`).
+6. Toolbox crystal field (development environment): crystals are added and stay.
+7. Start today's toy activity twice: paid once.
+8. Edit `PLAYER_PROFILE.Economy.CrystalBalance` in the dashboard to 999999, restart: the game shows the server balance.
+
 ### 🔴 Fair play: host measures guests' movement; PilotControl out of release builds (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
 
 **What landed:** Threat Board T5 and T6 (`Docs/AntiCheat/README.md` §8b). `MovementPlausibilityMonitor` is attached

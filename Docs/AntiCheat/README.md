@@ -336,9 +336,9 @@ Set on the Threat Board artifact (https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi
 
 | Importance | Threat | Board score | Team task |
 |---|---|---|---|
-| Critical | R12 Monitoring that isn't disclosed (privacy policy section, Code of Conduct, store labels) | 15 | T-20261024-1a44, T-20261022-3075 (counsel) |
-| Critical | T3 Currency, unlocks and tokens written by the client | 20 | T-20261022-9bbd |
-| Critical | T5 Ship positions trusted from each client (speed / teleport / boost) | 9 | T-20261024-1652 |
+| Critical | R12 Monitoring that isn't disclosed (privacy policy section, Code of Conduct, store labels) | 15 | T-20261024-1a44 **done 2026-10-24** (drafts in `Docs/Legal/`), T-20261022-3075 (counsel) |
+| Critical | T3 Currency, unlocks and tokens written by the client | 20 | T-20261022-9bbd. **Crystal wallet built 2026-10-24, gated off until deployed** (`Tools/UGS/README.md`); unlock records and tokens remain |
+| Critical | T5 Ship positions trusted from each client (speed / teleport / boost) | 9 | T-20261024-1652. **Monitor built 2026-10-24, observe-only until ceilings are set** |
 | High | T1 Anonymous accounts | 20 | T-20261022-6151 |
 | High | T2 Client-trusted leaderboard | 15 | T-20261022-9bbd |
 | High | T8 No Report button | 12 | T-20261022-7708 |

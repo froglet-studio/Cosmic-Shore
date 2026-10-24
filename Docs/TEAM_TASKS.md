@@ -2377,3 +2377,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (style-B menu)
 - **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/MENU_REDESIGN_B.md §24; Docs/PERFORMANCE_OPTIMIZATION.md §2 10-24
+
+### T-20261024-c755 · open · setup · Fair play
+- **Task:** Deploy the server-owned crystal wallet: run node Tools/UGS/CloudCode/economy.test.cjs, deploy Tools/UGS/CloudCode/economy.js with the UGS CLI to the development environment, set ServerEconomyGate.Enabled = true in a test build and run the 'Server-owned wallet' editor checks; then production
+- **Done when:** Checklist entry 'Fair play: server-owned crystal wallet' is green on development, and the gate ships on with production deployed
+- **Who can take it:** Shombith (UGS layer owner); Yash (offered)
+- **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Tools/UGS/README.md; Docs/UNITY_VERIFICATION_CHECKLIST.md
