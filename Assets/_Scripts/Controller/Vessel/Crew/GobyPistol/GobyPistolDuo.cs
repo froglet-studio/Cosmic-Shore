@@ -55,7 +55,8 @@ namespace CosmicShore.Gameplay
         bool _pinned, _penHeld;
         Vector3 _home;
         readonly List<Den> _perches = new();                 // perch k: where the Goby sat, and the den the Pistol builds there
-        readonly List<PlaneSegment> _segments = new();       // segment k: the dart from perch k to perch k + 1
+        readonly List<PlaneSegment> _segments = new();
+        readonly List<PistolPlane.HillTrack> _tracks = new();   // each island's ground, built from its perches' seed (the same on every machine)
         readonly Trail _trail = new();
 
         // the Goby: its dart and its lock
@@ -163,7 +164,7 @@ namespace CosmicShore.Gameplay
             if (!config) config = ScriptableObject.CreateInstance<GobyPistolConfigSO>();
             _body = Config.Body; _vs = Config.Vortex;
             _t = 0f; _swapReadyAt = 0f; _human = Half.Goby;
-            _perches.Clear(); _segments.Clear(); _rings.Clear(); _held.Clear();
+            _perches.Clear(); _segments.Clear(); _tracks.Clear(); _rings.Clear(); _held.Clear();
             _darting = _charging = false; _dartReadyAt = 0f; ClearLock();
             _aiRng = new PistolAI.Mulberry32(20261022u); _ai = new PistolAI(31337u + 17u);
             _home = _gt.position; _aiHasDir = false; _aiIslandGoal = 0f; _perched = false; _perchT = 0f;
@@ -206,7 +207,7 @@ namespace CosmicShore.Gameplay
             if (_view) Destroy(_view);
             if (_bodyGo) Destroy(_bodyGo);
             foreach (var o in new Object[] { _torus, _ringMat, _lockMat, _bodyMat }) if (o) Destroy(o);
-            _perches.Clear(); _segments.Clear(); ClearLock();
+            _perches.Clear(); _segments.Clear(); _tracks.Clear(); ClearLock();
             _goby = null; _status = null; _gt = null; _cam = null; _view = null; _bodyGo = null; _camLive = false;
         }
 
@@ -381,7 +382,8 @@ namespace CosmicShore.Gameplay
                 AddPerch(pos, up, ownPad: i < pieces || !onBlock);
                 var seg = new PlaneSegment(from, pos, (fromUp + up).normalized);
                 _segments.Add(seg);
-                LayGround(seg);
+                _tracks.Add(TrackFor(seg, _segments.Count - 1));
+                LayGround(seg, _tracks[_tracks.Count - 1]);
                 from = pos; fromUp = up;
             }
             _perched = true; _perchT = 0f; _aiHasDir = false;
@@ -436,19 +438,21 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>The dart's ground: a trail block every <c>trailBlockGap</c> along the line, on the hills the Pistol rides.</summary>
-        void LayGround(in PlaneSegment seg)
+        /// <summary>An island's ground from its perches (<see cref="PistolPlane.IslandSeed"/>): the rider's machine builds the same.</summary>
+        PistolPlane.HillTrack TrackFor(in PlaneSegment seg, int island) => PistolPlane.HillTrack.Build(seg.L, PistolPlane.IslandSeed(seg.A, seg.B), Config.HillSpec, island);
+
+        /// <summary>The island's ground: a trail block every <c>trailBlockGap</c> along the line, on the hills the Pistol rides.</summary>
+        void LayGround(in PlaneSegment seg, PistolPlane.HillTrack track)
         {
             var prisms = _status.VesselPrismController;
             var channel = prisms ? prisms.PrismSpawnChannel : null;
             if (!channel || seg.L < 1f) return;
             float gap = Mathf.Max(2f, Config.TrailBlockGap);
-            var hills = Config.Hills;
             Vector3 scale = Config.TrailBlockScale;
             for (float s = gap * 0.5f; s < seg.L; s += gap)
             {
-                Vector3 pos = seg.Ground(s, hills);
-                Vector3 along = seg.S + seg.N * PistolPlane.HillSlope(s, seg.L, hills);
+                Vector3 pos = seg.Ground(s, track);
+                Vector3 along = seg.S + seg.N * track.Slope(s);
                 if (!SafeLookRotation.TryGet(along, seg.N, out var rot, this, logError: false)) continue;
                 var ret = channel.RaiseEvent(new PrismEventData
                 {
@@ -603,7 +607,7 @@ namespace CosmicShore.Gameplay
         PistolPlane.Frame WaitingFrame()
         {
             Vector3 a = _perches[_perches.Count - 1].Pos;
-            return PistolPlane.For(new PlaneSegment(a, a + _gt.forward * 100f, _gt.up), 1, Config.SlopeDegrees, default);
+            return PistolPlane.For(new PlaneSegment(a, a + _gt.forward * 100f, _gt.up), 1, Config.SlopeDegrees, null);
         }
 
         void StepPistol(float dt)
@@ -652,7 +656,7 @@ namespace CosmicShore.Gameplay
         void Ride(int seg, int dir)
         {
             _seg = seg; _dir = dir; _resting = false;
-            _f = PistolPlane.For(_segments[seg], dir, Config.SlopeDegrees, Config.Hills);
+            _f = PistolPlane.For(_segments[seg], dir, Config.SlopeDegrees, _tracks[seg]);
             // from a standstill: the Pistol rested at the perch, so it sets off at the ride's least speed and gathers it on
             // the way down, never carrying its arrival speed into the first hump and flying off the perch (Garrett,
             // 2026-10-22: "it should not launch from the perch each time")
@@ -1044,9 +1048,12 @@ namespace CosmicShore.Gameplay
             }
             if (_perches.Count > count) _perches.RemoveRange(count, _perches.Count - count);
             // the darts between them; the one the Pistol rides keeps its frame
-            if (_segments.Count > count - 1) _segments.RemoveRange(count - 1, _segments.Count - (count - 1));
+            if (_segments.Count > count - 1) { _segments.RemoveRange(count - 1, _segments.Count - (count - 1)); _tracks.RemoveRange(count - 1, _tracks.Count - (count - 1)); }
             for (int k = _segments.Count; k < count - 1; k++)
+            {
                 _segments.Add(new PlaneSegment(_perches[k].Pos, _perches[k + 1].Pos, (_perches[k].Up + _perches[k + 1].Up).normalized));
+                _tracks.Add(TrackFor(_segments[k], k));
+            }
             if (_at >= _perches.Count) _at = _perches.Count - 1;
             if (_seg >= _segments.Count) { _seg = -1; _resting = true; }
 

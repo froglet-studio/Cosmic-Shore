@@ -97,8 +97,9 @@ namespace CosmicShore.Gameplay
         /// it dives) and the water's drag; a CREST throws it when its speed needs more pull round the curve than the air's
         /// gravity <paramref name="gAir"/> gives (v^2 times the curvature over g cos), so holding the dive keeps it down and
         /// letting go over a crest flies it. In the air it floats (the air's gravity is lighter than the slide's while it
-        /// lets go); a landing within <c>pGoodLand</c> of the slope is a smooth slide that adds speed, a steeper one keeps
-        /// <c>pHardKeep</c> of its speed, and a hop shorter than <c>pMinAir</c> is neither. Never faster than <c>pMaxSpeed</c>.
+        /// lets go); a landing keeps its speed along the slope and loses the part into it (the game's frictionless ground):
+        /// within <c>pGoodLand</c> of the slope it is a perfect slide, steeper it keeps <c>pHardKeep</c> of what is left, and
+        /// a hop shorter than <c>pMinAir</c> is neither. Never faster than <c>pMaxSpeed</c>.
         /// </summary>
         static void Ride(State p, in PistolPlane.Frame f, float h, float g, float gAir, in Settings s, ref Events ev)
         {
@@ -123,8 +124,10 @@ namespace CosmicShore.Gameplay
             if (p.airT < s.pMinAir) { p.v = Mathf.Clamp(vt, s.pMinSpeed, vMax); return; }   // a skip
             float ang = sp > 1e-6f ? Mathf.Acos(Mathf.Clamp(vt / sp, -1f, 1f)) * Mathf.Rad2Deg : 0f;
             ev.Landed = true;
-            if (ang <= s.pGoodLand) { p.v = Mathf.Min(vMax, Mathf.Max(vt, sp * 0.98f) * (s.pSmoothBoost > 0f ? s.pSmoothBoost : 1f)); ev.SmoothLanding = true; }
-            else p.v = Mathf.Clamp(vt * s.pHardKeep, s.pMinSpeed, vMax);
+            // Tiny Wings' landing (frictionless, no bounce): the speed INTO the slope is lost, the speed along it kept; within
+            // pGoodLand of the slope it is a perfect slide (a touch of pSmoothBoost), steeper it keeps pHardKeep of it
+            if (ang <= s.pGoodLand) { p.v = Mathf.Clamp(vt * (s.pSmoothBoost > 0f ? s.pSmoothBoost : 1f), s.pMinSpeed, vMax); ev.SmoothLanding = true; }
+            else p.v = Mathf.Clamp(vt * (s.pHardKeep > 0f ? s.pHardKeep : 1f), s.pMinSpeed, vMax);
         }
 
         /// <summary>The jump that lands the Pistol <paramref name="aim"/> away (capped at <c>pLaunchRange</c>).</summary>

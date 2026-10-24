@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>A point of the ground, <paramref name="s"/> along the line from <see cref="A"/>.</summary>
-        public Vector3 Ground(float s, in PistolPlane.Hills hills) => A + S * s + N * PistolPlane.Hill(s, L, hills);
+        public Vector3 Ground(float s, PistolPlane.HillTrack track) => A + S * s + N * (track?.Height(s) ?? 0f);
     }
 
     /// <summary>
@@ -44,7 +44,7 @@ namespace CosmicShore.Gameplay
         {
             public Vector3 O, T, R, Up, M;
             public float L, Cos, Sin;
-            public Hills H;
+            public HillTrack Track;
             public int Dir;
             public PlaneSegment Seg;
 
@@ -61,64 +61,141 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The trail's hills, Tiny Wings' (Garrett, 2026-10-22: "the reference for the pistol is the game tiny wings"): ONE
-        /// train of smooth hills, <see cref="Height"/> high and <see cref="Wavelength"/> from crest to crest, whose heights
-        /// swell and fall by <see cref="Swell"/> over <see cref="SwellWavelength"/> - runs of big hills and runs of small
-        /// ones, like the game's islands, and every hill a clean slope to dive down and a clean crest to fly off. Laid along
-        /// the Goby's up. (Rolls plus a fine zigzag, the shape before, left no slope a landing could be smooth on.)
+        /// The shape of Tiny Wings' hills (Garrett, 2026-10-24: "you need to understand tiny wings better ... the right
+        /// sinusoidal curve"; the study: <c>Docs/PISTOL_TINY_WINGS_STUDY.md</c>). The game's ground is a run of KEY POINTS,
+        /// alternately a crest and a trough, each a random distance on and a random height up or down from the last, with
+        /// a HALF-COSINE between every pair (the haqu remake's <c>generateHillKeyPoints</c>: dx 160-240 pt, dy 60-120 pt,
+        /// for a 14 pt bird). So every hill is different, every crest and trough is level, and the steepest slope is
+        /// pi dy / 2 dx. All lengths in u; the island's heights grow by <see cref="GrowthPerIsland"/> per island, as the
+        /// game's later islands are taller, to <see cref="GrowthMax"/>.
         /// </summary>
-        public struct Hills
+        public struct HillSpec
         {
-            public float Height, Wavelength, Swell, SwellWavelength;
+            public float HalfLengthMin, HalfLengthMax, HalfHeightMin, HalfHeightMax, Band, GrowthPerIsland, GrowthMax;
 
-            public Hills(float height, float wavelength, float swell, float swellWavelength)
+            public HillSpec(float halfLengthMin, float halfLengthMax, float halfHeightMin, float halfHeightMax, float band, float growthPerIsland = 0f, float growthMax = 1f)
             {
-                Height = height; Wavelength = wavelength; Swell = swell; SwellWavelength = swellWavelength;
+                HalfLengthMin = halfLengthMin; HalfLengthMax = halfLengthMax; HalfHeightMin = halfHeightMin; HalfHeightMax = halfHeightMax; Band = band;
+                GrowthPerIsland = growthPerIsland; GrowthMax = growthMax;
             }
 
-            public bool IsFlat => Height == 0f;
+            /// <summary>The mean hill, crest to crest (two half-hills).</summary>
+            public float MeanWavelength => HalfLengthMin + HalfLengthMax;
+
+            /// <summary>The mean hill, trough to crest.</summary>
+            public float MeanHeight => 0.5f * (HalfHeightMin + HalfHeightMax);
+
+            public bool IsFlat => HalfHeightMax <= 0f;
+
+            /// <summary>How much taller island <paramref name="island"/> (0 the first) is than the first.</summary>
+            public float Growth(int island) => Mathf.Min(Mathf.Max(1f, GrowthMax), 1f + Mathf.Max(0f, GrowthPerIsland) * Mathf.Max(0, island));
         }
 
-        /// <summary>Whole half-waves of <paramref name="wavelength"/> that fit a stretch <paramref name="length"/> long (at
-        /// least one), so a hill of that scale is zero at both perches without fading: every dart, short or long, keeps
-        /// its hills right up to each perch.</summary>
-        public static int HalfWaves(float length, float wavelength) => Mathf.Max(1, Mathf.RoundToInt(2f * length / Mathf.Max(1f, wavelength)));
+        /// <summary>
+        /// One island's ground: the key points of a <see cref="HillSpec"/> laid along a dart <see cref="Length"/> long from a
+        /// seed (the same seed on every machine: the rider's Pistol builds the same ground from the perches alone). The
+        /// island starts on a crest at the perch it leaves (its first half-hill runs DOWN, the dive that starts the ride)
+        /// and ends on a crest at the perch it rides to (its last half-hill climbs, the ramp that lands it there); both
+        /// are at height 0, so the ground meets both perches. Heights stay within +-<see cref="HillSpec.Band"/> of the dart.
+        /// </summary>
+        public sealed class HillTrack
+        {
+            public readonly float Length;
+            readonly float[] _s, _h;
 
-        /// <summary>The steepest the trail's hills may climb or fall, dHill/ds. Under cot(slope) the ground never folds
-        /// back on the Pistol's screen.</summary>
+            public int KeyCount => _s.Length;
+            public float KeyS(int i) => _s[i];
+            public float KeyH(int i) => _h[i];
+
+            HillTrack(float length, float[] s, float[] h) { Length = length; _s = s; _h = h; }
+
+            /// <summary>A flat track (no hills): the frame the Pistol waits in.</summary>
+            public static HillTrack Flat(float length) => new(length, new[] { 0f, Mathf.Max(1f, length) }, new[] { 0f, 0f });
+
+            /// <summary>Lay the island. <paramref name="island"/> is its index from the run's first (for the growth).</summary>
+            public static HillTrack Build(float length, uint seed, in HillSpec spec, int island = 0)
+            {
+                length = Mathf.Max(1f, length);
+                if (spec.IsFlat || length < 2f) return Flat(length);
+                var rng = new PistolAI.Mulberry32(seed);
+                float grow = spec.Growth(island);
+                float dxMin = Mathf.Max(1f, spec.HalfLengthMin), dxMax = Mathf.Max(dxMin, spec.HalfLengthMax);
+                float dyMin = Mathf.Max(0f, spec.HalfHeightMin) * grow, dyMax = Mathf.Max(dyMin, spec.HalfHeightMax) * grow, band = Mathf.Max(dyMax, spec.Band);
+                var ss = new System.Collections.Generic.List<float> { 0f };
+                var hs = new System.Collections.Generic.List<float> { 0f };
+                float s = 0f, h = 0f, sign = -1f;   // the first half-hill runs down: the perch is a crest
+                while (true)
+                {
+                    float dx = Mathf.Lerp(dxMin, dxMax, rng.Next()), dy = Mathf.Lerp(dyMin, dyMax, rng.Next());
+                    if (s + dx > length - dxMin) break;
+                    s += dx;
+                    h = Mathf.Clamp(h + dy * sign, -band, band);
+                    sign = -sign;
+                    ss.Add(s); hs.Add(h);
+                }
+                // the island ends on a climb to the perch: the key before the end is a trough. If the last step went up,
+                // put a trough between it and the end when there is room, else drop it
+                int n = ss.Count;
+                if (n >= 2 && hs[n - 1] > hs[n - 2])
+                {
+                    if (length - ss[n - 1] >= 1.6f * dxMin) { ss.Add(0.5f * (ss[n - 1] + length)); hs.Add(Mathf.Clamp(hs[n - 1] - Mathf.Lerp(dyMin, dyMax, rng.Next()), -band, band)); }
+                    else { ss.RemoveAt(n - 1); hs.RemoveAt(n - 1); }
+                }
+                if (ss.Count == 1) { ss.Add(0.5f * length); hs.Add(-Mathf.Lerp(dyMin, dyMax, rng.Next())); }   // one valley
+                ss.Add(length); hs.Add(0f);
+                return new HillTrack(length, ss.ToArray(), hs.ToArray());
+            }
+
+            int Piece(float s)
+            {
+                int lo = 0, hi = _s.Length - 2;
+                while (lo < hi) { int mid = (lo + hi + 1) >> 1; if (_s[mid] <= s) lo = mid; else hi = mid - 1; }
+                return lo;
+            }
+
+            /// <summary>The ground's height at <paramref name="s"/> along the dart (0 past either end: the perches).</summary>
+            public float Height(float s)
+            {
+                if (s <= 0f || s >= Length) return 0f;
+                int i = Piece(s);
+                float s0 = _s[i], s1 = _s[i + 1], h0 = _h[i], h1 = _h[i + 1];
+                float t = (s - s0) / Mathf.Max(1e-4f, s1 - s0);
+                return 0.5f * (h0 + h1) + 0.5f * (h0 - h1) * Mathf.Cos(Mathf.PI * t);
+            }
+
+            /// <summary>dHeight/ds.</summary>
+            public float Slope(float s)
+            {
+                if (s < 0f || s > Length) return 0f;
+                int i = Piece(s);
+                float s0 = _s[i], s1 = _s[i + 1], h0 = _h[i], h1 = _h[i + 1], w = Mathf.Max(1e-4f, s1 - s0);
+                return -0.5f * (h0 - h1) * Mathf.PI / w * Mathf.Sin(Mathf.PI * (s - s0) / w);
+            }
+
+            /// <summary>The steepest the track climbs or falls, dHeight/ds.</summary>
+            public float SteepestSlope()
+            {
+                float worst = 0f;
+                for (int i = 0; i + 1 < _s.Length; i++) worst = Mathf.Max(worst, Mathf.Abs(_h[i] - _h[i + 1]) * Mathf.PI / (2f * Mathf.Max(1e-4f, _s[i + 1] - _s[i])));
+                return worst;
+            }
+        }
+
+        /// <summary>The seed an island's ground is built from: its two perches, quantised, so every machine that knows the
+        /// perches builds the same hills.</summary>
+        public static uint IslandSeed(Vector3 a, Vector3 b)
+        {
+            unchecked
+            {
+                uint h = 2166136261u;
+                foreach (float v in new[] { a.x, a.y, a.z, b.x, b.y, b.z }) { h ^= (uint)Mathf.RoundToInt(v * 4f); h *= 16777619u; }
+                return h;
+            }
+        }
+
+        /// <summary>Hills steeper than this would fold the ground back on a leaning screen (cot of the lean); the lean is
+        /// capped at 33 deg so cot stays above it. Level, as Tiny Wings is, nothing folds.</summary>
         public const float MaxHillSlope = 1.5f;
-
-        /// <summary>The hill at <paramref name="s"/> along a line <paramref name="length"/> long: whole half-waves
-        /// (<see cref="HalfWaves"/>), so the ground meets both perches, under the swell's envelope (1 - swell at each perch,
-        /// up to 1 between). A dart so short that its hills would pass <see cref="MaxHillSlope"/> gets lower hills.</summary>
-        public static float Hill(float s, float length, in Hills h)
-        {
-            if (length <= 1e-4f || h.IsFlat || s <= 0f || s >= length) return 0f;
-            float q = Mathf.PI * s / length;
-            int m = HalfWaves(length, h.Wavelength), n = HalfWaves(length, h.SwellWavelength);
-            return Calm(length, h, n, m) * h.Height * Envelope(h.Swell, n * q) * Mathf.Sin(m * q);
-        }
-
-        /// <summary>dHill/ds.</summary>
-        public static float HillSlope(float s, float length, in Hills h)
-        {
-            if (length <= 1e-4f || h.IsFlat || s < 0f || s > length) return 0f;
-            float k = Mathf.PI / length, q = k * s;
-            int m = HalfWaves(length, h.Wavelength), n = HalfWaves(length, h.SwellWavelength);
-            float dEnv = 0.5f * Mathf.Clamp01(h.Swell) * n * k * Mathf.Sin(n * q);
-            return Calm(length, h, n, m) * h.Height * (dEnv * Mathf.Sin(m * q) + Envelope(h.Swell, n * q) * m * k * Mathf.Cos(m * q));
-        }
-
-        /// <summary>The swell: 1 - swell at each perch (the island starts on small hills, as Tiny Wings' do, so nothing flies
-        /// off the first crest), rising to 1 between.</summary>
-        static float Envelope(float swell, float phase) => 1f - 0.5f * Mathf.Clamp01(swell) * (1f + Mathf.Cos(phase));
-
-        /// <summary>1, or less where the hills would climb steeper than <see cref="MaxHillSlope"/>.</summary>
-        static float Calm(float length, in Hills h, int n, int m)
-        {
-            float steepest = Mathf.PI / length * Mathf.Abs(h.Height) * (m + 0.5f * Mathf.Clamp01(h.Swell) * n);
-            return steepest > MaxHillSlope ? MaxHillSlope / steepest : 1f;
-        }
 
         /// <summary>The ground's signed curvature under frame-x <paramref name="x"/> (negative over a crest), and its slope.
         /// The ride's liftoff reads it: a crest throws the Pistol when its speed needs more pull round the curve than
@@ -183,13 +260,13 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The frame for riding <paramref name="seg"/> forward (<paramref name="dir"/> +1, from A to B) or back
         /// (-1, from B to A), leaning the travel <paramref name="slopeDegrees"/> downhill.</summary>
-        public static Frame For(in PlaneSegment seg, int dir, float slopeDegrees, in Hills hills)
+        public static Frame For(in PlaneSegment seg, int dir, float slopeDegrees, HillTrack track)
         {
             float a = Mathf.Clamp(slopeDegrees, 0f, 75f) * Mathf.Deg2Rad, c = Mathf.Cos(a), sn = Mathf.Sin(a);
             Vector3 t = dir >= 0 ? seg.S : -seg.S;
             var f = new Frame
             {
-                Dir = dir >= 0 ? 1 : -1, Seg = seg, L = seg.L, Cos = c, Sin = sn, H = hills,
+                Dir = dir >= 0 ? 1 : -1, Seg = seg, L = seg.L, Cos = c, Sin = sn, Track = track ?? HillTrack.Flat(seg.L),
                 O = dir >= 0 ? seg.A : seg.B, T = t,
                 R = (t * c + seg.N * sn).normalized,
                 Up = (-t * sn + seg.N * c).normalized,
@@ -204,7 +281,7 @@ namespace CosmicShore.Gameplay
         {
             // x = u cos + h(u) sin: solve for u by Newton's method. Its derivative cos + h'(u) sin stays positive while the
             // hills are under MaxHillSlope and the lean under 33 deg (cot > 1.5), so x never folds and the root is unique;
-            // the fixed-point guess starts it close.
+            // the fixed-point guess starts it close. Level (the shipped lean is 0, Tiny Wings') it is exact at once.
             float cs = Mathf.Max(1e-4f, f.Cos), u = (x - HillAt(f, x / cs) * f.Sin) / cs;
             for (int i = 0; i < 8; i++)
             {
@@ -232,13 +309,13 @@ namespace CosmicShore.Gameplay
         static float HillAt(in Frame f, float u)
         {
             if (u <= 0f || u >= f.L) return 0f;
-            return Hill(LineS(f, u), f.L, f.H);
+            return f.Track.Height(LineS(f, u));
         }
 
         static float HillSlopeAt(in Frame f, float u)
         {
             if (u <= 0f || u >= f.L) return 0f;
-            return HillSlope(LineS(f, u), f.L, f.H) * f.Dir;
+            return f.Track.Slope(LineS(f, u)) * f.Dir;
         }
     }
 

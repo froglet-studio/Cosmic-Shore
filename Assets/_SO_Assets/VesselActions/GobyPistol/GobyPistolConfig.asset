@@ -28,23 +28,26 @@ MonoBehaviour:
   lockRange: 1400
   lockCone: 12
   lockKeepScale: 1.6
-  slopeDegrees: 5
-  hillHeight: 3.5
-  hillWavelength: 26
-  hillSwell: 0.5
-  swellWavelength: 156
+  slopeDegrees: 0
+  hillHalfLengthMin: 10
+  hillHalfLengthMax: 15
+  hillHalfHeightMin: 3.6
+  hillHalfHeightMax: 7.2
+  hillBand: 9
+  hillGrowthPerIsland: 0.08
+  hillGrowthMax: 1.5
   trailBlockGap: 6
   trailBlockScale: {x: 1.4, y: 0.4, z: 5.5}
-  pGravity: 12
-  pDiveMul: 4
-  pMinSpeed: 9
-  pDrag: 0.01
-  pGoodLand: 65
-  pMinAir: 0.25
-  pAirGravity: 0.5
-  pSmoothBoost: 1.12
-  pHardKeep: 0.95
-  pMaxSpeed: 100
+  pGravity: 19
+  pDiveMul: 7.5
+  pMinSpeed: 6
+  pDrag: 0.05
+  pGoodLand: 30
+  pMinAir: 0.15
+  pAirGravity: 1
+  pSmoothBoost: 1.05
+  pHardKeep: 1
+  pMaxSpeed: 90
   pBodyR: 0.85
   pBodyHalfDepth: 10
   pLaunchRange: 35
@@ -115,13 +118,13 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   pipSize: 0.32
   viewMargin: 0.015
-  viewWidth: 30
-  viewMaxWidth: 180
-  viewSpeedWiden: 0.6
-  viewGroundedAt: 0.35
-  viewHeadroom: 0.15
+  viewWidth: 29
+  viewMaxWidth: 150
+  viewSpeedWiden: 0.15
+  viewGroundedAt: 0.4
+  viewHeadroom: 0.2
   viewDistance: 60
-  viewPistolAt: -0.2
+  viewPistolAt: -0.35
   depthFullSpreadAt: 60
   aiDartLength: 300
   aiCruiseSpeed: 100

@@ -20,17 +20,15 @@
 >   lays a small pad of its own blocks under the Goby there.
 > - "the slope from one perch to another should be a fun downhill for the shrimp" **[stated]**. **[read]:** each dart
 >   lays its trail as the Pistol's ground, and the Pistol rides it as **Tiny Wings** (Garrett, 2026-10-22: "the
->   reference for the pistol is the game tiny wings"; in Tiny Wings' PROPORTIONS since 2026-10-23, fourth pass below): one
->   train of smooth hills (`hillHeight` 3.5, `hillWavelength` 26: about 15 Pistol lengths crest to crest and 4 tall)
->   whose heights swell and fall like the game's islands (`hillSwell` 0.5 over `swellWavelength` 156), whole half-waves
->   per dart so the ground meets both perches; a gentle `slopeDegrees` 5 lean downhill whichever way it rides
->   (`PistolPlane`). An island of 900-1800 u from perch to perch (`islandMinLength` / `islandMaxLength`, 3x the kit's:
->   2026-10-23) is 35-70 hills, crossed in 20-30 s at about two hills a second by a rider who plays it. Hold to dive down a slope, let go and
->   the crest throws it, land on the back of a hill to slide faster; the ride is FLOATY and FORGIVING (`pAirGravity`
->   0.5, `pGoodLand` 65, `pHardKeep` 0.95) and its speed BUILDS (`pSmoothBoost` 1.12, `pDrag` 0.01, `pMaxSpeed` 100)
->   until it launches over many hills; the aimed jump is off (`aimedJump`). The camera is Tiny Wings' (`PistolPlane.TinyWingsView`): at rest a little over
->   one hill wide (`viewWidth` 30 u, the Pistol a seventeenth of it), the ground low on the screen and the Pistol a
->   third in, zooming out to `viewMaxWidth` 180 as it speeds up and flies.
+>   reference for the pistol is the game tiny wings"; until 2026-10-24 a sinusoid with a swell on a 5 deg lean, the third and
+>   fourth passes below). **Since 2026-10-24 the ride is Tiny Wings' own, measured from the game's remakes
+>   (`Docs/PISTOL_TINY_WINGS_STUDY.md`, the fifth pass below):** the ground is random KEY POINTS, alternately a crest and a
+>   trough, 10-15 u on and 3.6-7.2 u up or down, a half-cosine between (`PistolPlane.HillTrack`, seeded from the island's
+>   perches), level (`slopeDegrees` 0), an island of 900-1800 u (36-73 hills) starting on a crest at the perch and ending
+>   on a climb to the next; a frictionless body under `pGravity` 19, a dive x7.5, drag 0.05, a landing that keeps its
+>   speed along the slope (`pHardKeep` 1; within `pGoodLand` 30 deg a perfect slide, `pSmoothBoost` 1.05), a floor of
+>   `pMinSpeed` 6, the aimed jump off (`aimedJump`). The camera is the game's (`PistolPlane.TinyWingsView`): 29 u across
+>   at rest with the Pistol 0.15 in from the left, zooming out by height to keep a fifth of headroom, to 150 u.
 > - "the non-danger mass on either side of the pistol's plane (which no longer needs to bend at all) is pulled into that
 >   plane based on the pair's space. Space L5 pulls in shielded prisms too." **[stated]** The plane is FLAT: the
 >   unrolled ribbon and its warped view are retired. **[read]:** super-shielded and the pair's own prisms never move.
@@ -752,3 +750,34 @@ the line it settled.
   `GobyPistolTests`: `Islands_AreLaidAtTheirLength_AndKeepThePairTogether`, `Pair_TheGobyKeepsAheadOfThePistol` (control:
   the waiting Goby), the ride tests on island lengths with the sloppy rider over four phases. Logic run in .NET against
   the pure files: all pass.
+- 2026-10-24, Garrett: "i feel like you could really make this class work but you need to understand tiny wings better,
+  and really put the effort into making the pistol feel great and satisfying. it should be properly scaled, have the
+  right sinusoidal curve, speed, accelerations, camera, everything. find the other games in the genre. what works and
+  what doesn't. make a really fun to play pistol and goby." The four passes before tuned from memory; this one from the
+  game. **The study is `Docs/PISTOL_TINY_WINGS_STUDY.md`** (sources: the MIT haqu remake, the Kodeco tutorial, two clones,
+  the guides; Wavespark, Dune!, Alto's, Ski Safari for the genre). What it corrected:
+  - **The ground is not a sinusoid.** Random key points, alternately crest and trough, 160-240 pt on and 60-120 pt up or
+    down for a 14 pt bird, a half-cosine between: every hill a different size, every crest and trough level. Rebuilt as
+    `PistolPlane.HillTrack` in the Pistol's length (half-hills 10-15 u, rises 3.6-7.2 u, a +-9 u band, +8 % taller an
+    island to x1.5), seeded from the island's two perches so the rider's machine builds the same ground; the island
+    starts on a crest (the first half-hill is the dive) and ends on a climb (the ramp onto the perch). `Hills` (the
+    sinusoid and swell) is retired.
+  - **The dive is ~7 g, not 4, and the air is not light.** Gravity 9.8 m/s^2 plus a 40 N dive on a 0.6 kg body; drag 5 %/s;
+    no friction, no bounce, no cap, a floor on forward speed. Now `pGravity` 19, `pDiveMul` 7.5, `pAirGravity` 1,
+    `pDrag` 0.05, `pMinSpeed` 6, `pMaxSpeed` 90.
+  - **A landing loses only the speed into the slope** (frictionless, no bounce): `pHardKeep` 1, and the perfect slide is
+    the game's scored event, not a speed bonus (`pSmoothBoost` 1.05 kept as a touch, `pGoodLand` 30 deg).
+  - **Level** (`slopeDegrees` 0): the game's hills are level; every u/s is the rider's.
+  - **The camera**: the bird an eighth of the screen from the left and the zoom by height only, keeping it under four
+    fifths (`viewPistolAt` -0.35, `viewHeadroom` 0.2, `viewSpeedWiden` 0.15, `viewMaxWidth` 150).
+  - **Measured** (60 fps, two seeds): a 36-hill island in 20-21 s at 1.6-1.8 screens a second, 14 flights (13-14 perfect
+    slides), the longest 4.3 hills and 3 hill heights up, speed 23 -> 33 d/s with a top of 51; a 73-hill island in 40 s.
+    A rider wrong a third of the time takes twice as long (so would the game's); never diving dawdles at the floor speed
+    (93 s; the game's nightfall is what ends that); never letting go stays glued (43 s, one flight).
+  - **[read] for Garrett:** the Pistol AI is in the air 77-81 % of a ride (it dives in the air only when that lands it
+    flatter). And the study's §4, not built: fever for the pair (three perfect slides -> the den or the ring), speed coins
+    in the troughs, juice on the slide and the launch, a clock.
+  `GobyPistolTests`: `Ground_IsTinyWingsKeyPointHills` (lengths, rises, alternation, level keys, the dive start and the
+  ramp end, determinism; controls: flat, growth), `Ride_IsTinyWings` (pace in screens a second, flights, perfect slides,
+  the top speed in bird lengths; the never-dive, never-let-go and sloppy controls), `Proportions_AreTinyWings` on the
+  game's ranges, the view test on the game's framing. Their logic run in .NET against the pure files: all pass.

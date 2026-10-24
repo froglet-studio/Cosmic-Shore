@@ -2199,12 +2199,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-23 by a Claude session (`cece/inspiring-hawking-mnzmqc`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Honeyguide juice, 2026-10-23); Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
 
-### T-20261023-be8f · open · test · Crew vessels
+### T-20261023-be8f · done · test · Crew vessels
 - **Task:** Fly the Goby & Pistol's movement pass (Toybox > Vessel Changer > Goby and Pistol). As the Goby: it now CRUISES on two-thumb flight; hold Dart and let go to dash 140-600 u; once you are 900+ u from your last perch a dart's end becomes a perch (the island lays out behind you) and the Goby sits 1.5 s, then flies on. Swap to the Pistol (double tap the small view) and ride: the Goby AI should keep cruising and laying islands just ahead of you, never far away and never leaving you waiting at a perch. Swap back and let the Pistol AI ride while you fly.
 - **Done when:** Garrett says both halves move well together, or names what to change (GobyPistolConfig: aiCruiseSpeed, perchSeconds, islandMinLength / islandMaxLength / islandQueue, dart ranges; the Pistol's pAirGravity, pSmoothBoost, pMaxSpeed)
 - **Who can take it:** Garrett (feel call); Yash (offered) for a phone run
 - **Added:** 2026-10-23 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
 - **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log, 2026-10-23 movement pass)
+- **Done:** 2026-10-24, Garrett: understand Tiny Wings properly first - the study and the rebuilt ride follow; its playtest is the next task
 
 ### T-20261023-a6e1 · open · decision · Crew vessels
 - **Task:** Should a person's Goby show, in the world, when its next dart will perch (900+ u from the last perch and the Pistol's island queue not full)? Today a dart that falls short just dashes with no cue.
@@ -2212,3 +2213,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-23 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
 - **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (2026-10-23 movement pass, [read])
+
+### T-20261024-3791 · open · test · Crew vessels
+- **Task:** Fly the Pistol rebuilt from the Tiny Wings study (Docs/PISTOL_TINY_WINGS_STUDY.md; Toybox > Vessel Changer > Goby and Pistol, dart 900+ u, double tap the small view). Judge it against Tiny Wings side by side: the hills (every one a different size, level crests and troughs, the island starting with a dive and ending on a ramp), the heavy dive (hold on a downslope and it rockets; hold on an upslope and it dies), the launch off a crest when you let go, landings that keep speed along the slope, the pace (one to two screens a second), the camera (shrimp near the left, zoom out when you fly high). Say which of these is still off.
+- **Done when:** Garrett says the ride reads as Tiny Wings, or names the number (the study's §3 table maps each feel to its field)
+- **Who can take it:** Garrett (feel call); Yash (offered) for a phone run
+- **Added:** 2026-10-24 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
+- **See:** Docs/PISTOL_TINY_WINGS_STUDY.md §3; .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (2026-10-24)
+
+### T-20261024-5282 · open · decision · Crew vessels
+- **Task:** The Tiny Wings study's next steps for the Pistol (Docs/PISTOL_TINY_WINGS_STUDY.md §4): (1) fever for the pair - three perfect slides in a row feed the den or the ring; (2) speed coins in the island's troughs (crystals or the Goby's marks); (3) a sound and a world effect on the perfect slide and the launch; (4) a clock on the Pistol. Decide which to build and in what order.
+- **Done when:** Garrett picks and orders them
+- **Who can take it:** Garrett
+- **Added:** 2026-10-24 by a Claude session (cece/cool-shannon-aulgpe) (`cece/cool-shannon-aulgpe`)
+- **See:** Docs/PISTOL_TINY_WINGS_STUDY.md §4
