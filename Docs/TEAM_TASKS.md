@@ -1934,19 +1934,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/ECOSYSTEM.md §62.2b; Prism.CreateBlockCoroutine; Prism.MaxCreationCompletionsPerFrame / LoadGateCreationCompletionsPerFrame
 - **Done:** 2026-10-24, Prism.CreationQueue replaces per-prism polling (Bloomrush: 56k coroutines/frame, 166 ms). Unity after-capture owed (Bloomrush, Release).
 
-### T-20261021-a743 · open · dev · Performance
+### T-20261021-a743 · done · dev · Performance
 - **Task:** A Cell Selector swap releases the old world at a fixed 500 prisms a frame (Cell.ReleaseRetiredWorld). That took 1.1-1.4 s in both Orrery captures, for only 4,259 Garland prisms plus the pilot's trail, because the frames are slow, not the work. The world is already suctioned to a point, so nothing is visible. Make it a time slice (e.g. 8-16 ms a frame) instead of a count, and measure with a Load Time Insights capture
 - **Done when:** The release span in a swap capture is clearly under 1.1 s, with no long frame (over 100 ms) during it
 - **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
 - **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Cell.ReleaseRetiredWorld (PrismsPerFrame = 500); Docs/ECOSYSTEM.md §62.2b
+- **Done:** 2026-10-24, 12 ms time slice (500 cap kept only for deferred Destroys), 10-24; Unity swap capture owed
 
-### T-20261021-e916 · open · dev · Performance
+### T-20261021-e916 · done · dev · Performance
 - **Task:** Both Orrery captures logged '[PrismClock] STRICT MODE: no companion render entity to stamp (cellSwapSuction)': some prisms of the retiring world have no render entity, so they snap away instead of suctioning (a continuity pop). The new Load Time Insights counter 'Suction: prisms with no render entity' says how many. Find which prisms they are (flora? not yet created?) and give them the suction. Also, StampSuctionToward builds PrismRenderService.StatusLine() for every such prism before the warn-once check discards it: pass it only on the first warning
 - **Done when:** A swap capture shows 0 for the counter and no STRICT MODE cellSwapSuction error
 - **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
 - **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Prism.StampSuctionToward; PrismClockDiagnostics.WarnNoRenderEntity; the 'Suction: prisms with no render entity' counter
+- **Done:** 2026-10-24, the entity-less prisms are uncreated (invisible) ones; their pending creation is cancelled at suction so none pops in; warning detail composed once, 10-24
 
 ### T-20261021-4a44 · open · dev · card-art
 - **Task:** The card-art harness stubs PaintingStrokeToolkit.CurlNoise, so every world shaped by curl noise (Atlantis' kelp and currents, Yggdra's veils, Zephyr's rivers) is drawn from straightened geometry. Zephyr measured 52,917 prisms stubbed vs 36,069 real. The clip audit already compiles the real CurlNoise into its own copy of the shim (run.sh). Do the same in the card harness, re-render the cards that change (Scurry at least), and render_card_backgrounds --check

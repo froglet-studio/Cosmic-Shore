@@ -14260,3 +14260,16 @@ Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-24.
 `perf_hunt.py gates` all OK.
 
 1. Load any arena that builds a Geode (the freestyle six, Cell Selector): its band prisms lay flush, as on 10-20.
+
+## 🔴 2026-10-24 — Cell Selector swap: time-sliced release, no pop-in during suction (unverified: no Unity CLI in the session)
+
+**Files:** `Cell.cs` (`ReleaseRetiredWorld`), `Prism.cs` (`StampSuctionToward`, `CancelPendingCreation`),
+`PrismClockDiagnostics.cs` (`WillWarnNoRenderEntity`). What ran instead of `/verify-unity`: `unity_refcompile` player
+RESULT OK, editor 0 errors in changed files; perf gates OK. Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-24.
+
+1. Release, Menu_Main, arm Record Insight Mode (FrogletTools > Performance > Performance Benchmark > Load Time
+   Insights), Cell Selector > Orrery right after the boot world appears (while it is still growing in). The old
+   world suctions to a point with no prism popping in during the suction; the new world builds behind the veil.
+2. In the recording: the release span is well under the 1.1-1.4 s of the 10-21 captures; "Suction: prisms not
+   created yet" counts the invisible ones; "Suction: prisms with no render entity" is 0 (or names a real case).
+3. Swap back and forth a few times: no console error, the trail and the new world behave as before.
