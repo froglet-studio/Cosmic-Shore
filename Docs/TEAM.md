@@ -91,7 +91,9 @@ it; `who_works_where.py` reports a session nobody has merged as unattributed.
    - **Done needs its proof**: `done <id> --note "<the check>"`; a failed test is not done.
    `/ship` puts `team_tasks.py pr-section` in the PR body. The old markdown board (`TEAM_TASKS.md`) is a pointer now;
    the `team_tasks_nudge.py` hook that pushed tasks into every prompt was switched off on 2026-10-23 and deleted on
-   2026-10-25 (Shombith). Self-test: `team_tasks.py --self-test`.
+   2026-10-25 (Shombith). Instead, `team_tasks_mode.py` asks once per chat, before the first task, whether the chat
+   uses Froglet Tasks automatically or only through `/team-tasks` (Shombith, 2026-10-25). Self-test:
+   `team_tasks.py --self-test`.
 10. **Give a report to whoever asks** (Yash, 2026-10-15: "if someone asks you about a report of some other person
    working on some shared field, you should be able to give those reports to them"). Garrett asking for Yash's
    Regatta AI work, Shombith asking what changed in an area he shares: build the report from the system, never from
@@ -203,5 +205,6 @@ volunteer.
 decision on the first prompt about the engine or the tools. Shombith switched it off on 2026-10-23 with
 `team_activity.py` and `team_tasks_nudge.py` (deleted 2026-10-25): together they added about 7 KB to prompts and sent
 sessions off to fetch and query before answering. `vessel_studio_nudge.py` (once per session, on vessel work) and
-`report_request.py` (when a prompt asks for a report) still run. The Froglet Tasks page
+`report_request.py` (when a prompt asks for a report) still run, and `team_tasks_mode.py` (2026-10-25) asks once per
+chat whether Froglet Tasks is used automatically or manually. The Froglet Tasks page
 (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f) is the board for the team's tickets (rule 9).

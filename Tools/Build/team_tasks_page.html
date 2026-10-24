@@ -821,6 +821,7 @@ function pageInfo() {
   return headHtml("Info", "", "Everything this page does, a Claude session can do too. Use whichever you prefer: the page is recommended at the start of a day, never required.") +
     `<div class="cards info">
       <div class="card"><h3>In a Claude session</h3><p class="hint">Type these in any Claude Code session on the repo.</p><ul class="cmds">${INFO_SKILLS.map(([c, d]) => cmd(c, d)).join("")}</ul></div>
+      <div class="card"><h3>Automatic or manual</h3><p class="prose">Every new Claude chat on the repo asks you once, before its first task: <b>Automatic</b> (it shows the tickets that touch your work and offers to take, suggest or close them, each only on your yes) or <b>Manual</b> (it leaves the board alone unless you run <code>/team-tasks</code>).</p></div>
       <div class="card"><h3>Skills that use the board</h3><ul class="cmds">${INFO_RELATED.map(([c, d]) => cmd(c, d)).join("")}</ul></div>
       <div class="card"><h3>From a terminal</h3><ul class="cmds">${INFO_CLI.map(([c, d]) => cmd(c, d)).join("")}</ul></div>
       <div class="card"><h3>The rules</h3><ul class="rules">
