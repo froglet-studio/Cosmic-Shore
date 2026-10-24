@@ -187,6 +187,62 @@
         "Stop playing: the capture goes to Claude by itself.",
         "python3 Tools/Build/perf_hunt.py sweep --write shows the capture judged against its baseline in Docs/Reports/PERFORMANCE.md."
       ]
+    },
+    "bug-hunt": {
+      "title": "Bug Hunt",
+      "aliases": [
+        "bug hunt",
+        "bug ledger",
+        "console errors",
+        "send to claude",
+        "team bug board",
+        "bugledger"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Garrett",
+        "Caleb",
+        "Shombith",
+        "Andrew",
+        "jtgjones"
+      ],
+      "audience": [
+        "the core four"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "branchNote": "tooling and fixes merge to bleeding-edge; testers send to bugledger/<user>",
+      "summary": "Unity sends every tester's console errors to bugledger/<user> after Play; Claude fixes them and marks them fixed there; the tester's next clean play tests close them. A daily scheduled sweep is meant to do this unattended.",
+      "paths": [
+        "Assets/_Scripts/Editor/Diagnostics",
+        "Tools/Build/bug_ledger.py",
+        "BugLedger",
+        ".claude/skills/bug-ledger",
+        "Docs/DIAGNOSTICS.md"
+      ],
+      "docs": [
+        "Docs/DIAGNOSTICS.md",
+        ".claude/skills/bug-ledger/SKILL.md"
+      ],
+      "artifacts": [
+        {
+          "name": "Team Bug Board",
+          "url": "https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno"
+        },
+        {
+          "name": "Bug Hunt Loop (how it works)",
+          "url": "https://claude.ai/artifact/U8djY1FtPnqDmLS6QLG5t4"
+        }
+      ],
+      "report": "Docs/Reports/BUG_HUNT.md",
+      "taskAreas": [
+        "diagnostics",
+        "Performance",
+        "audio"
+      ],
+      "test": [
+        "Pull bleeding-edge, open Unity, play anything until a red error appears, stop Play: the console says it was sent to Claude.",
+        "git fetch origin; python3 Tools/Build/bug_ledger.py collect shows it on bugledger/<you>."
+      ]
     }
   }
 }
