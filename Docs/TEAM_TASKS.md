@@ -1915,12 +1915,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Two humans, two seats)
 - **Progress:** 2026-10-23 on `cece/relaxed-tesla-axhxzy` (Garrett's ask, Docs/CREW_STATIONS.md): steps 3, 4 and 5 are built for every crew, not only the Wrasse - one station per person on the Player (`Player.NetStation`, server-checked by `CrewStations.Classify`), the Wrasse seat run on its rider's machine with boosts and steals sent to the hull's machine and its kite's path replayed for race rings, and one swap ring (seats first, then the domain's hulls). Garrett replaced the offers: "players pass over seats with other players", and AI fills every empty seat. Still open: step 1 (pops, blasts and Mass clusters on every peer, T-20261023-d13a) and step 6 (seat stations in the Vessel Changer; two party members picking one crew hull from a menu). Untested in the Editor (T-20261023-d445).
 
-### T-20261021-a2b3 · open · dev · Performance
+### T-20261021-a2b3 · done · dev · Performance
 - **Task:** Prism creation is per-prism polling. Every laid prism starts its own CreateBlockCoroutine, and while the per-frame budget is spent, each waiting prism is resumed every frame only to yield again. Under the menu veil the budget is a fixed 512 completions a frame. Measured in the second Orrery capture: 34,770 completions at 0.07 ms each (2.5 s of real work), metered over ~68+ frames. Measure first (the third capture, T-20261021-a96c, shows the settle with the grow-in snapped). If the creation queue is then the floor, replace the polling with one queue the gate drains on a time slice, so a waiting prism costs nothing per frame
 - **Done when:** A capture shows the creation queue's share of a swap, and if it is the floor, a change that drains it from one queue on a time slice lands with a before/after capture
 - **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
 - **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Docs/ECOSYSTEM.md §62.2b; Prism.CreateBlockCoroutine; Prism.MaxCreationCompletionsPerFrame / LoadGateCreationCompletionsPerFrame
+- **Done:** 2026-10-24, Prism.CreationQueue replaces per-prism polling (Bloomrush: 56k coroutines/frame, 166 ms). Unity after-capture owed (Bloomrush, Release).
 
 ### T-20261021-a743 · open · dev · Performance
 - **Task:** A Cell Selector swap releases the old world at a fixed 500 prisms a frame (Cell.ReleaseRetiredWorld). That took 1.1-1.4 s in both Orrery captures, for only 4,259 Garland prisms plus the pilot's trail, because the frames are slow, not the work. The world is already suctioned to a point, so nothing is visible. Make it a time slice (e.g. 8-16 ms a frame) instead of a count, and measure with a Load Time Insights capture
@@ -2286,7 +2287,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md §5
 
 ### T-20261024-ae82 · open · dev · Amoebius
-- **Task:** Amoebius does not compile the game since bleeding-edge 98c25995b9 (2026-10-22): Assets/_Scripts/Utility/OrthographicLens.cs uses UnityEngine.Rendering.VolumeFrameworkUpdateMode and Camera.GetVolumeFrameworkUpdateMode / SetVolumeFrameworkUpdateMode (URP extension methods), which Port/src/CosmicShore.Engine/Rendering lacks (CS0246 at OrthographicLens.cs(32,44)). Add the enum (EveryFrame, ViaScripting, UsePipelineSettings) and the two camera methods. Until then the perf-daily 'amoebius' job is red on every branch carrying that file (seen on PR #1201).
+- **Task:** Amoebius does not compile the game since bleeding-edge 98c25995b9 (2026-10-22): Assets/_Scripts/Utility/OrthographicLens.cs uses UnityEngine.Rendering.VolumeFrameworkUpdateMode and Camera.GetVolumeFrameworkUpdateMode / SetVolumeFrameworkUpdateMode (URP extension methods), which Port/src/CosmicShore.Engine/Rendering lacks (CS0246 at OrthographicLens.cs(32,44)). Add the enum (EveryFrame, ViaScripting, UsePipelineSettings) and the two camera methods. Until then the perf-daily 'amoebius' job is red on every branch carrying that file (seen on PR #1201). Measured 2026-10-24 on Ys-bleeding-edge 7c68405057: Amoebius has 9 compile errors, not 1 - also TouchControl.startTime (PilotSwapGesture.cs:114), GravitySensor (TouchTilt.cs:29,79), Vector3.RotateTowards (PistolBodyMath.cs:149), UniversalAdditionalCameraData.requiresVolumeFrameworkUpdate and .volumeStack (OrthographicLens.cs:69,77).
 - **Done when:** engine_build of the player on bleeding-edge compiles OrthographicLens.cs, and perf-daily's amoebius job is green
 - **Who can take it:** Shombith (the Amoebius engine)
 - **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
@@ -2305,3 +2306,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (style-B menu)
 - **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/MENU_REDESIGN_B.md §24; Docs/PERFORMANCE_OPTIMIZATION.md §2 10-24
+
+### T-20261024-3084 · open · decision · Ecology
+- **Task:** Bloomrush (and Rampage, same cactus forest) grows its ~480-plant arena DURING play: about 56,000 prisms wait for creation at the 90 s mark in both of Andrew's 10-20 captures, and at the gameplay budget (6 completions a frame for laid-world mass) the forest takes ~2.6 min to finish appearing. The per-frame cost of the wait is fixed (Prism.CreationQueue, 10-24); the growth rate is a design call: build the forest under the load gate (512/frame behind the connecting screen), or give environment mass a time slice in play.
+- **Done when:** A decision recorded, and a Bloomrush capture shows the forest's backlog drained or bounded
+- **Who can take it:** Garrett (ecology, arenas)
+- **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md §2 10-24
+
+### T-20261024-0212 · open · test · Performance
+- **Task:** Re-capture Bloomrush after the prism creation queue (Ys-bleeding-edge): Release, Third Eye closed, Arcade > Bloomrush, play past the 90 s auto-capture, stop Play. Compare with the 10-20 captures (CPU busy 130-221 ms, Prism.CreateBlockCoroutine x56k/frame, CoroutinesDelayedCalls 139 ms).
+- **Done when:** A Bloomrush capture after the fix with CoroutinesDelayedCalls near zero
+- **Who can take it:** Andrew (has the Bloomrush captures), Yash, anyone with the Unity Editor
+- **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-24 prism creation queue

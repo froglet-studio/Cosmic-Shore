@@ -14175,3 +14175,16 @@ Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-24.
    scrolled to the centre, exactly as before. Claim a quest: its card animates, then settles at the right scale.
 2. Leave Profile (or enter freestyle) and play Menu_Main past the 4-minute auto-capture, then stop Play. In the
    capture, `ClipperRegistry.Cull` should be well below the 3-7 ms of the 10-19..23 captures (0.26 ms on 10-16).
+
+## 🔴 2026-10-24 — Prism creation waits in one queue, not one coroutine per prism (Bloomrush 3.5 fps) (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/Controller/Vessel/Prism.cs` (`CreationQueue`). What ran instead of `/verify-unity`:
+`unity_refcompile` player and player-dev RESULT OK; console-logging and conditional-compilation gates OK.
+Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-24.
+
+1. Release, Arcade > Bloomrush, play 90 s or more (the editor auto-captures), stop Play. In the capture,
+   `Prism.CreateBlockCoroutine` calls per frame drop from ~56,000 to a handful, `CoroutinesDelayedCalls` from ~139 ms,
+   and `Prism.CreationQueue.Drain` appears. The cactus forest still grows in (as slowly as before).
+2. Any arcade mode and Menu_Main: trails, flora and crystals appear as before (a 0.6 s spawn window, then visible);
+   a prism shot inside that window never appears; a Cell Selector world swap still builds behind the veil.
+3. A swarm fauna (Docs/SWARM_FAUNA.md §16.2) hit right after it spawns still materialises (CompleteCreationImmediately).
