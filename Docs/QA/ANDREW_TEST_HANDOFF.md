@@ -11,19 +11,19 @@ Start whenever you are ready. Nothing here is time-boxed.
 
 ## 0. Your whole list, in one command
 
-Everything the owner tests by hand is on the team board, `Docs/TEAM_TASKS.md`. Yash's open `test`
-tasks now name you in "Who can take it" (the first-login guide, the performance captures, the Third
-Eye and Regatta playtests, the bug-flow check) and two new ones cover multiplayer
-(`T-20261015-4354` Unity, `T-20261015-0426` Amoebius). Nobody is assigned until you take one.
+Everything the owner tests by hand is a ticket on Froglet Tasks (GitHub issues labelled `team-task`; the
+board is https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f): the first-login guide, the performance captures, the Third Eye and
+Regatta playtests, the bug-flow check, and two for multiplayer (`T-20261015-4354` Unity, `T-20261015-0426`
+Amoebius). Tickets name nobody (since 2026-10-23); take one by naming your branch.
 
 ```bash
-python3 Tools/Build/team_tasks.py list --for Andrew        # what you can take
-python3 Tools/Build/team_tasks.py take <id> --who Andrew   # so nobody does it twice
-python3 Tools/Build/team_tasks.py done <id> --note "what happened"   # when finished
+python3 Tools/Build/team_tasks.py list --dept testers                       # what you can take
+python3 Tools/Build/team_tasks.py take <id> --who Andrew --branch <branch>   # so nobody does it twice
+python3 Tools/Build/team_tasks.py done <id> --note "what happened"           # when finished
 ```
 
-A test that FAILS is not "done": write what failed in the note and add the fix as a new `dev` task
-(`team_tasks.py add --kind dev ...`). Sections 1–3 below are the multiplayer tasks in full.
+A test that FAILS is not "done": write what failed on the ticket, and the fix goes on a ticket of its own
+(`/team-tasks add --kind dev ...` from a session). Sections 1–3 below are the multiplayer tasks in full.
 
 ---
 
