@@ -3143,6 +3143,27 @@ puts the AI on the rail's - face, the side every ring sits on, 22 u off the rail
 4. Fail = it hits the rail more, stalls at a ring, or flips faces every ring. Undo: set `SkimHeight` back to 4.346 in
    `Tools/Build/author_skimrace_ai_config.py` (`REGATTA_LEARNED`) and re-run it.
 
+### 🔴 Party: B35 fixed - direct joins no longer fail with `NetworkConfig mismatch` (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed** (cause and fix in `Docs/PartySystem/BUGS.md` B35): 11 of the 31 registered network prefabs
+committed a `GlobalObjectIdHash` that is not the one Unity computes, so two editors on the same commit could
+hash the prefab list differently and the host refused every join. Each now carries Unity's value (one line per
+prefab). `Tools/Build/check_network_prefab_hashes.py` fails on a stale hash (`--fix` writes it). Each peer's
+multiplayer test log records a `netConfig` line (config hash + prefab keys), and `net_logs.py show` names the
+keys that differ between two players.
+**Verified without the editor:** `check_network_prefab_hashes.py --self-test` and the gate on the tree;
+`NetworkConfigMarkTests` (3) and the party suites as edit-mode tests on Amoebius; `net_logs.py --self-test`;
+`unity_refcompile` player and editor. `/verify-unity` is not available in the cloud session, so Unity has not
+compiled or loaded the change.
+**Verify in editor:**
+1. Open the project: none of the eleven prefabs (Player, NetworkVesselSpawner, AstroLeagueBall, Butterfly,
+   Falcon, Rhino, Scarab, Termite, MassSharkFauna, QuadFish, TadPoleFauna) shows as modified in git after
+   selecting it in the Project window (Unity computes the same value, so nothing to save).
+2. Two machines on this commit: one hosts a party, the other direct-joins, then once more by accepting an
+   invite. Pass: the joiner lands in the party; the host has no `NetworkConfig mismatch`.
+3. `python3 Tools/Build/net_logs.py collect` then `show 1`: both players have a `netConfig` event and no
+   `NetworkConfig differs between players` line.
+
 ### 🔴 Party: B31-B33 fixed - refresh under the UGS read limit, the shared presence lobby survives its host, a new Play starts clean (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed** (full cause and fix in `Docs/PartySystem/BUGS.md` B31-B33):
@@ -14175,3 +14196,16 @@ Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-24.
    scrolled to the centre, exactly as before. Claim a quest: its card animates, then settles at the right scale.
 2. Leave Profile (or enter freestyle) and play Menu_Main past the 4-minute auto-capture, then stop Play. In the
    capture, `ClipperRegistry.Cull` should be well below the 3-7 ms of the 10-19..23 captures (0.26 ms on 10-16).
+
+## 🔴 2026-10-24 — Prism creation waits in one queue, not one coroutine per prism (Bloomrush 3.5 fps) (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/Controller/Vessel/Prism.cs` (`CreationQueue`). What ran instead of `/verify-unity`:
+`unity_refcompile` player and player-dev RESULT OK; console-logging and conditional-compilation gates OK.
+Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-24.
+
+1. Release, Arcade > Bloomrush, play 90 s or more (the editor auto-captures), stop Play. In the capture,
+   `Prism.CreateBlockCoroutine` calls per frame drop from ~56,000 to a handful, `CoroutinesDelayedCalls` from ~139 ms,
+   and `Prism.CreationQueue.Drain` appears. The cactus forest still grows in (as slowly as before).
+2. Any arcade mode and Menu_Main: trails, flora and crystals appear as before (a 0.6 s spawn window, then visible);
+   a prism shot inside that window never appears; a Cell Selector world swap still builds behind the veil.
+3. A swarm fauna (Docs/SWARM_FAUNA.md §16.2) hit right after it spawns still materialises (CompleteCreationImmediately).
