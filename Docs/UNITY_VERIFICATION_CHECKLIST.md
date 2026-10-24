@@ -65,6 +65,33 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Flea (vessel 24): bounce off mass, time RT to the contact, LT crouch and hop (`claude/flea-vessel`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** a first Unity Flea for Garrett, cloned from the Vessel Studio's concept fleet (kind `ricochet`):
+`FleaMath` (the page's step / normal / onContact, line for line), `FleaVesselTransformer` (the vector flight model with
+grip and thrust off; FleaMath owns the momentum), `FleaBounceByPrismEffectSO` in a forked `FleaImpactorDataContainer`
+(no contact damage, boost reset or speed change), `FleaActionSO` on LT / RT, `FleaHUDController` on the Stoat's HUD
+(stand-in), `Flea.prefab` + every registration by `Tools/Build/author_flea_assets.py`. Design:
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/FLEA.md`. The body, camera, HUD art and card sprites are the Stoat's.
+
+**Verified without the editor:** `unity_refcompile` player 0 errors, editor 0 in changed files; `to-bleeding-edge/gates.sh`
+all OK but `check_generated_assets`, whose 7 findings on `Flea.prefab` are all copied verbatim from `Stoat.prefab`: six
+are Netcode's `#if UNITY_EDITOR` serialized fields (`ShowTopMostFoldoutHeaderGroup`, `NetworkTransformExpanded`) judged
+against the player schema, and one is `R_VesselElementStatsHandler.cs` declaring `R_ShipElementStatsHandler` (on all 24
+vessel prefabs; `VesselStatus` GetOrAdds it at runtime); `author_flea_assets.py --check` OK and `--self-test` 20/20 negative controls; `FleaMathTests` 8/8 headless
+(`bash Tools/Build/flea_harness/run.sh --self-test`, goldens from the page's own code in node; two planted defects caught).
+`/verify-unity` did not run: no Unity CLI in the session.
+
+**Verify (Menu_Main, freestyle):** Toy Box ▸ Vessel Changer ▸ **Flea**.
+1. It spawns, crawls up to about 50 u/s on its own and the console stays clean (no missing-script, no missing executor).
+2. Fly into a trail: the hull BOUNCES off (no prism shredded, no speed reset). With no press the bounce is dull (slower).
+3. Press RT (Right Shift / LMB) just before a contact: perfect, faster, the Charge gauge (chain) fills a sixth.
+4. Press RT just AFTER a dull bounce (within 90 ms): saved, it speeds up.
+5. Hold LT (Left Shift / RMB): it slows to a crouch and the Space gauge charges; let go: it hops along the nose.
+6. Between bounces the momentum turns toward the nose slowly (a ballistic arc), and steering turns the nose freely.
+Watch for: a double bounce off one prism (raise `FleaConfig.samePrismGuard`); a bounce normal that sends the hull INTO a
+ribbon (the prism axis is read as `transform.forward`); the AI Flea flying but never bouncing on purpose (no Flea AI yet).
+
 ### 🔴 Seats, then hulls: any person changes seat and vessel in freestyle (`cece/relaxed-tesla-axhxzy`, 2026-10-23) — NOT EDITOR-VERIFIED
 
 **What landed:** one swap ring for every person (`CrewStations`, `Docs/CREW_STATIONS.md`): D-pad left / right, the

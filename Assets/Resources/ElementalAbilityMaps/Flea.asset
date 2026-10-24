@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Flea
+  m_EditorClassIdentifier:
+  vesselClass: 24
+  entries:
+  - Element: 1
+    AbilityLabel: (open design slot)
+    AbilityDescription: '(open design slot) The Vessel Studio proposes "Spring": this element scales FleaConfig.perfectGain x1 to x1.15 at level 10 (FleaMath.AtLevels). Not wired and not signed off - FLEA.md section 5.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel:
+    UpgradeDescription: '(open design slot) The studio proposes "Supercharge". Do not invent one without sign-off.'
+  - Element: 2
+    AbilityLabel: (open design slot)
+    AbilityDescription: '(open design slot) The Vessel Studio proposes "Momentum": this element scales FleaConfig.topSpeed x1 to x1.2 at level 10 (FleaMath.AtLevels). Not wired and not signed off - FLEA.md section 5.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel:
+    UpgradeDescription: '(open design slot) The studio proposes "Shatter". Do not invent one without sign-off.'
+  - Element: 3
+    AbilityLabel: (open design slot)
+    AbilityDescription: '(open design slot) The Vessel Studio proposes "Big Hop": this element scales FleaConfig.hopMax x1 to x1.5 at level 10 (FleaMath.AtLevels). Not wired and not signed off - FLEA.md section 5.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel:
+    UpgradeDescription: '(open design slot) The studio proposes "Leap". Do not invent one without sign-off.'
+  - Element: 4
+    AbilityLabel: (open design slot)
+    AbilityDescription: '(open design slot) The Vessel Studio proposes "Wide Window": this element scales FleaConfig.window x1 to x1.7 at level 10 (FleaMath.AtLevels). Not wired and not signed off - FLEA.md section 5.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel:
+    UpgradeDescription: '(open design slot) The studio proposes "Slow Motion". Do not invent one without sign-off.'
