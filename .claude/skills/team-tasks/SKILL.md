@@ -8,7 +8,9 @@ description: Froglet Tasks from a session - the team's ticketing system (GitHub 
 Tickets are GitHub issues on `froglet-studio/Cosmic-Shore` labelled `team-task`. `Tools/Build/team_tasks.py` is the
 only writer a session uses; the board people read is the **Froglet Tasks page**,
 https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f. `.github/workflows/team-tasks.yml` runs the sweep (merges,
-deletions, nightly). Owner of this tooling: Shombith.
+deletions, nightly). Owner of this tooling: Shombith. The page's source is `Tools/Build/team_tasks_page.html`: edit it
+there and republish it to the same url (Artifact tool, `url` above); its Info view lists this skill's commands, so a new
+command lands there too.
 
 ## The rules (Docs/TEAM.md rule 9; every command below enforces its part)
 
