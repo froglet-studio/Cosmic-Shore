@@ -18,7 +18,8 @@ What it checks, and where each number comes from:
             amoebius_markers_run.py): allocations per marker repeat to ~1% between identical runs, so a
             KB/frame rise is a regression the same day; milliseconds there are .NET's and only WATCHED.
   sweep     gates + collect (+ --amoebius) -> the generated block of Docs/Reports/PERFORMANCE.md, a JSON
-            board, and (with --tasks) one team task per NEW regression on Docs/TEAM_TASKS.md.
+            board, and (with --tasks) one Froglet Tasks ticket per NEW regression
+            (team_tasks.py add; run it only when the person asked for the tickets).
 
 Baselines live in Docs/perf/baselines.json (Unity captures, per scene|label) and
 Docs/perf/amoebius_baselines.json (per mode); the first VALID measurement of a key becomes its baseline
