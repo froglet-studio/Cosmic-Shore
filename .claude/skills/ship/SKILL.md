@@ -973,7 +973,7 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
   re-tune another collaborator's work is a NO-GO until the person you work with has confirmed it with them (§4).
 - **Hand-offs** (`Docs/TEAM.md` rule 9, the `/team-tasks` skill): anything the branch leaves for a person (an editor
   test, a playtest, a dashboard step, content, a decision) goes on the branch's ONE ticket (`/team-tasks add`; a second
-  `add` appends a checklist line), naming nobody: tickets are never assigned, and taking one names its branch. Close
+  `add` appends a checklist line), naming nobody: tickets are never assigned; taking one makes it the taker's, and naming a branch starts it. Close
   the tickets the branch finished (`team_tasks.py done <id> --note <proof>`). Then put
   `python3 Tools/Build/team_tasks.py pr-section` in the PR body as its **Hand-offs** section.
 - Do not ask whether Amoebius or the Vessel Studio helped: the decision is recorded (`Docs/TOOLING_DECISIONS.md`

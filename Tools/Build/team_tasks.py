@@ -5,7 +5,8 @@ A session or person leaves a ticket another collaborator can pick up: a test tha
 a dashboard to set up, content to write, a decision to take. The rules (Shombith, 2026-10-23 and 2026-10-25):
 
 1. A ticket names nobody until someone takes it. `add` refuses a person; `sweep` clears any assignee set on GitHub.
-2. Taking a ticket names your branch. A live ticket shows the person and the branch.
+2. Taking a ticket needs only your name: it shows as yours to everyone. Naming your branch (when you take it, or
+   later with `take <id> --branch`) starts it; not started within 14 days, it goes back to open, nobody's.
 3. When that branch merges into bleeding-edge the ticket closes by itself. If the branch is deleted, released, or has
    no commit for 14 days, the ticket goes back to open, nobody's.
 4. A ticket nobody takes in 14 days is archived (closed, not planned, label `archived`). Done tickets close as
@@ -554,14 +555,17 @@ def open_by_area(tickets):
 # --- What a ticket goes through --------------------------------------------------------------------------------------
 
 def take(t, who, branch_name, today):
-    if not branch_name.strip():
-        raise SystemExit("taking a task names your branch: pass --branch <the branch you do it on>")
+    """Taking needs only a name: the ticket shows as theirs to everyone. A branch is optional; naming one is how the
+    taker starts it (and the taker names it later the same way). Not started in 14 days, it goes back to open."""
     if not who.strip():
         raise SystemExit("taking a task names you: pass --who <your name>")
     if t.state not in ("open", "live"):
         raise SystemExit(f"{t.id} is {t.state}; `revive` it first")
     if t.state == "live" and t.taken_by.lower() != who.lower():
         raise SystemExit(f"{t.id} is live: {t.taken_by} on {t.branch or 'no branch'}. They release it first.")
+    if t.state == "live":   # the taker names (or changes) the branch they started it on; the take date stays
+        t.branch = branch_name.strip() or t.branch
+        return
     t.state, t.taken_by, t.branch, t.taken = "live", who.strip(), branch_name.strip(), today.isoformat()
 
 
@@ -965,16 +969,21 @@ def plan_sweep(tasks, probe, today, idle_days=IDLE_DAYS):
             continue
         if not taker(t):
             continue
-        name = branch_of(t)
+        name, taken = branch_of(t), taken_on(t)
         if not name:
-            plan.append((t.id, "no-branch", f"taken by {taker(t)} before branches were recorded"))
+            if taken is None:
+                plan.append((t.id, "no-branch", f"taken by {taker(t)} with no date recorded"))
+            elif (today - taken).days >= idle_days:
+                plan.append((t.id, "unstarted", f"not started in {(today - taken).days} days"))
             continue
-        taken = taken_on(t) or today
+        taken = taken or today
         p = probe(name, taken)
         if p["merged"]:
             plan.append((t.id, "merged", name + (f" (#{p['pr']})" if p.get("pr") else "")))
         elif not p["exists"]:
-            plan.append((t.id, "gone", name))
+            # Named but not pushed yet counts as not started: it has the same 14 days as a take with no branch.
+            if (today - taken).days >= idle_days:
+                plan.append((t.id, "gone", name))
         else:
             quiet = (today - max(d for d in (p.get("last"), taken) if d)).days
             if quiet >= idle_days:
@@ -998,6 +1007,8 @@ def apply_sweep(tickets, plan, today, base=BASE):
             reopen(t, "the branch was deleted without merging", today)
         elif action == "idle":
             reopen(t, detail.split(", ", 1)[1], today)
+        elif action == "unstarted":
+            reopen(t, detail, today)
         elif action == "expire":
             t.state, t.archived = "archived", f"{today.isoformat()}, {detail}"
             t.notes.append(f"Archived: {detail}. Bring it back with `/team-tasks revive {t.id}` or from the page's "
@@ -1061,7 +1072,8 @@ def sweep(store, dry_run, fetch, base, idle_days, hint=None, today=None, refs=BR
     listed = {p[0] for p in plan if p[1] == "unassign"}
     plan += [(t.id, "unassign", "assigned on GitHub: " + ", ".join(t.assignees)) for t in current
              if t.is_open and t.assignees and t.id not in listed and t.state == "live"]
-    words = {"unassign": "unassign (was: {})", "merged": "done: {} merged", "gone": "back to open: {} was deleted",
+    words = {"unassign": "unassign (was: {})", "merged": "done: {} merged", "gone": "back to open: {} was deleted or never pushed",
+             "unstarted": "back to open: {}",
              "idle": "back to open: {}", "expire": "archived: {}", "no-branch": "left as is: {}"}
     for tid, action, detail in plan:
         print(f"{'would ' if dry_run else ''}{tid}: {words[action].format(detail)}")
@@ -1074,9 +1086,9 @@ def sweep(store, dry_run, fetch, base, idle_days, hint=None, today=None, refs=BR
             store.write(t)
     legacy = [t for t in tickets if t.legacy]
     counts = collections.Counter(p[1] for p in plan)
-    print(f"sweep: {counts['merged']} done, {counts['gone'] + counts['idle']} back to open, {counts['expire']} archived "
-          f"after {idle_days} days untaken, {counts['unassign']} unassigned, {counts['no-branch']} taken without a "
-          f"branch, {n_new} filed and {len(filed) - n_new} closed from an old board" +
+    print(f"sweep: {counts['merged']} done, {counts['gone'] + counts['idle'] + counts['unstarted']} back to open, {counts['expire']} archived "
+          f"after {idle_days} days untaken, {counts['unassign']} unassigned, {counts['no-branch']} taken with no date "
+          f"recorded, {n_new} filed and {len(filed) - n_new} closed from an old board" +
           (f"; {len(legacy)} still in the old mirror's format, skipped until `migrate` runs" if legacy else "") +
           (" (dry run, nothing written)" if dry_run else ""))
     return plan, filed
@@ -1274,9 +1286,6 @@ def sync(store, data, since, dry_run, today=None, now=None, extras=True, base=BA
         if t is None or t.legacy:
             skipped.append(f"{d.get('id')}: no such ticket" + (" (not migrated yet)" if t else ""))
             continue
-        if kind == "take" and d.get("action", "take") == "take" and not d.get("branch") and d.get("session"):
-            skipped.append(f"{t.id}: started in a session; that session takes it on its branch")
-            continue
         day = datetime.date.fromisoformat((d.get("at") or d.get("updatedAt") or today.isoformat())[:10])
         try:
             if kind == "take":
@@ -1293,7 +1302,7 @@ def sync(store, data, since, dry_run, today=None, now=None, extras=True, base=BA
                     revive(t, day)
                 else:
                     raise SystemExit(f"unknown action {action!r}")
-                applied.append(f"{t.id}: {action} by {who}" + (f" on {t.branch}" if action == "take" else ""))
+                applied.append(f"{t.id}: {action} by {who}" + (f" on {t.branch}" if action == "take" and t.branch else ""))
             else:
                 for field in ("priority", "dept", "milestone"):
                     if field in d:
@@ -1550,8 +1559,13 @@ def self_test():
 
     # take, release, done, archive, revive
     t = find(store.fetch(), t3.id)
-    refused(lambda: take(t, "Shombith", " ", day), "take took no branch")
-    take(t, "Shombith", "claude/b", day)
+    refused(lambda: take(t, " ", "", day), "take took no name")
+    take(t, "Shombith", "", day)
+    if t.state != "live" or t.taken_by != "Shombith" or t.branch:
+        bad.append("taking with no branch did not make the ticket live and the taker's")
+    take(t, "Shombith", "claude/b", day + datetime.timedelta(days=3))
+    if t.branch != "claude/b" or t.taken != day.isoformat():
+        bad.append("naming the branch later did not start the ticket on it, keeping the take date")
     refused(lambda: take(t, "Garrett", "claude/g", day), "a live ticket was taken from under its taker")
     refused(lambda: archive(t, "", day), "a live ticket was archived")
     take(t, "Shombith", "claude/b2", day)
@@ -1568,14 +1582,19 @@ def self_test():
     api2 = FakeApi()
     s2 = Issues("o/r", api2)
     ids = {}
-    for key in ("merged", "gone", "idle", "uncommitted", "active", "legacy", "named", "editor", "stale"):
+    for key in ("merged", "gone", "idle", "uncommitted", "active", "legacy", "named", "editor", "stale",
+                "unstarted", "waiting", "unpushed"):
         when = day + datetime.timedelta(days=10) if key in ("named", "editor") else day
         tk, _ = add([], "Tooling", "dev", f"Sweep case {key}.", "It sweeps.", "P3", "developers", "w",
                     who="anyone with the Unity Editor" if key == "editor" else "anyone", today=when, on=f"claude/f-{key}")
         if key in ("merged", "gone", "idle", "uncommitted", "active"):
             take(tk, "Shombith", f"claude/{key}", day)
         if key == "legacy":
-            tk.state, tk.taken_by, tk.taken = "live", "Yash", day.isoformat()
+            tk.state, tk.taken_by, tk.taken = "live", "Yash", ""
+        if key == "unstarted":
+            take(tk, "Caleb", "", day)
+        if key in ("waiting", "unpushed"):   # taken 3 days before the sweep: still inside the 14 days to start
+            take(tk, "Caleb", "claude/unpushed" if key == "unpushed" else "", day + datetime.timedelta(days=17))
         s2.write(tk)
         ids[key] = tk.id
     named_issue = next(i for i in api2.issues.values() if ids["named"] in i["title"])
@@ -1585,11 +1604,12 @@ def self_test():
              "claude/gone": dict(exists=False, merged=False, pr=None, last=None),
              "claude/idle": dict(exists=True, merged=False, pr=None, last=day + datetime.timedelta(days=2)),
              "claude/uncommitted": dict(exists=True, merged=False, pr=None, last=day - datetime.timedelta(days=5)),
-             "claude/active": dict(exists=True, merged=False, pr=None, last=later - datetime.timedelta(days=3))}
+             "claude/active": dict(exists=True, merged=False, pr=None, last=later - datetime.timedelta(days=3)),
+             "claude/unpushed": dict(exists=False, merged=False, pr=None, last=None)}
     probe = lambda name, taken: facts[name]
     plan = plan_sweep(s2.fetch(), probe, later)
     want = {ids["merged"]: "merged", ids["gone"]: "gone", ids["idle"]: "idle", ids["uncommitted"]: "idle",
-            ids["legacy"]: "no-branch", ids["named"]: "unassign", ids["stale"]: "expire"}
+            ids["legacy"]: "no-branch", ids["named"]: "unassign", ids["stale"]: "expire", ids["unstarted"]: "unstarted"}
     if {tid: action for tid, action, _ in plan} != want:
         bad.append(f"sweep planned the wrong moves: {plan}")
     swept = s2.fetch()
@@ -1601,12 +1621,14 @@ def self_test():
     if after[ids["merged"]].state != "done" or raw[ids["merged"]]["state_reason"] != "completed" or \
             not any("#1500" in c["body"] for c in api2.comments):
         bad.append("a merged branch did not close its ticket as completed with the PR")
-    for key in ("gone", "idle", "uncommitted"):
+    for key in ("gone", "idle", "uncommitted", "unstarted"):
         tk = after[ids[key]]
         if tk.state != "open" or tk.branch or "live" in {l["name"] for l in raw[ids[key]]["labels"]} or not tk.released:
             bad.append(f"a {key} branch did not put its ticket back to open, nobody's")
     if after[ids["active"]].state != "live" or after[ids["active"]].branch != "claude/active":
         bad.append("an active branch's ticket was moved")
+    if after[ids["waiting"]].state != "live" or after[ids["unpushed"]].branch != "claude/unpushed":
+        bad.append("a ticket taken 3 days ago went back to open before its 14 days to start")
     if raw[ids["named"]]["assignees"] or after[ids["editor"]].needs != "anyone with the Unity Editor":
         bad.append("sweep did not clear an assignee, or dropped what the work needs")
     if after[ids["legacy"]].state != "live":
@@ -1742,7 +1764,7 @@ def self_test():
         bad.append("migrate did not rebuild the tickets in the new shape")
     if any(a != "keep" for _, a, _ in plan_migrate(s4.fetch(), tasks, day)[0]):
         bad.append("a second migrate would write again")
-    if [p[1] for p in plan_sweep(s4.fetch(), probe, day)] != ["no-branch"]:
+    if plan_sweep(s4.fetch(), probe, day):   # its live ticket was taken today: 14 days to start
         bad.append("a sweep right after migrate would change something")
     if bridge(s4.fetch(), day, tasks=tasks) or \
             len(bridge(s4.fetch(), day, tasks=dict(tasks, **{"T-20261020-eeee": Task(
@@ -1813,7 +1835,8 @@ def main(argv):
     sp.add_argument("--dry-run", action="store_true")
     tk = sub.add_parser("take")
     tk.add_argument("id")
-    tk.add_argument("--branch", required=True, help="the branch you do it on; the ticket closes when it merges")
+    tk.add_argument("--branch", default="", help="the branch you do it on (optional; naming it starts the ticket, "
+                                                 "and the ticket closes when it merges)")
     tk.add_argument("--who")
     tk.add_argument("--dry-run", action="store_true")
     for name in ("release", "done"):
@@ -1926,7 +1949,7 @@ def main(argv):
             if not who:
                 raise SystemExit("cannot tell who you are from git config: pass --who <your name>")
             take(t, who, a.branch, today)
-            if git("rev-parse", "--verify", "--quiet", f"refs/remotes/origin/{a.branch}").returncode != 0:
+            if a.branch and git("rev-parse", "--verify", "--quiet", f"refs/remotes/origin/{a.branch}").returncode != 0:
                 print(f"note: origin/{a.branch} does not exist yet; push it, or the sweep reads it as deleted and "
                       f"reopens the ticket")
         elif a.cmd == "release":

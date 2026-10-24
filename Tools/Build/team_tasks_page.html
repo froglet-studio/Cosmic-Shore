@@ -86,6 +86,8 @@ a { color: var(--accent); }
 .chip-clear { border: 0; background: none; color: var(--accent); cursor: pointer; font-weight: 600; font-size: 12.5px; }
 .card { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
 .cards { display: grid; gap: 12px; margin-top: 16px; }
+.fy-acts { display: flex; gap: 10px; align-items: center; margin-left: auto; }
+.fy-acts + .count { margin-left: 0; }
 .cards.info { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start; }
 .cmds, .rules { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
 .cmd { display: grid; gap: 2px; min-width: 0; }
@@ -321,6 +323,7 @@ const S = {
   meta: null, branches: null, activity: null, settings: null, loaded: false, error: "", ready: false,
   list: load("list", "open"), view: load("view", "board"), q: "", area: "", kind: "", from: "", sort: load("sort", "priority"), group: load("group", "dept"),
   shown: 50, filters: false, expanded: new Set(), open: null, form: null, ai: null, names: {},
+  cleared: new Set(load("cleared", [])),
   meId: null, meName: "", canWrite: null, canEdit: false, sheetMode: null, msEdit: null, envs: null, chatOpen: false, chat: [], chatBusy: false, draft: null,
 };
 let db = null, user = null, sample = null, mcp = null;
@@ -359,7 +362,8 @@ function eff(t) {
   const tk = S.takes.get(t.id);
   if (newer(tk, t)) {
     const who = S.names[tk.byId] || "Someone";
-    if (tk.action === "take") Object.assign(e, { state: "live", takenBy: who, branch: tk.branch || "", session: tk.session || "", sessionUrl: tk.sessionUrl || "" });
+    if (tk.action === "take") Object.assign(e, t.state === "live" && t.takenBy ? { branch: tk.branch || t.branch || "" }
+      : { state: "live", takenBy: who, taken: String(tk.at || today()).slice(0, 10), branch: tk.branch || "", session: tk.session || "", sessionUrl: tk.sessionUrl || "" });
     else if (tk.action === "release" || tk.action === "revive") Object.assign(e, { state: "open", takenBy: "", branch: "" });
     else if (tk.action === "done") e.state = "done";
     else if (tk.action === "archive") e.state = "archived";
@@ -373,11 +377,21 @@ function eff(t) {
     e.archivesOn = since ? addDays(since, IDLE_DAYS) : "";
     e.daysLeft = e.archivesOn ? days(today(), e.archivesOn) : null;
   } else { e.archivesOn = ""; e.daysLeft = null; }
+  // A live ticket with no branch is taken but not started: 14 days from the take, it goes back to open.
+  e.startBy = e.state === "live" && !e.branch && /^\d{4}-\d{2}-\d{2}/.test(e.taken || "") ? addDays(String(e.taken).slice(0, 10), IDLE_DAYS) : "";
+  e.startLeft = e.startBy ? days(today(), e.startBy) : null;
   return e;
 }
 function all() { return [...S.tasks.values()].map(eff).filter((t) => t && t.state !== "merged"); }
 const isOpen = (t) => t.state === "open" || t.state === "live";
 const closedOn = (t) => String((t.state === "done" ? t.done : t.archived) || "").slice(0, 10);
+
+const firstName = (n) => String(n || "").toLowerCase().split(" ")[0];
+function isMine(t) {
+  const tk = S.takes.get(t.id);
+  return t.state === "live" && ((tk && tk.action === "take" && S.meId && tk.byId === S.meId) || (!!S.meName && firstName(t.takenBy) === firstName(S.meName)));
+}
+const notStarted = (t) => t.startBy ? `not started · back to open ${t.startLeft <= 0 ? "today" : "in " + t.startLeft + " day" + (t.startLeft === 1 ? "" : "s")}` : "not started";
 
 /* ---- For you: from what this viewer took, finished or filed. Computed here, shown only to them, never stored. ---- */
 function myTickets(T) {
@@ -390,7 +404,7 @@ function forYou(T) {
   const area = {}, kind = {};
   for (const t of mine) { area[t.area] = (area[t.area] || 0) + 1; kind[t.kind] = (kind[t.kind] || 0) + 1; }
   const learned = mine.length > 0;
-  return T.filter((t) => t.state === "open").map((t) => {
+  return T.filter((t) => t.state === "open" && !S.cleared.has(t.id)).map((t) => {
     let s = 0; const why = [];
     if (area[t.area]) { s += 3; why.push(`you worked on ${t.area}`); }
     if (kind[t.kind]) { s += 1; if (!area[t.area]) why.push(`you take ${t.kind} tickets`); }
@@ -398,16 +412,17 @@ function forYou(T) {
     if (t.daysLeft !== null && t.daysLeft <= 4) { s += 1; why.push(`archives in ${Math.max(0, t.daysLeft)} days`); }
     if (!learned && t.milestone === "M1") { s += 1; why.push("needed for M1"); }
     return { ...t, score: s, why: why.join(" · ") };
-  }).filter((t) => t.score >= (learned ? 3 : 2)).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id)).slice(0, 15);
+  }).filter((t) => t.score >= (learned ? 3 : 2)).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
 }
+const forYouTop = (T) => forYou(T).slice(0, 15);
 
 /* ---- lists ---- */
 function listDef(key) {
-  if (key === "open") return { title: "Open", sub: "Nobody's until someone takes it, naming their branch or starting a session. Untaken for 14 days, a ticket is archived.", test: (t) => t.state === "open" };
-  if (key === "live") return { title: "Live", sub: `Taken, each on a branch. The ticket closes when that branch merges into ${base()}.`, test: (t) => t.state === "live" };
+  if (key === "open") return { title: "Open", sub: "Nobody's until someone takes it. Untaken for 14 days, a ticket is archived.", test: (t) => t.state === "open" };
+  if (key === "live") return { title: "Live", sub: `Taken: each shows whose it is. Naming a branch starts it, and it closes when that branch merges into ${base()}. Not started within 14 days, it goes back to open.`, test: (t) => t.state === "live" };
   if (key === "p1") return { title: "P1", sub: "Blocks a person or a build, or ships broken or silently.", test: (t) => isOpen(t) && t.priority === "P1" };
   if (key === "soon") return { title: "Archives soon", sub: "Open tickets nobody has taken, archived within 4 days.", test: (t) => t.state === "open" && t.daysLeft !== null && t.daysLeft <= 4 };
-  if (key === "foryou") return { title: "For you", sub: "Suggested from what you took and finished. Only you see this list; nothing is assigned.", foryou: true, test: () => true };
+  if (key === "foryou") return { title: "For you", sub: "Suggested from what you took and finished. Only you see this list; nothing is assigned. Clear it and only tickets that turn up later show here.", foryou: true, test: () => true };
   if (key === "archive") return { title: "Archive", sub: "Done, or not taken in 14 days. Bring one back and its 14 days start again.", test: (t) => t.state === "done" || t.state === "archived" };
   if (key.startsWith("dept:")) { const d = key.slice(5); return { title: DEPTS[d] || d, sub: "Open and live tickets for this department.", test: (t) => isOpen(t) && t.dept === d }; }
   if (key.startsWith("ms:")) { const k = key.slice(3); return { title: `${k} · ${msName(k)}`, sub: "Open and live tickets aimed at this milestone.", test: (t) => isOpen(t) && t.milestone === k }; }
@@ -433,7 +448,7 @@ const GROUPS = {
 function visible() {
   const def = listDef(S.list);
   const q = S.q.trim().toLowerCase();
-  let L = def.foryou ? forYou(all()) : all().filter(def.test);
+  let L = def.foryou ? forYouTop(all()) : all().filter(def.test);
   if (q) L = L.filter((t) => [t.id, t.title, t.task, t.area, t.branch, t.filedOn, t.takenBy, "#" + t.number].join(" ").toLowerCase().includes(q));
   if (S.area) L = L.filter((t) => t.area === S.area);
   if (S.kind) L = L.filter((t) => t.kind === S.kind);
@@ -491,7 +506,7 @@ function renderSide(force) {
   const tiles = [
     ["open", "Open", "var(--accent)", n((t) => t.state === "open")],
     ["live", "Live", "var(--live)", n((t) => t.state === "live")],
-    ["foryou", "For you", "var(--info)", S.loaded ? forYou(T).length : 0],
+    ["foryou", "For you", "var(--info)", S.loaded ? forYouTop(T).length : 0],
     ["p1", "P1", "var(--p1)", n((t) => isOpen(t) && t.priority === "P1")],
     ["suggested", "Suggested", "var(--done)", pendingSug],
     ["soon", "Archives soon", "var(--arch)", n((t) => t.state === "open" && t.daysLeft !== null && t.daysLeft <= 4)],
@@ -522,7 +537,7 @@ function renderSide(force) {
 function rowHtml(t) {
   const prio = t.priority === "P1" ? `<span class="label p1">P1</span>` : t.priority === "P2" ? `<span class="label p2">P2</span>` : "";
   const ms = t.milestone && !S.list.startsWith("ms:") ? `<span class="label ms">${esc(t.milestone)}</span>` : "";
-  const live = t.state === "live" ? `<span class="label live">${esc(t.takenBy || "Someone")} · ${esc(t.branch || (t.session ? "new session" : "no branch"))}</span>` : "";
+  const live = t.state === "live" ? `<span class="label live">${esc(t.takenBy || "Someone")} · ${esc(t.branch || (t.session ? "new session" : "not started"))}</span>` : "";
   const pend = t.pending.length ? `<span class="label pending">syncing</span>` : "";
   const when = t.state === "open" && t.daysLeft !== null && t.daysLeft <= 7
     ? `<span class="${t.daysLeft <= 4 ? "soon" : ""}">${t.daysLeft <= 0 ? "archives today" : `archives in ${t.daysLeft} day${t.daysLeft === 1 ? "" : "s"}`}</span>` : "";
@@ -553,7 +568,7 @@ function renderMain(force) {
   } else if (!S.tasks.size) {
     body = `<div class="empty"><b>No tickets yet</b>A Claude session fills this board from GitHub Issues with <span class="mono">/team-tasks sync</span>.</div>`;
   } else if (!L.length) {
-    body = `<div class="empty"><b>${filtered ? "No ticket matches" : def.foryou ? "Nothing to suggest yet" : "Nothing here"}</b>${filtered ? "Clear the filters to see the whole list." : def.foryou ? "Take a ticket and this list learns what you work on." : esc(def.sub)}</div>`;
+    body = `<div class="empty"><b>${filtered ? "No ticket matches" : def.foryou ? (S.cleared.size ? "All clear" : "Nothing to suggest yet") : "Nothing here"}</b>${filtered ? "Clear the filters to see the whole list." : def.foryou ? (S.cleared.size ? "Tickets that turn up later and fit what you work on show here." : "Take a ticket and this list learns what you work on.") : esc(def.sub)}</div>`;
   } else if (S.view === "board" && !def.foryou) {
     body = boardHtml(L);
   } else if (S.group !== "none" && GROUPS[S.group] && !def.foryou) {
@@ -573,7 +588,7 @@ function renderMain(force) {
   const mine = [...S.fresh.values()].filter((d) => d.byId === S.meId);
   const banner = S.list === "open" && mine.length ? `<div class="banner">${mine.length} task${mine.length === 1 ? "" : "s"} you filed here ${mine.length === 1 ? "is" : "are"} waiting for the next sync to reach GitHub. <button class="btn small" data-list="suggested">See ${mine.length === 1 ? "it" : "them"}</button></div>` : "";
   const opt = (v, l, cur) => `<option value="${esc(v)}" ${v === cur ? "selected" : ""}>${esc(l)}</option>`;
-  const switcher = def.foryou ? "" : `<span class="viewsw" role="group" aria-label="View"><button data-act="view-board" aria-pressed="${S.view === "board"}">Board</button><button data-act="view-list" aria-pressed="${S.view === "list"}">List</button></span>`;
+  const switcher = def.foryou ? `<span class="fy-acts">${S.cleared.size ? `<button class="chip-clear" data-act="fy-restore" type="button">Bring back ${S.cleared.size} cleared</button>` : ""}${L.length ? `<button class="btn small" data-act="fy-clear" type="button">Clear list</button>` : ""}</span>` : `<span class="viewsw" role="group" aria-label="View"><button data-act="view-board" aria-pressed="${S.view === "board"}">Board</button><button data-act="view-list" aria-pressed="${S.view === "list"}">List</button></span>`;
   const graphs = S.loaded && S.tasks.size && (S.list === "open" || S.list === "live") ? graphsHtml() : "";
   host.innerHTML = `${headHtml(def.title, L.length, esc(def.sub), def.mono).replace('<span class="count">', switcher + '<span class="count">')}${graphs}${banner}
     <div class="head" style="margin-top:6px"><button class="btn filter-btn small" data-act="filters" type="button">${filtered ? "Filters on" : "Filter and sort"}</button></div>
@@ -601,7 +616,7 @@ function cardHtml(t) {
   const kind = `<span class="label">${esc(t.kind)}</span>`;
   const pend = t.pending.length ? `<span class="label pending">syncing</span>` : "";
   let foot;
-  if (t.state === "live") foot = `<span class="avatar" title="${esc(t.takenBy)}">${esc(initials(t.takenBy))}</span><span class="mono">${esc(t.branch || (t.session ? "new session" : "no branch"))}</span>`;
+  if (t.state === "live") foot = `<span class="avatar" title="${esc(t.takenBy)}">${esc(initials(t.takenBy))}</span><span class="${t.branch ? "mono" : ""}">${esc(t.branch || (t.session ? "new session" : "not started"))}</span>`;
   else if (t.state === "open" && t.daysLeft !== null) {
     const used = Math.min(1, Math.max(0, (IDLE_DAYS - t.daysLeft) / IDLE_DAYS));
     foot = `<span class="mono">${esc(t.id.slice(2, 10).replace(/(\d{4})(\d{2})(\d{2})/, "$3/$2"))}</span><span class="clock ${t.daysLeft <= 4 ? "warn" : ""}" title="${t.daysLeft} of 14 days left before it is archived"><i style="width:${100 - used * 100}%"></i></span><span class="${t.daysLeft <= 4 ? "soon" : ""}">${Math.max(0, t.daysLeft)}d</span>`;
@@ -779,7 +794,7 @@ const INFO_SKILLS = [
   ["/team-tasks", "What is open: P1 and P2 first, then the counts per department, with this page's link."],
   ["/team-tasks suggest", "Proposes a ticket from the session's work. It waits in Suggested until its person, or an approver, approves it."],
   ["/team-tasks add", "Files a ticket once the person says yes. On a branch that already has one, it adds a checklist line instead."],
-  ["/team-tasks take", "Takes a ticket for the session's branch. A session started from a ticket does this first."],
+  ["/team-tasks take", "Takes a ticket in your name. With a branch it also starts it; a session started from a ticket names its branch first."],
   ["/team-tasks done", "Closes a ticket with the check that proved it. A failed test is not done."],
   ["/team-tasks release", "Gives a ticket back: open again, nobody's."],
   ["/team-tasks set", "Re-ranks priority, department or milestone. Attributed; nothing automatic changes it again."],
@@ -796,7 +811,7 @@ const INFO_RELATED = [
 const INFO_CLI = [
   ["python3 Tools/Build/team_tasks.py list --json", "Open tickets"],
   ["python3 Tools/Build/team_tasks.py me", "Your live tickets and the ones suggested for you"],
-  ["python3 Tools/Build/team_tasks.py take <id> --branch <branch>", "Take one"],
+  ["python3 Tools/Build/team_tasks.py take <id> [--branch <branch>]", "Take one; the branch starts it (now or later)"],
   ["python3 Tools/Build/team_tasks.py done <id> --note \"<proof>\"", "Close one"],
   ["python3 Tools/Build/team_tasks.py pr-section", "The Hand-offs section for a pull request"],
   ["python3 Tools/Build/team_tasks.py --self-test", "The tool's own tests"],
@@ -809,7 +824,8 @@ function pageInfo() {
       <div class="card"><h3>Skills that use the board</h3><ul class="cmds">${INFO_RELATED.map(([c, d]) => cmd(c, d)).join("")}</ul></div>
       <div class="card"><h3>From a terminal</h3><ul class="cmds">${INFO_CLI.map(([c, d]) => cmd(c, d)).join("")}</ul></div>
       <div class="card"><h3>The rules</h3><ul class="rules">
-        <li>Nobody is assigned. A ticket is nobody's until someone takes it, and taking it names their branch.</li>
+        <li>Nobody is assigned. A ticket is nobody's until someone takes it, and then it shows as theirs to everyone.</li>
+        <li>Naming a branch starts it. Not started within 14 days of taking it, it goes back to open.</li>
         <li>The branch decides: it merges into ${esc(base())} and the ticket closes. Deleted, released or 14 days without a commit, and it is open again.</li>
         <li>An open ticket nobody takes in 14 days is archived. Revive brings it back.</li>
         <li>One ticket per branch: every hand test a branch leaves goes in its one checklist.</li>
@@ -864,14 +880,16 @@ function renderSheet() {
   const f = S.form && S.form.id === t.id ? S.form : null;
   const actions = [];
   if (t.state === "open") actions.push(`<button class="btn primary" data-act="take-form" ${can ? "" : "disabled"}>Take it</button>`, mcp ? `<button class="btn" data-act="session-form" ${can ? "" : "disabled"}>Start in a new session</button>` : "", `<button class="btn" data-act="archive" ${can ? "" : "disabled"}>Archive</button>`);
+  if (t.state === "live" && isMine(t)) actions.push(`<button class="btn ${t.branch ? "" : "primary"}" data-act="take-form" ${can ? "" : "disabled"}>${t.branch ? "Change branch" : "Start: name your branch"}</button>`);
   if (t.state === "live") actions.push(`<button class="btn" data-act="release" ${can ? "" : "disabled"}>Release</button>`);
   if (isOpen(t)) actions.push(`<button class="btn" data-act="done-form" ${can ? "" : "disabled"}>Mark done</button>`);
   if (t.state === "done" || t.state === "archived") actions.push(`<button class="btn primary" data-act="revive" ${can ? "" : "disabled"}>Bring back</button>`);
   const branchList = (S.branches ? S.branches.branches : []).map((b) => `<option value="${esc(b.name)}">`).join("");
   let form = "";
-  if (f && f.kind === "take") form = `<div class="form"><label for="fBranch"><b>Your branch</b></label><input id="fBranch" class="mono" list="branchList" placeholder="claude/your-branch" value="${esc(f.branch || "")}"><datalist id="branchList">${branchList}</datalist>
-      <p class="hint">The ticket closes when this branch merges into ${esc(base())}, and goes back to open if it is deleted or has no commit for 14 days.</p>
-      <div class="actions"><button class="btn primary" data-act="take">Take on this branch</button><button class="btn ghost" data-act="cancel">Cancel</button></div></div>`;
+  const starting = t.state === "live";
+  if (f && f.kind === "take") form = `<div class="form"><label for="fBranch"><b>Your branch</b>${starting ? "" : ` <span class="by">optional</span>`}</label><input id="fBranch" class="mono" list="branchList" placeholder="claude/your-branch" value="${esc(f.branch || "")}"><datalist id="branchList">${branchList}</datalist>
+      <p class="hint">${starting ? "" : "Leave it empty to take it now and name it when you start: not started within 14 days, it goes back to open. "}A branch starts the ticket. It closes when the branch merges into ${esc(base())}, and goes back to open if the branch is deleted or has no commit for 14 days.</p>
+      <div class="actions"><button class="btn primary" data-act="take-branch">${starting ? "Start on this branch" : "Take it"}</button><button class="btn ghost" data-act="cancel">Cancel</button></div></div>`;
   else if (f && f.kind === "done") form = `<div class="form"><label for="fNote"><b>What proved it</b></label><textarea id="fNote" rows="3" placeholder="The check, the commit or the result">${esc(f.note || "")}</textarea>
       <p class="hint">A test that failed is not done: say what failed instead, and leave it open.</p>
       <div class="actions"><button class="btn primary" data-act="done">Mark done</button><button class="btn ghost" data-act="cancel">Cancel</button></div></div>`;
@@ -891,7 +909,7 @@ function renderSheet() {
         <div class="actions"><button class="btn primary small" data-act="ai-use" ${can ? "" : "disabled"}>Use these</button><button class="btn ghost small" data-act="ai-clear">Dismiss</button></div>`
       : ai && ai.error ? `<span class="by">${esc(ai.error)}</span>` : `<span class="by">Claude suggests a priority, department and milestone with a reason. Nothing changes until you use it.</span>`}
       ${ai && (ai.busy || ai.result) ? "" : `<div><button class="btn small" data-act="ai">Suggest a ranking</button></div>`}</div></section>`;
-  const liveWhere = t.state === "live" ? `<span>${esc(t.takenBy || "Someone")} on ${t.branch ? `<span class="mono">${esc(t.branch)}</span>` : t.sessionUrl ? `<a href="${esc(t.sessionUrl)}" target="_blank" rel="noopener">a new session</a>` : "no branch"}</span>` : "";
+  const liveWhere = t.state === "live" ? `<span>${esc(t.takenBy || "Someone")}${t.branch ? ` on <span class="mono">${esc(t.branch)}</span>` : t.sessionUrl ? ` in <a href="${esc(t.sessionUrl)}" target="_blank" rel="noopener">a new session</a>` : ""}</span>` : "";
   host.innerHTML = `<div class="scrim" data-act="close"></div>
     <div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(t.head)}">
       <div class="sheet-bar"><span class="mono">${esc(t.id)}</span>${t.number ? `<a class="mono" href="${esc(t.url || `${REPO_URL}/issues/${t.number}`)}" target="_blank" rel="noopener">#${t.number} on GitHub</a>` : ""}<span class="sp"></span>
@@ -906,6 +924,7 @@ function renderSheet() {
           ${prop("Area", esc(t.area))}${prop("Kind", esc(t.kind))}
           ${t.filedOn ? prop("Filed from", `<button class="label" data-list="from:${esc(t.filedOn)}" style="border:0;cursor:pointer">${esc(t.filedOn)}</button>`) : ""}
           ${t.needs && t.needs !== "anyone" ? prop("Needs", esc(t.needs.replace(/^anyone\s*/i, "") || t.needs)) : ""}
+          ${t.state === "live" && !t.branch ? prop("Started", `Not yet <span class="${t.startLeft !== null && t.startLeft <= 4 ? "soon" : "by"}">${t.startBy ? `back to open ${esc(fmtDay(t.startBy))} unless ${isMine(t) ? "you name" : "they name"} a branch` : "naming a branch starts it"}</span>`) : ""}
           ${t.state === "open" && t.archivesOn ? prop("Archives", `${esc(fmtDay(t.archivesOn))} <span class="${t.daysLeft <= 4 ? "soon" : "by"}">${t.daysLeft <= 0 ? "today" : `in ${t.daysLeft} days`} if nobody takes it</span>`) : ""}
         </dl>
         ${can ? "" : `<div class="note">${db ? "You can read this board. Changing it needs Contributor access from an approver (the core four or Iggy)." : "Open this page in claude.ai to take or change tickets."}</div>`}
@@ -1032,6 +1051,12 @@ async function write(path, data, done, merge) {
     return false;
   }
 }
+// For you's cleared list is this viewer's own: data/users/<id>/foryou is private to them, on every device.
+async function saveCleared(ids, done) {
+  S.cleared = new Set(ids); keep("cleared", [...S.cleared]); render();
+  if (db && S.meId) { try { await db.doc(`data/users/${S.meId}/foryou`).set({ ids: [...S.cleared], at: new Date().toISOString() }); } catch {} }
+  toast(done);
+}
 async function act(id, action, extra, done) { if (await write("takes/" + id, { id, action, ...extra }, done)) { S.form = null; render(); } }
 async function override(id, fields, why) {
   const t = S.tasks.get(id); const prev = S.overrides.get(id);
@@ -1058,7 +1083,7 @@ Then do the work on that branch. When it is done, close the ticket with its proo
     const p = r.payload; const raw = typeof p === "string" ? p : JSON.stringify(p || {});
     const sid = (p && (p.id || p.session_id || (p.session && p.session.id) || (p.ccr && p.ccr.id))) || (raw.match(/session_[A-Za-z0-9]+/) || [""])[0];
     const url = sid ? `https://claude.ai/code/${sid}` : "";
-    await act(t.id, "take", { session: sid || "started", sessionUrl: url }, "Session started. It takes the ticket on its branch.");
+    await act(t.id, "take", { session: sid || "started", sessionUrl: url }, "Session started. The ticket is yours; the session names its branch.");
     if (url) toast("Session started. Open it from your Claude Code sessions.");
   } catch (e) {
     f.busy = false;
@@ -1133,6 +1158,8 @@ document.addEventListener("click", async (ev) => {
   if (a === "menu") { document.getElementById("side").dataset.open = "true"; return; }
   if (a === "filters") { S.filters = !S.filters; renderMain(); return; }
   if (a === "sync-now") { syncNow(); return; }
+  if (a === "fy-clear") { const ids = forYou(all()).map((x) => x.id); await saveCleared([...S.cleared, ...ids], `Cleared ${Math.min(ids.length, 15)}. New tickets that fit you show here.`); return; }
+  if (a === "fy-restore") { await saveCleared([], "Brought back."); return; }
   if (a === "copy-cmd") { const c = el.dataset.cmd; try { await navigator.clipboard.writeText(c); toast("Copied"); } catch { toast(c); } return; }
   if (a === "view-board" || a === "view-list") { S.view = a === "view-board" ? "board" : "list"; keep("view", S.view); renderMain(); return; }
   if (a === "clear") { S.q = S.area = S.kind = S.from = ""; render(); return; }
@@ -1164,12 +1191,17 @@ document.addEventListener("click", async (ev) => {
   if (a === "save-settings") { const b = document.getElementById("setBase").value, p = document.getElementById("setPhase").value.trim(); if (await write("meta/settings", { base: b, phase: p || phase() }, `Sessions now start from ${b}.`)) render(); return; }
   if (!t) return;
   if (a === "copy") { const link = location.href.split("#")[0] + "#" + t.id; try { await navigator.clipboard.writeText(link); toast("Link copied"); } catch { toast(link); } }
-  else if (a === "take-form") { S.form = { id: t.id, kind: "take", branch: "" }; renderSheet(); }
+  else if (a === "take-form") { S.form = { id: t.id, kind: "take", branch: t.branch || "" }; renderSheet(); }
   else if (a === "done-form") { S.form = { id: t.id, kind: "done", note: "" }; renderSheet(); }
   else if (a === "session-form") { S.form = { id: t.id, kind: "session", env: load("env", "") }; loadEnvs(); renderSheet(); }
   else if (a === "session-start") startSession(t);
   else if (a === "cancel") { S.form = null; renderSheet(); }
-  else if (a === "take") { const br = (S.form && S.form.branch || "").trim(); if (!br || /\s/.test(br)) { toast("Name the branch you do it on, without spaces."); return; } act(t.id, "take", { branch: br }, `Taken on ${br}. It closes when the branch merges.`); }
+  else if (a === "take-branch") {
+    const br = (S.form && S.form.branch || "").trim();
+    if (/\s/.test(br) || (!br && t.state === "live")) { toast("Name the branch you do it on, without spaces."); return; }
+    if (br) act(t.id, "take", { branch: br }, `${t.state === "live" ? "Started" : "Taken"} on ${br}. It closes when the branch merges.`);
+    else act(t.id, "take", {}, "Taken: it shows as yours to everyone. Name your branch when you start; not started in 14 days, it goes back to open.");
+  }
   else if (a === "done") { const note = (S.form && S.form.note || "").trim(); if (!note) { toast("Say what proved it before marking it done."); return; } act(t.id, "done", { note }, "Marked done."); }
   else if (a === "release") act(t.id, "release", {}, "Released. It is open again, nobody's.");
   else if (a === "archive") act(t.id, "archive", {}, "Archived. Bring it back from Archive.");
@@ -1208,6 +1240,7 @@ render();
     S[key] = new Map(snap.docs.map((d) => [d.id, { ...d.data(), id: d.id }])); if (after) after(); resolveNames(); render();
   }, fail);
   sub("tasks", "tasks", () => { S.loaded = true; });
+  if (S.meId) db.doc(`data/users/${S.meId}/foryou`).onSnapshot((d) => { if (d.exists) { S.cleared = new Set(d.data().ids || []); keep("cleared", [...S.cleared]); render(); } }, () => {});
   sub("takes", "takes"); sub("overrides", "overrides"); sub("new", "fresh"); sub("suggestions", "suggestions"); sub("milestones", "milestoneDocs"); sub("feedback", "feedback");
   for (const [path, key] of [["meta/sync", "meta"], ["meta/branches", "branches"], ["meta/activity", "activity"], ["meta/settings", "settings"]])
     db.doc(path).onSnapshot((d) => { S[key] = d.exists ? d.data() : null; render(); }, () => {});

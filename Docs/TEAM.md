@@ -77,8 +77,10 @@ it; `who_works_where.py` reports a session nobody has merged as unattributed.
    claude.ai; the **approvers** (the core four and Iggy, `TEAM.json`) are the page's Editors, edit milestones and let
    others in. Opening the page at the start of a day is recommended, never required. The rules:
    - **Nobody's until taken.** A ticket names no one (rule 11); an assignee set on GitHub is cleared by the sweep.
-   - **Taking names your branch** (`take <id> --branch <branch>`, Take on the page, or "Start in a new session",
-     which opens a Claude Code session on the ticket from the base branch, `bleeding-edge` in Beta phase 1). It closes when that
+   - **Taking needs only your name** (`take <id>`, or Take it on the page): the ticket shows as yours to everyone.
+     **Naming a branch starts it** (`take <id> --branch <branch>`, a branch pasted on the page at the take or later, or
+     "Start in a new session", which opens a Claude Code session on the ticket from the base branch, `bleeding-edge` in
+     Beta phase 1). Not started within 14 days of the take, it goes back to open, nobody's (Shombith, 2026-10-25). It closes when that
      branch merges into bleeding-edge, and goes back to open, nobody's, when the branch is deleted, released or idle
      for 14 days (`.github/workflows/team-tasks.yml` runs the sweep on every merge, deletion and nightly).
    - **14 days untaken: archived** (closed as not planned, label `archived`). Done tickets close as completed. Both

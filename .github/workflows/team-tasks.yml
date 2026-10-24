@@ -1,7 +1,7 @@
 # Froglet Tasks (Docs/TEAM.md rule 9): the team's hand-off tickets are GitHub issues labelled team-task, kept by
 # Tools/Build/team_tasks.py. This runs its sweep on every event that can change a ticket's fate: a ticket whose
-# taker's branch merged into bleeding-edge closes; one whose branch was deleted, or had no commit for 14 days, goes
-# back to open, nobody's; one nobody took in 14 days is archived; an assignee set on GitHub is cleared; a task a branch
+# taker's branch merged into bleeding-edge closes; one whose branch was deleted, or had no commit for 14 days, or that
+# was taken and not started (no branch named) within 14 days, goes back to open, nobody's; one nobody took in 14 days is archived; an assignee set on GitHub is cleared; a task a branch
 # still wrote on the old markdown board is filed. The decisions are plan_sweep()'s; this only runs it. It never files,
 # closes or re-ranks anything for any other reason (Docs/TEAM.md rule 9: sessions act only when a person asks).
 name: team-tasks

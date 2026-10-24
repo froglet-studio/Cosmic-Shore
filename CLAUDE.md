@@ -90,8 +90,8 @@ the engine renamed twice, retired tools brought back. **Every session:**
   no hook, no end-of-session filing, no re-ranking on your own (Shombith, 2026-10-25). People sign in to the page with
   claude.ai; the approvers (the core four and Iggy, `Docs/TEAM.json`) are its Editors and let others in. Opening the
   page at the start of a day is recommended, not required; the skill does everything it does. **Never assign one**: never a
-  person, never a volunteer (Shombith, 2026-10-23). A ticket is nobody's until someone takes it; taking it names their
-  branch, and it closes when that branch merges (`.github/workflows/team-tasks.yml`). **One ticket per branch**: every
+  person, never a volunteer (Shombith, 2026-10-23). A ticket is nobody's until someone takes it; then it shows as theirs.
+  Naming a branch starts it (not started in 14 days, it goes back to open), and it closes when that branch merges (`.github/workflows/team-tasks.yml`). **One ticket per branch**: every
   hand test your branch leaves is a checklist line on its one ticket (49 branches had filed 242 open tasks in 9 days).
   A ticket nobody takes in 14 days is archived.
 - **No favourites among the core four.** Garrett, Caleb, Shombith and Yash carry equal weight. Never assign a task

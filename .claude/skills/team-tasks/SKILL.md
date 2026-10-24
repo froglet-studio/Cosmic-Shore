@@ -16,7 +16,8 @@ command lands there too.
 
 1. **Never assigned.** An untaken ticket belongs to nobody. Never put a person in `--who` (only "anyone" or
    "anyone with <what the work needs>"), never assign on GitHub (the sweep clears it), never write "X offered".
-2. **Taking names your branch.** A live ticket shows the person and the branch.
+2. **Taking needs only a name.** The ticket shows as the taker's to everyone. Naming a branch (at the take, or later
+   with `take <id> --branch`) starts it; not started within 14 days of the take, it goes back to open, nobody's.
 3. **The branch decides.** It merges into bleeding-edge: the ticket closes. Deleted, released, or 14 days without a
    commit: back to open, nobody's.
 4. **14 days untaken: archived.** Done and archived both come back with `revive`; the 14 days restart.
@@ -89,7 +90,8 @@ ticket.
 ## /team-tasks take | done | release | archive | revive | set
 
 ```
-python3 Tools/Build/team_tasks.py take <id> --branch <branch> [--who <name>]   # who defaults to git config (Docs/TEAM.json)
+python3 Tools/Build/team_tasks.py take <id> [--branch <branch>] [--who <name>]   # who defaults to git config (Docs/TEAM.json)
+                                                    # the taker runs it again with --branch to start it
 python3 Tools/Build/team_tasks.py done <id> --note "<the check that proved it>"
 python3 Tools/Build/team_tasks.py release <id> --note "<why>"
 python3 Tools/Build/team_tasks.py archive <id>... [--note "<why>"]
