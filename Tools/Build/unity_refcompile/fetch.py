@@ -135,6 +135,34 @@ def git_clone_commit(url, sha, dest):
     return "fetched"
 
 
+def registry_tarball(name, ver, dest):
+    """The package's own tarball from the Unity registry, for a package needle-mirror does not carry (e.g.
+    com.unity.services.moderation, added 2026-10-24). Only reachable where the sandbox allows packages.unity.com."""
+    import io
+    import shutil
+    import tarfile
+    if os.path.exists(os.path.join(dest, ".fetched")):
+        return "cached"
+    with urllib.request.urlopen("https://packages.unity.com/" + name, timeout=60) as r:
+        url = json.load(r)["versions"][ver]["dist"]["tarball"]
+    with urllib.request.urlopen(url, timeout=180) as r:
+        data = r.read()
+    shutil.rmtree(dest, ignore_errors=True)
+    os.makedirs(dest, exist_ok=True)
+    root = os.path.realpath(dest)
+    with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as t:
+        for m in t.getmembers():
+            rel = m.name.split("/", 1)[1] if "/" in m.name else ""
+            target = os.path.realpath(os.path.join(dest, rel))
+            if not rel or not m.isfile() or not target.startswith(root + os.sep):
+                continue  # directories are made below; links and paths outside dest are refused
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            with t.extractfile(m) as src, open(target, "wb") as out:
+                out.write(src.read())
+    prune(dest)
+    return "fetched (registry tarball)"
+
+
 def fetch_registry(name, ver):
     tag = NEAREST_TAG.get(name, ver)
     dest = os.path.join(CACHE, "packages", name + "@" + tag)
@@ -142,7 +170,12 @@ def fetch_registry(name, ver):
         st = git_clone_tag("https://github.com/needle-mirror/" + name, tag, dest)
         return (name, tag, st if tag == ver else st + " (SUBSTITUTE for locked " + ver + ")")
     except RuntimeError as e:
-        return (name, ver, "UNAVAILABLE: " + str(e).splitlines()[0][:160])
+        mirror_error = str(e).splitlines()[0][:160]
+    dest = os.path.join(CACHE, "packages", name + "@" + ver)
+    try:
+        return (name, ver, registry_tarball(name, ver, dest))
+    except Exception as e:  # registry unreachable here, or the version is not published
+        return (name, ver, "UNAVAILABLE: " + mirror_error + "; registry: " + str(e)[:80])
 
 
 def fetch_git(name, url, sha):

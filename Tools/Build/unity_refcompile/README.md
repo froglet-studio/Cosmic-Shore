@@ -183,3 +183,12 @@ it gets an entry: add one only for documented Unity API, with the version that i
   reports `audited 0 added + 0 modified` and passes without having read your assets. Fix: reuse
   `changed_since()` and read changed assets from the working tree. The audit's base-relative
   "new findings only" filter needs the base blob, which `git show <merge-base>:<path>` still gives.
+
+## Registry fallback (2026-10-24)
+
+`fetch.py` clones each registry package from its needle-mirror tag. When the mirror does not carry a package (first
+seen with `com.unity.services.moderation`), it now downloads that version's tarball from `packages.unity.com` instead,
+where the sandbox can reach it. In the first run with the fallback, every package that used to land in the
+"unobtainable" bucket (Multiplayer, Friends, Leaderboards, Multiplayer Play Mode, Widgets) fetched and compiled:
+87 assemblies, 0 project errors, 0 unobtainable. Where the registry is unreachable, the result is `UNAVAILABLE` as before.
+
