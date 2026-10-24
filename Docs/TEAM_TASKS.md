@@ -2290,12 +2290,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-17 by Yash's session (work report) (`Ys-bleeding-edge`)
 - **See:** PR #1030 (claude/trusting-curie-bn6rrn); Docs/TOOLING_DECISIONS.md 3
 
-### T-20261024-ae82 · open · dev · Amoebius
-- **Task:** Amoebius does not compile the game since bleeding-edge 98c25995b9 (2026-10-22): Assets/_Scripts/Utility/OrthographicLens.cs uses UnityEngine.Rendering.VolumeFrameworkUpdateMode and Camera.GetVolumeFrameworkUpdateMode / SetVolumeFrameworkUpdateMode (URP extension methods), which Port/src/CosmicShore.Engine/Rendering lacks (CS0246 at OrthographicLens.cs(32,44)). Add the enum (EveryFrame, ViaScripting, UsePipelineSettings) and the two camera methods. Until then the perf-daily 'amoebius' job is red on every branch carrying that file (seen on PR #1201).
+### T-20261024-ae82 · done · dev · Amoebius
+- **Task:** Amoebius does not compile the game since bleeding-edge 98c25995b9 (2026-10-22): Assets/_Scripts/Utility/OrthographicLens.cs uses UnityEngine.Rendering.VolumeFrameworkUpdateMode and Camera.GetVolumeFrameworkUpdateMode / SetVolumeFrameworkUpdateMode (URP extension methods), which Port/src/CosmicShore.Engine/Rendering lacks (CS0246 at OrthographicLens.cs(32,44)). Add the enum (EveryFrame, ViaScripting, UsePipelineSettings) and the two camera methods. Until then the perf-daily 'amoebius' job is red on every branch carrying that file (seen on PR #1201). Measured 2026-10-24 on Ys-bleeding-edge 7c68405057: Amoebius has 9 compile errors, not 1 - also TouchControl.startTime (PilotSwapGesture.cs:114), GravitySensor (TouchTilt.cs:29,79), Vector3.RotateTowards (PistolBodyMath.cs:149), UniversalAdditionalCameraData.requiresVolumeFrameworkUpdate and .volumeStack (OrthographicLens.cs:69,77).
 - **Done when:** engine_build of the player on bleeding-edge compiles OrthographicLens.cs, and perf-daily's amoebius job is green
 - **Who can take it:** Shombith (the Amoebius engine)
 - **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
 - **See:** PR #1201 comment; .github/workflows/perf-daily.yml
+- **Done:** 2026-10-24
 
 ### T-20261024-803f · open · test · Performance
 - **Task:** Re-capture Menu_Main after the QuestTrackView fix (Ys-bleeding-edge): Release, Third Eye closed, play Menu_Main (freestyle or the hub) past the 4-minute auto-capture and stop Play. Compare ClipperRegistry.Cull with the 10-19..23 captures (3.1-7.7 ms/frame; 0.26 ms on 10-16).
@@ -2338,3 +2339,94 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Andrew (has the Bloomrush captures), Yash, anyone with the Unity Editor
 - **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-24 prism creation queue
+
+### T-20261024-2979 · open · test · Regatta AI
+- **Task:** Race an AI Rhino in Regatta I1 and I3 (Third Eye on it) with the corner speed 333 and line 0.676 set from your six Rhino races: it should brake to about 330 u/s before sharp rings, fly about two thirds of the way out, and scrape rails less; note its times (before: about 45 s I1, 50 s I3; the offline model predicts slower)
+- **Done when:** The UNITY_VERIFICATION_CHECKLIST entry for 2026-10-24 Rhino corner speed and line is ticked, with the I1 and I3 times
+- **Who can take it:** Yash (has offered to take tasks)
+- **Added:** 2026-10-24 by Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Rhino corner speed and line, 2026-10-24); Assets/_Scripts/Controller/AI/AI_BOOST.md (Ramp)
+
+### T-20261024-3e3c · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part A steps 3 and 9 on GitHub Actions: run Unity CI (tier static) on Ys-bleeding-edge and confirm the skimmer audit, AI/replay gate and generator loop ran green; then check the first Bleeding-edge guard run after A landed is green at every static step
+- **Done when:** Both runs green with those steps present and not skipped; result noted in BRANCH_PARTS_STATUS.md
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-faca · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part A steps 4-6 in the Unity editor: Audit Vessel Skimmers vs audit_vessel_skimmers.py (6 faults), Validate Lifeform Crystals vs audit_lifeform_crystals.py, and an Inspector edit to SkimRaceAIConfig_I4.asset turning author_skimrace_ai_config.py --check to DRIFT (then git checkout the asset)
+- **Done when:** All three steps match their PASS lines; mismatches pasted into DT-002
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-3d2f · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part E (AI training fixes, deployed tournament genome): run its editor steps, then push it onto Ys-bleeding-edge with pick_branch_parts.py build E
+- **Done when:** Editor steps pass and E is pushed; discard any Archive/SessionState asset changes from the test session
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-e80a · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part F (Skim Race AI intensity-4 policy v2-i4): run its editor steps, then push it with pick_branch_parts.py build F
+- **Done when:** Editor steps pass and F is pushed; Skim Race AI config assets not left modified
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-e462 · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part G (load-time target, unattended load sweep R7): after E has landed, run its editor steps, then push it with pick_branch_parts.py build G
+- **Done when:** Editor steps pass and G is pushed (E and M already in)
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-d76a · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part H (parity harness, Unity side): run its editor steps (needs a throwaway returning-user account named exactly 'parity'), push H, then push part I (Port/ only) after it
+- **Done when:** H's editor steps pass, H then I pushed as separate pushes
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-e520 · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part J (multiplayer QoL: Add Friend, recently played with, ready lights, dropping out, invite inbox): run its two-account editor steps, then push it with pick_branch_parts.py build J
+- **Done when:** Two-account steps pass (or are marked 'needs two accounts'), J pushed
+- **Who can take it:** Yash; a second UGS account / machine (Caleb or Andrew)
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-5cad · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part K (leak and lifetime fixes: effect cooldowns, score trackers, delayed tasks): run its editor steps, then push it with pick_branch_parts.py build K
+- **Done when:** Editor steps pass and K is pushed
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-7c3d · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part L (heritable genome, off by default): run its editor steps and get Garrett's sign-off on the LOCKED rule 'the genome is a lean, not a level' and on worm fission as a mutating birth; then push L
+- **Done when:** Steps pass, Garrett's sign-off recorded, L pushed
+- **Who can take it:** Yash (tests); Garrett (sign-off)
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-a306 · open · setup · Branch parts (nice-brahmagupta)
+- **Task:** Part B (untrack FMOD's cache, PR template): ask the sound designer to open Cosmic Shore.fspro, settle the 'Squirel boost' track volumes, save, build and commit Metadata/ and Build/; then push B
+- **Done when:** The sound designer's commit is on Ys-bleeding-edge and B is pushed
+- **Who can take it:** Yash (push); the sound designer (FMOD save)
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-a0c4 · open · docs · Branch parts (nice-brahmagupta)
+- **Task:** Part C step 10: get Shombith and Garrett to read the Steam Playtest runbook (A4 step 6, branch model, upload block, the name step, A6 template) and confirm they can execute each step
+- **Done when:** Both confirm, or their corrections are filed
+- **Who can take it:** Yash (chase); Shombith and Garrett (read)
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-eb42 · open · docs · Branch parts (nice-brahmagupta)
+- **Task:** Part D (plans and docs) last: push it once the parts its QA items describe have landed, then run /qa-backlog once on bleeding-edge; when every part has landed or been dropped, delete the test plan, pick_branch_parts.py and BRANCH_PARTS_STATUS.md
+- **Done when:** D pushed, QA backlog refreshed, the one-off plan files deleted
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
