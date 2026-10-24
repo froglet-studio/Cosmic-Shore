@@ -78,6 +78,9 @@ namespace CosmicShore.Engine.Audio.Fmod
         public bool Stopped;
         public bool Paused;
         public bool Released;
+        /// <summary>Set by <see cref="EventInstance.setCallback"/>; start() raises STARTED / RESTARTED through it.</summary>
+        public EVENT_CALLBACK Callback;
+        public EVENT_CALLBACK_TYPE CallbackMask;
         static int s_nextId;
         public readonly int Id = System.Threading.Interlocked.Increment(ref s_nextId);
         public readonly Dictionary<PARAMETER_ID, float> Parameters = new();
@@ -114,6 +117,16 @@ namespace CosmicShore.Engine.Audio.Fmod
         /// <summary>The native handle (non-zero and unique per live instance; zero when invalid).</summary>
         public System.IntPtr handle => State == null ? System.IntPtr.Zero : (System.IntPtr)State.Id;
 
+        /// <summary>Original contract: this instance's callback. Recorded; start() raises STARTED / RESTARTED through
+        /// it when masked. The port never raises SOUND_PLAYED (no per-sound playlist state).</summary>
+        public RESULT setCallback(EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE callbackmask = EVENT_CALLBACK_TYPE.ALL)
+        {
+            if (State == null) return RESULT.ERR_INVALID_HANDLE;
+            State.Callback = callback;
+            State.CallbackMask = callbackmask;
+            return RESULT.OK;
+        }
+
         public RESULT setVolume(float volume)
         {
             if (State == null) return RESULT.ERR_INVALID_HANDLE;
@@ -141,7 +154,10 @@ namespace CosmicShore.Engine.Audio.Fmod
             State.Started = true; State.Stopped = false;
             RuntimeManager.RecordStart(State);
             FmodBackend.Current?.Start(State);
-            RuntimeManager.InvokeDescriptionCallback(State, restart ? EVENT_CALLBACK_TYPE.RESTARTED : EVENT_CALLBACK_TYPE.STARTED);
+            var startType = restart ? EVENT_CALLBACK_TYPE.RESTARTED : EVENT_CALLBACK_TYPE.STARTED;
+            RuntimeManager.InvokeDescriptionCallback(State, startType);
+            if (State.Callback != null && (State.CallbackMask & startType) != 0)
+                State.Callback(startType, (System.IntPtr)State.Id, System.IntPtr.Zero);
             return RESULT.OK;
         }
 
@@ -162,6 +178,13 @@ namespace CosmicShore.Engine.Audio.Fmod
             state = State == null || !State.Started || State.Stopped ? PLAYBACK_STATE.STOPPED : PLAYBACK_STATE.PLAYING;
             // The real runtime knows when a one-shot has finished; the local model does not.
             if (State != null && FmodBackend.Current?.GetPlaybackState(State) is { } live) state = live;
+            return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
+        }
+
+        /// <summary>Original contract. The local model keeps no timeline, so the position reads 0.</summary>
+        public RESULT getTimelinePosition(out int position)
+        {
+            position = 0;
             return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
         }
 

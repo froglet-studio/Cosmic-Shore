@@ -30,10 +30,35 @@ the fleet's one-thumb model (`SingleStickVesselTransformer`, via `BrittleStarVes
 | Aim | **right stick** | P ; L ' (no aim on the mouse scheme) | Direction turns the ring (brings a turret round; turns the five guns or cords with it); deflection moves the guns / cords in and out |
 | Ring Detonation | **LT** | Left Shift / RMB | Throw the ring — only with a spare ring in stock |
 
-Bindings are in the **shared** list (`_inputEventShipActions`), the Sparrow's shape, so touch reaches RT and Ring
-Detonation through its own trigger gestures. Charge Mode is on `FlipAction` (InputEvents 3: RB / E), the only free face
-control the input layer raises; on touch that event comes from turning the phone (`DeviceOrientationHandler`), so a
-landscape flip toggles Charge Mode there. Touch has no face buttons for the other three modes (follow-up F1).
+Bindings are in the **shared** list (`_inputEventShipActions`), the Sparrow's shape; touch has no overrides. Charge Mode
+is on `FlipAction` (InputEvents 3: RB / E), the only free face control the input layer raised when it shipped. Turning
+the phone no longer raises it (2026-10-21, `DeviceOrientationHandler`): on a phone every control is an on-screen button
+(next section).
+
+### On a phone (2026-10-21, Garrett: "it will need all four totems and two fire buttons, so 6 buttons ... The fire button can become the right joystick once held. and it can be rotated without firing by touching down elsewhere")
+
+The Brittle Star flies the **TotemButtons** scheme (`Tools/Build/author_touch_profiles.py`, `Resources/TouchControlProfiles.asset`):
+lifting a thumb raises nothing, and six buttons sit round the right thumb.
+
+| Button | Raises | What it does |
+|---|---|---|
+| Speed Mode card (Time) | `Button1Action` (A) | Select Speed Mode (tap again: Cruise) |
+| Creation Mode card (Mass) | `Button2Action` (B) | Select Creation Mode |
+| Space Mode card (Space) | `Button3Action` (X) | Select Space Mode |
+| Charge Mode card (Charge) | `FlipAction` (RB) | Select Charge Mode |
+| **Fire** (extra, primary) | `RightStickAction` (RT), held, **aims while held** | Fires while the finger is down; dragging that finger from where it landed is the right stick, so it turns the ring and moves the guns / cords in and out as it fires |
+| **Ring** (extra, primary) | `LeftStickAction` (LT), held, **aims while held** | Throws the ring on the press (it flies along the nose, not the aim); dragging the held finger then turns the ring without firing |
+
+- **Steering** is the left thumb (or any single thumb). With one flight thumb the touch strategy writes the right stick
+  as zero on a single-stick hull, so a hard turn no longer turns the ring or splays the guns (it used to mirror the
+  steering thumb onto the right stick).
+- **Aiming without firing**: put a second finger down on the right side of the glass. It is the right stick, measured
+  from where it landed (`TouchInputStrategy`, two flight touches). `BrittleStarExecutor.AimStick` reads
+  `RightNormalizedJoystickPosition`, which the held aim button's drag also writes, so both reach the same aim.
+- **RT depth**: a phone has no analog trigger (`RightTriggerAnalog` stays 0), and `TriggerDepth` reads a press with no
+  depth as a full pull, so Fire is always the full rate and the Charge cords are always sabers while it is held.
+  Whips (released cords) are what Charge Mode shows with Fire up.
+- **Not reachable on a phone**: a partial trigger pull (see above); everything else is.
 
 Modes are **exclusive**: one at a time, or **Cruise** (none). All four need the mounted ring (off only for the half
 second the ring regrows after a throw).
@@ -42,7 +67,60 @@ Concept art from the design studio's first pass: `Docs/Studios/BrittleStar/*.jpg
 ring detonation, the Zephyr's circle ring). It draws the ring **suspended** round the cockpit by energy, not joined by
 struts — the shipped hull still has physical arms (follow-up F8).
 
-## 2. The hull (`BrittleStarHullForm` / `BrittleStarHullBuilder` / `BrittleStarAnimation`)
+## 2. The hull (`BrittleStar.fbx` / `BrittleStarHullModel` / `BrittleStarAnimation`)
+
+**A real FBX since 2026-10-18** (`Assets/_Models/Vessel Models/BrittleStar.fbx`, built by `/vessel-model` from
+`Tools/Build/vessel_model/specs/brittlestar.py`; `build.py brittlestar --check` is its drift gate; sheet
+`Docs/VesselModels/sheets/brittlestar_after.jpg`). It replaced the procedural placeholder (`BrittleStarHullForm` /
+`BrittleStarHullBuilder`, 844 flat triangles in two materials), which the owner judged "terrible even as placeholders"
+(2026-10-17) with every other C# runtime hull. Like the Butterfly it has no artist file behind it, so it is built to the
+fleet convention for a new vessel, and its gameplay numbers are the placeholder's: **no tuning moved**.
+
+| | |
+|---|---|
+| Nodes | mesh `mesh`, armature `rig`, root bone `hull` (the disc, the cockpit pod, the canopy) at the vessel origin; preset `zup` |
+| Bones (37) | `ring` at (0, 0, −0.35), the placeholder's Ring pivot: everything under it is what the firing rotation turns and Ring Detonation throws. `arm.1`..`arm.5` (arm.N = the placeholder's point N−1: point 0 straight up, then counter-clockwise seen from behind) from the bearing collar (r 1.86) to the point (r 6). Under each arm, `jet.N` (the nacelle, at the point), `jet.N.mouth` (the nozzle lip, z −0.85, the placeholder's flame root), `jet.N.flame` (the plume) and `gun.N` (barrel, from z 0.05), `gun.N.mouth` (z 0.9 = `BrittleStarHullForm.MuzzlePosition`). The cockpit's own: `jet` / `jet.mouth` / `jet.flame` (nozzle z −0.9) and `gun` / `gun.mouth` (muzzle z 1.65). Every bone skins geometry (the import's `optimizeBones` strips one that skins nothing) |
+| Size | x ±6.07, y −5.21..6.35, z −1.9..1.65 (Unity, flames at rest length 1) against the placeholder's ±5.95, −5.07..6.26, −1.9..1.69: within 2% on every axis. Ring radius 6, its half-thickness 0.22 (the explosion's disk), the six muzzles and nozzles exact |
+| Slots | Domain (radial shields, dorsal arm plates, the halo's rear channel, nacelle bands: 13% of the surface), Body (gunmetal), Window (the canopy and the five aboral lenses), Engine (the six bells and plumes) |
+| Morphs | the placeholder's art direction at the convention's travel: Charge (pods ×1.5 girth ×1.3 length, barrels ×1.6 girth and 0.3 forward, the arm spines bristle ×3.4) 4.2%, Mass (the cockpit ×1.25 long from its tail, its pod ×1.45 girth, the disc ×1.12) 4.9%, Space (the barrels ×2.2) 5.3%, Time (the halo from pentagon to circle) 6.7% of the diagonal. Each moves its barrels by the form's own distances; the muzzles follow the drawn barrel mouths' own travel (`BrittleStarHullModel.ReadMouthTravel`) |
+| Takes | none drive it (`BrittleStarAnimation` writes the bones in code); `bankright` / `bankleft` (the hull's 28° lean) and `ringturn` (the ring turned 36°) are documentation poses with `pose_expect` |
+| Budget | 13,712 triangles, 7,242 vertices |
+
+**Clade to ship.** Seen from the camera (straight behind, 38 u: ~25 px per unit, the ring ~300 px wide) the pilot sees
+the star's ABORAL side, so that is where the read is built: the **central disc** is the armoured hull core with the main
+engine in its centre; its five pairs of **radial shields** are sunken domain plates at each arm's root, with five cyan
+**lenses** between them (the brittle star's photoreceptor lenses, as sensor windows); the **oral jaws** are the forward
+cockpit pod's five interradial plates converging on the nose gun, with the canopy dome on top; the **arm base** is a
+slew-ring **bearing collar** round the disc that the ring assembly turns on; each **arm** is a boom of eight armour
+**ossicles** (a sunken domain dorsal plate each) on knuckle joints, bowed the same way round like a swimming brittle
+star's, its **arm spines** short radiator spines on every ossicle's flanks; the **tube feet** are the thruster nacelles at
+the arm tips, bells glowing; the **ring** is a structural halo through the tips, a channelled box beam whose rear channel
+carries the domain colour; each tip carries a shrouded **gun** with a muzzle brake.
+
+**Integration is by NAME, not by fileID** (an FBX's sub-object fileIDs cannot be derived offline). The prefab's
+`BrittleStarHull` holds the model instance; its MeshFilter / MeshRenderer are gone and its hull component, on the SAME
+fileID (so `BrittleStarExecutor.hull` still points at it), is now `BrittleStarHullModel`. That component finds `ring`,
+the mouths, the flames and the SkinnedMeshRenderer by name in `Awake`, and implements `BrittleStarHullSource`, the
+surface the executor and the animation now use instead of the builder: the ring's pose (a turn about the nose axis
+composed onto the bone's captured rest, and the bloom scale), the flames (a scale along whichever local axis of the bone
+runs down the exhaust), six muzzle transforms ON the drawn barrel mouths (the `gun.N.mouth` bones, built at
+`BrittleStarHullForm.MuzzlePosition`), carried by each barrel's own blend-shape travel read once from the mesh, so a
+round leaves and a cord roots exactly where the drawn barrel ends at every element weight and in whatever frame Unity
+imports the bones (2026-10-18: Garrett saw the guns and cords leave away from the ring corners; until then the muzzles
+were placed from the form's hull-space numbers, which only meet the drawing when the bones import in the frame the
+spec assumes), the thrown ring (a `BakeMesh` copy of the ring's triangles,
+recentred on its pivot), and the domain material the explosion wears (slot 0). The element shapes are blend shapes the
+base `VesselAnimation` drives by name, so the builder's `IProceduralElementMorphSource` duty ends; `VesselCustomization`
+paints the model by identity (`_domainReplacesMaterials` = GreenAccentVesselMaterial) after swapping the renderer-less
+hull for its skinned child. `author_brittlestar_assets.py --check` now asserts the model component, the nested model and
+a hull with no leftover renderer. Crystal hull fusion finds the skinned hull and solves it at runtime until somebody
+runs **Bake Crystal Hull Fusions** for it.
+
+**The procedural placeholder** is kept in the tree until the owner accepts the model, then retired:
+`BrittleStarHullForm.cs` (still the source of the ring's numbers and the muzzle positions), `BrittleStarHullBuilder.cs`
+(no longer on the prefab; it now implements `BrittleStarHullSource` too, so putting it back on the hull's fileID restores
+it), `Tools/Build/brittlestar_harness/` (`render_brittlestar_card_icon.py` was retired 2026-10-18: it drew this form over the model's card). The bullets below describe the shared
+design and, where they name parts, the placeholder's:
 
 - **Ring size** (Garrett, 2026-10-14): radius **6** — 2.5× the first cut — so Creation Mode's five corner trails lie
   12 u apart across the path. The vessel's hit box still spans only the cockpit and the inner arms (4.6 × 4.6 × 2.4):
@@ -62,7 +140,7 @@ struts — the shipped hull still has physical arms (follow-up F8).
   gone while thrown and **blooms back** (ease-out-back) while rebuilt. The drawn hull leans 28° into a full-stick turn
   (fleet-scale puppetry, vessel rule 24). Channel discipline: the animation writes transforms only; the builder writes
   vertices and the muzzles' positions.
-- **Card icons** are renders of this hull (`Tools/Build/render_brittlestar_card_icon.py`), the four ability icons are
+- **Card images** (icon, inactive, silhouette, large, hangar preview) are renders of the MODEL (`Tools/Build/vessel_model/render_cards.py BrittleStar`, `--check`), the four ability icons are
   `Tools/Build/author_brittlestar_icons.py` (the Thresher's icon language).
 
 ## 3. The abilities (`BrittleStarExecutor`, tuning `BrittleStarConfigSO`)
@@ -300,8 +378,11 @@ cluster (≥ 18), or into any cluster when its stock is full (a crystal would be
 
 | Role | Path |
 |---|---|
-| Pure hull geometry + morphs | `_Scripts/Controller/Vessel/BrittleStarHullForm.cs` |
-| Hull emitter (meshes, muzzles, materials) | `_Scripts/Controller/Vessel/BrittleStarHullBuilder.cs` |
+| The hull model and its spec (§2) | `_Models/Vessel Models/BrittleStar.fbx`, `Tools/Build/vessel_model/specs/brittlestar.py` |
+| The hull surface the executor and animation use | `_Scripts/Controller/Vessel/BrittleStarHullSource.cs` |
+| The model's parts, found by name (ring, muzzles, flames, thrown ring) | `_Scripts/Controller/Vessel/BrittleStarHullModel.cs` |
+| Pure hull geometry + morphs (the ring's numbers and the muzzle positions; the placeholder's geometry) | `_Scripts/Controller/Vessel/BrittleStarHullForm.cs` |
+| The procedural placeholder (off the prefab since 2026-10-18; kept until the model is accepted) | `_Scripts/Controller/Vessel/BrittleStarHullBuilder.cs` |
 | Pure rules (ring life, modes, mode speed, aim, spread, arm direction, the disk, range) | `_Scripts/Controller/Vessel/BrittleStarRules.cs` |
 | Pure cord physics (Destruction Mode's five cords) | `_Scripts/Controller/Vessel/BrittleStarCord.cs` |
 | Flight model (Speed Mode multiplier) | `_Scripts/Controller/Vessel/BrittleStarVesselTransformer.cs` |
@@ -317,7 +398,7 @@ cluster (≥ 18), or into any cluster when its stock is full (a crystal would be
 | Tests | `_Scripts/Tests/Editor/BrittleStarTests.cs` (29: five on the cords) |
 | Creation tool | `Tools/Build/author_brittlestar_assets.py` (`--check`, `--self-test`) |
 | Offline test runner | `Tools/Build/brittlestar_harness/run.sh` (`--self-test`, `--obj DIR`) |
-| Art | `Tools/Build/author_brittlestar_icons.py`, `Tools/Build/render_brittlestar_card_icon.py`; concept art `Docs/Studios/BrittleStar/` |
+| Art | `Tools/Build/author_brittlestar_icons.py`, `Tools/Build/vessel_model/render_cards.py`; concept art `Docs/Studios/BrittleStar/` |
 
 ### How the prefab was made
 
@@ -370,7 +451,7 @@ identical on the Stoat and Sparrow and shared by all 16 vessel prefabs — inher
 | Cruise | `BrittleStar.prefab` transformer | `DefaultThrottleScaler` 35 + `DefaultMinimumSpeed` 10 |
 | Turn rates | `BrittleStar.prefab` transformer | the Sparrow's: pitch/yaw 80, roll 30 |
 | Base trail | `BrittleStar.prefab` spawner | `BaseScale` (1, 1, 6), wavelength 6, offset 2 |
-| Hull proportions | `BrittleStarHullBuilder` field initializers (`BrittleStarHullForm.Defaults`) | ring radius 6 (2.5× the first cut), struts 0.22, arms 0.14 |
+| Hull proportions | `BrittleStarHullForm.Defaults` (read by `BrittleStarHullModel`; the model is built to them, `specs/brittlestar.py`) | ring radius 6 (2.5× the first cut), struts 0.22, arms 0.14 |
 | Flames / bank | `BrittleStarAnimation` | lit 3.2 u, ember 0.12 u, bank 28° |
 | Camera | `BrittleStarCameraSettingsSO` | offset (0, 0, −38) — no height: the vessel is a crosshair — far 12000 |
 | `armFocusDistance` / `armSplayDegrees` (the cords in / out) | `BrittleStarConfig` | 120 u / 25° |
@@ -382,9 +463,11 @@ Garrett played the 2026-10-16 build and reported it working; no step below has b
 controls), the peer-press harness (0 divergences), the element table (0 disagreements), and the fleet's static gates.
 None of that is a play test. In order:
 
-1. **Freestyle**: Menu → freestyle → Vessel Changer → Brittle Star. Expect: a gold pentagon ring round a hub, domain-
-   coloured nozzles and canopy, a cockpit flame; the hull leans into turns and the **outside** pods light as it banks.
-   Console clean (no `[BrittleStar]` errors).
+1. **Freestyle**: Menu → freestyle → Vessel Changer → Brittle Star. Expect (the model, §2): a dark five-lobed disc with
+   domain radial shields and cyan lenses round a glowing engine, five segmented arms bowed the same way round to a
+   pentagon halo with a domain channel, a glowing nacelle at each point; the cockpit flame is lit; the hull leans into
+   turns and the **outside** pods light as it banks. Console clean (no `[BrittleStar]` or `[BrittleStarHullModel]`
+   warnings).
 2. **Trail**: fly straight; a single long, slim block (0.5 × 1 × 6 as laid: `BaseScale` 1 × 1 × 6, the spawner halving
    x for a single trail) every ~6 u behind the cockpit, end to end. Raise Mass: the blocks widen and thicken, never lengthen.
 3. **A** (Speed): every thruster lights and the hull runs at **6×** (45 → 270 u/s); the trail's blocks spread out
@@ -415,9 +498,9 @@ None of that is a play test. In order:
    meet it - all still turning with the ring's spin. Nothing in it should read flat from any angle; a new ring blooms back on the hull over 3 s
    and the card drops a step. The hull is never ringless; the modes drop out only for those three seconds.
 9. **HUD**: four cards, charge → mass → space → time; each turns lime while its mode is on. Run **FrogletTools ▸ Vessels
-   ▸ Audit Vessel Ability Rows**, **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs** (expect: procedural, four
+   ▸ Audit Vessel Ability Rows**, **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs** (expect: blend shapes on the model, four
    elements) and **Audit Vessel Construction**.
-10. **Element morphs**: raise each element (crystals, or the debug element tool): Mass grows the cockpit, Charge the
+10. **Element morphs**: raise each element (crystals, or the debug element tool): Mass grows the cockpit pod, Charge the
    pods and guns, Space the barrels, Time rounds the ring into a circle.
 11. **AI**: an arcade/arena match with the Brittle Star in an AI seat: it fires at mass ahead, takes Charge Mode's sabers
     to a near wall and Space Mode's guns to a far one, takes Speed on straights, and throws spare rings into clusters.
@@ -429,9 +512,9 @@ None of that is a play test. In order:
 
 ## Follow-ups
 
-- **F1 — touch controls for the modes.** Touch raises no face-button events, so Speed / Creation / Destruction are
-  unreachable on touch (the Stoat has the same gap). The document's touch design — drag on the shoot button to aim and
-  spread — needs an on-screen control.
+- **F1 — touch controls for the modes: DONE** (2026-10-21). The ability cards became buttons (`AbilityCardPress`), and
+  the phone profile adds a Fire and a Ring button whose drag aims (§1, "On a phone"). Left to test on a phone: the six
+  buttons' reach round the right thumb, and that a hard turn on the steering thumb leaves the ring and guns still.
 - **F2 — level-5 upgrades** (§5): Garrett's call.
 - **F3 — persona AI**: the document gives each element a persona (Fabricator builds, Rolling Thunder destroys clumps,
   Hunter chases pilots, Zephyr chases crystals into enemy zones). Today one autopilot serves all four.
@@ -458,8 +541,8 @@ None of that is a play test. In order:
   `git mv` the control asset (its guid survives); then `author_brittlestar_assets.py --check` and the HUD audit.
 - **R2 — a gap this branch walked past (fleet input layer).** `InputEvents` has no fourth face-button event: the gamepad
   raises A / B / X (`Button1-3Action`) and RB (`FlipAction`) only (`GamepadInputStrategy.ProcessButtonInput`), so a
-  vessel that needs a fourth mode control must borrow `FlipAction` — which `DeviceOrientationHandler` also raises when a
-  phone is turned. Measure before acting: which vessels bind `FlipAction` today (`grep -l "InputEvent: 3" Assets/_Prefabs/Spacevessels/*.prefab`),
+  vessel that needs a fourth mode control must borrow `FlipAction` (`DeviceOrientationHandler` raised it when a phone
+  was turned until 2026-10-21; it no longer does). Measure before acting: which vessels bind `FlipAction` today (`grep -l "InputEvent: 3" Assets/_Prefabs/Spacevessels/*.prefab`),
   and whether a `Button4Action` (Y / a key / an on-screen button) is wanted fleet-wide (measured 2026-10-16: the
   Brittle Star and the Grizzly bind it). Owner: the input layer.
 - **R3 — an inconsistency this branch walked past (the trails' width).** The fleet spawner lays a single, gapless

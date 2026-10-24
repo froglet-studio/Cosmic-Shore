@@ -23,9 +23,9 @@
 
 | # | What | Evidence | Status |
 |---|---|---|---|
-| 1 | Joining a party fails: `NetworkManagerStartFailed` / `SessionConflict` / "player is already a member" / client never connects | ledger E-d1d183ed78, E-96c9656884, E-5b3fdac4a4, E-f900f1f48d, E-9a3e719250, E-e2d305370d; in 5 of the 7 two-machine tests | new, not root-caused |
+| 1 | Joining a party fails: `NetworkManagerStartFailed` / `SessionConflict` / "player is already a member" / client never connects | ledger E-d1d183ed78, E-96c9656884, E-5b3fdac4a4, E-f900f1f48d, E-9a3e719250, E-e2d305370d; in 5 of the 7 two-machine tests | **B35, fixed 2026-10-24, awaiting retest:** 11 network prefabs committed a wrong `GlobalObjectIdHash`, so editors on one commit refused each other (`NetworkConfig mismatch`). SessionConflict / "already a member" follow from the failed first try |
 | 2 | Relay connection dies mid-session (timed out / allocation invalid / bind failed -> host shuts down) | E-0a098d80df, E-4d0d17e44b, E-fda866d511, E-e5ff2abb8c, E-e6054bc064 | new, not root-caused |
-| 3 | B31: the party session refresh is still rate-limited every ~10-15 s | every test; e.g. gradi 23 Oct: 53 in 9 min | fix did not hold |
+| 3 | B31: the party session refresh is still rate-limited every ~10-15 s | every test; e.g. gradi 23 Oct: 53 in 9 min | **fixed again 2026-10-24, awaiting retest:** the presence and party reads went out in the same second; every read now waits 1.05 s after the last (`LobbyReadPacer`) and a tick reads one lobby |
 | 4 | Presence lobby create throws NullReference (5x); "INVITE-SEND ABORT - presence lobby is null" | E-6b79cd07f1, E-ca3bc5cbe1 | new |
 | 5 | Recovery after a failed join throws (ArgumentNull / InvalidOperation) | E-0de9ec6c70, E-41b7610878 | new |
 
@@ -45,7 +45,7 @@ Closed in practice: **B32** (seen recover twice). Waiting on more evidence: **B3
 
 ## 5. Next steps
 
-1. Root-cause the failed joins (bug 1) from the 23 Oct logs (`net_logs.py show 1..3`).
-2. B31 again: find who reads the party lobby (SDK polling vs Wire events) before tuning anything.
+1. ~~Root-cause the failed joins (bug 1).~~ Done 2026-10-24 (B35); retest on two machines.
+2. ~~B31 again.~~ Done 2026-10-24: it was our own two reads in one second, not the SDK; retest on two machines.
 3. Relay drops (bug 2): check whether they follow long idle / alt-tab (timed out due to inactivity).
 4. Close T-20261015-ac73 (log collection works) and mark B32 fixed in BUGS.md.

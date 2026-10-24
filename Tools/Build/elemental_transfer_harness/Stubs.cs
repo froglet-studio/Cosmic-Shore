@@ -8,6 +8,11 @@ using System.Collections.Generic;
 
 namespace UnityEngine
 {
+    public struct Vector2
+    {
+        public float x, y;
+        public Vector2(float x, float y) { this.x = x; this.y = y; }
+    }
     public struct Vector3
     {
         public float x, y, z;
@@ -26,6 +31,12 @@ namespace UnityEngine
         public static Vector3 Cross(Vector3 a, Vector3 b) =>
             new Vector3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
         public static Vector3 ClampMagnitude(Vector3 v, float max) => v;
+    }
+    // VesselSilenceConfigSO's fallback danger colour (type-checked only).
+    public struct Color
+    {
+        public float r, g, b, a;
+        public Color(float r, float g, float b, float a) { this.r = r; this.g = g; this.b = b; this.a = a; }
     }
     public struct Quaternion
     {
@@ -48,8 +59,32 @@ namespace UnityEngine
         public static int FloorToInt(float f) => (int)Math.Floor(f);
         public static bool Approximately(float a, float b) => Math.Abs(a - b) < 1e-6f;
         public static float MoveTowards(float a, float b, float d) => a;
+        // SilenceVignetteMask (compiled with VesselSilenceConfigSO, which hands out its Shape).
+        public const float PI = (float)Math.PI;
+        public static float Lerp(float a, float b, float t) => a + (b - a) * Clamp01(t);
+        public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
+        public static float Cos(float f) => (float)Math.Cos(f);
+        public static float Floor(float f) => (float)Math.Floor(f);
+        // SilencePerimeter (compiled with VesselSilenceConfigSO, which hands out its Settings).
+        public static float Sin(float f) => (float)Math.Sin(f);
+        public static float Tan(float f) => (float)Math.Tan(f);
+        public static int Max(int a, int b) => a > b ? a : b;
+        public static int Clamp(int v, int a, int b) => v < a ? a : v > b ? b : v;
     }
-    public static class Time { public static float deltaTime => 0.016f; public static float time => 0f; }
+    public static class Time
+    {
+        public static float deltaTime => 0.016f;
+        public static float time => 0f;
+        public static double timeAsDouble => 0d;   // VesselSilence's default clock; the driver swaps the clock
+    }
+    // VesselSilence's config lookup. Load answers null, so the harness runs on the config SO's own
+    // field initializers - the defaults the shipped asset also authors.
+    public static class Resources { public static T Load<T>(string path) where T : Object => null; }
+    public enum RuntimeInitializeLoadType { SubsystemRegistration = 4 }
+    public class RuntimeInitializeOnLoadMethodAttribute : AttrBase
+    {
+        public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType t) { }
+    }
     public static class Random
     {
         public static Vector3 onUnitSphere => new Vector3(0, 1, 0);
@@ -80,7 +115,12 @@ namespace UnityEngine
     }
     public class Behaviour : Component { public bool enabled { get; set; } }
     public class MonoBehaviour : Behaviour { }
-    public class ScriptableObject : Object { }
+    // VesselSilenceConfigSO's perimeter shader reference (type-checked only).
+    public class Shader : Object { public bool isSupported => true; }
+    public class ScriptableObject : Object
+    {
+        public static T CreateInstance<T>() where T : ScriptableObject => Activator.CreateInstance<T>();
+    }
     public class Transform : Component { public Vector3 position { get; set; } public Vector3 localScale { get; set; } }
     public class GameObject : Object
     {

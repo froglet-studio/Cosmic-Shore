@@ -104,6 +104,13 @@ namespace CosmicShore.Gameplay
         {
             base.OnNetworkSpawn();
 
+            // freestyle: any person may move to any free hull or seat of their domain (CrewStations), on every peer
+            CrewStations.MenuLive = true;
+            CrewStations.ConfigureFreestyleAI = pilot =>
+            {
+                if (pilot) pilot.ConfigureForGameMode(gameData, shouldSeekPlayers: false, companionSkill);
+            };
+
             // Register the swap + AI-companion callbacks so client-originated requests
             // route to the server-side handlers.
             if (NetworkManager.Singleton.IsServer)
@@ -115,6 +122,8 @@ namespace CosmicShore.Gameplay
 
         protected override void OnNetworkDespawn()
         {
+            CrewStations.MenuLive = false;
+            CrewStations.ConfigureFreestyleAI = null;
             if (clientPlayerVesselInitializer)
             {
                 clientPlayerVesselInitializer.OnSwapRequested -= HandleSwapRequest;

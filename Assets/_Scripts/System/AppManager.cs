@@ -562,6 +562,14 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
 
+            // Platform sign-in (Steam / Google / Apple) behind the sign-in UI (Docs/MENU_REDESIGN_B.md §54). The
+            // login branch replaces NoPlatformSignIn - every provider unavailable - with the real providers.
+            builder.RegisterFactory<IPlatformSignIn>(
+                c => new NoPlatformSignIn(),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
             // Reconnect (Docs/OFFLINE_MODE.md §7): re-runs the boot chain in place so an
             // offline session can come back online with no app restart. Captures the
             // serialized SceneTransitionManager directly - like ApplicationStateMachine

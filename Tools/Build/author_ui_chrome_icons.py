@@ -21,10 +21,20 @@ supersampling, margin or PNG encoding. Docs/STYLE_FOUNDATION.md sections 1.2, 5 
   * 256x256 with a 24px margin, matching the vendor sub-sprites they replace so no
     RectTransform moves.
 
-FIVE glyphs, FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
+TWENTY-NINE glyphs. Five arrived with the vendor swap - FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
 (Menu_Main) and `Close Button` (Arcade Screen) wore two DIFFERENT vendor glyphs while
 meaning the same thing; the style guide's icon list names one "X Button", so they share
-`chrome_close` here. That is the one intentional look change in the swap.
+`chrome_close` here. That is the one intentional look change in the swap. `chrome_lock` and
+`chrome_crystal` were added for the style-B component kit (Docs/MENU_REDESIGN_B.md, item 0);
+`chrome_plus`, `chrome_star` and `chrome_star_fill` for the arcade (item 3): the party panel's open
+seat and the game card's favourite star, off and on; `chrome_globe`, `chrome_pin` and
+`chrome_people` for the weekly leaderboard's scope tabs (item 4); `chrome_diamond` for a display-name
+rule not yet met in the profile window (item 5 - a met rule wears `chrome_confirm`); `chrome_shuffle` for the
+Toy Box's shuffle card (item 8); `chrome_gear`, `chrome_display`, `chrome_gauge` and `chrome_sliders` for
+the settings window's four tabs (item 9); `chrome_cube`, `chrome_pad`, `chrome_blades` and `chrome_target` for
+Home's four hub buttons - Toy Box, Arcade, Arena, Mission (item 6); `chrome_pause` for the centre of the
+in-game pause hex (item 12); `chrome_chevron` for the hub windows' edge arrows and strip (Rev 7); `chrome_person` and
+the three `chrome_provider_*` STAND-IN marks for sign-in (Rev 9).
 
 Usage:
     python3 Tools/Build/author_ui_chrome_icons.py            # write the PNGs + .meta files
@@ -96,6 +106,65 @@ def chrome_confirm():
     return stroke([(-0.70, 0.06), (-0.20, -0.54), (0.72, 0.62)], w=W * 1.30)
 
 
+def chrome_diamond():
+    """A rule not yet met - a small hollow diamond, the open counterpart of the confirm tick in
+    the profile window's display-name rules (Docs/MENU_REDESIGN_B.md, item 5)."""
+    return ring([(0.00, 0.62), (0.62, 0.00), (0.00, -0.62), (-0.62, 0.00)], w=W * 1.05)
+
+
+def chrome_shuffle():
+    """Shuffle - two crossing paths, each ending in a right-pointing arrowhead (the Toy Box's shuffle
+    card, Docs/MENU_REDESIGN_B.md item 8)."""
+    m = stroke([(-0.82, 0.50), (-0.36, 0.50), (0.36, -0.50), (0.78, -0.50)], w=W * 1.05)
+    m |= stroke([(-0.82, -0.50), (-0.36, -0.50), (0.36, 0.50), (0.78, 0.50)], w=W * 1.05)
+    m |= stroke([(0.56, 0.74), (0.80, 0.50), (0.56, 0.26)], w=W * 1.05)
+    m |= stroke([(0.56, -0.26), (0.80, -0.50), (0.56, -0.74)], w=W * 1.05)
+    return m
+
+
+def _arc(r, a0, a1, n=12):
+    return [(r * math.cos(math.radians(a0 + (a1 - a0) * i / n)), r * math.sin(math.radians(a0 + (a1 - a0) * i / n)))
+            for i in range(n + 1)]
+
+
+def chrome_gear():
+    """Settings, General - an octagonal gear: a faceted rim with six square teeth and a hub."""
+    m = ring([(0.58 * math.cos(math.radians(22.5 + 45 * i)), 0.58 * math.sin(math.radians(22.5 + 45 * i)))
+              for i in range(8)], w=W * 1.05)
+    for i in range(6):
+        a = math.radians(90 + 60 * i)
+        m |= stroke([(0.58 * math.cos(a), 0.58 * math.sin(a)), (0.84 * math.cos(a), 0.84 * math.sin(a))], w=W * 1.6)
+    m |= ring([(0.22 * math.cos(math.radians(45 * i)), 0.22 * math.sin(math.radians(45 * i))) for i in range(8)], w=W * 0.95)
+    return m
+
+
+def chrome_display():
+    """Settings, Display - a monitor: the screen frame, its neck and its foot."""
+    m = ring([(-0.80, 0.62), (0.80, 0.62), (0.80, -0.30), (-0.80, -0.30)], w=W * 1.05)
+    m |= stroke([(0.00, -0.30), (0.00, -0.62)], w=W * 1.05)
+    m |= stroke([(-0.40, -0.66), (0.40, -0.66)], w=W * 1.05)
+    return m
+
+
+def chrome_gauge():
+    """Settings, Performance - a speed gauge: a faceted half dial and its needle."""
+    # A filled band, not a stroked polyline: the shared stroke squares off its joints, which reads
+    # as knuckles on a curve.
+    half = W * 1.05 / 2
+    m = fill(_arc(0.78 + half, 200, -20, 24) + _arc(0.78 - half, -20, 200, 24))
+    m |= stroke([(0.00, -0.22), (0.44, 0.40)], w=W * 1.15)
+    return m
+
+
+def chrome_sliders():
+    """Settings, Other - two slider rails, each with its square knob at a different point."""
+    m = stroke([(-0.82, 0.36), (0.82, 0.36)], w=W * 0.95)
+    m |= stroke([(-0.82, -0.36), (0.82, -0.36)], w=W * 0.95)
+    m |= fill([(0.12, 0.58), (0.44, 0.58), (0.44, 0.14), (0.12, 0.14)])
+    m |= fill([(-0.46, -0.14), (-0.14, -0.14), (-0.14, -0.58), (-0.46, -0.58)])
+    return m
+
+
 def chrome_arrow_down():
     """Expand / more - a hollow down triangle, the read the vendor sprite it replaces had."""
     return ring([(-0.80, 0.50), (0.80, 0.50), (0.00, -0.74)], w=W * 1.15)
@@ -118,12 +187,202 @@ def chrome_vessel_placeholder():
     return m
 
 
+def chrome_lock():
+    """Locked - a padlock built from right angles (section 5: nothing is rounded), so the
+    shackle is a squared arch rather than the usual hoop. Worn by the style-B kit's locked
+    tiles and the locked top-nav tab (Docs/MENU_REDESIGN_B.md, item 0)."""
+    m = stroke([(-0.40, -0.02), (-0.40, 0.70), (0.40, 0.70), (0.40, -0.02)], w=W * 1.10)
+    m |= ring([(-0.66, 0.02), (0.66, 0.02), (0.66, -0.74), (-0.66, -0.74)], w=W * 1.10)
+    m |= stroke([(0.00, -0.24), (0.00, -0.50)], w=W * 1.10)
+    return m
+
+
+def chrome_crystal():
+    """Currency - a cut gem: a crown over a long pavilion, the girdle drawn across it.
+    The currency bar and Purchase buttons wear it, tinted the purchase role (section 3)."""
+    m = ring([(0.00, 0.80), (0.68, 0.24), (0.00, -0.80), (-0.68, 0.24)], w=W * 1.05)
+    m |= stroke([(-0.62, 0.24), (0.62, 0.24)], w=W * 0.95)
+    return m
+
+
+def chrome_plus():
+    """Add - the open party seat's invite glyph. Butt-capped, like the X it pairs with."""
+    m = stroke([(-0.70, 0.00), (0.70, 0.00)], w=W * 1.30)
+    m |= stroke([(0.00, -0.70), (0.00, 0.70)], w=W * 1.30)
+    return m
+
+
+def _star(outer=0.84, inner=0.36):
+    """A five-point star, point up - straight edges and sharp points (section 5)."""
+    return [((outer if k % 2 == 0 else inner) * math.cos(math.pi / 2 + k * math.pi / 5),
+             (outer if k % 2 == 0 else inner) * math.sin(math.pi / 2 + k * math.pi / 5) - 0.04)
+            for k in range(10)]
+
+
+def chrome_star():
+    """Favourite, off - the star's outline."""
+    return ring(_star(), w=W * 1.00)
+
+
+def chrome_star_fill():
+    """Favourite, on - the same star, solid, so on and off share one silhouette."""
+    return fill(_star())
+
+
+def _octagon(r, cx=0.0, cy=0.0):
+    return [(cx + r * math.cos(math.pi / 8 + k * math.pi / 4), cy + r * math.sin(math.pi / 8 + k * math.pi / 4))
+            for k in range(8)]
+
+
+def chrome_globe():
+    """World scope - an octagonal globe (section 5: no circles) with its equator and a
+    meridian lens. The weekly leaderboard's World tab (item 4)."""
+    m = ring(_octagon(0.80), w=W * 1.05)
+    m |= stroke([(-0.78, 0.00), (0.78, 0.00)], w=W * 0.90)
+    m |= ring([(0.00, 0.72), (0.32, 0.38), (0.32, -0.38), (0.00, -0.72), (-0.32, -0.38), (-0.32, 0.38)],
+              w=W * 0.90)
+    return m
+
+
+def chrome_pin():
+    """Regional scope - a map pin cut from straight edges: a faceted head over a point, with
+    a hollow core. The weekly leaderboard's Regional tab (item 4)."""
+    m = ring([(0.00, -0.84), (-0.56, 0.06), (-0.56, 0.46), (-0.22, 0.80), (0.22, 0.80),
+              (0.56, 0.46), (0.56, 0.06)], w=W * 1.05)
+    m |= ring(_octagon(0.20, 0.0, 0.36), w=W * 0.90)
+    return m
+
+
+def chrome_people():
+    """Friends scope - two pilots, heads and shoulders, the rear one offset. The weekly
+    leaderboard's Friends tab (item 4)."""
+    m = ring(_octagon(0.24, -0.20, 0.30), w=W * 0.95)
+    m |= stroke([(-0.68, -0.76), (-0.68, -0.24), (-0.40, -0.04), (0.00, -0.04), (0.28, -0.24), (0.28, -0.76)],
+                w=W * 0.95)
+    m |= stroke([(0.22, 0.62), (0.40, 0.70), (0.58, 0.54), (0.58, 0.28), (0.40, 0.10)], w=W * 0.90)
+    m |= stroke([(0.50, -0.04), (0.72, -0.04), (0.84, -0.20), (0.84, -0.60)], w=W * 0.90)
+    return m
+
+
+def chrome_cube():
+    """Home, Toy Box - an isometric cube: the hexagon outline and the three edges meeting at its front corner."""
+    hexa = [(0.00, 0.86), (0.74, 0.44), (0.74, -0.44), (0.00, -0.86), (-0.74, -0.44), (-0.74, 0.44)]
+    m = ring(hexa, w=W * 1.05)
+    m |= stroke([(-0.74, 0.44), (0.00, 0.02), (0.74, 0.44)], w=W * 1.0)
+    m |= stroke([(0.00, 0.02), (0.00, -0.86)], w=W * 1.0)
+    return m
+
+
+def chrome_pad():
+    """Home, Arcade - a gamepad: a faceted body, the d-pad cross on the left and two buttons on the right."""
+    m = ring([(-0.86, 0.10), (-0.62, 0.40), (0.62, 0.40), (0.86, 0.10), (0.86, -0.30), (0.56, -0.52),
+              (0.30, -0.24), (-0.30, -0.24), (-0.56, -0.52), (-0.86, -0.30)], w=W * 1.0)
+    m |= stroke([(-0.50, 0.08), (-0.18, 0.08)], w=W * 0.9)
+    m |= stroke([(-0.34, 0.24), (-0.34, -0.08)], w=W * 0.9)
+    m |= fill([(0.26, 0.20), (0.40, 0.20), (0.40, 0.06), (0.26, 0.06)])
+    m |= fill([(0.46, 0.02), (0.60, 0.02), (0.60, -0.12), (0.46, -0.12)])
+    return m
+
+
+def chrome_blades():
+    """Home, Arena - two crossed blades, each with its cross-guard."""
+    m = stroke([(-0.74, 0.78), (0.42, -0.38)], w=W * 1.05)
+    m |= stroke([(0.74, 0.78), (-0.42, -0.38)], w=W * 1.05)
+    m |= stroke([(0.22, -0.56), (0.60, -0.18)], w=W * 1.0)
+    m |= stroke([(-0.22, -0.56), (-0.60, -0.18)], w=W * 1.0)
+    m |= stroke([(0.50, -0.46), (0.80, -0.76)], w=W * 1.0)
+    m |= stroke([(-0.50, -0.46), (-0.80, -0.76)], w=W * 1.0)
+    return m
+
+
+def chrome_target():
+    """Home, Mission - a target: two octagonal rings (section 5: no circles) and four ticks."""
+    m = ring(_octagon(0.62), w=W * 1.0)
+    m |= ring(_octagon(0.26), w=W * 0.95)
+    for a, b in (((0, 0.70), (0, 0.92)), ((0, -0.70), (0, -0.92)), ((0.70, 0), (0.92, 0)), ((-0.70, 0), (-0.92, 0))):
+        m |= stroke([a, b], w=W * 1.0)
+    return m
+
+
+def chrome_pause():
+    """In-game pause (item 12) - two upright bars, square-ended, in the centre of the volume hex."""
+    m = fill([(-0.46, 0.66), (-0.14, 0.66), (-0.14, -0.66), (-0.46, -0.66)])
+    m |= fill([(0.14, 0.66), (0.46, 0.66), (0.46, -0.66), (0.14, -0.66)])
+    return m
+
+
+def chrome_chevron():
+    """Next window (Rev 7, Docs/MENU_REDESIGN_B.md §47.2) - an open chevron pointing right, square-ended; the hub
+    window's edge arrows and its strip wear it, the left one mirrored by its RectTransform."""
+    # A filled band, not a stroked polyline: the stroke squares off its joint into a knuckle at the point.
+    return fill([(-0.40, 0.74), (-0.10, 0.74), (0.52, 0.00), (-0.10, -0.74), (-0.40, -0.74), (0.22, 0.00)])
+
+
+def chrome_person():
+    """One pilot, head and shoulders - Play as guest and the settings window's Account tab (Rev 9,
+    Docs/MENU_REDESIGN_B.md §54)."""
+    m = ring(_octagon(0.30, 0.0, 0.36), w=W * 1.0)
+    m |= stroke([(-0.66, -0.80), (-0.66, -0.30), (-0.36, -0.06), (0.36, -0.06), (0.66, -0.30), (0.66, -0.80)], w=W * 1.0)
+    return m
+
+
+def chrome_provider_steam():
+    """STAND-IN for the Steam mark on the sign-in buttons (Rev 9): an octagon, a hollow piston head and a
+    small weight on a rod. The built buttons take each provider's official mark from SignInProviders.asset
+    when the login branch adds it - the providers' brand rules require their own marks."""
+    m = ring(_octagon(0.84), w=W * 0.95)
+    m |= ring(_octagon(0.24, 0.26, 0.20), w=W * 0.95)
+    m |= fill(_octagon(0.15, -0.34, -0.30))
+    m |= stroke([(-0.82, -0.08), (-0.34, -0.30), (0.08, 0.04)], w=W * 0.95)
+    return m
+
+
+def chrome_provider_google():
+    """STAND-IN for the Google mark (Rev 9): an angular G - an octagon open on its upper right, with its bar."""
+    oct_ = _octagon(0.74)
+    m = stroke([oct_[1], oct_[2], oct_[3], oct_[4], oct_[5], oct_[6], oct_[7], (oct_[7][0], 0.0)], w=W * 1.25)
+    m |= stroke([(0.06, 0.0), (oct_[7][0] + W * 0.6, 0.0)], w=W * 1.25)
+    return m
+
+
+def chrome_provider_apple():
+    """STAND-IN for the Apple mark (Rev 9): a faceted apple with its leaf."""
+    m = fill([(0.0, 0.40), (0.36, 0.52), (0.66, 0.30), (0.70, -0.16), (0.44, -0.68), (0.18, -0.70), (0.0, -0.60),
+              (-0.18, -0.70), (-0.44, -0.68), (-0.70, -0.16), (-0.66, 0.30), (-0.36, 0.52)])
+    m |= fill([(0.02, 0.50), (0.12, 0.80), (0.36, 0.86), (0.26, 0.58)])
+    return m
+
+
 GLYPHS = [
     ("chrome_close",      chrome_close),
     ("chrome_reroll",     chrome_reroll),
     ("chrome_confirm",    chrome_confirm),
     ("chrome_arrow_down", chrome_arrow_down),
     ("chrome_vessel_placeholder", chrome_vessel_placeholder),
+    ("chrome_lock",       chrome_lock),
+    ("chrome_crystal",    chrome_crystal),
+    ("chrome_plus",       chrome_plus),
+    ("chrome_star",       chrome_star),
+    ("chrome_star_fill",  chrome_star_fill),
+    ("chrome_globe",      chrome_globe),
+    ("chrome_pin",        chrome_pin),
+    ("chrome_people",     chrome_people),
+    ("chrome_diamond",    chrome_diamond),
+    ("chrome_shuffle",    chrome_shuffle),
+    ("chrome_gear",       chrome_gear),
+    ("chrome_display",    chrome_display),
+    ("chrome_gauge",      chrome_gauge),
+    ("chrome_sliders",    chrome_sliders),
+    ("chrome_cube",       chrome_cube),
+    ("chrome_pad",        chrome_pad),
+    ("chrome_blades",     chrome_blades),
+    ("chrome_target",     chrome_target),
+    ("chrome_pause",      chrome_pause),
+    ("chrome_chevron",    chrome_chevron),
+    ("chrome_person",     chrome_person),
+    ("chrome_provider_steam", chrome_provider_steam),
+    ("chrome_provider_google", chrome_provider_google),
+    ("chrome_provider_apple", chrome_provider_apple),
 ]
 
 

@@ -212,7 +212,7 @@ same ledger issues. Keep it a pure function — no editor types, no statics with
 
 | Route | Id | How |
 |---|---|---|
-| **Auto-capture** | `E-…` | Every distinct error/exception/assert signature files itself, once — captured via `logMessageReceivedThreaded` into a background worker (the log path never blocks on file IO). A thousand repeats update one issue. |
+| **Auto-capture** | `E-…` | Every distinct error/exception/assert signature files itself, once — captured via `logMessageReceivedThreaded` into a background worker (the log path never blocks on file IO). A thousand repeats update one issue. Errors raised inside a Test Runner test are skipped (their stack carries NUnit / TestRunner frames): the Test Runner already judges them, and an expected one is declared with `LogAssert.Expect`. |
 | **Custom** | `C-…` | For anything auto-capture cannot see ("the quest screen is empty"): filed on the Team Bug Board artifact (no Unity needed) and imported by the daily sweep with `bug_ledger.py file`. |
 | **Tool findings** | `T-…` | `BugLedger.ReportFromTool` / `ReportToolFindings` — auditors and validators file their failures as tracked issues. The crash detector's File Bug button uses the same route. |
 

@@ -96,6 +96,10 @@ namespace CosmicShore.Gameplay
         readonly NetworkVariable<byte> _netLifeState = new((byte)LifeState.Alive);
         readonly NetworkVariable<byte> _netDeathStyle = new((byte)LifeformDeathStyle.Withered);
 
+        // The leash's MARK (Fauna.ApplyLeashMark), server-write: the holder's domain in the high byte and the lean x 255
+        // in the low byte, 0 = wild. A NetworkVariable so a peer that joins mid-herd sees the marked creatures marked.
+        readonly NetworkVariable<ushort> _netLeashMark = new(0);
+
         bool _appliedReplicatedDeath;
 
         void Awake()
@@ -371,6 +375,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkSpawn()
         {
             _netLifeState.OnValueChanged += OnLifeStateChanged;
+            _netLeashMark.OnValueChanged += OnLeashMarkChanged;
 
             // Server: the spawner already ran the full Initialize + AssignLineage before Spawn -
             // nothing to do. Clients: puppet-ize BEFORE Initialize so the sim halves (goal
@@ -389,6 +394,7 @@ namespace CosmicShore.Gameplay
             fauna.ApplyReplicatedIdentity(host, ResolveConfig(host, identity),
                                           ResolvePaletteConfig(host, identity),
                                           (Element)identity.Element);
+            OnLeashMarkChanged(0, _netLeashMark.Value);
 
             // Joined mid-death: run the same local death path now (crystal + wither) so the husk
             // withers instead of popping out at the server's despawn.
@@ -399,6 +405,36 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             _netLifeState.OnValueChanged -= OnLifeStateChanged;
+            _netLeashMark.OnValueChanged -= OnLeashMarkChanged;
+        }
+
+        /// <summary>Server: publish the creature's leash mark (<see cref="Fauna.ApplyLeashMark"/>); a no-op off the server
+        /// and when never network-spawned.</summary>
+        public void PublishLeashMark(Domains domain, float lean)
+        {
+            if (!IsSpawned || !IsServer) return;
+            ushort packed = PackLeashMark(domain, lean);
+            if (_netLeashMark.Value != packed) _netLeashMark.Value = packed;
+        }
+
+        void OnLeashMarkChanged(ushort _, ushort next)
+        {
+            if (IsServer || !fauna) return;
+            UnpackLeashMark(next, out var domain, out float lean);
+            fauna.ApplyLeashMark(domain, lean);
+        }
+
+        /// <summary>The mark on the wire: the domain in the high byte, the lean x 255 in the low byte; no lean is 0.</summary>
+        public static ushort PackLeashMark(Domains domain, float lean)
+        {
+            int amount = Mathf.RoundToInt(Mathf.Clamp01(lean) * 255f);
+            return amount == 0 ? (ushort)0 : (ushort)(((int)domain & 0xFF) << 8 | amount);
+        }
+
+        public static void UnpackLeashMark(ushort packed, out Domains domain, out float lean)
+        {
+            domain = (Domains)(packed >> 8);
+            lean = (packed & 0xFF) / 255f;
         }
 
         void OnLifeStateChanged(byte _, byte next)

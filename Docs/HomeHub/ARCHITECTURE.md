@@ -272,10 +272,10 @@ Sparrow. Both harvesters now skip `IProceduralElementMorphSource.HiddenLegacyMod
 harvest `IProceduralHullSource` pieces (the Scarab answers off the asset with the same parts its
 runtime `EmitParts` lays), so a codex re-bake and the toybox's mini Scarab are the Scarab. The
 card icons themselves (`Assets/_Graphics/CardImages/Scarab.png` / `Scarab_Inactive.png`) are
-rendered from the SHIPPED hull by `Tools/Build/render_scarab_card_icons.py` (Roslyn compiles and
-runs `ScarabHullForm` at the prefab's authored proportions; `--check` fails on a hull retune
-until the script is re-run) in the card family's palette — a stand-in until an artist draws
-one, but a stand-in that is the ship. `ArenaRosterTests` compares icon FILE bytes across a card's
+rendered from the SHIPPED hull: since 2026-10-18 from the Scarab's MODEL (`Scarab.fbx`) by
+`Tools/Build/vessel_model/render_cards.py Scarab` (`--check` fails when the model changes until it
+is re-run; it replaced `render_scarab_card_icons.py`, which compiled and ran the procedural
+`ScarabHullForm`) in the card family's palette — the card is the ship. `ArenaRosterTests` compares icon FILE bytes across a card's
 hulls, because the two sprites were different assets with the same pixels, which a reference
 check cannot see.
 
@@ -503,10 +503,12 @@ sized to "the largest Urchin/Dolphin roster" (`PrismCradle.Slots` 4, `PrismLit.S
 untouched by the six-seat cards.
 
 **3. A human can swap into an AI teammate's hull mid-match** - **D-pad left / right**, keyboard
-**1 / 2** (`PilotSwapGesture`, polled by `InputController`, so local-pilot and pause gated like the
+**1 / 2** (the **left / right arrow keys** and a two-finger swipe since 2026-10-23, read by the person's `LocalCrewStation` round the domain's seats: `Docs/CREW_STATIONS.md`) (`PilotSwapGesture`, polled by `InputController`, so local-pilot and pause gated like the
 rear view). Left/1 = previous, right/2 = next, round a ring of the pilot's own hull plus every AI
 teammate's, ordered by vessel NetworkObjectId so every peer walks it identically
 (`PilotSwap.TryPickRingTarget`). Human teammates' hulls are never in the ring.
+The same two targets are drawn in the in-game top bar and are tappable there, which is the
+swap control on a phone (`PilotSwapIndicator`, 2026-10-21, `Docs/GAME_MODE_TOPBAR.md` §2.7).
 
 It is the **Cellular Duel vessel swap generalised** (`IPlayer.ChangeVessel` + `IVessel.ChangePlayer`),
 not a respawn: nothing is spawned or destroyed, the two Players EXCHANGE live hulls, so rule 2
@@ -668,9 +670,12 @@ its **own** two rather than copies of the arcade's:
 | left | weekly challenge — one curated mode a week, ranked by time | **today's activity** — one activity a day, paid for TRYING it |
 | right | Maelstrom — a tournament of other modes | **shuffle** — re-roll every setting the toys own |
 
-Both are authored by `Tools/Build/author_toybox_top_buttons.py` (`--check`, `--self-test`), which
-also writes the one asset they read (`Resources/ToyboxDailyActivityConfig`, optional — every field
-has a code default, so a missing asset costs the feature nothing).
+Both were first authored into the scene by `Tools/Build/author_toybox_top_buttons.py`; since the
+style-B rebuild (2026-10-15, `Docs/MENU_REDESIGN_B.md` section 17.3) they are the `Daily` and
+`Shuffle` cards of `ToyboxView.prefab` (`Tools/Build/author_menu_toybox.py`), and the older tool's
+scene half stands down. It still writes the one asset they read
+(`Resources/ToyboxDailyActivityConfig`, optional — every field has a code default, so a missing
+asset costs the feature nothing; its strings are sentence case now).
 
 ### 4.0.1 One flag divides them, and it already existed
 
@@ -847,7 +852,8 @@ They call exactly what the cards call - `DailyToyActivity.Today` + `TryClaim`, `
 to build its first gate beside the gallery, a cell away, where the player could not see it. So a
 shell option can now answer **`ToyShellOption.Arrival`** - the ring the player threads next and the
 way through it, resolved AFTER the press because the press is what builds the ring - and the pole
-puts the vessel in front of it, facing through, at the Navigate stand-off (2.4 ring radii) plus
+puts the vessel in front of it, facing through, at 2.4 ring radii (Navigate's original stand-off;
+Navigate itself now stands off 7.2, see below) plus
 1.5 s of the vessel's own speed (a fresh gate blooms for 1.2 s and cannot fire until it has, and a
 fast hull needs room to see it). The painting gallery answers with its live run's start gate or
 ride checkpoint (`PaintingRunner.TryGetArrival`, read off the stroke's points, not the ring object,
@@ -939,7 +945,11 @@ ring mid-blend and trips the toy before the player has touched a control — `To
 
 The stand-off sits **outside** the toy's own `SwitchRingRadius` (`arrivalDistanceFactor` > 1) and
 faces it, so the player looks at what they chose and flies through the ring to use it; arriving
-inside would trip the toy on the first frame, using it without ever seeing it.
+inside would trip the toy on the first frame, using it without ever seeing it. **It is 7.2 ring
+radii, three times the original 2.4** (Garrett, 2026-10-20): the player has already made their
+selection in the window and usually just wants to return to freestyle, so they need time to steer
+around the switch rather than run into it. The inward-lane cap (80% of the distance to the cell
+centre) still bounds it.
 
 **The approach is the toy's INWARD radial — from inside the cell.** The toybox rings its toys
 around the membrane facing inward, so the inward radial is both the toy's own front and the side

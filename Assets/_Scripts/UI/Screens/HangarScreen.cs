@@ -5,29 +5,39 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
+    /// <summary>
+    /// The Hangar: one view in three zones (style-B menu redesign, item 2) - the vessel list, the
+    /// selected vessel and its abilities. Picking a list tile, by click or by gamepad / keyboard focus,
+    /// selects that vessel; there is no grid-to-detail hop and no Back button.
+    /// </summary>
     public class HangarScreen : MonoBehaviour, IScreen
     {
         [Header("Data")]
         [SerializeField] private SO_VesselList ShipList;
 
-        [Header("Grid Selection Panel")]
-        [SerializeField] private GameObject gridPanel;
-        [SerializeField] private Transform gridContainer;
-        [SerializeField] private HangarVesselGridCard gridCardPrefab;
-        [SerializeField] private Button eyeButton;
+        [Header("Vessel List")]
+        [Tooltip("Content of the list's ScrollRect. Tiles are built here, owned vessels first.")]
+        [SerializeField] private RectTransform vesselList;
+        [Tooltip("Scrolls a focused tile into view when the roster outgrows the list.")]
+        [SerializeField] private ScrollRect vesselScroll;
+        [Tooltip("One row per vessel (HangarVesselTile.prefab, a variant of KitTile).")]
+        [SerializeField] private HangarVesselTile vesselTilePrefab;
+        [Tooltip("\"1 / 11 owned\" beside the list's label.")]
+        [SerializeField] private KitText ownedCountText;
 
-        [Header("Grid Animation")]
-        [Tooltip("Delay in seconds between each card fade-in.")]
+        [Header("List Animation")]
+        [Tooltip("Delay in seconds between each tile's fade-in.")]
         [SerializeField] private float cardStaggerDelay = 0.08f;
-        [Tooltip("Duration of each card's fade-in animation.")]
+        [Tooltip("Duration of each tile's fade-in.")]
         [SerializeField] private float cardFadeDuration = 0.25f;
 
-        [Header("Detail Panel")]
-        [SerializeField] private GameObject detailPanel;
+        [Header("Selected Vessel")]
+        [Tooltip("The centre and right zones plus the spend-crystals popup.")]
         [SerializeField] private HangarVesselDetailView detailView;
 
         [Header("Legacy Views (kept for backward compatibility)")]
@@ -48,36 +58,33 @@ namespace CosmicShore.UI
         [SerializeField] private TMPro.TMP_Text SelectedGameDescription;
         [SerializeField] private GameObject SelectedGamePreviewWindow;
 
+        static readonly Vector3[] Corners = new Vector3[4];
+
         List<SO_Vessel> Ships;
         SO_Vessel SelectedShip;
-        readonly List<HangarVesselGridCard> _gridCards = new();
-        Coroutine _gridAnimCoroutine;
-        bool _namesVisible = true;
+        readonly List<HangarVesselTile> _tiles = new();
+        Coroutine _listAnimCoroutine;
 
         // ScreenSwitcher.NavigateTo loads the hangar twice in the same frame (once via the
         // explicit HangarMenu.LoadView() call and once via IScreen.OnScreenEnter()). A second
-        // PopulateGrid in the same frame destroys the cards the first run just instantiated
+        // PopulateList in the same frame destroys the tiles the first run just instantiated
         // while their fade-in coroutines are still running. Coalesce calls per frame so the
-        // grid is built exactly once regardless of how many callers fire.
+        // list is built exactly once regardless of how many callers fire.
         int _lastLoadFrame = -1;
+
+        bool UsesList => vesselList && vesselTilePrefab && detailView;
 
         void OnEnable()
         {
-            VesselUnlockSystem.OnUnlockStateChanged += RefreshGridCards;
-            // Flipping the master developer unlock changes every card's lock overlay.
-            DeveloperUnlockGate.OnChanged += RefreshGridCards;
-
-            if (eyeButton)
-            {
-                eyeButton.onClick.RemoveAllListeners();
-                eyeButton.onClick.AddListener(ToggleVesselNames);
-            }
+            VesselUnlockSystem.OnUnlockStateChanged += RebuildList;
+            // Flipping the master developer unlock changes every tile's lock state and the sort.
+            DeveloperUnlockGate.OnChanged += RebuildList;
         }
 
         void OnDisable()
         {
-            VesselUnlockSystem.OnUnlockStateChanged -= RefreshGridCards;
-            DeveloperUnlockGate.OnChanged -= RefreshGridCards;
+            VesselUnlockSystem.OnUnlockStateChanged -= RebuildList;
+            DeveloperUnlockGate.OnChanged -= RebuildList;
         }
 
         public void OnScreenEnter()
@@ -95,11 +102,12 @@ namespace CosmicShore.UI
 
             Ships = ShipList.VesselList;
 
-            // New grid-based flow
-            if (gridPanel && gridContainer && gridCardPrefab)
+            if (UsesList)
             {
-                PopulateGrid();
-                ShowGridPanel();
+                detailView.ReturnFocus = FocusSelectedTile;
+                PopulateList();
+                SelectVesselForDetail(Ships.Contains(SelectedShip) ? SelectedShip : FirstListedVessel());
+                AnimateListIn();
             }
             else
             {
@@ -108,124 +116,151 @@ namespace CosmicShore.UI
             }
         }
 
-        #region Grid Panel
+        #region Vessel List
 
-        void PopulateGrid()
+        SO_Vessel FirstListedVessel() => _tiles.Count > 0 ? _tiles[0].Vessel : null;
+
+        void PopulateList()
         {
-            _gridCards.Clear();
-            for (int i = gridContainer.childCount - 1; i >= 0; i--)
-                Destroy(gridContainer.GetChild(i).gameObject);
+            _tiles.Clear();
+            for (int i = vesselList.childCount - 1; i >= 0; i--)
+            {
+                // Destroy lands at the end of the frame. Deactivate first so the dying tiles leave
+                // the layout now and ScreenSwitcher.Refocus cannot put the pad on one of them.
+                var old = vesselList.GetChild(i).gameObject;
+                old.SetActive(false);
+                Destroy(old);
+            }
 
-            // Sort: unlocked vessels first, then locked
-            var sorted = Ships.OrderBy(s => s.IsLocked ? 1 : 0).ToList();
+            // Owned vessels first, then locked; otherwise the roster's own order.
+            var sorted = Ships.Where(s => s).OrderBy(s => s.IsLocked ? 1 : 0).ToList();
 
             foreach (var ship in sorted)
             {
-                var card = Instantiate(gridCardPrefab, gridContainer);
-                card.name = $"GridCard_{ship.Name}";
-                card.Configure(ship, this);
-                card.SetNameVisible(_namesVisible);
-                _gridCards.Add(card);
+                var tile = Instantiate(vesselTilePrefab, vesselList);
+                tile.name = $"VesselTile_{ship.Name}";
+                tile.Configure(ship, this);
+                tile.IsSelected = ship == SelectedShip;
+                _tiles.Add(tile);
+            }
+
+            if (ownedCountText)
+                ownedCountText.SetText($"{sorted.Count(s => !s.IsLocked)} / {sorted.Count} owned");
+        }
+
+        void RebuildList()
+        {
+            if (!UsesList || Ships == null) return;
+
+            // A rebuild destroys the tile that may hold gamepad focus; put focus back on the
+            // selected vessel's new tile, but only when focus was on a tile of this screen.
+            var current = EventSystem.current ? EventSystem.current.currentSelectedGameObject : null;
+            bool focusOnTile = current && current.transform.IsChildOf(vesselList);
+
+            PopulateList();
+            if (SelectedShip) SelectVesselForDetail(SelectedShip);
+            if (focusOnTile) FocusSelectedTile();
+        }
+
+        /// <summary>Called by a tile when it is clicked or receives focus.</summary>
+        public void OnTileFocused(HangarVesselTile tile)
+        {
+            if (!tile || !tile.Vessel) return;
+            if (tile.Vessel != SelectedShip) SelectVesselForDetail(tile.Vessel);
+            ScrollIntoView(tile);
+        }
+
+        /// <summary>Puts gamepad / keyboard focus on the selected vessel's tile.</summary>
+        public void FocusSelectedTile()
+        {
+            var es = EventSystem.current;
+            if (!es) return;
+            foreach (var tile in _tiles)
+            {
+                if (tile && tile.Vessel == SelectedShip)
+                {
+                    es.SetSelectedGameObject(tile.gameObject);
+                    return;
+                }
             }
         }
 
-        void RefreshGridCards()
+        void ScrollIntoView(HangarVesselTile tile)
         {
-            // Match the development behavior: re-populate so cards re-sort (unlocked first)
-            // and lock overlays update immediately after a purchase, rather than only flipping
-            // the overlay in place.
-            if (gridPanel && gridContainer && gridCardPrefab)
-                PopulateGrid();
-            else
-                foreach (var card in _gridCards)
-                    if (card)
-                        card.UpdateLockState();
+            if (!vesselScroll) return;
+            var viewport = vesselScroll.viewport ? vesselScroll.viewport : (RectTransform)vesselScroll.transform;
+            float contentHeight = vesselList.rect.height;
+            float viewHeight = viewport.rect.height;
+            if (contentHeight <= viewHeight) return;
+
+            // Distances from the content's top edge, in its own space.
+            ((RectTransform)tile.transform).GetWorldCorners(Corners);
+            float top = vesselList.rect.yMax - vesselList.InverseTransformPoint(Corners[1]).y;
+            float bottom = vesselList.rect.yMax - vesselList.InverseTransformPoint(Corners[0]).y;
+
+            float scrollable = contentHeight - viewHeight;
+            float offset = (1f - vesselScroll.verticalNormalizedPosition) * scrollable;
+            if (top < offset) offset = top;
+            else if (bottom > offset + viewHeight) offset = bottom - viewHeight;
+            vesselScroll.verticalNormalizedPosition = 1f - Mathf.Clamp01(offset / scrollable);
         }
 
-        void ToggleVesselNames()
+        void AnimateListIn()
         {
-            _namesVisible = !_namesVisible;
-            foreach (var card in _gridCards)
-            {
-                if (card)
-                    card.SetNameVisible(_namesVisible);
-            }
+            if (_listAnimCoroutine != null)
+                StopCoroutine(_listAnimCoroutine);
+            _listAnimCoroutine = StartCoroutine(AnimateTilesIn());
         }
 
-        void ShowGridPanel()
+        IEnumerator AnimateTilesIn()
         {
-            if (gridPanel) gridPanel.SetActive(true);
-            if (detailPanel) detailPanel.SetActive(false);
+            foreach (var tile in _tiles)
+                if (tile) tile.SetAlpha(0f);
 
-            if (_gridAnimCoroutine != null)
-                StopCoroutine(_gridAnimCoroutine);
-            _gridAnimCoroutine = StartCoroutine(AnimateGridCardsIn());
-        }
-
-        IEnumerator AnimateGridCardsIn()
-        {
-            foreach (var card in _gridCards)
+            for (int i = 0; i < _tiles.Count; i++)
             {
-                if (!card) continue;
-                card.SetAlpha(0f);
-                card.gameObject.SetActive(true);
-            }
+                var tile = _tiles[i];
+                if (!tile) continue;
 
-            for (int i = 0; i < _gridCards.Count; i++)
-            {
-                var card = _gridCards[i];
-                if (!card) continue;
-
-                StartCoroutine(FadeCard(card, 0f, 1f, cardFadeDuration));
+                StartCoroutine(FadeTile(tile, 0f, 1f, cardFadeDuration));
                 yield return new WaitForSecondsRealtime(cardStaggerDelay);
             }
 
-            _gridAnimCoroutine = null;
+            _listAnimCoroutine = null;
         }
 
-        IEnumerator FadeCard(HangarVesselGridCard card, float from, float to, float duration)
+        IEnumerator FadeTile(HangarVesselTile tile, float from, float to, float duration)
         {
             float elapsed = 0f;
             while (elapsed < duration)
             {
+                if (!tile) yield break;
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
-                card.SetAlpha(Mathf.Lerp(from, to, t));
+                tile.SetAlpha(Mathf.Lerp(from, to, t));
                 yield return null;
             }
-            card.SetAlpha(to);
+            if (tile) tile.SetAlpha(to);
         }
 
         #endregion
 
-        #region Detail Panel
+        #region Selected Vessel
 
+        /// <summary>Selects a vessel: its tile is marked and the centre and right zones show it.</summary>
         public void SelectVesselForDetail(SO_Vessel ship)
         {
             if (ship == null) return;
 
             SelectedShip = ship;
 
+            foreach (var tile in _tiles)
+                if (tile) tile.IsSelected = tile.Vessel == ship;
+
             if (detailView)
-            {
                 detailView.SetVessel(ship);
-                detailView.OnBackPressed = ShowGridPanel;
-            }
 
-            ShowDetailPanel();
             UpdateLegacyViews(ship);
-        }
-
-        void ShowDetailPanel()
-        {
-            if (_gridAnimCoroutine != null)
-            {
-                StopCoroutine(_gridAnimCoroutine);
-                _gridAnimCoroutine = null;
-            }
-
-            if (gridPanel) gridPanel.SetActive(false);
-            if (detailPanel) detailPanel.SetActive(true);
         }
 
         #endregion

@@ -13,8 +13,8 @@
 
 > **What is your hull FOR, on a course everyone shares?**
 
-A Rhino ramps to 1200 u/s on a straight and pays five seconds of wind-up for every corner it
-cannot hold. A Manta trades Soar for yaw one trigger at a time. A Scarab's ceiling is its Time
+A Rhino ramps to 840 u/s on a straight and pays ~3.6 s of wind-up (at rest) for every corner it
+cannot hold. *(This line said 1200 u/s and five seconds before the 2026-09-25 ramp retune.)* A Manta trades Soar for yaw one trigger at a time. A Scarab's ceiling is its Time
 level. An Urchin latches onto the rail in its colour and lets the cable drive at 300 u/s
 through corners that cost it nothing. A Squirrel skims the same rail for the boost energy that
 is its only speed. A Dolphin chains a charge into a discharge and holds 347 through a drift. A
@@ -38,7 +38,7 @@ Measured off the shipped code and assets (the vessel-numbers pass that preceded 
 | **Urchin** | grinds its OWN colour at 300 u/s (`FriendlyTerrainSpeed`); a rival's at 20 (Time-5 Slipstream: 300) | riding, no resource | nothing; corners are the rail's |
 | **Squirrel** | skims any colour: +0.1 boost per contact to ×5 → 300 u/s | skim energy, decays 0.3/s | ramming a rail prism **resets the boost** (`VesselResetBoostPrismEffect`) |
 | **Manta** | flies beside it | Soar (free; costs yaw) 720 u/s | ram = slow (`VesselChangeSpeedByPrism`) |
-| **Rhino** | flies beside it; an **energised** sword pops a rail prism | ramp (straightness) 1200 u/s | none — no speed effect wired |
+| **Rhino** | flies beside it; an **energised** sword pops a rail prism | ramp (straightness) 840 u/s (1200 before the 2026-09-25 retune) | none, **by design** — the hull ploughs prisms aside (`RhinoPloughPrismEffect`) and ramming costs no speed ("the bulldozer ignores mass", recorded in the Time row's description since 2026-10-16) |
 | **Dolphin** | skims for seed energy, not speed | charge (drift) → discharge 347 u/s | ram = slow + half the charge |
 | **Serpent** | flies beside it | 4 charges × 3 s at 160 u/s, regen 3.6 s/charge | none wired |
 | **Sparrow** | flies beside it | indefinite boost 135 u/s | ram = slow |
@@ -94,7 +94,8 @@ C# so a course edit cannot ship on stale numbers.
 The circuit is `HeadlongCircuit`, shared, cut for **nobody in particular** (`RegattaCourse`):
 Redline's corner profiles (the solver's proven reach at each rung), absolute corner floors set
 where the fastest hull that cannot slow instantly — the Scarab at 216 u/s, ~102 u — still makes
-the corner, and mouths a step wider than Headlong's because a Rhino crosses one at 1200 u/s.
+the corner, and mouths a step wider than Headlong's because a Rhino crosses one at 1200 u/s (sized before the
+2026-09-25 retune; the Rhino now tops out at 840, so the mouths are generous for it, not tight).
 
 | intensity | turn profile (deg) | floor | mouth | measured tightest corner | spine | prisms |
 |---|---|---|---|---|---|---|
@@ -111,6 +112,17 @@ an inside lane on one corner is the outside lane on another and the three lanes 
 **1.9%** of one length (measured over 240 seeds; asserted at 3%). One (6,6,8) prism every 8 u,
 laid down each lane's own **closed** `Trail` (a loop has no ends to launch off — an Urchin that
 stays on rides the whole race), `PrismscapeDimension.Trail`.
+
+**The rails are flush, not overlapping (2026-10-20, Docs/ECOSYSTEM.md §49.10).** Each prism looks
+down the chord to its successor, so on a bend two 6 u-wide boxes met at an angle and crossed at
+their inner corners: every consecutive pair on every lane clipped (worst 0.55 u). Each prism's
+LENGTH is now fitted at authoring time to its two neighbours (`RegattaCourse.FlushRailLengths`:
+the longest length a pair can share and only touch, separated on the plane normal to their
+chord - closed form, a few dot products per prism). The 6 u cross-section (the catch window), the
+count and every pose are unchanged; the median prism keeps 99% of its 8 u, the worst 93%, and the
+rails' volume drops 0.9-1.4% (517,194 / 580,342 / 627,530 / 625,649 at intensities 1-4, measured
+by `Tools/Build/regatta_course_harness/run.sh` into `railVolume`). The cell's volume ladder prices
+that measured volume (`author_regatta_assets.py`), never count x 288.
 
 **The seed lives on the arena.** `SpawnableRegattaRails` (one prefab variant per intensity) lays
 the rails from its own seed, and `RegattaController.BuildCourse` re-derives the SAME gates from
@@ -251,7 +263,7 @@ and the Manta got Regatta Soar bands (`f4e35748c`, below).
 **Per-hull Regatta variants.** The Rhino, Dolphin and Manta drives and the Stoat's three configs each read a
 Regatta-only copy when one exists (`Resources/AIBoostPolicies/<asset>_Regatta`, written by
 `learn_drives_from_flights.py` from people's editor flights). Only the Manta's exists: `MantaSoarAITuning_Regatta`,
-Soar bands 0.8 / 0.85 against the executor's 0.35 / 0.75 (2026-10-17, set from `Tools/Build/manta_drive_sim.py`, which
+Soar bands 0.8 / 0.85 against the executor's 0.35 / 0.75 (since 2026-10-24: 0.975 / 0.975, learned from Yash's 3 fastest of 9 finished Manta flights; `LEARNED_DRIVES.md`) (2026-10-17, set from `Tools/Build/manta_drive_sim.py`, which
 raced three laps 1.5-2 s faster at every intensity; Manta flights replace it). So the Squirrel
 (`SkimRaceAIConfig_Regatta`) and the Manta fly Regatta numbers; the Rhino, the Dolphin and the Stoat fly their shipped
 numbers.
@@ -291,11 +303,14 @@ once, and a big hull scrapes them (a ram slows the Manta, Dolphin and Sparrow an
   rim (`HullClearance`), and its **risk**. Bold cuts more of each bend (a longer look-ahead) and keeps 0.75x the room;
   careful follows the line tightly with 1.5x. Every AI seat draws its own risk round the hull's (seeded per seat), so a
   grid has careful and bold pilots of the same hull. Starting values: Rhino 0.80 / 18 u / 0.40 (biggest, fastest:
-  out wide, safer), Manta 0.70 / 16 / 0.50, Dolphin 0.60 / 12 / 0.50, Stoat 0.55 / 10 / 0.60, Serpent 0.60 / 12 /
+  out wide, safer; line set 2026-10-24 from Yash's six Rhino races: 0.676), Manta 0.70 / 16 / 0.50 (line learned 2026-10-24: 0.809), Dolphin 0.60 / 12 / 0.50, Stoat 0.55 / 10 / 0.60, Serpent 0.60 / 12 /
   0.50, Sparrow 0.55 / 10 / 0.50, Scarab 0.60 / 12 / 0.45.
 - **Learned from people**: `learn_drives_from_flights.py` measures where a person crosses the rings in their fastest
   three finished races of a hull and writes that hull's `LaneShare` (`race_lines_learned.json`, read by the
-  generator). No Rhino, Manta, Dolphin, Stoat, Sparrow or Scarab flights yet; the Serpent has one finished race.
+  generator). Each crossing is scaled by its OWN ring's mouth (an I1 crossing read against the I3 mouth looked far
+  wider: the Rhino's six races read 0.815 that way and 0.676 crossing by crossing, I1 0.676 and I3 0.672). The Manta's
+  line is learned (0.809). The Rhino's 0.676 was SET BY HAND on 2026-10-24 (Yash's ask) from all six of his Rhino races,
+  four of them unfinished, because only two finished; the learner replaces it at the third finished race.
 - **Steering** (`GateRaceController.TryRaceLine`, overridden here): asked after the difficulty belief and the
   missed-mouth test, so an Easy pilot's mistakes and a missed ring are still flown the gate way (a missed ring is flown
   the gate way until threaded, or the closed line would carry the pilot a whole lap round to it). The point a second
@@ -442,7 +457,7 @@ on a Sparrow), and a guest's own hull carries the same levels as the host's repl
   authored 1.0/1.0, and Broadside's first playtest filled it (**Ramp Spool**, 2.5 / 0.5 — see
   `BROADSIDE.md` § "What the first playtest changed"). So Time now reaches the Rhino's **wind-up
   rate**, fleet-wide. What it still does **not** reach is the ramp's **ceiling**
-  (`maxBoostMultiplier` 24), which over a lap is most of what a race is bounded by — so this
+  (`maxBoostMultiplier` 24 when this was written; **16.8** since the 2026-09-25 retune), which over a lap is most of what a race is bounded by — so this
   model's numbers stand and its Rhino row is **unchanged and now stale in one respect**:
   `rhino_model` returns its acceleration as a constant and does not scale it by level. The honest
   next steps, in order of how much they respect the fundamentals: (1) teach `rhino_model` the new
@@ -452,6 +467,18 @@ on a Sparrow), and a guest's own hull carries the same levels as the host's repl
   start** — the regatta's own answer to mixed boats, a per-hull start release derived from this
   model, first through the last ring wins outright; (4) a playtest before any of them, because
   this model is arithmetic.
+- **2026-10-16 Rhino kit — needs a playtest.** (1) **AI Rhinos now cut the rails.**
+  `RhinoSwordAutopilot` holds the energize stance near super-shielded mass, and every rail prism is
+  super-shielded, so an AI Rhino flying beside a rail will now energize and pop holes in it — before
+  today no AI could. A rider bridges a hole at full pace, but whether a bot grid shreds the braid is
+  a playtest question. (2) **The AI now ramps** (`RampBoostAIPolicySO`), so the AI Rhino's lap time
+  is no longer a cruise lap (the model's 12 s always assumed a ramping pilot); re-check the all-AI-domain claim in §6.
+  (3) **Momentum** (Time L5, danger immunity above 588 u/s) — the rails are super-shielded, not
+  danger, so it matters here only against danger prisms a Rhino lays itself (Mass-L5 Danger
+  Afterimages) or the comeback/Surge levels push a rival to. (4) **Afterimages** put up to 5 s of
+  blade-shaped prisms on the racing line after every energize, which the lap-time model does not
+  carry. `regatta_balance.py` reads `maxBoostMultiplier` from the asset, so re-run it before quoting
+  the Rhino row again.
 - The Dolphin's Time lever is inert here (the first charge cycle of every leg dominates), and
   its 347 peak is `BoostMultiplier × ChargedBoostCharge` — a squaring the vessel pass flagged
   as a possible defect. The model follows the code.

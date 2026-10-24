@@ -269,6 +269,14 @@
    "track": null,
    "triangles": 301492
   },
+  "WrasseRun": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 23196
+  },
   "WreckingBall": {
    "cell": "WreckingBall Cell Config 2",
    "environment": null,
@@ -283,5 +291,5 @@
   768,
   510
  ],
- "source_hash": "120f55204a2702b004e73660e3078c248ae9de5c4e8f101bdca900b71e0094a7"
+ "source_hash": "3739933571a53e1f0faea1cb9d69463ef071f7e18d568885270643ca739619f2"
 }

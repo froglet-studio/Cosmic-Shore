@@ -144,6 +144,35 @@
       "docs": "Docs/Studios/SHRIKE.md"
     },
     {
+      "id": "goby",
+      "name": "Goby and Pistol",
+      "file": "goby.html",
+      "kind": "crew vessel - in the game",
+      "chip": "crew vessel · in the game",
+      "summary": "A crew vessel: two seats, one hull, its card reads Goby and Pistol (SO_Vessel.CrewNames, as the Wrasse and Grouper). The Goby flies the 3D world on two thumbs, very fast, and lays the path; the Pistol plays a 2D side view unrolled from that path, rides its hills Tiny Wings style and blows things up. D-pad left or right swaps seats; the AI takes the empty one.",
+      "spec": [
+        {
+          "k": "Goby",
+          "v": "two thumbs · 160 u/s · primer · flares"
+        },
+        {
+          "k": "Pistol",
+          "v": "side view · dive · launch · vortex ring · ghost"
+        },
+        {
+          "k": "Seats",
+          "v": "D-pad left / right · AI in the empty seat"
+        },
+        {
+          "k": "Status",
+          "v": "in the Toybox Vessel Changer (not editor-verified)"
+        }
+      ],
+      "preview": "previews/goby.png",
+      "accent": "#ff8a3d",
+      "docs": ".claude/skills/duo-vessel/references/designs/goby-and-pistol.md"
+    },
+    {
       "id": "gibbon",
       "name": "Gibbon",
       "file": "gibbon.html",

@@ -42,10 +42,44 @@ namespace CosmicShore.UI
         [SerializeField] private GameObject crystalRewardRoot;
         [SerializeField] private TMP_Text crystalRewardText;
 
+        [Header("Style-B row (Docs/MENU_REDESIGN_B.md section 22.4) - all optional")]
+        [Tooltip("The placing - '1', '2' - drawn from the card's order on the board.")]
+        [SerializeField] private TMP_Text rankText;
+        [Tooltip("The pilot's domain under their name, in the domain colour.")]
+        [SerializeField] private TMP_Text domainText;
+        [Tooltip("The row's slivered hairline: Light for the local pilot, Neutral Dark for everyone else.")]
+        [SerializeField] private Image borderImage;
+        [SerializeField] private CosmicShore.UI.UIColorToken localBorderToken = CosmicShore.UI.UIColorToken.TextLight;
+        [SerializeField] private CosmicShore.UI.UIColorToken otherBorderToken = CosmicShore.UI.UIColorToken.SurfaceDark;
+        [Tooltip("The first place's rank wears Light; every other rank Neutral Lightest.")]
+        [SerializeField] private CosmicShore.UI.UIColorToken leaderRankToken = CosmicShore.UI.UIColorToken.TextLight;
+        [SerializeField] private CosmicShore.UI.UIColorToken rankToken = CosmicShore.UI.UIColorToken.NeutralLightest;
+
+        [Header("Rev 8 glass ladder (Docs/MENU_REDESIGN_B.md section 49) - all optional")]
+        [Tooltip("The thin stripe down the row's left edge, in the pilot's domain colour.")]
+        [SerializeField] private Image teamStripe;
+        [Tooltip("The line along the row's foot: the pilot's share of the team's count. Hidden when there is none.")]
+        [SerializeField] private RectTransform shareBar;
+        [Tooltip("The row's glass fill; the local pilot's is tinted toward the selection blue.")]
+        [SerializeField] private Image glassFill;
+        [SerializeField] private CosmicShore.UI.UIColorToken glassToken = CosmicShore.UI.UIColorToken.SurfaceVeryDark;
+        [Range(0f, 1f)]
+        [SerializeField] private float glassAlpha = 0.8f;
+        [Tooltip("How far the local pilot's glass leans toward the selection blue.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float localGlassTint = 0.35f;
+        [Tooltip("The border's light for a pilot on the winning team (ElementRim_Time), on another team " +
+                 "(ElementRim_Space) and for the local pilot (SelectionRim). Empty: the hairline tokens above.")]
+        [SerializeField] private Material wonBorderMaterial;
+        [SerializeField] private Material lostBorderMaterial;
+        [SerializeField] private Material localBorderMaterial;
+
         [Header("Animation (optional - falls back to defaults)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 
         private CanvasGroup _canvasGroup;
+        private bool _isLocal;
+        private bool _teamWon = true;
         private Sequence _entranceSeq;
         private ScoreNumberAnimator _scoreAnimator;
 
@@ -74,6 +108,12 @@ namespace CosmicShore.UI
             if (playerScoreText) playerScoreText.text = formattedScore;
 
             ApplyDomainColor(domainColor);
+            if (rankText)
+            {
+                rankText.text = (staggerIndex + 1).ToString();
+                rankText.color = CosmicShore.UI.UITheme.Resolve(null, staggerIndex == 0 ? leaderRankToken : rankToken);
+            }
+            SetLocal(false);
             HideCrystalReward();
             HideSecondaryStat();
             PlayEntrance(staggerIndex);
@@ -155,6 +195,82 @@ namespace CosmicShore.UI
             dataPanelsRoot.SetActive(anyChildShown);
         }
 
+        /// <summary>The local pilot's row wears the selection (and "(you)" after the name).</summary>
+        public void SetLocal(bool isLocal)
+        {
+            _isLocal = isLocal;
+            RefreshBorder();
+            RefreshGlass();
+            if (isLocal && playerNameText && !playerNameText.text.EndsWith(" (you)"))
+                playerNameText.text += " (you)";
+        }
+
+        /// <summary>Whether the pilot's team won: the border runs Time's light for a winner, Space's otherwise.</summary>
+        public void SetOutcome(bool teamWon)
+        {
+            _teamWon = teamWon;
+            RefreshBorder();
+        }
+
+        /// <summary>The placing shown on the row (the results' rank; rows grouped by team are not in rank order).</summary>
+        public void SetRank(int rank)
+        {
+            if (!rankText) return;
+            rankText.text = rank.ToString();
+            rankText.color = CosmicShore.UI.UITheme.Resolve(null, rank == 1 ? leaderRankToken : rankToken);
+        }
+
+        /// <summary>Hides the row's own score when its team header says it once for everyone.</summary>
+        public void ShowScore(bool show)
+        {
+            if (playerScoreText) playerScoreText.gameObject.SetActive(show);
+        }
+
+        /// <summary>The pilot's share (0-1) of the team's count along the row's foot; below 0 hides the line.</summary>
+        public void SetShare(float share)
+        {
+            if (!shareBar) return;
+            bool show = share >= 0f;
+            shareBar.gameObject.SetActive(show);
+            if (!show) return;
+            var max = shareBar.anchorMax;
+            max.x = Mathf.Clamp(share, 0.02f, 1f);
+            shareBar.anchorMax = max;
+        }
+
+        void RefreshBorder()
+        {
+            if (!borderImage) return;
+            var material = _isLocal ? localBorderMaterial : _teamWon ? wonBorderMaterial : lostBorderMaterial;
+            if (material)
+            {
+                borderImage.material = material;
+                // The rim materials carry their own colour; the local selection takes the theme's blue.
+                borderImage.color = CosmicShore.UI.UITheme.Resolve(null, _isLocal ? CosmicShore.UI.UIColorToken.Selection
+                                                                                  : CosmicShore.UI.UIColorToken.TextLight);
+                return;
+            }
+            borderImage.color = CosmicShore.UI.UITheme.Resolve(null, _isLocal ? localBorderToken : otherBorderToken);
+        }
+
+        void RefreshGlass()
+        {
+            if (!glassFill) return;
+            var glass = CosmicShore.UI.UITheme.Resolve(null, glassToken);
+            if (_isLocal)
+                glass = Color.Lerp(glass, CosmicShore.UI.UITheme.Resolve(null, CosmicShore.UI.UIColorToken.Selection), localGlassTint);
+            glass.a = glassAlpha;
+            glassFill.color = glass;
+        }
+
+        /// <summary>The domain line under the name ("Jade"), in the domain colour.</summary>
+        public void SetDomain(string label, Color color)
+        {
+            if (!domainText) return;
+            domainText.text = label;
+            domainText.color = color;
+        }
+
         /// <summary>
         /// In-game live score update. Animates a counter roll + punch.
         /// </summary>
@@ -174,6 +290,9 @@ namespace CosmicShore.UI
                 domainIndicatorImage.gameObject.SetActive(true);
                 domainIndicatorImage.color = domainColor;
             }
+
+            if (teamStripe) teamStripe.color = domainColor;
+            if (shareBar) shareBar.gameObject.SetActive(false);
         }
 
         private void PlayEntrance(int staggerIndex)

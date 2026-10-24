@@ -1,0 +1,1190 @@
+<title>Crew Vessel Lab</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<!--
+  CREW VESSEL LAB, round 3: the KITE AND ITS TAIL, signed off 2026-10-17 and ported to Unity
+  (Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; parity gate Tools/Build/kite_navigator_lab/parity.cjs).
+  The navigator is a kite on the flying vessel's own x-z plane; the 3D world projects onto it. One thumb flies the kite
+  (it rides above the thumb on a phone). Its HEAD destroys hostile prisms. Its TAIL is a lasso: cross your own tail and
+  every navigator mote inside is collected. A loop of ONE element fires that element's effect, exponentially bigger per
+  mote: Space = a prism-destroying blast, Mass = a prism cluster, Time = boost energy for the pilot, Charge = kite power
+  that steals petals when the kite rams a rival vessel.
+  Motes are the navigator's own and are NOT game crystals. Prisms, vessels and effects copy the game's numbers.
+    (1) LAB meta + SHIPPED + presets   (2) SPEC   (3) THE MODEL
+  Verify:   node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewVesselLab.html
+  Write-up: Docs/Studios/CREW_VESSEL_LAB.md   Earlier rounds: CrewVesselLab.round1.html, CrewVesselLab.round2.html
+-->
+<style>
+  /* Layout: an editor. The stage shows the pilot's 3D view and the navigator's board (on a phone the board fills the
+     stage and the 3D view is a picture-in-picture); settings dock right, results dock below. */
+  :root {
+    --bg: #f4f6f8; --panel: #ffffff; --ink: #172028; --muted: #59646f; --line: #d8dee4;
+    --accent: #0b8f88; --warn: #b4560b; --ok: #1f7a43; --changed: #0b7f99;
+    --f-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --f-mono: ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1216; --panel: #141b21; --ink: #e4eaef; --muted: #93a0ab; --line: #26313a;
+      --accent: #3fd0c6; --warn: #f0a050; --ok: #5cc98a; --changed: #6cc8e0; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1216; --panel: #141b21; --ink: #e4eaef; --muted: #93a0ab; --line: #26313a;
+    --accent: #3fd0c6; --warn: #f0a050; --ok: #5cc98a; --changed: #6cc8e0; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.45 var(--f-ui); overflow: hidden; }
+  #app { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 340px; grid-template-rows: auto minmax(0, 1fr) 220px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 8px 10px; align-items: center; padding: 7px max(16px, env(safe-area-inset-right, 0px)) 7px max(16px, env(safe-area-inset-left, 0px)); border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font-size: 15px; margin: 0; }
+  header .meta { color: var(--muted); }
+  header .spacer { flex: 1; }
+  #diff { color: var(--changed); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button { border: 0; border-right: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 4px 10px; font: inherit; cursor: pointer; }
+  .seg button:last-child { border-right: 0; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: #04070a; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #stage { width: 100%; height: 100%; display: block; }
+  #toast { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); background: rgba(10,20,26,.9); color: #e8fffd; border: 1px solid #13fff2; border-radius: 6px; padding: 5px 12px; font: 12px var(--f-mono); pointer-events: none; white-space: nowrap; }
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px 16px; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button, .btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; }
+  .tabs button[aria-selected="true"], .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .row { display: grid; grid-template-columns: 1fr 64px; gap: 2px 8px; margin: 8px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; }
+  .row label .key { color: var(--muted); font: 11px var(--f-mono); }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; }
+  .row output { text-align: right; font-variant-numeric: tabular-nums; }
+  .row output.changed { color: var(--changed); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .field { display: grid; gap: 4px; margin: 10px 0; }
+  .field > span { color: var(--muted); font-size: 12px; }
+  .check { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+  .presets { display: grid; gap: 6px; }
+  .preset { text-align: left; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 7px 10px; cursor: pointer; font: inherit; display: grid; gap: 2px; }
+  .preset b { font-size: 13px; }
+  .preset span { color: var(--muted); font-size: 12px; }
+  .preset .tags { font: 11px var(--f-mono); color: var(--changed); }
+  .preset[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .legend { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: center; margin: 8px 0; font-size: 12px; }
+  .legend i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font-weight: 600; font-size: 12px; cursor: help; }
+  .tablewrap { overflow-x: auto; }
+  .best { font-weight: 700; color: var(--ok); }
+  .hint { color: var(--muted); font-size: 12px; }
+  .status-ok { color: var(--ok); } .status-warn { color: var(--warn); }
+  textarea, select, input[type=text] { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+  ul.plain { margin: 4px 0; padding-left: 18px; }
+  ul.plain li { margin: 2px 0; }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { height: 82vh; min-height: 440px; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  }
+</style>
+<div id="app">
+  <header>
+    <h1 id="title"></h1>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <span class="seg" id="seatSeg" role="group" aria-label="Your seat">
+      <button data-you="nav">Navigate</button><button data-you="pilot">Fly</button><button data-you="none">Watch</button><button data-you="both">Couch (2)</button>
+    </span>
+    <button class="btn" id="swapBtn" title="Swap seats with your squad mate (D-pad left/right, or 1 / 2)">Swap seats</button>
+    <span class="meta" id="platform"></span>
+    <button class="btn" id="pause">Pause</button>
+    <button class="btn" id="restart">Restart</button>
+    <button class="btn" id="resetAll">Shipped</button>
+  </header>
+  <div id="stageWrap"><canvas id="stage"></canvas><div id="toast" hidden></div></div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  // ================= (1) LAB meta + the shipped numbers =================
+  const LAB = { name: 'Crew Vessel Lab', branch: 'cece/compassionate-babbage-gc13io', round: 3, doc: 'Docs/Studios/CREW_VESSEL_LAB.md' };
+  const SHIPPED = {
+    // The vessel: the Sparrow (Assets/_Prefabs/Spacevessels/Sparrow.prefab). Every hull here, ours and the rivals', flies these.
+    minSpeed: 10,        // VesselTransformer.DefaultMinimumSpeed
+    throttleScaler: 25,  // VesselTransformer.DefaultThrottleScaler (cruise 35 u/s)
+    boostMul: 5,         // VesselStatus.boostMultiplier (CurrentBoostAmount: the throttle term × 5 while boosting → 135 u/s)
+    yawRate: 80,         // VesselTransformer.YawScaler (°/s)
+    pitchRate: 80,       // VesselTransformer.PitchScaler (°/s)
+    rollRate: 30,        // VesselTransformer.RollScaler (°/s, plus speed × RotationThrottleScaler 0.1)
+    pilotBank: 0.6,      // lab: how hard the AI pilots bank into a turn
+    hullRadius: 3,       // lab: hull contact radius for a prism hit (u)
+    hitSlow: 0.5,        // lab: VesselChangeSpeedByPrismEffectSO stand-in (speed lost on a hostile prism)
+    // Trail prisms: Sparrow VesselPrismController
+    prismW: 2,           // BaseScale.x
+    prismH: 2,           // BaseScale.y
+    prismL: 5,           // BaseScale.z
+    wavelength: 7,       // initialWavelength: one prism per 7 u flown
+    trailCap: 140,       // lab: prisms kept per trail (the game conserves mass; the lab recycles the oldest)
+    // World
+    cellRadius: 320, crystalCount: 12, rivals: 2,
+    rivalStart: 5,       // lab: each rival's petals per element at spawn (what the kite can steal)
+    startLevel: 2,       // lab: our hull's petals per element at spawn
+    catchRadius: 6,      // lab: a hull's pickup reach for a game crystal (u)
+    pilotFov: 120, viewRange: 220,
+    // The board: the vessel's own x-z plane
+    planeRange: 160, anchor: 0.3, easeRate: 3,
+    reachY: 40,          // lab: things within ± this of the plane can be touched (u)
+    // The kite
+    kiteRadius: 8, kiteSpeed: 320, kiteAccel: 12,
+    thumbOffset: 80,     // lab: on touch, the kite aims this many screen pixels ABOVE the thumb, so the thumb never covers it
+    tailLen: 4.8,        // lab: the tail's length (board radii); cross it to close a loop. 2.4 = round 3's 1.6 + 50% (Garrett, 2026-10-18, in Unity); 4.8 = doubled (2026-10-20, KiteNavigatorConfig.asset)
+    moteCount: 26,       // lab: navigator motes kept near the board
+    moteCluster: 4,      // lab: motes per same-element cluster (average)
+    // Effects: base × growth^(n − 1) for a pure loop of n motes
+    growth: 2,           // lab: the exponential base
+    spaceScale: 60,      // AOEExplosion.MaxScale for one Space mote (radius = 0.5 × MaxScale = 30 u)
+    blastDuration: 3,    // AOEExplosion.prefab ExplosionDuration (s); radius eases in with sin(t·π/2)
+    blastDelay: 0.2,     // AOEExplosion.prefab ExplosionDelay (s)
+    spaceCap: 640,       // lab: largest MaxScale a blast may reach
+    massPrisms: 6,       // lab: prisms in the cluster for one Mass mote
+    massCap: 240,        // lab: most prisms one cluster may hold
+    timeBoost: 1.5,      // lab: seconds of boost for one Time mote
+    timeCap: 30,         // lab: boost energy the pilot can hold (s)
+    chargePetals: 1,     // lab: kite power for one Charge mote (petals stolen per ram)
+    chargeCap: 30,       // lab
+    stealCooldown: 1,    // lab: seconds between two rams on one rival
+    // Seats
+    swapCooldown: 0.75,  // PilotSwap.CooldownSeconds
+    swapOrient: 1,       // lab: a human proxy's seconds to find their bearings after a swap
+  };
+
+  const SPEC = [
+    ['Kite', 'thumbOffset', 0, 200, 4, 'Thumb offset (px)', 'On a touch screen the kite aims this far above your thumb. 0 = under the thumb.'],
+    ['Kite', 'tailLen', 0.4, 8, 0.1, 'Tail length (radii)', 'How long a tail the kite drags. Longer: bigger loops, slower to close.'],
+    ['Kite', 'kiteRadius', 3, 24, 1, 'Kite head (u)', 'How near a prism or a rival the head must pass.'],
+    ['Kite', 'kiteSpeed', 80, 700, 10, 'Kite speed (u/s)', 'Top speed toward the aim point.'],
+    ['Kite', 'kiteAccel', 2, 30, 1, 'Kite response (/s)', 'How fast the kite reaches the speed it is asked for.'],
+    ['Kite', 'moteCount', 6, 80, 1, 'Motes', 'Navigator motes kept near the board. Only the navigator sees them.'],
+    ['Kite', 'moteCluster', 1, 10, 1, 'Cluster size', 'Average motes per same-element cluster. Bigger: purer loops are easier.'],
+    ['Effects', 'growth', 1, 4, 0.1, 'Growth per mote', 'Each extra mote in a pure loop multiplies the effect by this. 2 = doubles.'],
+    ['Effects', 'spaceScale', 10, 200, 5, 'Space: blast MaxScale', 'AOEExplosion MaxScale for one mote; radius is half of it.'],
+    ['Effects', 'spaceCap', 100, 1200, 10, 'Space: largest MaxScale', 'A blast never grows past this.'],
+    ['Effects', 'blastDuration', 0.5, 6, 0.1, 'Space: blast time (s)', 'AOEExplosion.prefab ExplosionDuration.'],
+    ['Effects', 'massPrisms', 1, 30, 1, 'Mass: prisms', 'Prisms in the cluster for one mote.'],
+    ['Effects', 'massCap', 20, 600, 10, 'Mass: largest cluster', 'Most prisms one cluster may hold.'],
+    ['Effects', 'timeBoost', 0.25, 6, 0.25, 'Time: boost (s)', 'Seconds of boost for one mote.'],
+    ['Effects', 'timeCap', 2, 120, 1, 'Time: boost held (s)', 'Most boost energy the pilot can hold.'],
+    ['Effects', 'chargePetals', 0.25, 4, 0.25, 'Charge: petals', 'Kite power for one mote: petals stolen per ram.'],
+    ['Effects', 'chargeCap', 2, 100, 1, 'Charge: most power', 'Most kite power held.'],
+    ['Effects', 'stealCooldown', 0, 5, 0.1, 'Charge: ram cooldown (s)', 'Seconds between two rams on one rival.'],
+    ['Plane', 'planeRange', 60, 400, 10, 'Board radius (u)', 'How much of the vessel\'s plane the board shows.'],
+    ['Plane', 'anchor', 0, 0.7, 0.05, 'Look-ahead', 'Board centre ahead of the vessel (× radius).'],
+    ['Plane', 'easeRate', 0.5, 12, 0.5, 'Ease rate (/s)', 'Eased frame: how fast the board follows a bank or pitch.'],
+    ['Plane', 'reachY', 4, 400, 2, 'Reach above/below (u)', 'Motes, prisms and rivals within this of the plane can be touched.'],
+    ['Flight', 'minSpeed', 0, 40, 1, 'Minimum speed (u/s)', 'Sparrow DefaultMinimumSpeed.'],
+    ['Flight', 'throttleScaler', 5, 80, 1, 'Throttle scaler (u/s)', 'Sparrow DefaultThrottleScaler.'],
+    ['Flight', 'boostMul', 1, 8, 0.5, 'Boost ×', 'Sparrow VesselStatus.boostMultiplier on the throttle term.'],
+    ['Flight', 'yawRate', 30, 200, 5, 'Yaw (°/s)', 'Sparrow YawScaler.'],
+    ['Flight', 'pitchRate', 30, 200, 5, 'Pitch (°/s)', 'Sparrow PitchScaler.'],
+    ['Flight', 'rollRate', 0, 200, 5, 'Roll (°/s)', 'Sparrow RollScaler.'],
+    ['Flight', 'pilotBank', 0, 1, 0.05, 'Pilots bank', 'How hard the AI pilots bank into turns (tilts the board).'],
+    ['Flight', 'hitSlow', 0, 0.9, 0.05, 'Hostile-prism slow', 'Speed lost for a second on a hostile prism.'],
+    ['World', 'prismW', 0.5, 6, 0.5, 'Prism width (u)', 'Sparrow BaseScale.x.'],
+    ['World', 'prismH', 0.5, 6, 0.5, 'Prism height (u)', 'Sparrow BaseScale.y.'],
+    ['World', 'prismL', 1, 12, 0.5, 'Prism length (u)', 'Sparrow BaseScale.z.'],
+    ['World', 'wavelength', 2, 20, 0.5, 'Prism spacing (u)', 'Sparrow initialWavelength.'],
+    ['World', 'trailCap', 20, 400, 10, 'Trail length (prisms)', 'Lab only: the oldest is recycled.'],
+    ['World', 'crystalCount', 2, 40, 1, 'Game crystals', 'Ordinary crystals the pilots fly for. Not the navigator\'s motes.'],
+    ['World', 'rivals', 0, 4, 1, 'Rival vessels', 'AI rivals laying hostile trails and carrying petals to steal. Restart to apply.'],
+    ['World', 'rivalStart', 0, 10, 1, 'Rival petals', 'Each rival\'s petals per element at spawn.'],
+    ['World', 'cellRadius', 160, 600, 10, 'Cell radius (u)', 'The membrane sphere.'],
+    ['Seats', 'swapCooldown', 0, 3, 0.05, 'Swap cooldown (s)', 'PilotSwap.CooldownSeconds.'],
+    ['Seats', 'swapOrient', 0, 4, 0.1, 'Human re-orient (s)', 'Scorecard proxy only.'],
+  ];
+
+  const FRAMES = { eased: 'Eased: the board follows the vessel smoothly', locked: 'Locked: the board is the vessel\'s plane every frame', level: 'Level: the board only turns with heading (control)' };
+  const DEPTHS = { ghost: 'Ghosts: out-of-reach things drawn hollow', flatten: 'Flatten: everything drawn solid', slab: 'Slab: only what is within reach is drawn' };
+  const MIXES = { fizzle: 'Fizzle: a mixed loop takes the motes and does nothing', majority: 'Majority: the biggest element fires, minus one per other mote' };
+  const MOTE_HOMES = { board: 'On the board: motes flow past like the world but always stay in the plane', world: 'In the world: motes are fixed in space; the pilot\'s pitch and roll sweep the plane through them' };
+  const OPT_SHIPPED = { frame: 'eased', depth: 'ghost', mixed: 'fizzle', motes: 'board', showCrystals: false, offsetMouse: false };
+
+  const PRESETS = [
+    { key: 'kite', name: 'Kite & Tail', blurb: 'The candidate. Head pops hostile prisms; cross your tail to loop motes; one element per loop, doubling per mote.', opts: {}, set: {} },
+    { key: 'gentle', name: 'Gentle growth', blurb: 'Each extra mote is worth ×1.5, not ×2. Big loops matter less; small ones more often.', opts: {}, set: { growth: 1.5 } },
+    { key: 'steep', name: 'Steep growth', blurb: 'Each extra mote is worth ×3. One perfect loop of five is a match-ender.', opts: {}, set: { growth: 3 } },
+    { key: 'long', name: 'Long tail', blurb: 'A 7.2-radius tail (1.5x the shipped 4.8): wide loops round big clusters, slower to close.', opts: {}, set: { tailLen: 7.2 } },
+    { key: 'short', name: 'Short tail', blurb: 'A 1.0-radius tail: tight, quick loops round small clusters.', opts: {}, set: { tailLen: 1.0 } },
+    { key: 'majority', name: 'Forgiving mixes', blurb: 'A mixed loop still fires its biggest element, one mote weaker per stray.', opts: { mixed: 'majority' }, set: {} },
+    { key: 'locked', name: 'Locked board', blurb: 'The candidate with the board locked to every bank and pitch.', opts: { frame: 'locked' }, set: {} },
+    { key: 'worldMotes', name: 'Motes in the world', blurb: 'Motes fixed in space: only those the pilot\'s plane cuts through can be looped. The pilot works for the navigator.', opts: { motes: 'world' }, set: {} },
+    { key: 'thin', name: 'Thin slice', blurb: 'Motes in the world and only ±18 u of the plane touchable: the pilot must sweep the slice through them.', opts: { depth: 'slab', motes: 'world' }, set: { reachY: 18 } },
+  ];
+  const PRESET_KEYS = ['growth', 'tailLen', 'reachY'];
+  const presetNumbers = (pr) => { const o = {}; for (const k of PRESET_KEYS) o[k] = k in pr.set ? pr.set[k] : SHIPPED[k]; return o; };
+  const presetOpts = (pr) => Object.assign({}, OPT_SHIPPED, pr.opts);
+
+  const LS = 'lab:' + LAB.name + ':r3:';
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(LS + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const P = Object.assign({}, SHIPPED, lsGet('P', {}));
+  for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
+  const OPT = Object.assign({}, OPT_SHIPPED, lsGet('opt', {}));
+  let presetKey = lsGet('preset', 'kite');
+
+  // ================= helpers =================
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const gauss = (rng) => { const u = Math.max(1e-9, rng()), v = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const clamp = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
+  const DEG = Math.PI / 180;
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const len = (a) => Math.hypot(a[0], a[1], a[2]);
+  const norm = (a) => { const l = len(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const addS = (a, b, s) => [a[0] + b[0] * s, a[1] + b[1] * s, a[2] + b[2] * s];
+  const d2 = (a, b) => { const x = a[0] - b[0], y = a[1] - b[1], z = a[2] - b[2]; return x * x + y * y + z * z; };
+  function rot(B, ka, kb, ang) { const a = B[ka], b = B[kb], c = Math.cos(ang), s = Math.sin(ang); B[ka] = [a[0] * c + b[0] * s, a[1] * c + b[1] * s, a[2] * c + b[2] * s]; B[kb] = [b[0] * c - a[0] * s, b[1] * c - a[1] * s, b[2] * c - a[2] * s]; }
+  function ortho(B) { B.f = norm(B.f); B.r = norm(cross(B.u, B.f)); B.u = cross(B.f, B.r); }
+  const turnAngle = (A, B) => Math.acos(clamp((dot(A.r, B.r) + dot(A.u, B.u) + dot(A.f, B.f) - 1) / 2, -1, 1));
+  const hypot2 = (x, y) => Math.sqrt(x * x + y * y);
+  const randUnit = (rng) => norm([gauss(rng), gauss(rng), gauss(rng)]);
+  function randInSphere(rng, R) { const d = randUnit(rng), r = R * Math.cbrt(rng()); return [d[0] * r, d[1] * r, d[2] * r]; }
+
+  // ================= (3) THE MODEL =================
+  const EL = ['Charge', 'Mass', 'Space', 'Time'], ELC = ['#f2c14e', '#ff6b4a', '#8f84ff', '#36d39a'];
+  const CH = 0, MA = 1, SP = 2, TI = 3;
+  // Domain colours: OriginalColorSetSO.asset via Docs/Studios/VesselStudio/studio-domains.js (GetDomainSignalColor).
+  const DOM = { jade: '#13fff2', ruby: '#ff00f9', gold: '#ffa700', blue: '#6680ff' };
+  const RIVAL_DOMS = ['ruby', 'gold', 'blue', 'ruby'];
+  const SKILL = {
+    easy:   { label: 'Easy',   noise: 0.3,  react: 0.5,  think: 0.9,  avoid: 0.25, fovMul: 0.8 },
+    medium: { label: 'Medium', noise: 0.12, react: 0.28, think: 0.5,  avoid: 0.6,  fovMul: 1 },
+    hard:   { label: 'Hard',   noise: 0.04, react: 0.15, think: 0.25, avoid: 0.9,  fovMul: 1 },
+  };
+  // The navigator AI moves an AIM point at a finite speed (board radii / s), like a thumb, and knows only what is on the board.
+  const NSKILL = {
+    easy:   { label: 'Easy',   thumb: 1.2, think: 0.7,  noise: 0.04,  purity: 0.4, reachAware: 0.5, lead: 0 },
+    medium: { label: 'Medium', thumb: 2.0, think: 0.4,  noise: 0.02,  purity: 0.8, reachAware: 0.85, lead: 0.6 },
+    hard:   { label: 'Hard',   thumb: 3.0, think: 0.2,  noise: 0.008, purity: 1,   reachAware: 1,   lead: 1 },
+  };
+
+  let world = null, seed = 7;
+  function seatFrom(o) { return { who: o.who, skill: o.skill || 'medium', human: !!o.human, orient: 0, q: [], thinkT: 0, target: -1, noise: [0, 0], avoidRoll: 1, roam: null, plan: null, aim: { x: 0, z: 0, down: false }, jx: 0, jy: 0 }; }
+  function makeVessel(w, dom, p, f) {
+    const B = { f, u: Math.abs(f[1]) > 0.9 ? [1, 0, 0] : [0, 1, 0], r: [1, 0, 0] }; ortho(B);
+    return { dom, p, f: B.f, u: B.u, r: B.r, speed: P.minSpeed + P.throttleScaler, slowT: 0, flash: 0, boosting: false, boostE: 0, trailAcc: 0, trail: [],
+      petals: [0, 0, 0, 0], stealT: -99, sx: 0, sz: 0, sy: 0, svx: 0, svz: 0, has: false };
+  }
+  function makeWorld(s, cfg) {
+    const R = P.cellRadius;
+    const w = {
+      t: 0, seed: s, cfg, opts: cfg.opts, nextId: 1, steps: 0,
+      rngW: mulberry32(s * 9301 + 1), rngP: mulberry32(s * 7919 + 11), rngN: mulberry32(s * 104729 + 5), rngM: mulberry32(s * 6151 + 17),
+      vessels: [], crystals: [], prisms: [], motes: [], blasts: [], streams: [], massList: [],
+      pl: { f: [0, 0, 1], u: [0, 1, 0], r: [1, 0, 0] },
+      stats: { hullPetals: 0, crystals: 0, stolen: 0, popped: 0, blasted: 0, massLaid: 0, boostGiven: 0, boostUsed: 0, loops: 0, pure: 0, nSum: 0, nMax: 0, mixed: 0, hits: 0, rams: 0 },
+      whipSum: 0, whipN: 0, swaps: 0, swapCool: 0, swapT: cfg.swapEvery || 0,
+      seats: { pilot: seatFrom(cfg.pilot), nav: seatFrom(cfg.nav) }, rivalSeats: [],
+      nav: null,
+    };
+    const hull = makeVessel(w, 'jade', [0, 0, -R * 0.45], [0, 0, 1]);
+    hull.petals = [P.startLevel, P.startLevel, P.startLevel, P.startLevel];
+    w.vessels.push(hull);
+    for (let i = 0; i < Math.round(P.rivals); i++) {
+      const v = makeVessel(w, RIVAL_DOMS[i % RIVAL_DOMS.length], randInSphere(w.rngW, R * 0.6), randUnit(w.rngW));
+      v.petals = [P.rivalStart, P.rivalStart, P.rivalStart, P.rivalStart];
+      w.vessels.push(v); w.rivalSeats.push(seatFrom({ who: 'ai', skill: 'medium' }));
+    }
+    for (let i = 0; i < Math.round(P.crystalCount); i++) spawnCrystal(w);
+    // pre-roll the rivals so their trails exist at t = 0
+    for (let i = 0; i < 900; i++) for (let k = 1; k < w.vessels.length; k++) { const v = w.vessels[k]; stepVessel(w, v, pilotAI(w, v, w.rivalSeats[k - 1], 1 / 30), 1 / 30); }
+    w.t = 0; for (const k in w.stats) w.stats[k] = 0; w.vessels[0].petals = [P.startLevel, P.startLevel, P.startLevel, P.startLevel];
+    w.nav = { c: [0, discA() * 0.5], vel: [0, 0], tail: [], charge: 0, prevDown: false, lastAim: null, fx: [], lastEvent: 0, maxGap: 0, events: 0, downTime: 0, travel: 0 };
+    updatePlane(w, 1 / 30, true);
+    return w;
+  }
+  const hullOf = (w) => w.vessels[0];
+  function spawnCrystal(w) {
+    let p = null;
+    for (let k = 0; k < 6; k++) { p = randInSphere(w.rngW, P.cellRadius * 0.85); if (!w.vessels.length || d2(p, w.vessels[0].p) > 3600) break; }
+    w.crystals.push({ id: w.nextId++, p, e: Math.floor(w.rngW() * 4) % 4 });
+  }
+  // a prism: a box prismW × prismH × prismL, oriented along f, in a domain
+  function layPrism(w, p, f, dom, kind) { const pr = { p, f, dom, kind, dead: false, born: w.t, sx: 0, sz: 0, sy: 0, svx: 0, svz: 0, has: false }; w.prisms.push(pr); return pr; }
+  function compactPrisms(w) { if (w.prisms.some((p) => p.dead)) w.prisms = w.prisms.filter((p) => !p.dead); for (const v of w.vessels) v.trail = v.trail.filter((p) => !p.dead); }
+
+  // ---- a vessel in 3D (ours and the rivals' fly the same model) ----
+  function stepVessel(w, v, inp, dt) {
+    const R = P.cellRadius;
+    rot(v, 'f', 'r', clamp(inp.yaw, -1, 1) * P.yawRate * DEG * dt);
+    rot(v, 'f', 'u', clamp(inp.pitch, -1, 1) * P.pitchRate * DEG * dt);
+    rot(v, 'u', 'r', clamp(inp.roll, -1, 1) * (P.rollRate + 0.1 * v.speed) * DEG * dt);
+    ortho(v);
+    const thr = inp.throttle == null ? 1 : clamp(inp.throttle, 0, 1);
+    v.boosting = !!inp.boost && v.boostE > 0;
+    // VesselTransformer: min speed + throttle × scaler × CurrentBoostAmount (boostMultiplier while boosting)
+    let sp = P.minSpeed + P.throttleScaler * thr * (v.boosting ? P.boostMul : 1);
+    if (v.boosting) { v.boostE = Math.max(0, v.boostE - dt); if (v === w.vessels[0]) w.stats.boostUsed += dt; }
+    if (v.slowT > 0) { v.slowT -= dt; sp *= 1 - P.hitSlow; }
+    v.speed = sp;
+    v.p = addS(v.p, v.f, sp * dt);
+    const r = len(v.p);
+    if (r > R) { const n = [v.p[0] / r, v.p[1] / r, v.p[2] / r]; v.p = [n[0] * R, n[1] * R, n[2] * R]; const d = dot(v.f, n); if (d > 0) { v.f = addS(v.f, n, -2 * d); v.u = addS(v.u, v.f, -dot(v.u, v.f)); ortho(v); } }
+    if (v.flash > 0) v.flash -= dt;
+    // lay the trail: one prism per wavelength flown (VesselPrismController)
+    v.trailAcc += sp * dt;
+    while (v.trailAcc >= P.wavelength) {
+      v.trailAcc -= P.wavelength;
+      v.trail.push(layPrism(w, addS(v.p, v.f, -6), v.f.slice(), v.dom, 'trail'));
+      while (v.trail.length > P.trailCap) { const old = v.trail.shift(); old.dead = true; }
+    }
+    // a hostile prism slows the hull and is destroyed (danger-prism stand-in)
+    const h2 = (P.hullRadius + P.prismW) * (P.hullRadius + P.prismW);
+    for (const pr of w.prisms) { if (pr.dead || pr.dom === v.dom || pr.born > w.t - 0.5) continue; if (d2(pr.p, v.p) < h2) { pr.dead = true; v.slowT = 1; v.flash = 0.3; if (v === w.vessels[0]) w.stats.hits++; } }
+    // game crystals: one petal each
+    const c2 = P.catchRadius * P.catchRadius;
+    for (let i = w.crystals.length - 1; i >= 0; i--) {
+      const c = w.crystals[i]; if (d2(c.p, v.p) >= c2) continue;
+      w.crystals.splice(i, 1); v.petals[c.e] += 1;
+      if (v === w.vessels[0]) { w.stats.crystals++; w.stats.hullPetals++; }
+      spawnCrystal(w);
+    }
+  }
+
+  // ---- AI pilots (ours and the rivals'): {yaw, pitch, roll, boost, throttle}, the same object a gamepad writes ----
+  function localOf(B, origin, q) { const d = sub(q, origin); return [dot(d, B.r), dot(d, B.u), dot(d, B.f)]; }
+  function perceives(v, seat, q) { const l = localOf(v, v.p, q), d = len(l); if (d < 40) return true; if (d > P.viewRange) return false; return Math.acos(clamp(l[2] / d, -1, 1)) <= P.pilotFov * DEG * 0.5 * SKILL[seat.skill].fovMul; }
+  function currentRoll(v) { const lu = [-v.f[0] * v.f[1], 1 - v.f[1] * v.f[1], -v.f[2] * v.f[1]]; if (len(lu) < 0.2) return 0; return Math.atan2(-dot(lu, v.r), dot(lu, v.u)); }
+  function pilotAI(w, v, seat, dt) {
+    const S = SKILL[seat.skill], rng = w.rngP, R = P.cellRadius, cruise = P.minSpeed + P.throttleScaler, turnR = cruise / (P.yawRate * DEG);
+    seat.thinkT -= dt;
+    if (seat.thinkT <= 0) {
+      seat.thinkT = S.think * (0.8 + 0.4 * rng());
+      let tgt = -1, best = 1e9;
+      for (const c of w.crystals) { if (!perceives(v, seat, c.p)) continue; const l = localOf(v, v.p, c.p), d = len(l), k = d + Math.acos(clamp(l[2] / Math.max(d, 1e-6), -1, 1)) * turnR; if (k < best) { best = k; tgt = c.id; } }
+      seat.target = tgt; seat.noise = [gauss(rng) * S.noise, gauss(rng) * S.noise]; seat.avoidRoll = rng();
+    }
+    let tg = null; if (seat.target >= 0) for (const c of w.crystals) if (c.id === seat.target) tg = c;
+    let goal;
+    if (dot(v.p, v.f) > 0 && len(v.p) > R * 0.9) goal = [0, 0, 0];
+    else if (tg) goal = tg.p;
+    else { if (!seat.roam || d2(seat.roam.p, v.p) < 1600 || w.t > seat.roam.until) seat.roam = { p: randInSphere(rng, R * 0.6), until: w.t + 12 }; goal = seat.roam.p; }
+    const l = localOf(v, v.p, goal), dist = len(l);
+    let yaw = clamp((Math.atan2(l[0], l[2]) + seat.noise[0]) / 0.35, -1, 1), pitch = clamp((Math.atan2(l[1], hypot2(l[0], l[2])) + seat.noise[1]) / 0.35, -1, 1);
+    if (seat.avoidRoll < S.avoid) {
+      let nd = 1e9, nl = null;
+      for (const pr of w.prisms) { if (pr.dead || pr.dom === v.dom) continue; const dd = d2(pr.p, v.p); if (dd > 2025) continue; const q = localOf(v, v.p, pr.p); if (q[2] <= 0) continue; if (hypot2(q[0], q[1]) < q[2] * 0.25 && q[2] < nd) { nd = q[2]; nl = q; } }
+      if (nl) { if (Math.abs(nl[0]) >= Math.abs(nl[1])) yaw = nl[0] >= 0 ? -1 : 1; else pitch = nl[1] >= 0 ? -1 : 1; }
+    }
+    const roll = clamp((yaw * P.pilotBank * 60 * DEG - currentRoll(v)) / 0.3, -1, 1);
+    const angOff = Math.acos(clamp(l[2] / Math.max(dist, 1e-6), -1, 1));
+    const boost = !!tg && angOff < 0.25 && dist > 60 && v.boostE > 0;
+    const throttle = tg && angOff > 0.5 && dist < turnR * 2.2 ? 0 : 1;
+    seat.q.push({ t: w.t, yaw, pitch, roll, boost, throttle });
+    while (seat.q.length > 1 && seat.q[1].t <= w.t - S.react) seat.q.shift();
+    return seat.q[0];
+  }
+
+  // ---- the board: the hull's x-z plane ----
+  function updatePlane(w, dt, snap) {
+    const v = w.vessels[0], pl = w.pl, prev = { f: pl.f, u: pl.u, r: pl.r }, mode = w.opts.frame;
+    if (snap || mode === 'locked') { pl.f = v.f.slice(); pl.u = v.u.slice(); pl.r = v.r.slice(); }
+    else if (mode === 'eased') { const a = 1 - Math.exp(-P.easeRate * dt); pl.f = addS(pl.f, sub(v.f, pl.f), a); pl.u = addS(pl.u, sub(v.u, pl.u), a); ortho(pl); }
+    else { const fh = [v.f[0], 0, v.f[2]]; if (len(fh) > 0.15) pl.f = norm(fh); pl.u = [0, 1, 0]; pl.r = norm(cross(pl.u, pl.f)); pl.f = cross(pl.r, pl.u); }
+    if (!snap && dt > 0) { w.whipSum += turnAngle(prev, pl) / DEG / dt; w.whipN++; }
+  }
+  function shadowOf(w, o, dt) {
+    const d = sub(o.p, w.vessels[0].p), x = dot(d, w.pl.r), z = dot(d, w.pl.f), y = dot(d, w.pl.u);
+    if (o.has && dt > 0) { o.svx += ((x - o.sx) / dt - o.svx) * 0.5; o.svz += ((z - o.sz) / dt - o.svz) * 0.5; }
+    o.sx = x; o.sz = z; o.sy = y; o.has = true;
+  }
+  const discA = () => P.anchor * P.planeRange;
+  const inDisc = (x, z) => x * x + (z - discA()) * (z - discA()) <= P.planeRange * P.planeRange;
+  const touchable = (o) => Math.abs(o.sy) <= P.reachY;
+  const boardToWorld = (w, x, z) => addS(addS(w.vessels[0].p, w.pl.r, x), w.pl.f, z);
+  function onBoard(x, z) { const A = discA(), R = P.planeRange * 0.96, dz = z - A, d = hypot2(x, dz); return d <= R ? [x, z] : [x / d * R, A + dz / d * R]; }
+
+  // ---- navigator motes: the navigator's own, seen only on the board; they sit in the world so the pilot's flying sweeps them ----
+  function stepMotes(w, dt) {
+    const Rr = P.planeRange, A = discA();
+    for (const m of w.motes) { shadowOf(w, m, dt); if (w.opts.motes === 'board') { m.p = boardToWorld(w, m.sx, m.sz); m.sy = 0; } }   // on the board: flow with the world, stay in the plane
+    w.motes = w.motes.filter((m) => !m.dead && hypot2(m.sx, m.sz - A) < Rr * 1.9 && Math.abs(m.sy) < Math.max(P.reachY * 5, 160));
+    let guard = 0;
+    while (w.motes.length < P.moteCount && guard++ < 6) {
+      // a same-element cluster ahead of the board, so it flows in from the top
+      const rng = w.rngM, e = Math.floor(rng() * 4) % 4, n = Math.max(1, Math.round(P.moteCluster * (0.5 + rng())));
+      const cx = (rng() * 2 - 1) * Rr * 0.8, cz = A + Rr * (0.75 + rng() * 0.5), cy = w.opts.motes === 'board' ? 0 : gauss(rng) * P.reachY * 0.9;
+      for (let i = 0; i < n && w.motes.length < P.moteCount + 6; i++) {
+        const x = cx + gauss(rng) * 18, z = cz + gauss(rng) * 18, y = w.opts.motes === 'board' ? 0 : cy + gauss(rng) * 6;
+        const m = { id: w.nextId++, e, p: addS(boardToWorld(w, x, z), w.pl.u, y), sx: 0, sz: 0, sy: 0, svx: 0, svz: 0, has: false, dead: false };
+        shadowOf(w, m, 0); w.motes.push(m);
+      }
+    }
+  }
+
+  // ---- the kite: head pops hostile prisms and rams rivals; the tail is a lasso ----
+  function navEvent(w, x, z, kind, e, text) {
+    const N = w.nav;
+    if (w.t - N.lastEvent > 0.4 || N.events === 0) { const gap = w.t - N.lastEvent; if (gap > N.maxGap) N.maxGap = gap; N.events++; }
+    N.lastEvent = w.t;
+    if (N.fx.length < 50) N.fx.push({ x, z, t: w.t, kind, e, text });
+  }
+  function segX(a, b, c, d) {   // intersection of segments ab and cd, or null
+    const r0 = b[0] - a[0], r1 = b[1] - a[1], s0 = d[0] - c[0], s1 = d[1] - c[1], den = r0 * s1 - r1 * s0;
+    if (Math.abs(den) < 1e-9) return null;
+    const t = ((c[0] - a[0]) * s1 - (c[1] - a[1]) * s0) / den, u = ((c[0] - a[0]) * r1 - (c[1] - a[1]) * r0) / den;
+    return t > 0 && t <= 1 && u >= 0 && u <= 1 ? [a[0] + r0 * t, a[1] + r1 * t] : null;
+  }
+  function pointInPoly(x, z, pts) { let inside = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const a = pts[i], b = pts[j]; if ((a[1] > z) !== (b[1] > z) && x < (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1] + 1e-9) + a[0]) inside = !inside; } return inside; }
+  function closeLoop(w, poly) {
+    const N = w.nav, inside = [];
+    for (const m of w.motes) if (!m.dead && touchable(m) && pointInPoly(m.sx, m.sz, poly)) inside.push(m);
+    let cx = 0, cz = 0; for (const q of poly) { cx += q[0]; cz += q[1]; } cx /= poly.length; cz /= poly.length;
+    N.fx.push({ loop: poly, t: w.t, kind: 'loop' });
+    if (!inside.length) return;
+    const counts = [0, 0, 0, 0]; for (const m of inside) { counts[m.e]++; m.dead = true; }
+    const kinds = counts.filter((c) => c > 0).length, st = w.stats;
+    st.loops++;
+    if (kinds > 1) st.mixed++; else st.pure++;
+    const r = resolveLoop(counts, w.opts.mixed);
+    if (!r) { navEvent(w, cx, cz, 'fizzle', -1, 'mixed loop'); return; }
+    st.nSum += r.n; st.nMax = Math.max(st.nMax, r.n);
+    fireEffect(w, r.e, r.n, cx, cz);
+  }
+  const grow = (base, n, cap) => Math.min(cap, base * Math.pow(P.growth, n - 1));
+  function fireEffect(w, e, n, x, z) {
+    const st = w.stats, at = boardToWorld(w, x, z), hull = w.vessels[0], N = w.nav;
+    if (e === SP) {   // an AOEExplosion at the loop's centre, on the plane, sparing our own domain
+      const maxScale = grow(P.spaceScale, n, P.spaceCap);
+      w.blasts.push({ p: at, maxScale, t0: w.t, dom: 'jade', r: 0 });
+      navEvent(w, x, z, 'space', SP, 'Space ×' + n + '  blast ' + Math.round(maxScale / 2) + ' u');
+    } else if (e === MA) {   // a cluster of our domain's prisms at the loop's centre
+      const count = Math.round(grow(P.massPrisms, n, P.massCap)), rad = Math.max(4, 2.6 * Math.cbrt(count) * (P.prismL / 5));
+      for (let i = 0; i < count; i++) w.massList.push(layPrism(w, addS(at, randUnit(w.rngM), rad * Math.cbrt(w.rngM())), randUnit(w.rngM), 'jade', 'mass'));
+      while (w.massList.length > 1500) w.massList.shift().dead = true;   // lab only: keeps a long session fast (the game conserves mass)
+      st.massLaid += count;
+      navEvent(w, x, z, 'mass', MA, 'Mass ×' + n + '  ' + count + ' prisms');
+    } else if (e === TI) {   // boost energy for the pilot
+      const s = grow(P.timeBoost, n, P.timeCap), before = hull.boostE; hull.boostE = Math.min(P.timeCap, hull.boostE + s);
+      st.boostGiven += hull.boostE - before;
+      navEvent(w, x, z, 'time', TI, 'Time ×' + n + '  +' + s.toFixed(1) + ' s boost');
+    } else {   // kite power: the next ram on a rival steals this many petals
+      const c = grow(P.chargePetals, n, P.chargeCap); N.charge = Math.min(P.chargeCap, N.charge + c);
+      navEvent(w, x, z, 'charge', CH, 'Charge ×' + n + '  kite ' + N.charge.toFixed(1));
+    }
+  }
+  function stepBlasts(w) {
+    for (const b of w.blasts) {
+      const t = w.t - b.t0 - P.blastDelay;
+      if (t < 0) continue;
+      const k = Math.min(1, t / P.blastDuration); b.r = blastRadius(b.maxScale, w.t - b.t0);   // AOEExplosion: collider 0.5 × MaxScale × sin ease
+      const r2 = b.r * b.r;
+      for (const pr of w.prisms) if (!pr.dead && pr.dom !== b.dom && d2(pr.p, b.p) < r2) { pr.dead = true; w.stats.blasted++; }
+      if (k >= 1) b.done = true;
+    }
+    w.blasts = w.blasts.filter((b) => !b.done || w.t - b.t0 < P.blastDelay + P.blastDuration + 0.6);
+  }
+  function ram(w, rival) {
+    const N = w.nav, hull = w.vessels[0];
+    if (N.charge < 1 || w.t - rival.stealT < P.stealCooldown) return;
+    let want = Math.floor(N.charge), got = 0;
+    // a steal takes only what the rival holds above zero (ResourceSystem.AccrueElementalLoss: nothing imaginary leaves)
+    while (want > 0) { let e = -1, m = 0; for (let i = 0; i < 4; i++) if (rival.petals[i] >= 1 && rival.petals[i] > m) { m = rival.petals[i]; e = i; } if (e < 0) break; rival.petals[e] -= 1; hull.petals[e] += 1; w.streams.push({ from: rival.p.slice(), e, t0: w.t + got * 0.06 }); got++; want--; }
+    rival.stealT = w.t; N.charge -= got; if (N.charge < 1e-6) N.charge = 0;
+    w.stats.stolen += got; w.stats.hullPetals += got; w.stats.rams++;
+    navEvent(w, rival.sx, rival.sz, 'steal', CH, got ? 'stole ' + got + ' petals' : 'rival is empty');
+  }
+  // ---- THE KITE CORE: pure functions of (kite state, aim, dt, P). Ported line for line to C# as KiteNavigatorCore
+  //      (Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorCore.cs) and held to it by Tools/Build/kite_navigator_lab/parity.cjs.
+  // the kite flies to the aim point while the thumb is down, and coasts to a stop when it lifts; returns where it was
+  function kiteMove(N, ax, az, down, dt) {
+    if (down) { const g = onBoard(ax, az), dx = g[0] - N.c[0], dz = g[1] - N.c[1], d = hypot2(dx, dz), s = Math.min(P.kiteSpeed, d * 7), want = d > 1e-6 ? [dx / d * s, dz / d * s] : [0, 0], a = 1 - Math.exp(-P.kiteAccel * dt); N.vel[0] += (want[0] - N.vel[0]) * a; N.vel[1] += (want[1] - N.vel[1]) * a; }
+    else { const k = Math.exp(-4 * dt); N.vel = [N.vel[0] * k, N.vel[1] * k]; }
+    const prev = N.c.slice();
+    N.c = onBoard(N.c[0] + N.vel[0] * dt, N.c[1] + N.vel[1] * dt);
+    return prev;
+  }
+  // the tail: a polyline of where the kite has been (board-fixed), trimmed to tailLen; crossing it closes a loop (returned)
+  function tailAdvance(N) {
+    const Rr = P.planeRange, T = N.tail, q = N.c.slice();
+    let poly = null;
+    if (!T.length || hypot2(q[0] - T[T.length - 1][0], q[1] - T[T.length - 1][1]) > 2.5) {
+      if (T.length >= 3) {
+        const a = T[T.length - 1];
+        for (let i = 0; i < T.length - 3; i++) {
+          const X = segX(a, q, T[i], T[i + 1]);
+          if (X) { poly = [X].concat(T.slice(i + 1)); poly.push(q); N.tail = [q]; break; }
+        }
+      }
+      if (!N.tail.length || N.tail[N.tail.length - 1] !== q) N.tail.push(q);
+      let total = 0; for (let i = N.tail.length - 1; i > 0; i--) { total += hypot2(N.tail[i][0] - N.tail[i - 1][0], N.tail[i][1] - N.tail[i - 1][1]); if (total > P.tailLen * Rr) { N.tail = N.tail.slice(i); break; } }
+    }
+    return poly;
+  }
+  // a loop's motes by element → which effect fires and how strongly (null: nothing fires)
+  function resolveLoop(counts, mixed) {
+    const total = counts[0] + counts[1] + counts[2] + counts[3]; if (!total) return null;
+    const kinds = counts.filter((c) => c > 0).length;
+    let e = counts.indexOf(Math.max(...counts)), n = counts[e];
+    if (kinds > 1) { if (mixed !== 'majority') return null; n = counts[e] - (total - counts[e]); if (n < 1) return null; }
+    return { e, n };
+  }
+  const blastRadius = (maxScale, since) => { const t = since - P.blastDelay; if (t < 0) return 0; const k = Math.min(1, t / P.blastDuration); return 0.5 * maxScale * Math.sin(k * Math.PI / 2); };
+  function stepNav(w, aim, dt) {
+    const N = w.nav, Rr = P.planeRange;
+    const down = !!aim.down; N.prevDown = down;
+    if (down) N.downTime += dt;
+    if (N.lastAim) N.travel += hypot2(aim.x - N.lastAim[0], aim.z - N.lastAim[1]) / (2 * Rr);
+    N.lastAim = [aim.x, aim.z];
+    const prev = kiteMove(N, aim.x, aim.z, down, dt);
+    // head: pop hostile prisms it touches (sweep the move so a fast kite cannot tunnel)
+    const hr = P.kiteRadius + P.prismW * 0.5, h2 = hr * hr, mx = (prev[0] + N.c[0]) / 2, mz = (prev[1] + N.c[1]) / 2, step = hypot2(N.c[0] - prev[0], N.c[1] - prev[1]), reach2 = (hr + step) * (hr + step);
+    for (const pr of w.prisms) {
+      if (pr.dead || pr.dom === 'jade' || !touchable(pr)) continue;
+      const dx = pr.sx - mx, dz = pr.sz - mz; if (dx * dx + dz * dz > reach2) continue;
+      if (distSeg2(pr.sx, pr.sz, prev, N.c) <= h2) { pr.dead = true; w.stats.popped++; navEvent(w, pr.sx, pr.sz, 'pop', -1, ''); }
+    }
+    // head: ram a rival vessel's shadow
+    for (let i = 1; i < w.vessels.length; i++) { const v = w.vessels[i]; if (!touchable(v)) continue; if (distSeg2(v.sx, v.sz, prev, N.c) <= (P.kiteRadius + 4) * (P.kiteRadius + 4)) ram(w, v); }
+    const poly = tailAdvance(N);
+    if (poly) closeLoop(w, poly);
+    while (N.fx.length && w.t - N.fx[0].t > 1.4) N.fx.shift();
+  }
+  function distSeg2(x, z, a, b) { const vx = b[0] - a[0], vz = b[1] - a[1], l2 = vx * vx + vz * vz; let t = l2 > 0 ? ((x - a[0]) * vx + (z - a[1]) * vz) / l2 : 0; t = clamp(t, 0, 1); const px = a[0] + vx * t - x, pz = a[1] + vz * t - z; return px * px + pz * pz; }
+
+  // ---- the navigator AI: moves an aim point like a thumb; plans pure loops, pops prisms, rams rivals when charged ----
+  function moveAim(seat, gx, gz, dt) {
+    const S = NSKILL[seat.skill], a = seat.aim, tx = gx + seat.jx * P.planeRange, tz = gz + seat.jy * P.planeRange;
+    const dx = tx - a.x, dz = tz - a.z, d = hypot2(dx, dz), s = S.thumb * P.planeRange * dt;
+    if (d <= s) { a.x = tx; a.z = tz; } else { a.x += dx / d * s; a.z += dz / d * s; }
+    return hypot2(tx - a.x, tz - a.z);
+  }
+  function jitter(w, seat) { const S = NSKILL[seat.skill]; seat.jx = gauss(w.rngN) * S.noise; seat.jy = gauss(w.rngN) * S.noise; }
+  const pred = (o, t) => [o.sx + o.svx * t, o.sz + o.svz * t];
+  function planLoop(w, seat) {
+    const S = NSKILL[seat.skill], N = w.nav, Rr = P.planeRange, rc = Math.min(0.16 * Rr, P.tailLen * Rr / 7.5);
+    const ms = w.motes.filter((m) => !m.dead && inDisc(m.sx, m.sz) && (w.rngN() >= S.reachAware ? true : touchable(m)));
+    let best = null, bv = 0;
+    for (const a of ms) {
+      const counts = [0, 0, 0, 0]; let cx = 0, cz = 0, k = 0;
+      for (const b of ms) if (hypot2(a.sx - b.sx, a.sz - b.sz) < rc) { counts[b.e]++; cx += b.sx; cz += b.sz; k++; }
+      const kinds = counts.filter((c) => c > 0).length;
+      if (kinds > 1 && w.rngN() < S.purity) continue;          // a careful navigator loops one element only
+      let v = Math.pow(P.growth, counts[a.e] - 1) * (kinds > 1 ? 0.3 : 1);
+      if (a.e === CH && w.vessels.length < 2) v *= 0.2;           // no rival to ram
+      v /= 1 + hypot2(cx / k - N.c[0], cz / k - N.c[1]) / Rr;    // nearer is better
+      if (v > bv) { bv = v; best = { cx: cx / k, cz: cz / k, svx: a.svx, svz: a.svz }; }
+    }
+    if (!best) return null;
+    const rr = rc + 10, lapT = (2 * Math.PI * rr * 1.25) / P.kiteSpeed + 0.4;
+    const c0 = [best.cx + best.svx * lapT * 0.5 * S.lead, best.cz + best.svz * lapT * 0.5 * S.lead];
+    const a0 = Math.atan2(N.c[1] - c0[1], N.c[0] - c0[0]), dir = w.rngN() < 0.5 ? 1 : -1, pts = [];
+    for (let i = 0; i <= 30; i++) { const a = a0 + dir * i / 24 * 2 * Math.PI; pts.push(onBoard(c0[0] + Math.cos(a) * rr, c0[1] + Math.sin(a) * rr)); }
+    return { kind: 'loop', pts, i: 0, until: w.t + lapT + 2 };
+  }
+  function navAI(w, seat, dt) {
+    const S = NSKILL[seat.skill], N = w.nav, a = seat.aim, Rr = P.planeRange;
+    if (w.cfg.idleNav) return { x: a.x, z: a.z, down: false };
+    seat.thinkT -= dt;
+    if (seat.plan && (w.t > seat.plan.until || (seat.plan.kind === 'loop' && seat.plan.i >= seat.plan.pts.length))) seat.plan = null;
+    if (seat.thinkT <= 0) {
+      seat.thinkT = S.think * (0.8 + 0.4 * w.rngN());
+      // charged: go and ram the nearest rival you can touch
+      let rv = null, rd = 1e9;
+      if (N.charge >= 1) for (let i = 1; i < w.vessels.length; i++) { const v = w.vessels[i]; if (!inDisc(v.sx, v.sz) || !touchable(v) || w.t - v.stealT < P.stealCooldown) continue; const d = hypot2(v.sx - N.c[0], v.sz - N.c[1]); if (d < rd) { rd = d; rv = v; } }
+      if (rv) { seat.plan = { kind: 'ram', v: rv, until: w.t + 2 }; jitter(w, seat); }
+      else if (!seat.plan || seat.plan.kind !== 'loop') {
+        const lp = planLoop(w, seat);
+        if (lp) { seat.plan = lp; jitter(w, seat); }
+        else {   // nothing worth a loop: pop the nearest hostile prism in reach
+          let bp = null, bd = 1e9; for (const pr of w.prisms) { if (pr.dead || pr.dom === 'jade' || !inDisc(pr.sx, pr.sz) || !touchable(pr)) continue; const d = hypot2(pr.sx - N.c[0], pr.sz - N.c[1]); if (d < bd) { bd = d; bp = pr; } }
+          seat.plan = bp ? { kind: 'pop', pr: bp, until: w.t + 1.5 } : null;
+        }
+      }
+    }
+    const pl = seat.plan;
+    if (!pl) { moveAim(seat, N.c[0], N.c[1], dt); a.down = false; return { x: a.x, z: a.z, down: false }; }
+    if (pl.kind === 'loop') { const q = pl.pts[Math.min(pl.i, pl.pts.length - 1)], d = moveAim(seat, q[0], q[1], dt); if (d < 0.04 * Rr) pl.i++; }
+    else if (pl.kind === 'ram') { const t = hypot2(pl.v.sx - N.c[0], pl.v.sz - N.c[1]) / P.kiteSpeed * S.lead, g = pred(pl.v, t); moveAim(seat, g[0], g[1], dt); if (N.charge < 1) seat.plan = null; }
+    else { if (pl.pr.dead) { seat.plan = null; } else { const g = pred(pl.pr, hypot2(pl.pr.sx - N.c[0], pl.pr.sz - N.c[1]) / P.kiteSpeed * S.lead); moveAim(seat, g[0], g[1], dt); } }
+    a.down = true;
+    return { x: a.x, z: a.z, down: true };
+  }
+
+  // ---------------- crew + one world step ----------------
+  function swapSeats(w) {
+    const a = w.seats.pilot, b = w.seats.nav;
+    w.seats.pilot = seatFrom({ who: b.who, skill: b.skill, human: b.human });
+    w.seats.nav = seatFrom({ who: a.who, skill: a.skill, human: a.human });
+    w.seats.nav.aim = { x: w.nav.c[0], z: w.nav.c[1], down: false };
+    for (const st of [w.seats.pilot, w.seats.nav]) if (st.human) st.orient = P.swapOrient;
+    w.swaps++; w.swapCool = P.swapCooldown;
+  }
+  const NEUTRAL = { yaw: 0, pitch: 0, roll: 0, boost: false, throttle: 1 };
+  function simStepWorld(w, dt, live) {
+    if (w.cfg.swapEvery > 0) { w.swapT -= dt; if (w.swapT <= 0) { w.swapT = w.cfg.swapEvery; swapSeats(w); } }
+    if (w.swapCool > 0) w.swapCool -= dt;
+    const hull = w.vessels[0], ps = w.seats.pilot, ns = w.seats.nav;
+    let pin = ps.who === 'you' ? (live ? live.pilot() : NEUTRAL) : pilotAI(w, hull, ps, dt);
+    if (ps.orient > 0) { ps.orient -= dt; pin = NEUTRAL; }
+    stepVessel(w, hull, pin, dt);
+    for (let i = 1; i < w.vessels.length; i++) { const v = w.vessels[i]; stepVessel(w, v, pilotAI(w, v, w.rivalSeats[i - 1], dt), dt); }
+    updatePlane(w, dt, false);
+    for (const pr of w.prisms) if (!pr.dead) shadowOf(w, pr, dt);
+    for (let i = 1; i < w.vessels.length; i++) shadowOf(w, w.vessels[i], dt);
+    stepBlasts(w);
+    if (!w.cfg.navOff) {
+      stepMotes(w, dt);
+      let aim = ns.who === 'you' ? (live ? live.nav() : { x: 0, z: 0, down: false }) : navAI(w, ns, dt);
+      if (ns.orient > 0) { ns.orient -= dt; aim = { x: aim.x, z: aim.z, down: false }; }
+      w.navAim = { x: aim.x, z: aim.z, down: aim.down, thumb: aim.thumb };
+      stepNav(w, aim, dt);
+    }
+    w.streams = w.streams.filter((s) => w.t - s.t0 < 0.8);
+    if (++w.steps % 20 === 0) compactPrisms(w);
+    w.t += dt;
+  }
+
+  // ================= live crew state =================
+  const crew = Object.assign({ you: 'none', mate: 'hard' }, lsGet('crew', {}));
+  function liveCfg() {
+    const me = { who: 'you', skill: 'hard' }, mate = { who: 'ai', skill: crew.mate };
+    let pilot = mate, nav = { who: 'ai', skill: crew.mate };
+    if (crew.you === 'pilot') { pilot = me; nav = mate; }
+    else if (crew.you === 'nav') { pilot = mate; nav = me; }
+    else if (crew.you === 'both') { pilot = me; nav = { who: 'you', skill: 'hard' }; }
+    return { opts: Object.assign({}, OPT), pilot, nav, swapEvery: 0 };
+  }
+  function reset(s) { if (s != null) seed = s >>> 0; world = makeWorld(seed, liveCfg()); }
+  function applyCrew() { const c = liveCfg(); world.cfg.pilot = c.pilot; world.cfg.nav = c.nav; world.seats.pilot = seatFrom(c.pilot); world.seats.nav = seatFrom(c.nav); world.seats.nav.aim = { x: world.nav.c[0], z: world.nav.c[1], down: false }; }
+  function applyOpts() { Object.assign(world.opts, OPT); lsSet('opt', OPT); }
+
+  // ---- inputs ----
+  const keys = new Set();
+  addEventListener('keydown', (e) => {
+    if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    keys.add(e.code);
+    if (e.code === 'Digit1' || e.code === 'Digit2') requestSwap('keys');
+    if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+  });
+  addEventListener('keyup', (e) => keys.delete(e.code));
+  addEventListener('blur', () => keys.clear());
+  let pad = null, padPrev = [];
+  function pollPad() {
+    pad = null;
+    try { const ps = navigator.getGamepads ? navigator.getGamepads() : []; for (const p of ps) if (p && p.connected) { pad = p; break; } } catch (e) { pad = null; }
+    if (!pad) return;
+    const b = (i) => !!(pad.buttons[i] && pad.buttons[i].pressed);
+    if ((b(14) && !padPrev[14]) || (b(15) && !padPrev[15])) requestSwap('D-pad');
+    padPrev = pad.buttons.map((x) => x.pressed);
+  }
+  function livePilot() {
+    const k = (c) => keys.has(c);
+    let yaw = (k('KeyD') || k('ArrowRight') ? 1 : 0) - (k('KeyA') || k('ArrowLeft') ? 1 : 0);
+    let pitch = (k('KeyS') || k('ArrowDown') ? 1 : 0) - (k('KeyW') || k('ArrowUp') ? 1 : 0);
+    let roll = (k('KeyE') ? 1 : 0) - (k('KeyQ') ? 1 : 0);
+    let boost = k('Space'), throttle = k('ShiftLeft') || k('ShiftRight') ? 0 : 1;
+    if (pad) {
+      const ax = (i) => { const v = pad.axes[i] || 0; return Math.abs(v) > 0.15 ? v : 0; };
+      yaw += ax(0); pitch += ax(1); roll += ax(2);
+      if (pad.buttons[7] && pad.buttons[7].value > 0.3) boost = true;
+      if (pad.buttons[6] && pad.buttons[6].value > 0.1) throttle = 1 - pad.buttons[6].value;
+    }
+    return { yaw: clamp(yaw, -1, 1), pitch: clamp(pitch, -1, 1), roll: clamp(roll, -1, 1), boost, throttle };
+  }
+  // the human's aim: the pointer on the board, lifted by thumbOffset screen pixels on touch so the thumb never covers the kite
+  const thumb = { sx: 0, sy: 0, down: false, touch: false };
+  function liveAim() {
+    if (!layout) return { x: 0, z: 0, down: false };
+    const L = layout.nav, off = (thumb.touch || OPT.offsetMouse) ? P.thumbOffset : 0, q = fromS(L, thumb.sx, thumb.sy - off), t = fromS(L, thumb.sx, thumb.sy);
+    return { x: q[0], z: q[1], down: thumb.down, thumb: t };
+  }
+  const LIVE = { pilot: livePilot, nav: liveAim };
+
+  let toastT = 0;
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; toastT = 1.8; }
+  const seatName = (st, nav) => st.who === 'you' ? 'You' : 'AI ' + (nav ? NSKILL : SKILL)[st.skill].label;
+  function requestSwap(how) {
+    if (world.swapCool > 0) return;
+    if (crew.you === 'pilot') crew.you = 'nav'; else if (crew.you === 'nav') crew.you = 'pilot';
+    swapSeats(world); lsSet('crew', crew); paintSeatSeg();
+    toast('Swapped (' + how + '): pilot ' + seatName(world.seats.pilot) + ' · navigator ' + seatName(world.seats.nav, true));
+  }
+
+  // ================= rendering =================
+  const canvas = $('stage'), ctx = canvas.getContext('2d');
+  let layout = null;
+  function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
+  function computeLayout(W, H) {
+    const side = W >= H * 1.15;
+    const nav = side ? { x: W * 0.44, y: 0, w: W * 0.56, h: H } : { x: 0, y: 0, w: W, h: H };
+    const pil = side ? { x: 0, y: 0, w: W * 0.44, h: H } : { x: W - Math.min(W * 0.42, 260) - 8, y: 36, w: Math.min(W * 0.42, 260), h: Math.min(H * 0.26, 200) };
+    // on a phone the board sits BELOW the pilot's picture-in-picture, so nothing flowing in at the top is hidden
+    const Rpx = Math.max(40, side ? Math.min(nav.w - 24, nav.h - 70) / 2 : Math.min(nav.w - 20, nav.h - (pil.y + pil.h + 8) - 56) / 2);
+    nav.cx = nav.x + nav.w / 2; nav.cy = side ? nav.y + nav.h / 2 + 8 : pil.y + pil.h + 8 + Rpx; nav.R = Rpx; nav.k = Rpx / P.planeRange;
+    return { side, nav, pil };
+  }
+  const toS = (L, x, z) => [L.cx + x * L.k, L.cy - (z - discA()) * L.k];
+  const fromS = (L, sx, sy) => [(sx - L.cx) / L.k, discA() - (sy - L.cy) / L.k];
+  function badge(x, y, txt, active, size) {
+    ctx.font = '600 ' + (size || 12) + 'px system-ui, sans-serif'; ctx.textAlign = 'left';
+    const tw = ctx.measureText(txt).width + 14;
+    ctx.fillStyle = active ? 'rgba(19,255,242,.18)' : 'rgba(10,16,22,.75)'; ctx.fillRect(x, y, tw, 21);
+    ctx.strokeStyle = active ? 'rgba(19,255,242,.75)' : 'rgba(255,255,255,.16)'; ctx.strokeRect(x + 0.5, y + 0.5, tw - 1, 20);
+    ctx.fillStyle = active ? '#d8fffd' : '#c3ced8'; ctx.fillText(txt, x + 7, y + 14);
+  }
+  // a prism as the game draws it: a box prismW × prismL seen from above the plane, along its own axis
+  function prismOnBoard(L, pr, alpha, hollow) {
+    const [x, y] = toS(L, pr.sx, pr.sz), w = world, fx = dot(pr.f, w.pl.r), fz = dot(pr.f, w.pl.f), fl = hypot2(fx, fz);
+    const ang = fl > 0.05 ? Math.atan2(-fz, fx) : 0, lenPx = Math.max(2, P.prismL * Math.max(fl, 0.3) * L.k), wPx = Math.max(1.5, P.prismW * L.k);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+    if (hollow) { ctx.strokeStyle = hexA(DOM[pr.dom], alpha); ctx.lineWidth = 1; ctx.strokeRect(-lenPx / 2, -wPx / 2, lenPx, wPx); }
+    else { ctx.fillStyle = hexA(DOM[pr.dom], alpha); ctx.fillRect(-lenPx / 2, -wPx / 2, lenPx, wPx); }
+    ctx.restore();
+  }
+  // a navigator mote: an orb with an element glyph. Deliberately NOT a crystal: only the navigator sees these.
+  function moteGlyph(c, e, x, y, r, solid) {
+    const col = ELC[e];
+    if (solid) { c.fillStyle = hexA(col, 0.22); c.beginPath(); c.arc(x, y, r * 1.9, 0, 7); c.fill(); }
+    c.strokeStyle = col; c.fillStyle = solid ? col : 'transparent'; c.lineWidth = 1.5;
+    c.beginPath(); c.arc(x, y, r, 0, 7); if (solid) c.fill(); c.stroke();
+    c.strokeStyle = solid ? '#071017' : col; c.lineWidth = 1.4; c.beginPath();
+    if (e === SP) { c.arc(x, y, r * 0.45, 0, 7); }
+    else if (e === MA) { c.rect(x - r * 0.4, y - r * 0.4, r * 0.8, r * 0.8); }
+    else if (e === TI) { c.moveTo(x - r * 0.45, y - r * 0.5); c.lineTo(x + r * 0.45, y - r * 0.5); c.lineTo(x - r * 0.45, y + r * 0.5); c.lineTo(x + r * 0.45, y + r * 0.5); c.closePath(); }
+    else { c.moveTo(x - r * 0.15, y - r * 0.6); c.lineTo(x - r * 0.35, y + r * 0.05); c.lineTo(x + r * 0.2, y - r * 0.05); c.lineTo(x - r * 0.05, y + r * 0.6); }
+    c.stroke();
+  }
+  function vesselOnBoard(L, v, label) {
+    const [x, y] = toS(L, v.sx, v.sz), w = world, fx = dot(v.f, w.pl.r), fz = dot(v.f, w.pl.f), ang = Math.atan2(-fz, fx) + Math.PI / 2, reach = touchable(v);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+    ctx.fillStyle = hexA(DOM[v.dom], reach ? 1 : 0.35); ctx.beginPath(); ctx.moveTo(0, -11); ctx.lineTo(8, 8); ctx.lineTo(0, 4); ctx.lineTo(-8, 8); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    if (label) { ctx.font = '10px ui-monospace, monospace'; ctx.textAlign = 'center'; ctx.fillStyle = hexA(DOM[v.dom], reach ? 0.9 : 0.4); ctx.fillText(label, x, y + 22); }
+  }
+  function drawBoard(w, L) {
+    const N = w.nav, o = w.opts, Rr = P.planeRange;
+    ctx.fillStyle = '#071017'; ctx.fillRect(L.x, L.y, L.w, L.h);
+    const g = ctx.createRadialGradient(L.cx, L.cy, L.R * 0.1, L.cx, L.cy, L.R);
+    g.addColorStop(0, '#0d2027'); g.addColorStop(1, '#081318');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(L.cx, L.cy, L.R, 0, 7); ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.arc(L.cx, L.cy, L.R, 0, 7); ctx.clip();
+    const [vx, vy] = toS(L, 0, 0);
+    ctx.strokeStyle = 'rgba(19,255,242,.07)'; ctx.lineWidth = 1;
+    for (let r = 40; r < Rr * 2; r += 40) { ctx.beginPath(); ctx.arc(vx, vy, r * L.k, 0, 7); ctx.stroke(); }
+    const depthA = (sy) => clamp(1 - Math.abs(sy) / Math.max(P.reachY * 3, 60), 0.15, 1);
+    // blasts: the sphere's cut through the plane
+    for (const b of w.blasts) {
+      if (b.r <= 0) continue;
+      const d = sub(b.p, w.vessels[0].p), bx = dot(d, w.pl.r), bz = dot(d, w.pl.f), by = dot(d, w.pl.u), rc = b.r * b.r - by * by;
+      if (rc <= 0) continue;
+      const [x, y] = toS(L, bx, bz), age = clamp((w.t - b.t0 - P.blastDelay) / P.blastDuration, 0, 1);
+      ctx.fillStyle = 'rgba(160,150,255,' + (0.18 * (1 - age) + 0.04) + ')'; ctx.strokeStyle = 'rgba(190,180,255,' + (0.9 - 0.6 * age) + ')'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y, Math.sqrt(rc) * L.k, 0, 7); ctx.fill(); ctx.stroke();
+    }
+    // prisms
+    for (const pr of w.prisms) {
+      if (pr.dead || !pr.has || !inDisc(pr.sx, pr.sz)) continue;
+      const reach = touchable(pr);
+      if (!reach && o.depth === 'slab') continue;
+      if (reach) prismOnBoard(L, pr, pr.dom === 'jade' ? 0.55 : 0.95, false);
+      else prismOnBoard(L, pr, o.depth === 'flatten' ? 0.5 * depthA(pr.sy) : 0.22, o.depth !== 'flatten');
+    }
+    // the game's crystals (off by default: they are the pilot's, not the navigator's)
+    if (o.showCrystals) for (const c of w.crystals) { shadowOf(w, c, 0); if (!inDisc(c.sx, c.sz)) continue; const [x, y] = toS(L, c.sx, c.sz); ctx.strokeStyle = hexA(ELC[c.e], 0.5); ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x + 4, y); ctx.lineTo(x, y + 6); ctx.lineTo(x - 4, y); ctx.closePath(); ctx.stroke(); }
+    // navigator motes
+    if (!w.cfg.navOff) for (const m of w.motes) {
+      if (m.dead || !m.has || !inDisc(m.sx, m.sz)) continue;
+      const reach = touchable(m); if (!reach && o.depth === 'slab') continue;
+      const [x, y] = toS(L, m.sx, m.sz), r = clamp(6 * L.k * 1.3, 4.5, 9);
+      if (reach || o.depth === 'flatten') moteGlyph(ctx, m.e, x, y, r * (reach ? 1 : 0.8), true);
+      else moteGlyph(ctx, m.e, x, y, r * 0.8, false);
+      if (!reach) { ctx.fillStyle = 'rgba(255,255,255,.5)'; const up = m.sy > 0, ty = y + (up ? -r - 5 : r + 5); ctx.beginPath(); ctx.moveTo(x - 3, ty + (up ? 2 : -2)); ctx.lineTo(x + 3, ty + (up ? 2 : -2)); ctx.lineTo(x, ty + (up ? -2 : 2)); ctx.fill(); }
+    }
+    // rivals and the stolen petals streaming home
+    for (let i = 1; i < w.vessels.length; i++) { const v = w.vessels[i]; if (inDisc(v.sx, v.sz)) vesselOnBoard(L, v, v.petals.reduce((a, b) => a + Math.max(0, Math.floor(b)), 0) + ' petals'); }
+    for (const s of w.streams) { const k = clamp((w.t - s.t0) / 0.6, 0, 1); if (k <= 0) continue; const d = sub(s.from, w.vessels[0].p), bx = dot(d, w.pl.r) * (1 - k), bz = dot(d, w.pl.f) * (1 - k), [x, y] = toS(L, bx, bz); ctx.fillStyle = ELC[s.e]; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, 7); ctx.fill(); }
+    // our vessel
+    const hull = w.vessels[0];
+    ctx.fillStyle = DOM.jade; ctx.beginPath(); ctx.moveTo(vx, vy - 13); ctx.lineTo(vx + 9, vy + 9); ctx.lineTo(vx, vy + 4); ctx.lineTo(vx - 9, vy + 9); ctx.closePath(); ctx.fill();
+    if (hull.boosting) { ctx.fillStyle = 'rgba(255,200,90,.9)'; ctx.beginPath(); ctx.moveTo(vx - 4, vy + 8); ctx.lineTo(vx, vy + 30); ctx.lineTo(vx + 4, vy + 8); ctx.fill(); }
+    if (hull.flash > 0) { ctx.strokeStyle = 'rgba(255,80,80,' + (hull.flash / 0.3) + ')'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(vx, vy, 20, 0, 7); ctx.stroke(); }
+    if (!w.cfg.navOff) drawKite(w, L);
+    for (const f of N.fx) {
+      const age = (w.t - f.t) / 1.4;
+      if (f.kind === 'loop') { ctx.fillStyle = 'rgba(255,224,138,' + 0.12 * (1 - age) + ')'; ctx.strokeStyle = 'rgba(255,224,138,' + (1 - age) + ')'; ctx.lineWidth = 2; ctx.beginPath(); f.loop.forEach((q, i) => { const s = toS(L, q[0], q[1]); if (i) ctx.lineTo(s[0], s[1]); else ctx.moveTo(s[0], s[1]); }); ctx.closePath(); ctx.fill(); ctx.stroke(); continue; }
+      const [x, y] = toS(L, f.x, f.z), col = f.kind === 'pop' ? '#ff3df9' : f.kind === 'fizzle' ? '#8a96a3' : ELC[f.e];
+      ctx.strokeStyle = hexA(col, 1 - age); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 5 + age * (f.kind === 'pop' ? 14 : 30), 0, 7); ctx.stroke();
+      if (f.text) { ctx.fillStyle = 'rgba(255,255,255,' + (1 - age) + ')'; ctx.font = '600 12px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(f.text, x, y - 16 - age * 18); }
+    }
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(19,255,242,.35)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(L.cx, L.cy, L.R, 0, 7); ctx.stroke();
+  }
+  function drawKite(w, L) {
+    const N = w.nav, aim = w.navAim || { x: 0, z: 0, down: false };
+    // the thumb and the aim point it lifts the kite to
+    if (aim.down && aim.thumb) { const [tx, ty] = toS(L, aim.thumb[0], aim.thumb[1]), [ax, ay] = toS(L, aim.x, aim.z); ctx.fillStyle = 'rgba(255,255,255,.10)'; ctx.beginPath(); ctx.arc(tx, ty, 24, 0, 7); ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(ax, ay); ctx.stroke(); ctx.beginPath(); ctx.arc(ax, ay, 5, 0, 7); ctx.stroke(); }
+    // the tail: the lasso
+    const T = N.tail;
+    if (T.length > 1) {
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (let i = 1; i < T.length; i++) { const a = toS(L, T[i - 1][0], T[i - 1][1]), b = toS(L, T[i][0], T[i][1]), k = i / T.length; ctx.strokeStyle = 'rgba(255,224,138,' + (0.15 + 0.75 * k) + ')'; ctx.lineWidth = 1 + 2.5 * k; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+    }
+    const [kx, ky] = toS(L, N.c[0], N.c[1]), sp = hypot2(N.vel[0], N.vel[1]), ang = sp > 5 ? Math.atan2(-N.vel[1], N.vel[0]) : -Math.PI / 2, r = Math.max(7, P.kiteRadius * L.k) * (1 + 0.04 * Math.min(N.charge, 20));
+    if (N.charge >= 1) { ctx.fillStyle = hexA(ELC[CH], 0.18 + 0.08 * Math.sin(w.t * 9)); ctx.beginPath(); ctx.arc(kx, ky, r * 2, 0, 7); ctx.fill(); }
+    ctx.save(); ctx.translate(kx, ky); ctx.rotate(ang + Math.PI / 2);
+    ctx.fillStyle = N.charge >= 1 ? '#ffe9a6' : '#ffe08a'; ctx.beginPath(); ctx.moveTo(0, -r * 1.25); ctx.lineTo(r * 0.75, 0); ctx.lineTo(0, r * 0.9); ctx.lineTo(-r * 0.75, 0); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    if (N.charge >= 1) { ctx.font = '600 11px ui-monospace, monospace'; ctx.textAlign = 'center'; ctx.fillStyle = ELC[CH]; ctx.fillText('⚡' + Math.floor(N.charge), kx, ky - r * 1.6); }
+  }
+  function drawPilot3D(w, R, pip) {
+    const v = w.vessels[0], cam = addS(addS(v.p, v.f, -80), v.u, 55), B = { f: norm(addS(v.f, v.u, -0.55)), u: v.u, r: v.r };
+    ortho(B);
+    const foc = R.h * 0.8, cx = R.x + R.w / 2, cy = R.y + R.h * 0.5;
+    const proj = (q) => { const d = sub(q, cam), z = dot(d, B.f); if (z < 2) return null; return [cx + dot(d, B.r) / z * foc, cy - dot(d, B.u) / z * foc, z]; };
+    ctx.save(); ctx.beginPath(); ctx.rect(R.x, R.y, R.w, R.h); ctx.clip();
+    ctx.fillStyle = '#060a10'; ctx.fillRect(R.x, R.y, R.w, R.h);
+    const pl = w.pl, A = discA(), Rr = P.planeRange, ring = (yOff, style, fill) => {
+      ctx.beginPath(); let ok = 0;
+      for (let i = 0; i <= 40; i++) { const a = i / 40 * 2 * Math.PI, q = addS(addS(addS(v.p, pl.r, Math.cos(a) * Rr), pl.f, A + Math.sin(a) * Rr), pl.u, yOff), s = proj(q); if (!s) { ok = 0; continue; } if (ok) ctx.lineTo(s[0], s[1]); else ctx.moveTo(s[0], s[1]); ok = 1; }
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); } ctx.strokeStyle = style; ctx.stroke();
+    };
+    ctx.lineWidth = 1; ring(0, 'rgba(19,255,242,.45)', 'rgba(19,255,242,.05)');
+    for (const pr of w.prisms) { if (pr.dead) continue; const s = proj(pr.p); if (!s) continue; const r = Math.max(1, 70 * P.prismW / 2 / s[2]); ctx.fillStyle = hexA(DOM[pr.dom], pr.dom === 'jade' ? 0.6 : 0.9); ctx.fillRect(s[0] - r / 2, s[1] - r / 2, r, r); }
+    for (const c of w.crystals) { const s = proj(c.p); if (!s) continue; const r = Math.max(2, 200 / s[2]); ctx.fillStyle = ELC[c.e]; ctx.beginPath(); ctx.moveTo(s[0], s[1] - r); ctx.lineTo(s[0] + r * 0.6, s[1]); ctx.lineTo(s[0], s[1] + r); ctx.lineTo(s[0] - r * 0.6, s[1]); ctx.fill(); }
+    for (const b of w.blasts) { if (b.r <= 0) continue; const s = proj(b.p); if (!s) continue; ctx.strokeStyle = 'rgba(190,180,255,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(s[0], s[1], b.r / s[2] * foc, 0, 7); ctx.stroke(); }
+    for (let i = 1; i < w.vessels.length; i++) { const s = proj(w.vessels[i].p); if (!s) continue; const r = Math.max(3, 400 / s[2]); ctx.fillStyle = DOM[w.vessels[i].dom]; ctx.beginPath(); ctx.moveTo(s[0], s[1] - r); ctx.lineTo(s[0] + r * 0.8, s[1] + r * 0.7); ctx.lineTo(s[0] - r * 0.8, s[1] + r * 0.7); ctx.fill(); }
+    for (const st of w.streams) { const k = clamp((w.t - st.t0) / 0.6, 0, 1); if (k <= 0) continue; const s = proj(addS(st.from, sub(v.p, st.from), k)); if (s) { ctx.fillStyle = ELC[st.e]; ctx.beginPath(); ctx.arc(s[0], s[1], 3, 0, 7); ctx.fill(); } }
+    const hv = proj(v.p);
+    if (hv) { ctx.fillStyle = DOM.jade; ctx.beginPath(); ctx.moveTo(hv[0], hv[1] - 7); ctx.lineTo(hv[0] + 7, hv[1] + 5); ctx.lineTo(hv[0] - 7, hv[1] + 5); ctx.fill(); if (v.boosting) { ctx.fillStyle = 'rgba(255,200,90,.9)'; ctx.beginPath(); ctx.moveTo(hv[0] - 3, hv[1] + 5); ctx.lineTo(hv[0], hv[1] + 18); ctx.lineTo(hv[0] + 3, hv[1] + 5); ctx.fill(); } if (v.flash > 0) { ctx.strokeStyle = '#ff5050'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(hv[0], hv[1], 14, 0, 7); ctx.stroke(); } }
+    ctx.restore();
+    ctx.strokeStyle = pip ? 'rgba(19,255,242,.5)' : 'rgba(19,255,242,.2)'; ctx.lineWidth = 1; ctx.strokeRect(R.x + 0.5, R.y + 0.5, R.w - 1, R.h - 1);
+    badge(R.x + 6, R.y + 6, 'PILOT · ' + seatName(w.seats.pilot), w.seats.pilot.who === 'you', pip ? 11 : 12);
+    // petals + boost energy (the pilot's HUD)
+    const bx = R.x + 10, by = R.y + R.h - (pip ? 40 : 86), unit = pip ? 5 : 8;
+    ctx.font = (pip ? 9 : 11) + 'px ui-monospace, monospace'; ctx.textAlign = 'left';
+    if (!pip) for (let i = 0; i < 4; i++) { const y = by + i * 15, n = clamp(Math.floor(v.petals[i]), 0, 15); ctx.fillStyle = ELC[i]; ctx.fillText(EL[i][0], bx, y + 9); for (let p = 0; p < 15; p++) { ctx.fillStyle = p < n ? ELC[i] : 'rgba(255,255,255,.08)'; ctx.fillRect(bx + 14 + p * unit, y + 1, unit - 2, 9); } }
+    const ey = pip ? R.y + R.h - 14 : by + 64, ew = pip ? R.w - 90 : 134;
+    ctx.fillStyle = 'rgba(255,255,255,.1)'; ctx.fillRect(bx, ey, ew, 6); ctx.fillStyle = ELC[TI]; ctx.fillRect(bx, ey, ew * Math.min(1, v.boostE / Math.max(1, P.timeCap)), 6);
+    ctx.fillStyle = '#c3ced8'; ctx.fillText('boost ' + v.boostE.toFixed(1) + ' s', bx + ew + 6, ey + 6);
+  }
+  function render() {
+    const dpr = canvas.width / Math.max(1, canvas.getBoundingClientRect().width);
+    const W = canvas.width / dpr, H = canvas.height / dpr, w = world;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#04070a'; ctx.fillRect(0, 0, W, H);
+    layout = computeLayout(W, H);
+    const L = layout.nav;
+    drawBoard(w, L);
+    const pr = PRESETS.find((p) => p.key === presetKey);
+    badge(L.x + 8, L.y + 8, 'NAVIGATOR · ' + seatName(w.seats.nav, true) + ' · ' + (pr ? pr.name : 'custom'), w.seats.nav.who === 'you', 12);
+    const st = w.stats, min = Math.max(1 / 60, w.t / 60);
+    ctx.font = '11px ui-monospace, monospace'; ctx.textAlign = 'left'; ctx.fillStyle = '#c3ced8';
+    ctx.fillText('loops ' + st.loops + ' (pure ' + st.pure + ', best ×' + st.nMax + ')  popped ' + st.popped + '  blasted ' + st.blasted + '  mass laid ' + st.massLaid, L.x + 10, L.y + L.h - 40);
+    ctx.fillText('stolen ' + st.stolen + ' petals  kite power ' + w.nav.charge.toFixed(1) + '  boost given ' + st.boostGiven.toFixed(1) + ' s', L.x + 10, L.y + L.h - 25);
+    ctx.fillText('hull petals/min ' + (st.hullPetals / min).toFixed(1) + '  t ' + w.t.toFixed(0) + ' s' + (paused ? '  [paused]' : ''), L.x + 10, L.y + L.h - 10);
+    drawPilot3D(w, layout.pil, !layout.side);
+  }
+
+  // one thumb: the first pointer on the board drives the kite
+  let thumbId = null;
+  function onBoardPx(ev) { if (!layout) return false; const r = canvas.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top, L = layout.nav; return x >= L.x && x <= L.x + L.w && y >= L.y && y <= L.y + L.h; }
+  function setThumb(ev) { const r = canvas.getBoundingClientRect(); thumb.sx = ev.clientX - r.left; thumb.sy = ev.clientY - r.top; thumb.touch = ev.pointerType !== 'mouse'; }
+  canvas.addEventListener('pointerdown', (ev) => {
+    if (thumbId != null || !onBoardPx(ev)) return;
+    thumbId = ev.pointerId; try { canvas.setPointerCapture(ev.pointerId); } catch (e) { /* ok */ }
+    setThumb(ev); thumb.down = true;
+    if (crew.you === 'none' || crew.you === 'pilot') { crew.you = crew.you === 'pilot' ? 'both' : 'nav'; lsSet('crew', crew); applyCrew(); paintSeatSeg(); toast('You took the navigator seat'); }
+    tryFullscreen();
+  });
+  canvas.addEventListener('pointermove', (ev) => { if (ev.pointerId !== thumbId && !(thumbId == null && ev.pointerType === 'mouse')) return; setThumb(ev); });
+  const endThumb = (ev) => { if (ev.pointerId !== thumbId) return; thumbId = null; thumb.down = false; };
+  canvas.addEventListener('pointerup', endThumb); canvas.addEventListener('pointercancel', endThumb);
+  let fsTried = false;
+  function tryFullscreen() { if (fsTried || PLATFORM.device !== 'phone') return; fsTried = true; try { const r = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* refused */ } }
+
+  // ================= score + headless batch =================
+  function score(w) {
+    w = w || world; const min = Math.max(1e-9, w.t / 60), N = w.nav, st = w.stats;
+    return {
+      hullPetals: +(st.hullPetals / min).toFixed(2), crystals: +(st.crystals / min).toFixed(2), stolen: +(st.stolen / min).toFixed(2),
+      popped: +(st.popped / min).toFixed(1), blasted: +(st.blasted / min).toFixed(1), massLaid: +(st.massLaid / min).toFixed(1),
+      boostGiven: +(st.boostGiven / min).toFixed(2), boostUsed: +(st.boostUsed / min).toFixed(2),
+      loops: +(st.loops / min).toFixed(2), purePct: +(100 * st.pure / Math.max(1, st.loops)).toFixed(0), meanN: +(st.nSum / Math.max(1, st.pure + (w.opts.mixed === 'majority' ? st.mixed : 0))).toFixed(2), maxN: st.nMax,
+      events: +(N.events / min).toFixed(1), dry: +Math.max(N.maxGap, w.t - N.lastEvent).toFixed(1), thumbDown: +(100 * N.downTime / Math.max(1e-9, w.t)).toFixed(0),
+      whip: +(w.whipSum / Math.max(1, w.whipN)).toFixed(1), hits: +(st.hits / min).toFixed(2), t: +w.t.toFixed(2),
+    };
+  }
+  function runOne(cfg, s, seconds, dt) { const w = makeWorld(s, cfg); const n = Math.round(seconds / dt); for (let i = 0; i < n; i++) simStepWorld(w, dt, null); return score(w); }
+  function presetCfg(pr, navSkill, extra) { return Object.assign({ opts: presetOpts(pr), pilot: { who: 'ai', skill: 'hard' }, nav: { who: 'ai', skill: navSkill } }, extra || {}); }
+  function runBatch(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2, 3], seconds = opts.seconds || 60, dt = 1 / 30, list = opts.presets || PRESETS;
+    const saved = Object.assign({}, P), rows = [];
+    const avg = (cfg) => { const acc = {}, per = []; for (const s of seeds) { const r = runOne(cfg, s, seconds, dt); per.push(r.hullPetals); for (const k in r) acc[k] = (acc[k] || 0) + r[k] / seeds.length; } acc.per = per; return acc; };
+    const sd = (a) => { const m = a.reduce((x, y) => x + y, 0) / a.length; return Math.sqrt(a.reduce((x, y) => x + (y - m) * (y - m), 0) / Math.max(1, a.length - 1)); };
+    const f1 = (x) => +x.toFixed(1), f2 = (x) => +x.toFixed(2);
+    Object.assign(P, saved, presetNumbers(PRESETS[0]));
+    const solo = avg(presetCfg(PRESETS[0], 'hard', { navOff: true }));
+    rows.push({ key: 'solo', name: 'Solo pilot (no navigator)', hullPetals: f2(solo.hullPetals), lift: 0, stolen: 0, popped: 0, blasted: 0, massLaid: 0, boostGiven: 0, loops: 0, purePct: 0, meanN: 0, maxN: 0, skill: 0, idle: 0, events: 0, dry: 0, thumbDown: 0, whip: 0, hits: f2(solo.hits), noise: f2(sd(solo.per) / Math.sqrt(seeds.length)) });
+    for (const pr of list) {
+      Object.assign(P, saved, presetNumbers(pr));
+      const hard = avg(presetCfg(pr, 'hard')), easy = avg(presetCfg(pr, 'easy')), idle = avg(presetCfg(pr, 'hard', { idleNav: true }));
+      const value = (r) => r.hullPetals + r.blasted / 10 + r.massLaid / 10 + r.popped / 10 + r.boostGiven;   // a rough sum of what the seat produces
+      rows.push({
+        key: pr.key, name: pr.name, hullPetals: f2(hard.hullPetals), lift: f1(100 * (hard.hullPetals / Math.max(1e-9, solo.hullPetals) - 1)), stolen: f2(hard.stolen),
+        popped: f1(hard.popped), blasted: f1(hard.blasted), massLaid: f1(hard.massLaid), boostGiven: f2(hard.boostGiven), loops: f2(hard.loops), purePct: Math.round(hard.purePct), meanN: f2(hard.meanN), maxN: f1(hard.maxN),
+        skill: f1(100 * (value(hard) - value(easy)) / Math.max(1e-9, value(hard))), idle: f1(100 * value(idle) / Math.max(1e-9, value(hard))),
+        events: f1(hard.events), dry: f1(hard.dry), thumbDown: Math.round(hard.thumbDown), whip: f1(hard.whip), hits: f2(hard.hits), noise: f2(sd(hard.per) / Math.sqrt(seeds.length)),
+      });
+    }
+    Object.assign(P, saved);
+    return rows;
+  }
+
+  // ================= platform =================
+  function detectPlatform() {
+    const host = window.__labHost || {}, ua = navigator.userAgent || '';
+    const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+    return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+  }
+  const PLATFORM = detectPlatform();
+  $('platform').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+
+  // ================= UI =================
+  const outputs = {};
+  function fmt(v, step) { const dec = step < 1 ? Math.min(3, String(step).split('.')[1].length) : 0; return Number(v).toFixed(dec); }
+  function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+  function optDiff() { const o = {}; for (const k in OPT_SHIPPED) if (OPT[k] !== OPT_SHIPPED[k]) o[k] = OPT[k]; return o; }
+  function refreshDiff() {
+    const n = Object.keys(diffOnly()).length, pr = PRESETS.find((p) => p.key === presetKey);
+    $('diff').textContent = (pr ? 'preset ' + pr.name : 'custom setup') + ' · ' + (n ? n + ' number' + (n > 1 ? 's differ' : ' differs') + ' from shipped' : 'shipped numbers');
+    for (const [, key, , , step] of SPEC) { const o = outputs[key]; if (!o || !o.out.isConnected) continue; o.inp.value = P[key]; o.out.textContent = fmt(P[key], step); o.out.classList.toggle('changed', Math.abs(P[key] - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + SHIPPED[key] + ' · yours ' + P[key]; }
+  }
+  function markCustom() { if (presetKey !== 'custom') { presetKey = 'custom'; lsSet('preset', presetKey); paintPresets(); refreshDiff(); } }
+  function setParam(key, v) { P[key] = v; lsSet('P', diffOnly()); if (PRESET_KEYS.includes(key)) markCustom(); if (['crystalCount', 'rivals', 'rivalStart', 'startLevel', 'cellRadius'].includes(key)) reset(); refreshDiff(); }
+  function applyPreset(key) {
+    const pr = PRESETS.find((p) => p.key === key); if (!pr) return;
+    Object.assign(OPT, presetOpts(pr)); Object.assign(P, presetNumbers(pr));
+    presetKey = key; lsSet('preset', key); lsSet('P', diffOnly()); applyOpts();
+    world.nav.tail = []; world.seats.nav.plan = null;
+    paintPresets(); refreshDiff(); toast('Preset: ' + pr.name);
+  }
+  function makeTabs(barId, bodyId, tabs, storeKey) {
+    const bar = $(barId), body = $(bodyId), sel = lsGet(storeKey, tabs[0].name);
+    function show(name) { for (const b of bar.children) b.setAttribute('aria-selected', String(b.dataset.name === name)); body.replaceChildren(tabs.find((t) => t.name === name).build()); lsSet(storeKey, name); }
+    for (const t of tabs) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
+    show(tabs.some((t) => t.name === sel) ? sel : tabs[0].name);
+  }
+  function sliderGroup(group) {
+    const box = document.createElement('div');
+    if (group === 'Effects') { const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'A pure loop of n motes fires base × growth^(n − 1), up to the cap. Mixed loops follow the rule in the Navigator tab.'; box.appendChild(p); }
+    for (const [g, key, lo, hi, step, label, tip] of SPEC) {
+      if (g !== group) continue;
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div>';
+      row.querySelector('label span').textContent = label; row.querySelector('.key').textContent = key; row.querySelector('.tip').textContent = tip;
+      const inp = row.querySelector('input'); Object.assign(inp, { min: lo, max: hi, step, value: P[key], id: 'sl-' + key });
+      inp.oninput = () => setParam(key, parseFloat(inp.value));
+      outputs[key] = { out: row.querySelector('output'), inp };
+      box.appendChild(row);
+    }
+    queueMicrotask(refreshDiff);
+    return box;
+  }
+  let presetBox = null;
+  function paintPresets() { if (!presetBox || !presetBox.isConnected) return; for (const b of presetBox.querySelectorAll('.preset')) b.setAttribute('aria-pressed', String(b.dataset.key === presetKey)); }
+  function presetsPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint">One design, eight variants. Hold your thumb on the board: the kite flies to just above it. Its head pops hostile prisms and rams rivals; cross your own tail to loop the motes inside. One element per loop fires that element, doubling per mote.</p>' +
+      '<div class="legend"><i style="background:#8f84ff"></i><span><b>Space</b>: a blast that destroys hostile prisms (AOEExplosion)</span><i style="background:#ff6b4a"></i><span><b>Mass</b>: a cluster of your domain\'s prisms</span><i style="background:#36d39a"></i><span><b>Time</b>: boost energy for your pilot</span><i style="background:#f2c14e"></i><span><b>Charge</b>: kite power; ram a rival to steal that many petals</span></div><div class="presets"></div>';
+    const grid = box.querySelector('.presets');
+    for (const pr of PRESETS) {
+      const b = document.createElement('button'); b.className = 'preset'; b.dataset.key = pr.key;
+      b.innerHTML = '<b></b><span></span><span class="tags"></span>';
+      b.children[0].textContent = pr.name; b.children[1].textContent = pr.blurb;
+      const n = presetNumbers(pr), o = presetOpts(pr);
+      b.children[2].textContent = '×' + n.growth + ' per mote · tail ' + n.tailLen + ' · reach ±' + n.reachY + ' · ' + o.frame + ' · mixed ' + o.mixed + ' · motes on the ' + o.motes;
+      b.onclick = () => applyPreset(pr.key);
+      grid.appendChild(b);
+    }
+    presetBox = box; queueMicrotask(paintPresets);
+    return box;
+  }
+  function optionsPanel() {
+    const box = document.createElement('div');
+    const sel = (id, label, table, key) => { const l = document.createElement('label'); l.className = 'field'; l.innerHTML = '<span></span><select></select>'; l.firstChild.textContent = label; const s = l.lastChild; s.id = id; for (const k in table) { const op = document.createElement('option'); op.value = k; op.textContent = table[k]; s.appendChild(op); } s.value = OPT[key]; s.onchange = () => { OPT[key] = s.value; applyOpts(); markCustom(); }; box.appendChild(l); };
+    const chk = (id, label, key) => { const l = document.createElement('label'); l.className = 'check'; l.innerHTML = '<input type="checkbox"><span></span>'; l.lastChild.textContent = label; const c = l.firstChild; c.id = id; c.checked = OPT[key]; c.onchange = () => { OPT[key] = c.checked; applyOpts(); }; box.appendChild(l); };
+    sel('optMotes', 'Where the navigator\'s motes live', MOTE_HOMES, 'motes');
+    sel('optMixed', 'A loop with more than one element', MIXES, 'mixed');
+    sel('optFrame', 'How the board follows the vessel', FRAMES, 'frame');
+    sel('optDepth', 'Things off the plane', DEPTHS, 'depth');
+    chk('optCrystals', 'Show the pilot\'s game crystals on the board (outline only)', 'showCrystals');
+    chk('optMouse', 'Lift the kite above the mouse too (to feel the touch offset on a PC)', 'offsetMouse');
+    const p = document.createElement('p'); p.className = 'hint';
+    p.textContent = 'Seats: Navigate (you fly the kite, an AI flies the vessel), Fly (A/D yaw, W/S pitch, Q/E roll, Space boost while you have boost energy, Shift brake), Watch, or Couch (two people). Swap with the D-pad, 1 / 2 or the header button. Touching the board takes the navigator seat.';
+    box.appendChild(p);
+    const ms = document.createElement('label'); ms.className = 'field'; ms.innerHTML = '<span>Your squad mate (the AI in the other seat)</span><select id="mateSel"><option value="easy">AI Easy</option><option value="medium">AI Medium</option><option value="hard">AI Hard</option></select>';
+    const s2 = ms.querySelector('select'); s2.value = crew.mate; s2.onchange = () => { crew.mate = s2.value; lsSet('crew', crew); applyCrew(); };
+    box.appendChild(ms);
+    return box;
+  }
+  function paintSeatSeg() { for (const b of $('seatSeg').children) b.setAttribute('aria-pressed', String(b.dataset.you === crew.you)); }
+  for (const b of $('seatSeg').children) b.onclick = () => { crew.you = b.dataset.you; lsSet('crew', crew); applyCrew(); paintSeatSeg(); };
+  $('swapBtn').onclick = () => requestSwap('button');
+
+  // ---- decision log (shared db, browser fallback) ----
+  let db = null, me = '', remote = [], localLog = lsGet('log', []);
+  function snapshot() { return { round: LAB.round, seed, preset: presetKey, options: Object.assign({}, OPT), optionsChanged: optDiff(), you: crew.you, mate: crew.mate, changed: diffOnly() }; }
+  async function record(topic, choice, note) {
+    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+    if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
+    localLog.push(doc); lsSet('log', localLog); return 'local';
+  }
+  function currentChoice(topic) {
+    const pr = PRESETS.find((p) => p.key === presetKey), name = pr ? pr.name : 'custom';
+    if (topic === 'Sign-off') return 'Sign off ' + name + ' for Unity (or: not yet, because…)';
+    if (topic === 'Effects') return 'Growth ×' + P.growth + ': Space / Mass / Time / Charge feel right / wrong because…';
+    if (topic === 'Thumb offset') return 'Offset ' + P.thumbOffset + ' px: right / too much / too little';
+    if (topic === 'Mixed loops') return MIXES[OPT.mixed];
+    return 'Settings: ' + (Object.keys(diffOnly()).length ? JSON.stringify(diffOnly()) : 'shipped');
+  }
+  function logPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint" id="logStatus"></p><label class="field"><span>Topic</span><select id="logTopic"><option>Sign-off</option><option>Effects</option><option>Thumb offset</option><option>Mixed loops</option><option>Tuning</option><option>Other idea</option></select></label><label class="field"><span>Your decision</span><textarea id="logChoice" rows="2"></textarea></label><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p><div class="tablewrap"><table id="logTable"></table></div>';
+    const status = box.querySelector('#logStatus'), topic = box.querySelector('#logTopic'), choice = box.querySelector('#logChoice');
+    status.textContent = db ? 'Shared log: saved with the lab, readable by Claude at the start of the next round.' : 'Kept in this browser. Use Copy log to send it.';
+    status.className = db ? 'status-ok' : 'status-warn';
+    const prefill = () => { choice.value = currentChoice(topic.value); }; topic.onchange = prefill; prefill();
+    box.querySelector('#logSave').onclick = async () => { const where = await record(topic.value, choice.value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; renderLog(box); };
+    box.querySelector('#logCopy').onclick = () => { const t = remote.concat(localLog).map((d) => new Date(d.createdAt).toISOString() + ' · ' + d.topic + ': ' + d.choice + ' ' + JSON.stringify(d.settings)).join('\n'); try { navigator.clipboard.writeText(t).catch(() => {}); } catch (e) { /* refused */ } };
+    renderLog(box);
+    return box;
+  }
+  function renderLog(box) {
+    const t = (box || document).querySelector('#logTable'); if (!t) return;
+    const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    t.innerHTML = '<tr><th>When</th><th>Topic</th><th>Decision</th></tr>';
+    if (!rows.length) { const tr = document.createElement('tr'); tr.innerHTML = '<td colspan="3" class="hint">No decisions yet. Fly the kite on your phone, then sign off a preset (or say what is missing).</td>'; t.appendChild(tr); }
+    for (const d of rows) { const tr = document.createElement('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice]) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); } t.appendChild(tr); }
+  }
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) return;
+    db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; });
+  })();
+
+  const COLS = [
+    ['name', 'Preset', ''], ['hullPetals', 'Hull petals/min', 'petals the hull gains per minute: its own crystals plus petals the kite stole'],
+    ['lift', 'Lift %', 'hull petals against the same pilot with nobody on the board'], ['stolen', 'Stolen/min', 'petals the kite took from rivals by ramming them charged'],
+    ['popped', 'Popped/min', 'hostile prisms the kite\'s head destroyed'], ['blasted', 'Blasted/min', 'hostile prisms Space blasts destroyed'],
+    ['massLaid', 'Mass/min', 'prisms Mass loops laid in your domain'], ['boostGiven', 'Boost s/min', 'seconds of boost Time loops gave the pilot'],
+    ['loops', 'Loops/min', 'loops that enclosed at least one mote'], ['purePct', 'Pure %', 'loops of one element'], ['meanN', 'Mean n', 'motes per firing loop'], ['maxN', 'Best n', 'the biggest loop (mean over seeds)'],
+    ['skill', 'Skill %', 'how much less an Easy navigator produces (petals + boost + prisms ÷ 10), as % of Hard'],
+    ['idle', 'Idle %', 'what a navigator who never touches produces, as % of Hard: the seat should earn nothing for nothing'],
+    ['events', 'Moments/min', 'the navigator\'s beats (events under 0.4 s apart count once)'], ['dry', 'Dry spell (s)', 'longest wait between two moments'],
+    ['thumbDown', 'Thumb down %', ''], ['whip', 'Board turn °/s', 'how fast the board turns under the thumb'], ['hits', 'Hits/min', 'hostile prisms the hull flew into'], ['noise', '± (SE)', 'standard error of hull petals/min over the seeds'],
+  ];
+  let lastRows = null;
+  function scorecardPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p><button class="btn primary" id="runBatch">Score every preset</button> <span class="hint" id="batchNote">Headless: 3 seeds × 60 s, AI Hard pilot, 2 AI rivals; each preset with a Hard, an Easy and an idle navigator. Hover a column for what it measures.</span></p><div class="tablewrap"><table id="scoreTable"></table></div>';
+    const paint = (rows) => {
+      const t = box.querySelector('#scoreTable'); t.innerHTML = '';
+      const hr = document.createElement('tr'); for (const [, label, tip] of COLS) { const th = document.createElement('th'); th.textContent = label; th.title = tip; hr.appendChild(th); } t.appendChild(hr);
+      const hi = ['hullPetals', 'lift', 'stolen', 'popped', 'blasted', 'massLaid', 'boostGiven', 'loops', 'purePct', 'meanN', 'skill', 'events'], lo = ['idle', 'dry', 'whip'], body = rows.slice(1), best = {};
+      for (const k of hi) best[k] = Math.max(...body.map((r) => r[k]));
+      for (const k of lo) best[k] = Math.min(...body.map((r) => r[k]));
+      for (const r of rows) { const tr = document.createElement('tr'); for (const [k] of COLS) { const td = document.createElement('td'); td.textContent = r[k]; if (r.key !== 'solo' && k in best && best[k] === r[k]) td.className = 'best'; tr.appendChild(td); } t.appendChild(tr); }
+    };
+    box.querySelector('#runBatch').onclick = () => { const n = box.querySelector('#batchNote'); n.textContent = 'Scoring…'; setTimeout(() => { const t0 = performance.now(); lastRows = runBatch(); paint(lastRows); n.textContent = 'Done in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s. Green = best in its column (lowest for idle, dry spell and board turn).'; }, 30); };
+    if (lastRows) paint(lastRows);
+    return box;
+  }
+  function archivePanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint"><b>Round 2</b> (2026-10-16): twelve one-thumb presets on the vessel\'s plane; the designer kept the Lasso for collecting and the Guardian\'s direct prism destruction, and asked for navigator-only elements and in-game prisms, vessels and effects. Page: Docs/Studios/CrewVesselLab.round2.html. <b>Round 1</b> (2026-10-14): four consoles on a flat stand-in. Page: Docs/Studios/CrewVesselLab.round1.html.</p><div class="tablewrap"><table></table></div>';
+    const rows = [['Round 2 preset', 'Petals/min', 'Lift %', 'Skill %', 'Moments/min', 'Dry spell (s)', 'Thumb down %'], ['Glide', 37.34, 130.9, 97.9, 51.7, 2.5, 100], ['Hopper', 52.83, 226.8, 149.5, 51.7, 4.0, 3], ['Lasso', 19.67, 21.6, 17.5, 10.8, 13.2, 24], ['Guardian', 16.5, 2.1, -4.1, 34.0, 11.6, 100], ['Everything Flat', 74.5, 360.8, 204.1, 48.7, 2.1, 100]];
+    const t = box.querySelector('table');
+    rows.forEach((r, i) => { const tr = document.createElement('tr'); for (const v of r) { const c = document.createElement(i ? 'td' : 'th'); c.textContent = v; tr.appendChild(c); } t.appendChild(tr); });
+    return box;
+  }
+  function aboutPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p id="aboutHead"></p><p><b>The question.</b> Sign off the kite before it is built in Unity: one thumb, a head that destroys and a tail that collects, navigator-only motes, and four exponential pure-loop effects that act on the real game.</p>' +
+      '<p class="hint"><b>Parity with the game.</b> Hulls fly the Sparrow\'s numbers (speed, ×5 boost, yaw, pitch, roll). Trail prisms are the Sparrow\'s 2 × 2 × 5 boxes, one per 7 u. The Space blast is AOEExplosion: radius 0.5 × MaxScale × sin(t·π/2) over 3 s after 0.2 s, sparing its own domain. A steal moves whole petals and only what the rival holds (ElementalTransfer.Steal; ResourceSystem never lets anything imaginary leave). Domain colours are the game\'s palette.</p>' +
+      '<p class="hint"><b>What this lab does NOT model.</b></p><ul class="plain hint">' +
+      '<li>The motes are new: the game has no navigator-only pickup yet. Neither does it have a prism-cluster spawner (Mass) or a boost-energy pool (the Sparrow boosts with no meter).</li>' +
+      '<li>Prisms are flat boxes on the board and points in the 3D view: no shaders, shields or lighting. Trails recycle their oldest prism (the game conserves mass).</li>' +
+      '<li>A hostile prism slows a hull for a second (a stand-in for the danger-prism effects). No hull abilities fire.</li>' +
+      '<li>Two players in one hull, networking, and which machine runs the board. A steal would be a scored combat hit in the game (CombatHitDrain.TryAdmit); the lab only counts petals.</li>' +
+      '<li>A real thumb tires and misses; the AI navigator\'s aim only has a speed, a reaction time and aim noise.</li></ul>';
+    box.querySelector('#aboutHead').textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up: ' + LAB.doc;
+    return box;
+  }
+
+  $('title').textContent = LAB.name; $('meta').textContent = 'round ' + LAB.round + ' · the kite and its tail';
+  let paused = false;
+  $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; };
+  $('restart').onclick = () => reset();
+  $('resetAll').onclick = () => { Object.assign(P, SHIPPED); Object.assign(OPT, OPT_SHIPPED); presetKey = 'kite'; lsSet('P', {}); lsSet('preset', presetKey); applyOpts(); reset(); paintPresets(); refreshDiff(); };
+
+  // ================= sizing + loop =================
+  function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } }
+  addEventListener('resize', resize);
+  let manualClock = false, last = performance.now(), acc = 0;
+  const DT = 1 / 60;
+  function frame(now) {
+    const el = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
+    if (!manualClock) {
+      pollPad(); resize();
+      if (!paused) { acc += el; while (acc >= DT) { simStepWorld(world, DT, LIVE); acc -= DT; } }
+      if (toastT > 0) { toastT -= el; if (toastT <= 0) $('toast').hidden = true; }
+      render();
+    }
+    requestAnimationFrame(frame);
+  }
+  reset();
+  paintSeatSeg();
+  const groups = [...new Set(SPEC.map((r) => r[0]))];
+  makeTabs('dockTabs', 'dockBody', [{ name: 'Presets', build: presetsPanel }, { name: 'Navigator', build: optionsPanel }].concat(groups.map((g) => ({ name: g, build: () => sliderGroup(g) }))), 'dock');
+  makeTabs('bottomTabs', 'bottomBody', [{ name: 'Scorecard', build: scorecardPanel }, { name: 'Decisions', build: logPanel }, { name: 'Archive', build: archivePanel }, { name: 'About', build: aboutPanel }], 'bottom');
+  resize(); refreshDiff(); render(); requestAnimationFrame(frame);
+
+  window.__lab = {
+    LAB, SHIPPED, SPEC, P, OPT, PRESETS, PLATFORM, crew,
+    set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+    tick(dt, n) { dt = dt || DT; n = n || 1; for (let i = 0; i < n; i++) simStepWorld(world, dt, LIVE); resize(); render(); },
+    reset, score: () => score(), runBatch, runOne, makeWorld, simStepWorld, presetCfg, presetNumbers, presetOpts, setParam, applyPreset, record, requestSwap, fireEffect, closeLoop,
+    get world() { return world; },
+    core: { kiteMove, tailAdvance, resolveLoop, blastRadius, grow, onBoard, segX, pointInPoly },
+    // parity: run a scripted thumb through the page's own kite core; one row per frame
+    parityTrace(scn) {
+      const saved = Object.assign({}, P); Object.assign(P, scn.P || {});
+      const N = { c: [0, P.anchor * P.planeRange * 0.5], vel: [0, 0], tail: [] }, rows = [];
+      for (let f = 0; f < scn.aims.length; f++) {
+        const a = scn.aims[f]; kiteMove(N, a[0], a[1], !!a[2], scn.dt);
+        const poly = tailAdvance(N);
+        rows.push({ x: N.c[0], z: N.c[1], vx: N.vel[0], vz: N.vel[1], tail: N.tail.length, loop: poly ? poly.length : 0 });
+      }
+      Object.assign(P, saved);
+      return rows;
+    },
+    state: () => ({ t: world.t, seed, preset: presetKey, pilot: seatName(world.seats.pilot), nav: seatName(world.seats.nav, true), stats: Object.assign({}, world.stats), charge: world.nav.charge, boost: world.vessels[0].boostE, petals: world.vessels[0].petals.slice() }),
+  };
+})();
+</script>

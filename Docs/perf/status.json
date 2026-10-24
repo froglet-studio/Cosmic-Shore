@@ -136,7 +136,7 @@
   "gates": [
     {
       "gate": "mathf params alloc",
-      "ok": true
+      "ok": false
     },
     {
       "gate": "burst MathF (swarm pose)",
@@ -155,9 +155,11 @@
       "ok": true
     }
   ],
-  "gatesOk": true,
-  "generatedUtc": "2026-10-24T18:53:30Z",
+  "gatesOk": false,
+  "generatedUtc": "2026-10-24T19:03:59Z",
   "next": [
+    "Fix the red gate 'mathf params alloc': mathf-params-alloc check: 1 FAILURE(S) (python3 Tools/Build/perf_hunt.py gates)",
+    "Resolve: Performance gate 'mathf params alloc' is red: mathf-params-alloc check: 1 FAILURE(S)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker UniTaskLoopRunnerPreLateUpdate 0.0007 -> 0.3666 ms/frame (+52271%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)",
@@ -327,9 +329,65 @@
       "id": "T-20261017-2215",
       "kind": "test",
       "task": "Try the after-play confirmation and the Project Record in Unity (2026-10-17): stop Play after a run that leaves something new; the small window says what went t"
+    },
+    {
+      "id": "T-20261017-9990",
+      "kind": "dev",
+      "task": "Menu_Main with the Stoat flying: Driver.LateUpdate (BlackHoleRegistry or WormholeView) read 2.7 ms/frame average and 88 ms self in a spike frame (Yash, 2026-10-"
+    },
+    {
+      "id": "T-20261017-7647",
+      "kind": "test",
+      "task": "Share a clean capture of the lag you see: Release code optimization, Third Eye window closed, vsync/frame cap off ('fps uncap'), Auto-publish on in the Bug Hunt"
+    },
+    {
+      "id": "T-20261017-3d13",
+      "kind": "test",
+      "task": "Re-capture Menu_Main with the Stoat for 10 minutes in a Release editor run, with the Third Eye CLOSED (it is a second camera and taints the frame time). The ves"
+    },
+    {
+      "id": "T-20261020-86b5",
+      "kind": "test",
+      "task": "Open cece/gallant-keller-6mr1u4 in Unity: let SpindleLodMidGraph / SpindleLodFarGraph import (no magenta), run the EditMode test SpindleLodTests (ShippedProfile"
+    },
+    {
+      "id": "T-20261020-fb02",
+      "kind": "test",
+      "task": "Spindle LOD A/B in Unity Release: S2 Lattice (Cell Selector > Lattice, 8 min, auto-capture) once with Resources/SpindleLodProfile lodEnabled ON and once OFF; co"
+    },
+    {
+      "id": "T-20261020-09fe",
+      "kind": "decision",
+      "task": "Pick the spindle LOD style and tune it in Unity. Resources/SpindleLodProfile > style: OVERT (default; the braid fans open on the prisms' own depth ramp, as far "
+    },
+    {
+      "id": "T-20261021-a2b3",
+      "kind": "dev",
+      "task": "Prism creation is per-prism polling. Every laid prism starts its own CreateBlockCoroutine, and while the per-frame budget is spent, each waiting prism is resume"
+    },
+    {
+      "id": "T-20261021-a743",
+      "kind": "dev",
+      "task": "A Cell Selector swap releases the old world at a fixed 500 prisms a frame (Cell.ReleaseRetiredWorld). That took 1.1-1.4 s in both Orrery captures, for only 4,25"
+    },
+    {
+      "id": "T-20261021-e916",
+      "kind": "dev",
+      "task": "Both Orrery captures logged '[PrismClock] STRICT MODE: no companion render entity to stamp (cellSwapSuction)': some prisms of the retiring world have no render "
+    },
+    {
+      "id": "T-20261021-fa97",
+      "kind": "test",
+      "task": "Measure the new Medium / Low quality presets on an older phone (Mali-G52 / Adreno 610 class): F7 diag GPU ms at High, Medium, Low in the same scene, and run the"
+    },
+    {
+      "id": "T-20261021-b133",
+      "kind": "decision",
+      "task": "Decide which preset an older MobileLow phone starts on: first-run auto-detect still picks Very Low with 4x MSAA (Round 8); a hand pick of Low / Very Low now wri"
     }
   ],
   "regressions": [
+    "Performance gate 'mathf params alloc' is red: mathf-params-alloc check: 1 FAILURE(S)",
     "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker UniTaskLoopRunnerPreLateUpdate 0.0007 -> 0.3666 ms/frame (+52271%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)",

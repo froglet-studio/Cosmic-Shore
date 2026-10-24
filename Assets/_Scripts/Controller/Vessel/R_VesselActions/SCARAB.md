@@ -159,6 +159,77 @@ behind the pilot as well as ahead and drags it forward through them (§3.9).
 
 ### 3.0 The hull, and the camera behind it
 
+**A real FBX since 2026-10-18** (`Assets/_Models/Vessel Models/Scarab.fbx`, built by `/vessel-model`
+from `Tools/Build/vessel_model/specs/scarab.py`; `build.py scarab --check` is its drift gate; sheet
+`Docs/VesselModels/sheets/scarab_after.jpg`). It replaced the procedural placeholder described
+below, which the owner had accepted only as a placeholder ("more like a low poly scarab than a space
+ship", 2026-09-01) and then judged, with every C# runtime hull, "terrible even as placeholders"
+(2026-10-17). Like the Butterfly it has no artist file behind it; it is built to the fleet
+convention for a new vessel and to the fleet's look (dark gunmetal armour, domain plates and trim
+lines, cyan glass, lime engine glows; since 2026-10-18 the engine slot is the Fire ember of
+`Docs/VesselModels/COLOR.md`, never Lime, which is the call-to-action colour):
+
+| | |
+|---|---|
+| Nodes | mesh `mesh`, armature `rig`, root bone `hull`, preset `zup` (Blender: nose -Y, up +Z, +X = the pilot's left) |
+| Bones | each head on the placeholder's pivot (`ScarabHullForm.Generate` at the prefab's settings, run offline through `Tools/Build/scarab_icon_harness`), Blender frame: `wing.L` / `wing.R` (the elytra) (0, 0.409, -0.695), the centreline hinge; `horn` (0, -3.191, -0.180); `antenna.L/.R` (±1.134, -3.109, -0.367); `leg.1.L/.R` (aft) (±3.338, 2.700, -1.016), `leg.2.*` (±3.434, 0.900, -1.055), `leg.3.*` (fore) (±2.659, -1.391, -0.979); plus `jet.L/.R` (±1.2, 3.55, -0.5) and their `.mouth` children at the nozzle lips (±1.2, 4.62, -0.5), the FX mounts of FLEET_CONVENTION rule 2.5 (no `VesselJet` is wired to them yet) |
+| Size | span 9.65 / length 10.38 / height 4.06 against the placeholder's 9.79 / 10.30 / 4.12 (-1.4 / +0.7 / -1.5%); circumscribing radius 6.27 against 6.40 (-2%), so the occlusion corridor, the speed-tunnel camera and the r 4.5 hull trigger keep the sizes they were tuned to |
+| Slots | `Domain` (the cases' crown plates and skirt trims, the collar's plates and flank trims, the sensor fans, the knee barrels, the lance's collars, the nozzle lips, the prow's edge: 8% of the surface, inside the artist hulls' 6-29% band), `Body`, `Window` (the canopy visor and the sensor eyes), `Engine` (the twin mouths, the flank and dorsal vents, the cases' tail lights, the lance's emitter) |
+| Morphs | Charge 5.4% (the prow's teeth run out, the cases' rims flare into armour, the lance's emitter swells), Mass 4.5% (the shells dome up, the core and collar fatten, every limb rides out with its socket), Space 7.5% (the lance, the masts and the struts reach along their own axes), Time 6.8% (the cases sweep back and taper to a sharper stern, the masts rake back) of the diagonal. The nozzles never move (their `.mouth` lips are pinned) |
+| Takes | none drive it: `ScarabAnimation` springs the bones in code. `flare`, `hang`, `tuck`, `aim` are documentation poses for the sheet and the studio, authored with `ScarabAnimation`'s own signs and proven by `pose_expect` |
+| Budget | 13,928 triangles, 7,148 vertices, 16 bones |
+
+**Clade to ship, part by part:** the elytra are two hinged armour shells, cut in facets (not a smooth
+dome), each carrying a long domain plate on its crown cut by two sunken transverse panel gaps, a
+domain trim along its skirt and a lime running light at its tail; they hinge open at the centreline
+over a dark spine rail to show the engine core. The pronotum is the forward armour collar: two
+domain plates either side of a dark keel, flank trims and a sunken cyan canopy visor on its brow. The
+toothed clypeus is the dozer prow, a flat ram blade with six teeth (the sacred scarab's six) and a
+domain edge trim: the bumper that shoves balls and pilots. The horn is the forge lance, a faceted
+spar with two domain collars and a lime emitter tip. The eyes are cyan sensor domes in dark socket
+rings under the collar's margin. The lamellate antennae are sensor masts, each topped by a
+three-blade domain sensor fan facing astern. The legs are six landing struts / manipulator arms: a
+socket ball on a hip housing, a femur strut, a domain hinge barrel at the knee, a piston tibia and a
+clawed foot pad, the fore pair carrying a scarab's three digging teeth. The abdomen under the cases
+is the engine core: a flat ventral keel plate, lime vent slits along each flank and down its back
+(seen when the cases open), and twin engine nacelles at the stern under the cases' tails, which is
+what the 50 u chase camera looks at.
+
+**Integration is by NAME, not by fileID** (an FBX's sub-object fileIDs cannot be derived offline):
+the prefab's `ScarabHull` holds the model instance in place of the placeholder's MeshFilter /
+MeshRenderer / `ScarabHullBuilder`. `ScarabAnimation` resolves `wing.L`, `horn`, `antenna.L`,
+`leg.1.L` … (the placeholder's `elytron.l`, `leg.l1` … still resolve, so either hull works), finds
+the SkinnedMeshRenderer (`updateWhenOffscreen`, since the springs swing the cases past the bind
+bounds), flares it through the same per-material-index property blocks, and composes every spring
+in the HULL frame (`ScarabHull`, which the juke's roll spins) onto the rest captured there, then
+carries it into the bone's parent space: identical to the old parent-space Euler on the procedural
+parts, and what keeps a pitch a pitch on bones whose parents point wherever the rig points. The
+element morphs are the model's blend shapes, driven by `VesselAnimation` by name; the builder's
+`IProceduralElementMorphSource` duty ended with it. `VesselCustomization` resolves `ScarabHull`
+(no Renderer) to the model's SkinnedMeshRenderer and paints by material identity
+(`_domainReplacesMaterials` = the Domain material).
+
+**The wrapped Sparrow is gone from the prefab.** It was kept only because the hull trigger sphere
+(r 4.5) and the `ImpactCollider` lived on its root and repointing the instance would have dangled
+them; both moved onto `ScarabHull` (same layer 8, same identity frame, same radius;
+`verify_scarab_cavitation_plate.py` still finds the hull sphere). Its other stripped references
+(the skinned renderer, a bone, the disabled Animator) were referenced by nothing. With it went the
+last Sparrow blend shapes the morph audit had to mark INERT and the Sparrow mesh the toy and codex
+harvesters had to be told to skip.
+
+**What changed nowhere else:** the spring tuning, the amplitudes and every sign in `ScarabAnimation`
+are as they were (the doc poses were authored to them). The model's child GameObjects sit on the
+Default layer, like the Butterfly's (the procedural parts sat on Ships; only colliders read that
+layer, and the colliders stayed on Ships).
+
+**The procedural placeholder** is kept in the tree until the owner accepts the model, then retired
+(`ScarabHullForm.cs`, `ScarabHullBuilder.cs` (no longer on the prefab), `ScarabHullFormTests`,
+`ScarabHullMorphTests`, `Tools/Build/scarab_icon_harness/`). `render_scarab_card_icons.py` was retired
+2026-10-18: the card images are rendered from the model by `Tools/Build/vessel_model/render_cards.py Scarab`. Its record follows, kept because its reasoning (spring puppetry, the
+morph meanings, the NaN and Core-offset lessons) still holds.
+
+#### The procedural placeholder (2026-08-15 to 2026-10-18)
+
 > ⚠ **DESIGN STATUS (2026-09-01, Garrett, on the shipped procedural hull): "it looks more like a
 > low poly scarab than a space ship with independent floating parts, but it is a good
 > placeholder."** Accepted as a placeholder; the silhouette is NOT the target. The gap is not
@@ -347,6 +418,10 @@ roll, with a one-shot echo flag so a host-simulated AI's own loopback doesn't do
 
 ### 3.0.2 Elemental hull morphs — the generated hull is an element display
 
+> **On the model (2026-10-18)** the morphs are `Scarab.fbx`'s `Charge` / `Mass` / `Space` / `Time`
+> blend shapes, driven by `VesselAnimation` like every blend-shape vessel; the procedural path below
+> (and the builder's rows in §3.0.1's channel table) runs only if the placeholder builder is put back.
+
 The fleet's morph contract (CLAUDE.md "Elemental Hull Morphs") assumes FBX blend shapes; the
 Scarab's hull is a pure function, so its morphs are **the four element extremes of that same
 function**. `ScarabHullForm.ApplyElementExtreme` is the one code-owned table:
@@ -426,15 +501,16 @@ stick pinned at the perimeter for a juke perturbs nothing.)
 | LT | `InputStatus.LeftTriggerAnalog` + `LeftStickAction (2)` edges | `LeftStickAction (2)` → `[ScarabSharpDriftAction, ScarabDriftAction, DriftTrailAction]` — the Squirrel stack |
 | Right stick | `RightNormalizedJoystickPosition` (polled) | `ScarabJukeController` (§3.4) |
 | A (`buttonSouth`) / Space | `Button1Action (6)` | `PlaceSwitchAction` (§5) |
-| RB | raises `FlipAction` + feeds binary `InputStatus.Throttle` | unbound (RB's `Throttle` feed is ignored — §3.2) |
+| RB | raises `FlipAction` + feeds binary `InputStatus.Throttle` | unbound (RB's `Throttle` feed is ignored on a pad — §3.2; `Throttle` is read only on touch, §3.11) |
 | B / X / Y, LB, D-pad | `Button2Action` / `Button3Action` / — | unbound |
 
 Combo events (`OnlyLeftStickAction (12)` / `OnlyRightStickAction (11)` / `BothSticksAction (13)`)
 fire constantly under a two-analog-trigger scheme — all three stay unbound on gamepad. Touch: the
-drift stack mirrors the Squirrel's touch overrides (`OnlyLeftStickAction` → drift). ⚠ **Touch has
-no raise site for `Button1Action`** (the "Onscreen UI buttons" the enum comments promise don't
-exist in code) — switch placement is gamepad/desktop-only until an on-screen button raising the
-shared `OnButtonPressed` SOAP event is added (open item, §15).
+prefab carries no touch overrides, and since 2026-10-21 the Scarab's phone controls are on-screen
+buttons that raise the shared events above (the Switch card raises `Button1Action`, a Drift button
+`LeftStickAction`) plus a throttle slider writing `InputStatus.Throttle` — §3.11. *(Superseded: this
+paragraph used to say touch had no raise site for `Button1Action`; the ability cards became buttons
+in 9718a382, `AbilityCardPress`.)*
 
 ### 3.2 Throttle — continuous analog acceleration (a different model from the fleet)
 
@@ -486,8 +562,9 @@ Notes and consequences, all of which are design decisions worth marking up:
 - The analog read is per-frame in the transformer (the `ShieldSwipeActionExecutor` /
   `MantaAnalogTurnBoostExecutor` precedent: continuous behaviours poll `InputStatus`, they do not
   ride events). `InputStatus.Throttle` — the binary right-**bumper** feed ("this is just the boost
-  button", GamepadInputStrategy.cs:47) — is ignored entirely; repointing it would be a global
-  input change affecting every vessel.
+  button", GamepadInputStrategy.cs:47) — is ignored on every device but touch; repointing it would
+  be a global input change affecting every vessel. **On touch** it is the throttle: no touch
+  strategy writes it, and the phone HUD's set-and-hold slider does (`ScarabVesselTransformer.PilotThrottle01`, §3.11).
 - `ThrottleScalerMultiplier` is the **existing** `ElementalFloat` on `VesselTransformer` (the
   Squirrel ships it disabled) — the Scarab enables it as its Time scaling. Double-dipping is now
   impossible by construction rather than by authoring: the map's generic per-element multiplier
@@ -955,6 +1032,50 @@ closure on a slow sample clock. Nothing changes for a human pilot.
 and an `ExplosionWitherLifeformByCrystalEffectSO` (fauna only, own-domain not spared), beside the
 debuff and the ball forge it always had. Counted everywhere, paid only by Undertow's rule.
 Record: `Arcade/UNDERTOW.md`.
+
+### 3.11 On a phone (2026-10-21)
+
+Garrett, 2026-10-21: *"scarab can have a throttle appear on mobile as a slider that is set. the juke
+can be done from anywhere with the right thumb. drift becomes a button, and the ring is another
+button."* The Scarab flies the **TotemButtons** scheme (`Tools/Build/author_touch_profiles.py`,
+`Resources/TouchControlProfiles.asset`): lifting a thumb raises nothing, the left thumb (or any single
+thumb) steers, and the rest is on screen.
+
+| Control | Raises / writes | What it does |
+|---|---|---|
+| **Throttle slider** (set and hold, starts at half) | `InputStatus.Throttle` 0..1 (owner-write, replicated) | The throttle (§3.2). Drag it to a speed and let go: it stays there, so no thumb is spent holding it. The bottom is the brake (coast below the 0.05 deadzone) |
+| **Drift** button (held) | `LeftStickAction` (LT) | `ScarabSharpDriftAction` + `ScarabDriftAction` + `DriftTrailAction` |
+| Switch card (Mass) — "the ring" | `Button1Action` (A) | Place the switch (§5) |
+| Throttle card (Time) | — | Display only on touch (the slider is the throttle) |
+| Cavitation Blast / Ball Forge cards | — | Not buttons on any device (the juke and flying through a crystal are their controls) |
+| **Juke** | the right stick | A second finger on the right side of the glass, anywhere |
+
+- **The throttle read.** `ScarabVesselTransformer.PilotThrottle01` reads `InputStatus.Throttle` when the
+  pilot's device (`ActiveInputDevice`, replicated) is Touch and `RightTriggerAnalog` otherwise; the
+  autopilot still reads a full throttle. `ScarabAnimation` reads the same value, and on touch an idle
+  frame (no thumb on the glass) does not drop it to zero, because the slider still holds it.
+- **Snap Dash (Time 5): flick the slider up.** Garrett: "why can't the scarab just record a swipe with the
+  right thumb for the snap dash?" It does: a quick upward swipe that STARTS on the throttle slider (at least
+  8 mm up, more up than across, inside 0.25 s; `TouchThrottleSlider.Flicked`) fires
+  `ScarabVesselTransformer.TryTouchSnapDash` - the same TIME-5 gate and impulse as the pad's double tap - and
+  the slider goes back to where it was set, so a dash never moves the throttle. It lives on the slider, not
+  on open glass, because the juke owns the right thumb everywhere else: any right-thumb push past 35 % is a
+  juke, so a free swipe would juke first. A touch that starts on the slider is the slider's
+  (`FlightTouchClaims`), never the right stick. On touch the double-tap detector no longer counts the
+  slider's value as taps (a flick raises and restores it, and would otherwise dash twice).
+- **The juke.** `ScarabJukeController` polls `RightNormalizedJoystickPosition`. With one flight thumb
+  the touch strategy writes the right stick as zero on a single-stick hull (it used to mirror the
+  steering thumb onto it, so every hard turn was also a juke). A second flight finger is the right
+  stick, measured from where it landed, so a flick from anywhere on the right is a juke and a flick to
+  the rim is the plate. Of two flight fingers the left one steers and the right one jukes, by
+  position: a juke finger that lands LEFT of the steering thumb swaps them for that touch.
+- **The drift's depth.** A phone has no analog LT, so `VesselTransformer.GetTriggerSum` reads the
+  button as binary: both drift actions are active, the sum is 2, and the button is always the
+  **sharp** tier (eased in at the non-pad ramp, passing through the single tier on the way). The
+  single-only drift (a half pull on a pad) has no phone equivalent.
+- **Not reachable on a phone**: the single (half-pull) drift.
+- **If the HUD builds no slider** (a mode without the phone HUD), `Throttle` stays 0 and a touch
+  Scarab does not move — as before this change, when touch wrote no trigger depth at all.
 
 ## 4. The ball
 
@@ -2574,8 +2695,9 @@ implementation time.
    as energy-scoring rings alongside the mode's fixed goals. Confirm.
 8. **Right-stick hint address** (§12): approve a hint-only `InputEvents` member + a
    `PadRightStick` glyph, or accept a hint-less juke icon (the audit will flag it).
-9. **Touch** (§3.1): no `Button1Action` raise site exists on touch — on-screen switch button, or
-   gamepad/desktop-only at v1?
+9. **Touch** (§3.1): **CLOSED 2026-10-21** — Garrett: "scarab can have a throttle appear on mobile as
+   a slider that is set. the juke can be done from anywhere with the right thumb. drift becomes a
+   button, and the ring is another button." The Switch card is its button; §3.11 has the whole scheme.
 9a. **AI and a held modifier** (§3.8): **CLOSED — the mechanic it described is retired.** Kept for
    the trap. While the ball reversal rode a held drift, an AI drift was BINARY — the non-gamepad
    trigger sum reports 1 or 2 for the whole ability, so the drift hold read as FULLY HELD for a
@@ -2642,7 +2764,9 @@ implementation time.
     scene). Until then: mini hulls, codex portrait and the corridor AUDITOR read the placeholder,
     while the runtime corridor is correct (it measures after `HideLegacyModel`).
 
-17. **RE-FORM THE HULL: a ship of independent floating parts, not a low-poly beetle** — the
+17. **RE-FORM THE HULL** — *superseded 2026-10-18 by `Scarab.fbx` (§3.0): a model, every part
+    joined to the next by a mechanical contact. Whether the owner wants real gaps between the modules,
+    as this item proposed, is still his call.* The original item: **a ship of independent floating parts, not a low-poly beetle** — the
     highest-value follow-up on this vessel, and the one piece of §3.0 that is explicitly a
     placeholder (design status quote at the top of §3.0). The shipped hull is a **contiguous
     creature**: a closed carapace with limbs attached to it. The target is a **machine** — parts

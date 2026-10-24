@@ -35,7 +35,10 @@ namespace CosmicShore.Render
             if (camera == null) return s;
             var data = camera.GetComponent<CosmicShore.Engine.Rendering.UniversalAdditionalCameraData>();
             if (data == null || !data.renderPostProcessing) return s;
-            stack.Update(camera.transform.position, data.volumeLayerMask.value);
+            // A ViaScripting camera renders with its own stack, as its scripts last refreshed it (URP); every other camera
+            // with the pipeline's shared stack, refreshed here each frame.
+            if (!data.requiresVolumeFrameworkUpdate && data.volumeStack != null) stack = data.volumeStack;
+            else stack.Update(camera.transform.position, data.volumeLayerMask.value);
 
             var bloom = stack.GetComponent<CosmicShore.Engine.Rendering.Bloom>();
             if (bloom != null && bloom.intensity.value > 0f) s.SetBloom(bloom);

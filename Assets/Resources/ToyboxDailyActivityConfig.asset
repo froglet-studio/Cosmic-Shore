@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: ToyboxDailyActivityConfig
   m_EditorClassIdentifier: 
   rewardCrystals: 10
-  activityTitle: TODAY'S ACTIVITY
-  shuffleTitle: SHUFFLE THE TOY BOX
-  shuffleDetail: NEW WORLD, NEW COLOURS, NEW HULL
+  activityTitle: Today's activity
+  shuffleTitle: Shuffle the toy box
+  shuffleDetail: New world, new colours, new hull

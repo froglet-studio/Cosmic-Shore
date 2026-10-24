@@ -266,7 +266,7 @@ executors, serialized on the prefab — rule 14):
 | Time | Pathfinder | Mass mode: the warp boost on; Time mode: progress to the 90° sweet spot, lime in the window (the warp runs in both) |
 
 The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--check`); the card icons on
-`SO_Class_Stoat` are renders of the Stoat's own hull (`Tools/Build/render_stoat_card_icon.py`, `--check`).
+`SO_Class_Stoat` are renders of the Stoat's own hull (since 2026-10-18 its model: `Tools/Build/vessel_model/render_cards.py Stoat`, `--check`).
 
 ## 1e. Space 5 Accretion, Time 5 Foresight, the omni crystal
 
@@ -372,7 +372,8 @@ holes overlap on screen, the black shadow is drawn over the white core, exactly 
 sideways = the triggers' difference (the black hole on the deeper side), lengthways = their sum (the black hole
 nearer), mirrored about the laid middle. What differed was a KEY: the studio squeezes a key to 0.5 at once
 (`dpKeySqueeze`), Unity ramped it 0 → 1 over 1.5 s, so on keys the poles sat on top of each other first and then
-opened wider than the studio's (200 u, not 70). `keySqueeze` 0.5 is the studio's.
+opened wider than the studio's (200 u, not 70). `keySqueeze` 0.5 is the studio's. A phone's held button is a key too (2026-10-21,
+`STOAT.md` §4a): no trigger depth on glass, so a touch pair opens at `keySqueeze` the same way.
 
 **The path is in the scene.** `StoatPathfinderWorldDots`: camera-facing discs every `worldDotSpacing` (3 u: denser
 than the studio's 2D line) along the 3D path, `worldDotSize` 0.7 u, never under `worldDotMinPixels` 2.5 px. They
@@ -486,7 +487,7 @@ against the Unity references, and none of it has been opened in the Editor.
 `unity_refcompile` player + editor configs (0 errors in project code), `author_stoat_assets.py --check` / `--self-test`
 (22 negative controls; stages 2–6 idempotent; no dangling local reference after the surgery), the peer-press harness
 (1050 human + 1050 AI presses, 0 divergences, with both trigger assets on each trigger and B bound),
-`author_stoat_icon_placeholders.py --check`, `render_stoat_card_icon.py --check`, `element_ability_table.py Stoat`
+`author_stoat_icon_placeholders.py --check`, `vessel_model/render_cards.py Stoat --check`, `element_ability_table.py Stoat`
 (4/4, 0 disagreements) and the repo's logging / conditional / abstract-member / switch / using / network-hash /
 container / channel / far-clip / class-icon / elemental-float gates. `StoatRippleTests`' assertions were RUN headless (the shipped `StoatRippleMath` / `StoatSlingMath` on the hull
 harness's math stub: 29 of 29 pass); the NUnit suites (`StoatRippleTests`, the edited `StoatSlingTests` /

@@ -1,7 +1,9 @@
 # QA Backlog — untested development on `bleeding-edge`
 
 **Generated:** 2026-10-05 (arcade/arena matrix pass), **refreshed 2026-10-06** for PRs #971–#976,
-**refreshed 2026-10-08** for the party cards and the round-3 PRs
+**refreshed 2026-10-08** for the party cards and the round-3 PRs, **Rhino items amended 2026-10-16**
+for the unmerged branch `cece/relaxed-hopper-r62hbd` (the Rhino deep dive — nine new Block G items,
+stale Rhino steps corrected in place)
 · **Scan covers:** PR bodies for merges up to `3ba8ea1d2` (PRs #583–#956, the 2026-10-05 refresh
 in PR #961), plus a full sweep of every launchable Arcade and Arena card, its mode doc's
 verification section, and the per-vessel entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md`,
@@ -42,7 +44,7 @@ has its own item, and each hull's open vessel checks sit next to the modes that 
 | D | Maelstrom tournament | Starter hull; strings blocks A–C together | 1 |
 | E | Sparrow hull (13 red entries) + Dog Fight, Salvo, Breakwater, Wildlife Liberation | On 11 cards, the most in the fleet | 14 |
 | F | Dolphin hull (10 red entries) + Rampage rungs 1–3, The Bends, Switchback | 7 cards; its forest is shared by four modes | 9 |
-| G | Rhino: Cleave, Headlong | 2 hull-locked cards | 2 |
+| G | Rhino: Cleave, Headlong + the 2026-10-16 four-row kit | 2 hull-locked cards; the kit reaches Broadside, Regatta, Astro League | 11 |
 | H | Manta: Redline, Bloomrush | 2 hull-locked cards | 2 |
 | I | Urchin hull + Skein, Hijack | Least finished; its HUD, AI and Hijack sync merged 2026-10-06 (Block P) | 3 |
 | J | Two-player setup (shared by Block Q); both party cards retired 2026-10-08 | No items | 0 |
@@ -405,7 +407,8 @@ Run each and paste its report into your results file:
 
 **PASS:** every tool runs without throwing, and each reports either clean or *only*
 the known exceptions: Serpent fails the skimmer audit; Manta/Rhino/Serpent are listed
-as design-blocked in the ability-row audit; Dolphin/Urchin/Rhino/Grizzly lack elemental
+as design-blocked in the ability-row audit *(on a build carrying `cece/relaxed-hopper-r62hbd`
+the Rhino binds **4/4** and must NOT be listed — 2026-10-16)*; Dolphin/Urchin/Rhino/Grizzly lack elemental
 morphs; `SkyboxModel` entries listed under OK in the cell-visual audit.
 **FAIL:** any tool that throws, or any *new* failure beyond the known exceptions above
 — especially "SCENE-PLACED DUPLICATES" or "DEAD CELL OVERRIDES" being non-empty, or a
@@ -829,8 +832,12 @@ the AI of every hull lands at least some hits; the round ends on the team target
 winner.
 **FAIL:** a hull whose weapon passes through a rival and scores nothing · any hit scoring a
 different price than listed · a Rhino blade scoring every frame · the Serpent offered.
-**Known, do not fail on:** the Dolphin is the weakest seat (its cone needs a crystal); the
-Rhino's sword drains no elements.
+**Known, do not fail on:** the Dolphin is the weakest seat (its cone needs a crystal).
+*(Corrected 2026-10-16: this line also said "the Rhino's sword drains no elements" — wrong. The
+sword STEALS petals: `RhinoSwordStealBySkimmerEffect`, −0.08 per element off the victim and +0.08
+to the Rhino for 3 s, at most once a second, only on a hit the sword's scoring admits (so only when
+the Rhino is faster than its victim). Watch the victim's petal bars on a +8 hit: a small dip on all
+four is the PASS; no dip is a FAIL.)*
 **Report:** which hulls feel strongest and weakest, and whether each AI's weapon reads as a
 real attack (the Urchin's spike tap in particular).
 
@@ -864,7 +871,9 @@ the card's preview window may show a stale layout.
 
 ### QA-ASTROLEAGUE-REWORK ⬜ — blade strikes, the fauna pen, the smaller court, the settling ball
 **Source:** PRs #704 and #706 (#706 is a playtest follow-up to #704, itself unflown). The mode
-is now an **arena** card (Rhino, Scarab, Squirrel), and its doc still says "Rhino-only" (stale).
+is now an **arena** card (Rhino, Scarab, Squirrel). *(The doc no longer says "Rhino-only" — checked
+2026-10-16. The sword's capsule went back to a TRIGGER on that date; the blade-strike half of this
+item now has its own check, QA-RHINO-ASTROLEAGUE-BLADE.)*
 Reference: `_Scripts/Controller/Arcade/ASTROLEAGUE.md`, `Docs/ECOSYSTEM.md`.
 1. Play **Astro League** from the Arena screen as the Rhino. Judge the court size first —
    #706 cut it **40 %** linearly.
@@ -1136,7 +1145,7 @@ renamed serialized fields). Reference: `SPARROW_AFTERBURNER.md` § In-editor ver
 danger trail and no self-slam; one press = exactly one roll; the boost ring is full on
 press, wipes empty on the roll, and stays empty until the next press (never a partial
 fill); at Time 5 a danger prism **while boosting** leaves the flowers undipped and
-**not boosting** dips them (the slow and input-mute still land either way, by design);
+**not boosting** dips them (the slow still lands either way, by design — the input mute was deleted 2026-10-17);
 the stopped Serpent never dips at any Time level; both peers agree.
 **FAIL:** a missing script or a Heat resource still present · boost force-releasing or
 laying a danger trail · more than one roll per press · a partially-filled boost ring ·
@@ -1712,6 +1721,14 @@ If the session has time, the Rhino vessel items in Priority 1 fit here too
 (QA-VESSEL-RHINO-SWORD, QA-RHINO-SWORD-COMBOS, QA-RHINO-SKIMMER-SHAPE, QA-RHINO-RAMP-BOOST,
 QA-P1-RHINO-RAMP-CEILING); Headlong exercises the ramp boost directly.
 
+**Amended 2026-10-16 (`cece/relaxed-hopper-r62hbd`, not yet merged, nothing run in Unity):** the
+Rhino deep dive gave the hull all four rows (Sword Energy / Afterimage / Blade Reach / Ramp Spool,
+with Live Wire, Danger Afterimages, Breaker and Momentum at L5), an omni-crystal Surge, sword and
+ramp replication, an AI that ramps and swings, and retired the old HUD status cluster. Its nine
+checks follow the two mode items: QA-RHINO-HUD-ROW, QA-RHINO-AFTERIMAGE, QA-RHINO-LIVE-WIRE,
+QA-RHINO-MOMENTUM, QA-RHINO-OMNI-SURGE, QA-RHINO-TWO-PEER (needs two players), QA-RHINO-AI,
+QA-RHINO-ASTROLEAGUE-BLADE, QA-RHINO-CHARGE-HARNESS. Run them on a build that carries the branch.
+
 ### QA-CLEAVE-MODE ⬜ — "Cleave" has never been opened
 **Source:** PR #662 + later tuning + the second `claude/rhino-cage-destruction-mode-1t9e3q`
 merge (`a6066b54`, which carried the B17 scoring fix — see QA-SCORING-CLIENT-MIRROR),
@@ -1751,7 +1768,9 @@ form).
    roads.
 7. Select one laid arena prism at intensity 1 and read its transform scale.
 8. Ram a plain prism. Then find a **danger** prism (distinct material) and ram it.
-9. Watch an AI Rhino for a minute at intensity 1 AND at intensity 4.
+9. Watch an AI Rhino for a minute at intensity 1 AND at intensity 4. *(Since 2026-10-16 an AI
+   Rhino also ramps on straights and swings/energizes its sword — see QA-RHINO-AI. Note whether
+   the faster AI still loiters OUTSIDE the arena and only cuts on transits.)*
 10. Play a full round to the target at intensity **1** and again at **4**, and watch the
     goal row and the scoreboard count.
 11. **Arcade card preview (new):** open the Cleave card in the Arcade screen WITHOUT
@@ -1791,15 +1810,21 @@ specific:** a road you cannot find from spawn, a cut that keeps dropping while y
 one, a road that ROLLS about its own travel direction (that is the Twistbands' job, not
 this rung's), danger on an inside verge or on a straight, or a road folding through itself
 at the inside of a bend.
-**Known, do not fail on:** the Rhino's ability row shows two LOCKED cards (the 1st and 3rd)
-- those are open design slots with no ability yet; the other two icons are white placeholders.
+**Known, do not fail on:** the Rhino's ability row shows four cards — Sword Energy, Afterimage,
+Blade Reach, Ramp Spool — all with PLACEHOLDER icons (on builds before 2026-10-16 it showed two
+LOCKED cards; on a build carrying `cece/relaxed-hopper-r62hbd` a LOCKED card is a FAIL, see
+QA-RHINO-HUD-ROW). Afterimage prisms laid by a Rhino after an energize are new mass the prism
+target was not tuned against — report how much they move the goal row.
 (The objective arrow and the pop-up messages now exist; the arrow points at a dense part of the
 arena and moves at most every 1.5 s.)
 
 ### QA-HEADLONG-MODE ⬜ — "Headlong" (the Rhino's circuit) has never been flown
 **Source:** PR #852. `GameModes.Headlong = 49`, Rhino-only closed circuit (8 rings a lap, **24**
 to win) built around the graded ramp boost. "Not editor-verified … nobody has flown it." The AI
-was never tuned for Rhino speed. Its doc points to a checklist entry that does not exist.
+was never tuned for Rhino speed — and until 2026-10-16 it never ramped at all (only a human input
+strategy raised the ramp gesture); `RampBoostAIPolicySO` now ramps on straights that pay back and
+brakes on the ramp into each ring (`_Scripts/Controller/AI/AI_BOOST.md`, Ramp). Its doc points to
+a checklist entry that does not exist.
 Reference: `_Scripts/Controller/Arcade/HEADLONG.md` § 8.
 
 1. On a fresh account, open the Arcade screen: the **Headlong** card is clickable and its
@@ -1814,18 +1839,235 @@ Reference: `_Scripts/Controller/Arcade/HEADLONG.md` § 8.
 7. With two players (Multiplayer Play Mode), compare the circuit and the gate counts.
 8. Regression: launch Switchback.
 
-**PASS:** the card pins the Rhino; speed climbs steadily toward about 1200 over ~5 s; at
+**PASS:** the card pins the Rhino; speed climbs steadily toward about **840** over ~3.6 s (this
+said 1200 / ~5 s before the 2026-09-25 retune); at
 intensities 1–2 exactly **one** corner costs speed; after ring 8 the lime returns to ring 1 and
 the row reads **8/24**, not "finished"; intensity 4 has three speed-costing corners including a
 hairpin to about a third of top speed, and extra stick visibly costs exit speed; the AI completes
-more than one lap; both machines see the same circuit and no crossing counts twice; Switchback
+more than one lap **and visibly speeds up on the straights** (it ramps since 2026-10-16) and slows
+before corners; both machines see the same circuit and no crossing counts twice; Switchback
 unchanged.
 **FAIL:** a non-Rhino ship · a circuit that never arrives · "finished" after one lap · an AI stuck
 after lap 1 · a crossing credited twice.
-**Known, do not fail on:** the Rhino's ability row shows two LOCKED cards (the 1st and 3rd)
-- open design slots; the other two icons are white placeholders (QA-HULL-ABILITY-ROWS).
+**Known, do not fail on:** the Rhino's ability row icons are white placeholders
+(QA-HULL-ABILITY-ROWS). *(Two LOCKED cards were expected before 2026-10-16; on a build carrying
+`cece/relaxed-hopper-r62hbd` all four cards are bound — QA-RHINO-HUD-ROW.)* The circuit's corner
+table was cut at the pre-retune 1200 u/s; the easiest level now asks for two lifts a lap, not one.
 **Report:** whether the graded ramp feels too forgiving or too punishing (dial:
 `straightnessGraceBand`).
+
+### QA-RHINO-HUD-ROW ⬜ — the old Rhino status cluster is gone; four lit-up ability cards replace it
+**Source:** branch `cece/relaxed-hopper-r62hbd` (2026-10-16, commits `3fa268cd` + `8a3b4161`, not
+yet merged). Binding the Rhino's first icon (#971) brought back the pre-lockup status cluster in the
+row's corner (skimmer-size ring, slowed counter, slow-line flash, debuff/shock timer, LaserTargeting /
+Crystal / ForceField indicators); it is deleted from `RhinoHUDVariant`, `Rhino.prefab` and
+`RhinoVesselHUDView`. The row now binds 4/4 with placeholder icons. Prefabs edited as text, never
+imported.
+1. Open `RhinoHUDVariant.prefab` (`Assets/_Prefabs/UI Elements/VesselHUD/`) and `Rhino.prefab`
+   (`Assets/_Prefabs/Spacevessels/`). Watch the Console.
+2. Run **FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows** and **Audit Ability Lockups**; read
+   the Rhino lines.
+3. Freestyle as the **Rhino**. Read the four cards bottom-right, left to right, and look at the
+   rest of the bottom-right corner.
+4. Swing the sword through prisms until the meter can pay, then hold **both triggers** (the chop
+   stance) for 1 s to energize. Watch the first card while the blade is lit, then after it goes
+   out.
+5. Energize again, let go, and watch the second card for the 5 s after the blade goes out.
+6. Collect **Time** to level 5 (Time crystals, or the Element Charger toy — QA-TOY-ELEMENT-CHARGER),
+   then hold full-speed-straight until the speed readout passes ~600. Watch the fourth card; then
+   steer off and let the speed fall.
+7. Read the control chip on each card, on a gamepad and then on keyboard.
+
+**PASS:** no import errors; the row auditor reports the Rhino **4/4** with no "open design slot"
+line; the cards read **Sword Energy / Afterimage / Blade Reach / Ramp Spool**, each with its own
+icon; the corner shows the four cards and nothing else — no ring, counter, timer, flash or
+laser/crystal/force-field indicator; card 1 lights while the blade is energized and carries a
+cooldown veil while the energize cools down (5 s), and its gauge fills with sword energy and stays
+lit through the 5 s tail after the stance is let go; card 2 lights while afterimages are being laid;
+card 4 lights while the ramp is boosting, flashes once when speed passes ~588 (Momentum, Time 5),
+goes dark when the ramp ends, and its gauge fills with speed / top speed *(changed 2026-10-17: it
+used to light only above ~588)*; cards 1-3 carry the L1+R1 two-trigger chip and card 4 the
+sticks-apart chip, reading "L+R SHIFT" and "A + '" on keyboard.
+**FAIL:** a missing-script or broken-reference error · any old status-cluster object on screen ·
+a LOCKED card · a card that never lights, or stays lit after its window ends · two Rhinos'
+energizes lighting each other's cards.
+**Known, do not fail on:** the four icons are PLACEHOLDERS (`Rhino_SwordEnergy` / `Afterimage` /
+`BladeReach` / `RampSpool`); the two-trigger chip is a PLACEHOLDER composite
+(`Glyph_BothTriggers-PLACEHOLDER.png`); the Rhino's petal bars are built at runtime with a warning (no `ElementalBarsView` authored).
+
+### QA-RHINO-AFTERIMAGE ⬜ — Mass: an energized blade leaves 5 s of blade-shaped prisms
+**Source:** `cece/relaxed-hopper-r62hbd` (`8a3b4161`). Mass is now **Afterimage**
+(`RhinoSwordAfterimage` + `RhinoSwordAfterimageConfig.asset`, first-pass numbers, never played):
+for 5 s after the energized blade goes out, the sword lays prisms in its own shape and pose — at
+most one afterimage per 0.3 s and 6 u of tip travel, at most 16 per window, each cut into ≤ 6
+segments. Mass scales their volume ×1 → ×2.5; Mass L5 (**Danger Afterimages**) lays them as danger
+prisms. Reference: `ElementalAbilityMaps/Rhino.asset`.
+1. Freestyle as the **Rhino** at Mass rest. Energize (both triggers 1 s), let go, and keep swinging
+   for the next 5 s.
+2. Turn round and swing the sword through the afterimages you just laid.
+3. Wait 1 s, then fly the hull through them.
+4. Collect **Mass** to level 10 and repeat step 1; compare their size.
+5. Collect Mass to level 5 (or stay at 10) and repeat step 1; look at their material.
+6. Watch the frame rate and the Console through a full 5 s window of hard swinging.
+
+**PASS:** after the blade goes out, prisms appear along the blade's path shaped like the blade at
+that moment (thin, segmented along its length), stop after ~5 s, and number at most about 16 strokes'
+worth; for ~1 s the sword passes through its own fresh afterimages, after that it cuts them like
+any prism and the meter gains energy *(changed 2026-10-17: it used to never cut its own)*; the hull
+ploughs them aside like any prism once the ~1 s self-trail grace is up; at Mass 10 they are visibly fatter; at
+Mass 5+ they wear the **danger** material.
+**FAIL:** no afterimages · afterimages while the blade is lit and before it goes out (outside an
+omni Surge) · afterimages that never stop · the sword cutting its own afterimages inside the
+first second · the hull crashing into them inside the first second · plain-material prisms at Mass 5+ · a frame-rate drop
+or errors.
+**Report:** whether 5 s / 16 afterimages feels like too much mass or too little (dials on
+`RhinoSwordAfterimageConfig.asset`), and whether one energize plus cutting your own afterimages
+refills the meter too easily (the self-farm watch; the lever is energy per own afterimage).
+
+### QA-RHINO-LIVE-WIRE ⬜ — Charge L5: without it the energized tail runs out; with it the stance relights
+**Source:** `cece/relaxed-hopper-r62hbd` (`8a3b4161`). Before it, an ungated refresh kept an
+energized blade lit forever for one 0.1 payment. Now the 5 s tail runs out once the stance is let go,
+unless Charge L5 **Live Wire** is active (every return to the stance re-lights it).
+1. Freestyle as the **Rhino** with Charge **below 5**. Energize (both triggers 1 s), let go, and keep
+   flying with only single-trigger swings for 10 s. Watch the blade colour.
+2. Energize, let go, then 2 s later return to the both-triggers stance for a moment, and let go again.
+3. Collect **Charge** to level 5 (Element Charger toy, or Charge crystals) and repeat step 2 several
+   times in a row, about 3 s apart.
+
+**PASS:** at Charge < 5 the danger-red blade goes out ~5 s after the stance is let go whatever you
+do, and returning to the stance mid-tail does not extend the tail; at Charge 5 every return to the stance relights the tail and the blade can
+be kept lit by repeated stances.
+**FAIL:** a blade that stays lit indefinitely below Charge 5 (the old refresh is back) · a blade
+that goes out at Charge 5 even though you keep returning to the stance · an energized colour that
+is teal/cyan/white instead of the danger red.
+
+### QA-RHINO-MOMENTUM ⬜ — Time L5: above ~588 u/s a danger prism cannot drain the Rhino
+**Source:** `cece/relaxed-hopper-r62hbd` (`8a3b4161`). Time L5 is now **Momentum**:
+`VesselElementalImmunity`'s new `WhileAboveTopSpeedFraction` window, 0.7 of the ramp's top speed
+(588 of 840 u/s), DangerPrism-scoped.
+1. Freestyle as the **Rhino**. Collect **Time** to level 5 and **Mass** to level 5 (Element Charger
+   toy). Energize, let go, and swing for 5 s to lay **danger** afterimages (QA-RHINO-AFTERIMAGE).
+   (Or launch **Cleave** and use its danger traps instead, with Time raised to 5.)
+2. Fly away, then hold full-speed-straight until the speed readout is well above 600, and ram a
+   danger prism. Watch the four petal bars.
+3. Fly back at cruise (speed under ~500) and ram another danger prism. Watch the petal bars.
+4. Drop Time below 5 (a Time debuff, or a fresh vessel) and repeat step 2.
+
+**PASS:** above ~588 with Time 5+ a danger prism leaves the petal bars untouched and the Time card
+is lit; below ~588 the same prism drains them; with Time below 5 it drains them at any speed.
+**FAIL:** a drain above 588 at Time 5 · no drain below 588 · immunity at Time < 5 · immunity that
+also blocks ordinary (non-danger) prism effects.
+
+### QA-RHINO-OMNI-SURGE ⬜ — the omni crystal is a 6 s Surge; ordinary petals no longer empty the sword
+**Source:** `cece/relaxed-hopper-r62hbd` (`8a3b4161`). `RhinoVesselSurgeByCrystalEffect` replaces
+the meter fill: it fills sword energy to 1, bursts the blade, holds it energized **6 s** with no
+stance and no cost (overriding a cooldown), lends **+2 levels** (+0.2) to all four elements
+decaying over the 6 s, and lays afterimages throughout; then the normal 5 s afterimage window
+follows. Separately, the elemental-crystal **burst** that drained all sword energy on every petal
+the sword touched is deleted (`RhinoSwordCrystalBurstEffectSO`).
+1. Freestyle as the **Rhino** with the sword meter low. Fly through an **omni** crystal without
+   touching the triggers.
+2. Watch the blade, the four petal bars and the space behind the sword for the next ~11 s.
+3. Energize, let go, and inside the 5 s cooldown fly through another omni crystal.
+4. With the meter about half full, swing the sword through several **elemental** (single-element)
+   crystals.
+
+**PASS:** the omni crystal fills the meter, bursts the blade and holds it danger-red for ~6 s with
+no triggers held; all four petal bars jump ~2 levels and ease back over the 6 s; afterimages are laid
+the whole time and for ~5 s after the blade goes out; the crystal explosion still fires as before;
+a Surge during the cooldown still energizes; elemental crystals the sword touches are collected and
+the meter does **not** empty.
+**FAIL:** a plain meter fill with no blade · a Surge that needs the stance or charges 0.1 · levels
+that stay +2 after 6 s, or never rise · no afterimages during the Surge · the explosion missing ·
+the meter emptying on an elemental petal.
+
+### QA-RHINO-TWO-PEER ⬜ — two machines agree on the Rhino's swing, energize, afterimages and ramp
+**Source:** `cece/relaxed-hopper-r62hbd` (`805eef12` + `8a3b4161`). Every peer now poses the blade
+from `InputStatus`' replicated analog-trigger mirrors (touch still uses press/release events), and
+energy, energize phase and Surge are owner-authoritative through the new `RhinoSwordNetworkRelay`.
+Every peer now also grades the ramp from the replicated sticks — before, only the owner did, and a
+replica held `IsBoosting` and ×16.8 for the rest of the turn after its first ramp. Compiled offline
+only.
+1. Do the two-player setup at the top of Block J (Multiplayer Play Mode). Both fly the **Rhino** in
+   freestyle or any Rhino mode. Give the client a **gamepad**.
+2. **Half-pull swing.** On the client, half-pull one trigger slowly into a cluster of prisms. In
+   **both** windows, compare the blade angle and which prisms break.
+3. **Energize + afterimages.** On the client, energize (both triggers 1 s) and let go. In the host
+   window watch the client's blade colour and the afterimages behind it. Repeat with the host as
+   the pilot, watched from the client.
+4. **Remote ramp end.** On the client, hold full-speed-straight until fast, then steer hard off
+   the straight. In the host window watch the client's Rhino. If you can, select it in the
+   Hierarchy and read `IsBoosting` on its vessel status.
+5. Repeat step 4 with the host as the pilot.
+
+**PASS:** a half-pulled blade sits at the same angle and cuts the same prisms in both windows; an
+energize turns the blade danger-red and lays afterimages in both windows, at the same time; a
+remote Rhino slows back toward cruise after its pilot steers off, and `IsBoosting` goes false.
+**FAIL:** a blade parked on one window and swung on the other · prisms that break on one window only
+· energize or afterimages visible only on the pilot's window · a remote Rhino that stays at boost
+speed (or `IsBoosting` true) after its pilot has turned off.
+**Known, do not fail on:** a touch-screen pilot's blade replicates by press/release only (touch
+writes no analog mirrors), so a half-pull is not testable on touch.
+
+### QA-RHINO-AI ⬜ — AI Rhinos ramp on straights, swing at prisms and energize near super-shields
+**Source:** `cece/relaxed-hopper-r62hbd` (`8a3b4161`; its ramp driver was replaced by bleeding-edge's in
+merge `5b09c6896`). The AI Rhino never ramped (only a human input strategy raises the ramp gesture) and
+never swung. `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` ramps on a straight that pays the wind-up
+back, brakes ON the ramp to a corner speed and lets go at a sharp corner (`AI_BOOST.md`, Ramp);
+`RhinoSwordAutopilot` (Rhino root) writes the
+trigger mirrors — a stroke at the nearest hostile prism in reach (0.15 s think, 0.3 s stroke, 0.45 s
+rest), the energize stance near super-shielded mass or on a ≥ 75% meter. The AIPilot's old ability
+list (GrowTrail, flickering every frame) is empty. Reference: `_Scripts/Controller/AI/AI_BOOST.md`.
+1. Open `Rhino.prefab`: `AIPilot` → **Boost Policy** = `RhinoAIBoostPolicy`; the abilities list is
+   empty; a `RhinoSwordAutopilot` sits on the root.
+2. Launch **Headlong** at intensity 1 with an AI Rhino and follow it for a lap.
+3. Launch **Cleave** at intensity 1 with AI Rhinos and watch one cross the arena.
+4. Launch a mode with **super-shielded** mass and an AI Rhino — **Regatta** (super-shielded rails)
+   or **Astro League** (super-shielded edge lining) — and watch an AI Rhino near that mass.
+5. In freestyle, take control of the Rhino, then hand it back to the autopilot (centre click / Y)
+   mid-swing.
+
+**PASS:** the AI Rhino speeds up on straights and slows into each ring without overshooting the mouth
+(it no longer cruises at ~50 u/s); its sword swings at nearby prisms in short strokes and breaks some; near super-shielded
+mass (or with a nearly full meter) it holds the stance, the blade turns danger-red and super-shields
+pop; on hand-over the triggers let go cleanly and the human's control is unaffected.
+**FAIL:** an AI Rhino that never ramps or never swings · a blade stuck in one pose · an AI that
+holds the stance forever · an AI ramp that carries full speed into every corner · the sword fighting
+the human's triggers after a take-over.
+**Known, do not fail on:** the AI never combos; AI pace in Headlong/Cleave/Regatta was not tuned
+against a ramping AI. **Report:** whether AI Rhinos in Regatta shred the rails (they now can).
+
+### QA-RHINO-ASTROLEAGUE-BLADE ⬜ — sword strikes still launch the ball with the capsule back to a trigger
+**Source:** `cece/relaxed-hopper-r62hbd` (`805eef12`). The sword's `CapsuleCollider` is a **trigger**
+again — the PR #928 merge had made it a solid kinematic capsule that physically shoved the Astro
+League ball. The ball's trigger path is meant to resolve blade strikes on its own. Reference:
+`_Scripts/Controller/Arcade/ASTROLEAGUE.md` § Ball Physics Notes.
+1. Open `Rhino.prefab`, select the ForceFieldSkimmer's sword capsule: **Is Trigger** is ticked.
+2. Play **Astro League** from the Arena screen as the **Rhino**. Strike the ball with a **swung** tip.
+3. Strike it with a **parked** sword at the same closing speed.
+4. Rest the parked sword against the ball and drift slowly into it.
+5. Strike the ball with the hull.
+
+**PASS:** a swung tip launches the ball hard with the strike feedback (pop, shake, burst, sound); a
+parked sword deflects it gently; a slow press does not shove the ball along like a solid paddle,
+and the ball never passes through the blade; hull strikes are unchanged.
+**FAIL:** the ball passing straight through the blade with no strike · a parked sword pushing the
+ball as a solid object (the #928 shove) · the strike feedback missing on a blade hit.
+
+### QA-RHINO-CHARGE-HARNESS ⬜ — the Rhino's Charge level moves with crystals again
+**Source:** `cece/relaxed-hopper-r62hbd` (`805eef12`). `Rhino.prefab` shipped `ChargeTestHarness
+0.5` on its `ResourceSystem`, which pinned Charge at level 5 every frame on every Rhino — crystals,
+debuffs, comeback and theft could not move it. Set to 0.
+1. Open `Rhino.prefab` → `ResourceSystem` → **Charge Test Harness** reads **0**.
+2. Freestyle as the **Rhino**. Read the Charge petal bar at spawn.
+3. Collect two or three **Charge** crystals and read it again.
+4. Take a Charge debuff (a rival's hit, or ram a danger prism) and read it again.
+5. Swing through prisms at Charge rest and again at Charge 10; compare how fast the sword meter fills.
+
+**PASS:** Charge starts at the Rhino's rest level (not 5), climbs with each Charge crystal, falls on
+a debuff; at Charge 10 each cut banks visibly more meter (about ×2) than at rest.
+**FAIL:** Charge stuck at 5 whatever happens · the harness field non-zero · no difference in meter
+gain between Charge rest and Charge 10.
 
 ## Priority 0 — Block H: the Manta — Redline and Bloomrush
 
@@ -2097,7 +2339,9 @@ pictures. Prefabs written as text, never imported; no code changed.
 Time bound and Serpent Charge, Space and Time bound, and the only complaints left are "open design
 slot / no icon" lines for Rhino Charge, Rhino Space and Serpent Mass; the lockup auditor reports no
 icon that does not fit; the Rhino reads LOCKED / Trail Slabs / LOCKED / Ramp Spool with no old
-Rhino chrome in the bottom-right; the Serpent reads Sniper Shot (RT) / LOCKED / Scope (LT) /
+Rhino chrome in the bottom-right *(superseded on `cece/relaxed-hopper-r62hbd`, 2026-10-16: the Rhino
+binds **4/4** — Sword Energy / Afterimage / Blade Reach / Ramp Spool — the auditor lists no Rhino
+"open design slot" line, and Trail Slabs is gone; see QA-RHINO-HUD-ROW)*; the Serpent reads Sniper Shot (RT) / LOCKED / Scope (LT) /
 Pellets (A) and firing the rifle sweeps a cooldown shadow over the first card; the Scarab shows a
 blast, a ring, a ball and a dial (not missiles or bullets) and its cards still change colour as
 before.
@@ -2111,8 +2355,9 @@ ability behind them.
 
 ### QA-AI-BOOST-POLICIES ⬜ — AI ships now boost on the straights
 **Source:** PR #974 (`AIPilot.boostPolicy`; five assets in `Assets/_SO_Assets/AI Boost Policies/`;
-design `Assets/_Scripts/Controller/AI/AI_BOOST.md`). Before it only the Manta and Rhino AI could
-boost, so AI Sparrows, Serpents, Dolphins and Scarabs finished Regatta but never won. Code
+design `Assets/_Scripts/Controller/AI/AI_BOOST.md`). Before it only the Manta AI could
+boost (the item said "Manta and Rhino" — wrong, corrected 2026-10-16: the AI Rhino never ramped; it
+gained `RhinoAIBoostPolicy` on `cece/relaxed-hopper-r62hbd`, checked in QA-RHINO-AI), so AI Sparrows, Serpents, Dolphins and Scarabs finished Regatta but never won. Code
 type-checked offline only; never compiled in Unity.
 
 1. Wait for Unity to finish compiling. Open `Sparrow`, `Serpent`, `Dolphin`, `Squirrel` and
@@ -4474,17 +4719,20 @@ suctions converging on a stale point or freezing.
 3. Swap to the Rhino in freestyle and look at the blade at rest.
 4. Skim prisms and watch the blade grow.
 5. Collect **Space** crystals up to level 10, then take a Space debuff.
-6. Watch the Rhino HUD's skimmer-scale fill.
+6. ~~Watch the Rhino HUD's skimmer-scale fill.~~ *(Retired 2026-10-16: the skimmer-size ring was
+   part of the old status cluster, deleted on `cece/relaxed-hopper-r62hbd`. On such a build there
+   must be NO ring — QA-RHINO-HUD-ROW.)*
 7. Fly tight enough to clip your own just-laid trail.
 8. Sanity-check a spherical-skimmer vessel (Squirrel).
 
 **PASS:** the capsule sways with the hull instead of staying screen-fixed; the blade
 keeps its thin profile at **all** times; growth is along the long axis only; resting
 length grows toward 50 at Space 10 and shortens below 30 on a debuff; the HUD fill starts
-at the true base and tracks growth; the Rhino cannot collide with its own just-laid trail;
+at the true base and tracks growth (pre-2026-10-16 builds only); the Rhino cannot collide with its own just-laid trail;
 the Squirrel's uniform scaling is unchanged.
 **FAIL:** the blade inflating into a sphere/box · the capsule glued to the camera ·
-self-collision with fresh trail · the HUD fill starting mid-bar · Squirrel scaling changed.
+self-collision with fresh trail · the HUD fill starting mid-bar (pre-2026-10-16 builds only) ·
+Squirrel scaling changed.
 
 ### QA-RHINO-RAMP-BOOST 🟡 — the ramp boost's final (inverted) direction
 **Source:** PR #613 (engage/release verified mid-branch; the final inverted FOV/Panini
@@ -4492,13 +4740,17 @@ direction and the merged state were not). Reference: `RHINO_RAMP_BOOST.md`.
 1. Hold full-speed-straight on the Rhino and watch speed climb.
 2. Release and watch the return.
 3. Wobble the stick mid-boost.
-4. With a second client up, confirm the remote Rhino looks sane.
+4. With a second client up, confirm the remote Rhino looks sane. *(Sharpened 2026-10-16: on the
+   OTHER window, the remote Rhino must also drop back to cruise once its pilot steers off the
+   straight — before that branch a replica kept its ×16.8 boost for the rest of the turn. Full
+   check: QA-RHINO-TWO-PEER step 4.)*
 
-**PASS:** speed climbs **linearly** to ~6× over ~3.6 s; the view zooms *in* (narrower
+**PASS:** speed climbs **linearly** to top (840 u/s, ×16.8 of the 50 u/s cruise) over ~3.6 s; the view zooms *in* (narrower
 FOV) as speed rises; release returns in ~0.5 s landing exactly on the pre-boost FOV and
 Panini; no discrete "gear" steps.
 **FAIL:** stepped speed · the view zooming out instead of in · FOV/Panini not returning
-exactly to home · the remote client seeing something different.
+exactly to home · the remote client seeing something different · a remote Rhino that stays fast
+after its pilot has turned off the straight.
 
 ### QA-TOYS-WANDERWAY-INVISIBLE ⬜ — the conveyor's transport is never watched
 **Source:** PR #609.
@@ -4765,6 +5017,10 @@ retune). Reference: `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SHIELD_SWI
 the sword binds in super-shielded mass without recoil; the speed/turn retune is flyable.
 **FAIL:** combos that never chain · no slice on destruction · a sword that bounces off
 super-shielded mass instead of binding · a retune that makes the Rhino uncontrollable.
+**Known, do not fail on (2026-10-16, `cece/relaxed-hopper-r62hbd`):** an energized blade now goes
+dark ~5 s after you let go of the both-triggers stance (it used to stay lit indefinitely) unless
+Charge is at level 5 (Live Wire — QA-RHINO-LIVE-WIRE); combos still have no sounds, no HUD callout,
+and AI Rhinos never combo.
 **Report the feel:** say whether the combo timing and the new speed/turn read well.
 
 ### QA-SERPENT-RETICLE-PELLETS ⬜ — a visible reticle, a piercing sniper round, and Solid Fuel Pellets

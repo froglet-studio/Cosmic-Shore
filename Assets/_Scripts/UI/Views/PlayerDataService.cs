@@ -401,6 +401,17 @@ namespace CosmicShore.UI
             OnProfileChanged?.Invoke(CurrentProfile);
         }
 
+        /// <summary>Sets the favourite pilot (an SO_Captain asset name; empty clears it) and saves.</summary>
+        public void SetFavouritePilot(string pilotKey)
+        {
+            if (CurrentProfile == null)
+                return;
+
+            CurrentProfile.Identity.FavouritePilot = pilotKey ?? string.Empty;
+            OnProfileChanged?.Invoke(CurrentProfile);
+            ScheduleSave();
+        }
+
         public void SetAvatarId(int avatarId)
         {
             if (CurrentProfile == null)

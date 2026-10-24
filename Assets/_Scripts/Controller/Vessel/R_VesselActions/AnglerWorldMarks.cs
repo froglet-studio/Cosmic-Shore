@@ -33,11 +33,20 @@ namespace CosmicShore.Gameplay
 
         public int Count => _count;
 
-        public bool Begin(Camera cam)
+        bool _onlyThisCamera;
+        int _layer;
+
+        /// <summary>Start a frame of marks facing <paramref name="cam"/>. <paramref name="onlyThisCamera"/> draws them in
+        /// that camera alone (a vessel with two views draws a set per view); otherwise every camera sees them.
+        /// <paramref name="layer"/> is the layer they draw on (an <see cref="UnprocessedOverlay"/>'s, to skip a view's
+        /// post-processing).</summary>
+        public bool Begin(Camera cam, bool onlyThisCamera = false, int layer = 0)
         {
             _count = 0;
             _colors.Clear();
             _cam = cam;
+            _onlyThisCamera = onlyThisCamera;
+            _layer = layer;
             if (!cam || !SharedMaterial()) return false;
             var t = cam.transform;
             _camPos = t.position;
@@ -90,6 +99,8 @@ namespace CosmicShore.Gameplay
                 shadowCastingMode = ShadowCastingMode.Off,
                 receiveShadows = false,
                 worldBounds = bounds,
+                camera = _onlyThisCamera ? _cam : null,
+                layer = _layer,
             };
             Graphics.RenderMeshInstanced(rp, _mesh, 0, s_identity);
         }

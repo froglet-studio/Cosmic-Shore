@@ -188,8 +188,9 @@ def arena_numbers():
         out = {}
         for i in sorted(SB.STRAND_COUNTS):
             r = SB.analyse(i, spine, w, verbose=False)
-            out[i] = (r["prisms"], int(r["prisms"] * SB.PRISM_SCALE[0]
-                                       * SB.PRISM_SCALE[1] * SB.PRISM_SCALE[2]), r["n"])
+            # The volume the model PRICES - every prism at the length the flush fit lays it at
+            # (skein_budget.rail_fit, SkeinCourse.FitFlush), never count x the nominal 288.
+            out[i] = (r["prisms"], int(r["vol"]), r["n"])
         return out
     finally:
         sys.argv = saved

@@ -292,9 +292,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7788112233445567702}
-  - component: {fileID: 7788112233445567703}
-  - component: {fileID: 7788112233445567704}
-  - component: {fileID: 7788112233445567705}
   m_Layer: 8
   m_Name: ThresherHull
   m_TagString: Untagged
@@ -317,74 +314,83 @@ Transform:
   m_Children:
   - {fileID: 2617076957950753345}
   - {fileID: 2333430861380747575}
+  - {fileID: 1945698819565915686}
   m_Father: {fileID: 5928382658856804067}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &7788112233445567703
-MeshFilter:
+--- !u!1001 &8333434907443222190
+PrefabInstance:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 7788112233445567702}
+    m_Modifications:
+    - target: {fileID: 919132149155446097, guid: 7afd7f8333454ad7b4417f1bdab7fa29,
+        type: 3}
+      propertyPath: m_Name
+      value: Thresher
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7afd7f8333454ad7b4417f1bdab7fa29,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7afd7f8333454ad7b4417f1bdab7fa29,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7afd7f8333454ad7b4417f1bdab7fa29,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7afd7f8333454ad7b4417f1bdab7fa29,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7afd7f8333454ad7b4417f1bdab7fa29,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7afd7f8333454ad7b4417f1bdab7fa29,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7afd7f8333454ad7b4417f1bdab7fa29,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7afd7f8333454ad7b4417f1bdab7fa29,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7afd7f8333454ad7b4417f1bdab7fa29,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7afd7f8333454ad7b4417f1bdab7fa29,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 7afd7f8333454ad7b4417f1bdab7fa29, type: 3}
+--- !u!4 &1945698819565915686 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 7afd7f8333454ad7b4417f1bdab7fa29,
+    type: 3}
+  m_PrefabInstance: {fileID: 8333434907443222190}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7788112233445567701}
-  m_Mesh: {fileID: 0}
---- !u!23 &7788112233445567704
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7788112233445567701}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 54e78ce17120fe641904833c11bc1210, type: 2}
-  - {fileID: 2100000, guid: 539a8c65974bf0b48aae77d83884c13b, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &7788112233445567705
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7788112233445567701}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dd02c8d8920e905b08887aaf892fca52, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &7788112233445567710
 GameObject:
   m_ObjectHideFlags: 0
@@ -705,7 +711,6 @@ MonoBehaviour:
   RollScaler: 130
   RotationThrottleScaler: 0
   restrictedTurnMultiplier: 3
-  touchNoseResponse: 9
   thresher: {fileID: 7788112233445566780}
   pivotFacingRate: 25
 --- !u!114 &874579555101021522
@@ -842,7 +847,7 @@ MonoBehaviour:
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7
-  cruiseSpeed: 110
+  hullRoot: {fileID: 7788112233445567702}
 --- !u!114 &5086360743770514783
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -916,6 +921,9 @@ MonoBehaviour:
   - InputEvent: 11
     ShipActions:
     - {fileID: 11400000, guid: 9e0e236a487d47b08beb798a6d83bc9f, type: 2}
+  - InputEvent: 4
+    ShipActions:
+    - {fileID: 11400000, guid: f1c477af65d44d70b140b0693cd68ef2, type: 2}
   _gamepadActionOverrides:
   - InputEvent: 2
     ShipActions:
@@ -942,7 +950,8 @@ MonoBehaviour:
   _shipGeometries:
   - {fileID: 7788112233445567701}
   _domainMaterialSlot: 1
-  _domainReplacesMaterials: []
+  _domainReplacesMaterials:
+  - {fileID: 2100000, guid: 539a8c65974bf0b48aae77d83884c13b, type: 2}
 --- !u!114 &9000000000000000001
 MonoBehaviour:
   m_ObjectHideFlags: 0

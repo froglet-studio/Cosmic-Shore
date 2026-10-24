@@ -188,6 +188,134 @@
         "python3 Tools/Build/perf_hunt.py sweep --write shows the capture judged against its baseline in Docs/Reports/PERFORMANCE.md."
       ]
     },
+    "crew-vessels": {
+      "title": "Crew vessels",
+      "aliases": [
+        "crew vessel",
+        "crew vessels",
+        "multiplayer vessel",
+        "multiplayer vessels",
+        "kite navigator",
+        "kite and tail",
+        "kite & tail",
+        "navigator",
+        "maverick and goose",
+        "crew vessel lab",
+        "wrasse",
+        "wrasse and grouper",
+        "grouper"
+      ],
+      "owner": "Garrett",
+      "people": [],
+      "audience": [
+        "Garrett",
+        "the core four"
+      ],
+      "branch": "cece/compassionate-babbage-gc13io",
+      "branchNote": "not on bleeding-edge yet; nothing has been played in the Unity editor",
+      "summary": "The first multiplayer vessel, the Wrasse (card: Wrasse and Grouper): one hull, two seats. The pilot flies the Grouper, the hull, on two sticks; the navigator flies the Wrasse, a kite on the hull's x-z plane whose head pops hostile prisms and rams rivals and whose tail lassos navigator-only motes into exponential Space / Mass / Time / Charge effects. Designed in the Crew Vessel Lab (signed off 2026-10-17), ported to Unity with a parity gate, then directed by play in rounds 4-4f; compiled against Unity reference assemblies, not yet played in the editor.",
+      "paths": [
+        "Assets/_Scripts/Controller/Vessel/Crew",
+        "Assets/_Scripts/Editor/Studios/KiteNavigatorHarnessMenu.cs",
+        "Assets/_SO_Assets/VesselActions/KiteNavigator",
+        "Assets/_Scripts/Tests/Editor/KiteNavigatorCoreTests.cs",
+        "Assets/_Scripts/Tests/Editor/KiteNavigatorConfigTests.cs",
+        "Tools/Build/kite_navigator_lab",
+        "Docs/Studios/CrewVesselLab.html",
+        "Docs/Studios/CREW_VESSEL_LAB.md",
+        "Assets/_Prefabs/Spacevessels/Wrasse.prefab",
+        "Tools/Build/author_wrasse_assets.py",
+        "Assets/_Scripts/UI/Controller/WrasseHUDController.cs",
+        "Assets/_Scripts/Utility/PrismDepthPlane.cs",
+        "Assets/_Graphics/Materials/Graphs/PrismDepthPlane.hlsl",
+        "Assets/_SO_Assets/Classes/SO_Class_Wrasse.asset",
+        "Assets/Resources/ElementalAbilityMaps/Wrasse.asset",
+        "Assets/_Prefabs/Spacevessels/Orca.prefab",
+        "Tools/Build/author_orca_assets.py",
+        "Tools/Build/orca_crew_lab",
+        "Assets/_SO_Assets/VesselActions/OrcaCrew",
+        "Assets/_Scripts/UI/Controller/OrcaHUDController.cs",
+        "Assets/_Scripts/Tests/Editor/OrcaCrewCoreTests.cs",
+        "Assets/_SO_Assets/Classes/SO_Class_Orca.asset",
+        "Assets/Resources/ElementalAbilityMaps/Orca.asset",
+        "Docs/Studios/CrewOfFourLab.html",
+        "Docs/Studios/CREW_OF_FOUR_LAB.md"
+      ],
+      "docs": [
+        "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md",
+        "Docs/Studios/CREW_VESSEL_LAB.md",
+        "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md",
+        "Docs/Studios/CREW_OF_FOUR_LAB.md"
+      ],
+      "artifacts": [
+        {
+          "name": "Crew Vessel Lab (round 3, signed off)",
+          "url": "https://claude.ai/artifact/JtQptDHQhNdC2CxPmspfct"
+        }
+      ],
+      "report": "Docs/Reports/CREW_VESSELS.md",
+      "taskAreas": [
+        "Crew vessels"
+      ],
+      "test": [
+        "Check out cece/compassionate-babbage-gc13io, open Unity, wait for the compile and the shader import.",
+        "Open the Toybox, fly into the Vessel Changer and fly the Wrasse and Grouper station (a Sparrow body): the kite view is a small square in the lower left and the AI flies the kite.",
+        "Press 2 (or D-pad right) to take the kite: its view fills the screen and the hull's shrinks to the corner. The kite follows the mouse or stick; loop motes of one petal shape. Press 1 to fly again.",
+        "Run the steps of the Kite Navigator entry in Docs/UNITY_VERIFICATION_CHECKLIST.md."
+      ]
+    },
+    "mobile-vessels": {
+      "title": "Vessels on a phone",
+      "aliases": [
+        "mobile",
+        "mobile audit",
+        "phone",
+        "touch",
+        "touch controls",
+        "mobile vessels",
+        "vessels on mobile",
+        "mobile friendly"
+      ],
+      "owner": "Garrett",
+      "people": [
+        "Shombith",
+        "Yash"
+      ],
+      "audience": [
+        "Garrett",
+        "the core four"
+      ],
+      "branch": "cece/admiring-hamilton-gyzzh8",
+      "branchNote": "audit 2026-10-21, then Garrett's decisions built the same day; not on bleeding-edge, not flown on a phone or opened in the Editor",
+      "summary": "The fleet on a phone: an audit of all 18 hulls, then Garrett's decisions built - every hull has a touch profile (thumb lifts with glyphs, or totems as buttons laid out round the right thumb in millimetres), idle parity, tilt steering/roll, per-hull phone controls (Scarab slider, Brittle Star aim discs, Dolphin lift-either, Manta/Rhino/Thresher both-thumbs-off), the idle-animation fixes and the arena pilot-swap tiles.",
+      "paths": [
+        "Assets/Resources/TouchControlProfiles.asset",
+        "Assets/_Scripts/Controller/IO/DeviceOrientationHandler.cs",
+        "Assets/_Scripts/Controller/IO/FlightTouchClaims.cs",
+        "Assets/_Scripts/Controller/IO/TouchControls",
+        "Assets/_Scripts/Controller/IO/TouchInputStrategy.cs",
+        "Assets/_Scripts/UI/Elements/AbilityCardPress.cs",
+        "Assets/_Scripts/UI/Elements/PilotSwapIndicator.cs",
+        "Assets/_Scripts/UI/TouchControls",
+        "Tools/Build/author_touch_profiles.py",
+        "Tools/Build/touch_controls_harness",
+        "Tools/Build/touch_glyph_art.py"
+      ],
+      "docs": [
+        "Docs/ABILITY_LOCKUP.md",
+        "Docs/ANDROID_BUILD.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/MOBILE_VESSELS.md",
+      "taskAreas": [
+        "vessels"
+      ],
+      "test": [
+        "Check out cece/admiring-hamilton-gyzzh8 and build an Android development APK (Docs/ANDROID_BUILD.md).",
+        "Run Docs/UNITY_VERIFICATION_CHECKLIST.md \"Phone controls for the whole fleet\" steps 4-15 in the Toybox Vessel Changer and an arena match.",
+        "In the Editor, Device Simulator with a phone selected shows the button layouts (steps 1-3)."
+      ]
+    },
     "bug-hunt": {
       "title": "Bug Hunt",
       "aliases": [

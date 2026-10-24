@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Starling
+  m_EditorClassIdentifier:
+  vesselClass: 21
+  entries:
+  - Element: 1
+    AbilityLabel: Pick the Charge card
+    AbilityDescription: 'X: pick the Charge card from the hand. A hand is dealt when the Omnicrystal phase ends, or when the swarm collects an omnicrystal in another phase; a pick adds the card''s level to what you hold of it (up to 15). R_VesselActions/STARLING.md.'
+    Input: 8
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 2
+    AbilityLabel: Pick the Mass card
+    AbilityDescription: 'A: pick the Mass card from the hand. A hand is dealt when the Omnicrystal phase ends, or when the swarm collects an omnicrystal in another phase; a pick adds the card''s level to what you hold of it (up to 15). R_VesselActions/STARLING.md.'
+    Input: 6
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 3
+    AbilityLabel: Pick the Space card
+    AbilityDescription: 'Y: pick the Space card from the hand. A hand is dealt when the Omnicrystal phase ends, or when the swarm collects an omnicrystal in another phase; a pick adds the card''s level to what you hold of it (up to 15). R_VesselActions/STARLING.md.'
+    Input: 14
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 4
+    AbilityLabel: Pick the Time card
+    AbilityDescription: 'B: pick the Time card from the hand. A hand is dealt when the Omnicrystal phase ends, or when the swarm collects an omnicrystal in another phase; a pick adds the card''s level to what you hold of it (up to 15). R_VesselActions/STARLING.md.'
+    Input: 7
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 

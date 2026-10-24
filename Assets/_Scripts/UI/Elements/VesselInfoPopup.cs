@@ -1,5 +1,6 @@
 using System.Text;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -32,6 +33,33 @@ namespace CosmicShore.UI
         [SerializeField] TMP_Text descriptionText;
         [Tooltip("The hull's abilities, one per line. Hidden when the hull lists none.")]
         [SerializeField] TMP_Text abilitiesText;
+
+        [Header("Ability rows (optional)")]
+        [Tooltip("Authored rows: each element's ability as a coloured hex and its name, from the hull's " +
+                 "ElementalAbilityMapSO (Charge, Mass, Space, Time). When wired, abilitiesText is not used.")]
+        [SerializeField] AbilityRow[] abilityRows = System.Array.Empty<AbilityRow>();
+        [Tooltip("Shown over the rows; hidden with them when the hull lists no abilities.")]
+        [SerializeField] GameObject abilitiesGroup;
+        [Tooltip("Element colours for the rows' hexes.")]
+        [SerializeField] AbilityLockupStyleSO lockupStyle;
+
+        [Header("Words")]
+        [Tooltip("The subtitle when the seat and the element are both known; {seat} and {element} are filled in.")]
+        [SerializeField] string subtitleTemplate = "{seat}  ·  {element} vessel";
+        [Tooltip("The subtitle when only the element is known; {element} is filled in.")]
+        [SerializeField] string elementOnlyTemplate = "{element} vessel";
+        [Tooltip("The heading over the abilities list (the text fallback). Empty shows no heading.")]
+        [SerializeField] string abilitiesHeading = "ABILITIES";
+        [Tooltip("Put before each ability in the text fallback.")]
+        [SerializeField] string abilityBullet = "•  ";
+
+        [System.Serializable]
+        public struct AbilityRow
+        {
+            public Element element;
+            public Image hex;
+            public TMP_Text name;
+        }
 
         [Header("Close")]
         [Tooltip("Full-panel transparent button behind the card: a tap outside closes it.")]
@@ -86,7 +114,12 @@ namespace CosmicShore.UI
                 descriptionText.gameObject.SetActive(description.Length > 0);
             }
 
-            if (abilitiesText)
+            if (abilityRows is { Length: > 0 })
+            {
+                bool any = FillAbilityRows(vessel);
+                if (abilitiesGroup) abilitiesGroup.SetActive(any);
+            }
+            else if (abilitiesText)
             {
                 string abilities = AbilityList(vessel);
                 abilitiesText.text = abilities;
@@ -108,18 +141,22 @@ namespace CosmicShore.UI
         public void Hide() => gameObject.SetActive(false);
 
         public static string DisplayName(SO_Vessel vessel) =>
-            !string.IsNullOrWhiteSpace(vessel.Name) ? vessel.Name : vessel.Class.ToString();
+            !string.IsNullOrWhiteSpace(vessel.CardName) ? vessel.CardName : vessel.Class.ToString();
 
-        static string Subtitle(SO_Vessel vessel, string seatLabel)
+        string Subtitle(SO_Vessel vessel, string seatLabel)
         {
             bool hasSeat = !string.IsNullOrWhiteSpace(seatLabel);
             bool hasElement = vessel.PrimaryElement is not (Element.None or Element.Omni);
-            if (hasSeat && hasElement) return $"{seatLabel}  ·  {vessel.PrimaryElement} vessel";
+            string element = vessel.PrimaryElement.ToString();
+            if (hasSeat && hasElement) return Fill(subtitleTemplate, seatLabel, element);
             if (hasSeat) return seatLabel;
-            return hasElement ? $"{vessel.PrimaryElement} vessel" : string.Empty;
+            return hasElement ? Fill(elementOnlyTemplate, seatLabel, element) : string.Empty;
         }
 
-        static string AbilityList(SO_Vessel vessel)
+        static string Fill(string template, string seat, string element) =>
+            string.IsNullOrEmpty(template) ? string.Empty : template.Replace("{seat}", seat ?? string.Empty).Replace("{element}", element);
+
+        string AbilityList(SO_Vessel vessel)
         {
             if (vessel.Abilities is not { Count: > 0 }) return string.Empty;
             var sb = new StringBuilder();
@@ -127,9 +164,31 @@ namespace CosmicShore.UI
             {
                 if (!ability || string.IsNullOrWhiteSpace(ability.Name)) continue;
                 if (sb.Length > 0) sb.Append('\n');
-                sb.Append("•  ").Append(ability.Name);
+                sb.Append(abilityBullet).Append(ability.Name);
             }
-            return sb.Length > 0 ? "ABILITIES\n" + sb : string.Empty;
+            if (sb.Length == 0) return string.Empty;
+            return string.IsNullOrEmpty(abilitiesHeading) ? sb.ToString() : abilitiesHeading + "\n" + sb;
+        }
+
+        /// <summary>Each authored row shows its element's ability on this hull (the Hangar's names); a slot
+        /// the hull leaves open hides its row. Returns whether any row shows.</summary>
+        bool FillAbilityRows(SO_Vessel vessel)
+        {
+            var map = ElementalAbilityMapSO.LoadFor(vessel.Class);
+            bool any = false;
+            foreach (var row in abilityRows)
+            {
+                var entry = map ? map.GetEntry(row.element) : null;
+                bool show = entry != null && !string.IsNullOrWhiteSpace(entry.AbilityLabel);
+                if (row.name)
+                {
+                    row.name.text = show ? entry.AbilityLabel : string.Empty;
+                    row.name.transform.parent.gameObject.SetActive(show);
+                }
+                if (row.hex && lockupStyle) row.hex.color = lockupStyle.ColourFor(row.element);
+                any |= show;
+            }
+            return any;
         }
 
         #region Generated layout

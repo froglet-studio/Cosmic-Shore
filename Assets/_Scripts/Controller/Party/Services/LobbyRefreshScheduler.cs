@@ -62,8 +62,8 @@ namespace CosmicShore.Gameplay
         /// Refresh interval while in boosted mode (seconds). UGS Lobby allows one GET per second
         /// PER PLAYER, across every lobby that player reads. This was 0.75 s, which is 1.33 GETs/s
         /// from the presence refresh alone, over the cap before the party session's own GET (B31).
-        /// 1.1 s plus the party session's boosted poll (<see cref="PARTY_SESSION_POLL_BOOSTED_SECONDS"/>)
-        /// is about 0.98 GETs/s, and still faster than the 1.5 s default.
+        /// A tick makes ONE read (the party session's turn replaces the presence read), and
+        /// <see cref="LobbyReadPacer"/> holds every read at least 1.05 s after the last.
         /// </summary>
         public const float BOOSTED_INTERVAL_SECONDS = 1.1f;
 
@@ -74,7 +74,10 @@ namespace CosmicShore.Gameplay
         /// it existed (Caleb's two-machine log, 2026-10-16: 69 in 11 minutes). The party roster does
         /// not need the GET each tick: the SDK keeps <c>ISession.Players</c> current from its own
         /// lobby events, and the tick still syncs the roster from it every time. This GET is the
-        /// safety net under those events. 0.67 + 0.17 = 0.83 GETs/s at rest.
+        /// safety net under those events. Its tick skips the presence read (see
+        /// <see cref="IsPartySessionPollDue"/>): the average alone was not enough, because the two
+        /// reads went out in the same second and the second was refused every time (B31 again,
+        /// 2026-10-24).
         /// </summary>
         public const float PARTY_SESSION_POLL_SECONDS = 6f;
 
@@ -97,7 +100,7 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>
         /// Applied to the DEFAULT interval only. The boosted interval is already at
-        /// 0.75 s against a ~1/s read cap, so it has no room to be jittered DOWN, and
+        /// 1.1 s against a ~1/s read cap, so it has no room to be jittered DOWN, and
         /// the boost window is the one phase where responsiveness is the point.
         /// </para>
         /// </summary>
@@ -184,6 +187,13 @@ namespace CosmicShore.Gameplay
             _currentInterval = RollInterval();
             return true;
         }
+
+        /// <summary>
+        /// True when the party session is due a GET, without claiming it. The refresh tick asks first so
+        /// a tick that reads the party session skips its presence read: one GET per tick, never two in
+        /// the same second (B31, <see cref="LobbyReadPacer"/>).
+        /// </summary>
+        public bool IsPartySessionPollDue(float now) => now >= _nextPartySessionPollAt;
 
         /// <summary>
         /// True when the refresh tick may GET the party session now, and starts the wait for the next

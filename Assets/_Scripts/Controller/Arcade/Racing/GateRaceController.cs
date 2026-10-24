@@ -36,7 +36,8 @@ namespace CosmicShore.Gameplay
     /// vessel's replicated position is interpolated and would miss or invent crossings. The
     /// server credits its own directly; a client forwards the index and the server re-validates
     /// it against its own copy of the count, so a pilot can neither skip a gate nor be paid
-    /// twice for one.</para>
+    /// twice for one. A hull with a second threading body (<see cref="IRingThreadProbe"/>: the
+    /// Thresher's ball) threads its gate with either, tested the same way, one credit a frame.</para>
     ///
     /// <para>A subclass supplies two things and inherits the rest: the mode's NAME (for logs)
     /// and its COURSE SOURCE (<see cref="CreateCourseSource"/>) - the one definition of the
@@ -438,11 +439,47 @@ namespace CosmicShore.Gameplay
             /// </summary>
             public int Optimistic;
             public float LastReportTime;
+
+            /// <summary>The hull's second threading body, when it has one (the Thresher's ball,
+            /// <see cref="IRingThreadProbe"/>): a gate is threaded by the hull OR by it.</summary>
+            public readonly RingThreadProbeSample Probe = new();
+        }
+
+        // The race running on this machine, for TryGetNextRing. One gate race runs at a time (one per scene).
+        static GateRaceController _current;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _current = null;
+
+        /// <summary>
+        /// The ring <paramref name="vessel"/> must thread next in the gate race running on this machine, or false (no race,
+        /// no course yet, the turn not running, the pilot finished, or a pilot this machine does not simulate). A second
+        /// body reads it to know where to go: the Wrasse's kite navigator flies through it, for the local pilot and for an
+        /// AI crew alike (KiteNavigator).
+        /// </summary>
+        public static bool TryGetNextRing(IVessel vessel, out RaceGateRing ring)
+        {
+            ring = null;
+            var race = _current;
+            if (!race || vessel == null || race._rings.Count == 0 || race.gameData == null || !race.gameData.IsTurnRunning) return false;
+            var players = race.gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var p = players[i];
+                if (p == null || !ReferenceEquals(p.Vessel, vessel)) continue;
+                int next = race._runs.TryGetValue(p, out var run) ? run.Optimistic
+                         : p.RoundStats != null ? p.RoundStats.SwitchesThreaded : -1;
+                if (next < 0 || next >= race.RaceLength) return false;
+                ring = race._rings[race.RingIndexFor(next)];
+                return ring;
+            }
+            return false;
         }
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            _current = this;
             gameData.ScoringRule = rule;
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
@@ -466,6 +503,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            if (_current == this) _current = null;
             _awaitingCourse = false;
             ReleaseArenaBuildAnnouncement();
             ClearCourse();
@@ -795,6 +833,14 @@ namespace CosmicShore.Gameplay
         protected virtual bool RaceToastsSumTeams => false;
 
         /// <summary>
+        /// Does the HULL still thread gates while its vessel has a live second body (<see cref="IRingThreadProbe"/>)? True for
+        /// every race (hull OR probe, the Thresher's rule). Wrasse Run answers false: there the Wrasse's kite collects the
+        /// rings and the Grouper only carries it to them. A hull with no live probe (an AI Wrasse, which seats no kite)
+        /// always threads, so an all-AI domain can still finish (the Tollway rule).
+        /// </summary>
+        protected virtual bool HullThreadsWhileProbeLive => true;
+
+        /// <summary>
         /// Feed the race beats. The FINAL LAP threshold is where the last lap's first gate
         /// falls - the race length of a course one lap shorter - so it means the same thing on
         /// a plain circuit (Headlong, Redline) and behind a lead-in (Breakwater), and an open
@@ -892,6 +938,8 @@ namespace CosmicShore.Gameplay
                 Reconcile(run, stats.SwitchesThreaded);
 
                 Vector3 cur = t.position;
+                // Sampled every frame, ahead of every skip below, so the probe's next segment is one frame long.
+                bool probeFlew = run.Probe.Advance(vessel, maxStepSqr, out var probePrev, out var probeCur);
                 if (!run.HasLastPosition)
                 {
                     run.LastPosition = cur;
@@ -928,7 +976,9 @@ namespace CosmicShore.Gameplay
                 if (index < 0 || index >= RaceLength) continue;   // finished the course
 
                 var ring = _rings[RingIndexFor(index)];
-                if (!ring || !ring.CrossedMouth(prev, cur)) continue;
+                if (!ring) continue;
+                bool hullThreads = HullThreadsWhileProbeLive || !run.Probe.Live;
+                if (!(hullThreads && ring.CrossedMouth(prev, cur)) && !(probeFlew && ring.CrossedMouth(probePrev, probeCur))) continue;
 
                 run.Optimistic = index + 1;
                 run.LastReportTime = Time.time;
@@ -966,7 +1016,9 @@ namespace CosmicShore.Gameplay
 
         void Forget(IPlayer p)
         {
-            if (_runs.TryGetValue(p, out var run)) run.HasLastPosition = false;
+            if (!_runs.TryGetValue(p, out var run)) return;
+            run.HasLastPosition = false;
+            run.Probe.Forget();
         }
 
         void PruneDepartedPilots(List<IPlayer> players)

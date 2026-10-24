@@ -221,12 +221,22 @@ lockup's control chips already speak.
 | Physical control | Publishes | Raises | Sparrow | Scarab |
 |---|---|---|---|---|
 | Mouse move | `EasedLeftJoystickPosition`, `LeftNormalizedJoystickPosition`, `XSum`/`YSum` | — | pitch / yaw / bank | pitch / yaw / bank |
+| **WASD** | the same stick, summed with the mouse's deflection and clamped to the unit circle | — | pitch / yaw / bank | pitch / yaw / bank |
 | **LMB** *or* Right Shift | `RightTriggerAnalog` | `RightStickAction`, `OnlyRight…`, `BothSticks…` | guns | throttle |
 | **RMB** *or* Left Shift | `LeftTriggerAnalog` | `LeftStickAction`, `OnlyLeft…`, `BothSticks…` | skybursts | drift |
 | **Space** | — | `Button1Action` (pad A) | Mass ability | place switch |
 | **T** | — | `Button2Action` (pad B; R until 2026-10-14 — R is the Vessel Studio's reset) | Time ability | — |
 | Q *or* MMB | — | `Button3Action` (pad X) | — | — |
 | E | `Throttle` | `FlipAction` | — | — |
+
+**WASD steers the same stick (2026-10-07).** The scheme first read no movement keys at all, so
+engaging it — which happens the moment a one-thumb hull is flown on a desktop — silently took away
+the WASD steering the same hull has on `KeyboardInputStrategy`. Reported from the Breakwater
+microgame preview: *"the keyboard didn't fly the ship; left mouse fired the guns"*, which held the
+forced Lesson on its steer step. The keys are digital and are **added** to the mouse's published
+deflection (then clamped to the unit circle); they never touch the mouse stick's state, so letting
+go of a key leaves the mouse exactly where it was. The silent-mouse diagnostics still watch the
+**mouse's** share only, so WASD steering cannot hide a dead mouse delta.
 
 **The keys live in the QWERT + Space cluster**, so one resting left hand reaches every one of them
 without the right hand leaving the mouse. They are assigned in **reverse priority order**: the two
@@ -404,6 +414,14 @@ Two warn-once diagnostics close that, in the shape `PrismOcclusionDiagnostics` a
   `Mouse.current.delta` reading exactly zero for four seconds, which is what a project set to
   *Process Events In Fixed Update* would produce. A player who is flying necessarily moves the
   mouse, so silence that long is the device not reaching us rather than them sitting still.
+  A second cause of the same reading, found in the microgame preview: the Windows raw-input
+  reader behind dual-mouse (`Win32RawInputMultiMouseProvider`) registers mouse raw input to its
+  own hidden window. Windows keeps one registration per device class per PROCESS, so Unity stops
+  receiving WM_INPUT and `delta` reads zero while the buttons (legacy messages) still fire. Every
+  InputController built that reader, so a sparring partner spawning mid-flight was enough; a focus
+  round-trip (the Windows key) masked it by making Unity register again. The reader is now opt-in
+  (`MouseFlightConfig` ▸ *Dual mouse (Windows)*, default off) and never built for an AI or remote
+  player. Ticking it brings the conflict back by design.
 
 *General shape: when a system's failure mode is that another system quietly covers for it, the
 system has to say so itself — nobody downstream can tell the difference.*
@@ -433,7 +451,7 @@ Both duplicates are excised. The roster now reads:
 | Sparrow, Serpent, Grizzly, Termite, Falcon, Shrike | `SingleStickVesselTransformer` | ✅ |
 | Scarab | `ScarabVesselTransformer` | ✅ |
 | Brittle Star | `BrittleStarVesselTransformer` (single-stick subclass) | ✅ |
-| Dolphin, Manta, Rhino, Squirrel | `VesselTransformer` | — |
+| Dolphin, Manta, Rhino, Squirrel, Wrasse | `VesselTransformer` | — |
 | Urchin | `GunVesselTransformer` | — |
 
 `OneThumbVesselCoverageTests` holds all three halves of that as source laws — exactly one

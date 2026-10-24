@@ -313,6 +313,25 @@ def base_scene(current):
         return current
 
 
+def pristine(scene):
+    """`scene` as it was before this tool's first run, for the self-test's first-run refusals: the
+    converter's three documents and its m_Children entry removed, ArkScreen's OfflineUIGate put back on
+    its GameObject, and ARK disabled again."""
+    for fid in (NEW_GO, NEW_RT, NEW_VIEW):
+        if fid in docs(scene):
+            kind, body = docs(scene)[fid]
+            scene = scene.replace(f"--- !u!{kind} &{fid}\n" + body, "", 1)
+    scene = scene.replace(f"  - {{fileID: {NEW_RT}}}\n", "", 1)
+    if f"&{ARK_GATE}\n" not in scene:
+        kind, body = docs(scene)[ARK_GO]
+        gate = (f"--- !u!114 &{ARK_GATE}\nMonoBehaviour:\n  m_GameObject: {{fileID: {ARK_GO}}}\n"
+                "  m_Name: \n  m_EditorClassIdentifier: OfflineUIGate\n")
+        scene = scene.replace(f"--- !u!1 &{ARK_GO}\n" + body,
+                              f"--- !u!1 &{ARK_GO}\n" + body.replace("  m_Component:\n",
+                              f"  m_Component:\n  - component: {{fileID: {ARK_GATE}}}\n", 1) + gate, 1)
+    return scene.replace(f"  disabledScreens: {DISABLED_AFTER}\n", f"  disabledScreens: {DISABLED_BEFORE}\n", 1)
+
+
 def unedited_scene():
     """Menu_Main as it was before this tool first edited it: the parent of the oldest commit that added the converter.
     Once the converter is on the merge base, base_scene() is ALREADY edited, every edit is a no-op, and the refusals
@@ -360,9 +379,15 @@ def self_test():
     check("a converter missing from ArkScreen's children is refused", refused(lambda: validate_scene(base, broken, g)))
     broken = after.replace(f"config: {{fileID: 11400000", "config: {fileID: 11400001", 1) + f"  stray: {{fileID: 424242}}\n"
     check("a new dangling reference is refused", refused(lambda: validate_scene(base, broken, g)))
-    taken = base.replace("m_Name: ArkScreen\n", f"m_Name: ArkScreen\n  m_Note: {NEW_VIEW}\n", 1)
+    # The first-run refusals need a scene this tool has not edited yet. The merge base carries the
+    # converter now, so plant them into a synthesised pre-converter scene: the converter's documents and
+    # child entry stripped, the gate and ARK's disabled entry put back. Planted into `base` they reached
+    # no code (the converter step and the gate step are skipped on an edited scene) and failed silently.
+    fresh = pristine(base)
+    check("the synthesised pre-converter scene edits cleanly", edit_scene(fresh, g).count(f"--- !u!1 &{NEW_GO}\n") == 1)
+    taken = fresh.replace("m_Name: ArkScreen\n", f"m_Name: ArkScreen\n  m_Note: {NEW_VIEW}\n", 1)
     check("a fileID already in the scene is refused", refused(lambda: edit_scene(taken, g)))
-    gated = base.replace(f"  disabledScreens: {DISABLED_BEFORE}\n", f"  disabledScreens: {DISABLED_BEFORE}\n  m_Extra: {{fileID: {ARK_GATE}}}\n", 1)
+    gated = fresh.replace(f"  disabledScreens: {DISABLED_BEFORE}\n", f"  disabledScreens: {DISABLED_BEFORE}\n  m_Extra: {{fileID: {ARK_GATE}}}\n", 1)
     check("an OfflineUIGate referenced from elsewhere is not removed", refused(lambda: edit_scene(gated, g)))
     out, _ = planned()
     check("the config asset carries every OmniCombineConfigSO field",

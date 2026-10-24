@@ -968,7 +968,7 @@ namespace CosmicShore.Gameplay
                     var prism = FeedScratch[q];
                     if (!IsFood(prism)) continue;
                     float volume = Mathf.Max(0.001f, prism.Volume);
-                    prism.Consume(MouthFor(i - _start, at), domain, _eaterName, false, true);
+                    prism.Consume(MouthFor(i - _start, at), domain, _eaterName, IsShieldedMass(prism), true);
                     job.QueueFeed(i, volume);
                     break;
                 }
@@ -981,7 +981,7 @@ namespace CosmicShore.Gameplay
             if (!prism || prism.destroyed || prism is not HealthPrism hp) return false;
             if (hp.ResolveOwnerFauna() != null) return false;
             if (hp.LifeForm is not Flora plant || !plant) return false;
-            if (IsShieldedMass(prism)) return false;
+            if (IsInedibleShield(prism)) return false;
             return IsPreyForMe(prism.transform.position, prism.Domain, domain);
         }
 

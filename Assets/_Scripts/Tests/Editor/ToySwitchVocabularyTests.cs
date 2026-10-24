@@ -11,9 +11,10 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Locks the SWITCH shader vocabulary (Docs/ToySystem/ARCHITECTURE.md, "The switch"):
-    /// every switch is drawn in the prism shader, and WHICH prism it is painted as says what it
-    /// will do.
+    /// Locks the SWITCH colour vocabulary (Docs/ToySystem/ARCHITECTURE.md, "The switch"): WHICH
+    /// prism's colour a switch wears says what it will do. (Since 2026-10-21 the ring itself is drawn
+    /// as a spindle wearing that colour - Docs/SPINDLE_LOD.md section 8 - so the vocabulary is the
+    /// colour, not the shader.)
     ///
     /// <para>The rule that needs holding is the RESERVATION - <b>a switch wearing a playable
     /// domain's colour is one that hands you that domain</b>. Half of it is structural and needs

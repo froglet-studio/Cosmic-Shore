@@ -24,6 +24,7 @@ What each hull did before, measured off the prefabs:
 | Dolphin | `ChargeBoostActionSO` on the drift control | the commit drift banks charge, but is released only once the course has LEFT the objective — the discharge was spent in the turn |
 | Squirrel | skim energy (+0.1/contact) | never flies near mass on purpose: ~no boost |
 | Scarab | throttle ceiling (autopilot = full throttle) | already at the ceiling; the Time-5 Snap Dash is a double-tap no autopilot can make |
+| Rhino | `RampBoostActionSO`, graded ramp armed by the full-speed-straight gesture | **never ramped** — nothing raises the gesture under autopilot (added 2026-10-16) |
 
 ## The shape
 
@@ -45,6 +46,14 @@ subclass per MECHANIC, never per mode:
 | `RampBoostAIPolicySO` | `RhinoAIBoostPolicy` | ramp on a straight whose leg pays the wind-up back, brake ON the ramp to a corner speed, let go at the corner (section below) |
 | `BrittleStarSpeedModeAIPolicySO` | `BrittleStarAIBoostPolicy` | the shared straight / runway test raises a Speed Mode WISH (min hold 1.2 s, min rest 0.8 s); `BrittleStarExecutor` presses the mode itself (`R_VesselActions/BRITTLE_STAR.md` §3.1) |
 | `SkimRingAIPolicySO` (a copy) | `StoatAIBoostPolicy` | the Squirrel's asset cloned onto `Stoat.prefab`. The Stoat binds no `SquirrelTubeActionSO`, so `CreateDriver` returns null and it is a quiet no-op; the Stoat's pace comes from its own executors' autopilot (dipole / sling) |
+
+The Rhino's **sword** has an autopilot too, and it is deliberately **not** a boost policy:
+`RhinoSwordAutopilot` (Rhino root) writes the trigger mirrors (`InputStatus.LeftTriggerAnalog /
+RightTriggerAnalog`) on the machine that owns the AI's input, so the shipped sword code poses,
+swipes and energizes exactly as for a human and replicates the same way. Every `thinkSeconds`
+(0.15 s) it strokes at the nearest hostile prism in reach (stroke 0.3 s, rest 0.45 s), or holds the
+energize stance when the meter can pay (cost + 0.05) and super-shielded mass is near, or the meter
+is ≥ 0.75. It never steers and drives only while the autopilot is on. It never combos.
 
 The shared law (base class): **straight** = course within `alignDegrees` (12°) of the objective
 and stick within `stickBand` (0.35, the Manta drive's band); **runway** = distance / current speed
@@ -89,7 +98,7 @@ have handed over, so the hull flies exactly as before. Shipped lists:
 the base in that mode only. A variant of a different class than the base is ignored. `learn_drives_from_flights.py`
 writes them from people's editor flights; `AIModeTuning.For` does the same for the Stoat's three configs and
 `MantaSoarAITuningSO.LoadForMode` for the Manta's Soar bands. The folder holds one variant so far, `MantaSoarAITuning_Regatta`
-(Soar bands 0.8 / 0.85 against the executor's 0.35 / 0.75, 2026-10-17, from `manta_drive_sim.py`); every boost-policy
+(Soar bands 0.8 / 0.85 against the executor's 0.35 / 0.75 (since 2026-10-24: 0.975 / 0.975, learned from Yash's 3 fastest of 9 finished Manta flights; `LEARNED_DRIVES.md`), 2026-10-17, from `manta_drive_sim.py`); every boost-policy
 drive flies its base asset. Renaming a base asset orphans its variants.
 
 ## Known limits
@@ -142,9 +151,9 @@ approach point, then the next ring after the mouth). A mode that does not say ge
 **The first cut's defect** (2026-10-14 to 10-17): it let go 0.5 s from every objective, after which the released ramp
 coasted down from 840 u/s at 120 u/s² and the Rhino overshot mouths (`REGATTA_AI_ROADMAP.md`: 67.9 s at I1 in the
 deleted page's model). It also never re-armed a ramp the grading let fall off. The re-arm (`minRearmSeconds`) and the
-explicit end are taken from the other cut of this driver on `cece/relaxed-hopper-r62hbd` (Garrett's Rhino branch, not
-merged), which this file will conflict with when that branch lands: keep this one's states and that one's executor
-changes (`TrackedSpeed`, live Time).
+explicit end are taken from the other cut of this driver on `cece/relaxed-hopper-r62hbd` (Garrett's Rhino branch). That
+branch's merge of bleeding-edge (`5b09c6896`, 2026-10-18) kept this file's driver whole, repointed `Rhino.prefab` at this
+asset's guid, and kept that branch's executor changes (`VesselTransformer.TrackedSpeed`, live Time).
 
 **Offline check** (`Tools/Build/rhino_drive_sim.py`, a point-mass model of the ramp executor and the gate steering on
 the Regatta courses; a model without break-off or rotation-follow lag, not the game). It defaults to Regatta's
@@ -156,8 +165,17 @@ new drive (then at `cornerReleaseDegrees` 50, `minSpeedGain` 150) raced 43.0 / 5
 drive's 48.2 / 55.4 / stalled / stalled; the retune (50 → 30, 150 → 50) is for the centre steering. `--sweep` re-runs
 the parameter grid. The editor is the measurement.
 
-Asset: `AI Boost Policies/RhinoAIBoostPolicy`, wired on `Rhino.prefab`'s `AIPilot`; a Regatta variant
-(`Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta`) appears once flights are learned. Tests:
+**Corner speed from Yash's flights (2026-10-24).** Yash threads Regatta rings at a median 333 u/s (129 ring passages,
+six Rhino races, I1 425 and I3 290-345; his top speed was about 590, never the 840 ceiling). The Regatta variant
+(`Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta`) carries `cornerSpeed` 333 and the base's every other number;
+the base asset (600) and every other mode are unchanged. It was set by hand at Yash's ask from all six races, four
+unfinished, because only two finished; `learn_drives_from_flights.py --write` rewrites the variant at the third
+finished race. The model disagrees: `rhino_drive_sim.py` at 333 is slower than at 600 (I1 50.2 / 44.9, I3 75.1 / 50.1,
+I4 61.0 / 55.4 s, I2 the same), because it flies the centre line with no rails to scrape and no rotation lag, the very
+risks a person brakes for. Yash's finished I1 was 36.5 s, faster than the model at either value. The editor decides.
+
+Asset: `AI Boost Policies/RhinoAIBoostPolicy`, wired on `Rhino.prefab`'s `AIPilot`; the Regatta variant
+(`Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta`) is loaded by `AIBoostPolicySO.ForMode`. Tests:
 `RhinoRampDriveTests`. Not editor-verified.
 
 The 2026-10-14 audit added two hooks every driver can use (`AIBoostDriver.HoldsFullThrottle`, `RotationLimit`), a

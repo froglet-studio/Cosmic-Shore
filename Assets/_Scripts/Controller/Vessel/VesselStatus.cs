@@ -305,6 +305,9 @@ namespace CosmicShore.Gameplay
 
             ResourceSystem.Reset();
             ResourceSystem.MarkSpawned();
+            // A silence bought in the last turn does not carry into this one. Every peer resets
+            // its copy of the vessel, so every peer lifts it.
+            if (Player != null) VesselSilence.Lift(Player.Name);
             VesselTransformer.ResetTransformer();
             VesselPrismController.StopSpawn();
             VesselPrismController.ClearTrails();

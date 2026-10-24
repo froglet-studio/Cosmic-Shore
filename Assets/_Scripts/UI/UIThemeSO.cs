@@ -9,10 +9,17 @@ namespace CosmicShore.UI
     /// which also carries the hardcoded fallbacks so a null theme reference degrades to the
     /// authored §11 value rather than to <c>default</c>.
     ///
-    /// TEAM COLOURS ARE DELIBERATELY ABSENT. Jade, Ruby and Gold stay in <c>SO_ColorSet</c>:
-    /// §3 makes team colour DATA and green the interactive hue, and the only structural way to
-    /// keep a designer from tinting a button with a team colour is to give this asset no team
-    /// field to reach for. Do not add one.
+    /// TEAM COLOURS ARE DELIBERATELY ABSENT. Jade, Ruby and Gold as TEAM IDENTITY stay in
+    /// <c>SO_ColorSet</c>: §3 makes team colour DATA and green the interactive hue, and the only
+    /// structural way to keep a designer from tinting a button with a team colour is to give this
+    /// asset no team field to reach for. Do not add one.
+    ///
+    /// The three ROLE tokens under "Control roles" share those hexes on purpose and are not team
+    /// fields: §3 also gives each hue a UI JOB that has nothing to do with a team - Jade marks
+    /// active toggles, sliders, scrollbars and the Play button; Gold marks currency and purchase;
+    /// Ruby marks tooltips. They are named for the job (<c>controlActive</c>, <c>purchase</c>,
+    /// <c>tooltip</c>) so a domain panel never reaches for one to mean "Jade team". Added with the
+    /// style-B menu redesign (Docs/MENU_REDESIGN_B.md, decision D2).
     /// </summary>
     [CreateAssetMenu(
         fileName = "UITheme",
@@ -49,6 +56,33 @@ namespace CosmicShore.UI
         public Color cta = new Color32(0x99, 0xFF, 0x80, 0xFF);
         [Tooltip("FF4B3A — destructive / danger. Approved in v0.3.2. Full-bleed fill only.")]
         public Color danger = new Color32(0xFF, 0x4B, 0x3A, 0xFF);
+
+        [Header("Control roles (UI jobs, never team identity)")]
+        [Tooltip("00D4FF — active toggles, sliders, scrollbars, the transparent Default button's border, the Play button (§3, §10.1). Same hex as Jade; never use it to mean the Jade team.")]
+        public Color controlActive = new Color32(0x00, 0xD4, 0xFF, 0xFF);
+        [Tooltip("FFAE00 — currency and purchase affordance (§3, §10.1 Purchase). Same hex as Gold; never use it to mean the Gold team.")]
+        public Color purchase = new Color32(0xFF, 0xAE, 0x00, 0xFF);
+        [Tooltip("A600FF — tooltip boxes (§3). Same hex as Ruby; never use it to mean the Ruby team.")]
+        public Color tooltip = new Color32(0xA6, 0x00, 0xFF, 0xFF);
+
+        [Header("Elements (rev 6: the colours of meaning)")]
+        [Tooltip("Charge - threat and energy: play. START, PLAY and every Play button.")]
+        public Color elementCharge = new Color32(0xFF, 0xD3, 0x4D, 0xFF);
+        [Tooltip("Mass - substance: what you own. Vessels, upgrades, crystals, prices and every spend.")]
+        public Color elementMass = new Color32(0x7F, 0xA8, 0xFF, 0xFF);
+        [Tooltip("Space - reach and presence: people. Friends, parties, invites, who is online.")]
+        public Color elementSpace = new Color32(0xB0, 0x7C, 0xFF, 0xFF);
+        [Tooltip("Time - rate: progress. Timers, quests, records, leaderboards.")]
+        public Color elementTime = new Color32(0x5F, 0xF0, 0xC8, 0xFF);
+
+        [Header("Selection (rev 7)")]
+        [Tooltip("Whatever is selected or focused - a tile, a card, a tab, the pad's ring - wears this sky blue.")]
+        public Color selection = new Color32(0x3D, 0xB2, 0xFF, 0xFF);
+        [Tooltip("The selection's border light (SelectionRim.mat): a bright sweep running round the border while it " +
+                 "breathes. Optional - without it the selection is the plain colour.")]
+        public Material selectionMaterial;
+        [Tooltip("The same light for a line (SelectionBar.mat): the sweep runs along an underline.")]
+        public Material selectionBarMaterial;
 
         // ── Spacing ───────────────────────────────────────────────────────────────────
 

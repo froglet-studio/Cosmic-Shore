@@ -48,12 +48,23 @@ namespace CosmicShore.Gameplay
         [Header("Wiring (serialized on the prefab so a missing wire shows in the inspector)")]
         [Tooltip("Every number this executor reads. Wired directly (vessel rule 20).")]
         [SerializeField] ShrikeConfigSO config;
-        [Tooltip("The procedural hull: its renderer's materials dress the flora and the missiles.")]
-        [SerializeField] ShrikeHullBuilder hull;
+        [Tooltip("The Hull: the transform that holds the model (Shrike.fbx, SHRIKE.md §2). Its renderer's Domain slot " +
+                 "dresses the flora and the missiles, and the model's `gun.mouth` bone is where the lance's beam leaves " +
+                 "the barrel. Left empty, the vessel's child named 'ShrikeHull' is used.")]
+        [SerializeField] Transform hull;
         [Tooltip("The fleet's shared turn-end channel: triggers let go, the tether and missiles are cleared.")]
         [SerializeField] ScriptableEventNoParam OnMiniGameTurnEnd;
 
         [Inject] GameDataSO _gameData;
+
+        // The hull's parts, found by NAME (ResolveHullParts). Names, not tuning: the prefab's Hull object and the bones
+        // Tools/Build/vessel_model/specs/shrike.py writes into Shrike.fbx.
+        const string HullName = "ShrikeHull";
+        const string ModelMuzzleName = "gun.mouth";
+        const string PlaceholderMuzzleName = "Muzzle";
+        Renderer _hullRenderer;
+        int _domainSlot;
+        Transform _muzzle;
 
         enum DockKind { None = 0, Block = 1, Nest = 2 }
 
@@ -180,7 +191,8 @@ namespace CosmicShore.Gameplay
             ClearAll();
             _status = shipStatus;
             if (!hull && _status != null && _status.Transform)
-                hull = _status.Transform.GetComponentInChildren<ShrikeHullBuilder>(true);
+                hull = _status.Transform.Find(HullName);
+            ResolveHullParts();
             _mode = Mode.Space;
             _lanceCd = _slingCd = _nestCd = 0f;
             _lockId = 0;
@@ -190,8 +202,45 @@ namespace CosmicShore.Gameplay
             if (!config)
                 CSDebug.LogError($"[Shrike] {name}: ShrikeExecutor has no ShrikeConfig — the vessel has no lance, sling, " +
                                  "array or nest. Wire Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset.");
-            if (!hull)
-                CSDebug.LogError($"[Shrike] {name}: no ShrikeHullBuilder under the vessel — flora and missiles have no material.");
+            if (!_hullRenderer)
+                CSDebug.LogError($"[Shrike] {name}: no hull renderer under '{HullName}' (the Shrike.fbx model) — flora and " +
+                                 "missiles have no material.");
+        }
+
+        /// <summary>
+        /// The hull's renderer, its domain slot and the lance's muzzle, found BY NAME under <see cref="hull"/>: the model's
+        /// sub-objects have fileIDs only after Unity imports it, so they cannot be wired (asset-surgery 4.8c). The model
+        /// (Shrike.fbx, FLEET_CONVENTION §3) wears the domain on slot 0 and names its muzzle bone <c>gun.mouth</c>; the
+        /// retired placeholder (<see cref="ShrikeHullBuilder"/>, kept until the model is accepted) wore it on slot 1 of
+        /// its own MeshRenderer and named its muzzle <c>Muzzle</c>, so either hull resolves.
+        /// </summary>
+        void ResolveHullParts()
+        {
+            _hullRenderer = null;
+            _muzzle = null;
+            _domainSlot = 0;
+            if (!hull) return;
+            var model = hull.GetComponentInChildren<SkinnedMeshRenderer>(true);
+            if (model)
+                _hullRenderer = model;
+            else if (hull.TryGetComponent(out MeshRenderer placeholder))
+            {
+                _hullRenderer = placeholder;
+                _domainSlot = 1;
+            }
+            _muzzle = FindDescendant(hull, ModelMuzzleName);
+            if (!_muzzle) _muzzle = FindDescendant(hull, PlaceholderMuzzleName);
+        }
+
+        static Transform FindDescendant(Transform root, string childName)
+        {
+            if (root.name == childName) return root;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                var found = FindDescendant(root.GetChild(i), childName);
+                if (found) return found;
+            }
+            return null;
         }
 
         void OnEnable()
@@ -863,8 +912,14 @@ namespace CosmicShore.Gameplay
                     if (!prism || prism.destroyed) continue;
                     if (_dock == DockKind.Block && prism == _dockPrism) continue;
                     if (_dock == DockKind.Nest && IsNestBlock(prism, out var nest) && nest == _dockNest) continue;
-                    if (!ShrikeRules.LanceBreaks(prism.prismProperties is { IsSuperShielded: true }, pierce)) continue;
                     if (!RayHits(prism, o, f, r, len, out _)) continue;
+                    // A lance that cannot pierce super-shielded mass still meets it: the deflection
+                    // jiggle, never a beam passing through armour in silence (Docs/LIT.md).
+                    if (!ShrikeRules.LanceBreaks(prism.prismProperties is { IsSuperShielded: true }, pierce))
+                    {
+                        prism.AbsorbSuperShieldHit(config.LanceDebrisSpeed);
+                        continue;
+                    }
                     BreakPrism(prism, f * config.LanceDebrisSpeed, devastate: true);
                     hit = true;
                 }
@@ -884,7 +939,7 @@ namespace CosmicShore.Gameplay
 
             // Drawn from the barrel's muzzle to the point the axis reaches, so the beam leaves the gun and lands where the
             // hit test ran (they meet at range; 0.75 u apart at the nose).
-            Vector3 from = hull && hull.Muzzle ? hull.Muzzle.position : o;
+            Vector3 from = _muzzle ? _muzzle.position : o;
             SniperBeam.Fire(from, o + f * len, r * 2f, r * 2f, DomainColour(), config.LanceBeamSeconds, r * 3f, 0.2f, hit);
             PlayAt(config.LanceEvent, o);
         }
@@ -893,6 +948,8 @@ namespace CosmicShore.Gameplay
         /// <c>devastate</c> stops the prism restoring its armour instead of dying.</summary>
         void BreakPrism(Prism prism, Vector3 impact, bool devastate)
         {
+            // A silenced Shrike breaks nothing it does not own (VesselSilence) - asked before the shield drop.
+            if (prism.DeflectsSilenced(_status.PlayerName, impact.magnitude)) return;
             if (prism.prismProperties is { IsSuperShielded: true })
             {
                 prism.DeactivateShields(impact);
@@ -1610,12 +1667,14 @@ namespace CosmicShore.Gameplay
             return colorSet != null && _status != null ? colorSet.GetDomainSignalColor(_status.Domain) : Color.white;
         }
 
-        /// <summary>The hull's domain material (its renderer's slot 1, where ShipHelper paints the domain).</summary>
+        /// <summary>The hull's domain material: the renderer's domain slot (<see cref="ResolveHullParts"/>), where
+        /// VesselCustomization paints the domain.</summary>
         Material DomainMaterial()
         {
-            if (!hull || !hull.TryGetComponent(out MeshRenderer source)) return null;
-            var mats = source.sharedMaterials;
-            return mats.Length > 0 ? mats[mats.Length > 1 ? 1 : 0] : null;
+            if (!_hullRenderer) return null;
+            var mats = _hullRenderer.sharedMaterials;
+            if (mats.Length == 0) return null;
+            return mats[_domainSlot < mats.Length ? _domainSlot : 0];
         }
 
         static void PlayAt(EventReference reference, Vector3 at)

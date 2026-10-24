@@ -90,6 +90,7 @@ namespace UnityEngine
     {
         public const float PI = (float)Math.PI; public const float Deg2Rad = PI/180f; public const float Rad2Deg = 180f/PI;
         public static float Sin(float v) => (float)Math.Sin(v); public static float Cos(float v) => (float)Math.Cos(v); public static float Tan(float v) => (float)Math.Tan(v);
+        public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
         public static float Acos(float v) => (float)Math.Acos(v); public static float Sqrt(float v) => (float)Math.Sqrt(v); public static float Abs(float v) => Math.Abs(v);
         public static float Max(float a, float b) => Math.Max(a,b); public static int Max(int a, int b) => Math.Max(a,b);
         public static float Min(float a, float b) => Math.Min(a,b); public static int Min(int a, int b) => Math.Min(a,b);

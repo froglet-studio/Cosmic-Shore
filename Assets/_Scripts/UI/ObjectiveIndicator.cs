@@ -332,6 +332,13 @@ namespace CosmicShore.UI
 
         // ── Runtime construction ─────────────────────────────────────────
 
+        /// <summary>Tint the arrow (and its distance readout) with a domain colour.</summary>
+        public void SetAccent(Color accent)
+        {
+            if (icon && icon.TryGetComponent(out ObjectiveArrowGraphic arrow)) arrow.SetAccent(accent);
+            if (distanceText) distanceText.color = accent;
+        }
+
         /// <summary>
         /// Builds a fully configured indicator at runtime: a full-screen
         /// container under <paramref name="parent"/> with a procedural arrow

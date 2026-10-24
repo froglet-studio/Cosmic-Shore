@@ -1,0 +1,11 @@
+{
+  "hulls": {
+    "Manta": {
+      "LaneShare": 0.809
+    },
+    "Rhino": {
+      "LaneShare": 0.676
+    }
+  },
+  "note": "Written by learn_drives_from_flights.py --write from people's Regatta flights; read by author_race_lines.py."
+}

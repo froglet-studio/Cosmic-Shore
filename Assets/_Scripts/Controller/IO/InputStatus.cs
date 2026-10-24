@@ -245,6 +245,11 @@ namespace CosmicShore.Gameplay
             set { if (IsSpawned && IsOwner) n_3dPos.Value  = value; else _threeDLocal = value; }
         }
 
+        /// <summary>Owner-local (see <see cref="IInputStatus.HoldsRollAngle"/>): the pose it drives replicates
+        /// through the hull's NetworkTransform, so it adds nothing to the wire.</summary>
+        public bool HoldsRollAngle { get; set; }
+        public float HeldRollDegrees { get; set; }
+
         public Quaternion GetGyroRotation() => InputController.GetGyroRotation();
         
         public override void OnNetworkSpawn()
@@ -294,6 +299,8 @@ namespace CosmicShore.Gameplay
             EasedLeftJoystickPosition = Vector2.zero;
             SingleTouchValue = Vector2.zero;
             ThreeDPosition = Vector3.zero;
+            HoldsRollAngle = false;
+            HeldRollDegrees = 0f;
         }
         
         void OnNetworkPausedValueChanged(bool oldValue, bool newValue) => OnToggleInputPaused?.Invoke(newValue);
