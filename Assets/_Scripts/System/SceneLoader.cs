@@ -267,6 +267,9 @@ namespace CosmicShore.Core
             FadeFromSplashWhenSettled().Forget();
         }
 
+        /// <summary>Longest the splash waits for the boot world's build before fading anyway.</summary>
+        const float MaxBootWorldHoldSeconds = 60f;
+
         async UniTaskVoid FadeFromSplashWhenSettled()
         {
             // Game→menu return only: hold the opaque veil for a short settle window so
@@ -280,6 +283,16 @@ namespace CosmicShore.Core
                     TimeSpan.FromSeconds(menuReturnSettleSeconds),
                     DelayType.UnscaledDeltaTime);
             }
+
+            // The boot world builds BEFORE the menu is revealed (Docs/MENU_REDESIGN_B.md sections
+            // 25-26): Cell.CoverBootWorld raised EnvironmentLoadVeil on the scene's first frame, and
+            // the build runs behind it once the vessel is ready - i.e. from now. Hold the splash (its
+            // LOADING bar reads the same build) until the veil lets go, so the player sees one screen
+            // and then the finished world, never the veil as a second screen. Capped: a build the
+            // veil itself has stopped waiting on never holds the splash for good.
+            float holdUntil = Time.unscaledTime + MaxBootWorldHoldSeconds;
+            while (CosmicShore.Gameplay.EnvironmentLoadVeil.IsCovering && Time.unscaledTime < holdUntil)
+                await UniTask.Yield(PlayerLoopTiming.Update);
 
             // Runs on EVERY peer (clients never reach LoadSceneAsync's pre-load
             // collect — they defer scene loads to the server) with the splash still

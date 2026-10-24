@@ -257,7 +257,10 @@ namespace CosmicShore.Tests
                                   "    - {fileID: 11400000, guid: 012d65baf31c49c496d38975eba8c0be, type: 2}\n", block, "RT → dipole right + orbit right");
             StringAssert.Contains("  - InputEvent: 6\n    ShipActions:\n    - {fileID: 11400000, guid: 9b50ea11259b4b1aa750eea7f1d7f781, type: 2}\n", block, "X → StoatHoldAction");
             StringAssert.Contains("  - InputEvent: 7\n    ShipActions:\n    - {fileID: 11400000, guid: f05e7ded817a4670bb78832c9c879566, type: 2}\n", block, "B → StoatModeAction");
-            StringAssert.Contains("  _touchActionOverrides: []\n", text, "no touch design yet — recorded in STOAT.md");
+            // On a phone the same four (the owner, 2026-10-21: "the stoat should join the mobile fleet"; STOAT.md "On a phone").
+            string touch = Regex.Match(text, @"  _touchActionOverrides:\n(?:.*\n)*?(?=  _gamepadActionOverrides:)").Value;
+            Assert.AreEqual(block.Substring(block.IndexOf('\n') + 1), touch.Substring(touch.IndexOf('\n') + 1),
+                "the touch overrides carry exactly the gamepad's four entries");
             // No DriftActionSO is bound, so the trigger analog the transformer still reads never drifts.
             StringAssert.DoesNotContain("guid: aa095c07c8cd0374698884d1a44dbdec", text, "the Squirrel's drift action must not ride the Stoat's triggers");
         }

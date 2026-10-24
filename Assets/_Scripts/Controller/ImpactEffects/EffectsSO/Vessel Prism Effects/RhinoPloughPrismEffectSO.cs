@@ -20,6 +20,10 @@ namespace CosmicShore.Gameplay
     /// (Docs/PRISM_ANIMATION.md §5 C5). So the hull leaves contact on the very next physics step
     /// and nothing per-frame runs on the CPU while the prism slides.</para>
     ///
+    /// <para><b>A shoved prism is a MOVING prism</b> (<see cref="PrismMotion"/>, Docs/PRISM_MOTION.md): if its
+    /// path out of the furrow runs into another prism, it stops there and both are destroyed, scored to the
+    /// Rhino's pilot. Only a clear path completes the shove.</para>
+    ///
     /// <para>Runs on every peer, like the damage it replaces (prism contact is simulated per peer);
     /// the side is read off the peer's own hull pose, so it agrees everywhere except for a prism
     /// struck dead on the centreline.</para>
@@ -84,27 +88,53 @@ namespace CosmicShore.Gameplay
             float shove = RhinoPlough.LateralShove(lateral, clearance, throwDistance);
             if (shove == 0f) return;
 
-            Slide(prism, prismPos, prismPos + right * shove, slideSeconds);
+            Vector3 end = prismPos + right * shove;
+            if (PrismMotion.TrySweep(prism, prismPos, end, out var struck, out var contact))
+            {
+                // Prism motion's collision rule: it stops where it met the other prism, and both go.
+                Place(prism, contact);
+                PrismMotion.Annihilate(prism, struck, (end - prismPos) / slideSeconds, status.Domain, status.PlayerName,
+                    PrismMotion.SingleMoverLevel());
+                return;
+            }
+
+            Slide(prism, prismPos, end, slideSeconds);
+        }
+
+        static void Place(Prism prism, Vector3 at)
+        {
+            prism.transform.position = at;
+            if (prism.prismProperties != null) prism.prismProperties.position = at;
+            prism.NotifyPositionChanged();
         }
 
         static void Slide(Prism prism, Vector3 start, Vector3 end, float seconds)
         {
-            prism.transform.position = end;
-            // Kept in step the way FullAutoBlockShoot's mover keeps it - nothing reads it today,
-            // but a cached position that lies is the next reader's bug.
-            if (prism.prismProperties != null) prism.prismProperties.position = end;
-            prism.NotifyPositionChanged();
+            // prismProperties.position is kept in step the way FullAutoBlockShoot's mover keeps it -
+            // nothing reads it today, but a cached position that lies is the next reader's bug.
+            Place(prism, end);
 
             Vector3 flight = end - start;
             if (flight.sqrMagnitude < 1e-4f) return;
             // StampFlight's full vector is v * 2T / pi, so v = flight * pi / (2T).
             Vector3 v = flight * (Mathf.PI / (2f * seconds));
-            if (!PrismRenderService.StampFlight(in prism.RenderHandle, PrismClock.Now, seconds,
-                    new float3(v.x, v.y, v.z)))
+            var fv = new float3(v.x, v.y, v.z);
+            Vector3 local;
+            if (!PrismRenderService.StampFlight(in prism.RenderHandle, PrismClock.Now, seconds, fv))
+            {
+                // No Entities Graphics on this device (Docs/PRISM_ANIMATION.md §4.11): the same stamp and
+                // envelope on the MeshRenderer, which clears itself at arrival. False everywhere else.
+                if (!PrismMeshRendererStamps.StampFlight(prism.StampRenderer, PrismClock.Now, seconds, in fv))
+                    return;
+                local = prism.transform.InverseTransformPoint(start);
+                PrismMeshRendererStamps.ResetBounds(prism.StampRenderer);
+                PrismMeshRendererStamps.EncapsulateBoundsPoint(prism.StampRenderer,
+                    new float3(local.x, local.y, local.z), 1f);
                 return;
+            }
             // The render bounds sit on the new anchor; cover the start too, or the sliding visual
             // frustum-culls against its resting box (BuilderPrismWorld.Settle does the same).
-            Vector3 local = prism.transform.InverseTransformPoint(start);
+            local = prism.transform.InverseTransformPoint(start);
             PrismRenderService.EncapsulateBoundsPoint(in prism.RenderHandle,
                 new float3(local.x, local.y, local.z), 1f);
         }

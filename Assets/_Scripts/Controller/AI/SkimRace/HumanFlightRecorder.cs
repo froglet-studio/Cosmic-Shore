@@ -34,19 +34,19 @@ namespace CosmicShore.Gameplay
     /// <c>Tools/Build/learn_from_flights.py</c> and <c>situation_features.py</c> can measure the flight against them.</para>
     ///
     /// <para>One <c>flight_&lt;Mode&gt;_&lt;Vessel&gt;_&lt;time&gt;.json</c> per match (schema <c>cosmic-shore.flight/3</c>,
-    /// with the mode, the vessel and the training type) in <c>&lt;Diagnostics folder&gt;/Flights/</c>. After Play, Unity
-    /// asks "Store AI training record?" naming the vessel, the mode and the training type, and stores it on the
-    /// person's <c>bugledger/&lt;user&gt;</c> branch (<c>BugHuntAutoSend</c>, <c>BugHuntReports</c> kind <c>flights</c>). A
-    /// match that could not be stored says why in one Console warning. Editor and development builds only; nothing
-    /// leaves the machine unless its owner presses Store. Players get their own consent question before any of this
-    /// ships.</para>
+    /// with the mode, the vessel and the training type) in <c>&lt;Diagnostics folder&gt;/Flights/</c>. After Play, the editor
+    /// sends each new record to the person's <c>bugledger/&lt;user&gt;</c> branch without a question (since 2026-10-16;
+    /// <c>BugHuntAutoSend</c>, <c>BugHuntReports</c> kind <c>flights</c>) and logs one Console line naming the vessel and
+    /// the mode. A match that could not be stored says why in one Console warning. The recorder compiles in editor and
+    /// development builds; only the automatic send is editor-only, so a development build's records stay on its machine.
+    /// Players get their own consent question before any of this ships.</para>
     /// </summary>
     public sealed class HumanFlightRecorder : MonoBehaviour
     {
         public const string CommandName = "flightrec";
         public const string Schema = "cosmic-shore.flight/3";   // /3: the situation (SITUATION_RECORDING_PLAN.md §2); columns are read by name, so additions keep /3
 
-        /// <summary>The kind of AI training a record serves, as Unity's "Store AI training record?" names it.</summary>
+        /// <summary>The kind of AI training a record serves, written into the record's <c>training</c> field.</summary>
         public const string TrainingType = "imitation: learning from your flying";
         const float SampleHz = 10f;
         const float LookEvery = 0.5f;
@@ -99,6 +99,7 @@ namespace CosmicShore.Gameplay
             public int State;                    // State* bits
             public float LvC, LvM, LvS, LvT;     // element levels, 0..1 (charge, mass, space, time)
             public float M0, M1, M2, M3;         // the hull's first four resource meters (CurrentAmount), -1 if absent
+            public int TimeMode;                 // the Stoat's mode: 1 Time (catch sling), 0 Mass (field dipole), -1 another hull
             public bool Held;                    // the AI held the hull (the You / AI toggle)
             public Vector3 CamPos, CamFwd, CamUp;    // forward + up = the camera's full rotation
             public float Fov, Aspect;            // vertical field of view (degrees), width / height
@@ -133,6 +134,9 @@ namespace CosmicShore.Gameplay
         // boost spends (ChargeBoostActionSO.BoostResourceIndex; -1 when it has none): what the Dolphin AI decides on.
         readonly List<string> _meterNames = new(4);
         int _boostMeter = -1;
+        // The Stoat's mode switch (its triggers are the field dipole in Mass mode, the catch sling in Time mode), found
+        // once per race; null on every other hull.
+        StoatModeExecutor _stoatMode;
         ScriptableEventInputEvents _pressed, _released;
         GameDataSO _gameData;
         Player _player;
@@ -199,6 +203,9 @@ namespace CosmicShore.Gameplay
             {
                 if (now < _nextLook) return;
                 _nextLook = now + LookEvery;
+                // Development diagnostics switched off (DevDiagnostics): the build plays like a release one, which
+                // records nothing. A race already being recorded when they go off still finishes and is stored.
+                if (!DevDiagnostics.Enabled) { _waiting = "development diagnostics are off"; return; }
                 if (!TryFindLocalHuman()) { _waiting = "waiting for your hull (AI-only races are not recorded)"; return; }
                 _recording = true;
                 _startRings = _player.RoundStats?.SwitchesThreaded ?? 0;
@@ -347,6 +354,7 @@ namespace CosmicShore.Gameplay
                 LvC = Level(resources, Element.Charge), LvM = Level(resources, Element.Mass),
                 LvS = Level(resources, Element.Space), LvT = Level(resources, Element.Time),
                 M0 = Meter(resources, 0), M1 = Meter(resources, 1), M2 = Meter(resources, 2), M3 = Meter(resources, 3),
+                TimeMode = _stoatMode ? (_stoatMode.IsTimeMode ? 1 : 0) : -1,
                 // The AI holding this hull (the Third Eye's You / AI toggle) is not the human's flight: kept, marked,
                 // and skipped by every learner (situation_features.py, situation.js, learn_from_flights.py).
                 Held = PilotControl.IsHeldByAI(_player),
@@ -373,6 +381,8 @@ namespace CosmicShore.Gameplay
             if (_meterNames.Count == 0) _meterNames.Add("");
             _boostMeter = status.ActionHandler != null && status.ActionHandler.TryGetBoundAction<ChargeBoostActionSO>(out var charge, out _)
                 ? charge.BoostResourceIndex : -1;
+            var registry = _player && _player.Vessel?.Transform ? _player.Vessel.Transform.GetComponentInChildren<ActionExecutorRegistry>() : null;
+            _stoatMode = registry ? registry.Get<StoatModeExecutor>() : null;
         }
 
         static float Level(ResourceSystem resources, Element element)
@@ -543,6 +553,7 @@ namespace CosmicShore.Gameplay
             _buttonEvents.Clear();
             _meterNames.Clear();
             _boostMeter = -1;
+            _stoatMode = null;
             StopListening();
             _ringData.Clear();
             _ownRail = -1;
@@ -760,7 +771,7 @@ namespace CosmicShore.Gameplay
             sb.Append("\"columns\":[\"t\",\"x\",\"y\",\"z\",\"fx\",\"fy\",\"fz\",\"ux\",\"uy\",\"uz\",\"speed\",\"boost\",\"xSum\",\"ySum\",\"xDiff\",\"yDiff\",\"throttle\",\"rings\",\"lt\",\"rt\",\"cx\",\"cy\",\"cz\","
                     + "\"vx\",\"vy\",\"vz\",\"pitchRate\",\"yawRate\",\"rollRate\",\"charge\",\"state\",\"lvC\",\"lvM\",\"lvS\",\"lvT\",\"held\","
                     + "\"camx\",\"camy\",\"camz\",\"camfx\",\"camfy\",\"camfz\",\"fov\",\"camMode\",\"camux\",\"camuy\",\"camuz\",\"camAspect\",\"camRear\","
-                    + "\"m0\",\"m1\",\"m2\",\"m3\"],\n");
+                    + "\"m0\",\"m1\",\"m2\",\"m3\",\"timeMode\"],\n");
             sb.Append("\"samples\":[\n");
             for (int i = 0; i < _samples.Count; i++)
             {
@@ -786,7 +797,7 @@ namespace CosmicShore.Gameplay
                   .Append(F(m.Fov, "0.#")).Append(',').Append(m.CamMode).Append(',')
                   .Append(F(m.CamUp.x, "0.###")).Append(',').Append(F(m.CamUp.y, "0.###")).Append(',').Append(F(m.CamUp.z, "0.###")).Append(',')
                   .Append(F(m.Aspect, "0.###")).Append(',').Append(m.RearView ? '1' : '0').Append(',')
-                  .Append(F(m.M0, "0.###")).Append(',').Append(F(m.M1, "0.###")).Append(',').Append(F(m.M2, "0.###")).Append(',').Append(F(m.M3, "0.###")).Append(']');
+                  .Append(F(m.M0, "0.###")).Append(',').Append(F(m.M1, "0.###")).Append(',').Append(F(m.M2, "0.###")).Append(',').Append(F(m.M3, "0.###")).Append(',').Append(m.TimeMode).Append(']');
             }
             sb.Append("\n]\n}\n");
             if (regatta && !haveLane)

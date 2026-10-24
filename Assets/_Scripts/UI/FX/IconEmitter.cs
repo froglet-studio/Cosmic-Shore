@@ -14,7 +14,7 @@ namespace CosmicShore.UI
     /// </summary>
     public class IconEmitter : MonoBehaviour
     {
-        public enum EmissionMode { RandomAngle, Sweep, Scatter }
+        public enum EmissionMode { RandomAngle = 0, Sweep = 1, Scatter = 2 }
 
         [SerializeField] RectTransform Container;
         [SerializeField] Image Source;

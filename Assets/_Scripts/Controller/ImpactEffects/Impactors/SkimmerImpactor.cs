@@ -44,8 +44,14 @@ namespace CosmicShore.Gameplay
         // against a prism that was already overlapping the blade before it ignited (no
         // fresh OnTriggerEnter fires for it). Generic + cheap; only the Rhino path calls
         // ReapplyPrismEffectsToOverlapping.
-        readonly HashSet<PrismImpactor> _overlappingPrisms = new();
-        readonly List<PrismImpactor> _reapplyBuffer = new();
+        //
+        // Each entry remembers the LIFE it was recorded against (prismProperties.TimeCreated, which
+        // Prism.Initialize re-stamps on every pool issue). A prism the blade destroys disables its
+        // collider, so no OnTriggerExit ever removes it; once the pool hands it out again it is
+        // alive, so `destroyed` no longer catches it either. Without the stamp the next ignition
+        // re-ran the sword's effects on that recycled prism wherever the pool had placed it.
+        readonly Dictionary<PrismImpactor, float> _overlappingPrisms = new();
+        readonly List<KeyValuePair<PrismImpactor, float>> _reapplyBuffer = new();
         //private int ActivelySkimmingBlockCount;
         //[HideInInspector]
         public float CombinedWeight; // exposed for effects that need it
@@ -119,8 +125,11 @@ namespace CosmicShore.Gameplay
         /// shell-tier counterpart is PrismShellContactManager.RedispatchPairsForOwner).
         /// Shell-owned prisms are skipped here for exact parity with AcceptImpactee's
         /// suppression — the shell tier owns those pairs.
+        /// <para><paramref name="superShieldedOnly"/> limits the replay to SUPER-shielded mass, which
+        /// is all an ignition exists to reach. Replaying every standing contact also gave a shielded
+        /// prism resting in the blade a second slice for free (the Space-5 Breaker's whole effect).</para>
         /// </summary>
-        public void ReapplyPrismEffectsToOverlapping()
+        public void ReapplyPrismEffectsToOverlapping(bool superShieldedOnly = false)
         {
             if (!isInitialized || _overlappingPrisms.Count == 0) return;
             if (IsEffectContainerMissing(skimmerImpactorDataContainer, nameof(skimmerImpactorDataContainer)))
@@ -132,13 +141,17 @@ namespace CosmicShore.Gameplay
             _reapplyBuffer.AddRange(_overlappingPrisms);
             for (int i = 0; i < _reapplyBuffer.Count; i++)
             {
-                var prismImpactor = _reapplyBuffer[i];
-                if (!prismImpactor || prismImpactor.Prism == null || prismImpactor.Prism.destroyed)
+                var prismImpactor = _reapplyBuffer[i].Key;
+                var prism = prismImpactor ? prismImpactor.Prism : null;
+                if (prism == null || prism.destroyed || prism.prismProperties == null
+                    || prism.prismProperties.TimeCreated != _reapplyBuffer[i].Value)
                 {
                     _overlappingPrisms.Remove(prismImpactor);
                     continue;
                 }
-                if (PrismShellContactManager.ShellOwnsContact(prismImpactor.Prism))
+                if (PrismShellContactManager.ShellOwnsContact(prism))
+                    continue;
+                if (superShieldedOnly && !prism.prismProperties.IsSuperShielded)
                     continue;
                 for (int e = 0; e < esp.Length; e++)
                 {
@@ -289,8 +302,8 @@ namespace CosmicShore.Gameplay
                         return;
                     // Track genuine BOX overlaps only (a shell dispatch is not box
                     // residency; its lifecycle belongs to the shell tier's pair map).
-                    if (!IsShellDispatch)
-                        _overlappingPrisms.Add(prismImpactor);
+                    if (!IsShellDispatch && prism.prismProperties != null)
+                        _overlappingPrisms[prismImpactor] = prism.prismProperties.TimeCreated;
                     var esp = skimmerImpactorDataContainer.SkimmerPrismEffects;
                     skimmer.ExecuteImpactOnPrism(prism); // secondary call (booster viz, etc.)
                     if (!DoesEffectExist(esp)) return;

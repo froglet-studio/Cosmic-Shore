@@ -172,7 +172,7 @@ consumers scale symmetrically down through debuffs — codebase-consistent behav
 | Element | Quantitative (continuous) | Attach point | Level-5 upgrade | Attach point |
 |---|---|---|---|---|
 | **Space** | **HOLE (2026-09-28)** — gun range is now FIXED and no element scales it | Retired: `FullAutoActionSO.spaceSpeedMultiplier` (x1 → x9) is deleted and `speedValue` is a fixed **1350** u/s = **257.8 u** range, 2x the old Space-1 range (`SPARROW_SPRAY_ACCURACY.md` Round 7). The guns card now shows the gun's HEAT instead. The row still names the Pulsefire Cannons and needs a re-cut | **Piercing bullets** — and ONLY that, on **both** fire modes (bullets and turret prism rounds). SPACE owns REACH; the armour on fired prisms is **MASS 5** (it spent 2026-08 rounds 4–6 here and was returned by sign-off on 2026-08-13) | Per-shot `piercing` flag through `Gun.FireGun → Projectile.Initialize`; prism-impact flow returns the projectile to the factory after the damage effect when not piercing. Must not reuse `DisableColliderNow` until the dud bug is fixed |
-| **Time** | Boost speed, on an **indefinite** boost (no heat, no meter) | `VesselTransformer.CurrentBoostAmount()` — live `Multiplier(Time)` on top of `VesselStatus.BoostMultiplier`; the shared field is never mutated | **Elemental Ward**: while boosting, negative `ResourceSystem.ApplyElementalEffect` calls are dropped — buffs still land, live debuffs still decay, non-elemental danger punishments (slow, input mute) still apply | The general `ResourceSystem` immunity state + the shared `VesselElementalImmunity` driver (`WhileBoosting`, gated `Element.Time`, warding `ElementalDebuffSources.All` — a ward declares WHICH debuff classes it stops, and the Sparrow's stops every one; the Dolphin's Drift Ward stops `DangerPrism` alone). The **strafing roll is now BASE kit**, ungated, on `BarrelRollController` (left stick at perimeter + boost). Detail: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md` |
+| **Time** | Boost speed, on an **indefinite** boost (no heat, no meter) | `VesselTransformer.CurrentBoostAmount()` — live `Multiplier(Time)` on top of `VesselStatus.BoostMultiplier`; the shared field is never mutated | **Elemental Ward**: while boosting, negative `ResourceSystem.ApplyElementalEffect` calls are dropped — buffs still land, live debuffs still decay, non-elemental danger punishments (the slow, the boost reset) still apply — the danger input mute was deleted 2026-10-17 | The general `ResourceSystem` immunity state + the shared `VesselElementalImmunity` driver (`WhileBoosting`, gated `Element.Time`, warding `ElementalDebuffSources.All` — a ward declares WHICH debuff classes it stops, and the Sparrow's stops every one; the Dolphin's Drift Ward stops `DangerPrism` alone). The **strafing roll is now BASE kit**, ungated, on `BarrelRollController` (left stick at perimeter + boost). Detail: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md` |
 | **Mass** | Turret prism stretch (long z-axis) **+ in-flight round growth on BOTH fire modes** (rounds swell across their flight: 3× at resting Mass, 6× at Mass 10, linear in level over [-5, 15]) | `FullAutoBlockShootActionExecutor` — multiply `BlockScale.z` by `Multiplier(Mass)` at fire time, routed through `TargetScale` + `Prism.Initialize`. Growth: `FullAutoActionSO.ResolveGrowthFactor` → `Projectile.SetFlightGrowth`, scaling the drawn cross-section and the swept hit radius by the same factor every frame | **Shielded Prisms** — turret-fired prisms arrive with one-hit ablative octahedron armour and a wider hit sphere. Returned here from Space 5 by design sign-off (2026-08-13): **MASS owns the SUBSTANCE of what you fire, SPACE owns its REACH** | `FiredPrismState.ShieldedAtMass5` sets `prismProperties.IsShielded` before `Initialize`, off an `IsUpgradeActive(Mass)` snapshot taken per volley |
 | **Charge** | Skyburst blast radius | `FireGunActionExecutor.Fire`: replace the literal `0` with `Clamp01(GetLevel(Charge)/10)`; author real min/max on the three skyburst effect assets (the `Lerp(MinScale, MaxScale, Charge)` pipe already exists in `ProjectileDetonatorSO`) | **Skybursts spare the shooter's own domain** | Gate the direct-hit damage in `SkyBurstProjectileDamagePrismEffectSO` on domain when unlocked (per-shot flag plumbed like piercing). **The AOE follows the same per-shot flag** since 2026-08: `ProjectileDetonatorSO` passes `AffectSelfOverride = !SpareOwnDomain`, because the prefabs' authored `affectSelf: 0` had the blast sparing own domain at EVERY level — half the upgrade was pre-unlocked. Prereq: wire steal → `PrismSpatialIndex.UpdateDomain` so "own domain" is live |
 
@@ -346,8 +346,14 @@ oversights:
 Mechanics for what those four icons will label: `_Scripts/Controller/Vessel/R_VesselActions/`
 `URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
 
-The **Rhino** is blocked on **design**: its map is still `(open design slot)` with `Input = 0`
-and no `UpgradeLabel`, and its HUD carries 0–2 lower-right icons. (The Manta left this set
+The **Rhino** left this set **2026-10-16**: all four rows are designed and shipped (Sword Energy /
+Live Wire, Afterimage / Danger Afterimages, Blade Reach / Breaker, Ramp Spool / Momentum — FLEET_MAPS.md
+§2 Rhino, `R_VesselActions/RHINO_SWORD_AFTERIMAGE.md`), Charge/Mass/Space on `Input: 13`
+(`BothSticksAction`, the both-triggers energize — 2026-10-17; they were a deliberate `0`) and Time a
+deliberate passive `0`, and its row binds **4/4** with placeholder icons. The pre-lockup status cluster that came
+back when it bound its first icon is deleted (`Docs/ABILITY_LOCKUP.md`). Not yet run in the editor.
+(Until then it was blocked on design: `(open design slot)` entries, no `UpgradeLabel`, 0–2
+lower-right icons.) (The Manta left this set
 2026-08-26 — its spec remake shipped a full map, four bound icons at the wirer bands, and all four
 L5 upgrades; see FLEET_MAPS.md §2 Manta and
 `_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md`. The **Serpent** left it
@@ -359,8 +365,8 @@ fuel tank, while Charge/Mass/Space still render LOCKED and the Charge card's coo
 checks map completeness, icon count and order, pitch/size uniformity and hint coverage across the whole
 fleet from assets alone. At runtime a vessel with no row now warns once per class instead of failing
 silently. The
-remaining flyable HUDs (Rhino, Serpent — 1/4, Time only, since 2026-09-25 — and the Urchin until
-its row is authored) have no or partial `abilityIcons` bindings and varied lower-right layouts; wiring them is per-vessel HUD work — the
+remaining flyable HUDs (Serpent — 1/4, Time only, since 2026-09-25 — and the Urchin until
+its row is authored; the Rhino left this list 2026-10-16 at 4/4) have no or partial `abilityIcons` bindings and varied lower-right layouts; wiring them is per-vessel HUD work — the
 framework above needs no further changes.
 
 ### 7.3 Gotcha: never write a control hint's SIZE

@@ -87,6 +87,10 @@ namespace CosmicShore.Gameplay
         /// the class remarks) - kept because the base contract requires it.</summary>
         protected override int DefaultSeed => 48;
 
+        /// <summary>Never baked (PrismLayoutBake): its lay is split into trails by build state the
+        /// bake does not carry, and its fit is closed-form and cheap.</summary>
+        protected override bool BakesLayout => false;
+
         /// <summary>The widest shipped arena is 4,144 prisms (intensity 1: 14 x 257 + 546).</summary>
         protected override int LayCapacity => 6000;
 

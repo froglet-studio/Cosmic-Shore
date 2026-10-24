@@ -30,7 +30,7 @@ namespace CosmicShore.Tests
     /// the previous ranking can only swap places if their crystal counts actually differ.
     /// Mutating that comparison to greater-or-equal changes no observable behaviour
     /// (verified by mutation, 2026-09-08); mutating the ThenBy to ThenByDescending breaks
-    /// two of these tests. Anyone "simplifying" the sort would silently lose tie protection
+    /// BreakingThatTie_IsPassingThem (re-measured 2026-10-17, offline harness). Anyone "simplifying" the sort would silently lose tie protection
     /// while pointing at a guard that never runs.
     /// </summary>
     [TestFixture]
@@ -149,13 +149,18 @@ namespace CosmicShore.Tests
         public void SetUp()
         {
             // The real toast channel: the driver posts through GameToastAPI, which raises
-            // this asset. Subscribing to it is what makes these assertions observe the
-            // SHIPPED posting path rather than a re-implementation of it.
+            // this asset. Without it GameToastAPI.Post returns before posting anything.
             var channel = Resources.Load<ScriptableEventGameToastData>(
                 "Channels/GameToastChannel");
             Assert.IsNotNull(channel, "Resources/Channels/GameToastChannel is missing - the "
                                       + "toast feed cannot post without it.");
-            channel.OnRaised += Record;
+
+            // Observe GameToastAPI.Posted, NOT channel.OnRaised: Soap's ScriptableEvent.Raise
+            // early-returns while !Application.isPlaying, so in Edit Mode the channel delivers
+            // nothing and every test expecting a toast read an empty list (DT-003: all seven
+            // red). Posted fires inside Post with the exact payload handed to channel.Raise,
+            // so this still observes the SHIPPED posting path.
+            GameToastAPI.Posted += Record;
 
             _host = new GameObject("RaceRankToastDriverTests");
             _host.SetActive(false);          // no Awake/Start, so nothing needs injecting
@@ -177,9 +182,7 @@ namespace CosmicShore.Tests
         [TearDown]
         public void TearDown()
         {
-            var channel = Resources.Load<ScriptableEventGameToastData>(
-                "Channels/GameToastChannel");
-            if (channel != null) channel.OnRaised -= Record;
+            GameToastAPI.Posted -= Record;
             if (_host != null) UnityEngine.Object.DestroyImmediate(_host);
             if (_gameData != null) UnityEngine.Object.DestroyImmediate(_gameData);
             _posts.Clear();
@@ -286,7 +289,9 @@ namespace CosmicShore.Tests
         {
             Poll(("A", 2), ("B", 2));
             Poll(("A", 2), ("B", 3));
-            AssertPosted("NewRaceLeader(B)");
+            // Breaking the tie is also passing A (see BreakingThatTie_IsPassingThem), so the
+            // overtake is announced after the leader, as in TakingTheLead_PostsBothSituations.
+            AssertPosted("NewRaceLeader(B)", "Overtake(B,A)");
         }
 
         // ---- overtakes -------------------------------------------------------------------
@@ -304,7 +309,9 @@ namespace CosmicShore.Tests
             Poll(("A", 3), ("B", 2));
             _posts.Clear();
             Poll(("A", 3), ("B", 4));
-            AssertPosted("Overtake(B,A)");
+            // B's pass also takes the lead, so the leader toast comes first (the shipped order:
+            // CheckLeaderChange runs before CheckOvertakes, pinned by TakingTheLead_PostsBothSituations).
+            AssertPosted("NewRaceLeader(B)", "Overtake(B,A)");
         }
 
         [Test]
@@ -323,7 +330,7 @@ namespace CosmicShore.Tests
             Poll(("A", 3), ("B", 3));
             _posts.Clear();
             Poll(("A", 3), ("B", 4));
-            AssertPosted("Overtake(B,A)");
+            AssertPosted("NewRaceLeader(B)", "Overtake(B,A)");
         }
 
         [Test]
@@ -335,7 +342,7 @@ namespace CosmicShore.Tests
             Poll(("A", 3), ("B", 2), ("C", 1));
             _posts.Clear();
             Poll(("A", 3), ("B", 2), ("C", 4));
-            AssertPosted("Overtake(C,A)", "Overtake(C,B)");
+            AssertPosted("NewRaceLeader(C)", "Overtake(C,A)", "Overtake(C,B)");
         }
 
         [Test]

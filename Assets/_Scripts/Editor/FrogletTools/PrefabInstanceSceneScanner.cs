@@ -193,7 +193,7 @@ namespace CosmicShore.Editor.Froglet
 
         // ── Instance body parsing ────────────────────────────────────────────────
 
-        enum Section { None, Modifications, RemovedComponents, RemovedGameObjects, AddedGameObjects, AddedComponents }
+        enum Section { None = 0, Modifications = 1, RemovedComponents = 2, RemovedGameObjects = 3, AddedGameObjects = 4, AddedComponents = 5 }
 
         static ScenePrefabInstance ParseInstance(string body)
         {

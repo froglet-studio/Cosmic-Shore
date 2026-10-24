@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8f8eaec790646b1934e57c9364e84dd, type: 3}
   m_Name: PrivacyConsentConfig
   m_EditorClassIdentifier: 
-  privacyPolicyUrl: 
+  privacyPolicyUrl: https://www.froglet.games/privacy
   ageTitle: Before you fly
   ageBody: What year were you born?
   consentTitle: Help us improve Cosmic Shore
@@ -21,3 +21,12 @@ MonoBehaviour:
   declineLabel: No thanks
   continueLabel: Continue
   policyLabel: Privacy policy
+  ageEyebrow: First flight
+  consentEyebrow: Privacy
+  primaryKeycap: A
+  secondaryKeycap: B
+  panelFillSprite: {fileID: 21300000, guid: ca4373d0715c706b95d5b8df5b647f0c, type: 3}
+  panelBorderSprite: {fileID: 21300000, guid: e75ec5d5d015d1257b05414fdff6f954, type: 3}
+  buttonFillSprite: {fileID: 21300000, guid: 9a86abd8613e387afc691f6e48d9830a, type: 3}
+  buttonBorderSprite: {fileID: 21300000, guid: 98099cf4a35661dd88b7e9cb399386b7, type: 3}
+  focusRingSprite: {fileID: 21300000, guid: c98bf509f8f1a509923a051d3b07c6c5, type: 3}

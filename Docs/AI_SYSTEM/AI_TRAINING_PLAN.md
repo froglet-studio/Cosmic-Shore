@@ -129,15 +129,21 @@ something (target, line-up, obstacles, skims taken and skipped, outcome) is plan
    - Ghosts (a top player's line as a race opponent) come almost free from the recorder.
 
 **Where L3 stands (2026-10-17):**
-- **Built:** the recorder, automatic in every mode and editor-only (step 1). Consent and upload (steps 2-3) wait on the
-  team decisions in §5.
-- **Data:** 46 Squirrel flights from editor play.
+- **Built:** the recorder, automatic in every mode (step 1). It compiles in editor and development builds; only the
+  automatic send to `bugledger/<user>` is editor-only (`BugHuntAutoSend`), so training data comes from the editor.
+  Consent and upload (steps 2-3) wait on the team decisions in §5.
+- **Data:** 46 Squirrel flights from editor play by the evening of 2026-10-16; on 2026-10-17 the bugledger branches hold
+  49 Squirrel and 5 Urchin Regatta flights (plus 2 Serpent and 4 unnamed).
 - **Readers:**
   - `situation_features.py`: situations and choices.
   - `learn_from_flights.py`: the Skim Race numbers, written into the Regatta config on 2026-10-17
     (`LEARNED_FROM_FLIGHTS.md`).
   - `racing_line.py`: the line averaged from clean, fast legs, with each leg's style read from the recording
     (`RACING_LINE.md`). This is a cheaper, explainable stand-in for step A's "recorded lines of the best players".
+  - `learn_drives_from_flights.py`: the other Regatta drives (Rhino, Dolphin, Manta, Stoat; the Urchin report only) as
+    Regatta-only variants (`SITUATION_RECORDING_PLAN.md` §9). No Rhino, Dolphin, Manta or Stoat flight exists yet; the
+    one variant in the repo, `MantaSoarAITuning_Regatta` (bands 0.8 / 0.85, 2026-10-17), was set from a model with
+    the learner's writer, and a person's Manta flights replace it.
 
 ### L4 — Ship: nothing deploys itself
 
@@ -168,6 +174,33 @@ Everything lands on `Ys-bleeding-edge` for testing; nothing goes to `bleeding-ed
 1. **Extend the existing genetic trainer** (recommended) or build a second one. This plan assumes extending it, with
    its authors' agreement.
 2. **Where player flights are stored** (T4), and the privacy wording. The core four decide; Shombith owns UGS.
+
+   **Where the team's own editor data lives today, measured 2026-10-17:**
+   - Flights go to each person's `bugledger/<user>` branch, which is never merged into `bleeding-edge`.
+   - 67 flights on 4 branches: about 33 MB of flight JSON, roughly 0.5 MB each. yskha alone has 48 flights (22.5 MB).
+   - The whole repo is 3.8 GB packed.
+
+   **What that is fine for, and what it is not:**
+   - **Fine for the team's own editor play at this scale:** reviewable, versioned, read by every tool
+     (`racing_line.py`, `learn_from_flights.py`, `vessel_mode_chart.py`), and nothing leaves the team.
+   - **It grows forever.** Git keeps every file, and `git fetch origin` pulls every bugledger branch into every clone.
+     The 100-races-per-person capture plan (`RACING_LINE.md` §4) is about 50 MB per person.
+   - **Players' data must never go in git.** That is a privacy matter, not a size one.
+
+   **Recommended, in order:**
+   1. Now: keep the editor flights on bugledger branches. Optionally gzip them: lossless, so every byte comes back.
+      JSON this regular should shrink several times; it is a small change where `BugHuntReports` stores the file, plus
+      a `.gz` reader in the tools.
+   2. When players record (consent, T4): small per-race summaries in Cloud Save, the way the match-replay work stores
+      its `REPLAY_INDEX` (`claude/match-replays-5t3dbr`). Hull, mode, intensity, time, finished and rings are a few
+      hundred bytes; the chart reads exactly those.
+   3. The full flights (about 0.5 MB, the tracks) go in a file store: Cloud Save files if our version has them, the
+      R2 bucket, or our own endpoint. This is the open decision above (task T-20261015-0064).
+
+   **Keep the data whole** (Yash, 2026-10-17): lossless compression only. Nothing lossy: no fewer decimals, samples or
+   columns, no trimmed stretches, never summaries alone. The brief for whoever wires UGS, Shombith first, is
+   `AI_DATA_IN_UGS.md`. A hook (`.claude/hooks/ugs_ai_data_nudge.py`) shows it to any session whose prompt is about
+   UGS.
 3. **Whether a network-driven AI (T5) may ship**, or whether learning only moves the numbers of hand-written AIs.
 4. **Which hulls get real drives next.** The generic drive is a stand-in, and a hull's own abilities are modelled when
    its AI is built (`REGATTA_AI_ROADMAP.md`).

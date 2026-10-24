@@ -5,7 +5,8 @@
 (`Docs/GAMECANVAS.md` § "Shared prefabs are single sources of truth").
 
 **Scope:** the **centre** is §1. The **left** is §2 — the goal stack, which
-replaced the ring cluster. The right volume/pause button is untouched.
+replaced the ring cluster. Between the two, in arena matches, the pilot-swap targets (§2.7).
+The right volume/pause button is untouched.
 
 ---
 
@@ -302,6 +303,65 @@ shipping a bar the plate clips.
 win condition, 0.12 for context — on top of the `CanvasGroup` that already dims a
 secondary row. The lockup's bloom is a STATE (it lights on upgrade); here it is rank, and
 the primary row is the one worth lighting because it is the one you are chasing.
+
+### 2.7 Between the two — the pilot-swap targets (2026-10-21)
+
+```
+  ┌ goal stack ─────────┐   ┌────┐ ┌────┐   ┌ 12 ┬ 7 ┬ 3 ┐
+  │ ◈ COLLECT …  18/30  │   │ ◇  │ │ ◇  │   │ score bar   │
+  └─────────────────────┘   └────┘ └────┘   └─────────────┘
+                             [ 1 ]  [ 2 ]    <- keycap on pad/keyboard; nothing on a phone
+                             LEFT   RIGHT
+```
+
+Garrett asked for it on 2026-10-21: the space between the score bar and the goal stack shows
+the teammates a swap would put you in, and on a phone, with no D-pad, they are tappable.
+
+**What it shows.** In an **arena match** (`GameDataSO.IsArenaMatch`) with the turn running,
+the hull the arena pilot swap would move the local human to each way round the team's ring:
+the **left** tile is D-pad left / key 1 (the previous hull), the **right** tile is D-pad right /
+key 2 (the next). Each tile is that hull's class icon (`SO_Vessel.IconActive`, from
+`SO_Classlist_All`). With **one** AI teammate both directions land on the same hull, so only the
+right tile shows. With **none**, or in any other mode, nothing shows. The targets come from
+`PilotSwap.ResolveSwapTargets`, which runs the same ring pick (`TryPickRingTarget`) over the same
+team set (`CollectTeamHulls`) as `Player.RequestPilotSwap`, so a tile always shows where a press goes.
+
+**The keycap.** On a pad the chip is the `ControlGlyphSet` entry for `PadDpadLeft` /
+`PadDpadRight` (its `padLabel`, else its `padGlyph`). **The set authors no D-pad entry today, so a
+pad player sees no chip until one is added.** On a keyboard the chip is the config's
+`keyboardLeftLabel` / `keyboardRightLabel` (`1` / `2`). A phone with no pad
+(`KitInputDevice.ShowsControlHints` false) draws no chip. The device is the pilot's
+`InputController.ActiveDeviceFamily`.
+
+**Tapping.** A click or tap on a tile calls `Player.RequestPilotSwap(-1 / +1)`, the gesture's own
+path, on every device (the 0.75 s debounce and the server's checks apply as usual). While a tile
+is shown its rect is registered with `FlightTouchClaims`, as the ability cards are, so a finger
+that lands on it presses it and is not also read as a flight thumb.
+
+**Where and how big.** `MiniGameHUD.Start` ensures it (`EnsurePilotSwapIndicator`), the way it
+ensures the spectator badge, under the HUD root, whose `SafeAreaFitter` keeps it in the safe
+area. Every 0.25 s it reads the goal stack's right edge and the score bar's left edge and
+centres the row in that gap, top aligned with the goal stack, 16 units clear of both. If the
+row is wider than the gap it moves against the score bar's margin. A tile is
+`tileSize` (72) canvas units, raised so it is at least **9 mm** on the glass: `9 / 25.4 ×
+Screen.dpi` (160 when the dpi is unknown) divided by the canvas scale factor.
+
+**It adds no prefab or scene edit.** Everything it draws with (vessel list, glyph set, theme,
+font, sizes, `UITheme` colour tokens, the optional caption shipped **empty**, the keyboard
+labels) is in `Resources/PilotSwapIndicatorConfig.asset` (`PilotSwapIndicatorConfigSO`). Built in
+code rather than added to `GameCanvas.prefab` because a hand-made YAML component is invisible in a
+diff review and does not reach a scene that removed or forked the HUD's components
+(`Docs/GAMECANVAS.md` §9). One `Ensure` call in `MiniGameHUD` reaches every scene that
+instances the canvas.
+
+**It polls, at 4 Hz.** The roster grows late on a client, a teammate's hull can die, and the local
+pilot's own hull changes with every swap. No single event covers all three. The poll reuses its
+lists and redraws only when the answer changes. Tests: `PilotSwapIndicatorTests` (the targets
+match the gesture's ring, the fingertip arithmetic, and every arena hull has an icon in the list).
+
+**Not verified in Unity or on a phone yet.** Check that the tiles sit in the gap and clear the
+FPS panel on 16:9, 4:3 and a notched phone, that a tap swaps and does not also steer, and that the
+keycaps follow the device.
 
 ## 3. Adding a mode
 

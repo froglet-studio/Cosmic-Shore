@@ -30,10 +30,35 @@ the fleet's one-thumb model (`SingleStickVesselTransformer`, via `BrittleStarVes
 | Aim | **right stick** | P ; L ' (no aim on the mouse scheme) | Direction turns the ring (brings a turret round; turns the five guns or cords with it); deflection moves the guns / cords in and out |
 | Ring Detonation | **LT** | Left Shift / RMB | Throw the ring — only with a spare ring in stock |
 
-Bindings are in the **shared** list (`_inputEventShipActions`), the Sparrow's shape, so touch reaches RT and Ring
-Detonation through its own trigger gestures. Charge Mode is on `FlipAction` (InputEvents 3: RB / E), the only free face
-control the input layer raises; on touch that event comes from turning the phone (`DeviceOrientationHandler`), so a
-landscape flip toggles Charge Mode there. Touch has no face buttons for the other three modes (follow-up F1).
+Bindings are in the **shared** list (`_inputEventShipActions`), the Sparrow's shape; touch has no overrides. Charge Mode
+is on `FlipAction` (InputEvents 3: RB / E), the only free face control the input layer raised when it shipped. Turning
+the phone no longer raises it (2026-10-21, `DeviceOrientationHandler`): on a phone every control is an on-screen button
+(next section).
+
+### On a phone (2026-10-21, Garrett: "it will need all four totems and two fire buttons, so 6 buttons ... The fire button can become the right joystick once held. and it can be rotated without firing by touching down elsewhere")
+
+The Brittle Star flies the **TotemButtons** scheme (`Tools/Build/author_touch_profiles.py`, `Resources/TouchControlProfiles.asset`):
+lifting a thumb raises nothing, and six buttons sit round the right thumb.
+
+| Button | Raises | What it does |
+|---|---|---|
+| Speed Mode card (Time) | `Button1Action` (A) | Select Speed Mode (tap again: Cruise) |
+| Creation Mode card (Mass) | `Button2Action` (B) | Select Creation Mode |
+| Space Mode card (Space) | `Button3Action` (X) | Select Space Mode |
+| Charge Mode card (Charge) | `FlipAction` (RB) | Select Charge Mode |
+| **Fire** (extra, primary) | `RightStickAction` (RT), held, **aims while held** | Fires while the finger is down; dragging that finger from where it landed is the right stick, so it turns the ring and moves the guns / cords in and out as it fires |
+| **Ring** (extra, primary) | `LeftStickAction` (LT), held, **aims while held** | Throws the ring on the press (it flies along the nose, not the aim); dragging the held finger then turns the ring without firing |
+
+- **Steering** is the left thumb (or any single thumb). With one flight thumb the touch strategy writes the right stick
+  as zero on a single-stick hull, so a hard turn no longer turns the ring or splays the guns (it used to mirror the
+  steering thumb onto the right stick).
+- **Aiming without firing**: put a second finger down on the right side of the glass. It is the right stick, measured
+  from where it landed (`TouchInputStrategy`, two flight touches). `BrittleStarExecutor.AimStick` reads
+  `RightNormalizedJoystickPosition`, which the held aim button's drag also writes, so both reach the same aim.
+- **RT depth**: a phone has no analog trigger (`RightTriggerAnalog` stays 0), and `TriggerDepth` reads a press with no
+  depth as a full pull, so Fire is always the full rate and the Charge cords are always sabers while it is held.
+  Whips (released cords) are what Charge Mode shows with Fire up.
+- **Not reachable on a phone**: a partial trigger pull (see above); everything else is.
 
 Modes are **exclusive**: one at a time, or **Cruise** (none). All four need the mounted ring (off only for the half
 second the ring regrows after a throw).
@@ -42,7 +67,60 @@ Concept art from the design studio's first pass: `Docs/Studios/BrittleStar/*.jpg
 ring detonation, the Zephyr's circle ring). It draws the ring **suspended** round the cockpit by energy, not joined by
 struts — the shipped hull still has physical arms (follow-up F8).
 
-## 2. The hull (`BrittleStarHullForm` / `BrittleStarHullBuilder` / `BrittleStarAnimation`)
+## 2. The hull (`BrittleStar.fbx` / `BrittleStarHullModel` / `BrittleStarAnimation`)
+
+**A real FBX since 2026-10-18** (`Assets/_Models/Vessel Models/BrittleStar.fbx`, built by `/vessel-model` from
+`Tools/Build/vessel_model/specs/brittlestar.py`; `build.py brittlestar --check` is its drift gate; sheet
+`Docs/VesselModels/sheets/brittlestar_after.jpg`). It replaced the procedural placeholder (`BrittleStarHullForm` /
+`BrittleStarHullBuilder`, 844 flat triangles in two materials), which the owner judged "terrible even as placeholders"
+(2026-10-17) with every other C# runtime hull. Like the Butterfly it has no artist file behind it, so it is built to the
+fleet convention for a new vessel, and its gameplay numbers are the placeholder's: **no tuning moved**.
+
+| | |
+|---|---|
+| Nodes | mesh `mesh`, armature `rig`, root bone `hull` (the disc, the cockpit pod, the canopy) at the vessel origin; preset `zup` |
+| Bones (37) | `ring` at (0, 0, −0.35), the placeholder's Ring pivot: everything under it is what the firing rotation turns and Ring Detonation throws. `arm.1`..`arm.5` (arm.N = the placeholder's point N−1: point 0 straight up, then counter-clockwise seen from behind) from the bearing collar (r 1.86) to the point (r 6). Under each arm, `jet.N` (the nacelle, at the point), `jet.N.mouth` (the nozzle lip, z −0.85, the placeholder's flame root), `jet.N.flame` (the plume) and `gun.N` (barrel, from z 0.05), `gun.N.mouth` (z 0.9 = `BrittleStarHullForm.MuzzlePosition`). The cockpit's own: `jet` / `jet.mouth` / `jet.flame` (nozzle z −0.9) and `gun` / `gun.mouth` (muzzle z 1.65). Every bone skins geometry (the import's `optimizeBones` strips one that skins nothing) |
+| Size | x ±6.07, y −5.21..6.35, z −1.9..1.65 (Unity, flames at rest length 1) against the placeholder's ±5.95, −5.07..6.26, −1.9..1.69: within 2% on every axis. Ring radius 6, its half-thickness 0.22 (the explosion's disk), the six muzzles and nozzles exact |
+| Slots | Domain (radial shields, dorsal arm plates, the halo's rear channel, nacelle bands: 13% of the surface), Body (gunmetal), Window (the canopy and the five aboral lenses), Engine (the six bells and plumes) |
+| Morphs | the placeholder's art direction at the convention's travel: Charge (pods ×1.5 girth ×1.3 length, barrels ×1.6 girth and 0.3 forward, the arm spines bristle ×3.4) 4.2%, Mass (the cockpit ×1.25 long from its tail, its pod ×1.45 girth, the disc ×1.12) 4.9%, Space (the barrels ×2.2) 5.3%, Time (the halo from pentagon to circle) 6.7% of the diagonal. Each moves its barrels by the form's own distances; the muzzles follow the drawn barrel mouths' own travel (`BrittleStarHullModel.ReadMouthTravel`) |
+| Takes | none drive it (`BrittleStarAnimation` writes the bones in code); `bankright` / `bankleft` (the hull's 28° lean) and `ringturn` (the ring turned 36°) are documentation poses with `pose_expect` |
+| Budget | 13,712 triangles, 7,242 vertices |
+
+**Clade to ship.** Seen from the camera (straight behind, 38 u: ~25 px per unit, the ring ~300 px wide) the pilot sees
+the star's ABORAL side, so that is where the read is built: the **central disc** is the armoured hull core with the main
+engine in its centre; its five pairs of **radial shields** are sunken domain plates at each arm's root, with five cyan
+**lenses** between them (the brittle star's photoreceptor lenses, as sensor windows); the **oral jaws** are the forward
+cockpit pod's five interradial plates converging on the nose gun, with the canopy dome on top; the **arm base** is a
+slew-ring **bearing collar** round the disc that the ring assembly turns on; each **arm** is a boom of eight armour
+**ossicles** (a sunken domain dorsal plate each) on knuckle joints, bowed the same way round like a swimming brittle
+star's, its **arm spines** short radiator spines on every ossicle's flanks; the **tube feet** are the thruster nacelles at
+the arm tips, bells glowing; the **ring** is a structural halo through the tips, a channelled box beam whose rear channel
+carries the domain colour; each tip carries a shrouded **gun** with a muzzle brake.
+
+**Integration is by NAME, not by fileID** (an FBX's sub-object fileIDs cannot be derived offline). The prefab's
+`BrittleStarHull` holds the model instance; its MeshFilter / MeshRenderer are gone and its hull component, on the SAME
+fileID (so `BrittleStarExecutor.hull` still points at it), is now `BrittleStarHullModel`. That component finds `ring`,
+the mouths, the flames and the SkinnedMeshRenderer by name in `Awake`, and implements `BrittleStarHullSource`, the
+surface the executor and the animation now use instead of the builder: the ring's pose (a turn about the nose axis
+composed onto the bone's captured rest, and the bloom scale), the flames (a scale along whichever local axis of the bone
+runs down the exhaust), six muzzle transforms ON the drawn barrel mouths (the `gun.N.mouth` bones, built at
+`BrittleStarHullForm.MuzzlePosition`), carried by each barrel's own blend-shape travel read once from the mesh, so a
+round leaves and a cord roots exactly where the drawn barrel ends at every element weight and in whatever frame Unity
+imports the bones (2026-10-18: Garrett saw the guns and cords leave away from the ring corners; until then the muzzles
+were placed from the form's hull-space numbers, which only meet the drawing when the bones import in the frame the
+spec assumes), the thrown ring (a `BakeMesh` copy of the ring's triangles,
+recentred on its pivot), and the domain material the explosion wears (slot 0). The element shapes are blend shapes the
+base `VesselAnimation` drives by name, so the builder's `IProceduralElementMorphSource` duty ends; `VesselCustomization`
+paints the model by identity (`_domainReplacesMaterials` = GreenAccentVesselMaterial) after swapping the renderer-less
+hull for its skinned child. `author_brittlestar_assets.py --check` now asserts the model component, the nested model and
+a hull with no leftover renderer. Crystal hull fusion finds the skinned hull and solves it at runtime until somebody
+runs **Bake Crystal Hull Fusions** for it.
+
+**The procedural placeholder** is kept in the tree until the owner accepts the model, then retired:
+`BrittleStarHullForm.cs` (still the source of the ring's numbers and the muzzle positions), `BrittleStarHullBuilder.cs`
+(no longer on the prefab; it now implements `BrittleStarHullSource` too, so putting it back on the hull's fileID restores
+it), `Tools/Build/brittlestar_harness/` (`render_brittlestar_card_icon.py` was retired 2026-10-18: it drew this form over the model's card). The bullets below describe the shared
+design and, where they name parts, the placeholder's:
 
 - **Ring size** (Garrett, 2026-10-14): radius **6** — 2.5× the first cut — so Creation Mode's five corner trails lie
   12 u apart across the path. The vessel's hit box still spans only the cockpit and the inner arms (4.6 × 4.6 × 2.4):
@@ -62,7 +140,7 @@ struts — the shipped hull still has physical arms (follow-up F8).
   gone while thrown and **blooms back** (ease-out-back) while rebuilt. The drawn hull leans 28° into a full-stick turn
   (fleet-scale puppetry, vessel rule 24). Channel discipline: the animation writes transforms only; the builder writes
   vertices and the muzzles' positions.
-- **Card icons** are renders of this hull (`Tools/Build/render_brittlestar_card_icon.py`), the four ability icons are
+- **Card images** (icon, inactive, silhouette, large, hangar preview) are renders of the MODEL (`Tools/Build/vessel_model/render_cards.py BrittleStar`, `--check`), the four ability icons are
   `Tools/Build/author_brittlestar_icons.py` (the Thresher's icon language).
 
 ## 3. The abilities (`BrittleStarExecutor`, tuning `BrittleStarConfigSO`)
@@ -92,15 +170,24 @@ struts — the shipped hull still has physical arms (follow-up F8).
   ring. They turn with the ring's firing rotation, so aiming while building twists the five lines round each other.
 - **The same small block as the base trail** (Garrett, 2026-10-16: "use the same smaller prisms for all 5 prism trails
   in mass mode"): the spawner's own `BaseScale` (`VesselPrismController.TrailBaseScale`, a read-only getter added for this)
-  × **`creationBlockScale` ×1 → ×1.8 at Mass 10** (`EvaluateReplicated`) — so at Mass 0 all six trails lay one block.
+  with its **x and y × `prismWidthScale` ×1 → ×2 at Mass 10** (`EvaluateReplicated`; §3.3) — so all six trails always
+  lay one block. (Until 2026-10-16 this was `creationBlockScale`, ×1 → ×1.8 on all three axes, corner trails only.)
   At most 3 blocks per corner a frame, excess dropped (rule 17).
 - **The slowest mode**: cruise × `creationSpeedMultiplier` **×0.5**.
 - While Creation is on, the cockpit's own trail is replaced: the base spawner's pen is held up (`SetSpawnerPaused`, on
   EDGES only, rule 48). The corners lay only while the spawner runs, above 3 u/s and not attached.
 
 ### 3.3 The base trail
-- "A single small block when not in creation mode": `BaseScale` **(1.5, 1.5, 3)** (Garrett, 2026-10-16: "reduce the base
-  prism size"; was 2.5 × 2.5 × 4.5), wavelength 6, `prismType` Sparrow, laid 2 u behind the cockpit, skimmer clearance on.
+- "A single small block when not in creation mode": `BaseScale` **(1, 1, 6)** (Garrett, 2026-10-16: "reduce the base
+  prism size", then "stretch the prisms in z and decrease them in x and y at base"; was 2.5 × 2.5 × 4.5, then
+  1.5 × 1.5 × 3), wavelength 6 — so at cruise the blocks meet end to end — `prismType` Sparrow, laid 2 u behind the
+  cockpit, skimmer clearance on. The fleet spawner lays a single (gapless) trail at `BaseScale.x / 2` wide, so the base
+  trail's block is 0.5 × 1 × 6 while the corner trails, which read `TrailBaseScale` whole, lay 1 × 1 × 6 (inherited
+  from the first cut, not introduced here).
+- **MASS is the blocks' girth** (Garrett, 2026-10-16: "mass can control the x and y"): `prismWidthScale` **×1 → ×2 at
+  Mass 10** on the x and y of every block the hull lays, never its length — the base trail through the fleet spawner's
+  `WidthMultiplier` / `ThicknessMultiplier` (the executor is their single writer on this hull, `ApplyBlockGirth`, and
+  resets them on disable), Creation Mode's corners at lay time.
 - **Danger trail**: while the guns are OVERHEATED in Space Mode, the spawner lays **danger prisms** — the fleet's
   `EnableDangerMode` / `DisableDangerMode` (the `IsDangerous` flag through `Prism.Initialize`), written on edges only.
 
@@ -121,15 +208,23 @@ struts — the shipped hull still has physical arms (follow-up F8).
   is owed in seconds and paid in whole volleys, at most four a frame (rule 17). The depth is the owner's own analog
   trigger; a device without one (keyboard, mouse), the autopilot and **every remote replica read a press as a full pull**
   — only the press and release replicate (the Thresher's rule, `THRESHER.md` §7).
-- **Heat** (`BrittleStarRules.HeatState`, tested): every round adds `heatPerRound` 0.0012, so heat per second is the pull ×
+- **Heat** (`BrittleStarRules.HeatState`, tested): every round adds `heatPerRound` 0.000637, so heat per second is the pull ×
   the guns firing ("proportional to firing rate (trigger pull) and number of guns firing"). Heat bleeds off at `coolRate`
   0.12/s, plus `chargeCoolRate` 0.6/s × how far Charge Mode's cords are out ("using charge lasers cools the guns"). At 1
   the guns **overheat**: nothing fires until heat falls to `overheatRecoverBelow` 0.35, and while overheated **in Space
   Mode the trail lays danger prisms** (§3.3). Measured on the shipped numbers: the five guns at a full pull overheat in
-  ~2.4 s; one turret at a full pull (0.108/s) runs under passive cooling and never does; recovery takes ~5.4 s passively,
+  ~6 s (Garrett, 2026-10-17: "from 6 to 20 seconds"; ~2.4 s at the first 0.0012); one turret at a full pull (0.057/s)
+  runs under passive cooling and never does; recovery takes ~5.4 s passively,
   ~0.9 s with the cords out.
-- **Cost**: Space Mode at a full pull fires 450 rounds/s; overheat ends a burst after ~2.4 s, and the rounds fly 4.5–9 s,
-  so ~1,100 are alive per hull per burst. The turrets' pool is 1400 / max 2400 again.
+- **SPACE holds more heat** (Garrett, 2026-10-16: "have the maximum heat scale with space"; 2026-10-17: "from 6 to 20
+  seconds"): `heatCapacity` **×1 → ×3.33 at Space 10**, the heat the guns hold in Space 0 units. Heat and cooling are in
+  those units, so a full-pull burst of the five guns runs **~6 s at Space 0 and ~20 s at Space 10** (tested); `Heat01` stays the
+  share of the current capacity (the HUD's card). Recovery comes after shedding the same 0.65 of heat at every Space
+  (`HeatState.RecoverMark`), so the lockout stays ~5.4 s — Space lengthens the run, never the wait.
+- **Cost**: Space Mode at a full pull fires 450 rounds/s; overheat ends a burst after ~6 s at Space 0 (rounds fly
+  4.5 s: **~2,000 alive** per hull) and ~20 s at Space 10 (rounds fly 9 s: **~4,000 alive**). The turrets' pool is
+  1400 / max 2400, sized for Space 0: past it `GenericPoolManager` creates rounds on demand and destroys the extras on
+  release. Profile a Space 10 burst before raising the pool (F9).
 
 ### 3.4a Charge Mode — the five cords (CHARGE)
 - **Five cords, one from each turret** (Garrett, 2026-10-15 → 2026-10-16: "make these melee cords behave like whips, so
@@ -147,10 +242,15 @@ struts — the shipped hull still has physical arms (follow-up F8).
   and 144 fps whip alike (tested within 30%).
 - **RT, analog, from whip to saber**: the pull (eased at `cordRigidityRate` 12/s so a digital press does not snap)
   moves every dial at once — length `cordLength` 80 u × `cordLooseLengthScale` **1.5 → 1** (120 u whip → 80 u saber),
-  wave stiffness `cordLooseWave` **180** → `cordRigidWave` 2500 /s², damping `cordLooseDamping` **0.4** → `cordRigidDamping`
-  14 /s, and a pose spring `pull² × cordPose` 1600 /s² onto the straight arm line. Measured (tests, 72° ring flick): the
-  whip's flick reaches link 4 at ~0.5 s, the middle at ~0.8 s and the tip at ~1.3 s, and is still swinging 2.5 s later;
-  the saber's tip strays a third as far and every link is straight once it settles.
+  wave stiffness `cordLooseWave` **144** (2026-10-16: 80% of the first 180, "even less stiff") → `cordRigidWave`
+  2500 /s², damping `cordLooseDamping` **0.4** → `cordRigidDamping` 14 /s, and a pose spring `rigidity² × cordPose`
+  1600 /s² onto the straight arm line. **A full pull is not fully rigid** (Garrett, 2026-10-16: "not completely rigid at
+  full press… 30% of the current max elasticity", then 2026-10-17: "further reduce… to 40%"): it shortens the cords all
+  the way to 80 u but takes the stiffness dials only `cordMaxRigidity` **0.4** of the way from whip to rigid, so the saber
+  keeps 60% of the whip's give (tested:
+  a flick bends it more than the rigid dials, under half as far as the whip, and it settles straight). Measured on the
+  first whip (180, tests, 72° ring flick): the flick reaches link 4 at ~0.5 s, the middle at ~0.8 s and the tip at
+  ~1.3 s, and is still swinging 2.5 s later; the 144 whip carries it ~10% slower.
 - **The right stick** works the cords as it works the guns: direction turns the ring and the five cords with it,
   deflection moves them in (meeting ahead) and out (splayed 25°).
 - **They slice prisms** — the Thresher's chain cut: every frame each link is swept through `QuerySegment`, and every prism
@@ -171,21 +271,45 @@ struts — the shipped hull still has physical arms (follow-up F8).
     not its control radius, which some modes collapse to 0), else that cell's `ExpectedNucleusWorldRadius`, else the
     nearest active cell's, else `ringBlastFallbackRadius` 200 u — the standard cell's nucleus is ~392 u, so the disk is
     ~780 u across;
-  - **as thick as the ring**: ± the ring's strut half-thickness (`BrittleStarHullBuilder.RingHalfThickness`, 0.22 u) ×
-    **`blastScale` ×1 → ×4 at Charge 10**. A prism is caught when its own half-extent along the disk's normal overlaps
+  - **four times as thick as the ring** (Garrett, 2026-10-18: "quadruple the ring explosion thickness"): ± the ring's
+    strut half-thickness (`BrittleStarHullBuilder.RingHalfThickness`, 0.22 u) × **`ringBlastThicknessScale` 4** ×
+    **`blastScale` ×1 → ×4 at Charge 10** — 1.76 u thick at Charge 0, 7 u at Charge 10. A prism is caught when its own half-extent along the disk's normal overlaps
     the disk (`BrittleStarRules.DiskReaches`, tested — a disk, not a sphere: a block a few units off the plane survives);
   - swept out from the ring's own radius to the nucleus's over `ringBlastSeconds` 0.7 s (ease-out, ten queries per
     explosion, not one per frame), **destroying every prism it passes**, any domain — "destroying both enemy and allied
     mass" (shields pop first; super-shielded mass refuses: `Prism.Damage`);
   - **stripping petals** from every rival hull it passes: a scored `MissileBlast` hit through `CombatHitDrain`, once per
     hull per explosion (petals only — nothing is moved);
-  - drawn as an expanding band in the domain's colour (`ringBlastBandWidth` 6 u wide, as thick as the disk), one pooled
-    dynamic mesh per live explosion.
+  - **drawn five-fold, out of the ring that blew, as faceted VOLUMES** (Garrett, 2026-10-18: "a fun effect with 5
+    fold symmetry that looks awesome and like it came from the ring that exploded", then "nothing in the environment
+    should ever look flat like this, that is reserved for ui" - `Docs/claude/SHADERS_AND_PERFORMANCE.md`;
+    `BrittleStarBlastForm`, pure, tested), in the domain's lit material, in the thrown ring's own frame and turning on
+    with its spin (`ringBlastSpinDegrees` 108°, braking to a stop over the sweep). Every part is a beam with five flat
+    facets round it (the prism-cut read of the hull and the crystals), and **every thickness is a share of the front's
+    radius**, so it reads as a volume at any size:
+    - **the front** — a faceted torus whose outer ridge is the disk's true edge, `ringBlastFrontWidth` 0.05 × the radius
+      wide and `ringBlastFrontHeight` 0.04 high, swelling into **five crests** (`ringBlastCrestDepth` ×2.5) where the arms
+      meet it;
+    - **the ring, grown** — the thrown ring's own pentagon as faceted beams with a **crystal knot** at each corner, its
+      corners at `ringBlastPentagonLag` 0.8 of the front;
+    - **five arms**, the animal's — tapered faceted beams (`ringBlastArmWidth` 0.08 × the radius at the root, 30% at the
+      tip) from each of the ring's points, curling back `ringBlastArmCurlDegrees` 30° against the spin, swinging sideways
+      (`ringBlastArmWiggle` 0.06 of their length) and, a quarter-wave on, **coiling out of the plane** within
+      `ringBlastRelief` 0.12 × the radius; each is led by a **crystal head** (the ring's pod, flying out) that meets the
+      front at its crest. The arms and the ring thin as the blast spends itself.
+    **Honest where it counts** (tested, with negative controls): nothing is drawn past the front, so the edge shows
+    exactly how far the blast reaches. The disk that does the damage is only 1.76-7 u thick, so the volume necessarily
+    stands above and below it (the front ±2% of the radius, the arms and crystals within ±12%): that overstates the
+    reach out of the plane, never along it. The shape maps onto itself turned a fifth of a turn, and a flat version fails
+    `Blast_IsAVolume_NotAFlatSheet`. One pooled dynamic mesh per live explosion, ~5,900 vertices rebuilt a frame for
+    0.7 s (lists reused; the mesh upload is the cost). The Vessel Studio page draws the same shape lit and flat-shaded
+    (`blastForm`, its line-for-line twin, matched to the C# within 0.001 u).
   The fleet AOE prefab and the plane wave of the first cut are retired.
 - **The ring stock** (Garrett, 2026-10-16: "only let them shoot the ring if they have a spare one that automatically
   regrows. they can store two extra rings, and they get 1 ring per crystal"; `BrittleStarRules.RingState`, tested):
   - the hull always carries a ring; **throwing it needs a SPARE**, and the mounted ring then **regrows on its own** over
-    `rebuildSeconds` 0.5 (blooming back) — the hull is never ringless, and the modes are off only during that half second;
+    `rebuildSeconds` **3** (Garrett, 2026-10-16; was 0.5), blooming back — the hull is never ringless, and the modes are
+    off only during those three seconds;
   - a crystal adds **one spare**, up to `maxSpareRings` **2**; at a full stock it adds nothing;
   - a hull starts with no spare, so its first throw needs a crystal.
   This retires the class document's one stored charge, its **Overdrive** (a crystal while charged: all modes at once —
@@ -207,7 +331,7 @@ The class document predates the rule *"no other pvp in the game … we should on
 | Shots "knock back enemy vessels, reducing their momentum", stacking per hit | Every round on an enemy hull is a **scored bullet hit** (petals ejected, 1 point); a Charge Mode cord across one is a scored **Strike** (8 points, once per victim per 0.5 s). Nothing moves or slows the hull. |
 | Destruction Mode hits "disable enemy vessel mass production temporarily" | Retired (CONTROL tier). Space Mode's five guns take petals five times as fast as one; Charge Mode's cords strike. |
 | Ring blast: knocked back, momentum reduced, trail disabled | The ring explosion's scored **MissileBlast** hit, once per hull per explosion, through `CombatHitDrain.TryAdmit` (a warded pilot is neither scored on nor robbed). |
-| Space (Hunter): "increased shot range and **nudge intensity**" | Range only — the nudge went with knockback. |
+| Space (Hunter): "increased shot range and **nudge intensity**" | Range, and the guns' heat capacity (2026-10-16) — the nudge went with knockback. |
 | Friendly fire "accidentally disable allied mass production" | Friendly fire stays on **mass** (rounds and blasts break allied prisms); nothing touches an allied hull. |
 
 ## 4. HUD (`BrittleStarHUDController` / `BrittleStarHUDView`, `BrittleStarHUDVariant.prefab`)
@@ -254,8 +378,11 @@ cluster (≥ 18), or into any cluster when its stock is full (a crystal would be
 
 | Role | Path |
 |---|---|
-| Pure hull geometry + morphs | `_Scripts/Controller/Vessel/BrittleStarHullForm.cs` |
-| Hull emitter (meshes, muzzles, materials) | `_Scripts/Controller/Vessel/BrittleStarHullBuilder.cs` |
+| The hull model and its spec (§2) | `_Models/Vessel Models/BrittleStar.fbx`, `Tools/Build/vessel_model/specs/brittlestar.py` |
+| The hull surface the executor and animation use | `_Scripts/Controller/Vessel/BrittleStarHullSource.cs` |
+| The model's parts, found by name (ring, muzzles, flames, thrown ring) | `_Scripts/Controller/Vessel/BrittleStarHullModel.cs` |
+| Pure hull geometry + morphs (the ring's numbers and the muzzle positions; the placeholder's geometry) | `_Scripts/Controller/Vessel/BrittleStarHullForm.cs` |
+| The procedural placeholder (off the prefab since 2026-10-18; kept until the model is accepted) | `_Scripts/Controller/Vessel/BrittleStarHullBuilder.cs` |
 | Pure rules (ring life, modes, mode speed, aim, spread, arm direction, the disk, range) | `_Scripts/Controller/Vessel/BrittleStarRules.cs` |
 | Pure cord physics (Destruction Mode's five cords) | `_Scripts/Controller/Vessel/BrittleStarCord.cs` |
 | Flight model (Speed Mode multiplier) | `_Scripts/Controller/Vessel/BrittleStarVesselTransformer.cs` |
@@ -271,7 +398,7 @@ cluster (≥ 18), or into any cluster when its stock is full (a crystal would be
 | Tests | `_Scripts/Tests/Editor/BrittleStarTests.cs` (29: five on the cords) |
 | Creation tool | `Tools/Build/author_brittlestar_assets.py` (`--check`, `--self-test`) |
 | Offline test runner | `Tools/Build/brittlestar_harness/run.sh` (`--self-test`, `--obj DIR`) |
-| Art | `Tools/Build/author_brittlestar_icons.py`, `Tools/Build/render_brittlestar_card_icon.py`; concept art `Docs/Studios/BrittleStar/` |
+| Art | `Tools/Build/author_brittlestar_icons.py`, `Tools/Build/vessel_model/render_cards.py`; concept art `Docs/Studios/BrittleStar/` |
 
 ### How the prefab was made
 
@@ -295,7 +422,7 @@ identical on the Stoat and Sparrow and shared by all 16 vessel prefabs — inher
 |---|---|---|
 | `speedModeMultiplier` (Time) | `BrittleStarConfig` | 6 → 8, floor 4 |
 | `speedModeSpacingFollow` / `speedModeStretch` | `BrittleStarConfig` | 1 / 1 (prisms stretch with the spacing) |
-| `creationBlockScale` (Mass, × the base trail's block) | `BrittleStarConfig` | 1 → 1.8 |
+| `prismWidthScale` (Mass, × every block's x and y) | `BrittleStarConfig` | 1 → 2 |
 | `creationSpacing` / `creationRadiusScale` / `creationOffset` | `BrittleStarConfig` | 6 u / 1 / 2 u |
 | `creationSpeedMultiplier` (the slowest mode) | `BrittleStarConfig` | ×0.5 |
 | `fireRate` (per gun, × the RT pull) / `projectileSpeed` / `projectileTime` | `BrittleStarConfig` | 90 /s / 135 u/s / 4.5 s (387 u) |
@@ -304,22 +431,27 @@ identical on the Stoat and Sparrow and shared by all 16 vessel prefabs — inher
 | `roundGrowthFactor` (in-flight swell, the Sparrow's look) | `BrittleStarConfig` | ×3 |
 | `armFocusDistance` / `armSplayDegrees` (the guns and cords in / out) | `BrittleStarConfig` | 120 u / 25° |
 | `aimDeadzone` / `ringTurnRate` | `BrittleStarConfig` | 0.25 / 540°/s |
-| `heatPerRound` / `coolRate` / `chargeCoolRate` / `overheatRecoverBelow` | `BrittleStarConfig` | 0.0012 / 0.12 /s / 0.6 /s / 0.35 |
+| `heatPerRound` / `coolRate` / `chargeCoolRate` / `overheatRecoverBelow` | `BrittleStarConfig` | 0.000637 / 0.12 /s / 0.6 /s / 0.35 |
+| `heatCapacity` (Space — the heat the guns hold) | `BrittleStarConfig` | 1 → 3.33 (~6 s → ~20 s full-pull burst) |
 | `cordLength` (the saber) / `cordLooseLengthScale` (the whip) / `cordLinks` / `cordCutRadius` (× Charge) | `BrittleStarConfig` | 80 u / ×1.5 / 16 / 0.6 u |
-| `cordLooseWave` / `cordRigidWave` / `cordLooseDamping` / `cordRigidDamping` / `cordPose` / `cordRigidityRate` | `BrittleStarConfig` | 180 / 2500 /s² / 0.4 / 14 /s / 1600 /s² / 12 /s |
+| `cordLooseWave` / `cordRigidWave` / `cordLooseDamping` / `cordRigidDamping` / `cordPose` / `cordRigidityRate` | `BrittleStarConfig` | 144 / 2500 /s² / 0.4 / 14 /s / 1600 /s² / 12 /s |
+| `cordMaxRigidity` (how rigid a full pull makes the cords) | `BrittleStarConfig` | 0.4 (60% of the whip's give kept; 0.7 on 2026-10-16) |
 | `cordDebrisRestitution` / `cordDebrisSpeedLimit` / `cordHitCooldown` | `BrittleStarConfig` | 0.5 / 200 u/s / 0.5 s |
 | `cordRenderSubdivisions` / `cordColor` / `cordRimBrightness` / `cordMaterial` | `BrittleStarConfig`, executor | 4 / iron / 0.75 / `ThresherChainMaterial` |
-| Round pool | `BrittleStar.prefab` turrets | 1400 / max 2400 (~1,100 alive per Space Mode burst) |
+| Round pool | `BrittleStar.prefab` turrets | 1400 / max 2400 (~2,000 alive in a Space Mode burst at Space 0, ~4,000 at Space 10) |
 | `ringLaunchSpeed` / `ringFuseSeconds` | `BrittleStarConfig` | 240 u/s / 1.1 s |
-| `blastScale` (Charge — the disk's thickness) | `BrittleStarConfig` | 1 → 4 (× the ring's 0.22 u half-thickness) |
-| `ringBlastSeconds` / `ringBlastFallbackRadius` / `ringBlastBandWidth` | `BrittleStarConfig` | 0.7 s / 200 u / 6 u (radius = the cell's nucleus) |
+| `ringBlastThicknessScale` (the disk's thickness before Charge) | `BrittleStarConfig` | ×4 the ring's (2026-10-18) |
+| `blastScale` (Charge — the disk's thickness, on top) | `BrittleStarConfig` | 1 → 4 (so 4 → 16 × the ring's 0.22 u half-thickness) |
+| The look (shares of the front's radius): `ringBlastFrontWidth` / `ringBlastFrontHeight` / `ringBlastArmWidth` / `ringBlastRelief` | `BrittleStarConfig` | 0.05 / 0.04 / 0.08 / 0.12 |
+| The look: `ringBlastSpinDegrees` / `ringBlastCrestDepth` / `ringBlastPentagonLag` / `ringBlastArmWiggle` / `ringBlastArmCurlDegrees` | `BrittleStarConfig` | 108° / ×2.5 / 0.8 / 0.06 / 30° |
+| `ringBlastSeconds` / `ringBlastFallbackRadius` | `BrittleStarConfig` | 0.7 s / 200 u (radius = the cell's nucleus) |
 | `ringBlastHitClass` / `ringBlastHitCooldown` | `BrittleStarConfig` | MissileBlast / 0.5 s |
-| `maxSpareRings` / `rebuildSeconds` | `BrittleStarConfig` | 2 / 0.5 s (regrowth) |
+| `maxSpareRings` / `rebuildSeconds` | `BrittleStarConfig` | 2 / 3 s (regrowth) |
 | AI thresholds | `BrittleStarConfig` | fire ≥ 2, Space / Charge ≥ 8, detonate ≥ 18 |
 | Cruise | `BrittleStar.prefab` transformer | `DefaultThrottleScaler` 35 + `DefaultMinimumSpeed` 10 |
 | Turn rates | `BrittleStar.prefab` transformer | the Sparrow's: pitch/yaw 80, roll 30 |
-| Base trail | `BrittleStar.prefab` spawner | `BaseScale` (1.5, 1.5, 3), wavelength 6, offset 2 |
-| Hull proportions | `BrittleStarHullBuilder` field initializers (`BrittleStarHullForm.Defaults`) | ring radius 6 (2.5× the first cut), struts 0.22, arms 0.14 |
+| Base trail | `BrittleStar.prefab` spawner | `BaseScale` (1, 1, 6), wavelength 6, offset 2 |
+| Hull proportions | `BrittleStarHullForm.Defaults` (read by `BrittleStarHullModel`; the model is built to them, `specs/brittlestar.py`) | ring radius 6 (2.5× the first cut), struts 0.22, arms 0.14 |
 | Flames / bank | `BrittleStarAnimation` | lit 3.2 u, ember 0.12 u, bank 28° |
 | Camera | `BrittleStarCameraSettingsSO` | offset (0, 0, −38) — no height: the vessel is a crosshair — far 12000 |
 | `armFocusDistance` / `armSplayDegrees` (the cords in / out) | `BrittleStarConfig` | 120 u / 25° |
@@ -331,10 +463,13 @@ Garrett played the 2026-10-16 build and reported it working; no step below has b
 controls), the peer-press harness (0 divergences), the element table (0 disagreements), and the fleet's static gates.
 None of that is a play test. In order:
 
-1. **Freestyle**: Menu → freestyle → Vessel Changer → Brittle Star. Expect: a gold pentagon ring round a hub, domain-
-   coloured nozzles and canopy, a cockpit flame; the hull leans into turns and the **outside** pods light as it banks.
-   Console clean (no `[BrittleStar]` errors).
-2. **Trail**: fly straight; a single SMALL block (1.5 × 1.5 × 3) every ~6 u behind the cockpit.
+1. **Freestyle**: Menu → freestyle → Vessel Changer → Brittle Star. Expect (the model, §2): a dark five-lobed disc with
+   domain radial shields and cyan lenses round a glowing engine, five segmented arms bowed the same way round to a
+   pentagon halo with a domain channel, a glowing nacelle at each point; the cockpit flame is lit; the hull leans into
+   turns and the **outside** pods light as it banks. Console clean (no `[BrittleStar]` or `[BrittleStarHullModel]`
+   warnings).
+2. **Trail**: fly straight; a single long, slim block (0.5 × 1 × 6 as laid: `BaseScale` 1 × 1 × 6, the spawner halving
+   x for a single trail) every ~6 u behind the cockpit, end to end. Raise Mass: the blocks widen and thicken, never lengthen.
 3. **A** (Speed): every thruster lights and the hull runs at **6×** (45 → 270 u/s); the trail's blocks spread out
    (~36 u apart, same blocks per second) and **stretch** with it (~18 u long), so the line still reads joined. **A** again:
    back to Cruise; no burst of short blocks while the hull coasts down.
@@ -345,24 +480,27 @@ None of that is a play test. In order:
    overheats on its own (watch the Space card's heat settle).
 6. **X** (Space): RT fires all five turrets, the pull setting the rate; stick in, the five streams meet ~120 u ahead,
    out, they splay 25°. Rounds reach ~387 u (raise Space: up to ~774 u). Hold a full pull: the Space card fills with heat
-   and turns red after ~2.4 s; the guns stop; **your trail turns to danger prisms** while overheated in Space Mode. Release
+   and turns red after ~6 s (raise Space to 10: ~20 s); the guns stop; **your trail turns to danger prisms** while overheated in Space Mode. Release
    and wait ~5 s: the card drops below a third and the guns fire again. Profiler with 3–4 AI Brittle Stars bursting:
-   ~1,100 rounds alive per hull.
+   ~2,000 rounds alive per hull (~4,000 at Space 10).
 7. **RB** (Charge): five cords (fresnel tubes in your domain's colour) grow out of the turrets, **120 u long and loose**.
    Flick the right stick round: the ring snaps over and a **wave travels slowly down each cord** (about a second to the
    tip), bounces back and keeps swinging for a few seconds; turn the hull hard and the cords trail and swing. Squeeze RT
-   slowly: the cords **shorten to 80 u and stiffen**, becoming five straight sabers at a full pull; ease off, they loosen
-   again (analog). Fly them through mass: prisms are sliced in two (friendly fire, except trail laid in the last
+   slowly: the cords **shorten to 80 u and stiffen**, becoming five sabers at a full pull that still flex a little when
+   you flick the ring (60% of the give stays); ease off, they loosen again (analog). Fly them through mass: prisms are sliced in two (friendly fire, except trail laid in the last
    second). Draw one across a rival: petals only. Overheat in Space Mode, then switch to Charge: the heat drains in about
    a second.
 8. **LT** with no spare ring: nothing happens. Collect a **crystal**: the Charge card fills half (one spare); another:
-   full (two); a third: still two. **LT**: the ring flies off and blows in the nucleus-wide disk (a flat slice through
-   every prism in its plane; a rival it crosses loses petals); a new ring blooms back on the hull at once and the card
-   drops a step. The hull is never ringless; the modes drop out only for that half second.
+   full (two); a third: still two. **LT**: the ring flies off and blows in the nucleus-wide disk (a flat slice, now four
+   times thicker, through every prism in its plane; a rival it crosses loses petals). Watch it from behind and from the side: it bursts
+   out of the ring as faceted, lit volumes - five arms coiling in and out of the plane like a pinwheel, each led by a
+   crystal, the ring's own pentagon growing with crystal knots, and a faceted torus front with five crests where the arms
+   meet it - all still turning with the ring's spin. Nothing in it should read flat from any angle; a new ring blooms back on the hull over 3 s
+   and the card drops a step. The hull is never ringless; the modes drop out only for those three seconds.
 9. **HUD**: four cards, charge → mass → space → time; each turns lime while its mode is on. Run **FrogletTools ▸ Vessels
-   ▸ Audit Vessel Ability Rows**, **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs** (expect: procedural, four
+   ▸ Audit Vessel Ability Rows**, **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs** (expect: blend shapes on the model, four
    elements) and **Audit Vessel Construction**.
-10. **Element morphs**: raise each element (crystals, or the debug element tool): Mass grows the cockpit, Charge the
+10. **Element morphs**: raise each element (crystals, or the debug element tool): Mass grows the cockpit pod, Charge the
    pods and guns, Space the barrels, Time rounds the ring into a circle.
 11. **AI**: an arcade/arena match with the Brittle Star in an AI seat: it fires at mass ahead, takes Charge Mode's sabers
     to a near wall and Space Mode's guns to a far one, takes Speed on straights, and throws spare rings into clusters.
@@ -374,9 +512,9 @@ None of that is a play test. In order:
 
 ## Follow-ups
 
-- **F1 — touch controls for the modes.** Touch raises no face-button events, so Speed / Creation / Destruction are
-  unreachable on touch (the Stoat has the same gap). The document's touch design — drag on the shoot button to aim and
-  spread — needs an on-screen control.
+- **F1 — touch controls for the modes: DONE** (2026-10-21). The ability cards became buttons (`AbilityCardPress`), and
+  the phone profile adds a Fire and a Ring button whose drag aims (§1, "On a phone"). Left to test on a phone: the six
+  buttons' reach round the right thumb, and that a hard turn on the steering thumb leaves the ring and guns still.
 - **F2 — level-5 upgrades** (§5): Garrett's call.
 - **F3 — persona AI**: the document gives each element a persona (Fabricator builds, Rolling Thunder destroys clumps,
   Hunter chases pilots, Zephyr chases crystals into enemy zones). Today one autopilot serves all four.
@@ -392,7 +530,8 @@ None of that is a play test. In order:
   `Docs/Studios/BRITTLE_STAR.md` §5.2. Not yet published into the one artifact (it goes through `Ys-bleeding-edge`).
 - **F9 — profile the two costs** (measured offline only): each ring explosion runs ten `PrismSpatialIndex.QuerySphere`
   calls of up to the nucleus radius (392 u) (the knob: the sweep count in `BrittleStarExecutor.UpdateWaves`), and a Space
-  Mode burst keeps ~1,100 swept rounds alive per hull (the knobs: `heatPerRound` shortens bursts, `fireRate` thins them).
+  Mode burst keeps ~2,000 swept rounds alive per hull at Space 0 and ~4,000 at Space 10, past the turrets' 2,400 pool
+  (the knobs: `heatPerRound` and `heatCapacity` set the burst's length, `fireRate` thins it).
 - **R1 — naming drift this branch created (inconsistency → a rename, not a redesign).** "Space Mode" is still spelled
   `Mode.Destruction` / `BrittleStarControl.DestructionMode` / `BrittleStarDestructionMode.asset` / `Destruction01`, and the
   HUD view's `ringGauge` is now the Charge card, `destructionGauge` the Space card — 27 occurrences over 9 files
@@ -402,10 +541,26 @@ None of that is a play test. In order:
   `git mv` the control asset (its guid survives); then `author_brittlestar_assets.py --check` and the HUD audit.
 - **R2 — a gap this branch walked past (fleet input layer).** `InputEvents` has no fourth face-button event: the gamepad
   raises A / B / X (`Button1-3Action`) and RB (`FlipAction`) only (`GamepadInputStrategy.ProcessButtonInput`), so a
-  vessel that needs a fourth mode control must borrow `FlipAction` — which `DeviceOrientationHandler` also raises when a
-  phone is turned. Measure before acting: which vessels bind `FlipAction` today (`grep -l "InputEvent: 3" Assets/_Prefabs/Spacevessels/*.prefab`),
+  vessel that needs a fourth mode control must borrow `FlipAction` (`DeviceOrientationHandler` raised it when a phone
+  was turned until 2026-10-21; it no longer does). Measure before acting: which vessels bind `FlipAction` today (`grep -l "InputEvent: 3" Assets/_Prefabs/Spacevessels/*.prefab`),
   and whether a `Button4Action` (Y / a key / an on-screen button) is wanted fleet-wide (measured 2026-10-16: the
   Brittle Star and the Grizzly bind it). Owner: the input layer.
+- **R3 — an inconsistency this branch walked past (the trails' width).** The fleet spawner lays a single, gapless
+  trail at `BaseScale.x / 2` (`VesselPrismController.CreateBlock`: `BaseScale.x * XScaler / 2f - Mathf.Abs(halfGap)`),
+  but Creation Mode's corners read `TrailBaseScale` whole (`BrittleStarExecutor.LayCornerPrism`). So the corner blocks
+  are twice as wide as the base trail's: 1 × 1 × 6 against 0.5 × 1 × 6, although Garrett asked for "the same smaller
+  prisms for all 5 prism trails". The studio models both at 1 × 1 × 6. Measure first: in Play mode, read the `scale`
+  of a base-trail prism and a corner prism. Then pick one fix: halve the corner's x, or author the base block as
+  (2, 1, 6). The second changes what `TrailBaseScale` means to every other reader. Owner: Garrett (the look).
+- **R4 — debt this branch walked past (the studio page's About text).** The "Unity build" paragraph in
+  `brittlestar.html`'s About tab still describes round 2: 12 rounds/s at 70 u/s, a stored charge, Overdrive, a disk
+  "0.22 u x Charge 1 to 4" thick. The SHIPPED block and the rules are current (`studio_to_unity --check` 0 drift);
+  only that prose is stale. This branch patched two sentences in it. A rewrite from the SHIPPED block would end the
+  drift, ideally generated so it cannot recur. Count first: `grep -c "70 u/s\|Overdrive" brittlestar.html`.
+- **F14 — profile the ring explosion's mesh** (2026-10-18): each live explosion rebuilds about 5,900 flat-shaded
+  vertices a frame for 0.7 s (`BrittleStarBlastForm` through `BrittleStarExecutor.BuildBand`; lists are reused, so the
+  cost is the mesh upload). Capture several AI Brittle Stars throwing rings together. If it shows, the levers are
+  `FrontSegments` (120), `ArmSegments` (12), or rebuilding every other frame.
 - **F12 — the Charge card's icon** still shows Ring Detonation (`author_brittlestar_icons.py`): Charge Mode's cords need
   their own icon; the card's gauge (the spare-ring stock) already fits the ring.
 - **F13 — replicate RT's depth** (two bytes a frame) so remote copies fire, heat and stiffen at the owner's real pull;

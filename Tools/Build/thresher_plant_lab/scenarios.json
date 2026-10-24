@@ -1,5 +1,5 @@
 {
- "_comment": "Scripted plant cycles for the parity gate (parity.cjs). Each step runs for t seconds at a constant yaw (deg/s) and winch state; plant/release/arm fire on the step's first frame. Run by TraceDriver.cs against the SHIPPED ThresherChainSolver and by the lab page's own JS port.",
+ "_comment": "Scripted plant cycles for the parity gate (parity.cjs). Each step runs for t seconds at a constant yaw (deg/s) and winch state; plant/release/arm fire on the step's first frame. Run by TraceDriver.cs against the SHIPPED ThresherChainSolver and by the lab page's own JS port. 'boost' (optional, default 1) is ArmLaunch's launch boost (the game's launchBoost 4.8).",
  "scenarios": [
   {
    "name": "reeled-turn-plant",
@@ -341,6 +341,60 @@
      "yaw": 0,
      "pay": false,
      "lt": 0,
+     "rt": 1
+    }
+   ]
+  },
+  {
+   "name": "analog-armed-line-steer",
+   "analog": true,
+   "steps": [
+    {
+     "t": 1.0,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0,
+     "rt": 1
+    },
+    {
+     "t": 0.5,
+     "yaw": 90,
+     "pay": false,
+     "lt": 0,
+     "rt": 1
+    },
+    {
+     "t": 2.0,
+     "yaw": 0,
+     "pay": false,
+     "lt": 1,
+     "rt": 1
+    },
+    {
+     "t": 1.5,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0.85,
+     "rt": 1,
+     "arm": [
+      1,
+      0,
+      0
+     ],
+     "boost": 4.8
+    },
+    {
+     "t": 1.0,
+     "yaw": 0,
+     "pay": false,
+     "lt": 0.85,
+     "rt": 1
+    },
+    {
+     "t": 1.5,
+     "yaw": 90,
+     "pay": false,
+     "lt": 0.85,
      "rt": 1
     }
    ]

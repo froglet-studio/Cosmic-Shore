@@ -87,7 +87,7 @@ namespace CosmicShore.Gameplay
         AstroLeagueBoundaryShape _appliedShape;
         bool _appliedCentralGoal;
 
-        enum MatchPhase { PreMatch, Kickoff, Live, Celebration, Overtime, Finished }
+        enum MatchPhase { PreMatch = 0, Kickoff = 1, Live = 2, Celebration = 3, Overtime = 4, Finished = 5 }
         MatchPhase phase = MatchPhase.PreMatch;
 
         bool _finalResultsSent;

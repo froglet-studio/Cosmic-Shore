@@ -131,9 +131,16 @@ namespace CosmicShore.Gameplay
         /// standing up a vessel, a ResourceSystem and a GameObject —
         /// <c>ElementalScalingUnificationTests</c> locks each one's rest / full / floored-deficit
         /// values, which is exactly what an asset edit could silently move.</para>
+        ///
+        /// <para>A DISABLED ElementalFloat returns its authored <see cref="Value"/> at every level,
+        /// the same answer <see cref="EvaluateLive"/> and <see cref="EvaluateReplicated"/> give.
+        /// Without that its zeroed Min/Max lerp to 0, so a caller asking "what is this at rest"
+        /// (the Stoat's <c>BoostRatio</c> denominator, <c>Skimmer.ElementalScale01</c>) would
+        /// divide by nothing the moment someone untoggled Enabled.</para>
         /// </summary>
         public float EvaluateAtNormalizedLevel(float normalizedLevel)
         {
+            if (!Enabled) return Value;
             float value = Mathf.LerpUnclamped(Min, Max, normalizedLevel);
             return UseFloor ? Mathf.Max(Floor, value) : value;
         }

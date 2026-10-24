@@ -37,6 +37,24 @@ namespace CosmicShore.Editor
 
         public static bool IsBusy => Volatile.Read(ref _busy) == 1;
 
+        /// <summary>How the last send ended, for the after-play confirmation (<see cref="BugHuntSendConfirmation"/>).</summary>
+        public enum SendOutcome { None = 0, Sending = 1, Sent = 2, NothingNew = 3, Failed = 4 }
+
+        static volatile int _lastOutcome;
+        static volatile string _lastDetail = "";
+
+        /// <summary>Written by the send's worker thread; read on the main thread.</summary>
+        public static SendOutcome LastOutcome => (SendOutcome)_lastOutcome;
+
+        /// <summary>The commit message of a send, or why it failed.</summary>
+        public static string LastDetail => _lastDetail;
+
+        static void SetOutcome(SendOutcome outcome, string detail)
+        {
+            _lastDetail = detail ?? "";
+            _lastOutcome = (int)outcome;
+        }
+
         public static string BranchFor(string user) => "bugledger/" + BugHuntReports.Slug(user);
 
         /// <summary>Background: adopt any fix Claude published for this machine. Called at editor load.</summary>
@@ -55,7 +73,12 @@ namespace CosmicShore.Editor
         /// silent progress update after a play run that counted toward a fix.</summary>
         public static void SendInBackground(bool withReports = true)
         {
-            if (!TryBegin(out var ctx)) return;
+            if (!TryBegin(out var ctx))
+            {
+                if (withReports) SetOutcome(SendOutcome.Failed, "git is not available here, or a send is already running");
+                return;
+            }
+            if (withReports) SetOutcome(SendOutcome.Sending, "");
             if (!withReports)
             {
                 ctx.StatusOnly = true;
@@ -68,8 +91,11 @@ namespace CosmicShore.Editor
                     var outcome = SendOnce(ctx, attempt);
                     if (outcome == null) return;                      // done (sent or nothing new)
                     if (attempt == 1)
+                    {
+                        if (!ctx.StatusOnly) SetOutcome(SendOutcome.Failed, outcome);
                         Debug.LogWarning($"[BugLedger] Could not send the errors to Claude: {outcome}. " +
                                          "They stay on this machine and go with the next send.");
+                    }
                 }
             });
         }
@@ -135,7 +161,11 @@ namespace CosmicShore.Editor
             new Thread(() =>
             {
                 try { body(); }
-                catch (Exception e) { Debug.LogWarning($"[BugLedger] {name} failed: {e.GetType().Name}: {e.Message}"); }
+                catch (Exception e)
+                {
+                    if (LastOutcome == SendOutcome.Sending) SetOutcome(SendOutcome.Failed, $"{e.GetType().Name}: {e.Message}");
+                    Debug.LogWarning($"[BugLedger] {name} failed: {e.GetType().Name}: {e.Message}");
+                }
                 finally { Interlocked.Exchange(ref _busy, 0); }
             })
             { Name = name, IsBackground = true }.Start();
@@ -204,6 +234,7 @@ namespace CosmicShore.Editor
                 var parentTree = FrogletGit.Run("rev-parse", remote.Parent + "^{tree}");
                 if (parentTree.Ok && parentTree.StdOut.Trim() == treeSha)
                 {
+                    if (!ctx.StatusOnly) SetOutcome(SendOutcome.NothingNew, "Claude already has everything from this machine.");
                     Debug.Log("[BugLedger] Nothing new to send — Claude already has every error from this machine.");
                     return null;
                 }
@@ -226,6 +257,7 @@ namespace CosmicShore.Editor
                 TryDelete(ctx.IndexPath);
                 return null;
             }
+            SetOutcome(SendOutcome.Sent, message + $" (on {ctx.Branch})");
             Debug.Log($"[BugLedger] Sent to Claude: {open} open error(s)" +
                       (reports.Count > 0 ? $" and {reports.Count} report file(s)" : "") +
                       $" on branch {ctx.Branch}. Ask Claude to fix them, or wait for the daily sweep.");

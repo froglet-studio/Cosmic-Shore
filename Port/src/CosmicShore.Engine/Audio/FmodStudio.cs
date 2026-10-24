@@ -27,7 +27,25 @@ namespace CosmicShore.Engine.Audio.Fmod
     public enum EVENT_CALLBACK_TYPE : uint
     {
         CREATED = 0x00000001, DESTROYED = 0x00000002, STARTING = 0x00000004, STARTED = 0x00000008,
-        RESTARTED = 0x00000010, STOPPED = 0x00000020, START_FAILED = 0x00000040, ALL = 0xFFFFFFFF,
+        RESTARTED = 0x00000010, STOPPED = 0x00000020, START_FAILED = 0x00000040,
+        SOUND_PLAYED = 0x00002000, SOUND_STOPPED = 0x00004000, ALL = 0xFFFFFFFF,
+    }
+
+    /// <summary>
+    /// Original contract: FMOD.Sound, the handle a SOUND_PLAYED / SOUND_STOPPED callback passes as its parameters.
+    /// The port keeps no per-sound playlist state, so nothing raises those callbacks yet and a name reads empty.
+    /// </summary>
+    public struct Sound
+    {
+        public IntPtr handle;
+        public Sound(IntPtr ptr) { handle = ptr; }
+        public bool hasHandle() => handle != IntPtr.Zero;
+
+        public RESULT getName(out string name, int namelen)
+        {
+            name = string.Empty;
+            return handle == IntPtr.Zero ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
+        }
     }
 
     /// <summary>Original contract: FMOD.Studio.EVENT_CALLBACK. The engine invokes it on the main thread, from start().</summary>

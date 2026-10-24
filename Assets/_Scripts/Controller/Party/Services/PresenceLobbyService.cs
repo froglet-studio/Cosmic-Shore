@@ -268,9 +268,9 @@ namespace CosmicShore.Gameplay
 
         /// <inheritdoc/>
         /// <remarks>
-        /// Gracefully leaves (or deletes if host) the active lobby.  Exceptions
-        /// from the UGS SDK are caught and swallowed so callers always reach the
-        /// <c>finally</c> cleanup even on broken connections.
+        /// Gracefully leaves the active lobby, deleting it only when we host it AND are alone in it
+        /// (<see cref="DeletesOnLeave"/>). Exceptions from the UGS SDK are caught and swallowed so
+        /// callers always reach the <c>finally</c> cleanup even on broken connections.
         /// </remarks>
         public async UniTask LeaveAsync()
         {
@@ -279,7 +279,7 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] LeaveAsync - lobby: {_activeLobby.Id}, IsHost: {_activeLobby.IsHost}");
             try
             {
-                if (_activeLobby.IsHost)
+                if (DeletesOnLeave(_activeLobby.IsHost, _activeLobby.Players?.Count ?? 0))
                     await _activeLobby.AsHost().DeleteAsync().AsMainThread();
                 else
                     await _activeLobby.LeaveAsync().AsMainThread();
@@ -295,6 +295,16 @@ namespace CosmicShore.Gameplay
                 _leaving     = false;
             }
         }
+
+        /// <summary>
+        /// Whether leaving the presence lobby deletes it: only when we host it and nobody else is in it.
+        /// The presence lobby is the ONE lobby every online player sits in, and whoever created it hosts
+        /// it. Deleting it on leave evicted everybody: when ys1 stopped Play, Caleb's next refresh got
+        /// <c>NotInLobby</c> and his party sat in <c>Reconnecting</c> for the rest of the session (B32,
+        /// Docs/PartySystem/BUGS.md). A host that leaves an occupied lobby just leaves; UGS Lobby makes
+        /// another member the host. The same rule <see cref="ConvergeToCanonicalAsync"/> keeps.
+        /// </summary>
+        internal static bool DeletesOnLeave(bool isHost, int playerCount) => isHost && playerCount <= 1;
 
         /// <inheritdoc/>
         public async UniTask RefreshAsync()

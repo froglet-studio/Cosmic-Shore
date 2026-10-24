@@ -925,6 +925,8 @@ MonoBehaviour:
   stationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f,
     type: 2}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
+  flightCameraHeight: 0
+  cameraBlendSeconds: 0.35
 --- !u!1 &8279817603024118164
 GameObject:
   m_ObjectHideFlags: 0

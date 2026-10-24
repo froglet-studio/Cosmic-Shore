@@ -88,7 +88,8 @@ recorded.
 ## 3. How the AI is built from this (proposed)
 
 **What has reached the game so far:** only `learn_from_flights.py`'s Skim Race numbers. They were written on 2026-10-17
-into `SkimRaceAIConfig_Regatta.asset` by another session (`LEARNED_FROM_FLIGHTS.md`); the main change is skimming the
+local time (2026-10-16 UTC, the date `LEARNED_FROM_FLIGHTS.md` and the policy name `regatta-learned-20261016-3flights`
+carry; commit `e9a2a42fe`) into `SkimRaceAIConfig_Regatta.asset` by another session (`LEARNED_FROM_FLIGHTS.md`); the main change is skimming the
 ring face of the rail. The racing line and the per-leg style choice below are not ported yet.
 
 | Layer | Learned from | What it gives the AI |
@@ -166,4 +167,5 @@ python3 Tools/Build/racing_line.py --dir <folder of flight_*.json>           # r
 python3 Tools/Build/racing_line.py --dir <folder> --write                    # + Docs/AI_SYSTEM/racing_lines/*.json
 ```
 
-Flights stored with Store AI record are on `origin/bugledger/<user>` under `BugLedger/shared/reports/<user>/flights/`.
+Flights are sent automatically when Play stops (no question since 2026-10-16, `BugHuntAutoSend.cs`) to
+`origin/bugledger/<user>` under `BugLedger/shared/reports/<user>/flights/`.

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Compile the SHIPPED ScarabHullForm against a UnityEngine math stub with Roslyn and RUN it at the
-# settings passed as key=value args (render_scarab_card_icons.py reads them off Scarab.prefab).
+# settings passed as key=value args (render_scarab_card_icons.py read them off Scarab.prefab until its
+# retirement on 2026-10-18; the card is now rendered from Scarab.fbx by vessel_model/render_cards.py).
 # Prints the hull's parts as JSON on stdout. Needs a dotnet 8 SDK (per-user install is fine:
 # `bash <(curl -fsSL https://dot.net/v1/dotnet-install.sh) --channel 8.0 --install-dir
 # $DOTNET_ROOT --no-path`), found through DOTNET_ROOT (default ~/.dotnet).

@@ -124,15 +124,22 @@ persisted — it didn't "pop into existence." The stock indicator sprite is
 
 `Assets/_SO_Assets/GameModeQuest/` (`GameModeQuestList.asset` order):
 
-| # | Asset | Feature | Gate | Breadcrumb target | Dep |
+| # | Asset | Feature | Gate | `CallToActionTargetID` | `DependencyTargetIDs` |
 |---|---|---|---|---|---|
-| 0 | CrystalCapture (free) | GameMode 35 | Intensity 4 | PlayGameMultiplayerCrystalCapture (433) | ArcadeMenu |
-| 1 | HexRace | GameMode 33 | Intensity 4 | PlayGameHexRace (431) | ArcadeMenu |
-| 2 | Joust | GameMode 34 | Intensity 4 | PlayGameMultiplayerJoust (434) | ArcadeMenu |
-| 3 | PartyGame | GameMode (placeholder) | — | none (placeholder) | — |
-| 4 | VesselHangar | **Screen** | all prior done | HangarMenu (300), dismiss on ViewHangarMenu | — |
+| 0 | GameModeQuest_Scurry (free) | GameMode 35 (Scurry) | Intensity 4 | 433 | [100] |
+| 1 | GameModeQuest_SkimRace | GameMode 33 (Hex Race) | Intensity 4 | 431 | [100] |
+| 2 | GameModeQuest_Joust | GameMode 34 (Joust) | Intensity 4 | 434 | [100] |
+| 3 | GameModeQuest_MaelStrom | GameMode 36 (Maelstrom) | Placeholder (target 30) | -1 (none) | [] |
+| 4 | VesselHangarUnlock | **Screen** (`Hangar`) | all prior done | 300, dismiss on 300 | [] |
 
-Node 5 (a `Screen`, not a mode) proves the "any feature" generalization. Its reachability is the
+Corrected 2026-10-17 against `GameModeQuestList.asset` (T-20261015-ff1c). The earlier table listed Crystal Capture
+and a PartyGame placeholder; the live chain is Scurry > Hex Race > Joust > Maelstrom > Vessel Hangar.
+**The breadcrumb columns are now data nothing reads.** The call-to-action system (`CallToActionTargetType` and its
+targets) was retired, and no C# reads `CallToActionTargetID`, `CompletionUserAction` or `DependencyTargetIDs`.
+The menu's guidance today is the first-login guide's spotlight (`MenuGuide`, `QuestGuideToMicrogameNode`). Read the
+breadcrumb sections of this doc as history.
+
+Node 4 (a `Screen`, not a mode) proves the "any feature" generalization. Its reachability is the
 project's own `IsVesselHangarUnlocked()` — fixed in this work to test the **persistent** done signal
 (a completed quest stays at max intensity) instead of the transient `CompletedQuests` set, which a
 claim empties (the prior conjunction was unsatisfiable, so the hangar — and its breadcrumb — never

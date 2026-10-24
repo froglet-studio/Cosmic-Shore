@@ -126,6 +126,40 @@ granted) are fenced and recorded; neither licenses another.
 > (`VesselPrismController.SetTierHold`) — pausing the spawner, the sanctioned lever named
 > in the rejected-cheat note above. Nothing already laid is removed.
 
+> **AUTHORIZED EXCEPTION (2026-10-16): the Angler's KEEPER — one creature that does not
+> starve.** The designer asked for it in plain words: *"there should always be at least one
+> fauna that doesn't starve etc. so the number of fauna under angler control is always greater
+> than zero."* It resembles the rejected **immortal husk** (a creature that outlives its own
+> death rules, `ECOSYSTEM_DESIGN_PRINCIPLES.md`, "A creature dies when its last body prism is
+> destroyed"), and it is NOT that.
+>
+> What it does:
+>
+> - **No starvation for one creature.** The FIRST creature in an Angler's school (`_tamed[0]`)
+>   does not starve: `Fauna.IsStarving` reads `IFaunaLeash.Sustains`.
+> - **A keeper whenever the school is empty.** One creature is born behind the hull, already
+>   tamed. It is the cell's own first leashable herbivore, else `AnglerConfigSO.companionFauna`.
+>   It is born through `CellLifeSpawnerBase.SpawnFaunaWithDomain`, in the cell's controlling
+>   colour.
+>
+> Its fence — do not widen it:
+>
+> - **One reader, one implementer.** `IFaunaLeash.Sustains` is read only by `Fauna.IsStarving`,
+>   and implemented only by `AnglerCommandExecutor`. No `immortal` / `noStarve` field was added
+>   to `Fauna` or any config; the waiver exists only while a leash says so.
+> - **At most one per Angler.** When the keeper dies the next creature in the school inherits
+>   the role. When the school is empty one is born (at most once a second).
+> - **Only starvation is waived.** A keeper that is eaten, shot to its last body prism or
+>   jousted dies the ordinary way: wither, heart drop, mass conserved. Continuity of existence
+>   holds: the birth blooms through the same seam every spawner uses.
+> - **Production, not decay.** The birth is a spawn (allowed — §0 forbids aging mass out, not
+>   creating it), in the controlling colour (no domain asymmetry), on the sim authority only for
+>   a replicated species. It adds at most one creature per Angler to the cell (a creature's
+>   colliders, against a cell that already ships tens), and only while that Angler leads nobody.
+>
+> **An exception, not a precedent.** The next holder that wants a creature to outlive its
+> clock needs its own sign-off. Detail: §61.4; `R_VesselActions/ANGLER.md` §1b.
+
 **Growth-side cheats — all retired.** Two artificial throttles used to fake the
 homeostasis the food web is meant to produce, both now gone:
 
@@ -1618,7 +1652,11 @@ Measure Cell Environment Baselines). Re-baselined 2026-08-02 post clock-material
 (volume is final at spawn now) — e.g. Yggdra measures 34,340 prisms / 541,156 volume →
 Restless at 552,356 / 549,156, Frenzy at 598,756 / 589,156, counts
 35,040/34,840/37,940/37,340. As grazing wears the garden down the cell relaxes deeper
-into Calm — an emergent "aging" of the biome with no clock anywhere.
+into Calm — an emergent "aging" of the biome with no clock anywhere. **Re-baselined again
+2026-10-20** when the generators were fitted to lay their prisms flush (§62.2). The counts did not
+change, but the volume dropped by what had been inside other prisms, and each ladder moved down by
+that drop (§62.3). Yggdra now measures 34,340 / 341,545, so it enters Restless at 352,745 / 349,545
+and Frenzy at 399,145 / 389,545. The numbers above are the 2026-08-02 ones.
 
 **The Yggdra cell** (`_SO_Assets/Cell Configs/Yggdra Cell/Yggdra Cell Config.asset`) is
 the first user: a Blob-family cell (same membrane/nucleus/cytoplasm/modifiers/spawn
@@ -1676,9 +1714,9 @@ danger), and **Ourobor** (see §18.2 — the pastoral pole: three interlocked UL
 bands carrying rolling countryside with a cityscape on both faces; zero danger). All extend
 `CellEnvironmentSpawnableBase` (one deterministic lay/stream/noise
 contract, per-cell fixed seed); per-cell PhaseThresholds ride each baseline measured with
-a bit-exact simulation of the C# noise (count/volume): Yggdra 34.3k/541k, Daedala
-33.9k/638k, Orrery 34.6k/197k, Zephyr 36.1k/427k, Caldera 41.4k/1,211k, Geode 34.4k/561k,
-Ourobor 37.9k/751k —
+a bit-exact simulation of the C# noise (count/volume): Yggdra 34.3k/342k, Daedala
+33.9k/421k, Orrery 34.6k/68k, Zephyr 36.1k/418k, Caldera 41.4k/1,154k, Geode 34.4k/503k,
+Ourobor 37.9k/744k (the flush lays of §62.2, 2026-10-20) —
 confirm in-engine via FrogletTools > Ecology > Measure Cell Environment Baselines before
 retuning any ladder. Same soak-before-ship rule as §17 above; each prefab's
 `density` knob (0.5-1.3) is the per-cell fallback lever.
@@ -1770,7 +1808,8 @@ that is geometry, not a tuning miss. The levers are coverage (holier mountains) 
 it reproduced 31,194 / 430,691 to the unit before any edit): **41,353 prisms / 1,210,753 volume**
 (the de-gravitized pass alone measured 25,055 / 374,907 before the 2× scale-up). Outer extent
 460 → **903**. PhaseThresholds re-authored as baseline + Blob deltas: 42053/41853/44953/44353
-count, 1221953/1218753/1268353/1258753 volume. This is now the heaviest cell in the rotation by
+count, 1221953/1218753/1268353/1258753 volume. *(2026-10-20: the flush lays of §62.2 measure
+41,353 / 1,154,048, so the volume ladder is now 1165248/1162048/1211648/1202048; counts unchanged.)* This is now the heaviest cell in the rotation by
 volume — `density` (0.5–1.3) on `SpawnableCaldera.prefab` is the fallback lever, and the
 soak-before-ship rule in §18 applies double.
 
@@ -1843,7 +1882,8 @@ in the cell. Plus a centreline *road* and drifting *motes*.
 **Baseline** (same offline sim): **37,889 prisms / 751,449 volume**, extent 422 → 982, **zero
 prisms inside the nucleus** (every `BandSpec` is authored so `Radius − HalfWidth − RollAmp −
 TowerDepth` clears `NucleusR`). PhaseThresholds 38589/38389/41489/40889 count,
-762649/759449/809049/799449 volume.
+762649/759449/809049/799449 volume. *(2026-10-20: the flush lays of §62.2 measure 37,889 / 744,294,
+so the volume ladder is now 755494/752294/801894/792294; counts unchanged.)*
 
 **Zero danger** — the pastoral pole, alongside Geode. Its risk is disorientation, not damage, and
 that is the deliberate contrast with Caldera sitting next to it in the rotation. It is also NOT
@@ -1874,7 +1914,8 @@ Neither cell has been opened in Unity. Run these in order; each has a specific f
    and the prefab's serialized field set is byte-identical to `SpawnableCaldera.prefab`'s, but an
    import pass is the only real proof.)
 2. **Baselines.** `FrogletTools > Ecology > Measure Cell Environment Baselines`. Expect
-   `SpawnableCaldera` **41,353 / 1,210,753** and `SpawnableOurobor` **37,889 / 751,449**. These
+   `SpawnableCaldera` **41,353 / 1,154,048** and `SpawnableOurobor` **37,889 / 744,294** (the
+flush lays of §62.2; they were 1,210,753 and 751,449 before). These
    came from an offline bit-exact port of the generators (validated by reproducing the shipped
    Caldera's 31,194 / 430,691 to the unit), so a divergence of more than a few hundred count /
    few thousand volume means the port drifted — re-author the two `PhaseThresholds` blocks from
@@ -6655,8 +6696,9 @@ five-playtest failure class).
   authored leaves):** mixed-element average ≈ 46.4 vol/strut × 59 × 14 plants ≈ **38.3k**.
   The `Blob Cell Spawn Profile` this config sits in is no longer Blob's — §36.10 retired that
   cell and the profile is now the population of all seven authored freestyle worlds — so the
-  number to hold it against is the **tightest** of them, Orrery's `FrenzyEnterVolume` 253,386:
-  **15.1%**, and 3.0% of the widest (Caldera, 1,268,353). Mass's 3×3 cross-section carries most
+  number to hold it against is the **tightest** of them, Orrery's `FrenzyEnterVolume` 125,368
+  (since the flush lays of §62.2, 2026-10-20; it was 253,386): **30.6%**, and 3.2% of the widest
+  (Caldera, 1,211,648). It still sits under the 57.6k Frenzy delta every cell adds to its baseline. Mass's 3×3 cross-section carries most
   of it at 135/strut. Every one of the seven absorbs the species without re-authoring its
   ladder. Level spread multiplier is ×1 (lattice species, §34.9 — and ×1 everywhere since §40). *(A profile named for a cell
   that no longer exists is §36.10's stated debt; the lesson here is that a ladder claim must be
@@ -7219,7 +7261,8 @@ SPECIES reads wrong, fix that species' authored `HeartWorldScale`.** Never the r
 
 **The numbers are owned by a tool, not by hand.**
 `Tools/Build/author_lifeform_heart_sizes.py` (`--check` in CI, `--write` to author) covers the
-**88 canonical** `_SO_Assets/Lifeforms` assets plus the **25 per-cell deployments that author
+**108 canonical** `_SO_Assets/Lifeforms` assets (27 species × 4 elements; the Nested Gyroid's four, the 28th
+species, are pinned by `author_nested_gyroid_flora_assets.py` instead, 112 in the folder) plus the **25 per-cell deployments that author
 their own variant block** — those do NOT inherit a canonical heart, which is why they are
 enumerated rather than assumed. It also flipped the canonical assets' `Variant.Enabled` to 1: a
 heart size stated in a disabled block is a heart size nothing reads
@@ -11571,3 +11614,509 @@ each heart must show `ElementalCrystalImpactor` (`Crystal` set, one collection e
 `ImpactCollider` (pointing at it), its `Crystal` component unchecked, and no Missing (Mono Script)
 rows. A living QuadFish's heart must still be joustable: `SetEmbeddedIn` enables the collider, and
 that doesn't depend on the `Crystal` component being enabled.
+
+## 61. The fauna leash — a vessel can steer a creature, never rewrite it (Oct 2026)
+
+The Angler (vessel 17, `R_VesselActions/ANGLER.md`) lures, tames and commands fauna. It does that through one narrow
+contract, `IFaunaLeash` (`Controller/Environment/FloraAndFauna/IFaunaLeash.cs`), and the contract is narrow on
+purpose: **a leash bends behaviour and nothing else.**
+
+### 61.1 What a leash may do
+
+- **`TrySteer(creature, out goal, out speed, out turnRate)`.** It replaces the creature's own goal for this tick:
+  - `LightFauna` slerps its body to that goal (`SteerOnLeash`) and eases its speed at 2.5/s.
+  - A `Boid` uses the goal as its steering target, at the leash's turn rate.
+- **`OrderedMeal(creature)`.** Picks which edible prism the creature's next mouthful faces. The creature re-reads it every frame.
+- **`Released(creature)`.** The creature tells its holder it has left the leash.
+
+### 61.2 What a leash may NOT do (the invariants, each held by the creature's code, not the holder's)
+
+- **The diet decides.** An ordered prism is re-checked against the creature's own edibility rule. It is eaten with the creature's own mouthful (`UpdateFeeding`), so a leash cannot make a herbivore eat what it could not eat wild.
+- **No imposed death, and no reprieve — but one keeper.** The starvation clock keeps running. A tamed creature that is never ordered to eat follows the school without grazing, and may starve on its own clock. That is the ordinary rule, with ONE authorized exception: the school's first creature, the Angler's keeper, does not starve (§61.4, §0). Whether a following creature should graze in passing is an open designer call (`ANGLER.md` §8).
+- **One fauna colour per cell.** A tamed creature keeps the cell's colour (LOCKED, `ECOSYSTEM_DESIGN_PRINCIPLES.md`). "My squad" is a leash relationship, not a team.
+- **The heart, body prisms, wither and mass conservation** are untouched. A leashed creature dies exactly as a wild one does.
+- **Who can be leashed:**
+  - Herbivores only (`Fauna.CanBeLeashed`). A `Boid` must also be a forager.
+  - Only on the peer that simulates the creature (`IsSimAuthority`), so consequences never fork across peers.
+  - Never while dying. `Die()` and `OnDestroy()` call `DropLeash()` before anything else, so a holder never steers a corpse.
+
+### 61.3 What is inert without a holder
+
+Every hook is gated on `Leash != null`. With no Angler in the cell, `LightFauna` and `Boid` run exactly the code they ran
+before: the same goal, the same feed candidate, the same speed.
+
+### 61.4 The keeper (2026-10-16, an authorized exception)
+
+The designer asked that an Angler always leads at least one creature, and that one never starves.
+
+**The rule:**
+
+- **One creature never starves.** `IFaunaLeash.Sustains(creature)` is true for exactly one creature per holder: the first in the Angler's school. `Fauna.IsStarving` is false while it holds. The stomach still drains and refills as usual; only the death at empty is waived.
+- **An empty school gets a keeper.** When the school is empty, `AnglerCommandExecutor.EnsureKeeper` births one creature:
+  - behind the hull, at the school's first slot;
+  - through `CellLifeSpawnerBase.SpawnFaunaWithDomain` (lineage bind, replication seam, bloom), in the cell's controlling colour;
+  - leashed at once.
+- **Which species:** the cell's own first leashable herbivore (`SpawnProfile.SupportedFaunas`, `Fauna.Leashable`), else `AnglerConfigSO.companionFauna` (Clawfish Space, the lab's first species).
+- **Where it is born:** a replicated species only on the sim authority, at most once a second. Never after the turn has ended.
+
+**What it does not waive:**
+
+- Predation, a jousting vessel, and losing the last body prism still kill a keeper. Its heart still drops and its mass is still conserved. The next creature in the school becomes the keeper, and an empty school gets a new one.
+- §0's "AUTHORIZED EXCEPTION … the Angler's KEEPER" is the record of the sign-off and the fence.
+
+
+### 61.5 Round 3 (2026-10-16): painted prey, theft, and the lure's garden
+
+The designer gave the Angler's elements their abilities (`R_VesselActions/ANGLER.md` §1c–§1g). Three of them touch the
+ecosystem:
+
+- **Every creature prefers painted prisms** (`PaintedPrey`).
+  - `LightFauna` and `Boid` rank a painted prism `paintedPreference` (4) times closer in their own nearest-edible search. That is the only reader.
+  - It is a preference inside the creature's own sensing radius, never a goal and never food. The diet still decides edibility, and shielded mass is still never food.
+  - It is a vessel's active act on the world (an ability), not an imposed rule of the food web. With nothing painted, every forager ranks exactly as before.
+  - Its static registry is fenced against the static-registry trap. Each holder unmarks what it marked (eaten, erased, turn end, disable), and `Prism.Initialize` forgets a pooled prism's marks.
+- **Theft** (Mass level 5). `Fauna.TryLeash(holder, steal: true)` moves a creature from one holder's leash to another's. The old holder is told (`Released`).
+  - A leash is still behaviour only (§61.1–61.2), so stealing changes who steers the creature and nothing else.
+- **The lure's garden** (Mass). While an Angler's lure is out, one plant of the PILOT'S domain is planted in the lure's reach every 2 s:
+  - one of the cell's own species;
+  - through `CellLifeSpawnerBase.SpawnFlora`, so it grows in;
+  - a replicated species only on the sim authority.
+
+  This is a vessel laying its own domain's mass, the same as a trail. It is not the spawner, so the "fauna spawn in the controlling colour" rule (a spawner rule) is not touched.
+
+**The Space level-5 "Paint Shields"** never makes shielded mass food. A squad member that reaches a painted shielded prism
+cracks the shield off (`Prism.DeactivateShields`, the same call a vessel's impact makes), and only then can it eat the prism.
+
+### 61.6 Round 4 (2026-10-17): growth haste replaces the garden; seeds; a spent creature
+
+- **The lure's light hastens growth** (`Flora.Hasten`). It replaces §61.5's lure garden, which planted a new plant every 2 s.
+  - While an Angler's lure is out, every plant within its reach waits `growPeriod / 3` between grow ticks instead of `growPeriod`.
+  - Each tick grows exactly what it always did, under the plant's own budgets, so mass is created at the plant's own rate per tick and only the cadence changes.
+  - The haste lapses by itself: a 0.6 s window, refreshed while the light is on the plant. Nothing needs undoing.
+  - Its one caller is `AnglerCommandExecutor`. `Flora` grew no serialized field for it.
+- **An omni crystal's seed.** An Angler that collects an omni crystal holds one flora seed (one of the cell's species) until its lure is next let go. The seed is then planted at the esca, in the pilot's domain, through `CellLifeSpawnerBase.SpawnFlora`.
+  - It grows in; a replicated species is planted only on the sim authority.
+  - It is the same as the garden: a vessel laying its own domain's mass, not the spawner.
+- **A spent creature** (the Charge lock) leaves its holder's school but stays leashed, hunting one vessel until it dies.
+  - It is not the keeper, so it starves normally (§61.4).
+  - Its leash is still behaviour only (§61.2): it swims at the vessel; it does not eat it.
+  - Its bites are the vessel's petals, through the PvP gate, never mass.
+
+### 61.7 Round 7 (2026-10-18): a holder asks the creature's diet before it orders
+
+- **`Fauna.LeashCanEat(Prism)`** is the creature's own edibility rule, asked by a holder before it gives an order (`LightFauna` → `IsEdibleForHerbivore`, `Boid` → `IsEdibleForForager`; the base answers true).
+  - It reads; it changes nothing. The diet is still the creature's (§61.2): a holder can only skip a prism the creature would refuse, never make one edible.
+  - Without it a leashed creature was ordered to a prism its diet refused (its own domain in a cell with no nucleus, the nucleus claim, outside its pen) and hovered there for good. That is the "the fauna don't always listen" the designer saw.
+  - The Angler's `PickTarget` is its one caller. A shielded prism stays a candidate: only Space 5 paints one, and the squad cracks the shield (§61.5).
+
+### 61.8 The herd, and shields in a Frenzy (2026-10-21)
+
+The designer, 2026-10-21: "these are a special swarm that can be upgraded to break rules and should only starve down to a minimum size and break other rules if need be. in general shielded prisms should be food during a frenzy when the cell has too many prism."
+
+- **A HERD is a leash whose creatures may break rules** (`IFaunaHerd : IFaunaLeash`; the Jacks, `R_VesselActions/JACKS.md`). Every break is one method with one reader in `Fauna`, so the exceptions stay fenced:
+  - `Sustains` (the second sign-off after the keeper, §61.4): the herd's first `minHerd` creatures do not starve, and an empty herd has that many born to it. Predation and jousts still kill.
+  - `EatsShields`: shielded (never super-shielded) mass is food for the herd (the Jacks' Space level 5).
+  - `FeedsPerOffspringScale`: the holder scales the feeds a birth takes (the Jacks' Mass).
+  - `Born`: a herded creature's offspring joins the herd.
+- **Shielded mass is food during a FRENZY**, for every grazer: `Cell.ShieldedMassIsFood` is `phase == CellPhase.Frenzy` (the phase a cell enters when it holds too much mass). `Cell.IsInedibleShield` drives the targeting grids, and every shielded prism is re-filed on the Frenzy edge (`SyncShieldFoodFiling`), so a Frenzy steers fauna onto shields and the Calm that follows takes them off again. Super-shielded mass is never food.
+- **One predicate.** `Fauna.IsInedibleShield(prism)` replaced `IsShieldedMass` in every grazer's edibility test (`Boid`, `LightFauna`, `WormFauna`, `SubstrateFauna`, `NcaCreatureFauna`, `SwarmFauna`). `IsShieldedMass` stays the fact ("is this armoured"), now read only to pass `devastate: true` to `Prism.Consume`, so an edible shield is eaten with its prism instead of shed. `ThreatGrove` keeps the strict rule.
+- §16.2 still holds where it was written: outside a Frenzy, with no herd upgrade, a shielded prism is not food and is not a target.
+
+## 62. NO PRISM MAY INTERPENETRATE ANOTHER — everywhere, not species by species (Oct 2026)
+
+§49.10 made the rule (*a plate may not pass through a plate; a limb may pass through a plate*),
+and until this section it was held only by the generators that had been fitted under it: the
+Garland cell (§48.10), the Borromean (§49.10) and Schwarz P flora, the quasicrystal struts and the
+shields. Every Spawnable shape — the cell environments, the menu's freestyle worlds and the arcade
+arenas — had never been measured at all. Garrett found a clip in the game and asked for an audit
+of every clipping moment and a fix for all of them.
+
+### 62.1 The audit — `Tools/Build/audit_prism_clipping.py`
+
+It reads every prefab whose generator is a compiled Spawnable shape (or a `*Generator`) the way the
+card-art renderer reads it (`render_card_backgrounds.generator_node`: every serialized value, nested
+child generators followed), RUNS the shipped C# through `prism_clip_audit/` (Roslyn + the card-art
+shims, compiled as partial copies so nothing in Caleb's harness is forked) at intensities 1–4, and
+puts every pair of laid prisms whose bounding spheres meet through the 15-axis separating-axis test.
+A prism is its oriented box at its lay scale, clamped into its prefab's `PrismScaleAnimator` window
+the way the lay clamps it (`SpawnablePrism.prefab`: 0.5–100 per axis). Breakwater, which lays
+nothing until its controller hands it a course, is posed with the shipped `BreakwaterCourse` at the
+card recipe's settings. **59 generators on 57 prefabs, 236 runs.**
+
+**What it found: 42 of the 57 generators laid interpenetrating prisms**, most of them in the shipped
+cells. In the order a player would meet them:
+
+| environment | where it ships | prisms | clipping pairs | of which a trail into its own neighbour | duplicates |
+|---|---|---:|---:|---:|---:|
+| Orrery | freestyle cell | 34,573 | 77,672 | 1,930 | 2 |
+| Atlantis | Scurry | 69,303 | 46,623 | 9,846 | 0 |
+| Twistbands | Cleave I4 | 16,423 | 42,257 | 5,683 | 0 |
+| Swell | Cleave I2 | 14,277 | 31,406 | 4,124 | 0 |
+| Yggdra | freestyle cell | 34,340 | 29,323 | 6,739 | 0 |
+| Ribcage | Cleave I3 | 14,731 | 26,771 | 3,839 | 213 |
+| Daedala | freestyle cell | 33,858 | 25,797 | 2,897 | 425 |
+| Geode | freestyle cell | 34,367 | 23,453 | 13,972 | 732 |
+| Concentric spheres (Spherene shells) | Scurry | 24,966 | 22,197 | 417 | 0 |
+| Panes | Cleave I1 | 15,380 | 15,906 | 13,815 | 0 |
+| Boneyard 1–4 | Dog Fight, Salvo, Dustup, Broadside, Grizzly Charge | 9,043–34,654 | 2,995–13,548 | 351–1,462 | 72–264 |
+| Caldera | freestyle cell | 41,353 | 12,929 | 3,055 | 5 |
+| Helicoid | Scurry | 57,840 | 9,427 | 0 | 0 |
+| Wildlife cage 1–4 | Wildlife Liberation | 9,206–13,956 | 2,598–7,788 | 104–884 | 0 |
+| Zephyr | freestyle cell | 52,917 | 6,611 | 2,294 | 0 |
+| Gyroid | Joust I4, Crystal Capture | 40,851 | 6,487 | 1,771 | 2 |
+| Breakwater | Breakwater | 4,575 | 6,015 | 15 | 0 |
+| Hesperides | freestyle garden cell | 12,060 | 5,744 | 2,879 | 101 |
+| TorusKnot | Joust | 1,500 | **6,020** | 1,497 | 0 |
+| Spherene | the concentric-spheres shell | 8,322 | 5,047 | — | **5,047** |
+| Regatta rails 1–4 | Regatta | 1,812–2,209 | 1,812–2,199 | all | 0 |
+| Skein 1–4 | Skein | 3,602–6,165 | 525–890 | nearly all | 0 |
+| Hopf fibration | Joust | 2,304 | 791 | 605 | 1 |
+| Ourobor | freestyle cell | 37,889 | 804 | 0 | 0 |
+| SchwarzP | Joust | 49,856 | 288 | 96 | 0 |
+
+(and the stress-test Pumpkin and Ellipsoid, the unreferenced LinkedRings and LongComet, and the
+Batman AOE spawner). Clean: the Garland, the four Switchyards, the Skim Race waypoint track, the
+race torus, the Clifford torus, the comets, the dart board, the Hilbert mazes and the other two AOE
+spawners.
+
+Four kinds of clip, each with a different fix:
+
+1. **A trail whose pitch is shorter than its prisms** — every consecutive pair overlaps (the
+   Regatta and Skein rails, the torus knot, most of Panes and Geode). One structural fix per trail.
+2. **Structures that cross with no clearance** — rings through rings, bands through bands, the
+   Orrery's orbits through its planets. The bulk of the big environments.
+3. **Joints where several trails share one point** — branch nodes, cage corners.
+4. **The same prism laid twice.** Two of these were GENERATOR BUGS, fixed at source:
+   - **SpawnableTorusKnot laid its three "parallel" strands on ONE curve.** A strand's minor phase
+     was `2π·s/strands`, but shifting a (p,q) knot's phase by a multiple of `2π·gcd(p,q)/p` gives
+     back the same curve — and with p = 3 and 3 strands, `2π/3` is exactly that period. Joust's knot
+     was one tube with blue, jade and gold prisms threaded through each other (6,020 clipping pairs,
+     every prism inside two others). Strands are now spread over one symmetry period, so they are
+     the distinct parallel rails the class doc always described.
+   - **SpawnableSpherene laid the first block of every edge on its start vertex**, so five or six
+     edge blocks plus the gold vertex block stacked in one place at every vertex (5,047 coincident
+     pairs). Edge blocks sit at segment midpoints now, and each one is capped against the vertex
+     block and its sibling edges at that vertex (shorter or thinner, whichever keeps more), so the
+     gold node stays whole.
+
+### 62.2 The fix — at AUTHORING time, inside each generator; every prism kept
+
+A first version of this section resolved every lay list at runtime (`PrismClearance`: shrink each
+prism in lay order, clear what cannot be shrunk). Garrett rejected it on 2026-10-20: *"we don't want
+to bloat our run time load when this is a strictly editor time solvable problem. ... don't reduce
+prism count. minimally reduce scale so they are flush."* It cost up to 700 ms at load and cleared
+thousands of prisms. It was removed in full. The cell configs, budget generators, card art and lay
+paths went back to bleeding-edge. What replaced it:
+
+- **Each generator lays its prisms flush, where its geometry is decided.** A prism's size is fitted
+  to the neighbours its own construction already knows: the next step along a rail, the ring
+  spacing, the lane step, a vertex's sibling edges, a planet's orbit. Those are analytic indices,
+  not a search of the lay list. The fit is the longest size at which the two oriented boxes only
+  touch (`FlushPairLength`, ×0.998 for float noise). Where two families cross by design, the
+  generator decides which one yields.
+- **No prism is removed, and none is added.** The draws are the same, in the same order. A
+  `Jit(s)` whose result would undo a flush size became `JitDown(s)`
+  (`CellEnvironmentSpawnableBase`). It is one draw, like `Jit`, so swapping it in moves no other
+  prism, and it only ever shrinks. Where no shrink can part a pair (a duplicate, two centres that
+  coincide), the later prism slides along its own rail by the smallest separating travel.
+- **The audit is the gate, and it runs at editor time.** `audit_prism_clipping.py` tags every lay
+  with the generator family that emitted it (the stack frames above `Emit`, or "X trail k" for a
+  trail shape). Its report is per family: self pairs, cross pairs, and the uniform scale at which
+  that family would be flush. That is how each generator was fixed where its geometry is wrong.
+  The audit's shim copy carries the REAL `PaintingStrokeToolkit.CurlNoise`. The card-art shim stubs
+  it, so curl-driven worlds had been measured straight: Zephyr lays 36,069 prisms, not 52,917.
+
+**Result** (236 runs, `audit_prism_clipping.py`; count unchanged everywhere; load is one build in the
+.NET 8 harness, and IL2CPP on a phone will be slower):
+
+| environment | clipping pairs before → after | volume kept | load per build |
+|---|---|---:|---|
+| Orrery | 77,661 → 0 | 35% (the overlap WAS the volume) | unmeasured |
+| Atlantis | 45,529 → 0 | 73% | ~+90 ms (~0.45 s total) |
+| Twistbands / Swell / Ribcage / Panes (Cleave I4/I2/I3/I1) | 42,252 / 31,402 / 26,762 / 15,903 → 0 | 53% / 58% / 61% / 79% | +0.4 to +3 ms |
+| Yggdra | 30,692 → 0 | 63% | ~+50 ms |
+| Daedala / Geode | 25,784 / 23,447 → 0 | 66% / 89% | 6.6 → ~13 ms |
+| Spherene, concentric spheres | 7,397 / 22,191 → 0 | 79% | — |
+| Helicoid | 9,427 → 0 | 95.5% | — |
+| Breakwater | 1,785–6,015 → 0 | 85–90% | — |
+| Wildlife cages 1–4 | 2,596–7,786 → 0 | — | — |
+| Hesperides | 5,742 → 0 | 90% | 3.7 → ~13 ms |
+| TorusKnot / Hopf / SchwarzP / Ourobor | 1,500 / 791 / 288 / 804 → 0 | 67% / 85% / — / 99% | — |
+| Regatta rails / Skein | 1,812–2,199 / 512–865 → 0 | 98.6–99.8% | — |
+| Ellipsoid, comets, LinkedRings | → 0 | — | — |
+| **Caldera** | 12,926 → **5,097** | 95% | 14 → ~40 ms |
+| **Zephyr** | 11,353 → **6,692** (real curl) | 98% | 12.5 → ~20 ms |
+| **Gyroid** | 6,487 → **1,233** | — | none (per-block-type lengths) |
+| **Boneyard 1–4** | 2,995–13,548 → **277 / 674 / 1,285 / 2,392** | — | — |
+| **Batman AOE / Pumpkin** | 464 → **363** / **36,538** | — | — |
+
+Two shapes changed visibly, not just in size:
+- **Panes (Cleave I1).** Panes 0, 4 and 7 meet along three lines within 3°, so their mullions lay
+  inside each other for ~500 u. 1,221 members slid along their own rail, 344 of them by more than
+  20 u (max 499). Changing one `PaneSpecs` normal would remove that; it moves a wall, so it is a
+  gameplay call (T-20261020-086a).
+- **Breakwater's plug weave.** The three rakes now sit one bar section apart along the axis
+  (9 u deep). Before, they were three passes through one plane.
+
+The Orrery and the Ourobor now admit their authored scale (`AdmitsAuthoredPrismScale`): a few flush
+sizes sit under the prism prefab's 0.5 floor, and the floor would grow them back into a clip.
+
+### 62.2b The layouts are BAKED: the game does not run the fit while it loads
+
+The load column above is what the fits cost. Garrett, 2026-10-20: *"bake the fitted layouts into
+assets so load cost is zero."* A cell environment's output depends only on its generator's code
+and its serialized fields, so it is now computed once, offline, and the game reads it:
+
+- **`Tools/Build/bake_prism_layouts.py`** runs every `CellEnvironmentSpawnableBase` prefab through the
+  prism clip audit's harness (the same shipped C# the audit proves flush) and writes
+  `Assets/Resources/PrismLayouts/<Type>_<fingerprint>.bytes`: every lay (pose, scale, domain,
+  kind) and every planting site, exact float32. It bakes each world at intensities 1 and 4 and
+  fails if they differ. `--check` re-bakes and fails on any drifted, missing or orphan bake;
+  `--self-test` proves `--check` catches each of those. Per-bake sizes and timings go to
+  `Tools/Build/prism_layout_bakes.json`.
+- **The key is a FINGERPRINT of the generator's fields** (`PrismLayoutBakeFormat.Fingerprint`:
+  FNV-1a over seed, density, spawn clearance and every serialized field the subclass declares).
+  The harness compiles the same file, so the baked fingerprint is the one the game computes. An
+  edited prefab asks for a fingerprint with no file, and the world is generated live with one
+  `[PrismLayoutBake]` warning naming the script. A stale bake is never served for new fields.
+- **A code change is caught twice.** `--check` fails on it, and in the Editor each bake carries a
+  hash of its generator's own script, so a world whose `.cs` was edited is generated live in
+  Play mode until it is re-baked. A player build always trusts its bakes.
+- **Read path:** `CellEnvironmentSpawnableBase.GenerateTrailData` asks `PrismLayoutBake.TryLoad`
+  first. It loads the bake from `Resources`, unloads it as soon as it is decoded (so the Cell
+  Selector, which references every world, keeps none of them resident), and falls back to
+  `BuildEnvironment` on any miss. `using (PrismLayoutBake.Bypass())` forces live generation.
+- **Not baked:** the four rail worlds (Skein, Regatta rails, Switchyard, Breakwater). They split
+  their lay into trails by build state a bake does not carry, so they override
+  `BakesLayout => false`. Their fits are closed-form and cheap. The `SpawnableBase` shapes
+  (Spherene, Helicoid, the torus knot, Hopf, SchwarzP, Gyroid) are not cell environments and
+  still generate live; their fits are closed-form too.
+
+| | live generation (.NET 8) | bake decode | bake size |
+|---|---:|---:|---:|
+| Atlantis | 289 ms | 3.4 ms | 2.84 MB |
+| Ourobor | 203 ms (never measured before) | 2.0 ms | 1.59 MB |
+| Yggdra | 201 ms | 1.2 ms | 1.44 MB |
+| Caldera | 108 ms | 0.9 ms | 1.74 MB |
+| Daedala / Geode | 44 / 34 ms | 1.3 / 1.6 ms | 1.42 / 1.44 MB |
+| the other 16 (Orrery, Zephyr, Hesperides, Garland, Cleave ×4, Boneyard ×4, Wildlife cages ×4) | 4–24 ms each | 0.2–1.8 ms | 0.18–1.51 MB |
+| **all 22** | **~1.09 s** | **~22 ms** | **22.3 MB** |
+
+Timings are one run each, as `Tools/Build/prism_layout_bakes.json` records them. They move by
+tens of percent from run to run, and a phone running IL2CPP will be several times slower on both
+sides.
+
+**What the bake does NOT speed up** (Garrett, 2026-10-21: "i loaded the orrery in the toybox and
+it wasn't any faster"). The bake removes GENERATION, and for most worlds that was never the bulk of
+a load. The Orrery generated in 22 ms in the harness and 97 ms in Amoebius's debug build, against
+8 ms to read its bake. A Cell Selector swap then spends its time elsewhere:
+- the retiring world suctions away for a fixed 1.1 s (the continuity law);
+- it is released at 500 prisms a frame, ~70 frames for a 35k world;
+- 34.5k prisms are laid in 80 ms slices behind the veil;
+- each laid prism finishes creation at most 512 a frame, ~68 frames. Every prism still waiting
+  is a coroutine resumed each frame only to find no budget left.
+- the grow-in, a stable all-clear, and the veil's 0.65 s of fades.
+
+Two of those stages are capped by count per frame, not by time, so a faster machine does not
+shorten them.
+
+**Measured (Load Time Insights, Editor, 2026-10-21): an Orrery swap took 21.3 s at 7.8 fps.**
+
+| stage | time |
+|---|---:|
+| streamed lay of 34,573 prisms | 16.1 s |
+| settle (creation queue + grow-in) | 2.8 s |
+| release of the old world | 1.4 s |
+| suction | 0.9 s |
+| layout bake | 5 ms |
+
+Inside the lay, the per-prism work was only 0.8 s. The lay was FRAME-bound: it awaits one
+256-prism async clone batch before it starts the next, so 135 batches took ~125 frames of
+~130 ms. While the gate holds, a batch is now 2,048 prisms
+(`PrismTrailBuilder.LoadGateCloneBatchSize`). Unity's async-instantiate integration slice
+(`AsyncInstantiateOperation.SetIntegrationTimeMS`) is raised to the gate's lay slice (80 ms
+under the menu veil) and restored when the gate releases. The swap now also records the trail
+return separately from the world release, the clone wait per batch, how many prisms were reused
+or newly made, the creation completions, and how many prisms had no render entity at suction.
+
+**Second capture (same swap, after the batch fix): 13.9 s at 18.8 fps.**
+
+| stage | time |
+|---|---:|
+| settle | 5.8 s |
+| lay | 5.7 s |
+| release | 1.1 s |
+| suction | 0.9 s |
+
+Inside the lay, 15 clone batches spent 3.6 s integrating 30,314 new prisms; 4,259 were reused from
+the pool. Prism creation completions cost 0.07 ms each, 2.5 s in all, at the unchanged 512 a
+frame. The settle had grown because the backlog moved there. Most of it was not work: at
+`growthRate` 0.5 (k = 1.25/s) and a settle epsilon of 0.1, a 10–30 u prism counts as settled
+3.7–4.6 s after its creation completes, so the gate waited out the last prisms' bloom behind an
+opaque black screen. **Behind the menu veil only** (`PrismTrailBuilder.LoadGateCovered`, set once
+the veil has fully faded in), the gate now settles each created prism's grow-in at once with
+`Prism.CompleteGrowthImmediately`, the method made for "loading-screen use — the world must be
+covered". Game loads keep the full bloom, because the connecting screen previews the arena live. **A swap now records in Load
+Time Insights**: arm Record Insight Mode, then swap. The report has a span for the suction, the
+release, the layout bake, the streamed lay and the settle, and it ends when the veil lifts. Fix
+the stage that report names, not a guess.
+
+**The cost is size.** Exact float32 is ~40 bytes per prism, and deduplication buys almost nothing:
+the fits make nearly every scale and rotation unique. The bakes are 22.3 MB on disk, about 13 MB
+once a build compresses them (11 MB with a byte-shuffle). Quantizing would roughly halve that,
+but a quantized rotation can reopen a flush contact the fit closed, so the bakes stay exact.
+
+**Amoebius** reads the same bakes: its `Resources.Load` now resolves a `.bytes` TextAsset, and
+`Resources.UnloadAsset` exists as a no-op. A Menu_Main boot there served the Garland cell from its
+bake. Before the loader fix it computed the same fingerprint and fell back to live, which is a
+second engine agreeing with the harness's fingerprint.
+
+### 62.3 The phase ladders moved with the volume
+
+`Cell.LiveVolume` counts every laid prism, the environment's too. So a cell's `PhaseThresholds` are
+its environment's baseline plus the mode's deltas (§18). The counts did not move, but the volume
+did, so every ladder moved down by the measured volume drop:
+
+- **The mirror budget models** replay the fitted C# and price it exactly. Each has an author script
+  and a `--check`: `boneyard_budget.py` (Dog Fight, Salvo, Dustup, Broadside, Grizzly Charge),
+  `wildlife_cage_budget.py`, `breakwater_arena.py`, `skein_budget.py` (with a 15-axis
+  `prove_rails_flush` proof and its negative control), the Regatta harness
+  (`regatta_course_measurements.json`), and the Cleave harness (`cleave_arena_measurements.json`).
+- **The hand-measured freestyle cells** (§18) were moved by hand, by the drop the audit measured:
+  Orrery Restless 206,986 → 78,968, Yggdra → 352,745, Daedala 648,504 → 432,298, Geode 574,650 →
+  514,429, Caldera → 1,165,248, Zephyr → 429,484 and Ourobor 762,649 → 755,494.
+  `Tools/ecosim/gen_hesperides_assets.py` writes Hesperides' ladder (Restless 550,182).
+
+**A generator change that moves an environment's volume re-measures its ladder in the same change.**
+
+### 62.4 What is still clipping, and why it is a decision
+
+None of these can be fixed by fitting a size, and each fix would change something else:
+
+- **Random scatter**: Boneyard 1–4 (rubble on rubble, hulks scattered into each other), plus
+  Caldera's and Zephyr's hash-scattered shards, discs, clouds and rain. Parting two random overlaps
+  means moving one piece. A redraw moves every later draw, so it moves every prism after it.
+  T-20261020-b391 (Boneyard) and T-20261020-7b07 (Zephyr/Caldera).
+- **Gyroid walk drift**: the walk revisits near-duplicate sites, and only a neighbourhood search
+  finds them. That search was built and cost +53 ms, so it was reverted (T-20261020-c358).
+- **Under the scale floor**: Batman's head strokes and every Pumpkin block are flush only below the
+  prefab's 0.5 floor (T-20261020-c71f). Pumpkin is a stress test and is not shipped.
+- ~~The load cost of the fits~~: resolved by baking (§62.2b, T-20261020-8f9d done).
+
+### 62.5 What this does NOT cover yet
+
+- **The Mandelbulb flora family** (FractalFoliage, Coral Bloom, Watershed, Apollonia) clips BY ITS
+  OWN DESIGN. `MandelbulbFlora.Claim` refuses only a prism laid essentially inside another ("two
+  ribbons meeting at an angle legitimately overlap — that is what a cage is"), and
+  `measure_mandelbulb_flora.py` gates a BOUND rather than a zero: 8–66% of touching pairs
+  interpenetrate across the species and elements. That is its own change, under the /flora skill
+  (T-20261020-2529).
+- **Vessel trails** are laid live from flight and overlap on tight turns. They are not generated
+  lists.
+- **Fauna bodies** move; the rule is about laid structure.
+- **Scene overrides**: the audit reads prefabs. A scene that overrides a shape's numbers on an
+  instance is measured at the prefab's values.
+
+### 62.6 Dynamic contact never does nothing (the clip Garrett found)
+
+The clip Garrett found was not a laid one. It was the **Thresher cord passing through the pilot's
+own shielded mass**. The cord can do nothing to that mass, so it did nothing, and that reads on
+screen as clipping. The rule (Garrett, 2026-10-20): **dynamic clipping should never do nothing.**
+A contact with no mechanical effect still acknowledges the hit:
+
+- **Own armoured mass enters the LIT state.** `ThresherExecutor` gathers the step's touches on own
+  shielded prisms (chain links, the Mass Mode ball, a ball that stays inside) and publishes ONE
+  own-domain light per Thresher over their span: `PrismLit.PublishLight(..., ownDomainOnly: true)`,
+  a cylinder, or a sphere for a single touch. It is cleared on disable. This is the fifth `PrismLit`
+  producer (`Docs/LIT.md`, "Contact acknowledgement").
+- **Super-shielded rival mass answers with its deflection jiggle**
+  (`Prism.AbsorbSuperShieldHit`), as every other hit on it does. This is now true for the Thresher
+  chain and Mass Mode, `PrismTeamManager.Steal` (every steal source: hull, skimmer, Urchin spike,
+  black hole), the AstroLeague and Scarab balls, the Brittle Star cords, the Shrike lance below
+  pierce and the Grizzly flamethrower (which no longer spends an ignite on it).
+- The AstroLeague ball lights own already-shielded mass in the ball's colour.
+
+Still open: own-domain pass-throughs that would light on every frame of normal flight (a vessel
+flying through its own trail). Lighting those would be noise, so it is a decision
+(T-20261020-8fd0, `Docs/LIT.md` "Still open").
+
+### 62.7 Verification
+
+Offline, measured on this branch:
+- `audit_prism_clipping.py`: 236 runs. Every environment in §62.2 reads 0, except the §62.4 residuals.
+- Every touched budget model and author script passes its `--check`.
+- The headless reference compile passes: player config RESULT OK, editor config 0 errors in changed files.
+- `render_card_backgrounds.py --check` passes.
+- `bake_prism_layouts.py --check` and `--self-test` pass. Its negative controls were run by hand: a
+  changed `DefaultSeed` reads as a drifted bake, and a changed prefab field reads as missing plus
+  orphan.
+- Amoebius: `dotnet build Port/src/CosmicShore.Live` passes. A headless Menu_Main boot serves the
+  Garland cell from its bake. `CosmicShore.Tests` has 1978 of 1979 passing; the one failure
+  (`UnityWrittenOverrideListsReplayByteForByte`) fails the same with the port changes removed.
+
+**Nothing has been run in the Unity editor.** The hand tests are T-20261020-74d8 (freestyle cells
+and Atlantis), T-20261020-fa54 (arcade arenas), T-20261020-2cee (the Thresher acknowledgement) and
+T-20261020-ad7e (the bakes: `PrismLayoutBakeTests`, no `[PrismLayoutBake]` warning in play).
+
+## 63. A dying limb becomes a cytoplasm shard (Oct 2026)
+
+Garrett, 2026-10-21: *"when spindles wither or die lets have them instead morph into a new shard that
+gets added to the shard list."* Until now a spindle's death fade (`Spindle.StampEvaporate`, the
+`_DeathStartTime` stamp on `SpindleGraph`) ended in nothing. Now every limb that withers or dies leaves
+one new shard in its cell's cytoplasm, the `SnowChanger` field whose shards point at the crystal.
+
+### 63.1 How it works
+
+- **One call per death.** `Spindle.StampEvaporate` is the one place both deaths reach: `CheckForLife`
+  (the limb lost its last prism and child) and `ForceWither` (starvation, the ordered withers of §26,
+  the joust). Both latch `dying` first, so a limb makes at most one shard. After stamping its fade,
+  the limb calls `MorphIntoShard`, which finds the cell around the limb's middle
+  (`Cell.FindCellContaining`, at a lifecycle point, never per frame) and hands the shard to
+  `Cell.Cytoplasm.AddMorphedShard`.
+- **The shard condenses on the limb's own clock.** It joins the shard list where the limb's middle was,
+  at zero scale and facing along the limb. Over the limb's fade (`DeathFadeDuration`, 1 s, starting at the
+  same `PrismClock` time, so the `i * interval` offsets of an ordered wither stay outside-in or
+  heart-outward) it grows to its law scale and turns toward the crystal. The limb fades as the shard
+  grows, so nothing pops (continuity of existence). After that it is an ordinary shard and is
+  reoriented with the rest whenever the cell's items change.
+- **The shard list grows.** On the instanced path (the shipped `shard.prefab`, lever L6) the position,
+  rotation, scale and matrix arrays are now a capacity that doubles, and `_count` is the shard count.
+  On the GameObject path `shards` is a `List<GameObject>`. The reorient slice and the instanced draw
+  read the count, so a new shard is drawn and reoriented like the field's own. Only shards that are
+  still condensing are touched every frame (`SnowChanger.CondenseTick`), so the cost is a handful per
+  dying plant.
+- **One shard per five limbs.** Garrett, 2026-10-21, after the first look: *"tone down the number of
+  shards created from spindles by a factor 5."* `SnowChanger.limbsPerMorphedShard` (5) counts the cell's
+  dying limbs and only every fifth one condenses into a shard; the rest evaporate as they always did.
+  The count is per cell and in death order, so an ordered wither still leaves its shards outside-in.
+- **A backstop, not a lifespan.** `SnowChanger.maxMorphedShards` (800 by default, cut from 4000 with the
+  rate so both are a fifth) is the most shards limbs may add. It is thinned by `GraphicsCuts.CytoplasmDensity` like
+  the field (§3.10 of `Docs/PLATFORM_UNIFICATION.md`: a quarter on Low / Very Low / MobileLow / Web).
+  Past it a limb just evaporates, as before. No shard is ever removed to make room: that would be an
+  imposed death.
+- **Where nothing happens.** There is no cell around the limb (a hangar or a toy outside every
+  membrane). The cell is a satellite (no cytoplasm). The config has no `CytoplasmPrefab`. The cytoplasm
+  has not been built yet. The scene is unloading. In all of these the limb evaporates exactly as it did.
+
+### 63.2 The invariants, checked one by one
+
+- **Continuity of existence:** the limb's fade and the shard's growth run on the same start time and the
+  same duration.
+- **Mass conservation:** a spindle is not mass (it holds none of `LiveVolume`) and a shard is not a prism,
+  so no volume is made or lost. Body and health prisms keep their own paths (§26.2's skeleton, the
+  wither-to-crystal) untouched.
+- **No imposed death:** nothing new dies on a clock, and shards are never culled.
+- **Collider budget: zero.** A shard has no collider (the instanced path refuses a prefab with anything
+  but Transform + MeshFilter + MeshRenderer), so active colliders per cell are unchanged.
+- **The crystal invariant:** untouched. The heart still drops as before.
+
+### 63.3 Not done, and not seen
+
+- **Nothing has been run in the Unity editor.** The hand test is on the team board (T-20261021-6fa4).
+  The headless reference compile passes, and the edit-mode test
+  `PrismSpindleDeathClockTests.EvaporatingLimb_BecomesAShardOnItsOwnFadeClock` pins the shared start
+  time and that the field draws its live count, not its array capacity.
+- Amoebius's own `Port/` copy of `SnowChanger` and `Spindle` is the engine's to follow (Shombith). It was
+  not changed here.
+- The shard condenses by scale and turn, not by shape: it does not start as the limb's silhouette. A
+  silhouette morph would need the snow graph to fade per instance.

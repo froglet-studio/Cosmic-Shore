@@ -63,6 +63,7 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 | What each unverified Unity change needs in the editor | `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
 | A multiplayer test's logs, every player, one timeline (sent by the after-test "Send to Claude") | `python3 Tools/Build/net_logs.py collect` / `show 1`; `Docs/DIAGNOSTICS.md` § "Multiplayer test logs" |
 | Party architecture | `Docs/PartySystem/ARCHITECTURE.md`, `Docs/MultiplayerArchitecture/` |
+| Who sits where: every person's seat and hull (`Player.NetStation`), the one swap ring (seats, then the domain's hulls), riders on another person's crew vessel, the crew relay RPCs | `Docs/CREW_STATIONS.md`, `Assets/_Scripts/Controller/Multiplayer/CrewStations.cs` |
 | Five-player scenario harness (runs the real game code in Amoebius, no Unity; down until it moves to the UGS stand-ins, §4) | `Tools/Build/prisma_party_scenarios/` (README) |
 | The game's edit-mode tests, run in Amoebius | `Tools/Build/prisma_edit_mode_tests/run.sh` |
 | Amoebius online play: START ONLINE, + PLAYER 2, SETTINGS > ONLINE (UGS environment, UGS CHECK) | `Port/docs/LAUNCHER.md` § START ONLINE |
@@ -218,6 +219,7 @@ Each step has the check that proves it done. Update the state in §4 when a step
 | U1 | The owner's MPPM runs in §5.2 | Each 🔴 checklist entry becomes 🟢 with a date |
 | U2 | **Block 5: push instead of poll** (hardening prompt) | GETs ≤ 4/min/client at rest; invite visible < 1 s p95; no stale-index lines in a 30-minute 4-client run |
 | U3 | Block 6: reconnection grace | A 15 s network pull mid-match hands the vessel back with no menu |
+| U4 | **What the first real logs showed** (Caleb ↔ ys1, two machines, 2026-10-16; `Docs/PartySystem/BUGS.md` B31-B33). **Fixed 2026-10-17, awaiting the hand retest:** the party session is read at most every 6 s (B31); leaving the shared presence lobby no longer deletes it under everyone, and a rejoin leaves `Reconnecting` (B32); a new editor Play no longer inherits the last Play's session (B33) | B31: no `rate-limited` lines in a 10-minute party (`net_logs.py` shows `429s 0`); B32: a guest's mid-match leave keeps the host `InParty`; B33: a second Play's log starts clean |
 
 ## 7. How a session starts here
 

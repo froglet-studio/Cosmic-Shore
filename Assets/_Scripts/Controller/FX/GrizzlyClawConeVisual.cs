@@ -1,3 +1,4 @@
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -56,7 +57,7 @@ namespace CosmicShore.Gameplay
             _filter.sharedMesh = _mesh;
 
             _material = BuildAdditiveMaterial();
-            _renderer.sharedMaterial = _material;
+            if (_material) _renderer.sharedMaterial = _material;
             _renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             _renderer.receiveShadows = false;
 
@@ -66,7 +67,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Show the cone for an ability whose reach is <paramref name="range"/>.</summary>
         public void Show(float range, float halfAngleDegrees)
         {
-            if (range <= 0f || halfAngleDegrees <= 0f) return;
+            // No material in this build (BuildAdditiveMaterial logged it once): the claw still burns,
+            // it just has no cone - never a magenta mesh or a null-material renderer.
+            if (!_material || range <= 0f || halfAngleDegrees <= 0f) return;
 
             if (!Mathf.Approximately(range, _builtRange) ||
                 !Mathf.Approximately(halfAngleDegrees, _builtHalfAngle))
@@ -117,15 +120,48 @@ namespace CosmicShore.Gameplay
             _mesh.RecalculateBounds();
         }
 
+        // The shader comes from a Resources material, never from Shader.Find alone: a player build strips
+        // any shader nothing references, Shader.Find then returns null on the phone, and new Material(null)
+        // throws (team task T-20261019-41bb; the Wrasse's kite drew nothing on Android for this reason).
+        // Resources/KiteNavigatorUnlit.mat is URP/Unlit with the transparent variant this cone needs; the
+        // additive blend below is render state (_SrcBlend/_DstBlend), not a keyword, so the same variant
+        // draws it.
+        const string UnlitTemplateResource = "KiteNavigatorUnlit";
+        static bool s_reportedMissingShader;
+
         static Material BuildAdditiveMaterial()
         {
-            var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
-            var mat = new Material(shader) { name = "PlasmaClawCone" };
+            Material mat = null;
+            var template = Resources.Load<Material>(UnlitTemplateResource);
+            if (template && template.shader && template.shader.isSupported)
+                mat = new Material(template);
+            else
+            {
+                var shader = Shader.Find("Universal Render Pipeline/Unlit");
+                if (!shader) shader = Shader.Find("Unlit/Color");
+                if (shader) mat = new Material(shader);
+            }
+
+            if (!mat)
+            {
+                if (!s_reportedMissingShader)
+                {
+                    s_reportedMissingShader = true;
+                    CSDebug.LogError(
+                        $"[GrizzlyClawConeVisual] Resources/{UnlitTemplateResource}.mat and the URP/Unlit shader are " +
+                        "missing from this build, so the plasma claw's cone is not drawn (the claw still burns).");
+                }
+                return null;
+            }
+
+            mat.name = "PlasmaClawCone";
 
             mat.SetFloat("_Surface", 1f);                 // transparent
             mat.SetFloat("_Blend", 2f);                   // additive
             mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
             mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+            mat.SetFloat("_SrcBlendAlpha", (float)UnityEngine.Rendering.BlendMode.One);   // the template's are alpha-blend
+            mat.SetFloat("_DstBlendAlpha", (float)UnityEngine.Rendering.BlendMode.One);
             mat.SetFloat("_ZWrite", 0f);
             mat.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Off);
             mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");

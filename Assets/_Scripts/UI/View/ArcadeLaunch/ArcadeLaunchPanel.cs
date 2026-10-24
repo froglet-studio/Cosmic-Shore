@@ -95,7 +95,55 @@ namespace CosmicShore.UI
                                  "the same event, and both may be wired at once.")]
         protected UnityEngine.UI.Toggle fillWithAIToggle;
 
+        [Header("Configure tree (optional)")]
+        [SerializeField, Tooltip("Every label that names the card's hull: the step value, the vessel " +
+                                 "node's caption, the class title, the preview strip, the controls " +
+                                 "header, the summary chip. Written as the hull's Name; a Label-role " +
+                                 "text upper-cases it itself.")]
+        protected List<TMPro.TMP_Text> vesselNameTexts = new();
+
+        [SerializeField, Tooltip("The header eyebrow over the card's name (\"Arcade\", \"Arena\"). Reads " +
+                                 "\"Weekly challenge\" while the card is open as the weekly challenge; " +
+                                 "the authored text otherwise.")]
+        protected TMPro.TMP_Text eyebrowText;
+
+        [SerializeField, Tooltip("The hull's class description.")]
+        protected TMPro.TMP_Text vesselDescriptionText;
+
+        [SerializeField, Tooltip("The vessel node's art: the hull's hangar render (SO_Vessel.PreviewImage).")]
+        protected KitCoverImage vesselArt;
+
+        [SerializeField, Tooltip("The intensity step's value - the bare level, \"2\".")]
+        protected TMPro.TMP_Text intensityValueText;
+
+        [SerializeField, Tooltip("The summary chip - \"Intensity 2\".")]
+        protected TMPro.TMP_Text intensityChipText;
+
+        [SerializeField, Tooltip("The summary chip's line. {intensity} is the level. Empty: no chip text.")]
+        protected string intensityChipLine = "Intensity {intensity}";
+
+        [SerializeField, Tooltip("The pilots step's value - seats filled of the seats the match holds, \"2 of 4\".")]
+        protected TMPro.TMP_Text seatValueText;
+
+        [SerializeField, Tooltip("The summary chip - \"2 pilots\".")]
+        protected TMPro.TMP_Text pilotsChipText;
+
+        [SerializeField, Tooltip("The pilots step's value. {seated} of {seats}. Empty: no value.")]
+        protected string seatLine = "{seated} of {seats}";
+        [SerializeField, Tooltip("The pilots chip with one pilot. {seated} is the count.")]
+        protected string onePilotLine = "{seated} pilot";
+        [SerializeField, Tooltip("The pilots chip with any other count. {seated} is the count.")]
+        protected string manyPilotsLine = "{seated} pilots";
+
+        [SerializeField, Tooltip("\"Ready to launch\": shown while Start is live, replaced by the refusal " +
+                                 "reason or by the waiting label.")]
+        protected GameObject readyLabel;
+
         bool _suppressFillToggleCallback;
+
+        // Whether the local player has pressed Start (held so the ready line and the refusal line,
+        // which two different calls drive, agree with each other).
+        bool _confirmed;
 
         // Null = draw the card's own description and tips. Non-null = draw this line instead.
         // Held rather than written straight into the briefing because Bind() re-fills the block
@@ -194,6 +242,15 @@ namespace CosmicShore.UI
             if (gameNameText)
                 gameNameText.text = game ? game.DisplayName : string.Empty;
 
+            // Every card flies one hull now (the two-screen flow is gone), so the first vessel the
+            // card lists IS the hull. The Arena carousel redraws this through ShowVessel.
+            SO_Vessel hull = null;
+            if (game && game.Vessels != null)
+                foreach (var v in game.Vessels)
+                    if (v) { hull = v; break; }
+            DrawVessel(hull);
+            DrawIntensity(intensity);
+
             if (briefing)
             {
                 if (_briefingOverride != null)
@@ -235,7 +292,37 @@ namespace CosmicShore.UI
         }
 
         /// <summary>The intensity changed while this panel is up.</summary>
-        public virtual void HandleIntensityChanged(int intensity) { }
+        public virtual void HandleIntensityChanged(int intensity) => DrawIntensity(intensity);
+
+        /// <summary>Write the hull into every place the configure tree names it. Null clears them.</summary>
+        protected void DrawVessel(SO_Vessel vessel)
+        {
+            string name = vessel ? vessel.Name : string.Empty;
+            foreach (var label in vesselNameTexts)
+                if (label) label.text = name;
+            if (vesselDescriptionText) vesselDescriptionText.text = vessel ? vessel.Description : string.Empty;
+            if (vesselArt) vesselArt.SetSprite(vessel ? vessel.PreviewImage : null);
+        }
+
+        void DrawIntensity(int intensity)
+        {
+            if (intensityValueText) intensityValueText.text = intensity.ToString();
+            if (intensityChipText) intensityChipText.text = TemplateText.Fill(intensityChipLine, "intensity", intensity.ToString());
+        }
+
+        /// <summary>
+        /// The seats: <paramref name="seated"/> of <paramref name="seats"/> filled (humans and AI), and
+        /// <paramref name="spare"/> still open. Each domain shows its open seat while one is spare, with
+        /// its + AI only for a player who may place one (<paramref name="canAddAI"/>: the host).
+        /// </summary>
+        public virtual void SetSeatSummary(int seated, int seats, int spare, bool canAddAI)
+        {
+            if (seatValueText) seatValueText.text = TemplateText.Fill(seatLine, "seated", seated.ToString(), "seats", seats.ToString());
+            if (pilotsChipText) pilotsChipText.text = TemplateText.Fill(seated == 1 ? onePilotLine : manyPilotsLine, "seated", seated.ToString());
+            foreach (var tile in domainTiles)
+                if (tile && tile.Domain != CosmicShore.Data.Domains.Blue)
+                    tile.SetOpenSeat(spare > 0, canAddAI && spare > 0);
+        }
 
         /// <summary>Redraw the roster. A panel with no <see cref="lobbyRow"/> ignores this.</summary>
         public virtual void RefreshRoster(GameDataSO gameData, int totalPlayers, int humanCount,
@@ -281,14 +368,36 @@ namespace CosmicShore.UI
         /// <summary>Ready-up state: the Start button and the waiting label are mutually exclusive.</summary>
         public virtual void SetReadyUpState(bool confirmed)
         {
+            _confirmed = confirmed;
             if (startButton)
             {
-                startButton.gameObject.SetActive(!confirmed);
+                SetPartShown(startButton.gameObject, !confirmed);
                 // Re-asserted, because this is the redraw that would otherwise hand a spent
                 // weekly challenge a live Start button back.
                 startButton.interactable = _startAvailable;
             }
-            if (waitingForOthersLabel) waitingForOthersLabel.SetActive(confirmed);
+            SetPartShown(waitingForOthersLabel, confirmed);
+            RefreshReadyLine();
+        }
+
+        void RefreshReadyLine()
+        {
+            bool reasonShown = startUnavailableLabel && !_startAvailable &&
+                               !string.IsNullOrEmpty(startUnavailableLabel.text);
+            SetPartShown(readyLabel, !_confirmed && !reasonShown);
+            if (startUnavailableLabel) SetPartShown(startUnavailableLabel.gameObject, !_confirmed && reasonShown);
+        }
+
+        /// <summary>
+        /// Show or hide one of the panel's parts: through its CanvasGroup when it has one (the
+        /// style-B panels - a hidden part keeps its lifecycle and closes up in a layout), otherwise
+        /// by active state (the legacy panels this class still drives).
+        /// </summary>
+        protected static void SetPartShown(GameObject part, bool shown)
+        {
+            if (!part) return;
+            if (part.TryGetComponent(out CanvasGroup group)) KitVisibility.SetShown(group, shown);
+            else part.SetActive(shown);
         }
 
         /// <summary>
@@ -312,10 +421,8 @@ namespace CosmicShore.UI
             if (startButton) startButton.interactable = available;
 
             if (startUnavailableLabel)
-            {
-                startUnavailableLabel.gameObject.SetActive(!available && !string.IsNullOrEmpty(reason));
-                if (!available && !string.IsNullOrEmpty(reason)) startUnavailableLabel.text = reason;
-            }
+                startUnavailableLabel.text = !available && !string.IsNullOrEmpty(reason) ? reason : string.Empty;
+            RefreshReadyLine();
         }
 
         /// <summary>
@@ -326,8 +433,18 @@ namespace CosmicShore.UI
         /// </summary>
         public virtual void SetLeaderboardAvailable(bool available)
         {
-            if (leaderboardButton) leaderboardButton.gameObject.SetActive(available);
+            if (leaderboardButton) SetPartShown(leaderboardButton.gameObject, available);
+
+            // The leaderboard is offered exactly when the card is the weekly challenge, so this is
+            // also the one call that knows which eyebrow the header wears.
+            if (eyebrowText)
+            {
+                _authoredEyebrow ??= eyebrowText.text;
+                eyebrowText.text = available ? "Weekly challenge" : _authoredEyebrow;
+            }
         }
+
+        string _authoredEyebrow;
 
         /// <summary>Whether this panel shows an AI difficulty row at all.</summary>
         public bool HasAIDifficultyRow => aiDifficultyPicker;
@@ -340,7 +457,7 @@ namespace CosmicShore.UI
         /// </summary>
         public virtual void SetAIDifficultyAvailable(bool available)
         {
-            if (aiDifficultyPicker) aiDifficultyPicker.gameObject.SetActive(available);
+            if (aiDifficultyPicker) SetPartShown(aiDifficultyPicker.gameObject, available);
         }
 
         /// <summary>Light <paramref name="difficulty"/> on the row. Draws only; raises nothing, so

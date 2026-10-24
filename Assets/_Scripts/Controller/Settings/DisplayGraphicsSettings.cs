@@ -84,6 +84,7 @@ namespace CosmicShore.Core
             PlayerPrefs.SetFloat(P + "Fov", _data.FieldOfView);
 
             PlayerPrefs.SetInt(P + "Preset", (int)_data.QualityPreset);
+            PlayerPrefs.SetInt(P + "BasePreset", (int)_data.BasePreset);
             PlayerPrefs.SetInt(P + "AA", (int)_data.AntiAliasing);
             PlayerPrefs.SetInt(P + "RenderScale", _data.RenderScalePercent);
             PlayerPrefs.SetInt(P + "Upscale", (int)_data.Upscaling);
@@ -112,6 +113,13 @@ namespace CosmicShore.Core
             d.FieldOfView = PlayerPrefs.GetFloat(P + "Fov", d.FieldOfView);
 
             d.QualityPreset = (QualityPresetSetting)PlayerPrefs.GetInt(P + "Preset", (int)d.QualityPreset);
+            // Saved before BasePreset existed: a picked preset is its own base, and a Custom one
+            // started from the quality level Unity is running (the platform default).
+            int basePreset = d.QualityPreset != QualityPresetSetting.Custom
+                ? (int)d.QualityPreset
+                : QualitySettings.GetQualityLevel();
+            d.BasePreset = (QualityPresetSetting)Mathf.Clamp(PlayerPrefs.GetInt(P + "BasePreset", basePreset),
+                (int)QualityPresetSetting.VeryLow, (int)QualityPresetSetting.Ultra);
             d.AntiAliasing = (AntiAliasingSetting)PlayerPrefs.GetInt(P + "AA", (int)d.AntiAliasing);
             d.RenderScalePercent = PlayerPrefs.GetInt(P + "RenderScale", d.RenderScalePercent);
             d.Upscaling = (UpscalingSetting)PlayerPrefs.GetInt(P + "Upscale", (int)d.Upscaling);
@@ -212,8 +220,14 @@ namespace CosmicShore.Core
             OnAnySettingChanged?.Invoke(_data);
         }
 
-        /// <summary>Any individual graphics override flips the preset label to Custom.</summary>
-        void MarkCustomPreset() => _data.QualityPreset = QualityPresetSetting.Custom;
+        /// <summary>Any individual graphics override flips the preset label to Custom; the preset it
+        /// started from stays the base whose GPU cuts remain in force.</summary>
+        void MarkCustomPreset()
+        {
+            if (_data.QualityPreset != QualityPresetSetting.Custom)
+                _data.BasePreset = _data.QualityPreset;
+            _data.QualityPreset = QualityPresetSetting.Custom;
+        }
 
         #endregion
 
@@ -245,9 +259,19 @@ namespace CosmicShore.Core
 
         #region Graphics setters
 
+        /// <summary>
+        /// Pick a quality preset: Unity's quality level, plus the preset's "on pick" settings from
+        /// <c>QualityPresetCutsSO</c> (Low turns anti-aliasing off and lowers render scale), which the
+        /// player can then change by hand. Its render cuts apply in <c>GraphicsSettingsApplier</c>.
+        /// </summary>
         public void SetQualityPreset(QualityPresetSetting preset)
         {
             _data.QualityPreset = preset;
+            if (preset != QualityPresetSetting.Custom)
+            {
+                _data.BasePreset = preset;
+                GraphicsCuts.For(preset)?.ApplyPickTo(_data);
+            }
             Commit(reapplyQuality: true);
         }
 

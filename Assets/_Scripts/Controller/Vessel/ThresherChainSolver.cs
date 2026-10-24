@@ -325,6 +325,9 @@ namespace CosmicShore.Gameplay
         float _hookSlackSpeed;     // d(slack)/dt - the reel-back is a spring, so radial speed ramps
         Vector3 _launchAim;        // armed launch direction (zero = none armed)
         float _launchBoost;        // the armed launch leaves this many times the orbit's speed (1 = none)
+        float _lineAge = -1f;      // seconds an aimed launch has flown its line (negative = not on one)
+        bool _lineHauling;         // on the line, the ball has not fallen in behind the ship yet
+        bool _ltLetGo;             // an aimed launch left and LT has not come back to rest: its depth anchors nothing
 
         // Analog triggers (Settings.Analog). The lab's names are kept in comments so the port reads beside
         // Docs/Studios/ThresherPlantLab.html, which Tools/Build/thresher_plant_lab/parity.cjs holds it to.
@@ -365,6 +368,37 @@ namespace CosmicShore.Gameplay
         /// <summary>A launch is armed: the ship keeps orbiting until it reaches the launch point.</summary>
         public bool LaunchArmed => _launchAim.sqrMagnitude > 0.5f;
 
+        /// <summary>
+        /// An ARMED launch has left and is flying its LINE: the chain hauls the ball after the ship and does
+        /// not pull the ship, so the ship flies where the crosshair pointed whatever the triggers do. Without
+        /// it the ball, still sitting at the old pivot, swung the ship back round it: with RT held rigid and
+        /// LT just past the let-go point (its depth still anchors the ball) the heading went 177 degrees off
+        /// the aim within 1.5 s (Garrett, 2026-10-21: "if I release the ball and keep the tension it doesn't
+        /// always shoot me at the cross hair"). Two phases: until the ball trails within
+        /// <see cref="LaunchLineTrailDegrees"/> of straight behind, the chain does not pull the ship at all;
+        /// after that it pulls as usual but only ALONG the ship's line of flight - it can slow the ship, never
+        /// turn or reverse it - until the ball has settled into the tow: trailing, the ship no faster than the ball
+        /// can follow (<see cref="ThresherChainSettings.MaxBallSpeed"/>), and the ball not closing on the ship.
+        /// The boosted launch leaves at up to ~1 300 u/s off a Time-raised spin against the ball's 479 u/s cap: a
+        /// rigid chain then brakes the ship below the ball's own speed and the ball overtakes it, which pulled
+        /// the ship 30-55 degrees off the aim once the line let go early. The line also ends after
+        /// <see cref="LaunchLineMaxSeconds"/>, or on a new plant or windmill.
+        /// </summary>
+        public bool OnLaunchLine => _lineAge >= 0f;
+        /// <summary>The ball counts as trailing (the launch line ends) within this angle of straight behind the ship.</summary>
+        public const float LaunchLineTrailDegrees = 10f;
+        /// <summary>The longest a launch line holds, however the ball is lying.</summary>
+        public const float LaunchLineMaxSeconds = 3f;
+        /// <summary>
+        /// After an aimed launch, LT's depth brakes and anchors nothing until the trigger eases back under this
+        /// (or is pulled full again, which plants). The launch fires as LT passes the let-go point, so the
+        /// trigger is still most of the way down: read as a partial pull, that depth made the ball a sliding
+        /// anchor that swung the ship round it, off the line it was aimed along.
+        /// </summary>
+        public const float LaunchReleaseRestDepth = 0.2f;
+        /// <summary>LT was let go for an aimed launch and has not come back to rest yet (<see cref="LaunchReleaseRestDepth"/>).</summary>
+        public bool LeftTriggerLetGo => _ltLetGo;
+
         /// <summary>Fraction below full length at which the chain counts as SLACK for the crack.
         /// A chain riding taut frame after frame must not crack every frame; it has to go slack
         /// first and then snap.</summary>
@@ -388,6 +422,8 @@ namespace CosmicShore.Gameplay
             WindmillTimeLeft = 0f;
             _planeNormal = Vector3.zero;
             _launchAim = Vector3.zero;
+            _lineAge = -1f;
+            _ltLetGo = false;
             _hookHeading = Vector3.zero;
             _hookSlack = 0f;
             _hookSlackSpeed = 0f;
@@ -405,6 +441,7 @@ namespace CosmicShore.Gameplay
             if (Mode != ThresherMode.Free) return;
             Mode = ThresherMode.Skidding;
             _skidTime = 0f;
+            _lineAge = -1f;
         }
 
         /// <summary>Left trigger up: the ship flies off on its current velocity and, if the ball
@@ -449,6 +486,7 @@ namespace CosmicShore.Gameplay
             LockSpeed = 0f;
             _braking = false;
             _launchAim = Vector3.zero;
+            _lineAge = -1f;
             _planeNormal = Vector3.zero;
             WindmillTimeLeft = Mathf.Max(WindmillTimeLeft, seconds);
         }
@@ -607,7 +645,7 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 n = d / dist;
                 float excess = dist - Length;
-                float shipShare = ShipShare(Settings);
+                float shipShare = OnLaunchLine && _lineHauling ? 0f : ShipShare(Settings);
 
                 // The radial speed this frame's projection is about to cancel — measured BEFORE
                 // the projection, because that is the speed the crack redistributes.
@@ -630,13 +668,14 @@ namespace CosmicShore.Gameplay
                     result.Cracked = true;
                 }
 
-                result.ShipVelocity = ApplyShipFloor(shipVelocity, newShipVelocity, shipCruise);
+                result.ShipVelocity = KeepOnLine(shipVelocity, ApplyShipFloor(shipVelocity, newShipVelocity, shipCruise), shipCruise);
             }
 
             BallVelocity = Vector3.ClampMagnitude(BallVelocity, Settings.MaxBallSpeed);
             BallPosition = ballNext;
             IsTaut = taut;
             _wasSlack = dist < Length * (1f - SlackTolerance);
+            AdvanceLaunchLine(shipPosition + result.ShipVelocity * dt, result.ShipVelocity, dt);
 
             // 4) SKID — a planted ball becomes the pivot once the skid is spent.
             if (Mode == ThresherMode.Skidding)
@@ -670,8 +709,10 @@ namespace CosmicShore.Gameplay
             AnalogFullPull = Mathf.Clamp(fullPull, 0.05f, 1f);
             float rt = Mathf.Clamp01(rightDepth);
             Rigidity = Settings.RigiditySlew > 0f ? Mathf.MoveTowards(Rigidity, rt, Settings.RigiditySlew * Mathf.Max(0f, dt)) : rt;
+            if (_ltLetGo && LeftTriggerDepth < LaunchReleaseRestDepth) _ltLetGo = false;
             if (Mode == ThresherMode.Free && LeftTriggerDepth >= fullPull)
             {
+                _ltLetGo = false;
                 AnalogBeginStop(shipPosition, shipVelocity, shipUp);
                 return ThresherTriggerEdge.Stop;
             }
@@ -708,6 +749,7 @@ namespace CosmicShore.Gameplay
         {
             if (Mode != ThresherMode.Free) return;
             Mode = ThresherMode.Skidding;
+            _lineAge = -1f;
             _brakeT = 0f;
             _brakeV0 = BallVelocity;
             _stopT = Mathf.Max(0.08f, 1.5f * BallVelocity.magnitude / Settings.StopDecel);
@@ -742,8 +784,9 @@ namespace CosmicShore.Gameplay
             var s = Settings;
             bool stopping = Mode == ThresherMode.Skidding;
             float baseShare = ShipShare(s);
-            float depth = stopping ? 1f : Mathf.Clamp01(LeftTriggerDepth / Mathf.Max(1e-3f, AnalogFullPull));
+            float depth = stopping ? 1f : _ltLetGo ? 0f : Mathf.Clamp01(LeftTriggerDepth / Mathf.Max(1e-3f, AnalogFullPull));
             float share = stopping ? 1f : baseShare + (1f - baseShare) * Mathf.Pow(depth, s.AnchorCurve);
+            if (OnLaunchLine && _lineHauling) share = 0f;   // the ship flies its aimed line; the chain only hauls the ball
             result.BallFrom = BallPosition;
 
             float wMax = Mathf.Max(ChainRate(Rigidity), (BallPosition - shipPosition).magnitude > s.MaxLength * 0.9f ? 2f * s.ChainRigidRate : 0f);
@@ -773,7 +816,7 @@ namespace CosmicShore.Gameplay
                 shipP += ship * h;
             }
             // The transformer moves the hull by velocity x dt once, so hand it the sub-steps' mean velocity.
-            result.ShipVelocity = ApplyShipFloor(shipVelocity, (shipP - shipPosition) / dt, shipCruise);
+            result.ShipVelocity = KeepOnLine(shipVelocity, ApplyShipFloor(shipVelocity, (shipP - shipPosition) / dt, shipCruise), shipCruise);
             _prevVel = _hasVel ? _curVel : shipVelocity;
             _curVel = result.ShipVelocity;
             _hasVel = true;
@@ -781,7 +824,36 @@ namespace CosmicShore.Gameplay
             IsTaut = dist > s.RestLength;
             _wasSlack = false;
             Length = Mathf.Min(s.MaxLength, Mathf.Max(s.RestLength, dist));
+            AdvanceLaunchLine(shipP, result.ShipVelocity, dt);
             return result;
+        }
+
+        /// <summary>Age the launch line by one Free frame: the haul ends once the ball trails the ship, and the line
+        /// once the ball has settled into the tow - trailing, the ship no faster than the ball can follow, the ball not
+        /// closing on it (or it has held <see cref="LaunchLineMaxSeconds"/>). <paramref name="shipPosition"/> is where
+        /// the ship is after this frame's move.</summary>
+        void AdvanceLaunchLine(Vector3 shipPosition, Vector3 shipVelocity, float dt)
+        {
+            if (_lineAge < 0f) return;
+            _lineAge += dt;
+            Vector3 back = BallPosition - shipPosition;
+            bool trailing = shipVelocity.sqrMagnitude > 1e-6f && back.sqrMagnitude > 1e-6f &&
+                            Vector3.Dot(back.normalized, -shipVelocity.normalized) >= Mathf.Cos(LaunchLineTrailDegrees * Mathf.Deg2Rad);
+            if (_lineHauling && trailing) _lineHauling = false;
+            bool closing = back.sqrMagnitude > 1e-6f && Vector3.Dot(BallVelocity - shipVelocity, back) < 0f;
+            bool settled = !_lineHauling && trailing && !closing && shipVelocity.magnitude <= Settings.MaxBallSpeed;
+            if (settled || _lineAge >= LaunchLineMaxSeconds) _lineAge = -1f;
+        }
+
+        /// <summary>On the launch line the chain changes the ship's speed along the line it is flying
+        /// (<paramref name="before"/>, the flight model's own direction this frame, so the pilot's stick and the
+        /// release wind-down still turn it) and nothing else: no sideways pull, and never below the tug's floor.</summary>
+        Vector3 KeepOnLine(Vector3 before, Vector3 after, float shipCruise)
+        {
+            if (!OnLaunchLine || before.sqrMagnitude < 1e-8f) return after;
+            Vector3 line = before.normalized;
+            float floor = Mathf.Min(before.magnitude, Settings.MinShipFraction * Mathf.Max(0f, shipCruise));
+            return line * Mathf.Max(floor, Vector3.Dot(after, line));
         }
 
         /// <summary>The full-pull depth a partial pull's brake and anchor curves are measured against (the
@@ -980,6 +1052,9 @@ namespace CosmicShore.Gameplay
                 : aim;
             Vector3 velocity = dir * (LockSpeed * Mathf.Max(1f, _launchBoost));
             Release(velocity);   // Pivot -> Free, the yank, disarms
+            _lineAge = 0f;       // ...and flies its line (OnLaunchLine)
+            _lineHauling = true;
+            _ltLetGo = Settings.Analog;   // ...and LT anchors nothing until it is back at rest
             result.ShipVelocity = velocity;
             result.BallFrom = BallPosition;
             result.Launched = true;
@@ -1200,26 +1275,7 @@ namespace CosmicShore.Gameplay
             return p.normalized;
         }
 
-        // ------------------------------------------------------------------ prediction + smash rules
-
-        /// <summary>
-        /// The READY cue: the ball's speed if the right trigger were released NOW and the chain
-        /// reeled all the way in, by spin conservation from the current length. Deliberately
-        /// ignores the snap crack and the ship's own turning — so it UNDERESTIMATES during a fast
-        /// snap (a known weakness, recorded in THRESHER.md).
-        /// </summary>
-        public float PredictReelCrackSpeed(Vector3 shipPosition, Vector3 shipVelocity)
-        {
-            if (Mode != ThresherMode.Free) return BallSpeed;
-            Vector3 r = BallPosition - shipPosition;
-            float dist = r.magnitude;
-            if (dist < 1e-5f) return BallSpeed;
-            Vector3 n = r / dist;
-            Vector3 relative = BallVelocity - shipVelocity;
-            Vector3 tangential = relative - n * Vector3.Dot(relative, n);
-            float mult = dist > Settings.RestLength ? dist / Settings.RestLength : 1f;
-            return Mathf.Min(Settings.MaxBallSpeed, (shipVelocity + tangential * mult).magnitude);
-        }
+        // ------------------------------------------------------------------ smash rules
 
         /// <summary>How white-hot a ball at <paramref name="speed"/> is: 0 at smash speed, 1 at
         /// <see cref="ThresherChainSettings.WhiteHotSpeed"/>.</summary>
@@ -1476,6 +1532,15 @@ namespace CosmicShore.Gameplay
         /// <summary>Angular speed (rad/s) of a planted orbit.</summary>
         public static float SpinRate(float orbitSpeed, float radius)
             => radius > 1e-3f ? orbitSpeed / radius : 0f;
+
+        /// <summary>
+        /// The launch view's GRIP (<c>ThresherExecutor.UpdateLaunchView</c>): with the digital triggers a held
+        /// plant is enough; with analog triggers only the ball STOPPED and both triggers at a full pull - LT's
+        /// depth and the chain's rigidity (RT after its slew) at <paramref name="fullPull"/>. On a phone both
+        /// thumbs off a planted spin reads as exactly that (<see cref="ThresherTouchLaunch"/>).
+        /// </summary>
+        public static bool LaunchViewGrip(bool analog, bool braking, float leftDepth, float rigidity, float fullPull)
+            => !analog || (!braking && leftDepth >= fullPull && rigidity >= fullPull);
 
         /// <summary>
         /// The LAUNCH camera of a spectated orbit: it follows behind the launch point ON the launch

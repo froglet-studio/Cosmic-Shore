@@ -83,6 +83,11 @@ namespace CosmicShore.Gameplay
             if (impactorVessel.VesselStatus.IsImmuneToElementalDebuff(ElementalDebuffSources.VesselContact))
                 return;
 
+            // ...and a SILENCED jouster scores nothing, for the same reason: CombatHitDrain.TryAdmit
+            // refuses their overtake's steal (VesselSilence), so the joust point goes with it.
+            if (VesselSilence.IsSilenced(impacteeVessel.VesselStatus))
+                return;
+
             var impacteeVesselImpactor = impacteeVessel.Transform.GetComponent<VesselImpactor>();
             if (impacteeVesselImpactor == null)
                 return;

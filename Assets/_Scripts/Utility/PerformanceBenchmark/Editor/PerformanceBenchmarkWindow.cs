@@ -12,7 +12,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 {
     public class PerformanceBenchmarkWindow : EditorWindow
     {
-        enum Tab { Collect, Sweep, History, Compare, LoadInsights }
+        enum Tab { Collect = 0, Sweep = 1, History = 2, Compare = 3, LoadInsights = 4 }
         [SerializeField] Tab activeTab = Tab.Collect;
 
         // ── Shared assets (serialized so they survive the play-mode domain reload) ──

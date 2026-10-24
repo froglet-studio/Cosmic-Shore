@@ -439,8 +439,18 @@ namespace CosmicShore.Editor.Froglet
             var configure = FindByName("ToyboxGameConfigureModal");
 
             int changed = 0;
-            changed += FillToyGrid(toybox, configure, switcher, dryRun);
-            changed += FillConfigure(configure, switcher, dryRun);
+            // The style-B rebuild (Docs/MENU_REDESIGN_B.md sections 17.3 and 17.4) generated both
+            // windows' bodies: Tools/Build/author_menu_toybox.py and author_menu_toyconfigure.py
+            // own the grid, the templates and the buttons this pass would otherwise clone in. A
+            // window that carries its view stands down here.
+            if (toybox && FindIn(toybox, "ToyboxView"))
+                _log.Add("ToyboxScreenModal: style-B ToyboxView present - its grid is the generator's; skipped.");
+            else
+                changed += FillToyGrid(toybox, configure, switcher, dryRun);
+            if (configure && FindIn(configure, "ToyConfigureView"))
+                _log.Add("ToyboxGameConfigureModal: style-B ToyConfigureView present - its controls are the generator's; skipped.");
+            else
+                changed += FillConfigure(configure, switcher, dryRun);
             changed += EnsureSocialColumns(dryRun);
             return changed;
         }

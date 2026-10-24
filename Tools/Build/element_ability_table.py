@@ -81,13 +81,14 @@ INPUT_EVENTS = {
     4: ("IdleAction", "", ""),
     5: ("MinimumSpeedStraightAction", "", ""),
     6: ("Button1Action", "A", "Space"),
-    7: ("Button2Action", "B", "R"),
+    7: ("Button2Action", "B", "T"),   # T since 2026-10-14 (R is the Vessel Studio reset)
     8: ("Button3Action", "X", "Q"),
     9: ("NodeTapAction", "", ""),
     10: ("SelfTapAction", "", ""),
     11: ("OnlyRightStickAction", "RT", "R-Shift"),
     12: ("OnlyLeftStickAction", "LT", "L-Shift"),
     13: ("BothSticksAction", "LT+RT", "Both shifts"),
+    14: ("Button4Action", "Y", "F"),
 }
 
 GUID_RE = re.compile(r"guid:\s*([0-9a-f]{32})")

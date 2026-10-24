@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Honeyguide
+  m_EditorClassIdentifier:
+  vesselClass: 23
+  entries:
+  - Element: 1
+    AbilityLabel: 'Peck'
+    AbilityDescription: 'Hold RT for a weak shot, two and a half a second, out to 45 u. When the Ratel makes an attack card (Hard Light Lasso, Genesis Lance, Little Bang Grenade, Sepia Drone, Particle Harmonizer, Fugacity Discharger) RT is that card''s for 20 s, then Peck comes back.'
+    Input: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 2
+    AbilityLabel: 'Flit'
+    AbilityDescription: 'Press LT for a short thrust 18 u ahead, every 2 s. When the Ratel makes a move card (Hexapod Eyelet Jet, Thruster Swarm, Blink Drive, All Terrain Portals, Rosen Bridge, FTL Chromatool, Monte Cannon) LT is that card''s for 20 s, then Flit comes back.'
+    Input: 2
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 3
+    AbilityLabel: 'Slip'
+    AbilityDescription: 'Touch a trail of a domain the battery holds with your nose along it and ride it to its end, fast: the charge is spent. The Ratel charges the battery by making patterns on the Dynamo.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Piercing Pecks'
+    UpgradeDescription: 'Pecks pierce through prisms instead of stopping at the first.'
+  - Element: 4
+    AbilityLabel: 'Afterburner'
+    AbilityDescription: 'Hold to boost indefinitely - there is no heat and no meter. Boosting at full stick deflection performs one strafing roll per press (base, no unlock). Time raises the boost speed; at level 5 boosting also makes you immune to elemental debuffs.'
+    Input: 7
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Elemental Ward'
+    UpgradeDescription: 'While boosting, elemental debuffs cannot land - danger prisms and skimmer overtakes leave your levels untouched. Buffs still apply.'

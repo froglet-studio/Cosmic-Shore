@@ -134,10 +134,11 @@ Tools/Build/team_tasks.py list --area Activation`). Yash has offered to take tas
 
 ## 7. Stale records found by this sweep
 
-- `MENU_PROGRESSION_AND_IAP.md` (chain table) and `QUEST_TRACK_AND_BREADCRUMB.md` (authored-content
-  table) still list Crystal Capture / Hex Race / Joust / PartyGame. The live chain is Scurry → Hex Race
-  → Joust → Maelstrom → Vessel Hangar.
-- `Docs/QuestMap/QUEST_MAP.html` still draws the retired breadcrumb nodes.
+- ~~`MENU_PROGRESSION_AND_IAP.md` (chain table) and `QUEST_TRACK_AND_BREADCRUMB.md` (authored-content
+  table) still list Crystal Capture / Hex Race / Joust / PartyGame.~~ Corrected 2026-10-17: both tables now
+  match `GameModeQuestList.asset` (Scurry → Hex Race → Joust → Maelstrom → Vessel Hangar).
+- `Docs/QuestMap/QUEST_MAP.html` still draws the retired breadcrumb nodes. It now carries an "out of date"
+  banner; redrawing it waits on the phases decision (T-20261015-fb65).
 - `Analytics/ANALYTICS_HANDOFF.md` §8 still calls the quest branch unmerged. Its two reconcile items
   (the `Version` vs `SchemaVersion` field name, and the second progression key `QUEST_GRAPH_PROGRESS`)
   have no record of being done.

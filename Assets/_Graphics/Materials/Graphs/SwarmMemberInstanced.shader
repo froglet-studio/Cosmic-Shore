@@ -38,6 +38,7 @@ Shader "CosmicShore/SwarmMemberInstanced"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "PrismOcclusionCorridor.hlsl"
+            #include "PrismDepthPlane.hlsl"
             #include "SwarmMemberInstanced.hlsl"
 
             // the corridor's globals (PrismOcclusionCorridor.cs publishes them; the prism graphs declare

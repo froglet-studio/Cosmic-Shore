@@ -325,6 +325,23 @@ Measure Cell Environment Baselines):
 > by eye — the rounding in the per-segment prism walk is not monotonic in frequency, so an
 > eyeballed bump can easily make a cage *lighter*.
 
+**The bars are FLUSH** (2026-10-20; no prism may interpenetrate another, `Docs/ECOSYSTEM.md`
+§49.10). The clip audit (`Tools/Build/audit_prism_clipping.py SpawnableWildlifeCage -v`) measured
+2,596 → 7,786 interpenetrating pairs at intensities 1-4, every one at a JOINT or on a short run: a
+run of `round(len / 34)` bars can step as little as ~23u against a 26u bar the jitter grows to 31u;
+every end bar ran into the post at its joint; and at a box face's post-less crossings the end bars
+of two rails met inside each other. Each bar is now sized from the geometry it already has - no
+longer than the gap to its neighbours' centres along the run, and an end bar stops where the post
+it meets ends along the run (the post as actually drawn: the shell's jitter is drawn up front, in
+the order the lay always used) and far enough out that the joint's other bars clear it. On the tight
+boxes a post is also capped so the shortest bar beside it still fits (the 14.25u corner blocks at
+intensity 4's core, on a 19.2u rail step). Counts, positions, rotations, kinds and every draw are
+unchanged; the cage's laid volume fell 5.1 / 7.4 / 12.5 / 12.0 % at intensities 1-4, and
+`wildlife_cage_budget.py` now sizes every prism the same way (reproducing the C#'s seeded draws),
+so the `PhaseThresholds` follow it exactly. The model still prices the cage at **2x** its laid
+volume - the legacy `JIT` factor the shipped thresholds were tuned on (see `cleave_budget.py`'s
+note on the same expression) - so this pass moved them by its own trim and nothing else.
+
 ## The wildlife (the objective)
 
 **One `FaunaConfigurationSO` per (species, intensity)** — five species, four intensities, and

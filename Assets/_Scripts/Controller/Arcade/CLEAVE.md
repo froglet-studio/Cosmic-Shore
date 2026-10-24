@@ -19,10 +19,13 @@ unrelated arenas with four different verbs, built by four different generators:
 
 | i | arena | the verb | radius | prisms | volume | danger | far reach | target |
 |---|---|---|---:|---:|---:|---:|---:|---:|
-| 1 | **The Panes** | commit to a line | 2,160 | 15,380 | 38,522,229 | 511 | 2,184 | 1,200 |
-| 2 | **The Swell** | follow the road | 2,160 | 14,277 | 103,293,190 | 399 | 1,997 | 1,200 |
-| 3 | **The Cage** | peel inward | 720 | 14,731 | 23,357,561 | 428 | 749 | 1,500 |
-| 4 | **The Twistbands** | roll the blade | 720 | 16,423 | 32,466,038 | 228 | 715 | 1,500 |
+| 1 | **The Panes** | commit to a line | 2,160 | 15,380 | 30,489,649 | 511 | 2,179 | 1,200 |
+| 2 | **The Swell** | follow the road | 2,160 | 14,277 | 59,811,031 | 399 | 1,987 | 1,200 |
+| 3 | **The Cage** | peel inward | 720 | 14,731 | 14,208,571 | 428 | 744 | 1,500 |
+| 4 | **The Twistbands** | roll the blade | 720 | 16,423 | 17,163,913 | 228 | 711 | 1,500 |
+
+*Volumes and reach are the 2026-10-20 flush pass's (§ "Flush prisms" below): every prism now
+touches its neighbours instead of passing through them, at the same counts.*
 
 This replaced a ladder that was **2 / 3 / 4 / 5 nested shells** — the same arena four times, and
 the reason the mode was renamed. The three-rind cage is the only rung kept, and its GEOMETRY is
@@ -93,8 +96,8 @@ prism palette; each one exists to ask the sword a different question.
 ### 1 · The Panes — `SpawnablePanes`
 
 Nine flat slabs cutting the cell at nine authored angles, each a **corduroy of parallel ribs** with
-its own grain direction. Planks overlap along a rib (step **30** under length **34**) and ribs sit
-**126** apart across it, so a pane is something you fly *through* as much as *at*. That ratio is
+its own grain direction. Planks are laid end to end along a rib (step and length **30**) and ribs
+sit **378** apart across it (126 x the gap dial's 3), so a pane is something you fly *through* as much as *at*. That ratio is
 the corduroy: fine grain, wide gaps.
 
 It is intensity 1 because a plane is the most forgiving surface in the mode. A shell curves away
@@ -134,8 +137,9 @@ Four things are load-bearing:
   this rung is ribbons rather than the corrugated sheets it replaced — sheets put the mass where a
   blade CROSSES it, ribbons put the mass where a blade can STAY on it.
 - **The deck is MANY SMALL PLATES, and it is solid rather than a lattice.** A plate is
-  **44 × 44 × 5.2**, and plates overlap in both directions (step 34 under a 44 plate, both ways),
-  which is the Twistbands' rule for the Twistbands' reason: a sparse deck is something the sword
+  **~34 × 34 × 5.2**, laid flush in both directions (exactly the 34 lane step across, and along as
+  long as the gap to the rows either side allows, so shorter on the inside of a bend), which is the
+  Twistbands' rule for the Twistbands' reason: a sparse deck is something the sword
   rattles through rather than something it cuts. It is also why this is the second rung to author
   `GapScaleI2 = 1` — see § "The second dial: GAP".
 - **The road is PAINTED as a road.** A Gold crown down the middle, Blue shoulders, Jade verges, as
@@ -169,7 +173,7 @@ Three construction facts worth keeping:
   runs further. That is what keeps the deck's prism count proportional to how much PLACE a ribbon
   covers, and it is why the outer roads can sit at 1,728 without the count running away.
 
-⚠ **This rung's VOLUME is 2.7× the Panes' on 7% fewer prisms**, because a road is tiled with square
+⚠ **This rung's VOLUME is ~2× the Panes' on 7% fewer prisms**, because a road is tiled with square
 plates where a pane is drawn with narrow ribs. Nothing reads it — the cell grows nothing — but do
 not read the volume column as "how much arena there is" when comparing rungs 1 and 2. Prism COUNT
 is the collider budget and the thing a player destroys.
@@ -177,8 +181,9 @@ is the collider budget and the thing a player destroys.
 ### 3 · The Cage — `SpawnableRibcage` (the kept arena)
 
 Three concentric hollow rinds of prism bone at radius **720 / 590 / 460** — meridian ribs, latitude
-hoops, a diagonal through every cell, joints at every crossing, two polar crowns. Unchanged from
-the mode that was named after it.
+hoops, a diagonal through every cell, joints at every crossing, two polar crowns. The weave is
+unchanged from the mode that was named after it; its bars were made flush on 2026-10-20 (a rib,
+hoop or strut now stops at the joint and the bars it crosses instead of passing through them).
 
 - **The openings are TRIANGLES.** Every rib × hoop cell carries one diagonal with an alternating
   lean, so the weave reads as a truss rather than as rounded bubbles.
@@ -237,6 +242,16 @@ This is asserted, not just documented: `cleave_budget.verify` fails the build if
 shielded prism of either tier. If the mode ever wants hardened mass, it needs an AI that can
 energize first.
 
+> **2026-10-16 — the premise above no longer holds; re-measure before relying on it.** The AI can
+> now energize: `RhinoSwordAutopilot` (Rhino root) writes the trigger mirrors on the owning machine,
+> strokes at the nearest hostile prism in reach, and holds the energize stance near super-shielded
+> mass or on a ≥ 75% meter. So "an AI never pulls a trigger" — the reason both this section and
+> `cleave_budget` check 3 give — is stale. The arenas are unchanged (still no shielded prism of
+> either tier) and check 3 still passes; what is now open is whether "no shielded mass" stays a
+> *rule* or becomes a design choice. Settle that with an all-AI domain actually popping
+> super-shields in play, then update check 3's comment (or its assertion) to match — do not change
+> the arenas on this note alone.
+
 ## The envelope, per intensity
 
 Each arena is built to its own radius from `SliceArenaGeometry`'s table, and three systems are
@@ -264,7 +279,7 @@ that genuinely has to bound every rung at once.
 
 The ordering is asserted per rung in `cleave_budget.verify`, and it is asserted on the prism's
 **far corner** rather than on its lay point: a lay at exactly 2,160 still puts geometry outside
-2,160. The measured worst cases are **2,184** (the Panes) and **749** (the cage's rim), both
+2,160. The measured worst cases are **2,179** (the Panes) and **744** (the cage's rim), both
 comfortably inside their own station radius.
 
 ### The arena is bigger than a nucleus, and that is the requirement
@@ -385,14 +400,19 @@ anywhere, those two would have moved.
 **A side effect worth carrying past this mode: shrinking the prisms bought back the volume ladder's
 float32 resolution.** The Panes' baseline went 345M → **38.5M**, where float32's ulp falls from 32
 to **4** — under a Rhino trail prism's 4.5 — so that rung's volume ladder can be moved by laying
-trail again. The Swell is still over the line (103M, ulp 8). See § "Stated cost" below, which
-`cleave_budget` check 7 now measures per rung rather than asserting about the pair.
+trail again. *(2026-10-16: 4.5 is the `BaseScale` 3 × 3 × 0.5 volume, but the Rhino lays its trail
+prism at Gap 2 as a 0.5 × 3 × 0.5 sliver — **0.75** volume — which is UNDER the Panes' ulp 4 too.
+By the laid size this rung's ladder cannot be moved one trail prism at a time either; see the
+follow-up below.)* The Swell was still over the line then (103M, ulp 8); the 2026-10-20 flush pass
+took it to **59.8M (ulp 4)** and the Panes to **30.5M (ulp 2)**, so by the `BaseScale` prism no
+rung is over it any more. See § "Stated cost" below, which `cleave_budget` check 7 measures per
+rung rather than asserting about the pair.
 
 **A shared prefab's scale ceiling was the only thing in the project saying the prisms had grown
 absurd — and it said it silently.** `SpawnablePrism.prefab` authors `maxScale` 100; at 6× the
 Panes' rim and mullion (108 and 132) cleared it, which is why all four arenas opt into
-`AdmitsAuthoredPrismScale`. Every size they state now is comfortably inside that window
-(34/36/44 long), so the flag is a standing GUARD rather than a fix. *The clamp was reporting a
+`AdmitsAuthoredPrismScale`. Every size they lay now is comfortably inside that window
+(at most 30/32/38 long, plank/rim/mullion), so the flag is a standing GUARD rather than a fix. *The clamp was reporting a
 design problem as a rendering one.*
 
 The **spawn ring and membrane are not pure scales of the arena either**, for a reason worth
@@ -402,18 +422,23 @@ clearance. At 6× the membrane *does* scale (`CleaveMembrane.prefab`, radius 3,6
 ring is a clean **×3** of that play-tested pair. *When only part of a system scales, the interfaces
 between the scaled and unscaled halves are what has to be re-derived by hand.*
 
-### ⚠ Stated cost: on rung 2 the volume ladder cannot move
+### ⚠ Stated cost: the volume ladder's float32 resolution (rung 2 was frozen until 2026-10-20)
 
 `Cell.liveVolumeTotal` is a **float32 running accumulator**, so its resolution is the ulp at the
 value it holds. This was a both-open-rungs problem when prism size rode the envelope — every prism
 was **216×**, baselines reached **345M** and **898M**, and float32's ulp there is **32** and **64**
-against a Rhino trail prism's whole volume of **4.5** (`BaseScale` 3 × 3 × 0.5), so adding one was
+against a Rhino trail prism's whole volume of **4.5** (`BaseScale` 3 × 3 × 0.5 — the LAID prism is
+the 0.5 × 3 × 0.5 = **0.75** sliver, which makes the margin worse, not better), so adding one was
 a no-op and the cell stayed in Calm for the whole match on both.
 
-**The prism dial fixed half of it.** The baselines are now **38.5M** (ulp 4) and **103M** (ulp 8),
-so the Panes' ladder moves one trail prism at a time and **the Swell's still cannot** — a road is
-tiled with square plates where a pane is drawn with narrow ribs, so rung 2 carries 2.7× the volume
-on 7% fewer prisms.
+**The prism dial fixed half of it.** The baselines went to **38.5M** (ulp 4) and **103M** (ulp 8),
+so the Panes' ladder moved one trail prism at a time and **the Swell's still could not** — a road is
+tiled with square plates where a pane is drawn with narrow ribs, so rung 2 carried 2.7× the volume
+on 7% fewer prisms. **The flush pass (2026-10-20) fixed the other half:** the Swell's plates no
+longer overlap, so its baseline is **59.8M (ulp 4)**, under the 4.5 `BaseScale` prism, and check 7
+stops asserting about it. By the 0.75 LAID sliver (see the 2026-10-16 note) only a baseline under
+2^24 ≈ 16.8M (ulp 1, so a 0.75 add rounds up to one whole unit) registers one at all - the Cage
+(14.2M) does, the Twistbands (17.2M) just misses, the two open rungs do not.
 
 That is harmless today and only because this cell grows nothing — `SupportedFloras` and
 `SupportedFaunas` are both empty, so nothing reads the phase — which is exactly why it is a
@@ -436,8 +461,8 @@ mullion 132) cleared `SpawnablePrism.prefab`'s serialized `maxScale` of 100.
 value**, so the arena would have built with 100-long mullions — gaps in a wall — and nothing
 anywhere would have said so.
 
-**Every size the four arenas state is now inside that window** (the longest is a 44-unit deck
-plate), because the prism dial took size off the envelope. The overrides stay as a standing GUARD,
+**Every size the four arenas lay is now inside that window** (the longest is a ~38-unit mullion),
+because the prism dial took size off the envelope. The overrides stay as a standing GUARD,
 and the episode is worth keeping for what it says about the clamp: *it was the only thing in the
 project reporting that the prisms had grown absurd, and it reported it as a rendering artefact
 rather than as a design problem.*
@@ -455,6 +480,70 @@ re-stating the size. Three things about that are load-bearing:
   silently trimmed twice over.
 - **The widening only ever widens, and pool reuse restores the authored window**, so a prism that
   once carried a 132-long mullion cannot keep that ceiling into its next life as a trail prism.
+
+## Flush prisms (2026-10-20)
+
+**NO PRISM MAY INTERPENETRATE ANOTHER** (`Docs/ECOSYSTEM.md` §49.10), and the rule is held at
+AUTHORING time: each generator emits prisms that touch, and nothing resolves clipping while the
+game loads. All four arenas broke it by construction - they laid prisms LONGER than their step "so
+a run reads as continuous", and laid crossing structures through each other. Measured by
+`python3 Tools/Build/audit_prism_clipping.py SpawnablePanes SpawnableSwell SpawnableRibcage
+SpawnableTwistbands -v`, at every intensity:
+
+| arena | clipping pairs | prisms | volume | prisms moved |
+|---|---:|---:|---:|---:|
+| Panes | 15,903 → **0** | 15,380 (same) | 38.5M → 30.5M (−21%) | 1,221 (344 by > 20u) |
+| Swell | 31,402 → **0** | 14,277 (same) | 103.3M → 59.8M (−42%) | 76, at road crossings |
+| Cage | 26,762 → **0** | 14,731 (same) | 23.4M → 14.2M (−39%) | 2,221 (all ≤ 24u) |
+| Twistbands | 42,252 → **0** | 16,423 (same) | 32.5M → 17.2M (−47%) | 1,413 (66 by > 5u) |
+
+**What was done, and why the volume is what it is.** No prism was dropped or merged, and every
+random draw is spent in the same order, so every prism still exists where the seed put it. Sizes
+came down only as far as contact:
+
+- **A run's length is the ACTUAL gap to its neighbours, per prism** - a plank, a mullion, a rib bar,
+  a strut fills its slot between its neighbours; a ring or rail prism (rim, hoop, crown, cornice)
+  stops on the plane that bisects it from the next, so it is shorter on the inside of a bend. A
+  plated deck's plate is exactly its lane step wide and as long as the planes between its row and
+  the next allow (the Twistbands' rows lie in half-planes through the loop axis, the Swell's are
+  bisected by the plane through the mid-spine point). Most of the volume is this: the overlap is
+  gone, and on a deck that is two axes of it (44 → 34, 20 → 14).
+- **`Jit` grew sizes by up to 20%, so a fitted size could not take it.** Each prism's one draw now
+  goes to the one axis nothing is planned around - a plank's section, a plate's thickness, a bar's
+  radial height - and the fitted axes are exact.
+- **Crossings: one structure yields, by geometry.** A plank stops at another pane's slab (as deep as
+  the mullions whose lines actually pass near it); a mullion stops at a third pane; a later road or
+  band is cut out of an earlier one in its own plane (keeping the largest piece of its own
+  footprint); a rib, a hoop and a strut stop at each node's joint, a rib at the hoop and crown it
+  crosses, a strut at both ribs and hoops of its cell. A prism whose centre is clear shrinks about
+  its centre.
+- **Moves are the placements no scale could fix** - a centre INSIDE what it crosses (a deck plate
+  centred under the cornice, a rib bar centred in a joint, a plank in a crossing pane's slab). It
+  moves to the nearest clear room on its own rail - an emptied slot, or a share of a neighbour's
+  piece - which is always a sub-box of a box already clear of everything, so a move reaches nothing
+  new. The two big movers are authored coincidences, not bugs in the fit:
+  - **Panes 0, 4 and 7 meet along three lines within 3° of one another** (their triple point is
+    714 from the centre), so their mullions lie inside each other for ~500 units, and two of the
+    three lines' members there move along their own line to where it is clear. Re-authoring one of
+    those three `PaneSpecs` normals would remove it - a gameplay decision, not done here.
+  - **The cage's outer and inner rinds have EVEN rib counts (24, 26)**, and a great circle at
+    longitude λ is also the one at λ + 180°, so rib k and rib k + Ribs/2 are one circle laid twice,
+    bars interleaved half a step apart. Flush, each bar is half as long (17, not 32) - the rib
+    reads the same, as one continuous bone, made of twice the pieces. That is most of the cage's
+    volume drop.
+
+**Load-time cost is a few dozen arithmetic ops per prism, no pass over pairs and no table.** Each
+fit reads only the prism's own neighbours and the structures it can analytically reach (a pane
+plank tests the other eight planes; a road or band prism rejects every other ribbon in its loop
+frame in a handful of dot products; a cage bar looks up the one node and the one crown its ray
+reaches in a per-rind table measured once). Measured on the harness (desktop .NET 8, steady state,
+one build): Panes 2.5 → 2.9 ms, Swell 6.4 → 7.0, Cage 2.1 → 4.7, Twistbands 2.7 → 5.6 - and a
+match builds only its own rung's arena.
+
+**What it moved downstream:** `cleave_arena_measurements.json` re-measured, the four
+`Cleave Cell Config` PhaseThresholds re-authored by `author_cleave_assets.py` (counts unchanged,
+volume thresholds down with the baselines), and the float32 resolution above improved on every
+rung. Far-corner reach went DOWN on all four, so no envelope moved.
 
 ## How the numbers are measured
 
@@ -515,7 +604,7 @@ Cell.AssignConfig                                     [Cell.cs]
 ```
 
 Each intensity needs its OWN `CellConfigDataSO` because `PhaseThresholds` must ride its own
-baseline — and the spread is still wide: the arenas run ~14.3k…16.4k prisms and **23M…103M**
+baseline — and the spread is still wide: the arenas run ~14.3k…16.4k prisms and **14M…60M**
 volume (rungs 1 and 2 are 6× the authored radius, so a road's plate sweeps far more space even at
 the shared prism size), so one shared threshold block would put three of the four cells in the
 wrong phase from frame one. It
@@ -676,7 +765,11 @@ by seat so they never all raid at once.
 
 ⚠ **An AI Rhino cannot energize its blade** (no triggers), which is fine here because nothing in any
 arena is super-shielded — but it is the constraint that makes "no shielded mass" a rule rather than
-a preference. See above.
+a preference. See above. *(Stale as of 2026-10-16: `RhinoSwordAutopilot` now swings the AI's blade
+and energizes near super-shielded mass or on a ≥ 75% meter, and `RampBoostAIPolicySO` now ramps it
+on straights that pay the wind-up back and brakes on the ramp into corners (`AI/AI_BOOST.md`, Ramp)
+— before this the AI never ramped, so every transit speed this section was watched at
+was cruise. Both change AI pace; see the follow-up.)*
 
 ## End condition
 
@@ -822,8 +915,10 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
 5. **Swell — the road is legible, and holdable.** From a distance each ribbon should read as a
    carriageway: a Gold crown down the middle, Blue shoulders, Jade verges. Find one, put the blade
    on the deck and FOLLOW it through a full lap — the cut should stay unbroken through the weave
-   and the climbs, and that is the whole rung. If contact keeps dropping, the plate overlap or the
-   arc-length walk is wrong, not the pilot.
+   and the climbs, and that is the whole rung. If contact keeps dropping, the plate fit or the
+   arc-length walk is wrong, not the pilot. Where two roads cross, the later one is cut back out of
+   the earlier (a road passing through a slot in the other): that cut should read as a clean slot,
+   not as missing deck.
 6. **Swell — running wide on a bend punishes, and the racing line never does.** Hold the crown
    through the tighter corners: nothing should bite. Drift out to the OUTSIDE verge on one of those
    same corners and you should full-stop, debuff all four elements for 4 s and lose boost. Danger
@@ -831,10 +926,13 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
 6a. **Swell — no fold-through.** Fly the INSIDE verge of the tightest bend on each of the five
    ribbons. The deck must stay a single surface; a road doubling back over itself there means a
    half-width got authored past its spine's narrowest radius and the build-time guard did not fire.
-7. **Cage — unchanged, full stop.** Three rinds at 720 / 590 / 460, triangular openings, tightening
+7. **Cage — the weave unchanged.** Three rinds at 720 / 590 / 460, triangular openings, tightening
    inward, each inner rind tilted onto its own axis, no free radial corridor. Rungs 3 and 4 were
-   NOT touched by the 3× pass, so anything that differs from the previous build here is a
-   regression, not a tuning.
+   NOT touched by the 3× pass. The 2026-10-20 flush pass changed only how the bars MEET: a rib, a
+   hoop and a strut now stop at each node's joint, the bars on the outer and inner rinds are half as
+   long (each of those great circles is laid twice, interleaved - see § "Flush prisms"), and the
+   ribs narrow into the pole. Look at a node and a pole: they should read as knuckles and a closed
+   cap, not as gaps.
 8. **Twistbands — the roll.** Fly a band holding the blade against the deck: keeping contact should
    require continuously rolling the sword. Fly a full lap and confirm you arrive back at your start
    inverted, and that the lane colours have mirrored.
@@ -889,19 +987,19 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
     cell rather than sit in the middle of it: from the spawn ring the mass should span most of the
     view. A boosted straight-line run across the whole thing should take **~1.2 s** at intensities
     3–4 and **~3.6 s** at 1–2. Sight-check that each arena's far side is comfortably inside its own
-    membrane (far corner 2,184 against 3,600 on the big rungs, 749 against 1,200 on the small ones)
+    membrane (far corner 2,179 against 3,600 on the big rungs, 744 against 1,200 on the small ones)
     and that nothing pokes through it.
 27. **THE PRISM DIAL — the check the last pass exists for.** At intensities 1 and 2 the arena must
     read as **lots of small pieces**, not as a few enormous slabs. A pane's rib is now a run of
-    34-unit planks rather than 102-unit ones, and a road's deck is 44-unit plates rather than
-    132-unit ones. Two failure modes to tell apart: if it still reads as slabs, a prism dimension
+    30-unit planks laid end to end rather than 102-unit ones, and a road's deck is ~34-unit plates
+    rather than 132-unit ones. Two failure modes to tell apart: if it still reads as slabs, a prism dimension
     is still on `S` instead of `P`; if a rib reads as **beads** rather than a continuous bar, the
     along-grain step went to `P` while its prism length did not (or vice versa). Prism counts would
     be unchanged in the second case, so no offline check can see it — this is the one thing on the
     list the harness structurally cannot prove.
 28. **Nothing was silently clamped.** Select one laid arena prism at intensity 1 and read its
-    transform scale: a pane rib should be **~6.8 × 6.8 × 34**, a mullion **~10.4 × 10.4 × 44**, and
-    a Swell deck plate **~44 × 5.2 × 44**. Every one of those is now comfortably inside
+    transform scale: a pane rib should be **~6.8 × 6.8 × 30**, a mullion **~10.4 × 10.4 × 38**, and
+    a Swell deck plate **~34 × 5.2 × 34** (each section ±20%; shorter where something crosses it). Every one of those is now comfortably inside
     `SpawnablePrism.prefab`'s `maxScale` of 100 — the clamp is no longer load-bearing here — so any
     axis pinned at exactly **10** means the arena is laying through a prefab that inherits the
     default window rather than `SpawnablePrism.prefab`'s.
@@ -915,7 +1013,7 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
   approved at the 6x envelope**, which is why the pass that re-authored rung 2 left its geometry
   alone — but the prism pass after it re-cut rung 1 into 15,380 pieces from 5,107, so what was
   approved is where the surfaces ARE, not what they are made of. The one thing to look at first is
-  whether a rib at 34 units long still reads as a continuous beam at the 2,160 spacing it is laid
+  whether a rib at 30 units long still reads as a continuous beam at the 2,160 spacing it is laid
   at; the approval does not cover that, because the arena it was given to had 102-unit planks.
 - **The 1,200 / 1,200 / 1,500 / 1,500 targets are unmeasured for all four arenas** — see the pacing
   flag. The split makes every rung ask for a comparable FRACTION of its own arena, which is a real
@@ -941,8 +1039,12 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
   ~0.4 of its radius so the deck banks at most ~22°, which is what keeps this rung from quietly
   becoming a second Twistbands. Nothing asserts it — a bigger `RiseAmp` or harmonic will simply
   make the road roll, and the only signal is a playtest that says it stopped being a joy.
-- **The volume phase ladder is frozen on intensity 2** — float32 cannot register a 4.5-volume
-  trail prism against a 103M baseline (ulp 8). It used to be frozen on rung 1 as well and the prism
+- **The volume phase ladder WAS frozen on intensity 2** — float32 cannot register a 4.5-volume
+  trail prism against a 103M baseline (ulp 8). The 2026-10-20 flush pass took that baseline to
+  59.8M (ulp 4), under the line. *(2026-10-16: the Rhino's LAID trail prism is the
+  0.75-volume sliver, not 4.5 — `cleave_budget.RHINO_TRAIL_PRISM_VOLUME` still reads the
+  `BaseScale` product. At 0.75 the Panes' ulp 4 freezes rung 1 as well. Still harmless while the cell
+  grows nothing, but check 7 is measuring against the wrong prism; re-measure with the laid size.)* It used to be frozen on rung 1 as well and the prism
   dial fixed that one (345M → 38.5M, ulp 4). Harmless while the cell grows nothing, and gated by
   `cleave_budget` check 7 per rung so it fails loudly the day it stops being harmless. See "Stated
   cost" above.
@@ -952,6 +1054,18 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
   on rungs 1 or 2 has to state its prism count before it is authored, and the lever if it needs to
   come down is a road's LANE count or the Panes' `GapScaleI1`, not the prism dial (which is now
   fleet-wide across the mode).
+- **2026-10-16 Rhino kit — needs a playtest and a re-measurement.** (1) **Afterimage mass**: for
+  5 s after an energized blade goes out (and throughout a 6 s omni Surge) the sword lays prisms in
+  its own shape — up to 16 afterimages × 6 segments, i.e. ≤ 96 prisms per Rhino per window, at
+  Mass-scaled volume (×1 → ×2.5). That is new player-laid mass in a mode whose collider ladder has
+  23% headroom and whose score is destroying mass; `cleave_budget` models none of it. At Mass L5
+  they are laid as **danger** prisms, which adds to the arenas' danger traps. (2) **The AI now
+  ramps and swings**: `RampBoostAIPolicySO` ramps on straights that pay the wind-up back and
+  brakes on the ramp into corners (`AI/AI_BOOST.md`, Ramp; the AI never ramped before), and `RhinoSwordAutopilot` strokes at the nearest hostile prism and energizes near
+  super-shields or on a ≥ 75% meter — so AI transit speed and cut rate both change, and the
+  1,200 / 1,500 pacing flag above now has a moved baseline. (3) **"AI cannot energize, so the mode
+  has no shielded mass"** (§ "Nothing is shielded", `cleave_budget` check 3) no longer holds as a
+  premise — flagged there; numbers unchanged pending re-measurement.
 - **Toast copy is first-pass.** Since #976 (2026-10-06) `GameToastConfig_Cleave.asset` (registered
   in `GameToastLibrary`) authors the three milestone situations (50 quarter, 51 halfway, 52 lead
   change; `{0}`=domain, `{1}`=prisms destroyed, `{2}`=target), the prisms-destroyed stat toast (83)

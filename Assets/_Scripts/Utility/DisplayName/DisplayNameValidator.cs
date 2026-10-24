@@ -48,6 +48,39 @@ namespace CosmicShore.Utility
     }
 
     /// <summary>
+    /// The four live display-name rules (<see cref="DisplayNameValidator.EvaluateRules"/>), in
+    /// caption order: length, character set, letter-or-number at both ends, no doubled
+    /// separators.
+    /// </summary>
+    public readonly struct DisplayNameRuleState
+    {
+        public bool Length { get; }
+        public bool Characters { get; }
+        public bool Edges { get; }
+        public bool NoDoubles { get; }
+
+        public DisplayNameRuleState(bool length, bool characters, bool edges, bool noDoubles)
+        {
+            Length = length;
+            Characters = characters;
+            Edges = edges;
+            NoDoubles = noDoubles;
+        }
+
+        public const int Count = 4;
+
+        /// <summary>Rule <paramref name="index"/> in caption order.</summary>
+        public bool this[int index] => index switch
+        {
+            0 => Length,
+            1 => Characters,
+            2 => Edges,
+            3 => NoDoubles,
+            _ => false,
+        };
+    }
+
+    /// <summary>
     /// The one place display names are judged. Enforces length, allowed characters and
     /// format from <see cref="DisplayNameValidationConfigSO"/>, and rejects slurs and
     /// profanity via built-in deny lists that survive leetspeak (n1gg3r), separator
@@ -193,6 +226,62 @@ namespace CosmicShore.Utility
                     "That name isn't allowed. Pick something respectful.");
 
             return DisplayNameValidationResult.Success(sanitized);
+        }
+
+        /// <summary>
+        /// The four rules the profile window ticks as the player types (Docs/MENU_REDESIGN_B.md
+        /// section 15.2), judged exactly as <see cref="Validate"/> judges them - on the sanitized
+        /// name, against the same config. Each is false for an empty name. The content filter,
+        /// reserved names and the letter requirement are not live rules: they answer only on
+        /// submit, in <see cref="Validate"/>'s message.
+        /// </summary>
+        public static DisplayNameRuleState EvaluateRules(string rawName)
+        {
+            var config = Config;
+            string s = Sanitize(rawName);
+            if (string.IsNullOrEmpty(s))
+                return default;
+
+            bool characters = true;
+            foreach (char c in s)
+            {
+                if (IsAsciiLetterOrDigit(c)) continue;
+                if (c == ' ' && config.AllowSpaces) continue;
+                if (c != ' ' && config.AllowedSpecialCharacters.IndexOf(c) >= 0) continue;
+                characters = false;
+                break;
+            }
+
+            bool noDoubles = true;
+            for (int i = 1; i < s.Length && noDoubles; i++)
+                noDoubles = IsAsciiLetterOrDigit(s[i]) || IsAsciiLetterOrDigit(s[i - 1]);
+
+            return new DisplayNameRuleState(
+                s.Length >= config.MinLength && s.Length <= config.MaxLength,
+                characters,
+                IsAsciiLetterOrDigit(s[0]) && IsAsciiLetterOrDigit(s[s.Length - 1]),
+                noDoubles);
+        }
+
+        /// <summary>The four live rules' captions, built from the config so they can never
+        /// promise a limit the validator does not enforce: "3 to 25 characters",
+        /// "Letters, numbers, spaces, _ - .", "Starts and ends with a letter or number",
+        /// "No doubled spaces or punctuation".</summary>
+        public static string[] RuleCaptions()
+        {
+            var config = Config;
+            var chars = new StringBuilder("Letters, numbers");
+            if (config.AllowSpaces)
+                chars.Append(", spaces");
+            if (config.AllowedSpecialCharacters.Length > 0)
+                chars.Append(", ").Append(string.Join(" ", config.AllowedSpecialCharacters.ToCharArray()));
+            return new[]
+            {
+                $"{config.MinLength} to {config.MaxLength} characters",
+                chars.ToString(),
+                "Starts and ends with a letter or number",
+                config.AllowSpaces ? "No doubled spaces or punctuation" : "No doubled punctuation",
+            };
         }
 
         /// <summary>

@@ -21,16 +21,18 @@ namespace CosmicShore.Gameplay
     /// <item><b>Speed Mode</b> (Time): the hull's cruise × <c>speedModeMultiplier</c> (×6), every thruster lit, the base
     /// trail's spacing stretched so production per second does not rise, and its prisms stretched with it so the trail
     /// joins up.</item>
-    /// <item><b>Creation Mode</b> (Mass): a trail behind EACH of the ring's five corners instead of the cockpit's one, the
+    /// <item><b>Creation Mode</b>: a trail behind EACH of the ring's five corners instead of the cockpit's one, the
     /// base trail's own small block, turning with the ring's firing rotation.</item>
+    /// <item><b>Mass</b>: the x and y of every block the hull lays (<c>prismWidthScale</c>), never its length.</item>
     /// <item><b>Space Mode</b> (<see cref="Mode.Destruction"/>): FIVE GUNS, the RT pull setting their rate (analog); the
     /// right stick moves them in (meeting ahead, a crosshair) and out (splayed).</item>
     /// <item><b>Charge Mode</b>: FIVE CORDS (<see cref="BrittleStarCord"/>) — whips at 150% length with RT released,
-    /// shortening and stiffening into five straight sabers as it is pulled. They slice every prism they touch and cool
-    /// the guns.</item>
+    /// shortening and stiffening as it is pulled into five sabers that keep some give (<c>cordMaxRigidity</c>). They
+    /// slice every prism they touch and cool the guns.</item>
     /// <item><b>Every other mode</b>: RT fires the one turret the ring has turned to the aim — the same gun, no spread.</item>
-    /// <item><b>Heat</b>: every round heats the guns (<see cref="BrittleStarRules.HeatState"/>); overheated they cannot
-    /// fire until they cool, and in Space Mode the trail lays DANGER prisms meanwhile.</item>
+    /// <item><b>Heat</b>: every round heats the guns (<see cref="BrittleStarRules.HeatState"/>), which hold more heat
+    /// with Space (<c>heatCapacity</c>); overheated they cannot fire until they cool, and in Space Mode the trail lays
+    /// DANGER prisms meanwhile.</item>
     /// <item><b>Ring Detonation</b> (LT): throw the ring forward — only with a SPARE ring in stock; the mounted ring then
     /// regrows on its own. It blows on contact or on its fuse in a nucleus-wide disk.</item>
     /// <item><b>Crystals</b> (<see cref="BrittleStarRingChargeByCrystalEffectSO"/>): one spare ring each, up to two.</item>
@@ -53,8 +55,9 @@ namespace CosmicShore.Gameplay
         [Header("Wiring (serialized on the prefab so a missing wire shows in the inspector)")]
         [Tooltip("Every number this executor reads. Wired directly (vessel rule 20).")]
         [SerializeField] BrittleStarConfigSO config;
-        [Tooltip("The procedural hull: the ring, the six muzzles, the ring mesh a detonation throws.")]
-        [SerializeField] BrittleStarHullBuilder hull;
+        [Tooltip("The hull (BrittleStarHullModel, which finds its parts in BrittleStar.fbx by name; or the procedural " +
+                 "BrittleStarHullBuilder it replaced): the ring, the six muzzles, the copy of the ring a detonation throws.")]
+        [SerializeField] BrittleStarHullSource hull;
         [Tooltip("Fires every turret's rounds (its ProjectileFactory pools the round prefab).")]
         [SerializeField] Gun gun;
         [Tooltip("The fleet's shared turn-end channel: the trigger lets go and every thrown ring is cleared.")]
@@ -79,7 +82,7 @@ namespace CosmicShore.Gameplay
         bool _shotOwedNow;           // the press owes one volley at once
         float _gunsOwed;
         float _cordsOut01;           // eased 0..1: how far the five cords are grown out of their muzzles
-        float _rigidity01;           // eased 0..1: the cords from whip (released) to saber (pulled)
+        float _cordPull01;           // eased 0..1: RT's pull as the cords feel it (length; x cordMaxRigidity = rigidity)
         bool _dangerHeld;            // the base spawner is laying danger prisms (written on EDGES only)
         bool _penHeld;
         float _creationOwed;
@@ -150,8 +153,9 @@ namespace CosmicShore.Gameplay
         public float Heat01 => _heat.Heat01;
         /// <summary>Overheated: the guns cannot fire until they cool (and in Space Mode the trail lays danger prisms).</summary>
         public bool Overheated => _heat.Overheated;
-        /// <summary>Eased 0..1: Charge Mode's cords from whip (0) to saber (1), following the RT pull.</summary>
-        public float CordRigidity01 => _rigidity01;
+        /// <summary>Eased 0..1: Charge Mode's cords from whip (0) toward rigid (1), following the RT pull. A full pull
+        /// reaches <c>cordMaxRigidity</c>, never 1.</summary>
+        public float CordRigidity01 => config ? _cordPull01 * config.CordMaxRigidity : _cordPull01;
         /// <summary>The ring's firing rotation about the nose axis, radians. The animation draws it.</summary>
         public float RingPhase => _ringPhase;
         public bool IsFiring => _firing;
@@ -182,7 +186,7 @@ namespace CosmicShore.Gameplay
             _status = shipStatus;
             _impactor = _status != null && _status.Transform ? _status.Transform.GetComponent<VesselImpactor>() : null;
             if (!hull && _status != null && _status.Transform)
-                hull = _status.Transform.GetComponentInChildren<BrittleStarHullBuilder>(true);
+                hull = _status.Transform.GetComponentInChildren<BrittleStarHullSource>(true);
             if (gun) gun.Initialize(shipStatus);
 
             _ring.Reset();
@@ -194,7 +198,7 @@ namespace CosmicShore.Gameplay
             _firing = false;
             _shotOwedNow = false;
             _gunsOwed = 0f;
-            _rigidity01 = 0f;
+            _cordPull01 = 0f;
             _heat.Reset();
             ReleaseDanger();
             ClearCords();
@@ -210,7 +214,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError($"[BrittleStar] {name}: BrittleStarExecutor has no BrittleStarConfig — the vessel has no " +
                                  "modes, no guns and no ring. Wire Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset.");
             if (!hull)
-                CSDebug.LogError($"[BrittleStar] {name}: no BrittleStarHullBuilder under the vessel — there is no ring to " +
+                CSDebug.LogError($"[BrittleStar] {name}: no BrittleStarHullSource under the vessel — there is no ring to " +
                                  "aim, lay from or throw.");
             if (!gun)
                 CSDebug.LogError($"[BrittleStar] {name}: BrittleStarExecutor has no Gun — the turrets cannot fire.");
@@ -236,6 +240,11 @@ namespace CosmicShore.Gameplay
             {
                 prisms.SpacingMultiplier = 1f;
                 prisms.LengthMultiplier = 1f;
+            }
+            if (_status?.VesselPrismController is { } spawner)
+            {
+                spawner.WidthMultiplier = 1f;
+                spawner.ThicknessMultiplier = 1f;
             }
         }
 
@@ -320,6 +329,7 @@ namespace CosmicShore.Gameplay
             _ring.Tick(dt);
             EaseModes(dt);
             ApplySpeedMode();
+            ApplyBlockGirth();
             AimRing(dt);
             UpdateCreation();
             float depth = TriggerDepth();
@@ -369,6 +379,23 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// MASS sizes the x and y of every block the hull lays, never its length (Garrett, 2026-10-16: "stretch the prisms
+        /// in z and decrease them in x and y at base. mass can control the x and y"): the base trail through the fleet
+        /// spawner's own width and thickness dials (this executor is their single writer on this hull), Creation Mode's
+        /// corner trails at lay time (<see cref="LayCornerPrism"/>). Read on the replicated level, so every peer lays the
+        /// same block.
+        /// </summary>
+        void ApplyBlockGirth()
+        {
+            if (_status.VesselPrismController is not { } prisms) return;
+            float girth = BlockGirth();
+            prisms.WidthMultiplier = girth;
+            prisms.ThicknessMultiplier = girth;
+        }
+
+        float BlockGirth() => Mathf.Max(0.1f, config.PrismWidthScale.EvaluateReplicated(_status));
+
         // ------------------------------------------------------------------ aim: the ring's firing rotation
 
         Vector2 AimStick()
@@ -406,7 +433,7 @@ namespace CosmicShore.Gameplay
             var hullT = _status.Transform;
             float a = BrittleStarHullForm.PointAngle(index) + _ringPhase;
             float r = hull.RingRadius * radiusScale;
-            Vector3 local = new(Mathf.Cos(a) * r, Mathf.Sin(a) * r, hull.Ring ? hull.Ring.localPosition.z : 0f);
+            Vector3 local = new(Mathf.Cos(a) * r, Mathf.Sin(a) * r, hull.RingPlaneZ);
             return hullT.TransformPoint(local);
         }
 
@@ -456,7 +483,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>One block of corner <paramref name="index"/>'s trail, <paramref name="back"/> behind the corner along
-        /// the course, its length along the path and its broad side tangent to the ring. MASS sizes it, read at lay time.</summary>
+        /// the course, its length along the path and its broad side tangent to the ring. MASS sizes its x and y, read at lay
+        /// time.</summary>
         void LayCornerPrism(PrismEventChannelWithReturnSO channel, PrismType type, int index, Vector3 course, float back)
         {
             Vector3 corner = RingPoint(index, config.CreationRadiusScale);
@@ -466,9 +494,11 @@ namespace CosmicShore.Gameplay
             if (!SafeLookRotation.TryGet(course, radial.normalized, out var rot, this, logError: false)) return;
 
             // The base trail's own small block (Garrett, 2026-10-16: "use the same smaller prisms for all 5 prism
-            // trails"), × MASS.
-            Vector3 scale = _status.VesselPrismController.TrailBaseScale
-                          * Mathf.Max(0.1f, config.CreationBlockScale.EvaluateReplicated(_status));
+            // trails"), its x and y × MASS (ApplyBlockGirth).
+            Vector3 scale = _status.VesselPrismController.TrailBaseScale;
+            float girth = BlockGirth();
+            scale.x *= girth;
+            scale.y *= girth;
             var ret = channel.RaiseEvent(new PrismEventData
             {
                 ownDomain = _status.Domain,
@@ -518,8 +548,8 @@ namespace CosmicShore.Gameplay
             var prisms = _status.VesselPrismController;
             bool want = IsOn(Mode.Charge) && hull && prisms && prisms.SpawnerEnabled;
             _cordsOut01 = Mathf.MoveTowards(_cordsOut01, want ? 1f : 0f, dt / config.ModeBlendSeconds);
-            _rigidity01 += (depth - _rigidity01) * (1f - Mathf.Exp(-config.CordRigidityRate * dt));
-            float length = config.CordLength * Mathf.Lerp(config.CordLooseLengthScale, 1f, _rigidity01)
+            _cordPull01 += (depth - _cordPull01) * (1f - Mathf.Exp(-config.CordRigidityRate * dt));
+            float length = config.CordLength * Mathf.Lerp(config.CordLooseLengthScale, 1f, _cordPull01)
                          * _cordsOut01 * RingPresence01;
             if (length < 0.5f || !hull)
             {
@@ -542,12 +572,15 @@ namespace CosmicShore.Gameplay
                 RigidDamping = config.CordRigidDamping,
                 Pose = config.CordPose,
             };
+            // A full pull shortens the cords all the way but stiffens them only to cordMaxRigidity: the saber keeps 60% of
+            // the whip's give (Garrett: "not completely rigid at full press", 0.4 since 2026-10-17).
+            float rigidity = CordRigidity01;
             float splay01 = BrittleStarRules.Spread01(AimStick(), config.AimDeadzone);
             for (int i = 0; i < _cords.Length; i++)
             {
                 var muzzle = hull.Muzzle(i);
                 if (!muzzle) continue;
-                _cords[i].Step(muzzle.position, ArmLine(muzzle, splay01), length, _rigidity01, settings, dt);
+                _cords[i].Step(muzzle.position, ArmLine(muzzle, splay01), length, rigidity, settings, dt);
             }
 
             float cut = config.CordCutRadius * Mathf.Max(0.1f, config.ProjectileScaleMultiplier.EvaluateReplicated(_status));
@@ -598,7 +631,6 @@ namespace CosmicShore.Gameplay
                     {
                         var prism = _candidates[i];
                         if (!prism || prism.destroyed || _cutThisFrame.Contains(prism)) continue;
-                        if (prism.prismProperties is { IsSuperShielded: true }) continue;
                         if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, _status)) continue;
 
                         Vector3 centre = prism.transform.position;
@@ -609,6 +641,9 @@ namespace CosmicShore.Gameplay
 
                         _cutThisFrame.Add(prism);
                         Vector3 v = Vector3.Lerp(cord.NodeVelocity(s), cord.NodeVelocity(s + 1), t);
+                        // Super-shielded mass refuses the cut, visibly: the deflection jiggle, never
+                        // a cord passing through armour in silence (Docs/LIT.md).
+                        if (prism.AbsorbSuperShieldHit(v.magnitude)) continue;
                         Vector3 cutNormal = Vector3.Cross(ab, v);
                         if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.Cross(ab, _status.Transform.up);
                         if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.right;
@@ -843,7 +878,7 @@ namespace CosmicShore.Gameplay
                     var muzzle = hull.Muzzle(_ring.Mounted ? _aimedPoint : -1);
                     if (muzzle) FireAlong(muzzle, _status.Transform.forward, scale, time, inherit);
                 }
-                if (_heat.AddRounds(guns, config.HeatPerRound)) PlayAt(config.OverheatEvent, HullPosition);
+                if (_heat.AddRounds(guns, config.HeatPerRound, HeatCapacity())) PlayAt(config.OverheatEvent, HullPosition);
             }
             PlayAt(config.FireEvent, HullPosition);
         }
@@ -864,7 +899,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void UpdateHeat(float dt)
         {
-            _heat.Cool(config.CoolRate + config.ChargeCoolRate * _cordsOut01, config.OverheatRecoverBelow, dt);
+            _heat.Cool(config.CoolRate + config.ChargeCoolRate * _cordsOut01, config.OverheatRecoverBelow, dt, HeatCapacity());
             bool danger = _heat.Overheated && IsOn(Mode.Destruction);
             if (danger && !_dangerHeld && _status.VesselPrismController)
             {
@@ -873,6 +908,10 @@ namespace CosmicShore.Gameplay
             }
             else if (!danger) ReleaseDanger();
         }
+
+        /// <summary>SPACE: the heat the guns hold, in Space 0 capacities (×1 → ×3.33 at Space 10: a full five-gun
+        /// burst runs ~20 s instead of ~6 s). Read on the replicated level, so every peer's copy overheats on the same round.</summary>
+        float HeatCapacity() => Mathf.Max(0.1f, config.HeatCapacity.EvaluateReplicated(_status));
 
         void ReleaseDanger()
         {
@@ -888,13 +927,13 @@ namespace CosmicShore.Gameplay
         {
             var body = TakeBody();
             if (!body) return;
-            var ringT = hull.Ring;
-            body.transform.SetPositionAndRotation(ringT.position, ringT.rotation);
-            body.transform.localScale = ringT.lossyScale;
+            // A still copy of the mounted ring, posed where it is (the hull draws it: a baked copy of the model's ring).
+            hull.DressThrownRing(body);
             body.SetActive(true);
+            Vector3 from = body.transform.position;
             Vector3 velocity = _status.Transform.forward * config.RingLaunchSpeed + _status.Course * _status.Speed;
-            _flights.Add(new Flight { Body = body, Velocity = velocity, Age = 0f, Previous = ringT.position });
-            PlayAt(config.RingLaunchEvent, ringT.position);
+            _flights.Add(new Flight { Body = body, Velocity = velocity, Age = 0f, Previous = from });
+            PlayAt(config.RingLaunchEvent, from);
         }
 
         GameObject TakeBody()
@@ -911,9 +950,6 @@ namespace CosmicShore.Gameplay
                 body.AddComponent<MeshFilter>();
                 body.AddComponent<MeshRenderer>();
             }
-            body.GetComponent<MeshFilter>().sharedMesh = hull.RingMesh;
-            if (hull.TryGetComponent<MeshRenderer>(out var source))
-                body.GetComponent<MeshRenderer>().sharedMaterials = source.sharedMaterials;
             return body;
         }
 
@@ -940,7 +976,7 @@ namespace CosmicShore.Gameplay
 
                 if (flight.Age >= config.RingFuseSeconds || Touches(flight.Previous, next, flight.Age))
                 {
-                    Detonate(next, t.forward);
+                    Detonate(next, t.rotation);
                     ReturnBody(flight.Body);
                     _flights.RemoveAt(f);
                 }
@@ -985,15 +1021,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The RING EXPLOSION (Garrett, 2026-10-14): a flat disk lying in the ring's plane, centred where it blew, as thick
-        /// as the ring (× Charge) and as wide as the cell's NUCLEUS. It is swept outward from the ring's own radius to the
-        /// nucleus's over <c>ringBlastSeconds</c>, drawn as an expanding band.
+        /// The RING EXPLOSION (Garrett, 2026-10-14): a flat disk lying in the ring's plane, centred where it blew,
+        /// <c>ringBlastThicknessScale</c> (×4, 2026-10-18) times as thick as the ring (× Charge) and as wide as the cell's
+        /// NUCLEUS. It is swept outward from the ring's own radius to the nucleus's over <c>ringBlastSeconds</c>, drawn in
+        /// the thrown ring's own frame (<paramref name="ringRotation"/>), so its five-fold look starts from the ring's points.
         /// </summary>
-        void Detonate(Vector3 at, Vector3 ringNormal)
+        void Detonate(Vector3 at, Quaternion ringRotation)
         {
             PlayAt(config.RingBlastEvent, at);
-            float half = (hull ? hull.RingHalfThickness : 0.2f) * Mathf.Max(0.1f, config.BlastScale.EvaluateReplicated(_status));
-            Vector3 normal = ringNormal.sqrMagnitude > 1e-6f ? ringNormal.normalized : Vector3.forward;
+            float half = (hull ? hull.RingHalfThickness : 0.2f) * Mathf.Max(0.1f, config.RingBlastThicknessScale)
+                       * Mathf.Max(0.1f, config.BlastScale.EvaluateReplicated(_status));
+            Vector3 normal = ringRotation * Vector3.forward;
             float inner = hull ? hull.RingRadius : 1f;
             var wave = new Wave
             {
@@ -1006,7 +1044,7 @@ namespace CosmicShore.Gameplay
                 HalfThickness = half,
             };
             wave.Band = TakeBand(out wave.BandMesh);
-            if (wave.Band) wave.Band.transform.SetPositionAndRotation(at, Quaternion.LookRotation(normal));
+            if (wave.Band) wave.Band.transform.SetPositionAndRotation(at, ringRotation);
             _waves.Add(wave);
         }
 
@@ -1041,7 +1079,7 @@ namespace CosmicShore.Gameplay
                     wave.LastRadius = radius;
                     _waves[w] = wave;
                 }
-                if (wave.BandMesh) BuildBand(wave.BandMesh, radius, config.RingBlastBandWidth, wave.HalfThickness);
+                if (wave.BandMesh) BuildBand(wave.BandMesh, wave, radius, t);
                 if (t >= 1f)
                 {
                     ReturnBand(wave.Band);
@@ -1118,12 +1156,9 @@ namespace CosmicShore.Gameplay
                 band.AddComponent<MeshRenderer>();
             }
             mesh = band.GetComponent<MeshFilter>().sharedMesh;
-            // The domain colour: slot 1 of the hull's painted renderer (ShipHelper.ApplyShipMaterial).
-            if (hull && hull.TryGetComponent<MeshRenderer>(out var source))
-            {
-                var mats = source.sharedMaterials;
-                if (mats is { Length: > 0 }) band.GetComponent<MeshRenderer>().sharedMaterial = mats[mats.Length > 1 ? 1 : 0];
-            }
+            // The domain colour: the material the hull's domain slot is painted with (ShipHelper.ApplyShipMaterial).
+            var domain = hull ? hull.DomainMaterial : null;
+            if (domain) band.GetComponent<MeshRenderer>().sharedMaterial = domain;
             band.SetActive(true);
             return band;
         }
@@ -1135,40 +1170,34 @@ namespace CosmicShore.Gameplay
             _idleBands.Add(band);
         }
 
-        /// <summary>A flat annulus in the band's local XY plane: outer radius <paramref name="radius"/>, <paramref name="width"/>
-        /// wide, ±<paramref name="half"/> thick — top, bottom, outer and inner walls, flat-shaded.</summary>
-        void BuildBand(Mesh mesh, float radius, float width, float half)
+        /// <summary>The explosion's look at this moment (<see cref="BrittleStarBlastForm"/>): faceted volumes - the front at
+        /// the disk's true edge with five crests, the thrown ring's pentagon grown, five coiling arms led by crystals - all
+        /// turning on with the ring's spin. The lists are reused, so a frame allocates nothing but the mesh upload.</summary>
+        void BuildBand(Mesh mesh, in Wave wave, float radius, float t01)
         {
-            const int Segments = 96;
-            float outer = Mathf.Max(0.01f, radius), inner = Mathf.Max(0f, radius - width);
-            half = Mathf.Max(0.05f, half);
-            _bandVerts.Clear(); _bandNormals.Clear(); _bandTris.Clear();
-            for (int i = 0; i < Segments; i++)
+            float spinSign = config.RingFlightSpin < 0f ? -1f : 1f;
+            var form = new BrittleStarBlastForm.Settings
             {
-                float a0 = i * Mathf.PI * 2f / Segments, a1 = (i + 1) * Mathf.PI * 2f / Segments;
-                Vector3 d0 = new(Mathf.Cos(a0), Mathf.Sin(a0), 0f), d1 = new(Mathf.Cos(a1), Mathf.Sin(a1), 0f);
-                Vector3 f = Vector3.forward * half;
-                BandQuad(d0 * inner + f, d0 * outer + f, d1 * outer + f, d1 * inner + f, Vector3.forward);
-                BandQuad(d1 * inner - f, d1 * outer - f, d0 * outer - f, d0 * inner - f, Vector3.back);
-                BandQuad(d0 * outer + f, d0 * outer - f, d1 * outer - f, d1 * outer + f, (d0 + d1).normalized);
-                BandQuad(d1 * inner + f, d1 * inner - f, d0 * inner - f, d0 * inner + f, -(d0 + d1).normalized);
-            }
+                RingRadius = wave.InnerRadius,
+                Front = radius,
+                HalfThickness = wave.HalfThickness,
+                FrontWidth = config.RingBlastFrontWidth,
+                FrontHeight = config.RingBlastFrontHeight,
+                Phase = BrittleStarBlastForm.PhaseAt(0f, spinSign * config.RingBlastSpinDegrees * Mathf.Deg2Rad, t01),
+                T01 = t01,
+                CrestDepth = config.RingBlastCrestDepth,
+                PentagonLag = config.RingBlastPentagonLag,
+                ArmWidth = config.RingBlastArmWidth,
+                ArmWiggle = config.RingBlastArmWiggle,
+                ArmCurl = spinSign * config.RingBlastArmCurlDegrees * Mathf.Deg2Rad,
+                Relief = config.RingBlastRelief,
+            };
+            BrittleStarBlastForm.Build(form, _bandVerts, _bandNormals, _bandTris);
             mesh.Clear();
             mesh.SetVertices(_bandVerts);
             mesh.SetNormals(_bandNormals);
             mesh.SetTriangles(_bandTris, 0);
             mesh.RecalculateBounds();
-        }
-
-        void BandQuad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n)
-        {
-            // Wound so Unity's front face (clockwise seen from outside) faces along n.
-            if (Vector3.Dot(Vector3.Cross(b - a, c - a), n) < 0f) { (b, d) = (d, b); }
-            int i0 = _bandVerts.Count;
-            _bandVerts.Add(a); _bandVerts.Add(b); _bandVerts.Add(c); _bandVerts.Add(d);
-            for (int k = 0; k < 4; k++) _bandNormals.Add(n);
-            _bandTris.Add(i0); _bandTris.Add(i0 + 1); _bandTris.Add(i0 + 2);
-            _bandTris.Add(i0); _bandTris.Add(i0 + 2); _bandTris.Add(i0 + 3);
         }
 
         /// <summary>The ring explosion's hit on an enemy hull, under the LOCKED PvP rule: admitted through

@@ -8,6 +8,18 @@ namespace CosmicShore.Engine
         WorldSpace = 2,
     }
 
+    /// <summary>Original contract: the extra vertex channels a canvas passes to its shaders.</summary>
+    [System.Flags]
+    public enum AdditionalCanvasShaderChannels
+    {
+        None = 0,
+        TexCoord1 = 1,
+        TexCoord2 = 2,
+        TexCoord3 = 4,
+        Normal = 8,
+        Tangent = 16,
+    }
+
     /// <summary>
     /// The UI root component (original contract: Canvas). A ROOT screen-space canvas
     /// drives its own <see cref="RectTransform"/>: rect size = screen / scaleFactor,
@@ -24,6 +36,8 @@ namespace CosmicShore.Engine
     public class Canvas : Behaviour
     {
         public RenderMode renderMode = RenderMode.ScreenSpaceOverlay;
+        /// <summary>Original contract. Recorded only: the port's UI renderer passes every channel it draws.</summary>
+        public AdditionalCanvasShaderChannels additionalShaderChannels;
         public int sortingOrder;
         public bool overrideSorting;
         public bool pixelPerfect;

@@ -549,6 +549,11 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            // The leash (Fauna.Leash): a leashed creature heads where its holder says. Written through Goal's setter,
+            // so the cell's pens still clamp it.
+            if (Leash != null && Leash.TrySteer(this, out var leashGoal, out _, out _))
+                Goal = leashGoal;
+
             Vector3 goalDirection = (Goal - transform.position).normalized;
 
             int neighborCount = 0;
@@ -677,9 +682,11 @@ namespace CosmicShore.Gameplay
                         // turns to face it, and only then starts the suction.)
                         if (diet == FaunaDiet.Herbivore && IsEdibleForHerbivore(prism))
                         {
-                            if (sqr < bestFeedSqr)
+                            // A painted prism ranks closer (PaintedPrey: an Angler's paint is preferred, never forced).
+                            float rank = PaintedPrey.Rank(prism, sqr);
+                            if (rank < bestFeedSqr)
                             {
-                                bestFeedSqr = sqr;
+                                bestFeedSqr = rank;
                                 feedCandidate = prism;
                             }
                             continue;
@@ -696,10 +703,14 @@ namespace CosmicShore.Gameplay
                     // Handle blocks (trail prisms) — same spatialized diet rule as above
                     // (plain prisms never contributed separation here, so only the
                     // feed-candidate role applies).
-                    if (diet == FaunaDiet.Herbivore && sqr < bestFeedSqr && IsEdibleForHerbivore(prism))
+                    if (diet == FaunaDiet.Herbivore)
                     {
-                        bestFeedSqr = sqr;
-                        feedCandidate = prism;
+                        float rank = PaintedPrey.Rank(prism, sqr);
+                        if (rank < bestFeedSqr && IsEdibleForHerbivore(prism))
+                        {
+                            bestFeedSqr = rank;
+                            feedCandidate = prism;
+                        }
                     }
                 }
             }
@@ -709,6 +720,9 @@ namespace CosmicShore.Gameplay
             // makes the grazing read as deliberate.
             if (diet == FaunaDiet.Herbivore)
             {
+                // A leashed creature eats only what its holder orders (re-checked by its own diet); unordered, it follows
+                // and does not graze.
+                if (Leash != null) feedCandidate = LeashedMeal();
                 if (!IsFeedingHold)
                     _feedTarget = feedCandidate;
                 if (_feedTarget && !_feedTarget.destroyed)
@@ -779,14 +793,15 @@ namespace CosmicShore.Gameplay
         /// LifeForm (fauna bodies carry none — herbivores never eat creatures), and the
         /// diet is spatialized through Cell.IsPreyForHerbivore (nucleus interior = the
         /// territorial claim, never consumed; exterior = voracious any-domain; no nucleus
-        /// = legacy opposing-domain rule). Shielded and super-shielded mass is never food
-        /// (Fauna.IsShieldedMass) — targeting one is a feed-hold the creature can never
-        /// finish, which is what stuck brittlestars on Skim Race's track prisms.
+        /// = legacy opposing-domain rule). Shielded mass is food only in a Frenzy cell or for a
+        /// herd whose holder allows it, and super-shielded mass never (Fauna.IsInedibleShield) —
+        /// targeting an inedible one is a feed-hold the creature can never finish, which is what
+        /// stuck brittlestars on Skim Race's track prisms.
         /// </summary>
         bool IsEdibleForHerbivore(Prism prism)
         {
             if (!prism || prism.destroyed) return false;
-            if (IsShieldedMass(prism)) return false;
+            if (IsInedibleShield(prism)) return false;
             if (prism is HealthPrism hp)
             {
                 if (!hp.LifeForm) return false;
@@ -825,8 +840,11 @@ namespace CosmicShore.Gameplay
             {
                 _feedHoldUntil = -1f;
                 if (!_feedTarget || _feedTarget.destroyed)
-                    _feedTarget = FindNearestEdibleInFeedingRange();
+                    _feedTarget = Leash != null ? LeashedMeal() : FindNearestEdibleInFeedingRange();
             }
+
+            // Leashed: the order IS the meal, re-read every frame so a new order (a throw, a recall) takes over at once.
+            if (Leash != null) _feedTarget = LeashedMeal();
 
             var target = _feedTarget;
             if (!target || target.destroyed)
@@ -944,6 +962,48 @@ namespace CosmicShore.Gameplay
                 Mathf.Clamp01(Time.deltaTime * data.feedingBrakeSharpness));
         }
 
+        // --- The leash (Fauna.Leash, per-frame) ------------------------------
+
+        /// <summary>The holder's ordered meal if THIS creature may eat it (its own diet decides), else null.</summary>
+        Prism LeashedMeal()
+        {
+            var meal = Leash?.OrderedMeal(this);
+            return meal && IsEdibleForHerbivore(meal) ? meal : null;
+        }
+
+        /// <summary>
+        /// Per-frame steer toward the holder's goal, the predator's homing (<see cref="UpdateHunting"/>) generalised: the
+        /// heading slerps toward the goal at the holder's turn rate (or this creature's own rotationLerpSpeed) and the
+        /// speed eases to the holder's at 2.5/s. The behaviour tick's separation still applies on its own cadence.
+        /// </summary>
+        void SteerOnLeash()
+        {
+            if (!Leash.TrySteer(this, out var goal, out float speed, out float turnRate)) return;
+            Vector3 to = goal - transform.position;
+            if (to.sqrMagnitude < 1e-4f) return;
+            float current = currentVelocity.magnitude;
+            Vector3 heading = current > 1e-3f ? currentVelocity / current : transform.forward;
+            float turn = turnRate > 0f ? turnRate : Mathf.Max(0.01f, data.rotationLerpSpeed);
+            heading = Vector3.Slerp(heading, to.normalized, Mathf.Clamp01(Time.deltaTime * turn));
+            current = Mathf.Lerp(current, Mathf.Max(0f, speed), Mathf.Clamp01(Time.deltaTime * 2.5f));
+            currentVelocity = heading * current;
+            if (current > 1e-3f && SafeLookRotation.TryGet(currentVelocity, out var rotation, this))
+                desiredRotation = rotation;
+        }
+
+        public override void LeashLaunch(Vector3 velocity)
+        {
+            if (!IsSimAuthority || !IsFinite(velocity)) return;
+            currentVelocity = velocity;
+            if (velocity.sqrMagnitude > 1e-6f && SafeLookRotation.TryGet(velocity, out var rotation, this))
+                desiredRotation = rotation;
+        }
+
+        public override float LeashTopSpeed => data ? Mathf.Max(0f, data.maxSpeed) * GetAggressionSpeedMultiplier() : 0f;
+        public override float LeashMinSpeed => data ? Mathf.Max(0f, data.minSpeed) : 0f;
+        public override float LeashMouthReach => data ? Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier() : 0f;
+        public override bool LeashCanEat(Prism prism) => IsEdibleForHerbivore(prism);
+
         // --- Hunting (predator, per-frame) -----------------------------------
 
         /// <summary>
@@ -1056,6 +1116,7 @@ namespace CosmicShore.Gameplay
                 if (diet == FaunaDiet.Herbivore)
                 {
                     using (s_FeedMarker.Auto()) UpdateFeeding();
+                    if (Leash != null && !IsFeedingEngaged) SteerOnLeash();
                 }
                 else if (diet == FaunaDiet.Predator)
                 {

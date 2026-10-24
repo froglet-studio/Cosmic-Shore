@@ -15,6 +15,41 @@ public class SO_Vessel : ScriptableObject
     [SerializeField] public string Name;
     [SerializeField] public string Description;
 
+    [Header("Crew (an asymmetric multiplayer vessel: one hull, two seats)")]
+    [Tooltip("Each subvessel's own name, in the order its card names them: the Wrasse's are Wrasse (the navigator's " +
+             "kite) and Grouper (the pilot's hull). Leave empty on a one-seat vessel.")]
+    [SerializeField] public string[] CrewNames;
+    [Tooltip("How a card joins the first two crew names: {0} is the first, {1} the second. Empty shows Name alone.")]
+    [SerializeField] public string CrewNameTemplate = "{0} and {1}";
+
+    [Header("Seats (a multiplayer vessel is named by its seats)")]
+    [Tooltip("How many players this vessel seats; every seat no person takes is flown by an AI. 1 on a one-seat hull. " +
+             "Garrett, 2026-10-20: \"we can start referring to multiplayer vessels by their seats. this is a 4 seat " +
+             "vessel. that lets players know it supports four players or brings in 4 AI.\"")]
+    [SerializeField, Min(1)] public int SeatCount = 1;
+    [Tooltip("How a card adds the seats to a multi-seat vessel's name: {name} is the name (or the crew names), {seats} " +
+             "the seat count. Empty shows the name alone. Unused when SeatCount is 1.")]
+    [SerializeField] public string SeatLabelTemplate = "{name} \u00b7 {seats} seat";
+
+    /// <summary>
+    /// What a card calls this vessel: a crew vessel's two subvessel names joined by <see cref="CrewNameTemplate"/>
+    /// ("Wrasse and Grouper"), else <see cref="Name"/>; a vessel with more than one seat then adds its seats through
+    /// <see cref="SeatLabelTemplate"/> ("Orca · 4 seat"). Display only: <see cref="Name"/> stays the vessel's key (the
+    /// hangar's cloud unlocks are keyed by it).
+    /// </summary>
+    public string CardName
+    {
+        get
+        {
+            string name = CrewNames is { Length: >= 2 } && !string.IsNullOrEmpty(CrewNameTemplate)
+                ? CrewNameTemplate.Replace("{0}", CrewNames[0]).Replace("{1}", CrewNames[1])
+                : Name;
+            return SeatCount > 1 && !string.IsNullOrEmpty(SeatLabelTemplate)
+                ? SeatLabelTemplate.Replace("{name}", name).Replace("{seats}", SeatCount.ToString())
+                : name;
+        }
+    }
+
     [Header("Element Configuration")]
     [SerializeField] public Element PrimaryElement;
     [SerializeField] public SO_Element Element;

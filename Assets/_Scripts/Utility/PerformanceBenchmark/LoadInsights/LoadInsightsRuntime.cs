@@ -43,10 +43,19 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void AutoSpawn()
         {
-            if (Environment.CommandLine != null &&
-                Environment.CommandLine.Contains("-csmloadinsights", StringComparison.OrdinalIgnoreCase))
-                LoadInsights.Armed = true;
-            EnsureSpawned();
+            bool launchFlag = Environment.CommandLine != null &&
+                Environment.CommandLine.Contains("-csmloadinsights", StringComparison.OrdinalIgnoreCase);
+            if (launchFlag) LoadInsights.Armed = true;
+            // With the development-build diagnostics switched off (DevDiagnostics) the host
+            // waits until they are switched back on - unless the launch flag asked for a recording.
+            DevDiagnostics.Changed -= OnDevDiagnosticsChanged;
+            DevDiagnostics.Changed += OnDevDiagnosticsChanged;
+            if (DevDiagnostics.Enabled || launchFlag) EnsureSpawned();
+        }
+
+        static void OnDevDiagnosticsChanged(bool on)
+        {
+            if (on) EnsureSpawned();
         }
 
         /// <summary>Idempotent spawn — also callable from the editor tab when arming mid-play.</summary>

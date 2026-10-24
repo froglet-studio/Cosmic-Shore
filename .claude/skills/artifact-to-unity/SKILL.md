@@ -34,6 +34,15 @@ changed since the last clone (`Tools/Build/studio_to_unity/clones.json`).
 
 ## 2. The steps (do all of them; do not stop to ask between them)
 
+**"Bring it to Unity" ends in the Vessel Changer.** It means the Toybox's Vessel Changer offers it (Garrett, 2026-10-17: "whenever i say bring to
+unity that means put it in the vessel selector. my workflow is artifact to vessel selector in toybox"). A port is not
+done when a play-mode menu or a scene can reach it: it is done when the person can fly it from the freestyle Vessel
+Changer. The changer offers hulls (`ToyVesselRoster.Default` + the `Vessel Prefab Container`), so a mechanic that is
+not a hull of its own (a seat, a crew role, a mode of flight) ships ON a hull class: clone a donor prefab with the
+component on its root and register it, as `Tools/Build/author_wrasse_assets.py` (the Kite navigator on the Sparrow hull, the Wrasse) and
+`author_goby_assets.py` (the Goby & Pistol duo, `cece/sharp-tesla-j0kd7z`) do. The `/vessel` contract §1 lists every
+registration; take the class id only after checking `bleeding-edge` and every in-flight branch.
+
 1. **Bring the artifact's pages into the repo.** Run `/amoebius-artifact`'s UPDATE for entry `vessel-studio`
    (dry run first). Normally every file is `unchanged` (the repo pages are what was published). A `changed` page
    means the artifact is ahead: take it. The Stoat's published `stoat.html` is the hub COPY; port its diff into the

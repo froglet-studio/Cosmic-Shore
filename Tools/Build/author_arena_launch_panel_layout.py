@@ -158,10 +158,28 @@ def author(sc):
     return r_select, r_play
 
 
+# The style-B rebuild (Tools/Build/author_menu_configure.py, 2026-10-15) replaced this window's whole
+# ConfigurationContent with a ConfigureArenaView instance: the carousel, SelectVesselButton and the Play
+# button this script laid out are gone, and the Claim button now sits in the vessel step of the tree,
+# nowhere near Start. A spent one-shot STANDS DOWN rather than aborting (CLAUDE.md).
+REBUILT_MARKER = "value: ConfigureArenaView"
+
+
+def stood_down(text):
+    return REBUILT_MARKER in text and "m_Name: SelectVesselButton" not in text
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
+
+    with open(SCENE, encoding="utf-8") as fh:
+        if stood_down(fh.read()):
+            print("OK  stood down: the Arena window is ConfigureArenaView now (author_menu_configure.py owns it)")
+            return 0
+    # Negative control: a scene still carrying the legacy picker must NOT stand down.
+    assert not stood_down("m_Name: SelectVesselButton\n" + REBUILT_MARKER), "stand-down fired on a legacy scene"
 
     sc = Scene(SCENE)
     r_select, r_play = author(sc)

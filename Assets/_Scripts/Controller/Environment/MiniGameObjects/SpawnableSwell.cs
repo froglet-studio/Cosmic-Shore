@@ -25,16 +25,18 @@ namespace CosmicShore.Gameplay
     ///     the cut while the meander is what makes the cut interesting. It is the whole reason
     ///     this arena is ribbons rather than the corrugated sheets it replaced: sheets put the
     ///     mass where a blade CROSSES it, ribbons put the mass where a blade can STAY on it.
-    ///   • <b>The deck is MANY SMALL PLATES.</b> A plate is 44 x 44 x 5.2 world units on a road
+    ///   • <b>The deck is MANY SMALL PLATES.</b> A plate is ~34 x 34 x 5.2 world units on a road
     ///     whose spine may be 1,700 out, because a plate's size rides
     ///     <see cref="SliceArenaGeometry.PrismScaleI2"/> and the ribbon's radius rides
     ///     <see cref="S"/>. Cutting a hundred small things is the fun; cutting one enormous slab
     ///     reads as low poly, which is exactly what this deck did at 132-unit plates.
-    ///   • <b>The deck is solid, not a lattice.</b> Plates overlap in both directions
-    ///     (<see cref="PlateStepAlong"/> under <see cref="PlateLength"/>,
-    ///     <see cref="PlateStepAcross"/> under <see cref="PlateWidth"/>) - the Twistbands' rule,
-    ///     for the Twistbands' reason: a sparse deck is something the sword rattles through rather
-    ///     than something it cuts.
+    ///   • <b>The deck is solid, not a lattice.</b> Plates are laid FLUSH in both directions -
+    ///     exactly <see cref="PlateStepAcross"/> wide, and as long as the gap to the rows either
+    ///     side allows (so shorter on the inside of a bend) - the Twistbands' rule, for the
+    ///     Twistbands' reason: a sparse deck is something the sword rattles through rather than
+    ///     something it cuts. They used to OVERLAP (a 44-unit plate on a 34-unit step) and every
+    ///     plate passed through its neighbours; flush is the same continuous road with no prism
+    ///     inside another (Docs/ECOSYSTEM.md §49.10).
     ///   • <b>The road is PAINTED as a road.</b> A crown lane in Gold down the middle, shoulders in
     ///     Blue, verges in Jade, so the ribbon reads as a carriageway from right across the arena
     ///     and a pilot can see where the middle of it is before they are close enough to see the
@@ -97,9 +99,16 @@ namespace CosmicShore.Gameplay
         // -- The deck --------------------------------------------------------
         /// <summary>Spacing ALONG the spine, measured in ARC LENGTH (see the class summary).</summary>
         const float PlateStepAlong = 17f * P;
-        const float PlateLength = 22f * P;      // long axis, along the direction of travel
+        /// <summary>Spacing ACROSS the road, lane to lane. A plate's width is exactly this (less
+        /// <see cref="Flush"/>), and its length is fitted per plate to the rows either side - see
+        /// <see cref="BuildRoad"/>. Both used to be a constant 22 x P, 5 x P longer than the step,
+        /// which made every plate interpenetrate all eight of its neighbours.</summary>
         const float PlateStepAcross = 17f * P * G;
-        const float PlateWidth = 22f * P;       // cross axis, across the road
+
+        /// <summary>How close to exact contact a FITTED face is laid: a hair under, so float noise
+        /// in the fit never turns a touching pair into an interpenetrating one (NO PRISM MAY
+        /// INTERPENETRATE ANOTHER, Docs/ECOSYSTEM.md §49.10).</summary>
+        const float Flush = 0.995f;
         const float PlateThickness = 2.6f * P;
 
         /// <summary>The keel: half-density plates this far below the deck along its own normal,
@@ -209,8 +218,8 @@ namespace CosmicShore.Gameplay
         protected override int DefaultSeed => 392;
 
         protected override int BuildParameterHash() => System.HashCode.Combine(
-            nameof(SpawnableSwell), R, PlateStepAlong, PlateLength, PlateStepAcross,
-            System.HashCode.Combine(PlateWidth, PlateThickness, KeelDrop, KeelPlate,
+            nameof(SpawnableSwell), R, PlateStepAlong, Flush, PlateStepAcross,
+            System.HashCode.Combine(PlateThickness, KeelDrop, KeelPlate,
                                     VoidThreshold, VoidFreq, CurveBiteRatio, CrownFraction),
             RibbonHash());
 
@@ -280,13 +289,15 @@ namespace CosmicShore.Gameplay
         }
 
         Ribbon[] _ribbons;
+        float[] _stationU;
+        Vector3[] _stationSpine, _stationAlong;
 
         /// <summary>A Cleave arena STATES its prism sizes, so its lay goes through
         /// <c>Prism.AdmitTargetScale</c> rather than trusting <c>PrismScaleAnimator</c>'s
         /// serialized window. It used to be REQUIRED here: at 132-unit plates this deck was over
         /// the shared prefab's <c>maxScale</c> of 100, which clamps PER AXIS inside the setter
         /// with no log and no return value, so the road silently rendered as 100-unit tiles.
-        /// <b>Every size this arena states is now well inside that window</b> (44 long, 5.2
+        /// <b>Every size this arena states is now well inside that window</b> (~34 long, 5.2
         /// thick), so the flag is a standing GUARD rather than a fix - and the clamp having fired
         /// at all is worth keeping in mind: <i>a shared prefab's scale ceiling was the only thing
         /// in the project telling us the prisms had grown absurd.</i></summary>
@@ -346,14 +357,51 @@ namespace CosmicShore.Gameplay
 
             int lanes = Mathf.Max(1, Mathf.FloorToInt(spec.HalfWidth / PlateStepAcross));
 
+            // The walk, taken up front so every row can see BOTH of its neighbours: a plate's
+            // length is fitted to the planes that bisect its row from the rows either side, and
+            // the last row's front neighbour is the first. Advance is deterministic and draws
+            // nothing, so walking it once more moves no prism.
+            if (_stationU == null || _stationU.Length < stations)
+            {
+                _stationU = new float[stations]; _stationSpine = new Vector3[stations]; _stationAlong = new Vector3[stations];
+            }
+            var us = _stationU;
             float u = 0f;
             for (int station = 0; station < stations; station++)
             {
+                us[station] = u;
+                _stationSpine[station] = ribbon.Spine(u);
+                _stationAlong[station] = ribbon.SpineTangent(u).normalized;
+                u = Advance(ribbon, u, ds);
+            }
+
+            // A row is RIGID - every plate in it shares one rotation and they sit exactly
+            // PlateStepAcross apart along its width axis - so neighbouring plates' side faces are
+            // parallel and the deck is flush across at exactly that width.
+            float halfWidth = 0.5f * PlateStepAcross * Flush;
+
+            for (int station = 0; station < stations; station++)
+            {
+                u = us[station];
                 var tangent = ribbon.SpineTangent(u);
                 var across = ribbon.Width(u);
                 var normal = ribbon.Normal(u);
                 var rotation = SpawnPoint.LookRotation(tangent, normal);
                 var keelRotation = SpawnPoint.LookRotation(across, normal);
+
+                // The planes this row's plates may not cross: each bisects the row from a
+                // neighbouring one (through the midpoint of the two spine points, square to the
+                // mean of the two tangents). The neighbouring row is held to the same plane from
+                // the other side, so the two touch and cannot pass through each other. On a bend
+                // the plane closes in on the INNER verge, which is exactly where a constant plate
+                // length used to clip.
+                var along = _stationAlong[station];
+                var spine = _stationSpine[station];
+                int next = (station + 1) % stations, prev = (station + stations - 1) % stations;
+                var frontAt = 0.5f * (spine + _stationSpine[next]);
+                var front = (along + _stationAlong[next]).normalized;
+                var backAt = 0.5f * (spine + _stationSpine[prev]);
+                var back = -(along + _stationAlong[prev]).normalized;
 
                 // Which way this station is turning, and how hard. Curvature x the ribbon's own
                 // radius is dimensionless, so the trap threshold is a shape fact rather than a
@@ -386,16 +434,30 @@ namespace CosmicShore.Gameplay
                     // the road is genuinely turning - so the racing line is always clean.
                     bool danger = biting && lane == outerSide * lanes;
 
-                    Emit(pos, rotation, Jit(new Vector3(PlateWidth, PlateThickness, PlateLength)),
-                        dom, danger ? PrismKind.Danger : PrismKind.Plain);
+                    // The plate's one jitter draw, as before, now spent on its THICKNESS alone:
+                    // its length and width are fitted to its neighbours and a jitter that can grow
+                    // a fitted size is a size that clips.
+                    float halfThick = 0.5f * PlateThickness * JitFactor();
+                    float halfLength = Flush * Mathf.Min(
+                        FitToPlane(pos, across, halfWidth, normal, halfThick, along, frontAt, front),
+                        FitToPlane(pos, across, halfWidth, normal, halfThick, along, backAt, back));
+
+                    // Where this road passes THROUGH an earlier one, the plates at the crossing
+                    // are cut down out of that road (YieldToEarlierRibbons).
+                    var platePos = pos;
+                    var plate = new Vector3(2f * halfWidth, 2f * halfThick, 2f * halfLength);
+                    if (ribbonIndex > 0)
+                        YieldToEarlierRibbons(ribbonIndex, ref platePos, across, normal, along, ref plate);
+                    Emit(platePos, rotation, plate, dom, danger ? PrismKind.Danger : PrismKind.Plain);
 
                     if (((station + lane) & 1) != 0) continue;
 
-                    Emit(pos - normal * KeelDrop, keelRotation,
-                        Jit(new Vector3(KeelThickness, KeelThickness, KeelPlate)), Domains.Ruby);
+                    var keelPos = pos - normal * KeelDrop;
+                    var keel = Jit(new Vector3(KeelThickness, KeelThickness, KeelPlate));
+                    if (ribbonIndex > 0)
+                        YieldToEarlierRibbons(ribbonIndex, ref keelPos, along, normal, across, ref keel);
+                    Emit(keelPos, keelRotation, keel, Domains.Ruby);
                 }
-
-                u = Advance(ribbon, u, ds);
             }
         }
 
@@ -422,6 +484,228 @@ namespace CosmicShore.Gameplay
                 u += step / Mathf.Max(1e-4f, ribbon.SpineTangent(u).magnitude);
             return u;
         }
+
+        /// <summary>
+        /// The largest half-length along <paramref name="z"/> that keeps a box - centred at
+        /// <paramref name="c"/>, half-extents <paramref name="hx"/> / <paramref name="hy"/> along
+        /// <paramref name="x"/> / <paramref name="y"/> - on the near side of the plane through
+        /// <paramref name="at"/> with outward normal <paramref name="n"/>: the box's support along
+        /// <c>n</c> may not pass the plane. Pure arithmetic on vectors the walk already has.
+        /// </summary>
+        static float FitToPlane(Vector3 c, Vector3 x, float hx, Vector3 y, float hy, Vector3 z,
+                                Vector3 at, Vector3 n)
+        {
+            float room = Vector3.Dot(n, at - c)
+                       - hx * Mathf.Abs(Vector3.Dot(x, n)) - hy * Mathf.Abs(Vector3.Dot(y, n));
+            return Mathf.Max(0f, room) / Mathf.Max(1e-4f, Mathf.Abs(Vector3.Dot(z, n)));
+        }
+
+        // -- Crossings --------------------------------------------------------
+        /// <summary>
+        /// The ribbons are threaded THROUGH one another, so where two roads cross, two decks
+        /// occupy the same place. The later ribbon (higher index) yields: each of its prisms that
+        /// reaches an earlier ribbon is cut down, in its own plane, to the largest piece of itself
+        /// that stays out of that road. A prism whose centre is clear keeps its centre and only
+        /// shrinks about it; only one whose centre lies INSIDE the other road (a placement no
+        /// scale can fix) moves - to the largest piece of its own footprint on one side of it.
+        /// Nothing is dropped and the earlier ribbon is untouched, so it reads as one road passing
+        /// through a cut in the other.
+        ///
+        /// The earlier road is taken LOCALLY: the row of that ribbon whose plane holds the prism
+        /// (two Newton steps on the spine from the prism's loop angle), and the two slabs the road
+        /// fills there - its deck, and its keel <see cref="KeelDrop"/> below, with open space
+        /// between - each widened by <see cref="CrossingMargin"/> for the curvature a tangent plane
+        /// ignores. A prism's piece may sit above the deck, in the open between, or below the keel.
+        /// Only a thin bar lying almost IN the other road, with no clear piece at all, moves off
+        /// its own surface - the least distance along that road's normal. A test in the earlier
+        /// ribbon's own loop frame skips every prism nowhere near it, which is nearly all of them,
+        /// so this is a few dot products per prism.
+        /// </summary>
+        void YieldToEarlierRibbons(int ribbonIndex, ref Vector3 c, Vector3 x, Vector3 y, Vector3 z,
+                                   ref Vector3 size)
+        {
+            // The hot path: every prism of a later ribbon asks, almost none is near. It stays a
+            // few dot products, and the real fit lives in YieldToRibbon.
+            for (int a = 0; a < ribbonIndex; a++)
+            {
+                ref readonly Ribbon other = ref _ribbons[a];
+                float reach = 0.5f * size.magnitude;
+
+                // In the other ribbon's loop frame its deck centres sit at height Lift(u) (the
+                // width axis never leaves the loop plane) and nothing of it is more than a keel
+                // and a plate from there.
+                float h = Vector3.Dot(c, other.E3);
+                if (Mathf.Abs(h) > other.RiseAmp + KeelDrop + 30f + reach) continue;
+                float px = Vector3.Dot(c, other.E1), py = Vector3.Dot(c, other.E2);
+                float rho = Mathf.Sqrt(px * px + py * py);
+                float vMax = Mathf.FloorToInt(other.HalfWidth / PlateStepAcross) * PlateStepAcross
+                           + 0.25f * PlateStepAcross + 0.6f * KeelPlate;
+                if (Mathf.Abs(rho - other.Radius) > other.SwayAmp + vMax + 30f + reach) continue;
+                YieldToRibbon(a, px, py, vMax, ref c, x, y, z, ref size);
+            }
+        }
+
+        /// <summary>Fit one prism out of ribbon <paramref name="a"/>, which it is near (see
+        /// <see cref="YieldToEarlierRibbons"/>): <paramref name="px"/> / <paramref name="py"/> are
+        /// its coordinates in that ribbon's loop plane, <paramref name="vMax"/> how far across the
+        /// road the ribbon's prisms reach.</summary>
+        void YieldToRibbon(int a, float px, float py, float vMax, ref Vector3 c, Vector3 x, Vector3 y,
+                           Vector3 z, ref Vector3 size)
+        {
+            ref readonly Ribbon other = ref _ribbons[a];
+            float hx = 0.5f * size.x, hy = 0.5f * size.y, hz = 0.5f * size.z;
+            float reach = Mathf.Sqrt(hx * hx + hy * hy + hz * hz);
+            float u = Mathf.Atan2(py, px);
+            for (int it = 0; it < 2; it++)
+            {
+                var t = other.SpineTangent(u);
+                u += Vector3.Dot(c - other.Spine(u), t) / Mathf.Max(1e-4f, t.sqrMagnitude);
+            }
+            var foot = other.Spine(u);
+            if (Mathf.Abs(Vector3.Dot(c - foot, other.Width(u))) > vMax + reach) return;
+            var n = other.Normal(u);
+            float d = Vector3.Dot(c - foot, n);
+            // The other road fills two slabs along its normal: the deck, and the keel hung
+            // KeelDrop under it. Between them is open.
+            float deckTop = 0.6f * PlateThickness + CrossingMargin;
+            float deckBottom = -deckTop;
+            float keelTop = -KeelDrop + 0.6f * KeelThickness + CrossingMargin;
+            float keelBottom = -KeelDrop - 0.6f * KeelThickness - CrossingMargin;
+            if (d - reach >= deckTop || d + reach <= keelBottom ||
+                (d - reach >= keelTop && d + reach <= deckBottom)) return;
+
+            float gx = Vector3.Dot(x, n), gz = Vector3.Dot(z, n);
+            float ax = Mathf.Abs(gx), az = Mathf.Abs(gz);
+            float thick = hy * Mathf.Abs(Vector3.Dot(y, n));
+
+            // Centre clear of both slabs: shrink about it until its support along n stops at
+            // the faces either side of it.
+            float room = d > deckTop ? d - deckTop
+                       : d < keelBottom ? keelBottom - d
+                       : d > keelTop && d < deckBottom ? Mathf.Min(d - keelTop, deckBottom - d)
+                       : 0f;
+            room -= thick;
+            float symX = 0f, symZ = 0f;
+            if (room > 0f) MaxRect(ax, az, room, hx, hz, out symX, out symZ);
+
+            // The largest piece of its own footprint that lies wholly above the deck, wholly
+            // in the open between deck and keel, or wholly below the keel.
+            float bestArea = 0f, bestX = 0f, bestZ = 0f, bestCx = 0f, bestCz = 0f;
+            for (int region = 0; region < 3; region++)
+            {
+                float lo = region == 0 ? deckTop : region == 1 ? keelTop : float.NegativeInfinity;
+                float hi = region == 0 ? float.PositiveInfinity : region == 1 ? deckBottom : keelBottom;
+                if (!PieceIn(d, gx, gz, thick, lo, hi, hx, hz, out float spanX, out float spanZ,
+                             out float cx, out float cz)) continue;
+                if (spanX * spanZ > bestArea)
+                {
+                    bestArea = spanX * spanZ; bestX = spanX; bestZ = spanZ; bestCx = cx; bestCz = cz;
+                }
+            }
+
+            // Stay put and shrink when that keeps a fair share of what moving would; a centre
+            // a hair outside the other road would otherwise shrink to a sliver.
+            if (symX * symZ > 0f && 4f * (4f * symX * symZ) >= bestArea)
+            {
+                size = new Vector3(2f * symX, size.y, 2f * symZ);
+                return;
+            }
+            if (bestArea > 0f)
+            {
+                c += x * bestCx + z * bestCz;
+                size = new Vector3(bestX, size.y, bestZ);
+                return;
+            }
+
+            // No piece of its footprint is clear (a thin bar lying almost IN the other road):
+            // move the whole prism the least distance along the other road's normal that
+            // clears it - above the deck, into the open under it, or below the keel.
+            float support = ax * hx + az * hz + thick;
+            float best = float.PositiveInfinity, to = d;
+            float[] targets = _crossTargets;
+            targets[0] = deckTop + support;
+            targets[1] = keelBottom - support;
+            targets[2] = 2f * support <= deckBottom - keelTop
+                ? Mathf.Clamp(d, keelTop + support, deckBottom - support) : float.NaN;
+            for (int i = 0; i < 3; i++)
+                if (!float.IsNaN(targets[i]) && Mathf.Abs(targets[i] - d) < best)
+                {
+                    best = Mathf.Abs(targets[i] - d); to = targets[i];
+                }
+            c += n * (to - d);
+            size = new Vector3(2f * hx, size.y, 2f * hz);
+        }
+
+        /// <summary>
+        /// The largest axis-aligned piece of a footprint [-hx, hx] x [-hz, hz] whose support along a
+        /// normal (signed distance <paramref name="d"/> + gx * x + gz * z, plus
+        /// <paramref name="thick"/> either side) lies inside [<paramref name="lo"/>,
+        /// <paramref name="hi"/>], and the offset of its centre from the footprint's: as close to
+        /// the old centre as that piece can sit. False when no piece fits.
+        /// </summary>
+        static bool PieceIn(float d, float gx, float gz, float thick, float lo, float hi,
+                            float hx, float hz, out float spanX, out float spanZ, out float cx, out float cz)
+        {
+            float ax = Mathf.Abs(gx), az = Mathf.Abs(gz);
+            spanX = spanZ = cx = cz = 0f;
+            if (float.IsInfinity(lo) || float.IsInfinity(hi))
+            {
+                // One-sided: anchor on the footprint corner furthest into the region.
+                float side = float.IsInfinity(hi) ? 1f : -1f;
+                float k = float.IsInfinity(hi)
+                    ? d + ax * hx + az * hz - thick - lo
+                    : hi - d + ax * hx + az * hz - thick;
+                MaxRect(ax, az, k, 2f * hx, 2f * hz, out spanX, out spanZ);
+                if (spanX <= 0f || spanZ <= 0f) return false;
+                cx = side * (gx >= 0f ? 1f : -1f) * (hx - 0.5f * spanX);
+                cz = side * (gz >= 0f ? 1f : -1f) * (hz - 0.5f * spanZ);
+                return true;
+            }
+
+            // Two-sided: the piece's support must fit the band, then its centre slides along the
+            // gradient to the band, as little as it can.
+            float band = hi - lo - 2f * thick;
+            MaxRect(ax, az, band, 2f * hx, 2f * hz, out spanX, out spanZ);
+            if (spanX <= 0f || spanZ <= 0f) return false;
+            float half = 0.5f * (ax * spanX + az * spanZ);
+            float target = Mathf.Clamp(d, lo + thick + half, hi - thick - half);
+            float g2 = gx * gx + gz * gz;
+            if (g2 < 1e-8f) return target == d;
+            float limX = hx - 0.5f * spanX, limZ = hz - 0.5f * spanZ;
+            cx = Mathf.Clamp((target - d) * gx / g2, -limX, limX);
+            float restZ = target - d - gx * cx;
+            cz = az < 1e-4f ? 0f : Mathf.Clamp(restZ / gz, -limZ, limZ);
+            float restX = target - d - gz * cz;
+            if (ax >= 1e-4f) cx = Mathf.Clamp(restX / gx, -limX, limX);
+            return Mathf.Abs(d + gx * cx + gz * cz - target) < 1e-3f;
+        }
+
+        /// <summary>Widening of an earlier road's slab, for the curvature and the row-to-row turn
+        /// that a tangent plane at the foot does not see.</summary>
+        const float CrossingMargin = 3f;
+
+        readonly float[] _crossTargets = new float[3];
+
+        /// <summary>The largest rectangle <paramref name="a"/> x <paramref name="b"/> (each no larger
+        /// than <paramref name="maxA"/> / <paramref name="maxB"/>) whose support
+        /// <c>ga * a + gb * b</c> fits in <paramref name="room"/> - the closed form of "shrink a
+        /// plate only as much as it has to": both sides give up equal support unless one is
+        /// already at its cap.</summary>
+        static void MaxRect(float ga, float gb, float room, float maxA, float maxB, out float a, out float b)
+        {
+            const float Eps = 1e-4f;
+            if (room <= 0f) { a = 0f; b = 0f; return; }
+            if (ga < Eps && gb < Eps) { a = maxA; b = maxB; return; }
+            if (ga < Eps) { a = maxA; b = Mathf.Min(maxB, room / gb); return; }
+            if (gb < Eps) { b = maxB; a = Mathf.Min(maxA, room / ga); return; }
+            a = room / (2f * ga); b = room / (2f * gb);
+            if (a >= maxA) { a = maxA; b = Mathf.Min(maxB, (room - ga * maxA) / gb); }
+            else if (b >= maxB) { b = maxB; a = Mathf.Min(maxA, (room - gb * maxB) / ga); }
+        }
+
+        /// <summary>One jitter factor in [0.8, 1.2] from the shared stream - exactly the one draw
+        /// <c>Jit</c> makes, so spending it on a single axis moves no other prism.</summary>
+        float JitFactor() => Jit(Vector3.one).x;
 
         /// <summary>
         /// How hard the spine is turning here, as a multiple of its own mean radius (1 for a

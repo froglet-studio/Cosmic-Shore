@@ -138,3 +138,5 @@ items.jsonl
 *.jks
 .env
 .env.*
+Tools/Build/vessel_model/.artist_cache/
+Tools/Build/vessel_model/.sheets/

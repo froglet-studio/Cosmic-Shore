@@ -386,11 +386,7 @@ namespace CosmicShore.Core
         {
             if (field == null)
             {
-#if UNITY_2023_1_OR_NEWER
                 field = FindAnyObjectByType<T>();
-#else
-                field = FindObjectOfType<T>();
-#endif
             }
 
             if (field != null)
@@ -570,6 +566,14 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
 
+            // Platform sign-in (Steam / Google / Apple) behind the sign-in UI (Docs/MENU_REDESIGN_B.md §54). The
+            // login branch replaces NoPlatformSignIn - every provider unavailable - with the real providers.
+            builder.RegisterFactory<IPlatformSignIn>(
+                c => new NoPlatformSignIn(),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
             // Reconnect (Docs/OFFLINE_MODE.md §7): re-runs the boot chain in place so an
             // offline session can come back online with no app restart. Captures the
             // serialized SceneTransitionManager directly - like ApplicationStateMachine
@@ -636,11 +640,7 @@ namespace CosmicShore.Core
                     }
 
                     // Deferred scene search at first injection time.
-#if UNITY_2023_1_OR_NEWER
                     var found = FindAnyObjectByType<T>();
-#else
-                    var found = FindObjectOfType<T>();
-#endif
                     if (found != null)
                     {
                         EnsurePersistent(found);
@@ -754,11 +754,7 @@ namespace CosmicShore.Core
             var activeScene = SceneManager.GetActiveScene();
             if (activeScene.buildIndex != 0) return;
 
-#if UNITY_2023_1_OR_NEWER
             if (FindAnyObjectByType<AppManager>() != null) return;
-#else
-            if (FindObjectOfType<AppManager>() != null) return;
-#endif
 
             CSDebug.LogVerbose(CSLogChannel.Boot, "[AppManager] No AppManager found in Bootstrap scene. Auto-creating flow objects.");
 
