@@ -736,7 +736,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/Studios/CONCEPT_FLEET.md section 8
 
 ### T-20261017-e64b · open · dev · Vessel / Tether
-- **Task:** Bring cece/loving-feynman-hlgf18 (the Tether prototype) onto Ys-bleeding-edge: Tether = 14 collides with Thresher = 14; take the next free id (re-check before claiming: 17 went to the Angler and the Kite's branch claims 19, so 18 as of 2026-10-18), rewrite TETHER.md section 12, run check_network_prefab_hashes.py and the edit-mode suite
+- **Task:** Bring cece/loving-feynman-hlgf18 (the Tether prototype) onto Ys-bleeding-edge: Tether = 14 collides with Thresher = 14; take the next free id (re-check before claiming: 17 went to the Angler and the Kite's branch claims 19, so 18 as of 2026-10-18; 18 then went to the Goby and 19-23 are taken: 24 as of 2026-10-24), rewrite TETHER.md section 12, run check_network_prefab_hashes.py and the edit-mode suite
 - **Done when:** the Tether flies from Toy Box > Vessel Changer on Ys-bleeding-edge with its own id and the suite green
 - **Who can take it:** Yash or the Gibbon session; Garrett merged the branch's family
 - **Added:** 2026-10-17 by the concept-fleet session (`Ys-bleeding-edge`)
