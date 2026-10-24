@@ -2285,12 +2285,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-24 by a Claude session (`cece/bold-gauss-lad943`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md §5
 
-### T-20261024-ae82 · open · dev · Amoebius
+### T-20261024-ae82 · done · dev · Amoebius
 - **Task:** Amoebius does not compile the game since bleeding-edge 98c25995b9 (2026-10-22): Assets/_Scripts/Utility/OrthographicLens.cs uses UnityEngine.Rendering.VolumeFrameworkUpdateMode and Camera.GetVolumeFrameworkUpdateMode / SetVolumeFrameworkUpdateMode (URP extension methods), which Port/src/CosmicShore.Engine/Rendering lacks (CS0246 at OrthographicLens.cs(32,44)). Add the enum (EveryFrame, ViaScripting, UsePipelineSettings) and the two camera methods. Until then the perf-daily 'amoebius' job is red on every branch carrying that file (seen on PR #1201).
 - **Done when:** engine_build of the player on bleeding-edge compiles OrthographicLens.cs, and perf-daily's amoebius job is green
 - **Who can take it:** Shombith (the Amoebius engine)
 - **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
 - **See:** PR #1201 comment; .github/workflows/perf-daily.yml
+- **Done:** 2026-10-24
 
 ### T-20261024-803f · open · test · Performance
 - **Task:** Re-capture Menu_Main after the QuestTrackView fix (Ys-bleeding-edge): Release, Third Eye closed, play Menu_Main (freestyle or the hub) past the 4-minute auto-capture and stop Play. Compare ClipperRegistry.Cull with the 10-19..23 captures (3.1-7.7 ms/frame; 0.26 ms on 10-16).
