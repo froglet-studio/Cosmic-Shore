@@ -2398,3 +2398,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (UGS layer owner); Yash (offered, MPPM)
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Tools/UGS/README.md
+
+### T-20261024-4c26 · open · setup · Fair play
+- **Task:** Switch on player reports: enable Moderation in the UGS dashboard (each environment), check a report from the profile popup reaches the queue (apply Tools/UGS/AccessControl/moderation-policy.json if it returns 403), and run the 'Report and Block' editor checks including the layout of the generated buttons
+- **Done when:** A Cheating report from Menu_Main appears in the Moderation dashboard and the checklist entry is green
+- **Who can take it:** Shombith (Menu_Main, UGS); Yash (offered)
+- **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Tools/UGS/README.md; Docs/UNITY_VERIFICATION_CHECKLIST.md

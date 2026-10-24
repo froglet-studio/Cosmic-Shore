@@ -13,6 +13,7 @@ player's device, so a modified game cannot change what it decides. Part of the f
 | `AccessControl/project-policy.json` | Denies players any direct leaderboard write, so `weekly-score` is the only way onto a board | T2 |
 | `CloudCode/match-report.js` | Every player reports each match (`start`, `end`). Counts quits without the quitter's help (`FAIRPLAY_CONDUCT`: started, finished, left, leave rate over the last 20) and compares the players' end reports of one match, recording a `host_result_mismatch` signal against the host in `FAIRPLAY_SIGNALS` when they disagree | T4, T9 |
 | `CloudCode/match-report.test.cjs` | `node Tools/UGS/CloudCode/match-report.test.cjs` | T4, T9 |
+| `AccessControl/moderation-policy.json` | Lets players send reports to UGS Moderation (the Report button on the profile popup) | T8 |
 
 ## Switching on the server-owned wallet
 
@@ -69,6 +70,16 @@ off, `MatchReporter` is never attached).
 What it does not do yet: nothing acts on the record. The leave rate and the signals wait for the trust record and the
 Undertow (phase B), and a host that tells every player the same false scores is not caught (that needs a server the
 host does not run).
+
+## Switching on player reports (T8)
+
+Report and Block are live in the game (no gate): they appear on the player profile popup in Menu_Main.
+
+1. Dashboard: enable **Moderation** for the project (and each environment). Reports arrive in its queue with the reason
+   (`hacking`, `player name` or `sabotage`) and the reporter.
+2. Apply `ugs access upsert-project-policy Tools/UGS/AccessControl/moderation-policy.json` if a report returns 403
+   (the research found Moderation reports need a player allow statement; confirm on first use).
+3. Name the person who reviews the queue (the owner decision in `Docs/AntiCheat/README.md` §8).
 
 No Access Control policy is needed for the wallet: players can never write a protected Cloud Save key, so the
 game's old client-written copy in `PLAYER_PROFILE` is only a display cache the server ignores.

@@ -65,6 +65,32 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play: Report and Block on the player profile popup (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T8. New package `com.unity.services.moderation` 1.1.0 (approved by Shombith, 2026-10-24).
+`PlayerReports.ReportAsync` sends a UGS Moderation report (Cheating -> `hacking`, Offensive name -> `player name`,
+Trolling -> `sabotage`), one per reported player per 600 s. `FriendProfilePopup` gains **Report** and **Block**: with no
+controls wired in the scene, it builds them (and three reason buttons) at start from copies of its Invite control,
+with Invite's listeners switched off. Report opens the reasons; a reason sends and the button reads "Reported". Block
+calls `FriendsServiceFacade.BlockPlayerAsync` and reads "Blocked". All words and the cooldown are in
+`Resources/PlayerReportConfig.asset`. Not gated.
+
+**Verified without the editor:** `unity_refcompile` player: **87 assemblies, 0 errors, 0 unobtainable** (the fetcher now
+falls back to the registry tarball, so Moderation, Multiplayer, Friends, Leaderboards and Play Mode compile for real);
+a planted error in the Moderation call was caught. Editor config: 3 errors, all in unchanged files. Amoebius port
+build (Moderation stub, separate commit): clean for the changed files, planted errors in `PlayerReports`,
+`FriendProfilePopup` and `MatchReporter` caught. Nothing run in Play mode.
+
+**Test in the editor (Menu_Main, two accounts in MPPM):**
+1. Hover another player's avatar in the presence list or party: the popup shows Report and Block beside Join/Invite,
+   laid out like Invite. **Look at the layout**: the copies sit in the Invite row's parent; if it looks crowded, wire
+   dedicated controls in the popup's "Report and Block" fields instead.
+2. Report > Cheating: the reasons replace the buttons, then Report reads "Reported" and is inert; the report appears
+   in the UGS Moderation dashboard (after `Tools/UGS/README.md` T8 step 1).
+3. Pressing Invite still invites; pressing Report never invites (Invite's listeners are off on the copies).
+4. Block: reads "Blocked"; the friends service lists the player as blocked.
+5. Gamepad: the new buttons are reachable with the D-pad.
+
 ### 🔴 Fair play: every player's game hides offensive names it receives (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
 
 **What landed:** Threat Board T7. `DisplayNameValidator.ForDisplay` judges a name received from another player on its words
