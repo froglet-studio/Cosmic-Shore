@@ -2065,12 +2065,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-22 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md section 2 (T6-T8)
 
-### T-20261024-1a44 · open · docs · Fair play
+### T-20261024-1a44 · done · docs · Fair play
 - **Task:** CRITICAL (Threat Board R12): write the 'Fair play and security' section of Docs/Legal/PRIVACY_POLICY_TEMPLATE.md, a Code of Conduct (rules, measures incl. separate matchmaking, appeal route), and the App Store / Play Data safety entries, before any fair-play telemetry ships
 - **Done when:** Drafts are in Docs/Legal/ and sent to counsel with T-20261022-3075
 - **Who can take it:** Shombith (draft), Garrett (counsel sign-off)
 - **Added:** 2026-10-24 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md section 4.7; https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi4s2
+- **Taken:** 2026-10-24, Shombith
+- **Done:** 2026-10-24, Drafted 2026-10-24: PRIVACY_POLICY_TEMPLATE.md §5a, CODE_OF_CONDUCT_TEMPLATE.md, STORE_PRIVACY_LABELS.md. Counsel review rides T-20261022-3075; brackets (appeal contact, retention) still to fill.
 
 ### T-20261024-1652 · open · dev · Fair play
 - **Task:** CRITICAL (Threat Board T5): host-side movement plausibility check: each vessel's speed against its hull's configured top speed, boost against charge, and jump distance per tick; violations become fair-play signals (logged with evidence), never kicks

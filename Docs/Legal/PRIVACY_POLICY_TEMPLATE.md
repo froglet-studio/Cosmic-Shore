@@ -101,10 +101,50 @@ maintain security and prevent abuse.
 - **Consent** — gameplay analytics and [advertising]. You may withdraw it any time.
 - **Contractual necessity** — account, cloud save, multiplayer, leaderboards, purchases
   (needed to provide the game you asked for).
-- **Legitimate interests** — security, abuse prevention, and crash diagnostics, balanced
-  against your rights.
+- **Legitimate interests** — security, abuse prevention, fair play (§5a), and crash
+  diagnostics, balanced against your rights.
 
 [Counsel to confirm the basis assigned to each processing activity.]
+
+## 5a. Fair play and security
+
+> Added 2026-10-24 for the fair-play system (`Docs/AntiCheat/README.md`). Every sentence here
+> describes something the design does; if the build changes, change this section in the same
+> release. Counsel to review with `Docs/AntiCheat/LEGAL.md` §4.
+
+To keep matches fair and the community safe, we run automated checks for cheating, automated
+play ("bots"), abusive names or messages, and repeated quitting or griefing.
+
+**What we use.** Match results reported by every player in a match; a short, coarse sample of
+how your vessel moved during a match; whether a score, purchase or reward request matches the
+game's rules; the platform's check that the game and device are genuine (Apple App Attest and
+DeviceCheck, Google Play Integrity); which platform account you signed in with; reports other
+players make about you; and how often you leave matches early. We **do not** scan your device,
+read other apps or files, or install anything outside the game.
+
+**What can happen.** If our checks find play that breaks the Code of Conduct, we may place your
+account in separate matchmaking with other flagged accounts, keep your scores off public
+leaderboards, withhold rewards earned through the breach, reset an offensive display name, or
+restrict ranked and public play. These measures can start without advance notice. **They never
+remove access to anything you paid for.**
+
+**People, not just software.** Automated systems flag accounts; a person reviews before any
+restriction of ranked or public play, and always for players under 18. When a measure is in
+place we tell you what kind of behaviour it concerns, which rule, and how to appeal. Measures
+based on something you wrote are notified straight away. You can appeal at
+**[APPEALS CONTACT / IN-GAME APPEAL]**, and a person will review it.
+
+**Legal basis and limits.** Legitimate interests (keeping play fair and the service secure).
+We use this data only for fair play and security, never for advertising or analytics. For
+players under 13 we use it only to protect the security and integrity of the game (COPPA's
+"support for internal operations").
+
+**Retention.** Match samples: **[e.g. 30 days]** unless attached to a flag. Flags and their
+evidence: until **[e.g. 12 months]** after the flag expires or an appeal is decided. Device
+marks held by Apple or Google: reset when the restriction ends.
+
+**Your rights.** You can ask what fair-play data we hold about you, including any flag and the
+reason for it. We may withhold details of how our detection works, but not the fact of a flag.
 
 ## 6. Who we share it with (processors / sub-processors)
 
