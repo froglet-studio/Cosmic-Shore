@@ -29,9 +29,9 @@
 ## 1a. Waiting on Garrett (Yash, 2026-10-15: "tell this to Garrett, this has to [reach him] next time he works")
 
 Four performance items were waiting on Garrett. On 2026-10-17 Yash took the first three over ("Garrett is busy, we do
-them ourselves"); what was done is below, so Garrett only needs to look, not build. `team_tasks.py list --for Garrett`
-lists the open ones (the `team_tasks_nudge.py` hook that showed them on his first matching prompt was switched off on
-2026-10-23).
+them ourselves"); what was done is below, so Garrett only needs to look, not build. `team_tasks.py list --area Performance`
+lists the open ones (tickets name nobody since 2026-10-23; the `team_tasks_nudge.py` hook that showed them on a first
+matching prompt was switched off that day and deleted on 2026-10-25).
 
 1. **Charge light sleep size: done** (T-20261015-a5a5 closed). Kept at 24 px radius; between 24 and 64 px the arcs now
    update every other frame (`halfRateBelowScreenRadiusPixels`). Garrett may still retune either number in the profile.

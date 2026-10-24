@@ -971,11 +971,11 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
   in-flight or recent work in those paths, the PR body gets an **Affects** line ("Affects: Garrett's
   `cece/zen-fermat` Stoat modes - builds on them, changes nothing they decided"). A branch that would replace or
   re-tune another collaborator's work is a NO-GO until the person you work with has confirmed it with them (§4).
-- **Hand-offs** (`Docs/TEAM.md` rule 9): anything the branch leaves for a person (an editor test, a playtest, a
-  dashboard step, content, an owner's decision) is a task on `Docs/TEAM_TASKS.md` (`python3 Tools/Build/team_tasks.py
-  add ...`), naming nobody (`--who anyone`: tasks are never assigned; taking one names its branch). Close the tasks the branch finished. Then put
-  `python3 Tools/Build/team_tasks.py pr-section` in the PR body as its **Hand-offs** section, and run
-  `team_tasks.py --check`.
+- **Hand-offs** (`Docs/TEAM.md` rule 9, the `/team-tasks` skill): anything the branch leaves for a person (an editor
+  test, a playtest, a dashboard step, content, a decision) goes on the branch's ONE ticket (`/team-tasks add`; a second
+  `add` appends a checklist line), naming nobody: tickets are never assigned, and taking one names its branch. Close
+  the tickets the branch finished (`team_tasks.py done <id> --note <proof>`). Then put
+  `python3 Tools/Build/team_tasks.py pr-section` in the PR body as its **Hand-offs** section.
 - Do not ask whether Amoebius or the Vessel Studio helped: the decision is recorded (`Docs/TOOLING_DECISIONS.md`
   §6, 2026-10-19) and Shombith asked sessions to stop. Keep Vessel Studio work out of `Port/`.
 - Check for a PR template (`.github/pull_request_template.md` and variants); mirror its

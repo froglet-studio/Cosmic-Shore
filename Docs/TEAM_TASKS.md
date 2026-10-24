@@ -1,55 +1,14 @@
 # Team tasks: hand work to each other
 
-**One board for work that one collaborator's session leaves for another**: a test that needs the Unity
-Editor, a playtest, a dashboard or service to set up, content to write, a decision to take. Almost all of
-our work goes through Claude sessions, and a session cannot open Unity, sign in to a dashboard or watch a
-first-timer play. This is where it says so, and where somebody picks it up (Docs/TEAM.md rule 9).
+**This board is moving to GitHub Issues** (Shombith, 2026-10-25): each task below becomes an issue labelled
+`team-task`, with the same id, and this file becomes a pointer. The board people read is the **Froglet Tasks page**,
+https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f; sessions read and write tickets through the `/team-tasks` skill
+(`Tools/Build/team_tasks.py`), only when the person asks. The rules are [`TEAM.md`](TEAM.md) rule 9: a ticket names
+nobody until someone takes it; taking it names your branch, and it closes when that branch merges; untaken for 14
+days, it is archived; one ticket per branch.
 
-**Yash has offered to take tasks** (Yash, 2026-10-15): testing in the editor, playtests, UGS and
-dashboard setup, and follow-up fixes. When you add a task he could do, name him in "Who can take it".
-Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your own.
-
-## How to use it
-
-- **Add** a task whenever your work leaves something another person can do or test. Claude sessions do
-  this before they finish (a hook reminds them), and tell the person what they added:
-  `python3 Tools/Build/team_tasks.py add --area Activation --kind test --task "..." --done-when "..." --who "anyone" --see "Docs/..."`
-- **Find** work: `python3 Tools/Build/team_tasks.py list` (open tasks), `--for Yash`, `--area Activation`,
-  `--kind test`.
-- **The team hub** ([Froglet Team Hub](https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f)) is the board's page: Open,
-  Live and Done tabs, Take (with your branch), Release, Mark done, New task. It keeps its own copy of the tasks, and a
-  Claude session syncs it with this file: read the hub's `tasks` into a JSON file (ArtifactData `list`), run
-  `team_tasks.py hub-import <file> --since <meta/sync.at>`, then `team_tasks.py sweep`, then
-  `team_tasks.py hub-export --probe` and write the changed tasks and a new `meta/sync` back. Commit the board.
-- **One task per branch.** Put every hand test or step your branch leaves into one task (its "Done when" can list
-  them), never one task each. The team hub groups open tasks by the branch that filed them.
-- **The board holds only what is open or live.** `sweep` archives an open task nobody took in 14 days, and moves done
-  and archived tasks to [`TEAM_TASKS_ARCHIVE.md`](TEAM_TASKS_ARCHIVE.md). `team_tasks.py archive <id>...` archives by
-  hand, `team_tasks.py revive <id>` brings one back (open, nobody's, 14 more days), and `list --all` reads both files.
-- **Nobody is assigned.** A task names nobody (`--who anyone`, or `"anyone with ..."` for what the work needs) until
-  someone takes it. `sweep` strips any name left on an open task.
-- **Take** one by naming your branch: `team_tasks.py take <id> --who <you> --branch <branch>`. It stays live while
-  that branch does: `team_tasks.py sweep` (it fetches with `--prune` first; `--dry-run` previews) closes it when the
-  branch merges into `bleeding-edge`, and puts it back to open, nobody's, when the branch is deleted unmerged or has
-  had no commit for 14 days. `team_tasks.py release <id>` gives it back by hand. **Close** one by hand:
-  `team_tasks.py done <id> --note "what happened, commit or result"`. A test that FAILS is not done: write
-  what failed in the note and add the fix as a new `dev` task.
-- **On GitHub**: every task is mirrored to an issue (issues #1105-#1144 hold the first 40), titled `[<id>] <task>`
-  and labelled `team-task`, `kind:<kind>`, `area:<area>` and `taken`. Filter the repository's issues by `team-task`
-  to see the board on GitHub or a phone, and comment on an issue to discuss a task. **The board is the source**: take
-  and close tasks here (`take`, `done`); the sync rewrites an issue's body and closes it when the task is done. It
-  runs on every push of this file to `bleeding-edge` or `Ys-bleeding-edge`
-  (`.github/workflows/team-tasks-sync.yml`), nightly, and by hand (`team_tasks.py gh-sync`, `--dry-run` to preview).
-  It never reopens an issue or moves one backwards, so an older copy of the board on another branch cannot undo a
-  newer one; a task closed on GitHub but still open here is reported, so it can be closed here with `done`. `/ship`
-  also puts `team_tasks.py pr-section` into the pull request body, so a reviewer sees what a branch handed off.
-- **Kinds:** `test` (run something and report pass or fail), `dev` (code), `content` (words, tips, art),
-  `setup` (a dashboard, a service, a key), `decision` (the owner or the core four decide), `docs`.
-- Ids are `T-<date>-<hash>`, never "the next number", so two branches cannot collide. If two branches both
-  append a task, git conflicts at the end of the file: keep both. `team_tasks.py --check` validates the board, and fails on
-  any conflict marker left in it (a half-resolved merge still parses, so it used to pass).
-- QA's own failures stay in `Docs/QA/DEV_TASKS.md` (written by `/qa-backlog`); vessel and AI test scripts stay
-  in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. A task here may point at either.
+**Do not add tasks here.** `team_tasks.py migrate` moves this board to the issues once, and the sweep
+(`.github/workflows/team-tasks.yml`) files any task a branch still appends below in this format.
 
 ## The board
 

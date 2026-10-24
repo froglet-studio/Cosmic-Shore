@@ -79,7 +79,7 @@ python3 Tools/Build/perf_capture_report.py <capture.json> # one capture, judged 
    there before it gets code.
 3. Pick the top item whose go/no-go is met. One item per commit. State the number you expect to move and by how much.
 4. Team rule: `python3 Tools/Build/who_works_where.py query <files>` first; a fix in another collaborator's area that
-   is more than local (one function, a data repair) is a `team_tasks.py add` for its owner with the measurement attached,
+   is more than local (one function, a data repair) is a ticket (`/team-tasks add`, naming nobody) with the measurement attached,
    not a commit. Write `Affects: <person>'s <area>` in the commit otherwise.
 
 ## 3. Fix - the checklist every performance change in this repo is held to

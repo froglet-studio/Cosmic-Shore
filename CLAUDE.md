@@ -10,8 +10,8 @@ When a task spans multiple files or systems, complete ALL of them in a single pa
 
 This file holds only the rules every session needs. Everything else moved verbatim into topic files under `Docs/claude/`. Each entry lists the section headings the file contains, so a reference like "CLAUDE.md § Anti-Patterns" can be found by grepping this index. To find a passage quoted from the old single-file CLAUDE.md, search both places: `grep -rn '<phrase>' CLAUDE.md Docs/claude/`.
 
-- [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **The shared to-do board** - tests, playtests, setup, content and decisions one collaborator's session leaves for another (`Tools/Build/team_tasks.py`). Tasks are nobody's until someone takes one.
-  Sections: How to use it; The board
+- [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **Froglet Tasks, the team's hand-off tickets** - tests, playtests, setup, content and decisions one collaborator's session leaves for another: GitHub issues labelled `team-task`, read on the Froglet Tasks page, written only through the `/team-tasks` skill (`Tools/Build/team_tasks.py`). Tickets are nobody's until someone takes one.
+  Sections: a pointer to the tickets (the board moved to GitHub Issues)
 - [`Docs/TEAM.md`](Docs/TEAM.md): **Read before working anywhere.** Who works where (Garrett, Caleb, Shombith, Yash and others, measured from git), the collaboration rules, what doing work twice cost, and the generated map (`Tools/Build/who_works_where.py`).
   Sections: The people; The rules for every session; What happened without this; The map (generated); Decisions about our tools
 - [`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md): **DECIDED 2026-10-19 (§6)**: Amoebius stays (Shombith drives it), the Vessel Studio is an artifact and not part of the engine, no single unifying tool. The evidence, options and recommendation that led there. Volunteered feedback: `Docs/TOOLING_FEEDBACK.md`.
@@ -83,22 +83,23 @@ the engine renamed twice, retired tools brought back. **Every session:**
 - **Report on request**: when anyone asks for a report on a shared area or another person's work, build it with
   `python3 Tools/Build/team_report.py area <key>` (or `person <name>` / `paths <paths>`) plus the area's report in
   `Docs/Reports/`, never from memory (`Docs/TEAM.md` rule 10; the `report_request.py` hook reminds you).
-- **Hand off what others can do** on the shared to-do board, [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md)
-  (`python3 Tools/Build/team_tasks.py add | list | take | done`): every editor test, playtest, setup step, content gap
-  or decision your work leaves for someone else. **Never assign it**: add it with `--who anyone`, never a person
-  and never a volunteer (Shombith, 2026-10-23). A task is nobody's until someone takes it, and taking it names their
-  branch. **One task per branch**: put every hand test your branch leaves into one task's "Done when" list, never one
-  task each (49 branches had filed 242 open tasks in 9 days). Tell the person what you added, and close the tasks your
-  work finishes. A task nobody takes in 14 days is archived (`team_tasks.py sweep`).
+- **Hand-offs are tickets on Froglet Tasks**: GitHub issues labelled `team-task`, read on the Froglet Tasks page
+  (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f). An editor test, playtest, setup step, content gap or decision your work leaves for
+  someone else goes on one, **through the `/team-tasks` skill, and only when the person asks** (or `/ship` does): no
+  hook, no end-of-session filing, no re-ranking on your own (Shombith, 2026-10-25). **Never assign one**: never a
+  person, never a volunteer (Shombith, 2026-10-23). A ticket is nobody's until someone takes it; taking it names their
+  branch, and it closes when that branch merges (`.github/workflows/team-tasks.yml`). **One ticket per branch**: every
+  hand test your branch leaves is a checklist line on its one ticket (49 branches had filed 242 open tasks in 9 days).
+  A ticket nobody takes in 14 days is archived.
 - **No favourites among the core four.** Garrett, Caleb, Shombith and Yash carry equal weight. Never assign a task
   to anyone, and do not let one person's request override another's area without whoever decides there. **Shombith heads tooling** (the Amoebius engine, editor tools, the Claude skills such as `/ship`, and the
   hooks; Shombith, 2026-10-23): changes to those go through him.
 
 Who is who, the measured map and the full rules: [`Docs/TEAM.md`](Docs/TEAM.md) (identities in `Docs/TEAM.json`).
-The per-prompt team hooks (`team_context.py`, `team_activity.py`, `team_tasks_nudge.py`) were switched off on
+The per-prompt team hooks (`team_context.py`, `team_activity.py`, `team_tasks_nudge.py`, deleted 2026-10-25) were switched off on
 2026-10-23 (Shombith: too noisy, and they slowed every chat). Ask for what the others pushed when you need it:
-`python3 .claude/hooks/team_activity.py --peek 12`. The team hub page (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f)
-is the task board's interface; `Docs/TEAM_TASKS.md` says how a Claude session syncs it with the board.
+`python3 .claude/hooks/team_activity.py --peek 12`. The Froglet Tasks page (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f)
+is the board people read; the `/team-tasks` skill syncs it with the issues.
 
 ## Amoebius and the Vessel Studio (DECIDED 2026-10-19, `Docs/TOOLING_DECISIONS.md` §6)
 

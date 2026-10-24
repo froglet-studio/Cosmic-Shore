@@ -1,63 +1,122 @@
 #!/usr/bin/env python3
-"""team_tasks.py - the team's shared to-do board, Docs/TEAM_TASKS.md (Docs/TEAM.md rule 9).
+"""team_tasks.py - Froglet Tasks: the team's hand-off tickets (Docs/TEAM.md rule 9), one GitHub issue each.
 
-Any session or person leaves a task another collaborator can pick up: a test that needs the Unity Editor,
-a playtest, a dashboard to set up, content to write, a decision to take. A task names nobody ("Who can take
-it": anyone) until someone takes it (Shombith, 2026-10-23: no assigning, no standing volunteer offers).
+A session or person leaves a ticket another collaborator can pick up: a test that needs the Unity Editor, a playtest,
+a dashboard to set up, content to write, a decision to take. The rules (Shombith, 2026-10-23 and 2026-10-25):
 
-Taking a task names your branch. The task is live while that branch is: `sweep` closes it when the branch merges
-into bleeding-edge, and puts it back to open, nobody's, when the branch is deleted unmerged or has had no commit for
-14 days. `release` does the same by hand. An open task nobody takes in 14 days is archived, and done and archived
-tasks move to Docs/TEAM_TASKS_ARCHIVE.md, so the board holds only what is open or live.
+1. A ticket names nobody until someone takes it. `add` refuses a person; `sweep` clears any assignee set on GitHub.
+2. Taking a ticket names your branch. A live ticket shows the person and the branch.
+3. When that branch merges into bleeding-edge the ticket closes by itself. If the branch is deleted, released, or has
+   no commit for 14 days, the ticket goes back to open, nobody's.
+4. A ticket nobody takes in 14 days is archived (closed, not planned, label `archived`). Done tickets close as
+   completed. Both come back with `revive`, and the 14 days start again.
+5. One ticket per branch: `add` appends a checklist line to this branch's open ticket when it has one.
+6. The core four carry equal weight. Priority ranks tickets and milestones rank time; nothing ranks people.
+7. Sessions add, close and classify only when a person asks (the /team-tasks skill). The rule set classifies a ticket
+   once, when it is filed; a person's `set` is never overwritten by anything automatic.
 
-    team_tasks.py list [--all] [--area A] [--for NAME] [--kind K]   open tasks (or every task)
-    team_tasks.py add --area A --kind K --task T --done-when D [--who "anyone ..."] [--see S] [--by B]
-    team_tasks.py take ID --who NAME --branch BRANCH                 take it; it stays live while BRANCH is
-    team_tasks.py release ID [--note N]                              give it back: open, nobody's
-    team_tasks.py archive ID... [--note N] | revive ID               off the board into TEAM_TASKS_ARCHIVE.md, or back
-    team_tasks.py done ID [--note N]                                 close it by hand
-    team_tasks.py sweep [--dry-run] [--no-fetch] [--idle-days 14]    close merged, reopen gone or idle, and strip
-                        [--base origin/bleeding-edge]                names from open tasks
-    team_tasks.py pr-section [--base origin/bleeding-edge]           tasks this branch added or changed,
-                                                                     as markdown for a PR body (/ship)
-    team_tasks.py gh-sync [--dry-run] [--repo OWNER/NAME]            mirror the board to GitHub issues
-    team_tasks.py --check | --self-test
+Where things live
+  GitHub Issues hold the tickets: title "[<id>] <task>"; labels team-task, kind:*, area:*, dept:*, prio:*, `live`
+  while taken, `archived`; a milestone; never an assignee. The body is the task, a "Done when" checklist (tick it on
+  GitHub freely), links, and a machine block (<!-- team-task ... -->) this script owns.
+  .github/workflows/team-tasks.yml runs `sweep` when a pull request merges, a branch is deleted, bleeding-edge moves,
+  and nightly. The Froglet Tasks page (PAGE_URL) is the board people read; a scheduled Claude session runs `sync` to
+  carry the page's takes and overrides to Issues and the issues back to the page.
 
-GitHub issues mirror the board (gh-sync, run by .github/workflows/team-tasks-sync.yml on every push of the board to
-bleeding-edge or Ys-bleeding-edge, or by hand). One issue per task, titled "[<id>] <task>", labelled team-task,
-kind:<kind>, area:<area> and taken when someone took it. The board is the source: edit it, not the issue body (the
-next sync rewrites the body); comment on the issue freely. The sync is MONOTONIC, because several branches carry
-copies of the board: it creates, updates and closes (when a task is done), never reopens, and never moves an issue
-backwards (open < taken < done). A task closed on GitHub but open on this board is reported, so its board copy can
-be closed with `done`.
+    team_tasks.py list [--dept D] [--area A] [--milestone M] [--all] [--json] [--md]
+    team_tasks.py add --area A --kind K --task T --done-when D --priority P --dept D --why W
+                      [--milestone M] [--see S] [--by B] [--who "anyone with ..."]
+    team_tasks.py step --line "..." [--id ID]           a checklist line on this branch's ticket
+    team_tasks.py take ID --branch B [--who NAME]       who defaults to `me`
+    team_tasks.py release ID [--note N] | done ID --note N | archive ID... [--note N] | revive ID
+    team_tasks.py set ID priority|dept|milestone VALUE --by NAME [--why W]     VALUE "clear" hands it back to the rule
+    team_tasks.py sweep [--dry-run] [--no-fetch] [--base origin/bleeding-edge] [--idle-days 14] [--merged BRANCH --pr N]
+    team_tasks.py sync FILE [--since ISO] [--dry-run]   the page's store <-> Issues
+    team_tasks.py pr-section [--base origin/bleeding-edge]
+    team_tasks.py migrate [--dry-run]                   one shot: the markdown board -> Issues
+    team_tasks.py review [--all | --area A | ID...] [--batch N] | review --apply FILE [--dry-run]
+    team_tasks.py milestone list | milestone add NAME --gate TEXT [--due YYYY-MM-DD]
+    team_tasks.py me
+    team_tasks.py --self-test
+  Every command takes --repo OWNER/NAME (default: origin) and --offline FILE (run on a saved dump of the issues
+  instead of GitHub; writes go back to the file).
 
-Ids are T-<date>-<4 hex of the task text>, never "the next number": two branches adding a task on the same
-day must not both take T-012 (Docs/TEAM.md, "What happened without this"). Every task is a level-3 heading
-`### <id> · <status> · <kind> · <area>` plus bullet fields, so a human edits it as plain markdown and this
-script still reads it.
+Ids are T-<date>-<4 hex of the task text>, never "the next number": two branches filing on the same day must not both
+take T-012 (Docs/TEAM.md, "What happened without this"). GitHub's issue numbers are the second handle.
 """
 import argparse
+import collections
+import contextlib
 import datetime
 import hashlib
+import io
 import json
 import os
 import re
 import subprocess
 import sys
+import urllib.parse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-BOARD = os.path.join(ROOT, "Docs", "TEAM_TASKS.md")
+BOARD = os.path.join(ROOT, "Docs", "TEAM_TASKS.md")             # the old markdown board, read by migrate and the bridge
 ARCHIVE = os.path.join(ROOT, "Docs", "TEAM_TASKS_ARCHIVE.md")
-MARK = "<!-- team-tasks -->"
+TEAM = os.path.join(ROOT, "Docs", "TEAM.json")
+PAGE_URL = "https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f"
 KINDS = ("test", "dev", "content", "setup", "decision", "docs")
-HEAD = re.compile(r"^### (T-\d{8}-[0-9a-f]{4}) · (open|taken by [^·]+?|done|archived) · (" + "|".join(KINDS) + r") · (.+?)\s*$")
-FIELD = re.compile(r"^- \*\*([^*]+):\*\* (.*)$")
-REQUIRED = ("Task", "Done when", "Who can take it", "Added")
 BASE = "origin/bleeding-edge"
 IDLE_DAYS = 14   # a live task whose branch has had no commit for this long goes back to open (Shombith, 2026-10-23)
+# Branches whose copy of the old markdown board still gains tasks until they merge bleeding-edge; the sweep files
+# any task it finds there that has no issue yet, and migrate reads them.
+BRIDGE_REFS = ("origin/bleeding-edge", "origin/Ys-bleeding-edge")
+# Many sessions file from these, about unrelated work: "one ticket per branch" does not fold their tasks together.
+SHARED_BRANCHES = ("bleeding-edge", "Ys-bleeding-edge", "main", "master", "development", "HEAD", "unknown")
+OLD_WORKFLOW = "team-tasks-sync.yml"
+
+LABEL = "team-task"
+DEPTS = {"testers": "Testers", "developers": "Developers", "decisions": "Decisions", "content": "Content & docs"}
+DEPT_OF_KIND = {"test": "testers", "dev": "developers", "setup": "developers", "decision": "decisions",
+                "content": "content", "docs": "content"}
+PRIORITIES = ("P1", "P2", "P3")
+# key, name, gate (the exit criterion), scope. The X% values are unset on purpose: the plan has not set them.
+MILESTONES = (
+    ("M1", "Closed testing, all platforms", "co-op repeat retention over weeks with the same experience",
+     "Every vessel and every game mode tested on every platform, with the performance fixing that makes that "
+     "possible; alpha access; friends, family and Tadpole feedback; instrumented data."),
+    ("M2", "Beta phase 2, limited keys", "X% of new users play again after 1 week",
+     "Pre-release access with FFT feedback; limited beta keys, one at a time; activation data."),
+    ("M3", "Beta phase 3", "X% of users claim they would give a 5-star review when surveyed",
+     "Alpha access with Tadpole feedback; beta access with limited keys; activation, retention and referral data."),
+    ("M4", "Early access, $15", "feature complete: only content from here",
+     "The same loop, paid. Activation, retention and referral data."),
+    ("M5", "Full release, free to play", "",
+     "Then Game 2 design, and everlasting content, bug fixing and balance updates."),
+)
+MILESTONE_KEYS = tuple(m[0] for m in MILESTONES)
+LABEL_COLORS = {LABEL: "5319e7", "live": "fbca04", "archived": "cfd3d7", "kind": "0e8a16", "area": "1d76db",
+                "dept": "c5def5", "prio:P1": "d73a4a", "prio:P2": "f9a03f", "prio:P3": "ededed"}
+OUR_LABELS = {LABEL, "live", "archived", "taken"}
+OUR_PREFIXES = ("kind:", "area:", "dept:", "prio:")
+AUTOMATIC = ("rule", "kind", "claude")   # set-by values that are not a person
+FOOTER = ("_Froglet Tasks: nobody's until someone takes it, naming their branch; it closes when that branch merges. "
+          "Take it, close it or re-rank it on the Froglet Tasks page or with `/team-tasks`._")
+
+FIELD = re.compile(r"^- \*\*([^*]+):\*\* (.*)$")
+ID_RE = re.compile(r"T-\d{8}-[0-9a-f]{4}")
+TITLE_ID = re.compile(r"^\[(T-\d{8}-[0-9a-f]{4})\]\s*")
+BLOCK = re.compile(r"<!-- team-task\n(.*?)\n-->", re.S)
+LEGACY = re.compile(r"<!-- team-task:(T-\d{8}-[0-9a-f]{4}) -->")
+STEP = re.compile(r"^\s*[-*] \[( |x|X)\] (.*)$")
+
+
+# --- The old markdown board, read only: migrate moves it to Issues, and the sweep files tasks that branches still
+# --- append to it after the switch --------------------------------------------------------------------------------
+
+MARK = "<!-- team-tasks -->"
+HEAD = re.compile(r"^### (T-\d{8}-[0-9a-f]{4}) · (open|taken by [^·]+?|done|archived) · (" + "|".join(KINDS) + r") · (.+?)\s*$")
 
 
 class Task:
+    """One task of the old markdown board."""
     def __init__(self, tid, status, kind, area, fields, lines):
         self.id, self.status, self.kind, self.area, self.fields, self.lines = tid, status, kind, area, fields, lines
 
@@ -65,99 +124,66 @@ class Task:
     def is_open(self):
         return self.status not in ("done", "archived")
 
-    def line(self):
-        who = self.fields.get("Who can take it", "")
-        on = f" on {branch_of(self)}" if branch_of(self) else ""
-        return f"{self.id}  [{self.status}{on}]  {self.kind} · {self.area} - {self.fields.get('Task', '')}  (who: {who})"
-
-    def markdown(self):
-        return "\n".join(self.lines)
-
 
 def parse(text):
-    """(preamble, tasks). The preamble is everything up to and including the marker line."""
+    """The old board's tasks. Text without the marker (a stub, a missing file) has none."""
     if MARK not in text:
-        raise ValueError(f"no {MARK} marker in the board")
-    pre, body = text.split(MARK, 1)
+        return []
     tasks, cur = [], None
-    for raw in body.split("\n"):
+    for raw in text.split(MARK, 1)[1].split("\n"):
         m = HEAD.match(raw)
         if m:
             cur = Task(m.group(1), m.group(2), m.group(3), m.group(4), {}, [raw])
             tasks.append(cur)
-            continue
-        if raw.startswith("### "):
-            raise ValueError(f"malformed task heading: {raw!r}")
-        if cur is None:
-            continue
-        cur.lines.append(raw)
-        f = FIELD.match(raw)
-        if f:
-            cur.fields[f.group(1)] = f.group(2)
-    for t in tasks:
-        while t.lines and not t.lines[-1].strip():
-            t.lines.pop()
-    return pre + MARK, tasks
+        elif cur is not None and not raw.startswith("### "):
+            cur.lines.append(raw)
+            f = FIELD.match(raw)
+            if f:
+                cur.fields[f.group(1)] = f.group(2)
+    return tasks
 
 
-def render(pre, tasks):
-    return pre + "\n\n" + "\n\n".join(t.markdown() for t in tasks) + "\n"
-
-
-# git's conflict markers (diff3's base marker included). Every branch appends to the end of the board, so two branches
-# that each add a task conflict there, and a half-resolved merge still PARSES - each side's tasks are well formed - so
-# the field checks alone passed a board with the markers in it (measured 2026-10-18, twice on one branch).
-CONFLICT = re.compile(r"^(<{7}|\|{7}|>{7})( |$)|^={7}$")
-
-
-def conflict_lines(text):
-    """(line number, line) of every unresolved merge conflict marker in the board."""
-    return [(n, line) for n, line in enumerate(text.split("\n"), 1) if CONFLICT.match(line)]
-
-
-def errors(text):
-    markers = [f"line {n}: unresolved merge conflict marker {line[:40]!r} (keep both sides' tasks, then delete the markers)"
-               for n, line in conflict_lines(text)]
+def read(path):
     try:
-        _, tasks = parse(text)
-    except ValueError as e:
-        return markers + [str(e)]
-    out, seen = markers, set()
-    for t in tasks:
-        if t.id in seen:
-            out.append(f"{t.id}: id used twice")
-        seen.add(t.id)
-        for f in REQUIRED:
-            if not t.fields.get(f, "").strip():
-                out.append(f"{t.id}: missing **{f}:**")
-        if any(ord(c) > 0x2FFF for c in t.markdown()):
-            out.append(f"{t.id}: carries an emoji or other symbol the board does not use")
+        with open(path, encoding="utf-8") as fh:
+            return fh.read()
+    except OSError:
+        return ""
+
+
+def git(*args):
+    return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True)
+
+
+def git_show(ref, path="Docs/TEAM_TASKS.md"):
+    r = git("show", f"{ref}:{path}")
+    return r.stdout if r.returncode == 0 else ""
+
+
+def markdown_tasks(refs=BRIDGE_REFS):
+    """Every task on the old boards: this checkout's board and archive, then each ref's. Where an id appears twice the
+    copy furthest along wins (done or archived over taken over open), so a stale copy never moves a task back."""
+    rank = lambda t: 2 if not t.is_open else 1 if t.status.startswith("taken") else 0
+    out = {}
+    texts = [read(BOARD), read(ARCHIVE)]
+    for ref in refs:
+        texts += [git_show(ref), git_show(ref, "Docs/TEAM_TASKS_ARCHIVE.md")]
+    for text in texts:
+        for t in parse(text):
+            if t.id not in out or rank(t) > rank(out[t.id]):
+                out[t.id] = t
     return out
 
 
-def load(path=BOARD):
-    with open(path, encoding="utf-8") as fh:
-        return fh.read()
-
-
-def save(text, path=BOARD):
-    bad = errors(text)
-    if bad:
-        raise SystemExit("refusing to write a board that fails --check:\n  " + "\n  ".join(bad))
-    with open(path, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(text)
-
+# --- A ticket -------------------------------------------------------------------------------------------------------
 
 def new_id(task, today):
     return f"T-{today:%Y%m%d}-" + hashlib.sha1(task.strip().lower().encode()).hexdigest()[:4]
 
 
 def branch():
-    try:
-        return subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=ROOT, capture_output=True,
-                              text=True, check=True).stdout.strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return "unknown"
+    r = git("rev-parse", "--abbrev-ref", "HEAD")
+    return r.stdout.strip() if r.returncode == 0 else "unknown"
 
 
 def unassigned(who):
@@ -165,70 +191,71 @@ def unassigned(who):
     return who.strip().lower().startswith("anyone")
 
 
-def add(text, area, kind, task, done_when, who="anyone", see=None, by=None, today=None):
-    today = today or datetime.date.today()
-    if kind not in KINDS:
-        raise SystemExit(f"kind must be one of {', '.join(KINDS)}")
-    if not unassigned(who):
-        raise SystemExit(f"a task names nobody until someone takes it: pass --who anyone (or \"anyone with ...\" for "
-                         f"what the work needs), not {who!r} (Docs/TEAM.md rule 11)")
-    pre, tasks = parse(text)
-    tid = new_id(task, today)
-    if any(t.id == tid for t in tasks):
-        raise SystemExit(f"{tid} is already on the board (the same task text was added today)")
-    lines = [f"### {tid} · open · {kind} · {area}",
-             f"- **Task:** {task}",
-             f"- **Done when:** {done_when}",
-             f"- **Who can take it:** {who}",
-             f"- **Added:** {today.isoformat()} by {by or 'a Claude session'} (`{branch()}`)"]
-    if see:
-        lines.append(f"- **See:** {see}")
-    tasks.append(Task(tid, "open", kind, area, {}, lines))
-    return render(pre, tasks), tid
+def slug(text):
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:40] or "general"
 
 
-def set_status(text, tid, status, note_field, note, today=None):
-    today = today or datetime.date.today()
-    pre, tasks = parse(text)
-    match = [t for t in tasks if t.id == tid]
-    if not match:
-        raise SystemExit(f"no task {tid} on the board")
-    t = match[0]
-    t.lines[0] = HEAD.sub(lambda m: f"### {m.group(1)} · {status} · {m.group(3)} · {m.group(4)}", t.lines[0])
-    t.lines.append(f"- **{note_field}:** {today.isoformat()}" + (f", {note}" if note else ""))
-    return render(pre, tasks)
+def clean(value):
+    """One line that is safe inside the machine block."""
+    return re.sub(r"\s+", " ", str(value or "")).replace("-->", "->").replace(" | ", " / ").strip()
 
 
-# --- Taking a task names its branch; the branch decides when the task leaves -----------------------------------
-
-def find(tasks, tid):
-    match = [t for t in tasks if t.id == tid]
-    if not match:
-        raise SystemExit(f"no task {tid} on the board")
-    return match[0]
+def by_person(set_by):
+    return bool(set_by) and set_by.split(" ")[0] not in AUTOMATIC
 
 
-def set_head(t, status):
-    t.lines[0] = HEAD.sub(lambda m: f"### {m.group(1)} · {status} · {m.group(3)} · {m.group(4)}", t.lines[0])
-    t.status = status
+class Ticket:
+    """One task. On GitHub it is an issue: the title, the visible body a person may edit (task, checklist, links), the
+    labels, the milestone, and the machine block at the end of the body that this script owns."""
 
+    def __init__(self, tid="", kind="dev", area="General", task="", steps=None, see="", needs="anyone",
+                 filed_date="", filed_by="", filed_on=""):
+        self.id, self.kind, self.area, self.task = tid, kind, area, task
+        self.steps = steps or []                       # [[ticked, text], ...]
+        self.see, self.needs = see, needs
+        self.filed_date, self.filed_by, self.filed_on = filed_date, filed_by, filed_on
+        self.state = "open"                            # open | live | done | archived | merged
+        self.taken_by = self.branch = self.taken = ""
+        self.released = self.revived = self.done = self.archived = self.merged_into = ""
+        self.priority, self.prio_why, self.prio_by = "P3", "", ""
+        self.dept, self.dept_by = DEPT_OF_KIND.get(kind, "developers"), ""
+        self.milestone, self.ms_why, self.ms_by = "", "", ""
+        self.number, self.url, self.raw, self.updated = None, "", None, ""
+        self.assignees, self.legacy, self.adopt, self.notes = [], False, False, []
 
-def set_field(t, name, value):
-    """Replace a field's line in place, or append it."""
-    line = f"- **{name}:** {value}"
-    for i, raw in enumerate(t.lines):
-        f = FIELD.match(raw)
-        if f and f.group(1) == name:
-            t.lines[i] = line
-            break
-    else:
-        t.lines.append(line)
-    t.fields[name] = value
+    # The shape the sweep's planning reads (plan_sweep, open_since): the old board's status and fields.
+    @property
+    def status(self):
+        return f"taken by {self.taken_by}" if self.state == "live" else self.state
 
+    @property
+    def is_open(self):
+        return self.state in ("open", "live")
 
-def drop_field(t, name):
-    t.lines = [raw for raw in t.lines if not (FIELD.match(raw) and FIELD.match(raw).group(1) == name)]
-    t.fields.pop(name, None)
+    @property
+    def fields(self):
+        f = {"Task": self.task, "Done when": "; ".join(s for _, s in self.steps), "Added": self.filed_date,
+             "Who can take it": "assigned on GitHub: " + ", ".join(self.assignees) if self.assignees else self.needs}
+        for name, value in (("Branch", f"`{self.branch}`" if self.branch else ""),
+                            ("Taken", f"{self.taken}, {self.taken_by}" if self.taken else ""),
+                            ("Released", self.released), ("Revived", self.revived), ("Done", self.done),
+                            ("Archived", self.archived), ("See", self.see)):
+            if value:
+                f[name] = value
+        return f
+
+    @property
+    def lines(self):
+        return [f"- **{k}:** {v}" for k, v in self.fields.items()]
+
+    @property
+    def title(self):
+        return (self.task.strip().split("\n") or [""])[0]
+
+    def line(self):
+        live = f"  live: {self.taken_by} on {self.branch or 'no branch'}" if self.state == "live" else ""
+        return f"{self.id}  {self.priority}  {DEPTS.get(self.dept, self.dept):<14} {self.area[:18]:<18} " \
+               f"{self.title[:90]}{live}"
 
 
 def branch_of(t):
@@ -246,39 +273,653 @@ def taken_on(t):
         return None
 
 
-def take(text, tid, who, branch_name, today=None):
-    today = today or datetime.date.today()
+def open_since(t):
+    """The day an open task started waiting: the day it was added (its id), or the day it was last released."""
+    days = [datetime.date(int(t.id[2:6]), int(t.id[6:8]), int(t.id[8:10]))]
+    for raw in t.lines:
+        f = FIELD.match(raw)
+        if f and f.group(1) in ("Released", "Revived"):
+            try:
+                days.append(datetime.date.fromisoformat(f.group(2)[:10]))
+            except ValueError:
+                pass
+    return max(days)
+
+
+def split_steps(done_when):
+    return [s.strip() for s in re.split(r";\s+", done_when) if s.strip()]
+
+
+# --- The issue body: visible part (a person may edit it) + machine block (this script's) ---------------------------
+
+def block_lines(t):
+    def row(key, value, **sub):
+        s = f"{key}:" + (f" {clean(value)}" if clean(value) else "")
+        for k, v in sub.items():
+            if v:
+                s += f" | {k.replace('_', '-')}: {clean(v)}"
+        return s
+    return [row("id", t.id), row("kind", t.kind), row("area", t.area),
+            row("filed", t.filed_date, by=t.filed_by, branch=t.filed_on), row("needs", t.needs),
+            row("taken-by", t.taken_by), row("branch", t.branch), row("taken", t.taken),
+            row("released", t.released), row("revived", t.revived), row("done", t.done), row("archived", t.archived),
+            row("merged-into", t.merged_into),
+            row("priority", t.priority, why=t.prio_why, set_by=t.prio_by),
+            row("dept", t.dept, set_by=t.dept_by),
+            row("milestone", t.milestone, why=t.ms_why, set_by=t.ms_by)]
+
+
+def parse_block(text):
+    out = {}
+    for line in text.split("\n"):
+        key, sep, rest = line.partition(":")
+        if not sep:
+            continue
+        parts = rest.split(" | ")
+        sub = {}
+        for p in parts[1:]:
+            k, s, v = p.partition(":")
+            if s:
+                sub[k.strip()] = v.strip()
+        out[key.strip()] = (parts[0].strip(), sub)
+    return out
+
+
+def render_body(t):
+    out = [t.task.strip(), ""]
+    if t.needs.strip().lower() != "anyone":
+        out += [f"**Who can take it** {t.needs.strip()}", ""]
+    if t.steps:
+        out += ["**Done when**"] + [f"- [{'x' if done else ' '}] {text}" for done, text in t.steps] + [""]
+    if t.see:
+        out += [f"**See** {t.see}", ""]
+    return "\n".join(out + [FOOTER, "", "<!-- team-task", *block_lines(t), "-->"])
+
+
+def parse_visible(text):
+    """(task, needs, steps, see) from the part of a body a person reads and may edit on GitHub."""
+    task, steps, see, needs, where = [], [], [], "", "task"
+    for line in text.split("\n"):
+        s = line.strip()
+        if s.startswith("_Froglet Tasks"):
+            continue
+        for marker, name in (("**Done when**", "steps"), ("**See**", "see"), ("**Who can take it**", "needs")):
+            if s.startswith(marker):
+                where, s = name, s[len(marker):].strip(" :")
+                break
+        if where == "task":
+            task.append(line)
+        elif where == "needs":
+            needs = needs or s
+        elif where == "steps":
+            m = STEP.match(line)
+            if m:
+                steps.append([m.group(1) != " ", m.group(2).strip()])
+            elif s.startswith(("- ", "* ")):
+                steps.append([False, s[2:].strip()])
+            elif s and steps:
+                steps[-1][1] += " " + s
+        elif where == "see" and s:
+            see.append(s)
+    return "\n".join(task).strip(), needs, steps, " ".join(see)
+
+
+def core(body):
+    """A body up to the end of its machine block (or legacy marker). GitHub-side tooling may append to a body, and
+    that must not read as a change, or every sync rewrites every issue."""
+    body = (body or "").replace("\r\n", "\n")
+    m = BLOCK.search(body) or LEGACY.search(body)
+    return body[:m.end()] if m else body
+
+
+def from_issue(i):
+    body = (i.get("body") or "").replace("\r\n", "\n")
+    labels = [l["name"] if isinstance(l, dict) else l for l in i.get("labels", [])]
+    tid_m = TITLE_ID.match(i.get("title", ""))
+    blk = BLOCK.search(body)
+    if blk:
+        b = parse_block(blk.group(1))
+        g = lambda k: b.get(k, ("", {}))[0]
+        sub = lambda k: b.get(k, ("", {}))[1]
+        task, needs, steps, see = parse_visible(body[:blk.start()])
+        t = Ticket(g("id") or (tid_m.group(1) if tid_m else ""), g("kind") or "dev", g("area") or "General", task,
+                   steps, see, needs or g("needs") or "anyone", g("filed"), sub("filed").get("by", ""),
+                   sub("filed").get("branch", ""))
+        t.taken_by, t.branch, t.taken = g("taken-by"), g("branch"), g("taken")
+        t.released, t.revived, t.done, t.archived, t.merged_into = (g("released"), g("revived"), g("done"),
+                                                                    g("archived"), g("merged-into"))
+        t.priority, t.prio_why, t.prio_by = g("priority") or "P3", sub("priority").get("why", ""), \
+            sub("priority").get("set-by", "")
+        t.dept, t.dept_by = g("dept") or DEPT_OF_KIND.get(t.kind, "developers"), sub("dept").get("set-by", "")
+        t.milestone, t.ms_why, t.ms_by = g("milestone"), sub("milestone").get("why", ""), \
+            sub("milestone").get("set-by", "")
+        # A priority, department or milestone a person changed on GitHub itself is their override: keep it.
+        on = f"GitHub {(i.get('updated_at') or '')[:10]}".strip()
+        prio = next((l[5:] for l in labels if l.startswith("prio:") and l[5:] in PRIORITIES), "")
+        if prio and prio != t.priority:
+            t.priority, t.prio_why, t.prio_by = prio, "set on GitHub", on
+        dept = next((l[5:] for l in labels if l.startswith("dept:") and l[5:] in DEPTS), "")
+        if dept and dept != t.dept:
+            t.dept, t.dept_by = dept, on
+        milestone = (i.get("milestone") or {}).get("title", "").split(" ")[0]
+        if milestone and milestone != t.milestone:
+            t.milestone, t.ms_why, t.ms_by = milestone, "set on GitHub", on
+    elif LEGACY.search(body):
+        t = from_legacy(body, labels)
+    else:
+        # Filed on GitHub by hand (or a block someone deleted): open, nobody's, and the next write gives it a block.
+        title = TITLE_ID.sub("", i.get("title", "")).strip()
+        task, needs, steps, see = parse_visible(body)
+        created = (i.get("created_at") or datetime.date.today().isoformat())[:10]
+        t = Ticket(tid_m.group(1) if tid_m else new_id(title, datetime.date.fromisoformat(created)),
+                   next((l.split(":", 1)[1] for l in labels if l.startswith("kind:") and l[5:] in KINDS), "dev"),
+                   "General", title + ("\n\n" + task if task and task != title else ""), steps, see, "anyone",
+                   created, (i.get("user") or {}).get("login", "GitHub"), "")
+        t.adopt = True
+    t.number, t.url, t.raw = i.get("number"), i.get("html_url", ""), i
+    t.updated = i.get("updated_at", "")
+    t.assignees = [a["login"] if isinstance(a, dict) else a for a in i.get("assignees") or []]
+    if i.get("state") == "closed":
+        # GitHub's state is the truth: a person may close an issue there (completed = done, not planned = archived).
+        reason = i.get("state_reason") or "completed"
+        t.state = "done" if reason == "completed" else "merged" if t.merged_into else "archived"
+        if t.state != "done":
+            t.taken_by = t.branch = t.taken = ""
+        if t.state == "done" and not t.done:
+            t.done = f"{(i.get('closed_at') or '')[:10]}, closed on GitHub".lstrip(", ")
+        if t.state == "archived" and not t.archived:
+            t.archived = f"{(i.get('closed_at') or '')[:10]}, closed on GitHub as not planned".lstrip(", ")
+    else:
+        t.state = "live" if t.taken_by else "open"
+        t.done = t.archived = t.merged_into = ""   # reopened on GitHub
+    return t
+
+
+def from_legacy(body, labels):
+    """An issue the old mirror (gh-sync) wrote: its body is the board task's fields."""
+    fields = {}
+    for line in body.split("\n"):
+        f = FIELD.match(line)
+        if f:
+            fields[f.group(1)] = f.group(2)
+    status = (re.search(r"^\*\*Status on the board:\*\* (.+)$", body, re.M) or [None, "open"])[1].strip()
+    kind = next((l[5:] for l in labels if l.startswith("kind:") and l[5:] in KINDS), "dev")
+    area = next((l[5:].replace("-", " ").title() for l in labels if l.startswith("area:")), "General")
+    tid = LEGACY.search(body).group(1)
+    heading = f"### {tid} · {status} · {kind} · {area}"
+    task = Task(tid, status, kind, area, fields, [heading] + [f"- **{k}:** {v}" for k, v in fields.items()])
+    t = from_task(task)
+    t.legacy = True
+    return t
+
+
+def from_task(task):
+    """A ticket from an old-board task (markdown, or a legacy issue body)."""
+    f = task.fields
+    m = re.match(r"(\d{4}-\d{2}-\d{2})(?: by (.*?))?(?: \(`([^`]*)`\))?\s*$", f.get("Added", ""))
+    filed_date, filed_by, filed_on = (m.group(1), m.group(2) or "", m.group(3) or "") if m else \
+        (task.id[2:6] + "-" + task.id[6:8] + "-" + task.id[8:10], f.get("Added", ""), "")
+    who = f.get("Who can take it", "anyone")
+    t = Ticket(task.id, task.kind, task.area, f.get("Task", ""), [[False, s] for s in split_steps(f.get("Done when", ""))],
+               f.get("See", ""), who if unassigned(who) else "anyone", filed_date, filed_by, filed_on)
+    for raw in task.lines:
+        g = FIELD.match(raw)
+        if g and g.group(1) in ("Released", "Revived"):
+            setattr(t, g.group(1).lower(), g.group(2))     # the last one wins: the clock's latest restart
+    if task.status.startswith("taken by "):
+        t.state, t.taken_by = "live", task.status[len("taken by "):]
+        t.branch = f.get("Branch", "").strip().strip("`")
+        t.taken = f.get("Taken", "")[:10]
+    elif task.status == "done":
+        t.state, t.done = "done", f.get("Done", "done")
+    elif task.status == "archived":
+        t.state, t.archived = "archived", f.get("Archived", "archived")
+    return t
+
+
+def issue_title(t):
+    task = t.title
+    return f"[{t.id}] " + (task if len(task) <= 100 else task[:97].rstrip() + "...")
+
+
+def issue_labels(t, keep=()):
+    labels = [LABEL, f"kind:{t.kind}", f"area:{slug(t.area)}", f"dept:{t.dept}", f"prio:{t.priority}"]
+    if t.state == "live":
+        labels.append("live")
+    if t.state == "archived":
+        labels.append("archived")
+    return labels + [l for l in keep if l not in OUR_LABELS and not l.startswith(OUR_PREFIXES)]
+
+
+# --- The rule set: a ticket's first priority, department and milestone, used only where nothing better exists -----
+
+P1_WORDS = re.compile(r"crash|block(?:s|ed|ing)\b|silently|never (?:been )?(?:re-?)?tested|data loss|dangling|"
+                      r"before (?:either|it|they) reach|release build|\bsteam\b|cannot|regress|broken|does nothing|"
+                      r"dead press", re.I)
+VESSELS = ("manta|dolphin|rhino|serpent|sparrow|squirrel|urchin|grizzly|termite|falcon|shrike|stoat|wrasse|grouper|"
+           "goby|pistol|orca|honeyguide|ratel|starlings?|marlin|jacks|butterfly|angler|thresher|vessels?|hulls?|crew")
+MODES = ("regatta|skim ?race|joust|crystal capture|maelstrom|skein|headlong|dog ?fight|hijack|salvo|tollway|"
+         "switchback|wildlife liberation|freestyle|toybox|arena|arcade|game modes?")
+M1_WORDS = re.compile(rf"\b(?:{VESSELS}|{MODES}|performance|perf|fps|editor|playtest|play-test|multiplayer|mppm|"
+                      rf"platforms?|phone|android|ios|mobile|webgl|browser|builds?)\b", re.I)
+M2_WORDS = re.compile(r"\b(?:activation|ftue|first[- ]login|onboarding|analytics|ugs|retention|referral|beta keys?)\b",
+                      re.I)
+
+
+def rule_priority(t, today, area_open):
+    m = P1_WORDS.search(f"{t.task} {t.fields['Done when']}")
+    if m:
+        return "P1", f'"{m.group(0)}" in the task text'
+    if t.state == "open":
+        used = (today - open_since(t)).days
+        if used >= 10:
+            return "P2", f"{used} of {IDLE_DAYS} days used"
+    if t.kind == "test" and area_open.get(t.area.lower(), 0) >= 15:
+        return "P2", f"a test on {t.area}, which has {area_open[t.area.lower()]} open tasks"
+    return "P3", "no rule matched"
+
+
+def rule_milestone(t):
+    text = f"{t.task} {t.fields['Done when']}"
+    m = M2_WORDS.search(t.area)
+    if m:
+        return "M2", f"area {t.area}"
+    if t.kind in ("test", "dev"):
+        m = M1_WORDS.search(t.area) or M1_WORDS.search(text)
+        if m:
+            return "M1", f'"{m.group(0)}"'
+    m = M2_WORDS.search(text)
+    if m:
+        return "M2", f'"{m.group(0)}"'
+    return "", "serves no milestone by the rules"
+
+
+def classify(t, today, area_open):
+    """Fill priority, department and milestone from the rule set, except where a person (or a review) set them."""
+    stamp = today.isoformat()
+    if not t.prio_by or t.prio_by.startswith("rule"):
+        t.priority, t.prio_why = rule_priority(t, today, area_open)
+        t.prio_by = t.prio_by or f"rule {stamp}"
+    if not t.dept_by or t.dept_by.startswith("kind"):
+        t.dept, t.dept_by = DEPT_OF_KIND.get(t.kind, "developers"), t.dept_by or f"kind {stamp}"
+    if not t.ms_by or t.ms_by.startswith("rule"):
+        t.milestone, t.ms_why = rule_milestone(t)
+        t.ms_by = t.ms_by or f"rule {stamp}"
+
+
+def open_by_area(tickets):
+    return collections.Counter(t.area.lower() for t in tickets if t.is_open)
+
+
+# --- What a ticket goes through --------------------------------------------------------------------------------------
+
+def take(t, who, branch_name, today):
     if not branch_name.strip():
         raise SystemExit("taking a task names your branch: pass --branch <the branch you do it on>")
-    pre, tasks = parse(text)
-    t = find(tasks, tid)
-    if t.status == "done":
-        raise SystemExit(f"{tid} is done")
-    if taker(t) and taker(t).lower() != who.lower():
-        raise SystemExit(f"{tid} is live: {taker(t)} on {branch_of(t) or 'no branch'}. They release it first.")
-    set_head(t, f"taken by {who}")
-    set_field(t, "Taken", f"{today.isoformat()}, {who}")
-    set_field(t, "Branch", f"`{branch_name.strip()}`")
-    return render(pre, tasks)
+    if not who.strip():
+        raise SystemExit("taking a task names you: pass --who <your name>")
+    if t.state not in ("open", "live"):
+        raise SystemExit(f"{t.id} is {t.state}; `revive` it first")
+    if t.state == "live" and t.taken_by.lower() != who.lower():
+        raise SystemExit(f"{t.id} is live: {t.taken_by} on {t.branch or 'no branch'}. They release it first.")
+    t.state, t.taken_by, t.branch, t.taken = "live", who.strip(), branch_name.strip(), today.isoformat()
 
 
 def reopen(t, why, today):
-    """Back to open, nobody's: the taker and branch come off, and a dated line says why."""
-    who, name = taker(t), branch_of(t)
-    set_head(t, "open")
-    drop_field(t, "Branch")
-    set_field(t, "Who can take it", "anyone")
-    t.lines.append(f"- **Released:** {today.isoformat()}, {who}" + (f" on `{name}`" if name else "") + f": {why}")
+    """Back to open, nobody's: the taker and branch come off, and a dated line says why. The 14 days start again."""
+    who, name = t.taken_by, t.branch
+    t.state, t.taken_by, t.branch, t.taken = "open", "", "", ""
+    t.released = f"{today.isoformat()}, {who}" + (f" on `{name}`" if name else "") + f": {why}"
+    t.notes.append(f"Back to open, nobody's: {why}.")
 
 
-def release(text, tid, note=None, today=None):
-    today = today or datetime.date.today()
-    pre, tasks = parse(text)
-    t = find(tasks, tid)
-    if not taker(t):
-        raise SystemExit(f"{tid} is {t.status}, not taken")
+def release(t, note, today):
+    if t.state != "live":
+        raise SystemExit(f"{t.id} is {t.state}, not taken")
     reopen(t, note or "released", today)
-    return render(pre, tasks)
+
+
+def close_done(t, note, today):
+    if not (note or "").strip():
+        raise SystemExit("done needs --note: what proved it (the check, the commit, the result)")
+    if t.state not in ("open", "live"):
+        raise SystemExit(f"{t.id} is already {t.state}")
+    t.state, t.done = "done", f"{today.isoformat()}, {note.strip()}"
+    t.notes.append(f"Done: {note.strip()}")
+
+
+def archive(t, note, today):
+    if t.state == "live":
+        raise SystemExit(f"{t.id} is live: {t.taken_by} on {t.branch or 'no branch'}. Release it first.")
+    if t.state != "open":
+        raise SystemExit(f"{t.id} is already {t.state}")
+    t.state, t.archived = "archived", f"{today.isoformat()}, {note or 'archived by hand'}"
+    if note:
+        t.notes.append(f"Archived: {note}")
+
+
+def revive(t, today):
+    if t.state not in ("done", "archived"):
+        raise SystemExit(f"{t.id} is {t.state}; only a done or archived task comes back")
+    t.state, t.done, t.archived, t.revived = "open", "", "", today.isoformat()
+    t.taken_by = t.branch = t.taken = ""
+
+
+def set_class(t, field, value, by, today, why="", area_open=None):
+    """A person's override (or a review's): attributed, and never touched by anything automatic until it is cleared."""
+    stamp = f"{by} {today.isoformat()}"
+    if field == "priority":
+        if value == "clear":
+            t.prio_by = ""
+            t.priority, t.prio_why = rule_priority(t, today, area_open or {})
+            t.prio_by = f"rule {today.isoformat()}"
+            return
+        if value not in PRIORITIES:
+            raise SystemExit(f"priority is one of {', '.join(PRIORITIES)}")
+        t.priority, t.prio_why, t.prio_by = value, why or f"set by {by}", stamp
+    elif field == "dept":
+        if value == "clear":
+            t.dept, t.dept_by = DEPT_OF_KIND.get(t.kind, "developers"), f"kind {today.isoformat()}"
+            return
+        key = next((k for k, v in DEPTS.items() if value.lower() in (k, v.lower())), None)
+        if not key:
+            raise SystemExit(f"dept is one of {', '.join(DEPTS)}")
+        t.dept, t.dept_by = key, stamp
+    elif field == "milestone":
+        if value == "clear":
+            t.milestone, t.ms_why = rule_milestone(t)
+            t.ms_by = f"rule {today.isoformat()}"
+            return
+        value = "" if value.lower() == "none" else value.upper()
+        if value and not re.fullmatch(r"M\d+", value):
+            raise SystemExit(f"milestone is a key such as {', '.join(MILESTONE_KEYS)} (`milestone list`), or none")
+        t.milestone, t.ms_why, t.ms_by = value, why or f"set by {by}", stamp
+    else:
+        raise SystemExit("set takes priority, dept or milestone")
+
+
+# --- GitHub ----------------------------------------------------------------------------------------------------------
+
+def gh_api(method, path, payload=None):
+    args = ["gh", "api", "--method", method, path] + (["--input", "-"] if payload is not None else [])
+    r = subprocess.run(args, input=json.dumps(payload) if payload is not None else None, capture_output=True, text=True)
+    if r.returncode != 0:
+        raise SystemExit(f"gh api {method} {path} failed: {r.stderr.strip()[:400]}")
+    return json.loads(r.stdout) if r.stdout.strip() else None
+
+
+class FakeApi:
+    """GitHub's issue endpoints in memory. --self-test runs on it, and --offline FILE runs any command on a saved dump
+    of the issues (a dry run without the network, or a rehearsal of migrate, then sweep, then sync)."""
+
+    def __init__(self, issues=None, milestones=None, path=None, repo="o/r"):
+        self.issues = {i["number"]: dict(i) for i in issues or []}
+        self.milestones = [dict(m) for m in milestones or []]
+        self.labels = {(l["name"] if isinstance(l, dict) else l) for i in self.issues.values() for l in i.get("labels", [])}
+        self.comments, self.path, self.repo, self.calls, self.clock = [], path, repo, [], 0
+
+    @classmethod
+    def load(cls, path):
+        data = json.loads(read(path) or "[]")
+        data = {"issues": data} if isinstance(data, list) else data
+        return cls(data.get("issues"), data.get("milestones"), path)
+
+    def save(self):
+        if self.path:
+            with open(self.path, "w", encoding="utf-8") as fh:
+                json.dump({"issues": sorted(self.issues.values(), key=lambda i: -i["number"]),
+                           "milestones": self.milestones, "comments": self.comments}, fh, indent=1, ensure_ascii=False)
+
+    def _stamp(self):
+        self.clock += 1
+        return f"2026-10-25T00:00:{self.clock % 60:02d}Z"
+
+    def _milestone(self, number):
+        return next((dict(m) for m in self.milestones if m["number"] == number), None) if number else None
+
+    def __call__(self, method, path, payload=None):
+        self.calls.append((method, path))
+        url = urllib.parse.urlsplit(path)
+        q = dict(urllib.parse.parse_qsl(url.query))
+        rest = url.path.split("/")[3:]
+        if rest == ["issues"] and method == "GET":
+            items = sorted(self.issues.values(), key=lambda i: -i["number"])
+            if q.get("labels"):
+                items = [i for i in items if q["labels"] in [l["name"] for l in i["labels"]]]
+            if q.get("state", "open") != "all":
+                items = [i for i in items if i["state"] == q.get("state", "open")]
+            per, page = int(q.get("per_page", 30)), int(q.get("page", 1))
+            return [dict(i) for i in items[(page - 1) * per:page * per]]
+        if rest == ["issues"] and method == "POST":
+            n = max(self.issues, default=0) + 1
+            self.issues[n] = {"number": n, "title": payload["title"], "body": payload.get("body", ""), "state": "open",
+                              "state_reason": None, "labels": [{"name": l} for l in payload.get("labels", [])],
+                              "assignees": [], "milestone": self._milestone(payload.get("milestone")),
+                              "html_url": f"https://github.com/{self.repo}/issues/{n}", "created_at": self._stamp(),
+                              "updated_at": self._stamp(), "closed_at": None}
+            self.labels |= set(payload.get("labels", []))
+            return dict(self.issues[n])
+        if len(rest) == 2 and rest[0] == "issues" and method == "PATCH":
+            i = self.issues[int(rest[1])]
+            for k, v in payload.items():
+                if k == "labels":
+                    i["labels"] = [{"name": l} for l in v]
+                    self.labels |= set(v)
+                elif k == "milestone":
+                    i["milestone"] = self._milestone(v)
+                elif k == "assignees":
+                    i["assignees"] = [{"login": a} for a in v]
+                elif k == "state":
+                    i["state"] = v
+                    i["state_reason"] = payload.get("state_reason", "completed") if v == "closed" else "reopened"
+                    i["closed_at"] = self._stamp() if v == "closed" else None
+                elif k != "state_reason":
+                    i[k] = v
+            i["updated_at"] = self._stamp()
+            return dict(i)
+        if len(rest) == 3 and rest[0] == "issues" and rest[2] == "comments" and method == "POST":
+            self.comments.append({"issue": int(rest[1]), "body": payload["body"]})
+            return {"id": len(self.comments)}
+        if rest == ["milestones"]:
+            if method == "GET":
+                return [dict(m) for m in self.milestones]
+            m = dict(payload, number=len(self.milestones) + 1, open_issues=0, closed_issues=0)
+            self.milestones.append(m)
+            return dict(m)
+        if rest == ["labels"]:
+            if method == "GET":
+                return [{"name": l} for l in sorted(self.labels)] if int(q.get("page", 1)) == 1 else []
+            self.labels.add(payload["name"])
+            return dict(payload)
+        if len(rest) == 4 and rest[0] == "actions" and method == "PUT":
+            return None
+        raise ValueError(f"FakeApi does not serve {method} {path}")
+
+
+class Issues:
+    """The ticket store: the repository's issues labelled team-task, over `gh api` (REST). It pages with page=N
+    itself: gh's --paginate follows GitHub's next links, which name the repository by number, and the session proxy
+    refuses those (measured 2026-10-25)."""
+
+    def __init__(self, repo, api=gh_api):
+        self.repo, self.api, self._ms = repo, api, None
+
+    def _pages(self, path):
+        out, page, sep = [], 1, "&" if "?" in path else "?"
+        while True:
+            batch = self.api("GET", f"{path}{sep}per_page=100&page={page}") or []
+            out += batch
+            if len(batch) < 100:
+                return out
+            page += 1
+
+    def fetch(self, state="all"):
+        items = self._pages(f"repos/{self.repo}/issues?labels={LABEL}&state={state}")
+        return [from_issue(i) for i in items if not i.get("pull_request")]
+
+    def milestone_numbers(self):
+        if self._ms is None:
+            self._ms = {m["title"].split(" ")[0]: m["number"] for m in self._pages(f"repos/{self.repo}/milestones?state=all")}
+        return self._ms
+
+    def payload(self, t):
+        keep = [l["name"] if isinstance(l, dict) else l for l in (t.raw or {}).get("labels", [])]
+        p = {"title": issue_title(t), "body": render_body(t), "labels": issue_labels(t, keep),
+             "state": "open" if t.is_open else "closed"}
+        if not t.is_open:
+            p["state_reason"] = "completed" if t.state == "done" else "not_planned"
+        number = self.milestone_numbers().get(t.milestone) if t.milestone else None
+        if number or not t.milestone:
+            p["milestone"] = number
+        return p
+
+    def changes(self, t):
+        """The fields of the issue that differ from what the ticket says, as a PATCH payload."""
+        want, raw = self.payload(t), t.raw or {}
+        have_labels = sorted(l["name"] if isinstance(l, dict) else l for l in raw.get("labels", []))
+        diff = {}
+        for k, v in want.items():
+            if k == "labels":
+                if sorted(v) != have_labels:
+                    diff[k] = v
+            elif k == "body":
+                if core(raw.get("body")) != v:
+                    diff[k] = v
+            elif k == "milestone":
+                if (raw.get("milestone") or {}).get("number") != v:
+                    diff[k] = v
+            elif k == "state_reason":
+                continue
+            elif raw.get(k) != v:
+                diff[k] = v
+        if not t.is_open and (raw.get("state") != "closed" or (raw.get("state_reason") or "completed") != want["state_reason"]):
+            diff["state"], diff["state_reason"] = "closed", want["state_reason"]
+        return diff
+
+    def create(self, t):
+        p = self.payload(t)
+        created = self.api("POST", f"repos/{self.repo}/issues",
+                           {k: p[k] for k in ("title", "body", "labels", "milestone") if p.get(k) is not None})
+        t.number, t.url, t.raw = created["number"], created.get("html_url", ""), created
+        if not t.is_open:
+            t.raw = self.api("PATCH", f"repos/{self.repo}/issues/{t.number}",
+                             {"state": "closed", "state_reason": p["state_reason"]})
+        return t.number
+
+    def write(self, t):
+        """Create or update the issue, post the ticket's pending notes as comments; returns what changed."""
+        if t.number is None:
+            self.create(t)
+            diff = {"created": True}
+        else:
+            diff = self.changes(t)
+            if diff:
+                t.raw = self.api("PATCH", f"repos/{self.repo}/issues/{t.number}", diff)
+        if t.assignees:
+            self.api("PATCH", f"repos/{self.repo}/issues/{t.number}", {"assignees": []})
+            t.assignees, diff = [], dict(diff, assignees=[])
+        for note in t.notes:
+            self.api("POST", f"repos/{self.repo}/issues/{t.number}/comments", {"body": note})
+        t.notes = []
+        return diff
+
+    def ensure_labels(self, names):
+        have = {l["name"] for l in self._pages(f"repos/{self.repo}/labels")}
+        for name in sorted(set(names) - have):
+            color = LABEL_COLORS.get(name) or LABEL_COLORS.get(name.split(":")[0], "ededed")
+            self.api("POST", f"repos/{self.repo}/labels", {"name": name, "color": color})
+
+    def ensure_milestones(self):
+        made = []
+        for key, name, gate, scope in MILESTONES:
+            if key not in self.milestone_numbers():
+                m = self.api("POST", f"repos/{self.repo}/milestones",
+                             {"title": f"{key} · {name}", "description": f"{scope}\n\nGate: {gate or '-'}"})
+                self._ms[key] = m["number"]
+                made.append(key)
+        return made
+
+
+def repo_name():
+    if os.environ.get("GITHUB_REPOSITORY"):
+        return os.environ["GITHUB_REPOSITORY"]
+    url = git("remote", "get-url", "origin").stdout.strip()
+    m = re.search(r"github\.com[/:]([^/]+/[^/.]+)", url) or re.search(r"/git/([^/]+/[^/.]+?)(?:\.git)?$", url)
+    if not m:
+        raise SystemExit(f"cannot tell the GitHub repository from origin ({url!r}); pass --repo OWNER/NAME")
+    return m.group(1)
+
+
+def open_tickets(area_names=None, repo=None):
+    """Open and live tickets for a reader (perf_hunt's status, team_report): [] when GitHub cannot be read, because a
+    status or a report must never fail on the network."""
+    try:
+        tickets = Issues(repo or repo_name()).fetch("open")
+    except (SystemExit, Exception):  # noqa: BLE001 - gh missing, no token, offline
+        return []
+    names = {n.lower() for n in area_names} if area_names else None
+    return [t for t in tickets if t.is_open and (names is None or t.area.lower() in names)]
+
+
+def find(tickets, tid):
+    for t in tickets:
+        if t.id == tid or (tid.lstrip("#").isdigit() and t.number == int(tid.lstrip("#"))):
+            return t
+    raise SystemExit(f"no ticket {tid}")
+
+
+def team():
+    try:
+        return json.loads(read(TEAM) or "{}").get("people", [])
+    except ValueError:
+        return []
+
+
+def canon(name):
+    """A display name as the team writes it: "Shombith03" or "shombith@froglet.studio" -> "Shombith"."""
+    n = (name or "").strip()
+    for p in team():
+        if n.lower() in [x.lower() for x in p.get("names", []) + p.get("emails", []) + [p["name"]]] or \
+                n.split(" ")[0].lower() == p["name"].lower():
+            return p["name"]
+    return n
+
+
+def me():
+    for key in ("user.email", "user.name"):
+        value = git("config", key).stdout.strip()
+        name = canon(value)
+        if name and any(p["name"] == name for p in team()):
+            return name
+    return ""
+
+
+# --- Sweep: the branch decides when a live ticket leaves; the clock decides when an untaken one does ----------------
+
+def ere(s):
+    """Escape a branch name for git's --grep (POSIX extended regex)."""
+    return re.sub(r"([.\[\]()*+?{}|^$\\])", r"\\\1", s)
+
+
+def probe_branch(name, taken, base=BASE):
+    """What git knows about a task's branch. Merged = a merge commit on `base`, made on or after the day the task was
+    taken, names it (GitHub's "Merge pull request #N from owner/<branch>", or git's "Merge branch '<branch>'"; the date
+    matters for long-lived branches such as Ys-bleeding-edge, merged many times), or its tip is on `base` and is newer
+    than the day the task was taken (a branch cut from bleeding-edge with no commit yet is not "merged")."""
+    exists = git("rev-parse", "--verify", "--quiet", f"refs/remotes/origin/{name}").returncode == 0
+    pattern = f"(from [^/ ]+/{ere(name)}$|^Merge (remote-tracking )?branch '(origin/)?{ere(name)}')"
+    # An explicit midnight: git reads a bare date as that day at the current time, which missed a 04:19 merge at noon.
+    subject = git("log", base, "--merges", "-1", "--format=%s", f"--since={taken.isoformat()} 00:00:00", "-E",
+                  f"--grep={pattern}").stdout.strip()
+    pr = re.search(r"#(\d+)", subject)
+    last = None
+    merged = bool(subject)
+    if exists:
+        stamp = git("log", "-1", "--format=%cs", f"origin/{name}").stdout.strip()
+        last = datetime.date.fromisoformat(stamp) if stamp else None
+        if not merged and last and last >= taken:
+            merged = git("merge-base", "--is-ancestor", f"origin/{name}", base).returncode == 0
+    return {"exists": exists, "merged": merged, "pr": pr.group(1) if pr else None, "last": last}
 
 
 def plan_sweep(tasks, probe, today, idle_days=IDLE_DAYS):
@@ -314,694 +955,857 @@ def plan_sweep(tasks, probe, today, idle_days=IDLE_DAYS):
     return plan
 
 
-def apply_sweep(text, plan, today, base=BASE):
-    pre, tasks = parse(text)
-    into = base.split("/", 1)[-1]
+def apply_sweep(tickets, plan, today, base=BASE):
+    """Apply a plan to the tickets in memory; returns the tickets that changed."""
+    into, by_id, changed = base.split("/", 1)[-1], {t.id: t for t in tickets}, []
     for tid, action, detail in plan:
-        t = find(tasks, tid)
+        t = by_id[tid]
         if action == "unassign":
-            set_field(t, "Who can take it", "anyone")
+            pass   # Issues.write clears the assignees
         elif action == "merged":
             name, _, pr = detail.partition(" (#")
-            set_head(t, "done")
-            t.lines.append(f"- **Done:** {today.isoformat()}, `{name}` merged into {into}" + (f" in #{pr.rstrip(')')}" if pr else ""))
+            pr = pr.rstrip(")")
+            t.state, t.done = "done", f"{today.isoformat()}, `{name}` merged into {into}" + (f" in #{pr}" if pr else "")
+            t.notes.append(f"Done: `{name}` merged into {into}" + (f" in #{pr}" if pr else "") + ".")
         elif action == "gone":
             reopen(t, "the branch was deleted without merging", today)
         elif action == "idle":
-            reopen(t, f"{detail.split(', ', 1)[1]}", today)
+            reopen(t, detail.split(", ", 1)[1], today)
         elif action == "expire":
-            set_head(t, "archived")
-            t.lines.append(f"- **Archived:** {today.isoformat()}, {detail}")
-    return render(pre, tasks)
+            t.state, t.archived = "archived", f"{today.isoformat()}, {detail}"
+            t.notes.append(f"Archived: {detail}. Bring it back with `/team-tasks revive {t.id}` or from the page's "
+                           f"Archive.")
+        else:
+            continue
+        changed.append(t)
+    return changed
 
 
-def open_since(t):
-    """The day an open task started waiting: the day it was added (its id), or the day it was last released."""
-    days = [datetime.date(int(t.id[2:6]), int(t.id[6:8]), int(t.id[8:10]))]
-    for raw in t.lines:
-        f = FIELD.match(raw)
-        if f and f.group(1) in ("Released", "Revived"):
-            try:
-                days.append(datetime.date.fromisoformat(f.group(2)[:10]))
-            except ValueError:
-                pass
-    return max(days)
+def bridge(tickets, today, refs=BRIDGE_REFS, tasks=None):
+    """Tickets for old-board tasks no issue carries yet: a branch made before the switch that appends to
+    Docs/TEAM_TASKS.md still files its hand-off. Only open tasks, only ids GitHub has never seen."""
+    have = {t.id for t in tickets}
+    area_open = open_by_area(tickets)
+    out = []
+    for task in (tasks if tasks is not None else markdown_tasks(refs)).values():
+        if task.id in have or not task.is_open:
+            continue
+        t = from_task(task)
+        classify(t, today, area_open)
+        out.append(t)
+    return out
 
 
-ARCHIVE_PREAMBLE = ("# Team tasks: archive\n\nDone and archived tasks, moved out of [`TEAM_TASKS.md`](TEAM_TASKS.md) by "
-                    "`team_tasks.py sweep` (a task is archived when nobody takes it for 14 days, or by hand with "
-                    "`team_tasks.py archive`). `team_tasks.py revive <id>` brings an archived task back to the board.\n\n" + MARK)
-
-
-def load_archive(path=ARCHIVE):
-    return load(path) if os.path.exists(path) else ARCHIVE_PREAMBLE + "\n"
-
-
-def move_closed(board_text, archive_text):
-    """Move done and archived tasks from the board to the archive. Returns (board, archive, moved ids)."""
-    pre, tasks = parse(board_text)
-    apre, archived = parse(archive_text)
-    closed = [t for t in tasks if not t.is_open]
-    if not closed:
-        return board_text, archive_text, []
-    have = {t.id for t in archived}
-    archived += [t for t in closed if t.id not in have]
-    return render(pre, [t for t in tasks if t.is_open]), render(apre, archived), [t.id for t in closed]
-
-
-def archive_task(text, tid, note=None, today=None):
-    today = today or datetime.date.today()
-    pre, tasks = parse(text)
-    t = find(tasks, tid)
-    if not t.is_open:
-        raise SystemExit(f"{tid} is already {t.status}")
-    if taker(t):
-        raise SystemExit(f"{tid} is live: {taker(t)} on {branch_of(t) or 'no branch'}. Release it first.")
-    set_head(t, "archived")
-    t.lines.append(f"- **Archived:** {today.isoformat()}" + (f", {note}" if note else ", by hand"))
-    return render(pre, tasks)
-
-
-def revive(board_text, archive_text, tid, today=None):
-    """An archived task back on the board: open, nobody's, its 14 days starting again."""
-    today = today or datetime.date.today()
-    apre, archived = parse(archive_text)
-    t = find(archived, tid)
-    if t.status != "archived":
-        raise SystemExit(f"{tid} is {t.status}; only an archived task comes back")
-    set_head(t, "open")
-    set_field(t, "Who can take it", "anyone")
-    t.lines.append(f"- **Revived:** {today.isoformat()}")
-    pre, tasks = parse(board_text)
-    return render(pre, tasks + [t]), render(apre, [a for a in archived if a.id != tid])
-
-
-def git(*args):
-    return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True)
-
-
-def ere(s):
-    """Escape a branch name for git's --grep (POSIX extended regex)."""
-    return re.sub(r"([.\[\]()*+?{}|^$\\])", r"\\\1", s)
-
-
-def probe_branch(name, taken, base=BASE):
-    """What git knows about a task's branch. Merged = a merge commit on `base`, made on or after the day the task was
-    taken, names it (GitHub's "Merge pull request #N from owner/<branch>", or git's "Merge branch '<branch>'"; the date
-    matters for long-lived branches such as Ys-bleeding-edge, merged many times), or its tip is on `base` and is newer
-    than the day the task was taken (a branch cut from bleeding-edge with no commit yet is not "merged")."""
-    exists = git("rev-parse", "--verify", "--quiet", f"refs/remotes/origin/{name}").returncode == 0
-    pattern = f"(from [^/ ]+/{ere(name)}$|^Merge (remote-tracking )?branch '(origin/)?{ere(name)}')"
-    # An explicit midnight: git reads a bare date as that day at the current time, which missed a 04:19 merge at noon.
-    subject = git("log", base, "--merges", "-1", "--format=%s", f"--since={taken.isoformat()} 00:00:00", "-E",
-                  f"--grep={pattern}").stdout.strip()
-    pr = re.search(r"#(\d+)", subject)
-    last = None
-    merged = bool(subject)
-    if exists:
-        stamp = git("log", "-1", "--format=%cs", f"origin/{name}").stdout.strip()
-        last = datetime.date.fromisoformat(stamp) if stamp else None
-        if not merged and last and last >= taken:
-            merged = git("merge-base", "--is-ancestor", f"origin/{name}", base).returncode == 0
-    return {"exists": exists, "merged": merged, "pr": pr.group(1) if pr else None, "last": last}
-
-
-def sweep(dry_run, fetch, base, idle_days, today=None):
+def sweep(store, dry_run, fetch, base, idle_days, hint=None, today=None, refs=BRIDGE_REFS, tasks=None, probe_fn=None):
     today = today or datetime.date.today()
     if fetch:
         r = git("fetch", "--prune", "--quiet", "origin")
         if r.returncode != 0:
             raise SystemExit(f"git fetch --prune origin failed: {r.stderr.strip()[:300]}")
-    text = load()
-    plan = plan_sweep(parse(text)[1], lambda name, taken: probe_branch(name, taken, base), today, idle_days)
+    tickets = store.fetch()
+    current = [t for t in tickets if not t.legacy]
+    filed = bridge(tickets, today, refs, tasks)
+    for t in filed:
+        print(f"{'would file' if dry_run else 'filed'} {t.id} from an old board: {t.title[:80]}")
+    for t in (t for t in current if t.adopt):
+        print(f"{'would adopt' if dry_run else 'adopted'} #{t.number} as {t.id}: {t.title[:80]}")
+        classify(t, today, open_by_area(current))
+
+    def probe(name, taken):
+        if hint and name == hint[0]:
+            return {"exists": True, "merged": True, "pr": hint[1], "last": None}
+        return (probe_fn or (lambda n, k: probe_branch(n, k, base)))(name, taken)
+
+    plan = plan_sweep([t for t in current if not t.adopt], probe, today, idle_days)
+    listed = {p[0] for p in plan if p[1] == "unassign"}
+    plan += [(t.id, "unassign", "assigned on GitHub: " + ", ".join(t.assignees)) for t in current
+             if t.is_open and t.assignees and t.id not in listed and t.state == "live"]
     words = {"unassign": "unassign (was: {})", "merged": "done: {} merged", "gone": "back to open: {} was deleted",
              "idle": "back to open: {}", "expire": "archived: {}", "no-branch": "left as is: {}"}
     for tid, action, detail in plan:
         print(f"{'would ' if dry_run else ''}{tid}: {words[action].format(detail)}")
-    changes = [p for p in plan if p[1] != "no-branch"]
-    board, archive, moved = move_closed(apply_sweep(text, changes, today, base), load_archive())
-    if not dry_run and (changes or moved):
-        save(archive, ARCHIVE)
-        save(board)
-    counts = {a: sum(1 for p in plan if p[1] == a) for a in words}
+    changed = apply_sweep(current, [p for p in plan if p[1] != "no-branch"], today, base)
+    changed += [t for t in current if (t.adopt or t.assignees) and t not in changed]
+    if not dry_run and (filed or changed):
+        store.ensure_labels({l for t in filed + changed for l in issue_labels(t)})
+        for t in filed + changed:
+            store.write(t)
+    legacy = [t for t in tickets if t.legacy]
+    counts = collections.Counter(p[1] for p in plan)
     print(f"sweep: {counts['merged']} done, {counts['gone'] + counts['idle']} back to open, {counts['expire']} archived "
-          f"after 14 days untaken, {counts['unassign']} unassigned, {counts['no-branch']} taken without a branch; "
-          f"{len(moved)} done or archived moved to TEAM_TASKS_ARCHIVE.md" + (" (dry run, nothing written)" if dry_run else ""))
+          f"after {idle_days} days untaken, {counts['unassign']} unassigned, {counts['no-branch']} taken without a "
+          f"branch, {len(filed)} filed from an old board" +
+          (f"; {len(legacy)} still in the old mirror's format, skipped until `migrate` runs" if legacy else "") +
+          (" (dry run, nothing written)" if dry_run else ""))
+    return plan, filed
 
 
-# --- The team hub (a claude.ai page) keeps a copy of the board people act on ---------------------------------
-# The page cannot reach git, so a Claude session carries changes across: it reads the page's `tasks` documents into
-# a JSON file, `hub-import`s them onto the board, runs `sweep`, then `hub-export`s the board back to the page.
+# --- migrate: the old board (and the old mirror's issues) -> tickets, once ------------------------------------------
 
-def hub_doc(t, state=None):
-    """One board task as the hub's `tasks/<id>` document."""
-    who = t.fields.get("Who can take it", "")
-    doc = {"id": t.id, "status": t.status if t.status in ("done", "archived") else "live" if taker(t) else "open",
-           "kind": t.kind, "area": t.area, "task": t.fields.get("Task", ""), "doneWhen": t.fields.get("Done when", ""),
-           "see": t.fields.get("See", ""), "added": t.fields.get("Added", ""),
-           "who": who if unassigned(who) or taker(t) else "anyone",
-           "takenBy": taker(t), "branch": branch_of(t), "takenAt": t.fields.get("Taken", "")[:10],
-           "done": t.fields.get("Done", ""), "released": t.fields.get("Released", ""),
-           "archived": t.fields.get("Archived", ""), "revived": t.fields.get("Revived", ""), "updatedBy": "board"}
-    if state:
-        doc["branchState"] = state
-    return doc
+STUB = """# Team tasks
 
+The team's hand-off tickets live on **GitHub Issues** (label `team-task`) since {date}; this file no longer holds
+them. Rules: [`Docs/TEAM.md`](TEAM.md) rule 9.
 
-def hub_export(text, probe=None, today=None, archive_text=None):
-    """The board (and the archive) as hub documents. With `probe`, each live task carries what git says about its
-    branch."""
-    today = today or datetime.date.today()
-    docs = []
-    for t in parse(text)[1] + (parse(archive_text)[1] if archive_text else []):
-        state = None
-        if probe and taker(t) and branch_of(t):
-            p = probe(branch_of(t), taken_on(t) or today)
-            state = {"exists": p["exists"], "merged": p["merged"], "pr": p.get("pr"),
-                     "last": p["last"].isoformat() if p.get("last") else None, "checked": today.isoformat()}
-        docs.append(hub_doc(t, state))
-    return docs
+- **The board:** the Froglet Tasks page, {page}
+- **From a session:** the `/team-tasks` skill, or `python3 Tools/Build/team_tasks.py list`
+- **On GitHub:** issues labelled [`team-task`](https://github.com/{repo}/issues?q=label%3Ateam-task)
+
+A task a branch still writes below the marker in the old format is filed as a ticket by the next sweep
+(`.github/workflows/team-tasks.yml`); prefer `/team-tasks add`.
+
+<!-- team-tasks -->
+"""
+ARCHIVE_STUB = """# Team tasks: archive
+
+Done and archived tickets are closed issues labelled `team-task` since {date}: closed as completed when done, as not
+planned with the label `archived` when nobody took them in 14 days. The Froglet Tasks page lists them under
+Archive, and `python3 Tools/Build/team_tasks.py revive <id>` brings one back. See [`TEAM_TASKS.md`](TEAM_TASKS.md).
+"""
 
 
-def hub_import(text, docs, since="", today=None, archive_text=None):
-    """Apply what people did in the hub since the last sync (`updatedAt` after `since`) to the board: new tasks,
-    takes, releases, closes, archives and revivals. Returns (board text, what changed, archive text)."""
-    today = today or datetime.date.today()
-    archive_text = archive_text or ARCHIVE_PREAMBLE + "\n"
-    done_ids = []
-    for d in sorted(docs, key=lambda d: d.get("updatedAt", "")):
-        if d.get("updatedBy", "board") == "board" or d.get("updatedAt", "") <= since:
+def plan_migrate(tickets, tasks, today):
+    """(rows, tickets to write) for moving the old board onto Issues. Pure. An issue the old mirror already made is
+    updated in place, never created twice; one already migrated is left as it is; one only GitHub has (its board copy
+    lives on a branch this checkout cannot read) is rebuilt from the old mirror's body."""
+    by_id = {t.id: t for t in tickets}
+    area_open = collections.Counter(t.area.lower() for t in tasks.values() if t.is_open)
+    rows, out = [], []
+    for tid in sorted(set(tasks) | {t.id for t in tickets if t.legacy}):
+        cur = by_id.get(tid)
+        if cur is not None and not cur.legacy:
+            rows.append((tid, "keep", cur))
             continue
-        pre, tasks = parse(text)
-        board = {t.id: t for t in tasks}
-        when = datetime.date.fromisoformat((d.get("takenAt") or d.get("updatedAt") or today.isoformat())[:10])
-        t = board.get(d["id"])
-        in_archive = {a.id: a for a in parse(archive_text)[1]}.get(d["id"])
-        if t is None and in_archive is not None:
-            if d["status"] in ("open", "live") and in_archive.status == "archived":
-                text, archive_text = revive(text, archive_text, d["id"], today)
-                done_ids.append(f"{d['id']}: revived")
-                t = find(parse(text)[1], d["id"])
-            else:
-                continue
-        if t is None:
-            if d.get("status") in ("done", "archived"):
-                continue
-            if not re.fullmatch(r"T-\d{8}-[0-9a-f]{4}", d.get("id", "")) or d.get("kind") not in KINDS:
-                done_ids.append(f"{d.get('id')}: skipped, not a well-formed task")
-                continue
-            lines = [f"### {d['id']} · open · {d['kind']} · {d['area']}",
-                     f"- **Task:** {d['task']}", f"- **Done when:** {d['doneWhen']}",
-                     f"- **Who can take it:** {d.get('who') if unassigned(d.get('who', '')) else 'anyone'}",
-                     f"- **Added:** {d.get('added') or today.isoformat() + ' in the team hub'}"]
-            if d.get("see"):
-                lines.append(f"- **See:** {d['see']}")
-            tasks.append(Task(d["id"], "open", d["kind"], d["area"], {}, lines))
-            text = render(pre, tasks)
-            done_ids.append(f"{d['id']}: added")
-            t = find(parse(text)[1], d["id"])
-        if d["status"] == "live" and (taker(t) != d.get("takenBy") or branch_of(t) != d.get("branch")):
-            if taker(t) and taker(t) != d.get("takenBy"):
-                text = release(text, t.id, f"taken over in the hub by {d.get('takenBy')}", today)
-            text = take(text, t.id, d["takenBy"], d["branch"], when)
-            done_ids.append(f"{t.id}: taken by {d['takenBy']} on {d['branch']}")
-        elif d["status"] == "open" and taker(t):
-            text = release(text, t.id, "released in the team hub", today)
-            done_ids.append(f"{t.id}: released")
-        elif d["status"] == "done" and t.status != "done":
-            text = set_status(text, t.id, "done", "Done", d.get("done") or "closed in the team hub", today)
-            done_ids.append(f"{t.id}: done")
-        elif d["status"] == "archived" and t.is_open and not taker(t):
-            text = archive_task(text, t.id, d.get("archived") or "archived in the team hub", today)
-            done_ids.append(f"{t.id}: archived")
-    return text, done_ids, archive_text
+        new = from_task(tasks[tid]) if tid in tasks else cur
+        if cur is not None:
+            new.number, new.url, new.raw, new.assignees, new.updated = cur.number, cur.url, cur.raw, cur.assignees, cur.updated
+            if cur.raw.get("state") == "closed" and new.is_open:
+                # The old mirror closed it from another copy of the board: it stays closed.
+                completed = (cur.raw.get("state_reason") or "completed") == "completed"
+                new.state = "done" if completed else "archived"
+                new.taken_by = new.branch = new.taken = ""
+                setattr(new, "done" if completed else "archived", "closed on GitHub before the migration")
+        new.legacy = False
+        new.notes = []
+        classify(new, today, area_open)
+        rows.append((tid, "create" if new.number is None else f"update #{new.number}", new))
+        out.append(new)
+    return rows, out
 
 
-def pr_section(text, base_text):
-    """Markdown naming the tasks this branch added or whose status it changed, for a PR body."""
-    _, now = parse(text)
+def migrate(store, dry_run, today, repo, refs=BRIDGE_REFS):
+    tasks = markdown_tasks(refs)
+    tickets = store.fetch()
+    rows, todo = plan_migrate(tickets, tasks, today)
+    print(f"{'id':<16} {'action':<12} {'state':<9} {'prio':<4} {'dept':<10} {'ms':<3} task")
+    for tid, action, t in rows:
+        print(f"{tid:<16} {action:<12} {t.state:<9} {t.priority:<4} {t.dept:<10} {t.milestone or '-':<3} {t.title[:70]}")
+    actions = collections.Counter(a.split(" ")[0] for _, a, _ in rows)
+    states = collections.Counter(t.state for _, _, t in rows)
+    print(f"migrate: {len(rows)} tickets ({', '.join(f'{v} {k}' for k, v in sorted(actions.items()))}); "
+          f"{', '.join(f'{v} {k}' for k, v in sorted(states.items()))}; "
+          f"{collections.Counter(t.priority for _, _, t in rows if t.is_open)} open by priority" +
+          (" (dry run, nothing written)" if dry_run else ""))
+    if dry_run:
+        return rows
     try:
-        before = {t.id: t.status for t in parse(base_text)[1]} if base_text else {}
-    except ValueError:
-        before = {}
-    added = [t for t in now if t.id not in before]
-    moved = [t for t in now if t.id in before and before[t.id] != t.status]
-    if not added and not moved:
+        store.api("PUT", f"repos/{repo}/actions/workflows/{OLD_WORKFLOW}/disable")
+        print(f"disabled the old mirror workflow ({OLD_WORKFLOW}): it would write the old bodies back")
+    except SystemExit as e:
+        print(f"WARNING: could not disable {OLD_WORKFLOW} ({e}); disable it under Actions before the next push of "
+              f"the old board, or it writes the old bodies back")
+    made = store.ensure_milestones()
+    if made:
+        print(f"created milestones {', '.join(made)}")
+    store.ensure_labels({l for t in todo for l in issue_labels(t)})
+    for t in todo:
+        store.write(t)
+    for path, stub in ((BOARD, STUB), (ARCHIVE, ARCHIVE_STUB)):
+        if os.path.exists(path) and (parse(read(path)) or path == ARCHIVE):
+            with open(path, "w", encoding="utf-8", newline="\n") as fh:
+                fh.write(stub.format(date=today.isoformat(), page=PAGE_URL, repo=repo))
+    print("wrote the stubs over Docs/TEAM_TASKS.md and Docs/TEAM_TASKS_ARCHIVE.md: commit them")
+    return rows
+
+
+# --- add: one ticket per branch ---------------------------------------------------------------------------------------
+
+def add(tickets, area, kind, task, done_when, priority, dept, why, milestone=None, see=None, by=None, who="anyone",
+        today=None, on=None):
+    """A new ticket, or (when this branch already has an open one) a checklist line on it. Returns (ticket, new?)."""
+    today, on = today or datetime.date.today(), on or branch()
+    if kind not in KINDS:
+        raise SystemExit(f"kind must be one of {', '.join(KINDS)}")
+    if not unassigned(who):
+        raise SystemExit(f"a task names nobody until someone takes it: pass --who anyone (or \"anyone with ...\" for "
+                         f"what the work needs), not {who!r} (Docs/TEAM.md rule 11)")
+    if not (why or "").strip():
+        raise SystemExit("add needs --why: one line naming what decided the priority, department and milestone")
+    mine = [t for t in tickets if t.filed_on == on and t.is_open and on not in SHARED_BRANCHES]
+    if mine:
+        t = mine[0]
+        t.steps.append([False, f"{task.strip()} (done when: {done_when.strip()})"])
+        return t, False
+    tid = new_id(task, today)
+    if any(t.id == tid for t in tickets):
+        raise SystemExit(f"{tid} already exists (the same task text was filed today)")
+    t = Ticket(tid, kind, area, task.strip(), [[False, s] for s in split_steps(done_when)], see or "", who.strip(),
+               today.isoformat(), by or "a Claude session", on)
+    # The filing session decides these from the work it just did; "claude" marks them as a session's, which a
+    # person's `set` (or a later review) may change.
+    set_class(t, "priority", priority, "claude", today, why)
+    set_class(t, "dept", dept, "claude", today)
+    set_class(t, "milestone", milestone or "none", "claude", today, why)
+    return t, True
+
+
+# --- sync: the Froglet Tasks page's store <-> Issues -----------------------------------------------------------------
+
+def norm(doc):
+    """A page-store document as {id, updatedAt, **fields}, whether it came flat or as ArtifactData's {id, data}."""
+    if isinstance(doc, dict) and isinstance(doc.get("data"), dict):
+        return dict(doc["data"], id=doc.get("id", doc["data"].get("id")), updatedAt=doc.get("updatedAt", ""))
+    return dict(doc)
+
+
+def page_doc(t):
+    since = open_since(t)
+    return {"id": t.id, "number": t.number, "url": t.url, "title": t.title, "task": t.task, "kind": t.kind,
+            "area": t.area, "dept": t.dept, "priority": t.priority, "prioWhy": t.prio_why, "prioBy": t.prio_by,
+            "deptBy": t.dept_by, "milestone": t.milestone, "msWhy": t.ms_why, "msBy": t.ms_by, "state": t.state,
+            "takenBy": t.taken_by, "branch": t.branch, "taken": t.taken, "filed": t.filed_date, "filedBy": t.filed_by,
+            "filedOn": t.filed_on, "needs": t.needs, "steps": [{"done": d, "text": s} for d, s in t.steps],
+            "see": t.see, "released": t.released, "revived": t.revived, "done": t.done, "archived": t.archived,
+            "openSince": since.isoformat(),
+            "archivesOn": (since + datetime.timedelta(days=IDLE_DAYS)).isoformat() if t.state == "open" else "",
+            "legacy": t.legacy, "updated": t.updated}
+
+
+def sync(store, data, since, dry_run, today=None, now=None):
+    """Apply the page's takes and overrides made after `since` to Issues, then return the page's new task documents:
+    {"at", "applied", "skipped", "write": [changed docs], "remove": [ids]}."""
+    today = today or datetime.date.today()
+    now = now or datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+    tickets = store.fetch()
+    by_id = {t.id: t for t in tickets}
+    events = sorted([("take", norm(d)) for d in data.get("takes", [])] +
+                    [("override", norm(d)) for d in data.get("overrides", [])], key=lambda e: e[1].get("updatedAt", ""))
+    applied, skipped, changed = [], [], {}
+    area_open = open_by_area(tickets)
+    for kind, d in events:
+        if d.get("updatedAt", "") <= since:
+            continue
+        t, who = by_id.get(d.get("id")), canon(d.get("by", ""))
+        if t is None or t.legacy:
+            skipped.append(f"{d.get('id')}: no such ticket" + (" (not migrated yet)" if t else ""))
+            continue
+        day = datetime.date.fromisoformat((d.get("at") or d.get("updatedAt") or today.isoformat())[:10])
+        try:
+            if kind == "take":
+                action = d.get("action", "take")
+                if action == "take":
+                    take(t, who, d.get("branch", ""), day)
+                elif action == "release":
+                    release(t, d.get("note") or f"released on the page by {who}", day)
+                elif action == "done":
+                    close_done(t, d.get("note") or f"closed on the page by {who}", day)
+                elif action == "archive":
+                    archive(t, d.get("note") or f"archived on the page by {who}", day)
+                elif action == "revive":
+                    revive(t, day)
+                else:
+                    raise SystemExit(f"unknown action {action!r}")
+                applied.append(f"{t.id}: {action} by {who}" + (f" on {t.branch}" if action == "take" else ""))
+            else:
+                for field in ("priority", "dept", "milestone"):
+                    if field in d:
+                        set_class(t, field, d[field] or "clear", who, day, d.get("why", ""), area_open)
+                        applied.append(f"{t.id}: {field} {d[field] or 'cleared'} by {who}")
+            changed[t.id] = t
+        except SystemExit as e:
+            skipped.append(f"{t.id}: {e}")
+    if not dry_run:
+        for t in changed.values():
+            store.write(t)
+    prev = {norm(d)["id"]: norm(d) for d in data.get("tasks", [])}
+    docs = [dict(page_doc(t), syncedAt=now) for t in tickets]
+    strip = lambda d: {k: v for k, v in (d or {}).items() if k not in ("syncedAt", "updatedAt", "updated")}
+    write = [d for d in docs if strip(prev.get(d["id"])) != strip(d)]
+    remove = sorted(set(prev) - {d["id"] for d in docs})
+    return {"at": now, "applied": applied, "skipped": skipped, "write": write, "remove": remove,
+            "counts": dict(collections.Counter(t.state for t in tickets))}
+
+
+# --- review: a Claude session re-reads tickets and proposes; a person approves; then it is written -------------------
+
+def review_rows(tickets, ids=None, area=None, every=False, batch=None, size=25):
+    picked = [t for t in tickets if t.is_open and not t.legacy and
+              (every or (ids and t.id in ids) or (area and area.lower() in t.area.lower()))]
+    if batch:
+        picked = picked[(batch - 1) * size:batch * size]
+    return [{"id": t.id, "number": t.number, "task": t.task, "doneWhen": [s for _, s in t.steps], "area": t.area,
+             "kind": t.kind, "filedOn": t.filed_on, "filed": t.filed_date, "state": t.state,
+             "priority": t.priority, "prioBy": t.prio_by, "dept": t.dept, "deptBy": t.dept_by,
+             "milestone": t.milestone, "msBy": t.ms_by, "openSince": open_since(t).isoformat()} for t in picked]
+
+
+def review_apply(tickets, decisions, today):
+    """Apply a review's decisions in memory: [{id, priority?, dept?, milestone?, why, duplicateOf?}]. A field a person
+    set is kept. Returns (rows, changed tickets)."""
+    by_id, rows, changed = {t.id: t for t in tickets}, [], {}
+    for d in decisions:
+        t = by_id.get(d.get("id"))
+        if t is None:
+            rows.append((d.get("id"), "-", "no such ticket", ""))
+            continue
+        why = d.get("why", "")
+        moved = []
+        for field, attr, by_attr in (("priority", "priority", "prio_by"), ("dept", "dept", "dept_by"),
+                                     ("milestone", "milestone", "ms_by")):
+            if field not in d or d[field] is None:
+                continue
+            old = getattr(t, attr)
+            if by_person(getattr(t, by_attr)):
+                if (d[field] or "") != old:
+                    rows.append((t.id, field, f"{old} kept (set by {getattr(t, by_attr)})", why))
+                continue
+            set_class(t, field, (d[field] or "none") if field == "milestone" else d[field], "claude", today, why)
+            if getattr(t, attr) != old:
+                moved.append(f"{field} {old or '-'} -> {getattr(t, attr) or '-'}")
+                rows.append((t.id, field, f"{old or '-'} -> {getattr(t, attr) or '-'}", why))
+        target = by_id.get(d.get("duplicateOf") or "")
+        if target is not None and target is not t:
+            for step in [[False, f"{t.title} (from {t.id})"]] + t.steps:
+                if step[1] not in [s for _, s in target.steps]:
+                    target.steps.append([step[0], step[1]])
+            t.state, t.merged_into = "merged", target.id
+            t.notes.append(f"Merged into {target.id}" + (f" (#{target.number})" if target.number else "") +
+                           ": the same work filed from another branch.")
+            changed[target.id] = target
+            rows.append((t.id, "duplicate", f"merged into {target.id}", why))
+            moved.append(f"merged into {target.id}")
+        if moved:
+            t.notes.append(f"Re-evaluated {today.isoformat()} by a Claude session: {why}")
+            changed[t.id] = t
+    return rows, list(changed.values())
+
+
+# --- pr-section --------------------------------------------------------------------------------------------------------
+
+def pr_section(tickets, branch_name):
+    """Markdown naming the tickets this branch filed or took, for a PR body (/ship)."""
+    filed = [t for t in tickets if t.filed_on == branch_name and t.state != "merged"]
+    taken = [t for t in tickets if t.branch == branch_name and t not in filed]
+    if not filed and not taken:
         return ""
-    out = ["## Hand-offs (Docs/TEAM_TASKS.md)", ""]
-    for t in added:
-        out.append(f"- **New** `{t.id}` ({t.kind}, {t.area}): {t.fields.get('Task', '')} "
-                   f"Who can take it: {t.fields.get('Who can take it', '')}.")
-    for t in moved:
-        out.append(f"- `{t.id}` is now **{t.status}**: {t.fields.get('Task', '')}")
+    link = lambda t: f"[`{t.id}`]({t.url})" if t.url else f"`{t.id}`"
+    out = ["## Hand-offs (Froglet Tasks)", ""]
+    for t in filed:
+        out.append(f"- **New** {link(t)} ({t.kind}, {t.area}, {t.priority}): {t.title}"
+                   + ("" if t.is_open else f" ({t.state})"))
+    for t in taken:
+        out.append(f"- {link(t)} is **{t.state}** on this branch" + (", and closes when it merges" if t.state == "live"
+                                                                      else "") + f": {t.title}")
     return "\n".join(out)
 
 
-def git_show(ref):
-    try:
-        return subprocess.run(["git", "show", f"{ref}:Docs/TEAM_TASKS.md"], cwd=ROOT, capture_output=True,
-                              text=True, check=True).stdout
-    except (subprocess.CalledProcessError, FileNotFoundError):
+def pr_section_markdown(text, base_text):
+    """The same for tasks a branch still wrote on the old markdown board."""
+    before = {t.id: t.status for t in parse(base_text)}
+    now = parse(text)
+    added = [t for t in now if t.id not in before]
+    if not added:
         return ""
+    return "\n".join(["## Hand-offs (old board, filed as tickets by the next sweep)", ""] +
+                     [f"- **New** `{t.id}` ({t.kind}, {t.area}): {t.fields.get('Task', '')}" for t in added])
 
 
-# --- GitHub issues --------------------------------------------------------------------------------------------
-
-LABEL = "team-task"
-LABEL_COLORS = {LABEL: "5319e7", "taken": "fbca04", "kind": "0e8a16", "area": "1d76db"}
-RANK = {"open": 0, "taken": 1, "done": 2}
-
-
-def rank(status):
-    return RANK["done"] if status in ("done", "archived") else RANK["taken"] if status.startswith("taken") else RANK["open"]
-
-
-def slug(text):
-    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:40] or "general"
-
-
-def issue_title(t):
-    task = t.fields.get("Task", "")
-    return f"[{t.id}] " + (task if len(task) <= 100 else task[:97].rstrip() + "...")
-
-
-def issue_labels(t):
-    labels = [LABEL, f"kind:{t.kind}", f"area:{slug(t.area)}"]
-    if t.status.startswith("taken"):
-        labels.append("taken")
-    return labels
-
-
-def issue_body(t, repo, ref):
-    rows = "\n".join(f"- **{k}:** {v}" for k, v in t.fields.items())
-    return (f"**Status on the board:** {t.status}\n\n{rows}\n\n---\n"
-            f"Mirrored from [`Docs/TEAM_TASKS.md`](https://github.com/{repo}/blob/{ref}/Docs/TEAM_TASKS.md) by "
-            f"`Tools/Build/team_tasks.py gh-sync`. **Edit the board, not this body** (the next sync rewrites it); "
-            f"comment here freely. Take it with `team_tasks.py take {t.id} --who <you> --branch <your branch>`; it "
-            f"leaves the board when that branch merges (Docs/TEAM.md rule 9).\n<!-- team-task:{t.id} -->")
-
-
-def body_core(body):
-    """The body up to and including its task marker. GitHub-side tooling may append to a body (an attribution
-    footer, seen on the first sync), and that must not read as a change, or every sync rewrites every issue."""
-    body = (body or "").replace("\r\n", "\n")
-    m = re.search(r"<!-- team-task:T-\d{8}-[0-9a-f]{4} -->", body)
-    return body[:m.end()] if m else body
-
-
-def plan_sync(tasks, issues, repo, ref):
-    """The GitHub calls that make `issues` mirror `tasks`, as (action, task id, payload, issue number) tuples, plus
-    the ids closed on GitHub that this board still has open. Pure, so --self-test proves it without a network."""
-    by_id = {}
-    for i in issues:
-        m = re.match(r"\[(T-\d{8}-[0-9a-f]{4})\]", i.get("title", ""))
-        if m:
-            by_id[m.group(1)] = i
-    actions, behind = [], []
-    for t in tasks:
-        want = {"title": issue_title(t), "body": issue_body(t, repo, ref), "labels": issue_labels(t)}
-        i = by_id.get(t.id)
-        if i is None:
-            actions.append(("create", t.id, dict(want, state="closed" if not t.is_open else "open"), None))
-            continue
-        on_gh_closed = i.get("state") == "closed"
-        gh_rank = RANK["done"] if on_gh_closed else RANK["taken"] if "taken" in i.get("labels", []) else RANK["open"]
-        if rank(t.status) < gh_rank:
-            if on_gh_closed:
-                behind.append(t.id)
-            continue   # monotonic: an older copy of the board never moves an issue backwards
-        patch = {k: v for k, v in want.items()
-                 if (sorted(i.get(k) or []) != sorted(v) if k == "labels" else
-                     body_core(i.get(k)) != body_core(v) if k == "body" else i.get(k) != v)}
-        if not t.is_open and not on_gh_closed:
-            patch["state"] = "closed"
-            patch["state_reason"] = "completed" if t.status == "done" else "not_planned"
-        if patch:
-            actions.append(("update", t.id, patch, i["number"]))
-    return actions, behind
-
-
-def gh(args, payload=None):
-    r = subprocess.run(["gh", "api"] + args + (["--input", "-"] if payload is not None else []),
-                       input=json.dumps(payload) if payload is not None else None, capture_output=True, text=True)
-    if r.returncode != 0:
-        raise SystemExit(f"gh api {' '.join(args)} failed: {r.stderr.strip()[:400]}")
-    return r.stdout
-
-
-def repo_name():
-    if os.environ.get("GITHUB_REPOSITORY"):
-        return os.environ["GITHUB_REPOSITORY"]
-    url = subprocess.run(["git", "remote", "get-url", "origin"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
-    m = re.search(r"github\.com[/:]([^/]+/[^/.]+)", url)
-    if not m:
-        raise SystemExit(f"cannot tell the GitHub repository from origin ({url!r}); pass --repo OWNER/NAME")
-    return m.group(1)
-
-
-def gh_sync(repo, dry_run):
-    tasks = parse(load())[1] + parse(load_archive())[1]
-    ref = os.environ.get("GITHUB_REF_NAME") or branch()
-    lines = gh(["--paginate", f"repos/{repo}/issues?labels={LABEL}&state=all&per_page=100",
-                "--jq", ".[] | select(.pull_request == null) | {number, title, state, body, labels: [.labels[].name]}"])
-    issues = [json.loads(l) for l in lines.splitlines() if l.strip()]
-    actions, behind = plan_sync(tasks, issues, repo, ref)
-    if not dry_run and actions:
-        have = set(gh(["--paginate", f"repos/{repo}/labels?per_page=100", "--jq", ".[].name"]).split("\n"))
-        need = sorted({l for _, _, p, _ in actions for l in p.get("labels", [])} - have)
-        for name in need:
-            color = LABEL_COLORS.get(name.split(":")[0], "ededed")
-            gh(["--method", "POST", f"repos/{repo}/labels"], {"name": name, "color": color})
-    for action, tid, payload, number in actions:
-        what = f"{action} {tid}" + (f" (#{number})" if number else "") + ": " + ", ".join(sorted(payload))
-        print(("would " if dry_run else "") + what)
-        if dry_run:
-            continue
-        if action == "create":
-            state = payload.pop("state")
-            created = json.loads(gh(["--method", "POST", f"repos/{repo}/issues"], payload))
-            if state == "closed":
-                done = any(t.id == tid and t.status == "done" for t in tasks)
-                gh(["--method", "PATCH", f"repos/{repo}/issues/{created['number']}"],
-                   {"state": "closed", "state_reason": "completed" if done else "not_planned"})
-        else:
-            gh(["--method", "PATCH", f"repos/{repo}/issues/{number}"], payload)
-    for tid in behind:
-        print(f"closed on GitHub, still open on this board: {tid} - close it here with `team_tasks.py done {tid}`")
-    print(f"gh-sync: {len(actions)} change(s) {'planned' if dry_run else 'made'}, {len(tasks)} tasks, "
-          f"{len(issues)} issues on {repo}")
-
+# --- self-test ----------------------------------------------------------------------------------------------------------
 
 def self_test():
     bad = []
-    seed = "# Board\n\n" + MARK + "\n"
-    day = datetime.date(2026, 10, 15)
-    t1, a = add(seed, "Activation", "test", "Play the guide once.", "It draws.", "anyone", today=day)
-    t2, b = add(t1, "Activation", "setup", "Declare the events.", "UGS lists them.", "anyone", see="x", today=day)
-    if a == b or not re.match(r"T-20261015-[0-9a-f]{4}$", a):
-        bad.append("ids are not distinct date+hash ids")
-    if errors(t2):
-        bad.append(f"a board the script wrote fails its own check: {errors(t2)}")
-    try:
-        add(t2, "Activation", "test", "Play the guide once.", "x", "y", today=day)
-        bad.append("the same task added twice on one day was accepted")
-    except SystemExit:
-        pass
-    t3 = set_status(t2, a, "taken by Yash", "Taken", "Yash", today=day)
-    t4 = set_status(t3, a, "done", "Done", "passed on 993a3b4dc", today=day)
-    tasks = parse(t4)[1]
-    if tasks[0].status != "done" or tasks[1].status != "open" or "Done" not in tasks[0].fields:
-        bad.append("take/done did not move the status")
-    if [t.id for t in tasks if t.is_open] != [b]:
-        bad.append("open filter is wrong")
-    sec = pr_section(t4, t1)
-    if f"**New** `{b}`" not in sec or f"`{a}` is now **done**" not in sec:
-        bad.append(f"pr-section missed a new or moved task: {sec!r}")
-    if pr_section(t4, t4):
-        bad.append("pr-section reported an unchanged board")
-    for broken, what in ((t2.replace("- **Done when:** It draws.\n", ""), "a missing field"),
-                         (t2 + "\n" + t2.split(MARK)[1].strip() + "\n", "a duplicate id"),
-                         (t2.replace(" · test · ", " · testing · "), "an unknown kind"),
-                         (t2.replace(MARK, ""), "a missing marker"),
-                         (t2.replace("### ", "<<<<<<< HEAD\n### ", 1) + "=======\n>>>>>>> origin/bleeding-edge\n", "a conflict block"),
-                         (t2 + ">>>>>>> origin/bleeding-edge\n", "a lone closing conflict marker"),
-                         (t2 + "|||||||\n", "a diff3 base marker")):
-        if not errors(broken):
-            bad.append(f"--check missed {what}")
-    tk = parse(t4)[1]   # tasks[0] (a) done, tasks[1] (b) open
-    acts, behind = plan_sync(tk, [], "o/r", "main")
-    if [x[0] for x in acts] != ["create", "create"] or acts[0][2]["state"] != "closed" or LABEL not in acts[1][2]["labels"]:
-        bad.append(f"gh-sync did not create one issue per task with its state and label: {acts}")
-    mirrored = [dict(number=n, title=a2[2]["title"], body=a2[2]["body"], labels=a2[2]["labels"], state=a2[2]["state"])
-                for n, a2 in enumerate(acts, 1)]
-    if plan_sync(tk, mirrored, "o/r", "main") != ([], []):
-        bad.append("gh-sync is not idempotent on a mirrored board")
-    footed = [dict(m, body=m["body"].replace("\n", "\r\n") + "\r\n\n---\n_Generated by a bot_") for m in mirrored]
-    if plan_sync(tk, footed, "o/r", "main") != ([], []):
-        bad.append("a footer GitHub appended to a body read as a change")
-    older = parse(t2)[1]   # the same two tasks, both still open: an older copy of the board
-    acts2, behind2 = plan_sync(older, mirrored, "o/r", "main")
-    if any(x[1] == a for x in acts2) or behind2 != [a]:
-        bad.append(f"an older board moved a closed issue backwards or did not report it: {acts2} {behind2}")
-    taken = parse(t3)[1]
-    acts3, _ = plan_sync(taken, [dict(m, state="open") if m["title"].startswith(f"[{a}]") else m for m in mirrored],
-                         "o/r", "main")
-    if not any(x[1] == a and "taken" in x[2].get("labels", []) for x in acts3):
-        bad.append(f"taking a task did not label its issue: {acts3}")
-    if errors(t2 + "\n=========\n") or errors(t2 + "\nSee <<<<<<< in the merge notes.\n"):
-        bad.append("--check called a line that is not a conflict marker one")
-    try:
-        save(t2 + "=======\n", path=os.devnull)
-        bad.append("save wrote a board with a conflict marker in it")
-    except SystemExit:
-        pass
 
-    # Tasks name nobody; taking one names its branch; the branch decides when it leaves (Shombith, 2026-10-23).
-    for refused, what in ((lambda: add(t2, "UI", "test", "Name a person.", "x", "Yash (offered)", today=day),
-                           "add took a person in --who"),
-                          (lambda: take(t2, a, "Shombith", " ", today=day), "take took no branch")):
+    def refused(fn, what):
         try:
-            refused()
+            fn()
             bad.append(what)
         except SystemExit:
             pass
-    board, ids = seed, {}
+
+    day = datetime.date(2026, 10, 15)
+    api = FakeApi()
+    store = Issues("o/r", api)
+
+    # add: nobody's, needs a why, one ticket per branch
+    refused(lambda: add([], "UI", "test", "Name a person.", "x", "P3", "testers", "w", who="Yash (offered)", today=day,
+                        on="claude/a"), "add took a person in --who")
+    refused(lambda: add([], "UI", "test", "No why.", "x", "P3", "testers", "", today=day, on="claude/a"),
+            "add took no --why")
+    t1, new1 = add([], "Activation", "test", "Play the guide once.", "It draws; it ends", "P2", "testers",
+                   "the guide is M2", "M2", today=day, on="claude/a")
+    be, _ = add([], "Performance", "dev", "First regression.", "x", "P2", "developers", "w", today=day,
+                on="bleeding-edge")
+    be2, be2_new = add([be], "Performance", "dev", "Second regression.", "x", "P2", "developers", "w", today=day,
+                       on="bleeding-edge")
+    if not be2_new or be2 is be:
+        bad.append("add folded a task filed from a shared branch into that branch's other ticket")
+    store.write(t1)
+    t2, new2 = add(store.fetch(), "Activation", "test", "Play it again.", "It still draws.", "P3", "testers", "w",
+                   today=day, on="claude/a")
+    if not new1 or new2 or t2.id != t1.id or len(t2.steps) != 3:
+        bad.append("add did not append to the branch's open ticket")
+    store.write(t2)
+    t3, new3 = add(store.fetch(), "Tooling", "dev", "Other branch.", "x", "P3", "developers", "w", today=day,
+                   on="claude/b")
+    if not new3 or t3.id == t1.id or not ID_RE.fullmatch(t3.id):
+        bad.append("ids are not distinct date+hash ids")
+    store.write(t3)
+
+    # the issue: labels, block round trip, nothing to write a second time
+    issue = api.issues[t1.number]
+    names = {l["name"] for l in issue["labels"]}
+    if names != {LABEL, "kind:test", "area:activation", "dept:testers", "prio:P2"} or issue["assignees"]:
+        bad.append(f"a new ticket's labels are wrong: {names}")
+    back = find(store.fetch(), t1.id)
+    if store.changes(back) or (back.priority, back.dept, back.taken_by, back.steps) != ("P2", "testers", "", t2.steps):
+        bad.append(f"the machine block does not round-trip: {store.changes(back)}")
+    if "Who can take it" in issue["body"]:
+        bad.append("a plain 'anyone' ticket shows a who line")
+
+    # a person edits the body on GitHub: a ticked box and a GitHub footer survive; a deleted block is adopted
+    api.issues[t1.number]["body"] = issue["body"].replace("- [ ] It draws\n", "- [x] It draws\n").replace("\n", "\r\n") \
+        + "\r\n\r\n---\r\n_appended by a bot_"
+    ticked = find(store.fetch(), t1.id)
+    if ticked.steps[0] != [True, "It draws"] or store.changes(ticked):
+        bad.append("a box ticked on GitHub (or a footer GitHub appended) read as a change")
+    api.issues[t3.number]["body"] = "Just some words a person left."
+    api.issues[t3.number]["labels"].append({"name": "bug"})
+    lost = find(store.fetch(), t3.id)
+    if not lost.adopt or lost.state != "open" or "bug" not in issue_labels(lost, ["bug", "taken"]) or \
+            "taken" in issue_labels(lost, ["bug", "taken"]):
+        bad.append("a body without its block was not adopted as open, nobody's (or a person's label was dropped)")
+    hand = api("POST", "repos/o/r/issues", {"title": "Ship the thing", "body": "**Done when**\n- [ ] shipped",
+                                             "labels": [LABEL, "kind:setup"]})
+    adopted = find(store.fetch(), str(hand["number"]))
+    if not adopted.adopt or not ID_RE.fullmatch(adopted.id) or adopted.kind != "setup" or adopted.steps != [[False, "shipped"]]:
+        bad.append("an issue filed by hand on GitHub was not adopted with an id")
+
+    # take, release, done, archive, revive
+    t = find(store.fetch(), t3.id)
+    refused(lambda: take(t, "Shombith", " ", day), "take took no branch")
+    take(t, "Shombith", "claude/b", day)
+    refused(lambda: take(t, "Garrett", "claude/g", day), "a live ticket was taken from under its taker")
+    refused(lambda: archive(t, "", day), "a live ticket was archived")
+    take(t, "Shombith", "claude/b2", day)
+    store.write(t)
+    live = find(store.fetch(), t3.id)
+    if live.state != "live" or live.branch != "claude/b2" or "live" not in {l["name"] for l in api.issues[t3.number]["labels"]}:
+        bad.append("taking a ticket did not make it live on its branch, labelled live")
+    refused(lambda: close_done(live, "", day), "done took no note")
+    release(live, "plans changed", day)
+    if live.state != "open" or live.branch or "plans changed" not in live.released:
+        bad.append("release did not put the ticket back to open without its branch")
+
+    # sweep: merged / gone / idle / uncommitted / active / legacy / named / stale, then a second sweep is a no-op
+    api2 = FakeApi()
+    s2 = Issues("o/r", api2)
+    ids = {}
     for key in ("merged", "gone", "idle", "uncommitted", "active", "legacy", "named", "editor", "stale"):
-        # named and editor were added 10 days before the sweep, so they wait; stale waited 20 days, so it expires
-        board, ids[key] = add(board, "Tooling", "dev", f"Sweep case {key}.", "It sweeps.",
-                              "anyone with the Unity Editor" if key == "editor" else "anyone",
-                              today=day + datetime.timedelta(days=10) if key in ("named", "editor") else day)
-    for key in ("merged", "gone", "idle", "uncommitted", "active"):
-        board = take(board, ids[key], "Shombith", f"claude/{key}", today=day)
-    board = set_status(board, ids["legacy"], "taken by Yash", "Taken", "Yash", today=day)
-    pre, ts = parse(board)
-    set_field(find(ts, ids["named"]), "Who can take it", "Yash (offered)")
-    set_field(find(ts, ids["gone"]), "Who can take it", "Yash (testing it)")   # reopening clears a taken task's names too
-    board = render(pre, ts)
+        when = day + datetime.timedelta(days=10) if key in ("named", "editor") else day
+        tk, _ = add([], "Tooling", "dev", f"Sweep case {key}.", "It sweeps.", "P3", "developers", "w",
+                    who="anyone with the Unity Editor" if key == "editor" else "anyone", today=when, on=f"claude/f-{key}")
+        if key in ("merged", "gone", "idle", "uncommitted", "active"):
+            take(tk, "Shombith", f"claude/{key}", day)
+        if key == "legacy":
+            tk.state, tk.taken_by, tk.taken = "live", "Yash", day.isoformat()
+        s2.write(tk)
+        ids[key] = tk.id
+    named_issue = next(i for i in api2.issues.values() if ids["named"] in i["title"])
+    named_issue["assignees"] = [{"login": "yash"}]
     later = day + datetime.timedelta(days=20)
     facts = {"claude/merged": dict(exists=False, merged=True, pr="1500", last=None),
              "claude/gone": dict(exists=False, merged=False, pr=None, last=None),
              "claude/idle": dict(exists=True, merged=False, pr=None, last=day + datetime.timedelta(days=2)),
              "claude/uncommitted": dict(exists=True, merged=False, pr=None, last=day - datetime.timedelta(days=5)),
              "claude/active": dict(exists=True, merged=False, pr=None, last=later - datetime.timedelta(days=3))}
-    plan = plan_sweep(parse(board)[1], lambda name, taken: facts[name], later)
+    probe = lambda name, taken: facts[name]
+    plan = plan_sweep(s2.fetch(), probe, later)
     want = {ids["merged"]: "merged", ids["gone"]: "gone", ids["idle"]: "idle", ids["uncommitted"]: "idle",
             ids["legacy"]: "no-branch", ids["named"]: "unassign", ids["stale"]: "expire"}
     if {tid: action for tid, action, _ in plan} != want:
         bad.append(f"sweep planned the wrong moves: {plan}")
-    swept = apply_sweep(board, [p for p in plan if p[1] != "no-branch"], later)
-    ts = {t.id: t for t in parse(swept)[1]}
-    if ts[ids["merged"]].status != "done" or "#1500" not in ts[ids["merged"]].fields.get("Done", ""):
-        bad.append("a merged branch did not close its task with the PR")
+    swept = s2.fetch()
+    for tk in apply_sweep(swept, [p for p in plan if p[1] != "no-branch"], later) + \
+            [tk for tk in swept if tk.assignees]:
+        s2.write(tk)
+    after = {tk.id: tk for tk in s2.fetch()}
+    raw = {tk.id: tk.raw for tk in after.values()}
+    if after[ids["merged"]].state != "done" or raw[ids["merged"]]["state_reason"] != "completed" or \
+            not any("#1500" in c["body"] for c in api2.comments):
+        bad.append("a merged branch did not close its ticket as completed with the PR")
     for key in ("gone", "idle", "uncommitted"):
-        t = ts[ids[key]]
-        if t.status != "open" or branch_of(t) or t.fields.get("Who can take it") != "anyone" or "Released" not in t.fields:
-            bad.append(f"a {key} branch did not put its task back to open, nobody's")
-    if ts[ids["active"]].status != "taken by Shombith" or branch_of(ts[ids["active"]]) != "claude/active":
-        bad.append("an active branch's task was moved")
-    if ts[ids["named"]].fields.get("Who can take it") != "anyone" or \
-            ts[ids["editor"]].fields.get("Who can take it") != "anyone with the Unity Editor":
-        bad.append("sweep did not strip a name, or stripped what the work needs")
-    if ts[ids["legacy"]].status != "taken by Yash" or errors(swept):
-        bad.append(f"sweep touched a task taken without a branch, or wrote a bad board: {errors(swept)}")
-    if ts[ids["stale"]].status != "archived" or "Archived" not in ts[ids["stale"]].fields:
-        bad.append("an open task nobody took for 14 days was not archived")
-    if [p[1] for p in plan_sweep(parse(swept)[1], lambda name, taken: facts[name], later)] != ["no-branch"]:
-        bad.append("a second sweep changed the board again")
-    moved_board, archive, moved = move_closed(swept, ARCHIVE_PREAMBLE + "\n")
-    if sorted(moved) != sorted([ids["merged"], ids["stale"]]) or any(not t.is_open for t in parse(moved_board)[1]) or \
-            {t.id for t in parse(archive)[1]} != {ids["merged"], ids["stale"]} or errors(archive) or errors(moved_board):
-        bad.append(f"done and archived tasks did not move to the archive: {moved}")
-    if move_closed(moved_board, archive)[2]:
-        bad.append("a second move moved something again")
-    back_board, back_archive = revive(moved_board, archive, ids["stale"], today=later)
-    revived = find(parse(back_board)[1], ids["stale"])
-    if revived.status != "open" or ids["stale"] in {t.id for t in parse(back_archive)[1]} or \
-            any(p[0] == ids["stale"] for p in plan_sweep(parse(back_board)[1], lambda n, k: facts[n], later)):
-        bad.append("a revived task did not come back open with its 14 days starting again")
-    for refused, what in ((lambda: revive(moved_board, archive, ids["merged"], today=later), "revived a done task"),
-                          (lambda: archive_task(swept, ids["active"], today=later), "archived a live task")):
-        try:
-            refused()
-            bad.append(what)
-        except SystemExit:
-            pass
-    if plan_sync(parse(archive)[1], [], "o/r", "main")[0][1][2]["state"] != "closed":
-        bad.append("gh-sync did not close an archived task's issue")
-    back = parse(release(swept, ids["active"], "plans changed", today=later))[1]
-    if find(back, ids["active"]).status != "open" or branch_of(find(back, ids["active"])):
-        bad.append("release did not put the task back to open without its branch")
-    try:
-        take(swept, ids["active"], "Garrett", "claude/other", today=later)
-        bad.append("a live task was taken from under its taker")
-    except SystemExit:
-        pass
-    if branch_of(find(parse(take(swept, ids["active"], "Shombith", "claude/renamed", today=later))[1],
-                      ids["active"])) != "claude/renamed":
-        bad.append("the taker could not move their task to another branch")
-    if not re.fullmatch(r"claude/a\\\.b", ere("claude/a.b")):
-        bad.append("a branch name is not escaped for git --grep")
+        tk = after[ids[key]]
+        if tk.state != "open" or tk.branch or "live" in {l["name"] for l in raw[ids[key]]["labels"]} or not tk.released:
+            bad.append(f"a {key} branch did not put its ticket back to open, nobody's")
+    if after[ids["active"]].state != "live" or after[ids["active"]].branch != "claude/active":
+        bad.append("an active branch's ticket was moved")
+    if raw[ids["named"]]["assignees"] or after[ids["editor"]].needs != "anyone with the Unity Editor":
+        bad.append("sweep did not clear an assignee, or dropped what the work needs")
+    if after[ids["legacy"]].state != "live":
+        bad.append("sweep touched a ticket taken without a branch")
+    st = raw[ids["stale"]]
+    if after[ids["stale"]].state != "archived" or st["state_reason"] != "not_planned" or \
+            "archived" not in {l["name"] for l in st["labels"]}:
+        bad.append("an open ticket nobody took for 14 days was not archived (closed, not planned, labelled)")
+    calls = len(api2.calls)
+    again = plan_sweep(s2.fetch(), probe, later)
+    if [p[1] for p in again] != ["no-branch"] or any(s2.changes(tk) for tk in s2.fetch()):
+        bad.append("a second sweep would change something again")
+    with contextlib.redirect_stdout(io.StringIO()):
+        sweep(s2, False, False, BASE, IDLE_DAYS, today=later, tasks={}, probe_fn=probe)
+    if any(m != "GET" for m, _ in api2.calls[calls:]):
+        bad.append("a second sweep wrote to GitHub")
+    hinted = []
+    with contextlib.redirect_stdout(io.StringIO()):
+        hinted = sweep(s2, True, False, BASE, IDLE_DAYS, ("claude/active", "1600"), later, tasks={}, probe_fn=probe)[0]
+    if (ids["active"], "merged", "claude/active (#1600)") not in hinted:
+        bad.append("the merged pull request's branch (the workflow's hint) did not close its ticket")
 
-    # The hub round trip: an export imported back changes nothing; hub actions land on the board.
-    docs = hub_export(swept)
-    if hub_import(swept, docs)[1]:
-        bad.append("importing the board's own export changed it")
-    if any(d["status"] == "open" and not unassigned(d["who"]) for d in hub_export(board)):
-        bad.append("hub-export put a name on an open task")
-    stamp = "2026-11-06T10:00:00Z"
-    by_id = {d["id"]: dict(d) for d in docs}
-    by_id[ids["named"]].update(status="live", takenBy="Caleb", branch="claude/caleb", takenAt="2026-11-06",
-                               updatedBy="Caleb", updatedAt=stamp)
-    by_id[ids["active"]].update(status="open", takenBy="", branch="", updatedBy="Yash", updatedAt=stamp)
-    by_id[ids["editor"]].update(status="done", done="ran it", updatedBy="Yash", updatedAt=stamp)
-    by_id["T-20261106-abcd"] = dict(id="T-20261106-abcd", status="open", kind="test", area="UI", task="From the hub.",
-                                    doneWhen="It shows.", who="anyone", see="", added="2026-11-06 by Garrett in the team hub",
-                                    updatedBy="Garrett", updatedAt=stamp)
-    by_id["T-bad"] = dict(id="T-bad", status="open", kind="test", updatedBy="Garrett", updatedAt=stamp)
-    hub_board, changed, _ = hub_import(swept, list(by_id.values()), since="2026-11-01T00:00:00Z", today=later)
-    ts = {t.id: t for t in parse(hub_board)[1]}
-    if (taker(ts[ids["named"]]), branch_of(ts[ids["named"]])) != ("Caleb", "claude/caleb") or \
-            ts[ids["active"]].status != "open" or ts[ids["editor"]].status != "done" or \
-            "T-20261106-abcd" not in ts or "T-bad" in ts or errors(hub_board):
-        bad.append(f"hub-import did not apply the hub's take, release, close and add: {changed}")
-    if hub_import(swept, list(by_id.values()), since="2026-11-07T00:00:00Z", today=later)[1]:
-        bad.append("hub-import applied changes older than the last sync")
-    gone_doc = dict(hub_doc(find(parse(moved_board)[1], ids["named"])), status="archived", updatedBy="Yash", updatedAt=stamp)
-    b2, c2, a2 = hub_import(moved_board, [gone_doc], since="2026-11-01T00:00:00Z", today=later, archive_text=archive)
-    b2, a2, _ = move_closed(b2, a2)
-    back_doc = dict(gone_doc, status="open", updatedAt="2026-11-08T10:00:00Z")
-    b3, c3, a3 = hub_import(b2, [back_doc], since="2026-11-07T00:00:00Z", today=later, archive_text=a2)
-    if ids["named"] in {t.id for t in parse(b2)[1]} or find(parse(b3)[1], ids["named"]).status != "open" or \
-            ids["named"] in {t.id for t in parse(a3)[1]}:
-        bad.append(f"the hub's archive or bring-back did not reach the board: {c2} {c3}")
-    if os.path.exists(BOARD):
-        shipped = errors(load())
-        if shipped:
-            bad.append(f"the shipped board fails --check: {shipped}")
+    # revive restarts the clock; a done ticket comes back too
+    stale = after[ids["stale"]]
+    revive(stale, later)
+    s2.write(stale)
+    back = find(s2.fetch(), ids["stale"])
+    if back.state != "open" or "archived" in {l["name"] for l in back.raw["labels"]} or \
+            any(p[0] == ids["stale"] for p in plan_sweep([back], probe, later)) or \
+            not any(p[0] == ids["stale"] for p in plan_sweep([back], probe, later + datetime.timedelta(days=IDLE_DAYS))):
+        bad.append("a revived ticket did not come back open with its 14 days starting again")
+    refused(lambda: revive(back, later), "revived an open ticket")
+
+    # set by a person survives review; review merges duplicates
+    tickets = s2.fetch()
+    a_, b_ = find(tickets, ids["active"]), find(tickets, ids["editor"])
+    set_class(a_, "priority", "P1", "Garrett", later, "blocks the build")
+    rows, changed = review_apply(tickets, [{"id": a_.id, "priority": "P3", "dept": "testers", "why": "re-read"},
+                                           {"id": b_.id, "priority": "P2", "milestone": "M1", "why": "editor test",
+                                            "duplicateOf": a_.id}], later)
+    if a_.priority != "P1" or a_.prio_by.split(" ")[0] != "Garrett" or a_.dept != "testers" or \
+            b_.state != "merged" or b_.merged_into != a_.id or not any("from " + b_.id in s for _, s in a_.steps):
+        bad.append(f"review overwrote a person's priority or did not merge a duplicate: {rows}")
+    for tk in changed:
+        s2.write(tk)
+    merged = find(s2.fetch(), b_.id)
+    if merged.state != "merged" or merged.raw["state_reason"] != "not_planned" or \
+            "archived" in {l["name"] for l in merged.raw["labels"]}:
+        bad.append("a merged duplicate did not close as not planned without the archived label")
+
+    # sync: the page's take and override reach Issues; an old one does not; the docs come back
+    api3 = FakeApi()
+    s3 = Issues("o/r", api3)
+    font, _ = add([], "UI", "decision", "Pick a font.", "Picked.", "P3", "decisions", "w", today=day, on="claude/s")
+    s3.write(font)
+    first = sync(s3, {}, "", True, today=day)
+    stamp = "2026-10-16T10:00:00Z"
+    data = {"tasks": first["write"],
+            "takes": [{"id": font.id, "data": {"action": "take", "by": "Shombith03", "branch": "claude/font"},
+                       "updatedAt": stamp}],
+            "overrides": [{"id": font.id, "data": {"priority": "P1", "by": "Yash", "why": "store page needs it"},
+                           "updatedAt": stamp}]}
+    out = sync(s3, data, "2026-10-16T00:00:00Z", False, today=day)
+    got = find(s3.fetch(), font.id)
+    if (got.state, got.taken_by, got.branch, got.priority, got.prio_by.split(" ")[0]) != \
+            ("live", "Shombith", "claude/font", "P1", "Yash") or len(out["write"]) != 1:
+        bad.append(f"sync did not carry the page's take and override to the issue: {out['applied']} {out['skipped']}")
+    if sync(s3, dict(data, tasks=out["write"]), "2026-10-17T00:00:00Z", False, today=day)["applied"]:
+        bad.append("sync applied page changes older than the last sync")
+
+    # migrate: the old mirror's issues are updated in place, never created twice; then nothing more to do
+    api4 = FakeApi()
+    s4 = Issues("o/r", api4)
+    md = ("# Board\n\n" + MARK + "\n\n### T-20261015-aaaa · open · test · Regatta AI\n- **Task:** Fly it.\n"
+          "- **Done when:** It flies; it lands\n- **Who can take it:** Yash (offered)\n"
+          "- **Added:** 2026-10-15 by Yash's session (`Ys-bleeding-edge`)\n\n"
+          "### T-20261015-bbbb · taken by Yash · test · Regatta AI\n- **Task:** Playtest it.\n- **Done when:** Done.\n"
+          "- **Who can take it:** anyone\n- **Added:** 2026-10-15 by Yash\n- **Taken:** 2026-10-15, Yash\n\n"
+          "### T-20261015-cccc · done · dev · Tooling\n- **Task:** Built it.\n- **Done when:** Built.\n"
+          "- **Who can take it:** anyone\n- **Added:** 2026-10-15\n- **Done:** 2026-10-16, built\n")
+    tasks = {x.id: x for x in parse(md)}
+    legacy_body = ("**Status on the board:** open\n\n- **Task:** Fly it.\n- **Done when:** It flies; it lands\n"
+                   "- **Who can take it:** Yash (offered)\n- **Added:** 2026-10-15\n\n---\nMirrored.\n"
+                   "<!-- team-task:T-20261015-aaaa -->")
+    only_gh = legacy_body.replace("T-20261015-aaaa", "T-20261015-dddd").replace("Fly it.", "Only on GitHub.")
+    api4("POST", "repos/o/r/issues", {"title": "[T-20261015-aaaa] Fly it.", "body": legacy_body,
+                                      "labels": [LABEL, "kind:test", "area:regatta-ai"]})
+    api4("POST", "repos/o/r/issues", {"title": "[T-20261015-dddd] Only on GitHub.", "body": only_gh,
+                                      "labels": [LABEL, "kind:test", "area:regatta-ai", "taken"]})
+    if not all(tk.legacy for tk in s4.fetch()):
+        bad.append("the old mirror's bodies did not read as legacy")
+    rows, todo = plan_migrate(s4.fetch(), tasks, day)
+    acts = {tid: a for tid, a, _ in rows}
+    if acts != {"T-20261015-aaaa": "update #1", "T-20261015-bbbb": "create", "T-20261015-cccc": "create",
+                "T-20261015-dddd": "update #2"}:
+        bad.append(f"migrate would create a ticket the mirror already has, or miss one: {acts}")
+    s4.ensure_milestones()
+    for tk in todo:
+        s4.write(tk)
+    mig = {tk.id: tk for tk in s4.fetch()}
+    if any(tk.legacy for tk in mig.values()) or mig["T-20261015-aaaa"].needs != "anyone" or \
+            mig["T-20261015-bbbb"].state != "live" or mig["T-20261015-cccc"].state != "done" or \
+            mig["T-20261015-aaaa"].steps != [[False, "It flies"], [False, "it lands"]] or \
+            mig["T-20261015-aaaa"].area != "Regatta AI" or len(api4.issues) != 4 or len(api4.milestones) != 5:
+        bad.append("migrate did not rebuild the tickets in the new shape")
+    if any(a != "keep" for _, a, _ in plan_migrate(s4.fetch(), tasks, day)[0]):
+        bad.append("a second migrate would write again")
+    if [p[1] for p in plan_sweep(s4.fetch(), probe, day)] != ["no-branch"]:
+        bad.append("a sweep right after migrate would change something")
+    if bridge(s4.fetch(), day, tasks=tasks) or \
+            len(bridge(s4.fetch(), day, tasks=dict(tasks, **{"T-20261020-eeee": Task(
+                "T-20261020-eeee", "open", "test", "UI", {"Task": "New on an old board.", "Done when": "x",
+                                                           "Added": "2026-10-20"}, [])}))) != 1:
+        bad.append("the bridge filed a task GitHub has, or missed one it lacks")
+
+    # pagination past 100, pr-section, the small helpers
+    api5 = FakeApi([{"number": n, "title": f"[T-20261015-{n:04x}] t{n}", "body": "", "state": "open",
+                     "labels": [{"name": LABEL}], "assignees": [], "html_url": ""} for n in range(1, 151)])
+    if len(Issues("o/r", api5).fetch()) != 150:
+        bad.append("fetch stopped at the first page")
+    sec = pr_section(s3.fetch() + s4.fetch(), "claude/s")
+    if f"**New** [`{font.id}`]" not in sec or pr_section(s3.fetch(), "claude/none"):
+        bad.append(f"pr-section missed a filed ticket or reported one for another branch: {sec!r}")
+    if pr_section(s3.fetch(), "claude/font").count("closes when it merges") != 1:
+        bad.append("pr-section missed a ticket taken on the branch")
+    if not re.fullmatch(r"claude/a\\\.b", ere("claude/a.b")) or canon("Shombith03") not in ("Shombith", "Shombith03"):
+        bad.append("a branch name is not escaped for git --grep, or a name not mapped")
+    if parse_block("\n".join(block_lines(Ticket("T-20261015-ffff", "dev", "A | B")))).get("area")[0] != "A / B":
+        bad.append("a value with the block's separator was not cleaned")
+    # A person's change on GitHub itself (label, milestone) is their override, and a write keeps it.
+    gh_set = dict(api3.issues[1], labels=[{"name": n} for n in (LABEL, "kind:decision", "area:ui", "dept:testers",
+                                                                 "prio:P3", "live")])
+    kept = from_issue(gh_set)
+    if (kept.dept, kept.priority) != ("testers", "P3") or not by_person(kept.dept_by) or not by_person(kept.prio_by):
+        bad.append("a priority or department a person set on GitHub was not kept as theirs")
     print("team_tasks self-test: " + ("ok" if not bad else "FAILED: " + "; ".join(bad)))
     return 0 if not bad else 1
 
 
+# --- CLI ------------------------------------------------------------------------------------------------------------
+
 def main(argv):
     if "--self-test" in argv:
         return self_test()
-    if "--check" in argv:
-        bad = errors(load()) + [f"archive: {e}" for e in (errors(load(ARCHIVE)) if os.path.exists(ARCHIVE) else [])]
-        for e in bad:
-            print("ERROR: " + e)
-        archived = len(parse(load(ARCHIVE))[1]) if os.path.exists(ARCHIVE) and not bad else 0
-        print("team tasks: " + ("FAIL" if bad else f"ok ({len(parse(load())[1])} on the board, {archived} archived)"))
-        return 1 if bad else 0
-
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--repo")
+    ap.add_argument("--offline", metavar="FILE", help="run on a saved dump of the issues instead of GitHub")
     sub = ap.add_subparsers(dest="cmd", required=True)
     ls = sub.add_parser("list")
-    ls.add_argument("--all", action="store_true")
+    ls.add_argument("--dept")
     ls.add_argument("--area")
-    ls.add_argument("--for", dest="person")
-    ls.add_argument("--kind", choices=KINDS)
+    ls.add_argument("--milestone")
+    ls.add_argument("--all", action="store_true")
+    ls.add_argument("--json", action="store_true")
+    ls.add_argument("--md", action="store_true")
     ad = sub.add_parser("add")
-    for f in ("area", "task", "done-when"):
+    for f in ("area", "task", "done-when", "why"):
         ad.add_argument("--" + f, required=True)
-    ad.add_argument("--who", default="anyone", help='"anyone", or "anyone with ..." for what the work needs')
     ad.add_argument("--kind", required=True, choices=KINDS)
+    ad.add_argument("--priority", required=True, choices=PRIORITIES)
+    ad.add_argument("--dept", required=True)
+    ad.add_argument("--milestone")
     ad.add_argument("--see")
     ad.add_argument("--by")
+    ad.add_argument("--who", default="anyone", help='"anyone", or "anyone with ..." for what the work needs')
+    ad.add_argument("--dry-run", action="store_true")
+    sp = sub.add_parser("step")
+    sp.add_argument("--line", required=True)
+    sp.add_argument("--id")
+    sp.add_argument("--dry-run", action="store_true")
     tk = sub.add_parser("take")
     tk.add_argument("id")
-    tk.add_argument("--who", required=True)
-    tk.add_argument("--branch", required=True, help="the branch you do it on; the task leaves the board when it merges")
-    ar = sub.add_parser("archive", help="take an open task off the board (into TEAM_TASKS_ARCHIVE.md)")
+    tk.add_argument("--branch", required=True, help="the branch you do it on; the ticket closes when it merges")
+    tk.add_argument("--who")
+    tk.add_argument("--dry-run", action="store_true")
+    for name in ("release", "done"):
+        p = sub.add_parser(name)
+        p.add_argument("id")
+        p.add_argument("--note", required=name == "done")
+        p.add_argument("--dry-run", action="store_true")
+    ar = sub.add_parser("archive")
     ar.add_argument("ids", nargs="+")
     ar.add_argument("--note")
-    rv = sub.add_parser("revive", help="bring an archived task back to the board, open and nobody's")
+    ar.add_argument("--dry-run", action="store_true")
+    rv = sub.add_parser("revive")
     rv.add_argument("id")
-    rl = sub.add_parser("release")
-    rl.add_argument("id")
-    rl.add_argument("--note")
-    dn = sub.add_parser("done")
-    dn.add_argument("id")
-    dn.add_argument("--note")
+    rv.add_argument("--dry-run", action="store_true")
+    st = sub.add_parser("set")
+    st.add_argument("id")
+    st.add_argument("field", choices=("priority", "dept", "milestone"))
+    st.add_argument("value")
+    st.add_argument("--by", required=True)
+    st.add_argument("--why", default="")
+    st.add_argument("--dry-run", action="store_true")
     sw = sub.add_parser("sweep")
     sw.add_argument("--dry-run", action="store_true")
     sw.add_argument("--no-fetch", action="store_true", help="skip `git fetch --prune origin` (branch state may be stale)")
     sw.add_argument("--base", default=BASE)
     sw.add_argument("--idle-days", type=int, default=IDLE_DAYS)
-    he = sub.add_parser("hub-export", help="print the board as the team hub's task documents (JSON)")
-    he.add_argument("--probe", action="store_true", help="add each live task's branch state from git")
-    he.add_argument("--base", default=BASE)
-    hi = sub.add_parser("hub-import", help="apply what people did in the team hub to the board")
-    hi.add_argument("file", help="JSON: the hub's task documents, as a list or {\"tasks\": [...]}")
-    hi.add_argument("--since", default="", help="the last sync's time (ISO); older hub changes are skipped")
-    hi.add_argument("--dry-run", action="store_true")
-    gs = sub.add_parser("gh-sync")
-    gs.add_argument("--dry-run", action="store_true")
-    gs.add_argument("--repo")
+    sw.add_argument("--merged", metavar="BRANCH", help="a branch the caller knows just merged (the PR event)")
+    sw.add_argument("--pr")
+    sy = sub.add_parser("sync")
+    sy.add_argument("file", help='JSON: the page store, {"tasks": [...], "takes": [...], "overrides": [...]}')
+    sy.add_argument("--since", default="", help="the last sync's time (ISO); older page changes are skipped")
+    sy.add_argument("--dry-run", action="store_true")
     pr = sub.add_parser("pr-section")
-    pr.add_argument("--base", default="origin/bleeding-edge")
+    pr.add_argument("--base", default=BASE)
+    mg = sub.add_parser("migrate")
+    mg.add_argument("--dry-run", action="store_true")
+    rw = sub.add_parser("review")
+    rw.add_argument("ids", nargs="*")
+    rw.add_argument("--all", action="store_true")
+    rw.add_argument("--area")
+    rw.add_argument("--batch", type=int)
+    rw.add_argument("--apply", metavar="FILE", help="JSON: [{id, priority?, dept?, milestone?, why, duplicateOf?}]")
+    rw.add_argument("--dry-run", action="store_true")
+    ms = sub.add_parser("milestone")
+    ms.add_argument("action", choices=("list", "add"))
+    ms.add_argument("name", nargs="?")
+    ms.add_argument("--gate", default="")
+    ms.add_argument("--due")
+    sub.add_parser("me")
     a = ap.parse_args(argv)
 
-    text = load()
+    if a.cmd == "me":
+        print(me() or "unknown: set git config user.email to an address in Docs/TEAM.json")
+        return 0
+    repo = a.repo or ("o/r" if a.offline else repo_name())
+    api = FakeApi.load(a.offline) if a.offline else gh_api
+    store = Issues(repo, api)
+    today = datetime.date.today()
+    dry = getattr(a, "dry_run", False)
+
+    def save(*tickets):
+        if dry:
+            print("(dry run, nothing written)")
+            return
+        store.ensure_labels({l for t in tickets for l in issue_labels(t)})
+        for t in tickets:
+            store.write(t)
+        if a.offline:
+            api.save()
+
     if a.cmd == "list":
-        for t in parse(text)[1] + (parse(load_archive())[1] if a.all else []):
-            if not a.all and not t.is_open:
-                continue
-            if a.area and a.area.lower() not in t.area.lower():
-                continue
-            if a.kind and t.kind != a.kind:
-                continue
-            if a.person and a.person.lower() not in (t.fields.get("Who can take it", "") + t.status).lower():
-                continue
-            print(t.line())
+        tickets = [t for t in store.fetch() if (a.all or t.is_open) and t.state != "merged"]
+        if a.dept:
+            tickets = [t for t in tickets if a.dept.lower() in (t.dept, DEPTS.get(t.dept, "").lower())]
+        if a.area:
+            tickets = [t for t in tickets if a.area.lower() in t.area.lower()]
+        if a.milestone:
+            tickets = [t for t in tickets if t.milestone == a.milestone.upper()]
+        tickets.sort(key=lambda t: (list(DEPTS).index(t.dept) if t.dept in DEPTS else 9, t.priority, t.id))
+        if a.json:
+            print(json.dumps([page_doc(t) for t in tickets], indent=1, ensure_ascii=False))
+        elif a.md:
+            print("| id | prio | dept | area | task | state |\n|---|---|---|---|---|---|")
+            for t in tickets:
+                print(f"| [{t.id}]({t.url}) | {t.priority} | {DEPTS.get(t.dept)} | {t.area} | "
+                      f"{t.title[:90].replace('|', '/')} | {t.state}{' ' + t.branch if t.branch else ''} |")
+        else:
+            for t in tickets:
+                print(t.line())
+            print(f"{len(tickets)} tickets; the board: {PAGE_URL}")
     elif a.cmd == "add":
-        text, tid = add(text, a.area, a.kind, a.task, a.done_when, a.who, a.see, a.by)
-        save(text)
-        print(f"added {tid}")
-    elif a.cmd == "take":
-        save(take(text, a.id, a.who, a.branch))
-        if git("rev-parse", "--verify", "--quiet", f"refs/remotes/origin/{a.branch}").returncode != 0:
-            print(f"note: origin/{a.branch} does not exist yet; push it, or `sweep` reads the task as deleted and reopens it")
-        print(f"{a.id} taken by {a.who} on {a.branch}")
-    elif a.cmd == "release":
-        save(release(text, a.id, a.note))
-        print(f"{a.id} is open again, nobody's")
-    elif a.cmd == "done":
-        save(set_status(text, a.id, "done", "Done", a.note))
-        print(f"{a.id} done")
-    elif a.cmd == "sweep":
-        sweep(a.dry_run, not a.no_fetch, a.base, a.idle_days)
+        t, new = add(store.fetch(), a.area, a.kind, a.task, a.done_when, a.priority, a.dept, a.why, a.milestone, a.see,
+                     a.by, a.who, today)
+        save(t)
+        print(f"filed {t.id}" + (f" (#{t.number})" if t.number else "") if new else
+              f"this branch already has {t.id}: added a checklist line to it instead (one ticket per branch)")
+    elif a.cmd == "step":
+        tickets = store.fetch()
+        t = find(tickets, a.id) if a.id else next((x for x in tickets if x.filed_on == branch() and x.is_open), None)
+        if t is None:
+            raise SystemExit(f"{branch()} has no open ticket; file one with `add`")
+        t.steps.append([False, a.line.strip()])
+        save(t)
+        print(f"{t.id}: added a checklist line")
+    elif a.cmd in ("take", "release", "done", "revive", "set"):
+        t = find(store.fetch(), a.id)
+        if a.cmd == "take":
+            who = canon(a.who) if a.who else me()
+            if not who:
+                raise SystemExit("cannot tell who you are from git config: pass --who <your name>")
+            take(t, who, a.branch, today)
+            if git("rev-parse", "--verify", "--quiet", f"refs/remotes/origin/{a.branch}").returncode != 0:
+                print(f"note: origin/{a.branch} does not exist yet; push it, or the sweep reads it as deleted and "
+                      f"reopens the ticket")
+        elif a.cmd == "release":
+            release(t, a.note, today)
+        elif a.cmd == "done":
+            close_done(t, a.note, today)
+        elif a.cmd == "revive":
+            revive(t, today)
+        else:
+            set_class(t, a.field, a.value, canon(a.by), today, a.why)
+        save(t)
+        print(f"{t.id}: {t.state}" + (f", {t.taken_by} on {t.branch}" if t.state == "live" else "") +
+              (f"; {a.field} {getattr(t, {'priority': 'priority', 'dept': 'dept', 'milestone': 'milestone'}[a.field])}"
+               if a.cmd == "set" else ""))
     elif a.cmd == "archive":
-        for tid in a.ids:
-            text = archive_task(text, tid, a.note)
-        board, archive, moved = move_closed(text, load_archive())
-        save(archive, ARCHIVE)
-        save(board)
-        print(f"archived {len(a.ids)}: {' '.join(a.ids)}")
-    elif a.cmd == "revive":
-        board, archive = revive(text, load_archive(), a.id)
-        save(board)
-        save(archive, ARCHIVE)
-        print(f"{a.id} is back on the board, open and nobody's")
-    elif a.cmd == "hub-export":
-        probe = (lambda name, taken: probe_branch(name, taken, a.base)) if a.probe else None
-        print(json.dumps({"exportedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
-                          "tasks": hub_export(text, probe, archive_text=load_archive())}, indent=1, ensure_ascii=False))
-    elif a.cmd == "hub-import":
-        with open(a.file, encoding="utf-8") as fh:
-            docs = json.load(fh)
-        new_text, changes, archive = hub_import(text, docs["tasks"] if isinstance(docs, dict) else docs, a.since,
-                                                archive_text=load_archive())
-        board, archive, _ = move_closed(new_text, archive)
-        for c in changes:
-            print(("would " if a.dry_run else "") + c)
-        if changes and not a.dry_run:
-            save(archive, ARCHIVE)
-            save(board)
-        print(f"hub-import: {len(changes)} change(s)" + (" (dry run, nothing written)" if a.dry_run else ""))
-    elif a.cmd == "gh-sync":
-        gh_sync(a.repo or repo_name(), a.dry_run)
+        tickets = store.fetch()
+        done = [find(tickets, tid) for tid in a.ids]
+        for t in done:
+            archive(t, a.note, today)
+        save(*done)
+        print(f"archived {len(done)}: {' '.join(t.id for t in done)}")
+    elif a.cmd == "sweep":
+        sweep(store, a.dry_run, not a.no_fetch and not a.offline, a.base, a.idle_days,
+              (a.merged, a.pr) if a.merged else None, today)
+        if a.offline and not a.dry_run:
+            api.save()
+    elif a.cmd == "sync":
+        data = json.loads(read(a.file) or "{}")
+        out = sync(store, data, a.since, a.dry_run, today)
+        print(json.dumps(out, indent=1, ensure_ascii=False))
+        if a.offline and not a.dry_run:
+            api.save()
     elif a.cmd == "pr-section":
-        print(pr_section(text, git_show(a.base)))
+        here = branch()
+        sec = pr_section(store.fetch(), here)
+        old = pr_section_markdown(read(BOARD), git_show(a.base))
+        print("\n\n".join(s for s in (sec, old) if s))
+    elif a.cmd == "migrate":
+        migrate(store, a.dry_run, today, repo)
+        if a.offline and not a.dry_run:
+            api.save()
+    elif a.cmd == "review":
+        tickets = store.fetch()
+        if a.apply:
+            decisions = json.loads(read(a.apply) or "[]")
+            rows, changed = review_apply(tickets, decisions, today)
+            for tid, field, what, why in rows:
+                print(f"{tid}  {field:<10} {what:<34} {why}")
+            n = collections.Counter(f for _, f, _, _ in rows)
+            print(f"review: {len(changed)} tickets change; {dict(n)}" + (" (dry run, nothing written)" if a.dry_run else ""))
+            if not a.dry_run:
+                for t in changed:
+                    store.write(t)
+                if a.offline:
+                    api.save()
+        else:
+            print(json.dumps(review_rows(tickets, set(a.ids), a.area, a.all, a.batch), indent=1, ensure_ascii=False))
+    elif a.cmd == "milestone":
+        if a.action == "list":
+            for m in store._pages(f"repos/{repo}/milestones?state=all"):
+                print(f"{m['title']:<40} open {m.get('open_issues', 0):>3}  closed {m.get('closed_issues', 0):>3}  "
+                      f"due {(m.get('due_on') or '-')[:10]}  {(m.get('description') or '').splitlines()[-1:]}")
+        else:
+            if not a.name:
+                raise SystemExit("milestone add NAME --gate TEXT [--due YYYY-MM-DD]")
+            payload = {"title": a.name, "description": f"Gate: {a.gate or '-'}"}
+            if a.due:
+                payload["due_on"] = f"{a.due}T00:00:00Z"
+            m = api("POST", f"repos/{repo}/milestones", payload)
+            print(f"created milestone {m['title']} (#{m['number']})")
+            if a.offline:
+                api.save()
     return 0
 
 

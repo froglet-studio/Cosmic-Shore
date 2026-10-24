@@ -559,9 +559,12 @@ def write_report(block):
 
 
 def file_task(task, done_when, see):
+    # A ticket names nobody (Docs/TEAM.md rule 9); whoever owns the files finds it with who_works_where.py.
     r = subprocess.run(["python3", "Tools/Build/team_tasks.py", "add", "--area", "Performance", "--kind", "dev",
-                        "--task", task, "--done-when", done_when, "--who", "the owner of the files it names (who_works_where.py); Yash (offered)",
-                        "--see", see, "--by", "perf_hunt sweep"], cwd=REPO, capture_output=True, text=True)
+                        "--task", task, "--done-when", done_when, "--see", see, "--by", "perf_hunt sweep",
+                        "--priority", "P2", "--dept", "developers", "--milestone", "M1",
+                        "--why", "a performance gate or a capture regressed; M1 needs every mode at speed on every platform"],
+                       cwd=REPO, capture_output=True, text=True)
     m = re.search(r"T-\d{8}-[0-9a-f]{4}", r.stdout + r.stderr)
     return m.group(0) if m else None
 
@@ -627,14 +630,10 @@ def cmd_sweep(args):
 def _open_tasks(area="Performance"):
     try:
         import team_tasks
-        _, tasks = team_tasks.parse(team_tasks.load())
-    except Exception:  # noqa: BLE001 - a status read must never fail on the board's format
+        tickets = team_tasks.open_tickets([area])
+    except Exception:  # noqa: BLE001 - a status read must never fail on the ticket store
         return []
-    out = []
-    for t in tasks:
-        if t.status == "open" and t.area.lower() == area.lower():
-            out.append({"id": t.id, "kind": t.kind, "task": (t.fields.get("Task") or "")[:160]})
-    return out
+    return [{"id": t.id, "kind": t.kind, "task": t.task[:160]} for t in tickets if t.state == "open"]
 
 
 def _bugs():
