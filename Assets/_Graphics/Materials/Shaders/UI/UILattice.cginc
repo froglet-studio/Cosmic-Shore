@@ -1,109 +1,59 @@
-// The living crystal lattice behind style-B panels (Docs/MENU_REDESIGN_B.md §45.2): a triangular lattice that
-// drifts by one lattice vector per period, element energy pulses running along some of its lines, and a few
-// nodes twinkling in the element colours. Pure maths on canvas-space position and time - no textures - so the
-// same function draws a panel and a whole window, and Tools/Build/lattice_harness compiles and renders it.
+// The hex lattice behind style-B panels and windows (Docs/MENU_REDESIGN_B.md §62, rev 11 option H): Amoebius's
+// LATTICE backdrop (Port/src/CosmicShore.Launcher/LauncherApp.Look.cs DrawLattice) - pointy-top hexagons, one
+// outline per cell - over frosted glass, with one of three motions a window picks when it opens. Pure maths on
+// canvas-space position and time - no textures but the blurred world - so the same functions draw a panel and a
+// whole window, and Tools/Build/lattice_preview.py compiles and measures them.
 #ifndef COSMIC_UI_LATTICE_INCLUDED
 #define COSMIC_UI_LATTICE_INCLUDED
 
-static const float LATTICE_SQ3_2 = 0.8660254;
+static const float LATTICE_SQ3 = 1.7320508;
+static const float LATTICE_TAU = 6.2831853;
 
-float LatticeHash(float a, float b)
+// Distance (canvas units) from p to the outline of its hexagon, and that hexagon's centre.
+// r: centre to corner. Pointy-top cells: rows 1.5 r apart, every other row shifted half a cell (r * sqrt 3).
+// inset: the outline drawn at this fraction of the cell (Amoebius: 0.92), so neighbours read as separate panes.
+float HexEdgeDistance(float2 p, float r, float inset, out float2 centre)
 {
-    return frac(sin(a * 127.1 + b * 311.7) * 43758.5453);
+    float w = r * LATTICE_SQ3;
+    float2 s = float2(w, r * 3.0);
+    // Two interleaved rectangular grids of centres; the nearer centre owns p.
+    float2 a = (floor(p / s + 0.5)) * s;
+    float2 b = (floor((p - s * 0.5) / s + 0.5)) * s + s * 0.5;
+    centre = dot(p - a, p - a) < dot(p - b, p - b) ? a : b;
+    float2 q = abs(p - centre);
+    // The pointy-top hexagon's distance function: the larger of the flat sides (x) and the slanted pair.
+    float apothem = w * 0.5;
+    float hexD = max(q.x, dot(q, float2(0.5, LATTICE_SQ3 * 0.5)));
+    return abs(apothem * inset - hexD);
 }
 
-// Distance (canvas units) from p to the nearest line of the family with unit normal n and spacing h;
-// that line's index goes to `index`.
-float LatticeLineDistance(float2 p, float2 n, float h, out float index)
+// Line coverage in [0, 1] for a line of the given width (canvas units).
+float HexLine(float edgeDistance, float lineWidth)
 {
-    float d = dot(p, n) / h;
-    index = floor(d + 0.5);
-    return abs(d - index) * h;
+    return 1.0 - smoothstep(lineWidth * 0.5, lineWidth * 0.5 + 1.0, edgeDistance);
 }
 
-// One of the four element colours, picked by a hash in [0, 1).
-float3 LatticeElement(float hash, float3 charge, float3 mass, float3 space, float3 time)
+// H2, the centre ring: one narrow bright ring rippling out from the centre (Amoebius: 0.5 + 0.5 sin(d * 14 - t * 1.2),
+// raised to the sixth). d in canvas units; wavelength and period are the launcher's at 1080p.
+float HexRing(float d, float t, float wavelength, float period)
 {
-    float k = floor(hash * 4.0);
-    return k < 1.0 ? charge : (k < 2.0 ? mass : (k < 3.0 ? space : time));
+    float wave = 0.5 + 0.5 * sin(d / wavelength * LATTICE_TAU - t / max(period, 0.01) * LATTICE_TAU);
+    float w2 = wave * wave;
+    return w2 * w2 * w2;
 }
 
-// One lattice layer as premultiplied colour (rgb) and coverage (a), before the layer alpha.
-// spacing: node to node, canvas units. driftPeriod: seconds per lattice vector, 0 holds the lattice still (the menu's
-// default since 2026-10-24: a background must not move for its own sake). pulseDensity / twinkleDensity:
-// fractions of lines / nodes that carry energy. pulseRepeat: distance between pulses on a carrying line.
-float4 LatticeLayer(float2 p, float t, float spacing, float driftPeriod, float lineWidth, float nodeSize,
-                    float pulseDensity, float pulseSpeed, float pulseRepeat, float pulseLength, float twinkleDensity,
-                    float3 lineColor, float3 charge, float3 mass, float3 space, float3 time)
+// H4, the tide: one soft band of light crossing the rect top to bottom and back. v: 0 bottom, 1 top.
+float HexTide(float v, float t, float period, float width)
 {
-    float h = spacing * LATTICE_SQ3_2;
-    float2 q = p + float2(spacing * 0.5, h) * (driftPeriod > 0.0 ? t / driftPeriod : 0.0);
-
-    float2 n0 = float2(0.0, 1.0);
-    float2 n1 = float2(-LATTICE_SQ3_2, 0.5);
-    float2 n2 = float2(-LATTICE_SQ3_2, -0.5);
-    float i0, i1, i2;
-    float d0 = LatticeLineDistance(q, n0, h, i0);
-    float d1 = LatticeLineDistance(q, n1, h, i1);
-    float d2 = LatticeLineDistance(q, n2, h, i2);
-    float dmin = min(d0, min(d1, d2));
-
-    float lineCore = 1.0 - smoothstep(0.0, lineWidth, dmin);
-    float lineGlow = (1.0 - smoothstep(0.0, lineWidth * 4.0, dmin)) * 0.22;
-    // Two families only ever cross at a node (the third passes there too).
-    float node = 1.0 - smoothstep(0.0, nodeSize, max(d0, d1));
-
-    float coverage = lineCore + lineGlow + node * 1.2;
-    float3 colour = lineColor * coverage;
-
-    // Twinkling nodes: the nearest node in this row, a few of them glowing in an element colour. Paid for only
-    // within reach of a node that twinkles - everywhere else the term is exactly 0.
-    float row = floor(q.y / h + 0.5);
-    float col = floor((q.x - row * spacing * 0.5) / spacing + 0.5);
-    float2 nodePos = float2(col * spacing + row * spacing * 0.5, row * h);
-    float nodeDistance = length(q - nodePos);
-    if (nodeDistance < nodeSize * 2.6)
-    {
-        float nodeHash = LatticeHash(col, row);
-        if (nodeHash < twinkleDensity)
-        {
-            float wave = sin(t * (1.1 + nodeHash * 2.3) + nodeHash * 40.0) * 0.5 + 0.5;
-            float twinkle = wave * wave * wave * (1.0 - smoothstep(0.0, nodeSize * 2.6, nodeDistance));
-            colour += LatticeElement(LatticeHash(row, col), charge, mass, space, time) * twinkle * 1.6;
-            coverage += twinkle;
-        }
-    }
-
-    // Pulses: a bright head and a fading tail running along a few lines of each family. A pulse lights only within
-    // three line widths of its line, so the rest of the panel (most of it) skips the block.
-    if (dmin >= lineWidth * 3.0 || pulseDensity <= 0.0) return float4(colour, coverage);
-    float2 t0 = float2(1.0, 0.0);
-    float2 t1 = float2(0.5, LATTICE_SQ3_2);
-    float2 t2 = float2(-0.5, LATTICE_SQ3_2);
-    float tailStart = 1.0 - pulseLength / max(pulseRepeat, 1.0);
-    float carry0 = step(LatticeHash(i0, 1.0), pulseDensity);
-    float carry1 = step(LatticeHash(i1, 2.0), pulseDensity);
-    float carry2 = step(LatticeHash(i2, 3.0), pulseDensity);
-    float f0 = frac(dot(q, t0) / pulseRepeat - t * pulseSpeed / pulseRepeat + LatticeHash(i0, 11.0) * 13.0);
-    float f1 = frac(dot(q, t1) / pulseRepeat - t * pulseSpeed / pulseRepeat + LatticeHash(i1, 12.0) * 13.0);
-    float f2 = frac(dot(q, t2) / pulseRepeat - t * pulseSpeed / pulseRepeat + LatticeHash(i2, 13.0) * 13.0);
-    float near0 = 1.0 - smoothstep(0.0, lineWidth * 3.0, d0);
-    float near1 = 1.0 - smoothstep(0.0, lineWidth * 3.0, d1);
-    float near2 = 1.0 - smoothstep(0.0, lineWidth * 3.0, d2);
-    float p0 = carry0 * smoothstep(tailStart, 1.0, f0) * near0;
-    float p1 = carry1 * smoothstep(tailStart, 1.0, f1) * near1;
-    float p2 = carry2 * smoothstep(tailStart, 1.0, f2) * near2;
-    colour += LatticeElement(LatticeHash(i0, 5.0), charge, mass, space, time) * p0 * 2.0
-            + LatticeElement(LatticeHash(i1, 6.0), charge, mass, space, time) * p1 * 2.0
-            + LatticeElement(LatticeHash(i2, 7.0), charge, mass, space, time) * p2 * 2.0;
-    coverage += p0 + p1 + p2;
-
-    return float4(colour, coverage);
+    float centre = 0.5 + 0.38 * sin(t / max(period, 0.01) * LATTICE_TAU);
+    float x = (v - centre) / max(width, 0.001);
+    return exp(-x * x);
 }
 
-// How much of the panel has crystallised: the lattice grows outward from the centre as `reveal` (the vertex
-// alpha, so a CanvasGroup fade-in) goes 0 -> 1, and its growth front burns brighter. r: 0 at the centre,
-// 1 at the corners. Returns (mask, front).
+// The crystallise-in reveal: r is the normalised distance from the rect's centre (0 centre, 1 corner), reveal 0..1.
+// Returns (mask, front): the lattice inside the growing radius, and a bright band just inside its edge that fades
+// out as the reveal completes. H6 drives it from the time since the window opened; the CanvasGroup fade drives it
+// otherwise.
 float2 LatticeReveal(float r, float reveal)
 {
     float edge = reveal * 1.15;

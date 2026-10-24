@@ -31,32 +31,31 @@ Material:
     m_Floats:
     - _ColorMask: 15
     - _FadeStart: 0.6
-    - _FarAlpha: 0
-    - _FarDrift: 0
-    - _FarSpacing: 36
-    - _LineWidth: 1.1
-    - _NearAlpha: 0.5
-    - _NearDrift: 0
-    - _NearSpacing: 64
-    - _NodeSize: 2.2
-    - _PulseDensity: 0
-    - _PulseLength: 70
-    - _PulseRepeat: 900
-    - _PulseSpeed: 150
+    - _Frost: 0
+    - _FrostAmount: 0.5
+    - _GrowSeconds: 1.2
+    - _HexInset: 0.92
+    - _HexRadius: 34
+    - _LineAlpha: 0.3
+    - _LineWidth: 1
+    - _Motion: 0
     - _Reveal: 1
+    - _RingAlpha: 0.85
+    - _RingPeriod: 5.2
+    - _RingWavelength: 862
     - _Stencil: 0
     - _StencilComp: 8
     - _StencilOp: 0
     - _StencilReadMask: 255
     - _StencilWriteMask: 255
-    - _TwinkleDensity: 0
+    - _TideAlpha: 0.18
+    - _TidePeriod: 14
+    - _TideWidth: 0.16
     - _UseUIAlphaClip: 0
     m_Colors:
-    - _ChargeColor: {r: 1, g: 0.827451, b: 0.3019608, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _LineColor: {r: 0.2627451, g: 0.2980392, b: 0.5372549, a: 1}
-    - _MassColor: {r: 0.4980392, g: 0.6588236, b: 1, a: 1}
-    - _SpaceColor: {r: 0.6901961, g: 0.4862745, b: 1, a: 1}
-    - _TimeColor: {r: 0.372549, g: 0.9411765, b: 0.7843137, a: 1}
+    - _FrostTint: {r: 0, g: 0.0039216, b: 0.0392157, a: 1}
+    - _GlowColor: {r: 0.4980392, g: 0.8470588, b: 1, a: 1}
+    - _LineColor: {r: 0.345098, g: 0.4, b: 0.6901961, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

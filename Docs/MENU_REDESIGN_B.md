@@ -2974,3 +2974,37 @@ Gates: `check_ui_colors.py` (new, 7 planted defects), every touched generator's 
 - **Home's four hub buttons** (Toy Box, Arcade, Arena, Mission) draw alike: Arcade was the opaque lime Play button and
   is now Default like the others (it keeps the A keycap and the pad's first focus); Mission stays Inactive while it is
   unavailable. `author_menu_home.py` asserts it, with a planted defect.
+
+## 62. Rev 11 built: frosted glass with Amoebius's hex lattice, a random motion per open (2026-10-24, awaiting in-editor approval)
+
+The owner turned down the grid ("change all the grid like background"), then the opaque solids ("need the transparency
+back"), and picked option H from the Rev 11 boards (frosted glass + faint hexagons), with "randomize H2, 4, 6
+everywhere". Boards: the canvas's Rev 11 page (`R11HMotion` is the motion board).
+
+- **Lattice shader** (`Lattice.shader` + `UILattice.cginc`, same file and guid, so every backdrop changed at once):
+  Amoebius's LATTICE backdrop (`Port/src/CosmicShore.Launcher/LauncherApp.Look.cs`), pointy-top hexagons, radius 34,
+  each outline at 0.92 of its cell, fading toward the corners; under it, frost (the blurred world tinted halfway to
+  navy) while `_FrogletBackdropBlurOn` is set. `Lattice_Window.mat` is frosted, `Lattice_Panel.mat` is not (no double
+  frost). Neither material moves by itself.
+- **Motion per window** (`KitBackdropMotion`, on every window backdrop through `menu_b_motion.window_lattice_node`):
+  each time the window becomes visible (its inherited alpha rises above zero; hub windows stay active and fade) it
+  picks the ring (H2: one wave rippling out from the centre, cells lighting together, every 5.2 s), the tide (H4: a
+  soft band rising and falling, 14 s) or the grow (H6: the hexagons grow out from the centre over 1.2 s, then hold) at
+  random, and hands it to the shader as vertex data (UV1 = motion + 1 and the open time, UV2 = the rect's size), so
+  every window wears its own on the one shared material and the mesh is rebuilt only on an open.
+- **Frost** (`UIBackdropBlur`): a script-enqueued render pass, like `SilencePerimeterPass` and `BlackHoleLensPass`
+  (no renderer feature, nothing added to the URP renderer asset), on the base game camera that draws to the screen,
+  after post-processing, only while at least one frosted backdrop is showing. It downsamples to 1/4 and runs two
+  four-tap blur passes (`BackdropBlur.shader`) into two persistent textures (the overlay canvas reads them after the
+  camera). Settings: `Resources/UIBackdropBlurSettings` (on, 1/4, 2 passes, off on Very Low, where windows keep their
+  dark veil under the hexagons). Written by `author_ui_lattice.py`.
+- **Where:** every backdrop that had the window lattice: Arcade, Arena, Toy Box, Mission, the three configure views,
+  Profile and its pilot record, the friends drawer, the in-match scoreboard, the splash and the sign-in screens.
+  Hangar and Settings never had a lattice backdrop and are unchanged.
+- **Gates:** `author_ui_lattice.py` (window frosted / panel not / no material motion / Amoebius's cell / the blur
+  settings name the shader / the blur shader's pass order / the motion codes match the shader / every window backdrop
+  carries `KitBackdropMotion`, each with a planted defect); `lattice_preview.py --check` compiles the shader maths with
+  clang and asserts the cell count, the edge fade, still is still, a hidden window draws nothing, the frost colour, a
+  panel draws no frost, the ring's speed, the tide band moving, the grow starting empty and ending on the still frame.
+- **Amoebius:** gained `RenderGraph.ImportTexture` and `RenderingUtils.ReAllocateHandleIfNeeded` stand-ins (it records
+  render graphs but does not execute them, so the frost does not draw there yet).

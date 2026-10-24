@@ -54,6 +54,11 @@ Hub windows: the strip's four words (Toy Box, Arcade, Arena, Mission) all read i
   there and Garrett agreed it could work).
 - **Strong juice is reserved** for upgrades, powered states and the call to action.
 
+**Window backdrops (rev 11 option H, 2026-10-24):** frosted glass (the blurred world, tinted halfway to navy) with
+Amoebius's faint hexagons. The owner chose motion here: each open picks the centre ring, the tide or the grow at random
+(`KitBackdropMotion`); the hexagons stay in the neutral blues and the light is the light blue (#7FD8FF), never an
+element colour. Docs/MENU_REDESIGN_B.md section 62.
+
 ## Where this is enforced
 
 | What | Where |

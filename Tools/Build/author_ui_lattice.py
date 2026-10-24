@@ -69,21 +69,33 @@ WINDOW_GUID = guid("window_mat")
 
 ELEMENTS = {"_ChargeColor": (1, 0.827451, 0.3019608), "_MassColor": (0.49803922, 0.65882355, 1),
             "_SpaceColor": (0.6901961, 0.4862745, 1), "_TimeColor": (0.37254903, 0.9411765, 0.78431374)}
-LINE = (0.2627451, 0.29803923, 0.5372549)          # SurfaceLight #434C89
+LINE = (0.34509805, 0.4, 0.6901961)               # the hexagons' outline, a light SurfaceLight (#5866B0)
+GLOW = (0.49803922, 0.84705883, 1)                # the ring's and the tide's light (#7FD8FF)
+FROST_TINT = (0, 0.003921569, 0.039215688)        # SurfaceBlack (#00010A): the frost leans toward it
 
-# name: (floats). Every property the shader declares is written, so Unity never re-serializes the asset.
-# Still since 2026-10-24 (Garrett: "every pixel is important"; a background never moves for its own sake, and elements
-# carry no colour, so no element pulses or twinkles): drift 0 holds it, pulse and twinkle densities 0 draw neither.
-# The crystallise-in on a window's open stays - a transition is a meaningful moment.
-STILL = dict(_NearDrift=0, _FarDrift=0, _PulseDensity=0, _TwinkleDensity=0)
+# Rev 11 option H (Docs/MENU_REDESIGN_B.md section 62, the owner 2026-10-24): frosted glass with Amoebius's hex
+# lattice. The window material is frosted (it draws the blurred world behind the menu while UIBackdropBlur has it live,
+# and nothing under the hexagons otherwise); a panel inside a window is not (no double frost). Neither material moves
+# by itself (_Motion 0): KitBackdropMotion on a window's backdrop picks the ring, the tide or the grow each time the
+# window opens (the owner: "randomize H2, 4, 6 everywhere").
+MOTION = dict(_Motion=0, _RingAlpha=0.85, _RingWavelength=862, _RingPeriod=5.2, _TideAlpha=0.18, _TidePeriod=14,
+              _TideWidth=0.16, _GrowSeconds=1.2)
+HEX = dict(_LineWidth=1, _HexRadius=34, _HexInset=0.92, _FadeStart=0.6, _Reveal=1)
 MATERIALS = {
-    "Lattice_Panel": dict(_LineWidth=1.1, _NodeSize=2.2, _NearSpacing=64, _NearAlpha=0.5, _NearDrift=0,
-                          _FarSpacing=36, _FarAlpha=0, _FarDrift=0, _PulseDensity=0, _PulseSpeed=150,
-                          _PulseRepeat=900, _PulseLength=70, _TwinkleDensity=0, _FadeStart=0.6, _Reveal=1),
-    "Lattice_Window": dict(_LineWidth=1.1, _NodeSize=2.4, _NearSpacing=130, _NearAlpha=0.42, _NearDrift=0,
-                           _FarSpacing=72, _FarAlpha=0.2, _FarDrift=0, _PulseDensity=0, _PulseSpeed=240,
-                           _PulseRepeat=1400, _PulseLength=120, _TwinkleDensity=0, _FadeStart=0.55, _Reveal=1),
+    "Lattice_Panel": dict(HEX, **MOTION, _Frost=0, _FrostAmount=0.5, _LineAlpha=0.3),
+    "Lattice_Window": dict(HEX, **MOTION, _Frost=1, _FrostAmount=0.5, _LineAlpha=0.4),
 }
+FROSTED = {"Lattice_Panel": 0, "Lattice_Window": 1}
+# The frosted glass's blur (UIBackdropBlur): its settings asset, its shader, and the motion component the window
+# backdrops carry (menu_b_motion.window_lattice_node adds it).
+BLUR_SHADER = f"{DIR}/BackdropBlur.shader"
+BLUR_SHADER_GUID = guid("backdrop_blur_shader")
+BLUR_SETTINGS = "Assets/Resources/UIBackdropBlurSettings.asset"
+BLUR_SETTINGS_GUID = guid("backdrop_blur_settings_asset")
+BLUR_SETTINGS_SCRIPT = guid("backdrop_blur_settings_cs")
+MOTION_SCRIPT_PATH = "Assets/_Scripts/UI/Kit/KitBackdropMotion.cs"
+BLUR = dict(enabled=1, downsample=4, passes=2, minQualityLevel=1)
+MOTION_CODES = {"Still": 0, "Ring": 1, "Tide": 2, "Grow": 3}      # the shader's _Motion codes
 MAT_GUID = {"Lattice_Panel": PANEL_GUID, "Lattice_Window": WINDOW_GUID}
 # The presence orb (§45.4). Its member seats sit on the inner ring at these angles (degrees, counter-clockwise from
 # the right): the shader's bonds (_BondAngles, _MemberRadius) and the drawer generator's avatar positions
@@ -117,7 +129,7 @@ def col(rgb, a=1):
 
 def material(name):
     floats = dict(MATERIALS[name], **UI_FLOATS)
-    colors = dict(_Color=(1, 1, 1), _LineColor=LINE, **ELEMENTS)
+    colors = dict(_Color=(1, 1, 1), _LineColor=LINE, _GlowColor=GLOW, _FrostTint=FROST_TINT)
     return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!21 &2100000\nMaterial:\n  serializedVersion: 8\n"
             "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
             f"  m_PrefabAsset: {{fileID: 0}}\n  m_Name: {name}\n"
@@ -130,6 +142,16 @@ def material(name):
             + "".join(f"    - {k}: {f(v)}\n" for k, v in sorted(floats.items()))
             + "    m_Colors:\n" + "".join(f"    - {k}: {col(v)}\n" for k, v in sorted(colors.items()))
             + "  m_BuildTextureStacks: []\n  m_AllowLocking: 1\n")
+
+
+def blur_settings():
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n"
+            "  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n"
+            "  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {BLUR_SETTINGS_SCRIPT}, type: 3}}\n"
+            "  m_Name: UIBackdropBlurSettings\n  m_EditorClassIdentifier: \n"
+            + "".join(f"  {k}: {v}\n" for k, v in BLUR.items())
+            + f"  blurShader: {{fileID: 4800000, guid: {BLUR_SHADER_GUID}, type: 3}}\n")
 
 
 def mat_meta(g):
@@ -219,6 +241,8 @@ def outputs():
     out[f"{DIR}/SelectionBar.mat"] = selection_material(True)
     out[f"{DIR}/SelectionBar.mat.meta"] = mat_meta(SELECTION_BAR_GUID)
     out[THEME] = theme_asset()
+    out[BLUR_SETTINGS] = blur_settings()
+    out[BLUR_SETTINGS + ".meta"] = mat_meta(BLUR_SETTINGS_GUID).replace("mainObjectFileID: 2100000", "mainObjectFileID: 11400000")
     return out
 
 
@@ -261,6 +285,17 @@ def validate_screens(prefabs):
     for w in WINDOWS:
         assert f"m_Material: {{fileID: 2100000, guid: {WINDOW_GUID}, type: 2}}" in prefabs.get(w, ""), \
             f"{w} has no window lattice behind it"
+    # Every window backdrop picks its motion and keeps the frost live: KitBackdropMotion sits beside each Image drawn
+    # with Lattice_Window.mat (rev 11 option H, "randomize H2, 4, 6 everywhere").
+    motion = guid("backdrop_motion_cs")
+    for path, text in prefabs.items():
+        gos_with_motion = set(re.findall(r"m_GameObject: \{fileID: (-?\d+)\}\n(?:.*\n){0,6}?  m_Script: \{fileID: 11500000, guid: %s" % motion, text))
+        for m in re.finditer(r"^--- !u!114 &-?\d+\nMonoBehaviour:\n((?:(?!--- ).*\n)*)", text, re.M):
+            body = m.group(1)
+            if f"m_Material: {{fileID: 2100000, guid: {WINDOW_GUID}, type: 2}}" not in body:
+                continue
+            go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", body).group(1)
+            assert go in gos_with_motion, f"{path}: a window backdrop without KitBackdropMotion (no random motion, no frost)"
     # Every bond Image has KitRimMesh beside it, and no screen is lit with a retired element rim.
     for path, text in prefabs.items():
         lit, meshed = rim_pairs(text)
@@ -281,10 +316,32 @@ def validate(files):
         assert written == declared, f"{name}: properties drifted from the shader (missing {declared - written}, extra {written - declared})"
         assert f"guid: {MAT_GUID[name]}" in files[f"{DIR}/{name}.mat.meta"], f"{name}.mat.meta has the wrong guid"
     assert f"guid: {SHADER_GUID}" in files[f"{SHADER}.meta"], "Lattice.shader.meta has the wrong guid"
-    # Still (2026-10-24): no drift, no element pulses, no twinkling nodes.
+    # Rev 11 option H: Amoebius's cell (radius 34, inset 0.92); the window frosted, the panel not; neither moves by
+    # itself - the motion is per window, picked by KitBackdropMotion.
     for name in MATERIALS:
-        for k, v in STILL.items():
-            assert f"    - {k}: {f(v)}\n" in files[f"{DIR}/{name}.mat"], f"{name}: {k} must be {v} - the lattice holds still"
+        m = files[f"{DIR}/{name}.mat"]
+        assert "    - _HexRadius: 34\n" in m and "    - _HexInset: 0.92\n" in m, f"{name}: not Amoebius's hexagon (radius 34, inset 0.92)"
+        assert f"    - _Frost: {FROSTED[name]}\n" in m, f"{name}: _Frost must be {FROSTED[name]} (only the window is frosted)"
+        assert "    - _Motion: 0\n" in m, f"{name}: the material moves by itself (the motion belongs to KitBackdropMotion)"
+        assert f"- _GlowColor: {col(GLOW)}" in m, f"{name}: the ring and tide light is not the light blue"
+
+    # The blur: its settings name the shader (so the build includes it) and the shader's passes sit in the order
+    # UIBackdropBlur.BlurPass uses them; the motion component's codes are the shader's.
+    st = files[BLUR_SETTINGS]
+    assert f"guid: {BLUR_SETTINGS_SCRIPT}" in st, "UIBackdropBlurSettings.asset is not a UIBackdropBlurSettingsSO"
+    assert f"  blurShader: {{fileID: 4800000, guid: {BLUR_SHADER_GUID}, type: 3}}\n" in st, \
+        "UIBackdropBlurSettings does not name BackdropBlur.shader (the build would leave it out: no frost)"
+    for k, v in BLUR.items():
+        assert f"  {k}: {v}\n" in st, f"UIBackdropBlurSettings: {k} is not {v}"
+    bs = open(os.path.join(REPO, BLUR_SHADER), encoding="utf-8").read()
+    assert f"guid: {BLUR_SHADER_GUID}" in open(os.path.join(REPO, BLUR_SHADER + ".meta"), encoding="utf-8").read(), \
+        "BackdropBlur.shader.meta has the wrong guid"
+    assert re.findall(r'Name "(\w+)"', bs) == ["Downsample", "Blur"], "BackdropBlur.shader's passes moved (UIBackdropBlur names them 0, 1)"
+    cs = open(os.path.join(REPO, MOTION_SCRIPT_PATH), encoding="utf-8").read()
+    codes = dict((n, int(v)) for n, v in re.findall(r"^\s+(\w+) = (\d+),", cs.split("enum BackdropMotion", 1)[1].split("}", 1)[0], re.M))
+    assert codes == MOTION_CODES, f"BackdropMotion {codes} no longer matches the shader's _Motion codes {MOTION_CODES}"
+    assert "_Motion (\"Motion without per-Image data (0 still, 1 ring, 2 tide, 3 grow)\"" in shader, \
+        "Lattice.shader's _Motion codes changed: update BackdropMotion and MOTION_CODES together"
 
     rim = open(os.path.join(REPO, RIM_SHADER), encoding="utf-8").read()
     rim_declared = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", rim, re.M)) - {"_MainTex"}
@@ -346,8 +403,12 @@ def self_test(files):
         ("a material on the wrong shader", lambda f: f.__setitem__(f"{DIR}/Lattice_Panel.mat", f[f"{DIR}/Lattice_Panel.mat"].replace(SHADER_GUID, "0" * 32))),
         ("a property the shader no longer declares", lambda f: f.__setitem__(f"{DIR}/Lattice_Window.mat", f[f"{DIR}/Lattice_Window.mat"].replace(
             "    - _FadeStart:", "    - _Retired: 1\n    - _FadeStart:", 1))),
-        ("the lattice drifting again", lambda f: f.__setitem__(f"{DIR}/Lattice_Window.mat", f[f"{DIR}/Lattice_Window.mat"].replace(
-            "    - _NearDrift: 0\n", "    - _NearDrift: 40\n", 1))),
+        ("the blur settings without the shader", lambda f: f.__setitem__(BLUR_SETTINGS, f[BLUR_SETTINGS].replace(BLUR_SHADER_GUID, "0" * 32))),
+        ("the blur switched off", lambda f: f.__setitem__(BLUR_SETTINGS, f[BLUR_SETTINGS].replace("  enabled: 1\n", "  enabled: 0\n"))),
+        ("the panel frosted too", lambda f: f.__setitem__(f"{DIR}/Lattice_Panel.mat", f[f"{DIR}/Lattice_Panel.mat"].replace(
+            "    - _Frost: 0\n", "    - _Frost: 1\n", 1))),
+        ("the window moving by itself", lambda f: f.__setitem__(f"{DIR}/Lattice_Window.mat", f[f"{DIR}/Lattice_Window.mat"].replace(
+            "    - _Motion: 0\n", "    - _Motion: 1\n", 1))),
         ("the orb's dots orbiting again", lambda f: f.__setitem__(f"{DIR}/Presence_Orb.mat", f[f"{DIR}/Presence_Orb.mat"].replace(
             "    - _SpinSeconds: 0\n", "    - _SpinSeconds: 24\n", 1))),
         ("the Time rim material brought back", lambda f: f.__setitem__(f"{DIR}/ElementRim_Time.mat", rim_material("Time"))),
@@ -368,6 +429,8 @@ def self_test(files):
             WINDOWS[0]: screens[WINDOWS[0]] + f"  m_Sprite: {{fileID: 21300000, guid: {KIT_GRID}, type: 3}}\n"}))),
         ("a screen lit with an element rim again", lambda f: f.__setitem__("__screens__", dict(screens, **{
             PARTY_PANEL: screens[PARTY_PANEL].replace(f"guid: {BOND_GUID}", f"guid: {RIM_GUID['Space']}", 1)}))),
+        ("a window backdrop without its motion", lambda f: f.__setitem__("__screens__", dict(screens, **{
+            WINDOWS[0]: screens[WINDOWS[0]].replace(guid("backdrop_motion_cs"), "6" * 32)}))),
         ("a window without its lattice", lambda f: f.__setitem__("__screens__", dict(screens, **{
             WINDOWS[2]: screens[WINDOWS[2]].replace(WINDOW_GUID, "2" * 32)}))),
         ("a party bond without KitRimMesh", lambda f: f.__setitem__("__screens__", dict(screens, **{
