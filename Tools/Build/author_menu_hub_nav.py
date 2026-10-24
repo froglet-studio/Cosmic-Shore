@@ -57,6 +57,8 @@ SAFE_AREA_RT, MODAL_WINDOWS_RT, SWITCHER = FD.SAFE_AREA_RT, FD.MODAL_WINDOWS_RT,
 
 # The row, in ScreenSwitcher.ModalWindows values and the words the strip shows (authored on each tab).
 HUB = (("ToyBox", 13, "Toy Box"), ("Arcade", 10, "Arcade"), ("Arena", 14, "Arena"), ("Mission", 15, "Mission"))
+HUB_WORD_TOKENS = (("restLabelToken", "NeutralLightest"), ("selectedLabelToken", "NeutralLightest"),
+                   ("hoverLabelToken", "TextLight"))
 SLIDE_DISTANCE, SLIDE_SECONDS = 160, 0.32   # ScreenSwitcher.hubSlideDistance / hubSlideSeconds
 
 # The strip: under the 84-unit nav band, centred (the board: 120 down at 1080).
@@ -126,7 +128,10 @@ def strip_tab(strip, key, word, x):
           + A.calls([(ctx.c(k, "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")])
           + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {{fileID: 0}}\n"
           "  isSelected: 0\n"
-          f"  label: {ref(ctx.c(f'{k}/Label', 'tmp'))}\n  underline: {ref(ctx.c(f'{k}/Underline', 'img'))}\n"))
+          f"  label: {ref(ctx.c(f'{k}/Label', 'tmp'))}\n  underline: {ref(ctx.c(f'{k}/Underline', 'img'))}\n"
+          # Arcade, Mission, Arena and Toy Box all read in the one neutral blue; the underline marks the shown one
+          # (Shombith, 2026-10-24).
+          + "".join(f"  {f}: {K.TOKEN_INDEX[t]}\n" for f, t in HUB_WORD_TOKENS)))
     n.add("audio", 114, A.menu_audio(11))
 
 
@@ -272,6 +277,8 @@ def validate(files):
         assert re.search(r"  m_Navigation:\n    m_Mode: 0\n", tab), f"the pad can land on the strip's {word} (it must stay on the cards)"
         lab = sc.docs[str(ctx.c(f"Strip/{key}/Label", "tmp"))]
         assert f"  m_text: {word}\n" in lab, f"the strip's {word} lost its authored word"
+        for f, t in HUB_WORD_TOKENS:
+            assert f"  {f}: {K.TOKEN_INDEX[t]}\n" in tab, f"the strip's {word}: {f} is not {t} (all four words read in one blue)"
     for side in ("Left", "Right"):
         btn = sc.docs[str(ctx.c(f"{side}Arrow", "button"))]
         assert re.search(r"  m_Navigation:\n    m_Mode: 0\n", btn), f"the pad can land on the {side.lower()} arrow"
@@ -316,6 +323,8 @@ def self_test(files):
         assert old in seg, f"{old!r} not in document {fid}"
         return text_[:i] + seg.replace(old, new, 1) + text_[j:]
 
+    expect("the shown hub word turning white again", lambda t: in_doc(t, ctx.c("Strip/Arcade", "tab"),
+           f"  selectedLabelToken: {K.TOKEN_INDEX['NeutralLightest']}\n", f"  selectedLabelToken: {K.TOKEN_INDEX['TextLight']}\n"))
     expect("the strip skips the Arena", lambda t: in_doc(t, ctx.c("Host", "nav"), "  - window: 14\n", "  - window: 15\n"))
     expect("the pad can land on a strip word", lambda t: in_doc(
         t, ctx.c("Strip/Arcade", "tab"), "  m_Navigation:\n    m_Mode: 0\n", "  m_Navigation:\n    m_Mode: 3\n"))

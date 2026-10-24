@@ -2347,3 +2347,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Andrew (has the Bloomrush captures), Yash, anyone with the Unity Editor
 - **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-24 prism creation queue
+
+### T-20261024-6756 · open · decision · Menu_Main
+- **Task:** Friends orb polish: the orb lost its orbiting particles in Garrett's attention pass (2026-10-24) but has not had a full polish pass. Shombith has more direction to give; remind him and do the pass from it
+- **Done when:** Shombith's direction for the orb is recorded in Docs/MENU_REDESIGN_B.md and built
+- **Who can take it:** Shombith (owner, has the direction)
+- **Added:** 2026-10-24 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md 61.1; Tools/Build/author_ui_lattice.py PRESENCE

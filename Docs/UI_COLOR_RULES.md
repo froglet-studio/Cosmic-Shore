@@ -13,7 +13,7 @@ assets. These rules hold for every UI surface: Menu_Main, the in-match HUD and c
 | Call to action (lime) | `Cta`, the `Play` / `Cta` button variants | categorically good, no caution: launch, join, accept, confirm, earned rewards, "online", a done tick | an eyebrow, a heading or decoration |
 | Danger (fire) | `Danger`, the `Danger` button variant | danger, caution, a problem: delete my data, a guest-account warning, why a game cannot launch | anything merely important |
 | Spend (gold) | `Purchase`, the `Purchase` button variant | spending something: a purchase, an upgrade, any button that confirms using a resource; the crystal glyph (the currency) | a first place, a highlight, a reward amount |
-| Selection (sky blue) | `Selection`, the SelectionRim / SelectionBar materials | the one thing that is actually selected (a picked tile, the open tab) | a playing track, your own row, a favourite, a spinner, a "featured" card |
+| Selection (sky blue) | `Selection`, the SelectionRim material | the one thing that is actually selected (a picked tile, the open tab's still underline) and the keyboard / pad focus ring (decided 2026-10-24: focus keeps the selection blue, no look of its own) | a playing track, your own row, a favourite, a spinner, a "featured" card |
 
 Domain colour notes from Garrett: Ruby can mean risk-taking. Jade is open and may trend toward order, control and
 arrangement.
@@ -37,11 +37,15 @@ Still on element colours, and not changed here because they are other people's H
 `StarlingHUDView`, `GobyPistolButtons`, `OrcaHUDController`, `TouchControlsHud`, `AbilityLockupView` call `ColourFor`.
 With `elementColour` off the lockup itself is neutral; those vessel HUDs still tint by element.
 
+Hub windows: the strip's four words (Toy Box, Arcade, Arena, Mission) all read in the one neutral blue
+(`NeutralLightest`), the shown one included; its still underline alone marks it (Shombith, 2026-10-24).
+
 ## Attention economy
 
 "Every pixel is important." Nothing in the UI moves for its own sake while a player is reading or playing.
 
-- **Still:** the lattice backdrop (no drift, no element pulses, no twinkles), the presence orb (no orbiting dots, no
+- **Still:** every tab underline (the top nav's Home / Hangar / Ark bar ran the selection sweep and read as frozen next
+  to the hub strip's bar; both are plain bars now), the lattice backdrop (no drift, no element pulses, no twinkles), the presence orb (no orbiting dots, no
   spinning ring), the party bonds (solid), the Hangar bay (no breathing rings, no scan line, no motes), floating
   avatars and art, the settings gear, element halos (`KitElementHalo.breathe` off).
 - **Kept, because they mean something:** progress spinners while something loads or connects, the music EQ while a

@@ -2959,3 +2959,15 @@ What changed:
 Gates: `check_ui_colors.py` (new, 7 planted defects), every touched generator's `--check` and `--self-test`,
 `lattice_preview.py --check` (new still-mode assertions). Open: which element looked "frozen" next to a working one
 (Garrett's note) - needs a screenshot; the party orb's polish beyond removing its orbiting charge.
+
+### 61.1 Follow-up (2026-10-24, Shombith)
+
+- **Focus ring:** keeps the selection blue (no look of its own).
+- **The "frozen" element** was the bar under the top nav's Home / Hangar / Ark: it ran the selection sweep
+  (`SelectionBar.mat`), which read as stuck next to the hub strip's bar. Every tab underline is now a plain, still
+  Selection bar: the top nav's lost the material and `KitRimMesh`, and `KitTextTab` no longer lights its underline.
+- **Hub strip words:** Toy Box, Arcade, Arena and Mission all read in `NeutralLightest`, the shown one included
+  (`KitTextTab` gained serialized `restLabelToken` / `selectedLabelToken` / `hoverLabelToken`; the strip sets the
+  selected one to the rest blue; hover still lifts to white). Held by `author_menu_hub_nav.py` and
+  `author_ui_kit_prefabs.py` validation, each with a planted defect.
+- **Friends orb polish:** pending Shombith's direction (team task).

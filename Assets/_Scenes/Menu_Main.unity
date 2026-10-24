@@ -72971,6 +72971,9 @@ MonoBehaviour:
   isSelected: 0
   label: {fileID: 996736259759782596}
   underline: {fileID: 49913552720061945}
+  restLabelToken: 7
+  selectedLabelToken: 7
+  hoverLabelToken: 0
 --- !u!114 &1066354907189375741
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -73389,6 +73392,9 @@ MonoBehaviour:
   isSelected: 0
   label: {fileID: 206364510103892183}
   underline: {fileID: 549032305994184584}
+  restLabelToken: 7
+  selectedLabelToken: 7
+  hoverLabelToken: 0
 --- !u!114 &424738876268818681
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -73807,6 +73813,9 @@ MonoBehaviour:
   isSelected: 0
   label: {fileID: 591535762174559219}
   underline: {fileID: 122380736542104942}
+  restLabelToken: 7
+  selectedLabelToken: 7
+  hoverLabelToken: 0
 --- !u!114 &61955207537988492
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -74225,6 +74234,9 @@ MonoBehaviour:
   isSelected: 0
   label: {fileID: 539384746793563012}
   underline: {fileID: 108065252755643883}
+  restLabelToken: 7
+  selectedLabelToken: 7
+  hoverLabelToken: 0
 --- !u!114 &57078791259368450
 MonoBehaviour:
   m_ObjectHideFlags: 0

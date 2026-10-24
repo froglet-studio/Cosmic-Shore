@@ -14126,4 +14126,6 @@ project code; Amoebius builds. Rules: `Docs/UI_COLOR_RULES.md`. Check by hand:
 - [ ] In a match: the ability row has no element colour and no lava motion; the scoreboard rows have plain hairline
       borders, PLAY AGAIN lime, MAIN MENU neutral, the reward amount lime.
 - [ ] Settings > links open www.froglet.games pages.
+- [ ] The bar under the open top-nav tab (Home / Hangar / Ark) is a still sky-blue line, like the hub strip's.
+- [ ] Hub strip: Toy Box, Arcade, Arena and Mission all read in the same blue whichever is open; only the underline moves.
 - [ ] EditMode suite passes.

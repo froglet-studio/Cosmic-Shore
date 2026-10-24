@@ -717,16 +717,13 @@ def build_top_nav_tab():
     # The label sizes itself to its text so the 2px underline beneath it spans the word, not the tab.
     alab = active.child(Node("ActiveImage/Label", "Label",
                              rect(size=(label_width("TAB", "Button"), line_height("Button")))))
-    # Rev 7: the shown screen's word and underline in the sky-blue Selection; the underline carries the selection
-    # light (SelectionBar.mat: a sweep running along it, breathing), placed by KitRimMesh.
+    # The shown screen's word and underline in the sky-blue Selection. The underline is a plain, still bar: the rev 7
+    # sweep along it read as frozen next to the hub strip's bar (Shombith, 2026-10-24), and it was decoration
+    # (Docs/UI_COLOR_RULES.md, attention economy).
     alab.add("cr", 222, canvas_renderer()).add("tmp", 114, tmp("TAB", "Button", tok("Selection"))) \
         .add("kt", 114, kit_text("Button", "Selection")).add("csf", 114, fitter(2, 0))
     under = alab.child(Node("ActiveImage/Underline", "Underline", rect((0, 0), (1, 0), (0, -6), (0, 2), (0.5, 0.5))))
-    bar_mat = hashlib.md5(b"CosmicShore/MenuB/lattice/selection_bar_mat").hexdigest()
-    under.add("cr", 222, canvas_renderer()).add("img", 114, lambda ctx, go: image(tok("Selection"))(ctx, go).replace(
-        "  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {bar_mat}, type: 2}}\n", 1)) \
-        .add("th", 114, themed("Selection")) \
-        .add("rim", 114, lambda ctx, go: mono(go, "b403ee3874d54f79d0f27e7013879c0f", ""))
+    under.add("cr", 222, canvas_renderer()).add("img", 114, image(tok("Selection"))).add("th", 114, themed("Selection"))
     # The lit glyph hangs off the word's left edge, so it follows the fitted label without a layout.
     aicon = alab.child(Node("ActiveImage/Icon", "Icon", rect((0, 0.5), None, (-(NAV_ICON_GAP + NAV_ICON / 2), 0),
                                                               (NAV_ICON, NAV_ICON)), active=False))
@@ -1239,9 +1236,8 @@ def validate(out):
     assert f"  selectedBorderToken: {TOKEN_INDEX['Selection']}\n" in tile, "KitTile's selected border is not Selection"
     nav = out[f"{PREFAB_DIR}/KitTopNavTab.prefab"]
     bar_mat = hashlib.md5(b"CosmicShore/MenuB/lattice/selection_bar_mat").hexdigest()
-    assert f"guid: {bar_mat}, type: 2}}" in nav, "the nav underline lost the selection light (SelectionBar.mat)"
-    assert nav.count("guid: b403ee3874d54f79d0f27e7013879c0f, type: 3}") == 1, \
-        "the nav underline has no KitRimMesh (the selection light would sweep the wrong UVs)"
+    assert f"guid: {bar_mat}, type: 2}}" not in nav, "the nav underline runs the selection sweep again (it must be a still bar)"
+    assert "guid: b403ee3874d54f79d0f27e7013879c0f, type: 3}" not in nav, "the nav underline carries KitRimMesh again"
     known_guids = set(PACKAGE_GUIDS)
     for root, _dirs, names in os.walk(os.path.join(REPO, "Assets")):
         for n in names:
@@ -1295,8 +1291,8 @@ def self_test(out):
     nav, tile = f"{PREFAB_DIR}/KitTopNavTab.prefab", f"{PREFAB_DIR}/KitTile.prefab"
     bar_mat = hashlib.md5(b"CosmicShore/MenuB/lattice/selection_bar_mat").hexdigest()
     plants = {
-        "the nav underline loses the selection light": (nav, lambda t: t.replace(
-            f"  m_Material: {{fileID: 2100000, guid: {bar_mat}, type: 2}}\n", "  m_Material: {fileID: 0}\n", 1)),
+        "the nav underline sweeping again": (nav, lambda t: t.replace(
+            "  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {bar_mat}, type: 2}}\n")),
         "the selected tile border falls back to the green CTA": (tile, lambda t: t.replace(
             f"  selectedBorderToken: {TOKEN_INDEX['Selection']}\n", f"  selectedBorderToken: {TOKEN_INDEX['Cta']}\n", 1)),
     }
