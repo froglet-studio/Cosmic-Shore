@@ -341,7 +341,7 @@ def tile_body(ring, fill, border, sliver, primary=(), unsel_primary="TextLight",
                     + refs("primaryGraphics", [f(x) for x in primary])
                     + f"  unselectedPrimaryToken: {K.TOKEN_INDEX[unsel_primary]}\n"
                     + refs("secondaryGraphics", [f(x) for x in secondary])
-                    + f"  lockedSecondaryToken: {K.TOKEN_INDEX['Purchase']}\n"
+                    + f"  lockedSecondaryToken: {K.TOKEN_INDEX['NeutralLightest']}\n"
                     + refs("artGraphics", [f(x) for x in art])
                     + f"  lockGraphic: {ref(f(lock) if lock else 0)}\n"
                     + f"  lockLabel: {ref(f(lock_label) if lock_label else 0)}\n")
@@ -573,18 +573,18 @@ def build_slot():
         .add("img", 114, K.image(tok("SurfaceVeryDark", 0.55), K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
     bord = empty.child(N("Empty/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver10_line1"), True))
-    oct_nodes(empty, "Empty/PlusRing", SOCK_AV - 8, "ElementSpace")
+    oct_nodes(empty, "Empty/PlusRing", SOCK_AV - 8, "NeutralLightest")
     oct_nodes(empty, "Empty/PlusBack", SOCK_AV - 12, "SurfaceBlack")
     plus = empty.child(N("Empty/Plus", "Plus", R((0.5, 1), None, (0, -SOCK_AV_Y), (22, 22))))
     plus.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("ElementSpace"), K.chrome_sprite("chrome_plus"), preserve=True))
+        .add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite("chrome_plus"), preserve=True))
     lab = empty.child(N("Empty/Label", "Label", R((0, 1), (1, 1), (0, -name_top - 4), (-12, 30), (0.5, 1))))
     lab.add("cr", 222, K.canvas_renderer()) \
-        .add("tmp", 114, ellipsis(text("Invite a friend", "Label", tok("ElementSpace"), align="center"))) \
-        .add("kt", 114, K.kit_text("Label", "ElementSpace", driven=True))
+        .add("tmp", 114, ellipsis(text("Invite a friend", "Label", tok("NeutralLightest"), align="center"))) \
+        .add("kt", 114, K.kit_text("Label", "NeutralLightest", driven=True))
     empty.add("tile", 114, tile_body(c("Empty/FocusRing", "img"), c("Empty/Fill", "img"), c("Empty/Border", "img"), 10,
                                      primary=[c("Empty/Plus", "img"), c("Empty/Label", "tmp")],
-                                     unsel_primary="ElementSpace"))
+                                     unsel_primary="NeutralLightest"))
 
     root.add("slot", 114, lambda ctx, go: mono(go, S["slot"],
              f"  avatarIcon: {ref(ctx.c('Occupied/Avatar/Icon', 'img'))}\n"
@@ -630,7 +630,7 @@ def build_request_row():
     text_columns(root, 84, "Pilot", "PARTY INVITE", "ControlActive", line_driven=True)
     btns = root.child(N("Buttons", "Buttons", R((1, 0.5), None, (0, 0), (72, 32), (1, 0.5))))
     btns.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 5, (0, 0), (0, 0)))
-    btns.children.append(small_button("Accept", "Accept", "Space", None, icon="chrome_confirm", added=[row_scroll_into()]))
+    btns.children.append(small_button("Accept", "Accept", "Cta", None, icon="chrome_confirm", added=[row_scroll_into()]))
     btns.children.append(small_button("Decline", "Decline", "Cancel", None, icon="chrome_close", added=[row_scroll_into()]))
     root.add("row", 114, lambda ctx, go: mono(go, S["request"],
              f"  avatarIcon: {ref(ctx.c('Avatar/Icon', 'img'))}\n"
@@ -654,14 +654,14 @@ def build_online_row():
     # it are sized for the widest pair. The strip CONTROLS its slots' widths (from their preferred
     # size): reading each slot's own rect instead took its 60-wide placeholder until the slot's
     # fitter caught up, which drew JOIN over INVITE.
-    text_columns(root, 210, "Pilot", "ONLINE", "ElementSpace")
+    text_columns(root, 210, "Pilot", "ONLINE", "NeutralLightest")
     # Rev 7: the pilot's profile card opens on their avatar (pointer) and on any of the row's buttons (pad focus).
     row_comp, row_avatar = (lambda ctx: ctx.c("root", "row")), (lambda ctx: ctx.rt("Avatar/Icon"))
     profile_hit(root, "Avatar/Hit", R((0, 0.5), None, (20, 0), (40, 40)), row_comp, row_avatar)
     relay = ("profile", 114, profile_hover(row_comp, row_avatar))
     btns = root.child(N("Buttons", "Buttons", R((1, 0.5), None, (0, 0), (202, 36), (1, 0.5))))
     btns.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 5, (1, 0), (0, 0)))
-    for key, caption, variant, shown in (("Invite", "INVITE", "Space", True), ("Join", "JOIN", "Space", False)):
+    for key, caption, variant, shown in (("Invite", "INVITE", "Default", True), ("Join", "JOIN", "Cta", False)):
         slot = wrap_slot(btns, f"{key}Slot", f"{key}Slot", shown)
         slot.children.append(small_button(f"{key}Button", f"{key}Button", variant, caption, added=[row_scroll_into(), relay]))
     cancel = wrap_slot(btns, "CancelSlot", "CancelSlot", False)
@@ -744,11 +744,11 @@ def build_panel():
     top = inner.child(N("Top", "Top", R((0, 1), None, (0, 0), (ROW_W, 46), (0, 1))))
     top.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 8, 0, (1, 1), (1, 0))).add("le", 114, le(ph=46))
     head = top.child(N("Top/Header", "Header", R((0, 1), None, (0, 0), (ROW_W, 18), (0, 1)))).add("le", 114, le(ph=18))
-    label(head.child(N("Top/Header/Label", "Label", STRETCH)), "Your party", "Label", "ElementSpace")
-    label(head.child(N("Top/Header/Count", "Count", STRETCH)), "1 / 4", "Label", "ElementSpace", align="right")
+    label(head.child(N("Top/Header/Label", "Label", STRETCH)), "Your party", "Label", "NeutralLightest")
+    label(head.child(N("Top/Header/Count", "Count", STRETCH)), "1 / 4", "Label", "NeutralLightest", align="right")
     online = top.child(N("Top/Online", "OnlineCount", R((0, 1), None, (0, -26), (ROW_W, 20), (0, 1))))
     online.add("le", 114, le(ph=20)).add("hlg", 114, K.hv_layout(False, (1, 0, 0, 0), 10, 3, (0, 0), (0, 0)))
-    diamond = image_node(online, "Top/Online/Diamond", "Diamond", R((0, 0.5), None, (5, 0), (8, 8)), "ElementSpace")
+    diamond = image_node(online, "Top/Online/Diamond", "Diamond", R((0, 0.5), None, (5, 0), (8, 8)), "Cta")
     diamond.rot = 45
     label(online.child(N("Top/Online/Text", "Text", R((0, 0.5), None, (20, 0), (300, 20), (0, 0.5)))),
           "1 Player Online", "BodySmall", "NeutralLightest")
@@ -760,7 +760,7 @@ def build_panel():
         bond = mol.child(N(f"Bond{i + 2}", f"Bond{i + 2}", R((0.5, 0.5), None, socket_pos(0), (MOL_R, BOND_H), (0, 0.5))))
         bond.rot = angle
         bond.add("cr", 222, K.canvas_renderer()) \
-            .add("img", 114, M.material_image(tok("ElementSpace", OPEN_BOND_ALPHA), M.BOND_MAT)) \
+            .add("img", 114, M.material_image(tok("NeutralLightest", OPEN_BOND_ALPHA), M.BOND_MAT)) \
             .add("rim", 114, lambda ctx, go: mono(go, M.RIM_SCRIPT, ""))
     for i in range(4):
         x, y = socket_pos(i)
@@ -943,8 +943,6 @@ def feature_card(parent, key, name, art, eyebrow, eyebrow_token, title, extra=No
     image_node(clip, f"{key}/Clip/Scrim", "Scrim", STRETCH, "SurfaceBlack", K.kit_sprite("kit_fade_h"))
     bord = n.child(N(f"{key}/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
-    # Rev 6: the card's rim in the element its job comes from; KitTile's state tint keeps it dim until focused.
-    M.rim_border(bord, {"Weekly": "Time", "Maelstrom": "Omni"}.get(key, "Charge"))
     label(n.child(N(f"{key}/Eyebrow", "Eyebrow", R((0, 1), None, (26, -24), (420, 18), (0, 1)))), eyebrow, "Label", eyebrow_token)
     t = n.child(N(f"{key}/Title", "Title", R((0, 1), None, (26, -48), (600, 46), (0, 1))))
     t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text(title, "H1", tok("TextLight"))) \
@@ -1027,7 +1025,7 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
             .add("tmp", 114, text(maelstrom_desc, "BodySmall", tok("TextLight"), valign="top", wrap=True)) \
             .add("kt", 114, K.kit_text("BodySmall", "TextLight"))
 
-    wk = feature_card(feats, "Weekly", "WeeklyChallenge", weekly_art, "WEEKLY CHALLENGE", "ElementTime", "Skim Race",
+    wk = feature_card(feats, "Weekly", "WeeklyChallenge", weekly_art, "WEEKLY CHALLENGE", "NeutralLightest", "Skim Race",
                       weekly_extra)
     wk.add("weekly", 114, lambda ctx, go: mono(go, S["weekly"],
            f"  GameTitle: {ref(ctx.c('Weekly/Title', 'tmp'))}\n"

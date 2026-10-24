@@ -107,7 +107,6 @@ def recipe_panel(root):
     pn = root.child(N("Recipe", "Recipe", TR(40, 108, 438, 760)))
     pn.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=1))
     C.frame(pn, "Recipe/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
-    M.rim_border(M.find_node(pn, "Recipe/Frame/Border"), "Omni")     # rev 6: the Ark is about every element
     pn.child(M.grid_node("Recipe/Grid"))
     M.bracket_nodes(pn, "Recipe/Bracket")
     C.section_label(pn, "Recipe/Caption", "Caption", "Recipe", TL(26, 26, 200, 18))
@@ -129,7 +128,6 @@ def recipe_panel(root):
     bord.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver10_line1"), True))
     art = art_node(om, "Recipe/Omni/Art", "Art", TL(26, 58, 100, 100), OMNI, preserve=True)
-    art.add("amb", 114, M.ambient("Float", period=4.2, amplitude=5))
     label(om.child(N("Recipe/Omni/Name", "Name", TL(146, 66, 220, 30))), "Omni crystal", "H3", "TextLight")
     label(om.child(N("Recipe/Omni/Line", "Line", TL(146, 100, 220, 48))), "Forms when all four elements have merged.",
           "BodySmall", "NeutralLightest", valign="top", wrap=True)
@@ -163,7 +161,7 @@ def converter_bar(root):
     w = max(w, 210)
     holder = bar.child(N("Bar/Convert", "Convert", R((1, 0.5), None, (-28, 0), (w, h), (1, 0.5))))
     holder.children.append(P.Inst("ConvertButton", "KitButton", "ConvertButton", STRETCH,
-                                  K.button_mods("KitButton", "Play", True, "CONVERT"),
+                                  K.button_mods("KitButton", "Purchase", True, "CONVERT"),
                                   added=[("mask", 114, A.rect_mask())], added_nodes=[C.sweep_node()]))
 
 

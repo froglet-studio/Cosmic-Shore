@@ -120,7 +120,7 @@ MonoBehaviour:
   - {fileID: 111792372592653676}
   unselectedPrimaryToken: 0
   secondaryGraphics: []
-  lockedSecondaryToken: 11
+  lockedSecondaryToken: 7
   artGraphics:
   - {fileID: 417363001424702390}
   - {fileID: 957919424876099009}

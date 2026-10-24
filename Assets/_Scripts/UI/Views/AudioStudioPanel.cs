@@ -150,11 +150,9 @@ namespace CosmicShore.UI
                 Set(r.titleText, p.Title(i));
                 if (r.tickMark) r.tickMark.SetActive(on);
                 if (r.playingMark) r.playingMark.SetActive(i == p.NowPlaying && !p.Stopped);
-                if (r.tile)
-                {
-                    r.tile.IsSelected = i == p.NowPlaying && !p.Stopped;
-                    r.tile.IsLocked = !p.Playable(i);
-                }
+                // The playing row says so with its "Playing" mark, never the selection light: that means only
+                // what is actually selected (Docs/UI_COLOR_RULES.md).
+                if (r.tile) r.tile.IsLocked = !p.Playable(i);
             }
         }
 

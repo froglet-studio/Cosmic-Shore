@@ -112,8 +112,6 @@ def avatar_oct(parent, key, r, ring_token, inset=(6, 10), ambient=False):
     image_node(av, f"{key}/Back", "Back", R((0, 0), (1, 1), (0, 0), (-inset[0], -inset[0])), "SurfaceDark", OCT)
     icon = art_node(av, f"{key}/Icon", "Icon", R((0, 0), (1, 1), (0, 0), (-inset[1], -inset[1])),
                     A.AVATAR_PLACEHOLDER, preserve=True)
-    if ambient:
-        icon.add("amb", 114, M.ambient("Float", period=4.2, amplitude=4))
     return av
 
 

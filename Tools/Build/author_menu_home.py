@@ -336,10 +336,10 @@ def chip_node():
     image_node(n, "Chip/Divider", "Divider", TL(436, 28, 1, 56), "SurfaceDark")
     cr = n.child(N("Chip/Crystals", "Crystals", TL(456, 26, 130, 60)))
     label(cr.child(N("Chip/Crystals/Label", "Label", TL(0, 0, 130, 16))), "Crystals", "Label", "NeutralLightest")
-    image_node(cr, "Chip/Crystals/Glyph", "Glyph", TL(0, 26, 20, 20), "ElementMass", K.chrome_sprite("chrome_crystal"), preserve=True)
+    image_node(cr, "Chip/Crystals/Glyph", "Glyph", TL(0, 26, 20, 20), "Purchase", K.chrome_sprite("chrome_crystal"), preserve=True)
     amt = cr.child(N("Chip/Crystals/Amount", "Amount", TL(28, 22, 100, 28)))
-    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0", "Data", tok("ElementMass"))) \
-        .add("kt", 114, K.kit_text("Data", "ElementMass"))
+    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0", "Data", tok("TextLight"))) \
+        .add("kt", 114, K.kit_text("Data", "TextLight"))
     cr.add("display", 114, lambda ctx, go: mono(go, S["crystals"], f"  balanceText: {ref(ctx.c('Chip/Crystals/Amount', 'tmp'))}\n"))
     return n
 
@@ -380,8 +380,7 @@ def settings_nodes():
     bord = N("Settings/Border", "Border", STRETCH)
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_hex_line1"), True))
     gear = N("Settings/Gear", "Gear", R(size=(36, 36)))
-    gear.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.chrome_sprite("chrome_gear"), preserve=True)) \
-        .add("spin", 114, M.ambient("Spin", period=24.0, amplitude=0.0))
+    gear.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.chrome_sprite("chrome_gear"), preserve=True))
     kw = K.label_width("X", "Label") + 24
     slot = N("Settings/KeycapSlot", "KeycapSlot", R((0.5, 0), None, (0, -8), (kw, K.line_height("Label") + 8), (0.5, 1)))
     slot.children.append(P.Inst("SettingsKeycap", "KitKeycap", "Keycap", STRETCH, [("Label#tmp", "m_text", "X", None)]))
@@ -552,8 +551,6 @@ def upnext_card(key, eyebrow, eyebrow_token, border_token, x):
     A.art_node(clip, f"{k}/Clip/Art", "Art", R(size=(ART_W, CARD_H)), None)
     bord = c.child(N(f"{k}/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok(border_token), K.kit_sprite("kit_sliver14_line1"), True))
-    if border_token == "ElementTime":
-        M.rim_border(bord, "Time")                                      # rev 6: progress is Time
     label(c.child(N(f"{k}/Eyebrow", "Eyebrow", TL(TEXT_X, 12, TEXT_W, 16))), eyebrow, "Label", eyebrow_token)
     # Everything under the eyebrow folds away with the card (HomeDockCard.detailGroup).
     detail = c.child(N(f"{k}/Detail", "Detail", STRETCH))
@@ -587,22 +584,22 @@ def upnext_node():
     # Rev 3: docked on the left under the pilot chip, stacked; a closed card closes its gap.
     root = N("UpNext", "UpNext", TL(CHIP["x"], CHIP["y"] + CHIP["h"] + 16, CARD_W, 2 * CARD_H + DOCK_GAP))
     root.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), DOCK_GAP, 0, (0, 0), (0, 0)))
-    w, wd = upnext_card("Weekly", "Weekly challenge", "ElementTime", "ElementTime", 0)
+    w, wd = upnext_card("Weekly", "Weekly challenge", "NeutralLightest", "SurfaceDark", 0)
     # The stats row sizes each word to itself (an HLG over TMP's preferred widths): "YOUR BEST" ran into
     # its value when the slots were fixed pixel widths.
     stats = wd.child(N("UpNext/Weekly/Stats", "Stats", TL(TEXT_X, 76, CARD_W - TEXT_X - 14, 18)))
     stats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 3, (1, 1), (0, 0)))
     label(stats.child(N("UpNext/Weekly/EndsLabel", "EndsLabel", R(size=(64, 18)))), "Ends in", "Label", "TextLight")
     cd = stats.child(N("UpNext/Weekly/Countdown", "Countdown", R(size=(110, 18))))
-    cd.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0d 00:00", "DataSmall", tok("ElementTime"))) \
-        .add("kt", 114, K.kit_text("DataSmall", "ElementTime"))
+    cd.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0d 00:00", "DataSmall", tok("TextLight"))) \
+        .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
     stats.child(N("UpNext/Weekly/StatsGap", "Gap", R(size=(10, 18)))).add("le", 114, le(pw=10, ph=18))
     label(stats.child(N("UpNext/Weekly/BestLabel", "BestLabel", R(size=(76, 18)))), "Your best", "Label", "NeutralLightest")
     b = stats.child(N("UpNext/Weekly/Best", "Best", R(size=(100, 18))))
     b.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("None yet", "DataSmall", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
     root.children.append(w)
-    q, qd = upnext_card("Quest", "Current quest", "ElementTime", "ElementTime", 0)
+    q, qd = upnext_card("Quest", "Current quest", "NeutralLightest", "SurfaceDark", 0)
     for i, h in enumerate((8, 10, 12, 14)):
         seg = qd.child(N(f"UpNext/Quest/Meter{i + 1}", f"Meter{i + 1}", R((0, 1), None, (TEXT_X + i * 10, -92), (7, h), (0, 0))))
         seg.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
@@ -649,7 +646,7 @@ def build_invite():
         .add("mask", 114, A.mask(False))
     av = clip.child(N("Ring/Clip/Avatar", "Avatar", STRETCH))
     av.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, A.AVATAR_PLACEHOLDER))
-    label(root.child(N("Eyebrow", "Eyebrow", TL(112, 24, 380, 16))), "Party invite", "Label", "Cta")
+    label(root.child(N("Eyebrow", "Eyebrow", TL(112, 24, 380, 16))), "Party invite", "Label", "NeutralLightest")
     nm = root.child(N("Name", "Name", TL(112, 44, 380, 28)))
     nm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Pilot", "H3", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H3", "TextLight"))

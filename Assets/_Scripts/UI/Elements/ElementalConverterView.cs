@@ -236,7 +236,7 @@ namespace CosmicShore.UI
                     convertLabel.text = phase switch { Phase.Converting => "Converting...", Phase.Converted => "Convert again", _ => buttonLabel };
                 if (convertButton)
                 {
-                    convertButton.Variant = phase == Phase.Converting ? KitButtonVariant.Inactive : KitButtonVariant.Play;
+                    convertButton.Variant = phase == Phase.Converting ? KitButtonVariant.Inactive : KitButtonVariant.Purchase;   // converting spends the merged elements: gold
                     convertButton.interactable = phase != Phase.Converting;
                 }
             }

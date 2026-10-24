@@ -14109,3 +14109,21 @@ Not opened in Unity (no editor in the session); `unity_refcompile --config edito
 - [ ] Fly the Starlings, pick a card; on a later hand that offers it again the row reads `Lv 3 → 7` (the arrow renders, no box).
 - [ ] Open that card's details: `Level 3 → 7`, each number `now → next`, `Unlocks at Lv 5: ...` for a jolt the pick passes.
 - [ ] With no hand, open details: each held card heads `Lv N → N+1` with numbers beside the next level's and its next jolt; a card at 15 shows `Max level`.
+
+## Garrett's palette and attention pass (2026-10-24, `claude/new-session-76hnyc`)
+
+Not opened in Unity (no editor in the session; `/verify-unity` did not run). `unity_refcompile` player: 0 errors in
+project code; Amoebius builds. Rules: `Docs/UI_COLOR_RULES.md`. Check by hand:
+- [ ] Menu_Main, every hub window: no element colours anywhere (no yellow / blue / purple / teal labels, rims or bars);
+      no panel border light runs round a panel; the lattice backdrop holds still; nothing floats or spins idly.
+- [ ] Buttons: PLAY / JOIN / ACCEPT lime; UPGRADE / UNLOCK / CONVERT / SPEND gold; DELETE MY DATA fire; Spectate,
+      Invite, Main menu, Leave lobby neutral.
+- [ ] Weekly leaderboard: podium first lime, second white, third neutral; reward amounts lime; a blocked launch's
+      reason in fire.
+- [ ] Selection blue only on the picked tile / open tab: not on the playing track, your scoreboard row, the favourite
+      pilot ring, the Toybox daily card, the sign-in spinner. The Hangar pilot underline is blue on the picked pilot.
+- [ ] Friends orb: no orbiting dots, still ring, solid bonds; the online count still reads.
+- [ ] In a match: the ability row has no element colour and no lava motion; the scoreboard rows have plain hairline
+      borders, PLAY AGAIN lime, MAIN MENU neutral, the reward amount lime.
+- [ ] Settings > links open www.froglet.games pages.
+- [ ] EditMode suite passes.

@@ -2924,3 +2924,38 @@ still the one random event, so both showed "Cosmic Shore soundtrack". Now:
 **Arena hull icons.** The vessel chips on Arena cards drew white squares: `KitArenaGameCard` put each vessel's icon on
 the chip's FIRST child, which is the chip frame's fill (`Fill`, `Border`, `Icon`), and left the sprite-less `Icon`
 drawing a white quad on top. It now finds the `Icon` child by name.
+
+## 61. Garrett's palette and attention pass (2026-10-24, awaiting in-editor approval)
+
+Garrett's feedback, relayed by Shombith: six colour families (domain jade / ruby / gold, neutral blue, call-to-action
+lime, danger fire), gold only for spending, elements told by shape / animation / effects and never by a fixed colour,
+"every pixel is important" (no decorative motion; juice only for upgrades, powered states and the call to action),
+and the selection effect only on what is actually selected. The rules and where each is enforced:
+[`Docs/UI_COLOR_RULES.md`](UI_COLOR_RULES.md). This section supersedes the element-colour parts of §45 (rev 6: element
+tokens across the menu, element rims) and §49's rim choices for the scoreboard.
+
+What changed:
+- **Elements:** no screen draws in an element token; the five `ElementRim_*` materials are deleted (the selection's
+  materials keep the shader); the `Mass` / `Space` / `Time` button variants draw as Default; the ability lockup's
+  `elementColour` and `lavaMotion` are off; Hangar abilities / upgrades / pilots, the vessel info card and the pilot
+  record read a serialized neutral token (upgrades: gold).
+- **Gold = spend:** Purchase stays gold (and CONVERT on the Ark, UPGRADE, UNLOCK, SPEND); the crystal glyph stays gold
+  as the currency. Off gold: the leaderboard podium (lime, white, neutral; no gold / silver / bronze), reward amounts
+  (lime), the configure launch-blocked reason (fire).
+- **Lime = good:** PLAY / JOIN / ACCEPT / "online" / done ticks / earned reward amounts. Off lime: every eyebrow that
+  wore it (welcome, sign-in, Google, Steam account, party invite, pilot record, Link Google, today's activity) and the
+  Spectate / Invite buttons (neutral).
+- **Fire = danger:** DELETE MY DATA, the guest notice, the Steam-not-running note, why a game cannot launch.
+- **Selection:** off the Audio Studio's playing row (it has its "Playing" mark), the Toybox daily card (its CTA is the
+  lime "Try it" chip), your own scoreboard row (a brighter hairline, glass leaning neutral), the favourite-pilot ring,
+  the account-link "Other" card and the sign-in spinner. On: the Hangar pilot underline (a real selection).
+- **Still:** lattice drift / pulses / twinkles 0 (the shader now draws exactly nothing for a density of 0), presence-orb
+  spin and dots 0 (a dot size of 0 draws none), solid bonds, no Hangar ring breathing / scan line / motes, no floating
+  avatars or art, no gear spin, `KitElementHalo` rests unless `breathe` is set. Kept: loading / connecting spinners,
+  the music EQ, the fly and focus hints, the START sweep, the current quest segment's spark, window entrances.
+- **Settings links:** `author_menu_settings.py` now writes the www.froglet.games links that merge `c659fe209f` set by
+  hand (and checks them), so re-running it no longer reverts them.
+
+Gates: `check_ui_colors.py` (new, 7 planted defects), every touched generator's `--check` and `--self-test`,
+`lattice_preview.py --check` (new still-mode assertions). Open: which element looked "frozen" next to a working one
+(Garrett's note) - needs a screenshot; the party orb's polish beyond removing its orbiting charge.

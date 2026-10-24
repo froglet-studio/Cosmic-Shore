@@ -310,16 +310,38 @@ namespace CosmicShore.Engine.Rendering
         public bool stopNaN { get; set; }
         public bool dithering { get; set; }
         public List<Camera> cameraStack { get; } = new();
+        public VolumeFrameworkUpdateMode volumeFrameworkUpdateMode { get; set; } = VolumeFrameworkUpdateMode.UsePipelineSettings;
+        /// <summary>URP: whether the camera's volume stack refreshes every frame (anything but ViaScripting).</summary>
+        public bool requiresVolumeFrameworkUpdate => volumeFrameworkUpdateMode != VolumeFrameworkUpdateMode.ViaScripting;
+        /// <summary>A ViaScripting camera's own stack (null until a script updates it).</summary>
+        public VolumeStack volumeStack { get; set; }
 
         ScriptableRenderer _renderer;
         /// <summary>This camera's renderer: script-injected passes are enqueued on it.</summary>
         public ScriptableRenderer scriptableRenderer => _renderer ??= new ScriptableRenderer();
     }
 
+    /// <summary>URP's VolumeFrameworkUpdateMode: when a camera's volume stack refreshes.</summary>
+    public enum VolumeFrameworkUpdateMode { EveryFrame = 0, ViaScripting = 1, UsePipelineSettings = 2 }
+
     public static class CameraExtensions
     {
         public static UniversalAdditionalCameraData GetUniversalAdditionalCameraData(this Camera camera)
             => camera.GetComponent<UniversalAdditionalCameraData>() ?? camera.gameObject.AddComponent<UniversalAdditionalCameraData>();
+
+        public static VolumeFrameworkUpdateMode GetVolumeFrameworkUpdateMode(this Camera camera)
+            => camera.GetUniversalAdditionalCameraData().volumeFrameworkUpdateMode;
+
+        public static void SetVolumeFrameworkUpdateMode(this Camera camera, VolumeFrameworkUpdateMode mode)
+            => camera.GetUniversalAdditionalCameraData().volumeFrameworkUpdateMode = mode;
+
+        /// <summary>URP's CameraExtensions.UpdateVolumeStack: blend the camera's own stack from the volumes it sees.</summary>
+        public static void UpdateVolumeStack(this Camera camera, UniversalAdditionalCameraData data)
+        {
+            data.volumeStack ??= new VolumeStack();
+            var trigger = data.volumeTrigger ? data.volumeTrigger : camera.transform;
+            data.volumeStack.Update(trigger.position, data.volumeLayerMask.value);
+        }
     }
 
     /// <summary>The render-graph submission context (opaque here).</summary>

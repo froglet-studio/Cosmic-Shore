@@ -134,7 +134,7 @@ def daily_card(parent):
     frame(n, k)
     art_node(n, f"{k}/Portrait", "Portrait", R((0, 0.5), None, (24, 0), (170, 170), (0, 0.5)), None, preserve=True)
     t = n.child(N(f"{k}/Title", "Title", R((0, 1), None, (222, -26), (420, 18), (0, 1))))
-    label(t, "Today's activity", "Label", "Cta")
+    label(t, "Today's activity", "Label", "NeutralLightest")
     act = n.child(N(f"{k}/Activity", "Activity", R((0, 1), None, (222, -46), (440, 44), (0, 1))))
     act.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Activity", "H1", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H1", "TextLight", driven=True))
@@ -145,9 +145,9 @@ def daily_card(parent):
     H.framed(chip, f"{k}/Reward", 10, "SurfaceVeryDark", "Cta")
     label(chip.child(N(f"{k}/Reward/Label", "Label", R((0, 0), (1, 1), (-10, 0), (-40, 0)))), "Try it", "Label", "Cta",
           align="center")
-    image_node(chip, f"{k}/Reward/Crystal", "Crystal", R((1, 0.5), None, (-14, 0), (16, 16), (1, 0.5)), "Cta",
+    image_node(chip, f"{k}/Reward/Crystal", "Crystal", R((1, 0.5), None, (-14, 0), (16, 16), (1, 0.5)), "Purchase",
                K.chrome_sprite("chrome_crystal"), preserve=True)
-    n.add("tile", 114, tile(k, [c(f"{k}/Activity", "tmp")], art=[c(f"{k}/Portrait", "img")], selected=True, sel_border="Cta"))
+    n.add("tile", 114, tile(k, [c(f"{k}/Activity", "tmp")], art=[c(f"{k}/Portrait", "img")]))   # its call to action is the lime "Try it" chip, never a selection
     n.add("daily", 114, lambda ctx, go: mono(go, S["daily"],
           f"  titleText: {ref(ctx.c(f'{k}/Title', 'tmp'))}\n  activityText: {ref(ctx.c(f'{k}/Activity', 'tmp'))}\n"
           f"  toyText: {ref(ctx.c(f'{k}/Toy', 'tmp'))}\n  statusText: {{fileID: 0}}\n"

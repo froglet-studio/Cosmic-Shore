@@ -166,6 +166,11 @@ geometry re-point. The printed procedure ends by clearing the animation's part f
 > petals are never tinted. A locked card stays dim and still. Tunable on the style asset (`lavaAlpha`,
 > `lavaDrift`, `lavaPeriod`, `lavaMotion` off = still colour, no per-frame work). Mockups: the canvas's Rev 3 page,
 > `R3Hud<Vessel>` boards.
+>
+> **Retired 2026-10-24 (Garrett, `Docs/UI_COLOR_RULES.md`):** elements are told by shape, animation and effects, never
+> by a fixed colour. `elementColour` and `lavaMotion` now default to off and `Resources/AbilityLockupStyle.asset`
+> ships both off (`author_ingame_hud.py` checks it; `check_ui_colors.py` gates it). The fields stay for the vessel
+> HUDs that still call `ColourFor` (Starling, Goby & Pistol, Orca, touch controls), which are their owners' to re-tune.
 
 > **Every card is its ability's button (2026-10-19, Garrett).** A finger on a pressable card presses the control its
 > chip names and lifting releases (`AbilityCardPress`); locked, passive (`Input: 0`) and gesture cards are not

@@ -58,7 +58,9 @@ SELECTION_GUID = guid("selection_rim_mat")
 SELECTION_BAR_GUID = guid("selection_bar_mat")
 SELECTION = (0.23921569, 0.69803923, 1)            # #3DB2FF, UITheme.Selection
 THEME = "Assets/_SO_Assets/UI/UITheme.asset"
-# The elemental rims (§45.3): one material per element plus omni. menu_b_motion.rim_border emits these guids.
+# The elemental rims (§45.3), RETIRED 2026-10-24 (Docs/UI_COLOR_RULES.md): elements carry no colour in the UI, and a
+# light running round a panel nobody selected read as the selection. Their five materials are deleted; the guids stay
+# so the screens can be checked for a stray reference. The shader stays - the selection's two materials run on it.
 RIMS = {"Charge": (1, 0.827451, 0.3019608), "Mass": (0.49803922, 0.65882355, 1), "Space": (0.6901961, 0.4862745, 1),
         "Time": (0.37254903, 0.9411765, 0.78431374), "Omni": None}
 RIM_GUID = {e: guid(f"rim_{e.lower()}_mat") for e in RIMS}
@@ -70,13 +72,17 @@ ELEMENTS = {"_ChargeColor": (1, 0.827451, 0.3019608), "_MassColor": (0.49803922,
 LINE = (0.2627451, 0.29803923, 0.5372549)          # SurfaceLight #434C89
 
 # name: (floats). Every property the shader declares is written, so Unity never re-serializes the asset.
+# Still since 2026-10-24 (Garrett: "every pixel is important"; a background never moves for its own sake, and elements
+# carry no colour, so no element pulses or twinkles): drift 0 holds it, pulse and twinkle densities 0 draw neither.
+# The crystallise-in on a window's open stays - a transition is a meaningful moment.
+STILL = dict(_NearDrift=0, _FarDrift=0, _PulseDensity=0, _TwinkleDensity=0)
 MATERIALS = {
-    "Lattice_Panel": dict(_LineWidth=1.1, _NodeSize=2.2, _NearSpacing=64, _NearAlpha=0.5, _NearDrift=40,
-                          _FarSpacing=36, _FarAlpha=0, _FarDrift=60, _PulseDensity=0.25, _PulseSpeed=150,
-                          _PulseRepeat=900, _PulseLength=70, _TwinkleDensity=0.06, _FadeStart=0.6, _Reveal=1),
-    "Lattice_Window": dict(_LineWidth=1.1, _NodeSize=2.4, _NearSpacing=130, _NearAlpha=0.42, _NearDrift=55,
-                           _FarSpacing=72, _FarAlpha=0.2, _FarDrift=90, _PulseDensity=0.22, _PulseSpeed=240,
-                           _PulseRepeat=1400, _PulseLength=120, _TwinkleDensity=0.05, _FadeStart=0.55, _Reveal=1),
+    "Lattice_Panel": dict(_LineWidth=1.1, _NodeSize=2.2, _NearSpacing=64, _NearAlpha=0.5, _NearDrift=0,
+                          _FarSpacing=36, _FarAlpha=0, _FarDrift=0, _PulseDensity=0, _PulseSpeed=150,
+                          _PulseRepeat=900, _PulseLength=70, _TwinkleDensity=0, _FadeStart=0.6, _Reveal=1),
+    "Lattice_Window": dict(_LineWidth=1.1, _NodeSize=2.4, _NearSpacing=130, _NearAlpha=0.42, _NearDrift=0,
+                           _FarSpacing=72, _FarAlpha=0.2, _FarDrift=0, _PulseDensity=0, _PulseSpeed=240,
+                           _PulseRepeat=1400, _PulseLength=120, _TwinkleDensity=0, _FadeStart=0.55, _Reveal=1),
 }
 MAT_GUID = {"Lattice_Panel": PANEL_GUID, "Lattice_Window": WINDOW_GUID}
 # The presence orb (§45.4). Its member seats sit on the inner ring at these angles (degrees, counter-clockwise from
@@ -84,10 +90,14 @@ MAT_GUID = {"Lattice_Panel": PANEL_GUID, "Lattice_Window": WINDOW_GUID}
 # (author_menu_friends_drawer.py) both read them, so a bond always ends under its avatar.
 ORB_MEMBER_ANGLES = (135, 45, 270)
 ORB_MEMBER_RADIUS = 0.66
-PRESENCE = dict(_GlowAlpha=0.32, _InnerRadius=ORB_MEMBER_RADIUS, _InnerAlpha=0.34, _OuterRadius=0.92, _OuterAlpha=0.55,
-                _RingWidth=0.012, _Soft=0.03, _Dashes=28, _SpinSeconds=40, _Online=0, _DotSize=0.055,
-                _MemberRadius=ORB_MEMBER_RADIUS, _BondWidth=0.022, _BondPeriod=0.16, _BondSpeed=0.22)
-BOND = dict(_Width=1.4, _Soft=1, _Period=18, _Speed=26)
+# Still since 2026-10-24 (Garrett: the charged particles and orbiting elements round the connected circles were a
+# polish problem): the orbit does not turn and carries no dots (the count is the "N online" line), and every bond is
+# a solid, still line (period 0). The orb's own ring is the neutral blue, not an element's colour.
+PRESENCE = dict(_GlowAlpha=0.24, _InnerRadius=ORB_MEMBER_RADIUS, _InnerAlpha=0.34, _OuterRadius=0.92, _OuterAlpha=0.3,
+                _RingWidth=0.012, _Soft=0.03, _Dashes=28, _SpinSeconds=0, _Online=0, _DotSize=0,
+                _MemberRadius=ORB_MEMBER_RADIUS, _BondWidth=0.022, _BondPeriod=0, _BondSpeed=0)
+BOND = dict(_Width=1.4, _Soft=1, _Period=0, _Speed=0)
+NEUTRAL = (0.45490196, 0.48235294, 0.6784314)       # NeutralLightest #747BAD
 KIT_GRID = "21a4d02295ff993cb1746d4d792daa21"       # the retired blueprint grid sprite (kit_grid.png)
 SCREENS = "Assets/_Prefabs/UI Elements/Main Menu Screens"
 WINDOWS = [f"{SCREENS}/{p}" for p in ("Arcade/ArcadeView.prefab", "Arena/ArenaView.prefab", "Mission/MissionView.prefab",
@@ -176,7 +186,7 @@ def theme_asset():
 def presence_material():
     clear = (0, 0, 0, 0)
     return shader_material("Presence_Orb", PRESENCE_SHADER_GUID, PRESENCE,
-                           dict(_Color=(1, 1, 1), _SpaceColor=ELEMENTS["_SpaceColor"], _Bond0=clear, _Bond1=clear,
+                           dict(_Color=(1, 1, 1), _SpaceColor=NEUTRAL, _Bond0=clear, _Bond1=clear,
                                 _Bond2=clear, _BondAngles=ORB_MEMBER_ANGLES + (0,)))
 
 
@@ -197,9 +207,6 @@ def outputs():
         out[f"{DIR}/{name}.mat.meta"] = mat_meta(MAT_GUID[name])
     out[f"{RIM_SHADER}.meta"] = out[f"{SHADER}.meta"].replace(SHADER_GUID, RIM_SHADER_GUID)
     out[f"{RIM_CGINC}.meta"] = out[f"{CGINC}.meta"].replace(CGINC_GUID, RIM_CGINC_GUID)
-    for e in RIMS:
-        out[f"{DIR}/ElementRim_{e}.mat"] = rim_material(e)
-        out[f"{DIR}/ElementRim_{e}.mat.meta"] = mat_meta(RIM_GUID[e])
     out[f"{PRESENCE_SHADER}.meta"] = out[f"{SHADER}.meta"].replace(SHADER_GUID, PRESENCE_SHADER_GUID)
     out[f"{BOND_SHADER}.meta"] = out[f"{SHADER}.meta"].replace(SHADER_GUID, BOND_SHADER_GUID)
     out[f"{PRESENCE_CGINC}.meta"] = out[f"{CGINC}.meta"].replace(CGINC_GUID, PRESENCE_CGINC_GUID)
@@ -226,8 +233,7 @@ def shipped_prefabs():
 
 RIM_SCRIPT = "b403ee3874d54f79d0f27e7013879c0f"      # KitRimMesh.cs
 PARTY_PANEL = f"{SCREENS}/Party/PartyPanel.prefab"
-RIMMED = {f"{SCREENS}/Ark/ArkView.prefab": "Omni", f"{SCREENS}/Configure/ConfigureView.prefab": "Charge",
-          f"{SCREENS}/Hangar/HangarView.prefab": "Mass"}
+RETIRED = tuple(f"{DIR}/ElementRim_{e}.mat{x}" for e in RIMS for x in ("", ".meta"))
 
 
 def rim_pairs(text):
@@ -255,14 +261,13 @@ def validate_screens(prefabs):
     for w in WINDOWS:
         assert f"m_Material: {{fileID: 2100000, guid: {WINDOW_GUID}, type: 2}}" in prefabs.get(w, ""), \
             f"{w} has no window lattice behind it"
-    # The rims (§45.3): every rim-lit Image has KitRimMesh beside it, and each rimmed panel carries its element.
+    # Every bond Image has KitRimMesh beside it, and no screen is lit with a retired element rim.
     for path, text in prefabs.items():
         lit, meshed = rim_pairs(text)
         bare = [go for go, _ in lit if go not in meshed]
-        assert not bare, f"{path}: a rim-lit or bond Image without KitRimMesh (the shader would not know where it is): {bare[:3]}"
-    for path, element in RIMMED.items():
-        lit, _ = rim_pairs(prefabs.get(path, ""))
-        assert element in {e for _, e in lit}, f"{path} lost its {element} rim"
+        assert not bare, f"{path}: a bond Image without KitRimMesh (the shader would not know where it is): {bare[:3]}"
+        rimmed = sorted({e for _, e in lit if e in RIMS})
+        assert not rimmed, f"{path} is lit with the retired element rim(s) {rimmed} (Docs/UI_COLOR_RULES.md)"
 
 
 def validate(files):
@@ -276,18 +281,15 @@ def validate(files):
         assert written == declared, f"{name}: properties drifted from the shader (missing {declared - written}, extra {written - declared})"
         assert f"guid: {MAT_GUID[name]}" in files[f"{DIR}/{name}.mat.meta"], f"{name}.mat.meta has the wrong guid"
     assert f"guid: {SHADER_GUID}" in files[f"{SHADER}.meta"], "Lattice.shader.meta has the wrong guid"
-    for k, rgb in ELEMENTS.items():
-        assert col(rgb) in files[f"{DIR}/Lattice_Window.mat"], f"the lattice's {k} is not the theme's element colour"
+    # Still (2026-10-24): no drift, no element pulses, no twinkling nodes.
+    for name in MATERIALS:
+        for k, v in STILL.items():
+            assert f"    - {k}: {f(v)}\n" in files[f"{DIR}/{name}.mat"], f"{name}: {k} must be {v} - the lattice holds still"
+
     rim = open(os.path.join(REPO, RIM_SHADER), encoding="utf-8").read()
     rim_declared = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", rim, re.M)) - {"_MainTex"}
-    for e in RIMS:
-        m = files[f"{DIR}/ElementRim_{e}.mat"]
-        assert f"m_Shader: {{fileID: 4800000, guid: {RIM_SHADER_GUID}, type: 3}}" in m, f"ElementRim_{e} does not use ElementRim.shader"
-        written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
-        assert written == rim_declared, f"ElementRim_{e}: properties drifted (missing {rim_declared - written}, extra {written - rim_declared})"
-        if RIMS[e]:
-            assert f"- _ElementColor: {col(RIMS[e])}" in m, f"ElementRim_{e} is not lit in {e}"
-    assert "  - _Omni: 1\n" in files[f"{DIR}/ElementRim_Omni.mat"].replace("    - _Omni: 1", "  - _Omni: 1"), "the omni rim is not omni"
+    back = [p for p in RETIRED if p in files]
+    assert not back, f"a retired element rim material is written again: {back}"
     # The presence orb and the bonds (§45.4).
     for shader_path, mat, g in ((PRESENCE_SHADER, "Presence_Orb", PRESENCE_SHADER_GUID), (BOND_SHADER, "Bond_Party", BOND_SHADER_GUID)):
         src = open(os.path.join(REPO, shader_path), encoding="utf-8").read()
@@ -299,7 +301,11 @@ def validate(files):
         assert written == declared_, f"{mat}: properties drifted (missing {declared_ - written}, extra {written - declared_})"
         assert f"guid: {g}" in files[f"{shader_path}.meta"], f"{shader_path}.meta has the wrong guid"
     orb = files[f"{DIR}/Presence_Orb.mat"]
-    assert f"- _SpaceColor: {col(ELEMENTS['_SpaceColor'])}" in orb, "the orb is not drawn in the theme's Space"
+    assert f"- _SpaceColor: {col(NEUTRAL)}" in orb, "the orb's ring must be the neutral blue, not an element's colour"
+    for k in ("_SpinSeconds", "_DotSize", "_BondPeriod", "_BondSpeed"):
+        assert f"    - {k}: 0\n" in orb, f"Presence_Orb: {k} must be 0 - the orb has no orbiting dots or flowing bonds"
+    for k in ("_Period", "_Speed"):
+        assert f"    - {k}: 0\n" in files[f"{DIR}/Bond_Party.mat"], f"Bond_Party: {k} must be 0 - the party bonds are solid and still"
     assert f"- _BondAngles: {col(ORB_MEMBER_ANGLES, 0)}" in orb, \
         f"the orb's bonds do not point at the member seats (ORB_MEMBER_ANGLES {ORB_MEMBER_ANGLES})"
     radii = {k: re.search(rf"^    - {k}: (.*)$", orb, re.M).group(1) for k in ("_MemberRadius", "_InnerRadius")}
@@ -331,7 +337,7 @@ def drift(files):
         full = os.path.join(REPO, p)
         if not os.path.exists(full) or open(full, encoding="utf-8").read() != t:
             bad.append(p)
-    return bad
+    return bad + [p for p in RETIRED if os.path.exists(os.path.join(REPO, p))]
 
 
 def self_test(files):
@@ -340,10 +346,11 @@ def self_test(files):
         ("a material on the wrong shader", lambda f: f.__setitem__(f"{DIR}/Lattice_Panel.mat", f[f"{DIR}/Lattice_Panel.mat"].replace(SHADER_GUID, "0" * 32))),
         ("a property the shader no longer declares", lambda f: f.__setitem__(f"{DIR}/Lattice_Window.mat", f[f"{DIR}/Lattice_Window.mat"].replace(
             "    - _FadeStart:", "    - _Retired: 1\n    - _FadeStart:", 1))),
-        ("Charge off the theme colour", lambda f: f.__setitem__(f"{DIR}/Lattice_Window.mat", f[f"{DIR}/Lattice_Window.mat"].replace(
-            col(ELEMENTS["_ChargeColor"]), col((0, 0.83, 1)), 1))),
-        ("the Time rim lit in another colour", lambda f: f.__setitem__(f"{DIR}/ElementRim_Time.mat", f[f"{DIR}/ElementRim_Time.mat"].replace(
-            f"- _ElementColor: {col(RIMS['Time'])}", f"- _ElementColor: {col(RIMS['Mass'])}", 1))),
+        ("the lattice drifting again", lambda f: f.__setitem__(f"{DIR}/Lattice_Window.mat", f[f"{DIR}/Lattice_Window.mat"].replace(
+            "    - _NearDrift: 0\n", "    - _NearDrift: 40\n", 1))),
+        ("the orb's dots orbiting again", lambda f: f.__setitem__(f"{DIR}/Presence_Orb.mat", f[f"{DIR}/Presence_Orb.mat"].replace(
+            "    - _SpinSeconds: 0\n", "    - _SpinSeconds: 24\n", 1))),
+        ("the Time rim material brought back", lambda f: f.__setitem__(f"{DIR}/ElementRim_Time.mat", rim_material("Time"))),
         ("the shader meta on another guid", lambda f: f.__setitem__(f"{SHADER}.meta", f[f"{SHADER}.meta"].replace(SHADER_GUID, "1" * 32))),
         ("the orb's bonds aimed away from the seats", lambda f: f.__setitem__(f"{DIR}/Presence_Orb.mat", f[f"{DIR}/Presence_Orb.mat"].replace(
             f"- _BondAngles: {col(ORB_MEMBER_ANGLES, 0)}", f"- _BondAngles: {col((90, 45, 270), 0)}", 1))),
@@ -359,10 +366,8 @@ def self_test(files):
     cases += [
         ("a screen still drawing the grid", lambda f: f.__setitem__("__screens__", dict(screens, **{
             WINDOWS[0]: screens[WINDOWS[0]] + f"  m_Sprite: {{fileID: 21300000, guid: {KIT_GRID}, type: 3}}\n"}))),
-        ("a rim without KitRimMesh", lambda f: f.__setitem__("__screens__", dict(screens, **{
-            f"{SCREENS}/Ark/ArkView.prefab": screens[f"{SCREENS}/Ark/ArkView.prefab"].replace(RIM_SCRIPT, "3" * 32)}))),
-        ("the Hangar panel back to a plain border", lambda f: f.__setitem__("__screens__", dict(screens, **{
-            f"{SCREENS}/Hangar/HangarView.prefab": screens[f"{SCREENS}/Hangar/HangarView.prefab"].replace(RIM_GUID["Mass"], "4" * 32)}))),
+        ("a screen lit with an element rim again", lambda f: f.__setitem__("__screens__", dict(screens, **{
+            PARTY_PANEL: screens[PARTY_PANEL].replace(f"guid: {BOND_GUID}", f"guid: {RIM_GUID['Space']}", 1)}))),
         ("a window without its lattice", lambda f: f.__setitem__("__screens__", dict(screens, **{
             WINDOWS[2]: screens[WINDOWS[2]].replace(WINDOW_GUID, "2" * 32)}))),
         ("a party bond without KitRimMesh", lambda f: f.__setitem__("__screens__", dict(screens, **{
@@ -403,6 +408,9 @@ def main():
     for p, t in files.items():
         with open(os.path.join(REPO, p), "w", encoding="utf-8", newline="\n") as fh:
             fh.write(t)
+    for p in RETIRED:
+        if os.path.exists(os.path.join(REPO, p)):
+            os.remove(os.path.join(REPO, p))
     print(f"wrote {len(files)} files")
 
 

@@ -72,8 +72,8 @@ namespace CosmicShore.UI
         [SerializeField] private VesselPrefabContainer prefabs;
         [Tooltip("Loaded from Resources/ControlGlyphSet when empty.")]
         [SerializeField] private ControlGlyphSetSO glyphSet;
-        [Tooltip("Element colours (AbilityLockupStyle - the same ones the in-match row wears).")]
-        [SerializeField] private AbilityLockupStyleSO lockupStyle;
+        [Tooltip("What an ability row's keycap border, halo and the stage's demo draw in. Docs/UI_COLOR_RULES.md: an element never has a fixed colour in the UI - its glyph's shape says which it is.")]
+        [SerializeField] private CosmicShore.UI.UIColorToken elementTint = CosmicShore.UI.UIColorToken.NeutralLightest;
 
         [Header("Words")]
         [Tooltip("Element names, in the rows' order.")]
@@ -115,7 +115,6 @@ namespace CosmicShore.UI
         void Awake()
         {
             if (!glyphSet) glyphSet = Resources.Load<ControlGlyphSetSO>("ControlGlyphSet");
-            if (!lockupStyle) lockupStyle = Resources.Load<AbilityLockupStyleSO>("AbilityLockupStyle");
             foreach (var row in rows)
             {
                 if (row?.button == null) continue;
@@ -276,7 +275,7 @@ namespace CosmicShore.UI
             }
         }
 
-        Color Colour(Element e) => lockupStyle ? lockupStyle.ColourFor(e) : Color.white;
+        Color Colour(Element e) => CosmicShore.UI.UITheme.Resolve(null, elementTint);
 
         /// <summary>The ability's first sentence - the row is a summary; the full text is the map's.</summary>
         static string FirstSentence(string text)

@@ -350,12 +350,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Claude for Shombith (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §30
 
-### T-20261016-cfc3 · open · decision · Vessel HUD
+### T-20261016-cfc3 · done · decision · Vessel HUD
 - **Task:** Review the rev-3 lava-lamp ability row (element-coloured plates/edges/keycaps; petals untouched) against the HUD's colour vocabulary - Mass blue / Time teal sit near the petal ladder's blue / green; retune AbilityLockupStyle colours or lavaAlpha if they compete
 - **Done when:** Keep / retune / turn off decided on AbilityLockupStyle.asset
 - **Who can take it:** Garrett (vessel HUD owner)
 - **Added:** 2026-10-16 by Claude for Shombith (`claude/new-session-76hnyc`)
 - **See:** Docs/claude/VESSEL_HUD_AND_ELEMENTS.md (Four-Icon row note), canvas Rev 3 R3Hud boards
+- **Done:** 2026-10-24, Garrett answered 2026-10-24: elements carry no fixed colour in the UI; the lockup's elementColour and lavaMotion are off (Docs/UI_COLOR_RULES.md, claude/new-session-76hnyc).
 
 ### T-20261016-be3d · open · test · Menu_Main / Hangar
 - **Task:** Play-test the rev-3 Hangar: 3D turntable, vibe sliders, five animated tabs (abilities with device labels + perform, upgrade morph preview, games -> configure, pilots, artifacts)
@@ -803,12 +804,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-17 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §43
 
-### T-20261017-35e3 · open · test · Menu_Main
+### T-20261017-35e3 · done · test · Menu_Main
 - **Task:** Play-test the rev 6 presence orb and party molecule in the editor: the orb bottom-left (glow, turning ring, one dot per player online, 'N online' / 'FRIENDS'), pressing it opens the party panel, it sits over the four windows without covering their cards; in a two-device party each member shows on the orb's inner ring with a bond in their domain colour; the panel draws the party as a molecule (leader in the middle, bonds to seated pilots, violet '+ Invite a friend' tiles).
 - **Done when:** Every step of Docs/UNITY_VERIFICATION_CHECKLIST.md 'Rev 6 step 4: presence orb + party molecule' passes (no pink shaders, no canvas rebuild from the orb in the Profiler) or the failures are reported in this task.
 - **Who can take it:** Shombith (Menu_Main owner) or Yash (offered: party / multiplayer); a second device for step 4
 - **Added:** 2026-10-17 by Claude (claude/new-session-76hnyc) (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §45.4
+- **Done:** 2026-10-24, Superseded 2026-10-24: the orb no longer turns or carries dots and its bonds are solid (Garrett's attention pass); its look is part of the new palette play-test task.
 
 ### T-20261017-b7af · open · dev · Multiplayer
 - **Task:** An AI the host places on a domain past RequestedDomainCount (e.g. 1 human, Add AI on Gold in a 2-domain lobby) is spawned there (ServerPlayerVesselInitializerWithAI.cs ~267-279 honours placed domains) but RequestedDomainCount is only widened by human picks (~111), so domain-summing rules like ScurryScoringRuleSO.IsObjectiveReached never count that AI's crystals toward the end or the win. Found by code reading on claude/new-session-76hnyc while tracing a missing scoreboard; not reproduced in the editor.
@@ -2158,3 +2160,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered) or Garrett
 - **Added:** 2026-10-24 by a Claude session (`cece/bold-gauss-lad943`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md §5
+
+### T-20261024-7fc8 · open · test · Menu_Main
+- **Task:** Play-test Garrett's palette and attention pass (claude/new-session-76hnyc) in the editor: no element colours or panel rims anywhere in the menu or HUD; PLAY/JOIN/ACCEPT lime, UPGRADE/UNLOCK/CONVERT/SPEND gold, DELETE MY DATA fire, Spectate/Invite/Main menu neutral; the selection blue only on the picked tile or open tab; the lattice, orb and bonds hold still; the leaderboard podium lime/white/neutral; the in-match ability row has no element colour or lava motion; the scoreboard rows are plain hairlines
+- **Done when:** Every item in Docs/UNITY_VERIFICATION_CHECKLIST.md 'Garrett's palette and attention pass' is ticked or filed as a bug
+- **Who can take it:** Shombith (Menu_Main owner) or Yash (offered); Garrett for the look
+- **Added:** 2026-10-24 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/UI_COLOR_RULES.md

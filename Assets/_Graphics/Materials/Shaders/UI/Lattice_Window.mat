@@ -32,14 +32,14 @@ Material:
     - _ColorMask: 15
     - _FadeStart: 0.55
     - _FarAlpha: 0.2
-    - _FarDrift: 90
+    - _FarDrift: 0
     - _FarSpacing: 72
     - _LineWidth: 1.1
     - _NearAlpha: 0.42
-    - _NearDrift: 55
+    - _NearDrift: 0
     - _NearSpacing: 130
     - _NodeSize: 2.4
-    - _PulseDensity: 0.22
+    - _PulseDensity: 0
     - _PulseLength: 120
     - _PulseRepeat: 1400
     - _PulseSpeed: 240
@@ -49,7 +49,7 @@ Material:
     - _StencilOp: 0
     - _StencilReadMask: 255
     - _StencilWriteMask: 255
-    - _TwinkleDensity: 0.05
+    - _TwinkleDensity: 0
     - _UseUIAlphaClip: 0
     m_Colors:
     - _ChargeColor: {r: 1, g: 0.827451, b: 0.3019608, a: 1}

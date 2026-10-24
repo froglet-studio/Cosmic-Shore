@@ -108,6 +108,23 @@ namespace CosmicShore.Engine
             return (a.normalized * MathF.Cos(theta) + relative * MathF.Sin(theta)) * magLerp;
         }
 
+        /// <summary>Unity's Vector3.RotateTowards: turn `current` toward `target` by at most maxRadiansDelta and move its
+        /// length toward the target's by at most maxMagnitudeDelta.</summary>
+        public static Vector3 RotateTowards(Vector3 current, Vector3 target, float maxRadiansDelta, float maxMagnitudeDelta)
+        {
+            float lc = current.magnitude, lt = target.magnitude;
+            if (lc < 1e-6f || lt < 1e-6f) return MoveTowards(current, target, maxMagnitudeDelta);
+            Vector3 a = current / lc, b = target / lt;
+            float angle = MathF.Acos(Mathf.Clamp(Dot(a, b), -1f, 1f));
+            float len = lc + Mathf.Clamp(lt - lc, -maxMagnitudeDelta, maxMagnitudeDelta);
+            if (angle <= maxRadiansDelta || angle < 1e-6f) return b * len;
+            Vector3 axisPerp = (b - a * Dot(a, b));
+            if (axisPerp.sqrMagnitude < 1e-12f)            // opposite: pick any perpendicular
+                axisPerp = Cross(a, MathF.Abs(a.x) < 0.9f ? new Vector3(1, 0, 0) : new Vector3(0, 1, 0));
+            axisPerp = axisPerp.normalized;
+            return (a * MathF.Cos(maxRadiansDelta) + axisPerp * MathF.Sin(maxRadiansDelta)) * len;
+        }
+
         public static Vector3 MoveTowards(Vector3 current, Vector3 target, float maxDistanceDelta)
         {
             Vector3 toVector = target - current;

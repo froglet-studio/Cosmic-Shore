@@ -29,14 +29,15 @@ float3 LatticeElement(float hash, float3 charge, float3 mass, float3 space, floa
 }
 
 // One lattice layer as premultiplied colour (rgb) and coverage (a), before the layer alpha.
-// spacing: node to node, canvas units. driftPeriod: seconds per lattice vector. pulseDensity / twinkleDensity:
+// spacing: node to node, canvas units. driftPeriod: seconds per lattice vector, 0 holds the lattice still (the menu's
+// default since 2026-10-24: a background must not move for its own sake). pulseDensity / twinkleDensity:
 // fractions of lines / nodes that carry energy. pulseRepeat: distance between pulses on a carrying line.
 float4 LatticeLayer(float2 p, float t, float spacing, float driftPeriod, float lineWidth, float nodeSize,
                     float pulseDensity, float pulseSpeed, float pulseRepeat, float pulseLength, float twinkleDensity,
                     float3 lineColor, float3 charge, float3 mass, float3 space, float3 time)
 {
     float h = spacing * LATTICE_SQ3_2;
-    float2 q = p + float2(spacing * 0.5, h) * (t / max(driftPeriod, 0.001));
+    float2 q = p + float2(spacing * 0.5, h) * (driftPeriod > 0.0 ? t / driftPeriod : 0.0);
 
     float2 n0 = float2(0.0, 1.0);
     float2 n1 = float2(-LATTICE_SQ3_2, 0.5);
@@ -64,7 +65,7 @@ float4 LatticeLayer(float2 p, float t, float spacing, float driftPeriod, float l
     if (nodeDistance < nodeSize * 2.6)
     {
         float nodeHash = LatticeHash(col, row);
-        if (nodeHash <= twinkleDensity)
+        if (nodeHash < twinkleDensity)
         {
             float wave = sin(t * (1.1 + nodeHash * 2.3) + nodeHash * 40.0) * 0.5 + 0.5;
             float twinkle = wave * wave * wave * (1.0 - smoothstep(0.0, nodeSize * 2.6, nodeDistance));
@@ -75,7 +76,7 @@ float4 LatticeLayer(float2 p, float t, float spacing, float driftPeriod, float l
 
     // Pulses: a bright head and a fading tail running along a few lines of each family. A pulse lights only within
     // three line widths of its line, so the rest of the panel (most of it) skips the block.
-    if (dmin >= lineWidth * 3.0) return float4(colour, coverage);
+    if (dmin >= lineWidth * 3.0 || pulseDensity <= 0.0) return float4(colour, coverage);
     float2 t0 = float2(1.0, 0.0);
     float2 t1 = float2(0.5, LATTICE_SQ3_2);
     float2 t2 = float2(-0.5, LATTICE_SQ3_2);

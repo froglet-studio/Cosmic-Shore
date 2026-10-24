@@ -957,8 +957,7 @@ def vessel_body(sec):
         .add("th", 114, themed("SurfaceBlack")).add("mask", 114, A.rect_mask())
     art = clip.child(N("VesselNode/Clip/Art", "Art", STRETCH))
     art.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, SQUIRREL_ICON)) \
-        .add("cover", 114, lambda ctx, go: mono(go, S["cover"], "")) \
-        .add("amb", 114, M.ambient("Float", period=3.6, amplitude=4))
+        .add("cover", 114, lambda ctx, go: mono(go, S["cover"], ""))
     side = inner - VESSEL_ART_W - 16
     info = sec.child(N("ClassInfo", "ClassInfo", TL(VESSEL_ART_W + 16, SEC_HEAD, side, VESSEL_ART_H)))
     info.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
@@ -1010,7 +1009,7 @@ def footer(chrome, kind):
     label(rdy, "Ready to launch", "Body", "TextLight")
     why = status.child(N("Status/Reason", "Reason", STRETCH))
     why.add("cg", 225, canvas_group(False))
-    label_e(why, "", "Body", "Purchase")
+    label_e(why, "", "Body", "Danger")   # why it cannot launch: a problem, so fire (never the spend gold)
     wait = status.child(N("Status/Waiting", "Waiting", STRETCH))
     wait.add("cg", 225, canvas_group(False)).add("amb", 114, M.ambient("Breathe", period=1.6, amplitude=0.5))
     label(wait, "Waiting for others...", "Body", "ControlActive")
@@ -1125,7 +1124,6 @@ def steps_row(chrome, kind):
     node or a domain - never on FLY or Back. Its sections are Step1..3 so the panel's value labels keep
     their keys: Vessel, Intensity, Pilots (Maelstrom: Intensity, Pilots, then Format)."""
     steps = glass(chrome, "Steps", "Steps", TL(SET_X, TOP, SET_W, column_height(kind)), 0)
-    M.rim_border(M.find_node(steps, "Steps/Frame/Border"), "Charge")   # rev 6: setting up a game is play
     y = PAD
     keys = ("Step1", "Step2", "Step3") if kind != "maelstrom" else (None, "Step1", "Step2")
     if kind != "maelstrom":
@@ -1257,7 +1255,9 @@ def panel_body(ctx, go, kind):
 LB_ROW_W, LB_ROW_H = 1336, 58
 REWARD_BANDS = ((1, 1, "1st", "100"), (2, 2, "2nd", "50"), (3, 3, "3rd", "20"), (4, 20, "4th - 20th", "10"),
                 (21, 0, "21st and below", "5"))
-PODIUM = (("Podium1", 1, "Purchase"), ("Podium2", 2, "TextLight"), ("Podium3", 3, "Purchase"))
+# Docs/UI_COLOR_RULES.md: gold means spending only, so first place is the lime of a good outcome, then white, then the
+# neutral blue (no gold / silver / bronze).
+PODIUM = (("Podium1", 1, "Cta"), ("Podium2", 2, "TextLight"), ("Podium3", 3, "NeutralLightest"))
 TABS = (("World", "chrome_globe", "World"), ("Regional", "chrome_pin", "Regional"), ("Friends", "chrome_people", "Friends"))
 ALL_GAMES = A.ALL_GAMES
 PROFILE_ICONS = A.PROFILE_ICONS
@@ -1304,8 +1304,6 @@ def podium_slot(parent, key, rank, accent, amin, amax, top, height):
     image_node(n, f"{key}/AvatarBack", "AvatarBack", R((0, 0.5), None, (122, 0), (62, 62)), "SurfaceDark",
                K.kit_sprite("kit_oct_fill"))
     av = art_node(n, f"{key}/Avatar", "Avatar", R((0, 0.5), None, (122, 0), (58, 58)), AVATAR_PLACEHOLDER, preserve=True)
-    if first:
-        av.add("amb", 114, M.ambient("Float", period=3.4, amplitude=5))
     nm = n.child(N(f"{key}/Name", "Name", R((0, 0.5), (1, 0.5), ((170 - 20) / 2, 14), (-(170 + 20), 26))))
     nm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("PILOT", "H3", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H3", "TextLight"))
@@ -1329,7 +1327,7 @@ def reward_band(parent, i, lo, hi, caption, amount):
           "ControlActive")
     label(n.child(N(f"{key}/Rank", "Rank", R((0, 0.5), None, (14, 0), (200, 24), (0, 0.5)))), caption, "Body", "TextLight")
     label(n.child(N(f"{key}/Amount", "Amount", R((1, 0.5), None, (-40, 0), (100, 26), (1, 0.5)))), amount, "Data",
-          "Purchase", align="right")
+          "Cta", align="right")   # what you win: good, so lime (the crystal beside it stays the currency's gold)
     ic = image_node(n, f"{key}/Crystal", "Crystal", R((1, 0.5), None, (-14, 0), (18, 18), (1, 0.5)), "Purchase",
                     K.chrome_sprite("chrome_crystal"), preserve=True)
     n.add("band", 114, lambda ctx, go: mono(go, S["band"],
@@ -1374,9 +1372,8 @@ def build_leaderboard_view():
     for i, (key, icon, cap) in enumerate(TABS):
         tab_node(tabs, i, key, icon, cap)
     thirds = (((0, 1), (0.326, 1)), ((0.337, 1), (0.663, 1)), ((0.674, 1), (1, 1)))
-    podium_slot(right, "Podium1", 1, "Purchase", thirds[1][0], thirds[1][1], 112, 130)
-    podium_slot(right, "Podium2", 2, "TextLight", thirds[0][0], thirds[0][1], 132, 110)
-    podium_slot(right, "Podium3", 3, "Purchase", thirds[2][0], thirds[2][1], 132, 110)
+    for (key, rank, accent), (amin, amax), top, height in zip(PODIUM, (thirds[1], thirds[0], thirds[2]), (112, 132, 132), (130, 110, 110)):
+        podium_slot(right, key, rank, accent, amin, amax, top, height)
 
     lst = right.child(N("List", "List", R((0, 1), (1, 1), (0, -260), (0, COL_H - 260), (0.5, 1))))
     lst.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=4))
@@ -1456,8 +1453,7 @@ def build_leaderboard_view():
             f"  profileIcons: {K.ref(11400000, PROFILE_ICONS, 2)}\n"
             f"  localRowColor: {color('ControlActive')}\n  rowColor: {color('TextLight')}\n"
             "  localNameSuffix: ' *'\n"
-            "  podiumColors:\n  - {r: 1, g: 0.84, b: 0.25, a: 1}\n  - {r: 0.78, g: 0.82, b: 0.86, a: 1}\n"
-            "  - {r: 0.8, g: 0.53, b: 0.3, a: 1}\n"
+            "  podiumColors:\n" + "".join(f"  - {color(accent)}\n" for _, _, accent in PODIUM)
             + refs("podium", [ctx.c(k, "slot") for k, _, _ in PODIUM])
             + refs("rewardBands", [ctx.c(f"Rewards/Band{i + 1}", "band") for i in range(len(REWARD_BANDS))])
             + f"  bestRankText: {ref(ctx.c('Best/Rank', 'tmp'))}\n"
@@ -1471,7 +1467,6 @@ def build_leaderboard_view():
 # VesselInfoCard.prefab - Yash's AI seat info card, in style B (rev 5)
 # --------------------------------------------------------------------------------------------
 
-LOCKUP_STYLE = K.meta_guid("Assets/Resources/AbilityLockupStyle.asset")
 CARD_ELEMENTS = (("Charge", 1), ("Mass", 2), ("Space", 3), ("Time", 4))
 INFO_W, INFO_H = 420, 480
 
@@ -1523,7 +1518,7 @@ def build_info_card():
                  f"  - element: {v}\n    hex: {ref(ctx.c(f'Card/Abilities/{el}/Hex', 'img'))}\n"
                  f"    name: {ref(ctx.c(f'Card/Abilities/{el}/Name', 'tmp'))}\n" for el, v in CARD_ELEMENTS)
              + f"  abilitiesGroup: {ref(ctx.go('Card/Abilities'))}\n"
-             f"  lockupStyle: {K.ref(11400000, LOCKUP_STYLE, 2)}\n"
+             f"  hexTint: {K.TOKEN_INDEX['NeutralLightest']}\n"
              "  subtitleTemplate: '{seat}  -  {element} vessel'\n  elementOnlyTemplate: '{element} vessel'\n"
              "  abilitiesHeading: ABILITIES\n  abilityBullet: '-  '\n"
              f"  backdropButton: {ref(ctx.c('root', 'button'))}\n"
@@ -1930,7 +1925,7 @@ def validate_prefabs(files):
     rows = re.findall(r"^  - element: (\d+)\n    hex: \{fileID: (-?\d+)\}\n    name: \{fileID: (-?\d+)\}", pbody, re.M)
     assert [r[0] for r in rows] == ["1", "2", "3", "4"] and all(r[1] != "0" and r[2] != "0" for r in rows), \
         "the info card needs a wired row for each of Charge, Mass, Space and Time"
-    assert f"lockupStyle: {{fileID: 11400000, guid: {LOCKUP_STYLE}" in pbody, "the info card has no element colours"
+    assert f"  hexTint: {K.TOKEN_INDEX['NeutralLightest']}\n" in pbody, "the info card's hexes wear an element colour again"
 
     # The intensity node writes the shared IntVariable, or the modal's selection never reaches the
     # session (IntensitySelectButton.SetSelected).

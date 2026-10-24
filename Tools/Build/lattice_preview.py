@@ -171,6 +171,12 @@ int main(int argc, char** argv) {
     need(half.centreAlpha > 0.02 && half.cornerAlpha < 1e-3, "reveal 0.5 is a disc: lattice at the centre, none at the corners");
     need(nofar.coverage < a.coverage, "the far layer adds coverage");
     need(a.cornerAlpha < a.centreAlpha * 0.5, "the edge fade empties the corners");
+    // The shipped materials since 2026-10-24: drift 0 and no pulses or twinkles hold the lattice perfectly still.
+    defaults(); _NearDrift = 0; _FarDrift = 0; _PulseDensity = 0; _TwinkleDensity = 0;
+    Stats still3 = render(480, 270, 3.0f, 1.0f, nullptr), still9 = render(480, 270, 9.0f, 1.0f, nullptr);
+    std::printf("still: t3 %.6f t9 %.6f el %.5f\n", still3.coverage, still9.coverage, still3.elementPixels);
+    need(still3.coverage > 0.02 && still3.coverage == still9.coverage, "drift 0 holds the lattice still (and still draws it)");
+    need(still3.elementPixels == 0, "with no pulses and no twinkles there is no element colour at all");
     return bad ? 1 : 0;
 }
 """
@@ -360,6 +366,16 @@ int main() {
     need(std::fabs(emptyCover - offBond) < 0.05f, "an empty seat's bond draws nothing at all");
     need(centre.w > corner.w * 4 && corner.w < 0.02f, "the glow sits in the middle and the corners stay clear");
     need(std::fabs(shift - 0.022f) < 0.003f, "the bond's dashes flow outward at their set speed");
+    // The shipped orb since 2026-10-24: no orbiting dots, a still ring, solid still bonds.
+    defaults(); _SpinSeconds = 0; _DotSize = 0; _BondPeriod = 0; _BondSpeed = 0; _Online = 3;
+    _Bond0 = C(0.9f, 0.15f, 0.3f, 1);
+    float g0, stillDots = dots(0, &g0);
+    float4 r0 = at(0.9f, 0.1f, 0), r1 = at(0.9f, 0.1f, 10);
+    float b0 = PresenceBond(0, 0.05f, 0, 0.022f, 0.03f, 0, 0), b1 = PresenceBond(0, 0.05f, 7.3f, 0.022f, 0.03f, 0, 0);
+    std::printf("still orb: dots %.0f | ring a %.4f -> %.4f | bond %.3f -> %.3f\n", stillDots, r0.w, r1.w, b0, b1);
+    need(stillDots == 0, "dot size 0 draws no orbiting dots");
+    need(r0.w == r1.w, "spin 0 holds the ring still");
+    need(b0 > 0.5f && b0 == b1, "bond period 0 draws a solid, still bond");
     return bad ? 1 : 0;
 }
 """

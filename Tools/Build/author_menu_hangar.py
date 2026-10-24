@@ -304,7 +304,6 @@ KIT_TEXT_TAB = K.kit_script("KitTextTab")
 MENU_AUDIO = K.meta_guid("Assets/_Scripts/UI/MenuAudio.cs")
 VESSEL_PREFABS = K.meta_guid("Assets/_SO_Assets/Vessel Prefab Container.asset")
 GLYPH_SET = K.meta_guid("Assets/Resources/ControlGlyphSet.asset")
-LOCKUP_STYLE = K.meta_guid("Assets/Resources/AbilityLockupStyle.asset")
 CAPTAINS = K.meta_guid("Assets/_SO_Assets/Captains/Elemental/ElementalCaptains.asset")
 GAME_LISTS = [K.meta_guid("Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset"),
               K.meta_guid("Assets/_SO_Assets/Games/GameLists/ArenaGames.asset")]
@@ -446,7 +445,7 @@ def abilities_page(panel):
         return K.mono(go, ABILITIES_SCRIPT,
                       "  rows:\n" + rows
                       + f"  prefabs: {K.ref(11400000, VESSEL_PREFABS, 2)}\n  glyphSet: {K.ref(11400000, GLYPH_SET, 2)}\n"
-                      f"  lockupStyle: {K.ref(11400000, LOCKUP_STYLE, 2)}\n"
+                      f"  elementTint: {K.TOKEN_INDEX['NeutralLightest']}\n"
                       "  elementNames:\n  - Charge\n  - Mass\n  - Space\n  - Time\n"
                       "  openSlotName: Open slot\n  openSlotLine: Not designed yet.\n  passiveWord: Passive\n  glowSeconds: 0.9\n"
                       "  kindOverrides: []\n"
@@ -529,7 +528,7 @@ def upgrades_page(panel):
                      f"    upgradeButtonText: {ref(ctx.c(f'{k}/Buy/Label', 'tmp'))}\n")
         return K.mono(go, UPGRADES_SCRIPT,
                       "  rows:\n" + rows + f"  headerLineText: {ref(ctx.c('Tabs/Upgrades/Line', 'tmp'))}\n"
-                      f"  lockupStyle: {K.ref(11400000, LOCKUP_STYLE, 2)}\n"
+                      f"  elementTint: {K.TOKEN_INDEX['Purchase']}\n"
                       "  crystalsPerLevel: 100\n"
                       "  pipOff: {r: 0.13, g: 0.15, b: 0.27, a: 1}\n  pipFlashSeconds: 0.45\n  morphSeconds: 0.5\n"
                       "  elementNames:\n  - Charge\n  - Mass\n  - Space\n  - Time\n"
@@ -639,7 +638,7 @@ def pilots_page(panel):
                        f"    underline: {ref(ctx.c(f'{k}/Underline', 'img'))}\n")
         h = "Tabs/Pilots/Hero"
         return K.mono(go, PILOTS_SCRIPT,
-                      f"  captains: {K.ref(11400000, CAPTAINS, 2)}\n  lockupStyle: {K.ref(11400000, LOCKUP_STYLE, 2)}\n"
+                      f"  captains: {K.ref(11400000, CAPTAINS, 2)}\n  elementTint: {K.TOKEN_INDEX['NeutralLightest']}\n"
                       f"  heroGroup: {ref(ctx.c(h, 'cg'))}\n  heroPortrait: {ref(ctx.c(f'{h}/Portrait', 'img'))}\n"
                       f"  heroFrame: {ref(ctx.c(f'{h}/Frame', 'img'))}\n  heroEyebrowText: {ref(ctx.c(f'{h}/Eyebrow', 'tmp'))}\n"
                       f"  heroNameText: {ref(ctx.c(f'{h}/Name', 'tmp'))}\n  heroDescriptionText: {ref(ctx.c(f'{h}/Desc', 'tmp'))}\n"
@@ -745,15 +744,9 @@ def hangar_bay(clip):
     for i, (w, h) in enumerate(((640, 120), (480, 90), (330, 62))):
         ring = glow_img(bay, f"Hero/Clip/Bay/Ring{i}", f"Ring{i}", R((0.5, 0), None, (0, 96), (w, h)), "ControlActive", 0.5,
                         K.kit_sprite("kit_hex_line2"))
-        ring.add("cg", 225, canvas_group(True)).add("amb", 114, M.ambient("Breathe", period=2.4, amplitude=0.25, phase=i * 0.33))
-    scan = glow_img(bay, "Hero/Clip/Bay/Scan", "Scan", R((0, 0.5), (1, 0.5), (0, 0), (0, 3)), "ControlActive", 0.45,
-                    K.kit_sprite("kit_spark"))
-    scan.add("amb", 114, M.ambient("Float", period=7.0, amplitude=240))
-    for i in range(8):
-        x, y = (i * 113) % 760 - 380, (i * 71) % 420 - 160
-        mote = glow_img(bay, f"Hero/Clip/Bay/Mote{i}", f"Mote{i}", R(pos=(x, y), size=(5, 5)), "TextLight", 0.8,
-                        K.kit_sprite("kit_hex_fill"))
-        mote.add("cg", 225, canvas_group(True)).add("amb", 114, M.ambient("Breathe", period=2.0 + (i % 3), amplitude=0.1, phase=i * 0.21))
+        ring.add("cg", 225, canvas_group(True))
+    # Still since 2026-10-24 (Garrett: "every pixel is important"): the rings no longer breathe, and the sweeping scan
+    # line and the drifting motes are gone. The bay is a place, not a show; the vessel's moves are the motion here.
 
 
 def stage_fx(clip):
@@ -920,7 +913,7 @@ def build_view(row_guid):
     rz = body.child(N("Abilities", "Tabs", R(size=(548, 844))))
     rz.add("le", 114, le(mw=0, pw=0, fw=38))
     panel = rz.child(N("Abilities/Panel", "Panel", R((0, 0), (1, 1), (2.5, 0), (-5, 0))))
-    M.rim_border(framed(panel, "Abilities/Panel", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.8)[1], "Mass")   # rev 6
+    framed(panel, "Abilities/Panel", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.8)
     build_tabs(panel)
 
     # ---- the spend-crystals popup ----

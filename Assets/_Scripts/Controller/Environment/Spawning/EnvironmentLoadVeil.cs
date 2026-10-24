@@ -200,8 +200,10 @@ namespace CosmicShore.Gameplay
             crystalGo.transform.SetParent(_content, false);
             _crystal = crystalGo.AddComponent<LoadCrystalGraphic>();
             _crystal.raycastTarget = false;
-            _crystal.SetColours(UITheme.Resolve(null, UIColorToken.ElementMass), UITheme.Resolve(null, UIColorToken.ElementTime),
-                                UITheme.Resolve(null, UIColorToken.ElementCharge), UITheme.Resolve(null, UIColorToken.ElementSpace),
+            // The facets are the neutral blues, not the four element colours: elements carry no colour in the UI
+            // (Docs/UI_COLOR_RULES.md). The crystal's growth is the transition's motion.
+            _crystal.SetColours(UITheme.Resolve(null, UIColorToken.SurfaceLight), UITheme.Resolve(null, UIColorToken.NeutralLightest),
+                                UITheme.Resolve(null, UIColorToken.ControlActive), UITheme.Resolve(null, UIColorToken.NeutralLightest),
                                 UITheme.Resolve(null, UIColorToken.TextLight));
             Centre(crystalGo.GetComponent<RectTransform>(), new Vector2(0f, 150f), new Vector2(300f, 300f));
 
@@ -219,13 +221,12 @@ namespace CosmicShore.Gameplay
 
             var steps = Row(_content, "Steps", 40f);
             Centre((RectTransform)steps.transform, new Vector2(0f, -230f), new Vector2(0f, 30f));
-            UIColorToken[] elements = { UIColorToken.ElementMass, UIColorToken.ElementTime, UIColorToken.ElementCharge, UIColorToken.ElementSpace };
             for (int i = 0; i < StepCount; i++)
             {
                 var step = Row(steps.transform, $"Step{i + 1}", 12f);
                 _steps[i] = step.AddComponent<CanvasGroup>();
                 _steps[i].alpha = StepPendingAlpha;
-                var colour = UITheme.Resolve(null, elements[i]);
+                var colour = UITheme.Resolve(null, UIColorToken.TextLight);   // the glyph tells the steps apart, not a colour
                 var glyph = _words.StepGlyph(i);
                 if (glyph)
                 {
@@ -245,7 +246,7 @@ namespace CosmicShore.Gameplay
             if (string.IsNullOrEmpty(tip)) return;
             var tipRow = Row(_content, "Tip", 12f);
             Centre((RectTransform)tipRow.transform, new Vector2(0f, -310f), new Vector2(0f, 26f));
-            Label(tipRow.transform, "TipLabel", _words.captionFont, 13f, 12f, UITheme.Resolve(null, UIColorToken.ElementTime),
+            Label(tipRow.transform, "TipLabel", _words.captionFont, 13f, 12f, UITheme.Resolve(null, UIColorToken.NeutralLightest),
                   _words.tipLabel).fontStyle = FontStyles.UpperCase;
             Label(tipRow.transform, "TipText", _words.captionFont, 17f, 0f, UITheme.Resolve(null, UIColorToken.TextLight), tip);
         }

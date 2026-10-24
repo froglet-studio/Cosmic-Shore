@@ -160,7 +160,7 @@ namespace CosmicShore.UI
             for (int i = 0; i < questMeterSegments.Length; i++)
             {
                 if (!questMeterSegments[i]) continue;
-                questMeterSegments[i].SetToken(i < unlocked ? UIColorToken.ElementTime : UIColorToken.SurfaceDark);   // rev 6: progress is Time
+                questMeterSegments[i].SetToken(i < unlocked ? UIColorToken.Cta : UIColorToken.SurfaceDark);   // earned progress is good: lime
             }
             var card = CardFor(quest.GameMode);
             var art = card && card.CardBackground ? card.CardBackground : quest.Icon;

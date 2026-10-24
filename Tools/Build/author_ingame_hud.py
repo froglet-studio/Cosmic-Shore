@@ -84,6 +84,9 @@ LOCKUP_FIELDS = {
     "slantEdgeColor": "{r: 0.455, g: 0.482, b: 0.678, a: 0.85}",  # Neutral Lightest #747BAD at 85%
     "lockedPlateColor": "{r: 0, g: 0.016, b: 0.122, a: 0.55}",    # the same surface, dimmer
 }
+# Elements carry no colour in any UI (Garrett's palette, 2026-10-24; Docs/UI_COLOR_RULES.md): the rev 3 lava lamp is
+# off, so a card shows its element by its flower and glyph, not by a coloured plate, and nothing drifts behind it.
+NO_ELEMENT_COLOUR_FIELDS = [("elementColour", "0"), ("lavaMotion", "0")]
 KEYCAP_FIELDS = [
     ("keycapChips", "1"),
     ("keycapFillSprite", K.sprite_ref(K.kit_sprite("kit_sliver10_fill"))),
@@ -157,6 +160,10 @@ def lockup_text(text_):
         text_ = C.field_set(text_, k, v)
     after = "bloomPadding"
     for k, v in KEYCAP_FIELDS:
+        text_ = insert_after_field(text_, after, k, v)
+        after = k
+    after = "plateColor"
+    for k, v in NO_ELEMENT_COLOUR_FIELDS:
         text_ = insert_after_field(text_, after, k, v)
         after = k
     return text_
@@ -353,7 +360,7 @@ def waiting_node():
     n = N("Wait", "ReadyWaiting", R((0.5, 0.5), (0.5, 0.5), WAIT_POS, (WAIT_W, WAIT_H)))
     n.add("cg", 225, H.canvas_group(False)).add("in", 114, HM.M.entrance("Rise", distance=18, play_on_enable=False))
     H.framed(n, "Wait", 14, "SurfaceVeryDark", "SurfaceLight", fill_alpha=0.92)
-    dia = A.image_node(n, "Wait/Diamond", "Diamond", HM.TL(26, 37, 12, 12), "Cta", K.chrome_sprite("chrome_diamond"), preserve=True)
+    dia = A.image_node(n, "Wait/Diamond", "Diamond", HM.TL(26, 37, 12, 12), "NeutralLightest", K.chrome_sprite("chrome_diamond"), preserve=True)
     dia.add("breathe", 114, HM.M.ambient("Breathe", period=1.6, amplitude=0.6))
     H.label(n.child(N("Wait/Title", "Title", HM.TL(54, 18, 420, 20))), WAIT_TITLE, "Label", "TextLight")
     H.label(n.child(N("Wait/Note", "Note", HM.TL(54, 44, 440, 22))), WAIT_NOTE, "BodySmall", "NeutralLightest")
@@ -662,8 +669,7 @@ def backdrop_nodes():
     clip.add("rmask", 114, A.rect_mask())
     drift = clip.child(N("Connect/Backdrop/Drift", "Drift", R((0, 0), (1, 1), (0, 0), (160, 90))))
     drift.add("cover", 114, lambda ctx, go: K.mono(go, K.kit_script("KitCoverImage"),
-              f"  image: {{fileID: {ctx.c('Connect/Backdrop/Drift/Art', 'img')}}}\n")) \
-        .add("pan", 114, HM.M.ambient("Pan", period=28, amplitude=0.06))
+              f"  image: {{fileID: {ctx.c('Connect/Backdrop/Drift/Art', 'img')}}}\n"))
     art = drift.child(N("Connect/Backdrop/Drift/Art", "Art", STRETCH))
     art.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
     dim = N("Connect/Dim", "Dim", STRETCH)
@@ -760,21 +766,21 @@ GAMEOVER_GUID = K.meta_guid("Assets/_Prefabs/UI Elements/Panels/GameOverPanel.pr
 ANIM_SETTINGS = "e1e99ce577ae9be408463160f475ed8d"
 LIST_W, ROW_HT, LIST_H = 1400, 84, 500
 HEAD_HT = 30
-SB_BUTTONS = [  # key, caption, variant, keycap, pad (South 6 = A, East 5 = B), width, rim element
-    ("PlayAgain", "Play again", "Play", "A", 6, 300, "Charge"),
-    ("Continue", "Continue", "Play", "A", 6, 300, "Charge"),
-    ("MainMenu", "Main menu", "Mass", "B", 5, 260, "Mass"),
-    ("LeaveLobby", "Leave lobby", "Mass", "B", 5, 260, "Mass"),
+SB_BUTTONS = [  # key, caption, variant, keycap, pad (South 6 = A, East 5 = B), width
+    ("PlayAgain", "Play again", "Play", "A", 6, 300),
+    ("Continue", "Continue", "Play", "A", 6, 300),
+    ("MainMenu", "Main menu", "Default", "B", 5, 260),
+    ("LeaveLobby", "Leave lobby", "Default", "B", 5, 260),
 ]
 SB_HEADER = "ScoreboardTeamHeader"
 P.PREFABS = tuple(P.PREFABS) + (SB_HEADER,)
 S.update(header=script_guid("Assets/_Scripts/UI/ScoreboardTeamHeader.cs"),
          strip=script_guid("Assets/_Scripts/UI/ScoreboardRewardStrip.cs"),
          roster=script_guid("Assets/_Scripts/UI/Elements/RematchVoteRoster.cs"))
-SELECTION_RIM_MAT = HM.M._lattice_guid("selection_rim_mat")
-# Rev 8 option B (Docs/MENU_REDESIGN_B.md section 49): a winner's row runs Time's light, every other team's Space's,
-# the local pilot's the selection; PLAY AGAIN is Charge, MAIN MENU Mass; the reward strip is Mass.
-ROW_RIMS = dict(won="Time", lost="Space")
+# Docs/UI_COLOR_RULES.md (Garrett, 2026-10-24): no element colours and no element rims anywhere in the UI, and the
+# selection blue only on what is actually selected. A row's border is a still hairline (TextLight for you, SurfaceDark
+# for the rest), PLAY AGAIN is the lime call to action, MAIN MENU / LEAVE LOBBY are neutral, the reward strip is plain.
+NO_ROW_RIM = "{fileID: 0}"
 
 
 def sb_path(name):
@@ -787,18 +793,17 @@ def mat_ref(guid):
 
 def build_row():
     """Rev 8 option B: a dark glass row with a thin team stripe, the pilot's share of the team's count along its foot,
-    and an element rim (Time for the winning team, Space for the others, the selection blue for you)."""
+    and a still hairline border (brighter for you)."""
     root = N("root", SB_ROW, R(size=(LIST_W, ROW_HT)))
     root.add("cg", 225, H.canvas_group(True)).add("le", 114, H.le(ph=ROW_HT, pw=LIST_W))
     glass = root.child(N("Glass", "Glass", STRETCH))
     glass.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark", 0.8), K.kit_sprite("kit_sliver14_fill"), True))
     bord = root.child(N("Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.kit_sprite("kit_sliver14_line1"), True))
-    HM.M.rim_border(bord, ROW_RIMS["won"])
     stripe = root.child(N("Stripe", "TeamStripe", HM.TL(0, 12, 4, ROW_HT - 24)))
     stripe.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
     share = root.child(N("Share", "Share", R((0, 0), (0.5, 0), (0, 0), (0, 3), (0, 0))))
-    share.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ElementTime"))).add("th", 114, H.themed("ElementTime"))
+    share.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"))).add("th", 114, H.themed("NeutralLightest"))
     rank = root.child(N("Rank", "Rank", HM.TL(28, 21, 44, 42)))
     rank.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("1", "H2", tok("TextLight")))
     ring = root.child(N("Ring", "Ring", HM.TL(84, 16, 52, 52)))
@@ -815,14 +820,14 @@ def build_row():
     sec = root.child(N("Secondary", "Secondary", HM.TL(620, 21, 260, 42)))
     sec.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Data", tok("TextLight")))
     score = root.child(N("Score", "Score", HM.TR(210, 21, 300, 42)))
-    score.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H2", tok("ElementTime"), align="right"))
+    score.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H2", tok("TextLight"), align="right"))
     data = root.child(N("Data", "DataPanels", HM.TR(26, 21, 170, 42)))
     data.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 5, (0, 0), (0, 0)))
     glyph = data.child(N("Data/Glyph", "Glyph", R(size=(20, 20))))
-    glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ElementMass"), K.chrome_sprite("chrome_crystal"), preserve=True)) \
-        .add("th", 114, H.themed("ElementMass")).add("le", 114, H.le(pw=20, ph=20))
+    glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Purchase"), K.chrome_sprite("chrome_crystal"), preserve=True)) \
+        .add("th", 114, H.themed("Purchase")).add("le", 114, H.le(pw=20, ph=20))
     amt = data.child(N("Data/Amount", "Amount", R(size=(110, 36))))
-    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H3", tok("ElementMass"), align="right")).add("le", 114, H.le(pw=110, ph=36))
+    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H3", tok("TextLight"), align="right")).add("le", 114, H.le(pw=110, ph=36))
     root.add("card", 114, lambda ctx, go: K.mono(go, S["card"],
         f"  playerAvatarImage: {{fileID: {ctx.c('Ring/Clip/Avatar', 'img')}}}\n"
         f"  playerNameText: {{fileID: {ctx.c('Name', 'tmp')}}}\n  playerScoreText: {{fileID: {ctx.c('Score', 'tmp')}}}\n"
@@ -833,14 +838,13 @@ def build_row():
         f"  crystalRewardRoot: {{fileID: {ctx.go('Data')}}}\n  crystalRewardText: {{fileID: {ctx.c('Data/Amount', 'tmp')}}}\n"
         f"  rankText: {{fileID: {ctx.c('Rank', 'tmp')}}}\n  domainText: {{fileID: {ctx.c('Domain', 'tmp')}}}\n"
         f"  borderImage: {{fileID: {ctx.c('Border', 'img')}}}\n"
-        f"  localBorderToken: {K.TOKEN_INDEX['Selection']}\n  otherBorderToken: {K.TOKEN_INDEX['SurfaceDark']}\n"
+        f"  localBorderToken: {K.TOKEN_INDEX['TextLight']}\n  otherBorderToken: {K.TOKEN_INDEX['SurfaceDark']}\n"
         f"  leaderRankToken: {K.TOKEN_INDEX['TextLight']}\n  rankToken: {K.TOKEN_INDEX['NeutralLightest']}\n"
         f"  teamStripe: {{fileID: {ctx.c('Stripe', 'img')}}}\n  shareBar: {{fileID: {ctx.rt('Share')}}}\n"
         f"  glassFill: {{fileID: {ctx.c('Glass', 'img')}}}\n  glassToken: {K.TOKEN_INDEX['SurfaceVeryDark']}\n"
         "  glassAlpha: 0.8\n  localGlassTint: 0.35\n"
-        f"  wonBorderMaterial: {mat_ref(HM.M.rim_material(ROW_RIMS['won']))}\n"
-        f"  lostBorderMaterial: {mat_ref(HM.M.rim_material(ROW_RIMS['lost']))}\n"
-        f"  localBorderMaterial: {mat_ref(SELECTION_RIM_MAT)}\n"
+        f"  localGlassTintToken: {K.TOKEN_INDEX['NeutralLightest']}\n"
+        f"  wonBorderMaterial: {NO_ROW_RIM}\n  lostBorderMaterial: {NO_ROW_RIM}\n  localBorderMaterial: {NO_ROW_RIM}\n"
         f"  animSettings: {K.ref(11400000, ANIM_SETTINGS, 2)}\n"))
     return root
 
@@ -879,21 +883,21 @@ def build_stat():
 
 
 def reward_strip(root):
-    """What you earned and the wallet counting up, in a Mass-rimmed glass panel bottom right."""
+    """What you earned and the wallet counting up, in a plain glass panel bottom right (the amount in the lime of a
+    good outcome, the crystal in gold)."""
     w, h = 560, 92
     strip = root.child(N("Reward", "RewardStrip", R((0.5, 1), (0.5, 1), (LIST_W / 2 - w / 2, -770), (w, h), (0.5, 1))))
     strip.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", delay=0.7))
     _, bord = H.framed(strip, "Reward", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.86)
-    HM.M.rim_border(bord, "Mass")
     glyph = strip.child(N("Reward/Glyph", "Glyph", HM.TL(24, 30, 32, 32)))
-    glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ElementMass"), K.chrome_sprite("chrome_crystal"), preserve=True)) \
-        .add("th", 114, H.themed("ElementMass"))
-    H.label(strip.child(N("Reward/Earned", "Earned", HM.TL(72, 18, 200, 16))), "You earned", "Label", "ElementMass")
+    glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Purchase"), K.chrome_sprite("chrome_crystal"), preserve=True)) \
+        .add("th", 114, H.themed("Purchase"))
+    H.label(strip.child(N("Reward/Earned", "Earned", HM.TL(72, 18, 200, 16))), "You earned", "Label", "NeutralLightest")
     amt = strip.child(N("Reward/Amount", "Amount", HM.TL(72, 36, 180, 42)))
-    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H1", tok("TextLight")))
+    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("+200", "H1", tok("Cta")))
     H.label(strip.child(N("Reward/Balance", "Balance", HM.TR(24, 20, 200, 16))), "Balance", "Label", "NeutralLightest", align="right")
     to = strip.child(N("Reward/To", "To", HM.TR(24, 42, 120, 32)))
-    to.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H3", tok("ElementMass"), align="right"))
+    to.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("0", "H3", tok("TextLight"), align="right"))
     chev = strip.child(N("Reward/Arrow", "Arrow", HM.TR(152, 50, 16, 16)))
     chev.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite("chrome_chevron"), preserve=True))
     frm = strip.child(N("Reward/From", "From", HM.TR(176, 42, 120, 32)))
@@ -931,16 +935,15 @@ def build_panel():
     row = root.child(N("Buttons", "Buttons", R((0.5, 1), (0.5, 1), (0, -784), (LIST_W, 52), (0.5, 1))))
     row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 0))) \
         .add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Rise", delay=0.6))
-    for key, cap, variant, keycap, pad, w, rim in SB_BUTTONS:
+    for key, cap, variant, keycap, pad, w in SB_BUTTONS:
         b = kit_button(f"Sb/{key}", f"{key}Button", R(size=(w, 52)), variant, False, cap, keycap, pad,
                        keycap_key=f"Sb{key}Keycap")
         b.add("le", 114, H.le(pw=w, ph=52))
-        HM.M.rim_border(HM.M.find_node(b, f"Sb/{key}/Border"), rim)
         if key == "PlayAgain":
             strip = b.child(N("Sb/PlayAgain/Avatars", "PlayerAvatars", R((0, 0), (0, 0), (8, -12), (420, 30), (0, 1))))
             strip.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 3, (0, 0), (0, 0))).add("le", 114, H.le(ignore=True))
             cnt = strip.child(N("Sb/PlayAgain/Avatars/Count", "Count", R(size=(300, 30))))
-            cnt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Label", tok("ElementSpace"))) \
+            cnt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, H.text("", "Label", tok("NeutralLightest"))) \
                 .add("le", 114, H.le(pw=300, ph=30))
             b.add("roster", 114, lambda ctx, go: K.mono(go, S["roster"],
                 f"  container: {{fileID: {ctx.rt('Sb/PlayAgain/Avatars')}}}\n  builtEntrySize: 30\n"
@@ -1343,6 +1346,8 @@ def validate(files):
         assert f"  {k}: {v}\n" in lk, f"AbilityLockupStyle: {k} is not the style-B value"
     for k, v in KEYCAP_FIELDS:
         assert f"  {k}: {v}\n" in lk, f"AbilityLockupStyle: {k} is not set"
+    for k, v in NO_ELEMENT_COLOUR_FIELDS:
+        assert f"  {k}: {v}\n" in lk, f"AbilityLockupStyle: {k} must be off - elements carry no colour (Docs/UI_COLOR_RULES.md)"
     # The LOCKED geometry is untouched (VESSEL_HUD_AND_ELEMENTS: changeable only within the asserted limits).
     for k, v in (("plateWidth", "104"), ("cardPitch", "128"), ("abilityCellHeight", "88"), ("petalCellHeight", "88"),
                  ("iconBoxSize", "60"), ("petalFlowerSize", "60"), ("rowMarginRight", "40"), ("rowMarginBottom", "44")):
@@ -1479,11 +1484,12 @@ def validate(files):
     check_local_refs(sb_path(SB_PANEL), sp)
     spd = docs_of(sp)
     fk = K.FileIds(SB_PANEL)
-    for key, _, _, _, pad, _, rim in SB_BUTTONS:
+    for key, _, _, _, pad, _ in SB_BUTTONS:
         cbp = spd[str(fk(f"Sb/{key}#cbp"))]
         assert f"  activationButton: {pad}\n" in cbp, f"{key} answers the wrong pad button"
         bd = spd[str(fk(f"Sb/{key}/Border#img"))]
-        assert f"guid: {HM.M.rim_material(rim)}" in bd, f"{key}'s border is not lit with the {rim} rim"
+        assert not any(f"guid: {g}" in bd for g in HM.M.RETIRED_RIM_GUIDS), \
+            f"{key}'s border carries an element rim again (Docs/UI_COLOR_RULES.md)"
     assert {b[4] for b in SB_BUTTONS if b[0] in ("PlayAgain", "Continue")} == {6} and \
            {b[4] for b in SB_BUTTONS if b[0] in ("MainMenu", "LeaveLobby")} == {5}, "A and B share an end-of-match button"
     row = docs_of(files[sb_path(SB_ROW)])[str(K.FileIds(SB_ROW)("root#card"))]
@@ -1492,9 +1498,10 @@ def validate(files):
         assert re.search(r"^  %s: \{fileID: [1-9-]" % f, row, re.M), f"ScoreboardRow: {f} is not wired"
     # Option B: dark glass and a thin stripe - never a slab of team colour again.
     assert "  backgroundImage: {fileID: 0}\n" in row, "the scoreboard row is a full team fill again (backgroundImage wired)"
-    for f, guid in (("wonBorderMaterial", HM.M.rim_material(ROW_RIMS["won"])), ("lostBorderMaterial", HM.M.rim_material(ROW_RIMS["lost"])),
-                    ("localBorderMaterial", SELECTION_RIM_MAT)):
-        assert f"  {f}: {mat_ref(guid)}\n" in row, f"ScoreboardRow: {f} is not the {guid} rim"
+    for f in ("wonBorderMaterial", "lostBorderMaterial", "localBorderMaterial"):
+        assert f"  {f}: {NO_ROW_RIM}\n" in row, f"ScoreboardRow: {f} lights the border again (no rims, Docs/UI_COLOR_RULES.md)"
+    assert f"  localBorderToken: {K.TOKEN_INDEX['TextLight']}\n" in row and \
+           f"  localGlassTintToken: {K.TOKEN_INDEX['NeutralLightest']}\n" in row, "the local scoreboard row draws in the selection blue again"
     for name in (SB_ROW, SB_STAT, SB_HEADER):
         check_local_refs(sb_path(name), files[sb_path(name)])
     hd = docs_of(files[sb_path(SB_HEADER)])[str(K.FileIds(SB_HEADER)("root#header"))]
@@ -1622,6 +1629,7 @@ def self_test(files):
         ("the scoreboard host a 0x0 point again", point_host),
         ("the connecting backdrop unwired", lambda f: f.__setitem__(CONNECT, re.sub(
             r"(  backdropArt: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT], count=1))),
+        ("the lava lamp's element colour back on", sub(LOCKUP, "  elementColour: 0\n", "  elementColour: 1\n")),
         ("the lockup plate back to the old near-black", sub(LOCKUP, LOCKUP_FIELDS["plateColor"], "{r: 0.024, g: 0.031, b: 0.063, a: 0.86}")),
         ("the LOCKED card pitch moved", sub(LOCKUP, "  cardPitch: 128\n", "  cardPitch: 140\n")),
         ("RT named wrong", sub(GLYPHS, "    padLabel: RT\n", "    padLabel: R2\n")),
@@ -1648,8 +1656,8 @@ def self_test(files):
         ("the scoreboard row a full team fill", lambda f: f.__setitem__(sb_path(SB_ROW), f[sb_path(SB_ROW)].replace(
             "  backgroundImage: {fileID: 0}\n", f"  backgroundImage: {{fileID: {K.FileIds(SB_ROW)('Glass#img')}}}\n", 1))),
         ("the reward strip unwired", lambda f: f.__setitem__(CANVAS, re.sub(r"(  rewardStrip: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CANVAS]))),
-        ("PLAY AGAIN without its Charge light", lambda f: f.__setitem__(sb_path(SB_PANEL), f[sb_path(SB_PANEL)].replace(
-            f"guid: {HM.M.rim_material('Charge')}", f"guid: {HM.M.rim_material('Time')}"))),
+        ("the local scoreboard row lit with the selection rim", lambda f: f.__setitem__(sb_path(SB_ROW), f[sb_path(SB_ROW)].replace(
+            f"  localBorderMaterial: {NO_ROW_RIM}\n", f"  localBorderMaterial: {mat_ref(HM.M._lattice_guid('selection_rim_mat'))}\n"))),
         ("the match feed back bottom-left", sub(CANVAS, "      propertyPath: m_AnchoredPosition.x\n      value: -40\n", "      propertyPath: m_AnchoredPosition.x\n      value: 316.80005\n")),
         ("feed rows vanishing again", sub(TOAST_SETTINGS, "  agedAlpha: 0.5\n", "  agedAlpha: 0\n")),
         ("the feed row without its accent bar", lambda f: f.__setitem__(FEED, re.sub(

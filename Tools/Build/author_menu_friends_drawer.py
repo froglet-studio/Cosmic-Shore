@@ -96,7 +96,7 @@ class Patch(HM.Patch):
 
 def seat_nodes(parent, key, size, pos=(0, 0)):
     """An avatar in an octagon: the ring KitPresenceOrb paints the pilot's domain colour, a dark gap, the icon."""
-    for part, inset, colour in (("Ring", 0, tok("ElementSpace")), ("Gap", 3, tok("SurfaceVeryDark"))):
+    for part, inset, colour in (("Ring", 0, tok("NeutralLightest")), ("Gap", 3, tok("SurfaceVeryDark"))):
         n = parent.child(N(f"{key}/{part}", part, R(pos=pos, size=(size - inset, size - inset))))
         n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(colour, K.kit_sprite("kit_oct_fill")))
     icon = parent.child(N(f"{key}/Avatar", "Avatar", R(pos=pos, size=(size - 5, size - 5))))
@@ -127,7 +127,7 @@ def orb_node(parent):
     you = o.child(N("Drawer/Orb/You", "You", R(size=(YOU, YOU))))
     seat_nodes(you, "Drawer/Orb/You", YOU)
     count = o.child(N("Drawer/Orb/Count", "Count", R((0, 0), (1, 0), (0, -4), (0, COUNT_H), (0.5, 1))))
-    AR.label_e(count, "Friends", "Label", "ElementSpace", driven=True, align="center")
+    AR.label_e(count, "Friends", "Label", "NeutralLightest", driven=True, align="center")
     o.add("button", 114, lambda ctx, go: mono(go, A.BUTTON,
           orb_tint() + f"  m_TargetGraphic: {ref(ctx.c('Drawer/Orb/Field', 'img'))}\n" + A.calls([])))
     o.add("audio", 114, A.menu_audio(11))
@@ -165,10 +165,9 @@ def window_node(parent):
     w.children.append(M.window_lattice_node("Drawer/Window/Lattice"))
     bord = w.child(N("Drawer/Window/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_sliver14_line1"), True))
-    M.rim_border(bord, "Space")
     glyph = w.child(N("Drawer/Window/TitleGlyph", "TitleGlyph", TL(20, 16, 24, 24)))
     glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), H.element_glyph("Space"), preserve=True))
-    label(w.child(N("Drawer/Window/Title", "Title", TL(52, 18, 200, 22))), "Friends", "Label", "ElementSpace")
+    label(w.child(N("Drawer/Window/Title", "Title", TL(52, 18, 200, 22))), "Friends", "Label", "NeutralLightest")
     # Minimise (a bar): slides the window back to the handle.
     HM.icon_button(w, "Drawer/Window/Minimise", "Minimise", None, TR(16 + BTN + 6, 14, BTN, BTN))
     # Maximise / restore: one button, two glyphs the drawer swaps (a screen to grow, a chevron to shrink).
@@ -194,9 +193,9 @@ def chip(parent, key, name, word, x, filled):
     w = K.label_width(word.upper(), "Label") + 20
     n = parent.child(N(key, name, TL(x, 74, w, 24)))
     sprite = K.kit_sprite("kit_sliver10_fill" if filled else "kit_sliver10_line1")
-    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ElementSpace"), sprite, True))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), sprite, True))
     lab = n.child(N(f"{key}/Label", "Label", STRETCH))
-    label(lab, word, "Label", "SurfaceBlack" if filled else "ElementSpace", align="center")
+    label(lab, word, "Label", "SurfaceBlack" if filled else "NeutralLightest", align="center")
     return n, x + w + 8
 
 
@@ -208,7 +207,6 @@ def profile_node(parent):
     fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark", 0.95), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
     bord = card.child(N(f"{PK}/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_sliver14_line1"), True))
-    M.rim_border(bord, "Space")
     av = card.child(N(f"{PK}/Avatar", "Avatar", TL(20, 20, CARD_AVATAR + 6, CARD_AVATAR + 6)))
     seat_nodes(av, f"{PK}/Avatar", CARD_AVATAR + 6)
     label(card.child(N(f"{PK}/Name", "Name", TL(128, 28, 220, 36))), "Pilot", "H2", "TextLight")
@@ -221,7 +219,7 @@ def profile_node(parent):
         rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark")))
     AR.label_e(card.child(N(f"{PK}/StateLabel", "StateLabel", TL(20, 138, 200, 30))), "Online", "Label",
                "NeutralLightest", driven=True)
-    AR.label_e(card.child(N(f"{PK}/StateValue", "StateValue", TR(20, 138, 160, 30))), "", "Body", "ElementTime",
+    AR.label_e(card.child(N(f"{PK}/StateValue", "StateValue", TR(20, 138, 160, 30))), "", "Body", "TextLight",
                driven=True, align="right")
     game = card.child(N(f"{PK}/Game", "GameRow", R((0, 1), (1, 1), (0, -182), (0, 36), (0.5, 1))))
     game.add("cg", 225, H.canvas_group(False))
@@ -229,7 +227,7 @@ def profile_node(parent):
     AR.label_e(game.child(N(f"{PK}/Game/Value", "Value", TR(20, 4, 240, 28))), "", "Body", "TextLight",
                driven=True, align="right")
     # JOIN in Time (where you go next), INVITE in Space (people), as the board; the popup swaps JOIN for SPECTATE.
-    for key, x, variant, caption in (("Join", 20, "Time", "JOIN"), ("Invite", 196, "Space", "INVITE")):
+    for key, x, variant, caption in (("Join", 20, "Cta", "JOIN"), ("Invite", 196, "Default", "INVITE")):
         slot = card.child(N(f"{PK}/{key}Slot", f"{key}Slot", R((0, 0), None, (x, 20), (164, 36), (0, 0))))
         slot.add("cg", 225, H.canvas_group(False))
         slot.children.append(P.kit_button(f"{PK}/{key}", f"{key}Button", variant, caption, STRETCH, opaque=False, small=True))
@@ -428,8 +426,8 @@ def validate_orb(sc, ctx):
             f"Member{i + 1} sits at ({x}, {y}); the shader's bond {i + 1} ends at ({want[0]:.1f}, {want[1]:.1f})"
     assert "  onlineTemplate: '{count} online'\n" in orb, "the orb's count line lost its authored template"
     border = sc.docs[str(ctx.c("Drawer/Window/Border", "img"))]
-    assert f"guid: {M.rim_material('Space')}" in border, "the drawer window lost its Space rim"
-    assert sc.has(str(ctx.c("Drawer/Window/Border", "rim"))), "the drawer window's rim has no KitRimMesh"
+    assert not any(f"guid: {g}" in border for g in M.RETIRED_RIM_GUIDS), \
+        "the drawer window is lit with an element rim again (Docs/UI_COLOR_RULES.md)"
     assert f"guid: {M.LATTICE_WINDOW_MAT}" in sc.docs[str(ctx.c("Drawer/Window/Lattice", "img"))], "the drawer window has no window lattice"
 
 
@@ -467,7 +465,9 @@ def self_test(files):
         ("the orb grown into the windows", lambda f: f.__setitem__(SCENE, in_doc(
             f[SCENE], ctx.rt("Drawer/Orb"), f"m_SizeDelta: {K.v2(ORB, ORB)}", f"m_SizeDelta: {K.v2(140, 140)}"))),
         ("the orb's field on another material", lambda f: f.__setitem__(SCENE, f[SCENE].replace(M.PRESENCE_MAT, M.LATTICE_PANEL_MAT, 1))),
-        ("the window's rim gone", lambda f: f.__setitem__(SCENE, f[SCENE].replace(M.rim_material("Space"), "7" * 32, 1))),
+        ("the window's element rim back", lambda f: f.__setitem__(SCENE, in_doc(
+            f[SCENE], ctx.c("Drawer/Window/Border", "img"), "  m_Material: {fileID: 0}\n",
+            f"  m_Material: {{fileID: 2100000, guid: {M.rim_material('Space')}, type: 2}}\n"))),
         ("rev 3's handle left behind", lambda f: f.__setitem__(SCENE, in_doc(
             f[SCENE], ctx.go("Drawer/Orb"), "  m_Name: PresenceOrb\n", "  m_Name: Handle\n"))),
         ("the drawer ungated offline", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
