@@ -720,6 +720,10 @@ class FakeApi:
         if len(rest) == 3 and rest[0] == "issues" and rest[2] == "comments" and method == "POST":
             self.comments.append({"issue": int(rest[1]), "body": payload["body"]})
             return {"id": len(self.comments)}
+        if len(rest) == 2 and rest[0] == "milestones" and method == "PATCH":
+            m = next(m for m in self.milestones if m["number"] == int(rest[1]))
+            m.update(payload)
+            return dict(m)
         if rest == ["milestones"]:
             if method == "GET":
                 return [dict(m) for m in self.milestones]
@@ -828,6 +832,29 @@ class Issues:
         for name in sorted(set(names) - have):
             color = LABEL_COLORS.get(name) or LABEL_COLORS.get(name.split(":")[0], "ededed")
             self.api("POST", f"repos/{self.repo}/labels", {"name": name, "color": color})
+
+    def milestones(self):
+        """The repository's milestones as the page shows them: key, name, gate, scope, due, counts."""
+        out = []
+        for m in self._pages(f"repos/{self.repo}/milestones?state=all"):
+            key, _, name = m["title"].partition(" · ")
+            desc = re.split(r"\n\s*---\s*\n", (m.get("description") or "").replace("\r\n", "\n"))[0]
+            scope, _, gate = desc.partition("Gate:")
+            out.append({"key": key, "name": name or m["title"], "scope": scope.strip(), "gate": gate.strip().strip("-").strip(),
+                        "due": (m.get("due_on") or "")[:10], "number": m["number"], "state": m.get("state", "open"),
+                        "open": m.get("open_issues", 0), "closed": m.get("closed_issues", 0)})
+        return out
+
+    def write_milestone(self, key, name, gate, scope, due=""):
+        """Create or update a milestone from the page's editor."""
+        payload = {"title": f"{key} · {name}".strip(" ·"), "description": f"{scope}\n\nGate: {gate or '-'}"}
+        if due:
+            payload["due_on"] = f"{due[:10]}T00:00:00Z"
+        number = self.milestone_numbers().get(key)
+        if number:
+            self.api("PATCH", f"repos/{self.repo}/milestones/{number}", payload)
+        else:
+            self._ms[key] = self.api("POST", f"repos/{self.repo}/milestones", payload)["number"]
 
     def ensure_milestones(self):
         made = []
@@ -1112,8 +1139,11 @@ def migrate(store, dry_run, today, repo, refs=BRIDGE_REFS):
         store.api("PUT", f"repos/{repo}/actions/workflows/{OLD_WORKFLOW}/disable")
         print(f"disabled the old mirror workflow ({OLD_WORKFLOW}): it would write the old bodies back")
     except SystemExit as e:
-        print(f"WARNING: could not disable {OLD_WORKFLOW} ({e}); disable it under Actions before the next push of "
-              f"the old board, or it writes the old bodies back")
+        if "not active" in str(e):
+            print(f"the old mirror workflow ({OLD_WORKFLOW}) is already disabled")
+        else:
+            print(f"WARNING: could not disable {OLD_WORKFLOW} ({e}); disable it under Actions before the next push "
+                  f"of the old board, or it writes the old bodies back")
     made = store.ensure_milestones()
     if made:
         print(f"created milestones {', '.join(made)}")
@@ -1141,7 +1171,7 @@ def add(tickets, area, kind, task, done_when, priority, dept, why, milestone=Non
                          f"what the work needs), not {who!r} (Docs/TEAM.md rule 11)")
     if not (why or "").strip():
         raise SystemExit("add needs --why: one line naming what decided the priority, department and milestone")
-    mine = [t for t in tickets if t.filed_on == on and t.is_open and on not in SHARED_BRANCHES]
+    mine = [t for t in tickets if t.filed_on == on and t.is_open and on and on not in SHARED_BRANCHES]
     if mine:
         t = mine[0]
         t.steps.append([False, f"{task.strip()} (done when: {done_when.strip()})"])
@@ -1181,23 +1211,51 @@ def page_doc(t):
             "legacy": t.legacy, "updated": t.updated}
 
 
-def sync(store, data, since, dry_run, today=None, now=None):
-    """Apply the page's takes and overrides made after `since` to Issues, then return the page's new task documents:
-    {"at", "applied", "skipped", "write": [changed docs], "remove": [ids]}."""
+def store_op(op, collection, doc_id, data=None):
+    return {"op": op, "collection": collection, "doc_id": doc_id, **({"data": data} if data is not None else {})}
+
+
+def file_from_page(tickets, d, who, today, person=True):
+    """A ticket from a page document: a task someone filed on the page (`new/<id>`), or a Claude session's suggestion
+    a person approved there (`suggestions/<id>`). It is filed as its own ticket: the page is not a branch."""
+    task, done_when = str(d.get("task", "")).strip(), str(d.get("doneWhen", "")).strip()
+    if not task:
+        raise SystemExit("no task text")
+    kind = d.get("kind") if d.get("kind") in KINDS else "test"
+    priority = d.get("priority") if d.get("priority") in PRIORITIES else "P3"
+    dept = d.get("dept") if d.get("dept") in DEPTS else DEPT_OF_KIND.get(kind, "developers")
+    by = d.get("from") or f"{who} on the Froglet Tasks page"
+    t, _ = add(tickets, d.get("area") or "General", kind, task, done_when or "Done when the task says so", priority,
+               dept, d.get("why") or f"filed by {by}", d.get("milestone") or None, d.get("see") or None, by,
+               today=today, on=d.get("filedOn") or "")
+    if person and who:   # a person filed it on the page: the ranking is theirs
+        t.prio_by = t.dept_by = t.ms_by = f"{who} {today.isoformat()}"
+    return t
+
+
+def sync(store, data, since, dry_run, today=None, now=None, extras=True, base=BASE):
+    """Carry the page's changes made after `since` to Issues, then return what the page's store should hold:
+    {"at", "applied", "skipped", "store": [ops], "counts"}. The page writes: takes/<id> (take, release, done, archive,
+    revive), overrides/<id> (priority, dept, milestone), new/<id> (a task filed on the page), suggestions/<id> (a
+    Claude session's draft; filed once a person approves it), milestones/<key> (edited by an approver). The store ops
+    give back tasks/<id>, milestones/<key>, meta/branches and meta/activity, and clear what was filed."""
     today = today or datetime.date.today()
     now = now or datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
     tickets = store.fetch()
     by_id = {t.id: t for t in tickets}
     events = sorted([("take", norm(d)) for d in data.get("takes", [])] +
                     [("override", norm(d)) for d in data.get("overrides", [])], key=lambda e: e[1].get("updatedAt", ""))
-    applied, skipped, changed = [], [], {}
+    applied, skipped, changed, ops = [], [], {}, []
     area_open = open_by_area(tickets)
     for kind, d in events:
-        if d.get("updatedAt", "") <= since:
+        if d.get("updatedAt", "") <= since or d.get("applied"):
             continue
         t, who = by_id.get(d.get("id")), canon(d.get("by", ""))
         if t is None or t.legacy:
             skipped.append(f"{d.get('id')}: no such ticket" + (" (not migrated yet)" if t else ""))
+            continue
+        if kind == "take" and d.get("action", "take") == "take" and not d.get("branch") and d.get("session"):
+            skipped.append(f"{t.id}: started in a session; that session takes it on its branch")
             continue
         day = datetime.date.fromisoformat((d.get("at") or d.get("updatedAt") or today.isoformat())[:10])
         try:
@@ -1224,16 +1282,96 @@ def sync(store, data, since, dry_run, today=None, now=None):
             changed[t.id] = t
         except SystemExit as e:
             skipped.append(f"{t.id}: {e}")
+
+    # Tasks filed on the page, and suggestions a person approved there.
+    for coll in ("new", "suggestions"):
+        for d in sorted((norm(x) for x in data.get(coll, [])), key=lambda x: x.get("updatedAt", "")):
+            if coll == "suggestions" and d.get("status") != "approved":
+                continue
+            who = canon(d.get("approvedBy") or d.get("by", ""))
+            try:
+                t = file_from_page(tickets, d, who, today, person=coll == "new")
+            except SystemExit as e:
+                skipped.append(f"{coll}/{d.get('id')}: {e}")
+                continue
+            if t.number is None and t not in tickets:
+                tickets.append(t)
+            changed[t.id] = t
+            applied.append(f"{t.id}: filed from the page ({coll}) by {who or 'someone'}")
+            ops.append(store_op("delete", coll, d["id"]) if coll == "new" else
+                       store_op("update", coll, d["id"], {"status": "filed", "ticket": t.id}))
+
+    # Milestones an approver edited on the page.
+    gh_ms = [] if not extras else store.milestones()
+    for d in (norm(x) for x in data.get("milestones", [])):
+        if d.get("updatedAt", "") <= since or not re.fullmatch(r"M\d+", str(d.get("id") or d.get("key") or "")):
+            continue
+        key = d.get("key") or d["id"]
+        try:
+            if not dry_run:
+                store.write_milestone(key, d.get("name", ""), d.get("gate", ""), d.get("scope", ""), d.get("due", ""))
+            applied.append(f"milestone {key}: saved on GitHub")
+        except SystemExit as e:
+            skipped.append(f"milestone {key}: {e}")
     if not dry_run:
+        if changed:
+            store.ensure_labels({l for t in changed.values() for l in issue_labels(t)})
         for t in changed.values():
             store.write(t)
+
     prev = {norm(d)["id"]: norm(d) for d in data.get("tasks", [])}
     docs = [dict(page_doc(t), syncedAt=now) for t in tickets]
-    strip = lambda d: {k: v for k, v in (d or {}).items() if k not in ("syncedAt", "updatedAt", "updated")}
-    write = [d for d in docs if strip(prev.get(d["id"])) != strip(d)]
-    remove = sorted(set(prev) - {d["id"] for d in docs})
-    return {"at": now, "applied": applied, "skipped": skipped, "write": write, "remove": remove,
+    strip = lambda d: {k: v for k, v in (d or {}).items() if k not in ("syncedAt", "updatedAt", "updated", "id")}
+    ops += [store_op("set", "tasks", d["id"], d) for d in docs if strip(prev.get(d["id"])) != strip(d)]
+    ops += [store_op("delete", "tasks", i) for i in sorted(set(prev) - {d["id"] for d in docs})]
+    if extras:
+        for m in (store.milestones() if not dry_run else gh_ms):
+            ops.append(store_op("set", "milestones", m["key"], m))
+        ops.append(store_op("set", "meta", "branches", branches_report(tickets, base, today)))
+        ops.append(store_op("set", "meta", "activity", activity_report(base)))
+    ops.append(store_op("update", "meta", "sync", {"at": now, "applied": len(applied), "base": base.split("/", 1)[-1],
+                                                    "counts": dict(collections.Counter(t.state for t in tickets))}))
+    return {"at": now, "applied": applied, "skipped": skipped, "store": ops,
             "counts": dict(collections.Counter(t.state for t in tickets))}
+
+
+def branches_report(tickets, base=BASE, today=None, days=21):
+    """The branches people work on now (a commit in the last `days`), each with how far ahead of the base it is and
+    the tickets live on it or filed from it. The page's Branches view; bleeding-edge is where every session starts."""
+    today = today or datetime.date.today()
+    since = (today - datetime.timedelta(days=days)).isoformat()
+    rows = git("for-each-ref", "refs/remotes/origin", "--sort=-committerdate",
+               "--format=%(refname:short)|%(committerdate:short)|%(subject)").stdout.splitlines()
+    out = []
+    for row in rows:
+        ref, date, subject = (row.split("|", 2) + ["", ""])[:3]
+        name = ref.split("/", 1)[-1]
+        if name in ("HEAD", "origin") or date < since or ref == base:
+            continue
+        ahead = git("rev-list", "--count", f"{base}..{ref}").stdout.strip()
+        out.append({"name": name, "last": date, "subject": subject[:140], "ahead": int(ahead or 0),
+                    "live": [t.id for t in tickets if t.state == "live" and t.branch == name],
+                    "filed": len([t for t in tickets if t.filed_on == name and t.is_open])})
+        if len(out) >= 150:
+            break
+    return {"base": base.split("/", 1)[-1], "days": days, "checked": today.isoformat(), "branches": out}
+
+
+def activity_report(base=BASE, days=7):
+    """What landed on the base in the last `days`: each merged pull request with its branch, title and day."""
+    log = git("log", base, "--merges", "--first-parent", f"--since={days}.days", "--format=%cs%x1f%an%x1f%s%x1f%b%x1e").stdout
+    merged = []
+    for rec in log.split("\x1e"):
+        parts = rec.strip("\n").split("\x1f")
+        if len(parts) < 4:
+            continue
+        date, author, subject, body = parts
+        m = re.match(r"Merge pull request #(\d+) from [^/]+/(\S+)", subject)
+        if not m:
+            continue
+        merged.append({"date": date, "pr": int(m.group(1)), "branch": m.group(2), "mergedBy": author,
+                       "title": (body.strip().split("\n") or [""])[0][:160]})
+    return {"base": base.split("/", 1)[-1], "days": days, "merged": merged[:120]}
 
 
 # --- review: a Claude session re-reads tickets and proposes; a person approves; then it is written -------------------
@@ -1504,20 +1642,48 @@ def self_test():
     s3 = Issues("o/r", api3)
     font, _ = add([], "UI", "decision", "Pick a font.", "Picked.", "P3", "decisions", "w", today=day, on="claude/s")
     s3.write(font)
-    first = sync(s3, {}, "", True, today=day)
+    first = sync(s3, {}, "", True, today=day, extras=False)
+    task_docs = lambda out: [o["data"] for o in out["store"] if o["collection"] == "tasks" and o["op"] == "set"]
     stamp = "2026-10-16T10:00:00Z"
-    data = {"tasks": first["write"],
+    data = {"tasks": task_docs(first),
             "takes": [{"id": font.id, "data": {"action": "take", "by": "Shombith03", "branch": "claude/font"},
                        "updatedAt": stamp}],
             "overrides": [{"id": font.id, "data": {"priority": "P1", "by": "Yash", "why": "store page needs it"},
                            "updatedAt": stamp}]}
-    out = sync(s3, data, "2026-10-16T00:00:00Z", False, today=day)
+    out = sync(s3, data, "2026-10-16T00:00:00Z", False, today=day, extras=False)
     got = find(s3.fetch(), font.id)
     if (got.state, got.taken_by, got.branch, got.priority, got.prio_by.split(" ")[0]) != \
-            ("live", "Shombith", "claude/font", "P1", "Yash") or len(out["write"]) != 1:
+            ("live", "Shombith", "claude/font", "P1", "Yash") or len(task_docs(out)) != 1:
         bad.append(f"sync did not carry the page's take and override to the issue: {out['applied']} {out['skipped']}")
-    if sync(s3, dict(data, tasks=out["write"]), "2026-10-17T00:00:00Z", False, today=day)["applied"]:
+    if sync(s3, dict(data, tasks=task_docs(out)), "2026-10-17T00:00:00Z", False, today=day, extras=False)["applied"]:
         bad.append("sync applied page changes older than the last sync")
+    # A task filed on the page, and a session's suggestion once a person approved it, become tickets; a pending
+    # suggestion and a session start (no branch yet) do not.
+    page = {"new": [{"id": "n1", "data": {"task": "Check the menu on a phone.", "doneWhen": "It fits; it scrolls",
+                                          "area": "UI", "kind": "test", "priority": "P2", "by": "Caleb"},
+                     "updatedAt": stamp}],
+            "suggestions": [{"id": "s1", "data": {"task": "Add a tooltip.", "kind": "dev", "status": "approved",
+                                                  "approvedBy": "Garrett", "from": "Yash's session on claude/tip",
+                                                  "filedOn": "claude/tip", "why": "players miss it"}, "updatedAt": stamp},
+                            {"id": "s2", "data": {"task": "Not yet.", "status": "pending"}, "updatedAt": stamp}],
+            "takes": [{"id": font.id, "data": {"action": "take", "by": "Yash", "session": "session_x"},
+                       "updatedAt": "2026-10-18T00:00:00Z"}]}
+    out2 = sync(s3, page, "2026-10-17T00:00:00Z", False, today=day, extras=False)
+    filed = {t.title: t for t in s3.fetch()}
+    ops = {(o["collection"], o["doc_id"]): o for o in out2["store"]}
+    if "Check the menu on a phone." not in filed or "Add a tooltip." not in filed or "Not yet." in filed or \
+            filed["Check the menu on a phone."].prio_by.split(" ")[0] != "Caleb" or \
+            filed["Add a tooltip."].filed_on != "claude/tip" or ops.get(("new", "n1"), {}).get("op") != "delete" or \
+            ops.get(("suggestions", "s1"), {}).get("data", {}).get("status") != "filed" or \
+            find(s3.fetch(), font.id).taken_by != "Shombith":
+        bad.append(f"page filings, approvals or a session start were handled wrongly: {out2['applied']} {out2['skipped']}")
+    s3.ensure_milestones()
+    s3.write_milestone("M1", "Closed testing", "co-op retention", "every vessel", "2026-12-01")
+    s3.write_milestone("M6", "Game 2", "", "design")
+    ms = {m["key"]: m for m in s3.milestones()}
+    if ms["M1"]["gate"] != "co-op retention" or ms["M1"]["due"] != "2026-12-01" or ms["M6"]["name"] != "Game 2" or \
+            ms["M1"]["scope"] != "every vessel":
+        bad.append(f"a milestone edited on the page did not round-trip through GitHub: {ms.get('M1')}")
 
     # migrate: the old mirror's issues are updated in place, never created twice; then nothing more to do
     api4 = FakeApi()
