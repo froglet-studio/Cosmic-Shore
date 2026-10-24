@@ -8,12 +8,9 @@ short listed set of substitutions, into a C++ harness that renders frames to PNG
     python3 Tools/Build/lattice_preview.py --out DIR       # render into DIR
     python3 Tools/Build/lattice_preview.py --check         # compile + assert only (no PNGs)
 
-What it proves for the frosted hex lattice (rev 11 option H, section 62): the include and the fragment compile
-(-Wall -Werror); about two outlines per cell across the frame (Amoebius's radius 34, inset 0.92); the edge fade
-empties the corners; still is still; a hidden window draws nothing; the frost is opaque and is the world tinted
-halfway to navy, and a panel material draws none; the ring (H2) ripples outward at its set speed; the tide (H4)
-lights a band that moves; grow on open (H6) starts empty and ends on the still frame; the vertex-alpha reveal is
-a disc. The rim (ElementRim.shader) and the presence orb and party bonds (Presence.shader,
+What it proves: the include and the fragment compile (-Wall -Werror); pulses appear only when lines carry them;
+reveal 0 shows nothing, reveal 1 equals the plain draw, reveal 0.5 shows a disc; the far layer adds coverage; the
+edge fade empties the corners. The rim (ElementRim.shader) and the presence orb and party bonds (Presence.shader,
 Bond.shader on UIPresence.cginc, section 45.4) go through the same translation: the orb draws exactly _Online dots
 on its orbit and turns them, a bond lights only in its member's colour and only for a seated member, the bond
 dashes flow outward, and the molecule's bond stays on its line. What it does not: Unity's own shader compile (no editor here) - the UI plumbing
@@ -39,7 +36,6 @@ BOND_SHADER = os.path.join(SHADER_DIR, "Bond.shader")
 
 # The whole translation: HLSL out-params to C++ references, and the vector constructor spellings.
 SUBS = [(r"\bout float\b", "float&"),
-        (r"\bout float2\b", "float2&"),
         (r"\bfloat2\(", "mk2("),
         (r"\bfloat3\(", "mk3("),
         (r"\bfloat4\(", "mk4(")]
@@ -66,10 +62,6 @@ static inline float smoothstep(float a, float b, float x) { float t = saturate((
 static inline float dot(float2 a, float2 b) { return a.x * b.x + a.y * b.y; }
 static inline float length(float2 a) { return std::sqrt(dot(a, a)); }
 static inline float floor_(float x) { return std::floor(x); }
-static inline float2 floor_(float2 v) { return (float2){std::floor(v.x), std::floor(v.y)}; }
-static inline float2 habs(float2 v) { return (float2){v.x < 0 ? -v.x : v.x, v.y < 0 ? -v.y : v.y}; }
-static inline float2 hmax(float2 v, float m) { return (float2){v.x > m ? v.x : m, v.y > m ? v.y : m}; }
-static inline float exp_(float x) { return std::exp(x); }
 static inline float sin_(float x) { return std::sin(x); }
 static inline float3 lerp(float3 a, float3 b, float t) { return a + (b - a) * t; }
 static inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
@@ -85,20 +77,14 @@ static inline float4 tex2D(sampler2D, float2) { return (float4){1, 1, 1, 1}; }
 #define sin sin_
 #define atan2 atan2_
 #define cos cos_
-#define exp exp_
 """
 
 UNIFORMS = r"""
-struct v2f { float4 vertex; float4 color; float2 texcoord; float4 worldPosition; float4 motion; float4 screenPos; };
+struct v2f { float4 vertex; float4 color; float2 texcoord; float4 worldPosition; };
 float4 _Time;
-fixed4 _Color, _FrostTint, _LineColor, _GlowColor;
-float _Frost, _FrostAmount, _LineAlpha, _LineWidth, _HexRadius, _HexInset, _FadeStart, _Motion;
-float _RingAlpha, _RingWavelength, _RingPeriod, _TideAlpha, _TidePeriod, _TideWidth, _GrowSeconds, _Reveal;
-float4 g_world = (float4){1, 0, 0, 1};
-static inline float4 tex2D_world(int, float2) { return g_world; }
-#define tex2D tex2D_world
-int _FrogletBackdropBlur;
-float _FrogletBackdropBlurOn;
+fixed4 _Color, _LineColor, _ChargeColor, _MassColor, _SpaceColor, _TimeColor;
+float _LineWidth, _NodeSize, _NearSpacing, _NearAlpha, _NearDrift, _FarSpacing, _FarAlpha, _FarDrift;
+float _PulseDensity, _PulseSpeed, _PulseRepeat, _PulseLength, _TwinkleDensity, _FadeStart, _Reveal;
 """
 
 MAIN = r"""
@@ -109,111 +95,88 @@ MAIN = r"""
 #undef sin
 #undef atan2
 #undef cos
-#undef tex2D
-static const int SW = 1920, SH = 1080;
+static float4 col(float r, float g, float b) { return (float4){r, g, b, 1}; }
 static void defaults() {
-    _Color = (float4){1, 1, 1, 1}; _Frost = 1; _FrostTint = (float4){0, 0.004f, 0.039f, 1}; _FrostAmount = 0.5f;
-    _LineColor = (float4){0.345f, 0.4f, 0.69f, 1}; _LineAlpha = 0.4f; _LineWidth = 1; _HexRadius = 34; _HexInset = 0.92f;
-    _FadeStart = 0.6f; _Motion = 0; _GlowColor = (float4){0.498f, 0.847f, 1, 1}; _RingAlpha = 0.85f; _RingWavelength = 862;
-    _RingPeriod = 5.2f; _TideAlpha = 0.18f; _TidePeriod = 14; _TideWidth = 0.16f; _GrowSeconds = 1.2f; _Reveal = 0;
-    _FrogletBackdropBlurOn = 0; g_world = (float4){1, 0, 0, 1};
+    _Color = col(1, 1, 1); _LineColor = col(0.263f, 0.298f, 0.537f);
+    _ChargeColor = col(1, 0.827f, 0.302f); _MassColor = col(0.498f, 0.659f, 1);
+    _SpaceColor = col(0.690f, 0.486f, 1); _TimeColor = col(0.373f, 0.941f, 0.784f);
+    _LineWidth = 1.1f; _NodeSize = 2.4f; _NearSpacing = 130; _NearAlpha = 0.42f; _NearDrift = 55;
+    _FarSpacing = 72; _FarAlpha = 0.2f; _FarDrift = 90; _PulseDensity = 0.22f; _PulseSpeed = 240;
+    _PulseRepeat = 1400; _PulseLength = 120; _TwinkleDensity = 0.05f; _FadeStart = 0.55f; _Reveal = 1;
 }
-// One pixel of a full-screen 1920 x 1080 backdrop; motion: 0 = none (the material's), else the motion + 1.
-static float4 at(float x, float y, float t, float motion, float opened, float alpha = 1) {
+// Render W x H pixels of a 1920 x 1080 canvas; returns stats and optionally writes a PPM over the menu's deep blue.
+struct Stats { double coverage; double elementPixels; double cornerAlpha; double centreAlpha; };
+static Stats render(int W, int H, float t, float vertexAlpha, const char* ppm) {
     _Time = (float4){t / 20, t, t * 2, t * 3};
-    v2f IN;
-    IN.color = (float4){1, 1, 1, alpha};
-    IN.texcoord = (float2){x / SW, y / SH};
-    IN.worldPosition = (float4){x, y, 0, 1};
-    IN.motion = (float4){motion, opened, (float)SW, (float)SH};
-    IN.screenPos = (float4){x / SW, y / SH, 0, 1};
-    return frag(IN);
-}
-// The mean alpha over a coarse sample of the frame, its centre and its corners.
-struct Stats { double mean, centre, corner; };
-static Stats scan(float t, float motion, float opened, float alpha = 1) {
-    Stats s = {0, 0, 0}; int n = 0, nc = 0, nk = 0;
-    for (int y = 1; y < SH; y += 3)
-        for (int x = 1; x < SW; x += 3) {
-            float a = at(x + 0.5f, y + 0.5f, t, motion, opened, alpha).w;
-            s.mean += a; n++;
-            float dx = x / (float)SW - 0.5f, dy = y / (float)SH - 0.5f;
-            if (dx * dx + dy * dy < 0.01f) { s.centre += a; nc++; }
-            if (dx * dx + dy * dy > 0.42f) { s.corner += a; nk++; }
+    FILE* f = ppm ? std::fopen(ppm, "wb") : nullptr;
+    if (f) std::fprintf(f, "P6 %d %d 255\n", W, H);
+    Stats s = {0, 0, 0, 0};
+    int corner = 0, centre = 0;
+    for (int y = 0; y < H; y++)
+        for (int x = 0; x < W; x++) {
+            v2f IN;
+            float u = (x + 0.5f) / W, v = (y + 0.5f) / H;
+            IN.texcoord = (float2){u, v};
+            IN.worldPosition = (float4){u * 1920, v * 1080, 0, 1};
+            IN.color = (float4){1, 1, 1, vertexAlpha};
+            float4 c = frag(IN);
+            s.coverage += c.w;
+            float sat = std::fmax(c.x, std::fmax(c.y, c.z)) - std::fmin(c.x, std::fmin(c.y, c.z));
+            if (c.w > 0.05f && sat > 0.35f) s.elementPixels += 1;
+            float du = u - 0.5f, dv = v - 0.5f;
+            if (du * du + dv * dv > 0.36f) { s.cornerAlpha += c.w; corner++; }
+            if (du * du + dv * dv < 0.01f) { s.centreAlpha += c.w; centre++; }
+            if (f) {
+                float bg[3] = {0.008f, 0.016f, 0.10f};
+                float rgb[3] = {c.x, c.y, c.z};
+                unsigned char px[3];
+                for (int k = 0; k < 3; k++) {
+                    float o = bg[k] * (1 - c.w) + rgb[k] * c.w;
+                    px[k] = (unsigned char)(o < 0 ? 0 : (o > 1 ? 255 : o * 255));
+                }
+                std::fwrite(px, 1, 3, f);
+            }
         }
-    s.mean /= n; s.centre /= nc ? nc : 1; s.corner /= nk ? nk : 1;
+    if (f) std::fclose(f);
+    s.coverage /= (double)W * H; s.elementPixels /= (double)W * H;
+    s.cornerAlpha /= corner ? corner : 1; s.centreAlpha /= centre ? centre : 1;
     return s;
 }
-// Line crossings along a row (alpha rising above 0.1).
-static int crossings(float y, float t) {
-    int c = 0; bool on = false;
-    for (int x = 0; x < SW; x++) { bool l = at(x + 0.5f, y, t, 0, 0).w > 0.1f; if (l && !on) c++; on = l; }
-    return c;
-}
-// Where the ring is brightest along the centre row, right of the centre (canvas units from the centre).
-static float ringRadius(float t) {
-    float best = -1; int bx = 0;
-    for (int x = SW / 2; x < SW; x++) {
-        float4 c = at(x + 0.5f, SH / 2 + 0.5f, t, 2, 0);
-        float b = c.w * c.z;      // the glow is light blue: alpha times blue on the lines
-        if (b > best) { best = b; bx = x; }
-    }
-    return bx - SW / 2.0f;
-}
-int main() {
+int main(int argc, char** argv) {
+    const char* out = argc > 1 ? argv[1] : nullptr;
+    char path[1024];
+    auto P = [&](const char* name) -> const char* { if (!out) return nullptr; std::snprintf(path, sizeof path, "%s/%s", out, name); return path; };
+    defaults();
+    Stats a = render(480, 270, 3.0f, 1.0f, P("lattice_t3.ppm"));
+    Stats b = render(480, 270, 9.0f, 1.0f, P("lattice_t9.ppm"));
+    Stats half = render(480, 270, 3.0f, 0.5f, P("lattice_reveal_half.ppm"));
+    Stats none = render(480, 270, 3.0f, 0.0f, nullptr);
+    _PulseDensity = 0; _TwinkleDensity = 0;
+    Stats calm = render(480, 270, 3.0f, 1.0f, nullptr);
+    defaults(); _FarAlpha = 0;
+    Stats nofar = render(480, 270, 3.0f, 1.0f, nullptr);
+    defaults(); _Reveal = 0;
+    Stats plain = render(480, 270, 3.0f, 1.0f, nullptr);
+    std::printf("full %.4f el %.5f corner %.4f centre %.4f | t9 el %.5f | half %.4f centre %.4f corner %.4f | none %.5f | "
+                "calm el %.5f | nofar %.4f | plain %.4f\n", a.coverage, a.elementPixels, a.cornerAlpha, a.centreAlpha,
+                b.elementPixels, half.coverage, half.centreAlpha, half.cornerAlpha, none.coverage, calm.elementPixels,
+                nofar.coverage, plain.coverage);
     int bad = 0;
     auto need = [&](bool ok, const char* what) { if (!ok) { std::printf("FAIL: %s\n", what); bad++; } };
-
-    defaults();                      // frost off (no live blur): hexagons only
-    Stats still = scan(3, 0, 0);
-    int cross = crossings(510.5f, 3);   // y = 510 is a row of cell centres (rows 1.5 r = 51 apart)
-    float4 gap = at(SW / 2 + 0.5f, SH / 2 + 0.5f + 17, 3, 0, 0);
-    std::printf("hex: mean %.4f centre %.4f corner %.4f | crossings %d along a row of cell centres | between lines a %.3f\n",
-                still.mean, still.centre, still.corner, cross, gap.w);
-    need(still.mean > 0.01 && still.mean < 0.2, "the hexagons cover a sensible share of the frame");
-    need(cross >= 50 && cross <= 80, "about two outlines per cell across 1920 units (Amoebius's radius 34, inset 0.92)");
-    need(still.corner < still.centre * 0.6, "the edge fade empties the corners");
-    Stats later = scan(9, 0, 0);
-    need(std::fabs(later.mean - still.mean) < 1e-6, "still is still");
-    need(scan(3, 0, 0, 0).mean < 1e-6, "a hidden window (alpha 0) draws nothing");
-
-    _FrogletBackdropBlurOn = 1;      // the blur is live: frosted glass under the hexagons
-    float4 f = at(SW / 2 + 0.5f, SH / 2 + 17.5f, 3, 0, 0);
-    std::printf("frost: a %.3f rgb %.3f %.3f %.3f (world red, tint navy, amount 0.5)\n", f.w, f.x, f.y, f.z);
-    need(f.w > 0.99f, "the frost is opaque inside the window");
-    need(std::fabs(f.x - 0.5f) < 0.06f && f.z < 0.2f, "the frost is the world tinted halfway to navy");
-    _Frost = 0; float4 nf = at(SW / 2 + 0.5f, SH / 2 + 17.5f, 3, 0, 0); _Frost = 1;
-    need(nf.w < 0.05f, "a panel material (_Frost 0) draws no frost");
-    _FrogletBackdropBlurOn = 0;
-
-    // H2: the ring moves out at wavelength / period canvas units per second.
-    float r0 = ringRadius(1.0f), r1 = ringRadius(2.0f);
-    float moved = r1 - r0; if (moved < 0) moved += 862;
-    std::printf("ring: radius %.0f -> %.0f (moved %.0f, want ~%.0f)\n", r0, r1, moved, 862 / 5.2f);
-    need(std::fabs(moved - 862 / 5.2f) < 60, "the ring ripples outward at its set speed");
-    Stats ring = scan(1, 2, 0);
-    need(ring.mean > still.mean, "the ring brightens the lines it passes");
-
-    // H4: the tide lights a band that crosses the rect.
-    _FrogletBackdropBlurOn = 1; g_world = (float4){0, 0, 0, 1};
-    float tc = 0;                                  // at t = 0 the band is at the middle
-    float mid = at(300.5f, SH * 0.5f + 17, tc, 3, 0).z, low = at(300.5f, SH * 0.08f + 17, tc, 3, 0).z;
-    float midLater = at(300.5f, SH * 0.5f + 17, 3.5f, 3, 0).z;
-    std::printf("tide: blue at middle %.3f, near the bottom %.3f, middle a quarter-period later %.3f\n", mid, low, midLater);
-    need(mid > low + 0.05f, "the tide lights its band");
-    need(mid > midLater + 0.03f, "the tide band moves");
-    _FrogletBackdropBlurOn = 0; g_world = (float4){1, 0, 0, 1};
-
-    // H6: grow on open - nothing at the moment of opening, the full still frame once _GrowSeconds have passed.
-    Stats g0 = scan(10.0f, 4, 10.0f), g1 = scan(12.0f, 4, 10.0f);
-    std::printf("grow: at open %.4f, %.1f s later %.4f (still %.4f)\n", g0.mean, 2.0f, g1.mean, still.mean);
-    need(g0.mean < still.mean * 0.1, "grow starts empty");
-    need(std::fabs(g1.mean - still.mean) < still.mean * 0.02, "grow ends on the still frame and holds");
-
-    // The vertex-alpha reveal still crystallises the hexagons in.
-    _Reveal = 1;
-    Stats half = scan(3, 0, 0, 0.5f);
-    need(half.corner < 1e-3 && half.centre > 0.005, "reveal 0.5 is a disc: hexagons at the centre, none at the corners");
+    need(a.coverage > 0.02 && a.coverage < 0.6, "the lattice covers a sensible share of the panel");
+    need(a.elementPixels > 0.0005, "element energy (pulses / twinkles) is visible");
+    need(calm.elementPixels < a.elementPixels * 0.2, "with no pulses and no twinkles the element colour goes away");
+    need(none.coverage < 1e-4, "reveal 0 draws nothing");
+    need(std::fabs(plain.coverage - a.coverage) < a.coverage * 0.02, "reveal 1 equals the plain draw");
+    need(half.centreAlpha > 0.02 && half.cornerAlpha < 1e-3, "reveal 0.5 is a disc: lattice at the centre, none at the corners");
+    need(nofar.coverage < a.coverage, "the far layer adds coverage");
+    need(a.cornerAlpha < a.centreAlpha * 0.5, "the edge fade empties the corners");
+    // The shipped materials since 2026-10-24: drift 0 and no pulses or twinkles hold the lattice perfectly still.
+    defaults(); _NearDrift = 0; _FarDrift = 0; _PulseDensity = 0; _TwinkleDensity = 0;
+    Stats still3 = render(480, 270, 3.0f, 1.0f, nullptr), still9 = render(480, 270, 9.0f, 1.0f, nullptr);
+    std::printf("still: t3 %.6f t9 %.6f el %.5f\n", still3.coverage, still9.coverage, still3.elementPixels);
+    need(still3.coverage > 0.02 && still3.coverage == still9.coverage, "drift 0 holds the lattice still (and still draws it)");
+    need(still3.elementPixels == 0, "with no pulses and no twinkles there is no element colour at all");
     return bad ? 1 : 0;
 }
 """
@@ -539,6 +502,13 @@ def main():
     sys.stdout.write(r.stdout)
     if r.returncode:
         raise SystemExit("FAIL: the lattice dials do not drive as asserted")
+    if out:
+        from PIL import Image
+        for name in ("lattice_t3", "lattice_t9", "lattice_reveal_half"):
+            ppm = os.path.join(out, name + ".ppm")
+            Image.open(ppm).save(os.path.join(out, name + ".png"))
+            os.remove(ppm)
+        print(f"rendered to {out}")
     build_rim(work)
     build_presence(work)
     print("OK: the lattice, the rim, the presence orb and the bonds compile and their dials drive")

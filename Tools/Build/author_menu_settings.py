@@ -418,9 +418,6 @@ def prompt_body(ctx):
 def build_view():
     root = N("root", VIEW, STRETCH)
     image_node(root, "Dim", "Dim", STRETCH, "SurfaceBlack", alpha=0.82, raycast=True)
-    # Rev 11 option H (Docs/MENU_REDESIGN_B.md section 62, the owner 2026-10-24): frosted glass with the hex lattice
-    # over the whole screen behind the window; the dim under it shows when the frost is off (Very Low).
-    root.child(M.window_lattice_node("Backdrop"))
     win = root.child(N("Window", "Window", R((0.5, 0.5), None, (0, -42), (WIN_W, WIN_H))))
     win.add("cg", 225, canvas_group(True))
     fill = win.child(N("Window/Fill", "Fill", STRETCH))

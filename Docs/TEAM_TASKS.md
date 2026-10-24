@@ -26,13 +26,6 @@ A task a branch still writes below the marker in the old format is filed as a ti
 - **Added:** 2026-10-24 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md 61.1; Tools/Build/author_ui_lattice.py PRESENCE
 
-### T-20261024-345b · open · test · Menu_Main
-- **Task:** Play-test rev 11 (frosted glass + Amoebius hex lattice) on claude/new-session-76hnyc: windows blur the world behind under faint hexagons, each open picks a random motion (ring / tide / grow), the blur pass runs only while a window is open and is off on Very Low; note the frame cost on a phone
-- **Done when:** Every item in Docs/UNITY_VERIFICATION_CHECKLIST.md 'Rev 11: frosted glass' is ticked or filed as a bug, and the phone frame cost is noted in Docs/MENU_REDESIGN_B.md section 62
-- **Who can take it:** Shombith (Menu_Main owner) or Yash (offered)
-- **Added:** 2026-10-24 by a Claude session (`claude/new-session-76hnyc`)
-- **See:** Docs/MENU_REDESIGN_B.md section 62
-
 ### T-20261016-cfc3 · done · decision · Vessel HUD
 - **Task:** Review the rev-3 lava-lamp ability row (element-coloured plates/edges/keycaps; petals untouched) against the HUD's colour vocabulary - Mass blue / Time teal sit near the petal ladder's blue / green; retune AbilityLockupStyle colours or lavaAlpha if they compete
 - **Done when:** Keep / retune / turn off decided on AbilityLockupStyle.asset

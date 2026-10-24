@@ -394,21 +394,6 @@ namespace CosmicShore.Engine.Rendering
     /// <summary>URP's drawing helpers (UnityEngine.Rendering.Universal.RenderingUtils).</summary>
     public static class RenderingUtils
     {
-        /// <summary>URP's RenderingUtils.ReAllocateHandleIfNeeded: (re)creates <paramref name="handle"/>'s texture when it
-        /// is missing or its size or format no longer match. True when it allocated.</summary>
-        public static bool ReAllocateHandleIfNeeded(ref RTHandle handle, in RenderTextureDescriptor descriptor,
-            FilterMode filterMode = FilterMode.Point, TextureWrapMode wrapMode = TextureWrapMode.Repeat,
-            int anisoLevel = 1, float mipMapBias = 0, string name = "")
-        {
-            var d = handle?.rt?.descriptor;
-            if (handle?.rt != null && d.HasValue && d.Value.width == descriptor.width && d.Value.height == descriptor.height
-                && d.Value.colorFormat == descriptor.colorFormat)
-                return false;
-            var rt = new RenderTexture(descriptor) { name = name, filterMode = filterMode, wrapMode = wrapMode };
-            handle = new RTHandle { rt = rt, nameID = rt, name = name };
-            return true;
-        }
-
         public static DrawingSettings CreateDrawingSettings(ShaderTagId shaderTagId, UniversalRenderingData renderingData,
             UniversalCameraData cameraData, UniversalLightData lightData, SortingCriteria sortingCriteria)
             => new(shaderTagId, sortingCriteria) { mainLightIndex = lightData?.mainLightIndex ?? -1 };
@@ -524,15 +509,6 @@ namespace CosmicShore.Engine.Rendering.RenderGraphModule
         }
 
         public TextureHandle CreateTexture(TextureHandle texture) => CreateTexture(GetTextureDesc(texture));
-
-        /// <summary>Brings a texture the caller keeps across frames (an RTHandle) into the graph.</summary>
-        public TextureHandle ImportTexture(RTHandle rt)
-        {
-            int id = _nextTexture++;
-            var d = rt?.rt != null ? new TextureDesc(rt.rt.width, rt.rt.height) { name = rt.name } : new TextureDesc(1, 1);
-            _descs[id] = d;
-            return new TextureHandle(id, rt);
-        }
 
         public TextureDesc GetTextureDesc(TextureHandle texture)
             => _descs.TryGetValue(texture.Id, out var d) ? d : new TextureDesc(1, 1);

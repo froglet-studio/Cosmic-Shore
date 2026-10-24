@@ -177,22 +177,10 @@ def grid_node(key, name="Lattice"):
     return n
 
 
-BACKDROP_MOTION_SCRIPT = _lattice_guid("backdrop_motion_cs")     # KitBackdropMotion.cs
-# Rev 11 option H (Docs/MENU_REDESIGN_B.md section 62, the owner 2026-10-24: "randomize H2, 4, 6 everywhere"): each
-# open picks the ring (1), the tide (2) or the grow (3), the BackdropMotion codes, and keeps the frosted glass live.
-BACKDROP_MOTIONS = (1, 2, 3)
-
-
-def backdrop_motion_body():
-    return "  motions:\n" + "".join(f"  - {m}\n" for m in BACKDROP_MOTIONS) + "  frosted: 1\n"
-
-
 def window_lattice_node(key, name="Lattice", rect=None):
-    """A whole window's backdrop: frosted glass with Amoebius's hexagons (Lattice_Window.mat), and KitBackdropMotion
-    picking the ring, the tide or the grow each time the window opens."""
+    """The two-layer lattice for a whole window's backdrop (Lattice_Window.mat)."""
     n = K.Node(key, name, rect or K.STRETCH)
-    n.add("cr", 222, K.canvas_renderer()).add("img", 114, lattice_image(LATTICE_WINDOW_MAT)) \
-        .add("bm", 114, lambda ctx, go: K.mono(go, BACKDROP_MOTION_SCRIPT, backdrop_motion_body()))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, lattice_image(LATTICE_WINDOW_MAT))
     return n
 
 

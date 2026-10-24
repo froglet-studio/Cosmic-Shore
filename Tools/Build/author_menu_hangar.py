@@ -786,29 +786,8 @@ def stage_fx(clip):
     return fx
 
 
-# Rev 11 option H (Docs/MENU_REDESIGN_B.md section 62, the owner 2026-10-24: "add the frosted backdrop to Hangar and
-# Settings too"): the hub windows' three layers behind the content - the nav band dimmed, a dark veil under the nav,
-# then the frosted hex lattice (KitBackdropMotion picks its motion on each open). Same rects and alpha as the Arena.
-BACKDROP_RECT = R((0, 0), (1, 1), (0, -42), (0, -84))
-BACKDROP_ALPHA = 0.75
-
-
-def dim_node(parent, key, name, r, alpha):
-    n = parent.child(N(key, name, r))
-    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.tok("SurfaceBlack", alpha))) \
-        .add("th", 114, K.themed("SurfaceBlack", alpha))
-    return n
-
-
 def build_view(row_guid):
     root = N("root", "HangarView", STRETCH)
-    dim_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), 0.75)
-    dim_node(root, "Backdrop", "Backdrop", BACKDROP_RECT, BACKDROP_ALPHA)
-    # menu_b_motion.window_lattice_node, built with this generator's own Node class (menu_b_motion loads its own copy
-    # of the kit module, and emit_node tells nodes from instances by class).
-    lat = root.child(N("BackdropLattice", "BackdropLattice", BACKDROP_RECT))
-    lat.add("cr", 222, K.canvas_renderer()).add("img", 114, M.lattice_image(M.LATTICE_WINDOW_MAT)) \
-        .add("bm", 114, lambda ctx, go: K.mono(go, M.BACKDROP_MOTION_SCRIPT, M.backdrop_motion_body()))
 
     # ---- header ----
     header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))

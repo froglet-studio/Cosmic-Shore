@@ -1,17 +1,9 @@
-// The frosted hex lattice (Docs/MENU_REDESIGN_B.md §62, rev 11 option H): replaces the line lattice behind style-B
-// panels and windows. UGUI-compatible (UI/Default structure: stencil masking, RectMask2D clip, vertex colour). Draw
-// it on an Image with no sprite: the UVs then span the rect, which the edge fade, the tide and the reveal use.
-//
-// Three layers, one pass:
-//   1. Frost: the world behind the menu, blurred (UIBackdropBlur's _FrogletBackdropBlur, sampled at the pixel's screen
-//      position) and tinted toward _FrostTint. Only while that texture is live (_FrogletBackdropBlurOn) and _Frost is
-//      on; otherwise this layer draws nothing and whatever is under the Image (the window's dark veil) shows.
-//   2. Hexagons: Amoebius's LATTICE backdrop, one inset outline per cell, faint, fading toward the rect's corners.
-//   3. Motion, picked per Image by KitBackdropMotion through UV1 (x: motion + 1, y: the time the window opened;
-//      no data: _Motion) and UV2 (the rect's size, for the ring): 0 still, 1 the centre ring (H2), 2 the tide (H4),
-//      3 grow on open (H6).
-// Animated by _Time alone, so it never dirties a canvas. With _Reveal on, the vertex alpha (a CanvasGroup fade) also
-// grows the hexagons out from the centre. The maths is UILattice.cginc.
+// The living crystal lattice (Docs/MENU_REDESIGN_B.md §45.2): replaces the blueprint grid (kit_grid) behind
+// style-B panels and windows. UGUI-compatible (UI/Default structure: stencil masking, RectMask2D clip, vertex
+// colour). Draw it on an Image with no sprite: the UVs then span the rect, which the edge fade and the reveal use.
+// Animated by _Time alone, so it never dirties a canvas. Two layers: a far one drifting slowly, a near one
+// carrying the element energy. With _Reveal on, the vertex alpha (a CanvasGroup fade) grows the lattice out
+// from the centre instead of fading it - the window crystallises in. The maths is UILattice.cginc.
 Shader "CosmicShore/UI/Lattice"
 {
     Properties
@@ -19,31 +11,34 @@ Shader "CosmicShore/UI/Lattice"
         [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1,1,1,1)
 
-        [Header(Frost)]
-        [Toggle] _Frost ("Frosted glass (the blurred world behind)", Float) = 1
-        _FrostTint ("Frost tint", Color) = (0, 0.004, 0.039, 1)
-        _FrostAmount ("Tint over the blurred world", Range(0, 1)) = 0.5
+        [Header(Lattice)]
+        _LineColor ("Line Colour", Color) = (0.263, 0.298, 0.537, 1)
+        _LineWidth ("Line Width (canvas units)", Range(0.3, 4)) = 1.1
+        _NodeSize ("Node Size (canvas units)", Range(0.5, 8)) = 2.4
 
-        [Header(Hexagons)]
-        _LineColor ("Line colour", Color) = (0.345, 0.4, 0.69, 1)
-        _LineAlpha ("Line alpha", Range(0, 1)) = 0.4
-        _LineWidth ("Line width (canvas units)", Range(0.3, 4)) = 1
-        _HexRadius ("Cell radius, centre to corner (canvas units)", Float) = 34
-        _HexInset ("Outline at this fraction of the cell", Range(0.5, 1)) = 0.92
-        _FadeStart ("Edge fade starts (0 centre, 1 corner)", Range(0, 1)) = 0.6
+        [Header(Near layer)]
+        _NearSpacing ("Spacing", Float) = 130
+        _NearAlpha ("Alpha", Range(0, 1)) = 0.42
+        _NearDrift ("Seconds per lattice step", Float) = 55
 
-        [Header(Motion)]
-        _Motion ("Motion without per-Image data (0 still, 1 ring, 2 tide, 3 grow)", Float) = 0
-        _GlowColor ("Ring and tide light", Color) = (0.498, 0.847, 1, 1)
-        _RingAlpha ("Ring line alpha", Range(0, 1)) = 0.85
-        _RingWavelength ("Ring wavelength (canvas units)", Float) = 862
-        _RingPeriod ("Ring period (seconds)", Float) = 5.2
-        _TideAlpha ("Tide light", Range(0, 1)) = 0.18
-        _TidePeriod ("Tide period (seconds)", Float) = 14
-        _TideWidth ("Tide band half-width (0-1 of the rect)", Range(0.02, 0.6)) = 0.16
-        _GrowSeconds ("Grow on open (seconds)", Float) = 1.2
+        [Header(Far layer)]
+        _FarSpacing ("Spacing", Float) = 72
+        _FarAlpha ("Alpha (0 skips the layer)", Range(0, 1)) = 0.2
+        _FarDrift ("Seconds per lattice step", Float) = 90
+
+        [Header(Energy)]
+        _PulseDensity ("Lines carrying pulses", Range(0, 1)) = 0.22
+        _PulseSpeed ("Pulse speed (units per second)", Float) = 240
+        _PulseRepeat ("Distance between pulses", Float) = 1400
+        _PulseLength ("Pulse length", Float) = 120
+        _TwinkleDensity ("Nodes that twinkle", Range(0, 1)) = 0.05
+        _ChargeColor ("Charge", Color) = (1, 0.827, 0.302, 1)
+        _MassColor ("Mass", Color) = (0.498, 0.659, 1, 1)
+        _SpaceColor ("Space", Color) = (0.690, 0.486, 1, 1)
+        _TimeColor ("Time", Color) = (0.373, 0.941, 0.784, 1)
 
         [Header(Shape)]
+        _FadeStart ("Edge fade starts (0 centre, 1 corner)", Range(0, 1)) = 0.55
         [Toggle] _Reveal ("Crystallise in with the vertex alpha", Float) = 1
 
         _StencilComp ("Stencil Comparison", Float) = 8
@@ -88,6 +83,7 @@ Shader "CosmicShore/UI/Lattice"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            // 3.0: two lattice layers exceed the shader-model-2 instruction limits.
             #pragma target 3.0
 
             #include "UnityCG.cginc"
@@ -99,11 +95,9 @@ Shader "CosmicShore/UI/Lattice"
 
             struct appdata_t
             {
-                float4 vertex    : POSITION;
-                float4 color     : COLOR;
-                float2 texcoord  : TEXCOORD0;
-                float2 texcoord1 : TEXCOORD1;
-                float2 texcoord2 : TEXCOORD2;
+                float4 vertex   : POSITION;
+                float4 color    : COLOR;
+                float2 texcoord : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -113,24 +107,18 @@ Shader "CosmicShore/UI/Lattice"
                 fixed4 color         : COLOR;
                 float2 texcoord      : TEXCOORD0;
                 float4 worldPosition : TEXCOORD1;
-                float4 motion        : TEXCOORD2;
-                float4 screenPos     : TEXCOORD3;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
             fixed4 _Color;
             float4 _ClipRect;
-            float _Frost, _FrostAmount;
-            fixed4 _FrostTint;
             fixed4 _LineColor;
-            float _LineAlpha, _LineWidth, _HexRadius, _HexInset, _FadeStart;
-            float _Motion;
-            fixed4 _GlowColor;
-            float _RingAlpha, _RingWavelength, _RingPeriod, _TideAlpha, _TidePeriod, _TideWidth, _GrowSeconds;
-            float _Reveal;
-            // Set by UIBackdropBlur (Assets/_Scripts/UI/Kit/UIBackdropBlur.cs): the blurred world and whether it is live.
-            sampler2D _FrogletBackdropBlur;
-            float _FrogletBackdropBlurOn;
+            float _LineWidth, _NodeSize;
+            float _NearSpacing, _NearAlpha, _NearDrift;
+            float _FarSpacing, _FarAlpha, _FarDrift;
+            float _PulseDensity, _PulseSpeed, _PulseRepeat, _PulseLength, _TwinkleDensity;
+            fixed4 _ChargeColor, _MassColor, _SpaceColor, _TimeColor;
+            float _FadeStart, _Reveal;
 
             v2f vert(appdata_t v)
             {
@@ -141,101 +129,45 @@ Shader "CosmicShore/UI/Lattice"
                 OUT.vertex = UnityObjectToClipPos(OUT.worldPosition);
                 OUT.texcoord = v.texcoord;
                 OUT.color = v.color * _Color;
-                OUT.motion = float4(v.texcoord1, v.texcoord2);
-                OUT.screenPos = ComputeScreenPos(OUT.vertex);
                 return OUT;
             }
 
             fixed4 frag(v2f IN) : SV_Target
             {
-                // A hidden window (its CanvasGroup at alpha 0) draws nothing: stop before the maths
-                // (Docs/MENU_REDESIGN_B.md §46.3).
+                // A hidden window (its CanvasGroup at alpha 0) draws nothing: stop before the maths. The output
+                // there is already transparent; this only stops paying for it (Docs/MENU_REDESIGN_B.md §46.3).
                 if (IN.color.a < 0.004) return float4(0.0, 0.0, 0.0, 0.0);
+                // Canvas-space position: the lattice keeps its size whatever the panel's.
                 float2 p = IN.worldPosition.xy;
                 float t = _Time.y;
 
-                // The motion this Image wears: KitBackdropMotion writes motion + 1 (0 = no data, use the material's).
-                float motion = IN.motion.x > 0.5 ? floor(IN.motion.x - 0.5) : _Motion;
-                float opened = IN.motion.y;
+                float4 near = LatticeLayer(p, t, _NearSpacing, _NearDrift, _LineWidth, _NodeSize,
+                                           _PulseDensity, _PulseSpeed, _PulseRepeat, _PulseLength, _TwinkleDensity,
+                                           _LineColor.rgb, _ChargeColor.rgb, _MassColor.rgb, _SpaceColor.rgb, _TimeColor.rgb);
+                float4 sum = near * _NearAlpha;
+                if (_FarAlpha > 0.0)
+                {
+                    float4 far = LatticeLayer(p, t, _FarSpacing, _FarDrift, _LineWidth * 0.8, _NodeSize * 0.7,
+                                              0.0, 0.0, 1.0, 0.0, 0.0,
+                                              _LineColor.rgb, _ChargeColor.rgb, _MassColor.rgb, _SpaceColor.rgb, _TimeColor.rgb);
+                    sum += far * _FarAlpha;
+                }
 
-                // r: 0 at the rect's centre, 1 at its corners. The ring is measured in canvas units from the centre.
-                float2 fromCentre = (IN.texcoord - 0.5) * 2.0;
-                float r = length(fromCentre) * 0.70710678;
+                // r: 0 at the centre, 1 at the corners.
+                float r = length((IN.texcoord - 0.5) * 2.0) * 0.70710678;
                 float fade = 1.0 - smoothstep(_FadeStart, 1.0, r);
-
-                float2 cell;
-                float edge = HexEdgeDistance(p, _HexRadius, _HexInset, cell);
-                float lineCov = HexLine(edge, _LineWidth);
-
                 float alpha = IN.color.a;
-                float lines = lineCov * _LineAlpha;
-                float3 lineRgb = _LineColor.rgb;
-                float3 glowAdd = float3(0.0, 0.0, 0.0);
-
-                if (motion > 0.5 && motion < 1.5)
-                {
-                    // H2: the ring, in canvas units from the Image's centre, measured at the cell's centre so whole
-                    // cells light together, as Amoebius's do. IN.motion.zw: the rect's size (KitBackdropMotion).
-                    float2 size = max(IN.motion.zw, 1.0);
-                    float2 cellUv = IN.texcoord + (cell - p) / size;
-                    float pulse = HexRing(length((cellUv - 0.5) * size), t, _RingWavelength, _RingPeriod);
-                    lines = lineCov * lerp(_LineAlpha, _RingAlpha, pulse);
-                    lineRgb = lerp(_LineColor.rgb, _GlowColor.rgb, pulse);
-                    glowAdd = _GlowColor.rgb * pulse * 0.05;
-                }
-                else if (motion > 1.5 && motion < 2.5)
-                {
-                    // H4: the tide, a soft band of light crossing the rect.
-                    float band = HexTide(IN.texcoord.y, t, _TidePeriod, _TideWidth);
-                    glowAdd = _GlowColor.rgb * band * _TideAlpha;
-                    lines = lineCov * _LineAlpha * (1.0 + band * 0.6);
-                }
-
-                float shape = fade;
-                float front = 0.0;
-                if (motion > 2.5)
-                {
-                    // H6: the hexagons grow out from the centre over _GrowSeconds after the window opened, then hold.
-                    float k = saturate((t - opened) / max(_GrowSeconds, 0.01));
-                    float2 rv = LatticeReveal(r, k);
-                    shape *= rv.x;
-                    front = rv.y;
-                }
+                float shape = fade * alpha;
                 if (_Reveal > 0.5)
                 {
                     float2 rv = LatticeReveal(r, alpha);
-                    shape *= rv.x;
-                    front = max(front, rv.y);
+                    shape = fade * rv.x;
+                    sum.rgb += sum.rgb * rv.y * 2.0;
                 }
-                lines = saturate(lines * shape + lineCov * front * 0.8);
-                lineRgb = lerp(lineRgb, _GlowColor.rgb, saturate(front));
-
-                // The frost underneath: the blurred world tinted toward navy, opaque, faded with the window.
-                float frostOn = _Frost * _FrogletBackdropBlurOn;
-                float3 baseRgb = float3(0.0, 0.0, 0.0);
-                float baseA = 0;
-                if (frostOn > 0.5)
-                {
-                    float2 suv = IN.screenPos.xy / max(IN.screenPos.w, 1e-6);
-                    float3 world = tex2D(_FrogletBackdropBlur, suv).rgb;
-                    baseRgb = lerp(world, _FrostTint.rgb, _FrostAmount) + glowAdd;
-                    baseA = 1.0;
-                }
-                else
-                {
-                    // No live blur: the motion's light still reads over the veil under the Image.
-                    float glowA = saturate(max(glowAdd.r, max(glowAdd.g, glowAdd.b)));
-                    baseRgb = glowAdd / max(glowA, 1e-4);
-                    baseA = glowA;
-                }
-
-                // Lines over the base, as straight alpha.
-                float outA = lines + baseA * (1.0 - lines);
-                float3 outRgb = (lineRgb * lines + baseRgb * baseA * (1.0 - lines)) / max(outA, 1e-4);
 
                 fixed4 color;
-                color.rgb = outRgb * IN.color.rgb;
-                color.a = saturate(outA * alpha);
+                color.a = saturate(sum.a * shape);
+                color.rgb = (sum.rgb / max(sum.a, 0.0001)) * IN.color.rgb;
 
                 #ifdef UNITY_UI_CLIP_RECT
                 color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
