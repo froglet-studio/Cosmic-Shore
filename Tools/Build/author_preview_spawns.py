@@ -70,6 +70,7 @@ SCENE_FOR_MODE = {
     65: 'MinigameWarpline',
     66: 'MinigameThresherTime',
     68: 'MinigameWrasseRun',
+    69: 'MinigameTandava',
 }
 
 

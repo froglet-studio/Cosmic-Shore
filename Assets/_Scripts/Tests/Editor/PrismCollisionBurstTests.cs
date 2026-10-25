@@ -13,8 +13,8 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// The CPU half of prism movement's three-level ladder and of the prism's interaction DETAIL LEVELS —
-    /// destruction (the explosion, then the Sierpinski cut moved by the explosion's own law) and stealing (the grade,
-    /// or a bloom shed)
+    /// destruction (the explosion, then the Sierpinski cut moved by the explosion's own law), stealing (the grade,
+    /// or a bloom shed) and, since round 15, the suction on the destruction's ladder
     /// (Docs/PRISM_MOTION.md, Docs/PRISM_ANIMATION.md §4.12). The GPU half is proven by
     /// Tools/Shaders/verify_prism_collision_burst.py, which executes the shipped HLSL. This file holds
     /// the CPU to the promises that proof assumes — the culling envelope and the dissolve overshoot are the
@@ -157,7 +157,8 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1000, counts[PrismCollisionBurst.Unravel], 1);
             Assert.AreEqual(1000, counts[PrismCollisionBurst.Flake], 1);
             Assert.AreEqual(0, counts[PrismCollisionBurst.Shatter] + counts[PrismCollisionBurst.Glitter] +
-                               counts[PrismCollisionBurst.Fragment], "a destruction kind is never a shed");
+                               counts[PrismCollisionBurst.Fragment] + counts[PrismCollisionBurst.Suction],
+                "a destruction or suction kind is never a shed");
 
             for (int i = 0; i < 100; i++)
                 Assert.AreNotEqual(PrismCollisionBurst.Unravel, PrismCollisionBurst.PickShed(i / 100f, 1f, 0f, 1f));
@@ -181,7 +182,7 @@ namespace CosmicShore.Tests
             StringAssert.Contains($"#define PRISM_BURST_ROLL    {PrismCollisionBurst.Roll}.0", hlsl);
             string tail = PrismCollisionBurst.RollTail.ToString("0.0##", System.Globalization.CultureInfo.InvariantCulture);
             StringAssert.Contains($"#define PRISM_BURST_ROLL_TAIL {tail}", hlsl);
-            Assert.AreEqual(PrismCollisionBurst.KindCount - 1, PrismCollisionBurst.Roll, "the roll is the last kind");
+            Assert.AreEqual(6, PrismCollisionBurst.Roll, "the roll is the HLSL's kind 6");
             // A roll lives past its grade by the tail; every other shed ends with the grade.
             Assert.AreEqual(0.8f * (1f + PrismCollisionBurst.RollTail), PrismCollisionBurst.ShedLife(0.8f, PrismCollisionBurst.Roll), 1e-6f);
             Assert.AreEqual(PrismCollisionBurst.ShedLife(0.8f), PrismCollisionBurst.ShedLife(0.8f, PrismCollisionBurst.Bloom), 1e-6f);
@@ -205,6 +206,45 @@ namespace CosmicShore.Tests
                 "FragmentVarietyReach is the HLSL's PrismBurstFragmentVarietyReach");
             StringAssert.Contains("float size = clamp(level, 0.0, 6.0);", hlsl, "the reach's 6 is the size level's cap");
             Assert.AreEqual(5, PrismCollisionBurst.Fragment);
+        }
+
+        [Test]
+        public void TheSuctionIsTheHlslsKindAndReach()
+        {
+            // Round 15 (Garrett, 2026-10-25): the suction draws the destruction's cut into the eater. Its kind and its
+            // culling reach are the HLSL's, which the harness proves every pose stays inside.
+            string hlsl = File.ReadAllText(HlslPath);
+            StringAssert.Contains($"#define PRISM_BURST_SUCTION {PrismCollisionBurst.Suction}.0", hlsl);
+            Assert.AreEqual(PrismCollisionBurst.KindCount - 1, PrismCollisionBurst.Suction, "the suction is the last kind");
+            StringAssert.Contains(
+                "return sinkDistance + radius * (3.0 + max(lift, 0.0) * (1.0 + 0.5 * saturate(variety)));", hlsl,
+                "SuctionReach is the HLSL's PrismBurstSuctionReach");
+            var shape = new PrismCollisionBurst.SuctionShape { Lift = 0.4f, Variety = 0.5f };
+            Assert.AreEqual(9f + 2f * (3f + 0.4f * 1.25f), PrismCollisionBurst.SuctionReach(2f, 9f, shape), 1e-5f);
+            Assert.AreEqual(2f * 3f, PrismCollisionBurst.SuctionReach(2f, 0f, default), 1e-6f,
+                "a fragment that never lifts stays within the prism's own 3R of a sink at its centre");
+            shape.Variety = 4f;
+            Assert.AreEqual(2f * (3f + 0.4f * 1.5f), PrismCollisionBurst.SuctionReach(2f, 0f, shape), 1e-5f, "the variety is capped at 1");
+        }
+
+        [Test]
+        public void TheSuctionRidesTheDestructionsLadder()
+        {
+            // "Use the same LOD system as well": every level of a suction draws the destruction's own mesh at that
+            // level, with the suction-only program.
+            var cfg = AssetDatabase.LoadAssetAtPath<PrismInteractionLodConfigSO>(LodConfigPath);
+            Assert.IsNotNull(cfg, LodConfigPath);
+            Assert.IsTrue(cfg.SuctionEnabled && cfg.SuctionAsFragments, "the shipped suction is the cut, level 0 included");
+            Assert.AreEqual(DestructionCut.SilverGnomon, cfg.Cut, "the silver gnomon cut");
+            Assert.Greater(cfg.MaxLiveSuctions, 0);
+            Assert.AreEqual(PrismCollisionBurst.VariantSuction, PrismCollisionBurst.VariantOf(PrismCollisionBurst.Suction));
+            Assert.AreEqual("_BURST_SUCTION", PrismCollisionBurst.VariantKeywords[PrismCollisionBurst.VariantSuction]);
+            Assert.AreEqual(24, PrismCollisionBurst.TrianglesOf(PrismInteractionLod.MeshOfLevel(0, cfg)), "level 0: the 24 wedges");
+            for (int level = 1; level <= cfg.MaxDepth; level++)
+                Assert.AreSame(HighPolyPrismMesh.GetSilverGnomon(cfg.CutDepthOf(level)), PrismInteractionLod.MeshOfLevel(level, cfg),
+                    $"level {level}: the silver gnomon cut at depth {cfg.CutDepthOf(level)}");
+            // Every fragment is in by 95% of the life: the trips fit after the last start.
+            Assert.LessOrEqual(cfg.SuctionStagger, 0.85f);
         }
 
         [Test]
@@ -275,13 +315,16 @@ namespace CosmicShore.Tests
         [Test]
         public void TheGameCompilesOneKindPerProgram()
         {
-            // Round 11 (performance): the game's two programs each carry one kind; the lab keeps every kind.
+            // Round 11 (performance): the game's programs each carry one kind (round 15 adds the suction's); the lab
+            // keeps every kind.
             string shader = File.ReadAllText(ShaderPath);
-            Assert.AreEqual(3, Regex.Matches(shader, @"#pragma multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL").Count,
-                "every pass compiles the destruction-only and steal-only programs");
+            Assert.AreEqual(3, Regex.Matches(shader, @"#pragma multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL _BURST_SUCTION\r?\n").Count,
+                "every pass compiles the destruction-only, steal-only and suction-only programs");
             Assert.IsNull(PrismCollisionBurst.VariantKeywords[PrismCollisionBurst.VariantAll]);
             Assert.AreEqual("_BURST_FRAGMENT", PrismCollisionBurst.VariantKeywords[PrismCollisionBurst.VariantFragment]);
             Assert.AreEqual("_BURST_ROLL", PrismCollisionBurst.VariantKeywords[PrismCollisionBurst.VariantRoll]);
+            Assert.AreEqual("_BURST_SUCTION", PrismCollisionBurst.VariantKeywords[PrismCollisionBurst.VariantSuction]);
+            Assert.AreEqual(PrismCollisionBurst.VariantCount, PrismCollisionBurst.VariantKeywords.Length);
             foreach (int k in new[] { PrismCollisionBurst.Shatter, PrismCollisionBurst.Bloom, PrismCollisionBurst.Unravel,
                          PrismCollisionBurst.Glitter, PrismCollisionBurst.Flake })
                 Assert.AreEqual(PrismCollisionBurst.VariantAll, PrismCollisionBurst.VariantOf(k), $"kind {k} needs the every-kind program");
@@ -305,6 +348,8 @@ namespace CosmicShore.Tests
             Has("_FragmentNoise", cfg.FragmentSpinNoise, cfg.FragmentNoiseFrequency, cfg.FragmentTravelNoise, cfg.FragmentSpeedRef);
             Assert.IsTrue(Regex.IsMatch(shader, $@"_FragmentVariety \(""[^""]*"", Range\(0, 1\)\) = {Regex.Escape(F(cfg.FragmentVariety))}\r?\n"),
                 $"_FragmentVariety defaults to {F(cfg.FragmentVariety)}");
+            Has("_SuctionMotion", cfg.SuctionStagger, cfg.SuctionAcceleration, cfg.SuctionLift, cfg.SuctionSwirl);
+            Has("_SuctionShape", cfg.SuctionSpin, cfg.SuctionShrink, cfg.SuctionFaceLag, cfg.SuctionOrderNoise);
         }
 
         [Test]
@@ -839,7 +884,7 @@ namespace CosmicShore.Tests
             Assert.IsTrue(Regex.IsMatch(shader, @"UNITY_DOTS_INSTANCED_PROP\(float4, _SliceAxis\)"), "the roll's camera stamp");
             StringAssert.Contains("PRISM_BURST_PROP(float4, _SliceAxis)", shader, "the roll's camera stamp");
             foreach (var prop in new[] { "_BurstShape", "_BurstCurl", "_BurstPeel", "_BurstRoll", "_ExplosionDials",
-                         "_FragmentMotion", "_FragmentSize", "_FragmentFade", "_FragmentNoise" })
+                         "_FragmentMotion", "_FragmentSize", "_FragmentFade", "_FragmentNoise", "_SuctionMotion", "_SuctionShape" })
             {
                 StringAssert.Contains(prop, shader);
                 Assert.IsTrue(Regex.IsMatch(shader, $@"float4 {prop};"), $"{prop} in the CBUFFER");
@@ -850,6 +895,9 @@ namespace CosmicShore.Tests
                 StringAssert.DoesNotContain(retired, shader, retired);
             Assert.IsTrue(Regex.IsMatch(shader, @"float _FragmentVariety;"), "_FragmentVariety in the CBUFFER");
             StringAssert.Contains("shape.variety = _FragmentVariety;", shader, "the variety reaches the pose");
+            // Round 15: the suction's live sink rides _SliceCentre (refreshed), its stamp-time sink _SliceAxis.
+            Assert.IsTrue(Regex.IsMatch(shader, @"UNITY_DOTS_INSTANCED_PROP\(float4, _SliceCentre\)"), "the suction's live sink");
+            StringAssert.Contains("PRISM_BURST_PROP(float4, _SliceCentre).xyz", shader, "the suction's live sink");
             StringAssert.Contains("#include \"PrismCollisionBurst.hlsl\"", shader);
         }
 

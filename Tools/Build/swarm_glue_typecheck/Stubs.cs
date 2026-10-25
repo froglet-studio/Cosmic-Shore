@@ -19,7 +19,7 @@ namespace UnityEngine
     public class TextAsset : Object { public string text; }
     public class GameObject : Object { public GameObject(string n) { } public bool activeInHierarchy; public Scene scene; public int layer; public Transform transform; public T AddComponent<T>() where T : Component => default; }
     public struct Scene { public bool isLoaded; }
-    public class Transform : Component { public Vector3 position, localPosition, localScale; public Vector3 forward => default; public Quaternion rotation, localRotation; public Matrix4x4 localToWorldMatrix, worldToLocalMatrix; public void SetPositionAndRotation(Vector3 p, Quaternion q) { } public Vector3 InverseTransformPoint(Vector3 p) => p; public void SetParent(Transform p, bool worldPositionStays) { } public Transform parent; }
+    public class Transform : Component { public Vector3 position, localPosition, localScale; public Vector3 forward => default; public Vector3 up => default; public Vector3 right => default; public Quaternion rotation, localRotation; public Matrix4x4 localToWorldMatrix, worldToLocalMatrix; public void SetPositionAndRotation(Vector3 p, Quaternion q) { } public Vector3 InverseTransformPoint(Vector3 p) => p; public void SetParent(Transform p, bool worldPositionStays) { } public Transform parent; }
     public class Renderer : Component { public bool enabled; }
     public class SkinnedMeshRenderer : Renderer { public Mesh sharedMesh; }
     public class MeshFilter : Component { public Mesh sharedMesh; }
