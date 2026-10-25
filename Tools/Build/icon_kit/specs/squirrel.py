@@ -8,8 +8,9 @@
                          reads and is the omni card's shielded ring's twin; nothing here redraws it
   Space   Steal          KEPT - GENERATED in code (SquirrelVesselHUDView.EnsureGeneratedAbilityIcons: the reach
                          ring at the skimmer's live radius with the steal count under it); no sprite to draw
-  Time    Skimming       the hull skimming the trail: the chevron low over a ribbon of blocks, one motion bar
-                         (before: the SPARROW's boost icon, borrowed)
+  Time    Skimming       the Squirrel centred in its skimmer sphere over a row of prisms (blocks) - a tinted PAIR:
+                         hull + sphere + the prisms under it in the domain colour, the prisms ahead in the blue
+                         (before: the SPARROW's boost icon, borrowed; round 2's chevron over a notched band)
   core    Drift          the hull sliding: the chevron turned off its course on a swept band
   core    Sharp Drift    the same hull broadside on a tighter, double band (before: DriftIconSelected /
                          CannonIconSelected placeholders - baked teal, and the sharp one a CANNON)
@@ -19,8 +20,8 @@ The core (drift) icons live in Core/ so the family gate compares the elemental i
 import math
 
 import mesh_silhouette
-from canvas import band, empty, fill, ngon, rect, rotate, scale, stroke, translate
-from motifs import hull, speed_wedge, trail_band
+from canvas import band, empty, fill, ngon, rect, ring, rotate, scale, stroke, translate
+from motifs import block, hull, speed_wedge, trail_band
 
 HULL = "Squirrel"
 VARIANT = "Assets/_Prefabs/UI Elements/VesselHUD/SquirrelHUDVariant.prefab"
@@ -76,11 +77,38 @@ def crystal_joust():
     return joust_self() | joust_other()
 
 
+SKIM_RING = dict(cx=56, cy=56, r=46, w=7)          # B2's sphere, a touch left so prisms can be AHEAD of it
+SKIM_BLOCKS = (14, 37, 60, 83, 106)                  # front-face centres along the bottom (B2's blocks, five of them)
+SKIM_Y = 113
+SKIM_BLOCK = dict(w=17, h=11, dp=6)
+SKIM_REACH = SKIM_RING["cx"] + SKIM_RING["r"] * 0.55  # a prism centred beyond this is "in front of the skimmer"
+
+
+def skim_self():
+    """What the skim has made YOURS: the Squirrel centred in its skimmer sphere, and the prisms under / behind the
+    sphere - tinted the pilot's domain colour on the HUD."""
+    m = squirrel(62, SKIM_RING["cx"], SKIM_RING["cy"], dilate_px=1.5) | ring(SKIM_RING["cx"], SKIM_RING["cy"], SKIM_RING["r"], SKIM_RING["w"])
+    for x in SKIM_BLOCKS:
+        if x <= SKIM_REACH:
+            m |= block(x, SKIM_Y, **SKIM_BLOCK)
+    return m
+
+
+def skim_ahead():
+    """The prisms still AHEAD of the sphere - tinted the HUD's blue (ElementalBarsConfigSO.blueColor)."""
+    m = empty()
+    for x in SKIM_BLOCKS:
+        if x > SKIM_REACH:
+            m |= block(x, SKIM_Y, **SKIM_BLOCK)
+    return m
+
+
 def skimming():
-    ribbon = trail_band(y0=98, y1=118)
-    body = hull(70, 58, 36, heading=0)
-    bar = speed_wedge(14, 58, 22, 9)
-    return ribbon | body | bar
+    """Skimming (Time): the Squirrel in its skimmer sphere passing over a row of prisms. On the HUD this is a tinted
+    PAIR (like the joust): hull + sphere + the prisms it has reached wear the domain colour, the prisms ahead the
+    blue. Garrett 2026-10-25: "make the vessel and the prisms touching and behind the skimmer the player's domain
+    color. make the prisms in front of the skimmer the blue." "i like b2 the best" - B2's sphere and blocks."""
+    return skim_self() | skim_ahead()
 
 
 def drift():
@@ -104,7 +132,12 @@ ICONS = [
                  "coverage": "two real hulls nose to nose at 57 px each sit at 0.10; thicker than 1.8 px loses the ribs"}),
     dict(name="Squirrel_JoustSelf", element="Charge", act="Crystal Joust: the player's hull (domain colour)", draw=joust_self, subdir="Pair", family=False, exempt=HALF_EXEMPT),
     dict(name="Squirrel_JoustOther", element="Charge", act="Crystal Joust: the opponent (danger colour)", draw=joust_other, subdir="Pair", family=False, exempt=HALF_EXEMPT),
-    dict(name="Squirrel_Skimming", element="Time", act="Skimming", draw=skimming, before="Assets/_Graphics/Design Assests/HUD UI/New_Sparrow/boost icon.png"),
+    dict(name="Squirrel_Skimming", element="Time", act="Skimming", draw=skimming, before="Assets/_Graphics/Design Assests/HUD UI/New_Sparrow/boost icon.png",
+         exempt={"gap": "Garrett 2026-10-25 - the hull is its real mesh", "components": "five prisms, a sphere and a hull: the pair's halves are what the HUD draws", "specks": "the blocks' seam slivers"}),
+    dict(name="Squirrel_SkimSelf", element="Time", act="Skimming: hull, sphere, prisms reached (domain colour)", draw=skim_self, subdir="Pair", family=False,
+         exempt={"gap": "the real mesh", "components": "three prisms, a sphere, a hull", "specks": "the blocks' seam slivers", "coverage": "half of a pair", "box_fill": "half of a pair", "in_box": "half of a pair"}),
+    dict(name="Squirrel_SkimAhead", element="Time", act="Skimming: prisms ahead (blue)", draw=skim_ahead, subdir="Pair", family=False,
+         exempt={"coverage": "half of a pair", "box_fill": "half of a pair", "in_box": "half of a pair", "components": "two prisms", "specks": "the blocks' seam slivers", "gap": "the seams", "thin": "the seams"}),
     dict(name="Squirrel_Drift", element="Core", act="Drift", draw=drift, subdir="Core", before=PH + "DriftIconSelected-PLACEHOLDER.png"),
     dict(name="Squirrel_SharpDrift", element="Core", act="Sharp Drift", draw=sharp_drift, subdir="Core", before=PH + "CannonIconSelected-PLACEHOLDER.png"),
 ]
@@ -116,7 +149,11 @@ REBIND = [
                                  children=[("JoustSelf", "Squirrel_JoustSelf", "joustSelfIcon"),
                                            ("JoustOther", "Squirrel_JoustOther", "joustOpponentIcon")])),
     dict(file="Assets/Resources/ModeControlsLibrary.asset", old="28ece425c4d02474e802223309bdbb11", icon="Squirrel_CrystalJoust", expect=1),
-    dict(file=VARIANT, old="f0197e0a2ce38654ea3d882fff64967a", icon="Squirrel_Skimming", expect=1),       # the Sparrow's boost icon
+    # The Time card: a second tinted pair under the icon (the sprite it wore - the Sparrow's boost icon, then round 2's
+    # chevron - goes with the container's sprite).
+    dict(file=VARIANT, pair=dict(container="6559234619875545904", view="7422230368815066413", after="joustOpponentIcon",
+                                 children=[("SkimSelf", "Squirrel_SkimSelf", "skimSelfIcon"),
+                                           ("SkimAhead", "Squirrel_SkimAhead", "skimAheadIcon")])),
     dict(file=VARIANT, old="41c9f6e2ec44f0c458351500f1bfacdc", icon="Squirrel_Drift", expect=1),          # DriftIconSelected-PLACEHOLDER
     dict(file=VARIANT, old="117829e3ccd2f4c439bc98b203359180", icon="Squirrel_SharpDrift", expect=1),     # CannonIconSelected-PLACEHOLDER
 ]

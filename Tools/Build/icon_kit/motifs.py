@@ -95,6 +95,18 @@ def rail(cx, y_near, y_far, w_near, w_far, ties=4, tie_gap=4.0):
     return m
 
 
+def block(cx, cy, w=22, h=12, dp=7):
+    """A prism as the game LAYS it: a box seen from front-above - front, top and right faces, the seams between
+    them cut as negative space so it reads as a solid at 40 px (Garrett 2026-10-25: "the prisms should look like
+    prisms, not the profile of a chocolate bar"). (cx, cy) is the front face's centre."""
+    front = rect(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
+    top = fill([(cx - w / 2, cy - h / 2), (cx - w / 2 + dp, cy - h / 2 - dp), (cx + w / 2 + dp, cy - h / 2 - dp), (cx + w / 2, cy - h / 2)])
+    side = fill([(cx + w / 2, cy - h / 2), (cx + w / 2 + dp, cy - h / 2 - dp), (cx + w / 2 + dp, cy + h / 2 - dp), (cx + w / 2, cy + h / 2)])
+    seams = stroke([(cx - w / 2, cy - h / 2), (cx + w / 2, cy - h / 2), (cx + w / 2, cy + h / 2)], 2.5) \
+        | stroke([(cx + w / 2, cy - h / 2), (cx + w / 2 + dp, cy - h / 2 - dp)], 2.5)
+    return (front | top | side) & ~seams
+
+
 def trail_band(y0=96, y1=114, x0=6, x1=122, notches=4):
     """A ribbon of trail seen from the side: one solid band with V notches cut from its top, so it reads as
     blocks at 40 px without splitting into components (the Urchin rides it, the Squirrel skims it)."""

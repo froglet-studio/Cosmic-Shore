@@ -2209,3 +2209,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (has offered to take tests) or Garrett
 - **Added:** 2026-10-25 by a Claude session (`cece/loving-ptolemy-4715w4`)
 - **See:** .claude/skills/ability-icon/references/LESSONS.md 27, Docs/Icons/sheets/squirrel_crystal_joust.png
+
+### T-20261025-a2ef · open · test · Squirrel
+- **Task:** Editor-verify the Skimming pair (no Unity CLI in the session that wrote it): the Time card's Icon is a transparent container with SkimSelf / SkimAhead child Images; SquirrelVesselHUDView compiles with skimSelfIcon / skimAheadIcon; in freestyle the Squirrel, its sphere and the three near prisms wear the pilot's domain colour, the two far prisms the HUD blue, and the boost fill still draws behind the card
+- **Done when:** compiles, both tints right, boost fill unaffected, no lockup console error about the Time icon
+- **Who can take it:** Yash (has offered to take tests) or Garrett
+- **Added:** 2026-10-25 by a Claude session (`cece/loving-ptolemy-4715w4`)
+- **See:** Docs/Icons/sheets/squirrel_skimming.png, .claude/skills/ability-icon/references/LESSONS.md 28

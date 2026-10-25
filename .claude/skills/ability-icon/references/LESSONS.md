@@ -130,3 +130,10 @@ one thing right. then move on."
     the view's fields; the kit writes three sprites (the pair in Pair/, each exempt from the whole-icon gates,
     and the white composite the Jousts objective box keeps). C# touched: SquirrelVesselHUDView - no Unity CLI in
     this session, so the editor check is on the board.
+28. **Skimming is the second tinted pair, and the split is WHAT IS YOURS.** Garrett: "make the vessel and the
+    prisms touching and behind the skimmer the player's domain color. make the prisms in front of the skimmer the
+    blue" and "i like b2 the best". The Time card's icon became a container over SkimSelf (hull, skimmer sphere,
+    the prisms under it - domain colour, from the same push as the boost fill) and SkimAhead (the prisms ahead -
+    `ElementalBarsConfigSO.blueColor`, the HUD's one blue). Prisms are `motifs.block()` - a box from front-above
+    with its seams cut - after a notched band read as "the profile of a chocolate bar". The pair's `pair=` step
+    inserts the view's fields after a named anchor (`after=`). Seam slivers trip the specks gate: exempt by name.

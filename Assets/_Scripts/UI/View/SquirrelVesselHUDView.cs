@@ -129,6 +129,13 @@ namespace CosmicShore.UI
                  "'the right facing squirrel should be the players domain color. the other squirrel can " +
                  "be the danger color (fire). when the player jousts then both can turn lime.'")]
         [SerializeField] private Image joustOpponentIcon;
+        [Tooltip("Skimming (the TIME card) as a pair, a child of its icon: the Squirrel in its skimmer sphere and the " +
+                 "prisms it has reached - tinted the pilot's DOMAIN colour (skimmed mass is yours).")]
+        [SerializeField] private Image skimSelfIcon;
+        [Tooltip("The prisms still ahead of the sphere - tinted the shared spec's blueColor. Garrett 2026-10-25: " +
+                 "'make the vessel and the prisms touching and behind the skimmer the player's domain color. make " +
+                 "the prisms in front of the skimmer the blue.'")]
+        [SerializeField] private Image skimAheadIcon;
         [Tooltip("Shared colour spec: the joust's hit colour is its limeColor, the SAME lime a maxed flower and " +
                  "the Dolphin's armed jaws show. Loaded from Resources when left empty; never author a second lime.")]
         [SerializeField] private ElementalBarsConfigSO barsConfig;
@@ -384,6 +391,7 @@ namespace CosmicShore.UI
                 _impactIconOriginalScale = AbilityIconRestScale(Element.Charge);
             }
             PaintJoustPair();
+            PaintSkimPair();
 
 
             if (tubeCooldownIcon)
@@ -437,6 +445,20 @@ namespace CosmicShore.UI
 
             PaintStealCount(color);
             PaintJoustPair();
+            PaintSkimPair();
+        }
+
+        /// <summary>
+        /// The Time card's pair: what the skim has made yours in the domain colour, what is still ahead in the
+        /// HUD's blue. Painted on the same domain push as the boost fill and the steal count.
+        /// </summary>
+        void PaintSkimPair()
+        {
+            if (!skimSelfIcon || !skimAheadIcon) return;
+            skimSelfIcon.color = _playerDomainColor;
+            if (!barsConfig && !string.IsNullOrEmpty(barsConfigResourcePath))
+                barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
+            skimAheadIcon.color = barsConfig ? barsConfig.blueColor : Color.white;
         }
 
         /// <summary>Both joust hulls are wired - the Charge icon is a transparent container over them.</summary>
