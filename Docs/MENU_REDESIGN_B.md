@@ -2943,5 +2943,6 @@ only the ones that clash today, so the page cannot start fighting the menu again
 that tab, and still leave LB / RB and A fighting. The TRY flight (§35) could take the pad because it was a real flight
 (`ModePreviewWindow.AnyHasFocus`, which also stood the shell down); the AI demo (§59) is a display, so it does not.
 
-The header line stays "Labels follow your device. Press one to see it again." ("one" is the row). Changed:
-`HangarAbilitiesPage` (the poll and its summary), `HangarControlInput` (summary only).
+The header line now reads "Labels follow your device. Select one to see it again." (was "Press one", which read as
+"press that control"; Yash, 2026-10-25), authored in `author_menu_hangar.py` and regenerated into `HangarView.prefab`.
+Changed: `HangarAbilitiesPage` (the poll and its summary), `HangarControlInput` (summary only), the header line.
