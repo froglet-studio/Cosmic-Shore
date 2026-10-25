@@ -24,7 +24,7 @@ GateRaceScoringRuleSO. The clone swaps FIVE things and inherits the rest:
   1. the controller script (ThresherTimeController), keeping the donor's `laps` field (3).
   2. its scoring rule ASSET (another asset on the same GateRaceScoringRuleSO script).
   3. the AI approach numbers and the plausible-speed clamp - the approach sized to the only
-     circle an AI Thresher flies (cruise: it never slings), the clamp to cover a boosted aimed launch.
+     circle an AI Thresher flies (cruise; since 2026-10-26 it also slings sharp corners, ThresherSlingAIPolicySO), the clamp to cover a boosted aimed launch.
   4. the scene's Netcode GlobalObjectIdHash values, minted fresh so no in-scene NetworkObject
      shares an id with its donor.
   5. the arcade card's Vessels list: Thresher, not Grizzly.
@@ -106,8 +106,8 @@ RINGS_PER_LAP = 8                 # ThresherTimeCourse.GatesPerLap
 GATE_TARGET = LAPS * RINGS_PER_LAP
 BASE_RADIUS = 800                 # ThresherTimeCourse.BaseRadius
 
-# AI approach geometry. An AI Thresher NEVER SLINGS (AIPilot writes the sticks and the throttle and
-# no trigger, and the Thresher's sling is LT + RT), so it races at cruise - at most 0.9 throttle,
+# AI approach geometry. An AI Thresher races at cruise between its slings (ThresherSlingAIPolicySO presses
+# LT + RT only at a 70+ deg corner, 2026-10-26; before that it never slung), so it races at cruise - at most 0.9 throttle,
 # 114 u/s, on a <= 60 u circle - and the approach is sized to THAT circle, not to the 229 u
 # full-sling circle the course is cut against: Slingshot's ratios (commit 2.2x, lead 2.5x, through
 # 1.7x its 72 u circle) on the Thresher's 60 u cruise circle. Grizzly Time's 380 / 420 / 285 were
@@ -387,6 +387,12 @@ _ai = re.search(r"  m_Enabled: (\d)\n  m_EditorHideFlags: 0\n  m_Script: \{fileI
                 r"guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3\}", _thresher)
 if not _ai or _ai.group(1) != "1":
     errors.append("Thresher.prefab's AIPilot is not enabled - an AI Thresher cannot race")
+# ...and slings with its own policy (2026-10-26): the Squirrel's inherited SkimRingAIPolicySO bound nothing here.
+_policy_meta = read_or_empty("Assets/_SO_Assets/AI Boost Policies/ThresherAIBoostPolicy.asset.meta")
+_policy_guid = re.search(r"^guid: ([0-9a-f]{32})", _policy_meta, re.M)
+if not _policy_guid or f"  boostPolicy: {{fileID: 11400000, guid: {_policy_guid.group(1)}, type: 2}}" not in _thresher:
+    errors.append("Thresher.prefab's AIPilot does not name ThresherAIBoostPolicy (ThresherSlingAIPolicySO) - "
+                  "an AI Thresher would never sling")
 # The sling's ceiling (the number the whole cut rests on) must still be the ball's: maxBall in the
 # config, scaled by gameCruise / sandboxCruise. ThresherTimeCourseTests reads it too; this names it
 # at generation time.

@@ -21,7 +21,9 @@ or leaves it to the sweep below.
 | It reaches the person's editor | the person pulls `Ys-bleeding-edge` as usual | - |
 
 `ai_learn.py` remembers what it has learned from (`Docs/AI_SYSTEM/ai_learning_seen.json`), so an hour with no new
-race writes nothing. A learner writes a hull's numbers only once it has three finished races of that hull in that mode
+race writes nothing. Only a race a learner actually read is remembered as learned: one in a mode on hold or of a hull
+no learner covers waits in the file's `waiting` list with its reason and is learned from once the reason goes away (the
+hold lifts, a vessel gains a learner), and one whose learner failed is tried again next hour. A learner writes a hull's numbers only once it has three finished races of that hull in that mode
 (its own rule), so one race only counts toward the three.
 
 ## 2. What the sweep does (the scheduled task's whole instruction)
@@ -93,8 +95,8 @@ write, so a field set there by hand survives (`SparrowAIBoostPolicy_Breakwater`'
 | Urchin | report only | rail ride | its riding lives in each mode's scene fields |
 | Grizzly | report only | - | its bomb autopilot does not load per mode, and `grizzly-v3` (jtgjones) is reworking the bombs |
 | Butterfly | report only | - | its Mass / Dust choice is each mode's controller code; no Dust bit is recorded |
-| Wrasse | report only (defect) | - | its prefab names `SparrowAIBoostPolicy`, which presses a Boost the Wrasse does not bind: the AI never boosts |
-| Thresher | report only (defect) | - | its prefab names `SquirrelAIBoostPolicy`, which presses a boost ring the Thresher does not have: the AI never boosts |
+| Wrasse | report only | the crew's saved boost | `KiteNavigator.AIPilotWantsBoost` (`KiteNavigatorConfig.aiBoostRingDistance`), which does not load per mode. Its prefab named `SparrowAIBoostPolicy`, inert on a Wrasse: cleared 2026-10-26 |
+| Thresher | drives (ThresherSling, 2026-10-26) | a Plant press | the corner it plants at, the room it needs, the let-go cone, the longest swing, seconds between slings |
 
 A policy switched off in a mode (`disabledInModes`) is reported there, never written: the Sparrow in Dog Fight, the
 Squirrel in Joust and Skim Race, the Scarab in Scarab Scramble.

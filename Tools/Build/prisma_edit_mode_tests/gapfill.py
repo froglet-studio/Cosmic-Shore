@@ -98,6 +98,12 @@ edit("InputSystem/InputDevices.cs", "class GravitySensor",
 edit("Networking/NetcodeSurface.cs", "NetworkPrefabOverrideLinks",
      "        public List<NetworkPrefabsList> NetworkPrefabsLists = new();\n",
      "        public readonly Dictionary<uint, NetworkPrefab> NetworkPrefabOverrideLinks = new();\n")
+# GobyPistolDuo (2026-10-25) submits a List<Matrix4x4>, Unity's List overload; the engine has the array one.
+edit("Rendering/Graphics.cs", "List<CosmicShore.Engine.Matrix4x4> instanceData",
+     "        public static void RenderMeshInstanced(in RenderParams rparams, Mesh mesh, int submeshIndex,\n",
+     "            System.Collections.Generic.List<CosmicShore.Engine.Matrix4x4> instanceData, int instanceCount = -1, int startInstance = 0)\n"
+     "            => RenderMeshInstanced(rparams, mesh, submeshIndex, instanceData?.ToArray(), instanceCount, startInstance);\n\n"
+     "        public static void RenderMeshInstanced(in RenderParams rparams, Mesh mesh, int submeshIndex,\n")
 edit("Networking/NetcodeSurface.cs", "public ulong GetConfig",
      "        public bool ForceSamePrefabs = true;\n",
      "        public ulong GetConfig(bool cache = true) => 0UL;\n")
