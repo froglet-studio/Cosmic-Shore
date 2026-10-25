@@ -65,7 +65,46 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Leaving a match lands on its launch panel, not on HOME (`claude/wizardly-euler-3ccjg6`, 2026-10-25) — NOT EDITOR-VERIFIED
+### 🟢 Arena configure: one shared vessel panel for every seat; intensity on top (`claude/wizardly-euler-3ccjg6`, 2026-10-25) — VERIFIED IN EDITOR
+
+**Verified in editor 2026-10-25 by Yash**: every step below run and passing, the party-of-two guest rule and the EditMode tests included (Froglet Tasks T-20261025-f5ea, #1542, closed with this result).
+
+**What landed:** the settings column reads Intensity, Pilots, Vessel (Arcade and Arena). On the Arena, tapping a seat
+row selects it and the vessel panel below (< seven tiles >, CLAIM) picks THAT seat's hull: your own, or an AI's (no
+claim; the host applies it, `RequestAIVessel`, protocol 12 -> 14). Tap the selected AI again or your own row to go
+back. The < > arrows are generator-authored, 32 x 56, level with the tiles and inset from the panel edges
+(`Docs/HomeHub/ARCHITECTURE.md` §3.2.1).
+
+**Verified without the editor:** `unity_refcompile` player OK, editor 0 errors in changed files;
+`author_menu_configure.py --check` / `--self-test` OK (its drift from `d9b7305b1` is gone); every gate in
+`.claude/skills/to-bleeding-edge/gates.sh` OK. `SharedVesselPanelTests` compile, not run.
+
+**Verify in editor:**
+1. Arcade > any card: the column reads Intensity, Pilots, Vessel; the pad's first focus is an intensity node.
+2. Arena > Regatta: the caption reads "Your vessel"; the < > sit level with the tiles, a little in from the panel's
+   edges; tiles, arrows and CLAIM pick your hull as before; Start waits for CLAIM.
+3. Add two AI. Tap one AI's row: it turns the Selection colour, the caption reads "<Domain> AI's vessel", CLAIM hides.
+   Tap a tile: that AI's row name and icon change at once. Use the arrows: they step it, skipping hulls taken.
+4. Tap the same AI row again (or your own row): the caption is "Your vessel" and your hull is shown again.
+5. Party of two: the guest can select and pick only their own team's AI; the host sees the guest's picks.
+6. Launch: each AI flies the hull its row named.
+7. Run `SharedVesselPanelTests` and `ArenaHullStripTests` (EditMode).
+
+### 🟢 AI seat names follow the pick; result rows name each pilot's vessel (`claude/wizardly-euler-3ccjg6`, 2026-10-25) — VERIFIED IN EDITOR
+
+**Verified in editor 2026-10-25 by Yash**: every step below run and passing, the party-of-two guest rule and the EditMode tests included (Froglet Tasks T-20261025-f5ea, #1542, closed with this result).
+
+**What landed:** `ArcadeGameConfigureModal.AiSeatName` resolves the hull by `AIHullSeating.SeatHull`, the rule the chip's icon and hover label already used. On an opponent seat it named the card's pinned hull first, so a picked hull showed under "Squirrel" (Regatta) until hovered. The result panel's line under each name is now `{domain}  ·  {vessel}`, the hull that human or AI was flying at the end (`Scoreboard.pilotLine` / `pilotNoVesselLine`, authored on the component).
+
+**Verified without the editor:** `unity_refcompile` player OK; `author_ingame_hud.py`, `check_hud_onscreen.py`, `author_menu_configure.py` checks OK.
+
+**Verify in editor:**
+1. Arena > Regatta configure: add an AI on the other team, tap its chip to step the hull. The row's name changes at once (no hover needed) and matches the hover label.
+2. Play the match with a mix of hulls, humans and AI. Each result row reads e.g. `RUBY · SQUIRREL` under the name, and the hull is the one that pilot flew. A single-hull card shows its hull on every row.
+
+### 🟡 Leaving a match lands on its launch panel, not on HOME (`claude/wizardly-euler-3ccjg6`, #1529, 2026-10-25) — PARTIALLY CONFIRMED IN EDITOR
+
+**Confirmed in editor 2026-10-25 by Yash**, after #1529 merged to bleeding-edge: Main Menu from a match lands back on its launch panel and works as expected (step 1). Ticket T-20261025-4e15 (#1526) closed with that note. Steps 2-6 (the pause menu, Arena, Maelstrom / weekly challenge, a party of two, the boot and freestyle no-regression checks) were not recorded separately; tick each here when it is run, and turn the entry green once all six have passed.
 
 **What landed:** `MenuReturnCard` (`_Scripts/UI/`) records the card a match was launched from
 (`ArcadeGameConfigureModal.HandleAllPlayersReady`, every peer). The next Menu_Main load takes it, and

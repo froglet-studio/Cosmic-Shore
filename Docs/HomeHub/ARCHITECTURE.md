@@ -232,6 +232,36 @@ press itself, because a disabled button is never the whole gate.
 Two things the window does NOT draw: the objective box and the controls block. The panel's
 `objectiveBox` is unwired and the `ControlsDescription` object now hosts the carousel.
 
+### 3.2.1 One shared vessel panel for every seat (2026-10-25)
+
+Yash asked for one place to choose every hull - your own and each AI's - instead of a control on every
+seat: "use the vessel panel to choose the AI vessels and owner vessels together", with the intensity on
+top and the vessel panel below. So the configure window's settings column now reads **Intensity, Pilots,
+Vessel**, top to bottom (the Arcade's view takes the same order; its vessel section only shows the card's
+hull). On the Arena the vessel section is the **shared vessel panel**: `<`, seven hull tiles, `>`, then
+the class line and CLAIM. It picks the hull of whichever seat is selected:
+
+- **Your own row** (the default, and on every open): the panel works as it always did. A tile shows a
+  hull, the arrows step it, CLAIM takes it, and Start waits for the claim.
+- **An AI's row**: tap it and the caption reads "Ruby AI's vessel". The section's own labels show that
+  AI's hull ("Auto" while none is picked), and a tile or an arrow puts the AI in that hull at once. There
+  is no CLAIM for an AI. Tap the same row again, or your own row, to go back to your own hull. The row being
+  edited turns the Selection colour (`DomainAvatarChip.SetEditing`). Your summary chips, the FLY row and
+  the controls keep naming YOUR hull while an AI is selected.
+- **Who may pick** is unchanged (`AIHullSeating.MayPick`): the host any seat, opponents included; a guest
+  only their own team's allies. A guest's row taps go nowhere else.
+- **The host decides.** An arrow sends the existing `RequestAllyVesselCycle`. A tile sends the new
+  `RequestAIVessel` (protocol 14). The host refuses a hull another pilot has claimed or another AI already
+  flies (`TakenHullsForAiSeat`, the same set the strip draws locked), then re-broadcasts the roster, which
+  is how a guest's panel learns the pick.
+- **A tap on an AI row used to step its hull.** It now selects the seat; the stepping moved to the panel's
+  arrows.
+
+The arrows and the tiles are authored by `Tools/Build/author_menu_configure.py` (`hull_body`): 74-px
+tiles centred in the panel, and 32 x 56 arrows level with the tiles' middle, inset from the panel's edges.
+The arrows first landed as a hand edit of `ConfigureArenaView.prefab` (`d9b7305b1`), which left the
+generator's `--check` red; the generator now owns them.
+
 ### 3.3 What the carousel offers: the card's list, never the Hangar's lock
 
 **A card's `Vessels` list is the authority on what a mode admits. The Hangar's purchase lock
