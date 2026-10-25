@@ -37,6 +37,18 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Waystation_FliesTheRegattaSteering_WhateverTheSceneSays()
+        {
+            var go = new GameObject("SwitchbackAISteeringTests_Waystation");
+            try
+            {
+                Assert.IsTrue(CommitsFromApproachPoint(go.AddComponent<WaystationController>()),
+                    "the AI Butterflies would orbit the first ring again (0 of 24 in Caleb's races, 2026-10-20/21)");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void OtherGateRaces_KeepTheirSceneSwitch()
         {
             // Negative control: Headlong did not opt in, so it reads its own (off) inspector switch.

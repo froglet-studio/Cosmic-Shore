@@ -147,6 +147,29 @@ dead astern, so it wrote no turn and flew 14,600 u away for the rest of the race
 `AIPilot.TurnHardIfBehind` turns at full stick toward any target more than 90 deg off the nose (the old stick was already
 full past about 120 deg; only the dead zone near 180 deg changes). Tests: `SwitchbackAISteeringTests.Target*`.
 
+### 3.6 One drive per intensity (the AI learning sweep, 2026-10-25 23:30 UTC)
+
+**What the races after both fixes showed.** Yash's three races at 04:04-04:09 (+05:30; 22:34-22:39 UTC) are the
+first flown after the steering fix and `TurnHardIfBehind` (22:12 UTC). `regatta_rival_report.py --mode Switchback
+--since "2026-10-26 03:50"`: the AI Dolphins (Medium) threaded 10 of 20 rings at 8.8 rings a minute and finished
+none of six; Yash ran 17-20 a minute at I1 and 10 at I4. One I1 rival raced at 17 a minute with no circling; the I4
+ones circled 23 s and sat 50 s on gate 4.
+
+**Why numbers alone could not fix it.** The learner takes the fastest three finished races, and those are always the
+easiest intensity's: the mode-wide `DolphinAIBoostPolicy_Switchback` was I1's numbers exactly (a 36 deg discharge cone,
+0.54 s of runway, spend at 0.96 charge). Raced offline on the recorded courses (`switchback_dolphin_sim.py`, the Regatta
+steering on), those numbers missed 31 of the I4 course's 20 u mouths and took 232 s; the I4 races' own numbers (52 deg,
+1.1 s of runway, spend at 0.50) missed 12 and took 148 s, and at I1 they stayed within a few seconds of I1's own.
+
+**Built.** `AIBoostPolicySO.ForMode(policy, mode, intensity)` loads `<policy>_<mode>_I<n>` first, then the mode's
+variant, then the hull's policy; `AIPilot` passes `GameDataSO.SelectedIntensity`. `learn_drives_from_flights.py` learns
+each intensity of a `PER_INTENSITY_MODES` mode (Switchback) from its own races and writes `_I<n>` variants started from
+the mode's variant (MIN_FINISHED still applies, so I3, with no races, flies the mode variant). Written:
+`DolphinAIBoostPolicy_Switchback_I1`, `_I2`, `_I4`. The I2 and I4 numbers still mix the old ladder's races (28 u and
+4 u mouths) with the new one's; the next races at each intensity replace them. Tests:
+`RegattaDriveTuningTests.ForMode_AnIntensityWithItsOwnVariant_FliesIt_ElseTheModes`. Not run in Unity
+(`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+
 ## 4. The end state: Regatta rebuilt from the trained vessels
 
 Once two to four vessels race at their best in their own minigames:

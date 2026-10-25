@@ -38,6 +38,12 @@ not the person's: they are measured separately as "the AI today" for comparison.
 not in Regatta: "in case of Dolphin, we should keep playing that Dolphin minigame, Switchback"). `--mode <GameModes name>`
 reads that mode's flights and writes `<asset>_<mode>` variants, which AIBoostPolicySO.ForMode loads in that mode only;
 the report goes to LEARNED_DRIVES_<mode>.md and counts the flights per intensity. The race lines are Regatta's alone.
+
+**Per intensity** (PER_INTENSITY_MODES, 2026-10-26): in a mode whose intensity IS its course (Switchback: 72 u mouths at
+I1, 20 u at I4) a drive hull's policy is also learned from each intensity's own races alone and written as
+`<policy>_<mode>_I<n>` (AIBoostPolicySO.ForMode(policy, mode, intensity)), started from the mode's variant. The mode-wide
+variant is learned from the fastest races, which are the easiest intensity's, and its numbers threw the I4 mouths
+(switchback_dolphin_sim.py: 232 s and 31 missed mouths on the I4 course, 148 s and 12 with the I4 races' own numbers).
 """
 import argparse
 import datetime
@@ -62,6 +68,7 @@ MANTA_SCRIPT = os.path.join(REPO, "Assets", "_Scripts", "Controller", "AI", "Boo
 REPORT_DOC = os.path.join(REPO, "Docs", "AI_SYSTEM", "LEARNED_DRIVES.md")
 MODE = "Regatta"   # --mode sets it: the GameModes name whose flights are read and whose variants are written
 MIN_FINISHED = 3
+PER_INTENSITY_MODES = {"Switchback"}   # modes whose intensity is the course: one drive per intensity (the header)
 MIN_EPISODES = 6
 MIN_MEAN_SOAR = 0.05   # the Manta: a person who barely Soars has no band to learn
 STATE_BOOSTING, STATE_DISCHARGING, STATE_DRIFTING, STATE_ATTACHED = 1, 2, 4, 16
@@ -482,7 +489,7 @@ def completed(f):
     from learn_from_flights import finished_of
     if is_race(f):
         return finished_of(f)
-    if f.get("ended") == "race over":
+    if f.get("result") or f.get("ended") == "race over":
         return True
     rows = f.get("samples") or []
     return bool(rows) and "left" in str(f.get("ended")) and (rows[-1][0] - rows[0][0]) >= 60.0
@@ -654,8 +661,14 @@ def learn_hull(hull, flights):
     (held) from all of them, and what would be written."""
     spec = HULLS[hull]
     done = sorted([fs for fs in flights if completed(fs[0])], key=lambda fs: fs[0].get("raceSeconds") or 1e9)
-    # A race learns from its fastest MIN_FINISHED; a match without rings has no time to rank by, so all of them count.
-    used = done[:MIN_FINISHED] if all(is_race(f) for f, _ in done) else done
+    # A race learns from its fastest MIN_FINISHED. A match without rings has no time to rank by: it learns from the
+    # matches the person WON (the flight's "result", recorded since 2026-10-26) once there are MIN_FINISHED of them,
+    # else from every complete one.
+    if all(is_race(f) for f, _ in done):
+        used = done[:MIN_FINISHED]
+    else:
+        won = [fs for fs in done if (fs[0].get("result") or {}).get("youWon")]
+        used = won if len(won) >= MIN_FINISHED else done
     every = [s for _, S in flights for s in S]
     learned, person, ai, why = {}, {}, {}, None
     if hull == "Manta":
@@ -756,11 +769,13 @@ def ensure_folder():
                               "DefaultImporter:\n  externalObjects: {}\n  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
 
 
-def copy_with(base_path, name, learned):
+def copy_with(base_path, name, learned, fallback=None):
     """A mode copy of an asset: its own text, renamed, with only the fields it HAS overridden. An existing variant is
-    the start, so a field someone set there by hand (SparrowAIBoostPolicy_Breakwater's rocket) is kept."""
+    the start, so a field someone set there by hand (SparrowAIBoostPolicy_Breakwater's rocket) is kept; else the
+    fallback variant (an intensity's variant starts from its mode's), else the base."""
     existing = os.path.join(OUT_DIR, name + ".asset")
-    base = open(existing if os.path.exists(existing) else base_path, encoding="utf-8").read()
+    start = next((c for c in (existing, fallback and os.path.join(OUT_DIR, fallback + ".asset")) if c and os.path.exists(c)), base_path)
+    base = open(start, encoding="utf-8").read()
     text = re.sub(r"(?m)^  m_Name: .*$", f"  m_Name: {name}", base, count=1)
     for k, v in learned.items():
         text = re.sub(rf"(?m)^  {re.escape(k)}: [^\n]*$", f"  {k}: {v}", text, count=1)
@@ -775,21 +790,25 @@ def variant_texts(hull, learned):
     return [variant_text(hull, learned)]
 
 
-def variant_text(hull, learned):
-    """(path, text) of the hull's Regatta variant: its own asset with the learned fields, or the Manta's tuning."""
+def variant_text(hull, learned, intensity=None):
+    """(path, text) of the hull's Regatta variant: its own asset with the learned fields, or the Manta's tuning.
+    intensity: the policy's <policy>_<mode>_I<n> variant instead (policy hulls only)."""
     spec = HULLS[hull]
     if "policy" in spec:
-        return copy_with(os.path.join(POLICY_DIR, spec["policy"] + ".asset"), f"{spec['policy']}_{MODE}", learned)
+        name = f"{spec['policy']}_{MODE}"
+        if intensity:
+            return copy_with(os.path.join(POLICY_DIR, spec["policy"] + ".asset"), f"{name}_I{intensity}", learned, fallback=name)
+        return copy_with(os.path.join(POLICY_DIR, spec["policy"] + ".asset"), name, learned)
     name = f"{spec['tuning']}_{MODE}"
     script_guid = re.search(r"guid: ([0-9a-f]{32})", open(MANTA_SCRIPT + ".meta").read()).group(1)
     body = "".join(f"  {k}: {v}\n" for k, v in learned.items())
     return os.path.join(OUT_DIR, name + ".asset"), asset_header(script_guid, name) + body
 
 
-def write_variant(hull, learned):
+def write_variant(hull, learned, intensity=None):
     ensure_folder()
     paths = []
-    for path, text in variant_texts(hull, learned):
+    for path, text in ([variant_text(hull, learned, intensity)] if intensity else variant_texts(hull, learned)):
         open(path, "w", encoding="utf-8").write(text)
         meta = path + ".meta"
         if not os.path.exists(meta):
@@ -810,7 +829,8 @@ def check():
         text = open(os.path.join(OUT_DIR, fn), encoding="utf-8").read()
         if not os.path.exists(os.path.join(OUT_DIR, fn + ".meta")):
             problems.append(f"{fn}: no .meta")
-        base = fn[:fn.rfind("_")] + ".asset"   # <asset>_<mode>.asset, any mode
+        stem = re.sub(r"_I\d+$", "", fn[:-len(".asset")])   # <asset>_<mode>_I<n>: an intensity's variant
+        base = stem[:stem.rfind("_")] + ".asset"   # <asset>_<mode>.asset, any mode
         base_path = next((os.path.join(d, base) for d in (POLICY_DIR, STOAT_DIR) if os.path.exists(os.path.join(d, base))), None)
         if base_path:
             bt = open(base_path, encoding="utf-8").read()
@@ -837,7 +857,7 @@ def fmt(v):
 def report(results, wrote):
     lines = []
     for R in results:
-        lines.append(f"### {R['hull']} ({HULLS[R['hull']]['verb']})\n")
+        lines.append(f"### {R['hull']}{' at ' + R['label'] + ' alone' if R.get('label') else ''} ({HULLS[R['hull']]['verb']})\n")
         lines.append(f"{R['flights']} editor flight(s), {R['finished']} finished; learned from: "
                      + (", ".join(os.path.basename(u) for u in R["used"]) or "-") + "\n")
         if R.get("intensities"):
@@ -967,6 +987,17 @@ def run(sources, write):
             R["intensities"][int(f.get("intensity") or 0)] = (n + 1, d + (1 if completed(f) else 0))
         results.append(R)
     wrote = [p for R in results if write and R["learned"] for p in write_variant(R["hull"], R["learned"])]
+    if MODE in PER_INTENSITY_MODES:
+        for h, fl in by_hull.items():
+            if "policy" not in HULLS[h]:
+                continue
+            for i in sorted({int(f.get("intensity") or 0) for f, _ in fl} - {0}):
+                R = learn_hull(h, [(f, S) for f, S in fl if int(f.get("intensity") or 0) == i])
+                R["hull"], R["label"] = h, f"I{i}"
+                R["intensities"] = {}
+                results.append(R)
+                if write and R["learned"]:
+                    wrote += write_variant(h, R["learned"], intensity=i)
     text = report(results, wrote)
     print(text)
     if write:
@@ -1065,6 +1096,8 @@ def self_test():
     # A variant overrides only the base's own fields and keeps its script.
     path, text = variant_text("Rhino", {"alignDegrees": 9.5, "notAField": 1})
     assert "alignDegrees: 9.5" in text and "notAField" not in text and "m_Name: RhinoAIBoostPolicy_Regatta" in text, text
+    path, text = variant_text("Rhino", {"alignDegrees": 9.5}, intensity=4)
+    assert path.endswith(f"RhinoAIBoostPolicy_{MODE}_I4.asset") and f"m_Name: RhinoAIBoostPolicy_{MODE}_I4" in text, path
     path, text = variant_text("Manta", {"BoostStickBand": 0.5, "YastriStickBand": 0.8})
     assert "MantaSoarAITuning_Regatta" in text and "BoostStickBand: 0.5" in text
     # The Stoat: a pilot in Time mode slings when the ring is 40+ deg off the nose and 200+ u away, squeezes 0.7, lets
@@ -1148,6 +1181,11 @@ def self_test():
         assert g and g["alignDegrees"] <= 10.5 and g["stickBand"] <= 0.31 and g["engageRunwaySeconds"] >= 1.15, R
         assert g["minSecondsBetweenPellets"] >= 1.45, g
         assert completed(fl[0]) and not is_race(fl[0]), "a match without rings that ran out is complete"
+        # Matches the person WON teach first: three won rule-flights plus a lost random one learn the rule's numbers.
+        wins = [dict(crystal_flight("rule", 120 + i), result={"youWon": True}) for i in range(3)]
+        lost = dict(crystal_flight("random", 130), result={"youWon": False})
+        gw = learn_hull("Ghost", [(f, samples_of(f)) for f in wins + [lost]])["learned"]
+        assert gw and gw["alignDegrees"] <= 10.5, ("a lost match must not teach when three won ones exist", gw)
         rnd = learn_hull("Ghost", [(f, samples_of(f)) for f in [crystal_flight("random", 120 + i) for i in range(3)]])["learned"]
         assert rnd.get("alignDegrees", 0) > g["alignDegrees"] + 5, ("negative control: random presses are not lined up", rnd)
         # The Snap Dash: two throttle edges within the window at TIME 5 are one dash; a slow double press, or below
@@ -1173,6 +1211,14 @@ def self_test():
                        open(os.path.join(POLICY_DIR, "RhinoAIBoostPolicy.asset"), encoding="utf-8").read()))
             _, text = copy_with(os.path.join(POLICY_DIR, "RhinoAIBoostPolicy.asset"), "RhinoAIBoostPolicy_SelfTest", {"alignDegrees": 9.0})
             assert "cornerSpeed: 333" in text and "alignDegrees: 9.0" in text, "a hand-set field in an existing variant survives"
+            # An intensity's variant starts from its mode's, so the mode's hand-set field reaches it too; without a
+            # mode variant it starts from the base (negative control).
+            _, text = copy_with(os.path.join(POLICY_DIR, "RhinoAIBoostPolicy.asset"), "RhinoAIBoostPolicy_SelfTest_I4",
+                                {"alignDegrees": 7.0}, fallback="RhinoAIBoostPolicy_SelfTest")
+            assert "cornerSpeed: 333" in text and "m_Name: RhinoAIBoostPolicy_SelfTest_I4" in text, text
+            _, text = copy_with(os.path.join(POLICY_DIR, "RhinoAIBoostPolicy.asset"), "RhinoAIBoostPolicy_NoMode_I4",
+                                {"alignDegrees": 7.0}, fallback="RhinoAIBoostPolicy_NoMode")
+            assert "cornerSpeed: 333" not in text and "alignDegrees: 7.0" in text, "no mode variant: the base"
         finally:
             OUT_DIR = keep
 
@@ -1181,7 +1227,7 @@ def self_test():
           "seconds write nothing; variants keep only their base's fields; the Stoat's sling turn / distance / squeeze / release "
           "and its Time-mode switch angle recovered, a random slinger rejected; a press verb against the nearest crystal "
           "recovered and random presses rejected; the Snap Dash double-tap counted once; a switched-off mode and an "
-          "existing variant's own fields respected)")
+          "existing variant's own fields respected; an intensity's variant named _I<n> and started from its mode's)")
     return 0
 
 

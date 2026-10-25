@@ -214,6 +214,17 @@ namespace CosmicShore.Gameplay
         /// the Butterfly's authored 0.6 skill throttle it cruised at about 45).</summary>
         protected override float AIThrottleFloor => 1f;
 
+        /// <summary>
+        /// Regatta's gate steering (<see cref="GateRaceController.AICommitFromApproachPoint"/>, 2026-10-26): commit no earlier
+        /// than the approach point, which then lies inside the commit radius; aim through the ring's CENTRE; re-attack after
+        /// a missed mouth. With the shipped steering the AI Butterfly threaded 0 of 24 rings in both of Caleb's races
+        /// (2026-10-20/21): its approach point sat 300 u out against a 260 u commit, and it orbited the first ring 150-300 u
+        /// off for the whole race on its 85 u turning circle (45 deg/s at 67 u/s). Offline on those two courses
+        /// (<c>Tools/Build/switchback_dolphin_sim.py --mode Waystation</c>, no fold): 0 and 5 rings before, 24 of 24 on both
+        /// after, in 205 s and 213 s against Caleb's 245 s and 205 s.
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
+
         void ReleaseFold(IPlayer pilot)
         {
             _aiFoldReleaseAt.Remove(pilot);

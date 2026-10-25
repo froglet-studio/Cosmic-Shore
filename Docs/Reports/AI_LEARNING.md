@@ -1,19 +1,19 @@
 # AI learning: what the last races taught
 
-Written by `Tools/Build/ai_learn.py --run` (the scheduled AI learning sweep, `Docs/AI_SYSTEM/AUTO_LEARNING.md`) on 2026-10-25 22:43 UTC. Nobody runs it by hand: every race flown in Unity reaches it on its own.
+Written by `Tools/Build/ai_learn.py --run` (the scheduled AI learning sweep, `Docs/AI_SYSTEM/AUTO_LEARNING.md`) on 2026-10-25 23:40 UTC. Nobody runs it by hand: every race flown in Unity reaches it on its own.
 
-**159 new flight(s)** since the last learn.
+**167 new flight(s)** since the last learn.
 
 ## Bloomrush
 
-New flights: Manta 5.
+New flights: Manta 7.
 
-- `learn_drives_from_flights --write`: OK. nothing.
+- `learn_drives_from_flights --write`: OK. Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Bloomrush.asset.
 - `learn_drives_from_flights --check`: OK. check: OK
 
 ## Breakwater
 
-New flights: Sparrow 5.
+New flights: Sparrow 7.
 
 - `learn_drives_from_flights --write`: OK. nothing.
 - `learn_drives_from_flights --check`: OK. check: OK
@@ -22,14 +22,14 @@ The person, every recorded race in this mode:
 
 | Hull | Intensity | Races | Finished | Fastest | Last raced |
 |---|---|---:|---:|---:|---|
-| Sparrow | I1 | 3 | 3 | 84 s | 2026-10-20 16:27 |
+| Sparrow | I1 | 5 | 4 | 84 s | 2026-10-26 03:35 |
 | Sparrow | I4 | 2 | 2 | 89 s | 2026-10-20 16:35 |
 
 The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-sparrow        5      1    0.7    36      56%     2%    0/5    0: 5, 1: 2, 9: 1
+sparrow        9     12    6.1    37      41%     3%    0/9    0: 11, 1: 6, 3: 3, 5: 2
 ```
 
 ## Broadside
@@ -119,7 +119,7 @@ scarab         2      5    5.5   322       0%     0%    0/2    1: 1, 4: 1, 5: 1
 
 ## ScarabScramble
 
-New flights: Scarab 1.
+New flights: Scarab 2.
 
 - **Scarab: measured, not written** - ScarabAIBoostPolicy is switched off in ScarabScramble (disabledInModes).
 
@@ -173,24 +173,24 @@ squirrel      15      0    0.0   183       8%     1%    0/15   0: 15
 
 ## Switchback
 
-New flights: Dolphin 12.
+New flights: Dolphin 15.
 
-- `learn_drives_from_flights --write`: OK. Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback.asset.
+- `learn_drives_from_flights --write`: OK. Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback.asset, Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback_I1.asset, Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback_I2.asset, Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback_I4.asset.
 - `learn_drives_from_flights --check`: OK. check: OK
 
 The person, every recorded race in this mode:
 
 | Hull | Intensity | Races | Finished | Fastest | Last raced |
 |---|---|---:|---:|---:|---|
-| Dolphin | I1 | 4 | 3 | 75 s | 2026-10-26 01:41 |
+| Dolphin | I1 | 6 | 5 | 60 s | 2026-10-26 04:06 |
 | Dolphin | I2 | 5 | 5 | 80 s | 2026-10-26 01:46 |
-| Dolphin | I4 | 3 | 2 | 247 s | 2026-10-26 02:03 |
+| Dolphin | I4 | 4 | 3 | 120 s | 2026-10-26 04:09 |
 
 The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
-dolphin       26      6    3.3    68      20%     1%    2/26   0: 26, 5: 6, 6: 6, 8: 5
+dolphin       32     10    3.7    75      19%     1%    2/32   0: 32, 6: 8, 3: 7, 7: 7
 ```
 
 ## Tapestry
@@ -203,7 +203,8 @@ New flights: Butterfly 1.
 
 New flights: Thresher 2.
 
-- **Thresher: measured, not written** - its boost policy SquirrelAIBoostPolicy (SkimRingAIPolicySO) presses SquirrelTubeActionSO, which this hull does not bind - the drive cannot act.
+- `learn_drives_from_flights --write`: OK. nothing.
+- `learn_drives_from_flights --check`: OK. check: OK
 
 The person, every recorded race in this mode:
 
@@ -262,7 +263,7 @@ butterfly      2      0    0.0    50      44%     3%    0/2    0: 2
 
 New flights: Wrasse 3.
 
-- **Wrasse: measured, not written** - its boost policy SparrowAIBoostPolicy (HoldBoostAIPolicySO) presses BoostActionSO, which this hull does not bind - the drive cannot act.
+- **Wrasse: measured, not written** - its boost is the crew's: KiteNavigator spends a saved boost while the next ring is aiBoostRingDistance away (AIPilotWantsBoost, KiteNavigatorConfig), which does not load per mode; its AIPilot names no policy.
 
 The person, every recorded race in this mode:
 
@@ -286,11 +287,31 @@ New flights: Scarab 1.
 
 ## Files the learners changed
 
-- `Docs/AI_SYSTEM/AUTO_LEARNING.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES.md`
+- `Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Bloomrush.asset`
+- `Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Bloomrush.asset.meta`
 - `Docs/AI_SYSTEM/LEARNED_DRIVES_Bloomrush.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Breakwater.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Broadside.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Scurry.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_WreckingBall.md`
-- `Docs/UNITY_VERIFICATION_CHECKLIST.md`
+
+## What the sweep judged (2026-10-25 23:30-00:15 UTC)
+
+Only races flown after the AI last changed count. Flight times are the recorder's local clock (+05:30).
+
+- **Switchback (Dolphin): fixed what numbers could not.** The three races after the steering fix and the hard turn
+  (04:04-04:09, 22:34-22:39 UTC): AI Dolphins 8.8 rings/min, 0 of 6 finished, circling 23 s at I4; Yash 17-20 at I1.
+  The learner's one Switchback drive was I1's numbers, which miss I4's 20 u mouths (offline: 232 s, 31 misses; with
+  I4's own numbers 148 s, 12). Now one drive per intensity: `DolphinAIBoostPolicy_Switchback_I1` / `_I2` / `_I4`
+  (`AIBoostPolicySO.ForMode(policy, mode, intensity)`; `MINIGAME_TRAINING_PLAN.md` §3.6). Not run in Unity.
+- **Breakwater (Sparrow):** its newest races (03:23, 03:35) came before the Sparrow AI changed (22:12 UTC): nothing to
+  judge yet.
+- **Bloomrush (Manta):** two new I3 races carry real Soaring; the Manta's Bloomrush bands are written.
+- **Regatta, Skim Race, Thresher Time, Warpline, Waystation, Wrasse Run, Skein:** every race in them came before their
+  AI's last change (or the hull is on hold or report only): nothing to judge yet.
+
+## Waiting on
+
+- Warpline: the Stoat's configuration (Garrett, issue 1198).
+- Grizzly Charge: jtgjones's `grizzly-v3` bomb rework.
+
+## To build
+
+- Butterfly (Dustup, Tapestry, Waystation): the recorder logs no Dust-mode bit, so its one choice cannot be learned.
+- Urchin, Wrasse: their riding / crew boost do not load per mode.
