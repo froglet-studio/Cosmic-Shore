@@ -136,6 +136,76 @@ back. The < > arrows are generator-authored, 32 x 56, level with the tiles and i
 
 **Confirmed in editor 2026-10-25 by Yash**, after #1529 merged to bleeding-edge: Main Menu from a match lands back on its launch panel and works as expected (step 1). Ticket T-20261025-4e15 (#1526) closed with that note. Steps 2-6 (the pause menu, Arena, Maelstrom / weekly challenge, a party of two, the boot and freestyle no-regression checks) were not recorded separately; tick each here when it is run, and turn the entry green once all six have passed.
 
+### 🔴 Goby & Pistol: the path map, teleport between perches, either way from any den (`cece/cool-shannon-aulgpe`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** after its rest at a perch the Pistol's view becomes the path map: each island glows by the opposing
+prisms the vortex ring could reach over it; pick a den and a direction (A / D or left stick, F / Y turns round) and dive
+(or tap a path's start) to ride it. Another den is a teleport: no rest, no den growth. The AI takes the richest island.
+`PistolPaths` (pure) + `GobyPistolDuo` (scores, choice, map camera, lit bars for the Pistol's camera only).
+
+**Verified without the editor:** refcompile player 0 errors, editor 0 in changed files; `PistolPaths` run headless in a
+harness (options, cursor, AI pick, band; a planted wrong expectation failed); logging, conditional compilation, crew
+vessels, orthographic views, `author_goby_assets --check`. New tests `Paths_*` compile, not run. `/verify-unity` did
+not run.
+
+**Verify in editor (Toybox, Goby and Pistol, fly the Pistol):**
+1. Ride to a perch: after the rest the view pulls back to all perches; islands with rival prisms near them glow lime and
+   thicker, empty ones thin blue; the highlight is white with a pointer along the way it rides.
+2. Touch first (Garrett, 2026-10-25: controls for 2D characters are mobile, then gamepad, then mouse/keyboard): on a
+   phone, drag spins the map, a tap on a path's bar picks it from the nearer den, a tap on the picked path rides it, Back
+   turns it round, a finger held still from the ride rides on. Pad: right stick spins, left stick picks the next path that
+   way on screen, A rides, Y turns round. Keyboard: Space rides, A / D pick, F turns round, Q / E spin. The head's
+   "ahead" waits. The spin stays as you left it at the next perch.
+3. Pick another den and dive: the Pistol appears there and rides; arriving at the next perch the den grows only by the
+   distance ridden since the teleport. Holding the dive through a perch rides on after half a second.
+4. The Goby's view never shows the bars.
+5. Fly the Goby: the AI Pistol heads for the island with the most rival prisms.
+6. Fly the Pistol (2026-10-25): the AI Goby lays its islands through clusters of rival prisms (the debug overlay's Goby
+   line reads `route N opposing`), not off in random directions; with nothing rival in reach it still cruises and
+   chases a rival or wanders.
+
+### 🔴 2D cameras fade the sky's Voronoi cell net (`cece/cool-shannon-aulgpe`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** `TwoDCameraSky` sets the global `_SkyCellOverlaySuppress` per camera; `HyperSeaSkybox.shader` fades
+its cell overlay by it. Registered: the Pistol's camera, the Wrasse's kite board, the Jacks' herding view.
+
+**Verified without the editor:** refcompile player 0 errors, editor 0 in changed files; `bake_static_skybox.py`
+re-baked the phone sky byte-identical (the global unset reads 0, so the sky is unchanged everywhere else);
+`CrewVesselTests.TwoDCameraSky_FadesTheCellNetOnlyInA2DCamera` compiles, not run. `/verify-unity` did not run.
+
+**Verify in editor:** fly the Pistol, the Wrasse's kite and the Jacks' herding view: no cell net in their views (full
+screen and small square), stars and nebulae still there; the Goby's own chase view, the Squirrel's and every other
+main view still show the cells.
+
+### 🔴 Goby & Pistol: the Pistol's model, each seat's own cards, the vortex ring's toroidal lens (`cece/cool-shannon-aulgpe`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** the Pistol is drawn as `Pistol.fbx` (a pistol-shrimp ship, `specs/pistol.py`) instead of a capsule:
+nose along its travel, 2.7 u long, domain on slot 0, the hammer claw shuts on a Snap, the tail curls on a dive. The
+Goby has its own HUD (`GobyHUDVariant`, `GobyPistolHUDView` / `GobyPistolHUDController`, written by
+`author_goby_hud.py`): each seat's four cards change icon, chip, press, veil, gauge and count on a swap, and the
+Pistol's controls moved onto the fleet's face buttons (A / Space dive, B / T ghost, X / Q Snap, Y / F back; G, E, the B
+key and LB still work; the aimed jump's key is J). The vortex ring is a `VortexRingLens` (a URP full-screen pass beside
+the black hole's) instead of a faceted torus.
+
+**Verified without the editor:** `unity_refcompile` player 0 errors, editor 0 in changed files;
+`verify_vortex_ring_lens.py` PASS (ring projection vs brute force on off-axis cameras, glslang compile, negative
+controls); `build.py specs/pistol.py --check` and the hovering-assembly gate; `author_goby_hud.py` and
+`author_goby_assets.py` `--check` and `--self-test`; logging, conditional compilation, crew vessels, orthographic views.
+New EditMode tests compile, not run (`GobyPistolTests.Pistol_HasItsOwnModel`, `Hud_EachSeatHasItsOwnCards`,
+`VortexRingLensTests`). `/verify-unity` did not run: no Unity CLI in the session.
+
+**Verify in editor (Toybox, Vessel Changer > Goby and Pistol):**
+1. `Pistol.fbx` imports with no errors; the shader `VortexRingLens` compiles on first open (the real URP library has
+   never compiled it).
+2. Fly the Pistol (swap with D-pad / arrows): the shrimp rides the hills nose first, tips with the slope, turns round
+   when heading back; Snap shuts the claw; holding dive curls the tail; ghosting shrinks it. Its domain colour shows.
+3. The ability row: flying the Goby shows Lock / perches / reach gauge / Dart with Y, X chips (Q, F on keyboard);
+   flying the Pistol shows Snap / den count / Ghost / dive with X, Y, B, A chips (Q, F, T, Space). Veils sweep on Dart,
+   Snap and Ghost; Mass flashes on each perch. No Squirrel drift card or boost fill anywhere.
+4. Snap a ring: it reads as a subtle clear-glass doughnut bending what is behind it, in the Pistol's view (off-axis
+   lens), the small square and the Goby's chase view; it swells in and fades out; nothing in front of it is bent.
+5. Watch the frame time while rings live (a second full-screen colour copy).
+
 ### 🔴 Crystal pickups run once per machine: no ghost omni crystal on a watcher's screen (`cece/gallant-brown-2gs03c`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** `VesselImpactor.RouteCrystalPickup(isSpawned, isOwner)`. A spawned copy of another pilot's vessel

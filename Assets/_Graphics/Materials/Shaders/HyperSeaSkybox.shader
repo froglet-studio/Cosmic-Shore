@@ -118,6 +118,11 @@ Shader "CosmicShore/HyperSeaSkybox"
     half _AndromedaSize;
 
     half _CellOverlayStrength;
+    // A GLOBAL, not a material property: 1 while a 2D camera renders (TwoDCameraSky), 0 for every other camera.
+    // A 2D camera slides and zooms across a plane while the sky only follows rotation, so the cell net would sit
+    // magnified and glued to its screen (Garrett, 2026-10-25: "doing something weird with the voroni effect").
+    // Unset it reads 0, so the sky looks exactly as authored everywhere else.
+    half _SkyCellOverlaySuppress;
     half _CellOverlayScale;
     half4 _CellOverlayColor;
     half _CellEdgeSharpness;
@@ -586,7 +591,8 @@ Shader "CosmicShore/HyperSeaSkybox"
 
     half3 computeCellOverlay(float3 dir, float time)
     {
-        if (_CellOverlayStrength < 0.001) return 0;
+        half strength = _CellOverlayStrength * saturate(1.0 - _SkyCellOverlaySuppress);
+        if (strength < 0.001) return 0;
 
         float3 p = dir * _CellOverlayScale;
         float3 drift = float3(time * _DriftSpeed * 0.3, 0, time * _DriftSpeed * 0.2);
@@ -629,7 +635,7 @@ Shader "CosmicShore/HyperSeaSkybox"
         float interior = smoothstep(0.0, 0.5, minDist1) * 0.15;
 
         float pattern = edge + interior;
-        return pattern * _CellOverlayColor.rgb * _CellOverlayStrength;
+        return pattern * _CellOverlayColor.rgb * strength;
     }
 
     // ================================================================

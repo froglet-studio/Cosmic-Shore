@@ -8,15 +8,27 @@
 > - "it should not have the squirrels abilities or be anything like the squirrel. it should be a goby with its own kit
 >   that represents a goby and synergizes with the pistol and its kit" **[stated]**
 > - "The goby should dart and perch similar to the way the shrike shoots itself" **[stated]**. **[read]:** the Goby is
->   always pinned (the fleet's restricted stance): it aims while perched and DARTS - hold Dart to charge the distance
->   (`dartMinRange` 140 -> `dartRange` 600 over 0.8 s), let go, and it flies there in `dartSeconds` 1 (the Shrike's
->   distance / 1 s), stopping on the first block on its line, where it perches.
+>   CRUISES between perches, as the Shrike does between docks (2026-10-23; it was always pinned until then, which left it
+>   "barely cruising around at all"): a person on the hull's own two-thumb flight, the seat's AI at `aiCruiseSpeed` 100.
+>   Hold Dart to charge the distance (`dartMinRange` 140 -> `dartRange` 600 over 0.8 s), let go, and it flies there in
+>   `dartSeconds` 1 (the Shrike's distance / 1 s), stopping on the first block on its line. The dart's end is a PERCH
+>   (the end of the Pistol's next island) once it is `islandMinLength` 900 from the last perch, while fewer than
+>   `islandQueue` 3 islands wait ahead of the Pistol; a longer gap is laid as islands of at most `islandMaxLength` 1800.
+>   Otherwise the dart is a dash and it cruises on. Perched, it is pinned and aims for `perchSeconds` 1.5 (longer while a
+>   dart charges), then lifts off (`GobyIslands`).
 > - "the goby may shoot into open space and make its own perch" **[stated]**. **[read]:** a dart that reaches nothing
 >   lays a small pad of its own blocks under the Goby there.
 > - "the slope from one perch to another should be a fun downhill for the shrimp" **[stated]**. **[read]:** each dart
->   lays its trail as the Pistol's ground, with low hills (`hillAmplitude` 10, `hillWavelength` 70) that meet both
->   perches, and the Pistol's frame leans the stretch `slopeDegrees` 22 downhill whichever way it rides
->   (`PistolPlane`).
+>   lays its trail as the Pistol's ground, and the Pistol rides it as **Tiny Wings** (Garrett, 2026-10-22: "the
+>   reference for the pistol is the game tiny wings"; until 2026-10-24 a sinusoid with a swell on a 5 deg lean, the third and
+>   fourth passes below). **Since 2026-10-24 the ride is Tiny Wings' own, measured from the game's remakes
+>   (`Docs/PISTOL_TINY_WINGS_STUDY.md`, the fifth pass below):** the ground is random KEY POINTS, alternately a crest and a
+>   trough, 10-15 u on and 3.6-7.2 u up or down, a half-cosine between (`PistolPlane.HillTrack`, seeded from the island's
+>   perches), level (`slopeDegrees` 0), an island of 900-1800 u (36-73 hills) starting on a crest at the perch and ending
+>   on a climb to the next; a frictionless body under `pGravity` 19, a dive x7.5, drag 0.05, a landing that keeps its
+>   speed along the slope (`pHardKeep` 1; within `pGoodLand` 30 deg a perfect slide, `pSmoothBoost` 1.05), a floor of
+>   `pMinSpeed` 6, the aimed jump off (`aimedJump`). The camera is the game's (`PistolPlane.TinyWingsView`): 29 u across
+>   at rest with the Pistol 0.15 in from the left, zooming out by height to keep a fifth of headroom, to 150 u.
 > - "the non-danger mass on either side of the pistol's plane (which no longer needs to bend at all) is pulled into that
 >   plane based on the pair's space. Space L5 pulls in shielded prisms too." **[stated]** The plane is FLAT: the
 >   unrolled ribbon and its warped view are retired. **[read]:** super-shielded and the pair's own prisms never move.
@@ -32,14 +44,108 @@
 >   homes at 240 °/s; a hit is one scored PvP hit taking 1 -> 3 petals from each element with Charge.
 > - "time is the cooldown on the pistol's jump. time L5 allows the goby to phase through prisms when darting."
 >   **[stated]** (jump 9 s -> 3 s).
+>   **[open] since 2026-10-22:** the aimed jump is off ("launching intentionally was wierd"), so Time's base card has
+>   nothing to drive until Garrett names what Time does on the Pistol (or turns `aimedJump` back on).
 > - The primer, heat and flares are RETIRED (they were the Goby's old kit). Charge has no level-5 upgrade yet **[open]**.
 > - Controls: Goby Dart = pad RT / X, key Q, phone Dart button (hold, let go); Lock = pad LT / Y, key F, phone Lock.
->   Pistol: dive / drag-to-jump / Ghost / Snap as before, plus Back (key B, pad LB, phone Back).
+>   Pistol (since 2026-10-24, on the fleet's four labelled face buttons so each card's chip names its control from the
+>   one glyph set): dive A / Space (hold), Ghost B / T, Snap X / Q, Back Y / F; the old keys still work (G ghost, E Snap,
+>   the B key and LB back); with `aimedJump` on, the keyboard jump is J (it was F, which is now Back). Phone: its own
+>   Ghost, Snap and Back buttons.
+> - Each seat has its OWN four cards (Garrett, 2026-10-24: "give both of its seats separate UI ability icons, glyphs,
+>   etc."): `GobyHUDVariant` + `GobyPistolHUDView` / `GobyPistolHUDController`, written by `Tools/Build/author_goby_hud.py`
+>   and swapped onto `Goby.prefab` by `author_goby_assets.py`. Flying the Goby: Charge **Lock** (Y / F, lit while it holds
+>   a lock), Mass the **perches** it has made (a count; flashes on each perch), Space the **undertow's reach** (a gauge),
+>   Time **Dart** (X / Q; the gauge is the held charge, the veil its cooldown). Flying the Pistol: Charge **Snap** (X / Q,
+>   the veil its cooldown), Mass the **den prisms** (a count) with **Back** (Y / F, lit while heading back), Space
+>   **Ghost** (B / T, the veil its cooldown; the same reach gauge), Time the **dive** (A / Space; the gauge is its speed).
+>   The icons are 128 px placeholders in `Assets/_Graphics/Icons/AbilityIcons/Goby/` for the art pass to replace 1:1,
+>   drawn on the motifs of the seats' phone buttons. Time's card on the Pistol stays the dive until Time's open question
+>   (below) is answered.
 > - The four cards: Charge **Vortex Sting**, Mass **Dens** (L5 Fortress), Space **Undertow** (L5 Deep Undertow), Time
 >   **Quick Jump** (L5 Phase Dart). `Tools/Build/author_goby_assets.py` writes and checks them.
-> - Still the Squirrel's: the hull MODEL (on the Squirrel's rig), the HUD controller, the nested skimmer prefab (its
+> - "when the shrimp gets to a new perch it should be able to pick another perch to teleport to. teleporting to different
+>   perches does not grow them. only traveling the distance using the dive should grow the den. the pistol should be able
+>   to travel either direction from a den as well. the view that allows the pistol to find a den and direction of
+>   interest should show which paths have collected the most opposing prisms for the vortex ring to destroy." **[stated]**
+>   (2026-10-25). **[read]:** after its rest at a perch the Pistol's view pulls back to the PATH MAP: every perch framed,
+>   looking along the islands' planes. Each island glows along its ground as a lit faceted bar, thicker and from the
+>   neutral blue toward the call-to-action lime as it holds more OPPOSING prisms (not the pair's domain, breakable, not
+>   super-shielded: what the vortex ring can catch) over it, within the undertow's reach of its plane and `pathScoreBand`
+>   60 u of its ground. The options are every den, either way it has an island (`PistolPaths`); the head's "ahead" waits
+>   for the Goby's next island. The pick is white, with a pointer at its den along the way it rides. Controls in the 2D
+>   cameras' priority (Garrett, 2026-10-25: "the control priority for 2d characters is mobile, gamepad, mouse/keyboard ...
+>   the player needs to be able to spin the map"): **touch** (the mouse is the same pointer) drags to spin the map, taps a
+>   path's glowing bar to pick it (starting from the den at the end nearer the tap), taps the picked path again to ride
+>   it, and the phone's Back button turns it round; a finger still down from the ride, held still 0.5 s, rides on
+>   (`MapPointer`). **Gamepad**: right stick spins, left stick moves the pick to the next path that way on screen, A (or LT)
+>   rides it (a fresh press, or held through the perch), Y turns it round. **Keyboard**: Space rides, A / D move the pick,
+>   F turns round, Q / E spin. The spin is kept from perch to perch. Picking another den TELEPORTS there and rides from it:
+>   no rest, no den growth (only the distance ridden grows the den the Pistol next arrives at). The AI takes the island
+>   with the most opposing prisms (ties: nearest end), and its old way when every island is empty. Scores are kept one
+>   island per 0.1 s, every frame while the map is open.
+> - The Pistol has its own MODEL (Garrett, 2026-10-24: "give the pistol a model"): `Pistol.fbx`, a pistol-shrimp ship
+>   built by `/vessel-model` (`specs/pistol.py`, `Docs/VesselModels/Pistol.md`): 19 floating parts, the big hammer claw
+>   on its right (the side the Pistol's camera sees going forward), four element morphs. The seat draws it where the
+>   ride puts it, nose along its travel and tipped with the slope or its flight, `pistolModelLength` 2.7 u long, wearing
+>   the pair's domain on slot 0; the hammer shuts on a Snap and re-cocks (`snapClawShut` 75 deg, hold 0.08 s, re-cock
+>   0.35 s) and the tail curls under on a dive (`diveTailCurl` 22 deg). Shrinks to 0.6 while ghosting, as the capsule did.
+> - The vortex ring is no longer a flat faceted torus (Garrett, 2026-10-24: "make the vortex ring loose the flat effect
+>   and replace it with a cool warping effect like the black holes use but convey a more subtle toroid"): each ring is a
+>   `VortexRingLens`, a full-screen URP pass beside the black hole's that bends the light behind the ring toward its
+>   core circle like a clear glass rod, with a faint 0x9fe8ff rim, a slight chromatic split and a slow swirl
+>   (`Docs/BLACK_HOLE.md` §5.3; knobs on `Resources/VortexRingLens.mat`). It swells in over 0.25 s and fades over its
+>   last 0.5 s; the prisms it carries still flow round it. The Goby's lock stays a lit ring (a fact in the world).
+> - Still the Squirrel's: the hull MODEL's rig (the Goby's own hull, `Goby.fbx`, is built on the Squirrel's bones), the nested skimmer prefab (its
 >   Squirrel effects are stripped through the Goby's own containers; it still collects crystals), and an AI-flown Goby
 >   that the seat does not run on (backfill, other machines) flies the platform AIPilot without the kit. Team tasks.
+
+## The ability matrix: both seats, every platform (2026-10-25)
+
+Garrett, 2026-10-25: "ability matrix should now include controls like that. table with all three platforms. please give
+me an ability matrix for both seats." Columns run in the 2D characters' control priority: **mobile, gamepad,
+mouse/keyboard**. The four cards are the HUD's row (`GobyPistolHUDController`); each seat draws them its own way. Keep this
+table in step with `GobyPistolDuo` (`HumanPistol`, `Choose`), the hull's bindings (`author_goby_assets.py`
+`GOBY_BINDINGS`) and the phone buttons (`GobyPistolButtons`) in every change that moves a control.
+
+**The Goby seat** (the 3D flier that lays the islands and perches):
+
+| Card | Ability | What it does, and how its element scales it | Level 5 | Mobile | Gamepad | Mouse / keyboard |
+|---|---|---|---|---|---|---|
+| Charge | **Lock** (feeds the Pistol's Vortex Sting) | Locks the best target in the nose's cone, rival vessels first, then fauna; while the lock is on the Pistol's screen its rings home on it. Charge raises the petals a ring hit takes (1 -> 3). | none yet **[open]** | Lock button | Y or LT | F |
+| Mass | **Perches** (the Pistol's dens) | Passive: a dart's end becomes a perch once it is 900 u from the last one; the Pistol builds its den there. The card counts them and flashes on each. | (Fortress, on the Pistol's dens) | passive | passive | passive |
+| Space | **Undertow** (the Pistol's) | Passive: mass beside the Pistol's plane is pulled into it; the card's gauge is the reach (40 -> 200 u with Space). | (Deep Undertow) | passive | passive | passive |
+| Time | **Dart** | Hold to charge the distance (140 -> 600 u over 0.8 s), let go to dart; it stops on the first block on its line. The gauge is the charge, the veil the cooldown. | **Phase Dart**: darts pass through prisms | Dart button: hold, let go | X or RT: hold, let go | Q: hold, let go |
+| (flight) | the hull's own flight | Cruises; perched, it is pinned and aims. | | two thumbs | both sticks | the desktop flight scheme |
+
+**The Pistol seat** (the 2D sidescroller that rides the islands, Tiny Wings style):
+
+| Card | Ability | What it does, and how its element scales it | Level 5 | Mobile | Gamepad | Mouse / keyboard |
+|---|---|---|---|---|---|---|
+| Charge | **Snap** -> **Vortex Sting** | Fires a vortex ring (the toroidal lens) that gathers prisms round its core; with the Goby's lock on screen it homes, and a rival hull it passes through loses petals from each element (1 -> 3 with Charge). The veil is its cooldown. | none yet **[open]** | Snap button | X | Q (or E) |
+| Mass | **Dens**, and **Back** | At each perch it rests and builds a den: one prism per 40 u ridden since the last den, x1 -> x2.5 with Mass, at most 80. Teleporting grows none. The card counts the den prisms; Back, pressed while riding, turns the next perch's pick round. | **Fortress**: danger and super-shielded prisms too | Back button | Y (or LB) | F (or the B key) |
+| Space | **Ghost** (and the Undertow, passive) | Ghost: a moment of passing through prisms, then a cooldown (the veil). The Undertow pulls mass beside the plane into it, 40 -> 200 u with Space; the card's gauge is that reach. | **Deep Undertow**: shielded prisms pulled too | Ghost button | B | T (or G) |
+| Time | **the dive** (and the aimed jump, off) | Hold to press into the hill; let go on an upslope and it throws the Pistol. The gauge is its speed. With `aimedJump` on, a dragged jump whose cooldown Time shortens (9 -> 3 s); off since 2026-10-22, so Time's card on the Pistol is **[open]**. | (Phase Dart is the Goby's) | finger held on the view (aimed jump: drag) | A or LT (aimed jump: RT + right stick) | Space, S, down, or mouse held (aimed jump: J) |
+
+**The path map** (the Pistol seat, at a perch after its rest; picking another den teleports there):
+
+| Move | Mobile | Gamepad | Mouse / keyboard |
+|---|---|---|---|
+| Spin the map | drag | right stick | drag, or Q / E |
+| Pick a path (from the den at the nearer end) | tap its glowing bar | left stick (the next path that way on screen) | click its bar, or A / D |
+| Ride it (or teleport, then ride) | tap the picked path again | A or LT | Space (or S, down), or click the picked path |
+| Turn it round at its den | tap the den's other path (or the Back button) | Y | F |
+| Ride on without stopping | keep the finger down, still | keep A or LT held | keep Space held |
+
+The phone's Dart, Lock, Snap, Ghost and Back buttons are drawn by the seat (`GobyPistolButtons`, round the right thumb).
+Since 2026-10-25 `/vessel` §4.ac3 (LOCKED, Garrett) says a vessel draws no controls of its own: each becomes its card
+(the follow-ups below).
+
+**Both seats:**
+
+| Move | Mobile | Gamepad | Mouse / keyboard |
+|---|---|---|---|
+| Swap seats | two-finger swipe, or double tap the small view | D-pad left / right | left / right arrows |
 
 **Status (2026-10-18):** in the game as a prototype, not yet flown in the editor. The Goby is vessel class 18 (card
 "Goby and Pistol"), flyable from the Toybox's Vessel Changer, built from the shared crew pieces (SKILL.md "One notion
@@ -230,6 +336,20 @@ craft riding the trail.
 7. The Pistol's AI priorities.
 8. What the Pistol does before the spline exists (spawning or respawning away from the trail),
    and whether one half dying downs the pair.
+
+### 8.1 Follow-ups left by `cece/cool-shannon-aulgpe` (shipped 2026-10-25)
+
+1. **The phone buttons become the cards** (`/vessel` §4.ac3, LOCKED 2026-10-25: a vessel draws no controls of its own).
+   `GobyPistolButtons` predates the rule and still draws Dart, Lock, Snap, Ghost and Back. The per-seat cards exist
+   (`GobyPistolHUDController`), so each seat's card taps become its controls; the Pistol's cards need their inputs
+   BOUND on `Goby.prefab` (Button1 and Button2 are not today: `GOBY_BINDINGS` in `author_goby_assets.py`) and the seat
+   must hear taps while its flight input is paused (`JacksExecutor.ListenToCards` is the pattern). Then the matrix's
+   mobile column changes. Measure first: `grep -n "GobyPistolButtons" -r Assets/_Scripts`.
+2. **The path map's cost on a long chain is unmeasured.** `ScorePaths` queries spheres every 1.5 x max(reach, band)
+   along one island per frame while the map is open; `AiPlanRoute` queries one sphere of the island's length round the
+   last perch every rethink. Profile both with 20+ perches in a dense cell before tuning.
+3. **Time's card on the Pistol** stays the dive while the aimed jump is off (open since 2026-10-22).
+4. **The Charge level-5 upgrade** on either seat (open).
 
 ## 9. The lab comes first [stated]
 
@@ -560,3 +680,237 @@ the line it settled.
   **[read] for Garrett:** fly it on a phone and a pad: perch, aim, dart (short tap vs full charge), dart into space,
   watch the Pistol ride down, rest and build, press Back to an old den, lock a rival and Snap when it is on the
   Pistol's screen.
+- 2026-10-22, Garrett: "the pistol view needs updating. it was getting pretty fun, but with the recent change its camera
+  is too far away, the number of wiggles in the path is too small. its needs a pass that preserves what is fun about the
+  mechanics we are after and brings them back into the progress that we have made since they were tuned for fun."
+  **[read]:** "tuned for fun" is the lab's rounds 12-13 (the ride numbers the kit already carries), against which the
+  kit's flat plane lost two things. Measured:
+  - **The camera.** The lab's and the first Unity side view's camera sat `pParallax` 160 u off the plane with an off-axis
+    lens (`frustumOf` / `PistolWarp.Frustum`), so the world either side of the plane read in depth. The kit's sat
+    `viewWidth / (2 tan(fov/2) aspect)` away at `viewFov` 40: 961 u in the small square, 541 u full screen on 16:9.
+    Now `viewDistance` 160 again (replaces `viewFov`), the camera BESIDE the Pistol and the lens looking ahead
+    (`viewPistolAt` -0.2: the Pistol a fifth of the width left of centre, the lab's), so the Pistol sits on the lens's
+    axis and is never stretched; its height eases between the Pistol and the ground ahead (`PistolPlane.OffAxis`,
+    `GobyPistolDuo.LateUpdate`). `viewWidth` 700 is kept.
+  - **The wiggles.** The lab's ground had two scales: the fine zigzag of the alternating hinges (every second 16 u
+    block, ±10 u: 64 u) and the rolls the Goby AI's height weave laid (18 u at 0.55 Hz behind a 160 u/s Goby: ~290 u),
+    on top of the Goby's own climbs and dives. A dart is straight, so the kit kept only one wave (10 u at 70 u) and
+    faded it to nothing over the dart (`sin(pi s / L)`), so the hills only stood up mid-dart and peaked at 10 u. Now
+    both scales are laid along the Goby's up, each a whole number of half-waves per dart (`PistolPlane.HalfWaves`),
+    so neither needs a fade and both meet each perch: a 380 u dart has 6 crests and hills to ~27 u (was 10); a dart so
+    short that the hills would climb steeper than `MaxHillSlope` 1.5 gets lower ones, so the ground never folds
+    (`slopeDegrees` is capped at 33 for the same reason). The ground's inverse is Newton's method now (exact to
+    1e-4 u on every dart length measured, 6 to 600 u).
+  - Kept as the kit has them: the ride (round 12's numbers), the 22 deg downhill, the dens, the undertow, the rings.
+  `GobyPistolTests`: `Ground_KeepsTheLabsWiggles`, `Ground_NeverFolds_EvenOnAShortDart`,
+  `SideLens_LooksAheadOfTheCameraBeside`. **[read] for Garrett:** fly the Pistol full screen and in the small square:
+  is 160 u close enough (the lens is wide: 700 u across at 160 u is ~130 deg in the square), and do the rolls give a
+  dive and a release on every dart?
+- 2026-10-22, Garrett, on that pass: "we should zoom in, make the shrimp smaller and make more wiggles along the path.
+  it should have a 15 to 30 second journey from perch to perch. it should not launch from the perch each time, and
+  launching should only get big enough to clear a few humps that are a small fraction of the journey. launching
+  intentionally was wierd." Built (`GobyPistolConfig`):
+  - **Shrimp scale.** The ride's physics has no scale of its own (lengths and gravity scale together), so the Pistol's
+    world is shrunk round the same darts: humps 10 u long, ±1.6 u (were 64 u, ±10), on rolls 60 u, ±3.5 u (were 290,
+    ±18); trail blocks every 3 u, 1.4 x 0.4 x 2.8 (were 10 u, 4 x 0.9 x 9); the shrimp `pBodyR` 0.5 (was 2.5); the
+    view `viewWidth` 120 u across (was 700), about twelve humps.
+  - **The journey.** Tuned in a headless port of `PistolBodyMath.Step` against the Pistol AI's Tiny Wings rider:
+    `pGravity` 30, `pDiveMul` 2.2, `pDrag` 0.45, `pMinSpeed` 4 (were 95 / 2.6 / 0.35 / 22). A rider who dives on the
+    downslopes crosses 300 / 450 / 600 u in 16.5 / 24 / 30 s; one who never dives takes 20 / 27 / 37 s; the kit's
+    first numbers took 4-9 s. **[read]:** a journey is 15-30 s only for darts of 300-600 u, so `dartMinRange` is
+    300 (was 140: a tap now darts 300 u) and the Goby AI darts 450 (was 380) and waits up to 25 s for the Pistol
+    (was 7).
+  - **No launch off the perch.** Each stretch starts from a standstill at `pMinSpeed`; the Pistol used to carry its
+    arrival speed into the first hump, and the Pistol AI aimed its jump at the den it had just built.
+  - **Short flights.** Flights come only off the humps (let go of the dive on an upslope): ~5-9 a stretch, the longest
+    ~29 u, three humps and 5-10 % of the journey.
+  - **The aimed jump is off** (`aimedJump` false: no drag-to-aim, no RT + stick, no F, and the AI does not jump). With
+    it on it reaches `pLaunchRange` 35 u (was 220). **[open] for Garrett:** Time's base card ("Quick Jump", the jump's
+    cooldown) has nothing to drive; say what Time does on the Pistol, or turn the jump back on.
+  - **[read] for Garrett, side effects:** the homing ring fires only when the locked rival is on the Pistol's screen,
+    which is now 120 u across, so it homes far less often; and a 600 u dart lays 200 trail prisms (was 60). The class
+    card's description ("flies the Goby ... on two thumbs", "launching into clusters") predates the kit and is stale.
+  `GobyPistolTests.Ride_IsAFifteenToThirtySecondJourney_WithShortFlights` rides the SHIPPED asset over the shortest and
+  the longest dart (12-32 s, longest flight under 15 % of the journey and six humps; control: the kit's first numbers
+  under 12 s).
+- 2026-10-22, Garrett: "the reference for the pistol is the game tiny wings. Tune the camera etc. to get us closer to that
+  gameplay for the base movement of the pistol." Measured first, in a headless port of the ride (`PistolBodyMath.Step`)
+  with Tiny Wings' loop as the scorecard (dive the slope, let go in the valley, the crest throws it, land on a back
+  slope to slide faster, build speed over a run):
+  - **The ride never flew.** Its liftoff compared one frame's free fall with the ground (`yb > yg + 0.05`), so it
+    depended on the frame: at 120 steps a second the shrimp never left the ground, at 30 and 60 it left at random
+    points. The same rider took 16.5 s at 60 fps and 19.9 s at 30. And **no landing was ever smooth** (0 %): it fell
+    steeply onto the fronts of humps, so every flight cost 45 % of its speed. Tiny Wings' reward never happened.
+  - **The physics now (`PistolBodyMath.Ride`).** A crest throws the Pistol when its speed needs more pull round the
+    curve than gravity gives (v^2 times the curvature > g cos), so holding the dive keeps it down and letting go over a
+    crest flies it. Every frame is ridden in 1/120 s steps (`Substep`): a never-diving and an always-diving rider are
+    identical at 30 and 60 fps. A hop shorter than `pMinAir` 0.25 s is a skip (keeps its speed, earns nothing): before
+    that, frame-long hops each counted as a smooth landing's x1.04.
+  - **The hills (`PistolPlane.Hills`).** One train of smooth hills, heights swelling and falling, replaces rolls plus a
+    fine zigzag (which left no slope a landing could be smooth on). The lean is 6 deg (was 22): Tiny Wings' hills are
+    level, so speed is the rider's to build, and 22 deg of free speed drowned it.
+  - **The ride's numbers**, chosen by sweeping lean, hill size, gravity, dive and drag against the scorecard and then
+    checking 30 and 60 fps: `pGravity` 18, `pDiveMul` 4 (Tiny Wings' heavy dive), `pDrag` 0.15. Measured in the C#
+    (300 / 600 u darts, 60 fps): the rider who dives the slopes and lets go up them takes 11.4 / 24.6 s, flies 11 / 22
+    times, lands 10 / 17 of them as smooth slides, and its longest flight is ~36 u (two hills, 6-12 % of the journey);
+    one who never dives takes 29.7 / 56.9 s and never flies; one who never lets go takes 17.3 / 34.2 s and flies 2 / 5.
+  - **The Pistol AI** plays it the same way (`PistolAI.TinyWingsDive`): dive down slopes, let go up them, and in the
+    air dive only when that lands it at a smaller angle (the back of a hill). Its old "dive when high" rule
+    (`aiHighDive`) is gone.
+  - **The camera (`PistolPlane.TinyWingsView`).** Tiny Wings frames the ground, not the bird: the ground under the
+    Pistol sits `viewGroundedAt` 0.35 up the screen, the Pistol `viewPistolAt` a fifth left of centre (a third in);
+    the view widens by `viewSpeedWiden` 1 u per u/s, and when the Pistol flies high it zooms out to keep `viewHeadroom`
+    0.15 above it with the ground still on screen, up to `viewMaxWidth` 240 (then it rises with it). Out quickly, back
+    in slowly. The camera pulls back with the zoom (`viewDistance` 160 at the rest width of 80), so the lens never
+    changes (28 deg across: nearly flat, as Tiny Wings is 2D).
+  - Kept: the shrimp (`pBodyR` 0.5), `dartMinRange` 300, no aimed jump, no launch off the perch.
+  `GobyPistolTests`: `Ride_IsTinyWings_DiveLetGoFlySlide` (with the never-dive and never-let-go controls),
+  `Ride_IsTheSame_AtThirtyAndSixtyFps`, `TinyWingsView_KeepsTheGroundOnScreen_AndZoomsOutToFly`,
+  `Ground_IsATrainOfTinyWingsHills` (the control: no swell, hills alike). Their logic was run in .NET against the
+  three pure files (all pass); the editor run is T-20261022-bc36. **[read] for Garrett:** the never-diving rider takes
+  ~57 s on a full dart, Tiny Wings' penalty for not playing; at 30 fps a skilled run's longest flight reached 81 u once
+  (4.5 hills, 14 % of the journey).
+- 2026-10-23, Garrett: "it should feel much closer to tiny wings in relative scale of piston and hill height, apparent
+  speed, length of level compared to perch distance. it doesn't feel there or even close in its tunings." The third pass
+  fixed Tiny Wings' LOOP but not its PROPORTIONS. Measured in the Pistol's length (d), as Tiny Wings' are in the bird's:
+  the screen showed 4.4 hills with the Pistol 1/80 of it, so the Pistol looked about 5x too small, the hills read as
+  wiggles and the ride as slow (0.3 screens a second); a hill was only 3.6 d tall; a stretch was 17-33 hills.
+  - **Tiny Wings' proportions, the targets** (**[read]**: Claude's estimates from the game, not measured from footage;
+    correct any of them and the next pass re-tunes to it): a hill about 15 d crest to crest and 3-5 d tall (taller on
+    later islands); the resting screen a little over one hill wide, the bird about 1/15-1/20 of its width, a quarter to
+    a third in, the ground in the lower third; an island about 12-20 hills, crossed at about a hill a second (about a
+    resting screen a second); a good flight clears 1-3 hills and peaks 1-3 hill heights up; the view zooms out about 4x
+    in flight.
+  - **Shipped** (`GobyPistolConfig`): `hillWavelength` 26, `hillHeight` 3.5 (a hill 15.3 d long, 4.1 d tall at the
+    tallest; `swellWavelength` 156, six hills); `pBodyR` 0.85 (d = 1.7 u); `slopeDegrees` 5; `pGravity` 14, `pDiveMul` 4,
+    `pDrag` 0.03; the view `viewWidth` 30 (1.15 hills, the Pistol 1/18 of it), `viewMaxWidth` 120, `viewSpeedWiden` 0.6,
+    `viewDistance` 60 at rest (the same 28 deg lens). Chosen by a sweep of hill size, lean, gravity, dive and drag against
+    those targets with the expert rider and both controls.
+  - **Measured in the C#** (60 fps): a 300 u stretch is 11.5 hills, played in 13.8 s (0.83 hills/s), 6 flights, 4 of them
+    smooth slides, the longest 59 u (2.3 hills); a 600 u stretch is 23 hills in 24.8 s (0.93 hills/s), 12 flights, 8
+    smooth, the longest 64 u; at 30 fps 14.6 s and 25.3 s. A rider who never dives takes 29.3 / 57.1 s (1 smooth slide);
+    one who never lets go 18.4 / 33.6 s (0 / 2). On screen the ride runs at about 0.9 resting screens a second (was 0.3).
+  - **[read] for Garrett:** with taller hills a flight is about one in two hills, and the longest is ~20 % of the shortest
+    (300 u) stretch: "a few humps" now means a few of Tiny Wings' hills, each about a twelfth of the journey. Flights
+    peak about one hill height up (two at most): higher, Tiny Wings-at-full-speed flights need more speed than one
+    stretch builds.
+  `GobyPistolTests.Proportions_AreTinyWings` pins the ratios (control: the third pass's 18 u hills under an 80 u
+  screen fail); `Ride_IsTinyWings_DiveLetGoFlySlide` now asks for a flight at least every three hills, flights under
+  three hills and the controls sliding at most half as often. Logic run in .NET against the three pure files: all pass.
+- 2026-10-23, Garrett: "the tiny wings character gets really floaty and can launch over many hills after just riding a
+  few. it gets to quicker speeds launches higher falls slower. you gotta get a handle on their physics which is very
+  forgiving and lets you ride about 3 times longer before the perch/den." The previous ride was the opposite: as heavy in
+  the air as on the ground, a hard landing kept 55 % of the speed, drag held the speed flat, and a stretch was 11-23
+  hills. The physics now (`PistolBodyMath.Ride`, four new numbers):
+  - **Floaty** (`pAirGravity` 0.45): gravity in the air while the Pistol lets go is 0.45 of the slide's, so it launches
+    higher and falls slower; the dive still pulls it down at x4. A crest throws it when its speed beats the AIR's
+    gravity round the curve, so a floatier Pistol leaves crests sooner.
+  - **Builds speed** (`pSmoothBoost` 1.16 per smooth landing, `pDrag` 0.01, `pMaxSpeed` 120, `pMinSpeed` 9): chained
+    slides keep adding speed, so after a few hills it flies over many.
+  - **Forgiving** (`pGoodLand` 65: a landing within 65 deg of the slope is smooth; `pHardKeep` 0.95: a hard one keeps
+    95 % of its speed along the slope).
+  - **3x longer** (`dartMinRange` 900, `dartRange` 1800, `aiDartLength` 1350; was 300 / 600 / 450): the Pistol's ground
+    is the Goby's dart, so the darts are what got longer. Kept with it: `aiHomeRadius` 4000 (was 1600, so the Goby AI's
+    1350 u darts have room), `aiWaitForPistol` 45, a trail block every 6 u (5.5 u long; was 3) so a full dart lays 300
+    prisms, not 600. **[read] for Garrett:** a full dart now covers 1800 u in `dartSeconds` 1 - the Goby's own feel
+    changed with it; and the island starts on SMALL hills by each perch, rising to tall ones between (`hillSwell` now
+    lowers the hills at the perches), so nothing flies off the first crest.
+  - The view zooms out to `viewMaxWidth` 180 (was 120) for the higher flights.
+  - Chosen by a C# sweep (gravity, dive, float, boost, landing window and keep, floor and top speed, drag) over four
+    dart lengths and three seeds, scored on: the first big flight after a few hills, flights over many hills, speed
+    building, flight height, smooth landings, a sloppy rider (wrong a third of the time) not much slower, and a
+    never-diver clearly slower. **Measured in the C#** (60 fps): 900 u (35 hills) in 20.2 s, the first 3-hill flight at
+    hill 2.3, the longest 5.4 hills, speed 32 -> 92 u/s, 10 of 10 landings smooth; 1800 u (69 hills) in 30.4 s, first big
+    flight at hill 4.1, the longest 9.4 hills, 58 -> 83 u/s, 12 of 12 smooth. The sloppy rider takes 20.0 / 44.9 s, the
+    never-diver 61.9 / 60.5 s. At 30 fps one 1800 u run threw a 20-hill flight. About 1.7-2.3 hills a second.
+  `GobyPistolTests.Ride_IsTinyWings_FloatyForgivingAndBuilding` replaces the dive-let-go test (the first big flight
+  after 1.5 hills and within the first third, a flight of at least 4 hills, speed building x1.25+, 75 % smooth, the
+  sloppy rider under x1.6, the never-diver over x1.4); `Proportions_AreTinyWings` now asks for 30-75 hills a stretch at
+  1.2-3 hills a second. Logic run in .NET against the three pure files: all pass.
+- 2026-10-23, Garrett: "ok now take a pass at tuning the two together. the pistol is a bit overtuned now but much closer.
+  the goby is barely cruising around at all. I coudn't get the goby to work and the AI did only a little better. there
+  is a fun pair here but they both need a lot of work lets start by tuning their movement". Measured first:
+  - **The Goby never cruised.** The kit pinned it always ([read] above), so it moved only during a dart, and a dart
+    stops on the first prism within 9 u of its line - in a cell of flora usually a few dozen u out. With the 900-1800 u
+    darts of the floaty pass that meant short islands and a Goby that hardly moved. Its AI aimed one long dart, then waited
+    up to 45 s (`aiWaitForPistol`) for the Pistol, which rides an island in 20-35 s.
+  - **The Goby now cruises** (`GobyPistolDuo`, `GobyIslands`): pinned only while perched or darting; a person flies it on
+    the hull's own two-thumb flight (`DefaultThrottleScaler` 160), the seat's AI cruises at `aiCruiseSpeed` 100, turning
+    at `aiTurnRate` 90 deg/s and re-choosing its heading every `aiRethinkSeconds` 2.5 (at a locked rival in reach, back
+    toward the last perch while the Pistol's islands are full, home when it strays, else a wander off the nose). The dart
+    is the Goby's burst again (140-600 u, `aiDartLength` 300); its end is a perch only when the island would be
+    `islandMinLength` 900 or more and fewer than `islandQueue` 3 islands wait for the Pistol; a gap longer than
+    `islandMaxLength` 1800 is laid as several islands, each ending in a perch of its own. Perched it aims for
+    `perchSeconds` 1.5, then lifts off. `aiWaitForPistol` is retired.
+  - **Together:** the wandering AI (simulated over 200 seeds: net progress median 0.88 of what it flies, one run in ten
+    0.56) makes a 1350 u island in about 22 s; the Pistol AI rides one in about 33 s. So the Pistol never waits at the
+    head perch, and the queue keeps the Goby from running away: it circles the last perch until the Pistol catches up.
+  - **The Pistol, a notch back** ("a bit overtuned"): `pAirGravity` 0.45 -> 0.5, `pSmoothBoost` 1.16 -> 1.12,
+    `pMaxSpeed` 120 -> 100; the forgiveness (`pGoodLand` 65, `pHardKeep` 0.95) kept, since a version without it made a
+    sloppy rider twice as slow on a long island. Measured: 900 u in 19.3 s (19.3 s at 30 fps too), first big flight at hill
+    8, longest 6.5 hills, speed 41 -> 76 u/s; 1800 u in 33.6 s, longest 7.3 hills; sloppy rider x1.3 / x1.2 (averaged over
+    four phases: one frame's shift moved a single run by half again), never-diver x2.7 / x2.2.
+  - **[read] for Garrett:** a person's Goby has no in-world cue yet for "this dart will perch" (900 u from the last perch,
+    queue not full): a dart that falls short just dashes. Say if it wants one (the LOCKED world-not-screen rule: a light or
+    shape in the world).
+  `GobyPistolTests`: `Islands_AreLaidAtTheirLength_AndKeepThePairTogether`, `Pair_TheGobyKeepsAheadOfThePistol` (control:
+  the waiting Goby), the ride tests on island lengths with the sloppy rider over four phases. Logic run in .NET against
+  the pure files: all pass.
+- 2026-10-24, Garrett: "i feel like you could really make this class work but you need to understand tiny wings better,
+  and really put the effort into making the pistol feel great and satisfying. it should be properly scaled, have the
+  right sinusoidal curve, speed, accelerations, camera, everything. find the other games in the genre. what works and
+  what doesn't. make a really fun to play pistol and goby." The four passes before tuned from memory; this one from the
+  game. **The study is `Docs/PISTOL_TINY_WINGS_STUDY.md`** (sources: the MIT haqu remake, the Kodeco tutorial, two clones,
+  the guides; Wavespark, Dune!, Alto's, Ski Safari for the genre). What it corrected:
+  - **The ground is not a sinusoid.** Random key points, alternately crest and trough, 160-240 pt on and 60-120 pt up or
+    down for a 14 pt bird, a half-cosine between: every hill a different size, every crest and trough level. Rebuilt as
+    `PistolPlane.HillTrack` in the Pistol's length (half-hills 10-15 u, rises 3.6-7.2 u, a +-9 u band, +8 % taller an
+    island to x1.5), seeded from the island's two perches so the rider's machine builds the same ground; the island
+    starts on a crest (the first half-hill is the dive) and ends on a climb (the ramp onto the perch). `Hills` (the
+    sinusoid and swell) is retired.
+  - **The dive is ~7 g, not 4, and the air is not light.** Gravity 9.8 m/s^2 plus a 40 N dive on a 0.6 kg body; drag 5 %/s;
+    no friction, no bounce, no cap, a floor on forward speed. Now `pGravity` 19, `pDiveMul` 7.5, `pAirGravity` 1,
+    `pDrag` 0.05, `pMinSpeed` 6, `pMaxSpeed` 90.
+  - **A landing loses only the speed into the slope** (frictionless, no bounce): `pHardKeep` 1, and the perfect slide is
+    the game's scored event, not a speed bonus (`pSmoothBoost` 1.05 kept as a touch, `pGoodLand` 30 deg).
+  - **Level** (`slopeDegrees` 0): the game's hills are level; every u/s is the rider's.
+  - **The camera**: the bird an eighth of the screen from the left and the zoom by height only, keeping it under four
+    fifths (`viewPistolAt` -0.35, `viewHeadroom` 0.2, `viewSpeedWiden` 0.15, `viewMaxWidth` 150).
+  - **Measured** (60 fps, two seeds): a 36-hill island in 20-21 s at 1.6-1.8 screens a second, 14 flights (13-14 perfect
+    slides), the longest 4.3 hills and 3 hill heights up, speed 23 -> 33 d/s with a top of 51; a 73-hill island in 40 s.
+    A rider wrong a third of the time takes twice as long (so would the game's); never diving dawdles at the floor speed
+    (93 s; the game's nightfall is what ends that); never letting go stays glued (43 s, one flight).
+  - **[read] for Garrett:** the Pistol AI is in the air 77-81 % of a ride (it dives in the air only when that lands it
+    flatter). And the study's §4, not built: fever for the pair (three perfect slides -> the den or the ring), speed coins
+    in the troughs, juice on the slide and the launch, a clock.
+  `GobyPistolTests`: `Ground_IsTinyWingsKeyPointHills` (lengths, rises, alternation, level keys, the dive start and the
+  ramp end, determinism; controls: flat, growth), `Ride_IsTinyWings` (pace in screens a second, flights, perfect slides,
+  the top speed in bird lengths; the never-dive, never-let-go and sloppy controls), `Proportions_AreTinyWings` on the
+  game's ranges, the view test on the game's framing. Their logic run in .NET against the pure files: all pass.
+- 2026-10-24, Garrett: "this vessel needs a lot of work but this is big step. now give the pistol a model, give both of
+  its seats separate UI ability icons, glyphs, etc. and make the vortex ring loose the flat effect and replace it with a
+  cool warping effect like the black holes use but convey a more subtle toroid instead of a spherical singularity."
+  - The Pistol's model: `Pistol.fbx` (three rounds; a wasp, then a shrimp side-on, then its paint and fan fixed), drawn
+    by the seat in place of the capsule, with the claw snap and the dive's tail curl. **[proposed]** its length 2.7 u
+    (the capsule's) and the claw on the camera's side going forward.
+  - Each seat's own HUD: `GobyHUDVariant`, eight placeholder icons, per-seat chips, veils, gauges and counts (top
+    section). **[proposed]** the Pistol's controls on the fleet's four labelled face buttons (old keys kept), so every
+    chip is honest; the aimed jump's key J.
+  - The toroidal lens: `VortexRingLens` (top section). **[proposed]** dropping the faceted ring mesh entirely (the lens
+    alone carries the ring); the rim tint stays the ring's old 0x9fe8ff rather than the domain colour.
+- 2026-10-25, Garrett: the path map, teleport between perches, either direction from any den, den growth only from the
+  distance ridden (top section). **[proposed]** the map's look (side-on to the islands, lit bars by score, a white pick
+  with a pointer), its controls (A / D or left stick, F / Y turns round, the dive or a tap rides), "opposing" = any domain
+  but the pair's, and the AI's pick (the richest island, else its old way).
+- 2026-10-25, Garrett: "the control priority for 2d characters is mobile, gamepad, mouse/keyboard. so make sure the
+  controls work best in that priority. the player needs to be able to spin the map to decide where they want to go when
+  choosing the den to teleport to." The map's controls reworked touch first (drag spins, tap picks, tap again rides),
+  then the pad (right stick spins, left stick picks, A rides), then the keyboard (top section). **[proposed]** tap-again
+  to ride on touch, and the spin kept between perches.
+- 2026-10-25, Garrett: "ability matrix should now include controls like that. table with all three platforms. please give
+  me an ability matrix for both seats. the goby AI was doing a bad job of taking paths that would give the shrimp plenty
+  to destroy." The ability matrix above (both seats, mobile / gamepad / mouse-keyboard). The Goby AI now plans each
+  island through the opposing prisms (`PistolPaths.BestHeading`): of 26 fixed headings and a heading through each of up
+  to 64 sampled opposing prisms, the one whose island passes the most within the Pistol's reach, its end inside the home
+  radius; Easy and Medium misread the counts (up to +-50 % / +-22 %, rolled per island). It chases a rival only when no
+  opposing prism is in reach. **[proposed]** the corridor (the undertow's reach, or `pathScoreBand` when wider).

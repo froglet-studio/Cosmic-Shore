@@ -52,6 +52,7 @@ namespace CosmicShore.Gameplay
             _cam.nearClipPlane = 0.1f;
             _cam.enabled = false;
             _marks = new UnprocessedOverlay(_cam, "JacksMarks");
+            TwoDCameraSky.Register(_cam);   // a 2D camera: no sky cell net glued to the herding view (TwoDCameraSky)
         }
 
         internal Camera Camera => _cam;
@@ -62,6 +63,7 @@ namespace CosmicShore.Gameplay
 
         internal void Dispose()
         {
+            TwoDCameraSky.Unregister(_cam);
             _park.Release();
             _marks.Dispose();
             if (_root) Object.Destroy(_root);
