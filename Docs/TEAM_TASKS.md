@@ -2413,3 +2413,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith; Yash or Garrett for the vessel values
 - **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/AntiCheat/README.md section 8b
+
+### T-20261025-6e9a · open · setup · Fair play
+- **Task:** Fair play - T1 Steam sign-in: on the Steamworks partner site get the app id and a Web API publisher key; in the UGS dashboard add the Steam identity provider (development, then production); set appId and signInWithSteam in Assets/Resources/SteamConfig.asset
+- **Done when:** A test build signs in with Steam and the dashboard player shows a Steam identity (Tools/UGS/README.md, 'Switching on Steam sign-in')
+- **Who can take it:** Garrett (Steam partner account), Yash (UGS dashboard)
+- **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Tools/UGS/README.md
+
+### T-20261025-885c · open · test · Fair play
+- **Task:** Fair play - T1 Steam sign-in editor checks: run the 'Steam sign-in on PC' steps in Docs/UNITY_VERIFICATION_CHECKLIST.md with the Steam client running (first launch signs in with Steam, an old anonymous player links, Steam closed falls back to anonymous)
+- **Done when:** All seven checks pass and the checklist entry is marked verified
+- **Who can take it:** Yash (authentication)
+- **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261025-7795 · open · dev · Fair play
+- **Task:** Fair play - T1 Apple and Google sign-in: add Sign in with Apple (iOS) and Google Play Games (Android) through their Unity plugins (new packages: ask first) and link them to the existing anonymous account the way SteamSignIn does
+- **Done when:** A phone build links its account to Apple or Google and a reinstall signs back in to the same player id
+- **Who can take it:** Yash (authentication)
+- **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Assets/_Scripts/System/Steam/SteamSignIn.cs

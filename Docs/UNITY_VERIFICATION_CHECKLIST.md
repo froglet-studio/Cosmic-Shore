@@ -65,6 +65,38 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play: Steam sign-in on PC, linked to the existing account (`claude/vigilant-archimedes-euoz8z`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T1, the Steam part. New package `com.rlabrecque.steamworks.net` 2025.164.1 (Steamworks.NET,
+MIT, git package; approved by Shombith, 2026-10-25). `SteamPlatform` starts the Steam API on Windows, macOS and Linux
+only (a shell elsewhere), pumps its callbacks and issues the Web API ticket. `AuthenticationServiceFacade` (Yash's auth)
+now: with no cached session, signs in WITH Steam (`SteamSignIn.TrySignInAsync`), falling back to anonymous; with a cached
+session, resumes it anonymously as before and then links Steam in the background (`SteamSignIn.LinkInBackground`). A
+refused Steam attempt does not raise `OnSignInFailed`. **Switched off**: `Resources/SteamConfig.asset` ships app id 0
+and `signInWithSteam` off, so nothing changes until both are set. Apple and Google sign-in are not done (they need their
+own plugins).
+
+**Verified without the editor:** `unity_refcompile` player and player-dev: **88 assemblies, 0 errors** (Steamworks.NET
+fetched at its locked commit); planted errors in `SteamPlatform` and `SteamCallbackPump` caught, so the guarded Steam code
+is really compiled against Steamworks.NET. webgl config (no standalone defines): 0 errors, the shell compiles. Editor
+config: the 3 errors are the unobtainable `Unity.Multiplayer.PlayMode` usings already in the facade (lines 9, 423, 426,
+unchanged; `MultiplayerSetup.cs` shows the same three). Amoebius port build (auth shim grown, separate commit): no errors
+in the changed files; the 13 left are in files this branch does not touch. Nothing run in Play mode, no Steam client here.
+
+**Test in the editor (needs the Steam client running and signed in, and the app id):**
+1. Edit-mode tests `SteamSignInTests` pass (the shipped config is off).
+2. With the shipped config, Play: sign-in is anonymous exactly as before; the console has no `[Steam]` line.
+3. Set the app id in `Resources/SteamConfig` and tick **Sign In With Steam** (local only, do not commit), enable the
+   Steam provider in the UGS dashboard (`Tools/UGS/README.md`, "Switching on Steam sign-in"). Clear the session token
+   (FrogletTools auth reset, or a fresh MPPM profile) and Play: the Boot channel shows `Steam=True`, sign-in succeeds,
+   and the dashboard player has a Steam identity.
+4. Play again with the cached session from an older anonymous account: it resumes the same player id and then links
+   (`[Steam] Linked Steam to this account.` on the Boot channel); the dashboard player gains the Steam identity.
+5. Quit Steam and Play: one `[Steam] Steam is not available` warning and an anonymous sign-in, no failure screen.
+6. Wrong provider setup (Steam provider off in the dashboard): one `UGS refused the Steam sign-in` warning, then an
+   anonymous sign-in, and the Authentication scene never shows its failure state.
+7. Windows player build: `steam_api64.dll` is in the build's Plugins folder.
+
 ### 🔴 Fair play: Report and Block on the player profile popup (`claude/vigilant-archimedes-euoz8z`, 2026-10-24) — NOT EDITOR-VERIFIED
 
 **What landed:** Threat Board T8. New package `com.unity.services.moderation` 1.1.0 (approved by Shombith, 2026-10-24).

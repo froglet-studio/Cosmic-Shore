@@ -14,6 +14,7 @@ player's device, so a modified game cannot change what it decides. Part of the f
 | `CloudCode/match-report.js` | Every player reports each match (`start`, `end`). Counts quits without the quitter's help (`FAIRPLAY_CONDUCT`: started, finished, left, leave rate over the last 20) and compares the players' end reports of one match, recording a `host_result_mismatch` signal against the host in `FAIRPLAY_SIGNALS` when they disagree | T4, T9 |
 | `CloudCode/match-report.test.cjs` | `node Tools/UGS/CloudCode/match-report.test.cjs` | T4, T9 |
 | `AccessControl/moderation-policy.json` | Lets players send reports to UGS Moderation (the Report button on the profile popup) | T8 |
+| (no file) | Steam sign-in is a dashboard identity provider plus `Assets/Resources/SteamConfig.asset`, below | T1 |
 
 ## Switching on the server-owned wallet
 
@@ -80,6 +81,25 @@ Report and Block are live in the game (no gate): they appear on the player profi
 2. Apply `ugs access upsert-project-policy Tools/UGS/AccessControl/moderation-policy.json` if a report returns 403
    (the research found Moderation reports need a player allow statement; confirm on first use).
 3. Name the person who reviews the queue (the owner decision in `Docs/AntiCheat/README.md` §8).
+
+## Switching on Steam sign-in (T1)
+
+Off in the game: `Assets/Resources/SteamConfig.asset` ships `appId: 0` and `signInWithSteam: 0`, so the Steam API never
+starts and every player signs in anonymously. Code: `Assets/_Scripts/System/Steam/`.
+
+1. **Steamworks partner site:** the app id (`Docs/STEAM_BUSINESS_SETUP.md` item A2) and a **Web API publisher key**
+   (Users & Permissions > Manage Groups > the group's Web API key).
+2. **UGS dashboard:** Player Authentication > Identity providers > add **Steam** with the app id and the publisher key
+   (development environment first).
+3. **The game:** set `appId` and tick `signInWithSteam` in `SteamConfig`, then run the "Steam sign-in" editor checks in
+   `Docs/UNITY_VERIFICATION_CHECKLIST.md` with the Steam client running.
+4. **Production:** add the provider to production too, then ship the build with the config on.
+
+What it does: a launch with no cached session (a first launch or a reinstall) signs in with Steam, so the player lands on
+the account tied to their Steam id. A launch with a cached anonymous session resumes it and links Steam to it. If that
+Steam id already belongs to another account, the session stays put and a warning is logged (no progress is moved).
+Every failure falls back to an anonymous sign-in. Not done: Apple (iOS) and Google (Android) sign-in, which need the
+Sign in with Apple and Play Games plugins.
 
 No Access Control policy is needed for the wallet: players can never write a protected Cloud Save key, so the
 game's old client-written copy in `PLAYER_PROFILE` is only a display cache the server ignores.
