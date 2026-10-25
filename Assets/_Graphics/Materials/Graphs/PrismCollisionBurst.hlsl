@@ -51,6 +51,10 @@
 //   5 FRAGMENT — destruction (round 9). Each triangle of the cut (silver gnomon or Sierpinski) bursts out on its own
 //     direction, tumbles about cross(velocity, N) and its own travel at the explosion's capped rate, and shrinks away
 //     at its own end, the smallest first (PrismBurstFragmentPose).
+//   7 SUCTION — consumption (round 15). The same cut, at the same detail level, drawn into a moving sink: each
+//     fragment lifts off its face, winds in along a curve and shrinks away as it arrives, the side facing the sink
+//     first (PrismBurstSuctionPose). It stands in for the SuctionGraph's implosion exactly as FRAGMENT stands in for
+//     the explosion's graph.
 //
 // EXACTNESS. Rigid pieces rotate their normal with them (Rodrigues). A bend's normal is the bend's
 // derivative: the strip at arc length s is rotated by a = κ·s about the hinge, so its normal is that
@@ -72,6 +76,7 @@
 #define PRISM_BURST_FLAKE   4.0
 #define PRISM_BURST_FRAGMENT 5.0
 #define PRISM_BURST_ROLL    6.0
+#define PRISM_BURST_SUCTION 7.0
 
 // The ROLL shed (the designer, 2026-10-15: "the peeling can curl into a tight roll and roll along and around the
 // surface until the prism occludes it ... then the rolls don't need to dissolve"). Its life is the grade's length
@@ -842,6 +847,96 @@ float PrismBurstFragmentReach(float radius, float life, PrismBurstFragmentShape 
 {
     return radius * (3.0 + (s.burst + s.drift * life) * (1.0 + 6.0 * s.sizeSpeed) * (1.0 + abs(travelNoise))
                          * PrismBurstFragmentBoost(flightSpeed, s) * PrismBurstFragmentVarietyReach(s.variety));
+}
+
+// ─── the suction's fragments (kind SUCTION) ───────────────────────────────────────────────────────
+
+// How a fragment is drawn into the sink — written by PrismCollisionBurst from PrismInteractionLodConfig (Garrett,
+// 2026-10-25: "lets use the silver gnomen triangles that are used on the explosion shader on the suction shader. Use the
+// same LOD system as well."). The suction's cut and its ladder are the destruction's; only the motion is its own.
+struct PrismBurstSuctionShape
+{
+    float stagger;   // the share of the life the fragments' starts are spread over (the rest is each one's own trip)
+    float accel;     // the trip's progress is (its own time)^accel: it creeps off the face, then rushes in — never linear
+    float lift;      // how far it first rises off its face on the way, in prism radii (the curve's control point)
+    float swirl;     // turns it winds about the line to the sink on the way in: the drain's vortex
+    float spin;      // turns it tumbles on the way in (× min(1 + sizeSpin × level, spinCap): the smaller a little faster)
+    float shrink;    // the share of its trip over which it shrinks into the sink (it is gone the moment it arrives)
+    float sizeOrder; // 0: the side facing the sink goes first (the SuctionGraph's face order); 1: the smallest first
+    float sizeSpin;  // per size level the smaller spin this much faster (the destruction's)
+    float spinCap;   // the most any fragment's spin is multiplied (the destruction's: nothing flickers)
+    float levelRef;  // the size level counted as "the smallest" (the destruction's)
+    float variety;   // one suction's character, per death (the destruction's): its swirl's hand and amount, its lift
+};
+
+// One fragment of the cut drawn into the SINK, in WORLD space. sink is the live convergence point (refreshed by the CPU
+// while the eater lives — the §1 moving-target exception, exactly the SuctionGraph's _Location); sink0 is where it was
+// at the stamp, which fixes the ORDER and the vortex's AXIS so neither changes under a fragment already on its way.
+// Its turn: the side facing the sink first (the SuctionGraph consumes the face nearest its _Location first), the
+// smaller a little sooner as sizeOrder asks, a gradient noise at its centroid moving it a little (noise.w), so
+// neighbours leave nearly together, never in step; every start inside the first stagger of the life and every trip
+// over by 95% of it. Its trip, u in [0, 1] of its own time, eased in as u^accel: along a quadratic curve from its rest
+// centroid, through a point lifted off its face, to the sink, wound about the line to the sink by the swirl — a
+// rotation about an axis THROUGH the sink, so it never carries a fragment farther from it — tumbling about
+// cross(N, the axis) and its own normal, and shrinking to nothing as it arrives, so it is gone exactly AT the sink.
+// The first frame is the prism: at age 0 every term is zero and the scale is 1. noise = (spin amplitude, frequency,
+// seed, order jitter).
+void PrismBurstSuctionPose(float3 rest, float3 N, float3 middle, float3 centre, float3 noisePoint, float level,
+    float radius, float age, float life, float3 sink, float3 sink0, float4 noise, PrismBurstSuctionShape s,
+    out float3 pos, out float3 nrm)
+{
+    float3 q = noisePoint * noise.y + noise.z * float3(17.13, 31.71, 7.37);
+    float n1 = PrismBurstGradientNoise(q);
+    float n2 = PrismBurstGradientNoise(q + float3(41.3, 11.9, 23.7));
+    float n3 = PrismBurstGradientNoise(q + float3(73.1, 5.3, 61.7));
+
+    float3 axis = PrismBurstAxis(sink0 - centre, N);
+    float size = clamp(level, 0.0, 6.0);
+#ifdef PRISM_BURST_SUCTION_UNORDERED
+    float order = PrismBurstHash(middle * 13.7 + noise.z);   // negative control only: every fragment at a random turn
+#else
+    float facing = 0.5 - 0.5 * clamp(dot(middle - centre, axis) / max(radius, 1e-5), -1.0, 1.0);
+    float smallFirst = 1.0 - saturate(size / max(s.levelRef, 1e-3));
+    float order = saturate(lerp(facing, smallFirst, saturate(s.sizeOrder)) + noise.w * n3);
+#endif
+    float stagger = clamp(s.stagger, 0.0, 0.85);
+    float start = order * stagger * life;
+    float trip = (0.95 - stagger) * life;
+    float u = saturate((age - start) / max(trip, 1e-4));
+    float p = u > 0.0 ? pow(u, max(s.accel, 1.0)) : 0.0;
+
+    float3 wave = PrismBurstSeedWave(noise.z, float3(3.0, 7.0, 11.0), float3(0.29, 0.61, 0.83));
+    float v = saturate(s.variety);
+    float hand = wave.x >= 0.0 ? 1.0 : -1.0;
+    float lift = max(s.lift, 0.0) * (1.0 + 0.5 * v * wave.z);
+
+#ifdef PRISM_BURST_SUCTION_SNAPSHOT
+    sink = sink0;   // negative control only: the mass converges on where the eater WAS
+#endif
+    float3 raised = middle + N * (lift * radius);
+    float3 curve = middle * ((1.0 - p) * (1.0 - p)) + raised * (2.0 * p * (1.0 - p)) + sink * (p * p);
+    float swirl = hand * s.swirl * (1.0 + 0.5 * v * wave.y) * PRISM_BURST_TAU * p;
+    float3 at = sink + PrismBurstRotate(curve - sink, axis, swirl);
+
+    float turns = s.spin * min(1.0 + s.sizeSpin * size, s.spinCap) * PRISM_BURST_TAU * p;
+    float a1 = turns * (1.0 + noise.x * n1);
+    float a2 = 0.5 * turns * (1.0 + noise.x * n2);
+    float3 tumble = PrismBurstAxis(cross(N, axis), PrismBurstAxis(cross(N, float3(0.31, 0.83, 0.47)), float3(1.0, 0.0, 0.0)));
+    float scale = 1.0 - smoothstep(1.0 - saturate(s.shrink), 1.0, p);
+
+    pos = at + PrismBurstRotate(PrismBurstRotate(rest - middle, tumble, a1), N, a2) * scale;
+    nrm = PrismBurstRotate(PrismBurstRotate(N, tumble, a1), N, a2);
+}
+
+// How far, in WORLD units, a suction fragment can be from the LIVE sink. Proved, not fitted: its curve is a convex
+// blend of its rest centroid (within R of the prism's centre), that centroid lifted by lift × R × (1 + v/2), and the
+// sink, so it is never farther from the sink than |sink − centre| + R + the lift; the swirl turns it about an axis
+// through the sink, which keeps that distance; every vertex is within 2R of its centroid (the tumble keeps it, the
+// shrink only pulls in). The CPU sizes the culling bounds by the same sum about the sink (PrismCollisionBurst
+// .SuctionReach) and grows them when the sink wanders; the harness asserts every pose stays inside it.
+float PrismBurstSuctionReach(float radius, float sinkDistance, float lift, float variety)
+{
+    return sinkDistance + radius * (3.0 + max(lift, 0.0) * (1.0 + 0.5 * saturate(variety)));
 }
 
 // ─── the fade ─────────────────────────────────────────────────────────────────────────────────

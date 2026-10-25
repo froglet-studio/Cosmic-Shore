@@ -30,6 +30,8 @@ namespace CosmicShore.ScriptableObjects
     /// one shed since round 7; bloom, unravel and flake stay as weights at 0): each face's skin in the old colours
     /// rolls up away from the camera and round the prism until the prism hides it — at one of three mesh
     /// resolutions (12, 18, 24 subdivisions).</item>
+    /// <item><b>Suction</b> (round 15) rides the destruction's ladder: the same cut at the same depth lines, every
+    /// fragment drawn into the eater instead of bursting out; level 0 is the cut's depth 0 or the SuctionGraph.</item>
     /// </list>
     ///
     /// Both ladders are graded by DISTANCE (the prism's projected diameter over the screen height, so one number
@@ -160,6 +162,54 @@ namespace CosmicShore.ScriptableObjects
                  "by up to 60%. 0: every death alike.")]
         [Range(0f, 1f)] [SerializeField] float fragmentVariety = 0.5f;
 
+        [Header("Suction — the destruction's cut and ladder, every fragment drawn into the eater (round 15)")]
+        [Tooltip("Garrett, 2026-10-25: \"use the silver gnomen triangles that are used on the explosion shader on the " +
+                 "suction shader. Use the same LOD system as well.\" On: a consumed prism comes apart along the " +
+                 "destruction's cut at the depth its size on screen and the budget allow (the depth lines above), and " +
+                 "every fragment is drawn into the eater. Off: every suction is the SuctionGraph's implosion.")]
+        [SerializeField] bool suctionEnabled = true;
+
+        [Tooltip("Level 0 — every suction the finer levels do not take, far away, off screen or over their budget — " +
+                 "is the same kind on the cut's depth 0 (the explosion's 24 wedges), as explosionAsFragments does for " +
+                 "the destruction. Off: level 0 is the SuctionGraph's implosion.")]
+        [SerializeField] bool suctionAsFragments = true;
+
+        [Tooltip("Level-0 suctions alive at once (24 triangles each; kept OUT of the detail budget). Past it a " +
+                 "suction falls back to the SuctionGraph's implosion — never nothing.")]
+        [SerializeField] int maxLiveSuctions = 1024;
+
+        [Tooltip("The share of the implosion's life the fragments' STARTS are spread over: 0, all leave together; " +
+                 "higher, one after another (the SuctionGraph consumes face by face). The rest of the life is each " +
+                 "fragment's own trip, all of them in by 95% of it.")]
+        [Range(0f, 0.85f)] [SerializeField] float suctionStagger = 0.5f;
+
+        [Tooltip("Each trip's progress is (its own time)^this: it creeps off the face, then rushes in — the crystal " +
+                 "capture's suction is never linear either. 1: linear.")]
+        [Range(1f, 4f)] [SerializeField] float suctionAcceleration = 2.2f;
+
+        [Tooltip("How far each fragment first rises off its face on the way in, in prism radii (the curve's control " +
+                 "point), so the pieces visibly part before they are drawn in.")]
+        [Range(0f, 2f)] [SerializeField] float suctionLift = 0.35f;
+
+        [Tooltip("Turns each fragment winds about the line to the eater on the way in: the drain's vortex. Its hand " +
+                 "and amount vary per suction with fragmentVariety.")]
+        [Range(0f, 2f)] [SerializeField] float suctionSwirl = 0.35f;
+
+        [Tooltip("Turns each fragment tumbles on the way in, the smaller a little faster up to fragmentSpinCap.")]
+        [Range(0f, 3f)] [SerializeField] float suctionSpin = 0.75f;
+
+        [Tooltip("The share of its own trip over which a fragment shrinks into the eater: it is gone the moment it " +
+                 "arrives.")]
+        [Range(0.05f, 1f)] [SerializeField] float suctionShrink = 0.45f;
+
+        [Tooltip("Which go first: 0, the side facing the eater (the SuctionGraph's face order); 1, the smallest " +
+                 "(as a destruction's smallest leave first).")]
+        [Range(0f, 1f)] [SerializeField] float suctionSizeOrder = 0.35f;
+
+        [Tooltip("How much a gradient noise over the prism moves each fragment's turn, so neighbours leave nearly " +
+                 "together, never in step. 0: a perfect wave.")]
+        [Range(0f, 0.3f)] [SerializeField] float suctionOrderNoise = 0.1f;
+
         [Header("Stealing — the grade, or a shed at one of three resolutions")]
         [Tooltip("Off: every steal is the ordinary grade.")]
         [SerializeField] bool shedEnabled = true;
@@ -257,6 +307,17 @@ namespace CosmicShore.ScriptableObjects
         public float CrowdedFill => Mathf.Clamp01(crowdedFill);
         public float PackedFill => Mathf.Clamp01(packedFill);
         public bool DestructionEnabled => destructionEnabled;
+        public bool SuctionEnabled => suctionEnabled;
+        public bool SuctionAsFragments => suctionAsFragments;
+        public int MaxLiveSuctions => Mathf.Max(0, maxLiveSuctions);
+        public float SuctionStagger => Mathf.Clamp(suctionStagger, 0f, 0.85f);
+        public float SuctionAcceleration => Mathf.Clamp(suctionAcceleration, 1f, 4f);
+        public float SuctionLift => Mathf.Clamp(suctionLift, 0f, 2f);
+        public float SuctionSwirl => Mathf.Clamp(suctionSwirl, 0f, 2f);
+        public float SuctionSpin => Mathf.Clamp(suctionSpin, 0f, 3f);
+        public float SuctionShrink => Mathf.Clamp(suctionShrink, 0.05f, 1f);
+        public float SuctionSizeOrder => Mathf.Clamp01(suctionSizeOrder);
+        public float SuctionOrderNoise => Mathf.Clamp(suctionOrderNoise, 0f, 0.3f);
 
         /// <summary>The deepest cut a death can be drawn at (the number of depth lines, capped).</summary>
         public int MaxDepth => depthMinScreen == null ? 0

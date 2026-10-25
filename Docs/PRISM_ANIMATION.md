@@ -2691,7 +2691,7 @@ still snaps and screams through `PrismClockDiagnostics.WarnNoRenderEntity`, exac
   above. NOT verified: nothing has run in a browser or in the editor — see `Docs/WEBGL_TOYBOX.md` §4 for the
   in-browser checks.
 
-### 4.12 The prism's interaction DETAIL LEVELS — destruction and stealing (shipped 2026-10-14, C20, C21)
+### 4.12 The prism's interaction DETAIL LEVELS — destruction and stealing (shipped 2026-10-14, C20, C21; the suction on the destruction's ladder, round 15, 2026-10-25)
 
 **Current design (round 2, the designer, 2026-10-14):** *"lets do without the white edge on the dissolves
 and the glitter; the interior brighter color will create plenty of contrast already. in this scheme
@@ -2709,6 +2709,40 @@ effect) and by the shared budget (`PrismInteractionLod`, config `Resources/Prism
 |---|---|---|---|
 | **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION — depth 0 of the Sierpinski cut | DEPTH 1 (≥ 5%) → DEPTH 2 (≥ 10%) | DEPTH 3 (≥ 16%) → DEPTH 4 (≥ 24%) |
 | **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ 8%): the ROLL (round 7; bloom, unravel and flake ship at weight 0), on 12 subdivisions | the same shed on 18 (≥ 16%), then 24 (≥ 28%) subdivisions |
+| **Suction** (every consumption, `PrismFactory.SpawnImplosion`; round 15) | LEVEL 0 — the suction kind on the cut's depth 0 (the explosion's 24 wedges); refused, the SuctionGraph's implosion | the destruction's DEPTHS 1–2, same lines | its DEPTHS 3–4, same lines |
+
+**Round 15 (Garrett, 2026-10-25) — the suction comes apart on the destruction's cut and ladder:** *"lets use the silver
+gnomen triangles that are used on the explosion shader on the suction shader. Use the same LOD system as well."*
+
+- **The SUCTION kind** (kind 7, `PrismBurstSuctionPose`, its own program `_BURST_SUCTION`): a consumed prism is drawn
+  on the destruction's own mesh at the destruction's own depth (`PrismInteractionLod.TrySuction` runs `PickDepth`,
+  the crowding steps and the triangle fit exactly as `TryDestruction` does), and every silver triangle and gnomon is
+  drawn into the eater over the implosion's authored life (`PrismImplosion.prefab` `implosionDuration`, 2 s, read
+  through `PrismDebris.TryGetImplosionDuration`). Each fragment takes its TURN — the side facing the eater first (the
+  SuctionGraph's `SequentialFaceConverger` consumes the face nearest `_Location` first), the smaller a little sooner
+  (`suctionSizeOrder` 0.35), a gradient noise keeping neighbours near but never in step — inside the first
+  `suctionStagger` (0.5) of the life; then its own trip, eased in as u^`suctionAcceleration` (2.2): along a curve
+  lifted `suctionLift` (0.35 R) off its face, wound `suctionSwirl` (0.35 turns, its hand per suction) about the line to
+  the eater, tumbling `suctionSpin` (0.75 turns, the destruction's size spin and cap), shrinking over the last
+  `suctionShrink` (0.45) of the trip so it is gone exactly AT the eater; every fragment in by 95% of the life.
+- **The moving target, unchanged**: the eater swims while it feeds, so the sink is RETAINED, not snapshotted — the
+  burst carrier's one post-spawn write, `PrismCollisionBurst.RefreshSuctions` → `PrismRenderService
+  .RefreshSliceDebrisSinkBatch`, one float4 (`_SliceCentre`, unused by every other burst kind) per live suction per
+  frame, the §1 exception exactly as `PrismDebris.RefreshImplosions` writes the SuctionGraph's `_Location`. The
+  stamp-time sink rides `_SliceAxis` and fixes the order and the vortex's axis, so a fragment already on its way
+  never changes its turn. An eater that dies mid-suction freezes the sink where it was last seen.
+- **Level 0 and the budget**: far away, off screen or over the detail budget a suction is the same kind on depth 0
+  (`suctionAsFragments`, its own cap `maxLiveSuctions` 1,024, outside the detail budget like the explosions); close-up
+  suctions share the detail budget (`maxLiveBursts`, `maxLiveTriangles`) with destructions and sheds. Any refusal —
+  config off, budget, the render service down, a device without Entities Graphics — draws the SuctionGraph's implosion,
+  so a consumption never loses its visual. **Grow** (the Sparrow's ReverseSuction, `PrismType.Grow`) is untouched: it
+  still runs the pooled SuctionGraph, which owns its completion callback.
+- **Proved offline**: `verify_prism_collision_burst.py` § S — the first frame is the prism, every fragment rigid up to
+  its shrink, every pose inside `PrismBurstSuctionReach` about the LIVE sink (= `PrismCollisionBurst.SuctionReach`, the
+  culling box grown when the sink wanders), every fragment at the live sink by 95% of the life, the facing side first;
+  negative controls: a random order (S6 fires), the sink snapshotted at the stamp (S5 fires). Every pass compiles with
+  `_BURST_SUCTION`, plain and DOTS-instanced. The Collision Burst Lab does not draw the suction yet (its page is rebuilt
+  from the shipped HLSL; its JS port has no suction kind).
 
 **Round 14 (Garrett, 2026-10-23) — the skin is the OLD domain on both sides:** *"the stealing effect is supposed to
 curl the original domain and reveal the stolen domain underneath, but i am seeing it immediately change domain color

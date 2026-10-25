@@ -166,6 +166,7 @@
 #define PRISM_BURST_FLAKE   4.0
 #define PRISM_BURST_FRAGMENT 5.0
 #define PRISM_BURST_ROLL    6.0
+#define PRISM_BURST_SUCTION 7.0
 #define PRISM_BURST_ROLL_TAIL 0.6
 #define PRISM_BURST_ROLL_EASE 0.3
 #define PRISM_BURST_ROLL_HIDE 2.0
@@ -732,6 +733,65 @@ float PrismBurstFragmentReach(float radius, float life, PrismBurstFragmentShape 
 {
     return radius * (3.0 + (s.burst + s.drift * life) * (1.0 + 6.0 * s.sizeSpeed) * (1.0 + abs(travelNoise))
                          * PrismBurstFragmentBoost(flightSpeed, s) * PrismBurstFragmentVarietyReach(s.variety));
+}
+struct PrismBurstSuctionShape
+{
+    float stagger;
+    float accel;
+    float lift;
+    float swirl;
+    float spin;
+    float shrink;
+    float sizeOrder;
+    float sizeSpin;
+    float spinCap;
+    float levelRef;
+    float variety;
+};
+void PrismBurstSuctionPose(vec3 rest, vec3 N, vec3 middle, vec3 centre, vec3 noisePoint, float level,
+    float radius, float age, float life, vec3 sink, vec3 sink0, vec4 noise, PrismBurstSuctionShape s,
+    out vec3 pos, out vec3 nrm)
+{
+    vec3 q = noisePoint * noise.y + noise.z * vec3(17.13, 31.71, 7.37);
+    float n1 = PrismBurstGradientNoise(q);
+    float n2 = PrismBurstGradientNoise(q + vec3(41.3, 11.9, 23.7));
+    float n3 = PrismBurstGradientNoise(q + vec3(73.1, 5.3, 61.7));
+    vec3 axis = PrismBurstAxis(sink0 - centre, N);
+    float size = clamp(level, 0.0, 6.0);
+#ifdef PRISM_BURST_SUCTION_UNORDERED
+    float order = PrismBurstHash(middle * 13.7 + noise.z);
+#else
+    float facing = 0.5 - 0.5 * clamp(dot(middle - centre, axis) / max(radius, 1e-5), -1.0, 1.0);
+    float smallFirst = 1.0 - saturate(size / max(s.levelRef, 1e-3));
+    float order = saturate(mix(facing, smallFirst, saturate(s.sizeOrder)) + noise.w * n3);
+#endif
+    float stagger = clamp(s.stagger, 0.0, 0.85);
+    float start = order * stagger * life;
+    float trip = (0.95 - stagger) * life;
+    float u = saturate((age - start) / max(trip, 1e-4));
+    float p = u > 0.0 ? pow(u, max(s.accel, 1.0)) : 0.0;
+    vec3 wave = PrismBurstSeedWave(noise.z, vec3(3.0, 7.0, 11.0), vec3(0.29, 0.61, 0.83));
+    float v = saturate(s.variety);
+    float hand = wave.x >= 0.0 ? 1.0 : -1.0;
+    float lift = max(s.lift, 0.0) * (1.0 + 0.5 * v * wave.z);
+#ifdef PRISM_BURST_SUCTION_SNAPSHOT
+    sink = sink0;
+#endif
+    vec3 raised = middle + N * (lift * radius);
+    vec3 curve = middle * ((1.0 - p) * (1.0 - p)) + raised * (2.0 * p * (1.0 - p)) + sink * (p * p);
+    float swirl = hand * s.swirl * (1.0 + 0.5 * v * wave.y) * PRISM_BURST_TAU * p;
+    vec3 at = sink + PrismBurstRotate(curve - sink, axis, swirl);
+    float turns = s.spin * min(1.0 + s.sizeSpin * size, s.spinCap) * PRISM_BURST_TAU * p;
+    float a1 = turns * (1.0 + noise.x * n1);
+    float a2 = 0.5 * turns * (1.0 + noise.x * n2);
+    vec3 tumble = PrismBurstAxis(cross(N, axis), PrismBurstAxis(cross(N, vec3(0.31, 0.83, 0.47)), vec3(1.0, 0.0, 0.0)));
+    float scale = 1.0 - smoothstep(1.0 - saturate(s.shrink), 1.0, p);
+    pos = at + PrismBurstRotate(PrismBurstRotate(rest - middle, tumble, a1), N, a2) * scale;
+    nrm = PrismBurstRotate(PrismBurstRotate(N, tumble, a1), N, a2);
+}
+float PrismBurstSuctionReach(float radius, float sinkDistance, float lift, float variety)
+{
+    return sinkDistance + radius * (3.0 + max(lift, 0.0) * (1.0 + 0.5 * saturate(variety)));
 }
 float PrismBurstProgress(float age, float life, float curve)
 {
