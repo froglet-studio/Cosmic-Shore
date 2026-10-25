@@ -45,6 +45,7 @@ namespace CosmicShore.Utility
             NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
         static double s_lastFrameAt = double.NaN;
+        static string s_lastScene;
         static double s_lastStallSeconds;
         static double s_lastStallEndedAt = double.NegativeInfinity;
 
@@ -60,16 +61,21 @@ namespace CosmicShore.Utility
             double now = Now();
             double frame = double.IsNaN(s_lastFrameAt) ? 0 : now - s_lastFrameAt;
             s_lastFrameAt = now;
+            // The frame began in the scene the previous boundary saw: a teardown freeze belongs to the scene
+            // being torn down, not to the one active when the frame finally ends.
+            string startedIn = s_lastScene ?? sceneName;
+            s_lastScene = sceneName;
             if (frame < STALL_SECONDS || !SafeOnline()) return 0;
+            string where = startedIn == sceneName ? sceneName : $"{startedIn}, ending in {sceneName}";
 
             s_lastStallSeconds = frame;
             s_lastStallEndedAt = now;
             if (frame > LongestStallSeconds) LongestStallSeconds = frame;
 
             string seconds = frame.ToString("0.0", CultureInfo.InvariantCulture);
-            NetSessionRecorder.Mark("stall", $"{seconds}s in {sceneName}");
+            NetSessionRecorder.Mark("stall", $"{seconds}s in {where}");
             if (frame >= RELAY_RISK_SECONDS)
-                CSDebug.LogWarning($"[Net] The game froze for {seconds} s in {sceneName} while online. Unity Relay drops a " +
+                CSDebug.LogWarning($"[Net] The game froze for {seconds} s in {where} while online. Unity Relay drops a " +
                                    "connection after about 10 s without traffic, so this session may end with 'player timed out " +
                                    "due to inactivity' (Docs/PartySystem/BUGS.md B36).");
             return frame;
@@ -99,6 +105,7 @@ namespace CosmicShore.Utility
         internal static void Reset()
         {
             s_lastFrameAt = double.NaN;
+            s_lastScene = null;
             s_lastStallSeconds = 0;
             s_lastStallEndedAt = double.NegativeInfinity;
             LongestStallSeconds = 0;

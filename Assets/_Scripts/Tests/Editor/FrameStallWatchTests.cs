@@ -51,11 +51,20 @@ namespace CosmicShore.Tests
         [Test]
         public void AFrozenFrameOnline_IsRecordedWithItsScene()
         {
-            Frame(0);
-            Assert.AreEqual(0, Frame(0.29), "a slow frame (Bloomrush ran at 290 ms) is not a stall");
+            Frame(0, "MinigameBloomrush");
+            Assert.AreEqual(0, Frame(0.29, "MinigameBloomrush"), "a slow frame (Bloomrush ran at 290 ms) is not a stall");
             Assert.AreEqual(12.5, Frame(12.5, "MinigameBloomrush"), 1e-9);
             CollectionAssert.AreEqual(new[] { "12.5s in MinigameBloomrush" }, Stalls());
             Assert.AreEqual(12.5, FrameStallWatch.LongestStallSeconds, 1e-9);
+        }
+
+        [Test]
+        public void AFreezeAcrossASceneChange_NamesTheSceneItStartedIn()
+        {
+            Frame(0, "MinigameBloomrush");
+            Frame(11.0, "Menu_Main");
+            CollectionAssert.AreEqual(new[] { "11.0s in MinigameBloomrush, ending in Menu_Main" }, Stalls(),
+                "the teardown froze, not the menu it led to");
         }
 
         [Test]
