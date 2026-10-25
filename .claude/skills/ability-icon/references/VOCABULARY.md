@@ -17,6 +17,9 @@ function, what it is in the game, and the rule for using it.
 | Speed wedge | `speed_wedge(x, y, length, w, lean)` | motion | at most two, behind the moving mass, never three lines |
 | Ghost | a layer at alpha 0.6 (`draw()` returns `[(mask, 1.0), (ghost, 0.6)]`) | a previous position, a second mode, a spent slot | the SAME shape displaced or dimmed; 0.5 sits on the gates' threshold and vanishes at 40 px (LESSONS 14) |
 | Band / ring / disc | `canvas.band`, `canvas.ring`, `canvas.disc` | arcs, orbits, reticles | 96-gons: round things yes, round corners no |
+| Hull, real | `mesh_silhouette.silhouette(fbx, pitch, yaw, box, cx, cy, dilate_px, close_px, roll, mirror)` | the vessel doing the act | its own FBX mesh, parallel-projected - never a drawing ("the fidelity is too low. this reads too abstractly"). Pick the view from `mesh_silhouette.py <fbx> --out sheet.png` (the lettered grid; the Squirrel's D = pitch 45 yaw 15, the Dolphin's A = plan view). Check the file frame in `Docs/VesselModels/<Hull>.md` §1.1: a Blender export with the nose at -Y needs `mirror=True`. Thicken 1.2-1.8 px for the 60 px card, no more |
+| Block | `block(cx, cy, w, h, dp)` | a bare prism in a trail, from front-above | a box with its seams cut; a notched band read as "the profile of a chocolate bar". Gap ≥ 6 px between blocks |
+| Plate gauge | not a motif: `AbilityIconBinding.gauge` on the HUD; `card.py card(..., gauge=0..1)` on a sheet | HOW MUCH (a bank, a charge) | the lockup's one linear fill of the lower totem. Never a ring round the hull ("the ring now reads as a skimmer"), never a sprite ladder |
 | Chamfered rect | `canvas.chamfered_rect` | a plate, a card, a chip | the style guide's corner sliver on two opposite corners |
 
 **A hull's own silhouette is its mesh**, never a drawing of it (Garrett 2026-10-25: "the fidelity is too low"):

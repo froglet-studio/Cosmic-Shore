@@ -147,9 +147,11 @@ namespace CosmicShore.UI
                  "and the drift is what fills the bank behind it. Its sprite is the hull centred in its " +
                  "own canvas, so the rotation is about the hull.")]
         [SerializeField] private Image driftHullIcon;
-        [Tooltip("Degrees the hull may turn off the course line on the card. The real angle is clamped " +
-                 "to this so a spin never puts the hull upside down on its plate.")]
-        [SerializeField, Min(1f)] private float driftMaxAngle = 75f;
+        [Tooltip("Degrees the hull may turn off the course line on the card. 180 = never clamped: the " +
+                 "card shows the REAL angle, a reverse drift included (Garrett 2026-10-25: good \"as long " +
+                 "as the dolphin icon's angle matches the drift angle\"). A plan view of a symmetric hull " +
+                 "has no upside down, so nothing here needs the cap the Squirrel's 3/4 view keeps.")]
+        [SerializeField, Range(1f, 180f)] private float driftMaxAngle = 180f;
         [Tooltip("Degrees per second the drawn angle may move toward the live one, so a course that " +
                  "flips as the vessel passes through zero speed eases rather than snaps. The same " +
                  "speed brings the hull back onto the line when the drift ends.")]

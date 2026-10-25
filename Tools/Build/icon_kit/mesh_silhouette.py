@@ -99,3 +99,32 @@ def project_point(fbx_rel, v, pitch=0.0, yaw=0.0, box=114, cx=64.0, cy=64.0, rol
     x, y = (s[0] - mx) * k, (s[1] - my) * k
     ra = math.radians(roll)
     return (x * math.cos(ra) - y * math.sin(ra) + cx, x * math.sin(ra) + y * math.cos(ra) + cy)
+
+
+def views_sheet(fbx_rel, out, mirror=False, pitches=(0, 20, 45, 70, 90), yaws=(0, 15, 30), box=112, dilate_px=1.2):
+    """A lettered grid of the hull from every (pitch, yaw) pair - the sheet the owner picks a view from (the Squirrel's
+    'D', the Dolphin's 'A'). Check the hull's file frame in Docs/VesselModels/<Hull>.md §1.1 first: a hull whose
+    mesh nose is -Y (the Dolphin, exported from Blender) needs mirror=True to put the nose on the right."""
+    from PIL import ImageDraw
+    import canvas as C
+    views = [(p, y) for p in pitches for y in yaws]
+    cols, tile = len(yaws), N + 8
+    sheet = Image.new("RGBA", (cols * tile, (len(views) // cols) * tile), (14, 20, 44, 255))
+    d = ImageDraw.Draw(sheet)
+    for i, (p, y) in enumerate(views):
+        im = C.render(silhouette(fbx_rel, pitch=p, yaw=y, box=box, dilate_px=dilate_px, mirror=mirror))
+        x0, y0 = (i % cols) * tile, (i // cols) * tile
+        sheet.alpha_composite(im, (x0 + 4, y0 + 4))
+        d.text((x0 + 6, y0 + 4), f"{chr(65 + i)} pitch {p} yaw {y}", fill=(255, 220, 120, 255))
+    sheet.save(out)
+    return out
+
+
+if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser(description="Render a hull's FBX from a grid of views to pick an icon view from.")
+    ap.add_argument("fbx", help="repo-relative FBX path")
+    ap.add_argument("--out", required=True)
+    ap.add_argument("--mirror", action="store_true", help="nose to the right for a mesh whose nose is -Y in its own frame")
+    a = ap.parse_args()
+    print("wrote", views_sheet(a.fbx, a.out, mirror=a.mirror))

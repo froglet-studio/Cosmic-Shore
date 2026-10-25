@@ -8,6 +8,8 @@ can show it near 40.
 | Rule | Value | Why |
 |---|---|---|
 | The icon TEACHES the ability | who acts (the hull's real mesh), on what, and what changes - told by TINT on separately-tinted parts (yours = domain colour, theirs = danger, untouched = the HUD blue, landed = lime), never by element | Garrett 2026-10-25: "the icons are teaching the ability" |
+| HOW MUCH is the plate, not a shape | a bank, a charge, a readiness is the card's plate gauge (`AbilityIconBinding.gauge`, the lockup's one linear fill of the lower totem); the icon never draws a meter | Garrett 2026-10-25 on a boost ring: "the ring now reads as a skimmer. lets just have the whole lower totem fill with the consistency of other resources" |
+| LIVE where the act is live | a part the HUD turns by the REAL number (the hull by its forward-vs-course angle), swaps by the real state (blocks → octahedrons when the drift shields), tints by the real team; a state is told by shape and team colour, never a second palette | "as long as the dolphin icon's angle matches the drift angle"; "the dynamic angle and trail change should be sufficient" |
 | One object names the act | ≤ 3 shapes, 1 focal mass, ≤ 4 connected components | a scene is a diagram at 128 and noise at 40 |
 | Optical box | 116 px (margin 6), long axis fills ≥ 80 % of it | the lockup scales by authored size, so a timid icon draws small on the HUD |
 | Primary stroke | 11 px (5.2 at 60) | reads under the gauge fill and the cooldown veil |
@@ -22,7 +24,7 @@ can show it near 40.
 | Negative space | prefer a cut to a stroke: a crescent makes a sphere, a hole makes a blast's core, a notch makes a reticle | the Starlings' Opposing Mass is the pattern |
 | Family | a hull's four share weight, box and vocabulary and differ in silhouette (IoU ≤ 0.75 at 24 px) | four fonts on one HUD read as four games |
 | Fleet | the same thing is the same pictogram everywhere (VOCABULARY.md) | a prism is a prism on every hull |
-| Hull silhouette | fair game where the act IS the hull doing something (Soar, Trail Rider) | Garrett: the Dolphin's jaw on its Space icon |
+| Hull silhouette | the hull's REAL mesh (`mesh_silhouette.py`), in the view the owner picked from the grid, where the act IS the hull doing something (the joust, the skim, the drift, Soar, Trail Rider); never a generic chevron, never a hand-simplified drawing | Garrett: the Dolphin's jaw on its Space icon; "it should read as the squirrel silhouette vs a generic one"; "the fidelity is too low. this reads too abstractly" |
 
 The yardstick set (icons that read, keep them in sight on every sheet): Thresher Wrecking Ball /
 Winch / Plant, Shrike Void Lance / Nest / Targeting Array, the Starlings' cards, Stoat Ripple, Scarab

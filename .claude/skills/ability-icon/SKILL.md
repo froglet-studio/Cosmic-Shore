@@ -64,12 +64,33 @@ round adds the states (the joust flash, a spent ring) and every other surface th
 the PNG) before writing; the gates are a floor, not a judgement - Urchin Slip's three circles passed
 every gate and named nothing.
 
+## 2.5 What a card can be (measured on the HUD first - `card.py`, `rebind.py`, the view)
+
+| Shape | When | Kit | HUD |
+|---|---|---|---|
+| One white sprite | the act is one object and nothing about it changes | `ICONS` entry | `AbilityIconBinding.icon` by guid |
+| A tinted PAIR / TRIO | the act has sides: yours, theirs, the untouched | `rebind.py pair=` children (field None for a part never tinted) | a transparent container; the view paints each child (domain, danger, blue, lime) |
+| LIVE PARTS | the act has a live number or state: an angle, a swap | `pair=` child with a rect for a part that turns; two sprites for a swap | the controller pushes the REAL value every frame; the view eases toward it and never caps a plan view |
+| The PLATE GAUGE | the act has a how-much | `pair=` child with icon None + `binding=`; `card.py gauge=` on sheets | `AbilityIconBinding.gauge`; the view writes `fillAmount` only |
+| A generated readout | the shape IS data (the Dolphin's blast profile) | nothing to draw; measure and leave | `EnsureGeneratedAbilityIcons` |
+
+Worked examples, in order: the Squirrel's Crystal Joust (pair), Skimming (trio), Drift (live parts), the Dolphin's
+Time card (one part + the plate gauge). `specs/squirrel.py`, `specs/dolphin.py`.
+
 ## 3. The round
 
+0. **One card at a time, with the owner** ("lets focus on one icon for one vessel"; "lets get one thing right. then
+   move on"). Measure the HUD first: what the card is today (a sprite, a pair, a readout, a ladder) and what the
+   view writes on it per frame. The BEFORE sheet is the card as the HUD draws it, every state, never the raw PNG
+   ("your before pictures are not accurate or exhaustive").
 1. **Brief, one line per icon**: the act, and the ONE object that names it. Write it in the spec's
    docstring, with what the old icon was.
-2. **Draw, preview, look at 40 px first.** Say what fails the language in words before touching
-   numbers (round 1 of the Manta: "the lobes read as ears - a fox, not a ray").
+2. **Options with the OLD first** ("show the old when comparing"): three or four candidates on the real card, each
+   in its states (rest, mid, landed) at 60 and 40 and 128, gate verdicts under each, the recommendation named.
+   When a hull is in the picture, send the mesh grid first (`mesh_silhouette.py <fbx> --out ...`, `--mirror` when
+   the file frame's nose is -Y) and let the owner pick the view. Then draw, preview, look at 40 px first. Say
+   what fails the language in words before touching numbers (round 1 of the Manta: "the lobes read as ears - a
+   fox, not a ray").
 3. **Gates green** (`verify.py`: white 128, coverage 0.10-0.45, long axis ≥ 80 % of the 116 px
    optical box and inside it, thin share ≤ 0.35, tight-gap boundary ≤ 0.25, ≤ 4 components, no
    specks, ≥ 85 % mass at 40 px, the hull's four tell apart at 24 px). A gate that is wrong is
@@ -93,9 +114,9 @@ every gate and named nothing.
 - **Elements have no colour** (LOCKED, Garrett 2026-10-24): never a colour per element on a card, a blob, an
   edge, an icon or a sheet; the four domain colours are team identity only. `check_element_colour.py`.
 - **Measure the HUD first.** On the older hulls a card is often a live readout (a generated graphic, a jaw pair,
-  a step ring, a sprite ladder); a sprite swap polishes none of that, and a ladder is ONE icon in several
-  states (`subdir`, `family=False`, the card's sprite is the top rung, `rebind.py list=` rewrites the view's
-  list). The Dolphin had nothing to redraw.
+  a step ring, a sprite ladder); a sprite swap polishes none of that. A ladder or a step ring is a HOW-MUCH
+  drawn as shapes: move it to the plate gauge (the Dolphin's Time card) rather than redrawing its rungs; the
+  Sparrow's rocket ladder is the one that still stands as rungs.
 - **A quantity is the plate gauge, never a ring.** A ring round a hull reads as a skimmer (Garrett, the Dolphin's
   Time card). How-much goes to `AbilityIconBinding.gauge` - the lockup's one linear fill of the lower totem - and
   the icon spends its shapes on who and what. A sprite ladder is the same mistake in steps.
