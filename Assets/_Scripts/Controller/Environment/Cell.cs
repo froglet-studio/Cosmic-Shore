@@ -70,6 +70,13 @@ namespace CosmicShore.Gameplay
         public CellConfigDataSO Config => cellConfigData;
         GameObject membrane;
         GameObject nucleus;
+
+        /// <summary>The cell's own spawned VISUALS, for a mode-side effect that changes how they LOOK and nothing else
+        /// (<see cref="CellVisualTint"/>). Null until <c>SpawnVisuals</c> has run, or when the config has none. The
+        /// boundary, the nucleus control radius and every gameplay read stay the cell's own.</summary>
+        public CapsuleMembrane MembraneVisual => membrane ? membrane.GetComponentInChildren<CapsuleMembrane>() : null;
+        public GameObject NucleusVisual => nucleus;
+        public SnowChanger CytoplasmVisual => spawnedCytoplasm;
         GameObject environment;   // config-authored structural environment (lives/dies with the cell)
 
         // Optional target WORLD radius for the nucleus, requested by a mode (e.g. Astro League uses
@@ -2897,15 +2904,32 @@ namespace CosmicShore.Gameplay
         {
             if (!retiring) yield break;
 
-            const int PrismsPerFrame = 500;
+            // A time slice, not a count: 500 a frame took 1.1-1.4 s for 4,259 Garland prisms in the Orrery swap
+            // captures because the frames were slow, not the work (T-20261021-a743, handed over by Garrett).
+            // Destroy is deferred to the end of the frame, where the slice cannot see its cost (every
+            // Prism.OnDestroy unregisters), so deferred destroys keep the old per-frame cap.
+            const double ReleaseSliceMs = 12.0;
+            const int MaxDeferredDestroysPerFrame = 500;
+            double msPerTick = 1000.0 / System.Diagnostics.Stopwatch.Frequency;
             var prisms = retiring.GetComponentsInChildren<Prism>(true);
+            long sliceStart = System.Diagnostics.Stopwatch.GetTimestamp();
+            int destroysThisFrame = 0;
             for (int i = 0; i < prisms.Length; i++)
             {
                 var p = prisms[i];
                 if (!p) continue;
                 if (!EnvironmentPrismPool.TryRelease(p))
+                {
                     Destroy(p.gameObject);
-                if ((i + 1) % PrismsPerFrame == 0) yield return null;
+                    destroysThisFrame++;
+                }
+                if (destroysThisFrame >= MaxDeferredDestroysPerFrame
+                    || (System.Diagnostics.Stopwatch.GetTimestamp() - sliceStart) * msPerTick >= ReleaseSliceMs)
+                {
+                    yield return null;
+                    sliceStart = System.Diagnostics.Stopwatch.GetTimestamp();
+                    destroysThisFrame = 0;
+                }
             }
 
             // Whatever is left (lifeform bodies, the old membrane / nucleus / cytoplasm) dies

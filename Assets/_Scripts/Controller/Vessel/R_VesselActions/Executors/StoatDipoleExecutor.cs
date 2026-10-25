@@ -770,7 +770,9 @@ namespace CosmicShore.Gameplay
                     float held = Time.time - _aiHoldStart;
                     _aiDry = _pathfinder.IsWarped ? 0f : _aiDry + Time.deltaTime;
                     var aiNow = _status.AIPilot;
-                    bool near = aiNow && (aiNow.TargetPosition - _status.Transform.position).sqrMagnitude
+                    // Near the thing it is AFTER (a Regatta ring), not the steering point: on a race line that point
+                    // is always one look-ahead away (AIPilot.ObjectivePosition).
+                    bool near = aiNow && (aiNow.ObjectivePosition - _status.Transform.position).sqrMagnitude
                                          < AIConfig.AutopilotLetGoNear * AIConfig.AutopilotLetGoNear;
                     bool letGo = near || held > AIConfig.AutopilotMaxHoldSeconds ||
                                  (held > AIConfig.AutopilotMinHoldSeconds && _aiDry > AIConfig.AutopilotDrySeconds);
@@ -793,7 +795,9 @@ namespace CosmicShore.Gameplay
             var ai = _status.AIPilot;
             var hull = _status.Transform;
             if (!ai || !hull) return;
-            var local = hull.InverseTransformPoint(ai.TargetPosition);
+            // Bearing from the steering point, range from the objective (StoatDipoleMath.AutopilotGauge).
+            var local = StoatDipoleMath.AutopilotGauge(hull.InverseTransformPoint(ai.TargetPosition),
+                                                       (ai.ObjectivePosition - hull.position).magnitude);
             // Watching the path lays a pair whenever the target is not right on top of it, at any bearing: the
             // warp is the speed, so the pair is open as much of the race as it can be.
             if (!StoatDipoleMath.AutopilotTriggers(local,

@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
+  m_Name: Tandava Cell Spawn Profile
+  m_EditorClassIdentifier:
+  FloraExcludeLocalDomain: 0
+  FloraSpawnVolumeCeiling: 12000
+  FloraInitialDelaySeconds: 0
+  FloraSpawnIntervalSeconds: 0
+  FloraPopulationScale: 1
+  FloraPlantBudgetScale: 1
+  FloraPrismScale: 1
+  SupportedFloras:
+  - {fileID: 11400000, guid: c692bf5260bc43a29cf28b1035724e42, type: 2}
+  - {fileID: 11400000, guid: e8c07b5742f9e56d5ae3a194125b82b6, type: 2}
+  - {fileID: 11400000, guid: 52c43abaa652c53970187890d9c43058, type: 2}
+  - {fileID: 11400000, guid: bfa841d67710990c849c4054c811b637, type: 2}
+  - {fileID: 11400000, guid: 1d65dd89ba7cb3bdc4ebcab72fe8de53, type: 2}
+  - {fileID: 11400000, guid: 20998545d9c53d500298020bd473b5f5, type: 2}
+  - {fileID: 11400000, guid: 2c06ca3314ec6f80eedc6fdb3ea7f4ad, type: 2}
+  FaunaExcludeLocalDomain: 0
+  InitialFaunaSpawnWaitTime: 6
+  InitialFaunaReleaseTier: 2147483647
+  FaunaSpawnVolumeThreshold: 1
+  FaunaPopulationScale: 1
+  BaseFaunaSpawnTime: 30
+  SeedFullWaveEveryTick: 0
+  FaunaFoodFloor: 0
+  FaunaInitialDelaySeconds: 0
+  FaunaSpawnIntervalSeconds: 0
+  HerbivoreSpawnPointCount: 3
+  HerbivoreSpawnRadius: 500
+  PredatorSpawnPointCount: 0
+  PredatorSpawnRadius: 900
+  SupportedFaunas:
+  - {fileID: 11400000, guid: f40529e9fe9ddcc6a5eb6f47e4a6c396, type: 2}

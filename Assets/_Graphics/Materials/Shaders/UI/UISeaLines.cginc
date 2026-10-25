@@ -1,4 +1,4 @@
-// The sea lines behind a style-B window (Docs/MENU_REDESIGN_B.md §63, the canvas's Rev 12 Sea lines board): thin
+// The sea lines behind a style-B window (Docs/MENU_REDESIGN_B.md §67, the canvas's Rev 12 Sea lines board): thin
 // wave lines across the veil in three depth layers, each sliding sideways at its own slow speed (parallax). Every
 // line's waves repeat every `loop` canvas units, so a layer that slides one loop per period never shows a seam.
 // Pure maths on canvas-space position and time - no textures - and Tools/Build/lattice_preview.py compiles and

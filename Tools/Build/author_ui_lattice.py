@@ -9,7 +9,7 @@ blueprint grid (kit_grid) behind style-B panels and windows.
     Lattice_Panel.mat     one finer layer for panels (the Ark recipe, leaderboard, Profile card, Toy Box cards...)
     Lattice_Window.mat    two layers for a panel-sized backdrop (the pilot record, the friends drawer, the in-game HUD)
     Sea_Window.mat        the sea lines behind a whole window (Arcade, Arena, Mission, Toy Box, Configure, Profile,
-                          Leaderboard): SeaLines.shader on UISeaLines.cginc, §63
+                          Leaderboard): SeaLines.shader on UISeaLines.cginc, §67
 
 It also writes the rev 6 rims (ElementRim.shader, §45.3: ElementRim_<element>.mat) and the presence orb and party
 bonds (§45.4): Presence.shader / Bond.shader on UIPresence.cginc, Presence_Orb.mat (the friends orb in Menu_Main)
@@ -92,7 +92,7 @@ MATERIALS = {
                            _PulseRepeat=1400, _PulseLength=120, _TwinkleDensity=0, _FadeStart=0.55, _Reveal=1),
 }
 MAT_GUID = {"Lattice_Panel": PANEL_GUID, "Lattice_Window": WINDOW_GUID}
-# The sea lines behind a whole window (§63, Shombith 2026-10-25: the canvas's Rev 12 Sea lines board, "keep it a bit
+# The sea lines behind a whole window (§67, Shombith 2026-10-25: the canvas's Rev 12 Sea lines board, "keep it a bit
 # slow"): three depth layers of thin wave lines in a lighter neutral blue, sliding sideways one 480-unit loop per
 # 90 / 68 / 45 s - half again slower than the board's 60 / 45 / 30. The one background motion the menu keeps
 # (Docs/UI_COLOR_RULES.md); SEA_SLOWEST_LOOP is the floor the gate holds every layer to.
@@ -323,7 +323,7 @@ def validate(files):
         written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
         assert written == declared_, f"{mat}: properties drifted (missing {declared_ - written}, extra {written - declared_})"
         assert f"guid: {g}" in files[f"{shader_path}.meta"], f"{shader_path}.meta has the wrong guid"
-    # The sea lines (§63): the material carries every property the shader declares, and every layer moves - slowly.
+    # The sea lines (§67): the material carries every property the shader declares, and every layer moves - slowly.
     src = open(os.path.join(REPO, SEA_SHADER), encoding="utf-8").read()
     assert '#include "UISeaLines.cginc"' in src, "SeaLines.shader does not include UISeaLines.cginc"
     sea_declared = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", src, re.M)) - {"_MainTex"}

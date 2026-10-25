@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c9c2d147d0ecc82c3df6c594f0440d20, type: 3}
   m_Name: MantaSoarAITuning_Regatta
   m_EditorClassIdentifier: 
-  BoostStickBand: 0.8
-  YastriStickBand: 0.85
+  BoostStickBand: 0.975
+  YastriStickBand: 0.975

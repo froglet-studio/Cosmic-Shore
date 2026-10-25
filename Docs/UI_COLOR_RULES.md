@@ -49,7 +49,7 @@ Hub windows: the strip's four words (Toy Box, Arcade, Arena, Mission) all read i
   spinning ring), the party bonds (solid), the Hangar bay (no breathing rings, no scan line, no motes), floating
   avatars and art, the settings gear, element halos (`KitElementHalo.breathe` off).
 - **The one background motion: the sea lines** behind a whole window (Arcade, Arena, Mission, Toy Box, Configure,
-  Profile, Leaderboard; `Docs/MENU_REDESIGN_B.md` §63). Shombith chose it on 2026-10-25 from the canvas's Rev 12 board
+  Profile, Leaderboard; `Docs/MENU_REDESIGN_B.md` §67). Shombith chose it on 2026-10-25 from the canvas's Rev 12 board
   ("keep it a bit slow"): thin neutral-blue wave lines over a 95 % veil, three layers sliding one 480-unit loop per
   90 / 68 / 45 s. `author_ui_lattice.py` fails any layer faster than 40 s a loop.
 - **Kept, because they mean something:** progress spinners while something loads or connects, the music EQ while a

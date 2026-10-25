@@ -14,7 +14,7 @@ section 45.4; the owner chose option A, "Orb", over the bond rail).
        |                            three party members on the inner ring, "N online" under it
        |                            (KitPresenceOrb); pressing it opens the drawer
        '- Window                    panel that slides in from the left and takes the whole left side
-          |                         under the top nav (460 wide, maximised 720; section 64): over a hub
+          |                         under the top nav (460 wide, maximised 720; section 68): over a hub
           |                         window it docks and the cards move right (FriendsDrawerDock); over a
           |                         game's configure or Settings it never opens. The lattice is behind it:
           |                         the Space glyph and title, a minimise (slide back) and a maximise
@@ -66,7 +66,7 @@ PARTY_GUID = AR.asset_guid("PartyPanel")
 SAFE_AREA_RT = "1034510601983959698"
 MODAL_WINDOWS_RT = "6818916199485298600"
 
-# §64 (Shombith, 2026-10-25): the window takes the whole left side, from under the top nav (DOCK_TOP) to the bottom,
+# §68 (Shombith, 2026-10-25): the window takes the whole left side, from under the top nav (DOCK_TOP) to the bottom,
 # flush with the screen edge, so its height follows the screen; over a hub window it docks and the cards move right
 # (FriendsDrawerDock, author_menu_arcade.drawer_dock). Only the widths are fixed.
 NORMAL_W = 460
@@ -388,7 +388,7 @@ def hub_windows():
 
 
 def validate_dock(sc, ctx, hub):
-    """§64: the window takes the whole left side under the nav (its height follows the screen), and every hub window
+    """§68: the window takes the whole left side under the nav (its height follows the screen), and every hub window
     makes room for it (FriendsDrawerDock pushing its Header and Body)."""
     win = sc.docs[str(ctx.rt("Drawer/Window"))]
     for want in ("m_AnchorMin: {x: 0, y: 0}", "m_AnchorMax: {x: 0, y: 1}",

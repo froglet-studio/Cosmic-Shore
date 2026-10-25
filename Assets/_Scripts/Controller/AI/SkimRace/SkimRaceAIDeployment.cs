@@ -43,8 +43,7 @@ namespace CosmicShore.Gameplay
             if (vessel.VesselStatus == null || vessel.VesselStatus.VesselType != VesselClassType.Squirrel)
                 return null; // tuned for the Squirrel; other hulls keep AIPilot
 
-            var pilot = vesselObject.GetComponent<SkimRacePilot>();
-            if (pilot == null) pilot = vesselObject.AddComponent<SkimRacePilot>();
+            if (!vesselObject.TryGetComponent(out SkimRacePilot pilot)) pilot = vesselObject.AddComponent<SkimRacePilot>();
             // No upper clamp: an intensity with no tuning file of its own flies the general policy.
             int intensity = gameData.SelectedIntensity != null ? Mathf.Max(1, gameData.SelectedIntensity.Value) : 1;
             // The per-intensity tuning files were tuned on Skim Race's tracks; Regatta flies its own copy of the

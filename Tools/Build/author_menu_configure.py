@@ -1159,7 +1159,7 @@ def build_view(kind):
     root = N("root", VIEW_NAME[kind], STRETCH)
     # Near-opaque (the owner, 2026-10-15): it keeps the Arcade window behind from reading through.
     image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=A.WINDOW_BACKDROP_ALPHA, raycast=True)
-    # §63: the sea lines over the veil (Sea_Window.mat).
+    # §67: the sea lines over the veil (Sea_Window.mat).
     root.child(M.window_sea_node("VeilLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
     preview_window(root, kind)
 

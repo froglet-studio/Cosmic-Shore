@@ -247,8 +247,10 @@ horizon a ship is HELD rather than destroyed — a simple version's stated limit
 
 Applied only on the machine that drives the vessel (`!IsNetworkClient`: the owner, or a
 non-networked vessel) and never on a stationary one (whose transformer does not age its modifiers,
-so entries would pile up). Vessels are enumerated once a second while a hole is live — there is no
-vessel registry, and this is not a hot path. `ModifyVelocity` weights a fresh entry at 1.5×, and an
+so entries would pile up). Vessels are re-read once a second while a hole is live, from
+`VesselStatus.Live` (the registry `VesselStatus` keeps in OnEnable/OnDisable). It used to be a
+`FindObjectsByType<VesselStatus>` scene search, which walks every loaded object and so grew all
+session: 1.8 ms a call in a Stoat match's first minute, 20-36 ms eight minutes in (2026-10-17). `ModifyVelocity` weights a fresh entry at 1.5×, and an
 entry given this frame's `dt` as its duration is consumed exactly once on steady frame times, so the
 shift handed over is `v_g / 1.5`; on a jittery frame an entry can survive into a second application
 at ~0.5× — bounded noise, the price of the sanctioned channel over a direct position write.

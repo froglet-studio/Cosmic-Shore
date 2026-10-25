@@ -1,4 +1,4 @@
-// The sea lines behind a style-B window (Docs/MENU_REDESIGN_B.md §63): thin wave lines in three depth layers sliding
+// The sea lines behind a style-B window (Docs/MENU_REDESIGN_B.md §67): thin wave lines in three depth layers sliding
 // sideways, slowly, at their own speeds over the window's veil. UGUI-compatible (UI/Default structure: stencil
 // masking, RectMask2D clip, vertex colour). Draw it on an Image with no sprite: the UVs then span the rect, which the
 // top and bottom fade read. Animated by _Time alone, so it never dirties a canvas. The maths is UISeaLines.cginc.

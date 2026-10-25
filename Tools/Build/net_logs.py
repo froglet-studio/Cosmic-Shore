@@ -212,6 +212,20 @@ def console_rate_limits(log):
                if l.get("type") == "warning" and RATE_LIMIT.search(l.get("msg", "")))
 
 
+def longest_stall(events):
+    """B36: the longest frame freeze (seconds) a player's record marked while online, or 0. A freeze of
+    ~10 s loses the Relay connection ("player timed out due to inactivity")."""
+    longest = 0.0
+    for ev in events:
+        ev = ev[1] if isinstance(ev, tuple) else ev
+        if ev.get("e") == "stall":
+            try:
+                longest = max(longest, float((ev.get("detail") or "").split("s", 1)[0]))
+            except ValueError:
+                pass
+    return longest
+
+
 def peer_summary(log, name=None):
     rec = log.get("record") or {}
     con = log.get("console") or {}
@@ -223,9 +237,11 @@ def peer_summary(log, name=None):
     limits = f"{counted}" + (f" (console {seen})" if seen != counted else "")
     events = log["_events"] if "_events" in log else rec.get("lifecycle") or []
     carried = "  [record carried over from an earlier Play: counters and why may be that one's]" if log.get("_carried") else ""
+    freeze = longest_stall(events)
+    stall = f" longest freeze {freeze:.1f}s" if freeze else ""
     return (f"{name or log.get('peer', '?'):<10} {rec.get('role', '?'):<10} "
             f"{'CLEAN' if clean else 'DIRTY':<6} errors {con.get('errors', 0):<4} warnings {con.get('warnings', 0):<4} "
-            f"reads {counters.get('lobbyReads', 0)} 429s {limits} "
+            f"reads {counters.get('lobbyReads', 0)} 429s {limits}{stall} "
             f"events {len(events)}  ({log.get('why', '')}){carried}")
 
 
@@ -282,6 +298,25 @@ def cmd_collect(args):
     return 0
 
 
+def config_diff(test):
+    """B35: lines naming where the players' Netcode configs differ, from each one's last `netConfig`
+    mark ("hash=<hex> prefabs=<n> <key>:<name> ..."). Empty when they agree or fewer than two recorded one."""
+    configs = {}
+    for log in test["peers"]:
+        marks = [ev.get("detail") or "" for _, ev in log.get("_events", []) if ev.get("e") == "netConfig"]
+        if marks:
+            words = marks[-1].split()
+            configs[peer_name(test, log)] = (words[0] if words else "", set(w for w in words[2:] if ":" in w))
+    if len(configs) < 2 or len({h for h, _ in configs.values()}) == 1:
+        return []
+    out = ["NetworkConfig differs between players (B35):"]
+    every = set.intersection(*(keys for _, keys in configs.values()))
+    for name, (h, keys) in configs.items():
+        only = sorted(keys - every)
+        out.append(f"  {name}: {h}" + (f"  only here: {' '.join(only)}" if only else "  (same prefab keys: the difference is a setting)"))
+    return out
+
+
 def cmd_show(args):
     tests = load(args)
     pick = None
@@ -296,6 +331,8 @@ def cmd_show(args):
     for p in pick["peers"]:
         print("  " + peer_summary(p, peer_name(pick, p)))
         print(f"    branch {p.get('branch')} @ {p.get('commit')}   source {p.get('source')}")
+    for line in config_diff(pick):
+        print("  " + line)
     print()
     width = max([10] + [len(peer_name(pick, p)) for p in pick["peers"]])
     for when, peer, kind, text in timeline(pick, all_lines=args.lines):
@@ -375,6 +412,21 @@ def self_test():
     check([peer_name(two[1], p) for p in two[1]["peers"]] == ["belac/main", "yskha/main"], "...whose players carry their sender")
     check(len(two[0]["peers"]) == 1 and peer_name(two[0], two[0]["peers"][0]) == "main",
           "a later Play that overlapped nothing stays its own test (negative control)")
+
+    # B36: a frozen frame shows on the player's summary line.
+    froze = parse(json.dumps(_fixture("main", "2026-10-20T19:58:24Z", "host",
+                  [(415.0, "stall", "12.4s in MinigameBloomrush"), (418.0, "relayDrop", "after a 12.4 s freeze 2.9 s earlier")], [])), "x", "owner")
+    check("longest freeze 12.4s" in peer_summary(froze), "a recorded freeze shows on the summary line")
+    calm = parse(json.dumps(_fixture("main", "2026-10-20T19:58:24Z", "host", [(5.0, "party", "a->b")], [])), "x", "owner")
+    check("freeze" not in peer_summary(calm), "...and nothing shows without one (negative control)")
+
+    # B35: two players whose Netcode configs differ - the report names the prefab key only one has.
+    h = at(_fixture("main", "2026-10-23T23:02:05Z", "host", [(1.0, "netConfig", "hash=00000000000000aa prefabs=2 11:Goby 22:Player")], []), "2026-10-23T23:10:00Z", "belac")
+    j = at(_fixture("main", "2026-10-23T23:02:30Z", "client", [(1.0, "netConfig", "hash=00000000000000bb prefabs=2 11:Goby 33:Player")], []), "2026-10-23T23:09:00Z", "gradi")
+    diff = config_diff(group([h, j])[0])
+    check(len(diff) == 3 and "22:Player" in diff[1] and "33:Player" in diff[2], "differing configs name the prefab key each player alone has")
+    j2 = at(_fixture("main", "2026-10-23T23:02:30Z", "client", [(1.0, "netConfig", "hash=00000000000000aa prefabs=2 11:Goby 22:Player")], []), "2026-10-23T23:09:00Z", "gradi")
+    check(config_diff(group([h, j2])[0]) == [], "matching configs print nothing (negative control)")
 
     # A record carried over from an earlier Play (no domain reload): cut to this Play's events.
     old = _fixture("main", "2026-10-16T21:56:40Z", "host",

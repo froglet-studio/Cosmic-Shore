@@ -321,6 +321,11 @@ namespace CosmicShore.Utility
             Color bright, Color dark, Vector3 velocity, float speedLimitOverride,
             PrismKind kind = PrismKind.Plain)
         {
+            // A rotation that drifted off unit length (1.00001 after many prism-to-prism
+            // multiplications) makes Matrix4x4.TRS log "Quaternion To Matrix conversion failed"
+            // (Bug Ledger E-16d65ffecb and three more, Garrett and Shombith). Normalize once here.
+            rotation = Quaternion.Normalize(rotation);
+
             // No Entities Graphics on this device (a WebGL2 browser): the same piece, computed below with the
             // same arithmetic, is drawn by the capped MeshRenderer carrier (Docs/PRISM_ANIMATION.md §4.11)
             // instead of being queued for a batch that could never spawn. False everywhere else.
@@ -381,6 +386,8 @@ namespace CosmicShore.Utility
         public static bool TryRequestImplosion(Vector3 position, Quaternion rotation, Vector3 scale,
             Color bright, Color dark, Transform target)
         {
+            rotation = Quaternion.Normalize(rotation);   // see TryRequestExplosion
+
             // §4.11: on a device without Entities Graphics the capped MeshRenderer carrier draws it instead.
             bool meshRendererPath = PrismMeshRendererStamps.Active;
             if (!s_impConfigured || (!meshRendererPath && !PrismRenderService.Enabled) || s_quitting) return false;

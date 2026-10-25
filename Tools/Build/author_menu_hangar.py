@@ -329,9 +329,11 @@ def element_glyph(name):
     return sprite_guid(f"Assets/_Graphics/ElementIcons/icon_{name.lower()}Upgrade_3_active.png")
 
 
-def kit_row(parent, key, name, r, layout_h, content_keys=()):
+def kit_row(parent, key, name, r, layout_h, content_keys=(), interactive=True):
     """A selectable row: focus ring, glass fill, hairline, KitButton (Cancel variant, outline) and the
-    menu's press sound. The row's own content draws itself; the button paints only its frame."""
+    menu's press sound. The row's own content draws itself; the button paints only its frame.
+    interactive=False keeps the look and drops the input (an information row, section 66): out of pad
+    navigation, and a CanvasGroup that blocks no raycasts, so no click, tap or A reaches it; no press sound."""
     b = parent.child(N(key, name, r))
     b.add("le", 114, le(ph=layout_h))
     ring = b.child(N(f"{key}/FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (10, 10))))
@@ -347,13 +349,17 @@ def kit_row(parent, key, name, r, layout_h, content_keys=()):
 
     def body(ctx, go):
         content = "".join(f"  - {ref(ctx.c(k, c))}\n" for k, c in content_keys)
+        nav = K.SELECTABLE_FIELDS if interactive else K.SELECTABLE_FIELDS.replace("    m_Mode: 3\n", "    m_Mode: 0\n")
         return K.mono(go, KIT_BUTTON,
-                      K.SELECTABLE_FIELDS + f"  m_TargetGraphic: {ref(ctx.c(f'{key}/Fill', 'img'))}\n" + EMPTY_CALLS
+                      nav + f"  m_TargetGraphic: {ref(ctx.c(f'{key}/Fill', 'img'))}\n" + EMPTY_CALLS
                       + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c(f'{key}/FocusRing', 'img'))}\n"
                       f"  variant: {K.VARIANTS['Cancel']}\n  fill: 0\n"
                       f"  fillGraphic: {ref(ctx.c(f'{key}/Fill', 'img'))}\n  borderGraphic: {ref(ctx.c(f'{key}/Border', 'img'))}\n"
                       + (f"  contentGraphics:\n{content}" if content else "  contentGraphics: []\n") + "  playGradient: {fileID: 0}\n")
     b.add("button", 114, body)
+    if not interactive:
+        b.add("cg", 225, lambda ctx, go: canvas_group(True)(ctx, go).replace("  m_BlocksRaycasts: 1\n", "  m_BlocksRaycasts: 0\n"))
+        return b
     b.add("audio", 114, lambda ctx, go: K.mono(go, MENU_AUDIO, "  category: 11\n"))
     return b
 
@@ -407,11 +413,12 @@ def page_header(page, key, title, line):
 
 def abilities_page(panel):
     page = page_node(panel, "Abilities", True, own_canvas=True)
-    page_header(page, "Tabs/Abilities", "WATCH THE AI PLAY EACH CONTROL", "Labels follow your device. Press one to see it again.")
+    page_header(page, "Tabs/Abilities", "WATCH THE AI PLAY EACH CONTROL", "Labels follow your device.")
     lst = list_node(page, "Tabs/Abilities/List", 54)
     for name, _ in ELEMENTS:
         k = f"Tabs/Abilities/{name}"
-        row = kit_row(lst, k, name, R((0, 1), (1, 1), (0, 0), (0, 94), (0.5, 1)), 94)
+        # Information, not buttons (section 66): the AI demo plays each ability; nothing the player presses does.
+        row = kit_row(lst, k, name, R((0, 1), (1, 1), (0, 0), (0, 94), (0.5, 1)), 94, interactive=False)
         halo(row, f"{k}/Halo", TLr(-6, -1, 96, 96), round(0.25 * [n for n, _ in ELEMENTS].index(name), 2))
         row.child(N(f"{k}/Hex", "Hex", TLr(14, 19, 56, 56))).add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image(tok("SurfaceLight", 0.35), K.kit_sprite("kit_hex_fill"), preserve=True))
@@ -449,7 +456,7 @@ def abilities_page(panel):
                       "  elementNames:\n  - Charge\n  - Mass\n  - Space\n  - Time\n"
                       "  openSlotName: Open slot\n  openSlotLine: Not designed yet.\n  passiveWord: Passive\n  glowSeconds: 0.9\n"
                       "  kindOverrides: []\n"
-                      "  demoStepSeconds: 2.4\n  demoLeadSeconds: 0.8\n  demoResumeSeconds: 4\n"
+                      "  demoStepSeconds: 2.4\n  demoLeadSeconds: 0.8\n"
                       "  keyPressSeconds: 0.35\n  keyPressScale: 0.84\n")
     page.add("logic", 114, body)
     return page
@@ -1212,8 +1219,16 @@ def validate_prefabs(files, guids):
         "the Abilities rows must be Charge, Mass, Space, Time"
     # The AI demo (2026-10-19): the page plays the stage itself, so it carries the demo timings and nothing of TRY
     # survives - no forward to a preview, no window over the stage, no hint, no bare-arena asset on disk.
-    for field in ("demoStepSeconds", "demoLeadSeconds", "demoResumeSeconds", "keyPressSeconds", "keyPressScale"):
+    for field in ("demoStepSeconds", "demoLeadSeconds", "keyPressSeconds", "keyPressScale"):
         assert f"\n  {field}: " in abil, f"the Abilities page has no AI demo field {field}"
+    # Section 66: the ability rows are information - out of pad navigation, blocking no raycasts, no press sound.
+    for name, _ in ELEMENTS:
+        k = f"Tabs/Abilities/{name}"
+        _, btn = doc_of(view, hv(f"{k}#button"))
+        assert re.search(r"  m_Navigation:\n    m_Mode: 0\n", btn), f"the {name} ability row is a pad stop (it is information)"
+        _, cg = doc_of(view, hv(f"{k}#cg"))
+        assert cg and "  m_BlocksRaycasts: 0\n" in cg, f"the {name} ability row takes clicks (it is information)"
+        assert not doc_of(view, hv(f"{k}#audio"))[1], f"the {name} ability row still has a press sound"
     assert "tryPreview" not in abil, "the Abilities page still forwards to TRY"
     for gone in ("TryButton", "TryPreview", "TryHint", "TryLine"):
         assert f"m_Name: {gone}\n" not in view, f"retired TRY node {gone} is back in HangarView"
@@ -1323,6 +1338,8 @@ def self_test(current, files, guids):
     desc_ref = re.search(r"vesselDescriptionText: \{fileID: (-?\d+)\}", dbody).group(1)
     plants = {
         "the screen's entrances stripped": view_plant(M.strip_entrances),
+        "an ability row takes clicks again": view_plant(lambda t: T.in_doc(
+            t, str(K.FileIds("HangarView")("Tabs/Abilities/Charge#cg")), "  m_BlocksRaycasts: 0\n", "  m_BlocksRaycasts: 1\n")),
         "detail field swapped onto the wrong kind": view_plant(lambda t: t.replace(
             f"chipLabel: {{fileID:", f"chipLabel: {{fileID: {name_ref}}}\n  chipLabelX: {{fileID:", 1)),
         "detail field unwired": view_plant(lambda t: t.replace(

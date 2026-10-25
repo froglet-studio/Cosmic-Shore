@@ -635,6 +635,16 @@ namespace CosmicShore.Engine.InputSystem
         public override void MakeCurrent() => current = this;
     }
 
+    /// <summary>Gravity in the device's frame, the OS's fused estimate (UnityEngine.InputSystem.GravitySensor). No
+    /// desktop backend feeds it, so <see cref="current"/> stays null there and the game falls back to the accelerometer.</summary>
+    public class GravitySensor : Sensor
+    {
+        public static GravitySensor current { get; set; }
+        public Vector3Control gravity { get; }
+        public GravitySensor() : base("GravitySensor") { gravity = AddChild(new Vector3Control { name = "gravity" }); }
+        public override void MakeCurrent() => current = this;
+    }
+
     public class Gyroscope : Sensor
     {
         public static Gyroscope current { get; set; }
@@ -735,7 +745,7 @@ namespace CosmicShore.Engine.InputSystem
             s_Frame.AddRange(s_Devices);
             void Add(InputDevice d) { if (d != null && !s_Frame.Contains(d)) s_Frame.Add(d); }
             Add(Keyboard.current); Add(Mouse.current); Add(Gamepad.current); Add(Touchscreen.current);
-            Add(Pointer.current); Add(Accelerometer.current); Add(AttitudeSensor.current);
+            Add(Pointer.current); Add(Accelerometer.current); Add(AttitudeSensor.current); Add(GravitySensor.current);
             return s_Frame;
         }
 
@@ -755,7 +765,7 @@ namespace CosmicShore.Engine.InputSystem
             foreach (var d in s_Devices.ToArray()) RemoveDevice(d);
             Keyboard.current = null; Mouse.current = null; Gamepad.current = null;
             Touchscreen.current = null; Pointer.current = null;
-            Accelerometer.current = null; AttitudeSensor.current = null;
+            Accelerometer.current = null; AttitudeSensor.current = null; GravitySensor.current = null;
             InputActionState.Reset();
         }
     }
@@ -783,6 +793,8 @@ namespace CosmicShore.Engine.InputSystem.Controls
         public DoubleControl startTime { get; }
         public IntegerControl touchId { get; }
         public AxisControl pressure { get; }
+        /// <summary>When the touch began, on the input clock in seconds (Unity's TouchControl.startTime).</summary>
+        public DoubleControl startTime { get; }
         public TouchPhase phase { get; set; }
         public bool isInProgress => phase is TouchPhase.Began or TouchPhase.Moved or TouchPhase.Stationary;
 
@@ -795,6 +807,7 @@ namespace CosmicShore.Engine.InputSystem.Controls
             startTime = AddChild(new DoubleControl { name = "startTime" });
             touchId = AddChild(new IntegerControl { name = "touchId" });
             pressure = AddChild(new AxisControl { name = "pressure" });
+            startTime = AddChild(new DoubleControl { name = "startTime" });
         }
 
         public override TouchState ReadValue() => new() { position = position.value, phase = phase, touchId = touchId.value };

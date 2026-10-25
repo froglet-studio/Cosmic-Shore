@@ -306,7 +306,7 @@ STATS = (("Crystals", "Crystals", "0", 0, 0), ("Games completed", "Games", "0", 
 def build_view():
     root = N("root", "ProfileView", STRETCH)
     image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=0.95)
-    # §63: the sea lines over the veil (Sea_Window.mat).
+    # §67: the sea lines over the veil (Sea_Window.mat).
     root.child(M.window_sea_node("VeilSea", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
 
     # The quest row comes first in hierarchy: Refocus lands on the first live Selectable, and the

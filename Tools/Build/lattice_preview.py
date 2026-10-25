@@ -14,7 +14,7 @@ edge fade empties the corners. The rim (ElementRim.shader) and the presence orb 
 Bond.shader on UIPresence.cginc, section 45.4) go through the same translation: the orb draws exactly _Online dots
 on its orbit and turns them, a bond lights only in its member's colour and only for a seated member, the bond
 dashes flow outward, and the molecule's bond stays on its line. The sea lines (SeaLines.shader on UISeaLines.cginc,
-section 63) are thin, move slowly, loop without a seam, hold still at 0 seconds and fade at the window's top and
+section 67) are thin, move slowly, loop without a seam, hold still at 0 seconds and fade at the window's top and
 bottom. What it does not: Unity's own shader compile (no editor here) - the UI plumbing
 (stencil, clip rect, UnityCG) is Unity's standard UI/Default block, copied from SilhouetteHolo.shader.
 """

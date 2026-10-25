@@ -17,8 +17,9 @@ And for the Swarm demo cell (author_swarm_fauna.py composes these through cell_p
   * Swarm <Band> Nca<Species> Fauna Config Data.asset - the cell's population of the species, penned in a band
     over the flora it eats.
 
-The weights come from the research branch (RESEARCH_REF) when it is reachable; otherwise the committed weights are
-kept and checked for shape only - exactly how swarm_plans.py treats the swarm's body plans.
+The weights come from the research branch (RESEARCH_REF) at a PINNED commit (RESEARCH_COMMIT) when that commit is
+in this clone; otherwise the committed weights are kept and checked for shape only - exactly how swarm_plans.py
+treats the swarm's body plans.
 
 The grown size (GrownVoxels) and the steps to grow it (GrowSteps) are MEASURED by Tools/Build/nca_creature_harness
 (`run.sh measure`); the harness asserts the numbers written here still hold.
@@ -38,7 +39,13 @@ REPO = os.path.dirname(os.path.dirname(HERE))
 assert os.path.isdir(os.path.join(REPO, "Assets")), REPO
 
 A = lambda *p: os.path.join(REPO, "Assets", *p)
-RESEARCH_REF = "origin/cece/gifted-curie-x2cpd0"
+RESEARCH_REF = "origin/cece/gifted-curie-x2cpd0"   # where the weights come from (also the label assets carry)
+# The research COMMIT actually read. Pinned so --check answers the same in every clone: reading the branch head made
+# the verdict depend on whether (and how recently) that branch was fetched - the shape that turned
+# author_swarm_fauna.py red on 2026-10-25 (swarm_plans.RESEARCH_COMMIT is pinned to the same commit). This is the
+# head every committed weights asset reproduces from (2026-10-25). To adopt newer research, move this to the new
+# commit, re-run the generator and commit its output.
+RESEARCH_COMMIT = "325dbc9512f62a000505243d72530f40299d7776"
 RESEARCH_DIR = "Tools/NCA/results"
 SO_DIR = A("_SO_Assets", "NCA Creatures")
 PREFAB_DIR = A("_Prefabs", "FloraAndFauna")
@@ -77,9 +84,9 @@ def read(p):
 
 
 def research_weights(run):
-    """The research export, or None when the research ref is not reachable here."""
+    """The research export at RESEARCH_COMMIT, or None when that commit is not in this clone."""
     try:
-        text = subprocess.run(["git", "-C", REPO, "show", f"{RESEARCH_REF}:{RESEARCH_DIR}/{run}/weights.json"],
+        text = subprocess.run(["git", "-C", REPO, "show", f"{RESEARCH_COMMIT}:{RESEARCH_DIR}/{run}/weights.json"],
                               capture_output=True, text=True, check=True).stdout
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
@@ -131,7 +138,7 @@ def weights_json(sp, w):
 def committed_weights_ok(path):
     """Shape check of a committed weights asset (the research ref is not reachable)."""
     if not os.path.exists(path):
-        return [f"{rel(path)} is missing and the research ref {RESEARCH_REF} is not reachable to author it"]
+        return [f"{rel(path)} is missing and the research commit {RESEARCH_COMMIT[:10]} ({RESEARCH_REF}) is not in this clone to author it"]
     w = json.loads(read(path))
     C, HID = w["channel_n"], w["hidden"]
     n = lambda k: len(base64.b64decode(w[k])) // 4
@@ -420,7 +427,7 @@ def main():
     args = ap.parse_args()
     out, problems, baked = emit()
     print(f"NCA creatures: {', '.join(s['name'] for s in SPECIES)}; weights "
-          f"{'re-baked from ' + RESEARCH_REF + ' for ' + ', '.join(baked) if baked else 'kept (research ref not reachable)'}")
+          f"{'re-baked from ' + RESEARCH_REF + ' @ ' + RESEARCH_COMMIT[:10] + ' for ' + ', '.join(baked) if baked else 'kept (research commit not in this clone)'}")
     if args.check:
         drift = [rel(p) for p, t in out.items() if not os.path.exists(p) or read(p) != t]
         if problems or drift:

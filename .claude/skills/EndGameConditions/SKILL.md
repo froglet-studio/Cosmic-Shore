@@ -18,7 +18,7 @@ at runtime via `Resources.Load`.
 ## The rule (do not break this)
 
 - **There are NO per-scene inspector fields for these counts.** The old
-  `CrystalCollisionTurnMonitor.CrystalCollisions` and `JoustCollisionTurnMonitor.collisionsNeeded`
+  `CrystalCollisions` and `collisionsNeeded` on the crystal and joust turn monitors
   `[SerializeField]`s were removed on purpose. **Do not re-add `[SerializeField]` to them** — they
   are now plain internal fields that just hold the *resolved* value. If you want a count changed,
   change it in the tool, not in a scene.
@@ -55,13 +55,13 @@ at runtime via `Resources.Load`.
 EndConditionOverridesSO (Resources/EndConditionOverrides.asset)   ← edited by the Tools window
         │  GetCrystalCount(mode, autoCalc) / GetJoustCount() / GetMaelstromWinTarget()
         ▼
-CrystalCollisionTurnMonitor.GetCrystalCollisionCount()   → resolves CrystalCollisions (SkimRace, Crystal Capture)
-JoustCollisionTurnMonitor.StartMonitor()                 → resolves collisionsNeeded (Joust)
+NetworkCrystalCollisionTurnMonitor.GetCrystalCollisionCount() → resolves CrystalCollisions (SkimRace, Crystal Capture)
+NetworkJoustCollisionTurnMonitor.StartMonitor()               → resolves collisionsNeeded (Joust)
 MaelstromController.StartMaelstromInternal()           → MaelstromDataSO.ResolveWinTarget(...) (Maelstrom)
         │  (0 in the tool → waypoint auto-calc / default 3 / default 6)
         ▼
-NetworkCrystalCollisionTurnMonitor → gameData.CrystalTargetCount   (synced to clients)
-NetworkJoustCollisionTurnMonitor   → gameData.JoustTargetCount
+  …then the same monitor     → gameData.CrystalTargetCount   (synced to clients)
+  …then the same monitor     → gameData.JoustTargetCount
 MaelstromDataSO.EffectiveWinTarget → IsShuffleComplete + the lobby/summary race-rule text
         ▼
 the mode's ScoringRuleSO.IsObjectiveReached(...) ends the turn on that target;
@@ -158,13 +158,13 @@ build restore.
 | Config asset (committed) | `Assets/Resources/EndConditionOverrides.asset` |
 | Editor window (the menu) | `Assets/_Scripts/Editor/EndConditionOverridesWindow.cs` |
 | Build-time auto-restore | `Assets/_Scripts/Editor/EndConditionBuildRestore.cs` |
-| Crystal modes read it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/CrystalCollisionTurnMonitor.cs` (`GetCrystalCollisionCount`) |
-| Joust reads it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/JoustCollisionTurnMonitor.cs` (`StartMonitor`) |
+| Crystal modes read it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/NetworkCrystalCollisionTurnMonitor.cs` (`GetCrystalCollisionCount`; its local-only base was folded in on 2026-10-25) |
+| Joust reads it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/NetworkJoustCollisionTurnMonitor.cs` (`StartMonitor`; its local-only base was folded in on 2026-10-25) |
 | Maelstrom resolves it here | `Assets/_Scripts/Controller/Arcade/MaelstromController.cs` (`StartMaelstromInternal` → `ResolveWinTarget`) |
 | Maelstrom reads it here | `Assets/_Scripts/Utility/DataContainers/MaelstromDataSO.cs` (`EffectiveWinTarget`, `IsShuffleComplete`) |
 | Gate races resolve it here | `Assets/_Scripts/Controller/Arcade/Racing/RaceGateTurnMonitor.cs` (`StartMonitor` → `GateRaceController.AuthoredGateTarget`) |
 | Skein / Headlong keys read here | `Skein/SkeinController.cs`, `Headlong/HeadlongController.cs` (`AuthoredGateTarget`, `BuildCourse`) |
-| Network sync (unchanged) | `NetworkCrystalCollisionTurnMonitor.cs` (`CrystalTargetCount`), `NetworkJoustCollisionTurnMonitor.cs` (`JoustTargetCount`) |
+| Network sync (the same two files) | `NetworkCrystalCollisionTurnMonitor.cs` (`CrystalTargetCount`), `NetworkJoustCollisionTurnMonitor.cs` (`JoustTargetCount`) |
 
 ## When adding a new count-based mode
 

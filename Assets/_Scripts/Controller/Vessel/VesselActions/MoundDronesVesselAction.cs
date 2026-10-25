@@ -4,7 +4,7 @@ using UnityEngine;
 using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
-    public class MoundDronesShipAction : ShipAction
+    public class MoundDronesVesselAction : ShipAction
     {
         [SerializeField]
         CellRuntimeDataSO cellData;

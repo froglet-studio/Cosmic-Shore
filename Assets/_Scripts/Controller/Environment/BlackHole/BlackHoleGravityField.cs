@@ -121,6 +121,9 @@ namespace CosmicShore.Gameplay
         static readonly List<Candidate> _candidates = new();
         static readonly List<Prism> _evict = new();
         static float _nextAdmission;
+        static readonly Unity.Profiling.ProfilerMarker s_admit = new("BlackHole.GravityField.Admit");
+        static readonly Unity.Profiling.ProfilerMarker s_prune = new("BlackHole.GravityField.Prune");
+        static readonly Unity.Profiling.ProfilerMarker s_verdicts = new("BlackHole.GravityField.Verdicts");
 
         // The hole behind each well slot this frame. A well index is NOT a holes-list index: the
         // wells skip null holes, so a capture's well index is resolved through this table.
@@ -177,12 +180,13 @@ namespace CosmicShore.Gameplay
             if (sweep)
             {
                 _nextAdmission = Time.unscaledTime + config.AdmissionInterval;
-                if (wells.Count > 0) Admit(holes, config);
+                if (wells.Count > 0)
+                    using (s_admit.Auto()) Admit(holes, config);
             }
 
             // The cheap checks every frame; the entity and hierarchy checks on the sweep cadence
             // — the job and the bulk writers are safe against a dead entity in between.
-            Prune(deep: sweep);
+            using (s_prune.Auto()) Prune(deep: sweep);
             int n = _prisms.Count;
             if (n == 0 || dt <= 0f) return;
 
@@ -251,7 +255,7 @@ namespace CosmicShore.Gameplay
                 index.UpdatePositionsBatch(_indexIds.AsArray(), _points, n);
 
             ApplyContacts(index, dt, _level);
-            ApplyVerdicts(index);
+            using (s_verdicts.Auto()) ApplyVerdicts(index);
         }
 
         // ---------------- Prism motion: collisions ----------------

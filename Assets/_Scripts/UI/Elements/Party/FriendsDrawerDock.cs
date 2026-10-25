@@ -4,7 +4,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Makes room for the friends drawer inside a hub window (Arcade, Arena, Mission, Toy Box; Docs/MENU_REDESIGN_B.md
-    /// §64, Shombith 2026-10-25: "when it is enabled inside the arcade screen the cards move to the right when this panel
+    /// §68, Shombith 2026-10-25: "when it is enabled inside the arcade screen the cards move to the right when this panel
     /// opens up"). While <see cref="FriendsDrawer.DockWidth"/> is above zero - the drawer is open over a hub window - the
     /// window's header and body start right of it; at zero they return to their authored gutter. Home, the Hangar and
     /// every other screen carry no dock, so the drawer slides over them and moves nothing.

@@ -101,6 +101,24 @@ namespace CosmicShore.UI
         [SerializeField] ConverterRecipeRow[] recipeRows = { };
         [Tooltip("\"2 of 4 merged\".")]
         [SerializeField] KitText mergedText;
+
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("The status eyebrow before a run.")]
+        [SerializeField] string readyStatusLine = "Ready";
+        [Tooltip("The status eyebrow during a run.")]
+        [SerializeField] string convertingStatusLine = "Converting";
+        [Tooltip("The status eyebrow after a run.")]
+        [SerializeField] string convertedStatusLine = "Converted";
+        [Tooltip("CONVERT's label during a run (before one it reads the Layout's button label).")]
+        [SerializeField] string convertingButtonLine = "Converting...";
+        [Tooltip("CONVERT's label after a run.")]
+        [SerializeField] string convertAgainButtonLine = "Convert again";
+        [Tooltip("The merged count. {merged} is how many elements have merged, {total} how many there are.")]
+        [SerializeField] string mergedLine = "{merged} of {total} merged";
+        [Tooltip("The clock. {time} is the play time, {length} the run's length (or the next line before it is known).")]
+        [SerializeField] string clockLine = "{time} / {length}";
+        [Tooltip("The clock's {length} while the run's length is not known yet.")]
+        [SerializeField] string unknownLengthLine = "--:--";
         [Tooltip("The omni block: dim until the omni forms.")]
         [SerializeField] CanvasGroup omniGroup;
         [Tooltip("Pops the omni in as it forms (ceremony). Optional.")]
@@ -215,7 +233,7 @@ namespace CosmicShore.UI
             if (merged != _merged)
             {
                 _merged = merged;
-                if (mergedText) mergedText.SetText($"{merged} of {Elements} merged");
+                if (mergedText) mergedText.SetText(TemplateText.Fill(mergedLine, "merged", merged.ToString(), "total", Elements.ToString()));
             }
 
             bool formed = _player.OmniFormed;
@@ -231,9 +249,9 @@ namespace CosmicShore.UI
             {
                 _phase = phase;
                 if (statusText)
-                    statusText.SetText(phase switch { Phase.Converting => "Converting", Phase.Converted => "Converted", _ => "Ready" });
+                    statusText.SetText(phase switch { Phase.Converting => convertingStatusLine, Phase.Converted => convertedStatusLine, _ => readyStatusLine });
                 if (convertLabel)
-                    convertLabel.text = phase switch { Phase.Converting => "Converting...", Phase.Converted => "Convert again", _ => buttonLabel };
+                    convertLabel.text = phase switch { Phase.Converting => convertingButtonLine, Phase.Converted => convertAgainButtonLine, _ => buttonLabel };
                 if (convertButton)
                 {
                     convertButton.Variant = phase == Phase.Converting ? KitButtonVariant.Inactive : KitButtonVariant.Purchase;   // converting spends the merged elements: gold
@@ -248,7 +266,7 @@ namespace CosmicShore.UI
             {
                 _clockShown = shown;
                 _clockTotal = total;
-                clockText.text = $"{Clock(shown)} / {(total > 0 ? Clock(total) : "--:--")}";
+                clockText.text = TemplateText.Fill(clockLine, "time", Clock(shown), "length", total > 0 ? Clock(total) : unknownLengthLine);
             }
         }
 

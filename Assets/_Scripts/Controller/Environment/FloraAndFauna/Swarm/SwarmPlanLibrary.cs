@@ -46,6 +46,40 @@ namespace CosmicShore.Gameplay
             return plans;
         }
 
+        /// <summary>
+        /// Tandava: the config's SCRIPTED forms in order (<see cref="SwarmFaunaConfigSO.ScriptedPlans"/>), each upsampled
+        /// to the config's density like the elemental plans. Any form may be of any major element, and several forms may
+        /// share one (the serpent's three sizes), so there is no slot check - only that every entry parses into a plan
+        /// with a real major element. Null (logged) when an entry is missing or broken: a half-loaded form list would
+        /// let the director name a form the swarm cannot grow.
+        /// </summary>
+        public static SwarmPlanData[] LoadScripted(SwarmFaunaConfigSO config)
+        {
+            var assets = config.ScriptedPlans;
+            var plans = new SwarmPlanData[assets.Length];
+            for (int k = 0; k < assets.Length; k++)
+            {
+                var asset = assets[k];
+                if (!asset)
+                {
+                    CSDebug.LogError($"[Swarm] {config.name}: scripted form {k} is not assigned - re-run Tools/Build/author_tandava_assets.py.");
+                    return null;
+                }
+                if (!s_cache.TryGetValue(asset, out var plan))
+                {
+                    plan = JsonUtility.FromJson<SwarmPlanJson>(asset.text).ToPlanData();
+                    s_cache[asset] = plan;
+                }
+                if (plan.MajorElement < 0 || plan.MajorElement > 3 || plan.N <= 0)
+                {
+                    CSDebug.LogError($"[Swarm] {config.name}: scripted form {k} ({asset.name}) is not a usable plan (major {plan.MajorElement}, {plan.N} units).");
+                    return null;
+                }
+                plans[k] = Dense(asset, plan, config.PlanDensity);
+            }
+            return plans;
+        }
+
         /// <summary>The plan at <paramref name="density"/> members per plan unit (SwarmPlanData.Upsample; 1 = as baked).</summary>
         static SwarmPlanData Dense(TextAsset asset, SwarmPlanData plan, int density)
         {

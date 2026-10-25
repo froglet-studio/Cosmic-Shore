@@ -17,7 +17,7 @@ namespace CosmicShore.UI
     /// The – button minimises back to the handle. The panel inside (PartyPanel) keeps all its own
     /// behaviour; this only moves and sizes its window.
     ///
-    /// <para>Where it sits (§64, Shombith 2026-10-25): the window takes the whole left side, from under the top nav to
+    /// <para>Where it sits (§68, Shombith 2026-10-25): the window takes the whole left side, from under the top nav to
     /// the bottom, so its height follows the screen it is on. Over a hub window (Arcade, Arena, Mission, Toy Box) it
     /// docks: <see cref="DockWidth"/> tells each window's <see cref="FriendsDrawerDock"/> how much room to make, and
     /// the cards move right. Over Home, the Hangar and the other screens it slides over them and moves nothing. While

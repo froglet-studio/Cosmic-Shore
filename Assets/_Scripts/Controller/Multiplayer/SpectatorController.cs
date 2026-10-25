@@ -562,8 +562,7 @@ namespace CosmicShore.Gameplay
             }
             foreach (var gc in FindObjectsByType<GameCanvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
-                var canvas = gc.GetComponent<Canvas>();
-                if (canvas != null) canvas.enabled = false;
+                if (gc.TryGetComponent(out Canvas canvas)) canvas.enabled = false;
             }
         }
 

@@ -186,7 +186,7 @@ def window_lattice_node(key, name="Lattice", rect=None):
 
 
 def window_sea_node(key, name="SeaLines", rect=None):
-    """The sea lines behind a whole window (§63, Sea_Window.mat): slow wave lines in three depth layers over the
+    """The sea lines behind a whole window (§67, Sea_Window.mat): slow wave lines in three depth layers over the
     window's veil. Put it right after the veil so the window's content draws over it."""
     n = K.Node(key, name, rect or K.STRETCH)
     n.add("cr", 222, K.canvas_renderer()).add("img", 114, lattice_image(SEA_WINDOW_MAT))

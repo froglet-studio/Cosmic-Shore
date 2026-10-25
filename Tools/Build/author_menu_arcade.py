@@ -709,7 +709,7 @@ OPEN_BOND_ALPHA = 0.35     # an open seat's bond (ArcadeLobbyList.openBondAlpha)
 # Arena, Toy Box and Mission windows.
 # 0.55 -> 0.75 on 2026-10-17 (the owner: "make the bg opaque by 20%"): still glass, but Home no longer
 # reads through behind a window's title and Back.
-# 0.75 -> 0.95 on 2026-10-25 (Shombith, with the sea lines, §63: "make it 95% opaque").
+# 0.75 -> 0.95 on 2026-10-25 (Shombith, with the sea lines, §67: "make it 95% opaque").
 WINDOW_BACKDROP_ALPHA = 0.95
 # Rev 3: the four windows' body and header, shared. The left inset is a gutter for the friends control
 # drawn over every window (rev 3's 76 px handle on the left edge; since rev 6 the presence orb, ORB_*
@@ -729,7 +729,7 @@ DOCK_GAP = 24
 
 
 def drawer_dock(root):
-    """§64: the hub window makes room for the open friends drawer - its Header and Body start right of it
+    """§68: the hub window makes room for the open friends drawer - its Header and Body start right of it
     (FriendsDrawerDock), so the cards move right. Shared by the Arcade, Arena, Mission and Toy Box windows."""
     root.add("dock", 114, lambda ctx, go: mono(go, S["dock"],
              f"  pushed:\n  - {ref(ctx.rt('Header'))}\n  - {ref(ctx.rt('Body'))}\n  gap: {DOCK_GAP}\n"))
@@ -1001,7 +1001,7 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     root = N("root", "ArcadeView", STRETCH)
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
     image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=WINDOW_BACKDROP_ALPHA)
-    # §63: the sea lines over the glass (Sea_Window.mat), slow wave lines in three depth layers.
+    # §67: the sea lines over the glass (Sea_Window.mat), slow wave lines in three depth layers.
     root.child(M.window_sea_node("BackdropLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
 
     # Sibling order is FOCUS order: ScreenSwitcher.Refocus lands on the first live Selectable in
