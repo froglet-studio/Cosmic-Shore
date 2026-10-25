@@ -48,6 +48,7 @@ MonoBehaviour:
   netRivalTake: 0.1
   netRivalCooldown: 2
   jackCrystalReach: 32
+  jackNetCrystalReach: 10
   jackCrystalHeight: 200
   netCameraFill: 0.8
   netCameraEase: 3

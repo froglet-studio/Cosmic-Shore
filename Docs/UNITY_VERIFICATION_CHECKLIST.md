@@ -14196,3 +14196,15 @@ ramp boost still bound, its registry on the hull, no `netPrismCap`), then passed
     by side in the net never break each other.
 19. Fly straight at full speed: no ramp boost (no surge, no boost sound); the AI Jacks never ramps either.
 
+### Round 4 (2026-10-25, same branch)
+
+Garrett: "if either jack hits the omnicrystal it should still produce the serpent, but if it nets the omnicrystal it should
+move it. same with the elemental crystals the hulls can collect in either mode, but the net allows them to be relocated."
+Headless compile OK (player and editor, 0 errors in changed files); `author_jacks_assets.py --check` failed first (no
+`jackNetCrystalReach`), then passed.
+
+20. Netting, steer one FISH onto the omni crystal: it is collected and a worm colony is born in your domain behind the hull.
+    Steer the crystal between the fish instead: it rides in the net, and the worm is not born.
+21. Same with an elemental crystal: a fish that hits it collects it (its level rises); between the fish, the net carries it.
+22. Herding, a jack over a crystal still collects it (round 2), the omni one bearing the worm.
+

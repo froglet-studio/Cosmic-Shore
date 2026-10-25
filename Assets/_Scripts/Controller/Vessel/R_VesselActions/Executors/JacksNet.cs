@@ -238,17 +238,22 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Herding (Garrett, 2026-10-24: "the net goes away and they can collect the crystals netted"): a jack that touches a
-        /// crystal collects it, the two halves a physics contact would dispatch (the Starlings' and the race rings' seam).
+        /// In EITHER mode a jack that touches a crystal collects it (Garrett, 2026-10-24: "the net goes away and they can collect
+        /// the crystals netted"; 2026-10-25: "if either jack hits the omnicrystal it should still produce the serpent, but if
+        /// it nets the omnicrystal it should move it. same with the elemental crystals the hulls can collect in either mode,
+        /// but the net allows them to be relocated"): the fish are the hulls that collect, and the net between them carries.
+        /// A jack that touches a crystal collects it, the two halves a physics contact would dispatch (the Starlings' and the race rings' seam).
         /// An elemental crystal is taken by the hull's near-field skimmer on every peer, as a skimmer contact is; the omni
         /// crystal's pickup is decided on the machine that decides the hull and credited by the crystal's authority
         /// (<see cref="CrystalManager.ReportRingThreaded"/>, the race ring's report of a crystal taken off the hull).
         /// </summary>
-        internal void CollectByJacks(JacksExecutor ex)
+        internal void CollectByJacks(JacksExecutor ex, bool herding)
         {
             var status = ex.Status;
             var cfg = ex.Config;
-            float reach2 = cfg.JackCrystalReach * cfg.JackCrystalReach, height = cfg.JackCrystalHeight;
+            // herding, across the board as the top-down view shows it; netting, round each flying fish (they are its size)
+            float reach = herding ? cfg.JackCrystalReach : cfg.JackNetCrystalReach;
+            float reach2 = reach * reach, height = herding ? cfg.JackCrystalHeight : reach;
             var up = ex.BoardUp;
             var skimmerOwner = status.NearFieldSkimmer;
             var skimmer = skimmerOwner ? skimmerOwner.GetComponentInChildren<SkimmerImpactor>(true) : null;

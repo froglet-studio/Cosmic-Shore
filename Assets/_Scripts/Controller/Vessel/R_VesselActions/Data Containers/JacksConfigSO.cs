@@ -115,6 +115,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("Herding: how close a jack must come to a crystal to collect it, across the board as the herding view sees " +
                  "it (u; Garrett, 2026-10-24: \"i had a hard time collecting crystals\").")]
         [SerializeField, Min(0f)] float jackCrystalReach = 32f;
+        [Tooltip("Netting: how close a flying jack must come to a crystal to collect it (u, round the fish; Garrett, " +
+                 "2026-10-25: \"if either jack hits the omnicrystal it should still produce the serpent\"). The net between " +
+                 "the jacks carries the crystals the fish do not touch.")]
+        [SerializeField, Min(0f)] float jackNetCrystalReach = 10f;
         [Tooltip("Herding: how far above or below the board a crystal can sit and still be collected by a jack under it in " +
                  "the top-down view (u).")]
         [SerializeField, Min(0f)] float jackCrystalHeight = 200f;
@@ -256,6 +260,7 @@ namespace CosmicShore.Gameplay
         public float NetRivalCooldown => netRivalCooldown;
         public float JackCrystalReach => jackCrystalReach;
         public float JackCrystalHeight => jackCrystalHeight;
+        public float JackNetCrystalReach => jackNetCrystalReach;
         public float NetCameraFill => netCameraFill;
         public float NetCameraEase => netCameraEase;
         /// <summary>The fish's distance apart with the net closed, and fully open: what <see cref="JacksMath.NetOpenFromGap"/>

@@ -127,7 +127,13 @@ that grow open and shrink away (`netGrowRate`). What crosses the mouth (`JacksNe
   root is an `ICrystalPickupGate` (`JacksBodies.TakesCrystalsByContact`, off while netting, read on every peer from the
   replicated mode), and both halves of a crystal contact honour it (`VesselImpactor`'s omni case, `OmniCrystalImpactor`
   and `ElementalCrystalImpactor` on the server and every peer), so the omni crystal the hull flies into is netted, not
-  collected. A deliberate pickup (a sweep: the herding jacks, the race rings) is never gated. On landing the net goes away and they
+  collected. A deliberate pickup (a sweep: the herding jacks, the race rings) is never gated.
+- **The jacks collect, the net relocates** (Garrett, 2026-10-25: "if either jack hits the omnicrystal it should still
+  produce the serpent, but if it nets the omnicrystal it should move it. same with the elemental crystals the hulls can
+  collect in either mode, but the net allows them to be relocated"): in EITHER mode a fish that touches a crystal collects
+  it (`JacksNet.CollectByJacks`: herding across the board, `jackCrystalReach`; netting round each flying fish,
+  `jackNetCrystalReach` 10 u), so an omni crystal a jack hits still bears the worm. Netting, the fish take first and the
+  net carries what crosses its mouth between them. On landing the net goes away and they
   stay where they were; the cell's omni crystal is put there on every machine by the hull's owner
   (`CrystalManager.RelocateCrystal`, new: a slot write on the network manager, no second bloom where it already is).
 - **Prisms** (Garrett, 2026-10-25: "lets have prisms move and be dragged by the net. they should only be destroyed when

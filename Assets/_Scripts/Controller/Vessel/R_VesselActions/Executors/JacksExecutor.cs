@@ -374,9 +374,14 @@ namespace CosmicShore.Gameplay
             if (herdingNow)
             {
                 if (_net.Open) _net.Release(this);
-                _net.CollectByJacks(this);
+                _net.CollectByJacks(this, herding: true);
             }
-            else _net.Step(this, _jack[0], _jack[1], dt);
+            else
+            {
+                // the fish take what they touch first (an omni crystal a jack hits still bears the worm); the net carries the rest
+                _net.CollectByJacks(this, herding: false);
+                _net.Step(this, _jack[0], _jack[1], dt);
+            }
             EnsureFloor();
             Recruit(ring);
             StepHerd(dt, ring);
