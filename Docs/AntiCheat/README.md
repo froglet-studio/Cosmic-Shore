@@ -299,6 +299,16 @@ A kernel driver would cost months, cover only the PC build, and stop none of T1-
   hardest case to defend ([`LEGAL.md`](LEGAL.md) §L1).
 - **It misses our cheats.** A fake leaderboard post, an edited balance or a modded host never touch the kernel.
 
+**Enforced since 2026-10-25 (R16).** `Tools/Build/check_fairplay_device_reads.py` (bleeding-edge guard and
+`/to-bleeding-edge`'s gates) fails any fair-play file that reads a hardware or identity fingerprint
+(`SystemInfo.deviceUniqueIdentifier`, `deviceName`, `deviceModel`, GPU ids, the machine or user name), other processes,
+the registry or WMI, the network adapters, or files and drives outside the game, and reports every native call
+(`DllImport`, `AndroidJavaObject`) until it has a reviewed row in its `ALLOW` table. Platform attestation (App Attest,
+DeviceCheck, Play Integrity) goes there when it is built. Project-wide it fails any `QUERY_ALL_PACKAGES` request, any
+installed-apps query in runtime code, and any `.sys` driver file. It cannot see inside an SDK's binaries: an SDK added
+later is checked against the store labels by hand, and the merged Android manifest of a release build is worth a
+look for `QUERY_ALL_PACKAGES`.
+
 Microsoft has said it is moving third-party drivers out of the kernel (Nov 2025, May 2026) but has announced no
 rule for anti-cheat. If PC client cheating appears after launch, the cheaper steps are in §4.3.
 
@@ -361,7 +371,7 @@ Set on the Threat Board artifact (https://claude.ai/artifact/PwjCQgUu9JWENw9FyFi
 | Medium | R10 Bot farming | 9 | **Two server checks built 2026-10-25, with match reports (gated off), observe only**: `around_the_clock` (match starts in 20 distinct hours of 24) and `repetitive_results` (6 matches of a mode within 2% of the same time). Still phase C: the human-vs-AI flight classifier (needs Yash's and Garrett's flight data, T-20261025-cebb), identical routes across accounts, many accounts per device (needs App Attest / Play Integrity), and farming earning nothing (the Undertow) |
 | Medium | R13 Automated penalties on children | 12 | design rule (§4.6). **Built 2026-10-25, with match reports (gated off)**: the birth year is kept and sent; minors and unknown ages get no quit record and every signal about them is marked for a person (§4.6). Counsel decides whether quit counting may run for minors (`RULES.keepConductForMinors`) |
 | Medium | R14 Locking paid content | 8 | **Enforced 2026-10-25**: restrictions cover only play with or seen by others (§4.6); a gate in the bleeding-edge guard fails any fair-play code that names the paid layer, or paid code that names a fair-play record |
-| Medium | R16 Reading more from the device than needed | 8 | design rule (§5) |
+| Medium | R16 Reading more from the device than needed | 8 | **Enforced 2026-10-25**: a gate fails fingerprint, process, installed-app, registry and outside-file reads in fair-play code, and `QUERY_ALL_PACKAGES` or a kernel driver anywhere (§5) |
 | Unset | T7 Display names checked on the client only | 12 | T-20261022-7708. **Done 2026-10-24 on the receiving side**: every player's game hides offensive names it receives (`Pilot {tag}`); a server check of the sender adds nothing a modified game cannot skip |
 | Not ticked | R15 False positives with no evidence or appeal | 12 | — (the ladder in §4.6 still requires evidence and appeal) |
 

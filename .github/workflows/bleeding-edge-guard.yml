@@ -179,6 +179,15 @@ jobs:
           python3 Tools/Build/check_fairplay_paid_content.py --self-test
           python3 Tools/Build/check_fairplay_paid_content.py
 
+      # Fair play reads no more from the device than it needs (Threat Board R16, Docs/AntiCheat/README.md 5): no
+      # fingerprints, processes, installed apps, registry or outside files in fair-play code; no QUERY_ALL_PACKAGES
+      # and no kernel driver anywhere in the project.
+      - name: Check fair play reads nothing extra from the device
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/check_fairplay_device_reads.py --self-test
+          python3 Tools/Build/check_fairplay_device_reads.py
+
       # Every arcade card in every SO_GameList must name a scene that exists AND
       # is enabled in the build settings. A card that fails this renders normally
       # and dies at the moment a player commits to it, and nothing in the Editor
@@ -596,6 +605,8 @@ jobs:
               python3 Tools/Build/check_console_logging.py
               python3 Tools/Build/check_fairplay_paid_content.py --self-test
               python3 Tools/Build/check_fairplay_paid_content.py
+              python3 Tools/Build/check_fairplay_device_reads.py --self-test
+              python3 Tools/Build/check_fairplay_device_reads.py
               python3 Tools/Build/check_gamelist_scenes.py
               python3 Tools/Build/check_hud_onscreen.py
               python3 Tools/Build/audit_vessel_skimmers.py --self-test
