@@ -19,6 +19,7 @@ MonoBehaviour:
   ClosingFraction: 0.7
   LaunchPreferArc: 160
   DryCrawlArc: 80
+  MaxDryCrawlSeconds: 4
   ReverseLeadTurnRadii: 2.2
   ParkedSpeed: 6
   ParkedSeconds: 5

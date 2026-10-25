@@ -408,6 +408,10 @@ public class VesselTransformer : MonoBehaviour
         /// (see <see cref="RefreshDriftSpeedHold"/>).</summary>
         public bool IsDriftSpeedHeld => _driftSpeedHeld;
 
+        /// <summary>Whether a drift on this hull keeps the speed it began at (<see cref="holdSpeedWhileDrifting"/>):
+        /// an autopilot must not start one before the hull is up to speed (AIPilot.CanCommitAt).</summary>
+        public bool HoldsSpeedWhileDrifting => holdSpeedWhileDrifting;
+
         // ----------------------------- Update Loop -----------------------------
         protected virtual void Update()
         {

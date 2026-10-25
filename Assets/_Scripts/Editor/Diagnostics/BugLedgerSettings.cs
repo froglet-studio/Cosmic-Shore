@@ -38,7 +38,8 @@ namespace CosmicShore.Editor
 
         [SerializeField, Range(10, 1000), Tooltip("Hard cap on auto-filed issues. A runaway error generator " +
                                                   "must not mint files; past the cap new signatures are " +
-                                                  "dropped with one console warning.")]
+                                                  "dropped with one console warning. Counts open issues " +
+                                                  "seen in the last 30 days.")]
         int maxAutoIssues = 150;
 
         [SerializeField, HideInInspector] string sentFingerprints = "";
