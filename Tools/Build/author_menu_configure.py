@@ -642,6 +642,8 @@ EYEBROW = {"arcade": "Arcade", "arena": "Arena", "maelstrom": "Arcade - Maelstro
 PANEL_CLASS = {"arcade": "minigame", "arena": "arena", "maelstrom": "maelstrom"}
 VIEW_NAME = {"arcade": "ConfigureView", "arena": "ConfigureArenaView", "maelstrom": "ConfigureMaelstromView"}
 HULL_SLOTS = 8
+HULL_TILES = 7          # the tiles between the < and > arrows (d9b7305b11); Hull8 stays authored, inactive
+HULL_ARROW_W = 36
 
 
 
@@ -976,9 +978,18 @@ def hull_body(sec):
     """The Arena's hulls as one row of eight tiles, then the class line and Claim."""
     inner = SET_W - 2 * PAD
     strip = sec.child(N("HullStrip", "HullStrip", TL(0, SEC_HEAD, inner, HULL_ROWS * HULL_H)))
+    # Bleeding-edge d9b7305b11 (the arena hull strip, 2026-10-25): a card can list more hulls than there are tiles (the
+    # Regatta lists nine), so the strip is a window onto them with < and > at its ends. HULL_TILES tiles sit between the
+    # arrows, shifted right by one arrow and its gap; the last slot stays authored but inactive and off the tile list.
     for i in range(HULL_SLOTS):
-        strip.children.append(Inst(f"Hull{i + 1}", "ConfigureHullTile", f"Hull{i + 1}",
-                                   TL((i % HULL_COLS) * (HULL_W_SET + 4), (i // HULL_COLS) * HULL_H, HULL_W_SET, HULL_H)))
+        shown = i < HULL_TILES
+        x = (i % HULL_COLS) * (HULL_W_SET + 4) + (HULL_ARROW_W + 4 if shown else 0)
+        tile = Inst(f"Hull{i + 1}", "ConfigureHullTile", f"Hull{i + 1}", TL(x, (i // HULL_COLS) * HULL_H, HULL_W_SET, HULL_H))
+        tile.active = shown
+        strip.children.append(tile)
+    for key, x, glyph in (("PrevVesselButton", 0, "<"), ("NextVesselButton", HULL_ARROW_W + 4 + HULL_TILES * (HULL_W_SET + 4), ">")):
+        strip.children.append(Inst(key, "KitButtonSmall", key, TL(x, 0, HULL_ARROW_W, HULL_H),
+                                   K.button_mods("KitButtonSmall", "Default", False, glyph, small=True)))
     top = SEC_HEAD + HULL_ROWS * HULL_H + 8
     bw, bh = K.button_size("CLAIM", small=True)
     info = sec.child(N("ClassInfo", "ClassInfo", TL(0, top, inner - bw - 12, 34)))
@@ -1229,9 +1240,11 @@ def panel_body(ctx, go, kind):
                    f"  microToast: {ref(ctx.c('Preview/Toast', 'toast'))}\n")
     if kind == "arena":
         fields += (f"  roster: {K.ref(11400000, ARENA_ROSTER, 2)}\n"
-                   "  vesselIcon: {fileID: 0}\n  prevButton: {fileID: 0}\n  nextButton: {fileID: 0}\n"
+                   "  vesselIcon: {fileID: 0}\n"
+                   f"  prevButton: {ref(ctx.iref('PrevVesselButton', 'root#button'))}\n"
+                   f"  nextButton: {ref(ctx.iref('NextVesselButton', 'root#button'))}\n"
                    f"  selectVesselButton: {ref(ctx.iref('ClaimButton', 'root#button'))}\n"
-                   + refs("hullTiles", [ctx.iref(f"Hull{i + 1}", "root#hull") for i in range(HULL_SLOTS)]))
+                   + refs("hullTiles", [ctx.iref(f"Hull{i + 1}", "root#hull") for i in range(HULL_TILES)]))
     if kind == "maelstrom":
         fields += (f"  videoView: {ref(ctx.c('Preview', 'video'))}\n"
                    f"  poolList: {ref(ctx.c('Pool', 'list'))}\n"
@@ -2004,8 +2017,10 @@ def validate_prefabs(files):
         if kind == "arena":
             wired(text, body, "selectVesselButton", S["button"], view)
             hulls = re.findall(r"^  - \{fileID: (-?\d+)\}", body.split("  hullTiles:")[1], re.M)
-            assert len(hulls) == HULL_SLOTS and all(A.kind_of(text, h) == (114, S["hull"]) for h in hulls), \
-                f"{view}: the hull strip needs {HULL_SLOTS} hull tiles"
+            assert len(hulls) == HULL_TILES and all(A.kind_of(text, h) == (114, S["hull"]) for h in hulls), \
+                f"{view}: the hull strip needs {HULL_TILES} hull tiles"
+            for field in ("prevButton", "nextButton"):
+                wired(text, body, field, S["button"], view)
             assert f"roster: {{fileID: 11400000, guid: {ARENA_ROSTER}" in body, f"{view}: no Arena roster (Handles is false)"
         if kind == "maelstrom":
             for field, want in (("videoView", S["video"]), ("poolList", S["pool"]), ("winTargetText", TMP)):
