@@ -50,6 +50,9 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Mesh/material swaps applied per frame. A swap left for the next frame is invisible: both sides of every swap draw the same picture over the hysteresis band. Leaving the instanced batch because a spindle MOVED is never budgeted.")]
         [Min(16)] public int maxTransitionsPerFrame = 384;
 
+        [Tooltip("Milliseconds of swaps per frame, on top of the count above: whichever runs out first ends the frame's drain. Each swap is several renderer writes, so a full count budget measured 14.7 ms in one frame (Menu_Main, 2026-10-23); the rest waits invisibly for the next frame.")]
+        [Min(0.5f)] public float maxTransitionMsPerFrame = 3f;
+
         [Tooltip("Draw still, far spindles as ONE instanced call per material instead of one renderer each. Off keeps every far thread on its own renderer (the per-limb CPU cost stays; the triangle saving remains).")]
         public bool batchFarThreads = true;
 

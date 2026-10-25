@@ -819,10 +819,16 @@ namespace CosmicShore.Gameplay
             using (s_drainMarker.Auto())
             {
                 int budget = _profile.maxTransitionsPerFrame;
+                // Count AND time: a swap costs several renderer writes, so the count alone let one
+                // frame spend 14.7 ms here. What is left waits for the next frame, invisibly.
+                long deadline = System.Diagnostics.Stopwatch.GetTimestamp() +
+                                (long)(_profile.maxTransitionMsPerFrame * 0.001 * System.Diagnostics.Stopwatch.Frequency);
                 var cam = CameraManager.ViewCamera;
                 Vector3 camPos = cam ? cam.transform.position : Vector3.zero;
                 while (_pendingCursor < _pending.Count && budget > 0)
                 {
+                    // Read the clock every 16 swaps: a timestamp is cheap, not free.
+                    if ((budget & 15) == 0 && System.Diagnostics.Stopwatch.GetTimestamp() >= deadline) break;
                     var h = _pending[_pendingCursor++];
                     if (!h.IsRegistered || h.owner != this) continue;
                     int i = h.index;

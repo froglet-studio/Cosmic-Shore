@@ -14369,3 +14369,13 @@ RESULT OK, editor 0 errors in changed files; perf gates OK. Docs/PERFORMANCE_OPT
 2. In the recording: the release span is well under the 1.1-1.4 s of the 10-21 captures; "Suction: prisms not
    created yet" counts the invisible ones; "Suction: prisms with no render entity" is 0 (or names a real case).
 3. Swap back and forth a few times: no console error, the trail and the new world behave as before.
+
+## 🔴 2026-10-25 — Spindle LOD drain capped by time (unverified: no Unity CLI in the session)
+
+**Files:** `SpindleLodSystem.cs` (`Drain`), `SpindleLodProfileSO.cs` + `Resources/SpindleLodProfile.asset`
+(`maxTransitionMsPerFrame` 3). Ran instead: refcompile player-dev OK, SpindleLodTests 17/17 on the engine runner,
+`author_spindle_lod_meshes.py --check` OK.
+
+1. Release, Menu_Main (Garland), fly the freestyle vessel through the flora and swing the camera: spindles still
+   step between braid / converging braid / thread with no visible pop.
+2. The next Menu_Main auto-capture: `SpindleLod.Drain` max total ms per frame about 3 ms or less (was 14.7).
