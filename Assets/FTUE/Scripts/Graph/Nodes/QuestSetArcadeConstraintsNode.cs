@@ -15,6 +15,7 @@ namespace CosmicShore.Core
     public class QuestSetArcadeConstraintsNode : QuestNodeSO
     {
         public override QuestNodeCategory Category => QuestNodeCategory.Gameplay;
+        public override bool AppliesLock => !clearConstraints;
         public override string TypeTooltip =>
             "Funnels the arcade UI: locks every game card except Allowed Mode, disables every intensity except Forced Intensity, and defaults the configure modal's player count (max) and domain count. Survives scene reloads — pair with a Clear node when the funnel ends.";
         public override string EditorSummary => clearConstraints

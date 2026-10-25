@@ -336,7 +336,18 @@ namespace CosmicShore.Gameplay
             // handler runs the owner id may already be gone - and asking "who owned this?" then is
             // asking a question whose answer has been erased. AI players share the HOST's owner id,
             // so only real remote humans are recorded, or one AI would shadow another.
-            if (ConvertDepartedPlayersToAI && !player.NetIsAI.Value && ownerClientId != NetworkManager.ServerClientId)
+            bool adoptOnDeparture =
+                ConvertDepartedPlayersToAI && !player.NetIsAI.Value && ownerClientId != NetworkManager.ServerClientId;
+
+            // ASSIGNED on every pass, never only raised: the Player object persists across scene
+            // loads, so a flag set to true by a game scene used to survive into Menu_Main (whose
+            // spawner never adopts), and a guest who then left the party from the menu left a
+            // server-owned ghost Player behind - a chip in the configure modal, a "human" in
+            // domain balancing, and a re-registered roster entry in every later game.
+            if (player.NetworkObject != null && !player.NetIsAI.Value)
+                player.NetworkObject.DontDestroyWithOwner = adoptOnDeparture;
+
+            if (adoptOnDeparture)
             {
                 _humanPlayersByOwner[ownerClientId] = player;
 
@@ -351,9 +362,7 @@ namespace CosmicShore.Gameplay
                 // survive a menu departure with nothing to convert it and no vessel (that one is
                 // flagged under the same gate) - a server-owned orphan in gameData.Players,
                 // accumulating one per guest who ever left the party. Whoever owns the survival
-                // must own the adoption.
-                if (player.NetworkObject != null)
-                    player.NetworkObject.DontDestroyWithOwner = true;
+                // must own the adoption. (The flag itself is assigned above, on every pass.)
             }
 
             if (!IsReadyToSpawn(player))
@@ -775,6 +784,9 @@ namespace CosmicShore.Gameplay
                 var v = vessels[i];
                 if (v is not UnityEngine.Object o || !o || v.VesselStatus == null) continue;
                 if (ReferenceEquals(v.VesselStatus.Player, networkPlayer)) continue;
+                // A card's pinned opponent grid (Regatta's Squirrels) sits outside arena seating:
+                // a human who picked that hull keeps it.
+                if (gameData.IsPinnedOpponent(v.VesselStatus.Player, v.VesselStatus.VesselType)) continue;
                 _arenaHullsInUse.Add(v.VesselStatus.VesselType);
             }
 
@@ -851,6 +863,7 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
                 $"[ServerVesselInit] Client {departedClientId} left mid-match - handing " +
                 $"'{player.NetName.Value}' to the AI so the ship stays in the arena and the score keeps counting.");
+            NetSessionRecorder.Mark("leaverToAI", player.NetName.Value.ToString());
 
             // Ownership: Netcode reassigns to the server under DontDestroyWithOwner, but say it
             // explicitly rather than depending on that - an object still owned by a client that no

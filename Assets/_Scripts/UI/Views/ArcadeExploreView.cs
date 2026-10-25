@@ -38,7 +38,6 @@ namespace CosmicShore.UI
         [SerializeField] SO_GameList rosterOverride;
         [SerializeField] GameObject GameSelectionView;
         [SerializeField] Transform GameSelectionGrid;
-        [SerializeField] ArcadeDPadNav ArcadeDPadNav;
         // FormerlySerializedAs because the daily -> weekly rename renamed the FIELD, and Unity
         // keys serialized data by field NAME: every scene and prefab already wired to the card
         // still said DailyChallengeCard, so the reference deserialized NULL and the arcade grid
@@ -46,6 +45,14 @@ namespace CosmicShore.UI
         // migration, not a refactor.
         [FormerlySerializedAs("DailyChallengeCard")]
         [SerializeField] WeeklyChallengeCard WeeklyChallengeCard;
+
+        [Header("Style-B Explore (optional)")]
+        [Tooltip("The Maelstrom feature card. Pressing it opens the Maelstrom launch panel " +
+                 "(ArcadeGameConfigureModal.OpenMaelstrom) - wired here, in code, so the card can live " +
+                 "in a prefab that holds no reference to the scene's modal.")]
+        [SerializeField] Button maelstromCard;
+        [Tooltip("The count beside ALL GAMES: how many cards the grid draws.")]
+        [SerializeField] KitText gameCountText;
         [Header("Game Detail View")]
         [SerializeField] ArcadeGameConfigureModal ArcadeGameConfigureModal;
         [SerializeField] VesselClassTypeVariable selectedVesselClassType;
@@ -88,6 +95,8 @@ namespace CosmicShore.UI
             QuestArcadeConstraints.OnChanged += HandleConstraintsChanged;
             // Flipping the master developer unlock changes every card's lock state.
             DeveloperUnlockGate.OnChanged += HandleConstraintsChanged;
+            // A guided path may open the one card it points at, so its start and end re-lock.
+            MenuGuide.Changed += HandleConstraintsChanged;
             // Guarded + idempotent, and retried from Start() — supersedes the raw
             // subscribe here, which would double-add alongside it.
             TrySubscribeToProgression();
@@ -105,6 +114,7 @@ namespace CosmicShore.UI
             CatalogManager.OnLoadInventory -= PopulateGameSelectionList;
             QuestArcadeConstraints.OnChanged -= HandleConstraintsChanged;
             DeveloperUnlockGate.OnChanged -= HandleConstraintsChanged;
+            MenuGuide.Changed -= HandleConstraintsChanged;
 
             // A reveal cut short by the grid going away must not strand a card at alpha 0.
             CardGridReveal.Snap(this, _revealCards, _reveal);
@@ -132,11 +142,14 @@ namespace CosmicShore.UI
 
             _hostModal = GetComponentInParent<ModalWindowManager>(true);
             if (_hostModal) _hostModal.OnModalOpened += PlayCardReveal;
+
+            if (maelstromCard) maelstromCard.onClick.AddListener(SelectMaelstrom);
         }
 
         void OnDestroy()
         {
             if (_hostModal) _hostModal.OnModalOpened -= PlayCardReveal;
+            if (maelstromCard) maelstromCard.onClick.RemoveListener(SelectMaelstrom);
             CardGridReveal.Snap(this, _revealCards, _reveal);
             _reveal = null;
         }
@@ -176,29 +189,19 @@ namespace CosmicShore.UI
         {
             GameCards = new List<GameCard>();
             _lockedSlots.Clear();
-            // Rebuild the dpad grid from scratch - AddRow calls below would otherwise
-            // append duplicate rows on every repopulate (inventory load, progression
-            // change, favorite toggle), breaking gamepad navigation.
-            ArcadeDPadNav.ResetGrid();
 
+            // Gamepad navigation is the EventSystem's: the cards are the window's Selectables, and
+            // each carries a KitScrollIntoView that keeps the focused card in view. The hand-rolled
+            // ArcadeDPadNav grid that used to be rebuilt here is retired - it polled the pad
+            // directly, did nothing while its window was open (every window here is a modal) and
+            // drove a hidden grid while it was closed (Docs/MENU_REDESIGN_B.md section 12).
+            //
             // The weekly challenge card is OPTIONAL, and this method must survive it being
             // absent: it is the one thing that populates, unlocks and wires EVERY game card, so
             // a null reference here takes the whole arcade grid down with it - cards left
             // inactive, no click listeners, and every card warning that it has no SO_ArcadeGame
             // for its unassigned mode.
             //
-            // It gets the grid's first row when it is present, and NO row when it is not: an
-            // empty row is not the same thing, because ArcadeDPadNav clamps a column into
-            // "row.Count - 1", which is -1 on an empty row and throws the moment the dpad walks
-            // into it.
-            var challengeButton = WeeklyChallengeCard ? WeeklyChallengeCard.GetComponent<Button>() : null;
-            int rowIndex = -1;
-            if (challengeButton)
-            {
-                ArcadeDPadNav.AddRow(new List<Button>());
-                ArcadeDPadNav.AddButtonToRow(challengeButton, ++rowIndex);
-            }
-
             // Hand the card this view so a press can route through SelectWeeklyChallenge. Done on
             // every repopulate because the card's own state (this week's mode, completion, the
             // countdown label) is redrawn by Bind - and a repopulate is exactly when the grid
@@ -243,22 +246,16 @@ namespace CosmicShore.UI
             });
 
             EnsureGridCapacity(sortedGames.Count);
+            if (gameCountText) gameCountText.SetText(sortedGames.Count.ToString());
 
             // Deactivate all game cards and add them to the list of game cards
             for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
             {
-                // Counted rather than derived from i, because the challenge row above it is
-                // conditional - "i + 1" is off by one on any scene that carries no card.
-                ArcadeDPadNav.AddRow(new List<Button>());
-                rowIndex++;
-
                 var gameSelectionRow = GameSelectionGrid.GetChild(i);
                 for (var j = 0; j < gameSelectionRow.childCount; j++)
                 {
                     gameSelectionRow.GetChild(j).gameObject.SetActive(false);
                     GameCards.Add(gameSelectionRow.GetChild(j).GetComponent<GameCard>());
-
-                    ArcadeDPadNav.AddButtonToRow(gameSelectionRow.GetChild(j).GetComponent<Button>(), rowIndex);
                 }
             }
 
@@ -278,9 +275,11 @@ namespace CosmicShore.UI
                 gameCard.ExploreView = this;
 
                 // Locked when the quest progression hasn't unlocked the mode, or the running
-                // quest graph has funneled the arcade down to one tutorial mode.
-                bool isLocked = (progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode))
-                                || QuestArcadeConstraints.IsModeBlocked(game.Mode);
+                // quest graph has funneled the arcade down to one tutorial mode - unless a guided
+                // path points at this card, which may always open the one door it leads to.
+                bool isLocked = ((progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode))
+                                 || QuestArcadeConstraints.IsModeBlocked(game.Mode))
+                                && !MenuGuide.ExemptsMode(game.Mode);
                 gameCard.SetLocked(isLocked);
 
                 if (isLocked) _lockedSlots.Add(i);
@@ -302,8 +301,6 @@ namespace CosmicShore.UI
             // authored rows before any row was added - this is a repair as much as a fit.
             FitScrollContent();
             ReportUnreachableCards(sortedGames.Count);
-
-            ArcadeDPadNav.RefreshSelection();
         }
 
         /// <summary>
@@ -724,6 +721,9 @@ namespace CosmicShore.UI
             }
         }
 
+        /// <summary>True when this window's roster lists <paramref name="game"/> (the Hangar's Games tab asks).</summary>
+        public bool Offers(SO_ArcadeGame game) => game && Roster && Roster.Games != null && Roster.Games.Contains(game);
+
         public void SelectGame(SO_ArcadeGame selectedGame)
         {
             // The press itself, stated. Everything ReportCardPressability can measure is about the
@@ -768,6 +768,50 @@ namespace CosmicShore.UI
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Open the Maelstrom's own launch panel - the meta-mode is not a grid card (see
+        /// PopulateGameSelectionList), so its feature card routes here.
+        /// </summary>
+        public void SelectMaelstrom()
+        {
+            if (ArcadeGameConfigureModal) ArcadeGameConfigureModal.OpenMaelstrom();
+        }
+
+        /// <summary>
+        /// The shown card for <paramref name="mode"/>, scrolled into view - so a guided path
+        /// (<see cref="MenuGuide"/>) can spotlight it for the player to press. It finds and reveals
+        /// the card and deliberately does NOT press it: a guide shows the way, the player walks it.
+        /// </summary>
+        public bool TryRevealCard(CosmicShore.Data.GameModes mode, out RectTransform card)
+        {
+            card = null;
+            if (GameCards == null) return false;
+
+            foreach (var c in GameCards)
+                if (c && c.gameObject.activeInHierarchy && c.GameMode == mode)
+                {
+                    card = (RectTransform)c.transform;
+                    break;
+                }
+            if (!card) return false;
+
+            var scroll = GameSelectionGrid ? GameSelectionGrid.GetComponentInParent<ScrollRect>() : null;
+            if (scroll && scroll.content)
+            {
+                var viewport = scroll.viewport ? scroll.viewport : (RectTransform)scroll.transform;
+                var b = RectTransformUtility.CalculateRelativeRectTransformBounds(viewport, card);
+                var v = viewport.rect;
+                float shift = 0f;
+                if (b.max.y > v.yMax) shift = v.yMax - b.max.y;          // above: move content down
+                else if (b.min.y < v.yMin) shift = v.yMin - b.min.y;     // below: move content up
+                if (Mathf.Abs(shift) > 0.5f)
+                {
+                    scroll.content.anchoredPosition += new Vector2(0f, shift);
+                }
+            }
+            return true;
         }
 
         /// <summary>

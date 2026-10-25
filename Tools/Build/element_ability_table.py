@@ -77,17 +77,18 @@ INPUT_EVENTS = {
     0: ("FullSpeedStraightAction", "", ""),
     1: ("RightStickAction", "RT", "R-Shift"),
     2: ("LeftStickAction", "LT", "L-Shift"),
-    3: ("FlipAction", "RB", ""),
+    3: ("FlipAction", "RB", "E"),
     4: ("IdleAction", "", ""),
     5: ("MinimumSpeedStraightAction", "", ""),
     6: ("Button1Action", "A", "Space"),
-    7: ("Button2Action", "B", "R"),
+    7: ("Button2Action", "B", "T"),   # T since 2026-10-14 (R is the Vessel Studio reset)
     8: ("Button3Action", "X", "Q"),
     9: ("NodeTapAction", "", ""),
     10: ("SelfTapAction", "", ""),
     11: ("OnlyRightStickAction", "RT", "R-Shift"),
     12: ("OnlyLeftStickAction", "LT", "L-Shift"),
     13: ("BothSticksAction", "LT+RT", "Both shifts"),
+    14: ("Button4Action", "Y", "F"),
 }
 
 GUID_RE = re.compile(r"guid:\s*([0-9a-f]{32})")
@@ -696,11 +697,13 @@ def rows_for_vessel(vessel, map_path, guid_to_path, script_index, symbols, max_d
 
 
 def resolve_element_field(field, info, body):
-    v = None
     m = re.search(rf"^\s*{re.escape(field)}:\s*(\d+)\s*$", body, re.M)
     if m:
-        v = ELEMENTS.get(int(m.group(1)))
-    return v or info["elems"].get(field)
+        # An AUTHORED value wins outright - including 0, Element.None, which means "no gate".
+        # Falling back to the C# initializer on a None reported a gate the asset had switched
+        # off (the Thresher's forked skim-boost effect read as a Charge L5 gate).
+        return ELEMENTS.get(int(m.group(1)))
+    return info["elems"].get(field)
 
 
 def find_authored(field, own_body, bodies):

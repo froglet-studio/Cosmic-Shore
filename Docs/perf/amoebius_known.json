@@ -1,0 +1,15 @@
+{
+  "comment": "Markers whose Amoebius allocation is the ENGINE's, not the game's: an engine API that copies on every call (Unity's does not). perf_hunt.py amoebius reports them as 'engine shim (known)' instead of a regression, and lists them in the report so the number is never mistaken for the game's. Remove an entry when the engine stops copying; the task names who owns that.",
+  "markers": {
+    "CrystalChargeArcs.LateUpdate": {
+      "reason": "Mesh.SetVertices(List)/SetUVs(List<Vector4>)/SetTriangles(List) copy their lists into fresh arrays on every call in Amoebius (Port/src/CosmicShore.Engine/Rendering/Mesh.cs:249,289, Mesh.Extras.cs:78,139); the renderer detects a changed mesh by array identity (Port/src/CosmicShore.Render/SceneRenderer.cs:2676, :1428), so the copies are how it is told. The game's own code reuses its writer lists and cached arrays (Assets/_Scripts/Controller/Environment/Crystals/CrystalChargeArcs.cs:187-196). Unity's SetVertices(List) allocates nothing.",
+      "measured": "~708 KB/frame, Skim Race I2 3 seats, 2026-10-15 (Docs/perf/amoebius_baselines.json)",
+      "task": "see Docs/TEAM_TASKS.md, area Performance, 'Amoebius: Mesh.Set*(List) copy per call'"
+    },
+    "CrystalDepthPrisms.LateUpdate": {
+      "reason": "MaterialPropertyBlock.SetVectorArray(Vector4[]) clones the array on every call in Amoebius (Port/src/CosmicShore.Engine/Rendering/MaterialPropertyBlock.cs:68); the game passes one cached Vector4[] (Assets/_Scripts/Controller/Environment/Crystals/CrystalDepthPrisms.cs:77,196). Unity's SetVectorArray copies into native memory without a managed allocation.",
+      "measured": "~3.0 KB/frame, Skim Race I2 3 seats, 2026-10-15",
+      "task": "same task as CrystalChargeArcs.LateUpdate (the engine's copy-per-call stand-ins)"
+    }
+  }
+}

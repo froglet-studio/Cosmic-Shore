@@ -16,10 +16,18 @@ namespace CosmicShore.Gameplay
     /// <c>VesselCombatHitBySkimmerEffectSO</c> already prices being faster.</item>
     /// </list>
     ///
+    /// <para><b>The opponent branch runs only through <see cref="IContactPetalTake"/></b>
+    /// (2026-10-10): the container's <see cref="VesselCombatHitBySkimmerEffectSO"/> admits and
+    /// scores the hit and calls <see cref="TakeFrom"/>, so a scored joust or sword stroke and the
+    /// petals it steals are one event. <c>Execute</c> handles the ally branch and the haptic
+    /// only.</para>
+    ///
     /// <para><b>The opponent branch is now a permanent STEAL, not a decaying debuff.</b> A contact
     /// verb is the one kind of hit where the attacker is physically there to take what they knocked
     /// loose, so the petals move straight onto the overtaker's own levels
-    /// (<see cref="ElementalTransfer.Steal"/>): the victim is permanently poorer and the jouster
+    /// (<see cref="ElementalTransfer.ApplyAllAuthoritative"/> with
+    /// <see cref="ElementalTransferForm.Steal"/>, settled on the victim's owner and paid on the
+    /// thief's): the victim is permanently poorer and the jouster
     /// permanently richer until somebody takes it off THEM. Nothing decays, so a match is a running
     /// ledger rather than a series of four-second inconveniences.</para>
     ///
@@ -40,7 +48,7 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(
         fileName = "VesselOvertakeBySkimmerEffect",
         menuName = "ScriptableObjects/Impact Effects/Vessel - Skimmer/VesselOvertakeBySkimmerEffectSO")]
-    public class VesselOvertakeBySkimmerEffectSO : VesselSkimmerEffectsSO
+    public class VesselOvertakeBySkimmerEffectSO : VesselSkimmerEffectsSO, IContactPetalTake
     {
         [Header("Effect")]
         [Tooltip("Signed level change TAKEN from an overtaken opponent and handed to the " +
@@ -69,10 +77,10 @@ namespace CosmicShore.Gameplay
                  "the Rhino's sword. Scales the opponent branch ONLY: the ally buff keeps " +
                  "mirroring the base magnitude, so a friendly overtake can never out-pay an " +
                  "enemy one. Read through the thief's REPLICATED integer level " +
-                 "(R_VesselElementalAbilityHandler.ReplicatedLevel): the steal runs on the " +
-                 "victim's machine as well as the thief's, element levels never replicate, and " +
-                 "two peers disagreeing about the multiplier is two peers disagreeing about how " +
-                 "many petals left the victim.")]
+                 "(R_VesselElementalAbilityHandler.ReplicatedLevel). The steal is now decided " +
+                 "once, on the thief's owner (ElementalTransfer.ApplyAllAuthoritative), so only " +
+                 "one machine computes it; the replicated read is kept so the size of a steal " +
+                 "never depends on which copy of the thief a machine is looking at.")]
         [SerializeField] private ElementalFloat stealScale = new(1f);
 
         [Header("When it lands")]
@@ -95,12 +103,27 @@ namespace CosmicShore.Gameplay
         static readonly Element[] AllElements =
             { Element.Mass, Element.Charge, Element.Space, Element.Time };
 
-        // Per-vessel anti-spam: last time an overtake effect was applied to a vessel.
+        // Per-vessel anti-spam: last time an overtake effect was applied to a vessel. Static, so it is
+        // shared by every asset of this type (the Squirrel's joust and the Rhino's sword steal) - one
+        // cooldown per victim, whoever lands it. Pruned of destroyed systems once it grows past
+        // PruneThreshold, so a long session's despawned vessels do not accumulate in it.
         private static readonly Dictionary<ResourceSystem, float> _lastEffectTime = new();
+        private static readonly List<ResourceSystem> _deadKeys = new();
+        const int PruneThreshold = 32;
 
-        // No prune path — destroyed ResourceSystem keys accumulate for the editor session.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics() => _lastEffectTime.Clear();
+
+        static void PruneDestroyedKeys()
+        {
+            if (_lastEffectTime.Count < PruneThreshold) return;
+            _deadKeys.Clear();
+            foreach (var key in _lastEffectTime.Keys)
+                if (!key) _deadKeys.Add(key);
+            for (int i = 0; i < _deadKeys.Count; i++)
+                _lastEffectTime.Remove(_deadKeys[i]);
+            _deadKeys.Clear();
+        }
 
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)
         {
@@ -128,10 +151,14 @@ namespace CosmicShore.Gameplay
             var now = Time.time;
             if (_lastEffectTime.TryGetValue(rs, out var lastTime) && now - lastTime < cooldown)
                 return;
+            PruneDestroyedKeys();
             _lastEffectTime[rs] = now;
 
-            // Haptic feedback
-            HapticController.PlayConstant(hapticAmplitude, hapticFrequency, hapticDuration);
+            // Haptic feedback - only on a machine whose local human is one of the two pilots. Every
+            // peer simulates this contact, and an ungated call rumbled every player's pad for any
+            // two vessels touching anywhere in the match.
+            if (IsLocalHuman(overtakenStatus) || IsLocalHuman(impacteeVessel.VesselStatus))
+                HapticController.PlayConstant(hapticAmplitude, hapticFrequency, hapticDuration);
 
             bool isAlly = overtakenStatus.Domain == impacteeVessel.VesselStatus.Domain;
 
@@ -144,23 +171,9 @@ namespace CosmicShore.Gameplay
                     rs.ApplyElementalEffect(AllElements[i], buffMagnitude, effectDuration,
                                             ElementalDebuffSources.VesselContact);
             }
-            else
-            {
-                // A CONTACT VERB STEALS: the petals leave the victim's levels permanently and
-                // land on the overtaker's. Classed VesselContact, which is what decides which
-                // wards stop it - and a warded pilot yields nothing, so the thief is paid
-                // exactly what the victim actually lost and never more
-                // (ResourceSystem.AccrueElementalLoss is the authority, not this call site).
-                // The magnitude is authored negative because it reads as a debuff; a transfer
-                // takes a positive amount, since how much moves has no sign.
-                // How much moves is the priced magnitude times the THIEF's element scale,
-                // snapshotted once per steal so all four elements move at one rate.
-                var thief = impacteeVessel.VesselStatus;
-                float amount = -debuffMagnitude * StealScale(thief);
-                for (int i = 0; i < AllElements.Length; i++)
-                    ElementalTransfer.Steal(overtakenStatus, thief, AllElements[i],
-                                            amount, ElementalDebuffSources.VesselContact);
-            }
+            // An OPPONENT is not touched here. The steal is this asset's IContactPetalTake.TakeFrom,
+            // which the container's VesselCombatHitBySkimmerEffectSO calls for the hit it has just
+            // admitted and scored, so a scored joust and a stolen petal are one event.
 
             // Friendly buff audio: all four elements are buffed at once, so play a
             // single representative element's buff SFX (chosen at random for variety)
@@ -173,8 +186,31 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// The opponent branch: a CONTACT VERB STEALS. The petals leave the victim's levels
+        /// permanently and land on the overtaker's, classed VesselContact (the ward the reporter's
+        /// gate already asked about), and a warded pilot yields nothing, so the thief is paid
+        /// exactly what the victim lost (<c>ResourceSystem.AccrueElementalLoss</c> is the
+        /// authority). How much moves is the priced magnitude times the THIEF's element scale,
+        /// snapshotted once so all four elements move at one rate. Called only by
+        /// <see cref="VesselCombatHitBySkimmerEffectSO"/>, on the thief's owner, for an admitted
+        /// hit; the victim's owner settles it (<see cref="ElementalTransfer.ApplyAllAuthoritative"/>).
+        /// </summary>
+        public void TakeFrom(IVesselStatus victim, IVesselStatus attacker, VesselImpactor impactor,
+                             SkimmerImpactor impactee)
+        {
+            if (victim == null || attacker == null) return;
+            float amount = -debuffMagnitude * StealScale(attacker);
+            ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Steal, victim, attacker,
+                                                    amount, Vector3.zero,
+                                                    ElementalDebuffSources.VesselContact);
+        }
+
         float StealScale(IVesselStatus thief) =>
             Mathf.Max(0f, stealScale.EvaluateReplicated(thief));
+
+        static bool IsLocalHuman(IVesselStatus status) =>
+            status != null && status.IsLocalUser && !status.AutoPilotEnabled;
 
         static GameplaySFXCategory JoustBuffCategoryForElement(Element element) => element switch
         {

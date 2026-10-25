@@ -293,6 +293,9 @@ def budget():
                 volume=r["volume"], radius=r["radius"],
                 dims=r["dims"],
                 quota=source_field(species, element, "GrowthPerOffspring"),
+                # Verbatim too: the Mandelbulb family states maturity per element, as half of
+                # that element's own form, because a form can be smaller than half the budget.
+                maturity=source_field(species, element, "MaturityFraction"),
                 asset=name, guid=guid_for(name), owned_here=True,
             ))
     return rows + borromean_rows()
@@ -444,7 +447,7 @@ def flora_asset(row):
         f"  GrowthPerOffspring: {row['quota']}\n"
         "  OffspringPerBirth: 1\n"
         f"  ReproductionCooldownSeconds: {COOLDOWN}\n"
-        f"  MaturityFraction: {MATURITY}\n"
+        f"  MaturityFraction: {row.get('maturity', MATURITY)}\n"
         f"  OffspringSpread: {SPREAD}\n"
         f"  Element: {ELEMENT_ID[element]}\n"
         "  Variant:\n" + variant_block(species, element))

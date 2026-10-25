@@ -430,7 +430,11 @@ namespace CosmicShore.Tests
                 foreach (var d in file.Documents.Where(d => d.ClassId == 1001).ToList())
                 {
                     if (d.Body["m_Modification"]?["m_Modifications"] is not YSeq mods) continue;
+                    // An instance with no source prefab is not something Unity writes (a generator cut its
+                    // tail; the content loader reports it as "missing source prefab"): nothing to replay.
+                    if (d.Body["m_SourcePrefab"] is null) continue;
                     var items = mods.List.Cast<YMap>().ToList();
+                    if (items.Any(m => m["target"] is null)) continue;
                     var t = items.Select(m => m["target"].Long("fileID")).ToList();
                     if (!t.SequenceEqual(t.OrderBy(x => x))) unitySorted = false;
                     if (items.Any(m => m["target"].Str("guid") != d.Body["m_SourcePrefab"].Str("guid"))) unitySorted = false;

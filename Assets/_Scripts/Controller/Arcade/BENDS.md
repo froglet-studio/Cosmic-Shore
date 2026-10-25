@@ -604,9 +604,9 @@ editor and a real lobby.
   silent no-op (the alert haptic still fires). This matches the shipped state of Dog Fight,
   Rampage, Cleave and Wildlife Liberation, which all post situations with no authored copy. One
   config asset covering all five modes is the right fix, not five.
-- **`BendsObjectiveProvider` is not wired into the scene**, exactly like `DogFightObjectiveProvider`
-  — the objective-marker HUD element has no host in these scenes yet. The provider is correct and
-  ready for whichever one lands first.
+- **`BendsObjectiveProvider` is registered** in `MiniGameHUD.CreateObjectiveProviderForGameMode`
+  (`GameModes.Bends`) — it had been borrowed by Undertow, Dustup and Tapestry before the mode
+  itself had a case.
 - ~~**The Drift Ward interaction is the branch's top open risk**~~ — **RESOLVED** by scoping the
   ward to `ElementalDebuffSources.DangerPrism`, so a drifting Dolphin is warded against the arena
   and never against another pilot's cone. See the section above. What remains open there is only

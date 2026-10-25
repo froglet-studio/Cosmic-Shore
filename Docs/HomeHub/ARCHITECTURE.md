@@ -86,7 +86,7 @@ quietly un-dim the first time a sibling is pressed.
 
 ### 2.3 The nav bar: `disabledScreens` stays the single source of truth
 
-`ScreenSwitcher.disabledScreens` (`{ARK, PORT}`) already decided which screens are closed. It now
+`ScreenSwitcher.disabledScreens` (`{PORT}`; ARK reopened 2026-10-13 as the Elemental Converter) already decided which screens are closed. It now
 also decides which links *read* as closed: `MarkDisabledNavLinks` stamps `Locked` onto each
 disabled screen's link at `Start`, and `NavigateTo` answers a press through that link's view
 instead of returning in silence.
@@ -109,7 +109,7 @@ screen. The two lists answer different questions and move on different clocks:
 
 | | `disabledScreens` | `SO_CommerceAvailability` |
 |---|---|---|
-| Says | this screen is **permanently** closed (ARK, PORT) | this surface is closed **for this build** |
+| Says | this screen is **permanently** closed (PORT; ARK until 2026-10-13) | this surface is closed **for this build** |
 | Reads as | `Locked` | whatever the surface's own row says |
 | Flips when | design opens the screen | the paid-EA conversion — **one asset edit** |
 | Lives in | the scene | `Resources/` |
@@ -272,10 +272,10 @@ Sparrow. Both harvesters now skip `IProceduralElementMorphSource.HiddenLegacyMod
 harvest `IProceduralHullSource` pieces (the Scarab answers off the asset with the same parts its
 runtime `EmitParts` lays), so a codex re-bake and the toybox's mini Scarab are the Scarab. The
 card icons themselves (`Assets/_Graphics/CardImages/Scarab.png` / `Scarab_Inactive.png`) are
-rendered from the SHIPPED hull by `Tools/Build/render_scarab_card_icons.py` (Roslyn compiles and
-runs `ScarabHullForm` at the prefab's authored proportions; `--check` fails on a hull retune
-until the script is re-run) in the card family's palette — a stand-in until an artist draws
-one, but a stand-in that is the ship. `ArenaRosterTests` compares icon FILE bytes across a card's
+rendered from the SHIPPED hull: since 2026-10-18 from the Scarab's MODEL (`Scarab.fbx`) by
+`Tools/Build/vessel_model/render_cards.py Scarab` (`--check` fails when the model changes until it
+is re-run; it replaced `render_scarab_card_icons.py`, which compiled and ran the procedural
+`ScarabHullForm`) in the card family's palette — the card is the ship. `ArenaRosterTests` compares icon FILE bytes across a card's
 hulls, because the two sprites were different assets with the same pixels, which a reference
 check cannot see.
 
@@ -439,7 +439,7 @@ lerped to rim by fresnel - the prism shader's defining read). Every card states 
 | tier | cards | what is drawn |
 |---|---|---|
 | RUN | Cleave, Wildlife Liberation, Undertow, Dog Fight, Salvo, Broadside, Hijack, Skein, Regatta, Skim Race, Joust, Scurry | the shipped generator's own lay list, prism for prism (Swell 14,277, Switchyard 3,978, concentric shells 24,966 - each the documented count) |
-| COURSE | Switchback, Headlong, Redline, Breakwater | the shipped course generator at intensity 2 on the card's fixed seed, shell and gate count mirrored from `GateRaceController.BuildCourse` |
+| COURSE | Switchback, Headlong, Redline, Breakwater | the shipped course generator at intensity 2 on the card's fixed seed, shell and gate count mirrored from the mode's `RaceCourseSource` (`SwitchbackCourseSource` etc.) |
 | MODEL | Rampage, Bends, Bloomrush, Wrecking Ball, Tollway, Scarab Scramble, Astro League, Brood Rush | what exists only at runtime: the planting measured as the preview measures it with each plant a species glyph, or a court read off the controller's own settings asset |
 | MONTAGE | Maelstrom | slanted strips of the cards of the modes it can draw at intensity 2 (its cumulative ladder) |
 
@@ -471,8 +471,8 @@ Three rules, all carried by one authored bit on the card - **`SO_ArcadeGame.Aren
 the four `ArenaGames` cards and nowhere else (`ArenaSeatingTests` holds both directions) - and
 published at launch as **`GameDataSO.IsArenaMatch`** (by `SyncFromArcadeGame` on the host, by the
 config-sync RPC on a guest, cleared by the menu). It is an explicit bit rather than "the card lists
-several hulls" because that proxy is false: Scurry, Multiplayer Freestyle and the Maelstrom card
-all list several hulls and are not arenas.
+several hulls" because that proxy is false: Scurry and the Maelstrom card
+both list several hulls and are not arenas.
 
 **1. Arena cards go up to six pilots.** `MaxPlayersAllowed` is 6 on Astro League (already), Brood
 Rush, Regatta and Broadside; the two Regatta/Broadside generators author the same number. What the
@@ -503,10 +503,12 @@ sized to "the largest Urchin/Dolphin roster" (`PrismCradle.Slots` 4, `PrismLit.S
 untouched by the six-seat cards.
 
 **3. A human can swap into an AI teammate's hull mid-match** - **D-pad left / right**, keyboard
-**1 / 2** (`PilotSwapGesture`, polled by `InputController`, so local-pilot and pause gated like the
+**1 / 2** (the **left / right arrow keys** and a two-finger swipe since 2026-10-23, read by the person's `LocalCrewStation` round the domain's seats: `Docs/CREW_STATIONS.md`) (`PilotSwapGesture`, polled by `InputController`, so local-pilot and pause gated like the
 rear view). Left/1 = previous, right/2 = next, round a ring of the pilot's own hull plus every AI
 teammate's, ordered by vessel NetworkObjectId so every peer walks it identically
 (`PilotSwap.TryPickRingTarget`). Human teammates' hulls are never in the ring.
+The same two targets are drawn in the in-game top bar and are tappable there, which is the
+swap control on a phone (`PilotSwapIndicator`, 2026-10-21, `Docs/GAME_MODE_TOPBAR.md` §2.7).
 
 It is the **Cellular Duel vessel swap generalised** (`IPlayer.ChangeVessel` + `IVessel.ChangePlayer`),
 not a respawn: nothing is spawned or destroyed, the two Players EXCHANGE live hulls, so rule 2
@@ -617,6 +619,20 @@ is the first thing to run it against every hull on the card rather than against 
 was spawned as. Stated cost: swapping INTO the Urchin still shows no ability row, because it has
 none to show.
 
+**Two exceptions a card can author (2026-10-06, Regatta).** `AIHullSeating` splits AI seats in two:
+
+- **A pinned opponent grid.** `SO_ArcadeGame.OpponentAIVessel` (published host-side as
+  `GameDataSO.OpponentAIVesselClass`) makes every AI on a domain NO human flies fly that one hull.
+  Those vessels sit OUTSIDE rule 2: `SpawnAIs` never adds them to the used set, and
+  `ResolveArenaUniqueHull` skips them (`GameDataSO.IsPinnedOpponent`), so a human who claimed the
+  same hull keeps it. Regatta pins the Squirrel until the racing AI can drive every hull.
+- **Ally hulls picked by teammates.** On an arena card each ally AI chip (an AI on a domain a human
+  flies) shows its hull, and a pilot taps their OWN team's chips to step it (auto → card hulls →
+  auto), skipping claimed hulls and other allies' picks. Host-arbitrated
+  (`ArcadeConfigSyncManager.RequestAllyVesselCycle`, refused for another team's AI), replicated in
+  `LobbySnapshot.AiV0..AiV5`, launched as `GameDataSO.RequestedAIVessels`; the AI draw honours a pick
+  that is still free and falls back to its ordinary deal otherwise. `REGATTA.md` §6.
+
 **Stated limits.** Element levels are simulated on the machine that OWNS a hull and never
 replicate, so a hull that changes machines keeps the levels its new owner's replica held (starting
 elements plus whatever it saw) - crystal-earned levels the previous owner simulated do not travel.
@@ -654,9 +670,12 @@ its **own** two rather than copies of the arcade's:
 | left | weekly challenge — one curated mode a week, ranked by time | **today's activity** — one activity a day, paid for TRYING it |
 | right | Maelstrom — a tournament of other modes | **shuffle** — re-roll every setting the toys own |
 
-Both are authored by `Tools/Build/author_toybox_top_buttons.py` (`--check`, `--self-test`), which
-also writes the one asset they read (`Resources/ToyboxDailyActivityConfig`, optional — every field
-has a code default, so a missing asset costs the feature nothing).
+Both were first authored into the scene by `Tools/Build/author_toybox_top_buttons.py`; since the
+style-B rebuild (2026-10-15, `Docs/MENU_REDESIGN_B.md` section 17.3) they are the `Daily` and
+`Shuffle` cards of `ToyboxView.prefab` (`Tools/Build/author_menu_toybox.py`), and the older tool's
+scene half stands down. It still writes the one asset they read
+(`Resources/ToyboxDailyActivityConfig`, optional — every field has a code default, so a missing
+asset costs the feature nothing; its strings are sentence case now).
 
 ### 4.0.1 One flag divides them, and it already existed
 
@@ -833,7 +852,8 @@ They call exactly what the cards call - `DailyToyActivity.Today` + `TryClaim`, `
 to build its first gate beside the gallery, a cell away, where the player could not see it. So a
 shell option can now answer **`ToyShellOption.Arrival`** - the ring the player threads next and the
 way through it, resolved AFTER the press because the press is what builds the ring - and the pole
-puts the vessel in front of it, facing through, at the Navigate stand-off (2.4 ring radii) plus
+puts the vessel in front of it, facing through, at 2.4 ring radii (Navigate's original stand-off;
+Navigate itself now stands off 7.2, see below) plus
 1.5 s of the vessel's own speed (a fresh gate blooms for 1.2 s and cannot fire until it has, and a
 fast hull needs room to see it). The painting gallery answers with its live run's start gate or
 ride checkpoint (`PaintingRunner.TryGetArrival`, read off the stroke's points, not the ring object,
@@ -925,7 +945,11 @@ ring mid-blend and trips the toy before the player has touched a control — `To
 
 The stand-off sits **outside** the toy's own `SwitchRingRadius` (`arrivalDistanceFactor` > 1) and
 faces it, so the player looks at what they chose and flies through the ring to use it; arriving
-inside would trip the toy on the first frame, using it without ever seeing it.
+inside would trip the toy on the first frame, using it without ever seeing it. **It is 7.2 ring
+radii, three times the original 2.4** (Garrett, 2026-10-20): the player has already made their
+selection in the window and usually just wants to return to freestyle, so they need time to steer
+around the switch rather than run into it. The inward-lane cap (80% of the distance to the cell
+centre) still bounds it.
 
 **The approach is the toy's INWARD radial — from inside the cell.** The toybox rings its toys
 around the membrane facing inward, so the inward radial is both the toy's own front and the side
@@ -1281,7 +1305,7 @@ AA stay off, which is where the cost was.
 **The portraits ARE low-poly, and it is the bake, not the display.** `ToolPortraitBuilder.AddRing`
 rebuilt the toy's own 12 × 6 torus — sized for a ring seen from a vessel in flight — and drawn as a
 still at 330 px it is a dodecagon. The bake now tessellates at 48 × 12. **The portraits are baked
-assets** (`Assets/_Graphics/Codex/`), so this lands on the next FrogletTools > Interface > Codex
+assets** (`Assets/_Graphics/Codex/`), so this lands on the next FrogletTools > UI > Codex
 bake; nothing changes on screen until it is run.
 
 ## 4.2 A modal closes without being disabled — so the reset rides `OnModalClosed`
@@ -1381,7 +1405,7 @@ before the raise, on both edges.
 
 The UI itself is hand-designed. What the code needs:
 
-> **Run `FrogletTools ▸ Interface ▸ Home Hub Wiring` first — it does most of this list.** The hub
+> **Run `FrogletTools ▸ UI ▸ Home Hub Wiring` first — it does most of this list.** The hub
 > screens were authored by duplicating the Arcade's, which is the right way to get the LAYOUT and
 > the wrong way to get the WIRING: measured on the authored scene, all four hub buttons called
 > `ScreenSwitcher.OnClickArcadeNav`, all four screen modals declared `ModalType = ARCADE`, and none
@@ -1727,3 +1751,126 @@ it drift on every one. So "better" cannot quietly become "a different colour".
 > a sprited one freezes its slant into the art and is exact only at the size it was exported at.
 > This pass stayed a sprite because eight elements draw it at four aspects and a swap is a scene
 > change; the resolution and the crop were the reported problem, and both are asset-side.
+
+---
+
+## 8. Guiding a player: SHOW the path, never walk it (LOCKED rule)
+
+**When the app wants a player to go to one place - the microgame on first login, the Hangar or
+Profile early on - it SIGNALS that one place and lets the player go there themselves.** It never
+navigates, opens, selects or flies anything on the player's behalf.
+
+In practice, for every step of the path:
+
+1. **The one control to press next has a call to action on it** - a spotlight cut-out with a
+   pulsing frame in the palette's CTA colour, and an optional authored caption beside it.
+2. **Everything else is under a semi-transparent dim, and dimmed means dead.** A press anywhere
+   off the path lands on the dim and does nothing. The pad's own shortcuts that lead elsewhere
+   (Y for freestyle, the triggers for screen paging, B to back out of a window on the path) stand
+   down, and a pad selection that wanders off the path is put back on it.
+3. **Settings is never taken away** (and the credits it opens). It is cut out of the dim on every
+   step, and while it is open the spotlight stands aside entirely. A player who cannot turn the
+   volume down while being guided has been trapped, not guided.
+4. **The player presses the real control.** The cut-out is a hole, not a button: a press inside
+   it falls through to the actual Arcade entry, card or window underneath.
+
+**Why.** A player who was carried somewhere has no idea how they got there and cannot get back. A
+player who walked a locked path by hand - even one with only one door open at each step - has
+learned where the thing lives. The guide is a lesson in the app's geography as much as a route.
+
+**Three properties the implementation keeps, and a new guide must too:**
+
+- **The step is re-derived from where the player IS, every frame**, never advanced through a
+  sequence. A resumed quest, a window that closed, a detour into Settings - each lands on the
+  right step with no counter to drift.
+- **It fails open.** If no step can be found for more than a moment the spotlight fades away
+  rather than dimming a screen with no way forward. Trapping a new player is the one outcome worse
+  than not guiding them.
+- **A guide may open the one door it points at** (`MenuGuide.ExemptsMode`) - a progression-locked
+  card at the end of the path is pressable while the path leads to it - and it never closes one
+  permanently. That is why a guide is not an `AppliesLock` node and runs under the master
+  developer unlock: it takes nothing away beyond the length of its own beat.
+
+**The pieces.** `MenuGuide` (`_Scripts/UI/Guide/`) is the shared state the menu reads - whether a
+guide is on, which card it leads to, which windows are always available, and the derived list of
+controls that open them (any Button whose inspector-wired onClick opens an always-available
+`ModalWindowManager`, any `MenuHubButton` targeting one, anything carrying
+`MenuGuideAlwaysAvailable`). `MenuSpotlight` draws it on its own screen-space overlay canvas,
+built in code so no scene can be missing it: `SpotlightDimGraphic` is the dim, drawn as the cells
+of the grid its cut-outs make and an `ICanvasRaycastFilter` that refuses every press except inside
+a cut-out; `SpotlightFrameGraphic` is the CTA frame. It fades in and out, and the cut-out glides
+between steps - continuity of existence applies to UI too. The first driver is the Quest Graph's
+`QuestGuideToMicrogameNode` (Home → Arcade entry → this week's card → the preview window).
+
+**What the rule retires.** The first-login "railroad" shipped in phase 4 of the training plan
+opened the Arcade itself, pressed the card itself (`ArcadeExploreView.TrySelectMode`) and flew the
+vessel into the preview by itself (`ModePreviewSession.ArmForcedEntry`). All three are deleted,
+not merely unused, so nothing can reach for them again. The Quest Graph's `Navigate` and
+`EnterFreestyle` nodes still exist for the older phases 1-5 and break this rule; those phases
+stand down under the developer unlock today, and converting them to guides is part of
+re-deciding them (`Docs/ModePreview/TRAINING_PLAN.md` §11). `author_first_login_guide.py --check`
+fails if a carrying node ever appears in the first-login phase.
+
+### 8.1 First playtest: the dim drew nothing in Unity, and Settings was never cut out
+
+Reported from the Unity editor: the caption appeared over the Arcade button and nothing else did -
+no dim, no CTA frame, every hub button and the nameplate lit as normal. Three changes followed, and
+the flow was then walked end to end in **Prisma** (`Port/`), which runs the real Menu_Main and
+compiles `Assets/_Scripts` live: Home (dim, frame on ARCADE, Settings cut out) → Toybox press
+ignored → Settings opens and the spotlight stands aside → pad B closes it and the guide returns →
+Arcade opens and the light moves to this week's card → the card opens and the light moves to the
+preview, with B refused → tap in and the spotlight fades.
+
+- **All spotlight geometry is in the overlay's LOCAL space, never `Screen.*`.** The dim built its
+  mesh from `Screen.width`/`Screen.height` at rebuild time; in the Editor a canvas rebuild can run
+  while another window is the one being painted, which places every cell somewhere other than the
+  Game view. The mesh now reads its own `rectTransform.rect`, the cut-outs are converted into that
+  space once (`ScreenPointToLocalPointInRectangle`), and the raycast filter converts the press the
+  same way - one coordinate space for drawing and for blocking. Prisma drew it correctly either way,
+  so this is the Unity-only difference; it is the strongest candidate rather than a proven cause.
+  **It was not the cause - see 8.2.** The change stays: one coordinate space is still right.
+- **Settings is marked, not only found.** Finding it from its inspector-wired onClick works in Unity
+  but depends on persistent-listener introspection (Prisma's port of `UnityEvent` cannot answer it),
+  so Menu_Main's `SettingsButton` now carries `MenuGuideAlwaysAvailable`. Both routes stay.
+- **A Settings cut-out is punched only where a press would actually reach Settings** (an
+  `EventSystem` raycast at its centre, ignoring the spotlight). The configure window is drawn over
+  the gear; cutting a hole there showed an empty square and passed the press to the window beneath.
+- **The caption has a dark backing**, because white text over dimmed card art is still unreadable.
+
+**Open, and not the guide's to fix:** inside the Arcade and the launch window, the menu's own panels
+are drawn over the gear (`Arcade_Panel` covers it), so Settings cannot be pressed there with or
+without a guide. "Settings is always reachable" therefore holds on Home only today. Making it hold
+everywhere is a menu change - the gear above every window, or pad West opening Settings from any
+menu window - and wants its own decision.
+
+### 8.2 Second playtest: the real cause - the dim had no CanvasRenderer
+
+The second Unity run still drew nothing, the menu ignored every press, and the console said
+**"There is no 'CanvasRenderer' attached to the 'Dim' game object, but a script is trying to access
+it."** That one line explains every symptom:
+
+- `UnityEngine.UI.Graphic` does not itself require a `CanvasRenderer`. `Image`, `RawImage` and TMP
+  each declare `[RequireComponent(typeof(CanvasRenderer))]` on their own class. `SpotlightDimGraphic`
+  and `SpotlightFrameGraphic` did not, and `MenuSpotlight` builds them with `AddComponent<T>()` on a
+  bare GameObject, so they had no renderer. (The caption is TMP, which is why it was the one thing
+  that drew in the first playtest.)
+- In the Unity Editor every access to the missing renderer throws `MissingComponentException`. The
+  dim and frame drew nothing. And because the dim is a raycast target, `GraphicRaycaster` threw on
+  it for every pointer event, so **no UI press anywhere in the menu reached anything**. That is the
+  "nothing works when I click", not the dim's filter.
+- Prisma's port adds the renderer on demand, so it drew everything correctly from the same code. The
+  Editor-only failure is why the walk in 8.1 passed.
+
+**Fix.** Both spotlight graphics now carry `[RequireComponent(typeof(CanvasRenderer))]`. So do the
+other first-party Graphics without it: `ScopeRingGraphic` and `ScopeCrosshairGraphic` are built
+exactly this way by `SniperScopeOverlay` (see `SERPENT_SNIPER_SCOPE.md`), and `TrapezoidGraphic` and
+`MouseFlightWidget` get theirs some other way today but carry the attribute anyway.
+**Gate:** `python3 Tools/Build/check_graphic_canvas_renderer.py` (`--self-test`) fails on any
+`Graphic`/`MaskableGraphic` subclass under `Assets/_Scripts` or `Assets/FTUE` without the attribute.
+It flagged all six on the old tree.
+
+**Lesson.** A port that is more forgiving than the engine passes exactly the bugs that live in that
+gap. Prisma's walk proved the guide's logic, not that Unity would build its parts. **Read the Unity
+console first**; the answer was on screen in red in the playtest screenshot.
+
+

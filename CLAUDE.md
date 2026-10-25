@@ -10,6 +10,12 @@ When a task spans multiple files or systems, complete ALL of them in a single pa
 
 This file holds only the rules every session needs. Everything else moved verbatim into topic files under `Docs/claude/`. Each entry lists the section headings the file contains, so a reference like "CLAUDE.md § Anti-Patterns" can be found by grepping this index. To find a passage quoted from the old single-file CLAUDE.md, search both places: `grep -rn '<phrase>' CLAUDE.md Docs/claude/`.
 
+- [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **Froglet Tasks, the team's hand-off tickets** - tests, playtests, setup, content and decisions one collaborator's session leaves for another: GitHub issues labelled `team-task`, read on the Froglet Tasks page, written only through the `/team-tasks` skill (`Tools/Build/team_tasks.py`). Tickets are nobody's until someone takes one.
+  Sections: a pointer to the tickets (the board moved to GitHub Issues)
+- [`Docs/TEAM.md`](Docs/TEAM.md): **Read before working anywhere.** Who works where (Garrett, Caleb, Shombith, Yash and others, measured from git), the collaboration rules, what doing work twice cost, and the generated map (`Tools/Build/who_works_where.py`).
+  Sections: The people; The rules for every session; What happened without this; The map (generated); Decisions about our tools
+- [`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md): **DECIDED 2026-10-19 (§6)**: Amoebius stays (Shombith drives it), the Vessel Studio is an artifact and not part of the engine, no single unifying tool. The evidence, options and recommendation that led there. Volunteered feedback: `Docs/TOOLING_FEEDBACK.md`.
+  Sections: The questions; What we have today; Amoebius: keep, narrow, or stop?; The Vessel Studio: keep, narrow, or remove?; The one tool; Decision record; How we decide
 - [`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`](Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): LOCKED. Read before any ecology, fauna, flora, or HyperSea change.
   Sections: Ecosystem Design Principles (LOCKED — read before any ecology change)
 - [`Docs/claude/ABOUT_PROJECT.md`](Docs/claude/ABOUT_PROJECT.md): Vessel classes, team domains, tech stack.
@@ -20,26 +26,130 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Game Modes & Controllers
 - [`Docs/claude/DOCUMENTATION_INDEX.md`](Docs/claude/DOCUMENTATION_INDEX.md): Catalogue of every doc under Docs/ and what it covers.
   Sections: Documentation Index
-- [`Docs/claude/ARCHITECTURE_CORE.md`](Docs/claude/ARCHITECTURE_CORE.md): SOAP, threading, bootstrap, auth/session flow, Reflex DI, input strategy.
+- [`Docs/claude/ARCHITECTURE_CORE.md`](Docs/claude/ARCHITECTURE_CORE.md): SOAP, threading, bootstrap, auth/session flow, Reflex DI, input strategy (with the one Invert Y rule, no nose lag for human pilots, and the per-hull phone touch profiles).
   Sections: Architecture Patterns; ScriptableObject Config Separation; SOAP — Scriptable Object Architecture Pattern (Primary Architecture); Threading & Main-Thread Affinity; Bootstrap & Scene Flow; Authentication & Session Flow; Dependency Injection (Reflex); Input Strategy Pattern
-- [`Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`](Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md): Impact effects architecture; the LOCKED FMOD exposed-field convention.
-  Sections: Impact Effects Architecture; Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)
-- [`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`](Docs/claude/MULTIPLAYER_AND_SOCIAL.md): Netcode, player spawning, party/invite lobby, friends, AI backfill, SkimRace.
+- [`Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`](Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md): Impact effects architecture; the LOCKED PvP-is-petals-only rule (and silence, its one consequence beyond the petals: every scored hit leaves the victim's abilities harmless for what the hit is worth, `Docs/ElementalAbilitySystem/SILENCE.md`, which also holds the AI-plateau balancing plan); the LOCKED FMOD exposed-field convention.
+  Sections: Impact Effects Architecture; PvP is petals only (LOCKED, Garrett 2026-10-10); Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)
+- [`Docs/MULTIPLAYER_START_HERE.md`](Docs/MULTIPLAYER_START_HERE.md): **Read first for ANY multiplayer work (Unity or Amoebius).** What the owner wants, the standing rules, where everything is, current state, the owner's hand-test list, and the ordered next steps.
+  Sections: What the owner wants; Rules every session keeps; Where everything is; Where things stand; What the owner tests by hand; What comes next, in order; How a session starts here
+- [`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`](Docs/claude/MULTIPLAYER_AND_SOCIAL.md): Netcode, player spawning, party/invite lobby, friends, AI backfill, SkimRace — the party-docs table routes every UGS call to `UgsRequestPolicy` and the invite/resilience review, lists the pinned multiplayer package versions and the protocol-version rule.
   Sections: Multiplayer / Netcode; Party / Invite Lobby System; Friend System; Player Count & AI Backfill Pipeline; SkimRace Game Mode
-- [`Docs/claude/FTUE_DIALOGUE_AI.md`](Docs/claude/FTUE_DIALOGUE_AI.md): The FTUE quest graph, dialogue system, AI opponent system.
+- [`Docs/Studios/VESSEL_STUDIO_PLAN.md`](Docs/Studios/VESSEL_STUDIO_PLAN.md): The Vessel Studio — pick a vessel and fly its studio on web, Windows (Amoebius's VESSEL STUDIO page; Unity's FrogletTools > Vessels > Vessel Studio opens the studio home, whose cards open the same pages as the artifact) and phones. Pages in `Docs/Studios/VesselStudio/`; every studio is a reader of the shipped numbers. Read before touching a studio.
+  Sections: What exists; Two kinds of studio; Platforms; The game studio and Amoebius on more platforms; The studio agent; Phases; Branches
+- [`Docs/Studios/VESSEL_STUDIO_VISION.md`](Docs/Studios/VESSEL_STUDIO_VISION.md): **The north star for every studio task**: a Vessel Studio so simple that a non-programmer makes vessels (presets, dice, voice), trains their AI from their own play, makes their mini-games and assigns arena games, with Amoebius as a game engine for non-programmers. The building blocks B1-B9, their order and status (update it in every change that moves a step), and what each step taught.
+  Sections: What "done" looks like; Rules that keep it simple and safe; The building blocks; Status and order; Who does what; What each step taught
+- [`Docs/Studios/VESSEL_TEST_RANGE_PLAN.md`](Docs/Studios/VESSEL_TEST_RANGE_PLAN.md): Plan for testing any vessel and its AI in the REAL game: one dev-only harness in the real mode scenes (AI on any seat, free-fly camera, intensity maps, time scale, Full / Mobile-low / Block look), opened from Unity and Amoebius. The `/vessel-studio` skill builds the web studios and owns the one Vessel Studio artifact.
+  Sections: Three tiers, one catalog; What the game already has; The Test Range harness; Opening it; Phases; Decisions for the user
+- [`Docs/AI_SYSTEM/README.md`](Docs/AI_SYSTEM/README.md): Home for EVERY vessel AI, worked on `Ys-bleeding-edge` (the `ai-system` branch was merged there and retired 2026-10-09) — the branch workflow (bleeding-edge, Ys-bleeding-edge, perf/performance-optimization, claude/peaceful-rubin-hhw49n), the AI roster and layers, the per-AI diagnosis playbook and intake checklist. Run `python3 Tools/Build/ai_branch_sync.py` first in any AI session.
+  Sections: Branch Workflow; Architecture (layers, roster, target); Diagnosis Playbook (tiers, intake, status board); Sync Log
+- [`Docs/BRANCH_PARTS_STATUS.md`](Docs/BRANCH_PARTS_STATUS.md): **Current report on the A–M parts of `cece/nice-brahmagupta-ojclij`** (the 2026-10-12 branch test plan): which parts landed where, what is still to test and who owes each step. Answer any question about those parts or that plan from it, and update it when a part lands.
+  Sections: Where each part stands; What landed, and how it differs from the plan; Open problems not caused by these parts; Re-measuring this report
+- [`Docs/claude/FTUE_DIALOGUE_AI.md`](Docs/claude/FTUE_DIALOGUE_AI.md): The FTUE quest graph, dialogue system, AI opponent system — with the table of every AI (platform autopilot + boost policies, the Skim Race pilot and its doc `Docs/SKIM_RACE_AI.md`, the Urchin autopilot), the input-only rule and the AI gates. Read before touching any AI. Holds the LOCKED guided-path rule: to send a player somewhere, spotlight the one control to press next, dim and disable everything else except Settings, and let them press it - never navigate for them.
   Sections: FTUE (First-Time User Experience) — the QUEST GRAPH; Dialogue System; AI Opponent System
 - [`Docs/claude/MENU_AND_LAVA_LAMP.md`](Docs/claude/MENU_AND_LAVA_LAMP.md): Menu_Main screens, ScreenSwitcher, menu freestyle (lava-lamp) HUD.
   Sections: Menu Screen Navigation (Menu_Main Scene); Lava-Lamp Mode (Menu Freestyle Merge)
 - [`Docs/claude/VESSEL_HUD_AND_ELEMENTS.md`](Docs/claude/VESSEL_HUD_AND_ELEMENTS.md): Elemental bars, hull morphs, rigged-model swap, the LOCKED four-icon ability row.
   Sections: Elemental Bars (per-vessel buff/debuff display); Elemental Hull Morphs (the vessel model is an element display); The Four-Icon Ability Row (LOCKED structure — every vessel HUD)
+- [`Docs/VesselModels/README.md`](Docs/VesselModels/README.md): **Vessel MODELS (the FBX hulls) are built by `/vessel-model`**, not by C# `*HullForm` surfaces (Garrett, 2026-10-17: "procedural vessel models are terrible even as placeholders"). Blender-as-a-module specs under `Tools/Build/vessel_model/specs/` rebuild each hull in place with the shipped names, bone rest poses (exact), four real element morphs, the puppetry takes and the four slots; three readers verify, a Cycles contact sheet is looked at, `build.py --check` is the drift gate. One measured dossier per vessel (Squirrel, Dolphin, Sparrow, Serpent, Manta, Urchin, Rhino) and the constraints a replacement meets; `COLOR.md` there is the fleet's colour language and vessel colour scheme (`vessel_colors.py --check`), and every class card is rendered from its model (`render_cards.py --all --check`). Read before touching any `Assets/_Models/Vessel Models/**` file or a vessel prefab's model.
+  Sections: the table of dossiers; how to regenerate a number
 - [`Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md`](Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md): Namespace convention, key systems & classes reference, async pattern.
   Sections: Namespace Convention; Key Systems & Classes; Async Pattern
 - [`Docs/claude/ANTI_PATTERNS.md`](Docs/claude/ANTI_PATTERNS.md): Read before writing or reviewing C#.
   Sections: Anti-Patterns to Avoid
-- [`Docs/claude/SHADERS_AND_PERFORMANCE.md`](Docs/claude/SHADERS_AND_PERFORMANCE.md): HLSL / Shader Graph, performance standards, prism performance.
-  Sections: Shader & Visual Development; HLSL / Shader Graph; Performance Standards; Prism System Performance
+- [`Docs/claude/SHADERS_AND_PERFORMANCE.md`](Docs/claude/SHADERS_AND_PERFORMANCE.md): orthographic views (no Panini on any orthographic camera, `OrthographicLens`; 2D marks skip post through `UnprocessedOverlay`, gate `check_orthographic_views.py`) and the one picture-in-picture frame (`PipViewFrame`, style-guide tokens); the LOCKED rule that nothing in the world looks flat (flat is the UI's look: world effects are lit, faceted volumes scaled with their size); the LOCKED rule to show a world fact in the world, in 3D (light or shape the thing), never as 2D text or a ring on the screen (Garrett 2026-10-21); HLSL / Shader Graph, performance standards, prism performance — Performance Standards now routes to the perf record (`Docs/PERFORMANCE_OPTIMIZATION.md` first, `MEMORY_AUDIT.md`, `PLATFORM_UNIFICATION.md`), the in-game instruments (`diag`, `prof`, `freeze`/`ab`, `renderers`), the allocation gates and the editor-vs-build measurement rules. Read before any perf work.
+  Sections: Shader & Visual Development; Orthographic views and picture-in-picture frames; HLSL / Shader Graph; Performance Standards; Prism System Performance
+- [`Docs/claude/SESSION_DECK.md`](Docs/claude/SESSION_DECK.md): The session deck plugin: `/deck` pane of buttons (team activity, gates, reference compile, sync, ship), band, status line.
+  Sections: What it adds; What each button runs; How it loads; Changing it
+- [`Docs/claude/PLUGINS_AND_CONNECTORS.md`](Docs/claude/PLUGINS_AND_CONNECTORS.md): Claude plugins and connectors that help build this game (unity-perf, Unity's official plugin, Sentry, Figma), the check-and-suggest rule a session follows before Unity perf, C# review, URP, UI, physics or package work, and the plugin-driven performance restart.
+  Sections: The rule every session follows; Plugins; Connectors; The performance restart (planned 2026-10-08)
 - [`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`](Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md): Read before designing any gameplay feature: fundamentals, order of preference, universality.
   Sections: Design Philosophy: Favor Emergent Systems Over Bespoke Solutions; The fundamentals (working list); Process for curating fundamentals; Order of preference; Don't "cheat" emergence without asking; Universality — one HyperSea, one rule set; When in doubt
+
+## Team: know who works where, and build on each other's work (read before working)
+
+Cosmic Shore is built by **Garrett, Caleb, Shombith and Yash** (the core four) plus other collaborators. Almost
+all of it goes through Claude sessions, so git rarely says which person drove a change. On 2026-10-13 one merge
+needed about 110 conflict fixes because work had been done twice: the Stoat in two places, enum value 14 taken twice,
+the engine renamed twice, retired tools brought back. **Every session:**
+- **Look before you touch.** Run `git fetch origin`, then `python3 Tools/Build/who_works_where.py query <the paths you
+  will change>` (about 10 s). It shows who has unmerged work in flight there and who landed what.
+- **Say who else works there**, in a line or two. Read their branch, docs and skill, and build on them.
+- **Never replace, retire, rename or re-tune another collaborator's work** unless the person you work with confirms.
+  Name the owner to check with.
+- **Look for what exists before building anything new** (tool, system, skill, studio, lab, doc), and extend it.
+- **Claim shared numbers only after checking `bleeding-edge` AND the in-flight branches**: enum values, `GameModes`
+  ids, learnings ids, Netcode hashes, GUIDs.
+- **Leave a trail**: write "Affects: <person>'s <area>" in the commit or PR whenever you touch someone else's area.
+- **Report on request**: when anyone asks for a report on a shared area or another person's work, build it with
+  `python3 Tools/Build/team_report.py area <key>` (or `person <name>` / `paths <paths>`) plus the area's report in
+  `Docs/Reports/`, never from memory (`Docs/TEAM.md` rule 10; the `report_request.py` hook reminds you).
+- **Hand-offs are tickets on Froglet Tasks**: GitHub issues labelled `team-task`, read on the Froglet Tasks page
+  (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f). An editor test, playtest, setup step, content gap or decision your work leaves for
+  someone else goes on one, **through the `/team-tasks` skill, and only once the person approves**: a session may
+  *suggest* a ticket (it waits on the page until that person or an approver approves it), never file one on its own;
+  no hook, no end-of-session filing, no re-ranking on your own (Shombith, 2026-10-25). People sign in to the page with
+  claude.ai; the approvers (the core four and Iggy, `Docs/TEAM.json`) are its Editors and let others in. Opening the
+  page at the start of a day is recommended, not required; the skill does everything it does. **Never assign one**: never a
+  person, never a volunteer (Shombith, 2026-10-23). A ticket is nobody's until someone takes it; then it shows as theirs.
+  Naming a branch starts it (not started in 14 days, it goes back to open), and it closes when that branch merges (`.github/workflows/team-tasks.yml`). **One ticket per branch**: every
+  hand test your branch leaves is a checklist line on its one ticket (49 branches had filed 242 open tasks in 9 days).
+  A ticket nobody takes in 14 days is archived.
+- **No favourites among the core four.** Garrett, Caleb, Shombith and Yash carry equal weight. Never assign a task
+  to anyone, and do not let one person's request override another's area without whoever decides there. **Shombith heads tooling** (the Amoebius engine, editor tools, the Claude skills such as `/ship`, and the
+  hooks; Shombith, 2026-10-23): changes to those go through him.
+
+Who is who, the measured map and the full rules: [`Docs/TEAM.md`](Docs/TEAM.md) (identities in `Docs/TEAM.json`).
+The per-prompt team hooks (`team_context.py`, `team_activity.py`, `team_tasks_nudge.py`, deleted 2026-10-25) were switched off on
+2026-10-23 (Shombith: too noisy, and they slowed every chat). Ask for what the others pushed when you need it:
+`python3 .claude/hooks/team_activity.py --peek 12`. The Froglet Tasks page (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f)
+is the board people read; the `/team-tasks` skill syncs it with the issues.
+
+## Amoebius and the Vessel Studio (DECIDED 2026-10-19, `Docs/TOOLING_DECISIONS.md` §6)
+
+Shombith, who started the engine and drives it, settled it on 2026-10-19:
+- **Amoebius stays.** It is a long-term goal: Froglet's own engine, so the team can one day leave Unity completely.
+  That is not plausible now (legal challenges, the porting, other problems), so Unity stays the engine the game
+  ships on. The engine is focused solely on the game, and Shombith drives what is good for it.
+- **The Vessel Studio is an artifact, not part of the engine.** The engine carries no studio work. Whether the
+  artifact itself is kept is still the team's call; Yash drives it.
+- **No single tool unifying everything**: the cost is more than the team will put in.
+- Proposed: an artifact-storing webpage that keeps the synced artifacts anyone thinks are important (open).
+
+What sessions do:
+- **Do not ask whether Amoebius or the Vessel Studio helped**, and do not open answers with an "under evaluation"
+  line. Shombith asked for this ("please stop asking these questions"). `Docs/TOOLING_FEEDBACK.md` stays as a log for
+  anything someone volunteers.
+- Do not put Vessel Studio work into `Port/`. Build engine work and studio work as separate tasks.
+- Offer the Vessel Studio for vessel work in one line, as an option; never require it.
+- **The rules below stay in force while the studio exists.** But before writing artifact numbers over Unity values
+  that someone play-tuned in Unity, ask: `who_works_where.py` shows who tuned them.
+
+### Working with the Vessel Studio (while it is kept)
+
+**"Bring it to Unity" means "put it in the Toybox's Vessel Changer"** (Garrett, 2026-10-17: "my workflow is artifact
+to vessel selector in toybox"). A port is done when the person can fly it from the freestyle Vessel Changer, not when
+a play-mode menu or a scene reaches it. Anything that is not a hull of its own (a seat, a crew role) ships on a hull
+class (`Tools/Build/author_wrasse_assets.py` is the pattern). Details: `/labmaker` §7, `/artifact-to-unity` §2.
+
+For vessel work (how a vessel flies, its AI, difficulty levels, play styles or cameras), **offer the Vessel Studio**
+to the person in one line: the ONE claude.ai artifact
+(https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) where the team flies, watches and decides vessels and their AI on
+phone or PC before the game changes. **Load `/vessel-studio`** for it: §1.5 is the universal panel kit every studio is
+built from (the six settings tabs Scene / Game / AI / Play Style Config, Input and Vessel Config; dropdown rules; the
+Players list with + / -, domain, difficulty, play style and view; the Easy / Medium / Hard levels; the I1-I4
+intensity ladder; the three cameras). Load `/vessel` for the Unity side. Never publish a second Vessel Studio (hub) artifact; that rule is the shared hub's
+only: a `/labmaker` lab, a vessel's included, publishes its own artifact to explore in and takes its findings to Unity by `/labmaker` §7.
+**The artifact is the ONE source of truth; Unity is its clone** (the user, 2026-10-10): features and numbers are made
+and decided in the artifact first, then **`/artifact-to-unity`** clones them into the game
+(`Tools/Build/studio_to_unity.py` writes the artifact's values into the vessel's assets, `--check` is the drift gate;
+features are ported line for line with page-golden tests). Never build a Unity tuning window or tabs that re-draw a
+studio's parameters, never rename an artifact parameter on the Unity side, never hand-edit a mapped field.
+**Every Vessel Studio feature lands on all three surfaces in the same change** (the user, 2026-10-14, `/vessel-studio`
+D37): the artifact, Amoebius's VESSEL STUDIO page (and its studio backend), and Unity's studio home; `parity_gate.py`
+fails a native home that misses a hub card. A project hook
+(`.claude/hooks/vessel_studio_nudge.py`, in `.claude/settings.json`) shows the person this notice once per session
+when a prompt is about vessel work. Studio domain colours come from the game's palette (`studio-domains.js`, generated by
+`.claude/skills/vessel-studio/domain_colors.py`), the same values Amoebius renders.
 
 ## Testing
 
@@ -182,6 +292,20 @@ shared across scenes.
 - Prefer expression-bodied members for simple accessors: `public Transform Transform => transform;`
 - Anti-spam / cooldown patterns belong in the SO config, not hardcoded
 - Always assign static numeric values to enum members to prevent Unity serialization drift
+- **All player-facing text has a human-facing control (LOCKED rule, every branch).** Every word the
+  player can read is a serialized field on an SO, prefab or component, or in an authored table. A
+  human can add, edit, blank or delete it in the inspector (or an authoring window) without touching
+  code. This is the text twin of the FMOD rule ("every sound is an exposed `EventReference`"). The
+  rule in practice:
+  - **Never** put a C# string literal that reaches a `TMP_Text`, toast, dialogue or button label.
+  - Text whose facts are computed is an **authored template with tokens** (`Hold {glyph:Time} to
+    boost`). Code fills the tokens; a human owns the sentence. `TemplateText.Fill(template, "token", value, ...)`
+    (`Assets/_Scripts/UI/TemplateText.cs`) is the one filler; it returns empty for an empty template.
+  - An empty field shows nothing. That is how a line is deleted, so never fall back to a hardcoded
+    default.
+  - **Excluded:** logs, dev/diagnostic overlays and editor-tool UI.
+  - Existing literal-built strings are the **legacy shape**. Move them to authored fields when you
+    touch them. Worked example: `Docs/ModePreview/TRAINING_PLAN.md` §4.2.1.
 - Commit messages follow conventional commits: `type(scope): summary` (see `GIT_RULES.md`)
 
 ## Debugging Methodology
@@ -232,5 +356,5 @@ Do not guess at performance problems. Profile first.
 - Generate code that compiles but ignores the established architecture patterns above
 - Add if-null guards on SOAP ScriptableEvent serialized fields — fail loud
 - Plug a placeholder/temp FMOD event into a new sound, or hardcode an event path in code. Add the `[SerializeField] EventReference` (per ability, per trigger, per emitter), ship it **empty**, and say so — an unwired slot is a visible TODO; a temp event is one nobody ever finds
-- **Leave a spent one-shot `assert` sitting ABOVE a generator's validation section.** A `Tools/Build/author_*.py` script typically performs a one-time migration (clone a donor scene, patch its wiring) and *then* validates everything it built. When the donor moves on, the migration's `assert` fires — and takes every check below it with it, while `--check` is still wired into the workflow and still looks like a gate. `author_dogfight_assets.py` validated **nothing** for as long as that was true, including four checks added specifically to guard the missile-tier scoring; `author_ribcage_assets.py` and `author_wildlife_liberation_assets.py` are in that state today, on the identical `controller field block not found in donor scene` assertion. **Measured across the whole family on 2026-09-09, SIX of the eight mode generators are red and nobody was reading them**, in two distinct classes: those two plus `author_drumfire_assets.py` (`donor crystal block not found`) abort on a spent one-shot, while `author_salvo_assets.py`, `author_dogfight_assets.py` and `author_hijack_assets.py` fail their asset-key validation because they still emit `CallToActionTargetType`, a field the call-to-action retirement deleted from `SO_ArcadeGame` — that retirement swept the 42 shipped assets and left the NINE generators that author them untouched, so re-running any of those re-introduces the retired key. (`author_switchback_assets.py` is a third shape: its asserts pass and it reports two files drifted from its own output.) The general lesson restated: **a generator that owns an asset's content is a second place every schema change has to land, and it does not fail at the time of the change — it fails the next time somebody runs the generator, which may be months later and on somebody else's branch.** **A spent one-shot must STAND DOWN, not abort** — guard it (`if not DONOR_STILL_MATCHES: skip`), register the already-committed output so the downstream checks describe the shipped artifact, and prove the checks fire with a negative control. Corollary worth stating separately: **a gate that aborts looks exactly like a gate that passes if nobody reads its output**, so a green `--check` in a commit message is only evidence if you can name a failure it produced.
+- **Leave a spent one-shot `assert` sitting ABOVE a generator's validation section.** A `Tools/Build/author_*.py` script typically performs a one-time migration (clone a donor scene, patch its wiring) and *then* validates everything it built. When the donor moves on, the migration's `assert` fires — and takes every check below it with it, while `--check` is still wired into the workflow and still looks like a gate. `author_dogfight_assets.py` validated **nothing** for as long as that was true, including four checks added specifically to guard the missile-tier scoring; `author_ribcage_assets.py` and `author_wildlife_liberation_assets.py` sat in that state on the identical `controller field block not found in donor scene` assertion. **Measured across the family on 2026-09-09, SIX of the eight mode generators then checked were red and nobody was reading them**, in two distinct classes: those two plus `author_drumfire_assets.py` (`donor crystal block not found`) aborted on a spent one-shot, while `author_salvo_assets.py`, `author_dogfight_assets.py` and `author_hijack_assets.py` failed their asset-key validation because they still emitted `CallToActionTargetType`, a field the call-to-action retirement deleted from `SO_ArcadeGame` — that retirement swept the 42 shipped assets and left the generators that author them untouched, so re-running any of them re-introduced the retired key. (`author_switchback_assets.py` was a third shape: its asserts passed and it reported drift from its own output.) A fourth class surfaced when the whole family was measured again: twelve generators re-emitted the legacy `CardBackground` placeholder over the `/cardart` render. **Fixed, measured 2026-10-06:** #969 moved the shared pieces into `arcade_mode_lib.py` — `card_background()` (the guid comes from the mode's render, so a card that drifts back to the placeholder fails), `card_errors`/`check_cards` (retired keys), `drift()` (Dog Fight, Hijack and Salvo used to print "no files written" and exit 0 without diffing) and `committed_scene()` (the clone stands down once the scene is committed), all held by `arcade_mode_lib.py --self-test`; #967 guarded Wildlife Liberation's spent clone and fixed Tollway. All 25 `author_*_assets.py` scripts (21 mode generators plus four flora/vessel kits) now pass `--check`, and the Ribcage and Drumfire modes have been retired with their generators. `author_urchin_assets.py --check` still validates without diffing against disk. The general lesson restated: **a generator that owns an asset's content is a second place every schema change has to land, and it does not fail at the time of the change — it fails the next time somebody runs the generator, which may be months later and on somebody else's branch.** **A spent one-shot must STAND DOWN, not abort** — guard it (`if not DONOR_STILL_MATCHES: skip`), register the already-committed output so the downstream checks describe the shipped artifact, and prove the checks fire with a negative control. Corollary worth stating separately: **a gate that aborts looks exactly like a gate that passes if nobody reads its output**, so a green `--check` in a commit message is only evidence if you can name a failure it produced.
 - Use `renderer.material` when `renderer.sharedMaterial` + MaterialPropertyBlock works

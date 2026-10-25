@@ -1,0 +1,601 @@
+{
+  "comment": "Shared areas Tools/Build/team_report.py can report on (Docs/TEAM.md rule 10). One row per area: its paths, owner, who it is for, branch, artifacts, docs, how to test it, and its hand-written report. Add a row when you start a shared area; keep the report doc's top half current by hand, the generated block by `team_report.py area <key> --write`.",
+  "areas": {
+    "regatta-ai": {
+      "title": "Regatta AI",
+      "aliases": [
+        "regatta",
+        "regatta ais",
+        "racing ai",
+        "gate race ai",
+        "ai regatta",
+        "regatta ai works"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Garrett"
+      ],
+      "audience": [
+        "Garrett",
+        "the core four"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "branchNote": "for testing; nothing goes to bleeding-edge until Yash has tested it",
+      "summary": "Five hulls racing Regatta with working AIs (Squirrel, Manta, Rhino, Urchin, Dolphin), the host picking every AI seat's hull, the Third Eye showing each AI's path and what it is doing, and a steering fix found in a browser lab and ported to Unity. Tested in the Unity editor only (the lab artifact was deleted 2026-10-16).",
+      "paths": [
+        "Assets/_Scripts/Controller/Arcade/Regatta",
+        "Assets/_Scripts/Controller/Arcade/Racing",
+        "Assets/_Scripts/Controller/Arcade/REGATTA.md",
+        "Assets/_Scripts/Controller/AI",
+        "Assets/_Scripts/Editor/AI",
+        "Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md",
+        "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md"
+      ],
+      "docs": [
+        "Assets/_Scripts/Controller/Arcade/REGATTA.md",
+        "Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md",
+        "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md"
+      ],
+      "artifacts": [
+        {
+          "name": "Regatta AI Report (the page for Garrett)",
+          "url": "https://claude.ai/artifact/RmxWBLGfSsAXsUeubFXkUm"
+        }
+      ],
+      "report": "Docs/Reports/REGATTA_AI.md",
+      "taskAreas": [
+        "Regatta AI",
+        "Regatta",
+        "AI training"
+      ],
+      "test": [
+        "Pull Ys-bleeding-edge, open Unity, wait for the compile.",
+        "Arcade > Regatta, solo, Hard. Tap the AI chips to seat Squirrel, Manta, Rhino, Urchin and Dolphin. Launch.",
+        "FrogletTools > AI > Third Eye, Trails on: each AI reads Approach then Through near a ring; after a missed ring it reads break-off and comes straight back.",
+        "Every hull finishes three laps at I1; repeat at I3. Note any hull that does not, and at which ring."
+      ]
+    },
+    "ai-training": {
+      "title": "AI training",
+      "aliases": [
+        "training",
+        "ai trainer",
+        "genetic trainer",
+        "train the ai",
+        "learn from players",
+        "ai lab"
+      ],
+      "owner": "Garrett",
+      "people": [
+        "Yash",
+        "Shombith"
+      ],
+      "audience": [
+        "the core four"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "summary": "Training every vessel's AI: the genetic trainer in Unity (studyholic, Garrett, Shombith), situations learned from Unity editor flights (the browser prototype was deleted 2026-10-16), and the plan to an AI Lab scene, Regatta in the trainer, a consented flight recorder and behaviour cloning.",
+      "paths": [
+        "Assets/_Scripts/Utility/AITraining",
+        "Assets/_SO_Assets/AI Training",
+        "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md",
+        "Tools/Build/skimrace_sim_harness"
+      ],
+      "docs": [
+        "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md",
+        "Assets/_Scripts/Utility/AITraining/README.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/REGATTA_AI.md",
+      "taskAreas": [
+        "AI training",
+        "Regatta AI"
+      ],
+      "test": [
+        "Open the artifact's Training tab, pick a hull, Train, then Race trained vs untrained."
+      ]
+    },
+    "team-tools": {
+      "title": "Team tools",
+      "aliases": [
+        "team tools",
+        "session deck",
+        "deck",
+        "reports",
+        "team report",
+        "team activity"
+      ],
+      "owner": "Yash",
+      "audience": [
+        "everyone"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "summary": "What every Claude session on this repo gets: the team notices and activity feed (hooks), the task board, who_works_where.py, this report system and the session deck (buttons, status line).",
+      "paths": [
+        ".claude/hooks",
+        ".claude/skills/cosmic-shore-deck",
+        "Tools/Build/team_report.py",
+        "Tools/Build/team_tasks.py",
+        ".claude/skills/team-tasks",
+        ".github/workflows/team-tasks.yml",
+        "Tools/Build/who_works_where.py",
+        "Docs/TEAM.md",
+        "Docs/Reports"
+      ],
+      "docs": [
+        "Docs/TEAM.md",
+        "Docs/claude/SESSION_DECK.md",
+        "Docs/TEAM_TASKS.md"
+      ],
+      "report": "",
+      "taskAreas": [
+        "Team tools"
+      ],
+      "artifacts": []
+    },
+    "performance": {
+      "title": "Performance",
+      "aliases": [
+        "perf",
+        "performance",
+        "fps",
+        "frame rate",
+        "optimization",
+        "optimisation",
+        "perf hunt",
+        "performance sweep",
+        "prisms per frame"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Garrett",
+        "Shombith"
+      ],
+      "audience": [
+        "the core four"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "branchNote": "developed on perf/performance-optimization, merged into Ys-bleeding-edge on 2026-10-15; the daily check runs on bleeding-edge",
+      "summary": "The 2x plan (100k prisms at 60 fps on a phone), one-button measurement (capture: burst + diag + prof + renderers + cells + cameras as one JSON), the game's own markers measured in Amoebius with no Unity, baselines, a daily sweep that files a team task per regression, and the /perf-hunt resolve loop.",
+      "paths": [
+        "Assets/_Scripts/Utility/PerformanceBenchmark",
+        "Assets/_Scripts/Editor/Diagnostics/BugHuntPerfBadge.cs",
+        "Tools/Build/perf_hunt.py",
+        "Tools/Build/perf_capture_report.py",
+        "Tools/Build/scan_perframe_allocations.py",
+        "Tools/Build/check_mathf_params_alloc.py",
+        "Port/tools/amoebius_markers_run.py",
+        "Port/src/CosmicShore.Engine/Profiling",
+        "Docs/perf",
+        ".github/workflows/perf-daily.yml",
+        "Docs/PERFORMANCE_OPTIMIZATION.md",
+        ".claude/skills/perf-hunt"
+      ],
+      "docs": [
+        "Docs/PERFORMANCE_OPTIMIZATION.md",
+        "Docs/Reports/PERFORMANCE.md",
+        "Docs/claude/SHADERS_AND_PERFORMANCE.md",
+        ".claude/skills/perf-hunt/SKILL.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/PERFORMANCE.md",
+      "taskAreas": [
+        "Performance"
+      ],
+      "test": [
+        "Pull Ys-bleeding-edge, open Unity, Code Optimization = Release, close the Third Eye window.",
+        "Play, Cell Selector > Lattice, wait 8 minutes.",
+        "Keep playing: the editor captures S2 by itself at 8 minutes (the Scene view badge counts down and says Saved).",
+        "Stop playing: the capture goes to Claude by itself.",
+        "python3 Tools/Build/perf_hunt.py sweep --write shows the capture judged against its baseline in Docs/Reports/PERFORMANCE.md."
+      ]
+    },
+    "crew-vessels": {
+      "title": "Crew vessels",
+      "aliases": [
+        "crew vessel",
+        "crew vessels",
+        "multiplayer vessel",
+        "multiplayer vessels",
+        "kite navigator",
+        "kite and tail",
+        "kite & tail",
+        "navigator",
+        "maverick and goose",
+        "crew vessel lab",
+        "wrasse",
+        "wrasse and grouper",
+        "grouper"
+      ],
+      "owner": "Garrett",
+      "people": [],
+      "audience": [
+        "Garrett",
+        "the core four"
+      ],
+      "branch": "cece/compassionate-babbage-gc13io",
+      "branchNote": "not on bleeding-edge yet; nothing has been played in the Unity editor",
+      "summary": "The first multiplayer vessel, the Wrasse (card: Wrasse and Grouper): one hull, two seats. The pilot flies the Grouper, the hull, on two sticks; the navigator flies the Wrasse, a kite on the hull's x-z plane whose head pops hostile prisms and rams rivals and whose tail lassos navigator-only motes into exponential Space / Mass / Time / Charge effects. Designed in the Crew Vessel Lab (signed off 2026-10-17), ported to Unity with a parity gate, then directed by play in rounds 4-4f; compiled against Unity reference assemblies, not yet played in the editor.",
+      "paths": [
+        "Assets/_Scripts/Controller/Vessel/Crew",
+        "Assets/_Scripts/Editor/Studios/KiteNavigatorHarnessMenu.cs",
+        "Assets/_SO_Assets/VesselActions/KiteNavigator",
+        "Assets/_Scripts/Tests/Editor/KiteNavigatorCoreTests.cs",
+        "Assets/_Scripts/Tests/Editor/KiteNavigatorConfigTests.cs",
+        "Tools/Build/kite_navigator_lab",
+        "Docs/Studios/CrewVesselLab.html",
+        "Docs/Studios/CREW_VESSEL_LAB.md",
+        "Assets/_Prefabs/Spacevessels/Wrasse.prefab",
+        "Tools/Build/author_wrasse_assets.py",
+        "Assets/_Scripts/UI/Controller/WrasseHUDController.cs",
+        "Assets/_Scripts/Utility/PrismDepthPlane.cs",
+        "Assets/_Graphics/Materials/Graphs/PrismDepthPlane.hlsl",
+        "Assets/_SO_Assets/Classes/SO_Class_Wrasse.asset",
+        "Assets/Resources/ElementalAbilityMaps/Wrasse.asset",
+        "Assets/_Prefabs/Spacevessels/Orca.prefab",
+        "Tools/Build/author_orca_assets.py",
+        "Tools/Build/orca_crew_lab",
+        "Assets/_SO_Assets/VesselActions/OrcaCrew",
+        "Assets/_Scripts/UI/Controller/OrcaHUDController.cs",
+        "Assets/_Scripts/Tests/Editor/OrcaCrewCoreTests.cs",
+        "Assets/_SO_Assets/Classes/SO_Class_Orca.asset",
+        "Assets/Resources/ElementalAbilityMaps/Orca.asset",
+        "Docs/Studios/CrewOfFourLab.html",
+        "Docs/Studios/CREW_OF_FOUR_LAB.md"
+      ],
+      "docs": [
+        "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md",
+        "Docs/Studios/CREW_VESSEL_LAB.md",
+        "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md",
+        "Docs/Studios/CREW_OF_FOUR_LAB.md"
+      ],
+      "artifacts": [
+        {
+          "name": "Crew Vessel Lab (round 3, signed off)",
+          "url": "https://claude.ai/artifact/JtQptDHQhNdC2CxPmspfct"
+        }
+      ],
+      "report": "Docs/Reports/CREW_VESSELS.md",
+      "taskAreas": [
+        "Crew vessels"
+      ],
+      "test": [
+        "Check out cece/compassionate-babbage-gc13io, open Unity, wait for the compile and the shader import.",
+        "Open the Toybox, fly into the Vessel Changer and fly the Wrasse and Grouper station (a Sparrow body): the kite view is a small square in the lower left and the AI flies the kite.",
+        "Press 2 (or D-pad right) to take the kite: its view fills the screen and the hull's shrinks to the corner. The kite follows the mouse or stick; loop motes of one petal shape. Press 1 to fly again.",
+        "Run the steps of the Kite Navigator entry in Docs/UNITY_VERIFICATION_CHECKLIST.md."
+      ]
+    },
+    "mobile-vessels": {
+      "title": "Vessels on a phone",
+      "aliases": [
+        "mobile",
+        "mobile audit",
+        "phone",
+        "touch",
+        "touch controls",
+        "mobile vessels",
+        "vessels on mobile",
+        "mobile friendly"
+      ],
+      "owner": "Garrett",
+      "people": [
+        "Shombith",
+        "Yash"
+      ],
+      "audience": [
+        "Garrett",
+        "the core four"
+      ],
+      "branch": "cece/admiring-hamilton-gyzzh8",
+      "branchNote": "audit 2026-10-21, then Garrett's decisions built the same day; not on bleeding-edge, not flown on a phone or opened in the Editor",
+      "summary": "The fleet on a phone: an audit of all 18 hulls, then Garrett's decisions built - every hull has a touch profile (thumb lifts with glyphs, or totems as buttons laid out round the right thumb in millimetres), idle parity, tilt steering/roll, per-hull phone controls (Scarab slider, Brittle Star aim discs, Dolphin lift-either, Manta/Rhino/Thresher both-thumbs-off), the idle-animation fixes and the arena pilot-swap tiles.",
+      "paths": [
+        "Assets/Resources/TouchControlProfiles.asset",
+        "Assets/_Scripts/Controller/IO/DeviceOrientationHandler.cs",
+        "Assets/_Scripts/Controller/IO/FlightTouchClaims.cs",
+        "Assets/_Scripts/Controller/IO/TouchControls",
+        "Assets/_Scripts/Controller/IO/TouchInputStrategy.cs",
+        "Assets/_Scripts/UI/Elements/AbilityCardPress.cs",
+        "Assets/_Scripts/UI/Elements/PilotSwapIndicator.cs",
+        "Assets/_Scripts/UI/TouchControls",
+        "Tools/Build/author_touch_profiles.py",
+        "Tools/Build/touch_controls_harness",
+        "Tools/Build/touch_glyph_art.py"
+      ],
+      "docs": [
+        "Docs/ABILITY_LOCKUP.md",
+        "Docs/ANDROID_BUILD.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/MOBILE_VESSELS.md",
+      "taskAreas": [
+        "vessels"
+      ],
+      "test": [
+        "Check out cece/admiring-hamilton-gyzzh8 and build an Android development APK (Docs/ANDROID_BUILD.md).",
+        "Run Docs/UNITY_VERIFICATION_CHECKLIST.md \"Phone controls for the whole fleet\" steps 4-15 in the Toybox Vessel Changer and an arena match.",
+        "In the Editor, Device Simulator with a phone selected shows the button layouts (steps 1-3)."
+      ]
+    },
+    "bug-hunt": {
+      "title": "Bug Hunt",
+      "aliases": [
+        "bug hunt",
+        "bug ledger",
+        "console errors",
+        "send to claude",
+        "team bug board",
+        "bugledger"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Garrett",
+        "Caleb",
+        "Shombith",
+        "Andrew",
+        "jtgjones"
+      ],
+      "audience": [
+        "the core four"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "branchNote": "tooling and fixes merge to bleeding-edge; testers send to bugledger/<user>",
+      "summary": "Unity sends every tester's console errors to bugledger/<user> after Play; Claude fixes them and marks them fixed there; the tester's next clean play tests close them. A daily scheduled sweep is meant to do this unattended.",
+      "paths": [
+        "Assets/_Scripts/Editor/Diagnostics",
+        "Tools/Build/bug_ledger.py",
+        "BugLedger",
+        ".claude/skills/bug-ledger",
+        "Docs/DIAGNOSTICS.md"
+      ],
+      "docs": [
+        "Docs/DIAGNOSTICS.md",
+        ".claude/skills/bug-ledger/SKILL.md"
+      ],
+      "artifacts": [
+        {
+          "name": "Team Bug Board",
+          "url": "https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno"
+        },
+        {
+          "name": "Bug Hunt Loop (how it works)",
+          "url": "https://claude.ai/artifact/U8djY1FtPnqDmLS6QLG5t4"
+        }
+      ],
+      "report": "Docs/Reports/BUG_HUNT.md",
+      "taskAreas": [
+        "diagnostics",
+        "Performance",
+        "audio"
+      ],
+      "test": [
+        "Pull bleeding-edge, open Unity, play anything until a red error appears, stop Play: the console says it was sent to Claude.",
+        "git fetch origin; python3 Tools/Build/bug_ledger.py collect shows it on bugledger/<you>."
+      ]
+    },
+    "multiplayer": {
+      "title": "Multiplayer",
+      "aliases": [
+        "multiplayer",
+        "party",
+        "multiplayer bugs",
+        "lobby",
+        "relay",
+        "online",
+        "mppm",
+        "net logs"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Caleb",
+        "Shombith"
+      ],
+      "audience": [
+        "Yash",
+        "the core four"
+      ],
+      "branch": "bleeding-edge",
+      "summary": "Party, presence lobby, Relay and the multiplayer test logs: open bugs, what the testers' logs show, next steps.",
+      "paths": [
+        "Assets/_Scripts/Controller/Party",
+        "Assets/_Scripts/Controller/Multiplayer",
+        "Assets/_Scripts/Utility/UgsRequestPolicy.cs",
+        "Assets/_Scripts/Editor/Diagnostics/NetTestLogs.cs",
+        "Tools/Build/net_logs.py",
+        "Docs/PartySystem"
+      ],
+      "docs": [
+        "Docs/MULTIPLAYER_START_HERE.md",
+        "Docs/PartySystem/BUGS.md",
+        "Docs/DIAGNOSTICS.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/MULTIPLAYER.md",
+      "taskAreas": [
+        "Multiplayer"
+      ],
+      "test": [
+        "Two machines on bleeding-edge party up, play a match, one leaves mid-match, both stop Play normally.",
+        "python3 Tools/Build/net_logs.py collect, then show 1."
+      ]
+    },
+    "concept-fleet": {
+      "title": "Concept fleet",
+      "aliases": [
+        "concept fleet",
+        "concept vessels",
+        "new vessels",
+        "prototype vessels",
+        "vessel concepts",
+        "gibbon",
+        "flea",
+        "dragonfly",
+        "albatross",
+        "web-slinger"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Garrett"
+      ],
+      "audience": [
+        "Yash",
+        "Garrett",
+        "the core four"
+      ],
+      "branch": "Ys-bleeding-edge",
+      "branchNote": "browser prototypes in the Vessel Studio; nothing in Unity yet",
+      "summary": "Ten concept vessels built as Vessel Studio recipes (2026-10-17); Garrett kept the Gibbon, Flea, Dragonfly, Marlin and Albatross. Round 2 runs one vessel per session; the Gibbon (now a web-slinger) is the only one done.",
+      "paths": [
+        "Docs/Studios/CONCEPT_FLEET.md",
+        "Docs/Studios/VesselStudio/vessels",
+        "Docs/Studios/VesselStudio/studio-kinds.js",
+        "Docs/Studios/VesselStudio/studio-vessel.js",
+        ".claude/skills/vessel-studio/vessel_pages.py"
+      ],
+      "docs": [
+        "Docs/Studios/CONCEPT_FLEET.md"
+      ],
+      "artifacts": [
+        {
+          "name": "Vessel Studio (the concept fleet row)",
+          "url": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa"
+        }
+      ],
+      "report": "Docs/Reports/CONCEPT_FLEET.md",
+      "taskAreas": [
+        "Vessel Studio",
+        "Vessel Studio / concept fleet",
+        "Vessel Studio / Gibbon",
+        "Vessel Studio / Flea",
+        "Vessel Studio / Albatross",
+        "Vessel Studio / Dragonfly",
+        "Vessel Studio / Marlin",
+        "Vessel / Tether"
+      ],
+      "test": [
+        "Open the Vessel Studio artifact, the concept fleet row.",
+        "Fly a vessel; record Keep / Drop on its Decisions tab."
+      ]
+    },
+    "android-build": {
+      "title": "Android build",
+      "aliases": [
+        "android",
+        "android build",
+        "android builds",
+        "play store",
+        "google play",
+        "aab",
+        "apk",
+        "internal testing",
+        "play console"
+      ],
+      "owner": "Yash",
+      "people": [
+        "Shombith",
+        "Garrett",
+        "Caleb"
+      ],
+      "audience": [
+        "the core four"
+      ],
+      "branch": "bleeding-edge",
+      "branchNote": "all on bleeding-edge; the 32-bit build has not been uploaded to Play yet",
+      "summary": "The signed release App Bundle for Google Play with its pre-upload check, the development APK and the switch that makes it play like release, and 32-bit (ARMv7) back beside ARM64. Build 412826 (2026-10-14, 64-bit only) is on internal testing.",
+      "paths": [
+        "Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.Android.cs",
+        "Assets/_Scripts/Editor/Build/AndroidBundleCheck.cs",
+        "Assets/_Scripts/Tests/Editor/AndroidBundleCheckTests.cs",
+        "Assets/_Scripts/Utility/DevDiagnostics.cs",
+        "Assets/_Scripts/Utility/DevDiagnosticsToggle.cs",
+        "Assets/Plugins/Android",
+        "ProjectSettings/AndroidResolverDependencies.xml",
+        "Tools/Build/check_android_signing_settings.py",
+        "Docs/ANDROID_BUILD.md"
+      ],
+      "docs": [
+        "Docs/ANDROID_BUILD.md",
+        "Docs/PLATFORM_UNIFICATION.md",
+        "Docs/UNITY_VERIFICATION_CHECKLIST.md"
+      ],
+      "artifacts": [],
+      "report": "Docs/Reports/ANDROID_BUILD.md",
+      "taskAreas": [
+        "Android build"
+      ],
+      "test": [
+        "Pull bleeding-edge; switch the editor to Android.",
+        "Select the upload key in Publishing Settings, then FrogletTools > Build > Android App Bundle (Release); the .check.txt lists arm64-v8a and armeabi-v7a.",
+        "Upload to Play internal testing and install on a 32-bit phone (Moto G Power or Galaxy M) and a 64-bit one."
+      ]
+    },
+    "steam-launch": {
+      "title": "Steam launch",
+      "aliases": [
+        "steam",
+        "steam launch",
+        "steam release",
+        "launch",
+        "launch readiness",
+        "steam playtest",
+        "playtest",
+        "store page",
+        "steamworks",
+        "steam direct",
+        "how fast to launch",
+        "shipping on steam"
+      ],
+      "owner": "Shombith",
+      "people": [
+        "Caleb",
+        "Garrett",
+        "Yash"
+      ],
+      "audience": [
+        "Shombith",
+        "Caleb",
+        "Garrett"
+      ],
+      "branch": "bleeding-edge",
+      "branchNote": "everything described is on bleeding-edge; this report doc arrives with PR #1521",
+      "summary": "Getting Cosmic Shore onto Steam as an invite-only Playtest (Revision 2), not the paid Early Access of Revision 1. The uploader, the Playtest runbook and the platform work are finished and waiting on a Steamworks app that does not exist yet, so the 30-day Steam Direct clock has not started.",
+      "paths": [
+        "Tools/Steam",
+        "Tools/Build/build_windows.sh",
+        "Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.cs",
+        "Docs/STEAM_BUSINESS_SETUP.md",
+        "Docs/STEAM_RELEASE_TASKS.md",
+        "Docs/STEAM_PLAYTEST_RUNBOOK.md",
+        "Docs/STEAM_CHECKPOINT_SERIES.md",
+        "Docs/LAUNCH_BLOCKER_INDEX.md",
+        "Docs/BUILD_AND_DELIVERY.md",
+        ".github/workflows/unity-ci.yml"
+      ],
+      "docs": [
+        "Docs/STEAM_RELEASE_TASKS.md",
+        "Docs/STEAM_BUSINESS_SETUP.md",
+        "Docs/STEAM_PLAYTEST_RUNBOOK.md",
+        "Docs/STEAM_CHECKPOINT_SERIES.md",
+        "Docs/BUILD_AND_DELIVERY.md",
+        "Docs/LAUNCH_BLOCKER_INDEX.md",
+        "Docs/Legal/README.md"
+      ],
+      "artifacts": [
+        {
+          "name": "Steam Launch Status (the page for Shombith and Caleb)",
+          "url": "https://claude.ai/artifact/53u11qrp5tgdSm87S1Mj4n"
+        }
+      ],
+      "report": "Docs/Reports/STEAM_LAUNCH.md",
+      "taskAreas": [
+        "Steam launch"
+      ],
+      "test": [
+        "Nothing here is testable in the editor: the gate is off-machine (a Steamworks account).",
+        "The one thing a person can do today: ./Tools/Build/build_windows.sh --version <x.y.z>, launch the player, sign in, reach Menu_Main, open and close the pause menu, read Player.log (QA-BUILD-WINDOWS-PLAYER).",
+        "Steam upload, once an app id exists: ./Tools/Steam/upload.sh --target playtest --build-dir Builds/Windows64 --branch internal"
+      ]
+    }
+  }
+}

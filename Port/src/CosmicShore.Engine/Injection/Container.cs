@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
@@ -142,14 +143,19 @@ namespace CosmicShore.Engine.Injection
         }
 
         /// <summary>Inject all components on a GameObject, optionally through its whole hierarchy.</summary>
+        /// <remarks>
+        /// Walks a snapshot, as Reflex's injector does (it takes GetComponentsInChildren up front):
+        /// an [Inject] property setter may add components or children, and those are not
+        /// injected by this pass (MinigameFreestyleMultiplayer_Gameplay's setter did exactly that).
+        /// </remarks>
         public void InjectGameObject(GameObject root, bool recursive = true)
         {
-            foreach (var component in root.Components)
-                if (HasInjectables(component.GetType()))
+            foreach (var component in root.Components.ToArray())
+                if (component is not null && HasInjectables(component.GetType()))
                     Inject(component);
 
             if (!recursive) return;
-            foreach (var child in root.transform.Children)
+            foreach (var child in root.transform.Children.ToArray())
                 InjectGameObject(child.gameObject, recursive: true);
         }
 

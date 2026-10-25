@@ -24,7 +24,7 @@ WHAT IT FIXES (measured on the authored scene, 2026-09-09):
   * The variant row's plates are stretched and sliced too, so the chamfer is a chamfer at
     275x88 rather than a 228x170 picture squashed to 3:1.
 
-The editor tool (FrogletTools > Interface > Home Hub Wiring) writes the SAME numbers, so a re-run
+The editor tool (FrogletTools > UI > Home Hub Wiring) writes the SAME numbers, so a re-run
 of WIRE IT after this cannot regress it; this script exists because the layout has to land on the
 branch, and the tool's output is otherwise a working-tree change nobody pushed
 (Docs/TOOLING.md, "Tool output is a deliverable"). Both read the constants below.
@@ -51,7 +51,13 @@ RIM_SPRITE = "a0f080f0"         # Rectangle 1127 (2).png - the card rim
 
 # ---- the numbers. The editor tool mirrors these (HomeHubWiringWindow.ToyLayout). --------------
 TOY_CELL = (400.0, 250.0)
-TOY_SPACING = (20.0, 20.0)
+# x = 10, not the 20 this script first wrote: the UI owner re-tuned the shipped grid in the
+# Editor on 2026-09-09 (050ee6e82, "Update Menu_Main.unity") to a FIXED THREE-COLUMN grid
+# (m_Constraint 1 / m_ConstraintCount 3, which this script does not author) with 10 between
+# columns (3 x 400 + 2 x 10 + the 36/16 insets = 1272 wide). The scene is the design; this
+# constant follows it, and so does HomeHubWiringWindow.ToyLayout.ToySpacing (+ ToyColumns 3), so
+# a WIRE IT re-run cannot widen the gutter again.
+TOY_SPACING = (10.0, 20.0)
 TOY_PADDING = 16
 VARIANT_CELL = (275.0, 88.0)
 VARIANT_SPACING = (16.0, 14.0)
@@ -562,10 +568,26 @@ def author(sc):
         set_band(sc, go, lo, hi, f"{path} ({label})")
 
 
+# The style-B rebuild (Docs/MENU_REDESIGN_B.md sections 17.3 and 17.4) replaced both windows this tool
+# lays out - the Toy Box (author_menu_toybox.py) and Toy configure (author_menu_toyconfigure.py) - with
+# generated views whose layout is their generators'. With both views in the scene this tool STANDS DOWN:
+# every object it walks is gone, and re-authoring would have nothing to edit but its own absence.
+STYLE_B_VIEWS = [hashlib.md5(f"CosmicShore/MenuB/assets/{n}".encode()).hexdigest()
+                 for n in ("ToyboxView", "ToyConfigureView")]
+
+
+def stood_down(text):
+    return all(f"guid: {g}, type: 3" in text for g in STYLE_B_VIEWS)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
+
+    if stood_down(open(SCENE, errors="ignore").read()):
+        print("OK  stood down: the style-B Toy Box and Toy configure views own these windows now")
+        return 0
 
     sc = Scene(SCENE)
     author(sc)

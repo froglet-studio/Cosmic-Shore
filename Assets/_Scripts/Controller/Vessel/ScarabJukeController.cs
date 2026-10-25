@@ -145,6 +145,15 @@ namespace CosmicShore.Gameplay
         /// fire time (1 for a committed juke).</summary>
         public float LastJukeStrength01 => _lastJukeStrength01;
 
+        /// <summary>How long a juke's displacement lasts, and so how long a committed dash
+        /// keeps <see cref="IsJukeStrikeWindowOpen"/> true (seconds). Read-only so a mode's AI
+        /// can plan a steal against the prefab's own value instead of a copy of it.</summary>
+        public float JukeDurationSeconds => jukeDurationSeconds;
+
+        /// <summary>Peak sideways speed of a committed dash (world units/second) — the
+        /// <c>ModifyVelocity</c> amplitude. Read-only, for the same reason.</summary>
+        public float JukeSpeed => jukeSpeed;
+
         /// <summary>
         /// OWNER -> SERVER: this pilot just fired a juke; open the strike window on the
         /// server's replica so the (server-side) ball strike path can see the dash. Same

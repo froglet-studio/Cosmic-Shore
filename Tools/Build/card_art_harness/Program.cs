@@ -98,13 +98,19 @@ static class Program
             case "generator":
             {
                 var lays = new List<(SpawnPoint p, Domains d, PrismKind k)>();
-                RunGenerator(layer, Matrix.Identity, lays);
+                var markers = new List<SpawnPoint>();
+                RunGenerator(layer, Matrix.Identity, lays, markers);
                 foreach (var (p, d, k) in lays) AddPrism(scene, p, pal.For(d, k));
+                if (layer.TryGetProperty("markerRings", out var mr)) MarkerRings(mr, markers, scene, pal);
                 return lays.Count;
             }
             case "switchback":
             case "headlong":
             case "redline":
+            case "grizzlytime":
+            case "slingshot":
+            case "threshertime":
+            case "wrasserun":
             case "regattaGates":
             {
                 int intensity = layer.GetProperty("intensity").GetInt32();
@@ -114,6 +120,10 @@ static class Program
                     "switchback" => SwitchbackCourse.Generate(seed, Apply(SwitchbackCourseSettings.ForIntensity(intensity), layer)),
                     "headlong" => HeadlongCircuit.Generate(seed, Apply(HeadlongCircuitSettings.ForIntensity(intensity), layer)),
                     "redline" => HeadlongCircuit.Generate(seed, Apply(RedlineCourse.ForIntensity(intensity), layer)),
+                    "grizzlytime" => HeadlongCircuit.Generate(seed, Apply(GrizzlyTimeCourse.ForIntensity(intensity), layer)),
+                    "slingshot" => HeadlongCircuit.Generate(seed, Apply(SlingshotCourse.ForIntensity(intensity), layer)),
+                    "threshertime" => HeadlongCircuit.Generate(seed, Apply(ThresherTimeCourse.ForIntensity(intensity), layer)),
+                    "wrasserun" => HeadlongCircuit.Generate(seed, Apply(WrasseRunCourse.ForIntensity(intensity), layer)),
                     _ => RegattaCourse.BuildGates(seed, intensity),
                 };
                 if (gates == null || gates.Count == 0) { UnityEngine.Debug.LogError($"{kind}: course generator returned no gates"); return 0; }
@@ -123,6 +133,8 @@ static class Program
                     scene.Ring(ToV(g.Position), ToV(g.Axis), g.Radius, g.Radius * tube, gm, 56, 8);
                 if (layer.TryGetProperty("path", out var pe) && pe.GetBoolean())
                     DrawPath(scene, gates.Select(g => ToV(g.Position)).ToList(), kind != "switchback", pal, layer);
+                if (kind == "threshertime") StageSling(scene, gates);
+                if (kind == "wrasserun") StageKite(scene, gates);
                 return 0;
             }
             case "breakwater":
@@ -283,6 +295,88 @@ static class Program
         }
     }
 
+    /// <summary>
+    /// Thresher Time's signature act, STAGED (not simulated): the wrecking ball planted inside the
+    /// lap's tightest corner with the ship's orbit round it drawn as a dotted circle and the chain
+    /// from ball to ship - the sling that corner asks for. Sizes are card-scale, not the game's
+    /// (the real ball is ~3 u across, invisible at 313x208); the corner is the shipped course's own.
+    /// </summary>
+    static void StageSling(Scene scene, List<RaceGate> gates)
+    {
+        int n = gates.Count, k = 0;
+        float best = float.MaxValue;
+        for (int i = 0; i < n; i++)
+        {
+            float r = RaceCourseGeometry.CornerRadius(gates[(i - 1 + n) % n].Position, gates[i].Position, gates[(i + 1) % n].Position);
+            if (r < best) { best = r; k = i; }
+        }
+        V3 p0 = ToV(gates[(k - 1 + n) % n].Position), p1 = ToV(gates[k].Position), p2 = ToV(gates[(k + 1) % n].Position);
+        V3 inside = ((p0 - p1).Norm + (p2 - p1).Norm).Norm;
+        V3 normal = V3.Cross(p0 - p1, p2 - p1).Norm;
+        const double orbit = 70, ballR = 22;
+        V3 ball = p1 + inside * (orbit + gates[k].Radius * 0.6);
+        var hot = new Material { Base = new V3(0.07, 0.065, 0.065), Rim = new V3(1.7, 0.4, 0.1), Emissive = new V3(0.9, 0.18, 0.04), EdgeGlow = 0.3, RimPower = 1.5 };
+        scene.Sphere(ball, ballR, hot, 28, 56, false);
+        // The orbit: dots round the ball in the corner's plane, so it never reads as another gate ring.
+        V3 a = (p1 - ball).Norm, b = V3.Cross(normal, a).Norm;
+        var dot = new Material { Base = new V3(0.2, 0.3, 0.06), Rim = new V3(0.8, 1.8, 0.3), Emissive = new V3(0.45, 1.0, 0.18), EdgeGlow = 0.2 };
+        for (int j = 0; j < 28; j++)
+        {
+            double t = 2 * Math.PI * j / 28;
+            scene.Sphere(ball + (a * Math.Cos(t) + b * Math.Sin(t)) * orbit, 4.0, dot, 8, 16, false);
+        }
+        // The chain, taut from the ball to the ship's point on the orbit (the corner side).
+        V3 ship = ball + a * orbit;
+        var iron = new Material { Base = new V3(0.07, 0.065, 0.065), Rim = new V3(0.7, 0.7, 0.75), Emissive = new V3(0.05, 0.05, 0.05), EdgeGlow = 0.1 };
+        V3 up = Math.Abs(a.y) < 0.9 ? new V3(0, 1, 0) : new V3(1, 0, 0);
+        V3 r1 = V3.Cross(up, a).Norm, u1 = V3.Cross(a, r1);
+        for (int j = 1; j < 12; j++)
+            scene.Box(ball + a * (orbit * j / 12.0), a * 2.4, r1 * 1.3, u1 * 1.3, iron, false);
+        scene.Sphere(ship, 6, new Material { Base = new V3(0.15, 0.4, 0.38), Rim = new V3(0.6, 1.6, 1.5), Emissive = new V3(0.2, 0.6, 0.55), EdgeGlow = 0.2 }, 12, 24, false);
+    }
+
+    /// <summary>
+    /// Wrasse Run's signature act, STAGED (not simulated): the Wrasse's kite threading a ring, its tail a lasso
+    /// that has just closed round a cluster of Time motes (the boosts the Grouper needs), the Grouper below
+    /// carrying the kite's plane to the ring. Card-scale sizes (the real kite is 8 u, invisible at 313x208);
+    /// the ring is the shipped course's own.
+    /// </summary>
+    static void StageKite(Scene scene, List<RaceGate> gates)
+    {
+        int n = gates.Count, k = 1 % n;
+        V3 g = ToV(gates[k].Position), axis = ToV(gates[k].Axis).Norm, prev = ToV(gates[(k - 1 + n) % n].Position);
+        V3 up = Math.Abs(axis.y) < 0.9 ? new V3(0, 1, 0) : new V3(1, 0, 0);
+        V3 side = V3.Cross(up, axis).Norm, lift = V3.Cross(axis, side).Norm;
+        var lime = new Material { Base = new V3(0.25, 0.4, 0.05), Rim = new V3(1.2, 1.9, 0.4), Emissive = new V3(0.75, 1.15, 0.2), EdgeGlow = 0.3 };
+        var teal = new Material { Base = new V3(0.05, 0.25, 0.25), Rim = new V3(0.4, 1.7, 1.6), Emissive = new V3(0.2, 0.95, 0.9), EdgeGlow = 0.2 };
+        // the kite in the ring's mouth, flying through it
+        V3 kite = g + axis * 6;
+        scene.Box(kite, axis * 30, side * 15, lift * 4, lime, false);
+        // the lasso: a closed loop of dots beside the approach, round five Time motes
+        V3 loopC = g - axis * 200 + side * 120;
+        for (int j = 0; j < 30; j++)
+        {
+            double t = 2 * Math.PI * j / 30;
+            scene.Sphere(loopC + (axis * Math.Cos(t) + side * Math.Sin(t)) * 90, 6.0, lime, 8, 16, false);
+        }
+        var rng = new System.Random(7);
+        for (int j = 0; j < 5; j++)
+        {
+            V3 m = loopC + axis * (rng.NextDouble() * 90 - 45) + side * (rng.NextDouble() * 90 - 45);
+            scene.Box(m, axis * 10, side * 18, lift * 4, teal, false);
+        }
+        // the tail from the loop to the kite, and the Grouper below the kite's plane on its way to the ring
+        for (int j = 1; j < 18; j++)
+        {
+            double t = j / 18.0;
+            V3 p = loopC + side * 90 * (1 - t) * Math.Cos(t * 2.0) + (g - loopC) * t;
+            scene.Sphere(p, 4.0, lime, 6, 12, false);
+        }
+        V3 hull = g - axis * 150 - lift * 40;
+        scene.Sphere(hull, 16, new Material { Base = new V3(0.15, 0.4, 0.38), Rim = new V3(0.6, 1.6, 1.5), Emissive = new V3(0.2, 0.6, 0.55), EdgeGlow = 0.2 }, 12, 24, false);
+        _ = prev;
+    }
+
     static Material GateMaterial(JsonElement layer)
     {
         var c = layer.TryGetProperty("color", out _) ? Vec(layer, "color") : new V3(0.35, 0.45, 1.3);
@@ -337,7 +431,8 @@ static class Program
 
     static readonly Assembly Asm = typeof(Program).Assembly;
 
-    static void RunGenerator(JsonElement node, Matrix parent, List<(SpawnPoint, Domains, PrismKind)> sink)
+    static void RunGenerator(JsonElement node, Matrix parent, List<(SpawnPoint, Domains, PrismKind)> sink,
+        List<SpawnPoint> markerSink = null)
     {
         string typeName = node.GetProperty("type").GetString();
         var type = Asm.GetTypes().FirstOrDefault(t => t.Name == typeName || t.FullName == typeName);
@@ -374,7 +469,9 @@ static class Program
                 var bt = b.GetType();
                 var sp = new SpawnPoint((Vector3)bt.GetField("Position").GetValue(b), (Quaternion)bt.GetField("Rotation").GetValue(b),
                     (Vector3)bt.GetField("Scale").GetValue(b));
-                sink.Add((Xform(local, sp), domainOf((bool)bt.GetField("IsMarker").GetValue(b)), PrismKind.Plain));
+                bool marker = (bool)bt.GetField("IsMarker").GetValue(b);
+                sink.Add((Xform(local, sp), domainOf(marker), PrismKind.Plain));
+                if (marker) markerSink?.Add(Xform(local, sp));
             }
             return;
         }
@@ -403,6 +500,31 @@ static class Program
         foreach (var td in trails)
             foreach (var p in td.Points)
                 sink.Add((Xform(local, p), td.Domain, PrismKind.Plain));
+    }
+
+    /// <summary>Rings standing square across a track at its MARKER blocks - the waypoints that
+    /// carry a crystal anchor - each facing along the block's own pose (the track tangent, the
+    /// layout rule the track lays with), offset onto a seeded point of the jitter shell round it.
+    /// Spec: { pick: [marker index...], R, r, jitter, seed, styles: [material spec per ring] }.</summary>
+    static void MarkerRings(JsonElement spec, List<SpawnPoint> markers, Scene scene, Palette pal)
+    {
+        if (markers.Count == 0) { UnityEngine.Debug.LogError("markerRings: the generator laid no marker blocks"); return; }
+        var rng = new System.Random(spec.GetProperty("seed").GetInt32());
+        double R = spec.GetProperty("R").GetDouble(), r = spec.GetProperty("r").GetDouble();
+        double jitter = spec.TryGetProperty("jitter", out var je) ? je.GetDouble() : 0;
+        var styles = spec.GetProperty("styles").EnumerateArray().ToList();
+        int n = 0;
+        foreach (var ie in spec.GetProperty("pick").EnumerateArray())
+        {
+            var m = markers[ie.GetInt32() % markers.Count];
+            // CrystalManager.GetSpawnPointAroundAnchor: anchor + onUnitSphere * anchorJitterRadius.
+            V3 off;
+            do off = new V3(rng.NextDouble() * 2 - 1, rng.NextDouble() * 2 - 1, rng.NextDouble() * 2 - 1);
+            while (off.Len < 1e-3 || off.Len > 1);
+            var c = ToV(m.Position) + off.Norm * jitter;
+            scene.Ring(c, ToV(m.Rotation * Vector3.forward), R, r, MaterialFrom(styles[n % styles.Count], pal), 64, 10, false);
+            n++;
+        }
     }
 
     static SpawnPoint Xform(Matrix m, SpawnPoint p) =>

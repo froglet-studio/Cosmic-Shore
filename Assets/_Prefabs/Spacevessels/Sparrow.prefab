@@ -169,7 +169,7 @@ MonoBehaviour:
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1920, y: 1080}
-  m_ScreenMatchMode: 0
+  m_ScreenMatchMode: 1
   m_MatchWidthOrHeight: 1
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
@@ -925,6 +925,8 @@ MonoBehaviour:
   stationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f,
     type: 2}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
+  flightCameraHeight: 0
+  cameraBlendSeconds: 0.35
 --- !u!1 &8279817603024118164
 GameObject:
   m_ObjectHideFlags: 0
@@ -1343,7 +1345,7 @@ MonoBehaviour:
   objectiveSwitchImprovement: 0.75
   preferApproachRunDistance: 0
   breakOffClosingCosine: 0.5
-  orbitSweepDegrees: 540
+  orbitSweepDegrees: 360
   orbitProgressFraction: 0.9
   orbitTargetJumpFraction: 1.6
   abilities:
@@ -1361,6 +1363,7 @@ MonoBehaviour:
     Cooldown: 10
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 5466809915974853214}
+  boostPolicy: {fileID: 11400000, guid: 193cc98fcde34143a71e79c5ccdaa1f4, type: 2}
 --- !u!114 &9172070623654400206
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -50,8 +50,14 @@ here** — the split Dog Fight established.
    `IRoundStats.StrikeHitsLanded` carries it. *An else-arm in a tally is the same trap the enum's
    own doc already records for pricing.*
 
-**The Serpent is deliberately not on the card.** It has no anti-vessel verb authored at all (0/4
-abilities). Listing it would seat a pilot who cannot score; giving it one is a `/vessel` job.
+**The Serpent is deliberately not on the card.** When this mode shipped it had no anti-vessel verb
+at all. It has one now: the **Sniper Shot** (`SniperShotActionExecutor.StripVessels`,
+`SniperShotAction.asset` `vesselStripPerElement: 0.1`) ejects elements from every opposing pilot in
+the round's cone. But the round raises **no combat-hit report** (no `VesselCombatHit*` effect and
+no `CombatHitClass`), so in this mode it would still score **0**. Listing the Serpent today would
+still seat a pilot who cannot score. Seating it needs a hit report on the round and a balance row
+in `broadside_balance.py`. *Re-checked 2026-10-08.* The kit is no longer what is missing, so
+whether to seat it is a design call.
 
 ## The fleet table
 
@@ -66,7 +72,7 @@ Measured off the shipped prefabs and containers, 2026-09-16.
 | Squirrel | joust | ❌ paid `Jousts` only | yes — the joust is landed by arriving |
 | Rhino | energised sword | ❌ damaged + spun, reported nothing | yes — same |
 | Urchin | chain spikes | ❌ **container empty** | yes — a replicated trigger tap |
-| ~~Serpent~~ | — | — | **not on the card** |
+| ~~Serpent~~ | Sniper Shot strips elements (added after this table) | ❌ no hit report | **not on the card** |
 
 ## Balance
 
@@ -167,16 +173,18 @@ which is why three separate documents (this one, CLAUDE.md, and the balance mode
 reaches nothing on the Rhino" as a measurement. It is now a real ability, **Ramp Spool** (2.5 /
 0.5), and Broadside's card starts the Rhino at **+0.5**. This is a fleet change and was accepted
 as one: Headlong's Rhino spools faster too. There is deliberately **no L5 upgrade** — the slot is
-filled, not designed.
+filled, not designed. *(Superseded 2026-10-16: Time now carries the L5 **Momentum** — above 70% of
+top speed (588 of 840 u/s) danger prisms cannot drain the Rhino. It reaches this card only if a
+Rhino climbs from +0.5 to level 5 in the match.)*
 
 > **A capability that is live in code and flat in data reads exactly like a capability that does
 > not exist**, and it will be written down as one. The Rhino's ramp took 5.2 s to climb from
-> ~50 u/s cruise to ~1200 against a 300/s bleed — which a brawl's short straights simply do not
+> ~50 u/s cruise to ~1200 (pre-2026-09-25 retune; ~3.6 s to 840 today) against a 300/s bleed — which a brawl's short straights simply do not
 > contain — so at Time rest the hull was *structurally* never fast. Before recording "element X
 > reaches nothing on hull Y", check the executor, not the map.
 
 The model converts that endpoint honestly: Time is the ramp's **wind-up rate**, not its ceiling
-(`maxBoostMultiplier` stays 24), so `rhino_speed_multiplier` integrates
+(`maxBoostMultiplier` stays 24 — **16.8** since the 2026-09-25 retune, top 840), so `rhino_speed_multiplier` integrates
 `min(top, cruise + a·t)` over a 2-second brawl straight and takes the ratio of the means — **2.22×
 at full**, not the 2.5× the acceleration row reads, and it **saturates** once the hull tops out
 inside the straight. Feeding the raw acceleration ratio in overpays the hull badly. All three
@@ -373,13 +381,33 @@ a volley, and everything about feel.
 - **Connect fractions are estimates** (above). The first playtest should correct them.
 - **The Dolphin is the weakest seat** at 4.8 min to target: its cone is gated on a crystal run
   rather than on the fight. Its Time row already buys it the maximum the platform allows.
-- **No Serpent.**
+- **No Serpent.** This is a design call now, not a missing kit. The Sniper Shot strips elements from
+  rivals but reports no combat hit, so it would score nothing here. See *The Serpent is
+  deliberately not on the card* above.
 - **The Rhino's sword is the one verb whose drain is still authored nowhere.** Every other
   scoring class now bites in proportion to its price; a Strike is covered by the per-weapon
   table, and the only Strike asset in the fleet is the Squirrel's overtake, which gates on being
   FASTER than its victim. The blade lands a Strike and drains nothing. Arming it is a Rhino kit
   decision (a skimmer drain SO the sword's container carries), not a number — see
   *The drain follows the price*.
+  **Stale (noted 2026-10-16):** the sword DOES steal. `RhinoSwordStealBySkimmerEffect` (a
+  `VesselOvertakeBySkimmerEffectSO`, landed with #928) sits in the sword's container at the Strike
+  price — debuff −0.08 / buff +0.08 per element for 3 s, cooldown 1 s, `stealScale` authored disabled
+  (base magnitude) — and runs only for a hit `VesselCombatHitBySword` admits, so it inherits the
+  faster-than-victim gate (PvP is petals only). It is a second Strike asset; the table above does
+  not list it yet.
+- **2026-10-16 Rhino kit — needs a playtest.** The AI Rhino now ramps (`RampBoostAIPolicySO`;
+  before this only a human strategy raised the gesture, so a bot Rhino never reached the
+  faster-than-victim speed the sword now requires) and swings/energizes its blade
+  (`RhinoSwordAutopilot`), so the fleet table's "AI can fight? yes — same" is newly true in a way it
+  was not measured against. Afterimages (5 s of blade-shaped prisms after an energize; danger at
+  Mass L5) add mass to cut and, at L5, danger traps. A Danger Afterimage used to trigger
+  `SparrowDebuffByRhinoDangerPrismEffect` (Sparrow and Grizzly containers — muted Button2 for 5 s);
+  that effect was deleted 2026-10-17 under the control-theft rule, so a danger afterimage now costs
+  what any danger prism does (slow, burn or own-domain debuff, boost reset), and the Grizzly gained
+  the fleet danger burn it never had. Since the same day the Rhino's own blade cuts its own
+  afterimages past the 1 s grace and banks energy for them. The omni crystal
+  is now a 6 s **Surge** (+2 levels on every element, blade held energized) rather than a meter fill.
 - **The Debuff anchor moved 4.2× lighter** and The Bends / Undertow are scored entirely on that
   drain. Their scoring is unaffected; the FEEL is not, and it wants a playtest.
 - **TWO rank->class helpers now exist, with DISAGREEING fallbacks** (refactor row, measured

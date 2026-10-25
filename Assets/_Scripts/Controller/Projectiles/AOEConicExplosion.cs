@@ -117,6 +117,20 @@ namespace CosmicShore.Gameplay
 
             // create CTS for explosion
             explosionCts = new CancellationTokenSource();
+
+            // The post-injection subscription the base Initialize makes and this wholesale override
+            // skipped (see AOEExplosion.SubscribeToGameEvents): without it a Dolphin cone - or a
+            // Sparrow skyburst, which inherits this Initialize - fired near turn end kept sweeping and
+            // destroying prisms for its whole duration after OnMiniGameTurnEnd, and survived
+            // OnResetForReplay.
+            SubscribeToGameEvents();
+        }
+
+        // Initialize always clones the material for this instance; a runtime material is not freed
+        // with its GameObject, so every cone and skyburst used to leak one.
+        protected virtual void OnDestroy()
+        {
+            if (Material) Destroy(Material);
         }
 
         /// <summary>

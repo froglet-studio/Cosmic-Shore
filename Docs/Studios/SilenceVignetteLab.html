@@ -1,0 +1,1118 @@
+<!doctype html>
+<!--
+  SILENCE VIGNETTE LAB — a /labmaker browser lab (round 4: a thin pull + edge that deepens with the seconds of silence).
+  Question: what should the silenced pilot's danger-coloured screen edge look like, so it is noticed for
+  sure and still fits the game (Docs/ElementalAbilitySystem/SILENCE.md §5)?
+  The mask is a line-for-line twin of Assets/_Scripts/Controller/FX/SilenceVignetteMask.cs (between the
+  <mask-twin> markers), and the 3D perimeter's layout and shard geometry are a twin of SilencePerimeter.cs
+  (between the <perimeter-twin> markers); Tools/Build/silence_vignette_parity/run.sh holds both together. Every SHIPPED
+  key is a VesselSilenceConfigSO field (Assets/Resources/VesselSilenceConfig.asset).
+  Write-up: Docs/Studios/SILENCE_VIGNETTE_LAB.md. Live: https://claude.ai/artifact/Hequw1VLdwXi2ztrDeuXQC
+  Verify: node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/SilenceVignetteLab.html
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Silence Vignette Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: an editor - the stand-in Dog Fight in the middle, settings dock right, scorecard and
+     decisions below. The stage is always the game's own night; the chrome follows the viewer's theme. */
+  :root {
+    --bg: #f3f4f7; --panel: #ffffff; --ink: #161a22; --muted: #586172; --line: #d9dde5;
+    --accent: #c4161c; --accent-ink: #ffffff; --ok: #1b7a45; --warn: #a65a08; --changed: #c4161c;
+    --stage: #00001a;
+    --display: "Chakra Petch", "Barlow", system-ui, sans-serif;
+    --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b0d14; --panel: #121520; --ink: #e5e8f0; --muted: #929bb0; --line: #252a38;
+      --accent: #ff4a4f; --accent-ink: #12060a; --ok: #58c98a; --warn: #f0a050; --changed: #ff6a6e; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0d14; --panel: #121520; --ink: #e5e8f0; --muted: #929bb0; --line: #252a38;
+    --accent: #ff4a4f; --accent-ink: #12060a; --ok: #58c98a; --warn: #f0a050; --changed: #ff6a6e; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--body); overflow: hidden; }
+  #app { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 350px; grid-template-rows: auto minmax(0, 1fr) 210px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 12px; align-items: center; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font: 600 17px/1.2 var(--display); letter-spacing: 0.02em; margin: 0; text-wrap: balance; }
+  header .meta { color: var(--muted); }
+  header .spacer { flex: 1; }
+  #diff { color: var(--changed); }
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: var(--stage); overflow: hidden; }
+  #stage { width: 100%; height: 100%; display: block; }
+  #glStage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+  #hud { position: absolute; left: 12px; top: 10px; color: #c9d3ea; font: 12px/1.55 var(--mono); pointer-events: none; text-shadow: 0 1px 2px #000; }
+  #stageBar { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100% - 24px); }
+  #stageBar .btn { background: rgba(10, 12, 26, 0.78); color: #e5e8f0; border-color: rgba(255, 255, 255, 0.18); }
+  #stageBar .btn.on { background: #c4161c; border-color: #ff6a6e; color: #fff; }
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 10px 16px 16px; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button, .btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 4px; padding: 4px 10px; cursor: pointer; font: 500 13px/1.3 var(--body); }
+  .tabs button[aria-selected="true"], .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn:focus-visible, .tabs button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .row { display: grid; grid-template-columns: 1fr 64px; gap: 2px 8px; margin: 9px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+  .row label .key { color: var(--muted); font: 11px var(--mono); }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+  .row output { text-align: right; font: 12px var(--mono); font-variant-numeric: tabular-nums; }
+  .row output.changed { color: var(--changed); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; }
+  .presets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 4px 0 10px; }
+  .presets .btn { text-align: left; }
+  .hint { color: var(--muted); font-size: 12.5px; margin: 4px 0; }
+  .eyebrow { font: 600 11px/1.2 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 10px 0 2px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font: 600 12px var(--body); color: var(--muted); }
+  td.num { font: 12px var(--mono); text-align: right; }
+  .best { font-weight: 700; color: var(--ok); }
+  .bad { color: var(--warn); }
+  .tablewrap { overflow-x: auto; }
+  .status-ok { color: var(--ok); } .status-warn { color: var(--warn); }
+  textarea, select, input[type=text] { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; }
+  .flex { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  pre.export { font: 12px/1.5 var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px; overflow-x: auto; margin: 6px 0; }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { aspect-ratio: 16 / 10; max-width: 100%; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    #bottom { max-height: none; }
+    .presets { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 id="title"></h1>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <label class="meta" for="backdrop">Scene</label>
+    <select id="backdrop" style="width:auto"></select>
+    <span class="meta" id="platform"></span>
+    <button class="btn" id="pause" type="button">Pause</button>
+    <button class="btn" id="resetAll" type="button">Shipped</button>
+  </header>
+  <div id="stageWrap">
+    <canvas id="stage"></canvas>
+    <canvas id="glStage" hidden></canvas>
+    <div id="hud"></div>
+    <div id="stageBar">
+      <button class="btn" id="hitBullet" type="button">Bullet hit</button>
+      <button class="btn" id="hitRocket" type="button">Rocket hit</button>
+      <button class="btn" id="silence4" type="button">Silence 4 s</button>
+      <button class="btn" id="silence8" type="button">Silence 8 s</button>
+      <button class="btn" id="autoRival" type="button">Rival firing</button>
+      <button class="btn" id="hold" type="button">Hold full</button>
+    </div>
+  </div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  // ================= (1) LAB meta + the shipped numbers =================
+  const LAB = { name: 'Silence Vignette Lab', branch: 'cece/sleepy-shannon-9qk646', round: 4, doc: 'Docs/Studios/SILENCE_VIGNETTE_LAB.md' };
+  // Every key is a VesselSilenceConfigSO field, read off Assets/Resources/VesselSilenceConfig.asset
+  // (the "overtuned" first cut of the overlay, 2026-10-21). Lab-only knobs carry the lab* prefix.
+  const SHIPPED = {
+    vignetteIntensity: 0.6,       // VesselSilenceConfigSO.vignetteIntensity (the 2D edge, drawn UNDER the shards so the pull drags it)
+    vignetteColorStrength: 1,     // .vignetteColorStrength (black .. the palette's danger colour)
+    vignetteDarken: 0,            // .vignetteDarken (URP Vignette, black, under the colour; off with the 2D edge)
+    vignetteSmoothness: 0.55,     // .vignetteSmoothness (that darkening's URP smoothness)
+    vignetteStyle: 1,             // .vignetteStyle (0 Soft, 1 Faceted; 4 facets = a frame that hugs the screen's border)
+    vignetteFacets: 4,            // .vignetteFacets
+    vignetteInner: 0.93,          // .vignetteInner (where the edge starts with little silence left: a thin band)
+    vignetteFeather: 0.07,        // .vignetteFeather
+    vignetteRoundness: 0,         // .vignetteRoundness
+    vignetteDeepInner: 0.6,       // .vignetteDeepInner (where the edge starts at full depth)
+    vignetteFill: 1,              // .vignetteFill
+    vignetteRimStrength: 0.3,     // .vignetteRimStrength
+    vignetteRimWidth: 0.015,      // .vignetteRimWidth
+    vignetteBreatheDepth: 0.25,   // .vignetteBreatheDepth
+    vignetteBreatheHz: 0.8,       // .vignetteBreatheHz
+    vignetteHitPulse: 0.35,       // .vignetteHitPulse
+    vignetteHitPulseSeconds: 0.35,// .vignetteHitPulseSeconds
+    vignetteFadeInSeconds: 0.15,  // .vignetteFadeInSeconds
+    vignetteFadeOutSeconds: 0.6,  // .vignetteFadeOutSeconds
+    onsetShakeIntensity: 0.45,    // .onsetShakeIntensity (world units, CustomCameraController.Shake)
+    onsetShakeSeconds: 0.35,      // .onsetShakeSeconds
+    hitShakeIntensity: 0.2,       // .hitShakeIntensity
+    hitShakeSeconds: 0.15,        // .hitShakeSeconds
+    depthFullSeconds: 8,          // .depthFullSeconds (seconds of silence left that reach full depth)
+    depthFollowSeconds: 0.25,     // .depthFollowSeconds (how fast depth catches up, 0 -> 1)
+    secondsPerPetal: 1,           // .secondsPerPetal
+    maxSeconds: 8,                // .maxSeconds
+    perimeterAmount: 1,           // .perimeterAmount (the 3D perimeter: 0 off .. 1 full)
+    perimeterShape: 0,            // .perimeterShape (0 crystal shards, 1 prism slabs)
+    perimeterCount: 160,          // .perimeterCount
+    perimeterSeed: 7,             // .perimeterSeed
+    perimeterSize: 0.1,           // .perimeterSize (shard length with little silence left, x the screen's height)
+    perimeterReach: 0.03,         // .perimeterReach (how far a centre may sink with little silence left, x half the height)
+    perimeterDeepSize: 0.38,      // .perimeterDeepSize (shard length at full depth)
+    perimeterDeepReach: 0.22,     // .perimeterDeepReach (sink at full depth)
+    perimeterSpin: 0.35,          // .perimeterSpin (radians a second)
+    perimeterRefraction: 0.14,    // .perimeterRefraction
+    perimeterTwist: 0.9,          // .perimeterTwist
+    perimeterAberration: 0.02,    // .perimeterAberration
+    perimeterTint: 0.25,          // .perimeterTint
+    perimeterRimGlow: 0.6,        // .perimeterRimGlow
+    perimeterEdgeGlow: 0.05,      // .perimeterEdgeGlow
+    perimeterFill: 0.1,           // .perimeterFill
+    perimeterInvert: 0,           // .perimeterInvert
+    perimeterOpacity: 0.95,       // .perimeterOpacity
+    perimeterWarp: 0.08,          // .perimeterWarp
+    perimeterGlitch: 0.06,        // .perimeterGlitch
+    perimeterPull: 0.08,          // .perimeterPull
+    perimeterStreak: 0.012,       // .perimeterStreak
+    perimeterTipFade: 0.85,       // .perimeterTipFade
+    perimeterPullDrift: 0.12,     // .perimeterPullDrift (radians a second around the screen)
+    labHitsPerSecond: 1.2,        // lab: how often the stand-in rival lands a hit while firing
+  };
+  // OriginalColorSetSO.asset (the live palette, Docs/PALETTE.md §1).
+  const PALETTE = {
+    sky: [0, 0, 0.102],                                   // EnvironmentColors.SkyColor
+    danger: [1.4979111, 0.0058463, 0.0068495],            // EnvironmentColors.Danger (HDR; the game normalises it)
+    jade: { base: [0, 0.16, 0.34], rim: [0, 0.5884546, 1.1353014] },
+    ruby: { base: [0.11906711, 0.006783697, 0.30817598], rim: [0.5490196, 0, 1.4980392] },
+    gold: { base: [0.23899364, 0.124818474, 0], rim: [0.9964046, 0.4048625, 0.0185709] },
+  };
+  // SO_ColorSet.GetDangerSignalColor: the rim's hue with its brightest channel driven to 1.
+  const DANGER = (() => { const c = PALETTE.danger, p = Math.max(...c); return c.map((x) => x / p); })();
+
+  // ================= (2) SPEC: one row per slider =================
+  const SPEC = [
+    ['Perimeter', 'perimeterAmount',      0, 1, 0.01, 'Amount', '0 = off. The 3D perimeter: faceted shards on the screen\'s edge, each facet showing the frame behind it bent - reality breaking. Drawn only for the silenced pilot.'],
+    ['Perimeter', 'perimeterShape',       0, 1, 1,    'Shape (0 crystal, 1 prism slab)', 'Crystal: pointed shards. Prism slab: broken pieces of a trail, the prisms\' own boxes.'],
+    ['Perimeter', 'perimeterCount',       4, 160, 1,  'Shards', 'How many shards ring the screen. Many, so they overlap in layers and no one of them reads as a crystal.'],
+    ['Perimeter', 'perimeterSeed',        1, 99, 1,   'Arrangement', 'Reshuffles where the shards sit and how each is cut.'],
+    ['Perimeter', 'perimeterSize',     0.02, 0.6, 0.01, 'Size (thin)', 'Shard length with little silence left, as a share of the screen\'s height.'],
+    ['Perimeter', 'perimeterDeepSize', 0.02, 0.8, 0.01, 'Size (deep)', 'Shard length at full depth: the more seconds of silence, the longer they grow.'],
+    ['Perimeter', 'perimeterDeepReach',   0, 0.6, 0.01, 'Sink (deep)', 'How far in a shard\'s centre may sink at full depth.'],
+    ['Perimeter', 'perimeterReach',       0, 0.6, 0.01, 'Sink (thin)', 'Each shard\'s centre sits on the screen\'s edge, half of it beyond; this is how far in a centre may sink (share of half the height).'],
+    ['Perimeter', 'perimeterSpin',        0, 3, 0.05, 'Spin', 'How fast each shard turns about its long axis (radians a second).'],
+    ['Perimeter', 'perimeterRefraction',  0, 0.3, 0.005, 'Refraction', 'How far each facet bends the frame it shows (by the facet\'s normal).'],
+    ['Perimeter', 'perimeterTwist',       0, 1, 0.01, 'Twist', 'How much each shard turns and scales the reality it shows.'],
+    ['Perimeter', 'perimeterAberration',  0, 0.04, 0.001, 'Aberration', 'Red and blue pulled apart inside the facets.'],
+    ['Perimeter', 'perimeterTint',        0, 1, 0.01, 'Danger tint', 'How much the bent frame takes the danger colour.'],
+    ['Perimeter', 'perimeterRimGlow',     0, 3, 0.05, 'Rim glow', 'Danger light where a facet turns away from you (fresnel), as every prism\'s rim does.'],
+    ['Perimeter', 'perimeterEdgeGlow',    0, 3, 0.05, 'Edge lines', 'Danger lines along the shards\' facet edges.'],
+    ['Perimeter', 'perimeterFill',        0, 1, 0.01, 'Danger fill', 'A lit danger glow inside every facet, brighter on facets that face the light, so a shard reads as a solid volume even over black space.'],
+    ['Perimeter', 'perimeterInvert',      0, 1, 0.01, 'Invert', 'Turns the reality inside a facet into its negative.'],
+    ['Perimeter', 'perimeterOpacity',     0, 1, 0.01, 'Opacity', 'How solid the shards are.'],
+    ['Perimeter', 'perimeterWarp',        0, 0.15, 0.005, 'Warp', 'The frame swirls and ripples near the edges while silenced; hits send a ring through it.'],
+    ['Perimeter', 'perimeterGlitch',      0, 0.2, 0.005, 'Hit glitch', 'Each hit tears the facets\' picture into sliding bands (decays with the hit flare).'],
+    ['Perimeter', 'perimeterPull',        0, 0.3, 0.005, 'Pull', 'Reality is dragged, in slow waves, toward a point near the edge: the frame and every facet\'s picture stream toward it.'],
+    ['Perimeter', 'perimeterStreak',      0, 0.05, 0.001, 'Streak', 'Each facet\'s picture is smeared toward the pull, so light streams into the maw.'],
+    ['Perimeter', 'perimeterTipFade',     0, 1, 0.01, 'Tip fade', 'Each shard fades toward its inward tip, so none ends in a point you could name: it dissolves into the distortion.'],
+    ['Perimeter', 'perimeterPullDrift',   0, 1, 0.01, 'Pull drift', 'How fast that point wanders around the screen (radians a second).'],
+    ['Edge',   'vignetteIntensity',      0, 1, 0.01, 'Strength', 'Peak opacity of the danger-coloured edge while silenced. The overlay ADDS colour, so it shows on black space.'],
+    ['Edge',   'vignetteColorStrength',  0, 1, 0.01, 'Danger colour', '1 = the palette\'s danger signal colour (the rim every danger prism wears); toward 0 it darkens to black.'],
+    ['Edge',   'vignetteDarken',         0, 1, 0.01, 'Darken under it', 'URP Vignette, black, under the colour: helps the edge read over a bright scene. On its own it is invisible on black space.'],
+    ['Edge',   'vignetteSmoothness',  0.01, 1, 0.01, 'Darken smoothness', 'URP smoothness of that darkening.'],
+    ['Shape',  'vignetteStyle',          0, 1, 1,    'Style (0 soft, 1 faceted)', 'Soft: a smooth ellipse. Faceted: a polygonal window, the prisms\' language.'],
+    ['Shape',  'vignetteFacets',         3, 16, 1,   'Facets', 'Sides of the faceted window.'],
+    ['Shape',  'vignetteInner',          0, 1.5, 0.01, 'Starts at (thin)', 'Where the edge starts with little silence left: 0 = the centre of the screen, 1 = the top and bottom edges.'],
+    ['Shape',  'vignetteDeepInner',      0, 1.5, 0.01, 'Starts at (deep)', 'Where the edge starts at full depth: it moves in with the seconds of silence and bleeds back out as they drain.'],
+    ['Shape',  'vignetteFeather',        0, 1.5, 0.01, 'Feather', 'How far the edge takes to reach full strength.'],
+    ['Shape',  'vignetteRoundness',      0, 1, 0.01, 'Roundness', '0 = the screen\'s own ellipse; 1 = a circle in pixels (reaches the top and bottom first).'],
+    ['Shape',  'vignetteFill',           0, 1, 0.01, 'Fill', 'Opacity of the outer fill. 0 leaves only the rim line.'],
+    ['Shape',  'vignetteRimStrength',    0, 1, 0.01, 'Rim line', 'A bright line along the edge\'s inner boundary.'],
+    ['Shape',  'vignetteRimWidth',       0, 0.3, 0.005, 'Rim width', 'Half-width of that line.'],
+    ['Motion', 'vignetteBreatheDepth',   0, 1, 0.01, 'Breathe depth', 'How far the edge dips and returns while silenced.'],
+    ['Motion', 'vignetteBreatheHz',      0, 4, 0.05, 'Breaths / s', 'Speed of the breathing.'],
+    ['Motion', 'vignetteHitPulse',       0, 1, 0.01, 'Hit flare', 'Extra opacity each hit adds while silenced, decaying.'],
+    ['Motion', 'vignetteHitPulseSeconds', 0.05, 2, 0.01, 'Flare decay (s)', 'Time for a flare to fall to a third.'],
+    ['Motion', 'vignetteFadeInSeconds',  0, 2, 0.05, 'Fade in (s)', 'How fast the edge rises when a silence lands.'],
+    ['Motion', 'vignetteFadeOutSeconds', 0, 3, 0.05, 'Fade out (s)', 'How long it drains when the silence ends.'],
+    ['Motion', 'onsetShakeIntensity',    0, 1.5, 0.01, 'Onset shake', 'Camera shake when a silence begins (world units; shown here as an approximate pixel offset).'],
+    ['Motion', 'onsetShakeSeconds',      0, 1, 0.01, 'Onset shake (s)', 'Its decay time.'],
+    ['Motion', 'hitShakeIntensity',      0, 1, 0.01, 'Hit shake', 'A lighter shake on each further hit.'],
+    ['Motion', 'hitShakeSeconds',        0, 1, 0.01, 'Hit shake (s)', 'Its decay time.'],
+    ['Silence', 'secondsPerPetal',       0, 3, 0.05, 'Seconds per petal', 'A hit silences for its worth: points / 10 x 4 elements x this.'],
+    ['Silence', 'depthFullSeconds',      0.5, 15, 0.5, 'Full depth at (s)', 'Seconds of silence left that reach full depth. Fewer seconds, shallower.'],
+    ['Silence', 'depthFollowSeconds',    0, 2, 0.05, 'Depth follow (s)', 'How fast depth catches up with the seconds (0 to full).'],
+    ['Silence', 'maxSeconds',            0, 15, 0.5, 'Ceiling (s)', 'The most silence one pilot carries.'],
+    ['Silence', 'labHitsPerSecond',      0.1, 4, 0.1, 'Rival hit rate (lab)', 'Hits a second the stand-in rival lands while "Rival firing" is on.'],
+  ];
+
+  const LS_KEY = 'lab:' + LAB.name + ':P';
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const P = Object.assign({}, SHIPPED, lsGet(LS_KEY, {}));
+  for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
+
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  // ================= (3) THE MODEL =================
+  // <mask-twin> SilenceVignetteMask.cs, line for line. Tools/Build/silence_vignette_parity extracts this block.
+  const MASK = (() => {
+    const StyleFaceted = 1;
+    const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+    const lerp = (a, b, t) => a + (b - a) * clamp01(t);
+    const repeat = (t, length) => t - Math.floor(t / length) * length;
+    function smoothStep(a, b, x) {
+      if (b <= a) return x >= a ? 1 : 0;
+      const t = clamp01((x - a) / (b - a));
+      return t * t * (3 - 2 * t);
+    }
+    function distance(u, v, aspect, s) {
+      const x = (u - 0.5) * 2 * lerp(1, Math.max(0.01, aspect), clamp01(s.roundness));
+      const y = (v - 0.5) * 2;
+      const r = Math.sqrt(x * x + y * y);
+      if (s.style !== StyleFaceted || s.facets < 3) return r;
+      const seg = 2 * Math.PI / s.facets;
+      const start = Math.PI * 0.5 - seg * 0.5;
+      const a = repeat(Math.atan2(y, x) - start, seg) - seg * 0.5;
+      return r * Math.cos(a);
+    }
+    function alpha(u, v, aspect, s) {
+      const d = distance(u, v, aspect, s);
+      const fill = smoothStep(s.inner, s.inner + Math.max(0, s.feather), d) * clamp01(s.fill);
+      let rim = 0;
+      if (s.rimStrength > 0 && s.rimWidth > 0)
+        rim = clamp01(1 - Math.abs(d - s.inner) / s.rimWidth) * clamp01(s.rimStrength);
+      return clamp01(fill + rim);
+    }
+    function breathe(time, depth, hz) {
+      if (depth <= 0 || hz <= 0) return 1;
+      const wave = 0.5 + 0.5 * Math.cos(2 * Math.PI * hz * time);
+      return 1 - clamp01(depth) * (1 - wave);
+    }
+    function opacity(mask, weight, intensity, breatheValue, pulse) {
+      return clamp01(mask) * clamp01(clamp01(weight) * clamp01(intensity) * breatheValue + Math.max(0, pulse));
+    }
+    return { distance, alpha, breathe, opacity };
+  })();
+  // </mask-twin>
+
+  // <perimeter-twin> SilencePerimeter.cs, line for line. Tools/Build/silence_vignette_parity extracts this block.
+  const PERIM = (() => {
+    const ShapeSlab = 1;
+    const Depth = 4;
+    const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+    const smooth = (x) => x * x * (3 - 2 * x);
+    function hash(h) {
+      h = (h ^ (h >>> 16)) >>> 0; h = Math.imul(h, 0x7feb352d) >>> 0;
+      h = (h ^ (h >>> 15)) >>> 0; h = Math.imul(h, 0x846ca68b) >>> 0;
+      return (h ^ (h >>> 16)) >>> 0;
+    }
+    // A stable random number 0..1 (24 bits, exact in float and double) for shard i, draw k.
+    function rand(seed, shard, k) {
+      const h = hash((Math.imul(seed, 0x9e3779b1) ^ Math.imul(shard + 1, 0x85ebca77) ^ Math.imul(k + 1, 0xc2b2ae3d)) >>> 0);
+      return (h >>> 8) / 16777216;
+    }
+    // Where reality is being pulled: an angle around the screen that drifts slowly, and the point near the
+    // screen's edge in that direction (screen uv, 0..1).
+    function pullAngle(s, time) { return s.pullDrift * time + rand(s.seed, 0, 99) * 6.2831855; }
+    function pullPoint(s, time) {
+      const a = pullAngle(s, time);
+      return [0.5 + 0.42 * Math.cos(a), 0.5 + 0.42 * Math.sin(a)];
+    }
+    // Shard i's pose in the camera's own space (+x right, +y up, +z forward, as Unity's camera transform): its
+    // centre ON the screen's edge (half of it pokes in, half is beyond), sunk a little inward, and its three axes
+    // scaled by its length (the geometry is one unit long along +y). It grows in as the silence lands.
+    // deepen 0..1 = how much silence is left (SilenceScreenFeedback): 0 the thin band, 1 the deepest.
+    function layout(i, s, weight, deepen, pulse, time, aspect, fovDeg) {
+      const n = Math.max(1, s.count);
+      const r = (k) => rand(s.seed, i, k);
+      const theta = 2 * Math.PI * (i + 0.9 * (r(0) - 0.5)) / n;
+      const depth = Depth * (0.6 + r(1));
+      const h = depth * Math.tan(fovDeg * 0.5 * Math.PI / 180), w = h * aspect;
+      const cx = Math.cos(theta), cy = Math.sin(theta);
+      const tx = Math.abs(cx) > 1e-4 ? w / Math.abs(cx) : 1e9, ty = Math.abs(cy) > 1e-4 ? h / Math.abs(cy) : 1e9;
+      const edge = Math.min(tx, ty);
+      const presence = smooth(clamp01(clamp01(weight) * 1.35 - 0.35 * r(2)));
+      // The maw: on the pull's side the shards grow longer and sink deeper, so the mouth wanders with the pull.
+      const toward = 0.5 + 0.5 * Math.cos(theta - pullAngle(s, time)), maw = toward * toward;
+      const dd = clamp01(deepen);
+      const size = s.size + (s.deepSize - s.size) * dd, reach = s.reach + (s.deepReach - s.reach) * dd;
+      const len = size * 2 * h * (0.5 + r(3)) * (0.25 + 0.75 * presence) * (0.55 + 0.9 * maw);
+      const sink = h * presence * (reach * (r(13) + 0.8 * maw) + 0.15 * Math.max(0, pulse) * (0.5 + r(4)));
+      const sway = 0.05 * h * Math.sin(time * (0.6 + r(5)) + r(6) * 6.2831855);
+      const along = edge - sink;
+      const px = cx * along - cy * sway, py = cy * along + cx * sway;
+      // The long axis points inward, turned in the screen's plane and tilted toward or away from you.
+      const turn = (r(7) - 0.5) * 1.2, tilt = (r(8) - 0.5) * 2.0;
+      let ax = -(cx * Math.cos(turn) - cy * Math.sin(turn)), ay = -(cx * Math.sin(turn) + cy * Math.cos(turn)), az = tilt;
+      const al = Math.sqrt(ax * ax + ay * ay + az * az); ax /= al; ay /= al; az /= al;
+      let x0x = ay, x0y = -ax;                                   // cross(axis, forward), forward = (0, 0, 1)
+      const xl = Math.sqrt(x0x * x0x + x0y * x0y); x0x /= xl; x0y /= xl;
+      const z0x = x0y * az, z0y = -x0x * az, z0z = x0x * ay - x0y * ax;   // cross(x0, axis)
+      const phi = s.spin * (0.5 + r(9)) * time * (r(10) < 0.5 ? -1 : 1) + r(11) * 6.2831855;
+      const c = Math.cos(phi), sn = Math.sin(phi);
+      return {
+        position: [px, py, depth],
+        right: [(x0x * c + z0x * sn) * len, (x0y * c + z0y * sn) * len, z0z * sn * len],
+        up: [ax * len, ay * len, az * len],
+        forward: [(-x0x * sn + z0x * c) * len, (-x0y * sn + z0y * c) * len, z0z * c * len],
+        presence, seed: r(12),
+      };
+    }
+    // Shard i's facets as flat triangles, one unit long along +y: positions, normals and barycentrics (a quad's
+    // diagonal carries 1, so only real edges draw a line). Wound so cross(b - a, c - a) faces OUT (Unity's front).
+    function geometry(s, i) {
+      const r = (k) => rand(s.seed, i, 20 + k);
+      const pos = [], nor = [], bar = [];
+      function tri(a, b, c, hide) {
+        let nx = (b[1] - a[1]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[1] - a[1]);
+        let ny = (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]);
+        let nz = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+        const mx = a[0] + b[0] + c[0], my = a[1] + b[1] + c[1], mz = a[2] + b[2] + c[2];
+        if (nx * mx + ny * my + nz * mz < 0) { const t = b; b = c; c = t; nx = -nx; ny = -ny; nz = -nz; hide = hide === 1 ? 2 : hide === 2 ? 1 : hide; }
+        const nl = Math.sqrt(nx * nx + ny * ny + nz * nz); nx /= nl; ny /= nl; nz /= nl;
+        const v = [a, b, c];
+        for (let j = 0; j < 3; j++) {
+          pos.push(v[j][0], v[j][1], v[j][2]); nor.push(nx, ny, nz);
+          bar.push(j === 0 || hide === 0 ? 1 : 0, j === 1 || hide === 1 ? 1 : 0, j === 2 || hide === 2 ? 1 : 0);
+        }
+      }
+      const quad = (a, b, c, d) => { tri(a, b, c, 1); tri(a, c, d, 2); };
+      if (s.shape === ShapeSlab) {
+        const hx = 0.32 * (0.8 + 0.4 * r(0)), hz = 0.18 * (0.8 + 0.4 * r(1)), shear = (r(2) - 0.5) * 0.3;
+        const v = (x, y, z) => [x * hx + y * shear * hx, y * 0.5, z * hz];
+        quad(v(-1, -1, -1), v(1, -1, -1), v(1, 1, -1), v(-1, 1, -1));
+        quad(v(-1, -1, 1), v(-1, 1, 1), v(1, 1, 1), v(1, -1, 1));
+        quad(v(-1, -1, -1), v(-1, 1, -1), v(-1, 1, 1), v(-1, -1, 1));
+        quad(v(1, -1, -1), v(1, -1, 1), v(1, 1, 1), v(1, 1, -1));
+        quad(v(-1, 1, -1), v(1, 1, -1), v(1, 1, 1), v(-1, 1, 1));
+        quad(v(-1, -1, -1), v(-1, -1, 1), v(1, -1, 1), v(1, -1, -1));
+      } else {
+        // A crystal of k sides cut by three rings: 6k facets, irregular enough that no two read alike.
+        const k = 6 + Math.floor(r(0) * 5);
+        const rad = 0.16 * (0.8 + 0.4 * r(1));
+        const top = [(r(2) - 0.5) * 0.1, 0.5, (r(3) - 0.5) * 0.1];
+        const bottom = [(r(4) - 0.5) * 0.1, -0.5 * (0.6 + 0.4 * r(5)), (r(6) - 0.5) * 0.1];
+        const rings = [[-0.22, 0.9], [0, 1], [0.22, 0.8]];
+        const ring = [];
+        for (let m = 0; m < 3; m++) {
+          const out = [];
+          for (let j = 0; j < k; j++) {
+            const ang = 2 * Math.PI * (j + 0.3 * (r(7 + j) - 0.5)) / k, rr = rad * rings[m][1] * (0.8 + 0.4 * r(17 + m * 10 + j));
+            out.push([Math.cos(ang) * rr, rings[m][0], Math.sin(ang) * rr]);
+          }
+          ring.push(out);
+        }
+        for (let j = 0; j < k; j++) {
+          const j1 = (j + 1) % k;
+          quad(ring[0][j], ring[0][j1], ring[1][j1], ring[1][j]);
+          quad(ring[1][j], ring[1][j1], ring[2][j1], ring[2][j]);
+          tri(ring[2][j], ring[2][j1], top, -1);
+          tri(ring[0][j1], ring[0][j], bottom, -1);
+        }
+      }
+      return { pos, nor, bar };
+    }
+    return { rand, pullAngle, pullPoint, layout, geometry };
+  })();
+  // </perimeter-twin>
+
+  // The perimeter's settings, from the lab's (VesselSilenceConfigSO.PerimeterSettings).
+  function perimOf(p) {
+    return { shape: Math.round(p.perimeterShape), count: Math.round(p.perimeterCount), seed: Math.round(p.perimeterSeed),
+      size: p.perimeterSize, reach: p.perimeterReach, spin: p.perimeterSpin, pullDrift: p.perimeterPullDrift,
+      deepSize: p.perimeterDeepSize, deepReach: p.perimeterDeepReach };
+  }
+
+  // ---- the 3D perimeter, drawn in WebGL2 the way SilencePerimeterPass draws it in the game: copy the frame, warp
+  // it near the edges, then draw each shard (back to front, back faces culled) sampling that copy. ----
+  const LAB_FOV = 60;   // a stand-in: the game passes the camera's own field of view
+  const VS_FULL = `#version 300 es
+out vec2 vUv;
+void main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); vUv = p; gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+  // <warp-shader> SilencePerimeter.shader, pass "SilencePerimeterWarp"
+  const FS_WARP = `#version 300 es
+precision highp float;
+uniform sampler2D uScene; uniform float uWarp, uTime, uShock, uAspect, uPull; uniform vec2 uPullPoint;
+in vec2 vUv; out vec4 o;
+void main() {
+  vec2 q = (vUv - 0.5) * 2.0;
+  float edge = smoothstep(0.45, 1.25, length(q));
+  vec2 p = vec2(q.x * uAspect, q.y);
+  float r = length(p);
+  float ang = uWarp * edge * (2.0 + 1.5 * sin(r * 9.0 - uTime * 2.3));
+  float s = sin(ang), c = cos(ang);
+  p = vec2(c * p.x - s * p.y, s * p.x + c * p.y);
+  p *= 1.0 + uShock * 0.06 * sin(r * 14.0 - uTime * 20.0) * edge;
+  vec2 uv = vec2(p.x / uAspect, p.y) * 0.5 + 0.5;
+  // The pull: the frame near the edges is dragged toward the pull point in slow waves; the middle stays still.
+  vec2 toP = (uPullPoint - vUv) * vec2(uAspect, 1.0);
+  float dP = length(toP) + 1e-4;
+  float wave = 0.5 + 0.5 * sin(dP * 14.0 - uTime * 3.0);
+  uv -= (toP / dP) * uPull * edge * (0.35 + 0.65 * wave) / vec2(uAspect, 1.0);
+  o = vec4(texture(uScene, uv).rgb, 1.0);
+}`;
+  const VS_SHARD = `#version 300 es
+in vec3 aPos; in vec3 aNor; in vec3 aBar;
+uniform mat4 uModel; uniform mat4 uProj;
+out vec3 vN; out vec3 vV; out vec3 vBar; out float vAlong;
+void main() { vec4 w = uModel * vec4(aPos, 1.0); vN = mat3(uModel) * aNor; vV = -w.xyz; vBar = aBar; vAlong = aPos.y; gl_Position = uProj * w; }`;
+  // <shard-shader> SilencePerimeter.shader, pass "SilencePerimeter"
+  const FS_SHARD = `#version 300 es
+precision highp float;
+uniform sampler2D uScene; uniform vec2 uRes; uniform vec3 uDanger; uniform vec2 uCenter;
+uniform float uRefract, uTwist, uAberr, uRim, uEdge, uAlpha, uGlitch, uTime, uSeed, uTint, uFill, uInvert, uPull, uStreak, uTipFade;
+uniform vec2 uPullPoint;
+in vec3 vN; in vec3 vV; in vec3 vBar; in float vAlong; out vec4 o;
+float hash1(float n) { return fract(sin(n) * 43758.5453); }
+void main() {
+  vec3 n = normalize(vN); vec3 v = normalize(vV);
+  float aspect = uRes.x / uRes.y;
+  vec2 uv = gl_FragCoord.xy / uRes;
+  vec2 d = uv - uCenter; d.x *= aspect;
+  float a = uTwist * (uSeed * 2.0 - 1.0) * 1.2;
+  float ca = cos(a), sa = sin(a);
+  d = vec2(ca * d.x - sa * d.y, sa * d.x + ca * d.y);
+  d *= 1.0 + 0.35 * uTwist * (fract(uSeed * 7.31) - 0.5);
+  d.x /= aspect;
+  vec2 suv = uCenter + d + n.xy * uRefract;
+  vec2 toP = (uPullPoint - uv) * vec2(aspect, 1.0);
+  vec2 pullDir = toP / (length(toP) + 1e-4) / vec2(aspect, 1.0);
+  suv -= pullDir * uPull * 0.6;
+  suv.x += (hash1(floor(uv.y * 180.0) + floor(uTime * 24.0)) - 0.5) * uGlitch;
+  vec2 ab = n.xy * uAberr;
+  // The picture is smeared toward the pull: light streams into the maw.
+  vec3 col = vec3(0.0);
+  for (int k = 0; k < 6; k++) {
+    vec2 tuv = suv - pullDir * uStreak * float(k);
+    col += vec3(texture(uScene, tuv + ab).r, texture(uScene, tuv).g, texture(uScene, tuv - ab).b);
+  }
+  col /= 6.0;
+  col = mix(col, vec3(1.0) - col, uInvert);
+  float shade = max(0.0, dot(n, normalize(vec3(0.35, 0.6, 0.7))));
+  float lit = 0.8 + 0.3 * shade;
+  float fres = pow(1.0 - abs(dot(n, v)), 3.0);
+  float e = min(min(vBar.x, vBar.y), vBar.z);
+  float edgeLine = 1.0 - smoothstep(0.0, max(fwidth(e) * 1.5, 1e-4), e);
+  col = mix(col * lit, uDanger * dot(col, vec3(0.3, 0.59, 0.11)) * 2.0, uTint) + uDanger * (uFill * (0.35 + 0.65 * shade) + fres * uRim + edgeLine * uEdge);
+  // Facets differ in how solid they are, so overlapping shards dissolve into each other.
+  // ... and each fades toward its inward tip, so no shard ends in a point: it dissolves into the distortion.
+  float facetAlpha = uAlpha * (0.6 + 0.4 * hash1(dot(n, vec3(12.9898, 78.233, 37.719)) * 9.0))
+                   * (1.0 - uTipFade * smoothstep(-0.1, 0.5, vAlong));
+  o = vec4(col * facetAlpha, facetAlpha);
+}`;
+  function perspective(fovDeg, aspect, near, far) {
+    const f = 1 / Math.tan(fovDeg * Math.PI / 360), nf = 1 / (near - far);
+    return new Float32Array([f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) * nf, -1, 0, 0, 2 * far * near * nf, 0]);
+  }
+  function makePerimeter(cv) {
+    let gl = null;
+    try { gl = cv.getContext('webgl2', { alpha: true, premultipliedAlpha: true, preserveDrawingBuffer: true, antialias: true }); } catch (e) { gl = null; }
+    if (!gl) return { ok: false, why: 'no WebGL2' };
+    function program(vs, fs, attrs) {
+      const pr = gl.createProgram();
+      for (const [src, type] of [[vs, gl.VERTEX_SHADER], [fs, gl.FRAGMENT_SHADER]]) {
+        const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh);
+        if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) { console.error('perimeter shader: ' + gl.getShaderInfoLog(sh)); return null; }
+        gl.attachShader(pr, sh);
+      }
+      (attrs || []).forEach((a, k) => gl.bindAttribLocation(pr, k, a));
+      gl.linkProgram(pr);
+      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) { console.error('perimeter program: ' + gl.getProgramInfoLog(pr)); return null; }
+      const u = {}, n = gl.getProgramParameter(pr, gl.ACTIVE_UNIFORMS);
+      for (let k = 0; k < n; k++) { const info = gl.getActiveUniform(pr, k); u[info.name] = gl.getUniformLocation(pr, info.name); }
+      return { pr, u };
+    }
+    const warp = program(VS_FULL, FS_WARP), shard = program(VS_SHARD, FS_SHARD, ['aPos', 'aNor', 'aBar']);
+    if (!warp || !shard) return { ok: false, why: 'shader failed' };
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const emptyVao = gl.createVertexArray();
+    let meshKey = '', meshes = [];
+    function buildMeshes(s) {
+      const key = s.shape + '|' + s.count + '|' + s.seed;
+      if (key === meshKey) return;
+      for (const m of meshes) { gl.deleteVertexArray(m.vao); m.bufs.forEach((b) => gl.deleteBuffer(b)); }
+      meshes = [];
+      for (let i = 0; i < s.count; i++) {
+        const g = PERIM.geometry(s, i), vao = gl.createVertexArray(), bufs = [];
+        gl.bindVertexArray(vao);
+        [g.pos, g.nor, g.bar].forEach((arr, k) => {
+          const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(arr), gl.STATIC_DRAW);
+          gl.enableVertexAttribArray(k); gl.vertexAttribPointer(k, 3, gl.FLOAT, false, 0, 0); bufs.push(b);
+        });
+        meshes.push({ vao, bufs, n: g.pos.length / 3 });
+      }
+      gl.bindVertexArray(null);
+      meshKey = key;
+    }
+    // st: { t, drive (eased weight 0..1), pulse }. Draws the warped frame, then the shards over it.
+    function draw(src, w, h, p, st) {
+      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+      gl.viewport(0, 0, w, h);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+      const aspect = w / h, amount = Math.max(0, Math.min(1, p.perimeterAmount)), pulse = st.pulse * st.drive;
+      gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE); gl.disable(gl.DEPTH_TEST);
+      gl.useProgram(warp.pr); gl.bindVertexArray(emptyVao);
+      gl.uniform1i(warp.u.uScene, 0); gl.uniform1f(warp.u.uWarp, p.perimeterWarp * st.drive * amount);
+      gl.uniform1f(warp.u.uTime, st.t); gl.uniform1f(warp.u.uShock, pulse * amount); gl.uniform1f(warp.u.uAspect, aspect);
+      const sp = perimOf(p), pp = PERIM.pullPoint(sp, st.t);
+      gl.uniform1f(warp.u.uPull, p.perimeterPull * st.drive * amount); gl.uniform2f(warp.u.uPullPoint, pp[0], pp[1]);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if (amount <= 0 || st.drive <= 0.0001) return;
+      const s = perimOf(p);
+      buildMeshes(s);
+      const proj = perspective(LAB_FOV, aspect, 0.1, 50);
+      const poses = [];
+      for (let i = 0; i < s.count; i++) poses.push(PERIM.layout(i, s, st.drive, st.depth, pulse, st.t, aspect, LAB_FOV));
+      const order = poses.map((q, i) => i).sort((a, b) => poses[b].position[2] - poses[a].position[2]);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); gl.frontFace(gl.CW);   // the camera's +z is mirrored into GL's -z
+      gl.useProgram(shard.pr);
+      gl.uniformMatrix4fv(shard.u.uProj, false, proj);
+      gl.uniform1i(shard.u.uScene, 0); gl.uniform2f(shard.u.uRes, w, h); gl.uniform3f(shard.u.uDanger, DANGER[0], DANGER[1], DANGER[2]);
+      gl.uniform1f(shard.u.uRefract, p.perimeterRefraction); gl.uniform1f(shard.u.uTwist, p.perimeterTwist);
+      gl.uniform1f(shard.u.uAberr, p.perimeterAberration); gl.uniform1f(shard.u.uRim, p.perimeterRimGlow);
+      gl.uniform1f(shard.u.uEdge, p.perimeterEdgeGlow); gl.uniform1f(shard.u.uGlitch, p.perimeterGlitch * pulse);
+      gl.uniform1f(shard.u.uTime, st.t); gl.uniform1f(shard.u.uTint, p.perimeterTint);
+      gl.uniform1f(shard.u.uFill, p.perimeterFill); gl.uniform1f(shard.u.uInvert, p.perimeterInvert);
+      gl.uniform1f(shard.u.uPull, p.perimeterPull * st.drive); gl.uniform2f(shard.u.uPullPoint, pp[0], pp[1]);
+      gl.uniform1f(shard.u.uStreak, p.perimeterStreak); gl.uniform1f(shard.u.uTipFade, p.perimeterTipFade);
+      for (const i of order) {
+        const q = poses[i];
+        if (q.presence <= 0.001) continue;
+        const [px, py, pz] = q.position, R = q.right, U = q.up, F = q.forward;
+        gl.uniformMatrix4fv(shard.u.uModel, false, new Float32Array([R[0], R[1], -R[2], 0, U[0], U[1], -U[2], 0, F[0], F[1], -F[2], 0, px, py, -pz, 1]));
+        const cw = proj[11] * -pz, cx = proj[0] * px / cw, cy = proj[5] * py / cw;
+        gl.uniform2f(shard.u.uCenter, cx * 0.5 + 0.5, cy * 0.5 + 0.5);
+        gl.uniform1f(shard.u.uSeed, q.seed);
+        gl.uniform1f(shard.u.uAlpha, Math.max(0, Math.min(1, p.perimeterOpacity)) * q.presence * amount);
+        gl.bindVertexArray(meshes[i].vao);
+        gl.drawArrays(gl.TRIANGLES, 0, meshes[i].n);
+      }
+      gl.bindVertexArray(null);
+    }
+    function read(w, h) { const buf = new Uint8Array(w * h * 4); gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf); return buf; }
+    return { ok: true, draw, read };
+  }
+
+  // The shape the mask reads, from the lab's settings (VesselSilenceConfigSO.VignetteShape).
+  // depth 0..1 moves the edge's inner boundary from vignetteInner (thin) to vignetteDeepInner. The game works it
+  // out per pixel in SilencePerimeter.shader (continuous); the lab re-bakes its mask in 1/48 steps.
+  const quantDepth = (d) => Math.round(Math.max(0, Math.min(1, d || 0)) * 48) / 48;
+  function shapeOf(p, depth) {
+    const d = quantDepth(depth);
+    return { style: Math.round(p.vignetteStyle), facets: Math.round(p.vignetteFacets), inner: p.vignetteInner + (p.vignetteDeepInner - p.vignetteInner) * d,
+      feather: p.vignetteFeather, roundness: p.vignetteRoundness, fill: p.vignetteFill,
+      rimStrength: p.vignetteRimStrength, rimWidth: p.vignetteRimWidth };
+  }
+  // URP's UberPost ApplyVignette (Universal RP 17): input * lerp(color, 1, pow(saturate(1 - dot(d, d)), smoothness*5)),
+  // d = |uv - centre| * intensity*3, d.x *= aspect when rounded. Round 0 shipped it in danger red; it now only darkens.
+  function urpFactor(u, v, aspect, intensity, smoothness, rounded) {
+    let dx = Math.abs(u - 0.5) * intensity * 3, dy = Math.abs(v - 0.5) * intensity * 3;
+    if (rounded) dx *= aspect;
+    const t = Math.max(0, Math.min(1, 1 - (dx * dx + dy * dy)));
+    return Math.pow(t, smoothness * 5);
+  }
+
+  // ---- the silence timeline: the game's own rules, so the edge is judged in motion ----
+  // VesselSilence.SecondsForPoints / Extend; SilenceScreenFeedback.Update (MoveTowards weight, SmoothStep drive,
+  // pulse decay exp(-dt / seconds), onset vs per-hit shake).
+  const HIT = { bullet: 1, strike: 8, shockwave: 10, debuff: 12, blast: 20, direct: 30 };   // CombatHitDrain.PointsFor
+  let world = null, seed = 7;
+  function reset(s) {
+    if (s != null) seed = s >>> 0;
+    world = { t: 0, rnd: mulberry32(seed), left: 0, weight: 0, depth: 0, pulse: 0, shakeLeft: 0, shakeDur: 0, shakeAmp: 0,
+              hits: 0, onsets: 0, nextHit: 0, auto: world ? world.auto : true, hold: world ? world.hold : false, flashes: [] };
+    world.nextHit = 0.6;
+  }
+  function shake(amp, dur) {
+    if (amp <= 0 || dur <= 0) return;
+    if (world.shakeLeft > 0 && amp < world.shakeAmp * (world.shakeLeft / world.shakeDur)) return;   // a stronger one keeps playing
+    world.shakeAmp = amp; world.shakeDur = dur; world.shakeLeft = dur;
+  }
+  function hit(kind) {
+    const pts = HIT[kind] || 1;
+    const add = pts / 10 * 4 * P.secondsPerPetal;
+    if (add <= 0 || P.maxSeconds <= 0) return;
+    const onset = world.weight <= 0.0001;
+    world.left = Math.min(P.maxSeconds, Math.max(0, world.left) + add);
+    world.hits++;
+    if (onset) { world.onsets++; shake(P.onsetShakeIntensity, P.onsetShakeSeconds); }
+    else { shake(P.hitShakeIntensity, P.hitShakeSeconds); world.pulse = Math.min(1, world.pulse + P.vignetteHitPulse); }
+    world.flashes.push({ t: world.t, kind });
+  }
+  function simStep(dt) {
+    const w = world;
+    w.t += dt;
+    if (w.auto && !w.hold) {
+      w.nextHit -= dt;
+      if (w.nextHit <= 0) {
+        hit(w.rnd() < 0.12 ? 'shockwave' : 'bullet');
+        w.nextHit = (0.5 + w.rnd()) / Math.max(0.1, P.labHitsPerSecond);
+      }
+    }
+    if (w.hold) w.left = Math.max(w.left, 1);
+    w.left = Math.max(0, w.left - dt);
+    const silenced = w.left > 0;
+    const secs = silenced ? P.vignetteFadeInSeconds : P.vignetteFadeOutSeconds;
+    const target = silenced ? 1 : 0;
+    w.weight = secs > 0 ? (w.weight < target ? Math.min(target, w.weight + dt / secs) : Math.max(target, w.weight - dt / secs)) : target;
+    // Depth follows the seconds of silence left: deeper with every second added, bleeding back out as they drain.
+    const depthTarget = P.depthFullSeconds > 0 ? Math.min(1, w.left / P.depthFullSeconds) : 0;
+    const depthStep = P.depthFollowSeconds > 0 ? dt / P.depthFollowSeconds : 1;
+    w.depth = w.depth < depthTarget ? Math.min(depthTarget, w.depth + depthStep) : Math.max(depthTarget, w.depth - depthStep);
+    w.pulse = P.vignetteHitPulseSeconds > 0 ? w.pulse * Math.exp(-dt / P.vignetteHitPulseSeconds) : 0;
+    if (w.weight <= 0.0001) w.pulse = 0;
+    w.shakeLeft = Math.max(0, w.shakeLeft - dt);
+    w.flashes = w.flashes.filter((f) => w.t - f.t < 0.25);
+  }
+  const smooth = (x) => x * x * (3 - 2 * x);
+
+  // ---- the stand-in Dog Fight: the shipped palette, drawn deterministically from a seed ----
+  const BACKDROPS = [
+    { key: 'space', name: 'Open space (Dog Fight)' },
+    { key: 'bright', name: 'Bright cell' },
+    { key: 'danger', name: 'Busy mass + danger prisms' },
+  ];
+  let backdrop = lsGet('lab:' + LAB.name + ':backdrop', 'space');
+  if (!BACKDROPS.some((b) => b.key === backdrop)) backdrop = 'space';
+  const css = (c, a) => 'rgba(' + Math.round(Math.min(1, c[0]) * 255) + ',' + Math.round(Math.min(1, c[1]) * 255) + ',' + Math.round(Math.min(1, c[2]) * 255) + ',' + (a == null ? 1 : a) + ')';
+  function drawBackdrop(g, w, h, kind, sd, t) {
+    const rnd = mulberry32(sd * 977 + kind.length);
+    g.fillStyle = css(PALETTE.sky); g.fillRect(0, 0, w, h);
+    // a faint far field of specks
+    g.fillStyle = 'rgba(160,180,255,0.35)';
+    for (let i = 0; i < 140; i++) { const x = rnd() * w, y = rnd() * h, s = rnd() < 0.1 ? 2 : 1; g.fillRect(x, y, s, s); }
+    if (kind === 'bright') {
+      const gr = g.createRadialGradient(w * 0.62, h * 0.35, 10, w * 0.62, h * 0.35, Math.max(w, h) * 0.75);
+      gr.addColorStop(0, 'rgba(255,214,140,0.95)'); gr.addColorStop(0.25, 'rgba(255,150,40,0.55)'); gr.addColorStop(0.6, 'rgba(90,40,120,0.35)'); gr.addColorStop(1, 'rgba(0,0,26,0)');
+      g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    }
+    // prism trails: domain base faces with a fresnel rim, scrolling toward the camera
+    const trails = kind === 'danger' ? 9 : kind === 'bright' ? 6 : 5;
+    const unit = Math.min(w, h) / 30;
+    for (let k = 0; k < trails; k++) {
+      const dom = [PALETTE.jade, PALETTE.ruby, PALETTE.gold][k % 3];
+      const x0 = rnd() * w, y0 = rnd() * h, ang = rnd() * Math.PI * 2, curl = (rnd() - 0.5) * 0.08;
+      const n = 18 + Math.floor(rnd() * 16), step = unit * 1.5;
+      let x = x0, y = y0, a = ang;
+      for (let i = 0; i < n; i++) {
+        const danger = kind === 'danger' && (i + k) % 5 === 0;
+        const drift = (t * 22) % step;
+        const px = x + Math.cos(a) * drift, py = y + Math.sin(a) * drift;
+        g.save(); g.translate(px, py); g.rotate(a);
+        g.fillStyle = css(dom.base); g.strokeStyle = danger ? css(DANGER) : css(dom.rim, 0.9); g.lineWidth = danger ? 2.2 : 1.4;
+        g.fillRect(-unit * 0.55, -unit * 0.3, unit * 1.1, unit * 0.6); g.strokeRect(-unit * 0.55, -unit * 0.3, unit * 1.1, unit * 0.6);
+        g.restore();
+        x += Math.cos(a) * step; y += Math.sin(a) * step; a += curl;
+      }
+    }
+    // the rival, ahead and slightly high
+    const rx = w * 0.56 + Math.sin(t * 0.7) * w * 0.08, ry = h * 0.36 + Math.cos(t * 0.9) * h * 0.05;
+    ship(g, rx, ry, unit * 1.4, PALETTE.ruby.rim, Math.PI * 0.5 + Math.sin(t * 0.7) * 0.3);
+    // the pilot, below centre in the chase view
+    ship(g, w * 0.5, h * 0.66, unit * 2.2, PALETTE.jade.rim, -Math.PI * 0.5);
+    return { rx, ry };
+  }
+  function ship(g, x, y, s, col, ang) {
+    g.save(); g.translate(x, y); g.rotate(ang);
+    g.fillStyle = css([col[0] * 0.25, col[1] * 0.25, col[2] * 0.25]); g.strokeStyle = css(col); g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(s, 0); g.lineTo(-s * 0.7, s * 0.55); g.lineTo(-s * 0.35, 0); g.lineTo(-s * 0.7, -s * 0.55); g.closePath(); g.fill(); g.stroke();
+    g.restore();
+  }
+
+  // ---- the overlay: the same product the game draws (baked mask x danger colour x opacity) ----
+  const maskCanvas = document.createElement('canvas'), maskCtx = maskCanvas.getContext('2d');
+  let maskKey = '';
+  function bakeMask(aspect, p, depth) {
+    const s = shapeOf(p, depth), key = JSON.stringify(s) + '|' + aspect.toFixed(3) + '|' + p.vignetteColorStrength;
+    if (key === maskKey) return;
+    maskKey = key;
+    const W = 256, H = Math.max(16, Math.min(512, Math.round(W / Math.max(0.1, aspect))));   // SilenceScreenFeedback.EnsureOverlay
+    maskCanvas.width = W; maskCanvas.height = H;
+    const img = maskCtx.createImageData(W, H), col = edgeColour(p);
+    for (let y = 0; y < H; y++) {
+      const v = 1 - (y + 0.5) / H;   // Unity's texture rows run bottom-up
+      for (let x = 0; x < W; x++) {
+        const u = (x + 0.5) / W, a = MASK.alpha(u, v, aspect, s), i = (y * W + x) * 4;
+        img.data[i] = Math.round(col[0] * 255); img.data[i + 1] = Math.round(col[1] * 255); img.data[i + 2] = Math.round(col[2] * 255);
+        img.data[i + 3] = Math.round(a * 255);
+      }
+    }
+    maskCtx.putImageData(img, 0, 0);
+  }
+  function edgeColour(p) { const k = Math.max(0, Math.min(1, p.vignetteColorStrength)); return DANGER.map((c) => c * k); }
+  const darkCanvas = document.createElement('canvas'), darkCtx = darkCanvas.getContext('2d');
+  function drawDarken(g, w, h, intensity, smoothness, colour) {
+    // URP multiply, rendered at low resolution and stretched (it is smooth). colour = the vignette colour.
+    if (intensity <= 0) return;
+    const W = 192, H = Math.max(8, Math.round(W * h / w)), img = darkCtx.createImageData(W, H), aspect = w / h;
+    darkCanvas.width = W; darkCanvas.height = H;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const f = urpFactor((x + 0.5) / W, (y + 0.5) / H, aspect, intensity, smoothness, false), i = (y * W + x) * 4;
+      // multiply by lerp(colour, 1, f) == draw colour with alpha (1 - f) in 'multiply' over the frame
+      img.data[i] = Math.round(colour[0] * 255); img.data[i + 1] = Math.round(colour[1] * 255); img.data[i + 2] = Math.round(colour[2] * 255);
+      img.data[i + 3] = Math.round((1 - f) * 255);
+    }
+    darkCtx.putImageData(img, 0, 0);
+    g.save(); g.globalCompositeOperation = 'multiply'; g.imageSmoothingEnabled = true; g.drawImage(darkCanvas, 0, 0, w, h); g.restore();
+  }
+
+  const canvas = $('stage'), ctx = canvas.getContext('2d');
+  const glCanvas = $('glStage'), stagePerim = makePerimeter(glCanvas);
+  function render() {
+    const w = canvas.width, h = canvas.height, W = world;
+    const amp = W.shakeLeft > 0 ? W.shakeAmp * (W.shakeLeft / W.shakeDur) : 0;
+    // CustomCameraController.ApplyShake: Perlin-ish offset, ~10 Hz. 1 world unit at the chase distance ~ h/40 px.
+    const ox = amp * (h / 40) * Math.sin(W.t * 63.1) , oy = amp * (h / 40) * Math.cos(W.t * 57.7);
+    ctx.save(); ctx.translate(ox, oy);
+    const pos = drawBackdrop(ctx, w, h, backdrop, seed, W.t);
+    // tracer rounds from the rival toward the pilot while firing
+    if (W.auto && !W.hold) {
+      ctx.strokeStyle = css(PALETTE.ruby.rim, 0.85); ctx.lineWidth = Math.max(1, h / 450);
+      for (let i = 0; i < 3; i++) { const f = ((W.t * 2.3 + i / 3) % 1); const x = pos.rx + (w * 0.5 - pos.rx) * f, y = pos.ry + (h * 0.66 - pos.ry) * f; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + (w * 0.5 - pos.rx) * 0.04, y + (h * 0.66 - pos.ry) * 0.04); ctx.stroke(); }
+    }
+    for (const f of W.flashes) { const a = 1 - (W.t - f.t) / 0.25; ctx.fillStyle = 'rgba(255,240,220,' + (0.7 * a) + ')'; ctx.beginPath(); ctx.arc(w * 0.5, h * 0.66, h / 30 * (f.kind === 'bullet' ? 1 : 2.4), 0, 7); ctx.fill(); }
+    ctx.restore();
+    const drive = smooth(Math.max(0, Math.min(1, W.weight)));
+    if (drive > 0.0001) {
+      drawDarken(ctx, w, h, P.vignetteDarken * drive, P.vignetteSmoothness, [0, 0, 0]);
+      if (P.vignetteIntensity > 0) {   // SilenceScreenFeedback: no 2D edge at strength 0, not even the hit flare
+        bakeMask(w / h, P, W.depth);
+        const b = MASK.breathe(W.t, P.vignetteBreatheDepth, P.vignetteBreatheHz);
+        ctx.save(); ctx.globalAlpha = MASK.opacity(1, drive, P.vignetteIntensity, b, W.pulse * drive); ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(maskCanvas, 0, 0, w, h); ctx.restore();
+      }
+    }
+    const perimOn = P.perimeterAmount > 0 && stagePerim.ok;
+    glCanvas.hidden = !perimOn;
+    if (perimOn) stagePerim.draw(canvas, w, h, P, { t: W.t, drive, depth: W.depth, pulse: W.pulse });
+    $('hud').textContent = 'silenced ' + W.left.toFixed(1) + ' s   depth ' + W.depth.toFixed(2) + '   edge ' + drive.toFixed(2) + '   flare ' + W.pulse.toFixed(2)
+      + '\nhits ' + W.hits + '   onsets ' + W.onsets + '   scene ' + BACKDROPS.find((x) => x.key === backdrop).name + (paused ? '   [paused]' : '')
+      + (P.perimeterAmount > 0 && !stagePerim.ok ? '\n3D perimeter unavailable here (' + stagePerim.why + ')' : '');
+    $('hud').style.whiteSpace = 'pre';
+  }
+
+  // ================= the yardstick: does the edge READ, and does it keep the centre clear? =================
+  // Scored on a fixed 480 x 270 frame, at full weight, breathing at its peak, no flare. Per scene: the mean
+  // OKLab colour difference x100 the effect makes in the outer band (12% of the height in from every edge)
+  // and in the centre box (the middle 40% x 40%), and the red it adds at the edge. The backdrop is drawn by
+  // the same deterministic painter the stage uses (t = 0).
+  const SW = 480, SH = 270, scoreCanvas = document.createElement('canvas'); scoreCanvas.width = SW; scoreCanvas.height = SH;
+  const scoreCtx = scoreCanvas.getContext('2d', { willReadFrequently: true });
+  const backdropCache = {};
+  function backdropPixels(kind, sd) {
+    const k = kind + ':' + sd;
+    if (!backdropCache[k]) { drawBackdrop(scoreCtx, SW, SH, kind, sd, 0); backdropCache[k] = scoreCtx.getImageData(0, 0, SW, SH).data.slice(); }
+    return backdropCache[k];
+  }
+  const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  function oklab(r, g, b) {
+    r = lin(r); g = lin(g); b = lin(b);
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s];
+  }
+  // One variant = settings plus an optional legacy URP-red pass (Round 0, the cut that showed nothing).
+  // One pixel of the 2D composite: the legacy URP-red pass, the black darkening, then the edge overlay.
+  function compositePixel(src, i, u, v, p, legacy, aspect, s, col, op) {
+    let r = src[i] / 255, g = src[i + 1] / 255, b = src[i + 2] / 255;
+    if (legacy) { const f = urpFactor(u, 1 - v, aspect, legacy.intensity, legacy.smoothness, false); r *= legacy.color[0] + (1 - legacy.color[0]) * f; g *= legacy.color[1] + (1 - legacy.color[1]) * f; b *= legacy.color[2] + (1 - legacy.color[2]) * f; }
+    if (p.vignetteDarken > 0) { const f = urpFactor(u, 1 - v, aspect, p.vignetteDarken, p.vignetteSmoothness, false); r *= f; g *= f; b *= f; }
+    const a = op > 0 ? MASK.alpha(u, v, aspect, s) * op : 0;
+    if (a > 0) { r += (col[0] - r) * a; g += (col[1] - g) * a; b += (col[2] - b) * a; }
+    return [r, g, b];
+  }
+  const frameCanvas = document.createElement('canvas'); frameCanvas.width = SW; frameCanvas.height = SH;
+  const frameCtx = frameCanvas.getContext('2d');
+  const SCORE_DEPTH = 1;   // scored at full depth: the most a look ever covers
+  const scorePerim = makePerimeter(Object.assign(document.createElement('canvas'), { width: SW, height: SH }));
+  function compositeScore(p, legacy, kind, sd) {
+    const src = backdropPixels(kind, sd), aspect = SW / SH, s = shapeOf(p, SCORE_DEPTH), col = edgeColour(p);
+    const op = MASK.opacity(1, 1, p.vignetteIntensity, 1, 0);
+    // A perimeter look: the 2D composite of the whole frame goes through the same WebGL passes the stage draws
+    // (t = 0, full silence, no flare), and the measure reads what comes back.
+    let out = null;
+    if (p.perimeterAmount > 0) {
+      if (!scorePerim.ok) return null;
+      const img = frameCtx.createImageData(SW, SH);
+      for (let y = 0; y < SH; y++) for (let x = 0; x < SW; x++) {
+        const i = (y * SW + x) * 4, c = compositePixel(src, i, (x + 0.5) / SW, 1 - (y + 0.5) / SH, p, legacy, aspect, s, col, op);
+        img.data[i] = Math.round(c[0] * 255); img.data[i + 1] = Math.round(c[1] * 255); img.data[i + 2] = Math.round(c[2] * 255); img.data[i + 3] = 255;
+      }
+      frameCtx.putImageData(img, 0, 0);
+      scorePerim.draw(frameCanvas, SW, SH, p, { t: 0, drive: 1, depth: SCORE_DEPTH, pulse: 0 });
+      out = scorePerim.read(SW, SH);
+    }
+    let edgeSum = 0, edgeN = 0, midSum = 0, midN = 0, redSum = 0;
+    const band = Math.round(SH * 0.12), cx0 = SW * 0.3, cx1 = SW * 0.7, cy0 = SH * 0.3, cy1 = SH * 0.7;
+    for (let y = 0; y < SH; y += 2) for (let x = 0; x < SW; x += 2) {
+      const inEdge = x < band || y < band || x >= SW - band || y >= SH - band, inMid = x >= cx0 && x < cx1 && y >= cy0 && y < cy1;
+      if (!inEdge && !inMid) continue;
+      const i = (y * SW + x) * 4, u = (x + 0.5) / SW, v = 1 - (y + 0.5) / SH;
+      const r0 = src[i] / 255, g0 = src[i + 1] / 255, b0 = src[i + 2] / 255;
+      let r, g, b;
+      if (out) { const j = ((SH - 1 - y) * SW + x) * 4; r = out[j] / 255; g = out[j + 1] / 255; b = out[j + 2] / 255; }
+      else [r, g, b] = compositePixel(src, i, u, v, p, legacy, aspect, s, col, op);
+      const A = oklab(r0, g0, b0), B = oklab(r, g, b), dE = 100 * Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
+      if (inEdge) { edgeSum += dE; edgeN++; redSum += Math.max(0, (r - Math.max(g, b)) - (r0 - Math.max(g0, b0))); }
+      if (inMid) { midSum += dE; midN++; }
+    }
+    return { edge: edgeSum / Math.max(1, edgeN), mid: midSum / Math.max(1, midN), red: redSum / Math.max(1, edgeN) };
+  }
+  // Baselines first: the effect OFF (a negative control: every column must read 0) and Round 0 (URP red, the
+  // cut Garrett could not see - the yardstick must score it near the just-noticeable difference on open space, or it is not measuring sight).
+  // Round 1's shipped 2D edge (overtuned) - superseded by the perimeter on 2026-10-21 ("instead of a 2d effect").
+  const R1_EDGE = { vignetteIntensity: 0.75, vignetteDarken: 0.3, perimeterAmount: 0, vignetteStyle: 0, vignetteFacets: 10, vignetteRoundness: 0.25,
+    vignetteInner: 0.55, vignetteDeepInner: 0.55, vignetteFeather: 0.5, vignetteRimStrength: 0.35, vignetteRimWidth: 0.04 };
+  // Round 3's shipped look (the pull, no 2D edge, no deepening), kept to compare.
+  const R3_PULL = { vignetteIntensity: 0, perimeterCount: 110, perimeterSize: 0.34, perimeterDeepSize: 0.34, perimeterReach: 0.12, perimeterDeepReach: 0.12 };
+  const OFF = { vignetteIntensity: 0, vignetteDarken: 0, vignetteRimStrength: 0, perimeterAmount: 0 };
+  const VARIANTS = [
+    { name: 'Off (control)', v: OFF },
+    { name: 'Round 0: URP red multiply', v: OFF, legacy: { intensity: 0.26, smoothness: 0.55, color: [0.75, 0, 0] } },
+    { name: 'Round 1: 2D edge (overtuned)', v: R1_EDGE },
+    { name: 'Shipped: thin pull + edge, deepens with silence', v: {} },
+    { name: 'Round 3: the pull, no edge', v: R3_PULL },
+    { name: 'Undertow (strong pull)', v: { ...R3_PULL, perimeterPull: 0.18, perimeterPullDrift: 0.25, perimeterWarp: 0.12, perimeterTwist: 1 } },
+    { name: 'Shattered mirror', v: { ...R3_PULL, perimeterCount: 150, perimeterSize: 0.28, perimeterRefraction: 0.22, perimeterTwist: 1, perimeterEdgeGlow: 0.35, perimeterTint: 0.15 } },
+    { name: 'Broken trail (prism slabs)', v: { ...R3_PULL, perimeterShape: 1, perimeterCount: 90, perimeterSize: 0.3, perimeterSpin: 0.6 } },
+    { name: 'Negative space (inverted)', v: { ...R3_PULL, perimeterInvert: 1, perimeterFill: 0.05, perimeterTint: 0.5 } },
+    { name: 'Tear (warp + glitch)', v: { ...R3_PULL, perimeterWarp: 0.14, perimeterGlitch: 0.15, perimeterAberration: 0.03 } },
+    { name: 'Round 2: crystals from the edge', v: { vignetteIntensity: 0, perimeterDeepSize: 0.26, perimeterDeepReach: 0.26, perimeterTipFade: 0, perimeterStreak: 0, perimeterCount: 22, perimeterSize: 0.26, perimeterReach: 0.26, perimeterSpin: 0.5, perimeterRefraction: 0.06, perimeterTwist: 0.5, perimeterAberration: 0.006, perimeterTint: 0.15, perimeterRimGlow: 1.2, perimeterEdgeGlow: 0.8, perimeterFill: 0.4, perimeterOpacity: 0.9, perimeterWarp: 0.03, perimeterGlitch: 0.05, perimeterPull: 0 } },
+    { name: 'Round 3: pull + 2D edge', v: { ...R3_PULL, vignetteIntensity: 0.4, vignetteStyle: 0, vignetteFacets: 10, vignetteRoundness: 0.25, vignetteInner: 0.7, vignetteDeepInner: 0.7, vignetteFeather: 0.5, vignetteRimStrength: 0.35, vignetteRimWidth: 0.04 } },
+    { name: 'Hairline (very thin, very deep)', v: { vignetteInner: 0.975, vignetteFeather: 0.04, perimeterSize: 0.06, perimeterReach: 0.01, perimeterDeepSize: 0.45, perimeterDeepReach: 0.28, vignetteDeepInner: 0.45 } },
+    { name: 'Soft oval edge', v: { vignetteStyle: 0, vignetteRoundness: 0.25, vignetteInner: 0.95, vignetteFeather: 0.15, vignetteDeepInner: 0.6 } },
+    { name: 'Yours (current settings)', v: null },
+    // Archive: round 1's 2D looks, one click away (not scored).
+    { name: 'Ember (subtle)', archive: true, v: Object.assign({}, R1_EDGE, { vignetteIntensity: 0.45, vignetteInner: 0.7, vignetteFeather: 0.45, vignetteRimStrength: 0, vignetteDarken: 0.2 }) },
+    { name: 'Faceted window', archive: true, v: Object.assign({}, R1_EDGE, { vignetteStyle: 1, vignetteFacets: 10, vignetteInner: 0.62, vignetteFeather: 0.25, vignetteFill: 0.85, vignetteRimStrength: 0.6, vignetteRimWidth: 0.025 }) },
+    { name: 'Prism rim', archive: true, v: Object.assign({}, R1_EDGE, { vignetteInner: 0.75, vignetteFeather: 0.4, vignetteFill: 0.25, vignetteRimStrength: 0.9, vignetteRimWidth: 0.05 }) },
+    { name: 'Hard frame', archive: true, v: Object.assign({}, R1_EDGE, { vignetteIntensity: 0.9, vignetteInner: 0.45, vignetteFeather: 0.3, vignetteDarken: 0.5 }) },
+    { name: 'Breathing', archive: true, v: Object.assign({}, R1_EDGE, { vignetteBreatheDepth: 0.6, vignetteBreatheHz: 1.2 }) },
+  ];
+  const SCORE_SEEDS = [1, 2, 3];
+  function scoreVariant(base) {
+    const out = {};
+    for (const b of BACKDROPS) {
+      let e = 0, m = 0, r = 0;
+      for (const sd of SCORE_SEEDS) { const s = compositeScore(base.p, base.legacy, b.key, sd); if (!s) return null; e += s.edge; m += s.mid; r += s.red; }
+      out[b.key] = { edge: +(e / SCORE_SEEDS.length).toFixed(2), mid: +(m / SCORE_SEEDS.length).toFixed(2), red: +(r / SCORE_SEEDS.length).toFixed(3) };
+    }
+    return out;
+  }
+  function runBatch() {
+    const rows = [];
+    for (const va of VARIANTS) {
+      if (va.archive) continue;
+      const p = Object.assign({}, va.v === null ? P : SHIPPED, va.v || {});
+      const s = scoreVariant({ p, legacy: va.legacy });
+      if (!s) { rows.push({ variant: va.name, edgeSpace: null, edgeBright: null, edgeDanger: null, centre: null, redSpace: null }); continue; }
+      rows.push({ variant: va.name, edgeSpace: s.space.edge, edgeBright: s.bright.edge, edgeDanger: s.danger.edge,
+        centre: +((s.space.mid + s.bright.mid + s.danger.mid) / 3).toFixed(2), redSpace: s.space.red });
+    }
+    return rows;
+  }
+  function score() { const s = scoreVariant({ p: Object.assign({}, P) }); if (!s) return null; return { edgeSpace: s.space.edge, edgeBright: s.bright.edge, edgeDanger: s.danger.edge, centre: +((s.space.mid + s.bright.mid + s.danger.mid) / 3).toFixed(2), t: +world.t.toFixed(2) }; }
+
+  // ================= platform =================
+  function detectPlatform() {
+    const host = window.__labHost || {}, ua = navigator.userAgent || '';
+    const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+    return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+  }
+  const PLATFORM = detectPlatform();
+  $('platform').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+
+  // ================= UI =================
+  const outputs = {};
+  function fmt(v, step) { const dec = step < 1 ? Math.min(3, String(step).split('.')[1].length) : 0; return Number(v).toFixed(dec); }
+  function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+  function refreshDiff() {
+    const n = Object.keys(diffOnly()).length;
+    $('diff').textContent = n ? n + ' setting' + (n > 1 ? 's differ' : ' differs') + ' from shipped' : 'shipped numbers';
+    for (const [, key, , , step] of SPEC) {
+      const o = outputs[key]; if (!o) continue;
+      o.out.textContent = fmt(P[key], step); o.inp.value = P[key];
+      const changed = Math.abs(P[key] - SHIPPED[key]) > 1e-9;
+      o.out.classList.toggle('changed', changed);
+      o.out.title = 'shipped ' + SHIPPED[key] + ' · yours ' + P[key];
+    }
+  }
+  function setParam(key, v) { P[key] = v; lsSet(LS_KEY, diffOnly()); refreshDiff(); }
+  function applyPreset(v) { Object.assign(P, SHIPPED, v || {}); lsSet(LS_KEY, diffOnly()); refreshDiff(); if (world.weight < 0.5) hit('shockwave'); }
+
+  function makeTabs(barId, bodyId, tabs, storeKey) {
+    const bar = $(barId), body = $(bodyId), sel = lsGet(storeKey, tabs[0].name);
+    function show(name) {
+      for (const b of bar.children) b.setAttribute('aria-selected', String(b.dataset.name === name));
+      body.replaceChildren(tabs.find((t) => t.name === name).build()); lsSet(storeKey, name);
+    }
+    for (const t of tabs) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
+    show(tabs.some((t) => t.name === sel) ? sel : tabs[0].name);
+  }
+  function presetsBox() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="eyebrow">Looks</p><div class="presets" id="lookGrid"></div><p class="eyebrow">Archive: round 1, the 2D edge</p><div class="presets" id="archiveGrid"></div><p class="hint">A look loads its settings over the shipped ones and lands a hit so you see it. Shipped = what the game draws today.</p>';
+    for (const va of VARIANTS) {
+      if (va.v === null || va.legacy || /control/.test(va.name)) continue;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = va.name; b.onclick = () => applyPreset(va.v);
+      box.querySelector(va.archive ? '#archiveGrid' : '#lookGrid').appendChild(b);
+    }
+    return box;
+  }
+  function sliderGroup(group) {
+    const box = document.createElement('div');
+    if (group === 'Perimeter') box.appendChild(presetsBox());
+    for (const [g, key, lo, hi, step, label, tip] of SPEC) {
+      if (g !== group) continue;
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div>';
+      const id = 'p_' + key;
+      row.querySelector('label').htmlFor = id; row.querySelector('label span').textContent = label; row.querySelector('.key').textContent = key; row.querySelector('.tip').textContent = tip;
+      const inp = row.querySelector('input'); inp.id = id; Object.assign(inp, { min: lo, max: hi, step, value: P[key] });
+      inp.oninput = () => setParam(key, parseFloat(inp.value));
+      outputs[key] = { out: row.querySelector('output'), inp };
+      box.appendChild(row);
+    }
+    queueMicrotask(refreshDiff);
+    return box;
+  }
+  const groups = [...new Set(SPEC.map((r) => r[0]))];
+  makeTabs('dockTabs', 'dockBody', groups.map((g) => ({ name: g, build: () => sliderGroup(g) })), 'lab:' + LAB.name + ':dock');
+
+  // ================= decision log =================
+  let db = null, me = '', remote = [], localLog = lsGet('lab:' + LAB.name + ':log', []);
+  function snapshot() { return { round: LAB.round, seed, backdrop, changed: diffOnly() }; }
+  async function record(topic, choice, note) {
+    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+    if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through to this browser */ } }
+    localLog.push(doc); lsSet('lab:' + LAB.name + ':log', localLog); return 'local';
+  }
+  function logPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint" id="logStatus"></p><div class="flex"><input type="text" id="logTopic" placeholder="Topic" value="Silence vignette look" style="max-width:260px"><button class="btn primary" id="logSave" type="button">Record decision</button><button class="btn" id="logCopy" type="button">Copy log</button></div><textarea id="logChoice" rows="2" style="margin-top:6px" placeholder="What you picked and why"></textarea><div class="tablewrap"><table id="logTable"></table></div>';
+    const status = box.querySelector('#logStatus');
+    status.textContent = db ? 'Shared log: saved with the lab and read by Claude at the start of the next round. Your current settings are attached.' : 'Kept in this browser (Copy log to send it). Your current settings are attached.';
+    status.className = db ? 'status-ok' : 'status-warn';
+    box.querySelector('#logChoice').value = Object.keys(diffOnly()).length ? 'This look, with these settings.' : 'The shipped look.';
+    box.querySelector('#logSave').onclick = async () => { const where = await record(box.querySelector('#logTopic').value || 'Silence vignette look', box.querySelector('#logChoice').value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; renderLog(box); };
+    box.querySelector('#logCopy').onclick = () => {
+      const t = remote.concat(localLog).map((d) => new Date(d.createdAt).toISOString() + ' · ' + d.topic + ': ' + d.choice + ' ' + JSON.stringify(d.settings)).join('\n');
+      try { navigator.clipboard.writeText(t).catch(() => {}); } catch (e) { /* the viewer refused the clipboard */ }
+    };
+    renderLog(box);
+    return box;
+  }
+  function renderLog(box) {
+    const t = (box || document).querySelector('#logTable'); if (!t) return;
+    const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    t.innerHTML = '<tr><th>When</th><th>Topic</th><th>Decision</th><th>Settings</th></tr>';
+    for (const d of rows) { const tr = document.createElement('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice, Object.keys((d.settings && d.settings.changed) || {}).length + ' changed']) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); } t.appendChild(tr); }
+  }
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) return;
+    try { db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; }); } catch (e) { db = null; }
+  })();
+
+  function scorecardPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<div class="flex"><button class="btn primary" id="runBatch" type="button">Score the looks</button><span class="hint">Edge = how much the edge changes the picture (OKLab difference x100, higher reads more). Centre = how much it touches the middle of the screen (lower keeps play clear). Seeds 1-3, full strength, at the peak of each breath (breathing is judged by eye).</span></div><p class="hint" id="yard"></p><div class="tablewrap"><table id="scoreTable"></table></div>';
+    box.querySelector('#runBatch').onclick = () => {
+      const rows = runBatch(), t = box.querySelector('#scoreTable');
+      const best = (k, hi) => (hi ? Math.max : Math.min)(...rows.filter((r) => !/control|Round 0/.test(r.variant) && r[k] !== null).map((r) => r[k]));
+      t.innerHTML = '<tr><th>Look</th><th>Edge: open space</th><th>Edge: bright cell</th><th>Edge: danger prisms</th><th>Centre</th><th>Red added (space)</th></tr>';
+      const hiKeys = { edgeSpace: 1, edgeBright: 1, edgeDanger: 1, redSpace: 1 }, bests = {};
+      for (const k of ['edgeSpace', 'edgeBright', 'edgeDanger', 'centre', 'redSpace']) bests[k] = best(k, !!hiKeys[k]);
+      for (const r of rows) {
+        const tr = document.createElement('tr'), cells = [r.variant, r.edgeSpace, r.edgeBright, r.edgeDanger, r.centre, r.redSpace];
+        cells.forEach((v, i) => { const td = document.createElement('td'); td.textContent = v === null ? 'n/a' : v; if (i) td.className = 'num'; tr.appendChild(td); });
+        ['edgeSpace', 'edgeBright', 'edgeDanger', 'centre', 'redSpace'].forEach((k, i) => { if (!/control|Round 0/.test(r.variant) && r[k] === bests[k]) tr.children[i + 1].classList.add('best'); });
+        if (/Round 0/.test(r.variant)) tr.children[1].classList.add('bad');
+        t.appendChild(tr);
+      }
+      const off = rows[0], r0 = rows[1], sh = rows.find((r) => /^Shipped/.test(r.variant));
+      const ok = off.edgeSpace === 0 && off.centre === 0 && r0.edgeSpace < 4 && sh.edgeSpace !== null && sh.edgeSpace > 2 * Math.max(0.1, r0.edgeSpace);
+      box.querySelector('#yard').textContent = (ok ? 'Yardstick check passed: ' : 'Yardstick check FAILED: ') + 'Off reads ' + off.edgeSpace + ' / ' + off.centre + ' (must be 0), Round 0 reads ' + r0.edgeSpace + ' on open space (must be under 4, near the just-noticeable difference of about 2: nobody saw it), Shipped reads ' + sh.edgeSpace + ' (must be over twice Round 0; the band average favours a full frame, so a sparse moving perimeter is judged by eye too).';
+      box.querySelector('#yard').className = 'hint ' + (ok ? 'status-ok' : 'status-warn');
+    };
+    return box;
+  }
+  function exportPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint">Your settings as the lines of Assets/Resources/VesselSilenceConfig.asset that would change. Record a decision and Claude ports it; this is for reading.</p><pre class="export" id="exportText"></pre><button class="btn" id="exportCopy" type="button">Copy lines</button>';
+    const d = diffOnly(), keys = Object.keys(d).filter((k) => !k.startsWith('lab'));
+    box.querySelector('#exportText').textContent = keys.length ? keys.map((k) => '  ' + k + ': ' + d[k]).join('\n') : '(no change from the shipped asset)';
+    box.querySelector('#exportCopy').onclick = () => { try { navigator.clipboard.writeText(box.querySelector('#exportText').textContent).catch(() => {}); } catch (e) { /* refused */ } };
+    return box;
+  }
+  function aboutPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p id="aboutLine"></p>'
+      + '<p class="hint"><strong>Why an overlay.</strong> URP\'s Vignette multiplies the frame by its colour, so a red one only darkens. Over the arena\'s near-black space that is invisible; Round 0 shipped exactly that and Garrett saw nothing in Dog Fight. The game now draws the edge as an overlay in the palette\'s danger colour (it adds colour), with an optional black URP darkening under it.</p>'
+      + '<p class="hint"><strong>What this lab does NOT model.</strong> The scene is a 2D stand-in drawn in the shipped palette, not the game\'s 3D render: no bloom, no tonemapping, no HDR, no HUD. The URP darkening uses URP 17\'s formula without its colour grading. The shake is an approximate pixel offset (1 world unit at the chase camera taken as 1/40 of the height). The rival\'s hits are a seeded schedule, not an AI. Phones draw the same overlay; the game\'s mobile render path is not modelled.</p>'
+      + '<p class="hint"><strong>The 3D perimeter (round 2).</strong> The shards are real 3D facets drawn the way the game draws them: the frame is copied, warped near the edges, and every shard samples that copy, bent by its facet\'s normal, turned by its own twist and torn by hits. Their layout and geometry are the game\'s own code (SilencePerimeter.cs, held by a parity gate). Not modelled: the game\'s camera field of view (the lab uses 60 degrees), HDR and bloom on the danger lines, anything nearer the camera than the shards (the game draws them over everything), and the extra cost of the frame copy on a phone.</p>';
+    box.querySelector('#aboutLine').textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up: ' + LAB.doc + ' · the mask is SilenceVignetteMask.cs, line for line';
+    return box;
+  }
+  makeTabs('bottomTabs', 'bottomBody', [{ name: 'Scorecard', build: scorecardPanel }, { name: 'Decisions', build: logPanel }, { name: 'To Unity', build: exportPanel }, { name: 'About', build: aboutPanel }], 'lab:' + LAB.name + ':bottom');
+
+  // ================= header, stage buttons =================
+  $('title').textContent = LAB.name; $('meta').textContent = 'round ' + LAB.round;
+  for (const b of BACKDROPS) { const o = document.createElement('option'); o.value = b.key; o.textContent = b.name; $('backdrop').appendChild(o); }
+  $('backdrop').value = backdrop;
+  $('backdrop').onchange = () => { backdrop = $('backdrop').value; lsSet('lab:' + LAB.name + ':backdrop', backdrop); };
+  let paused = false;
+  $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; };
+  $('resetAll').onclick = () => applyPreset({});
+  $('hitBullet').onclick = () => hit('bullet');
+  $('hitRocket').onclick = () => hit('shockwave');
+  function silenceFor(seconds) { const onset = world.weight <= 0.0001; world.left = Math.min(P.maxSeconds || seconds, Math.max(world.left, seconds)); if (onset) { world.onsets++; shake(P.onsetShakeIntensity, P.onsetShakeSeconds); } }
+  $('silence4').onclick = () => silenceFor(4);
+  $('silence8').onclick = () => silenceFor(8);
+  function syncToggles() { $('autoRival').classList.toggle('on', world.auto); $('hold').classList.toggle('on', world.hold); }
+  $('autoRival').onclick = () => { world.auto = !world.auto; syncToggles(); };
+  $('hold').onclick = () => { world.hold = !world.hold; syncToggles(); };
+
+  // ================= sizing + loop =================
+  function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } }
+  addEventListener('resize', resize);
+  let manualClock = false, last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+    if (!manualClock) { resize(); if (!paused) simStep(dt); render(); }
+    requestAnimationFrame(frame);
+  }
+  reset(); syncToggles(); resize(); refreshDiff(); render(); requestAnimationFrame(frame);
+
+  window.__lab = {
+    LAB, SHIPPED, SPEC, P, PLATFORM, VARIANTS, MASK, PERIM, PALETTE, DANGER,
+    get perimeterOk() { return stagePerim.ok; },
+    set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+    tick(dt, n) { dt = dt || 1 / 60; n = n || 1; for (let i = 0; i < n; i++) simStep(dt); resize(); render(); },
+    reset, score, runBatch, setParam, record, hit,
+    state: () => ({ t: world.t, seed, left: world.left, weight: world.weight, depth: world.depth, pulse: world.pulse, hits: world.hits, onsets: world.onsets, backdrop }),
+  };
+})();
+</script>
+</body>
+</html>

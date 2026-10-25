@@ -10,7 +10,7 @@ using UnityEngine;
 namespace CosmicShore.Utility.AITraining.Editor
 {
     /// <summary>
-    /// FrogletTools / AI Training. Keeper window (re-runnable). WRITER: Quick Setup
+    /// FrogletTools / AI / AI Training. Keeper window (re-runnable). WRITER: Quick Setup
     /// creates the asset set under Assets/_SO_Assets/AI Training when it is missing,
     /// and Configure / Deploy / import write the scenario, control, and archive.
     /// Those writes are ledger-recorded and the ship panel is drawn. Do not retire
@@ -21,7 +21,7 @@ namespace CosmicShore.Utility.AITraining.Editor
     /// </summary>
     public class TrainingEditorWindow : EditorWindow
     {
-        enum Tab { Configure, Schedule, Inspect, Archive, Deploy }
+        enum Tab { Configure = 0, Schedule = 1, Inspect = 2, Archive = 3, Deploy = 4 }
         Tab _tab = Tab.Configure;
 
         TrainingScenarioSO _scenario;
@@ -55,8 +55,8 @@ namespace CosmicShore.Utility.AITraining.Editor
             ToolScriptPaths = new[] { "Assets/_Scripts/Utility/AITraining/Editor/TrainingEditorWindow.cs" },
         };
 
-        [MenuItem("FrogletTools/AI Training", false, 21)]
-        [FrogletTool(FrogletToolCategory.GameModes, Importance = 4,
+        [MenuItem("FrogletTools/AI/AI Training", false, 120)]
+        [FrogletTool(FrogletToolCategory.Ai, Importance = 4,
             Description = "Learn a mode overnight, inspect the best pilot, and play against the archive.",
             DocPath = "Assets/_Scripts/Utility/AITraining/README.md#operator")]
         public static void Open()
@@ -880,8 +880,8 @@ namespace CosmicShore.Utility.AITraining.Editor
                 FrogletToolChangeLedger.Record(ToolName, path);
         }
 
-        [MenuItem("FrogletTools/AI Training/Quick Setup", false, 22)]
-        [FrogletTool(FrogletToolCategory.GameModes, Importance = 3,
+        [MenuItem("FrogletTools/AI/AI Training Quick Setup", false, 121)]
+        [FrogletTool(FrogletToolCategory.Ai, Importance = 3,
             Description = "Create the default AI training assets without entering Play mode.",
             DocPath = "Assets/_Scripts/Utility/AITraining/README.md#operator")]
         public static void QuickSetupMenuItem() => RunQuickSetup(focusWindow: true);

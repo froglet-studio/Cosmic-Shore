@@ -125,6 +125,12 @@ namespace CosmicShore.Engine.InputSystem
         public override object ReadValueAsObject() => ReadValue();
     }
 
+}
+
+// The controls live where Unity's do (UnityEngine.InputSystem.Controls), so a game file that names
+// one fully qualified - UnityEngine.InputSystem.Controls.ButtonControl - compiles unchanged.
+namespace CosmicShore.Engine.InputSystem.Controls
+{
     /// <summary>A single float axis.</summary>
     public class AxisControl : InputControl<float>
     {
@@ -332,6 +338,10 @@ namespace CosmicShore.Engine.InputSystem
         public override double ReadValue() => value;
     }
 
+}
+
+namespace CosmicShore.Engine.InputSystem
+{
     // ── Devices ──────────────────────────────────────────────────────────────
 
     [Serializable]
@@ -531,10 +541,47 @@ namespace CosmicShore.Engine.InputSystem
             _ => throw new ArgumentOutOfRangeException(nameof(button)),
         };
 
-        public void SetMotorSpeeds(float lowFrequency, float highFrequency) => MotorSpeeds = (lowFrequency, highFrequency);
-        public void PauseHaptics() { }
-        public void ResumeHaptics() { }
-        public void ResetHaptics() => MotorSpeeds = (0f, 0f);
+        /// <summary>
+        /// Where this pad's motors are driven: set by the player's input backend when the platform can
+        /// rumble the device (XInput on Windows, SDL's rumble on phones), called with each change as
+        /// (low, high) in [0, 1]. Null on a pad with no motors the engine can reach. Not Unity API.
+        /// </summary>
+        public Action<float, float> MotorOutput { get; set; }
+
+        bool _hapticsPaused;
+
+        /// <summary>How many times the motors went from still to running (diagnostics: the control port's state). Not Unity API.</summary>
+        public int MotorStarts { get; private set; }
+
+        public void SetMotorSpeeds(float lowFrequency, float highFrequency)
+        {
+            bool wasOff = MotorSpeeds.low <= 0f && MotorSpeeds.high <= 0f;
+            MotorSpeeds = (lowFrequency, highFrequency);
+            if (wasOff && (lowFrequency > 0f || highFrequency > 0f)) MotorStarts++;
+            if (!_hapticsPaused) Drive(lowFrequency, highFrequency);
+        }
+
+        /// <summary>Stops the motors but keeps their speeds for <see cref="ResumeHaptics"/>, as Unity's does.</summary>
+        public void PauseHaptics()
+        {
+            _hapticsPaused = true;
+            MotorOutput?.Invoke(0f, 0f);
+        }
+
+        public void ResumeHaptics()
+        {
+            _hapticsPaused = false;
+            Drive(MotorSpeeds.low, MotorSpeeds.high);
+        }
+
+        void Drive(float low, float high) => MotorOutput?.Invoke(Math.Clamp(low, 0f, 1f), Math.Clamp(high, 0f, 1f));
+
+        public void ResetHaptics()
+        {
+            _hapticsPaused = false;
+            MotorSpeeds = (0f, 0f);
+            MotorOutput?.Invoke(0f, 0f);
+        }
 
         public override void MakeCurrent() => current = this;
         internal override void OnAdded() { if (!s_All.Contains(this)) s_All.Add(this); }
@@ -577,6 +624,16 @@ namespace CosmicShore.Engine.InputSystem
         public static AttitudeSensor current { get; set; }
         public QuaternionControl attitude { get; }
         public AttitudeSensor() : base("AttitudeSensor") { attitude = AddChild(new QuaternionControl { name = "attitude" }); }
+        public override void MakeCurrent() => current = this;
+    }
+
+    /// <summary>Gravity in the device's frame, the OS's fused estimate (UnityEngine.InputSystem.GravitySensor). No
+    /// desktop backend feeds it, so <see cref="current"/> stays null there and the game falls back to the accelerometer.</summary>
+    public class GravitySensor : Sensor
+    {
+        public static GravitySensor current { get; set; }
+        public Vector3Control gravity { get; }
+        public GravitySensor() : base("GravitySensor") { gravity = AddChild(new Vector3Control { name = "gravity" }); }
         public override void MakeCurrent() => current = this;
     }
 
@@ -668,8 +725,8 @@ namespace CosmicShore.Engine.InputSystem
 
         public static void ResetDevice(InputDevice device, bool alsoResetDontResetControls = false) { }
         public static void ResetHaptics() { foreach (var d in s_Devices) if (d is Gamepad g) g.ResetHaptics(); }
-        public static void PauseHaptics() { }
-        public static void ResumeHaptics() { }
+        public static void PauseHaptics() { foreach (var d in s_Devices) if (d is Gamepad g) g.PauseHaptics(); }
+        public static void ResumeHaptics() { foreach (var d in s_Devices) if (d is Gamepad g) g.ResumeHaptics(); }
 
         static readonly List<InputDevice> s_Frame = new();
 
@@ -680,7 +737,7 @@ namespace CosmicShore.Engine.InputSystem
             s_Frame.AddRange(s_Devices);
             void Add(InputDevice d) { if (d != null && !s_Frame.Contains(d)) s_Frame.Add(d); }
             Add(Keyboard.current); Add(Mouse.current); Add(Gamepad.current); Add(Touchscreen.current);
-            Add(Pointer.current); Add(Accelerometer.current); Add(AttitudeSensor.current);
+            Add(Pointer.current); Add(Accelerometer.current); Add(AttitudeSensor.current); Add(GravitySensor.current);
             return s_Frame;
         }
 
@@ -700,7 +757,7 @@ namespace CosmicShore.Engine.InputSystem
             foreach (var d in s_Devices.ToArray()) RemoveDevice(d);
             Keyboard.current = null; Mouse.current = null; Gamepad.current = null;
             Touchscreen.current = null; Pointer.current = null;
-            Accelerometer.current = null; AttitudeSensor.current = null;
+            Accelerometer.current = null; AttitudeSensor.current = null; GravitySensor.current = null;
             InputActionState.Reset();
         }
     }
@@ -726,6 +783,8 @@ namespace CosmicShore.Engine.InputSystem.Controls
         public Vector2Control startPosition { get; }
         public IntegerControl touchId { get; }
         public AxisControl pressure { get; }
+        /// <summary>When the touch began, on the input clock in seconds (Unity's TouchControl.startTime).</summary>
+        public DoubleControl startTime { get; }
         public TouchPhase phase { get; set; }
         public bool isInProgress => phase is TouchPhase.Began or TouchPhase.Moved or TouchPhase.Stationary;
 
@@ -737,6 +796,7 @@ namespace CosmicShore.Engine.InputSystem.Controls
             startPosition = AddChild(new Vector2Control { name = "startPosition" });
             touchId = AddChild(new IntegerControl { name = "touchId" });
             pressure = AddChild(new AxisControl { name = "pressure" });
+            startTime = AddChild(new DoubleControl { name = "startTime" });
         }
 
         public override TouchState ReadValue() => new() { position = position.value, phase = phase, touchId = touchId.value };

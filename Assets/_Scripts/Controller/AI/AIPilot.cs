@@ -62,6 +62,15 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] bool ram;
         [SerializeField] bool drift;
+        [Tooltip("Never commit a drift slower than this (u/s), and let go of a commit drift that has fallen under it. " +
+                 "A hull whose drift holds its speed (the Dolphin's holdSpeedWhileDrifting) keeps the speed it drifted " +
+                 "at, so a commit at the start line held 0 u/s for a whole race: the hull never moved, its aim never " +
+                 "changed, and the drift was never let go (Regatta I2, 2026-10-25). Well under every hull's cruise.")]
+        [SerializeField, Min(0f)] float commitMinSpeed = 20f;
+        [Tooltip("On a hull whose drift keeps its speed, commit only once the speed is this share of the speed the " +
+                 "throttle is taking it to: up to speed, so the drift holds a race pace rather than a launch pace. " +
+                 "Also the ChargeBoost rule's peak (speed meets the falling target), so it never delays a re-drift there.")]
+        [SerializeField, Range(0f, 1f)] float commitUpToSpeedShare = 0.9f;
 
         [Header("Targeting")]
         [Tooltip("When true, AI targets enemy players instead of crystals/items (used for Joust)")]
@@ -132,19 +141,33 @@ namespace CosmicShore.Gameplay
                  "closing on. 0.5 is 60 degrees; 1 disables the guarantee.")]
         [SerializeField, Range(0f, 1f)] float breakOffClosingCosine = 0.5f;
         [Tooltip("Degrees swept around the objective, with no progress made, before the empirical " +
-                 "detector calls it an orbit. 540 is a lap and a half - enough that a wide but " +
-                 "genuine approach is never mistaken for one.")]
-        [SerializeField, Min(180f)] float orbitSweepDegrees = 540f;
+                 "detector calls it an orbit. 360 is ONE lap - the most a pilot may circle " +
+                 "something before it breaks off. A genuine approach still closes (the progress " +
+                 "gate below), so it is never mistaken for one.")]
+        [SerializeField, Min(180f)] float orbitSweepDegrees = 360f;
         [Tooltip("Closing to this fraction of the closest range achieved counts as real progress " +
                  "and clears the detector.")]
         [SerializeField, Range(0.1f, 0.999f)] float orbitProgressFraction = 0.9f;
-        [Tooltip("A range jump beyond this multiple of the closest approach is read as the " +
+        [Tooltip("A range jump beyond this multiple of the PREVIOUS FRAME's range is read as the " +
                  "objective having been REPLACED rather than as a manoeuvre, and resets the detector.")]
         [SerializeField, Min(1.05f)] float orbitTargetJumpFraction = 1.6f;
+        [Tooltip("Seconds a pilot leaves a crystal alone after giving up on it: either it circled " +
+                 "it for a full lap (the detector fired), or it already broke off it once and " +
+                 "would have to break off it AGAIN. Re-attacking the same spot from the same side " +
+                 "is what turned one orbit into four or five. Another eligible crystal is taken " +
+                 "instead; if it is the only one, the pilot keeps it and just re-attacks.")]
+        [SerializeField, Min(0f)] float orbitAbandonSeconds = 5f;
 
         /// <summary>
         /// Configure AI behavior at runtime (called after spawning for solo-play AI opponents).
         /// </summary>
+        /// <summary>The mode this pilot races in, once its game data is known (a hull's drive reads its mode's tuning).</summary>
+        public bool TryGetGameMode(out GameModes mode)
+        {
+            mode = gameData != null ? gameData.GameMode : default;
+            return gameData != null;
+        }
+
         public void ConfigureForGameMode(GameDataSO gameDataRef, bool shouldSeekPlayers, float skill)
         {
             gameData = gameDataRef;
@@ -159,12 +182,19 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] private ActionExecutorRegistry actionExecutorRegistry;
 
+        [Header("Boost")]
+        [Tooltip("When this hull's autopilot spends its speed resource - on straights toward the " +
+                 "objective, conserving it before turns. One asset per boost MECHANIC (hold, pellet, " +
+                 "drift-charge, skim ring, throttle dash); see AI/AI_BOOST.md. Empty = the hull flies " +
+                 "exactly as before (the Manta and Rhino boost through their own executors instead).")]
+        [SerializeField] AIBoostPolicySO boostPolicy;
+
         enum Corner 
         {
-            TopRight,
-            BottomRight,
-            BottomLeft,
-            TopLeft,
+            TopRight = 0,
+            BottomRight = 1,
+            BottomLeft = 2,
+            TopLeft = 3,
         };
 
         IVessel vessel;
@@ -175,11 +205,15 @@ namespace CosmicShore.Gameplay
         float _lastYawTarget;
         float _lastRollTarget;
 
-        RaycastHit _hit;
         float _maxDistance = 50f;
         float _maxDistanceSquared;
 
         Vector3 _targetPosition;
+
+        /// <summary>Where the pilot WANTS to be this frame (the objective, the mode's external
+        /// target, a chased vessel) — read-only, for an ability that must aim the way the AI is
+        /// going (the Stoat's autopilot sling). Steering may differ (the drift look target).</summary>
+        public Vector3 TargetPosition => _targetPosition;
         // Live opponent the AI is chasing in player-seek (Joust) mode. Chosen by the
         // UpdatePlayerTarget coroutine; Update() reads its current position every frame.
         Transform _targetVesselTransform;
@@ -203,6 +237,14 @@ namespace CosmicShore.Gameplay
         bool _extending;
         float _extendElapsed;
         OrbitDetector _orbitDetector;
+
+        // The objective this pilot last broke off from, so a SECOND break-off from the same one
+        // gives it up instead of re-attacking into the same orbit (see UpdateOrbitBreak), and the
+        // one it gave up and until when (honoured by UpdateCellContent).
+        CellItem _brokeOffObjective;
+        Vector3 _brokeOffPosition;
+        CellItem _abandonedObjective;
+        float _abandonedUntil;
 
         /// <summary>True while this pilot is flying a break-off instead of chasing its objective.</summary>
         public bool IsBreakingOrbit => _extending;
@@ -233,8 +275,113 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetExternalTargetProvider(Func<Vector3> provider) => _externalTargetProvider = provider;
 
+        // Set by the external target provider, for the frame it is sampled in: see MarkAimAsPathLead.
+        bool _aimIsPathLead;
+
+        /// <summary>
+        /// Called from inside the external target provider: the position it is returning this frame is a LEAD POINT on a
+        /// path (a look-ahead along a race line), not an objective to reach. Such a point stays a look-ahead in front, so
+        /// its range never falls and a lap of turning reads as an orbit; and on a corner it sits off the nose inside the
+        /// turning circle. The orbit break-off is therefore skipped for it, as it already is for a rail
+        /// (<see cref="UpdateOrbitBreak"/>). Regatta's race line, 2026-10-25: people's editor races showed every styled
+        /// AI hull breaking off its own line and swinging 500-1500 u wide (Tools/Build/regatta_rival_report.py), and the
+        /// offline model of the line (regatta_line_sim.py) broke off 3-22 times a race on every hull and course.
+        /// Cleared before every sample, so a provider that does not call it keeps the break-off.
+        /// </summary>
+        public void MarkAimAsPathLead() => _aimIsPathLead = true;
+
         /// <summary>Restores default crystal/player target seeking.</summary>
-        public void ClearExternalTargetProvider() => _externalTargetProvider = null;
+        public void ClearExternalTargetProvider()
+        {
+            _externalTargetProvider = null;
+            _nextLegProvider = null;
+            _objective = default;
+            _throttleFloor = 0f;
+        }
+
+        // Where the mode sends the pilot AFTER its current steering target, or null when it does not know.
+        Func<Vector3?> _nextLegProvider;
+
+        /// <summary>
+        /// Where the pilot flies AFTER the point <see cref="SetExternalTargetProvider"/> gives (the gate races: the
+        /// mouth after the approach point, the next ring after the mouth), or null when the mode does not know. Read only
+        /// by the boost driver, as <see cref="AIBoostContext.CornerDegrees"/>: how sharp the coming corner is, so a ramp
+        /// brakes as much as that corner needs (REGATTA_AI_ROADMAP.md: the one fact a Rhino lacked). Cleared with
+        /// <see cref="ClearExternalTargetProvider"/> and carried by <see cref="TakeModeHooksFrom"/>.
+        /// </summary>
+        public void SetNextLegProvider(Func<Vector3?> provider) => _nextLegProvider = provider;
+
+        // The least throttle a mode asks for (a race: full). The skill throttle still applies above it.
+        float _throttleFloor;
+
+        /// <summary>
+        /// The least throttle this pilot flies while the mode's hooks are installed, 0..1 (0 = none, the skill
+        /// throttle alone). A race asks for full: an AI holding 0.6 throttle in a race is slow by construction
+        /// (2026-10-14 Regatta audit: the Rhino cruised at about 19 u/s, the Dolphin at 54 against a human's 68).
+        /// Cleared with <see cref="ClearExternalTargetProvider"/> and carried by <see cref="TakeModeHooksFrom"/>.
+        /// </summary>
+        public void SetThrottleFloor(float floor) => _throttleFloor = Mathf.Clamp01(floor);
+
+        float SteeringThrottle => Mathf.Clamp(Mathf.Max(throttle, _throttleFloor), 0f, 1f);
+
+        /// <summary>What a mode's steering hook is doing for a pilot (<see cref="ObjectiveReport"/>).</summary>
+        public enum ObjectivePhase
+        {
+            None = 0,
+            Approach = 1,        // flying at the approach point before a ring
+            Through = 2,         // committed: flying through the ring's mouth
+            CrystalDetour = 3,   // a crystal on the way to the ring
+            NotNoticed = 4,      // difficulty: the ring is not noticed yet
+            Misjudged = 5,       // difficulty: the ring's mouth is misjudged
+            Override = 6,        // the mode's own aim (Regatta: an Urchin riding its rail)
+            Finished = 7,        // past the last ring
+        }
+
+        /// <summary>
+        /// What a mode's steering hook is doing for this pilot this frame, for a viewer (the Third Eye) - never read
+        /// by the pilot itself. The mode's provider fills it as it decides (<see cref="ReportObjective"/>). Value data
+        /// only, so reporting every frame allocates nothing; the viewer turns it into words.
+        /// </summary>
+        public struct ObjectiveReport
+        {
+            /// <summary>False until a mode reports.</summary>
+            public bool Has;
+            public ObjectivePhase Phase;
+            /// <summary>The thing the mode is after (a ring's centre, a crystal) - not the steering point.</summary>
+            public Vector3 Objective;
+            /// <summary>Ring on the course (0-based) and lap (1-based), or -1 when the mode has neither.</summary>
+            public int Ring, Lap;
+            /// <summary>True when the phase is a difficulty mistake (GateRaceHandicap): drawn in a warning colour.</summary>
+            public bool Mistake;
+        }
+
+        ObjectiveReport _objective;
+
+        /// <summary>The mode's last report for this pilot (see <see cref="ObjectiveReport"/>).</summary>
+        public ObjectiveReport Objective => _objective;
+
+        /// <summary>
+        /// Where the thing this pilot is AFTER is (a Regatta ring), else the point it steers for. A hull autopilot gauges
+        /// RANGE with this and bearing with <see cref="TargetPosition"/>: when a mode steers along a race line the
+        /// steering point always sits one look-ahead away, so a "how close is my target" question asked of it never comes
+        /// true (the Stoat's field autopilot never laid a pair; the Rhino and Dolphin drives never fired, 2026-10-17). A
+        /// difficulty mistake keeps the believed point: a pilot that has not noticed or has misjudged its ring must not
+        /// judge the true one. The one pilot-side read of the mode's report.
+        /// </summary>
+        public Vector3 ObjectivePosition => _objective.Has && !_objective.Mistake ? _objective.Objective : _targetPosition;
+
+        /// <summary>A mode's steering hook says what it is doing (presentation only, no allocation).</summary>
+        public void ReportObjective(ObjectivePhase phase, Vector3 objective, int ring = -1, int lap = -1) =>
+            _objective = new ObjectiveReport
+            {
+                Has = true, Phase = phase, Objective = objective, Ring = ring, Lap = lap,
+                Mistake = phase == ObjectivePhase.NotNoticed || phase == ObjectivePhase.Misjudged,
+            };
+
+        /// <summary>The boost policy's name and what its driver is doing, or null when this hull has no live policy.</summary>
+        public string BoostStatus => _boostActive && boostPolicy
+            ? $"{boostPolicy.name}: {_boostDriver.Status ?? "idle"}"
+            : null;
 
         /// <summary>
         /// Optional override for the DRIFT LOOK-DIRECTION only - where the AI points its nose
@@ -260,6 +407,18 @@ namespace CosmicShore.Gameplay
 
         Func<Vector3?> _driftLookTargetProvider;
 
+        AIPilotBelief _belief;
+
+        /// <summary>
+        /// The lobby AI difficulty's mistakes on this pilot (<see cref="AIPilotBelief"/>): late notice
+        /// and a misjudged target, applied to whatever point this pilot wants to reach. Null on Hard
+        /// and on every mode that does not offer the difficulty - the pilot then flies exactly as shipped.
+        /// </summary>
+        public void SetTargetBelief(AIPilotBelief belief) => _belief = belief;
+
+        /// <summary>The belief this pilot flies on, or null (diagnostics; the Third Eye reads it).</summary>
+        public AIPilotBelief Belief => _belief;
+
         /// <summary>
         /// Move the MODE's steering hooks (<see cref="SetExternalTargetProvider"/> and
         /// <see cref="SetDriftLookTargetProvider"/>) off <paramref name="source"/> and onto this
@@ -278,8 +437,14 @@ namespace CosmicShore.Gameplay
             if (!source || source == this) return;
             _externalTargetProvider = source._externalTargetProvider;
             _driftLookTargetProvider = source._driftLookTargetProvider;
+            _belief = source._belief;
+            _throttleFloor = source._throttleFloor;
+            _nextLegProvider = source._nextLegProvider;
+            source._nextLegProvider = null;
             source._externalTargetProvider = null;
             source._driftLookTargetProvider = null;
+            source._belief = null;
+            source._throttleFloor = 0f;
         }
 
         /// <summary>
@@ -330,6 +495,7 @@ namespace CosmicShore.Gameplay
             // the scene unloading under a live match.
             ReleaseAimTelegraph();
             EndOrbitBreak();
+            _boostDriver?.Release();
         }
 
 
@@ -398,6 +564,21 @@ namespace CosmicShore.Gameplay
                 _eligibleDistances.Add(Vector3.Distance(item.transform.position, transform.position));
             }
 
+            // A crystal this pilot just gave up on (it circled it, or would have broken off it a
+            // second time) sits out for orbitAbandonSeconds - unless it is the only one there is,
+            // in which case a fresh attack on it beats loitering at the cell centre.
+            if (_abandonedObjective != null && Time.time < _abandonedUntil && _eligibleObjectives.Count > 1)
+            {
+                int abandoned = _eligibleObjectives.IndexOf(_abandonedObjective);
+                if (abandoned >= 0)
+                {
+                    _eligibleObjectives.RemoveAt(abandoned);
+                    _eligibleDistances.RemoveAt(abandoned);
+                }
+            }
+
+            var previousObjective = _objectiveItem;
+
             // The selection - which objective, and whether to abandon the one already committed to
             // - lives in AIObjectiveScoring so the shipped path is the one the tests cover. It is
             // not a formality: the original inline version compared a squared distance against a
@@ -412,6 +593,12 @@ namespace CosmicShore.Gameplay
                 Mathf.Abs(VesselStatus.Speed) * approachRunSeconds, objectiveSwitchImprovement);
 
             _objectiveItem = pick >= 0 ? _eligibleObjectives[pick] : null;
+
+            // A new objective is a new pursuit: sweep accumulated around the old one says nothing
+            // about it. The detector also notices the range jump itself, but not when the new
+            // crystal happens to sit at a similar range - say so explicitly.
+            if (_objectiveItem != previousObjective && !_extending)
+                _orbitDetector.Reset();
 
             if (_objectiveItem != null)
                 _targetPosition = _objectiveItem.transform.position;
@@ -514,7 +701,7 @@ namespace CosmicShore.Gameplay
             while (AutoPilotEnabled)
             {
                 SelectClosestOpponent();
-                yield return new WaitForSeconds(
+                yield return CosmicShore.Utility.WaitCache.Seconds(
                     _targetVesselTransform != null ? playerSeekUpdateInterval : playerReacquireInterval);
             }
         }
@@ -590,6 +777,15 @@ namespace CosmicShore.Gameplay
             var handler = VesselStatus?.ActionHandler;
             _hasAimTelegraph = handler != null &&
                                handler.TryGetInputForAction<IAimTelegraphAction>(out _aimTelegraphInput);
+
+            // The boost driver, built against THIS vessel's bindings (null when it binds none of
+            // the ability the policy drives). A re-Initialize lets go of the previous one first.
+            _boostDriver?.Release();
+            // A mode's own tuning when it has one (AIBoostPolicySO.ForMode: e.g. RhinoAIBoostPolicy_Regatta, learned from
+            // editor flights); the hull's policy otherwise.
+            var policy = gameData != null ? AIBoostPolicySO.ForMode(boostPolicy, gameData.GameMode) : boostPolicy;
+            _boostDriver = policy ? policy.CreateDriver(VesselStatus, actionExecutorRegistry) : null;
+            _boostActive = false;
         }
 
         public void StartAIPilot()
@@ -610,8 +806,10 @@ namespace CosmicShore.Gameplay
             foreach (var ability in _activeAbilities)
                 ability.Ability.StopAction(actionExecutorRegistry, VesselStatus);
             _activeAbilities.Clear();
+            _boostDriver?.Release();
 
             AutoPilotEnabled = true;
+            _boostActive = ResolveBoostActive();
 
             // A pilot that manages its own drift (the commit loop: line up a crystal, lock the
             // course, swing the nose onto the aim) must not ALSO blind-cycle the abilities bound
@@ -633,6 +831,9 @@ namespace CosmicShore.Gameplay
             {
                 if (ability.SourceAsset != null && _commitBoundActions.Contains(ability.SourceAsset))
                     continue;
+                // Same reason, other owner: the boost driver presses this one itself.
+                if (_boostActive && _boostDriver.Drives(ability.SourceAsset))
+                    continue;
                 StartCoroutine(UseAbilityCoroutine(ability));
             }
 
@@ -650,6 +851,8 @@ namespace CosmicShore.Gameplay
             // false and this is the last chance to put the telegraph down.
             ReleaseAimTelegraph();
             EndOrbitBreak();
+            _boostDriver?.Release();
+            _boostActive = false;
 
             // A STOPPED pilot must leave its hull holding NOTHING. That used to be harmless to get
             // wrong, because the only stop was the menu's freestyle toggle, where the same player
@@ -670,7 +873,7 @@ namespace CosmicShore.Gameplay
 
             if (_commitDriftHeld)
             {
-                _commitDriftHeld = false;
+                SetCommitDriftHeld(false);
                 vessel?.StopShipControllerActions(CommitControl);
             }
         }
@@ -679,6 +882,22 @@ namespace CosmicShore.Gameplay
         // this pilot is holding the commit drift - the two things StopAIPilot has to give back.
         readonly HashSet<AIAbility> _activeAbilities = new();
         bool _commitDriftHeld;
+
+        /// <summary>
+        /// The commit drift is held or let go. While held the pilot also holds the left trigger fully down: on a
+        /// GAMEPAD device the drift's depth IS the trigger (VesselTransformer.GetTriggerSum), and an AI's device is the
+        /// host's, so with a pad plugged in an untriggered commit drifted at depth 0 - the course never locked, the
+        /// Dolphin weaved and never charged (2026-10-14 Regatta audit; the unmerged 0f4ef8c0c's holdDriftTrigger, for
+        /// the Dolphin too). Only the commit loop writes it, and only the Dolphin flies the commit loop (drift: 1).
+        /// </summary>
+        void SetCommitDriftHeld(bool held)
+        {
+            if (_commitDriftHeld == held) return;
+            _commitDriftHeld = held;
+            var status = vessel != null ? vessel.VesselStatus : null;
+            var input = status != null ? status.InputStatus : null;
+            if (input != null) input.LeftTriggerAnalog = held ? 1f : 0f;
+        }
 
         void Update()
         {
@@ -693,6 +912,7 @@ namespace CosmicShore.Gameplay
                 // sweep accumulated before it stopped describes a pursuit that is no longer running.
                 ReleaseAimTelegraph();
                 EndOrbitBreak();
+                _boostDriver?.Release();
                 return;
             }
 
@@ -705,8 +925,14 @@ namespace CosmicShore.Gameplay
 
             // External steering hook (e.g. Astro League ball striking) overrides all other
             // targeting when set - checked last so it always wins.
+            _aimIsPathLead = false;
             if (_externalTargetProvider != null)
                 _targetPosition = _externalTargetProvider();
+
+            // The lobby difficulty edits what the pilot BELIEVES about that target - never how it
+            // flies to it. Null on Hard, so Hard is the shipped pilot.
+            if (_belief != null)
+                _targetPosition = _belief.Believe(_targetPosition, transform.position, HeadingDirection(), Time.time);
 
             // Where the pilot WANTS to be is _targetPosition; where it steers may differ, because a
             // pursuer with a bounded turn radius cannot fly straight at an objective sitting inside
@@ -723,22 +949,41 @@ namespace CosmicShore.Gameplay
             _distance = steerTarget - transform.position;
             Vector3 desiredDirection = _distance.normalized;
 
+            // Boost policy (AI_BOOST.md). Ticked BEFORE the commit branches: the drift-charge
+            // driver may release the commit drift here and then hold the next one off.
+            TickBoostPolicy(toObjective);
+            bool commitHeldOff = _boostActive && _boostDriver.HoldsOffCommit;
+
             // A break-off is not a commitment, so it must not drift and must not light the aim
             // telegraph: the vessel is repositioning, and announcing an aim at the escape point
             // would be announcing an aim at nothing. The branches below read this, and the
             // drift-ended branch is what releases a telegraph already lit.
             LookingAtCrystal = !_extending &&
                                Vector3.Dot(desiredDirection, VesselStatus.Course) >= .9f;
-            if (LookingAtCrystal && drift && !VesselStatus.IsDrifting)
+            if (commitHeldOff)
+            {
+                // Spending the charge a commit would cancel: no commit, no telegraph, and nothing
+                // to unwind (the release already happened in TickBoostPolicy).
+                ReleaseAimTelegraph();
+            }
+            else if (LookingAtCrystal && drift && !VesselStatus.IsDrifting && CommitSpeedOk())
             {
                 // COMMIT. The course locks onto the objective and the nose is freed to swing
                 // elsewhere; from here the vessel is travelling at the crystal no matter where it
                 // points, which is exactly the window in which announcing the aim is honest.
                 VesselStatus.Course = desiredDirection;
                 vessel.PerformShipControllerActions(CommitControl);
-                _commitDriftHeld = true;
+                SetCommitDriftHeld(true);
                 EngageAimTelegraph();
                 desiredDirection = ResolveDriftLookDirection(desiredDirection);
+            }
+            else if (_commitDriftHeld && VesselStatus.IsDrifting && !CanCommitAt(VesselStatus.Speed, commitMinSpeed))
+            {
+                // Our commit drift is holding the hull (nearly) still: a drift that keeps its speed keeps 0, and
+                // with no motion the aim never swings off course to end it. Let go; the throttle takes over.
+                vessel.StopShipControllerActions(CommitControl);
+                SetCommitDriftHeld(false);
+                ReleaseAimTelegraph();
             }
             else if (LookingAtCrystal && VesselStatus.IsDrifting)
             {
@@ -759,7 +1004,7 @@ namespace CosmicShore.Gameplay
                 // longer reach until the cell happens to raise OnCellItemsUpdated, which is a
                 // crystal event and not a "this pilot needs a new goal" event.
                 vessel.StopShipControllerActions(CommitControl);
-                _commitDriftHeld = false;
+                SetCommitDriftHeld(false);
                 ReleaseAimTelegraph();
 
                 if (_reseekArmed)
@@ -790,7 +1035,7 @@ namespace CosmicShore.Gameplay
                     _inputStatus.XSum = 0;
                     _inputStatus.YSum = 0;
                     _inputStatus.YDiff = 0;
-                    _inputStatus.XDiff = Mathf.Clamp(throttle, 0, 1);
+                    _inputStatus.XDiff = SteeringThrottle;
                 }
                 return;
             }
@@ -815,13 +1060,43 @@ namespace CosmicShore.Gameplay
                 _inputStatus.XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
                 _inputStatus.YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
                 _inputStatus.YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-                _inputStatus.XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
+                _inputStatus.XDiff = (LookingAtCrystal && ram) ? 1 : SteeringThrottle;
+            }
+
+            if (_boostActive && _boostDriver.HoldsLine)
+                CentreStick();
+            if (_boostActive && !VesselStatus.IsSingleStickControls)
+            {
+                if (_boostDriver.HoldsFullThrottle) _inputStatus.XDiff = 1f;
+                float driverThrottle = _boostDriver.Throttle;
+                if (driverThrottle >= 0f) _inputStatus.XDiff = Mathf.Clamp01(driverThrottle);
+                float rotationLimit = _boostDriver.RotationLimit;
+                if (rotationLimit >= 0f) LimitRotation(rotationLimit);
             }
 
             //aggressiveness += aggressivenessIncrease * Time.deltaTime;
             throttle += throttleIncrease * Time.deltaTime;
         }
         
+        /// <summary>
+        /// Fast enough to commit a drift: at least <paramref name="minSpeed"/>, and on a hull whose drift
+        /// <paramref name="holdsSpeed"/> also <paramref name="upToSpeedShare"/> of <paramref name="throttleTarget"/>
+        /// (the speed the throttle is taking it to), since that drift keeps the speed it begins at. Keeping a held
+        /// commit drift asks only the first part (<c>holdsSpeed: false</c>): a drift at speed is never let go for
+        /// the throttle target rising under it.
+        /// </summary>
+        public static bool CanCommitAt(float speed, float minSpeed, bool holdsSpeed = false, float throttleTarget = 0f,
+                                       float upToSpeedShare = 0f) =>
+            speed >= minSpeed && (!holdsSpeed || speed >= upToSpeedShare * throttleTarget);
+
+        bool CommitSpeedOk()
+        {
+            var transformer = VesselStatus.VesselTransformer;
+            bool holds = transformer && transformer.HoldsSpeedWhileDrifting;
+            return CanCommitAt(VesselStatus.Speed, commitMinSpeed, holds,
+                               holds ? transformer.CurrentThrottleTarget : 0f, commitUpToSpeedShare);
+        }
+
         /// <summary>
         /// The direction this vessel is actually TRAVELLING — the quantity a turn radius applies
         /// to. Outside a drift it is the nose; inside one the course is locked and the nose swings
@@ -910,7 +1185,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void UpdateOrbitBreak(Vector3 toObjective)
         {
-            if (!breakOrbits || VesselStatus.IsDrifting)
+            // Riding a rail is not an orbit: the rail's aim point is always a lead ahead, so the range never falls and
+            // a lap of turning would trip the detector (2026-10-14 Regatta audit: an AI Urchin rode at 0.6 throttle).
+            // Nor is following a path's lead point (MarkAimAsPathLead): the same lead-ahead aim as a rail.
+            if (!breakOrbits || VesselStatus.IsDrifting || VesselStatus.IsAttached || _aimIsPathLead)
             {
                 EndOrbitBreak();
                 return;
@@ -952,8 +1230,60 @@ namespace CosmicShore.Gameplay
             _extending = true;
             _extendElapsed = 0f;
 
+            // Never a second lap on the same crystal. A full lap already flown (the detector) or a
+            // second break-off from the same objective means re-attacking it from here is how one
+            // orbit becomes five: the pilot comes back on the same arc and is trapped the same way.
+            // Give it up for a while and take another; the break-off itself still runs, because it
+            // is what gets the pilot out of the circle it is in.
+            if (_objectiveItem != null && !seekPlayers && _externalTargetProvider == null)
+            {
+                // Same instance AND same place: a pooled crystal respawned elsewhere is a new
+                // objective as far as reachability is concerned.
+                bool brokeOffHereBefore = _objectiveItem == _brokeOffObjective &&
+                    (_objectiveItem.transform.position - _brokeOffPosition).sqrMagnitude <
+                    objectiveCaptureRadius * objectiveCaptureRadius;
+
+                if (orbiting || brokeOffHereBefore)
+                    AbandonObjective();
+                else
+                {
+                    _brokeOffObjective = _objectiveItem;
+                    _brokeOffPosition = _objectiveItem.transform.position;
+                }
+            }
+
             // The sweep accumulated on the way IN says nothing about the pursuit that follows the
             // break-off, and leaving it would re-fire the detector immediately on re-attack.
+            _orbitDetector.Reset();
+        }
+
+        void AbandonObjective()
+        {
+            _abandonedObjective = _objectiveItem;
+            _abandonedUntil = Time.time + orbitAbandonSeconds;
+            _brokeOffObjective = null;
+            // Drop the commitment first, or AIObjectiveScoring's hysteresis would hand the same
+            // crystal straight back.
+            _objectiveItem = null;
+            UpdateCellContent();
+        }
+
+        /// <summary>
+        /// Extend and re-attack NOW, without waiting for the turning-circle test or the orbit detector:
+        /// for a caller that already knows the pursuit failed. A gate race calls it when its pilot crosses
+        /// the ring's plane outside the mouth (<see cref="GateRaceController"/>), because by then the far-side
+        /// point is behind it and close, which the detector only notices after a lap of circling it
+        /// (2026-10-15 Regatta AI studio: 17/32 Hard races finished without this, 30/32 with it).
+        /// The break-off then ends by <see cref="UpdateOrbitBreak"/>'s own rules. No-op where a break-off
+        /// could not run (breaking off, drifting or attached).
+        /// </summary>
+        public void BreakOffNow()
+        {
+            if (!breakOrbits || vessel == null) return;
+            var status = VesselStatus;
+            if (status == null || status.IsDrifting || status.IsAttached) return;
+            _extending = true;
+            _extendElapsed = 0f;
             _orbitDetector.Reset();
         }
 
@@ -1020,100 +1350,101 @@ namespace CosmicShore.Gameplay
             handler.StopShipControllerActionsReplicated(_aimTelegraphInput);
         }
 
-        IEnumerator UseAbilityCoroutine(AIAbility action) 
+        #region Boost policy (AI_BOOST.md)
+
+        // Built at Initialize from boostPolicy against this vessel's bindings; null when the hull
+        // has no policy or binds none of its ability. _boostActive is the per-start verdict
+        // (mode gate, AI-player gate) and is what every hook below reads.
+        AIBoostDriver _boostDriver;
+        bool _boostActive;
+
+        bool ResolveBoostActive()
+        {
+            if (_boostDriver == null || boostPolicy == null) return false;
+            if (gameData != null && !boostPolicy.AllowsMode(gameData.GameMode)) return false;
+            if (boostPolicy.RequireAIPlayer && (VesselStatus?.Player == null || !VesselStatus.IsInitializedAsAI))
+                return false;
+            return true;
+        }
+
+        void TickBoostPolicy(Vector3 toObjective)
+        {
+            if (!_boostActive) return;
+
+            // The drivers judge the thing the pilot is AFTER (the mode's objective, a ring): its bearing, its range (the
+            // runway) and the turn there. On a race line the steering point sits one look-ahead (0.35-0.8 s) ahead, so
+            // judged by it no straight is ever long enough: the Rhino needs 1.5 s to ramp, the Dolphin 2.5 s to spend, and
+            // neither would ever have fired on the line (2026-10-17). A difficulty mistake keeps the believed point: a
+            // pilot that has not noticed or has misjudged its ring must not spend against the true one.
+            Vector3 judged = ObjectivePosition;
+            Vector3 toJudged = _objective.Has && !_objective.Mistake ? judged - transform.position : toObjective;
+            // The leg after the objective, from the objective (zero when the mode does not say, or while breaking off).
+            Vector3 nextLeg = !_extending && _nextLegProvider?.Invoke() is Vector3 after ? after - judged : default;
+            _boostDriver.Tick(new AIBoostContext(
+                toJudged, HeadingDirection(), transform.forward, VesselStatus.Speed, LastStickDeflection(),
+                _extending, _commitDriftHeld, VesselStatus.IsTranslationRestricted, nextLeg));
+
+            // The drift-charge driver spends the bank by ending the commit drift on a straight -
+            // the same release the off-course branch performs, just earlier.
+            if (_boostDriver.TakeCommitReleaseRequest() && _commitDriftHeld)
+            {
+                vessel.StopShipControllerActions(CommitControl);
+                SetCommitDriftHeld(false);
+                ReleaseAimTelegraph();
+            }
+        }
+
+        /// <summary>The stick this pilot last wrote (a frame stale at most - the same read the
+        /// Manta's drive makes), as the larger axis deflection.</summary>
+        float LastStickDeflection()
+        {
+            if (VesselStatus.IsSingleStickControls)
+            {
+                var stick = _inputStatus.EasedLeftJoystickPosition;
+                return Mathf.Max(Mathf.Abs(stick.x), Mathf.Abs(stick.y));
+            }
+            return Mathf.Max(Mathf.Abs(_inputStatus.XSum), Mathf.Abs(_inputStatus.YSum));
+        }
+
+        /// <summary>Hold the line: no turn input this frame, throttle untouched.</summary>
+        /// <summary>Scale the three steering axes down together so their sum stays at or under
+        /// <paramref name="limit"/>: the same direction of turn, gentler.</summary>
+        void LimitRotation(float limit)
+        {
+            float sum = Mathf.Abs(_inputStatus.XSum) + Mathf.Abs(_inputStatus.YSum) + Mathf.Abs(_inputStatus.YDiff);
+            if (sum <= limit || sum <= 1e-6f) return;
+            float k = limit / sum;
+            _inputStatus.XSum *= k;
+            _inputStatus.YSum *= k;
+            _inputStatus.YDiff *= k;
+        }
+
+        void CentreStick()
+        {
+            if (VesselStatus.IsSingleStickControls)
+            {
+                _inputStatus.EasedLeftJoystickPosition = Vector2.zero;
+                return;
+            }
+            _inputStatus.XSum = 0;
+            _inputStatus.YSum = 0;
+            _inputStatus.YDiff = 0;
+        }
+
+        #endregion
+
+        IEnumerator UseAbilityCoroutine(AIAbility action)
         {
             yield return new WaitForSeconds(3);
             while (AutoPilotEnabled)
             {
                 action.Ability.StartAction(actionExecutorRegistry, VesselStatus);
                 _activeAbilities.Add(action);
-                yield return new WaitForSeconds(action.Duration);
+                yield return CosmicShore.Utility.WaitCache.Seconds(action.Duration);
                 _activeAbilities.Remove(action);
                 action.Ability.StopAction(actionExecutorRegistry, VesselStatus);
-                yield return new WaitForSeconds(action.Cooldown);
+                yield return CosmicShore.Utility.WaitCache.Seconds(action.Cooldown);
             }
         }
-        
-        #region Unused Methods
-
-        Vector3 ShootLaser(Vector3 position)
-        {
-            if (Physics.Raycast(transform.position + position, transform.forward, out _hit, _maxDistance))
-            {
-                Debug.DrawLine(transform.position + position, _hit.point, Color.red);
-                return _hit.point - (transform.position + position);
-            }
-
-            Debug.DrawLine(transform.position + position, transform.position + position + transform.forward * _maxDistance, Color.green);
-            return transform.forward * _maxDistance - (transform.position + position);
-        }
-        
-        float CalculateRollAdjustment(Dictionary<Corner, Vector3> obstacleDirections)
-        {
-            float rollAdjustment = 0f;
-
-            // Example logic: If top right and bottom left corners detect obstacles, induce a roll.
-            if (obstacleDirections[Corner.TopRight].magnitude > 0 && obstacleDirections[Corner.BottomLeft].magnitude > 0)
-                rollAdjustment -= 1; // Roll left
-            if (obstacleDirections[Corner.TopLeft].magnitude > 0 && obstacleDirections[Corner.BottomRight].magnitude > 0)
-                rollAdjustment += 1; // Roll right
-
-            return rollAdjustment;
-        }
-
-        float SigmoidResponse(float input)
-        {
-            float output = 2 * (1 / (1 + Mathf.Exp(-0.1f * input)) - 0.5f);
-            return output;
-        }
-        
-        
-        /*
-         
-         // TODO - This method is moved inside AIPilot. Some logics and conditions might have
-         // been temporarily removed, but check this method, for adding those logics inside the
-         // new method of AIPilot
-         IEnumerator SetTargetCoroutine()
-        {
-            // TODO - these lists if needed, should be specified separate.
-            List<ShipClassType> aggressiveShips = new List<ShipClassType>
-            {
-                ShipClassType.Rhino,
-                ShipClassType.Sparrow,
-            };
-
-            var rand = new System.Random();
-
-            // Assume activeNode can't change.
-            var activeCell = CellControlManager.Instance.GetCellByPosition(transform.position);
-            if (activeCell == null)
-                activeCell = CellControlManager.Instance.GetNearestCell(transform.position);
-
-            while (true)
-            {
-                if (activeCell != null &&
-                    // TODO - Commented out as aggressive
-                    // aggressiveShips.Contains(vessel.VesselStatus.ShipType) &&
-                    activeCell.ControllingTeam != Teams.None)
-                {
-                    if ((VesselStatus.Team == activeCell.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
-                    {
-                        _targetPosition = _crystalPosition;
-                    }
-                    else
-                    {
-                        _targetPosition = activeCell.GetExplosionTarget(activeCell.ControllingTeam);  // Block centroid belonging to the winning team
-                    }
-                }
-                else
-                {
-                    _targetPosition = _crystalPosition;
-                }
-                yield return new WaitForSeconds(targetUpdateFrequencySeconds);
-            }
-        }*/
-
-
-        #endregion
     }
 }

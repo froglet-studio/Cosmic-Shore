@@ -98,6 +98,10 @@ namespace CosmicShore.Gameplay
         int _milestone = MilestoneNone;
         Domains _leader = Domains.Blue;
 
+        // Latched once the first pilot flies into the core cage's room, so the breach is
+        // announced once a match. Server-side; reset with the rest of the progress state.
+        bool _coreBreached;
+
         // Golf: the winning DOMAIN's players carry their finish time, everyone else a
         // DnfThreshold+remaining sentinel - lower is better, like every race here.
         protected override bool UseGolfRules => true;
@@ -117,6 +121,7 @@ namespace CosmicShore.Gameplay
             _finalResultsSent = false;
             _milestone = MilestoneNone;
             _leader = Domains.Blue;
+            _coreBreached = false;
 
             // Belt-and-braces against the Cleave regression where players started a match on a
             // non-zero score. The authoritative reset is
@@ -194,6 +199,8 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer || rule == null) return;
 
+            SampleCoreBreach();
+
             int target = gameData.LifeformTargetCount;
             if (target <= 0) return; // monitor hasn't resolved the target yet
 
@@ -255,6 +262,42 @@ namespace CosmicShore.Gameplay
             // match-changing events - see Docs/HAPTICS.md). Safe on every peer: HapticController
             // gates on the local player's own haptics setting.
             HapticController.PlayAlert();
+        }
+
+        /// <summary>
+        /// Server-side: the first pilot inside the CORE cage's room - the innermost shell, where
+        /// the 50-99 danger traps live - is the hunt's set-piece moment, so it is announced once.
+        /// Read off the vessels' positions on the server (the host simulates its own pilot and
+        /// every AI; a client's vessel is its replicated transform, which is ample for a 200u
+        /// sphere sampled twice a second). Feedback only - nothing about the core changes.
+        /// </summary>
+        void SampleCoreBreach()
+        {
+            if (_coreBreached || !arenaCell) return;
+
+            Vector3 centre = arenaCell.transform.position;
+            float core = SpawnableWildlifeCage.ShellRadii[SpawnableWildlifeCage.ShellCount - 1];
+            float coreSqr = core * core;
+
+            foreach (var p in gameData.Players)
+            {
+                if (p == null || string.IsNullOrEmpty(p.Name)) continue;
+                var vessel = p.Vessel;
+                if (vessel == null || vessel is Object uo && !uo) continue;
+                var t = vessel.Transform;
+                if (!t || (t.position - centre).sqrMagnitude > coreSqr) continue;
+
+                _coreBreached = true;
+                AnnounceCoreBreached_ClientRpc(new FixedString64Bytes(p.Name), (int)p.Domain);
+                return;
+            }
+        }
+
+        [ClientRpc]
+        void AnnounceCoreBreached_ClientRpc(FixedString64Bytes pilot, int domain)
+        {
+            var d = (Domains)domain;
+            GameToastAPI.Post(GameToastSituation.WildlifeCoreBreached, d, pilot.ToString(), d.ToString());
         }
 
         [ClientRpc]
@@ -462,6 +505,7 @@ namespace CosmicShore.Gameplay
             _finalResultsSent = false;
             _milestone = MilestoneNone;
             _leader = Domains.Blue;
+            _coreBreached = false;
 
             StopProgressSampler();
 

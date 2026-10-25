@@ -33,10 +33,10 @@ namespace CosmicShore.ECS
     /// </summary>
     public enum PrismRenderOverrideSet
     {
-        Prism,
-        Explosion,
-        Implosion,
-        Slice,
+        Prism = 0,
+        Explosion = 1,
+        Implosion = 2,
+        Slice = 3,
     }
 
     /// <summary>
@@ -80,8 +80,10 @@ namespace CosmicShore.ECS
     /// All methods are main-thread only and no-op safely when the ECS world or
     /// EntitiesGraphicsSystem is unavailable (tool scenes, headless, teardown),
     /// so the legacy MeshRenderer path remains a complete fallback at runtime
-    /// via the master toggle (PrismRenderConfigSO, runtime override, or the
-    /// PRISM_RENDER_TOGGLE in the benchmark workflow).
+    /// via the master toggle (PrismRenderConfigSO, SetRuntimeOverride, or the
+    /// DiagnosticsHUD console command "prismpath on | off | auto", which also
+    /// re-syncs the LIVE population — SetRuntimeOverride alone gates only entity
+    /// CREATION, so prisms that already own one keep drawing through it).
     /// </summary>
     public static class PrismRenderService
     {
@@ -98,6 +100,7 @@ namespace CosmicShore.ECS
         {
             _runtimeOverride = null;
             _linearizeOverride = null;
+            _forceMeshRendererStamps = false;
         }
         static bool _configLoaded;
         // OPT-IN: defaults OFF. The instanced path only renders correctly once the
@@ -148,6 +151,32 @@ namespace CosmicShore.ECS
 
         /// <summary>Runtime A/B override (null = fall back to config). New prisms follow the new value; existing ones keep their current path until reuse.</summary>
         public static void SetRuntimeOverride(bool? enabled) => _runtimeOverride = enabled;
+
+        // ------------------------------------------------------------------
+        // The no-compute MeshRenderer stamp path (Docs/PRISM_ANIMATION.md §4.11)
+        // ------------------------------------------------------------------
+
+        static bool _forceMeshRendererStamps;
+
+        /// <summary>
+        /// True on a device where Entities Graphics cannot run (<see cref="EntitiesGraphicsSupportProbe"/>: no
+        /// SRP, no compute — every WebGL2 browser —, or compute kernels that fail to load), and while the dev A/B
+        /// forces it (<c>prismpath mpb</c>). On such a device no prism ever gets a companion entity, so the
+        /// clock-material stamps go to each prism's MaterialPropertyBlock instead
+        /// (<see cref="PrismMeshRendererStamps"/>) and the death visuals to a small pooled GameObject carrier
+        /// (<c>PrismMeshRendererDebris</c>). Keyed off the device probe, never a build define. Everywhere else it is
+        /// false and strict mode holds unchanged: a prism without an entity snaps and screams.
+        /// </summary>
+        public static bool UsesMeshRendererStamps =>
+            _forceMeshRendererStamps || !EntitiesGraphicsSupportProbe.IsSupported;
+
+        /// <summary>Whether the dev A/B currently forces the MeshRenderer stamp path.</summary>
+        public static bool MeshRendererStampsForced => _forceMeshRendererStamps;
+
+        /// <summary>Dev A/B (the <c>prismpath mpb</c> console command): force the MeshRenderer stamp path on a
+        /// device that HAS Entities Graphics. Only meaningful together with <c>SetRuntimeOverride(false)</c> and a
+        /// re-sync of the live prisms, so no prism keeps an entity the stamps would land on first.</summary>
+        public static void SetMeshRendererStampsForced(bool forced) => _forceMeshRendererStamps = forced;
 
         // ------------------------------------------------------------------
         // Clock-material animation (Docs/PRISM_ANIMATION.md, LOCKED law)
@@ -519,6 +548,14 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismSuctionDirectionOverride { Value = 1f });
                         em.AddComponentData(prototype, new PrismSuctionGrowDelayOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismImplosionLocationOverride { Value = float3.zero });
+                        // Black-hole gravity body (Docs/BLACK_HOLE.md). NOT a material
+                        // property: a simulation state the gravity job reads and writes.
+                        // On the prototype so admitting a prism to a field is a
+                        // non-structural SetComponentData + SetComponentEnabled; DISABLED
+                        // by default, so every prism outside a hole's influence is exactly
+                        // what it was before the component existed.
+                        em.AddComponentData(prototype, new GravityBody());
+                        em.SetComponentEnabled<GravityBody>(prototype, false);
                         break;
                     case PrismRenderOverrideSet.Explosion:
                         em.AddComponentData(prototype, new PrismExplodeStartTimeOverride { Value = 0f });
@@ -1166,6 +1203,46 @@ namespace CosmicShore.ECS
         }
 
         /// <summary>
+        /// Re-writes the entity's bright/dark overrides as a SHADE of <paramref name="material"/>'s authored colours:
+        /// scaled by <paramref name="gain"/> (0-1, darker), then lifted toward white by <paramref name="lift"/> (0-1,
+        /// the LIT state). The hue stays the material's, so neither reads as another team. Inputs are authored-space;
+        /// the colour-space transform is applied here, as in <see cref="SetMaterial"/>. Spread is left as the material
+        /// set it. Called by <c>Prism.ApplyColorShade</c> after every material sync, so a domain or state change keeps
+        /// the shade.
+        /// </summary>
+        public static void ApplyColorShade(in PrismRenderHandle handle, Material material, float gain, float lift = 0f)
+        {
+            if (material == null || !IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = ApplyColorSpace(ShadedColor(material, BrightColorId, gain, lift)) });
+            em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = ApplyColorSpace(ShadedColor(material, DarkColorId, gain, lift)) });
+        }
+
+        /// <summary>
+        /// Fades the entity INTO its current shade (<see cref="ApplyColorShade"/>, already written) from the shade it
+        /// showed at <paramref name="fromGain"/> / <paramref name="fromLift"/>, over <paramref name="duration"/>: one
+        /// <see cref="StampColorTransition"/>, so the GPU runs the fade and nothing is written per frame. False when
+        /// the clock path is off; the prism then shows its new shade at once.
+        /// </summary>
+        public static bool StampShadeTransition(in PrismRenderHandle handle, Material material, float startTime,
+            float duration, float fromGain, float fromLift)
+        {
+            if (material == null) return false;
+            return StampColorTransition(in handle, startTime, duration,
+                ShadedColor(material, BrightColorId, fromGain, fromLift),
+                ShadedColor(material, DarkColorId, fromGain, fromLift),
+                ReadVector3(material, SpreadId));
+        }
+
+        // Authored-space: the caller applies the colour-space transform (StampColorTransition does it itself).
+        static float4 ShadedColor(Material material, int propertyId, float gain, float lift)
+        {
+            Color c = material.HasProperty(propertyId) ? material.GetColor(propertyId) : Color.white;
+            float k = Mathf.Clamp01(gain), l = Mathf.Clamp01(lift);
+            return new float4(Mathf.Lerp(c.r * k, 1f, l), Mathf.Lerp(c.g * k, 1f, l), Mathf.Lerp(c.b * k, 1f, l), c.a);
+        }
+
+        /// <summary>
         /// Swaps the entity's mesh (settled octahedron shield ↔ prism box) and refreshes
         /// RenderBounds. The mesh registers once and is shared across entities, so
         /// same-geometry shielded prisms keep batching.
@@ -1468,7 +1545,72 @@ namespace CosmicShore.ECS
             ClearJiggleStamp(in handle);
             ClearSuctionClockStamp(in handle);
             ClearSwayStamp(in handle);
+            ClearGravityBody(in handle);
         }
+
+        // ------------------------------------------------------------------
+        // Gravity body (Docs/BLACK_HOLE.md) — simulation state, not a stamp
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Seats a prism as a body under black-hole gravity: writes its state and ENABLES the
+        /// component. Non-structural (the component lives on the Prism prototype). Returns false
+        /// when there is no usable entity or the entity was created with a non-Prism override set
+        /// (debris, slices and implosion husks are not bodies — their flight is a clock stamp).
+        /// </summary>
+        public static bool SetGravityBody(in PrismRenderHandle handle, in GravityBody body, bool enabled)
+        {
+            if (!IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<GravityBody>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity, body);
+            em.SetComponentEnabled<GravityBody>(handle.Entity, enabled);
+            return true;
+        }
+
+        /// <summary>Reads a body's state (the job writes it). False when the entity has none.</summary>
+        public static bool TryGetGravityBody(in PrismRenderHandle handle, out GravityBody body)
+        {
+            body = default;
+            if (!IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<GravityBody>(handle.Entity)) return false;
+            body = em.GetComponentData<GravityBody>(handle.Entity);
+            return true;
+        }
+
+        /// <summary>
+        /// Releases a prism from gravity: zero state, component DISABLED. Pool hygiene as much as
+        /// a release — a reused prism must never inherit the velocity of the one it replaced.
+        /// </summary>
+        public static void ClearGravityBody(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<GravityBody>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new GravityBody());
+            em.SetComponentEnabled<GravityBody>(handle.Entity, false);
+        }
+
+        /// <summary>
+        /// The gravity job's access to its component: a read-write
+        /// <see cref="ComponentLookup{T}"/> over <see cref="GravityBody"/>, with any in-flight
+        /// job on it completed first. The caller schedules against it and MUST complete that
+        /// job within the same frame, before any structural change (the same contract
+        /// <see cref="SetTransformsBatch(Unity.Collections.NativeArray{PrismRenderHandle}, Unity.Collections.NativeArray{float4x4}, int, JobHandle)"/>
+        /// keeps for <c>LocalToWorld</c>). False when there is no world.
+        /// </summary>
+        internal static bool TryGetGravityBodyLookup(out ComponentLookup<GravityBody> lookup)
+        {
+            lookup = default;
+            if (_world == null || !_world.IsCreated) return false;
+            _world.EntityManager.CompleteDependencyBeforeRW<GravityBody>();
+            lookup = Lookup<GravityBody>(false);
+            return true;
+        }
+
+        /// <summary>The service's current epoch — a handle whose epoch differs is stale.</summary>
+        internal static int HandleEpoch => _epoch;
 
         /// <summary>Stamps an explosion's flight: offset/amount/opacity become pure
         /// functions of the clock. The entity transform must already hold the debris'

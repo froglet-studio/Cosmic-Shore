@@ -209,6 +209,43 @@ match, so a charge timer on it would be last-writer-wins across vessels — the 
 `ElementalFloat` is banned from these assets. `UrchinSpikeActionExecutor._chargeStartTime` is
 per-vessel state on a per-vessel MonoBehaviour, which is where all of it belongs.
 
+**The charge is READABLE, and the HUD draws it (2026-10, #973 follow-up).** The executor exposes
+three read-only properties answered from the same `_charging` / `_chargeStartTime` pair
+`ReleaseCharge` reads, through the same `Charge01` curve, so the gauge is the burst the trigger
+would throw if it came up this frame — not a second copy of the arithmetic:
+
+| property | meaning |
+|---|---|
+| `IsCharging` | the trigger is held on a charge-enabled spike ability |
+| `IsChargeArmed` | the hold has passed `minChargeSeconds` — a release NOW throws a burst |
+| `ChargeProgress01` | `Charge01(held)`: 0 at (and below) the minimum, 1 at `maxChargeSeconds`; 0 when idle |
+
+`UrchinVesselHUDController` polls them each frame (a charge is a clock with no event, exactly like
+the Track recharge it already polls) off its OWN serialized `spikeExecutor` — never a type search
+(vessel skill rule 14) — and hands `IsChargeArmed` + `ChargeProgress01` to
+`UrchinVesselHUDView.SetSpikeCharge`. The view draws them as **`SpikeChargeRing`**, a radial ring
+(from the top, clockwise) around the Charge card's icon:
+
+- **A tap draws nothing.** The ring fades in only once the hold is ARMED, because below the minimum
+  a release is the tap the press already paid for, and a ring would promise a burst that never
+  comes.
+- It fills with `ChargeProgress01` and shades from the lockup's `gaugeFillColor` to its
+  `cooldownReadyFlashColor` at a full charge — the row's existing "ready" vocabulary, not a new hue.
+- On release it **dissolves** over `chargeFadeSeconds` (0.12 s) at the fill it reached, so the
+  release reads as the charge being thrown rather than the meter emptying; a teardown (vessel
+  swap, hand-over to an AI) clears it in `Initialize`.
+- **Why a ring and not the card's gauge:** the Charge card's one lockup gauge is already the AMMO
+  meter (`ammoFill`, adopted through the binding's `gauge`). The ring is a CHILD of the Charge
+  ICON, which is the seat that survives the lockup — `AbilityLockupView.RetireLegacyChrome`
+  deactivates every other child of a card's host, and an icon's children travel with it (the
+  Dolphin's blast profile sits the same way). It is never the icon itself, which carries the
+  four-icon row's upgrade tint and badge.
+
+All of it is authored by `Tools/Build/author_urchin_hud.py` (the ring sprite
+`Urchin_ChargeRing.png`, the `SpikeChargeRing` object in `UrchinHUDVariant.prefab`, the view's
+`chargeRing` binding, and the controller's `spikeExecutor` wire to fileID `7770000000000000007` on
+`Urchin.prefab`, which the generator asserts still IS the Chain Spikes executor).
+
 **A RELEASE discharges; a TEARDOWN does not.** `End(so)` fires the burst; `End(null)` — the vessel
 swap / disable path — drops the charge silently. A vessel handed to a new pilot mid-hold must never
 discharge in the previous pilot's name, which is the same rule `Initialize`'s unconditional
@@ -308,7 +345,8 @@ checked once per tick, so the two cases are not conflated into one early return.
 | Volley stamping, factory hand-down, determinism | `Controller/Projectiles/Gun.cs` — `ChainRangeScale`/`ChainRangeFalloff`, `SetProjectileFactory`, `DeterministicOrientation`, `Scramble` |
 | Frame brake | `Controller/Projectiles/ChainReactionBudget.cs` |
 | Ability config (one asset, both shots) | `R_VesselActions/Data Containers/UrchinSpikeActionSO.cs` → `_SO_Assets/VesselActions/Urchin/UrchinSpikeAction.asset` (`UrchinSpikeVolleyAction` / `UrchinSpikeBarrageAction` retired 2026-08-18) |
-| Executor (all per-vessel state) | `R_VesselActions/Executors/UrchinSpikeActionExecutor.cs` |
+| Executor (all per-vessel state) | `R_VesselActions/Executors/UrchinSpikeActionExecutor.cs` — also the read-only charge readout (`IsCharging`, `IsChargeArmed`, `ChargeProgress01`) |
+| HUD charge ring | `UI/Controller/UrchinVesselHUDController.cs` (`spikeExecutor`) → `UI/View/UrchinVesselHUDView.cs` (`SetSpikeCharge`, `chargeRing`), authored by `Tools/Build/author_urchin_hud.py` |
 | Element map | `Assets/Resources/ElementalAbilityMaps/Urchin.asset` |
 | Spike prefabs (pool tiers) — **the live ones** | `_Prefabs/Projectile/UrchinSpikeProjectile.prefab` (`energy 0`, speed 40) · `UrchinSpikeProjectileEnergized.prefab` (1) · `UrchinSpikeProjectileSuperEnergized.prefab` (2). Fully wired: trigger SphereCollider (r 0.25) + `Rigidbody` + `Projectile` + `ProjectileImpactor` → `UrchinSpikeProjectileImpactContainer` + `ImpactCollider` + `LoadedGun`. |
 | Spike prefabs — **the 2023 originals, historical only** | `_Prefabs/Environment/SpikeProjectile.prefab` (`energy 0`, speed 40) · `EnergizedSpikeProjectile.prefab` (1, 60) · `SuperEnergizedSpikeProjectile.prefab` (2, 80) · `RecursiveSpikeProjectile.prefab` (0, 40). No collider, no impactor; three still carry the orphaned `[Stop, Steal, Fire]` YAML. Nothing points at them. |
@@ -493,6 +531,12 @@ Nothing below can be checked without play mode; the depth curve is a pure functi
 16. **The charge cannot survive the vessel.** Hold the trigger and, while still holding, swap
     vessels at the vessel-changer toy (or end the turn). **No** burst may fire. Then press and
     release normally on the new hull — the charge must work from scratch.
+16a. **The charge ring.** Tap the trigger: no ring appears around the Charge card's icon. Hold it:
+    after ~0.35 s a thin ring fades in at the top of the Charge icon and sweeps clockwise, full at
+    2.5 s, shading from the gauge blue toward near-white. Let go: the burst fires and the ring
+    dissolves where it was (no snap to empty). Repeat step 16's mid-hold vessel swap: the ring must
+    not survive onto the new hull. The ammo fill on the same card keeps reading the meter
+    throughout — the two never share an Image.
 
 ### MPPM — two clients
 
@@ -507,10 +551,11 @@ Nothing below can be checked without play mode; the depth curve is a pure functi
     client's own `PrismStolen` / `VolumeStolen` on the scoreboard. Before
     `Player.ReportPrismStolen_ServerRpc` this was **zero** — `StatsManager.PrismStolen` opened
     with `if (!_allowRecord) return;` and `_allowRecord` is false on clients, so a client's steals
-    scored nothing at all, for every steal source in the game. Note the **victim's**
-    remaining-mass tally still drifts on a client-side steal: only the stealer's half travels,
-    because identity on the far side comes from RPC ownership and debiting the victim would mean
-    trusting a client-supplied name.
+    scored nothing at all, for every steal source in the game. The **victim's** remaining-mass
+    tally must fall by the same count and volume: the RPC now carries the victim's name and the
+    server debits it (`StatsManager.DebitPrismSteal`, the trade recorded in
+    `Docs/ScoringSystem/BUGS.md` B19). A victim whose `PrismsRemaining` does not move means the
+    debit half is stranded again.
 
 ## Follow-ups
 
@@ -545,6 +590,8 @@ Nothing below can be checked without play mode; the depth curve is a pure functi
 - **Audio.** No spike sound is authored. Per the FMOD convention, the embed, the steal and the
   chain-fire each want their own inspector-exposed `EventReference` on the component that makes the
   noise — shipped **empty**, never pointed at a borrowed event.
-- **No AI path.** `AIPilot` has no notion of the tap, the charge, or the track, so an AI Urchin flies but
-  does not shoot. The abilities run through the standard executor registry, so this is binding
-  work rather than new mechanics.
+- ~~**No AI path.**~~ **Landed (#975 + the Regatta follow-up):** `UrchinAutopilotDriver` taps
+  the spikes for every mode that seats an AI Urchin (Skein, Hijack, Regatta) — at HOSTILE,
+  CONVERTIBLE mass only: a super-shielded prism refuses every steal, so it is never spiked
+  (`UrchinAutopilotDriver.IsConvertible`). The AI never HOLDS the trigger (it would charge a burst
+  it never released), so the charged burst is still human-only.

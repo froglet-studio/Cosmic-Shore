@@ -57,7 +57,11 @@ namespace CosmicShore.Gameplay
             Yaw();
             Pitch();
 
-            transform.rotation = Quaternion.Slerp(transform.rotation, accumulatedRotation, LERP_AMOUNT * Time.deltaTime);
+            // The fleet's one follow rule (VesselTransformer.NoseFollowFraction): no lag for a human
+            // pilot on any device, the fleet's 1.5/s for AI and autopilot. This override used to
+            // hard-code the lag, so no one-thumb hull got a touch response at all.
+            transform.rotation = Quaternion.Slerp(transform.rotation, accumulatedRotation,
+                                                  NoseFollowFraction(accumulatedRotation, Time.deltaTime));
             courseTransform = transform;
             VesselStatus.Course = courseTransform.forward;
         }
@@ -81,9 +85,13 @@ namespace CosmicShore.Gameplay
             if (toggleManualThrottle && !IsDriftSpeedHeld)
                 effectiveSpeed = Mathf.Lerp(0, effectiveSpeed, InputStatus.Throttle);
 
+            // Warp field: see VesselTransformer.MoveShipScalar.
+            float warp = WarpFieldRuntime.ScaleAt(transform.position);
+            effectiveSpeed *= warp;
+
             VesselStatus.Speed = effectiveSpeed;
 
-            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift) * Time.deltaTime;
+            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift * warp) * Time.deltaTime;
         }
     }
 }

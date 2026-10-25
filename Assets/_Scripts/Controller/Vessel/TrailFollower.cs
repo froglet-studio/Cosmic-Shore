@@ -201,9 +201,9 @@ namespace CosmicShore.Gameplay
         /// index so the rider stays on the prism it was actually on. Reaching -1 means the ridden
         /// prism is the one that just left, so let go.
         ///
-        /// Only the Wanderway's rolling tether removes from the front today
-        /// (<see cref="Trail.RemoveOldest"/>); without this the rider would race forward along the
-        /// ribbon at the recycle rate.
+        /// The recorded front-removers (<see cref="Trail.RemoveOldest()"/> lists them: the Wanderway
+        /// tether, the Arkway corridor, the Ark's wake, and the MobileLow race trail cap); without
+        /// this the rider would race forward along the ribbon at the recycle rate.
         /// </summary>
         void HandleOldestRemoved()
         {
@@ -222,6 +222,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public float RideSpeed => _rideSpeed;
         float _rideSpeed;
+
+        /// <summary>
+        /// True when riding <paramref name="prism"/> runs SLOWER than this hull's own colour - a
+        /// rival's mass without the Time-5 Slipstream. Read-only, and the same rule the ride
+        /// itself applies (<see cref="GetTerrainAwareBlockSpeed"/>), so an autopilot asking "am I
+        /// crawling?" cannot disagree with the speed it is actually riding at.
+        /// </summary>
+        public bool IsCrawlTerrain(Prism prism) => prism && GetTerrainAwareBlockSpeed(prism) < FriendlyTerrainSpeed;
 
         public void RideTheTrail()
         {

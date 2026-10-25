@@ -36,6 +36,8 @@ import importlib.util
 import os
 import re
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
@@ -97,7 +99,6 @@ EXISTING = {
     "IconActive":     "1dc25875d7cbd3e478fc5a133e65eedb",
     "IconInactive":   "fa9b62abd1b217b4ba3d7c5a4a2c0916",
     "CardBackground": "587d2203114c8004c9985d0112c89585",
-    "PreviewClip":    "4396864d799a6154bb82e5346ac0093b",
     # the objective glyph for the new metric, authored by author_objective_icons.py
     "ObjectiveIconPrismsStolen": "d1145b060398fbc980160019ca18f99d",
 }
@@ -105,7 +106,6 @@ EXISTING = {
 PRISM_FILEID = 4563009547826722997
 MEMBRANE_FILEID = 346633111830028674
 CYTOPLASM_FILEID = 639495419069806261
-PREVIEW_FILEID = 241334157148977051
 SPRITE_FILEID = 21300000
 
 # ── Arena constants: IMPORTED from hijack_budget, never copied ───────────────
@@ -344,8 +344,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameHijack.asset",
     the target wins.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
-  CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
-  PreviewClip: {{fileID: {PREVIEW_FILEID}, guid: {EXISTING['PreviewClip']}, type: 3}}
+  CardBackground: {{fileID: 21300000, guid: {aml.card_background('Hijack')}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameHijack
   Vessels:
@@ -356,7 +355,6 @@ emit("Assets/_SO_Assets/Games/ArcadeGameHijack.asset",
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: {len(INTENSITIES)}
-  CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
   ComebackRatePerScoreDeficit: {COMEBACK_RATE}
@@ -449,16 +447,6 @@ emit("Assets/_SO_Assets/Cell Configs/Switchyard Cell/Switchyard Spawn Profile.as
 # (which is what this mode wants too - the yard's rails ring the core, so a tetrahedral spread
 # would drop two of four players on a pole where no rail passes), four AI templates, and one
 # omni crystal. The clone swaps the mode identity, the arena, the hull and the spawn radius.
-scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameCleave.unity")
-
-# 6a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
-scene, n = re.subn(EXISTING["CleavePrismTurnMonitor"], G_SCRIPT["HijackStealTurnMonitor"], scene)
-assert n == 1, f"turn monitor guid appeared {n} times"
-
-# 6b. controller script swap + its serialized field block
-scene, n = re.subn(EXISTING["CleaveController"], G_SCRIPT["HijackController"], scene)
-assert n == 1, f"controller guid appeared {n} times"
-
 OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['CleaveScoringRule']}, type: 2}}
   arenaCell: {{fileID: 1700000065}}
   firstMilestoneFraction: 0.25
@@ -478,42 +466,65 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['HijackScoringRule']
   aiStuckSeconds: 6
   aiParkedSpeed: 6
 """
-assert OLD_FIELDS in scene, "controller field block not found in donor scene"
-scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
-
-# 6c. The ARENA: swap the donor's four Cleave configs for the four Switchyard ones. The choice
-# mode is already IntensityWise, which is the platform's own way to vary a cell by intensity.
-old_cell = re.search(r"  CellConfigs:\n(?:  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n)+"
-                     r"  cellTypeChoiceOptions: 1\n", scene)
-assert old_cell, "donor Cell config block not found"
 NEW_CELL = "  CellConfigs:\n" + "".join(
     f"  - {{fileID: 11400000, guid: {G_ASSET[f'SwitchyardCellConfig{i}']}, type: 2}}\n"
     for i in INTENSITIES) + "  cellTypeChoiceOptions: 1\n"
-scene = scene.replace(old_cell.group(0), NEW_CELL)
-
-# 6d. Spawn ring: OUTSIDE the yard. The donor's floor is sized for its cage; this arena's
-# outermost mass reaches ~985u, so the ring goes to the budget model's own SPAWN_RING_RADIUS
-# (1120) - clear of the rails and still inside the 1200u membrane. Both numbers are asserted
-# against each other by hijack_budget.prove_extent().
-scene, n = re.subn(r"  spawnRingRadiusFloor: \d+\n",
-                   f"  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}\n", scene)
-assert n == 1, f"spawnRingRadiusFloor appeared {n} times"
-
-# 6e. THE HULL: four AI templates, Rhino (3) -> Urchin (4). The platform clamps humans to the
-# card's single Vessels entry, but the AI's class is scene-authored, so this is the third
-# enforcement layer's data (ServerPlayerVesselInitializerWithAI re-clamps it anyway).
-scene, n = re.subn(r"  - vesselClass: 3\n", "  - vesselClass: 4\n", scene)
-assert n == 4, f"expected 4 AI vessel templates, found {n}"
-
-# 6f. The core crystal. This cell has NO NUCLEUS, so without an explicit radius every omni
-# crystal falls through to its own SphereRadius and respawns on the arena's exact centre - the
-# defect Dog Fight recorded, where a big faceted sphere at the origin was mistaken for the
-# objective. One crystal, loose in the hollow core, is an elemental pickup and nothing more.
-scene, n = re.subn(r"  noNucleusSpawnRadius: \d+\n",
-                   f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n", scene)
-assert n == 1, f"noNucleusSpawnRadius appeared {n} times"
 
 
+def clone_scene() -> str:
+    scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameCleave.unity")
+
+    # 6a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
+    scene, n = re.subn(EXISTING["CleavePrismTurnMonitor"], G_SCRIPT["HijackStealTurnMonitor"], scene)
+    assert n == 1, f"turn monitor guid appeared {n} times"
+
+    # 6b. controller script swap + its serialized field block
+    scene, n = re.subn(EXISTING["CleaveController"], G_SCRIPT["HijackController"], scene)
+    assert n == 1, f"controller guid appeared {n} times"
+
+    assert OLD_FIELDS in scene, "controller field block not found in donor scene"
+    scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
+
+    # 6c. The ARENA: swap the donor's four Cleave configs for the four Switchyard ones. The choice
+    # mode is already IntensityWise, which is the platform's own way to vary a cell by intensity.
+    old_cell = re.search(r"  CellConfigs:\n(?:  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n)+"
+                         r"  cellTypeChoiceOptions: 1\n", scene)
+    assert old_cell, "donor Cell config block not found"
+    scene = scene.replace(old_cell.group(0), NEW_CELL)
+
+    # 6d. Spawn ring: OUTSIDE the yard. The donor's floor is sized for its cage; this arena's
+    # outermost mass reaches ~985u, so the ring goes to the budget model's own SPAWN_RING_RADIUS
+    # (1120) - clear of the rails and still inside the 1200u membrane. Both numbers are asserted
+    # against each other by hijack_budget.prove_extent().
+    scene, n = re.subn(r"  spawnRingRadiusFloor: \d+\n",
+                       f"  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}\n", scene)
+    assert n == 1, f"spawnRingRadiusFloor appeared {n} times"
+
+    # 6e. THE HULL: four AI templates, Rhino (3) -> Urchin (4). The platform clamps humans to the
+    # card's single Vessels entry, but the AI's class is scene-authored, so this is the third
+    # enforcement layer's data (ServerPlayerVesselInitializerWithAI re-clamps it anyway).
+    scene, n = re.subn(r"  - vesselClass: 3\n", "  - vesselClass: 4\n", scene)
+    assert n == 4, f"expected 4 AI vessel templates, found {n}"
+
+    # 6f. The core crystal. This cell has NO NUCLEUS, so without an explicit radius every omni
+    # crystal falls through to its own SphereRadius and respawns on the arena's exact centre - the
+    # defect Dog Fight recorded, where a big faceted sphere at the origin was mistaken for the
+    # objective. One crystal, loose in the hollow core, is an elemental pickup and nothing more.
+    scene, n = re.subn(r"  noNucleusSpawnRadius: \d+\n",
+                       f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n", scene)
+    assert n == 1, f"noNucleusSpawnRadius appeared {n} times"
+    return scene
+
+
+# The clone is a one-shot: once MinigameHijack.unity is committed the Editor owns it - its own
+# fileIDs and GlobalObjectIdHash values, and later edits (the controller's aiSlippedRailCooldown).
+# Re-cloning Cleave today would also drag in Cleave's per-intensity spawn floor, which is
+# Cleave's, not this arena's. So the committed scene is adopted, the blocks this script authors
+# must still be in it, and the checks below run on it. See aml.committed_scene.
+scene, _scene_errors = aml.committed_scene(
+    "Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity", clone_scene,
+    authored_blocks=(NEW_FIELDS, NEW_CELL, f"  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}\n",
+                     f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n"))
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity.meta",
      scene_meta(G_ASSET["MinigameHijack.unity"]))
@@ -608,7 +619,7 @@ emit(END_PATH, endcond)
 
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
-errors = []
+errors = list(_scene_errors)
 
 all_new = list(G_SCRIPT.values()) + list(G_ASSET.values())
 if len(set(all_new)) != len(all_new):
@@ -734,7 +745,7 @@ def cs_fields(path):
 
 
 SO_BASE = {"Mode", "IsMultiplayer", "DisplayName", "Description", "IconActive", "IconInactive",
-           "CardBackground", "PreviewClip", "GolfScoring", "SceneName"}
+           "CardBackground", "GolfScoring", "SceneName"}
 
 # (asset, its own class, the BASE classes whose fields it also inherits).
 #
@@ -821,6 +832,10 @@ if not re.search(rf"^\s*PrismsStolen = {METRIC_ID},", metric_cs, re.M):
     errors.append(f"ScoringMetric.cs has no 'PrismsStolen = {METRIC_ID}' - the scoring rule "
                   f"authors metric {METRIC_ID}")
 
+# The card's CardBackground is the /cardart render and no retired key rides on it - the
+# shared check every arcade generator runs (arcade_mode_lib.card_errors).
+errors += aml.check_cards(files)
+
 if errors:
     print("VALIDATION FAILED - nothing written:")
     for e in errors:
@@ -832,7 +847,15 @@ for rel in sorted(files):
     print("  ", rel)
 
 if CHECK_ONLY:
-    print("\n--check: no files written.")
+    # Diff against disk. This used to print "no files written" and exit 0 - a --check that
+    # never compares is a false green (a retired key and the placeholder CardBackground sat behind it).
+    _changed = aml.drift(files)
+    if _changed:
+        print(f"\n--check: {len(_changed)} file(s) differ from the authored output:")
+        for _c in sorted(_changed):
+            print("  -", _c)
+        sys.exit(1)
+    print(f"\n--check: no files written; all {len(files)} files match what this script authors.")
     sys.exit(0)
 
 for rel, content in files.items():

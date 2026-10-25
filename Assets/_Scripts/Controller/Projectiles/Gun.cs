@@ -28,6 +28,9 @@ namespace CosmicShore.Gameplay
         private IVesselStatus _vesselStatus;
         private Projectile _lastProjectile;
 
+        /// <summary>Most recently fired projectile — may be despawned; callers must guard with FlightGeneration.</summary>
+        public Projectile LastProjectile => _lastProjectile;
+
         private bool _onCooldown;
 
         /// <summary>
@@ -102,6 +105,9 @@ namespace CosmicShore.Gameplay
                         stopOnFirstPrismImpact, spareOwnDomain, flightGrowthFactor, payload);
                     break;
             }
+
+            // The camera following the shooter recoils (Docs/CAMERA_FEEL.md); it rate-limits a held trigger itself.
+            VesselCameraFeel.Shot(_vesselStatus);
 
             if (!ignoreCooldown)
             {
@@ -178,6 +184,8 @@ namespace CosmicShore.Gameplay
                         projectileScale, dir * sideLength, projectileTime, charge, energy, dir);
                 }
             }
+
+            VesselCameraFeel.Shot(_vesselStatus);   // one recoil per blast, not per spike
         }
 
         #region Firing Implementations

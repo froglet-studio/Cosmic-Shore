@@ -182,7 +182,8 @@ somebody will run**: one prompt file was still instructing a future session to a
 the branch had just deleted.
 
 **3.10 A one-shot migration `assert` above a generator's validation makes `--check` vacuous.**
-Six of eight mode generators were red and nobody was reading them. A spent one-shot must STAND
+Measured 2026-09-09, six of the eight mode generators then checked were red and nobody was reading
+them (all 25 `author_*_assets.py` pass `--check` since #969/#967, measured 2026-10-06). A spent one-shot must STAND
 DOWN, not abort. And *a `--check` that never reads the disk is not a check.*
 
 **3.11 "Referenced by SOMETHING" is also a statement about what you searched** — the mirror of
@@ -196,6 +197,14 @@ and had looked wired for as long as anybody read the prefab. Ask **which CONTAIN
 never which prefab mentions it; and when a claim rests on a prefab override, check that the
 target script still declares that field. (CLAUDE.md records the same shape for the stale `Cell`
 overrides 12 scenes accumulated; this is it met from the effect side.)
+
+**The converse also holds: a reference NAMING a deleted type can still be live wiring.** A UnityEvent
+persistent call stores both `m_Target` (the object) and `m_TargetAssemblyTypeName` (a cached
+string), and Unity resolves the method on the TARGET's actual type. `ModalWindows.prefab` still
+named `_Scripts._Core.Playfab_Models.ProfileMenu`, a type deleted with PlayFab, but `m_Target` was
+the `ProfileModal` component, which still declares the method: the randomize-name button was live,
+and "remove everything PlayFab" would have broken it. Resolve `m_Target`'s script guid and check
+the method exists before calling a listener dead; the stale string heals on the prefab's next save.
 
 **3.12 A container emptied to nothing is a real change to state, not a neutral outcome.** Removing
 the last entry from a list is arithmetically the same edit as removing the second-to-last and

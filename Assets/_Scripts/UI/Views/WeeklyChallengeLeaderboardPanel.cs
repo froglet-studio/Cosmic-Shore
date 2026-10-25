@@ -101,6 +101,19 @@ namespace CosmicShore.UI
             new(0.80f, 0.53f, 0.30f, 1f),   // bronze
         };
 
+        [Header("Style-B board (all optional)")]
+        [Tooltip("The podium for ranks 1, 2 and 3, in rank order. When wired, the top three are drawn " +
+                 "here and the row list starts at 4th; empty keeps every rank in the list.")]
+        [SerializeField] LeaderboardPodiumSlot[] podium = { };
+        [Tooltip("The inline rewards table. The band the local pilot's rank falls in is marked.")]
+        [SerializeField] LeaderboardRewardBand[] rewardBands = { };
+        [Tooltip("\"Your best run\": the local pilot's rank on the drawn board, as an ordinal (\"7th\").")]
+        [SerializeField] TMP_Text bestRankText;
+        [Tooltip("\"Your best run\": this week's best time (WeeklyChallengeService.BestTimeThisWeekMs).")]
+        [SerializeField] TMP_Text bestTimeText;
+        [Tooltip("The local pilot's row background, when the podium is wired (podium tints are then unused).")]
+        [SerializeField] Color localRowBackground = new(0.13f, 0.15f, 0.27f, 1f);
+
         [Header("Entry animation")]
         [Tooltip("Rows fade and slide in one after another. 0 disables the whole effect — every " +
                  "row simply appears, which is what a reduced-motion setting wants.")]
@@ -129,6 +142,8 @@ namespace CosmicShore.UI
             public TMP_Text Score;
             public Image Background;
             public Color BackgroundRest;
+            // The template's own avatar art, restored for an entry with no avatar (see BindAvatar).
+            public Sprite AvatarRest;
         }
 
         readonly List<Row> _rows = new();
@@ -249,14 +264,15 @@ namespace CosmicShore.UI
         {
             EnsureTemplate();
             KillRowTweens();
+            var listed = DrawBoard(entries);
 
-            while (_rows.Count > entries.Count)
+            while (_rows.Count > listed.Count)
             {
                 var last = _rows[^1];
                 _rows.RemoveAt(_rows.Count - 1);
                 if (last?.Root) Destroy(last.Root.gameObject);
             }
-            while (_rows.Count < entries.Count)
+            while (_rows.Count < listed.Count)
             {
                 var row = BuildRow();
                 if (row == null) break;
@@ -265,7 +281,7 @@ namespace CosmicShore.UI
 
             for (int i = 0; i < _rows.Count; i++)
             {
-                Bind(_rows[i], entries[i]);
+                Bind(_rows[i], listed[i]);
                 PlayRowEntry(_rows[i], i, _rows.Count);
             }
 
@@ -273,6 +289,56 @@ namespace CosmicShore.UI
             else HideEmpty();
 
             OnDrawn?.Invoke(Scope, entries.Count);
+        }
+
+        /// <summary>
+        /// The style-B half of a draw: the top three onto the podium (returning what is left for
+        /// the list), the "your best run" card and the local pilot's reward band. A board without
+        /// those parts gets every entry back unchanged.
+        /// </summary>
+        List<WeeklyChallengeRanking> DrawBoard(List<WeeklyChallengeRanking> entries)
+        {
+            int localRank = 0;
+            foreach (var e in entries)
+                if (e.IsLocalPlayer) { localRank = e.Rank; break; }
+
+            if (bestRankText) bestRankText.text = localRank > 0 ? Ordinal(localRank) : "-";
+            if (bestTimeText)
+            {
+                var service = WeeklyChallengeService.Instance;
+                long ms = service != null ? service.BestTimeThisWeekMs : 0;
+                bestTimeText.text = ms > 0 ? WeeklyChallengeRanking.FormatSeconds(ms / 1000.0) : "--:--.--";
+            }
+            foreach (var band in rewardBands)
+                if (band) band.SetLocalRank(localRank);
+
+            if (podium == null || podium.Length == 0) return entries;
+
+            var rest = new List<WeeklyChallengeRanking>(entries.Count);
+            var filled = new bool[podium.Length];
+            foreach (var e in entries)
+            {
+                int slot = e.Rank - 1;
+                if (slot >= 0 && slot < podium.Length && !filled[slot] && podium[slot])
+                {
+                    podium[slot].Show(e.IsLocalPlayer ? e.PlayerName + localNameSuffix : e.PlayerName,
+                                      e.FormatTime(), ResolveAvatarSprite(e.AvatarId));
+                    filled[slot] = true;
+                }
+                else rest.Add(e);
+            }
+            for (int i = 0; i < podium.Length; i++)
+                if (!filled[i] && podium[i]) podium[i].Clear();
+            return rest;
+        }
+
+        /// <summary>1st, 2nd, 3rd, 4th ... 11th, 12th, 13th ... 21st.</summary>
+        public static string Ordinal(int n)
+        {
+            int teen = n % 100;
+            string suffix = teen is >= 11 and <= 13 ? "th"
+                : (n % 10) switch { 1 => "st", 2 => "nd", 3 => "rd", _ => "th" };
+            return n + suffix;
         }
 
         void Bind(Row row, in WeeklyChallengeRanking entry)
@@ -301,7 +367,7 @@ namespace CosmicShore.UI
             }
 
             BindAvatar(row, entry);
-            BindPodium(row, entry.Rank);
+            BindPodium(row, entry.Rank, entry.IsLocalPlayer);
         }
 
         /// <summary>
@@ -316,8 +382,11 @@ namespace CosmicShore.UI
         {
             if (!row.Avatar) return;
 
+            // Rows are REUSED across redraws (a tab switch, a refresh), so an entry with no avatar
+            // must restore the template's art rather than keep whichever face the row showed
+            // last - that put another player's face beside this player's name.
             var sprite = ResolveAvatarSprite(entry.AvatarId);
-            if (sprite) row.Avatar.sprite = sprite;
+            row.Avatar.sprite = sprite ? sprite : row.AvatarRest;
 
             row.Avatar.enabled = row.Avatar.sprite;
             row.Avatar.color = Color.white;   // the ART carries the colour; tinting it dyes a face
@@ -339,9 +408,16 @@ namespace CosmicShore.UI
         /// on the podium is restored to the colour the TEMPLATE authored — captured once per row
         /// at build time, so a re-draw that moves a player off the podium cannot leave them gold.
         /// </summary>
-        void BindPodium(Row row, int rank)
+        void BindPodium(Row row, int rank, bool local)
         {
             if (!row.Background) return;
+
+            // With a podium the top three never reach the list, so the row tint marks YOU instead.
+            if (podium != null && podium.Length > 0)
+            {
+                row.Background.color = local ? localRowBackground : row.BackgroundRest;
+                return;
+            }
 
             row.Background.color = podiumColors != null && rank >= 1 && rank <= podiumColors.Length
                 ? podiumColors[rank - 1]
@@ -363,13 +439,26 @@ namespace CosmicShore.UI
 
         void ShowEmpty(string message)
         {
-            if (emptyState) emptyState.SetActive(true);
+            SetEmptyShown(true);
             if (emptyStateText) emptyStateText.text = message ?? string.Empty;
         }
 
-        void HideEmpty()
+        void HideEmpty() => SetEmptyShown(false);
+
+        // Through the empty state's CanvasGroup when it has one (the style-B board), by active
+        // state otherwise. An empty board also clears the podium and the reward mark.
+        void SetEmptyShown(bool shown)
         {
-            if (emptyState) emptyState.SetActive(false);
+            if (shown)
+            {
+                foreach (var slot in podium)
+                    if (slot) slot.Clear();
+                foreach (var band in rewardBands)
+                    if (band) band.SetLocalRank(0);
+            }
+            if (!emptyState) return;
+            if (emptyState.TryGetComponent(out CanvasGroup group)) KitVisibility.SetShown(group, shown);
+            else emptyState.SetActive(shown);
         }
 
         void ClearRows()
@@ -498,7 +587,8 @@ namespace CosmicShore.UI
             var row = new Row
             {
                 Root = clone,
-                Group = clone.GetComponent<CanvasGroup>() ?? clone.gameObject.AddComponent<CanvasGroup>(),
+                // TryGetComponent: GetComponent() ?? AddComponent() keeps the Editor's fake null.
+                Group = clone.TryGetComponent(out CanvasGroup group) ? group : clone.gameObject.AddComponent<CanvasGroup>(),
                 Rank = Resolve<TMP_Text>(clone, _rankPath) ?? FindByName<TMP_Text>(clone, "rank"),
                 Avatar = Resolve<Image>(clone, _avatarPath) ?? FindByName<Image>(clone, "avatar")
                          ?? FindByName<Image>(clone, "icon") ?? FindByName<Image>(clone, "profile"),
@@ -509,6 +599,7 @@ namespace CosmicShore.UI
                 Background = background,
                 BackgroundRest = background ? background.color : Color.white,
             };
+            row.AvatarRest = row.Avatar ? row.Avatar.sprite : null;
 
             return row;
         }

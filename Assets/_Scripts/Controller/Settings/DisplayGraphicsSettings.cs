@@ -24,7 +24,7 @@ namespace CosmicShore.Core
         /// Schema version of the persisted snapshot. Bump it whenever a saved value needs a
         /// one-time fix-up, and handle that bump in <see cref="Migrate"/>.
         /// </summary>
-        const int SettingsVersion = 2;
+        const int SettingsVersion = 3;
 
         GraphicsSettingsData _data = new();
 
@@ -84,6 +84,7 @@ namespace CosmicShore.Core
             PlayerPrefs.SetFloat(P + "Fov", _data.FieldOfView);
 
             PlayerPrefs.SetInt(P + "Preset", (int)_data.QualityPreset);
+            PlayerPrefs.SetInt(P + "BasePreset", (int)_data.BasePreset);
             PlayerPrefs.SetInt(P + "AA", (int)_data.AntiAliasing);
             PlayerPrefs.SetInt(P + "RenderScale", _data.RenderScalePercent);
             PlayerPrefs.SetInt(P + "Upscale", (int)_data.Upscaling);
@@ -112,6 +113,13 @@ namespace CosmicShore.Core
             d.FieldOfView = PlayerPrefs.GetFloat(P + "Fov", d.FieldOfView);
 
             d.QualityPreset = (QualityPresetSetting)PlayerPrefs.GetInt(P + "Preset", (int)d.QualityPreset);
+            // Saved before BasePreset existed: a picked preset is its own base, and a Custom one
+            // started from the quality level Unity is running (the platform default).
+            int basePreset = d.QualityPreset != QualityPresetSetting.Custom
+                ? (int)d.QualityPreset
+                : QualitySettings.GetQualityLevel();
+            d.BasePreset = (QualityPresetSetting)Mathf.Clamp(PlayerPrefs.GetInt(P + "BasePreset", basePreset),
+                (int)QualityPresetSetting.VeryLow, (int)QualityPresetSetting.Ultra);
             d.AntiAliasing = (AntiAliasingSetting)PlayerPrefs.GetInt(P + "AA", (int)d.AntiAliasing);
             d.RenderScalePercent = PlayerPrefs.GetInt(P + "RenderScale", d.RenderScalePercent);
             d.Upscaling = (UpscalingSetting)PlayerPrefs.GetInt(P + "Upscale", (int)d.Upscaling);
@@ -156,6 +164,51 @@ namespace CosmicShore.Core
             {
                 _data.FieldOfView = GraphicsSettingsData.DefaultFieldOfView;
             }
+
+            // v3: device tiers. A device whose profile has its own recommendation (MobileLow) was
+            // seeded on first run by the desktop-shaped capability score, which ranked a budget
+            // 8-core phone above an iPhone. Re-seed it - but only while the graphics fields still
+            // hold exactly what that old auto-detect wrote, i.e. the player never touched them.
+            if (version < 3)
+                ReseedUntouchedTierGraphics();
+        }
+
+        /// <summary>
+        /// The v3 migration: on a device whose <c>PlatformProfile</c> carries its own recommendation,
+        /// replace a still-untouched first-run graphics snapshot (preset, AA, render scale and
+        /// upscaler all equal to the capability heuristic's output on this device) with the tier's
+        /// recommendation. The frame cap moves with it only if it, too, was never changed. Desktop
+        /// and MobileHigh keep the heuristic, so this is a no-op for them.
+        /// </summary>
+        void ReseedUntouchedTierGraphics()
+        {
+            var profile = PlatformProfile.Current;
+            if (!profile || profile.AutoDetect.UseCapabilityHeuristic) return;
+
+            // A SIMULATED tier (FrogletTools ▸ Performance ▸ Device Tier) must not rewrite this
+            // machine's saved graphics: clearing the override would not bring them back, because the
+            // migration stamps the settings version and never runs again.
+            if (PlatformProfile.TierOverride.HasValue) return;
+
+            var old = SettingsAutoDetector.RecommendByCapability();
+            bool untouched = _data.QualityPreset == old.QualityPreset
+                             && _data.AntiAliasing == old.AntiAliasing
+                             && _data.RenderScalePercent == old.RenderScalePercent
+                             && _data.Upscaling == old.Upscaling;
+            if (!untouched) return;
+
+            var tier = SettingsAutoDetector.RecommendSettings();
+            if (_data.TargetFrameRate == old.TargetFrameRate)
+                _data.TargetFrameRate = tier.TargetFrameRate;
+            _data.QualityPreset = tier.QualityPreset;
+            _data.AntiAliasing = tier.AntiAliasing;
+            _data.RenderScalePercent = tier.RenderScalePercent;
+            _data.Upscaling = tier.Upscaling;
+
+            CSDebug.LogVerbose(CSLogChannel.Boot,
+                $"[Settings] Re-seeded first-run graphics for device tier {PlatformProfile.Tier}: " +
+                $"{_data.QualityPreset}, {_data.RenderScalePercent}% {_data.Upscaling}, {_data.AntiAliasing}, " +
+                $"{_data.TargetFrameRate} fps cap.");
         }
 
         void Commit(bool reapplyDisplay = false, bool reapplyQuality = false, bool reapplyFrameRate = false)
@@ -167,8 +220,14 @@ namespace CosmicShore.Core
             OnAnySettingChanged?.Invoke(_data);
         }
 
-        /// <summary>Any individual graphics override flips the preset label to Custom.</summary>
-        void MarkCustomPreset() => _data.QualityPreset = QualityPresetSetting.Custom;
+        /// <summary>Any individual graphics override flips the preset label to Custom; the preset it
+        /// started from stays the base whose GPU cuts remain in force.</summary>
+        void MarkCustomPreset()
+        {
+            if (_data.QualityPreset != QualityPresetSetting.Custom)
+                _data.BasePreset = _data.QualityPreset;
+            _data.QualityPreset = QualityPresetSetting.Custom;
+        }
 
         #endregion
 
@@ -200,9 +259,19 @@ namespace CosmicShore.Core
 
         #region Graphics setters
 
+        /// <summary>
+        /// Pick a quality preset: Unity's quality level, plus the preset's "on pick" settings from
+        /// <c>QualityPresetCutsSO</c> (Low turns anti-aliasing off and lowers render scale), which the
+        /// player can then change by hand. Its render cuts apply in <c>GraphicsSettingsApplier</c>.
+        /// </summary>
         public void SetQualityPreset(QualityPresetSetting preset)
         {
             _data.QualityPreset = preset;
+            if (preset != QualityPresetSetting.Custom)
+            {
+                _data.BasePreset = preset;
+                GraphicsCuts.For(preset)?.ApplyPickTo(_data);
+            }
             Commit(reapplyQuality: true);
         }
 
@@ -261,7 +330,7 @@ namespace CosmicShore.Core
             GraphicsSettingsApplier.ApplyAll(_data);
             Save();
             OnAnySettingChanged?.Invoke(_data);
-            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[Settings] Auto-detect -> {_data.QualityPreset} (capability score {SettingsAutoDetector.CapabilityScore()}/7).");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[Settings] Auto-detect -> {_data.QualityPreset} on device tier {PlatformProfile.Tier} (capability score {SettingsAutoDetector.CapabilityScore()}/7).");
         }
 
         /// <summary>Adopt a whole snapshot (e.g. the preset the benchmark sweep settled on).</summary>

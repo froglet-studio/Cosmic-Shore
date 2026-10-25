@@ -16,7 +16,8 @@ the vector flight model that fixes it, and the numbers.
 |---|---|
 | Input (gamepad) | **Left trigger**, analog. `singleTriggerDrift: 1` on the prefab and ONE drift action bound, so **the drift amount is how far LT is pulled**: 0 = no drift, full pull = the action's full authored drift, linear in between (`GetTriggerSum` returns raw `LeftTriggerAnalog` when no sharp tier is bound) |
 | Drift sound | `DriftAudioController.singleTriggerDepth: 1` on the prefab — the FMOD `Drift Amount` parameter follows the same LT pull (0 feathered → 1 buried), so the sound gets harder as the drift does; keyboard/touch read 1 |
-| Input (touch) | `OnlyLeftStickAction (12)` → binary (full drift), smoothed by `DRIFT_EASE_SPEED` (12/s ≈ 83 ms ramp) so a tap still reads as an analog pull |
+| Input (touch) | **Right-thumb lift = a full trigger pull** (every touch device, iOS and Android; ported from the Android strip branch 2026-10-05): lifting the right thumb raises `OnlyLeftStickAction (12)`, which the Squirrel's touch override binds to the drift. Glass measures no trigger travel, so the drift takes the BINARY fallback every non-gamepad input gets (`VesselTransformer.GetTriggerSum`: a gamepad reads its analog trigger; every other device drifts at a full pull). The left thumb flies alone - mirrored onto both sticks at FULL authority (one thumb at the rim commands what two full pad sticks command), pitch and yaw only, re-zeroed where it rests so the lift does not yank the vessel; the drift's own `Mult` then turns it sharper exactly as on a pad, and the hull follows at `touchNoseResponse` (9; local human pilot only - AI and autopilot keep the fleet's 1.5) through the drift as out of it. Putting the thumb back ends the drift; binary drifts ease in and out over `DRIFT_EASE_SPEED`. **The touch drift is the pad drift with the analog trigger replaced by a full pull** - `Tools/Build/touch_drift_slip.py --check` fails if they differ (same drift assets bound on both overrides, no one-thumb gain, the same full-deflection authority; `--self-test` proves each rule fires). A full-lock 180° hairpin at full pull scrubs ~7% on BOTH devices (reported, not gated: it is the drift action's tuning, `Mult`/`driftDamping`). The strip branch once cut the mirror to 0.70 (`OneThumbDriftTurnGain`) to stop that scrub on touch alone - a steering cut a pad pilot never had, since retired, as were a two-thumb overdrive (out of reach from cruise) and a depth-from-the-steering-thumb (the slide changed under the pilot as they steered) |
+| Input (AI) | `SkimRacePilot` asks `TryGetInputForAction<DriftActionSO>` at each press — it answers for the hull's ACTIVE device (12 on touch, 2 on every PC device) — and holds the left trigger at **full pull** (`DriftTriggerPull = 1`) while the drift is held, so an AI drifts at the tier's full authored depth on every device. See §10 |
 | Drift action | `SquirrelDriftAction` — at full pull rotation ×**1.8**, grip **0.25** (the old sharp tier's values; the old ×1.4 / 0.5 single tier now sits at ≈ half pull). `SquirrelSharpDriftAction` is no longer bound (2026-09-23) |
 | Right trigger | **NOT free** — `RightStickAction (1)` is `SquirrelTubeAction` (touch: `OnlyRightStickAction (11)`). The Squirrel keeps its two-stick scissor throttle; do not propose a Scarab-style RT accelerator here |
 
@@ -230,6 +231,9 @@ a terminal approach that lands on it.**
 | `_Prefabs/Spacevessels/Squirrel.prefab` | `vectorFlightModel: 1`, `driftOvershootCeiling: 1.25`, `driftThrottlePolicy: 0` (Live) |
 | `_SO_Assets/VesselActions/Squirrel/SquirrelDriftAction.asset` | the one drift action — ×1.8 / grip 0.25 at full pull |
 | `_SO_Assets/VesselActions/Squirrel/SquirrelSharpDriftAction.asset` | unbound since 2026-09-23 (safe to delete) |
+| `Controller/Vessel/DriftJet.cs` | the four jets: plume along Course while drifting, along `FlightAxis` (the mount bone's ±right) otherwise |
+| `Controller/FX/DriftAudioController.cs` | the drift loop (`event:/SFX/Drift`) and the release one-shot; §13 slip-angle volume (`DriftSlipVolumeTests`) |
+| `Controller/Vessel/DriftEngineSwivel.cs` | §12 — the drift animation: the four engine pods swing onto Course, parallel with their jets |
 
 `DriftDamping` was renamed to **`Grip`** (`[FormerlySerializedAs]` migrates the prefabs). It is what
 the field has always meant: the rate at which momentum rotates back onto the nose. It is a
@@ -244,7 +248,7 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 |---|---|---|---|
 | **Squirrel** | vector | Live | This document. Throttle semantics unchanged — only the direction of thrust |
 | **Scarab** | vector | Live (own policy) | Integrator throttle; overrides `ComputeNoseAcceleration` + `ShapeSpeed` |
-| **Dolphin** | **scalar** | (`Locked`, not consulted) | `Dolphin.prefab` authors `vectorFlightModel: 0`, so its drift freeze is the SCALAR path's `holdSpeedWhileDrifting: 1` — the only vessel in the fleet that sets it — and its `driftThrottlePolicy: Locked` is inert (the policy is vector-only). Same outcome (speed pinned for the drift's duration, entering at speed costs nothing), different mechanism. `DOLPHIN_ENERGY_ECONOMY.md` §2a |
+| **Dolphin** | **scalar** | Live (not consulted) | `Dolphin.prefab` authors `vectorFlightModel: 0`, so its drift freeze is the SCALAR path's `holdSpeedWhileDrifting: 1` — the only vessel in the fleet that sets it. Its `driftThrottlePolicy` was `Locked` (inert: the policy is vector-only) until 2026-10-17, when it went back to the default; keeping the scalar hold is decided for now (`DOLPHIN_ENERGY_ECONOMY.md` §2a). Same outcome (speed pinned for the drift's duration, entering at speed costs nothing), different mechanism. `DOLPHIN_ENERGY_ECONOMY.md` §2a |
 | Everyone else | scalar | — | Bit-identical to before the flag existed |
 
 ---
@@ -254,11 +258,19 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 | Knob | Where | Value | Effect |
 |---|---|---|---|
 | `driftOvershootCeiling` | Squirrel.prefab | 1.25 | Max \|v\| during a drift, × the throttle target. 1 = no overshoot |
-| `driftThrottlePolicy` | Squirrel.prefab | Live (0) | Whether thrust acts during a drift. `Locked` (the Dolphin) = no acceleration for the drift's duration |
+| `driftThrottlePolicy` | Squirrel.prefab | Live (0) | Whether thrust acts during a drift. `Locked` = no acceleration for the drift's duration (no shipped vessel; the Dolphin's documented alternative) |
 | `Mult` / `driftDamping` | `SquirrelDriftAction` | 1.8/0.25 | Rotation multiplier and grip at full trigger pull |
 | `DefaultThrottleScaler` | Squirrel.prefab | 60 | Scissor throttle's speed scale |
 | `RotationThrottleScaler` | Squirrel.prefab | 0 | Turn rate vs speed — **deliberately 0** |
 | `minimumThrottleBrakeSeconds` | every vessel | 2 | §3.5. Seconds to shed one cruise once the target is ZERO. 0 restores the legacy exponential tail |
+| `swivelRate` | Squirrel.prefab, `DriftEngineSwivel` | 3.7 /s | §12. How fast the engine pods ease onto Course and back; 3.7 matches the jets' own 0.06-per-frame ease at 60 fps |
+| `maxSwivelDegreesPerSecond` | Squirrel.prefab, `DriftEngineSwivel` | 360 | §12. Slew limit on the pods' swing (the Dolphin cage's number) |
+| `scaleVolumeBySlipAngle` | Squirrel.prefab, `DriftAudioController` | on | §13. Drift loop volume follows the slip angle (off by default in code, so the Dolphin's loop is unchanged) |
+| `quietSlipDegrees` / `fullSlipDegrees` | Squirrel.prefab, `DriftAudioController` | 0 / 180 | §13. Quiet at 0 degrees of slip, full (the pre-change volume) at 180, linear between |
+| `scaleReleaseBySlipAngle` | Squirrel.prefab, `DriftAudioController` | on | §13. The release one-shot's volume follows the slip angle the drift ended at, same curve (off by default in code) |
+| `quietVolume01` | Squirrel.prefab, `DriftAudioController` | 0.15 | §13. Volume multiplier at a small slip; 0 = silent |
+| `slipVolumeSmoothing` | Squirrel.prefab, `DriftAudioController` | 10 /s | §13. Smoothing on the slip volume |
+| `engines[].driftOffset` | Squirrel.prefab, `DriftEngineSwivel` | 0 | §12. Per-pod slide while drifting (vessel frame); the dial if the swung pods read as clipping the wing slats |
 
 ---
 
@@ -280,7 +292,11 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
    read as a speed dial while drifting.
 5. **AI drift.** SkimRace, watch an AI approach a crystal. At drift entry its trail must continue
    toward the crystal while the hull swings off-axis. If the trail follows the nose instead, the
-   Course re-aim in `SyncExternalWrites` regressed.
+   Course re-aim in `SyncExternalWrites` regressed. ⚠ **Corrected 2026-10-06:** this step cannot
+   pass as written. In Skim Race the Squirrel AI seats belong to `SkimRacePilot`, not `AIPilot`,
+   and every shipped `SkimRaceAIConfig*.asset` has `UseDrift: 0`, so no AI in Skim Race ever asks
+   to drift; the `AIPilot` course-lock drift this step describes runs in the OTHER modes a Squirrel
+   AI flies. To see the Skim Race pilot drift, follow §10's verification instead.
 6. **Danger prism while drifting.** Clip a danger prism mid-drift — the slow must land.
 7. **Vessel swap.** Menu freestyle → vessel changer → Squirrel at speed. The new hull inherits the
    speed rather than dropping to a stop.
@@ -327,3 +343,320 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 - The remaining scalar-path vessels have the same latent defect wherever they drift. Manta is the
   live case (two-trigger drift, `singleTriggerDrift: 0`); flipping its flag is a one-line change
   plus a feel pass, deliberately not taken in this branch.
+
+---
+
+## 10. AI drift: which control, and how deep (2026-10-06)
+
+**The defect.** An AI Squirrel in Skim Race could never drift — nor lay a Boost Ring — on a PC.
+`Squirrel.prefab` binds both abilities ONLY in its `R_VesselActionHandler` device-override maps
+(touch: drift on `OnlyLeftStickAction (12)`, ring on `OnlyRightStickAction (11)`; pad: drift on
+`LeftStickAction (2)`, ring on `RightStickAction (1)`; the shared map is empty).
+`TryGetInputForAction<T>` swept shared → touch → gamepad regardless of device, so it handed the
+pilot the TOUCH controls, and on a PC — `GetActiveOverrides` resolves Gamepad, Keyboard, DualMouse
+and MouseKeyboard all against the pad overrides — `PerformShipControllerActions(12)` was refused at
+`HasAction`. An AI player's `ActiveInputDevice` is decided once, by its own `InputController`, from
+the host's hardware: Gamepad with a pad connected, Keyboard without, Touch on a handheld. So only a
+handheld host ever drifted.
+
+**The fix (lookup).** `TryGetInputForAction` / `TryGetBoundAction` now resolve with the same rule a
+press does — `R_VesselActionHandler.TryGetPressedActions`: the ACTIVE device's override map first,
+then the shared entries that map does not shadow. One function serves the press gate, the press and
+the lookup, so a control the lookup hands out is by construction one the press accepts. An ability
+bound only for ANOTHER device is deliberately not a fallback (that control does nothing here, or
+fires whatever the shared map puts on it). `CollectBoundActions` / `HasBinding` — the HUD's
+all-devices view — are untouched. Every other caller (`AIPilot`'s aim telegraph, Tollway, Waystation,
+the Butterfly mode driver, and the AI boost policies' `CreateDriver` for the Sparrow, Serpent and
+Dolphin) binds its ability in the shared map, so its answer is unchanged; `SkimRingAIPolicySO` asks
+for the Squirrel's ring, which is bound in BOTH override maps, so it is found on every device as it
+was before (the policies start the returned action themselves rather than pressing its control).
+`SkimRacePilot` now asks at every press instead of caching the first answer for the match, and
+releases on the control its own press used. Pinned by `DeviceAwareActionLookupTests`, which also
+reads the shipped prefab and asserts both abilities are pressable on all five devices.
+
+**The depth (a deliberate choice).** With the press accepted, the drift's depth still depended on
+the device: on a PAD `VesselTransformer.GetTriggerSum` scales the drift by `LeftTriggerAnalog`, and
+an AI has no physical trigger, so a pad-device AI drifted at depth 0 — inert, while still reporting
+`IsDrifting` — and a keyboard-device AI at full depth. **An AI drift is now full depth on every
+device**: `SkimRacePilot` writes `LeftTriggerAnalog = 1` (`DriftTriggerPull`) every frame its drift
+is held and 0 otherwise, as one more input channel beside the sticks. Reasons:
+- full pull is the only depth every device agrees on — keyboard, mouse and touch already treat a
+  started drift as full depth, so a partial pull would only ever take effect on a pad;
+- the race must not depend on whether a controller is plugged into the host;
+- the driver's drift decision is on/off (enter past `DriftEnterDegrees`, leave under
+  `DriftExitDegrees`), and on/off means the tier's authored drift;
+- a buried trigger is a human input, inside the input-only contract (`Docs/SKIM_RACE_AI.md` §3).
+
+It is a constant, not a config field, for the first reason. Written every frame (not once at the
+press) so a neutral frame — a stationary hull — cannot leave a held drift at depth 0 when flight
+resumes. `LeftTriggerAnalog` replicates (`n_lTrig`), so remote peers' drift audio
+(`DriftAudioController.singleTriggerDepth`) reads the same buried trigger.
+
+**What this does NOT change: the shipped policy never asks to drift.** Every
+`SkimRaceAIConfig*.asset` ships `UseDrift: 0` and `UseLaunchRing: 0` (the C# defaults). That "off"
+was never measured against a working drift: the offline simulator does not model drift at all, and
+an in-editor benchmark on a PC had its drift and ring presses refused. Whether either should be on
+is a tuning question for the benchmark (`Docs/SKIM_RACE_AI.md` §7), not something this fix decides.
+
+**Verification (NOT EDITOR-VERIFIED at the time of writing).** Out of editor: the shipped
+`DeviceAwareActionLookupTests` were compiled with Roslyn against the shipped lookup methods and RUN
+against the real `Squirrel.prefab` (8/8, with three negative controls each failing the test aimed at
+it), and a harness drove the shipped `SkimRacePilot` actuation through the shipped press path on all
+five devices — the pre-fix code reproduced the report exactly (drift and ring start on Touch only),
+the fixed code drifts, holds the trigger at 1, releases it to 0 and lays the ring on every device.
+In the editor:
+1. Set `UseDrift: 1` on the config the intensity you play reads (`SkimRaceAIConfig_I1` for I1) —
+   a test edit, do not commit it.
+2. Skim Race with AI seats, **no pad connected**: an AI drifts on sharp heading changes — the hull
+   swings off its travel direction and its trail curves; `IsDrifting` toggles on the AI's
+   `VesselStatus`.
+3. Same with a **pad connected** (the AI's device becomes Gamepad): the same drift at the same
+   depth — with the AI's `InputStatus.LeftTriggerAnalog` reading 1 while it drifts. Before the fix
+   no drift started at all; with the lookup fixed but no trigger write, this run would show
+   `IsDrifting` with no visible drift (depth 0).
+4. HUD unchanged: your own Squirrel's control chips and ability row read exactly as before, on pad
+   and on keyboard.
+5. Revert step 1.
+
+---
+
+## 11. What a press runs on the OTHER machines (2026-10-06)
+
+§10 made the autopilot's lookup agree with the press gate on ONE machine. This is the cross-machine
+half: whether the same press runs the same actions on every peer. It is fleet-wide (the Squirrel is
+one of three hulls it hit), recorded here beside §10 because the Squirrel's override-only drift is
+what surfaced it.
+
+**The defect.** A press replicates by RE-EXECUTION: owner → `SendButtonPressed_ServerRpc` →
+`SendButtonPressed_ClientRpc` → every peer resolves the pressed INPUT to actions itself, against
+`R_VesselActionHandler`'s device override maps (Touch reads `_touchActionOverrides`; Gamepad,
+Keyboard, DualMouse and MouseKeyboard read `_gamepadActionOverrides`). The device came from
+`InputStatus.ActiveInputDevice`, which was the one `InputStatus` field that did not replicate — and
+every peer runs `InputController.Initialize` for every player (`Player.OnNetworkSpawn`), which picks
+a strategy from THAT machine's hardware (`SystemInfo.deviceType == Handheld` → Touch). So a phone saw
+a PC pilot as Touch and a PC saw a phone pilot as Keyboard, and each resolved the remote press
+against the wrong map. Measured from the shipped prefabs by `Tools/Build/peer_press_harness`, which
+compiles the real handler and routes its RPCs between an owner copy and a peer copy: of 825 presses
+on the 2026-10-08 tree (13 vessels × owner device × what the peer thinks the device is × bound input), **72 ran something
+different on the peer**, all on the three hulls that author device overrides:
+
+| Hull | Owner → peer | What diverged |
+|---|---|---|
+| Squirrel | PC → phone, phone → PC | Drift + `DriftTrailAction` (2 / 12) and the Boost Ring (1 / 11) **refused** on the other side — no drift, no drift-trail prisms, no ring |
+| Manta | phone → PC | **A different ability ran**: a touch pilot's both-thumbs boost (13) ran `BoostAction` locally and `MantaAnalogTurnBoostAction` on the PC; one-thumb yaw (11 / 12) likewise |
+| Rhino | PC → phone | Shield swipes (1 / 2) refused on the phone |
+
+The same 72 for an AI's `PerformShipControllerActionsReplicated` (the server's hardware decides the
+AI's device). Every hull without overrides is unaffected. The prismscape diverged with it, plus a
+second defect on the same path: **a release resolved against the device at RELEASE time**, so a
+device switch mid-hold (a phone pilot picking up a pad) released against the other map — 48 cases
+stranded the held ability, and on the Manta the release stopped an ability that was never started.
+
+**The fix — two halves, because each closes a gap the other cannot.**
+
+1. **`InputStatus.ActiveInputDevice` is an owner-write NetworkVariable** (`n_device`), the same
+   pattern as every other field there. Every reader on a replica now sees the OWNER's device, which
+   matters well beyond the action maps: `MantaAnalogTurnBoostExecutor` shapes the Yastri trail
+   (`SetTurnTrail`) only for pad/keyboard pilots; `VesselTransformer.GetTriggerSum` reads trigger
+   depth as analog on a pad and full pull otherwise, and eases non-pad input; `DriftAudioController`
+   does the same for the drift sound. The trigger analogs those interpret already replicated; the
+   device that says how to interpret them did not.
+2. **The press and release RPCs carry the device** the owner resolved with, as one byte
+   (`(byte)InputDeviceType`, or `R_VesselActionHandler.NoDevice` = 255 when the vessel has no pilot
+   input), and every peer — the owner's own copy included — resolves with THAT. Needed because a
+   NetworkVariable and an RPC are not ordered against each other (different objects — the device
+   lives on the Player, the press on the vessel — and a variable's delta goes out at the network
+   tick while an RPC goes out at once), so the first press after a device switch would otherwise
+   reach peers ahead of the switch. The press ledger (`_heldInputs`) now records the device each
+   held input was pressed with: a release resolves with the press's device, so it stops what the
+   press started; and the owner's release carries that device, for a peer that never ran the press
+   (joined mid-hold).
+
+**A parallel fix for the release half, superseded in the merge.** `7e5c950e4` ("a release stops
+the actions its press started", bleeding-edge 2026-10-08) attacked the same release defect from the
+other side: it recorded each press's resolved action LIST in a second ledger (`_startedActions`) and
+stopped that list on release. But the release still ran the `HasAction` gate against the LIVE device
+first, so an input the new device does not bind at all was refused before the record was ever read.
+Measured with `peer_press_harness --rev origin/bleeding-edge` on that handler: stranded holds 48 →
+24 (the Manta's fixed; the Squirrel's ring and drift and the Rhino's swipes still stuck), late-joiner
+releases still 48 wrong, and the cross-peer 72 untouched. This branch keeps ONE ledger, the device
+record above, because the device is what the wire needs anyway (a release carries it to a peer that
+never ran the press); the merge removed `_startedActions` rather than leave two bookkeepers for one
+release.
+
+**Rejected:** carrying the resolved action LIST (needs an action-index scheme every peer agrees on,
+costs more than a byte per press, and still leaves the executors' own device reads divergent); the
+NetworkVariable alone (the first press after a switch races it, and the release mismatch remains);
+the RPC alone (fixes the maps, leaves the Manta trail and the drift depth simulating the wrong
+device on every replica). Bandwidth: +1 byte per press and per release; the variable changes only
+when a pilot switches device.
+
+**What changes on screen beyond the fix.** A replica now simulates the owner's device, not the
+watching machine's: a PC watching a pad pilot's Squirrel reads that pilot's analog trigger depth
+(it read full pull when the PC had no pad); a phone watching a pad Manta now runs its trigger turn
+and boost exactly as a PC peer always did. An AI's device is the host's on every machine. Surfaces
+gated on the LOCAL pilot (`VesselTransformer.IsLocalHumanPilot`,
+`ShieldSwipeActionExecutor.IsLocalAnalogPilot`) are unchanged. No asset changed.
+
+**Files.**
+
+| File | Change |
+|---|---|
+| `Controller/IO/InputStatus.cs` | `n_device`; `ActiveInputDevice` follows the owner-write pattern |
+| `Controller/Vessel/R_VesselActionHandler.cs` | RPCs carry `byte device`; `StartPressedActions` / `StopPressedActions` resolve with it; `_heldInputs` is `input → device`; `CurrentDevice`, `PressedDevice`, `NoDevice`, `OverridesForCarried` |
+| `Tests/Editor/CarriedInputDeviceTests.cs` | the byte encoding: every device fits and round-trips, the sentinel collides with none, an unknown byte resolves to the shared map |
+| `Tools/Build/peer_press_harness/` | the two-machine harness; `--rev <git-rev>` reproduces the defect on an older handler, `--self-test` removes each mechanism above and requires a failure |
+
+**Verification.** NOT EDITOR-VERIFIED: no editor and no `unity` CLI in the authoring session, so
+`/verify-unity` did not run. Out of editor: `Tools/Build/unity_refcompile/run.sh` compiled the
+branch against the real Netcode 2.5.0 source and Unity reference assemblies with 0 errors in project
+code (negative control: a wrong-arity call planted in the ClientRpc fails it with CS7036, tagged as
+a changed file). `peer_press_harness` against the 2026-10-08 prefabs: the pre-fix handler
+(`--rev 40c9b744`) runs 72 of 825 presses differently on the peer (and 72 AI presses), strands 48
+holds and stops the wrong thing on 48 late-joiner releases; bleeding-edge's handler 72 / 24 / 48;
+this branch: 0 everywhere, plus the 4 shipped
+`CarriedInputDeviceTests` run green; `--self-test` catches all three removals. What none of that
+covers: Netcode delivery itself, the variable's replication, and what an executor DOES with a press
+— those need two real machines.
+
+In the editor (the Touch half needs a phone build: `InputController` keys Touch on
+`UnityEngine.SystemInfo.deviceType`, which reads Desktop in the editor and in every MPPM player; the
+Device Simulator overrides only `UnityEngine.Device.SystemInfo`):
+1. Edit-mode tests: `CarriedInputDeviceTests` (4) and `DeviceAwareActionLookupTests` pass.
+2. **Phone build + PC host, both on Squirrels.** PC pilot drifts (left trigger or Left Shift): on
+   the phone the PC Squirrel slides AND lays its drift trail — before the fix the trail never
+   appeared there. Phone pilot lifts the right thumb to drift: the PC sees the trail. Each pilot's
+   Boost Ring appears on the other machine. Prism counts in the drift trail match on both screens.
+3. **Same pair on Mantas.** Phone pilot lifts both thumbs (boost): the PC sees a straight boost, not
+   a trigger turn. PC pilot (pad) holds one trigger: the phone sees the Yastri flared trail.
+4. **Same pair on Rhinos.** PC pilot swipes the shield (pad triggers): the phone shows the swipe.
+5. **Mid-hold switch** (phone with a Bluetooth pad): hold a touch drift, touch the pad, let go — the
+   drift ends on BOTH screens (before: it could stay engaged).
+6. MPPM / two desktop players (no Touch available): a match plays exactly as before — presses, AI
+   abilities (Tollway, Waystation, Butterfly modes, Skim Race AI drift per §10), no console errors.
+
+**Follow-ups.** None required by this change. The harness covers what a press RESOLVES to; an
+executor that reads the local machine's hardware directly (`Gamepad.current`, as
+`ShieldSwipeActionExecutor` does for the local pilot) is a separate question and is gated correctly
+today.
+
+---
+
+## 12. The drift animation: the engine pods swing onto Course (2026-10-21)
+
+**The ask** (Garrett): the Squirrel should have a drift animation like the Dolphin's. The jets already
+show the drift (`DriftJet` turns each plume onto Course); the engines should turn with them, so the
+pods are parallel with the jets and the jets still come out of the back of the turned pods.
+
+**What it does.** While drifting, each of the four engine pods turns rigidly about the centre of its
+bone heads until its jet's flight axis lies on Course, and turns back when the drift ends. The hull,
+cockpit, crest, wings and tail keep aiming with the nose. It is the Dolphin's split
+(`RiptideAnimation`: the wings and engines go on flying straight down Course while the fuselage aims
+through them), applied to the parts the Squirrel's request names.
+
+| Pod | Bones (turned together) | Jet it carries |
+|---|---|---|
+| Front L / R | `bbone_FrontEngineBase`, `Trim`, `Tip` `.L/.R` (siblings) | `VesselJet (2)` / `(3)`, `flip 1` |
+| Back L / R | `bbone_BackEngineFrame` `.L/.R` (`BackEngineInner` is its child and rides it) | `VesselJet` / `(1)`, `flip 0` |
+
+The jet of each pod is found at runtime (a `DriftJet` whose parent is one of the pod's bones or under
+one), so the table's jet column is a measurement, not wiring: on the shipped FBX the `flip 0` jets
+point nose-wards only on the back-engine bones and the `flip 1` jets only on the front-engine bones.
+
+**How, and the three things it had to get right.**
+
+1. **After the Animator.** The Squirrel's model is driven by an Animator (`MantaAnimationContoller`,
+   nine single-frame poses in blend trees), which rewrites every bone between `Update` and
+   `LateUpdate`. The swing is applied in `LateUpdate` on top of the animated pose, so the pods keep
+   every pitch / yaw / roll take while turned. A bone the Animator did NOT write this frame still
+   holds last frame's swing; it is detected (its local pose is exactly what was written) and put
+   back to its animated pose before the next swing, so the swing cannot compound.
+2. **Parallel with the jet, exactly.** The swing is the hull's shortest arc onto Course (the
+   Dolphin's appendage frame: no roll of its own, held inside the antipode cone where the arc is
+   undefined, slew-limited at 360 deg/s) followed by a small per-pod correction from the pod's own
+   cant onto Course. The pod's axis is `DriftJet.FlightAxis`, the very vector the jet points along
+   outside a drift, so a pod at full swing and its plume share one direction by construction.
+3. **Jets stay in the back of the pods.** Each jet is a child of a pod bone, so it rides the pod
+   rigidly: wherever it sat on the pod before the swing, it sits there after. Its direction is still
+   `DriftJet`'s own; outside a drift `DriftJet` now aims along `FlightAxis` (unchanged behaviour), which
+   on the frames after a drift is the turned pod's axis, so the plumes follow the pods home.
+
+**Measured clearance (not yet seen in the editor).** Swinging the shipped FBX's pod vertices (dominant
+skin weight) about their centres and measuring the closest non-pod vertex: at rest the front pod sits
+0.09 u and the back pod 0.04 u from the hull; past about 30 degrees of drift aim both come within
+~0.01 u of the wing slats (`bbone_WingPiece1` for the front pod, `WingPiece4-6` for the back pod).
+Vertex distance is not penetration, so whether that reads as clipping at 17 u is for the flight to
+say. A slide clears the front pod for most angles (0.4 u outward: 0.31-0.37 u clearance at +30..+90,
+0.04-0.17 u at -45..-90); no single slide cleared the back pod, which sits inside the slat stack.
+`engines[].driftOffset` (default 0) is the dial if it does read as clipping.
+
+**What it does not touch.** Gameplay: it reads `IsDrifting` and `Course` (every peer has both) and
+writes only bone transforms. The flight model, the hull's colliders (on other nodes), the jets'
+own `DriftJet` steering and the tails.
+
+**In-editor verification.**
+1. Menu freestyle (or the Toybox Vessel Changer) on the Squirrel. Hold LT into a hard drift and aim
+   the nose well off the slide: all four engine pods turn to lie along the direction of travel,
+   parallel with their plumes, and the plumes still leave from the same spot on each pod. The hull,
+   wings, crest and tail keep aiming with the nose.
+2. Release the drift: the pods ease back onto the hull with the plumes, no snap.
+3. Aim fully backwards mid-drift (nose opposite the slide): the pods hold their last swing rather
+   than flicking; leaving that cone they swing smoothly (at most 360 deg/s).
+4. Fly without drifting: the pods animate exactly as before (the swivel writes nothing at rest).
+5. Look for the pods passing through the wing slats beyond ~30 degrees of aim. If they visibly clip,
+   try `driftOffset` on the front pods first (e.g. x = -0.4 on L / +0.4 on R in the vessel frame,
+   i.e. outward), and report what the back pods do.
+6. An AI Squirrel drifting (any mode where the AIPilot drifts it) shows the same swing; nothing in
+   the console.
+
+**Follow-ups.** None required. If the wings should also hold Course the way the Dolphin's do, they
+are six floating slats per side (`bbone_WholeWing.L/R` parents them) and fit the same component as a
+fifth and sixth "pod"; not done, because the ask named the engines.
+
+---
+
+## 13. The drift loop's volume follows the slip angle (2026-10-21)
+
+**The ask** (Garrett): scale the drift sound's amplitude by the difference between the drift angle and
+the return angle: a small angle is quiet, a large angle is what we hear now.
+
+**What it measures.** The slip angle: `Vector3.Angle(Course, nose)`, the angle between the direction the
+drift is carrying the Squirrel and the direction it returns to when the drift lets go (Grip rotates the
+momentum back onto the nose, §3). It is 0 when a drift begins and opens as the nose swings off the slide.
+
+**What it changes.** Only the looping drift event's volume (`event:/SFX/Drift`, on `DriftAudioController`),
+as a multiplier on top of the SFX slider and `baseVolumeMultiplier`:
+
+| Slip | Volume multiplier |
+|---|---|
+| 0 degrees | 0.15 |
+| 45 degrees | 0.36 |
+| 90 degrees | 0.575 |
+| 135 degrees | 0.79 |
+| 180 degrees | 1 (the volume before this change) |
+
+The curve is linear between the two angles (Garrett, 2026-10-21: "a linear curve between zero and 180
+with the max at 180"; the first cut was a smoothstep from 5 to 45 degrees) (`DriftAudioController.SlipVolume`, held by
+`DriftSlipVolumeTests`), smoothed at 10 /s so a twitchy nose does not make the loop flutter. The
+`Drift Amount` parameter (trigger depth) is untouched.
+
+**The release one-shot** (`Squirel boost`, fired when a drift held at least `minHoldForReleaseSound`
+ends) takes the same curve, from the slip angle the drift ENDED at (Garrett, 2026-10-21: "do the same
+for the end drift sound based on the angle difference of where the drift ended"). That angle is the
+last one measured while drifting, not the one on the release frame: once the drift lets go, Grip
+rotates the momentum back onto the nose, and reading Course after that could see 0 for a hard drift.
+Unsmoothed, since it is one value per release. The switch is OFF by default in code because the Dolphin uses the
+same controller for its own drift loop; only the Squirrel prefab turns it on. Local pilot only, as before.
+
+**In-editor verification.**
+1. Toy Box > Vessel Changer > Squirrel. Tap into a drift and keep the nose on the slide: the loop is
+   quiet.
+2. Hold the drift and swing the nose further and further off the slide: the loop rises evenly, reaching
+   its pre-change volume only with the nose pointing back along the slide (180 degrees).
+3. Swing back onto the slide while still drifting: it falls again, without fluttering.
+4. Release with the nose on the slide: the release one-shot is quiet. Release from a hard drift with the
+   nose far off the slide: it is loud, reaching its pre-change volume only at 180 degrees.
+5. Fly the Dolphin and drift: its drift sound is unchanged.
+
+If the quiet end is too quiet or the swell comes too late, `quietVolume01` and `fullSlipDegrees` are the
+dials (first-pass numbers, not play-tuned).

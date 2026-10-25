@@ -34,7 +34,9 @@ Idempotent: re-running prints "already retired" and exits 0.
 
     python3 Tools/Build/retire_call_to_action.py [--check]
 
---check exits 1 if the retirement has not been applied (for CI).
+--check exits 1 if the retirement has not been applied (for CI). It also runs
+retire_preview_clip.py's check, which owns the card half: no SO_Game card may carry the
+retired `CallToActionTargetType` (or `PreviewClip`) key.
 """
 from __future__ import annotations
 
@@ -240,10 +242,18 @@ def main() -> int:
     left = remaining()
 
     if check:
+        # The card half of the retirement - `CallToActionTargetType` (and the retired
+        # `PreviewClip`) on SO_Game cards - is owned by retire_preview_clip.py. Run it here so
+        # the one CI step that guards this retirement covers the cards too.
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import retire_preview_clip
+        cards_rc = retire_preview_clip.check()
         if left:
             print("call-to-action retirement: NOT APPLIED", file=sys.stderr)
             for rel in left:
                 print(f"  still carries it: {rel}", file=sys.stderr)
+            return 1
+        if cards_rc:
             return 1
         print("call-to-action retirement: OK (surface is gone)")
         return 0

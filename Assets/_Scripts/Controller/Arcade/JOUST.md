@@ -250,6 +250,18 @@ The pause menu's Restart button routes through the same `RequestReplay()` path (
 
 **Button gating (host-only + anti-spam):** the Scoreboard's `playAgainButton` (PlayAgainButton GO) and `mainMenuButton` (HomeButton GO) fields are wired in all three domain-game scenes so `ConfigureLobbyButtons` can hide both from non-host clients — only the host navigates; clients follow via the Netcode scene load. Once the host commits a navigation (Play Again clicked, or the main-menu SOAP event `Event_OnClickToMainMenuButton` fires from `PauseMenu.OnClickMainMenu`), `Scoreboard.HideHostNavButtons()` hides both buttons so the transition can't be spam-clicked. The `onClickToMainMenu` field must reference the same event asset PauseMenu raises.
 
+## Trail cap on low-end phones (MobileLow only)
+
+On the `MobileLow` device tier (`Docs/PLATFORM_UNIFICATION.md` §3.6) `OnNetworkSpawn` adds a
+`RaceTrailCap` (`RaceTrailCap.Attach(this, gameData, profile.JoustTrail)`): each vessel keeps
+its share of a 4,000-prism race budget, clamped to 400–1,200, and past it the
+oldest prism withers and returns to its pool. Every other tier — every PC, every iPhone that tiers
+High — sets no budget and adds nothing. This is an owner-authorized exception to the no-trail-cap
+law, recorded in `Docs/ECOSYSTEM.md` §0 with its fence; it is not a precedent. Trail prisms are
+local per peer, so in a phone-vs-PC joust the phone's ribbons are shorter than the PC's. Joust is flown
+in the empty Barren cell, where the rivals' ribbons are the only mass to skim — the cap keeps them,
+it only bounds their length.
+
 ## Collision Mechanics
 
 The jousting collision system is triggered by `VesselExplosionBySkimmerEffectSO` (`_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Skimmer Effects/`):

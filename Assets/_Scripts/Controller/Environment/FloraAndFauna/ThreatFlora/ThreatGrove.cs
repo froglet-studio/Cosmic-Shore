@@ -125,7 +125,9 @@ namespace CosmicShore.Gameplay
             Vector3 delta = end - start;
             if (duration <= 1e-3f || delta.sqrMagnitude < 1e-4f) return;
             Vector3 v = delta * (Mathf.PI / (2f * duration));
-            PrismRenderService.StampFlight(in prism.RenderHandle, PrismClock.Now, duration, new float3(v.x, v.y, v.z));
+            var fv = new float3(v.x, v.y, v.z);
+            if (!PrismRenderService.StampFlight(in prism.RenderHandle, PrismClock.Now, duration, fv))
+                PrismMeshRendererStamps.StampFlight(prism.StampRenderer, PrismClock.Now, duration, in fv); // §4.11 twin
         }
 
         /// <summary>Glow a prism into (or out of) its domain's DANGER palette over duration, without making it
@@ -518,20 +520,21 @@ namespace CosmicShore.Gameplay
         readonly HashSet<int> _queued = new();
         readonly List<Prism> _food = new();
         readonly List<int> _scratchVox = new();
-        float _foodAt, _pollAt;
+        float _foodAt, _pollAt, _physBudRetryAt;
         bool _tubesSeeded;
 
         public PhysarumCore Network => _phys;
 
-        /// <summary>A sclerotium joins the network with its planted share; returns its heart index.</summary>
-        public int RegisterSclerotium(PhysarumSclerotium heart, Vector3 position, HealthPrism tubePrefab)
+        /// <summary>A sclerotium joins the network; returns its heart index. A seeded one brings its planted share; a
+        /// budded daughter brings nothing (the reserve held her shell when her parent budded her - BudSclerotium).</summary>
+        public int RegisterSclerotium(PhysarumSclerotium heart, Vector3 position, HealthPrism tubePrefab, bool budded)
         {
             if (_phys == null)
             {
                 _phys = new PhysarumCore(_cfg.BuildPhysarum(heart.Element), _shape, _seed ^ 0x9E3779B9u);
                 _tubePrefab = tubePrefab;
             }
-            int k = _phys.AddHeart(ToN(position), _cfg.PlantedVolumePerSclerotium);
+            int k = budded ? _phys.AddBud(ToN(position)) : _phys.AddHeart(ToN(position), _cfg.PlantedVolumePerSclerotium);
             while (_hearts.Count <= k) _hearts.Add(null);
             _hearts[k] = heart;
             return k;
@@ -580,6 +583,7 @@ namespace CosmicShore.Gameplay
                 _phys.SetVessels(_vessels, _vesselCount);
                 _phys.Advance(dt * FarScale());
                 ProcessPhysarumEvents(warm: false);
+                BudSclerotium();
                 DrainLayQueue();
                 if (Time.time >= _pollAt) { _pollAt = Time.time + _phys.P.MaterializeEvery; PollTubes(); }
             }
@@ -600,7 +604,7 @@ namespace CosmicShore.Gameplay
             if (Time.time < _farCheckAt) return _farScale;
             _farCheckAt = Time.time + FarCheckSeconds;
             int n = 0;
-            var cam = Camera.main;
+            var cam = CameraManager.ViewCamera;   // not Camera.main: in flight that is the menu's static camera
             if (cam) _farPilots[n++] = ToN(cam.transform.position);
             int hits = Physics.OverlapSphereNonAlloc(_centre, _reach + _cfg.FarMargin, s_farOverlap, _vesselMask);
             for (int h = 0; h < hits && n < _farPilots.Length; h++)
@@ -615,6 +619,19 @@ namespace CosmicShore.Gameplay
                 : ThreatFloraMath.FarTimeScale(ToN(_centre), _reach + _cfg.FarMargin, _cfg.FarTimeScale,
                                                new System.ReadOnlySpan<NVec>(_farPilots, 0, n));
             return _farScale;
+        }
+
+        /// <summary>While the reserve holds a whole beat shell, a living sclerotium buds a daughter through the platform's
+        /// one offspring path (Flora.TrySpawnOneOffspring: the cell's cap and the Frenzy freeze apply), tried at most
+        /// every BudRetrySeconds as the snap traps' BudRequest is. Her shell is laid from the reserve, so a bud plants
+        /// no mass, and it blooms in like every shell prism.</summary>
+        void BudSclerotium()
+        {
+            if (Time.time < _physBudRetryAt) return;
+            var parent = Heart(_phys.BudParent());
+            if (!parent || parent.IsDying) return;
+            _physBudRetryAt = Time.time + _cfg.BudRetrySeconds;
+            parent.TryBud();
         }
 
         void Enqueue(int v)

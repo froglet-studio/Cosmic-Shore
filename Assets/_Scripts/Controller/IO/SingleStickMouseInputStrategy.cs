@@ -44,19 +44,21 @@ namespace CosmicShore.Gameplay
     /// <list type="table">
     /// <item><term>Mouse move</term><description>the single stick — pitch, yaw, and the bank into
     /// the turn the transformer derives from it</description></item>
+    /// <item><term>WASD</term><description>the same stick, digitally, added to the mouse's
+    /// deflection - see <see cref="KeyboardStick"/></description></item>
     /// <item><term>LMB <i>or</i> Right Shift</term><description>the RIGHT trigger side
     /// (<c>RightStickAction</c> / <c>OnlyRightStickAction</c> / <c>BothSticksAction</c> +
     /// <c>RightTriggerAnalog</c>) — the Sparrow's guns, the Scarab's throttle</description></item>
     /// <item><term>RMB <i>or</i> Left Shift</term><description>the LEFT trigger side — the
     /// Sparrow's skybursts, the Scarab's drift</description></item>
     /// <item><term>Space</term><description><c>Button1Action</c> (pad A)</description></item>
-    /// <item><term>R</term><description><c>Button2Action</c> (pad B)</description></item>
+    /// <item><term>T</term><description><c>Button2Action</c> (pad B; R until 2026-10-14, now the studio's reset)</description></item>
     /// <item><term>Q <i>or</i> MMB</term><description><c>Button3Action</c> (pad X)</description></item>
     /// <item><term>E</term><description><c>FlipAction</c> + the manual-throttle channel</description></item>
     /// </list>
-    /// The keys sit in the <b>QWER + Space</b> cluster so one resting left hand reaches every one
+    /// The keys sit in the <b>QWERT + Space</b> cluster so one resting left hand reaches every one
     /// of them without leaving the mouse, and they are assigned in REVERSE priority order: the two
-    /// mouse buttons carry the highest-priority abilities, Space the next, R the one after. Q is
+    /// mouse buttons carry the highest-priority abilities, Space the next, T the one after. Q is
     /// last and no one-thumb vessel binds it today. <c>KeyboardInputStrategy</c> was moved to the
     /// same three keys rather than left on B/N — there is ONE <c>keyboardLabel</c> per control, so
     /// two desktop schemes binding different keys would make the chip confidently wrong for one of
@@ -114,6 +116,7 @@ namespace CosmicShore.Gameplay
         bool prevButton1;
         bool prevButton2;
         bool prevButton3;
+        bool prevButton4;
 
         bool fullSpeedStraightEffectsStarted;
         bool minimumSpeedStraightEffectsStarted;
@@ -193,7 +196,7 @@ namespace CosmicShore.Gameplay
 
             UpdateStick(pixelDelta);
             ProcessButtons(mouse, keyboard);
-            Publish();
+            Publish(KeyboardStick(keyboard));
             PerformSpeedAndDirectionalEffects();
 
             // DEAD LAST, and isolated. Everything above is flight input; everything here is a
@@ -229,9 +232,11 @@ namespace CosmicShore.Gameplay
 
             deltaPixelsSinceActive += pixelDelta.magnitude;
 
-            if (publishedDeflection.sqrMagnitude > 0f)
+            // The MOUSE's deflection, not the published one: WASD steering the vessel says nothing
+            // about whether the mouse can, and a dead mouse is still worth naming.
+            if (mouseDeflection.sqrMagnitude > 0f)
             {
-                deadFlightReported = true;      // it is steering - say nothing, ever
+                deadFlightReported = true;      // the mouse is steering - say nothing, ever
                 return;
             }
 
@@ -284,6 +289,10 @@ namespace CosmicShore.Gameplay
         /// <summary>The deflection <see cref="Publish"/> last handed the vessel — what the widget
         /// draws and what the diagnostic reports, so all three can never disagree.</summary>
         Vector2 publishedDeflection;
+
+        /// <summary>The mouse's share of <see cref="publishedDeflection"/>, before WASD is added -
+        /// what <see cref="WatchForDeadFlight"/> asks about.</summary>
+        Vector2 mouseDeflection;
 
         static bool widgetFaulted;
 
@@ -402,13 +411,15 @@ namespace CosmicShore.Gameplay
         void ProcessButtons(Mouse mouse, Keyboard keyboard)
         {
             bool space = keyboard != null && keyboard.spaceKey.isPressed;
-            bool rKey = keyboard != null && keyboard.rKey.isPressed;
+            bool tKey = keyboard != null && keyboard.tKey.isPressed;
             bool qKey = keyboard != null && keyboard.qKey.isPressed;
+            bool fKey = keyboard != null && keyboard.fKey.isPressed;
             bool eKey = keyboard != null && keyboard.eKey.isPressed;
 
             EdgeFire(space, ref prevButton1, InputEvents.Button1Action);
-            EdgeFire(rKey, ref prevButton2, InputEvents.Button2Action);
+            EdgeFire(tKey, ref prevButton2, InputEvents.Button2Action);
             EdgeFire(qKey || mouse.middleButton.isPressed, ref prevButton3, InputEvents.Button3Action);
+            EdgeFire(fKey, ref prevButton4, InputEvents.Button4Action);   // the pad's Y, as in KeyboardInputStrategy
 
             // FlipAction has no held state to track beyond the key itself, and the manual-throttle
             // channel rides the same key, exactly as KeyboardInputStrategy wires it.
@@ -500,7 +511,28 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------
         // Publish
 
-        void Publish()
+        /// <summary>
+        /// WASD as a second source for the ONE stick, read exactly as <see cref="KeyboardInputStrategy"/>
+        /// reads its left stick: D/A is x, W/S is y, each digital.
+        ///
+        /// <para><b>Why the keyboard steers here at all.</b> This scheme originally read no
+        /// movement keys, so engaging it - which happens the moment a one-thumb hull is flown on a
+        /// desktop - silently killed the WASD steering the same hull had on
+        /// <see cref="KeyboardInputStrategy"/>. A player who reached for the keys got a ship that
+        /// fired (the buttons are shared) and would not turn, which is indistinguishable from
+        /// broken flight, and it held the Breakwater microgame's forced Lesson on its steer step.
+        /// The mouse remains the precise control; the keys are the one every desktop player tries
+        /// first.</para>
+        /// </summary>
+        static Vector2 KeyboardStick(Keyboard keyboard)
+        {
+            if (keyboard == null) return Vector2.zero;
+            return new Vector2(
+                (keyboard.dKey.isPressed ? 1f : 0f) - (keyboard.aKey.isPressed ? 1f : 0f),
+                (keyboard.wKey.isPressed ? 1f : 0f) - (keyboard.sKey.isPressed ? 1f : 0f));
+        }
+
+        void Publish(Vector2 keys)
         {
             // InvertY is applied HERE, at the source, rather than to YSum the way DualStickMix
             // does it — because a one-thumb vessel never reads YSum. Its pitch, its hull puppetry
@@ -508,7 +540,12 @@ namespace CosmicShore.Gameplay
             // stick, so inverting the stick is what makes every consumer agree about which way the
             // player just pushed. YSum below is derived from the already-inverted value for the
             // same reason: one truth, published once.
-            Vector2 reported = MouseVirtualStick.Deflection(stick, Config.DeadZone);
+            // The two sources are SUMMED and clamped to the unit circle the mouse stick already
+            // lives on, so a key adds to a mouse deflection rather than replacing it, and holding
+            // both can never publish past full lock. The keys never touch the mouse stick's STATE:
+            // releasing them leaves the mouse exactly where it was.
+            mouseDeflection = MouseVirtualStick.Deflection(stick, Config.DeadZone);
+            Vector2 reported = Vector2.ClampMagnitude(mouseDeflection + keys, 1f);
             publishedDeflection = reported;
 
             Vector2 aimed = inputStatus.InvertYEnabled ? new Vector2(reported.x, -reported.y) : reported;
@@ -583,6 +620,7 @@ namespace CosmicShore.Gameplay
             EdgeFire(false, ref prevButton1, InputEvents.Button1Action);
             EdgeFire(false, ref prevButton2, InputEvents.Button2Action);
             EdgeFire(false, ref prevButton3, InputEvents.Button3Action);
+            EdgeFire(false, ref prevButton4, InputEvents.Button4Action);
 
             if (fullSpeedStraightEffectsStarted)
             {
@@ -606,9 +644,10 @@ namespace CosmicShore.Gameplay
             prevRightActive = (mouse != null && mouse.leftButton.isPressed)
                               || (keyboard != null && keyboard.rightShiftKey.isPressed);
             prevButton1 = keyboard != null && keyboard.spaceKey.isPressed;
-            prevButton2 = keyboard != null && keyboard.rKey.isPressed;
+            prevButton2 = keyboard != null && keyboard.tKey.isPressed;
             prevButton3 = (keyboard != null && keyboard.qKey.isPressed)
                           || (mouse != null && mouse.middleButton.isPressed);
+            prevButton4 = keyboard != null && keyboard.fKey.isPressed;
         }
 
         static void LockCursor(bool locked)
@@ -626,9 +665,11 @@ namespace CosmicShore.Gameplay
             prevButton1 = false;
             prevButton2 = false;
             prevButton3 = false;
+            prevButton4 = false;
             fullSpeedStraightEffectsStarted = false;
             minimumSpeedStraightEffectsStarted = false;
             publishedDeflection = Vector2.zero;
+            mouseDeflection = Vector2.zero;
             deadFlightReported = false;
             deltaPixelsSinceActive = 0f;
         }

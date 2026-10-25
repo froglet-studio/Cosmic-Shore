@@ -233,6 +233,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] protected float density = 1f;
         [SerializeField] protected float spawnClearRadius = 0f;
         [SerializeField] protected Vector3[] spawnClearPoints = Array.Empty<Vector3>();
+        // Mirrors the shipped base (CellEnvironmentSpawnableBase.FingerprintBaseFields).
+        internal static readonly string[] FingerprintBaseFields =
+            { nameof(seed), nameof(density), nameof(spawnClearRadius), nameof(spawnClearPoints) };
         protected const float GoldenAngle = 2.39996323f;
         protected List<PrismLay> _cachedLays;
         protected System.Random _r;
@@ -243,6 +246,8 @@ namespace CosmicShore.Gameplay
         protected virtual int LayCapacity => 40000;
         protected abstract void BuildEnvironment();
         protected virtual bool AdmitsAuthoredPrismScale => false;
+        // CellEnvironmentSpawnableBase.BakesLayout: the rail worlds override it false (PrismLayoutBake).
+        protected virtual bool BakesLayout => true;
         protected abstract int BuildParameterHash();
 
         public IReadOnlyList<PrismLay> CachedLays => _cachedLays;
@@ -267,6 +272,12 @@ namespace CosmicShore.Gameplay
         protected Vector3 Jit(Vector3 s, float amt = 0.2f)
         {
             float k = 1f + RangeF(-amt, amt);
+            return new Vector3(Mathf.Max(0.5f, s.x * k), Mathf.Max(0.5f, s.y * k), Mathf.Max(0.5f, s.z * k));
+        }
+        // CellEnvironmentSpawnableBase.JitDown, verbatim: a jitter that only shrinks a flush size.
+        protected Vector3 JitDown(Vector3 s, float amt = 0.2f)
+        {
+            float k = 1f - RangeF(0f, 2f * amt);
             return new Vector3(Mathf.Max(0.5f, s.x * k), Mathf.Max(0.5f, s.y * k), Mathf.Max(0.5f, s.z * k));
         }
 

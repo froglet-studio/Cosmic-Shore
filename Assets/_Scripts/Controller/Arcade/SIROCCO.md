@@ -19,7 +19,7 @@ working pilots over), **Tapestry** (Mass, making mass), and this (Space, destroy
 | Target | `EndConditionOverridesSO.siroccoPrismTarget` (**600**) |
 | Comeback | rate **0.01** — a quarter behind (150 prisms) buys 1.5 element levels |
 | Arena | **Rampage's cactus forest**, referenced read-only (four intensity configs) |
-| Objective arrow | none — like Cleave, the forest rings the whole cell |
+| Objective arrow | `HostileMassObjectiveProvider` — the densest standing hostile stand (the point the AI's erosion runs steer to), never the crystal |
 | Generator | `Tools/Build/author_sirocco_assets.py` (`--check`) |
 
 ## The loop

@@ -299,6 +299,25 @@ namespace CosmicShore.Engine.UI
 
         public bool HasCharacter(uint unicode) => characterLookupTable.ContainsKey(unicode);
 
+        /// <summary>Original contract: true when every character of <paramref name="text"/> is in this face (or, with
+        /// <paramref name="searchFallbacks"/>, a fallback). The port's faces are static, so nothing is added.</summary>
+        public bool HasCharacters(string text, out List<char> missingCharacters, bool searchFallbacks = false, bool tryAddCharacter = false)
+        {
+            missingCharacters = null;
+            if (string.IsNullOrEmpty(text)) return true;
+            foreach (char c in text)
+            {
+                if (HasCharacter(c)) continue;
+                bool found = false;
+                if (searchFallbacks)
+                    foreach (var f in fallbackFontAssetTable)
+                        if (f != null && f.HasCharacter(c)) { found = true; break; }
+                if (found) continue;
+                (missingCharacters ??= new List<char>()).Add(c);
+            }
+            return missingCharacters == null;
+        }
+
         public bool TryGetCharacter(uint unicode, out TMP_Character character)
             => characterLookupTable.TryGetValue(unicode, out character);
 
@@ -541,5 +560,15 @@ namespace CosmicShore.Engine.UI
     /// <summary>Canvas (UGUI) TextMeshPro component.</summary>
     public class TextMeshProUGUI : TMP_Text
     {
+        /// <summary>
+        /// Canvas text is always orthographic: TMP's Awake forces it whatever the scene serialized.
+        /// A label saved with <c>m_isOrthographic: 0</c> (made by a script or an older TMP) would
+        /// otherwise take the world-space font scale (x 0.1) and draw at a tenth of its size.
+        /// </summary>
+        protected override void Awake()
+        {
+            base.Awake();
+            m_isOrthographic = true;
+        }
     }
 }

@@ -23,6 +23,7 @@ namespace CosmicShore.Tests
         const string LightFaunaPath = "Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs";
         const string LifeFormPath = "Assets/_Scripts/Controller/Environment/FloraAndFauna/LifeForm.cs";
         const string CellPath = "Assets/_Scripts/Controller/Environment/Cell.cs";
+        const string SnowChangerPath = "Assets/_Scripts/Controller/Environment/Cytoplasm/SnowChanger.cs";
         const string HlslPath = "Assets/_Graphics/Materials/Graphs/PrismClockAnimation.hlsl";
 
         static readonly string[] SpindleGraphs =
@@ -116,6 +117,33 @@ namespace CosmicShore.Tests
             Assert.IsTrue(src.Contains("ForceWither(float evaporateDelay"),
                 "ForceWither must take an evaporateDelay so ordered wither can stamp i * interval " +
                 "in one pass instead of WaitForSeconds between calls.");
+        }
+
+        /// <summary>
+        /// Docs/ECOSYSTEM.md §63: a dying limb becomes a cytoplasm shard. The shard must start on
+        /// the limb's OWN fade start (so it grows while the limb fades, and an ordered wither's
+        /// i * interval offsets carry over), and the shard field must draw and reorient its live
+        /// COUNT, not its array capacity, or the doubled tail draws zero-matrix shards.
+        /// </summary>
+        [Test]
+        public void EvaporatingLimb_BecomesAShardOnItsOwnFadeClock()
+        {
+            string src = File.ReadAllText(SpindlePath);
+            var evaporate = Regex.Match(src, @"void StampEvaporate\(float delay\)\s*\{(?<body>[^}]*)\}");
+            Assert.IsTrue(evaporate.Success, "Spindle.StampEvaporate(float delay) is missing.");
+            string body = evaporate.Groups["body"].Value;
+            Assert.IsTrue(Regex.IsMatch(body, @"StampDeathFade\(start,"),
+                "StampEvaporate must stamp the fade from the local start time it hands the shard.");
+            Assert.IsTrue(Regex.IsMatch(body, @"MorphIntoShard\(start\)"),
+                "StampEvaporate no longer hands its fade start to MorphIntoShard - a dying limb " +
+                "must condense into a shard on its own clock (Docs/ECOSYSTEM.md §63).");
+
+            string snow = File.ReadAllText(SnowChangerPath);
+            Assert.IsTrue(snow.Contains("public bool AddMorphedShard("),
+                "SnowChanger.AddMorphedShard is missing - dying limbs have no shard list to join.");
+            Assert.IsFalse(snow.Contains("_matrices.Length - start") || Regex.IsMatch(snow, @"start < _matrices\.Length"),
+                "SnowChanger draws its matrix CAPACITY - the arrays double as limbs add shards, so the " +
+                "draw must read _count.");
         }
 
         [Test]

@@ -5,13 +5,13 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using ImGuiNET;
-using Prisma;
+using Amoebius;
 
 namespace CosmicShore.Launcher
 {
     /// <summary>
     /// macOS-style notifications (banners top right, a notification center under the bell), the
-    /// clean-ups Prisma offers but never does unasked (a stale git lock, stale build outputs, low
+    /// clean-ups Amoebius offers but never does unasked (a stale git lock, stale build outputs, low
     /// disk, errors from the last run), and the first-run tour.
     /// </summary>
     public sealed partial class LauncherApp
@@ -40,7 +40,7 @@ namespace CosmicShore.Launcher
             }
         }
 
-        void NotifyRun(PrismaTracks.IngestResult r)
+        void NotifyRun(AmoebiusTracks.IngestResult r)
         {
             var run = r.Run;
             if (run.Crashed)
@@ -57,11 +57,11 @@ namespace CosmicShore.Launcher
                     string.Join("\n", problems.Take(2).Select(i => Trim(i.Message.Replace('\n', ' '), 70))), NoteKind.Warning,
                     ("CLEAN UP", () =>
                     {
-                        _chat.SetScope(ClaudeChat.Scope.Game);
+                        _chats.New();
                         _page = Page.Chat;
-                        SendChat("Clean up the new problems from my last play run (prisma_tracks has them with counts):\n" +
+                        SendChat("Clean up the new problems from my last play run (amoebius_tracks has them with counts):\n" +
                                  string.Join("\n", problems.Take(8).Select(i => $"- [{i.Kind}] {i.Message}")) +
-                                 "\nFix the ones whose cause is in the game, prove each fix, and suggest the rest as board items.", (ClaudeChat.Mode)_s.ChatMode);
+                                 "\nFix the ones whose cause is in the game, prove each fix, and suggest the rest as board items.", ChatModeNow);
                     }),
                     ("REVIEW", () => { _page = Page.Tracks; _tracksTab = 0; }));
             }
@@ -71,11 +71,52 @@ namespace CosmicShore.Launcher
                 Notify("Clean run", $"{run.Seconds / 60:0.0} min, {run.Exceptions + run.Errors} errors, p95 {run.P95:0.0} ms. Recorded in TRACKS.", NoteKind.Success);
         }
 
+        // ------------------------------------------------------------------ multiplayer test logs
+
+        readonly object _netLogGate = new();
+
+        /// <summary>
+        /// After an online test (START ONLINE, + PLAYER 2) every player has written its multiplayer test log; one
+        /// notification offers to send them to Claude, as the Unity editor's after-play question does. Asked once per
+        /// log: NOT NOW keeps them here and they go with the next send.
+        /// </summary>
+        void OfferNetLogs()
+        {
+            if (_jobs.GameRunning || _jobs.SecondPlayerRunning) return; // the last player to close asks
+            List<FileInfo> fresh;
+            lock (_netLogGate)
+            {
+                var seenFile = Path.Combine(LauncherJobs.NetLogsDir, "offered.txt");
+                var seen = new HashSet<string>(File.Exists(seenFile) ? File.ReadAllLines(seenFile) : Array.Empty<string>(), StringComparer.Ordinal);
+                fresh = NetTestLogFormat.NewFiles(LauncherJobs.NetLogsDir, seen);
+                if (fresh.Count == 0) return;
+                try { File.AppendAllLines(seenFile, fresh.Select(f => f.Name)); } catch { /* asked again next time at worst */ }
+            }
+            var peers = NetTestLogFormat.PeersOf(fresh.Select(f => f.Name));
+            Notify("Send this online test's logs to Claude?",
+                $"Logs from {NetTestLogFormat.Players(peers)}: each player's console and network timeline. Nothing in your project or branch changes.",
+                NoteKind.Info,
+                ("SEND TO CLAUDE", SendNetLogs),
+                ("NOT NOW", () => { }));
+        }
+
+        void SendNetLogs() => Task.Run(async () =>
+        {
+            var files = NetLogSender.Candidates(LauncherJobs.NetLogsDir);
+            if (files.Count == 0) { Notify("No multiplayer test logs to send", "An online test with a second player writes them when its players close.", NoteKind.Info); return; }
+            var r = await NetLogSender.Send(_tools.Git ?? "git", _ws.Dir, files, Environment.UserName, _jobs.Log, System.Threading.CancellationToken.None);
+            if (r.Ok)
+                Notify(r.Sent == 0 ? "Claude already has these logs" : "Sent to Claude",
+                    r.Sent == 0 ? $"They are on {r.Branch}." : $"{r.Sent} multiplayer test log(s) on {r.Branch}. Ask Claude to read them.", NoteKind.Success);
+            else
+                Notify("Could not send the logs", r.Error ?? "", NoteKind.Error, ("RETRY", SendNetLogs), ("NOT NOW", () => { }));
+        });
+
         // ------------------------------------------------------------------ doctor
 
         bool? _lastOkSeen;
 
-        /// <summary>Looks for things Prisma can clean up. It only ever offers; the user decides.</summary>
+        /// <summary>Looks for things Amoebius can clean up. It only ever offers; the user decides.</summary>
         void RunDoctor()
         {
             try
@@ -90,11 +131,11 @@ namespace CosmicShore.Launcher
                             ("CLEAN UP", () => { try { File.Delete(lockFile); Notify("Lock removed", "Updates work again.", NoteKind.Success); } catch (Exception e) { Notify("Could not remove the lock", e.Message, NoteKind.Error); } }),
                             ("NOT NOW", () => { }));
                 }
-                // 2. low disk where Prisma keeps its workspace, versions and builds
+                // 2. low disk where Amoebius keeps its workspace, versions and builds
                 var drive = new DriveInfo(Path.GetPathRoot(LauncherSettings.DataDir)!);
                 if (drive.IsReady && drive.AvailableFreeSpace < 3L << 30)
                     Notify($"Low disk space: {drive.AvailableFreeSpace / (double)(1L << 30):0.0} GB free",
-                        "Prisma can remove old launcher versions (keeping the newest three), build caches and session reports older than 30 days.", NoteKind.Warning,
+                        "Amoebius can remove old launcher versions (keeping the newest three), build caches and session reports older than 30 days.", NoteKind.Warning,
                         ("CLEAN UP", () => Task.Run(FreeSpace)), ("NOT NOW", () => { }));
             }
             catch { /* the doctor never gets in the way */ }
@@ -124,13 +165,13 @@ namespace CosmicShore.Launcher
             var last = string.Join("\n", _jobs.Log.Tail(80));
             bool buildFail = last.Contains("error CS", StringComparison.Ordinal) || last.Contains("MSB", StringComparison.Ordinal) || last.Contains("being used by another process");
             if (!buildFail) return;
-            Notify("The build failed", "If the outputs are stale, a clean build fixes it. Prisma can delete Port's build folders and try again.", NoteKind.Error,
+            Notify("The build failed", "If the outputs are stale, a clean build fixes it. Amoebius can delete Port's build folders and try again.", NoteKind.Error,
                 ("CLEAN & RETRY", () => Task.Run(() =>
                 {
                     foreach (var proj in Directory.GetDirectories(Path.Combine(_ws.Dir, "Port", "src")))
                         foreach (var sub in new[] { "obj", "bin" })
                             try { var d = Path.Combine(proj, sub); if (Directory.Exists(d)) Directory.Delete(d, true); } catch { }
-                    _jobs.Play();
+                    _jobs.Play(_jobs.PlayingOnline);
                 })),
                 ("SHOW LOG", () => _page = Page.Console));
         }
@@ -197,7 +238,7 @@ namespace CosmicShore.Launcher
             dl.AddRectFilled(a + new Vector2(14, 16), a + new Vector2(42, 44), Neon.U(new Vector4(0.06f, 0.07f, 0.12f, 1f)), 8);
             Neon.PrismIcon(dl, a + new Vector2(28, 31), 16, 1f, Neon.Time);
             dl.AddCircleFilled(a + new Vector2(40, 18), 4, Neon.U(NoteColor(n.Kind)));
-            dl.AddText(Neon.Small, 12, a + new Vector2(54, 12), Neon.U(Neon.Dim), "PRISMA");
+            dl.AddText(Neon.Small, 12, a + new Vector2(54, 12), Neon.U(Neon.Dim), "AMOEBIUS");
             var ago = DateTime.Now - n.Time;
             var when = ago.TotalMinutes < 1 ? "now" : ago.TotalHours < 1 ? $"{(int)ago.TotalMinutes}m ago" : n.Time.ToString("HH:mm");
             dl.AddText(Neon.Small, 12, new Vector2(b.X - 14 - when.Length * 6.2f, a.Y + 12), Neon.U(Neon.Dim), when);
@@ -276,17 +317,16 @@ namespace CosmicShore.Launcher
 
         TourStep[] Tour => new[]
         {
-            new TourStep("Welcome to Prisma",
+            new TourStep("Welcome to Amoebius",
                 "Froglet's own engine for Cosmic Shore. It builds the game from source, runs it, records every run, and has an agent powered by Claude. Here is a one-minute tour.",
                 () => null),
-            new TourStep("Play", "Pick a branch and press START: Prisma fetches it, builds it and runs the game. Every play session is recorded when you close the game.", () => Rail(Page.Play), Page.Play),
-            new TourStep("Build", "Phone builds: an Android APK, or an iOS .ipa built on GitHub's Mac for Sideloadly.", () => Rail(Page.Build), Page.Build),
-            new TourStep("Project", "Prisma's own Player, Scenes and Quality settings. Empty fields follow Unity's.", () => Rail(Page.Project), Page.Project),
-            new TourStep("Prisma Agent", "Powered by Claude. It works on the game, starting from what your last runs recorded. Sign in with your Claude plan, pick a model, plan first or let it edit.", () => Rail(Page.Chat), Page.Chat),
+            new TourStep("Play", "Pick a branch and press START: Amoebius fetches it, builds it and runs the game. Every play session is recorded when you close the game.", () => Rail(Page.Play), Page.Play),
+            new TourStep("Build", "Phone builds: an Android APK, or an iOS Xcode project (TestFlight is the route onto a phone).", () => Rail(Page.Build), Page.Build),
+            new TourStep("Project", "Amoebius's own Player, Scenes and Quality settings. Empty fields follow Unity's.", () => Rail(Page.Project), Page.Project),
+            new TourStep("Amoebius Agent", "Powered by Claude. It works on the game, starting from what your last runs recorded. Sign in with your Claude plan, pick a model, plan first or let it edit.", () => Rail(Page.Chat), Page.Chat),
             new TourStep("Tracks", "Every run's performance per scene, the modes and vessels you used, audio, and every problem with when it was first and last seen.", () => Rail(Page.Tracks), Page.Tracks),
-            new TourStep("Board", "Your bugs and tasks. Prisma suggests new ones from your runs; nothing joins the board until you accept it.", () => Rail(Page.Board), Page.Board),
-            new TourStep("Milestones", "The roadmap to parity with Unity and beyond. START a checkpoint to open an engine session for it, right here.", () => Rail(Page.Milestones), Page.Milestones),
-            new TourStep("Notifications", "Prisma tells you what each run found and offers clean-ups - it never cleans up without asking.", () => Title("tbbell")),
+            new TourStep("Board", "Your bugs and tasks. Amoebius suggests new ones from your runs; nothing joins the board until you accept it.", () => Rail(Page.Board), Page.Board),
+            new TourStep("Notifications", "Amoebius tells you what each run found and offers clean-ups - it never cleans up without asking.", () => Title("tbbell")),
             new TourStep("Settings", "Looks and themes, the Claude account, updates and every installed version. Press ? in the top bar to see this tour again.", () => Rail(Page.Options), Page.Options),
         };
 

@@ -1,6 +1,6 @@
 ---
 name: ship
-description: End-of-branch shipping protocol - review everything on the branch, prove any editor tool's ASSET OUTPUT actually landed (§2.5, never skipped), complete the documentation so the work is ready to build from, make an honest go/no-go call (pushing back with a concrete iteration list when the branch needs another pass), and only then open the pull request. Use when a feature branch feels done ("wrap this up", "open the PR", "ship it"), before ANY pull request is created, or at the end of a long working session. Depth variants: /ship-quick (fast), /ship-deep (thorough), /ship-tools (tool output + retirement only). Pairs with /reorient (run it first when the session has run long or bleeding-edge may have moved).
+description: End-of-branch shipping protocol - review everything on the branch, prove any editor tool's ASSET OUTPUT actually landed (§2.5, never skipped), complete the documentation so the work is ready to build from, feed what any LAB on the branch taught back into the /labmaker skill (§3.55), make an honest go/no-go call (pushing back with a concrete iteration list when the branch needs another pass), and only then open the pull request. Use when a feature branch feels done ("wrap this up", "open the PR", "ship it"), before ANY pull request is created, or at the end of a long working session. Depth variants: /ship-quick (fast), /ship-deep (thorough), /ship-tools (tool output + retirement only). Pairs with /reorient (run it first when the session has run long or bleeding-edge may have moved).
 ---
 
 # Ship Protocol — review, document, decide, then PR
@@ -14,8 +14,8 @@ two more iterations should fix. **Opening the PR is the last step, never the fir
 | You want | Use | What changes |
 |---|---|---|
 | The default, full protocol | `/ship` | Everything below. |
-| A small, already-reviewed branch out the door | `/ship-quick` | Trims the §2 review and §3 doc passes. **Never** trims §2.5. |
-| A big branch, a LOCKED system, or a long session | `/ship-deep` | Adds an adversarial re-read, a blast-radius sweep, a doc-drift sweep, and a mechanical refactor-opportunity sweep (D8) over §3.6. |
+| A small, already-reviewed branch out the door | `/ship-quick` | Trims the §2 review and §3 doc passes. **Never** trims §2.5, and keeps §3.55's minimum (the lab's CATALOG row plus any costly lesson). |
+| A big branch, a LOCKED system, or a long session | `/ship-deep` | Adds an adversarial re-read, a blast-radius sweep, a doc-drift sweep, a mechanical refactor-opportunity sweep (D8) over §3.6, and a lab audit (D9) over §3.55. |
 | Only to land an editor tool's OUTPUT (no PR) | `/ship-tools` | Runs §2.5 alone, then retires the tool and pushes. |
 
 `/ship <mode>` works too (`/ship quick`, `/ship deep`, `/ship tools`).
@@ -43,7 +43,8 @@ That is the standing setting for every mode (`/ship`, `/ship-quick`, `/ship-deep
   about your own change; never as a checklist item, never as evidence, and never as a reason
   to sit on finished work.
 - **Do not wait on, poll, or report CI.** Do not subscribe to a PR to watch checks. If a
-  human wants CI watched, they will ask.
+  human wants CI watched, they will ask. The one CI action a ship command takes is to FIRE
+  it, once, at the end (§5.5) — `claude/**` branches trigger nothing on their own.
 - **Say so plainly instead.** The verification line in the PR body and the ship report reads
   "not compiled — no editor or compiler in this environment", followed by what a human must
   do at the editor. An honest "unverified" is the deliverable; a manufactured green is not.
@@ -67,6 +68,22 @@ script bare (`script >/dev/null 2>&1; echo $?`), or read `${PIPESTATUS[0]}`. Do 
 negative control too: a `--check` you have only ever watched SUCCEED is a `--check` you have
 not tested — mutate one authored value, confirm it exits non-zero AND names the file, then
 restore and confirm the tree is clean (`git status --short` on the asset path).
+
+**One tool changes the premise above, though not the policy: `Tools/Build/unity_refcompile`
+(2026-10).** It binds the whole of `Assembly-CSharp`, method bodies included, against real Unity 6
+reference assemblies and every package at its locked source — not the syntax-only Roslyn pass this
+section warns about — and `check_generated_assets.py` then audits changed YAML assets against the
+schema it wrote. It is still not a ship gate and still optional; but when a session has network and
+ten minutes, a green run of it (negative-controlled) IS evidence, and the verification line may say
+"compiled against Unity reference assemblies (`unity_refcompile`), not opened in the editor" instead
+of "not compiled". How to run it, and its false positives: `/asset-surgery` §4.
+
+**A green `unity_refcompile` does not cover Amoebius.** Amoebius compiles the same `Assets/_Scripts` against its own
+`UnityEngine` shim, as a development build with no platform symbol, so a Unity API the shim lacks breaks the engine
+and nothing on the Unity side notices (2026-10-19: `Debug.developerConsoleEnabled`, CS0117). When the branch calls a
+Unity API the game did not call before, `dotnet build Port/src/CosmicShore.Live` (.NET 10 SDK, `dotnet-install.sh
+--channel 10.0`, about 2 minutes) is the check; `Docs/CONDITIONAL_COMPILATION.md` "The Amoebius variant" has the
+guard that keeps player-only APIs out of it.
 
 **§2.5 is NOT one of these.** The tool-output gate is a git and filesystem question — did the
 WRITER tool's assets land in a commit — and it needs no compiler, no editor and no CI. It
@@ -114,6 +131,11 @@ run the `/reorient` skill first and act on its verdict before shipping.
   the same branch, `git diff` between the two merge commits' trees was EMPTY, which is better
   evidence the resolution is right than any amount of re-reading it.
 
+- **A `.prefab` / `.unity` conflict is resolved per OBJECT, never per line:** `/asset-surgery` § "resolve a
+  `.unity` / `.prefab` MERGE per OBJECT" and `Tools/Build/merge_unity_scene.py`, with its five assertions. That
+  includes the shape where each side DELETED different adjacent documents. Git then pairs one side's deleted
+  object against the other's surviving neighbour, and every "keep both" builds an object out of two. (2026-10-18:
+  the Rhino rig swap against bleeding-edge's HUD cleanup, 74 deletions and 0 genuine conflicts.)
 - **Merge the base branch in before reviewing**, so you resolve conflicts rather than
   leaving them for a reviewer, and so §2 reviews the tree that will actually land.
   **`git fetch` the base again right before you open the PR, and treat a moved tip as a
@@ -312,6 +334,36 @@ run the `/reorient` skill first and act on its verdict before shipping.
   of one bug. Reference theirs rather than restating it, and keep only the part they do
   not cover. Expect this whenever the base branch touched the same files — check with
   `git log --oneline <merge-base>..origin/<base> -- <your changed files>`.
+  **That check sees only what has MERGED. The collision that costs a whole branch is the one
+  still in flight.** Two sessions were given the same refcompile bug within minutes of each other
+  (2026-10-06). Both fixed it, and the second to reach the base conflicted in four files. The other
+  branch was even NAMED in a base README this branch merged (*"an unmerged branch,
+  `claude/hopeful-heisenberg-murjor`, does this"*). One `git log` of it would have shown the
+  duplicate fix before the PR opened, not after the PR conflicted. Listing every remote branch is
+  no help (`git ls-remote origin 'refs/heads/*'` returns 500+), so follow the names. Before opening
+  the PR, grep the files you changed for branch names
+  (`git grep -ohE '(claude|cece)/[a-z0-9-]+' origin/<base> -- <your changed files> | sort -u`).
+  For each name that still exists (`git ls-remote origin refs/heads/<name>`), run
+  `git fetch --depth=50 origin <name>` and then
+  `git log --oneline origin/<base>..FETCH_HEAD -- <your changed files>`.
+- **Taking THEIR side of a file your branch refactored voids your branch's PROSE about that refactor, and nothing
+  conflicts there.** `cece/sharp-tesla-j0kd7z` moved the Wrasse's `KiteNavigator` onto a shared `ICrewSeat`; the next
+  base merge (2026-10-21) took bleeding-edge's `KiteNavigator` wholesale because it had grown its own crew system. The
+  code was right after that. Five claims that the Wrasse ran on the shared pieces were still in the docs: a CLOSED team
+  task, a verification-checklist entry, the project overview row, a report and the brief. A closed task is the worst of
+  them, because nobody re-reads a done row. After any take-theirs on a file your branch changed, grep your branch's diff
+  for the file's types (`git diff <merge-base>..HEAD -- '*.md' | grep <Type>`) and correct or reopen each claim.
+- **An add/add conflict on a `.meta` is two GUIDs for one asset path, and taking one side wholesale
+  orphans every reference to the other.** Two branches each created `RampBoostAIPolicySO.cs` and
+  `RhinoAIBoostPolicy.asset` (2026-10-17, `cece/relaxed-hopper-r62hbd` against bleeding-edge), so
+  the file names matched and the guids did not. `git checkout --theirs` on the four files is the
+  right resolve, but the branch's own `Rhino.prefab` still pointed `boostPolicy` at the LOSING
+  asset guid. It surfaced here only because both sides had edited that prefab line. Had the other
+  branch not wired the prefab, the line would have auto-merged to a guid no file carries: a null
+  policy, and "the AI quietly never ramps" in play. After taking a side on any `AA` `.meta`,
+  `git grep` the losing guid across `Assets/` and repoint every hit. Two quicker tells that the
+  other copy is the one to keep: its doc comment names your branch as a source, or a
+  `Docs/TEAM_TASKS.md` row already flags the duplicate.
 - **"Pick one wholesale" is right when the two fixes have the same BLAST RADIUS, and wrong when
   they do not — ask about scope before you discard either.** The collision above assumes two
   implementations of one fix. The other shape is two fixes at different ALTITUDES, and there
@@ -773,6 +825,70 @@ Then act on it — this step produces edits, not intentions:
   decide — silence is the only wrong output. A session that learned nothing
   reusable says so explicitly.
 
+## 3.55 Lab capture (any branch that made or changed a LAB — feeds `/labmaker`)
+
+A lab is a prototype rig built to DECIDE a mechanic before Unity: a browser studio, a research
+rig with a generated viewer, a calibrated headless model, or an in-editor lab window
+(`/labmaker` §0). Labs are built by many contributors on many branches. The craft compounds only
+if every branch that touched one leaves what it learned in **`.claude/skills/labmaker/`**. This
+is §3.5 made specific and mechanical for labs. It runs in every mode that runs §3.5, and
+`/ship-quick` keeps a minimum of it (see that file).
+
+**1. Detect.** The branch touched a lab if any of these hits:
+
+```sh
+git diff --name-only <merge-base>..HEAD | grep -iE \
+  '(^|/)(Docs/Studios|Tools/(NCA|Ecology|ecosim))/|(lab|studio|bestiary|sandbox|playground)[^/]*\.(html|py|cjs|js|cs)$|(^|/)(DISCOVERIES|PROGRAM)\.md$|/briefs/'
+git diff <merge-base>..HEAD -- '*.html' | grep -cE '^\+.*(window\.__[A-Za-z]+(Studio|Lab)\b|use\(.db.\))'   # >0 = a lab page
+```
+
+(Measured on `claude/peaceful-rubin-hhw49n`: the first command lists `Docs/Studios/**`, and the
+second counts 8. On `cece/swarm-x-live2` the first lists about 500 `Tools/NCA` paths.)
+
+Also count a lab the session PUBLISHED as an artifact even if its repo copy did not change. No hit
+means one report line, "no lab touched", and you are done.
+
+**2. Verify each single-file browser lab** it touched:
+
+```sh
+node .claude/skills/labmaker/verify_lab.cjs <lab.html> --out <scratch>
+```
+
+- Read both screenshots.
+- A page that fails to load cleanly, or scrolls on desktop, is a §2 finding against the branch.
+- A lab that predates the `window.__lab` hook fails the hook checks: report that as "not on the
+  contract yet". It is not a §4 blocker.
+- Research rigs and models run their own gates (fidelity, `--check`, parity harness). Report what
+  ran.
+
+**3. Update `/labmaker` — edits, not intentions:**
+
+- **`CATALOG.md`**: add or refresh the lab's row (branch, path, live URL, status, what it
+  decided). A lab that is not in the catalog is invisible to the next contributor.
+- **`LEARNINGS.md`**: one attributed entry (branch, session, date) per lesson that cost real time
+  or that the next lab would re-learn. That covers:
+  - a trap;
+  - a verification that caught something;
+  - a technique that made the lab legible;
+  - a process change the human asked for between rounds.
+
+  Use that file's entry format. Grep the id before you claim it (§1's id-collision rule).
+- **Promote** into `SKILL.md` §2–§8 any entry that has now recurred in a second lab or cost a
+  round. Mark it `Promoted: §N`.
+- If the branch added a reusable check, extend `verify_lab.cjs`, add its planted defect to
+  `--self-test`, and run both.
+
+**4. Two traps specific to this step.**
+
+- **A lab branch is often not the branch being shipped.** Its learnings still belong in this
+  branch's copy of `/labmaker` when this session learned them. Attribute them to the branch where
+  the lab lives.
+- **Never copy a lab's numbers into LEARNINGS as current truth.** Quote them as "measured at round
+  N", with the tool that produced them (§3: a measurement is a derived value).
+
+**Report**: labs touched, the verifier verdict per lab, the CATALOG rows changed, the LEARNINGS
+ids added and anything promoted, or an explicit "lab touched, nothing new learned: <why>".
+
 ## 3.6 Refactor-opportunity pass (§3.5 for DEBT — rows only, never edits)
 
 §3.5 harvests what the session learned. This harvests what the session **saw and did not
@@ -850,6 +966,18 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
 
 ## 5. Open the PR (GO only)
 
+- **Who else works here** (`Docs/TEAM.md`): `git fetch origin && python3 Tools/Build/who_works_where.py query
+  $(git diff --name-only origin/bleeding-edge...HEAD | cut -d/ -f1-4 | sort -u)`. For every other collaborator with
+  in-flight or recent work in those paths, the PR body gets an **Affects** line ("Affects: Garrett's
+  `cece/zen-fermat` Stoat modes - builds on them, changes nothing they decided"). A branch that would replace or
+  re-tune another collaborator's work is a NO-GO until the person you work with has confirmed it with them (§4).
+- **Hand-offs** (`Docs/TEAM.md` rule 9, the `/team-tasks` skill): anything the branch leaves for a person (an editor
+  test, a playtest, a dashboard step, content, a decision) goes on the branch's ONE ticket (`/team-tasks add`; a second
+  `add` appends a checklist line), naming nobody: tickets are never assigned; taking one makes it the taker's, and naming a branch starts it. Close
+  the tickets the branch finished (`team_tasks.py done <id> --note <proof>`). Then put
+  `python3 Tools/Build/team_tasks.py pr-section` in the PR body as its **Hand-offs** section.
+- Do not ask whether Amoebius or the Vessel Studio helped: the decision is recorded (`Docs/TOOLING_DECISIONS.md`
+  §6, 2026-10-19) and Shombith asked sessions to stop. Keep Vessel Studio work out of `Port/`.
 - Check for a PR template (`.github/pull_request_template.md` and variants); mirror its
   structure if present.
 - PR body: what & why, per-system summary, **verification status** (what a human must
@@ -859,12 +987,58 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
   gate applies.
 - Base is `bleeding-edge` unless told otherwise. Do not subscribe to PR activity to watch
   CI (§0.05); subscribe only if the human asks you to follow the review.
+- **Before pushing MORE work onto the branch of a PR you already opened, confirm the PR is still
+  OPEN** (`pull_request_read` → `merged`/`state`), right before the push, not at the start of the
+  task. A human can merge at any moment, and a commit pushed after the merge lands on a branch
+  nobody will merge again: it is stranded, and any PR-body update you make to describe it then
+  claims work the merged PR does not contain. It happened on 2026-10-14: #1091 merged at 21:20 and
+  the prefab-authoring commit was pushed at 21:30. The QA backlog is scanned from PR bodies, so an
+  overclaiming body is a wrong test plan, not just a wrong note. If it has merged, restart the
+  branch from the base (merge the base in when force-push is refused), keep the commit, and say so
+  in both PRs. The follow-up went out as #1094, and #1091 carries a correction note pointing at it.
+
+## 5.5 Fire CI once (every mode — `/ship`, `/ship-quick`, `/ship-deep`, `/ship-tools`)
+
+A `claude/**` branch fires no CI by itself: `unity-ci.yml` skips every pull-request event whose
+head is `claude/**`, and the iOS request-file workflows ignore those branches
+(`Docs/BUILD_AND_DELIVERY.md` § "`claude/**` branches do not trigger CI on their own"). CI runs
+for it only when it lands on `bleeding-edge` or when a ship command runs — so this step is the
+branch's one pre-merge check. Do it after the LAST push of the command (the PR in §5, or the
+§6/§7 push in `/ship-tools`), on a GO and on a `/ship-tools` push alike; a NO-GO pushes nothing
+new and fires nothing.
+
+```
+mcp__github__actions_run_trigger
+  method: run_workflow
+  owner: froglet-studio   repo: cosmic-shore
+  workflow_id: unity-ci.yml
+  ref: <this branch>
+  inputs: { mode: static }
+```
+
+- **`static`, not `compile`.** It is the ubuntu static checks only and never takes the single
+  Unity runner, which is reserved for post-merge compiles and the scheduled IL2CPP builds. A
+  human who wants a real compile of the branch dispatches `compile` from the Actions tab.
+- **Once per command, and fire-and-forget.** Do not wait on it, poll it, or subscribe to it
+  (§0.05). Put "CI dispatched: `unity-ci.yml` static on `<branch>`" in the PR body or the
+  `/ship-tools` report — the run lands on the branch head's checks.
+- **The branch must carry the `static` choice.** A dispatch runs the ref's own copy of
+  `unity-ci.yml`, so a branch cut before the option existed is refused with a 422 until
+  bleeding-edge is merged in (which §1 normally does anyway).
+- **If the dispatch is refused** (no tool, a 403), say so in the report in one line with the
+  manual route — Actions → Unity CI → Run workflow → `static` → the branch. It is never a
+  reason to hold a GO.
+- **Never push an empty commit, or close and reopen the PR, to make CI fire.** The dispatch is
+  the only trigger.
 
 ## 6. Report
 
-Tell the prompter: the go/no-go call and why, the PR link (or the iteration list), the
+Tell the prompter: the go/no-go call and why, the PR link (or the iteration list), whether
+the §5.5 CI dispatch went out, the
 **§2.5 tool-output verdict** (every tool classified, whose output landed in which commit,
 what was retired), the follow-ups you recorded, the §3.5 skill-capture outcome
-(skills created/extended, or the explicit "nothing reusable this session"), and the
+(skills created/extended, or the explicit "nothing reusable this session"), the §3.55
+lab-capture outcome (labs touched, verifier verdicts, `/labmaker` CATALOG/LEARNINGS changes, or
+"no lab touched"), and the
 §3.6 refactor-opportunity outcome (the rows opened and where they live, or the explicit
 "nothing found" — and never a fix made in their place).

@@ -17,11 +17,11 @@ namespace CosmicShore.Gameplay
 
         public enum SiteType
         {
-            Top,
-            Right,
-            Bottom,
-            Left,
-            None
+            Top = 0,
+            Right = 1,
+            Bottom = 2,
+            Left = 3,
+            None = 4
         }
 
         [SerializeField] private float ownPullSpeed = 4.0f;
@@ -96,10 +96,18 @@ namespace CosmicShore.Gameplay
             StartBonding();
         }
 
+        // The search loop's handle. StopBonding has to be able to end it: the inner search loop
+        // never read isStopped, so after every Serpent cloak (CloakSeedWallActionExecutor ->
+        // StopSeedCompletely -> StopBonding) the loop kept searching every ~2 s for the life of
+        // the prism - stamping WallAssemblers onto, resizing and pulling every prism within 40u,
+        // enemy trails included - and a repeated StartBonding stacked a second loop.
+        Coroutine _lookForMates;
+
         public override void StartBonding()
         {
             isStopped = false;
-            StartCoroutine(LookForMates());
+            if (_lookForMates != null) StopCoroutine(_lookForMates);
+            _lookForMates = StartCoroutine(LookForMates());
         }
 
         //the following method calculates rotation using SiteType. Is is similiar to "Quaternion CalculateRotation(BondMate mate)"
@@ -275,11 +283,11 @@ namespace CosmicShore.Gameplay
         {
             while (!isStopped)
             {
-                while (true)
+                while (!isStopped)
                 {
                     if (Prism == null)
                     {
-                        yield return new WaitForSeconds(1f);
+                        yield return CosmicShore.Utility.WaitCache.Seconds(1f);
                         continue;
                     }
 
@@ -296,7 +304,7 @@ namespace CosmicShore.Gameplay
                         }
                     }
 
-                    yield return new WaitForSeconds(1f);
+                    yield return CosmicShore.Utility.WaitCache.Seconds(1f);
                     if (BottomMate.Mate == null)
                     {
                         BottomMate = FindClosestMate(globalBondSiteBottom, SiteType.Bottom);
@@ -309,7 +317,7 @@ namespace CosmicShore.Gameplay
                         }
                     }
 
-                    yield return new WaitForSeconds(1f);
+                    yield return CosmicShore.Utility.WaitCache.Seconds(1f);
                     if (TopIsBonded && BottomIsBonded)
                     {
                         StopAllCoroutines();
@@ -409,11 +417,9 @@ namespace CosmicShore.Gameplay
                 var trailBlock = s_mateScratch[i];
                 if (trailBlock == null || trailBlock.destroyed) continue;
 
-                WallAssembler mateComponent = trailBlock.GetComponent<WallAssembler>();
-                if (mateComponent == null)
+                if (!trailBlock.TryGetComponent(out WallAssembler mateComponent))
                 {
-                    HealthPrism healthPrism = trailBlock.GetComponent<HealthPrism>();
-                    if (healthPrism != null)
+                    if (trailBlock.TryGetComponent(out HealthPrism healthPrism))
                     {
                         healthPrism.Reparent(Prism.transform.parent);
                     }
@@ -573,6 +579,7 @@ namespace CosmicShore.Gameplay
         public override void StopBonding()
         {
             isStopped = true;
+            if (_lookForMates != null) { StopCoroutine(_lookForMates); _lookForMates = null; }
             if (updateTopMate != null) { StopCoroutine(updateTopMate); updateTopMate = null; }
             if (updateBottomMate != null) { StopCoroutine(updateBottomMate); updateBottomMate = null; }
 

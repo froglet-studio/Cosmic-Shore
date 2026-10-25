@@ -73,7 +73,7 @@ namespace CosmicShore.Engine
     }
 
     /// <summary>
-    /// GPU buffer (UnityEngine.GraphicsBuffer), CPU-backed like <see cref="ComputeBuffer"/>. Prisma's
+    /// GPU buffer (UnityEngine.GraphicsBuffer), CPU-backed like <see cref="ComputeBuffer"/>. Amoebius's
     /// GL 3.3 / GL ES 3.0 renderer has no vertex-stage storage buffers, so nothing draws from one
     /// (<see cref="SystemInfo.maxComputeBufferInputsVertex"/> says so, as Unity does on such a device).
     /// </summary>
@@ -161,31 +161,6 @@ namespace CosmicShore.Engine
     }
 
     public enum FullScreenMode { ExclusiveFullScreen = 0, FullScreenWindow = 1, MaximizedWindow = 2, Windowed = 3 }
-
-    /// <summary>One frame's CPU/GPU timings (UnityEngine.FrameTiming).</summary>
-    public struct FrameTiming
-    {
-        public ulong cpuTimePresentCalled, cpuTimeFrameComplete, frameStartTimestamp, firstSubmitTimestamp;
-        public double cpuFrameTime, cpuMainThreadFrameTime, cpuMainThreadPresentWaitTime, cpuRenderThreadFrameTime, gpuFrameTime;
-        public float heightScale, widthScale;
-        public uint syncInterval;
-    }
-
-    /// <summary>Frame-timing capture (UnityEngine.FrameTimingManager). Reports the engine's own frame time.</summary>
-    public static class FrameTimingManager
-    {
-        public static bool IsFeatureEnabled() => true;
-        public static void CaptureFrameTimings() { }
-        public static uint GetLatestTimings(uint numFrames, FrameTiming[] timings)
-        {
-            if (timings == null || timings.Length == 0 || numFrames == 0) return 0;
-            timings[0] = new FrameTiming { cpuFrameTime = Time.unscaledDeltaTime * 1000.0, cpuMainThreadFrameTime = Time.unscaledDeltaTime * 1000.0, gpuFrameTime = 0 };
-            return 1;
-        }
-        public static ulong GetCpuTimerFrequency() => (ulong)System.Diagnostics.Stopwatch.Frequency;
-        public static ulong GetGpuTimerFrequency() => 0;
-        public static ulong GetVSyncsPerSecond() => 60;
-    }
 
     /// <summary>IMGUI style (UnityEngine.GUIStyle) — the port draws no IMGUI; styles are data.</summary>
     public class GUIStyle

@@ -33,6 +33,8 @@ using System.Collections.Generic;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Unity.Services.Multiplayer;
+using Unity.Services.Authentication;
+using Unity.Services.Core;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -69,7 +71,6 @@ namespace CosmicShore.Gameplay
         private const string MATCH_NAME_KEY           = "matchName";
         private const string INVITE_PAYLOADS_KEY      = "invite_payloads";
         private const string JOINED_PARTY_KEY         = "joined_party";
-        private const string ACCEPTED_INVITE_KEY      = "accepted_invite";
         private const string PARTY_SESSION_KEY        = "partySession";
 
         /// <summary>
@@ -78,8 +79,6 @@ namespace CosmicShore.Gameplay
         /// same millisecond in MPPM or near-simultaneous launches).
         /// </summary>
         private const int LOBBY_RACE_SETTLE_MS   = 1500;
-        private const int RATE_LIMIT_MAX_RETRIES = 3;
-        private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
 
         // ─────────────────────────────────────────────────────────────────────
         // Private state
@@ -87,6 +86,7 @@ namespace CosmicShore.Gameplay
 
         private readonly HostConnectionDataSO _connectionData;
         private readonly LobbyPropertyWriter  _propertyWriter;
+        private readonly UgsRequestPolicy     _policy;
 
         /// <summary>
         /// UGS multiplayer service, resolved fresh at use time. Never cache
@@ -115,10 +115,11 @@ namespace CosmicShore.Gameplay
         /// Owns the lobby mutex and SaveWithRetry pattern; used by
         /// <see cref="SavePropertiesAsync"/> to write player properties safely.
         /// </param>
-        public PresenceLobbyService(HostConnectionDataSO connectionData, LobbyPropertyWriter propertyWriter)
+        public PresenceLobbyService(HostConnectionDataSO connectionData, LobbyPropertyWriter propertyWriter, UgsRequestPolicy policy)
         {
             _connectionData = connectionData;
             _propertyWriter = propertyWriter;
+            _policy         = policy ?? UgsRequestPolicy.CreateDefault();
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -146,6 +147,17 @@ namespace CosmicShore.Gameplay
         {
             if (_activeLobby != null) return;
 
+            // B37: with Unity Services not initialized (or nobody signed in) the SDK has no session
+            // service to call, and the query and the create each threw a bare NullReferenceException
+            // ("Could not create presence lobby: Object reference not set..."). Leave the lobby null
+            // instead: the caller's presence rejoin tries again with back-off (3 s up to 60 s).
+            string notReady = UgsNotReadyReason(ServicesState(), SignedIn());
+            if (notReady != null)
+            {
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Not joining the presence lobby yet: {notReady}.");
+                return;
+            }
+
             CSDebug.LogVerbose(CSLogChannel.Party, "[PresenceLobbyService] JoinOrCreateAsync - joining presence lobby");
             try
             {
@@ -161,7 +173,7 @@ namespace CosmicShore.Gameplay
                     // sides deterministically pick the SAME one instead of staying
                     // split.  A symmetric "join the first rival" merge could have both
                     // sides swap into each other's lobby and end up split again.
-                    await UniTask.Delay(LOBBY_RACE_SETTLE_MS);
+                    await UniTask.Delay(LOBBY_RACE_SETTLE_MS, DelayType.UnscaledDeltaTime);
                     await ConvergeToCanonicalAsync(maxPlayers);
                 }
             }
@@ -184,26 +196,17 @@ namespace CosmicShore.Gameplay
             queryOptions.FilterOptions.Add(
                 new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
 
-            IList<ISessionInfo> sessions = null;
-            for (int attempt = 0; ; attempt++)
+            IList<ISessionInfo> sessions;
+            try
             {
-                try
-                {
-                    var results = await _multiplayerService.QuerySessionsAsync(queryOptions).AsMainThread();
-                    sessions = results.Sessions;
-                    break;
-                }
-                catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogWarning($"[PresenceLobbyService] Rate limited during converge query - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
-                }
-                catch (Exception e)
-                {
-                    CSDebug.LogWarning($"[PresenceLobbyService] Converge query failed ({e.GetType().Name}): {e.Message}");
-                    return;
-                }
+                var results = await _policy.ExecuteAsync("presence:query",
+                    async () => await _multiplayerService.QuerySessionsAsync(queryOptions).AsMainThread());
+                sessions = results.Sessions;
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[PresenceLobbyService] Converge query failed ({e.GetType().Name}): {e.Message}");
+                return;
             }
 
             // Canonical id = smallest (ordinal) over the visible set ∪ our own lobby.
@@ -255,9 +258,14 @@ namespace CosmicShore.Gameplay
             // never leaves us lobby-less, then release the one we were holding.
             try
             {
-                var joined = await _multiplayerService.JoinSessionByIdAsync(
-                    canonicalId,
-                    new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
+                // Through the policy like the converge query above and the join path below: counted
+                // in the ugs[...] telemetry, held to the retry budget, and single-flight on the same
+                // "presence:join:{id}" key, so a converge and a JoinOrCreate racing to the canonical
+                // lobby send one join between them.
+                var joined = await _policy.ExecuteAsync($"presence:join:{canonicalId}",
+                    async () => await _multiplayerService.JoinSessionByIdAsync(
+                        canonicalId,
+                        new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread());
 
                 await DeleteOwnLobbyQuietlyAsync();   // releases the previous _activeLobby
                 _activeLobby = joined;
@@ -273,9 +281,9 @@ namespace CosmicShore.Gameplay
 
         /// <inheritdoc/>
         /// <remarks>
-        /// Gracefully leaves (or deletes if host) the active lobby.  Exceptions
-        /// from the UGS SDK are caught and swallowed so callers always reach the
-        /// <c>finally</c> cleanup even on broken connections.
+        /// Gracefully leaves the active lobby, deleting it only when we host it AND are alone in it
+        /// (<see cref="DeletesOnLeave"/>). Exceptions from the UGS SDK are caught and swallowed so
+        /// callers always reach the <c>finally</c> cleanup even on broken connections.
         /// </remarks>
         public async UniTask LeaveAsync()
         {
@@ -284,7 +292,7 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] LeaveAsync - lobby: {_activeLobby.Id}, IsHost: {_activeLobby.IsHost}");
             try
             {
-                if (_activeLobby.IsHost)
+                if (DeletesOnLeave(_activeLobby.IsHost, _activeLobby.Players?.Count ?? 0))
                     await _activeLobby.AsHost().DeleteAsync().AsMainThread();
                 else
                     await _activeLobby.LeaveAsync().AsMainThread();
@@ -301,11 +309,21 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Whether leaving the presence lobby deletes it: only when we host it and nobody else is in it.
+        /// The presence lobby is the ONE lobby every online player sits in, and whoever created it hosts
+        /// it. Deleting it on leave evicted everybody: when ys1 stopped Play, Caleb's next refresh got
+        /// <c>NotInLobby</c> and his party sat in <c>Reconnecting</c> for the rest of the session (B32,
+        /// Docs/PartySystem/BUGS.md). A host that leaves an occupied lobby just leaves; UGS Lobby makes
+        /// another member the host. The same rule <see cref="ConvergeToCanonicalAsync"/> keeps.
+        /// </summary>
+        internal static bool DeletesOnLeave(bool isHost, int playerCount) => isHost && playerCount <= 1;
+
         /// <inheritdoc/>
         public async UniTask RefreshAsync()
         {
             if (_activeLobby == null) return;
-            await _activeLobby.RefreshAsync().AsMainThread();
+            await LobbyReadPacer.RefreshAsync(_activeLobby);
         }
 
         /// <inheritdoc/>
@@ -314,7 +332,7 @@ namespace CosmicShore.Gameplay
         /// do NOT call while already holding the mutex (e.g. from inside
         /// <see cref="HostConnectionService"/>'s RefreshAsync cycle).  For in-mutex
         /// writes, set properties directly then call
-        /// <see cref="LobbyPropertyWriter.SaveWithRetryAsync"/> explicitly.
+        /// <see cref="LobbyPropertyWriter.SaveAsync"/> explicitly.
         /// </remarks>
         public async UniTask SavePropertiesAsync(
             Dictionary<string, PlayerProperty> properties,
@@ -367,9 +385,9 @@ namespace CosmicShore.Gameplay
         internal Dictionary<string, PlayerProperty> BuildLocalPlayerProperties()
         {
             int partyCount = _connectionData.PartyMembers != null ? _connectionData.PartyMembers.Count : 0;
-            // The DISPLAYED party size, never the transport capacity: this value is what every
-            // other peer renders as "N/M" and what their LOBBY FULL badge compares against.
-            int partyMax   = _connectionData.PartyDisplaySlots;
+            // The party size (4 - one size since B25, the same number the session's seats enforce):
+            // what every other peer renders as "N/M" and what their LOBBY FULL badge compares against.
+            int partyMax   = _connectionData.MaxPartySlots;
 
             var props = new Dictionary<string, PlayerProperty>
             {
@@ -380,7 +398,6 @@ namespace CosmicShore.Gameplay
                 { MATCH_NAME_KEY,      new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { ACCEPTED_INVITE_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 // The joinable/spectatable session id (HostConnectionService.PARTY_SESSION_KEY).
                 // Seeded empty like every stateful key; the live overlay below fills it in.
                 { PARTY_SESSION_KEY,   new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
@@ -423,22 +440,9 @@ namespace CosmicShore.Gameplay
             queryOptions.FilterOptions.Add(
                 new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
 
-            IList<ISessionInfo> sessions = null;
-            for (int attempt = 0; ; attempt++)
-            {
-                try
-                {
-                    var results = await _multiplayerService.QuerySessionsAsync(queryOptions).AsMainThread();
-                    sessions = results.Sessions;
-                    break;
-                }
-                catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogWarning($"[PresenceLobbyService] Rate limited querying lobby - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
-                }
-            }
+            var results = await _policy.ExecuteAsync("presence:query",
+                async () => await _multiplayerService.QuerySessionsAsync(queryOptions).AsMainThread());
+            IList<ISessionInfo> sessions = results.Sessions;
 
             if (sessions == null || sessions.Count == 0) return null;
 
@@ -455,17 +459,16 @@ namespace CosmicShore.Gameplay
 
                 try
                 {
-                    var joined = await _multiplayerService.JoinSessionByIdAsync(
-                        session.Id,
-                        new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
+                    var joined = await _policy.ExecuteAsync($"presence:join:{session.Id}",
+                        async () => await _multiplayerService.JoinSessionByIdAsync(
+                            session.Id,
+                            new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread());
                     CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Joined existing presence lobby {joined.Id} (capacity {maxPlayers}).");
                     return joined;
                 }
                 catch (Exception e)
                 {
                     CSDebug.LogWarning($"[PresenceLobbyService] Failed to join session {session.Id}: {e.Message}");
-                    if (IsRateLimitException(e))
-                        await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
                 }
             }
 
@@ -474,7 +477,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Creates a new presence lobby and stores it in <see cref="_activeLobby"/>.
-        /// Retries up to <see cref="RATE_LIMIT_MAX_RETRIES"/> times on HTTP 429.
+        /// Runs under <see cref="UgsRequestPolicy.ExecuteAsync{T}"/> (key <c>presence:create</c>).
         /// </summary>
         private async UniTask CreateAsync(int maxPlayers)
         {
@@ -499,27 +502,50 @@ namespace CosmicShore.Gameplay
                     }
                 };
 
-                for (int attempt = 0; ; attempt++)
-                {
-                    try
-                    {
-                        _activeLobby = await _multiplayerService.CreateSessionAsync(opts).AsMainThread();
-                        CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Created presence lobby {_activeLobby.Id}.");
-                        return;
-                    }
-                    catch (Exception re) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(re))
-                    {
-                        int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                        CSDebug.LogWarning($"[PresenceLobbyService] Rate limited creating lobby - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                        await UniTask.Delay(delay);
-                    }
-                }
+                _activeLobby = await _policy.ExecuteAsync("presence:create",
+                    async () => await _multiplayerService.CreateSessionAsync(opts).AsMainThread());
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Created presence lobby {_activeLobby.Id}.");
             }
             catch (Exception e)
             {
-                CSDebug.LogError($"[PresenceLobbyService] Could not create presence lobby: {e.Message}");
+                // B37: a failure the presence rejoin recovers from (a timeout, a 429, the SDK's own
+                // wrapped errors) is a warning; anything else is a fault in our code or in how we call the
+                // SDK, logged whole so the ledger keeps the frame that threw (it used to keep only the
+                // message, so the September NullReferenceException could never be traced).
+                if (CreateFailureIsRetryable(UgsRequestPolicy.Classify(e)))
+                    CSDebug.LogWarning($"[PresenceLobbyService] Could not create presence lobby ({e.GetType().Name}): {e.Message} - the presence rejoin tries again.");
+                else
+                    CSDebug.LogError($"[PresenceLobbyService] Could not create presence lobby: {e}");
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
             }
+        }
+
+        /// <summary>
+        /// Why the presence lobby cannot be reached yet, or null when it can: Unity Services must be
+        /// initialized and a player signed in before the SDK has a session service to call (B37).
+        /// </summary>
+        internal static string UgsNotReadyReason(ServicesInitializationState state, bool signedIn)
+        {
+            if (state != ServicesInitializationState.Initialized) return $"Unity Services are {state}";
+            if (!signedIn) return "nobody is signed in";
+            return null;
+        }
+
+        /// <summary>A create failure the presence rejoin's back-off recovers from (B37).</summary>
+        internal static bool CreateFailureIsRetryable(UgsFailureClass failure) =>
+            failure is UgsFailureClass.Transient or UgsFailureClass.RateLimited
+                    or UgsFailureClass.Benign or UgsFailureClass.Cancelled;
+
+        static ServicesInitializationState ServicesState()
+        {
+            try { return UnityServices.State; }
+            catch { return ServicesInitializationState.Uninitialized; }
+        }
+
+        static bool SignedIn()
+        {
+            try { return AuthenticationService.Instance is { IsSignedIn: true }; }
+            catch { return false; }
         }
 
         /// <summary>
@@ -558,12 +584,5 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>
-        /// True when the exception is a UGS HTTP 429 Too Many Requests response.
-        /// Used in <c>catch ... when (...)</c> clauses to distinguish rate-limit
-        /// errors (retry-able) from other errors (propagate).
-        /// </summary>
-        private static bool IsRateLimitException(Exception e) =>
-            e.Message != null && e.Message.Contains("Too Many Requests");
     }
 }

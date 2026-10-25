@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
+  m_Name: Swarm Middle NcaLizard Fauna Config Data
+  m_EditorClassIdentifier:
+  FaunaPrefab: {fileID: 7316405550184922003, guid: e33899bded9757712eeb723233938240, type: 3}
+  InitialSpawnCount: 1
+  PopulationSize: 2
+  SpawnProbability: 1
+  NetworkSynced: 0
+  FeedsPerOffspring: 24
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 60
+  MaxLivePopulation: 2
+  ReleaseTier: 0
+  BandInnerRadius: 690
+  BandOuterRadius: 840
+  CenterFocusBias: 0
+  Element: 4
+  Variant:
+    Enabled: 0
+  SpreadElements: 0
+  ElementPalette: []

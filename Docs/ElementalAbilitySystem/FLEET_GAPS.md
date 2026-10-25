@@ -12,25 +12,28 @@ rather than reported, and §3 lists those so the two are never confused again.
 
 ---
 
-## 1. The open design slots (3 rows, 2 vessels)
+## 1. The open design slots (3 rows, 2 vessels — ALL FILLED as of 2026-10-16)
 
-Each is `(open design slot)` in its own map asset — the entry exists, names no ability, binds no
+Each was `(open design slot)` in its own map asset — the entry exists, names no ability, binds no
 input, and nothing in code reads that element on that hull. None is a regression; none has ever
 been filled.
 
 | Vessel | Element | State | What filling it costs |
 |---|---|---|---|
-| **Rhino** | Charge | no ability, no scaling, no L5 | design + one `ElementalFloat` + (optionally) one `IsUpgradeActive` gate |
-| **Rhino** | Space | no ability, no scaling, no L5 | as above |
-| **Serpent** | Mass | no ability, no scaling, no L5 | as above |
+| ~~**Rhino**~~ | ~~Charge~~ | **FILLED 2026-10-16:** Sword Energy (`chargeEnergyGainMultiplier` ×1 → ×2, floored ×0.5, on `RhinoSkimmerDamagePrismEffect.asset`) + **Live Wire** (`ShieldSkimmerScaleConfigSO.liveWireUpgradeElement`) | |
+| ~~**Rhino**~~ | ~~Space~~ | **FILLED 2026-10-16:** Blade Reach (`Skimmer.Scale` 30 → 50 on `ForceFieldSkimmer Variant`) on the row whose L5 **Breaker** had shipped 2026-10-13 | |
+| ~~**Serpent**~~ | ~~Mass~~ | **FILLED 2026-10-09:** Seed Wall + Lockdown (`R_VesselActions/SERPENT_SEED_WALL.md`) | |
 
 This report opened at **five** such rows. The Serpent's **Charge** and **Space** were two of them
 and were filled upstream, by the scope + rifle branch, while this one was in review — see "What
 the two vessels DO have" below. That is the reason the header says to re-run the tool: a gap list
 is a snapshot, and another branch closing a gap looks exactly like this report being wrong.
 
-`Docs/ElementalAbilitySystem/FLEET_MAPS.md §2` carries the un-approved PROPOSALS for the
-still-open rows. They are proposals, not a backlog: **do not implement one without sign-off**, and
+With the Rhino's two rows filled, **this section has no open row left** (`--gaps` on 2026-10-16
+lists only the Grizzly, a different shape: all four of its rows still carry the retired generic map
+multiplier, its Mass changes no number and its Charge L5 is prose — `FLEET_MAPS.md §1`).
+`Docs/ElementalAbilitySystem/FLEET_MAPS.md §2` carries the approved maps and any remaining
+un-approved PROPOSALS. A proposal is not a backlog: **do not implement one without sign-off**, and
 do not invent a mapping to make the audit green — an invented mapping is worse than an honest
 hole, because the next reader cannot tell it from a designed one.
 
@@ -38,11 +41,19 @@ hole, because the next reader cannot tell it from a designed one.
 
 | Vessel | Element | Ability | Live scaling | L5 |
 |---|---|---|---|---|
-| Rhino | Mass | Trail Slabs | `massMaxSizeMultiplier` ×1 → ×1.5, floored ×0.25 (`GrowTrailAction.asset`) | — |
-| Rhino | Time | Ramp Spool | `timeAccelerationMultiplier` ×1 → ×2.5, floored ×0.5 (`RhinoRampBoostAction.asset`) | — |
+| Rhino | Charge | Sword Energy *(2026-10-16)* | `chargeEnergyGainMultiplier` ×1 → ×2, floored ×0.5 (`RhinoSkimmerDamagePrismEffect.asset`) — energy per cut | **Live Wire** |
+| Rhino | Mass | Afterimage *(2026-10-16; was Trail Slabs)* | `massVolumeMultiplier` ×1 → ×2.5, floored ×0.25 (`RhinoSwordAfterimageConfig.asset`) — afterimage VOLUME, at the replicated level | **Danger Afterimages** |
+| Rhino | Space | Blade Reach *(2026-10-16)* | `Skimmer.Scale` 30 → 50 (`ForceFieldSkimmer Variant.prefab`, nested-prefab override) — blade resting length | **Breaker** |
+| Rhino | Time | Ramp Spool | `timeAccelerationMultiplier` ×1 → ×2.5, floored ×0.5 (`RhinoRampBoostAction.asset`), read live since 2026-10-16 | **Momentum** *(2026-10-16)* |
 | Serpent | Charge | Sniper Shot | `cooldownMultiplierAtFullCharge` 0.45 on `SniperShotAction.asset`, read through `ElementalScaling.Multiplier` in the executor | **Pierce** |
+| Serpent | Mass | Seed Wall | `massSizeMultiplierAtFull` 2 on `SeedWallAction.asset`: brick size AND lattice spacing, snapshotted at placement (`SeedAssemblerActionExecutor.SnapshotWallShape`) | **Lockdown** |
 | Serpent | Space | Scope | `zoomDepthAtFullSpace` 2 on `SniperScopeAction.asset`, same channel | **Deep Focus** |
 | Serpent | Time | Solid Fuel Pellets | `timeDurationMultiplier` ×1 → ×1.6, floored ×0.25 (`ConsumeBoostAction.asset`) — burn DURATION per pellet | — |
+
+*Trail Slabs is gone (2026-10-16), and was never a live ability: `GrowTrail`'s grow loop never
+ran (`Begin` cancelled itself) and its shrink loop never ran either (every scaler already sat at its
+1.0 floor), so the `massMaxSizeMultiplier` ×1 → ×1.5 this table used to list scaled a number nobody
+saw. Deleting it changed nothing on screen.*
 
 The Serpent's two new rows scale through `ElementalScaling.Multiplier(status, element, atFull,
 minMul)` — a per-executor read of an authored endpoint on the ability's own asset — rather than
@@ -91,7 +102,7 @@ design gaps §1 opened with. They are listed because each is a shape that will r
 | 3 | **Squirrel Space: "NO SCALING — this element changes no number"** | `Skimmer.Scale` is authored 15 → 30 on Space, as a **nested-prefab-instance override** — scattered `m_Modifications` entries rather than a contiguous block. Six of twelve vessel prefabs author a float this way and all six were invisible. |
 | 4 | Scarab Space named the skimmer radius, not the ball | `ScarabBallForge.BallSizeScale` is a C# `static readonly` (that class is static and can hold no serialized field), so its endpoints exist only in a field initializer. The tool now reads those too — which also covers the rule-4-i case where an asset predates the field. |
 | 5 | Rhino Mass / Scarab Mass "gate exists but the map names no upgrade" | Both gates are branches guarded by `massUpgradeShieldsTrail` / `turnUpgradeShieldsTrail`, **absent from those prefabs' YAML and initialized `false` in C#**. `guard_state` only read authored YAML, so an unauthored bool counted as live — on ten of twelve hulls. |
-| 6 | Rhino Mass appeared to scale twice | `GrowTrailActionSO.maxSize` was authored `Enabled` with a 4 → 8 Mass ramp **that had never run once**: it is declared on a ScriptableObject and read as `.Value`, and the binder reflects over MonoBehaviours only. Two more shipped the same way (`GrowSkimmerAction.shrinkRate` Charge 6 → 2, `FullAutoAction.speedValue` Space 375 → 4875). All three authored `Enabled: 0`; behaviour is byte-identical. |
+| 6 | Rhino Mass appeared to scale twice | `GrowTrailActionSO.maxSize` was authored `Enabled` with a 4 → 8 Mass ramp **that had never run once**: it is declared on a ScriptableObject and read as `.Value`, and the binder reflects over MonoBehaviours only. Two more shipped the same way (`GrowSkimmerAction.shrinkRate` Charge 6 → 2, `FullAutoAction.speedValue` Space 375 → 4875). All three authored `Enabled: 0`; behaviour is byte-identical. *(2026-10-16: `GrowTrail` and `GrowSkimmer` were then deleted outright — neither action ever ran on the Rhino, so the removal is behaviour-neutral.)* |
 | 7 | — (found while auditing 6) | `ElementalFloatBinder` was dead AND broken: it set a property named `"Ship"` that does not exist (`?.SetValue` → silent no-op) and its "clone" copied only `Value`, dropping `Min`/`Max`/`element`/`Enabled`. Its one reference was a commented-out call. Deleted. `AOERadialBlocks.depthScale` was a `private` ElementalFloat with **no `[SerializeField]`** — unserializable, permanently 1, and multiplying pooled instance fields, so a non-1 value would have compounded on reuse. Deleted. |
 
 A footnote on #1 that is worth more than the fix: **the same defect then appeared in the new

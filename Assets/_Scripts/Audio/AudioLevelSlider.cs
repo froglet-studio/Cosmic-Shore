@@ -24,7 +24,7 @@ namespace CosmicShore.UI
     [DisallowMultipleComponent]
     public class AudioLevelSlider : MonoBehaviour
     {
-        public enum Channel { Music, SFX }
+        public enum Channel { Music = 0, SFX = 1 }
 
         [FormerlySerializedAs("VCA")]
         [SerializeField, Tooltip("Which GameSetting level this slider edits: 'Music' or 'SFX' (legacy Mixer VCA name).")]

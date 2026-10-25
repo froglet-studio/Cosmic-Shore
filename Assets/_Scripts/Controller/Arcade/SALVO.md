@@ -95,9 +95,12 @@ OmniCrystalImpactor.AcceptImpactee            [SERVER only - clients early-out]
      payload = collector's PlayerName)                 ← StatsManager already listens here
         └─ SalvoController.HandleOmniCrystalCollected  [server]
             ├─ resolve domain: gameData.TryGetRoundStats(name).Domain
-            └─ RefuelDomainMissiles_ClientRpc(domain)
-                └─ on EVERY peer (host included): for each player of that domain,
-                   ResourceSystem.SetResourceAmount(missileResourceIndex, MaxAmount)
+            └─ RefuelDomainMissiles_ClientRpc(domain, collector)   (collector = FixedString64Bytes
+                │                                                    of the PlayerName, display-only)
+                ├─ on EVERY peer (host included): for each player of that domain,
+                │  ResourceSystem.SetResourceAmount(missileResourceIndex, MaxAmount)
+                └─ if the domain fields 2+ pilots: GameToastAPI.Post(SalvoWingReload (136),
+                   domain, collector, domain name)  → "<b>{0}</b> reloaded the wing"
 ```
 
 Why this shape:
@@ -110,8 +113,9 @@ Why this shape:
   on every peer is exactly as authoritative as the ammo system itself. The write that matters
   lands on each vessel's OWNER machine; the same write on replicas is a harmless idempotent
   set.
-- **The collector is covered twice**: the platform crystal effect refills them (replayed on
-  their owner machine), and the RPC's set-to-full is idempotent on top.
+- **The collector is refilled by the same RPC** as the rest of the domain. (This line used to
+  say the platform crystal effect refilled them first; that effect was retired 2026-09 - see the
+  table above.)
 - **A blast-consumed crystal refuels nobody** — `ConsumeByBlast` raises with an empty
   `PlayerName` and the handler skips it; there is no pilot to credit a reload to.
 - **Elemental crystals do NOT refuel.** They raise a different channel
@@ -189,10 +193,12 @@ behind it yet.
 
 Every Salvo-owned asset is authored by `Tools/Build/author_salvo_assets.py` (deterministic
 GUIDs, idempotent, validates before writing). **Re-tune there and re-run** rather than
-hand-editing YAML. The generator clones `MinigameDogFight.unity` as its donor — if the Dog
-Fight scene is reworked, the asserts here will fail against the moved donor; that is the
-expected end state of a migration generator (see the Dog Fight generator's §9 note), not a
-break to repair.
+hand-editing YAML. The generator cloned `MinigameDogFight.unity` as its donor on first
+bring-up; since #969 (2026-10) it goes through `arcade_mode_lib.committed_scene`, so the
+committed `MinigameSalvo.unity` is adopted as-is, the clone stands down when the Dog Fight donor
+has moved, and the blocks the generator still authors must appear verbatim in the committed
+scene. `--check` now diffs every file against disk (it used to print "no files written" and exit
+0 without comparing).
 
 ## Shared-code touchpoints (added for this mode)
 
@@ -205,6 +211,7 @@ break to repair.
 | `EndConditionOverridesSO` (+ window + asset) | `salvoPrismTarget` live/build/getter, default 700 |
 | `ElementalComebackSystem` | reads `SalvoScoringRule`'s `DomainValue` (`PrismsDestroyed`) |
 | `MiniGameHUD.CreateObjectiveProviderForGameMode` | Salvo → `RampageObjectiveProvider` |
+| `GameToastSituation` (+ `GameToastConfig_Salvo.asset`) | `SalvoWingReload = 136`, posted by the wingman-reload RPC (#976) |
 
 Nothing else moved: no new stats, no new metrics, no new impact effects, no vessel or cell
 edits. The mode is deliberately a composition of shipped systems.
@@ -253,12 +260,15 @@ edits. The mode is deliberately a composition of shipped systems.
 
 - **700 is still unmeasured** — retuned down from the launch value of 1500 on request, not from
   a playtest. The intended match length is 3–6 minutes; the target is the dial.
-- **No refuel FEEDBACK beyond the gauge.** The wingman reload lands silently (the ammo gauge
-  fills). A `GameToastSituation` ("WINGMAN RELOAD — <name>") + a small SFX would sell the
-  cooperation; the toast enum + config authoring was deliberately left out of v1 (the same
-  unauthored-toast state Dog Fight ships in).
-- **No milestones.** Rampage ships without them too; Dog Fight's quarter/half rungs would
-  port trivially if the mode needs mid-match drama.
+- **The wingman reload has a toast, no SFX.** Since #976 (2026-10) the RPC carries the
+  collector's name and posts `GameToastSituation.SalvoWingReload` (136, "**<name>** reloaded the
+  wing", domain-tinted, authored in `GameToastConfig_Salvo.asset`) - only when the domain fields
+  two or more pilots, since a solo pilot refuelling itself is the ordinary crystal economy. A
+  small SFX is still unauthored.
+- **Milestones are the shared race beats.** Since #976 (2026-10-06) `SalvoController` ticks
+  `DomainRaceToasts` (a local poll over replicated RoundStats), and `GameToastConfig_Salvo.asset`
+  authors its quarter (128), halfway (129) and lead-change (130) beats, the prisms-levelled stat
+  toast (83) and the comeback toast (30). Rampage gets the same beats.
 - **Shared-arena coupling is deliberate but real**: retuning the Boneyard for Dog Fight
   (structure counts, danger, PhaseThresholds) retunes Salvo's quarry too. If the two modes
   ever need to diverge, fork the cell configs then — not preemptively.

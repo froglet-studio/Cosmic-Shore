@@ -31,7 +31,7 @@ SCRIPT_PATHS = {
     "SiroccoSettingsSO":       "Assets/_Scripts/Controller/Arcade/Sirocco/SiroccoSettingsSO.cs",
     "SiroccoScoringRuleSO":    "Assets/_Scripts/Controller/Arcade/Sirocco/SiroccoScoringRuleSO.cs",
     "SiroccoPrismTurnMonitor": "Assets/_Scripts/Controller/Arcade/TurnMonitors/SiroccoPrismTurnMonitor.cs",
-    "ButterflyAutopilotModeDriver": "Assets/_Scripts/Controller/Arcade/ButterflyGames/ButterflyAutopilotModeDriver.cs",
+    "ButterflyAutopilotModeDriver": "Assets/_Scripts/Controller/AI/Butterfly/ButterflyAutopilotModeDriver.cs",
 }
 G_SCRIPT = {k: guid(f"script/{k}") for k in SCRIPT_PATHS}
 G_ASSET = {
@@ -68,7 +68,7 @@ CARD_REL = "Assets/_SO_Assets/Games/ArcadeGameSirocco.asset"
 for k, p in SCRIPT_PATHS.items():
     g.script_meta(p, G_SCRIPT[k])
 g.folder_meta("Assets/_Scripts/Controller/Arcade/Sirocco")
-g.folder_meta("Assets/_Scripts/Controller/Arcade/ButterflyGames")
+g.folder_meta("Assets/_Scripts/Controller/AI/Butterfly")
 g.text_meta("Assets/_Scripts/Controller/Arcade/SIROCCO.md")
 
 # ── 2. Scoring rule: metric 5 = PrismsDestroyed (Rampage's rule, inherited) ──
@@ -98,7 +98,7 @@ g.emit_asset(CARD_REL, G_ASSET["ArcadeGameSirocco"],
     target wins.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
-  CardBackground: {{fileID: 21300000, guid: {common.card_background(CARD_REL)}, type: 3}}
+  CardBackground: {{fileID: 21300000, guid: {lib.card_background(CARD_REL)}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameSirocco
   Vessels:
@@ -204,5 +204,5 @@ common.assert_scene(errors, scene,
 g.finish(errors, referenced=EXISTING,
          minted=list(G_SCRIPT.values()) + list(G_ASSET.values())
                 + [guid("folder/Assets/_Scripts/Controller/Arcade/Sirocco"),
-                   guid("folder/Assets/_Scripts/Controller/Arcade/ButterflyGames"),
+                   guid("folder/Assets/_Scripts/Controller/AI/Butterfly"),
                    guid("text/Assets/_Scripts/Controller/Arcade/SIROCCO.md")])

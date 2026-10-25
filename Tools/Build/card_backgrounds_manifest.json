@@ -72,6 +72,22 @@
    "track": null,
    "triangles": 278200
   },
+  "GrizzlyCharge": {
+   "cell": "Boneyard Cell Config 2",
+   "environment": "SpawnableBoneyard2",
+   "prisms": 16101,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 216196
+  },
+  "GrizzlyTime": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 8956
+  },
   "Headlong": {
    "cell": "Skim Race Cell Config",
    "environment": null,
@@ -179,7 +195,15 @@
    "prisms": 464,
    "tier": "RUN",
    "track": "SkimRaceWaypointTrack",
-   "triangles": 38116
+   "triangles": 11876
+  },
+  "Slingshot": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 12228
   },
   "Switchback": {
    "cell": "Skim Race Cell Config",
@@ -205,6 +229,14 @@
    "track": null,
    "triangles": 80500
   },
+  "ThresherTime": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 20124
+  },
   "Tollway": {
    "cell": "Tollway Cell Config 2",
    "environment": null,
@@ -220,6 +252,14 @@
    "tier": "RUN",
    "track": null,
    "triangles": 301700
+  },
+  "Warpline": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 12120
   },
   "Waystation": {
    "cell": "Skim Race Cell Config",
@@ -237,6 +277,14 @@
    "track": null,
    "triangles": 301492
   },
+  "WrasseRun": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 23196
+  },
   "WreckingBall": {
    "cell": "WreckingBall Cell Config 2",
    "environment": null,
@@ -251,5 +299,5 @@
   768,
   510
  ],
- "source_hash": "cb5a888650370954be6d0a7315e439dfcd9ec9add889f9325b090890e7be52c8"
+ "source_hash": "3739933571a53e1f0faea1cb9d69463ef071f7e18d568885270643ca739619f2"
 }

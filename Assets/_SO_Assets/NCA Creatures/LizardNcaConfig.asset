@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f38b5eecc5ccf7bdc2dbc1e1a66abdeb, type: 3}
+  m_Name: LizardNcaConfig
+  m_EditorClassIdentifier:
+  Weights: {fileID: 4900000, guid: 820e60314368ae69c951402113b50cfa, type: 3}
+  VoxelSize: 1.2
+  ScaleShape: {x: 1.35, y: 0.6, z: 1.55}
+  AlphaThreshold: 0.3
+  MaxShown: 1600
+  Theme: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  StepsPerSecond: 20
+  BoltStepsPerSecond: 30
+  InlineStepsPerSecond: 8
+  Segments: 8
+  SwimSpeed: 14
+  BoltSpeed: 38
+  TurnDegreesPerSecond: 40
+  SlowRadius: 40
+  StrokeThrust: 0.4
+  FullStrokeBendRate: 0.35
+  VesselSenseRadius: 120
+  BoltClosingSpeed: 25
+  BoltSeconds: 3
+  VesselBiteReachVoxels: 1.5
+  VesselBiteCooldown: 0.8
+  BiteRadiusVoxels: 3.5
+  HitPrismSeconds: 2
+  HitPrismPrefab: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195, type: 3}
+  HitPrismScale: {x: 4, y: 4, z: 4}
+  BodyVolume: 1975.1
+  HealShareOfMeal: 0.5
+  MouthReach: 2
+  MouthRadius: 9
+  FeedInterval: 1.2
+  PrismsPerMouthful: 3
+  MatureFraction: 0.8
+  DeathFraction: 0.35
+  HeartWorldScale: 2.89
+  HeartSeatDepthVoxels: 4
+  WitherSeconds: 3
+  DevourSeconds: 1.2

@@ -99,6 +99,7 @@ CHECK_ONLY = "--check" in sys.argv
 
 sys.path.insert(0, HERE)
 import breakwater_arena as arena          # noqa: E402  - the measured model IS the authority
+import arcade_mode_lib as aml          # noqa: E402  - card background + retired-key checks
 
 # Nothing in this file raises. Every problem lands here and the run reports all of them together,
 # so one stale anchor can never hide the twelve checks underneath it (safety rule (a)).
@@ -674,7 +675,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameBreakwater.asset",
      + yaml_text("Description", CARD_DESCRIPTION)
      + f"""  IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
-  CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
+  CardBackground: {{fileID: 21300000, guid: {aml.card_background('Breakwater')}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameBreakwater
   Vessels:
@@ -1360,6 +1361,10 @@ for _shared in ("Assets/Resources/ObjectiveIconSet.asset",
 
 
 # ══════════════════ REPORT, THEN WRITE ═══════════════════════════════════════════════════════
+# The card's CardBackground is the /cardart render and no retired key rides on it - the
+# shared check every arcade generator runs (arcade_mode_lib.card_errors).
+errors += aml.check_cards(files)
+
 if errors:
     print("VALIDATION FAILED - nothing written:")
     for e in errors:

@@ -98,8 +98,6 @@ namespace CosmicShore.Utility.AITraining
             if (_control.Archive == null) return;
             if (_gameData == null) return;
             if (_gameData.IsTraining) return;
-            // Skim Race seats belong to the dedicated SkimRacePilot in normal play.
-            if (CosmicShore.Gameplay.SkimRaceAIDeployment.Claims(_gameData)) return;
 
             StartCoroutine(InstallAfterFrame(clientId));
         }
@@ -131,6 +129,11 @@ namespace CosmicShore.Utility.AITraining
             if (go.GetComponent<TrainingPilot>() != null) return;
 
             VesselClassType liveVessel = vessel.VesselStatus?.VesselType ?? VesselClassType.Any;
+
+            // Squirrel seats in a racing mode (Skim Race, Regatta) belong to the dedicated
+            // SkimRacePilot in normal play; every other hull in that match is still ours.
+            if (liveVessel == VesselClassType.Squirrel &&
+                CosmicShore.Gameplay.SkimRaceAIDeployment.Claims(_gameData)) return;
             GameModes mode = _gameData.GameMode;
             int intensity = _gameData.SelectedIntensity != null
                 ? Mathf.Clamp(_gameData.SelectedIntensity.Value, 1, 4)

@@ -15,6 +15,9 @@ namespace CosmicShore.Gameplay
     ///    gyroid/Schwarz surface spawnables declare 2D), downgraded to Singleton when the
     ///    container holds a single block. `Trail` is the general lay container, so its
     ///    presence is membership evidence, never shape evidence. No geometry is consulted.
+    ///  * A prism whose owning structure declares itself a STACK (<see cref="ILayeredPrismscape"/> - the
+    ///    nested gyroid) is a <see cref="PrismscapeDimension.Volume"/>, read off the owner rather than
+    ///    counted: a census near a stack's outer skin sees half the stack and would call it a Surface.
     ///  * Anything else is classified from its NEIGHBOURHOOD via
     ///    <see cref="PrismSpatialIndex.QuerySphere"/> - the canonical spatial store, never
     ///    physics. A shell (gyroid / Schwarz-P flora, walls) fills its neighbourhood like an
@@ -59,6 +62,8 @@ namespace CosmicShore.Gameplay
                     : prism.Trail.Dimension;
             }
 
+            if (LayeredOwnerOf(prism) != null) return PrismscapeDimension.Volume;
+
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return PrismscapeDimension.Singleton;
 
@@ -71,5 +76,13 @@ namespace CosmicShore.Gameplay
             if (n < SingletonBelow) return PrismscapeDimension.Singleton;
             return n > VolumeAbove ? PrismscapeDimension.Volume : PrismscapeDimension.Surface;
         }
+
+        /// <summary>
+        /// The layered structure <paramref name="prism"/> belongs to, or null. A field read, no query - cheap
+        /// enough for the ride kernel to ask per ground candidate. The Unity-null test on the owner matters: a
+        /// withered plant's husk is a destroyed object that a plain C# pattern would still match.
+        /// </summary>
+        public static ILayeredPrismscape LayeredOwnerOf(Prism prism) =>
+            prism is HealthPrism hp && hp.LifeForm && hp.LifeForm is ILayeredPrismscape layered ? layered : null;
     }
 }

@@ -250,6 +250,21 @@ These are not stylistic. Each one is a specific artefact somebody saw on screen.
 - **Guard the degenerate inputs explicitly**: zero-length normal, vertex at the source centre,
   zero reach, non-finite matrix. Each guard returns pass-through, which is always a legal frame.
 
+- **A displacement read off a vertex ATTRIBUTE tears every seam; one read off POSITION cannot.** UV seams
+  and hard edges split vertices, so a push along the normal or a weight from a UV moves the two copies of a
+  seam vertex apart. On a mesh you did not author (a creature's FBX, skinned or not) that is every seam.
+  `IncorporealDepthBloom` (Docs/SPINDLE_LOD.md §8) is a field of position alone, so the two copies stay
+  together. The harness proves it with a seam test: two copies, different normal and UV, the same output.
+  Its pulse in the fragment stage then needs the REST radius, so the bloom must be invertible: cap the
+  travel by the wave's steepness so the radius's derivative stays >= 0.2, and Newton-invert it.
+
+- **Pixels per unit from `UNITY_MATRIX_P._m11` need `abs()`.** URP renders into an intermediate texture on
+  D3D, Metal and Vulkan and FLIPS the projection's y there, so `_m11` is negative. A width hold that read
+  the on-screen width as negative clamped every strand to its 32x inflation cap. The spindles "blew up to
+  very large proportions" across the band where the hold ramped in, from round 1 until 2026-10-21. A
+  clang harness and Amoebius both use an upright projection and cannot see it. Test with the sign
+  flipped, and keep removing the `abs()` as a mutant (`verify_spindle_lod.py`).
+
 - **Composition across two morph nodes is legal but is not free.** Normals compose correctly by
   the chain rule (each node applies its own inverse-transpose to the normal it received), and
   positions compose as fields applied in sequence. But **the no-fold guarantee is per-node and
@@ -315,6 +330,14 @@ Properties the cradle harness proves, and the shape to copy:
 
 **Always carry a NEGATIVE CONTROL**, driven by a `-D` override of the file's own `#ifndef`
 dial, and assert that it FAILS. A gate nobody has watched fail is a gate nobody should trust.
+
+**Run the harness's glslang front end too, not only the C++ execution.** The C++ translation accepts names
+HLSL reserves: a parameter called `centroid` (an HLSL interpolation modifier) compiled and passed every
+executed test, and only glslang's HLSL parse of the shader passes failed on it (Collision Burst round 9,
+`cece/dreamy-pascal-7xxx1m`). Likewise `v -= N * dot(v, N)` fails the C++ shim's operators while legal HLSL
+and GLSL; spell it `v = v - …`. And **make a parametrised case prove it built the case it names**: assert a
+property only that case has (a vertex count), because a name test like `name[1] == 'i'` matched two cuts
+and ran the wrong mesh for two rounds (`.claude/skills/labmaker/LEARNINGS.md` L-STU-76).
 
 ### 7.1 Prove a derivative by CONVERGENCE RATE, not by a tolerance
 
@@ -426,6 +449,17 @@ wrong. Two things follow:
 
 ---
 
+- **A morph that LANDS ON prisms someone just laid inherits their arrival animations.** A freshly
+  laid prism blooms in on the clock (boost pool: `k = 2.5/s`, ~61% grown at 0.37 s) and a shield
+  engaged on a live prism blooms its faces. Reveal the prisms at the hand-off without settling those
+  and the pilot sees the morph land on full-size targets, then the targets jump smaller and grow back.
+  The morph IS their arrival: hold their photons (`Prism.SetOwnerHidden`, never `HideForTransport`),
+  and at the hand-off — still covered — `CompleteCreationImmediately` if needed,
+  `CompleteGrowthImmediately`, shield `Engage(instant: true)`, THEN unhide. Worked example:
+  `R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md` §2.5.
+
+---
+
 ## 11. Docs you must update
 
 | File | What |
@@ -462,8 +496,26 @@ The family is defined by four axes. A new member is a choice on each:
 
 - **CRADLE** (Urchin, `Docs/PRISM_ANIMATION.md` §4.7.2) — *hull · drape · riding · 24 × s16*.
   Mass around a riding hull slides along its own radius onto the hull's sphere; inside closes
-  over, outside rises to meet. **It is the family's only member, and the only consumer of the
-  high-poly swap, the residency contract and the global-uniform bank.**
+  over, outside rises to meet. The first member, and the reference implementation of the
+  high-poly swap, the residency contract and the global-uniform bank.
+- **GRAVITY WARP** (black hole, `Docs/PRISM_ANIMATION.md` §4.7.4, `Docs/BLACK_HOLE.md` §5) —
+  *a placed world object · the GR tidal stretch, one affine map per prism · proximity to a horizon ·
+  no residency*. Mass near a black hole's horizon is drawn spaghettified: log-stretch
+  `ε = GM·τ²/r³` along the line to the hole, `−ε/2` across it (the trace-free tidal tensor),
+  about each prism's own centre. **Built 2026-10-07, re-cut 2026-10-08, not yet playtested.** It
+  LEFT the residency half of the family on the re-cut: the first version was a per-vertex radial
+  STRAIN (`p' = U + dir·d·(1 − w·k(s))`, 32 × s12 residents), which slid mass toward the singularity
+  a second time on top of the real pull and — with `k` flat at the horizon — put the stretch's peak
+  mid-reach and ZERO at the horizon. The physics is one affine map per prism, which the authored
+  24-triangle prism draws exactly, so the dense mesh, the residency and its budget all went. **The
+  finding that transfers: before picking a per-vertex map, ask whether the effect is affine per
+  prism — if it is, the budget is zero and the normal is exact.** What it still adds to the family:
+  a SOURCE that is not a vessel and that also MOVES the prisms (through the movers contract, a
+  separate system — the morph never reads anything the field did not already make true); and a
+  second node on the vertex chain, spliced immediately BEFORE the cradle (the cradle stays last),
+  anchored structurally, all sixteen sibling wirers passing. Its harness measures the tensor number
+  for number, volume conservation, the ceiling, `ε_h ∝ 1/M²` and the inverse-transpose normal, with a
+  negative control that switches the normal correction off.
 
 **A neighbour, not a member: the Rhino sword's SLICE** (`Docs/PRISM_ANIMATION.md` §4.10). It is
 the admission test's question 1 answered "no" and still wanting the dense mesh — every input (the
@@ -479,6 +531,16 @@ the far side of a convex solid onto a plane EXACTLY** (a bijection onto the true
 where the obvious orthogonal projection overhangs every face slanted to the plane. Its harness
 (`verify_prism_slice.py`) adds a second proof tier this family lacks: glslang front-end-compiles
 every pass of a hand-written `.shader`, plain and DOTS-instanced, against a URP mock.
+
+**A second neighbour: the COLLISION BURST** (`Docs/PRISM_ANIMATION.md` §4.12) — prism movement's
+level-1 death, also a STAMP on the slice's carrier, drawn on an UNWELDED variant of the mesh
+(`HighPolyPrismMesh.GetUnwelded`) so it can tear along any pattern. Two findings that transfer: **when a
+visual must be indistinguishable from another at a squint, share its ENVELOPE in code, not by tuning**
+(the burst calls the explosion's own flight resolver and life, and its fade value is
+`frac(piece + grain·noise)` — uniform whatever the noise, so coverage is EXACTLY the explosion's linear
+opacity); and **prove a derivative against the measured float-noise floor, not a fixed tolerance** — its
+bend-normal check first "failed" at 10⁻⁴ tilt that did not converge, which was coordinate rounding, and
+only a cheap-normal negative control (10⁻¹, plateauing) showed the gate could still fire.
 
 **Built and NOT shipped — a retirement record.** One other member reached playtest and was removed
 with everything that carried it. It is written down because the family inherits its findings, not

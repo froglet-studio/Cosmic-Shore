@@ -78,9 +78,25 @@ namespace CosmicShore.Engine.Audio.Fmod
         public bool Stopped;
         public bool Paused;
         public bool Released;
+        /// <summary>Set by <see cref="EventInstance.setCallback"/>; start() raises STARTED / RESTARTED through it.</summary>
+        public EVENT_CALLBACK Callback;
+        public EVENT_CALLBACK_TYPE CallbackMask;
         static int s_nextId;
         public readonly int Id = System.Threading.Interlocked.Increment(ref s_nextId);
         public readonly Dictionary<PARAMETER_ID, float> Parameters = new();
+
+        // Live instances by Id, so a native-style handle (an EVENT_CALLBACK's IntPtr) resolves
+        // back to its state; an entry leaves on release().
+        static readonly Dictionary<int, EventInstanceState> s_live = new();
+
+        public EventInstanceState() { lock (s_live) s_live[Id] = this; }
+
+        internal static EventInstanceState Find(System.IntPtr handle)
+        {
+            lock (s_live) return s_live.TryGetValue((int)handle, out var state) ? state : null;
+        }
+
+        internal static void Forget(EventInstanceState state) { lock (s_live) s_live.Remove(state.Id); }
     }
 
     /// <summary>
@@ -93,10 +109,23 @@ namespace CosmicShore.Engine.Audio.Fmod
     {
         internal EventInstanceState State;
 
+        /// <summary>Original contract: wraps a native handle (the IntPtr an EVENT_CALLBACK receives).</summary>
+        public EventInstance(System.IntPtr ptr) { State = EventInstanceState.Find(ptr); }
+
         public bool isValid() => State != null && !State.Released;
 
         /// <summary>The native handle (non-zero and unique per live instance; zero when invalid).</summary>
         public System.IntPtr handle => State == null ? System.IntPtr.Zero : (System.IntPtr)State.Id;
+
+        /// <summary>Original contract: this instance's callback. Recorded; start() raises STARTED / RESTARTED through
+        /// it when masked. The port never raises SOUND_PLAYED (no per-sound playlist state).</summary>
+        public RESULT setCallback(EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE callbackmask = EVENT_CALLBACK_TYPE.ALL)
+        {
+            if (State == null) return RESULT.ERR_INVALID_HANDLE;
+            State.Callback = callback;
+            State.CallbackMask = callbackmask;
+            return RESULT.OK;
+        }
 
         public RESULT setVolume(float volume)
         {
@@ -117,13 +146,18 @@ namespace CosmicShore.Engine.Audio.Fmod
             return RESULT.OK;
         }
 
+        /// <summary>Starts the instance. On one already playing FMOD restarts it, and so does this (recorded again).</summary>
         public RESULT start()
         {
             if (State == null) return RESULT.ERR_INVALID_HANDLE;
-            if (State.Started && !State.Stopped) return RESULT.OK;
+            bool restart = State.Started && !State.Stopped;
             State.Started = true; State.Stopped = false;
             RuntimeManager.RecordStart(State);
             FmodBackend.Current?.Start(State);
+            var startType = restart ? EVENT_CALLBACK_TYPE.RESTARTED : EVENT_CALLBACK_TYPE.STARTED;
+            RuntimeManager.InvokeDescriptionCallback(State, startType);
+            if (State.Callback != null && (State.CallbackMask & startType) != 0)
+                State.Callback(startType, (System.IntPtr)State.Id, System.IntPtr.Zero);
             return RESULT.OK;
         }
 
@@ -131,6 +165,7 @@ namespace CosmicShore.Engine.Audio.Fmod
         {
             if (State == null) return RESULT.ERR_INVALID_HANDLE;
             State.Stopped = true;
+            RuntimeManager.RecordStop(State, mode);
             FmodBackend.Current?.Stop(State, mode);
             return RESULT.OK;
         }
@@ -143,6 +178,13 @@ namespace CosmicShore.Engine.Audio.Fmod
             state = State == null || !State.Started || State.Stopped ? PLAYBACK_STATE.STOPPED : PLAYBACK_STATE.PLAYING;
             // The real runtime knows when a one-shot has finished; the local model does not.
             if (State != null && FmodBackend.Current?.GetPlaybackState(State) is { } live) state = live;
+            return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
+        }
+
+        /// <summary>Original contract. The local model keeps no timeline, so the position reads 0.</summary>
+        public RESULT getTimelinePosition(out int position)
+        {
+            position = 0;
             return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
         }
 
@@ -179,6 +221,7 @@ namespace CosmicShore.Engine.Audio.Fmod
         {
             if (State == null) return RESULT.ERR_INVALID_HANDLE;
             State.Released = true;
+            EventInstanceState.Forget(State);
             FmodBackend.Current?.Release(State);
             return RESULT.OK;
         }
@@ -252,8 +295,9 @@ namespace CosmicShore.Engine.Audio.Fmod
         {
             if (reference.IsNull)
                 throw new System.ArgumentException("EventReference is null.", nameof(reference));
-            AudioStats.Created(reference.Path ?? reference.ToString());
-            var state = new EventInstanceState { Path = reference.Path };
+            string path = string.IsNullOrEmpty(reference.Path) ? FmodGuids.PathOf(reference.Guid) : reference.Path;
+            AudioStats.Created(path ?? reference.ToString());
+            var state = new EventInstanceState { Path = path };
             FmodBackend.Current?.Create(state, reference);
             return new EventInstance { State = state };
         }
@@ -349,7 +393,8 @@ namespace CosmicShore.Engine.Audio.Fmod
             return new VCA { State = state };
         }
 
-        public static EventDescription GetEventDescription(EventReference reference) => new() { Path = reference.Path ?? string.Empty };
+        public static EventDescription GetEventDescription(EventReference reference)
+            => new() { Path = string.IsNullOrEmpty(reference.Path) ? FmodGuids.PathOf(reference.Guid) ?? string.Empty : reference.Path };
         public static EventDescription GetEventDescription(string path) => new() { Path = path };
 
         /// <summary>Studio system (global parameters, bus/VCA lookups).</summary>
@@ -369,18 +414,78 @@ namespace CosmicShore.Engine.Audio.Fmod
         /// <summary>Original: the RuntimeManager MonoBehaviour singleton. The port has no component; this is a stand-in handle.</summary>
         public static object Instance => StudioSystem;
 
+        /// <summary>
+        /// Engine-only probe: every event start, by path, in order. Not part of the FMOD API; null
+        /// unless something is listening. <see cref="EventRecorded"/> carries the full sequence.
+        /// </summary>
+        public static System.Action<string> EventStarted;
+
+        /// <summary>
+        /// Engine-only probe: the parity harness's FMOD channel (Port/parity/README.md) as
+        /// (kind, name) in call order. "fmod": an event start or restart, name = path.
+        /// "fmod-stop": an explicit stop(), name = "PATH|ALLOWFADEOUT" or "PATH|IMMEDIATE".
+        /// "fmod-snapshot": a mixer snapshot, "start:PATH" / "stop:PATH", or
+        /// "start:mixer:MIXER/SNAPSHOT" for a Unity AudioMixer transition. A snapshot is never
+        /// written as "fmod" or "fmod-stop".
+        /// </summary>
+        public static System.Action<string, string> EventRecorded;
+
+        public const string Unresolved = "(unresolved)";
+
+        /// <summary>True for an FMOD snapshot path (or one the runtime says is a snapshot).</summary>
+        public static bool IsSnapshot(string path)
+            => path != null && (path.StartsWith("snapshot:/", System.StringComparison.Ordinal)
+                                || FmodBackend.Current?.IsSnapshot(path) == true);
+
         internal static void RecordStart(EventInstanceState state)
         {
+            string key = state.Path ?? Unresolved;
+            if (IsSnapshot(state.Path)) EventRecorded?.Invoke("fmod-snapshot", "start:" + key);
+            else
+            {
+                EventStarted?.Invoke(key);
+                EventRecorded?.Invoke("fmod", key);
+            }
             StartedTotal++;
-            string key = state.Path ?? "(unresolved)";
             StartedByPath[key] = StartedByPath.TryGetValue(key, out var n) ? n + 1 : 1;
             StartedInstances.Add(state);
             if (StartedInstances.Count > StartedLogCapacity) StartedInstances.RemoveRange(0, StartedLogCapacity / 2);
         }
 
+        internal static void RecordStop(EventInstanceState state, STOP_MODE mode)
+        {
+            if (EventRecorded == null) return;
+            string key = state.Path ?? Unresolved;
+            if (IsSnapshot(state.Path)) EventRecorded("fmod-snapshot", "stop:" + key);
+            else EventRecorded("fmod-stop", key + "|" + mode);
+        }
+
+        /// <summary>A Unity AudioMixer snapshot transition (the other mixer the game carries).</summary>
+        public static void RecordMixerSnapshot(string mixer, string snapshot)
+            => EventRecorded?.Invoke("fmod-snapshot", $"start:mixer:{mixer}/{snapshot}");
+
+        // EventDescription.setCallback, by event path: the game's ParityProbe hooks STARTED |
+        // RESTARTED on every loaded description, and start() invokes it with the instance's
+        // handle. One callback per description, as the original keeps one.
+        static readonly Dictionary<string, (EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE mask)> s_descriptionCallbacks = new();
+
+        internal static void SetDescriptionCallback(string path, EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE mask)
+        {
+            if (path == null) return;
+            if (callback == null) s_descriptionCallbacks.Remove(path);
+            else s_descriptionCallbacks[path] = (callback, mask);
+        }
+
+        internal static void InvokeDescriptionCallback(EventInstanceState state, EVENT_CALLBACK_TYPE type)
+        {
+            if (state.Path == null || !s_descriptionCallbacks.TryGetValue(state.Path, out var c) || (c.mask & type) == 0) return;
+            c.callback(type, (System.IntPtr)state.Id, System.IntPtr.Zero);
+        }
+
         /// <summary>Clears buses, the started log, and the failure seam (test isolation).</summary>
         public static void ResetForTests()
         {
+            s_descriptionCallbacks.Clear();
             Buses.Clear();
             Vcas.Clear();
             StudioSystem.Globals.Clear();

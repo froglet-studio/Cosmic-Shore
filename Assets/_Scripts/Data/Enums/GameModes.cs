@@ -38,16 +38,21 @@ namespace CosmicShore.Data
         MazeRun = 25,
         WildlifeBlitz = 26,        // single-player scene retired 2026-09; still set by BenchmarkSceneLauncher
         ProtectMission = 27,
-        MultiplayerFreestyle = 28,
-        OnlineDuelForTheCell = 29,
+        // 28 was MultiplayerFreestyle, the prototype multiplayer sandbox (no rules, no clock,
+        // no score) that grew into the Menu_Main lava lamp, freestyle, toybox and lobby, which
+        // replaced it. Removed 2026-10 with its card, scene and controller; the mode is in git.
+        // 28 IS RESERVED FOREVER, exactly like 7, 31 and 47 - saved selections still carry it.
+        // 29 was OnlineDuelForTheCell, the two-human vessel-swap duel. Brood Rush (38) replaced
+        // it. Removed 2026-10 with its card, scene and mode preview; OnlineDuelForTheCellController
+        // stays because the CoOp Wildlife Blitz scene still runs on it. 29 IS RESERVED FOREVER.
         Multiplayer2v2CoOpVsAI = 30,
-        CoOpWildlifeBlitz = 32,
+        CoOpWildlifeBlitz = 32,     // retired 2026-10 (Bug_Hunt BH-5.5/5.7); scene + controller deleted; enum kept
         SkimRace = 33,
         Joust = 34,
         Scurry = 35,
         // Maelstrom (36): session-level meta that chains the domain minigames
         // (SkimRace, Joust, Scurry) into one tournament. See
-        // Docs/MaelstromSystem/ARCHITECTURE.md. (7 and 31 stay reserved.)
+        // Docs/MaelstromSystem/ARCHITECTURE.md. (7, 28, 29 and 31 stay reserved.)
         Maelstrom = 36,
         // AstroLeague (37): hypersea soccer domain minigame. See
         // _Scripts/Controller/Arcade/ASTROLEAGUE.md.
@@ -280,16 +285,58 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/SIROCCO.md.
         Sirocco = 61,
 
-        // Tandava (62): an ARENA co-op chase (Squirrel / Sparrow / Rhino) - a tadpole swarm races down a long cell to
-        // the exit membrane, eating oases to take its next form (Serpent small -> medium -> large -> Bull); every pilot
-        // is on one domain and must wipe it out, starve it or break its final form before it escapes. The cell itself
-        // changes colour at each form. Swarm on the sort core's scripted-form mode, the route and the forms decided by
-        // TandavaDirectorCore. See _Scripts/Controller/Arcade/TANDAVA.md.
-        Tandava = 62,
 
+        // GrizzlyCharge (62): the Grizzly-only assault mode (in development). Authored as 42
+        // on grizzly-v2, moved to 44 when Bends/ScarabScramble took 42/43, to 54 at the
+        // 2026-09-12 merge after Salvo took 44 and Switchback 45, and to 62 at the 2026-10-02
+        // merge after WreckingBall took 54 (bleeding-edge had run on to Sirocco = 61) - the
+        // parallel-branch collision the Skein and Bloomrush notes above record, hit a SIXTH
+        // time. The ArcadeGameGrizzlyCharge asset's serialized Mode moved with it each time.
+        GrizzlyCharge = 62,
+
+        // GrizzlyTime (63): the Grizzly-only circuit race - Redline's shape (a lapped gate
+        // circuit on the shared HeadlongCircuit solver) cut against the Grizzly riding its own
+        // trigger-bomb blasts rather than a boost: a corner asks how much launch it is worth. See
+        // _Scripts/Controller/Arcade/GRIZZLYTIME.md.
+        GrizzlyTime = 63,
+
+        // Slingshot (64): the Stoat-only circuit race - Redline's shape (a lapped gate circuit on
+        // the shared HeadlongCircuit solver) cut for a 60 u/s hull whose only speed is the
+        // attractor-repulsor wormhole pair it slings on its triggers: a corner asks where to lay
+        // the attractor. See _Scripts/Controller/Arcade/SLINGSHOT.md.
+        Slingshot = 64,
+
+        // Warpline (65): the Stoat's TIME race - Slingshot's shape (a lapped gate circuit on the
+        // shared HeadlongCircuit solver, the Stoat's cut) with five long legs a lap, flown on the
+        // round-15 field dipole: lay the poles so the pathfinder's line is warped and the hull
+        // flies it faster (Time scales the boost). See _Scripts/Controller/Arcade/WARPLINE.md.
+        Warpline = 65,
+
+        // ThresherTime (66): the Thresher-only circuit race - Grizzly Time's shape (a lapped gate
+        // circuit on the shared HeadlongCircuit solver) cut against the Thresher's SLING: plant
+        // the ball, orbit it, wind the chain in and let go, and the launch is the hull's own
+        // momentum on a fixed 120 deg/s turn - a corner asks how much sling it is worth. See
+        // _Scripts/Controller/Arcade/THRESHERTIME.md.
+        ThresherTime = 66,
+
+        // WrasseRun (68): the Wrasse and Grouper's circuit race - Thresher Time's shape (a lapped gate
+        // circuit on the shared HeadlongCircuit solver) where a ring counts only when the WRASSE (the
+        // navigator's kite) threads it: the Grouper flies the plane through the next ring, the kite swings
+        // through its mouth, and Time loops save the boosts that reach the next one. 67 is SerpentCharge's
+        // on an in-flight branch. See _Scripts/Controller/Arcade/WRASSERUN.md.
+        WrasseRun = 68,
+
+        // Tandava (69): the co-op ARENA hunt (Squirrel / Sparrow / Rhino, every pilot on ONE domain) - one tadpole swarm
+        // (the sort core's scripted-form mode) forages a small closed cell and takes four remembered forms, Great Serpent ->
+        // Many-Headed Serpent -> Lord of the Dance (a halo of rings) -> Antlion, decided by TandavaDirectorCore; break it
+        // before the Antlion's last feast. Authored as 62 on claude/tandava-arena-mode and moved to 69 at the 2026-10-25
+        // merge: GrizzlyCharge had taken 62 and the modes after it 63-68 (67 is SerpentCharge's, in flight). The
+        // ArcadeGameTandava, ModePreview_Tandava and GameToastConfig_Tandava assets carry the number and moved with it.
+        // See _Scripts/Controller/Arcade/TANDAVA.md.
+        Tandava = 69,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 60) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 64) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

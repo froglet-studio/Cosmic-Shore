@@ -184,9 +184,9 @@ Nothing below can be checked without play mode.
 
 ## Follow-ups
 
-- **No HUD.** The Urchin still has no `UrchinHUDVariant.prefab` (`URCHIN_BACKLOG.md` U3), so the
-  cooldown is invisible. `UrchinTrackActionExecutor.CooldownRemaining01` is the surface a cooldown
-  icon binds to the day the HUD exists — it is exposed and unread on purpose.
+- ~~**No HUD.**~~ Closed 2026-10-06 (`URCHIN_BACKLOG.md` U3): `UrchinVesselHUDController` reads
+  `UrchinTrackActionExecutor.CooldownRemaining01` from a serialized reference and pushes it as
+  the Space card's recharge veil.
 - **No deploy sound.** `deployEvent` ships **empty** (an unwired `EventReference` is a visible TODO;
   a borrowed event is an invisible one). Wire it when the ability has a voice.
 - **No placement preview.** The track just appears, like the Squirrel's tube. If it wants a preview,

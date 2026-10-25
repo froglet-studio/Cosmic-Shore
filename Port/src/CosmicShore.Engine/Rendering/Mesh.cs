@@ -137,6 +137,9 @@ namespace CosmicShore.Engine
             set => _bindposes = Copy(value);
         }
 
+        /// <summary>Original contract: how many bind poses the mesh holds.</summary>
+        public int bindposeCount => _bindposes.Length;
+
         // ── Blend shapes (original contract) ─────────────────────────
 
         public int blendShapeCount => _blendShapes.Count;
@@ -392,6 +395,11 @@ namespace CosmicShore.Engine
             foreach (var sub in _submeshes) destination._submeshes.Add(Copy(sub));
             destination._bounds = _bounds;
             destination.indexFormat = indexFormat;
+            // The wide (3- and 4-component) UV channels the SetUVs(Vector3/Vector4) overloads keep.
+            destination._uvFull.Clear();
+            destination._uvDims.Clear();
+            foreach (var (channel, values) in _uvFull) destination._uvFull[channel] = Copy(values);
+            foreach (var (channel, dims) in _uvDims) destination._uvDims[channel] = dims;
         }
 
         static T[] Copy<T>(T[] source)

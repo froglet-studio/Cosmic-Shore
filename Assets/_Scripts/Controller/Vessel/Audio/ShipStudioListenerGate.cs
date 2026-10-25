@@ -33,7 +33,6 @@ namespace CosmicShore.Gameplay.Audio
 
         StudioListener _listener;
         IVesselStatus _status;
-        bool _resolved;   // true once IsLocalUser is known
 
         void Awake()
         {
@@ -45,36 +44,25 @@ namespace CosmicShore.Gameplay.Audio
                 _listener.enabled = false;
         }
 
+        /// <summary>
+        /// Follows ownership every frame rather than resolving it once. Two paths hand a LIVE hull
+        /// to a different pilot without respawning it - Cellular Duel's round swap and the arena
+        /// PilotSwap (VesselController.ChangePlayer) - and a one-shot latch left the listener on
+        /// the hull the player had LEFT: every 3D sound was then placed relative to the
+        /// opponent's ship. The test is two reads; the toggle only fires on a change.
+        /// </summary>
         void Update()
         {
-            if (_resolved) return;
+            if (_listener == null) return;
 
             // IVesselStatus.Player is null until vessel.Initialize(player) runs.
-            if (_status?.Player == null) return;
+            bool want = _status?.Player != null && _status.IsLocalUser;
+            if (_listener.enabled == want) return;
 
-            _resolved = true;
-
-            if (_status.IsLocalUser)
-                Activate();
-            // else: remote / AI - leave the listener disabled.
-        }
-
-        void OnEnable()
-        {
-            // Re-activate if the vessel is re-enabled after a swap, but only
-            // if we already resolved ownership as local.
-            if (_resolved && _status is { IsLocalUser: true })
-                Activate();
-        }
-
-        void Activate()
-        {
-            if (_listener == null || _listener.enabled) return;
-
-            _listener.enabled = true;
+            _listener.enabled = want;
 
             if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
-                CSDebug.LogVerbose(CSLogChannel.Audio, $"[ShipStudioListenerGate] '{name}': FMOD StudioListener ACTIVATED (local player).");
+                CSDebug.LogVerbose(CSLogChannel.Audio, $"[ShipStudioListenerGate] '{name}': FMOD StudioListener {(want ? "ACTIVATED (local player)" : "DEACTIVATED (no longer the local player's hull)")}.");
         }
     }
 }

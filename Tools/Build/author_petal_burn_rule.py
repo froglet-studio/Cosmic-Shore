@@ -10,7 +10,7 @@ Garrett's number) and tunedDebuffMagnitude (TUNED, -0.1 = one petal - the Living
 recommendation). Which one a contact uses is decided per CELL by CellConfigDataSO.PetalBurnRule,
 read through the cellData reference this script wires to Runtime Cell Data. The Swarm cell's
 PetalBurnRule is authored by author_swarm_fauna.py (PETAL_BURN_RULE); every other cell is silent
-and so plays Shipped. check_elemental_economy.py §5 is the gate over the whole arrangement.
+and so plays the field's default, Tuned (Garrett, 2026-10-08: Tuned everywhere). check_elemental_economy.py §5 is the gate over the whole arrangement.
 """
 import os
 import re

@@ -6,6 +6,19 @@
 
 The main menu uses a horizontal sliding panel system managed by `ScreenSwitcher`. Screen panels are laid out side-by-side and the container slides left/right to reveal each screen.
 
+How the strip is positioned (fixed 2026-10-12, after it broke on the first iPhone build and at 4:3):
+- It sits in a runtime `Screens Viewport`, a full-canvas `RectMask2D` child of the root canvas
+  placed just before `Safe Area`.
+- Each screen gets a full-screen SLOT, and its content is laid out in the safe rect within that
+  slot.
+- Full-width background images bleed to the slot edges (`SafeAreaBleed`). So do the NavBar band
+  and modal backgrounds. A notched phone therefore looks like the desktop.
+- The strip slides one slot per screen by `anchoredPosition`. Never set `transform.position`,
+  which is absolute screen pixels.
+- It re-lays out whenever the slot width or the safe insets change.
+
+Details: `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3.
+
 #### IScreen Interface
 
 All menu screens that need lifecycle notifications implement `IScreen` (`Assets/_Scripts/UI/Interfaces/IScreen.cs`):
@@ -27,7 +40,7 @@ public interface IScreen
 | Screen | Class | Extends `IScreen` | Init Pattern |
 |---|---|---|---|
 | Home | `HomeScreen` | No | `Start()` |
-| Arcade (ARK) | `ArcadeScreen` | No | `Start()` |
+| Ark (ARK) — the Elemental Converter (2026-10-13; the arcade moved to `ModalWindows.ARCADE`) | `ElementalConverterView` (+ the disabled legacy `StoreScreen`) | Yes | `OnScreenEnter()` → idle crystals; CONVERT plays the omni combine (`Docs/Studios/OMNI_COMBINE_LAB.md` § In the game) |
 | Store | `StoreScreen` (extends `View`) | No | `Start()` + `OnEnable()` events |
 | Port (Leaderboards) | `LeaderboardsMenu` | Yes | `OnScreenEnter()` → `LoadView()` |
 | Hangar | `HangarScreen` | Yes | `OnScreenEnter()` → `LoadView()` |
@@ -41,8 +54,10 @@ public interface IScreen
 - Handles horizontal slide animations between screens
 - Manages a modal window stack (`PushModal`/`PopModal`) for overlay modals
 - Persists return-to-screen/modal state via `PlayerPrefs` across scene reloads
+- Coming back from a match, re-opens the launch panel of the card it was launched from (`MenuReturnCard`, `ReturnToLaunchedCardCoroutine`), not HOME (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.2.1)
 - Notifies `IScreen` implementors on navigation transitions
-- Supports gamepad left/right trigger navigation
+- Supports gamepad left/right trigger navigation: between screens with no modal open, and (rev 7) between the home hub's windows (Toy Box, Arcade, Arena, Mission, `hubWindowOrder`) while one of them is the top modal, stopping at the ends and skipping a window its hub entry refuses (`SlideHubWindow`, `CanOpenHubWindow`). `HubWindowNav` draws the strip and edge arrows (`Docs/MENU_REDESIGN_B.md` §47.2). `ModalStackChanged` fires after every stack change
+- On a device tier that sets `PlatformProfileSO.DeactivateMenuWhileFlying` (MobileLow phones only), DEACTIVATES the active non-HOME screen roots and the nav bar once the enter-freestyle blend settles, and reactivates exactly those at the start of the exit (`HandleFreestyleSettled` / `RestoreMenuAfterFlying`). HOME stays active: the party-invite popup and `HomeScreen`'s profile subscription must keep listening in flight. Anything under a screen root that subscribes in `Start` and unsubscribes in `OnDisable` breaks under this - subscribe in `OnEnable`. Every other tier hides them by CanvasGroup alone, as before. `Docs/PLATFORM_UNIFICATION.md` §3.6
 
 **Adding a new screen**: Create a `MonoBehaviour` implementing `IScreen` if it needs enter/exit lifecycle. Add a `ScreenEntry` in the `ScreenSwitcher` inspector mapping. The switcher will discover and call the `IScreen` automatically.
 
@@ -51,6 +66,61 @@ public interface IScreen
 - **`ProfileDisplayWidget`** (`Assets/_Scripts/UI/Elements/ProfileDisplayWidget.cs`) — Displays player name + avatar. Uses `[Inject] PlayerDataService` and subscribes to `OnProfileChanged`. Drop onto any menu screen that needs profile display — replaces inline profile display logic.
 - **`NavLink` / `NavGroup`** (`Assets/_Scripts/UI/Elements/`) — Tab navigation within a screen. `NavGroup` discovers child `NavLink` components and manages selection state with crossfade animations.
 - **`ModalWindowManager`** (`Assets/_Scripts/UI/Modals/ModalWindowManager.cs`) — Base class for modal windows. Caches `ScreenSwitcher` reference at startup. Handles open/close animations, audio, and modal stack integration.
+
+#### Style-B component kit (the menu redesign)
+
+The menu is being rebuilt in the style-B "Hangar bay" look one item at a time. Status and rules
+live in `Docs/MENU_REDESIGN_B.md`. Build new menu UI from the kit:
+
+- **Buttons:** `KitButton` / `KitButtonSmall` (§10.1 variants × transparent/opaque).
+- **Selectable tiles:** `KitTile` / `KitHexNavTile`.
+- **Labels:** `KitText`, a §4 role plus a §11 colour token.
+- **Static chrome:** `KitThemedGraphic`.
+- **Hover on a non-`KitButton` surface** (an EventTrigger tab, a keycap on a plain Button):
+  `KitHoverTint`.
+- **Show / hide:** `KitVisibility.SetShown(CanvasGroup, bool)` - never `SetActive`; a `LayoutElement`
+  on the same object leaves the layout while hidden.
+- **Focus in a scroll view:** `KitScrollIntoView` on each control. **Lists spawned by other code:**
+  `KitListCounter` (count, header, empty line). **Rows rebuilt under focus:** `KitFocusKeeper`.
+- **A window's Back button:** `ModalWindowCloseButton` (closes like gamepad B).
+
+All of these are in `Assets/_Scripts/UI/Kit/` and `Assets/_Prefabs/UI Elements/Kit/`. Colours
+come from `UIThemeSO` tokens, never literals. The kit owns every interaction state, including the
+CTA gamepad focus ring.
+
+**The top nav is style B (item 1, 2026-10-14).** `Safe Area/NavBar` is an 84-tall band (`Band` +
+1 px `Rule`, both full width, so `SafeAreaBleed` takes them to the screen edges as it took the old
+gradient) with one centred row under `NavBarButtons`: the `LeftArrrow` Button wearing a `KitKeycap`
+"LT", five `KitTopNavTab` instances (`HangarLink`..`ProfileLink`, text labels, each with its
+`EventTrigger` -> `ScreenSwitcher.OnClick<X>Nav`), and `RightArrow` / "RT". `NavActiveImages` /
+`NavInactiveImages` point into the instances, so `UpdateNavBar` is unchanged; `NavBarLine` and
+`NavBarLineSprites` are deliberately empty. Locked PORT is drawn by an authored
+`MenuAvailabilityView` (padlock + dimmed word) that `disabledScreens` drives at runtime. The scene's
+nav is generated: change it through `Tools/Build/author_menu_topnav.py` (`--check`, `--self-test`),
+not by hand. Details: `Docs/MENU_REDESIGN_B.md` §10.
+
+**The Hangar is style B (item 2, 2026-10-14): one view, three zones.** `Screens/Hangar Screen` holds
+one `HangarView` prefab instance (generated by `Tools/Build/author_menu_hangar.py`): a vessel list
+of `HangarVesselTile`s (a `KitTile` variant, owned first), the selected vessel (cover-fitted
+`PreviewImage`, name, description, unlock button with its price) and every ability, with the
+spend-crystals popup over it. There is no grid-to-detail hop: a tile is selected by click OR by
+gamepad / keyboard focus arriving on it (`ISelectHandler`), so focus never lands on a hidden panel.
+`HangarScreen` still owns the list (`RebuildList` on unlock, owned first);
+`HangarVesselDetailView` owns everything else and toggles by CanvasGroup only. Details:
+`Docs/MENU_REDESIGN_B.md` §11.
+
+**The Arcade is style B (item 3, 2026-10-14), with the shared party panel.** `ArcadeScreenModal`
+stretches the safe area and holds one `ArcadeView` instance under `Arcade_Panel/Explore` (generated
+by `Tools/Build/author_menu_arcade.py`): a dimmed nav band, the header with Back + B keycap
+(`ModalWindowCloseButton`, the same close as gamepad B), the PARTY panel on the left and the explore
+scroll - weekly challenge and Maelstrom feature cards, ALL GAMES, 28 `ArcadeGameCard`s
+(`KitGameCard`, a `GameCard` on a `KitTile`). `ArcadeExploreView` stays on the scene's `Explore`
+(`ArcadeDPadNav` is retired from every window); cards are the scroll's Selectables and `KitScrollIntoView` keeps the focused one
+visible. Sibling order is focus order: the cards come before the party panel and Back comes last.
+The party panel is `Main Menu Screens/Party/PartyPanel.prefab`: `ArcadeLobbyList` +
+`FriendsListPanel` (embedded) on one root, four `KitPartySlot` seats, Leave, then INVITES and ONLINE
+in one scroll - the old friends overlay is gone from the Arcade. Arena, Toy Box and Mission still
+carry the legacy pair until item 8. Details: `Docs/MENU_REDESIGN_B.md` §12.
 
 #### Menu Screen Patterns to Follow
 
@@ -62,7 +132,7 @@ public interface IScreen
 
 ### Lava-Lamp Mode (Menu Freestyle Merge)
 
-**Naming: "lava lamp" and "freestyle" are the same thing.** When viewed from the menu (autopilot vessels drifting behind the UI) it is called the *lava lamp*; when the player takes control and flies it is called *freestyle*. One system, two names. The old standalone arcade game named "Freestyle" (`GameModes.Freestyle = 7`, `MinigameFreestyle.unity`, `SinglePlayerFreestyleController`) was a vestige of the pre-lava-lamp era and has been removed — do not reintroduce it. `MultiplayerFreestyle (28)` is a separate multiplayer sandbox game and still exists.
+**Naming: "lava lamp" and "freestyle" are the same thing.** When viewed from the menu (autopilot vessels drifting behind the UI) it is called the *lava lamp*; when the player takes control and flies it is called *freestyle*. One system, two names. The old standalone arcade game named "Freestyle" (`GameModes.Freestyle = 7`, `MinigameFreestyle.unity`, `SinglePlayerFreestyleController`) was a vestige of the pre-lava-lamp era and has been removed — do not reintroduce it. Its multiplayer sibling `MultiplayerFreestyle (28)` was the prototype that grew into the lava lamp, freestyle, toybox and lobby; it was removed 2026-10-08 (scene, controller, card, preview) and 28 stays reserved. Online Duel for the Cell (29) went the same day; Brood Rush replaced it.
 
 Lava-lamp mode hosts freestyle gameplay directly in Menu_Main: the autopilot vessel becomes playable when the player enters freestyle mode. Game UI panels (MiniGameHUD, Scoreboard, Vessel Selection, Vessel HUDs, PlayerScoreCards) live under Menu_Main's "Game UI" container and fade in/out with the freestyle toggle.
 
@@ -87,7 +157,9 @@ Game UI [RectTransform, CanvasGroup]                    ← already in freestyle
 
 `MenuMiniGameHUD` (`_Scripts/UI/MenuMiniGameHUD.cs`) is a slim alternative to the full `MiniGameHUD` for menu freestyle mode. It provides the Volume/Pause icon button that EXITS freestyle (`MenuCrystalClickHandler.ToggleTransition`), vessel HUD reparenting via the `onShipHUDInitialized` SOAP event, and runtime PauseMenu prefab instantiation. The button is visible when Game UI fades in during freestyle, hidden when returning to menu. The full `MiniGameHUD` can replace this when Phase 3 scoring is needed.
 
-**Freestyle input ownership + HUD-after-swap (do not regress).** The menu ("appshell") and the vessel both poll the one gamepad, so ownership must be exclusive: in freestyle `ScreenSwitcher.HandleEnterFreestyle` sets `EventSystem.sendNavigationEvents = false` (restored on exit) so the pad flies the ship and no longer double-drives the UI selection ring / Submit on the still-touch-interactable vessel HUD (`ScreenSwitcher.Update` screen-nav was already gated on `_isInFreestyle`; the vessel is paused in menu state). `MenuMiniGameHUD.Update` polls **gamepad Start** while in freestyle → `MenuCrystalClickHandler.ToggleTransition()`, the pad counterpart to the on-screen Volume/Pause exit. On a runtime **vessel swap**, `VesselController.Initialize` creates the new HUD hidden and the swap never re-enters freestyle, so `ClientPlayerVesselInitializer.ReInitializePair` re-raises `GameDataSO.OnPlayerPairInitialized` and `MenuMiniGameHUD` re-shows the local HUD (gated on freestyle + local player) — the `onShipHUDInitialized`/`ShipHUD` reparent path is dead for menu vessels (no `ShipHUD` on the vessel prefabs). See `Docs/ToySystem/ARCHITECTURE.md`.
+**No entry behind the boot veil (do not regress, 2026-10-22).** The primary fix for a stray click launching freestyle during the Garland intro is the base's: the boot world builds behind `EnvironmentLoadVeil`'s opaque cover (`dc023d00d`) and Home's full-screen surface flies only on a double tap (`DoubleTapRelay`, `01403d976`). Routes that bypass both - the pad's Select, Submit, the toybox modals - are covered by `MenuCrystalClickHandler.ToggleTransition`, which refuses to ENTER freestyle while `EnvironmentLoadVeil.IsCovering`. Exits are never gated; new entry routes go through `ToggleTransition` so they inherit it.
+
+**Freestyle input ownership + HUD-after-swap (do not regress).** The menu ("appshell") and the vessel both poll the one gamepad, so ownership must be exclusive: in freestyle `ScreenSwitcher.HandleEnterFreestyle` sets `EventSystem.sendNavigationEvents = false` (restored on exit) so the pad flies the ship and no longer double-drives the UI selection ring / Submit on the still-touch-interactable vessel HUD (`ScreenSwitcher.Update` screen-nav was already gated on `_isInFreestyle`; the vessel is paused in menu state). `MenuMiniGameHUD.Update` polls **gamepad Select / View** (`OverviewGesture`; it was Start until 2026-10-21) while in freestyle → `MenuCrystalClickHandler.ToggleTransition()`, the pad counterpart to the on-screen Volume/Pause exit. On a runtime **vessel swap**, `VesselController.Initialize` creates the new HUD hidden and the swap never re-enters freestyle, so `ClientPlayerVesselInitializer.ReInitializePair` re-raises `GameDataSO.OnPlayerPairInitialized` and `MenuMiniGameHUD` re-shows the local HUD (gated on freestyle + local player) — the `onShipHUDInitialized`/`VesselHUD` reparent path is dead for menu vessels (no `VesselHUD` on the vessel prefabs). See `Docs/ToySystem/ARCHITECTURE.md`.
 
 #### Phase 1: Core Freestyle HUD (target hierarchy)
 
@@ -131,7 +203,7 @@ Vessel HUDs reparent into "Game UI" automatically through the existing SOAP pipe
 
 ```
 Vessel spawned (MenuServerPlayerVesselInitializer)
-  └─ ShipHUD.Start() [on vessel prefab]
+  └─ VesselHUD.Start() [on vessel prefab]
       └─ onShipHUDInitialized.Raise(ShipHUDData)
           └─ MiniGameHUD.OnShipHUDInitialized()
               └─ Reparents HUD children under transform.parent (= "Game UI")
@@ -212,7 +284,7 @@ The scored shape-drawing minigame (`ShapeDrawingManager` + `ShapeDrawingCrystalM
 
 **The painting toy is the successor** — scoreless connect-the-dots in the toybox (`PaintingToy` / `ShapeDefinition` via `PaintingDefinitionSO.sourceShape`).
 
-**Still in the tree:** `SegmentSpawner` (SkimRace live; also lays trail segments that can carry `ShapeCollisionTrigger`), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `ShapeDefinition`. SOAP events `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` stay on live prism prefabs (inert — **never Raise them**; they dump every listener to `Prism.ReturnToPool`).
+**Still in the tree:** `SegmentSpawner` (SkimRace live; also lays trail segments that can carry `ShapeCollisionTrigger`), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `ShapeDefinition`. SOAP event ASSETS `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` are kept but **nothing listens to them any more**: the `EventListenerNoParam` pairs that wired them to `Prism.ReturnToPool` on 8 prism prefabs were stripped (2026-09) because every lattice-flora growth step paid for serializing their UnityEvent lists in `Instantiate.Copy` (`Docs/archive/PERFORMANCE_LOG_2026.md` §0.11.6). Raising them is now a no-op; re-adding a listener to a PRISM prefab is re-adding that cost to every prism laid.
 
 #### Phase 3: Scoring & PlayerScoreCards (Deferred)
 
@@ -236,7 +308,7 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 | Minigame HUD view | `MiniGameHUDView.cs` | `_Scripts/UI/View/` |
 | Scoreboard (end-game results) | `Scoreboard.cs` | `_Scripts/UI/` |
 | Player score card (per-player) | `PlayerScoreCard.cs` | `_Scripts/UI/` |
-| Vessel HUD reparenting bridge | `VesselHUD.cs` (class: `ShipHUD`) | `_Scripts/Controller/Vessel/` |
+| Vessel HUD reparenting bridge | `VesselHUD.cs` (class `VesselHUD`; `ShipHUD` until 2026-10-25) | `_Scripts/Controller/Vessel/` |
 | Freestyle SOAP events container | `MenuFreestyleEventsContainerSO.cs` | `_Scripts/ScriptableObjects/` |
 | VesselHUD prefab variants | `*HUDVariant.prefab` | `_Prefabs/UI Elements/VesselHUD/` |
 | PlayerScoreCard prefab | `PlayerScoreCard.prefab` | `_Prefabs/UI Elements/In Game/` |
@@ -247,6 +319,6 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 - **"Game UI" CanvasGroup controls all game panel visibility** — individual panels should not manage their own top-level visibility during freestyle toggles; the parent CanvasGroup handles fade in/out
 - **Vessel HUD reparenting is automatic** — do not manually instantiate or position vessel HUDs; the `onShipHUDInitialized` → `MiniGameHUD.OnShipHUDInitialized()` pipeline handles it
 - **Never author a panel of vessel/world/lifeform cards in a scene** — the roster goes stale the day a vessel ships and nothing says so. Hull selection is the Vessel Changer toy, reachable both by flying it and from the menu Toy Box; both read `ToyVesselRoster`
-- **Mass is conserved in the menu too** — the lava-lamp vessel is the freestyle gameplay vessel, so its trail follows the universal conserved-mass rules: no trail caps, prism TTLs, or idle cullers (a `maxTrailBlocks` ring-buffer cap was added for menu perf and reverted — see "Don't cheat emergence"). Manage menu-idle prism growth with fauna cleanup or by pausing the spawner
+- **Mass is conserved in the menu too** — the lava-lamp vessel is the freestyle gameplay vessel, so its trail follows the universal conserved-mass rules: no trail caps, prism TTLs, or idle cullers (a `maxTrailBlocks` ring-buffer cap was added for menu perf and reverted — see "Don't cheat emergence"). Manage menu-idle prism growth with fauna cleanup or by pausing the spawner. That is exactly what MobileLow phones do: the lava lamp lays no trail and freestyle trail waits above 10,000 cell prisms, through a creation-side hold (`VesselPrismController.SetTierHold`, driven by `MenuCrystalClickHandler`; a mode preview and a Wanderway run are exempt) — nothing laid is removed (`Docs/PLATFORM_UNIFICATION.md` §3.6)
 - **Scoreboard hidden until needed** — do not show the scoreboard in basic freestyle; let the SOAP event system activate it when a game controller raises `OnShowGameEndScreen`
 - **Phase 3 panels start inactive** — PlayerScoreCards are dynamically instantiated only when turns are active. The scored Phase 2 HUD (`EndShapeDetailHUD`) was deleted with C15.

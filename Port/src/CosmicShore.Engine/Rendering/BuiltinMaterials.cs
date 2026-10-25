@@ -12,11 +12,14 @@ namespace CosmicShore.Engine
 
         static Material s_line, s_particle;
 
-        /// <summary>Default-Line: unlit, alpha-blended, tinted by the vertex colour (every Line/TrailRenderer's default).</summary>
-        public static Material DefaultLine => s_line ??= new Material(Shader.Find("Legacy Shaders/Particles/Alpha Blended")) { name = "Default-Line", renderQueue = 3000 };
+        /// <summary>The shader of both: vertex colour x texture x vertex alpha, Blend One OneMinusSrcAlpha.</summary>
+        public const string ShaderName = "Legacy Shaders/Particles/Alpha Blended Premultiply";
 
-        /// <summary>Default-Particle: the particle system's default alpha-blended unlit material.</summary>
-        public static Material DefaultParticle => s_particle ??= new Material(Shader.Find("Legacy Shaders/Particles/Alpha Blended")) { name = "Default-Particle", renderQueue = 3000 };
+        /// <summary>Default-Line: unlit, premultiplied, tinted by the vertex colour (every Line/TrailRenderer's default).</summary>
+        public static Material DefaultLine => s_line ??= new Material(Shader.Find(ShaderName)) { name = "Default-Line", renderQueue = 3000 };
+
+        /// <summary>Default-Particle: the particle system's default material (same shader).</summary>
+        public static Material DefaultParticle => s_particle ??= new Material(Shader.Find(ShaderName)) { name = "Default-Particle", renderQueue = 3000 };
 
         public static Material ForFileId(long fileId) => fileId switch
         {

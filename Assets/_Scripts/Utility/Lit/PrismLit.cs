@@ -15,13 +15,16 @@ namespace CosmicShore.Utility
     /// <c>PrismDestructionSight.hlsl</c>, once per prism, off a handful of shader globals this
     /// class writes once per frame.
     ///
-    /// <para><b>Producers.</b> THREE today, each saying the same sentence at a different moment in
-    /// a force's life — pending, armed, resolved:</para>
+    /// <para><b>Producers.</b> FIVE today, each saying the same sentence at a different moment in
+    /// a force's life — pending, armed, live, resolved:</para>
     /// <list type="bullet">
     ///   <item><b>Echo Sight</b> (Dolphin, Charge) — the volume its next crystal blast WOULD
     ///   sweep. The pilot's own is the <see cref="PublishAimed"/> channel; rivals' ride the bank.</item>
     ///   <item><b>Proximity fuze</b> (Sparrow skyburst) — the sphere an armed warhead will
     ///   detonate inside.</item>
+    ///   <item><b>Bomb passage</b> (Grizzly trigger bomb) — the mass a live bomb is sliding
+    ///   through, which it never touches: only the trigger detonates it, so without a light it
+    ///   reads as a clip. <c>GrizzlyBombVisual.PublishLit</c>.</item>
     ///   <item><b>Explosion passthrough</b> — a blast that ARRIVED and spared what it touched.
     ///   This one REPLACED the 2-second temporary shield that used to stand in for it, so it is
     ///   the only producer that removes code rather than adding it; see <c>Docs/LIT.md</c> for why
@@ -29,6 +32,9 @@ namespace CosmicShore.Utility
     ///   blackout, a targeting-grid churn, and one shield SFX per prism). It covers EVERY shape,
     ///   because every blast that spares its own domain has a passthrough to express — the
     ///   Scarab's swept plate lights through the same call as the Dolphin's cone.</item>
+    ///   <item><b>Contact acknowledgement</b> (Thresher cord and ball) — own mass the cord passed
+    ///   through and had nothing left to do to (it was already shielded). Dynamic contact never
+    ///   does nothing; without a light it reads as a clip. <c>ThresherExecutor.PublishAcknowledged</c>.</item>
     /// </list>
     ///
     /// <para><b>A skim field was built as a fourth and CUT on a look call</b>, and the two reasons
@@ -481,7 +487,14 @@ namespace CosmicShore.Utility
         /// </summary>
         sealed class Driver : MonoBehaviour
         {
-            void LateUpdate() => Flush();
+            // Named so the Profiler can tell the ten nested "Driver" classes apart (they all read as
+            // "::Driver.LateUpdate"; the 2026-10-17 menu capture had an 88 ms spike there and no way to say whose).
+            static readonly Unity.Profiling.ProfilerMarker s_lateUpdate = new("PrismLit.Flush");
+
+            void LateUpdate()
+            {
+                using (s_lateUpdate.Auto()) Flush();
+            }
 
             void OnDisable()
             {

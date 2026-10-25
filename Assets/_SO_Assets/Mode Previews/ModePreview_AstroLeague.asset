@@ -21,7 +21,7 @@ MonoBehaviour:
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
   Vessel: 3
-  ObjectiveText: Crush Ballz , bruh.
+  ObjectiveText: Strike the ball through the rival goal
   ObjectiveMetric: 4
   ObjectiveTarget: 0
   DurationSeconds: 60

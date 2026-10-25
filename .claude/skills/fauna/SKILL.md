@@ -59,8 +59,8 @@ by measurement, before you conclude a creature is fine.
    by shooting it**, carries no conserved mass in its body, and leaves no §26 skeleton.
    (The Clawfish was in that state for two years; `Docs/ECOSYSTEM.md §46.2` is the fix, and
    the recipe is measured poses on the creature's own extremities, not eyeballed ones —
-   §26's ordered wither runs farthest-from-the-heart first, so the extremities are where
-   body prisms belong.)
+   §26's starvation wither runs outside-in along the spindle tree (deepest limb first, ties
+   farthest-from-the-heart), so the extremities are where body prisms belong.)
 
 ---
 
@@ -130,6 +130,19 @@ genuinely differs, in which case it gets its own material on the same graph, the
 `QuadFishSpindleMaterial` does (0.13 / 5.2). Never paint a fleet-wide colour onto the base
 material: `Spindle` mints eight phase-variant clones at runtime, copying the colour at mint
 time, so the paint is only correct if `ThemeManager.Awake` happens to beat the first spindle.
+
+**To recolour a LIVE creature's spindles, go through `Spindle.SetHueLean`, never the renderer**
+(`cece/sharp-faraday-gq7m65`, 2026-10-21, the tamer's mark). A limb's renderer holds a PHASE
+VARIANT, and once `SpindleLodSystem` has registered it, the LOD owns that renderer's material
+(near, depth or tier). A `sharedMaterial` swap or an MPB is either undone by the LOD's next tier
+change or knocks the limb out of the SRP batch. `SetHueLean` mints a shared leaned clone of the
+captured BASE material (cached per base, target and lean), takes the phase variant of that at
+the limb's CACHED bucket (`_phaseBucket`; re-hashing the current position would desync its
+prisms' stamped sway), and re-registers with the LOD, which copies the new near material into
+its tiers. A creature-wide wrapper is `Fauna.ApplyLeashMark`; any holder of a leash marks its
+creatures through `IFaunaLeash.TryGetLeashMark`, replicated by `FaunaNetworkSync._netLeashMark`.
+The hue lean keeps saturation and HDR value: build the target from the domain's HDR colour, not
+a `Color32`, because clamping a bright colour to 8 bits can turn its hue.
 
 **A CREATURE'S BODY PRISMS SWAY WITH IT, and that is where a new species gets it wrong.**
 `PrismSway` stamps a health prism with its limb's own shear field
@@ -249,6 +262,18 @@ Load **`/asset-surgery`** for the general rules. These are the fauna-specific on
   records two passes of Rhino jets landing on a placeholder hull a fifth of the ship's
   height. Prisms are gameplay colliders and conserved mass; put them where a human can see
   them land.
+- **Never scale a creature ROOT non-uniformly.** The heart hangs off the root, so a root at
+  `(1, 1, 1.31)` (the QuadFish until 2026-10-14) stretches it, shears its spinning model as it
+  turns, and used to bake that stretch into the dropped pickup. Put an elongation on the BODY
+  child instead — a roll about z commutes with a z-only scale, so the body's world pose is
+  identical. `Crystal.ReparentToCell` now restores a uniform size on release as a backstop.
+- **A heart needs its collection pair (`ElementalCrystalImpactor` + `ImpactCollider`).** A bare
+  `CrystalSpace` instance has only `Crystal` + a trigger, which the skimmer's VACUUM reads — so
+  the dead heart followed the vessel forever and could never be collected (QuadFish, Clawfish,
+  Nerve/Pine/Wall flora). `LifeFormCrystal.EnsureElementalCrystal` now wires the pair on a kept
+  crystal at runtime, and `python3 Tools/Build/author_lifeform_heart_collection.py [--check]`
+  authors it (plus the heart's `Crystal` disabled) on every lifeform prefab — run `--check` on any
+  new creature or plant.
 - **Every guid a creature prefab references must have exactly one `.meta` owner.** Sweep it:
   `for g in $(grep -o "guid: [0-9a-f]\{32\}" <prefab> | sort -u | cut -d' ' -f2); do ...`
 

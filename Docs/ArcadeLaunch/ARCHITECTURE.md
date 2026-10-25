@@ -115,8 +115,8 @@ joined AFTER the host opened a card was never told at all. The client sat on the
 while the host looked at a lobby, and re-opening the card was the only way to reach them.
 
 `ArcadeConfigSyncManager` now holds the lobby in one server-written
-`NetworkVariable<LobbySnapshot>`: the card, the intensity, the seat count, the domain
-count, the placed AI domains (four fixed slots — a match seats `MaxMatchSeats` = 4 and one
+`NetworkVariable<LobbySnapshot>`: the card, the intensity, the AI difficulty (§3.3), the seat
+count, the domain count, the placed AI domains (four fixed slots — a match seats `MaxMatchSeats` = 4 and one
 of them is always the host — so the struct stays unmanaged), and a **generation** that
 climbs on every open, so a close-and-reopen of the same card is a new open even on a peer
 that never saw the close land. A late joiner receives the value with the spawn and applies
@@ -243,7 +243,7 @@ modal pointed at a different roster, so the one key serves both.
 before it resets the config - a pilot who readied and whose party then dismissed the card has
 not launched anything, and remembering that would restore a setup that never flew. The record
 has two halves written by two authorities: the **host terms** (intensity, domain count, the
-placed AI in placement order) are written only by the launch authority (`SaveHostTerms`), and
+placed AI in placement order, the AI difficulty) are written only by the launch authority (`SaveHostTerms`), and
 the **pilot choice** (own domain, own hull) by every instance, host and guest alike
 (`SavePilotChoice`) - so a guest readying on a card this machine once hosted cannot clobber
 the host terms it last launched with. The weekly challenge writes nothing: pinned terms are
@@ -255,6 +255,7 @@ not a preference.
 | field | restored where | clamped against |
 |---|---|---|
 | intensity | `InitializeConfigFromGameDefaults`, so the row, the preview and the commit all see it | the card's range AND the player's unlocks - a saved 4 on a mode whose 3 and 4 are still locked opens on 2, never on a dimmed button drawn selected |
+| AI difficulty | `InitializeConfigFromGameDefaults`, beside the intensity, so the commit replicates it | `AIDifficultyRules.Resolve` - a record saved before difficulty existed reads 0 and opens on Medium; the weekly challenge pins Medium; a card that does not offer the row (§3.3) launches on Medium whatever it remembered |
 | placed AI + domain count | `RestoreRememberedRoster`, AFTER `CommitConfiguration` | Blue dropped; cut to the seats free above the humans present (a party that grew gets fewer bots back); the domain count covers every placement's prefix and stays inside the card's window, through the same `HandlePlayerCountSelected` clamp a live placement takes |
 | own domain | `RestoreRememberedDomain`, AFTER the commit on the host, and on a guest's first draw of a NEW lobby generation | only inside `ActiveDomains[0..DC-1]` - a Gold pick on a two-domain lobby falls back to Jade, because lighting a dimmed tile is a promise the spawn would break; routed through `HandleDomainSelected` so it is a real server request, never a lit tile the server never heard about |
 | own hull | `InitializeDefaultShipFromAvailable`, step 0 (ahead of the session's last hull and the legacy loadout file) | must be one the card lists; the arena's per-session confirmation gate is untouched - the carousel opens ON the hull, the pilot still presses SELECT VESSEL |
@@ -273,6 +274,104 @@ setup is a convenience of THIS machine, made with the party and the unlocks it h
 legacy `LoadoutSystem.SaveGameLoadOut` "last game play configuration" is superseded for the
 hull; its only writer was the retired two-screen path's `PlaySelectedGame`, and its read is
 kept as a fallback below this store.
+
+### 3.2.1 Leaving a match lands back on its panel
+
+Pressing Main Menu - on the result panel, in the pause menu, on the Maelstrom summary - used to land
+on HOME with the lava lamp, so changing the AI difficulty or the intensity for another go meant
+finding the card again. It now lands on **the launch panel of the card the match was launched
+from**, over the window that lists it, already seeded with the setup that just flew (§3.2) (Yash,
+2026-10-25: "this should be the general flow").
+
+- **The record:** `MenuReturnCard` (`_Scripts/UI/`), the card's mode plus whether it was this week's
+  challenge. Written in `HandleAllPlayersReady` beside the launch preference, on every peer. It is
+  a static, so it survives the scene loads and not an app restart, and the next Menu_Main load
+  TAKES it, so only the first load after a launch counts as a return.
+- **The re-open:** `ScreenSwitcher.ReturnToLaunchedCardCoroutine`, started from `Start`. It goes
+  through `OpenGame(GameModes)`: the window whose roster lists the card opens, then the card is
+  pressed, the same path as the Hangar's Games tab. For this week's challenge (if the week still
+  names that mode) it goes through `OpenWeeklyChallenge`. The Maelstrom card opens its own window
+  through `OpenFor` as usual.
+- **It waits for what a press never has to**, because a press cannot land while the splash covers
+  the menu: the menu's vessel (`MainMenuState.Ready`), the boot world (`EnvironmentLoadVeil`: the
+  preview stands a second arena, which must not race the first build) and the lobby
+  (`ArcadeGameConfigureModal.IsReadyToOpenCards`: before the sync manager spawns, the host's commit
+  returns on its first line). After `returnToCardTimeoutSeconds` (90 s, past the splash's own
+  60 s boot-world hold) it stays on HOME.
+- **Who does not re-open it** (`MenuReturnCard.ShouldReopen`, held by `MenuReturnCardTests`):
+  - A party GUEST. The host's open reaches them as the replicated lobby (§3.1), so the whole
+    party lands on the panel together. A guest's own `OpenFor` would be a request for the card.
+  - A guided path (`MenuGuide`) or the first orientation funnel (`QuestArcadeConstraints.Active`),
+    which decide where the player goes; the quest resumes on HOME.
+  - A player who already went into freestyle or a window.
+  - A host loss or a session end, which clear the record (`PartyInviteController.BounceToSoloMenuAsync`,
+    `SceneLoader.HandleActiveSessionEnd`): the party it was launched with is gone.
+- **Launches that do not come from a card** (Quick Play, missions, training, benchmarks) write no
+  record and still return to HOME.
+
+This is a place the player was, not a guided path (`Docs/HomeHub/ARCHITECTURE.md` §8): the player
+pressed Main Menu, and the panel they launched from is where that press now goes.
+
+### 3.3 The AI difficulty row: the opponent, not the map
+
+Three buttons under the intensity row - **Easy, Medium, Hard** - set how well the AI flies.
+They are deliberately not intensity: intensity is the MAP (track length, crystals, laps), the
+difficulty is the OPPONENT, so a Hard AI can race intensity 1 and an Easy one intensity 4.
+`AIDifficulty` (`_Scripts/Data/Enums/`, `Easy = 1, Medium = 2, Hard = 3`) carries it, and
+`AIDifficultyRules` holds the four rules every reader shares: the default is **Medium**, any
+other number (0 from an old save or a default struct, a member a later build added) resolves to
+that default, `IsOfferedFor` names the modes whose AI actually reads it, and `Step` is the pad's
+left/right.
+
+It follows intensity's path exactly, because it is the same kind of fact:
+
+- **The host decides, the panel only draws.** `AIDifficultyPicker` raises a press;
+  `ArcadeLaunchPanel` re-raises it as `OnAIDifficultyPicked`; `ArcadeGameConfigureModal
+  .HandleAIDifficultySelected` refuses it in client mode and on the weekly challenge, writes
+  `ArcadeGameConfigSO.AIDifficulty`, and replicates it. `SetHostControlsInteractable` greys the row
+  on a guest, like the intensity buttons.
+- **It is lobby STATE.** `LobbySnapshot.AIDifficulty` (an int, so the reflection test can mutate
+  it) rides the commit and every change (`NotifyAIDifficultyChanged` -> `OnAIDifficultyChangedOnClient`);
+  a guest's open reads it straight off `CurrentLobby`, so a late joiner sees the host's pick on
+  its first frame. The field changed the snapshot's wire layout, so the network protocol version went
+  8 -> 9 with it: a build without the field cannot join a build with it, and is now refused with
+  `NetworkConfig mismatch` in the host's console instead of failing the join silently
+  (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`, the protocol-version rule).
+- **It is a host term.** Remembered on launch with the intensity (§3.2), restored on the next open.
+- **It reaches the match through `GameDataSO.RequestedAIDifficulty`**, written by
+  `SyncAllGameDataForLaunch` beside the AI domains and read on the server where the AI is
+  installed. `[NonSerialized]`, survives `ResetRuntimeData` (and so the replay reload), reset by
+  `ResetAllData` - the same lifetime as `RequestedAIDomains`.
+- **It is offered only where the AI reads it.** A row that changed nothing would be a promise the
+  match breaks, so a mode is added to `AIDifficultyRules.IsOfferedFor` in the same change that
+  teaches its pilot to read the value. Today: Skim Race (`Docs/SKIM_RACE_AI.md` §10), the gate
+  races Slingshot and Warpline (`GateRaceHandicap`), Regatta (Squirrels on `SkimRaceHandicap`, every
+  other hull `GateRaceHandicap`), and the Arena's Astro League, Brood
+  Rush and Broadside (`AIDifficultyRules.UsesPilotBelief`: the platform autopilot flies on an
+  `AIPilotBelief` - the Skim Race's late notice and misjudged target, applied to whatever point
+  `AIPilot` wants to reach - installed by `ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode`,
+  none on Hard). So every Arena card offers it. Everywhere else the row is hidden, the pad steps
+  over it, and the launch writes Medium.
+
+**Layout.** The row is authored INACTIVE in the prefab, directly under the intensity row, by
+`Tools/Build/author_ai_difficulty_row.py`: the same 141 x 75 plates and 19.2 px spacing as the
+intensity buttons, so EASY sits under 1, MEDIUM under 2 and HARD under 3, and every serialized
+object cloned from a same-file donor. Its `--check` re-authors the row from the prefab with the
+row removed and compares byte for byte, proves the row clears the intensity row, the ADD AI toggle
+and the domain tiles in canvas pixels, and measures every label against the UI font's glyph table.
+The controls block already starts under the intensity row, so while the row shows
+`MinigameLaunchPanel.SetAIDifficultyAvailable` moves the block's top edge to just under the row
+(measured from the row's own rect, so moving the row needs no second edit) and puts it back on
+the next card; the block is a scroll view and only its viewport shrinks (375 -> 249 px at the
+reference resolution).
+
+**The Arena's window** (`ArenaGameConfigureModal`, a scene object in Menu_Main) gets the same row
+from the same script, in the same place: under its intensity row (canvas px L=980 B=617 W=709 H=113),
+EASY under 1, MEDIUM under 2, HARD under 3. Its vessel carousel used to start there, so the script
+re-fits the carousel once, statically - from 8 px under the row to 8 px over ADD AI, the hull icon
+(aspect-preserving, 195 px tall) above SELECT VESSEL, the arrows level with the icon - because every
+Arena card offers the row and `ArenaLaunchPanel` has no controls block to move at runtime.
+`--check` proves the row and the carousel clear every sibling.
 
 ## 4. The controls block: the mode's abilities — and the icon animates like the game
 
@@ -733,6 +832,8 @@ instead of splitting it across two files.
 | `ModeControlsLibrarySO` | `_Scripts/UI/View/ArcadeLaunch/` | Per-mode authored rows for the controls block; `Resources/ModeControlsLibrary`, default empty |
 | `LobbySlotRow` / `LobbySlotView` | same | Seats, ready lights, the AI kick, the fill toggle |
 | `GameBriefingView` | same | Description + rotating tips |
+| `AIDifficultyPicker` | `_Scripts/UI/Elements/` | The Easy / Medium / Hard row (§3.3) - draws and raises, never decides |
+| `author_ai_difficulty_row.py` | `Tools/Build/` | Writes that row into `ArcadeGameConfigureModal.prefab` (`--check`) |
 | `MaelstromPoolListView` / `MaelstromPoolEntry` | same | What this intensity can draw |
 | `ModeVideoView` | same | The Maelstrom's clip |
 | `ArcadeGameConfigureModal` | `_Scripts/UI/Modals/` | Still the one authority on config, commit, ready-up and launch |
@@ -778,6 +879,10 @@ Authored data: `SO_ArcadeGame.Tips` (per-card play tips) and `SO_ArcadeGame.Prev
   mode and a local close is undone by the reconcile. If a guest ever needs a legitimate way out —
   "leave this lobby" as distinct from "close this window" — it has to be a real request to the
   host, not a window close, or it is the stuck-guest bug again.
+- **The AI difficulty row (§3.3) has not been seen in the Editor.** The prefab objects were
+  authored as YAML by a script and the C# type-checked against stubs; the first look in play mode
+  is owed - the row's position under the intensity row, the plates' lit/unlit swap, the controls
+  block moving down on Skim Race and back on the next card, and a guest seeing the host's pick.
 - **The in-Maelstrom pre-game panel is not built.** The design calls for the same panel between
   rounds *without* the domain row (domain cannot change mid-tournament); that lives in the
   Maelstrom scene and is deliberately left for its own pass.
@@ -820,6 +925,14 @@ raised and nothing subscribes to it, in code or in any scene — a removal candi
 integration point rather than part of the two-screen path.
 
 ## The Maelstrom pool list is a Toy Box VARIANT ROW
+
+> **Superseded 2026-10-25 (kept for the lesson below).** The style-B configure windows (`a326296f6`,
+> 2026-10-15) moved the pool list out of `Menu_Main` into `ConfigureMaelstromView.prefab`, with its own
+> row, `ConfigurePoolRow.prefab`; both are authored by `Tools/Build/author_menu_configure.py`. The
+> `MaelstromPoolRow.prefab` this section describes was then referenced by nothing, and its generator,
+> `author_maelstrom_pool_cards.py`, had no grid left to patch, so both were deleted
+> (`Docs/REFACTOR_BACKLOG.md` S62). What still holds is the rule at the end of the next paragraphs: a
+> card slot is a promise about what the data means.
 
 `MaelstromPoolRow.prefab` was a 228×170 chamfered PNG drawn **Simple** — stretched — into a 260×80
 grid cell, carrying one centred label and nothing else. That is the trap §4.1.8 of

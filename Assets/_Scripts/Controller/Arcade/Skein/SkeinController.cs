@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
         [Header("Skein start line")]
         [Tooltip("How far BEHIND the start collar the pilots line up. Far enough that the ring " +
                  "reads as something to fly at rather than something they are already inside.")]
-        [SerializeField, Min(1f)] float startLineStandoff = 220f;
+        [SerializeField, Min(1f)] float startLineStandoff = RaceCourseSource.DefaultStartLineStandoff;
 
         [Tooltip("Radius of the ring the pilots stand on, about the collar's axis. Must stay " +
                  "well inside the collar's own 150 u mouth: everyone threads the first gate by " +
@@ -64,98 +64,21 @@ namespace CosmicShore.Gameplay
 
         protected override string ModeName => "Skein";
 
-        public override int AuthoredGateTarget()
-        {
-            var overrides = EndConditionOverridesSO.Instance;
-            return overrides != null
-                ? overrides.GetSkeinRingTarget()
-                : EndConditionOverridesSO.DefaultSkeinRingTarget;
-        }
+        protected override RaceCourseSource CreateCourseSource() => new SkeinCourseSource();
 
         /// <summary>
-        /// The cable's rings, in cell-local coordinates.
-        ///
-        /// <para><paramref name="seed"/>, <paramref name="inner"/> and <paramref name="outer"/>
-        /// are IGNORED, and that is the design rather than an oversight: this mode's course is a
-        /// property of the arena, which is authored on the cell config, so a seed or a shell
-        /// invented here could only disagree with it. <paramref name="gateCount"/> IS honoured -
-        /// it is the authored race length, and the platform hands the same number to the
-        /// monitor. The retry mirrors
-        /// <c>SpawnableSkein.BuildEnvironment</c> exactly - same base seed, same 7919 stride,
-        /// same six attempts - because the arena takes the first seed that lays a full course and
-        /// the controller has to land on the same one.</para>
+        /// The cable's authored settings live on the cell config - the EXPECTED one, never
+        /// <c>Config</c>: both callers run during the first second, and a cell does not latch its
+        /// config until <c>Initialize</c>.
         /// </summary>
-        protected override List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer)
+        protected override CellConfigDataSO ResolveCourseConfig()
         {
-            if (!TryResolveArena(out var arena, out string why))
-            {
-                // Reported, not logged: the platform retries this every frame, so a LogError
-                // here is a per-frame path. Until the window closes this is simply "not yet".
-                CourseFailureDetail = why;
-                return null;
-            }
-
-            // The AUTHORED target drives the course, so the finish line and the number of rings
-            // laid cannot drift - the platform reads the same number for the monitor's target.
-            var settings = arena.CourseSettings;
-            settings.GateCount = Mathf.Max(3, gateCount);
-
-            for (int attempt = 0; attempt < 6; attempt++)
-            {
-                var build = SkeinCourse.BuildAll(unchecked(arena.CableSeed + attempt * 7919), settings);
-                if (build == null) continue;
-
-                // The generator works about the ORIGIN and Cell parents the environment container
-                // at localPosition zero, so the cable's frame is the CELL's - not the prefab's,
-                // which is an asset and never moves.
-                var course = new List<RaceGate>(build.Gates.Count);
-                for (int i = 0; i < build.Gates.Count; i++)
-                {
-                    var g = build.Gates[i];
-                    course.Add(new RaceGate(g.Position, g.Axis, g.Radius));
-                }
-                return course;
-            }
-
-            CourseFailureDetail =
-                $"Could not lay a {settings.GateCount}-ring cable at N={settings.StrandCount} " +
-                "in six seeds - this one will not fix itself by waiting. Check " +
-                "Tools/Build/skein_budget.py against these settings.";
-            return null;
-        }
-
-        /// <summary>
-        /// The cable's authored settings, off the cell config.
-        ///
-        /// <para>ExpectedConfig, never Config: both callers run during the first second, and a
-        /// cell does not latch its config until <c>Initialize</c>. See the class remarks.</para>
-        /// </summary>
-        bool TryResolveArena(out SpawnableSkein arena, out string why)
-        {
-            arena = null;
             var cell = arenaCell != null ? arenaCell : FindAnyObjectByType<Cell>();
-            var config = cell != null ? cell.ExpectedConfig : null;
-
-            if (config == null)
-            {
-                why = "No Cell whose config is knowable - the cable's settings live on the cell " +
-                      "config. A Skein cell must be IntensityWise (its choice is derivable from " +
-                      "the intensity the server already holds); a Random multi-config cell " +
-                      "cannot answer before it rolls, by design.";
-                return false;
-            }
-
-            arena = config.EnvironmentPrefab as SpawnableSkein;
-            if (arena == null)
-            {
-                why = $"The cell config '{config.name}' authors no SpawnableSkein " +
-                      "EnvironmentPrefab, so there is no cable to hang rings on.";
-                return false;
-            }
-
-            why = null;
-            return true;
+            return cell != null ? cell.ExpectedConfig : null;
         }
+
+        bool TryResolveArena(out SpawnableSkein arena, out string why) =>
+            SkeinCourseSource.TryResolveArena(ResolveCourseConfig(), out arena, out why);
 
         /// <summary>
         /// Everyone starts just behind the start collar, aimed through it.
@@ -202,25 +125,77 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// While ATTACHED, aim down the pilot's own rail rather than at the ring.
+        /// The Urchin's kit, for every AI on the cable (<see cref="UrchinAutopilotDriver"/>).
+        /// Created on first use rather than in a field initializer, so it loads its config on the
+        /// main thread during play rather than while Unity deserialises the scene.
+        /// </summary>
+        UrchinAutopilotDriver _urchinAI;
+        UrchinAutopilotDriver UrchinAI => _urchinAI ??= new UrchinAutopilotDriver();
+
+        /// <summary>
+        /// While ATTACHED, ride the cable toward this pilot's next ring; while FREE, fly at it the
+        /// platform's way (and lay a Track Projector rail when it is a long straight shot).
         ///
         /// <para>The ride constrains POSITION and never attitude, so where an attached AI looks
         /// is also where it LAUNCHES when the ribbon runs out - and every break in this arena is
-        /// aimed by construction, so a competent AI is one that holds the throttle and lets the
-        /// geometry throw it. Off-rail this returns false and the platform's ordinary gate
-        /// aiming takes over, which is exactly right: then the pilot IS flying.</para>
+        /// aimed by construction. What the AI could not do before is CHOOSE: above intensity 1
+        /// most rings are pinned to one strand, and a pilot that only aims down whatever it
+        /// touched threads the rings its strands happen to pass and no others.
+        /// <see cref="UrchinAutopilotDriver.TryRideToward"/> walks the strand both ways from the
+        /// pilot and rides it (it goes through the ring, or closes most of the way at grind
+        /// speed), REVERSES onto it (the ring is back the way it came - the ride's direction is
+        /// the pilot's facing), or SLIPS off it; and it taps the chain spikes while the strand
+        /// underfoot is a rival's colour, so a hostile lane is converted rather than crawled.
+        /// Every aim it returns while riding is down the strand's own tangent, which keeps the
+        /// range falling (OrbitDetector stays reset) and <c>LookingAtCrystal</c> - and with it the
+        /// authored <c>ram</c> throttle - engaged.</para>
+        ///
+        /// <para>Off-rail this returns false and the platform's ordinary gate aiming takes over,
+        /// which is exactly right: then the pilot IS flying.</para>
         /// </summary>
         protected override bool TryOverrideAim(IPlayer pilot, out Vector3 target)
         {
             target = default;
             var status = pilot?.Vessel?.VesselStatus;
             var tf = pilot?.Vessel?.Transform;
-            if (status == null || tf == null || !status.IsAttached || status.AttachedPrism == null)
-                return false;
+            if (status == null || tf == null) return false;
 
-            Vector3 along = status.Course.sqrMagnitude > 1e-4f ? status.Course.normalized : tf.forward;
-            target = tf.position + along * aiRailLeadDistance;
+            bool hasGate = TryGetAIGate(pilot, out var gate);
+
+            if (status.IsAttached && status.AttachedPrism != null)
+            {
+                // Finished, or the course has not landed: ride on down the strand.
+                if (!hasGate)
+                {
+                    Vector3 along = status.Course.sqrMagnitude > 1e-4f ? status.Course.normalized : tf.forward;
+                    target = tf.position + along * aiRailLeadDistance;
+                    return true;
+                }
+
+                // False the frame it Slips off: fall through to flying at the ring.
+                return UrchinAI.TryRideToward(pilot, gate.Position, gate.Radius, out target, aiRailLeadDistance);
+            }
+
+            if (hasGate) UrchinAI.TryProjectTrackToward(pilot, gate.Position, gate.Axis);
+            return false;
+        }
+
+        /// <summary>The ring <paramref name="pilot"/> must thread next, from the same course and
+        /// the same progress counter the platform's own gate aiming reads.</summary>
+        bool TryGetAIGate(IPlayer pilot, out RaceGate gate)
+        {
+            gate = default;
+            if (_course.Count == 0) return false;
+            int index = pilot.RoundStats?.SwitchesThreaded ?? 0;
+            if (index < 0 || index >= RaceLength) return false;
+            gate = _course[RingIndexFor(index)];
             return true;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            _urchinAI?.Clear();
+            base.OnNetworkDespawn();
         }
     }
 }

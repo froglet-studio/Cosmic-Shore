@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Author every serialized asset Tandava (GameModes.Tandava = 62) adds - the swarm hunt in a closed cell.
+Author every serialized asset Tandava (GameModes.Tandava, read from the enum - 69 since the 2026-10-25 merge) adds - the swarm hunt in a closed cell.
 Assets/_Scripts/Controller/Arcade/TANDAVA.md is the design and status doc.
 
 One creature, a tadpole swarm, hatches WHOLE as the Great Serpent inside a closed cell (the standard membrane is its
@@ -43,7 +43,20 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arcade_mode_lib as lib          # noqa: E402
 import tandava_plans                   # noqa: E402
 
-MODE_ID = 62
+def enum_value(enum_file, member):
+    """A member's value, read out of its enum by NAME - a hardcoded id goes stale on the next parallel-branch renumber
+    (Tandava was authored as 62 and its toasts as 128-138; the 2026-10-25 merge moved them to 69 and 137-147)."""
+    m = re.search(rf"\b{member}\s*=\s*(\d+)\s*,", open(os.path.join(lib.ROOT, enum_file), encoding="utf-8").read())
+    assert m, f"{member} is not in {enum_file}"
+    return int(m.group(1))
+
+
+GAME_MODES_CS = "Assets/_Scripts/Data/Enums/GameModes.cs"
+TOASTS_CS = "Assets/_Scripts/Data/Enums/GameToastSituation.cs"
+MODE_ID = enum_value(GAME_MODES_CS, "Tandava")
+TOAST = {k: enum_value(TOASTS_CS, f"Tandava{k}") for k in (
+    "MatchStart", "FormTaken", "Completed", "Broken", "Feeding", "DenyHint", "MealBroken", "Rising", "HaloLit",
+    "HaloBroken", "Lunge")}
 g = lib.Generator(MODE_ID, "Tandava")
 guid = lib.guid
 num = lib.num
@@ -670,17 +683,9 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameTandava.asset", G_ASSET["ArcadeG
 g.emit_asset("Assets/_SO_Assets/Game Toasts/GameToastConfig_Tandava.asset", G_ASSET["GameToastConfigTandava"],
              so(EXISTING["GameToastConfigSO"], "GameToastConfig_Tandava") +
              f"  gameMode: {MODE_ID}\n  toasts:\n" +
-             lib.toast(128, "{0}", domain_names=0) +
-             lib.toast(129, "{0}", domain_names=0) +
-             lib.toast(130, "{0}", domain_names=0) +
-             lib.toast(131, "{0}", domain_names=0) +
-             lib.toast(132, "{0}", domain_names=0) +
-             lib.toast(133, "Break its meals - strike the body while it eats", domain_names=0, idle=1, idle_seconds=40) +
-             lib.toast(134, "{0}", domain_names=0) +
-             lib.toast(135, "{0}", domain_names=0) +
-             lib.toast(136, "{0}", domain_names=0) +
-             lib.toast(137, "{0}", domain_names=0) +
-             lib.toast(138, "{0}", domain_names=0))
+             "".join(lib.toast(TOAST[k], "{0}", domain_names=0) for k in ("MatchStart", "FormTaken", "Completed", "Broken", "Feeding")) +
+             lib.toast(TOAST["DenyHint"], "Break its meals - strike the body while it eats", domain_names=0, idle=1, idle_seconds=40) +
+             "".join(lib.toast(TOAST[k], "{0}", domain_names=0) for k in ("MealBroken", "Rising", "HaloLit", "HaloBroken", "Lunge")))
 g.register_toast_config(G_ASSET["GameToastConfigTandava"])
 
 
@@ -990,14 +995,14 @@ if not m or int(m.group(1)) != HALO_TO_BREAK:
     errors.append("EndConditionOverridesSO.DefaultTandavaHaloRingsToBreak differs from the authored rings to break")
 if "tandavaFlamesToBreak" in g.files[lib.END_CONDITIONS]:
     errors.append("EndConditionOverrides.asset still carries the ring of fire's key")
-if not re.search(rf"\bTandava = {MODE_ID},", g.read("Assets/_Scripts/Data/Enums/GameModes.cs")):
-    errors.append(f"GameModes.Tandava is not {MODE_ID}")
-toasts_src = g.read("Assets/_Scripts/Data/Enums/GameToastSituation.cs")
-for name, sid in (("TandavaMatchStart", 128), ("TandavaFormTaken", 129), ("TandavaCompleted", 130), ("TandavaBroken", 131),
-                  ("TandavaFeeding", 132), ("TandavaDenyHint", 133), ("TandavaMealBroken", 134), ("TandavaRising", 135),
-                  ("TandavaHaloLit", 136), ("TandavaHaloBroken", 137), ("TandavaLunge", 138)):
-    if not re.search(rf"\b{name} = {sid},", toasts_src):
-        errors.append(f"GameToastSituation.{name} is not {sid}")
+# the ids are read from the enums by name (enum_value); what can still go wrong is a parallel branch taking the SAME
+# number, which git merges without a conflict - so no value may repeat anywhere in either enum
+for enum_file in (GAME_MODES_CS, TOASTS_CS):
+    src = re.sub(r"//.*", "", g.read(enum_file))
+    vals = [int(v) for v in re.findall(r"^\s*\w+\s*=\s*(\d+)\s*,", src, re.M)]
+    dups = sorted({v for v in vals if vals.count(v) > 1})
+    if dups:
+        errors.append(f"{enum_file} has duplicate values {dups} - a parallel branch took the same id; renumber ours")
 if not re.search(r"\bHalo = 3,", g.read("Assets/_Scripts/Data/Enums/ToySwitchSignal.cs")):
     errors.append("ToySwitchSignal.Halo is not 3 (the halo rings' verb)")
 

@@ -267,6 +267,9 @@ namespace CosmicShore.Core
             FadeFromSplashWhenSettled().Forget();
         }
 
+        /// <summary>Longest the splash waits for the boot world's build before fading anyway.</summary>
+        const float MaxBootWorldHoldSeconds = 60f;
+
         async UniTaskVoid FadeFromSplashWhenSettled()
         {
             // Game→menu return only: hold the opaque veil for a short settle window so
@@ -280,6 +283,16 @@ namespace CosmicShore.Core
                     TimeSpan.FromSeconds(menuReturnSettleSeconds),
                     DelayType.UnscaledDeltaTime);
             }
+
+            // The boot world builds BEFORE the menu is revealed (Docs/MENU_REDESIGN_B.md sections
+            // 25-26): Cell.CoverBootWorld raised EnvironmentLoadVeil on the scene's first frame, and
+            // the build runs behind it once the vessel is ready - i.e. from now. Hold the splash (its
+            // LOADING bar reads the same build) until the veil lets go, so the player sees one screen
+            // and then the finished world, never the veil as a second screen. Capped: a build the
+            // veil itself has stopped waiting on never holds the splash for good.
+            float holdUntil = Time.unscaledTime + MaxBootWorldHoldSeconds;
+            while (CosmicShore.Gameplay.EnvironmentLoadVeil.IsCovering && Time.unscaledTime < holdUntil)
+                await UniTask.Yield(PlayerLoopTiming.Update);
 
             // Runs on EVERY peer (clients never reach LoadSceneAsync's pre-load
             // collect — they defer scene loads to the server) with the splash still
@@ -310,6 +323,8 @@ namespace CosmicShore.Core
             // on HOME with no modals open. These keys are set by ScreenSwitcher
             // during normal menu navigation but become stale when a scene
             // transition destroys modal GameObjects without proper ModalWindowOut().
+            // The card the match was launched from is not one of them: ScreenSwitcher
+            // re-opens it from MenuReturnCard once the menu is up.
             PlayerPrefs.DeleteKey("ReturnToScreen");
             PlayerPrefs.DeleteKey("ReturnToModal");
             PlayerPrefs.Save();
@@ -592,7 +607,9 @@ namespace CosmicShore.Core
             // "Main Menu" return does NOT route here; it goes straight through
             // ReturnToMainMenu(), which keeps the live Relay so the whole party
             // reloads Menu_Main together. Here the session is already gone, so we
-            // return to the menu and fully reset local game state.
+            // return to the menu and fully reset local game state - on HOME: the
+            // party the card was launched with is gone, so it is not re-opened.
+            CosmicShore.UI.MenuReturnCard.Clear();
             ReturnToMainMenu();
             gameData.ResetAllData();
         }

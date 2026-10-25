@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
             foreach (var effect in projectileImpactorDataContainer.ProjectileEndEffects)
             {
                 var e = effect; // capture per iteration - the lambda outlives the loop variable
-                RunEffectIsolated(() => e.Execute(this, this), e);   // impactee = self: end effects have none
+                try { e.Execute(this, this); } catch (System.Exception ex) { ReportEffectThrow(ex, e); }   // impactee = self: end effects have none
             }
         }
         
@@ -43,13 +43,19 @@ namespace CosmicShore.Gameplay
                     // here), which at 375 u/s is a 15 u stride across a ~6 u hull window.
                     if (Projectile.UsesSweptVesselDetection && !IsSweepDispatch)
                         break;
+                    // Every hull, before the domain rule below: that rule is about what the
+                    // EFFECTS may hit, and a listener (the Grizzly bomb stopping on a hull) filters
+                    // for itself. A listener that freezes the round halts the rest of the sweep.
+                    Projectile.RaiseVesselStruck(shipImpactee);
                     if (Projectile.DisallowImpactOnVessel(shipImpactee.Vessel.VesselStatus.Domain))
                         break;
+                    // The camera following the struck vessel takes the round (Docs/CAMERA_FEEL.md).
+                    VesselCameraFeel.Struck(shipImpactee.Vessel.VesselStatus, transform.position);
                     if(!DoesEffectExist(projectileImpactorDataContainer.ProjectileShipEffects)) return;
                     foreach (var effect in projectileImpactorDataContainer.ProjectileShipEffects)
                     {
                         var e = effect;
-                        RunEffectIsolated(() => e.Execute(shipImpactee, this), e);
+                        try { e.Execute(shipImpactee, this); } catch (System.Exception ex) { ReportEffectThrow(ex, e); }
                     }
                     break;
                 
@@ -70,7 +76,7 @@ namespace CosmicShore.Gameplay
                     foreach (var effect in projectileImpactorDataContainer.ProjectilePrismEffects)
                     {
                         var e = effect;
-                        RunEffectIsolated(() => e.Execute(this, prismImpactee), e);
+                        try { e.Execute(this, prismImpactee); } catch (System.Exception ex) { ReportEffectThrow(ex, e); }
                     }
 
                     // SPACE < 5 default: the bullet is destroyed on its first prism impact.
@@ -92,7 +98,7 @@ namespace CosmicShore.Gameplay
                     foreach (var effect in projectileImpactorDataContainer.ProjectileMineEffect)
                     {
                         var e = effect;
-                        RunEffectIsolated(() => e.Execute(this, mineImpactee), e);
+                        try { e.Execute(this, mineImpactee); } catch (System.Exception ex) { ReportEffectThrow(ex, e); }
                     }
                     break;
             }

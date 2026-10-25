@@ -1389,10 +1389,12 @@ SwarmFauna (anchor, main thread)                               worker thread (Th
   danger / shielded pair of the swarm's ONE domain, from `SO_ColorSet.TryGetPrismKindColors`), collapses a
   dead slot, and composes the prism occlusion corridor (`PrismOcclusionFade_float`, screen-door clip) - the
   platform law holds for members too. Meshes are the member's own: the body prism mesh off the tadpole
-  prefab and each element's crystal models off `ElementalCrystalSetSO`. `DrawMembersOnGpu` off (or a device
-  without vertex-stage structured buffers) = every member gets a GameObject as in round 6, warned once.
+  prefab and each element's crystal models off `ElementalCrystalSetSO`. `DrawMembersOnGpu` off = every member
+  gets a GameObject as in round 6, warned once. A device without vertex-stage structured buffers (WebGL2,
+  GLES 3.0) draws the same members through the SM 3.5 instanced path instead (§14.8); only a device with
+  neither path falls back to GameObjects.
 - **Proxies.** A member within `EngageRadius` (160) of a vessel becomes a real `SwarmTadpoleFauna` - heart,
-  body prism, colliders, spatial-index entry - nearest first, at most `MaxProxies` (160) per swarm, created
+  body prism, colliders, spatial-index entry - nearest first, at most `MaxProxies` (155; 160 until 2026-10-08, §14.3) per swarm, created
   under the cell-wide `MaxSpawnsPerFrame` (24) and kept `ProxyLingerSeconds` (2) after it leaves range. Its
   living visuals are hidden (`Prism.SetOwnerHidden`: the render entity exists but is not drawn; crystal and
   spindle renderers off) because the GPU draw already shows it; `OnDeath` un-hides them first, so the
@@ -1439,6 +1441,12 @@ seeded floor (59,021 volume) already sits above RestlessEnter, so the food web i
 
 Worst case 978, asserted under `COLLIDER_CEILING` 1,200 by the author script. 2,295 starting tadpoles
 (up to ~2,880 if all three became whales) carry **zero** colliders.
+
+**2026-10-08 trim: `MaxProxies` 160 → 155.** Two merges that each passed the gate alone (the physarum
+sclerotium cap 5 → 8, +3 grove hearts; the NCA creatures, +4) put the cell at 1,178 + 23 = **1,201 / 1,200**
+together. Five fewer proxies per swarm frees 30 colliders: **1,148 + 23 = 1,171 / 1,200**. Only the five
+farthest of each swarm's nearest members lose their collider; members past the proxy set were already
+GPU-only. The ladder counts proxies as prisms, so `FrenzyEnter` moved 17,300 → 17,200.
 
 ### 14.4 Invariants - what holds, and what each costs
 
@@ -1514,6 +1522,87 @@ threads are not sampled), so `SwarmTickJob.LastTickMs` times it and each swarm l
 | `Tools/Build/author_swarm_fauna.py` | the cell (3 sort swarms, Borromean forks, ladder, collider gate, stale-file removal) |
 | `Tools/Build/swarm_core_harness/TickJobHarness.cs`, `score_sortfeel.py --density` | the proof above |
 | `Tools/Shaders/verify_swarm_member_pose.py` | the shader proof |
+
+### 14.8 Devices without compute: the SM 3.5 instanced path (WebGL2, GLES 3.0)
+
+**The gap.** The member draw reads a `StructuredBuffer` in the vertex stage (SM 4.5). WebGL2 has neither compute
+nor structured buffers, so `SwarmMemberRenderer.Supported` is false there. Before this path existed, every member of
+every swarm became a real GameObject on such a device (the pre-round-7 cost, ~2,300 GameObjects for the Swarm cell),
+and every substrate agent (§20, `Docs/SUBSTRATE_FAUNA.md` §5.1) was invisible unless it had a proxy.
+
+**Selection.** It happens inside the renderers, not in the hosts. `SwarmMemberRenderer` and `SubstrateMemberRenderer`
+keep the GraphicsBuffer path, unchanged, wherever `Supported` is true. Where it is false they build a
+`SwarmMemberFallbackDraw` and report `Valid`. The choice keys off the GPU (`SystemInfo.supportsComputeShaders`,
+`maxComputeBufferInputsVertex`), never off the toybox build flag, so any device without compute gets it. The
+fallback needs `SystemInfo.supportsInstancing` and `Resources/SwarmMemberInstancedFallback.mat`. When either is
+missing, the old one-time warning names the reason and the old behaviour stands. When the fallback engages, it is
+logged once per owner kind on the `Ecology` channel (verbose: a WebGL build always takes it, so it is not a fault).
+`SwarmFauna`, `SubstrateFauna` and `BuilderColonyFauna` are unchanged: `_gpu = _render.Valid` is now true on WebGL. A
+WebGL swarm therefore runs the same data-member path as desktop: proxies only near a vessel, index entries, the macro
+LOD. The simulation, the counts and every rule are the desktop ones. Only the draw's carrier differs.
+
+**The carrier.** `SwarmMemberInstancedFallback.shader` (`#pragma target 3.5`, `multi_compile_instancing`) includes
+the same `SwarmMemberInstanced.hlsl`. That file is now split in two:
+- **The core**, used by both shaders: `SwarmMemberPoseOf(SwarmInstance, ...)` and `SwarmMemberShade`.
+- **The SM 4.5 half**: the buffers and the fetch by instance id. The fallback skips it by defining the include guard
+  first. The guard does this job because `verify_swarm_member_pose.py` strips only that guard.
+
+The fetch is the only difference:
+- **Per tick**, each living member's 80-byte `SwarmInstance` is packed into five `float4` rows
+  (`SwarmMemberFallbackDraw.Pack`; Flags travel as a float VALUE, exact below 2^10, never as raw bits a GPU could
+  flush as a denormal). Bodies are compacted to the living slots in slot order. Hearts are gathered per element from
+  the tick's own heart lists, so a molting heart sits in two lists exactly as on the GPU path.
+- **Per frame**, each list draws with `Graphics.RenderMeshInstanced` in batches of **128**. The rows travel as
+  MaterialPropertyBlock arrays in the instancing constant buffer, and the shader rebuilds the instance with
+  `SwarmInstanceFromRows`. 128 x 80 B = 10 KB fits the 16 KB minimum uniform block of WebGL2 / GLES 3.0, so each
+  call is one draw everywhere this runs, and correctness never relies on Unity splitting a batch. The matrices the
+  API requires are identity and unread. Culling uses the swarm's bounds, as before.
+- **Death between ticks.** `HideSlot` zeroes the slot's Flags in its body row and in up to two heart rows, and bumps
+  that batch's version. Each (part, batch) block re-reads its arrays only when its list's version changed.
+  `MaterialPropertyBlock`s stay one per draw, never shared (§14.5).
+
+**Look.** Identical by construction: the same pose, bloom, molt, tier and domain palette, spread and occlusion
+corridor code over the same instance, proved bitwise below. No visual difference from the SM 4.5 path is expected;
+the side-by-side look is on the in-editor checklist.
+
+**Cost.**
+- **Per tick:** ~20 floats per living member, plus five array re-sets per touched (part, batch).
+- **Per frame:** one `RenderMeshInstanced` per (part, batch), with five block writes each. Nothing per member.
+- **Draw calls:** for the Swarm cell's ~2,300 members, about 19 body draws, plus heart draws (each element's heart
+  count / 128 per crystal model).
+- **CPU:** WebGL runs the tick inline already (`_inline`), so the per-tick packing is main-thread time.
+
+**Proof (offline, 2026-10-14).**
+- `Tools/Shaders/verify_swarm_member_pose.py`, unmodified, passes on the split file with the same numbers as before
+  (T1-T10, negative controls firing).
+- **Old file and new file compiled into one binary** (asset-surgery §4.5c). Over 400,000 random members (dead,
+  newborn, molting, every tier, slot and heart; degenerate facings) both the buffer fetch and the row fetch match the
+  shipped shader bit for bit: position, normal, palette and shade, 0 mismatches. Negative control (one basis constant
+  perturbed): 1,192 / 2,383 mismatches.
+- **DXC** compiled both instancing variants of the fallback, vertex and fragment, against Unity's own SRP
+  `UnityInstancing.hlsl` under `SHADER_API_GLES3`. spirv-cross lowered them to **GLSL ES 3.00** and glslang accepted
+  that. The result reads its rows from the `UnityInstancing_SwarmMemberRows` uniform block by `gl_InstanceID`, with
+  no buffer blocks. Negative controls: the SM 4.5 shader, and the fallback made to call the buffer fetch, both fail ES
+  3.00 on `std430`. An undeclared row is named by DXC. The refactored SM 4.5 shader still compiles to DXIL, as the
+  original did.
+- **C#:** `unity_refcompile` `--config webgl` and `--config player` both exit 0. Planted errors in copies of the new
+  files are reported, so the compile reads them.
+
+**A/B in the editor.** The editor always has compute, so the console command `memberdraw sm35` forces the SM 3.5
+path for populations hatched afterwards (re-pick the cell, or re-enter play mode: this project skips the domain
+reload, so the switch persists until the next script compile). `memberdraw auto` clears it, and `memberdraw` reports
+the device's path. Editor and development builds only (`DiagnosticsHUD.RegisterCommand`).
+
+**What only Unity can prove:** that Unity's own compiler (FXC/HLSLcc to GLSL ES) accepts the pass; that
+`RenderMeshInstanced` feeds MaterialPropertyBlock arrays to `UNITY_INSTANCING_BUFFER` props on WebGL as on other
+APIs; that the material keeps the INSTANCING_ON variant in a WebGL build; the look side by side with the desktop path;
+and the WebGL frame time.
+
+**Files:** `Swarm/SwarmMemberFallbackDraw.cs` (new), `Swarm/SwarmMemberDrawConsoleCommand.cs` (new), `SwarmMemberRenderer.cs`, `Substrate/SubstrateMemberRenderer.cs`,
+`Assets/_Graphics/Materials/Graphs/SwarmMemberInstanced.hlsl` (split), `SwarmMemberInstancedFallback.shader` (new),
+`Assets/Resources/SwarmMemberInstancedFallback.mat` (new, GPU instancing on). Stale on purpose, not this change's to
+edit: `SwarmFaunaConfigSO.DrawMembersOnGpu`'s tooltip still says a device without vertex-stage structured buffers
+gets GameObjects.
 
 ## 15. Members OPEN with distance like every other prism (playtest: "the spread value ... not allowing them to open")
 
@@ -1906,6 +1995,11 @@ locked economy rule decides the cost (`Docs/ELEMENTAL_ECONOMY.md` §4): an **opp
 | Space | **locust** | a quarter of the cloud at a time, the quarter moving every `LocustPhaseSeconds` | read the shimmer and thread the safe gaps |
 | Time | **pack hunter** | startle above `HuntEnter` (0.2, earlier than the pufferfish), until below `DangerExit` | keep your distance; they turn on you early |
 
+**Fair burns (2026-10-08).** The pufferfish and the pack hunter now WIND UP: the plate goes up only after the
+startle has shown above its threshold for `PuffWindupSeconds` / `HuntWindupSeconds` (0.4 s each, the lab's
+bestiary `WINDUP`), so a strike never lands on the frame it is telegraphed (`SwarmTickJob.WindUp`;
+Docs/ELEMENTAL_ECONOMY.md §4.1 "Fair burns").
+
 `SwarmFaunaConfigSO.Bestiary` (default **on**, so every existing swarm config gets it without an asset edit) turns
 it off. The rule is `SwarmTickJob.BestiaryStrike`: pure per-member arithmetic on data the tick already had, no new
 neighbour queries, so the cost stays flat. Far members show the strike through the GPU tier colour; near ones get it
@@ -2060,7 +2154,9 @@ jobs.
 
 **What changed:**
 - **The pose is one function.** `SwarmBodyPose.PoseMatrix` is a scalar, Burst-compilable static function: field
-  reads, `MathF`, no `System.Numerics` method, no allocation. Two callers run it:
+  reads, `KernelMath` (never `MathF`: Burst cannot find `MathF`'s internal calls, and until 2026-10-07 this
+  job failed Burst compilation on `MathF.Sqrt` and ran managed; see `Docs/SUBSTRATE_FAUNA.md` §7.6), no
+  `System.Numerics` method, no allocation. Two callers run it:
   - **The game.** `SwarmPoseJob`, a `[BurstCompile] IJobParallelFor` in batches of 128, writes `float4x4`
     directly. It reads native copies of the published frame and of the shown-slot list, refreshed once per tick (two
     memcpys).
@@ -2069,6 +2165,13 @@ jobs.
     difference is 6e-5 u, which is float rounding at world coordinates.
   - **The Burst gate.** `check_burst_pose.py` runs inside `run.sh`. It is a textual check that the function stays
     inside what Burst compiles. Its negative control is the round-11a pose, which trips 5 rules.
+  - **Found 2026-10-08: `MathF.Sqrt` broke Burst for the whole game.** The pose first called `MathF.Sqrt`, as the
+    gate recommended. In Unity's Mono that is an InternalCall that Burst cannot link. Editor.log reads
+    `` Unable to find internal function `System.MathF::Sqrt` ``. Every Assembly-CSharp job shares one Burst library,
+    so from 10-05 every game job ran as managed code (`Docs/SUBSTRATE_FAUNA.md` §7.6, whose agent kernel had the
+    same defect; `Docs/SKIM_RACE_AI.md` §8.0k). The pose now calls `(float)Math.Sqrt`. That is a Burst intrinsic and bit-identical to `MathF.Sqrt`,
+    and R11d is unchanged. The gate now fails on any `MathF` member other than `Min/Max/Abs/PI` anywhere in
+    `SwarmBodyPose`, and on the 10-07 file it reports the one `MathF.Sqrt`.
 - **The job runs alongside other work.** `SwarmFauna.Update` schedules the job as soon as the frame's alpha is
   known and wakes the workers with `ScheduleBatchedJobs`. It then poses the proxies and issues the heart draw while
   the job runs.

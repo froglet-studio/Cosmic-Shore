@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using DG.Tweening;
+using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using TMPro;
@@ -34,8 +35,15 @@ namespace CosmicShore.UI
                  "plate. Tinted, breathed and punched here. Leave unassigned to skip.")]
         [SerializeField] private Image glowImage;
         [SerializeField] private Image domainIndicatorImage;
-        [Tooltip("Optional thin accent strip painted with the domain's secondary ship color. Leave unassigned to skip.")]
+        [Tooltip("Optional team-colour CAP: a short bar centred on the column's top edge, in the " +
+                 "domain's bright crystal colour (the one the number wears). Leave unassigned to skip.")]
         [SerializeField] private Image accentImage;
+        [Tooltip("Optional slivered hairline around the column, in the domain's LIGHT tone (its " +
+                 "bright colour halfway to white). Leave unassigned to skip.")]
+        [SerializeField] private Image borderImage;
+        [Tooltip("Alpha of that hairline.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float borderAlpha = 0.9f;
         [Tooltip("Alpha applied to the domain-color tint on the indicator image so the panel reads as a subtle background rather than a saturated block. 0 = invisible, 1 = fully opaque.")]
         [Range(0f, 1f)]
         [SerializeField] private float indicatorAlpha = 0.15f;
@@ -103,6 +111,7 @@ namespace CosmicShore.UI
             SumAnimator.SetImmediate(initialSum);
             ApplyIndicatorColor(domainColor, indicatorAlpha);
             ApplyAccentColor(domainColor, accentAlpha);
+            ApplyBorderColor(Color.Lerp(domainColor, UITheme.Resolve(null, UIColorToken.TextLight), 0.5f));
             ArmGlow(domainColor);
         }
 
@@ -135,8 +144,11 @@ namespace CosmicShore.UI
             SumAnimator.SetBaseColor(textColor);
             SumAnimator.SetImmediate(initialSum);
 
+            // Style B (Docs/MENU_REDESIGN_B.md section 22): the column is Team Dark at a low
+            // alpha with a Light hairline and a team-colour cap - never a full team fill.
             ApplyIndicatorColor(colorSet.ShipColor1, indicatorAlpha);
-            ApplyAccentColor(colorSet.ShipColor2, accentAlpha);
+            ApplyAccentColor(textColor, accentAlpha);
+            ApplyBorderColor(Color.Lerp(textColor, UITheme.Resolve(null, UIColorToken.TextLight), 0.5f));
 
             // The glow takes the BRIGHT crystal colour, the same one the number wears, so the
             // column reads as one lit object rather than a number sitting on a differently-tinted
@@ -150,6 +162,13 @@ namespace CosmicShore.UI
             domainIndicatorImage.gameObject.SetActive(true);
             color.a = alpha;
             domainIndicatorImage.color = color;
+        }
+
+        void ApplyBorderColor(Color color)
+        {
+            if (!borderImage) return;
+            color.a = borderAlpha;
+            borderImage.color = color;
         }
 
         void ApplyAccentColor(Color color, float alpha)
@@ -206,6 +225,17 @@ namespace CosmicShore.UI
 
             _glowBreath?.Kill();
             if (glowBreathDepth <= 0f || glowBreathPeriod <= 0f) return;
+
+            // A device tier may rest the glow instead (PlatformProfileSO.QuietScoreGlow,
+            // MobileLow): an endless alpha loop dirties the HUD canvas every frame of the match,
+            // so it re-batches every frame for a decoration. The glow still rests at its tint and
+            // still punches on a score change. Docs/PLATFORM_UNIFICATION.md §3.6.
+            var profile = PlatformProfile.Current;
+            if (profile && profile.QuietScoreGlow)
+            {
+                _glowBreath = null; // killed above - a punch must not Pause/Play a dead tween
+                return;
+            }
 
             // Yoyo between the two ends of the swing, starting from the DIM end so a freshly
             // built bar brightens into view instead of fading out of it.

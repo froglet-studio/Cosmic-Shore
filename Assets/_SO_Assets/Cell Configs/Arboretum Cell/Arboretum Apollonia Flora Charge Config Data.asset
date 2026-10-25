@@ -19,7 +19,7 @@ MonoBehaviour:
   NewPlantPeriod: 9999999
   PopulationSize: 1
   MaxLivePopulation: 1
-  GrowthPerOffspring: 2900
+  GrowthPerOffspring: 2175
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 5
   MaturityFraction: 0.5

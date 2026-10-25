@@ -373,11 +373,17 @@ namespace CosmicShore.Gameplay
                 for (int i = pop.Start; i < pop.Start + pop.Cap; i++)
                 {
                     if ((_bInst[i].Flags & 1u) == 0 || _bRiding[i]) continue;
-                    float best = float.MaxValue;
+                    float best = float.MaxValue, soon = float.MaxValue;
+                    var ahead = Core.Pos[i] + Core.Vel[i] * Core.Dt;
                     for (int k = 0; k < PilotCount; k++)
+                    {
                         best = MathF.Min(best, Vector3.DistanceSquared(Core.Pos[i], Pilots[k].Pos));
-                    // the sort key: a dangerous agent ranks below every harmless one (-1 + d^2 / 1e6 < 0 <= d^2)
-                    if (best <= r2) { _engD[n] = Core.Danger[i] ? -1f + best * 1e-6f : best; _engI[n] = i; n++; }
+                        soon = MathF.Min(soon, Vector3.DistanceSquared(ahead, Pilots[k].Pos + Pilots[k].Vel * Core.Dt));
+                    }
+                    // the sort key: a dangerous agent ranks below every harmless one (-1 + d^2 / 1e6 < 0 <= d^2), and among
+                    // the dangerous the one nearest a tick from now goes first - a siege dives from every side at once and
+                    // the members that arrive first are not the nearest now (Docs/SUBSTRATE_FAUNA.md §10.4)
+                    if (best <= r2) { _engD[n] = Core.Danger[i] ? -1f + soon * 1e-6f : best; _engI[n] = i; n++; }
                 }
             if (n > max) { Array.Sort(_engD, _engI, 0, n); n = max; }
             Array.Copy(_engI, 0, _bEngaged, pop.Start, n);

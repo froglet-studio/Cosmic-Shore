@@ -10,7 +10,7 @@ using CosmicShore.Utility;
 using Reflex.Attributes;
 using CosmicShore.ScriptableObjects;
 #if UNITY_EDITOR
-using Unity.Multiplayer.Playmode;
+using Unity.Multiplayer.PlayMode;
 using Unity.Netcode.Transports.UTP;
 #endif
 namespace CosmicShore.Gameplay
@@ -28,13 +28,31 @@ namespace CosmicShore.Gameplay
         private NetworkManager networkManager;
         private bool _hostStartInProgress;
 
-        private const int RATE_LIMIT_MAX_RETRIES = 3;
-        private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
+        [Inject] UgsRequestPolicy _requestPolicy;
+        bool _requestPolicyFallbackLogged;
 
-        private static bool IsRateLimitException(Exception e)
+        /// <summary>
+        /// The one UGS retry / back-off policy (AppManager DI). A missing injection is loud - a
+        /// [Inject] that stays null is a dead feature, never a quiet default - but the match
+        /// launch still proceeds on the default settings rather than stranding the player.
+        /// </summary>
+        UgsRequestPolicy Policy
         {
-            return e.Message != null && e.Message.Contains("Too Many Requests");
+            get
+            {
+                if (_requestPolicy == null)
+                {
+                    if (!_requestPolicyFallbackLogged)
+                    {
+                        _requestPolicyFallbackLogged = true;
+                        CSDebug.LogError("[MultiplayerSetup] UgsRequestPolicy was not injected - check AppManager DI registration. Using default settings.");
+                    }
+                    _requestPolicy = UgsRequestPolicy.CreateDefault();
+                }
+                return _requestPolicy;
+            }
         }
+
 
         private void Start()
         {
@@ -121,11 +139,44 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[NetTrace] Network started - IsHost={nm.IsHost} IsServer={nm.IsServer} IsClient={nm.IsClient} " +
                         $"activeScene={UnityEngine.SceneManagement.SceneManager.GetActiveScene().name} " +
                         $"sceneCount={UnityEngine.SceneManagement.SceneManager.sceneCount}");
+            MarkNetworkConfig(nm);
+        }
+
+        // B35 (Docs/PartySystem/BUGS.md): the host refuses a client whose NetworkConfig hash differs
+        // ("NetworkConfig mismatch") and says nothing about which part. Each peer's test log records
+        // its own hash and the prefab keys inside it, so two logs of one failed join name the prefab
+        // the editors disagree on. Once per Netcode start (a host fires both started events).
+        string _markedNetworkConfig;
+
+        void MarkNetworkConfig(NetworkManager nm)
+        {
+            var config = nm.NetworkConfig;
+            if (config?.Prefabs?.NetworkPrefabOverrideLinks == null) return;
+            var keys = config.Prefabs.NetworkPrefabOverrideLinks
+                .Select(kv => (kv.Key, kv.Value?.Prefab ? kv.Value.Prefab.name : null));
+            string detail = DescribeNetworkConfig(config.GetConfig(), keys);
+            if (detail == _markedNetworkConfig) return;
+            _markedNetworkConfig = detail;
+            NetSessionRecorder.Mark("netConfig", detail);
+        }
+
+        /// <summary>
+        /// "hash=&lt;16 hex&gt; prefabs=&lt;n&gt; &lt;key&gt;:&lt;name&gt; ...", keys sorted as Netcode hashes them.
+        /// </summary>
+        internal static string DescribeNetworkConfig(ulong configHash, IEnumerable<(uint key, string name)> prefabKeys)
+        {
+            var sorted = prefabKeys.OrderBy(p => p.key).ToList();
+            var sb = new System.Text.StringBuilder(32 + sorted.Count * 24);
+            sb.Append("hash=").Append(configHash.ToString("x16")).Append(" prefabs=").Append(sorted.Count);
+            foreach (var (key, name) in sorted)
+                sb.Append(' ').Append(key).Append(':').Append(string.IsNullOrEmpty(name) ? "?" : name);
+            return sb.ToString();
         }
 
         void OnNetworkStoppedTrace(bool wasHost)
         {
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[NetTrace] Network stopped (wasHost={wasHost}).");
+            _markedNetworkConfig = null;
             if (_tracedSceneManager != null)
             {
                 _tracedSceneManager.OnSceneEvent -= OnSceneEventTrace;
@@ -270,11 +321,10 @@ namespace CosmicShore.Gameplay
                 // bind conflicts. Relay transport handles actual multiplayer connections.
                 if (!CurrentPlayer.IsMainEditor)
                 {
-                    var transport = nm.GetComponent<UnityTransport>();
-                    if (transport != null)
+                    if (nm.TryGetComponent(out UnityTransport transport))
                     {
-                        var tags = CurrentPlayer.ReadOnlyTags();
-                        var tagKey = tags != null && tags.Length > 0 ? string.Join("-", tags) : "clone";
+                        var tags = CurrentPlayer.Tags;
+                        var tagKey = tags != null && tags.Count > 0 ? string.Join("-", tags) : "clone";
                         ushort port = (ushort)(7778 + (ushort)(Math.Abs(tagKey.GetHashCode()) % 100));
                         transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");
                         CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] MPPM clone '{tagKey}' - local host port {port}.");
@@ -349,8 +399,6 @@ namespace CosmicShore.Gameplay
                 catch (SessionException sx)
                 {
                     CSDebug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} - trying next.");
-                    if (IsRateLimitException(sx))
-                        await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
                     continue;
                 }
                 catch (Exception ex)
@@ -389,20 +437,8 @@ namespace CosmicShore.Gameplay
                 SessionProperties = sessionProperties
             }.WithRelayNetwork();
 
-            for (int attempt = 0; ; attempt++)
-            {
-                try
-                {
-                    gameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts).AsMainThread();
-                    break;
-                }
-                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on CreateSession - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
-                }
-            }
+            gameData.ActiveSession = await Policy.ExecuteAsync("match:create",
+                async () => await MultiplayerService.Instance.CreateSessionAsync(sessionOpts).AsMainThread());
 
             gameData.InvokeSessionStarted();
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Created session {gameData.ActiveSession.Id} with GameMode = {gameData.GameMode}");
@@ -418,7 +454,8 @@ namespace CosmicShore.Gameplay
             };
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Joining session {sessionId}");
-            gameData.ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts).AsMainThread();
+            gameData.ActiveSession = await Policy.ExecuteAsync($"match:join:{sessionId}",
+                async () => await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts).AsMainThread());
         }
 
         // --------------------------
@@ -433,21 +470,10 @@ namespace CosmicShore.Gameplay
             queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex1, gameModeString, FilterOperation.Equal));
             queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex2, maxPlayers,     FilterOperation.Equal));
 
-            for (int attempt = 0; ; attempt++)
-            {
-                try
-                {
-                    var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions).AsMainThread();
-                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
-                    return results.Sessions;
-                }
-                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on QuerySessions - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
-                }
-            }
+            var results = await Policy.ExecuteAsync("match:query",
+                async () => await MultiplayerService.Instance.QuerySessionsAsync(queryOptions).AsMainThread());
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
+            return results.Sessions;
         }
 
         // --------------------------
@@ -488,6 +514,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Approved client {request.ClientNetworkId} as a SPECTATOR (no player object).");
             }
 
+            NetSessionRecorder.Mark("clientApproved", spectator ? $"{request.ClientNetworkId} spectator" : request.ClientNetworkId.ToString());
             response.Approved           = true;
             response.CreatePlayerObject = !spectator;
             response.Position           = Vector3.zero;
@@ -504,6 +531,7 @@ namespace CosmicShore.Gameplay
                 if (clientId != networkManager.LocalClientId)
                 {
                     CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Client {clientId} disconnected from host.");
+                    NetSessionRecorder.Mark("clientLeft", clientId.ToString());
                     SpectatorSession.ServerUnregister(clientId);
                     // Netcode backstop for hard drops (client crash) that may beat the
                     // graceful UGS ISession.PlayerLeaving. Only the Netcode clientId is
@@ -568,6 +596,9 @@ namespace CosmicShore.Gameplay
             try
             {
                 CSDebug.LogWarning("[Net] Transport failure - bouncing to solo menu.");
+                // B36: Relay drops a player it has not heard from for ~10 s, and the transport only pings
+                // from the main thread. Name the freeze this drop most likely followed, if any.
+                NetSessionRecorder.Mark("relayDrop", FrameStallWatch.DescribeRecentStall());
 
                 // Same self-rescue as host-loss: tear down, shut down NM, reload Menu_Main,
                 // and recreate our OWN solo host (EnsurePartySessionAsync). The legacy path
@@ -593,7 +624,7 @@ namespace CosmicShore.Gameplay
                 if (networkManager != null)
                     networkManager.Shutdown();
 
-                await UniTask.Delay(500);
+                await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
                 gameData.InvokeOnSessionEnded();
             }
             catch (Exception e)

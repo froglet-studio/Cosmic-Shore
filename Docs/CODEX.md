@@ -11,7 +11,7 @@ One asset, `Assets/Resources/Codex.asset` (`CodexSO`), holds all three. The runt
 the codex is opened from more than one place and a per-scene reference is a per-scene thing to
 forget.
 
-**Tool:** FrogletTools ▸ Interface ▸ **Codex**.
+**Tool:** FrogletTools ▸ UI ▸ **Codex**.
 
 > **Naming hazard.** A **Tool** in this document is a thing in the GAME — the Vessel Changer, the
 > Cell Selector. It has nothing to do with **FrogletTools**, which are editor tools. The codebase
@@ -229,7 +229,7 @@ Two things the hull path had to get right, both easy to miss:
   hull the asset cannot show (bare arrays, minted into meshes it then owns as temporaries). Same
   fix, same seam, in `ToyModelBuilder` for the toybox's mini hulls. The shipped `__scarab.png` is
   the stale bake until the codex is re-run in the editor; the Scarab's CARD icon does not wait
-  for it (`Tools/Build/render_scarab_card_icons.py`).
+  for it (`Tools/Build/vessel_model/render_cards.py Scarab`, from the model since 2026-10-18).
 - **Hulls bake FLAT, always.** A vessel draws with the shared vessel graph — domain-tinted, and
   reading per-frame globals that do not exist outside a running frame — so the authored pass would
   render black, fall back to flat anyway, and cost a second render for the same picture.

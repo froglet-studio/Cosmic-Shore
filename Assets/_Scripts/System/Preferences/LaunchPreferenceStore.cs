@@ -65,10 +65,11 @@ namespace CosmicShore.Core
         /// both halves of the record.
         /// </summary>
         public static void SaveHostTerms(GameModes mode, int intensity, int domainCount,
-                                         IList<Domains> aiDomains, Domains domain, VesselClassType vessel)
+                                         IList<Domains> aiDomains, AIDifficulty aiDifficulty,
+                                         Domains domain, VesselClassType vessel)
         {
             TryGet(mode, out var current);
-            Put(current.WithHostTerms(intensity, domainCount, aiDomains, domain, vessel));
+            Put(current.WithHostTerms(intensity, domainCount, aiDomains, aiDifficulty, domain, vessel));
         }
 
         /// <summary>
@@ -108,6 +109,7 @@ namespace CosmicShore.Core
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                 $"[LaunchPreference] Saved {record.GameMode}: intensity={record.Intensity}, " +
                 $"domains={record.DomainCount}, ai={record.AIDomains?.Count ?? 0}, " +
+                $"aiDifficulty={record.AIDifficulty}, " +
                 $"domain={record.Domain}, vessel={record.Vessel}, host={record.HasHostTerms}.");
         }
     }

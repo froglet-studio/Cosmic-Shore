@@ -69,9 +69,17 @@ namespace CosmicShore.Gameplay
         [Tooltip("Minimum seconds between danger prism debuffs on the same vessel")]
         [SerializeField] private float cooldown = 1f;
 
+        [Header("Spawn Grace")]
+        [Tooltip("Seconds after a vessel spawns (ResetForPlay, or the go of StartVessel) during which a danger " +
+                 "contact does nothing - neither the hostile burn nor the own-domain sting. A pilot dropped onto a " +
+                 "trap's teeth has had no chance to read it. 1 s is the Living Ecology lab's fair-burns fix " +
+                 "(Tools/Ecology/DISCOVERIES.md, Fair burns 2026-10-05: the one unread burn left was a spawn on the " +
+                 "teeth at t = 0.1 s). Works the same under either PetalBurnRule. 0 = off.")]
+        [SerializeField] private float spawnGraceSeconds = 1f;
+
         [Header("Stakes Switch")]
         [Tooltip("The live cell. Its Config.PetalBurnRule picks debuffMagnitude (Shipped) or " +
-                 "tunedDebuffMagnitude (Tuned). Unassigned, or no LIVE cell, plays Shipped.")]
+                 "tunedDebuffMagnitude (Tuned). Unassigned, or no LIVE cell, plays Tuned.")]
         [SerializeField] private CellRuntimeDataSO cellData;
 
         static readonly Element[] AllElements =
@@ -108,8 +116,11 @@ namespace CosmicShore.Gameplay
             var rs = victim?.ResourceSystem;
             if (rs == null) return false;
 
-            // Cooldown check - anti-spam per debuffed vessel
+            // Spawn grace: nothing lands in the first spawnGraceSeconds of a life, and the cooldown is not started
             var now = Time.time;
+            if (InSpawnGrace(now, rs.SpawnedAt, spawnGraceSeconds)) return false;
+
+            // Cooldown check - anti-spam per debuffed vessel
             if (_lastEffectTime.TryGetValue(rs, out var lastTime) && now - lastTime < cooldown)
                 return false;
             _lastEffectTime[rs] = now;
@@ -125,10 +136,10 @@ namespace CosmicShore.Gameplay
             // contact's weight scales it (burn rules: a drain is a quarter of a bite).
             // Read through the LIVE cell, never CellRuntimeDataSO.Config alone: that field survives a scene load and
             // is only cleared when a Cell enables, so after the Swarm cell was picked a scene with no Cell would
-            // otherwise keep playing its Tuned burn. No live cell = Shipped.
+            // otherwise keep playing the last cell's burn. No live cell = Tuned, the game-wide default.
             var liveCell = cellData ? cellData.Cell : null;
             var liveConfig = liveCell ? liveCell.Config : null;
-            var rule = liveConfig ? liveConfig.PetalBurnRule : PetalBurnRule.Shipped;
+            var rule = liveConfig ? liveConfig.PetalBurnRule : PetalBurnRule.Tuned;
             float magnitude = PetalBurnRules.Magnitude(rule, debuffMagnitude, tunedDebuffMagnitude) * weight;
 
             // Classed DangerPrism either way, which is what a narrow ward can be held against: the
@@ -147,5 +158,10 @@ namespace CosmicShore.Gameplay
             }
             return true;
         }
+
+        /// <summary>Is a contact at <paramref name="now"/> inside the spawn grace of a vessel that spawned at
+        /// <paramref name="spawnedAt"/>? A grace of 0 or less is off; a vessel never stamped is never in grace.</summary>
+        public static bool InSpawnGrace(float now, float spawnedAt, float graceSeconds) =>
+            graceSeconds > 0f && now >= spawnedAt && now - spawnedAt < graceSeconds;
     }
 }

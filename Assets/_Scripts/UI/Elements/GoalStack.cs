@@ -87,6 +87,9 @@ namespace CosmicShore.UI
 
         readonly List<GoalEntry> _entries = new();
 
+        /// <summary>The goals as last drawn - the pause window's summary reads them.</summary>
+        public IReadOnlyList<GoalEntry> Entries => _entries;
+
         static IGoalSource s_source;
         static readonly List<GoalStack> s_live = new();
         int _drawnRevision = int.MinValue;
@@ -148,6 +151,17 @@ namespace CosmicShore.UI
         {
             _payload = payload ?? string.Empty;
             Rebuild();
+        }
+
+        /// <summary>
+        /// The local pilot's domain colour, for the win condition's progress bar. Null = no
+        /// domain (the rows fall back to their token).
+        /// </summary>
+        public void SetAccent(Color? accent)
+        {
+            if (rows == null) return;
+            for (int i = 0; i < rows.Length; i++)
+                if (rows[i] != null) rows[i].SetAccent(accent);
         }
 
         /// <summary>

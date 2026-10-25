@@ -36,11 +36,21 @@ name: Bleeding-edge guard
 # not exist sits as a permanently pending check and GitHub only reaps it after
 # roughly 24 hours. Until that variable is set, only stage 1 runs and this
 # workflow cannot catch a compile break. See Docs/BUILD_AND_DELIVERY.md section 10.
+# That is the state today: the self-hosted runner was removed on 2026-10-13 and
+# the variable deleted, so the unity job skips until a runner is attached.
 #
-# SECURITY: this repository is public. This workflow is push-only on a branch
-# that requires write access, so a self-hosted runner attached here is not
-# reachable by fork pull requests. Do not add a pull_request trigger to this
-# file without first restricting outside-contributor runs.
+# SECURITY: this repository is public. Being push-only does NOT keep a
+# self-hosted runner away from untrusted code. This file also has
+# workflow_dispatch, so any writer can run it on their own branch, and any
+# workflow in any pushed branch or fork pull request can request the runner's
+# label whatever this file's triggers say: reachability belongs to the RUNNER,
+# not to a workflow. So a runner for UNITY_RUNNER_LABEL may only be an isolated
+# machine or VM holding no credentials, signing material, personal accounts or
+# browser sessions - never anyone's everyday PC - with its service on a
+# dedicated low-privilege local account, and only after fork pull request
+# approval is set to "Require approval for all external contributors" and the
+# default branches are protected. Docs/BUILD_AND_DELIVERY.md section 10
+# (Security) and the section 10.2 checklist.
 
 on:
   push:
@@ -144,6 +154,7 @@ jobs:
           python3 Tools/Build/check_conditional_compilation.py --self-test
           python3 Tools/Build/check_gamelist_scenes.py --self-test
           python3 Tools/Build/check_hud_onscreen.py --self-test
+          python3 Tools/Build/check_junie_skills.py --self-test
 
       - name: Validate project
         run: python3 Tools/CI/validate_project.py --github
@@ -174,10 +185,53 @@ jobs:
       - name: Check HUD elements resolve on-screen
         run: python3 Tools/Build/check_hud_onscreen.py
 
+      # The offline twin of FrogletTools > Vessels > Audit Vessel Skimmers (DT-002). The
+      # self-test gates (negative controls on a synthetic hull); the fleet report is printed so
+      # a hull that starts failing is visible in the log. It does not --check yet: six hulls are
+      # standing exceptions until DT-002 is resolved, and a per-hull allow list would hide a
+      # new fault on a listed hull.
+      - name: Audit vessel skimmers (offline)
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/audit_vessel_skimmers.py --self-test
+          python3 Tools/Build/audit_vessel_skimmers.py
+          # Same shape for Validate Lifeform Crystals (DT-002's 34): self-test gates, report prints.
+          python3 Tools/Build/audit_lifeform_crystals.py --self-test
+          python3 Tools/Build/audit_lifeform_crystals.py
+
+      # The input-only contract for every AI pilot and the parity replay (LOCKED: a pilot or a
+      # replay that writes pose, course, speed, crystal or score records a result the vessel never
+      # flew). check_ai_no_state_writes.py --self-test gates; --check scans the four trees.
+      - name: Check the AI and replay trees never write vessel state
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/check_ai_no_state_writes.py --self-test
+          python3 Tools/Build/check_ai_no_state_writes.py --check
+
+      # Every asset generator must still match what it authored. CLAUDE.md records the failure
+      # class this closes: a generator that owns an asset's content is a second place every schema
+      # change has to land, and it fails months later on somebody else's branch; on 2026-09-09 six
+      # of eight mode generators were red and nobody was reading them. The whole family runs in
+      # about a minute. A generator that cannot --check is a bug in the generator.
+      - name: Check every asset generator against disk
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/arcade_mode_lib.py --self-test
+          for f in Tools/Build/author_*_assets.py Tools/Build/author_skimrace_ai_config.py Tools/Build/author_lifeform_heart_sizes.py; do
+            echo "== $f"
+            python3 "$f" --check
+          done
+
       # The call-to-action badge surface is retired (F7). This fails if any of it comes
       # back - the components, the indicator objects, or the two prefabs.
       - name: Check the call-to-action surface stays retired
         run: python3 Tools/Build/retire_call_to_action.py --check
+
+      # JetBrains Junie reads skills only from .junie/skills, which is a symlink to
+      # .claude/skills. A real directory there is a second hand-maintained copy, and
+      # the last one drifted 3,920 diff lines before anybody noticed. See AGENTS.md.
+      - name: Check .junie/skills is a link, not a copy
+        run: python3 Tools/Build/check_junie_skills.py
 
       # Authoritative --check gates for shader families the C# clock validator
       # does not name (back-face fade, destruction sight, opaque+clip, corridor)
@@ -372,6 +426,8 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SHA: ${{ github.sha }}
           ACTOR: ${{ github.actor }}
+          # Through env, not pasted into the script: a dispatch can name any branch.
+          REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
 
@@ -433,7 +489,7 @@ jobs:
           Open the run above for the failing output. A compile break prints its
           \`error CS\` lines inline and attaches the full editor log as an artifact.
 
-          This issue closes itself automatically when ${{ github.ref_name }} next verifies clean.
+          This issue closes itself automatically when $REF_NAME next verifies clean.
           EOF
           )
 
@@ -510,7 +566,7 @@ jobs:
 
       - name: Fix and open a PR against the guarded branch
         if: steps.key.outputs.have == 'true'
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@1d6de8cb0c237e7c15e9e1bdf973826ebae490cc # v1 — pinned to a commit; re-pin deliberately
         with:
           # Both are passed; the action ignores whichever is empty. See the
           # credential check above for which one bills where.
@@ -519,12 +575,27 @@ jobs:
           prompt: |
             Commit ${{ github.sha }} broke verification on ${{ github.ref_name }}.
 
-            Reproduce first. Run, in this order, and read the output:
+            Reproduce first. Run, in this order, and read the output (the same
+            steps as the "Static validation" job; keep the two lists in step):
+              python3 Tools/CI/test_validate_project.py
+              python3 Tools/Build/check_conditional_compilation.py --self-test
+              python3 Tools/Build/check_gamelist_scenes.py --self-test
+              python3 Tools/Build/check_hud_onscreen.py --self-test
+              python3 Tools/Build/check_junie_skills.py --self-test
               python3 Tools/CI/validate_project.py
               python3 Tools/Build/check_conditional_compilation.py --root Assets
+              python3 Tools/Build/check_console_logging.py --self-test
+              python3 Tools/Build/check_console_logging.py
               python3 Tools/Build/check_gamelist_scenes.py
               python3 Tools/Build/check_hud_onscreen.py
+              python3 Tools/Build/audit_vessel_skimmers.py --self-test
+              python3 Tools/Build/audit_lifeform_crystals.py --self-test
+              python3 Tools/Build/check_ai_no_state_writes.py --self-test
+              python3 Tools/Build/check_ai_no_state_writes.py --check
+              python3 Tools/Build/arcade_mode_lib.py --self-test
+              for f in Tools/Build/author_*_assets.py Tools/Build/author_skimrace_ai_config.py Tools/Build/author_lifeform_heart_sizes.py; do python3 "$f" --check || echo "GENERATOR RED: $f"; done
               python3 Tools/Build/retire_call_to_action.py --check
+              python3 Tools/Build/check_junie_skills.py
               python3 Tools/Shaders/wire_prism_backface_fade.py --check
               python3 Tools/Shaders/wire_prism_destruction_sight.py --check
               python3 Tools/Shaders/enable_prism_alpha_clip.py --check
@@ -535,6 +606,11 @@ jobs:
               python3 Tools/Shaders/wire_prism_jiggle_clock.py --check
               python3 Tools/Shaders/wire_prism_suction_clock.py --check
               python3 Tools/Shaders/wire_prism_spindle_death_clock.py --check
+            A generator that reports DRIFT, or a self-test that reports FAILED, is
+            not one of the mechanical classes below: an asset generator owns its
+            assets, so drift means a hand edit or a schema change the generator
+            has not taken yet, and re-running the generator would erase the
+            first. Name the generator or the failing control and stop.
             If those pass, the failure came from the Unity compile stage instead.
             Read the "Unity compile" job's log in this workflow run; it prints the
             first 40 `error CS...` lines directly, and the full editor log is

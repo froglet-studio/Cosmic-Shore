@@ -7,6 +7,7 @@ and how to handle the same kinds of problems next time.
 |---|---|
 | [`../BUG_HUNT_HANDOFF_2026-09.md`](../BUG_HUNT_HANDOFF_2026-09.md) | **The open backlog.** Every unfixed item, with its trigger, consequence and minimal fix. §0 lists what has shipped. This folder does not repeat that list. |
 | [`FIX_LOG.md`](FIX_LOG.md) | One short report per shipped fix, newest first: symptom, root cause, repro + evidence, fix, verification, PR/commit. Ends with the known open console issues. |
+| [`TeamBugBoard.html`](TeamBugBoard.html) | Source of the **Team Bug Board** artifact (https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno): every collaborator's published editor errors across all branches, the daily sweep's log, shared report files, and a form to file a bug without Unity. Fed by the daily sweep (`/bug-ledger` §6); the Unity half is the Bug Hunt check-in (`../DIAGNOSTICS.md`). |
 | [`PLAYBOOK.md`](PLAYBOOK.md) | Troubleshooting by problem class (native leaks, objects re-spawned during teardown, YAML parse errors, teardown-order NREs, leaked materials) and how to get the Editor log. |
 
 ## Workflow
@@ -34,3 +35,21 @@ and how to handle the same kinds of problems next time.
 
 The same "a fix is not believed until the game proves it" rule drives the in-editor Bug Ledger;
 see [`../DIAGNOSTICS.md`](../DIAGNOSTICS.md).
+
+## Finding the next batch (what worked on 2026-10-08)
+
+A read-only hunt split by subsystem (vessels, arcade/scoring, ecology, UI, multiplayer/party,
+data/economy, input/audio/AI; then projectiles/AOE, the newer modes, FTUE/weekly/menus), each
+asked for "small, local fix, large consequence" findings with a CONCRETE caller-to-failure trace
+and a confidence level, produced ~45 real bugs from ~55 reports. Two rules made that ratio:
+
+- **Verify every finding yourself before touching code.** Re-read the path and check the asset
+  wiring (grep the script's `.meta` guid in prefabs/scenes; a serialized field's value per
+  instance). About one report in six was deliberate, latent behind an unassigned field, or a
+  design call - those go to the handoff, not into a commit.
+- **Recurring classes worth sweeping on their own:** scaled waits in code that runs at
+  `timeScale 0` (every non-HOME menu screen), `??`/`??=` on Unity objects (Editor fake null), a
+  latch with no reset on the in-place replay path, server-only code whose effect every peer needs
+  (and the reverse), runtime `new Material`/`new Mesh` never destroyed, and saves that report
+  failure by returning `false` rather than throwing.
+

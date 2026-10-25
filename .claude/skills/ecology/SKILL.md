@@ -258,6 +258,22 @@ what the carve-out silently broke — see the traps below.
   couplings (and suspends `CheckForLife`, so handing a spindle's prisms away doesn't evaporate it
   out of turn). Detach body prisms BEFORE withering spindles — a body prism is parented to a
   spindle, so the wither would destroy the mass you meant to conserve. `Docs/ECOSYSTEM.md §26.3`.
+- **A per-LIMB death hook belongs in `Spindle.StampEvaporate`, and only deaths that FADE reach it.**
+  `CheckForLife` and `ForceWither` (every ordered wither, starvation, the joust, `LightFauna`'s
+  wither) both latch `dying` and then stamp the evaporate, so a hook there fires exactly once per
+  limb, on the limb's own fade start (`i * interval` included) — the dying-limb-to-shard morph
+  (`Docs/ECOSYSTEM.md` §63) rides it. A limb that is simply DESTROYED (scene unload, a husk pulled
+  by a manager) goes through `OnDestroy` instead and never fades, so it gets no hook — which is
+  correct, because nothing visible dies there. Hand the hook the SAME start time the fade got (one
+  local), or the morph and the fade drift apart under an ordered wither.
+- **Order an ordered wither off the spindle TREE, never off distance — and the tree must exist.**
+  Every standing spindle and prism of a lifeform keeps a path of standing spindles to its crystal,
+  with the crystal joust's heart-outward unravel as the ONE sanctioned exception. Use
+  `Spindle.OrderOutsideIn` / `Spindle.OrderHeartOutward` and call them BEFORE isolating (isolation
+  severs the links the depth is read from). A distance sort spends a parent before its child on any
+  surface that folds back past its heart (the Borromean membrane). And a species that poses limbs
+  as flat siblings under its root has NO tree unless it calls `Spindle.AttachToParent` — grazing an
+  inner prism then evaporates the limb everything beyond it hangs off. `Docs/ECOSYSTEM.md §26.10`.
 - **A per-lifeform SCALE curve must exempt any species whose geometry is a LATTICE.**
   The MECHANISM that made this concrete is gone — `Flora.LevelUp` grew `leafSize` and
   `Flora.AddHealthBlock` stamped it onto every prism the plant laid, and lifeform LEVELS are now
@@ -516,6 +532,21 @@ nucleus hands `DominantDomain` to whatever colour it favours before anyone flies
 That defect shipped undetected in Caldera (89% of its mass) until a one-line
 check over the point cloud found it.
 
+**A cell environment ships as a BAKE** (`Docs/ECOSYSTEM.md` §62.2b): the game reads
+`Assets/Resources/PrismLayouts/<Type>_<fingerprint>.bytes` instead of running the generator.
+After ANY change to a `CellEnvironmentSpawnableBase` generator, its prefab or the base class,
+re-bake in the same change and gate it:
+
+```bash
+python3 Tools/Build/bake_prism_layouts.py           # re-bake (writes the .bytes + prism_layout_bakes.json)
+python3 Tools/Build/bake_prism_layouts.py --check   # fails on a drifted, missing or orphan bake
+```
+
+Skipping it fails `--check`. In Unity, the world is generated live with a `[PrismLayoutBake]`
+warning, which is correct but slow. A generator whose layout reads its intensity, or whose
+`SpawnLeafObjects` needs build state beyond the lays and planting sites, overrides
+`BakesLayout => false`.
+
 ### 4.6 "It stopped growing" — prove WHICH gate binds before you turn a dial
 
 A population that stops has at least three ceilings — the species cap
@@ -556,7 +587,7 @@ last.
 ## 6. Commit
 One coherent step per commit; conventional-commit message; develop on the feature branch (never
 `bleeding-edge`); open a PR only when asked. After lifeform-prefab changes, note to run
-`FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
+`FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals`.
 
 ## 7. Budgeting a new cell WITHOUT Unity (do this before you author thresholds)
 

@@ -14,14 +14,22 @@ is touched, so a failed assert costs nothing.
     python3 Tools/Build/author_goal_stack.py [--check]
 
 --check exits 1 if the prefab does not already carry the stack (for CI).
+
+LOOK OWNED ELSEWHERE SINCE ITEM 12: this script authors the stack's STRUCTURE once and then stands
+down. The style-B restyle (Docs/MENU_REDESIGN_B.md section 22) re-scripted each row's trapezoid
+plate as a slivered glass Image under the same fileID and re-set the label face and the row's style
+fields; Tools/Build/author_ingame_hud.py owns those values and its --check holds them. The plate
+constants below describe what this script first wrote, not what ships.
 """
 import hashlib, re, sys, pathlib
 
-# Both canvases. GameCanvas-SkimRace is a hard COPY rather than a variant (Docs/GAMECANVAS.md
-# records that as a known defect), so propagation is severed and it has to be authored too -
-# and it is the one 12 of the domain modes actually instance.
-PREFABS = [pathlib.Path("Assets/_Prefabs/CORE/GameCanvas.prefab"),
-           pathlib.Path("Assets/_Prefabs/GameCanvas-SkimRace.prefab")]
+# ONE in-game canvas. There were TWO - CORE/GameCanvas and a hard-copy GameCanvas-SkimRace that
+# 12 of the domain scenes instanced - and this script authored both. The fork was RETIRED on
+# 2026-09-08 (Docs/GAMECANVAS.md §9): its prefab is deleted and every scene runs CORE, whose
+# stack the absorb kept by fileID. Listing a deleted prefab made --check crash on a missing file
+# rather than report anything, so the list shrank with the fork (author_safe_area_layers.py made
+# the same change). If a second canvas is ever added, add it here rather than authoring it by hand.
+PREFABS = [pathlib.Path("Assets/_Prefabs/CORE/GameCanvas.prefab")]
 
 VIEW_GUIDS = ("726155bbf4139474dbf25b978b006c3a",   # MiniGameHUDView
               "3d38e324226a48149a22fa95f9d10448")   # MultiplayerHUDView (subclass, same field)
@@ -693,7 +701,7 @@ def main():
     if "--check" in sys.argv:
         missing = [p.name for p in PREFABS if GOALSTACK not in p.read_text()]
         print("goal stack MISSING in: " + ", ".join(missing) if missing
-              else "goal stack present in both canvases")
+              else "goal stack present in every canvas")
         sys.exit(1 if missing else 0)
     for p in PREFABS:
         author(p)

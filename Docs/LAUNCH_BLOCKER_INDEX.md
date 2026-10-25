@@ -89,7 +89,7 @@ entitlement questions.
 | **A1, A2, A3** (shipped `Resources/` folders + the Demo asmdef) | [`SHIPPED_RESOURCES_PRUNE_PROMPT.md`](prompts/SHIPPED_RESOURCES_PRUNE_PROMPT.md) — **executed 12 Sep 2026**; A3's art half remains open |
 | **A3 art, B1** (NiceVibrations demo sprites + audio) | [`NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md`](prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md) |
 | ~~**A4, A5**~~ (Wwise, Parse) | ✅ **Executed** 12 Sep 2026 — [`WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md`](prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md). `SerializeInterface` went with them, rewritten first-party |
-| ~~**B2, C7**~~ (PlayFabSDK + editor extensions, 20 code call sites) | ✅ **Executed** 12 Sep 2026 — [`PLAYFAB_RETIREMENT_PROMPT.md`](prompts/PLAYFAB_RETIREMENT_PROMPT.md); the answer is [`PLAYFAB_RETIREMENT.md`](PLAYFAB_RETIREMENT.md) |
+| ~~**B2, C7**~~ (PlayFabSDK + editor extensions, 20 code call sites) | ✅ **Executed** 12 Sep 2026 — the record is [`PLAYFAB_RETIREMENT.md`](PLAYFAB_RETIREMENT.md) (its scoping prompt has been retired) |
 | ~~C3, C4~~ (PrimitivePlus, Shift) | ✅ **Done 12 Sep 2026.** [`VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md`](prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md) executed — both replaced first-party and removed. Record: [`THIRD_PARTY_REGISTER.md` §2.1](THIRD_PARTY_REGISTER.md) |
 | **C5** (Effects Library) | [`EFFECTS_LIBRARY_PROVENANCE_PROMPT.md`](prompts/EFFECTS_LIBRARY_PROVENANCE_PROMPT.md) |
 | **E1, E2** (the 360 MB noise pack, the video folder) | [`UNREFERENCED_ART_SWEEP_PROMPT.md`](prompts/UNREFERENCED_ART_SWEEP_PROMPT.md) |
@@ -118,7 +118,11 @@ Inbound references were measured with a single pass that indexes every guid in e
 That method reproduced the documented hazard live: **`RhinoModel.fbx` has 0 asset references but
 2 `.meta` `externalObjects` remaps pointing into it** (from both `Vessel_Placeholder_*.fbx.meta`).
 A `head -1` check would have mis-attributed it; a naive "0 references → delete" would have broken
-two `.meta` files.
+two `.meta` files. *(Re-measured 2026-10-16: both placeholders have since been retired —
+`VESSEL_CONSTRUCTION_FOLLOWUP.md` Phase 5 — and `RhinoModel.fbx` (guid `d342a388…`, one owner) now
+has **0** asset references AND **0** `.meta` remaps. It is HELD deliberately as the only copy of the
+pre-subdivision front wings, not because anything points at it. The lesson above stands; the
+example no longer reproduces.)*
 
 **Blind spot 1 — `Resources.Load` by name.** A guid check cannot see a runtime load by string.
 `Unity Assests/TextMesh Pro/Resources/TMP Settings.asset` measures **zero inbound guid references**
@@ -562,15 +566,18 @@ doc's Phase 0 asks for re-verification before acting, so this pass re-ran the re
 | `dolphin_shapekey_with_animations.fbx` | 1 | 0 | 0 |
 | `rhino_shapekey_with_animations.fbx` | 1 | 0 | 0 |
 | `urchan_shapekey_with_animations.fbx` | 1 | **5** | 0 |
-| `Vessel_Placeholder_1.fbx` | 1 | 0 | 0 |
-| `Vessel_Placeholder_2.fbx` | 1 | 0 | 0 |
-| `RhinoModel.fbx` | 1 | 0 | **2** |
+| `Vessel_Placeholder_1.fbx` *(retired since — FOLLOWUP Phase 5)* | 1 | 0 | 0 |
+| `Vessel_Placeholder_2.fbx` *(retired since — FOLLOWUP Phase 5)* | 1 | 0 | 0 |
+| `RhinoModel.fbx` *(2026-10-16: 0 remaps — they lived in the placeholders' `.meta`s and went with them; held as the only pre-subdivision wing copy)* | 1 | 0 | **2** → **0** |
 | `Riptide.fbx` / `Dolphin_split.fbx` / `Hammerhead_split.fbx` | 1 | 0 | 0 |
 
 Counts agree with `VESSEL_CONSTRUCTION.md`, so the tree has not moved. Two of the eight are **not**
 "referenced by nothing", which the summary phrasing elides: `urchan_shapekey` is referenced by four
-animator controllers plus one more (its takes are used by other vessels), and `RhinoModel` is
-reached through `externalObjects` remaps in both placeholder `.meta` files.
+animator controllers plus one more (its takes are used by other vessels), and `RhinoModel` was
+reached through `externalObjects` remaps in both placeholder `.meta` files *(true on 12 Sep; on
+2026-10-16 a grep of its guid across every `.meta` and asset finds nothing — the placeholders are
+gone, so `RhinoModel` is now referenced by nothing and kept by decision,
+`VESSEL_CONSTRUCTION_FOLLOWUP.md` "HELD deliberately")*.
 
 **Verdict `salvage-first`**, unchanged — `dolphin_shapekey_with_animations` carries the Dolphin's
 only real hull morph (10,909 verts) and is a salvage candidate, not a deletion candidate.
@@ -678,23 +685,34 @@ repository-weight problem rather than a build-size one, but it is the one worth 
 The sweep reported 110.7 MB of video as shipping. **It is not**, and the reason is worth more than
 the number.
 
-40 `SO_ArcadeGame` assets still carry a serialized **`PreviewClip:`** key pointing at a
-`*Preview_Prefab.prefab`. **`SO_ArcadeGame` no longer declares that field** — it declares
-`PreviewVideo` — and `SO_Game.PreviewClip` was
+At the time of the sweep, 40 `SO_ArcadeGame` assets carried a serialized **`PreviewClip:`** key
+pointing at a `*Preview_Prefab.prefab`. **`SO_ArcadeGame` no longer declares that field** — it
+declares `PreviewVideo` — and `SO_Game.PreviewClip` was
 deleted when the arcade preview became a live satellite arena (`Docs/ModePreview/ARCHITECTURE.md`,
 which states the window *"must never fall back to a video"*). Unity never prunes an unresolvable
-serialized key, so the YAML still names the guid and a text-based sweep still follows it.
+serialized key, so the YAML still named the guid and a text-based sweep still followed it.
+
+**The key is now RETIRED (2026-10, PR #1011).** `Tools/Build/retire_preview_clip.py` stripped it
+from the last 32 `SO_Game` cards (31 `SO_ArcadeGame` + `SO_Mission_Protect`), resolving each card
+by its `m_Script` owning type so `SO_VesselAbility`'s live field is untouched. Its `--check`
+(also run by `retire_call_to_action.py --check` in the bleeding-edge guard) fails if
+`PreviewClip` or `CallToActionTargetType` reappears on any card; `--self-test` is its negative
+control. The preview prefabs and videos the key pointed at were **left in place**: with the key
+gone, nothing on a card reaches them, but whether to delete them is still the `salvage-first`
+decision below.
 
 What is actually live: **one** card (`ArcadeGameMaelstrom`) wires a non-null `PreviewVideo`, read by
 the single consumer `MaelstromLaunchPanel`. The other 39 `PreviewVideo` fields are null. A separate
 path — `SO_VesselAbility.PreviewClip`, a **`VideoPlayer`** reference read by `HangarAbilitiesView` —
 covers the per-ability videos and is **not** verified here: **24 `SO_VesselAbility` assets carry a
-live one** (plus 1 `SO_Mission` asset whose type declares neither, a third dead key). So the field
+live one** (plus 1 `SO_Mission` asset whose type declares neither, a third dead key — since
+stripped with the rest). So the field
 NAME is not dead anywhere in the project — only its use on `SO_ArcadeGame` is, which is why the
 check has to be *which type owns the asset*, not *does this identifier exist*.
 
 **Verdict `salvage-first`.** Establish which clips the Hangar path still needs, keep those and the
-Maelstrom clip, and remove the rest along with the dead `PreviewClip:` keys. General rule:
+Maelstrom clip, and remove the rest (the dead `PreviewClip:` keys are already gone — see
+`retire_preview_clip.py` above — so this is now only the prefab/video deletion). General rule:
 **a retired serialized field is invisible to the compiler, invisible to the inspector, and still
 visible to every text-based tool** — including this index's own sweep.
 

@@ -82,16 +82,28 @@ namespace CosmicShore.UI
             // This is where it happens because this is where the ability map lives.
             SeedAbilityControls();
 
+            // A tap on a card is a press of its control, raised on this pilot's input like the control itself.
+            baseView?.SetAbilityPressSource(vesselStatus.InputStatus, Actions);
+
             // The switcher is what knows which device the player is holding. It is ENSURED rather
             // than required: three HUDs never had one, which is exactly why their authored glyphs
             // were never lit, never device-matched and never placed.
+            // Explicit Unity-null tests, not `??`: a missing component can come back as a
+            // fake-null object in the Editor, which `??` keeps.
             if (!_iconSetSwitcher)
-                _iconSetSwitcher = GetComponentInChildren<InputDeviceIconSetSwitcher>(true)
-                                ?? gameObject.AddComponent<InputDeviceIconSetSwitcher>();
+                _iconSetSwitcher = GetComponentInChildren<InputDeviceIconSetSwitcher>(true);
+            if (!_iconSetSwitcher)
+                _iconSetSwitcher = gameObject.AddComponent<InputDeviceIconSetSwitcher>();
 
             _iconSetSwitcher.OnSetChanged -= HandleControlDeviceChanged;
             _iconSetSwitcher.OnSetChanged += HandleControlDeviceChanged;
             baseView?.SetControlDevice(_iconSetSwitcher.IsKeyboard);
+
+            // Phone controls (Docs/Reports/MOBILE_VESSELS.md): on a touch-first device the cards follow
+            // the hull's TouchControlProfile - glyphs for thumb lifts, or the cards and extra buttons laid
+            // out round the right thumb. A no-op anywhere else. After the press source and the chips, both
+            // of which it builds on.
+            TouchControlsHud.Attach(baseView, vesselStatus);
 
 #if UNITY_EDITOR
             // Structural contract: four ability icons, charge/mass/space/time, left to right.

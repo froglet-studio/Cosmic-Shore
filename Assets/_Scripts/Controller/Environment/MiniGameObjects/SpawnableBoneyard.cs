@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Data;
 
@@ -146,6 +147,34 @@ namespace CosmicShore.Gameplay
         const int ReactorShellRibs = 10;
         const int ReactorShellPrisms = 26;
 
+        // ── Flush ────────────────────────────────────────────────────────────
+        // NO PRISM MAY INTERPENETRATE ANOTHER (Docs/ECOSYSTEM.md §49.10). Held here at AUTHORING
+        // time: every structure sizes its prisms from the geometry it already has - the angle to
+        // its neighbours on a ring, the step to the next station, the joint it meets - so the
+        // lay is flush with no pass over it at load. Tools/Build/audit_prism_clipping.py measures
+        // it; Tools/Build/boneyard_budget.py prices the sizes this produces. Positions,
+        // rotations, kinds, domains and every count are what they were; only sizes shrink, and
+        // only where a neighbour is.
+
+        /// <summary>A flush size is aimed a hair under exact contact, so a touching pair stays a
+        /// touching pair through float rounding.</summary>
+        const float FlushMargin = 0.995f;
+
+        /// <summary>
+        /// The widest a prism on a RING can be around it and still clear its two neighbours: the
+        /// two radial planes half a ring-step either side of it (through the ring's axis) bound
+        /// it, which a flat prism of half-thickness <paramref name="halfThick"/> centred
+        /// <paramref name="radius"/> out reaches at (radius - halfThick)·tan(halfStep). Every
+        /// prism of a ring keeps to its own wedge, so no pair of them can meet - whatever their
+        /// radii, and across stations of a hull that share the axis.
+        /// </summary>
+        static float RingWidth(float radius, float halfThick, float halfStep) =>
+            2f * Mathf.Max(0f, radius - halfThick) * Mathf.Tan(halfStep) * FlushMargin;
+
+        /// <summary>The innermost a hull plate's dent sets it (dent = 1 ± 0.06, see
+        /// <see cref="BuildHulkPlating"/>).</summary>
+        const float HulkDentMin = 0.94f;
+
         protected override int DefaultSeed => 41;
         protected override int LayCapacity => 34000;
 
@@ -293,6 +322,10 @@ namespace CosmicShore.Gameplay
         void BuildCrust()
         {
             int n = Scaled(CrustPlates);
+
+            // Pass 1: every plate's pose and its jitter draw (one each, in plate order, exactly as
+            // Jit always drew them), so pass 2 can size each plate against its neighbours.
+            _crustPos.Clear(); _crustRot.Clear(); _crustK.Clear();
             for (int i = 0; i < n; i++)
             {
                 float t = (i + 0.5f) / n;
@@ -311,7 +344,6 @@ namespace CosmicShore.Gameplay
                 planar += new Vector3(wx, 0f, wz);
 
                 float y = CrustSurface(planar);
-                var pos = new Vector3(planar.x, y, planar.z);
 
                 // Slab normal follows the local buckling, so plates lie ALONG the ground rather
                 // than all facing straight up - the difference between rubble and floor tiles.
@@ -321,9 +353,90 @@ namespace CosmicShore.Gameplay
                 var normal = new Vector3(-dx, e, -dz).normalized;
                 var along = new Vector3(-Mathf.Sin(a), 0f, Mathf.Cos(a));
 
-                Emit(pos, SpawnPoint.LookRotation(normal, along),
-                    Jit(new Vector3(9f, 8.4f, 1.4f), 0.35f), Domains.Blue);
+                _crustPos.Add(new Vector3(planar.x, y, planar.z));
+                _crustRot.Add(SpawnPoint.LookRotation(normal, along));
+                _crustK.Add(1f + RangeF(-CrustJitter, CrustJitter));
             }
+
+            // Pass 2: FLUSH. The warp that breaks the floor up also crowds it - where the noise
+            // compresses the spread, plates whose footprint the jitter has grown met their
+            // neighbours (1,062 pairs at intensity 4). A phyllotaxis disc's neighbours are
+            // the plates a FIBONACCI number of steps away (CrustNeighbours), so each plate looks
+            // only at those, and gives up just enough footprint to fit beside each: half the gap
+            // where both crowd it, the whole of whatever the neighbour leaves where only it does.
+            // The footprint shrinks uniformly (the plate keeps its shape and its thickness).
+            for (int i = 0; i < n; i++)
+            {
+                var size = CrustSize(i);
+                float scale = 1f;
+                foreach (int step in CrustNeighbours)
+                {
+                    for (int sgn = -1; sgn <= 1; sgn += 2)
+                    {
+                        int j = i + sgn * step;
+                        if (j < 0 || j >= n) continue;
+                        scale = Mathf.Min(scale, CrustFit(i, size, j, CrustSize(j)));
+                    }
+                }
+                size.x = Mathf.Max(0.5f, size.x * scale);
+                size.y = Mathf.Max(0.5f, size.y * scale);
+                Emit(_crustPos[i], _crustRot[i], size, Domains.Blue);
+            }
+        }
+
+        const float CrustJitter = 0.35f;
+        static readonly Vector3 CrustPlate = new(9f, 8.4f, 1.4f);
+
+        /// <summary>
+        /// The index steps at which a crust plate's neighbours sit: the Fibonacci numbers (the
+        /// parastichies of a golden-angle spiral - which ones are nearest drifts outward with the
+        /// radius) and the second-order ones (89 + 21 = 110 and the like) that the warp's
+        /// compression brings into reach. Measured off every shipped intensity: no crust pair
+        /// that could touch is at any other step.
+        /// </summary>
+        static readonly int[] CrustNeighbours =
+            { 1, 2, 3, 5, 8, 13, 21, 34, 55, 76, 89, 110, 144, 199, 233, 288, 377, 466, 610 };
+
+        // Crust pass-1 scratch, reused across builds.
+        readonly List<Vector3> _crustPos = new(6000);
+        readonly List<Quaternion> _crustRot = new(6000);
+        readonly List<float> _crustK = new(6000);
+
+        /// <summary>Crust plate <paramref name="i"/> at its jittered size (Jit's floor included).</summary>
+        Vector3 CrustSize(int i)
+        {
+            float k = _crustK[i];
+            return new Vector3(Mathf.Max(0.5f, CrustPlate.x * k), Mathf.Max(0.5f, CrustPlate.y * k),
+                Mathf.Max(0.5f, CrustPlate.z * k));
+        }
+
+        /// <summary>
+        /// The footprint scale crust plate <paramref name="i"/> may keep beside plate
+        /// <paramref name="j"/>: measured along the line between their centres, the two plates'
+        /// reaches must sum to no more than the gap. Each takes the larger of half the gap and
+        /// what the other's full reach leaves, which keeps the pair apart whichever of them
+        /// crowds the other - and shrinks neither where they already clear.
+        /// </summary>
+        float CrustFit(int i, Vector3 sizeI, int j, Vector3 sizeJ)
+        {
+            var d = _crustPos[j] - _crustPos[i];
+            float dist = d.magnitude;
+            float gap = dist * FlushMargin;
+            if (gap >= 0.5f * (sizeI.magnitude + sizeJ.magnitude)) return 1f;   // too far to touch
+
+            var u = d / dist;
+            var ri = _crustRot[i];
+            float footI = 0.5f * (sizeI.x * Mathf.Abs(Vector3.Dot(ri * Vector3.right, u)) +
+                                  sizeI.y * Mathf.Abs(Vector3.Dot(ri * Vector3.up, u)));
+            float thickI = 0.5f * sizeI.z * Mathf.Abs(Vector3.Dot(ri * Vector3.forward, u));
+            var rj = _crustRot[j];
+            float reachJ = 0.5f * (sizeJ.x * Mathf.Abs(Vector3.Dot(rj * Vector3.right, u)) +
+                                   sizeJ.y * Mathf.Abs(Vector3.Dot(rj * Vector3.up, u)) +
+                                   sizeJ.z * Mathf.Abs(Vector3.Dot(rj * Vector3.forward, u)));
+            if (footI + thickI + reachJ <= gap) return 1f;
+
+            float room = Mathf.Max(0.5f * gap, gap - reachJ);
+            return footI > 1e-5f ? Mathf.Clamp01((room - thickI) / footI) : 1f;
         }
 
         // ── 2. FALLEN HULKS - the hiding places ──────────────────────────────
@@ -379,6 +492,35 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>The hull's taper toward its torn ends at axial fraction t.</summary>
+        static float HulkTaper(float t) => 0.72f + 0.28f * Mathf.Sin(t * Mathf.PI);
+
+        /// <summary>
+        /// The radius a rib ring sits at: just INSIDE the plating. A rib on the skin's own radius
+        /// ran straight through the plates there (a rib's centre sat inside a plate - a placement
+        /// no scale can fix), so the ring is set in until its outermost corner clears the
+        /// innermost the plating near it can reach: the nearest stations' radius (the taper is
+        /// concave, so its least over the window is at an end), at the deepest dent, less a plate's
+        /// thickest half. Which is where a hull's frames are: under its skin.
+        /// </summary>
+        float HulkRibRadius(float t, float length, float radius)
+        {
+            float stationStep = length / (HulkStations - 1);
+            float reach = (RibHalfAlongMax + 0.5f * stationStep) / length;     // the window, in t
+            float rrPlate = radius * Mathf.Min(HulkTaper(Mathf.Clamp01(t - reach)),
+                                               HulkTaper(Mathf.Clamp01(t + reach)));
+            float inner = (rrPlate * HulkDentMin - PlateHalfThickMax) * FlushMargin;
+            return Mathf.Sqrt(Mathf.Max(0f, inner * inner - RibHalfAroundMax * RibHalfAroundMax))
+                   - RibHalfThickMax;
+        }
+
+        // A rib prism's half-extents at the top of its jitter (Jit 0.2): along the hull, around
+        // the hoop, across it; and a plate's thickest half (Jit 0.25).
+        const float RibHalfAlongMax = 3.4f * 1.2f * 0.5f;
+        const float RibHalfAroundMax = 5.6f * 1.2f * 0.5f;
+        const float RibHalfThickMax = 2.2f * 1.2f * 0.5f;
+        const float PlateHalfThickMax = 1.5f * 1.25f * 0.5f;
+
         void BuildHulkRibs(Vector3 centre, Vector3 axis, Vector3 up, Vector3 side,
             float length, float radius, Domains dom, int k)
         {
@@ -388,9 +530,9 @@ namespace CosmicShore.Gameplay
                 Vector3 ringCentre = centre + axis * ((t - 0.5f) * length);
 
                 // The hull tapers toward its torn ends, so the section reads as a piece of
-                // something bigger rather than a barrel.
-                float taper = 0.72f + 0.28f * Mathf.Sin(t * Mathf.PI);
-                float rr = radius * taper;
+                // something bigger rather than a barrel. The ribs sit just under the skin (see
+                // HulkRibRadius) rather than in it.
+                float rr = HulkRibRadius(t, length, radius);
 
                 for (int s = 0; s < HulkRibSegments; s++)
                 {
@@ -411,22 +553,39 @@ namespace CosmicShore.Gameplay
                         : PrismKind.Plain;
 
                     // forward = radial (2.2 thick), up = tangent (5.6 around the hoop),
-                    // x = 3.4 along the hull axis.
-                    Emit(pos, SpawnPoint.LookRotation(radial, tangent),
-                        Jit(new Vector3(3.4f, 5.6f, 2.2f), 0.2f), dom, kind);
+                    // x = 3.4 along the hull axis. Around the hoop it keeps to its own wedge of
+                    // the ring (RingWidth), so the chained ring is flush link to link.
+                    var size = Jit(new Vector3(3.4f, 5.6f, 2.2f), 0.2f);
+                    size.y = Mathf.Min(size.y, RingWidth(rr, 0.5f * size.z, Mathf.PI / HulkRibSegments));
+                    Emit(pos, SpawnPoint.LookRotation(radial, tangent), size, dom, kind);
                 }
             }
         }
 
+        const float PlateJitter = 0.25f;
+
+        // The current hull's plate jitter (see BuildHulkPlating), reused across hulls and builds.
+        readonly List<float> _plateK = new(HulkStations * HulkPlateArc);
+
+        /// <summary>Plate <paramref name="q"/>'s jittered length along the hull (Jit's floor).</summary>
+        float PlateAxial(int q) => Mathf.Max(0.5f, 8.0f * _plateK[q]);
+
         void BuildHulkPlating(Vector3 centre, Vector3 axis, Vector3 up, Vector3 side,
             float length, float radius, Domains dom, int k, float openPhase)
         {
+            // The hull's plate jitter, drawn up front in plate order (one draw each, exactly as
+            // Jit drew them inline), so a plate can see how long its neighbours along the hull are.
+            _plateK.Clear();
+            for (int q = 0; q < HulkStations * HulkPlateArc; q++)
+                _plateK.Add(1f + RangeF(-PlateJitter, PlateJitter));
+
+            float stationStep = length / (HulkStations - 1);
+            float room = stationStep * FlushMargin;
             for (int st = 0; st < HulkStations; st++)
             {
                 float t = st / (float)(HulkStations - 1);
                 Vector3 ringCentre = centre + axis * ((t - 0.5f) * length);
-                float taper = 0.72f + 0.28f * Mathf.Sin(t * Mathf.PI);
-                float rr = radius * taper;
+                float rr = radius * HulkTaper(t);
 
                 for (int s = 0; s < HulkPlateArc; s++)
                 {
@@ -440,14 +599,23 @@ namespace CosmicShore.Gameplay
                     float dent = 1f + 0.06f * (N01(st * 0.4f, s * 0.7f, k * 3.1f, 11) - 0.5f) * 2f;
                     var pos = ringCentre + radial * (rr * dent);
 
-                    // Plates are sized to nearly TOUCH at the loose end of the size range and
-                    // to overlap at the tight end, which is what makes the plated half read as
-                    // a wall rather than a lattice. That opacity is the whole point of a hiding
+                    // Plates are sized to TOUCH, which is what makes the plated half read as a
+                    // wall rather than a lattice. That opacity is the whole point of a hiding
                     // place: at 11 plates over a half-circumference of ~107u the spacing is
                     // ~9.7u circumferentially and 5.8-10.3u along the axis, so anything much
-                    // narrower than this leaves a hull you can see straight through.
-                    Emit(pos, SpawnPoint.LookRotation(radial, axis),
-                        Jit(new Vector3(8.6f, 8.0f, 1.5f), 0.25f), dom);
+                    // narrower than this leaves a hull you can see straight through. Flush, not
+                    // overlapping (they used to overlap at the tight end of the jitter): around
+                    // the hull a plate keeps to its own wedge of the arc (RingWidth - the
+                    // plating's arc steps pi/11); along it, every plate of one arc position is
+                    // posed identically, so they stack face to face, and each takes the larger of
+                    // half the station step and what its neighbour's length leaves of it.
+                    int q = st * HulkPlateArc + s;
+                    float kq = _plateK[q];
+                    var size = new Vector3(Mathf.Max(0.5f, 8.6f * kq), PlateAxial(q), Mathf.Max(0.5f, 1.5f * kq));
+                    if (st > 0) size.y = Mathf.Min(size.y, 2f * Mathf.Max(0.5f * room, room - 0.5f * PlateAxial(q - HulkPlateArc)));
+                    if (st < HulkStations - 1) size.y = Mathf.Min(size.y, 2f * Mathf.Max(0.5f * room, room - 0.5f * PlateAxial(q + HulkPlateArc)));
+                    size.x = Mathf.Min(size.x, RingWidth(rr * dent, 0.5f * size.z, 0.5f * Mathf.PI / HulkPlateArc));
+                    Emit(pos, SpawnPoint.LookRotation(radial, axis), size, dom);
                 }
             }
         }
@@ -482,6 +650,11 @@ namespace CosmicShore.Gameplay
                     : Vector3.forward;
                 var other = Vector3.Cross(lean, side).normalized;
 
+                // Flush: a ring's prisms keep to their own wedge of it (RingWidth), and every
+                // prism of the spire is posed with up = lean, so consecutive rings stack face to
+                // face once a prism is no longer along the lean than the ring step - twist or no
+                // twist.
+                float ringStep = height / (SpireSegments - 1) * FlushMargin;
                 for (int seg = 0; seg < SpireSegments; seg++)
                 {
                     float t = seg / (float)(SpireSegments - 1);
@@ -494,8 +667,10 @@ namespace CosmicShore.Gameplay
                     {
                         float ang = 2f * Mathf.PI * s / SpireRing + t * 1.1f; // slight twist
                         var radial = (side * Mathf.Cos(ang) + other * Mathf.Sin(ang)).normalized;
-                        Emit(ringCentre + radial * rr, SpawnPoint.LookRotation(radial, lean),
-                            Jit(new Vector3(3.6f, 5.4f, 2f), 0.25f), dom);
+                        var size = Jit(new Vector3(3.6f, 5.4f, 2f), 0.25f);
+                        size.x = Mathf.Min(size.x, RingWidth(rr, 0.5f * size.z, Mathf.PI / SpireRing));
+                        size.y = Mathf.Min(size.y, ringStep);
+                        Emit(ringCentre + radial * rr, SpawnPoint.LookRotation(radial, lean), size, dom);
                     }
                 }
 
@@ -553,35 +728,141 @@ namespace CosmicShore.Gameplay
                     var dir = Vector3.zero;
                     dir[axis] = 1f;
 
-                    EmitGirder(origin, frameRot, start, dir, half[axis] * 2f, FrameEdgePrisms, dom);
+                    // Three edges meet at every corner, and each used to lay its end prism ON
+                    // the corner - three prisms on one centre, which no scale can separate. The
+                    // x edges keep the corners; the y and z edges' end prisms step off them
+                    // (GirderCornerClear) - see EmitGirder.
+                    float clear = axis == 0 ? 0f : GirderCornerClear;
+                    EmitGirder(origin, frameRot, start, dir, half[axis] * 2f, FrameEdgePrisms, dom,
+                        clear, clear, 1f);
                 }
 
                 // Cross-braces through the volume: the difference between a wireframe box and
-                // something that reads as structure.
+                // something that reads as structure. The even braces all cross at the box's
+                // centre and the odd ones at its back face's, a few degrees apart, so the two
+                // prisms either side of each crossing are thinned (BraceCrossScale) until the
+                // braces pass each other.
+                float evenScale = BraceCrossScale(half, 0);
+                float oddScale = BraceCrossScale(half, 1);
                 for (int b = 0; b < FrameBraces; b++)
                 {
-                    float u = (b + 0.5f) / FrameBraces;
-                    var start = new Vector3(-half.x, Mathf.Lerp(-half.y, half.y, u), -half.z);
-                    var end = new Vector3(half.x, Mathf.Lerp(half.y, -half.y, u),
-                        (b % 2 == 0) ? half.z : -half.z);
-                    var delta = end - start;
-                    EmitGirder(origin, frameRot, start, delta.normalized, delta.magnitude,
-                        FrameBracePrisms, dom);
+                    BraceRun(half, b, out var start, out var delta);
+
+                    // A brace lands on two upright edges, and its end prisms sat ON them - inside
+                    // an edge girder. They step off along the brace until they clear the edge:
+                    // GirderReach either side of the edge's line, which a brace leaving it at
+                    // angle a reaches 2·GirderReach / sin(a) out.
+                    var braceDir = delta.normalized;
+                    float sinToEdge = Mathf.Sqrt(Mathf.Max(1e-4f, 1f - braceDir.y * braceDir.y));
+                    float clear = 2f * GirderReach / sinToEdge * 1.01f;
+                    EmitGirder(origin, frameRot, start, braceDir, delta.magnitude,
+                        FrameBracePrisms, dom, clear, clear, b % 2 == 0 ? evenScale : oddScale);
                 }
             }
         }
 
+        /// <summary>A brace's run from its start edge to its end edge, in the frame's own space -
+        /// the one expression BuildFrames and BraceCrossScale both read.</summary>
+        static void BraceRun(Vector3 half, int b, out Vector3 start, out Vector3 delta)
+        {
+            float u = (b + 0.5f) / FrameBraces;
+            start = new Vector3(-half.x, Mathf.Lerp(-half.y, half.y, u), -half.z);
+            var end = new Vector3(half.x, Mathf.Lerp(half.y, -half.y, u),
+                (b % 2 == 0) ? half.z : -half.z);
+            delta = end - start;
+        }
+
+        /// <summary>
+        /// The scale the middle two prisms of every brace of one parity take so that the braces
+        /// crossing at their shared midpoint pass each other. Each of those prisms sits half a
+        /// step (a) off the crossing; two braces leaving it at angle t are 2·m·sin(t/2) apart at a
+        /// distance m out, so prisms of half-length l·s and reach r·s clear once
+        /// (a - l·s)·sin(t/2) >= r·s. The tightest pair of the group sets one scale for all of it.
+        /// </summary>
+        static float BraceCrossScale(Vector3 half, int parity)
+        {
+            float scale = 1f;
+            for (int i = parity; i < FrameBraces; i += 2)
+            {
+                BraceRun(half, i, out _, out var di);
+                for (int j = i + 2; j < FrameBraces; j += 2)
+                {
+                    BraceRun(half, j, out _, out var dj);
+                    float a = 0.5f * Mathf.Min(di.magnitude, dj.magnitude) / (FrameBracePrisms - 1);
+                    float cos = Mathf.Clamp(Vector3.Dot(di.normalized, dj.normalized), -1f, 1f);
+                    float sinHalf = Mathf.Sqrt(0.5f * (1f - cos));
+                    scale = Mathf.Min(scale, FlushMargin * a * sinHalf /
+                                             (GirderReach + 0.5f * GirderLength * sinHalf));
+                }
+            }
+            return scale;
+        }
+
+        /// <summary>A girder's authored section and length.</summary>
+        const float GirderSection = 2.6f;
+        const float GirderLength = 4.4f;
+
+        /// <summary>How far a girder reaches out from its own line at any roll: half its square
+        /// section's diagonal.</summary>
+        const float GirderReach = GirderSection * 0.5f * 1.41421356f;
+
+        /// <summary>How far a yielding edge's end prism stands off a frame corner: past the
+        /// owning x edge's prism (and the other yielding edge's), each of which reaches
+        /// <see cref="GirderReach"/> across the corner.</summary>
+        const float GirderCornerClear = GirderReach * 1.01f;
+
+        /// <summary>The shortest a yielding end prism is laid (over the prism floor).</summary>
+        const float GirderEndMin = 0.6f;
+
+        /// <summary>
+        /// One girder: <paramref name="count"/> prisms from <paramref name="localStart"/> along
+        /// <paramref name="localDir"/>, evenly stepped, posed along the girder. Each is no longer
+        /// than its step, so the run is face to face.
+        ///
+        /// <para>An end with a clearance (<paramref name="clearFrom"/>, <paramref name="clearTo"/>
+        /// &gt; 0) YIELDS its joint to whatever owns it - the corner's x edge, the upright a brace
+        /// lands on. Its end prism used to sit on the joint itself; it now spans from
+        /// the clearance to its neighbour (moved off the joint by the least that clears, never
+        /// past its own step), and that neighbour gives up just enough length for the end prism
+        /// to keep <see cref="GirderEndMin"/>. Every other prism keeps its place.</para>
+        /// </summary>
         void EmitGirder(Vector3 origin, Quaternion rot, Vector3 localStart, Vector3 localDir,
-            float length, int count, Domains dom)
+            float length, int count, Domains dom, float clearFrom, float clearTo, float midScale)
         {
             var worldDir = rot * localDir;
             var worldStart = origin + rot * localStart;
             var girderRot = SpawnPoint.LookRotation(worldDir, Vector3.up);
             float step = length / Mathf.Max(1, count - 1);
+            float run = Mathf.Min(GirderLength, step * FlushMargin);
+
+            // The neighbours of yielding ends, shortened so the end prism keeps its minimum.
+            float nextFrom = clearFrom > 0f ? Mathf.Min(run, 2f * (step - clearFrom - GirderEndMin)) : run;
+            float nextTo = clearTo > 0f ? Mathf.Min(run, 2f * (step - clearTo - GirderEndMin)) : run;
 
             for (int i = 0; i < count; i++)
-                Emit(worldStart + worldDir * (i * step), girderRot,
-                    new Vector3(2.6f, 2.6f, 4.4f), dom);
+            {
+                float u = i * step;
+                float len = run;
+                if (i == 1) len = Mathf.Min(len, nextFrom);
+                if (i == count - 2) len = Mathf.Min(len, nextTo);
+
+                if (i == 0 && clearFrom > 0f)
+                {
+                    len = Mathf.Min(GirderLength, (step - 0.5f * nextFrom - clearFrom) * FlushMargin);
+                    u = clearFrom + 0.5f * len;
+                }
+                else if (i == count - 1 && clearTo > 0f)
+                {
+                    len = Mathf.Min(GirderLength, (step - 0.5f * nextTo - clearTo) * FlushMargin);
+                    u = length - clearTo - 0.5f * len;
+                }
+
+                // The two prisms either side of the run's midpoint, where a brace crosses its
+                // fellows (BraceCrossScale); 1 on the edges.
+                float k = i == count / 2 - 1 || i == count / 2 ? midScale : 1f;
+                Emit(worldStart + worldDir * u, girderRot,
+                    new Vector3(GirderSection * k, GirderSection * k, len * k), dom);
+            }
         }
 
         // ── 5. OVERPASSES - broken elevated roadways ─────────────────────────
@@ -613,28 +894,56 @@ namespace CosmicShore.Gameplay
                     float centred = t - 0.5f;
                     if (Mathf.Abs(centred) < gapHalf) continue;   // the fallen span
 
-                    var planar = mid + along * (centred * span);
-                    float ground = CrustSurface(planar);
-                    // Parabolic arc: piers on the crust at both ends, apex at the gap.
-                    float y = ground + rise * (1f - 4f * centred * centred) + 30f;
+                    var pos = OverpassDeckPoint(mid, along, span, rise, i);
 
                     // Deck tangent, so the roadway chains continuously through the arc.
                     float dy = -8f * centred * rise / span;
                     var tangent = (along + Vector3.up * dy).normalized;
-                    var deckRot = SpawnPoint.LookRotation(Vector3.Cross(tangent, across).normalized, tangent);
+                    var normal = Vector3.Cross(tangent, across).normalized;
+                    var deckRot = SpawnPoint.LookRotation(normal, tangent);
+                    var railRot = SpawnPoint.LookRotation(tangent, Vector3.up);
+                    var railUp = railRot * Vector3.up;
 
-                    var pos = new Vector3(planar.x, y, planar.z);
-                    Emit(pos, deckRot, new Vector3(11f, 7f, 1.8f), dom);
+                    // Flush: each deck plate (and the rail riding it) keeps to its half of the
+                    // way to each neighbour on the arc, measured along the line between them -
+                    // the arc is steep near the piers, and the ground under it buckles, so the
+                    // step is read off the neighbours' real poses rather than assumed.
+                    var deck = new Vector3(11f, 7f, 1.8f);
+                    var railSize = new Vector3(1.6f, 3.2f, 3.6f);
+                    for (int side = -1; side <= 1; side += 2)
+                    {
+                        int j = i + side;
+                        if (j < 0 || j >= OverpassDeck ||
+                            Mathf.Abs(j / (float)(OverpassDeck - 1) - 0.5f) < gapHalf) continue;
+                        var d = OverpassDeckPoint(mid, along, span, rise, j) - pos;
+                        float room = 0.5f * d.magnitude * FlushMargin;
+                        var u = d / d.magnitude;
+                        float alongU = Mathf.Max(1e-3f, Mathf.Abs(Vector3.Dot(tangent, u)));
+                        deck.y = Mathf.Min(deck.y,
+                            2f * (room - 0.5f * deck.z * Mathf.Abs(Vector3.Dot(normal, u))) / alongU);
+                        railSize.z = Mathf.Min(railSize.z,
+                            2f * (room - 0.5f * railSize.y * Mathf.Abs(Vector3.Dot(railUp, u))) / alongU);
+                    }
+
+                    Emit(pos, deckRot, deck, dom);
 
                     for (int rail = 0; rail < OverpassRails; rail++)
                     {
                         float sgn = rail == 0 ? 1f : -1f;
-                        Emit(pos + across * (sgn * 9f) + Vector3.up * 4f,
-                            SpawnPoint.LookRotation(tangent, Vector3.up),
-                            new Vector3(1.6f, 3.2f, 3.6f), dom);
+                        Emit(pos + across * (sgn * 9f) + Vector3.up * 4f, railRot, railSize, dom);
                     }
                 }
             }
+        }
+
+        /// <summary>Where deck station <paramref name="i"/> of an overpass sits: on a parabolic
+        /// arc with piers on the crust at both ends and the apex at the gap.</summary>
+        Vector3 OverpassDeckPoint(Vector3 mid, Vector3 along, float span, float rise, int i)
+        {
+            float centred = i / (float)(OverpassDeck - 1) - 0.5f;
+            var planar = mid + along * (centred * span);
+            float y = CrustSurface(planar) + rise * (1f - 4f * centred * centred) + 30f;
+            return new Vector3(planar.x, y, planar.z);
         }
 
         // ── 6. RUBBLE - the floor litter ─────────────────────────────────────
@@ -718,10 +1027,16 @@ namespace CosmicShore.Gameplay
                         ? PrismKind.Danger
                         : PrismKind.Plain;
 
+                    // Flush round the ring: the prism keeps to its own wedge of the latitude
+                    // (RingWidth). It lies on the sphere, so its reach toward the axis is its
+                    // half-height down the meridian (cos phi of it) plus its half-thickness
+                    // (sin phi of it) - the near polar ribs are tight, 15u round for 26 prisms.
+                    var size = Jit(new Vector3(4.4f, 5.8f, 1.8f), 0.2f);
+                    float reach = 0.5f * size.x * Mathf.Abs(Mathf.Cos(phi)) + 0.5f * size.z * Mathf.Sin(phi);
+                    size.y = Mathf.Min(size.y, RingWidth(ringR, reach, Mathf.PI / ReactorShellPrisms));
                     Emit(new Vector3(reactorPlanar.x + radial.x * ringR, ringY,
                             reactorPlanar.z + radial.z * ringR),
-                        SpawnPoint.LookRotation(outward, tangent),
-                        Jit(new Vector3(4.4f, 5.8f, 1.8f), 0.2f), dom, kind);
+                        SpawnPoint.LookRotation(outward, tangent), size, dom, kind);
                 }
             }
         }

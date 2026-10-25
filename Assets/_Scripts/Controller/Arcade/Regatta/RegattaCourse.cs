@@ -164,8 +164,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The shipped braid. Offset 22 u on a 6 u wide prism puts the lanes 38 u apart
-        /// and 29 u inside the tightest mouth; 8 u spacing on an 8 u long prism is a continuous
-        /// ribbon, which a super-shield's 1.5x reach fuses into one spiked cable per lane.</summary>
+        /// and 29 u inside the tightest mouth; 8 u spacing on an 8 u long prism, each length fitted
+        /// flush to its neighbours (<see cref="FlushRailLengths"/>), is a continuous ribbon, which a
+        /// super-shield's 1.5x reach fuses into one spiked cable per lane.</summary>
         public static RegattaRailSettings DefaultRails => new()
         {
             LaneOffset = 22f,
@@ -292,6 +293,72 @@ namespace CosmicShore.Gameplay
             // round a 512-sample loop.
             r1 -= t1 * Vector3.Dot(r1, t1);
             return RaceCourseGeometry.SafeNormalize(r1, RaceCourseGeometry.Perpendicular(t1));
+        }
+
+        /// <summary>How far under exact contact a fitted rail prism stops: a hair, so float noise in
+        /// the poses can never flip two touching faces into a clip.</summary>
+        public const float FlushMargin = 0.998f;
+
+        /// <summary>
+        /// The length each prism of ONE closed lane is laid at, so consecutive prisms TOUCH and never
+        /// interpenetrate (Docs/ECOSYSTEM.md 49.10): the prism's own length
+        /// (<paramref name="prismScale"/>.z) wherever it fits, else the longest length both of a
+        /// neighbouring pair can share (<see cref="FlushPairLength"/>), taken on each side and the
+        /// tighter one kept. The cross-section is never touched - it is the Urchin's catch window.
+        ///
+        /// <para>Why the ribbon needs it although the spacing IS the length: a lane is resampled at
+        /// <c>laneLength / count</c>, the chord between two samples on a curve is shorter than the
+        /// arc between them, and every prism looks down the CHORD to its successor, so on a bend
+        /// two 6 u-wide boxes meet at an angle and their inner corners cross. Measured before this:
+        /// every consecutive pair on every lane clipped (worst 0.55 u). Fitted, the median prism
+        /// keeps 99% of its length and the worst (intensity 3's tightest corner) 93%; the rails'
+        /// volume drops 0.9-1.4%. A few dot products per prism, at authoring time; nothing at
+        /// load.</para>
+        /// </summary>
+        public static float[] FlushRailLengths(Vector3[] positions, Quaternion[] rotations, Vector3 prismScale)
+        {
+            int n = positions?.Length ?? 0;
+            var lengths = new float[n];
+            if (n == 0) return lengths;
+            // pair[k] limits prism k and its successor; the lane is a loop, so the last pair wraps.
+            var pair = new float[n];
+            for (int k = 0; k < n; k++)
+            {
+                int j = (k + 1) % n;
+                pair[k] = FlushPairLength(positions[k], rotations[k], positions[j], rotations[j],
+                                          prismScale.x, prismScale.y);
+            }
+            for (int k = 0; k < n; k++)
+                lengths[k] = Mathf.Min(prismScale.z, FlushMargin * Mathf.Min(pair[k], pair[(k - 1 + n) % n]));
+            return lengths;
+        }
+
+        /// <summary>
+        /// The longest length two neighbouring prisms (same <paramref name="width"/> x
+        /// <paramref name="height"/> cross-section, +z down the rail) can BOTH take and still only
+        /// touch. It separates them on the plane normal to the chord between their centres: each
+        /// box's reach along the chord is <c>half-length |z.n| + half-width |x.n| + half-height
+        /// |y.n|</c>, and the two reaches may sum to the chord's length and no more. Solved for one
+        /// shared half-length it is closed form, and on these rails it agrees with the full 15-axis
+        /// separating test to five figures (the chord is the separating axis for a pair laid down
+        /// a curve). +Infinity when the pair is side by side (no length can make them meet), 0
+        /// when their cross-sections already cross.
+        /// </summary>
+        public static float FlushPairLength(Vector3 pa, Quaternion ra, Vector3 pb, Quaternion rb,
+                                            float width, float height)
+        {
+            Vector3 d = pb - pa;
+            float dist = d.magnitude;
+            if (dist < 1e-5f) return 0f;
+            Vector3 n = d / dist;
+            float lateral = 0.5f * width * (Mathf.Abs(Vector3.Dot(ra * Vector3.right, n))
+                                          + Mathf.Abs(Vector3.Dot(rb * Vector3.right, n)))
+                          + 0.5f * height * (Mathf.Abs(Vector3.Dot(ra * Vector3.up, n))
+                                           + Mathf.Abs(Vector3.Dot(rb * Vector3.up, n)));
+            float along = Mathf.Abs(Vector3.Dot(ra * Vector3.forward, n))
+                        + Mathf.Abs(Vector3.Dot(rb * Vector3.forward, n));
+            if (along < 1e-5f) return float.PositiveInfinity;
+            return 2f * Mathf.Max(0f, dist - lateral) / along;
         }
 
         /// <summary>Walk a closed polyline and drop a prism every <paramref name="spacing"/> - the

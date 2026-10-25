@@ -73,8 +73,17 @@ namespace CosmicShore.Gameplay
 
             if (sparesOwnDomain && lifeform.Domain == pilot.Domain) return;
 
-            if (lifeform.Jousted(pilot.PlayerName))
-                onLifeformWithered?.Raise(pilot.PlayerName);
+            // Captured BEFORE the kill: a progressive wither re-homes the heart onto the cell.
+            Vector3 heartAt = embeddedCrystal.transform.position;
+            if (!lifeform.Jousted(pilot.PlayerName)) return;
+
+            onLifeformWithered?.Raise(pilot.PlayerName);
+
+            // The wither's voice. Its slot lives on the Butterfly's dust capsule
+            // (ButterflyDustField), beside the SkimmerImpactor that ran this; any other adopter
+            // of this effect has no such component and stays silent here.
+            if (impactor.TryGetComponent(out ButterflyDustField dust))
+                dust.PlayHeartWither(heartAt);
         }
     }
 }

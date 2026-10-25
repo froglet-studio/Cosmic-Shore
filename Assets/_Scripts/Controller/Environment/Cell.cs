@@ -373,7 +373,7 @@ namespace CosmicShore.Gameplay
         // editor captures where Burst wasn't applied). Replaces the managed
         // 8000-prisms-per-frame slice, whose per-entry object-graph cost made
         // every recompute a ~10 ms reader-attributed frame spike at high prism
-        // counts (Docs/PERFORMANCE_OPTIMIZATION.md).
+        // counts (Docs/archive/PERFORMANCE_LOG_2026.md).
         static readonly Domains[] s_volumeDomainSlots = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
 
         /// <summary>The three playable domains, hoisted to a static. These used to be
@@ -399,6 +399,10 @@ namespace CosmicShore.Gameplay
         short _volumeCellId;
 
         SnowChanger spawnedCytoplasm;
+
+        /// <summary>This cell's cytoplasm (its drifting shard field), or null: a satellite, a config with
+        /// no cytoplasm, or before the bootstrap spawned it. Dying spindles add their shards to it.</summary>
+        public SnowChanger Cytoplasm => spawnedCytoplasm;
 
         // ---------------------------------------------------------------------
         // Static spatial registry. Pooled prefab-spawned objects (trail prisms)
@@ -648,7 +652,7 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < _containmentProbe.Count; i++)
                 {
                     var p = _containmentProbe[i];
-                    if (!p || IsShieldedMass(p)) continue;   // shields are not food, so not an intruder
+                    if (!p || IsInedibleShield(p)) continue;   // an inedible shield is not food, so not an intruder
                     _containmentHasPrey = true;
                     break;
                 }
@@ -1165,7 +1169,7 @@ namespace CosmicShore.Gameplay
         /// oscillator - a frozen-solid cell is a valid state, not a defect to auto-correct.
         /// See Docs/ECOSYSTEM.md §0/§5.
         /// </summary>
-        public bool FloraGrowingEnabled => phase < CellPhase.Frenzy;
+        public bool FloraGrowingEnabled => phase < CellPhase.Frenzy && !DiagnosticProductionHold;
 
         /// <summary>
         /// True while new flora may be planted. Identical to <see cref="FloraGrowingEnabled"/>
@@ -1184,7 +1188,76 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool FaunaSpawningEnabled
         {
-            get { EnsureVolumeFresh(); return liveEnvVolumeTotal > 0f; }
+            get
+            {
+                if (DiagnosticProductionHold) return false;
+                EnsureVolumeFresh();
+                return liveEnvVolumeTotal > 0f;
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // Diagnostic production hold - the DiagnosticsHUD `freeze` console command.
+        // ---------------------------------------------------------------------
+
+        /// <summary>
+        /// True while a DIAGNOSTIC production hold is in force on EVERY cell: no plant grows,
+        /// is planted or reproduces, no creature is seeded, born or grown onto a colony. It
+        /// exists for one reason - an A/B measurement is only valid between two arms taken in
+        /// the SAME state (Docs/PERFORMANCE_OPTIMIZATION.md §4.3), and a growing world is a
+        /// different world ten seconds later, so without a hold the arm measured second always
+        /// carries more mass than the arm measured first.
+        ///
+        /// <para>It is PRODUCTION gating and nothing else, the same class of gate Frenzy
+        /// already is (<see cref="FloraGrowingEnabled"/> is false at Frenzy, and that has always
+        /// been legal under the conserved-mass law): nothing is removed, nothing is aged, no
+        /// timer runs. Every ACTIVE force keeps working - grazing, predation, starvation,
+        /// vessel abilities - so a held world can only lose mass, never gain it, and fauna
+        /// aggression is untouched because <see cref="Phase"/> is not touched. Nothing banks
+        /// the held time either: every producer already turns its cycle whether or not it
+        /// produces (the lattice colony books, the worm colony, the seeders), so releasing the
+        /// hold resumes production at its ordinary rate rather than catching up.</para>
+        ///
+        /// <para>Settable only in the Editor and Development builds; in a Release build nothing
+        /// can raise it, so every read is a constant false. Reset at subsystem registration so
+        /// an editor session can never start held, and released by the owning switch on any
+        /// scene change so a measurement setting cannot escape into the next scene.</para>
+        /// </summary>
+        public static bool DiagnosticProductionHold { get; private set; }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// <summary>Raises or releases <see cref="DiagnosticProductionHold"/>. Diagnostics only.</summary>
+        public static void SetDiagnosticProductionHold(bool held) => DiagnosticProductionHold = held;
+#endif
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetDiagnosticProductionHold() => DiagnosticProductionHold = false;
+
+        // ---------------------------------------------------------------------
+        // Diagnostic read-outs - the DiagnosticsHUD `cells` console command.
+        // Read-only views of the private bootstrap state, so "why is this cell empty?" is one
+        // command rather than a code read. Nothing here changes behaviour.
+        // ---------------------------------------------------------------------
+
+        /// <summary>True once the first-crystal bootstrap has run: cytoplasm spawned, life spawner started.</summary>
+        public bool IsPostInitialized => postInitilized;
+
+        /// <summary>True while that bootstrap waits on a config this peer could not choose yet.</summary>
+        public bool IsPostInitDeferred => postInitDeferred;
+
+        /// <summary>The running life spawner's class name, or null when none runs.</summary>
+        public string ActiveSpawnerName => activeSpawner?.GetType().Name;
+
+        /// <summary>How this cell picks its config (Random / IntensityWise / EnvironmentFree).</summary>
+        public string ConfigChoiceName => cellTypeChoiceOptions.ToString();
+
+        /// <summary>
+        /// Live ENVIRONMENT volume (trail + flora; fauna bodies excluded) - the floor the
+        /// IntensityWise fauna loop needs above zero before it seeds anything.
+        /// </summary>
+        public float LiveEnvironmentVolume
+        {
+            get { EnsureVolumeFresh(); return liveEnvVolumeTotal; }
         }
 
         /// <summary>
@@ -1265,6 +1338,7 @@ namespace CosmicShore.Gameplay
         public void ApplyAuthoritativePhaseAndDomain(CellPhase newPhase, Domains newDominantDomain)
         {
             phase = newPhase;
+            SyncShieldFoodFiling();
             if (runtime != null)
                 runtime.WriteCellRuntimeStats(ID, LiveBlockCount, newPhase, newDominantDomain);
         }
@@ -1369,11 +1443,32 @@ namespace CosmicShore.Gameplay
                 gameData.OnInitializeGame.OnRaised -= Initialize;
                 gameData.OnInitializeGame.OnRaised += Initialize;
             }
+
+            CoverBootWorld();
+        }
+
+        /// <summary>
+        /// The world a gate-less scene boots into (<see cref="CellConfigDataSO.BootDefault"/> -
+        /// Garland, in Menu_Main) is built BEFORE the screen is revealed. Its build waits for the
+        /// scene to settle (<see cref="DeferredEnvironmentBuild"/>, a second or more after this
+        /// frame), and the menu shown in the meantime used to be covered by its own loading veil
+        /// mid-look. The cover goes up now and the build claims it. Keyed to the authored boot
+        /// bit, not to the scene: no game scene carries a BootDefault config, so their connecting
+        /// screens are untouched.
+        /// </summary>
+        void CoverBootWorld()
+        {
+            if (!Application.isPlaying || IsSatellite) return;
+            if (cellTypeChoiceOptions != CellTypeChoiceOptions.EnvironmentFree) return;
+            var boot = ExpectedConfig;
+            if (boot && boot.BootDefault && boot.EnvironmentPrefab != null)
+                EnvironmentLoadVeil.Cover(boot.CellName);
         }
 
         void OnDisable()
         {
             ActiveCells.Remove(this);
+            WarpFieldRuntime.Release(this);
 
             if (gameData != null)
                 gameData.OnInitializeGame.OnRaised -= Initialize;
@@ -1424,6 +1519,19 @@ namespace CosmicShore.Gameplay
                     grid?.Dispose();
                 countGrids.Clear();
             }
+
+            // The colony books are static and keyed by cell. ResetCell and Initialize retire this
+            // cell's entries, but a cell destroyed with its scene went through neither, and after
+            // the unload every Clear(cell) returns at its `!cell` guard - so the key could never be
+            // removed: each Menu_Main load leaked the previous colony's books (each entry pinning a
+            // destroyed AssembledFlora's object graph) and the colony census counted dead worlds'
+            // sites. `this` still passes the guard inside OnDestroy.
+            GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
+            SchwarzPColonyFrontier.Clear(this);
+            SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
         }
 
         void ResetCell()
@@ -1452,11 +1560,13 @@ namespace CosmicShore.Gameplay
             // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
             // the very scene this colony ships in). Keyed by cell, so this touches no other.
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);
             QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
+            SyncShieldFoodFiling();
 
             if (spawnedCytoplasm)
             {
@@ -1567,6 +1677,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool IsFaunaAtCap(FaunaConfigurationSO config)
         {
+            // Every fauna producer that asks the cell asks HERE (the seeders, reproduction, the
+            // Microscene conveyor), so a diagnostic hold reads as "full" to all of them at once.
+            if (DiagnosticProductionHold) return true;
             int cap = ResolveFaunaCap(config);
             return cap > 0 && GetLiveFaunaCount(config) >= cap;
         }
@@ -1697,6 +1810,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool IsFloraAtCap(FloraConfigurationSO config)
         {
+            // Redundant with FloraPlantingEnabled at every current producer; kept so a producer
+            // that asks only for the cap still cannot plant through a diagnostic hold.
+            if (DiagnosticProductionHold) return true;
             int cap = ResolveFloraCap(config);
             return cap > 0 && GetLiveFloraCount(config) >= cap;
         }
@@ -1718,6 +1834,23 @@ namespace CosmicShore.Gameplay
 
         void Initialize()
         {
+            // Already bootstrapped by the first-crystal path (OnClientReady can land the first
+            // crystal inside InitDelayMs, so InitilizePostFirstCellItem ran the lazy Initialize
+            // AND started the spawner before OnInitializeGame arrived). The config is sticky
+            // (AssignConfig), the visuals and grids exist, so this pass has nothing to build -
+            // but it used to CLEAR every registry underneath a spawner that was already
+            // planting: the cell forgot its first wave (the seeder planted the floor again,
+            // species caps ignored the forgotten plants, their deaths decremented counts of
+            // plants still tracked) and their seed prisms left LiveVolume and the targeting
+            // grids. Rebind and refresh the stats only.
+            if (postInitilized && cellConfigData)
+            {
+                runtime.Cell = this;
+                runtime.EnsureCellStats(ID);
+                UpdateCellStats();
+                return;
+            }
+
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
@@ -1735,11 +1868,13 @@ namespace CosmicShore.Gameplay
             // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
             // the very scene this colony ships in). Keyed by cell, so this touches no other.
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);
             QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
+            SyncShieldFoodFiling();
 
             // Bind runtime -> this cell
             runtime.Cell = this;
@@ -2001,6 +2136,11 @@ namespace CosmicShore.Gameplay
 
             if (spawnEnvironment && cellConfigData.EnvironmentPrefab != null && environment == null)
                 SpawnEnvironment();
+
+            // The config's warp field, centred on this cell. A satellite never owns it: the field
+            // rescales the PLAYER, and a satellite is a world beside the one they are in.
+            if (cellConfigData.WarpField && !IsSatellite && Application.isPlaying)
+                WarpFieldRuntime.Activate(this, cellConfigData.WarpField, transform);
 
             if (cellConfigData.NucleusPrefab == null || nucleus != null) return;
             nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
@@ -2538,11 +2678,13 @@ namespace CosmicShore.Gameplay
             liveFloraCounts.Clear();
             liveFauna.Clear();
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);
             QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
+            SyncShieldFoodFiling();
 
             SetVesselTrailsDetached(pauseSpawners: false);
 
@@ -2603,6 +2745,11 @@ namespace CosmicShore.Gameplay
         IEnumerator SwapCellConfigRoutine(CellConfigDataSO config, bool clearLooseTrailMass)
         {
             _swapping = true;
+            // A world swap is a load the player waits through behind the veil, so with Record
+            // Insight Mode armed (FrogletTools > Performance > Performance Benchmark > Load Time
+            // Insights) it records like a game launch: the suction and release below, then the
+            // build's own spans (layout bake, streamed lay, settle), ending when the veil lifts.
+            LoadInsights.BeginLoad($"Cell swap -> {config.CellName}");
             if (CSDebug.IsVerbose(CSLogChannel.Ecology))
                 CSDebug.LogVerbose(CSLogChannel.Ecology,
                     $"[Cell {ID}] Cell swap -> {config.CellName} " +
@@ -2630,6 +2777,8 @@ namespace CosmicShore.Gameplay
             // ── Suction (continuity law) ──────────────────────────────────────
             float elapsed = 0f;
             float duration = retireSuctionSeconds > 0.01f ? retireSuctionSeconds : DefaultRetireSuctionSeconds;
+            int suctionSpan = LoadInsights.Begin(LoadInsightCategory.ScriptedDelay,
+                $"Cell swap: the retiring world suctions away ({duration:F1}s)", isWait: true);
             StampRetiredWorldSuction(retiring, duration);
             while (elapsed < duration && retiring)
             {
@@ -2644,6 +2793,9 @@ namespace CosmicShore.Gameplay
                 retiring.transform.localScale = Vector3.one * Mathf.Max(SuctionFloorScale, eased);
                 yield return null;
             }
+            LoadInsights.End(suctionSpan);
+            int trailSpan = LoadInsights.Begin(LoadInsightCategory.Environment,
+                $"Cell swap: {pooledRetiring.Count} pooled trail prisms return to their pool");
 
             // Pooled prisms go back to their pool (destroying one corrupts the pool's
             // accounting). Detach with worldPositionStays:FALSE so the suction factor is not
@@ -2659,8 +2811,12 @@ namespace CosmicShore.Gameplay
                 block.ReturnToPool();
             }
             pooledRetiring.Clear();
+            LoadInsights.End(trailSpan);
 
+            int releaseSpan = LoadInsights.Begin(LoadInsightCategory.Environment,
+                "Cell swap: the retired world is released (500 prisms a frame)");
             yield return ReleaseRetiredWorld(retiring);
+            LoadInsights.End(releaseSpan);
 
             // ── Bookkeeping reset (the same set ResetCell clears) ─────────────
             // After the drain: every prism's OnDestroy routes through RemoveBlock, so
@@ -2680,11 +2836,13 @@ namespace CosmicShore.Gameplay
             // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
             // the very scene this colony ships in). Keyed by cell, so this touches no other.
             GyroidColonyFrontier.Clear(this);
+            NestedGyroidColony.Clear(this);
             SchwarzPColonyFrontier.Clear(this);
             SchwarzPTileRegistry.Clear(this);
             QuasicrystalColonyFrontier.Clear(this);
             QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
+            SyncShieldFoodFiling();
             _nucleusControlRadiusSqr = 0f;
 
             // ── Become the new config ────────────────────────────────────────
@@ -2707,6 +2865,11 @@ namespace CosmicShore.Gameplay
             // The veil raised inside BuildEnvironmentNow holds the screen while the world
             // streams in - the same treatment a boot-time build gets.
             BuildEnvironmentNow();
+            if (LoadInsights.IsRecording)
+            {
+                if (EnvironmentLoadVeil.IsCovering) EnvironmentLoadVeil.Released += CompleteSwapRecording;
+                else LoadInsights.CompleteLoad("Cell swap: nothing to build behind a veil");
+            }
 
             // Let the lay drain before life returns, so flora/fauna seed into a finished world
             // rather than racing it. The deadline mirrors the veil's own stall cap: a wedged
@@ -2722,6 +2885,14 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.Ecology, $"[Cell {ID}] Cell swap complete -> {config.CellName}.");
         }
 
+        /// <summary>The swap's Load Time Insights recording ends when the player can see the new
+        /// world: the veil lifts once every prism is laid and grown.</summary>
+        static void CompleteSwapRecording()
+        {
+            EnvironmentLoadVeil.Released -= CompleteSwapRecording;
+            LoadInsights.CompleteLoad("Cell swap: the new world is laid and grown, the veil lifts");
+        }
+
         /// <summary>
         /// Drain the suctioned world over frames. A 35k-prism world destroyed in one frame is
         /// a multi-second freeze (every <c>Prism.OnDestroy</c> unregisters from the spatial
@@ -2733,15 +2904,32 @@ namespace CosmicShore.Gameplay
         {
             if (!retiring) yield break;
 
-            const int PrismsPerFrame = 500;
+            // A time slice, not a count: 500 a frame took 1.1-1.4 s for 4,259 Garland prisms in the Orrery swap
+            // captures because the frames were slow, not the work (T-20261021-a743, handed over by Garrett).
+            // Destroy is deferred to the end of the frame, where the slice cannot see its cost (every
+            // Prism.OnDestroy unregisters), so deferred destroys keep the old per-frame cap.
+            const double ReleaseSliceMs = 12.0;
+            const int MaxDeferredDestroysPerFrame = 500;
+            double msPerTick = 1000.0 / System.Diagnostics.Stopwatch.Frequency;
             var prisms = retiring.GetComponentsInChildren<Prism>(true);
+            long sliceStart = System.Diagnostics.Stopwatch.GetTimestamp();
+            int destroysThisFrame = 0;
             for (int i = 0; i < prisms.Length; i++)
             {
                 var p = prisms[i];
                 if (!p) continue;
                 if (!EnvironmentPrismPool.TryRelease(p))
+                {
                     Destroy(p.gameObject);
-                if ((i + 1) % PrismsPerFrame == 0) yield return null;
+                    destroysThisFrame++;
+                }
+                if (destroysThisFrame >= MaxDeferredDestroysPerFrame
+                    || (System.Diagnostics.Stopwatch.GetTimestamp() - sliceStart) * msPerTick >= ReleaseSliceMs)
+                {
+                    yield return null;
+                    sliceStart = System.Diagnostics.Stopwatch.GetTimestamp();
+                    destroysThisFrame = 0;
+                }
             }
 
             // Whatever is left (lifeform bodies, the old membrane / nucleus / cytoplasm) dies
@@ -2827,6 +3015,9 @@ namespace CosmicShore.Gameplay
             nucleus = null;
             if (spawnedCytoplasm) spawnedCytoplasm.transform.SetParent(rootT, true);
             spawnedCytoplasm = null;
+
+            // The retiring world's warp field eases out with it (a no-op if it had none).
+            WarpFieldRuntime.Release(this);
 
             return root;
         }
@@ -3124,7 +3315,7 @@ namespace CosmicShore.Gameplay
                     // grid writes — it is the same instant, and the read is a
                     // managed→engine interop on the per-prism creation path.
                     Vector3 blockPosition = block.transform.position;
-                    if (!IsInsideNucleus(blockPosition) && !IsShieldedMass(block))
+                    if (!IsInsideNucleus(blockPosition) && !IsInedibleShield(block))
                     {
                         gridTracked[block] = blockPosition; // remembered for the symmetric remove
 
@@ -3215,7 +3406,7 @@ namespace CosmicShore.Gameplay
         {
             if (block is null || !trackedBlocks.ContainsKey(block)) return;
 
-            bool shouldBeGridTracked = !IsShieldedMass(block) && !IsInsideNucleus(block.transform.position);
+            bool shouldBeGridTracked = !IsInedibleShield(block) && !IsInsideNucleus(block.transform.position);
             if (shouldBeGridTracked == gridTracked.ContainsKey(block)) return;
 
             RemoveBlock(block);
@@ -3223,13 +3414,46 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Shield-state test used for grid membership. Mirrors <c>Fauna.IsShieldedMass</c>
-        /// (the diet rule) so "not food" and "not a steering target" can never disagree.
+        /// True while this cell's SHIELDED (not super-shielded) mass is food: the cell is in <see cref="CellPhase.Frenzy"/>,
+        /// it holds too much mass, and its grazers may eat through the shields (the designer, 2026-10-21: "in general
+        /// shielded prisms should be food during a frenzy when the cell has too many prism"). Super-shielded mass is never
+        /// food (<see cref="Prism.AbsorbSuperShieldHit"/>).
         /// </summary>
-        static bool IsShieldedMass(Prism block)
+        public bool ShieldedMassIsFood => phase == CellPhase.Frenzy;
+
+        /// <summary>
+        /// The diet's shield rule in this cell, used for grid membership AND by every grazer
+        /// (<c>Fauna.IsInedibleShield</c>), so "not food" and "not a steering target" can never disagree:
+        /// super-shielded mass is never food; shielded mass is food only during a Frenzy (<see cref="ShieldedMassIsFood"/>).
+        /// </summary>
+        public bool IsInedibleShield(Prism block)
         {
             var props = block ? block.prismProperties : null;
-            return props != null && (props.IsShielded || props.IsSuperShielded);
+            if (props == null) return false;
+            if (props.IsSuperShielded) return true;
+            return props.IsShielded && !ShieldedMassIsFood;
+        }
+
+        // The Frenzy state the targeting grids were last filed under. Entering or leaving a Frenzy flips whether shielded
+        // mass is food, so every shielded prism is re-filed once at the edge (NotifyBlockShieldStateChanged, which is a
+        // no-op for every prism whose classification did not change). Rare: a cell crosses the Frenzy line a few times a
+        // match at most.
+        bool _shieldFoodFiled;
+        readonly List<Prism> _shieldRefile = new();
+
+        void SyncShieldFoodFiling()
+        {
+            bool food = ShieldedMassIsFood;
+            if (food == _shieldFoodFiled) return;
+            _shieldFoodFiled = food;
+            _shieldRefile.Clear();
+            foreach (var kv in trackedBlocks)
+            {
+                var props = kv.Key ? kv.Key.prismProperties : null;
+                if (props != null && props.IsShielded && !props.IsSuperShielded) _shieldRefile.Add(kv.Key);
+            }
+            for (int i = 0; i < _shieldRefile.Count; i++) NotifyBlockShieldStateChanged(_shieldRefile[i]);
+            _shieldRefile.Clear();
         }
 
         /// <summary>
@@ -3263,13 +3487,27 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public Vector3 GetDensestRegionAnyDomain()
         {
-            if (!countGrids.TryGetValue(Domains.Blue, out var anyGrid) || anyGrid == null)
-                return GetCellAnchorPosition();
-
-            var region = anyGrid.FindDensestRegion();
-            if (anyGrid.LastResultDensity <= 0f)
-                return GetCellAnchorPosition();
+            TryGetDensestRegionAnyDomain(out var region);
             return region;
+        }
+
+        /// <summary>
+        /// <see cref="GetDensestRegionAnyDomain"/> as a QUESTION: false when the cell holds no
+        /// mass at all, in which case <paramref name="region"/> is the same anchor fallback the
+        /// demand form returns. Lets a caller that has a better idea than "the crystal" for an
+        /// empty cell (the Spawn Matrix releasing into the Barren cell) tell the two apart.
+        /// </summary>
+        public bool TryGetDensestRegionAnyDomain(out Vector3 region)
+        {
+            region = GetCellAnchorPosition();
+            if (!countGrids.TryGetValue(Domains.Blue, out var anyGrid) || anyGrid == null)
+                return false;
+
+            var densest = anyGrid.FindDensestRegion();
+            if (anyGrid.LastResultDensity <= 0f)
+                return false;
+            region = densest;
+            return true;
         }
 
         /// <summary>

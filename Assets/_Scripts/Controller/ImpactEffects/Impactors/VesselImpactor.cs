@@ -137,6 +137,9 @@ namespace CosmicShore.Gameplay
                     audioSystem?.PlayGameplaySFX(
                         isTrackImpact ? GameplaySFXCategory.TrackImpact : GameplaySFXCategory.VesselImpact,
                         transform.position);
+                    // The camera following this vessel takes the hit, as heavy as the prism is (Docs/CAMERA_FEEL.md).
+                    VesselCameraFeel.Impact(Vessel?.VesselStatus, prismImpactee.transform.position,
+                        VesselCameraFeel.PrismWeight(prismImpactee.Prism));
                     var prismEffects = vesselImpactorDataContainerSO.VesselPrismEffects;
                     for (int i = 0; i < prismEffects.Length; i++)
                     {
@@ -144,7 +147,7 @@ namespace CosmicShore.Gameplay
                                 nameof(VesselImpactorDataContainerSO.VesselPrismEffects), i))
                             continue;
                         var pe = prismEffects[i];
-                        RunEffectIsolated(() => pe.Execute(this, prismImpactee), pe);
+                        try { pe.Execute(this, prismImpactee); } catch (System.Exception ex) { ReportEffectThrow(ex, pe); }
                     }
                     break;
 
@@ -152,6 +155,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (!TryLatchCrystalImpact(omniCrystalImpactee.Crystal)) break;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
+                    VesselCameraFeel.Pickup(Vessel?.VesselStatus);
                     var data = CrystalImpactData.FromCrystal(omniCrystalImpactee.Crystal);
                     if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
                         networkVesselImpactor.ExecuteOnHitOmniCrystal(data);
@@ -170,19 +174,21 @@ namespace CosmicShore.Gameplay
                         if (!TryLatchCrystalImpact(elementalCrystalImpactee.Crystal)) break;
                         var lifeformEffects = vesselImpactorDataContainerSO.VesselLifeformCrystalEffects;
                         if (!DoesEffectExist(lifeformEffects)) break;
+                        VesselCameraFeel.Bump(Vessel?.VesselStatus, elementalCrystalImpactee.transform.position);
                         for (int i = 0; i < lifeformEffects.Length; i++)
                         {
                             if (IsEffectSlotEmpty(lifeformEffects[i], vesselImpactorDataContainerSO,
                                     nameof(VesselImpactorDataContainerSO.VesselLifeformCrystalEffects), i))
                                 continue;
                             var le = lifeformEffects[i];
-                            RunEffectIsolated(() => le.Execute(this, elementalCrystalImpactee.Crystal), le);
+                            try { le.Execute(this, elementalCrystalImpactee.Crystal); } catch (System.Exception ex) { ReportEffectThrow(ex, le); }
                         }
                         break;
                     }
 
                     if (!TryLatchCrystalImpact(elementalCrystalImpactee.Crystal)) break;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
+                    VesselCameraFeel.Pickup(Vessel?.VesselStatus);
                     var data = CrystalImpactData.FromCrystal(elementalCrystalImpactee.Crystal);
                     if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
                         networkVesselImpactor.ExecuteOnHitElementalCrystal(data);
@@ -200,13 +206,14 @@ namespace CosmicShore.Gameplay
                     var skimmerEffects = vesselImpactorDataContainerSO.VesselSkimmerEffects;
                     if (!DoesEffectExist(skimmerEffects)) return;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.VesselImpact, transform.position);
+                    VesselCameraFeel.Bump(Vessel?.VesselStatus, skimmerImpactee.transform.position);
                     for (int i = 0; i < skimmerEffects.Length; i++)
                     {
                         if (IsEffectSlotEmpty(skimmerEffects[i], vesselImpactorDataContainerSO,
                                 nameof(VesselImpactorDataContainerSO.VesselSkimmerEffects), i))
                             continue;
                         var se = skimmerEffects[i];
-                        RunEffectIsolated(() => se.Execute(this, skimmerImpactee), se);
+                        try { se.Execute(this, skimmerImpactee); } catch (System.Exception ex) { ReportEffectThrow(ex, se); }
                     }
                     break;
             }
@@ -263,10 +270,28 @@ namespace CosmicShore.Gameplay
                 "is wired in its skimmer effect containers.");
         }
 
+        /// <summary>
+        /// This vessel's bespoke omni-crystal retirement, or null when it keeps the shared husk
+        /// spray. Read by <see cref="OmniCrystalImpactor"/> so a crystal this hull retires itself
+        /// is exploded WITHOUT its husk — the two would otherwise draw over each other.
+        /// </summary>
+        public VesselOmniCrystalRetirementSO OmniCrystalRetirement =>
+            vesselImpactorDataContainerSO != null
+                ? vesselImpactorDataContainerSO.OmniCrystalRetirement
+                : null;
+
         public void ExecuteOmniCrystalImpact(CrystalImpactData data)
         {
             if (IsEffectContainerMissing(vesselImpactorDataContainerSO, nameof(vesselImpactorDataContainerSO)))
                 return;
+
+            // The retirement runs FIRST, on every peer: it takes over the crystal's body, and a
+            // sibling effect below is what lays the mass it lands on (the Squirrel's boost ring),
+            // so it has to be listening before that is laid.
+            var retirement = vesselImpactorDataContainerSO.OmniCrystalRetirement;
+            if (retirement != null)
+                try { retirement.Execute(this, data); } catch (System.Exception ex) { ReportEffectThrow(ex, retirement); }
+
             var effects = vesselImpactorDataContainerSO.VesselCrystalEffects;
             if (!DoesEffectExist(effects)) return;
             RunCrystalEffects(effects, nameof(VesselImpactorDataContainerSO.VesselCrystalEffects), data);
@@ -312,7 +337,7 @@ namespace CosmicShore.Gameplay
                 if (IsEffectSlotEmpty(effects[i], vesselImpactorDataContainerSO, field, i))
                     continue;
                 var ef = effects[i];
-                RunEffectIsolated(() => ef.Execute(this, data), ef);
+                try { ef.Execute(this, data); } catch (System.Exception ex) { ReportEffectThrow(ex, ef); }
             }
         }
 

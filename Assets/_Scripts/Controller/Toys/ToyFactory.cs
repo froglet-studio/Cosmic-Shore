@@ -299,10 +299,14 @@ namespace CosmicShore.Gameplay
 
         // ── What a switch's SHADER says ──────────────────────────────────────
         //
-        // EVERY switch is drawn in the PRISM shader - the same material family the painted trail
-        // wears - so the ring is made of the same stuff as the world it acts on, and the one
-        // channel left free to carry meaning is WHICH prism it is painted as. That channel is
-        // `ToySwitchSignal`:
+        // A switch's COLOUR comes from the prism the signal names - the same material family the
+        // painted trail wears - and the one channel free to carry meaning is WHICH prism's colour
+        // it wears. The RING itself is a SYNTHETIC WIRE (Garrett, 2026-10-21: "a synthetic spindle
+        // geometry that is more like a wire ... synthetic constructs up close, but spindles from
+        // afar"): a machined three-strand cable on SpindleWireGraph, tiered by the spindle LOD - solid
+        // up close, unravelling into a spindle's lace on the prisms' depth ramp, settling back into a
+        // glowing thread, never culled (SwitchRingLod, Docs/SPINDLE_LOD.md §9). Hubs and cones beside
+        // a ring stay prisms. The colour channel is `ToySwitchSignal`:
         //
         //     Domain  -> that domain's plain prism material. RESERVED: in the toybox, a switch
         //                wearing a playable domain's colour is one that HANDS you that domain
@@ -400,32 +404,100 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// A <b>switch ring</b>: one continuous ring square across the flight path, at the radius
-        /// of the trigger volume it advertises, in the prism material its
-        /// <paramref name="signal"/> resolves to. Named in the hierarchy so it is never confused
-        /// with an emblem's tilted halo. Returns null for a waived (non-positive) radius.
+        /// of the trigger volume it advertises, in the colour its <paramref name="signal"/> resolves
+        /// to. Built as the SYNTHETIC WIRE (<see cref="SwitchRingLod"/>): a machined cable up close
+        /// and a spindle from afar. Where the wire cannot run (edit mode, no profile, LOD off) it is
+        /// the signal's prism ring, as before. Named in the hierarchy so it is never confused with an
+        /// emblem's tilted halo. Returns null for a waived (non-positive) radius.
         /// </summary>
         public static GameObject AddSwitchRing(Transform parent, float radius,
             ThemeManagerDataContainerSO theme, ToySwitchSignal signal = ToySwitchSignal.Neutral,
             Domains domain = Domains.Blue)
         {
             if (radius <= 0.01f) return null;
-            var ring = AddRingBody(parent, radius, SwitchColor(theme, signal, domain),
-                                   SwitchMaterial(theme, signal, domain));
+            var color = SwitchColor(theme, signal, domain);
+            var wire = WireRingMaterial(color, out var wireMesh);
+            var ring = AddRingBody(parent, radius, color, wire ? wire : SwitchMaterial(theme, signal, domain));
             ring.name = "SwitchRing";
+            if (wire && ring.TryGetComponent(out MeshFilter filter))
+            {
+                filter.sharedMesh = wireMesh;
+                ring.AddComponent<SwitchRingLod>().Bind(wire);
+            }
             return ring;
         }
 
         /// <summary>
         /// Repaint an existing switch ring for a new signal - the Domain Changer's slots flip to
-        /// the domain you just left, and the ring IS what says which domain that is. Prism
-        /// materials are shared theme assets, so this swaps the reference and never mutates one.
+        /// the domain you just left, and the ring IS what says which domain that is. Materials are
+        /// shared, so this swaps the reference and never mutates one (a wire ring re-registers with
+        /// its LOD on the new colour).
         /// </summary>
         public static void RepaintSwitchRing(GameObject ring, ThemeManagerDataContainerSO theme,
             ToySwitchSignal signal, Domains domain)
         {
             if (!ring || !ring.TryGetComponent(out MeshRenderer renderer)) return;
-            ApplyBodyMaterial(renderer, SwitchColor(theme, signal, domain),
-                              SwitchMaterial(theme, signal, domain));
+            var color = SwitchColor(theme, signal, domain);
+            if (ring.TryGetComponent(out SwitchRingLod lod))
+            {
+                var wire = WireRingMaterial(color, out _);
+                if (wire) { lod.Bind(wire); return; }
+            }
+            ApplyBodyMaterial(renderer, color, SwitchMaterial(theme, signal, domain));
+        }
+
+        // The wire's near materials, one per signal colour, so a course of rings is one material
+        // (and one set of LOD tiers) and a repaint swaps a reference. Nothing mutates these after
+        // creation, and they are never destroyed (the same lifetime as the prism-minted switch
+        // materials), so a ring the LOD hands back always has its material.
+        static readonly System.Collections.Generic.Dictionary<int, Material> s_wireRingMaterials = new();
+
+        static readonly int DullColorId = Shader.PropertyToID("_DullColor");
+        static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
+        static readonly int SpindleGirthId = Shader.PropertyToID("_SpindleLodGirth");
+        static readonly int SpindleStrandId = Shader.PropertyToID("_SpindleLodStrand");
+        static readonly int SpindleStrengthId = Shader.PropertyToID("_SpindleLodStrength");
+        static readonly int SpindleDistanceId = Shader.PropertyToID("_Distance");
+        static readonly int SpindleSwayId = Shader.PropertyToID("_SwayAmplitude");
+
+        /// <summary>
+        /// The synthetic wire's NEAR material for a signal colour - <c>SpindleLodProfileSO.wireTemplate</c>
+        /// (SpindleMaterial on SpindleWireGraph), DARK at <c>switchRingDarkShare</c> of the signal and BRIGHT
+        /// at the signal itself (<c>switchRingRimWhiten</c> toward white), so its facets read; the wire's measured
+        /// girth and strand radius, <c>switchRingStrength</c>, no sway and its lace kept out to
+        /// <c>switchRingDistance</c> - and the wire mesh it draws. Null outside Play or wherever the
+        /// spindle LOD cannot run, and the caller keeps the prism ring.
+        /// </summary>
+        static Material WireRingMaterial(Color signal, out Mesh mesh)
+        {
+            mesh = null;
+            var profile = SpindleLodProfileSO.Instance;
+            var set = profile ? profile.SyntheticSet : null;
+            if (set == null || !set.source || !profile.LodEnabled || !profile.WireTemplate) return null;
+            var template = profile.WireTemplate;
+            if (!template.shader || !template.shader.isSupported) return null;
+            // The wire's tiers and the effect's globals are the system's.
+            if (!SpindleLodSystem.EnsureRunning()) return null;
+            mesh = set.source;
+
+            Color32 c = signal;
+            int key = (c.r << 24) | (c.g << 16) | (c.b << 8) | c.a;
+            if (s_wireRingMaterials.TryGetValue(key, out var cached) && cached) return cached;
+
+            var body = new Color(signal.r, signal.g, signal.b, 1f);
+            var mat = new Material(template) { name = $"SwitchRingWire_{ColorUtility.ToHtmlStringRGB(body)}" };
+            // Dark body, bright facets: the prism rings' own pairing (dark = rim x 0.22). Both ends near
+            // the signal colour washed every facet into one flat band.
+            float dark = profile.SwitchRingDarkShare;
+            mat.SetColor(DullColorId, new Color(body.r * dark, body.g * dark, body.b * dark, 1f));
+            mat.SetColor(BrightColorId, Color.Lerp(body, Color.white, profile.SwitchRingRimWhiten));
+            mat.SetFloat(SpindleGirthId, set.girth);
+            mat.SetFloat(SpindleStrandId, set.strandRadius);
+            mat.SetFloat(SpindleStrengthId, profile.SwitchRingStrength);
+            mat.SetFloat(SpindleDistanceId, profile.SwitchRingDistance);
+            mat.SetFloat(SpindleSwayId, profile.SwitchRingSway);
+            s_wireRingMaterials[key] = mat;
+            return mat;
         }
 
         /// <summary>Switch ring radius for a matrix station, clamped by <see cref="MaxRingSpacingFraction"/>.</summary>

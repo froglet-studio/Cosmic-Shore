@@ -32,7 +32,7 @@ namespace CosmicShore.Editor
     {
         const float SampleSeconds = 8f;
 
-        enum Phase { Idle, WarmA, RunA, WarmB, RunB, Done }
+        enum Phase { Idle = 0, WarmA = 1, RunA = 2, WarmB = 3, RunB = 4, Done = 5 }
 
         Phase _phase = Phase.Idle;
         double _phaseEndsAt;
@@ -44,7 +44,7 @@ namespace CosmicShore.Editor
         string _report = "";
         Vector2 _scroll;
 
-        [MenuItem("FrogletTools/Diagnostics/Prism Contact Probe", false, 12)]
+        [MenuItem("FrogletTools/Performance/Prism Contact Probe", false, 174)]
         [FrogletTool(FrogletToolCategory.Performance, Importance = 4,
             Description = "Measure what it costs to resolve every prism contact through the spatial index instead of PhysX triggers. Play mode; reader only.")]
         public static void Open()

@@ -1,0 +1,546 @@
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// The pure arithmetic of the Stoat's FIELD DIPOLE and PATHFINDER (<c>R_VesselActions/STOAT_DIPOLE.md</c>),
+    /// ported from the round-15 field trajectory of the Stoat Flight Studio
+    /// (<c>Docs/Studios/StoatFlightStudio.html</c>: <c>dipoleOffsets</c>, <c>fieldAccel</c>,
+    /// <c>fieldSubstep</c>, <c>fieldPath</c>). No scene, no time, no input device: every method is a
+    /// function of its arguments, so <c>StoatDipoleTests</c> hold it directly and the executors only
+    /// apply it.
+    ///
+    /// <para><b>Frames.</b> Unity's forward is +z (the studio's was −z); the maths is written against
+    /// <c>Vector3.forward</c> and a rotation, so it is frame-free.</para>
+    /// </summary>
+    public static class StoatDipoleMath
+    {
+        // ------------------------------------------------------------------ placement
+
+        /// <summary>
+        /// Where the two triggers put the poles relative to each other, in the frame the pair was
+        /// opened in. <see cref="Lateral"/> is signed: positive puts the SINK (the black hole) on the
+        /// hull's RIGHT. <see cref="Longitudinal"/> is never negative: the sink is always the nearer
+        /// pole and the source (the white hole) the further, so a pilot shoots into the sink and out of
+        /// the source.
+        /// </summary>
+        public readonly struct Separation
+        {
+            public readonly float Lateral;
+            public readonly float Longitudinal;
+            public Separation(float lateral, float longitudinal) { Lateral = lateral; Longitudinal = Mathf.Max(0f, longitudinal); }
+            public float Magnitude => Mathf.Sqrt(Lateral * Lateral + Longitudinal * Longitudinal);
+        }
+
+        /// <summary>
+        /// The two triggers, each on the squeeze curve (<c>t^exponent</c>): their DIFFERENCE sets the
+        /// sideways separation (up to <paramref name="sidewaysMax"/> for one full trigger, the sink on the
+        /// deeper trigger's side), their SUM the lengthways one (up to <paramref name="lengthwaysMax"/>
+        /// with both full). One full trigger alone gives a slight diagonal (half the lengthways
+        /// separation); both full put the sink dead ahead and the source beyond it on the same line.
+        /// </summary>
+        public static Separation TargetSeparation(float left01, float right01, float exponent, float sidewaysMax, float lengthwaysMax)
+        {
+            float e = Mathf.Max(0.01f, exponent);
+            float a = Mathf.Pow(Mathf.Clamp01(left01), e), b = Mathf.Pow(Mathf.Clamp01(right01), e);
+            return new Separation((b - a) * Mathf.Max(0f, sidewaysMax), 0.5f * (a + b) * Mathf.Max(0f, lengthwaysMax));
+        }
+
+        /// <summary>Eases a separation toward its target at <paramref name="followRate"/> per second (both components).</summary>
+        public static Separation Follow(Separation current, Separation target, float followRate, float dt)
+        {
+            float k = 1f - Mathf.Exp(-Mathf.Max(0.1f, followRate) * Mathf.Max(0f, dt));
+            return new Separation(Mathf.Lerp(current.Lateral, target.Lateral, k), Mathf.Lerp(current.Longitudinal, target.Longitudinal, k));
+        }
+
+        /// <summary>
+        /// The two poles about the pair's fixed middle, in the frame it was opened in: the sink half the
+        /// separation toward its side and back toward the pilot, the source mirrored through the middle.
+        /// </summary>
+        public static void PolePositions(Vector3 middle, Vector3 right, Vector3 forward, Separation s, out Vector3 sink, out Vector3 source)
+        {
+            var half = right * (0.5f * s.Lateral) - forward * (0.5f * s.Longitudinal);
+            sink = middle + half;
+            source = middle - half;
+        }
+
+        /// <summary>
+        /// A released pair's SLAM: the share of its separation (and of its fields' strength — a dipole's field is
+        /// its separation) left <paramref name="age"/> seconds after the release, closing from rest with constant
+        /// acceleration so the poles hit each other at full speed: <c>1 − (t/T)²</c>, 0 at
+        /// <paramref name="seconds"/> and after. Strength and distance fall together, so the two fields cancel
+        /// as the poles meet instead of either hole shrinking.
+        /// </summary>
+        public static float SlamRemaining(float age, float seconds)
+        {
+            if (seconds <= 1e-4f) return 0f;
+            float x = Mathf.Clamp01(age / seconds);
+            return 1f - x * x;
+        }
+
+        /// <summary>
+        /// Let go of both triggers and the poles fall back together; the pair annihilates once their
+        /// horizons touch (or they are within a unit, so a tap that never opened them ends at once).
+        /// </summary>
+        public static bool ShouldAnnihilate(bool anyTriggerHeld, float separation, float sinkHorizon, float sourceHorizon) =>
+            !anyTriggerHeld && separation <= Mathf.Max(1f, 0.5f * (sinkHorizon + sourceHorizon));
+
+        // ------------------------------------------------------------------ the field
+
+        /// <summary>
+        /// One dipole as a field: the sink's pull GM/(r − r_s)² (Paczyński–Wiita, the law
+        /// <c>BlackHolePhysics</c> uses on prisms) and the source's push GM·r/(r² + ε²)^1.5, softened over
+        /// <see cref="SourceSoftening"/>, the sum capped at <see cref="AccelerationCap"/>.
+        /// </summary>
+        public struct Field
+        {
+            public Vector3 Sink, Source;
+            public float SinkGM, SinkHorizon, SourceGM, SourceHorizon, SourceSoftening, AccelerationCap;
+            /// <summary>The sink's pull softened over this core radius, world units (0 = the steep Paczyński–Wiita
+            /// GM/(r − r_s)²): GM·r/(r² + ε²)^1.5, the source's own law, so how hard a pass bends grows gently
+            /// with how near it goes instead of jumping from nothing to everything in the last few units.</summary>
+            public float SinkSoftening;
+            /// <summary>The fly-through ZONE around the sink, world units (0 = the horizon alone carries you through):
+            /// inside it, a heading that has turned <see cref="ThroughDegrees"/> toward the sink goes through
+            /// (<see cref="WindThrough"/>).</summary>
+            public float ThroughRadius;
+            /// <summary>How far the heading must turn toward the sink inside the zone to go through, degrees.</summary>
+            public float ThroughDegrees;
+            public bool Exists => SinkGM > 0f || SourceGM > 0f;
+        }
+
+        public static Vector3 FieldAcceleration(Vector3 p, in Field f)
+        {
+            var a = Vector3.zero;
+            var toSink = f.Sink - p;
+            if (f.SinkSoftening > 0f)
+            {
+                float es = f.SinkSoftening;
+                float qs = toSink.sqrMagnitude + es * es;
+                a += toSink * (f.SinkGM / (qs * Mathf.Sqrt(qs)));
+            }
+            else
+            {
+                float r = toSink.magnitude + 1e-6f;
+                float x = Mathf.Max(r - f.SinkHorizon, 0.05f * Mathf.Max(f.SinkHorizon, 1e-3f));
+                a += toSink * (f.SinkGM / (x * x) / r);
+            }
+            var toSource = f.Source - p;
+            float e = Mathf.Max(1e-3f, f.SourceSoftening);
+            float q = toSource.sqrMagnitude + e * e;
+            a -= toSource * (f.SourceGM / (q * Mathf.Sqrt(q)));
+            return f.AccelerationCap > 0f ? Vector3.ClampMagnitude(a, f.AccelerationCap) : a;
+        }
+
+        // ------------------------------------------------------------------ flight in the field
+
+        /// <summary>A hull flying in the field: where it is, which way it points, and the gravity speed the
+        /// field has added along its nose (the engine's own speed is passed in separately).</summary>
+        public struct Body
+        {
+            public Vector3 Position;
+            public Quaternion Rotation;
+            public float GravitySpeed;
+            /// <summary>Total radians the FIELD has turned this body (steering not counted) — the warp measure.</summary>
+            public float Bend;
+            /// <summary>Degrees the heading has turned TOWARD the sink since it entered the fly-through zone
+            /// (<see cref="WindThrough"/>); 0 outside it.</summary>
+            public float Winding;
+            /// <summary>The steering COMMAND the hull's rotation chases (<c>VesselTransformer.CommandedRotation</c>),
+            /// when <see cref="HasCommand"/>: the field turns it with the hull, so the follow's gap is undisturbed.</summary>
+            public Quaternion Command;
+            public bool HasCommand;
+        }
+
+        /// <summary>
+        /// The hull's own response, for a prediction that flies it the way <c>VesselTransformer</c> does rather
+        /// than as a body that turns and speeds up the instant it is asked to: the stick turns the COMMAND, the
+        /// hull's rotation chases it at <see cref="NoseFollowRate"/> per second, and the engine's speed eases
+        /// toward <see cref="TargetSpeed"/> at <see cref="SpeedFollowRate"/> per second. Disabled = the old
+        /// instant model.
+        /// </summary>
+        public struct HullResponse
+        {
+            public bool Enabled;
+            public float NoseFollowRate;
+            public float TargetSpeed;
+            public float SpeedFollowRate;
+        }
+
+        /// <summary>The numbers one step of field flight reads.</summary>
+        public struct FlightSettings
+        {
+            /// <summary>The fastest the field may turn the nose, rad/s.</summary>
+            public float TurnCap;
+            /// <summary>How hard the engine pulls the gravity speed back toward cruise, /s (0 = pure gravity).</summary>
+            public float Grip;
+            /// <summary>The gravity speed's ceiling (the studio's 4 × cruise).</summary>
+            public float GravitySpeedCeiling;
+        }
+
+        /// <summary>
+        /// One step of flight in the field (the studio's <c>fieldSubstep</c>): the field's component ALONG
+        /// the nose changes the gravity speed (floored so the hull never flies backward), the PERPENDICULAR
+        /// component turns the nose at a/v (capped), and the body moves on along its new nose. The engine
+        /// speed is the caller's. Both the flight and the prediction call this, so the line shows the
+        /// flight's own law.
+        /// </summary>
+        public static void Step(ref Body body, in Field field, float engineSpeed, float h, in FlightSettings s)
+        {
+            var fwd = body.Rotation * Vector3.forward;
+            if (field.Exists)
+            {
+                var a = FieldAcceleration(body.Position, field);
+                float v = Mathf.Max(engineSpeed + body.GravitySpeed, 5f);
+                float along = Vector3.Dot(a, fwd);
+                float g = Mathf.Clamp(body.GravitySpeed + along * h, -Mathf.Max(0f, engineSpeed - 8f), Mathf.Max(0f, s.GravitySpeedCeiling));
+                body.GravitySpeed = g * Mathf.Exp(-Mathf.Max(0f, s.Grip) * h);
+                var perp = a - fwd * along;
+                float am = perp.magnitude;
+                if (am > 1e-4f)
+                {
+                    float angle = Mathf.Min(am / v, Mathf.Max(0f, s.TurnCap)) * h;
+                    var axis = Vector3.Cross(fwd, perp);
+                    if (axis.sqrMagnitude > 1e-12f)
+                    {
+                        var turn = Quaternion.AngleAxis(angle * Mathf.Rad2Deg, axis.normalized);
+                        body.Rotation = turn * body.Rotation;
+                        if (body.HasCommand) body.Command = turn * body.Command;
+                        body.Bend += angle;
+                        fwd = body.Rotation * Vector3.forward;
+                    }
+                }
+            }
+            body.Position += fwd * (Mathf.Max(0f, engineSpeed + body.GravitySpeed) * h);
+        }
+
+        /// <summary>
+        /// Through the wormhole: a body the sink takes — inside its horizon, or wound through its zone
+        /// (<see cref="WindThrough"/>) — comes out of the SOURCE, just outside its horizon
+        /// (<paramref name="exitGap"/> horizons) on the side opposite to where it went in (the point
+        /// reflection's direction), heading kept. Always at the source's mouth, however far out in the zone
+        /// the body was taken: the pass reads as going in one hole and out of the other.
+        /// </summary>
+        public static Vector3 ExitPoint(Vector3 position, in Field f, float exitGap)
+        {
+            var off = position - f.Sink;
+            float dist = off.magnitude;
+            var dir = dist > 1e-4f ? off / dist : (f.Source - f.Sink).normalized;
+            return f.Source - dir * (Mathf.Max(1f, exitGap) * Mathf.Max(1e-3f, f.SourceHorizon));
+        }
+
+        /// <summary>
+        /// The fly-through ZONE (2026-10-13): the sink's drawn horizon is small, but the hole takes a hull that
+        /// LOOPS it. Inside <see cref="Field.ThroughRadius"/> of the sink every step's turn of the heading is
+        /// counted — toward the sink adds, away subtracts, floored at 0 — and once it reaches
+        /// <see cref="Field.ThroughDegrees"/> the body goes through. Leaving the zone clears it. So a pilot can
+        /// swing a 180° turn round the attractive pole and fly out of it, but one who would loop on past
+        /// ~200° is taken through instead. <paramref name="previousForward"/> is the heading before this step.
+        /// Returns true on the step the body goes through.
+        /// </summary>
+        public static bool WindThrough(ref Body body, Vector3 previousForward, in Field f)
+        {
+            if (f.ThroughRadius <= 0f || f.ThroughDegrees <= 0f) { body.Winding = 0f; return false; }
+            var toSink = f.Sink - body.Position;
+            if (toSink.sqrMagnitude > f.ThroughRadius * f.ThroughRadius) { body.Winding = 0f; return false; }
+            var fwd = body.Rotation * Vector3.forward;
+            float turned = Vector3.Angle(previousForward, fwd);
+            if (turned > 1e-4f)
+            {
+                float toward = Vector3.Dot(Vector3.Cross(previousForward, fwd), Vector3.Cross(previousForward, toSink));
+                body.Winding = Mathf.Max(0f, body.Winding + (toward >= 0f ? turned : -turned));
+            }
+            return body.Winding >= f.ThroughDegrees;
+        }
+
+        // ------------------------------------------------------------------ the pathfinder
+
+        public enum PathEnd { Open = 0, Loop = 1, Hole = 2 }
+
+        /// <summary>The numbers the prediction reads.</summary>
+        public struct PathSettings
+        {
+            public float Length;          // u of path
+            public float Step;            // u between two points
+            public float NoseOffset;      // u ahead of the hull before the first drawn point
+            public float LoopMargin;      // the line stops where it comes back within this of itself …
+            public float MinLoop;         // … at least this far on (so it never touches its own neighbours)
+            public float WarpDegrees;     // the poles must bend the path at least this much to count as WARPED
+            public float ExitGap;         // where the wormhole puts you out, in source horizons
+            public bool PortalOpen;       // the sink carries you through (else the path stops at the horizon)
+        }
+
+        public struct PathResult
+        {
+            public int Count;             // points written
+            public PathEnd End;
+            public int LoopIndex;         // with End == Loop: the earlier point the path came back to
+            public int JumpCount;         // passes through the wormhole
+            public float BendDegrees;     // how far the poles turned the path in total
+            public bool Warped;           // the pathfinder's verdict: the boost is on
+        }
+
+        /// <summary>
+        /// The pathfinder's line (the studio's <c>fieldPath</c>): the hull's own flight run forward on the
+        /// current inputs — its engine speed held, its present steering rate held
+        /// (<paramref name="bodyAngularVelocity"/>, rad/s in the hull's own axes) — through the field,
+        /// from the hull (the first <see cref="PathSettings.NoseOffset"/> u are flown but not written).
+        /// It follows the pilot through the wormhole, stops at <see cref="PathSettings.Length"/> or where
+        /// it would loop back onto itself, and reports whether the poles WARP it at all: a total bend of
+        /// <see cref="PathSettings.WarpDegrees"/> or more, or a pass through the wormhole. Steering alone
+        /// can never warp it. <paramref name="points"/> receives the line; <paramref name="jumps"/> the
+        /// index of the first point after each pass (the line is not joined across one).
+        /// </summary>
+        public static PathResult PredictPath(Body start, float engineSpeed, Vector3 bodyAngularVelocity, in Field field, bool hasField,
+            in FlightSettings flight, in PathSettings s, Vector3[] points, int[] jumps, in HullResponse hullResponse = default)
+        {
+            var result = new PathResult { LoopIndex = -1 };
+            if (points == null || points.Length < 2) return result;
+            var body = start;
+            body.Bend = 0f;
+            float ds = Mathf.Max(0.5f, s.Step);
+            int cap = Mathf.Min(points.Length - 1, Mathf.CeilToInt(Mathf.Max(ds, s.Length) / ds));
+            float margin2 = s.LoopMargin * s.LoopMargin;
+            int skip = Mathf.Max(2, Mathf.CeilToInt(s.MinLoop / ds));
+            float gFar = body.GravitySpeed;
+            // a local function may not capture an `in` parameter (CS1628): copy them
+            var f = hasField ? field : default;
+            var fl = flight;
+            float spin = bodyAngularVelocity.magnitude;
+            var spinAxis = spin > 1e-6f ? bodyAngularVelocity / spin : Vector3.up;
+            var hull = hullResponse;
+            bool chase = hull.Enabled && body.HasCommand;
+            float engine = engineSpeed;
+
+            bool StepBy(ref Body b, float dist)
+            {
+                float v = Mathf.Max(5f, engine + b.GravitySpeed);
+                float t = dist / v;
+                int k = 1;
+                if (hasField)
+                {
+                    var a = FieldAcceleration(b.Position, f);
+                    float r = Vector3.Distance(b.Position, f.Sink);
+                    k = Mathf.Max(1, Mathf.CeilToInt(Mathf.Min(a.magnitude / v, fl.TurnCap) * t / 0.02f));
+                    k = Mathf.Max(k, Mathf.CeilToInt(dist / Mathf.Max(0.1f, 0.2f * (r - f.SinkHorizon))));
+                    k = Mathf.Min(k, 96);
+                }
+                float h = t / k;
+                for (int i = 0; i < k; i++)
+                {
+                    var before = b.Rotation * Vector3.forward;
+                    if (chase)
+                    {
+                        // VesselTransformer.RotateShip: roll, yaw, pitch turn the COMMAND about the hull's own axes,
+                        // then the hull slerps after it; AdvanceSpeed eases the engine toward its target.
+                        if (spin > 1e-6f)
+                        {
+                            var right = b.Rotation * Vector3.right;
+                            var up = b.Rotation * Vector3.up;
+                            var fwd = b.Rotation * Vector3.forward;
+                            b.Command = Quaternion.AngleAxis(bodyAngularVelocity.x * h * Mathf.Rad2Deg, right)
+                                      * Quaternion.AngleAxis(bodyAngularVelocity.y * h * Mathf.Rad2Deg, up)
+                                      * Quaternion.AngleAxis(bodyAngularVelocity.z * h * Mathf.Rad2Deg, fwd) * b.Command;
+                        }
+                        b.Rotation = Quaternion.Slerp(b.Rotation, b.Command, 1f - Mathf.Exp(-Mathf.Max(0f, hull.NoseFollowRate) * h));
+                        engine = Mathf.Lerp(engine, Mathf.Max(0f, hull.TargetSpeed), 1f - Mathf.Exp(-Mathf.Max(0f, hull.SpeedFollowRate) * h));
+                    }
+                    else if (spin > 1e-6f) b.Rotation = b.Rotation * Quaternion.AngleAxis(spin * h * Mathf.Rad2Deg, spinAxis);
+                    Step(ref b, f, engine, h, fl);
+                    if (hasField)
+                    {
+                        float r = Vector3.Distance(b.Position, f.Sink);
+                        if (r > 4f * f.SinkHorizon) gFar = b.GravitySpeed;
+                        if (r <= f.SinkHorizon) return true;
+                        if (WindThrough(ref b, before, f)) return true;
+                    }
+                }
+                return false;
+            }
+
+            for (float pre = 0f, nose = Mathf.Max(0f, s.NoseOffset); pre < nose - 1e-4f;)
+            {
+                float d = Mathf.Min(ds, nose - pre); pre += d;
+                if (StepBy(ref body, d)) break;
+            }
+            points[0] = body.Position;
+            int n = 1;
+            for (; n <= cap; n++)
+            {
+                bool inHole = StepBy(ref body, ds);
+                points[n] = body.Position;
+                if (inHole)
+                {
+                    if (!s.PortalOpen || n >= cap || jumps == null || result.JumpCount >= jumps.Length) { result.End = PathEnd.Hole; n++; break; }
+                    body.Position = ExitPoint(body.Position, f, s.ExitGap);
+                    body.GravitySpeed = gFar;
+                    body.Winding = 0f;
+                    n++;
+                    points[n] = body.Position;
+                    jumps[result.JumpCount++] = n;
+                }
+                bool hit = false;
+                for (int j = 0; j <= n - skip && !hit; j++)
+                    if ((points[j] - body.Position).sqrMagnitude <= margin2) { hit = true; result.LoopIndex = j; }
+                if (hit) { result.End = PathEnd.Loop; n++; break; }
+            }
+            result.Count = Mathf.Min(n, cap + 1);
+            result.BendDegrees = body.Bend * Mathf.Rad2Deg;
+            result.Warped = hasField && (result.JumpCount > 0 || result.End == PathEnd.Hole || result.BendDegrees >= s.WarpDegrees);
+            return result;
+        }
+
+        // ------------------------------------------------------------------ the autopilot
+
+        /// <summary>
+        /// Which triggers an autopilot pulls for a target at <paramref name="localTarget"/> (the hull's own
+        /// frame): nothing when it is nearer than <paramref name="minDistance"/> or more than
+        /// <paramref name="maxDegrees"/> off the nose (the pair is laid AHEAD, so it cannot help behind);
+        /// BOTH when it is within <paramref name="straightDegrees"/> — the sink dead ahead, the wormhole
+        /// shoots the hull at the target and the warp boosts it; otherwise the trigger on the target's
+        /// side, so the sink sits that way and the field turns the nose toward it.
+        /// </summary>
+        /// <summary>
+        /// Degrees the hull has swept round <paramref name="centre"/> between two positions (unsigned). Summed
+        /// over a hold it is how far the autopilot has circled its sink — the orbit cap's measure
+        /// (<see cref="StoatDipoleConfigSO.AutopilotMaxOrbitDegrees"/>). 0 when either position sits on the centre.
+        /// </summary>
+        public static float SweptAround(Vector3 centre, Vector3 from, Vector3 to)
+        {
+            var a = from - centre;
+            var b = to - centre;
+            if (a.sqrMagnitude < 1e-6f || b.sqrMagnitude < 1e-6f) return 0f;
+            return Vector3.Angle(a, b);
+        }
+
+        /// <summary>
+        /// Seconds the poles take to meet once both triggers are let go: the separation decays at
+        /// <paramref name="followRate"/> (<see cref="Follow"/>) until <see cref="ShouldAnnihilate"/>'s threshold.
+        /// The pair keeps pulling all that time, so a hull circling the sink keeps circling.
+        /// </summary>
+        public static float ClosingSeconds(float separation, float sinkHorizon, float sourceHorizon, float followRate)
+        {
+            float threshold = Mathf.Max(1f, 0.5f * (sinkHorizon + sourceHorizon));
+            return separation > threshold ? Mathf.Log(separation / threshold) / Mathf.Max(0.1f, followRate) : 0f;
+        }
+
+        /// <summary>
+        /// True once the autopilot must let go for its orbit to END at <paramref name="maxDegrees"/>: what it has
+        /// swept round its sink plus what it will still sweep at <paramref name="sweepRateDegreesPerSecond"/> while
+        /// the poles close (<paramref name="closingSeconds"/>). Letting go AT the cap left the hull another half lap
+        /// round the closing pair (measured in the Stoat Flight Studio). <paramref name="maxDegrees"/> ≤ 0 is no cap.
+        /// </summary>
+        public static bool OrbitCapReached(float sweptDegrees, float maxDegrees, float sweepRateDegreesPerSecond = 0f,
+            float closingSeconds = 0f) =>
+            maxDegrees > 0f && sweptDegrees + Mathf.Max(0f, sweepRateDegreesPerSecond) * Mathf.Max(0f, closingSeconds) >= maxDegrees;
+
+        /// <summary>
+        /// The target the field autopilot judges: the BEARING of the point it steers for (<paramref name="localSteer"/>,
+        /// hull space) at the RANGE of the thing it is after (<paramref name="objectiveRange"/>, a Regatta ring). On a race
+        /// line the steering point always sits one look-ahead (60-520 u) ahead, inside the autopilot's 90 u "far enough to
+        /// lay a pair" test at cruise, so judging that point alone, a Regatta Stoat never laid a pair and raced at cruise.
+        /// </summary>
+        public static Vector3 AutopilotGauge(Vector3 localSteer, float objectiveRange) =>
+            localSteer.sqrMagnitude > 1e-6f ? localSteer.normalized * Mathf.Max(0f, objectiveRange) : localSteer;
+
+        public static bool AutopilotTriggers(Vector3 localTarget, float minDistance, float straightDegrees, float maxDegrees,
+            out bool left, out bool right)
+        {
+            left = right = false;
+            if (localTarget.sqrMagnitude < minDistance * minDistance) return false;
+            float off = Vector3.Angle(Vector3.forward, localTarget);
+            if (off > maxDegrees) return false;
+            if (off <= straightDegrees) { left = right = true; return true; }
+            if (localTarget.x >= 0f) right = true; else left = true;
+            return true;
+        }
+
+        // ------------------------------------------------------------------ the dots
+
+        /// <summary>
+        /// Lays the pathfinder's dots along a polyline AS IT IS SEEN (screen space): one dot at the first
+        /// visible point, then one every <paramref name="spacing"/> pixels of on-screen length. A point
+        /// marked not <paramref name="visible"/> (behind the camera) breaks the line, and so does a
+        /// <paramref name="breakBefore"/> point (the far side of a pass through the wormhole: the line is not
+        /// joined across it); the next visible point restarts it with a dot. Returns the dots written to
+        /// <paramref name="dots"/> (its length caps them); <paramref name="sourceIndex"/> receives which
+        /// segment each came from, for its fade.
+        /// </summary>
+        public static int LayDots(Vector2[] screen, bool[] visible, bool[] breakBefore, int count, float spacing,
+            Vector2[] dots, int[] sourceIndex) =>
+            LayDots(screen, visible, breakBefore, null, count, spacing, dots, sourceIndex);
+
+        /// <summary>
+        /// <see cref="LayDots(Vector2[], bool[], bool[], int, float, Vector2[], int[])"/> with DEPTH: each
+        /// point's <paramref name="scale"/> (its dot's size as a share of the nearest dot's, from
+        /// <see cref="DepthScale"/>) scales the spacing walked along the segment that ends at it, so a far
+        /// stretch of path packs its smaller dots as tightly, in their own diameters, as a near one. Null =
+        /// every point at scale 1.
+        /// </summary>
+        public static int LayDots(Vector2[] screen, bool[] visible, bool[] breakBefore, float[] scale, int count,
+            float spacing, Vector2[] dots, int[] sourceIndex)
+        {
+            if (screen == null || dots == null || count <= 0) return 0;
+            spacing = Mathf.Max(0.5f, spacing);
+            int n = 0;
+            bool have = false;
+            float carry = 0f;
+            Vector2 prev = default;
+            for (int i = 0; i < count && n < dots.Length; i++)
+            {
+                if (visible != null && !visible[i]) { have = false; continue; }
+                var p = screen[i];
+                float step = Mathf.Max(0.5f, spacing * (scale != null ? Mathf.Max(0f, scale[i]) : 1f));
+                if (!have || (breakBefore != null && breakBefore[i]))
+                {
+                    dots[n] = p;
+                    if (sourceIndex != null) sourceIndex[n] = i;
+                    n++;
+                    have = true;
+                    carry = step;
+                    prev = p;
+                    continue;
+                }
+                var d = p - prev;
+                float len = d.magnitude;
+                // A segment that shrinks the step cuts the distance still owed to the next dot with it.
+                float t = Mathf.Min(carry, step);
+                for (; t <= len && n < dots.Length; t += step)
+                {
+                    dots[n] = prev + d * (t / Mathf.Max(len, 1e-6f));
+                    if (sourceIndex != null) sourceIndex[n] = i;
+                    n++;
+                }
+                carry = t - len;
+                prev = p;
+            }
+            return n;
+        }
+
+        /// <summary>
+        /// A dot's depth cue: its size as a share of the nearest dot's, <c>sqrt(nearDepth / depth)</c> — gentler
+        /// than true perspective, so the cue keeps changing over the whole path instead of bottoming out a
+        /// few dots from the nose — clamped to [<paramref name="minScale"/>, 1].
+        /// </summary>
+        public static float DepthScale(float depth, float nearDepth, float minScale)
+        {
+            float lo = Mathf.Clamp01(minScale);
+            if (depth <= 1e-4f || nearDepth <= 1e-4f) return 1f;
+            return Mathf.Clamp(Mathf.Sqrt(nearDepth / depth), lo, 1f);
+        }
+
+        // ------------------------------------------------------------------ the boost
+
+        /// <summary>
+        /// The warp boost's multiplier: it rises toward <paramref name="boost"/> at <paramref name="riseRate"/>
+        /// per second while the path is warped and falls back to 1 over <paramref name="fadeSeconds"/> once it
+        /// is not.
+        /// </summary>
+        public static float StepBoost(float current, bool warped, float boost, float riseRate, float fadeSeconds, float dt)
+        {
+            current = Mathf.Max(1f, current);
+            if (warped) return current + (Mathf.Max(1f, boost) - current) * (1f - Mathf.Exp(-Mathf.Max(0.1f, riseRate) * dt));
+            return 1f + (current - 1f) * Mathf.Exp(-dt / Mathf.Max(0.01f, fadeSeconds));
+        }
+    }
+}

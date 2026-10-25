@@ -27,10 +27,25 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B17 | Boot parks forever on a blank Authentication panel when the sign-in loses the race to the splash timer | Root-caused & fixed | 🟢 |
 | B18 | A client cannot leave a match at all, and cannot leave a Maelstrom tournament until it ends | Root-caused & fixed | 🟡 |
 | B19 | Nothing watches a client's scene transition, so a lost one is a permanent black screen | Root-caused & fixed | 🟡 |
-| B20 | A player leaving mid-wait strands the whole party at the ready screen, forever (match AND lobby gate) | Root-caused & fixed | 🟡 |
-| B21 | A pilot who leaves mid-match takes their ship AND their score out of the arena | Root-caused & fixed | 🟡 |
+| B20 | A player leaving mid-wait strands the whole party at the ready screen, forever (match AND lobby gate) | Root-caused & fixed; the lobby half did not work and was re-fixed 2026-10-08; both halves passed on Amoebius (5 processes) | 🟡 |
+| B21 | A pilot who leaves mid-match takes their ship AND their score out of the arena | Root-caused & fixed; passed on Amoebius 2026-10-08 | 🟡 |
 | B22 | The Scoreboard's client exit and rematch caption were never wired (`{fileID: 0}`), so B18's propagated fix was a no-op here | Root-caused & fixed | 🟡 |
 | B23 | The arcade card lobby does not follow the host: a flying guest is never pulled in, a guest who missed it once never gets it, a host who changes card cannot move the party, and guests draw phantom AI | Root-caused & fixed | 🟡 |
+| B24 | A rate-limited (HTTP 429) session create/join matched NEITHER retry filter, so the retry budget never ran: the guest bounced to its own solo menu and the host fell back to an OFFLINE session, which then correctly hid the online-only party panel | Root-caused & fixed 2026-10-06 from the first MPPM run | 🟡 |
+| B25 | Nothing enforced the four-player party size: two simultaneous Joins on a 3/4 party seated a fifth | Fixed 2026-10-08 (one size, 4, enforced by the session's own seats); passed on Amoebius 2026-10-08 | 🟡 |
+| B26 | A late online success could still build a Relay session over a live OFFLINE host: the §4.2 invariant was checked only at entry | Fixed 2026-10-08 (re-checked under the mutex and after the shutdown); L1 test + negative control | 🟡 |
+| B27 | A late sign-in re-joined the presence lobby of an OFFLINE session | Fixed 2026-10-08; L1 test + negative control | 🟡 |
+| B28 | The boot gate's in-attempt retry was unbounded, so "three attempts" was a minimum and the offline fallback could arrive minutes late | Fixed 2026-10-08 (bounded by the per-attempt timeout) | 🟡 |
+| B29 | The Join/Accept pre-flight refuses on STALE presence: a party that just shrank reads as "full", and a host that just re-created its session reads as "no longer available" | **Session case fixed 2026-10-09** (an invite and the `partySession` it names now go out in one save; this was "defect 5"); the Count case is open - its cure is Block 5 (push instead of poll) | 🟡 |
+| B30 | A party guest's swapped-in vessel never moves, and the gap throws every 250 ms | Root-caused & fixed 2026-10-13; playtest-confirmed by the owner | 🟢 |
+| B31 | While a party exists, its session refresh is rate-limited (429) about every 10 s, and the record did not count it | Fixed 2026-10-17 by averaging under 1 GET/s; that did not hold (1,061 party-read 429s, 21-23 Oct) because the presence and party reads still went out in the same second. Fixed again 2026-10-24: every read passes `LobbyReadPacer` (1.05 s apart) and a tick reads one lobby. Needs a two-machine retest | 🟡 |
+| B32 | After a guest leaves mid-match, the host's presence lobby answers `NotInLobby` and the host sits in `Reconnecting` for the rest of the session | Root-caused & fixed 2026-10-17: the leaving player hosted the shared presence lobby and its leave DELETED it; the host then never left `Reconnecting`. Needs a two-machine retest | 🟡 |
+| B33 | In the editor, a new Play starts inside the PREVIOUS Play's party session (no domain reload), so the first ~30 s fail with "lobby not found" | Root-caused & fixed 2026-10-17: `GameDataSO.ActiveSession` outlived Play and `CreateAsync` no-oped on it. Needs an editor retest | 🟡 |
+| B34 | In the editor, `ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!…'` some time after Play stops (Bug Ledger E-c523697cae, all four testers) | Root-caused 2026-10-17 in the SDK source: B33's leaked session meets Wire's Play-exit teardown. The console copy is filtered; the leak is B33 | 🟡 |
+| B35 | Every direct join fails: the host logs `NetworkConfig mismatch`, the joiner gets `NetworkManagerStartFailed` and falls back to hosting alone (Caleb and Gradi, five tests 21-23 Oct) | Root-caused & fixed 2026-10-24: 11 of the 31 network prefabs committed a wrong `GlobalObjectIdHash`, and each editor used the wrong or the right one depending on what it had opened in edit mode. Committed Unity's values; the gate fails on a wrong one; each test log records the config. Needs a two-machine retest | 🟡 |
+| B36 | The Relay drops the host ("player timed out due to inactivity", "allocation is invalid", transport failure, bounce to the menu with "Connection lost") | Root-caused 2026-10-25: Relay cuts a player it has not heard from for ~10 s, and the transport only pings from the main thread. The owner's three drops each came ~3 s after a Bloomrush scene teardown, in a mode that ran at 190-680 ms a frame on that machine. Freezes are now recorded in the test log and each drop names the one it followed; the freeze itself needs a profile | 🟠 |
+| B37 | "Could not create presence lobby: Object reference not set..." then "[INVITE-SEND] ABORT - presence lobby is null" (Bug Ledger E-6b79cd07f1, E-ca3bc5cbe1; Gradi and Shombith, 2-11 Sep) | Fixed 2026-10-25 (cause likely, not proven: the log kept only the message): the join waits for Unity Services and a sign-in; a create failure the rejoin recovers from is a warning, anything else is logged with its stack; an invite with no presence lobby tells the player. The lobby-less session itself was fixed 2026-10-08 (the boot-time rejoin) | 🟡 |
+| B38 | "[PartyInviteController] Recovery failed" after Play stops: "This can only be used during play mode" or "Value cannot be null. Parameter name: asyncOperation" (Bug Ledger E-41b7610878, belac 19 Oct; E-0de9ec6c70, Gradi, Sep) | Root-caused & fixed 2026-10-25: the recovery and the leave-lobby flow awaited the party leave and the Netcode shutdown, and loaded Menu_Main after Play had stopped. Each step after an await now stops once Play has ended or the controller is gone | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -1043,6 +1058,8 @@ the 4-VP + hard-drop variants on any change to the recovery path):
 > — so without the explicit clear the stale value would persist until the next
 > join/leave.
 
+**Re-run on Amoebius (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08).** T7: with a party of host + member + spectator in a match, the host was `kill -9`ed. The member and the spectator each became a solo host at 1/4 on Menu_Main within 2.3 s wall. TCP sees the dead peer at once; UTP waits out its 10 s disconnect timeout, so the real figure is about 10 s more. Amoebius, not Unity.
+
 ---
 
 ## B11 — Idle Relay allocation goes stale; every later join bounces at step 3 🟢 (CLOSED 2026-09-11 — the symptom was B16; the recycle stays reverted)
@@ -1318,7 +1335,7 @@ followed "playing a game" (a game is what you leave), and why the reverted idle-
   in-scene object is legitimately un-spawned before the host starts). It runs immediately
   before each of the four calls that start a NetworkManager: party session create, party
   session join, the offline `StartHost`, and the game-scene matchmaking path.
-- `FrogletTools ▸ Validation ▸ Audit Stray Network Objects` reports the authoring combination
+- `FrogletTools ▸ Utilities ▸ Audit Stray Network Objects` reports the authoring combination
   (a fauna config whose prefab carries a NetworkObject with replication off) so the guard never
   has to fire.
 
@@ -1570,6 +1587,8 @@ disagrees (`EvaluateLobbyReadyGate`).
 the turn/launch should proceed within a tick. Also: press Ready twice quickly → the match
 must NOT start until everyone has pressed.
 
+**Run on Amoebius (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08). The match half held; the LOBBY half did not, until fixed.** T4 (match): three pilots clicked the HUD's Ready button and the fourth left. The host's gate logged `3/4`, then `(client N disconnected): 3/3`, and the countdown started. The gate re-counts inside the disconnect callback, and NGO 2.13.3 removes the id from `ConnectedClientIds` before invoking it (`NetworkConnectionManager.cs` 1537 → 1567, read from the package), so the count is right on real NGO too. **T4-lobby (the arcade card lobby) FAILED on run 2:** three pressed Start, the fourth (unready) left, and the lobby sat at 3/4 forever. `ExpectedHumanCount` is `Max(_committedHumanCount, connected)`. The departure lowered `connected` but never the commit-time floor (4), so the re-decide this entry added compared 3 with 4 and returned, with no log. The fix in `ArcadeConfigSyncManager.HandleClientDisconnected` clamps the floor to the humans still connected; the floor exists for members still connecting, not for ones who left. The lobby gate now also logs each re-decision, as the match gate does. Run 6, after the fix: T4-lobby passed (`All players ready (client 3 left) - launching game`, and the three loaded the match). Amoebius, not Unity: the shipped C# ran in five processes over the port's TCP Netcode and a shared-directory Lobby/Relay stand-in, so this is evidence for the logic, not for UGS's error shapes or UTP timings. Stays 🟡 until the MPPM retest.
+
 ---
 
 ## B21 — A pilot who leaves mid-match takes their ship AND their score out of the arena 🟡 (root-caused & fixed 2026-09-11; needs a playtest)
@@ -1613,6 +1632,94 @@ separately a hard kill). Expect: the ship keeps flying under AI, a toast names t
 pilot, the scoreboard still shows their score, and their domain's total still includes it.
 Watch that the host's roster does not double-count them.
 
+**Passed on Amoebius (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08).** T3: a guest left mid-race. The host logged `left mid-match - handing '<name>' to the AI`; that vessel's owner flipped to the server and its position kept changing; the leaver's RoundStats row was still on the host. Amoebius, not Unity: the shipped C# ran in five processes over the port's TCP Netcode and a shared-directory Lobby/Relay stand-in, so this is evidence for the logic, not for UGS's error shapes or UTP timings. Stays 🟡 until the MPPM retest.
+
+---
+
+## B24 — a rate-limited session call matched neither retry filter, so one 429 took the guest to solo and the host offline 🟡 (root-caused & fixed 2026-10-06; needs the MPPM retest)
+
+**Symptom (owner report, first MPPM run, 2026-10-05).** Two Play Mode Scenario instances, one
+Server+Client ("player 1"), one Client-only ("player 2"). Three things at once:
+
+1. The console carried `SessionException ... HTTP 429 too many requests` attributed to player 2.
+2. Player 2 then "restarted in its own lava lamp" — i.e. bounced to its own solo menu+host.
+3. Player 1's **arcade panel had no party UI panel**; player 2's did. Reported as a UI mismatch.
+
+**All three are one root cause, and it is not a UI bug.**
+
+**Root cause.** `PartySessionService` guarded both its create and its join loops with
+
+```csharp
+IsRateLimitException(e) => e is RequestFailedException rfe && rfe.ErrorCode == 429;
+```
+
+`SessionException` derives from `Exception`, **not** from `RequestFailedException` — in UGS
+Multiplayer 1.1.8 and 2.3.3 alike, so this is **latent, not something the SDK upgrade
+introduced**. And `LobbyConverter.ToSessionException` builds it with the two-argument
+constructor (`new SessionException(message, SessionError.RateLimitExceeded)`), so
+`InnerException` is `null` too: the original `LobbyServiceException`/429 lineage is discarded
+and **only the message text survives**. The sibling predicate
+`IsTransientSessionException` probes for the NRE and `23006` families, which a 429 message does
+not match either.
+
+So **both catch filters declined and the exception escaped the retry loop.** Zero of the three
+rate-limit retries ever ran. Then:
+
+| Path | What the escaped 429 did |
+|---|---|
+| **Join** (`JoinByIdAsync`) | propagated to `AcceptInviteAsync` → `PartyInviteController` logged it and called `RecoverFromFailedTransitionAsync` → **symptom 2**, the bounce to solo |
+| **Create** (`CreateAsync`, via `EnsurePartySessionAsync`) | counted as a failed boot attempt; after 3, `AuthenticationSceneController` took the **offline fallback** → `OfflineModeService` sets `GameDataSO.IsOfflineSession = true` → `OfflineUIGate` hides every online-only object, and `ArcadeLobbyList` is on that list (`OfflineMenuWirer.OnlineOnlyPanels`) → **symptom 3** |
+
+**Symptom 3 was the gate working correctly.** The panel is wired and active in `Menu_Main` — all
+**four** `ArcadeLobbyList` instances (Toybox, Arena, Arcade, Mission panels) have 4/4 slots,
+`connectionData`, `onlineStatusText` and `leaveButton` all non-null, and no inactive ancestor on
+any of their parent chains. Nothing was mis-wired. Player 1 had simply fallen into an offline
+session, where that panel is *supposed* to be hidden. **The two instances do not share the flag**
+— MPPM additional instances are separate processes (see the correction in B23), so each has its
+own `GameDataSO`. The "mismatch" was two instances in genuinely different session states.
+
+**The confirming observation, for the retest.** An unwanted offline start calls
+`ShowOfflineNoticeAsync` before falling back, and the `OnlineStatusIndicator` lamp reads offline
+for the rest of the session. **If player 1 showed the offline notice at boot, or its lamp read
+offline, symptom 3 is fully explained by this entry.** If it did not, the panel was hidden by
+something else and symptom 3 needs its own investigation.
+
+**Fix.** Recognise a rate limit **structurally first** — `SessionError.RateLimitExceeded`, the
+SDK's own classification, which cannot drift with wording or locale — then `ErrorCode == 429`,
+then the message text as the floor. That message probe is what the three sibling predicates in
+`PresenceLobbyService`, `HostConnectionService` and `MultiplayerSetup` use *exclusively*, which
+is exactly why those three kept working while the one typed implementation did not.
+
+Also reordered `CreateAsync`'s catch filters to test rate-limit **before** host-conflict.
+`IsHostConflictException` matches any message containing `"host"` and its retry carries **no
+back-off at all**, so an exception matching both was retried three times with zero delay — the
+worst possible response to a 429. A genuine host conflict is not a 429, so the ordering cannot
+mis-route one.
+
+**Verification.** The two predicates were compiled and **run** against the SDK's real exception
+shapes (copied from the package sources), old against new:
+
+| case | OLD | NEW | want |
+|---|---|---|---|
+| SDK rate limit (the real one) | **False** | True | True |
+| typed rate limit, foreign wording | False | True | True |
+| plain `RequestFailedException` 429 | True | True | True |
+| `NotInLobby` | False | False | False |
+| lobby-events `23006` transient | False | False | False |
+
+The negative controls hold, so it is not over-matching. File parses clean under Roslyn.
+**No Unity in the authoring container, so `/verify-unity` did not run.**
+
+**General rule.** *A typed check that is narrower than the type it is handed fails silently and
+looks rigorous doing it.* It never throws and never logs — the retry simply never happens. Four
+copies of this predicate exist and three of them, written the "sloppy" way against the message,
+were the three that worked.
+
+**Still open after this fix.** Why there was a 429 at all with only two instances. Both were
+polling presence on the same machine under one UGS project; the refresh jitter landed in
+`a230ced2c` spreads that, and this fix makes a burst survivable rather than fatal, but neither
+reduces the underlying request *rate*. If the retest still shows 429s, the next step is
+`Docs/PresenceSystem/TODOS.md` TODO-P2 (write-coalescing), not another retry tweak.
 
 ---
 
@@ -1729,9 +1836,26 @@ not sufficient. **A value being replicated does not make it delivered.**
 reflection — a field missing there never dirties the NetworkVariable, and the omission only shows
 on a second machine. **Nothing has been through the Editor.** Needs three machines: host opens a
 card with one guest flying and one guest cold-joining, host backs out and picks another.
-**MPPM is not that test** — virtual players share one process and one `GameDataSO`, so this
-branch's failure mode (a peer that cannot act on replicated state) is exactly the class MPPM
-flatters.
+**MPPM is a weaker test than three machines, but it is not the no-op this entry used to claim.**
+
+> **Corrected 2026-10-06.** This read *"MPPM is not that test — virtual players share one
+> process and one `GameDataSO`"*. **That premise is false**, and it was load-bearing — it is why
+> this entry demanded three machines, and the QA item written from it repeated the claim.
+> MPPM's own documentation (`com.unity.multiplayer.playmode@2.0.2`,
+> `Documentation~/instance-types/instance-types.md`) states: *"Additional instances are clones of
+> the Editor that **run in separate processes**."* Each one gets its own `/Library/VP/<id>/` for
+> its configuration and data. Separate processes mean separate managed heaps, therefore
+> **separate `GameDataSO` instances** — a guest really does have its own copy of the replicated
+> state, which is the thing this bug is about. So MPPM *can* exercise symptoms 1–4.
+>
+> What clone editors genuinely DO share, and what therefore still makes three machines the
+> stronger test: the project's **`Library` asset cache** (per the same page, asset and code
+> changes propagate automatically), and **`PlayerPrefs`** — one OS user, one company/product
+> name, so every instance reads and writes the same store. Any state that rides either of those
+> leaks between "players" on one machine and will look synchronised when it is not.
+>
+> Run it under MPPM first, since that is cheap and now known to be meaningful. Keep the
+> three-machine pass as the confirmation, not as the entry fee.
 
 **Open / accepted.**
 - A guest cannot dismiss the host's lobby, by design. A legitimate "leave this lobby" has to be a
@@ -1741,3 +1865,537 @@ flatters.
 - `RepublishHumanCount` reads the connected clients inside `OnClientDisconnectCallback` and so
   inherits whatever that callback's ordering guarantees are — the same dependency
   `ExpectedHumanCount` already had. A transient over-count costs one AI chip for a tick.
+
+## B25 — Nothing enforces the four-player party size: two simultaneous Joins on a 3/4 party seat a fifth 🟡 (diagnosed + fixed 2026-10-08; needs the MPPM retest)
+
+**Shape.** A party has two sizes (`HostConnectionDataSO`): `partyDisplaySlots` = **4**, the size
+players see and the game's rule, and `maxPartySlots` = **6**, the transport capacity with spare
+seats so a flickering double-count in the polled roster cannot refuse the fourth member (the
+header comment on the field). Every check of the GAME's size runs on the **joining or inviting
+client**, against **published, polled** data:
+
+| Where | What it checks | Against |
+|---|---|---|
+| `FriendsListPanel` (Invite button) | `HasOpenDisplaySlots` (4) | the local roster |
+| `JoinTargetValidator` (Accept / Join / Spectate pre-flight, review Phase 1c) | target's `partyCount >= partyMax` | the target's **presence-lobby properties**, refreshed on the presence poll (seconds old) |
+| `HostConnectionService.SendInviteAsync` backstop (`:639`) | `HasOpenSlots` | **6**, the transport size |
+| The party session itself | `CreateAsync(connectionData.MaxPartySlots)` | **6** |
+
+Nothing on the **host** compares the live member count with `PartyDisplaySlots` after a join.
+
+**Failure.** Party at 3/4. Two players press **Join** on it within one presence-refresh window.
+Both pre-flights read `3/4` and pass; both `JoinSessionByIdAsync` calls succeed because the
+session holds 6; the party is 5/4. What follows is unspecified: the arcade lobby draws four slots,
+`PARTY_MAX_KEY` publishes 4 while the count says 5, and a 4-seat card launches with five humans.
+The same window lets an invite to a full party out of the host (`:639` checks 6), though there the
+acceptor's pre-flight usually catches it with "…party is full".
+
+**Why it has not been seen.** It needs two joins inside one refresh interval on a party that is
+exactly one short; MPPM runs so far have used two or three instances. The hardening plan's L1 test
+"two guests join-direct simultaneously → both seated" (HARDENING_PLAN_STEAM_LAUNCH.md §5.1 #2) is
+written for a party with room for both, and **passes on exactly the case that breaks**.
+
+**Fix (applied 2026-10-08, the owner's call: "only four players, no six anywhere").** One party
+size, 4. `partyDisplaySlots` / `PartyDisplaySlots` / `HasOpenDisplaySlots` are gone;
+`maxPartySlots` is 4 in code and in `HostConnectionData.asset`, and the party session is created
+with 4 seats, so **UGS itself refuses the fifth join** - the authority the client checks lacked.
+The loser of the race gets "That party is full." (`PartyInviteController` catches the policy's
+`Full` class and bounces to its own menu with that toast, instead of a red error and a silent
+bounce). `SendInviteAsync`'s backstop now checks 4. `HasOpenSlots` counts distinct player ids,
+which is what the spare seats used to absorb. A spectator also takes a seat, so a full party
+can no longer be spectated; `JoinTargetValidator` refuses that before teardown.
+
+**Options considered before that call** (kept for the record):
+1. Host-authoritative admission: when the host's reconcile sees `PartyMembers.Count >
+   PartyDisplaySlots`, it removes the most recent joiner(s) (`RemovePlayerAsync`, the kick path at
+   `HostConnectionService.cs:1090`) with a "party is full" reason the joiner's bounce path already
+   toasts. Keeps the transport headroom for flicker; makes 4 a rule instead of a hint.
+2. `SendInviteAsync`'s backstop gates on `HasOpenDisplaySlots`, the property its own doc comment
+   names as the one "an invite affordance must gate on".
+3. L1 tests: "party at 3/4, two guests join simultaneously → exactly one seated, the other toasted
+   'party is full' and back in its own menu"; and the existing 4/4 variant.
+
+**Evidence.** Read from code on `Ys-bleeding-edge` 280c0475: the call-site table above
+(`grep -rn 'HasOpenSlots\|HasOpenDisplaySlots\|PartyDisplaySlots\|MaxPartySlots' Assets/_Scripts`).
+The capacity split was pinned by `PartyInviteSystemTests.FourMembers_PartyIsFullByTheGameRule_TransportKeepsHeadroom`,
+deleted with the split; the one size is pinned by `HostConnectionDataSOTests.MaxPartySlots_IsFour` /
+`HasOpenSlots_CountsEachPlayerOnce` and `JoinTargetValidatorTests.Spectate_FullParty_IsPartyFull`.
+
+**Passed on Amoebius (`Tools/Build/prisma_party_scenarios/run.sh`, 2026-10-08).** T2b: two players pressed Join on a 3/4 party, the presses < 1 ms apart. Both passed the pre-flight; the session's 4 seats refused one (`Session is full.`), which `UgsRequestPolicy` classified `Full`; it bounced with "That party is full." and came back as a solo host at 1/4. The host ended at members 4/4, conns 4. **Found by the run:** that loser also logged a red `[HostConnectionService] JoinPartyDirect error`. The Phases 0–1 checklist promised a warning, so the three join catch sites now share `LogJoinFailure`, which keeps the error for real faults only. Amoebius, not Unity: the shipped C# ran in five processes over the port's TCP Netcode and a shared-directory Lobby/Relay stand-in, so this is evidence for the logic, not for UGS's error shapes or UTP timings. Stays 🟡 until the MPPM retest.
+
+---
+
+## B26 — A late online success could still build a Relay session over a live OFFLINE host 🟡 (found by reading + fixed 2026-10-08; L1-tested)
+
+**Shape.** `HostConnectionService.EnsurePartySessionAsync` stands down while `IsOfflineSession`
+is up, which is how it honours HARDENING_PLAN §4.2: a late online success must never tear down a
+live offline host. But it checked the flag once, at entry. `OfflineModeService` raises the flag
+only after a party-layer reset and a profile load that can take seconds. So a call that had passed
+the entry check could still be queued on the session-creation mutex, or inside its NetworkManager
+shutdown, when the offline host came up, and would then go on to `CreateAsync` over it. The callers
+that can be in flight at that moment:
+- the boot gate's retry;
+- a late sign-in's init;
+- the invite controller's recovery.
+
+**Fix.** The flag is re-checked at two points:
+- **Under the mutex,** with no await between that check and the shutdown, so the shutdown can never
+  land on a live loopback host.
+- **After the shutdown,** so no session is built over one. That path returns the state machine to
+  `Disconnected`, where the offline reset left it.
+
+**Evidence.**
+- `OfflineSessionTests.ALateOnlineSuccess_NeverBuildsASessionOnTopOfALiveOfflineHost` raises the
+  flag while the call's shutdown is pending, then completes the shutdown. It passes with the fix,
+  and fails without it (`CreateAsync` is called).
+- Found by a code read during Block 4's mapping (2026-10-08). It has never been seen in a play
+  session.
+
+---
+
+## B27 — A late sign-in re-joined the presence lobby of an OFFLINE session 🟡 (found by reading + fixed 2026-10-08; L1-tested)
+
+**Shape.** Auth can succeed after the boot gate has fallen back to offline, while Relay keeps
+failing. `HandleSignedInEvent` → `EnsureInitializedAsync` had no offline guard. It even checked the
+flag a few lines later, to skip the presence rejoin, but it still re-joined the presence lobby and
+moved the party state to `InPresenceLobby`. That undid step 1 of `OfflineModeService` and restarted
+UGS traffic under a player who had been told they were offline.
+
+**Fix.** `EnsureInitializedAsync` stands down while the flag is up. Coming back online is
+`ReconnectService`'s re-boot, which lowers the flag first.
+
+**Evidence.** `OfflineSessionTests.Case5_OfflineSession_ALateSignIn_DoesNotRejoinThePresenceLobby`
+passes with the fix and fails without it.
+
+---
+
+## B28 — The boot gate's in-attempt retry was unbounded 🟡 (found by reading + fixed 2026-10-08)
+
+**Shape.** `AuthenticationSceneController.LoadMainMenuNetworkedAsync` gives each Relay attempt a
+timeout, then on failure awaits `HostConnectionService.EnsurePartySessionAsync()` with no timeout
+and no token. When UGS is reachable but not answering, a hung create held the gate as long as it
+liked. "Three attempts, then offline" was therefore a minimum, not a maximum.
+
+**Fix.** The retry is bounded by the same per-attempt timeout (`AttachExternalCancellation`).
+Abandoning the wait is safe: the call keeps running, and B26's re-checks stop it from touching an
+offline host.
+
+**Evidence.** Compile only (`unity_refcompile`). This path needs a hanging UGS, which no harness
+here can produce. QA: boot with UGS blocked at the firewall but the NIC up. The offline notice
+must arrive within five attempt timeouts: three Relay waits plus two bounded retries, 75 s at the 15 s floor.
+
+---
+
+## B29 — The Join/Accept pre-flight refuses on stale presence 🟡 (found by the five-process runs 2026-10-08; Session case fixed 2026-10-09, Count case open)
+
+**Shape.** `JoinTargetValidator`, the zero-request pre-flight from review Phase 1c, decides from
+the target's **polled presence**. A host publishes `partyCount` and `partySession` on its own
+refresh tick, and a guest reads them on its tick. The guest's view can therefore be up to two
+refresh intervals old. A refusal made on it is a false refusal, and a person sees it as a toast
+for a party they could have joined:
+
+- **Count.** Right after a kick and a leave, B's party was really 2/4. A's row still read 4/4, and
+  A's Join was refused with "PilotB's party is full." (instrumented run, T2.)
+- **Session.** Right after a host drop, the new host's invite carried its new session id. Its
+  presence still carried the old one, and the guest's Accept was refused with "…party is no
+  longer available." (runs 3 and 4, `SessionChanged`.)
+
+**Why it is not simply relaxed.** A refusal here is what saves a player's own session from a
+doomed teardown. The validator cannot tell "the invite is stale" from "presence is stale" without
+a fresher source. Its count check is advisory anyway: since B25 the session's own seat count is
+the authority, so a false "full" costs the player a retry and nothing else.
+
+**Cure.** Block 5 (push instead of poll) shrinks the window this rides on. Until then the
+scenarios wait until each racer's row shows the host's real count before pressing Join
+(`wait_joinable`), as a person reads the row.
+
+**The Session case is fixed (2026-10-09).** For an Accept there *is* a fresher source, and it was
+being published out of order:
+- `SendInviteAsync` saved the invite lines alone.
+- The sender's `partySession` advertisement went out only on its next presence tick
+  (`PublishPartyState`).
+- A guest's poll that landed in between read a brand-new invite next to the sender's previous
+  session, and refused it.
+
+Now `PublishInvitePayloadsToCurrentPlayer` stages both properties for the same save
+(`HostConnectionService.InvitePublicationProperties`). No poll can read an invite without the
+session it names, so an Accept is refused only when the session really moved.
+
+This was "defect 5" of the Block 3 runs, mislabelled as "the new host's invite expired on send".
+The expiry in the host's log is a symptom: an unaccepted invite outlives its 60 s lifetime during
+the harness's 240 s wait. The cause was on the invitee's side:
+`Join pre-flight refused (SessionChanged) … PilotC's party is no longer available.`
+- **Reproduced** on Amoebius's five-player harness with every player on a simulated 4G line
+  (`COSMIC_SHORE_NET_SIM=4g`, `Port/docs/MULTIPLAYER.md`).
+- **Tests:** `JoinTargetValidatorTests` pins the failure shape and the one-save rule.
+- **Harness:** the T4-lobby classifier now reads the invitee's log first.
+- **Direct Join** (no invite) compares the row's own session with itself, so it never had this
+  case.
+
+
+## B30 — A party guest's swapped-in vessel never moves, and the gap throws every 250 ms 🟢 (root-caused & fixed 2026-10-13; playtest-confirmed by the owner 2026-10-13)
+
+**Report.** Join someone's lobby, change vessel (the vessel changer toy, or a mode preview's hull
+swap): the new ship sits still, and the console repeats
+`MissingReferenceException: The object of type 'VesselController' has been destroyed` from
+`DomainVolumeIndicator.ResolveCell`.
+
+**Cause 1, the ship that never moves.** `VesselController.Initialize` ends in
+`VesselStatus.ResetForPlay`, which sets `IsStationary = true`, and `VesselTransformer` does not
+move a stationary hull. Only `Player.StartPlayer` → `VesselController.StartVessel` releases it.
+- On the **host**, `MenuServerPlayerVesselInitializer.SwapVesselAsync` → `ActivateAutopilot` calls
+  `StartPlayer` on every swap, but on the host's copy only. The guest owns its vessel's movement.
+- On the **guest**, `ClientPlayerVesselInitializer.ReInitializePair` raises
+  `OnPlayerPairInitialized` and never `OnClientReady`. `MainMenuController.HandlePlayerPairInitialized`
+  skipped the local player, because `HandleMenuReady` (on `OnClientReady`) starts it. That is true of
+  the first pair only. Nothing started the swapped-in hull.
+
+**Cause 2, stuck on autopilot.** `VesselChangerToy.RestoreControlAfterSwap` gave up waiting
+after 600 ms + 20 × 100 ms. A guest's swap latch (`MenuServerPlayerVesselInitializer.ClientSwapPending`)
+holds until the new hull is bound, up to 5 s, and a relay round trip can outlast 2.6 s. An early
+restore found the old hull destroyed and did nothing, so the new hull stayed on autopilot under a
+pilot who was flying.
+
+**Cause 3, the exception.** The server despawns the old hull before
+`ReplaceVesselForPlayer_ClientRpc` binds the new one, so for the whole gap the guest's
+`Player.Vessel` is a destroyed `VesselController`. `IVessel` is an interface, so `?.` cannot see a
+destroyed object. `DomainVolumeIndicator.ResolveCell` (4 Hz) and
+`SpawnMatrixToy.TryPointAheadOfPilot` read `LocalPlayer?.Vessel?.Transform` through it.
+
+**Fix.**
+- `HandlePlayerPairInitialized` now activates the local pair too: start, autopilot on, input
+  paused. That mirrors the host's `ActivateAutopilot` exactly. `StartPlayer` is idempotent, so the
+  first pair being started twice is harmless.
+- `RestoreControlAfterSwap` waits out the whole swap. `IsSwapping` is bounded on both sides.
+- Both readers go through `VesselLiveness.IsAlive`. The gauge holds its last cell through the gap.
+
+**Verified 2026-10-13** by the owner's playtest: the guest's swapped-in vessel flies. Steps kept for regressions.
+
+**Verify (two machines or MPPM).** Host a party, join it from the second instance. On the guest:
+1. Change vessel from the menu (autopilot) state. The new hull must fly on autopilot at once.
+2. Enter freestyle, change vessel with the vessel changer. The new hull must move and answer the
+   stick within about a second of appearing.
+3. The console must show no `MissingReferenceException` during either swap.
+4. Repeat 2 on the host. Behaviour must be unchanged.
+
+---
+
+## B31 — While a party exists, its session refresh is rate-limited about every 10 s 🟡 (observed 2026-10-16; root-caused & fixed 2026-10-17; needs a two-machine retest)
+
+**Seen in.** Caleb's two-machine test with ys1 on `bleeding-edge` @ `08b058966` (his multiplayer log
+`bugledger/belac`, `net_20261016_200524_main.json`; read with `python3 Tools/Build/net_logs.py show`).
+From 31 s, when his party session existed, to 678 s, the console logged
+`[HostConnectionService] Party session refresh rate-limited - backing off` (or the presence refresh's
+`Rate limited during refresh`) **69 times, 7-10 s apart, steadily**. His second log shows the same rate
+(18 in 2.8 min).
+
+**What it costs.** Each 429 backs the refresh off by `refreshIntervalSeconds * 2` (3 s), so party
+state (members, `partyCount`, the session id other players read) is refreshed late all the time. This
+is the window B29 rides on.
+
+**Measured wrong until now.** The refresh ticks count as `lobbyReads` but their 429s were never counted
+(only calls through `UgsRequestPolicy.ExecuteAsync` were), so the session record said `429s 2`. Both
+refresh catches now count `UgsRequestCounter.RateLimited`, and `net_logs.py` shows the console's count
+beside the record's.
+
+**Root cause (2026-10-17).** Every menu tick (1.5 s) read BOTH lobbies: the presence lobby
+(`PresenceLobbyService.RefreshAsync`) and the party session (`RefreshPartyMembersAsync` →
+`PartySessionService.RefreshAsync`). That is 1.33 GETs/s against UGS Lobby's **1 GET/s per player**, the
+arithmetic the request-discipline review had already written down (§3.1). The deficit is 0.33/s, and each
+429 backs off 3 s, which predicts a 429 every ~9-10 s. The log measured 7-10 s. The boosted presence poll
+(0.75 s) was over the cap on its own.
+
+**Fix.** `LobbyRefreshScheduler.TryTakePartySessionPoll`: the tick GETs the party session at most every
+`PARTY_SESSION_POLL_SECONDS` (6 s; 15 s while boosted). It still syncs the roster from `ISession.Players`
+every tick, which the SDK keeps current from its lobby events, so a join or leave still shows within a
+tick. The leave reconcile (`ReconcilePartyMembersNow`) always reads. `BOOSTED_INTERVAL_SECONDS` went from
+0.75 to 1.1 s. Budget: 0.67 + 0.17 = 0.83 GETs/s at rest, 0.91 + 0.07 = 0.98 boosted. The full cure is
+still Block 5 (push instead of poll).
+
+**Verified.** `PartyRefreshRecoveryTests` (edit mode, run on Amoebius): the poll gate, the boosted
+spacing, and the budget under 1/s with the old cadence as the negative control. **Hand test:** two
+machines party up and idle 10 minutes in the menu; `net_logs.py show` reports `429s 0` and no
+`rate-limited` line.
+
+**The first fix did not hold (measured 2026-10-24).** Caleb's and Gradi's tests of 21-23 Oct, all on code
+with the fix above: 1,061 `Party session refresh rate-limited` warnings against 12 presence-refresh ones,
+spaced 7.8 s apart (one per party poll plus its 3 s back-off). Nearly every party read was refused. The
+average was under the cap, but the tick still read the presence lobby and then the party session back to
+back, milliseconds apart, so the party read always fell in the same second as the presence read. UGS's cap
+is one GET per second, not one per second on average.
+
+**Second fix (2026-10-24).**
+- `LobbyReadPacer` (`Assets/_Scripts/Utility/`) is the one gate every lobby GET of ours passes: the
+  presence refresh, the party refresh, and `LobbyPropertyWriter` / `PartySessionService`'s reads before and
+  after a save. No two go out less than 1.05 s apart; a read that would waits its turn. It resets at Play
+  start.
+- The refresh tick makes one read: on the tick the party session is due a read
+  (`LobbyRefreshScheduler.IsPartySessionPollDue`, asked without claiming it), it skips the presence read and
+  works from the presence lobby as last read. So the tick never waits a second in the middle, and the
+  presence lobby is read every tick but one in four.
+- Held by `PartyRefreshRecoveryTests` (13): the pacer refuses a read right behind another and allows it at
+  1.05 s, a refused try claims nothing, the Play-start reset frees the slot, and the party poll can be asked
+  without claiming it. **Hand test:** same as above: `429s 0` and no `rate-limited` line in a 10-minute
+  party. If 429s remain, they come from reads outside the pacer (the SDK's own), and the next step is Block 5.
+
+## B32 — After a guest leaves mid-match, the host sits in `Reconnecting` for the rest of the session 🟡 (observed 2026-10-16; root-caused & fixed 2026-10-17; needs a two-machine retest)
+
+**Seen in.** Same log as B31. ys1 joined Caleb's party (client 1 approved at 72 s), both pressed Ready in
+Regatta, and ys1 left mid-race: `clientLeft 1` and `leaverToAI ys1` at 589 s (B21's fix worked: its ship
+flew on). Then Caleb's party refresh got `NotInLobby: Player is not part of an active lobby` three
+times (606-626 s). That triggered
+`3 consecutive refresh errors - reconnecting to presence lobby`, and the party went
+`InParty->Reconnecting` at 621 s. **No later party transition is recorded** in the remaining 36 minutes,
+although Caleb played another Regatta match at 2640 s. Every transition goes through
+`PartyStateMachine.TryTransition`, which marks the record, so the machine really stayed in
+`Reconnecting`.
+
+**Why the host was "not part of" its own party lobby is unknown.** The guest's side would say; ys1's
+editor wrote no log (see the log-writer fix of 2026-10-16: a guest's record had no evidence of another
+player). By design, recovery from `Reconnecting` waits for the boot-status retry button
+(`HostConnectionService`, "Relay re-creation is driven by an explicit user action"), so the host may
+also have been shown "Connection lost".
+
+**Root cause (2026-10-17).** The `NotInLobby` came from the PRESENCE lobby (the refresh loop's outer
+catch), not the party. The presence lobby is the one lobby every online player sits in, and its creator
+hosts it. `PresenceLobbyService.LeaveAsync` DELETED it whenever the leaver was its host, so when ys1
+stopped Play (`HostConnectionService.OnDestroy` → `LeaveAsync`) it deleted the lobby under Caleb. Caleb was
+mid-match, where the refresh runs every 10 s: three `NotInLobby` errors 10 s apart, then the 3-strike
+`ForceReset` → `Reconnecting`. After the rejoin, `ApplyPostLobbyJoinState` cleared the "Connection lost"
+panel, but no code took the state machine out of `Reconnecting`, although the party (Relay) was still
+running. The converge path already refused to delete an occupied lobby for exactly this reason (B4); the
+leave path never got the same guard.
+
+**Fix.**
+- `PresenceLobbyService.DeletesOnLeave`: a host deletes the presence lobby only when alone in it. Otherwise
+  it leaves, and UGS Lobby makes another member the host.
+- `HostConnectionService.PresenceErrorForcesRejoin`: a presence refresh that answers Gone (`NotInLobby`,
+  `SessionNotFound`, deleted) rebuilds the presence layer at once instead of after three errors.
+- `LeaveReconnecting` after both background rejoins: `InParty` when the party session is still served,
+  `InPresenceLobby` otherwise (`StateAfterPresenceRejoin`). The front-door init keeps its own step.
+
+**Verified.** `PartyRefreshRecoveryTests`: the leave rule (an occupied lobby is never deleted), Gone
+versus other errors, and both ways out of `Reconnecting` are legal transitions. **Hand test:** two
+machines; the one that started first (it hosts the presence lobby) leaves a match mid-race and stops
+Play. The other stays `InParty` (`net_logs.py show`: no `->Reconnecting`, or one followed by
+`Reconnecting->InParty`), and its online list recovers within a refresh.
+
+## B33 — In the editor, a new Play starts inside the previous Play's party session 🟡 (observed 2026-10-16; root-caused & fixed 2026-10-17; needs an editor retest)
+
+**Seen in.** Caleb's second log (`net_20261016_215640_main.json`, a new Play after the session in B31/B32,
+nobody else joined). Within 1.9 s of Play the party went `Disconnected->InPresenceLobby->HostingParty->
+InParty`, straight into a party, before any join. At 4.9 s
+`[PartySessionService] UpdateLocalPlayerProperties failed: lobby not found` ×2 followed. Then came
+`Hosting<->InParty` churn and `Relay session not ready (attempt 1/3, 2/3) - retrying HCS init`. At
+31.7 s: `Party session gone server-side: lobby not found - auto-recovering to solo session`.
+
+**Likely cause.** The project enters Play without a domain reload (`ProjectSettings/EditorSettings.asset`:
+`m_EnterPlayModeOptions: 3`). The party layer has no `[RuntimeInitializeOnLoadMethod(SubsystemRegistration)]`
+reset, and the UGS SDK's own session state also outlives Play, so the new Play finds the old party
+session and tries to use it. The same carry-over made the session record hold the earlier Play's
+events and counters. The log writer now resets those at Play start.
+
+**Why it matters.** Editor only (a player build starts a fresh process), but every editor and MPPM
+multiplayer test after the first Play spends its first ~30 s recovering. Meanwhile its presence may
+advertise a dead party. That would explain Caleb's `direct-join -> ys1 failed: SessionNotFound (lobby
+not found)` at 33 s in the first log, if ys1 had just restarted Play (B29 family).
+
+**Root cause (2026-10-17).** `PartySessionService.ActiveSession` is stored on `GameDataSO.ActiveSession`,
+a property of the `Runtime GameData` asset. `ResetAllData` deliberately keeps it (the "Always InParty"
+lock), and an asset outlives Play in the Editor, so the new Play started holding the old Play's dead
+`ISession`. `UpdateLocalPlayerProperties` then hit its deleted lobby ("lobby not found", 4.9 s).
+`CreateAsync` returns early on any non-null session, so `EnsurePartySessionAsync` "created" nothing in
+3 ms and went `InParty` with no Relay host. The auth scene's "Relay session not ready ... retrying HCS
+init" then looped on it until the refresh saw the session gone at 31.7 s. Only then did a real Relay
+creation start (the QoS probe at 33.9 s). Reflex rebuilds its container every Play, so the services
+were fresh; the asset was not. `IsOfflineSession` and `HostConnectionDataSO`'s party flags (`IsPartyHost`,
+`IsSpectating`, ...) carried over the same way.
+
+**Fix.**
+- `GameDataSO` and `HostConnectionDataSO` clear that state in a `[RuntimeInitializeOnLoadMethod(SubsystemRegistration)]`
+  hook, as the project's other runtime-only state does (`SpectatorSession.ResetStatics` and friends). The
+  carried session is left in the background, so its lobby stops advertising a party.
+- `EnsurePartySessionAsync` leaves any session reference it is not serving before it creates its own, so
+  `CreateAsync` can never no-op into a fake `InParty` again (a guest's dropped session took the same path).
+
+**Verified.** `PartyRefreshRecoveryTests`: the hooks run at Play start and clear every loaded asset (an
+unloaded one is the negative control). **Hand test:** in the editor, Play, party up, stop, Play again.
+The second Play's `net_logs.py` log shows `HostingParty->InParty` more than a second apart (a real Relay
+creation), no "lobby not found", and no "Relay session not ready".
+
+**Also seen (2026-10-25, Bug Ledger `E-c2a4d444b8`, Yash; `E-81100c14a5`, Yash and Andrew).** Stopping Play while
+the game is still starting an online session logs `SessionException: Failed to start the network manager` (the
+SDK's `NetworkManagerSession.OnStopCompleted`: the NetworkManager shut down before its start finished) or
+`Cannot start when Singleton is not set` (the start began after the NetworkManager was gone). Both surface
+unobserved through `UniTaskExtensions.AsMainThread`, so the caller that started the session (boot's solo host,
+`MultiplayerSetup`, the presence or party create) is fire-and-forget at that moment and the 1,500-character stack
+excerpt does not name it. A teardown race, not a gameplay fault: the fix is for the starting caller to observe
+Play stopping (cancel, or catch `NetworkManagerStartFailed` while `IsQuitting`) - the same shape as B38.
+
+## B34 — `ObjectDisposedException` on a `$lobby` channel after Play stops 🟡 (root-caused 2026-10-17; the leak itself is B33)
+
+**Seen in.** Bug Ledger `E-c523697cae`, on every tester's branch (`bugledger/yskha`, `gradi`, `mrglo`,
+`belac`; 21 sightings by 2026-10-17), always in EDIT mode, some time after a Play that had a party:
+`ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!<lobby id>!!!…'`, from
+`Subscription.UnsubscribeAsync` ← `LobbyChannel.UnsubscribeAsync` ← `LobbyHandler.LobbyUnsubscribeCallbacksAsync`
+← `LobbyHandler.ResetAsync` ← `LobbyHandler.OnAccessTokenChanged`.
+
+**Cause, read in the package source** (`com.unity.services.wire` 1.5.1, `com.unity.services.multiplayer` 2.3.3):
+
+1. With no domain reload (`m_EnterPlayModeOptions: 3`) the Play's party session outlives Play (B33):
+   its `LobbyHandler` keeps `State != None` and its events subscription.
+2. Wire's `Centrifuge/Client.cs` handles `ExitingPlayMode` by disconnecting and **disposing every
+   subscription**.
+3. Later, in edit mode, the access token clears (it expires, or a sign-out), and the SDK's
+   `private async void OnAccessTokenChanged(null)` calls `ResetAsync`, which unsubscribes the disposed
+   subscription. `Subscription.UnsubscribeAsync` throws `ObjectDisposedException`; being `async void` inside
+   the SDK, nothing of ours can catch it, and Unity logs it.
+
+**What changed.** `UgsRequestPolicy.IsLobbyUnsubscribeAfterWireTeardown` names that one shape (an
+`ObjectDisposedException` whose stack has the SDK's `LobbyChannel` `UnsubscribeAsync` frame; held by
+`UgsRequestPolicyTests`, with negative controls), and `BenignLobbyLogFilter` drops its console copy, as it
+already does for the LobbyPatcher stale index (Presence B1). The error itself was harmless: the handler
+it fails to reset belongs to a session that no longer exists.
+
+**Still open.** The leak behind it is B33. When B33 leaves the SDK session cleanly as Play exits, this
+error has nothing left to fire on, and the filter rule can be deleted.
+
+## B35 — Every direct join fails with `NetworkConfig mismatch` 🟡 (root-caused & fixed 2026-10-24)
+
+**Seen in.** The multiplayer test logs of Caleb (`belac`) and Gradi, five two-machine tests from
+2026-10-21 to 2026-10-23, both editors on the same commit. Each time one of them direct-joins the other:
+the host logs `[Netcode] NetworkConfig mismatch. The configuration between the server and client does not
+match` (twice, once per connection attempt); the joiner logs `Received error message from Relay: not
+connected`, then `SessionException NetworkManagerStartFailed`, and its party falls back from
+`JoiningParty` to `HostingParty` alone. Later tries in the same Play add `SessionConflict: player is
+already a member` (the lobby join had succeeded; only Netcode failed). The 19-20 Oct tests had none.
+
+**Cause.** With `ForceSamePrefabs` on, the connection request carries a hash of the sorted
+`GlobalObjectIdHash` of every registered network prefab (NGO 2.13.3 `NetworkConfig.GetConfig`), and the
+host refuses any client whose hash differs. Each editor uses the hash IN MEMORY, and
+`NetworkObject.OnValidate` regenerates it from the prefab's GUID only in edit mode: it skips while
+entering Play. So a prefab first loaded as Play starts keeps its COMMITTED value, and one the editor had
+already loaded (selected it, opened a scene or a tool that holds it) carries the regenerated value.
+Eleven registered prefabs committed a value that is not the one Unity computes (AstroLeagueBall,
+Butterfly, Falcon, MassSharkFauna, NetworkVesselSpawner, Player, QuadFish, Rhino, Scarab, TadPoleFauna,
+Termite; AstroLeagueBall at 0). Two editors on the same commit therefore disagreed whenever their
+histories differed, and nothing said which prefab. Same mechanism, no logged proof of WHICH prefab
+differed in these tests: the logs carry only the host's one-line refusal.
+
+**What changed.**
+- The eleven prefabs carry the value Unity computes (`xxh32("GlobalObjectId_V1-1-<guid>-<fileID>-0")`,
+  checked against prefabs Unity regenerated itself), so every editor and every build agrees whatever it
+  loaded first. One line per prefab; no other field moved.
+- `Tools/Build/check_network_prefab_hashes.py` fails on a stale hash as well as a collision, and `--fix`
+  writes Unity's value (`--self-test` proves both fire, with negative controls).
+- Each peer's test log records `netConfig`: its config hash and the prefab keys inside it, once per
+  Netcode start (`MultiplayerSetup.MarkNetworkConfig`, pinned by `NetworkConfigMarkTests`).
+  `python3 Tools/Build/net_logs.py show <test>` prints `NetworkConfig differs between players (B35)` with
+  the keys only one player has, so a future mismatch names its prefab.
+
+**Hand test.** Two machines on this commit: one hosts a party, the other direct-joins (and once by
+accepting an invite). Pass: the joiner lands in the party, no `NetworkConfig mismatch` on the host. If it
+still fails, send the logs; `net_logs.py show` will name the prefab or setting.
+
+## B36 — The Relay drops the host after the game freezes 🟠 (root-caused 2026-10-25; the freeze itself is not fixed)
+
+**Seen in.** Bug Ledger `E-4d0d17e44b` ("Received error message from Relay: player timed out due to
+inactivity", 16 sightings), `E-0a098d80df` ("Relay allocation is invalid", 16), `E-fda866d511` ("Failed to
+establish connection with the Relay server", 11), `E-e5ff2abb8c` ("Transport failure! Relay allocation needs to
+be recreated", 10) and `E-e6054bc064` ("Host is shutting down due to network transport failure", 10). In the
+multiplayer test logs: the owner's 20 Oct test (`owner-20261020_195824`, solo against AI in Bloomrush) lost its
+host three times in 20 minutes, each time about 3 s after the Bloomrush scene was torn down (twice on the way
+back to the menu, once on a Bloomrush replay). Each ended in `Bouncing to solo menu: Connection lost`.
+
+**Not this bug.** The `Received error message from Relay: not connected` lines in Caleb's and Gradi's 21-23 Oct
+joins are the joiner's side of B35 (the host refused the connection).
+
+**Cause.**
+1. Unity Relay disconnects a player it has heard nothing from for about 10 s. Our UnityTransport pings the
+   Relay every 0.5 s (`m_HeartbeatTimeoutMS: 500` on `NetworkManager.prefab`; UTP 2.7.4 `RelayLayer` sends a
+   ping when nothing else went out). Those pings go out from the transport's update on the main thread, so
+   a frame that lasts 10 s sends nothing.
+2. The owner's Bloomrush flights record a mean frame of 190, 290, 273 and 300 ms (676 ms in one short run),
+   against 17-21 ms for every other mode on the same machine. Between "return to menu" (`AppState ->
+   MainMenu`) and the Bloomrush scene's unload, about 85 s passed with nothing logged. The Single-mode load's
+   final frame (destroy the Bloomrush scene, build Menu_Main, unload unused assets) is the likely 10 s freeze.
+   The logs had no frame timing, so this is inferred, not measured.
+3. Gradi's 19 Oct boot drop (`Failed to establish connection with the Relay server (server didn't answer any
+   BIND message)`) followed `HCS retry did not finish within 15s`: an allocation that sat unused about as
+   long. Same family, not proven.
+
+**What changed (2026-10-25).**
+- `FrameStallWatch` (`Assets/_Scripts/Utility/`): while the NetworkManager is listening, a frame of 3 s or
+  more is recorded in the session record as `stall` ("12.4s in MinigameBloomrush"). One of 9 s or more also
+  warns that Relay may drop the session. Resets at Play start; runs every frame from Play start.
+- `MultiplayerSetup.OnTransportFailure` records `relayDrop` with the freeze it followed ("after a 12.4 s freeze
+  2.9 s earlier") or "no freeze in the last 30 s".
+- `net_logs.py show` prints each player's `longest freeze` on its summary line.
+- Held by `FrameStallWatchTests` (5) and the `net_logs.py --self-test` checks.
+
+**Still open.** These changes make the next drop name its cause; they do not stop the freeze. If the next log
+shows a `stall` of 10 s before the `relayDrop`, the fix is in the freezing frame: profile the Bloomrush to
+menu load (`Docs/claude/SHADERS_AND_PERFORMANCE.md`, `/perf-hunt`) and why Bloomrush runs at 3-5 fps on that
+machine. If it shows "no freeze", the drop is a network fault and needs a different look.
+Tickets: T-20261025-482c (#1520, the retest) and T-20261024-0212 (#1495, Bloomrush's slow frames after the
+prism creation queue; it now also times the return to the menu).
+
+## B37 — "Could not create presence lobby: Object reference not set to an instance of an object" 🟡 (fixed 2026-10-25; cause likely, not proven)
+
+**Seen in.** Bug Ledger `E-6b79cd07f1` (Gradi, 5 times, and Shombith, twice, 2-11 Sep) and, in the same
+second as one of them, `E-ca3bc5cbe1` ("[INVITE-SEND] ABORT - presence lobby is null", Gradi, 11 Sep). Not seen
+since 11 Sep on any machine. Gradi's 13 Oct crash log shows the same create still failing for other reasons:
+`(0) Request timeout` and `An unknown error occurred`.
+
+**Cause.** `PresenceLobbyService.CreateAsync` logged `e.Message` only, so no report kept the frame that threw.
+What fits: `JoinOrCreateAsync` ran before Unity Services had initialized (or with nobody signed in). The SDK
+then has no session service to call, so the query threw a bare `NullReferenceException` (logged as "Join
+failed ... creating new lobby as fallback"), and the create threw the same one. Without a presence lobby, an
+invite aborts (the second issue). The party code was reworked since (every UGS call through
+`UgsRequestPolicy`, 7 Oct), so this is a likely cause, not a proven one.
+
+**Already fixed, 2026-10-08 (`ceabacdd50`).** A failed boot-time join left the player with no presence lobby
+for the whole session; it now retries with back-off (3 s up to 60 s, `SchedulePresenceRejoin`).
+
+**What changed (2026-10-25).**
+- `JoinOrCreateAsync` does not call the SDK until Unity Services are `Initialized` and a player is signed in
+  (`UgsNotReadyReason`); the lobby stays null and the rejoin back-off tries again.
+- A create failure the rejoin recovers from (`Transient`, `RateLimited`, `Benign`, `Cancelled`; Gradi's timeouts)
+  is a one-line warning. Anything else, a bare `NullReferenceException` included, is logged with the whole
+  exception, so a recurrence names its frame.
+- `SendInviteAsync` with no presence lobby is a warning naming whether a rejoin is pending, and the friends
+  panel shows its authored `serviceNotReadyLine` ("Connection service not ready. Try again shortly.") instead
+  of silently resetting the row. `HostConnectionService.HasPresenceLobby` is the public read for it.
+- Held by `PresenceLobbyCreateTests` (2).
+
+**Hand test.** Start Play with the network cable out (or Wi-Fi off), wait 10 s, plug it back in: no
+`Could not create presence lobby` error; a `Presence lobby not rejoined - retrying` warning, then the online list
+fills. Press Invite on a friend during the outage: the "Connection service not ready" toast.
+Ticket: T-20261025-3506 (#1524).
+
+## B38 — "Recovery failed" when Play stops during a failed join's recovery 🟡 (root-caused & fixed 2026-10-25)
+
+**Seen in.** Bug Ledger `E-41b7610878` (belac, 19 Oct: `Recovery failed (InvalidOperationException): This can
+only be used during play mode, please use EditorSceneManager.OpenScene() instead`, at
+`PartyInviteController.RecoverFromFailedTransitionAsync`, the Menu_Main load) and `E-0de9ec6c70` (Gradi, 3
+times, 2-28 Sep: `Recovery failed (ArgumentNullException): Value cannot be null. Parameter name:
+asyncOperation`). Both are marked **EditMode** in the ledger: they were logged after Play had stopped.
+
+**Cause.** After a failed join (or a lost host, B10), `RecoverFromFailedTransitionAsync` awaits the party
+leave and the Netcode shutdown (up to its shutdown timeout), then loads Menu_Main, then creates the solo
+session. The leave-lobby flow does the same. Stopping Play inside those awaits let the flow continue in edit
+mode: `SceneManager.LoadSceneAsync` throws there (Unity 6000.4), or returns null and UniTask's `ToUniTask`
+throws on it (6000.3). Had the load not thrown, `EnsurePartySessionAsync` would then have created a UGS
+session in edit mode, where nothing ever leaves it (the leak class behind B33/B34).
+
+**What changed.** `PartyInviteController.PlayEnded(flow)` is checked after every await in both flows and in
+their catch blocks: once Play has stopped (`IsPlaying`, Unity's flag; tests substitute it) or the controller
+is destroyed, the flow stops with a verbose line on the `Party` channel instead of loading a scene or
+creating a session. Held by `PartyRecoveryAfterPlayTests` (3). `ReconnectService`'s scene load is started by a
+button and has no report; it is unchanged.
+
+**Hand test.** Two machines: one joins a party that is not there (or the host stops Play mid-join), and the
+joiner stops Play while "Bouncing to solo menu" is on screen. No `Recovery failed` error in the console after
+Play stops.
+Ticket: T-20261025-6541 (#1527).
+

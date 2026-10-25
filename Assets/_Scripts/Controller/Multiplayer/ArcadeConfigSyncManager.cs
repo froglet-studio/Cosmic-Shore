@@ -120,8 +120,20 @@ namespace CosmicShore.Gameplay
             /// under-counts humans draws phantom AI avatars nobody ever spawns.
             /// </summary>
             public int  HumanCount;
+            /// <summary>
+            /// How well the AI flies (<c>CosmicShore.Data.AIDifficulty</c> as an int), the host's
+            /// pick on the launch panel. Replicated so a guest's panel shows the bots it is about
+            /// to race, and an int (not the enum) so the struct stays a plain value every
+            /// reflection test can mutate. 0 = unset; readers resolve it through
+            /// <c>AIDifficultyRules.Resolve</c>.
+            /// </summary>
+            public int  AIDifficulty;
             public int  AiCount;
             public int  Ai0, Ai1, Ai2, Ai3, Ai4, Ai5;
+            /// <summary>The hull picked for each placed AI (VesselClassType as int; 0 = Random,
+            /// no pick), parallel to the domain slots - so every peer's chips show the hull a
+            /// teammate picked for an ally.</summary>
+            public int  AiV0, AiV1, AiV2, AiV3, AiV4, AiV5;
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
             {
@@ -133,6 +145,7 @@ namespace CosmicShore.Gameplay
                 serializer.SerializeValue(ref MaxPlayers);
                 serializer.SerializeValue(ref DomainCount);
                 serializer.SerializeValue(ref HumanCount);
+                serializer.SerializeValue(ref AIDifficulty);
                 serializer.SerializeValue(ref AiCount);
                 serializer.SerializeValue(ref Ai0);
                 serializer.SerializeValue(ref Ai1);
@@ -140,16 +153,25 @@ namespace CosmicShore.Gameplay
                 serializer.SerializeValue(ref Ai3);
                 serializer.SerializeValue(ref Ai4);
                 serializer.SerializeValue(ref Ai5);
+                serializer.SerializeValue(ref AiV0);
+                serializer.SerializeValue(ref AiV1);
+                serializer.SerializeValue(ref AiV2);
+                serializer.SerializeValue(ref AiV3);
+                serializer.SerializeValue(ref AiV4);
+                serializer.SerializeValue(ref AiV5);
             }
 
             public bool Equals(LobbySnapshot o) =>
                 Generation == o.Generation && IsOpen == o.IsOpen && GameMode == o.GameMode &&
                 Intensity == o.Intensity && PlayerCount == o.PlayerCount && MaxPlayers == o.MaxPlayers &&
-                DomainCount == o.DomainCount && HumanCount == o.HumanCount && SameAi(o);
+                DomainCount == o.DomainCount && HumanCount == o.HumanCount &&
+                AIDifficulty == o.AIDifficulty && SameAi(o);
 
             public bool SameAi(LobbySnapshot o) =>
                 AiCount == o.AiCount && Ai0 == o.Ai0 && Ai1 == o.Ai1 && Ai2 == o.Ai2 && Ai3 == o.Ai3 &&
-                Ai4 == o.Ai4 && Ai5 == o.Ai5;
+                Ai4 == o.Ai4 && Ai5 == o.Ai5 &&
+                AiV0 == o.AiV0 && AiV1 == o.AiV1 && AiV2 == o.AiV2 && AiV3 == o.AiV3 &&
+                AiV4 == o.AiV4 && AiV5 == o.AiV5;
 
             /// <summary>The placed AI domains as the modal consumes them (Domains as ints, placement order).</summary>
             public int[] PlacedAiDomains()
@@ -175,6 +197,30 @@ namespace CosmicShore.Gameplay
             }
 
             int Slot(int i) => i switch { 0 => Ai0, 1 => Ai1, 2 => Ai2, 3 => Ai3, 4 => Ai4, _ => Ai5 };
+
+            /// <summary>The ally-hull picks, one per placed AI (VesselClassType as ints).</summary>
+            public int[] PlacedAiVessels()
+            {
+                int n = Mathf.Clamp(AiCount, 0, MaxAiSlots);
+                var result = new int[n];
+                for (int i = 0; i < n; i++) result[i] = VesselSlot(i);
+                return result;
+            }
+
+            /// <summary>Write the ally-hull picks. Entries past <c>AiCount</c> are ignored when
+            /// read; a short or null array leaves the rest at Random (0).</summary>
+            public void SetPlacedAiVessels(int[] vessels)
+            {
+                int n = vessels == null ? 0 : Mathf.Min(vessels.Length, MaxAiSlots);
+                AiV0 = n > 0 ? vessels[0] : 0;
+                AiV1 = n > 1 ? vessels[1] : 0;
+                AiV2 = n > 2 ? vessels[2] : 0;
+                AiV3 = n > 3 ? vessels[3] : 0;
+                AiV4 = n > 4 ? vessels[4] : 0;
+                AiV5 = n > 5 ? vessels[5] : 0;
+            }
+
+            int VesselSlot(int i) => i switch { 0 => AiV0, 1 => AiV1, 2 => AiV2, 3 => AiV3, 4 => AiV4, _ => AiV5 };
         }
 
         /// <summary>Server-written; every peer reads. See the class summary for why this is state.</summary>
@@ -244,12 +290,28 @@ namespace CosmicShore.Gameplay
         public event System.Action<int> OnIntensityChangedOnClient;
 
         /// <summary>
+        /// Raised on clients when the host picks a different AI difficulty while the lobby is
+        /// open. Arg: the difficulty as an int (<c>CosmicShore.Data.AIDifficulty</c>). A lobby
+        /// that OPENS carries its difficulty in <see cref="CurrentLobby"/>, which the open
+        /// handler reads directly - this is only the change.
+        /// </summary>
+        public event System.Action<int> OnAIDifficultyChangedOnClient;
+
+        /// <summary>
         /// Raised on clients when the host reshapes the roster mid-lobby - an AI placed on a
         /// domain, or one kicked. Args: playerCount, domainCount, placed AI domains (as ints,
         /// in placement order), so a client's tile chips redraw in real time to exactly what
         /// the host is looking at.
         /// </summary>
-        public event System.Action<int, int, int[]> OnRosterChangedOnClient;
+        public event System.Action<int, int, int[], int[]> OnRosterChangedOnClient;
+
+        /// <summary>
+        /// Raised on the HOST when a pilot asks to step an ally AI's hull (the launch panel's
+        /// ally chip). Args: requesting client id, AI ordinal, direction (+1 / -1). The host's
+        /// modal owns the roster, so it decides - the seat must be on the requester's domain -
+        /// and re-broadcasts through <see cref="NotifyRosterChanged"/>.
+        /// </summary>
+        public event System.Action<ulong, int, int> OnAllyVesselCycleRequested;
 
         void Awake()
         {
@@ -320,9 +382,11 @@ namespace CosmicShore.Gameplay
         /// True when this peer is a CLIENT in a live party - the one case in which tapping an
         /// arcade card must NOT open the configure modal, because only the host configures.
         ///
-        /// Deliberately NOT <c>HostConnectionDataSO.IsPartyHost</c>: that field is written by
-        /// nothing outside the edit-mode tests, so a gate built on it would read false for the
-        /// host as well and silently stand the whole arcade down. Under the locked EAGER-Relay
+        /// Read off the transport, not <c>HostConnectionDataSO.IsPartyHost</c>: that flag is the
+        /// party layer's bookkeeping (HostConnectionService sets it when this peer creates its own
+        /// Relay session and clears it on joining someone else's), so it lags the transport across
+        /// a join/leave and is never set on an offline host. NetworkManager answers the question
+        /// actually being asked - "is somebody else the server?". Under the locked EAGER-Relay
         /// design a solo player IS the server, so this is also correctly false offline and in
         /// single player.
         /// </summary>
@@ -396,6 +460,18 @@ namespace CosmicShore.Gameplay
             // A member who leaves mid-lobby is neither ready nor expected any more.
             if (_isCommitted && (_readyClients.Remove(clientId) || _lobby.Value.IsOpen))
             {
+                // The commit-time head-count is a FLOOR for members still connecting, never a
+                // reason to keep waiting on somebody who has left. Without this clamp
+                // ExpectedHumanCount stayed Max(committed, connected) = the committed count after
+                // a departure, so the re-decide below could never pass: four in the lobby, three
+                // press Start, the fourth leaves, and the lobby sat at 3/4 forever (B20's lobby
+                // half; found by Tools/Build/prisma_party_scenarios T4-lobby, 2026-10-08).
+                // NGO removes the id from ConnectedClientsIds before this callback runs
+                // (NetworkConnectionManager.OnClientDisconnectFromServer), so this is the
+                // post-departure count.
+                _committedHumanCount = Mathf.Min(_committedHumanCount,
+                    SpectatorSession.CountHumanClients(NetworkManager.Singleton));
+
                 RepublishHumanCount();
                 SyncReadyCount_ClientRpc(_readyClients.Count, ExpectedHumanCount);
 
@@ -425,6 +501,11 @@ namespace CosmicShore.Gameplay
             if (!IsServer || !_isCommitted) return;
 
             int expected = ExpectedHumanCount;
+            // Every re-decision is traced, the hold as much as the launch: a gate that holds in
+            // silence is how B20's lobby half went unseen (MultiplayerMiniGameControllerBase's
+            // match gate logs the same line).
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[ArcadeConfigSync] Lobby gate ({because}): {_readyClients.Count}/{expected}");
             if (expected <= 0 || _readyClients.Count < expected) return;
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
@@ -506,7 +587,8 @@ namespace CosmicShore.Gameplay
         /// at the _isCommitted gate.
         /// </summary>
         public void CommitConfiguration(int gameMode, int intensity, int playerCount,
-                                        int maxPlayers, int humanCount, int domainCount)
+                                        int maxPlayers, int humanCount, int domainCount,
+                                        int aiDifficulty)
         {
             if (!IsServer) return;
 
@@ -553,6 +635,7 @@ namespace CosmicShore.Gameplay
                 MaxPlayers  = maxPlayers,
                 DomainCount = domainCount,
                 HumanCount  = Mathf.Max(1, SpectatorSession.CountHumanClients(NetworkManager.Singleton)),
+                AIDifficulty = aiDifficulty,
             };
         }
 
@@ -604,12 +687,15 @@ namespace CosmicShore.Gameplay
             if (previous.Intensity != next.Intensity)
                 OnIntensityChangedOnClient?.Invoke(next.Intensity);
 
+            if (previous.AIDifficulty != next.AIDifficulty)
+                OnAIDifficultyChangedOnClient?.Invoke(next.AIDifficulty);
+
             // HumanCount is not carried by the event - a client reads it off CurrentLobby - but a
             // change to it still reshapes the roster (seats minus humans is the AI count), so it
             // has to be one of the things that asks for a redraw.
             if (previous.PlayerCount != next.PlayerCount || previous.DomainCount != next.DomainCount ||
                 previous.HumanCount != next.HumanCount || !previous.SameAi(next))
-                OnRosterChangedOnClient?.Invoke(next.PlayerCount, next.DomainCount, next.PlacedAiDomains());
+                OnRosterChangedOnClient?.Invoke(next.PlayerCount, next.DomainCount, next.PlacedAiDomains(), next.PlacedAiVessels());
         }
 
         void RaiseOpened(LobbySnapshot lobby)
@@ -624,7 +710,7 @@ namespace CosmicShore.Gameplay
             OnConfigOpenedOnClient?.Invoke(lobby.GameMode, lobby.Intensity, lobby.PlayerCount, lobby.MaxPlayers, lobby.DomainCount);
 
             if (lobby.AiCount > 0)
-                OnRosterChangedOnClient?.Invoke(lobby.PlayerCount, lobby.DomainCount, lobby.PlacedAiDomains());
+                OnRosterChangedOnClient?.Invoke(lobby.PlayerCount, lobby.DomainCount, lobby.PlacedAiDomains(), lobby.PlacedAiVessels());
         }
 
         /// <summary>
@@ -652,11 +738,25 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Called by ArcadeGameConfigureModal on the host whenever the AI difficulty changes while
+        /// the lobby is open, so every guest's panel shows the bots they are about to race.
+        /// </summary>
+        public void NotifyAIDifficultyChanged(int aiDifficulty)
+        {
+            if (!IsServer) return;
+            var snapshot = _lobby.Value;
+            if (!snapshot.IsOpen || snapshot.AIDifficulty == aiDifficulty) return;
+            snapshot.AIDifficulty = aiDifficulty;
+            _lobby.Value = snapshot;
+        }
+
+        /// <summary>
         /// Called by ArcadeGameConfigureModal on the host after every Add AI placement or kick,
         /// so clients' chips follow the host's roster live rather than freezing at the counts
         /// the open RPC carried.
         /// </summary>
-        public void NotifyRosterChanged(int playerCount, int domainCount, int[] placedAiDomains)
+        public void NotifyRosterChanged(int playerCount, int domainCount, int[] placedAiDomains,
+                                        int[] placedAiVessels = null)
         {
             if (!IsServer) return;
             var snapshot = _lobby.Value;
@@ -664,8 +764,30 @@ namespace CosmicShore.Gameplay
             snapshot.PlayerCount = playerCount;
             snapshot.DomainCount = domainCount;
             snapshot.SetPlacedAiDomains(placedAiDomains);
+            snapshot.SetPlacedAiVessels(placedAiVessels);
             if (snapshot.Equals(_lobby.Value)) return;
             _lobby.Value = snapshot;
+        }
+
+        /// <summary>
+        /// Ask the host to step ally AI <paramref name="aiOrdinal"/>'s hull by
+        /// <paramref name="direction"/>. The host raises <see cref="OnAllyVesselCycleRequested"/>
+        /// for itself; a guest sends it over the wire. The host validates either way.
+        /// </summary>
+        public void RequestAllyVesselCycle(int aiOrdinal, int direction)
+        {
+            if (!IsSpawned) return;
+            if (IsServer)
+                OnAllyVesselCycleRequested?.Invoke(NetworkManager.Singleton.LocalClientId, aiOrdinal, direction);
+            else
+                RequestAllyVesselCycle_ServerRpc(aiOrdinal, direction);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void RequestAllyVesselCycle_ServerRpc(int aiOrdinal, int direction, ServerRpcParams rpcParams = default)
+        {
+            if (!IsServer || !_lobby.Value.IsOpen) return;
+            OnAllyVesselCycleRequested?.Invoke(rpcParams.Receive.SenderClientId, aiOrdinal, direction);
         }
 
         #endregion

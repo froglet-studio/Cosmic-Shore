@@ -72,13 +72,14 @@ namespace CosmicShore.Utility
         /// Where the corridor opens onto for the VIEW being drawn: the vessel, seen through any
         /// portal the gameplay camera has not reached yet.
         ///
-        /// <para>A Butterfly fold gate moves the ship the instant it crosses, while the chase
-        /// camera trails it through the mouth a moment later (<c>CustomCameraController.
-        /// CarryThroughPortal</c>). For that moment the camera and the ship are on opposite sides
-        /// of the world, and a corridor drawn between them would dissolve a tube of prisms across
-        /// the whole arena. The camera is framing the ship at its position mapped BACK through the
-        /// pair, so that is where the corridor must open too — it is still exactly the camera→ship
-        /// segment the pilot is looking down, just measured in the frame the camera is in.</para>
+        /// <para>A wormhole (the pair a Butterfly fold leaves) moves the ship the instant it
+        /// enters, while the chase camera trails it through the mouth a moment later
+        /// (<c>CustomCameraController.CarryThroughSphere</c>). For that moment the camera and the
+        /// ship are on opposite sides of the world, and a corridor drawn between them would
+        /// dissolve a tube of prisms across the whole arena. The camera is framing the ship at its
+        /// position mapped BACK through the pair, so that is where the corridor must open too — it
+        /// is still exactly the camera→ship segment the pilot is looking down, just measured in the
+        /// frame the camera is in.</para>
         /// </summary>
         public static Vector3 ViewTargetPosition =>
             _target ? _target.position - _viewShift : Vector3.zero;
@@ -118,6 +119,49 @@ namespace CosmicShore.Utility
 
         /// <summary>True while the corridor is publishing a live cone.</summary>
         public static bool IsActive => _publishedActive;
+
+        static bool _viewOverride;
+        static Vector4 _savedTarget, _savedParams;
+        static float _savedNearRadius;
+
+        /// <summary>
+        /// Re-shape the corridor for ONE camera's render: a second view of the bound vessel's own play that looks
+        /// down a different line. The Kite's navigator board is the one caller (Controller/Vessel/Crew/
+        /// KiteNavigatorView.cs, PRISM_ANIMATION.md §4.7): a top-down orthographic camera over the hull's plane,
+        /// where the prisms between the lens and the plane hide the board the navigator flies on, so its corridor is
+        /// a cone from that lens down to the plane, sized to the board, and the mass above the plane dithers.
+        ///
+        /// <para>Identity-guarded like <see cref="SetViewShift"/>: only the bound vessel (or a child) may re-shape
+        /// it, so no mode gains a way to point the corridor somewhere else. Honours <see cref="SetSuppressed"/>.
+        /// Saves what was published and <see cref="EndViewOverride"/> restores it, so the cameras that render
+        /// after it (the pilot's, the Scene view) draw the corridor they always did. Call from
+        /// <c>RenderPipelineManager.beginCameraRendering</c> for that camera only, and pair it with the end
+        /// callback.</para>
+        /// </summary>
+        public static bool BeginViewOverride(Transform subject, Vector3 target, float outerRadius, float innerRadius,
+                                             float coreAlpha, float nearRadius)
+        {
+            if (_viewOverride || _suppressed || !subject || !_target) return false;
+            if (subject != _target && !subject.IsChildOf(_target)) return false;
+            _savedTarget = Shader.GetGlobalVector(TargetId);
+            _savedParams = Shader.GetGlobalVector(ParamsId);
+            _savedNearRadius = Shader.GetGlobalFloat(NearRadiusId);
+            _viewOverride = true;
+            Shader.SetGlobalVector(TargetId, new Vector4(target.x, target.y, target.z, 0f));
+            Shader.SetGlobalVector(ParamsId, new Vector4(outerRadius, Mathf.Min(innerRadius, outerRadius), Mathf.Clamp01(coreAlpha), 0f));
+            Shader.SetGlobalFloat(NearRadiusId, Mathf.Clamp(nearRadius, 0f, outerRadius));
+            return true;
+        }
+
+        /// <summary>Restore the corridor <see cref="BeginViewOverride"/> replaced. A no-op without one.</summary>
+        public static void EndViewOverride()
+        {
+            if (!_viewOverride) return;
+            _viewOverride = false;
+            Shader.SetGlobalVector(TargetId, _savedTarget);
+            Shader.SetGlobalVector(ParamsId, _savedParams);
+            Shader.SetGlobalFloat(NearRadiusId, _savedNearRadius);
+        }
 
         /// <summary>
         /// The bound vessel's circumscribing radius in world units — the sphere that encloses
@@ -305,6 +349,7 @@ namespace CosmicShore.Utility
 
         static void PublishOff()
         {
+            _viewOverride = false;
             Shader.SetGlobalVector(TargetId, Vector4.zero);
             Shader.SetGlobalVector(ParamsId, Vector4.zero); // x <= 0 is the shader's "off" sentinel
             Shader.SetGlobalFloat(NearRadiusId, 0f);

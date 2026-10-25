@@ -43,7 +43,7 @@ other domain minigame.
   (480→720) while the crystal count falls (`CrystalCountMode.IntensityScaled`: 4 players get
   7 / 6 / 4 / 2), so intensity 1 is a small court thick with balls and intensity 4 is a big court
   where every ring has to be aimed at a line somebody will actually fly — and each setting grows
-  **its own anchor species**, one per growth family (Spire → Gyroid → Cacti → Quasicrystal), so
+  **its own anchor species**, one per growth family (Spire → Gyroid → Cacti → Borromean), so
   it is visibly a different *kind* of place rather than the same court at four sizes
 
 ## Anchors — the rule the mode turns on, and the one it shipped without
@@ -91,31 +91,45 @@ one.*
 Intensity in this mode is **traffic**, and the anchor field is what a pilot reads the court by,
 so each of the four settings grows a different species and the marker **gets bigger as the court
 does** — a plant two hundred units further away has to read correspondingly larger. The four are
-not four variations on one growth rule: the project ships **three flora growth families** and all
-three are represented, so a pilot at intensity 3 is flying through a cactus grove and one at
-intensity 4 through a lattice of needles.
+not four variations on one growth rule: the project ships **five flora growth families** and four
+intensities show four of them, one each, so a pilot at intensity 3 is flying through a cactus grove
+and one at intensity 4 through a field of closed minimal membranes.
 
 | Intensity | Court | Species | Growth family | Prisms/plant | Leaf vol | One plant | Standing forest |
 |---|---|---|---|---|---|---|---|
 | 1 | 480u | **Spire** | `PhyllotacticFlora` | 40 | 14.26 | 570 vol | 560 prisms / 7,986 vol |
 | 2 | 560u | **Gyroid** | `AssembledFlora` | 30 | 50.27 | 1,508 vol | 420 prisms / 21,113 vol |
 | 3 | 640u | **Cacti** | `BranchingFlora` | 40 | 75.00 | 3,000 vol | 560 prisms / 42,000 vol |
-| 4 | 720u | **Quasicrystal** | `AssembledFlora` | 110 | 46.39 | 5,103 vol | 1,540 prisms / 71,441 vol |
+| 4 | 720u | **Borromean** | `BorromeanFlora` | 261 (mean of 180/216/288/360) | 21.50 (effective) | 5,611 vol | 3,654 prisms / 78,558 vol |
 
-Gyroid and Quasicrystal share a growth *component* and share nothing a player can see — one is a
-smooth minimal surface of 7×4.5×3.5 plates, the other an aperiodic cage whose struts run to 44
-units. The generator asserts the roster spans as many families as four intensities can, and that
-no family takes more than an even share; both bars are **derived from what the project ships**
-(it counts the distinct `Flora` subclasses across the flora prefabs) rather than written as
-literals, so adding a fourth family tightens the gate on its own.
+**I4 was the Quasicrystal** (`AssembledFlora`, 110 prisms, 71,441 vol) while the project shipped
+three families. The Borromean and Mandelbulb families landed afterwards, and the generator's family
+gate — which is **derived from what the project ships** (it counts the distinct `Flora` subclasses
+across the flora prefabs) rather than written as a literal — tightened on its own exactly as
+designed: two of four settings growing `AssembledFlora` became a repeat, and `--check` went red
+(*"the four intensities span only 3 growth families … of the 5 the project ships"*). The content
+moved rather than the gate: the Borromean took I4 because a Mandelbulb-family plant is a
+2,900–4,150-prism budget (fourteen of them is a 40–58k-prism anchor field), against the
+Borromean's 180–360, and because it is the candidate that keeps the one-plant volume ladder rising
+(5.6k against the Cacti's 3k). The Gyroid keeps I2, so the intensity-2 arena the card art renders
+from is unchanged.
 
-**A lattice species keeps its own per-plant budget; the other two take the cell's.** A gyroid
-octagon is 24 prisms around one crystal and a quasicrystal heart cell is one vertex's tree of
-struts (`Docs/ECOSYSTEM.md` §32.7/§36), so a cell-imposed number does not thin those plants, it
+The Borromean is the first anchor species whose **elements grow different budgets** (each element
+is a finished closed membrane on its own plate — flora skill §7.1, *quote the per-plant budget,
+never re-author it*), so the generator now prices a plant **per element and averages**, because
+`SpreadElements` rolls the four uniformly. Multiplying a mean budget by a mean leaf would price a
+product of means (≈6,240 vol) rather than the mean plant (5,611). For the three uniform-budget
+species the two are identical and their ladders did not move. The anchor config **quotes** the four
+canonical `Borromean Flora <Element>` assets through its palette (owned by
+`author_borromean_flora_assets.py`), it does not fork them.
+
+**A lattice or surface species keeps its own per-plant budget; the other two take the cell's.** A
+gyroid octagon is 24 prisms around one crystal and a Borromean element is a finished closed
+membrane (`Docs/ECOSYSTEM.md` §32.7/§36), so a cell-imposed number does not thin those plants, it
 truncates a shape mid-figure — *plant count is the only lever*. Spire and Cacti grow to whatever
 budget they are handed, and 40 keeps them markers rather than scenery. That is also why **both
 ladders are now per-intensity**: the previous single-family roster grew 560 prisms at every
-setting so the count ladder could be shared, and a Quasicrystal field is 1,540 against a Gyroid's
+setting so the count ladder could be shared, and a Borromean field is 3,654 against a Gyroid's
 420.
 
 Every number in that table is **read out of the shipped assets** by
@@ -249,8 +263,8 @@ survive — a standard crystal respawns in the nucleus volume — is accepted: i
 volume a court-mode has already filled with play, not mass the ecology cannot reach.
 
 **What the anchors cost.** 14 plants at every intensity, but a different KIND of plant at each,
-so the mass differs where the collider count does not: **560 / 420 / 560 / 1,540 prisms** and
-**7,986 / 21,113 / 42,000 / 71,441 volume** (Spire / Gyroid / Cacti / Quasicrystal), standing from
+so the mass differs where the collider count does not: **560 / 420 / 560 / 3,654 prisms** and
+**7,986 / 21,113 / 42,000 / 78,558 volume** (Spire / Gyroid / Cacti / Borromean), standing from
 the first seconds and folded into both bands of the cell's ladder rather than left for it to
 discover — which is why BOTH ladders are per-intensity here and not just the volume one. Collider
 budget: **14 always-on** heart colliders (one per plant) at every setting, which is the number that
@@ -429,30 +443,30 @@ would be crossed before the race was half run — after which the ladder conveys
 in the currency this mode actually runs on, at **50,773 volume and 255 prisms per monument**, and
 including the standing anchor forest, because that mass is present from the first seconds at
 every phase. **Both** ladders are per-intensity: the four species differ in how many prisms they
-grow *and* how big each one is, so a Quasicrystal field is 1,540 prisms against a Gyroid's 420 and
-one shared count backstop would be four times too tight at one end and slack at the other.
+grow *and* how big each one is, so a Borromean field is 3,654 prisms against a Gyroid's 420 and
+one shared count backstop would be far too tight at one end and slack at the other.
 
-| gate | arithmetic | I1 Spire | I2 Gyroid | I3 Cacti | I4 Quasicrystal |
+| gate | arithmetic | I1 Spire | I2 Gyroid | I3 Cacti | I4 Borromean |
 |---|---|---|---|---|---|
-| standing anchor forest | 14 plants × budget × leaf volume | 7,986 | 21,113 | 42,000 | 71,441 |
-| `RestlessEnterVolume` | 12,000 trail band + anchors + **3** monuments | **172,000** | **185,000** | **206,000** | **236,000** |
-| `RestlessExitVolume` | enter − 4,000 | 168,000 | 181,000 | 202,000 | 232,000 |
-| `FrenzyEnterVolume` | 36,000 trail band + anchors + **7** monuments | **399,000** | **413,000** | **433,000** | **463,000** |
-| `FrenzyExitVolume` | enter − 6,000 | 393,000 | 407,000 | 427,000 | 457,000 |
+| standing anchor forest | 14 plants × mean per-element (budget × leaf volume) | 7,986 | 21,113 | 42,000 | 78,558 |
+| `RestlessEnterVolume` | 12,000 trail band + anchors + **3** monuments | **172,000** | **185,000** | **206,000** | **243,000** |
+| `RestlessExitVolume` | enter − 4,000 | 168,000 | 181,000 | 202,000 | 239,000 |
+| `FrenzyEnterVolume` | 36,000 trail band + anchors + **7** monuments | **399,000** | **413,000** | **433,000** | **470,000** |
+| `FrenzyExitVolume` | enter − 6,000 | 393,000 | 407,000 | 427,000 | 464,000 |
 
-| count backstop | arithmetic | I1 Spire | I2 Gyroid | I3 Cacti | I4 Quasicrystal |
+| count backstop | arithmetic | I1 Spire | I2 Gyroid | I3 Cacti | I4 Borromean |
 |---|---|---|---|---|---|
-| standing anchor forest | 14 plants × budget | 560 | 420 | 560 | 1,540 |
-| `RestlessEnter` | 900 + anchors + 3 × 255 × ~1.6 headroom | **2,680** | **2,540** | **2,680** | **3,660** |
-| `RestlessExit` | enter − 100 | 2,580 | 2,440 | 2,580 | 3,560 |
-| `FrenzyEnter` | 3,000 + anchors + 7 × 255 × ~1.6 | **6,420** | **6,280** | **6,420** | **7,400** |
-| `FrenzyExit` | enter − 210 | 6,210 | 6,070 | 6,210 | 7,190 |
+| standing anchor forest | 14 plants × mean budget | 560 | 420 | 560 | 3,654 |
+| `RestlessEnter` | 900 + anchors + 3 × 255 × ~1.6 headroom | **2,680** | **2,540** | **2,680** | **5,780** |
+| `RestlessExit` | enter − 100 | 2,580 | 2,440 | 2,580 | 5,680 |
+| `FrenzyEnter` | 3,000 + anchors + 7 × 255 × ~1.6 | **6,420** | **6,280** | **6,420** | **9,510** |
+| `FrenzyExit` | enter − 210 | 6,210 | 6,070 | 6,210 | 9,300 |
 
 The generator also asserts the forest is under **half** of its own `RestlessEnterVolume` — folded
 into the threshold, a forest big enough to be most of it would make the ladder describe the
 scenery rather than the match, which is the Lattice cell's "no single colony's own ceiling may
 reach `FrenzyEnterVolume`" (`Docs/ECOSYSTEM.md` §36) applied one arena down. The shipped worst
-case is the Quasicrystal at 30%.
+case is the Borromean at 32%.
 
 The trail band and the headroom factor are Scramble's, unchanged; only the monument count and the
 anchor forest differ. Both monument budgets are **fractions of a maximum-length match** rather
@@ -477,8 +491,8 @@ Crystals spawn inside the court by the platform's own rule (the omni respawn vol
 nucleus), count per intensity, neutral domain.
 
 **Collider budget.** The arena's growth is bounded **by the win condition, not by a culler**: at
-most 10 monuments (4 + 3 + 3) × 255 prisms = **2,550 prisms**, plus the standing **560** anchor
-prisms — comparable to Cleave's arenas (14,277–16,423) and well inside Atlantis (~69k). A
+most 10 monuments (4 + 3 + 3) × 255 prisms = **2,550 prisms**, plus the standing **420–3,654** anchor
+prisms (I2 Gyroid … I4 Borromean) — comparable to Cleave's arenas (14,277–16,423) and well inside Atlantis (~69k). A
 typical match lands nearer 10–14 monuments. The anchors add **14 always-on** colliders (one heart
 each); their body prisms are LOD-cullable boxes. Rings themselves cost nothing — `ToyFactory.AddSwitchRing` is a generated mesh with
 **no collider**, which is also why a vessel flies straight through one and only a ball can
@@ -510,14 +524,16 @@ are bounded by `MaxLivePopulation`.
    crystals appear inside it; no console errors.
 3. **Find the anchors**: scattered through the court are **14 plants of this intensity's own
    species** — I1 Spire (a phyllotactic pillar), I2 Gyroid (a minimal-surface plate colony), I3
-   Cacti (a squat branching cactus), I4 Quasicrystal (an aperiodic needle cage) — in a band
+   Cacti (a squat branching cactus), I4 Borromean (a closed membrane of combed plates, a
+   different plate and size per element) — in a band
    roughly 192–408 u from the middle, inside the court wall and well clear of the core. Confirm
    they are INSIDE the court (the `NucleusIsControlZone` planting fix) rather than ringing it from
    outside, that each carries a visible elemental crystal, and that **switching intensity switches
    the species to a visibly different kind of plant** — this is the one step that catches a wrong
    `FloraPrefab` component fileID, which resolves to no component at all and grows nothing.
-   The two lattice species grow to their OWN budget (30 and 110 prisms) rather than the cell's 40,
-   so I2 and I4 should read as denser structures, not as bigger versions of I1.
+   The two lattice/surface species grow to their OWN budget (Gyroid 30; Borromean 180/216/288/360
+   by element) rather than the cell's 40, so I2 and I4 should read as denser structures, not as
+   bigger versions of I1 — and at I4 the four elements should look visibly unlike one another.
 4. **Placement is refused away from a plant**: press the switch control (A / Button1) in open
    space. **Nothing happens and no charge is spent**, and a toast reads *"No plant on this line —
    fly at one and plant your ring"* (rate-limited to one per 4 s).
@@ -634,8 +650,8 @@ are bounded by `MaxLivePopulation`.
   passes through and resolves that mass by domain instead: an opposing plant is destroyed by the
   ball that scores through its ring, an own-domain one takes a shield. What is untested is how a
   thread READS when the mouth is full of a lattice cage — the plant is not in the way, but it may
-  look like it is. Watch **I4 Quasicrystal** first (110 struts around one heart, the densest in the
-  roster) against **I1 Spire** (40 prisms, the airiest). If it reads as cluttered the lever is the
+  look like it is. Watch **I4 Borromean** first (a 108–222u closed membrane around one heart, the
+  biggest in the roster) against **I1 Spire** (40 prisms, the airiest). If it reads as cluttered the lever is the
   species, or the per-plant budget on the two that take the cell's — never the ring radius, which
   is a vessel-wide number.
 - **No `ForgeGate`, no ball cap of this mode's own.** The per-CELL ball limit
@@ -645,8 +661,9 @@ are bounded by `MaxLivePopulation`.
 - **No `ModeControlsLibrary` entry** (the card shows the vessel's four abilities, which is right)
   and **not in the Maelstrom pool** — the mode is domain-scored and 2–4 players so it qualifies;
   adding it is one asset edit once it has been play-tested.
-- **Card art is unauthored** (`IconActive`/`IconInactive`/`CardBackground` = 0, the Scarab
-  Scramble card's own current state).
+- **Icons are unauthored** (`IconActive`/`IconInactive` = 0, the Scarab Scramble card's own current
+  state). The `CardBackground` is the mode's own /cardart render (`CardBackgrounds/Tollway.png`), and
+  the generator now emits it — it used to emit a null background, so a re-run blanked the art.
 - **Max players is 4.** Scramble seats 6, and more pilots means more rings and more traffic,
   which probably suits this mode — worth trying after the first play-test.
 - **The mode preview is honest but empty**: rings are placed by pilots at runtime, so a preview

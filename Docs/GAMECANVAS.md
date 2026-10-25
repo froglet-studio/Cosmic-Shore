@@ -93,7 +93,7 @@ the property is.
 | MinigameDuelForTheCell (retired 2026-09) | CORE | 85 | layout 53 · button 13 · active 6 · script-field 5 |
 | MinigameFreestyleMultiplayer_Gameplay | CORE | 81 | layout 49 · button 11 · script-field 11 · active 5 |
 | Maelstrom | CORE | 65 | layout 49 · button 10 (+ 8 removed GameObjects) |
-| MinigameWildlifeBlitzMultuplayerCoOp | CORE | 61 | layout 49 · button 10 |
+| MinigameWildlifeBlitzMultuplayerCoOp (retired, deleted 2026-10) | CORE | 61 | layout 49 · button 10 |
 | Recording Studio / MattsRecording Studio | CORE | 27 each | layout 21 · other 4 |
 
 ---
@@ -264,6 +264,8 @@ vessel-telemetry discovery, so the priority chain becomes explicit → profile �
 | HUD (base / derived) | `Assets/_Scripts/UI/MiniGameHUD.cs`, `MultiplayerHUD.cs` |
 | HUD views | `Assets/_Scripts/UI/View/MinigameHUDView.cs`, `MultiplayerHUDView.cs` |
 | End-game scoreboard | `Assets/_Scripts/UI/Scoreboard.cs` |
+| End-game scoreboard panel (style B, item 12d - replaced the nested `GameOverPanel` instance) | `Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab`, `ScoreboardRow.prefab`, `ScoreboardStat.prefab` |
+| Style-B in-game UI generator (owns the HUD chrome, pause, connecting, reveal, scoreboard, feed) | `Tools/Build/author_ingame_hud.py` (`--check`, `--self-test`); `Docs/MENU_REDESIGN_B.md` section 22 |
 | Per-mode stats | `Assets/_Scripts/Controller/Vessel/EventDrivenStatsProvider.cs` |
 | Kit config asset | `Assets/Resources/GameModePrefabKit.asset` |
 | Kit window | `Assets/_Scripts/Editor/FrogletTools/GameModePrefabKitWindow.cs` |

@@ -146,6 +146,12 @@ Cost: nested `[Serializable]` classes. Newtonsoft (which the UGS SDK uses under 
 used on this path — worth restating, because it silently drops `Dictionary<,>` and has bitten this
 codebase before.
 
+**AI training data.** The AI flight recordings (`HumanFlightRecorder`, about 0.5 MB per race) have their own brief:
+`Docs/AI_SYSTEM/AI_DATA_IN_UGS.md`. In short:
+- small per-race summaries in Cloud Save, the full flight in a file store;
+- lossless compression only, never fewer decimals, samples or columns;
+- check with Yash or Garrett first.
+
 ---
 
 ## 3. Cloud Save schemas — the proposal
@@ -182,7 +188,8 @@ correlation across two payloads.
     "CrystalBalance": 37,
     "LifetimeCrystalsEarned": 412,
     "LifetimeCrystalsSpent": 375,
-    "UnlockedRewardIds": []
+    "UnlockedRewardIds": [],
+    "HangarUpgrades": [{ "Vessel": 16, "Element": 2, "Level": 3 }]
   },
   "Progression": {
   },
@@ -200,6 +207,10 @@ correlation across two payloads.
 
 **What changed and why**
 
+- **New (2026-10-25) — `Economy.HangarUpgrades`.** The Hangar's bought elemental levels (vessel and element as the
+  enums' values, level 1-10). In Economy because crystals pay for them: the debit and the level ride one save, where
+  they used to be split between this key and the device's PlayerPrefs (`Docs/REFACTOR_BACKLOG.md` S67). Additive, so
+  no schema bump: a profile without the key loads with an empty list.
 - Key renamed to `SCREAMING_SNAKE`; fields to `PascalCase`. Consistency ask, item one.
 - `firstSeenUtc` → `Lifecycle.FirstSeenUtcMs`. Same value, name now states the unit.
 - **`LastLoginTick` moves here** from `PLAYER_STATS_PROFILE` as `LastSeenUtcMs`, converted from .NET
@@ -689,7 +700,7 @@ Steam hands the client no wave number: grants are issued in Steamworks, there is
 "which batch was I in", and there is no Steam SDK in this build at all — the checkpoint's Engineering
 Positions pin it at *"Steam SDK: none at launch"*, and `viability-report.md` independently verified
 the absence against the tree (no Steamworks.NET, no Facepunch.Steamworks, no Unity Steam package;
-the only "Steam" hits in `Assets/` are inside the inert PlayFab SDK). So the wave has to be derived,
+the only "Steam" hits in `Assets/` were inside the inert PlayFab SDK, since removed). So the wave has to be derived,
 and the honest consequence is:
 
 > A tester who **requested** access in week 1 but **installed** in week 3 is counted in **wave 3**.

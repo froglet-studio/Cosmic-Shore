@@ -125,9 +125,10 @@ SPREAD = 40
 # passes PrismSpatialIndex.TryReserve.
 #
 # The inner edge still matters for the reason it always did: the shipped per-element assets
-# author PlantRadiusCellFraction 0.2 (240u), which is INSIDE the ~392u nucleus, so
-# ResolvePlantRadius collapses to a single degenerate shell there - every founder on one sphere,
-# inside the territorial claim.
+# author PlantRadiusCellFraction 0.2 (240u), which is INSIDE the ~392u nucleus. ResolvePlantRadius
+# used to collapse that to a single degenerate shell inside the territorial claim; it now lifts such
+# a band to a thin shell just outside the nucleus (Flora.LiftBandOutOfNucleus), which is still one
+# sphere of founders - hence a real band here.
 BAND_OUTER = 0.70
 BAND_INNER = 0.45
 

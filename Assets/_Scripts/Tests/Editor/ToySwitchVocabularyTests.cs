@@ -11,9 +11,10 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Locks the SWITCH shader vocabulary (Docs/ToySystem/ARCHITECTURE.md, "The switch"):
-    /// every switch is drawn in the prism shader, and WHICH prism it is painted as says what it
-    /// will do.
+    /// Locks the SWITCH colour vocabulary (Docs/ToySystem/ARCHITECTURE.md, "The switch"): WHICH
+    /// prism's colour a switch wears says what it will do. (Since 2026-10-21 the ring itself is drawn
+    /// as a spindle wearing that colour - Docs/SPINDLE_LOD.md section 8 - so the vocabulary is the
+    /// colour, not the shader.)
     ///
     /// <para>The rule that needs holding is the RESERVATION - <b>a switch wearing a playable
     /// domain's colour is one that hands you that domain</b>. Half of it is structural and needs
@@ -38,11 +39,6 @@ namespace CosmicShore.Tests
                 "the Scarab's placed switch - the first wearer OUTSIDE the toybox, where the " +
                 "colour names the domain the switch belongs to (SCARAB.md section 5). Nothing in " +
                 "that mode changes a pilot's domain, so the two readings never share a screen.",
-            ["FoldGate.cs"] =
-                "the Butterfly's fold gate - the second such wearer (BUTTERFLY_FOLD.md section 6). " +
-                "The colour says WHO MAY THREAD IT, which is a claim about the gate and not about " +
-                "the pilot: a gate never changes anyone's domain, it only declines pilots who are " +
-                "not already in it.",
         };
 
         // Files that NAME the member without requesting a switch.

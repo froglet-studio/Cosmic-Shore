@@ -1,0 +1,461 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a281c38ef60748d488e40c75069db68a, type: 3}
+  m_Name: TouchControlProfiles
+  m_EditorClassIdentifier:
+  profiles:
+  - vessel: 6
+    scheme: 0
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
+    - element: 2
+      glyph: 1
+    coreGlyphs:
+    - core: 1
+      glyph: 2
+  - vessel: 2
+    scheme: 0
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 1
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0.6
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
+    - element: 1
+      glyph: 3
+    - element: 4
+      glyph: 3
+    coreGlyphs: []
+  - vessel: 1
+    scheme: 0
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 1
+    flipTiltSteerPitch: 1
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 1
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
+    - element: 2
+      glyph: 3
+    - element: 4
+      glyph: 4
+    coreGlyphs: []
+  - vessel: 3
+    scheme: 0
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 1
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
+    - element: 1
+      glyph: 4
+    - element: 2
+      glyph: 3
+    - element: 3
+      glyph: 3
+    - element: 4
+      glyph: 5
+    coreGlyphs: []
+  - vessel: 13
+    scheme: 0
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
+    - element: 2
+      glyph: 1
+    - element: 4
+      glyph: 2
+    coreGlyphs: []
+  - vessel: 14
+    scheme: 0
+    liftDeferSeconds: 0.12
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 1
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
+    - element: 4
+      glyph: 2
+    - element: 3
+      glyph: 1
+    coreGlyphs: []
+  - vessel: 19
+    scheme: 0
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
+    - element: 4
+      glyph: 1
+    coreGlyphs: []
+  - vessel: 20
+    scheme: 0
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
+    - element: 4
+      glyph: 1
+    - element: 2
+      glyph: 2
+    coreGlyphs: []
+  - vessel: 18
+    scheme: 0
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs: []
+    coreGlyphs: []
+  - vessel: 23
+    scheme: 0
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
+    - element: 1
+      glyph: 1
+    - element: 2
+      glyph: 2
+    coreGlyphs: []
+  - vessel: 4
+    scheme: 1
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs: []
+    coreGlyphs: []
+  - vessel: 11
+    scheme: 1
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs: []
+    coreGlyphs: []
+  - vessel: 7
+    scheme: 1
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements:
+    - 3
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs: []
+    coreGlyphs: []
+  - vessel: 5
+    scheme: 1
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons:
+    - input: 2
+      behaviour: 0
+      aimsWhileHeld: 0
+      icon: {fileID: 21300000, guid: b8da265310b48dc84cb47de8f2e174f2, type: 3}
+      tint: 0
+      label: 
+      primary: 1
+    - input: 1
+      behaviour: 0
+      aimsWhileHeld: 0
+      icon: {fileID: 21300000, guid: b8da265310b48dc84cb47de8f2e174f2, type: 3}
+      tint: 0
+      label: 
+      primary: 1
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs: []
+    coreGlyphs: []
+  - vessel: 12
+    scheme: 1
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements:
+    - 4
+    extraButtons:
+    - input: 2
+      behaviour: 0
+      aimsWhileHeld: 0
+      icon: {fileID: 21300000, guid: 8398bb2055509dca2e645e756e8b9206, type: 3}
+      tint: 4
+      label: 
+      primary: 1
+    throttleSlider: 1
+    throttleSliderStart: 0.5
+    glyphs: []
+    coreGlyphs: []
+  - vessel: 10
+    scheme: 1
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons:
+    - input: 1
+      behaviour: 0
+      aimsWhileHeld: 0
+      icon: {fileID: 21300000, guid: 191541c7648260cd1a1207a1a287eedf, type: 3}
+      tint: 0
+      label: 
+      primary: 1
+    - input: 2
+      behaviour: 1
+      aimsWhileHeld: 0
+      icon: {fileID: 21300000, guid: 1ffb929051179cabf7c6ee6bb30b0008, type: 3}
+      tint: 1
+      label: 
+      primary: 0
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs: []
+    coreGlyphs: []
+  - vessel: 16
+    scheme: 1
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons:
+    - input: 1
+      behaviour: 0
+      aimsWhileHeld: 1
+      icon: {fileID: 21300000, guid: 191541c7648260cd1a1207a1a287eedf, type: 3}
+      tint: 3
+      label: 
+      primary: 1
+    - input: 2
+      behaviour: 0
+      aimsWhileHeld: 1
+      icon: {fileID: 21300000, guid: 1c4eb73c93a0ca3e84ef2f6c4324e2cc, type: 3}
+      tint: 1
+      label: 
+      primary: 1
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs: []
+    coreGlyphs: []
+  - vessel: 15
+    scheme: 1
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons:
+    - input: 1
+      behaviour: 0
+      aimsWhileHeld: 0
+      icon: {fileID: 21300000, guid: 44138545f892d3e6c7a3f0d1b19255c2, type: 3}
+      tint: 3
+      label: 
+      primary: 1
+    - input: 6
+      behaviour: 0
+      aimsWhileHeld: 0
+      icon: {fileID: 21300000, guid: 15328e6bb0f2cce90c3e7202bb49abbf, type: 3}
+      tint: 2
+      label: 
+      primary: 0
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs: []
+    coreGlyphs: []
+  - vessel: 17
+    scheme: 1
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs: []
+    coreGlyphs: []
+  tiltFullScaleDegrees: 25
+  tiltDeadZoneDegrees: 2.5
+  tiltSmoothingPerSecond: 12
+  tiltRollMaxDegrees: 90
+  noseFollowPerSecond: 9
+  buttonMillimetres: 10
+  buttonGapMillimetres: 1.5
+  innerArcMillimetres: 22
+  arcSpacingMillimetres: 12
+  maxHeightFraction: 0.55
+  maxWidthFraction: 0.36
+  glyphLiftLeftThumb: {fileID: 21300000, guid: 8f3ab066fc2408d1c30da19ba872efff, type: 3}
+  glyphLiftRightThumb: {fileID: 21300000, guid: d044794e46a10652c5bffb6e3a31ab07, type: 3}
+  glyphLiftEitherThumb: {fileID: 21300000, guid: 64cfaa60e459b832ffaa883860314434, type: 3}
+  glyphLiftBothThumbs: {fileID: 21300000, guid: 3460067ee182be0010a6a72d8435d1c7, type: 3}
+  glyphThumbsApart: {fileID: 21300000, guid: a6042b22fed97bbc72ac323a0925cda4, type: 3}
+  buttonDisc: {fileID: 21300000, guid: 46b274ca6b13497b94aacd50fd80d532, type: 3}
+  buttonRim: {fileID: 21300000, guid: 02358458586e7e63d808d1781a29728e, type: 3}
+  sliderWidthMillimetres: 9
+  sliderHeightMillimetres: 32

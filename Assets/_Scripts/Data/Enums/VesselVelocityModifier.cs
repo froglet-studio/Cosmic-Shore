@@ -18,16 +18,28 @@ namespace CosmicShore.Data
         /// </summary>
         public bool ignoresTranslationRestriction;
 
+        /// <summary>
+        /// The velocity ceiling this displacement is allowed to reach, u/s. 0 (every shove but
+        /// one) leaves the vessel's own ceiling (<c>VesselTransformer.velocityModifierMax</c>,
+        /// 100) in charge. A positive value RAISES the shared ceiling to itself for as long as
+        /// this modifier lives - never lowers it - so a launch that was designed to throw harder
+        /// than any knock-back can, without lifting the cap on every other shove the vessel
+        /// takes. Only the Grizzly's trigger-bomb self-launch sets it today
+        /// (<c>GrizzlyTriggerBombConfigSO.selfLaunchCeiling</c>).
+        /// </summary>
+        public float ceiling;
+
         public ShipVelocityModifier(Vector3 initialValue, float duration, float elapsedTime)
             : this(initialValue, duration, elapsedTime, false) { }
 
         public ShipVelocityModifier(Vector3 initialValue, float duration, float elapsedTime,
-                                    bool ignoresTranslationRestriction)
+                                    bool ignoresTranslationRestriction, float ceiling = 0f)
         {
             this.initialValue = initialValue;
             this.duration = duration;
             this.elapsedTime = elapsedTime;
             this.ignoresTranslationRestriction = ignoresTranslationRestriction;
+            this.ceiling = ceiling;
         }
     }
 }

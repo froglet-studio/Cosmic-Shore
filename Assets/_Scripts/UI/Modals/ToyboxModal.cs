@@ -55,6 +55,9 @@ namespace CosmicShore.UI
                                  "toybox yet, or the scene has no ToyboxController.")]
         GameObject emptyState;
 
+        [SerializeField, Tooltip("The ALL TOYS count beside the grid's heading. Optional.")]
+        TMPro.TMP_Text countText;
+
         [Header("The two big buttons")]
         [SerializeField, Tooltip("Today's activity - one press opens the toy that offers it with " +
                  "the activity selected. Optional: with none wired the window is just the grid.")]
@@ -165,6 +168,7 @@ namespace CosmicShore.UI
             var toys = ToyShellRegistry.Surfaces;
 
             if (emptyState) emptyState.SetActive(toys.Count == 0);
+            if (countText) countText.text = toys.Count.ToString();
 
             // Re-bound on every refresh, not just at Start: a refresh IS the toybox changing under
             // the window, which is exactly when both cards have to re-read what they are offering.
@@ -310,7 +314,7 @@ namespace CosmicShore.UI
             {
                 CSDebug.LogVerbose(CSLogChannel.ToyBox,
                     "[ToyBox] Shuffle found nothing to change - no live toy is offering a setting.");
-                LastShuffleSummary = "NOTHING TO SHUFFLE";
+                LastShuffleSummary = "Nothing to shuffle";
                 if (shuffleCard) shuffleCard.Bind(this);
                 PlayMenuAudio(MenuAudioCategory.Denied);
                 return;
@@ -344,7 +348,7 @@ namespace CosmicShore.UI
             plan = ToyShuffle.Plan();
             if (plan.Count == 0)
             {
-                LastShuffleSummary = "NOTHING TO SHUFFLE";
+                LastShuffleSummary = "Nothing to shuffle";
                 IsShuffling = false;
                 if (shuffleCard) shuffleCard.Bind(this);
                 return;

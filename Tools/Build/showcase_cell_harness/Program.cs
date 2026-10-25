@@ -862,7 +862,9 @@ static class Program
 
         // C8 (round 11-14): every population holds its radial band (and its sector, when it has one) - sampled once a second,
         // member-seconds inside the pen over member-seconds counted; a plant pen counts the seconds it holds a plant. Thieves
-        // and wearers range the cell by design (a raid on a pilot's wake, a hunt): reported, not asserted.
+        // and wearers range the cell by design (a raid on a pilot's wake, a hunt): reported, not asserted. So is the siege:
+        // its shell is a 300 u sphere round the pilot, wider than its 390 u band, and its leash lets a hunt follow a
+        // pilot 300 u out (SUBSTRATE_FAUNA.md §10.2); its ROAM homes into the band.
         Console.WriteLine($"C8 band occupancy (share of member-seconds inside the pen; a plant pen: share of seconds it holds a plant; worst run, floor {OccupancyFloor:P0} / plant pens {PenFloor:P0}):");
         var classes = runs.SelectMany(r => r.Occupancy.Keys).Distinct().OrderBy(k => k).ToList();
         var lowOcc = new List<string>();
@@ -872,7 +874,7 @@ static class Program
                           .Select(r => (r.Seed, share: r.Occupancy[cls].inPen / (double)r.Occupancy[cls].counted)).ToList();
             if (per.Count == 0) continue;
             var low = per.OrderBy(x => x.share).First();
-            bool asserted = cls != "thieves" && cls != "wearers/hearts";
+            bool asserted = cls != "thieves" && cls != "wearers/hearts" && cls != "substrate/siege";
             double floor = cls.StartsWith("plant pen") ? PenFloor : OccupancyFloor;
             Console.WriteLine($"     {cls,-22} worst {low.share,6:P1} (s{low.Seed})  runs {string.Join(" ", per.Select(x => $"s{x.Seed}:{x.share:P0}"))}{(asserted ? "" : "  (reported)")}");
             if (asserted && low.share < floor) lowOcc.Add($"{cls} {low.share:P1} in s{low.Seed}");

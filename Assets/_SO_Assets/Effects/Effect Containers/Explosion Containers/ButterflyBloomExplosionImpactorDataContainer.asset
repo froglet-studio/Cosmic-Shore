@@ -12,7 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 841db4ce66da4384a711272307733e0f, type: 3}
   m_Name: ButterflyBloomExplosionImpactorDataContainer
   m_EditorClassIdentifier: 
-  vesselExplosionEffects: []
+  vesselExplosionEffects:
+  - {fileID: 11400000, guid: f76debf588f341e2c6844598456fcef3, type: 2}
+  - {fileID: 11400000, guid: fb13e2c96ac07b6d086178c042518dcf, type: 2}
   explosionPrismEffects: []
   explosionCrystalEffects: []
   explosionLifeformCrystalEffects:

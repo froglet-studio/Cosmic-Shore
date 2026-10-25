@@ -31,7 +31,7 @@ namespace CosmicShore.Editor
 
         const string ToolName = "Audit Vessel Skimmers";
 
-        [MenuItem("FrogletTools/Vessels/Audit Vessel Skimmers")]
+        [MenuItem("FrogletTools/Vessels/Audits/Audit Vessel Skimmers", false, 274)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
             Description = "Checks every vessel's near/far skimmer reference actually reaches the " +
                           "object doing the physics — an unreachable or inactive skimmer skims " +
@@ -77,11 +77,11 @@ namespace CosmicShore.Editor
             else if (EditorUtility.DisplayDialog("Vessel skimmer audit",
                          $"{faults} fault(s) found (details in the console report).\n\n" +
                          "File/refresh them in the Bug Ledger so they are tracked and " +
-                         "auto-validated by the next clean audit run?",
+                         "auto-validated by the next clean audit run? They go to Claude with " +
+                         "your next \"Send to Claude\" after a play test.",
                          "File in Bug Ledger", "Skip"))
             {
                 BugLedger.ReportToolFindings(ToolName, findings);
-                DiagnosticsWindow.OpenBugLedger();
             }
         }
 
@@ -99,6 +99,7 @@ namespace CosmicShore.Editor
 
             var go = skimmer.gameObject;
             var problems = new List<string>();
+            bool crystalPickupOnly = false;
 
             // Active in the PREFAB hierarchy: VesselController initializes the component, but an
             // inactive GameObject never receives a trigger callback, so the skim is still dead.
@@ -114,8 +115,15 @@ namespace CosmicShore.Editor
                     problems.Add("SkimmerImpactor.skimmer points at a different Skimmer");
                 if (!impactor.EffectContainer)
                     problems.Add("SkimmerImpactor has no effect container");
+                // A far-field skimmer with no prism effects is a CRYSTAL CATCHER, not a dead skim:
+                // elemental crystals are collected by any initialised skimmer's contact, effects or
+                // not. The Butterfly's dust capsule (its near field) is off in Mass mode, so its
+                // always-on far field exists only to collect. The near field must still skim.
                 else if (impactor.EffectContainer.SkimmerPrismEffects is not { Length: > 0 })
-                    problems.Add($"container '{impactor.EffectContainer.name}' has no prism effects");
+                {
+                    if (optional) crystalPickupOnly = true;
+                    else problems.Add($"container '{impactor.EffectContainer.name}' has no prism effects");
+                }
                 else
                     AuditCrackle(problems, go, impactor.EffectContainer);
             }
@@ -137,7 +145,9 @@ namespace CosmicShore.Editor
 
             if (problems.Count == 0)
             {
-                report.AppendLine($"   {slot}: '{go.name}' OK");
+                report.AppendLine(crystalPickupOnly
+                    ? $"   {slot}: '{go.name}' OK (crystal pickup only — no prism effects)"
+                    : $"   {slot}: '{go.name}' OK");
                 return 0;
             }
 

@@ -118,13 +118,36 @@ namespace CosmicShore.Gameplay
 
         // ------------------- The integrator -------------------
         /// <summary>Live throttle 0..1: the right trigger's analog depth (the keyboard strategy
-        /// writes RightTriggerAnalog binary from RShift, so desktop works unchanged). Autopilot
-        /// reads as fully held — AIPilot produces no trigger input.</summary>
+        /// writes RightTriggerAnalog binary from RShift, so desktop works unchanged), or on a phone
+        /// the set-and-hold slider (<see cref="PilotThrottle01"/>). Autopilot reads as fully held —
+        /// AIPilot produces no trigger input.</summary>
         float ReadThrottle01()
         {
             if (VesselStatus != null && VesselStatus.AutoPilotEnabled) return 1f;
-            return InputStatus != null ? Mathf.Clamp01(InputStatus.RightTriggerAnalog) : 0f;
+            return PilotThrottle01(InputStatus);
         }
+
+        /// <summary>
+        /// A human pilot's throttle 0..1, by the device they fly with. A phone has no analog trigger
+        /// (touch writes <c>RightTriggerAnalog</c> 0), so on <see cref="InputDeviceType.Touch"/> the
+        /// throttle is <c>InputStatus.Throttle</c>, which the phone HUD's set-and-hold slider writes
+        /// (Garrett, 2026-10-21: "scarab can have a throttle appear on mobile as a slider that is
+        /// set"; SCARAB.md §3.11). Every other device keeps the right trigger's depth. Both values
+        /// and the device are owner-write NetworkVariables, so every peer reads the same throttle.
+        /// Shared with <c>ScarabAnimation</c> so the wing cases sweep off the throttle the hull flies on.
+        /// </summary>
+        public static float PilotThrottle01(IInputStatus input)
+        {
+            if (input == null) return 0f;
+            return Mathf.Clamp01(input.ActiveInputDevice == InputDeviceType.Touch
+                ? input.Throttle
+                : input.RightTriggerAnalog);
+        }
+
+        /// <summary>True when the pilot's throttle is SET rather than held (the phone slider): it stays
+        /// where it was left with no finger on the glass, so an idle frame is not a released throttle.</summary>
+        public static bool ThrottleIsSetAndHold(IInputStatus input)
+            => input != null && input.ActiveInputDevice == InputDeviceType.Touch;
 
         /// <summary>The Time-scaled throttle ceiling. ThrottleScalerMultiplier is the base
         /// class's existing ElementalFloat (dormant fleet-wide until now) — authored on the
@@ -141,13 +164,16 @@ namespace CosmicShore.Gameplay
         /// <summary>Double-tap detector for the TIME-5 dash. A rising edge is the analog value
         /// crossing the same deadzone the input strategy uses for its own trigger edges; two
         /// rising edges inside the window fire the dash. The upgrade gate is read at the moment
-        /// of the second tap (per-use snapshot), never cached.</summary>
+        /// of the second tap (per-use snapshot), never cached.
+        /// On a phone the dash is a flick on the slider instead (<see cref="TryTouchSnapDash"/>), so the
+        /// slider's own value never counts as taps here: a flick raises and restores it, and two flicks
+        /// would otherwise fire the dash twice (SCARAB.md §3.11).</summary>
         void DetectSnapDash(float throttle01)
         {
             bool held = throttle01 > TriggerDeadzone;
             bool risingEdge = held && !_triggerHeld;
             _triggerHeld = held;
-            if (!risingEdge) return;
+            if (!risingEdge || ThrottleIsSetAndHold(InputStatus)) return;
 
             // Autopilot holds the trigger permanently — no edges, no dash. (Defensive: held
             // stays true under AI, so risingEdge can never fire there anyway.)
@@ -161,6 +187,47 @@ namespace CosmicShore.Gameplay
             if (VesselStatus == null) return;
             if (!VesselStatus.ElementalAbilityHandler.IsUpgradeActive(Element.Time)) return;
 
+            FireSnapDash();
+        }
+
+        /// <summary>
+        /// The Snap Dash for a pilot with no trigger to double-tap: an autopilot reads as holding the
+        /// throttle permanently (<see cref="ReadThrottle01"/>), so it can never produce the two
+        /// rising edges the human gesture is. Same TIME-5 gate, read at the moment of use, and the
+        /// same impulse; pacing is the caller's (<c>SnapDashAIPolicySO</c>). Refused for a vessel
+        /// that is not on autopilot, so it can never fire on top of a human's own double-tap.
+        /// Returns whether the dash fired.
+        /// </summary>
+        public bool TryAutopilotSnapDash()
+        {
+            if (VesselStatus == null || !VesselStatus.AutoPilotEnabled) return false;
+            if (VesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Time) != true) return false;
+
+            FireSnapDash();
+            return true;
+        }
+
+        /// <summary>
+        /// The Snap Dash on a phone: a quick upward FLICK of the right thumb on the throttle slider
+        /// (Garrett, 2026-10-21: "why can't the scarab just record a swipe with the right thumb for the
+        /// snap dash?"). The pad's dash is a double-tap of the throttle; on a phone the throttle is the
+        /// set-and-hold slider, so a flick ON it is the same gesture's twin, and it cannot be confused
+        /// with the juke: a touch that starts on the slider is the slider's (FlightTouchClaims), never the
+        /// right stick the juke reads. Same TIME-5 gate, read at the moment of use, and the same impulse.
+        /// Only for this machine's human on touch, which is the only place the slider exists.
+        /// </summary>
+        public bool TryTouchSnapDash()
+        {
+            if (VesselStatus == null || VesselStatus.AutoPilotEnabled) return false;
+            if (!ThrottleIsSetAndHold(InputStatus)) return false;
+            if (VesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Time) != true) return false;
+
+            FireSnapDash();
+            return true;
+        }
+
+        void FireSnapDash()
+        {
             Vector3 course = VesselStatus.Course.sqrMagnitude > 1e-4f
                 ? VesselStatus.Course
                 : transform.forward;

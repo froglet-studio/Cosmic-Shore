@@ -21,19 +21,23 @@ namespace CosmicShore.Editor.Froglet
         Ecology = 4,
         /// <summary>Profiling, benchmarks, memory.</summary>
         Performance = 5,
-        /// <summary>Asset auditing, validation, integrity checks.</summary>
-        Validation = 6,
         /// <summary>UI, toasts, dialogue, canvases.</summary>
         Interface = 7,
-        /// <summary>Backend, PlayFab, UGS, data plumbing.</summary>
+        /// <summary>Backend, UGS, data plumbing.</summary>
         Services = 8,
-        /// <summary>Everything else / uncategorised.</summary>
-        Misc = 9,
+        /// <summary>Project-wide utilities: asset lookup, re-serialization, integrity audits.</summary>
+        Utilities = 9,
         /// <summary>Editor health: crash watchdog, bug ledger, triage.</summary>
         Diagnostics = 10,
 
         /// <summary>QA sessions, test results, the untested-development backlog.</summary>
         Qa = 11,
+
+        /// <summary>Vessel AI: watching, benchmarking and training pilots.</summary>
+        Ai = 12,
+
+        /// <summary>FTUE: the quest graph and its dialogue.</summary>
+        Ftue = 13,
     }
 
     /// <summary>
@@ -46,7 +50,7 @@ namespace CosmicShore.Editor.Froglet
     /// Put it on the same static method that carries the <see cref="UnityEditor.MenuItem"/>
     /// attribute:
     /// <code>
-    /// [MenuItem("FrogletTools/Game Modes/Game Mode Prefab Kit")]
+    /// [MenuItem("FrogletTools/Game Modes/Game Mode Prefab Kit", false, 161)]
     /// [FrogletTool(FrogletToolCategory.GameModes, Importance = 5,
     ///              Description = "Add and validate the prefabs every game-mode scene needs.")]
     /// static void Open() { ... }
@@ -55,7 +59,7 @@ namespace CosmicShore.Editor.Froglet
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public sealed class FrogletToolAttribute : Attribute
     {
-        public FrogletToolAttribute(FrogletToolCategory category = FrogletToolCategory.Misc)
+        public FrogletToolAttribute(FrogletToolCategory category = FrogletToolCategory.Utilities)
         {
             Category = category;
         }

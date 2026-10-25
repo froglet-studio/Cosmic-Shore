@@ -39,14 +39,15 @@ remembered:
 | SchwarzP | `AssembledFlora` (+`SchwarzPAssembler`) | `AssemblyBranch` |
 | Quasicrystal | `AssembledFlora` (+`QuasicrystalAssembler`) | `QuasicrystalBranch` |
 | Borromean | `BorromeanFlora` | `Branch` |
+| NestedGyroid | `NestedGyroidFlora` — a 3D STACK of gyroid sheets + fibers whose every sheet is the GYROID flora's own tiling (`NestedGyroidTemplate`, measured) carried along ∇G. A plant is ONE octagon tile through the stack, every prism on a limb off its crystal; the species is a COLONY of tiles in one periodic frame (`NestedGyroidColony`, the gyroid's §32.7 model). The only flora that is a `Volume` prismscape and an `ILayeredPrismscape` (`Docs/ECOSYSTEM.md` §58) | `Branch` |
 | MandelbulbFlora, CoralBloomFlora, WatershedFlora, ApolloniaFlora | `MandelbulbFlora` — **all four**, measured; there is no `CoralBloomFlora` class, the species differ only in their authored `GrowthRules` (`Docs/ECOSYSTEM.md` §50, §52, §53, §54, §55, §56) | `Branch` |
 | Wall | `AssembledFlora` | `AssemblyBranch` |
 | **Seaweed** | **`SegmentSpawner` — NOT a `Flora` at all** | (n/a) |
-| **oldWallFlora** | **`GyroidAssembler` — not a `Flora` either** | (n/a) |
 
-The last two rows are the reason a roster is MEASURED: both sit in the flora folder with
-`*Flora` names and carry components that are not a `Flora` at all, so "every prefab named
-`*Flora`" is not the species list. Resolve `m_Script`'s guid to a `.cs.meta` instead.
+The last row is the reason a roster is MEASURED: it sits in the flora folder with a `*Flora` name
+and carries a component that is not a `Flora` at all, so "every prefab named `*Flora`" is not the
+species list. (`oldWallFlora`, a `GyroidAssembler` prefab, was the second such row until it was
+deleted as unreferenced on 2026-10-14.) Resolve `m_Script`'s guid to a `.cs.meta` instead.
 
 ---
 
@@ -143,6 +144,14 @@ does not:
 5. **Keep the limb when its prism is eaten, and re-use it when the prism regrows.** A branch
    whose leaf was grazed is still a branch — and re-use is also what stops regrowth minting
    a second spindle on one bond. Track limb-per-site and clear the slot in `RemoveSpindle`.
+6. **A limb must know its PARENT limb.** `Spindle.CheckForLife` keeps a limb only while it
+   carries a prism OR a child spindle, and the child link comes from the transform hierarchy
+   unless you set it. A species that poses its limbs as flat siblings under the plant root
+   (Borromean, Mandelbulb) must call `limb.AttachToParent(parentLimb)` — otherwise grazing an
+   inner prism evaporates its limb while every limb beyond it stands on, cut off from the
+   crystal. **Every standing spindle and prism has a path of standing spindles to its crystal**
+   — in growth, under grazing and through every death, the crystal joust's heart-outward unravel
+   being the one sanctioned exception (`Docs/ECOSYSTEM.md` §26.10).
 
 ---
 
@@ -338,6 +347,20 @@ and by `AssembledFlora.ColonyCyclePeriod`. It cannot be authored per config; do 
 
 ---
 
+**A colony's birth gate must not be the PLANTING BAND.** The band (`plantRadiusCellFraction`,
+`ClampToPlantingBand`) says where a SEED lands; a colony wanders through its lattice from there.
+`NestedGyroidFlora`'s first colony cut refused every tile whose crystal fell outside the band and
+DISCARDED it from the frontier — and every Spawn Matrix station sits outside the membrane, so all
+four neighbours of the founder were refused on the first cycle and the population never grew past
+one plant, while the gyroid colony beside it (no gate at all) kept spreading. Reported from play;
+the harness reproduces it (`nested_gyroid_harness`, "retired planting-band gate" control). Refuse
+only what is permanently forbidden (a control-zone nucleus), let the CAP bound the colony, and copy
+the gyroid's population numbers (1 / 4 / 42) rather than inventing a smaller cap — a cap of 12 on a
+colony species reads as "it stopped growing" (`Docs/ECOSYSTEM.md` §58.9).
+
+**Maturity is "every prism has STOOD once", not "is standing now"** — a colony plant that contributes
+its frontier only while whole never contributes once grazing starts.
+
 ## 7. BUDGETS — what a flora species costs
 
 State all three when you add or resize one:
@@ -528,10 +551,42 @@ author_<cell>_cell.py           # a cell built FROM a species; grows it to size 
 * **A flora prefab holds exactly ONE prism** (the seed), because a plant is a growth RULE.
   Anything that photographs or measures a flora must run the rule
   (`Flora.TryPreviewGrowth`), never harvest the prefab's meshes.
+* **A spindle's renderer is not yours to write once the limb is posed.** `SpindleLodSystem` owns its
+  mesh, material and `enabled` flag while the limb is registered (`Docs/SPINDLE_LOD.md`): a far limb's
+  renderer is OFF and the limb is drawn instanced. Pose and stretch a spindle BEFORE its `Start` (every
+  species already does), and change a limb's look through its material asset or `Spindle`, never by
+  writing `sharedMaterial`/`enabled`/`sharedMesh` on the renderer. A new spindle MESH gets no LOD until
+  `Tools/Build/author_spindle_lod_meshes.py` measures it; a spindle renderer whose mesh is not the braid
+  (a creature's own model) is taken as a BODY and wears a depth material instead (§8 of that doc).
+* **"Strength" is not the whole effect - know which amplitude you are tuning.** The overt spindle
+  look has six visible parts, and the strength knobs (`chargeStrength`, `otherStrength`,
+  `switchRingStrength`) scale only ONE of them, how far the strands MOVE. The pulse on the wave
+  (`pulseGlow`), the lace closing into thread shading, the width hold and the far glow-up
+  (`threadGlow`) follow the ramp's openness, not the strength. Three rounds halved "the amplitude"
+  while the part Garrett was looking at stayed the same (`Docs/SPINDLE_LOD.md` §7.2e has the table).
+  When asked to change "how strong it is", name which part you are changing.
+* **On an UNLIT spindle graph, a surface shaded between two bright colours washes flat.** The first
+  synthetic switch ring used the signal colour and that colour toward white, and in Unity the facets,
+  twist and strands vanished into one bright band. Use a dark body and the bright colour on the facets
+  (the prism rings' own `dark = rim x 0.22`), and give the facets the full range
+  (`switchRingShadeBase` 0 / `switchRingShadeFacet` 1).
 * **`Flora.TryPreviewGrowth` must not touch `UnityEngine.Random`** — it is a pure preview and
   must not advance a sequence the simulation is drawing from. Seed a `System.Random`.
 
 ---
+
+* **A fleet generator's DEFAULT mode writes.** `author_flora_populations.py` with no flag rewrites
+  every config it models; run with `--check` (or `--help`) when you only meant to look. One probe
+  rewrote three unrelated configs' populations and they rode into a commit via `git add -A` — stage
+  by explicit path after running any generator.
+* **Ownership on a surface is GEODESIC.** Cutting a periodic tiling into per-plant tiles by
+  Euclidean nearest centre gave 17 of the nested gyroid's 24 tiles a disconnected fragment (a site
+  across a channel is near in space, far along the surface); multi-source Dijkstra over the bond
+  graph gave none. Same rule as §2's "order by hop distance", one step earlier.
+* **Run the shipped bookkeeping, not a transcription.** A population book that only touches
+  `UnityEngine.Random`, `Time.time` and `Object`'s bool conversion compiles into a headless harness
+  against a ~40-line stub file (`nested_gyroid_harness/ColonyStubs.cs`) — so the colony gates test
+  `NestedGyroidColony.cs` itself, seeded, rather than a model that can drift from it.
 
 ## 10. Checklist for a new or reworked species
 

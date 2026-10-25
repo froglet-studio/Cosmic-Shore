@@ -462,8 +462,7 @@ namespace CosmicShore.Utility.AITraining
                 var go = vessel.Transform != null ? vessel.Transform.gameObject : null;
                 if (go == null) continue;
 
-                var pilot = go.GetComponent<TrainingPilot>();
-                if (pilot == null) pilot = go.AddComponent<TrainingPilot>();
+                if (!go.TryGetComponent(out TrainingPilot pilot)) pilot = go.AddComponent<TrainingPilot>();
 
                 pilot.BindVessel(vessel, gameData, cellData);
                 pilot.TargetMode = scenario.TargetMode;
@@ -569,7 +568,7 @@ namespace CosmicShore.Utility.AITraining
             _fallbackProfile = ScriptableObject.CreateInstance<FitnessProfileSO>();
             _fallbackProfile.name = "Fallback Fitness (in-memory)";
             var mode = scenario != null ? scenario.GameMode : GameModes.Random;
-            if (mode == GameModes.OnlineDuelForTheCell || mode == GameModes.DuelForTheCell)
+            if (mode == GameModes.DuelForTheCell)
                 _fallbackProfile.ApplyCellularCaptureDefaults();
             else
                 _fallbackProfile.ApplyFor(mode);

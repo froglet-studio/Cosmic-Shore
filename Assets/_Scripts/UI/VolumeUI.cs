@@ -22,6 +22,13 @@ namespace CosmicShore.UI
             image.material = _material;
         }
 
+        // The per-instance material is a runtime asset: Unity does not free it with the GameObject,
+        // so every scene load that carried this gauge leaked one.
+        void OnDestroy()
+        {
+            if (_material) Destroy(_material);
+        }
+
         void OnEnable()
         {
             OnResetForReplay.OnRaised += ResetForReplay;

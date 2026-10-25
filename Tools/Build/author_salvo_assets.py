@@ -28,6 +28,8 @@ import hashlib
 import os
 import re
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
@@ -70,10 +72,7 @@ EXISTING = {
     "IconActive":     "1dc25875d7cbd3e478fc5a133e65eedb",
     "IconInactive":   "fa9b62abd1b217b4ba3d7c5a4a2c0916",
     "CardBackground": "587d2203114c8004c9985d0112c89585",
-    "PreviewClip":    "4396864d799a6154bb82e5346ac0093b",
 }
-
-PREVIEW_FILEID = 241334157148977051
 
 # The prism target - the race metric. Lower than Rampage's 2000 because the Sparrow's salvos
 # are crystal-rationed: a skyburst costs half the missile tank, the tank does not regenerate,
@@ -190,8 +189,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameSalvo.asset",
     the salvos. First domain to tear down the prism target wins.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
-  CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
-  PreviewClip: {{fileID: {PREVIEW_FILEID}, guid: {EXISTING['PreviewClip']}, type: 3}}
+  CardBackground: {{fileID: 21300000, guid: {aml.card_background('Salvo')}, type: 3}}
   GolfScoring: 1
   SceneName: MinigameSalvo
   Vessels:
@@ -202,7 +200,6 @@ emit("Assets/_SO_Assets/Games/ArcadeGameSalvo.asset",
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
-  CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
   ComebackRatePerScoreDeficit: {COMEBACK_RATE}
@@ -215,19 +212,8 @@ emit("Assets/_SO_Assets/Games/ArcadeGameSalvo.asset.meta",
 # The donor already IS the Boneyard scene this mode wants - Sparrow AI templates, spawn sphere
 # at r=700, IntensityWise Boneyard cell configs, noNucleusSpawnRadius 420 - so the clone only
 # swaps the mode identity: controller, turn monitor, rule, and the crystal economy.
-scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity")
-
-# 4a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
-scene, n = re.subn(EXISTING["DogFightPointTurnMonitor"], G_SCRIPT["SalvoPrismTurnMonitor"], scene)
-assert n == 1, f"turn monitor guid appeared {n} times"
-
-# 4b. controller script swap + its serialized field block. Salvo has no milestone sampler and
-# no AI dogfighter loop (the platform-default AI seeks the crystals, which here ARE its ammo
-# line), so those fields go; in their place the controller is wired to the omni crystal's
-# collection channel for the wingman reload.
-scene, n = re.subn(EXISTING["DogFightController"], G_SCRIPT["SalvoController"], scene)
-assert n == 1, f"controller guid appeared {n} times"
-
+# NEW_FIELDS wraps onOmniCrystalCollected the way the Editor saves a long reference (~80
+# columns) - otherwise the committed scene could never contain the block verbatim.
 OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['DogFightScoringRule']}, type: 2}}
   arenaCell: {{fileID: 1700000065}}
   firstMilestoneFraction: 0.25
@@ -244,28 +230,54 @@ OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['DogFightScoringRul
 """
 NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['SalvoScoringRule']}, type: 2}}
   arenaCell: {{fileID: 1700000065}}
-  onOmniCrystalCollected: {{fileID: 11400000, guid: {EXISTING['EventOnCrystalCollected']}, type: 2}}
+  onOmniCrystalCollected: {{fileID: 11400000, guid: {EXISTING['EventOnCrystalCollected']},
+    type: 2}}
   missileResourceIndex: 0
   elementalCrystalCount: 14
   crystalScatterRadius: 400
   crystalScatterSeed: 42
 """
-assert OLD_FIELDS in scene, "controller field block not found in donor scene"
-scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
-
-# 4c. THE CRYSTAL ABUNDANCE - the one gameplay dial this mode moves on the donor.
-# PlayerCountPlusExtra (+5): the Scurry shape, because in Salvo the omni crystal is the
-# missile economy - a Sparrow with an empty tank and no crystal in reach is a pilot with
-# nothing to do. noNucleusSpawnRadius stays 420 (this cell has no nucleus; without the
-# fallback every crystal stacks on the arena's exact centre).
 OLD_CRYSTALS = ("  noNucleusSpawnRadius: 420\n  crystalCountMode: 0\n"
                 "  fixedCrystalCount: 4\n  extraCrystalsToSpawnBeyondPlayerCount: 0\n")
 NEW_CRYSTALS = (f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n  crystalCountMode: 1\n"
                 f"  fixedCrystalCount: 4\n"
                 f"  extraCrystalsToSpawnBeyondPlayerCount: {EXTRA_CRYSTALS_BEYOND_PLAYERS}\n")
-assert OLD_CRYSTALS in scene, "donor crystal-count block not found"
-scene = scene.replace(OLD_CRYSTALS, NEW_CRYSTALS, 1)
 
+
+def clone_scene() -> str:
+    scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity")
+
+    # 4a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
+    scene, n = re.subn(EXISTING["DogFightPointTurnMonitor"], G_SCRIPT["SalvoPrismTurnMonitor"], scene)
+    assert n == 1, f"turn monitor guid appeared {n} times"
+
+    # 4b. controller script swap + its serialized field block. Salvo has no milestone sampler and
+    # no AI dogfighter loop (the platform-default AI seeks the crystals, which here ARE its ammo
+    # line), so those fields go; in their place the controller is wired to the omni crystal's
+    # collection channel for the wingman reload.
+    scene, n = re.subn(EXISTING["DogFightController"], G_SCRIPT["SalvoController"], scene)
+    assert n == 1, f"controller guid appeared {n} times"
+
+    assert OLD_FIELDS in scene, "controller field block not found in donor scene"
+    scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
+
+    # 4c. THE CRYSTAL ABUNDANCE - the one gameplay dial this mode moves on the donor.
+    # PlayerCountPlusExtra (+5): the Scurry shape, because in Salvo the omni crystal is the
+    # missile economy - a Sparrow with an empty tank and no crystal in reach is a pilot with
+    # nothing to do. noNucleusSpawnRadius stays 420 (this cell has no nucleus; without the
+    # fallback every crystal stacks on the arena's exact centre).
+    assert OLD_CRYSTALS in scene, "donor crystal-count block not found"
+    scene = scene.replace(OLD_CRYSTALS, NEW_CRYSTALS, 1)
+    return scene
+
+
+# The clone is a one-shot: once MinigameSalvo.unity is committed the Editor owns its fileIDs and
+# GlobalObjectIdHash values (a re-clone of Dog Fight reported ~330 lines of drift, every one an
+# Editor-minted id). The committed scene is adopted, the blocks this script authors must still
+# be in it, and the checks below run on it. See aml.committed_scene.
+scene, _scene_errors = aml.committed_scene(
+    "Assets/_Scenes/Multiplayer Scenes/MinigameSalvo.unity", clone_scene,
+    authored_blocks=(NEW_FIELDS, NEW_CRYSTALS))
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameSalvo.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameSalvo.unity.meta",
      scene_meta(G_ASSET["MinigameSalvo.unity"]))
@@ -323,7 +335,7 @@ emit(END_PATH, endcond)
 
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
-errors = []
+errors = list(_scene_errors)
 
 all_new = list(G_SCRIPT.values()) + list(G_ASSET.values())
 if len(set(all_new)) != len(all_new):
@@ -425,7 +437,7 @@ def cs_fields(path):
 
 
 SO_BASE = {"Mode", "IsMultiplayer", "DisplayName", "Description", "IconActive", "IconInactive",
-           "CardBackground", "PreviewClip", "GolfScoring", "SceneName"}
+           "CardBackground", "GolfScoring", "SceneName"}
 CHECKS = [
     ("Assets/_SO_Assets/Games/ArcadeGameSalvo.asset",
      "Assets/_Scripts/ScriptableObjects/SO_ArcadeGame.cs"),
@@ -471,6 +483,10 @@ gamemodes_cs = read("Assets/_Scripts/Data/Enums/GameModes.cs")
 if not re.search(r"^\s*Salvo = 44,", gamemodes_cs, re.M):
     errors.append("GameModes.cs has no 'Salvo = 44' - the card would launch nothing")
 
+# The card's CardBackground is the /cardart render and no retired key rides on it - the
+# shared check every arcade generator runs (arcade_mode_lib.card_errors).
+errors += aml.check_cards(files)
+
 if errors:
     print("VALIDATION FAILED - nothing written:")
     for e in errors:
@@ -482,7 +498,15 @@ for rel in sorted(files):
     print("  ", rel)
 
 if CHECK_ONLY:
-    print("\n--check: no files written.")
+    # Diff against disk. This used to print "no files written" and exit 0 - a --check that
+    # never compares is a false green (a retired key and the placeholder CardBackground sat behind it).
+    _changed = aml.drift(files)
+    if _changed:
+        print(f"\n--check: {len(_changed)} file(s) differ from the authored output:")
+        for _c in sorted(_changed):
+            print("  -", _c)
+        sys.exit(1)
+    print(f"\n--check: no files written; all {len(files)} files match what this script authors.")
     sys.exit(0)
 
 for rel, content in files.items():

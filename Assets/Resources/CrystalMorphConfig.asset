@@ -18,3 +18,9 @@ MonoBehaviour:
   phaseNear: 1
   phaseFar: 0
   colourBlendFraction: 0.8
+  overlayFadeFraction: 0.3
+  fillerPhase: 0
+  panelPhaseStart: 0.55
+  panelPhaseEnd: 1
+  targetGraceSeconds: 1.5
+  ringCaptureRadius: 60

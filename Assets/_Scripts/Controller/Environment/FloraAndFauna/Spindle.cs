@@ -83,8 +83,9 @@ namespace CosmicShore.Gameplay
 
         // ── Ordered death wither ─────────────────────────────────────────────
         // A dying lifeform spends its spindles ONE AT A TIME, in an order the death
-        // itself dictates (Docs/ECOSYSTEM.md §26): outside-in for starvation, from the
-        // heart outward for a joust. Two couplings in the ordinary spindle lifecycle
+        // itself dictates (Docs/ECOSYSTEM.md §26): outside-in along the spindle tree
+        // (OrderOutsideIn), except the crystal joust, which unravels from the heart outward
+        // (OrderHeartOutward, §26.10). Two couplings in the ordinary spindle lifecycle
         // fight that, and both are structural rather than cosmetic:
         //   • ForceWither RECURSES into child spindles, so withering an inner spindle
         //     first would collapse the whole creature in a single step.
@@ -101,6 +102,19 @@ namespace CosmicShore.Gameplay
         // would hand a prism a phase its own limb is not using.
         float _swayPhase;
         bool _swayPhaseResolved;
+        int _phaseBucket;
+
+        // ── Distance LOD (SpindleLodSystem, Docs/SPINDLE_LOD.md) ─────────────────────────────
+        // One handle per renderer the system took: a limb drawing a mesh the LOD profile knows is
+        // tiered, and a creature's own spindle-material body wears a depth material (null where
+        // neither applies; the whole array is null when none does). The system owns that
+        // renderer's material (and a limb's mesh and enabled flag) while the handle is registered;
+        // this class keeps owning life and death, and hands the renderer back before either.
+        SpindleLodSystem.Handle[] _lodHandles;
+        bool _started;
+        // A condense/evaporate MPB stamp is live on the renderers. Such a limb must draw through
+        // its own renderer, so the LOD never batches it.
+        bool _fadeActive;
 
         void CleanupDeadRefs()
         {
@@ -186,6 +200,11 @@ namespace CosmicShore.Gameplay
             if (!isPermanentlyWithered)
                 deregistered = false;
 
+            // A living limb re-enabled after Start (its plant was switched off and on) rejoins the
+            // LOD; the first enable is Start's to handle, once the limb is posed.
+            if (!isPermanentlyWithered && _started && _lodHandles == null)
+                RegisterLod();
+
             if (!isPermanentlyWithered) return;
 
             SetRenderersEnabled(false);
@@ -212,15 +231,16 @@ namespace CosmicShore.Gameplay
             // spindle stays SRP-batchable — no per-renderer MaterialPropertyBlock. Capture each
             // base material once so pooled reuse never layers variants-on-variants, and bucket
             // EVERY part off the spindle root's position so a multi-part spindle sways as one.
+            _phaseBucket = PhaseBucket(transform.position);
             for (int i = 0; i < _renderers.Length; i++)
             {
                 var partRenderer = _renderers[i];
                 if (!partRenderer) continue;
                 if (_phaseBaseMaterials[i] == null) _phaseBaseMaterials[i] = partRenderer.sharedMaterial;
-                _phaseVariants[i] = GetPhaseVariant(_phaseBaseMaterials[i], transform.position);
+                _phaseVariants[i] = GetPhaseVariant(LeanedMaterial(_phaseBaseMaterials[i]), _phaseBucket);
                 if (_phaseVariants[i]) partRenderer.sharedMaterial = _phaseVariants[i];
             }
-            _swayPhase = PhaseForBucket(PhaseBucket(transform.position));
+            _swayPhase = PhaseForBucket(_phaseBucket);
             _swayPhaseResolved = true;
             // Any prism already bound to this limb finished creating before Start ran, so
             // its own creation stamp found no phase to ride. Stamp them now — the values
@@ -231,14 +251,60 @@ namespace CosmicShore.Gameplay
                 StampCondense();
 
             if (LifeForm) LifeForm.AddSpindle(this);
-            parentSpindle ??= transform.parent.GetComponentInParent<Spindle>();
+            // Explicit Unity-null test: an unassigned serialized reference is a fake-null object in
+            // the Editor, which `??=` treats as set (see HealthPrism.ResolveSpindle).
+            if (!parentSpindle && transform.parent)
+                parentSpindle = transform.parent.GetComponentInParent<Spindle>();
             if (parentSpindle) parentSpindle.AddSpindle(this);
+
+            // Last: the limb is posed (a flora poses a spindle between Instantiate and its Start)
+            // and wears its phase variant, which is the near tier the LOD derives its tiers from.
+            _started = true;
+            RegisterLod();
+        }
+
+        void RegisterLod()
+        {
+            CacheRenderers();
+            // A Charge lifeform's limbs part hardest in the overt style (SpindleLodProfileSO.chargeStrength).
+            // A flora limb names its LifeForm; a creature's spindles do not (the shark's, the
+            // tadpole's), so the element is read off whatever lifeform this spindle is part of.
+            ILifeFormEntity lifeform = LifeForm ? LifeForm : GetComponentInParent<ILifeFormEntity>();
+            bool charge = lifeform != null && lifeform.Element == CosmicShore.Data.Element.Charge;
+            SpindleLodSystem.Handle[] handles = null;
+            for (int i = 0; i < _renderers.Length; i++)
+            {
+                if (!_renderers[i] || !_phaseVariants[i]) continue;
+                var handle = SpindleLodSystem.Register(_renderers[i], _phaseVariants[i], _fadeActive, charge);
+                if (handle == null) continue;
+                handles ??= new SpindleLodSystem.Handle[_renderers.Length];
+                handles[i] = handle;
+            }
+            _lodHandles = handles;
+        }
+
+        /// <summary>Hands every renderer back to this limb: its authored mesh, its phase variant and
+        /// enabled. <paramref name="restore"/> false when the renderers are being destroyed.</summary>
+        void UnregisterLod(bool restore)
+        {
+            if (_lodHandles == null) return;
+            for (int i = 0; i < _lodHandles.Length; i++)
+                SpindleLodSystem.Unregister(_lodHandles[i], restore);
+            _lodHandles = null;
+        }
+
+        void SetLodFading(bool fading)
+        {
+            _fadeActive = fading;
+            if (_lodHandles == null) return;
+            for (int i = 0; i < _lodHandles.Length; i++)
+                SpindleLodSystem.SetFading(_lodHandles[i], fading);
         }
 
         // A shared material identical to baseMat but with a fixed _Phase, bucketed by world
         // position: same bucket -> same material -> one SRP batch. Created lazily and cached
         // per base material, so the total is bounded by the distinct spindle materials in play.
-        static Material GetPhaseVariant(Material baseMat, Vector3 worldPos)
+        static Material GetPhaseVariant(Material baseMat, int bucket)
         {
             if (baseMat == null) return null;
 
@@ -256,7 +322,7 @@ namespace CosmicShore.Gameplay
                 PhaseVariants[baseMat] = variants;
             }
 
-            return variants[PhaseBucket(worldPos)];
+            return variants[bucket];
         }
 
         /// Cheap position hash -> stable per-spindle bucket that scatters neighbours. Shared
@@ -270,6 +336,87 @@ namespace CosmicShore.Gameplay
         }
 
         static float PhaseForBucket(int bucket) => bucket / (float)PhaseVariantCount * Mathf.PI * 2f;
+
+        // ── Hue lean: a holder's mark on a tamed creature (Fauna.ApplyLeashMark) ─────────────────────
+        // Garrett, 2026-10-21: "distinguish them by giving their spindles a slight hue shift in your domain". The
+        // limb's colours lean toward a target hue; nothing else about it changes. Like the phase variants it is a SHARED
+        // material per (base material, target, lean), minted under the phase variants and handed to the LOD as the near
+        // material, so a marked limb still batches with every other limb wearing the same mark.
+
+        static readonly int[] LeanColorIDs =
+        {
+            Shader.PropertyToID("_BrightColor"), Shader.PropertyToID("_DullColor"),   // SpindleGraph, SpindleDepthGraph
+            Shader.PropertyToID("_Color1"), Shader.PropertyToID("_Color2"),           // AnimatedSpindleGraph
+            Shader.PropertyToID("_BaseColor"), Shader.PropertyToID("_Color"),         // a creature's imported body
+        };
+        static readonly Dictionary<(Material, int, byte), Material> LeanedMaterials = new();   // (base, target RGBA, lean)
+
+        Color _leanTarget;   // as given (HDR kept: clamping a bright colour to 8 bits can turn its hue)
+        int _leanKey;        // the target as 8-bit RGBA, the cache key
+        byte _lean;          // 0..255 of the way toward the target's hue; 0 = the limb's own colours
+
+        /// <summary>
+        /// Lean this limb's colours toward <paramref name="target"/>'s hue by <paramref name="lean"/> (0..1 of the way
+        /// round the hue circle, the short way; saturation, value and HDR intensity kept). 0 restores its own colours.
+        /// Presentation only. Safe before Start: Start mints the leaned material.
+        /// </summary>
+        public void SetHueLean(Color target, float lean)
+        {
+            byte amount = (byte)Mathf.RoundToInt(Mathf.Clamp01(lean) * 255f);
+            Color32 rgba = amount > 0 ? (Color32)target : default;
+            int key = rgba.r << 24 | rgba.g << 16 | rgba.b << 8 | rgba.a;
+            if (amount == _lean && key == _leanKey) return;
+            _lean = amount;
+            _leanTarget = target;
+            _leanKey = key;
+            if (!_started || dying || isPermanentlyWithered) return;
+            RemintVariants();
+        }
+
+        /// <summary>Put each renderer back on its (re-leaned) phase variant, through the LOD if it holds the renderer.</summary>
+        void RemintVariants()
+        {
+            bool lod = _lodHandles != null;
+            if (lod) UnregisterLod(true);
+            for (int i = 0; i < _renderers.Length; i++)
+            {
+                var partRenderer = _renderers[i];
+                if (!partRenderer || !_phaseBaseMaterials[i]) continue;
+                _phaseVariants[i] = GetPhaseVariant(LeanedMaterial(_phaseBaseMaterials[i]), _phaseBucket);
+                if (_phaseVariants[i]) partRenderer.sharedMaterial = _phaseVariants[i];
+            }
+            if (lod) RegisterLod();
+        }
+
+        Material LeanedMaterial(Material baseMat)
+        {
+            if (!baseMat || _lean == 0) return baseMat;
+            var key = (baseMat, _leanKey, _lean);
+            if (LeanedMaterials.TryGetValue(key, out var leaned) && leaned) return leaned;
+            leaned = new Material(baseMat) { name = $"{baseMat.name}_Lean{_leanKey:X8}" };
+            float amount = _lean / 255f;
+            for (int i = 0; i < LeanColorIDs.Length; i++)
+                if (leaned.HasProperty(LeanColorIDs[i]))
+                    leaned.SetColor(LeanColorIDs[i], LeanHue(leaned.GetColor(LeanColorIDs[i]), _leanTarget, amount));
+            LeanedMaterials[key] = leaned;
+            return leaned;
+        }
+
+        /// <summary>
+        /// <paramref name="color"/> with its hue turned <paramref name="lean"/> of the way toward
+        /// <paramref name="target"/>'s, the short way round. Saturation, value (HDR included) and alpha are kept, so a
+        /// grey stays grey and a grey target (no hue) changes nothing.
+        /// </summary>
+        public static Color LeanHue(Color color, Color target, float lean)
+        {
+            Color.RGBToHSV(target, out float th, out float ts, out _);
+            if (ts < 0.05f || lean <= 0f) return color;
+            Color.RGBToHSV(color, out float h, out float s, out float v);
+            float turn = Mathf.DeltaAngle(h * 360f, th * 360f) / 360f;
+            var leaned = Color.HSVToRGB(Mathf.Repeat(h + turn * Mathf.Clamp01(lean), 1f), s, v, true);
+            leaned.a = color.a;
+            return leaned;
+        }
 
         /// <summary>The transform whose OBJECT SPACE the sway actually happens in. This is
         /// the RENDERER's, not the spindle root's: `SpindleSway` shears `PositionOS`, and
@@ -358,6 +505,94 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Hangs this limb off <paramref name="parent"/> in the spindle TREE (null = off the heart)
+        /// without touching the transform hierarchy. For a species that keeps its limbs as flat
+        /// siblings under the plant root and poses each one on a bond (<c>BorromeanFlora</c>,
+        /// <c>MandelbulbFlora</c>) this is the only thing that makes the tree real - and the tree
+        /// is what keeps a limb standing while anything still hangs off it, so a plant can never
+        /// lose the limb between its crystal and its outer prisms (Docs/ECOSYSTEM.md §26.10).
+        /// Re-linking releases the old parent, which then withers if nothing else holds it up.
+        /// </summary>
+        public void AttachToParent(Spindle parent)
+        {
+            if (parent == this || parentSpindle == parent) return;
+
+            var previous = parentSpindle;
+            parentSpindle = null;
+            if (previous) previous.RemoveSpindle(this);
+
+            if (parent) parent.AddSpindle(this);
+        }
+
+        /// <summary>
+        /// This limb's parent in the spindle tree: the logical link when one is set, otherwise
+        /// the nearest spindle above it in the transform hierarchy - which is what
+        /// <see cref="Start"/> would link it to, read before Start has run.
+        /// </summary>
+        Spindle ResolveTreeParent()
+        {
+            if (parentSpindle) return parentSpindle;
+            var up = transform.parent;
+            return up ? up.GetComponentInParent<Spindle>() : null;
+        }
+
+        /// <summary>
+        /// How many limbs stand between this one and the heart (0 = it grows straight out of the
+        /// crystal). Bounded so a malformed link can never hang the death path.
+        /// </summary>
+        int TreeDepth()
+        {
+            int depth = 0;
+            for (var p = ResolveTreeParent(); p && depth < 4096; p = p.ResolveTreeParent())
+                depth++;
+            return depth;
+        }
+
+        /// <summary>
+        /// The order an ordered death wither spends a lifeform's limbs in: OUTSIDE-IN along the
+        /// spindle tree, deepest first, so every limb still standing has an unbroken path of
+        /// standing limbs back to the heart at every instant of the wither. Ties (and a
+        /// lifeform whose limbs form no tree at all) fall back to farthest-from-the-heart first.
+        /// Euclidean distance alone is NOT enough on a plant whose surface wraps back past its
+        /// own heart (the Borromean membrane): a limb five hops out can sit closer to the crystal
+        /// than its own grandparent.
+        ///
+        /// <para>Every ordered wither uses this EXCEPT the crystal joust, which unravels
+        /// <see cref="OrderHeartOutward"/> from the hole the joust left (Docs/ECOSYSTEM.md
+        /// §26.10).</para>
+        ///
+        /// <para>Must be called BEFORE <see cref="IsolateForOrderedWither"/>, which is what
+        /// severs the links the depth is read from.</para>
+        /// </summary>
+        public static List<Spindle> OrderOutsideIn(IEnumerable<Spindle> spindles, Vector3 heart)
+        {
+            return spindles
+                .Where(s => s)
+                .Select(s => (spindle: s, depth: s.TreeDepth(),
+                              distance: (s.transform.position - heart).sqrMagnitude))
+                .OrderByDescending(e => e.depth)
+                .ThenByDescending(e => e.distance)
+                .Select(e => e.spindle)
+                .ToList();
+        }
+
+        /// <summary>
+        /// The crystal joust's EXCEPTION to <see cref="OrderOutsideIn"/>, and its exact reverse:
+        /// FROM THE MISSING CRYSTAL TO THE LEAVES along the spindle tree, the limbs at the heart
+        /// first. The jouster took the heart, so the body comes apart around the hole it left —
+        /// the one death in which an outer limb is ALLOWED to stand after the limb joining it to
+        /// the heart has gone (Docs/ECOSYSTEM.md §26.10). Read off the tree rather than distance
+        /// so the unravel follows the plant's own growth order on a surface that folds back past
+        /// its heart. Same call-before-isolation rule.
+        /// </summary>
+        public static List<Spindle> OrderHeartOutward(IEnumerable<Spindle> spindles, Vector3 heart)
+        {
+            var order = OrderOutsideIn(spindles, heart);
+            order.Reverse();
+            return order;
+        }
+
+        /// <summary>
         /// Sets this spindle aside for an ORDERED death wither (see the isolation notes):
         /// detaches it from its parent and children - logically AND in the hierarchy, so it
         /// can be destroyed without taking anything else with it - and suspends
@@ -411,7 +646,12 @@ namespace CosmicShore.Gameplay
             {
                 var partRenderer = _renderers[i];
                 if (!partRenderer) continue;
-                if (_phaseVariants[i]) partRenderer.sharedMaterial = _phaseVariants[i];
+                // A limb the LOD is drawing keeps its TIER's material (a clone of the same phase
+                // variant on the mid/far graph); writing the near variant back would put the
+                // braid's shader on the thread's mesh.
+                var tierMaterial = _lodHandles != null ? SpindleLodSystem.CurrentMaterial(_lodHandles[i]) : null;
+                if (tierMaterial) partRenderer.sharedMaterial = tierMaterial;
+                else if (_phaseVariants[i]) partRenderer.sharedMaterial = _phaseVariants[i];
                 partRenderer.SetPropertyBlock(null);
             }
         }
@@ -425,11 +665,40 @@ namespace CosmicShore.Gameplay
 
         void StampEvaporate(float delay)
         {
-            StampDeathFade(PrismClock.Now + delay, DeathFadeDuration, DeathDirectionEvaporate, OnEvaporateSettled);
+            // One start time for both: the shard grows exactly while the limb fades.
+            float start = PrismClock.Now + delay;
+            StampDeathFade(start, DeathFadeDuration, DeathDirectionEvaporate, OnEvaporateSettled);
+            MorphIntoShard(start);
+        }
+
+        /// <summary>
+        /// A withering or dying limb becomes a shard of its cell's cytoplasm (Garrett, 2026-10-21;
+        /// Docs/ECOSYSTEM.md, "A dying limb becomes a cytoplasm shard"): the shard joins the
+        /// SnowChanger's shard list where the limb stood and condenses on the limb's own fade
+        /// clock, so the limb fades as the shard grows and an ordered wither stays ordered. Every
+        /// death of a spindle runs through <see cref="StampEvaporate"/> exactly once (both callers
+        /// latch <c>dying</c>), so a limb makes at most one shard. No cell, a satellite (no
+        /// cytoplasm), or a full field: the limb evaporates as it always did.
+        /// </summary>
+        void MorphIntoShard(float startTime)
+        {
+            if (!gameObject.scene.isLoaded) return;
+
+            // The limb's middle, not its root: a limb is posed from its root along its forward.
+            // Local bounds read the same whether or not the LOD has the renderer switched off.
+            Vector3 at = transform.position;
+            if (RenderedObject)
+                at = RenderedObject.transform.TransformPoint(RenderedObject.localBounds.center);
+
+            var cell = Cell.FindCellContaining(at);
+            if (cell && cell.Cytoplasm)
+                cell.Cytoplasm.AddMorphedShard(at, transform.rotation, startTime, DeathFadeDuration);
         }
 
         void StampDeathFade(float startTime, float duration, float direction, Action onSettle)
         {
+            // Out of the instanced batch first: the fade is this renderer's own stamp.
+            SetLodFading(true);
             CancelFadeSettle();
             CacheRenderers();
             s_fadeMpb ??= new MaterialPropertyBlock();
@@ -454,12 +723,14 @@ namespace CosmicShore.Gameplay
         void OnCondenseSettled()
         {
             RestoreOriginalMaterial();
+            SetLodFading(false);
         }
 
         void OnEvaporateSettled()
         {
             // Must run even if the renderer is gone: bailing here leaves a dying=true
             // spindle registered forever and stalls LifeForm.DieCoroutine's empty-tracker wait.
+            UnregisterLod(restore: true);
             RestoreOriginalMaterial();
             SetRenderersEnabled(false);
             DisableSpindle();
@@ -472,8 +743,9 @@ namespace CosmicShore.Gameplay
 
         /// <param name="evaporateDelay">
         /// Seconds until this spindle's fade STARTS. Ordered wither stamps every
-        /// spindle in one pass with <c>i * interval</c> so starvation stays
-        /// extremity-first and a joust stays heart-outward — never a per-frame cascade.
+        /// spindle in one pass with <c>i * interval</c> so starvation stays outside-in
+        /// (<see cref="OrderOutsideIn"/>) and a joust stays heart-outward
+        /// (<see cref="OrderHeartOutward"/>) — never a per-frame cascade.
         /// </param>
         public void ForceWither(float evaporateDelay = 0f)
         {
@@ -511,6 +783,10 @@ namespace CosmicShore.Gameplay
 
         void OnDisable()
         {
+            // Before anything else: whatever happens next to this limb, its renderers are its own
+            // again (a pooled or deactivated limb must come back as the authored braid).
+            UnregisterLod(restore: gameObject.scene.isLoaded);
+
             if (deregistered) return;
 
             // only deregister if we are truly gone (dying/perma-wither) or being unloaded
@@ -548,6 +824,7 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            UnregisterLod(restore: false);
             CancelFadeSettle();
             if (deregistered) return;
             deregistered = true;

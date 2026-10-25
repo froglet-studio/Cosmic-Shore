@@ -25,7 +25,8 @@ WHAT IT CHECKS (per changed asset; modified files report only findings their bas
     script    m_Script -> a .cs whose file name is a non-abstract, non-generic class deriving
               MonoBehaviour (on a GameObject) or ScriptableObject (in an .asset)
     field     every serialized key exists on the class or a base (recursing into [Serializable]
-              classes/structs and lists of them; [FormerlySerializedAs] names count)
+              classes/structs and lists of them, a UnityEvent's persistent calls included;
+              [FormerlySerializedAs] names and #if UNITY_EDITOR fields, a package's too, count)
     enum      every enum-typed value is a declared member (not checked for [Flags])
     type      a reference in a field typed as a project class points at an object of that class
     override  PrefabInstance modifications: the target exists in the source prefab and the
@@ -33,6 +34,7 @@ WHAT IT CHECKS (per changed asset; modified files report only findings their bas
     deleted   no asset references the guid of a file deleted since the base
     swarm     the Swarm cell is in the Cell Selector's CellConfigs, its config points at its spawn
               profile, and every new fauna/flora config-data asset is listed by a spawn profile
+              or a Spawn Matrix row (the bench-only configs spawn nowhere else)
 
     The schema (fields, bases, enums) comes from Roslyn binding Assembly-CSharp exactly as
     Tools/Build/unity_refcompile builds it - run that first (this script says so if you did not).
@@ -80,6 +82,14 @@ MB_STANDARD = {"m_ObjectHideFlags", "m_CorrespondingSourceObject", "m_PrefabInst
                "m_GameObject", "m_Enabled", "m_EditorHideFlags", "m_Script", "m_Name",
                "m_EditorClassIdentifier", "serializedVersion"}
 UNITY_OBJECT = "UnityEngine.Object"
+
+
+def is_ref_registry(v):
+    """Unity's [SerializeReference] registry: a top-level `references:` block (`version` + `RefIds`)
+    that Unity writes beside the fields of any object holding managed references, at any depth (the
+    drill SOs' MentorTip.Moment / LessonStep.Condition). It is not a field, so the schema never lists
+    it; a `references` key without that shape is still checked as an ordinary field."""
+    return isinstance(v, dict) and "version" in v and "RefIds" in v
 
 
 # --------------------------------------------------------------------------------------------
@@ -145,15 +155,21 @@ def build_guid_index(tree):
 # schema (Roslyn, via Tools/Build/unity_refcompile/Schema)
 # --------------------------------------------------------------------------------------------
 def load_schema(rsp):
-    csc = sorted(glob.glob(os.path.join(DOTNET_ROOT, "sdk", "*", "Roslyn", "bincore", "csc.dll")))
+    sys.path.insert(0, os.path.join(ROOT, "Tools", "Build", "unity_refcompile"))
+    import build as refcompile  # noqa: E402  (the toolchain helpers; importing has no side effects)
     tools = os.path.join(CACHE, "tools")
-    if not csc or not os.path.exists(os.path.join(tools, "Microsoft.CodeAnalysis.dll")):
+    if not os.path.exists(os.path.join(tools, "Microsoft.CodeAnalysis.dll")):
         return None, "no Roslyn tools in %s - run `bash Tools/Build/unity_refcompile/run.sh` first" % tools
+    try:
+        csc, (ref, rt, tfm) = refcompile.csc_path(), refcompile.netcore_toolchain()
+    except SystemExit as e:  # no SDK / no usable reference pack: the message says which
+        return None, str(e.code)
     dll = os.path.join(tools, "Schema.dll")
-    fp = hashlib.sha1(open(SCHEMA_SRC, "rb").read()).hexdigest()
+    # rebuilt when the source or the .NET it targets changes (a runtimeconfig naming an uninstalled
+    # runtime cannot start)
+    fp = hashlib.sha1(open(SCHEMA_SRC, "rb").read() + (ref + rt).encode()).hexdigest()
     if not os.path.exists(dll + ".stamp") or open(dll + ".stamp").read() != fp:
-        ref = sorted(glob.glob(os.path.join(DOTNET_ROOT, "packs", "Microsoft.NETCore.App.Ref", "*", "ref", "net8.0")))[-1]
-        r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), csc[-1], "-nologo", "-noconfig", "-nostdlib",
+        r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), csc, "-nologo", "-noconfig", "-nostdlib",
                             "-langversion:latest", "-out:" + dll, SCHEMA_SRC,
                             "-r:" + os.path.join(tools, "Microsoft.CodeAnalysis.dll"),
                             "-r:" + os.path.join(tools, "Microsoft.CodeAnalysis.CSharp.dll")]
@@ -161,8 +177,7 @@ def load_schema(rsp):
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         if r.returncode != 0:
             return None, "Schema tool failed to build:\n" + r.stdout
-        rt = sorted(os.listdir(os.path.join(DOTNET_ROOT, "shared", "Microsoft.NETCore.App")))[-1]
-        json.dump({"runtimeOptions": {"tfm": "net8.0", "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
+        json.dump({"runtimeOptions": {"tfm": tfm, "framework": {"name": "Microsoft.NETCore.App", "version": rt}}},
                   open(os.path.join(tools, "Schema.runtimeconfig.json"), "w"))
         open(dll + ".stamp", "w").write(fp)
     out = os.path.join(os.path.dirname(rsp), "schema.json")
@@ -300,8 +315,9 @@ def iter_refs(node, path=""):
 # the audit
 # --------------------------------------------------------------------------------------------
 class Audit:
-    def __init__(self, tree, schema, guids):
+    def __init__(self, tree, schema, guids, external=frozenset()):
         self.tree, self.schema, self.guids = tree, schema, guids
+        self.external = external  # package-script guids the base tree already references (see external_script_guids)
         self._docs = {}
         self.unverified = collections.Counter()
 
@@ -330,6 +346,34 @@ class Audit:
     def resolve(self, guid):
         p = self.guids.get(guid)
         return p[0] if p else None
+
+    def has_object(self, rel, fid, depth=0):
+        """True when `fid` names an object of prefab/scene `rel`: one of its own documents, OR an
+        object it inherits through a PrefabInstance that it never writes out. Unity gives such an
+        object the id `(instanceFileID XOR sourceFileID) & INT64_MAX` - so a variant of a variant
+        references, and overrides, ids that appear in no document of its source. Checking anchors
+        alone reported every one of those as missing (the Skim Race ring crystal, a variant of
+        BigCrystalVariant, which is itself a variant of Crystal.prefab)."""
+        anchors = self.anchors(rel)
+        if anchors is None or fid in anchors:
+            return True
+        if depth > 8:
+            return False
+        try:
+            want = int(fid)
+        except ValueError:
+            return False
+        for inst_fid, doc in anchors.items():
+            if doc.cls != 1001:
+                continue
+            src = (doc.data or {}).get("m_SourcePrefab") if isinstance(doc.data, dict) else None
+            src_rel = self.resolve(src.get("guid")) if isinstance(src, dict) else None
+            if not src_rel or not src_rel.endswith(YAML_EXT) or not self.tree.exists(src_rel):
+                continue
+            sid = ((want & 0xFFFFFFFFFFFFFFFF) ^ (int(inst_fid) & 0xFFFFFFFFFFFFFFFF)) & 0x7FFFFFFFFFFFFFFF
+            if self.has_object(src_rel, str(sid), depth + 1):
+                return True
+        return False
 
     def class_of(self, rel, doc):
         """Full schema name of a MonoBehaviour doc's script class, or None."""
@@ -386,11 +430,16 @@ class Audit:
         target = self.resolve(guid)
         if path.endswith("m_SourcePrefab") and fid == "100100000":
             return [] if target else [("guid", rel, "%s.%s -> source prefab guid %s resolves to no asset" % (where, path, guid))]
+        if not target and guid in self.external:
+            # a script in a package (UGUI Button/Image, TextMeshPro, Netcode...): Unity resolves it
+            # through Library/PackageCache, which this audit never sees. The base tree already
+            # references it, so the project depends on it either way.
+            self.unverified["script in a package (guid %s)" % guid] += 1
+            return []
         if not target:
             return [("guid", rel, "%s.%s -> guid %s resolves to no asset in Assets/" % (where, path, guid))]
         if target.endswith(YAML_EXT) and self.tree.exists(target):
-            anchors = self.anchors(target)
-            if anchors is not None and fid not in anchors:
+            if not self.has_object(target, fid):
                 return [("guid", rel, "%s.%s -> fileID %s does not exist in %s" % (where, path, fid, target))]
         return []
 
@@ -430,6 +479,8 @@ class Audit:
         fields = self.schema.fields(full)
         for k, v in data.items():
             if k in standard:
+                continue
+            if depth == 0 and k == "references" and is_ref_registry(v):
                 continue
             f = fields.get(k)
             if f is None:
@@ -508,6 +559,7 @@ class Audit:
 # --------------------------------------------------------------------------------------------
 SWARM_CELL = "Assets/_SO_Assets/Cell Configs/Swarm Cell/Swarm Cell Config.asset"
 SWARM_PROFILE = "Assets/_SO_Assets/Cell Configs/Swarm Cell/Swarm Cell Spawn Profile.asset"
+SPAWN_MATRIX_TOY = "Assets/_SO_Assets/Toys/Toy_SpawnMatrix.asset"
 CELL_SELECTOR_SCENE = "Assets/_Scenes/Menu_Main.unity"
 
 
@@ -556,6 +608,30 @@ def check_swarm(audit, changed):
                     for r in (d.data.get(k) or []):
                         if isinstance(r, dict) and r.get("guid"):
                             listed.add(r["guid"])
+    # ...and every spawn profile already in the tree: a MODIFIED config (a generator re-tuning a
+    # biome's species) is listed by a profile nobody touched, which the changed-files scan
+    # above cannot see. Read straight from the profiles' list blocks, through the tree so a
+    # self-test overlay still applies.
+    so_root = os.path.join(ROOT, "Assets", "_SO_Assets")
+    for dirpath, _, names in os.walk(so_root):
+        for name in names:
+            if not name.endswith(".asset"):
+                continue
+            rel = os.path.relpath(os.path.join(dirpath, name), ROOT)
+            if not tree.exists(rel):
+                continue
+            text = tree.read(rel)
+            for key in ("SupportedFaunas:", "SupportedFloras:"):
+                if key not in text:
+                    continue
+                block = re.match(r"(?:\n  [- ] .*)*", text.split(key, 1)[1])
+                listed.update(re.findall(r"guid: ([0-9a-f]{32})", block.group(0)))
+    # The Spawn Matrix toy is the other way a config spawns: its species rows release one exact
+    # config on demand, and some configs exist ONLY for it (the bench swarm models in
+    # Swarm Fauna/Bench/, authored by author_spawn_matrix_roster.py).
+    if tree.exists(SPAWN_MATRIX_TOY):
+        listed.update(re.findall(r"^    - \{fileID: 11400000, guid: ([0-9a-f]{32}), type: 2\}$",
+                                 tree.read(SPAWN_MATRIX_TOY), re.M))
     for rel in changed:
         if not rel.endswith(".asset") or not tree.exists(rel):
             continue
@@ -565,8 +641,8 @@ def check_swarm(audit, changed):
         cls = audit.class_of(rel, docs[0])
         for k, etype in lists.items():
             if cls and audit.schema.derives(cls, etype) and meta_guid(tree, rel) not in listed:
-                out.append(("swarm", rel, "is a %s (%s) but no spawn profile's %s lists it - it never spawns"
-                            % (etype.split(".")[-1], cls, k)))
+                out.append(("swarm", rel, "is a %s (%s) but neither a spawn profile's %s nor a Spawn "
+                            "Matrix row lists it - it never spawns" % (etype.split(".")[-1], cls, k)))
     return out
 
 
@@ -586,9 +662,26 @@ def changed_assets(base):
     return added, modified, deleted
 
 
+def external_script_guids(base, guids):
+    """m_Script guids the BASE tree references that resolve to no .cs/.dll under Assets/ on the base:
+    scripts that live in a package (UGUI, TextMeshPro, Netcode, Cinemachine, ...). Unity resolves
+    those through Library/PackageCache, which this audit never sees, so a NEW document that names
+    one is not a dangling reference - the project already depends on that script. A guid that DID
+    resolve under Assets/ on the base and no longer does is deliberately not in this set, so the
+    orphaned references of a deleted script still surface as findings."""
+    def grep(pattern, *pathspec):
+        r = subprocess.run(["git", "grep", "-h", "-o", "-E", pattern, base, "--", *pathspec],
+                           cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        return set(re.findall(r"[0-9a-f]{32}", r.stdout))
+    referenced = grep(r"m_Script: \{fileID: -?[0-9]+, guid: [0-9a-f]{32}", "Assets")
+    in_base_assets = grep(r"^guid: [0-9a-f]{32}", "Assets/*.cs.meta", "Assets/*.dll.meta")
+    return frozenset(referenced - in_base_assets - set(guids))
+
+
 def run_audit(tree, schema, base, added, modified, deleted_metas, base_text):
     guids, dups = build_guid_index(tree)
-    audit = Audit(tree, schema, guids)
+    external = external_script_guids(base, guids)
+    audit = Audit(tree, schema, guids, external)
     findings = [("meta", "Assets/", "guid %s is shared by %s" % (g, ", ".join(p))) for g, p in dups]
     for rel in added:
         if tree.exists(rel):
@@ -611,10 +704,14 @@ def run_audit(tree, schema, base, added, modified, deleted_metas, base_text):
         now = audit.check_file(rel, only)
         before_tree = Tree(tree.root, {rel: old_text}, tree.deleted)
         before_tree.overlay.update({k: v for k, v in tree.overlay.items() if k != rel})
-        old = set(Audit(before_tree, schema, guids).check_file(rel, only))
+        old = set(Audit(before_tree, schema, guids, external).check_file(rel, only))
         findings += [f for f in now if f not in old]
     # nothing may still reference a deleted file's guid
     for meta, guid in deleted_metas:
+        # A MOVED file (git mv: same guid, new path) is not deleted: its guid still has an owner, so every reference
+        # to it still resolves. Without this the moved file's own .meta was reported as referencing itself.
+        if guids.get(guid):
+            continue
         hits = subprocess.run(["git", "grep", "-l", guid, "--", "Assets"], cwd=tree.root, stdout=subprocess.PIPE,
                               text=True).stdout.split()
         hits += [k for k, v in tree.overlay.items() if guid in v]
@@ -728,7 +825,10 @@ def self_test(schema, base):
         ("yaml", "broken YAML", sub(cfg, "  UnitScale: 2\n", "  UnitScale: [2\n")),
         ("yaml", "missing %TAG header", sub(cfg, "%TAG !u! tag:unity3d.com,2011:\n", "")),
         ("meta", "duplicate guid", {"Assets/_SO_Assets/Swarm Fauna/Dup.asset.meta": tree0.read(cfg + ".meta")}),
-        ("swarm", "species config dropped from the spawn profile", sub(SWARM_PROFILE, first_member, "")),
+        # Dropped from BOTH: a Spawn Matrix row is a spawn path too, and every Swarm-cell species is on it.
+        ("swarm", "species config dropped from the spawn profile and the Spawn Matrix",
+         {**sub(SWARM_PROFILE, first_member, ""),
+          SPAWN_MATRIX_TOY: tree0.read(SPAWN_MATRIX_TOY).replace("  " + first_member, "")}),
         ("swarm", "Swarm cell removed from the Cell Selector", sub(CELL_SELECTOR_SCENE, "guid: " + cell_guid, "guid: " + "f" * 32)),
     ]
     ok = True
@@ -756,12 +856,92 @@ def self_test(schema, base):
     if [f for f in clean_scene if f[0] != "swarm"]:
         ok = False
         print("self-test: the unmodified scene reports findings:", clean_scene[:3])
+    # a package script (UGUI Image, which lives in Library/PackageCache, never under Assets/) named by a
+    # NEW document is not a dangling guid; the "reference to an unknown guid" control above proves a
+    # guid the base tree never saw is still one
+    ugui_image = "fe87c0e1cc204ed48ad3b37840f39efc"
+    pkg = sub(tad, "m_Script: {fileID: 11500000, guid: ", "m_Script: {fileID: 11500000, guid: " + ugui_image + "}  # ", 1)
+    found, _ = run_audit(Tree(ROOT, pkg), schema, base, added, [], [], lambda r: None)
+    hit = [f for f in found if f[0] == "guid" and ugui_image in f[2]]
+    print("  [%s] %-60s %s" % ("MISSED" if hit else "ok", "package script guid on a new document is NOT a finding", hit[0][2][:110] if hit else ""))
+    ok &= not hit
+    # Unity's [SerializeReference] registry is not a field; a `references` key without its shape is
+    registry = "  references:\n    version: 2\n    RefIds: []\n"
+    found, _ = run_audit(Tree(ROOT, {cfg: tree0.read(cfg).rstrip("\n") + "\n" + registry}),
+                         schema, base, added, [], [], lambda r: None)
+    quiet = not [f for f in found if f[0] == "field" and "`references`" in f[2]]
+    print("  [%s] %-60s" % ("ok" if quiet else "FALSE HIT", "SerializeReference registry is not reported"))
+    ok &= quiet
+    found, _ = run_audit(Tree(ROOT, {cfg: tree0.read(cfg).rstrip("\n") + "\n  references: 3\n"}),
+                         schema, base, added, [], [], lambda r: None)
+    hit = [f for f in found if f[0] == "field" and "`references`" in f[2]]
+    print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "a plain `references` key is still a dead field", hit[0][2][:110] if hit else ""))
+    ok &= bool(hit)
+    # Fields the schema reads from outside the project: a one-component prefab on a PROJECT script (a
+    # package script's fields are never judged) must be clean, and a defect planted in it still caught.
+    def project_script(base_cls, unless=None):
+        for full, t in schema.types.items():
+            if (t["kind"] == "Class" and t["files"] and base_cls in t["bases"] and unless not in t["bases"]
+                    and not (t["isAbstract"] or t["isGeneric"])):
+                f = os.path.relpath(t["files"][0], ROOT)
+                if os.path.basename(f) == t["name"] + ".cs" and os.path.exists(os.path.join(ROOT, f + ".meta")):
+                    return full, META_GUID.search(open(os.path.join(ROOT, f + ".meta")).read()).group(1)
+        raise AssertionError("self-test fixture drifted: no project class derives " + base_cls)
+
+    def one_component(guid, body):
+        return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n"
+                "--- !u!1 &100\nGameObject:\n  m_Component:\n  - component: {fileID: 200}\n  m_Name: Fixture\n"
+                "--- !u!114 &200\nMonoBehaviour:\n  m_GameObject: {fileID: 100}\n  m_Enabled: 1\n"
+                "  m_Script: {fileID: 11500000, guid: " + guid + ", type: 3}\n" + body)
+    # 1. a Button's m_OnClick: the persistent-call body is declared on the engine's UnityEventBase (CoreModule)
+    btn = project_script("UnityEngine.UI.Button")
+    call_yaml = one_component(btn[1],
+                              "  m_OnClick:\n    m_PersistentCalls:\n      m_Calls:\n"
+                              "      - m_Target: {fileID: 200}\n"
+                              "        m_TargetAssemblyTypeName: " + btn[0] + ", Assembly-CSharp\n"
+                              "        m_MethodName: set_interactable\n        m_Mode: 6\n        m_Arguments:\n"
+                              "          m_ObjectArgument: {fileID: 0}\n"
+                              "          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine\n"
+                              "          m_IntArgument: 0\n          m_FloatArgument: 0\n          m_StringArgument: \n"
+                              "          m_BoolArgument: 0\n        m_CallState: 2\n")
+    # 2. a package's #if UNITY_EDITOR [SerializeField] (NetworkBehaviour.ShowTopMostFoldoutHeaderGroup): the
+    #    editor writes it, so it is a field - of its own class only (NetworkTransformExpanded is not one here)
+    net = project_script("Unity.Netcode.NetworkBehaviour", unless="Unity.Netcode.Components.NetworkTransform")
+    net_yaml = one_component(net[1], "  ShowTopMostFoldoutHeaderGroup: 1\n")
+    fixture = "Assets/_Prefabs/SelfTestFixture.prefab"
+    for kind, needle, label, text in [
+            (None, None, "a valid persistent call on a Button's m_OnClick", call_yaml),
+            ("field", "`m_MethodNam`", "misspelled key inside a persistent call", call_yaml.replace("m_MethodName:", "m_MethodNam:")),
+            ("field", "`m_PersistentCals`", "misspelled m_PersistentCalls under m_OnClick", call_yaml.replace("m_PersistentCalls:", "m_PersistentCals:")),
+            ("enum", "m_CallState = 7", "persistent call state out of range", call_yaml.replace("m_CallState: 2", "m_CallState: 7")),
+            (None, None, "a package's editor-only field on a NetworkBehaviour", net_yaml),
+            ("field", "`NetworkTransformExpanded`", "another package class's editor-only field",
+             net_yaml.replace("ShowTopMostFoldoutHeaderGroup:", "NetworkTransformExpanded:"))]:
+        found, _ = run_audit(Tree(ROOT, {fixture: text, fixture + ".meta": "fileFormatVersion: 2\nguid: " + "5e1f7e57" * 4 + "\n"}),
+                             schema, base, [fixture], [], [], lambda r: None)
+        mine = [f for f in found if f[1] == fixture]
+        if kind is None:
+            print("  [%s] %-60s %s" % ("FALSE HIT" if mine else "ok", label, mine[0][2][:110] if mine else ""))
+            ok &= not mine
+        else:
+            hit = [f for f in mine if f[0] == kind and needle in f[2]]
+            print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", label, hit[0][2][:110] if hit else ""))
+            ok &= bool(hit)
     # a deleted file still referenced
     found, _ = run_audit(Tree(ROOT, deleted=[cfg + ".meta"]), schema, base, added[2:], [],
                          [(cfg + ".meta", meta_guid(tree0, cfg))], lambda r: None)
     hit = [f for f in found if f[0] == "deleted"]
     print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "reference to a deleted asset", hit[0][2][:110] if hit else ""))
     ok &= bool(hit)
+    # an object a variant inherits without writing it out: its derived id must resolve, and a
+    # neighbouring id must not (BigCrystalVariant -> Crystal.prefab; root Transform 5535990081244205889)
+    audit = Audit(Tree(ROOT), schema, build_guid_index(Tree(ROOT))[0])
+    variant = "Assets/_Prefabs/Environment/BigCrystalVariant.prefab"
+    derived_ok = audit.has_object(variant, str(5535990081244205889 ^ 1710552517093063004))
+    bogus_ok = not audit.has_object(variant, str((5535990081244205889 ^ 1710552517093063004) - 1))
+    print("  [%s] %-60s" % ("ok" if derived_ok else "MISSED", "variant-derived fileID resolves"))
+    print("  [%s] %-60s" % ("ok" if bogus_ok else "MISSED", "a fileID derivable from nothing is still missing"))
+    ok &= derived_ok and bogus_ok
     print("self-test " + ("passed" if ok else "FAILED"))
     return 0 if ok else 1
 

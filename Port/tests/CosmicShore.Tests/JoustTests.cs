@@ -256,6 +256,7 @@ public class JoustTests
         // NetworkVesselImpactor pair, unspawned) + ImpactCollider — the HexRace/Joust shape.
         var bubble = rig.VesselGo.AddComponent<SphereCollider>();
         bubble.radius = bubbleRadius;
+        ContactRig.AddKinematicBody(rig.VesselGo); // as the vessel prefabs
         var networkImpactor = rig.VesselGo.AddComponent<NetworkVesselImpactor>();
         rig.VesselImpactor = rig.VesselGo.AddComponent<VesselImpactor>();
         SetField(rig.VesselImpactor, "vesselImpactorDataContainerSO",
@@ -273,6 +274,7 @@ public class JoustTests
         var trigger = rig.SkimmerGo.AddComponent<SphereCollider>();
         trigger.isTrigger = true;
         trigger.radius = skimmerRadius;
+        ContactRig.AddKinematicBody(rig.SkimmerGo); // Skimmer.prefab's own body: its messages stay on the skimmer
         var skimmer = rig.SkimmerGo.AddComponent<Skimmer>();
         SetField(skimmer, "onSkimmerShipImpact", ScriptableObject.CreateInstance<ScriptableEventString>());
         skimmer.Initialize(rig.Status);

@@ -25,7 +25,8 @@ it **grades down**, lerping the boost multiplier toward plain cruise as the stic
 
 Turn rate is linear in stick and the max turn rate grows with speed, so composing those two with
 the ramp's one lerp gives a continuous curve — the tightest circle the Rhino can hold at each
-sustained speed:
+sustained speed *(pre-2026-09-25 record at 1200 u/s / `RotationThrottleScaler` 0.5 — see the retune
+callout at the top; the live curve is in `RHINO_RAMP_BOOST.md`)*:
 
 | stick | speed | radius it holds | reads as |
 |---|---|---|---|
@@ -40,7 +41,8 @@ radius fits, and trade it against how long the following straight is (a tighter 
 *through* a corner and costs seconds of ramp coming out). That is what a pilot practises, and it
 is different on every corner of every seed.
 
-**Intensity is what mix of corners a lap asks for.** Measured over 600 seeds, the median lap:
+**Intensity is what mix of corners a lap asks for.** Measured over 600 seeds, the median lap
+*(pre-2026-09-25 record; post-retune medians are 2/4/4/5 speed-costing corners, hardest 92/66/47/34%)*:
 
 | intensity | corners that cost speed | its hardest corner | mouth ⌀ | reads as |
 |---|---|---|---|---|
@@ -49,7 +51,7 @@ is different on every corner of every seed.
 | 3 | **2** of 8 | 166 u — 65%, then 96% | 116 | a lap with a rhythm |
 | 4 | **3** of 8 | 107 u — **37%**, then 64%, 91% | 92 | two hairpins and three straights |
 
-Lift and you pay up to 5.2 s to wind back up — against a lap of roughly 5 k units, which a pilot
+Lift and you pay up to 5.2 s to wind back up (pre-retune; at 840 u/s and 220 u/s² the wind-up from cruise is ~3.6 s at rest, ~1.4 s at Time 10) — against a lap of roughly 5 k units, which a pilot
 who held the boost covers in about four seconds. **The gap between a clean lap and a scruffy one
 is most of a lap.**
 
@@ -75,7 +77,9 @@ cost speed.
 
 Because its turn radius **converges** with speed, which is unique in the fleet. With
 `RotationThrottleScaler` at 0.5, `R(v) = 180v / (π(0.5v + 90))` approaches **115 u** and never
-exceeds it: 100 u at 1200 u/s, 113 u at 12 000 u/s. Every other hull's turning circle grows
+exceeds it: 100 u at 1200 u/s, 113 u at 12 000 u/s. *(Pre-2026-09-25 numbers. At the shipped
+0.2 the same curve, `180v / (π(0.2v + 90))`, converges on 180/(π·0.2) ≈ **286 u** — still a
+ceiling, so the argument holds; the figures above are history.)* Every other hull's turning circle grows
 without bound, so a circuit whose corners are cut at a fixed radius is a course only this vessel
 gets *better* at as it accelerates.
 
@@ -164,7 +168,8 @@ most need to face you are the ones that stop being oriented at all. The caps
 `HeadlongCircuitTests` sweeps **400 seeds × 4 intensities** and asserts the safety floor, the
 shell, the mouth separation, the presentation cap, gate 0's pole placement, determinism, **and
 the corner demand**. The shipped C# was additionally compiled against real
-`Vector3`/`Quaternion`/`Mathf` and **run** over 600 seeds:
+`Vector3`/`Quaternion`/`Mathf` and **run** over 600 seeds *(pre-2026-09-25 record at 1200 u/s —
+history, not the shipped curve)*:
 
 | intensity | corners costing speed (median lap) | #1 | #2 | #3 | legs | max turn |
 |---|---|---|---|---|---|---|
@@ -199,7 +204,10 @@ shared base rather than being forked:
 | `Racing/SwitchThreadScoring.cs` | the one place a threaded gate is credited |
 | `Scoring/GateRaceScoringRuleSO.cs` | golf timing + the `BestByDomain` fold |
 
-A subclass supplies **three** things: `ModeName`, `BuildCourse`, and `LapsPerRace`.
+A subclass supplies **two** things: `ModeName` and `CreateCourseSource()`. (It was three -
+`ModeName`, `BuildCourse`, `LapsPerRace` - until 2026-09, when the course, its laps, its lead-in
+and its authored length moved onto a per-mode `RaceCourseSource` so the arcade card's preview
+can lay the same rings without loading the scene; `Docs/ModePreview/TRAINING_PLAN.md` §7.)
 
 **One real bug was found in the extraction**: the AI target provider tested
 `index >= _course.Count` and indexed `_course[index]` directly, so on a lapped circuit every AI
@@ -234,7 +242,7 @@ rules come out of it, and the second is the one that actually costs you:
 
 | Knob | Where | Shipped |
 |---|---|---|
-| race length (laps × rings) | `Resources/EndConditionOverrides` → `headlongGateTarget` | **24** |
+| race length (laps × rings) | **FrogletTools ▸ Game Modes ▸ End Game Conditions** → "Headlong - Gate Target (laps x rings)" (`Resources/EndConditionOverrides` → `headlongGateTarget`, Build twin `headlongGateTargetBuild`) | **24** |
 | laps | `MinigameHeadlong.unity` → `HeadlongController.laps` | **3** |
 | rings per lap | `HeadlongCircuitSettings.ForIntensity` → `GateCount` | **8** |
 | circuit base radius | same | **800** (~5 k per lap) |
@@ -249,6 +257,16 @@ different lengths. `Tools/Build/author_headlong_assets.py --check` asserts that,
 is a whole number of laps, and that the comeback rate still buys a whole element level at a
 quarter-of-target deficit — the trap `DOGFIGHT.md`, `BENDS.md`, `WILDLIFE_LIBERATION.md` and
 `SWITCHBACK.md` have each recorded independently.
+
+**It is authored in the End Game Conditions window, and only there.** Until 2026-10 the SO field,
+its `Build` twin, the getter, the `TryGetAuthoredTurnTarget` row and the asset value all existed but
+the window drew no row, so changing it meant hand-editing the asset. The row changed nothing that
+ships: the asset already held 24 / 24, and 24 over the scene's 3 laps is still 8 rings a lap.
+`laps` stays a scene field on purpose - it is an input to the circuit's SHAPE, not a second end
+condition: change it and the race is still 24 threadings, only the rings per lap move
+(`ceil(target / laps)`, rounded UP so a lap is whole, after which the course's own length is the
+target the monitor uses). A target that is not a multiple of `laps` therefore races to the next
+multiple, and the monitor logs the correction.
 
 ## 7. The arena is a REFERENCE, not a fork
 
@@ -266,8 +284,10 @@ leaving them as an absence.
 2. **Launch at intensity 1, 2 players.** The connecting panel holds until the circuit arrives,
    then eight rings bloom in a closed loop. Your next gate is lit lime and the objective arrow
    points at it.
-3. **Fly a lap holding full throttle.** Speed should climb linearly toward 1200 over ~5.2 s. At
-   intensity 1 and 2 there should be exactly ONE corner that makes you give some of it back;
+3. **Fly a lap holding full throttle.** Speed should climb linearly toward **840** over ~3.6 s
+   (at rest; ~1.4 s at Time 10 — this step said 1200 / 5.2 s before the 2026-09-25 retune). At
+   intensity 1 and 2 there should be exactly ONE corner that makes you give some of it back
+   (pre-retune expectation; the retune callout measures a median of 2 at level 1 and 4 at level 2);
    everything else goes flat out with quiet hands. Watch the speed readout — it is the mode's
    only feedback on how much stick a corner cost you.
 4. **Lap wrap.** After the eighth gate the lit ring should return to gate 1 and the goal row
@@ -293,13 +313,16 @@ leaving them as an absence.
 - **Not editor-verified.** Everything above §8 is asserted by static analysis, a real
   out-of-editor **compile** of the whole racing set AND the vessel-side change against stubbed
   packages, a 2400-circuit offline run of the shipped generator, and a 21-test edit-mode suite
-  compiled and run under a stub harness. Nobody has flown it. See
-  `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+  compiled and run under a stub harness. Nobody has flown it, and there is no Headlong entry in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md` yet, so the first-flight check is still unrecorded.
 - **The AI has never been tuned for a circuit.** It inherits Switchback's approach/commit
-  distances (260/300/220), which were sized for a Dolphin at 347 u/s. A Rhino at 1200 arrives
-  3.5× faster and those numbers are very likely too short. The graded ramp helps here for free —
+  distances (260/300/220), which were sized for a Dolphin at 347 u/s. A Rhino at 840 arrives
+  ~2.4× faster (the original note said 3.5× at the pre-retune 1200) and those numbers are very
+  likely too short. The graded ramp helps here for free —
   an AI that steers now sheds speed rather than carrying full ramp into a corner it cannot
-  make — but it is not a substitute for tuning the distances.
+  make — but it is not a substitute for tuning the distances. *(2026-10-16: this bullet assumed
+  the AI ramped. It did not — `FullSpeedStraightAction` is raised only by the human input
+  strategies, so every AI lap ever run flew without the ramp. See the kit bullet below.)*
 - **Intensity 4's hairpins present their mouths ~74° off the arrival line**, because a gate faces
   its corner's bisector and that is half of a 149° turn. The mouth was widened (40 → 46) to
   compensate; whether that is enough is a play-test question, and widening it further is the
@@ -312,11 +335,23 @@ leaving them as an absence.
   `maxBoostMultiplier`, so **every speed and every corner radius in §4 and §6 is unchanged** —
   `HeadlongCircuitSettings` is cut against `SpeedAtStick`/`CornerRadiusAtStick`, which read the
   ceiling, not the wind-up. What *does* change is how much of a straight a pilot converts: at
-  Time 10 the ramp reaches top in 2.1 s instead of 5.2, which makes this mode's short legs pay
+  Time 10 the ramp reaches top in 2.1 s instead of 5.2 (pre-retune; at 840 u/s it is ~1.4 s
+  instead of ~3.6), which makes this mode's short legs pay
   more than the circuit was tuned against. Headlong's card authors no Time row, so nothing moves
   at rest today — but the comeback system can hand a trailing Rhino element levels, and it now
   reaches this ability where it previously reached nothing. Worth a play-test before anyone
   authors a Time row here.
+- **2026-10-16 Rhino kit — needs a playtest.** Three changes reach this mode. (1) **The AI now
+  ramps**: `RampBoostAIPolicySO` (`RhinoAIBoostPolicy.asset`) ramps on a straight that pays the
+  wind-up back, brakes on the ramp to a corner speed and lets go at sharp corners
+  (`AI/AI_BOOST.md`, Ramp), so AI lap times change completely and the approach/commit distances above are
+  now load-bearing rather than theoretical. The AI also swings the sword (`RhinoSwordAutopilot`),
+  so it now interferes with a rival's line. (2) **Momentum** (Time L5) — above 588 u/s (70% of
+  840) danger prisms cannot drain the Rhino. The card authors no Time row, so only the comeback
+  levels or an omni Surge (+2 levels) can reach L5 here; it matters only where a danger prism sits
+  on the line, e.g. a rival's Mass-L5 Danger Afterimages. (3) **Afterimages** — for 5 s after an
+  energized blade goes out the sword lays prisms in its own shape, which puts new mass on the
+  circuit. Fly a 4-Rhino race (AI included) at intensity 4 before re-deriving anything.
 - **The mode does not read the boost state anywhere.** The whole design rests on the pilot
   choosing to hold it, and nothing on the HUD says whether they still have it beyond the speed
   itself. A "boost held" streak readout is the obvious next thing and is deliberately not here.

@@ -428,6 +428,7 @@ component and others get a new parent instead:
 | ″ | splash content | **Content.** `Status Text` sits at `y = -460` with height 92 → bottom edge at −506, i.e. 34 units off the screen bottom and inside the inset | New `Safe Area` layer inside `LoadingPanel` holding `Status Text`, `Loader`, `Button` |
 | `Canvas` (Authentication) | `Background` | **Full-bleed.** Full-stretch `Image` | no change |
 | ″ | `AuthPanel`, `UsernameSetupPanel`, `Status Text`, `Loader` | **Content.** `LoginStatusText` is anchored `(0.1, 0) → (0.9, 0.2)` — its lower edge *is* the screen bottom | New `Safe Area` layer holding all four |
+| Menu_Main `SceneTransitionModal` | `LeftDoor` / `RightDoor` | **Full-bleed.** A curtain. Its doors rest just outside the modal rect when open, so under the inset `Safe Area` they showed in the cutout margins as grey plates; closed, they left the margins uncovered | Hoisted to the root canvas in `SceneTransitionModal.Awake` (2026-10-12) |
 | Environment load veil (runtime) | `Backdrop` | **Full-bleed.** An occluding veil; strips of a half-built world showing under the notch is exactly what it exists to prevent | no change |
 | ″ | `Title`, `Progress` | **Content.** Both are full-stretch with centred text, so a long world name reaches the cutout | New `Safe Area` layer built in `EnvironmentLoadVeil.Awake` |
 | Privacy consent overlay (runtime) | `Scrim` | **Full-bleed.** Dims the game behind and swallows clicks | no change |
@@ -436,12 +437,45 @@ component and others get a new parent instead:
 
 #### What the application changed beyond attaching a component
 
-- **`ScreenSwitcher.GetViewportWidthInCanvasUnits` now reads the switcher's own rect, not the canvas
+- **`ScreenSwitcher.GetViewportWidthInCanvasUnits` read the switcher's own rect, not the canvas
   rect.** `LayoutScreensToViewport` sizes every menu screen panel to that width and offsets panel *i*
-  by `i × width`; reading the canvas rect would have left the filmstrip full canvas width inside a
+  by `i × width`. Reading the canvas rect would have left the filmstrip full canvas width inside a
   horizontally-inset `Screens`, so the *vertical* half of the safe area would have been respected
   and the horizontal half silently not. On desktop the fitter is a no-op and `Screens.rect ==
-  canvas.rect`, so the value is unchanged — this cannot regress a non-notched display.
+  canvas.rect`, so the value was unchanged.
+  - **Superseded 2026-10-12, after the first iPhone build.** `Screens` carries a ContentSizeFitter
+    (horizontal Min Size) that zeroes its own width on the first layout pass. The self-read
+    therefore saw the safe width in `Start` and the canvas width ever after. Navigation also
+    positioned the strip with `transform.position` (absolute screen pixels), so the safe-area
+    origin was ignored.
+  - On a Dynamic Island iPhone (2556 px wide, 177 px inset each side, 63 px at the bottom), the
+    result was:
+    - panels laid out 2202 px apart but slid 2556 px per step, so each navigation left the screen
+      another 354 px off;
+    - the whole strip shifted 177 px into the cutout and 63 px down;
+    - neighbouring screens visible in the margins, with nothing clipping them.
+  - **Fix** (`ScreenSwitcher`): the strip now sits in a runtime `Screens Viewport`, a
+    full-canvas `RectMask2D` child of the root canvas, placed just before `Safe Area` so screens
+    still draw under the NavBar and modals.
+    - Each screen gets a full-screen slot, with its content laid out in the safe rect inside that
+      slot.
+    - The strip's pivot is pinned to its left edge (so the fitter's zeroed width moves nothing),
+      and it slides one slot per screen by `anchoredPosition`.
+    - It re-lays out whenever the slot width or the safe insets change.
+  - **Backgrounds bleed** (`SafeAreaBleed`, same day). A first fix clipped everything to the safe
+    rect, which left every screen a box with the 3D scene showing round the notch, the corners and
+    the bottom, and the NavBar band stopping short of the edges.
+    - Full-width background images now get a copy that reaches the screen edge: in each screen,
+      in the NavBar, and in the modals, including 1920-wide panels centred in a wider safe area.
+    - The source keeps its rect and its raycast area; its CanvasRenderer alpha is 0.
+    - Only built when a display has margins, so a desktop never gets one.
+    - Full-height side panels docked on an edge also bleed out to that edge: the party panel of
+      the Arcade, Mission, Toybox and Arena windows.
+    - Those four windows were fixed 1920 × 908.7 rects and are now stretch-anchored. They fill the
+      safe area under the NavBar, with the same rect at 1920 × 1080.
+  - **Second bug fixed with it:** `currentScreen` is serialized as 0 (HANGAR), so restoring HANGAR
+    from the `ReturnToScreen` pref hit NavigateTo's "already on this screen" return. The strip was
+    never positioned and the hangar grid never built. `Start` now navigates from no screen.
 
 #### Known limitations (deliberate, recorded rather than solved)
 
@@ -453,11 +487,9 @@ component and others get a new parent instead:
 - **The split is made one level below each canvas root.** Panels that bundle their own dimmer with
   their own content are inset as a unit. Only the four full-screen scrims listed above were checked
   descendant-by-descendant.
-- **The menu filmstrip is laid out once, at `Start()`.** `LayoutScreensToViewport` has no
-  re-layout hook on resolution change (already recorded above), and the safe area now shares that
-  limitation: a landscape-left ↔ landscape-right flip moves the cutout to the other end and resizes
-  `Screens`, but the panels keep the width they were given at `Start`. Pre-existing, not introduced
-  here — the fix is a re-layout on `OnRectTransformDimensionsChange`, which belongs with T2.
+- ~~**The menu filmstrip is laid out once, at `Start()`.**~~ Fixed 2026-10-12: `ScreenSwitcher`
+  re-lays out the strip on the frame its viewport's width changes, whether from a desktop window
+  resize, a split view, or a change in the safe area.
 - **Nothing enforces §8's 24-unit minimum edge inset** on a future content layer — it is authored
   padding, which is what lets it survive the desktop no-op (see `Docs/UI_REDESIGN_TASKS.md` T1,
   queue item #3).
@@ -474,7 +506,7 @@ component and others get a new parent instead:
 | Orientation | **Landscape only** (auto-rotate between landscape L/R; portrait disabled) | Mobile |
 | Android max aspect | **2.1 (~18.9:9)** | Below modern 20:9 / 21:9 phones — devices wider than this letterbox or crop per OEM behavior |
 | Android min SDK | 28 (Android 9) | |
-| iOS target | 15.0, Universal (iPhone + iPad) | Bundle id is the TEST id `com.FrogletGames.CosmicShore.dev` (2026-10-02; was the legacy `com.FrogletGames.Tail-Glider`) — see `Docs/IOS_BUILD.md` §1 |
+| iOS target | 15.0, Universal (iPhone + iPad) | Bundle id is the production id `com.FrogletGames.CosmicShore` (2026-10-08; the TEST id `.dev` from 2026-10-02, unused since the free-Apple-ID path was retired on 2026-10-13; was the legacy `com.FrogletGames.Tail-Glider`) — see `Docs/IOS_BUILD.md` §1 |
 | Desktop default window | **1920×1080**, resizable, borderless fullscreen default | **Fixed 2026-09-11 (board item R5).** Was 1024×768 (4:3) and non-resizable — stale, as this audit suspected: the 4:3 default matched no canvas reference resolution. With `defaultIsNativeResolution: 1` these are the *windowed* size, not the initial fullscreen one. |
 | Color space | Linear | Matters for authoring UI colors (see `Docs/PALETTE.md`) |
 | Target frame rate | 60 (from `BootstrapConfigSO`), VSync 0 | |
@@ -484,7 +516,7 @@ The in-game Settings modal additionally exposes a resolution dropdown (built fro
 
 ### How the menu lays out across aspect ratios
 
-`ScreenSwitcher` (`Assets/_Scripts/UI/ScreenSwitcher.cs`, 1,047 lines) arranges the menu screens as a **horizontal filmstrip**: on `Start()` each screen panel is anchored to the left edge, stretched vertically, sized to exactly one viewport width (read live from the canvas rect, so it tracks the actual aspect), and offset by its index. Navigation slides the whole strip with a hand-rolled smoothstep coroutine (not DOTween). ⚠ The layout runs once at `Start()` — no re-layout hook on resolution change was found, so a mid-session desktop window resize would leave the strip sized to the old viewport (UNVERIFIED at runtime, but no code path was found).
+`ScreenSwitcher` (`Assets/_Scripts/UI/ScreenSwitcher.cs`, 1,047 lines) arranges the menu screens as a **horizontal filmstrip**: on `Start()` each screen panel is anchored to the left edge, stretched vertically, sized to exactly one viewport width (read live from the canvas rect, so it tracks the actual aspect), and offset by its index. Navigation slides the whole strip with a hand-rolled smoothstep coroutine (not DOTween). Since 2026-10-12 the strip sits in a full-canvas `Screens Viewport` and each screen gets a full-screen slot, with its content in the safe rect inside it; the slide is in `anchoredPosition`, and the layout re-runs when the slot width or the safe insets change (see "What the application changed" above).
 
 The menu root also carries a `PhoneFlipDetector` and per-screen `FlipUI` components responding to device flip.
 
@@ -602,7 +634,7 @@ The main menu is built as a **five-panel horizontal filmstrip** (screens slide l
 | 3 | `PORT` (3) | `PortScreen` | `LeaderboardsMenu` | ❌ **disabled** |
 | 4 | `PROFILE` (5) | `ProfileScreen` | `ProfileScreen` + `QuestTrackView` | ✅ |
 
-- `ScreenSwitcher.disabledScreens` = `{ARK, PORT}`. Navigating to a disabled screen silently does nothing; left/right paging skips over them.
+- `ScreenSwitcher.disabledScreens` = `{ARK, PORT}` at the audit (ARK reopened 2026-10-13 as the Elemental Converter). Navigating to a disabled screen silently does nothing; left/right paging skips over them.
 - The `STORE` enum value (0) is **not in the screens list at all** — the store content lives on the GameObject named `ArkScreen`. "ARK" and "Store" are the same (disabled) screen.
 - **Net player experience: Hangar ← Home → Profile**, with Arcade and Settings as modals on top.
 
@@ -654,7 +686,7 @@ Flow (status text goes to the splash's status line):
 - ⚠ **ArkLink and PortLink are still present and tappable even though their screens are disabled** — the tap silently does nothing. No greying-out logic was found; whether they look distinct is UNVERIFIED (the icon-swap treats all five identically).
 - The whole NavBar hides (CanvasGroup alpha 0) during freestyle flight.
 
-Gamepad, on HOME only: **A** opens Arcade, **X** opens Settings, **Y** toggles freestyle flight (3s cooldown). **L1/R1** (triggers) page the filmstrip anywhere.
+Gamepad, on HOME only: **A** opens Arcade, **Start** opens Settings, **Select / View** toggles freestyle flight (3s cooldown; Garrett moved these off X and Y on 2026-10-21). **L1/R1** (triggers) page the filmstrip anywhere.
 
 ## 2.4 HOME screen
 
@@ -672,20 +704,18 @@ Notably **absent from Home**: any daily-challenge widget (that card is inside th
 
 ## 2.5 HANGAR screen
 
-**Files:** `Assets/_Scripts/UI/Screens/HangarScreen.cs`, detail view `Assets/_Scripts/UI/Views/HangarVesselDetailView.cs`; prefabs under `Assets/_Prefabs/UI Elements/HangarScreen/`.
+**Files:** `Assets/_Scripts/UI/Screens/HangarScreen.cs`, `Assets/_Scripts/UI/Views/HangarVesselDetailView.cs`, `Assets/_Scripts/UI/Elements/Hangar/HangarVesselTile.cs` / `HangarAbilityRow.cs`; prefabs `Assets/_Prefabs/UI Elements/Main Menu Screens/Hangar/` (`HangarView`, `HangarVesselTile`, `HangarAbilityRow`), generated by `Tools/Build/author_menu_hangar.py`.
 
-Two panels, shown one at a time:
+**Rebuilt 2026-10-14 as one view in three zones** (style-B menu redesign item 2, `Docs/MENU_REDESIGN_B.md` §11). The old grid-then-detail panels, their Back button, the eye toggle, the Vibe tab and the static Overview / Elements / Progress images are gone.
 
-**Grid panel** — header, an **eye button** (toggles vessel name labels on all cards), and a vessel grid:
-- One `HangarVesselGridCard` per vessel from `SO_VesselList`, **sorted unlocked-first**; locked cards carry a lock overlay.
-- Cards **fade in staggered** (0.08s apart, 0.25s each).
-- Re-populates live on `VesselUnlockSystem.OnUnlockStateChanged` (a purchase immediately re-sorts and unlocks the card).
+- **Vessel list** (left): one `HangarVesselTile` (a `KitTile` variant) per vessel from `SO_VesselList`, owned first, fading in staggered (0.08 s apart, 0.25 s each, unscaled time). Clicking a tile **or moving gamepad / keyboard focus onto it** selects the vessel. Rebuilds live on `VesselUnlockSystem.OnUnlockStateChanged` and `DeveloperUnlockGate.OnChanged`, keeping the selection and putting focus back on its tile.
+- **Selected vessel** (centre): `SO_Vessel.PreviewImage` cover-fitted in the hero frame (the icon when a vessel has none), an Owned / Locked chip, the name, the description, and the unlock button: `UNLOCK - {cost}` (Purchase), `UNLOCK - FREE` at 0 (CTA), or the inactive `UNLOCKED`.
+- **Abilities** (right): every ability's name and description at once.
+- **Header**: "Select a vessel" and the live crystal balance.
 
-**Detail panel** — vessel 3D/preview area, name, description, and a **tab strip**: "General" (overview + unlock button) plus one tab per ability (up to 4; tabs hide if the vessel has fewer). A "Vibe" tab and a vessel preview image are authored but **force-hidden in code**.
+**Unlock flow:** press Unlock → gate check (`GameModeProgressionService.IsVesselHangarUnlocked()`; when it fails the press only writes a debug log, nothing on screen) → the **spend-crystals popup**: "{cost} to unlock {name}", the balance, Confirm (Purchase) left of Cancel on the popup's bottom edge. Short of crystals, Confirm is disabled and the popup says how many more are needed. Gamepad focus moves into the popup and cannot leave it except by Confirm / Cancel. Confirm goes through `VesselUnlockSystem.TryPurchaseVessel`; with cloud progression off that refuses every paid unlock and the popup stays open with no message (open defect, `Docs/MENU_REDESIGN_B.md` §7).
 
-**Unlock flow:** vessels are bought with **crystals** (soft currency). Button reads `UNLOCK - {cost}` / `UNLOCKED`. Press → gate check (`GameModeProgressionService.IsVesselHangarUnlocked()` — if the Hangar feature itself is still quest-locked, a toast reads **"Vessel Hangars LOCKED!"**) → a **Spend Crystals panel**: "**{cost}** to unlock **{name}**", live crystal balance, Confirm (hidden entirely — not disabled — when unaffordable), Cancel. Confirm goes through `VesselUnlockSystem.TryPurchaseVessel`.
-
-A legacy hangar path (scroll-based ship selection, training modal, overview/abilities sub-views) is still on the component but dormant while the grid references are wired.
+A legacy hangar path (scroll-based ship selection, training modal, overview/abilities sub-views under the inactive `Hangar_Panel`) is still on the component but dormant while the list references are wired.
 
 ## 2.6 PROFILE screen — where progression lives
 
@@ -895,7 +925,9 @@ so every input that worked before is unchanged. `PlayerProfileTests` holds it.
 - Sort: favorited first, then alphabetical.
 - Card states: favorite star, **locked** (from the quest chain — lock overlay, grey tint, non-interactable), ~~call-to-action badge slot (never lit — §2.13)~~ **removed with the CTA surface, §2.13.1**.
 - Tap an unlocked card → `ArcadeGameConfigureModal` (§2.10.1). This is the primary path into a match.
-- A D-pad navigation grid (`ArcadeDPadNav`) covers the cards for gamepad.
+- A D-pad navigation grid (`ArcadeDPadNav`) covered the cards for gamepad. **Retired 2026-10-14**
+  (`Docs/MENU_REDESIGN_B.md` §12): it did nothing while its window was open and drove a hidden grid
+  while it was closed; the EventSystem navigates the cards now.
 
 **Loadout view — quick play with saved configs:**
 - **Four saved loadout slots** (persisted by `LoadoutSystem`); selecting one loads its four values.
@@ -905,6 +937,11 @@ so every input that worked before is unchanged. `PlayerProfileTests` holds it.
 ## 2.12 Social: party + friends UI
 
 Reference doc: `Docs/PartySystem/UI.md`. Prefabs: `Assets/_Prefabs/UI Elements/Panels/Party/New Prefabs/`. **Both panels are children of the Arcade modal** — the friends list is only reachable through Arcade (or when an invite force-opens it).
+
+> **Since 2026-10-14 (style-B menu redesign, item 3)** the Arcade carries both panels below as one
+> prefab, `PartyPanel.prefab` (`Docs/MENU_REDESIGN_B.md` §12): the lists are embedded beside the
+> seats and the friends overlay is gone from the Arcade. The description below is the legacy shape the
+> Arena, Toy Box and Mission still use until item 8.
 
 **`ArcadeLobbyList` — the party panel** (`Assets/_Scripts/UI/Elements/ArcadeLobbyList.cs`): header + description, an **"N Players Online"** counter (counts the whole presence lobby including you; "1 Player Online" grammar special-cased), **exactly four member slots**, and a **Leave** button (non-interactable when alone).
 - Slot 0 is always the local player (avatar + name, or "You"). Slots 1–3 are remote members in join order.
@@ -1061,7 +1098,7 @@ flowchart TD
     GAME -- "session end / host quits to menu" --> G
 ```
 
-**Return-from-game always lands on HOME.** A `ReturnToScreen`/`ReturnToModal` PlayerPrefs persistence system is fully implemented in `ScreenSwitcher`, but every producer call is commented out and both `SceneLoader.LaunchGame()` and `ReturnToMainMenu()` explicitly delete the keys — so the player always comes back to Home.
+**Return-from-game lands on the launched card's panel (2026-10-25).** The `ReturnToScreen`/`ReturnToModal` PlayerPrefs keys are still deleted by `SceneLoader.LaunchGame()` and `ReturnToMainMenu()`, and a pref never reopens a configure window (a modal type carries no card). Instead `MenuReturnCard` carries the card a match was launched from through the game scene, and `ScreenSwitcher.ReturnToLaunchedCardCoroutine` re-opens its launch panel over the window that lists it once the menu is up, so the player can change the setup and go again. A guest, a guided path, a host loss and an app restart still land on Home (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.2.1).
 
 **Freestyle toggle** (`MenuCrystalClickHandler`): entering freestyle disables autopilot, fades all menu chrome out over ~0.5s while the camera blends, and holds input paused until the camera settles. Exiting restores each menu panel to its *saved* pre-freestyle alpha. During freestyle, `ScreenSwitcher` disables the EventSystem's move/submit/cancel actions (self-healing every frame) so the gamepad flies the ship instead of driving menu selection.
 
@@ -1354,7 +1391,7 @@ Shared `MultiplayerHUD`. The player sees: team jousts-remaining in the RoundTime
 Shared `MultiplayerHUD`. Team crystals-remaining in the RoundTime rings; team crystal totals in the panels; an **off-screen objective arrow pointing at the next crystal in your team's color**; the one mode confirmed to have the **connecting panel** wired; comeback-system toast (its driver *is* in the scene). **Elapsed race time is not shown during the race** — only on the end cards. The only SkimRace-specific UI class left is `SkimRaceHUDView`, an empty extension-point subclass that the scene doesn't even reference.
 
 ### Crystal Capture
-Shared `MultiplayerHUD`. Team crystals-remaining + team panels; **deliberately no mode toasts**; **no objective arrow** (no provider case exists for the mode — the runtime-created indicator stays hidden). Same end-game shape. Scene detail: like Joust it replaces the prefab scoreboard with a scene-level one (with a documented footgun: the Play Again button must be re-targeted or it silently no-ops).
+Shared `MultiplayerHUD`. Team crystals-remaining + team panels; ~~**deliberately no mode toasts**~~ [Edit 2026-10-06: `GameToastConfig_Scurry.asset` (gameMode 35) authors one crystal-milestone toast, situation 80 "**{0}** has collected {1} crystals", every 10 crystals]; ~~**no objective arrow** (no provider case exists for the mode — the runtime-created indicator stays hidden)~~ [Edit 2026-10-06: #964 added a `GameModes.Scurry` case in `MiniGameHUD.CreateObjectiveProviderForGameMode` - `RampageObjectiveProvider`, the nearest collectable manager-spawned crystal]. Same end-game shape. Scene detail: like Joust it replaces the prefab scoreboard with a scene-level one (with a documented footgun: the Play Again button must be re-targeted or it silently no-ops).
 
 ### Freestyle in Menu_Main (the "lava lamp")
 `Assets/_Scripts/UI/MenuMiniGameHUD.cs`; hierarchy `Menu_Main → UI_Refactored → Game UI`. The entire freestyle HUD is:
@@ -1377,7 +1414,7 @@ The scoreboard swaps its buttons to host-only **Continue**; the connecting panel
 
 ### The reparenting pipeline (important for any redesign)
 
-Each vessel prefab carries its own overlay canvas with the vessel HUD inside. On spawn, `ShipHUD` (`Assets/_Scripts/Controller/Vessel/VesselHUD.cs` — marked "TODO: remove this class") raises a SOAP event, and the game HUD **rips the vessel HUD's children out of the vessel prefab and reparents them under the game canvas** at sibling index 0 (so they draw under modals). **Three near-identical copies of this reparent loop exist** (`MiniGameHUD`, `MenuMiniGameHUD`, `GameCanvas`). Consequence: the runtime hierarchy matches no authored prefab — laying out in-game UI in the editor shows a false picture (see §5.7).
+Each vessel prefab carries its own overlay canvas with the vessel HUD inside. On spawn, `VesselHUD` (`Assets/_Scripts/Controller/Vessel/VesselHUD.cs`, `ShipHUD` until 2026-10-25 — marked "TODO: remove this class") raises a SOAP event, and the game HUD **rips the vessel HUD's children out of the vessel prefab and reparents them under the game canvas** at sibling index 0 (so they draw under modals). **Three near-identical copies of this reparent loop exist** (`MiniGameHUD`, `MenuMiniGameHUD`, `GameCanvas`). Consequence: the runtime hierarchy matches no authored prefab — laying out in-game UI in the editor shows a false picture (see §5.7).
 
 ### Coverage
 
@@ -1435,8 +1472,8 @@ HUD prefab variants exist at `Assets/_Prefabs/UI Elements/VesselHUD/` for **Dolp
 | Volume/Pause button + domain hex gauge | **Universal (gameplay + menu)** | The one cross-context element |
 | Connecting panel | Shared class | Confirmed wired only in SkimRace ⚠ |
 | Pre-game cinematic + SKIP | Shared, runtime-created | |
-| Toast feed | SkimRace-fork modes only | Per-mode copy SOs; Crystal Capture deliberately silent |
-| Objective arrow | Shared class, per-mode provider | None for Crystal Capture / Freestyle |
+| Toast feed | SkimRace-fork modes only | Per-mode copy SOs; Crystal Capture has one crystal-milestone toast every 10 crystals (`GameToastConfig_Scurry`) |
+| Objective arrow | Shared class, per-mode provider | None for Freestyle (Crystal Capture/Scurry gained one in #964, 2026-10-06) |
 | End reveal (slang toast) + Scoreboard + crystal rewards | All modes, one implementation | Per-mode text via `ScoringRuleSO` |
 | Pause menu | Shared (gameplay + menu) | Two forked prefabs — §4.3 |
 | Vessel HUD reparent pipeline | Shared | Three duplicate implementations |
@@ -1870,7 +1907,7 @@ Every distinct screen/state to capture for full visual coverage. Recommended: ca
 - [ ] Domain panels: your ally panel (with teammates' avatars) + 1 and 2 opposing panels (3-team match)
 - [ ] The panels rebuilding on a **mid-match join** (+ "{name} joined" toast)
 - [ ] Toast feed: Joust's joust line (team-colored names), the 60s idle hint, "{name} disconnected"; **Joust's feed position specifically** (drift may put it off-screen)
-- [ ] Objective arrow: on-screen-target hidden state, edge-clamped arrow, with distance label (SkimRace crystal; Joust nearest-opponent) — and Crystal Capture showing **no arrow**
+- [ ] Objective arrow: on-screen-target hidden state, edge-clamped arrow, with distance label (SkimRace crystal; Joust nearest-opponent) — and Crystal Capture (Scurry) pointing at the nearest crystal (it showed **no arrow** until #964, 2026-10-06)
 - [ ] A joust hit moment (explosion VFX — documents the absence of hit markers/damage numbers)
 - [ ] Touch device: the on-screen state as shipped (thumb cursors are self-disabled — capture what IS there)
 - [ ] Gamepad vs keyboard vs touch: control-hint glyph sets on the vessel HUD (Xbox, PS, keyboard text, touch = hidden)

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using TMPro;
 using DG.Tweening;
@@ -68,6 +69,10 @@ namespace CosmicShore.UI
             public RectTransform ChipSocket;
             public Image ChipGlyph;
             public TMP_Text ChipLabel;
+            public RectTransform Keycap;
+            public Image KeycapFill;
+            public Image KeycapBorder;
+            public TMP_Text KeycapLabel;
             public InputDeviceIconSetSwitcher.HintBinding PadBinding;
             public InputDeviceIconSetSwitcher.HintBinding KeyBinding;
             public Tween Tween;
@@ -75,7 +80,36 @@ namespace CosmicShore.UI
             public bool Pressed;
             public bool Locked;
             public bool Upgraded;
+            public bool HasTint;        // rev 3: the card wears its element's colour
+            public Color Tint;
+            public AbilityCardPress Press;   // a tap on the card presses its ability
+            public RectTransform Host;       // what the row positions (the card hangs off it)
+            public int Index;                // its row slot, for RestoreRowLayout
+            public int Count;
+            public Image TouchGlyph;         // the thumb-lift glyph a phone draws in the chip socket
         }
+
+        /// <summary>One card, as the phone controls (<c>TouchControlsHud</c>) see it.</summary>
+        public struct CardInfo
+        {
+            public bool IsCore;
+            public Element Element;
+            public CoreAbility Core;
+            public RectTransform Host;
+            public AbilityCardPress Press;
+            public bool Locked;
+        }
+
+        /// <summary>One drifting colour blob of the rev 3 lava lamp, behind a card's icon.</summary>
+        sealed class LavaBlob
+        {
+            public RectTransform Rt;
+            public Vector2 Home;
+            public float Period;
+            public float Phase;
+        }
+
+        readonly List<LavaBlob> _blobs = new();
 
         readonly Dictionary<Element, Slot> _slots = new();
         readonly Dictionary<CoreAbility, Slot> _coreSlots = new();
@@ -90,7 +124,19 @@ namespace CosmicShore.UI
         /// </summary>
         public ElementalBarsView ElementBars => elementBars;
 
-        void Awake() => Build();
+        void Awake()
+        {
+            // The lava blobs move every frame. On GameCanvas (thousands of graphics) each move re-batched
+            // the WHOLE canvas every frame - the in-match slowdown after the lava-lamp row (2026-10-17). A
+            // nested Canvas on the row confines that re-batch to the row; it needs its own raycaster for
+            // the touch ability buttons inside it.
+            if (!TryGetComponent<Canvas>(out _))
+            {
+                gameObject.AddComponent<Canvas>();
+                gameObject.AddComponent<GraphicRaycaster>();
+            }
+            Build();
+        }
 
         /// <summary>
         /// The scale that draws THIS element's icon at the fleet's one drawn size, whatever size the
@@ -135,6 +181,50 @@ namespace CosmicShore.UI
             return Mathf.Max(size.x, size.y);
         }
 
+        static readonly Vector3[] s_corners = new Vector3[4];
+
+        /// <summary>
+        /// The screen rectangle, in pixels, that the built cards cover together AT REST - so a view or an input can keep
+        /// clear of the totems (the Wrasse's hand line sits just above it). Each card is measured without its own scale and
+        /// rotation, so its press and upgrade tweens do not move the answer. False before <see cref="Build"/>, or while no
+        /// card is showing. A question, not a demand: a miss is an answer.
+        /// </summary>
+        public bool TryGetCardsScreenRect(out Rect rect)
+        {
+            rect = default;
+            if (!_built) return false;
+            var canvas = GetComponentInParent<Canvas>();
+            var root = canvas ? canvas.rootCanvas : null;
+            Camera cam = root && root.renderMode != RenderMode.ScreenSpaceOverlay ? root.worldCamera : null;
+            bool any = false;
+            float xMin = float.MaxValue, yMin = float.MaxValue, xMax = float.MinValue, yMax = float.MinValue;
+            foreach (var slot in _slots.Values) Grow(slot.Card, cam, ref any, ref xMin, ref yMin, ref xMax, ref yMax);
+            foreach (var slot in _coreSlots.Values) Grow(slot.Card, cam, ref any, ref xMin, ref yMin, ref xMax, ref yMax);
+            if (any) rect = Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+            return any;
+        }
+
+        static void Grow(RectTransform card, Camera cam, ref bool any, ref float xMin, ref float yMin, ref float xMax, ref float yMax)
+        {
+            if (!card || !card.gameObject.activeInHierarchy) return;
+            // the card's rect placed at its pivot in its parent, leaving out its own (tweened) scale and rotation
+            var r = card.rect;
+            var at = card.localPosition;
+            var parent = card.parent;
+            s_corners[0] = at + new Vector3(r.xMin, r.yMin, 0f);
+            s_corners[1] = at + new Vector3(r.xMin, r.yMax, 0f);
+            s_corners[2] = at + new Vector3(r.xMax, r.yMax, 0f);
+            s_corners[3] = at + new Vector3(r.xMax, r.yMin, 0f);
+            for (int i = 0; i < 4; i++)
+            {
+                var world = parent ? parent.TransformPoint(s_corners[i]) : s_corners[i];
+                var p = RectTransformUtility.WorldToScreenPoint(cam, world);
+                xMin = Mathf.Min(xMin, p.x); xMax = Mathf.Max(xMax, p.x);
+                yMin = Mathf.Min(yMin, p.y); yMax = Mathf.Max(yMax, p.y);
+            }
+            any = true;
+        }
+
         /// <summary>The flower socket for an element, if a card was built for it.</summary>
         public RectTransform GetFlowerSocket(Element element)
             => _slots.TryGetValue(element, out var slot) ? slot.FlowerSocket : null;
@@ -153,6 +243,86 @@ namespace CosmicShore.UI
         /// <summary>True when this slot's ability does not exist yet (no icon bound).</summary>
         public bool IsSlotLocked(Element element)
             => _slots.TryGetValue(element, out var slot) && slot.Locked;
+
+        // ---------------------------------------------------------------
+        // Phone controls (TouchControlsHud, Docs/Reports/MOBILE_VESSELS.md)
+        // ---------------------------------------------------------------
+
+        /// <summary>Every card of the row, elemental then non-elemental.</summary>
+        public void GetCards(List<CardInfo> into)
+        {
+            into.Clear();
+            foreach (var pair in _slots)
+                into.Add(new CardInfo { Element = pair.Key, Host = pair.Value.Host, Press = pair.Value.Press,
+                                        Locked = pair.Value.Locked });
+            foreach (var pair in _coreSlots)
+                into.Add(new CardInfo { IsCore = true, Core = pair.Key, Host = pair.Value.Host,
+                                        Press = pair.Value.Press, Locked = pair.Value.Locked });
+        }
+
+        /// <summary>The row the cards hang off (bottom-right of the HUD root).</summary>
+        public RectTransform Row => transform.Find("AbilityLockupRow") as RectTransform;
+
+        /// <summary>A card's width in canvas units, at host scale 1.</summary>
+        public float CardWidth => ResolveStyle() ? style.plateWidth : 104f;
+
+        /// <summary>A full totem's height (element plate, gap, ability plate) in canvas units.</summary>
+        public float CardHeight => ResolveStyle() ? style.PlateHeight : 182f;
+
+        /// <summary>How far above its host's centre a full totem's centre sits, in canvas units at scale 1.</summary>
+        public float CardCentreAboveHost => ResolveStyle() ? style.CardCenterOffsetY : 47f;
+
+        /// <summary>A colour for a button that is not an element's (the drift colour).</summary>
+        public Color NeutralColour => ResolveStyle() ? style.driftColour : Color.white;
+
+        public Color ColourFor(Element element) => ResolveStyle() ? style.ColourFor(element) : Color.white;
+
+        /// <summary>Puts every card back where the fleet row puts it, at scale 1 - undoing a phone layout.</summary>
+        public void RestoreRowLayout()
+        {
+            var row = Row;
+            if (!row || !ResolveStyle()) return;
+            foreach (var slot in _slots.Values)
+                if (slot.Host) PlaceHost(row, slot.Host, slot.Index, slot.Count);
+            foreach (var slot in _coreSlots.Values)
+                if (slot.Host) PlaceHost(row, slot.Host, slot.Index, slot.Count);
+        }
+
+        /// <summary>The touch gesture a card's ability is on, drawn in its chip socket. Null clears it.</summary>
+        public void SetTouchGlyph(Element element, Sprite glyph)
+        {
+            if (_slots.TryGetValue(element, out var slot)) SetSlotTouchGlyph(slot, glyph);
+        }
+
+        /// <summary>The same for a non-elemental card (the Squirrel's drift).</summary>
+        public void SetCoreTouchGlyph(CoreAbility ability, Sprite glyph)
+        {
+            if (_coreSlots.TryGetValue(ability, out var slot)) SetSlotTouchGlyph(slot, glyph);
+        }
+
+        void SetSlotTouchGlyph(Slot slot, Sprite glyph)
+        {
+            if (!slot.ChipSocket) return;
+            if (!glyph)
+            {
+                if (slot.TouchGlyph) slot.TouchGlyph.enabled = false;
+                return;
+            }
+            if (!slot.TouchGlyph)
+            {
+                slot.TouchGlyph = ResolveChildImage(slot.ChipSocket, "TouchGlyph", null);
+                var rt = slot.TouchGlyph.rectTransform;
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = Vector2.zero;
+                float side = style.chipHeight * 1.8f;
+                rt.sizeDelta = new Vector2(side, side);
+                slot.TouchGlyph.preserveAspect = true;
+                slot.TouchGlyph.raycastTarget = false;
+            }
+            slot.TouchGlyph.sprite = glyph;
+            slot.TouchGlyph.color = slot.HasTint ? slot.Tint : Color.white;
+            slot.TouchGlyph.enabled = true;
+        }
 
         // ---------------------------------------------------------------
         // Build
@@ -206,6 +376,16 @@ namespace CosmicShore.UI
             // The NON-elemental cards first, at NEGATIVE slot indices, so they land one pitch further
             // left per card and the elemental columns never move. A vessel that binds none of them
             // (every vessel but the Squirrel today) emits nothing at all here.
+            // A core card is DROPPED entirely only when the fleet has nothing to say about it:
+            // no art, no meter and no emblem. The omni crystal card always has an emblem, so
+            // every vessel draws it - locked where that hull has no omni ability yet, which is
+            // the honest state and what a locked card is for. The cards that are drawn pack
+            // against the elemental row, so a hull that binds only some of them shows no hole.
+            bool Present(CoreAbility a) =>
+                (hudView.TryGetCoreAbilityIcon(a, out var probeIcon) && probeIcon) ||
+                (hudView.TryGetCoreAbilityEmblem(a, out var probeEmblem) && probeEmblem) ||
+                (style && style.EmblemFor(a));
+
             int coreCount = 0;
             for (int i = 0; i < coreOrder.Length; i++)
             {
@@ -213,10 +393,6 @@ namespace CosmicShore.UI
                 var emblemSprite = style ? style.EmblemFor(ability) : null;
                 hudView.TryGetCoreAbilityEmblem(ability, out var emblem);
 
-                // A core card is DROPPED entirely only when the fleet has nothing to say about it:
-                // no art, no meter and no emblem. The omni crystal card always has an emblem, so
-                // every vessel draws it - locked where that hull has no omni ability yet, which is
-                // the honest state and what a locked card is for.
                 bool hasIcon = hudView.TryGetCoreAbilityIcon(ability, out var icon) && icon;
                 if (!hasIcon && !emblem && !emblemSprite) continue;
 
@@ -225,12 +401,18 @@ namespace CosmicShore.UI
                     : ResolveLockedHost(row, ability.ToString());
                 if (!host || host == row) continue;
 
-                // The LAST entry in the display order sits nearest Charge: index -1, then -2 leftward.
-                PlaceHost(row, host, -(coreOrder.Length - i), order.Length);
+                // The LAST drawn entry in the display order sits nearest Charge: index -1, then -2 leftward.
+                int drawnAfter = 0;
+                for (int j = i + 1; j < coreOrder.Length; j++)
+                    if (Present(coreOrder[j])) drawnAfter++;
+                PlaceHost(row, host, -(drawnAfter + 1), order.Length);
 
                 var slot = BuildSlot($"AbilityLockup_{ability}", host, hasIcon ? icon : null,
                                      Element.None, emblem, emblemSprite);
                 if (slot == null) continue;
+                slot.Host = host;
+                slot.Index = -(coreOrder.Length - i);
+                slot.Count = order.Length;
 
                 if (hasIcon)
                 {
@@ -239,6 +421,8 @@ namespace CosmicShore.UI
                 }
                 coreHosts[ability] = host;
                 _coreSlots[ability] = slot;
+                ApplyElementColour(slot, ability == CoreAbility.OmniCrystal ? OmniEdge : style.driftColour,
+                                   omni: ability == CoreAbility.OmniCrystal);
                 coreCount++;
             }
 
@@ -257,12 +441,16 @@ namespace CosmicShore.UI
                 var slot = BuildSlot($"AbilityLockup_{element}", host, hasIcon ? icon : null, element,
                                      emblem: null, emblemSprite: null);
                 if (slot == null) continue;
+                slot.Host = host;
+                slot.Index = i;
+                slot.Count = order.Length;
 
                 if (hasIcon) NormaliseIcon(icon.rectTransform);
 
                 hosts[element] = host;
                 if (hasIcon) icons[element] = icon;
                 _slots[element] = slot;
+                ApplyElementColour(slot, style.ColourFor(element), omni: false);
             }
 
             foreach (var pair in _coreSlots)
@@ -506,6 +694,12 @@ namespace CosmicShore.UI
             slot.AbilityPlate.raycastTarget = false;
             AdoptButtonTarget(host, slot.AbilityPlate);
 
+            // The card is its ability's button (SetSlotControl decides whether it is pressable).
+            if (!host.TryGetComponent(out slot.Press))
+                slot.Press = host.gameObject.AddComponent<AbilityCardPress>();
+            slot.Press.SetRegion(card);
+            slot.Press.SetInput(InputEvents.FullSpeedStraightAction, pressable: false);
+
             // The gauge lines the ABILITY plate, so the fill reads as the icon filling up. It stays
             // INVISIBLE until a meter is actually adopted onto this card (AdoptGauge turns it on):
             // an empty track under an ability that has no meter is a false affordance - it reads as
@@ -557,6 +751,17 @@ namespace CosmicShore.UI
             return slot;
         }
 
+        /// <summary>The rect + taper of something laid on a plate, already inset inside its band.</summary>
+        readonly struct PlateRect
+        {
+            public readonly float Width, Height, CentreY, TopEdge, BottomEdge;
+            public PlateRect(float width, float height, float centreY, float topEdge, float bottomEdge)
+            {
+                Width = width; Height = height; CentreY = centreY;
+                TopEdge = Mathf.Clamp01(topEdge); BottomEdge = Mathf.Clamp01(bottomEdge);
+            }
+        }
+
         /// <summary>
         /// The stencil the vessel's own meter is drawn through, so a rectangular <c>Filled</c> Image
         /// reads as the trapezoid it sits in.
@@ -570,17 +775,6 @@ namespace CosmicShore.UI
         /// <para>Costs two extra draw calls on a card that HAS a meter (stencil in, stencil out).
         /// Three cards fleet-wide carry one today, so it is six.</para>
         /// </summary>
-        /// <summary>The rect + taper of something laid on a plate, already inset inside its band.</summary>
-        readonly struct PlateRect
-        {
-            public readonly float Width, Height, CentreY, TopEdge, BottomEdge;
-            public PlateRect(float width, float height, float centreY, float topEdge, float bottomEdge)
-            {
-                Width = width; Height = height; CentreY = centreY;
-                TopEdge = Mathf.Clamp01(topEdge); BottomEdge = Mathf.Clamp01(bottomEdge);
-            }
-        }
-
         RectTransform ResolveGaugeClip(RectTransform card, PlateRect rect)
         {
             const string name = "GaugeClip";
@@ -995,8 +1189,8 @@ namespace CosmicShore.UI
 
             // The slant edge crosses with them - it is part of the plate, not a separate frame, and
             // it is the one channel with enough contrast left to read at a glance on a dark plate.
-            ApplySlantEdge(slot.ElementPlate, locked: false, upgraded);
-            ApplySlantEdge(slot.AbilityPlate, locked: false, upgraded);
+            ApplySlantEdge(slot.ElementPlate, locked: false, upgraded, slot);
+            ApplySlantEdge(slot.AbilityPlate, locked: false, upgraded, slot);
 
             if (!animate)
             {
@@ -1195,6 +1389,27 @@ namespace CosmicShore.UI
             if (_slots.TryGetValue(element, out var slot)) SetSlotControl(slot, input);
         }
 
+        /// <summary>
+        /// A card's chip named by its CONTROL rather than by an input event - for an ability driven by
+        /// a gesture no <see cref="InputEvents"/> button names (the Rhino's ramp is the dual-stick
+        /// throttle pushed apart; <c>FullSpeedStraightAction</c> is also the passive sentinel and draws
+        /// nothing, deliberately, for every passive card in the fleet). Overrides whatever the map's
+        /// input seeded on this card.
+        /// </summary>
+        public void SetAbilityControlBinding(Element element, InputDeviceIconSetSwitcher.HintBinding pad,
+                                             InputDeviceIconSetSwitcher.HintBinding key)
+        {
+            if (!_slots.TryGetValue(element, out var slot)) return;
+            slot.PadBinding = pad;
+            slot.KeyBinding = key;
+            RefreshChip(slot);
+
+            // A tap presses the control's own event when it has one; a gesture no button names
+            // (the Rhino's sticks pushed apart) cannot be pressed from a card.
+            var events = InputHintBindingMap.InputEventsFor(InputHintBindingMap.Canonical(pad));
+            SetSlotPressInput(slot, events.Count > 0 ? events[0] : InputEvents.FullSpeedStraightAction);
+        }
+
         /// <summary>The same chip on a NON-elemental card.</summary>
         public void SetCoreAbilityControl(CoreAbility ability, InputEvents input)
         {
@@ -1206,6 +1421,30 @@ namespace CosmicShore.UI
             slot.PadBinding = InputHintBindingMap.BindingFor(input, keyboard: false);
             slot.KeyBinding = InputHintBindingMap.BindingFor(input, keyboard: true);
             RefreshChip(slot);
+            SetSlotPressInput(slot, input);
+        }
+
+        /// <summary>
+        /// Arms the card's tap to press <paramref name="input"/>. A locked card or the passive sentinel
+        /// is not pressable. A pressable card's plates take hits, so a finger anywhere on the totem counts.
+        /// </summary>
+        void SetSlotPressInput(Slot slot, InputEvents input)
+        {
+            if (!slot.Press) return;
+            bool pressable = !slot.Locked && input != InputEvents.FullSpeedStraightAction;
+            slot.Press.SetInput(input, pressable);
+            if (!pressable) return;
+            if (slot.AbilityPlate) slot.AbilityPlate.raycastTarget = true;
+            if (slot.ElementPlate) slot.ElementPlate.raycastTarget = true;
+        }
+
+        /// <summary>Who a tapped card presses for: the pilot's input status and the vessel's action handler.</summary>
+        public void SetPressSource(IInputStatus input, R_VesselActionHandler actions)
+        {
+            foreach (var slot in _slots.Values)
+                if (slot.Press) slot.Press.Bind(input, actions);
+            foreach (var slot in _coreSlots.Values)
+                if (slot.Press) slot.Press.Bind(input, actions);
         }
 
         /// <summary>Which device the chips should speak for. Pushed on every set change.</summary>
@@ -1227,17 +1466,26 @@ namespace CosmicShore.UI
             if (!set || !slot.ChipSocket) return;
 
             var binding = _chipKeyboard ? slot.KeyBinding : slot.PadBinding;
-            var glyph = set.For(binding);
-
-            // A passive ability has no button, and several pad buttons have no keyboard equivalent.
-            // Both draw NOTHING rather than borrowing another device's picture.
-            bool showGlyph = glyph != null && !_chipKeyboard && glyph.padGlyph;
-            bool showLabel = glyph != null && _chipKeyboard && !string.IsNullOrEmpty(glyph.keyboardLabel);
+            // A locked slot has no ability, so it has no control to name (the board's "dim plate,
+            // a dash, no chip").
+            // A phone or tablet with no pad names no controls at all (KitInputDevice).
+            var glyph = slot.Locked || !KitInputDevice.ShowsControlHints ? null : set.For(binding);
 
             // A chip depicts a BUTTON, so it wears the button's own held art while the ability is
             // firing - the one thing the retired hint visuals did that the card cannot say, since
             // the card lights the ability and this lights the control. Both are the same press.
             bool held = slot.Pressed;
+
+            // Style B: the control's NAME on a keycap, on either device. A pad control with no
+            // name authored falls through to its artwork below.
+            string keyName = glyph == null ? null : _chipKeyboard ? glyph.keyboardLabel : glyph.padLabel;
+            bool keycap = style && style.keycapChips && !string.IsNullOrEmpty(keyName);
+            DrawKeycap(slot, keycap ? keyName : null, held, set);
+
+            // A passive ability has no button, and several pad buttons have no keyboard equivalent.
+            // Both draw NOTHING rather than borrowing another device's picture.
+            bool showGlyph = !keycap && glyph != null && !_chipKeyboard && glyph.padGlyph;
+            bool showLabel = !keycap && glyph != null && _chipKeyboard && !string.IsNullOrEmpty(glyph.keyboardLabel);
 
             if (showGlyph || slot.ChipGlyph)
             {
@@ -1258,6 +1506,56 @@ namespace CosmicShore.UI
                 slot.ChipLabel.color = held ? set.heldColor : set.restColor;
                 slot.ChipLabel.enabled = showLabel;
             }
+        }
+
+        /// <summary>
+        /// The style-B keycap: a slivered socket that hugs the control's name, centred in the
+        /// chip socket under its card. <paramref name="keyName"/> null hides it. Held, the key
+        /// reads as pressed in - a lit fill with dark text - which is the same press the card's
+        /// flash shows, said by the control rather than by the ability.
+        /// </summary>
+        void DrawKeycap(Slot slot, string keyName, bool held, ControlGlyphSetSO set)
+        {
+            if (string.IsNullOrEmpty(keyName))
+            {
+                if (slot.Keycap) slot.Keycap.gameObject.SetActive(false);
+                return;
+            }
+
+            if (!slot.Keycap)
+            {
+                var existing = slot.ChipSocket.Find("Keycap") as RectTransform;
+                if (!existing)
+                {
+                    existing = (RectTransform)new GameObject("Keycap", typeof(RectTransform)).transform;
+                    existing.SetParent(slot.ChipSocket, false);
+                }
+                slot.Keycap = existing;
+                slot.KeycapFill = ResolveChildImage(existing, "Fill", style.keycapFillSprite);
+                slot.KeycapBorder = ResolveChildImage(existing, "Border", style.keycapBorderSprite);
+                StretchTo(slot.KeycapFill.rectTransform, 0f);
+                StretchTo(slot.KeycapBorder.rectTransform, 0f);
+                slot.KeycapLabel = ResolveChipLabel(existing, set);
+                slot.KeycapLabel.fontSize = style.keycapTextSize;
+                if (style.keycapFont) slot.KeycapLabel.font = style.keycapFont;
+                slot.KeycapLabel.textWrappingMode = TextWrappingModes.NoWrap;
+            }
+
+            slot.Keycap.gameObject.SetActive(true);
+            slot.KeycapLabel.text = keyName;
+            slot.KeycapLabel.color = CosmicShore.UI.UITheme.Resolve(null, held ? style.keycapHeldTextToken : style.keycapTextToken);
+            slot.KeycapFill.color = CosmicShore.UI.UITheme.Resolve(null, held ? style.keycapHeldFillToken : style.keycapFillToken);
+            // Rev 3: the keycap's edge in the card's element colour, so control and ability read as one.
+            slot.KeycapBorder.color = slot.HasTint ? slot.Tint : CosmicShore.UI.UITheme.Resolve(null, style.keycapBorderToken);
+
+            float width = Mathf.Min(style.plateWidth,
+                                    slot.KeycapLabel.GetPreferredValues(keyName).x + style.keycapPadding * 2f);
+            slot.Keycap.anchorMin = slot.Keycap.anchorMax = slot.Keycap.pivot = new Vector2(0.5f, 0.5f);
+            slot.Keycap.sizeDelta = new Vector2(Mathf.Max(width, style.chipHeight), style.chipHeight);
+            slot.Keycap.anchoredPosition = Vector2.zero;
+            // Held, the key reads as pressed IN: lit and a touch smaller.
+            slot.Keycap.localScale = held ? Vector3.one * 0.92f : Vector3.one;
+            slot.Keycap.localRotation = Quaternion.identity;
         }
 
         TMP_Text ResolveChipLabel(RectTransform socket, ControlGlyphSetSO set)
@@ -1362,26 +1660,114 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// One of the card's generated plates. <paramref name="top"/> and <paramref name="bottom"/>
-        /// are edge widths as fractions of the rect - both always derived from the style's single
-        /// inset, mirrored, so the two halves of a totem can never disagree about the slant.
-        /// </summary>
-        /// <summary>
         /// The band on a plate's two SLOPED sides - solid the whole length of each slant, wrapping
         /// around both corners onto the horizontals and grading to nothing there, so it accents the
         /// edges that carry the shape and never closes into the border this style retired. A locked slot wears it at the locked
         /// mark's colour, so an undesigned slot is quiet in every channel at once.
         /// </summary>
-        void ApplySlantEdge(TrapezoidGraphic plate, bool locked, bool upgraded)
+        void ApplySlantEdge(TrapezoidGraphic plate, bool locked, bool upgraded, Slot tinted = null)
         {
+            if (!plate) return;
             plate.EdgeThickness = style.slantEdgeThickness;
             plate.EdgeWrap = style.slantEdgeWrap;
             plate.EdgeAntialias = style.slantEdgeAntialias;
             plate.EdgeColor = locked ? style.lockedMarkColor
                                      : upgraded ? style.upgradedSlantEdgeColor
-                                                : style.slantEdgeColor;
+                                                : tinted is { HasTint: true } ? WithAlpha(tinted.Tint, style.elementEdgeAlpha)
+                                                                              : style.slantEdgeColor;
         }
 
+        // ---------------------------------------------------------------
+        // Element colour - the rev 3 lava lamp
+        // ---------------------------------------------------------------
+
+        /// <summary>The omni card's edge: near-white, because its blobs carry all four elements.</summary>
+        static readonly Color OmniEdge = new(0.9f, 0.92f, 1f, 1f);
+
+        /// <summary>
+        /// Gives a built card its element's colour (rev 3, approved 2026-10-16): two soft blobs per plate
+        /// drifting behind the icon like a lava lamp, the slant edge and the keycap edge in the same
+        /// colour. The omni card's blobs are the four elements. A LOCKED card stays dim and still - it
+        /// has no ability for the colour to qualify. The flower petals are never touched: their level
+        /// ladder is the HUD's vocabulary.
+        ///
+        /// <para>Each plate's blobs sit in a soft-edged <see cref="RectMask2D"/> the size of the plate,
+        /// drawn right above it and below the gauge, flash and icon. RectMask2D rather than the stencil
+        /// Mask the gauge uses: it costs no extra draw calls, and the soft edge hides the corners where a
+        /// rectangle and a trapezoid disagree.</para>
+        /// </summary>
+        void ApplyElementColour(Slot slot, Color colour, bool omni)
+        {
+            if (slot == null || !style || !style.elementColour || slot.Locked) return;
+            slot.HasTint = true;
+            slot.Tint = colour;
+            if (slot.ElementPlate) BuildLava(slot.Card, slot.ElementPlate, colour, omni, 0);
+            if (slot.AbilityPlate) BuildLava(slot.Card, slot.AbilityPlate, colour, omni, 2);
+            ApplySlantEdge(slot.ElementPlate, false, slot.Upgraded, slot);
+            ApplySlantEdge(slot.AbilityPlate, false, slot.Upgraded, slot);
+        }
+
+        void BuildLava(RectTransform card, TrapezoidGraphic plate, Color colour, bool omni, int omniOffset)
+        {
+            string clipName = plate.name + "Lava";
+            var clip = card.Find(clipName) as RectTransform;
+            if (!clip)
+            {
+                clip = (RectTransform)new GameObject(clipName, typeof(RectTransform), typeof(RectMask2D)).transform;
+                clip.SetParent(card, false);
+            }
+            var prt = plate.rectTransform;
+            SetCellRect(clip, prt.anchoredPosition.y, prt.sizeDelta.x - style.PlateEdgeReach * 2f, prt.sizeDelta.y - style.PlateEdgeReach * 2f);
+            var mask = clip.GetComponent<RectMask2D>();
+            mask.softness = new Vector2Int(10, 10);
+            clip.SetSiblingIndex(plate.transform.GetSiblingIndex() + 1);
+
+            Color.RGBToHSV(colour, out float h, out float sat, out float val);
+            var second = Color.HSVToRGB(Mathf.Repeat(h + 0.06f, 1f), sat, val * 0.95f);
+            Color[] omniColours = { style.chargeColour, style.massColour, style.spaceColour, style.timeColour };
+            for (int i = 0; i < 2; i++)
+            {
+                var blob = ResolveChildImage(clip, $"Blob{i}", style.bloomSprite);
+                var c = omni ? omniColours[(i + omniOffset) % 4] : i == 0 ? colour : second;
+                blob.color = WithAlpha(c, style.lavaAlpha * (i == 0 ? 1f : 0.8f));
+                float d = style.plateWidth * style.lavaBlobScale * (i == 0 ? 1f : 0.8f);
+                var rt = blob.rectTransform;
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.sizeDelta = new Vector2(d, d);
+                var home = i == 0 ? new Vector2(-10f, -6f) : new Vector2(12f, 8f);
+                rt.anchoredPosition = home;
+                // Every blob on its own clock (golden-ratio spread), so the row never pulses in step.
+                float k = Mathf.Repeat((_blobs.Count + 1) * 0.618034f, 1f);
+                _blobs.Add(new LavaBlob
+                {
+                    Rt = rt,
+                    Home = home,
+                    Period = Mathf.Lerp(style.lavaPeriod.x, style.lavaPeriod.y, k),
+                    Phase = k * Mathf.PI * 2f,
+                });
+            }
+        }
+
+        void Update()
+        {
+            if (_blobs.Count == 0 || !style || !style.lavaMotion) return;
+            float t = Time.unscaledTime;
+            for (int i = 0; i < _blobs.Count; i++)
+            {
+                var b = _blobs[i];
+                if (!b.Rt) continue;
+                float a = t * (Mathf.PI * 2f) / Mathf.Max(0.1f, b.Period) + b.Phase;
+                b.Rt.anchoredPosition = b.Home + new Vector2(Mathf.Sin(a), Mathf.Cos(a * 0.77f)) * style.lavaDrift;
+                float sc = 1f + 0.18f * Mathf.Sin(a * 0.6f);
+                b.Rt.localScale = new Vector3(sc, sc, 1f);
+            }
+        }
+
+        /// <summary>
+        /// One of the card's generated plates. <paramref name="top"/> and <paramref name="bottom"/>
+        /// are edge widths as fractions of the rect - both always derived from the style's single
+        /// inset, mirrored, so the two halves of a totem can never disagree about the slant.
+        /// </summary>
         TrapezoidGraphic ResolveTrapezoid(RectTransform parent, string childName, float top, float bottom)
         {
             var existing = parent.Find(childName);
@@ -1459,6 +1845,7 @@ namespace CosmicShore.UI
             }
             _slots.Clear();
             _coreSlots.Clear();
+            _blobs.Clear();
         }
     }
 }

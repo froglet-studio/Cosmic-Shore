@@ -193,10 +193,16 @@ namespace CosmicShore.Gameplay
         /// one. SPACE now owns the Track Projector on the other trigger, so the whole weapon —
         /// reach and depth alike — belongs to CHARGE, and the map's Charge entry carries the
         /// multiplier the Space entry used to (2.5 at level 10, floored at 0.4).
+        ///
+        /// Evaluated at the REPLICATED integer level (<c>EvaluateReplicated</c>), not the local
+        /// one: every peer re-executes the volley and reach decides which prisms the cascade
+        /// touches, so a local read let peers run different-reach cascades (URCHIN_BACKLOG U1).
+        /// The price is the replicated level's 0..15 clamp: a Charge deficit reads as level 0
+        /// (x1), so the 0.4 floor is no longer reachable from a deficit.
         /// </summary>
         public float ResolveRangeScale(IVesselStatus status)
         {
-            return chargeRangeMultiplier.EvaluateLive(status);
+            return chargeRangeMultiplier.EvaluateReplicated(status);
         }
 
         /// <summary>
@@ -223,15 +229,21 @@ namespace CosmicShore.Gameplay
         /// CHARGE -> depth. How many generations this volley's spikes may propagate, from the
         /// vessel's LIVE Charge level, plus the level-5 "Overcharge" bonus generation.
         ///
-        /// KNOWN GAP (multiplayer): the level read is the LOCAL ResourceSystem's, which does
-        /// not replicate - unlike the unlock BIT that ResolveRangeFalloff correctly uses. Depth
-        /// changes the prismscape, so peers can run different-depth cascades until a replicated
-        /// level surface exists (Docs/ElementalAbilitySystem/ARCHITECTURE.md 3.4).
+        /// The level is the REPLICATED one (<c>ReplicatedLevel</c>, the owner-published
+        /// <c>NetElementLevels</c> nibble), the same kind of surface ResolveRangeFalloff's unlock
+        /// bit rides: depth changes the prismscape and every peer re-executes the volley, so a
+        /// local <c>ResourceSystem</c> read let peers run different-depth cascades
+        /// (URCHIN_BACKLOG U1). The price is the replicated 0..15 clamp: a Charge deficit reads
+        /// as level 0, i.e. the resting depth rather than the extrapolated deficit depth.
+        /// Off-vessel (no ability handler) it falls back to the local level.
         /// </summary>
         public int ResolveGenerations(IVesselStatus status)
         {
+            var abilities = status?.ElementalAbilityHandler;
             var resources = status?.ResourceSystem;
-            int level = resources ? resources.GetLevel(Element.Charge) : 0;
+            int level = abilities != null
+                ? abilities.ReplicatedLevel(Element.Charge)
+                : resources ? resources.GetLevel(Element.Charge) : 0;
             int generations = GenerationsForLevel(level, generationsAtRestingCharge, generationsAtFullCharge);
 
             // "Overcharge" ADDS a generation; it does not floor at one. A floor was a no-op by
@@ -240,7 +252,6 @@ namespace CosmicShore.Gameplay
             // could never bind and the level-5 upgrade did literally nothing. Clamped to the
             // same [0, 4] ceiling GenerationsForLevel enforces, so the pool tiers and the
             // per-frame volley budget still bound the worst case.
-            var abilities = status?.ElementalAbilityHandler;
             if (chainsOnChargeUpgrade && abilities != null && abilities.IsUpgradeActive(Element.Charge))
                 generations = Mathf.Clamp(generations + 1, 0, 4);
 

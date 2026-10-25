@@ -22,6 +22,35 @@ namespace CosmicShore.Engine.Audio.Fmod
 
     public enum STOP_MODE { ALLOWFADEOUT = 0, IMMEDIATE = 1 }
 
+    /// <summary>Original contract: FMOD.Studio.EVENT_CALLBACK_TYPE (the values the game masks with).</summary>
+    [Flags]
+    public enum EVENT_CALLBACK_TYPE : uint
+    {
+        CREATED = 0x00000001, DESTROYED = 0x00000002, STARTING = 0x00000004, STARTED = 0x00000008,
+        RESTARTED = 0x00000010, STOPPED = 0x00000020, START_FAILED = 0x00000040,
+        SOUND_PLAYED = 0x00002000, SOUND_STOPPED = 0x00004000, ALL = 0xFFFFFFFF,
+    }
+
+    /// <summary>
+    /// Original contract: FMOD.Sound, the handle a SOUND_PLAYED / SOUND_STOPPED callback passes as its parameters.
+    /// The port keeps no per-sound playlist state, so nothing raises those callbacks yet and a name reads empty.
+    /// </summary>
+    public struct Sound
+    {
+        public IntPtr handle;
+        public Sound(IntPtr ptr) { handle = ptr; }
+        public bool hasHandle() => handle != IntPtr.Zero;
+
+        public RESULT getName(out string name, int namelen)
+        {
+            name = string.Empty;
+            return handle == IntPtr.Zero ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
+        }
+    }
+
+    /// <summary>Original contract: FMOD.Studio.EVENT_CALLBACK. The engine invokes it on the main thread, from start().</summary>
+    public delegate RESULT EVENT_CALLBACK(EVENT_CALLBACK_TYPE type, IntPtr _event, IntPtr parameters);
+
     public enum PLAYBACK_STATE { PLAYING = 0, SUSTAINING, STOPPED, STARTING, STOPPING }
 
     [Flags]
@@ -81,10 +110,21 @@ namespace CosmicShore.Engine.Audio.Fmod
         public bool isValid() => Path != null;
 
         public RESULT getPath(out string path) { path = Path; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
-        public RESULT isOneshot(out bool oneshot) { oneshot = true; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        /// <summary>The GUID the project's GUIDs.txt gives this path (default when it is not listed).</summary>
+        public RESULT getID(out GUID id) { id = FmodGuids.GuidOf(Path); return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        /// <summary>Sets (null clears) the callback every instance of this event invokes; see <see cref="RuntimeManager.InvokeDescriptionCallback"/>.</summary>
+        public RESULT setCallback(EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE callbackmask = EVENT_CALLBACK_TYPE.ALL)
+        {
+            if (Path == null) return RESULT.ERR_INVALID_HANDLE;
+            RuntimeManager.SetDescriptionCallback(Path, callback, callbackmask);
+            return RESULT.OK;
+        }
+        // With a runtime installed these come from the banks (a looping event is NOT a one-shot,
+        // which FMODOneShotVolumeHelper checks); without one, a one-shot of length 0.
+        public RESULT isOneshot(out bool oneshot) { oneshot = FmodBackend.Current?.IsOneshot(Path) ?? true; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
         public RESULT is3D(out bool is3D) { is3D = true; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
-        public RESULT isSnapshot(out bool snapshot) { snapshot = false; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
-        public RESULT getLength(out int length) { length = 0; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        public RESULT isSnapshot(out bool snapshot) { snapshot = RuntimeManager.IsSnapshot(Path); return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        public RESULT getLength(out int length) { length = FmodBackend.Current?.GetLength(Path) ?? 0; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
         public RESULT loadSampleData() => RESULT.OK;
         public RESULT unloadSampleData() => RESULT.OK;
 
@@ -104,6 +144,28 @@ namespace CosmicShore.Engine.Audio.Fmod
     }
 
     public sealed class VCAState { public string Path; public float Volume = 1f; }
+
+    /// <summary>
+    /// Original contract: FMOD.Studio.Bank. The port has no banks; <see cref="StudioSystem.getBankList"/>
+    /// answers one pseudo bank that lists every event and snapshot path GUIDs.txt names.
+    /// </summary>
+    public struct Bank
+    {
+        internal string Path;
+        public bool isValid() => Path != null;
+        public RESULT getPath(out string path) { path = Path; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        public RESULT getID(out GUID id) { id = FmodGuids.GuidOf(Path); return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        public RESULT getEventList(out EventDescription[] array)
+        {
+            var list = new List<EventDescription>();
+            foreach (var p in FmodGuids.Paths)
+                if (p.StartsWith("event:/", StringComparison.Ordinal) || p.StartsWith("snapshot:/", StringComparison.Ordinal))
+                    list.Add(new EventDescription { Path = p });
+            array = list.ToArray();
+            return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
+        }
+        public RESULT getEventCount(out int count) { getEventList(out var a); count = a.Length; return RESULT.OK; }
+    }
 
     public struct VCA
     {
@@ -156,6 +218,15 @@ namespace CosmicShore.Engine.Audio.Fmod
             return RESULT.OK;
         }
 
+        /// <summary>One pseudo bank over GUIDs.txt, or none when no GUIDs file was loaded.</summary>
+        public RESULT getBankList(out Bank[] array)
+        {
+            array = FmodGuids.Count == 0 ? Array.Empty<Bank>() : new[] { new Bank { Path = "bank:/Master" } };
+            return RESULT.OK;
+        }
+
+        public RESULT getBankCount(out int count) { getBankList(out var a); count = a.Length; return RESULT.OK; }
+
         public RESULT update() => RESULT.OK;
         public RESULT flushCommands() => RESULT.OK;
     }
@@ -186,8 +257,15 @@ namespace CosmicShore.Engine.Audio.Fmod
     public class StudioEventEmitter : MonoBehaviour
     {
         public EventReference EventReference;
-        public EmitterGameEvent PlayEvent = EmitterGameEvent.None;
-        public EmitterGameEvent StopEvent = EmitterGameEvent.None;
+        // FMOD 2.02's names (what the project's prefabs serialize: EventPlayTrigger/EventStopTrigger);
+        // data written under the older names still loads.
+        [CosmicShore.Engine.Serialization.FormerlySerializedAs("PlayEvent")]
+        public EmitterGameEvent EventPlayTrigger = EmitterGameEvent.None;
+        [CosmicShore.Engine.Serialization.FormerlySerializedAs("StopEvent")]
+        public EmitterGameEvent EventStopTrigger = EmitterGameEvent.None;
+        /// <summary>The pre-2.02 names, kept as the original keeps them.</summary>
+        public EmitterGameEvent PlayEvent { get => EventPlayTrigger; set => EventPlayTrigger = value; }
+        public EmitterGameEvent StopEvent { get => EventStopTrigger; set => EventStopTrigger = value; }
         public bool AllowFadeout = true;
         public bool TriggerOnce;
         public bool Preload;
@@ -206,12 +284,20 @@ namespace CosmicShore.Engine.Audio.Fmod
         protected virtual void Start() { HandleGameEvent(EmitterGameEvent.ObjectStart); }
         protected virtual void OnEnable() { HandleGameEvent(EmitterGameEvent.ObjectEnable); }
         protected virtual void OnDisable() { HandleGameEvent(EmitterGameEvent.ObjectDisable); }
-        protected virtual void OnDestroy() { HandleGameEvent(EmitterGameEvent.ObjectDestroy); if (_instance.isValid()) { _instance.stop(STOP_MODE.IMMEDIATE); _instance.release(); } }
+        // As the original: the destroy trigger runs, then the instance is only detached (a looping
+        // event with no stop trigger plays on) and a one-shot's handle is released.
+        protected virtual void OnDestroy()
+        {
+            HandleGameEvent(EmitterGameEvent.ObjectDestroy);
+            if (!_instance.isValid()) return;
+            RuntimeManager.DetachInstanceFromGameObject(_instance);
+            if (EventDescription.isOneshot(out bool oneshot) == RESULT.OK && oneshot) { _instance.release(); _instance.clearHandle(); }
+        }
 
         protected void HandleGameEvent(EmitterGameEvent gameEvent)
         {
-            if (PlayEvent == gameEvent && gameEvent != EmitterGameEvent.None) Play();
-            if (StopEvent == gameEvent && gameEvent != EmitterGameEvent.None) Stop();
+            if (EventPlayTrigger == gameEvent && gameEvent != EmitterGameEvent.None) Play();
+            if (EventStopTrigger == gameEvent && gameEvent != EmitterGameEvent.None) Stop();
         }
 
         public void Play()

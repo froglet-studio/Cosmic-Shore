@@ -140,10 +140,16 @@ namespace CosmicShore.Gameplay
                 var renderer = geometry ? geometry.GetComponent<Renderer>() : null;
                 if (!renderer) continue;
 
-                var materials = renderer.materials;
+                // sharedMaterials, never materials: the `materials` getter clones EVERY slot,
+                // including the Body/Window materials this never writes, so each repaint minted
+                // a per-vessel instance of each (URCHIN_BACKLOG U14, the renderer.material
+                // anti-pattern). The domain material is itself a shared per-domain asset and
+                // nothing here varies per renderer, so no MaterialPropertyBlock is needed - the
+                // shared array is copied by the getter, edited, and written back.
+                var materials = renderer.sharedMaterials;
                 foreach (var slot in slots)
                     if (slot >= 0 && slot < materials.Length) materials[slot] = shipMaterial;
-                renderer.materials = materials;
+                renderer.sharedMaterials = materials;
             }
         }
 

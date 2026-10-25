@@ -102,14 +102,23 @@ namespace CosmicShore.Engine
         public static int vSyncCount;
     }
 
+    /// <summary>Original: UnityEngine.Rendering.CopyTextureSupport (flags).</summary>
+    [Flags]
+    public enum CopyTextureSupport { None = 0, Basic = 1, Copy3D = 2, DifferentTypes = 4, TextureToRT = 8, RTToTexture = 16 }
+
     public static partial class SystemInfo
     {
         public static DeviceType deviceType = DeviceType.Desktop;
 
+        /// <summary>What <see cref="Graphics.CopyTexture(Texture, int, int, Texture, int, int)"/> can do: everything once a backend provides the copy, None until then.</summary>
+        public static CopyTextureSupport copyTextureSupport => Graphics.CopyTextureHook != null
+            ? CopyTextureSupport.Basic | CopyTextureSupport.Copy3D | CopyTextureSupport.DifferentTypes | CopyTextureSupport.TextureToRT | CopyTextureSupport.RTToTexture
+            : CopyTextureSupport.None;
+
         /// <summary>
         /// Original contract: a stable per-device id. Derived from the machine +
         /// user names — constant across runs on one machine, which is the only
-        /// property the ported PlayFabAccount.UniqueID read relies on.
+        /// property a caller of the original API relies on.
         /// </summary>
         public static string deviceUniqueIdentifier { get; } =
             $"{Environment.MachineName}-{Environment.UserName}".GetHashCode().ToString("x8");
@@ -121,6 +130,16 @@ namespace CosmicShore.Engine
         public UnityException() { }
         public UnityException(string message) : base(message) { }
         public UnityException(string message, Exception innerException) : base(message, innerException) { }
+    }
+
+    /// <summary>Original engine's "the object you reference was destroyed / cannot be loaded" exception. This
+    /// engine never throws it (a reference here is either a live object or null); game code catches it
+    /// (VesselPrefabContainer's slot guard), so the type must exist to compile.</summary>
+    public class MissingReferenceException : Exception
+    {
+        public MissingReferenceException() { }
+        public MissingReferenceException(string message) : base(message) { }
+        public MissingReferenceException(string message, Exception innerException) : base(message, innerException) { }
     }
 
     public static partial class Application
@@ -147,13 +166,19 @@ namespace CosmicShore.Engine
                 // COSMIC_SHORE_PROFILE runs a second install side by side (a second player on one machine).
                 string profile = Environment.GetEnvironmentVariable("COSMIC_SHORE_PROFILE");
                 string folder = string.IsNullOrWhiteSpace(profile) ? "CosmicShore" : "CosmicShore-" + profile.Trim();
-                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), folder);
+                string path = LocalDataPath.Combine(folder);
                 Directory.CreateDirectory(path);
                 return path;
             }
         }
         public static event Action quitting;
-        public static void Quit() => quitting?.Invoke();
+
+        /// <summary>
+        /// Asks the player to quit, as Unity's does: nothing happens at once; at the end of the frame
+        /// the host runs <see cref="RunQuitSequence"/> (wantsToQuit, OnApplicationQuit, quitting) and
+        /// then closes the window.
+        /// </summary>
+        public static void Quit() => QuitRequested = true;
 
         /// <summary>
         /// Original-contract URL open (e.g. the painting toy's web-share viewer). Headless has no
@@ -272,6 +297,13 @@ namespace CosmicShore.Engine
 
         public static Object Load(string path) => Load<Object>(path);
 
+        /// <summary>
+        /// Unity contract: frees a loaded asset's memory (a cell environment's layout bake is
+        /// unloaded as soon as it is decoded). The port keeps a loaded asset as an ordinary managed
+        /// object, so there is nothing to free beyond what the GC reclaims; a no-op.
+        /// </summary>
+        public static void UnloadAsset(Object assetToUnload) { }
+
         public static T[] FindObjectsOfTypeAll<T>() where T : Object
         {
             var results = new List<T>();
@@ -325,7 +357,7 @@ namespace CosmicShore.Engine
         public Collider collider;
     }
 
-    /// <summary>Collision queries over the loop's collider registry (spheres exact, boxes/meshes as world AABBs).</summary>
+    /// <summary>Collision queries over the loop's collider registry (spheres, oriented boxes, capsules; meshes as their oriented bounds).</summary>
     public static partial class Physics
     {
         public static bool Raycast(Vector3 origin, Vector3 direction, out RaycastHit hitInfo, float maxDistance = float.PositiveInfinity)
@@ -364,16 +396,11 @@ namespace CosmicShore.Engine
         /// active collider overlaps the box.
         /// </summary>
         public static bool CheckBox(Vector3 center, Vector3 halfExtents)
-            => GameLoop.Current?.Triggers.CheckBox(center, halfExtents) ?? false;
+            => GameLoop.Current?.Triggers.CheckBox(center, halfExtents, Quaternion.identity) ?? false;
 
-        /// <summary>
-        /// Oriented overload. The trigger pass treats boxes as world-space AABBs
-        /// (rotation ignored — same phase-2 deviation as <see cref="TriggerPass"/> box
-        /// overlap); the orientation parameter is accepted for source compatibility and
-        /// gains effect with the full physics phase.
-        /// </summary>
+        /// <summary>Oriented overload: the probe box is rotated by <paramref name="orientation"/>.</summary>
         public static bool CheckBox(Vector3 center, Vector3 halfExtents, Quaternion orientation)
-            => CheckBox(center, halfExtents);
+            => GameLoop.Current?.Triggers.CheckBox(center, halfExtents, orientation) ?? false;
     }
 
     /// <summary>Original-engine force application modes (UnityEngine.ForceMode). Values frozen.</summary>
@@ -389,9 +416,8 @@ namespace CosmicShore.Engine
     public enum PhysicsMaterialCombine { Average = 0, Multiply = 1, Minimum = 2, Maximum = 3 }
 
     /// <summary>
-    /// Original-engine PhysicsMaterial (contact restitution/friction data). Data-only:
-    /// the headless engine resolves no contact pairs, so combine modes and friction are
-    /// carried for the authored setup code (e.g. AstroLeagueBall.Awake) to port verbatim.
+    /// Original-engine PhysicsMaterial: restitution and friction with their combine modes,
+    /// read by the contact pass (Physics/ContactPass.cs).
     /// </summary>
     public class PhysicsMaterial : Object
     {
@@ -418,10 +444,9 @@ namespace CosmicShore.Engine
     ///   • angular: damping, clamp to <see cref="maxAngularVelocity"/>, then rotate about
     ///     the world-space angular-velocity axis (radians/sec, original convention).
     ///
-    /// Contact RESOLUTION stays out of scope: the headless engine has no solver, so
-    /// OnCollisionEnter/Stay never fire (ported code's trigger paths carry vessel
-    /// contacts — see TriggerPass) and interpenetration is prevented by gameplay-side
-    /// depenetration (e.g. AstroLeagueBall.EjectBallFromVessel), never by the engine.
+    /// Contacts: a dynamic body's solid SPHERE collider is resolved against solid colliders
+    /// and gets OnCollisionEnter/Stay/Exit (Physics/ContactPass.cs — the C3 census's one
+    /// need, the Astro League ball). Nothing else is solved; there is no general solver.
     /// AddTorque uses a unit inertia tensor (the original engine's no-collider default);
     /// spin magnitudes are gameplay-cosmetic and clamped by <see cref="maxAngularVelocity"/>.
     /// Kinematic bodies keep the old placeholder behavior (pure data).
@@ -550,23 +575,44 @@ namespace CosmicShore.Engine
         public PhysicsMaterial material;
 
         /// <summary>
-        /// Layers this collider never collides with. Data-only in the headless engine:
-        /// the trigger pass ignores it (the ported call sites — e.g. the Astro League
-        /// ball excluding TrailBlocks — pair a NON-trigger collider with other
-        /// non-triggers, which the pass already skips entirely). Gains effect with the
-        /// full physics phase.
+        /// Layers this collider never makes CONTACT with (the contact pass, e.g. the Astro
+        /// League ball excluding TrailBlocks). The trigger pass does not read it.
         /// </summary>
         public LayerMask excludeLayers;
 
-        public virtual Vector3 ClosestPoint(Vector3 position) => transform.position;
+        /// <summary>Layers this collider makes contact with even if the layer matrix says otherwise (contact pass).</summary>
+        public LayerMask includeLayers;
+
+        /// <summary>The Rigidbody this collider belongs to: the nearest one on its GameObject or an ancestor.</summary>
+        public Rigidbody attachedRigidbody
+        {
+            get
+            {
+                for (var t = transform; t is not null; t = t.parent)
+                {
+                    var go = t.gameObject;
+                    if (go is null) break;
+                    var rb = go.GetComponent<Rigidbody>();
+                    if (rb is not null && !rb.destroyedFlag) return rb;
+                }
+                return null;
+            }
+        }
 
         /// <summary>
-        /// World-space AABB of this collider (original contract). Phase-2 convention —
-        /// rotation ignored: center transformed through the hierarchy, extents scaled by
-        /// |lossyScale| (the same AABB the <see cref="TriggerPass"/> overlaps with). The
-        /// base collider reports a degenerate point at the transform position.
+        /// The point on this collider nearest to <paramref name="position"/>, or the position
+        /// itself when it is inside (original contract, sphere / box / capsule / mesh bounds).
         /// </summary>
-        public virtual Bounds bounds => new Bounds(transform.position, Vector3.zero);
+        public Vector3 ClosestPoint(Vector3 position)
+            => ShapeMath.TryBuild(this, out var shape) ? ShapeMath.ClosestPoint(in shape, position) : transform.position;
+
+        /// <summary>
+        /// World-space AABB enclosing this collider (original contract): a rotated box's real
+        /// enclosing box, the same one the <see cref="TriggerPass"/> broadphase uses. A
+        /// collider with no shape reports a point at the transform position.
+        /// </summary>
+        public virtual Bounds bounds
+            => ShapeMath.TryBuild(this, out var shape) ? new Bounds(shape.Center, shape.Extents * 2f) : new Bounds(transform.position, Vector3.zero);
 
         internal override void OnEnabledChanged(bool value)
         {
@@ -587,35 +633,12 @@ namespace CosmicShore.Engine
     {
         public Vector3 center = Vector3.zero;
         public Vector3 size = Vector3.one;
-
-        public override Bounds bounds
-        {
-            get
-            {
-                Vector3 s = transform.lossyScale;
-                var worldSize = new Vector3(
-                    Mathf.Abs(size.x * s.x),
-                    Mathf.Abs(size.y * s.y),
-                    Mathf.Abs(size.z * s.z));
-                return new Bounds(transform.TransformPoint(center), worldSize);
-            }
-        }
     }
 
     public class SphereCollider : Collider
     {
         public Vector3 center = Vector3.zero;
         public float radius = 0.5f;
-
-        public override Bounds bounds
-        {
-            get
-            {
-                Vector3 s = transform.lossyScale;
-                float r = radius * Mathf.Max(Mathf.Abs(s.x), Mathf.Max(Mathf.Abs(s.y), Mathf.Abs(s.z)));
-                return new Bounds(transform.TransformPoint(center), new Vector3(r * 2f, r * 2f, r * 2f));
-            }
-        }
     }
 
     /// <summary>
@@ -623,32 +646,15 @@ namespace CosmicShore.Engine
     /// the collision mesh, <see cref="convex"/> requests a convex hull (required for
     /// Rigidbody interaction in the original engine — data-only here).
     ///
-    /// Overlap semantics headless: the TriggerPass treats a MeshCollider as its mesh's
-    /// LOCAL-BOUNDS AABB (bounds center transformed through the hierarchy, extents scaled
-    /// by |lossyScale|, rotation ignored — the same phase-2 convention box colliders use).
-    /// A null/destroyed mesh never overlaps anything. True per-triangle / convex-hull
-    /// collision arrives with the full physics phase.
+    /// Overlap semantics: a MeshCollider is the ORIENTED box of its mesh's local bounds
+    /// (center and rotation through the hierarchy, extents scaled by |lossyScale|). A
+    /// null/destroyed mesh never overlaps anything. No census user needs per-triangle or
+    /// convex-hull collision (Port/docs/ARCHITECTURE.md §13).
     /// </summary>
     public class MeshCollider : Collider
     {
         public Mesh sharedMesh;
         public bool convex;
-
-        public override Bounds bounds
-        {
-            get
-            {
-                var shared = sharedMesh;
-                if (shared is null || shared.IsDestroyed) return new Bounds(transform.position, Vector3.zero);
-                Bounds local = shared.bounds;
-                Vector3 s = transform.lossyScale;
-                var worldSize = new Vector3(
-                    Mathf.Abs(local.extents.x * s.x) * 2f,
-                    Mathf.Abs(local.extents.y * s.y) * 2f,
-                    Mathf.Abs(local.extents.z * s.z) * 2f);
-                return new Bounds(transform.TransformPoint(local.center), worldSize);
-            }
-        }
     }
 
     // E7/E8: Object statics that ported code calls.
@@ -714,6 +720,15 @@ namespace CosmicShore.Engine
                     if (component.gameObject.activeSelf) pendingActivation = cloned;
                     return cloned.GetComponent(component.GetType()) as T;
                 }
+                case Mesh mesh:
+                {
+                    // A deep copy (vertices, every UV channel, submeshes, skinning, blend shapes), as Unity's.
+                    var clone = new Mesh { name = mesh.name + "(Clone)" };
+                    mesh.CopyTo(clone);
+                    return clone as T;
+                }
+                case Material material:
+                    return new Material(material) { name = material.name + "(Clone)" } as T;
                 default:
                     throw new InvalidOperationException($"Instantiate: unsupported type {original.GetType().Name}");
             }
@@ -770,8 +785,16 @@ namespace CosmicShore.Engine
                 rect.anchorMin = sourceRect.anchorMin;
                 rect.anchorMax = sourceRect.anchorMax;
                 rect.pivot = sourceRect.pivot;
-                rect.anchoredPosition = sourceRect.anchoredPosition;
+                // The serialized values, as Unity copies them. Never through localPosition: the
+                // clone has no parent yet, so that setter would back-solve against a zero rect
+                // and bake the source parent's anchor reference point into anchoredPosition
+                // (every stretched child of a cloned card then sat off its anchors).
+                rect.anchoredPosition3D = sourceRect.anchoredPosition3D;
                 rect.sizeDelta = sourceRect.sizeDelta;
+            }
+            else
+            {
+                clone.transform.localPosition = source.transform.localPosition;
             }
 
             map[source] = clone;
@@ -779,7 +802,6 @@ namespace CosmicShore.Engine
 
             clone.layer = source.layer;
             clone.tag = source.tag;
-            clone.transform.localPosition = source.transform.localPosition;
             clone.transform.localRotation = source.transform.localRotation;
             clone.transform.localScale = source.transform.localScale;
 
@@ -851,15 +873,17 @@ namespace CosmicShore.Engine
 
         static void RemapField(object target, FieldInfo field, Dictionary<object, object> map)
         {
-            // Value types (and therefore primitives/enums/structs) can't hold scene
-            // references and were already value-copied by CopyFields.
-            if (field.FieldType.IsValueType) return;
+            // Primitives, enums and reference-free structs were already value-copied by CopyFields.
+            // A struct that holds references (a [Serializable] binding of icons, say) is remapped
+            // like a plain class: Unity inlines it and points its references at the clone.
+            if (field.FieldType.IsValueType && !StructMayHoldReferences(field.FieldType)) return;
 
             object value = field.GetValue(target);
             if (value is null) return;
 
             object replacement = RemapValue(value, map, depth: 0);
-            if (!ReferenceEquals(replacement, value))
+            // A struct comes back as the same (edited) box, so it is always written back.
+            if (field.FieldType.IsValueType || !ReferenceEquals(replacement, value))
                 field.SetValue(target, replacement);
         }
 
@@ -870,6 +894,9 @@ namespace CosmicShore.Engine
         ///   • engine Object outside the tree (other scene objects, ScriptableObject
         ///     assets) → kept, shared by design;
         ///   • string → kept (immutable);
+        ///   • struct holding references (directly or through a nested struct) → a copy with
+        ///     those references rerun through these rules, as Unity inlines a serialized struct;
+        ///     a reference-free struct (math types, enums, primitives) is a plain value copy;
         ///   • rank-1 array / <see cref="List{T}"/> / <see cref="Dictionary{TKey,TValue}"/>
         ///     → NEW container, elements rerun through these same rules (the original
         ///     engine never shares a mutable container instance between a template and its
@@ -926,6 +953,8 @@ namespace CosmicShore.Engine
                     return CloneHashSetValue((IEnumerable)value, setType, map, depth);
 
                 default:
+                    if (value.GetType().IsValueType)
+                        return StructMayHoldReferences(value.GetType()) ? RemapStruct(value, map, depth) : value;
                     if (!IsInlinePlainClass(value.GetType()))
                         return value;
                     if (depth >= MaxPlainObjectDepth)
@@ -938,8 +967,8 @@ namespace CosmicShore.Engine
         {
             Type elementType = array.GetType().GetElementType();
 
-            // Value-type/string elements can't reference the tree — a shallow clone IS the value copy.
-            if (elementType.IsValueType || elementType == typeof(string))
+            // String and reference-free struct elements can't reference the tree — a shallow clone IS the value copy.
+            if ((elementType.IsValueType && !StructMayHoldReferences(elementType)) || elementType == typeof(string))
                 return (Array)array.Clone();
 
             var copy = Array.CreateInstance(elementType, array.Length);
@@ -978,7 +1007,7 @@ namespace CosmicShore.Engine
             object copy = Activator.CreateInstance(setType, new[] { comparer });
             MethodInfo add = setType.GetMethod("Add")!;
 
-            bool remapElements = !elementType.IsValueType && elementType != typeof(string);
+            bool remapElements = (!elementType.IsValueType || StructMayHoldReferences(elementType)) && elementType != typeof(string);
             foreach (var element in set)
             {
                 object item = element is not null && remapElements
@@ -993,14 +1022,52 @@ namespace CosmicShore.Engine
         {
             Type elementType = listType.GetGenericArguments()[0];
 
-            // Value-type/string elements can't reference the tree — List<T>(IEnumerable<T>) IS the value copy.
-            if (elementType.IsValueType || elementType == typeof(string))
+            // String and reference-free struct elements can't reference the tree — List<T>(IEnumerable<T>) IS the value copy.
+            if ((elementType.IsValueType && !StructMayHoldReferences(elementType)) || elementType == typeof(string))
                 return (IList)Activator.CreateInstance(listType, list);
 
             var copy = (IList)Activator.CreateInstance(listType, list.Count);
             foreach (var element in list)
                 copy.Add(element is null ? null : RemapValue(element, map, depth));
             return copy;
+        }
+
+        static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, bool> s_StructHoldsReferences = new();
+
+        /// <summary>
+        /// True for a struct with a reference-typed field anywhere inside it (directly or through
+        /// a nested struct): the original engine serializes such a struct inline and Instantiate
+        /// points its references at the clone, exactly as for a plain class. Primitives, enums,
+        /// framework structs and the engine's math types hold no references and copy as values.
+        /// </summary>
+        static bool StructMayHoldReferences(Type type) => type.IsValueType && s_StructHoldsReferences.GetOrAdd(type, static t =>
+        {
+            if (t.IsPrimitive || t.IsEnum || t.Namespace is "System" || (t.Namespace?.StartsWith("System.", StringComparison.Ordinal) ?? false))
+                return false;
+            foreach (var field in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            {
+                var ft = field.FieldType;
+                if (ft == t) continue;
+                if (!ft.IsValueType ? ft != typeof(string) : StructMayHoldReferences(ft)) return true;
+            }
+            return false;
+        });
+
+        /// <summary>A boxed struct with its reference fields rerun through <see cref="RemapValue"/> (nested structs likewise).</summary>
+        static object RemapStruct(object boxed, Dictionary<object, object> map, int depth)
+        {
+            // GetValue handed us a fresh box, so writing its fields does not touch the source.
+            foreach (var field in boxed.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            {
+                var ft = field.FieldType;
+                if (ft.IsValueType ? !StructMayHoldReferences(ft) : ft == typeof(string)) continue;
+                if (typeof(Delegate).IsAssignableFrom(ft)) continue;
+                object value = field.GetValue(boxed);
+                if (value is null) continue;
+                object replacement = RemapValue(value, map, depth);
+                if (ft.IsValueType || !ReferenceEquals(replacement, value)) field.SetValue(boxed, replacement);
+            }
+            return boxed;
         }
 
         /// <summary>
@@ -1035,7 +1102,8 @@ namespace CosmicShore.Engine
             {
                 foreach (var field in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
                 {
-                    if (field.FieldType.IsValueType) continue; // memberwise copy already value-copied it
+                    // The memberwise copy already value-copied it, unless it is a struct holding references.
+                    if (field.FieldType.IsValueType && !StructMayHoldReferences(field.FieldType)) continue;
 
                     if (typeof(Delegate).IsAssignableFrom(field.FieldType))
                     {
@@ -1047,7 +1115,7 @@ namespace CosmicShore.Engine
                     if (value is null) continue;
 
                     object replacement = RemapValue(value, map, depth);
-                    if (!ReferenceEquals(replacement, value))
+                    if (field.FieldType.IsValueType || !ReferenceEquals(replacement, value))
                         field.SetValue(clone, replacement);
                 }
             }

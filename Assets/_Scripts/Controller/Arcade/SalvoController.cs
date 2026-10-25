@@ -123,6 +123,17 @@ namespace CosmicShore.Gameplay
         // Suppress the base turn→round→game flow so there is no duplicate.
         protected override bool HasEndGame => false;
 
+        // The race beats as toasts (quarter, halfway, lead change). A local poll over the
+        // replicated scored stat, run on every peer - see DomainRaceToasts. Feedback only.
+        DomainRaceToasts _raceToasts;
+
+        void Update()
+        {
+            if (_finalResultsSent || rule == null) return;
+            _raceToasts ??= new DomainRaceToasts(rule);
+            _raceToasts.Tick(gameData);
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -198,7 +209,7 @@ namespace CosmicShore.Gameplay
             var domain = roundStats.Domain;
             if (domain == Domains.Blue) return;
 
-            RefuelDomainMissiles_ClientRpc((int)domain);
+            RefuelDomainMissiles_ClientRpc((int)domain, new FixedString64Bytes(stats.PlayerName));
         }
 
         /// <summary>
@@ -208,15 +219,21 @@ namespace CosmicShore.Gameplay
         /// that lands on each vessel's OWNER machine, and the same write on its replicas is a
         /// harmless idempotent set. Runs on the host too - Netcode ClientRpcs execute on the
         /// host's client half, which covers the server's own pilot and every AI.
+        ///
+        /// <para>It also announces the reload, but only when there is a WINGMAN to reload - a
+        /// domain of one refuelling itself is the ordinary crystal economy, not news, and a
+        /// toast per crystal would bury the feed. <paramref name="collector"/> is display-only.</para>
         /// </summary>
         [ClientRpc]
-        void RefuelDomainMissiles_ClientRpc(int domain)
+        void RefuelDomainMissiles_ClientRpc(int domain, FixedString64Bytes collector)
         {
+            int wing = 0;
             var players = gameData.Players;
             for (int i = 0; i < players.Count; i++)
             {
                 var p = players[i];
                 if (p == null || p.Domain != (Domains)domain) continue;
+                wing++;
 
                 var resources = p.Vessel?.VesselStatus?.ResourceSystem;
                 if (resources == null) continue;
@@ -225,6 +242,10 @@ namespace CosmicShore.Gameplay
                 resources.SetResourceAmount(
                     missileResourceIndex, resources.Resources[missileResourceIndex].MaxAmount);
             }
+
+            if (wing > 1)
+                CosmicShore.UI.GameToastAPI.Post(GameToastSituation.SalvoWingReload, (Domains)domain,
+                    collector.ToString(), ((Domains)domain).ToString());
         }
 
         // ── Elemental crystal pickups (same recipe as Dog Fight) ─────────────

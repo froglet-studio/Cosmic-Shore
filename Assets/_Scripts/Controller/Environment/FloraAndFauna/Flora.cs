@@ -197,6 +197,7 @@ namespace CosmicShore.Gameplay
             // clutter in a volume a court-mode has already filled with play, not of mass the
             // ecology cannot reach.
             float nucleusFloor = cell.NucleusIsControlZone ? cell.ExpectedNucleusWorldRadius : 0f;
+            outer = LiftBandOutOfNucleus(outer, nucleusFloor, membrane);
             float inner = Mathf.Max(membrane * plantRadiusCellFractionMin, nucleusFloor);
             if (inner >= outer) return outer;
 
@@ -205,6 +206,26 @@ namespace CosmicShore.Gameplay
             float outerCubed = outer * outer * outer;
             return Mathf.Pow(Mathf.Lerp(innerCubed, outerCubed, t), 1f / 3f);
         }
+
+        /// <summary>How far past a control-zone nucleus a band that fits wholly inside it is lifted.</summary>
+        const float NucleusClearance = 1.1f;
+
+        /// <summary>
+        /// The band's outer edge, lifted just clear of a control-zone nucleus when the authored
+        /// band lies wholly inside it.
+        ///
+        /// <para>The lattice prefabs (Gyroid, SchwarzP, Quasicrystal) author an outer fraction of
+        /// 0.2 - 240u in a 1200u cell, inside the 392u nucleus. Clamping only the INNER edge left
+        /// <c>inner &gt;= outer</c>, and the old answer to that was "root at the outer edge", which
+        /// put every such plant inside the nucleus cage: the exact unreachable mass the clamp
+        /// exists to prevent. Lifting the outer edge instead keeps the band's intent (as close in
+        /// as the cell allows) and both <see cref="ResolvePlantRadius"/> and
+        /// <see cref="ClampToPlantingBand"/> read it, so an offspring is not dragged back in.</para>
+        /// </summary>
+        static float LiftBandOutOfNucleus(float outer, float nucleusFloor, float membrane) =>
+            nucleusFloor <= 0f || outer > nucleusFloor
+                ? outer
+                : Mathf.Min(nucleusFloor * NucleusClearance, membrane * 0.95f);
 
         /// <summary>Candidates a SPREAD planting draws (<see cref="FloraConfigurationSO.SpreadPlanting"/>).</summary>
         const int SpreadCandidates = 8;
@@ -833,9 +854,9 @@ namespace CosmicShore.Gameplay
             // Same rule as ResolvePlantRadius: a nucleus is a floor only while it is a CONTROL
             // ZONE. Without this an offspring seeded inside a court-as-nucleus is ejected to the
             // court wall, so a colony would drain out of the arena one birth at a time.
-            float inner = cell.NucleusIsControlZone
-                ? Mathf.Min(cell.ExpectedNucleusWorldRadius, outer)
-                : 0f;
+            float nucleusFloor = cell.NucleusIsControlZone ? cell.ExpectedNucleusWorldRadius : 0f;
+            outer = LiftBandOutOfNucleus(outer, nucleusFloor, cell.MembraneRadius);
+            float inner = Mathf.Min(nucleusFloor, outer);
 
             Vector3 offset = point - centre;
             float d = offset.magnitude;
@@ -863,6 +884,69 @@ namespace CosmicShore.Gameplay
             isGrowing = false;
         }
 
+        // Cached yield instructions for GrowCoroutine. This coroutine is `while (true)` and
+        // there is ONE PER PLANT - 1,080 of them in the Lattice boot world - so a
+        // `new WaitForSeconds(...)` per tick is 1,080 allocations per grow cycle for two values
+        // that almost never change. Measured: the coroutine group allocates 18.2 KB/frame in a
+        // boot-world spike frame (Docs/archive/PERFORMANCE_LOG_2026.md §0.8).
+        //
+        // Re-minted when the authored period changes rather than cached once. Today a lazy
+        // first-use cache would also be correct - `ApplyVariantTuning` writes `growPeriod`
+        // BEFORE `Initialize`, and the coroutine starts on Initialize's last line - but
+        // `growPeriod` is `protected` and `stunDuration` has no writer at all, so the guard
+        // is what keeps this honest if either ever becomes writable mid-life. It costs two
+        // float compares per tick. What it must NOT become is a field initializer: that
+        // would pin the prefab's value and silently ignore the species' own tuning.
+        //
+        // Reusing one instance across sequential yields is safe by construction - Unity reads
+        // the duration when the instruction is yielded and tracks elapsed time in the
+        // coroutine's own state, so the object is immutable data, not a running timer. The
+        // CADENCE is therefore byte-for-byte what it was.
+        WaitForSeconds _growWait;
+        float _growWaitFor = float.NaN;
+        WaitForSeconds _stunWait;
+        float _stunWaitFor = float.NaN;
+
+        WaitForSeconds GrowWait()
+        {
+            float period = EffectiveGrowPeriod;
+            if (_growWait == null || period != _growWaitFor)
+            {
+                _growWaitFor = period;
+                _growWait = new WaitForSeconds(period);
+            }
+            return _growWait;
+        }
+
+        // HASTE: an Angler's lure light makes the plants in it grow faster for a moment (the designer, 2026-10-17;
+        // R_VesselActions/ANGLER.md §1d, Docs/ECOSYSTEM.md §61.6). It shortens the wait between grow ticks and nothing
+        // else - each tick grows exactly what it always did, under the plant's own budgets - and it lapses on its own
+        // unless the light keeps refreshing it. Its one caller is AnglerCommandExecutor.
+        float _hasteFactor = 1f;
+        float _hasteUntil;
+
+        float EffectiveGrowPeriod => Time.time < _hasteUntil ? growPeriod / _hasteFactor : growPeriod;
+
+        /// <summary>Grow <paramref name="factor"/> times as often for the next <paramref name="seconds"/> (an Angler's lure:
+        /// the plant is in its light). A refresh extends the window; a stronger factor wins while both are live.</summary>
+        public void Hasten(float factor, float seconds)
+        {
+            if (factor <= 1f || seconds <= 0f) return;
+            float now = Time.time;
+            _hasteFactor = now < _hasteUntil ? Mathf.Max(_hasteFactor, factor) : factor;
+            _hasteUntil = Mathf.Max(_hasteUntil, now + seconds);
+        }
+
+        WaitForSeconds StunWait()
+        {
+            if (_stunWait == null || stunDuration != _stunWaitFor)
+            {
+                _stunWaitFor = stunDuration;
+                _stunWait = new WaitForSeconds(stunDuration);
+            }
+            return _stunWait;
+        }
+
         IEnumerator GrowCoroutine()
         {
             while (true)
@@ -880,12 +964,12 @@ namespace CosmicShore.Gameplay
                     // two int reads per tick and nothing else.
                     TryReproduce();
 
-                    yield return new WaitForSeconds(growPeriod);
+                    yield return GrowWait();
                 }
                 else
                 {
                     isGrowing = true;
-                    yield return new WaitForSeconds(stunDuration);
+                    yield return StunWait();
                 }
             }
         }

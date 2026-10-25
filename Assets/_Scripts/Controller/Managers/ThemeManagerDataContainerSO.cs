@@ -74,31 +74,48 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The per-domain crystal material for model slot <paramref name="index"/>, or null when
-        /// this domain has no material set yet. TeamMaterialSets is populated at runtime by
-        /// ThemeManager, so anything that mints a crystal before that (or in a theme-less scene)
-        /// gets null and keeps its authored material instead of a KeyNotFoundException.
+        /// The per-domain crystal material that stands in for <paramref name="authored"/> - a crystal model's own
+        /// default material - or null when there is none: no material set for this domain yet (ThemeManager fills
+        /// TeamMaterialSets at runtime; anything that mints a crystal before that, or in a theme-less scene, keeps
+        /// its authored material), or no slot of <see cref="BaseMaterialSet"/> holds that material.
+        ///
+        /// Keyed by the MATERIAL, never by the model's slot index (2026-10-13, refactor row F1 of
+        /// Docs/Studios/OMNI_SHEPARD_LAB.md): the base set's slots are the omni crystal's (0 body, 1 depth prisms),
+        /// so by index a Mass crystal given a domain would have put the omni BODY material on its depth-prism
+        /// renderer - the wrong shader, its prisms frozen. A model whose material is not in the set keeps it.
         /// </summary>
-        public Material GetTeamCrystalMaterial(Domains domain, int index)
+        public Material GetTeamCrystalMaterial(Domains domain, Material authored)
         {
+            int slot = CrystalSlotOf(BaseMaterialSet, authored);
+            if (slot < 0) return null;
             if (TeamMaterialSets == null || !TeamMaterialSets.TryGetValue(domain, out var set) || set == null)
             {
                 CSDebug.LogWarning($"No team material set for domain {domain}; crystal keeps its authored material.");
                 return null;
             }
-
-            switch (index)
-            {
-                case 0: return set.CrystalMaterial;
-                case 1: return set.CrystalMaterial1;
-                case 2: return set.CrystalMaterial2;
-                case 3: return set.CrystalMaterial3;
-                default:
-                    CSDebug.LogWarning($"Invalid crystal material index {index} for domain {domain}. Returning default crystal material.");
-                    break;
-            }
-            return set.CrystalMaterial;
+            return CrystalSlot(set, slot);
         }
+
+        /// <summary>Which crystal slot of <paramref name="set"/> holds <paramref name="material"/>, or -1.</summary>
+        public static int CrystalSlotOf(SO_MaterialSet set, Material material)
+        {
+            if (!set || !material) return -1;
+            for (int slot = 0; slot < CrystalSlots; slot++)
+                if (CrystalSlot(set, slot) == material) return slot;
+            return -1;
+        }
+
+        const int CrystalSlots = 5;
+
+        static Material CrystalSlot(SO_MaterialSet set, int slot) => slot switch
+        {
+            0 => set.CrystalMaterial,
+            1 => set.CrystalMaterial1,
+            2 => set.CrystalMaterial2,
+            3 => set.CrystalMaterial3,
+            4 => set.CrystalMaterial4,
+            _ => null,
+        };
 
         public Material GetTeamSpikeMaterial(Domains domain)
         {

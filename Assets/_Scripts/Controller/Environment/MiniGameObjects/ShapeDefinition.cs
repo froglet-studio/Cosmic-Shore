@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
-    public enum ShapePreset { None, Circle, Star, Heart, Lightning, Smiley, Spiral, Diamond, Infinity, Arrow, Wave }
+    public enum ShapePreset { None = 0, Circle = 1, Star = 2, Heart = 3, Lightning = 4, Smiley = 5, Spiral = 6, Diamond = 7, Infinity = 8, Arrow = 9, Wave = 10 }
 
     /// <summary>
     /// Defines a drawable shape. Create via:

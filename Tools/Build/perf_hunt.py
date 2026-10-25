@@ -1,0 +1,910 @@
+#!/usr/bin/env python3
+"""
+perf_hunt.py - the performance twin of bug_ledger.py: the automated performance check that runs at least
+once a day from the latest bleeding-edge, and the resolve loop a session runs on what it finds
+(.claude/skills/perf-hunt/SKILL.md). Docs/PERFORMANCE_OPTIMIZATION.md section 3.4 is the record.
+
+What it checks, and where each number comes from:
+
+  gates     the static performance gates that need no engine: 3-value Mathf.Min/Max params allocations,
+            the two Burst MathF gates, console logging, and scan_perframe_allocations.py's counts
+            (per-frame allocations in Update/LateUpdate, yield-return-new in loops) compared with the
+            recorded counts, so a new per-frame allocation is a regression on the day it lands.
+  collect   every capture_*.json a collaborator's editor sent with "Send to Claude" (bugledger/<user> and every other branch)
+            (BugLedger/shared/reports/<user>/perf/ on EVERY origin branch, like bug_ledger.py collect),
+            plus any local Documents/CosmicShore Diagnostics folder. Each one is judged with
+            perf_capture_report.py (validity first) and compared with its baseline.
+  amoebius  the game's own ProfilerMarkers measured in Amoebius with no Unity (Port/tools/
+            amoebius_markers_run.py): allocations per marker repeat to ~1% between identical runs, so a
+            KB/frame rise is a regression the same day; milliseconds there are .NET's and only WATCHED.
+  sweep     gates + collect (+ --amoebius) -> the generated block of Docs/Reports/PERFORMANCE.md, a JSON
+            board, and (with --tasks) one Froglet Tasks ticket per NEW regression
+            (team_tasks.py add; run it only when the person asked for the tickets).
+
+Baselines live in Docs/perf/baselines.json (Unity captures, per scene|label) and
+Docs/perf/amoebius_baselines.json (per mode); the first VALID measurement of a key becomes its baseline
+(bootstrap), and `--adopt` replaces one after a confirmed improvement. Thresholds are in THRESHOLDS below.
+
+    python3 Tools/Build/perf_hunt.py gates
+    python3 Tools/Build/perf_hunt.py collect [--local DIR] [--out board.json]
+    python3 Tools/Build/perf_hunt.py compare capture.json [--adopt]
+    python3 Tools/Build/perf_hunt.py amoebius [--modes SkimRace:2:3,...] [--frames 1800] [--adopt] [--no-build]
+    python3 Tools/Build/perf_hunt.py sweep [--amoebius] [--tasks] [--strict] [--write]
+    python3 Tools/Build/perf_hunt.py --self-test
+
+Exit codes: 0 clean, 2 a regression was found (sweep --strict, gates, amoebius), 1 a tool error.
+"""
+import argparse
+import datetime
+import json
+import os
+import re
+import subprocess
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
+sys.path.insert(0, HERE)
+import perf_capture_report as pcr  # noqa: E402  (the one judgement of a capture)
+
+BASELINES = os.path.join(REPO, "Docs", "perf", "baselines.json")
+AMOEBIUS_BASELINES = os.path.join(REPO, "Docs", "perf", "amoebius_baselines.json")
+STATE = os.path.join(REPO, "Docs", "perf", "perf_hunt_state.json")
+AMOEBIUS_KNOWN = os.path.join(REPO, "Docs", "perf", "amoebius_known.json")  # allocations that are the engine's, with evidence
+# The one status file both readers use: the editor's Bug Hunt & Performance indicator and the Claude status hook.
+STATUS = os.path.join(REPO, "Docs", "perf", "status.json")
+
+# The scenarios a valid baseline must exist for (Docs/PERFORMANCE_OPTIMIZATION.md §1.0 / §3.6). A capture's label is
+# matched case-insensitively against `label`; `scene` is the Unity scene it is captured in and `after` the seconds in
+# that scene before the editor's auto-capture takes it (PerfAutoCapture reads both from status.json - there is no
+# Capture button); `how` is the one line a person needs to put the game in that state.
+SCENARIOS = [
+    ("S2", "S2 Lattice", "Menu_Main", 480,
+     "Play Menu_Main in Release, Cell Selector > Lattice, and keep playing 8 minutes: the editor captures S2 by itself"),
+    ("SkimRace", "Skim Race I2", "MinigameSkimRace", 90,
+     "Play Arcade > Skim Race, intensity 2, 2 AI, in Release for 90 s: the editor captures it by itself - also proves the Burst fix"),
+    ("S5", "S5 Wildlife Liberation", "MinigameWildlifeLiberation", 120,
+     "Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go"),
+]
+REPORT = os.path.join(REPO, "Docs", "Reports", "PERFORMANCE.md")
+# Where performance work happens, in order (Yash, 2026-10-17: "mostly all my performance works will be done in
+# Ys-bleeding-edge first before even getting merged to bleeding-edge"). Written into status.json so the editor's
+# Project Record (BugHuntSendConfirmation) reads the same list and shows each branch's own status.json.
+BRANCH_FLOW = [
+    {"branch": "Ys-bleeding-edge", "role": "Performance work lands here first (Yash runs the performance work)"},
+    {"branch": "bleeding-edge", "role": "The team's shared branch: performance work arrives here from Ys-bleeding-edge"},
+]
+BEGIN, END = "<!-- perf_hunt:begin (generated by Tools/Build/perf_hunt.py; do not edit) -->", "<!-- perf_hunt:end -->"
+REPORTS_PREFIX = "BugLedger/shared/reports/"
+
+# A regression is a rise past BOTH the relative and the absolute floor, so noise on a tiny number never fires.
+THRESHOLDS = {
+    "cpuBusyMs": (0.15, 0.5),      # +15 % and at least +0.5 ms
+    "p95Ms": (0.15, 1.0),
+    "gcKB": (0.25, 2.0),           # +25 % and at least +2 KB/frame
+    "markerMs": (0.30, 0.20),      # a diag marker: +30 % and at least +0.2 ms/frame
+    "amoebiusKB": (0.10, 0.05),    # an Amoebius marker's allocation: +10 % and at least +0.05 KB/frame
+    "amoebiusMs": (0.25, 0.10),    # WATCH only: .NET milliseconds vary 5-10 % between identical runs
+    "scanCount": (0.0, 1),         # any new per-frame allocation site
+}
+
+
+# ------------------------------------------------------------------ helpers
+
+def now_iso():
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def git(*args):
+    r = subprocess.run(["git", "-C", REPO] + list(args), capture_output=True, text=True, encoding="utf-8", errors="replace")
+    return r.stdout if r.returncode == 0 else None
+
+
+def load_json(path, default):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return default
+
+
+def save_json(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(data, f, indent=2, sort_keys=True)
+        f.write("\n")
+
+
+def rose(old, new, key):
+    """True when new is past the relative AND absolute rise over old for THRESHOLDS[key]."""
+    if old is None or new is None:
+        return False
+    rel, absolute = THRESHOLDS[key]
+    return new - old >= absolute and (old == 0 or (new - old) / old >= rel)
+
+
+def pct(old, new):
+    return "n/a" if not old else f"{(new - old) / old * 100:+.0f}%"
+
+
+# ------------------------------------------------------------------ gates
+
+# The same invocations the harnesses' run.sh use: the Burst gates read the job source files they guard.
+SWARM = "Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
+SUBSTRATE = "Assets/_Scripts/Controller/Environment/FloraAndFauna/Substrate"
+GATE_SCRIPTS = [
+    ("mathf params alloc", ["python3", "Tools/Build/check_mathf_params_alloc.py"]),
+    ("burst MathF (swarm pose)", ["python3", "Tools/Build/swarm_core_harness/check_burst_pose.py",
+                                  f"{SWARM}/SwarmPrismSync.cs", "Tools/Build/swarm_core_harness/TickJobHarness.cs"]),
+    ("burst MathF (substrate)", ["python3", "Tools/Build/substrate_harness/check_burst_substrate.py",
+                                 f"{SUBSTRATE}/SubstrateKernel.cs", f"{SUBSTRATE}/SubstrateAgentJob.cs",
+                                 "Tools/Build/substrate_harness/ReferenceStep.cs"]),
+    ("console logging", ["python3", "Tools/Build/check_console_logging.py"]),
+]
+
+# scan_perframe_allocations.py prints one "=== <class>: N" header per finding class; the counts are those N.
+SCAN_HEADER = re.compile(r"^=== (.+?): (\d+)\s*$", re.M)
+SCAN_CLASSES = (("Update/LateUpdate", "updateAllocations"), ("per-FRAME coroutines", "yieldNullLoops"), ("INSIDE A LOOP", "yieldNewInLoop"))
+
+
+def parse_scan(text):
+    counts = {"updateAllocations": 0, "yieldNewInLoop": 0, "yieldNullLoops": 0}
+    for title, n in SCAN_HEADER.findall(text):
+        for needle, key in SCAN_CLASSES:
+            if needle in title:
+                counts[key] = int(n)
+    counts["total"] = counts["updateAllocations"] + counts["yieldNewInLoop"] + counts["yieldNullLoops"]
+    return counts
+
+
+def run_scan():
+    """scan_perframe_allocations.py is a reader (always exit 0); its headers carry the counts."""
+    r = subprocess.run(["python3", "Tools/Build/scan_perframe_allocations.py", "--all"], cwd=REPO,
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    text = r.stdout + r.stderr
+    return parse_scan(text), text[-1200:]
+
+
+def cmd_gates(args=None, quiet=False):
+    results, failed = [], 0
+    for name, cmd in GATE_SCRIPTS:
+        r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True, encoding="utf-8", errors="replace")
+        ok = r.returncode == 0
+        tail = (r.stdout + r.stderr).strip().splitlines()[-1:] or [""]
+        results.append({"gate": name, "ok": ok, "line": tail[0][:200]})
+        failed += 0 if ok else 1
+    counts, _ = run_scan()
+    state = load_json(STATE, {})
+    recorded = state.get("scanCounts")
+    scan_regressed = bool(recorded) and rose(recorded.get("total", 0), counts["total"], "scanCount")
+    results.append({"gate": "per-frame allocation scan", "ok": not scan_regressed,
+                    "line": f"{counts['total']} finding(s) (update {counts['updateAllocations']}, yield-new-in-loop "
+                            f"{counts['yieldNewInLoop']}, yield-null loops {counts['yieldNullLoops']})"
+                            + (f" - was {recorded['total']}" if recorded else " - first count recorded")})
+    if not recorded:
+        state["scanCounts"] = counts
+        save_json(STATE, state)
+    if scan_regressed:
+        failed += 1
+    if not quiet:
+        for r in results:
+            print(f"  {'OK  ' if r['ok'] else 'FAIL'} {r['gate']:<28} {r['line']}")
+        print(f"gates: {'OK' if failed == 0 else str(failed) + ' FAILURE(S)'}")
+    return results, failed
+
+
+# ------------------------------------------------------------------ captures and baselines
+
+def capture_key(b):
+    f = pcr.frame(b)
+    return f"{f['scene'] or '?'}|{scenario_label(b, f['label'])}"
+
+
+# The menu scenarios name a CELL, not a scene: S2 is the Lattice (Cell Selector > Lattice), but the editor's
+# auto-capture labels any long Menu_Main play S2, and the lava lamp boots Garland. A Garland capture keyed S2
+# became the S2 baseline on 2026-10-17 (mrglo's 10-16 capture: 'Garland Cell Config' in its cells line).
+SCENARIO_CELLS = {("Menu_Main", "S2"): "Lattice"}
+
+
+def scenario_label(b, label):
+    """The capture's label, or the cell it really measured when that is not the scenario's cell.
+    A capture with no cells line keeps its label (nothing says otherwise)."""
+    f = pcr.frame(b)
+    want = SCENARIO_CELLS.get((f["scene"], label))
+    m = re.search(r"cell 0 '([^']+)'", str(b.get("cells") or ""))
+    if not want or not m or want.lower() in m.group(1).lower():
+        return label or "?"
+    return m.group(1).replace(" Cell Config", "").strip() or (label or "?")
+
+
+def summarize(b):
+    """The numbers a baseline keeps for a Unity capture."""
+    f = pcr.frame(b)
+    markers = {m["name"]: round(m.get("avgMs") or 0, 4) for m in pcr.markers(b)[:40]}
+    return {"cpuBusyMs": f["cpuBusy"], "p95Ms": f["p95"], "gcKB": f["gcKB"], "fps": f["fps"], "prismEnts": f["prismEnts"],
+            "prismPath": f["prismPath"], "markers": markers, "timestamp": b.get("timestamp"), "codeOpt": f["codeOpt"]}
+
+
+def compare_capture(b, baselines, adopt=False):
+    """Judge one capture against its baseline. Returns (verdict dict, baselines possibly changed)."""
+    key = capture_key(b)
+    validity = pcr.validity(b)
+    errors = [v for v in validity if v.startswith("ERROR")]
+    summary = summarize(b)
+    verdict = {"key": key, "timestamp": b.get("timestamp"), "valid": not errors, "validity": validity,
+               "summary": summary, "regressions": [], "improvements": [], "baseline": None, "action": ""}
+    if errors:
+        verdict["action"] = "invalid: not compared"
+        return verdict
+    base = baselines.get(key)
+    if base is None or adopt:
+        baselines[key] = dict(summary, adoptedUtc=now_iso())
+        verdict["action"] = "adopted as the baseline" if base is None else "baseline replaced (--adopt)"
+        return verdict
+    verdict["baseline"] = {"timestamp": base.get("timestamp"), "cpuBusyMs": base.get("cpuBusyMs"),
+                           "p95Ms": base.get("p95Ms"), "gcKB": base.get("gcKB")}
+    for k in ("cpuBusyMs", "p95Ms", "gcKB"):
+        if rose(base.get(k), summary.get(k), k):
+            verdict["regressions"].append(f"{k} {base.get(k)} -> {summary.get(k)} ({pct(base.get(k), summary.get(k))})")
+        elif base.get(k) and summary.get(k) is not None and summary[k] < base[k] * 0.85:
+            verdict["improvements"].append(f"{k} {base.get(k)} -> {summary.get(k)} ({pct(base.get(k), summary.get(k))})")
+    for name, ms in summary["markers"].items():
+        old = base.get("markers", {}).get(name)
+        if rose(old, ms, "markerMs"):
+            verdict["regressions"].append(f"marker {name} {old} -> {ms} ms/frame ({pct(old, ms)})")
+    if base.get("prismPath") and summary.get("prismPath") and \
+            ("instanced" in str(base["prismPath"]).lower()) != ("instanced" in str(summary["prismPath"]).lower()):
+        verdict["regressions"].append(f"prism path changed: {base['prismPath']} -> {summary['prismPath']}")
+    verdict["action"] = "REGRESSION" if verdict["regressions"] else ("improved" if verdict["improvements"] else "within baseline")
+    return verdict
+
+
+def _remote_branches():
+    out = git("for-each-ref", "--format=%(refname:short)", "refs/remotes/origin")
+    return [b for b in (out or "").split() if b not in ("origin", "origin/HEAD")]
+
+
+def _stamp(name):
+    """The yyyymmdd_hhmmss in a diag_/prof_/capture_ file name, as seconds, or None."""
+    m = re.search(r"(\d{8})_(\d{6})", name)
+    if not m:
+        return None
+    t = datetime.datetime.strptime(m.group(1) + m.group(2), "%Y%m%d%H%M%S")
+    return t.timestamp()
+
+
+def pair_loose(loose, already=()):
+    """diag_*.json and prof_*.json shared on their own (the separate console commands, before `capture` existed)
+    become one bundle each: a diag, plus the prof of the same scene and label taken within 10 minutes, if any.
+    A diag that a capture bundle already embeds (same scene, label and timestamp: `already`) is skipped."""
+    diags = [x for x in loose if x["name"].startswith("diag_")
+             and (x["doc"].get("scene"), x["doc"].get("label"), x["doc"].get("timestamp")) not in set(already)]
+    profs = [x for x in loose if x["name"].startswith("prof_")]
+    out = []
+    for d in diags:
+        doc = d["doc"]
+        best, best_gap = None, 600
+        for pr in profs:
+            same = pr["doc"].get("scene") == doc.get("scene") and (pr["doc"].get("label") or "") == (doc.get("label") or "")
+            gap = abs((_stamp(pr["name"]) or 0) - (_stamp(d["name"]) or 0))
+            if same and gap < best_gap:
+                best, best_gap = pr, gap
+        bundle = {"kind": "perf-capture", "label": doc.get("label"), "scene": doc.get("scene"), "timestamp": doc.get("timestamp"),
+                  "burst": "", "renderers": "", "cells": "", "cameras": "", "log": [], "diag": doc, "prof": best["doc"] if best else None,
+                  "notes": ["paired from a shared diag" + (" + prof" if best else " (no prof within 10 minutes)") + " - not a capture bundle; no burst/renderers/cameras"]}
+        out.append({"bundle": bundle, "user": d["user"], "name": d["name"], "path": d["path"], "branches": d["branches"]})
+    return out
+
+
+def collect_captures(local_dir=None):
+    """Every shared capture_*.json on every origin branch (deduped by blob), loose diag_/prof_ pairs, plus a local folder's."""
+    found, blobs, loose = [], {}, {}
+    for ref in _remote_branches():
+        listing = git("ls-tree", "-r", "-l", ref, "--", REPORTS_PREFIX) or ""
+        for line in listing.splitlines():
+            meta, _, path = line.partition("\t")
+            parts = meta.split()
+            if len(parts) < 4 or parts[1] != "blob":
+                continue
+            rel = path[len(REPORTS_PREFIX):].split("/", 2)
+            if len(rel) != 3 or rel[1] != "perf" or not rel[2].endswith(".json"):
+                continue
+            kind = "capture" if rel[2].startswith("capture_") else "loose" if rel[2].startswith(("diag_", "prof_")) else None
+            if kind is None:
+                continue
+            sha = parts[2]
+            store = blobs if kind == "capture" else loose
+            if sha in store:
+                store[sha]["branches"].append(ref[len("origin/"):])
+                continue
+            text = git("cat-file", "blob", sha)
+            try:
+                b = json.loads(text) if text else None
+            except ValueError:
+                b = None
+            if not b:
+                continue
+            if kind == "capture":
+                if b.get("kind") == "perf-capture":
+                    blobs[sha] = {"bundle": b, "user": rel[0], "name": rel[2], "path": path, "branches": [ref[len("origin/"):]]}
+            else:
+                loose[sha] = {"doc": b, "user": rel[0], "name": rel[2], "path": path, "branches": [ref[len("origin/"):]]}
+    found.extend(blobs.values())
+    embedded = [((c["bundle"].get("diag") or {}).get("scene"), (c["bundle"].get("diag") or {}).get("label"), (c["bundle"].get("diag") or {}).get("timestamp")) for c in found]
+    found.extend(pair_loose(list(loose.values()), embedded))
+    if local_dir and os.path.isdir(local_dir):
+        local_loose = []
+        for name in sorted(os.listdir(local_dir)):
+            if not name.endswith(".json"):
+                continue
+            b = load_json(os.path.join(local_dir, name), None)
+            if name.startswith("capture_") and b and b.get("kind") == "perf-capture":
+                found.append({"bundle": b, "user": "local", "name": name, "path": os.path.join(local_dir, name), "branches": []})
+            elif name.startswith(("diag_", "prof_")) and b:
+                local_loose.append({"doc": b, "user": "local", "name": name, "path": os.path.join(local_dir, name), "branches": []})
+        embedded = [((c["bundle"].get("diag") or {}).get("scene"), (c["bundle"].get("diag") or {}).get("label"), (c["bundle"].get("diag") or {}).get("timestamp")) for c in found]
+        found.extend(pair_loose(local_loose, embedded))
+    found.sort(key=lambda c: c["bundle"].get("timestamp") or "")
+    return found
+
+
+def default_local_dir():
+    for base in (os.path.expanduser("~/Documents"), os.path.expanduser("~/.local/share")):
+        if not os.path.isdir(base):
+            continue
+        for d in sorted(os.listdir(base)):
+            p = os.path.join(base, d, "CosmicShore Diagnostics") if d.startswith("CosmicShore") else os.path.join(base, d)
+            if d == "CosmicShore Diagnostics" or (os.path.isdir(p) and p.endswith("CosmicShore Diagnostics")):
+                return p
+    return None
+
+
+def cmd_collect(args):
+    captures = collect_captures(args.local if args.local else default_local_dir())
+    baselines = load_json(BASELINES, {})
+    verdicts = []
+    for c in captures:
+        v = compare_capture(c["bundle"], baselines, adopt=False)
+        v.update(user=c["user"], name=c["name"], branches=c["branches"])
+        verdicts.append(v)
+    board = {"generatedUtc": now_iso(), "branchesScanned": len(_remote_branches()), "captures": verdicts}
+    if getattr(args, "write_baselines", True) and captures:
+        save_json(BASELINES, baselines)
+    if args.out:
+        save_json(args.out, board)
+        print(f"{len(verdicts)} capture(s) from {board['branchesScanned']} branch(es) -> {args.out}")
+    else:
+        for v in verdicts:
+            print(f"  {v['key']:<40} {v['user']:<10} {v['action']}" + (": " + "; ".join(v["regressions"]) if v["regressions"] else ""))
+        if not verdicts:
+            print("no shared captures yet (BugLedger/shared/reports/*/perf/capture_*.json on any branch, or a local "
+                  "CosmicShore Diagnostics folder). Ask for one: play the scene in Release past its auto-capture time "
+                  "(the editor captures by itself, PerfAutoCapture), then stop Play: it goes to Claude by itself.")
+    return board
+
+
+def cmd_compare(args):
+    b = load_json(args.capture, None)
+    if not b or b.get("kind") != "perf-capture":
+        sys.exit(f"{args.capture} is not a perf-capture bundle")
+    baselines = load_json(BASELINES, {})
+    v = compare_capture(b, baselines, adopt=args.adopt)
+    save_json(BASELINES, baselines)
+    print(json.dumps(v, indent=2))
+    return 2 if v["regressions"] else 0
+
+
+# ------------------------------------------------------------------ amoebius
+
+def parse_modes(spec):
+    out = []
+    for item in (spec or "SkimRace:2:3").split(","):
+        parts = item.split(":")
+        out.append((parts[0], int(parts[1]) if len(parts) > 1 else 2, int(parts[2]) if len(parts) > 2 else 3))
+    return out
+
+
+def compare_amoebius(doc, baselines, adopt=False, known=None):
+    """known: Docs/perf/amoebius_known.json's markers - allocations that are the ENGINE's copy, not the game's.
+    They are listed, never counted as a regression, and never silently dropped."""
+    known = known if known is not None else (load_json(AMOEBIUS_KNOWN, {}).get("markers") or {})
+    key = f"{doc.get('mode')}|I{doc.get('intensity')}|{doc.get('players')}p"
+    cur = {m["name"]: m for m in doc.get("markers", [])}
+    verdict = {"key": key, "frames": doc.get("frames"), "regressions": [], "watch": [], "improvements": [], "action": "",
+               "engineShim": [f"{n} {cur[n].get('kbPerFrame', 0):.2f} KB/frame - {known[n].get('reason', '')[:90]}" for n in cur if n in known],
+               "top": sorted(((n, m.get("kbPerFrame") or 0) for n, m in cur.items() if (m.get("kbPerFrame") or 0) >= 0.5 and n not in known), key=lambda t: -t[1])[:6]}
+    base = baselines.get(key)
+    if base is None or adopt:
+        baselines[key] = {"adoptedUtc": now_iso(), "frames": doc.get("frames"),
+                          "markers": {n: {"kbPerFrame": m.get("kbPerFrame", 0), "avgMsPerFrame": m.get("avgMsPerFrame", 0)} for n, m in cur.items()}}
+        verdict["action"] = "adopted as the baseline" if base is None else "baseline replaced (--adopt)"
+        return verdict
+    for name, m in cur.items():
+        old = base["markers"].get(name)
+        if name in known:
+            continue   # listed under engineShim above; its KB is the engine's copy, not a game regression
+        if not old:
+            if (m.get("kbPerFrame") or 0) >= THRESHOLDS["amoebiusKB"][1]:
+                verdict["regressions"].append(f"new allocating marker {name}: {m.get('kbPerFrame')} KB/frame")
+            continue
+        if rose(old["kbPerFrame"], m.get("kbPerFrame", 0), "amoebiusKB"):
+            verdict["regressions"].append(f"{name} allocates {old['kbPerFrame']} -> {m.get('kbPerFrame')} KB/frame ({pct(old['kbPerFrame'], m.get('kbPerFrame', 0))})")
+        elif old["kbPerFrame"] >= 0.05 and m.get("kbPerFrame", 0) <= old["kbPerFrame"] * 0.5:
+            verdict["improvements"].append(f"{name} allocates {old['kbPerFrame']} -> {m.get('kbPerFrame')} KB/frame")
+        if rose(old["avgMsPerFrame"], m.get("avgMsPerFrame", 0), "amoebiusMs"):
+            verdict["watch"].append(f"{name} {old['avgMsPerFrame']} -> {m.get('avgMsPerFrame')} ms/frame ({pct(old['avgMsPerFrame'], m.get('avgMsPerFrame', 0))}) - .NET time, confirm in Unity")
+    verdict["action"] = "REGRESSION" if verdict["regressions"] else ("improved" if verdict["improvements"] else "within baseline")
+    return verdict
+
+
+def cmd_amoebius(args):
+    baselines = load_json(AMOEBIUS_BASELINES, {})
+    verdicts, failed = [], 0
+    if getattr(args, "from_json", None):
+        for path in args.from_json:
+            doc = load_json(path, None)
+            if not doc or doc.get("kind") != "amoebius-markers":
+                sys.exit(f"{path} is not an amoebius-markers run")
+            v = compare_amoebius(doc, baselines, adopt=args.adopt)
+            v["out"] = path
+            verdicts.append(v)
+            failed += 1 if v["regressions"] else 0
+        save_json(AMOEBIUS_BASELINES, baselines)
+        _print_amoebius(verdicts)
+        return verdicts, failed
+    os.makedirs(os.path.join(REPO, "Port", "obj", "perf_hunt"), exist_ok=True)
+    for mode, intensity, players in parse_modes(args.modes):
+        out = os.path.join(REPO, "Port", "obj", "perf_hunt", f"{mode}_I{intensity}_{players}p.json")
+        cmd = ["python3", "Port/tools/amoebius_markers_run.py", "--mode", mode, "--intensity", str(intensity),
+               "--players", str(players), "--frames", str(args.frames), "--out", out, "--label", f"perf_hunt {now_iso()[:10]}",
+               "--profile", "perfhunt", "--port", str(47900 + len(verdicts))]
+        if args.no_build:
+            cmd.append("--no-build")
+        print(f"amoebius: {mode} I{intensity} {players} seats, {args.frames} frames ...", flush=True)
+        r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True, encoding="utf-8", errors="replace")
+        doc = load_json(out, None)
+        if r.returncode != 0 or not doc:
+            verdicts.append({"key": f"{mode}|I{intensity}|{players}p", "action": "RUN FAILED", "regressions": [],
+                             "watch": [], "improvements": [], "error": (r.stdout + r.stderr)[-800:]})
+            failed += 1
+            continue
+        v = compare_amoebius(doc, baselines, adopt=args.adopt)
+        v["out"] = out
+        verdicts.append(v)
+        if v["regressions"]:
+            failed += 1
+    save_json(AMOEBIUS_BASELINES, baselines)
+    _print_amoebius(verdicts)
+    return verdicts, failed
+
+
+def _print_amoebius(verdicts):
+    for v in verdicts:
+        print(f"  {v['key']:<24} {v['action']}")
+        for line in v["regressions"]:
+            print("    REGRESSION " + line)
+        for line in v["watch"]:
+            print("    watch      " + line)
+        for line in v["improvements"]:
+            print("    improved   " + line)
+        for line in v.get("engineShim", []):
+            print("    engine     " + line)
+        if v.get("top"):
+            print("    top game allocators (KB/frame): " + ", ".join(f"{n} {kb:.2f}" for n, kb in v["top"]))
+        if v.get("error"):
+            print("    " + v["error"].strip().replace("\n", "\n    ")[-600:])
+
+
+# ------------------------------------------------------------------ sweep
+
+def cell(v):
+    """A markdown table cell: no pipes, numbers to two decimals."""
+    if isinstance(v, float):
+        return f"{v:.2f}"
+    return str(v if v is not None else "-").replace("|", "\\|")
+
+
+def render_report(gates, gate_failures, board, amoebius, tasks_filed):
+    lines = [BEGIN, "", f"_Last sweep: {now_iso()} (`python3 Tools/Build/perf_hunt.py sweep`). Baselines: "
+             "`Docs/perf/baselines.json` (editor captures), `Docs/perf/amoebius_baselines.json` (Amoebius markers)._", ""]
+    lines.append(f"**Static gates:** {'all OK' if gate_failures == 0 else str(gate_failures) + ' FAILING'}")
+    lines.append("")
+    lines.append("| Gate | Result |")
+    lines.append("|---|---|")
+    for g in gates:
+        lines.append(f"| {g['gate']} | {'OK' if g['ok'] else 'FAIL'} - {g['line']} |")
+    lines.append("")
+    caps = board["captures"] if board else []
+    lines.append(f"**Editor captures sent to Claude from the editor:** {len(caps)} on {board['branchesScanned'] if board else 0} branch(es)")
+    lines.append("")
+    if caps:
+        lines.append("| Scene / label | By | When | CPU busy ms | p95 ms | GC KB/f | Prisms | Verdict |")
+        lines.append("|---|---|---|---:|---:|---:|---:|---|")
+        for v in caps:
+            s = v["summary"]
+            verdict = v['action'] + (': ' + '; '.join(v['regressions']) if v['regressions'] else '') + \
+                      (' - ' + '; '.join(x for x in v['validity'] if x.startswith('ERROR')) if not v['valid'] else '')
+            lines.append(f"| {cell(v['key'])} | {cell(v['user'])} | {cell(v['timestamp'])} | {cell(s.get('cpuBusyMs'))} | {cell(s.get('p95Ms'))} | "
+                         f"{cell(s.get('gcKB'))} | {cell(s.get('prismEnts'))} | {cell(verdict)} |")
+    else:
+        lines.append("_None yet. A capture reaches this report by itself: the editor captures in Play (PerfAutoCapture) "
+                     "and sends it to Claude after the play test (BugHuntAutoSend), with no button and no question._")
+    lines.append("")
+    if amoebius is not None:
+        lines.append("**Amoebius marker run (allocations are the gate; milliseconds are watched):**")
+        lines.append("")
+        for v in amoebius:
+            lines.append(f"- `{v['key']}`: {v['action']}" + (" - " + "; ".join(v["regressions"] + v["watch"] + v["improvements"]) if (v["regressions"] or v["watch"] or v["improvements"]) else ""))
+            if v.get("top"):
+                lines.append("  - top game allocators (KB/frame): " + ", ".join(f"`{n}` {kb:.2f}" for n, kb in v["top"]))
+            for line in v.get("engineShim", []):
+                lines.append(f"  - engine shim, not the game (`Docs/perf/amoebius_known.json`): {line}")
+        lines.append("")
+    if tasks_filed:
+        lines.append("**Team tasks filed this sweep:** " + ", ".join(tasks_filed))
+        lines.append("")
+    lines.append(END)
+    return "\n".join(lines) + "\n"
+
+
+def write_report(block):
+    os.makedirs(os.path.dirname(REPORT), exist_ok=True)
+    text = open(REPORT, encoding="utf-8").read() if os.path.exists(REPORT) else "# Performance - where it stands\n\n"
+    if BEGIN in text and END in text:
+        start, end = text.index(BEGIN), text.index(END) + len(END) + 1
+        text = text[:start] + block + text[end:]
+    else:
+        text = text.rstrip("\n") + "\n\n" + block
+    with open(REPORT, "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
+
+
+def file_task(task, done_when, see):
+    # A ticket names nobody (Docs/TEAM.md rule 9); whoever owns the files finds it with who_works_where.py.
+    r = subprocess.run(["python3", "Tools/Build/team_tasks.py", "add", "--area", "Performance", "--kind", "dev",
+                        "--task", task, "--done-when", done_when, "--see", see, "--by", "perf_hunt sweep",
+                        "--priority", "P2", "--dept", "developers", "--milestone", "M1",
+                        "--why", "a performance gate or a capture regressed; M1 needs every mode at speed on every platform"],
+                       cwd=REPO, capture_output=True, text=True)
+    m = re.search(r"T-\d{8}-[0-9a-f]{4}", r.stdout + r.stderr)
+    return m.group(0) if m else None
+
+
+def gate_and_capture_regressions(gates, board):
+    """(key, task, done-when, see) for every red gate and every capture regression. The sweep files tasks from these;
+    a status refresh lists them too, so it never reports a capture regression as gone (it did until 2026-10-17)."""
+    out = []
+    for g in gates:
+        if not g["ok"]:
+            out.append(("gate:" + g["gate"], f"Performance gate '{g['gate']}' is red: {g['line']}",
+                        f"python3 Tools/Build/perf_hunt.py gates reports '{g['gate']}' OK", "Docs/PERFORMANCE_OPTIMIZATION.md 3.4"))
+    for v in (board["captures"] if board else []):
+        for line in v["regressions"]:
+            out.append((f"capture:{v['key']}:{line.split(' ')[0]}", f"Performance regression in {v['key']} ({v['user']}, {v['timestamp']}): {line}",
+                        f"a new capture of {v['key']} compares within its baseline (perf_hunt.py compare)", "Docs/Reports/PERFORMANCE.md"))
+    return out
+
+
+def cmd_sweep(args):
+    gates, gate_failures = cmd_gates(quiet=True)
+    board = cmd_collect(argparse.Namespace(local=args.local, out=None, write_baselines=True)) if not args.no_collect else None
+    amoebius = None
+    if args.amoebius:
+        amoebius, _ = cmd_amoebius(argparse.Namespace(modes=args.modes, frames=args.frames, adopt=False, no_build=args.no_build, from_json=None))
+    else:
+        # No engine run asked for: judge the run files the last `amoebius` left, so the report still shows them.
+        run_dir = os.path.join(REPO, "Port", "obj", "perf_hunt")
+        runs = sorted(os.path.join(run_dir, n) for n in os.listdir(run_dir)) if os.path.isdir(run_dir) else []
+        runs = [r for r in runs if r.endswith(".json") and (load_json(r, {}) or {}).get("kind") == "amoebius-markers"]
+        if runs:
+            amoebius, _ = cmd_amoebius(argparse.Namespace(from_json=runs, adopt=False))
+    state = load_json(STATE, {})
+    filed = state.setdefault("filed", {})
+    tasks_filed = []
+    regressions = gate_and_capture_regressions(gates, board)
+    for v in (amoebius or []):
+        for line in v["regressions"]:
+            regressions.append((f"amoebius:{v['key']}:{line.split(' ')[0]}", f"Allocation regression in Amoebius {v['key']}: {line}",
+                                "perf_hunt.py amoebius reads within baseline for that marker", "Docs/Reports/PERFORMANCE.md"))
+    for key, task, done_when, see in regressions:
+        if args.tasks and key not in filed:
+            tid = file_task(task, done_when, see)
+            if tid:
+                filed[key] = {"task": tid, "filedUtc": now_iso()}
+                tasks_filed.append(tid)
+    save_json(STATE, state)
+    save_json(STATUS, build_status(gates, board, amoebius, [r[1] for r in regressions]))
+    block = render_report(gates, gate_failures, board, amoebius, tasks_filed)
+    if args.write:
+        write_report(block)
+    print(block)
+    if args.out:
+        save_json(args.out, {"generatedUtc": now_iso(), "gates": gates, "captures": board["captures"] if board else [],
+                             "amoebius": amoebius, "regressions": [r[1] for r in regressions], "tasksFiled": tasks_filed})
+    n = len(regressions)
+    print(f"sweep: {n} regression(s)" + (f", {len(tasks_filed)} task(s) filed" if tasks_filed else ""))
+    return 2 if (n and args.strict) else 0
+
+
+# ------------------------------------------------------------------ status (what the indicator and Claude read)
+
+def _open_tasks(area="Performance"):
+    try:
+        import team_tasks
+        tickets = team_tasks.open_tickets([area])
+    except Exception:  # noqa: BLE001 - a status read must never fail on the ticket store
+        return []
+    return [{"id": t.id, "kind": t.kind, "task": t.task[:160]} for t in tickets if t.state == "open"]
+
+
+def _bugs():
+    """The Bug Ledger's count, read the way the board is: every origin/bugledger/<user> branch merged
+    (bug_ledger.collect_board), not the checked-out tree. Until 2026-10-25 this read bug_ledger.load_all(),
+    the working tree's BugLedger/shared only, and reported "2 open, 1 validating" while 309 issues sat on
+    the senders' branches. Falls back to the working tree when no origin branch carries a ledger (not
+    fetched yet)."""
+    try:
+        import bug_ledger
+        board = bug_ledger.collect_board()
+        issues = board["issues"]
+        source = "%d branch(es)" % board["branchesScanned"]
+        if not issues:
+            issues = list(bug_ledger.load_all().values())
+            source = "working tree"
+    except Exception:  # noqa: BLE001
+        return {"open": 0, "validating": 0, "top": []}
+    live = [i for i in issues if i.get("state") in ("open", "validating")]
+
+    def testers(i):  # senders who hit it; a copy merged into a feature branch is not another tester
+        return sum(1 for b in i.get("branches") or [] if b.startswith("bugledger/"))
+
+    live.sort(key=lambda i: (i.get("state") != "open", -testers(i),
+                             -int(i.get("regressions") or 0), -int(i.get("timesSeen") or 0)))
+    return {"open": sum(1 for i in live if i["state"] == "open"),
+            "validating": sum(1 for i in live if i["state"] == "validating"),
+            "source": source,
+            "top": [{"id": i["id"], "state": i["state"], "title": (i.get("title") or "")[:110],
+                     "testers": testers(i)} for i in live[:5]]}
+
+
+def build_status(gates, board, amoebius, regressions):
+    """One small JSON: what is green, what regressed, and the next steps in order. Written by every sweep."""
+    baselines = load_json(BASELINES, {})
+    have = {k.split("|", 1)[1].lower() for k in baselines if "|" in k}
+    tasks = _open_tasks()
+    bugs = _bugs()
+    nxt = []
+    for g in gates:
+        if not g["ok"]:
+            nxt.append(f"Fix the red gate '{g['gate']}': {g['line']} (python3 Tools/Build/perf_hunt.py gates)")
+    for r in regressions:
+        nxt.append("Resolve: " + r)
+    for label, title, _scene, _after, how in SCENARIOS:
+        if label.lower() not in have:
+            tid = next((t["id"] for t in tasks if label.lower() in t["task"].lower() or title.lower() in t["task"].lower()), None)
+            nxt.append(f"Capture {title} in Release (no valid baseline yet): {how}" + (f" [{tid}]" if tid else ""))
+    if bugs["open"]:
+        nxt.append(f"{bugs['open']} open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: {bugs['top'][0]['title']})")
+    caps = board["captures"] if board else []
+    return {
+        "generatedUtc": now_iso(),
+        "gatesOk": all(g["ok"] for g in gates),
+        "gates": [{"gate": g["gate"], "ok": g["ok"]} for g in gates],
+        "regressions": regressions,
+        "baselines": sorted(baselines.keys()),
+        "captures": [{"key": v["key"], "user": v.get("user"), "timestamp": v.get("timestamp"), "valid": v["valid"],
+                      "verdict": v["action"], "cpuBusyMs": v["summary"].get("cpuBusyMs"), "gcKB": v["summary"].get("gcKB")} for v in caps[-8:]],
+        "amoebius": [{"key": v["key"], "verdict": v["action"], "topGameAllocators": v.get("top", [])} for v in (amoebius or [])],
+        "bugs": bugs,
+        "openPerformanceTasks": tasks,
+        "scenarios": [{"label": label, "title": title, "scene": scene, "afterSeconds": after, "owed": label.lower() not in have}
+                      for label, title, scene, after, _how in SCENARIOS],
+        "next": nxt,
+        "branchFlow": BRANCH_FLOW,
+    }
+
+
+def status_text(st):
+    lines = [f"Performance & Bug Hunt status (sweep {st.get('generatedUtc', '?')}):"]
+    lines.append(f"- Gates: {'all OK' if st.get('gatesOk') else 'RED: ' + ', '.join(g['gate'] for g in st.get('gates', []) if not g['ok'])}")
+    lines.append(f"- Regressions: {len(st.get('regressions', []))}" + (": " + "; ".join(st['regressions'][:3]) if st.get('regressions') else ""))
+    lines.append(f"- Valid baselines: {', '.join(st.get('baselines', [])) or 'none yet'}")
+    for a in st.get("amoebius", []):
+        top = ", ".join(f"{n} {kb:.1f} KB/f" for n, kb in a.get("topGameAllocators", [])[:3])
+        lines.append(f"- Amoebius {a['key']}: {a['verdict']}" + (f"; top game allocators {top}" if top else ""))
+    b = st.get("bugs", {})
+    lines.append(f"- Bug Ledger: {b.get('open', 0)} open, {b.get('validating', 0)} validating"
+                 + (f" (from {b['source']})" if b.get("source") else ""))
+    lines.append("Next, in order:")
+    for i, n in enumerate(st.get("next", [])[:6], 1):
+        lines.append(f"  {i}. {n}")
+    if not st.get("next"):
+        lines.append("  nothing owed: every scenario has a valid baseline, no regression, no open bug.")
+    return "\n".join(lines)
+
+
+def cmd_status(args):
+    st = load_json(STATUS, None)
+    if args.refresh or st is None:
+        gates, _ = cmd_gates(quiet=True)
+        board = cmd_collect(argparse.Namespace(local=None, out=None, write_baselines=False)) if args.refresh else None
+        # A refresh re-reads gates and captures but does not re-run Amoebius (minutes): carry the last sweep's
+        # Amoebius verdicts and their regressions over, so a refresh never reports a known regression as gone.
+        prev = st or {}
+        amo = [{"key": a["key"], "action": a.get("verdict", ""), "top": a.get("topGameAllocators", [])}
+               for a in prev.get("amoebius", [])]
+        amo_regs = [r for r in prev.get("regressions", []) if "Amoebius" in r]
+        if board is None:   # no re-read of captures: carry their regressions over as well
+            regs = [r for r in prev.get("regressions", []) if "Amoebius" not in r]
+        else:
+            regs = [r[1] for r in gate_and_capture_regressions(gates, board)]
+        st = build_status(gates, board, amo, regs + amo_regs)
+        save_json(STATUS, st)
+    print(json.dumps(st, indent=2) if args.json else status_text(st))
+    return 0
+
+
+# ------------------------------------------------------------------ self-test
+
+def self_test():
+    global BASELINES, AMOEBIUS_BASELINES, STATE, REPORT
+    import tempfile
+    sample = {"kind": "perf-capture", "label": "S2", "scene": "Menu_Main", "timestamp": "2026-10-15 10:00:00", "burst": "Run() BURST, Schedule() BURST",
+              "cameras": "1 enabled | Camera screen depth 0", "notes": [], "log": [],
+              "diag": {"label": "S2", "scene": "Menu_Main", "avgFps": 40.0, "avgCpuBusyMs": 20.0, "p95FrameMs": 30.0, "avgGcKbPerFrame": 50.0,
+                       "prismEnts": 42000, "prismPath": "ON (instanced)", "boundVerdict": "CPU", "frameCapVSync": 0, "frameCapTarget": -1,
+                       "environment": {"codeOptimization": "Release", "burstEnabled": True, "focused": True},
+                       "markers": [{"name": "LightFauna.Update", "found": True, "avgMs": 2.0, "p95Ms": 4, "maxMs": 9, "avgCalls": 1},
+                                   {"name": "LOD.Sweep", "found": True, "avgMs": 0.1, "p95Ms": 0.2, "maxMs": 3, "avgCalls": 0.1}]},
+              "prof": {"completed": True, "deepProfiling": False, "managedJobMs": 0.0, "topSelf": [], "topGc": [], "notes": []}}
+    with tempfile.TemporaryDirectory() as tmp:
+        BASELINES, AMOEBIUS_BASELINES = os.path.join(tmp, "b.json"), os.path.join(tmp, "a.json")
+        STATE, REPORT = os.path.join(tmp, "s.json"), os.path.join(tmp, "Reports", "PERFORMANCE.md")
+        base = {}
+        v = compare_capture(sample, base)
+        assert v["action"].startswith("adopted") and "Menu_Main|S2" in base, v
+        garland = json.loads(json.dumps(sample)); garland["cells"] = "cells: 1 | cell 0 'Garland Cell Config' Frenzy"
+        assert capture_key(garland) == "Menu_Main|Garland", capture_key(garland)
+        lattice = json.loads(json.dumps(sample)); lattice["cells"] = "cells: 1 | cell 0 'Lattice Cell Config' Frenzy"
+        assert capture_key(lattice) == "Menu_Main|S2", capture_key(lattice)
+        same = json.loads(json.dumps(sample)); same["diag"]["avgCpuBusyMs"] = 20.8   # +4 %: noise
+        assert compare_capture(same, base)["action"] == "within baseline"
+        worse = json.loads(json.dumps(sample)); worse["diag"]["avgCpuBusyMs"] = 26.0; worse["diag"]["markers"][0]["avgMs"] = 3.0
+        v = compare_capture(worse, base)
+        assert v["action"] == "REGRESSION" and len(v["regressions"]) == 2, v["regressions"]
+        tiny = json.loads(json.dumps(sample)); tiny["diag"]["markers"][1]["avgMs"] = 0.19   # +90 % of a tiny number: below the floor
+        assert compare_capture(tiny, base)["action"] == "within baseline"
+        bad = json.loads(json.dumps(worse)); bad["diag"]["environment"]["codeOptimization"] = "Debug"
+        assert compare_capture(bad, base)["action"].startswith("invalid"), "a Debug capture must never compare"
+        legacy = json.loads(json.dumps(sample)); legacy["diag"]["prismPath"] = "OFF (legacy)"
+        assert any("prism path" in r for r in compare_capture(legacy, base)["regressions"])
+        better = json.loads(json.dumps(sample)); better["diag"]["avgCpuBusyMs"] = 12.0
+        assert compare_capture(better, base)["action"] == "improved"
+        compare_capture(better, base, adopt=True)
+        assert base["Menu_Main|S2"]["cpuBusyMs"] == 12.0
+
+        doc = {"mode": "SkimRace", "intensity": 2, "players": 3, "frames": 1800,
+               "markers": [{"name": "PoolRefill.Squirrel Prism", "kbPerFrame": 9.0, "avgMsPerFrame": 0.07},
+                           {"name": "SkimRace.Pilot.Decide", "kbPerFrame": 0.001, "avgMsPerFrame": 0.45}]}
+        ab = {}
+        assert compare_amoebius(doc, ab)["action"].startswith("adopted")
+        d2 = json.loads(json.dumps(doc)); d2["markers"][0]["kbPerFrame"] = 9.05; d2["markers"][1]["avgMsPerFrame"] = 0.49
+        assert compare_amoebius(d2, ab)["action"] == "within baseline"
+        d3 = json.loads(json.dumps(doc)); d3["markers"][1]["kbPerFrame"] = 0.6; d3["markers"][1]["avgMsPerFrame"] = 0.7
+        v = compare_amoebius(d3, ab)
+        assert v["action"] == "REGRESSION" and v["watch"], v
+        d4 = json.loads(json.dumps(doc)); d4["markers"][0]["kbPerFrame"] = 0.0
+        assert compare_amoebius(d4, ab)["action"] == "improved"
+        d5 = json.loads(json.dumps(doc)); d5["markers"][0]["kbPerFrame"] = 700.0
+        v = compare_amoebius(d5, ab, known={"PoolRefill.Squirrel Prism": {"reason": "engine copy"}})
+        assert v["action"] == "within baseline" and v["engineShim"] and all("PoolRefill" not in n for n, _ in v["top"]), v
+
+        block = render_report([{"gate": "x", "ok": True, "line": "fine"}], 0,
+                              {"branchesScanned": 3, "captures": [dict(v if False else compare_capture(worse, base), user="ys", name="n", branches=[])]},
+                              [compare_amoebius(d3, ab)], ["T-1"])
+        write_report(block); write_report(block)
+        text = open(REPORT, encoding="utf-8").read()
+        assert text.count(BEGIN) == 1 and "REGRESSION" in text and "T-1" in text
+        assert "Menu_Main\\|S2" in text and "26.00" in text, "table cells must escape pipes and round numbers"
+        global _open_tasks, _bugs
+        keep = (_open_tasks, _bugs)
+        _open_tasks = lambda area="Performance": [{"id": "T-1", "kind": "test", "task": "First editor performance capture, S2 Lattice ..."}]
+        _bugs = lambda: {"open": 2, "validating": 0, "top": [{"id": "E-1", "state": "open", "title": "boom"}]}
+        try:
+            save_json(BASELINES, {"Menu_Main|S2": {"cpuBusyMs": 1}})
+            st = build_status([{"gate": "g", "ok": False, "line": "x"}], None, None, ["r1"])
+            assert st["next"][0].startswith("Fix the red gate") and st["next"][1] == "Resolve: r1", st["next"]
+            assert not any("S2 Lattice" in n for n in st["next"]), "a scenario with a baseline is not owed"
+            assert any("Skim Race I2" in n for n in st["next"]) and any("open console bug" in n for n in st["next"])
+            assert "Next, in order:" in status_text(st)
+        finally:
+            _open_tasks, _bugs = keep
+        # The Bug Ledger count is the senders' branches merged, not the checked-out tree (2026-10-25: the tree
+        # held 3 issues while the bugledger branches held 309), with the tree only as the unfetched fallback.
+        import bug_ledger
+        saved_bl = (bug_ledger.collect_board, bug_ledger.load_all)
+        on_branches = [{"id": "E-a", "state": "open", "title": "a", "branches": ["bugledger/x"], "timesSeen": 1},
+                       {"id": "E-b", "state": "open", "title": "b", "branches": ["bugledger/x", "bugledger/y", "bleeding-edge"], "timesSeen": 1},
+                       {"id": "E-c", "state": "validating", "title": "c", "branches": ["bugledger/y"], "timesSeen": 9},
+                       {"id": "E-d", "state": "ignored", "title": "d", "branches": ["bugledger/y"], "timesSeen": 1}]
+        try:
+            bug_ledger.collect_board = lambda: {"issues": on_branches, "branchesScanned": 2}
+            bug_ledger.load_all = lambda: {"e-z": {"id": "E-z", "state": "open", "title": "z"}}
+            b = _bugs()
+            assert (b["open"], b["validating"], b["source"]) == (2, 1, "2 branch(es)"), b
+            assert b["top"][0]["id"] == "E-b" and b["top"][0]["testers"] == 2, "most testers first"
+            bug_ledger.collect_board = lambda: {"issues": [], "branchesScanned": 0}
+            b = _bugs()
+            assert (b["open"], b["source"]) == (1, "working tree"), b
+        finally:
+            bug_ledger.collect_board, bug_ledger.load_all = saved_bl
+        assert rose(10, 11.6, "cpuBusyMs") and not rose(10, 11.4, "cpuBusyMs") and not rose(1.0, 1.4, "cpuBusyMs")
+        c = parse_scan("=== LARGE allocations in Update/LateUpdate/FixedUpdate/OnGUI: 6\n  x\n=== LARGE allocations in per-FRAME coroutines (yield return null): 9\n=== `yield return new ...` INSIDE A LOOP (one alloc per iteration, per instance): 63\n")
+        assert c == {"updateAllocations": 6, "yieldNullLoops": 9, "yieldNewInLoop": 63, "total": 78}, c
+        assert rose(78, 79, "scanCount") and not rose(78, 78, "scanCount")
+        loose = [{"doc": {"scene": "MinigameSkimRace", "label": "S", "timestamp": "t"}, "user": "ys", "name": "diag_MinigameSkimRace_S_20261008_063523.json", "path": "p", "branches": ["b"]},
+                 {"doc": {"scene": "MinigameSkimRace", "label": "S", "completed": True}, "user": "ys", "name": "prof_MinigameSkimRace_S_20261008_063333.json", "path": "q", "branches": ["b"]},
+                 {"doc": {"scene": "Menu_Main", "label": "S"}, "user": "ys", "name": "prof_Menu_Main_S_20261008_063340.json", "path": "r", "branches": ["b"]}]
+        paired = pair_loose(loose)
+        assert len(paired) == 1 and paired[0]["bundle"]["prof"] is not None and paired[0]["bundle"]["prof"]["scene"] == "MinigameSkimRace", paired
+        assert pair_loose(loose[:1])[0]["bundle"]["prof"] is None
+        assert pair_loose(loose[:1], [("MinigameSkimRace", "S", "t")]) == [], "a diag a capture already embeds must not be paired twice"
+    print("self-test ok")
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--self-test", action="store_true")
+    sub = ap.add_subparsers(dest="cmd")
+    sub.add_parser("gates", help="the static performance gates + the per-frame allocation scan counts")
+    p = sub.add_parser("collect", help="every shared capture_*.json on every origin branch, judged against its baseline")
+    p.add_argument("--local", help="a CosmicShore Diagnostics folder to include")
+    p.add_argument("--out")
+    p = sub.add_parser("compare", help="one capture against its baseline")
+    p.add_argument("capture")
+    p.add_argument("--adopt", action="store_true", help="make this capture the baseline (after a confirmed improvement)")
+    p = sub.add_parser("amoebius", help="run the Amoebius marker scenarios and compare allocations with their baseline")
+    p.add_argument("--from-json", nargs="+", help="judge existing amoebius-markers run file(s) instead of running the engine")
+    p.add_argument("--modes", default="SkimRace:2:3", help="Mode:intensity:players, comma separated")
+    p.add_argument("--frames", type=int, default=1800)
+    p.add_argument("--adopt", action="store_true")
+    p.add_argument("--no-build", action="store_true")
+    p = sub.add_parser("status", help="the short status and next steps (reads Docs/perf/status.json; --refresh re-measures)")
+    p.add_argument("--refresh", action="store_true")
+    p.add_argument("--json", action="store_true")
+    p = sub.add_parser("sweep", help="gates + collect (+ --amoebius) -> Docs/Reports/PERFORMANCE.md and team tasks")
+    p.add_argument("--amoebius", action="store_true")
+    p.add_argument("--modes", default="SkimRace:2:3")
+    p.add_argument("--frames", type=int, default=1800)
+    p.add_argument("--no-build", action="store_true")
+    p.add_argument("--no-collect", action="store_true")
+    p.add_argument("--local")
+    p.add_argument("--tasks", action="store_true", help="file a team task per NEW regression")
+    p.add_argument("--strict", action="store_true", help="exit 2 on any regression")
+    p.add_argument("--write", action="store_true", help="refresh the generated block of Docs/Reports/PERFORMANCE.md")
+    p.add_argument("--out", help="write the sweep as JSON")
+    args = ap.parse_args()
+    if args.self_test:
+        self_test()
+        return
+    if args.cmd == "gates":
+        _, failed = cmd_gates(args)
+        sys.exit(2 if failed else 0)
+    if args.cmd == "collect":
+        args.write_baselines = True
+        cmd_collect(args)
+        return
+    if args.cmd == "compare":
+        sys.exit(cmd_compare(args))
+    if args.cmd == "amoebius":
+        _, failed = cmd_amoebius(args)
+        sys.exit(2 if failed else 0)
+    if args.cmd == "sweep":
+        sys.exit(cmd_sweep(args))
+    if args.cmd == "status":
+        sys.exit(cmd_status(args))
+    ap.print_help()
+
+
+if __name__ == "__main__":
+    main()

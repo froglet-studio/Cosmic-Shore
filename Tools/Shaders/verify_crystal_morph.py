@@ -22,6 +22,11 @@ the file that ships — not a paraphrase of it.
      a face's shading can never arrive before or after its shape — is identity when
      unstamped, is exactly the target normal at t = 1, and never returns a non-unit vector,
      including through the near-antipodal case where the chord passes close to zero.
+  6. THE EASE IS THE ONE SCHEDULE. `CrystalMorphEase` is exactly 0 when unstamped (so a shader
+     that blends its SHADING by it is bit-identical on every unstamped crystal) and is, sample
+     for sample, the weight the position moves by. OmniCrystalFresnelShader carries its colour
+     formula onto the target's on this weight, so a colour that ran on its own clock would be a
+     face lit like the target before it had landed there.
 
 Usage:  python3 Tools/Shaders/verify_crystal_morph.py
 """
@@ -165,6 +170,28 @@ int main() {
         if (!(len > 0.99f && len < 1.01f)) { printf("FAIL antipodal len %f\n", len); return 1; }
     }
 
+    // 6. the ease is the schedule ----------------------------------------------------------
+    for (float clock : {0.0f, 5.0f, 1e9f}) {
+        float e = -1.0f;
+        CrystalMorphEase_float(DST1, clock, mk3(0, 0, 0), e);
+        if (e != 0.0f) { printf("FAIL ease not 0 when unstamped\n"); return 1; }
+    }
+    float worstEase = 0.0f;
+    for (float ph = 0; ph <= 1.0001f; ph += 0.125f) {
+        for (int i = 0; i <= 200; i++) {
+            float clock = 100.0f + (i / 200.0f) * 0.45f;
+            float4 T = (float4){10, 20, 30, ph};
+            float e = -1.0f;
+            CrystalMorphEase_float(T, clock, M, e);
+            CrystalMorph_float(SRC, T, clock, M, out);
+            // the position IS lerp(SRC, T, e): compare against that lerp evaluated with e
+            float3 want = lerp(SRC, T.xyz, e);
+            worstEase = hlsl_max(worstEase, length(out - want));
+        }
+    }
+    printf("  ease drives the position to %.3e\n", worstEase);
+    if (worstEase != 0.0f) { printf("FAIL ease is not the position's schedule\n"); return 1; }
+
     printf("  OK\n");
     return 0;
 }
@@ -173,7 +200,7 @@ int main() {
 
 def main():
     src = open(HLSL, encoding="utf-8").read()
-    for name in ("CrystalMorph_float",):
+    for name in ("CrystalMorph_float", "CrystalMorphNormal_float", "CrystalMorphEase_float"):
         assert name in src, f"{HLSL} no longer declares {name} — re-derive the harness"
     for pattern, repl in SUBS:
         src = re.sub(pattern, repl, src)

@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
 using UnityEngine;
@@ -25,6 +26,10 @@ namespace CosmicShore.Gameplay
 
         public Prism ActiveSeedBlock { get; private set; }
         Assembler _activeAssembler;
+        // The stopped stance's wall: grows only while the Serpent stays stopped
+        // (SERPENT_SEED_WALL.md, "The stance's wall"). Kept apart from _activeAssembler because
+        // the cloak can seed (and end) its own wall while the stance is held.
+        SerpentWallAssembler _heldWall;
 
         public event Action<Prism> OnSeedStarted;
         public event Action<Prism> OnBondingBegan;
@@ -55,8 +60,11 @@ namespace CosmicShore.Gameplay
         /// Entry from SeedWallActionSO: computes cost, validates block, sets ActiveSeedBlock.
         /// Does NOT start bonding yet (so other actions can "protect" it before bond starts).
         /// Returns true if a seed was set.
+        /// <para><paramref name="heldByStance"/>: the stopped stance's seed. It takes
+        /// <see cref="SeedWallActionSO.StanceShieldOnSeed"/> (never a super-shield) and its wall
+        /// grows only until <see cref="ReleaseHeldWall"/>.</para>
         /// </summary>
-        public bool StartSeed(SeedWallActionSO so, IVesselStatus status)
+        public bool StartSeed(SeedWallActionSO so, IVesselStatus status, bool heldByStance = false)
         {
             if (!so || status == null || !_resources || !vesselPrismController)
                 return false;
@@ -71,7 +79,7 @@ namespace CosmicShore.Gameplay
             ActiveSeedBlock = last;
             if (!ActiveSeedBlock) return false;
 
-            ApplyShield(ActiveSeedBlock, so.ShieldOnSeed);
+            ApplyShield(ActiveSeedBlock, heldByStance ? so.StanceShieldOnSeed : so.ShieldOnSeed);
 
             // consume resource
             if (cost > 0f)
@@ -80,6 +88,17 @@ namespace CosmicShore.Gameplay
             _activeAssembler = EnsureAssembler(ActiveSeedBlock, so.AssemblerType);
             if (_activeAssembler)
                 _activeAssembler.Depth = so.BondingDepth;
+
+            if (_activeAssembler is SerpentWallAssembler wall)
+            {
+                var shape = SnapshotWallShape(so, status);
+                shape.HeldByStance = heldByStance;
+                // Release any earlier hold BEFORE configuring: the stance can stop on the same
+                // live seed again, and Configure re-holds it.
+                if (heldByStance) ReleaseHeldWall();
+                wall.Configure(shape);
+                if (heldByStance) _heldWall = wall;
+            }
 
             OnSeedStarted?.Invoke(ActiveSeedBlock);
             return true;
@@ -96,9 +115,24 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Full stop via public End() to align with other executors.
+        /// The Serpent flies again: the stance's wall stops growing and stands as it is, like a
+        /// wall whose seed lost its super-shield. A cloak wall is untouched.
         /// </summary>
-        public void End() => StopSeedCompletely();
+        public void ReleaseHeldWall()
+        {
+            if (_heldWall) _heldWall.ReleaseHold();
+            _heldWall = null;
+        }
+
+        /// <summary>
+        /// Full stop via public End() to align with other executors. The vessel is gone or the
+        /// turn is over, so the stance's wall is released too.
+        /// </summary>
+        public void End()
+        {
+            ReleaseHeldWall();
+            StopSeedCompletely();
+        }
 
         /// <summary>
         /// Full stop. Clears references and stops any assembler work.
@@ -124,11 +158,7 @@ namespace CosmicShore.Gameplay
             var listA = vesselPrismController?.Trail?.TrailList;
             if (listA != null && listA.Count > 0) return listA[^1];
 
-            var trail2Field = typeof(VesselPrismController).GetField(
-                "Trail2",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
-            );
-            var trail2 = trail2Field?.GetValue(vesselPrismController) as Trail;
+            var trail2 = vesselPrismController.SecondaryTrail;
             if (trail2 != null && trail2.TrailList.Count > 0) return trail2.TrailList[^1];
 
             return null;
@@ -149,6 +179,10 @@ namespace CosmicShore.Gameplay
                 case SeedWallActionSO.ShieldMode.None:
                     break;
                 case SeedWallActionSO.ShieldMode.Shield:
+                    // Never a downgrade: the stance can seed on a cloak wall's super-shielded seed
+                    // when nothing has been laid since, and a plain shield over a super-shield
+                    // would leave the prism half in each state.
+                    if (block.prismProperties is { IsSuperShielded: true }) break;
                     block.ActivateShield();
                     break;
                 case SeedWallActionSO.ShieldMode.SuperShield:
@@ -157,12 +191,48 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// The wall's shape, fixed at placement from THIS vessel's elemental state (MASS is the
+        /// Serpent's wall element: R_VesselActions/SERPENT_SEED_WALL.md). Read here, on the
+        /// per-vessel executor, because the SO is shared by every Serpent.
+        /// </summary>
+        static SerpentWallAssembler.Snapshot SnapshotWallShape(SeedWallActionSO so, IVesselStatus status)
+        {
+            float mass = ElementalScaling.Multiplier(
+                status, Element.Mass,
+                atFull: so.MassSizeMultiplierAtFull,
+                minMul: so.MinMassSizeMultiplier);
+
+            return new SerpentWallAssembler.Snapshot
+            {
+                Config = so,
+                Owner = status,
+                Domain = status.Domain,
+                PlayerName = status.PlayerName,
+                ShortSide = so.BrickShortSide * mass,
+                Depth = so.BrickDepth * mass,
+                MassMultiplier = mass,
+            };
+        }
+
         Assembler EnsureAssembler(Prism block, SeedWallActionSO.AssemblerKind kind)
         {
             if (!block) return null;
 
-            var existing = block.GetComponent<Assembler>();
-            if (existing) return existing;
+            if (kind != SeedWallActionSO.AssemblerKind.SerpentLattice)
+            {
+                var existing = block.GetComponent<Assembler>();
+                if (existing) return existing;
+            }
+
+            if (kind == SeedWallActionSO.AssemblerKind.SerpentLattice)
+            {
+                // A pooled prism can carry a dissolved wall from a previous life; Configure
+                // re-arms it, and keeps the shape of one that is still live.
+                return block.TryGetComponent(out SerpentWallAssembler wall)
+                    ? wall
+                    : block.gameObject.AddComponent<SerpentWallAssembler>();
+            }
 
             return kind switch
             {

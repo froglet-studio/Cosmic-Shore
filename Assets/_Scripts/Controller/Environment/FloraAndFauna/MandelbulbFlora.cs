@@ -194,7 +194,7 @@ namespace CosmicShore.Gameplay
         /// <para>The generator guarantees <c>_parent[i] &lt; i</c>, so laying in list order is a
         /// growth order by construction: nothing is ever hung off something that does not exist
         /// yet. What it cannot guarantee is that the parent was actually LAID — the claim refuses
-        /// roughly a third of candidates — which is what <see cref="ResolveAnchorWorld"/> is for.
+        /// roughly a third of candidates — which is what <see cref="ResolveAnchorIndex"/> is for.
         /// </para>
         /// </summary>
         readonly List<int> _parent = new();
@@ -215,7 +215,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The LIMB carrying each laid address — the spindle spanning the bond from its anchor to
-        /// it. Kept across grazing for the reason <see cref="BorromeanFlora"/> records: a branch
+        /// it. Hung off its anchor's limb in the spindle tree, so it is kept across grazing while
+        /// anything hangs off it, for the reason <see cref="BorromeanFlora"/> records: a branch
         /// whose leaf was eaten is still a branch, and re-using it is what stops a regrowth
         /// minting a second spindle on one bond. It is RE-POSED on re-use rather than assumed
         /// still correct, because a regrown prism's nearest standing ancestor may have changed.
@@ -610,7 +611,8 @@ namespace CosmicShore.Gameplay
             // prisms; it loops.
             Vector3 childWorld = transform.TransformPoint(order.LocalPosition);
             Quaternion childRot = transform.rotation * order.LocalRotation;
-            Vector3 root = ResolveAnchorWorld(order.Index);
+            int anchor = ResolveAnchorIndex(order.Index);
+            Vector3 root = anchor >= 0 ? _laid[anchor].transform.position : transform.position;
             Vector3 bond = childWorld - root;
 
             // Re-used when this address is regrowing into its own vacancy, so grazing can never
@@ -627,6 +629,13 @@ namespace CosmicShore.Gameplay
                 _limb[order.Index] = limb;
             }
             limb.LifeForm = this;
+            // ...and hung off its anchor's LIMB in the spindle tree, re-linked on every re-pose
+            // for the same reason. The limbs are flat siblings under the plant root, so without
+            // this no limb knows anything grows from it: graze an inner prism and its limb
+            // evaporated at once while every limb beyond it stood on, rooted at nothing. Linked,
+            // a limb stands while it carries a prism OR anything hangs off it, and an ordered
+            // wither spends it only after its whole subtree (Docs/ECOSYSTEM.md §26.10).
+            limb.AttachToParent(anchor >= 0 && _limb.TryGetValue(anchor, out var anchorLimb) ? anchorLimb : null);
             limb.transform.position = root;
             // The branch geometry runs along the spindle's local +z, so LookRotation puts it on
             // the bond. Up is the prism's own surface NORMAL — PrismRotation seats the normal on
@@ -663,7 +672,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Where the prism at <paramref name="index"/> grows OUT of, in world space.
+        /// The address the prism at <paramref name="index"/> grows OUT of — its nearest STANDING
+        /// ancestor — or -1 for the heart at the plant's own origin.
         ///
         /// <para>The generator hands every address the index it continues from, and guarantees a
         /// parent is always earlier in the list — so laying in list order is a growth order by
@@ -675,16 +685,16 @@ namespace CosmicShore.Gameplay
         /// bond rather than severing a branch, which is what keeps the plant ONE object under
         /// refusal and under grazing alike.</para>
         /// </summary>
-        Vector3 ResolveAnchorWorld(int index)
+        int ResolveAnchorIndex(int index)
         {
             int p = index >= 0 && index < _parent.Count ? _parent[index] : -1;
             // Bounded by the chain length, and the chain is strictly decreasing, so it terminates.
             while (p >= 0)
             {
-                if (_laid.TryGetValue(p, out var prism) && prism) return prism.transform.position;
+                if (_laid.TryGetValue(p, out var prism) && prism) return p;
                 p = p < _parent.Count ? _parent[p] : -1;
             }
-            return transform.position;
+            return -1;
         }
 
         /// <summary>

@@ -19,7 +19,7 @@
 //   6. scar tissue (round 2): a slow max of alarm widens the template where the wall was cut, so it heals thicker.
 // What the GAME adds (Docs/BUILDERS_AND_THIEVES.md §3): a STOMACH per worker (eat a loose prism when hungry, starve
 // only when empty, breed from a full one - the ecology law), the claim-before-place reservation, a clock-stamped
-// settle, the band, and contact deaths reported to the glue (every death drops the worker's heart crystal).
+// settle, the band, the platform diet (other colours always, its own only when a worker is desperate), and contact deaths reported to the glue (every death drops the worker's heart crystal).
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -66,8 +66,16 @@ namespace CosmicShore.Gameplay
         public float StingReach = 4f;
         /// <summary>GAME: PrismSpatialIndex.TryReserve clear radius at a deposit (claim-before-place). 0 = no claim.</summary>
         public float ReserveClear = 3.6f;
-        /// <summary>PORT.md's predicate excludes the colony's own domain; the research re-picked its own loose bricks.</summary>
-        public bool SkipOwnDomain = true;
+        /// <summary>
+        /// GAME: the platform diet for a prism at this position wearing this domain (the glue binds Cell.IsPreyForHerbivore:
+        /// ANY domain outside the nucleus, nothing inside it, nothing outside a mode's pen). It applies ON TOP of the
+        /// colour preference: opposing-domain mass is always forage, the colony's own colour only for a DESPERATE worker
+        /// (<see cref="BuilderStomachParams.Desperate"/>, its stomach under OwnDomainBelow) and only when no opposing
+        /// candidate is in the same query. PORT.md's hard "never my colour" starved every colony that shares the pilot's
+        /// colour (a Spawn Matrix release, the controlling-colour spawn) - Docs/BUILDERS_AND_THIEVES.md §2.1.
+        /// Null = the research arena: no platform gate (the colour preference still holds).
+        /// </summary>
+        public Func<Vector3, int, bool> Diet;
         /// <summary>GAME: the settle from carrier to site is a clock-stamped flight of this long.</summary>
         public float SettleSeconds = 0.35f;
         /// <summary>Workers stay inside this radius of the cell centre (research: 0.95 x the arena radius).</summary>
@@ -279,13 +287,14 @@ namespace CosmicShore.Gameplay
 
         // ── the one predicate (PORT.md §1 IsStealableForMe) ─────────────────────────────────────────
         /// <summary>
-        /// Loose, live, unshielded, not this colony's domain, not built by ANY colony, not already being fetched,
-        /// inside the band. Shielded mass is never a target: a target you cannot take is a feed-hold you never finish.
+        /// Loose, live, unshielded, not built by ANY colony, not already being fetched, inside the band, and on the platform
+        /// diet (<see cref="BuilderColonyParams.Diet"/>). Colour-blind: the colour preference is the WORKER's
+        /// (<see cref="TakesColour"/>, applied in <see cref="ForageTarget"/>). Shielded mass is never a target: a target you
+        /// cannot take is a feed-hold you never finish.
         /// </summary>
         public bool IsStealableForMe(int h)
         {
             if (!_world.Alive(h) || _world.Shielded(h)) return false;
-            if (P.SkipOwnDomain && _world.Domain(h) == Domain) return false;
             if (_taken.Contains(h) || _claimed.Contains(h)) return false;
             if (!_world.Loose(h)) return false;
             if (P.BandOuter > 0f)
@@ -293,22 +302,38 @@ namespace CosmicShore.Gameplay
                 float r = Vector3.Distance(_world.Position(h), P.CellCentre);
                 if (r < P.BandInner || r > P.BandOuter) return false;
             }
-            return true;
+            return P.Diet == null || P.Diet(_world.Position(h), _world.Domain(h));
         }
 
+        /// <summary>Worker <paramref name="k"/> is desperate: its own colony's colour is food (Docs/BUILDERS_AND_THIEVES.md §2.1).</summary>
+        bool Desperate(int k) => P.Stomach != null && P.Stomach.Desperate(Stomach[k]);
+
+        /// <summary>The colour preference: another domain's mass always; the colony's own only for a desperate worker -
+        /// the starvation fallback, like the cell's Frenzy turning fauna on their own colour (O(1)).</summary>
+        bool TakesColour(int k, int h) => _world.Domain(h) != Domain || Desperate(k);
+
+        /// <summary>
+        /// The nearest acceptable prism (a pilot's trail preferred). Opposing mass WINS outright: the colony's own colour is
+        /// tracked as a second best in the same pass and returned only when the query held no opposing candidate - one
+        /// query, O(1) more per candidate, and a fed worker never considers it at all.
+        /// </summary>
         int ForageTarget(int k)
         {
             Queries++;
             int n = _world.QuerySphere(Pos[k], P.Sense, _scratch);
-            int best = -1; float bd = float.MaxValue;
+            bool desperate = Desperate(k);
+            int best = -1, own = -1; float bd = float.MaxValue, od = float.MaxValue;
             for (int j = 0; j < n; j++)
             {
                 int h = _scratch[j];
+                bool mine = _world.Domain(h) == Domain;
+                if (mine && (!desperate || best >= 0)) continue;   // own colour: only a desperate worker, only while no opposing find
                 if (!IsStealableForMe(h)) continue;
                 float d = Vector3.DistanceSquared(_world.Position(h), Pos[k]) * (_world.IsTrail(h) ? P.TrailPreference : 1f);
-                if (d < bd) { best = h; bd = d; }
+                if (mine) { if (d < od) { own = h; od = d; } }
+                else if (d < bd) { best = h; bd = d; }
             }
-            return best;
+            return best >= 0 ? best : own;
         }
 
         // ── the local rule ────────────────────────────────────────────────────────────────────────
@@ -580,7 +605,7 @@ namespace CosmicShore.Gameplay
                 else
                 {
                     int g = Goal[k];
-                    if (g >= 0 && (!_world.Alive(g) || _taken.Contains(g) || (WindDown && !Hungry(k))))
+                    if (g >= 0 && (!_world.Alive(g) || _taken.Contains(g) || (WindDown && !Hungry(k)) || !TakesColour(k, g)))
                     {
                         _claimed.Remove(g); Goal[k] = g = -1;
                     }

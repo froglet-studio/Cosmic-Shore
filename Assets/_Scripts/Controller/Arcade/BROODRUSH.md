@@ -143,10 +143,29 @@ Authored ONLY via **FrogletTools ▸ Game Modes ▸ End Game Conditions**
 | Wave SOAP event | `_SO_Assets/Cell Data/Event_OnFaunaWaveSpawned.asset` (wired on `Runtime Cell Data.asset`) |
 | End conditions | `Assets/Resources/EndConditionOverrides.asset` (`nucleusRushWaveTarget`) |
 
+## Verification status
+
+**No playtest is recorded.** As of 2026-10-08 nothing in the repo records an Editor or play pass of
+this mode: `Docs/QA/QA_BACKLOG.md` carries **QA-BROODRUSH-ARENA ⬜** ("has no recorded test pass"),
+and `Docs/UNITY_VERIFICATION_CHECKLIST.md` has no Brood Rush entry of its own. The last playtest, if
+there was one, predates the arena changes below and left no record.
+
+Authored headless since then, so never flown in their current form:
+
+- **Six arena seats, one pilot per hull** (`ArenaRules: 1`, `MaxPlayersAllowed: 6`), spawning on
+  the cell-relative ring (`Docs/HomeHub/ARCHITECTURE.md` §3.9).
+- **The comeback reads the rule's `DomainValue` (`Goals`)**, since `ScoreDifferenceSource` was
+  retired.
+
+Proved offline: `WaveSpawnCount` (`FaunaReproductionRulesTests`), and the mode's enum and genre
+registration (`ModeGenreTests`, `GameModeRenameMigrationTests`). Not proved: that a wave scores,
+that the nucleus claim flips, or that the brood count agrees on two machines. Those are steps 3-8 of
+QA-BROODRUSH-ARENA.
+
 ## Known limitations / follow-ups
 
-- No HUD objective provider yet (`MiniGameHUD.CreateObjectiveProviderForGameMode`
-  returns null for this mode) — a nucleus-pointing arrow would help new players.
+- Objective arrow: `BroodRushObjectiveProvider` points at the nucleus (the cell's own
+  transform) and hides while the pilot is inside it.
 - The scene keeps the Astro League comeback profile asset; author a Brood Rush profile
   if the buff curve needs its own tuning.
 - Fauna waves are client-local visuals: a client's wave may hatch a beat later than

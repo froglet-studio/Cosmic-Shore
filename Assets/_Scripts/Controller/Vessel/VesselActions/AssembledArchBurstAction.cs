@@ -40,7 +40,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Number of divisions across height (V).")]
         [SerializeField] private int vDiv = 6;
 
-        public enum LatticeType { Tri, Hex }
+        public enum LatticeType { Tri = 0, Hex = 1 }
         [SerializeField] private LatticeType lattice = LatticeType.Tri;
 
         [Header("Organic Variation")]

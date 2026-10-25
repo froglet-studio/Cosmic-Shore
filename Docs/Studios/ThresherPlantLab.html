@@ -1,0 +1,1511 @@
+<!doctype html>
+<!--
+  THRESHER PLANT LAB — the Thresher's Time ability (LT "Plant") without the jolts.
+  A /labmaker browser studio. Write-up: Docs/Studios/THRESHER_PLANT_LAB.md.
+  The model is a line-for-line JS port of the SHIPPED ThresherChainSolver (held to the C# solver by
+  Tools/Build/thresher_plant_lab/parity.cjs), plus the transformer's seams and the executor's camera,
+  plus the LAB approaches (every lab dial has a value at which the shipped path runs unchanged).
+  Verify:  node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/ThresherPlantLab.html
+           node Tools/Build/thresher_plant_lab/parity.cjs
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Thresher Plant Lab</title>
+<style>
+  /* Layout: a flight-recorder bench. Two chase views fly the same stick side by side (Shipped | the
+     approach under test), the right dock holds the approaches and their dials, the bottom dock the
+     recorder traces, the scorecard and the decision log. */
+  :root {
+    --bg: #eef0f2; --panel: #f9fafb; --ink: #1a1e23; --muted: #5a6470; --line: #d5dae0;
+    --accent: #c2410c; --accent-ink: #ffffff; --ok: #1f7a43; --warn: #a15c07;
+    --stage: #0a0d12; --stage-ink: #c9d3de; --shipped: #8fa3b8; --trial: #f2994a;
+    --changed: #c2410c;
+    --font-ui: "Bahnschrift", "DIN Alternate", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+    --font-num: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1115; --panel: #151a20; --ink: #e4e8ed; --muted: #95a0ad; --line: #28303a;
+      --accent: #f2994a; --accent-ink: #1a1206; --ok: #5cc98a; --warn: #f0b050;
+      --stage: #05070a; --stage-ink: #c9d3de; --shipped: #8fa3b8; --trial: #f2994a; --changed: #f2994a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1115; --panel: #151a20; --ink: #e4e8ed; --muted: #95a0ad; --line: #28303a;
+    --accent: #f2994a; --accent-ink: #1a1206; --ok: #5cc98a; --warn: #f0b050;
+    --stage: #05070a; --stage-ink: #c9d3de; --shipped: #8fa3b8; --trial: #f2994a; --changed: #f2994a;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.4 var(--font-ui); overflow: hidden; }
+  #app { display: grid; height: 100vh; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto minmax(0, 1fr) 236px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 10px; align-items: center; padding: 7px 16px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; min-width: 0; }
+  header h1 { font-size: 16px; margin: 0; letter-spacing: 0.02em; text-transform: uppercase; }
+  header .meta { color: var(--muted); }
+  header .spacer { flex: 1; }
+  #diff { color: var(--changed); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button { border: 0; border-right: 1px solid var(--line); border-radius: 0; }
+  .seg button:last-child { border-right: 0; }
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: var(--stage); }
+  #stage { width: 100%; height: 100%; display: block; touch-action: none; }
+  #legend { position: absolute; right: 10px; bottom: 8px; color: var(--stage-ink); opacity: 0.75; font: 11px/1.4 var(--font-num); pointer-events: none; text-align: right; }
+  #touch { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; justify-content: space-between; padding: 0 16px; pointer-events: none; }
+  #touch button { pointer-events: auto; width: 76px; height: 56px; border-radius: 12px; border: 1px solid #ffffff44; background: #ffffff18; color: #fff; font: 600 15px var(--font-ui); }
+  #touch button.on { background: var(--trial); color: #1a1206; }
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px 16px; min-width: 0; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px; min-width: 0; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button, .btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; }
+  .tabs button[aria-selected="true"], .btn.primary, .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .row { display: grid; grid-template-columns: 1fr 70px; gap: 2px 8px; margin: 8px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; min-width: 0; }
+  .row label .key { color: var(--muted); font: 11px var(--font-num); overflow: hidden; text-overflow: ellipsis; }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+  .row output { text-align: right; font: 12px var(--font-num); }
+  .row output.changed { color: var(--changed); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .preset { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; margin: 6px 0; cursor: pointer; background: var(--bg); }
+  .preset[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .preset b { font-size: 13px; }
+  .preset .kind { font: 10px var(--font-num); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; align-self: center; }
+  .preset p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 12px; }
+  .hint { color: var(--muted); font-size: 12px; margin: 4px 0; }
+  table { border-collapse: collapse; width: 100%; font: 12px var(--font-num); }
+  th, td { text-align: right; padding: 3px 7px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { font: 600 11px var(--font-ui); color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; vertical-align: bottom; white-space: normal; }
+  .best { font-weight: 700; color: var(--ok); }
+  .worst { color: var(--warn); }
+  .tablewrap { overflow-x: auto; }
+  .status-ok { color: var(--ok); } .status-warn { color: var(--warn); }
+  #traces { width: 100%; height: 182px; display: block; }
+  textarea, select, input[type=text] { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+  .about { max-width: 70ch; }
+  .about li { margin: 2px 0; }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { aspect-ratio: 4 / 5; max-width: 100%; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); }
+    header, #dock, #bottom { padding-left: 16px; padding-right: 16px; }
+    #bottom { max-height: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 id="title"></h1>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <span class="seg" role="group" aria-label="View"><button class="btn" id="viewSplit">Split</button><button class="btn" id="viewSingle">Single</button></span>
+    <span class="seg" role="group" aria-label="Camera"><button class="btn" id="camPilot">Pilot cam</button><button class="btn" id="camWorld">Top-down</button></span>
+    <button class="btn" id="auto">Autopilot</button>
+    <button class="btn" id="slow">Slow-mo</button>
+    <button class="btn" id="pause">Pause</button>
+    <button class="btn" id="resetAll">Digital</button>
+    <span class="meta" id="platform"></span>
+  </header>
+  <div id="stageWrap"><canvas id="stage"></canvas>
+    <div id="legend">A/D steer · hold Q = LT · hold E = RT · R restart · Tab A/B</div>
+    <div id="touch" hidden><button id="tLT">LT</button><button id="tRT">RT</button></div>
+  </div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const D2R = Math.PI / 180, R2D = 180 / Math.PI;
+
+  // ================= (1) LAB meta + the shipped numbers =================
+  // GRADUATED 2026-10-13: the game now ships the "Analog triggers" preset (ThresherConfig.asset turns
+  // dials.analogTriggers on; parity.cjs holds that asset equal to the preset, and this page's solver to the C#).
+  // SHIPPED below is the DIGITAL Thresher before it: the class defaults (ThresherDials field initializers), which
+  // the asset still uses for every non-analog dial. View A flies it, labelled "Digital (before)".
+  const LAB = { name: 'Thresher Plant Lab', branch: 'cece/zealous-johnson-gopp6t', round: 2, doc: 'Docs/Studios/THRESHER_PLANT_LAB.md' };
+  // Every shipped constant names where it was read from (2026-10-13). The dials asset is
+  // Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset (ThresherConfigSO.dials = ThresherDials),
+  // in SANDBOX units; settingsFrom() scales them exactly as ThresherDials.ToSettings does.
+  const SHIPPED = {
+    sandboxCruise: 380,  // ThresherDials.sandboxCruise
+    gameCruise: 70,      // ThresherDials.gameCruise (DefaultMinimumSpeed 15 + 0.5 x DefaultThrottleScaler 110)
+    restLen: 120,        // ThresherDials.restLen
+    maxLen: 760,         // ThresherDials.maxLen
+    payOut: 1000,        // ThresherDials.payOut
+    reelIn: 1800,        // ThresherDials.reelIn
+    reelSpinCap: 1.6,    // ThresherDials.reelSpinCap
+    ballDrag: 0.35,      // ThresherDials.ballDrag
+    ballMass: 0.4,       // ThresherDials.ballMass
+    ballR: 17,           // ThresherDials.ballR
+    maxBall: 2600,       // ThresherDials.maxBall
+    tug: 0.2,            // ThresherDials.tug
+    minShip: 0.6,        // ThresherDials.minShip
+    crack: 0.6,          // ThresherDials.crack
+    smashSpeed: 700,     // ThresherDials.smashSpeed
+    skid: 7,             // ThresherDials.skid            (plant brake, 1/s)
+    skidSeconds: 0.3,    // ThresherDials.skidSeconds
+    lockKeep: 1,         // ThresherDials.lockKeep
+    lockSpin: 220,       // ThresherDials.lockSpin
+    lockMax: 2.2,        // ThresherDials.lockMax
+    yank: 0.5,           // ThresherDials.yank
+    hookTurnRate: 300,   // ThresherDials.hookTurnRate    (deg/s)
+    hookReturnRate: 5,   // ThresherDials.hookReturnRate  (1/s)
+    spinMultiplier: 1,   // ThresherConfigSO.spinMultiplier (Time element: x1 -> x1.75 on lockSpin and lockMax)
+    pivotFacingRate: 25, // Thresher.prefab ThresherVesselTransformer.pivotFacingRate (1/s)
+    yawScaler: 120,      // Thresher.prefab YawScaler (deg/s at full stick)
+    noseLerp: 1.5,       // VesselTransformer.LERP_AMOUNT (hull follows the command; speed eases to cruise)
+    cameraMaxFollowTurnRate: 240, // ThresherConfigSO.cameraMaxFollowTurnRate (deg/s)
+    spectateSpinRate: 0.9,        // ThresherConfigSO.spectateSpinRate (rad/s)
+    spectateEngageSeconds: 0.1,   // ThresherConfigSO.spectateEngageSeconds
+    spectateReleaseFraction: 0.75,// ThresherConfigSO.spectateReleaseFraction
+    spectateEnterSeconds: 0.9,    // ThresherConfigSO.spectateEnterSeconds
+    spectateExitSeconds: 0.8,     // ThresherConfigSO.spectateExitSeconds
+    perfectWindowSeconds: 0.25,   // ThresherConfigSO.perfectWindowSeconds
+    // ---- LAB dials (no game field yet). At these values the shipped path runs unchanged. ----
+    bkMode: 0,       // lab: 0 = shipped skid then pin; 1 = quick deceleration to rest
+    bkSeconds: 0.35, // lab: brake time (quick deceleration only)
+    bkCurve: 2,      // lab: 0 linear, 1 bite-then-settle, 2 S-curve
+    hkEarly: 0,      // lab: 1 = start swinging onto the orbit at the press, round the braking ball
+    hkShape: 0,      // lab: 0 = shipped constant-rate hook; 1 = S-curve hook over hkSeconds
+    hkSeconds: 0.45, // lab: S-curve hook duration
+    spEase: 0,       // lab: seconds over which the spin-up fades in (0 = shipped step)
+    rlSpinDown: 0,   // lab: seconds over which the spin's turn rate winds down on release (0 = shipped dead stop)
+    rlSpinMaxDeg: 30,// lab: the most the wind-down may turn past the launch line (deg)
+    rlRopeGive: 0,   // lab: seconds the rope takes to draw the ball up to speed after a release (0 = shipped hard rope)
+    cmAngAccel: 0,   // lab: follow-frame angular acceleration limit (deg/s^2; 0 = shipped rate cap only)
+    cmCarry: 0,      // lab: spectate entry carries the camera's turn and glides it to a stop over this time (0 = shipped freeze)
+    wdReel: 1,       // lab: planted reel-in rate, x reelIn (1 = shipped)
+    // ---- round 2: ANALOG TRIGGERS (lab; anScheme 0 = the shipped digital controls) ----
+    anScheme: 0,     // lab: 1 = LT is an analog brake that stops the ball only at a full pull; RT is the chain's rigidity (pulled = rigid, released = slack)
+    anFull: 0.97,    // lab: trigger depth that counts as a FULL pull (stop / rigid / camera switch)
+    anRelease: 0.9,  // lab: below this a full pull counts as let go (hysteresis, so trigger noise cannot chatter)
+    anBrake: 4,      // lab: ball brake at a full-but-one pull (1/s)
+    anBrakeCurve: 1.5, // lab: brake = depth^this x anBrake
+    anAnchor: 2,     // lab: how fast the braking ball turns into an anchor: the ship's share of the rope's pull = shipped share + (1 - it) x depth^this
+    anStopDecel: 450,  // lab: peak deceleration of the final stop at a full pull (u/s^2); the stop takes 1.5 x speed / this
+    elSlack: 1.2,    // lab: the chain's natural frequency with RT released (rad/s): a soft bungee
+    elRigid: 30,     // lab: ... with RT fully pulled (rad/s): ~1 u of stretch at full spin
+    elDamp: 0.8,     // lab: the chain's damping ratio (1 = critically damped)
+    elCurve: 1,      // lab: rigidity = slack x (rigid/slack)^(depth^this)
+    elSlew: 0,       // lab: the most the chain's rigidity can change per second, as a fraction of the trigger's travel (0 = follows the trigger at once)
+    hlPost: 0,       // lab: 1 = while planted the hull also turns with the frame's velocity change AFTER the move (as towing does); shipped 0 = it faces the PREVIOUS frame's velocity, so it lags a frame and does not turn at all on the frame a plant begins
+    inKeyRamp: 0.35, // lab input only: seconds for a held key / touch button to ramp a trigger from 0 to 1 (and back)
+  };
+
+  // ================= (2) SPEC: one row per slider =================
+  const SPEC = [
+    ['Analog', 'anScheme', 0, 1, 1, 'Analog triggers', 'Off (0): the shipped controls, both triggers read as on/off (LT plants, RT held lets chain out). On (1), round 2: LT is a BRAKE whose strength follows the pull and the ball only stops (and becomes the pivot) at a full pull; RT is the chain\'s RIGIDITY, pulled = rigid, released = slack. The camera switches to the launch view only with both at a full pull.'],
+    ['Analog', 'anFull', 0.8, 1, 0.01, 'Full pull at', 'Trigger depth that counts as a full pull. Pads reach 1.0; 0.97 leaves room for a worn trigger.'],
+    ['Analog', 'anRelease', 0.5, 0.99, 0.01, 'Let go below', 'Once full, a trigger counts as let go only below this, so noise at the end of travel cannot flicker the stop or the camera.'],
+    ['Analog', 'anBrake', 0, 12, 0.5, 'Brake (1/s)', 'How hard the ball brakes just short of a full pull. A partial pull brakes less (depth^curve).'],
+    ['Analog', 'anBrakeCurve', 0.5, 3, 0.1, 'Brake curve', 'Brake = depth^this. Above 1, the first part of the pull is gentle and the last part bites.'],
+    ['Analog', 'anAnchor', 0.5, 4, 0.1, 'Anchor curve', 'As LT deepens, more of the chain\'s pull goes into the ship (the braking ball becomes an anchor), so a half pull already swings the ship round a sliding ball. Share = shipped 5.7% + the rest x depth^this.'],
+    ['Analog', 'anStopDecel', 100, 1500, 25, 'Final stop (u/s²)', 'At a full pull the ball\'s remaining speed is stopped along an S-curve that peaks at this deceleration. A slow squeeze has already shed most of it, so its stop is gentle; a slam stops ~70 u/s in 0.23 s.'],
+    ['Analog', 'elSlack', 0.3, 6, 0.1, 'Slack chain (rad/s)', 'The chain\'s natural frequency with RT released: a soft bungee the ball (and a planted ship) swings out on. The chain\'s full length (140 u) is always a hard limit.'],
+    ['Analog', 'elRigid', 10, 45, 1, 'Rigid chain (rad/s)', 'The chain\'s natural frequency at a full RT pull. 30 rad/s leaves ~1 u of stretch at full spin.'],
+    ['Analog', 'elDamp', 0.2, 1.5, 0.05, 'Chain damping', 'Damping ratio: below 1 the chain bounces, 1 settles without overshoot.'],
+    ['Analog', 'elSlew', 0, 10, 0.5, 'Rigidity slew (/s)', 'The chain stiffens or slackens at most this much of the trigger\'s travel per second, so a SLAMMED RT pulls the ball in over 1/this s instead of in one frame. 0 = it follows the trigger at once.'],
+    ['Analog', 'elCurve', 0.3, 3, 0.1, 'Rigidity curve', 'Rigidity follows depth^this between slack and rigid (log scale). Above 1 the chain stays soft through most of the pull.'],
+    ['Spin', 'hlPost', 0, 1, 1, 'Hull keeps up', 'Shipped (0): while planted, the hull faces the velocity of the frame BEFORE (ThresherVesselTransformer.RotateShip runs before the move), so it lags a frame and its turn rate drops to zero on the frame a plant begins: a one-frame hitch. 1: it also turns with the frame\'s own velocity change after the move, as towing already does.'],
+    ['Analog', 'inKeyRamp', 0.05, 1.5, 0.05, 'Key ramp (s)', 'Keyboard and touch only: a held key ramps its trigger from 0 to 1 over this time, and back on release. A pad reads the real trigger.'],
+    ['Catch', 'bkMode', 0, 1, 1, 'Quick deceleration', 'Off (0) is the shipped plant: the ball skids for skidSeconds against a 7/s brake, but the taut rope keeps dragging it along, so after 0.3 s it is still doing ~63 u/s and is then pinned in ONE frame. On (1): the ball decelerates to rest along a curve over bkSeconds while the rope pays out, and becomes the pivot already at rest.'],
+    ['Catch', 'bkSeconds', 0.1, 1, 0.05, 'Brake time (s)', 'How long the ball takes to come to rest. Shorter is snappier and still has no single-frame stop. Only with quick deceleration on.'],
+    ['Catch', 'bkCurve', 0, 2, 1, 'Brake curve', '0 linear: constant deceleration (the decel switches on and off at once). 1 bite-then-settle: hardest at the press, landing softly. 2 S-curve: the deceleration rises and falls, nothing switches at once.'],
+    ['Catch', 'skid', 0, 20, 0.5, 'Skid brake (1/s)', 'Shipped skid brake. Only used with quick deceleration off. Tuning it barely changes the stop, because the rope, not the brake, sets the ball\'s speed during the skid.'],
+    ['Catch', 'skidSeconds', 0, 1, 0.05, 'Skid time (s)', 'Shipped skid length before the pin. 0 pins the ball at full speed (the planted-defect control).'],
+    ['Hook', 'hkEarly', 0, 1, 1, 'Swing from the press', 'On: the ship starts curving onto the orbit the moment LT goes down, round the still-braking ball, instead of flying straight away from it until the brake ends.'],
+    ['Hook', 'hkShape', 0, 1, 1, 'S-curve hook', 'Off: the shipped hook-on, the heading turns at a flat hookTurnRate from the first frame (the turn rate jumps from 0 to 300 deg/s and back). On: it eases in and out over hkSeconds.'],
+    ['Hook', 'hkSeconds', 0.15, 1.2, 0.05, 'Hook time (s)', 'S-curve hook duration.'],
+    ['Hook', 'hookTurnRate', 60, 720, 10, 'Hook turn rate (deg/s)', 'Shipped constant-rate hook-on cap.'],
+    ['Hook', 'hookReturnRate', 1, 15, 0.5, 'Stretch reel-back (1/s)', 'How fast the chain reels back the stretch the swing-out took (critically damped).'],
+    ['Spin', 'spEase', 0, 1, 0.05, 'Spin-up fade-in (s)', 'The orbit spins up at lockSpin from the first frame. A fade-in ramps that acceleration in over this time.'],
+    ['Spin', 'lockSpin', 50, 600, 10, 'Spin-up (sandbox u/s²)', 'Shipped orbital spin-up while planted.'],
+    ['Spin', 'lockMax', 1, 4, 0.1, 'Spin cap (x cruise)', 'Shipped spin-up cap.'],
+    ['Spin', 'spinMultiplier', 1, 1.75, 0.05, 'Time scaling', 'The Time element\'s spinMultiplier (x1 at level 0 to x1.75), applied to spin-up and cap.'],
+    ['Spin', 'wdReel', 0.2, 1, 0.05, 'Planted wind-in rate', 'RT up while planted reels the chain in at reelIn (331 u/s): from full let-out the ship is hauled 118 u inward in 0.36 s and the hull whips round at over 1500 deg/s. The spin gained is the same at any rate (spin is conserved per unit length), so this slows the haul, not the payoff. x reelIn; 1 = shipped.'],
+    ['Spin', 'pivotFacingRate', 2, 60, 1, 'Hull facing (1/s)', 'How fast the hull turns to face the orbit tangent while planted (prefab field).'],
+    ['Let go', 'rlSpinDown', 0, 0.8, 0.05, 'Spin wind-down (s)', 'Shipped: on release the heading stops turning in one frame (it was turning at the orbit rate, ~180 deg/s reeled in). Here the turn rate winds down over this time. An aimed launch leaves early by the angle it will still turn, so it still lands on the aim.'],
+    ['Let go', 'rlSpinMaxDeg', 5, 90, 5, 'Wind-down angle cap (deg)', 'The wind-down is shortened so it never turns the ship more than this past its line. A fast spin (a let-out plant wound in reaches ~1100 deg/s) then stops harder; a bigger cap is smoother but the launch leaves earlier and the exit drifts more.'],
+    ['Let go', 'rlRopeGive', 0, 0.8, 0.05, 'Rope give (s)', 'Shipped: the ball is set to yank x ship velocity in one frame, then the hard rope snaps it to the ship\'s speed. Here the rope\'s pull is limited, so it draws the ball up to speed in about this long (and does not tug the ship meanwhile). Pair it with yank 0 so the ball leaves the pivot at rest.'],
+    ['Let go', 'yank', 0, 1.2, 0.05, 'Yank (x ship speed)', 'Shipped: the ball leaves the pivot at this fraction of the ship\'s velocity.'],
+    ['Camera', 'cmAngAccel', 0, 4000, 100, 'Follow angular accel (deg/s²)', 'Shipped: the chase camera\'s follow frame turns at most cameraMaxFollowTurnRate but can start and stop that turn in one frame. Here its turn rate also changes at most this fast. 0 = shipped.'],
+    ['Camera', 'cmCarry', 0, 0.8, 0.05, 'Spectate glide (s)', 'Shipped: when a fast spin hands the camera to the launch vantage, the entry ease starts from the pose the camera was in, so a camera turning with the hull at up to 240 deg/s stops turning in one frame. Here it keeps its turn and glides to a stop over this time; the aim (and the vantage) is where the glide ends. 0 = shipped.'],
+    ['Camera', 'cameraMaxFollowTurnRate', 60, 720, 10, 'Follow turn cap (deg/s)', 'Shipped cap on how fast the follow frame turns.'],
+    ['Camera', 'spectateSpinRate', 0.3, 5, 0.1, 'Spectate at (rad/s)', 'A planted orbit spinning at least this fast detaches the camera to the launch vantage (eased in over 0.9 s). Raise it to ride every spin in the chase view.'],
+  ];
+
+  const LS_KEY = 'lab:' + LAB.name + ':P';
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const hadSaved = lsGet(LS_KEY, null) !== null;
+  const P = Object.assign({}, SHIPPED, lsGet(LS_KEY, {}));
+  for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
+
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  // ================= (3) THE MODEL =================
+  // ---- Unity-shaped vector maths (Vector3 semantics as the harness stubs implement them) ----
+  const v3 = (x, y, z) => ({ x, y, z });
+  const ZERO = v3(0, 0, 0);
+  const add = (a, b) => v3(a.x + b.x, a.y + b.y, a.z + b.z);
+  const sub = (a, b) => v3(a.x - b.x, a.y - b.y, a.z - b.z);
+  const scl = (a, s) => v3(a.x * s, a.y * s, a.z * s);
+  const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+  const cross = (a, b) => v3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+  const sq = (a) => dot(a, a);
+  const len = (a) => Math.sqrt(dot(a, a));
+  const nrm = (a) => { const m = len(a); return m > 1e-5 ? scl(a, 1 / m) : ZERO; };
+  const clampMag = (a, max) => { const m = len(a); return m > max ? scl(a, max / m) : a; };
+  const projPlane = (v, n) => { const d = dot(n, n); return d < 1e-15 ? v : sub(v, scl(n, dot(v, n) / d)); };
+  const clamp01 = (v) => v < 0 ? 0 : (v > 1 ? 1 : v);
+  const lerp = (a, b, t) => a + (b - a) * clamp01(t);
+  const approx = (a, b) => Math.abs(b - a) < Math.max(1e-6 * Math.max(Math.abs(a), Math.abs(b)), 1.1e-44 * 8);
+  const moveTowards = (a, b, d) => Math.abs(b - a) <= d ? b : a + (b > a ? d : -d);
+  const smooth = (u) => { u = clamp01(u); return u * u * (3 - 2 * u); };
+  const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+  const yawOf = (v) => Math.atan2(v.x, v.z);
+  const sgn = (x) => (x < 0 ? -1 : 1);   // Mathf.Sign: 0 counts as positive
+  const signedAngle = (a, b, axis) => { const an = nrm(a), bn = nrm(b); return Math.atan2(dot(cross(an, bn), nrm(axis)), dot(an, bn)); };
+  const rotY = (v, rad) => { const c = Math.cos(rad), s = Math.sin(rad); return v3(v.x * c + v.z * s, v.y, -v.x * s + v.z * c); };
+  function anyPerp(n, hint) {
+    let p = cross(n, sq(hint) > 1e-6 ? hint : v3(0, 1, 0));
+    if (sq(p) < 1e-6) p = cross(n, v3(1, 0, 0));
+    if (sq(p) < 1e-6) p = cross(n, v3(0, 0, 1));
+    return nrm(p);
+  }
+  function turnTowards(from, to, maxRad) {
+    const c = Math.max(-1, Math.min(1, dot(from, to))), ang = Math.acos(c);
+    if (ang <= maxRad || ang < 1e-5) return to;
+    let perp = sub(to, scl(from, c));
+    if (sq(perp) < 1e-10) perp = anyPerp(from, v3(0, 1, 0));
+    perp = nrm(perp);
+    return nrm(add(scl(from, Math.cos(maxRad)), scl(perp, Math.sin(maxRad))));
+  }
+  function slerpUnit(a, b, w) {   // lab: a fraction w of the way from unit a to unit b
+    const c = Math.max(-1, Math.min(1, dot(a, b))), ang = Math.acos(c);
+    if (ang < 1e-5) return b;
+    let perp = sub(b, scl(a, c));
+    if (sq(perp) < 1e-10) perp = anyPerp(a, v3(0, 1, 0));
+    perp = nrm(perp);
+    return nrm(add(scl(a, Math.cos(ang * w)), scl(perp, Math.sin(ang * w))));
+  }
+  function fromTo(v, a, b) {      // apply Quaternion.FromToRotation(a, b) to v (Rodrigues)
+    const an = nrm(a), bn = nrm(b); let axis = cross(an, bn); const s = len(axis), c = dot(an, bn);
+    if (s < 1e-7) return v;
+    axis = scl(axis, 1 / s); const ang = Math.atan2(s, c), cs = Math.cos(ang), sn = Math.sin(ang);
+    return add(add(scl(v, cs), scl(cross(axis, v), sn)), scl(axis, dot(axis, v) * (1 - cs)));
+  }
+
+  // ---- ThresherDials.ToSettings (+ ApplyElementScaling's spinMultiplier, + the lab dials) ----
+  function settingsFrom(Q) {
+    const k = Q.sandboxCruise > 0 ? Q.gameCruise / Q.sandboxCruise : 1, m = Math.max(0.05, Q.spinMultiplier);
+    return {
+      RestLength: Q.restLen * k, MaxLength: Math.max(Q.restLen, Q.maxLen) * k, PayOutRate: Q.payOut * k, ReelInRate: Q.reelIn * k,
+      ReelSpinCap: Math.max(1, Q.reelSpinCap), BallDrag: Math.max(0, Q.ballDrag), BallMass: Math.max(0, Q.ballMass), BallRadius: Q.ballR * k,
+      MaxBallSpeed: Q.maxBall * k, Tug: clamp01(Q.tug), MinShipFraction: clamp01(Q.minShip), CrackShare: Math.max(0, Q.crack),
+      SmashSpeed: Q.smashSpeed * k, SkidRate: Math.max(0, Q.skid), SkidSeconds: Math.max(0, Q.skidSeconds), LockKeep: Math.max(0, Q.lockKeep),
+      LockSpinRate: Q.lockSpin * k * m, LockMaxSpeed: Q.lockMax * Q.gameCruise * m, Yank: Math.max(0, Q.yank),
+      HookTurnRate: Math.max(0, Q.hookTurnRate) * D2R, HookReturnRate: Math.max(0, Q.hookReturnRate), CruiseSpeed: Q.gameCruise,
+      // lab
+      BrakeMode: Q.bkMode | 0, BrakeSeconds: Math.max(0.02, Q.bkSeconds), BrakeCurve: Q.bkCurve | 0, HookEarly: Q.hkEarly | 0,
+      HookShape: Q.hkShape | 0, HookSeconds: Math.max(0.02, Q.hkSeconds), SpinEase: Math.max(0, Q.spEase), RopeGive: Math.max(0, Q.rlRopeGive), PlantReel: Math.max(0.05, Q.wdReel),
+      Analog: Q.anScheme | 0, AnFull: Math.max(0.05, Q.anFull), BrakeMax: Math.max(0, Q.anBrake), BrakeCurve2: Math.max(0.1, Q.anBrakeCurve),
+      AnchorCurve: Math.max(0.1, Q.anAnchor), StopDecel: Math.max(1, Q.anStopDecel), ElSlack: Math.max(0.05, Q.elSlack), ElRigid: Math.max(0.1, Q.elRigid),
+      ElDamp: Math.max(0, Q.elDamp), ElCurve: Math.max(0.05, Q.elCurve), ElSlew: Math.max(0, Q.elSlew),
+    };
+  }
+  const FREE = 0, SKID = 1, PIVOT = 2;
+  // A clock that adds dt N times lands a hair short of N x dt in float32 (the game), so a curve ends at this,
+  // not at 1, on both sides (ThresherChainSolver.EndOfCurve); otherwise the two end a hook a frame apart.
+  const END_OF_CURVE = 1 - 1e-4;
+  function brakeProfile(u, curve) {   // lab: fraction of the press speed SHED at u = t / brakeSeconds
+    u = clamp01(u);
+    if (curve === 0) return u;
+    if (curve === 1) return 1 - (1 - u) * (1 - u);
+    return smooth(u);
+  }
+
+  // ---- ThresherChainSolver, ported line for line (tow / skid / pivot / release / armed launch) ----
+  // Lab branches are fenced with `S.<LabDial>` checks; with every lab dial at its SHIPPED value the
+  // shipped path runs (parity.cjs holds that path to the C# solver frame by frame).
+  // ThresherChainSolver.LaunchLineTrailDegrees / LaunchLineMaxSeconds / LaunchReleaseRestDepth (2026-10-21)
+  const LAUNCH_LINE_TRAIL_DEG = 10, LAUNCH_LINE_MAX_S = 3, LAUNCH_RELEASE_REST = 0.2;
+  class Solver {
+    constructor(S) { this.S = S; }
+    reset(shipPos, shipFwd, shipVel) {
+      const back = sq(shipFwd) > 1e-6 ? scl(nrm(shipFwd), -1) : v3(0, 0, -1);
+      this.Length = this.S.RestLength; this.Ball = add(shipPos, scl(back, this.Length)); this.BallVel = shipVel;
+      this.Mode = FREE; this.Pivot = ZERO; this.LockSpeed = 0; this.IsTaut = true;
+      this.lockDir = ZERO; this.skidTime = 0; this.wasSlack = false; this.hookHeading = ZERO; this.hookSlack = 0; this.hookSlackSpeed = 0;
+      this.launchAim = ZERO; this.armedSeconds = 0; this.perfectWindow = 0; this.perfectBoost = 1; this.launchBoost = 1;
+      this.lineAge = -1; this.lineHauling = false; this.ltLetGo = false;   // the aimed launch's line and LT's let-go latch (ThresherChainSolver.OnLaunchLine)
+      // lab state
+      this.braking = false; this.brakeT = 0; this.brakeV0 = ZERO; this.brakeSlack = 0; this.brakeSlackSpeed = 0;
+      this.hookStart = ZERO; this.hookT = 0; this.pivotAge = 0; this.releaseAge = 1e9; this.launchLead = 0; this.plantedNow = false;
+      this.ltIn = 0; this.rtIn = 0; this.stopT = 0;   // round 2: the analog trigger depths, set by the vessel each frame
+    }
+    get BallSpeed() { return len(this.BallVel); }
+    /** How far out the chain is: the winch length, or (analog, planted) rest length + the elastic stretch. */
+    get Extent() { return this.S.Analog && this.Mode === PIVOT ? this.Length + this.hookSlack : this.Length; }
+    get LaunchArmed() { return sq(this.launchAim) > 0.5; }
+    get IsHookingOn() { return this.Mode === PIVOT && (sq(this.hookHeading) > 0.5 || this.hookSlack > 0); }
+    plant(shipPos, shipVel) {
+      if (this.Mode !== FREE) return;
+      this.Mode = SKID; this.skidTime = 0; this.lineAge = -1;
+      if (this.S.BrakeMode > 0) {                       // lab: quick deceleration
+        this.brakeT = 0; this.brakeV0 = this.BallVel; this.brakeSlack = 0; this.brakeSlackSpeed = 0;
+        if (this.S.HookEarly > 0 && shipPos) { this.braking = true; this.beginPivot(shipPos, shipVel); }
+      }
+    }
+    release(shipVel) {
+      this.launchAim = ZERO; this.hookHeading = ZERO; this.hookSlack = 0; this.hookSlackSpeed = 0;
+      // (a ball let go while still braking keeps its own speed; only a pinned ball is yanked)
+      if (this.Mode === PIVOT && !this.braking) { this.BallVel = clampMag(scl(shipVel, this.S.Yank), this.S.MaxBallSpeed); this.releaseAge = 0; this.ropeAmax = 1.5 * len(shipVel) / Math.max(0.05, this.S.RopeGive); }
+      this.Mode = FREE; this.LockSpeed = 0; this.wasSlack = false; this.braking = false;
+    }
+    // boost: ThresherChainSolver.ArmLaunch's boost (the game passes launchBoost x4.8; the lab's own vessel passes 1)
+    armLaunch(aim, perfectWindowSeconds, perfectBoost, boost) {
+      if (this.Mode !== PIVOT || sq(aim) < 1e-8) return;
+      this.launchAim = nrm(aim); this.armedSeconds = 0;
+      this.perfectWindow = Math.max(0, perfectWindowSeconds || 0); this.perfectBoost = Math.max(1, perfectBoost || 1); this.launchBoost = Math.max(1, boost || 1);
+    }
+    orbitNormal(shipPos) {
+      if (this.Mode !== PIVOT) return ZERO;
+      const n = cross(sub(shipPos, this.Pivot), this.lockDir);
+      return sq(n) > 1e-10 ? nrm(n) : ZERO;
+    }
+    launchRadial(shipPos, aim) {
+      const n = this.orbitNormal(shipPos); if (sq(n) < 0.5) return null;
+      const a = projPlane(aim, n); if (sq(a) < 1e-6) return null;
+      return nrm(cross(nrm(a), n));
+    }
+    launchPoint(shipPos, aim) { const r = this.launchRadial(shipPos, aim); return r ? add(this.Pivot, scl(r, len(sub(shipPos, this.Pivot)))) : this.Pivot; }
+
+    step(shipPos, shipVel, payOut, shipCruise, dt) {
+      const res = { ShipVelocity: shipVel, BallFrom: this.Ball, Planted: false, Launched: false, LaunchDirection: ZERO, Perfect: false };
+      if (dt <= 0) return res;
+      if (this.Mode === PIVOT) {
+        if (this.tryLaunch(shipPos, dt, res)) return res;
+        this.plantedNow = false;
+        res.ShipVelocity = this.stepPivot(shipPos, shipVel, payOut, dt);
+        res.BallFrom = this.Ball; res.Planted = this.plantedNow;
+        return res;
+      }
+      const S = this.S;
+      if (S.Analog) return this.stepAnalog(shipPos, shipVel, shipCruise, dt, res);   // round 2
+      // 1) LENGTH
+      const oldL = this.Length;
+      const newL = payOut ? Math.min(S.MaxLength, oldL + S.PayOutRate * dt) : Math.max(S.RestLength, oldL - S.ReelInRate * dt);
+      if (!approx(newL, oldL)) this.applyLengthChange(shipPos, shipVel, oldL, newL);
+      this.Length = newL; res.BallFrom = this.Ball;
+
+      if (this.Mode === SKID && S.BrakeMode > 0) return this.stepBrake(shipPos, shipVel, dt, res);   // lab
+
+      // lab: the springy rope after a release
+      // (a tension-limited rope: the ball chases the velocity the hard rope would give it, at no more than
+      // ropeAmax, so it is drawn up to speed in about rlRopeGive instead of being snapped there. The ship is
+      // not tugged meanwhile. The hard rope resumes once the ball has caught up, or after 3 x rlRopeGive.)
+      let soft = S.RopeGive > 0 && this.releaseAge < 3 * S.RopeGive;
+      if (soft) {
+        this.releaseAge += dt;
+        const ballFree = add(this.Ball, scl(this.BallVel, dt)), shipN = add(shipPos, scl(shipVel, dt));
+        const d0 = sub(ballFree, shipN), dist0 = len(d0);
+        if (dist0 > this.Length && dist0 > 1e-5) {
+          const want = scl(sub(sub(ballFree, scl(d0, (dist0 - this.Length) / dist0)), this.Ball), 1 / dt);
+          const gap = sub(want, this.BallVel), g = len(gap), cap = this.ropeAmax * dt;
+          this.BallVel = g > cap ? add(this.BallVel, scl(gap, cap / g)) : want;
+          if (g <= cap) this.releaseAge = 1e8;          // caught up: the hard rope takes over seamlessly
+        }
+      } else if (this.releaseAge < 1e8) this.releaseAge += dt;
+
+      // 2) BALL
+      const damping = S.BallDrag + (this.Mode === SKID ? S.SkidRate : 0);
+      this.BallVel = scl(this.BallVel, Math.exp(-damping * dt));
+      let ballNext = add(this.Ball, scl(this.BallVel, dt));
+      let shipNext = add(shipPos, scl(shipVel, dt));
+      // 3) ROPE
+      const d = sub(ballNext, shipNext), dist = len(d);
+      const taut = !soft && dist > this.Length && dist > 1e-5;
+      if (taut) {
+        const n = scl(d, 1 / dist), excess = dist - this.Length, shipShare = this.lineAge >= 0 && this.lineHauling ? 0 : clamp01(S.Tug * S.BallMass / (1 + S.BallMass));
+        const relative = sub(this.BallVel, shipVel), radial = dot(relative, n), tangential = sub(relative, scl(n, radial));
+        shipNext = add(shipNext, scl(n, excess * shipShare));
+        ballNext = sub(ballNext, scl(n, excess * (1 - shipShare)));
+        const newShipVel = scl(sub(shipNext, shipPos), 1 / dt);
+        this.BallVel = scl(sub(ballNext, this.Ball), 1 / dt);
+        if (this.wasSlack && radial > 0 && sq(tangential) > 1e-6) this.BallVel = add(this.BallVel, scl(nrm(tangential), S.CrackShare * radial));
+        res.ShipVelocity = this.keepOnLine(shipVel, this.applyShipFloor(shipVel, newShipVel, shipCruise), shipCruise);
+      }
+      this.BallVel = clampMag(this.BallVel, S.MaxBallSpeed);
+      this.Ball = ballNext; this.IsTaut = taut;
+      this.wasSlack = soft ? false : dist < this.Length * (1 - 0.02);
+      this.advanceLine(add(shipPos, scl(res.ShipVelocity, dt)), res.ShipVelocity, dt);
+      // 4) SKID
+      if (this.Mode === SKID) {
+        this.skidTime += dt;
+        if (this.skidTime >= S.SkidSeconds) { this.beginPivot(add(shipPos, scl(res.ShipVelocity, dt)), res.ShipVelocity); res.Planted = true; }
+      }
+      return res;
+    }
+    // lab: the ball sheds its press speed along a curve and is at rest when it becomes the pivot; the rope
+    // pays out meanwhile, and the stretch it took is handed to the hook-on's critically damped reel-back.
+    advanceBrake(dt) {
+      this.brakeT += dt;
+      const an = this.S.Analog, u = this.brakeT / (an ? this.stopT : this.S.BrakeSeconds);
+      this.BallVel = scl(this.brakeV0, 1 - brakeProfile(u, an ? 2 : this.S.BrakeCurve));
+      this.Ball = add(this.Ball, scl(this.BallVel, dt));
+      return u >= END_OF_CURVE;
+    }
+    stepBrake(shipPos, shipVel, dt, res) {
+      const done = this.advanceBrake(dt);
+      const shipNext = add(shipPos, scl(shipVel, dt));
+      const stretch = Math.max(0, len(sub(this.Ball, shipNext)) - this.Length);
+      this.brakeSlackSpeed = (stretch - this.brakeSlack) / dt; this.brakeSlack = stretch;
+      this.IsTaut = stretch > 0; this.wasSlack = false;
+      if (done) {
+        this.BallVel = ZERO;
+        this.beginPivot(shipNext, shipVel);
+        this.hookSlack = this.brakeSlack; this.hookSlackSpeed = Math.max(0, this.brakeSlackSpeed);
+        res.Planted = true;
+      }
+      return res;
+    }
+    // ---- round 2: analog triggers ----
+    // The chain is a one-sided spring at rest length whose stiffness follows RT (released = slack bungee,
+    // pulled = rigid), with the chain's full length as a stiff limit. LT below a full pull brakes the ball
+    // and hands more of the chain's pull to the ship (the ball becomes an anchor). A full pull stops the
+    // ball along an S-curve; then it is the pivot.
+    ropeW(rt) { const S = this.S; return S.ElSlack * Math.pow(S.ElRigid / S.ElSlack, Math.pow(clamp01(rt), S.ElCurve)); }
+    tension(dist, vrad, rt) {      // per unit mass along the chain; >= 0 (a chain cannot push)
+      const S = this.S, w = this.ropeW(rt);
+      let a = 0;
+      if (dist > S.RestLength) a += w * w * (dist - S.RestLength) + 2 * S.ElDamp * w * vrad;
+      if (dist > S.MaxLength) { const wr = 2 * S.ElRigid; a += wr * wr * (dist - S.MaxLength) + 1.4 * wr * Math.max(0, vrad); }
+      return Math.max(0, a);
+    }
+    // A full pull: the ball stops along an S-curve, and the ship starts its hook round the stopping ball at
+    // once (round 1's "Catch and swing"). Without that the stiff chain yanks a ship flying straight away from
+    // the ball back through zero speed and whips the hull round at ~2000 deg/s.
+    // The per-frame trigger entry point, the same as ThresherChainSolver.AnalogTriggers in the game (which
+    // parity.cjs holds this page to): RT -> the chain's rigidity (slew-limited), LT -> the brake; a full pull
+    // starts the stop, falling below letGo while stopped or planted asks the caller to let go (returns 2).
+    analogTriggers(lt, rt, full, letGo, shipPos, shipVel, up, dt) {
+      if (!this.S.Analog) return 0;
+      this.ltIn = clamp01(lt); this.anFullPull = Math.min(1, Math.max(0.05, full));
+      rt = clamp01(rt);
+      this.rtIn = this.S.ElSlew > 0 ? moveTowards(this.rtIn, rt, this.S.ElSlew * Math.max(0, dt)) : rt;
+      if (this.ltLetGo && this.ltIn < LAUNCH_RELEASE_REST) this.ltLetGo = false;
+      if (this.Mode === FREE && this.ltIn >= full) { this.ltLetGo = false; this.anBeginStop(shipPos, shipVel, up); return 1; }
+      if ((this.Mode === SKID || this.Mode === PIVOT) && this.ltIn < letGo && !this.LaunchArmed) return 2;
+      return 0;
+    }
+    anBeginStop(shipPos, shipVel, up) {
+      if (this.Mode !== FREE) return;
+      up = up && sq(up) > 1e-6 ? nrm(up) : v3(0, 1, 0);
+      this.Mode = SKID; this.lineAge = -1; this.brakeT = 0; this.brakeV0 = this.BallVel;
+      this.stopT = Math.max(0.08, 1.5 * len(this.BallVel) / this.S.StopDecel);
+      this.braking = true; this.beginPivot(shipPos, shipVel);
+      this.Length = this.S.RestLength;      // the chain's stretch is the hook's slack from here on
+      const a = this.anPrevVel, b = this.anCurVel, dtIn = this.anDt || 0;
+      // Which way round: planted nearly straight away from the ball (within 30 degrees), the sideways
+      // velocity that picks the orbit's direction is noise, so orbit the way the ship is ALREADY turning.
+      const rh = nrm(sub(shipPos, this.Pivot)), v = nrm(shipVel), yawIn = a && b && dtIn ? signedAngle(a, b, up) / dtIn : 0;
+      // (and when the sideways velocity is that small, its direction, or BeginPivot's AnyPerpendicular
+      // fallback, can tip the orbit out of the flight plane; orbit in the hull's own turning plane instead -
+      // the hull's up, world up in this yaw-only lab)
+      if (Math.abs(dot(v, rh)) > Math.cos(30 * D2R)) {
+        const flat = nrm(cross(up, rh));
+        if (sq(flat) > 0.5) this.lockDir = dot(flat, this.lockDir) >= 0 ? flat : scl(flat, -1);
+        if (Math.abs(yawIn) > 5 * D2R && sgn(signedAngle(v, this.lockDir, up)) !== sgn(yawIn)) this.lockDir = scl(this.lockDir, -1);
+      }
+      // the ship's turn rate coming in, about the orbit normal (the hook starts from it)
+      const N = cross(rh, this.lockDir);
+      this.anTurnIn = a && b && dtIn ? signedAngle(a, b, N) / dtIn : 0;
+    }
+    stepAnalog(shipPos, shipVel, shipCruise, dt, res) {
+      const S = this.S, stopping = this.Mode === SKID, base = clamp01(S.Tug * S.BallMass / (1 + S.BallMass));
+      const depth = stopping ? 1 : this.ltLetGo ? 0 : clamp01(this.ltIn / Math.max(1e-3, this.anFullPull || 1));
+      const share = this.lineAge >= 0 && this.lineHauling ? 0 : stopping ? 1 : base + (1 - base) * Math.pow(depth, S.AnchorCurve);
+      res.BallFrom = this.Ball;
+      // Sub-stepped so the stiffest spring in play stays well inside semi-implicit Euler's stable range
+      // (w x h <= 0.15) at ANY frame rate: a rigid 30 rad/s chain at 30 fps is otherwise at the edge.
+      const wMax = Math.max(this.ropeW(this.rtIn), len(sub(this.Ball, shipPos)) > S.MaxLength * 0.9 ? 2 * S.ElRigid : 0);
+      const nSub = Math.max(1, Math.ceil(wMax * dt / 0.15)), h = dt / nSub;
+      let shipP = shipPos, ship = shipVel, dist = len(sub(this.Ball, shipPos));
+      for (let i = 0; i < nSub; i++) {
+        const d = sub(this.Ball, shipP); dist = len(d);
+        const n = dist > 1e-5 ? scl(d, 1 / dist) : ZERO;
+        const a = dist > 1e-5 ? this.tension(dist, dot(sub(this.BallVel, ship), n), this.rtIn) : 0;
+        ship = add(ship, scl(n, a * share * h));
+        if (stopping) {
+          this.brakeT += h;
+          this.BallVel = scl(this.brakeV0, 1 - smooth(this.brakeT / this.stopT));
+        } else {
+          this.BallVel = sub(this.BallVel, scl(n, a * (1 - share) * h));
+          this.BallVel = scl(this.BallVel, Math.exp(-(S.BallDrag + Math.pow(depth, S.BrakeCurve2) * S.BrakeMax) * h));
+          this.BallVel = clampMag(this.BallVel, S.MaxBallSpeed);
+        }
+        this.Ball = add(this.Ball, scl(this.BallVel, h));
+        shipP = add(shipP, scl(ship, h));
+      }
+      // the transformer moves the hull by velocity x dt once, so hand it the sub-steps' mean velocity
+      res.ShipVelocity = this.keepOnLine(shipVel, this.applyShipFloor(shipVel, scl(sub(shipP, shipPos), 1 / dt), shipCruise), shipCruise);
+      this.anPrevVel = this.anCurVel || shipVel; this.anCurVel = res.ShipVelocity; this.anDt = dt;
+      this.IsTaut = dist > S.RestLength; this.wasSlack = false;
+      this.Length = Math.min(S.MaxLength, Math.max(S.RestLength, dist));
+      this.advanceLine(shipP, res.ShipVelocity, dt);
+      if (stopping && this.brakeT >= this.stopT) {
+        this.BallVel = ZERO;
+        this.beginPivot(add(shipPos, scl(res.ShipVelocity, dt)), res.ShipVelocity);
+        this.Length = S.RestLength;     // the stretch now lives in hookSlack (the elastic state)
+        res.Planted = true;
+      }
+      return res;
+    }
+    applyShipFloor(before, after, shipCruise) {
+      const floor = Math.min(len(before), this.S.MinShipFraction * Math.max(0, shipCruise)), speed = len(after);
+      if (speed >= floor) return after;
+      const dir = speed > 1e-5 ? scl(after, 1 / speed) : (sq(before) > 1e-8 ? nrm(before) : ZERO);
+      return scl(dir, floor);
+    }
+    applyLengthChange(shipPos, shipVel, oldL, newL) {
+      const r = sub(this.Ball, shipPos), dist = len(r);
+      if (dist < 1e-5 || newL <= 1e-5) return;
+      const n = scl(r, 1 / dist), relative = sub(this.BallVel, shipVel);
+      let radial = dot(relative, n), tangential = sub(relative, scl(n, radial));
+      if (newL < oldL) {
+        if (dist <= newL) return;
+        tangential = scl(tangential, Math.min(dist / newL, this.S.ReelSpinCap));
+        radial = Math.min(radial, 0);
+        this.Ball = add(shipPos, scl(n, newL));
+      } else {
+        if (dist < oldL * (1 - 0.02)) return;
+        tangential = scl(tangential, Math.sqrt(oldL / newL));
+      }
+      this.BallVel = add(add(shipVel, scl(n, radial)), tangential);
+    }
+    beginPivot(shipPos, shipVel) {
+      this.Mode = PIVOT; this.Pivot = this.Ball; this.BallVel = this.braking ? this.BallVel : ZERO;
+      const r = sub(shipPos, this.Pivot), n = sq(r) > 1e-8 ? nrm(r) : v3(0, 0, 1);
+      const tangent = sub(shipVel, scl(n, dot(shipVel, n)));
+      this.lockDir = sq(tangent) > 1e-6 ? nrm(tangent) : anyPerp(n, shipVel);
+      this.hookHeading = this.S.HookTurnRate > 0 && sq(shipVel) > 1e-6 ? nrm(shipVel) : ZERO;
+      this.hookSlack = 0; this.hookSlackSpeed = 0;
+      this.LockSpeed = Math.max(len(shipVel) * this.S.LockKeep, this.S.MinShipFraction * this.S.CruiseSpeed);
+      this.hookStart = this.hookHeading; this.hookT = 0; this.pivotAge = 0;   // lab
+      this.anWasHooking = true;                                                    // round 2
+    }
+    // An aimed launch flies its LINE: the chain hauls the ball and does not pull the ship until the ball trails
+    // within LAUNCH_LINE_TRAIL_DEG of straight behind; then it pulls only along the ship's line until the ball has settled
+    // into the tow - trailing, the ship no faster than the ball can follow, the ball not closing (or LAUNCH_LINE_MAX_S) -
+    // ThresherChainSolver.AdvanceLaunchLine / KeepOnLine.
+    advanceLine(shipPos, shipVel, dt) {
+      if (this.lineAge < 0) return;
+      this.lineAge += dt;
+      const back = sub(this.Ball, shipPos);
+      const trailing = sq(shipVel) > 1e-6 && sq(back) > 1e-6 && dot(nrm(back), scl(nrm(shipVel), -1)) >= Math.cos(LAUNCH_LINE_TRAIL_DEG * D2R);
+      if (this.lineHauling && trailing) this.lineHauling = false;
+      const closing = sq(back) > 1e-6 && dot(sub(this.BallVel, shipVel), back) < 0;
+      const settled = !this.lineHauling && trailing && !closing && len(shipVel) <= this.S.MaxBallSpeed;
+      if (settled || this.lineAge >= LAUNCH_LINE_MAX_S) this.lineAge = -1;
+    }
+    keepOnLine(before, after, shipCruise) {
+      if (this.lineAge < 0 || sq(before) < 1e-8) return after;
+      const line = nrm(before), floor = Math.min(len(before), this.S.MinShipFraction * Math.max(0, shipCruise));
+      return scl(line, Math.max(floor, dot(after, line)));
+    }
+    tryLaunch(shipPos, dt, res) {
+      if (!this.LaunchArmed) return false;
+      this.armedSeconds += dt;
+      const target = this.launchRadial(shipPos, this.launchAim); if (!target) return false;
+      const r = sub(shipPos, this.Pivot), dist = len(r); if (dist < 1e-5) return false;
+      const n = this.orbitNormal(shipPos), rh = scl(r, 1 / dist), t = cross(n, rh);
+      let ahead = Math.atan2(dot(target, t), dot(target, rh)); if (ahead < 0) ahead += 2 * Math.PI;
+      const stepA = this.LockSpeed / Math.max(1e-3, dist) * dt;
+      const lead = Math.max(0, this.launchLead);               // lab: 0 on the shipped path
+      if (ahead > stepA + lead) return false;
+      const aim = this.launchAim, perfect = this.perfectWindow > 0 && this.armedSeconds <= this.perfectWindow;
+      // Shipped: leave along the aim. Lab (a spin wind-down): leave along the CURRENT tangent and let the
+      // wind-down carry the heading onto the aim, so the velocity never steps.
+      const dir = lead > 0 ? nrm(cross(n, add(scl(rh, Math.cos(stepA / 2)), scl(nrm(t), Math.sin(stepA / 2))))) : aim;   // the chord the orbit step would fly
+      const vel = scl(dir, this.LockSpeed * (perfect ? this.perfectBoost : 1) * this.launchBoost);
+      this.release(vel);
+      this.lineAge = 0; this.lineHauling = true; this.ltLetGo = !!this.S.Analog;   // the line, and LT anchors nothing until it is back at rest
+      res.ShipVelocity = vel; res.BallFrom = this.Ball; res.Launched = true; res.LaunchDirection = aim; res.Perfect = perfect;
+      return true;
+    }
+    stepPivot(shipPos, shipVel, payOut, dt) {
+      const S = this.S;
+      if (this.braking) {                                       // lab: the pivot is the braking ball
+        if (this.advanceBrake(dt)) { this.braking = false; this.BallVel = ZERO; this.plantedNow = true; }
+        this.Pivot = this.Ball;
+      } else { this.Ball = this.Pivot; this.BallVel = ZERO; }
+      this.pivotAge += dt;
+      const r = sub(shipPos, this.Pivot), dist = len(r), n = dist > 1e-5 ? scl(r, 1 / dist) : v3(0, 0, 1);
+      if (!S.Analog) {   // (round 2 analog: no winch; the rigidity sets the radius below)
+        const oldL = this.Length;
+        const newL = payOut ? Math.min(S.MaxLength, oldL + S.PayOutRate * dt) : Math.max(S.RestLength, oldL - S.ReelInRate * S.PlantReel * dt);
+        const taut = dist >= oldL * (1 - 0.02);
+        if (taut && newL < oldL && dist > newL) this.LockSpeed *= Math.min(dist / newL, S.ReelSpinCap);
+        else if (taut && newL > oldL) this.LockSpeed *= Math.sqrt(oldL / newL);
+        this.Length = newL;
+      }
+      const spinRate = S.LockSpinRate * (S.SpinEase > 0 ? smooth(this.pivotAge / S.SpinEase) : 1);
+      if (this.LockSpeed < S.LockMaxSpeed) this.LockSpeed = Math.min(S.LockMaxSpeed, this.LockSpeed + spinRate * dt);
+      this.LockSpeed = Math.min(this.LockSpeed, S.MaxBallSpeed);
+      let tangent = sub(this.lockDir, scl(n, dot(this.lockDir, n)));
+      tangent = sq(tangent) > 1e-6 ? nrm(tangent) : anyPerp(n, shipVel);
+      let heading = tangent;
+      const hooking = sq(this.hookHeading) > 0.5;
+      if (hooking) {
+        if (S.Analog && S.HookShape > 0) {
+          // Round 2: round 1's S-curve hook (zero turn rate at its start) PLUS a carried turn that starts at the
+          // ship's own incoming turn rate (anTurnIn, about the orbit normal) and fades to nothing by the hook's
+          // end, so a ship already curving round a braking ball keeps curving instead of stopping its turn.
+          this.hookT += dt;
+          const u = clamp01(this.hookT / S.HookSeconds), N = this.orbitNormal(shipPos);
+          heading = slerpUnit(this.hookStart, tangent, smooth(u));
+          const carry = this.anTurnIn * S.HookSeconds * (u - (u * u * u - u * u * u * u / 2)) * (1 - smooth(u));
+          if (sq(N) > 0.5 && Math.abs(carry) > 1e-6) heading = nrm(add(scl(heading, Math.cos(carry)), scl(cross(N, heading), Math.sin(carry))));
+          this.hookHeading = heading;
+          if (u >= END_OF_CURVE) this.hookHeading = ZERO;
+        } else if (S.HookShape > 0) {                           // lab: S-curve hook
+          this.hookT += dt;
+          const w = smooth(this.hookT / S.HookSeconds);
+          this.hookHeading = slerpUnit(this.hookStart, tangent, w); heading = this.hookHeading;
+          if (w >= 1) this.hookHeading = ZERO;
+        } else {
+          this.hookHeading = turnTowards(this.hookHeading, tangent, S.HookTurnRate * dt); heading = this.hookHeading;
+          if (dot(this.hookHeading, tangent) > 0.99995) this.hookHeading = ZERO;
+        }
+      }
+      let next = add(shipPos, scl(heading, this.LockSpeed * dt));
+      let fromPivot = sub(next, this.Pivot);
+      const nextDist = len(fromPivot);
+      if (hooking) {
+        const stretch = Math.max(0, nextDist - this.Length);
+        this.hookSlackSpeed = (stretch - this.hookSlack) / dt; this.hookSlack = Math.max(this.hookSlack, stretch);
+      } else if (S.Analog) {
+        if (this.anWasHooking) {   // the hook just finished: start the elastic state at the ship's real stretch
+          this.hookSlack = Math.max(0, dist - this.Length); this.hookSlackSpeed = dot(shipVel, n); this.anWasHooking = false; this.anSinceHook = 0; this.anE0 = this.hookSlack;
+        }
+        this.anSinceHook = (this.anSinceHook || 0) + dt;
+        // Round 2: the stretch is the chain's elastic state. It springs (at the rigidity RT sets) toward the
+        // stretch where the orbit's outward pull balances the chain, and spin is conserved as the radius
+        // changes: pull RT and the ship is reeled in and spins up; ease off and it swings out and slows.
+        // (the swing-out's stretch is reeled back at the shipped hookReturnRate at first, ramping to the
+        // rigidity's own rate over 0.5 s: a rigid chain snapping 9 u of hook stretch back in two frames whips the hull)
+        const wRope = this.ropeW(this.rtIn), wBack = Math.min(wRope, S.HookReturnRate);
+        const w = wBack + (wRope - wBack) * smooth(this.anSinceHook / 0.5), room = S.MaxLength - S.RestLength, r0 = Math.max(1, dist);
+        // (the target eases in from where the hook left the ship, so a slack chain's outward pull fades in
+        // rather than switching on in one frame)
+        const eqFull = Math.min(room, this.LockSpeed * this.LockSpeed / (r0 * w * w)), e0 = this.anE0 == null ? eqFull : this.anE0;
+        const eq = e0 + (eqFull - e0) * smooth(this.anSinceHook / 0.5);
+        const before = this.hookSlack, nSub = Math.max(1, Math.ceil(w * dt / 0.15)), h = dt / nSub;   // (sub-stepped, as stepAnalog)
+        for (let i = 0; i < nSub; i++) {
+          this.hookSlackSpeed += (w * w * (eq - this.hookSlack) - 2 * S.ElDamp * w * this.hookSlackSpeed) * h;
+          this.hookSlack += this.hookSlackSpeed * h;
+          if (this.hookSlack < 0) { this.hookSlack = 0; this.hookSlackSpeed = Math.max(0, this.hookSlackSpeed); }
+          if (this.hookSlack > room) { this.hookSlack = room; this.hookSlackSpeed = Math.min(0, this.hookSlackSpeed); }
+        }
+        const rOld = S.RestLength + before, rNew = S.RestLength + this.hookSlack;
+        this.LockSpeed = Math.min(S.MaxBallSpeed, this.LockSpeed * Math.min(S.ReelSpinCap, Math.max(1 / S.ReelSpinCap, rOld / rNew)));
+      } else if (this.hookSlack > 0) {
+        const k = Math.max(0.1, S.HookReturnRate);
+        this.hookSlackSpeed += (-k * k * this.hookSlack - 2 * k * this.hookSlackSpeed) * dt;
+        this.hookSlack += this.hookSlackSpeed * dt;
+        if (this.hookSlack < 0.01 && Math.abs(this.hookSlackSpeed) < 0.5) { this.hookSlack = 0; this.hookSlackSpeed = 0; }
+        this.hookSlack = Math.max(0, this.hookSlack);
+      }
+      const reach = this.Length + this.hookSlack;
+      this.IsTaut = nextDist >= reach;
+      // (round 2 analog, once on the orbit: the ship rides the elastic radius, in or out)
+      if ((this.IsTaut || (S.Analog && !hooking)) && nextDist > 1e-5) fromPivot = scl(fromPivot, reach / nextDist);
+      next = add(this.Pivot, fromPivot);
+      const velocity = scl(sub(next, shipPos), 1 / dt);
+      const n2 = sq(sub(next, this.Pivot)) > 1e-8 ? nrm(sub(next, this.Pivot)) : n;
+      const t2 = sub(velocity, scl(n2, dot(velocity, n2)));
+      // (round 2 analog: the orbit's direction, once chosen, never flips; a heading swinging across the
+      // radial line mid-hook would otherwise reverse the tangent and the whole swing)
+      if (sq(t2) > 1e-6 && (!S.Analog || dot(t2, tangent) > 0)) this.lockDir = nrm(t2);
+      return velocity;
+    }
+  }
+
+  // ---- the hull (ThresherVesselTransformer seams over the vector flight model) + the pilot's camera ----
+  class Vessel {
+    constructor(Q) { this.Q = Q; this.S = settingsFrom(Q); this.solver = new Solver(this.S); this.reset(); }
+    retune(Q) { this.Q = Q; this.S = settingsFrom(Q); this.solver.S = this.S; }
+    reset() {
+      const S = this.S;
+      this.t = 0; this.pos = v3(0, 0, 0); this.fwd = v3(0, 0, 1); this.cmd = this.fwd; this.vel = scl(this.fwd, S.CruiseSpeed);
+      this.solver.reset(this.pos, this.fwd, this.vel);
+      this.lastShipVel = this.vel; this.wasPivoting = false; this.releaseDir = null; this.lt = false; this.lastEvents = []; this.lastInput = { lt: 0, rt: 0 };
+      this.spin = null;       // lab: an active wind-down { w0, t }
+      this.orbitYawRate = 0;  // signed yaw rate of the orbit (rad/s), for the wind-down
+      this.events = [];
+      const c = this.cam = { frame: 0, w: 0, dist: 55, spect: 'off', t: 0, engageT: 0, aim: v3(0, 0, 1), from: null };
+      c.pose = this.chasePose();
+      this.trail = []; this.ballTrail = [];
+    }
+    get pivoting() { return this.solver.Mode === PIVOT; }
+    // ThresherExecutor.EndPlant: an aimed (spectating) release ARMS the launch; otherwise leave on the tangent now.
+    endPlant() {
+      const s = this.solver, wasPivot = s.Mode === PIVOT;
+      if (wasPivot && this.cam.spect !== 'off' && this.cam.spect !== 'exit') { s.armLaunch(this.cam.aim, this.Q.perfectWindowSeconds, 1); this.events.push('arm'); return; }
+      s.release(this.lastShipVel); if (wasPivot) this.events.push('release');
+    }
+    step(dt, inp) {
+      const Q = this.Q, s = this.solver;
+      const lt = +inp.lt || 0, rt = +inp.rt || 0;
+      this.lastInput = { lt, rt };
+      let payOut;
+      if (!this.S.Analog) {
+        // The shipped controls: each trigger is an on/off edge (the Plant engages at 5% depth).
+        const held = lt > 0.05; payOut = rt > 0.05;
+        if (held && !this.lt) { this.lt = true; s.plant(this.pos, this.lastShipVel); this.events.push('plant'); }
+        else if (!held && this.lt) { this.lt = false; this.endPlant(); }
+      } else {
+        // Round 2: LT depth is the brake, a FULL pull stops the ball; RT depth is the rigidity.
+        payOut = false;
+        const edge = s.analogTriggers(lt, rt, Q.anFull, Q.anRelease, this.pos, this.lastShipVel, v3(0, 1, 0), dt);
+        if (edge === 1) { this.lt = true; this.events.push('plant'); }
+        else if (edge === 2) { this.lt = false; this.endPlant(); }
+      }
+
+      // ---- RotateShip ----
+      const pivoting = this.pivoting;
+      if (!pivoting) {
+        if (this.wasPivoting) {
+          const dir = this.releaseDir || this.lastShipVel; this.releaseDir = null;
+          if (Q.rlSpinDown > 0) this.spin = { w0: this.orbitYawRate, t: 0, T: spinDownTime(Q, this.orbitYawRate) };   // lab: no snap, wind the turn down
+          else if (sq(dir) > 1e-4) this.faceAlong(dir, 1);
+          this.wasPivoting = false;
+        }
+        if (this.spin) {
+          const T = this.spin.T, w = this.spin.w0 * (1 - smooth(this.spin.t / T));
+          this.fwd = rotY(this.fwd, w * dt); this.cmd = this.fwd; this.spin.t += dt;
+          if (this.spin.t >= T) this.spin = null;
+        } else {
+          this.cmd = rotY(this.cmd, Q.yawScaler * D2R * inp.yaw * dt);
+          this.fwd = slerpUnit(this.fwd, this.cmd, clamp01(Q.noseLerp * dt));
+        }
+      } else {
+        this.wasPivoting = true; this.spin = null;
+        if (sq(this.lastShipVel) > 1e-4) this.faceAlong(this.lastShipVel, 1 - Math.exp(-Q.pivotFacingRate * dt));
+      }
+      // ---- MoveShip (vector model): grip, nose thrust, the chain's external acceleration ----
+      let vel = this.vel;
+      const speedNow = len(vel);
+      if (!pivoting) {
+        vel = speedNow > 1e-4 ? scl(this.fwd, speedNow) : ZERO;
+        const along = dot(vel, this.fwd);
+        vel = add(vel, scl(this.fwd, lerp(along, this.S.CruiseSpeed, Q.noseLerp * dt) - along));
+      }
+      // lab: an armed launch leaves early by the angle the wind-down will still turn (minus the hull's lag)
+      if (Q.rlSpinDown > 0 && s.Mode === PIVOT && s.LaunchArmed) {
+        const lag = Math.abs(wrap(yawOf(this.lastShipVel) - yawOf(this.fwd)));
+        s.launchLead = Math.max(1e-4, Math.abs(this.orbitYawRate) * spinDownTime(Q, this.orbitYawRate) / 2 - lag);
+      } else s.launchLead = 0;
+      const res = s.step(this.pos, vel, payOut, this.S.CruiseSpeed, dt);
+      const shaped = res.ShipVelocity;
+      // (lab: on a wind-down's launch frame the spin, not the rope bend, turns the hull, unless the hull keeps up
+      // with its velocity while planted (hlPost), when the bend IS this frame's share of the orbit's turn)
+      if ((s.Mode !== PIVOT || Q.hlPost > 0) && sq(vel) > 1e-4 && sq(shaped) > 1e-4 && !(res.Launched && Q.rlSpinDown > 0 && !(Q.hlPost > 0))) { this.fwd = nrm(fromTo(this.fwd, vel, shaped)); this.cmd = nrm(fromTo(this.cmd, vel, shaped)); }
+      if (res.Launched) { this.releaseDir = res.LaunchDirection; this.events.push('launch'); }
+      if (res.Planted) this.events.push('pinned');
+      if (s.Mode === PIVOT) {
+        const r = sub(this.pos, s.Pivot), d2 = r.x * r.x + r.z * r.z;
+        this.orbitYawRate = d2 > 1e-6 ? -(r.x * shaped.z - r.z * shaped.x) / d2 : 0;
+      }
+      this.vel = shaped; this.lastShipVel = shaped;
+      this.pos = add(this.pos, scl(shaped, dt));
+      this.t += dt;
+      this.stepCamera(dt, inp);
+      if ((this._tr = (this._tr || 0) + 1) % 2 === 0) {
+        this.trail.push(this.pos); if (this.trail.length > 240) this.trail.shift();
+        this.ballTrail.push(s.Ball); if (this.ballTrail.length > 240) this.ballTrail.shift();
+      }
+    }
+    faceAlong(dir, f) { this.fwd = slerpUnit(this.fwd, nrm(dir), clamp01(f)); this.cmd = this.fwd; }
+    chasePose(frame) {
+      const c = this.cam, ph = frame == null ? c.frame : frame, sc = c.dist / 55;
+      const off = rotY(v3(0, 8 * sc, -55 * sc), ph), p = add(this.pos, off), look = sub(this.pos, p);
+      return { p, yaw: yawOf(look), pitch: Math.atan2(look.y, Math.hypot(look.x, look.z)) };
+    }
+    // ThresherExecutor.UpdateCamera + CustomCameraController (follow cap, zoom, spectate), yaw-plane only.
+    stepCamera(dt, inp) {
+      const Q = this.Q, c = this.cam, s = this.solver, hullYaw = yawOf(this.fwd);
+      const target = Math.max(55, 1.15 * s.Extent);
+      c.dist += (target - c.dist) * (1 - Math.exp(-(target > c.dist ? 12 : 0.7) * dt));
+      const max = Q.cameraMaxFollowTurnRate * D2R, err = wrap(hullYaw - c.frame);
+      if (Q.cmAngAccel > 0) {                      // lab: angular-acceleration-limited follow
+        const a = Q.cmAngAccel * D2R, hullW = c.lastHullYaw == null ? 0 : wrap(hullYaw - c.lastHullYaw) / dt;
+        // close the error no faster than the decel allows (sqrt) and proportionally near zero (10/s), so it settles instead of chattering
+        const want = Math.max(-max, Math.min(max, hullW + Math.sign(err) * Math.min(Math.sqrt(2 * a * Math.abs(err)), 10 * Math.abs(err))));
+        c.w = moveTowards(c.w, want, a * dt); c.frame = wrap(c.frame + c.w * dt);
+      } else { const stepA = Math.min(Math.abs(err), max * dt); c.frame = wrap(c.frame + Math.sign(err) * stepA); c.w = Math.sign(err) * stepA / dt; }
+      c.lastHullYaw = hullYaw;
+      // spectate
+      const rate = s.Mode === PIVOT ? s.LockSpeed / Math.max(1e-3, len(sub(this.pos, s.Pivot))) : 0;
+      if (c.spect === 'off') {
+        // (round 2 analog: only with the ball stopped AND the chain rigid, i.e. both triggers at a full pull)
+        // (the chain's ACTUAL rigidity, which a slew limit makes lag a slammed trigger)
+        const both = !this.S.Analog || (!s.braking && (+inp.lt || 0) >= Q.anFull && s.rtIn >= Q.anFull);
+        c.engageT = s.Mode === PIVOT && both && rate >= Q.spectateSpinRate ? c.engageT + dt : 0;
+        if (c.engageT >= Q.spectateEngageSeconds) {
+          c.spect = 'enter'; c.t = 0; c.from = c.pose;
+          // lab: carry the camera's turn into the entry and glide it to a stop; the aim is where it stops
+          c.carryW = Q.cmCarry > 0 ? (c.lastPoseYaw == null ? 0 : wrap(c.pose.yaw - c.lastPoseYaw) / dt) : 0;
+          const endYaw = c.pose.yaw + c.carryW * Q.cmCarry / 2;
+          c.aim = v3(Math.sin(endYaw), 0, Math.cos(endYaw));
+        }
+      } else if (c.spect === 'enter' || c.spect === 'on') {
+        if (s.Mode === PIVOT) c.aim = rotY(c.aim, 180 * D2R * inp.yaw * dt);   // aimYawRate
+        const fall = s.Mode === PIVOT && !s.LaunchArmed && (rate < Q.spectateSpinRate * Q.spectateReleaseFraction || (this.S.Analog && s.rtIn < Q.anRelease));
+        if (this.events.includes('launch') || (s.Mode !== PIVOT) || fall) { c.spect = 'exit'; c.t = 0; c.from = c.pose; }
+      }
+      let pose;
+      if (c.spect === 'enter' || c.spect === 'on') {
+        const lp = s.launchPoint(this.pos, c.aim), vp = { p: add(sub(lp, scl(c.aim, 55)), v3(0, 0, 0)), yaw: yawOf(c.aim), pitch: 0 };
+        c.vantage = vp; c.launchPt = lp;
+        if (c.spect === 'enter') {
+          c.t += dt; pose = lerpPose(c.from, vp, smooth(c.t / Q.spectateEnterSeconds));
+          if (c.carryW && Q.cmCarry > 0) { const u = clamp01(c.t / Q.cmCarry); pose.yaw = c.from.yaw + c.carryW * Q.cmCarry * (u - (u * u * u - u * u * u * u / 2)); }
+          if (c.t >= Q.spectateEnterSeconds) c.spect = 'on';
+        }
+        else pose = vp;
+      } else if (c.spect === 'exit') {
+        c.t += dt; c.frame = hullYaw; c.w = 0;
+        pose = lerpPose(c.from, this.chasePose(hullYaw), smooth(c.t / Q.spectateExitSeconds));
+        if (c.t >= Q.spectateExitSeconds) c.spect = 'off';
+      } else pose = this.chasePose();
+      c.lastPoseYaw = c.pose ? c.pose.yaw : null; c.pose = pose;
+      this.lastEvents = this.events.slice(); this.events.length = 0;
+    }
+  }
+  // lab: the wind-down takes rlSpinDown, shortened so the extra turn it adds never exceeds rlSpinMaxDeg
+  // (a reeled-in spin at 400 deg/s would otherwise carry the ship 60 degrees past its line).
+  function spinDownTime(Q, w0) { return Math.max(1e-3, Math.min(Q.rlSpinDown, 2 * Q.rlSpinMaxDeg * D2R / Math.max(1e-3, Math.abs(w0)))); }
+  function lerpPose(a, b, w) { return { p: add(a.p, scl(sub(b.p, a.p), w)), yaw: a.yaw + wrap(b.yaw - a.yaw) * w, pitch: a.pitch + (b.pitch - a.pitch) * w }; }
+
+  // ---- the scripted pilot (inputs only — never the vessel's state) ----
+  const KINDS = ['reeled', 'letout-wind', 'letout-held'];
+  const PILOTS = ['slam', 'squeeze', 'feather'];
+  // A scenario is an INTENT ("plant now", "chain tight", "chain out") turned into trigger values per control
+  // scheme. Shipped: LT on/off; RT held = let chain OUT. Analog (round 2): LT depth = brake (full = stop);
+  // RT depth = rigidity (pulled = tight). So "chain tight" is RT released on the shipped scheme and RT
+  // pulled on the analog one: the flipped axis.
+  function ramp(t, t0, T) { return T <= 0 ? (t >= t0 ? 1 : 0) : clamp01((t - t0) / T); }
+  function scenario(seed, kind, pilot) {
+    pilot = pilot || 'slam';
+    const rnd = mulberry32(seed * 7919 + KINDS.indexOf(kind) * 104729 + 1);
+    const turnAt = 0.8, turnDur = 0.4 + rnd() * 0.5, turnRate = (30 + rnd() * 60) * (rnd() < 0.5 ? -1 : 1);
+    // The wind-in (letout-wind) comes 1.2 s after the press, after the catch window, so the two jolts are
+    // measured apart; the release comes after the wind-in's window.
+    // (round 2 moved the wind-in and the release later, so a feathered pull's stop at +1.1 s is inside the
+    // 1.6 s catch window and the wind-in still comes after it)
+    const pressAt = turnAt + turnDur + rnd() * 0.2, reelAt = kind === 'letout-wind' ? pressAt + 1.8 : null;
+    const releaseAt = pressAt + 2.7 + rnd() * 1.0, end = releaseAt + 7;
+    const tight = (t) => kind === 'reeled' ? true : kind === 'letout-held' ? false : t >= reelAt;
+    const soft = pilot !== 'slam', relT = soft ? 0.25 : 0;
+    const ltAnalog = (t) => {
+      if (t < pressAt) return 0;
+      if (t >= releaseAt) return 1 - ramp(t, releaseAt, relT);
+      if (pilot === 'squeeze') return ramp(t, pressAt, 0.5);
+      if (pilot === 'feather') return t < pressAt + 0.8 ? 0.5 : 0.5 + 0.5 * ramp(t, pressAt + 0.8, 0.3);
+      return 1;
+    };
+    const rtAnalog = (t) => kind === 'letout-wind' ? ramp(t, reelAt, soft ? 0.35 : 0) : (tight(t) ? 1 : 0);
+    return {
+      kind, seed, pilot, pressAt, reelAt, releaseAt, end,
+      input: (t, noPlant, scheme) => {
+        const yaw = t >= turnAt && t < turnAt + turnDur ? turnRate / 120 : 0;
+        if (scheme) return { yaw, lt: noPlant ? 0 : ltAnalog(t), rt: rtAnalog(t) };
+        return { yaw, lt: !noPlant && t >= pressAt && t < releaseAt ? 1 : 0, rt: tight(t) ? 0 : 1 };
+      },
+    };
+  }
+
+  // ---- the recorder: one row per frame, and the scorecard's columns computed from it ----
+  function record(v) {
+    const s = v.solver, c = v.cam.pose;
+    return { t: v.t, mode: s.Mode, bv: s.BallVel, sv: v.vel, hull: yawOf(v.fwd), cy: c.yaw, cp: c.pitch, spect: v.cam.spect, turning: sq(s.hookHeading) > 0.5, braking: s.braking, slack: s.hookSlack, slackV: s.hookSlackSpeed, analog: !!s.S.Analog, rp: s.Mode === PIVOT ? len(sub(v.pos, s.Pivot)) : 0, rv: s.Mode === PIVOT ? dot(v.vel, nrm(sub(v.pos, s.Pivot))) : 0, ny: s.Mode === PIVOT ? s.orbitNormal(v.pos).y : 0, py: v.pos.y, th: s.Mode === PIVOT ? yawOf(sub(v.pos, s.Pivot)) * R2D : 0, pvx: s.Pivot.x, pvz: s.Pivot.z, ext: s.Extent };
+  }
+  function runScenario(Q, sc, dt, noPlant) {
+    const v = new Vessel(Q), rows = [];
+    let launchAt = null, aim = null, tanAtRelease = null;
+    const n = Math.round(sc.end / dt);
+    for (let i = 0; i < n; i++) {
+      const inp = sc.input(v.t, noPlant, v.S.Analog);
+      const before = v.solver.Mode, preVel = v.lastShipVel;
+      v.step(dt, inp);
+      if (v.lastEvents && v.lastEvents.includes('release') && before === PIVOT) tanAtRelease = nrm(preVel);
+      if (launchAt == null && before === PIVOT && v.solver.Mode !== PIVOT) launchAt = v.t;
+      rows.push(record(v));
+      if (v.solver.LaunchArmed) aim = v.solver.launchAim;
+    }
+    return { rows, launchAt, aim: aim || tanAtRelease, dt };
+  }
+  function peaks(run, sc) {
+    const { rows, dt } = run;
+    const press = sc.pressAt, rel = run.launchAt != null ? run.launchAt : sc.releaseAt;
+    const inW = (t, a, b) => t >= a && t <= b;
+    let ballStop = 0, ballYank = 0, hullP = 0, hullR = 0, hullW = 0, cam = 0, jerk = 0, catchT = null;
+    let pw = 0, pcw = 0, pa = null;
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i], q = rows[i - 1];
+      const dbv = len(sub(r.bv, q.bv));
+      const w = wrap(r.hull - q.hull) / dt, aH = (w - pw) / dt; pw = w;
+      const cw = wrap(r.cy - q.cy) / dt, aC = (cw - pcw) / dt; pcw = cw;
+      const acc = scl(sub(r.sv, q.sv), 1 / dt), j = pa ? len(sub(acc, pa)) / dt : 0; pa = acc;
+      if (i < 3) continue;
+      if (inW(r.t, press, press + 1.6)) { ballStop = Math.max(ballStop, dbv); hullP = Math.max(hullP, Math.abs(aH)); }
+      if (sc.reelAt != null && inW(r.t, sc.reelAt, sc.reelAt + 0.8)) hullW = Math.max(hullW, Math.abs(aH));
+      if (inW(r.t, rel, rel + 1.5)) { ballYank = Math.max(ballYank, dbv); hullR = Math.max(hullR, Math.abs(aH)); }
+      if (inW(r.t, press, rel + 2)) cam = Math.max(cam, Math.abs(aC));
+      if (inW(r.t, press, press + 1.6)) jerk = Math.max(jerk, j);
+      // caught: planted, on the orbit, and the chain settled (analog: its elastic stretch has stopped moving)
+      if (catchT == null && r.t > press && r.mode === PIVOT && !r.braking && !r.turning && (r.analog ? Math.abs(r.slackV) < 3 : r.slack < 1)) catchT = r.t - press;
+    }
+    // exit error: heading 1.2 s after leaving vs the aim (armed) or the tangent at release (unaimed)
+    let exitErr = 0;
+    if (run.aim) {
+      const k = rows.findIndex((r) => r.t >= rel + 1.2);
+      if (k > 0) exitErr = Math.abs(wrap(rows[k].hull - yawOf(run.aim))) * R2D;
+    }
+    return { ballStop, ballYank, hullP: hullP * R2D, hullR: hullR * R2D, hullW: sc.reelAt != null ? hullW * R2D : NaN, cam: cam * R2D, jerk, catchT: catchT == null ? NaN : catchT, exitErr };
+  }
+
+  // ================= the live world: two vessels, one stick =================
+  let A = null, B = null, seed = 7, demo = null, autoCycle = 0;
+  function reset(s) {
+    if (s != null) seed = s >>> 0;
+    A = new Vessel(SHIPPED); B = new Vessel(P);
+    demo = autopilot ? scenario(seed + autoCycle, KINDS[autoCycle % KINDS.length], PILOTS[Math.floor(autoCycle / KINDS.length) % PILOTS.length]) : null;
+    hist.length = 0;
+  }
+  const hist = [];   // traces: last ~7 s of both vessels
+  const input = { yaw: 0, lt: 0, rt: 0 };   // the physical sticks and triggers (0..1); each vessel reads them its own way
+  function simStep(dt) {
+    let inpA = input, inpB = input;
+    if (demo) {
+      // the autopilot flies the same INTENT on both, in each one's own control scheme (see scenario)
+      inpA = demo.input(A.t, false, A.S.Analog); inpB = demo.input(A.t, false, B.S.Analog);
+      if (A.t >= demo.end - 3) { autoCycle++; reset(); return; }
+    }
+    A.step(dt, inpA); B.step(dt, inpB);
+    const inp = inpB;
+    const pa = hist.length ? hist[hist.length - 1] : null;
+    const row = { t: A.t, a: { bs: A.solver.BallSpeed, hy: yawOf(A.fwd), cy: A.cam.pose.yaw }, b: { bs: B.solver.BallSpeed, hy: yawOf(B.fwd), cy: B.cam.pose.yaw }, lt: (+inp.lt || 0) > 0.05, tl: +inp.lt || 0, tr: +inp.rt || 0 };
+    if (pa) for (const k of ['a', 'b']) { row[k].hw = wrap(row[k].hy - pa[k].hy) / dt * R2D; row[k].cw = wrap(row[k].cy - pa[k].cy) / dt * R2D; }
+    else for (const k of ['a', 'b']) { row[k].hw = 0; row[k].cw = 0; }
+    hist.push(row); if (hist.length > 7 * 60) hist.shift();
+  }
+  function score() {
+    const sc = scenario(seed, 'reeled'), a = peaks(runScenario(SHIPPED, sc, 1 / 60), sc), b = peaks(runScenario(P, sc, 1 / 60), sc);
+    const r2 = (x) => Math.round(x * 100) / 100;
+    return { shippedBallStop: r2(a.ballStop), yoursBallStop: r2(b.ballStop), shippedHullJolt: r2(a.hullP), yoursHullJolt: r2(b.hullP), t: r2(A.t) };
+  }
+
+  // ================= headless batch: the scorecard =================
+  // Round 2: the analog scheme, with the round-1 pieces that still apply on top of it (the eased hook, the
+  // spectate glide and smooth follow, the soft let-go). The quick stop is the scheme's own full-pull stop.
+  const ANALOG = { anScheme: 1, hlPost: 1, elSlew: 2, hkShape: 1, hkSeconds: 0.5, spEase: 0.4, rlSpinDown: 0.3, yank: 0, cmAngAccel: 1500, cmCarry: 0.35 };
+  const VARIANTS = [
+    { name: 'Digital (before)', kind: 'baseline', v: {}, blurb: 'The Thresher until 2026-10-13 (the class defaults; SHIPPED below): a 0.3 s skid the taut rope mostly cancels, then the ball is pinned in one frame; a flat 300 deg/s hook; the spin stops dead on release and the ball is yanked in one frame.' },
+    { name: 'Analog triggers', kind: 'round 2', pilot: 'squeeze', v: ANALOG, blurb: 'LT is a brake: a partial pull slows the ball and swings the ship round it like a sliding anchor; only a FULL pull stops it (an S-curve stop of whatever speed is left) and makes it the pivot. RT is the chain\'s rigidity: released = a slack bungee, pulled = rigid; pulling it in reels the ship in and spins it up. The camera switches to the launch view only with both at a full pull. With the eased hook (starting from the ship\'s own turn), the hull keeping up while planted, a 2/s rigidity slew, the spectate glide and the soft let-go.' },
+    { name: 'Analog, slammed', kind: 'round 2', pilot: 'slam', v: ANALOG, scoreOnly: true, blurb: 'The analog scheme with both triggers slammed (0 to 1 in a frame), the way a digital habit pulls them.' },
+    { name: 'Analog, feathered', kind: 'round 2', pilot: 'feather', v: ANALOG, scoreOnly: true, blurb: 'The analog scheme with LT held at half (a sliding anchor) for 0.8 s before the full pull.' },
+    { name: 'Analog only', kind: 'round 2', pilot: 'squeeze', v: { anScheme: 1 }, blurb: 'The analog triggers alone, with every other dial shipped: the shipped hook, camera and let-go.' },
+    { name: 'Longer skid', kind: 'tuning', v: { skid: 12, skidSeconds: 0.5 }, blurb: 'Only the shipped dials: a harder, longer skid. Tests whether tuning alone removes the stop. (It cannot: the rope keeps the ball near ship speed until the pin.)' },
+    { name: 'Quick stop, linear', kind: 'approach', v: { bkMode: 1, bkCurve: 0, bkSeconds: 0.3 }, blurb: 'The ask in its plainest form: the ball decelerates to rest at a constant rate over 0.3 s while the rope pays out, then pivots already still.' },
+    { name: 'Quick stop, S-curve', kind: 'approach', v: { bkMode: 1, bkCurve: 2, bkSeconds: 0.35 }, blurb: 'The same quick deceleration with an S-shaped speed curve: the braking itself fades in and out, so nothing switches on in one frame.' },
+    { name: 'Catch and swing', kind: 'approach', v: { bkMode: 1, bkCurve: 2, bkSeconds: 0.35, hkEarly: 1, hkShape: 1, hkSeconds: 0.5 }, blurb: 'S-curve quick stop, and the ship starts curving onto the orbit at the press, easing in and out of the turn instead of snapping to 300 deg/s.' },
+    { name: 'Gentle wind-in', kind: 'approach', v: { wdReel: 0.4 }, blurb: 'Planted reel-in at 0.4 x reelIn: winding a let-out plant in takes 0.9 s instead of 0.36 s. Spin is conserved per unit length, so the speed it ends at is unchanged.' },
+    { name: 'Soft let-go', kind: 'approach', v: { rlSpinDown: 0.3, rlRopeGive: 0.3, yank: 0 }, blurb: 'Release only: the spin winds down (at most 0.3 s and 30 degrees) instead of stopping dead, and an aimed launch leaves early to land on the aim. The ball leaves the pivot at rest and the rope draws it up to speed in about 0.3 s instead of the shipped one-frame yank.' },
+    { name: 'Smooth camera', kind: 'approach', v: { cmAngAccel: 1500, cmCarry: 0.35 }, blurb: 'Camera only: the chase frame keeps its 240 deg/s cap but changes its turn rate at most 1500 deg/s², and when a fast spin hands the camera to the launch vantage it glides to a stop over 0.35 s instead of freezing.' },
+    { name: 'All smooth', kind: 'approach', v: { bkMode: 1, bkCurve: 2, bkSeconds: 0.35, hkEarly: 1, hkShape: 1, hkSeconds: 0.5, spEase: 0.4, wdReel: 0.4, rlSpinDown: 0.3, rlRopeGive: 0.3, yank: 0, cmAngAccel: 1500, cmCarry: 0.35 }, blurb: 'Catch and swing, a 0.4 s spin-up fade-in, Gentle wind-in, Soft let-go and Smooth camera together.' },
+    { name: 'Hard pin', kind: 'control', v: { skidSeconds: 0 }, blurb: 'Planted defect: no skid, the ball is pinned at full speed. The scorecard must rank it worst on the stop.' },
+    { name: 'No plant', kind: 'control', v: {}, noPlant: true, blurb: 'Negative control: the same flights with LT never pressed. Its jolts are the floor that ordinary flying produces.' },
+  ];
+  const COLS = [
+    ['ballStop', 'Ball stop', 'u/s in one frame', 'The largest one-frame change in the ball\'s velocity in the 1.6 s after LT starts down. The instant stop.'],
+    ['ballYank', 'Ball yank', 'u/s in one frame', 'The same, in the 1.5 s after the ship leaves the orbit.'],
+    ['hullP', 'Hull jolt, catch', 'deg/s²', 'Peak angular acceleration of the hull\'s heading while it hooks onto the orbit.'],
+    ['hullR', 'Hull jolt, leave', 'deg/s²', 'Peak angular acceleration of the hull\'s heading as it leaves the orbit.'],
+    ['hullW', 'Hull jolt, wind-in', 'deg/s²', 'Peak angular acceleration of the hull while RT up winds a let-out plant in (the let-out-then-wound-in flights only).'],
+    ['cam', 'Camera jolt', 'deg/s²', 'Peak angular acceleration of the pilot camera\'s yaw from the press to 2 s after leaving (chase or spectate, as in the game).'],
+    ['jerk', 'Ship jerk, catch', 'k u/s³', 'Peak change of the ship\'s acceleration per second in the 1.6 s after LT starts down.'],
+    ['catchT', 'Catch time', 's', 'Seconds from the press until the ball is at rest and the ship is flying the orbit. The cost column: smoother must not mean mushy.'],
+    ['exitErr', 'Exit error', 'deg', 'How far the heading 1.2 s after leaving is from the aim (aimed launch) or the tangent at release (unaimed).'],
+  ];
+  function runBatch(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2, 3, 4, 5, 6], dt = opts.dt || 1 / 60, kinds = opts.kinds || KINDS, rows = [];
+    for (const va of VARIANTS) {
+      const Q = Object.assign({}, SHIPPED, va.v), acc = {}, mx = {}, cnt = {};
+      for (const k of kinds) for (const s of seeds) {
+        const sc = scenario(s, k, va.pilot), p = peaks(runScenario(Q, sc, dt, !!va.noPlant), sc);
+        for (const [key] of COLS) {
+          const val = key === 'jerk' ? p[key] / 1000 : p[key]; if (isNaN(val)) continue;
+          acc[key] = (acc[key] || 0) + val; cnt[key] = (cnt[key] || 0) + 1; mx[key] = Math.max(mx[key] || 0, val);
+        }
+      }
+      const row = { variant: va.name + (va.pilot && va.v.anScheme ? ' · ' + va.pilot : ''), kind: va.kind };
+      for (const [key] of COLS) { row[key] = cnt[key] ? +(acc[key] / cnt[key]).toFixed(key === 'catchT' ? 2 : 1) : null; row[key + 'Max'] = cnt[key] ? +mx[key].toFixed(1) : null; }
+      if (va.noPlant) { row.catchT = null; row.exitErr = null; }
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  // ---- parity hook: the chain harness's stand-in pilot, run on THIS page's solver (parity.cjs) ----
+  function parityTrace(scenarios, overrides, analogDials) {
+    const dt = 1 / 60, out = {};
+    for (const sc of scenarios) {
+      const Q = Object.assign({}, SHIPPED, sc.analog ? analogDials || {} : {}, overrides || {}), S = settingsFrom(Q);
+      const solver = new Solver(S); let p = v3(0, 0, 0), f = v3(0, 0, 1), vv = S.CruiseSpeed; const cruise = S.CruiseSpeed;
+      solver.reset(p, f, scl(f, vv)); let last = scl(f, vv); const rows = [];
+      for (const st of sc.steps) {
+        if (st.plant) solver.plant(p, last);
+        if (st.release) solver.release(last);
+        if (st.arm) solver.armLaunch(v3(st.arm[0], st.arm[1], st.arm[2]), 0, 1, st.boost || 1);
+        if (st.lead != null) solver.launchLead = st.lead;
+        const n = Math.round(st.t / dt);
+        for (let i = 0; i < n; i++) {
+          if (S.Analog) {   // the analog triggers, exactly as TraceDriver.cs drives ThresherChainSolver.AnalogTriggers
+            const edge = solver.analogTriggers(st.lt || 0, st.rt || 0, Q.anFull, Q.anRelease, p, last, v3(0, 1, 0), dt);
+            if (edge === 2) solver.release(last);
+          }
+          f = rotY(f, st.yaw * D2R * dt);
+          const th = vv + (cruise - vv) * 1.5 * dt;
+          const r = solver.step(p, scl(f, th), st.pay, cruise, dt);
+          if (solver.Mode === PIVOT) f = nrm(r.ShipVelocity); else if (r.Launched) f = nrm(r.ShipVelocity);
+          vv = len(r.ShipVelocity); p = add(p, scl(r.ShipVelocity, dt)); last = r.ShipVelocity;
+          rows.push([solver.Mode, p.x, p.y, p.z, solver.Ball.x, solver.Ball.y, solver.Ball.z, solver.BallSpeed, solver.Extent]);
+        }
+      }
+      out[sc.name] = rows;
+    }
+    return out;
+  }
+
+  // ================= rendering =================
+  const canvas = $('stage'), ctx = canvas.getContext('2d');
+  let split = true, worldCam = false, autopilot = true, slowmo = false, paused = false;
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  function hash2(i, j) { let h = (i * 374761393 + j * 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+  function drawChase(x0, y0, w, h, v, label, color) {
+    const pose = v.cam.pose, cy = Math.cos(pose.yaw), sy = Math.sin(pose.yaw), cpp = Math.cos(pose.pitch), spp = Math.sin(pose.pitch);
+    const f = v3(cpp * sy, spp, cpp * cy), r = v3(cy, 0, -sy), u = cross(f, r), c = pose.p, foc = (h / 2) / Math.tan(30 * D2R);
+    const cx = x0 + w / 2, cyy = y0 + h / 2;
+    const cam = (p) => { const d = sub(p, c); return v3(dot(d, r), dot(d, u), dot(d, f)); };
+    const proj = (q) => [cx + q.x / q.z * foc, cyy - q.y / q.z * foc];
+    const seg = (a, b) => { let p = cam(a), q = cam(b); const near = 0.5; if (p.z < near && q.z < near) return; if (p.z < near) p = add(p, scl(sub(q, p), (near - p.z) / (q.z - p.z))); else if (q.z < near) q = add(q, scl(sub(p, q), (near - q.z) / (p.z - q.z))); const A2 = proj(p), B2 = proj(q); ctx.moveTo(A2[0], A2[1]); ctx.lineTo(B2[0], B2[1]); };
+    ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, w, h); ctx.clip();
+    ctx.fillStyle = css('--stage'); ctx.fillRect(x0, y0, w, h);
+    // the floor grid and the pillars: the parallax that makes a jolt visible
+    const G = 40, gy = -30, ox = Math.round(c.x / G) * G, oz = Math.round(c.z / G) * G, R = 640;
+    ctx.strokeStyle = 'rgba(140,165,190,0.16)'; ctx.lineWidth = 1; ctx.beginPath();
+    for (let k = -R; k <= R; k += G) { seg(v3(ox + k, gy, oz - R), v3(ox + k, gy, oz + R)); seg(v3(ox - R, gy, oz + k), v3(ox + R, gy, oz + k)); }
+    ctx.stroke();
+    ctx.lineWidth = 2;
+    for (let i = -16; i <= 16; i++) for (let j = -16; j <= 16; j++) {
+      const gx = Math.round(c.x / G) + i, gz = Math.round(c.z / G) + j, hv = hash2(gx, gz);
+      if (hv > 0.07) continue;
+      const px = gx * G + 10, pz = gz * G + 10, top = gy + 18 + hv * 600;
+      ctx.strokeStyle = hv < 0.035 ? 'rgba(94,200,190,0.55)' : 'rgba(150,120,220,0.5)';
+      ctx.beginPath(); seg(v3(px, gy, pz), v3(px, top, pz)); ctx.stroke();
+    }
+    const s = v.solver;
+    // ball trail (the skid) and pivot
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let i = 1; i < v.ballTrail.length; i++) seg(v.ballTrail[i - 1], v.ballTrail[i]); ctx.stroke();
+    // launch point marker while spectating
+    if (v.cam.spect !== 'off' && v.cam.launchPt && s.Mode === PIVOT) { const q = cam(v.cam.launchPt); if (q.z > 1) { const P2 = proj(q); ctx.strokeStyle = '#b5f24a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(P2[0], P2[1], 6, 0, 7); ctx.stroke(); } }
+    // chain
+    ctx.strokeStyle = s.IsTaut ? 'rgba(220,226,232,0.85)' : 'rgba(160,168,178,0.6)'; ctx.lineWidth = 1.5; ctx.beginPath(); seg(v.pos, s.Ball); ctx.stroke();
+    // ball
+    const bq = cam(s.Ball);
+    if (bq.z > 0.5) {
+      const B2 = proj(bq), rad = Math.max(2, s.S.BallRadius * 1.25 * foc / bq.z);
+      ballDisc(B2[0], B2[1], rad, s);
+    }
+    // ship
+    const right = nrm(cross(v3(0, 1, 0), v.fwd));
+    const pts = [add(v.pos, scl(v.fwd, 4)), add(add(v.pos, scl(v.fwd, -2.5)), scl(right, 3)), add(v.pos, scl(v.fwd, -1.2)), add(add(v.pos, scl(v.fwd, -2.5)), scl(right, -3))].map(cam);
+    if (pts.every((q) => q.z > 0.5)) { ctx.fillStyle = color; ctx.beginPath(); pts.forEach((q, i) => { const P2 = proj(q); if (i) ctx.lineTo(P2[0], P2[1]); else ctx.moveTo(P2[0], P2[1]); }); ctx.closePath(); ctx.fill(); }
+    hud(x0, y0, w, h, v, label, color);
+    ctx.restore();
+  }
+  function drawWorld(x0, y0, w, h, v, label, color) {
+    ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, w, h); ctx.clip();
+    ctx.fillStyle = css('--stage'); ctx.fillRect(x0, y0, w, h);
+    const s = v.solver, mid = scl(add(v.pos, s.Ball), 0.5), sc = Math.min(w, h) / Math.max(160, 2.6 * s.Length + 40);
+    const P2 = (p) => [x0 + w / 2 + (p.x - mid.x) * sc, y0 + h / 2 - (p.z - mid.z) * sc];
+    const G = 40; ctx.strokeStyle = 'rgba(140,165,190,0.14)'; ctx.beginPath();
+    const span = Math.max(w, h) / sc;
+    for (let gx = Math.floor((mid.x - span) / G) * G; gx < mid.x + span; gx += G) { const a = P2(v3(gx, 0, mid.z - span)), b = P2(v3(gx, 0, mid.z + span)); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
+    for (let gz = Math.floor((mid.z - span) / G) * G; gz < mid.z + span; gz += G) { const a = P2(v3(mid.x - span, 0, gz)), b = P2(v3(mid.x + span, 0, gz)); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
+    ctx.stroke();
+    const path = (arr, col) => { ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.beginPath(); arr.forEach((p, i) => { const q = P2(p); if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); }); ctx.stroke(); };
+    path(v.trail, color + '99'); path(v.ballTrail, 'rgba(255,255,255,0.35)');
+    const a = P2(v.pos), b = P2(s.Ball);
+    ctx.strokeStyle = 'rgba(220,226,232,0.8)'; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    ballDisc(b[0], b[1], Math.max(3, s.S.BallRadius * 1.25 * sc), s);
+    const fw = v.fwd, rt = nrm(cross(v3(0, 1, 0), fw)), tri = [add(v.pos, scl(fw, 5)), add(add(v.pos, scl(fw, -3)), scl(rt, 3.5)), add(add(v.pos, scl(fw, -3)), scl(rt, -3.5))].map(P2);
+    ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(tri[0][0], tri[0][1]); ctx.lineTo(tri[1][0], tri[1][1]); ctx.lineTo(tri[2][0], tri[2][1]); ctx.closePath(); ctx.fill();
+    hud(x0, y0, w, h, v, label, color);
+    ctx.restore();
+  }
+  // The ball as the game shades it (ThresherBallFresnelShader): a dull body under a bright rim, domain
+  // teal warming toward smash speed, red at and above it. Drawn at ballVisualScale 1.25.
+  function ballDisc(x, y, rad, s) {
+    const heat = clamp01(s.BallSpeed / s.S.SmashSpeed), hot = heat >= 1;
+    const rim = hot ? [255, 70, 60] : [Math.round(80 + 140 * heat), Math.round(220 - 70 * heat), Math.round(205 - 130 * heat)];
+    const g = ctx.createRadialGradient(x, y, 0, x, y, rad);
+    g.addColorStop(0, `rgba(${rim.map((c) => Math.round(c * 0.16)).join(',')},0.92)`);
+    g.addColorStop(0.72, `rgba(${rim.map((c) => Math.round(c * 0.3)).join(',')},0.92)`);
+    g.addColorStop(1, `rgba(${rim.join(',')},1)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rad, 0, 7); ctx.fill();
+  }
+  function hud(x0, y0, w, h, v, label, color) {
+    const s = v.solver, an = s.S.Analog, li = v.lastInput || { lt: 0, rt: 0 };
+    const mode = s.braking ? 'braking (swinging)' : an
+      ? [li.lt > 0.02 ? 'towing, braking' : 'towing', 'stopping', s.LaunchArmed ? 'planted, launch armed' : 'planted'][s.Mode]
+      : ['towing', s.S.BrakeMode > 0 ? 'braking' : 'skidding', s.LaunchArmed ? 'planted, launch armed' : 'planted'][s.Mode];
+    ctx.font = '600 13px ' + css('--font-ui'); ctx.fillStyle = color; ctx.fillText(label, x0 + 12, y0 + 20);
+    ctx.font = '11px ' + css('--font-num'); ctx.fillStyle = css('--stage-ink');
+    const hw = hist.length > 1 ? (v === A ? hist[hist.length - 1].a.hw : hist[hist.length - 1].b.hw) : 0;
+    ctx.fillText(mode + (v.cam.spect !== 'off' ? ' · spectate ' + v.cam.spect : ''), x0 + 12, y0 + 36);
+    ctx.fillText('ball ' + s.BallSpeed.toFixed(0).padStart(3) + ' u/s   hull ' + hw.toFixed(0).padStart(4) + ' °/s   chain ' + s.Extent.toFixed(0) + ' u', x0 + 12, y0 + 51);
+    // trigger gauges, read the way THIS vessel reads them
+    const Q = v.Q, gw = Math.min(110, w * 0.22), gy = y0 + 76;
+    const gauge = (gx, label, val, onOff, fullAt) => {
+      ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(gx, gy, gw, 6);
+      ctx.fillStyle = color; ctx.fillRect(gx, gy, gw * (onOff ? (val > 0.05 ? 1 : 0) : clamp01(val)), 6);
+      if (fullAt) { ctx.fillStyle = css('--stage-ink'); ctx.fillRect(gx + gw * fullAt - 1, gy - 3, 2, 12); }
+      ctx.fillStyle = css('--stage-ink'); ctx.fillText(label, gx, gy - 5);
+    };
+    if (an) {
+      gauge(x0 + 12, li.lt >= Q.anFull ? 'LT  STOP' : 'LT  brake ' + Math.round(100 * li.lt) + '%', li.lt, false, Q.anFull);
+      gauge(x0 + 24 + gw, li.rt >= Q.anFull ? 'RT  RIGID' : 'RT  ' + (li.rt < 0.05 ? 'slack' : 'rigidity ' + Math.round(100 * li.rt) + '%'), li.rt, false, Q.anFull);
+    } else {
+      gauge(x0 + 12, 'LT  plant ' + (li.lt > 0.05 ? 'ON' : 'off'), li.lt, true, 0);
+      gauge(x0 + 24 + gw, 'RT  let out ' + (li.rt > 0.05 ? 'ON' : 'off'), li.rt, true, 0);
+    }
+  }
+  function render() {
+    const W = canvas.width, H = canvas.height, dpr = W / Math.max(1, canvas.getBoundingClientRect().width || W);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = css('--stage'); ctx.fillRect(0, 0, W, H);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const w = W / dpr, h = H / dpr, draw = worldCam ? drawWorld : drawChase, phone = w < 700;
+    if (split) {
+      if (phone) { draw(0, 0, w, h / 2 - 1, A, 'A · Digital (before)', css('--shipped')); draw(0, h / 2 + 1, w, h / 2 - 1, B, 'B · ' + currentName(), css('--trial')); }
+      else { draw(0, 0, w / 2 - 1, h, A, 'A · Digital (before)', css('--shipped')); draw(w / 2 + 1, 0, w / 2 - 1, h, B, 'B · ' + currentName(), css('--trial')); }
+      ctx.fillStyle = css('--line'); if (phone) ctx.fillRect(0, h / 2 - 1, w, 2); else ctx.fillRect(w / 2 - 1, 0, 2, h);
+    } else draw(0, 0, w, h, showA ? A : B, showA ? 'A · Digital (before)' : 'B · ' + currentName(), showA ? css('--shipped') : css('--trial'));
+    if (paused) { ctx.font = '600 13px ' + css('--font-ui'); ctx.fillStyle = '#fff'; ctx.fillText('PAUSED', w / 2 - 24, h - 14); }
+    drawTraces();
+  }
+  let showA = false;
+  function currentName() { const m = VARIANTS.find((va) => va.name === activePreset); const changed = Object.keys(diffOnly()).length; return m && sameAsPreset(m) ? m.name : (changed ? 'your settings' : 'Digital (before)'); }
+
+  // ---- the recorder traces (bottom dock) ----
+  function drawTraces() {
+    const cv = $('traces'); if (!cv) return;
+    const r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1), W = Math.max(1, Math.round(r.width * dpr)), Hh = Math.max(1, Math.round(r.height * dpr));
+    if (cv.width !== W || cv.height !== Hh) { cv.width = W; cv.height = Hh; }
+    const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const w = r.width, h = r.height; g.clearRect(0, 0, w, h);
+    const lanes = [['Ball speed', 'bs', 0, 260, 'u/s'], ['Hull turn rate', 'hw', -360, 360, '°/s'], ['Camera turn rate', 'cw', -360, 360, '°/s'], ['B triggers', null, 0, 1, '']];
+    const lh = h / lanes.length, t1 = hist.length ? hist[hist.length - 1].t : 0, t0 = t1 - 7, X = (t) => 110 + (t - t0) / 7 * (w - 120);
+    g.font = '11px ' + css('--font-num');
+    lanes.forEach(([name, key, lo, hi, unit], li) => {
+      const y0 = li * lh + 4, y1 = (li + 1) * lh - 4, Y = (val) => y1 - (Math.max(lo, Math.min(hi, val)) - lo) / (hi - lo) * (y1 - y0);
+      g.fillStyle = css('--muted'); g.fillText(name, 0, y0 + 11);
+      if (key) { g.fillText(hi + ' ' + unit, 0, y0 + 24); g.fillText(lo + '', 0, y1); } else g.fillText('LT —   RT - -', 0, y0 + 24);
+      g.strokeStyle = css('--line'); g.lineWidth = 1; g.beginPath(); g.moveTo(110, Y(0)); g.lineTo(w - 10, Y(0)); g.stroke();
+      // LT held band
+      g.fillStyle = css('--line');
+      for (let i = 1; i < hist.length; i++) if (hist[i].lt) g.fillRect(X(hist[i - 1].t), y0, X(hist[i].t) - X(hist[i - 1].t) + 0.5, 3);
+      if (!key) {   // LT solid, RT dashed, both as B reads them
+        for (const [f, dash] of [['tl', []], ['tr', [4, 3]]]) {
+          g.strokeStyle = css('--trial'); g.lineWidth = 1.5; g.setLineDash(dash); g.beginPath();
+          hist.forEach((row, i) => { const x = X(row.t), y = Y(row[f]); if (i) g.lineTo(x, y); else g.moveTo(x, y); });
+          g.stroke(); g.setLineDash([]);
+        }
+        return;
+      }
+      for (const [k, col] of [['a', css('--shipped')], ['b', css('--trial')]]) {
+        g.strokeStyle = col; g.lineWidth = k === 'b' ? 1.8 : 1.4; g.beginPath();
+        hist.forEach((row, i) => { const x = X(row.t), y = Y(row[k][key]); if (i) g.lineTo(x, y); else g.moveTo(x, y); });
+        g.stroke();
+      }
+    });
+    const la = '— A Shipped   ', lb = '— B ' + currentName(), wa = g.measureText(la).width, wb = g.measureText(lb).width;
+    g.fillStyle = css('--shipped'); g.fillText(la, w - 10 - wa - wb, 12); g.fillStyle = css('--trial'); g.fillText(lb, w - 10 - wb, 12);
+  }
+
+  // ================= platform =================
+  function detectPlatform() {
+    const host = window.__labHost || {}, ua = navigator.userAgent || '';
+    const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+    return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+  }
+  const PLATFORM = detectPlatform();
+  $('platform').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+  if (PLATFORM.device === 'phone') { $('touch').hidden = false; $('legend').hidden = true; }
+
+  // ================= UI: approaches, sliders, shipped-vs-yours =================
+  const outputs = {};
+  let activePreset = lsGet('lab:' + LAB.name + ':preset', 'Analog triggers');
+  function fmt(v, step) { const dec = step < 1 ? Math.min(3, String(step).split('.')[1].length) : 0; return Number(v).toFixed(dec); }
+  function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+  function sameAsPreset(va) { const want = Object.assign({}, SHIPPED, va.v); return Object.keys(SHIPPED).every((k) => Math.abs(want[k] - P[k]) < 1e-9); }
+  function refreshDiff() {
+    const changed = Object.keys(diffOnly());
+    $('diff').textContent = changed.length ? 'B differs from shipped in ' + changed.length + ' setting' + (changed.length > 1 ? 's' : '') : 'B = shipped numbers';
+    for (const [, key, , , step] of SPEC) {
+      const o = outputs[key]; if (!o || !o.out.isConnected) continue;
+      o.out.textContent = fmt(P[key], step); o.out.classList.toggle('changed', Math.abs(P[key] - SHIPPED[key]) > 1e-9);
+      o.out.title = 'shipped ' + SHIPPED[key] + ' · yours ' + P[key]; o.inp.value = P[key];
+    }
+    document.querySelectorAll('.preset').forEach((el) => el.setAttribute('aria-pressed', String(el.dataset.name === activePreset && sameAsPreset(VARIANTS.find((va) => va.name === el.dataset.name)))));
+  }
+  function setParam(key, v) { P[key] = v; lsSet(LS_KEY, diffOnly()); B.retune(P); refreshDiff(); }
+  function applyPreset(name) {
+    const va = VARIANTS.find((x) => x.name === name); if (!va) return;
+    Object.assign(P, SHIPPED, va.v); activePreset = name; lsSet(LS_KEY, diffOnly()); lsSet('lab:' + LAB.name + ':preset', name);
+    reset(); refreshDiff();
+  }
+  function makeTabs(barId, bodyId, tabs, storeKey) {
+    const bar = $(barId), body = $(bodyId), sel = lsGet(storeKey, tabs[0].name);
+    function show(name) { for (const b of bar.children) b.setAttribute('aria-selected', String(b.dataset.name === name)); body.replaceChildren(tabs.find((t) => t.name === name).build()); lsSet(storeKey, name); refreshDiff(); }
+    for (const t of tabs) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
+    show(tabs.some((t) => t.name === sel) ? sel : tabs[0].name);
+  }
+  function approachPanel() {
+    const box = document.createElement('div');
+    const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Both views fly the same stick. A is always the shipped Thresher; pick what B flies. Every approach is a set of the dials in the other tabs.';
+    box.appendChild(p);
+    for (const va of VARIANTS) {
+      if (va.noPlant || va.scoreOnly) continue;
+      const el = document.createElement('div'); el.className = 'preset'; el.dataset.name = va.name; el.tabIndex = 0; el.setAttribute('role', 'button');
+      el.innerHTML = '<b></b><span class="kind"></span><p></p>';
+      el.querySelector('b').textContent = va.name; el.querySelector('.kind').textContent = va.kind; el.querySelector('p').textContent = va.blurb;
+      el.onclick = () => applyPreset(va.name); el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); applyPreset(va.name); } };
+      box.appendChild(el);
+    }
+    return box;
+  }
+  function sliderGroup(group) {
+    const box = document.createElement('div');
+    for (const [g, key, lo, hi, step, label, tip] of SPEC) {
+      if (g !== group) continue;
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div>';
+      row.querySelector('label span').textContent = label; row.querySelector('.key').textContent = key; row.querySelector('.tip').textContent = tip;
+      const inp = row.querySelector('input'); Object.assign(inp, { min: lo, max: hi, step, value: P[key], id: 'sl-' + key });
+      row.querySelector('label').htmlFor = inp.id;
+      inp.oninput = () => setParam(key, parseFloat(inp.value));
+      outputs[key] = { out: row.querySelector('output'), inp };
+      box.appendChild(row);
+    }
+    return box;
+  }
+  const groups = [...new Set(SPEC.map((r) => r[0]))];
+  makeTabs('dockTabs', 'dockBody', [{ name: 'Approach', build: approachPanel }].concat(groups.map((g) => ({ name: g, build: () => sliderGroup(g) }))), 'lab:' + LAB.name + ':dock');
+
+  // ================= the decision log =================
+  let db = null, me = '', remote = [], localLog = lsGet('lab:' + LAB.name + ':log', []);
+  function snapshot() { return { round: LAB.round, preset: currentName(), changed: diffOnly() }; }
+  async function recordDecision(topic, choice, note) {
+    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+    if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
+    localLog.push(doc); lsSet('lab:' + LAB.name + ':log', localLog); return 'local';
+  }
+  function logPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint" id="logStatus"></p><input type="text" id="logTopic" placeholder="Topic (e.g. Plant catch, Release, Camera)"><textarea id="logChoice" rows="2" placeholder="Your decision"></textarea><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p><table id="logTable"></table>';
+    const status = box.querySelector('#logStatus');
+    status.textContent = db ? 'Shared log: saved with the lab, readable by Claude.' : 'Kept in this browser (Copy log to send it).';
+    status.className = db ? 'status-ok' : 'status-warn';
+    box.querySelector('#logTopic').value = 'Plant feel';
+    box.querySelector('#logChoice').value = 'B = ' + currentName() + (Object.keys(diffOnly()).length ? ' ' + JSON.stringify(diffOnly()) : '');
+    box.querySelector('#logSave').onclick = async () => { const where = await recordDecision(box.querySelector('#logTopic').value || 'General', box.querySelector('#logChoice').value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; renderLog(box); };
+    box.querySelector('#logCopy').onclick = () => { const t = remote.concat(localLog).map((d) => new Date(d.createdAt).toISOString() + ' · ' + d.topic + ': ' + d.choice + ' ' + JSON.stringify(d.settings)).join('\n'); try { navigator.clipboard.writeText(t).catch(() => {}); } catch (e) { /* no clipboard */ } };
+    renderLog(box);
+    return box;
+  }
+  function renderLog(box) {
+    const t = (box || document).querySelector('#logTable'); if (!t) return;
+    const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    t.innerHTML = '<tr><th>When</th><th>Topic</th><th>Decision</th></tr>';
+    for (const d of rows) { const tr = document.createElement('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice]) { const td = document.createElement('td'); td.textContent = v; td.style.textAlign = 'left'; td.style.whiteSpace = 'normal'; tr.appendChild(td); } t.appendChild(tr); }
+  }
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) return;
+    db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; });
+  })();
+
+  // ================= bottom dock =================
+  function tracesPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<canvas id="traces" aria-label="Last seven seconds of ball speed, hull turn rate and camera turn rate for A and B"></canvas>';
+    return box;
+  }
+  let lastRows = null;
+  function scorecardPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p><button class="btn primary" id="runBatch">Score every approach</button> <span class="hint">headless · 6 seeds × 3 flights (chain tight; let out then tightened; let out) · 60 Hz · mean of each run\'s peak; lower is smoother. Analog rows name the pilot: squeeze (LT 0→1 in 0.5 s), slam (in a frame), feather (half for 0.8 s, then full).</span></p><div class="tablewrap"><table id="scoreTable"></table></div>';
+    const fill = (rows) => {
+      const t = box.querySelector('#scoreTable');
+      t.innerHTML = '';
+      const hr = document.createElement('tr'); const th0 = document.createElement('th'); th0.textContent = 'Approach'; hr.appendChild(th0);
+      for (const [, name, unit, tip] of COLS) { const th = document.createElement('th'); th.textContent = name + ' (' + unit + ')'; th.title = tip; hr.appendChild(th); }
+      t.appendChild(hr);
+      const cand = rows.filter((r) => r.kind !== 'control');
+      for (const r of rows) {
+        const tr = document.createElement('tr'); const td0 = document.createElement('td'); td0.textContent = r.variant + (r.kind === 'control' ? ' (control)' : ''); tr.appendChild(td0);
+        for (const [key] of COLS) {
+          const td = document.createElement('td'); const val = r[key];
+          td.textContent = val == null ? '—' : String(val); td.title = 'worst run ' + r[key + 'Max'];
+          if (val != null && r.kind !== 'control') {
+            const vals = cand.map((x) => x[key]).filter((x) => x != null), best = Math.min(...vals), worst = Math.max(...vals);
+            if (val === best && best !== worst) td.className = 'best'; else if (val === worst && best !== worst) td.className = 'worst';
+          }
+          tr.appendChild(td);
+        }
+        t.appendChild(tr);
+      }
+    };
+    box.querySelector('#runBatch').onclick = () => { const b = box.querySelector('#runBatch'); b.textContent = 'Scoring…'; setTimeout(() => { lastRows = runBatch(); fill(lastRows); b.textContent = 'Score every approach'; }, 20); };
+    if (lastRows) fill(lastRows);
+    return box;
+  }
+  function aboutPanel() {
+    const box = document.createElement('div'); box.className = 'about';
+    box.innerHTML = `<p><b>${LAB.name}</b> · round ${LAB.round} · branch <code>${LAB.branch}</code> · write-up <code>${LAB.doc}</code></p>
+<p>The Thresher's Time ability is the <b>Plant</b> (LT): the ball stops and becomes a pivot, the ship swings round it, and LT up flings the ship off. Shipped, the ball is pinned in one frame while still doing about 63 u/s, the heading snaps into a 300°/s turn, and on release the spin stops dead and the ball is yanked to speed in one frame. A always flies the shipped model; B flies the approach you pick. The traces below the stage plot both.</p>
+<p><b>Round 2: analog triggers</b> (dial <code>anScheme</code>, preset <i>Analog triggers</i>). LT is a brake: a partial pull slows the ball and hands more of the chain\'s pull to the ship, so it swings round a sliding anchor; only a full pull stops the ball, along an S-curve, and makes it the pivot. RT is the chain\'s rigidity, flipped from the shipped winch: released is a slack bungee, pulled is rigid. Stiffening the chain pulls the ball (or a planted ship) in and spins it up by angular momentum, which is what the winch\'s let-out and crack were. The camera switches to the launch view only with both triggers at a full pull. The left view keeps the shipped controls, so with a human at the sticks the same pull means different things on each side; the autopilot flies the same intent on both.</p>\n<p><b>Graduated (2026-10-13).</b> The game now ships the <i>Analog triggers</i> preset: <code>ThresherChainSolver</code> carries the analog path, <code>ThresherConfig.asset</code> turns it on, and <code>parity.cjs</code> holds this page's solver to the C# on both paths and the asset to the preset. View A is the digital Thresher from before.</p>\n<p><b>How faithful it is.</b> The chain is a line-for-line port of <code>ThresherChainSolver</code>, held to the C# solver frame by frame by <code>Tools/Build/thresher_plant_lab/parity.cjs</code>. Hull, grip, nose speed and the camera follow <code>ThresherVesselTransformer</code>, <code>VesselTransformer</code> (vector model) and <code>ThresherExecutor.UpdateCamera</code>, re-implemented here, not ported.</p>
+<p><b>What this lab does NOT model:</b></p>
+<ul>
+<li>Flight is in one plane: yaw only. Pitch, roll, planted steering (<code>pivotSteer</code>) and tilting the orbit with the aim are not modelled.</li>
+<li>The camera is a simplified <code>CustomCameraController</code>: no smoothing beyond the follow-frame cap, a zoom approximated as max(55, 1.15 × chain length), the spectate vantage without the sight window or FOV.</li>
+<li>No prisms, smashes, hit-stop, shake, haptics, audio, chain links or element upgrades (Perfect Release's boost is off).</li>
+<li>The ball is drawn as a sphere and the chain as a straight line; the game draws 24 relaxed links.</li>
+<li>Frame time is a fixed 1/60 s in the scorecard (the game's is variable).</li>
+<li>The lab approaches are lab code. None of them is in the game yet.</li>\n<li>Round 2\'s elastic chain is a spring model the game does not have: the shipped chain is a hard max-distance rope with a winch. Spin is conserved exactly (r × v) as the elastic radius changes; the shipped winch spends spin by sqrt(old/new) when paying out.</li>
+</ul>`;
+    return box;
+  }
+  makeTabs('bottomTabs', 'bottomBody', [{ name: 'Traces', build: tracesPanel }, { name: 'Scorecard', build: scorecardPanel }, { name: 'Decisions', build: logPanel }, { name: 'About', build: aboutPanel }], 'lab:' + LAB.name + ':bottom');
+
+  // ================= header controls =================
+  $('title').textContent = LAB.name; $('meta').textContent = 'round ' + LAB.round + ' · the game ships Analog triggers';
+  const pressed = () => {
+    $('viewSplit').setAttribute('aria-pressed', String(split)); $('viewSingle').setAttribute('aria-pressed', String(!split));
+    $('camPilot').setAttribute('aria-pressed', String(!worldCam)); $('camWorld').setAttribute('aria-pressed', String(worldCam));
+    $('auto').setAttribute('aria-pressed', String(autopilot)); $('slow').setAttribute('aria-pressed', String(slowmo));
+    $('auto').className = 'btn' + (autopilot ? ' primary' : ''); $('slow').className = 'btn' + (slowmo ? ' primary' : '');
+    $('pause').textContent = paused ? 'Resume' : 'Pause';
+  };
+  $('viewSplit').onclick = () => { split = true; pressed(); };
+  $('viewSingle').onclick = () => { split = false; pressed(); };
+  $('camPilot').onclick = () => { worldCam = false; pressed(); };
+  $('camWorld').onclick = () => { worldCam = true; pressed(); };
+  $('auto').onclick = () => { autopilot = !autopilot; autoCycle = 0; reset(); pressed(); };
+  $('slow').onclick = () => { slowmo = !slowmo; pressed(); };
+  $('pause').onclick = () => { paused = !paused; pressed(); };
+  $('resetAll').onclick = () => { Object.assign(P, SHIPPED); activePreset = 'Digital (before)'; lsSet(LS_KEY, {}); reset(); refreshDiff(); };
+
+  // ================= input: keyboard, gamepad, touch — all into one input object =================
+  const keys = new Set();
+  function manual() { if (autopilot) { autopilot = false; reset(); pressed(); } }
+  addEventListener('keydown', (e) => {
+    if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    if (e.code === 'Tab') { e.preventDefault(); showA = !showA; return; }
+    if (e.code === 'KeyR') { reset(); return; }
+    if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD', 'KeyQ', 'KeyE', 'KeyJ', 'KeyK', 'Space', 'ShiftLeft', 'ShiftRight'].includes(e.code)) { e.preventDefault(); manual(); keys.add(e.code); }
+  });
+  addEventListener('keyup', (e) => keys.delete(e.code));
+  addEventListener('blur', () => keys.clear());
+  let touchLT = false, touchRT = false, dragX = null, dragYaw = 0;
+  const tbtn = (id, set) => { const b = $(id); b.addEventListener('pointerdown', (e) => { e.preventDefault(); manual(); set(true); b.classList.add('on'); try { if (!document.fullscreenElement && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); } catch (err) { /* refused */ } }); for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, () => { set(false); b.classList.remove('on'); }); };
+  tbtn('tLT', (v) => { touchLT = v; }); tbtn('tRT', (v) => { touchRT = v; });
+  canvas.addEventListener('pointerdown', (e) => { if (PLATFORM.device === 'phone') { manual(); dragX = e.clientX; } });
+  canvas.addEventListener('pointermove', (e) => { if (dragX != null) dragYaw = Math.max(-1, Math.min(1, (e.clientX - dragX) / 80)); });
+  for (const ev of ['pointerup', 'pointercancel']) canvas.addEventListener(ev, () => { dragX = null; dragYaw = 0; });
+  // A held key or touch button RAMPS its trigger over inKeyRamp (and back on release), so the analog
+  // scheme can be flown without a pad. A pad's real trigger depth wins when it is deeper.
+  let kLT = 0, kRT = 0;
+  function pollInput(dt) {
+    let yaw = 0;
+    if (keys.has('ArrowLeft') || keys.has('KeyA')) yaw -= 1;
+    if (keys.has('ArrowRight') || keys.has('KeyD')) yaw += 1;
+    const holdL = keys.has('KeyQ') || keys.has('KeyJ') || keys.has('ShiftLeft') || touchLT;
+    const holdR = keys.has('KeyE') || keys.has('KeyK') || keys.has('Space') || keys.has('ShiftRight') || touchRT;
+    const step = (dt || 0) / Math.max(0.01, P.inKeyRamp);
+    kLT = clamp01(kLT + (holdL ? step : -step)); kRT = clamp01(kRT + (holdR ? step : -step));
+    let lt = kLT, rt = kRT;
+    let pads = [];
+    try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : []; } catch (e) { pads = []; }
+    for (const gp of pads) {
+      const ax = gp.axes[0] || 0, l = gp.buttons[6] ? gp.buttons[6].value : 0, r = gp.buttons[7] ? gp.buttons[7].value : 0;
+      if (Math.abs(ax) > 0.12) yaw = ax; lt = Math.max(lt, l); rt = Math.max(rt, r);
+      if (autopilot && (Math.abs(ax) > 0.3 || l > 0.3 || r > 0.3)) manual();
+    }
+    if (dragX != null) yaw = dragYaw;
+    input.yaw = Math.max(-1, Math.min(1, yaw)); input.lt = lt; input.rt = rt;
+  }
+
+  // ================= sizing + loop (manual clock for recorders) =================
+  function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } }
+  addEventListener('resize', resize);
+  let manualClock = false, last = performance.now(), accum = 0;
+  const FIXED = 1 / 60;
+  function frame(now) {
+    const real = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
+    if (!manualClock) {
+      resize(); pollInput(real * (slowmo ? 0.25 : 1));
+      if (!paused) { accum += real * (slowmo ? 0.25 : 1); let n = 0; while (accum >= FIXED && n < 6) { simStep(FIXED); accum -= FIXED; n++; } if (n === 6) accum = 0; }
+      render();
+    }
+    requestAnimationFrame(frame);
+  }
+  // First open: B flies the lead approach, so the page opens on a comparison (saved settings win after that).
+  if (!hadSaved && activePreset === 'Analog triggers') Object.assign(P, SHIPPED, VARIANTS.find((va) => va.name === activePreset).v);
+  reset(); resize(); refreshDiff(); pressed(); render(); requestAnimationFrame(frame);
+
+  window.__lab = {
+    LAB, SHIPPED, SPEC, P, PLATFORM, VARIANTS, COLS,
+    set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+    tick(dt, n) { dt = dt || FIXED; n = n || 1; for (let i = 0; i < n; i++) simStep(dt); resize(); render(); },
+    reset, score, runBatch, setParam, applyPreset, record: recordDecision, parityTrace,
+    runScenario: (overrides, seedN, kind, dt) => { const sc = scenario(seedN || 1, kind || 'reeled'); return peaks(runScenario(Object.assign({}, SHIPPED, overrides || {}), sc, dt || FIXED), sc); },
+    runRows: (overrides, seedN, kind, dt, pilot) => { const sc = scenario(seedN || 1, kind || 'reeled', pilot), r = runScenario(Object.assign({}, SHIPPED, overrides || {}), sc, dt || FIXED); return { pressAt: sc.pressAt, releaseAt: sc.releaseAt, launchAt: r.launchAt, rows: r.rows.map((q) => ({ t: q.t, mode: q.mode, bs: len(q.bv), bv: q.bv, slack: q.slack, sy: yawOf(q.sv) * R2D, ss: len(q.sv), rp: q.rp, rv: q.rv, ny: q.ny, py: q.py, th: q.th, pvx: q.pvx, pvz: q.pvz, ext: q.ext, hull: q.hull * R2D, cy: q.cy * R2D, spect: q.spect, turning: q.turning, braking: q.braking })) }; },
+    state: () => ({ t: A.t, seed, modeA: A.solver.Mode, modeB: B.solver.Mode, ballA: A.solver.BallSpeed, ballB: B.solver.BallSpeed, preset: currentName() }),
+  };
+})();
+</script>
+</body>
+</html>

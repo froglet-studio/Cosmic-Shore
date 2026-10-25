@@ -61,6 +61,10 @@ namespace CosmicShore.Gameplay
         // Slice clears it again whether or not the hit destroyed the prism.
         Vector3 _sliceCutPoint;
         Vector3 _sliceCutNormal;
+        // Set transiently by DamageByCollision around its Damage call, the same way: this death is
+        // prism movement's collision ABOVE level 1 of its ladder, so the factory draws the plain
+        // explosion rather than a finer detail level (Docs/PRISM_ANIMATION.md §4.12).
+        bool _plainDeath;
         public bool IsSmallest;
         public bool IsLargest;
         
@@ -256,6 +260,10 @@ namespace CosmicShore.Gameplay
         /// sites that can defer should check this ALONE — <see cref="UsesEntityColorSink"/>
         /// bundles it with handle usability and is the wrong test for that question.</summary>
         internal bool ExoticVisualActive => _exoticVisualActive;
+
+        /// <summary>The renderer the §4.11 MeshRenderer stamp path writes to (Docs/PRISM_ANIMATION.md) on a
+        /// device without Entities Graphics — the same renderer that draws this prism there.</summary>
+        internal MeshRenderer StampRenderer => meshRenderer;
 
         public Vector3 TargetScale
         {
@@ -551,12 +559,44 @@ namespace CosmicShore.Gameplay
             {
                 _renderEntityDecline = null;
                 _renderEntityMesh = renderMesh;
+                ApplyColorShade();
             }
             else
             {
                 _renderEntityDecline = "PrismRenderService.Create declined (no ECS world / EntitiesGraphicsSystem, or the master toggle is off)";
                 _renderEntityMesh = null;
             }
+        }
+
+        /// <summary>
+        /// Re-evaluates which path draws this prism against the CURRENT state of
+        /// <see cref="PrismRenderService.Enabled"/>, releasing the companion entity when
+        /// the service has been switched off.
+        ///
+        /// WHY this exists: <c>SetRuntimeOverride</c> only gates entity CREATION, so
+        /// flipping it mid-session leaves every prism that already owns an entity drawing
+        /// through it with its MeshRenderer still disabled — i.e. the A/B measures the two
+        /// paths on the prisms laid AFTER the flip and nothing else, which for a standing
+        /// arena is nothing at all. This is the missing half: the diagnostic toggle calls
+        /// it on every live prism so the whole population moves together.
+        ///
+        /// Diagnostics only — nothing in the game loop calls it, and the render path is not
+        /// a thing gameplay may switch. Left outside a compilation guard deliberately: it is
+        /// a handful of unreferenced lines in a release build, against the guard hazards
+        /// Docs/CONDITIONAL_COMPILATION.md records.
+        /// </summary>
+        internal void ResyncRenderPathForDiagnostics()
+        {
+            if (!PrismRenderService.Enabled && PrismRenderService.IsHandleUsable(in RenderHandle))
+            {
+                PrismRenderService.Destroy(ref RenderHandle);
+                // SyncRenderMesh dedupes against this; a stale value would suppress the
+                // mesh push to a LATER entity for as long as the prism keeps that mesh.
+                _renderEntityMesh = null;
+                _renderEntityDecline = null;
+            }
+
+            ApplyRenderPath();
         }
 
         /// <summary>
@@ -648,6 +688,10 @@ namespace CosmicShore.Gameplay
         {
             if (PrismRenderService.SetSuperShieldMark(in RenderHandle, _superShieldMark)) return;
 
+            // No Entities Graphics on this device: the mark is a family of the §4.11 stamp block, so a
+            // stamp rebuild keeps it and an unmarked prism carries no block at all.
+            if (PrismMeshRendererStamps.SetSuperShieldMark(meshRenderer, _superShieldMark)) return;
+
             // Legacy MeshRenderer path (no Entities Graphics on this device): the same bit rides
             // a property block. Get-modify-set, so any other writer's properties survive.
             if (meshRenderer == null) return;
@@ -714,6 +758,64 @@ namespace CosmicShore.Gameplay
             // Always refresh: clock color transitions bind the end-state material
             // at the stamp, and its authored values ARE the lerp targets.
             PrismRenderService.SetMaterial(in RenderHandle, meshRenderer.sharedMaterial, refreshColors: true);
+            ApplyColorShade();
+        }
+
+        // Per-prism SHADE of the domain colour (SetColorShade, SetColorLift). Identity = gain 1, lift 0, which every
+        // prism has unless an owner asks otherwise; reset on every pooled Initialize.
+        float _colorShadeGain = 1f;
+        float _colorLift;
+
+        bool HasColorShade => _colorShadeGain != 1f || _colorLift != 0f;
+
+        /// <summary>The lit mark this machine draws on the prism (<see cref="SetColorLift"/>), 0 when unlit.</summary>
+        public float ColorLift => _colorLift;
+
+        /// <summary>
+        /// Draw this prism DARKER than its domain colour: brightness scaled by <paramref name="gain"/>, clamped to
+        /// [0, 1]. The hue stays the domain's, because a prism's colour is its team; the one LIGHTER state is
+        /// <see cref="SetColorLift"/>. It is re-applied after every material sync, so it survives a team change,
+        /// a danger or shield state and a transparency swap, and is cleared by the next pooled
+        /// <see cref="Initialize"/>. The nested gyroid grades its sheets with it (Docs/ECOSYSTEM.md §58.5). Drawn on
+        /// the instanced (entity) path only; while a per-prism exotic visual holds the GameObject renderer the prism
+        /// shows its material unshaded.
+        /// </summary>
+        public void SetColorShade(float gain)
+        {
+            _colorShadeGain = Mathf.Clamp01(gain);
+            RefreshColorShade();
+        }
+
+        /// <summary>
+        /// Draw this prism LIT: its domain colour lifted toward white by <paramref name="lift"/> (0 = its own colour,
+        /// 1 = white). This is the per-prism SELECTED state: a pilot marking particular prisms (the Angler's paint,
+        /// <c>R_VesselActions/ANGLER.md</c> §1a). It is a look, never a gameplay state: nothing reads it, so it is set
+        /// on the machine that shows it and is not replicated. <paramref name="fadeSeconds"/> &gt; 0 fades from the
+        /// lift it showed (or from <paramref name="fromLift"/> when that is 0 or more) with one clock stamp, so a mark
+        /// never pops. Like the shade it survives a material sync and is cleared by the next pooled
+        /// <see cref="Initialize"/>; on the instanced (entity) path only.
+        /// </summary>
+        public void SetColorLift(float lift, float fadeSeconds = 0f, float fromLift = -1f)
+        {
+            float from = fromLift < 0f ? _colorLift : Mathf.Clamp01(fromLift);
+            _colorLift = Mathf.Clamp01(lift);
+            RefreshColorShade();
+            if (fadeSeconds > 0f && PrismRenderService.IsHandleUsable(in RenderHandle) && meshRenderer != null)
+                PrismRenderService.StampShadeTransition(in RenderHandle, meshRenderer.sharedMaterial, PrismClock.Now,
+                    fadeSeconds, _colorShadeGain, from);
+        }
+
+        void RefreshColorShade()
+        {
+            if (!PrismRenderService.IsHandleUsable(in RenderHandle) || meshRenderer == null) return;
+            if (HasColorShade) ApplyColorShade();
+            else PrismRenderService.SetMaterial(in RenderHandle, meshRenderer.sharedMaterial, refreshColors: true);
+        }
+
+        void ApplyColorShade()
+        {
+            if (!HasColorShade || meshRenderer == null) return;
+            PrismRenderService.ApplyColorShade(in RenderHandle, meshRenderer.sharedMaterial, _colorShadeGain, _colorLift);
         }
 
         /// <summary>
@@ -762,11 +864,40 @@ namespace CosmicShore.Gameplay
             if (duration <= 0.01f) return;
             if (blockCollider) blockCollider.enabled = false;
 
+            // A prism whose creation has not completed is invisible and has no render entity yet (one is made
+            // when it first shows), so there is nothing to suction. Its pending creation is cancelled: completing
+            // during the suction would pop it in at full size inside a world shrinking to a point. These were the
+            // Orrery swaps' "no companion render entity" prisms (T-20261021-e916).
+            if (!IsCreationComplete)
+            {
+                CancelPendingCreation();
+                CosmicShore.Utility.PerformanceBenchmark.LoadInsights.Count(
+                    "Suction: prisms not created yet (invisible; creation cancelled)");
+                return;
+            }
+
             var handle = RenderHandle;
             if (!PrismRenderService.IsHandleUsable(in handle))
             {
-                PrismClockDiagnostics.WarnNoRenderEntity("cellSwapSuction", this,
-                    PrismRenderService.StatusLine());
+                // No Entities Graphics on this device (a WebGL2 browser): the same stamp and the same
+                // culling envelope ride the MeshRenderer (Docs/PRISM_ANIMATION.md §4.11).
+                var suctionPoint = new float3(worldLocation.x, worldLocation.y, worldLocation.z);
+                if (PrismMeshRendererStamps.StampSuctionClock(meshRenderer, PrismClock.Now, duration, 1f, 0f,
+                        in suctionPoint))
+                {
+                    var local = transform.InverseTransformPoint(worldLocation);
+                    PrismMeshRendererStamps.ResetBounds(meshRenderer);
+                    PrismMeshRendererStamps.EncapsulateBoundsPoint(meshRenderer,
+                        new float3(local.x, local.y, local.z), ConvergenceBoundsPadding);
+                    return;
+                }
+
+                CosmicShore.Utility.PerformanceBenchmark.LoadInsights.Count(
+                    "Suction: prisms with no render entity (they snap instead of suctioning)");
+                // The detail line is composed only for the one warning that is actually logged.
+                if (PrismClockDiagnostics.WillWarnNoRenderEntity("cellSwapSuction"))
+                    PrismClockDiagnostics.WarnNoRenderEntity("cellSwapSuction", this,
+                        _renderEntityDecline ?? PrismRenderService.StatusLine());
                 return;
             }
 
@@ -790,6 +921,7 @@ namespace CosmicShore.Gameplay
         public void ClearSuctionClockStamp()
         {
             PrismRenderService.ClearSuctionClockStamp(in RenderHandle);
+            PrismMeshRendererStamps.ClearSuctionClockStamp(meshRenderer);
         }
 
         /// <summary>
@@ -801,7 +933,11 @@ namespace CosmicShore.Gameplay
             ResetState();
             ClearRenderMeshOverride(); // pooled reuse: the entity must not keep a prior life's shield mesh
             PrismRenderService.ClearPrismStamps(in RenderHandle); // nor a prior life's clock-animation stamps
+            PrismMeshRendererStamps.ClearPrismStamps(meshRenderer); // §4.11 twin (no-op where entities run)
             SetSuperShieldMark(false); // nor a prior life's super-shield
+            _colorShadeGain = 1f;      // nor a prior owner's colour shade (the next material sync drops it)
+            _colorLift = 0f;           // nor a prior pilot's lit mark
+            PaintedPrey.Forget(this);  // nor a prior life's paint (every creature preferred it)
 
             PlayerName = playerName;
             blockCollider.enabled = false;
@@ -814,10 +950,19 @@ namespace CosmicShore.Gameplay
 
             scaleAnimator.SetTargetScale(authoredTargetScale);
             _creationScale = authoredTargetScale;
+            _creationLife++;
+            _creationQueued = false;
             _creationRoutine = StartCoroutine(CreateBlockCoroutine(authoredTargetScale));
 
             if (prismProperties.IsShielded) ActivateShield();
-            if (prismProperties.IsDangerous) MakeDangerous();
+            if (prismProperties.IsDangerous)
+            {
+                // A silenced pilot lays no new danger (VesselSilence): the request is dropped here,
+                // at birth, so the prism is plain in every respect - the flag is what danger effects
+                // read, not only the look.
+                if (VesselSilence.SuppressesDanger(playerName)) prismProperties.IsDangerous = false;
+                else MakeDangerous();
+            }
         }
 
         private void ResetState()
@@ -1001,7 +1146,7 @@ namespace CosmicShore.Gameplay
         // Split attribution for the ~0.5ms creation-completion tick: which of the
         // three suspects dominates decides the fix (enableable-component render flag
         // vs SOAP listener work vs spatial bind). See
-        // Docs/PERFORMANCE_OPTIMIZATION.md Task 4.
+        // Docs/archive/PERFORMANCE_LOG_2026.md Task 4.
         static readonly ProfilerMarker s_createVisibilityMarker = new("Prism.Create.Visibility");
         static readonly ProfilerMarker s_createSoapMarker = new("Prism.Create.SOAPRaise");
         static readonly ProfilerMarker s_createSpatialMarker = new("Prism.Create.SpatialBind");
@@ -1036,55 +1181,143 @@ namespace CosmicShore.Gameplay
             // live ribbon (CompletesAsLiveRibbon) after Initialize. Membership cannot change
             // while the prism waits (a release parks it inactive, which stops this coroutine).
             bool isEnvironmentMass = !CompletesAsLiveRibbon && EnvironmentPrismPool.IsIssued(this);
+            _creationRoutine = null;
 
-            while (true)
+            // Complete now only if nobody of this class is already waiting (first come, first served).
+            if (CreationQueue.IsEmpty(isEnvironmentMass) && HasCreationBudget(isEnvironmentMass))
             {
-                if (s_creationBudgetFrame != Time.frameCount)
-                {
-                    s_creationBudgetFrame = Time.frameCount;
-                    s_creationCompletionsThisFrame = 0;
-                    s_environmentCompletionsThisFrame = 0;
-                    s_creationSpentMs = 0.0;
-                }
-
-                // A WATCHED load gate (the connecting screen showing the build live) states a
-                // per-frame TIME slice instead of a completion count - per-prism completion
-                // cost varies with scene size and collider density, so a count cannot hold a
-                // frame budget across machines. Same argument, same shape, as the lay budget.
-                float watchedCreationMs = PrismTrailBuilder.IsLoadGateHolding
-                    ? PrismTrailBuilder.LoadGateCreationBudgetMsOverride
-                    : 0f;
-                if (watchedCreationMs > 0f)
-                {
-                    if (s_creationSpentMs < watchedCreationMs)
-                        break;
-                }
-                else
-                {
-                    int creationBudget = PrismTrailBuilder.IsLoadGateHolding
-                        ? LoadGateCreationCompletionsPerFrame
-                        : s_bulkTransportsInFlight > 0
-                            ? BulkTransportCreationCompletionsPerFrame
-                            : MaxCreationCompletionsPerFrame;
-                    int spent = isEnvironmentMass
-                        ? s_environmentCompletionsThisFrame
-                        : s_creationCompletionsThisFrame;
-                    if (spent < creationBudget)
-                        break;
-                }
-
-                yield return null;
-                if (destroyed) yield break; // killed while waiting for budget
+                SpendCreationBudget(isEnvironmentMass);
+                FinishCreation(authoredTargetScale);
+                yield break;
             }
+
+            // Otherwise wait in ONE queue, drained by one driver, instead of as a coroutine woken every
+            // frame only to yield again: at 6 completions a frame, 57,638 waiting prisms cost 139 ms a
+            // frame of coroutine scheduling alone in a Bloomrush capture (3.5 fps, 2026-10-20).
+            _creationQueued = true;
+            CreationQueue.Enqueue(this, isEnvironmentMass);
+        }
+
+        static void BeginCreationBudgetFrame()
+        {
+            if (s_creationBudgetFrame == Time.frameCount) return;
+            s_creationBudgetFrame = Time.frameCount;
+            s_creationCompletionsThisFrame = 0;
+            s_environmentCompletionsThisFrame = 0;
+            s_creationSpentMs = 0.0;
+        }
+
+        static bool HasCreationBudget(bool isEnvironmentMass)
+        {
+            BeginCreationBudgetFrame();
+
+            // A WATCHED load gate (the connecting screen showing the build live) states a
+            // per-frame TIME slice instead of a completion count - per-prism completion
+            // cost varies with scene size and collider density, so a count cannot hold a
+            // frame budget across machines. Same argument, same shape, as the lay budget.
+            float watchedCreationMs = PrismTrailBuilder.IsLoadGateHolding
+                ? PrismTrailBuilder.LoadGateCreationBudgetMsOverride
+                : 0f;
+            if (watchedCreationMs > 0f)
+                return s_creationSpentMs < watchedCreationMs;
+
+            int creationBudget = PrismTrailBuilder.IsLoadGateHolding
+                ? LoadGateCreationCompletionsPerFrame
+                : s_bulkTransportsInFlight > 0
+                    ? BulkTransportCreationCompletionsPerFrame
+                    : MaxCreationCompletionsPerFrame;
+            int spent = isEnvironmentMass
+                ? s_environmentCompletionsThisFrame
+                : s_creationCompletionsThisFrame;
+            return spent < creationBudget;
+        }
+
+        static void SpendCreationBudget(bool isEnvironmentMass)
+        {
             if (isEnvironmentMass) s_environmentCompletionsThisFrame++;
             else s_creationCompletionsThisFrame++;
+        }
 
-            _creationRoutine = null;
-            FinishCreation(authoredTargetScale);
+        /// <summary>Prisms waiting for a creation completion (diagnostics, tests).</summary>
+        public static int CreationQueueLength => CreationQueue.Count;
+
+        /// <summary>
+        /// The prisms whose spawn wait has ended but whose completion the per-frame budget has not
+        /// reached yet, in arrival order, one queue per budget class. A waiting prism costs nothing
+        /// per frame. An entry whose prism has since died, completed, gone inactive (a coroutine would
+        /// have been stopped there) or started a new life is dropped without spending budget.
+        /// </summary>
+        static class CreationQueue
+        {
+            static readonly System.Collections.Generic.Queue<(Prism prism, int life)> s_environment = new();
+            static readonly System.Collections.Generic.Queue<(Prism prism, int life)> s_other = new();
+            static readonly ProfilerMarker s_drainMarker = new("Prism.CreationQueue.Drain");
+            static Driver s_driver;
+
+            public static int Count => s_environment.Count + s_other.Count;
+
+            public static bool IsEmpty(bool isEnvironmentMass) =>
+                (isEnvironmentMass ? s_environment : s_other).Count == 0;
+
+            public static void Enqueue(Prism prism, bool isEnvironmentMass)
+            {
+                (isEnvironmentMass ? s_environment : s_other).Enqueue((prism, prism._creationLife));
+                if (s_driver) return;
+                var go = new GameObject("[PrismCreationQueue]") { hideFlags = HideFlags.HideInHierarchy };
+                UnityEngine.Object.DontDestroyOnLoad(go);
+                s_driver = go.AddComponent<Driver>();
+            }
+
+            [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+            static void ResetOnLoad()
+            {
+                s_environment.Clear();
+                s_other.Clear();
+                s_driver = null;
+            }
+
+            static void Drain(System.Collections.Generic.Queue<(Prism prism, int life)> queue, bool isEnvironmentMass)
+            {
+                while (queue.Count > 0 && HasCreationBudget(isEnvironmentMass))
+                {
+                    var (prism, life) = queue.Dequeue();
+                    if (!prism || prism.destroyed || !prism._creationQueued || prism._creationLife != life
+                        || prism.IsCreationComplete || !prism.gameObject.activeInHierarchy)
+                        continue;
+
+                    SpendCreationBudget(isEnvironmentMass);
+                    prism._creationQueued = false;
+                    try { prism.FinishCreation(prism._creationScale); }
+                    catch (Exception e) { Debug.LogException(e, prism); }   // one bad prism must not stall the queue
+                }
+            }
+
+            // Runs in Update, before this frame's coroutines resume, so prisms already waiting are served
+            // before a prism whose spawn wait ends this frame.
+            sealed class Driver : MonoBehaviour
+            {
+                void Update()
+                {
+                    if (s_environment.Count == 0 && s_other.Count == 0) return;
+                    using (s_drainMarker.Auto())
+                    {
+                        Drain(s_environment, true);
+                        Drain(s_other, false);
+                    }
+                }
+
+                void OnDestroy()
+                {
+                    if (s_driver == this) s_driver = null;
+                }
+            }
         }
 
         Coroutine _creationRoutine;
         Vector3 _creationScale;
+        // Bumped by every Initialize, so a queue entry left by an earlier life of a pooled prism is dropped.
+        int _creationLife;
+        bool _creationQueued;
 
         /// <summary>
         /// Finish THIS life's creation now: skip the spawn wait and the per-frame completion budget, and run
@@ -1093,11 +1326,25 @@ namespace CosmicShore.Gameplay
         /// member materialised to take a hit a weapon has already landed (Docs/SWARM_FAUNA.md §16.2). The caller
         /// owns the budget: every call is one full completion. No-op once complete, destroyed, or never started.
         /// </summary>
+        /// <summary>
+        /// Abandon this life's pending creation (spawn wait or the creation queue): the prism stays invisible,
+        /// collider-off and unregistered until it is released or re-initialised. For mass leaving the world
+        /// before it ever showed (a retiring world's suction). No-op once complete.
+        /// </summary>
+        public void CancelPendingCreation()
+        {
+            if (IsCreationComplete) return;
+            if (_creationRoutine != null) StopCoroutine(_creationRoutine);
+            _creationRoutine = null;
+            _creationQueued = false;   // its queue entry is dropped when the drain reaches it
+        }
+
         public void CompleteCreationImmediately()
         {
-            if (destroyed || IsCreationComplete || _creationRoutine == null) return;
-            StopCoroutine(_creationRoutine);
+            if (destroyed || IsCreationComplete || (_creationRoutine == null && !_creationQueued)) return;
+            if (_creationRoutine != null) StopCoroutine(_creationRoutine);
             _creationRoutine = null;
+            _creationQueued = false;   // its queue entry is dropped when the drain reaches it
             FinishCreation(_creationScale);
         }
 
@@ -1107,6 +1354,7 @@ namespace CosmicShore.Gameplay
             // spatial registration) rather than one block of it - a slice that only counts
             // part of the work it is meant to bound is not a bound.
             long creationT0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            long insightT0 = CosmicShore.Utility.PerformanceBenchmark.LoadInsights.AccumulateStart();
 
             using (s_createVisibilityMarker.Auto())
             {
@@ -1171,6 +1419,8 @@ namespace CosmicShore.Gameplay
             }
 
             s_creationSpentMs += (System.Diagnostics.Stopwatch.GetTimestamp() - creationT0) * s_creationMsPerTick;
+            CosmicShore.Utility.PerformanceBenchmark.LoadInsights.AccumulateSample(
+                "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)", insightT0);
         }
 
         /// <summary>
@@ -1375,6 +1625,7 @@ namespace CosmicShore.Gameplay
             prismProperties.volume = volumeAtDeath;
 
             destroyed = true;
+            _creationQueued = false;   // as the waiting coroutine did: killed while waiting never completes (a Restore registers itself)
             devastated = devastate;
 
             // Destroyed mass weighs nothing in the per-domain sums — drop it from the
@@ -1468,6 +1719,7 @@ namespace CosmicShore.Gameplay
                 Kind = kind,
                 SlicePoint = _sliceCutPoint,
                 SliceNormal = _sliceCutNormal,
+                PlainDeath = _plainDeath,
                 PrismType = PrismType.Explosion
             });
         }
@@ -1522,6 +1774,12 @@ namespace CosmicShore.Gameplay
                            float debrisSpeedLimit = 0f, bool byGunfire = false)
         {
             if (destroyed) return;
+            // A SILENCED attacker's hit on anything but their own domain's mass deflects
+            // (VesselSilence, Docs/ElementalAbilitySystem/SILENCE.md): the weapon still connects and
+            // the prism still answers with the deflection wobble, so the shot reads as blocked rather
+            // than as a miss - and nothing about the prism changes. Every damage source funnels here
+            // (rounds, blasts, blades, flails, rams, sweeps), which is why the gate is here.
+            if (DeflectsSilenced(playerName, impactVector.magnitude)) return;
             // Super-shielded prisms are invulnerable to Damage itself. A source that may
             // break them (the Rhino energy sword, arena teardowns) must call
             // DeactivateShields() first, then Damage(devastate: true) — the sanctioned
@@ -1570,12 +1828,51 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// <see cref="Damage"/>, delivered by prism movement's COLLISION rule (<see cref="PrismMotion"/>,
+        /// Docs/PRISM_MOTION.md): devastating, because an ordinary shield is no answer to a collision.
+        /// With <paramref name="fineDetail"/> (LEVEL 1 of the ladder) the death may be drawn at a finer
+        /// destruction detail level — shatter or glitter, by the viewer's distance and the budget
+        /// (Docs/PRISM_ANIMATION.md §4.12) — like any other death; without it (levels 2 and 3, many movers)
+        /// it is always the plain explosion. Everything the death MEANS is Damage's, unchanged — the
+        /// super-shield gate included, so super-shielded mass still deflects and survives.
+        /// </summary>
+        public void DamageByCollision(Vector3 impactVector, Domains domain, string playerName, bool fineDetail,
+                                      float debrisSpeedLimit)
+        {
+            _plainDeath = !fineDetail;
+            try
+            {
+                Damage(impactVector, domain, playerName, devastate: true, debrisSpeedLimit: debrisSpeedLimit);
+            }
+            finally
+            {
+                _plainDeath = false;
+            }
+        }
+
+        /// <summary>
+        /// Destroyed where it stands with NO debris and NO sound: the prism crossed a black hole's horizon
+        /// and fell behind its shadow, so there is nothing left to see (the Stoat's dipole below its Space
+        /// upgrade, <c>R_VesselActions/STOAT_DIPOLE.md</c>). Everything the death MEANS is the ordinary
+        /// destruction's — the destroyed event scores it to <paramref name="playerName"/> and debits its
+        /// owner, the index frees its site, it stays restorable — only the effect is withheld. Shields are
+        /// no answer to a horizon (devastating).
+        /// </summary>
+        public void Vanish(string playerName)
+        {
+            if (destroyed) return;
+            if (DeflectsSilenced(playerName, 0f)) return;
+            SetupDestruction(Domain, playerName, devastate: true);
+        }
+
         public void Consume(Transform target, Domains domain, string playerName, bool devastate = false, bool byCreature = false)
         {
             // A consume carries no impact vector — only the suction sink — so the deflection
             // is stamped at the floor magnitude rather than derived from a direction that
             // describes where the mass was being pulled, not how hard it was struck.
             if (destroyed) return;
+            if (DeflectsSilenced(playerName, 0f)) return;
             if (AbsorbSuperShieldHit(0f)) return;
             // Impact-less on purpose, for the same reason the deflection above is stamped
             // at the floor: a consume carries no impact vector, only a suction sink, and
@@ -1629,12 +1926,39 @@ namespace CosmicShore.Gameplay
         public bool AbsorbSuperShieldHit(float impactSpeed)
         {
             if (prismProperties is not { IsSuperShielded: true }) return false;
+            StampDeflection(impactSpeed);
+            return true;
+        }
+
+        /// <summary>
+        /// The deflection wobble on its own - photons only, no state change of any kind. The read a
+        /// super-shield gives a hit it survives, and the read a SILENCED pilot's hit gets on any
+        /// prism (<see cref="DeflectsSilenced"/>). Rate-limited per prism by the same slot.
+        /// </summary>
+        public void StampDeflection(float impactSpeed) =>
             PrismSuperShieldJiggle.TryStamp(this, impactSpeed, ref _lastSuperShieldJiggleTime);
+
+        /// <summary>
+        /// THE silence gate on prism harm. True (and the hit is deflected) when
+        /// <paramref name="attackerName"/> is silenced and this prism is not their own domain's
+        /// (<see cref="VesselSilence.Protects"/>). Every call that destroys, consumes, steals or strips
+        /// the shield off a prism on a pilot's behalf asks it first.
+        /// </summary>
+        public bool DeflectsSilenced(string attackerName, float impactSpeed)
+        {
+            if (!VesselSilence.Protects(attackerName, Domain)) return false;
+            StampDeflection(impactSpeed);
             return true;
         }
 
         // State Management Methods
-        public void MakeDangerous() => stateManager?.MakeDangerous();
+        public void MakeDangerous()
+        {
+            // A silenced pilot's abilities turn nothing dangerous (VesselSilence). Danger that is
+            // already standing keeps its danger, so a re-apply on a dangerous prism goes through.
+            if (!prismProperties.IsDangerous && VesselSilence.SuppressesDanger(PlayerName)) return;
+            stateManager?.MakeDangerous();
+        }
         public void DeactivateShields() => stateManager?.DeactivateShields();
 
         /// <summary>
@@ -1670,8 +1994,21 @@ namespace CosmicShore.Gameplay
         public void SetTransparency(bool transparent) => materialAnimator?.SetTransparency(transparent);
 
         // Team Management Methods
-        public void Steal(string playerName, Domains domain, bool superSteal = false) =>
+        public void Steal(string playerName, Domains domain, bool superSteal = false)
+        {
+            // A silenced pilot steals no prism (VesselSilence) - the steal deflects like a hit.
+            if (DeflectsSilenced(playerName, 0f)) return;
             teamManager.Steal(playerName, domain, superSteal);
+        }
+
+        /// <summary>
+        /// Hands this prism BACK to the pilot it was taken from - a restitution, not a theft, so it
+        /// is the one ownership change silence does not refuse (a builder colony giving back what it
+        /// took, <c>BuilderPrismWorld.GiveBack</c>). Everything else that changes a prism's owner on
+        /// a pilot's behalf goes through <see cref="Steal"/>.
+        /// </summary>
+        public void ReturnTo(string playerName, Domains domain) =>
+            teamManager.Steal(playerName, domain, false);
         public void ChangeTeam(Domains domain) => teamManager?.ChangeTeam(domain);
 
         /// <summary>

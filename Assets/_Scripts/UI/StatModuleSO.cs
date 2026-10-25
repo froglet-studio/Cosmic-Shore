@@ -36,11 +36,11 @@ namespace CosmicShore.UI
     
     public enum ValueFormatType 
     { 
-        Integer,              // "42"
-        Float1Decimal,        // "42.5"
-        Float2Decimals,       // "42.53"
-        TimeSeconds,          // "42.53s"
-        Percentage,           // "42%"
-        Custom                // Use CustomFormat string
+        Integer = 0,              // "42"
+        Float1Decimal = 1,        // "42.5"
+        Float2Decimals = 2,       // "42.53"
+        TimeSeconds = 3,          // "42.53s"
+        Percentage = 4,           // "42%"
+        Custom = 5                // Use CustomFormat string
     }
 }

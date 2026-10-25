@@ -13,6 +13,10 @@ namespace CosmicShore.UI
     {
         [Inject] UGSDataService _ugsDataService;
 
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("An episode's value once it is completed.")]
+        [SerializeField] string completedLine = "Completed";
+
         [Header("Data")]
         [SerializeField] private SO_EpisodeList episodeList;
 
@@ -23,6 +27,12 @@ namespace CosmicShore.UI
 
         [Header("Support Us")]
         [SerializeField] private Button supportUsButton;
+
+        [Header("Refusal")]
+        [Tooltip("The control the player pressed to open Episodes (the Profile screen's Episodes card). " +
+                 "A refusal plays on IT - the Denied sting, the toast and its shake - instead of on " +
+                 "this inactive panel, where nothing can be seen. Left empty, the panel is used.")]
+        [SerializeField] private GameObject refusalHost;
 
         [Header("Panel Toggle")]
         [SerializeField] private GameObject episodePanel;
@@ -65,7 +75,7 @@ namespace CosmicShore.UI
 
             // UnityEvent invokes a method on an inactive target, so this runs with nothing of ours
             // on screen. Safe: the view guards every piece of presentation it has not captured yet.
-            SO_CommerceAvailability.TryPress(gameObject, CommerceSurface.Episodes);
+            SO_CommerceAvailability.TryPress(refusalHost ? refusalHost : gameObject, CommerceSurface.Episodes);
             return false;
         }
 
@@ -130,8 +140,7 @@ namespace CosmicShore.UI
                 var nameTransform = cardGO.transform.Find("EpisodeName");
                 if (nameTransform != null)
                 {
-                    var nameTMP = nameTransform.GetComponent<TMP_Text>();
-                    if (nameTMP != null)
+                    if (nameTransform.TryGetComponent(out TMP_Text nameTMP))
                         nameTMP.text = episode.title;
                 }
 
@@ -139,8 +148,7 @@ namespace CosmicShore.UI
                 var detailTransform = cardGO.transform.Find("EpisodeDetail");
                 if (detailTransform != null)
                 {
-                    var detailTMP = detailTransform.GetComponent<TMP_Text>();
-                    if (detailTMP != null)
+                    if (detailTransform.TryGetComponent(out TMP_Text detailTMP))
                         detailTMP.text = episode.description;
                 }
 
@@ -161,13 +169,12 @@ namespace CosmicShore.UI
                 var valueTransform = cardGO.transform.Find("Button/ValueText");
                 if (valueTransform != null)
                 {
-                    var valueTMP = valueTransform.GetComponent<TMP_Text>();
-                    if (valueTMP != null)
+                    if (valueTransform.TryGetComponent(out TMP_Text valueTMP))
                     {
                         if (isPurchasable)
                             valueTMP.text = FormatPrice(episode.priceUsd);
                         else if (cloudProgress != null && cloudProgress.IsCompleted(episode.episodeId))
-                            valueTMP.text = "Completed";
+                            valueTMP.text = completedLine;
                         else
                             valueTMP.text = episode.amount;
                     }
@@ -177,16 +184,14 @@ namespace CosmicShore.UI
                 var bgTransform = cardGO.transform.Find("BG");
                 if (bgTransform != null && episode.cardImage != null)
                 {
-                    var bgImage = bgTransform.GetComponent<Image>();
-                    if (bgImage != null)
+                    if (bgTransform.TryGetComponent(out Image bgImage))
                         bgImage.sprite = episode.cardImage;
                 }
 
                 var button = cardGO.transform.Find("Button");
                 if (button != null)
                 {
-                    var btn = button.GetComponent<Button>();
-                    if (btn != null)
+                    if (button.TryGetComponent(out Button btn))
                     {
                         if (isPurchasable)
                         {

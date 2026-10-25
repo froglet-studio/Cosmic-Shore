@@ -23,6 +23,24 @@ namespace CosmicShore.Gameplay
         }
     }
 
+    /// <summary>One ring that has just been laid: where it went, what it is, and its prisms.</summary>
+    public readonly struct BoostRingLay
+    {
+        public readonly Pose Pose;
+        public readonly BoostRingSpec Spec;
+        public readonly Domains Domain;
+        /// <summary>The prisms, in ring order. Live, conserved mass — read it, never retire it.</summary>
+        public readonly IReadOnlyList<Prism> Prisms;
+
+        public BoostRingLay(Pose pose, in BoostRingSpec spec, Domains domain, IReadOnlyList<Prism> prisms)
+        {
+            Pose = pose;
+            Spec = spec;
+            Domain = domain;
+            Prisms = prisms;
+        }
+    }
+
     /// <summary>
     /// THE canonical "ring of prisms the skimmer WILL collide with" builder - shared by every
     /// feature that throws a fly-through boost ring around the flight path: the Squirrel
@@ -48,6 +66,24 @@ namespace CosmicShore.Gameplay
     public static class BoostRingBuilder
     {
         /// <summary>
+        /// Raised the instant a ring finishes laying, on the machine that laid it.
+        ///
+        /// It exists so a visual that has to LAND on a ring reads the ring the builder actually
+        /// made instead of re-deriving it from the same authored numbers — those two can drift,
+        /// the ring cannot drift from itself. The Squirrel's omni-crystal morph
+        /// (<see cref="SquirrelCrystalMorph"/>) is the listener: it ends on the real octahedra of
+        /// the real prisms, so retuning <c>SpawnableRings</c> moves the animation with it.
+        ///
+        /// Listeners are visuals: they may hold a prism's PHOTONS, never its mass.
+        /// </summary>
+        public static event System.Action<BoostRingLay> RingLaid;
+
+        // Fast enter-play-mode keeps statics: a listener stranded by a stopped session must not be
+        // called into the next one.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => RingLaid = null;
+
+        /// <summary>
         /// Lays one ring of <see cref="BoostRingSpec.Segments"/> boost prisms around
         /// <paramref name="pose"/>'s forward axis. Pass a <paramref name="trail"/> to group them,
         /// and/or <paramref name="collected"/> to track them for later teardown.
@@ -62,6 +98,9 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Gathered only when somebody is listening, so a ring nobody watches allocates nothing.
+            var laid = RingLaid != null ? new List<Prism>(spec.Segments) : null;
+
             for (int i = 0; i < spec.Segments; i++)
             {
                 float angle = i * (2f * Mathf.PI / spec.Segments);
@@ -70,8 +109,27 @@ namespace CosmicShore.Gameplay
                 // Long side runs along the ring axis; block "up" points outward radially.
                 Quaternion rotation = pose.rotation * Quaternion.LookRotation(Vector3.forward, radial);
 
-                LayOne(channel, position, rotation, spec.PrismScale, spec.Kind,
+                var prism = LayOne(channel, position, rotation, spec.PrismScale, spec.Kind,
                     domain, playerName, $"{ownerPrefix}::{i}", trail, collected);
+                if (prism) laid?.Add(prism);
+            }
+
+            // ISOLATED: a listener is a VISUAL, and a visual must never be able to damage conserved
+            // mass. A throwing listener would otherwise unwind out of the lay into whatever spawner
+            // called it, and be reported frames from its cause — which is how the Squirrel's morph
+            // first failed (an unreadable source mesh threw in here after the prisms were laid, and
+            // the only symptom was the crystal fading out).
+            if (laid is { Count: > 0 })
+            {
+                try
+                {
+                    RingLaid?.Invoke(new BoostRingLay(pose, spec, domain, laid));
+                }
+                catch (System.Exception e)
+                {
+                    CSDebug.LogError($"[BoostRingBuilder] a RingLaid listener threw; the ring is laid " +
+                                     $"and unaffected. {e}");
+                }
             }
         }
 

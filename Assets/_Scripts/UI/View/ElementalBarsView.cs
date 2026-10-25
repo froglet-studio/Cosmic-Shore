@@ -83,6 +83,10 @@ namespace CosmicShore.UI
         private Tween[]   _labelScaleTweens;
         private Tween[]   _labelColorTweens;
         private bool _built;
+        // Elements whose container the ability lockup BUILT at runtime (TrySetPetalRoot with a socket that is not
+        // the authored container). Their petals are part of that runtime card build, so making them is the design,
+        // not a missing bake, and says nothing.
+        private int _socketedMask;
 
         // Scratch buffer reused by DistributePetalValues to avoid per-call allocations.
         private readonly int[] _tmpVals = new int[ElementalBarsConfigSO.PetalCount];
@@ -231,6 +235,7 @@ namespace CosmicShore.UI
             for (int i = 0; i < bars.Length; i++)
             {
                 if (bars[i].element != element) continue;
+                if (bars[i].petalRoot != root) _socketedMask |= 1 << i;
                 bars[i].petalRoot = root;
                 return true;
             }
@@ -267,10 +272,14 @@ namespace CosmicShore.UI
                 petals[p] = img;
             }
 
-            // Authored-in-prefab is the norm (FrogletTools > Vessels > Wire Elemental Petal Bars, or
+            // Authored-in-prefab is the norm (FrogletTools > Vessels > Wiring > Wire Elemental Petal Bars, or
             // the bake-all variant). Runtime creation is a fallback so the fleet-required display
             // can never silently ship missing - but it should be loud, not invisible.
-            if (runtimeCreated > 0)
+            // Not for a socket the ability lockup built at runtime: the card around it is built at runtime as well,
+            // so its petals are part of that build rather than a missing bake (a baked container is re-homed into the
+            // card with its petals, which only saves these 20 images). That path warned four times on every spawn of
+            // an unbaked hull - each Hangar TRY, each menu hull swap. A container AUTHORED without petals still warns.
+            if (runtimeCreated > 0 && (_socketedMask & (1 << index)) == 0)
                 Debug.LogWarning($"[ElementalBarsView] Created {runtimeCreated} petal(s) for '{bar.element}' at " +
                                  "RUNTIME. Author them into the prefab instead: FrogletTools > Vessels > " +
                                  "Bake Elemental Petal Bars Into All Vessel HUDs.", this);

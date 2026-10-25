@@ -1,0 +1,292 @@
+{
+  "comment": "The Brittle Star: where each studio parameter lives in the game. key = the studio's own key (the SHIPPED block in Docs/Studios/VesselStudio/brittlestar.html, the Unity build set); asset + field = the Unity field it becomes. BrittleStarConfig.asset rows use BrittleStarConfigSO's own field names; BrittleStar.prefab rows are the one-thumb transformer block and the trail spawner (each a single plain line in the prefab). Not mapped, and listed by --unmapped: the ElementalFloat ranges (speedModeAt0/At10, prismWidthAt10, rangeAt10, heatCapacityAt10, projectileScaleAt10, blastScaleAt10: nested in the asset; the trail block BaseScale is a Vector3 on the prefab), ringRadius / ringHalfThickness (BrittleStarHullBuilder C# defaults, not serialized), nucleusRadius (the game reads the cell's own) and skimGraceSeconds (SelfTrailContactConfig.asset, shared by the fleet). Edit this file, never the assets by hand.",
+  "vessel": "BrittleStar",
+  "page": "Docs/Studios/VesselStudio/brittlestar.html",
+  "rows": [
+    {
+      "key": "modeBlendSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "modeBlendSeconds"
+    },
+    {
+      "key": "speedModeSpacingFollow",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "speedModeSpacingFollow"
+    },
+    {
+      "key": "creationSpeedMultiplier",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "creationSpeedMultiplier"
+    },
+    {
+      "key": "creationSpacing",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "creationSpacing"
+    },
+    {
+      "key": "creationOffset",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "creationOffset"
+    },
+    {
+      "key": "fireRate",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "fireRate"
+    },
+    {
+      "key": "projectileSpeed",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "projectileSpeed"
+    },
+    {
+      "key": "projectileTime",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "projectileTime"
+    },
+    {
+      "key": "projectileScale",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "projectileScale"
+    },
+    {
+      "key": "cordLength",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordLength"
+    },
+    {
+      "key": "cordLinks",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordLinks"
+    },
+    {
+      "key": "cordCutRadius",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordCutRadius"
+    },
+    {
+      "key": "roundGrowthFactor",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "roundGrowthFactor"
+    },
+    {
+      "key": "armFocusDistance",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "armFocusDistance"
+    },
+    {
+      "key": "armSplayDegrees",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "armSplayDegrees"
+    },
+    {
+      "key": "aimDeadzone",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "aimDeadzone"
+    },
+    {
+      "key": "ringTurnRate",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringTurnRate"
+    },
+    {
+      "key": "ringLaunchSpeed",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringLaunchSpeed"
+    },
+    {
+      "key": "ringFuseSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringFuseSeconds"
+    },
+    {
+      "key": "ringContactRadiusScale",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringContactRadiusScale"
+    },
+    {
+      "key": "ringBlastSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastSeconds"
+    },
+    {
+      "key": "ringBlastFallbackRadius",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastFallbackRadius"
+    },
+    {
+      "key": "ringBlastFrontWidth",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastFrontWidth"
+    },
+    {
+      "key": "ringBlastFrontHeight",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastFrontHeight"
+    },
+    {
+      "key": "ringBlastRelief",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastRelief"
+    },
+    {
+      "key": "ringBlastThicknessScale",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastThicknessScale"
+    },
+    {
+      "key": "ringBlastSpinDegrees",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastSpinDegrees"
+    },
+    {
+      "key": "ringBlastCrestDepth",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastCrestDepth"
+    },
+    {
+      "key": "ringBlastPentagonLag",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastPentagonLag"
+    },
+    {
+      "key": "ringBlastArmWidth",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastArmWidth"
+    },
+    {
+      "key": "ringBlastArmWiggle",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastArmWiggle"
+    },
+    {
+      "key": "ringBlastArmCurlDegrees",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastArmCurlDegrees"
+    },
+    {
+      "key": "rebuildSeconds",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "rebuildSeconds"
+    },
+    {
+      "key": "ringBlastHitCooldown",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastHitCooldown"
+    },
+    {
+      "key": "cordHitCooldown",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordHitCooldown"
+    },
+    {
+      "key": "minimumSpeed",
+      "asset": "Assets/_Prefabs/Spacevessels/BrittleStar.prefab",
+      "field": "DefaultMinimumSpeed"
+    },
+    {
+      "key": "throttleScaler",
+      "asset": "Assets/_Prefabs/Spacevessels/BrittleStar.prefab",
+      "field": "DefaultThrottleScaler"
+    },
+    {
+      "key": "pitchScaler",
+      "asset": "Assets/_Prefabs/Spacevessels/BrittleStar.prefab",
+      "field": "PitchScaler"
+    },
+    {
+      "key": "yawScaler",
+      "asset": "Assets/_Prefabs/Spacevessels/BrittleStar.prefab",
+      "field": "YawScaler"
+    },
+    {
+      "key": "rollScaler",
+      "asset": "Assets/_Prefabs/Spacevessels/BrittleStar.prefab",
+      "field": "RollScaler"
+    },
+    {
+      "key": "rotationThrottleScaler",
+      "asset": "Assets/_Prefabs/Spacevessels/BrittleStar.prefab",
+      "field": "RotationThrottleScaler"
+    },
+    {
+      "key": "trailWavelength",
+      "asset": "Assets/_Prefabs/Spacevessels/BrittleStar.prefab",
+      "field": "initialWavelength"
+    },
+    {
+      "key": "trailOffset",
+      "asset": "Assets/_Prefabs/Spacevessels/BrittleStar.prefab",
+      "field": "offset"
+    },
+    {
+      "key": "speedModeStretch",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "speedModeStretch"
+    },
+    {
+      "key": "heatPerRound",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "heatPerRound"
+    },
+    {
+      "key": "coolRate",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "coolRate"
+    },
+    {
+      "key": "chargeCoolRate",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "chargeCoolRate"
+    },
+    {
+      "key": "overheatRecoverBelow",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "overheatRecoverBelow"
+    },
+    {
+      "key": "cordLooseLengthScale",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordLooseLengthScale"
+    },
+    {
+      "key": "cordLooseWave",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordLooseWave"
+    },
+    {
+      "key": "cordRigidWave",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordRigidWave"
+    },
+    {
+      "key": "cordLooseDamping",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordLooseDamping"
+    },
+    {
+      "key": "cordRigidDamping",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordRigidDamping"
+    },
+    {
+      "key": "cordPose",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordPose"
+    },
+    {
+      "key": "cordMaxRigidity",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordMaxRigidity"
+    },
+    {
+      "key": "cordRigidityRate",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordRigidityRate"
+    },
+    {
+      "key": "maxSpareRings",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "maxSpareRings"
+    }
+  ]
+}

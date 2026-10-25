@@ -39,6 +39,8 @@ static partial class SubstrateHarness
         if (all || which == "mobber") Mobber();
         if (all || which == "leech") Leech();
         if (all || which == "leviathan") Leviathan();
+        if (all || which == "siege") Siege();
+        if (all || which == "arms") Arms();
         if (all || which == "proxies") Proxies();
         if (all || which == "ledger") Ledger();
         if (all || which == "job") Job();
@@ -131,7 +133,15 @@ static partial class SubstrateHarness
         public void Step()
         {
             for (int j = 0; j < Pilots.Count; j++) { Pilots[j].Step(Dt); _sense[j] = Pilots[j].Sense; }
-            if (Core.Tick % 10 == 0)
+            if (SenseFood != null && Core.Tick % 10 == 0)
+            {
+                // the game's read of flora (SubstrateCellHost.SenseFood): one unit per living plant heart
+                var hearts = SenseFood();
+                if (_food.Length < hearts.Count) _food = new SubstrateFood[hearts.Count * 2];
+                for (int k = 0; k < hearts.Count; k++) _food[k] = hearts[k];
+                _foodCount = hearts.Count;
+            }
+            else if (Core.Tick % 10 == 0)
             {
                 int live = 0;
                 for (int k = 0; k < MassAlive.Count; k++) if (MassAlive[k]) live++;
@@ -176,6 +186,8 @@ static partial class SubstrateHarness
         }
         public int Preyed;
         int _foodCount;
+        /// <summary>When set, the food points the core senses (instead of every mass point at its volume).</summary>
+        public Func<List<SubstrateFood>> SenseFood;
 
         /// <summary>A death: the body (its stock) stays where it fell as ordinary mass the food web grazes.</summary>
         public void KillAndLay(int i)
@@ -229,6 +241,8 @@ static partial class SubstrateHarness
                 bool b => b ? "true" : "false",
                 string s => JsonSerializer.Serialize(s),
                 SubstrateRegime r => Obj(r, ind + "  "),
+                SubstrateSiegeParams sg => Obj(sg, ind + "  "),
+                SubstrateArmsParams ap => Obj(ap, ind + "  "),
                 float[] arr => "[" + string.Join(", ", arr.Select(a => a.ToString("R", System.Globalization.CultureInfo.InvariantCulture))) + "]",
                 _ => throw new InvalidOperationException($"export: unhandled field {f.Name} ({f.FieldType})"),
             };
@@ -1095,8 +1109,8 @@ static partial class SubstrateHarness
         // round 11-14: a lurker and a stampede proxy moved to the leech - the pen's full pull at its edge
         // (SubstrateKernel.PenWeight) packs a puddle of 4 tighter, and two proxies covered 84% of a ram's passes (three,
         // 89.5%); a lurker never has more than one agent in the contact horizon at once, a stampede three
-        ("pack", 7, 260f), ("locust", 12, 140f), ("lurker", 3, 160f), ("stampede", 5, 200f), ("mobber", 4, 120f),
-        ("leech", 4, 140f), ("leviathan", 4, 200f),
+        ("pack", 7, 260f), ("locust", 8, 140f), ("lurker", 3, 160f), ("stampede", 5, 200f), ("mobber", 4, 120f),
+        ("leech", 4, 140f), ("leviathan", 4, 200f), ("siege", 4, 200f),
     };
 
     /// <summary>
@@ -1124,9 +1138,14 @@ static partial class SubstrateHarness
             foreach (int i in LiveOf(w.Core, q))
             {
                 if (w.Core.Host[i] != 0) continue;   // a rider has no proxy
-                float best = float.MaxValue;
-                foreach (var p in w.Pilots) best = MathF.Min(best, Vector3.Distance(w.Core.Pos[i], p.Pos));
-                if (best <= engage) cand.Add((w.Core.Danger[i] ? -1f + best * 1e-6f : best, i));   // the tick job's rule: dangerous first
+                float best = float.MaxValue, soon = float.MaxValue;
+                foreach (var p in w.Pilots)
+                {
+                    best = MathF.Min(best, Vector3.Distance(w.Core.Pos[i], p.Pos));
+                    soon = MathF.Min(soon, Vector3.Distance(w.Core.Pos[i] + w.Core.Vel[i] * Dt, p.Pos + p.Vel * Dt));
+                }
+                // the tick job's rule: dangerous first - nearest a tick from now - then nearest
+                if (best <= engage) cand.Add((w.Core.Danger[i] ? -1f + soon * 1e-6f : best, i));
             }
             foreach (var c in cand.OrderBy(c => c.d).Take(cap)) eng.Add(c.i);
             w.Step();
@@ -1237,6 +1256,12 @@ static partial class SubstrateHarness
                             ticks = 120;
                             break;
                         }
+                    case "siege":
+                        // a careless wanderer: the siege's worst case (it breaches the web; the whole cloud dives)
+                        w.Core.Seed(q, P.N0, new Vector3(600, 0, 0), 70f);
+                        w.Pilots.Add(Wanderer(seed));
+                        ticks = 1800;
+                        break;
                     case "leviathan":
                         w.Core.Seed(q, P.N0, new Vector3(400, 0, 0), 60f);
                         for (int t = 0; t < 150; t++) w.Step();   // formed (it dissolves when hungry again, ~25 s)

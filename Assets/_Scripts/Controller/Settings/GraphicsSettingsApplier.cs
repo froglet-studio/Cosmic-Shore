@@ -11,8 +11,9 @@ namespace CosmicShore.Core
     /// main camera. This is the ONLY place that touches engine graphics state, so the rest of the
     /// settings system stays pure data (CLAUDE.md ▸ Config Separation).
     ///
-    /// Note: in the Editor, mutating the URP asset's renderScale/msaaSampleCount dirties the asset
-    /// (Unity quirk shared by the project's existing quality tiers). In a build it is in-memory only.
+    /// Note: in the Editor, mutating the URP asset's renderScale/msaaSampleCount/upscalingFilter/HDR
+    /// changes the asset itself; <c>UrpAssetPlayModeRestore</c> (Editor) puts the authored values
+    /// back when Play ends. In a build it is in-memory only.
     /// </summary>
     public static class GraphicsSettingsApplier
     {
@@ -26,6 +27,16 @@ namespace CosmicShore.Core
 
         public static void ApplyDisplay(GraphicsSettingsData s)
         {
+            // Display mode and resolution are desktop window settings. On a phone or tablet the
+            // app always fills the screen at the OS's resolution, and the pixel budget is the URP
+            // render scale (ApplyQuality). SetResolution there could only hurt: "native" is read
+            // from Display.main.systemWidth/Height, and iOS does not promise those in the
+            // landscape orientation this game runs in, so it could hand the backbuffer portrait
+            // dimensions. A WebGL player's canvas is sized by its page, and a full-screen mode
+            // there is a request the browser grants on the next click - so the first click into
+            // the browser Toybox would leave the page. The page's own fullscreen button owns that.
+            if (Application.isMobilePlatform || Application.platform == RuntimePlatform.WebGLPlayer) return;
+
             var mode = ToFullScreenMode(s.DisplayMode);
             int w = s.ResolutionWidth > 0 ? s.ResolutionWidth : Display.main.systemWidth;
             int h = s.ResolutionHeight > 0 ? s.ResolutionHeight : Display.main.systemHeight;
@@ -37,11 +48,23 @@ namespace CosmicShore.Core
                 Screen.SetResolution(w, h, mode);
         }
 
+        /// <summary>The URP asset's own HDR choice, read before anything here first wrote it, so a
+        /// preset that lifts its HDR cut puts back what was authored (not a blanket "on").</summary>
+        static UniversalRenderPipelineAsset s_hdrAsset;
+        static bool s_authoredHdr;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => s_hdrAsset = null;
+
         public static void ApplyQuality(GraphicsSettingsData s)
         {
             // The preset is the master tier; Custom means individual overrides - don't stomp them.
             if (s.QualityPreset != QualityPresetSetting.Custom)
                 QualitySettings.SetQualityLevel((int)s.QualityPreset, true);
+
+            // The preset's GPU cuts (QualityPresetCutsSO) stay in force after a hand change made it
+            // Custom: they follow the preset it started from. Docs/PLATFORM_UNIFICATION.md §3.10.
+            GraphicsCuts.SetPreset(s.EffectivePreset);
 
             QualitySettings.globalTextureMipmapLimit = Mathf.Clamp(s.TextureQuality, 0, 3);
 
@@ -50,9 +73,24 @@ namespace CosmicShore.Core
                 urp.renderScale = Mathf.Clamp(s.RenderScalePercent / 100f, 0.25f, 2f);
                 urp.msaaSampleCount = MsaaSampleCount(s.AntiAliasing);
                 urp.upscalingFilter = ToUpscalingFilter(s.Upscaling);
+
+                // The device tier (MobileLow) or the preset (Low) may turn HDR off: half the colour
+                // bandwidth, and room for MSAA in tile memory. Only ever OFF: with no cut the URP
+                // asset's authored value stands, so Desktop on High renders exactly as before.
+                // Docs/PLATFORM_UNIFICATION.md, Step 4 and §3.10.
+                if (s_hdrAsset != urp)
+                {
+                    s_hdrAsset = urp;
+                    s_authoredHdr = urp.supportsHDR;
+                }
+                urp.supportsHDR = s_authoredHdr && !GraphicsCuts.DisableHdr;
             }
 
             ApplyCameraAntiAliasing(Camera.main, s.AntiAliasing);
+
+            // The preset's other live cuts: bloom resolution and the baked sky.
+            PostProcessCuts.Apply(GraphicsCuts.Current);
+            PlatformRenderApplier.ApplySkybox();
         }
 
         public static void ApplyFrameRate(GraphicsSettingsData s)

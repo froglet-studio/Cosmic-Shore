@@ -1,0 +1,580 @@
+# Spindle LOD — the braid, the drawing-together, the thread
+
+**Owner:** Garrett (spindles, ecology look, toys). **Status (2026-10-21, shipped from `cece/gallant-keller-6mr1u4`):**
+two styles on one set of meshes (`SpindleLodProfileSO.style`, live-switchable): **COVERT** (§2, the first round:
+the LOD hides itself) and **OVERT** (§7, the default: the LOD IS the effect, in lockstep with the prisms' own
+depth ramp, through the shared `IncorporealDepth.hlsl`; the current ladder and amplitudes are §7.2d - §7.2e). The
+same effect reaches the creatures' own models (§8), and the switch rings are a synthetic wire tiered by the same
+system (§9). Compiled (Unity reference compile, Amoebius), the shader contracts proven by compiling the shipped
+HLSL (31 mutants caught), the runtime run in Amoebius, the look previewed offline (§7.3). Garrett has looked at the
+lattice spindles and the first cut of the wire rings in Unity; the wire's shading fix (§9.2), the width-hold fix
+and a frame-time A/B have not been seen in the editor yet (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, spindle LOD
+steps 10b - 12).
+
+**Round 1's play bug, fixed.** Garrett, Lattice cell, in flight: one gyroid showed its limbs' near AND far forms
+at once (the far thread as bright straight "stars" through every prism, braids around them). Cause: the system
+tiered by `Camera.main`, which in flight is Bootstrap's MainCamera-tagged menu camera and never follows the vessel
+(the depth prisms froze from the same mistake; `CameraManager.ViewCamera` exists for it). Limbs near the vessel were
+classified by their distance from a fixed point and handed the far mesh, while the shader blended for the real
+camera. Fixed by tiering from `CameraManager.ViewCamera`.
+
+## 1. Why
+
+Spindles are the skeleton made beautiful: every limb of every plant is a wire, and the game leans into that
+instead of hiding it. Up close they are the best thing in a cell. Far away they "don't look like much at all",
+and there are thousands of them at distances where they are barely seen (Garrett, 2026-10-20). Performance is the
+driver; a seamless transition is the requirement; a better far look is the stretch.
+
+### What a spindle is, measured
+
+Every flora branch prefab (`Branch`, `GyroidBranch`, `AssemblyBranch`, `QuasicrystalBranch`) and the tadpole draw
+ONE mesh, `BezierCurve.001` in `Assets/_Models/Fauna/bonita.fbx` (`Tools/Build/author_spindle_lod_meshes.py
+--report` re-measures all of this):
+
+- **A braid, not a tube.** Three strands of triangular cross-section, 25 rings each, spiralling round a STRAIGHT
+  centreline (the mean of the three ring centres is on the z axis to 0.014 of a unit). 216 quads, 432 triangles.
+- Each strand tapers 0.015 → 0.151 → 0.013 units; the three spread to 0.54 apart, pinch to 0.17 at ring 12 and
+  splay to 0.69 at the tip. The braid's width (its **girth**) is 1.40 object units; a flora branch is ~15 units long.
+- **SpindleGraph's lace works at the scale of whole strands**: UV0 runs u along a strand's length and v round its
+  three faces, and the Voronoi is ~1.5 cells per strand. So the lace stays legible into the mid distance; the strands
+  themselves do not.
+
+### Why the far ones cost so much and look like so little
+
+- A 0.3-unit strand is one pixel wide at ~280 units (1080p, 60° FOV). Beyond that each spindle is 432 triangles of
+  sub-pixel geometry, which rasterises as broken, sparkling dots — and tiny triangles are the most expensive kind a
+  GPU draws.
+- SpindleGraph's own distance term (`_Distance` = 2,000,000, so ~1,414 units) raises the alpha exponent with the
+  squared distance, alpha-clipping the braid away by ~1,000–1,400 units — after every vertex and fragment was paid for.
+- Every limb is its own GameObject renderer (lever L1 in `Docs/PERFORMANCE_OPTIMIZATION.md`): culled, sorted (it is
+  transparent) and submitted one at a time.
+
+### Why the 2026-10-17 sub-pixel LOD hid nothing
+
+It measured a limb's **bounding sphere** on screen (2–16 px) and hid limbs under 0.75 px. A spindle is ~15 units
+long and ~1.4 across, so its sphere is big at the very distance its three strands are each a fraction of a pixel.
+**A wire is judged by its thickness, never by its length or its bounding sphere.** Every number below is in
+**girths**: camera distance over the braid's world-space width. That unit means the same picture on a gyroid
+branch, a lattice-stretched limb (a stretch along the length leaves the girth alone) and a tadpole body.
+
+## 2. The tiers (the COVERT style; OVERT is §7)
+
+| tier | girths (default) | mesh | shader | draws |
+|---|---|---|---|---|
+| **near** | < 100 | the authored braid, 432 tris | **SpindleGraph, untouched** | its own renderer, exactly as before |
+| **mid** | 100 – 420 | `SpindleBraidMid`: the braid at every third ring, 144 tris | `SpindleLodMidGraph` | its own renderer |
+| **far** | 420 – 1,900 | `SpindleThreadFar`: one faceted thread on the centreline, 24 tris | `SpindleLodFarGraph` | **one instanced call per material** while still |
+| **culled** | > 1,900 | — | — | nothing |
+
+At the reference display a flora branch's girth is 1.40 units, so: near to ~140 units, mid to ~590, far to ~2,660.
+Today's braid has faded out by ~1,400; the thread stays as a glowing line for longer and costs a fraction of it.
+
+### What happens inside the mid tier (the seamless part)
+
+Everything that MOVES happens on the GPU, per pixel and per frame, as a pure function of the camera
+(`Assets/_Graphics/Materials/Graphs/SpindleLod.hlsl`):
+
+1. **Below `convergeStart` (110)** the mid graph returns SpindleGraph's lace exactly; the only difference from the
+   near tier is the decimated mesh, whose error (0.05 units) is under a quarter-pixel at the swap.
+2. **From `convergeStart` to `convergeEnd` (= midEnd × (1 − hysteresis) = 386)** the three strands **draw
+   together** onto their centreline (a geomorph: TEXCOORD1 is each ring's step to the centreline) while the lace
+   **closes** into the thread's shading on the same schedule. The braid becomes one thread as you pull away.
+3. **The width hold ramps in on that same schedule.** Past the width where a strand would go sub-pixel it is drawn
+   at `minThreadPixels` (1.25) by pushing each vertex out along its own radial arm (TEXCOORD2), and its alpha pays
+   for the extra width (coverage = true width / drawn width). It never starts before convergence: the near tier
+   cannot hold a width, and a hold the near tier lacks would show at the swap (the clang harness caught exactly that).
+4. Past `convergeEnd` the mid braid IS the far thread's construction, vertex for vertex and pixel for pixel.
+
+### The CPU only swaps where both sides draw the same picture
+
+`SpindleLodSystem` moves a limb outward past a boundary and inward only once it is back inside boundary ×
+(1 − hysteresis). Each band sits where the two tiers are identical:
+
+- near ↔ mid: [92, 100], below `convergeStart` — both draw the plain lace.
+- mid ↔ far: [386, 420], past `convergeEnd` — both draw the converged thread.
+- far ↔ culled: the inward edge is `farFadeEnd` itself — the thread is switched back on only where its alpha is
+  still zero, and fades in from there.
+
+`SpindleLodProfileSO.BandsAreSane` refuses a profile that breaks this order, and `SpindleLodTests` holds it.
+
+### The far look
+
+The skeleton glows instead of vanishing. The thread is a **faceted triangular volume** (never a sheet: the
+"Nothing in the world looks flat" rule), shaded between the material's dull and bright colours by how squarely
+each facet faces the camera (`threadBase`, `threadFacet`), brightening toward `threadGlow` (1.35, reaches bloom)
+as it recedes, held at a visible width so it reads as a continuous line rather than dotted sparkle, and fading
+out between `farFadeStart` and `farFadeEnd`. From afar a plant reads as its constellation of bonds. Every one of
+these is a dial on the profile — **the look is Garrett's call** (see the open decision on the task board).
+
+## 3. The pieces
+
+| piece | what it is |
+|---|---|
+| `Assets/_Scripts/Controller/Environment/FloraAndFauna/SpindleLodSystem.cs` | The runtime. ONE Burst pass per tick (`tickIntervalSeconds`, 0.2) over a read-only `TransformAccessArray` (the `PrismColliderLodManager` shape): pose, girth distance, tier under hysteresis, moved-or-still. Main-thread work is O(changed limbs), budgeted by count and by time (`maxTransitionsPerFrame` 384, `maxTransitionMsPerFrame` 3 ms, 2026-10-25: the count alone let one frame spend 14.7 ms). Still far limbs: renderer off, drawn by `Graphics.RenderMeshInstanced` in calls of 1,023. Created on the first registration; outlives scene loads. Kill switch: the profile's `lodEnabled`. |
+| `Spindle.cs` | Registers each renderer whose mesh the profile knows (end of `Start`, once posed), hands it back before any death, keeps a fading limb out of the batch (its condense/evaporate is a per-renderer MPB stamp), and keeps the tier's material on fade settle. Life, death, ordered wither and the tree are untouched. |
+| `Assets/Resources/SpindleLodProfile.asset` / `SpindleLodProfileSO` | The tuning half (bands, look, cadence) is the designer's and is written once. The measured half (templates, LOD meshes, girth, strand radius, the imported bounds Unity must produce) is owned by the generator. |
+| `Assets/_Models/Spindles/` | `SpindleBraidMid.asset`, `SpindleThreadFar.asset`, baked by `Tools/Build/author_spindle_lod_meshes.py` (`--check`, `--report`, `--self-test`). |
+| `SpindleLodMidGraph` / `SpindleLodFarGraph` | Generated FROM SpindleGraph by `Tools/Shaders/wire_spindle_lod.py` (`--check` is the drift gate: edit SpindleGraph, re-run it). SpindleGraph itself is not touched — it also draws BranchingMembrane and the Sparrow's exhaust projectile. |
+| `SpindleLodMid.mat` / `SpindleLodFar.mat` | Template materials: SpindleMaterial with the shader swapped. They exist so the BUILD keeps the shader variants the runtime clones use (`_ALPHATEST_ON`, `_SURFACE_TYPE_TRANSPARENT`, instancing). Runtime LOD materials clone them and copy each limb's phase-variant colours, sway and phase. |
+| `Tools/Shaders/verify_spindle_lod.py` | Compiles the shipped `SpindleLod.hlsl` + `IncorporealDepth.hlsl` with clang and proves: pass-through when unset, the near→mid and mid→far hand-offs in both styles, the width hold and its coverage, the fades; for OVERT, the opening against an independent transcription of SpreadSubGraph at every distance, exact rest up close, the danger magnitudes, world units under scale, the root-anchored fan, motion only while open. `--self-test`: 12 mutants, all caught. |
+| `Assets/_Graphics/Materials/Graphs/IncorporealDepth.hlsl`, `Resources/IncorporealDepth`, `Utility/IncorporealDepth.cs` | The shared depth effect of the incorporeal parts (§7), its tuning, and its publisher. |
+| `Tools/Shaders/render_spindle_lod_preview.py` | The offline preview from the shipped shader code (§7.3). |
+| `Assets/_Scripts/Tests/Editor/SpindleLodTests.cs` | Tier hysteresis, band order, the cull edge, and `ShippedProfile_IsSaneAndMeasured`, which checks the LOD meshes against the braid Unity actually imported. |
+
+**Telemetry.** `renderers` (HUD console) appends `spindle LOD: N limbs - near · mid · far own + instanced ·
+culled`, because an instanced far limb has no enabled renderer and the census alone would undercount the family.
+`[ECOSIM]` (EcosystemPerfProbe) carries `spindles=near/mid/farOwn/farInstanced/culled`. Markers:
+`SpindleLod.Tick`, `SpindleLod.Drain`, `SpindleLod.Draw`.
+
+**The import guard.** The generator reproduces Unity's FBX import (`bakeAxisConversion: 0`: x negated, winding
+reversed, ×0.01) and records the bounds that predicts for the source mesh. At runtime each mesh set compares them
+with the imported mesh's real bounds (readable on a non-readable mesh; the braid's centre sits off the x axis, so a
+sign error shows) and disables itself with a warning if they differ, rather than drawing a thread beside its branch.
+Amoebius's own FBX importer passes the same check.
+
+## 4. Measured
+
+- Mesh: 432 → 144 (mid) → 24 (far) triangles per limb; the instanced far tier has no renderer.
+- Amoebius, Menu_Main (Garland), headless, seed 7, 1,800 frames: 910 limbs registered, **865 (95%) drawn by the
+  instanced far batch**, 24 mid, 21 far on their own renderer (fading or just posed), 0 culled; the tier counters
+  matched a same-frame recount of the books on every sample. Those proportions are this camera's; Amoebius's
+  milliseconds are .NET's, so the frame-time win needs a Unity capture.
+
+## 5. What is not verified
+
+- **No Unity editor has opened the branch.** The two graphs are JSON generated from SpindleGraph (validated
+  structurally, custom-function signatures checked by `check_shadergraph_custom_function_signatures.py`) but have not
+  been through the Shader Graph importer. If one imports magenta, every limb past nearEnd shows it: set `lodEnabled`
+  off on the profile and report it.
+- **The look has not been seen.** Transitions are proven equal in the shader maths; whether the far thread is the
+  improvement it is meant to be is a judgement only Garrett can make in the editor.
+- **The frame-time win is unmeasured in Unity.** A/B: an S2 Lattice capture with `lodEnabled` on, one with it off.
+- **Amoebius draws the two LOD graphs untranslated** until its GLSL library carries `SpindleLodVertex_float`,
+  `SpindleLodSurface_float` and `SpindleLodThread_float` (the engine translates file-based Custom Functions from a
+  hand-ported library), and the two graph guids are mapped to the Spindle family. Shombith's area; on the board.
+
+## 6. Known limits
+
+- Tiering follows `CameraManager.ViewCamera` (the camera the player looks through). A second camera (the Third Eye,
+  a minimap) sees that camera's meshes; the shader still blends for its own distance.
+- The instanced batch is culled by one box per material, not per limb; instances off screen still run 24-triangle
+  vertex work. Per-instance culling is the next step if a capture asks for it.
+- A limb that moves never batches (a creature's body would lag its creature). Tadpoles and other moving users of
+  the braid mesh still get the mid and far meshes on their own renderers.
+- The ordered wither, the tree links, the sway constants handed to prisms (`PrismSway`) and the death fades are
+  unchanged; a fading limb leaves the batch for its fade.
+
+## 7. OVERT: the LOD as an effect, in lockstep with the prisms
+
+Garrett, round 2: *"explore an overt approach ... instead of trying to disguise the LOD, lean in and make it into a
+really cool effect that signals this mass is still alive because it has spindles moving through it. Its depth
+effects should be even stronger than the base prisms and on par with the danger prisms."* And: *"the model LOD
+should work in lockstep with a sqrdistance shader effect that ranges like the prisms. Then we can use the same
+shader effects on the shards and switches, membranes, and nucleus to give a connection between the incorporeal
+parts of the hypersea."*
+
+### 7.1 The prisms' depth effect, measured
+
+Traced out of BlockGraph (`DistanceSpreadAndColors` + `SpreadSubGraph`; `Docs/SWARM_FAUNA.md` §15 traced the same):
+`norm = |objectOrigin − camera|² / _SqrDistance` (100,000 on every prism material: the ramp ends at ~316 units),
+`far = _Spread × (50, 35, 20)`, `eff = norm > 1 ? far : lerp(−7, far, norm)`, `eff = max(eff, _Spread)`, and each
+face moves `eff / objectScale` along its normal. Base prisms (`PrismMaterial`, spread 0.1) open (5, 3.5, 2) units;
+**danger** prisms (`DangerBlockMaterial`, the theme's `OriginalMaterialSet` tier, spread 0.09/0.29/0.8) open
+(4.5, 10.2, 16). The incorporeal parts READ the danger tier (`Resources/IncorporealDepth.tierMaterialSet`), so a
+prism retune moves them too, and `strength` (1) scales it ("on par with danger"; above 1, stronger).
+
+### 7.2 What the spindle does with it
+
+- **The same ramp, less the resting spread**: `opening = eff − spread`, so up close the opening is exactly zero and
+  the braid is exactly SpindleGraph's. The first axis starts opening at norm 0.339 (~184 units for the danger tier);
+  everything is fully open at norm 1 (~316 units).
+- **The braid's parts are its STRANDS, and they FAN.** Each strand moves along its own splay (TEXCOORD3: the way its
+  tip already leans off the centreline), anchored at the root and reaching the danger face travel (15.2 units) at
+  the tip. The limb blooms like a whisk opening and stays a bond to the node it grows from.
+- **Alive**: a wave travels root to tip (`flowWaves` crests, `flowSpeed` crests/s), breathing the fan ±`flowAmplitude`
+  and lighting a pulse on its crest (`pulseGlow`), both in proportion to how open the limb is (a closed limb is
+  still).
+- **Lockstep tiers**, in the prisms' norm: near → mid at the ramp's first opening (both tiers closed inside the
+  hysteresis band below it); mid → far at 1 / (1 − hysteresis), so the far tier's inward edge is norm 1 (both fully
+  open inside the band above it); the lace closes into the thread shading on the opening's own schedule. The far
+  tier draws the SAME 144-triangle braid the mid tier does. A fully opened strand travels 15 units, so the two
+  tiers must open identically: the 5-ring alternative (72 tris) already sits 0.19 units off the 9-ring braid
+  before opening, and its normals would then carry its strands visibly elsewhere. (Round 3: past the peak it
+  settles back and steps down to the 72-triangle braid and the 12-triangle thread, §7.2b.)
+- **Culling bounds** grow by `IncorporealDepth.MaxOpening` × the limb's strength (the danger face travel × (1 +
+  flowAmplitude), ~20.5 units at strength 1) on mid/far renderers and the instanced batch, so an opened limb just off screen never blinks out.
+
+**What was tried first and rejected (measured in the preview, §7.3):** the literal prism rule on the braid's 216
+small faces, with its per-axis anisotropy, shredded every limb into a hairball - the skeleton gone. Then a rigid
+part along each strand's radial direction: that direction turns with the spiral, so parted strands curled into
+coils, and the roots left their node. The root-anchored fan along a fixed splay is what keeps the wireframe read.
+
+### 7.2b Round 3: strength by element, and the far side settles back
+
+Garrett, after the first overt pass: *"I love to see things overtuned so we can learn what to do next. Reduce the
+magnitude to 70% and tie that to spindles on charge lifeforms, then 20% for everything else. The effect from its
+peak sqrdistance to 0 looks great, but the onset is very abrupt: have it smoothly come in too, over greater
+distance, with a lower-poly effect that transitions to the lowest performance cost we can that still signals its
+minimal presence."*
+
+- **Strength by element** (`SpindleLodProfileSO.chargeStrength` 0.7 / `otherStrength` 0.2): a limb's share of the
+  danger prisms' face travel, read from its lifeform's element (`LifeForm.Element`, the crystal's) when it registers,
+  and written on its LOD materials as `_SpindleLodStrength`. A Charge tip travels ~10.6 units at the peak, every
+  other ~3. The shared `Resources/IncorporealDepth.strength` stays 1 (the danger tier itself).
+- **The far side recedes** (`IncorporealDepth.recedeStartNorm` 2.25 / `recedeEndNorm` 16, ~474 / ~1,265 units):
+  the peak holds past the prisms' over-distance, then the fan closes - smooth in DISTANCE, not squared distance -
+  while the three strands draw onto the centreline, so a fully receded braid IS the thread's construction. The
+  harness measures the onset: 1.7% of the effect per 1% of distance at its steepest, against the near ramp's 3.2%
+  (the side Garrett called great). It lives in the shared include, so every incorporeal part will settle back alike.
+- **Geometry steps down with it**: the 144-triangle braid at the peak, the 72-triangle braid (every sixth ring,
+  0.19 units of decimation, a third of a pixel there) from the recede's start, and the **12-triangle thread** (root,
+  belly, tip: the spindle's taper and nothing else) from its end - the cheapest form that still draws a spindle,
+  held at `minThreadPixels` with coverage alpha, faint glow, faded out between norm 36 and 64 (~1,900–2,530 units),
+  then culled. All three far tiers are instanced while still.
+
+### 7.2c Round 4: twice the distance, half the amplitude
+
+Garrett: *"Grade them in over twice the distance and cut both the charge and normal max amplitude values in half."*
+
+- **Strength** halves: `chargeStrength` 0.35 (a Charge tip travels ~5.3 units at the peak), `otherStrength` 0.1
+  (~1.5 units).
+- **The recede's span doubles in distance**: `recedeEndNorm` 16 -> 42.25, so the settle-back runs ~474 -> ~2,056
+  units (it was ~474 -> ~1,265). The harness's onset is now 1.3% of the effect per 1% of distance at its steepest
+  (round 3: 1.7%; the near ramp: 3.2%).
+- **The thread's fade moves out with it**: `overtFadeStartNorm` 46 / `overtFadeEndNorm` 100 (~2,145 -> ~3,160
+  units). The start must lie past the Low tier's outer edge (`recedeEndNorm / keep` = 45.9), which
+  `OvertBandsAreSane` checks.
+- **Cost**: the 72-triangle braid now reaches ~2,140 units (it handed over to the 12-triangle thread at ~1,320).
+  Amoebius, Garland, the last of six samples: 910 limbs - braid 24, low 886, thread 0, 889 of them instanced (round 3:
+  low 799, thread 87). Garrett's call if the frame-time A/B shows it: pull `recedeEndNorm` back in.
+
+### 7.2d Round 5: a short settle on the full braid, then down the ladder, gone by 1,500
+
+Garrett: *"Have the settling back phase go from 474 to circa 700 but still use the 144. Then have it use
+72 till circa 1000, then 12 till 1500 and gone after that. Then cut the amount of opening value at peak in
+half for both the base and charge. Then apply these effects to all spindles."*
+
+- **The recede** is `recedeEndNorm` 42.25 -> **4.9** (~474 -> ~700 units), and the **144-triangle braid
+  carries all of it**: the 144 -> 72 step now waits for the recede's END (`lowStart = recedeEnd / keep`), where
+  both braids are fully converged into the thread's construction. Its steepest rate is now 3.9% of the effect
+  per 1% of distance (the near ramp: 3.2%), so the settle is quicker than round 4's 1.3% and a little steeper
+  than the opening side; the harness guards it as an ease (under 5%), not a step.
+- **The 72-triangle braid** holds ~700 -> ~1,000 units; **the 12-triangle thread** takes over at the new
+  `overtThreadStartNorm` (**10**, ~1,000 units), glows up to 1.35x until ~1,250, and **fades out
+  ~1,250 -> 1,500** (`overtFadeStartNorm` 15.625, `overtFadeEndNorm` 22.5); it stops being drawn at
+  ~1,564 (the cull's outward edge).
+- **Strength halves again**: `chargeStrength` **0.175** (a tip travels ~2.7 units at the peak),
+  `otherStrength` **0.05** (~0.76), and `switchRingStrength` **0.05** with them (it is the non-Charge
+  value).
+- **Every spindle**: the creatures' bodies already ride the same ramp and recede (§8), so they settle by
+  ~700 at the halved strength; they now also **leave on the thread's own band**, their alpha fading
+  ~1,250 -> 1,500 (`SpindleDepthGlow`), so every spindle in the sea is gone at the same distance. The
+  switch rings take the same ramp, recede and strength but do NOT fade: they are signals you fly toward.
+
+Amoebius, Garland, the last of six samples: 910 limbs - braid 168, low 298, thread 444, 889 instanced, 49 bodies
+(round 4: braid 24, low 886, thread 0).
+
+### 7.2e Round 6: the sanity check - every amplitude, and which ones strength reaches
+
+Garrett: *"Something isn't right, we are not talking about the same amplitude. Do a sanity check and bring
+it down to absurd level, so the effect is negligible."* Rounds 3-5 cut `chargeStrength` / `otherStrength`,
+which scale ONE thing: how far the strands (a body, a ring's facets) MOVE. Five other visible parts of
+the overt look never read strength:
+
+| what you see | knob | scales with strength? |
+|---|---|---|
+| strands fan / body blooms / ring facets open | `chargeStrength`, `otherStrength`, `switchRingStrength` | yes |
+| the fan breathing with the wave | `IncorporealDepth.flowAmplitude` (a fraction of the opening) | yes, through the opening |
+| a pulse of LIGHT riding the crest, up to +80% | `IncorporealDepth.pulseGlow` (was 0.8) | **no** - follows the ramp's openness |
+| the lace closing into smooth thread shading, 184 -> 316 units | none (the LOD: the far tiers have no lace) | **no** |
+| strands held >= 1.25 px wide, alpha paying for it | `minThreadPixels` | **no** |
+| the thread glowing up to 1.35x, ~700 -> 1,250 units | `threadGlow` | **no** |
+
+So halving strength twice left the pulse, the lace change and the glow exactly as strong - the effect
+Garrett was looking at. Round 6 sets the two amplitudes that are THE EFFECT to negligible:
+`chargeStrength` **0.01** (~0.15 units of travel at the peak), `otherStrength` **0.005** (~0.08),
+`switchRingStrength` **0.005**, and `pulseGlow` **0.02** (2% brighter on a crest). What is left visible is
+the LOD itself: the lace closing between 184 and 316 units, the width hold, the far glow-up and the fade.
+If that still reads as "the effect", it is the LOD's own look; `threadGlow` 1 removes the glow-up, and the
+covert style replaces the whole ramp with a quiet convergence.
+
+**The ballooning limbs were a bug, not an amplitude (Garrett, after round 6: "the spindles on the lattice
+flora are still blowing up to very large proportions as I approach them from afar. They get very large, very
+quick, and then small again").** The width hold measured pixels per unit from `UNITY_MATRIX_P._m11`. URP
+renders into an intermediate texture on D3D, Metal and Vulkan and flips the projection's y there, so `_m11`
+is negative: the strand's on-screen width read as negative, the guard read that as infinitely thin, and every
+strand was held at the 32x inflation cap. The hold ramps in with the opening (184 -> 316 units) and is off
+below it, so the limbs swelled to ~32x their thickness across that band and snapped back closer in -
+in every style, since round 1. Fixed with `abs()` (the orthographic branch too); the harness now checks a
+flipped projection draws the same width, and removing the `abs()` is a caught mutant (27). Neither the
+harness nor Amoebius had a flipped projection, which is why neither saw it.
+
+The numbers in §7.2b - §7.2d are earlier rounds'; the table below is round 5's ladder (unchanged).
+
+| tier | overt range (norm, ~units) | mesh | draws |
+|---|---|---|---|
+| Near | < 0.34 (184) | authored braid, 432 | own renderer, SpindleGraph |
+| Mid | 0.34 – 1.09 (330) | braid, 144 | own renderer, opening ramp |
+| Far | 1.09 – 5.33 (730) | braid, 144 | instanced, the peak (to 474) and the recede (to 700) |
+| Low | 5.33 – 10 (1,000) | braid, 72 | instanced, settled |
+| Min | 10 – 24.5 (1,564) | thread, 12 | instanced, glowing to 1,250, fading out 1,250 -> 1,500 |
+| Culled | beyond | — | nothing |
+
+(Each boundary moves outward at the value shown and back inward at value × (1 − hysteresis); every band sits where
+the two tiers draw the same picture, `SpindleLodTests.Overt_StepsDownAsTheEffectSettlesBack`.) Amoebius, Garland, the
+last of six samples: 910 limbs - braid 24, low 799, thread 87, 890 of them instanced.
+
+### 7.3 Seeing it without Unity
+
+`python3 Tools/Shaders/render_spindle_lod_preview.py OUT --style overt|covert [--strength 0.175]` compiles the SHIPPED
+`SpindleLod.hlsl` + `IncorporealDepth.hlsl` + `SpindleSway.hlsl` with clang, runs them on the real mid braid posed
+as the Branch prefab poses it (a star of 8 limbs, like one lattice node), drawing the tier's own mesh at each
+distance, and writes a sheet (seven points from rest through the peak to the fading thread:
+the shape framed large with the width hold off, and below it the true size on a 1080p screen with the hold on) and a
+two-second animation of the open star. Colour is the far tier's thread shading (the lace's Voronoi is a Shader Graph
+node with no HLSL here) and the raster has no bloom: judge shape and motion, not grading.
+
+### 7.4 One effect for every incorporeal part
+
+`IncorporealDepth.hlsl` is written for adoption: include it from a graph's Custom Function and choose the form
+that fits what the surface is made of.
+
+| surface | form | why |
+|---|---|---|
+| snow shards | `IncorporealDepthOpen` (per face, prism-exact) | faceted solids with a few big split-normal faces |
+| toy switch rings | the synthetic wire: `SpindleLodVertex` on a machined cable | **§9** (§8.3's facet form is retired for them) |
+| membrane | `IncorporealDepthPart` along each panel's outward direction | parting panels, not shredding triangles |
+| nucleus | `IncorporealDepthPart` per shell | the same |
+| spindles | `IncorporealDepthPart` along each strand's splay, root-anchored | §7.2 |
+| creatures' own models | `IncorporealDepthBloom`, by position alone | §8 |
+
+Then `IncorporealDepthGlow` in the fragment and a per-surface Strength. The ramp, the tier and the wave are global
+(`Utility/IncorporealDepth.Publish`), so every part opens at the same distances, as hard as danger mass, with one
+wave, which is the connection between the incorporeal parts. The spindles, the creatures' models and
+the switch rings are wired (§8); the shards, membrane and nucleus are not yet (T-20261020-3b39).
+
+## 8. Beyond the braid: every spindle, and the switch rings
+
+Garrett, 2026-10-21: *"Let's also apply this to all spindles including fauna like sharks. Let's also
+replace the switch rings with a spindle material that has this effect."*
+
+### 8.1 What was not covered, measured
+
+The LOD and its effect took only renderers drawing the flora braid (`BezierCurve.001` in `bonita.fbx`):
+every flora branch and the tadpole. Every other SpindleGraph wearer that a `Spindle` drives draws its
+own model, and none of them had the effect:
+
+| creature | prefab | model | renderers |
+|---|---|---|---|
+| shark | `MassSharkFauna` | `Shark_model.fbx` (body + two wings) | 3 skinned |
+| brittlestar | `MassBrittlestarFauna` | `Brittlestar_Export.fbx` (body + arms) | 11 skinned |
+| worm | `WormHead/Body/TailSegment` | `wormhead.fbx` / `wormbody.fbx` | 1-2 static each |
+| quadfish | `QuadFish` | `mediumfish.fbx` | 1 static |
+
+They have nothing in common the braid's channels could be baked against: the shark is one lattice
+skin, the worm four swept strands, the fish two, the brittlestar a body and five tubes, and their UVs
+are ordinary unwraps (u does not run root to tip). And their UV seams and hard edges SPLIT vertices,
+so any displacement read off a vertex attribute (its normal, its UV) moves the two copies of a seam
+apart and tears the surface. Membranes and the Sparrow's exhaust also wear SpindleGraph but are not
+spindles; they are untouched.
+
+### 8.2 The bloom (creatures)
+
+`IncorporealDepthBloom` (`IncorporealDepth.hlsl`): every point moves OUTWARD from the object's pivot,
+by a function of its POSITION ALONE, so it can never tear a mesh. It is the braid's fan with the
+creature's heart for the root: anchored at the pivot, a point's travel grows linearly with its radius
+and reaches the full travel (the danger face's 15.2 world units x strength) at the body's REACH; the
+wave runs heart -> extremities along the same radius, and its pulse of light rides the crest. Same
+ramp, same recede, same strength by element (a Charge shark blooms 0.175, every other creature 0.05),
+in world units whatever the object's scale.
+
+- **Reach** is measured per renderer when it registers (`SpindleLodSystem.ReachOf`: the bounds'
+  farthest corner from the pivot, rounded up to a half-octave so bodies of a size share a material).
+  A skinned body is drawn about its ROOT BONE, so that is its pivot; a static one, its transform.
+- **It never folds.** A wave that pushes a crest harder than the trough ahead of it can overtake it and
+  turn the surface inside out. The travel is capped at 0.8 / q of the reach (q = 2 pi x waves x the
+  wave's amplitude), which keeps the displaced radius's derivative at least 0.2, and never more than
+  30% of the reach (a body blooms; it does not double). The harness sweeps it (no fold, at three
+  clocks and a body small enough for the cap to bite).
+- **The pulse is where the geometry is.** The fragment stage sees only displaced positions, so
+  `IncorporealDepth_BloomRestRadius` inverts the bloom (Newton, from the no-wave guess; the bloom is
+  monotone by the cap) and the pulse is read at the rest radius - within 1e-3 of the vertex stage's
+  crest, measured.
+- **No tiers, no LOD meshes.** These bodies are few and most of them move (a creature's body would lag
+  its creature in an instanced batch). `SpindleLodSystem.Register` takes a renderer whose mesh it has
+  no LOD for as a BODY: it swaps in a depth material (the body's own material, every property and
+  keyword, on `SpindleDepthGraph`, with `_SpindleLodStrength` / `_SpindleDepthReach` /
+  `_SpindleDepthForm` 0), grows its culling bounds by the bloom's travel, and hands the authored material
+  back when it unregisters. Only materials on SpindleGraph's blackboard are taken (a body on another
+  shader keeps it). `SpindleLodProfileSO.depthOnBodies` switches it off.
+- **The element** is read off whatever lifeform the spindle belongs to (`ILifeFormEntity`), so a
+  creature's spindles - which name no `LifeForm` - get their element too. That also fixed the tadpole:
+  a Charge tadpole's braid was being parted at the non-Charge strength.
+
+### 8.3 The switch rings (superseded by §9 the same day)
+
+*The rings are now the synthetic wire of §9; this records the facet form they wore first.*
+
+`ToyFactory.AddSwitchRing` (every toy root, matrix station, Domain Changer slot, painting gate, race gate,
+Scarab switch, Astro League goal) now draws the ring on `SpindleDepthGraph` in the FACETS form: from
+afar each of the ring's 72 flat facets opens along its own normal, prism-exact
+(`IncorporealDepthOpen`), on the same ramp, recede and wave, and the wave and its pulse run ROUND the
+ring (u, which `RingMesh` carried for it then; the UVs went with the facet form when the rings became the wire).
+The switch vocabulary is unchanged: the signal still picks the colour (`ToySwitchSignal`), which
+becomes the spindle's body colour, with its rim 37% toward white as `SpindleMaterial` pairs them.
+
+| profile field | value | why |
+|---|---|---|
+| `switchRingStrength` | 0.05 (round 5; was 0.1) | ~0.76 units at the peak, as a non-Charge limb |
+| `switchRingDistance` | 200,000,000 | SpindleGraph's `_Distance` (the lace's fade): a branch fades by ~1,400 units, a ring you fly toward stays readable to ~14,000 |
+| `switchRingSway` | 0 | a ring is a trigger volume drawn at its own radius; a swaying ring would draw it where it is not |
+
+Where the graph cannot run (no profile, `lodEnabled` off, an unsupported shader, edit mode) the ring
+is the signal's prism, exactly as before. Hubs and cones beside a ring stay prisms.
+
+### 8.4 The pieces
+
+| piece | what it is |
+|---|---|
+| `SpindleDepthGraph.shadergraph` / `SpindleDepth.mat` | Generated FROM SpindleGraph by `Tools/Shaders/wire_spindle_lod.py` (the third graph it writes; `--check` holds it): `SpindleDepthVertex` before the sway, `SpindleDepthGlow` on the lace colour, alpha untouched. The template is referenced by the profile (`depthTemplate`) so the build keeps its variants. |
+| `SpindleDepthVertex_float` / `SpindleDepthGlow_float` (`SpindleLod.hlsl`) | Form 0 bloom, form 1 facets; a pass-through in the covert style and at strength 0. |
+| `IncorporealDepthBloom_float`, `IncorporealDepth_BloomPulse` (`IncorporealDepth.hlsl`) | The bloom form, shareable by any incorporeal part with no channels to read. |
+| `SpindleLodSystem` bodies | `AddBody` / `RemoveBody`, `ReachOf`, `ReachBucket`, `BodyMaterialFor`; `EnsureRunning` (Play only) for the rings. The `renderers` line ends `· bodies N`. |
+| `Tools/Shaders/render_spindle_depth_preview.py` | The offline preview of a creature (`--body shark|brittlestar|worm|fish`) at seven stops and alive at the peak. |
+| `verify_spindle_lod.py` B / F blocks | Pass-through, pivot anchored, world units under non-uniform scale, the seam test, no fold, the inverse, the pulse on the crest, form 1 == the prism-exact opening with flat facets. 24 mutants, all caught. |
+
+Amoebius, Garland, headless, the last of six samples: 910 limbs as before (889 instanced) and **49 bodies**
+(the cell's sharks, brittlestars, worms and quadfish), with the same 38 distinct log messages as the run
+before this change.
+
+### 8.5 Not verified
+
+- No Unity editor has imported `SpindleDepthGraph` or seen a creature or ring in it. If it imports
+  magenta, every creature and ring shows it: untick `depthOnBodies` (creatures) or `lodEnabled` (both).
+- The skinned bodies' pivot is their root bone, which is how Unity draws them; the preview blooms about
+  the bounds centre instead. A root bone far from the body's middle blooms the body away from it.
+- Amoebius draws `SpindleDepthGraph` untranslated until its GLSL library carries the two functions
+  (T-20261020-1fd6): there the creatures and rings fall back to the engine's generic draw.
+
+## 9. The synthetic wire: the switch rings
+
+Garrett, 2026-10-21: *"Make a synthetic spindle geometry that is more like a wire instead of a root. Use this
+for the switch rings in a similar LOD fashion, so these look like synthetic constructs up close, but spindles
+from afar."*
+
+### 9.1 The geometry
+
+`Tools/Build/author_spindle_lod_meshes.py` builds it beside the braid's LOD meshes (`build_wire`): a machined
+THREE-STRAND CABLE closed round a unit ring (radius 0.5 in x/y, axis z - `RingMesh`'s convention, scaled by
+the switch's diameter). Where the bonita braid is a root - strands that taper thin-thick-thin, spread and pinch
+- the wire is regular: hexagonal strands of constant radius (0.016), laid 0.022 off the cable's axis at a
+constant twist (24 whole turns round the ring), flat-faceted, cable radius 0.038 (the old ring tube was 0.04).
+It carries the braid's own channels, so the LOD's vertex code applies to it unchanged:
+
+| channel | the wire |
+|---|---|
+| UV0 | u runs 1 -> 5 round the ring (`WIRE_WRAPS` spindle lengths; >= 1 everywhere, so the fan's root weight is 1 and the WHOLE cable unravels rather than a root holding), v round the strand |
+| TEXCOORD1 | strand centre -> the cable's axis (the convergence) |
+| TEXCOORD2 | the corner's arm off its strand centre (the width hold) |
+| TEXCOORD3 | the strand's SPLAY: out from the cable's axis (the fan: the lay loosens) |
+
+The hexagons keep a fixed orientation in the cross-section plane (they do not roll with the lay), so the three
+converged strands coincide exactly and any decimation of the converged cable is the same tube.
+
+| mesh | | triangles |
+|---|---|---|
+| `SpindleWireRing` | 144 segments x 3 strands x 6 sides; the near AND mid tier | 5,184 |
+| `SpindleWireRingLow` | 48 segments, drawn only once fully converged | 1,728 |
+| `SpindleWireRingThread` | one hexagonal tube on the cable's axis | 576 |
+
+It is the profile's second mesh set, flagged `synthetic`. The generator validates every vertex's convergence
+target on the cable's axis, every corner a strand radius off its centre, u >= 1, unit splays, winding against
+the normals, the closed loop and 16-bit indices (`--self-test`: 8 negative controls).
+
+### 9.2 The look: `SpindleWireGraph`
+
+Generated from SpindleGraph by `wire_spindle_lod.py` (the fourth graph): the mid graph's construction with
+`SpindleWireSurface` in place of `SpindleLodSurface`. It runs the plant's story the other way round:
+
+- **at rest** - up close, and again once settled far away - the thread's solid, faceted, lit-by-facing look:
+  a synthetic construct, no lace at all;
+- **while the effect is open** (the prisms' ramp from 184 units, the peak to 474, the recede to 700) the
+  spindle's own lace (SpindleGraph's chain), in proportion to how open it is: a spindle from afar;
+- **it never fades** and does not glow up with distance (`SpindleLod_ThreadLook(..., synthetic: true)`), and
+  its tier is **never culled** (`SpindleLodSystem.Kept`): a switch is a signal you fly toward.
+
+**Its facets must READ (Garrett, after the first look in Unity: "they were all very flat at all distances
+because they were so bright that they flattened as their features were all washed out").** The first cut
+painted the ring between its signal colour and that colour 37% toward white - both ends bright, on an unlit
+shader under bloom - so every facet landed in one bright band and the twist, the strands and the facets
+vanished. Now the ring is the prism rings' own pairing: a DARK body at `switchRingDarkShare` (0.18) of the
+signal and the BRIGHT signal itself (`switchRingRimWhiten` 0), with the wire's own facet shading
+(`switchRingShadeBase` 0, `switchRingShadeFacet` 1, published in `_SpindleLodLook2.zw`) spanning the whole
+range: an edge-on facet is the dark body, a facet square to the camera is the signal colour, ~5.5x
+brighter. The plant threads keep their own shading (`threadBase` / `threadFacet` / `threadGlow`). The
+harness holds it (W5; a wire shaded like the thread is a caught mutant).
+
+### 9.3 The tiers
+
+| distance | the ring | mesh |
+|---|---|---|
+| 0 - 184 u | a machined cable, solid | 5,184 |
+| 184 - 316 u | turning to spindle lace; the lay loosens (strength) | 5,184 |
+| 316 - 474 u | the peak: lace, wave, pulse | 5,184 |
+| 474 - 700 u | settling back: strands draw onto the axis, the solid look returns | 5,184 |
+| 700 - 1,000 u | a settled, solid ring | 1,728 |
+| beyond 1,000 u | the glowing thread, held >= 1.25 px, never culled | 576 |
+
+The near -> mid swap changes nothing (same mesh, same graph, same values); the 5,184 -> 1,728 and -> 576 swaps
+come only once the strands have fully converged, where every tier draws the same tube.
+
+### 9.4 The pieces
+
+- `ToyFactory.AddSwitchRing` builds the ring on the wire mesh with a NEAR material per signal colour
+  (`wireTemplate`, dark at `switchRingDarkShare` of the signal, bright at the signal, the wire's girth and strand,
+  `switchRingStrength`, `switchRingDistance`, `switchRingSway`), and adds `SwitchRingLod`, which registers it
+  (`SpindleLodSystem.RegisterSwitchRing`) and hands mesh and material back on disable, repaint or destroy.
+  `RepaintSwitchRing` rebinds it on the new colour. Outside Play, without the profile or with `lodEnabled`
+  off, the ring is the signal's prism ring as before.
+- `SpindleLodSystem`: strength is passed explicitly (limbs by element, rings by `switchRingStrength`); a
+  synthetic set's mid and far tiers derive from `wireTemplate`; `Kept` keeps it out of the cull. Rings spin
+  (`ToyIdleSpin`), so they always draw through their own renderer, never the instanced batch.
+- `verify_spindle_lod.py` W block: solid up close, exactly the lace at the peak, solid and still drawn far
+  past the limbs' fade, never lace in the covert style (mutants: the ring fades, never turns to lace, is lace
+  up close). `SpindleLodTests`: `ShippedProfile_CarriesTheSyntheticWire`, `SyntheticWire_IsNeverCulled`.
+- `render_spindle_lod_preview.py OUT --wire [--strength S]`: the ring at eight stops (the lace shows as the
+  solid look: no Voronoi in HLSL here).
+
+Amoebius, Garland, headless, the last of six samples: 920 registered (910 limbs as before plus the menu's
+**10 switch rings** as wire rings), 889 instanced, 49 bodies, the same 38 distinct log messages.
+
+### 9.5 Not verified
+
+- No Unity editor has imported `SpindleWireGraph` or drawn a wire ring. If it imports magenta every ring shows
+  it: untick `lodEnabled` (the rings fall back to prisms).
+- At the shipped `switchRingStrength` (0.005) the lay barely loosens; the spindle read from afar is the lace,
+  the wave's pulse (`pulseGlow`, 0.02 now) and the glowing thread. Raise `switchRingStrength` to see the
+  cable unravel (the preview uses 0.35).
+- Amoebius draws `SpindleWireGraph` untranslated until T-20261020-1fd6 maps it.
+
+## 10. Open rows (seen while shipping; not fixed on this branch)
+
+Each is a measurement, not a guess; take them as separate changes.
+
+1. **`SpindleDepthGraph` form 1 (facets) has no wearer.** The switch rings wore it for one round (§8.3)
+   and moved to the wire (§9). `SpindleDepthVertex_float` / `SpindleDepthGlow_float` still branch on it and
+   the harness still proves it (`verify_spindle_lod.py` F block). Measure: `grep -rn "_SpindleDepthForm"
+   Assets/_Scripts` returns only the body path writing 0. Decide with T-20261020-3b39: the snow shards are
+   the faceted surface it was designed for (keep and wire them), or delete the branch and its checks.
+2. **The `renderers` / `[ECOSIM]` line counts switch rings as limbs.** Amoebius, Garland: 920 registered
+   where 910 are limbs and 10 are the menu's rings (§9.4). `SpindleLodSystem.Describe` has a `bodies` count
+   but no `rings` count, so a ring-heavy scene (a race course) reads as a forest. Split the count by
+   `MeshSet.synthetic`.
+3. **The wire's triangle cost on a race course is unmeasured.** 5,184 triangles within ~730 units of each
+   ring, 576 beyond ~1,000; a 40-gate course entirely inside 730 units would draw ~207k. Needs a race
+   capture (`Docs/PERFORMANCE_OPTIMIZATION.md` row "Switch rings as a synthetic wire").
+4. **`SpindleLodProfileSO` now configures three surfaces** - limbs (bands, look, strengths), bodies
+   (`depthOnBodies`) and rings (seven `switchRing*` fields) - in one asset under one owner. Measure the
+   field count before splitting (`grep -c "public " Assets/_Scripts/ScriptableObjects/SpindleLodProfileSO.cs`);
+   a `SwitchRingLookSO` is the natural seam if the ring look grows again.
+

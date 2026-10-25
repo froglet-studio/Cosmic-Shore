@@ -83,7 +83,14 @@ namespace Unity.Profiling
 namespace FMODUnity
 {
     public struct EventReference { public bool IsNull => true; }
-    public class StudioEventEmitter : UnityEngine.MonoBehaviour { public EventReference EventReference; public void Play() { } }
+    // The real one is Assets/Plugins/FMOD/src/RuntimeUtils.cs; only the members the swarm glue reads.
+    public enum EmitterGameEvent { None = 0, ObjectStart = 1, ObjectDestroy = 2 }
+    public class StudioEventEmitter : UnityEngine.MonoBehaviour
+    {
+        public EventReference EventReference;
+        public EmitterGameEvent EventStopTrigger = EmitterGameEvent.None;
+        public void Play() { }
+    }
 }
 
 namespace CosmicShore.Data
@@ -169,6 +176,7 @@ namespace CosmicShore.Gameplay
     public static class FloraHeartRegistry { public static Flora NearestToPoint(Vector3 from, Predicate<Flora> reject) => null; }
     public class Cell : MonoBehaviour { public float MembraneRadius => 0; public void RegisterSpawnedObject(GameObject o) { } public bool IsInsideNucleus(Vector3 p) => false;
         public void BindVirtualMass(int spatialIndexId, Domains domain) { }   // Cell.cs (round 11a)
+        public bool IsPreyForHerbivore(Vector3 position, Domains faunaDomain, Domains preyDomain) => true;   // Cell.cs (the builders' platform diet)
         // Cell.cs (round 8)
         public static int VolumeSlotOf(Domains d) => 0; public void SetVirtualVolume(Object source, double[] bySlot) { } public void ClearVirtualVolume(Object source) { } }
     // PrismSpatialIndex.cs:678-700 - the virtual-entry contract (PR #944 + round 11a)

@@ -112,7 +112,12 @@ namespace CosmicShore.Core
             }
 
             var economy = Economy;
-            if (economy == null)
+            // "Not loaded" is not "null": before the cloud profile merges, CurrentProfile is a
+            // local DEFAULT whose Economy is non-null. A grant applied to it reported success to
+            // the storefront and was then discarded by MergeCloudProfile, which replaces the
+            // profile and does not carry tokens or RedeemedOrderIds across - a paid grant lost.
+            var data = PlayerDataService.Instance;
+            if (economy == null || data == null || !data.IsInitialized)
             {
                 // Losing a paid grant is the worst outcome here, so refuse loudly rather than
                 // silently dropping it. The caller is expected to retry once the profile loads.

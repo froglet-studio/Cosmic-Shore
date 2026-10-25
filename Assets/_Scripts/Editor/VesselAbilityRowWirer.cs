@@ -5,6 +5,7 @@ using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Editor.Froglet;
 // `using System;` (for Array/Enum below) collides with `using UnityEngine;` on the name
 // Object — CS0104. The repo's convention for this collision is an alias, not per-site
 // qualification (AOERadialBlocks.cs aliases Random, CSDebug.cs aliases Debug): it also means a
@@ -20,11 +21,15 @@ namespace CosmicShore.Editor
     /// Four-Icon Ability Row (LOCKED structure)").
     ///
     /// <para>Because that contract is fleet-wide, so is this tool. It was the Dolphin's private
-    /// wirer until 2026-08-17; nothing about the row's geometry was ever Dolphin-specific, and the
-    /// Rhino still reports <b>0/4 icons</b> against the audit (the Serpent binds 1/4, Time only). Pointing this
-    /// at one of them creates the whole row from nothing, correctly placed and correctly bound —
-    /// which is the entire mechanical half of bringing a vessel into compliance. The remaining half
-    /// is design (authoring that vessel's `ElementalAbilityMapSO`), which no tool can do.</para>
+    /// wirer until 2026-08-17; nothing about the row's geometry was ever Dolphin-specific. Pointing
+    /// this at a vessel with no row creates the whole row from nothing, correctly placed and
+    /// correctly bound — which is the entire mechanical half of bringing a vessel into compliance.
+    /// The remaining half is design (authoring that vessel's `ElementalAbilityMapSO`), which no tool
+    /// can do. (The Rhino, Serpent and Scarab rows were NOT built by this window: since 2026-10-06
+    /// (#971) they are authored headless by <c>Tools/Build/author_hull_ability_rows.py</c>, Rhino at
+    /// this tool's fleet bands, and each binds all four slots, with Rhino Charge/Space and Serpent
+    /// Mass bound icon-less as open design slots. Re-author those three by re-running that script
+    /// (its <c>--check</c> is the drift gate).)</para>
     ///
     /// <para><b>The layout is not a judgement call.</b> Four buttons parented to the HUD root sharing
     /// one Y band, at four equal X bands across the lower right, each holding an 80×80 icon. The
@@ -44,8 +49,8 @@ namespace CosmicShore.Editor
     /// out at its call site.</para>
     ///
     /// Open the HUD prefab in Prefab Mode, select the root, then
-    /// <b>FrogletTools ▸ Vessels ▸ Wire Vessel Ability Row</b>. Verify with
-    /// <b>FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows</b>.
+    /// <b>FrogletTools ▸ Vessels ▸ Wiring ▸ Wire Vessel Ability Row</b>. Verify with
+    /// <b>FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Ability Rows</b>.
     /// </summary>
     public static class VesselAbilityRowWirer
     {
@@ -108,7 +113,9 @@ namespace CosmicShore.Editor
             return slots;
         }
 
-        [MenuItem("FrogletTools/Vessels/Wire Vessel Ability Row")]
+        [MenuItem("FrogletTools/Vessels/Wiring/Wire Vessel Ability Row", false, 250)]
+        [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
+            Description = "Build or repair a vessel HUD's four-icon ability row.")]
         static void WireSelected()
         {
             var go = Selection.activeGameObject;
@@ -131,7 +138,7 @@ namespace CosmicShore.Editor
             EditorUtility.DisplayDialog("Wire Vessel Ability Row",
                 $"Placed and bound {bound}/4 ability icons on '{view.name}' at the fleet-standard bands.\n\n" +
                 (bound < 4 ? "A slot is unbound — see the Console for which and why.\n\n" : "") +
-                "Verify with FrogletTools > Vessels > Audit Vessel Ability Rows.", "OK");
+                "Verify with FrogletTools > Vessels > Audits > Audit Vessel Ability Rows.", "OK");
         }
 
         /// <summary>

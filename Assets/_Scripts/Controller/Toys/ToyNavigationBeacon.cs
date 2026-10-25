@@ -5,7 +5,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The arrow that points at the toy you asked to be taken to — the platform's own
+    /// The arrow that points at the toy (or the thing a toy made) you asked to be taken to — the platform's own
     /// <see cref="ObjectiveIndicator"/>, borrowed for as long as the trip lasts.
     ///
     /// <para>The Toy Box's Navigate drops the player just outside the toy's ring facing it, so the
@@ -52,12 +52,24 @@ namespace CosmicShore.Gameplay
         public static void PointAt(Toy toy, IPlayer player, MenuCrystalClickHandler freestyle)
         {
             if (!toy) { Clear(); return; }
+            PointAt(toy.transform, toy.SwitchRingRadius, toy.DisplayName, player, freestyle);
+        }
 
-            s_relay.Target = toy.transform;
+        /// <summary>
+        /// Point the arrow at any <paramref name="target"/> - the thing a toy MADE rather than the
+        /// toy (a creature the Spawn Matrix released), arrived at within
+        /// <see cref="ArrivedRingFactor"/> × <paramref name="radius"/>.
+        /// </summary>
+        public static void PointAt(Transform target, float radius, string label, IPlayer player,
+                                   MenuCrystalClickHandler freestyle)
+        {
+            if (!target) { Clear(); return; }
+
+            s_relay.Target = target;
             EnsureIndicator();
-            EnsureDriver().Begin(toy, player, freestyle);
+            EnsureDriver().Begin(target, radius, player, freestyle);
 
-            CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[ToyBox] beacon -> {toy.DisplayName}");
+            CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[ToyBox] beacon -> {label}");
         }
 
         /// <summary>Take the arrow down. Idempotent.</summary>
@@ -91,14 +103,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         class Driver : MonoBehaviour
         {
-            Toy _toy;
+            Transform _target;
+            float _radius;
             IPlayer _player;
             MenuCrystalClickHandler _freestyle;
             float _deadline;
 
-            public void Begin(Toy toy, IPlayer player, MenuCrystalClickHandler freestyle)
+            public void Begin(Transform target, float radius, IPlayer player, MenuCrystalClickHandler freestyle)
             {
-                _toy = toy;
+                _target = target;
+                _radius = radius;
                 _player = player;
                 _freestyle = freestyle;
                 _deadline = Time.unscaledTime + MaxTripSeconds;
@@ -109,7 +123,7 @@ namespace CosmicShore.Gameplay
             {
                 if (s_relay.Target == null) { enabled = false; return; }
 
-                if (!_toy || Time.unscaledTime > _deadline) { Finish("gave up"); return; }
+                if (!_target || Time.unscaledTime > _deadline) { Finish("gave up"); return; }
 
                 // Leaving freestyle ends the trip: the arrow points at a place in the lava lamp,
                 // and out of freestyle the player is not going anywhere.
@@ -118,8 +132,8 @@ namespace CosmicShore.Gameplay
                 var vessel = _player?.Vessel?.Transform;
                 if (!vessel) return;
 
-                float arrived = Mathf.Max(1f, _toy.SwitchRingRadius) * ArrivedRingFactor;
-                if ((vessel.position - _toy.transform.position).sqrMagnitude <= arrived * arrived)
+                float arrived = Mathf.Max(1f, _radius) * ArrivedRingFactor;
+                if ((vessel.position - _target.position).sqrMagnitude <= arrived * arrived)
                     Finish("arrived");
             }
 

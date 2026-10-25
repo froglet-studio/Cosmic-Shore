@@ -38,10 +38,11 @@ SW="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
 TANDAVA="$ROOT/Assets/_Scripts/Controller/Arcade/Tandava/TandavaDirectorCore.cs"   # pure C#: the director
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "-r:$NSREF" -target:library -out:"$OUT/unityprofile.dll" \
   "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmGridCore.cs" "$SW/SwarmSortCore.cs" "$SW/SwarmEvoFateCore.cs" \
-  "$SW/SwarmTickJob.cs" "$SW/SwarmPrismSync.cs" "$TANDAVA" || { echo "FAIL: the sim cores do not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
+  "$SW/SwarmTickJob.cs" "$SW/SwarmPrismSync.cs" "$SW/KernelMath.cs" "$TANDAVA" || { echo "FAIL: the sim cores do not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
 # Round 11a-2 (§19.4): the body pose the game Burst-compiles (SwarmPoseJob) must stay Burst-compilable - textual gate,
 # with the round-11a System.Numerics pose as its negative control.
 python3 "$HERE/check_burst_pose.py" "$SW/SwarmPrismSync.cs" "$HERE/TickJobHarness.cs" || exit 1
+python3 "$HERE/check_kernel_math.py" "$SW/KernelMath.cs" "$SW/SwarmPrismSync.cs" || exit 1
 # Round 11a (Docs/SWARM_FAUNA.md §19.1): the virtual-entry queries a member is found through vs the SHIPPED prism
 # predicates, both extracted verbatim from PrismSpatialIndex.cs (R11a). Its own small executable; runs first because
 # it takes about a second.
@@ -61,6 +62,7 @@ ECO=(); for f in "$ROOT"/Assets/_Scripts/Controller/Environment/FloraAndFauna/Ec
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmEvoFateCore.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmTickJob.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmPrismSync.cs" \
+  "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/KernelMath.cs" \
   "${ECO[@]}" "$TANDAVA" \
   "$HERE/Program.cs" "$HERE/TickJobHarness.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs" "$HERE/SortFeelHarness.cs" "$HERE/EvoHarness.cs" "$HERE/LineageHarness.cs" \
   "$HERE/SwarmLodHarness.cs" "$HERE/Round11dHarness.cs" "$HERE/EmotionExport.cs" "$HERE/TandavaHarness.cs"

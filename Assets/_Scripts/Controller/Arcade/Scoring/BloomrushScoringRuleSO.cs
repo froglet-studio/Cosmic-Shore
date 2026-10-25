@@ -56,6 +56,9 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < dc; i++)
             {
                 var d = GameDataSO.ActiveDomains[i];
+                // An empty domain would win an all-zero round by enum order, the controller
+                // would find no pilot to name for it, and the timed round would restart.
+                if (!IsFielded(gameData, d)) continue;
                 int volume = ScoringMetrics.SumByDomain(gameData, metric, d);
                 int fuses = SumFusesBeaten(gameData, d);
                 // Strict > with enum-order iteration = the documented Jade → Ruby → Gold last

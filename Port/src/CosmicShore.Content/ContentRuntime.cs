@@ -79,10 +79,18 @@ namespace CosmicShore.Content
             ChainImporter(typeof(Material), r => r.Guid == AssetLoader.BuiltinExtraGuid ? BuiltinMaterials.ForFileId(r.FileId) : null);
             ShaderProperties = new Shaders.ShaderPropertyCatalog(Db);
             Shader.PropertyCatalog = ShaderProperties.For;
+            Shader.HdrColorCatalog = ShaderProperties.HdrColors;
+            Shader.SourceInfoCatalog = ShaderProperties.SourceInfo;
+            ShaderGraphs = new Shaders.ShaderGraphCatalog(Db);
+            Shader.GraphCompiler = ShaderGraphs.For;
+            Shader.TextureByGuid = guid => Assets.Load<Texture>(new ObjRef(2800000, guid, 3));
         }
 
         /// <summary>The shaders' declared properties (what Material.HasProperty and unset-property reads answer from).</summary>
         public Shaders.ShaderPropertyCatalog ShaderProperties { get; }
+
+        /// <summary>The project's Shader Graphs compiled to GLSL (what the renderer draws an untranslated graph with).</summary>
+        public Shaders.ShaderGraphCatalog ShaderGraphs { get; }
 
         /// <summary>Adds an importer for <paramref name="type"/> in front of any already registered (first non-null wins).</summary>
         public void ChainImporter(Type type, Func<ObjRef, EngineObject> importer)
@@ -120,8 +128,8 @@ namespace CosmicShore.Content
 
         void ReadBuildSettings()
         {
-            // The engine's own Scenes In Build (Port/ProjectSettings/PrismaProject.json) wins when authored.
-            var froglet = Prisma.PrismaProjectSettings.Load(Db.ProjectRoot);
+            // The engine's own Scenes In Build (Port/ProjectSettings/AmoebiusProject.json) wins when authored.
+            var froglet = Amoebius.AmoebiusProjectSettings.Load(Db.ProjectRoot);
             if (froglet.Scenes is { Count: > 0 } own)
             {
                 foreach (var s in own) BuildScenes.Add((s.Path, s.Guid, s.Enabled));
@@ -149,7 +157,7 @@ namespace CosmicShore.Content
             if (TryFloat(body["m_TimeScale"], out float scale) && scale >= 0f) Time.timeScale = scale;
         }
 
-        /// <summary>ProjectSettings/DynamicsManager.asset: gravity, and which transform poses and triggers a query sees.</summary>
+        /// <summary>ProjectSettings/DynamicsManager.asset: gravity, which transform poses and triggers a query sees, and the contact pass's bounce threshold and layer matrix.</summary>
         void ReadPhysicsSettings()
         {
             var body = ReadSettingsBody("DynamicsManager.asset");
@@ -157,6 +165,8 @@ namespace CosmicShore.Content
             if (body["m_QueriesHitTriggers"] != null) Physics.queriesHitTriggers = body.Bool("m_QueriesHitTriggers");
             if (body["m_AutoSyncTransforms"] != null) Physics.autoSyncTransforms = body.Bool("m_AutoSyncTransforms");
             if (body["m_Gravity"] is YMap g) Physics.gravity = new Vector3(g.Float("x"), g.Float("y"), g.Float("z"));
+            if (TryFloat(body["m_BounceThreshold"], out float bounce) && bounce >= 0f) Physics.bounceThreshold = bounce;
+            Physics.SetLayerCollisionMatrix(body.Str("m_LayerCollisionMatrix"));
         }
 
         YNode ReadSettingsBody(string file)
@@ -284,6 +294,25 @@ namespace CosmicShore.Content
 
         // ── ISceneContentBackend ─────────────────────────────────────────────
 
+        /// <summary>
+        /// Enabled build-list membership by bare scene name or asset path (case-insensitive, the
+        /// same matching <see cref="ResolveScenePath"/> uses for the list). Unlike that lookup it
+        /// never falls back to the rest of the project: a scene outside the build list is one a
+        /// Unity player cannot load by name, which is the question being asked.
+        /// </summary>
+        public bool IsInBuildList(string nameOrPath)
+        {
+            if (string.IsNullOrEmpty(nameOrPath)) return false;
+            bool isPath = nameOrPath.EndsWith(".unity", StringComparison.OrdinalIgnoreCase);
+            foreach (var (path, _, enabled) in BuildScenes)
+            {
+                if (!enabled || string.IsNullOrEmpty(path)) continue;
+                string candidate = isPath ? path : Path.GetFileNameWithoutExtension(path);
+                if (string.Equals(candidate, nameOrPath, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            return false;
+        }
+
         public void Load(string sceneName, LoadSceneMode mode, Scene scene)
         {
             var path = ResolveScenePath(sceneName);
@@ -376,6 +405,9 @@ namespace CosmicShore.Content
                 ".prefab" => MainObjectOfPrefab(guid),
                 ".asset" or ".mat" => MainObjectOfAsset(guid),
                 ".png" or ".jpg" or ".jpeg" or ".tga" or ".psd" => typeof(Sprite).IsAssignableFrom(type) ? 21300000 : 2800000,
+                // A TextAsset's main object (the cell environments' layout bakes are .bytes, read
+                // with Resources.Load<TextAsset>); LoadTextAsset reads the file by its guid.
+                _ when TextAsset.IsTextAssetExtension(ext) => 4900000,
                 _ => 0,
             };
             if (fileId == 0) return null;

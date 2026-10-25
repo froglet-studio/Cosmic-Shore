@@ -146,17 +146,50 @@ namespace CosmicShore.Core
 
         void Start()
         {
+            // A scene carrying StandaloneSceneMarker runs ALONE: no network monitor, no UGS
+            // authentication, and no load of the Authentication scene. Reflex instantiates
+            // this prefab as a ROOT SCOPE, so without this guard AppManager reaches every
+            // scene in the project — and a bare measurement scene replaced itself with
+            // Authentication after MinimumSplashDuration, which makes it unable to measure
+            // anything.
+            //
+            // INSTALLING IS NOT BOOTING: InstallBindings has already run (Reflex calls it at
+            // container construction, before any Start), so a standalone scene keeps every DI
+            // binding and loses only the boot SEQUENCE.
+            //
+            // AutoCreateBootstrapFlow — the other way this class reaches a scene — has always
+            // opened with `if (activeScene.buildIndex != 0) return;`. This is the same
+            // decision applied to the path that never got it.
+            if (StandaloneSceneMarker.IsActive)
+            {
+                Log("Standalone scene — bootstrap stood down. DI bindings ARE installed; " +
+                    "auth, network monitor and the Authentication scene load are skipped.");
+                return;
+            }
+
             applicationStateMachine?.TransitionTo(ApplicationState.Bootstrapping);
 
             ConfigureGameData();
-            StartNetworkMonitor();
-            StartAuthentication();
 
-            // The one connection-loss surface that survives a scene load. Installed here rather
-            // than authored into a scene because a game scene has no toast surface at all - which
-            // is why a mid-match disconnect previously said nothing until after the bounce had
-            // already rebuilt the menu. See Docs/UI_ARCHITECTURE_AUDIT.md section 4.2.1.
-            DisconnectNotice.Install(networkMonitorDataVariable, gameData, reconnectService);
+            // The browser Toybox (WebToybox) talks to no online service: no network monitor, no
+            // UGS sign-in, and so no Cloud Save, presence lobby, Friends or analytics, all of which
+            // start from OnSignedIn. The Authentication scene starts the single-player local host
+            // and loads Menu_Main (AuthenticationSceneController.RunAuthFlowAsync).
+            if (WebToybox.IsBuild)
+            {
+                Log("Browser Toybox build - network monitor, UGS sign-in and the disconnect notice are skipped.");
+            }
+            else
+            {
+                StartNetworkMonitor();
+                StartAuthentication();
+
+                // The one connection-loss surface that survives a scene load. Installed here rather
+                // than authored into a scene because a game scene has no toast surface at all - which
+                // is why a mid-match disconnect previously said nothing until after the bounce had
+                // already rebuilt the menu. See Docs/UI_ARCHITECTURE_AUDIT.md section 4.2.1.
+                DisconnectNotice.Install(networkMonitorDataVariable, gameData, reconnectService);
+            }
 
             _cts = new CancellationTokenSource();
             RunBootstrapAsync(_cts.Token).Forget();
@@ -258,7 +291,10 @@ namespace CosmicShore.Core
                 // silently dropping every analytics event in the game. The overlay is persistent
                 // and non-blocking: bootstrap continues to Authentication underneath it, and
                 // granting consent starts collection whenever the player answers.
-                PrivacyConsentOverlay.CreateIfNeeded(analyticsServiceFacade);
+                // The browser Toybox collects no analytics (UGS never signs in), so there is
+                // nothing to consent to and no age question to ask.
+                if (!WebToybox.IsBuild)
+                    PrivacyConsentOverlay.CreateIfNeeded(analyticsServiceFacade);
 
                 string targetScene = _sceneNames != null ? _sceneNames.AuthenticationScene : "Authentication";
                 Log($"Loading scene: {targetScene}");
@@ -346,11 +382,7 @@ namespace CosmicShore.Core
         {
             if (field == null)
             {
-#if UNITY_2023_1_OR_NEWER
                 field = FindAnyObjectByType<T>();
-#else
-                field = FindObjectOfType<T>();
-#endif
             }
 
             if (field != null)
@@ -462,8 +494,18 @@ namespace CosmicShore.Core
             // Registration order does not matter - all factories are lazy and
             // resolve their own deps from the container on first injection.
 
+            // One retry / back-off / budget policy for every UGS call the party, presence and match
+            // layers make (Docs/MultiplayerArchitecture/REVIEW_INVITE_AND_RESILIENCE.md §5.4). The
+            // tunables ride HostConnectionDataSO so they are config; the INSTANCE is shared so the
+            // per-minute retry budget is per client, not per service.
             builder.RegisterFactory(
-                _ => new LobbyPropertyWriter(),
+                _ => new CosmicShore.Utility.UgsRequestPolicy(
+                    hostConnectionData != null ? hostConnectionData.UgsRequestPolicySettings : null),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+            builder.RegisterFactory(
+                c => new LobbyPropertyWriter(c.Resolve<UgsRequestPolicy>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
@@ -487,20 +529,14 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
 
-            builder.RegisterFactory(
-                _ => new AcceptanceSignalService(),
-                lifetime: Lifetime.Singleton,
-                resolution: Resolution.Lazy
-            );
-
             builder.RegisterFactory<IPresenceLobbyService>(
-                c => new PresenceLobbyService(hostConnectionData, c.Resolve<LobbyPropertyWriter>()),
+                c => new PresenceLobbyService(hostConnectionData, c.Resolve<LobbyPropertyWriter>(), c.Resolve<UgsRequestPolicy>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
 
             builder.RegisterFactory<IPartySessionService>(
-                c => new PartySessionService(hostConnectionData, c.Resolve<GameDataSO>()),
+                c => new PartySessionService(hostConnectionData, c.Resolve<GameDataSO>(), c.Resolve<UgsRequestPolicy>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
@@ -522,6 +558,14 @@ namespace CosmicShore.Core
             // GameDataSO.IsOfflineSession. Pure C# lazy singleton like the services above.
             builder.RegisterFactory(
                 c => new OfflineModeService(c.Resolve<GameDataSO>()),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            // Platform sign-in (Steam / Google / Apple) behind the sign-in UI (Docs/MENU_REDESIGN_B.md §54). The
+            // login branch replaces NoPlatformSignIn - every provider unavailable - with the real providers.
+            builder.RegisterFactory<IPlatformSignIn>(
+                c => new NoPlatformSignIn(),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
@@ -579,11 +623,7 @@ namespace CosmicShore.Core
                     }
 
                     // Deferred scene search at first injection time.
-#if UNITY_2023_1_OR_NEWER
                     var found = FindAnyObjectByType<T>();
-#else
-                    var found = FindObjectOfType<T>();
-#endif
                     if (found != null)
                     {
                         EnsurePersistent(found);
@@ -611,7 +651,30 @@ namespace CosmicShore.Core
         void StartNetworkMonitor()
         {
             CosmicShore.Utility.NetworkDiagnostics.Initialize(networkMonitorDataVariable);
+            InstallNetSessionProviders();
             networkMonitor?.StartMonitoring();
+        }
+
+        /// <summary>
+        /// Tells the session recorder what this peer is. The recorder references nothing in the
+        /// party layer on purpose (NetSessionRecorder.cs, "DEPENDENCY DIRECTION"), so the one
+        /// place that already wires the network diagnostics answers for it. Read on demand -
+        /// when a record is built - never per frame.
+        /// </summary>
+        void InstallNetSessionProviders()
+        {
+            NetSessionRecorder.OfflineProvider = () => gameData != null && gameData.IsOfflineSession;
+            NetSessionRecorder.DeviceOnlineProvider = () =>
+                Application.internetReachability != NetworkReachability.NotReachable;
+            NetSessionRecorder.RoleProvider = () =>
+            {
+                if (gameData != null && gameData.IsOfflineSession) return "offline";
+                var nm = Unity.Netcode.NetworkManager.Singleton;
+                if (nm == null || !nm.IsListening) return "none";
+                if (nm.IsHost) return "host";
+                if (nm.IsServer) return "server";
+                return hostConnectionData != null && hostConnectionData.IsSpectating ? "spectator" : "client";
+            };
         }
         void StopNetworkMonitor() => networkMonitor?.StopMonitoring();
         void StartAuthentication() => authenticationServiceFacade?.StartAuthentication();
@@ -674,11 +737,7 @@ namespace CosmicShore.Core
             var activeScene = SceneManager.GetActiveScene();
             if (activeScene.buildIndex != 0) return;
 
-#if UNITY_2023_1_OR_NEWER
             if (FindAnyObjectByType<AppManager>() != null) return;
-#else
-            if (FindObjectOfType<AppManager>() != null) return;
-#endif
 
             CSDebug.LogVerbose(CSLogChannel.Boot, "[AppManager] No AppManager found in Bootstrap scene. Auto-creating flow objects.");
 

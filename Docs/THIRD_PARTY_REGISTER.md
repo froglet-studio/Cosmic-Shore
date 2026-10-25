@@ -80,6 +80,7 @@ Sizes are `du -sh`; file counts exclude `.meta`.
 | **TextMesh Pro** (imported assets) | Unity | bundled | `Unity Assests/TextMesh Pro` | **12 MB / 62** | — (Unity UCL) | **Ships** — now ONE `Resources/`; `Examples & Extras` (incl. its second `Resources/` and 34 `.cs`) removed 12 Sep 2026, index §A1 |
 | ├ **EmojiOne** sample sprites | EmojiOne | — | `…/TextMesh Pro/Sprites` | — | ⚠️ `EmojiOne Attribution.txt` — defers to their terms | Ships if used |
 | └ **Bangers** + **Electronic Highway Sign** fonts | Google Fonts / unknown | — | `…/TextMesh Pro/Fonts` | — | ✅ `Bangers - OFL.txt` · ❌ **none for Electronic Highway Sign** | **Ship** — both are DYNAMIC TMP fonts referenced by shipped prefabs, so each carries its TTF. Relocated here 12 Sep 2026 from `Examples & Extras`, whose **Roboto** went with the folder (index §A1) |
+| **Chakra Petch SemiBold** font | **The Chakra Petch Project Authors** via Google Fonts | Version 1.000 (same build as the Regular beside TMP) | `_Graphics/Fonts/ChakraPetch` | 79 KB / 1 TTF | ✅ `OFL.txt` (**SIL OFL 1.1**) beside it | **Ships** — the §4 button/label face of `Docs/STYLE_FOUNDATION.md`, added 13 Oct 2026 by the style-B menu redesign (`Docs/MENU_REDESIGN_B.md` D3). Its TMP asset is DYNAMIC, so the TTF ships with it. **Not yet in `CreditsManifest.asset`** — nor are the Chakra Petch Regular and Aldrich already shipped beside TMP; add one font entry covering all three |
 | ~~**Parse** (support DLLs)~~ | Parse / Meta, via **Google EDM4U** (`gvh_version-9.4.0`, .NET 3.5 — recovered from the `.meta` labels) | not stated | ~~`Parse`~~ | ~~76 KB / 2~~ | ❌ none | **DELETED 12 Sep 2026.** Was 0 references; both DLLs were additionally importer-disabled (`Any: enabled: 0`, `Editor: enabled: 0`) so they reached no target at all |
 | ~~**Wwise**~~ | Audiokinetic | — | ~~`Wwise`~~ | ~~84 KB / **0 files**~~ | — | **DELETED 12 Sep 2026.** Shipped nothing (14 `.meta`, 0 assets). The per-title licence question is §0 row 8 and is a human item, not a tree item |
 | **SerializeInterface** → **first-party** | ~~unknown~~ → **Froglet** | — | `_Scripts/Utility/RequireInterfaceAttribute.cs` + `_Scripts/Editor/RequireInterfaceDrawer.cs` | 48 + 219 lines | n/a — first-party | **Ships** (the attribute only; the drawer is under `Editor/`). Rewritten 12 Sep 2026; `Assets/SerializeInterface/` deleted |
@@ -303,7 +304,7 @@ come with the Editor licence. Two are worth a line each:
 |---|---|
 | **`com.unity.pipeline` 0.5.0-exp.1** | The CLI pipeline package — a dev tool with a remote command surface. Already hard-gated out of release builds by `Assets/_Scripts/Editor/Build/UnityPipelineReleaseGuard.cs`. |
 | **UGS services** (`analytics`, `cloudsave`, `leaderboards`, `multiplayer`, `friends`, `core`, plus transitive `authentication`, `qos`, `wire`, `deployment`) | Governed by the **Unity Gaming Services Terms of Service**, not just the package licence — a separate agreement a human accepts on the UGS dashboard, with its own data-processing obligations. Relevant to the privacy/analytics work in `Docs/Analytics/`. |
-| **`com.unity.purchasing` 4.12.2 / `com.unity.ads`** | Commerce and ads SDKs carry additional platform terms. Note **R4 de-scoped the commerce surfaces**, so Purchasing is present but gated. |
+| **`com.unity.purchasing` 4.12.2 / `com.unity.ads`** | Commerce and ads SDKs carry additional platform terms. **Both are removed.** Unity Ads left the Gradle templates in 2026-10. Purchasing (installed and never called, since R4 de-scoped the commerce surfaces) was uninstalled on 2026-10-08 so no outdated Play Billing library ships in the store builds (`Docs/PLATFORM_UNIFICATION.md` §3.9). |
 
 ---
 
@@ -445,6 +446,19 @@ failure looks like so it cannot be mistaken for working.
 `creditsButton` in `SettingsModal.prefab`. Each ensure checks for the authored thing first and
 does nothing when it finds it, so neither needs a code change to stand down.
 
+**Both fallbacks now stand down (2026-10-15, style-B menu item 9, `Docs/MENU_REDESIGN_B.md`
+section 18).** Both are authored, so `EnsureCreditsRow` and `EnsureCreditsModal` find them and
+do nothing:
+- `SettingsView.prefab` wires a real `creditsButton` in the General links.
+- `Panels/CreditsModal.prefab` sits in `Menu_Main` under `ModalWindows` and is listed in
+  `ScreenSwitcher.Modals`; it was authored by `Tools/Build/author_menu_credits.py`.
+
+The code paths stay as the backstop, because deleting the authored window brings the built one
+back. Steps 1 and 2 above therefore describe the fallback. On the authored window, look for
+`CreditsModal` (not `(built)`) under `ModalWindows`, and for a CREDITS button in the General
+links. The section headings are now sentence case ("Middleware").
+
+
 ### §7.4 What is NOT proved
 
 * **That the screen renders.** Both gates check the **data**, so the modal's layout, the generated
@@ -461,6 +475,23 @@ does nothing when it finds it, so neither needs a code change to stand down.
   (`.claude/skills/asset-surgery` §4).
 * **Entitlement.** The register proves *presence*; §0 rows 2–8 are still the money-side questions,
   and a credits line is not a licence.
+
+## §7.1 · Provider brand artwork — sign-in buttons (added 18 Oct 2026)
+
+Four images in `Assets/_Graphics/UI/Brands/`, shipped in every build that contains `Authentication.unity` or the
+settings window (`SignInProviders.asset`). Added at the owner's request ("add the official logos", Shombith,
+2026-10-18; Docs/MENU_REDESIGN_B.md §57). Each file is the provider's download byte for byte; `author_start_flow.py`
+pins their SHA-256.
+
+| File | Source | Terms | Notes |
+|---|---|---|---|
+| `google_signin_dark_pill.png`, `google_logo_dark_pill.png` | Google's Sign in with Google branding kit (`signin-assets.zip`, developers.google.com/identity/branding-guidelines), Android + Web / PNG @4x / Dark | Google's Sign in with Google branding guidelines: use the pre-approved button images unmodified, standard-colour G, approved call to action | No licence file ships inside the zip; the guidelines page is the terms. |
+| `apple_signin_white_pill.png`, `apple_logo_white_pill.png` | Apple's Sign in with Apple button image service (`appleid.cdn-apple.com/appleid/button`, `.../button/logo`), white, radius 50 %, 4x | Apple Human Interface Guidelines, Sign in with Apple; App Review checks the button | **Not** the Apple Design Resources logo files: that download's licence permits only mock-ups for Apple-only software and forbids embedding, so it was not used. |
+
+**Entitlement question for a human:** none expected, but the Apple button is used on Windows / Android / web too; if
+App Review or Apple's terms for Sign in with Apple JS ask for its own rendered button on those platforms, the login
+branch should switch to it. **Steam**: no artwork is shipped (Valve allows only its approved artwork); the Account row
+shows no mark.
 
 ## §8 · Credentials
 

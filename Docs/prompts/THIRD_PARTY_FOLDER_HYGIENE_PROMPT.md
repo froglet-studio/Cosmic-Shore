@@ -50,8 +50,8 @@ locations is a legitimate goal but it is a *package configuration* change, not a
 through the package's own settings UI and let it rewrite the references, or leave it alone.
 
 **`Assets/Unity Assests/` is a typo, and renaming it is the single riskiest move available.** It holds
-`TextMesh Pro/` (two `Resources/` folders, fleet-wide), `Adaptive Performance/` (above) and
-`Editor/com.unity.mobile.notifications/`. A rename is safe *for guid references* if the `.meta` files
+`TextMesh Pro/` (two `Resources/` folders, fleet-wide) and `Adaptive Performance/` (above). A
+rename is safe *for guid references* if the `.meta` files
 move with it, and **unsafe for anything that resolves by path** — the two TMP `Resources/` folders
 are exactly that. `Docs/LAUNCH_BLOCKER_INDEX.md` §C1 already records that `TMP Settings.asset`
 measures **zero** guid references and every text component in the game needs it, because TMP loads it
@@ -63,7 +63,7 @@ verification pass.** Leaving it is a defensible answer; renaming it blind is not
 | Finding | Measured | Action |
 |---|---|---|
 | **`Assets/.DS_Store` and `Assets/_Scripts/Controller/.DS_Store` are tracked** | `.gitignore` already ignores `.DS_Store` at lines 108–109 — these predate it | `git rm --cached` both |
-| **`Assets/ArcadeDPadNav.cs` sits loose at the `Assets/` root** | first-party `MonoBehaviour` (`CosmicShore.Core`), **is used** — `Menu_Main.unity` | `git mv` (+ `.meta`) to `_Scripts/UI/Elements/` or `_Scripts/Controller/IO/` |
+| ~~**`Assets/ArcadeDPadNav.cs` sits loose at the `Assets/` root**~~ | **Deleted 2026-10-14** - the component was retired from every window (`Docs/MENU_REDESIGN_B.md` §12) | nothing left to move |
 | **`Assets/Environment/` is empty** | zero files | delete |
 | **`Assets/Resolvers/ObjectResolver.cs`** | first-party, whole-file `#if UNITY_EDITOR`, uses `UnityEditor` — and is referenced by **nothing** | it is dead; delete it, or move it under an `Editor/` folder if it is wanted. Do **not** leave editor-only code outside an `Editor/` folder relying on a guard |
 
@@ -74,7 +74,7 @@ pack where it is?**
 
 * **For it:** the boundary becomes visible, the next audit is a directory listing, and "is this ours?"
   stops being a per-folder judgement call.
-* **Against it:** every move is a chance to break a `Resources/` path, several vendors (FMOD, PlayFab,
+* **Against it:** every move is a chance to break a `Resources/` path, several vendors (FMOD,
   EDM4U) document their own install path and re-importing an update will recreate the original
   location, and `Assets/Plugins/` is already Unity's conventional third-party home for exactly this.
 
@@ -84,7 +84,7 @@ re-create their own path alone**, documenting why each exception exists. Pick on
 reason; an undocumented convention is one the next importer will not follow.
 
 Whatever is chosen, **the surviving third-party folders after the removal pass** are the ones to
-place: FMOD, Obvious SOAP, DOTween, NativeShare, PlayFabSDK, PlayFabEditorExtensions, QuickScene Pro
+place: FMOD, Obvious SOAP, DOTween, NativeShare, QuickScene Pro
 (`YethGameDev`), EDM4U, `Analyzers`, `Samples`, and `Unity Assests` (TMP).
 
 ## Method
@@ -101,8 +101,8 @@ Do this in **small commits, one folder per commit**, each verified:
 
 ## Definition of done
 
-1. The `.DS_Store` files untracked, `Assets/Environment/` gone, `ArcadeDPadNav.cs` and the
-   `ObjectResolver` question resolved.
+1. The `.DS_Store` files untracked, `Assets/Environment/` gone, the `ObjectResolver` question
+   resolved. (`ArcadeDPadNav.cs` was deleted on 2026-10-14.)
 2. Third-party folders consolidated per whichever convention was chosen, **with the convention and its
    exceptions written into `Docs/THIRD_PARTY_DECISIONS.md` §5.**
 3. `Adaptive Performance` and `Unity Assests` either left alone with the reason recorded, or moved in

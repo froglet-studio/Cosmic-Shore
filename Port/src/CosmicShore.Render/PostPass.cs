@@ -1,18 +1,25 @@
 using System;
 using System.Collections.Generic;
+using CosmicShore.Engine;
 using Silk.NET.OpenGL;
 using GlWrap = Silk.NET.OpenGL.TextureWrapMode;
 
 namespace CosmicShore.Render
 {
-    /// <summary>Post-processing settings the composite applies (the active volume profile's values).</summary>
+    /// <summary>Post-processing settings the composite applies (the active volume profile's values, as URP 17.3 reads them).</summary>
     public struct PostSettings
     {
         public bool Bloom;
-        public float BloomThreshold, BloomIntensity, BloomScatter, BloomClamp;
+        /// <summary>The bloom threshold in LINEAR space and its soft knee (half of it). The volume authors the threshold in gamma space.</summary>
+        public float BloomThreshold, BloomKnee;
+        public float BloomIntensity;
+        /// <summary>The low/high mip blend on the way up: lerp(0.05, 0.95, scatter).</summary>
+        public float BloomScatter;
+        public float BloomClamp;
+        /// <summary>The tint in linear space, normalised to unit luminance (white is (1, 1, 1)).</summary>
         public System.Numerics.Vector3 BloomTint;
-        public int BloomMaxIterations, BloomSkipIterations;
-        public bool BloomQuarterRes;
+        public int BloomMaxIterations;
+        public bool BloomQuarterRes, BloomHighQuality;
         public bool Panini;
         public float PaniniDistance, PaniniCropToFit;
         public float TanHalfFovX, TanHalfFovY;
@@ -28,22 +35,13 @@ namespace CosmicShore.Render
             if (camera == null) return s;
             var data = camera.GetComponent<CosmicShore.Engine.Rendering.UniversalAdditionalCameraData>();
             if (data == null || !data.renderPostProcessing) return s;
-            stack.Update(camera.transform.position, data.volumeLayerMask.value);
+            // A ViaScripting camera renders with its own stack, as its scripts last refreshed it (URP); every other camera
+            // with the pipeline's shared stack, refreshed here each frame.
+            if (!data.requiresVolumeFrameworkUpdate && data.volumeStack != null) stack = data.volumeStack;
+            else stack.Update(camera.transform.position, data.volumeLayerMask.value);
 
             var bloom = stack.GetComponent<CosmicShore.Engine.Rendering.Bloom>();
-            if (bloom != null && bloom.intensity.value > 0f)
-            {
-                s.Bloom = true;
-                s.BloomThreshold = bloom.threshold.value;
-                s.BloomIntensity = bloom.intensity.value;
-                s.BloomScatter = bloom.scatter.value;
-                s.BloomClamp = bloom.clamp.value;
-                var t = bloom.tint.value;
-                s.BloomTint = new System.Numerics.Vector3(t.r, t.g, t.b);
-                s.BloomMaxIterations = bloom.maxIterations.value;
-                s.BloomSkipIterations = bloom.skipIterations.value;
-                s.BloomQuarterRes = bloom.downscale.value == CosmicShore.Engine.Rendering.BloomDownscaleMode.Quarter;
-            }
+            if (bloom != null && bloom.intensity.value > 0f) s.SetBloom(bloom);
             var panini = stack.GetComponent<CosmicShore.Engine.Rendering.PaniniProjection>();
             if (panini != null && panini.distance.value > 0f)
             {
@@ -53,14 +51,55 @@ namespace CosmicShore.Render
             }
             return s;
         }
+
+        /// <summary>
+        /// Bloom's shader parameters from the component, as URP's documentation defines them: the
+        /// threshold is a gamma-space brightness (converted to linear here, the knee is half of it),
+        /// scatter maps to a 0.05-0.95 blend, and the tint is applied in linear space at unit
+        /// luminance so it changes the hue of the glow, not its strength.
+        /// </summary>
+        public void SetBloom(CosmicShore.Engine.Rendering.Bloom bloom)
+        {
+            Bloom = true;
+            BloomThreshold = Mathf.GammaToLinearSpace(bloom.threshold.value);
+            BloomKnee = BloomThreshold * 0.5f;
+            BloomIntensity = bloom.intensity.value;
+            BloomScatter = 0.05f + 0.9f * Math.Clamp(bloom.scatter.value, 0f, 1f);
+            BloomClamp = bloom.clamp.value;
+            var t = bloom.tint.value.linear;
+            float luma = Luminance(t.r, t.g, t.b);
+            BloomTint = luma > 0f ? new System.Numerics.Vector3(t.r / luma, t.g / luma, t.b / luma) : System.Numerics.Vector3.One;
+            BloomMaxIterations = bloom.maxIterations.value;
+            BloomQuarterRes = bloom.downscale.value == CosmicShore.Engine.Rendering.BloomDownscaleMode.Quarter;
+            BloomHighQuality = bloom.highQualityFiltering.value;
+        }
+
+        /// <summary>Rec. 709 relative luminance of a linear colour.</summary>
+        public static float Luminance(float r, float g, float b) => r * 0.2126729f + g * 0.7151522f + b * 0.0721750f;
+
+        /// <summary>
+        /// The bloom pyramid's depth for a source of <paramref name="width"/> x <paramref name="height"/>:
+        /// it starts at half (or quarter) resolution and halves until the larger side would drop
+        /// below 4 texels, capped at <paramref name="maxIterations"/>.
+        /// </summary>
+        public static int BloomMipCount(int width, int height, int maxIterations, bool quarter)
+        {
+            int shift = quarter ? 2 : 1;
+            int tw = Math.Max(1, width >> shift), th = Math.Max(1, height >> shift);
+            int iterations = (int)MathF.Floor(MathF.Log2(Math.Max(tw, th)) - 1f);
+            return Math.Clamp(iterations, 1, Math.Max(1, maxIterations));
+        }
     }
 
     /// <summary>
-    /// The 3D frame's post stack, from the HDR scene target into the UI frame target:
-    /// a bloom mip chain (threshold with a soft knee, clamp, separable blur down, scatter-
-    /// weighted blend up) and a Panini projection remap, composited additively. No
-    /// tonemapper — the project's default volume authors Tonemapping None, so the present
-    /// pass's clamp is the display transform, as in the Unity build.
+    /// The 3D frame's post stack, from the HDR scene target into the UI frame target, in URP's
+    /// order: the Panini projection (its own pass), then bloom built from the projected image, then
+    /// the composite (scene + bloom x intensity x tint). Bloom is URP's Gaussian pyramid: a
+    /// prefilter at half resolution (clamp, then the soft-knee threshold), each lower level made by
+    /// a 2x-downsampling horizontal 9-tap gaussian and a vertical 9-tap gaussian (5 bilinear
+    /// taps), and the way back up blending each level with the one below by the scatter. No
+    /// tonemapper — the project's default volume authors Tonemapping None, so the present pass's
+    /// clamp is the display transform, as in the Unity build.
     /// </summary>
     public sealed class PostPass : IDisposable
     {
@@ -72,38 +111,84 @@ void main(){
   gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
 }";
 
+        // B-spline bicubic filtering in 4 bilinear fetches (Sigg & Hadwiger, GPU Gems 2 ch. 20).
+        const string Bicubic = @"
+vec3 sampleBicubic(sampler2D tex, vec2 uv, vec2 size){
+  vec2 st = uv * size - 0.5;
+  vec2 i = floor(st);
+  vec2 f = st - i;
+  vec2 f2 = f * f, f3 = f2 * f;
+  vec2 w0 = (1.0 / 6.0) * (-f3 + 3.0 * f2 - 3.0 * f + 1.0);
+  vec2 w1 = (1.0 / 6.0) * (3.0 * f3 - 6.0 * f2 + 4.0);
+  vec2 w2 = (1.0 / 6.0) * (-3.0 * f3 + 3.0 * f2 + 3.0 * f + 1.0);
+  vec2 w3 = (1.0 / 6.0) * f3;
+  vec2 g0 = w0 + w1, g1 = w2 + w3;
+  vec2 h0 = (w1 / g0) - 1.0, h1 = (w3 / g1) + 1.0;
+  vec2 inv = 1.0 / size;
+  vec2 p0 = (i + 0.5 + h0) * inv, p1 = (i + 0.5 + h1) * inv;
+  return g0.y * (g0.x * texture(tex, vec2(p0.x, p0.y)).rgb + g1.x * texture(tex, vec2(p1.x, p0.y)).rgb)
+       + g1.y * (g0.x * texture(tex, vec2(p0.x, p1.y)).rgb + g1.x * texture(tex, vec2(p1.x, p1.y)).rgb);
+}";
+
         const string Prefilter = @"#version 330 core
 in vec2 vUv;
 uniform sampler2D uSrc;
-uniform vec2 uTexel;
+uniform vec2 uTexel;     // the SOURCE texel
+uniform int uHq;
 uniform float uThreshold;
+uniform float uKnee;
 uniform float uClamp;
 out vec4 frag;
+vec3 tap(vec2 o){ return texture(uSrc, vUv + uTexel * o).rgb; }
 void main(){
-  // 4-tap box downsample, then clamp + soft-knee threshold (knee = threshold / 2).
-  vec3 c = texture(uSrc, vUv + uTexel * vec2(-0.5,-0.5)).rgb + texture(uSrc, vUv + uTexel * vec2(0.5,-0.5)).rgb
-         + texture(uSrc, vUv + uTexel * vec2(-0.5, 0.5)).rgb + texture(uSrc, vUv + uTexel * vec2(0.5, 0.5)).rgb;
-  c = min(c * 0.25, vec3(uClamp));
-  float knee = uThreshold * 0.5;
+  vec3 c;
+  if (uHq == 1) {
+    // 13 taps: the inner 2x2 box at half weight, the four overlapping outer boxes at an eighth.
+    vec3 A = tap(vec2(-1.0, -1.0)), B = tap(vec2(0.0, -1.0)), C = tap(vec2(1.0, -1.0));
+    vec3 D = tap(vec2(-0.5, -0.5)), E = tap(vec2(0.5, -0.5));
+    vec3 F = tap(vec2(-1.0, 0.0)), G = tap(vec2(0.0, 0.0)), H = tap(vec2(1.0, 0.0));
+    vec3 I = tap(vec2(-0.5, 0.5)), J = tap(vec2(0.5, 0.5));
+    vec3 K = tap(vec2(-1.0, 1.0)), L = tap(vec2(0.0, 1.0)), M = tap(vec2(1.0, 1.0));
+    c = (D + E + I + J) * 0.125
+      + ((A + B + G + F) + (B + C + H + G) + (F + G + L + K) + (G + H + M + L)) * 0.03125;
+  } else {
+    // One bilinear fetch between four source texels: their average.
+    c = tap(vec2(0.0));
+  }
+  c = min(c, vec3(uClamp));
   float br = max(c.r, max(c.g, c.b));
-  float soft = clamp(br - uThreshold + knee, 0.0, 2.0 * knee);
-  soft = soft * soft / (4.0 * knee + 1e-4);
-  float mult = max(br - uThreshold, soft) / max(br, 1e-4);
-  frag = vec4(c * mult, 1.0);
+  float soft = clamp(br - uThreshold + uKnee, 0.0, 2.0 * uKnee);
+  soft = soft * soft / (4.0 * uKnee + 1e-4);
+  c *= max(br - uThreshold, soft) / max(br, 1e-4);
+  frag = vec4(max(c, 0.0), 1.0);
 }";
 
-        const string Blur = @"#version 330 core
+        const string BlurH = @"#version 330 core
 in vec2 vUv;
 uniform sampler2D uSrc;
-uniform vec2 uStep;
+uniform vec2 uTexel;     // the SOURCE texel; the taps step one DESTINATION texel (two source texels)
 out vec4 frag;
 void main(){
-  // 9-tap gaussian as 5 bilinear fetches.
-  vec3 c = texture(uSrc, vUv).rgb * 0.2270270270;
-  c += texture(uSrc, vUv + uStep * 1.3846153846).rgb * 0.3162162162;
-  c += texture(uSrc, vUv - uStep * 1.3846153846).rgb * 0.3162162162;
-  c += texture(uSrc, vUv + uStep * 3.2307692308).rgb * 0.0702702703;
-  c += texture(uSrc, vUv - uStep * 3.2307692308).rgb * 0.0702702703;
+  float s = uTexel.x * 2.0;
+  vec3 c = texture(uSrc, vUv).rgb * 0.22702703;
+  c += (texture(uSrc, vUv - vec2(s, 0.0)).rgb + texture(uSrc, vUv + vec2(s, 0.0)).rgb) * 0.19459459;
+  c += (texture(uSrc, vUv - vec2(2.0 * s, 0.0)).rgb + texture(uSrc, vUv + vec2(2.0 * s, 0.0)).rgb) * 0.12162162;
+  c += (texture(uSrc, vUv - vec2(3.0 * s, 0.0)).rgb + texture(uSrc, vUv + vec2(3.0 * s, 0.0)).rgb) * 0.05405405;
+  c += (texture(uSrc, vUv - vec2(4.0 * s, 0.0)).rgb + texture(uSrc, vUv + vec2(4.0 * s, 0.0)).rgb) * 0.01621622;
+  frag = vec4(c, 1.0);
+}";
+
+        const string BlurV = @"#version 330 core
+in vec2 vUv;
+uniform sampler2D uSrc;
+uniform vec2 uTexel;
+out vec4 frag;
+void main(){
+  // The same 9-tap gaussian as 5 bilinear fetches on a same-sized source.
+  float a = uTexel.y * 1.38461538, b = uTexel.y * 3.23076923;
+  vec3 c = texture(uSrc, vUv).rgb * 0.22702703;
+  c += (texture(uSrc, vUv - vec2(0.0, a)).rgb + texture(uSrc, vUv + vec2(0.0, a)).rgb) * 0.31621622;
+  c += (texture(uSrc, vUv - vec2(0.0, b)).rgb + texture(uSrc, vUv + vec2(0.0, b)).rgb) * 0.07027027;
   frag = vec4(c, 1.0);
 }";
 
@@ -111,117 +196,157 @@ void main(){
 in vec2 vUv;
 uniform sampler2D uHigh;
 uniform sampler2D uLow;
+uniform vec2 uLowSize;
+uniform int uHq;
 uniform float uScatter;
 out vec4 frag;
+" + Bicubic + @"
 void main(){
-  frag = vec4(mix(texture(uHigh, vUv).rgb, texture(uLow, vUv).rgb, uScatter), 1.0);
+  vec3 lo = uHq == 1 ? sampleBicubic(uLow, vUv, uLowSize) : texture(uLow, vUv).rgb;
+  frag = vec4(mix(texture(uHigh, vUv).rgb, lo, uScatter), 1.0);
+}";
+
+        const string Panini = @"#version 330 core
+in vec2 vUv;
+uniform sampler2D uSrc;
+uniform vec4 uParams;    // view extents (tan of the half angles), distance d, crop scale
+out vec4 frag;
+void main(){
+  // An output point on the image plane, seen from P (d behind the unit cylinder's axis O, 1 + d
+  // from the plane): where that ray meets the cylinder is the scene point; re-projecting it from
+  // O onto the rectilinear plane gives the source coordinate.
+  vec2 v = (vUv * 2.0 - 1.0) * uParams.xy * uParams.w;
+  float d = uParams.z, L = 1.0 + d;
+  float h2 = v.x * v.x + L * L;
+  float t = (d * L + sqrt(max(h2 - v.x * v.x * d * d, 0.0))) / h2;
+  vec2 src = v * t / (t * L - d);
+  frag = vec4(texture(uSrc, src / uParams.xy * 0.5 + 0.5).rgb, 1.0);
 }";
 
         const string Composite = @"#version 330 core
 in vec2 vUv;
 uniform sampler2D uScene;
 uniform sampler2D uBloom;
+uniform vec2 uBloomSize;
+uniform int uHq;
 uniform float uBloomIntensity;
 uniform vec3 uBloomTint;
-uniform int uPanini;
-uniform float uPaniniD;
-uniform vec2 uTanHalf;   // source view-plane half extents
-uniform float uPaniniScale;
 out vec4 frag;
-vec2 panini(vec2 uv){
-  // Output plane point -> Panini inverse -> rectilinear source point.
-  vec2 o = (uv * 2.0 - 1.0) * uTanHalf * uPaniniScale;
-  float d = uPaniniD;
-  float k = o.x / (d + 1.0);
-  float phi = atan(k) + asin(clamp(k * d / sqrt(1.0 + k * k), -1.0, 1.0));
-  float S = (d + 1.0) / (d + cos(phi));
-  float h = o.y / S;
-  vec2 rect = vec2(tan(phi), h / cos(phi));
-  return rect / uTanHalf * 0.5 + 0.5;
-}
+" + Bicubic + @"
 void main(){
-  vec2 uv = uPanini == 1 ? panini(vUv) : vUv;
-  vec3 c = texture(uScene, uv).rgb + texture(uBloom, uv).rgb * uBloomIntensity * uBloomTint;
+  vec3 c = texture(uScene, vUv).rgb;
+  if (uBloomIntensity > 0.0) {
+    vec3 b = uHq == 1 ? sampleBicubic(uBloom, vUv, uBloomSize) : texture(uBloom, vUv).rgb;
+    c += b * uBloomIntensity * uBloomTint;
+  }
   frag = vec4(c, 1.0);
 }";
 
         sealed class Rt { public uint Fbo, Tex; public int W, H; }
 
         readonly GL _gl;
-        readonly GlProgram _prefilter, _blur, _upsample, _composite;
+        readonly GlProgram _prefilter, _blurH, _blurV, _upsample, _panini, _composite;
         readonly uint _vao;
-        readonly List<Rt> _down = new(), _tmp = new(), _up = new();
-        int _w, _h, _levels;
+        readonly List<Rt> _down = new(), _up = new();
+        Rt _paniniRt;
+        int _srcW, _srcH, _mips;
+        bool _quarter;
 
         public PostPass(GL gl)
         {
             _gl = gl;
             _prefilter = new GlProgram(gl, Vert, Prefilter, "bloom-prefilter");
-            _blur = new GlProgram(gl, Vert, Blur, "bloom-blur");
+            _blurH = new GlProgram(gl, Vert, BlurH, "bloom-blur-h");
+            _blurV = new GlProgram(gl, Vert, BlurV, "bloom-blur-v");
             _upsample = new GlProgram(gl, Vert, Upsample, "bloom-upsample");
+            _panini = new GlProgram(gl, Vert, Panini, "panini");
             _composite = new GlProgram(gl, Vert, Composite, "post-composite");
             _vao = gl.GenVertexArray();
         }
 
-        /// <summary>Composites <paramref name="sceneTex"/> into the currently bound framebuffer (<paramref name="dstFbo"/>).</summary>
-        public void Draw(uint sceneTex, int w, int h, uint dstFbo, in PostSettings s)
+        /// <summary>Composites <paramref name="sceneTex"/> (the window's size) into <paramref name="dstFbo"/>.</summary>
+        public void Draw(uint sceneTex, int w, int h, uint dstFbo, in PostSettings s) => Draw(sceneTex, w, h, w, h, dstFbo, s);
+
+        /// <summary>
+        /// Composites <paramref name="sceneTex"/> (<paramref name="srcW"/> x <paramref name="srcH"/>, the
+        /// camera target at render scale) into <paramref name="dstFbo"/> (<paramref name="w"/> x <paramref name="h"/>).
+        /// </summary>
+        public void Draw(uint sceneTex, int srcW, int srcH, int w, int h, uint dstFbo, in PostSettings s)
         {
             _gl.Disable(EnableCap.DepthTest);
             _gl.Disable(EnableCap.Blend);
             _gl.Disable(EnableCap.CullFace);
             _gl.BindVertexArray(_vao);
 
-            uint bloomTex = 0;
-            if (s.Bloom && s.BloomIntensity > 0f)
+            uint source = sceneTex;
+            if (s.Panini && s.PaniniDistance > 0f && s.TanHalfFovX > 0f && s.TanHalfFovY > 0f)
             {
-                Ensure(w, h, s.BloomMaxIterations, s.BloomSkipIterations, s.BloomQuarterRes);
-                // Prefilter into level 0 (half res).
-                Bind(_down[0]);
-                _prefilter.Use();
-                _prefilter.Set("uSrc", 0);
-                _prefilter.Set("uTexel", 1f / w, 1f / h);
-                _prefilter.Set("uThreshold", s.BloomThreshold);
-                _prefilter.Set("uClamp", s.BloomClamp <= 0f ? 65472f : s.BloomClamp);
+                if (_paniniRt == null || _paniniRt.W != srcW || _paniniRt.H != srcH)
+                {
+                    if (_paniniRt != null) Free(_paniniRt);
+                    _paniniRt = Make(srcW, srcH, InternalFormat.Rgba16f);
+                }
+                Bind(_paniniRt);
+                _panini.Use();
+                _panini.Set("uSrc", 0);
+                _panini.Set("uParams", s.TanHalfFovX, s.TanHalfFovY, s.PaniniDistance, PaniniCropScale(s));
                 Tex(0, sceneTex);
                 Fullscreen();
-                // Blur each level, downsampling as we go.
-                _blur.Use();
-                _blur.Set("uSrc", 0);
-                for (int i = 0; i < _levels; i++)
+                source = _paniniRt.Tex;
+            }
+
+            uint bloomTex = 0;
+            int bloomW = 1, bloomH = 1;
+            if (s.Bloom && s.BloomIntensity > 0f)
+            {
+                Ensure(srcW, srcH, s.BloomMaxIterations, s.BloomQuarterRes);
+                _prefilter.Use();
+                _prefilter.Set("uSrc", 0);
+                _prefilter.Set("uTexel", 1f / srcW, 1f / srcH);
+                _prefilter.Set("uHq", s.BloomHighQuality ? 1 : 0);
+                _prefilter.Set("uThreshold", s.BloomThreshold);
+                _prefilter.Set("uKnee", s.BloomKnee);
+                _prefilter.Set("uClamp", s.BloomClamp);
+                Bind(_down[0]);
+                Tex(0, source);
+                Fullscreen();
+
+                // Down: horizontal gaussian while halving into up[i] (scratch), vertical into down[i].
+                for (int i = 1; i < _mips; i++)
                 {
-                    if (i > 0)
-                    {
-                        // downsample previous blurred level into this one
-                        Bind(_down[i]);
-                        _blur.Set("uStep", 0f, 0f);
-                        Tex(0, _down[i - 1].Tex);
-                        Fullscreen();
-                    }
-                    Bind(_tmp[i]);
-                    _blur.Set("uStep", 1f / _down[i].W, 0f);
-                    Tex(0, _down[i].Tex);
+                    _blurH.Use();
+                    _blurH.Set("uSrc", 0);
+                    _blurH.Set("uTexel", 1f / _down[i - 1].W, 1f / _down[i - 1].H);
+                    Bind(_up[i]);
+                    Tex(0, _down[i - 1].Tex);
                     Fullscreen();
+                    _blurV.Use();
+                    _blurV.Set("uSrc", 0);
+                    _blurV.Set("uTexel", 1f / _up[i].W, 1f / _up[i].H);
                     Bind(_down[i]);
-                    _blur.Set("uStep", 0f, 1f / _down[i].H);
-                    Tex(0, _tmp[i].Tex);
+                    Tex(0, _up[i].Tex);
                     Fullscreen();
                 }
-                // Upsample: up[i] = mix(down[i], up[i+1], scatter).
-                float scatter = 0.05f + 0.9f * Math.Clamp(s.BloomScatter, 0f, 1f);
+
+                // Up: up[i] = lerp(down[i], the level below, scatter); the deepest level is its own down.
                 _upsample.Use();
                 _upsample.Set("uHigh", 0);
                 _upsample.Set("uLow", 1);
-                _upsample.Set("uScatter", scatter);
-                uint low = _down[_levels - 1].Tex;
-                for (int i = _levels - 2; i >= 0; i--)
+                _upsample.Set("uHq", s.BloomHighQuality ? 1 : 0);
+                _upsample.Set("uScatter", s.BloomScatter);
+                for (int i = _mips - 2; i >= 0; i--)
                 {
+                    var low = i == _mips - 2 ? _down[i + 1] : _up[i + 1];
+                    _upsample.Set("uLowSize", low.W, low.H);
                     Bind(_up[i]);
                     Tex(0, _down[i].Tex);
-                    Tex(1, low);
+                    Tex(1, low.Tex);
                     Fullscreen();
-                    low = _up[i].Tex;
                 }
-                bloomTex = low;
+                var top = _mips == 1 ? _down[0] : _up[0];
+                bloomTex = top.Tex;
+                bloomW = top.W;
+                bloomH = top.H;
             }
 
             _gl.BindFramebuffer(FramebufferTarget.Framebuffer, dstFbo);
@@ -229,31 +354,32 @@ void main(){
             _composite.Use();
             _composite.Set("uScene", 0);
             _composite.Set("uBloom", 1);
+            _composite.Set("uBloomSize", bloomW, bloomH);
+            _composite.Set("uHq", s.BloomHighQuality ? 1 : 0);
             _composite.Set("uBloomIntensity", bloomTex != 0 ? s.BloomIntensity : 0f);
             _gl.Uniform3(_composite.Loc("uBloomTint"), s.BloomTint.X, s.BloomTint.Y, s.BloomTint.Z);
-            bool panini = s.Panini && s.PaniniDistance > 0f && s.TanHalfFovX > 0f;
-            _composite.Set("uPanini", panini ? 1 : 0);
-            _composite.Set("uPaniniD", s.PaniniDistance);
-            _composite.Set("uTanHalf", s.TanHalfFovX, s.TanHalfFovY);
-            _composite.Set("uPaniniScale", panini ? PaniniScale(s) : 1f);
-            Tex(0, sceneTex);
-            Tex(1, bloomTex != 0 ? bloomTex : sceneTex);
+            Tex(0, source);
+            Tex(1, bloomTex != 0 ? bloomTex : source);
             Fullscreen();
             _gl.ActiveTexture(TextureUnit.Texture0);
         }
 
         /// <summary>
-        /// Crop-to-fit: scale the Panini output so its horizontal edge lands on the source's
-        /// (1 = fully cropped, no black border; 0 = the full distorted view).
+        /// Crop-to-fit (URP's rule): how much of the projected image to keep so the frame edge lands
+        /// on the source's edge. The source's corner direction is traced through the cylinder back to
+        /// the projected plane; the smaller of the two axis ratios is the full crop, and cropToFit
+        /// blends from no crop (1) to it.
         /// </summary>
-        static float PaniniScale(in PostSettings s)
+        public static float PaniniCropScale(in PostSettings s)
         {
-            float d = s.PaniniDistance;
-            float phiEdge = MathF.Atan(s.TanHalfFovX);
-            float S = (d + 1f) / (d + MathF.Cos(phiEdge));
-            float xEdge = S * MathF.Sin(phiEdge);
-            float fit = xEdge / s.TanHalfFovX; // output units per source unit at the edge
-            return 1f + (fit - 1f) * Math.Clamp(s.PaniniCropToFit, 0f, 1f);
+            float d = s.PaniniDistance, L = 1f + d;
+            float px = s.TanHalfFovX, py = s.TanHalfFovY;
+            float hyp = MathF.Sqrt(px * px + 1f);
+            float cylMinusD = 1f / hyp;           // the corner ray's point on the unit cylinder, relative to its axis
+            float cyl = cylMinusD + d;            // ... and its distance from the projection centre
+            float cropX = px * cylMinusD * (L / cyl), cropY = py * cylMinusD * (L / cyl);
+            float scale = MathF.Min(cropX / px, cropY / py);
+            return 1f + (Math.Clamp(scale, 0f, 1f) - 1f) * Math.Clamp(s.PaniniCropToFit, 0f, 1f);
         }
 
         void Fullscreen() => _gl.DrawArrays(Silk.NET.OpenGL.PrimitiveType.Triangles, 0, 3);
@@ -270,37 +396,28 @@ void main(){
             _gl.Viewport(0, 0, (uint)rt.W, (uint)rt.H);
         }
 
-        /// <summary>
-        /// The bloom mip chain (original rule): the prefilter runs at half (or quarter)
-        /// resolution, the chain length is floor(log2(max side) - 1) less the skipped final
-        /// iterations, clamped to [1, max iterations].
-        /// </summary>
-        int _lw0;
-
-        void Ensure(int w, int h, int maxIterations, int skipIterations, bool quarter)
+        /// <summary>The pyramid for a <paramref name="srcW"/> x <paramref name="srcH"/> source: level 0 at half (or quarter) size, each next level halved.</summary>
+        void Ensure(int srcW, int srcH, int maxIterations, bool quarter)
         {
-            int div = quarter ? 4 : 2;
-            int lw = Math.Max(1, w / div), lh = Math.Max(1, h / div);
-            int iterations = (int)MathF.Floor(MathF.Log2(Math.Max(lw, lh)) - 1f);
-            int levels = Math.Clamp(iterations - skipIterations, 1, Math.Max(1, maxIterations));
-            if (w == _w && h == _h && levels == _levels && lw == _lw0) return;
+            int mips = PostSettings.BloomMipCount(srcW, srcH, maxIterations, quarter);
+            if (srcW == _srcW && srcH == _srcH && mips == _mips && quarter == _quarter) return;
             Release();
-            _w = w; _h = h; _levels = levels; _lw0 = lw;
-            for (int i = 0; i < levels; i++)
+            _srcW = srcW; _srcH = srcH; _mips = mips; _quarter = quarter;
+            int shift = quarter ? 2 : 1;
+            int tw = Math.Max(1, srcW >> shift), th = Math.Max(1, srcH >> shift);
+            for (int i = 0; i < mips; i++)
             {
-                _down.Add(Make(lw, lh));
-                _tmp.Add(Make(lw, lh));
-                _up.Add(Make(lw, lh));
-                lw = Math.Max(1, lw / 2);
-                lh = Math.Max(1, lh / 2);
+                int lw = Math.Max(1, tw >> i), lh = Math.Max(1, th >> i);
+                _down.Add(Make(lw, lh, InternalFormat.R11fG11fB10f));
+                _up.Add(Make(lw, lh, InternalFormat.R11fG11fB10f));
             }
         }
 
-        unsafe Rt Make(int w, int h)
+        unsafe Rt Make(int w, int h, InternalFormat format)
         {
             var rt = new Rt { W = w, H = h, Fbo = _gl.GenFramebuffer(), Tex = _gl.GenTexture() };
             _gl.BindTexture(TextureTarget.Texture2D, rt.Tex);
-            var (fmt, layout, type) = GlCaps.HdrTarget(InternalFormat.R11fG11fB10f);
+            var (fmt, layout, type) = GlCaps.HdrTarget(format);
             _gl.TexImage2D(TextureTarget.Texture2D, 0, fmt, (uint)w, (uint)h, 0, layout, type, null);
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
@@ -311,19 +428,27 @@ void main(){
             return rt;
         }
 
+        void Free(Rt rt)
+        {
+            _gl.DeleteFramebuffer(rt.Fbo);
+            _gl.DeleteTexture(rt.Tex);
+        }
+
         void Release()
         {
-            foreach (var list in new[] { _down, _tmp, _up })
+            foreach (var list in new[] { _down, _up })
             {
-                foreach (var rt in list) { _gl.DeleteFramebuffer(rt.Fbo); _gl.DeleteTexture(rt.Tex); }
+                foreach (var rt in list) Free(rt);
                 list.Clear();
             }
+            _mips = 0;
         }
 
         public void Dispose()
         {
             Release();
-            _prefilter.Dispose(); _blur.Dispose(); _upsample.Dispose(); _composite.Dispose();
+            if (_paniniRt != null) Free(_paniniRt);
+            _prefilter.Dispose(); _blurH.Dispose(); _blurV.Dispose(); _upsample.Dispose(); _panini.Dispose(); _composite.Dispose();
             _gl.DeleteVertexArray(_vao);
         }
     }

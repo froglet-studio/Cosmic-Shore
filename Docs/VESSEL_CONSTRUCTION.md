@@ -29,6 +29,13 @@ puppetry — the exact failure `CLAUDE.md` records for Dolphin / Urchin / Rhino.
 Measured across all twelve vessel prefabs (`MeshFilter` and `SkinnedMeshRenderer` counts, and the
 model each one's mesh subasset resolves to):
 
+> **Superseded for most rows on 2026-10-18** (`ccr-d93a6dfb-ugbxng`): the Urchin and Rhino draw their skinned
+> rigs (four real morphs; the placeholders' part GameObjects stay for colliders and jets, and the bones follow
+> them). The Scarab, Shrike, Stoat, Thresher, Brittle Star, Angler and Butterfly draw their own FBX models in
+> place of the procedural hulls. Only the Grizzly is still part-per-mesh. The current per-vessel record is
+> `Docs/VesselModels/README.md`. The table below is the census as it was measured, kept for the trap it
+> documents.
+
 | vessel | MeshFilter | SkinnedMR | model(s) wired | element shapes |
 |---|---|---|---|---|
 | Manta | 0 | 2 | `mantis_shapekey_with_animations` **+** `Manta_shapekey_rigged` | 4 (×2 — see §3.4) |
@@ -183,7 +190,7 @@ vertices it moves, so summing them counts moved vertices a second time. Both def
 reproducible; only one describes the hull.
 
 **The finding that changes the plan: a labelled shape is not a shape.** `VesselAnimation`
-discovers element shapes **by name**, and `FrogletTools ▸ Vessels ▸ Audit Vessel Elemental Morphs`
+discovers element shapes **by name**, and `FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Elemental Morphs`
 reports what it discovers. Swap the Rhino or Urchin rig in and both would report **4 labelled
 shapes — a green audit — while the hull morphs by exactly nothing.** That is worse than the
 current honest zero. Any morph audit or acceptance check must measure **shape magnitude**, not
@@ -289,7 +296,7 @@ Two different phenomena, and telling them apart matters:
 
 ### 4.5 The offline mirror and the in-editor audit disagree by a constant — and both are right
 
-Running **FrogletTools ▸ Vessels ▸ Audit Vessel Elemental Morphs** on the swapped Dolphin and
+Running **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Elemental Morphs** on the swapped Dolphin and
 `measure_vessel_models.py` on the same FBX gives two different sets of numbers for the same four
 shapes:
 

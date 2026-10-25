@@ -41,6 +41,7 @@ namespace CosmicShore.UI
     /// a per-fragment hit test on a slanted edge would make the corners of an ability button
     /// mysteriously dead.</para>
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     [AddComponentMenu("UI/Trapezoid Graphic", 12)]
     public class TrapezoidGraphic : MaskableGraphic
     {

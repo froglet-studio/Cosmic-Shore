@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   CellName: Wildlife Liberation
   Description: The three-layer jail at intensity 2 - cages at 1050 / 600 / 200 (geo / geo / geo),
-    12696 prisms of bar and 82 danger traps in the core. Holds 519 creatures at
-    seed and up to 1198 (4155 body prisms), every species roaming the whole
+    12696 prisms of bar and 82 danger traps in the core. Holds 553 creatures at
+    seed and up to 1275 (4463 body prisms), every species roaming the whole
     arena on one shared band (0..1180). NO NUCLEUS
     by design. PhaseThresholds ride THIS intensity's own baseline; regenerate with
     Tools/Build/author_wildlife_liberation_assets.py after any change rather than hand-editing.
@@ -35,7 +35,7 @@ MonoBehaviour:
     RestlessExit: 13196
     FrenzyEnter: 16296
     FrenzyExit: 15696
-    RestlessEnterVolume: 12053535
-    RestlessExitVolume: 12050335
-    FrenzyEnterVolume: 12099935
-    FrenzyExitVolume: 12090335
+    RestlessEnterVolume: 11117664
+    RestlessExitVolume: 11114464
+    FrenzyEnterVolume: 11164064
+    FrenzyExitVolume: 11154464

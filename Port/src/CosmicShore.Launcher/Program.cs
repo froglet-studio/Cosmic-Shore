@@ -24,7 +24,7 @@ namespace CosmicShore.Launcher
         }
 
         /// <summary>
-        /// Prisma [--page play|build|options|console] [--screenshot out.png --frames N] [--offline] [--auto play|update|android|ios|claude-install|launcher-update:REV] [--updated FROM]
+        /// Amoebius [--page play|build|options|console] [--screenshot out.png --frames N] [--offline] [--auto play|play-online|update|android|ios|claude-install|launcher-update:REV] [--updated FROM]
         /// The flags exist for docs and tests: a scripted run renders N frames, saves a screenshot and exits.
         /// </summary>
         [STAThread]
@@ -33,7 +33,7 @@ namespace CosmicShore.Launcher
             string? shot = null, page = null;
             int frames = 0;
             bool offline = false; int tour = -1;
-            string? auto = null, updatedFrom = null, installTo = null;
+            string? auto = null, updatedFrom = null, installTo = null, clone = null;
             int waitPid = 0;
             for (int i = 0; i < args.Length; i++)
             {
@@ -43,6 +43,7 @@ namespace CosmicShore.Launcher
                     case "--frames" when i + 1 < args.Length: int.TryParse(args[++i], out frames); break;
                     case "--page" when i + 1 < args.Length: page = args[++i]; break;
                     case "--offline": offline = true; break;
+                    case "--clone" when i + 1 < args.Length: clone = args[++i]; break;
                     case "--tour": tour = i + 1 < args.Length && int.TryParse(args[i + 1], out var step) ? (++i > 0 ? step : 0) : 0; break;
                     case "--auto" when i + 1 < args.Length: auto = args[++i]; break;
                     case "--updated" when i + 1 < args.Length: updatedFrom = args[++i]; break;
@@ -52,8 +53,9 @@ namespace CosmicShore.Launcher
             }
             if (installTo != null) return LauncherUpdater.FinishInstall(installTo, waitPid, updatedFrom); // no window: swap and relaunch
             if (shot != null && frames <= 0) frames = 90;
+            CrashLog.Install();
             PreloadBundledNatives();
-            new LauncherApp(new LauncherApp.Args(shot, frames, page, offline, auto, updatedFrom, tour)).Run();
+            new LauncherApp(new LauncherApp.Args(shot, frames, page, offline, auto, updatedFrom, tour, clone)).Run();
             return 0;
         }
     }

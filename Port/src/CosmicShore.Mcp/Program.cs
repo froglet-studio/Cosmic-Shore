@@ -10,11 +10,11 @@ using System.Threading.Tasks;
 namespace CosmicShore.Mcp
 {
     /// <summary>
-    /// prisma-mcp - Prisma as an MCP server (stdio, JSON-RPC 2.0, one message per line).
+    /// amoebius-mcp - Amoebius as an MCP server (stdio, JSON-RPC 2.0, one message per line).
     /// Gives an agent the engine's own verbs: build and test the port, check it leaves Unity
     /// alone, and start / look at / drive / stop a running player through its control port.
     ///
-    ///   claude mcp add prisma -- dotnet run --project Port/src/CosmicShore.Mcp
+    ///   claude mcp add amoebius -- dotnet run --project Port/src/CosmicShore.Mcp
     ///
     /// stdout is the protocol and nothing else; every diagnostic goes to stderr.
     /// </summary>
@@ -26,9 +26,28 @@ namespace CosmicShore.Mcp
         public static async Task<int> Main(string[] args)
         {
             var repo = Repo.Find(args.SkipWhile(a => a != "--repo").Skip(1).FirstOrDefault());
-            if (repo == null) { Console.Error.WriteLine("prisma-mcp: no Cosmic Shore checkout found (run it inside one, or pass --repo DIR)"); return 1; }
+            if (repo == null) { Console.Error.WriteLine("amoebius-mcp: no Cosmic Shore checkout found (run it inside one, or pass --repo DIR)"); return 1; }
+            // One amoebius_bisect candidate (git bisect run calls this): the exit code is the verdict.
+            int step = Array.IndexOf(args, "--bisect-step");
+            if (step >= 0 && step + 1 < args.Length) return await Tools.BisectStep(repo, args[step + 1]);
             s_tools = new Tools(repo);
-            Console.Error.WriteLine($"prisma-mcp: serving {repo}");
+            // One tool from a shell (CI): amoebius-mcp --call engine_smoke '{"scene":"Menu_Main"}'.
+            // Prints the tool's text; exits 1 when the tool reports a failure.
+            int call = Array.IndexOf(args, "--call");
+            if (call >= 0 && call + 1 < args.Length)
+            {
+                var a = call + 2 < args.Length && args[call + 2].StartsWith("{") ? JsonNode.Parse(args[call + 2])!.AsObject() : new JsonObject();
+                try
+                {
+                    var content = await s_tools.Call(args[call + 1], a);
+                    var text = string.Join("\n", content.Select(c => c?["text"]?.ToString()).Where(t => t != null));
+                    Console.WriteLine(text);
+                    return text.StartsWith("FAIL") || text.StartsWith("build FAILED") || text.StartsWith("tests FAILED") ? 1 : 0;
+                }
+                catch (ToolException e) { Console.WriteLine(e.Message); return 1; }
+                finally { s_tools.Dispose(); }
+            }
+            Console.Error.WriteLine($"amoebius-mcp: serving {repo}");
             var stdout = new StreamWriter(Console.OpenStandardOutput(), new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\n" };
             using var stdin = new StreamReader(Console.OpenStandardInput(), Encoding.UTF8);
             try
@@ -60,7 +79,7 @@ namespace CosmicShore.Mcp
                     {
                         ["protocolVersion"] = p["protocolVersion"]?.GetValue<string>() ?? "2025-06-18",
                         ["capabilities"] = new JsonObject { ["tools"] = new JsonObject() },
-                        ["serverInfo"] = new JsonObject { ["name"] = "prisma", ["version"] = "0.1.0" },
+                        ["serverInfo"] = new JsonObject { ["name"] = "amoebius", ["version"] = "0.1.0" },
                         ["instructions"] = Tools.Instructions,
                     });
                 case "ping":

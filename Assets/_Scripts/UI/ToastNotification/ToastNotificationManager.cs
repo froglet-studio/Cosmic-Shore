@@ -33,7 +33,13 @@ namespace CosmicShore.UI
 
         // Runtime
         private readonly List<ToastNotificationItem> _activeToasts = new();
-        private readonly Queue<string> _pendingQueue = new();
+        private readonly Queue<(string message, ToastKind kind)> _pendingQueue = new();
+
+        /// <summary>
+        /// The authored style-B toast (Docs/MENU_REDESIGN_B.md section 20), loaded when no prefab is
+        /// wired - which is always the case for the manager <see cref="ToastNotificationAPI"/> creates.
+        /// </summary>
+        public const string ItemResourcePath = "UI/ToastNotificationItem";
         private readonly Stack<ToastNotificationItem> _pool = new();
 
         public RectTransform Container
@@ -42,11 +48,20 @@ namespace CosmicShore.UI
             set => container = value;
         }
 
+        /// <summary>Wiring for a manager built in code - <see cref="ToastNotificationAPI"/>'s auto-create,
+        /// which has no inspector to set these.</summary>
+        internal void SetSettings(ToastNotificationSettingsSO value) => settings = value;
+
+        /// <inheritdoc cref="SetSettings"/>
+        internal void SetChannel(ToastNotificationChannel value) => channel = value;
+
         public override void Awake()
         {
             base.Awake();
             if (Instance != this) return;
 
+            if (toastPrefab == null)
+                toastPrefab = Resources.Load<ToastNotificationItem>(ItemResourcePath);
             if (toastPrefab == null)
                 toastPrefab = CreateDefaultPrefab();
         }
@@ -61,7 +76,9 @@ namespace CosmicShore.UI
             if (channel) channel.OnRaised -= Show;
         }
 
-        public void Show(string message)
+        public void Show(string message) => Show(message, ToastKind.None);
+
+        public void Show(string message, ToastKind kind)
         {
             if (settings == null)
             {
@@ -81,26 +98,27 @@ namespace CosmicShore.UI
             {
                 if (_pendingQueue.Count < settings.maxQueue)
                 {
-                    _pendingQueue.Enqueue(message);
+                    _pendingQueue.Enqueue((message, kind));
                     return;
                 }
 
                 _pendingQueue.Dequeue();
-                _pendingQueue.Enqueue(message);
+                _pendingQueue.Enqueue((message, kind));
                 return;
             }
 
-            SpawnToast(message);
+            SpawnToast(message, kind);
         }
 
-        private void SpawnToast(string message)
+        private void SpawnToast(string message, ToastKind kind)
         {
             var item = GetOrCreateItem();
             _activeToasts.Add(item);
 
-            // Place as last child so container layout puts it at the bottom
-            item.transform.SetAsLastSibling();
-            item.Show(message, settings);
+            // The container's layout stacks by sibling order: first is the top of the stack.
+            if (settings.newestOnTop) item.transform.SetAsFirstSibling();
+            else item.transform.SetAsLastSibling();
+            item.Show(message, kind, settings);
         }
 
         #region Pool
@@ -129,7 +147,10 @@ namespace CosmicShore.UI
             _pool.Push(item);
 
             if (_pendingQueue.Count > 0 && _activeToasts.Count < settings.maxVisible)
-                SpawnToast(_pendingQueue.Dequeue());
+            {
+                var (message, kind) = _pendingQueue.Dequeue();
+                SpawnToast(message, kind);
+            }
         }
 
         #endregion
@@ -166,9 +187,7 @@ namespace CosmicShore.UI
             tmp.overflowMode = TextOverflowModes.Ellipsis;
 
             var item = go.AddComponent<ToastNotificationItem>();
-            var field = typeof(ToastNotificationItem).GetField("messageText",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            field?.SetValue(item, tmp);
+            item.SetMessageText(tmp);
 
             go.transform.SetParent(transform, false);
             return item;

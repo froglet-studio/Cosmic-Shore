@@ -164,6 +164,67 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// How well the AI flies this match - the host's pick on the launch panel, written by the
+        /// launch pipeline beside <see cref="RequestedAIDomains"/> and read on the server where the
+        /// AI is installed (the Skim Race pilot first; <see cref="AIDifficultyRules.IsOfferedFor"/>
+        /// lists the modes that read it). Independent of intensity: intensity is the map,
+        /// difficulty is the opponent. Pre-launch config like the AI domains, so it survives
+        /// <see cref="ResetRuntimeData"/> into the game scene (and its replay reloads) and is
+        /// reset only by <see cref="ResetAllData"/>. [NonSerialized] for the same reason the
+        /// domain list is: a play-mode session must never bake a setting into the asset.
+        /// </summary>
+        [NonSerialized] public AIDifficulty RequestedAIDifficulty = AIDifficultyRules.Default;
+
+        /// <summary>
+        /// The HULLS picked for the AI seats on the launch panel (a teammate's for an ally, the
+        /// host's for any seat), parallel to <see cref="RequestedAIDomains"/> (entry i is bot i).
+        /// <see cref="VesselClassType.Random"/> - and anything past the end of the list - means "no
+        /// pick": an opponent seat then flies <see cref="OpponentAIVesselClass"/> when the card pins
+        /// one, any other seat draws from the card (<see cref="AIHullSeating.SeatHull"/>). Host-side, [NonSerialized], same
+        /// lifetime as the domain list.
+        /// </summary>
+        [NonSerialized] public List<VesselClassType> RequestedAIVessels = new();
+
+        /// <summary>Replace the ally-hull picks (cleared when <paramref name="vessels"/> is null).</summary>
+        public void SetRequestedAIVessels(IReadOnlyList<VesselClassType> vessels)
+        {
+            RequestedAIVessels.Clear();
+            if (vessels != null) RequestedAIVessels.AddRange(vessels);
+        }
+
+        /// <summary>
+        /// The hull every OPPONENT AI flies this match (<see cref="SO_ArcadeGame.OpponentAIVessel"/>),
+        /// or <see cref="VesselClassType.Random"/> when the card pins none. Published by
+        /// <see cref="SyncFromArcadeGame"/> on the host - only the server spawns AI and settles
+        /// arena hulls, so no client ever needs it. Pre-launch config like
+        /// <see cref="AllowedVesselClasses"/>: deliberately NOT cleared by ResetRuntimeData().
+        /// </summary>
+        [NonSerialized] public VesselClassType OpponentAIVesselClass = VesselClassType.Random;
+
+        /// <summary>
+        /// Whether <paramref name="player"/> is an AI flying the card's pinned opponent hull on a
+        /// domain no human flies. Such a hull sits OUTSIDE arena seating: a grid of identical
+        /// opponents is the card's choice, and it must never bump a human or an ally off a hull.
+        /// </summary>
+        public bool IsPinnedOpponent(IPlayer player, VesselClassType hull)
+        {
+            if (!AIHullSeating.IsConcrete(OpponentAIVesselClass) || hull != OpponentAIVesselClass) return false;
+            if (player is not Player p || !p || !p.NetIsAI.Value) return false;
+            return AIHullSeating.IsOpponentSeat(OpponentAIVesselClass, p.NetDomain.Value, CollectHumanDomains());
+        }
+
+        /// <summary>Every domain at least one human in <see cref="Players"/> flies.</summary>
+        public HashSet<Domains> CollectHumanDomains()
+        {
+            var domains = new HashSet<Domains>();
+            if (Players == null) return domains;
+            foreach (var ip in Players)
+                if (ip is Player p && p && !p.NetIsAI.Value)
+                    domains.Add(p.NetDomain.Value);
+            return domains;
+        }
+
+        /// <summary>
         /// Levels of ALL FOUR elements a trailing player/team gains per unit of score deficit
         /// behind first place - this game's comeback strength, authored on SO_ArcadeGame and
         /// synced from the launch pipeline (host) / config RPC (clients). Read every tick by
@@ -416,6 +477,9 @@ namespace CosmicShore.Utility
             // sync RPC so a guest's swap gesture knows whether it means anything here.
             IsArenaMatch = game.ArenaRules;
 
+            // The card's pinned opponent hull (Regatta: the Squirrel), host-side only.
+            OpponentAIVesselClass = game.OpponentAIVessel ? game.OpponentAIVessel.Class : VesselClassType.Random;
+
             // The card's per-hull starting element levels, published for the same reason as the
             // hull list and shipped to every client by the config sync RPC: element levels are
             // simulated on the machine that OWNS a vessel and never replicate, so the guest's own
@@ -599,9 +663,97 @@ namespace CosmicShore.Utility
         public bool IsTurnRunning { get; private set; }
         public Pose[] SpawnPoses { get; private set; }
         List<Pose> _playerSpawnPoseList = new ();
-        public IPlayer LocalPlayer { get; private set; }
-        public IRoundStats LocalRoundStats { get; private set; }
+        IPlayer _localPlayer;
+        IRoundStats _localRoundStats;
+
+        /// <summary>
+        /// The local pilot's Player, or null once it has been DESTROYED.
+        ///
+        /// <para>Self-healing on purpose. <see cref="IPlayer"/> is an interface, so `?.` and
+        /// `!= null` at a reader never reach <c>UnityEngine.Object</c>'s overloaded null test
+        /// and a destroyed Player reads as alive — then throws <c>MissingReferenceException</c>
+        /// on the first member access. This asset is also a ScriptableObject, so in the Editor
+        /// the field survives play-mode exit and the NEXT session starts holding the LAST
+        /// session's corpse.</para>
+        ///
+        /// <para>Roughly sixty runtime sites read this handle, most of them with `?.` and many
+        /// of them per frame (every turn monitor's display path, every objective provider
+        /// through <c>ObjectiveIndicator.LateUpdate</c>, <c>MiniGameHUD.Update</c>, the toys).
+        /// Each was individually reasonable and all of them were wrong the same way, turning
+        /// one destroyed Player into an unbounded per-frame exception storm that ate the frame
+        /// rate. Fixing the HANDLE fixes every reader at once and covers the next one for free;
+        /// <c>PruneDestroyedRosterEntries</c> already did exactly this for the LISTS and simply
+        /// never covered these two singletons.</para>
+        /// </summary>
+        public IPlayer LocalPlayer
+        {
+            get => UnityLiveness.Alive(_localPlayer) ? _localPlayer : (_localPlayer = null);
+            private set => _localPlayer = value;
+        }
+
+        /// <summary>The local pilot's RoundStats, or null once destroyed — the sibling of
+        /// <see cref="LocalPlayer"/> and null for exactly the same reasons (a destroyed
+        /// <c>RoundStats</c> is a MonoBehaviour behind an interface).</summary>
+        public IRoundStats LocalRoundStats
+        {
+            get => UnityLiveness.Alive(_localRoundStats) ? _localRoundStats : (_localRoundStats = null);
+            private set => _localRoundStats = value;
+        }
         public ISession ActiveSession { get; set; }
+
+        // ── One Play is one session (B33, Docs/PartySystem/BUGS.md) ─────────────────────
+        // The project enters Play WITHOUT a domain reload (EditorSettings: Enter Play Mode Options),
+        // and this asset outlives Play in the Editor, so ActiveSession and IsOfflineSession carried
+        // the previous Play's values into the next one. A second Play then started "in" a party
+        // session whose lobby was already gone: PartySessionService.CreateAsync returned early on the
+        // non-null reference, the party went InParty with nothing hosted, and the boot's Relay wait
+        // retried for ~30 s until a refresh noticed the dead session (Caleb's log, 2026-10-16). Both
+        // are reset when Play starts - the point a player build's process starts - as the other
+        // runtime-only state in this project is (SpectatorSession.ResetStatics and friends).
+
+        static readonly List<GameDataSO> s_loaded = new();
+
+        void OnEnable()
+        {
+            if (!s_loaded.Contains(this)) s_loaded.Add(this);
+        }
+
+        void OnDisable() => s_loaded.Remove(this);
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ClearSessionStateFromLastPlay()
+        {
+            foreach (var data in s_loaded.ToArray())
+                data.ClearPlaySessionState();
+        }
+
+        /// <summary>
+        /// Forgets the session state a previous Play left behind and leaves that session in the
+        /// background, so its lobby stops advertising a party nobody can join. Returns the session it
+        /// dropped (null when there was none). In a player build there never is one at startup.
+        /// </summary>
+        internal ISession ClearPlaySessionState()
+        {
+            var carried = ActiveSession;
+            ActiveSession = null;
+            IsOfflineSession = false;
+            if (carried != null) LeaveCarriedSessionAsync(carried);
+            return carried;
+        }
+
+        static async void LeaveCarriedSessionAsync(ISession carried)
+        {
+            try
+            {
+                if (carried.IsHost) await carried.AsHost().DeleteAsync();
+                else await carried.LeaveAsync();
+            }
+            catch (Exception e)
+            {
+                // Usually already gone server-side; either way nothing here can use it any more.
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[GameDataSO] Leaving the session carried from the last Play failed: {e.Message}");
+            }
+        }
         public int TurnsTakenThisRound { get; set; }
         public int RoundsPlayed { get; set; }
 
@@ -752,8 +904,8 @@ namespace CosmicShore.Utility
             CombatPointTargetCount = 0;
             SwitchTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
-            // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
-            // NOT reset here. They are pre-launch config values set by
+            // Note: RequestedAIBackfillCount, RequestedDomainCount and RequestedAIDifficulty
+            // are intentionally NOT reset here. They are pre-launch config values set by
             // ArcadeGameConfigureModal and must survive the ResetRuntimeData() call
             // in SceneLoader.LoadSceneAsync() so the game scene can read them.
             // They are reset in ResetAllData() instead.
@@ -861,6 +1013,8 @@ namespace CosmicShore.Utility
             SelectedIntensity.Value = 1;
             RequestedAIBackfillCount = 0;
             RequestedAIDomains.Clear();
+            RequestedAIDifficulty = AIDifficultyRules.Default;
+            RequestedAIVessels.Clear();
             RequestedDomainCount = 3;
             IsMaelstromMode = false;
 
@@ -971,14 +1125,27 @@ namespace CosmicShore.Utility
         public bool IsLocalDomain(Domains domain) =>
             LocalPlayer != null && domain == LocalPlayer.Domain;
 
+        /// <summary>
+        /// True when the local player's domain tops <see cref="DomainStatsList"/>, which
+        /// <see cref="CalculateDomainStats"/> leaves sorted best-first - the same entry the
+        /// scoreboard banner names. <paramref name="stats"/> is the local domain's entry.
+        ///
+        /// It used to compare the local domain against its OWN entry, which is true whenever the
+        /// local domain fielded anyone: both Duel pilots got VICTORY and the WinMatch quest.
+        /// </summary>
         public bool IsLocalDomainWinner(out DomainStats stats)
         {
             stats = default;
-            foreach (var stat in DomainStatsList.Where(stat => stat.Domain == LocalPlayer.Domain))
+            if (LocalPlayer == null || DomainStatsList == null || DomainStatsList.Count == 0)
+                return false;
+
+            foreach (var stat in DomainStatsList)
             {
+                if (stat.Domain != LocalPlayer.Domain) continue;
                 stats = stat;
+                break;
             }
-            return stats.Domain == LocalPlayer.Domain;
+            return DomainStatsList[0].Domain == LocalPlayer.Domain;
         }
 
         // ----- Domain aggregation helpers (per-domain sums for team-based scoring) -----
@@ -1031,15 +1198,32 @@ namespace CosmicShore.Utility
         /// dedup and lookups. Plain C# stats (edit-mode test fakes) are not
         /// UnityEngine.Objects and pass through untouched.
         /// </summary>
-        void PruneDestroyedRosterEntries()
+        public void PruneDestroyedRosterEntries()
         {
             for (int i = Players.Count - 1; i >= 0; i--)
-                if (Players[i] is UnityEngine.Object obj && !obj)
+                if (!UnityLiveness.Alive(Players[i]))
                     Players.RemoveAt(i);
 
             for (int i = RoundStatsList.Count - 1; i >= 0; i--)
-                if (RoundStatsList[i] is UnityEngine.Object obj && !obj)
+                if (!UnityLiveness.Alive(RoundStatsList[i]))
                     RoundStatsList.RemoveAt(i);
+
+            for (int i = Vessels.Count - 1; i >= 0; i--)
+                if (!UnityLiveness.Alive(Vessels[i]))
+                    Vessels.RemoveAt(i);
+        }
+
+        /// <summary>
+        /// Drop the local handles if the objects behind them are gone. The getters already
+        /// self-heal on READ, so this exists for the one thing a lazy getter cannot do: let a
+        /// dying <c>Player</c> hand the reference back at the moment of death rather than
+        /// leaving it for whoever reads next. Cheap and idempotent — reading the two properties
+        /// IS the check.
+        /// </summary>
+        public void ForgetLocalPlayerIfDestroyed()
+        {
+            _ = LocalPlayer;
+            _ = LocalRoundStats;
         }
 
         /// <summary>

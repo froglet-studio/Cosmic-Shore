@@ -313,7 +313,27 @@ since a ring is centred on ONE rail and *"which rail am I on"* has to have an an
 tightest same-shell separation **64.7 u** at N=9 against **18 u** of combined reach — **46.7 u
 clear** — and the shell gap 65 u likewise. `prove_shield_clearance` asserts all three (lane-to-lane,
 shell-to-shell, and that a gate mouth clears its own rail's armour), and fires when broken.
-Consecutive armoured prisms *along* a rail do interpenetrate; that is one rail, and it is fine.
+Consecutive armoured prisms *along* a rail meet the way their boxes do: the octahedron is the
+shield's look, and the boxes underneath are flush (below).
+
+**The boxes are FLUSH - no rail prism interpenetrates another (2026-10-20, Docs/ECOSYSTEM.md
+§49.10).** Before this, consecutive prisms along a rail crossed (14% of pairs: a node is dropped
+every 8 u of accumulated *sub*-chord, so on a bend the straight chord is a little under 8, and two
+6 u-wide boxes looking down their central differences cross at their inner corners), and at each
+strand's **seam** - its last rail ends on its last node, its first rail starts on node 0, and the
+strand is closed - the last node landed anywhere from 0 to 8 u short of the first; one seam per
+prefab was a duplicate, centres 0.07-1.2 u apart. `SkeinCourse.FitFlush` now fits every prism's
+LENGTH at authoring time: the nominal 8 u where it fits, else the longest length both of a
+neighbouring pair can share (the plane normal to the chord between their centres separates them,
+closed form), the tighter side kept; the seam pairs are fitted like any other pair. The 6 u
+cross-section - the catch window of section 7 - is never touched, the count and every pose are
+unchanged, except that a seam node that landed on its strand's first node is slid back along the
+chord the least that leaves both prisms 0.6 u (`SeamMinLength`, above the prefab's 0.5 u floor).
+Measured on the shipped prefabs: 512-865 clipping pairs per intensity -> **0**
+(`Tools/Build/audit_prism_clipping.py SpawnableSkein`), volume down **0.24-0.28%**.
+`skein_budget.prove_rails_flush` holds it on the model with the full 15-axis test, and its
+negative control (`FLUSH_MARGIN` 0.998 -> 1.05) fires; the cell's volume ladder prices the fitted
+volume, never count x 288.
 
 **Volume is 1.55–3.07 M**, against Drumfire's 1.37 M and Hijack's 0.15–0.54 M. That is the direct
 price of the tunnelling-safe prism: `(6,6,8)` is **288 per prism against `(3,3,6)`'s 54 — 5.33×,
@@ -449,6 +469,36 @@ near the tangent (which holds `LookingAtCrystal`, so the authored `ram: 1` keeps
 the grind at 300 rather than collapsing to 60 u/s). Off-rail it flies at its own next ring and
 *through* it, because `AIPilot` has no arrive-and-stop behaviour. The provider is cleared at
 teardown — Switchback ships without that and leaks its closure across a scene-reload replay.
+
+**The AI now flies the Urchin's kit, not just its aim** (`UrchinAutopilotDriver`,
+`_Scripts/Controller/AI/Urchin/`, asked from `TryOverrideAim`). Aiming down the rail made an AI
+ride whatever strand it touched to wherever that strand went - fine at intensity 1, where every
+ring is a collar, and a pilot that threads only the pinned rings its strands happen to pass above
+it. While attached the driver walks the strand both ways from the pilot (`UrchinRailAssessment`,
+pure and unit-tested) and picks one of three: **RIDE** (the strand threads the next ring within
+`CaptureFraction` of its mouth, or still closes 30%+ of the range at grind speed, or ends within
+160 u so the pilot launches rather than slips), **REVERSE** (the ring is back the way it came: the
+ride's direction is the pilot's FACING, so the AI swings its nose round, aiming behind AND to one
+side so AIPilot's cross product cannot vanish dead astern) or **LEAVE** (Slip, then the platform's
+gate aiming flies it at the ring). It taps the chain spikes only at mass the volley can CONVERT:
+the prism underfoot is a rival's colour, it is not super-shielded
+(`UrchinAutopilotDriver.IsConvertible`; `PrismTeamManager.Steal` refuses super-shielded prisms,
+so a volley there would only spend the meter), and the spike ability's own ammo cost is covered.
+That way a hostile lane is converted instead of crawled at 20 u/s. A crawl is DRY
+(`UrchinRailAssessment.IsDryCrawl`) when the ride is slowed on hostile mass and either the spikes
+cannot pay or the mass is super-shielded. Super-shielded mass is always dry, however full the
+meter, because spiking it changes nothing. A hostile ride the Time-5 Slipstream grinds at full
+pace is not a crawl. A dry crawl leaves the strand unless the ring is within 80 u
+(`UrchinAutopilotConfig.DryCrawlArc`). A parked ride (under 6 u/s for 5 s) Slips. In free flight it lays a **Track Projector** rail
+on a long straight shot - nose within 8 degrees of the ring, the ring 3+ track lengths away, and
+the flight line along the ring's axis so the launch goes through the mouth. Every control is found
+by capability on the vessel's own bindings and pressed replicated; every read is the host's own
+simulation of the AI vessel. Tunables: `Resources/UrchinAutopilotConfig.asset`.
+
+AI backfill already seats Urchins here: the card's `MinPlayersAllowed 2` means a solo launch
+requests one AI, `ServerPlayerVesselInitializerWithAI` (present in `MinigameSkein.unity`, every
+template `vesselClass: 4`) spawns it, and `ClampVesselToGame` holds it to the card's single hull.
+Nothing was gating it off.
 
 **Still unverified in the editor:** whether that AI actually races, and everything about how the
 mode plays. Nothing here has been run in Unity.
@@ -1051,3 +1101,40 @@ Every number in its row — 6,699 prisms, 327.3 u minimum gate separation, the p
 launch misses — reproduces the pre-pass output exactly. `PinStride = 1` makes `k % 1 != 0` false at
 every ring, so the collar branch is never taken and consumes no RNG; the seeded draw sequence, and
 therefore the course, is untouched.
+
+## 16. The race length, and where it is authored
+
+| Knob | Where | Shipped |
+|---|---|---|
+| rings in the course (= rings to thread) | **FrogletTools ▸ Game Modes ▸ End Game Conditions** → "Skein - Ring Target" (`Resources/EndConditionOverrides` → `skeinRingTarget`, Build twin `skeinRingTargetBuild`) | **24** |
+| the count the arena's cable is built for | `SkeinCourseSettings.ForIntensity` → `GateCount` | **24** |
+| the count the spacing is proven at | `Tools/Build/skein_budget.py` → `GATE_COUNT` | **24** |
+
+The end condition is ONE count, so it has one row in the window. Until 2026-10 the SO, the asset,
+the `Build` twin, the getter and the `TryGetAuthoredTurnTarget` row all existed and the window drew
+no row, so the only way to change it was to hand-edit the asset. Nothing about the shipped race
+changed when the row was added: the asset already held 24 / 24.
+
+The target travels `EndConditionOverridesSO.GetSkeinRingTarget()` →
+`SkeinController.AuthoredGateTarget()` → both `GateRaceController` (how many rings to lay) and
+`RaceGateTurnMonitor.StartMonitor` (the finish line). There is no Skein-specific monitor any more
+(the `SkeinRingTurnMonitor` in §10 was deleted in the §12 extraction).
+
+**The count is not free to change, and the window's help text says so.** Two reasons:
+
+- **It is geometry.** The rings must close on the finish collar after a whole number of cable
+  laps, so the spacing is `GateLaps · L / (count − 1)` (§15.4). The pinned-ring transfer window and
+  intensity 1's next-ring-on-screen promise are proven by `skein_budget.py` at 24 only.
+- **It picks the seed.** `SkeinCourse.BuildAll` returns null when the walk lays a different number of
+  rings than asked, and both the arena and the controller walk the same six-attempt seed ladder.
+  The arena builds for `SkeinCourseSettings`' own 24, so if the controller picked its seed with the
+  AUTHORED count, a different count could land it on a different re-roll and hang rings on rails the
+  arena never laid. `SkeinController.BuildCourse` therefore picks the seed with the arena's count
+  and walks the authored count on that same seed. At 24 that is exactly the single pass it always
+  was. At another count, a seed that cannot carry it fails the course loudly, naming the fix (set
+  it back, or re-measure the budget at the new count), rather than racing on a phantom cable.
+
+Making the arena itself read the authored count was the other option and was not taken:
+`SpawnableSkein.cs` is compiled and source-hashed by the card-art harness
+(`Tools/Build/render_card_backgrounds.py` `SOURCES`), so touching it re-stales every committed
+card background and needs a harness stub for the SO, for a value nobody has asked to change.

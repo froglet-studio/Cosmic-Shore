@@ -42,6 +42,31 @@ namespace CosmicShore.Utility
         [Tooltip("The GameOverCounter text inside the toast - shows the win/lose line.")]
         [SerializeField] TMP_Text gameOverCounterText;
 
+        [Header("Style-B reveal (Docs/MENU_REDESIGN_B.md section 22.4) - all optional")]
+        [Tooltip("Above the line: 'Jade wins' in the winning domain's colour, or Victory / Defeat " +
+                 "when no domain won.")]
+        [SerializeField] TMP_Text winnerText;
+        [Tooltip("The short rule under the line, in the same colour as the winner text.")]
+        [SerializeField] UnityEngine.UI.Image winnerRule;
+        [Tooltip("Under the rule: the mode's own number - 'Race time 2:41.37', from the scoring rule.")]
+        [SerializeField] TMP_Text detailText;
+        [Tooltip("Played as the reveal comes in - the winner line, the rule growing out, the detail - " +
+                 "each on its own delay. The toast shows through its CanvasGroup, so they are started " +
+                 "here rather than on enable.")]
+        [SerializeField] KitEntrance[] revealEntrances = new KitEntrance[0];
+
+        [Header("Words (every line the reveal writes; empty shows nothing)")]
+        [Tooltip("Above the line when a domain won. {domain} is its name.")]
+        [SerializeField] string winnerLine = "{domain} wins";
+        [Tooltip("Above the line when no domain won and you won; also the toast's line with no message set or rule.")]
+        [SerializeField] string victoryLine = "Victory";
+        [Tooltip("Above the line when no domain won and you lost; also the toast's line with no message set or rule.")]
+        [SerializeField] string defeatLine = "Defeat";
+        [Tooltip("The toast when a quest completes. {quest} is its name.")]
+        [SerializeField] string questCompleteLine = "Quest Complete!\n{quest}";
+        [Tooltip("The toast when an intensity unlocks. {mode} is the game, {intensity} the new level.")]
+        [SerializeField] string intensityUnlockedLine = "{mode} Intensity {intensity} Unlocked!";
+
         [Header("Timing")]
         [Tooltip("Seconds the reveal toast holds before the scoreboard appears.")]
         [SerializeField, Min(0f)] float revealDuration = 3f;
@@ -71,10 +96,16 @@ namespace CosmicShore.Utility
         Coroutine _revealRoutine;
         Sequence _toastSeq;
 
+        // Resolved at load, so the toast is watched for the whole match, not only from the reveal on.
+        void Start() => EnsureRevealRefs();
+
         void OnEnable()
         {
             if (gameData != null)
+            {
                 gameData.OnWinnerCalculated.OnRaised += HandleWinnerCalculated;
+                gameData.OnResetForReplay.OnRaised += HandleResetForReplay;
+            }
 
             var progression = GameModeProgressionService.Instance;
             if (progression != null)
@@ -87,7 +118,10 @@ namespace CosmicShore.Utility
         void OnDisable()
         {
             if (gameData != null)
+            {
                 gameData.OnWinnerCalculated.OnRaised -= HandleWinnerCalculated;
+                gameData.OnResetForReplay.OnRaised -= HandleResetForReplay;
+            }
 
             var progression = GameModeProgressionService.Instance;
             if (progression != null)
@@ -96,6 +130,30 @@ namespace CosmicShore.Utility
                 progression.OnIntensityUnlocked -= HandleIntensityUnlocked;
             }
 
+            if (_revealRoutine != null)
+            {
+                // The end screen is raised at the END of this coroutine; stopping it here means no scoreboard. Loud,
+                // so whatever disabled this object mid-reveal shows up in the console (Scoreboard's safety net then
+                // shows the board).
+                CSDebug.LogWarning($"[EndGameSequencer] '{name}' was disabled during the end reveal - the end screen " +
+                                   "would never have been raised. Find what disables it at the end of a match.");
+                StopCoroutine(_revealRoutine);
+                _revealRoutine = null;
+            }
+            _toastSeq?.Kill();
+            _isRunning = false;
+        }
+
+        /// <summary>
+        /// An IN-PLACE replay (Cellular Duel's rematch: no scene reload, so this component is
+        /// never disabled) is a new game. Without this the latch stayed set from game one, the
+        /// rematch's OnWinnerCalculated returned early, nothing raised OnShowGameEndScreen, and
+        /// every peer was left in the arena with no scoreboard and no way out. Cleared here and
+        /// not at the end of RunReveal, so a repeated raise within one game still cannot run the
+        /// reveal (and the end screen) twice.
+        /// </summary>
+        void HandleResetForReplay()
+        {
             if (_revealRoutine != null)
             {
                 StopCoroutine(_revealRoutine);
@@ -107,6 +165,7 @@ namespace CosmicShore.Utility
 
         void HandleWinnerCalculated()
         {
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[EndGameSequencer] Winner calculated - reveal {(_isRunning ? "already running" : "starting")}.");
             if (_isRunning) return;
             _isRunning = true;
             _revealRoutine = StartCoroutine(RunReveal());
@@ -129,6 +188,7 @@ namespace CosmicShore.Utility
                 if (AudioSystem.Instance != null)
                     AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
 
+                DrawRevealLines(didWin);
                 ShowToast(ResolveMessage(didWin));
             }
             catch (System.Exception e)
@@ -149,7 +209,11 @@ namespace CosmicShore.Utility
                 Debug.LogException(e);
             }
 
+            int shown = Scoreboard.ShowCount;
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[EndGameSequencer] Reveal over - raising the end screen.");
             gameData.InvokeShowGameEndScreen();
+            // A raise no board answered left the player in the arena with no way out: find the board and show it.
+            if (Scoreboard.ShowCount == shown) Scoreboard.ShowUnreached();
             _revealRoutine = null;
         }
 
@@ -175,7 +239,7 @@ namespace CosmicShore.Utility
             if (rule != null && gameData.LocalRoundStats != null)
                 return rule.BuildReveal(gameData, gameData.LocalRoundStats, didWin).Header;
 
-            return didWin ? "VICTORY" : "DEFEAT";
+            return didWin ? victoryLine : defeatLine;
         }
 
         /// <summary>
@@ -216,12 +280,14 @@ namespace CosmicShore.Utility
             // vessel would stay uncontrollable in the next tournament round. SetPause(true)
             // is the proven menu-autopilot pattern and is reset every round by
             // Player.StartPlayer() -> SetPause(false).
+            CrewSeat.ReturnHumansToHull(player.Vessel);   // a crew seat stops reading input too (it took the hull itself)
             if (player.InputController != null)
                 player.InputController.SetPause(true);
             player.Vessel.ToggleAIPilot(true);
 
-            // Sparrow keeps laying prisms forever otherwise.
-            if (status.VesselType == VesselClassType.Sparrow && status.VesselPrismController != null)
+            // Sparrow keeps laying prisms forever otherwise (the Wrasse and the Honeyguide are Sparrow hulls with a crew seat).
+            if (status.VesselType is VesselClassType.Sparrow or VesselClassType.Wrasse or VesselClassType.Honeyguide
+                && status.VesselPrismController != null)
                 status.VesselPrismController.StopSpawn();
 
             var behavior = status.AICinematicBehavior;
@@ -235,6 +301,48 @@ namespace CosmicShore.Utility
                 ? ImplementedBehaviors[Random.Range(0, ImplementedBehaviors.Length)]
                 : vesselBehavior;
 
+        /// <summary>
+        /// The lines around the message. The message itself is the crowd line (CLUTCHED IT); these
+        /// say who won and by what, in the mode's own terms.
+        /// </summary>
+        void DrawRevealLines(bool didWin)
+        {
+            if (!winnerText && !winnerRule && !detailText) return;
+
+            var domain = gameData != null ? gameData.WinnerDomain : Domains.Blue;
+            bool named = domain != Domains.Blue && (int)domain != 0;
+            var palette = gameData != null ? gameData.ThemeManagerData : null;
+            Color accent = named && palette != null
+                ? palette.GetDomainUIColor(domain)
+                : UITheme.Resolve(null, didWin ? UIColorToken.TextLight : UIColorToken.NeutralLightest);
+
+            if (winnerText)
+            {
+                winnerText.text = named ? TemplateText.Fill(winnerLine, "domain", domain.ToString()) : didWin ? victoryLine : defeatLine;
+                winnerText.color = accent;
+            }
+            if (winnerRule) winnerRule.color = accent;
+
+            if (!detailText) return;
+            detailText.text = string.Empty;
+            var rule = gameData != null ? gameData.ScoringRule : null;
+            if (rule == null || gameData.LocalRoundStats == null) return;
+            var reveal = rule.BuildReveal(gameData, gameData.LocalRoundStats, didWin);
+            if (string.IsNullOrEmpty(reveal.Label)) return;
+            string value = reveal.FormatAsTime
+                ? ScoreResultBuilder.FormatTime(reveal.Value)
+                : reveal.Value.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+            detailText.text = TabularText.Wrap($"{SentenceCase(reveal.Label)} {value}", detailText.font);
+        }
+
+        /// <summary>'RACE TIME' -> 'Race time'. The rules author their labels in caps for the old board.</summary>
+        public static string SentenceCase(string caps)
+        {
+            if (string.IsNullOrEmpty(caps)) return caps;
+            string lower = caps.ToLowerInvariant();
+            return char.ToUpperInvariant(lower[0]) + lower.Substring(1);
+        }
+
         void ShowToast(string message)
         {
             EnsureRevealRefs();
@@ -242,7 +350,13 @@ namespace CosmicShore.Utility
             if (gameOverCounterText != null)
                 gameOverCounterText.text = message;
 
-            if (toastCanvasGroup == null) return;
+            if (toastCanvasGroup == null)
+            {
+                CSDebug.LogWarning($"[EndGameSequencer] '{name}' found no ScoreRevealToast under '{transform.root.name}' - the reveal has nothing to show.");
+                return;
+            }
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[EndGameSequencer] Reveal toast '{message}': activeInHierarchy={toastCanvasGroup.gameObject.activeInHierarchy}.");
 
             _toastSeq?.Kill();
             var t = toastCanvasGroup.transform;
@@ -250,10 +364,14 @@ namespace CosmicShore.Utility
             toastCanvasGroup.blocksRaycasts = false;
             t.localScale = Vector3.one * 0.85f;
 
+            for (int i = 0; i < revealEntrances.Length; i++)
+                if (revealEntrances[i]) revealEntrances[i].Play();
+
             _toastSeq = DOTween.Sequence()
                 .Append(toastCanvasGroup.DOFade(1f, toastInDuration))
                 .Join(t.DOScale(toastPunchScale, toastInDuration).SetEase(Ease.OutBack))
-                .Append(t.DOScale(1f, 0.15f).SetEase(Ease.OutQuad));
+                .Append(t.DOScale(1f, 0.15f).SetEase(Ease.OutQuad))
+                .SetUpdate(true);   // a zero time scale at the end of a match must not hold the toast at alpha 0
         }
 
         void HideToast()
@@ -262,7 +380,8 @@ namespace CosmicShore.Utility
             _toastSeq?.Kill();
             _toastSeq = DOTween.Sequence()
                 .Append(toastCanvasGroup.DOFade(0f, toastOutDuration))
-                .Join(toastCanvasGroup.transform.DOScale(0.85f, toastOutDuration).SetEase(Ease.InQuad));
+                .Join(toastCanvasGroup.transform.DOScale(0.85f, toastOutDuration).SetEase(Ease.InQuad))
+                .SetUpdate(true);
         }
 
         /// <summary>
@@ -274,10 +393,12 @@ namespace CosmicShore.Utility
             if (toastCanvasGroup == null)
             {
                 var toast = FindUnderRoot("ScoreRevealToast");
-                if (toast != null)
-                    toastCanvasGroup = toast.GetComponent<CanvasGroup>()
-                        ?? toast.gameObject.AddComponent<CanvasGroup>();
+                // TryGetComponent, not `GetComponent() ?? AddComponent()`: a missing component is
+                // a fake-null object in the Editor, which the coalesce keeps.
+                if (toast != null && !toast.TryGetComponent(out toastCanvasGroup))
+                    toastCanvasGroup = toast.gameObject.AddComponent<CanvasGroup>();
             }
+            EndScreenWitness.Watch(toastCanvasGroup, "reveal toast");
 
             if (gameOverCounterText == null && toastCanvasGroup != null)
             {
@@ -299,7 +420,8 @@ namespace CosmicShore.Utility
         void HandleQuestCompleted(SO_UnlockData quest)
         {
             if (quest == null || quest.IsPlaceholder) return;
-            ToastNotificationAPI.Show($"Quest Complete!\n{quest.DisplayName}");
+            string line = TemplateText.Fill(questCompleteLine, "quest", quest.DisplayName);
+            if (line.Length > 0) ToastNotificationAPI.Show(line, ToastKind.Success);
         }
 
         void HandleIntensityUnlocked(GameModes mode, int intensity)
@@ -307,7 +429,8 @@ namespace CosmicShore.Utility
             var progression = GameModeProgressionService.Instance;
             var quest = progression != null ? progression.GetQuestForMode(mode) : null;
             string label = quest != null ? quest.DisplayName : mode.ToString();
-            ToastNotificationAPI.Show($"{label} Intensity {intensity} Unlocked!");
+            string line = TemplateText.Fill(intensityUnlockedLine, "mode", label, "intensity", intensity.ToString());
+            if (line.Length > 0) ToastNotificationAPI.Show(line, ToastKind.Success);
         }
     }
 }

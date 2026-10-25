@@ -35,15 +35,28 @@ namespace CosmicShore.Gameplay
             elapsedTime = 0f;
         }
 
+        // TurnMonitor.RunLoopAsync ticks ONCE before its first wait. Counted, that tick put a
+        // whole interval on the clock at t=0: a 120 s round showed "119" from its first frame
+        // and ended at 119 s. StartMonitor already published the full time, so the t=0 tick is
+        // skipped.
+        bool _primed;
+
         public override void StartMonitor()
         {
             elapsedTime = 0;
+            _primed = false;
             UpdateTimerUI();
             base.StartMonitor();
         }
         
         protected override void RestrictedUpdate()
         {
+            if (!_primed)
+            {
+                _primed = true;
+                return;
+            }
+
             elapsedTime += _updateInterval;
             UpdateTimerUI();
         }

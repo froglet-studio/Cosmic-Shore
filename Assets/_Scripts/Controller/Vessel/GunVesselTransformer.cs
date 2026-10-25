@@ -783,7 +783,10 @@ namespace CosmicShore.Gameplay
             // attitude. Slide() replaces base.MoveShip entirely, so without this the
             // accumulated rotation is a backlog nothing consumes - the hull never turns during
             // the ride, and detaching slams the whole backlog at once.
-            transform.rotation = Quaternion.Slerp(transform.rotation, accumulatedRotation, LERP_AMOUNT * dt);
+            // Through the fleet's one follow rule (no lag for a human pilot, the catch-up cap for a
+            // rail that turns the command abruptly; VesselTransformer.NoseFollowFraction).
+            transform.rotation = Quaternion.Slerp(transform.rotation, accumulatedRotation,
+                                                  NoseFollowFraction(accumulatedRotation, dt));
 
             // Keep the fleet's smoothed cruise field tracking the ride, so DETACHING hands
             // back a speed that matches what the pilot was doing rather than snapping to a

@@ -14,14 +14,14 @@ The `Assets/_Scripts/Utility/AITraining/` tree was copied from
 was not merged. Compile fixes against current APIs:
 
 - `GameModes.Freestyle` is retired. The launcher scene arm and the runner's
-  fallback fitness case are gone. `MultiplayerFreestyle` still uses
-  `ApplyFreestyleDefaults()`.
+  fallback fitness case are gone. `MultiplayerFreestyle` (28) was retired
+  2026-10, and `ApplyFreestyleDefaults()` with it.
 - `Domains.None` and `Domains.Unassigned` are gone. Sensors treat `Domains.Blue`
   as the no-team sentinel.
 - `TrainingPilot.BindVessel` still writes only `IInputStatus` and calls
   `PerformShipControllerActions` / `StopShipControllerActions`. It also disables
   `AIPilot` after `StopAIPilot` so the ability coroutines stop pressing buttons.
-- `FrogletTools/AI Training` and `Quick Setup` carry `[FrogletTool]`. Quick
+- `FrogletTools/AI/AI Training` and `Quick Setup` carry `[FrogletTool]`. Quick
   Setup records created assets on `FrogletToolChangeLedger` and the window
   draws `FrogletToolShipPanel`.
 - Tests stay in `AITraining/Tests/Editor/`. No gameplay asmdef was added.
@@ -112,7 +112,7 @@ scenarios was flown.
 
 ## Prompt 5 status
 
-`FrogletTools → AI Training` is the operator surface. The tabs are
+`FrogletTools → AI → AI Training` is the operator surface. The tabs are
 Configure, Inspect, Archive, and Deploy. Learn and Stop sit above every
 tab. Configure edits the selected scenario (population, elites, vessel,
 mode, intensity) and the control asset (target episodes, watchdog). −1
@@ -353,7 +353,7 @@ working tree. Sizes are blob bytes.
 | `Persistence/TrainingControlSO.cs` | `DeployArchiveInNormalPlay` | Port. |
 | `Persistence/GenomeJson.cs` | Sidecar export/import | Port. |
 | `Telemetry/TrainingTelemetrySO.cs` | Editor-facing session mirrors | Port. |
-| `Editor/TrainingEditorWindow.cs` | `FrogletTools/AI Training` and Quick Setup | Port. Add `[FrogletTool]` and the tool-output ledger. Learn writes assets under `Assets/_SO_Assets/AI Training/`. |
+| `Editor/TrainingEditorWindow.cs` | `FrogletTools/AI/AI Training` and Quick Setup | Port. Add `[FrogletTool]` and the tool-output ledger. Learn writes assets under `Assets/_SO_Assets/AI Training/`. |
 | `Editor/TrainingPlayModeHook.cs` | Auto-start when entering Play after Learn | Port. |
 | `Tests/Editor/AITrainingCoreTests.cs` | Edit-mode tests, already under `Editor/` | Port. Keep them under `Editor/`. Do not add a test asmdef. |
 | `README.md` (in that folder) | Operator notes | Do not treat as current. It disagrees with its own tip commit (below). |

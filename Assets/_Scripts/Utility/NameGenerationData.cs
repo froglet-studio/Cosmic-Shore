@@ -17,8 +17,10 @@ namespace CosmicShore.Utility
 
         public string GenerateName()
         {
-            var firstWord = FirstWordList[Random.Range(0, FirstWordList.Length - 1)];
-            var secondWord = SecondWordList[Random.Range(0, SecondWordList.Length - 1)];
+            // Random.Range(int, int) excludes its max, so the bound is Length, not Length - 1
+            // (which never picked the last word of either list).
+            var firstWord = FirstWordList[Random.Range(0, FirstWordList.Length)];
+            var secondWord = SecondWordList[Random.Range(0, SecondWordList.Length)];
 
             return firstWord + " " + secondWord;
         }

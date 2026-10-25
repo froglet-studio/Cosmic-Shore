@@ -233,6 +233,29 @@ static class Round11dHarness
             }
             Check(everyQuarter && exactlyOne && onBoundary, "locust: each member strikes one phase in four, a quarter of the cloud at a time, changing only on phase boundaries");
         }
+        // the pack hunter's WIND-UP (lab fair burns, bestiary pack.py WINDUP 0.4 s = 4 ticks at 10 Hz): the plate goes up
+        // only on the 4th tick the startle has shown above HuntEnter; a dip holds the count, a calm resets it
+        {
+            var w = S(); w.HuntWindupTicks = 4;
+            byte Run(float[] seq) { byte x = 0; foreach (var v in seq) x = SwarmTickJob.StrikeState(3, 0, 0, v, x, w); return x; }
+            bool firstAt4 = true;
+            byte state = 0; int upAt = -1;
+            for (int t = 0; t < 10 && upAt < 0; t++) { state = SwarmTickJob.StrikeState(3, 0, t, 0.5f, state, w); if (state == 2) upAt = t + 1; }
+            firstAt4 &= upAt == 4;
+            bool dipHolds = Run(new[] { 0.5f, 0.5f, 0.15f, 0.5f, 0.5f }) == 2;          // 4 shown ticks around a dip above 0.08
+            bool calmResets = Run(new[] { 0.5f, 0.5f, 0.5f, 0.02f, 0.5f, 0.5f, 0.5f }) != 2;   // a calm in between: only 3 since
+            var z = S(); z.HuntWindupTicks = 0;
+            bool zeroIsRound10 = SwarmTickJob.StrikeState(3, 0, 0, 0.5f, 0, z) == 2;
+            Check(firstAt4 && dipHolds && calmResets && zeroIsRound10,
+                $"pack hunter wind-up: the plate goes up on the 4th shown tick (got {upAt}), a dip holds the count, a calm resets it, 0 strikes at once");
+            // the pufferfish winds up the same way above DangerEnter (0.45; a calm is below 0.18)
+            var pw = S(); pw.PuffWindupTicks = 4;
+            byte state0 = 0; int puffAt = -1;
+            for (int t = 0; t < 10 && puffAt < 0; t++) { state0 = SwarmTickJob.StrikeState(0, 0, t, 0.6f, state0, pw); if (state0 == 2) puffAt = t + 1; }
+            byte held = 2; held = SwarmTickJob.StrikeState(0, 0, 0, 0.3f, held, pw);
+            Check(puffAt == 4 && held == 2 && SwarmTickJob.StrikeState(0, 0, 0, 0.6f, 0, S()) == 2,
+                $"pufferfish wind-up: the plate goes up on the 4th shown tick (got {puffAt}), a lit plate keeps its exit hysteresis, 0 puffs at once");
+        }
         // off: no bestiary, only the pufferfish strikes
         {
             var off = S(); off.Bestiary = false; bool ok = true;

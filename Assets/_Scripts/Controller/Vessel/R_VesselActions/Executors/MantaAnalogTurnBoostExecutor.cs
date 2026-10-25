@@ -25,6 +25,15 @@ namespace CosmicShore.Gameplay
     /// <see cref="aiBoostStickBand"/>, fading to nothing at its edge. Gated on the pilot being
     /// an AUTOPILOT (<c>AIPilot.AutoPilotEnabled</c>), not on the player being an AI, so the
     /// lava-lamp Manta and an AI-piloted companion fly the same kit a human does.</para>
+    ///
+    /// <para><b>Past <see cref="aiYastriStickBand"/> the drive also PIVOTS.</b> A yaw stick hauled
+    /// further than that band is a bot asking for more turn than the stick has, which is the
+    /// moment a human releases one trigger: the trigger on the turn's side is raised above the
+    /// boost hold by the excess deflection, so a full yaw deflection is one trigger flat and the
+    /// other released - the 82 u Yastri pivot (REDLINE.md §1). The boost hold (the overlap) is
+    /// exactly the band-only drive's at every stick, and below the Yastri band the two triggers
+    /// stay equal, so straights and ordinary corners fly as they did before the pivot existed.
+    /// The pure shape is <see cref="AutopilotTriggers"/>.</para>
     /// </summary>
     public sealed class MantaAnalogTurnBoostExecutor : ShipActionExecutorBase
     {
@@ -42,6 +51,13 @@ namespace CosmicShore.Gameplay
                  "goes over it - the same boost-for-turn trade a human makes on the triggers. " +
                  "0 disables the drive (an autopilot then never Soars).")]
         [SerializeField, Range(0f, 1f)] private float aiBoostStickBand = 0.35f;
+        [Tooltip("Past this YAW stick deflection an autopilot also Yastri-pivots: the trigger on " +
+                 "the turn's side rises above the boost hold by the excess deflection, reaching " +
+                 "one trigger flat and the other released at a full yaw stick. The boost (the " +
+                 "trigger overlap) is unchanged, and below this band both triggers stay equal. " +
+                 "Keep it above Ai Boost Stick Band so a bot never pivots while it is still " +
+                 "Soaring flat out. 1 disables the pivot.")]
+        [SerializeField, Range(0f, 1f)] private float aiYastriStickBand = 0.75f;
 
         [Header("Refs")]
         [SerializeField] private VesselTransformer vesselTransformer;
@@ -52,11 +68,17 @@ namespace CosmicShore.Gameplay
 
         private IVesselStatus _status;
         private float _baseBoostMultiplier;
+        // The mode's own Soar tuning (MantaSoarAITuningSO, e.g. learned from Regatta flights), looked up once the
+        // autopilot first drives; null = this executor's own bands.
+        private MantaSoarAITuningSO _aiTuning;
+        private bool _aiTuningResolved;
         private bool _wasBoosting;
 
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status = shipStatus;
+            _aiTuning = null;
+            _aiTuningResolved = false;
             _baseBoostMultiplier = boostMultiplierOverride > 0f
                 ? boostMultiplierOverride
                 : shipStatus.BoostMultiplier;
@@ -74,9 +96,13 @@ namespace CosmicShore.Gameplay
             if (IsAutopilotDriven)
             {
                 // The drive: both triggers at the autopilot's boost intent, which is a
-                // function of how straight it is flying. No net trigger, so no Yastri yaw - the
-                // stick is the autopilot's whole steering, exactly as AIPilot writes it.
-                lt = rt = AutopilotBoostIntent();
+                // function of how straight it is flying, plus a Yastri net trigger on the turn's
+                // side once the yaw stick is past aiYastriStickBand (a hairpin pivot).
+                var input = _status.InputStatus;
+                ResolveAITuning();
+                AutopilotTriggers(input.XSum, Mathf.Max(Mathf.Abs(input.XSum), Mathf.Abs(input.YSum)),
+                    _aiTuning ? _aiTuning.BoostStickBand : aiBoostStickBand,
+                    _aiTuning ? _aiTuning.YastriStickBand : aiYastriStickBand, out lt, out rt);
             }
             else
             {
@@ -135,24 +161,56 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The vessel is flown by its AIPilot right now - a backfill bot, a released
         /// companion, or the menu's lava-lamp autopilot.</summary>
+        private void ResolveAITuning()
+        {
+            if (_aiTuningResolved) return;
+            if (!_status.AIPilot.TryGetGameMode(out var mode)) return;   // game data not wired yet: ask again next frame
+            _aiTuning = MantaSoarAITuningSO.LoadForMode(mode);
+            _aiTuningResolved = true;
+        }
+
         private bool IsAutopilotDriven =>
             _status.AIPilot != null && _status.AIPilot.AutoPilotEnabled;
 
         /// <summary>
         /// How hard an autopilot holds the triggers: 1 with the stick inside
-        /// <see cref="aiBoostStickBand"/>, 0 at a full deflection, linear between. Reads the
-        /// stick AIPilot last wrote (its steering loop and this Update are not ordered against
-        /// each other, so the read can be a frame stale - harmless against a 1.5/s speed lerp),
-        /// so a bot lining up on a gate boosts and one hauling round a hairpin does not - which
-        /// is the corner trade the Manta's course is cut around.
+        /// <paramref name="boostBand"/>, 0 at a full deflection, linear between (0 band = never).
+        /// Reads the stick AIPilot last wrote (its steering loop and this Update are not ordered
+        /// against each other, so the read can be a frame stale - harmless against a 1.5/s speed
+        /// lerp), so a bot lining up on a gate boosts and one hauling round a hairpin does not -
+        /// which is the corner trade the Manta's course is cut around.
         /// </summary>
-        private float AutopilotBoostIntent()
+        public static float AutopilotBoostIntent(float stickDeflection, float boostBand)
         {
-            if (aiBoostStickBand <= 0f) return 0f;
-            var input = _status.InputStatus;
-            float stick = Mathf.Max(Mathf.Abs(input.XSum), Mathf.Abs(input.YSum));
-            if (stick <= aiBoostStickBand) return 1f;
-            return Mathf.Clamp01(1f - (stick - aiBoostStickBand) / Mathf.Max(1e-4f, 1f - aiBoostStickBand));
+            if (boostBand <= 0f) return 0f;
+            float stick = Mathf.Abs(stickDeflection);
+            if (stick <= boostBand) return 1f;
+            return Mathf.Clamp01(1f - (stick - boostBand) / Mathf.Max(1e-4f, 1f - boostBand));
+        }
+
+        /// <summary>
+        /// The autopilot's two triggers. Both start at <see cref="AutopilotBoostIntent"/> of the
+        /// larger stick axis; past <paramref name="yastriBand"/> of YAW deflection the trigger on
+        /// the turn's side (RT for a positive, rightward <paramref name="yawStick"/>) is raised by
+        /// the excess, rescaled to 0..1 over the band's remainder and capped at 1. The overlap
+        /// <c>min(lt, rt)</c> - the boost - is therefore always the boost intent, and the net
+        /// <c>rt - lt</c> is zero inside the band, so the pivot only ever ADDS yaw where a bot is
+        /// already asking for more turn than the stick gives. Positive <c>rt - lt</c> and positive
+        /// XSum both rotate about the vessel's up axis in the same sense (Update and
+        /// <c>VesselTransformer.Yaw</c>), so the pivot always agrees with the stick.
+        /// </summary>
+        public static void AutopilotTriggers(float yawStick, float stickDeflection, float boostBand,
+            float yastriBand, out float lt, out float rt)
+        {
+            float hold = AutopilotBoostIntent(stickDeflection, boostBand);
+            lt = rt = hold;
+
+            float yaw = Mathf.Abs(yawStick);
+            if (yaw <= yastriBand) return;
+            float excess = Mathf.Clamp01((yaw - yastriBand) / Mathf.Max(1e-4f, 1f - yastriBand));
+            float outer = Mathf.Min(1f, hold + excess);
+            if (yawStick > 0f) rt = outer;
+            else lt = outer;
         }
 
         private void OnDisable()

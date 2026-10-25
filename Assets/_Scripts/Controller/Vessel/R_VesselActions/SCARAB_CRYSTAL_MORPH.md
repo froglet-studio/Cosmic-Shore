@@ -79,7 +79,7 @@ i.e. on the polyhedron, not on the circumscribed sphere.
    |---|---|---|
    | geometry | TEXCOORD2, `CrystalMorph` | the shape |
    | **normals** | TEXCOORD3, `CrystalMorphNormal` | both shaders derive base colour from `(1 − N·V)⁴` through the **same** `FresnelColors` subgraph, so without it the morph arrives with the CAGE's normals sitting on the ball's facets — the right shape wearing the wrong surface |
-   | colour | `_DullCrystalColor`/`_BrightCrystalColor` → the ball's `_DarkColor`/`_BrightColor`, **re-read every frame** off its live property block | the pair IS the shading, and the ball animates it continuously through its domain phase — a snapshot converges on the colour the ball wore a third of a second ago |
+   | colour | the body's `_DarkColor`/`_BrightColor` → the ball's pair, **re-read every frame** off its live property block; and the body's colour FORMULA → BlockGraph's, per face, on `CrystalMorphEase` (`OmniCrystalFresnelShader`) | the ball animates its pair through its domain phase, and the body and the ball shade that pair through different formulas (`SQUIRREL_CRYSTAL_MORPH.md` §2). Until 2026-10-08 this row wrote `_DullCrystalColor`/`_BrightCrystalColor` — names the one-layer body no longer has, so the convergence was a silent no-op |
 
 **The tail is a dissolve, not a cross-fade of two different-looking things.** It exists because the
 two are drawn by different shaders in different queues, and no amount of matched colour changes
@@ -107,7 +107,7 @@ EVERY PEER (server, client replica, local mint alike)
   └─ AstroLeagueBall.OnNetworkSpawn / n_ForgedFrom.OnValueChanged
        └─ ScarabCrystalMorph.Begin(ball, origin)
             ├─ resolve the crystal by id through the cell nearest the collect pose
-            ├─ adopt its four shells (mesh + shared materials + property block)
+            ├─ adopt the body + overlays (mesh + shared materials + property block)
             ├─ read the ball's hull into this object's frame
             ├─ CrystalMorphMeshBuilder.TryBuild   (targets in TEXCOORD2, normals in TEXCOORD3)
             ├─ ball.SetMorphStandIn(true)         (photons only)
@@ -140,7 +140,8 @@ still closes, because those belong to the pickup rather than to the spray.
 | `_Graphics/Materials/Graphs/ShepardGraph.shadergraph` | both splices, at the END of the vertex position and normal chains |
 | `_Scripts/Utility/CrystalMorphMeshBuilder.cs` | the geometry — unshared emit, hull landing, per-solid phase |
 | `_Scripts/ScriptableObjects/CrystalMorphConfigSO.cs` + `Resources/CrystalMorphConfig.asset` | the FLEET's morph feel, one asset |
-| `_Scripts/Controller/Vessel/R_VesselActions/ScarabCrystalMorph.cs` | the runner — adopt, stamp, converge, hand off, dissolve |
+| `_Scripts/Controller/Vessel/R_VesselActions/CrystalMorphRunner.cs` | the shared runner — adopt, stamp, converge, fade overlays, hand off, dissolve (shared with the Squirrel) |
+| `_Scripts/Controller/Vessel/R_VesselActions/ScarabCrystalMorph.cs` | the Scarab's target — the ball's hull, its live colour pair, its photon hold |
 | `_Scripts/Controller/Vessel/R_VesselActions/CrystalForgeOrigin.cs` | which crystal, and the pose it was spent in |
 | `_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs` | `n_ForgedFrom`, `MarkForgedFromCrystal`, `SetMorphStandIn`, the hull/colour surface |
 | `…/Skimmer Crystal Effects/ScarabBallForgeBySkimmerCrystalEffectSO.cs` | marks the ball, suppresses the husk |
@@ -219,8 +220,8 @@ no fallback: it converts every distinct cause into the same symptom.*
 
 One `Mesh` build per forge: the cage's ~2,900 distinct points are cast once each (deduped by weld)
 against 320 facets, by best-fit facet with a barycentric verify — the exhaustive ray scan is the
-fallback, not the path. Four draw calls while the morph is alive (one per crystal shell, all on one
-mesh), for `duration` seconds. The animation itself is a single stamp; the only per-frame writes are
+fallback, not the path. Five draw calls while the morph is alive (the one-layer body on the morph
+mesh, plus the four tone-triangle overlays while they fade), for `duration` seconds. The animation itself is a single stamp; the only per-frame writes are
 uniforms — the colour convergence and the tail opacity, a handful of property-block values per
 shell.
 
@@ -285,11 +286,12 @@ invisible or shows a step.
   wavefront and a ball departs. Morphing it would have the cage chase a receding ball across 20 u.
   If that path ever wants a retirement it should be a different animation (a suction into the
   departing ball), not this one.
-- **The hull path is not wired on this branch.** The Squirrel's branch carries
-  `VesselOmniCrystalRetirementSO` + the `VesselImpactorDataContainerSO` slot +
-  `OmniCrystalImpactor`'s skip, which is how a HULL-collected crystal gets a retirement. The Scarab
-  needs none of it (its forge owns the crystal directly), so it was left there rather than landed
-  here as an unused abstraction. `CrystalImpactData`'s pose/id carry belongs with it.
+- **The hull path landed with the Squirrel** (`SQUIRREL_CRYSTAL_MORPH.md`, 2026-10-08):
+  `VesselOmniCrystalRetirementSO`, the `VesselImpactorDataContainerSO.OmniCrystalRetirement` slot,
+  `OmniCrystalImpactor` setting `SuppressHusk` for a hull that fills it, and `CrystalImpactData.Origin`
+  (this doc's `CrystalForgeOrigin`). The Scarab still needs none of it — its forge owns the crystal
+  directly — but it now shares `CrystalMorphRunner` with the Squirrel, which also fades the omni's
+  tone-triangle overlays instead of dropping them on the forge frame.
 - **The morph re-reads the ball's colour every frame but snapshots the crystal's start colour.**
   That is deliberate — the start is a fixed point of the lerp — but it means a crystal whose tint
   changes mid-morph (it should not; it has been spent) would not follow.

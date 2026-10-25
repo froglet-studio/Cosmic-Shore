@@ -22,6 +22,10 @@ namespace CosmicShore.UI
     [RequireComponent(typeof(MiniGameHUDView))]
     public class MiniGameHUD : MonoBehaviour
     {
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("The skip button's label on the first-login guide.")]
+        [SerializeField] string skipLabel = "SKIP >";
+
         [Header("Data")]
         [Inject] protected GameDataSO gameData;
         [Inject] protected Container _diContainer;
@@ -54,7 +58,7 @@ namespace CosmicShore.UI
         [Header("Event Channels")]
         [SerializeField] private ScriptableEventInt onMoundDroneSpawned;
         [SerializeField] private ScriptableEventInt onQueenDroneSpawned;
-        [SerializeField] private ScriptableEventShipHUDData onShipHUDInitialized;
+        [SerializeField] private ScriptableEventVesselHUDData onShipHUDInitialized;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
         [Header("Pre-Game Cinematic")]
@@ -156,7 +160,7 @@ namespace CosmicShore.UI
             textRect.sizeDelta = Vector2.zero;
 
             var tmpText = textGO.AddComponent<TextMeshProUGUI>();
-            tmpText.text = "SKIP >";
+            tmpText.text = skipLabel;
             tmpText.fontSize = 18;
             tmpText.alignment = TextAlignmentOptions.Center;
             tmpText.color = Color.white;
@@ -184,6 +188,7 @@ namespace CosmicShore.UI
             EnsureObjectiveIndicator();
             EnsureVolumeIndicator();
             EnsureSpectatorBadge();
+            EnsurePilotSwapIndicator();
             PrewarmPauseMenu();
 
             // If OnClientReady already fired before we subscribed (client race condition:
@@ -213,6 +218,10 @@ namespace CosmicShore.UI
         {
             var button = view != null ? view.ReadyButton : null;
             if (button == null) return;
+
+            // The waiting state listens to the press whoever starts the countdown.
+            button.onClick.RemoveListener(OnLocalReadyPressed);
+            button.onClick.AddListener(OnLocalReadyPressed);
 
             if (HasPersistentControllerListener(button)) return;
 
@@ -463,6 +472,24 @@ namespace CosmicShore.UI
                     // and "your next gate" is the only thing that tells two pilots on the same
                     // ring at the same moment apart.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Redline");
+                case GameModes.GrizzlyTime:
+                    // Redline's answer on the Grizzly's circuit: identical neutral rings, so
+                    // the per-viewer arrow is the only thing that names YOUR next gate.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_GrizzlyTime");
+                case GameModes.Slingshot:
+                    // Redline's answer on the Stoat's circuit: identical neutral rings, so the
+                    // per-viewer arrow is the only thing that names YOUR next gate.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Slingshot");
+                case GameModes.Warpline:
+                    // The same answer on the Stoat's warp circuit: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Warpline");
+                case GameModes.ThresherTime:
+                    // Grizzly Time's answer on the Thresher's circuit: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_ThresherTime");
+                case GameModes.WrasseRun:
+                    // The same answer on the Wrasse and Grouper's circuit: the arrow names the ring the
+                    // Grouper must carry the kite's plane through.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_WrasseRun");
                 case GameModes.Regatta:
                     // Same provider once more: a lapped circuit of neutral rings. The rails are
                     // painted per DOMAIN and say which lane is yours; they say nothing about which
@@ -484,10 +511,37 @@ namespace CosmicShore.UI
                     // wake is laid behind them. The PAINT half needs no arrow - you paint where
                     // you are.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Tapestry");
-                // Sirocco deliberately has NO arrow, like Cleave: the forest rings the whole
-                // cell, so "where is the thing to erode" has no single answer worth pointing at.
+                case GameModes.Bends:
+                    // The provider was written for this mode and borrowed by three others before
+                    // the mode itself was registered: the nearest pilot this player may bend.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Bends");
+                case GameModes.Cleave:
+                    // The arena surrounds you, so "where is mass" has no answer - but "where is
+                    // there still a LOT of it" does, and on the 2,160-unit open rungs it is far
+                    // from obvious. Densest hostile mass, the query Cleave's AI raids with.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Cleave");
+                case GameModes.Sirocco:
+                    // Same provider, same reason: the forest rings the cell, so the arrow names
+                    // the densest standing hostile stand - the point Sirocco's AI erosion runs
+                    // steer to. NOT Rampage's crystal: here the crystal is a pickup, not the weapon.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Sirocco");
+                case GameModes.WildlifeLiberation:
+                    // The nearest living creature, any colour - wildlife is quarry whatever it
+                    // wears, and fauna are client-local, so this peer's registry IS what the
+                    // pilot can shoot.
+                    return CreateProviderComponent<WildlifeObjectiveProvider>("ObjectiveProvider_WildlifeLiberation");
+                case GameModes.BroodRush:
+                    // The nucleus: control is decided only by mass laid inside it, and every
+                    // wave hatched under a claim is the score. Hidden while you are inside it.
+                    return CreateProviderComponent<BroodRushObjectiveProvider>("ObjectiveProvider_BroodRush");
+                case GameModes.Scurry:
+                    // Rampage's provider: the nearest collectable MANAGED crystal. Scurry's
+                    // crystals are neutral and manager-spawned, so this names exactly the
+                    // scoring crystals and never a lifeform heart (SkimRace's own-domain filter
+                    // would reject every one of them).
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Scurry");
                 case GameModes.Tandava:
-                    // the swarm: one opponent, one side, a long cell - "which way is it" is the whole question
+                    // the swarm: one opponent loose in a closed cell - "where is it" is the whole question
                     return CreateProviderComponent<TandavaObjectiveProvider>("ObjectiveProvider_Tandava");
                 default:
                     return null;
@@ -923,6 +977,33 @@ namespace CosmicShore.UI
             // any other pathway from showing the button before the cinematic finishes.
             if (toggle && !_readyButtonUnlocked) return;
             view.ReadyButton.gameObject.SetActive(toggle);
+            // A new round brings the button back: nobody is ready any more.
+            if (toggle && view.ReadyWaiting) view.ReadyWaiting.Hide();
+        }
+
+        readonly List<ReadyWaitingPanel.Pilot> _readyPilots = new();
+
+        /// <summary>
+        /// The local pilot pressed Ready. With other humans in the match, show who is still picking
+        /// until the countdown starts (Docs/MENU_REDESIGN_B.md section 22.2). Solo, and against AI
+        /// only, the countdown follows the press at once, so there is nothing to wait for.
+        /// </summary>
+        void OnLocalReadyPressed()
+        {
+            var panel = view != null ? view.ReadyWaiting : null;
+            if (!panel || gameData == null) return;
+
+            _readyPilots.Clear();
+            var players = gameData.Players;
+            for (int i = 0, n = players.Count; i < n; i++)
+            {
+                var p = players[i];
+                if (p == null || p.IsInitializedAsAI) continue;
+                _readyPilots.Add(new ReadyWaitingPanel.Pilot(p.Name, ResolveAvatarSprite(p.AvatarId),
+                    DomainAccent(p.Domain) ?? UITheme.Resolve(null, UIColorToken.ControlActive)));
+            }
+            if (_readyPilots.Count <= 1) return;
+            panel.Begin(_readyPilots, gameData.LocalPlayer != null ? gameData.LocalPlayer.Name : null);
         }
 
         /// <summary>
@@ -966,15 +1047,57 @@ namespace CosmicShore.UI
             SpectatorWatchBadge.Ensure(stack.transform, gameData);
         }
 
+        /// <summary>
+        /// The arena pilot swap's targets in the top bar, between the goal stack and the score bar,
+        /// tappable on a phone (Docs/GAME_MODE_TOPBAR.md §2.7). Ensured in code for the spectator
+        /// badge's reason - one call reaches every scene that instances the canvas, with no prefab
+        /// or scene edit - and it hides itself outside an arena match.
+        /// </summary>
+        void EnsurePilotSwapIndicator()
+        {
+            var stack = view != null ? view.GoalStack : null;
+            var stackRect = stack != null ? stack.transform as RectTransform : null;
+            var parent = stackRect != null ? stackRect.parent as RectTransform : transform as RectTransform;
+
+            RectTransform scoreBar = null;
+            if (view is MultiplayerHUDView mp && mp.UsesSingleDomainBar)
+                scoreBar = mp.AllyDomainContainer as RectTransform;
+
+            PilotSwapIndicator.Ensure(parent, gameData, stackRect, scoreBar);
+        }
+
         protected void RefreshGoalStack()
         {
             var stack = view != null ? view.GoalStack : null;
             if (stack == null) return;
 
+            var accent = LocalDomainAccent();
+            stack.SetAccent(accent);
+            // The objective arrow points at the local pilot's goal: it wears their colour too.
+            if (accent.HasValue && _autoCreatedIndicator != null) _autoCreatedIndicator.SetAccent(accent.Value);
+
             var rule = gameData != null ? gameData.ScoringRule : null;
             stack.SetObjective(rule != null ? rule.Metric : (ScoringMetric?)null,
                                rule != null ? rule.TargetFor(gameData) : 0,
                                ResolveTurnMonitor()?.PublishesSecondsRemaining ?? false);
+        }
+
+        /// <summary>
+        /// The local pilot's domain colour (its bright crystal colour, the one the score column's
+        /// number wears), or null when there is no domain to wear.
+        /// </summary>
+        Color? LocalDomainAccent()
+            => DomainAccent(gameData != null && gameData.LocalPlayer != null ? gameData.LocalPlayer.Domain : Domains.Blue);
+
+        /// <summary>A domain's bright crystal colour, or null for no domain / no palette.</summary>
+        Color? DomainAccent(Domains domain)
+        {
+            if (gameData == null || domain == Domains.Blue || (int)domain == 0) return null;
+            var palette = gameData.ThemeManagerData != null ? gameData.ThemeManagerData.ColorSet : null;
+            if (palette == null || !palette.TryGetColorSetByDomain(domain, out var set) || set == null) return null;
+            var c = set.BrightCrystalColor;
+            c.a = 1f;
+            return c;
         }
 
         TurnMonitor _turnMonitor;

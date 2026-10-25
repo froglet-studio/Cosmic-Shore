@@ -392,6 +392,21 @@ instance clears the stamp. It is a cull-efficiency loss on a torn-down scene, no
   edible by fauna via devastate, which is what keeps the food-web sink intact
   (`Docs/ECOSYSTEM.md` §16).
 
+## The camera rises only in the stance (2026-10-20, Garrett)
+
+> "Sparrow should only have the elevated [height] on the camera offset when stopped in mass/turret
+> mode. When flying it should use the flight camera with no offset."
+
+`SparrowCameraSettingsSO.followOffset` stays **(0, 10, −50)**: the 10 u height is the turret's
+view. Flying, the camera sits level with the hull, 50 u directly behind it.
+`ToggleTranslationModeActionExecutor.flightCameraHeight` (**0** on `Sparrow.prefab`, default 1 so
+the Serpent and the Stoat are unchanged) is the share of that height kept while flying. The stance
+always keeps all of it. The executor reads the replicated `IsTranslationRestricted` every frame and
+eases `CustomCameraController.FollowHeightScale` between the two over `cameraBlendSeconds` (0.35 s).
+So every way out of the stance moves the camera too: the toggle, a turn end, the Stoat's sling,
+a peer's replicated flag. It writes only while the player rig frames this vessel, the way the
+Butterfly's Mass mode does. Gate: `SparrowStanceCameraTests`.
+
 ## Files
 
 | File | Role |
@@ -472,7 +487,7 @@ Three silent failure modes survived the first fix, all now closed or screaming:
 ## In-editor verification
 
 Scene: any Sparrow-playable multiplayer scene (`MinigameWildlifeLiberation` or
-`MinigameFreestyleMultiplayer_Gameplay`). Stop with the stationary-mode input (input 6), then
+Menu_Main freestyle). Stop with the stationary-mode input (input 6), then
 hold fire (input 1). Test BOTH visualizations — select `FullAutoBlockShootAction.asset` and flip
 **Flight Visualization** live in play mode.
 

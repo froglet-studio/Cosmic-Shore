@@ -11,7 +11,7 @@ research module imports it); nothing is simulated here.
 Round 11-11 adds:
   * stampede and leviathan (species.py), the leviathan's BodyPlan (scale, well, speed) and research
     manta_slots(96) - the body plan at the game's member count (the research binds K to n0);
-  * "bestiary": the numbers the ports take from the BESTIARY (bestiary/species/{stampede,mobber,leech,leviathan}.py)
+  * "bestiary": the numbers the ports take from the BESTIARY (bestiary/species/{stampede,mobber,leech,leviathan,pack}.py)
     read straight out of the source - named constants and the inline literals each rule is written with - plus the
     burn rules' drain weight (burn-rules.md). A rule rewritten so a pattern no longer matches FAILS here rather
     than silently keeping an old number.
@@ -40,6 +40,7 @@ BESTIARY = [
     ("stampede.lead_clip", "stampede", r"np\.clip\(dist / [\d.]+, 0, ([\d.]+)\)"),
     ("stampede.closing", "stampede", r"axis=1\) > ([\d.]+) \* np\.maximum\(sp"),
     ("stampede.n", "stampede", r"def __init__\(self, arena, n=(\d+)"),
+    ("pack.WINDUP", "pack", r"\nWINDUP = ([\d.]+)"),
     ("mobber.MAXV", "mobber", r"MAXV, DIVE_V, PULL = ([\d.]+),"),
     ("mobber.DIVE_V", "mobber", r"MAXV, DIVE_V, PULL = [\d.]+, ([\d.]+),"),
     ("mobber.PULL", "mobber", r"MAXV, DIVE_V, PULL = [\d.]+, [\d.]+, ([\d.]+)"),

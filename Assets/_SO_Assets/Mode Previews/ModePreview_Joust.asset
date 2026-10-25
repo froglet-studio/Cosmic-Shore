@@ -27,7 +27,7 @@ MonoBehaviour:
   - {fileID: 1670082815129230080, guid: e8174c106727c824199fdd482cdf093d, type: 3}
   - {fileID: 4959367395204161429, guid: 7f105562de1ca3f41832337facd6e3d9, type: 3}
   Vessel: -1
-  ObjectiveText: Classic Joust
+  ObjectiveText: Overtake rivals to joust them
   ObjectiveMetric: 3
   ObjectiveTarget: 0
   DurationSeconds: 60

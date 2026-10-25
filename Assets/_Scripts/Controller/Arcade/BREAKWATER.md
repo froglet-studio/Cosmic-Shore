@@ -11,7 +11,9 @@
 > retyped, and the C# was compiled and EXECUTED outside the editor against Unity-type stubs - but
 > a stub is not the engine. See *In-editor verification* for what that does and does not buy, and
 > note in particular that the scene still carries the Salvo donor's two `GlobalObjectIdHash`
-> values and needs one open-and-save before it is flown in a real lobby.
+> values and needs one open-and-save before it is flown in a real lobby. *(Re-checked 2026-10-08:
+> `MinigameBreakwater.unity` still carries exactly Salvo's `1355002879` / `3459377201`, so the
+> scene has not been opened and saved yet.)*
 
 ## Overview
 
@@ -28,7 +30,7 @@ it with two rockets in the bay and make one choice:
 |---|---|---|
 | **fire** | half the missile tank (50 hostile prisms' worth of ammunition) | a 50-unit spherical hole, cut wherever you aimed |
 | **saw** | your speed — turret stance stops you dead | the weave ground open with free gun rounds |
-| **thread** | nothing at all | a 1.46× hull clearance with danger bars a hull-width away |
+| **thread** | nothing at all | a 1.46× hull clearance through the collar, with the danger weave starting just outside it (26.3 u off the axis) |
 
 **The walls you shoot ARE the ammunition.** `ammoPerPrism` is `0.01` on `Sparrow.prefab` and
 `SkyBurstGunAction.asset`'s `ammoCost` is `0.5` against a tank of 1, so **50 hostile prisms buy a
@@ -54,18 +56,22 @@ sawn station counts as much as a shot one.
 - **Station geometry**: `BreakwaterStationBuilder` — **closed form, zero random draws**.
 - **Arena**: `SpawnableBreakwater : CellEnvironmentSpawnableBase` — the stations plus the shoals,
   laid as 106 separate trails.
-- **Turn monitor**: `RaceGateTurnMonitor` (shared) — resolves the race length from
-  `EndConditionOverridesSO.GetBreakwaterStationTarget()` (default **14**, FrogletTools ▸ Game
-  Modes ▸ End Game Conditions — never a per-scene field), syncs via NetworkVariable →
-  `GameDataSO.SwitchTargetCount`.
+- **Turn monitor**: `RaceGateTurnMonitor` (shared) — reads the race length off the course
+  (`GateRaceController.AuthoritativeGateCount`, **29** crossings by default), syncs via
+  NetworkVariable → `GameDataSO.SwitchTargetCount`. The two authored inputs are
+  `GetBreakwaterStationTarget()` (default **15**) and `GetBreakwaterLaps()` (default **2**), both
+  rows in FrogletTools ▸ Game Modes ▸ End Game Conditions — never a per-scene field. See *End
+  condition* below.
 - **Scoring**: `ScoringMetric.SwitchesThreaded` (**9**, reused), golf-timed, folded
-  `BestByDomain`. `BreakwaterScoringRule.asset` will be a **second asset** on the existing
+  `BestByDomain`. `BreakwaterScoringRule.asset` is a **second asset** on the existing
   `GateRaceScoringRuleSO` (was `SwitchbackScoringRuleSO`) — zero new scoring code.
 - **Objective arrow**: `RaceGateObjectiveProvider` (shared), wired in `MiniGameHUD.ResolveObjectiveProvider`.
 - **Comeback**: the rule's `DomainValue` (`SwitchesThreaded`), rate **0.35** in the model
-  (a quarter-of-target deficit = 3.5 stations → **2.45** element levels).
-- **Vessels**: **Sparrow only.** **Players**: 2–4 with AI backfill (intended; the card that
-  declares it is unwritten).
+  (a quarter-of-target deficit = 7.25 of the 29 crossings → **2.54** element levels, as the
+  generator prints it).
+- **Vessels**: **Sparrow only.** **Players**: 2–4 with AI backfill (`ArcadeGameBreakwater.asset`
+  authors `MinPlayersAllowed: 2` / `MaxPlayersAllowed: 4`, and the scene carries
+  `ServerPlayerVesselInitializerWithAI`).
 
 **Only one new enum value lands in the whole branch.** Everything else about scoring is reused —
 see *One metric, reused*.
@@ -196,7 +202,7 @@ verbatim:
 | `ModeControlsLibrary.asset` metric 9 | the launch-panel objective icon — already present, **no asset edit** |
 | `GateRaceScoringRuleSO` | a **second asset**, not a second script |
 
-**"THREAD SWITCHES 3/14" is literally correct, not a compromise.** The goal-stack row is keyed on
+**"THREAD SWITCHES 3/29" is literally correct, not a compromise.** The goal-stack row is keyed on
 the `ScoringMetric`, never on the game mode (`Docs/GAME_MODE_TOPBAR.md` §2), so a new mode picking
 an existing metric gets a correct goal line for free — and here the shipped label happens to be
 the true description of what a Breakwater pilot does. The mode contributes **one** new enum value
@@ -215,7 +221,9 @@ landed with a full extraction — `GateRaceController` (abstract) with `Switchba
 and `RaceCourseGeometry`. The seam turned out to be four members, not two: `ModeName`,
 `LapsPerRace`, `BuildCourse(seed, gateCount, inner, outer)` and `AuthoredGateTarget()`. The
 monitor reads `GateRaceController.AuthoritativeGateCount` and *deliberately does not know which
-overrides key its mode uses* — which is precisely the objection above, answered.
+overrides key its mode uses* — which is precisely the objection above, answered. (Since 2026-09
+those four collapse to `ModeName` + `CreateCourseSource()`: the course recipe lives on
+`BreakwaterCourseSource`, which the arcade preview reads too.)
 
 So the reasoning here was not wrong about the cost, it was wrong about the count: at two modes a
 seam holding two constants is hard to justify, and at three it is the only thing keeping them from
@@ -416,7 +424,7 @@ holds the other still. Every row below is swept, and the sweep is the authority:
     worst JOIN corner        : 66.0 deg (cap-exempt; Dubins needs 237.8 u, shortest leg is 302.2)
     start gate presentation  : 48.1 deg, spread across pads 0.0000
     start gate pad distances : spread 0.0000 u
-    clear eye radius         : 18.000 u (1.46 x hull)
+    clear eye radius         : 18.000 u (1.46 x hull); danger weave from 26.306 u
 
   I2  (port 60, legs 300-433, turn cap 55, present cap 54)
     generation failures      : 0 / 400
@@ -430,7 +438,7 @@ holds the other still. Every row below is swept, and the sweep is the authority:
     worst JOIN corner        : 64.3 deg (cap-exempt; Dubins needs 234.5 u, shortest leg is 300.0)
     start gate presentation  : 48.7 deg, spread across pads 0.0000
     start gate pad distances : spread 0.0000 u
-    clear eye radius         : 18.000 u (1.46 x hull)
+    clear eye radius         : 18.000 u (1.46 x hull); danger weave from 26.306 u
 
   I3  (port 50, legs 300-407, turn cap 65, present cap 58)
     generation failures      : 0 / 400
@@ -444,7 +452,7 @@ holds the other still. Every row below is swept, and the sweep is the authority:
     worst JOIN corner        : 66.2 deg (cap-exempt; Dubins needs 238.0 u, shortest leg is 300.1)
     start gate presentation  : 48.7 deg, spread across pads 0.0000
     start gate pad distances : spread 0.0000 u
-    clear eye radius         : 18.000 u (1.46 x hull)
+    clear eye radius         : 18.000 u (1.46 x hull); danger weave from 26.306 u
 
   I4  (port 42, legs 300-380, turn cap 75, present cap 62)
     generation failures      : 0 / 400
@@ -458,7 +466,7 @@ holds the other still. Every row below is swept, and the sweep is the authority:
     worst JOIN corner        : 66.9 deg (cap-exempt; Dubins needs 239.4 u, shortest leg is 300.0)
     start gate presentation  : 48.8 deg, spread across pads 0.0000
     start gate pad distances : spread 0.0000 u
-    clear eye radius         : 18.000 u (1.46 x hull)
+    clear eye radius         : 18.000 u (1.46 x hull); danger weave from 26.306 u
 ```
 
 ### Flyability is a Dubins condition, checked at the transient ceiling
@@ -592,9 +600,34 @@ Two things generalise:
   circle. Both were run against a negative control that restores the centreline clip and reports
   16.5 at all four intensities.
 
+#### Flush: the weave is layered, and it stops at the collar and the dish
+
+NO PRISM MAY INTERPENETRATE ANOTHER (`Docs/ECOSYSTEM.md` §49.10), held at authoring time. The clip
+audit (`Tools/Build/audit_prism_clipping.py SpawnableBreakwater -v`) found 6,015 interpenetrating
+pairs at intensity 1, every one in the plug, in three shapes - and none in the dish:
+
+1. **The three rakes lay in one plane**, so every bar cut straight through the bars of the other two
+   rakes where their lines crossed. No scale separates a crossing, so the rakes are now **layered**
+   along the axis one cross-section apart (`RakeLayer`: −3 / 0 / +3): down the axis the weave is
+   exactly the weave it was, every bar keeps its 3 × 3 section, and two rakes' bars meet face to face.
+   The weave is 9 u deep instead of 3.
+2. **The two innermost lines ran in to the eye through the collar's blocks.** Their bars now start
+   on `CollarClearRadius` - the circle that just contains the collar, `hypot(26, 4) = 26.31` - so
+   the rim from 18 out to the collar's outer face is the collar's alone: the Plain aim point the
+   collar's own section describes, with the Danger weave beyond it.
+3. **Every line ran out to the port rim, into the dish's innermost ring** (whose plates are centred
+   on the rim). The bars now stop where their outer corner meets `DishInnerReach`: the rim less
+   that ring's reach toward the axis, `1.18 × (3.5 sin 22° + 0.75 cos 22°) = 2.37` u.
+
+Neither trim changes a count: a run is still cut into as many bars as its eye-to-rim length always
+needed (`BarsFor`), and those bars share the shorter laid length end to end. Prism counts are
+unchanged at every intensity; the arena's volume fell 10.0 / 11.8 / 14.0 / 15.1 % (intensities
+1-4), which `breakwater_arena.py` prices exactly and the cell's `PhaseThresholds` follow.
+
 One more geometric fact worth carrying:
 
-- **The longest bar the ladder produces is 58.79 u** (intensity 4, the 30-unit offset line),
+- **The longest bar the ladder produces is 54.37 u** (intensity 1; it was 58.79 before the flush
+  trims),
   against the 62 cut and a `PrismScaleAnimator` clamp at 100. It is far inside the clamp, but the
   clamp is the thing that would swallow an overshoot **in silence** (the environment lay path
   writes `TargetScale` directly and never calls `AdmitTargetScale`), which is why the model checks
@@ -792,27 +825,26 @@ where it crosses between them.
 Per-station geometry
                                 I1          I2          I3          I4
 R_port                          72          60          50          42
-plug lines/rake                  7           6           5           4
-plug bars                       78          54          42          30
-longest bar                     58          57          54          59
+plug lines/rake                 12          10           8           6
+plug bars                       84          54          42          30
+longest bar                     54          48          39          48
 dish rings                       4           4           3           3
 dish plates                    167         145          86          75
 collar blocks                   12          12          12          12
-prisms/station                 257         211         140         117
-volume/station              53,984      40,927      28,598      21,928
+prisms/station                 263         211         140         117
+volume/station              47,554      35,056      23,498      17,513
 
-Arena totals (15 stations + shoals)
+Arena totals (14 stations + shoals)
 arena prisms                 4,575       3,795       2,730       2,385
-arena volume               837,677     641,833     456,896     356,842
-x nominal (16/prism)          11.9        10.9        10.9         9.8
+arena volume               753,632     566,166     392,795     303,020
+x nominal (16/prism)          10.3         9.3         9.0         7.9
 
-Shoals: 546 prisms / 34,944 volume (constant at every intensity)
+Shoals: 630 prisms / 40,320 volume (constant at every intensity)
 ```
 
-> **Reading that table:** the row printed as **`plug lines/rake`** is `runs ÷ 2`, not the number of
-> lines. The real line count per rake is **12 / 10 / 8 / 6** (6 / 5 / 4 / 3 offsets, each ±). It is
-> a **display-only** label bug in `station_totals` — `bars`, `volume` and the clamp proof all come
-> from `plug_runs`/`plug_bars` directly and are correct. Fix the label, not the geometry.
+> **Reading that table:** `plug lines/rake` counts lines (both signs of every offset), and
+> `longest bar` / `volume` are the LAID bars - after the flush trims (see "Flush: the weave is
+> layered") - while `plug bars` is the count, which the trims never change.
 
 And the course rows, which run the **opposite** way (see *The ladder is measured*):
 
@@ -1056,16 +1088,16 @@ with exits 10% under their enters so a trail-caused Frenzy always releases with 
 
 ```
 Phase thresholds (volume is the spine; count is the backstop)
-  I1: baseline    837,677   RestlessEnter    957,677   FrenzyEnter  1,137,677
-  I2: baseline    641,833   RestlessEnter    761,833   FrenzyEnter    941,833
-  I3: baseline    456,896   RestlessEnter    576,896   FrenzyEnter    756,896
-  I4: baseline    356,842   RestlessEnter    476,842   FrenzyEnter    656,842
+  I1: baseline    753,632   RestlessEnter    873,632   FrenzyEnter  1,053,632
+  I2: baseline    566,166   RestlessEnter    686,166   FrenzyEnter    866,166
+  I3: baseline    392,795   RestlessEnter    512,795   FrenzyEnter    692,795
+  I4: baseline    303,020   RestlessEnter    423,020   FrenzyEnter    603,020
 ```
 
 Exits are `baseline + 108,000` and `baseline + 270,000`; counts ride `+700 / +500 / +3,600 /
 +3,000`.
 
-This arena is **9.8×–11.9× nominal volume per prism** (a 62-unit danger bar is 558 volume against
+This arena is **7.9×–10.3× nominal volume per prism** (a 62-unit danger bar is 558 volume against
 the nominal 16), which is exactly the case CLAUDE.md records for Rampage: *a cell whose prisms are
 not nominal must author its volume ladder, never inherit the `count × 16` derivation.* Inheriting
 it here would put the ladder an order of magnitude low and pin the cell at Frenzy from the first
@@ -1285,12 +1317,20 @@ laps split the one number that used to do two jobs:
 
 | authored | means | default |
 |---|---|---|
-| `breakwaterStationTarget` | stations **laid** — this is arena mass, and moves the PhaseThresholds | 14 |
-| `breakwaterLaps` | how many times the course is flown — costs **no** extra arena | 2 |
-| `GetBreakwaterCrossingTarget()` | *derived*: what a pilot must **thread** | **27** |
+| `breakwaterStationTarget` | stations **laid**, start gate included — this is arena mass, and moves the PhaseThresholds | 15 |
+| `breakwaterLaps` | how many times the circuit is flown — costs **no** extra arena | 2 |
+| `GetBreakwaterCrossingTarget()` | *derived*: what a pilot must **thread**, `1 + (stations - 1) x laps` | **29** |
 
 The race target is derived rather than authored, so it can never ask for a crossing the course
 cannot offer.
+
+**Both inputs have a row in the window.** "Breakwater - Station Target" was there from the start;
+**"Breakwater - Laps" was added in #983** (merged 2026-10-08). Before that, `breakwaterLaps` sat on
+the SO at 2/2 with no row, so the only way to change it was to hand-edit
+`EndConditionOverrides.asset`. Each input has the same four window pieces every count has: the
+field, a help-text bullet, an *Effective now* row and a *Build baseline* line. *Effective now*
+also shows the derived **"Breakwater crossings"** row (`1 + (stations - 1) x laps`, 29 at the
+shipped values), so neither authored row reads as the finish line.
 
 **But the COURSE is the authority, not the override.** Generation backs off when a shell is too
 tight, and ~0.1% of seeds fail outright, so the laid count can legitimately come in under the
@@ -1300,7 +1340,9 @@ nobody satisfies `IsObjectiveReached`, and the turn runs forever with **no clock
 this mode races to a count and authors no time monitor. So `RaceGateTurnMonitor` reads
 `BreakwaterController.CrossingTarget` — the laid count already folded over the authored laps, so
 the monitor and the detector cannot re-derive the laps arithmetic differently — and falls back to
-the override only before the course exists, warning when the two differ.
+the override only before the course exists, warning when the two differ. *(In code the read is
+`GateRaceController.AuthoritativeGateCount`, which is `RaceLengthFor(rings, LeadInGates = 1,
+LapsPerRace)` once the course is built — the platform's name for the same fold.)*
 
 **Publishing the target is load-bearing, not cosmetic.** `MiniGameHUD.RefreshGoalStack` draws
 nothing — silently, no warning, no placeholder row — when the target is 0, so a monitor that
@@ -1313,18 +1355,18 @@ and the late-start client branch.
 the decision: the payload is a COUNT, and answering true makes `MiniGameHUD` draw the **clock** row
 — `m:ss`, no glyph, no target — over a number that is neither seconds nor a time.
 
-**`EndConditionOverrides.asset` is authored with `breakwaterStationTarget: 14` and its `…Build`
-twin, and it is the one place this mode would have survived NOT being** — the general trap is that
-a missing YAML key deserializes to the **type** default rather than the field initializer, but here
-the getter treats 0 as *use the default* and returns 14 anyway. The key is authored regardless, so
-the window reads a real 14 instead of "14 (default)" and the build snapshot has something to
-restore.
+**`EndConditionOverrides.asset` is authored with `breakwaterStationTarget: 15`,
+`breakwaterLaps: 2` and their `…Build` twins, and it is the one place this mode would have
+survived NOT being** — the general trap is that a missing YAML key deserializes to the **type**
+default rather than the field initializer, but here both getters treat 0 as *use the default* and
+return 15 and 2 anyway. The keys are authored regardless, so the window reads a real 15 and 2
+instead of "(default)" and the build snapshot has something to restore.
 
 ---
 
 ## Assets
 
-Every asset is authored by **`Tools/Build/author_breakwater_assets.py`** (32 files, deterministic
+Every asset is authored by **`Tools/Build/author_breakwater_assets.py`** (30 files, deterministic
 GUIDs, idempotent, validated in memory before anything is written). **Re-tune there and re-run**
 rather than hand-editing YAML.
 
@@ -1350,41 +1392,45 @@ every cell config authors `NucleusPrefab: {fileID: 0}` and `EnvironmentPrefab: {
 arena is not an authored environment, because the course is rolled per match**, so the controller
 stands it up itself.
 
-### The generator is the only green one in the repo
+### The generator's `--check` is green, and so is every sibling's now
+
+*Retitled 2026-10-08.* This section was written as "The generator is the only green one in the
+repo", and at the time it was: Breakwater's was the one mode generator whose `--check` passed
+(`author_switchback`, `author_drumfire`, `author_salvo` and `author_hijack` all exited 1). That
+stopped being true with **#969** (merged 2026-10-06), which routed the mode generators through the
+shared `arcade_mode_lib.py` helpers (`card_background`, `check_cards`, `drift`,
+`committed_scene`) and turned 23 of the 25 green. Measured on bleeding-edge on 2026-10-08, **all 26
+`Tools/Build/author_*_assets.py` scripts exit 0 on `--check`**, Wildlife Liberation and Tollway
+included. (Across all 79 `author_*.py` scripts, 75 pass. The four that exit 1 are
+`author_flora_populations`, `author_goal_stack`, `author_mode_controls_library` and
+`author_toybox_layout`, and none of them is a mode generator.) `author_drumfire_assets.py` is gone,
+deleted with the mode.
+
+Breakwater's own run today:
 
 ```
 $ python3 Tools/Build/author_breakwater_assets.py --check
-Validation passed (32 files).
+Validation passed (30 files).
   scene: shipped (read-only)
-  stations 14  comeback 0.35 (2.36 levels at a quarter-of-target deficit)  sense radius 1250
-  I1: port 72   4,575 prisms     837,677 volume  ->  Restless    957,677  Frenzy  1,137,677
-  I2: port 60   3,795 prisms     641,833 volume  ->  Restless    761,833  Frenzy    941,833
-  I3: port 50   2,730 prisms     456,896 volume  ->  Restless    576,896  Frenzy    756,896
-  I4: port 42   2,385 prisms     356,842 volume  ->  Restless    476,842  Frenzy    656,842
---check: no files written; all 32 files match what this script authors.
+  stations 15 x 2 laps = 29 crossings  comeback 0.35 (2.54 levels at a quarter-of-target deficit)  sense radius 1250
+  I1: port 72   4,575 prisms     753,632 volume  ->  Restless    873,632  Frenzy  1,053,632
+  I2: port 60   3,795 prisms     566,166 volume  ->  Restless    686,166  Frenzy    866,166
+  I3: port 50   2,730 prisms     392,795 volume  ->  Restless    512,795  Frenzy    692,795
+  I4: port 42   2,385 prisms     303,020 volume  ->  Restless    423,020  Frenzy    603,020
+--check: no files written; all 30 files match what this script authors.
 ```
 
-Those rows are **imported from `breakwater_arena.py`, not retyped** — which is the whole point:
+Those rows are **imported from `breakwater_arena.py`, not retyped**, which is the whole point:
 the cell's `PhaseThresholds` are derived from the same arithmetic that builds the arena, so the two
 cannot drift. (Spot-checked against the shipped `Breakwater Cell Config 1.asset`: `RestlessEnter
-5275` = 4,575 + 700, `FrenzyExitVolume 1,107,677` = 837,677 + 270,000.)
+5275` = 4,575 + 700, `FrenzyExitVolume 1,023,632` = 753,632 + 270,000.)
 
-**Measured against its siblings, it is the only mode generator in this repo whose `--check`
-passes.** All five were run:
-
-```
-author_switchback_assets --check   exit 1
-author_drumfire_assets   --check   exit 1
-author_salvo_assets      --check   exit 1
-author_hijack_assets     --check   exit 1
-author_breakwater_assets --check   exit 0
-```
-
-Drumfire's is the failure mode to avoid and the reason there was no green baseline to copy: a spent
-one-shot `assert` sitting **above** the validation section (`donor crystal block not found`), which
-fires once the donor scene moves on **and takes every check below it with it** — so its `--check`
-proves nothing at all while still looking like a gate. This one raises nothing: every failure
-appends to an `errors` list, the run reports all of them at once, and it writes nothing.
+Drumfire's generator was the failure mode to avoid, and the reason there was no green baseline to
+copy: a spent one-shot `assert` sitting **above** the validation section (`donor crystal block not
+found`), which fired once the donor scene moved on **and took every check below it with it**, so
+its `--check` proved nothing at all while still looking like a gate. This one raises nothing:
+every failure appends to an `errors` list, the run reports all of them at once, and it writes
+nothing.
 
 **The scene clone STANDS DOWN rather than asserting.** Its output says so explicitly —
 `scene: shipped (read-only)` — because a measured re-run of `author_switchback_assets.py` rewrote
@@ -1428,8 +1474,8 @@ And two things the SCENE has to get right, both verified in the authored file:
 | `author_switchback_assets.py` | `RaceGateRing`'s path + the `Racing.meta` folder guid, seeded from the **old** name so the shipped `.cs.meta` guid is preserved |
 | `ElementalComebackSystem` | reads `BreakwaterScoringRule`'s `DomainValue` (the lead-runner fold) |
 | `MiniGameHUD` | `GameModes.Breakwater` → `RaceGateObjectiveProvider` (shared) |
-| `EndConditionOverridesSO` | `breakwaterStationTarget` live/build fields, `GetBreakwaterStationTarget()`, `DefaultBreakwaterStationTarget = 14`, and the four sync/compare paths |
-| `EndConditionOverridesWindow` | the field, the resolved-value row, the build-snapshot row, the help text |
+| `EndConditionOverridesSO` | `breakwaterStationTarget` and `breakwaterLaps` live/build fields, `GetBreakwaterStationTarget()` / `GetBreakwaterLaps()` / `GetBreakwaterCrossingTarget()`, `DefaultBreakwaterStationTarget = 15`, `DefaultBreakwaterLaps = 2`, and the four sync/compare paths |
+| `EndConditionOverridesWindow` | for each of station target and laps: the field, the resolved-value row, the build-snapshot row, the help text; plus the derived "Breakwater crossings" row. The laps row landed later, in #983 |
 
 **No new metric, no new stat, no new RPC, no new scoring code, no impact effects, no vessel edits,
 no prefab edits.** The mode is a composition of shipped systems plus a course generator, a station
@@ -1459,7 +1505,7 @@ exactly:
   reverted.
 - `Tools/Build/breakwater_arena.py` passes all of its proofs.
 - `check_conditional_compilation.py` and `check_enum_member_references.py` are clean.
-- `author_breakwater_assets.py --check` **exits 0** over all 32 authored files, with the cell's
+- `author_breakwater_assets.py --check` **exits 0** over all 30 authored files, with the cell's
   `PhaseThresholds` imported from the arena model rather than retyped.
 
 Run this in order:
@@ -1484,7 +1530,7 @@ Run this in order:
 4. **Ammunition closes the loop.** Start with a full bay. Open a door, then count: destroying ~50
    hostile prisms should refill one rocket, and the Charge card's gauge should climb toward it. A
    station's dish alone should roughly fund the next door.
-5. **THREADING SCORES, and only in order.** Cross station 1: the goal row ticks **1/14** and reads
+5. **THREADING SCORES, and only in order.** Cross station 1: the goal row ticks **1/29** and reads
    "THREAD SWITCHES"; the arrow and the lime ring move to station 2. Cross station 3 without
    threading 2 — nothing happens. Go back through 2, then 3: both count.
 6. **Backwards counts.** Thread a station from the far side: it still counts.
@@ -1496,9 +1542,9 @@ Run this in order:
 10. **The lead-runner fold.** Two pilots on one domain. A threads 5, B threads 0: the domain's HUD
     box reads **5**. B then threads 3: the box still reads 5, not 8. Each pilot's own goal row shows
     their own count.
-11. **Win + scoreboard.** First domain to put ONE pilot through station 14 ends the turn; winners
-    show "VICTORY" + course time. Replay (scene reload) resets everything to 0/14 **and rolls a new
-    course**.
+11. **Win + scoreboard.** First domain to put ONE pilot through the 29th crossing (the last
+    station on lap 2) ends the turn; winners show "VICTORY" + course time. Replay (scene reload)
+    resets everything to 0/29 **and rolls a new course**.
 12. **AI flies the course and opens its own doors.** AI Sparrows thread stations in order rather
     than orbiting a ring, and should be seen firing down a station's axis on the run-in. An AI that
     fires nothing must still thread the eye — if one gets **stuck** at a plug, the two-waypoint aim
@@ -1540,7 +1586,8 @@ Run this in order:
   at all four intensities, the weave and the collar now both stand at exactly **18.0000**
   (`1.461 ×` the hull), against a negative control that restores the old test and reports 16.5.
   Cost: +6 bars at intensity 1 and −92 u of bar length everywhere, so every `PhaseThreshold` was
-  re-derived.
+  re-derived. (Since the flush pass the weave stands further out still - its bars start on the
+  collar's clear circle, 26.31 - and the collar's faces alone are the 18-unit eye.)
 
 - ~~**Nothing kept a station off a spawn pad.**~~ **FIXED** — see "…and no station may swallow a
   spawn pad" above. 7 of 14,400 measured pad-cases put a pilot inside station structure; the walk
@@ -1591,8 +1638,8 @@ Run this in order:
   not from a playtest. It is one editor field, but it also sizes the arena — raising it adds mass
   and moves every `PhaseThreshold` with it.
 
-- **The comeback rate 0.35 is arithmetic, not a playtest.** `0.25 × 27 × 0.35 = 2.36` levels at a
-  quarter-of-target deficit. The generator **asserts** it in both directions (`require(_quarter >=
+- **The comeback rate 0.35 is arithmetic, not a playtest.** `0.25 × 29 × 0.35 = 2.54` levels at a
+  quarter-of-target deficit (it was `0.25 × 27 × 0.35 = 2.36` when the default was 14 stations). The generator **asserts** it in both directions (`require(_quarter >=
   1.0)` and `<= 5.0`) rather than trusting the number, because `bonusLevels = deficit × rate` makes
   the rate a function of the **target** — the trap `DOGFIGHT.md`, `BENDS.md`,
   `WILDLIFE_LIBERATION.md` and `SWITCHBACK.md` have each recorded independently, on four different
@@ -1605,12 +1652,12 @@ Run this in order:
   to forget.
 
 - **No toasts.** No `GameToastConfigSO`, so no "STATION 12/14" or lead-change announcement. Rampage,
-  Dog Fight, The Bends, Salvo and Switchback all ship this way.
+  Salvo and Switchback also ship this way.
 
-- **No mode preview.** No `ModePreview_Breakwater.asset`, so the arcade card falls back to its
-  `CardBackground` and hides Test Flight — the same state Salvo and Switchback ship in. Worth
-  authoring here, since the arena is the thing worth looking at; note the preview's satellite arena
-  has no controller to roll a course, so it would need a canned one.
+- **The mode preview has no stations in it.** `ModePreview_Breakwater.asset` exists (authored by
+  `Tools/Build/author_mode_previews.py`), but the fourteen stations are controller-built and the
+  preview's satellite arena has no controller to roll a course, so it shows the cell's own four
+  configs and the Sparrow's guns and skyburst only. Showing the stations would need a canned course.
 
 - **Adding a card is adding a ROW.** Menu_Main's arcade grid is authored at 3 × 4 and
   `EnsureGridCapacity` / `FitScrollContent` / `ReportUnreachableCards` now handle the growth

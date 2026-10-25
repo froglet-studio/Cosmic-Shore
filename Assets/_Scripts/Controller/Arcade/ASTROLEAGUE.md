@@ -9,7 +9,8 @@ through the opposing goal portal inside a wireframe arena suspended in the Hyper
 1-6 players (2v2/3v3 with AI backfill) through the same single unified Netcode scene as
 SkimRace / Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
 
-**It is Rhino-only.** The Rhino's ForceFieldSkimmer capsule is a real, analog-trigger-
+**The card seats three hulls: Rhino, Scarab and Squirrel** (`ArcadeGameAstroLeague.asset`
+`Vessels`). The Rhino is the one with a blade: its ForceFieldSkimmer capsule is a real, analog-trigger-
 puppeteered sword (`R_VesselActions/RHINO_SHIELD_SWIPE.md`), and the ball resolves a
 contact through it ON THE BLADE: the bounce normal comes off the point of the sword that
 touched, and the strike speed is that point's TRUE velocity from `SkimmerSwingKinematics`
@@ -32,8 +33,9 @@ any vessel without a swinging skimmer.
 - **Domains**: exactly two. `SO_ArcadeGame.MinDomainsAllowed = MaxDomainsAllowed = 2`
   pins the configure modal's DC stepper, so the standard pipeline (DomainAssigner →
   `ServerPlayerVesselInitializerWithAI` balancing) always produces Jade vs Ruby
-- **Vessels**: **Rhino only** (`SO_ArcadeGame.Vessels` = [Rhino]). Restricting the arcade
-  card's list is the whole mechanism — `GameDataSO.ClampVesselToGame` is applied on BOTH
+- **Vessels**: **Rhino, Scarab, Squirrel** (`SO_ArcadeGame.Vessels` = [Rhino, Scarab,
+  Squirrel]). The Rhino strikes on the blade; the Scarab and Squirrel play through the
+  hull-ram path. Restricting the arcade card's list is the whole mechanism — `GameDataSO.ClampVesselToGame` is applied on BOTH
   the human path (`ResolveSpawnVesselType`) and the AI path
   (`ServerPlayerVesselInitializerWithAI`), so AI can never field an illegal hull. Same
   pattern as Cleave. Do not add a mode-local vessel check.
@@ -93,7 +95,9 @@ FinishMatch             winner banner (real time) → matchMonitor.ForceEnd()
   `GameDataSO.GetDomainMetricSum`), so it can never diverge from the host. Astro League adds
   no bespoke score UI.
 - **Goal target**: `GameDataSO.GoalTargetCount` (mercy rule), published by the
-  controller from `AstroLeagueSettingsSO.goalLimit` and synced by ClientRpc.
+  controller from `EndConditionOverridesSO.GetAstroLeagueGoalLimit()` (FrogletTools ▸ Game
+  Modes ▸ End Game Conditions, default 5) and synced by NetworkVariable.
+  `AstroLeagueSettingsSO.goalLimit` is only the fallback when the overrides asset is missing.
 - **Final scores**: every player's `Score` = personal `GoalsScored`; the winning
   DOMAIN is the highest goal sum (golden goal guarantees no tie when enabled; with
   overtime disabled, full-time ties break by `ActiveDomains` order).
@@ -144,6 +148,15 @@ on the server with billiard thinking:
 - **Recover**: caught on the wrong side, or refused for an own goal, swing wide around the ball
   (`strikerRecoverDistance`, perpendicular offset) and come back onto the shot line.
 - **Kickoff hold**: while the ball is frozen, hold at the team's kickoff anchor.
+
+**2026-10-16 — the AI Rhino now has two levers this section says the AI lacks** (both vessel-side,
+not mode-side, so the "only lever" claim above still holds for the *mode*): `RampBoostAIPolicySO`
+(`RhinoAIBoostPolicy.asset`) ramps on a straight that pays the wind-up back, brakes on the ramp to
+a corner speed and lets go at sharp corners (`AI/AI_BOOST.md`, Ramp; the AI never ramped before —
+only a human input strategy raised the gesture), and `RhinoSwordAutopilot` swings the blade at the nearest
+hostile prism in reach and holds the energize stance near super-shielded mass — which this court's
+edge lining is. Whether the autopilot's strokes help or hurt a striker's ball contact, and whether
+it burns energize on the lining, is unplayed. Needs a playtest.
 
 Roles and the own-goal guard are **end-goal concepts** and are skipped in the central shared-goal
 layout (intensity 4), where both detectors sit at the arena centre: there is no "our end" to fall
@@ -197,8 +210,10 @@ back to, and own-goaling is a matter of pass DIRECTION, already handled by aimin
   the arcade pop's aim, the recoil, the feedback intensity) then describes the SWING rather than
   the hull. `bladeTipStrikeBonus` lerps an extra pop from hilt (1×) to tip.
   **Two traps this had to solve:**
-  1. *Reach.* The Rhino's skimmer carries TWO volumes — the sword's thin non-trigger
-     `CapsuleCollider` (~2.4 × 59 world units) and the inherited SPHERE trigger that is its skim
+  1. *Reach.* The Rhino's skimmer carries TWO volumes — the sword's thin
+     `CapsuleCollider` (~2.4 × 59 world units; **a trigger again since 2026-10-16** — the PR #928
+     merge had made it a solid kinematic capsule that physically shoved the ball, and the ball's
+     `OnTriggerEnter`/`OnTriggerStay` path already resolves blade strikes) and the inherited SPHERE trigger that is its skim
      field (radius = half the blade length, 15-60 units). Both reach the contact handler. A
      contact further than `ball radius + bladeClearRadius` from the blade CENTRELINE is the skim
      field, not the sword, and is dropped — otherwise the Rhino bats the payload from meters away
@@ -656,7 +671,12 @@ atmospheric/territorial — including the boundary surface itself — lives on t
     **Change the lining budget and these thresholds together** — the lining doubled from 240 with
     the court's size, and the floor doubled with it. Restless is also the gate that RELEASES the
     fauna into the court (see the cleanup crew above), so this is the mode's primary ecology pacing
-    dial and the first thing to move after a playtest. The **count** fields (`Restless 900`,
+    dial and the first thing to move after a playtest. **2026-10-16:** the Rhino's Mass row is now
+    **Afterimage** — for 5 s after an energized blade goes out (and through a 6 s omni Surge) the
+    sword lays blade-shaped prisms (≤ 16 afterimages × ≤ 6 segments per window, volume ×1 → ×2.5 with
+    Mass; danger prisms at Mass L5). That is Rhino mass these thresholds were not tuned against, and
+    it counts in `LiveVolume` like trail; re-measure the Restless/Frenzy window in a playtest before
+    moving it. The **count** fields (`Restless 900`,
     `Frenzy 3000`) remain the perf backstop (the volume-only lining never enters `LiveBlockCount`).
     `SpawnProfile.FaunaFoodFloor = 5` (nominal prisms → 80 prey-volume) so herbivores seed against
     the thin prey. The `DomainVolumeIndicator` hex gauge reads the same `FrenzyEnterVolume`, so a

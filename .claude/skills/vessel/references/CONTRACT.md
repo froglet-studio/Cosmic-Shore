@@ -18,11 +18,12 @@ read all of it when creating or completing a vessel. Where this file and the cod
 10. [Docs & paper trail](#10-docs--paper-trail) — trackers, design docs, verification ledger
 11. [Fleet status snapshot](#11-fleet-status-snapshot) — dated; verify before trusting
 
-Naming trap that applies everywhere: file names renamed Ship→Vessel but class names did not.
+Naming trap that applies everywhere: file names renamed Ship→Vessel before class names did.
 `VesselActionSO.cs` → `ShipActionSO` · `VesselActionExecutorBase.cs` → `ShipActionExecutorBase` ·
-`VesselHelper.cs` → `ShipHelper` · `R_VesselElementStatsHandler.cs` → `R_ShipElementStatsHandler` ·
-`VesselActions.cs` → `enum ShipActions` · `VesselHUD.cs` → `ShipHUD` (legacy).
-**Grep by class name.** (`VesselCardView.cs` → `ShipCardView` was on this list until the
+`VesselHelper.cs` → `ShipHelper` · `VesselActions.cs` → `enum ShipActions`.
+**Grep by class name.** Every class an asset binds to now matches its file (2026-10-25,
+`Docs/REFACTOR_BACKLOG.md` M5): `R_VesselElementStatsHandler` and `VesselHUD` were
+`R_ShipElementStatsHandler` and `ShipHUD` until then. (`VesselCardView.cs` → `ShipCardView` was on this list until the
 freestyle vessel-selection panel was retired, 2026-09-23.)
 
 ---
@@ -35,12 +36,12 @@ Count the fleet from `VesselClassType`, never from this paragraph.
 
 | # | Requirement | Enforced by |
 |---|---|---|
-| 1.1 | `VesselClassType` enum entry with an explicit numeric ID, never reused/renumbered (`Assets/_Scripts/Data/Enums/VesselClassType.cs`; `Any=-1`, `Random=0`) | convention only — serialization drift if broken |
+| 1.1 | `VesselClassType` enum entry with an explicit numeric ID, never reused/renumbered (`Assets/_Scripts/Data/Enums/VesselClassType.cs`; `Any=-1`, `Random=0`). **Parallel branches collide on "the next id"** (Thresher and the Stoat both took 14; the Stoat moved to 15 on 2026-10-13), and the NUMBER is serialized in places the enum rename never touches: the prefab's `vesselType`, `SO_Class_*.Class`, the `ElementalAbilityMaps/<Vessel>.asset` `vesselClass`, every `ModePreview_*.asset` `Vessel`, the generator's class-id constant, `arcade_mode_lib.VESSEL_CLASS_ID`, `EnumIntegrityTests` and the docs. Sweep all of them on a renumber | convention only — serialization drift if broken |
 | 1.2 | Prefab at `Assets/_Prefabs/Spacevessels/{Vessel}.prefab`, **named exactly after the enum member** — the auditors and `ElementalAbilityMapSO.LoadFor` key off the name | `VesselAbilityRowAuditor` flags unparseable names |
 | 1.3 | Prefab root: `NetworkObject` (+ `ClientNetworkTransform`, `NetcodeHooks`), `VesselController`, `VesselStatus` with serialized `vesselType` = the enum value (this IS the registration key — lookup scans `IVesselStatus.VesselType`, no dictionary) | `ServerPlayerVesselInitializer.SpawnVesselForPlayer` hard-errors without NetworkObject; `VesselPrefabContainer` warns+skips without VesselStatus |
 | 1.4 | The `[RequireComponent]` set on VesselStatus satisfied: `VesselPrismController`, `ResourceSystem`, `VesselTransformer`, `AIPilot`, `ElementalBarsController`, `VesselCameraCustomizer`, a **concrete** `VesselAnimation` subclass, `R_VesselActionHandler`, `VesselCustomization`, `R_ShipElementStatsHandler` | RequireComponent + lazy GetOrAdd accessors (self-heal, but unconfigured) |
 | 1.5 | `VesselStatus._shipInstance` → the VesselController; `vesselHUDController` → an `IVesselHUDController`; `_nearFieldSkimmer`/`_farFieldSkimmer` wired; `VesselController.gameData` → `Runtime GameData.asset` (`Assets/_SO_Assets/Game Data/`) | runtime LogError/LogWarning ("ShipInstance is not referenced", "HUD will not function", "Ship properties will not be set") |
-| 1.6 | Registered in `Assets/_SO_Assets/Vessel Prefab Container.asset` (`_shipPrefabs`) — BOTH spawn paths resolve exclusively through it | runtime LogError "No Vessel Prefab found" — note `VesselSpawner` resolves Random/Any over ALL enum values, so a Random roll can land on an unregistered class and fail loudly (three LogErrors, no vessel, the orphaned player is destroyed) |
+| 1.6 | Registered in `Assets/_SO_Assets/Vessel Prefab Container.asset` (`_shipPrefabs`) — BOTH spawn paths resolve exclusively through it. **`_shipPrefabs` is a `Transform[]`: the entry must name the prefab root's TRANSFORM fileID, never its GameObject's** (every shipped hull does; a GameObject fileID in a component-typed slot deserializes to null). The Stoat's generator wrote the GameObject id until 2026-10-13, and the hull was registered and still unreachable. `DefaultNetworkPrefabs.asset` is the opposite: it takes the GameObject. | runtime LogError "No Vessel Prefab found" — note `VesselSpawner` resolves Random/Any over ALL enum values, so a Random roll can land on an unregistered class and fail loudly (three LogErrors, no vessel, the orphaned player is destroyed) |
 | 1.7 | Listed in `Assets/DefaultNetworkPrefabs.asset` — clients cannot replicate an unregistered NetworkObject | nothing audits container↔network-list sync; manual |
 | 1.8 | `Assets/_SO_Assets/Camera/{Vessel}CameraSettingsSO.asset` assigned to `VesselCameraCustomizer.settings`. **It must STATE `farClipPlane` (the fleet ships 12000), not inherit it** — a setup tool names the one or two fields its hull differs on and leaves the rest at the C# initializer, which was 1000: a twelfth of the fleet's draw distance, and not even enough to cross a standard 1200-radius cell, so the far wall of the arena is clipped away. The Butterfly shipped that way and it was reported as a bug in the camera rather than as a field nobody named. `CustomCameraController` writes it straight onto the live camera, so it reaches the screen in full. | unguarded deref → NRE on local-player camera apply; a short far plane is SILENT — the only symptom is geometry that is not drawn. `Tools/Build/check_vessel_camera_farclip.py` (`--self-test`) holds the floor against the fleet's own measured mode |
 | 1.9 | `SO_Vessel` meta asset (`SO_Class_{Name}.asset` in `Assets/_SO_Assets/Classes/`, menu `CosmicShore/Vessel/Vessel`) with Class, Name, `InitialResourceLevels`, icons; added to the relevant `SO_Classlist_*`. NOTE: Arcade writes `InitialResourceLevels` into `GameDataSO.ResourceCollection`, but the downstream hop to `ResourceSystem.InitializeElementLevels` is currently **dead** — both `SetResourceLevels` call sites are commented out; the live element seed is `ResourceSystem.Start()` | absence = invisible in hangar/arcade selection |
@@ -120,7 +121,7 @@ mistake presents as a wiring bug, in a completely different part of the tool. Au
 DEPENDENCY ORDER (`<VesselAnimation subclass>` → `VesselStatus` → `VesselController` →
 `ResourceSystem`, `VesselImpactor`) and take, never re-add, what Unity auto-added along the way —
 `VesselStatus` pulls in `VesselCameraCustomizer`, `R_VesselActionHandler`, `VesselCustomization`
-and `R_ShipElementStatsHandler`, none of which carries `[DisallowMultipleComponent]`, so a second
+and `R_VesselElementStatsHandler`, none of which carries `[DisallowMultipleComponent]`, so a second
 `AddComponent` of any of them silently mints a duplicate. `ButterflyVesselSetup.Require<T>` is the
 shape: existing-or-add, and report the TYPE when the add comes back null.
 
@@ -166,8 +167,23 @@ falls back to Jade — the wrong paint plus a console error).
 - **Input binding is prefab data**: `R_VesselActionHandler._inputEventShipActions`
   (InputEvents → List\<ShipActionSO>; multiple SOs on one event start/stop together) plus
   `_touchActionOverrides`/`_gamepadActionOverrides` (per active device; DualMouse shares
-  gamepad). Dispatch replicates by re-execution: ServerRpc → ClientRpc →
-  `PerformShipControllerActions` on every peer.
+  gamepad). Dispatch replicates by re-execution: ServerRpc → ClientRpc → every peer resolves
+  the pressed input to actions ITSELF — so **the press carries the device it was resolved
+  against** (one byte) and every peer resolves with that, never with its own copy of the
+  pilot's input status; and a release resolves with its press's recorded device, so it stops
+  what the press started. Until 2026-10 the device did not travel and did not replicate, and the
+  three hulls with device overrides (Squirrel, Manta, Rhino) ran different abilities — or none —
+  on other machines (`R_VesselActions/SQUIRREL_DRIFT.md` §11). **Anything else that changes what
+  a press resolves to must travel with the press the same way.** Gate:
+  `python3 Tools/Build/peer_press_harness/run.py` (`--self-test`; `--rev` to compare an older
+  handler) — compiles the shipped handler as an owner copy and a peer copy over every shipped
+  vessel's maps. **An autopilot finds a control with
+  `TryGetInputForAction<T>` / `TryGetBoundAction<T>`, which answer for the ACTIVE device by the
+  press's own rule (`TryGetPressedActions`)** — so an ability bound only in the override maps must
+  be bound in BOTH of them, or an AI on the other device family cannot press it. The device-blind
+  view (every map at once) is `CollectBoundActions`/`HasBinding`, for presentation only. Until
+  2026-10-06 the lookup was device-blind and the Squirrel's AI could not drift on a PC
+  (`SQUIRREL_DRIFT.md` §10).
 - **AI parity is free if you don't fork**: AI drives the same executors. Stick-triggered
   abilities need explicit AI trigger synthesis in the executor (autopilot produces no stick
   input). Do not build a parallel ability path.
@@ -269,7 +285,7 @@ by how hard they are to see.
 **And when a report is about a COLOUR, sample the frame before re-reading the code that sets it.**
 Two colours 0.3° apart are identical in a diff and different on a screen; three consecutive passes
 of correct reasoning about the asset found three real defects and changed nothing the player saw,
-where one screenshot measured the answer. (`FrogletTools > Diagnostics > Report On-Screen UI` for
+where one screenshot measured the answer. (`FrogletTools > UI > Report On-Screen UI` for
 the layout equivalent.)
 
 
@@ -295,7 +311,9 @@ Canon: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1–7.4. The distilled 
   Resolve effective rects through the **vessel prefab's `m_Modifications` first** (instance
   overrides once split the Squirrel's row: four icons on two positions). A HUD-instance root
   that isn't stretched (0,0)-(1,1)/sizeDelta 0 collapses the whole HUD to screen centre (the
-  Serpent bug). Some icons may live in the vessel prefab, not the variant (Rhino: 3 of 4).
+  Serpent bug). Some icons may live in the vessel prefab, not the variant (the Rhino carried 3 of
+  4 that way — `LaserTargeting` / `Crystal` / `ForceField` — until 2026-10-16, when they were deleted
+  with its pre-lockup status cluster; its row now binds 4/4 from `RhinoHUDVariant`).
 - **Control hints bind to abilities, never positions**: `hint.binding` → `InputHintBindingMap`
   → `InputEvents` → map `Input` (fallback: `CollectBoundActions` shared-asset intersection) →
   `TryGetAbilityIcon`. `InputDeviceIconSetSwitcher.BindHintsToAbilities` runs once from
@@ -304,7 +322,7 @@ Canon: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1–7.4. The distilled 
   write a hint's size** (zero-sizeDelta stretch rects — collapsing the anchor span destroys
   their size); use `InverseLerpUnclamped` (anchor fractions far outside 0..1 are correct);
   `WarnIfPlacedOffScreen` closes the loop.
-- **Auditor**: `FrogletTools > Vessels > Audit Vessel Ability Rows` — asset-only; checks map
+- **Auditor**: `FrogletTools > Vessels > Audits > Audit Vessel Ability Rows` — asset-only; checks map
   completeness, 4 icons one-per-element, order, uniform size/pitch (1.5 px on a deterministic
   1920×1080 canvas), switcher + hint coverage. Blind spots: <2 resolved icons skips geometry;
   slot geometry reads the icon's PARENT rect.
@@ -315,7 +333,7 @@ The flower display is **fleet-required** (CLAUDE.md's "opt-in rollout" phrasing 
 `[RequireComponent(typeof(ElementalBarsController))]` on VesselStatus,
 `VesselController.Initialize` drives it, and every missing piece is runtime-created **with a
 loud warning naming the authoring tool** — warnings mean the prefab authoring was skipped, they
-are not the contract. Author via `FrogletTools > Vessels > Wire Elemental Petal Bars` (selected
+are not the contract. Author via `FrogletTools > Vessels > Wiring > Wire Elemental Petal Bars` (selected
 HUD prefab in Prefab Mode) or `Bake Elemental Petal Bars Into All Vessel HUDs` (fleet pass),
 then assign the view to `ElementalBarsController.elementBars`. All look/feel lives in
 `Assets/Resources/ElementalBarsConfig.asset` (`ElementalBarsConfigSO`) — never per-prefab
@@ -369,7 +387,7 @@ juice through `ElementBars` when a vessel wants it.
   Read the FBX `Geometry` sub-records of subtype `Shape` and sum the deltas. Evidence + the
   per-file table: `Docs/VESSEL_CONSTRUCTION.md` §4.
 - **Rig swaps** (Dolphin/Urchin/Rhino placeholders → their `*_shapekey_with_animations` rigs)
-  are a hands-on editor pass: run `FrogletTools > Vessels > Plan Vessel Rig Swap`
+  are a hands-on editor pass: run `FrogletTools > Vessels > Wiring > Plan Vessel Rig Swap`
   (report-only) and follow its printed procedure — migrate gameplay objects to mapped bones,
   retire legacy MeshRenderers, re-fit colliders by eye, re-point ship geometry, **clear the
   animation's part fields** so they re-resolve to bones, re-run the morph audit. Order of work
@@ -383,7 +401,7 @@ juice through `ElementBars` when a vessel wants it.
   most of the cost of a swap. Re-measure only what the rig genuinely re-poses (the Rhino's
   wings sit 1.38× wider in its bind pose, and its wings stop being separate GameObjects, so
   anything parented to them re-parents to bones).
-- Audit: `FrogletTools > Vessels > Audit Vessel Elemental Morphs` (asset-only, exact runtime
+- Audit: `FrogletTools > Vessels > Audits > Audit Vessel Elemental Morphs` (asset-only, exact runtime
   discovery). Mislabeled shapes fail **silently** in game — the audit is the only detector.
   **Since 2026-08-26 it measures MAGNITUDE**, so an empty labelled shape no longer passes:
   `Travel()` reports each shape's farthest vertex travel as a fraction of its mesh's own
@@ -422,7 +440,7 @@ juice through `ElementBars` when a vessel wants it.
   rule 39 for the full list of abstract bases a new vessel touches.
 
 - **`IVesselHUDView` is a trap**: an empty marker interface implemented by nothing —
-  `VesselHUDView` (abstract class) is the real contract. The legacy `ShipHUD` reparent path is
+  `VesselHUDView` (abstract class) is the real contract. The legacy `VesselHUD` (was `ShipHUD`) reparent path is
   dead for the shipping fleet (only Termite still nests `HUDContainer.prefab`).
 - **Lifecycle**: `VesselController.Initialize` initializes the HUD **hidden** and calls
   `SubscribeToEvents` only for the local user. Visibility is owned by scene hosts:
@@ -432,11 +450,14 @@ juice through `ElementBars` when a vessel wants it.
   either half of the swap re-show. `Show`/`Hide` are DOTween fades — nothing pops.
 - **Binding discipline** (the Dolphin branch shipped this wrong three times): one symmetric
   `Rebind()`/`Unbind()` pair, called from Initialize (detach-first — swaps re-run Initialize on
-  live components; Rhino's Unsubscribe-then-Subscribe exists because a re-init double-counted),
+  live components; Rhino's Unsubscribe-then-Subscribe existed because a re-init double-counted —
+  since 2026-10-16 its controller has no channels left and POLLS with change detection, which is
+  the other way to have no pair to leak),
   OnEnable (gated) and OnDisable/OnDestroy. Gate everything on
   `IsInitializedAsAI || !IsLocalUser` — **the base class does not gate for you** — and
   sender-filter shared SOAP channels (every vessel that wires `boostChanged` raises it — today
-  every Squirrel instance, **including remote ones**, per-frame via `DecayBoost` — so an
+  every Squirrel instance, **including remote ones**, via `DecayBoost` whenever the multiplier
+  moves (quiet at rest since 2026-10-06) — so an
   unfiltered handler lets a remote vessel pin your energy bar).
 - **Data discipline**: bind resources **by name** with serialized index as fallback; only bind
   meters whose writers raise the per-resource event; adopt displayed constants from the gameplay
@@ -455,7 +476,14 @@ warning). Be exhaustive here; this is the contract's least-guarded clause.
   VesselContainers/{Vessel}ImpactorDataContainer.asset`. Baseline prism trio every shipping
   vessel authors: `VesselDamagePrismEffect` + `VesselHapticsByPrismEffect` +
   `VesselElementalDebuffByDangerPrismEffect`; plus ≥1 crystal effect
-  (`{Vessel}VesselExplosionByCrystalEffect` / `...ChangeResourceByCrystalEffect`). Empty arrays
+  (`{Vessel}VesselExplosionByCrystalEffect` / `...ChangeResourceByCrystalEffect`). **The Rhino is
+  the sanctioned exception to the first slot** (2026-10-13): its hull destroys nothing, so
+  `RhinoPloughPrismEffect` REPLACES `VesselDamagePrismEffect` (`RhinoImpactorDataContainer`:
+  plough + haptics + elemental-debuff-by-danger), and its crystal pair is
+  `RhinoVesselExplosionByCrystalEffect` + `RhinoVesselSurgeByCrystalEffect` (the Surge replaced the
+  resource-change effect 2026-10-16). It also carries no `VesselChangeSpeedByPrismEffect` by design —
+  "the bulldozer ignores mass". The trio is the default, not a law: a hull whose contact verb is
+  not destruction swaps the first slot for its own verb. Empty arrays
   are a legal opt-out; a **null container is a bug that NREs on first contact by design**.
 - **Impactability**: every hittable collider carries an `ImpactCollider` whose `impactorObject`
   points at the owning impactor — colliders without one are invisible to the whole impact
@@ -580,7 +608,7 @@ already lists all 11 prefabs).
 | Sparrow | ✅ | 4/4 + 4 upgrades SHIPPED | ✅ row; no switcher (hints static, both glyph sets render); glyph art wrong | ✅ | skimmer containers all-empty; 2nd inline skimmer unwired | |
 | Manta | ✅ | 3/4 quantitative, 0 upgrades — **open slots** | 0 found (re-survey at vessel-prefab level) | ✅ (Manta meshes, also Termite/Falcon/Shrike) | ✅ | blocked on design |
 | Dolphin | ✅ | 4/4 + 4 upgrades SHIPPED (`claude/dolphin-energy-crystal-cooldown-zpvc07`) | 4/4 bound; no switcher (hints unbound) | ❌ placeholder art — rig swap pending | ✅ **since the branch** — the reference pointed at a DISABLED twin | energy economy + drift boost + cone; see `R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` |
-| Rhino | ✅ | 1/4, 0 upgrades — **open slots** | 4 icons exist (3 in vessel prefab), unbound | ❌ placeholder — rig swap pending | ✅ (sword variant) | bind once map approved |
+| Rhino | ✅ | **4/4 + 4 upgrades SHIPPED 2026-10-16** (Sword Energy / Live Wire, Afterimage / Danger Afterimages, Blade Reach / Breaker, Ramp Spool / Momentum; editor-unverified) | **4/4 bound** (placeholder icons, 2026-10-16); the old 3-in-vessel-prefab cluster deleted | ❌ `Rhino_Test.fbx` still wired — rig swap to `rhino_shapekey_with_animations.fbx` never run | ✅ (sword variant; hull = plough, not damage) | was "1/4, open slots, bind once map approved" — done. Still open: rig swap, jets unsized, no authored `ElementalBarsView` |
 | Serpent | ✅ | 1/4, 0 upgrades — **open slots** | 0 bound; HUD root was centre-collapsed (fixed) | ✅ | ❌ "VacuumSkimmer" has no SkimmerImpactor/container AND its GameObject is INACTIVE — cannot vacuum | fails Audit Vessel Skimmers |
 | Urchin / Grizzly / Termite / Falcon / Shrike | ❌ | none | none | Urchin ❌ (rig pending) · Grizzly ❌ (no art) · Termite/Falcon/Shrike ✅ | none (nested base skimmer would NRE) | prefabs exist and are already in DefaultNetworkPrefabs (all 11 are — don't re-add); Vessel Prefab Container registration unstarted; NONE of the five has a `{Vessel}CameraSettingsSO.asset`; Falcon/Shrike additionally lack SO_Class assets |
 
@@ -589,4 +617,4 @@ already lists all 11 prefabs).
 stack (`EnergySkimmer`) was the live one doing the physics, and the stack the vessel actually
 REFERENCED was a disabled leftover. Reading a prefab and concluding "looks wired" is not
 evidence; resolve the reference to its GameObject and check `m_IsActive` up the ancestor chain,
-or just run **FrogletTools > Vessels > Audit Vessel Skimmers**, which does exactly that.
+or just run **FrogletTools > Vessels > Audits > Audit Vessel Skimmers**, which does exactly that.

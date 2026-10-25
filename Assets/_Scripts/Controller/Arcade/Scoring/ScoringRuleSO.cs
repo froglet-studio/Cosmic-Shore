@@ -94,9 +94,14 @@ namespace CosmicShore.Gameplay
         public abstract bool IsObjectiveReached(GameDataSO gameData, out Domains winner);
 
         /// <summary>
-        /// The winning domain at game end = the active domain with the highest metric sum.
-        /// Ties break by <see cref="GameDataSO.ActiveDomains"/> order (Jade → Ruby → Gold), so
-        /// identical inputs resolve identically on every machine.
+        /// The winning domain at game end = the FIELDED active domain with the highest metric
+        /// sum. Ties break by <see cref="GameDataSO.ActiveDomains"/> order (Jade → Ruby → Gold),
+        /// so identical inputs resolve identically on every machine.
+        ///
+        /// An active domain nobody flies for (two pilots on Ruby and Gold widen the count to 3,
+        /// leaving Jade empty) sums to 0 and would otherwise win every all-zero tie by enum
+        /// order - a winner with no player to name. Unfielded domains are skipped; the enum-order
+        /// fallback stands only when no domain is fielded at all.
         /// </summary>
         public virtual Domains ResolveWinner(GameDataSO gameData)
         {
@@ -106,6 +111,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < dc; i++)
             {
                 var d = GameDataSO.ActiveDomains[i];
+                if (!IsFielded(gameData, d)) continue;
                 int sum = DomainValue(gameData, d);
                 if (sum > bestSum)
                 {
@@ -113,7 +119,21 @@ namespace CosmicShore.Gameplay
                     best = d;
                 }
             }
-            return best;
+            return best != Domains.Blue ? best : GameDataSO.ActiveDomains[0];
+        }
+
+        /// <summary>
+        /// True when at least one pilot in <see cref="GameDataSO.RoundStatsList"/> flies for
+        /// <paramref name="domain"/> - the same "fielded" set <see cref="ResolvePlacementOrder"/>
+        /// ranks. A domain inside the active count can still be empty.
+        /// </summary>
+        protected static bool IsFielded(GameDataSO gameData, Domains domain)
+        {
+            var list = gameData != null ? gameData.RoundStatsList : null;
+            if (list == null) return false;
+            for (int i = 0, n = list.Count; i < n; i++)
+                if (list[i] != null && list[i].Domain == domain) return true;
+            return false;
         }
 
         /// <summary>

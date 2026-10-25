@@ -173,6 +173,18 @@ namespace CosmicShore.Gameplay
         public float BirthAbove = 0.9f;
         /// <summary>Volume a birth costs the parent: the newborn's body and its starting stomach (half of it).</summary>
         public float BirthCost = 16f;
+        /// <summary>
+        /// Below this fraction of Capacity the member is DESPERATE and its colony's OWN colour becomes food
+        /// (Docs/BUILDERS_AND_THIEVES.md §2.1). Opposing-domain mass is always food (on the platform diet); own-domain
+        /// mass is the starvation fallback - the cell's Frenzy shape (fauna steer at their own colour only once the cell
+        /// is overfull) applied to a stomach instead of a cell. Read through <see cref="Desperate"/>, which clamps it to
+        /// <see cref="HungryBelow"/> so a fed member never takes own-colour mass (a fortress worker eats it on the spot, a
+        /// thief hoards it for its larder, a wearer heart wears it and eats its body's outermost prism).
+        /// </summary>
+        public float OwnDomainBelow = 0.25f;
+
+        /// <summary>A member with this much in its stomach may take mass of its own colony's colour (O(1)).</summary>
+        public bool Desperate(float stomach) => stomach < Capacity * MathF.Min(OwnDomainBelow, HungryBelow);
     }
 
     /// <summary>Shared vector helpers (research bestiary/core.py: unit, clamp_len, steer).</summary>

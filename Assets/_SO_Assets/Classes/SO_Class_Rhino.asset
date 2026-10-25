@@ -28,10 +28,8 @@ MonoBehaviour:
   PreviewImage: {fileID: 21300000, guid: 1d50cd3184d75fe43acf5ace04e20554, type: 3}
   SquadImage: {fileID: 21300000, guid: 2286f04c9031ee84d8d935de1926f92a, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 449a10c84f724994eb0401e2f1c3d7d4, type: 3}
-  CardSilohoutteActive: {fileID: 21300000, guid: 8da001fa155b50849bdb405534e9284e,
-    type: 3}
-  CardSilohoutteInactive: {fileID: 21300000, guid: 5c78cbe8d6ee46745a30138ff74c9659,
-    type: 3}
+  CardSilohoutteActive: {fileID: 21300000, guid: 8da001fa155b50849bdb405534e9284e, type: 3}
+  CardSilohoutteInactive: {fileID: 21300000, guid: 5c78cbe8d6ee46745a30138ff74c9659, type: 3}
   Abilities:
   - {fileID: 11400000, guid: f9f41e3b69e020741878e22c46c8190c, type: 2}
   - {fileID: 11400000, guid: 049001867ddf0504c93f7a903f691ca4, type: 2}
@@ -40,9 +38,7 @@ MonoBehaviour:
   Games:
   - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}
   - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
-  TrainingGames:
-  - {fileID: 11400000, guid: 32b17fe5b43035e469768fd702a9bdd9, type: 2}
-  - {fileID: 11400000, guid: 32b17fe5b43035e469768fd702a9bdd9, type: 2}
+  TrainingGames: []
   gameplayParameter1:
     LeftHandLabel: Casual
     RightHandLabel: Challenging

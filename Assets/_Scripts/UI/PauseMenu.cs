@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using UnityEngine;
@@ -43,6 +44,33 @@ namespace CosmicShore.UI
 
         [Tooltip("Game controller for the active scene. Required for the Replay button to work. Wire the scene's MiniGameControllerBase subclass.")]
         [SerializeField] MiniGameControllerBase gameController;
+
+        [Header("Style-B window (Docs/MENU_REDESIGN_B.md section 22.3)")]
+        [Tooltip("Resume - Start on the pad toggles it from the pause button, B fires it here. Every " +
+                 "pilot sees it: a guest used to have no way back into the match but the Settings " +
+                 "window's close.")]
+        [SerializeField] UnityEngine.UI.Button resumeButton;
+        [Tooltip("Opens the Settings window over the pause window (X). Settings used to BE the pause " +
+                 "screen, so pausing to resume meant dismissing a settings panel.")]
+        [SerializeField] UnityEngine.UI.Button settingsButton;
+        [Tooltip("Leave match (host) / Leave party (guest) - Y, never A, so the pad's confirm can " +
+                 "never take a pilot out of a match.")]
+        [SerializeField] UnityEngine.UI.Button leaveButton;
+        [Tooltip("The window's CanvasGroup. Made non-interactable while Settings is open, which also " +
+                 "silences the window's pad shortcuts (ControllerButtonPress reads it), so B closing " +
+                 "Settings does not also resume the match.")]
+        [SerializeField] CanvasGroup windowGroup;
+        [Tooltip("The mode's name.")]
+        [SerializeField] TMPro.TMP_Text modeTitle;
+        [Tooltip("'Intensity 3 - 3 domains - you fly Squirrel for Jade'.")]
+        [SerializeField] TMPro.TMP_Text modeDetail;
+        [Tooltip("The summary rows - the live goals, as the HUD's goal stack shows them.")]
+        [SerializeField] TMPro.TMP_Text[] rowLabels = new TMPro.TMP_Text[0];
+        [SerializeField] TMPro.TMP_Text[] rowValues = new TMPro.TMP_Text[0];
+        [Tooltip("One CanvasGroup per row, so an unused row hides without leaving its divider.")]
+        [SerializeField] CanvasGroup[] rowGroups = new CanvasGroup[0];
+        [SerializeField] string hostLeaveLabel = "Leave match";
+        [SerializeField] string guestLeaveLabel = "Leave party";
 
         [Inject] GameSetting gameSetting;
         [Inject] AudioSystem audioSystem;
@@ -112,6 +140,13 @@ namespace CosmicShore.UI
         {
             if (settingsModalWindowManager != null)
                 settingsModalWindowManager.OnModalClosed += HandleModalClosed;
+
+            // Wired in code, never by persistent calls (the item 10 precedent): the targets are
+            // methods on this component, and a persistent call into a nested prefab is a
+            // per-instance override waiting to drift.
+            if (resumeButton) resumeButton.onClick.AddListener(OnClickResumeGameButton);
+            if (settingsButton) settingsButton.onClick.AddListener(OnClickSettings);
+            if (leaveButton) leaveButton.onClick.AddListener(OnClickMainMenu);
         }
 
         /// <summary>
@@ -153,8 +188,7 @@ namespace CosmicShore.UI
 
             try
             {
-                var canvasGroup = panel.GetComponent<CanvasGroup>();
-                if (canvasGroup == null)
+                if (!panel.TryGetComponent(out CanvasGroup canvasGroup))
                     canvasGroup = panel.AddComponent<CanvasGroup>();
                 if (canvasGroup == null) return;
 
@@ -205,10 +239,25 @@ namespace CosmicShore.UI
             if (isHidingFromCode) return;
             if (Panel == null || !Panel.activeInHierarchy) return;
 
-            if (PauseSystem.Paused)
-                OnClickResumeGameButton();
-            else
-                OnClickMultiplayerResumeGameButton();
+            // Settings is a window ON the pause window now: closing it goes back to the pause
+            // window, never straight into the match - with the pad back on Settings.
+            SetWindowInteractable(true);
+            Select(settingsButton);
+        }
+
+        /// <summary>Settings (X): the Settings window, over the pause window.</summary>
+        public void OnClickSettings()
+        {
+            if (settingsModalWindowManager == null) return;
+            SetWindowInteractable(false);
+            settingsModalWindowManager.ModalWindowIn();
+        }
+
+        void SetWindowInteractable(bool on)
+        {
+            if (!windowGroup) return;
+            windowGroup.interactable = on;
+            windowGroup.blocksRaycasts = on;
         }
 
         /// <summary>
@@ -256,6 +305,13 @@ namespace CosmicShore.UI
         /// </summary>
         public void OnClickResumeGameButton()
         {
+            // Opened through the networked path below: time was never frozen, so resume the same way.
+            if (!PauseSystem.Paused)
+            {
+                OnClickMultiplayerResumeGameButton();
+                return;
+            }
+
             PauseSystem.TogglePauseGame(false);
             Hide();
 
@@ -268,12 +324,45 @@ namespace CosmicShore.UI
         /// </summary>
         public void OnClickPauseGameButton()
         {
+            // Start toggles: pressing it again while paused resumes (the board's "Resume (Start)").
+            if (Panel != null && Panel.activeInHierarchy)
+            {
+                OnClickResumeGameButton();
+                return;
+            }
+
+            // GameCanvas wires its Volume / Pause button (and so Escape / Start, which invoke that
+            // button) here in every live mode; only three retired scenes override it to the
+            // multiplayer handler. Freezing Time.timeScale in a match other peers are in stopped
+            // the HOST's physics, AI and server timers under every client - and on a client froze
+            // every other vessel on its screen. With anyone else connected, pause only the local
+            // pilot's input; a solo match (host plus AI) keeps the real pause.
+            if (InNetworkedSession())
+            {
+                OnClickMultiplayerPauseButton();
+                return;
+            }
+
             PauseSystem.TogglePauseGame(true);
             Show();
 
-            wasLocalPlayerInputPausedBefore = gameData.LocalPlayer.InputStatus.Paused;
+            // No live local pilot (its Player was despawned or destroyed - LocalPlayer self-heals to
+            // null): there is no input to pause, so treat it as already paused and leave it alone.
+            var localInput = gameData.LocalPlayer?.InputStatus;
+            wasLocalPlayerInputPausedBefore = localInput == null || localInput.Paused;
             if (!wasLocalPlayerInputPausedBefore)
                 _ = TogglePlayerPauseWithDelay(true);
+        }
+
+        /// <summary>
+        /// True when another peer shares this session: this machine is a client, or a host with a
+        /// second connected client. <c>ConnectedClientsIds</c> is server-only, so the client test
+        /// short-circuits before it.
+        /// </summary>
+        static bool InNetworkedSession()
+        {
+            var nm = NetworkManager.Singleton;
+            return nm != null && nm.IsListening && (!nm.IsServer || nm.ConnectedClientsIds.Count > 1);
         }
 
         /// <summary>
@@ -317,9 +406,100 @@ namespace CosmicShore.UI
         public void Show()
         {
             ConfigureHostOnlyButtons();
+            DrawSummary();
+            SetWindowInteractable(true);
             if (Panel != null) Panel.SetActive(true);
-            if (settingsModalWindowManager != null) settingsModalWindowManager.ModalWindowIn();
+            // Settings no longer opens with the pause: it is the X button's window. A prefab with no
+            // style-B window still gets the old behaviour, so nothing is left with no screen at all.
+            if (!windowGroup && settingsModalWindowManager != null) settingsModalWindowManager.ModalWindowIn();
+            LinkDpadNavigation();
+            Select(resumeButton);
             audioSystem.PlayGameplaySFX(GameplaySFXCategory.PauseOpen);
+        }
+
+        /// <summary>
+        /// The D-pad walks the window's actions top to bottom (Resume, Settings, Leave), skipping
+        /// any that are hidden, and A presses the selected one. The face-button shortcuts on the
+        /// keycaps still work alongside. Explicit, not automatic: automatic navigation could step
+        /// off the window onto the HUD behind it.
+        /// </summary>
+        void LinkDpadNavigation()
+        {
+            var chain = new System.Collections.Generic.List<UnityEngine.UI.Selectable>(3);
+            foreach (var b in new[] { resumeButton, settingsButton, leaveButton })
+                if (b && b.gameObject.activeInHierarchy) chain.Add(b);
+            for (int i = 0; i < chain.Count; i++)
+            {
+                var nav = new UnityEngine.UI.Navigation
+                {
+                    mode = UnityEngine.UI.Navigation.Mode.Explicit,
+                    selectOnUp = i > 0 ? chain[i - 1] : chain[chain.Count - 1],
+                    selectOnDown = i < chain.Count - 1 ? chain[i + 1] : chain[0],
+                };
+                chain[i].navigation = nav;
+            }
+        }
+
+        static void Select(UnityEngine.UI.Button button)
+        {
+            var events = UnityEngine.EventSystems.EventSystem.current;
+            if (events && button && button.gameObject.activeInHierarchy) events.SetSelectedGameObject(button.gameObject);
+        }
+
+        /// <summary>
+        /// The left half of the window: the mode, its setup, and the live goals - the same rows the
+        /// HUD's goal stack draws, so the pause window never states a different score.
+        /// </summary>
+        void DrawSummary()
+        {
+            if (modeTitle) modeTitle.text = gameData != null ? SpacedName(gameData.GameMode.ToString()) : string.Empty;
+            if (modeDetail) modeDetail.text = SetupLine();
+
+            var stack = rowLabels.Length > 0 ? FindAnyObjectByType<GoalStack>() : null;
+            var entries = stack != null ? stack.Entries : null;
+            for (int i = 0; i < rowLabels.Length; i++)
+            {
+                bool used = entries != null && i < entries.Count;
+                if (i < rowGroups.Length && rowGroups[i]) KitVisibility.SetShown(rowGroups[i], used);
+                if (!used) continue;
+                var e = entries[i];
+                if (rowLabels[i]) rowLabels[i].text = e.Label;
+                if (i < rowValues.Length && rowValues[i])
+                    rowValues[i].text = TabularText.Wrap(e.IsCount ? $"{e.Current} / {e.Target}" : e.RawValue, rowValues[i].font);
+            }
+        }
+
+        string SetupLine()
+        {
+            if (gameData == null) return string.Empty;
+            var parts = new System.Collections.Generic.List<string>(3);
+            if (gameData.SelectedIntensity != null && gameData.SelectedIntensity.Value > 0)
+                parts.Add($"Intensity {gameData.SelectedIntensity.Value}");
+            if (gameData.RequestedDomainCount > 1) parts.Add($"{gameData.RequestedDomainCount} domains");
+            var local = gameData.LocalPlayer;
+            if (local != null && gameData.selectedVesselClass != null)
+            {
+                string hull = gameData.selectedVesselClass.Value.ToString();
+                string domain = local.Domain == Domains.Blue || (int)local.Domain == 0 ? null : local.Domain.ToString();
+                parts.Add(domain != null ? $"you fly {hull} for {domain}" : $"you fly {hull}");
+            }
+            return string.Join(" - ", parts);
+        }
+
+        /// <summary>'SkimRace' -> 'Skim Race'. The enum is the only mode name a match carries.</summary>
+        public static string SpacedName(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return string.Empty;
+            var sb = new System.Text.StringBuilder(id.Length + 4);
+            for (int i = 0; i < id.Length; i++)
+            {
+                char c = id[i];
+                bool boundary = i > 0 && char.IsUpper(c)
+                                && (char.IsLower(id[i - 1]) || (i + 1 < id.Length && char.IsLower(id[i + 1]) && char.IsUpper(id[i - 1])));
+                if (boundary) sb.Append(' ');
+                sb.Append(c);
+            }
+            return sb.ToString();
         }
 
         /// <summary>
@@ -341,7 +521,7 @@ namespace CosmicShore.UI
             if (replayButton)   replayButton.SetActive(!isClient);
             if (mainMenuButton) mainMenuButton.SetActive(true);
             if (mainMenuButtonLabel)
-                mainMenuButtonLabel.text = isClient ? "LEAVE PARTY" : "MAIN MENU";
+                mainMenuButtonLabel.text = isClient ? guestLeaveLabel : hostLeaveLabel;
         }
 
         public void Hide()
@@ -357,7 +537,7 @@ namespace CosmicShore.UI
         async UniTaskVoid TogglePlayerPauseWithDelay(bool toggle)
         {
             await UniTask.Yield();
-            gameData.LocalPlayer?.InputController.SetPause(toggle);
+            gameData.LocalPlayer?.InputController?.SetPause(toggle);
         }
     }
 }

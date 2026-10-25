@@ -54,6 +54,10 @@ namespace CosmicShore.Editor
         const string TouchedKey = "BugLedger.TouchedThisEditorSession";
         const string PlayStartKey = "BugLedger.PlayStartUtc";
         const string EditorStartKey = "BugLedger.EditorStartUtc";
+        const string PlayRunOpenKey = "BugLedger.PlayRunOpen";
+
+        /// <summary>Cap on <c>local/validation.log</c>; past it the older half is dropped.</summary>
+        const long MaxTrailBytes = 64 * 1024;
 
         const int MaxSampleChars = 500;
         const int MaxTitleChars = 120;
@@ -118,6 +122,8 @@ namespace CosmicShore.Editor
         static volatile int _minPlaySeconds = 15;
         static volatile int _minEditorMinutes = 10;
         static volatile int _maxAutoIssues = 150;
+        /// <summary>Only open issues seen this recently count toward <see cref="_maxAutoIssues"/>.</summary>
+        const int CapWindowDays = 30;
 
         /// <summary>Bumped on every mutation; the window polls it to know when to repaint.</summary>
         public static int ChangeStamp => _changeStamp;
@@ -169,6 +175,7 @@ namespace CosmicShore.Editor
 
             Hook();
             StartWorker();
+            Trail($"editor load: play={_inPlayMode} capture={_autoCapture} minPlay={_minPlaySeconds}s issues={Issues.Count}");
         }
 
         /// <summary>Copies settings into the plain fields the background thread reads.</summary>
@@ -259,6 +266,11 @@ namespace CosmicShore.Editor
             if (condition != null &&
                 (condition.StartsWith("[BugLedger]", StringComparison.Ordinal) ||
                  condition.StartsWith("[CrashDetector]", StringComparison.Ordinal))) return;
+            // The Test Runner judges errors raised inside a test: an expected one is declared with
+            // LogAssert.Expect, an unexpected one fails the test. Filing them made the ledger report
+            // the tests' own expectations as bugs (E-14bef8c883, E-7a0e239d28: the AppManager and
+            // GameObjectExtension tests asserting Destroy's edit-mode error).
+            if (IsTestRunnerStack(stackTrace)) return;
 
             try
             {
@@ -268,6 +280,12 @@ namespace CosmicShore.Editor
             }
             catch { /* never throw back into the log pipeline */ }
         }
+
+        static bool IsTestRunnerStack(string stack) =>
+            stack != null &&
+            (stack.Contains("NUnit.Framework.Internal") ||
+             stack.Contains("UnityEngine.TestRunner") ||
+             stack.Contains("UnityEditor.TestTools.TestRunner"));
 
         static void WorkerLoop()
         {
@@ -307,6 +325,17 @@ namespace CosmicShore.Editor
                         issue.LastSeenUtc = nowIso;
                         if (entry.InPlayMode && issue.Scope != "PlayMode") issue.Scope = "PlayMode";
 
+                        // The stack is kept from the first sighting. One filed by an older ledger (or
+                        // cut off inside Unity's own frames) never names our caller, so take the first
+                        // later excerpt that does: "Destroying components immediately" (E-6bc7e07601)
+                        // was stored as ten Unity frames that end at DestroyImmediate.
+                        bool stackImproved = false;
+                        if (!OwnsAFrame(issue.Stack))
+                        {
+                            var fresh = StackExcerpt(entry.Stack);
+                            if (OwnsAFrame(fresh)) { issue.Stack = fresh; stackImproved = true; }
+                        }
+
                         if (issue.IsValidating && !issue.ValidationPaused)
                         {
                             // The fix did not fix. Reopen loudly — this is the ledger's whole point.
@@ -314,9 +343,10 @@ namespace CosmicShore.Editor
                             issue.Regressions++;
                             issue.CleanSessions = 0;
                             WriteLocked(issue);
+                            Trail($"{issue.Id} came back while its fix was being checked: reopened (regression {issue.Regressions})");
                             Debug.LogWarning($"[BugLedger] Regression: \"{issue.Title}\" recurred while validating — reopened (regression #{issue.Regressions}).");
                         }
-                        else if (firstThisSession)
+                        else if (firstThisSession || stackImproved)
                         {
                             // One occurrence write per issue per editor session keeps the committed
                             // files quiet; later hits this session count in memory only.
@@ -325,15 +355,23 @@ namespace CosmicShore.Editor
                         return;
                     }
 
+                    // The cap stops a runaway error generator, so it counts what is firing now: open
+                    // issues seen in the last CapWindowDays. Counting every issue ever filed blinded a
+                    // long-lived ledger: 159 issues (90 open ones last seen in September, 34 fixes being
+                    // checked) passed the cap of 150, and that editor filed nothing new (E-2fab142e42).
                     int autoCount = 0;
+                    var since = Iso(DateTime.UtcNow.AddDays(-CapWindowDays));
                     foreach (var existing in Issues.Values)
-                        if (existing.Kind == BugLedgerIssueKind.Auto) autoCount++;
+                        if (existing.Kind == BugLedgerIssueKind.Auto && existing.IsOpen &&
+                            string.CompareOrdinal(existing.LastSeenUtc ?? "", since) >= 0)
+                            autoCount++;
                     if (autoCount >= _maxAutoIssues)
                     {
                         if (!_capWarned)
                         {
                             _capWarned = true;
-                            Debug.LogWarning($"[BugLedger] Auto-issue cap reached ({_maxAutoIssues}) — new error signatures are no longer being filed. Triage the ledger.");
+                            Trail($"auto-issue cap reached ({autoCount} open issues seen in {CapWindowDays} days): {id} and later new errors are not filed");
+                            Debug.LogWarning($"[BugLedger] Auto-issue cap reached ({_maxAutoIssues} open errors seen in the last {CapWindowDays} days) — new error signatures are no longer being filed. Triage the ledger.");
                         }
                         return;
                     }
@@ -371,32 +409,65 @@ namespace CosmicShore.Editor
         {
             switch (change)
             {
+                case PlayModeStateChange.ExitingEditMode:
+                    // Adopt any fix published since the last sync (a pull with no C# change
+                    // triggers no domain reload, and this project runs play mode without one)
+                    // BEFORE the run starts, so this very run counts toward validating it.
+                    lock (StoreLock) SyncFromSharedLocked();
+                    break;
+
                 case PlayModeStateChange.EnteredPlayMode:
                     _inPlayMode = true;
                     _playStartUtc = DateTime.UtcNow;
                     SessionState.SetString(PlayStartKey, Iso(_playStartUtc));
+                    SessionState.SetBool(PlayRunOpenKey, true);
                     lock (SeenLock) SeenThisPlay.Clear();
                     break;
 
                 case PlayModeStateChange.ExitingPlayMode:
-                    _inPlayMode = false;
-                    // Let the worker land anything captured this play run before judging it —
-                    // an entry still in the queue is not yet in the seen set, and crediting a
-                    // clean session over it would validate a fix the session just disproved.
-                    DrainCapturesBriefly();
-                    double seconds = (DateTime.UtcNow - _playStartUtc).TotalSeconds;
-                    HashSet<string> seen;
-                    lock (SeenLock)
-                    {
-                        seen = new HashSet<string>(SeenThisPlay, StringComparer.OrdinalIgnoreCase);
-                        SeenThisPlay.Clear();
-                    }
-                    SessionState.SetString(PlayStartKey, "");
-                    CreditCleanSessions("PlayMode", seen, qualifies: seconds >= _minPlaySeconds,
-                        why: $"{Math.Max(1, (int)seconds)}s play run");
+                    EndPlayRun("exiting play mode");
+                    break;
+
+                case PlayModeStateChange.EnteredEditMode:
+                    // Unity stops calling playModeStateChanged handlers at the first one that
+                    // throws, so another tool's ExitingPlayMode handler can starve this one. The
+                    // run is still judged here; the trail says it was.
+                    if (SessionState.GetBool(PlayRunOpenKey, false))
+                        EndPlayRun("edit mode restored (the exiting-play-mode call never arrived)");
                     break;
             }
         }
+
+        /// <summary>The play run is over: remember what fired and credit every fix it did not disprove.</summary>
+        static void EndPlayRun(string how)
+        {
+            SessionState.SetBool(PlayRunOpenKey, false);
+            LastPlayCountedFix = false;
+            _inPlayMode = false;
+            // Let the worker land anything captured this play run before judging it —
+            // an entry still in the queue is not yet in the seen set, and crediting a
+            // clean session over it would validate a fix the session just disproved.
+            DrainCapturesBriefly();
+            double seconds = (DateTime.UtcNow - _playStartUtc).TotalSeconds;
+            HashSet<string> seen;
+            lock (SeenLock)
+            {
+                seen = new HashSet<string>(SeenThisPlay, StringComparer.OrdinalIgnoreCase);
+                SeenThisPlay.Clear();
+            }
+            SessionState.SetString(PlayStartKey, "");
+            LastPlaySeen = seen;
+            CreditCleanSessions("PlayMode", seen, qualifies: seconds >= _minPlaySeconds,
+                why: $"{Math.Max(1, (int)seconds)}s play run, {how}");
+        }
+
+        /// <summary>Error ids that fired during the play run that just ended — what
+        /// <see cref="BugHuntAutoSend"/> asks about. Main thread only.</summary>
+        public static HashSet<string> LastPlaySeen { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>The play run that just ended counted toward (or closed) a fix — worth a silent
+        /// progress send even when nothing new fired. Main thread only.</summary>
+        public static bool LastPlayCountedFix { get; private set; }
 
         /// <summary>Bounded wait for the worker to finish the already-captured backlog. Only ever
         /// called on the main thread at a session boundary, so 400 ms is the worst-case cost of a
@@ -427,18 +498,28 @@ namespace CosmicShore.Editor
         /// </summary>
         static void CreditCleanSessions(string scope, HashSet<string> seenIds, bool qualifies, string why)
         {
-            if (!_autoCapture || !qualifies) return;
+            if (!_autoCapture || !qualifies)
+            {
+                Trail($"{scope} session ended ({why}): not counted (capture={_autoCapture}, long enough={qualifies})");
+                return;
+            }
 
             List<BugLedgerIssue> resolved = null;
+            var credited = new StringBuilder();
+            int validating = 0;
             lock (StoreLock)
             {
                 foreach (var issue in Issues.Values)
                 {
-                    if (!issue.IsValidating || issue.ValidationPaused || !issue.HasSignature) continue;
+                    if (!issue.IsValidating) continue;
+                    validating++;
+                    if (issue.ValidationPaused || !issue.HasSignature) continue;
                     if (issue.Scope != scope) continue;
                     if (seenIds.Contains(issue.Id)) continue;   // recurrence already reopened it
 
                     issue.CleanSessions++;
+                    credited.Append(' ').Append(issue.Id).Append(' ').Append(issue.CleanSessions)
+                            .Append('/').Append(issue.CleanSessionsRequired);
                     if (issue.CleanSessions >= issue.CleanSessionsRequired)
                         (resolved ??= new List<BugLedgerIssue>()).Add(issue);
                     else
@@ -450,6 +531,10 @@ namespace CosmicShore.Editor
                         ResolveLocked(issue, $"validated — silent across {issue.CleanSessionsRequired} clean {scope} sessions");
             }
 
+            if (scope == "PlayMode" && credited.Length > 0) LastPlayCountedFix = true;
+            Trail($"{scope} session ended ({why}): {validating} fix(es) waiting; counted:" +
+                  (credited.Length > 0 ? credited.ToString() : " none") +
+                  (seenIds.Count > 0 ? $"; fired: {string.Join(" ", seenIds)}" : ""));
             if (resolved == null) return;
             foreach (var issue in resolved)
                 Debug.Log($"[BugLedger] Validated & closed: \"{issue.Title}\" — silent across {issue.CleanSessionsRequired} clean {scope} sessions (last: {why}). Archived to BugLedger/resolved/.");
@@ -706,7 +791,9 @@ namespace CosmicShore.Editor
         /// Adopts teammates' PUBLISHED issues into the local live store: every file under
         /// <c>shared/issues/</c> that is neither live locally nor tombstoned (resolved/deleted
         /// here) is imported. Local always wins for an issue that exists on both sides — the
-        /// difference is what the Stage &amp; Push tab shows as a pending MODIFY.
+        /// difference is what the Stage &amp; Push tab shows as a pending MODIFY — with ONE
+        /// exception, <see cref="TryAdoptPublishedFix"/>: a fix published after the local copy's
+        /// last fix moves a local OPEN issue to VALIDATING.
         /// </summary>
         static void SyncFromSharedLocked()
         {
@@ -717,7 +804,11 @@ namespace CosmicShore.Editor
                 {
                     var id = Path.GetFileName(path);
                     id = id[..^".bug.json".Length];
-                    if (Issues.ContainsKey(id)) continue;
+                    if (Issues.TryGetValue(id, out var live))
+                    {
+                        TryAdoptPublishedFix(live, path);
+                        continue;
+                    }
                     if (File.Exists(TombstonePath(id))) continue;
 
                     var issue = BugLedgerIssue.FromJson(File.ReadAllText(path));
@@ -727,6 +818,86 @@ namespace CosmicShore.Editor
                 }
             }
             catch { }
+        }
+
+        /// <summary>
+        /// The return half of the agent loop. Someone else — a teammate, or a Claude session running
+        /// the /bug-ledger skill (<c>Tools/Build/bug_ledger.py mark-fixed</c>) — fixed this bug and
+        /// published it as VALIDATING. "Local wins" would leave it OPEN here forever, and the fix
+        /// would never be validated by the machine that actually reproduces the bug. So a published
+        /// fix whose <c>fixedUtc</c> is NEWER than the local copy's last fix is adopted exactly like
+        /// pressing Mark Fixed: validating, clean count reset, the fixer and their notes carried.
+        /// An OPEN or VALIDATING issue adopts it (an ignored one stays parked), and only a strictly newer fix — after a regression reopens it, the same fix is
+        /// never re-adopted; it takes a NEW fix to put it back on the clock.
+        /// </summary>
+        static void TryAdoptPublishedFix(BugLedgerIssue live, string sharedPath)
+            => TryAdoptFixLocked(live, BugLedgerIssue.FromJson(File.ReadAllText(sharedPath)), fixInHead: null);
+
+        /// <summary>
+        /// The sender's entry point (<see cref="BugLedgerSender"/>, any thread): adopt a fix read
+        /// from this machine's <c>bugledger/&lt;user&gt;</c> branch. <paramref name="fixInHead"/>
+        /// answers "is this commit in my HEAD?" — a fix whose commit this machine has not pulled
+        /// yet is NOT adopted, because play runs on code without the fix would credit it falsely.
+        /// </summary>
+        internal static bool AdoptPublishedFix(BugLedgerIssue published, Func<string, bool> fixInHead)
+        {
+            if (published == null) return false;
+            lock (StoreLock)
+                return Issues.TryGetValue(published.Id, out var live) && TryAdoptFixLocked(live, published, fixInHead);
+        }
+
+        /// <summary>Deep copies of every live issue, for the sender to serialize off the lock.</summary>
+        internal static List<BugLedgerIssue> CopyLive()
+        {
+            lock (StoreLock)
+            {
+                var copies = new List<BugLedgerIssue>(Issues.Count);
+                foreach (var issue in Issues.Values)
+                {
+                    var copy = BugLedgerIssue.FromJson(issue.ToJson());
+                    if (copy != null) copies.Add(copy);
+                }
+                return copies;
+            }
+        }
+
+        /// <summary>True when <paramref name="published"/> carries a fix newer than anything the
+        /// local copy has adopted — i.e. the fix exists but this machine has not taken it yet.</summary>
+        internal static bool IsNewerFix(BugLedgerIssue published, BugLedgerIssue local)
+        {
+            if (published == null || !published.IsValidating) return false;
+            if (!TryParseIso(published.FixedUtc, out var publishedFix)) return false;
+            return local == null || !TryParseIso(local.FixedUtc, out var localFix) || publishedFix > localFix;
+        }
+
+        static bool TryAdoptFixLocked(BugLedgerIssue live, BugLedgerIssue published, Func<string, bool> fixInHead)
+        {
+            // OPEN adopts the fix; VALIDATING adopts a NEWER one too (the clean runs counted so far
+            // were against the old code, so the count restarts). An ignored issue stays parked.
+            if (!live.IsOpen && !live.IsValidating) return false;
+            if (!IsNewerFix(published, live)) return false;
+            if (fixInHead != null && !string.IsNullOrEmpty(published.FixCommit) && !fixInHead(published.FixCommit))
+            {
+                if (WaitingForPull.Add(live.Id + ":" + published.FixCommit))
+                    Trail($"{live.Id}: fix {Short(published.FixCommit)} is not in this checkout yet — waiting for a pull");
+                return false;
+            }
+
+            live.State = BugLedgerIssueState.Validating;
+            live.CleanSessions = 0;
+            live.ValidationPaused = false;
+            live.FixedBy = published.FixedBy;
+            live.FixedUtc = published.FixedUtc;
+            live.FixCommit = published.FixCommit;
+            if (!string.Equals(live.Notes, published.Notes, StringComparison.Ordinal))
+                live.Notes = string.IsNullOrEmpty(live.Notes) || published.Notes.Contains(live.Notes)
+                    ? published.Notes
+                    : live.Notes + "\n\n" + published.Notes;
+            WriteLocked(live);
+            Trail($"{live.Id}: fix {Short(published.FixCommit)} taken ({live.Scope}); needs {live.CleanSessionsRequired} clean run(s)");
+            Debug.Log($"[BugLedger] Fix received from {published.FixedBy}: \"{live.Title}\" — it closes itself after " +
+                      $"{live.CleanSessionsRequired} play test(s) without this error, and is sent back if it happens again.");
+            return true;
         }
 
         /// <summary>Pre-split layouts wrote the live store directly under <c>BugLedger/issues|resolved</c>
@@ -770,110 +941,11 @@ namespace CosmicShore.Editor
                 if (File.Exists(path)) return;
                 Directory.CreateDirectory(RootDir);
                 File.WriteAllText(path,
-                    "# Live ledger data is machine-local; only shared/ (published through the\n" +
-                    "# Stage & Push tab of FrogletTools > Diagnostics > Bug Ledger) is tracked.\n" +
+                    "# Live ledger data is machine-local. It reaches the team only through the\n" +
+                    "# after-play \"Send to Claude\" button, which pushes to bugledger/<user>.\n" +
                     "local/\n");
             }
             catch { }
-        }
-
-        // ── Publishing (the Stage & Push tab's data source) ──────────────────────────────────────
-
-        public enum BugLedgerChangeKind { Add = 0, Modify = 1, Remove = 2 }
-
-        /// <summary>One difference between the local live store and the published shared set.</summary>
-        public sealed class BugLedgerPendingChange
-        {
-            public string Id;
-            public string Title;
-            public BugLedgerChangeKind Kind;
-        }
-
-        /// <summary>
-        /// Diffs local against shared: live issues missing from shared are ADDs, differing ones
-        /// are MODIFYs, and shared issues with no live copy (resolved/deleted here) are REMOVEs.
-        /// Pure computation — nothing is written, and git sees nothing until
-        /// <see cref="ApplyStagedChanges"/> runs inside a publish.
-        /// </summary>
-        public static List<BugLedgerPendingChange> ComputePendingChanges()
-        {
-            var pending = new List<BugLedgerPendingChange>();
-            lock (StoreLock)
-            {
-                var shared = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                try
-                {
-                    if (SharedIssuesDir != null && Directory.Exists(SharedIssuesDir))
-                        foreach (var path in Directory.GetFiles(SharedIssuesDir, "*.bug.json"))
-                        {
-                            var name = Path.GetFileName(path);
-                            shared[name[..^".bug.json".Length]] = File.ReadAllText(path);
-                        }
-                }
-                catch { }
-
-                foreach (var issue in Issues.Values)
-                {
-                    if (!shared.TryGetValue(issue.Id, out var publishedJson))
-                        pending.Add(new BugLedgerPendingChange { Id = issue.Id, Title = issue.Title, Kind = BugLedgerChangeKind.Add });
-                    else if (!string.Equals(publishedJson, issue.ToJson(), StringComparison.Ordinal))
-                        pending.Add(new BugLedgerPendingChange { Id = issue.Id, Title = issue.Title, Kind = BugLedgerChangeKind.Modify });
-                }
-
-                foreach (var kv in shared)
-                {
-                    if (Issues.ContainsKey(kv.Key)) continue;
-                    var parsed = BugLedgerIssue.FromJson(kv.Value);
-                    pending.Add(new BugLedgerPendingChange
-                    {
-                        Id = kv.Key,
-                        Title = parsed?.Title ?? kv.Key,
-                        Kind = BugLedgerChangeKind.Remove,
-                    });
-                }
-            }
-
-            pending.Sort((a, b) => a.Kind != b.Kind
-                ? ((int)a.Kind).CompareTo((int)b.Kind)
-                : string.CompareOrdinal(a.Id, b.Id));
-            return pending;
-        }
-
-        /// <summary>
-        /// Materializes the STAGED ids into <c>shared/</c> — copy for Add/Modify, delete for
-        /// Remove — and returns the absolute paths touched (for a scoped <c>git add</c>). Called
-        /// only from inside a publish operation (any thread; takes the store lock), never from a
-        /// [+] click: files must not dirty git while the human is still choosing.
-        /// </summary>
-        public static List<string> ApplyStagedChanges(ICollection<string> stagedIds)
-        {
-            var touched = new List<string>();
-            if (stagedIds == null || stagedIds.Count == 0) return touched;
-
-            lock (StoreLock)
-            {
-                Directory.CreateDirectory(SharedIssuesDir);
-                foreach (var id in stagedIds)
-                {
-                    var sharedPath = Path.Combine(SharedIssuesDir, id + ".bug.json");
-                    try
-                    {
-                        if (Issues.TryGetValue(id, out var issue))
-                        {
-                            File.WriteAllText(sharedPath, issue.ToJson());
-                            touched.Add(sharedPath);
-                        }
-                        else if (File.Exists(sharedPath))
-                        {
-                            File.Delete(sharedPath);
-                            touched.Add(sharedPath);   // git add stages the deletion of a tracked file
-                        }
-                    }
-                    catch { }
-                }
-            }
-            Bump();
-            return touched;
         }
 
         static void WriteLocked(BugLedgerIssue issue)
@@ -958,6 +1030,47 @@ namespace CosmicShore.Editor
             return s.Length > max ? s[..max] + "…" : s;
         }
 
+        /// <summary>
+        /// Frames that are the LOGGING itself, not the code that logged. With Unity's native
+        /// ("Full") stack trace, every <c>Debug.LogError</c> starts with ~10 of these — the
+        /// engine's stack walker, <c>DebugLogHandler</c>, <c>Logger</c>, and our own
+        /// <c>BenignLobbyLogFilter</c> — so a 10-line excerpt kept ONLY plumbing and cut off the
+        /// caller (the 2026-10-15 "Rpc methods can only be invoked after starting the
+        /// NetworkManager!" issue arrived with no way to tell who sent the RPC).
+        /// </summary>
+        static readonly string[] PlumbingFrames =
+        {
+            "(Unity) ", "StackWalker", "Stacktrace::", "DebugStringToFile", "DebugLogHandler",
+            "UnityEngine.Logger:", "UnityEngine.Debug:", "(wrapper managed-to-native)",
+            "BenignLobbyLogFilter", "FilteringLogHandler", "CosmicShore.Utility.CSDebug",
+        };
+
+        internal static bool IsPlumbing(string line)
+        {
+            foreach (var marker in PlumbingFrames)
+                if (line.Contains(marker, StringComparison.Ordinal)) return true;
+            // Any other NATIVE frame (USER32, COMCTL32, KERNEL32, mono-2.0-bdwgc, a plugin DLL): an
+            // address with no managed method after it. They filled the excerpt around our frames: the
+            // Wrasse impactor issue (E-1f28d58e0c) spent five of its ten lines on mono and Windows.
+            return line.StartsWith("0x", StringComparison.Ordinal) &&
+                   !line.Contains("(Mono JIT Code)", StringComparison.Ordinal);
+        }
+
+        static bool OwnsAFrame(string stack) =>
+            !string.IsNullOrEmpty(stack) && stack.Contains("CosmicShore.", StringComparison.Ordinal);
+
+        /// <summary>How many of our own frames are appended when none made the excerpt.</summary>
+        const int MaxOwnFramesAppended = 3;
+
+        /// <summary>Native frames read <c>0x0000023e8f67b363 (Mono JIT Code) Ns.Type:Method (…)</c>;
+        /// keep only the managed part after the address and the JIT tag.</summary>
+        internal static string StripNativePrefix(string line)
+        {
+            const string jit = "(Mono JIT Code) ";
+            int idx = line.IndexOf(jit, StringComparison.Ordinal);
+            return idx >= 0 && line.StartsWith("0x", StringComparison.Ordinal) ? line[(idx + jit.Length)..] : line;
+        }
+
         static string StackExcerpt(string stack)
         {
             if (string.IsNullOrEmpty(stack)) return "";
@@ -966,13 +1079,41 @@ namespace CosmicShore.Editor
             foreach (var raw in stack.Split('\n'))
             {
                 var line = raw.TrimEnd();
-                if (line.Length == 0) continue;
+                if (line.Length == 0 || IsPlumbing(line)) continue;
+                line = StripNativePrefix(line);
                 if (lines > 0) sb.Append('\n');
                 sb.Append(line);
                 if (++lines >= MaxStackLines || sb.Length >= MaxStackChars) break;
             }
             var result = sb.ToString();
-            return result.Length > MaxStackChars ? result[..MaxStackChars] : result;
+            if (result.Length == 0) return Truncate(stack, MaxStackChars);   // nothing but plumbing: keep it raw
+            result = result.Length > MaxStackChars ? result[..MaxStackChars] : result;
+
+            // A deep SDK stack can fill the excerpt before reaching the caller that matters: the
+            // "Failed to start the network manager" issue (E-c2a4d444b8) kept 1,500 characters of
+            // Unity Multiplayer frames and not one of ours. Name our first frames when none made it.
+            if (OwnsAFrame(result)) return result;
+            var own = new StringBuilder();
+            int found = 0;
+            foreach (var raw in stack.Split('\n'))
+            {
+                var line = raw.TrimEnd();
+                if (!line.Contains("CosmicShore.", StringComparison.Ordinal) || IsPlumbing(line)) continue;
+                own.Append('\n').Append(StripNativePrefix(line));
+                if (++found >= MaxOwnFramesAppended) break;
+            }
+            if (found == 0) return result;
+            // Make room inside the cap by dropping SDK frames, so a reader that cuts at the cap (the
+            // Team Bug Board stores 1,500 characters) still shows ours.
+            var tail = "\n..." + own;
+            int room = MaxStackChars - tail.Length;
+            if (room <= 0) return own.ToString(1, Math.Min(own.Length - 1, MaxStackChars));
+            if (result.Length > room)
+            {
+                int cut = result.LastIndexOf('\n', room - 1);
+                result = cut > 0 ? result[..cut] : result[..room];
+            }
+            return result + tail;
         }
 
         static string RandomSuffix()
@@ -1004,6 +1145,52 @@ namespace CosmicShore.Editor
             foreach (var id in stored.Split('\n'))
                 if (id.Length > 0) set.Add(id);
         }
+
+        static readonly HashSet<string> WaitingForPull = new(StringComparer.Ordinal);   // under StoreLock
+        static readonly object TrailLock = new();
+
+        /// <summary><c>local/validation.log</c>: one line per fix taken, play run judged and regression.
+        /// It rides along with every "Send to Claude" (<see cref="BugLedgerSender"/>) so the answer to
+        /// "why is this fix still at 0 of 2?" is on the branch, not on one machine.</summary>
+        public static string TrailPath => LocalDir == null ? null : Path.Combine(LocalDir, "validation.log");
+
+        static void Trail(string line)
+        {
+            try
+            {
+                var path = TrailPath;
+                if (path == null) return;
+                lock (TrailLock)
+                {
+                    Directory.CreateDirectory(LocalDir);
+                    File.AppendAllText(path, Iso(DateTime.UtcNow) + " " + line + "\n");
+                    var info = new FileInfo(path);
+                    if (info.Length <= MaxTrailBytes) return;
+                    var text = File.ReadAllText(path);
+                    int cut = text.IndexOf('\n', text.Length / 2);
+                    File.WriteAllText(path, cut < 0 ? "" : text[(cut + 1)..]);
+                }
+            }
+            catch { /* the trail is evidence, never a reason to fail */ }
+        }
+
+        /// <summary>A copy of the trail for the sender, taken under its lock; false when there is none.</summary>
+        internal static bool CopyTrail(string destination)
+        {
+            try
+            {
+                lock (TrailLock)
+                {
+                    var path = TrailPath;
+                    if (path == null || !File.Exists(path)) return false;
+                    File.Copy(path, destination, overwrite: true);
+                    return true;
+                }
+            }
+            catch { return false; }
+        }
+
+        static string Short(string sha) => string.IsNullOrEmpty(sha) ? "(no commit)" : sha.Length > 9 ? sha[..9] : sha;
 
         static string Iso(DateTime utc)
             => utc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture);

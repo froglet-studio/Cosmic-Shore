@@ -26,7 +26,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("ARENA seating (Docs/HomeHub/ARCHITECTURE.md §3.9). On: every hull in this " +
                  "match is flown by exactly ONE pilot - once a pilot or an AI has a vessel class " +
                  "nobody else may take it - and a human may hand their ship to the AI and take " +
-                 "over an AI teammate's hull mid-match (D-pad left/right, keyboard 1/2). Seats " +
+                 "over an AI teammate's hull mid-match (D-pad left/right, the left/right arrow keys). Seats " +
                  "are therefore capped at the number of hulls this card lists (MaxSeats). Set " +
                  "on the cards in the ArenaGames roster; an arcade card that pins one hull " +
                  "leaves it off.")]
@@ -96,5 +96,15 @@ namespace CosmicShore.ScriptableObjects
                  "ElementalComebackSystem; the comeback layer can never lift an element above " +
                  "level 10. 0 disables comeback for this game.")]
         [Min(0f)] public float ComebackRatePerScoreDeficit = 1f;
+
+        [Header("AI seating (arena cards)")]
+        [Tooltip("When set, every AI seated on a domain NO human flies - an opponent seat - " +
+                 "flies this hull, whatever the card's roster would otherwise draw. Exempt from " +
+                 "ArenaRules' one-hull-per-pilot rule (a grid of identical opponents is the " +
+                 "point), and it never blocks a human's or an ally's hull. Ally AI (a domain a " +
+                 "human flies) still draw from the card, or fly the hull a teammate picked for " +
+                 "them on the launch panel. Regatta pins the Squirrel here until the racing AI " +
+                 "can drive every hull; leave empty for the card's ordinary mixed draw.")]
+        public SO_Vessel OpponentAIVessel;
     }
 }

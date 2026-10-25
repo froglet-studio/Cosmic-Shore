@@ -33,6 +33,30 @@ namespace CosmicShore.UI
         MaelstromPoolListView poolList;
 
         /// <summary>Only the meta-mode.</summary>
+        [Header("Format (optional)")]
+        [SerializeField, Tooltip("The tournament's rules, read for the format block: race target, game " +
+                                 "cap, points by place and seats.")]
+        MaelstromDataSO tournamentData;
+
+        [SerializeField, Tooltip("\"6 points\" - the race target (EffectiveWinTarget).")]
+        TMPro.TMP_Text winTargetText;
+
+        [SerializeField, Tooltip("\"up to 7\" - the game cap.")]
+        TMPro.TMP_Text gameCapText;
+
+        [SerializeField, Tooltip("The race target's line. {points} is the target. Empty shows nothing.")]
+        string winTargetLine = "{points} points";
+        [SerializeField, Tooltip("The game cap's line. {games} is the cap. Empty shows nothing.")]
+        string gameCapLine = "up to {games}";
+        [SerializeField, Tooltip("The game cap's line on a tournament with no cap. Empty shows nothing.")]
+        string noGameCapLine = "no cap";
+
+        [SerializeField, Tooltip("\"2 / 1 / 0\" - placement points, first to last.")]
+        TMPro.TMP_Text pointsByPlaceText;
+
+        [SerializeField, Tooltip("\"4\" - the fixed field every round seats.")]
+        TMPro.TMP_Text seatsText;
+
         public override bool Handles(SO_ArcadeGame game)
             => game != null && game.Mode == GameModes.Maelstrom;
 
@@ -45,6 +69,20 @@ namespace CosmicShore.UI
 
             if (poolList)
                 poolList.Show(intensity);
+
+            DrawFormat();
+        }
+
+        void DrawFormat()
+        {
+            if (!tournamentData) return;
+            if (winTargetText) winTargetText.text = TemplateText.Fill(winTargetLine, "points", tournamentData.EffectiveWinTarget.ToString());
+            if (gameCapText) gameCapText.text = tournamentData.MaxGames > 0
+                ? TemplateText.Fill(gameCapLine, "games", tournamentData.MaxGames.ToString())
+                : noGameCapLine;
+            if (pointsByPlaceText && tournamentData.PointsByPlace != null)
+                pointsByPlaceText.text = string.Join(" / ", tournamentData.PointsByPlace);
+            if (seatsText) seatsText.text = tournamentData.SeatCount.ToString();
         }
 
         public override void HandleIntensityChanged(int intensity)

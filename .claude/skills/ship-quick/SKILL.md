@@ -52,6 +52,8 @@ one fired.
 8. **PR** with what & why, verification status ("not compiled" plus what a human must still
    check in-editor), the **Tool output** line from §2.5, and follow-ups. Do not subscribe to
    watch CI.
+9. **Fire CI once** — `/ship` §5.5: dispatch `unity-ci.yml` with `mode: static` on the
+   branch. Not trimmed by fast mode; it is the branch's only pre-merge CI.
 
 ## What you skip
 
@@ -60,9 +62,14 @@ one fired.
 - The §3 documentation sweep beyond step 6 above.
 - The §3.5 skill-capture retrospective, **unless** something in this session was painful
   to figure out — in which case name it in the report in one line so it isn't lost.
+- Most of §3.55 lab capture, **but not its minimum**. If the branch touched a lab (§3.55's
+  detect step), still refresh the lab's row in `.claude/skills/labmaker/CATALOG.md` and add
+  any lesson that cost time to `LEARNINGS.md`. That is one row and at most a few lines. Labs are
+  built on many branches by many contributors, and a fast lane that drops their learnings is the
+  reason `/labmaker` would go stale. A small lab change can skip `verify_lab.cjs`. Say so.
 
 ## Report
 
 Two paragraphs: what shipped and the PR link, then the §2.5 verdict (tools classified,
-where their output landed) and anything you deliberately skipped so the prompter can
-call it back.
+where their output landed), the §3.55 lab line ("no lab touched", or the CATALOG/LEARNINGS
+changes), and anything you deliberately skipped so the prompter can call it back.

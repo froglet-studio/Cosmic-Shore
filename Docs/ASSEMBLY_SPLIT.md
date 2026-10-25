@@ -124,7 +124,8 @@ without dragging its siblings.
 ### `CosmicShore.Data` — `Assets/_Scripts/Data/`
 
 46 files: the enums, structs and small interfaces that everything reads and that read nothing
-back. Package references: `Unity.Netcode.Runtime`, `Unity.Collections`. `autoReferenced: true`,
+back. Package references: `Unity.Netcode.Runtime`, `Unity.Collections` (**none since 2026-10-17** —
+phase-2 step 2 moved out `RoundStats`, the only file that used them; 64 files). `autoReferenced: true`,
 so the 1,481 files still in `Assembly-CSharp` — and the edit-mode tests in
 `Assembly-CSharp-Editor` — see it with no change.
 
@@ -136,16 +137,18 @@ the rename is what would have broken references.
 
 Verified before the boundary was drawn: no `internal` members, no `partial` types, no
 extension-method use crossing it; no Editor-only code in the folder; and the one other
-first-party asmdef (`CosmicShore.PlayFabTests`) uses no `Data` type.
+first-party asmdef at the time (`CosmicShore.PlayFabTests`, deleted since with PlayFab) used no
+`Data` type.
 
-**Known wart, not fixed here:** `RoundStats.cs` is a 900-line `NetworkBehaviour` filed under
+**Known wart, not fixed here** *(fixed 2026-10-17, phase-2 step 2 — now
+`Controller/Player/RoundStats.cs`, beside the `Player.prefab` that carries it)*: `RoundStats.cs` is a 900-line `NetworkBehaviour` filed under
 `Data/Enums/`. It is the only reason this assembly references Netcode at all. Relocating it is
 a phase-2 item — moving it in phase 1 would have been a refactor riding along with a build
 change, and those are the commits nobody can bisect.
 
 ---
 
-## Phase 2 (not started — this is where it stops)
+## Phase 2 (steps 1–2 done 2026-10-17; step 3 onward not started)
 
 **Phase 1 stopped here deliberately.** The next two candidate layers both drag gameplay code
 with them, so neither extracts without a refactor first. Forcing either would mean dragging
@@ -180,21 +183,21 @@ block the entire layer:**
 
 | blocker | declared in | blocks |
 |---|---|---|
-| `CrystalStats`, `PrismStats`, `CombatHitStats`, `AbilityStats` | `Controller/Managers/StatsManager.cs` (4 plain structs, lines 21–66) | 8 files |
-| `GameplaySFXCategory` | `System/Audio/AudioSystem.cs` (1 enum, line 58) | 2 files |
+| `CrystalStats`, `PrismStats`, `CombatHitStats`, `AbilityStats` | `Controller/Managers/StatsManager.cs` (4 plain structs, lines 21–66) — **moved 2026-10-17 to `Data/Structs/<Name>.cs`** | 8 files |
+| `GameplaySFXCategory` | `System/Audio/AudioSystem.cs` (1 enum, line 58) — **moved 2026-10-17 to `Data/Enums/GameplaySFXCategory.cs`** | 2 files |
 
 All five are payload types with no behaviour, sitting in files that are otherwise systems.
 Moving them into `CosmicShore.Data` is a small, mechanical, independently-reviewable commit —
 and it takes the SOAP layer from 19 dirty files to about 9.
 
 The rest are real coupling and need real decisions: `IVessel` / `IVesselStatus` /
-`VesselImpactor` (`ScriptableClassType`), and `MiniGameHUD` / `ShipHUD`
+`VesselImpactor` (`ScriptableClassType`), and `MiniGameHUD` / `VesselHUD` (was `ShipHUD`)
 (`ScriptableVesselHUDData`) — a SOAP channel that carries a *HUD MonoBehaviour* as its payload
 is the coupling, and re-pointing it at an interface is a design change, not a move.
 
 ### The EDITOR assembly is a separate axis, and it was already measured
 
-`Docs/PERFORMANCE_OPTIMIZATION.md` (Task 10) carries a file-by-file check of splitting
+`Docs/archive/PERFORMANCE_LOG_2026.md` (Task 10) carries a file-by-file check of splitting
 `Assembly-CSharp-Editor`, concluded independently of this work: of 168 editor files, 79 are
 tests that structurally cannot move, and of the remaining 89 only **26 (~17% of editor LOC)**
 are free of gameplay-type references. It was closed as not worth shipping *at that time*.
@@ -205,8 +208,14 @@ editor-side count is a function of runtime progress, not a fixed 26.
 
 ### Suggested phase-2 order
 
-1. Move the five payload types above into `CosmicShore.Data`. Mechanical.
-2. Relocate `RoundStats.cs` out of `Data/` (it is a `NetworkBehaviour`, not data).
+1. ~~Move the five payload types above into `CosmicShore.Data`. Mechanical.~~ **Done 2026-10-17**:
+   moved verbatim (each keeps its `CosmicShore.Gameplay` / `CosmicShore.Core` namespace, so no
+   consumer changed; one `<see cref="StatsManager"/>` became `<c>StatsManager</c>`, since the
+   leaf assembly cannot see it).
+2. ~~Relocate `RoundStats.cs` out of `Data/`~~ **Done 2026-10-17**: `git mv` (file + `.meta`, guid
+   kept) to `Controller/Player/`, namespace `CosmicShore.Data` kept. `CosmicShore.Data` then
+   referenced nothing, so its asmdef `references` is now `[]` — any Netcode type added to `Data/`
+   fails to compile, which is the point of a leaf.
 3. Extract `CosmicShore.SOAP`, minus the vessel/HUD channels.
 4. Decide where `Utility` actually divides, then extract the dependency-free part.
 5. Only then: `Assembly-CSharp-Editor` gets split, and tests get real asmdefs (§ Tests).
@@ -222,7 +231,8 @@ Tests still live under `Editor/` folders and **that is still correct today** —
 What changes as the split proceeds: a test that touches **only extracted assemblies** can
 have a real test asmdef, referencing those assemblies plus the test-runner assemblies. That
 is a phase-2 win and should be taken per-suite as its dependencies come out, never as a
-project-wide flip. `CosmicShore.PlayFabTests` is already this shape and shows the pattern.
+project-wide flip. (`CosmicShore.PlayFabTests` was this shape until it was deleted with PlayFab;
+there is currently no suite in the tree that shows the pattern.)
 
 ---
 

@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class ButterflyAnimation : VesselAnimation
     {
-        [Header("Wings (resolved from the procedural hull by name if left empty)")]
+        [Header("Wings (resolved by name from the hull model's bones, or the procedural hull's parts, if left empty)")]
         [SerializeField] Transform ForeWingL;
         [SerializeField] Transform ForeWingR;
         [SerializeField] Transform HindWingL;
@@ -66,6 +66,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] float turnAsymmetry = 34f;
         [Tooltip("Degrees both wings sweep back along the hull at full pitch-up.")]
         [SerializeField] float pitchSweep = 18f;
+        [Tooltip("How fast the stick terms (turn asymmetry, pitch sweep) ease to the stick, per second. Keeps a " +
+                 "touch lifting off the screen from snapping a full-stick wing pose level in one frame.")]
+        [SerializeField, Min(0.1f)] float stickEaseRate = 10f;
 
         [Header("Spread (the Mass ability)")]
         [Tooltip("Degrees the wings hold ABOVE the hinge plane while the Mass spread is held — " +
@@ -87,6 +90,21 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds for the wings to close into (and out of) the fold pose.")]
         [SerializeField, Min(0.01f)] float foldBlendSeconds = 0.35f;
 
+        [Header("Audio")]
+        [Tooltip("FMOD event played ONCE PER BEAT, at the top of the stroke (the start of the " +
+                 "downstroke), attached to the hull. Its rate follows the beat, so it speeds up " +
+                 "with the vessel. Leave empty for silence - never point it at a borrowed event " +
+                 "to hear something.")]
+        [SerializeField] FMODUnity.EventReference wingbeatEvent;
+        [Tooltip("Beat half-amplitude, in degrees, below which a beat is SILENT. The fold closes " +
+                 "the wings and drives the amplitude to zero; a wing that is not moving makes no " +
+                 "sound. The glide (beatAmplitudeAtCruise) and the spread both stay above it.")]
+        [SerializeField, Min(0f)] float wingbeatMinAmplitude = 4f;
+
+        // Phase (in beats) inside each cycle where the voice lands: sin peaks at 0.25, the top of
+        // the stroke, which is where a real wing's downstroke starts.
+        const float WingbeatVoicePhase = 0.25f;
+
         ButterflyHullBuilder _hullBuilder;
 
         float _beatPhase;          // beats, accumulated — never reset, so the beat never jumps
@@ -94,6 +112,7 @@ namespace CosmicShore.Gameplay
         float _foldTarget;
         float _spreadBlend;        // 0 = normal beat, 1 = wings held wide
         float _spreadTarget;
+        float _pitchEased, _yawEased;  // the stick, eased here: Idle() never sees the input layer's eased stick
 
         // ---- procedural element morphs -----------------------------------------------------
         // This hull is generated, not an FBX, so its element morphs are the baked geometry deltas
@@ -110,21 +129,29 @@ namespace CosmicShore.Gameplay
         public override void Initialize(IVesselStatus vesselStatus)
         {
             _hullBuilder = GetComponentInChildren<ButterflyHullBuilder>(true);
+            // The model (Butterfly.fbx, nested under the prefab's Hull) is found, not wired: its
+            // sub-objects' fileIDs exist only after Unity imports it. Its element shapes are driven
+            // by the base class by name; the flares need the renderer; and the beat plus the Space
+            // morph reach past the bind-pose bounds, so it must not be culled on them.
+            if (!SkinnedMeshRenderer) SkinnedMeshRenderer = GetComponentInChildren<SkinnedMeshRenderer>(true);
+            if (SkinnedMeshRenderer) SkinnedMeshRenderer.updateWhenOffscreen = true;
             base.Initialize(vesselStatus);
             InitializeProceduralMorphs(vesselStatus);
         }
 
         protected override void ResolveParts()
         {
-            // The builder names its parts, so an un-authored prefab still resolves. An authored
-            // reference always wins (the base's rule), which is what lets real art drop in later.
-            ForeWingL = ResolvePart(ForeWingL, "WingForeL");
-            ForeWingR = ResolvePart(ForeWingR, "WingForeR");
-            HindWingL = ResolvePart(HindWingL, "WingHindL");
-            HindWingR = ResolvePart(HindWingR, "WingHindR");
+            // The model's wing BONES first (the fleet convention: wing / wing.2 = fore / hind, .L =
+            // the pilot's left), the procedural builder's part names after. An authored reference
+            // always wins (the base's rule).
+            ForeWingL = ResolvePart(ForeWingL, "wing.L", "WingForeL");
+            ForeWingR = ResolvePart(ForeWingR, "wing.R", "WingForeR");
+            HindWingL = ResolvePart(HindWingL, "wing.2.L", "WingHindL");
+            HindWingR = ResolvePart(HindWingR, "wing.2.R", "WingHindR");
+            ReportUnresolvedParts();
 
-            // The procedural wings rest at identity, so this is a no-op today — but it is what
-            // lets authored art with angled rest poses drop in without tearing flat.
+            // The bones rest at the wings' dihedral under a parent that is not vessel-aligned, so the
+            // rest is captured in the VESSEL's frame and every pose is composed there (ApplyWing).
             CaptureRestRotations(ForeWingL, ForeWingR, HindWingL, HindWingR);
         }
 
@@ -171,10 +198,19 @@ namespace CosmicShore.Gameplay
             float foldStep = Time.deltaTime / Mathf.Max(0.01f, foldBlendSeconds);
             _foldBlend = Mathf.MoveTowards(_foldBlend, _foldTarget, foldStep);
 
+            // The stick terms ease here, not in the input layer: on a phone lifting the thumb is an instant
+            // Idle() (DriveWings(0, 0)), and a raw stick would snap the wings level in one frame (vessel rule 53).
+            float ks = 1f - Mathf.Exp(-stickEaseRate * Time.deltaTime);
+            _pitchEased = Mathf.Lerp(_pitchEased, pitch, ks);
+            _yawEased = Mathf.Lerp(_yawEased, yaw, ks);
+            pitch = _pitchEased;
+            yaw = _yawEased;
+
             float spreadStep = Time.deltaTime / Mathf.Max(0.01f, spreadBlendSeconds);
             _spreadBlend = Mathf.MoveTowards(_spreadBlend, _spreadTarget, spreadStep);
 
             float hz = Mathf.Lerp(beatHz, beatHzAtCruise, speed01);
+            float previousPhase = _beatPhase;
             _beatPhase += hz * Time.deltaTime;
 
             float amplitude = Mathf.Lerp(beatAmplitude, beatAmplitudeAtCruise, speed01);
@@ -190,20 +226,39 @@ namespace CosmicShore.Gameplay
             // and a wing that kept flapping into the closed pose would read as a stuck animation.
             amplitude *= 1f - _foldBlend;
 
+            VoiceWingbeat(previousPhase, _beatPhase, amplitude);
+
             float foreBeat = Mathf.Sin(_beatPhase * Mathf.PI * 2f) * amplitude;
             float hindBeat = Mathf.Sin((_beatPhase - hindLagBeats) * Mathf.PI * 2f) * amplitude;
 
             // Turn: the OUTSIDE wing rises. yaw > 0 is a right turn, so the LEFT wing is outside.
+            // (Positive angles are UP since 2026-10-18 - see ApplyWing - so the outside wing ADDS asym.)
             float asym = yaw * turnAsymmetry * (1f - _foldBlend);
             // Pitch sweeps both wings back along the hull.
             float sweep = pitch * pitchSweep * (1f - _foldBlend);
 
             float closed = foldClosedAngle * _foldBlend;
 
-            ApplyWing(ForeWingL, -1, foreBeat + lift - asym + closed, sweep);
-            ApplyWing(ForeWingR, +1, foreBeat + lift + asym + closed, sweep);
-            ApplyWing(HindWingL, -1, hindBeat + lift * 0.6f - asym * 0.7f + closed, sweep);
-            ApplyWing(HindWingR, +1, hindBeat + lift * 0.6f + asym * 0.7f + closed, sweep);
+            ApplyWing(ForeWingL, -1, foreBeat + lift + asym + closed, sweep);
+            ApplyWing(ForeWingR, +1, foreBeat + lift - asym + closed, sweep);
+            ApplyWing(HindWingL, -1, hindBeat + lift * 0.6f + asym * 0.7f + closed, sweep);
+            ApplyWing(HindWingR, +1, hindBeat + lift * 0.6f - asym * 0.7f + closed, sweep);
+        }
+
+        /// <summary>
+        /// One voice per beat cycle: fires when the phase crosses <see cref="WingbeatVoicePhase"/>
+        /// of a cycle, so it is keyed to the beat itself and never to the frame rate. A frame long
+        /// enough to cross two cycles still voices once. Empty slot = silence.
+        /// </summary>
+        void VoiceWingbeat(float fromPhase, float toPhase, float amplitude)
+        {
+            if (wingbeatEvent.IsNull) return;
+            if (Mathf.FloorToInt(toPhase - WingbeatVoicePhase) ==
+                Mathf.FloorToInt(fromPhase - WingbeatVoicePhase)) return;
+            if (amplitude < wingbeatMinAmplitude) return;
+
+            var audio = CosmicShore.Core.AudioSystem.Instance;
+            if (audio) audio.PlaySFXEventAttached(wingbeatEvent, gameObject);
         }
 
         /// <summary>
@@ -224,15 +279,25 @@ namespace CosmicShore.Gameplay
         /// asymmetry, sweep) arrive pre-eased, and the fold is a MoveTowards, so every input to
         /// this pose is already continuous.</para>
         ///
-        /// <para>Composed with the captured REST rotation so authored art with an angled bind
-        /// pose is not flattened onto identity — the rig-swap trap the base class documents. On
-        /// the procedural hull the rest pose is identity and this term is free.</para>
+        /// <para>Composed in the VESSEL's frame onto the rest captured there, so it holds on a
+        /// rigged model whose wing bones rest at the dihedral under a parent that is not
+        /// vessel-aligned (the parent-frame Euler of the procedural era would roll such a bone
+        /// instead of beating it). On the procedural hull the two are identical.</para>
+        ///
+        /// <para><b>Sign: a positive angle LIFTS the tip</b> (side -1 = the left wing on -X; Unity's
+        /// Euler(0,0,+a) carries +X toward +Y). Until 2026-10-18 the Z term was <c>-side * beat</c>,
+        /// which DROPPED the tip for a positive angle: the glide lift drooped the wings and the
+        /// Fold's +88 degrees closed them under the belly, against every comment here ("above the
+        /// hinge plane", "close over the back"), while the turn term was written for that inverted
+        /// sign. Both flipped together, so the beat is unchanged, the Fold closes OVER the back,
+        /// the glide lifts and the outside wing still rises in a turn.</para>
         /// </summary>
         void ApplyWing(Transform wing, int side, float beatDegrees, float sweepDegrees)
         {
             if (!wing) return;
-            wing.localRotation =
-                Quaternion.Euler(0f, side * sweepDegrees, -side * beatDegrees) * RestRotationOf(wing);
+            Quaternion turn = Quaternion.Euler(0f, side * sweepDegrees, side * beatDegrees);
+            Quaternion world = transform.rotation * turn * RestOrientationInVessel(wing);
+            wing.localRotation = wing.parent ? Quaternion.Inverse(wing.parent.rotation) * world : world;
         }
 
         // ---- element morph plumbing --------------------------------------------------------
@@ -308,6 +373,7 @@ namespace CosmicShore.Gameplay
             _foldBlend = 0f;
             _spreadTarget = 0f;
             _spreadBlend = 0f;
+            _pitchEased = _yawEased = 0f;
         }
     }
 }

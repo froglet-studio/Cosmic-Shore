@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using CosmicShore.Engine;
 using CosmicShore.Engine.InputSystem;
+using CosmicShore.Engine.InputSystem.Controls;
 using EKey = CosmicShore.Engine.InputSystem.Key;
 
 namespace CosmicShore.Player
@@ -19,6 +20,8 @@ namespace CosmicShore.Player
     ///   key NAME       tap a key (Input System Key name: Enter, Escape, Tab, UpArrow…)
     ///   hold NAME N    hold a key for N frames
     ///   pad BUTTON     tap a gamepad button (buttonSouth, startButton, dpad.up…)
+    ///   scroll X,Y N   turn the mouse wheel N notches at a point (negative: towards the user)
+    ///   drag X,Y X,Y F press at the first point, move to the second over F frames, release
     /// </summary>
     public sealed class InputScript
     {
@@ -101,6 +104,29 @@ namespace CosmicShore.Player
                     case "pad":
                         Tap(PadButton(arg), frame, 2);
                         break;
+                    case "scroll":
+                    {
+                        // One frame of wheel at the point, in the units the window reports (a notch is 120).
+                        var a = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        _mouse.position.SetRaw(Point(a[0]));
+                        _mouse.scroll.SetRaw(new Vector2(0f, float.Parse(a[1], CultureInfo.InvariantCulture) * 120f));
+                        break;
+                    }
+                    case "drag":
+                    {
+                        var a = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        Vector2 from = Point(a[0]), to = Point(a[1]);
+                        int frames = a.Length > 2 ? Math.Max(1, int.Parse(a[2], CultureInfo.InvariantCulture)) : 10;
+                        _mouse.position.SetRaw(from);
+                        _mouse.leftButton.SetRaw(true);
+                        for (int i = 1; i <= frames; i++)
+                        {
+                            var p = Vector2.Lerp(from, to, i / (float)frames);
+                            _releases.Add((frame + i, () => _mouse.position.SetRaw(p)));
+                        }
+                        _releases.Add((frame + frames + 1, () => _mouse.leftButton.SetRaw(false)));
+                        break;
+                    }
                     case "inspect":
                     {
                         // inspect OBJECT COMPONENT — every field of that component, this frame.
@@ -142,6 +168,12 @@ namespace CosmicShore.Player
                     case "lookat": Inspector.LookAt(float.Parse(arg.Trim(), CultureInfo.InvariantCulture)); break;
                     case "vessels": Inspector.Vessels(); break;
                     case "party": Inspector.Party(arg.Trim()); break;
+                    // netsim SPEC: the network simulator (docs/MULTIPLAYER.md §6.2), e.g. "4g", "latency=80", "down", "off".
+                    case "netsim": Console.WriteLine(CosmicShore.Engine.Networking.NetSimulator.Apply(arg)); break;
+                    // net [reset|json|capture N [PATH]]: the netcode's traffic and RTT (docs/MULTIPLAYER.md §6.4).
+                    case "net": Console.WriteLine(CosmicShore.Engine.Networking.NetStats.Command(arg)); break;
+                    // netfault SPEC: session-service faults (docs/MULTIPLAYER.md §6.3), e.g. "full", "ratelimit=3", "down", "off".
+                    case "netfault": Console.WriteLine(CosmicShore.Engine.Networking.NetFaults.Apply(arg)); break;
                     case "domain": Inspector.Domain(arg.Trim()); break;
                     case "arcade": Inspector.Arcade(arg.Trim()); break;
                     case "score": Inspector.Score(arg.Trim()); break;
@@ -155,6 +187,8 @@ namespace CosmicShore.Player
                     case "blast":
                         Inspector.Blast(int.Parse(arg.Trim(), CultureInfo.InvariantCulture));
                         break;
+                    case "markers": MarkerReport.Run(arg); break;
+                    case "console": Inspector.HudCommand(arg.Trim()); break;
                     case "eval":
                         // eval Type.StaticMember[.member…] — read a static chain, this frame.
                         Inspector.PrintStatic(arg);

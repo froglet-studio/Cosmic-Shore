@@ -12,6 +12,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The Shader Graph custom functions, ported to GLSL once (GraphProgramCache prepends it). -->
+    <EmbeddedResource Include="Glsl/ShaderGraphLibrary.glsl" LogicalName="CosmicShore.Render.Glsl.ShaderGraphLibrary.glsl" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
   </ItemGroup>
 

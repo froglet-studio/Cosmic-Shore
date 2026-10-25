@@ -1,0 +1,439 @@
+# iOS TestFlight - signs and uploads a build to TestFlight from a free GitHub-hosted Mac, so nobody
+# on the team needs a Mac. Docs/IOS_BUILD.md section 2, Path C, has the one-time setup.
+#
+# It does NOT run Unity. A Windows machine exports the Xcode project
+# (Release, Development Build OFF), zips it and shares a link. This job compiles it with Xcode 26,
+# which Apple has required for uploads since 28 Apr 2026. It then signs with the company's
+# Apple Distribution certificate and App Store profile and uploads the .ipa to App Store Connect.
+#
+# Secrets belong to the `testflight` Environment (Settings -> Environments -> testflight), which
+# only bleeding-edge may deploy from and which needs a reviewer's approval per run. Repository-level
+# copies would be readable by any workflow on any branch; keep none.
+#   IOS_RELEASE_EXPORT_URL       share link to the zipped Release Xcode export
+#   IOS_DIST_CERT_P12_BASE64     the Apple Distribution certificate + private key, .p12, base64
+#   IOS_DIST_CERT_PASSWORD       the .p12's password
+#   IOS_APPSTORE_PROFILE_BASE64  the App Store provisioning profile, base64
+#   ASC_KEY_ID + ASC_ISSUER_ID + ASC_KEY_P8   App Store Connect team API key (the .p8 text)
+#   Without the three ASC_* secrets the job still builds, signs and checks the .ipa, then stops
+#   before uploading. (The personal Apple-ID upload route was removed on 2026-10-13: a team key
+#   is the only supported upload credential.)
+#
+# HOW TO RUN: Actions tab -> "iOS TestFlight" -> Run workflow. Manual only, on purpose: an upload is
+# a deliberate act, and a push trigger fired on every agent branch's first bleeding-edge merge
+# (runs 1 and 2, 2026-10-12), which with the secrets set would each have uploaded a build.
+#
+# PRIVACY: this repository is public, so run logs are too. Nothing secret is printed, and the
+# signed .ipa is NOT kept as an artifact; it goes to App Store Connect only.
+
+name: iOS TestFlight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-testflight
+  # Never cancel a job halfway through an upload.
+  cancel-in-progress: false
+
+env:
+  TEAM_ID: 9959RFD7XD
+  BUNDLE_ID: com.FrogletGames.CosmicShore
+  WORK: ${{ github.workspace }}/ios-work
+
+jobs:
+  testflight:
+    # The secrets live in this Environment. Its deployment-branch rule and required reviewer are
+    # what keep a workflow copy on some other branch from reading them.
+    environment: testflight
+    # Apple silicon with Xcode 26. Free and unlimited on a public repo.
+    runs-on: macos-26
+    timeout-minutes: 150
+    steps:
+      - name: Check the secrets
+        id: gate
+        env:
+          EXPORT_URL: ${{ secrets.IOS_RELEASE_EXPORT_URL }}
+          P12_B64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          PROFILE_B64: ${{ secrets.IOS_APPSTORE_PROFILE_BASE64 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          missing=""
+          [ -n "$EXPORT_URL" ]   || missing="$missing IOS_RELEASE_EXPORT_URL"
+          [ -n "$P12_B64" ]      || missing="$missing IOS_DIST_CERT_P12_BASE64"
+          [ -n "$P12_PASSWORD" ] || missing="$missing IOS_DIST_CERT_PASSWORD"
+          [ -n "$PROFILE_B64" ]  || missing="$missing IOS_APPSTORE_PROFILE_BASE64"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing secrets:$missing. One-time setup: Docs/IOS_BUILD.md section 2, Path C."
+            exit 1
+          fi
+          if [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_KEY_P8" ]; then
+            echo "upload=apikey" >> "$GITHUB_OUTPUT"
+            echo "Upload: App Store Connect API key."
+          else
+            echo "upload=none" >> "$GITHUB_OUTPUT"
+            echo "::warning::No upload credentials (ASC_KEY_ID/ASC_ISSUER_ID/ASC_KEY_P8). The build will be signed and checked but not uploaded."
+          fi
+
+      # Only Tools/iOS is needed (the signing script). Sparse and blob-less: the full repository
+      # is many gigabytes of LFS art this job never reads.
+      - name: Check out Tools/iOS
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: Tools/iOS
+          filter: blob:none
+          lfs: false
+
+      - name: Select Xcode 26
+        run: |
+          # Apple refuses uploads not built with the iOS 26 SDK (since 28 Apr 2026).
+          XCODE=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XCODE" ]; then
+            echo "::error::No Xcode 26.x on this runner image. Installed:"; ls -d /Applications/Xcode*.app
+            exit 1
+          fi
+          XCODE=$(cd "$XCODE" && pwd -P)
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
+          xcodebuild -version
+          echo "iOS SDK $(xcrun --sdk iphoneos --show-sdk-version)"
+          df -h /
+
+      # Download and extract. Only curl and the archive tools macOS ships: nothing is installed
+      # from a package index in this job before signing, except the hash-pinned Pillow below.
+      - name: Download the Xcode project
+        env:
+          EXPORT_URL: ${{ secrets.IOS_RELEASE_EXPORT_URL }}
+        run: |
+          mkdir -p "$WORK"
+          cd "$WORK"
+          case "$EXPORT_URL" in
+            *drive.google.com*|*docs.google.com*)
+              echo "::error::Google Drive links are no longer supported (they needed an unpinned download tool in the signing job). Share the .zip from Dropbox, or any direct-download link."
+              exit 1 ;;
+            *dropbox.com*)
+              case "$EXPORT_URL" in
+                *dl=0*) URL=$(printf '%s' "$EXPORT_URL" | sed -e 's/dl=0/dl=1/') ;;
+                *dl=1*) URL="$EXPORT_URL" ;;
+                *\?*)   URL="$EXPORT_URL&dl=1" ;;
+                *)      URL="$EXPORT_URL?dl=1" ;;
+              esac
+              curl -fL --retry 3 -o export.zip "$URL"
+              ;;
+            *)
+              curl -fL --retry 3 -o export.zip "$EXPORT_URL"
+              ;;
+          esac
+          ls -lh export.zip
+          KIND=$(file -b export.zip)
+          case "$KIND" in
+            *[Zz]ip\ archive*) ;;
+            *)
+              echo "::error::The link did not return a .zip ($KIND). Zip the Xcode export (not .rar or .7z) and share a direct-download or share link to the .zip itself."
+              exit 1 ;;
+          esac
+
+      - name: Unzip and restore executable bits
+        run: |
+          cd "$WORK"
+          ditto -x -k export.zip src || unzip -q export.zip -d src
+          rm -f export.zip
+          PROJ_FILE=$(find src -maxdepth 4 -name 'Unity-iPhone.xcodeproj' -type d | head -1)
+          if [ -z "$PROJ_FILE" ]; then
+            echo "::error::No Unity-iPhone.xcodeproj in the zip. Zip the folder Unity built into."
+            exit 1
+          fi
+          PROJ=$(cd "$(dirname "$PROJ_FILE")" && pwd)
+          echo "PROJ=$PROJ" >> "$GITHUB_ENV"
+          find "$PROJ" -type f \( -name '*.sh' -o -name 'MapFileParser' -o -name 'usymtool*' \) -exec chmod +x {} +
+          if [ -d "$PROJ/Il2CppOutputProject/IL2CPP" ]; then
+            chmod -R u+x "$PROJ/Il2CppOutputProject/IL2CPP"
+          fi
+          find "$PROJ" -type f ! -name '*.*' ! -path '*/Data/*' -print0 \
+            | xargs -0 file -N --mime-type 2>/dev/null \
+            | awk -F': ' '$2 ~ /x-mach-binary|x-shellscript|x-executable/ {print $1}' \
+            | while IFS= read -r f; do chmod +x "$f"; done
+          du -sh "$PROJ"
+
+      - name: Check the export is a store build
+        run: |
+          cd "$PROJ"
+          # awk reads to the end: exiting early would SIGPIPE xcodebuild and, under pipefail,
+          # end this step silently.
+          BID=$(xcodebuild -project Unity-iPhone.xcodeproj -target Unity-iPhone -configuration Release -showBuildSettings 2>/dev/null \
+                | awk -F' = ' '/^ *PRODUCT_BUNDLE_IDENTIFIER = / { if (!v) v = $2 } END { print v }' || true)
+          echo "Bundle ID in the export: $BID"
+          if [ "$BID" != "$BUNDLE_ID" ]; then
+            echo "::error::The export carries '$BID', not $BUNDLE_ID. Export from a branch whose Player Settings use the production id (Docs/IOS_BUILD.md section 1)."
+            exit 1
+          fi
+          ENC=$(/usr/libexec/PlistBuddy -c 'Print :ITSAppUsesNonExemptEncryption' Info.plist 2>/dev/null || echo missing)
+          echo "ITSAppUsesNonExemptEncryption: $ENC"
+          if [ "$ENC" = "missing" ]; then
+            echo "::warning::Info.plist has no ITSAppUsesNonExemptEncryption, so App Store Connect will ask the export-compliance questions for this build. IosExportCompliancePostprocess did not run on this export."
+          fi
+
+      - name: Remove the alpha channel from the app icons
+        run: |
+          # App Store Connect refuses an app icon that has an alpha channel (ITMS-90717), even a
+          # fully opaque one. The project's icon source (CSThumbApp.png) is RGBA, so flatten every
+          # PNG in the exported AppIcon set onto an opaque background before the archive.
+          # Pinned by version and hash (Tools/iOS/requirements-icons.txt): this job later holds the
+          # signing key, so nothing unverified may be installed into its Python.
+          python3 -m pip install --quiet --break-system-packages --only-binary :all: \
+            --require-hashes -r Tools/iOS/requirements-icons.txt
+          python3 - "$PROJ" <<'PY'
+          import glob, os, sys
+          from PIL import Image
+          flattened = 0
+          for path in glob.glob(os.path.join(sys.argv[1], "**", "*.appiconset", "*.png"), recursive=True):
+              im = Image.open(path)
+              if im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info):
+                  rgba = im.convert("RGBA")
+                  flat = Image.new("RGB", rgba.size, (0, 0, 0))
+                  flat.paste(rgba, mask=rgba.getchannel("A"))
+                  flat.save(path)
+                  flattened += 1
+          print(f"Removed the alpha channel from {flattened} app icon file(s).")
+          PY
+
+      - name: Install the signing certificate and profile
+        env:
+          P12_B64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          PROFILE_B64: ${{ secrets.IOS_APPSTORE_PROFILE_BASE64 }}
+        run: |
+          SIGN="$RUNNER_TEMP/signing"
+          mkdir -p "$SIGN"
+          # Secrets pasted on Windows can carry CR/LF or spaces; base64 itself never does.
+          printf '%s' "$P12_B64"     | tr -d '\r\n ' | base64 --decode > "$SIGN/dist.p12"
+          printf '%s' "$PROFILE_B64" | tr -d '\r\n ' | base64 --decode > "$SIGN/appstore.mobileprovision"
+
+          KEYCHAIN="$RUNNER_TEMP/cosmicshore-signing.keychain-db"
+          KC_PASS=$(uuidgen)
+          security create-keychain -p "$KC_PASS" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KC_PASS" "$KEYCHAIN"
+          if ! security import "$SIGN/dist.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"; then
+            echo "::error::The .p12 did not import. Check IOS_DIST_CERT_PASSWORD, and export the .p12 with 'openssl pkcs12 -export -legacy' (Docs/IOS_BUILD.md Path C)."
+            exit 1
+          fi
+          security set-key-partition-list -S apple-tool:,apple: -k "$KC_PASS" "$KEYCHAIN" > /dev/null
+          # Apple's intermediate (WWDR) certificates: without the one that issued the distribution
+          # certificate, find-identity calls the identity invalid and codesign refuses it. Harmless
+          # when the runner already trusts them.
+          for ca in AppleWWDRCAG3 AppleWWDRCAG6; do
+            if curl -fsSL --retry 3 -o "$SIGN/$ca.cer" "https://www.apple.com/certificateauthority/$ca.cer"; then
+              security import "$SIGN/$ca.cer" -k "$KEYCHAIN" > /dev/null 2>&1 || true
+            fi
+          done
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          echo "KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
+
+          IDENTITY_LINE=$(security find-identity -v -p codesigning "$KEYCHAIN" | grep 'Apple Distribution' | head -1 || true)
+          if [ -z "$IDENTITY_LINE" ]; then
+            echo "::error::The .p12 holds no 'Apple Distribution' identity with its private key. Identities found:"
+            security find-identity -v -p codesigning "$KEYCHAIN"
+            exit 1
+          fi
+          IDENTITY_SHA1=$(printf '%s' "$IDENTITY_LINE" | awk '{print $2}')
+          echo "Signing identity: $(printf '%s' "$IDENTITY_LINE" | sed -E 's/^ *[0-9]+\) [0-9A-F]+ //')"
+
+          security cms -D -i "$SIGN/appstore.mobileprovision" > "$SIGN/profile.plist"
+          python3 - "$SIGN/profile.plist" "$TEAM_ID" "$BUNDLE_ID" "$IDENTITY_SHA1" <<'PY'
+          import hashlib, os, plistlib, sys
+          path, team, bundle, identity_sha1 = sys.argv[1:]
+          p = plistlib.load(open(path, "rb"))
+          ent = p.get("Entitlements", {})
+          problems = []
+          app_id = ent.get("application-identifier", "")
+          if app_id != f"{team}.{bundle}":
+              problems.append(f"profile is for '{app_id}', not '{team}.{bundle}'")
+          if "ProvisionedDevices" in p or ent.get("get-task-allow"):
+              problems.append("this is a Development or Ad Hoc profile; make an 'App Store Connect' distribution profile")
+          certs = {hashlib.sha1(c).hexdigest().upper() for c in p.get("DeveloperCertificates", [])}
+          if identity_sha1.upper() not in certs:
+              problems.append("the profile does not include the certificate in the .p12; regenerate the profile with that certificate selected")
+          print(f"Profile '{p['Name']}', expires {p['ExpirationDate']:%Y-%m-%d}")
+          for msg in problems:
+              print(f"::error::{msg}")
+          if problems:
+              sys.exit(1)
+          with open(os.environ["GITHUB_ENV"], "a") as env:
+              env.write(f"PROFILE_UUID={p['UUID']}\nPROFILE_NAME={p['Name']}\n")
+          PY
+          UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$SIGN/profile.plist")
+          for d in "$HOME/Library/MobileDevice/Provisioning Profiles" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+            mkdir -p "$d"
+            cp "$SIGN/appstore.mobileprovision" "$d/$UUID.mobileprovision"
+          done
+          rm -f "$SIGN/dist.p12"
+
+      - name: Switch the project to manual App Store signing
+        run: |
+          if ! ruby -e 'require "xcodeproj"' 2>/dev/null; then
+            gem install --user-install --no-document xcodeproj -v 1.28.1
+          fi
+          ruby Tools/iOS/set_manual_signing.rb "$PROJ/Unity-iPhone.xcodeproj" "$TEAM_ID" "$PROFILE_UUID" "$PROFILE_NAME" "Apple Distribution"
+
+      - name: Set a unique build number
+        run: |
+          cd "$PROJ"
+          # App Store Connect rejects a build number it has seen for this version. Keep the
+          # integer Unity exported and append this workflow's run number: 14 -> 14.<run>.
+          BASE=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Info.plist)
+          if [[ "$BASE" =~ ^[0-9]+ ]]; then BASE=${BASH_REMATCH[0]}; else BASE=0; fi
+          BUILD="$BASE.$GITHUB_RUN_NUMBER"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" Info.plist
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)
+          echo "Version $VERSION, build $BUILD"
+          echo "### Cosmic Shore $VERSION ($BUILD)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Archive
+        run: |
+          cd "$PROJ"
+          set -o pipefail
+          xcodebuild \
+            -project Unity-iPhone.xcodeproj \
+            -scheme Unity-iPhone \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$WORK/CosmicShore.xcarchive" \
+            -derivedDataPath "$WORK/dd" \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN" \
+            archive 2>&1 | tee "$WORK/archive.log" | grep -E '(error|\*\* ARCHIVE)' || true
+          if ! grep -q '\*\* ARCHIVE SUCCEEDED \*\*' "$WORK/archive.log"; then
+            echo "::error::xcodebuild archive failed. Last 80 lines:"
+            # The tail can include build-phase environment dumps (a Unity symbol-upload token
+            # among them), and this job log is public: blank credential-shaped exports.
+            tail -80 "$WORK/archive.log" \
+              | sed -E 's/(export [A-Za-z0-9_]*(TOKEN|SECRET|PASSWORD|PASSWD|API_KEY|PRIVATE_KEY)[A-Za-z0-9_]*\\?=).*/\1***/'
+            exit 1
+          fi
+
+      - name: Export the signed .ipa
+        run: |
+          python3 - "$WORK/ExportOptions.plist" <<'PY'
+          import os, plistlib, sys
+          plistlib.dump({
+              "method": "app-store-connect",
+              "destination": "export",
+              "teamID": os.environ["TEAM_ID"],
+              "signingStyle": "manual",
+              "signingCertificate": "Apple Distribution",
+              "provisioningProfiles": {os.environ["BUNDLE_ID"]: os.environ["PROFILE_NAME"]},
+              "uploadSymbols": True,
+              "manageAppVersionAndBuildNumber": False,
+          }, open(sys.argv[1], "wb"))
+          PY
+          set -o pipefail
+          xcodebuild -exportArchive \
+            -archivePath "$WORK/CosmicShore.xcarchive" \
+            -exportOptionsPlist "$WORK/ExportOptions.plist" \
+            -exportPath "$WORK/export" 2>&1 | tee "$WORK/export.log" | tail -20
+          IPA=$(find "$WORK/export" -maxdepth 1 -name '*.ipa' 2>/dev/null | head -1 || true)
+          if [ -z "$IPA" ]; then
+            echo "::error::No .ipa was exported. See the log above."
+            exit 1
+          fi
+          echo "IPA=$IPA" >> "$GITHUB_ENV"
+          ls -lh "$IPA"
+          # The checks App Store Connect would otherwise fail the upload on, made here first.
+          mkdir -p "$WORK/ipa-check"
+          ditto -x -k "$IPA" "$WORK/ipa-check"
+          APP=$(ls -d "$WORK"/ipa-check/Payload/*.app | head -1)
+          echo "Bundle: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist") $(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist") ($(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist"))"
+          codesign -d --entitlements - --xml "$APP" 2>/dev/null > "$WORK/entitlements.plist" || true
+          TASK_ALLOW=$(/usr/libexec/PlistBuddy -c 'Print :get-task-allow' "$WORK/entitlements.plist" 2>/dev/null || echo absent)
+          echo "get-task-allow: $TASK_ALLOW"
+          if [ "$TASK_ALLOW" = "true" ]; then
+            echo "::error::The .ipa is signed for development (get-task-allow is true)."
+            exit 1
+          fi
+          # Diagnostic only: App Store Connect makes the final call on the signature.
+          if codesign --verify --deep --strict "$APP"; then
+            echo "Signature verified."
+          else
+            echo "::warning::codesign --verify reported a problem with the signature (see above)."
+          fi
+
+      # The macOS images ship fastlane; this only guards against an image that stops shipping it,
+      # which would otherwise fail the job after a 25-minute archive.
+      - name: Make sure fastlane is installed
+        if: steps.gate.outputs.upload != 'none'
+        run: |
+          if command -v fastlane >/dev/null 2>&1; then
+            echo "fastlane: $(command -v fastlane)"
+          else
+            echo "fastlane is not on this runner image; installing it with Homebrew."
+            brew install fastlane
+          fi
+
+      - name: Upload to TestFlight (API key)
+        if: steps.gate.outputs.upload == 'apikey'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          FASTLANE_SKIP_UPDATE_CHECK: '1'
+          FASTLANE_HIDE_CHANGELOG: '1'
+          LC_ALL: en_US.UTF-8
+          LANG: en_US.UTF-8
+        run: |
+          KEY_JSON="$RUNNER_TEMP/signing/asc_api_key.json"
+          python3 Tools/iOS/asc_api_key_json.py "$KEY_JSON"
+          fastlane pilot upload \
+            --ipa "$IPA" \
+            --api_key_path "$KEY_JSON" \
+            --skip_waiting_for_build_processing true \
+            --skip_submission true
+          echo "Uploaded. The build appears under TestFlight once App Store Connect finishes processing it (5-30 minutes)." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload skipped
+        if: steps.gate.outputs.upload == 'none'
+        run: |
+          echo "Signed and checked, not uploaded: no upload credentials are set (Docs/IOS_BUILD.md Path C, step 4)." >> "$GITHUB_STEP_SUMMARY"
+
+      # xcodebuild prints every build-phase script's environment into archive.log, and Unity's
+      # symbol-upload phase carries USYM_UPLOAD_AUTH_TOKEN there. The logs below are a public
+      # artifact on this repo, so blank every token/secret/password-shaped export first. If a
+      # value survives the scrub, the log is dropped rather than published.
+      - name: Scrub credentials from the build logs
+        if: always()
+        shell: bash
+        run: |
+          pattern='(export [A-Za-z0-9_]*(TOKEN|SECRET|PASSWORD|PASSWD|API_KEY|PRIVATE_KEY)[A-Za-z0-9_]*\\?=)'
+          for f in ios-work/archive.log ios-work/export.log; do
+            [ -f "$f" ] || continue
+            sed -E -i '' "s/${pattern}.*/\\1***/" "$f"
+            if grep -Eq "${pattern}[^*]" "$f"; then
+              echo "::warning::$f still holds a credential-shaped value after scrubbing; not uploading it."
+              rm -f "$f"
+            fi
+          done
+
+      - name: Keep the build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testflight-logs
+          path: |
+            ios-work/archive.log
+            ios-work/export.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Remove the signing material
+        if: always()
+        run: |
+          if [ -n "$KEYCHAIN" ]; then security delete-keychain "$KEYCHAIN" || true; fi
+          rm -rf "$RUNNER_TEMP/signing"
+          rm -f "$HOME"/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision \
+                "$HOME"/Library/Developer/Xcode/UserData/Provisioning\ Profiles/*.mobileprovision

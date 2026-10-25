@@ -71,6 +71,20 @@ namespace CosmicShore.Tests
             CollectionAssert.AreEqual(new[] { 1, 2 }, lobby.PlacedAiDomains());
         }
 
+        /// <summary>The ally-hull picks ride beside the placements, entry i for bot i, and a short
+        /// list leaves the rest on auto (0 = VesselClassType.Random).</summary>
+        [Test]
+        public void AllyHullPicksRideBesideThePlacements()
+        {
+            var lobby = new ArcadeConfigSyncManager.LobbySnapshot();
+            lobby.SetPlacedAiDomains(new[] { 1, 2, 1 });
+            lobby.SetPlacedAiVessels(new[] { 6, 3 });
+
+            CollectionAssert.AreEqual(new[] { 6, 3, 0 }, lobby.PlacedAiVessels());
+            CollectionAssert.AreEqual(new[] { 1, 2, 1 }, lobby.PlacedAiDomains(),
+                "writing the hulls must not disturb the domains");
+        }
+
         /// <summary>Placements past the six replicated slots truncate rather than corrupt.</summary>
         [Test]
         public void PlacedAiTruncatesToTheReplicatedSlots()

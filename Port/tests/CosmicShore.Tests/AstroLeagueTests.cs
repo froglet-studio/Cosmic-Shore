@@ -347,11 +347,23 @@ public class AstroLeagueTests
         // xorshift128 generator: seeds 3, 7, 8, 11, 12 tie regulation. Re-swept 2026-09-30 when
         // physics moved into the fixed step and OnTriggerStay began reaching the ball's vessel
         // handler: seeds 5, 10, 23 (of 1-30) tie regulation and are decided by sudden death.
-        var result = RunMatch(players: 4, seed: 5);
+        // Re-swept 2026-10-08 when boxes became oriented and capsules joined the trigger pass
+        // (C3; the same outcome with the contact pass disabled, so the shapes moved it): seeds
+        // 1, 4, 6, 16, 26, 27 tie regulation and are decided by a one-goal sudden death.
+        // Every engine change that moves a trajectory moved the seed, so (2026-10-08) the test now
+        // takes the first seed of 1-30 whose regulation ties: what it checks is the golden-goal
+        // rule, not one ball path. Most seeds are decided in regulation; a sweep that finds no tie
+        // at all fails, since the overtime path would then be untested.
+        AstroLeagueRoundResult result = null;
+        foreach (int seed in Enumerable.Range(1, 30))
+        {
+            var r = RunMatch(players: 4, seed: seed);
+            Assert.True(r.Finished, $"seed {seed} did not finish");
+            Assert.Empty(r.EngineErrors);
+            if (r.WentToOvertime) { result = r; break; }
+        }
 
-        Assert.True(result.Finished);
-        Assert.Empty(result.EngineErrors);
-        Assert.True(result.WentToOvertime, "expected the golden-goal path for this seed");
+        Assert.True(result != null, "no seed of 1-30 tied regulation: the golden-goal path went untested");
         Assert.Equal(1, Math.Abs(result.JadeGoals - result.RubyGoals)); // sudden death: one-goal margin
         Assert.Contains(result.Transcript, line => line.Contains("OVERTIME"));
     }

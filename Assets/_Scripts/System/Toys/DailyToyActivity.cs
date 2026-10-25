@@ -277,6 +277,13 @@ namespace CosmicShore.Core
                 return 0;
             }
 
+            // Not before the cloud profile has merged. Claimed earlier, the day's reward id was
+            // carried into the cloud record by MergeCloudProfile's reward-id union while the
+            // crystals - added to the pre-load default profile - were discarded with it: the day
+            // read as claimed and paid nothing. The activity still ran; the next apply after the
+            // profile is ready claims it.
+            if (!data.IsInitialized) return 0;
+
             string id = RewardIdFor(TodayKey);
             if (data.IsRewardUnlocked(id)) return 0;
 

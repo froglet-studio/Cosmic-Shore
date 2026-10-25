@@ -38,10 +38,15 @@ namespace CosmicShore.UI
             [HintBinding.KeyLeftShift]    = LeftSide,
             [HintBinding.KeyRightShift]   = RightSide,
 
+            // Both triggers held: the chord the Manta's Soar and the Rhino's energize stance ride.
+            [HintBinding.PadBothTriggers] = new[] { InputEvents.BothSticksAction },
+            [HintBinding.KeyBothShifts]   = new[] { InputEvents.BothSticksAction },
+
             [HintBinding.PadButtonSouth]   = new[] { InputEvents.Button1Action },
             [HintBinding.PadButtonEast]    = new[] { InputEvents.Button2Action },
             [HintBinding.PadButtonWest]    = new[] { InputEvents.Button3Action },
             [HintBinding.PadRightShoulder] = new[] { InputEvents.FlipAction },
+            [HintBinding.PadButtonNorth]   = new[] { InputEvents.Button4Action },
 
             // The keyboard's three action keys. Both desktop schemes raise these
             // (KeyboardInputStrategy and SingleStickMouseInputStrategy share their button half),
@@ -51,13 +56,17 @@ namespace CosmicShore.UI
             //
             // They live in the QWER + Space cluster so one resting left hand reaches all of them,
             // assigned in REVERSE priority order: the mouse buttons carry the two highest-priority
-            // abilities, so Space takes the next and R the one after. Q is last and is bound by no
-            // vessel today. There is ONE keyboardLabel per control, so these must match whatever
-            // the strategies actually raise or the chip is confidently wrong — which is the
+            // abilities, so Space takes the next and R the one after, then Q (the Grizzly's fire,
+            // since its triggers became its bombs). There is ONE keyboardLabel per control,
+            // so these must match whatever the strategies actually raise or the chip is confidently wrong — which is the
             // failure this whole table exists to prevent.
             [HintBinding.KeySpace] = new[] { InputEvents.Button1Action },
             [HintBinding.KeyR]     = new[] { InputEvents.Button2Action },
             [HintBinding.KeyQ]     = new[] { InputEvents.Button3Action },
+            // E raises FlipAction (the pad's right shoulder) in both desktop schemes.
+            [HintBinding.KeyE]     = new[] { InputEvents.FlipAction },
+            // F raises Button4Action (the pad's Y) in both desktop schemes.
+            [HintBinding.KeyF]     = new[] { InputEvents.Button4Action },
         };
 
         /// <summary>
@@ -82,6 +91,10 @@ namespace CosmicShore.UI
             HintBinding.KeySpace      => HintBinding.PadButtonSouth,
             HintBinding.KeyR          => HintBinding.PadButtonEast,
             HintBinding.KeyQ          => HintBinding.PadButtonWest,
+            HintBinding.KeyE          => HintBinding.PadRightShoulder,
+            HintBinding.KeyF          => HintBinding.PadButtonNorth,
+            HintBinding.KeyBothShifts    => HintBinding.PadBothTriggers,
+            HintBinding.KeySticksOutward => HintBinding.PadSticksOutward,
             _                         => binding,
         };
 

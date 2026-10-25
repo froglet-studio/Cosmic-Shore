@@ -67,6 +67,34 @@ ones.
   conserved mass (see **Mass**): only active forces — vessel abilities and
   fauna consumption — remove a prism. Whether a prism is a lifeform's health-
   prism or vessel-spawned makes no difference to this rule.
+- **Prism movement** — *a prism a force displaces is a MOVING prism, and every moving prism meets
+  the world by one rule.* Added at the prompter's request (2026-10-14) once two vessels had
+  introduced it: the Rhino's hull ploughs prisms aside (`RHINO_PLOUGH.md`) and the Stoat's dipole —
+  every black hole — pulls them (`BLACK_HOLE.md`, `STOAT_DIPOLE.md`). It extends **Prisms** rather
+  than sitting beside them: mass that was static is now mass with a path. **The expectations**
+  (`PrismMotion`, `Docs/PRISM_MOTION.md`): (1) **a moving prism that runs into another prism
+  destroys BOTH** — scored to the force behind the motion, devastating (an ordinary shield is no
+  answer); (2) **"runs into" means the two prisms go from apart to touching over the step** — as
+  their exact oriented BOXES when few prisms move (a plough throw, a sparse field), as the SPHERES of
+  their volumes when many do — a three-level LADDER by moving count (`PrismMotionConfig`: level 1 ≤ 64
+  boxes + the high-res destruction detail level (the silver gnomon cut, `PRISM_ANIMATION.md` §4.12); level 2 ≤ 256 boxes + the explosion;
+  level 3 spheres + the explosion; down at three quarters of each line). The count changes the
+  precision and the look, never the rule. Neighbours already touching when the step begins — a trail falling
+  together — are at rest, not a collision; (3) **super-shielded mass is
+  the one survivor**: it is indestructible, so it deflects and only the mover goes, and no force
+  moves it in the first place; (4) **the move is final the frame it is made** — collider, spatial
+  index and shell agree with the transform (the movers contract, `PRISM_ANIMATION.md` §3.6) — so a
+  moving prism is always tested where it actually is. **What is NOT a moving prism**: one POSED by
+  its owner every frame — a creature's body, a builder setting a stone, a growing plant, a
+  projectile carrying its payload. That prism is the shape of its owner, not displaced mass; it is a
+  valid target, never a mover. Composes with **Mass** (the collision is the act of a vessel or a
+  field, never a decay, so conservation holds — and it turns any force that moves mass into a way
+  to spend it), **Domain** (no friendly exception: a prism thrown into your own wall takes the wall
+  piece with it), **Vessels** (any ability that moves mass inherits the rule by calling
+  `PrismMotion`, not by re-deriving it), **Flora & Fauna** (a body prism struck by a moving prism is
+  destroyed like any other), **Cells** (annihilated mass leaves the cell's sums through the ordinary
+  destruction path). **A new mover calls `PrismMotion.TrySweep` / `TryFirstContact` (boxes) or, past a
+  box budget, schedules `PrismMotion.ContactJob` (spheres)** — never its own overlap test.
 - **Flora & Fauna** — populations that live on and respond to the
   fundamentals above (e.g. fauna attraction to prisms, flora growth on
   cells).
@@ -194,9 +222,11 @@ ones.
   `AddSwitchRing` takes no raw `Color` or `Material` at all). **Two wearers sit outside
   the toybox, and both are a claim about the SWITCH rather than about the pilot**:
   `ScarabSwitch`, where the colour names the domain the switch *belongs* to rather than
-  one it grants, and the Butterfly's `FoldGate`, one notch further out, where it names
-  **who may thread it** — a gate declines a pilot who is not already in its domain and
-  can never put anyone into one. Nothing in either case changes a pilot's domain, so the
+  one it grants, and the Butterfly's fold pair, one notch further out, where it names
+  **who rides it free** — anyone may thread it, a pilot not already in its domain pays in
+  petals, and it can never put anyone into one. (The pair was a `FoldGate` ring that
+  declined rivals, and is now a domain-TOLLED wormhole whose rim wears the domain's hue —
+  same reading, no longer a switch ring.) Nothing in either case changes a pilot's domain, so the
   two readings of a domain-coloured ring never share a screen;
   `ToySwitchVocabularyTests` holds the allow-list in both directions.
   **The cone is no longer part of this vocabulary** — as a BODY (one you fly at, rather
@@ -414,10 +444,13 @@ TTLs, or idle cullers are acceptable.** If prism accumulation in the menu (or
 anywhere) is a perf problem, solve it with the universal systems: **fauna
 cleanup** (cleanup is one of the fauna's jobs — foragers consume trail mass
 through the food web) or **pause/throttle the spawner** (not creating mass is
-allowed; aging it out is not). **One authorized exception exists** — the
+allowed; aging it out is not). **Two authorized exceptions exist** — the
 Wanderway rolling tether, granted by explicit sign-off to make that toy a truly
-infinite runner at fixed memory, fenced to a live `WanderwayRun` and recorded in
-`Docs/ECOSYSTEM.md` §0. It is an exception *because it was asked for*, not a
+infinite runner at fixed memory, fenced to a live `WanderwayRun`; and the Skim Race
+/ Joust trail cap on low-end phones (2026-10-05), granted by the project owner for
+the `MobileLow` device tier only, fenced to `RaceTrailCap` in those two modes on that
+tier (`Docs/PLATFORM_UNIFICATION.md` §3.6). Both are recorded in
+`Docs/ECOSYSTEM.md` §0. Each is an exception *because it was asked for*, not a
 precedent: the protocol still stands, and the next one needs its own sign-off.
 
 ### Universality — one HyperSea, one rule set
@@ -428,7 +461,10 @@ scenes alike. Do not create context-specific exemptions ("it's only the menu,"
 "it's just cosmetic," "it's a perf special case"). Every carve-out creeps
 confusion into best practices about when the rules apply, and carve-outs are
 precisely how rejected cheats re-enter the codebase — both resolved examples
-above came back wearing a special-circumstance costume.
+above came back wearing a special-circumstance costume. (The phone race cap is the
+one perf special case that was explicitly granted — by the project owner, for one
+device tier and two modes, recorded in `Docs/ECOSYSTEM.md` §0. That grant does not
+extend to any other tier, mode or system; asking again is the only route.)
 
 When a context creates pressure (performance, pacing, visuals), solve it with
 the universal systems that already exist — fauna have many jobs and cleanup is

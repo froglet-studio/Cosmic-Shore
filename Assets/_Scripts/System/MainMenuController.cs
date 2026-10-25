@@ -164,6 +164,7 @@ namespace CosmicShore.Core
             // Same for arena seating: the menu is not a match, so no hull is exclusive and the
             // pilot-swap gesture has no teammate to reach.
             _gameData.IsArenaMatch = false;
+            _gameData.OpponentAIVesselClass = VesselClassType.Random;
 
             // The host's Player NetworkObject was spawned in the Auth scene, where
             // gameData.selectedVesselClass was Squirrel (set by AppManager.ConfigureGameData).
@@ -210,12 +211,23 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Activates a non-local player's vessel with autopilot when their
-        /// player-vessel pair finishes initialization on this client.
-        /// Replaces the old batch activation in HandleMenuReady which raced
-        /// against pairs that hadn't resolved yet.
+        /// Activates a player's vessel with autopilot when their player-vessel pair finishes
+        /// (re)initialization on this client. Replaces the old batch activation in
+        /// HandleMenuReady which raced against pairs that hadn't resolved yet.
         /// Host skips this - <see cref="MenuServerPlayerVesselInitializer"/>
-        /// already activates every player via ActivateAutopilot().
+        /// already activates every player via ActivateAutopilot(), on spawn AND on every swap.
+        ///
+        /// <para>The LOCAL player is included. It used to be skipped on the grounds that
+        /// <see cref="HandleMenuReady"/> starts it, which is true of the FIRST pair only: a vessel
+        /// swap re-raises this event (ClientPlayerVesselInitializer.ReInitializePair) and never
+        /// OnClientReady, so on a party guest nothing started the swapped-in hull at all.
+        /// VesselController.Initialize leaves a vessel STATIONARY (VesselStatus.ResetForPlay), and
+        /// only StartPlayer -> StartVessel releases it - the host's ActivateAutopilot runs on the
+        /// host's copy, while the guest owns the movement. The guest's new ship therefore sat
+        /// still after every vessel change. Activating here mirrors the host exactly (start,
+        /// autopilot on, input paused); the vessel changer's RestoreControlAfterSwap then hands
+        /// the stick back if the pilot is in freestyle. StartPlayer is idempotent, so the first
+        /// pair being started twice (here, then HandleMenuReady) is harmless.</para>
         /// </summary>
         void HandlePlayerPairInitialized(ulong playerNetObjId)
         {
@@ -223,7 +235,7 @@ namespace CosmicShore.Core
                 return;
 
             var player = _gameData.Players.FirstOrDefault(p => p.PlayerNetId == playerNetObjId);
-            if (player == null || player.IsLocalUser || player.Vessel == null)
+            if (player == null || !player.Vessel.IsAlive())
                 return;
 
             player.StartPlayer();

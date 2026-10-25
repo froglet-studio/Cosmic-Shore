@@ -77,6 +77,7 @@ namespace CosmicShore.Gameplay
         [Header("Spawner Control")]
         [SerializeField] bool spawnerEnabled = true;
         bool trailPenUp; // painting pen-up - independent of spawnerEnabled (see SetSpawnerPaused)
+        bool tierHold;   // device-tier creation hold - independent of both (see SetTierHold)
         float waitTime;
         [SerializeField] float startDelay = 2.1f;
 
@@ -108,6 +109,13 @@ namespace CosmicShore.Gameplay
         /// trimmed silently, which reads as "the element stopped doing anything".</para>
         /// </summary>
         public float WidthMultiplier { get; set; } = 1f;
+
+        /// <summary>
+        /// The height sibling of <see cref="WidthMultiplier"/>: every prism laid is this many times THICKER
+        /// (its Y scale), 1 = as authored. Same single-owner contract and the same pool-window admission —
+        /// the Stoat's Mass mode is its owner (<c>StoatModeExecutor</c>, the thick trail).
+        /// </summary>
+        public float ThicknessMultiplier { get; set; } = 1f;
 
         /// <summary>
         /// While set, every prism this controller lays arrives SHIELDED (the regular tier). A
@@ -149,6 +157,11 @@ namespace CosmicShore.Gameplay
         /// Kept as public surface, but reach for the spawn-time `scale` if you need real geometry.
         /// </summary>
         public float TrailZScale => BaseScale.z; // <- from BaseScale now
+
+        /// <summary>The AUTHORED block size (<see cref="BaseScale"/>), for a hull that lays extra trails of the same
+        /// block (the Brittle Star's Creation Mode corners). The same caveat as <see cref="TrailZScale"/>: the real lay
+        /// multiplies it by the scalers, the boost scale and MASS.</summary>
+        public Vector3 TrailBaseScale => BaseScale;
 
         // Guards on the waitTillOutsideSkimmer clearance delay (see CreateBlock). Neither is a
         // tuning dial: the speed floor stops a stationary or near-stationary vessel dividing its
@@ -231,6 +244,22 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetSpawnerPaused(bool paused) => trailPenUp = paused;
 
+        /// <summary>Read-only: is the spawn loop running (started by the turn, not stopped by an ability)? An ability
+        /// that lays its own trail beside this one (the Brittle Star's Creation Mode pentagon) lays only while this
+        /// is, so it never builds before the turn starts or after an ability stopped the trail.</summary>
+        public bool SpawnerEnabled => spawnerEnabled;
+
+        /// <summary>
+        /// Device-tier creation hold: a THIRD independent axis beside <see cref="spawnerEnabled"/>
+        /// and the pen, owned only by <c>MenuCrystalClickHandler</c>'s tier trail policy (on
+        /// MobileLow the menu backdrop lays no trail, and freestyle trail waits while the cell is
+        /// over its prism budget - Docs/PLATFORM_UNIFICATION.md §3.6). Creation-side only: a
+        /// spawner that waits, which is the sanctioned lever - it never removes a prism. Its own
+        /// bool so it can neither release a pen a fold, painting or cell swap is holding, nor be
+        /// released by one of them.
+        /// </summary>
+        public void SetTierHold(bool held) => tierHold = held;
+
         public void ToggleBlockWaitTime(bool extended)
         {
             waitTime = extended ? defaultWaitTime * 3f : defaultWaitTime;
@@ -279,7 +308,12 @@ namespace CosmicShore.Gameplay
 
             while (!ct.IsCancellationRequested)
             {
-                if (spawnerEnabled && !trailPenUp && !vesselStatus.IsAttached && vesselStatus.Speed > 3f)
+                // The warp field's local length scale here (Docs/WARP_FIELD.md; exactly 1 with no
+                // field). Speed arrives already multiplied by it, so the gate and the wavelength
+                // are measured in the same shrunken lengths and the lay RATE is unchanged.
+                float warp = WarpFieldRuntime.ScaleAt(transform.position);
+
+                if (spawnerEnabled && !trailPenUp && !tierHold && !vesselStatus.IsAttached && vesselStatus.Speed > 3f * warp)
                 {
                     if (Mathf.Approximately(Gap, 0f))
                     {
@@ -292,7 +326,7 @@ namespace CosmicShore.Gameplay
                     }
                 }
 
-                float raw = vesselStatus.Speed > 0f ? wavelength / vesselStatus.Speed : defaultWaitTime;
+                float raw = vesselStatus.Speed > 0f ? wavelength * warp / vesselStatus.Speed : defaultWaitTime;
                 float clamped = float.IsNaN(raw) || float.IsInfinity(raw)
                     ? defaultWaitTime
                     : Mathf.Clamp(raw, 0f, 3f);
@@ -333,7 +367,7 @@ namespace CosmicShore.Gameplay
         /// however far the hole opens.
         ///
         /// Nothing else bounds the two against each other - <see cref="Gap"/> and
-        /// <see cref="XScaler"/> are driven independently (<c>GrowTrailActionExecutor</c> moves
+        /// <see cref="XScaler"/> are driven independently (<c>GrowTrailAction</c> moves
         /// both, on separate weights, with no clamp on the gap) - and a hole wider than its slab
         /// gives a ZERO OR NEGATIVE rail. That does not fail loudly:
         /// <c>PrismScaleAnimator.SetTargetScale</c> silently clamps the axis up to its 0.5 floor
@@ -392,8 +426,10 @@ namespace CosmicShore.Gameplay
             if (volumeMult > 0f && !Mathf.Approximately(volumeMult, 1f))
                 scale *= Mathf.Pow(volumeMult, 1f / 3f);
 
-            bool widened = WidthMultiplier > 1.0001f;
-            if (widened) scale.x *= WidthMultiplier;
+            bool thickened = ThicknessMultiplier > 1.0001f;
+            if (thickened) scale.y *= ThicknessMultiplier;
+            bool widened = WidthMultiplier > 1.0001f || thickened;
+            if (WidthMultiplier > 1.0001f) scale.x *= WidthMultiplier;
 
             // Yastri flare: the OUTER lane fattens with turn intensity, so a hard bank throws
             // visibly flared prisms off the outer wing. Applied BEFORE xShift is derived so
@@ -403,9 +439,20 @@ namespace CosmicShore.Gameplay
                 && turnFlareMaxScale > 1f)
                 scale.x *= Mathf.Lerp(1f, turnFlareMaxScale, _turnFlare01);
 
+            // Warp field (Docs/WARP_FIELD.md): every length of the lay — the prism, the lane gap,
+            // the offset behind the hull — shrinks with the vessel, so a shrunken vessel lays a
+            // trail that looks exactly like its own to itself. Exactly 1 with no field.
+            float warp = WarpFieldRuntime.ScaleAt(transform.position);
+            bool warped = !Mathf.Approximately(warp, 1f);
+            if (warped)
+            {
+                scale *= warp;
+                halfGap *= warp;
+            }
+
             // --- Position & Rotation ---
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
-            Vector3 pos = transform.position - vesselStatus.Course * offset
+            Vector3 pos = transform.position - vesselStatus.Course * (offset * warp)
                         + vesselStatus.ShipTransform.right * xShift;
             Quaternion rot = vesselStatus.blockRotation;
 
@@ -454,7 +501,7 @@ namespace CosmicShore.Gameplay
             // wait and say so once, by vessel, so the next hull authored without it loses a
             // clearance delay instead of its whole trail.
             prism.waitTime = waitTillOutsideSkimmer && skimmer
-                ? Mathf.Min((skimmer.transform.localScale.z + scale.z) /
+                ? Mathf.Min((skimmer.transform.localScale.z * warp + scale.z) /
                             Mathf.Max(vesselStatus.Speed, MinClearanceSpeed),
                             MaxClearanceWaitSeconds)
                 : waitTime;
@@ -502,8 +549,11 @@ namespace CosmicShore.Gameplay
             // A WIDENED prism is a stated size, not a grown one: admit it past the pool's scale
             // window AFTER Initialize (whose ResetState restores and re-clamps that window), or
             // everything past x = 40 is trimmed with no error. Un-widened lays are untouched, so
-            // every vessel that never writes WidthMultiplier is byte-identical.
-            if (widened)
+            // every vessel that never writes WidthMultiplier is byte-identical. A THICKENED prism
+            // (ThicknessMultiplier, the Stoat's Mass mode) is stated the same way: y = 10 is the window.
+            // A WARPED prism is a stated size too, and usually far BELOW the pool's window (the
+            // trail's 0.5 floor would otherwise turn a 1% vessel's prisms into boulders).
+            if (widened || warped)
             {
                 prism.AdmitTargetScale(scale);
                 prism.TargetScale = scale;

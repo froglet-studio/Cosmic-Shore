@@ -3,6 +3,7 @@ using CosmicShore.Gameplay;
 using Reflex.Attributes;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 
@@ -10,6 +11,18 @@ namespace CosmicShore.UI
 {
     public class ThumbPerimeter : MonoBehaviour
     {
+        // New Input System: legacy Input.touches is empty under the active backend.
+        static int ActiveTouchCount()
+        {
+            var touch = Touchscreen.current;
+            if (touch == null) return 0;
+            int n = 0;
+            var touches = touch.touches;
+            for (int i = 0; i < touches.Count; i++)
+                if (touches[i].isInProgress) n++;
+            return n;
+        }
+
         
         [SerializeField] bool LeftThumb;
         bool PerimeterActive = false;
@@ -77,13 +90,17 @@ namespace CosmicShore.UI
 
         void Update()
         {
+            // Suspended (see InitializeCoroutine): nothing sets initialized, so stay inert. Without
+            // this the first frame - before the coroutine disables the component - read the touch
+            // count and threw on every spawn.
+            if (!initialized) return;
             if(!imageEnabled) { return; }
 
             // TODO - Can't have LocalPlayer as static
             // if (initialized && !Player.LocalPlayer.Vessel.VesselStatus.AutoPilotEnabled)
             if (true) // TEMP  
             {
-                if (Input.touches.Length == 0)
+                if (ActiveTouchCount() == 0)
                 {
                     color.a = 0;
                     image.color = color;
@@ -94,7 +111,7 @@ namespace CosmicShore.UI
                     float normalizedJoystickDistance;
                     float angle;
                     Vector2 normalizedJoystickPosition;
-                    if (Input.touches.Length == 1)
+                    if (ActiveTouchCount() == 1)
                     {
                         PerimeterActive = _inputStatus.OneTouchLeft == LeftThumb;
                     }                  

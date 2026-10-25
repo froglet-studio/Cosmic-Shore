@@ -19,6 +19,10 @@ namespace CosmicShore.Gameplay
         public Material explodingMaterial;
         public Material inactiveMaterial;
         public SpaceCrystalAnimator spaceCrystalAnimator;
+
+        /// <summary>The <see cref="explodingMaterial"/> this model was authored with, latched by
+        /// <see cref="Crystal"/> before its first material change overwrites the live field.</summary>
+        [System.NonSerialized] public Material authoredExplodingMaterial;
     }
 
     public class Crystal : CellItem
@@ -53,6 +57,24 @@ namespace CosmicShore.Gameplay
         #endregion
         
         public List<CrystalModelData> CrystalModels => crystalModels;
+
+        /// <summary>
+        /// False for a crystal authored with no crystal model at all (its pickup drawn by something
+        /// else entirely). A retirement that animates the crystal's own body (the Squirrel's morph)
+        /// has nothing to carry for one and stands down quietly, rather than warning on every
+        /// pickup about a body that was never meant to exist. (Skim Race's race-ring crystals DO
+        /// have one: the small omni crystal in the middle of the ring.)
+        /// </summary>
+        public bool HasBody => crystalModels is { Count: > 0 };
+
+        /// <summary>
+        /// Raised when a model's renderer settles onto a new material — a domain change or an
+        /// activation reaching the end of its lerp. For an overlay that wears the crystal's colour
+        /// without being one of its models: the omni crystal's charge edges
+        /// (<see cref="CrystalAccentTint"/>), which are not a crystalModels slot so they neither
+        /// burst into a husk nor need a team material of their own.
+        /// </summary>
+        public event System.Action ModelMaterialSettled;
 
         public CrystalManager CrystalManager { get; protected set; }
         public bool IsExploding { get; private set; }
@@ -469,6 +491,25 @@ namespace CosmicShore.Gameplay
                 renderer.SetPropertyBlock(null);
         }
 
+        /// <summary>
+        /// The crystal pair <paramref name="domain"/> paints a crystal in — what this crystal would
+        /// wear if that domain owned it. A hull fusion converges onto it, so a pickup that becomes
+        /// part of a vessel ends in that vessel's colours rather than the lime it was collected in.
+        /// False for a domain with no crystal pair (<see cref="Domains.Blue"/> is the unresolved
+        /// sentinel and is refused, not answered — Docs/PALETTE.md §2.8) or an unwired theme.
+        /// </summary>
+        public bool TryGetDomainCrystalColors(Domains domain, out Color bright, out Color dull)
+        {
+            bright = default;
+            dull = default;
+            if (domain is not (Domains.Jade or Domains.Ruby or Domains.Gold)) return false;
+            if (!_themeManagerData || _themeManagerData.ColorSet == null) return false;
+            if (!_themeManagerData.ColorSet.TryGetColorSetByDomain(domain, out var set) || set == null) return false;
+            bright = set.BrightCrystalColor;
+            dull = set.DullCrystalColor;
+            return true;
+        }
+
         public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
 
         public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.Blue || ownDomain == shipDomain;
@@ -651,7 +692,7 @@ namespace CosmicShore.Gameplay
                         var spentAnimator = impact.GetComponent<SpaceCrystalAnimator>();
                         var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
                         if (spentAnimator && thisAnimator)
-                            spentAnimator.timer = thisAnimator.timer;
+                            spentAnimator.SyncPhaseFrom(thisAnimator);
                     }
 
                     impact.HandleImpact(
@@ -689,14 +730,35 @@ namespace CosmicShore.Gameplay
         /// every-lifeform-drops-a-crystal invariant. Reparenting preserves world pose, and a
         /// withering creature holds still, so the heart does not appear to move.
         /// </summary>
-        public void DetachHeartToCell()
+        public void DetachHeartToCell() => ReparentToCell();
+
+        /// <summary>
+        /// Moves this crystal onto the cell, keeping its world pose and its world SIZE - and
+        /// making that size uniform again. A heart is sized along x (<see cref="LifeFormCrystal.SetWorldScale"/>
+        /// divides out the parent's x), so under an owner whose chain is NON-uniformly scaled the
+        /// heart is stretched along the other axes, and its spinning model children shear as they
+        /// turn. A plain reparent bakes that stretch into the crystal's own localScale, so the
+        /// dropped pickup kept warping long after the creature was gone (the QuadFish root was
+        /// authored at z 1.31). Re-stating the x size on the uniform cell is what un-warps it, and
+        /// x is also the axis the collect reward reads, so the payoff does not move.
+        /// </summary>
+        void ReparentToCell()
         {
-            if (cellData && cellData.Cell)
-                transform.parent = cellData.Cell.transform;
+            if (!cellData || !cellData.Cell) return;
+            float worldScale = Mathf.Abs(transform.lossyScale.x);
+            transform.SetParent(cellData.Cell.transform, true);
+            LifeFormCrystal.SetWorldScale(this, worldScale);
         }
 
         public void ActivateCrystal()
         {
+            // Teardown-order guard (PLAYBOOK §4): LightFauna.WitherCoroutine can still reach
+            // ReleaseHeart → here after the cell is already destroyed (or the scene is
+            // unloading). Unity-null checks, not ?. — DetachHeartToCell already does this for
+            // the early re-home; ActivateCrystal must match or it NREs on .transform.
+            // Skip the whole activation when the scene is gone (crystal goes with it).
+            if (!gameObject.scene.isLoaded) return;
+
             // The pair on screen RIGHT NOW is where the heart → pickup cross-fade departs from,
             // and it has to be read before anything below disturbs it: clearing EmbeddedIn
             // changes what the state resolves to, and each material lerp drops the block on its
@@ -704,7 +766,7 @@ namespace CosmicShore.Gameplay
             bool hadTint = TryGetDisplayedTint(out var fromBright, out var fromDull);
 
             EmbeddedIn = null; // no longer a living heart - it's a free collectible now
-            transform.parent = cellData.Cell.transform;
+            ReparentToCell();
             var dropCol = gameObject.GetComponent<SphereCollider>();
             if (_authoredColliderRadius > 0f) dropCol.radius = _authoredColliderRadius;
             dropCol.enabled = true;
@@ -716,7 +778,7 @@ namespace CosmicShore.Gameplay
                 var model = modelData.model;
 
                 model.GetComponent<Renderer>().material = modelData.inactiveMaterial;
-                StartCoroutine(LerpCrystalMaterialCoroutine(model, ResolveActivationMaterial(modelData, i)));
+                StartCoroutine(LerpCrystalMaterialCoroutine(model, ResolveActivationMaterial(modelData)));
             }
 
             // The state just flipped from "living heart" to "collectible", so repaint NOW - after
@@ -739,14 +801,22 @@ namespace CosmicShore.Gameplay
         /// crystal colour is what tells a pilot who may collect it. An unowned crystal keeps its
         /// authored neutral material and stays free for anyone.
         /// </summary>
-        Material ResolveActivationMaterial(CrystalModelData modelData, int index)
+        Material ResolveActivationMaterial(CrystalModelData modelData)
         {
             bool domainOwned = ownDomain is Domains.Jade or Domains.Ruby or Domains.Gold;
-            if (!domainOwned || !_themeManagerData) return modelData.defaultMaterial;
+            return domainOwned ? TeamMaterialFor(modelData) : modelData.defaultMaterial;
+        }
 
+        /// <summary>
+        /// This model's material in <see cref="ownDomain"/>'s colours: the team clone of its OWN default material
+        /// (<see cref="ThemeManagerDataContainerSO.GetTeamCrystalMaterial(Domains, Material)"/> - by material, not
+        /// by slot index), or its default material when the theme has none for it.
+        /// </summary>
+        Material TeamMaterialFor(CrystalModelData modelData)
+        {
             // Unity's implicit bool, not ?? - a destroyed material is FAKE-null, which ?? happily
             // passes through, and the lerp would then bail and strand the crystal on inactiveMaterial.
-            var teamMaterial = _themeManagerData.GetTeamCrystalMaterial(ownDomain, index);
+            var teamMaterial = _themeManagerData ? _themeManagerData.GetTeamCrystalMaterial(ownDomain, modelData.defaultMaterial) : null;
             return teamMaterial ? teamMaterial : modelData.defaultMaterial;
         }
 
@@ -766,7 +836,7 @@ namespace CosmicShore.Gameplay
             ownDomain = newDomain;
             for (int i = 0; i < crystalModels.Count; i++)
             {
-                StartCoroutine(LerpCrystalMaterialCoroutine(crystalModels[i].model, _themeManagerData.GetTeamCrystalMaterial(ownDomain, i), 1));
+                StartCoroutine(LerpCrystalMaterialCoroutine(crystalModels[i].model, TeamMaterialFor(crystalModels[i]), 1));
             }
             if (duration != -1) StartCoroutine(DecayingTheftCoroutine(duration));
         }
@@ -779,8 +849,7 @@ namespace CosmicShore.Gameplay
 
         protected IEnumerator LerpCrystalMaterialCoroutine(GameObject model, Material targetMaterial, float lerpDuration = 2f)
         {
-            Renderer renderer = model.GetComponent<Renderer>();
-            if (renderer == null)
+            if (!model.TryGetComponent(out Renderer renderer))
                 yield break;
 
             // The theme's per-domain material sets are populated at runtime by ThemeManager; a
@@ -832,15 +901,24 @@ namespace CosmicShore.Gameplay
             }
 
             renderer.sharedMaterial = targetMaterial;
+            ModelMaterialSettled?.Invoke();
 
-            // Update the explodingMaterial for the matching crystal model entry
+            // The husk follows the look: a model handed someone else's material (a domain's team
+            // crystal) explodes in it. But a model settling back onto its OWN default takes back
+            // the husk authored for that look - ExplodingMassCrystalMaterial, ActiveSpaceCrystal-
+            // Material, the omni's CrystalMaterial - because those exist precisely because the
+            // look's shader carries no _velocity for Impact to shatter. Overwriting them here is
+            // what made every dropped heart's husk drift whole instead of bursting.
             for (int i = 0; i < crystalModels.Count; i++)
             {
-                if (crystalModels[i].model == model)
-                {
-                    crystalModels[i].explodingMaterial = targetMaterial;
-                    break;
-                }
+                var data = crystalModels[i];
+                if (data.model != model) continue;
+
+                if (!data.authoredExplodingMaterial) data.authoredExplodingMaterial = data.explodingMaterial;
+                data.explodingMaterial = targetMaterial == data.defaultMaterial && data.authoredExplodingMaterial
+                    ? data.authoredExplodingMaterial
+                    : targetMaterial;
+                break;
             }
 
             _lerpTempMaterials.Remove(tempMaterial);

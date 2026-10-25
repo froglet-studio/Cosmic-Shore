@@ -108,6 +108,10 @@ SOURCES = [
     f"{_AR}/Headlong/HeadlongCircuit.cs",
     f"{_AR}/Switchback/SwitchbackCourse.cs",
     f"{_AR}/Redline/RedlineCourse.cs",
+    f"{_AR}/GrizzlyTime/GrizzlyTimeCourse.cs",
+    f"{_AR}/Slingshot/SlingshotCourse.cs",
+    f"{_AR}/ThresherTime/ThresherTimeCourse.cs",
+    f"{_AR}/WrasseRun/WrasseRunCourse.cs",
     f"{_AR}/Breakwater/BreakwaterCourse.cs",
     f"{_AR}/Breakwater/BreakwaterStationBuilder.cs",
 ]
@@ -707,6 +711,28 @@ CAMERAS = {
     # Broadside and Sirocco the forest with Rampage / Bends / Bloomrush, so each gets its own angle.
     "Waystation": (35, 30, 0.95, 42), "Dustup": (165, 28, 0.62, 46), "Tapestry": (40, 24, 0.95, 42),
     "Sirocco": (320, 10, 0.66, 46),
+    # Grizzly Charge is the Boneyard's fourth card (with Dog Fight / Salvo / Broadside / Dustup):
+    # low, close, and down the axis of the Grizzly's run.
+    "GrizzlyCharge": (75, 6, 0.55, 48),
+    # Grizzly Time is the fourth gate circuit (Headlong / Redline / Regatta): Headlong's octagon
+    # since the bomb launch was tripled - eight rings round the nucleus, shot from a new side and
+    # pulled back far enough to keep the whole lap in frame.
+    "GrizzlyTime": (125, 34, 0.95, 42),
+    # Slingshot is the fifth gate circuit: the Stoat's smaller octagon (base 600) - shot from the
+    # opposite side to Grizzly Time and a little closer, so the two cards never read as one.
+    "Slingshot": (305, 30, 0.9, 42),
+    # Warpline is Slingshot's circle cut into five long legs: shot from between the two Stoat cards'
+    # angles so the pentagon does not read as Slingshot's octagon.
+    "Warpline": (215, 36, 0.9, 42),
+    # Thresher Time is Grizzly Time's octagon cut against the Thresher's sling: shot from high up
+    # (the other circuits sit at 30-36 deg), so the lap reads as a loop and the planted ball with its
+    # dotted orbit (the signature act, staged in the harness at the lap's tightest corner) reads
+    # against it. A side-on angle saw this seed's lap edge-on.
+    "ThresherTime": (20, 60, 0.9, 42),
+    # Wrasse Run is Thresher Time's octagon cut against the Grouper's boosted circle, its rings lifted out
+    # of the lap's plane: shot lower than Thresher Time so the lift reads, from the far side so the two
+    # octagons differ, with the kite threading a ring after lassoing Time motes (the harness's StageKite).
+    "WrasseRun": (155, 40, 0.9, 42),
     # Tandava: from above the feeding serpent's flank, its guarded head and the plant in the shot
     "Tandava": (35, 30, 0.95, 44),
 }
@@ -762,7 +788,8 @@ def recipe(stem, card_path, pal, ends):
         node["intensity"] = INTENSITY
         layers.append(node)
         nucleus()
-    elif s in ("Switchback", "Headlong", "Redline", "Breakwater"):
+    elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
+               "WrasseRun", "Breakwater"):
         # GateRaceController.BuildCourse, mirrored: the shell comes off the scene's controller and
         # the cell's nucleus (ResolveShell), the gate count off EndConditionOverrides.
         tier = "COURSE"
@@ -780,12 +807,21 @@ def recipe(stem, card_path, pal, ends):
                 settings["GateCount"] = ends.get("switchbackGateTarget", 20)
                 settings["FirstGateDistance"] = min(max(ctl.get("firstGateDistance", 620.0), inner), outer)
             else:
-                target = ends.get(f"{s.lower()}GateTarget", 24)
+                key = {"GrizzlyTime": "grizzlyTimeGateTarget",
+                       "ThresherTime": "thresherTimeGateTarget",
+                       "WrasseRun": "wrasseRunGateTarget"}.get(s, f"{s.lower()}GateTarget")
+                target = ends.get(key, 24)
                 settings["GateCount"] = max(3, math.ceil(target / max(1, ctl.get("laps", 3))))
-            layers.append({"kind": s.lower(), "intensity": INTENSITY, "seed": stable_seed(s),
-                           "path": True, "settings": settings, "tube": 0.14,
+            # Warpline cuts Slingshot's circuit (WarplineController.BuildCourse): the same generator.
+            layers.append({"kind": {"Warpline": "slingshot"}.get(s, s.lower()), "intensity": INTENSITY,
+                           "seed": stable_seed(s), "path": True, "settings": settings, "tube": 0.14,
                            "color": {"Switchback": [0.4, 0.8, 1.6], "Headlong": [1.4, 0.55, 0.2],
-                                     "Redline": [1.5, 0.25, 0.35]}[s]})
+                                     "Redline": [1.5, 0.25, 0.35],
+                                     "GrizzlyTime": [0.95, 0.45, 1.5],
+                                     "Slingshot": [0.35, 1.5, 0.95],
+                                     "Warpline": [0.62, 1.0, 0.18],
+                                     "ThresherTime": [1.6, 1.05, 0.25],
+                                     "WrasseRun": [0.3, 1.25, 1.45]}[s]})
             nucleus()
     elif s == "Waystation":
         # COURSE tier through the OFFLINE MIRROR (Tools/Build/waystation_course.py), which its own
@@ -1000,7 +1036,8 @@ def recipe(stem, card_path, pal, ends):
     elif s == "SkimRace":
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
-    elif s in ("Switchback", "Headlong", "Redline", "Waystation"):
+    elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
+               "WrasseRun", "Waystation"):
         cam["percentile"] = 0.6
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
@@ -1092,6 +1129,18 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             stage["vessels"] = vessels([(d, None, None, None, 70) for d in (JADE, RUBY, GOLD, JADE, RUBY, GOLD)])
             tgt = jitter(0.3)
             cone(v_add(tgt, v_mul(rng.unit(), span * 0.5)), tgt, 12, GOLD, 0.3)
+    elif s == "GrizzlyCharge":
+        # The Grizzly's two blasts: one big cannon shell going off in the wreckage, and the bomb
+        # pump - a line of alternating-side puffs, growing with the squeeze, kicking the hull
+        # down its own line of flight.
+        glow(jitter(0.5), span * 0.16, GOLD, 1.2, 0.45)
+        start = jitter(0.6)
+        d = v_norm(rng.unit())
+        side = v_norm(v_cross([0, 1, 0], d))
+        for k in range(6):
+            p = v_add(v_add(start, v_mul(d, span * 0.07 * k)), v_mul(side, span * 0.02 * (1 if k % 2 else -1)))
+            glow(p, span * (0.02 + 0.008 * k), JADE, 0.9, 0.35)
+        streak(v_add(start, v_mul(d, span * 0.45)), d, span * 0.12, JADE)
     elif s == "Salvo":
         for k in range(4):
             glow(jitter(0.8), span * rng.range(0.06, 0.12), (GOLD, JADE, RUBY, GOLD)[k], 1.1, 0.4)
@@ -1109,7 +1158,25 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             # the cavitation PLATE: a swept disc (a very flat cone) off a Scarab's dash
             p = [R * 0.35, R * 0.05, R * 0.3]
             cone(v_add(p, [0, -R * 0.004, 0]), v_add(p, [0, R * 0.004, 0]), 88, RUBY, 0.28, 1.0)
-    elif s in ("SkimRace", "Scurry"):
+    elif s == "SkimRace":
+        # The race is ringed (SKIMRACE.md §7a, CrystalRaceRing): each pilot's crystal is a
+        # RaceGateRing in its owner's domain, standing square across the track at the crystal's
+        # anchor + jitter. The harness
+        # stands them on the track's own MARKER blocks (the waypoints carrying a crystal anchor),
+        # facing along each block's pose - the track tangent - the way the COURSE cards' gates
+        # face along their course. Jitter is the scene CrystalManager's anchorJitterRadius. The
+        # ring is drawn at a GLYPH scale (SKIMRACE_RING_GLYPH x the real intensity-2 mouth) - true
+        # size is a 5-8 px speck at card size; the position, facing and jitter stay true. The small
+        # omni crystal in the ring's middle (~2.4 u) is sub-pixel even at glyph scale, so it is
+        # not drawn.
+        track = next(l for l in layers if l["kind"] == "generator")
+        mouth = skimrace_ring_mouth(INTENSITY) * SKIMRACE_RING_GLYPH
+        track["markerRings"] = {
+            "pick": SKIMRACE_RING_ANCHORS, "R": mouth, "r": mouth * 0.12, "seed": stable_seed(s + "/rings"),
+            "jitter": crystal_jitter(card_path),
+            "styles": [{"domain": d, "tier": SUPER, "emissive": domain_signal(pal, d, 0.9)}
+                       for d in (JADE, RUBY, GOLD)]}
+    elif s == "Scurry":
         for k in range(10):
             crystal(jitter(1.0), span * 0.015)
     elif s == "Joust":
@@ -1149,6 +1216,34 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             glow(v_add(p, v_mul(rng.unit(), span * 0.08 * rng.u())), span * 0.008, GOLD, 1.2, 0.6)
 
 
+# Which of the intensity-2 track's ten crystal anchors (marker blocks, in lap order) carry a staged
+# ring: the handful inside the shot (5 sits on the frame's corner, 6-9 fall outside it; 1 is
+# clipped by the bottom edge and, at glyph scale, overlaps 2), painted Jade / Ruby / Gold in turn
+# - one crystal per pilot.
+SKIMRACE_RING_ANCHORS = [0, 2, 3, 4]
+SKIMRACE_RING_GLYPH = 3.6   # drawn mouth / real I2 mouth (20 u): a 72 u glyph, the size approved on the sheet
+
+
+def skimrace_ring_mouth(intensity):
+    """CrystalRaceRing.MouthRadiusFor, read off the shipped ring prefab: I1's radius lerped toward
+    I1 x intensityFourMouthFraction at intensity 4 (24 / 20 / 16 / 12 u as authored)."""
+    body = read(ROOT / "Assets/_Prefabs/Environment/SkimRaceRingCrystal.prefab")
+    f = {k: float(re.search(rf"^  {k}: ([-0-9.e]+)$", body, re.M).group(1))
+         for k in ("intensityOneMouthRadius", "intensityFourMouthFraction")}
+    t = (min(max(intensity, 1), 4) - 1) / 3
+    return f["intensityOneMouthRadius"] * (1 + (f["intensityFourMouthFraction"] - 1) * t)
+
+
+def crystal_jitter(card_path):
+    """anchorJitterRadius off the mode scene's CrystalManager - the shell a crystal spawns on."""
+    scene = re.search(r"^  SceneName: (.*)$", read(card_path), re.M).group(1).strip()
+    text = read(next((ROOT / "Assets/_Scenes").rglob(f"{scene}.unity")))
+    m = re.search(r"^  anchorJitterRadius: ([-0-9.e]+)$", text, re.M)
+    if not m:
+        raise AssertionError(f"{scene}: no CrystalManager.anchorJitterRadius")
+    return float(m.group(1))
+
+
 def gate_race_controller(card_path):
     """The serialized shell/lap fields on the scene's GateRaceController subclass."""
     scene = re.search(r"^  SceneName: (.*)$", read(card_path), re.M).group(1).strip()
@@ -1170,7 +1265,8 @@ def env_seed(env):
 def end_conditions():
     body = read(ROOT / END_CONDITIONS)
     out = {}
-    for k in ("switchbackGateTarget", "breakwaterStationTarget", "breakwaterLaps", "waystationRingTarget"):
+    for k in ("switchbackGateTarget", "breakwaterStationTarget", "breakwaterLaps", "waystationRingTarget",
+              "grizzlyTimeGateTarget", "thresherTimeGateTarget"):
         m = re.search(rf"^  {k}: (\d+)", body, re.M)
         if m:
             out[k] = int(m.group(1))

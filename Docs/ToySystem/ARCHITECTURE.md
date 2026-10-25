@@ -35,8 +35,9 @@ detection. On top of that base the `Toy` class adds:
   (`ToyContext.IsFreestyleActive`).
 - **Continuity-law bloom-in** — every toy scales from zero on spawn (nothing pops in).
 - **A switch ring** — every toy is drawn inside one continuous ring, square across your flight
-  path, **at the radius of its own trigger collider**, in the **prism shader**. The ring is the
-  affordance: thread it and something fires, and *which prism it is painted as* says what.
+  path, **at the radius of its own trigger collider**, drawn as a **spindle** in the colour of a
+  prism (since 2026-10-21). The ring is the affordance: thread it and something fires, and *which
+  prism's colour it wears* says what.
   See "The switch" below — there are no exemptions left.
 - **Exit-gated re-arm** — a toy is *not consumed*, but it re-arms **only once the local vessel
   has flown clear of its trigger volume** (a per-frame distance poll with `exitRadiusMultiplier`
@@ -142,7 +143,7 @@ them toward the next layer, never back through the last.
 | pass | layer | what blooms |
 |---|---|---|
 | the toy | 1.5 | the **KINGDOM** row — Fauna, Flora, Vessels (station radius ×1.5, so the first row you meet is the biggest thing in the corridor) |
-| Fauna / Flora | 3.5 | that kingdom's **SPECIES** row, one station per registered species |
+| Fauna / Flora | 3.5 | that kingdom's **SPECIES** grid, one station per registered species, `speciesPerRow` wide |
 | Vessels | 3.5 | the **HANGAR** row, one mini hull per class |
 | a species | 5.5 | its **VARIANT** row — one station per ELEMENT, four of them |
 | a variant | — | that exact lifeform spawns live into the cell |
@@ -166,12 +167,65 @@ shark row reads big, a SchwarzP row small). A lifeform is its species and its el
 else — there is no level, so there are no level rows (`Docs/ECOSYSTEM.md` §40).
 
 **Lifeform release.** A variant spawns a POPULATION (fauna `PopulationSize` / flora
-`InitialSpawnCount`) through the canonical cell spawn paths, on a runtime CLONE of its per-element
-config (`_SO_Assets/Lifeforms/`) with `SpreadElements` off — the station spawns the EXACT variant
-it shows, and the authored assets are never mutated. Fauna hatch on the cell's densest mass (a
-creature released into empty space beyond the membrane has nothing to graze); flora root AT the
-station via `Flora.SetPlantPositionOverride`. Every spawn logs, including the cell's Frenzy
-growth-freeze state.
+`InitialSpawnCount`) on a runtime CLONE of its per-element config with `SpreadElements` off — the
+station spawns the EXACT variant it shows, and the authored assets are never mutated. **It lands
+where the species lives, never at the toy**, through the cell spawner's own placement calls:
+
+- **Fauna** go through `CellLifeSpawnerBase.SpawnFaunaBanded`. A banded species (the Swarm
+  swarms, the seven substrate species, the builders) is scattered one point per creature through
+  its own band and inside the cell's pens. An unbanded one hatches as a group (±150 u, the spawner
+  wave jitter) on the cell's densest mass; when the cell holds no mass at all
+  (`Cell.TryGetDensestRegionAnyDomain` is false — the Barren cell), 220 u ahead of the pilot,
+  whose trail is the only food such a cell will ever have, else on a random point in open water
+  (`CellLifeSpawnerBase.RandomPointInCytoplasm`) - never on the crystal, which is where every
+  release used to pile up.
+- **Flora** go through `CellLifeSpawnerBase.PlantFlora` (the call `RandomLifeSpawner` plants with):
+  a prepared planting site when the cell has one, otherwise the species' own `Plant()` dispersal
+  through its planting band — threat flora pick their grove site, the Swarm Borromean bands honour
+  their pens. Flora used to be pinned around the station, which clumped them at the toy.
+
+**Repeat presses grow a population, then found a new one.** The cell counts, caps and breeds
+lifeforms per config INSTANCE, so each variant keeps ONE runtime clone as its current lineage
+(`SpawnMatrixToy.LineageFor`). A press joins it while it can take the whole release (no
+`MaxLivePopulation`, or live + incoming within the cap) - an unbanded group hatches beside a live
+member so it reads as one group - and otherwise starts a fresh clone, a new population with its
+own count and cap. One-anchor species (swarms, builder colonies, substrate packs; cap 1) cannot
+grow an anchor after it seeds, so each press founds a new population. In the Toy Box window the
+Spawn button stays armed after a press (`ToyShellOption.Repeatable`).
+
+**Navigate goes to what you spawned.** A variant row's `WorldAnchor` is the newest still-living
+thing it released (for a population body - a swarm, substrate pack or builder colony,
+`IMacroPopulation` - a marker moved onto its live `MacroCentre`, because a stampede's herds or a
+mobber's roosts are seeded across a whole sector, far from their anchor GameObject), and the window's Navigate takes the player to the SELECTED row's live anchor
+before falling back to the toy (`ToyConfigureModal.ResolveDestination`; the arrow is
+`ToyNavigationBeacon.PointAt(Transform, …)`). That rule is generic: any toy row with a live
+`WorldAnchor` is where Navigate goes while that row is selected.
+
+Every spawn logs on the ToyBox channel. When the cell is at Frenzy (flora growth frozen
+cell-wide - a Barren cell has no grazers to bring it back down), the flora element rows say
+"Growth frozen" and their description explains it, so a plant that stays a seed prism does not read
+as a broken species.
+
+**Descriptions.** Every species row has an authored description (`speciesDescriptions`, read by
+`SpawnMatrixToyDefinitionSO.DescriptionOf`) shown in the Toy Box while that species or one of its
+elements is picked: what distinguishes it and, where it matters in Barren, what it eats. The
+generator owns the list for EVERY row, including rows other generators own, and its `--check`
+fails on a row without one. The entries are keyed `Species:` rather than `Name:` because other
+generators find their rows by `- Name: <row>` across the whole file.
+
+**The roster** (`faunaSpecies` / `floraSpecies`) holds every spawnable species: the original
+Lifeforms set, the generator-owned rows (Borromean, Mandelbulb family), and the rows
+`Tools/Build/author_spawn_matrix_roster.py` owns — piranha, the Swarm cell's life forms (swarm,
+the bench-only FIELD / GRID / EVOFATE swarm models and Sort's Time element, pack hunter, locust, lurker, stampede, mobber, leech, leviathan, fortress builders, thief nest,
+wearer builders, Swarm Borromean, physarum, snap trap), the Hesperides gyroid and Schwarz-P topiaries and the Arbor/Coral/Frond/Lantern/Reed/
+Rosette/Spire/Tendril flora sets. Most Swarm-cell species express one element, so their variant
+row has one station. Run the generator with `--check` after touching any of those configs. With
+47 species a kingdom's species row wraps into a grid of `speciesPerRow` (6) columns.
+
+**Inspecting one species on its own:** Cell Selector ▸ **Barren** (no environment, empty spawn
+profile, so nothing seeds itself), then Spawn Matrix ▸ kingdom ▸ species ▸ element. Barren has no
+food until you add it: grazers and swarms need flora, the pack hunter needs locusts, fortress and
+wearer builders need loose prisms, the thief nest needs fresh vessel trail.
 
 **Vessel release.** A hangar station calls
 `MenuServerPlayerVesselInitializer.RequestSpawnAiCompanion(class, domain, pose)` — the menu's
@@ -1081,6 +1135,13 @@ adds **no collider**: the toy's own trigger sphere remains the entire interactio
 > *threader-agnostic*: a **vessel** threads a toy, a **ball** threads a Scarab switch or an Astro
 > League goal. Same shape, same promise.
 
+**A second body threads toys too (2026-10-20).** A hull's `ISwitchThreadProbe` - the Thresher's ball, the flail
+(`ThresherExecutor`) - fires a toy when its segment passes through the toy's trigger sphere: `Toy.Update` samples the
+LOCAL hull's probe every frame and activates through the same deferred path a hull's trigger entry uses; the toy
+re-arms only once the hull AND the probe are clear of the exit radius. It is an opt-in interface over
+`IRingThreadProbe`, so a probe that only threads race rings (the Wrasse's kite) does not fire toys (Garrett: "lets
+flip things so the wrasse does not activate toys, but the thresher flail does").
+
 Before this pass the toybox taught it inconsistently — the painting's stroke gates and milestones
 were rings, but a toy root was a tinted sphere with a name floating over it and an invisible 42-unit
 trigger, so "how do I use this thing?" was answered by flying at it and finding out. Now **every
@@ -1111,9 +1172,21 @@ and is gone: that toy is a switch now.)*
 
 #### What a switch's SHADER says
 
-> **Every switch is drawn in the PRISM shader**, the same material family the painted trail wears
-> — so a switch is made of the same stuff as the world it acts on. The one channel left free to
-> carry meaning is *which prism it is painted as*, and that channel is `ToySwitchSignal`.
+> **Every switch wears a PRISM's colour**, the material family the painted trail wears — so a
+> switch speaks the language of the world it acts on. The one channel left free to carry meaning is
+> *which prism's colour it wears*, and that channel is `ToySwitchSignal`.
+
+**The ring is a SYNTHETIC WIRE (Garrett, 2026-10-21: "a synthetic spindle geometry that is more like a wire
+... synthetic constructs up close, but spindles from afar").** `ToyFactory.AddSwitchRing` builds it as a
+machined three-strand cable (`Assets/_Models/Spindles/SpindleWireRing`) on `SpindleWireGraph`, in the
+signal's colour (a dark body at `switchRingDarkShare` of the signal, facets square to the camera in the
+signal colour itself, so the machined facets read), and `SwitchRingLod` hands it to the
+spindle LOD: solid and machined up close, turning to a spindle's lace while the prisms' depth effect is open
+(184 - 700 units), settling back into a solid ring and then a glowing thread that never fades or is culled
+(`Docs/SPINDLE_LOD.md` §9). Tuning on `Resources/SpindleLodProfile`: `switchRingStrength` (how far the lay
+loosens), `switchRingDistance` (the lace's fade, ~14,000 units) and `switchRingSway` (0). Outside Play,
+without the profile or with `lodEnabled` off, the ring is the signal's prism, as before. Hubs and cones
+beside a ring stay prisms.
 
 | Signal | Painted as | Says | Wearers |
 |---|---|---|---|
@@ -1174,11 +1247,13 @@ colours mean something when they do appear.
 **Two wearers sit outside the toybox**, and both say something about the SWITCH rather than about
 the pilot. The Scarab's placed switch is the first: the domain colour names the domain the switch
 *belongs* to rather than one it grants (`SCARAB.md` §5 — whose colour it is decides who it pays).
-The Butterfly's **fold gate** is the second, one notch further out: there the colour names **who
-may thread it** (`BUTTERFLY_FOLD.md` § "Every fold leaves a PAIR OF GATES standing"). A gate
-declines a pilot who is not already in its domain and can never put anyone into one, so it is a
-gate on use rather than a grant. Nothing in either case changes a pilot's domain, so the two
-readings never share a screen; both are listed in the test's allow-list with their reason. Do not
+The Butterfly's **fold gate** was the second, one notch further out: there the colour named **who
+may thread it** (`BUTTERFLY_FOLD.md` § "Every fold leaves a PAIR OF GATES standing"). **The gates
+became wormholes on 2026-10-08** (`BUTTERFLY_FOLD.md` § "The gates became wormholes") and are no
+longer switch RINGS — a mouth is a sphere whose rim wears the domain's hue, outside this vocabulary
+and off the test's allow-list — but the reading is unchanged: the colour says who may use it, a mouth
+declines a pilot who is not already in its domain, and it can never put anyone into one. Nothing in
+either case changes a pilot's domain, so the two readings never share a screen. Do not
 add a toybox wearer without settling which reading wins. It draws in the **live** per-domain prism material —
 the same asset the dais prisms it pays out are laid in, so the two cannot drift — reached by
 injecting `GameDataSO` into `PlaceSwitchActionExecutor` (the vessel is DI-injected on spawn, the
@@ -1386,7 +1461,9 @@ so there is always a field of structures ahead.
 **Scale — 30,000 conserved prisms, built once behind a veil.** The belt's whole stock is
 `poolSize × prismBudgetPerScene` (**20 × 1500 = 30,000** at the authored defaults — the same order as
 an authored cell environment, which is the proven envelope for the instanced render path + collider
-LOD). It is built **up front**, on the first pass through the toy, behind the same
+LOD; a device tier may override the BUILT config, never the asset: MobileLow phones run 8 × 150 =
+1,200 with no lifeform scenes and 2 concurrent arrivals — `PlatformProfileSO.WanderwayBudget`,
+applied in `WanderToy.Configure`, `Docs/PLATFORM_UNIFICATION.md` §3.6). It is built **up front**, on the first pass through the toy, behind the same
 `EnvironmentLoadVeil` the Cell Selector raises for a world swap: `MicrosceneConveyor.PrimeAsync`
 brackets `PrismTrailBuilder.BeginArenaBuild`/`EndArenaBuild`, raises the veil, and lays all
 `poolSize` scenes concurrently through `PrismTrailBuilder.LayBudgetedAsync` — the time-budgeted,
@@ -1514,12 +1591,14 @@ back from. Starting one does three things, and all three are undone when it ends
   the run's tick — the tail advances a prism at a time and a station that teleported after it would
   read as a pop.
 
-> **The rolling tether is an AUTHORIZED EXCEPTION to mass conservation** — the one sanctioned place
-> trail mass is recycled, granted by explicit sign-off so the Wanderway can be an endless runner
+> **The rolling tether is an AUTHORIZED EXCEPTION to mass conservation** — a sanctioned place
+> trail mass is recycled (the other is the phone race cap, `RaceTrailCap`, MobileLow Skim Race /
+> Joust only), granted by explicit sign-off so the Wanderway can be an endless runner
 > without an ever-growing world. It is mechanically the reverted `maxTrailBlocks` cap, and it is
-> fenced so it cannot leak: `WanderwayRun.RollTether` is the ONLY caller of `Trail.RemoveOldest`,
+> fenced so it cannot leak: `WanderwayRun.RollTether` is the tether's only removal path,
 > it runs only while a run is live, and `VesselPrismController` grew no cap field — outside a run
-> the trail is untouched and the law holds in full. **Continuity of existence is not waived**: a
+> the tether never touches the trail. The device-tier trail policy (`MenuCrystalClickHandler`)
+> never holds the pen during a run (`WanderwayRun.AnyRunning`): the tether needs a trail to ride. **Continuity of existence is not waived**: a
 > retiring prism withers on the GPU clock (one grow-clock re-stamp toward a near-zero scale — the
 > belt's own collapse, `Docs/PRISM_ANIMATION.md` §5 C8) and returns to the pool only once it has
 > shrunk away. Full record: `Docs/ECOSYSTEM.md` §0. Do not generalise it; do not revert it.
@@ -1812,7 +1891,7 @@ window in which a key like this is free to move, and it closes the moment one do
 
 ### The 2D art is the encyclopedia's
 
-`ToyPortraitLibrary` resolves the portrait **FrogletTools ▸ Interface ▸ Codex** already bakes from
+`ToyPortraitLibrary` resolves the portrait **FrogletTools ▸ UI ▸ Codex** already bakes from
 each toy's own `ToyEmblem` grammar (`Docs/CODEX.md` §3.5). So the flat card is a picture of the
 thing the player flies at, re-baking an emblem re-skins the menu with nothing to re-wire, and no
 second icon set is authored.
@@ -1835,7 +1914,7 @@ Full surface + scene wiring: `Docs/HomeHub/ARCHITECTURE.md`.
    domain — `ToySwitchVocabularyTests` will otherwise fail, by design.
 3. Add the new definition asset to the `ToyboxSO` (or to `BuildDefaultToybox` for a built-in).
 4. Add a case to `ToolCodexHarvester.AddKindFacts` so the encyclopedia can say what the toy
-   offers, then run **FrogletTools ▸ Interface ▸ Codex** ▸ *Scan & Merge* and *Bake Missing*.
+   offers, then run **FrogletTools ▸ UI ▸ Codex** ▸ *Scan & Merge* and *Bake Missing*.
    The bake is also what gives the toy its app-shell portrait.
 5. Implement `IToyShellSurface` so the toy appears in the app shell's Toy Box (see "The app-shell
    face" above). Optional — a toy without it is simply freestyle-only — but the shell is where a

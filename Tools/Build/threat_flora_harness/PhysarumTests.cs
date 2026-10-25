@@ -120,7 +120,76 @@ public static class PhysarumTests
         Reroute(quick);
         GameGrove();
         FarCadence();
+        Budding();
         Cost(quick);
+    }
+
+    /// <summary>
+    /// P7: a sclerotium BUDS. The reserve pays a daughter's whole beat shell and nothing else: below a shell no parent
+    /// is offered, at a shell a LIVING one is (never a dead heart); the daughter joins with no planted mass and lays her
+    /// shell from the reserve (PhysarumSclerotium.LayShell -> SpendOnHeartBody), so planted + digested never moves on
+    /// a birth and the ledger closes. Then the game grove under ThreatGrove.BudSclerotium's rule (BudRetrySeconds,
+    /// the species cap) for two minutes: it buds from what it digests, and every bud is mass-neutral.
+    /// </summary>
+    static void Budding()
+    {
+        // the gate, on a hand-fed core
+        var p = ThreatGroveDefaults.Physarum().ForElement(ThreatGroveDefaults.PhysarumElement);
+        var shape = ThreatGroveDefaults.SwarmCellGrove(Vector3.Zero);
+        var rng = new ThreatRng(7);
+        float shell = p.ShellVolume, prism = shell / ThreatGroveDefaults.ShellPrisms;
+        var g = new PhysarumCore(p, shape, 7);
+        g.AddHeart(shape.Sample(ref rng, 40f), 0.5f * shell);
+        g.AddHeart(shape.Sample(ref rng, 40f), 0f);
+        bool shy = g.BudParent() < 0;
+        g.CreditDigest(0.5f * shell);
+        g.KillHeart(0);
+        int par = g.BudParent();
+        double inputs = g.Planted + g.Digested;
+        int d = g.AddBud(shape.Sample(ref rng, 40f));
+        bool free = g.Planted + g.Digested == inputs && Math.Abs(g.Reserve - shell) < 1e-3;
+        int laid = 0;
+        for (int k = 0; k < ThreatGroveDefaults.ShellPrisms; k++) if (g.SpendOnHeartBody(prism)) laid++;
+        Program.Check(shy && par == 1 && d == 2 && g.HeartAlive[d],
+            $"P7 a bud is offered only once the reserve holds a whole shell ({shell:F0}), and only to a living heart");
+        Program.Check(free && laid == ThreatGroveDefaults.ShellPrisms && g.BudParent() < 0 && Math.Abs(g.Audit()) < 1e-6,
+            $"P7 the daughter brings no mass and lays her {laid}-prism shell from the reserve; ledger {g.Audit():E2}");
+
+        // the game grove: seeded hearts lay their shells, then buds follow the glue's rule
+        var c = GameCore(5);
+        int cap = ThreatGroveDefaults.SclerotiumCap, buds = 0, daughterBeats = 0, firstBud = -1;
+        for (int k = 0; k < c.HeartPosition.Count; k++)
+            for (int s = 0; s < ThreatGroveDefaults.ShellPrisms; s++) c.SpendOnHeartBody(prism);
+        double planted = c.Planted, worst = 0;
+        bool neutral = true;
+        const float dt = 0.1f, retry = 2f;
+        float retryAt = 0f, now = 0f;
+        for (int step = 0; step < 1200; step++, now += dt)
+        {
+            c.Advance(dt);
+            foreach (var e in c.Events)
+            {
+                if (e.Kind == PhysarumEventKind.Digest) c.CreditDigest(c.FoodVol[e.Food]);
+                if (e.Kind == PhysarumEventKind.BeatOn && firstBud >= 0 && e.Heart >= firstBud) daughterBeats++;
+            }
+            if (now >= retryAt && c.LiveHearts < cap && c.BudParent() >= 0)
+            {
+                retryAt = now + retry;
+                double before = c.Planted + c.Digested;
+                int k = c.AddBud(shape.Sample(ref rng, 40f));
+                if (firstBud < 0) firstBud = k;
+                for (int s = 0; s < ThreatGroveDefaults.ShellPrisms; s++) neutral &= c.SpendOnHeartBody(prism);
+                neutral &= c.Planted + c.Digested == before;
+                buds++;
+            }
+            worst = Math.Max(worst, Math.Abs(c.Audit()));
+        }
+        Console.WriteLine($"   budding: {buds} buds in 120 s ({c.LiveHearts} hearts, cap {cap}); reserve {c.Reserve:F0}, " +
+                          $"digested {c.Digested:F0}, {c.TubeCount} tubes; daughters beat {daughterBeats}x; ledger worst {worst:E2}");
+        Program.Check(buds >= 1 && c.LiveHearts <= cap, $"P7 the game grove buds from what it digests ({buds} buds, {c.LiveHearts} <= cap {cap})");
+        Program.Check(neutral && c.Planted == planted && worst < 1e-6,
+            $"P7 every bud is mass-neutral: planted unchanged, each shell paid in full, ledger worst {worst:E2}");
+        Program.Check(daughterBeats > 0, "P7 a daughter beats like a seeded heart");
     }
 
     /// <summary>The game grove's core, warmed up (P4's set-up).</summary>

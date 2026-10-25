@@ -104,6 +104,7 @@ namespace CosmicShore.Render
             TMP_FontAsset runFont = null;
             Material runMat = null;
             int runAtlas = -1;
+            var toWorld = rt.PointToWorld;
             foreach (var q in layout.quads)
             {
                 if (q.font == null) continue;
@@ -113,10 +114,10 @@ namespace CosmicShore.Render
                     runFont = q.font; runMat = q.material; runAtlas = q.atlasIndex;
                 }
                 uint b = (uint)(_verts.Count / Floats);
-                Push(rt, q.bl, groupAlpha);
-                Push(rt, q.tl, groupAlpha);
-                Push(rt, q.tr, groupAlpha);
-                Push(rt, q.br, groupAlpha);
+                Push(toWorld, q.bl, groupAlpha);
+                Push(toWorld, q.tl, groupAlpha);
+                Push(toWorld, q.tr, groupAlpha);
+                Push(toWorld, q.br, groupAlpha);
                 _idx.Add(b); _idx.Add(b + 1); _idx.Add(b + 2);
                 _idx.Add(b + 2); _idx.Add(b + 3); _idx.Add(b);
             }
@@ -162,9 +163,9 @@ namespace CosmicShore.Render
             return h.ToHashCode();
         }
 
-        void Push(RectTransform rt, in TmpVertex v, float groupAlpha)
+        void Push(in PointToWorldMap toWorld, in TmpVertex v, float groupAlpha)
         {
-            var p = rt.TransformPoint(v.position);
+            var p = toWorld.Apply(v.position);
             Color c = v.color;
             _verts.Add(p.x); _verts.Add(p.y); _verts.Add(0f);
             _verts.Add(v.uv.x); _verts.Add(v.uv.y);

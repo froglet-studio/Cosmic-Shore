@@ -89,6 +89,16 @@ namespace CosmicShore.Gameplay
         // super-shielded mass it cannot cut. Bottom of the order beside the spray, same reasons.
         const float BindMinIntervalSec = 0.060f;   // backstop floor; the caller sets the real cadence
 
+        // The drift rumble is the third TEXTURE: it repeats while a drift is held. Bottom of the
+        // order beside spray and bind, same reasons.
+        const float DriftMinIntervalSec = 0.060f;  // backstop floor; the caller sets the real cadence
+
+        // Drift press / let-go kicks are EVENTS: one each per trigger edge. They sit above the
+        // textures (a texture must not cut a kick short) and below skim/punish/alert.
+        const float DriftKickMinIntervalSec = 0.050f; // only stops a double-fire in one frame
+        const float DriftEngageDurationSec = 0.060f;
+        const float DriftReleaseDurationSec = 0.090f;
+
         static float s_lastSkimTime = -999f;
         static float s_skimBusyUntil = -999f;      // spray is suppressed until here (skim outranks it)
         static float s_lastPunishTime = -999f;
@@ -97,6 +107,9 @@ namespace CosmicShore.Gameplay
         static float s_alertBusyUntil = -999f;     // skim AND punish are suppressed until here
         static float s_lastSprayTime = -999f;
         static float s_lastBindTime = -999f;
+        static float s_lastDriftTime = -999f;
+        static float s_lastDriftKickTime = -999f;
+        static float s_driftKickBusyUntil = -999f; // textures are suppressed until here
 
         // These are compared against Time.unscaledTime, which restarts at 0 every play session —
         // with domain reload disabled a leftover busy-until stamp from a long session would
@@ -112,6 +125,9 @@ namespace CosmicShore.Gameplay
             s_alertBusyUntil = -999f;
             s_lastSprayTime = -999f;
             s_lastBindTime = -999f;
+            s_lastDriftTime = -999f;
+            s_lastDriftKickTime = -999f;
+            s_driftKickBusyUntil = -999f;
         }
 
         /// <summary>
@@ -247,6 +263,68 @@ namespace CosmicShore.Gameplay
             PlayPattern(s_bindJson, s_bindRumble, level * Mathf.Clamp01(strength01));
         }
 
+        /// <summary>
+        /// The DRIFT rumble — the sixth feel, added deliberately (Docs/HAPTICS.md ▸ "Adding /
+        /// changing a feel"): a soft, smooth, low-mid rumble that repeats while the vessel is
+        /// drifting, so the pilot feels the slide under them. Strength is the drift depth
+        /// (DriftAudioController computes it from the trigger pull).
+        ///
+        /// Character: frequency 0.3 — between the bind grind (0.15) and the spray buzz (0.45) —
+        /// LOW-motor led but lighter than the bind, no transient (the skim's signature), and a
+        /// longer ~90 ms body so it reads as a continuous slide rather than a tick or a grind.
+        ///
+        /// Priority: the bottom, beside spray and bind — alert, punish and skim all suppress it
+        /// and it suppresses nothing, so skims landed mid-drift stay fully legible.
+        ///
+        /// Fenced to drifting on the LOCAL HUMAN pilot's own vessel. Do not hang it on anything else.
+        /// </summary>
+        public static void PlayDrift(float strength01)
+        {
+            if (!TryBeginPlayback(out var level)) return;
+
+            float now = Time.unscaledTime;
+            if (now < s_alertBusyUntil) return;                  // alert outranks everything
+            if (now < s_punishBusyUntil) return;                 // a thud must land intact
+            if (now < s_skimBusyUntil) return;                   // so must a reward pulse
+            if (now < s_driftKickBusyUntil) return;              // the press/let-go kick lands first
+            if (now - s_lastDriftTime < DriftMinIntervalSec) return;
+            s_lastDriftTime = now;
+            // Deliberately sets NO busy window: a texture never suppresses another feel.
+
+            EnsureClips();
+            PlayPattern(s_driftJson, s_driftRumble, level * Mathf.Clamp01(strength01));
+        }
+
+        /// <summary>
+        /// The drift PRESS kick: one crisp, firm tap the moment a drift engages. Mid frequency,
+        /// both motors, a soft attack (not the skim's sharp transient) — "you're in".
+        /// </summary>
+        public static void PlayDriftEngage() => PlayDriftKick(engage: true);
+
+        /// <summary>
+        /// The drift LET-GO kick: one softer, lower release bump the moment a drift ends —
+        /// "you're out". Low-motor led so it reads as the opposite of the press.
+        /// </summary>
+        public static void PlayDriftRelease() => PlayDriftKick(engage: false);
+
+        // Priority: alert > punish > skim > drift kicks > textures (spray / bind / drift rumble).
+        static void PlayDriftKick(bool engage)
+        {
+            if (!TryBeginPlayback(out var level)) return;
+
+            float now = Time.unscaledTime;
+            if (now < s_alertBusyUntil) return;
+            if (now < s_punishBusyUntil) return;
+            if (now < s_skimBusyUntil) return;
+            if (now - s_lastDriftKickTime < DriftKickMinIntervalSec) return;
+            s_lastDriftKickTime = now;
+            s_driftKickBusyUntil = now + (engage ? DriftEngageDurationSec : DriftReleaseDurationSec);
+
+            EnsureClips();
+            if (engage) PlayPattern(s_driftEngageJson, s_driftEngageRumble, level);
+            else        PlayPattern(s_driftReleaseJson, s_driftReleaseRumble, level);
+        }
+
         // Shared gate on the player's setting. Returns the output level (haptics "volume") to use.
         static bool TryBeginPlayback(out float level)
         {
@@ -269,11 +347,17 @@ namespace CosmicShore.Gameplay
         static byte[] s_alertJson;
         static byte[] s_sprayJson;
         static byte[] s_bindJson;
+        static byte[] s_driftJson;
+        static byte[] s_driftEngageJson;
+        static byte[] s_driftReleaseJson;
         static GamepadRumblePattern s_skimRumble;
         static GamepadRumblePattern s_punishRumble;
         static GamepadRumblePattern s_alertRumble;
         static GamepadRumblePattern s_sprayRumble;
         static GamepadRumblePattern s_bindRumble;
+        static GamepadRumblePattern s_driftRumble;
+        static GamepadRumblePattern s_driftEngageRumble;
+        static GamepadRumblePattern s_driftReleaseRumble;
         static bool s_clipsBuilt;
 
         static void EnsureClips()
@@ -355,6 +439,41 @@ namespace CosmicShore.Gameplay
             s_bindRumble = Rumble(
                 new[] { 50, 30 },
                 low:  new[] { 0.95f, 0.55f },
+                high: new[] { 0.25f, 0.10f });
+
+            // Drift — a smooth SLIDE, ~90 ms. No transient, frequency 0.3 (between bind and
+            // spray), low motor leading but softer than the bind, a gentle swell then fade so
+            // back-to-back pulses blend into a continuous rumble rather than a grind.
+            s_driftJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":0.6}," +
+                "{\"time\":0.05,\"amplitude\":0.8}," +
+                "{\"time\":0.09,\"amplitude\":0.0}",
+                frequency: "0.3", durationSec: "0.09");
+            s_driftRumble = Rumble(
+                new[] { 50, 40 },
+                low:  new[] { 0.65f, 0.45f },
+                high: new[] { 0.30f, 0.20f });
+
+            // Drift press — a firm ~60 ms tap, mid frequency, both motors, quick fade.
+            s_driftEngageJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":1.0}," +
+                "{\"time\":0.03,\"amplitude\":0.7}," +
+                "{\"time\":0.06,\"amplitude\":0.0}",
+                frequency: "0.6", durationSec: "0.06");
+            s_driftEngageRumble = Rumble(
+                new[] { 30, 30 },
+                low:  new[] { 0.70f, 0.40f },
+                high: new[] { 0.80f, 0.45f });
+
+            // Drift let-go — a softer ~90 ms bump, low frequency, low motor led, longer fade.
+            s_driftReleaseJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":0.75}," +
+                "{\"time\":0.04,\"amplitude\":0.5}," +
+                "{\"time\":0.09,\"amplitude\":0.0}",
+                frequency: "0.2", durationSec: "0.09");
+            s_driftReleaseRumble = Rumble(
+                new[] { 40, 50 },
+                low:  new[] { 0.75f, 0.35f },
                 high: new[] { 0.25f, 0.10f });
         }
 

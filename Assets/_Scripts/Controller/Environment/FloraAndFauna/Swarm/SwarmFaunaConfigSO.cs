@@ -89,9 +89,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("Run each swarm's tick (simulation step + the frame it draws) on a worker thread. The main " +
                  "thread then only swaps buffers. Off = run it inline on the main thread (WebGL always does).")]
         public bool SimulateOffMainThread = true;
-        [Tooltip("Draw every LIVING member from one GPU buffer (SwarmMemberInstanced). Off, or on a device " +
-                 "without vertex-stage structured buffers, every member gets a real GameObject again (the " +
-                 "pre-round-7 cost).")]
+        [Tooltip("Draw every LIVING member instanced (SwarmMemberInstanced): from one GPU buffer, or on a device " +
+                 "without vertex-stage structured buffers (WebGL2) through the SM 3.5 per-instance path " +
+                 "(SwarmMemberFallbackDraw). Off, or with neither path available, every member gets a real " +
+                 "GameObject again (the pre-round-7 cost).")]
         public bool DrawMembersOnGpu = true;
         [Tooltip("The instanced member shader (Assets/_Graphics/Materials/Graphs/SwarmMemberInstanced.shader). " +
                  "Referenced here so a player build includes it.")]
@@ -215,6 +216,12 @@ namespace CosmicShore.Gameplay
         public bool Bestiary = true;
         [Tooltip("Startle at which a Time member (pack hunter) turns on a vessel; it calms below DangerExit.")]
         [Range(0f, 1f)] public float HuntEnter = 0.2f;
+        [Tooltip("Seconds a pack hunter shows its startle above HuntEnter before its danger plate goes up - the wind-up a pilot " +
+                 "can read. 0.4 = the Living Ecology lab's fair-burns fix (bestiary pack.py WINDUP); 0 = strike at once (round 10).")]
+        [Min(0f)] public float HuntWindupSeconds = 0.4f;
+        [Tooltip("Seconds a Charge pufferfish shows its startle above DangerEnter before its danger plate goes up - the same " +
+                 "readable wind-up as the pack hunter's. 0.4 = the lab's fair-burns value; 0 = puff at once (round 9).")]
+        [Min(0f)] public float PuffWindupSeconds = 0.4f;
         [Tooltip("A Mass member (lurker) bristles once its startle passes this and stays dangerous until it reaches DangerEnter and bolts.")]
         [Range(0f, 1f)] public float LurkCalm = 0.05f;
         [Tooltip("Seconds before the dangerous quarter of a Space (locust) cloud moves to a different quarter.")]

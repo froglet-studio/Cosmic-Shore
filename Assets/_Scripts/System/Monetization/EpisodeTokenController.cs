@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
 
@@ -120,6 +121,15 @@ namespace CosmicShore.Core
             {
                 // The honest message. Do not pretend a purchase happened.
                 Finish(false, "Purchases are not available in this build yet.");
+                return;
+            }
+
+            // Refuse BEFORE the storefront charges anything: GrantTokens cannot land until the cloud
+            // profile has loaded, and nothing retries a refused grant after payment.
+            var playerData = PlayerDataService.Instance;
+            if (playerData == null || !playerData.IsInitialized)
+            {
+                Finish(false, "Your profile is still loading. Try again in a moment.");
                 return;
             }
 

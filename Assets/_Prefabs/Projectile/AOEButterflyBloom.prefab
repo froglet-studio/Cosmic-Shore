@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 8507666106090082206}
   - component: {fileID: 8507666106090082207}
   - component: {fileID: 8507666106090082208}
+  - component: {fileID: 8507666106090082209}
   m_Layer: 10
   m_Name: AOEButterflyBloom
   m_TagString: Untagged
@@ -189,3 +190,26 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   impactorObject: {fileID: 8507666106090082207}
+--- !u!114 &8507666106090082209
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8507666106090082200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 351d0e02c9461619694212b4a2006244, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dust: {fileID: 11400000, guid: 0ae756518d2f043fdd8f3b596892867c, type: 2}
+  particleMaterial: {fileID: 2100000, guid: f8fd41b2ddff19348bcba2a701321e1f, type: 2}
+  dustColor: {r: 1, g: 0.86, b: 0.52, a: 0.9}
+  bloomMotes: 2400
+  moteSize: {x: 6, y: 14}
+  moteLifetime: 2.2
+  fallSpeed: 6
+  motesPerDustedPrism: 5
+  puffSpeed: 10
+  puffSizeScale: 1.4
+  maxMotes: 12000

@@ -23,6 +23,11 @@ namespace CosmicShore.Launcher
         public string? Dotnet { get; private set; }
         public string? DotnetSdk { get; private set; }
         public bool VcRuntime { get; private set; } = true;
+        /// <summary>Blender / Maya (mayapy), which Unity and cs-asset need for .blend and .ma/.mb models; null when not found.</summary>
+        public string? Blender { get; private set; }
+        public string? BlenderVersion { get; private set; }
+        public string? MayaPy { get; private set; }
+        public string? MayaVersion { get; private set; }
 
         public bool Ready => Git != null && Dotnet != null;
 
@@ -39,6 +44,25 @@ namespace CosmicShore.Launcher
             (Dotnet, DotnetSdk) = FindDotnet(s.DotnetPath);
             if (Windows)
                 VcRuntime = File.Exists(Path.Combine(Environment.SystemDirectory, "vcruntime140.dll"));
+        }
+
+        /// <summary>
+        /// Blender and Maya: SETTINGS' paths go out as AMOEBIUS_BLENDER / AMOEBIUS_MAYAPY to every process
+        /// Amoebius starts (cs-asset converts .blend/.ma/.mb through them), then the same search cs-asset does.
+        /// Separate from <see cref="Detect"/>: asking Blender its version takes a second or more.
+        /// </summary>
+        public void DetectDcc(LauncherSettings s)
+        {
+            // Under the variables' names before the rename too: a branch from before it reads those.
+            foreach (var prefix in new[] { "AMOEBIUS_", "PRISMA_" })
+            {
+                Environment.SetEnvironmentVariable(prefix + "BLENDER", string.IsNullOrWhiteSpace(s.BlenderPath) ? null : s.BlenderPath.Trim());
+                Environment.SetEnvironmentVariable(prefix + "MAYAPY", string.IsNullOrWhiteSpace(s.MayaPyPath) ? null : s.MayaPyPath.Trim());
+            }
+            Blender = Amoebius.DccLocator.FindBlender();
+            BlenderVersion = Blender == null ? null : Amoebius.DccLocator.BlenderVersion(Blender);
+            MayaPy = Amoebius.DccLocator.FindMayaPy();
+            MayaVersion = MayaPy == null ? null : Amoebius.DccLocator.MayaVersion(MayaPy);
         }
 
         static string? FindGit(string configured)

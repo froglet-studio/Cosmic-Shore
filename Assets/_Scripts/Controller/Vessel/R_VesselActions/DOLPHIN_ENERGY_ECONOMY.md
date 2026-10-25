@@ -306,14 +306,35 @@ held, while banking the next boost. If that reads as a ratchet in play, the fix 
 captured value (clamp `_heldDriftSpeed` to the unboosted cruise target, 78), not the removal of the
 hold — but it is a real balance change and wants a play-test before it is decided.
 
+> **Decided for now (Yash, 2026-10-17; Garrett may change it): the drift KEEPS the boosted speed.** Drift →
+> release → re-drift at the peak is a skill move a player can learn and the AI uses (`ChargeBoostAIPolicySO`
+> drifts again at the discharge's peak; `AI/AI_BOOST.md`). The goal is a fun Dolphin, and holding the top of a boost
+> by timing the triggers is the fun part. Today's numbers: cruise **68** u/s (`DefaultMinimumSpeed` is 0 now), peak
+> **347** (68 × 2.259²). If play-tests read it as a ratchet, the fix above still stands (clamp `_heldDriftSpeed` to
+> the cruise target, 68), and the Dolphin AI's peak rule then gains nothing and should be reverted with it.
+>
+> **A person does it too (2026-10-24, data only, nothing decided).** In Yash's one recorded Dolphin Regatta race (I1),
+> 19 of his 21 re-drifts came at a discharge's peak (0.98-1.06 of its top speed), and he drifted 83% of the race. His
+> top speed was 263 u/s, under the 347 peak (`learn_drives_from_flights.py`'s `redriftShareOfPeak`).
+
 ---
 
 ## 2a. The drift is a momentum LOCK — and why it has to be
 
-The Dolphin runs the **vector flight model** (`vectorFlightModel: 1`) with
-`driftThrottlePolicy: Locked`. Full model, the no-drift identity proof and the constraints it had
-to respect are in `SQUIRREL_DRIFT.md` §3–§4; this section is the Dolphin's half and the reasoning
-that pins it here.
+> **Decided for now (Yash, 2026-10-17; Garrett may change it): the Dolphin keeps the model it ships with — the
+> SCALAR model plus `holdSpeedWhileDrifting`.** Every branch's `Dolphin.prefab` (213 of them, measured 2026-10-17)
+> authors `vectorFlightModel: 0` and `holdSpeedWhileDrifting: 1`: the hold (`VesselTransformer`, `_driftSpeedHeld` /
+> `_heldDriftSpeed`, pinned in `StepTowardTarget`) freezes the speed the drift starts at, which meets the requirement
+> below exactly as `Locked` would. The prefab also authored `driftThrottlePolicy: 1` (Locked), which only the vector
+> model reads; it is now back at its default, `Live` (0), so the prefab carries no setting nothing reads (the
+> transformer's own note: a vessel authors one of the two, not both). The vector + `Locked` material below is kept
+> as the documented ALTERNATIVE: to move the Dolphin onto it, set `vectorFlightModel: 1`, `driftThrottlePolicy: 1`
+> and `holdSpeedWhileDrifting: 0` together, and play-test it (steering and the discharge's acceleration after a drift
+> run through different code). The Dolphin AI (`ChargeBoostAIPolicySO`) is built on the hold.
+
+The requirement is met by the scalar model's **`holdSpeedWhileDrifting`** today. The alternative is the **vector
+flight model** with `driftThrottlePolicy: Locked`. Full model, the no-drift identity proof and the constraints it had
+to respect are in `SQUIRREL_DRIFT.md` §3–§4; this section is the Dolphin's half.
 
 ### The requirement
 
@@ -353,7 +374,10 @@ to zero for the drift's duration, and the Dolphin's authored grip is **0**
 |---|---|---|---|
 | scalar (the shipped defect) | 350.0 | **139.1** | → 78 |
 | vector + `Live` | 350.0 | 237.5 | 62.7 |
-| **vector + `Locked` (shipped)** | **357.0** | **357.0** | **357.0** |
+| **vector + `Locked` (the alternative)** | **357.0** | **357.0** | **357.0** |
+| **scalar + `holdSpeedWhileDrifting` (shipped)** | **357.0** | **357.0** | **357.0** |
+
+*(357 / 78 are from when `DefaultMinimumSpeed` was 10; today they are 347 / 68.)*
 
 Hold the drift and you keep exactly the momentum you entered with, aimed exactly where you entered
 it. Release, the discharge raises the target again, and nose acceleration resumes from the speed
@@ -389,16 +413,48 @@ accelerate immediately*. Under the vector model the drift simply ends, nose acce
 and the discharge has already raised `ComputeThrottleTarget` — and you are starting from the speed
 you kept, not from a decayed one, so there is less to make up than there ever was.
 
-### Correcting the record
+### Correcting the record (twice)
 
-Earlier notes described a `holdSpeedWhileDrifting` boolean that disabled the throttle for the
-drift's duration, with `RefreshDriftSpeedHold` / `_driftSpeedHeld` / `_heldDriftSpeed` machinery.
-**No such flag has ever existed in this repository** — absent from `VesselTransformer.cs`, from that
-file's entire git history, and from `Dolphin.prefab`. What shipped was the plain scalar model with
-the throttle live throughout the drift, and the boost-cancel cliff described above. There was never
-a workaround to retire; there was a defect to fix.
+This paragraph used to say that `holdSpeedWhileDrifting` had never existed in this repository. **That is wrong
+today**: the field, `RefreshDriftSpeedHold` and `_driftSpeedHeld` / `_heldDriftSpeed` are in `VesselTransformer.cs`,
+the Dolphin is the only prefab that sets it (`SQUIRREL_DRIFT.md` §6), and it is what the shipped Dolphin flies.
+(The repository's history was restarted on 2026-09-30, `5ff0c4e1f`, so how the prefab came back to the scalar model
+cannot be traced.) The scalar path's boost-cancel cliff described above is real only WITHOUT the hold.
 
 ---
+
+## 2b. On a phone (2026-10-21)
+
+Garrett, 2026-10-21: *"the dolphin can combine the scope and the drift into one when you lift either
+thumb. you can still fly with one thumb ... the only thing you lose is the roll axis rotation but we
+can recover that with the phone's gyro."*
+
+| Pad | Phone |
+| --- | --- |
+| LT (held) = drift + charge boost + drift trail | lift **either** thumb = drift + charge boost + drift trail **+ Echo Sight**, together |
+| RT (held) = Echo Sight | (same lift) |
+| release LT = discharge (the boost) | put the thumb back = discharge (the boost), Echo off |
+| right stick = roll | while one thumb flies, **turn the phone like a wheel** = roll (`TouchControlProfile.tiltRollOnOneThumb`) |
+
+- **Binding.** `Dolphin.prefab` `_touchActionOverrides`: `LeftStickAction (2)` and `RightStickAction (1)` both run
+  `[DolphinDriftAction, ChargeBoostAction, DriftTrailAction, EchoSightAction]` (guids `51198b11…`, `ab7bab2c…`,
+  `ca0139e3…`, `b58d21e7…`, the shared map's own assets). `TouchInputStrategy` raises `LeftStickAction` when the
+  RIGHT thumb lifts (the left flies on) and `RightStickAction` when the LEFT lifts, so either lift is the whole kit.
+  `OnlyLeft/OnlyRightStickAction` (raised on the same lift) are deliberately NOT bound - that would start everything
+  twice. The pad and keyboard are untouched (no touch override reaches them).
+- **Every action is a press/release pair**: the drift (`DriftActionSO` → `VesselTransformer.BeginDrift/EndDrift`,
+  flag-based, idempotent), the charge (`ChargeBoostActionExecutor.BeginCharge` on the lift → `BeginDischarge` when the
+  thumb returns, which is the boost), the trail (`DriftTrailActionExecutor.Begin/End`, idempotent) and Echo Sight
+  (`EchoSightActionExecutor.Engage/Release`, a bool). Echo Sight held through a drift is the pad's LT+RT, which a pad
+  pilot can already hold. Lifting the second thumb (one → none) releases all four (`StopStickEffects`) before idle.
+- **Drift depth on a phone is a full pull**: `VesselTransformer.GetTriggerSum` reads an analog trigger only for a
+  Gamepad; every other device drifts at the action's full authored `Mult` (binary, eased in and out).
+- **AI on a phone host.** An AI's input status reads the host's device (or `Touch`, the enum's zero), so an AI Dolphin
+  on a phone resolves through these overrides too: its commit drift (`AIPilot.CommitControl` = `LeftStickAction`)
+  now also lights Echo Sight, and its telegraph lookup (`TryGetInputForAction<IAimTelegraphAction>`) answers
+  `LeftStickAction` - the same control - so the replicated telegraph press re-starts the drift/charge/trail it already
+  holds (all idempotent; the charge restarts from its banked units, one extra boost SFX on release). Behaviour is the
+  same drift-and-announce beat; worth a look in an Android single-player match with AI Dolphins.
 
 ## 3. The hull reads out the blast
 
@@ -448,7 +504,7 @@ and the gape froze.
 
 Fleet-standard row (charge → mass → space → time, the same order as the element flowers), on
 the Squirrel's exact anchor bands. `DolphinHUDVariant.prefab` is authored;
-**FrogletTools > Vessels > Wire Vessel Ability Row** re-binds a broken one without
+**FrogletTools > Vessels > Wiring > Wire Vessel Ability Row** re-binds a broken one without
 re-deriving the layout.
 
 | slot | icon | shows |
@@ -523,7 +579,7 @@ The Dolphin carried an active `EnergySkimmer` doing the physics *and* a disabled
 nested `Skimmer.prefab` instance — and `_nearFieldSkimmer` pointed at the **disabled** one.
 Perfect wiring on the object that never ran; no wiring on the object that did.
 
-**FrogletTools > Vessels > Audit Vessel Skimmers** checks this from assets alone (no play
+**FrogletTools > Vessels > Audits > Audit Vessel Skimmers** checks this from assets alone (no play
 mode): assignment, active state up the whole ancestor chain, the
 impactor/`ImpactCollider`/trigger-collider/`Rigidbody` the trigger path needs, and whether
 the container holds any prism effects. *(Serpent still fails it — its `_nearFieldSkimmer`
@@ -568,8 +624,8 @@ Play Menu_Main, enter freestyle on the Dolphin.
 
 | check | expect |
 |---|---|
-| **FrogletTools > Vessels > Audit Vessel Skimmers** | Dolphin `NearFieldSkimmer: 'EnergySkimmer' OK` |
-| **FrogletTools > Vessels > Audit Vessel Ability Rows** | Dolphin: map complete, 4/4 icons, order ✅ |
+| **FrogletTools > Vessels > Audits > Audit Vessel Skimmers** | Dolphin `NearFieldSkimmer: 'EnergySkimmer' OK` |
+| **FrogletTools > Vessels > Audits > Audit Vessel Ability Rows** | Dolphin: map complete, 4/4 icons, order ✅ |
 | fly through cell mass | crackle arcs across the skimmer sphere per prism; jaw icon punches; gape widens |
 | fly through cell mass | **no beam** stretches from the hull to the skimmed prisms — the crackle is the only skim visual |
 | at zero energy | jaws sit slightly open (4.76°/side), NOT shut — hull and Time icon agree |

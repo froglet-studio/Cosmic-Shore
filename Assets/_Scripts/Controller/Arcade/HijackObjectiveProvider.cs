@@ -21,9 +21,16 @@ namespace CosmicShore.Gameplay
     /// colour is only where it started; pilots flip this mass back and forth all match. A cached
     /// answer would send a pilot at a cluster they have already emptied, so the choice is
     /// recomputed on a slow cadence (<see cref="RescanSeconds"/>) rather than cached until
-    /// something invalidates it - there is no event that fires on "a prism changed hands", the
-    /// steal path is a per-hop local call, and adding one would put an allocation on the ride's
-    /// hot path to serve an arrow.</para>
+    /// something invalidates it - the steal path is a per-hop call on the ride's hot path, and
+    /// an arrow is not worth putting work there.</para>
+    ///
+    /// <para><b>"Hostile" means hostile AS THE SERVER SAYS.</b> The census goes through
+    /// <see cref="HijackYard.NearestHostileBurr"/>, which reads the match's replicated ownership
+    /// table (<see cref="HijackOwnershipLedger"/>, bound by <see cref="HijackController"/>)
+    /// rather than this machine's prisms - so two players looking at the same burr get the same
+    /// arrow, and a client is not sent at a cluster a remote pilot's proxy only appeared to
+    /// empty. A pilot's OWN steals reach the arrow one round trip later, when the server echoes
+    /// them; at a 0.25s rescan that is invisible.</para>
     ///
     /// <para>Cost is bounded and small: 18 burrs, each a trail-list walk, four times a second -
     /// against a scan the Rampage provider runs over every live crystal in the arena. Steady-state

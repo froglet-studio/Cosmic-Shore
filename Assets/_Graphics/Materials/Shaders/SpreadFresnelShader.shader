@@ -53,7 +53,9 @@ Shader "Custom/SpreadFresnelShader"
             {
                 v2f o;
                 float3 objectScale = float3(length(unity_ObjectToWorld._m00_m01_m02), length(unity_ObjectToWorld._m10_m11_m12), length(unity_ObjectToWorld._m20_m21_m22));
-                float3 spreadedNormal = v.normal * (_Spread / objectScale);
+                // normalize: a blend-shape mesh hands the vertex stage a blended normal that is not unit
+                // length (spacecrystalanim.fbx's stacked keys reach ~2x), and the push must not scale with it.
+                float3 spreadedNormal = normalize(v.normal) * (_Spread / objectScale);
                 v.vertex.xyz += spreadedNormal;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.worldNormal = normalize(mul((float3x3)UNITY_MATRIX_M, v.normal));

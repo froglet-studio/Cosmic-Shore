@@ -34,3 +34,33 @@ MonoBehaviour:
     resetOnSituation: 0
     idleSeconds: 40
     repeatWhileIdle: 1
+  - situation: 129
+    messageTemplate: '{0} is halfway home - ring {1}/{2}'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 130
+    messageTemplate: '{0} takes the lead - ring {1}/{2}'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 131
+    messageTemplate: '{0} is on the home stretch - ring {1}/{2}'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
