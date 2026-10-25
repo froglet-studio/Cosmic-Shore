@@ -359,7 +359,7 @@ namespace CosmicShore.Gameplay
             inputStatus.RightTriggerAnalog = 0f;
         }
 
-        private enum TiltMode { None, Steer }
+        private enum TiltMode { None = 0, Steer = 1 }
         private TiltMode tiltMode;
 
         /// <summary>Tilt is measured from where the phone was when it took over, so every change of what

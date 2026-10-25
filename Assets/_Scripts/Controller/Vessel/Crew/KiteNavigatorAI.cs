@@ -46,7 +46,7 @@ namespace CosmicShore.Gameplay
             new() { Thumb = 3.0f, Think = 0.2f,  Noise = 0.008f, Purity = 1f,   ReachAware = 1f,    Lead = 1f },
         };
 
-        enum PlanKind { None, Loop, Ram, Pop }
+        enum PlanKind { None = 0, Loop = 1, Ram = 2, Pop = 3 }
 
         public KiteVec Aim;
         public bool Down;

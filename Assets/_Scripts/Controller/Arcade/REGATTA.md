@@ -252,7 +252,7 @@ every AI seat instead of per domain (Squirrels lift off their rail); the Rhino's
 addressed but unmeasured (2026-10-17: it brakes ON the ramp at 300 u/s² to a corner speed, `AI/AI_BOOST.md`). The bleeding-edge commit `fb2bff7ac` (Skim Race ring
 crystals) merges cleanly and does not change Regatta.
 
-**2026-10-17 (Ys-bleeding-edge only, not editor-verified).** Regatta's gate steering now puts the "through" point on
+**2026-10-17 (not editor-verified).** Regatta's gate steering now puts the "through" point on
 the line from the pilot through the ring's CENTRE, not on the ring's axis (`GateRaceController.ArmRacer`, gated by
 `AICommitFromApproachPoint`, so Regatta only). A drifting hull locks its course on that point, and an axis point lay off
 that line when the pilot committed off-axis, so the locked line passed beside the mouth. In the offline models the axis

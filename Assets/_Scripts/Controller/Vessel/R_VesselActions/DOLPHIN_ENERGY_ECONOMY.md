@@ -312,6 +312,10 @@ hold — but it is a real balance change and wants a play-test before it is deci
 > by timing the triggers is the fun part. Today's numbers: cruise **68** u/s (`DefaultMinimumSpeed` is 0 now), peak
 > **347** (68 × 2.259²). If play-tests read it as a ratchet, the fix above still stands (clamp `_heldDriftSpeed` to
 > the cruise target, 68), and the Dolphin AI's peak rule then gains nothing and should be reverted with it.
+>
+> **A person does it too (2026-10-24, data only, nothing decided).** In Yash's one recorded Dolphin Regatta race (I1),
+> 19 of his 21 re-drifts came at a discharge's peak (0.98-1.06 of its top speed), and he drifted 83% of the race. His
+> top speed was 263 u/s, under the 347 peak (`learn_drives_from_flights.py`'s `redriftShareOfPeak`).
 
 ---
 
