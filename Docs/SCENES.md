@@ -442,7 +442,7 @@ Collision-based competitive duel. Players collide with each other; first to reac
 - `UseGolfRules => true` — lower score = better
 - Server-authoritative collision tracking: clients report via ServerRpc, server monotonically updates counts
 - Winner score = elapsed time; loser score = 99999
-- `JoustCollisionTurnMonitor` with `CollisionsNeeded` threshold
+- `NetworkJoustCollisionTurnMonitor` with `CollisionsNeeded` threshold
 - Atomic results sync via `FixedString64Bytes[]` / `float[]` / `int[]` arrays in ClientRpc
 - `_finalResultsSent` guard prevents duplicate end-game processing
 
@@ -560,10 +560,8 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 |---|---|---|
 | `TimeBasedTurnMonitor` | `TurnMonitors/` | Elapsed time ≥ duration |
 | `NetworkTimeBasedTurnMonitor` | `TurnMonitors/` | Network-aware time-based |
-| `CrystalCollisionTurnMonitor` | `TurnMonitors/` | Player collects N crystals |
-| `NetworkCrystalCollisionTurnMonitor` | `TurnMonitors/` | Network-aware crystal collection |
-| `JoustCollisionTurnMonitor` | `TurnMonitors/` | Player completes N jousts |
-| `NetworkJoustCollisionTurnMonitor` | `TurnMonitors/` | Network-aware joust tracking |
+| `NetworkCrystalCollisionTurnMonitor` | `TurnMonitors/` | Player's domain collects N crystals (network-aware; the local-only base was folded in, 2026-10-25) |
+| `NetworkJoustCollisionTurnMonitor` | `TurnMonitors/` | Player's domain completes N jousts (network-aware; the local-only base was folded in, 2026-10-25) |
 | `VesselCollisionTurnMonitor` | `TurnMonitors/` | Player vessel collides with object |
 | `CellControlTurnMonitor` | `TurnMonitors/` | Cell ownership conditions met |
 | `VolumeCreatedTurnMonitor` | `TurnMonitors/` | Player creates N prisms |
