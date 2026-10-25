@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using CosmicShore.Utility;
 using UnityEngine;
 using Camera = UnityEngine.Camera;
@@ -487,8 +488,13 @@ namespace CosmicShore.Gameplay
         private bool _feelApplied;
         private IVesselStatus _feelVessel;                      // the vessel the follow target belongs to
         private Component _feelVesselBody;                      // the same object, for Unity's destroyed check
-        private float _feelInertia = 1f;
         private float _feelWeight = 1f;
+        // The followed hull's measured size and what it and the hull's table row give the G. Fields rather than
+        // properties so the Inspector's Debug view shows them while tuning.
+        private float _feelHullSize;     // the mean of the model's length, width and height, world units; 0 = not yet
+        private int _feelHullTries;      // a model can appear a few frames after the follow starts (the spawn chain)
+        private float _feelGForce = 1f;
+        private float _feelResponse = 1f;
 
         /// <summary>This camera's feel state (<see cref="VesselCameraFeel"/> feeds it).</summary>
         internal CameraFeel Feel => _feel ??= new CameraFeel(GetInstanceID() * 0.137f);
@@ -685,18 +691,76 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // Read every frame rather than cached, so a retuned table shows live in play mode.
-            if (_feelVesselBody) (_feelInertia, _feelWeight) = config.ProfileFor(_feelVessel.VesselType);
-            else { _feelInertia = 1f; _feelWeight = 1f; }
+            // Read every frame rather than cached, so a retuned table shows live in play mode. The hull is measured
+            // once per follow (a few tries while its model comes up); a bigger hull's pilot feels less G, slower.
+            float tableG = 1f;
+            if (_feelVesselBody)
+            {
+                (tableG, _feelWeight) = config.ProfileFor(_feelVessel.VesselType);
+                if (!(_feelHullSize > 0f) && _feelHullTries < MaxHullMeasureTries)
+                {
+                    _feelHullTries++;
+                    _feelHullSize = MeasureHullSize(_feelVesselBody.transform);
+                }
+            }
+            else _feelWeight = 1f;
+            var (sizeG, response) = config.SizeFeel(_feelHullSize);
+            _feelGForce = tableG * sizeG;
+            _feelResponse = response;
 
             Quaternion view = transform.rotation;
             float distance = Mathf.Max(1f, EffectiveOffset.magnitude * warp);
-            Feel.Step(config, Time.deltaTime, followPoint, view, distance, _feelInertia, DriftSlip(config, view));
+            Feel.Step(config, Time.deltaTime, followPoint, view, distance, _feelGForce, _feelResponse,
+                DriftSlip(config, view));
 
             _feelPosition = view * (Feel.LocalOffset * (distance * scale));
             _feelRotation = Quaternion.Euler(Feel.LocalAngles * scale);
             transform.SetPositionAndRotation(transform.position + _feelPosition, view * _feelRotation);
             _feelApplied = true;
+        }
+
+        const int MaxHullMeasureTries = 30;
+        static readonly List<Renderer> s_hullRenderers = new(32);
+
+        /// <summary>
+        /// How big a hull is: the mean of the length, width and height of the box around its model's meshes, in the
+        /// hull's own orientation (so it does not change with the way the hull points) and in world units (so a
+        /// scaled prefab measures its real size). The skimmer's visuals are not hull, and nor are trails, lines or
+        /// particles. 0 when there is no model to measure yet. Runs once per follow target, never per frame.
+        /// </summary>
+        public static float MeasureHullSize(Transform root)
+        {
+            if (!root) return 0f;
+            root.GetComponentsInChildren(false, s_hullRenderers);
+            Quaternion toHull = Quaternion.Inverse(root.rotation);
+            Vector3 min = Vector3.positiveInfinity, max = Vector3.negativeInfinity;
+            bool any = false;
+            for (int i = 0; i < s_hullRenderers.Count; i++)
+            {
+                var r = s_hullRenderers[i];
+                if (!r.enabled) continue;
+                Mesh mesh = r is SkinnedMeshRenderer skinned ? skinned.sharedMesh
+                    : r is MeshRenderer && r.TryGetComponent(out MeshFilter filter) ? filter.sharedMesh
+                    : null;
+                if (!mesh || r.GetComponentInParent<SkimmerImpactor>(true)) continue;
+                Bounds b = mesh.bounds;
+                Transform t = r.transform;
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    Vector3 local = new(
+                        (corner & 1) == 0 ? b.min.x : b.max.x,
+                        (corner & 2) == 0 ? b.min.y : b.max.y,
+                        (corner & 4) == 0 ? b.min.z : b.max.z);
+                    Vector3 p = toHull * (t.TransformPoint(local) - root.position);
+                    min = Vector3.Min(min, p);
+                    max = Vector3.Max(max, p);
+                }
+                any = true;
+            }
+            s_hullRenderers.Clear();
+            if (!any) return 0f;
+            Vector3 size = max - min;
+            return (size.x + size.y + size.z) / 3f;
         }
 
         /// <summary>Take last frame's feel back off, leaving the clean pose (see <see cref="ApplyFeel"/>).</summary>
@@ -825,6 +889,8 @@ namespace CosmicShore.Gameplay
             {
                 _feelVessel = target ? target.GetComponentInParent<IVesselStatus>() : null;
                 _feelVesselBody = _feelVessel as Component;
+                _feelHullSize = 0f;
+                _feelHullTries = 0;
             }
 
             // Remember WHO took the target away, so a frozen camera can name its cause instead of

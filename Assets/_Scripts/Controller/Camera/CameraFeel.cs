@@ -3,15 +3,17 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The camera feel's state and math (<c>Docs/CAMERA_FEEL.md</c>): inertia, kicks, shake, rumble, drift lean and
-    /// breathing, folded into one camera-local offset (<see cref="LocalOffset"/>, a fraction of the follow distance)
-    /// and one camera-local tilt (<see cref="LocalAngles"/>, degrees) that <see cref="CustomCameraController"/> adds
-    /// on top of its settled pose. Plain C# with no scene dependency, so every behaviour is tested directly.
+    /// The camera feel's state and math (<c>Docs/CAMERA_FEEL.md</c>): G-force (the lag of acceleration and the slide
+    /// of a drift, and the neck tilt they give), kicks, shake, rumble and breathing, folded into one camera-local
+    /// offset (<see cref="LocalOffset"/>, a fraction of the follow distance) and one camera-local tilt
+    /// (<see cref="LocalAngles"/>, degrees) that <see cref="CustomCameraController"/> adds on top of its settled pose.
+    /// Plain C# with no scene dependency, so every behaviour is tested directly.
     ///
-    /// <para><b>Inertia lags ACCELERATION, never speed.</b> The framed point's velocity is estimated from its motion,
-    /// and its change drives a damped spring as a pseudo-force (the camera is a mass on a spring riding the hull):
-    /// a constant acceleration settles at a constant lag, a constant velocity at none. So a cruise frames exactly as
-    /// before, and only boosts, stops and turns move the hull on screen.</para>
+    /// <para><b>G lags ACCELERATION and SLIDE, never speed.</b> The framed point's velocity is estimated from its
+    /// motion, and its change drives a damped spring as a pseudo-force (the camera is a mass on a spring riding the
+    /// hull): a constant acceleration settles at a constant lag, a constant velocity at none. A drift's slide is a
+    /// second rest point on the same spring. So a cruise frames exactly as before, and only boosts, stops, turns and
+    /// drifts move the hull on screen, each with the same accelerating start and settle.</para>
     ///
     /// <para><b>Kick units are true peaks.</b> An author writes "this shoves the camera 3.5% of the follow distance";
     /// the impulse that produces that peak through the kick spring's damping is worked out here
@@ -25,8 +27,10 @@ namespace CosmicShore.Gameplay
         const float VelocitySmoothing = 40f;
         // The furthest the inertia spring is driven, in "full lags" (a dash or a launch saturates here).
         const float MaxDrive = 3f;
+        // How fast the drift rumble follows the drift, per second.
+        const float DriftRumbleEase = 5f;
 
-        Vector3 _lag, _lagVelocity;                       // inertia: world axes, fraction of the follow distance
+        Vector3 _lag, _lagVelocity;                       // G: world axes, fraction of the follow distance
         Vector3 _kick, _kickVelocity;                     // kicks: camera-local, fraction of the follow distance
         Vector3 _kickAngles, _kickAngularVelocity;        // kicks: camera-local Euler degrees
         float _trauma, _skimRumble, _drift;
@@ -155,20 +159,25 @@ namespace CosmicShore.Gameplay
         /// <param name="point">The framed point this frame (world).</param>
         /// <param name="view">The camera's settled rotation this frame, before any feel.</param>
         /// <param name="distance">The follow distance, world units (offsets are fractions of it).</param>
-        /// <param name="inertia">The vessel's inertia: 1 = the fleet's, above = heavier, 0 = no lag.</param>
+        /// <param name="gForce">How much G this hull's pilot feels: 1 = the reference hull, below for a bigger hull,
+        /// above for a smaller one (<see cref="CameraFeelConfigSO.SizeFeel"/> times the hull's table row); 0 = none.</param>
+        /// <param name="response">How quickly the G builds and settles: 1 = the reference hull, below for a bigger,
+        /// slower-responding hull.</param>
         /// <param name="drift">The signed drift, -1..1: how far, and to which side of the view, the hull's travel
         /// slips from where it points (0 when not drifting).</param>
         public void Step(CameraFeelConfigSO c, float dt, Vector3 point, Quaternion view, float distance,
-            float inertia, float drift)
+            float gForce, float response, float drift)
         {
             if (!(dt > 0f)) return;   // paused: hold the pose as it is
             dt = Mathf.Min(dt, MaxStep);
             _clock += dt;
             _noiseTime += dt;
             distance = Mathf.Max(1f, distance);
-            inertia = Mathf.Max(0f, inertia);
+            gForce = Mathf.Max(0f, gForce);
+            response = Mathf.Max(0.05f, response);
+            drift = Mathf.Clamp(drift, -1f, 1f);
 
-            // --- Inertia: the acceleration of the framed point drives the lag spring.
+            // --- G: the acceleration of the framed point, and the slide of a drift, drive one spring.
             Vector3 accel = Vector3.zero;
             if (_primed == 0) { _lastPoint = point; _primed = 1; }
             else
@@ -183,16 +192,25 @@ namespace CosmicShore.Gameplay
                     accel = (_velocity - previous) / dt;
                 }
             }
-            float lagMax = c.MaxLag * inertia;
-            float lagOmega = 2f * Mathf.PI * c.InertiaFrequency / Mathf.Sqrt(Mathf.Max(inertia, 0.05f));
+            float lagMax = c.MaxLag * gForce;
+            float gMax = c.MaxGOffset * gForce;
+            float lagOmega = 2f * Mathf.PI * c.InertiaFrequency * response;
             // In "full lags": 1 settles the spring at lagMax behind the acceleration.
             Vector3 drive = Vector3.ClampMagnitude(accel / (distance * c.FullLagAcceleration), MaxDrive);
 
-            // e'' = -w^2 (e + lagMax drive) - 2 z w e': settles at e = -lagMax drive, behind the push. The drive
-            // is held for the frame, so the exact step is the spring's step around that rest point.
-            if (lagMax > 0f)
+            // A drift locks the hull's course while its nose swings, so its real acceleration is near zero and the
+            // lag alone never saw one. The slide is fed to the same spring as a rest point of its own: the camera
+            // is left behind toward where the hull is sliding FROM, so the hull slides out across the frame. At
+            // drift speed only (a slow slide is a gentle one), and through the spring, so it builds with an
+            // accelerating start, swings a little past and settles, instead of easing in along a straight line.
+            float speedShare = Mathf.SmoothStep(0f, 1f, _velocity.magnitude / (distance * c.DriftFullSpeed));
+            Vector3 slideRest = view * new Vector3(-drift * c.DriftSlide * gForce * speedShare, 0f, 0f);
+
+            // e'' = -w^2 (e - rest) - 2 z w e': settles at rest = behind the push, plus the slide. The rest is
+            // held for the frame, so the exact step is the spring's step around that rest point.
+            if (gMax > 0f)
             {
-                Vector3 rest = -drive * lagMax;
+                Vector3 rest = -drive * lagMax + slideRest;
                 Vector3 offset = _lag - rest;
                 Spring.Step(lagOmega, c.InertiaDamping, dt).Apply(ref offset, ref _lagVelocity);
                 _lag = rest + offset;
@@ -208,16 +226,22 @@ namespace CosmicShore.Gameplay
             ClampState(ref _kick, ref _kickVelocity, c.MaxKick);
             ClampState(ref _kickAngles, ref _kickAngularVelocity, c.MaxKickAngle);
 
-            Vector3 lagLocal = Quaternion.Inverse(view) * _lag;
-            lagLocal.z *= c.ForwardLagShare;
-            lagLocal = SoftClamp(lagLocal, lagMax);
+            Vector3 gLocal = Quaternion.Inverse(view) * _lag;
+            gLocal.z *= c.ForwardLagShare;
+            gLocal = SoftClamp(gLocal, gMax);
+
+            // The pilot's neck: the same G that moves the camera tilts it. Thrown back under a boost (nose up),
+            // forward under a stop (nose down), and leaned outward through a turn or a slide. Read against the
+            // fleet's full G, so a big hull that is pushed less also leans less.
+            float gFull = Mathf.Max(1e-4f, c.MaxGOffset);
+            Vector3 neck = new(c.GPitch * gLocal.z / gFull, 0f, -c.GRoll * gLocal.x / gFull);
 
             // --- Shake and rumble.
             _trauma = Mathf.Max(0f, _trauma - c.TraumaDecay * dt);
             float shake = _trauma * _trauma;
             _skimRumble *= Mathf.Exp(-c.SkimRumbleDecay * dt);
-            _drift = Mathf.Lerp(_drift, Mathf.Clamp(drift, -1f, 1f), 1f - Mathf.Exp(-c.DriftEase * dt));
-            float rumble = Mathf.Clamp01(Mathf.Max(_skimRumble, Mathf.Abs(_drift) * c.DriftRumble));
+            _drift = Mathf.Lerp(_drift, Mathf.Abs(drift) * speedShare, 1f - Mathf.Exp(-DriftRumbleEase * dt));
+            float rumble = Mathf.Clamp01(Mathf.Max(_skimRumble, _drift * c.DriftRumble));
 
             Vector3 shakeNoise = shake > 0f ? Noise(c.TraumaFrequency, 0f) : Vector3.zero;
             Vector3 rumbleNoise = rumble > 0f ? Noise(c.RumbleFrequency, 17f) : Vector3.zero;
@@ -227,14 +251,11 @@ namespace CosmicShore.Gameplay
                           + Vector3.Scale(shakeNoise, new Vector3(c.TraumaAngle, c.TraumaAngle, c.TraumaRoll)) * shake
                           + Vector3.Scale(rumbleNoise, new Vector3(1f, 1f, 0.6f)) * (c.RumbleAngle * rumble)
                           + Vector3.Scale(breathNoise, new Vector3(1f, 1f, 0.5f)) * c.BreathAngle
-                          + new Vector3(0f, _drift * c.DriftYaw, _drift * c.DriftRoll);
+                          + neck;
 
-            // The drift swings the camera out toward the side the hull is sliding FROM - where a camera that
-            // followed the travel rather than the nose would sit.
-            LocalOffset = lagLocal
+            LocalOffset = gLocal
                           + _kick
-                          + new Vector3(shakeNoise.y, shakeNoise.z, 0f) * (c.TraumaOffset * shake)
-                          + new Vector3(-_drift * c.DriftOffset, 0f, 0f);
+                          + new Vector3(shakeNoise.y, shakeNoise.z, 0f) * (c.TraumaOffset * shake);
         }
 
         // ---------------------------------------------------------------- helpers

@@ -90,7 +90,7 @@ Panel rather than into lavalamp Home UI ... This should be the general flow").
    host controls), ready-up works.
 6. No regression: first boot opens on HOME; enter freestyle during the splash and nothing opens over you.
 
-### 🔴 Camera feel: inertia, impact shake, skim and drift rumble, recoil (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+### 🔴 Camera feel: G-force (lag, drift slide, neck), impact shake, skim and drift rumble, recoil (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/CAMERA_FEEL.md`. `CustomCameraController` adds a feel layer after its pose and takes it off
 before the next (`ApplyFeel` / `UndoFeel`); events come from `SkimmerImpactor`, `VesselImpactor`, `ExplosionImpactor`,
@@ -111,15 +111,21 @@ directives.
    its side.
 4. Ram a prism: a short shove toward the hull, a tilt and a thud of shake; a super-shielded or large environment prism
    lands harder than a Sparrow trail.
-5. Drift (Squirrel or Dolphin): the camera banks into the turn and wobbles faintly; it eases back on release.
+5. Drift (Squirrel or Dolphin) at speed: the hull slides clearly off the centre (about 8% of the follow distance,
+   more on a small agile hull), building with an accelerating start and a small overshoot, never a straight-line
+   ease; the view leans outward like a neck under G and wobbles faintly; it swings back on release. A slow drift
+   slides less. A boost tips the view slightly nose-up. Round 2 (2026-10-25), after Yash's Squirrel flight.
+5b. Hull size: in the Debug Inspector on the gameplay camera, `_feelHullSize` reads each hull's size (a
+   Squirrel a few units, an Orca tens) and `_feelGForce` falls as size grows; an Orca feels clearly less G, and
+   slower, than a Manta.
 6. Fire (Sparrow full-auto, Urchin spikes): a small recoil per shot, no buzz.
 7. Rear view, the Butterfly's fold placement (no feel while aiming), a wormhole transit and the Thresher's spectate
    vantage: nothing jumps.
 8. Settings: camera shake at 0 removes all of it, the older shakes too; at 1 they are as before.
 
 **First-pass tuning** (`CameraFeelConfig`): max lag 6% of the follow distance, impact shove 3.5%, impact trauma 0.5,
-skim nudge 0.4%, rumble 0.3 deg, drift bank 2 deg, recoil 0.6%, breathing 0.1 deg; per-hull inertia 0.4 (Starling) to
-1.4 (Orca). If it all reads too strong or weak, change `strength` first.
+skim nudge 0.4%, rumble 0.3 deg, drift slide 8%, neck roll 3.5 / pitch 1.5 deg at full G, G spring 1.3 Hz damping
+0.7, recoil 0.6%, breathing 0.1 deg; size G (5 / size)^0.35 in 0.55..1.4; table G 0.4 (Starling) to 1.15 (Squirrel). If it all reads too strong or weak, change `strength` first.
 
 ### 🔴 Manta tilt yaw un-flipped; Dolphin one-thumb response curve (`cece/amazing-franklin-4lp0mk`, 2026-10-25) — NOT EDITOR-VERIFIED
 
