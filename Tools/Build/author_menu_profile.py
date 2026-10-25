@@ -543,7 +543,9 @@ def build_studio(rec, x):
         image_node(tick, f"{k}/Tick/Box", "Box", STRETCH, "ElementTime", K.kit_sprite("kit_sliver10_line1"), sliced=True, raycast=True)
         mark = image_node(tick, f"{k}/Tick/Mark", "Mark", R((0.5, 0.5), None, (0, 0), (18, 18)), "ElementTime",
                           K.chrome_sprite("chrome_confirm"), preserve=True)
-        tick.add("button", 114, C.plain_button(c(f"{k}/Tick/Box", "img")))
+        # The tick box is how a pad (un)ticks a track since Y stopped doing it (§65): a pad stop with its own ring.
+        tick_ring = K.focus_ring(tick, f"{k}/Tick", size=(10, 10))
+        tick.add("button", 114, C.plain_button(c(f"{k}/Tick/Box", "img"))).add("focus", 114, tick_ring)
         label(r.child(N(f"{k}/Number", "Number", R((0, 0.5), None, (64, 0), (40, 24), (0, 0.5)))), f"{i + 1:02d}", "Data", "NeutralLightest")
         label(r.child(N(f"{k}/Title", "Title", R((0, 0.5), (1, 0.5), (110, 0), (-240, 26), (0, 0.5)))), TRACKS[i][1], "Body", "TextLight")
         label(r.child(N(f"{k}/Playing", "Playing", R((1, 0.5), None, (-20, 0), (140, 18), (1, 0.5)), active=False)),
