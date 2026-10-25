@@ -278,7 +278,7 @@ namespace CosmicShore.UI
             if (!_bars) _bars = Resources.Load<ElementalBarsConfigSO>(ElementalBarsConfigSO.ResourcePath);
             if (!_bars) return;
 
-            tint = _bars.whiteColor;
+            tint = _bars.WhiteColor;
             primary = _bars.GetPetalSprite(first);
             if (second != Element.None) secondary = _bars.GetPetalSprite(second);
         }
@@ -331,13 +331,13 @@ namespace CosmicShore.UI
         /// </summary>
         Sprite ResolveAvatar(int avatarId)
         {
-            if (!ProfileIcons || ProfileIcons.profileIcons == null) return null;
+            if (!ProfileIcons || ProfileIcons.ProfileIcons == null) return null;
 
-            foreach (var icon in ProfileIcons.profileIcons)
+            foreach (var icon in ProfileIcons.ProfileIcons)
                 if (icon.Id == avatarId)
                     return icon.IconSprite;
 
-            return ProfileIcons.profileIcons.Count > 0 ? ProfileIcons.profileIcons[0].IconSprite : null;
+            return ProfileIcons.ProfileIcons.Count > 0 ? ProfileIcons.ProfileIcons[0].IconSprite : null;
         }
 
         public void ToggleFavorite()

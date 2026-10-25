@@ -132,6 +132,12 @@ namespace CosmicShore.Editor
 
         static BugLedger()
         {
+            // Unity's asset import workers are separate editor processes in the same project that
+            // run [InitializeOnLoad] too. Each one booted its own ledger over the same files: two
+            // extra "editor load" lines per reload in yskha's trail, each crediting fixes from its
+            // own memory and writing the same issue files as the editor.
+            if (AssetDatabase.IsAssetImportWorkerProcess()) return;
+
             // Same doctrine as the crash detector: the ledger must never take the editor down.
             try { Boot(); }
             catch (Exception e)

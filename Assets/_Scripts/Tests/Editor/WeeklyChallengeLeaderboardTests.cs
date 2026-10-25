@@ -142,11 +142,11 @@ namespace CosmicShore.Tests
             var catalog = UnityEngine.ScriptableObject.CreateInstance<WeeklyChallengeCatalogSO>();
             try
             {
-                catalog.regionalLeaderboards.Add(
+                catalog.RegionalLeaderboards.Add(
                     new WeeklyChallengeCatalogSO.RegionalBoard { regionKey = "sg", leaderboardId = "" });
-                catalog.regionalLeaderboards.Add(
+                catalog.RegionalLeaderboards.Add(
                     new WeeklyChallengeCatalogSO.RegionalBoard { regionKey = "US", leaderboardId = "wc_us" });
-                catalog.regionalLeaderboards.Add(
+                catalog.RegionalLeaderboards.Add(
                     new WeeklyChallengeCatalogSO.RegionalBoard { regionKey = "gb", leaderboardId = "wc_eu" });
 
                 Assert.AreEqual("wc_us", catalog.RegionalLeaderboardId("us"));

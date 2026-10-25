@@ -92,7 +92,7 @@ namespace CosmicShore.Core
             TokenBalance >= TokensPerEpisode(config);
 
         static int TokensPerEpisode(SO_EpisodeTokenConfig config) =>
-            Mathf.Max(1, config != null ? config.tokensPerEpisode : 1);
+            Mathf.Max(1, config != null ? config.TokensPerEpisode : 1);
 
         // ──────────────────────────────────────────────
         //  Grant (verified purchases only)

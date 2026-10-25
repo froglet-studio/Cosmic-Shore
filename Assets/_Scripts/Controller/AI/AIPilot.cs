@@ -782,8 +782,12 @@ namespace CosmicShore.Gameplay
             // the ability the policy drives). A re-Initialize lets go of the previous one first.
             _boostDriver?.Release();
             // A mode's own tuning when it has one (AIBoostPolicySO.ForMode: e.g. RhinoAIBoostPolicy_Regatta, learned from
-            // editor flights); the hull's policy otherwise.
-            var policy = gameData != null ? AIBoostPolicySO.ForMode(boostPolicy, gameData.GameMode) : boostPolicy;
+            // editor flights), at this intensity when that has its own (DolphinAIBoostPolicy_Switchback_I4); the hull's
+            // policy otherwise.
+            var policy = gameData != null
+                ? AIBoostPolicySO.ForMode(boostPolicy, gameData.GameMode,
+                    gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 0)
+                : boostPolicy;
             _boostDriver = policy ? policy.CreateDriver(VesselStatus, actionExecutorRegistry) : null;
             _boostActive = false;
         }

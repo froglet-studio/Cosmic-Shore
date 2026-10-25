@@ -4,6 +4,7 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using FMODUnity;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -77,6 +78,11 @@ namespace CosmicShore.Gameplay
 
         readonly List<Rival> _rivals = new();
         static readonly List<VesselStatus> s_scan = new();
+
+        // Update read 1.06-1.80 ms/frame self in Regatta captures with a Stoat (2026-10-25/26), unsplit.
+        static readonly ProfilerMarker s_predictMarker = new("StoatPathfinder.Predict");
+        static readonly ProfilerMarker s_dotsMarker = new("StoatPathfinder.Dots");
+        static readonly ProfilerMarker s_foresightMarker = new("StoatPathfinder.Foresight");
         float _nextForesightScan;
         float _overclockUntil = float.NegativeInfinity;
 
@@ -138,7 +144,7 @@ namespace CosmicShore.Gameplay
             bool flying = transformer.IsActive && !_status.IsStationary && !_status.IsTranslationRestricted;
             // Time mode draws the catch's rings, never a path (and so never warps one).
             _timeMode = _mode && _mode.IsTimeMode;
-            if (flying && !_timeMode) Predict(transformer, hull);
+            if (flying && !_timeMode) using (s_predictMarker.Auto()) Predict(transformer, hull);
             else _path = default;
 
             float dt = Time.deltaTime;
@@ -158,10 +164,10 @@ namespace CosmicShore.Gameplay
             _wasWarped = warped;
 
             bool pilot = _status.IsLocalUser && !_status.AutoPilotEnabled;
-            if (pilot && flying) DrawDots();
+            if (pilot && flying) using (s_dotsMarker.Auto()) DrawDots();
             else HideDots();
 
-            if (pilot && ForesightActive()) Foresight(dt);
+            if (pilot && ForesightActive()) using (s_foresightMarker.Auto()) Foresight(dt);
             else ClearForesight();
         }
 

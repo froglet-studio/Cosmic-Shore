@@ -854,17 +854,17 @@ namespace CosmicShore.UI
 
         protected Sprite ResolveAvatarSprite(int avatarId)
         {
-            if (profileIconList == null || profileIconList.profileIcons == null)
+            if (profileIconList == null || profileIconList.ProfileIcons == null)
                 return null;
 
-            foreach (var icon in profileIconList.profileIcons)
+            foreach (var icon in profileIconList.ProfileIcons)
             {
                 if (icon.Id == avatarId)
                     return icon.IconSprite;
             }
 
-            return profileIconList.profileIcons.Count > 0
-                ? profileIconList.profileIcons[0].IconSprite
+            return profileIconList.ProfileIcons.Count > 0
+                ? profileIconList.ProfileIcons[0].IconSprite
                 : null;
         }
 
@@ -876,7 +876,7 @@ namespace CosmicShore.UI
         protected void AssignAIProfiles()
         {
             _assignedAIProfiles.Clear();
-            if (aiProfileList == null || aiProfileList.aiProfiles == null || aiProfileList.aiProfiles.Count == 0)
+            if (aiProfileList == null || aiProfileList.AiProfiles == null || aiProfileList.AiProfiles.Count == 0)
                 return;
 
             // Collect only actual AI players, skipping local player and remote human players

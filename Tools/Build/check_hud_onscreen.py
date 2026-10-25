@@ -452,9 +452,16 @@ def run_self_test() -> int:
             fails += 1
         else:
             _, clean = evaluate(root, index, {}, HUD_LAYER, canvas_rect)
+            # Joust's drift put the feed wholly past the canvas's left edge. Its raw value
+            # (m_AnchoredPosition.x -1416.3756 against the feed's 2026-09 anchoring) lands ON the
+            # canvas once the feed is anchored elsewhere (top-right since 1141c3af14, 2026-10-16), so
+            # the fixture re-creates the drift's EFFECT from today's shipped rect: shifted left by
+            # the canvas width plus its own width, the panel's right edge ends at or before the
+            # canvas's left edge whatever its anchors are.
+            feed_rect = next(r for nm, r, _ in clean if nm == "NotificationUI")
+            off_left = feed.pos[0] - (canvas_rect[2] + feed_rect[2])
             _, drift = evaluate(root, index,
-                                {feed.fid: {"m_AnchoredPosition.x": -1416.3756,
-                                            "m_AnchoredPosition.y": -463.0}}, HUD_LAYER,
+                                {feed.fid: {"m_AnchoredPosition.x": off_left}}, HUD_LAYER,
                                 canvas_rect)
             clean_ok = all(f > 0 for _, _, f in clean)
             drift_bad = any(f <= 0 for nm, _, f in drift if nm == "NotificationUI")

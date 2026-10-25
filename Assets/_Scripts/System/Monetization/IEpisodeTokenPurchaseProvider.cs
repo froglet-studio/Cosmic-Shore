@@ -67,7 +67,7 @@ namespace CosmicShore.Core
             get
             {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                return _config != null && _config.allowUnverifiedGrantsInEditor;
+                return _config != null && _config.AllowUnverifiedGrantsInEditor;
 #else
                 return false;
 #endif

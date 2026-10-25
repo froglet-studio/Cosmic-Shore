@@ -365,6 +365,7 @@ namespace CosmicShore.Gameplay
             }
             points[0] = body.Position;
             int n = 1;
+            int boxed = 0;   // points[0 .. boxed * LoopBlock) have their block's bounds in s_blockMin / s_blockMax
             for (; n <= cap; n++)
             {
                 bool inHole = StepBy(ref body, ds);
@@ -379,15 +380,63 @@ namespace CosmicShore.Gameplay
                     points[n] = body.Position;
                     jumps[result.JumpCount++] = n;
                 }
+                // The loop check: the EARLIEST point (j <= n - skip) within the margin of the body. Every earlier point
+                // was compared each step (about 80,000 checks for a 400-point path, every frame, for every flying
+                // Stoat); now a block of LoopBlock points whose bounds lie beyond the margin is skipped with one
+                // check. Blocks are walked in order, so the first hit is the same j as before.
                 bool hit = false;
-                for (int j = 0; j <= n - skip && !hit; j++)
-                    if ((points[j] - body.Position).sqrMagnitude <= margin2) { hit = true; result.LoopIndex = j; }
+                int last = n - skip;
+                if (last >= 0)
+                {
+                    var at = body.Position;
+                    while ((boxed + 1) * LoopBlock - 1 <= last) BoxBlock(points, boxed++);
+                    for (int b = 0; b < boxed && !hit; b++)
+                    {
+                        if (SqrDistanceToBox(at, s_blockMin[b], s_blockMax[b]) > margin2) continue;
+                        for (int j = b * LoopBlock, end = j + LoopBlock; j < end; j++)
+                            if ((points[j] - at).sqrMagnitude <= margin2) { hit = true; result.LoopIndex = j; break; }
+                    }
+                    for (int j = boxed * LoopBlock; j <= last && !hit; j++)
+                        if ((points[j] - at).sqrMagnitude <= margin2) { hit = true; result.LoopIndex = j; }
+                }
                 if (hit) { result.End = PathEnd.Loop; n++; break; }
             }
             result.Count = Mathf.Min(n, cap + 1);
             result.BendDegrees = body.Bend * Mathf.Rad2Deg;
             result.Warped = hasField && (result.JumpCount > 0 || result.End == PathEnd.Hole || result.BendDegrees >= s.WarpDegrees);
             return result;
+        }
+
+        // The loop check's block bounds (PredictPath). Main thread only, like every caller of PredictPath.
+        const int LoopBlock = 16;
+        static Vector3[] s_blockMin = new Vector3[32], s_blockMax = new Vector3[32];
+
+        static void BoxBlock(Vector3[] points, int block)
+        {
+            if (block >= s_blockMin.Length)
+            {
+                System.Array.Resize(ref s_blockMin, s_blockMin.Length * 2);
+                System.Array.Resize(ref s_blockMax, s_blockMax.Length * 2);
+            }
+            int j0 = block * LoopBlock;
+            Vector3 lo = points[j0], hi = lo;
+            for (int j = j0 + 1; j < j0 + LoopBlock; j++)
+            {
+                lo = Vector3.Min(lo, points[j]);
+                hi = Vector3.Max(hi, points[j]);
+            }
+            s_blockMin[block] = lo;
+            s_blockMax[block] = hi;
+        }
+
+        /// <summary>Squared distance from <paramref name="p"/> to the box: never more than to any point inside it,
+        /// so a box beyond the margin holds no point within it.</summary>
+        static float SqrDistanceToBox(Vector3 p, Vector3 lo, Vector3 hi)
+        {
+            float dx = Mathf.Max(0f, Mathf.Max(lo.x - p.x, p.x - hi.x));
+            float dy = Mathf.Max(0f, Mathf.Max(lo.y - p.y, p.y - hi.y));
+            float dz = Mathf.Max(0f, Mathf.Max(lo.z - p.z, p.z - hi.z));
+            return dx * dx + dy * dy + dz * dz;
         }
 
         // ------------------------------------------------------------------ the autopilot

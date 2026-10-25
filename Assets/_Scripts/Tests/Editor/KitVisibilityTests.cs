@@ -67,6 +67,32 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void SetShown_HideDuringAnEntrancesDelay_StaysHidden()
+        {
+            // The configure window's AI pilots row: shown on the last card, the window opens again
+            // (its entrances replay, holding alpha at 0 through the delay), and the new card hides
+            // the row. Without settling the entrance first it faded back up with raycasts off.
+            _root = new GameObject("root", typeof(RectTransform));
+            var part = Part(_root.transform, "part");
+            var entrance = part.gameObject.AddComponent<KitEntrance>();
+            typeof(KitEntrance).GetMethod("Awake", System.Reflection.BindingFlags.Instance |
+                                                   System.Reflection.BindingFlags.NonPublic)
+                ?.Invoke(entrance, null);   // edit mode runs no Awake
+            KitVisibility.SetShown(part, true);
+
+            entrance.Play();
+            Assert.IsTrue(entrance.IsPlaying, "the entrance must be mid-play for this test to mean anything");
+            Assert.AreEqual(0f, part.alpha, "an entrance starts at alpha 0");
+
+            KitVisibility.SetShown(part, false);
+            entrance.Finish();   // what the entrance's own clock would do once it ran out
+
+            Assert.IsFalse(entrance.IsPlaying);
+            Assert.AreEqual(0f, part.alpha, "the hide must win over the entrance's remembered alpha");
+            Assert.IsFalse(part.blocksRaycasts);
+        }
+
+        [Test]
         public void ListCounter_ShowsItsHeaderOnlyWithRows_AndItsEmptyLineOnlyWithout()
         {
             _root = new GameObject("root", typeof(RectTransform));

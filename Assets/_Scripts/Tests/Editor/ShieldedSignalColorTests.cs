@@ -154,8 +154,8 @@ namespace CosmicShore.Tests
             var ladder = Ladder();
             var ladderColors = new[]
             {
-                ("fire", ladder.fireColor), ("grey", ladder.greyColor), ("white", ladder.whiteColor),
-                ("blue", ladder.blueColor), ("lime", ladder.limeColor),
+                ("fire", ladder.FireColor), ("grey", ladder.GreyColor), ("white", ladder.WhiteColor),
+                ("blue", ladder.BlueColor), ("lime", ladder.LimeColor),
             };
 
             foreach (var domain in Playable)
