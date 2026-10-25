@@ -14112,30 +14112,6 @@ Reference compile clean (player; editor: the 3 known errors only); Amoebius buil
    they open at once.
 5. Profiler on the Abilities tab: no cost above the plain stage (one 30 Hz render of the hull).
 
-## 🔴 2026-10-25 — LT / RT page the screens only from the top tab bar (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
-
-Docs/MENU_REDESIGN_B.md §64. Changed `ScreenSwitcher`, `MenuSpotlight` (keyboard held on the guide's path), `KitTopNavTab` (new), `KitTopNavTab.prefab`, `Menu_Main.unity`
-(top nav: Submit entries, keycaps out of pad navigation), `NavBarPadFocusTests` (new). What ran instead of
-`/verify-unity`: see the PR's Verification section.
-0. Navigate with the D-pad or the LEFT stick (the right stick is not menu navigation; on the Hangar it turns the vessel).
-   Click into the Game view (this clears the selection): the first D-pad push selects a control on the screen, and
-   LT / RT with nothing selected still page and leave the ring on the top tab. The pad is never dead.
-1. Menu_Main with a pad, Hangar, the pad on a vessel tile (e.g. Sparrow): LT / RT do nothing (no screen change).
-2. D-pad up from the Hangar: the pad lands on a top tab and its sky-blue focus ring shows (never on the LT / RT
-   keycaps). RT now pages to the Ark, and the ring moves to ARK with the underline; RT again pages to Home; LT back.
-   PORT is still skipped.
-3. On the bar, D-pad left / right moves the ring between tabs; A on a tab opens that screen and the ring stays on the
-   bar. D-pad down enters the screen; LT / RT stop paging again.
-4. Home: with the pad on the HOME tab, A does not open the Arcade; D-pad down to the hub row, A opens what is selected.
-   With nothing selected on Home, A still opens the Arcade.
-5. Open the Arcade (or Settings) and press D-pad up repeatedly: the pad never leaves the window onto a tab. Inside a hub
-   window, LT / RT still slide between Toy Box / Arcade / Arena / Mission.
-6. Mouse: clicking a tab, or the LT / RT keycaps, still pages exactly once (PORT plays its Denied sting once). Hovering
-   a tab still lifts its word; no ring appears for a click.
-7. First-login guide (a fresh profile, or replay the guide), keyboard only, no pad connected: the arrow keys never leave
-   the spotlit control (nor reach a top tab), and Enter presses the spotlit control. With the mouse only, no focus ring
-   appears anywhere until a key is pressed.
-
 ## 🔴 2026-10-25 — Hangar: pad presses belong to the menu, not the ability rows (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
 
 Docs/MENU_REDESIGN_B.md §63. Changed `HangarAbilitiesPage` (pad controls no longer polled), `HangarControlInput`

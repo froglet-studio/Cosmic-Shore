@@ -56,7 +56,7 @@ public interface IScreen
 - Persists return-to-screen/modal state via `PlayerPrefs` across scene reloads
 - Coming back from a match, re-opens the launch panel of the card it was launched from (`MenuReturnCard`, `ReturnToLaunchedCardCoroutine`), not HOME (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.2.1)
 - Notifies `IScreen` implementors on navigation transitions
-- Supports gamepad left/right trigger navigation: between screens with no modal open **only while the pad is on the top tab bar** (`IsOnNavBar`; `Docs/MENU_REDESIGN_B.md` §64, 2026-10-25: below the bar a trigger is not the menu's), and (rev 7) between the home hub's windows (Toy Box, Arcade, Arena, Mission, `hubWindowOrder`) while one of them is the top modal, stopping at the ends and skipping a window its hub entry refuses (`SlideHubWindow`, `CanOpenHubWindow`). `HubWindowNav` draws the strip and edge arrows (`Docs/MENU_REDESIGN_B.md` §47.2). `ModalStackChanged` fires after every stack change
+- Supports gamepad left/right trigger navigation: between screens with no modal open, and (rev 7) between the home hub's windows (Toy Box, Arcade, Arena, Mission, `hubWindowOrder`) while one of them is the top modal, stopping at the ends and skipping a window its hub entry refuses (`SlideHubWindow`, `CanOpenHubWindow`). `HubWindowNav` draws the strip and edge arrows (`Docs/MENU_REDESIGN_B.md` §47.2). `ModalStackChanged` fires after every stack change
 - On a device tier that sets `PlatformProfileSO.DeactivateMenuWhileFlying` (MobileLow phones only), DEACTIVATES the active non-HOME screen roots and the nav bar once the enter-freestyle blend settles, and reactivates exactly those at the start of the exit (`HandleFreestyleSettled` / `RestoreMenuAfterFlying`). HOME stays active: the party-invite popup and `HomeScreen`'s profile subscription must keep listening in flight. Anything under a screen root that subscribes in `Start` and unsubscribes in `OnDisable` breaks under this - subscribe in `OnEnable`. Every other tier hides them by CanvasGroup alone, as before. `Docs/PLATFORM_UNIFICATION.md` §3.6
 
 **Adding a new screen**: Create a `MonoBehaviour` implementing `IScreen` if it needs enter/exit lifecycle. Add a `ScreenEntry` in the `ScreenSwitcher` inspector mapping. The switcher will discover and call the `IScreen` automatically.
@@ -92,8 +92,7 @@ CTA gamepad focus ring.
 1 px `Rule`, both full width, so `SafeAreaBleed` takes them to the screen edges as it took the old
 gradient) with one centred row under `NavBarButtons`: the `LeftArrrow` Button wearing a `KitKeycap`
 "LT", five `KitTopNavTab` instances (`HangarLink`..`ProfileLink`, text labels, each with its
-`EventTrigger` -> `ScreenSwitcher.OnClick<X>Nav` on a click and on Submit; since 2026-10-25 each is a pad stop with the
-focus ring, §64), and `RightArrow` / "RT" (the two keycap buttons are pointer-only, out of pad navigation). `NavActiveImages` /
+`EventTrigger` -> `ScreenSwitcher.OnClick<X>Nav`), and `RightArrow` / "RT". `NavActiveImages` /
 `NavInactiveImages` point into the instances, so `UpdateNavBar` is unchanged; `NavBarLine` and
 `NavBarLineSprites` are deliberately empty. Locked PORT is drawn by an authored
 `MenuAvailabilityView` (padlock + dimmed word) that `disabledScreens` drives at runtime. The scene's
