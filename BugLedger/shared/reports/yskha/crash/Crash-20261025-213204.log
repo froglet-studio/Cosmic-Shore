@@ -1,0 +1,686 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-25 21:32:04 (next editor launch after the abnormal exit)
+session:          (pid -1, Unity )
+started:         UTC
+last heartbeat:  UTC
+last state:     unknown
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261025-113821659
+started: 2026-10-25T11:38:21.659Z UTC
+unity:   6000.3.17f1
+pid:     7116
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[17:09:07.545] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261025-113821659.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[17:09:58.098] ---- main thread stalled ~96s and RECOVERED — slow, not hung ----
+[17:21:49.122] ---- domain reload begins (script compilation / play-mode transition) ----
+ic-Shore\Logs\CrashDetector\HangDump-20261025-114011990.dmp (open in Visual Stud[17:23:19.757] ---- domain reload begins (script compilation / p[17:23:19.764] ---- domain reload begins (script compilation / play-mode transition) ----
+ic-Shore\Logs\CrashDetector\HangDump-20261025-115216029.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[17:23:19.705] ---- main thread stalled ~63s and RECOVERED — slow, not hung ----
+[18:03:01.635] ---- entering play mode ----
+[18:03:04.649] ---- play mode running ----
+[18:03:17.526] ---- leaving play mode ----
+[18:03:19.037] ---- edit mode restored ----
+[18:03:19.516] [EditMode] Exception: SessionException: Fa[18:07:28.323] ---- domain reload begins (script compilation / play-mode transition) ----
+StartAsync (System.Threading.CancellationToken cancellationToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/Handlers/NetworkHandler/NetworkManagerSession.cs:228)
+        Unity.Services.Multiplayer.GameObjectsNetcodeNetworkHandler.StartAsync (Unity.Services.Multiplayer.NetworkConfiguration configuration) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/Handlers/NetworkHandler/GameObjectsNetcodeNetworkHandler.cs:77)
+        Unity.Services.Multiplayer.NetworkModule.StartNetworkWithOptionsAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/NetworkModule.cs:370)
+        Unity.Services.Multiplayer.SessionHandler.InitializeModulesAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:766)
+        Unity.Services.Multiplayer.SessionManager.InitializeModulesAsync (Unity.Services.Multiplayer.SessionHandler session) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionManager.cs:315)
+        Unity.Services.Multiplayer.SessionManager.InitializeModulesAsync (Unity.Services.Multiplayer.SessionHandler session) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionManager.cs:320)
+        Unity.Services.Multiplayer.SessionManager.SetupSessionAsync (Unity.Services.Multiplayer.ILobbyHandler lobbyHandler, Unity.Services.Multiplayer.BaseSessionOptions options, System.Collections.Generic.Dictionary`2[TKey,TValue] sessionProperties) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionManager.cs:257)
+        Unity.Services.Multiplayer.SessionManager.CreateAsync (Unity.Services.Multiplayer.SessionOptions sessionOptions) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionManager.cs:87)
+        ...
+[18:05:03.840] ---- domain reload begins (script compilation / play-mode transition) ----
+[18:05:55.769] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261025-123510030.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[18:07:29.134] ---- main thread stalled ~139s and RECOVERED — slow, not hung ----
+[18:33:06.124] ---- entering play mode ----
+[18:33:08.378] ---- play mode running ----
+[18:46:25.135] ---- leaving play mode ----
+[18:46:32.022] ---- edit mode restored ----
+[19:06:54.289] ---- entering play mode ----
+[19:06:55.661] ---- play mode running ----
+[19:10:30.962] ---- leaving play mode ----
+[19:10:34.841] ---- edit mode restored ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+0x000001eeaf85bf91 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+0x000001f083b557ed (Mono JIT Code) UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+0x000001f083b54f13 (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:EnsureLoopStarted () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:431)
+0x000001f07ff1e6f3 (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:HandleBoostChanged (CosmicShore.UI.BoostChangedPayload) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:364)
+0x000001f07ff1e4d2 (Mono JIT Code) (wrapper delegate-invoke) System.Action`1<CosmicShore.UI.BoostChangedPayload>:invoke_void_T (CosmicShore.UI.BoostChangedPayload)
+0x000001f07ff1e2e5 (Mono JIT Code) Obvious.Soap.ScriptableEvent`1<CosmicShore.UI.BoostChangedPayload>:Raise (CosmicShore.UI.BoostChangedPayload) (at B:/FrogletGames/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEvent.cs:77)
+0x000001f083b53f7b (Mono JIT Code) CosmicShore.Gameplay.SkimmerBoostPrismEffectSO:Execute (CosmicShore.Gameplay.SkimmerImpactor,CosmicShore.Gameplay.PrismImpactor) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerBoostPrismEffect.cs:87)
+0x000001f07ff655d2 (Mono JIT Code) CosmicShore.Gameplay.SkimmerImpactor:AcceptImpactee (CosmicShore.Gameplay.IImpactor) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:317)
+0x000001f083b53040 (Mono JIT Code) CosmicShore.Gameplay.ImpactorBase:AcceptImpacteeFromShellContact (CosmicShore.Gameplay.IImpactor) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:196)
+0x000001f07ff36f63 (Mono JIT Code) CosmicShore.Gameplay.PrismShellContactManager:ResolveContacts (CosmicShore.Gameplay.PrismSpatialIndex) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismShellContactManager.cs:472)
+0x000001f07ff325d3 (Mono JIT Code) CosmicShore.Gameplay.PrismShellContactManager:Update () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismShellContactManager.cs:326)
+0x000001ef2e0b7438 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fff551e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fff55128984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fff55128a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fff47bffdd4 (Unity) scripting_method_invoke
+0x00007fff47c06c93 (Unity) ScriptingInvocation::Invoke
+0x00007fff47b11aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007fff47b11bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007fff476b308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007fff476b9f1a (Unity) BehaviourManager::Update
+0x00007fff47acc7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007fff47aaabef (Unity) ExecutePlayerLoop
+0x00007fff47aaad65 (Unity) ExecutePlayerLoop
+0x00007fff47aafc0f (Unity) PlayerLoop
+0x00007fff484256da (Unity) EditorPlayerLoop::Execute
+0x00007fff4843c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fff4843e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fff4843866d (Unity) Application::TickTimer
+0x00007fff48219f7c (Unity) MainMessageLoop
+0x00007fff48221a12 (Unity) UnityMain
+0x00007ff76a222f2a (Unity) __scrt_common_main_seh
+0x00007ff81d98dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff81fcbee4c (ntdll) RtlUserThreadStart
+
+[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.
+0x00007fff473c4e2e (Unity) StackWalker::ShowCallstack
+0x00007fff48bff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fff48bffbee (Unity) Stacktrace::GetStacktrace
+0x00007fff4737587f (Unity) DebugStringToFile
+0x00007fff47231b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001ee8df6317d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001ee8df63043 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001ee8df62c7b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001eefac8c6e5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x000001eeaf85bf91 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+0x000001f083b557ed (Mono JIT Code) UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+0x000001f083b54f13 (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:EnsureLoopStarted () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:431)
+0x000001f07ff1e6f3 (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:HandleBoostChanged (CosmicShore.UI.BoostChangedPayload) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:364)
+0x000001f07ff1e4d2 (Mono JIT Code) (wrapper delegate-invoke) System.Action`1<CosmicShore.UI.BoostChangedPayload>:invoke_void_T (CosmicShore.UI.BoostChangedPayload)
+0x000001f07ff1e2e5 (Mono JIT Code) Obvious.Soap.ScriptableEvent`1<CosmicShore.UI.BoostChangedPayload>:Raise (CosmicShore.UI.BoostChangedPayload) (at B:/FrogletGames/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEvent.cs:77)
+0x000001f083b53f7b (Mono JIT Code) CosmicShore.Gameplay.SkimmerBoostPrismEffectSO:Execute (CosmicShore.Gameplay.SkimmerImpactor,CosmicShore.Gameplay.PrismImpactor) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerBoostPrismEffect.cs:87)
+0x000001f07ff655d2 (Mono JIT Code) CosmicShore.Gameplay.SkimmerImpactor:AcceptImpactee (CosmicShore.Gameplay.IImpactor) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:317)
+0x000001f083b53040 (Mono JIT Code) CosmicShore.Gameplay.ImpactorBase:AcceptImpacteeFromShellContact (CosmicShore.Gameplay.IImpactor) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:196)
+0x000001f07ff36f63 (Mono JIT Code) CosmicShore.Gameplay.PrismShellContactManager:ResolveContacts (CosmicShore.Gameplay.PrismSpatialIndex) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismShellContactManager.cs:472)
+0x000001f07ff325d3 (Mono JIT Code) CosmicShore.Gameplay.PrismShellContactManager:Update () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismShellContactManager.cs:326)
+0x000001ef2e0b7438 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fff551e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fff55128984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fff55128a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fff47bffdd4 (Unity) scripting_method_invoke
+0x00007fff47c06c93 (Unity) ScriptingInvocation::Invoke
+0x00007fff47b11aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007fff47b11bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007fff476b308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007fff476b9f1a (Unity) BehaviourManager::Update
+0x00007fff47acc7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007fff47aaabef (Unity) ExecutePlayerLoop
+0x00007fff47aaad65 (Unity) ExecutePlayerLoop
+0x00007fff47aafc0f (Unity) PlayerLoop
+0x00007fff484256da (Unity) EditorPlayerLoop::Execute
+0x00007fff4843c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fff4843e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fff4843866d (Unity) Application::TickTimer
+0x00007fff48219f7c (Unity) MainMessageLoop
+0x00007fff48221a12 (Unity) UnityMain
+0x00007ff76a222f2a (Unity) __scrt_common_main_seh
+0x00007ff81d98dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff81fcbee4c (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Successfully resolved entitlement details
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassBrittlestarFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007fff473c4e2e (Unity) StackWalker::ShowCallstack
+0x00007fff48bff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fff48bffbee (Unity) Stacktrace::GetStacktrace
+0x00007fff4737587f (Unity) DebugStringToFile
+0x00007fff47231b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001ee8df6317d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001ee8df63043 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001ee8df62c7b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001eefac8c6e5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x000001ee8df62a00 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001ee8df628c8 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001f083c9ed33 (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:110)
+0x000001f083c9e9ab (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000001f083c9e6db (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:171)
+0x000001f083d02d4b (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:616)
+0x000001f083d0255b (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:592)
+0x000001f083d01ffb (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:402)
+0x000001f083cfa8db (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:907)
+0x000001f083ca8083 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:865)
+0x000001f083ca6d2b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1118)
+0x000001ef2e0b7438 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fff551e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fff55128984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fff55128a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fff47bffdd4 (Unity) scripting_method_invoke
+0x00007fff47c06c93 (Unity) ScriptingInvocation::Invoke
+0x00007fff47b11aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007fff47b11bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007fff476b308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007fff476b9f1a (Unity) BehaviourManager::Update
+0x00007fff47acc7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007fff47aaabef (Unity) ExecutePlayerLoop
+0x00007fff47aaad65 (Unity) ExecutePlayerLoop
+0x00007fff47aafc0f (Unity) PlayerLoop
+0x00007fff484256da (Unity) EditorPlayerLoop::Execute
+0x00007fff4843c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fff4843e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fff4843866d (Unity) Application::TickTimer
+0x00007fff48219f7c (Unity) MainMessageLoop
+0x00007fff48221a12 (Unity) UnityMain
+0x00007ff76a222f2a (Unity) __scrt_common_main_seh
+0x00007ff81d98dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff81fcbee4c (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassBrittlestarFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007fff473c4e2e (Unity) StackWalker::ShowCallstack
+0x00007fff48bff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fff48bffbee (Unity) Stacktrace::GetStacktrace
+0x00007fff4737587f (Unity) DebugStringToFile
+0x00007fff47231b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001ee8df6317d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001ee8df63043 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001ee8df62c7b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001eefac8c6e5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x000001ee8df62a00 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001ee8df628c8 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001f083c9ed33 (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:110)
+0x000001f083c9e9ab (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000001f083c9e6db (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:171)
+0x000001f083d02d4b (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:616)
+0x000001f083d0255b (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:592)
+0x000001f083d01ffb (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:402)
+0x000001f083cfa8db (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:907)
+0x000001f083ca8083 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:865)
+0x000001f083ca6d2b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1118)
+0x000001ef2e0b7438 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fff551e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fff55128984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fff55128a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fff47bffdd4 (Unity) scripting_method_invoke
+0x00007fff47c06c93 (Unity) ScriptingInvocation::Invoke
+0x00007fff47b11aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007fff47b11bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007fff476b308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007fff476b9f1a (Unity) BehaviourManager::Update
+0x00007fff47acc7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007fff47aaabef (Unity) ExecutePlayerLoop
+0x00007fff47aaad65 (Unity) ExecutePlayerLoop
+0x00007fff47aafc0f (Unity) PlayerLoop
+0x00007fff484256da (Unity) EditorPlayerLoop::Execute
+0x00007fff4843c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fff4843e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fff4843866d (Unity) Application::TickTimer
+0x00007fff48219f7c (Unity) MainMessageLoop
+0x00007fff48221a12 (Unity) UnityMain
+0x00007ff76a222f2a (Unity) __scrt_common_main_seh
+0x00007ff81d98dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff81fcbee4c (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007fff473c4e2e (Unity) StackWalker::ShowCallstack
+0x00007fff48bff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fff48bffbee (Unity) Stacktrace::GetStacktrace
+0x00007fff4737587f (Unity) DebugStringToFile
+0x00007fff47231b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001ee8df6317d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001ee8df63043 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001ee8df62c7b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001eefac8c6e5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x000001ee8df62a00 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001ee8df628c8 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001f083c9ed33 (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:110)
+0x000001f083c9e9ab (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000001f083c9e6db (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:171)
+0x000001f083d02d4b (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:616)
+0x000001f083d0255b (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:592)
+0x000001f083d01ffb (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:402)
+0x000001f083cfa8db (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:907)
+0x000001f083ca8083 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:865)
+0x000001f083ca6d2b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1118)
+0x000001ef2e0b7438 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fff551e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fff55128984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fff55128a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fff47bffdd4 (Unity) scripting_method_invoke
+0x00007fff47c06c93 (Unity) ScriptingInvocation::Invoke
+0x00007fff47b11aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007fff47b11bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007fff476b308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007fff476b9f1a (Unity) BehaviourManager::Update
+0x00007fff47acc7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007fff47aaabef (Unity) ExecutePlayerLoop
+0x00007fff47aaad65 (Unity) ExecutePlayerLoop
+0x00007fff47aafc0f (Unity) PlayerLoop
+0x00007fff484256da (Unity) EditorPlayerLoop::Execute
+0x00007fff4843c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fff4843e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fff4843866d (Unity) Application::TickTimer
+0x00007fff48219f7c (Unity) MainMessageLoop
+0x00007fff48221a12 (Unity) UnityMain
+0x00007ff76a222f2a (Unity) __scrt_common_main_seh
+0x00007ff81d98dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff81fcbee4c (ntdll) RtlUserThreadStart
+
+[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.
+0x00007fff473c4e2e (Unity) StackWalker::ShowCallstack
+0x00007fff48bff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fff48bffbee (Unity) Stacktrace::GetStacktrace
+0x00007fff4737587f (Unity) DebugStringToFile
+0x00007fff47231b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001ee8df6317d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001ee8df63043 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001ee8df62c7b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001eefac8c6e5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x000001eeaf85bf91 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+0x000001f083b557ed (Mono JIT Code) UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+0x000001f083b54f13 (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:EnsureLoopStarted () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:431)
+0x000001f07ff1e6f3 (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:HandleBoostChanged (CosmicShore.UI.BoostChangedPayload) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:364)
+0x000001f07ff1e4d2 (Mono JIT Code) (wrapper delegate-invoke) System.Action`1<CosmicShore.UI.BoostChangedPayload>:invoke_void_T (CosmicShore.UI.BoostChangedPayload)
+0x000001f07ff1e2e5 (Mono JIT Code) Obvious.Soap.ScriptableEvent`1<CosmicShore.UI.BoostChangedPayload>:Raise (CosmicShore.UI.BoostChangedPayload) (at B:/FrogletGames/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEvent.cs:77)
+0x000001f083b53f7b (Mono JIT Code) CosmicShore.Gameplay.SkimmerBoostPrismEffectSO:Execute (CosmicShore.Gameplay.SkimmerImpactor,CosmicShore.Gameplay.PrismImpactor) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerBoostPrismEffect.cs:87)
+0x000001f07ff655d2 (Mono JIT Code) CosmicShore.Gameplay.SkimmerImpactor:AcceptImpactee (CosmicShore.Gameplay.IImpactor) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:317)
+0x000001f083b53040 (Mono JIT Code) CosmicShore.Gameplay.ImpactorBase:AcceptImpacteeFromShellContact (CosmicShore.Gameplay.IImpactor) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:196)
+0x000001f07ff36f63 (Mono JIT Code) CosmicShore.Gameplay.PrismShellContactManager:ResolveContacts (CosmicShore.Gameplay.PrismSpatialIndex) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismShellContactManager.cs:472)
+0x000001f07ff325d3 (Mono JIT Code) CosmicShore.Gameplay.PrismShellContactManager:Update () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismShellContactManager.cs:326)
+0x000001ef2e0b7438 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fff551e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fff55128984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fff55128a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fff47bffdd4 (Unity) scripting_method_invoke
+0x00007fff47c06c93 (Unity) ScriptingInvocation::Invoke
+0x00007fff47b11aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007fff47b11bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007fff476b308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007fff476b9f1a (Unity) BehaviourManager::Update
+0x00007fff47acc7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007fff47aaabef (Unity) ExecutePlayerLoop
+0x00007fff47aaad65 (Unity) ExecutePlayerLoop
+0x00007fff47aafc0f (Unity) PlayerLoop
+0x00007fff484256da (Unity) EditorPlayerLoop::Execute
+0x00007fff4843c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fff4843e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fff4843866d (Unity) Application::TickTimer
+0x00007fff48219f7c (Unity) MainMessageLoop
+0x00007fff48221a12 (Unity) UnityMain
+0x00007ff76a222f2a (Unity) __scrt_common_main_seh
+0x00007ff81d98dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff81fcbee4c (ntdll) RtlUserThreadStart
+
+[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.
+0x00007fff473c4e2e (Unity) StackWalker::ShowCallstack
+0x00007fff48bff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fff48bffbee (Unity) Stacktrace::GetStacktrace
+0x00007fff4737587f (Unity) DebugStringToFile
+0x00007fff47231b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001ee8df6317d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001ee8df63043 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001ee8df62c7b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001eefac8c6e5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x000001eeaf85bf91 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+0x000001f083b557ed (Mono JIT Code) UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+0x000001f083b54f13 (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:EnsureLoopStarted () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:431)
+0x000001f07ff1e6f3 (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:HandleBoostChanged (CosmicShore.UI.BoostChangedPayload) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:364)
+0x000001f07ff1e4d2 (Mono JIT Code) (wrapper delegate-invoke) System.Action`1<CosmicShore.UI.BoostChangedPayload>:invoke_void_T (CosmicShore.UI.BoostChangedPayload)
+0x000001f07ff1e2e5 (Mono JIT Code) Obvious.Soap.ScriptableEvent`1<CosmicShore.UI.BoostChangedPayload>:Raise (CosmicShore.UI.BoostChangedPayload) (at B:/FrogletGames/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEvent.cs:77)
+0x000001f083b53f7b (Mono JIT Code) CosmicShore.Gameplay.SkimmerBoostPrismEffectSO:Execute (CosmicShore.Gameplay.SkimmerImpactor,CosmicShore.Gameplay.PrismImpactor) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerBoostPrismEffect.cs:87)
+0x000001f07ff655d2 (Mono JIT Code) CosmicShore.Gameplay.SkimmerImpactor:AcceptImpactee (CosmicShore.Gameplay.IImpactor) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:317)
+0x000001f083b53040 (Mono JIT Code) CosmicShore.Gameplay.ImpactorBase:AcceptImpacteeFromShellContact (CosmicShore.Gameplay.IImpactor) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:196)
+0x000001f07ff36f63 (Mono JIT Code) CosmicShore.Gameplay.PrismShellContactManager:ResolveContacts (CosmicShore.Gameplay.PrismSpatialIndex) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismShellContactManager.cs:472)
+0x000001f07ff325d3 (Mono JIT Code) CosmicShore.Gameplay.PrismShellContactManager:Update () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismShellContactManager.cs:326)
+0x000001ef2e0b7438 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fff551e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fff55128984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fff55128a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fff47bffdd4 (Unity) scripting_method_invoke
+0x00007fff47c06c93 (Unity) ScriptingInvocation::Invoke
+0x00007fff47b11aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007fff47b11bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007fff476b308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007fff476b9f1a (Unity) BehaviourManager::Update
+0x00007fff47acc7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007fff47aaabef (Unity) ExecutePlayerLoop
+0x00007fff47aaad65 (Unity) ExecutePlayerLoop
+0x00007fff47aafc0f (Unity) PlayerLoop
+0x00007fff484256da (Unity) EditorPlayerLoop::Execute
+0x00007fff4843c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fff4843e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fff4843866d (Unity) Application::TickTimer
+0x00007fff48219f7c (Unity) MainMessageLoop
+0x00007fff48221a12 (Unity) UnityMain
+0x00007ff76a222f2a (Unity) __scrt_common_main_seh
+0x00007ff81d98dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff81fcbee4c (ntdll) RtlUserThreadStart
+
+Asset Pipeline Refresh (id=1e674812a0fb9424b80b3688e77dde59): Total: 0.015 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
+[BugLedger] Validated & closed: "[PartyInviteController] direct-join -> Kyoki failed (SessionException): SessionException: [Error: NetworkManagerStartFai" — silent across 2 clean PlayMode sessions (last: 215s play run, exiting play mode). Archived to BugLedger/resolved/.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CosmicShore.Editor.BugLedger:CreditCleanSessions (string,System.Collections.Generic.HashSet`1<string>,bool,string) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:519)
+CosmicShore.Editor.BugLedger:EndPlayRun (string) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:439)
+CosmicShore.Editor.BugLedger:OnPlayModeChanged (UnityEditor.PlayModeStateChange) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:407)
+UnityEditor.EditorApplication:Internal_PlayModeStateChanged (UnityEditor.PlayModeStateChange)
+UnityEditor.EditorApplication:ExitPlaymode ()
+Unity.PlayMode.Editor.DefaultPlayModeConfiguration:ExecuteStop ()
+Unity.PlayMode.Editor.PlayModeManager:TransitionActionAsync (Unity.PlayMode.Editor.PlayModeState,Unity.PlayMode.Editor.PlayModeState,System.Threading.CancellationToken)
+Unity.PlayMode.Editor.StateMachine`1/<TransitionAsync>d__18<Unity.PlayMode.Editor.PlayModeState>:MoveNext ()
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.PlayMode.Editor.StateMachine`1/<TransitionAsync>d__18<Unity.PlayMode.Editor.PlayModeState>> (Unity.PlayMode.Editor.StateMachine`1/<TransitionAsync>d__18<Unity.PlayMode.Editor.PlayModeState>&)
+Unity.PlayMode.Editor.StateMachine`1<Unity.PlayMode.Editor.PlayModeState>:TransitionAsync (Unity.PlayMode.Editor.PlayModeState,System.Func`4<Unity.PlayMode.Editor.PlayModeState, Unity.PlayMode.Editor.PlayModeState, System.Threading.CancellationToken, System.Threading.Tasks.Task>,System.Threading.CancellationToken)
+Unity.PlayMode.Editor.PlayModeManager:TransitionToState (Unity.PlayMode.Editor.PlayModeState)
+Unity.PlayMode.Editor.PlayModeManager:Stop ()
+Unity.PlayMode.Editor.PlayModeButtonsView:OnPlayButtonValueChanged (UnityEngine.UIElements.ChangeEvent`1<bool>)
+UnityEngine.UIElements.EventCallbackFunctor`1<UnityEngine.UIElements.ChangeEvent`1<bool>>:Invoke (UnityEngine.UIElements.EventBase)
+UnityEngine.UIElements.EventCallbackRegistry/DynamicCallbackList:Invoke (UnityEngine.UIElements.EventBase,UnityEngine.UIElements.BaseVisualElementPanel,UnityEngine.UIElements.VisualElement)
+UnityEngine.UIElements.EventDispatchUtilities:HandleEventAcrossPropagationPath (UnityEngine.UIElements.EventBase,UnityEngine.UIElements.BaseVisualElementPanel,UnityEngine.UIElements.VisualElement,bool)
+UnityEngine.UIElements.EventDispatchUtilities:DefaultDispatch (UnityEngine.UIElements.EventBase,UnityEngine.UIElements.BaseVisualElementPanel)
+UnityEngine.UIElements.EventBase:Dispatch (UnityEngine.UIElements.BaseVisualElementPanel)
+UnityEngine.UIElements.EventDispatcher:ProcessEvent (UnityEngine.UIElements.EventBase,UnityEngine.UIElements.BaseVisualElementPanel)
+UnityEngine.UIElements.EventDispatcher:ProcessEventQueue ()
+UnityEngine.UIElements.EventDispatcher:OpenGate ()
+UnityEngine.UIElements.EventDispatcherGate:Dispose ()
+UnityEngine.UIElements.EventDispatcher:ProcessEvent (UnityEngine.UIElements.EventBase,UnityEngine.UIElements.BaseVisualElementPanel)
+UnityEngine.UIElements.EventDispatcher:Dispatch (UnityEngine.UIElements.EventBase,UnityEngine.UIElements.BaseVisualElementPanel,UnityEngine.UIElements.DispatchMode)
+UnityEngine.UIElements.BaseVisualElementPanel:SendEvent (UnityEngine.UIElements.EventBase,UnityEngine.UIElements.DispatchMode)
+UnityEngine.UIElements.UIElementsUtility:DoDispatch (UnityEngine.UIElements.BaseVisualElementPanel)
+UnityEngine.UIElements.UIElementsUtility:UnityEngine.UIElements.IUIElementsUtility.ProcessEvent (int,intptr,bool&)
+UnityEngine.UIElements.UIEventRegistration:ProcessEvent (int,intptr)
+UnityEngine.UIElements.UIEventRegistration/<>c:<.cctor>b__1_2 (int,intptr)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+(Filename: Assets/_Scripts/Editor/Diagnostics/BugLedger.cs Line: 519)
+
+[BugLedger] Validated & closed: "[HostConnectionService] JoinPartyDirect error (SessionException): SessionException: [Error: NetworkManagerStartFailed] [" — silent across 2 clean PlayMode sessions (last: 215s play run, exiting play mode). Archived to BugLedger/resolved/.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+CosmicShore.Editor.BugLedger:CreditCleanSessions (string,System.Collections.Generic.HashSet`1<string>,bool,string) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:519)
+CosmicShore.Editor.BugLedger:EndPlayRun (string) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:439)
+CosmicShore.Editor.BugLedger:OnPlayModeChanged (UnityEditor.PlayModeStateChange) (at Assets/_Scripts/Editor/Diagnostics/BugLedger.cs:407)
+UnityEditor.EditorApplication:Internal_PlayModeStateChanged (UnityEditor.PlayModeStateChange)
+UnityEditor.EditorApplication:ExitPlaymode ()
+Unity.PlayMode.Editor.DefaultPlayModeConfiguration:ExecuteStop ()
+Unity.PlayMode.Editor.PlayModeManager:TransitionActionAsync (Unity.PlayMode.Editor.PlayModeState,Unity.PlayMode.Editor.PlayModeState,System.Threading.CancellationToken)
+Unity.PlayMode.Editor.StateMachine`1/<TransitionAsync>d__18<Unity.PlayMode.Editor.PlayModeState>:MoveNext ()
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.PlayMode.Editor.StateMachine`1/<TransitionAsync>d__18<Unity.PlayMode.Editor.PlayModeState>> (Unity.PlayMode.Editor.StateMachine`1/<TransitionAsync>d__18<Unity.PlayMode.Editor.PlayModeState>&)
+Unity.PlayMode.Editor.StateMachine`1<Unity.PlayMode.Editor.PlayModeState>:TransitionAsync (Unity.PlayMode.Editor.PlayModeState,System.Func`4<Unity.PlayMode.Editor.PlayModeState, Unity.PlayMode.Editor.PlayModeState, System.Threading.CancellationToken, System.Threading.Tasks.Task>,System.Threading.CancellationToken)
+Unity.PlayMode.Editor.PlayModeManager:TransitionToState (Unity.PlayMode.Editor.PlayModeState)
+Unity.PlayMode.Editor.PlayModeManager:Stop ()
+Unity.PlayMode.Editor.PlayModeButtonsView:OnPlayButtonValueChanged (UnityEngine.UIElements.ChangeEvent`1<bool>)
+UnityEngine.UIElements.EventCallbackFunctor`1<UnityEngine.UIElements.ChangeEvent`1<bool>>:Invoke (UnityEngine.UIElements.EventBase)
+UnityEngine.UIElements.EventCallbackRegistry/DynamicCallbackList:Invoke (UnityEngine.UIElements.EventBase,UnityEngine.UIElements.BaseVisualElementPanel,UnityEngine.UIElements.VisualElement)
+UnityEngine.UIElements.EventDispatchUtilities:HandleEventAcrossPropagationPath (UnityEngine.UIElements.EventBase,UnityEngine.UIElements.BaseVisualElementPanel,UnityEngine.UIElements.VisualElement,bool)
+UnityEngine.UIElements.EventDispatchUtilities:DefaultDispatch (UnityEngine.UIElements.EventBase,UnityEngine.UIElements.BaseVisualElementPanel)
+UnityEngine.UIElements.EventBase:Dispatch (UnityEngine.UIElements.BaseVisualElementPanel)
+UnityEngine.UIElements.EventDispatcher:ProcessEvent (UnityEngine.UIElements.EventBase,UnityEngine.UIElements.BaseVisualElementPanel)
+UnityEngine.UIElements.EventDispatcher:ProcessEventQueue ()
+UnityEngine.UIElements.EventDispatcher:OpenGate ()
+UnityEngine.UIElements.EventDispatcherGate:Dispose ()
+UnityEngine.UIElements.EventDispatcher:ProcessEvent (UnityEngine.UIElements.EventBase,UnityEngine.UIElements.BaseVisualElementPanel)
+UnityEngine.UIElements.EventDispatcher:Dispatch (UnityEngine.UIElements.EventBase,UnityEngine.UIElements.BaseVisualElementPanel,UnityEngine.UIElements.DispatchMode)
+UnityEngine.UIElements.BaseVisualElementPanel:SendEvent (UnityEngine.UIElements.EventBase,UnityEngine.UIElements.DispatchMode)
+UnityEngine.UIElements.UIElementsUtility:DoDispatch (UnityEngine.UIElements.BaseVisualElementPanel)
+UnityEngine.UIElements.UIElementsUtility:UnityEngine.UIElements.IUIElementsUtility.ProcessEvent (int,intptr,bool&)
+UnityEngine.UIElements.UIEventRegistration:ProcessEvent (int,intptr)
+UnityEngine.UIElements.UIEventRegistration/<>c:<.cctor>b__1_2 (int,intptr)
+UnityEngine.GUIUtility:ProcessEvent (int,intptr,bool&)
+
+(Filename: Assets/_Scripts/Editor/Diagnostics/BugLedger.cs Line: 519)
+
+Analytics Dispatcher is already flushing.
+0x00007fff473c4e2e (Unity) StackWalker::ShowCallstack
+0x00007fff48bff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fff48bffbee (Unity) Stacktrace::GetStacktrace
+0x00007fff4737587f (Unity) DebugStringToFile
+0x00007fff47231b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001ee8df6317d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001ee8df63043 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001ee8df62c7b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001eefac8c6e5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x000001ee8df62a00 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001ee8df628c8 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001eefe558a73 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x000001eefe5589ae (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x000001f0c8c88486 (Mono JIT Code) CosmicShore.Core.UgsAnalyticsSink:Flush () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/UgsAnalyticsSink.cs:121)
+0x000001f0c8c883b7 (Mono JIT Code) CosmicShore.Core.AnalyticsServiceFacade:Flush () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs:605)
+0x000001f0c8c8803b (Mono JIT Code) CosmicShore.Core.AnalyticsServiceFacade:HandleAppQuitting () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs:809)
+0x000001eead2ee762 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x000001eefe552a30 (Mono JIT Code) Obvious.Soap.ScriptableEventNoParam:Raise () (at B:/FrogletGames/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEventNoParam.cs:75)
+0x000001f0c8c87f8b (Mono JIT Code) CosmicShore.Core.ApplicationLifecycleManager:OnApplicationQuit () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/System/Bootstrap/ApplicationLifecycleManager.cs:86)
+0x000001ef2e0b7438 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fff551e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fff55128984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fff55128a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fff47bffdd4 (Unity) scripting_method_invoke
+0x00007fff47c06c93 (Unity) ScriptingInvocation::Invoke
+0x00007fff47b16f51 (Unity) MonoBehaviour::HandleNotifications
+0x00007fff47575010 (Unity) GameObject::SendMessageAny
+0x00007fff47a9bc42 (Unity) SendMessageToEveryone
+0x00007fff47acf65a (Unity) NotifyPlayerQuit
+0x00007fff4843b7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007fff4843d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007fff4843896c (Unity) Application::TickTimer
+0x00007fff48219f7c (Unity) MainMessageLoop
+0x00007fff48221a12 (Unity) UnityMain
+0x00007ff76a222f2a (Unity) __scrt_common_main_seh
+0x00007ff81d98dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff81fcbee4c (ntdll) RtlUserThreadStart
+
+Container Menu_Main (-270748421) disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:57)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Container RootContainer disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Analytics Dispatcher is already flushing.
+0x00007fff473c4e2e (Unity) StackWalker::ShowCallstack
+0x00007fff48bff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fff48bffbee (Unity) Stacktrace::GetStacktrace
+0x00007fff4737587f (Unity) DebugStringToFile
+0x00007fff47231b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001ee8df6317d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001ee8df63043 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001ee8df62c7b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001eefac8c6e5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x000001ee8df62a00 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001ee8df628c8 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001eefe558a73 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x000001eefe5589ae (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x000001f0c8c89dfb (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:ApplicationQuit () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:326)
+0x000001f0c8c89ccb (Mono JIT Code) Unity.Services.Analytics.AnalyticsContainer:CleanUp () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/AnalyticsContainer.cs:111)
+0x000001eead2ee762 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x000001f0c8c88953 (Mono JIT Code) UnityEngine.Application:Internal_ApplicationQuit ()
+0x000001ef2df51de5 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007fff551e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fff55128984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fff55128a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fff47bffdd4 (Unity) scripting_method_invoke
+0x00007fff47c06c93 (Unity) ScriptingInvocation::Invoke
+0x00007fff47c02235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007fff470dab4b (Unity) Scripting::UnityEngine::ApplicationProxy::Internal_ApplicationQuit
+0x00007fff47acf689 (Unity) NotifyPlayerQuit
+0x00007fff4843b7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007fff4843d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007fff4843896c (Unity) Application::TickTimer
+0x00007fff48219f7c (Unity) MainMessageLoop
+0x00007fff48221a12 (Unity) UnityMain
+0x00007ff76a222f2a (Unity) __scrt_common_main_seh
+0x00007ff81d98dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff81fcbee4c (ntdll) RtlUserThreadStart
+
+[Multiplayer]: NetworkManagerSession.StopAsync: Called after dispose.
+0x00007fff473c4e2e (Unity) StackWalker::ShowCallstack
+0x00007fff48bff369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fff48bffbee (Unity) Stacktrace::GetStacktrace
+0x00007fff4737587f (Unity) DebugStringToFile
+0x00007fff47231b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001ee8df6317d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001ee8df63043 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001ee8df62c7b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001eefac8c6e5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:58)
+0x000001f0c8c92dfc (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,string,object,UnityEngine.Object)
+0x000001f0c8c92cff (Mono JIT Code) Unity.Services.Multiplayer.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:19)
+0x000001f0c8c92c6b (Mono JIT Code) Unity.Services.Multiplayer.Logger:LogWarning (object,UnityEngine.Object) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:39)
+0x000001f0c8c92bfb (Mono JIT Code) Unity.Services.Multiplayer.Logger:LogCallWarning (string,string,UnityEngine.Object,string) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:49)
+0x000001f0c8c92a8b (Mono JIT Code) Unity.Services.Multiplayer.Logger:LogCallWarning (string,string,string) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:44)
+0x000001f0c8c92243 (Mono JIT Code) Unity.Services.Multiplayer.NetworkManagerSession/<StopAsync>d__29:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/Handlers/NetworkHandler/NetworkManagerSession.cs:251)
+0x000001f0c8c920d3 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.Services.Multiplayer.NetworkManagerSession/<StopAsync>d__29> (Unity.Services.Multiplayer.NetworkManagerSession/<StopAsync>d__29&)
+0x000001f0c8c91f9b (Mono JIT Code) Unity.Services.Multiplayer.NetworkManagerSession:StopAsync (System.Threading.CancellationToken)
+0x000001f0c8c91e93 (Mono JIT Code) Unity.Services.Multiplayer.GameObjectsNetcodeNetworkHandler:StopAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/Handlers/NetworkHandler/GameObjectsNetcodeNetworkHandler.cs:121)
+0x000001f0c8c8e187 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule/<ResetAsync>d__83:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/NetworkModule.cs:727)
+0x000001f0c8c8e05b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.Services.Multiplayer.NetworkModule/<ResetAsync>d__83> (Unity.Services.Multiplayer.NetworkModule/<ResetAsync>d__83&)
+0x000001f0c8c8df23 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule:ResetAsync ()
+0x000001f0c8c8dc53 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule/<Unity-Services-Multiplayer-IModule-LeaveAsync>d__59:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/NetworkModule.cs:129)
+0x000001f0c8c8db5b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.Services.Multiplayer.NetworkModule/<Unity-Services-Multiplayer-IModule-LeaveAsync>d__59> (Unity.Services.Multiplayer.NetworkModule/<Unity-Services-Multiplayer-IModule-LeaveAsync>d__59&)
+0x000001f0c8c8da23 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule:Unity.Services.Multiplayer.IModule.LeaveAsync ()
+0x000001f0c8c8d451 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler/<LeaveModulesAsync>d__132:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:776)
+0x000001f0c8c8d0fb (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.Services.Multiplayer.SessionHandler/<LeaveModulesAsync>d__132> (Unity.Services.Multiplayer.SessionHandler/<LeaveModulesAsync>d__132&)
+0x000001f0c8c8cfb3 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler:LeaveModulesAsync ()
+0x000001f0c8c8bbfb (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler/<LeaveAsync>d__133:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:818)
+0x000001f0c8c8b0eb (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.Services.Multiplayer.SessionHandler/<LeaveAsync>d__133> (Unity.Services.Multiplayer.SessionHandler/<LeaveAsync>d__133&)
+0x000001f0c8c8afb3 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler:LeaveAsync ()
+0x000001f0c8c8ac93 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler/<OnQuitting>d__166:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:1234)
+0x000001f0c8c8ab93 (Mono JIT Code) System.Runtime.CompilerServices.AsyncVoidMethodBuilder:Start<Unity.Services.Multiplayer.SessionHandler/<OnQuitting>d__166> (Unity.Services.Multiplayer.SessionHandler/<OnQuitting>d__166&)
+0x000001f0c8c8aa73 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler:OnQuitting ()
+0x000001eead2ee762 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x000001f0c8c88953 (Mono JIT Code) UnityEngine.Application:Internal_ApplicationQuit ()
+0x000001ef2df51de5 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007fff551e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fff55128984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fff55128a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fff47bffdd4 (Unity) scripting_method_invoke
+0x00007fff47c06c93 (Unity) ScriptingInvocation::Invoke
+0x00007fff47c02235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007fff470dab4b (Unity) Scripting::UnityEngine::ApplicationProxy::Internal_ApplicationQuit
+0x00007fff47acf689 (Unity) NotifyPlayerQuit
+0x00007fff4843b7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007fff4843d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007fff4843896c (Unity) Application::TickTimer
+0x00007fff48219f7c (Unity) MainMessageLoop
+0x00007fff48221a12 (Unity) UnityMain
+0x00007ff76a222f2a (Unity) __scrt_common_main_seh
+0x00007ff81d98dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ff81fcbee4c (ntdll) RtlUserThreadStart
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            4.744 ms
+	Integration:            867.451 ms
+	Integration of assets:  0.004 ms
+	Thread Wait Time:       0.041 ms
+	Total Operation Time:   872.239 ms
+Unloading 20734 unused Assets / (34.1 MB). Loaded Objects now: 35479.
+Memory consumption went from 1.44 GB to 1.41 GB.
+Total: 139.421700 ms (FindLiveObjects: 3.656200 ms CreateObjectMapping: 8.250600 ms MarkObjects: 108.711800 ms  DeleteObjects: 18.801300 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Scanning for USB devices : 9.617ms
+Scanning for USB devices : 9.315ms
+Scanning for USB devices : 10.593ms
+Scanning for USB devices : 9.765ms
+Scanning for USB devices : 10.223ms
+Scanning for USB devices : 10.197ms
+Scanning for USB devices : 9.960ms
+Scanning for USB devices : 11.591ms
+Scanning for USB devices : 11.844ms
+Scanning for USB devices : 12.340ms
+Scanning for USB devices : 35.923ms
+Scanning for USB devices : 11.908ms
+Scanning for USB devices : 10.979ms
+Scanning for USB devices : 98.232ms
+Scanning for USB devices : 23.699ms
+Scanning for USB devices : 16.762ms
+Scanning for USB devices : 14.280ms
+Scanning for USB devices : 11.225ms
+Scanning for USB devices : 11.292ms
+Scanning for USB devices : 12.048ms
+Scanning for USB devices : 10.519ms
+Scanning for USB devices : 10.703ms
+Scanning for USB devices : 12.161ms
+Scanning for USB devices : 14.367ms
+Scanning for USB devices : 16.757ms
+Scanning for USB devices : 16.353ms
+Scanning for USB devices : 11.451ms
+Scanning for USB devices : 10.103ms
+Scanning for USB devices : 10.162ms
+Scanning for USB devices : 11.739ms
+Scanning for USB devices : 13.207ms
+Scanning for USB devices : 12.450ms
+Scanning for USB devices : 10.009ms
+Scanning for USB devices : 10.160ms
+Scanning for USB devices : 10.043ms
+Scanning for USB devices : 11.827ms
+Scanning for USB devices : 10.529ms
+Scanning for USB devices : 9.938ms
+Scanning for USB devices : 13.979ms
+Scanning for USB devices : 10.319ms
+Scanning for USB devices : 10.042ms
+Scanning for USB devices : 11.454ms
+Scanning for USB devices : 9.729ms
+Scanning for USB devices : 13.731ms
+Scanning for USB devices : 12.060ms
+Scanning for USB devices : 10.623ms
+Scanning for USB devices : 10.483ms
+Scanning for USB devices : 10.056ms
+Scanning for USB devices : 11.622ms
+Scanning for USB devices : 11.209ms
+Scanning for USB devices : 11.104ms
+Scanning for USB devices : 11.242ms
+Scanning for USB devices : 10.132ms
+Scanning for USB devices : 9.789ms
+Scanning for USB devices : 9.971ms
+Scanning for USB devices : 10.473ms
+Scanning for USB devices : 11.484ms
+Scanning for USB devices : 11.106ms
+Scanning for USB devices : 9.923ms
+Scanning for USB devices : 9.956ms
+Scanning for USB devices : 10.218ms
+Scanning for USB devices : 9.822ms
+Scanning for USB devices : 9.584ms
+Scanning for USB devices : 10.401ms
+Scanning for USB devices : 9.552ms
+Scanning for USB devices : 10.157ms
+Scanning for USB devices : 10.425ms
+Scanning for USB devices : 33.680ms
+Scanning for USB devices : 38.617ms
+Scanning for USB devices : 17.137ms
+Scanning for USB devices : 14.269ms
+Scanning for USB devices : 11.338ms
+Scanning for USB devices : 10.940ms
+
