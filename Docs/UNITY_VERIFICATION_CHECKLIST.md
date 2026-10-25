@@ -3556,6 +3556,19 @@ known AuthenticationServiceFacade errors). `/verify-unity` is not available in t
    `Presence lobby not rejoined - retrying` warning, then the online list fills.
 3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
 
+### 🔴 Party: B31 addendum - a lobby write's read is retried on a 429 (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B31, "First retest"): `LobbyPropertyWriter.WriteAsync` runs its read
+before the save under `UgsRequestPolicy`, so one 429 no longer drops the write (the 25 Oct "RepublishLocalIdentity
+error ... RateLimitExceeded"). `Refresh` / `Save` are internal delegates so tests drive them.
+**Verified without the editor:** `LobbyPropertyWriterRetryTests` (3, uses `DispatchProxy` for a stand-in `ISession`)
+plus `UgsRequestPolicyTests`, `OfflineSessionTests`, `PartyRefreshRecoveryTests` on Amoebius (111/111); the retry test
+fails with the old code; `unity_refcompile` player and editor. `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. The three `LobbyPropertyWriterRetryTests` pass in the Test Runner (if `DispatchProxy` is unavailable in the editor's
+   Mono, they fail at `DispatchProxy.Create`; say so in the next session).
+2. Start a party (host), then within 2 s rename yourself: no "[LobbyPropertyWriter] ... RateLimitExceeded" warning.
+
 ### 🔴 Net: Load Time Insights records every online load by itself, the return to the menu included (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed** (`Docs/PartySystem/BUGS.md` B36, `Docs/MULTIPLAYER_START_HERE.md` §3.1): `LoadInsights.ShouldRecord`

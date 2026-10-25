@@ -21,7 +21,9 @@ or leaves it to the sweep below.
 | It reaches the person's editor | the person pulls `Ys-bleeding-edge` as usual | - |
 
 `ai_learn.py` remembers what it has learned from (`Docs/AI_SYSTEM/ai_learning_seen.json`), so an hour with no new
-race writes nothing. A learner writes a hull's numbers only once it has three finished races of that hull in that mode
+race writes nothing. Only a race a learner actually read is remembered as learned: one in a mode on hold or of a hull
+no learner covers waits in the file's `waiting` list with its reason and is learned from once the reason goes away (the
+hold lifts, a vessel gains a learner), and one whose learner failed is tried again next hour. A learner writes a hull's numbers only once it has three finished races of that hull in that mode
 (its own rule), so one race only counts toward the three.
 
 ## 2. What the sweep does (the scheduled task's whole instruction)
