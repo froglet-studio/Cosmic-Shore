@@ -327,7 +327,10 @@ namespace CosmicShore.UI
                 _isPlaying = false;
                 SetSkipButtonVisible(false);
 
-                if (_playerCameraController is CustomCameraController pcc)
+                // `is` is a C# type test and passes for a camera Unity already destroyed: a scene
+                // unloading mid-cinematic disables this after the player camera is gone, and the
+                // re-enable threw (Bug Ledger E-3455204aad, jtgjones and Shombith). Test it as an Object.
+                if (_playerCameraController is CustomCameraController pcc && pcc)
                 {
                     pcc.enabled = true;
                     pcc.SnapToTarget();
