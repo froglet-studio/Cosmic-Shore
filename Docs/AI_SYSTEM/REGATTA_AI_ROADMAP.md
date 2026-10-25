@@ -127,7 +127,18 @@ and **not shipped**: slower on every course (27.6 / 34.6 / 40.5 / 39.8 s), becau
 shrinks when it slows (237 u at 720 u/s, 156 u at 180 u/s). Test: `RegattaDriveTuningTests.
 MantaRegattaTuning_LoadsWithThePivotBandAboveTheBoostBand`.
 
-All three sims are models without break-off or rotation-follow lag, and default to the Regatta steering
+**2026-10-25: the shared steering was losing every styled hull's race** (`Arcade/REGATTA.md` §6.3). Measured from
+the AI rivals in 87 stored editor races (`Tools/Build/regatta_rival_report.py`): every hull on the gate steering or the
+race line threaded 5.5-9.3 rings a minute (the Urchin 23.5, the Squirrel 13.7), crossing the ring's plane just outside
+the mouth and swinging 500-1500 u wide. Two fixes for all of them at once: the orbit break-off no longer judges the
+race line's lead point (`AIPilot.MarkAimAsPathLead`), and the aim never cuts the next ring's mouth
+(`RegattaRaceLine.AimThroughRing`). Offline (`Tools/Build/regatta_line_sim.py`, the first model WITH the break-off and
+`AIPilot`'s own stick law): break-offs plus misses 18-83 → 0 per hull over I1-I4, every hull faster on every course
+(Manta I4 215.5 → 66.5 s, Scarab I3 135.3 → 53.6 s). The Scarab's corner lift was modelled and not shipped
+(`scarab_drive_sim.py`). Per-hull drive work resumes from races flown after this change: re-run
+`regatta_rival_report.py --since 2026-10-26`.
+
+The three drive sims are models without break-off or rotation-follow lag (`regatta_line_sim.py` has both), and default to the Regatta steering
 (`THROUGH_CENTRE = True`). The editor is the measurement; none of this has been run there.
 
 **2026-10-17: the Regatta AIs learn from people's editor flights.** The Squirrel's skim line came from 29 flights (the 2026-10-16 learning run)
