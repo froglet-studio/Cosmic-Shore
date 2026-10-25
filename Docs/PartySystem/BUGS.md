@@ -2361,4 +2361,5 @@ for the whole session; it now retries with back-off (3 s up to 60 s, `SchedulePr
 **Hand test.** Start Play with the network cable out (or Wi-Fi off), wait 10 s, plug it back in: no
 `Could not create presence lobby` error; a `Presence lobby not rejoined - retrying` warning, then the online list
 fills. Press Invite on a friend during the outage: the "Connection service not ready" toast.
+Ticket: T-20261025-3506 (#1524).
 
