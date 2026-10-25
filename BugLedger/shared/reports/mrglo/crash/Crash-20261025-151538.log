@@ -1,0 +1,1014 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-25 15:15:38 (next editor launch after the abnormal exit)
+session:          (pid -1, Unity )
+started:         UTC
+last heartbeat:  UTC
+last state:     unknown
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261016-205233690
+started: 2026-10-16T20:52:33.690Z UTC
+unity:   6000.3.17f1
+pid:     53144
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[16:27:03.630] ---- entering play mode ----
+[16:27:05.817] ---- play mode running ----
+[16:40:39.636] ---- leaving play mode ----
+[16:40:41.288] ---- edit mode restored ----
+[16:40:45.017] ---- entering play mode ----
+[16:40:46.121] ---- play mod[16:43:29.650] ---- domain reload begins (script compilation / play-mode transition) ----
+estored ----
+[16:43:19.974] ---- domain reload begins (script compilation / play-mode transition) ----
+[16:44:25.072] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\mrglo\Doc[16:45:07.722] ---- leaving play mode ----
+[16:45:08.857] ---- edit mode restored ----
+[18:59:15.734] [EditMode] Exception: ObjectDisposedException: Cannot acce[06:04:08.404] ---- domain reload begins (script compilation / play-mode transition) ----
+4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[18:59:15.767] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!WV5VutDJqaspcm5sW3KqVd!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[18:59:17.051] ---- entering play mode ----
+[18:59:18.086] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!Kh4DrhWeecTbTSjcr9N9fn!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[18:59:18.158] ---- play mode running ----
+[19:00:21.080] ---- leaving play mode ----
+[19:00:22.021] ---- edit mode restored ----
+[21:10:15.831] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!yuEfhACp2RTrQWgBxDydbT!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[21:10:15.923] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!WV5VutDJqaspcm5sW3KqVd!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[21:10:15.977] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!Kh4DrhWeecTbTSjcr9N9fn!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[21:10:15.995] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!LELZPRhHdKS7AWR6Tx4cwk!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[21:10:16.011] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!h7NtRt9u5jAFZyz7XZdMfG!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[22:30:15.066] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!yuEfhACp2RTrQWgBxDydbT!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[22:30:15.117] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!WV5VutDJqaspcm5sW3KqVd!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[22:30:15.171] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!Kh4DrhWeecTbTSjcr9N9fn!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[22:30:15.217] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!LELZPRhHdKS7AWR6Tx4cwk!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[22:30:15.230] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!h7NtRt9u5jAFZyz7XZdMfG!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[23:58:40.553] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!yuEfhACp2RTrQWgBxDydbT!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[23:58:40.606] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!WV5VutDJqaspcm5sW3KqVd!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[23:58:40.658] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!Kh4DrhWeecTbTSjcr9N9fn!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[23:58:40.777] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!LELZPRhHdKS7AWR6Tx4cwk!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[23:58:40.783] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!h7NtRt9u5jAFZyz7XZdMfG!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[02:12:03.506] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!yuEfhACp2RTrQWgBxDydbT!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[02:12:03.557] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!WV5VutDJqaspcm5sW3KqVd!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[02:12:03.609] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!Kh4DrhWeecTbTSjcr9N9fn!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[02:12:03.659] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!LELZPRhHdKS7AWR6Tx4cwk!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[02:12:03.699] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!h7NtRt9u5jAFZyz7XZdMfG!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[03:32:02.285] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!yuEfhACp2RTrQWgBxDydbT!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[03:32:02.411] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!WV5VutDJqaspcm5sW3KqVd!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[03:32:02.463] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!Kh4DrhWeecTbTSjcr9N9fn!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[03:32:02.517] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!LELZPRhHdKS7AWR6Tx4cwk!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[03:32:02.523] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!h7NtRt9u5jAFZyz7XZdMfG!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[04:52:01.283] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!yuEfhACp2RTrQWgBxDydbT!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[04:52:01.334] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!WV5VutDJqaspcm5sW3KqVd!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[04:52:01.386] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!Kh4DrhWeecTbTSjcr9N9fn!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[04:52:01.468] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!LELZPRhHdKS7AWR6Tx4cwk!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[04:52:01.497] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!h7NtRt9u5jAFZyz7XZdMfG!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[06:00:43.555] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!yuEfhACp2RTrQWgBxDydbT!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[06:00:43.580] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!WV5VutDJqaspcm5sW3KqVd!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[06:00:43.632] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!Kh4DrhWeecTbTSjcr9N9fn!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[06:00:43.682] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!LELZPRhHdKS7AWR6Tx4cwk!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[06:00:43.770] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!h7NtRt9u5jAFZyz7XZdMfG!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[06:00:50.826] ---- entering play mode ----
+[06:00:52.267] ---- play mode running ----
+[06:02:30.807] ---- leaving play mode ----
+[06:02:32.022] ---- edit mode restored ----
+[06:03:35.729] ---- domain reload begins (script compilation / play-mode transition) ----
+[06:03:37.336] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\mrglo\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261016-214325922.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[06:05:05.937] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\mrglo\Doc[06:06:18.703] ---- leaving play mode ----
+[06:06:19.845] ---- edit mode restored ----
+[06:12:42.379] ---- entering play mode ----
+[06:12:43.434] ---- play mod[06:23:20.345] ---- domain reload begins (script compilation / play-mode transition) ----
+estored ----
+[06:13:01.951] ---- entering play mode ----
+[06:13:02.949] ---- play mode running ----
+[06:15:29.694] ---- leaving play mode ----
+[06:15:29.882] [PlayMode] Exception: MissingReferenceException: The object of type 'CosmicShore.Gameplay.CustomCameraController' has been destroyed but you are still trying to access it.
+Your script should either check if it is null or you should not destroy the object.
+        UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.Bindings.ThrowHelper.ThrowNullReferenceException (System.Object obj) (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.Behaviour.set_enabled (System.Boolean value) (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        CosmicShore.UI.PreGameCinematicController.OnDisable () (at Assets/_Scripts/UI/PreGameCinematic/PreGameCinematicController.cs:332)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:44)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+[06:15:30.759] ---- edit mode restored ----
+[06:22:33.296] ---- entering play mode ----
+[06:22:34.368] ---- play mode running ----
+[06:22:45.323] ---- leaving play mode ----
+[06:22:46.129] ---- edit mode restored ----
+[06:23:12.070] ---- domain reload begins (script compilation / play-mode transition) ----
+[06:23:26.629] ---- entering play mode ----
+[06:24:13.433] ---- main thread unresponsive[06:25:14.616] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.Skimmer.get_Domain () (at Assets/_Scripts/Controller/Vessel/Skim[07:07:16.243] ---- domain reload begins (script compilation / play-mode transition) ----
+s/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:32)
+        CosmicShore.Gameplay.OmniCrystalImpactor.AcceptImpactee (CosmicShore.Gameplay.IImpactor impactee) (at Assets/_Scripts/Controller/ImpactEffects/Impactors/OmniCrystalImpactor.cs:51)
+        CosmicShore.Gameplay.ImpactorBase.OnTriggerEnter (UnityEngine.Collider other) (at Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:271)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:44)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+[06:26:25.939] ---- leaving play mode ----
+[06:26:27.190] ---- edit mode restored ----
+[07:03:17.422] ---- entering play mode ----
+[07:03:18.544] ---- play mode running ----
+[07:04:46.240] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.Skimmer.get_Domain () (at Assets/_Scripts/Controller/Vessel/Skimmer.cs:37)
+        CosmicShore.Gameplay.SkimmerImpactor.get_OwnDomain () (at Assets/_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:32)
+        CosmicShore.Gameplay.OmniCrystalImpactor.AcceptImpactee (CosmicShore.Gameplay.IImpactor impactee) (at Assets/_Scripts/Controller/ImpactEffects/Impactors/OmniCrystalImpactor.cs:51)
+        CosmicShore.Gameplay.ImpactorBase.OnTriggerEnter (UnityEngine.Collider other) (at Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:271)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:44)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+[07:04:49.972] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.Skimmer.get_Domain () (at Assets/_Scripts/Controller/Vessel/Skimmer.cs:37)
+        CosmicShore.Gameplay.SkimmerImpactor.get_OwnDomain () (at Assets/_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:32)
+        CosmicShore.Gameplay.OmniCrystalImpactor.AcceptImpactee (CosmicShore.Gameplay.IImpactor impactee) (at Assets/_Scripts/Controller/ImpactEffects/Impactors/OmniCrystalImpactor.cs:51)
+        CosmicShore.Gameplay.ImpactorBase.OnTriggerEnter (UnityEngine.Collider other) (at Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:271)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:44)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+[07:05:53.044] ---- leaving play mode ----
+[07:05:54.082] ---- edit mode restored ----
+[07:06:47.350] ---- domain reload begins (script compilation / play-mode transition) ----
+[07:07:19.950] ---- entering play mode ----
+[07:07:21.896] ---- play mode running ----
+[07:10:33.274] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.Skimmer.get_Domain () (at Assets/_Scripts/Controller/Vessel/Skimmer.cs:37)
+        CosmicShore.Gameplay.SkimmerImpactor.get_OwnDomain () (at Assets/_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:32)
+        CosmicShore.Gameplay.OmniCrystalImpactor.AcceptImpactee (CosmicShore.Gameplay.IImpactor impactee) (at Assets/_Scripts/Controller/ImpactEffects/Impactors/OmniCrystalImpactor.cs:51)
+        CosmicShore.Gameplay.ImpactorBase.OnTriggerEnter (UnityEngine.Collider other) (at Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:271)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:44)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+[07:10:42.857] ---- leaving play mode ----
+[07:10:43.948] ---- edit mode restored ----
+[09:39:57.702] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!kcYQQhfi7hFRsXunD5iLb4!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+[09:42:00.767] [EditMode] Exception: ObjectDisposedException: Cannot access a disposed object.
+Object name: '$lobby!!!kcYQQhfi7hFRsXunD5iLb4!!!3030fd69-28ab-433f-b4bd-22b9b93c5118!!!a0e64a19-0eda-4bbe-b9f9-b9ad3e0e8203'.
+        Unity.Services.Wire.Internal.Subscription.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/Centrifuge/Subscription.cs:197)
+        Unity.Services.Lobbies.Internal.LobbyChannel.UnsubscribeAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/LobbyUpdates/Internal/LobbyChannel.cs:73)
+        Unity.Services.Multiplayer.LobbyHandler.LobbyUnsubscribeCallbacksAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:253)
+        Unity.Services.Multiplayer.LobbyHandler.ResetAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:923)
+        Unity.Services.Multiplayer.LobbyHandler.OnAccessTokenChanged (System.String accessToken) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:966)
+        System.Runtime.CompilerServices.AsyncMethodBuilderCore+<>c.<ThrowAsync>b__7_0 (System.Object state) (at <41d29b352f6a475ab1bf7c6628b82790>:0)
+        UnityEngine.UnitySynchronizationContext+WorkRequest.Invoke () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.UnitySynchronizationContext.Exec () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        ...
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "heP3A-ts"... (expires: 2026-10-19T18:39:13Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "4inlZioI"... (expires: 2026-10-19T20:38:59Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "vPvq3ofO"... (expires: 2026-10-19T22:38:05Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "d_FUUWwF"... (expires: 2026-10-20T00:37:53Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 25.702ms
+Scanning for USB devices : 25.605ms
+Scanning for USB devices : 33.399ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 23.698ms
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "-4nMQXmp"... (expires: 2026-10-20T02:37:10Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 24.665ms
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "XDlbvF42"... (expires: 2026-10-20T04:36:56Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "wNz7aa3i"... (expires: 2026-10-20T06:36:15Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "NYSExYHb"... (expires: 2026-10-20T08:35:28Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 25.210ms
+Scanning for USB devices : 23.232ms
+Scanning for USB devices : 34.674ms
+Scanning for USB devices : 439.359ms
+Scanning for USB devices : 180.168ms
+Scanning for USB devices : 640.672ms
+Scanning for USB devices : 100.680ms
+Scanning for USB devices : 166.345ms
+Scanning for USB devices : 29.957ms
+Scanning for USB devices : 27.772ms
+Scanning for USB devices : 25.269ms
+Scanning for USB devices : 28.683ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 30.401ms
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "Pj-oHdJ6"... (expires: 2026-10-20T10:34:34Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "m7XPR_TM"... (expires: 2026-10-20T12:34:31Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "rVXaZc-_"... (expires: 2026-10-20T14:34:17Z)
+Project ID request failed, Reason: The requested URL returned error: 403 (403).
+Unknown Unity Connect error (400). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 403
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Scanning for USB devices : 34.831ms
+Scanning for USB devices : 25.592ms
+Scanning for USB devices : 32.815ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 31.449ms
+Scanning for USB devices : 27.641ms
+Scanning for USB devices : 29.599ms
+Scanning for USB devices : 29.547ms
+Scanning for USB devices : 26.733ms
+Scanning for USB devices : 28.708ms
+Scanning for USB devices : 27.590ms
+Scanning for USB devices : 47.720ms
+[Licensing::Client] Successfully resolved entitlement details
+Scanning for USB devices : 33.334ms
+Project ID request failed, Reason: HTTP requests disabled because it reached the maximum number of failing requests (0).
+Unknown Unity Connect error (408). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 0
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "UFuBXH2E"... (expires: 2026-10-20T16:33:54Z)
+Project ID request failed, Reason: HTTP requests disabled because it reached the maximum number of failing requests (0).
+Unknown Unity Connect error (408). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 0
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Project ID request failed, Reason: HTTP requests disabled because it reached the maximum number of failing requests (0).
+Unknown Unity Connect error (408). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 0
+.Project ID request failed, Reason: HTTP requests disabled because it reached the maximum number of failing requests (0).
+Unknown Unity Connect error (408). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 0
+.[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "eyVVmYM3"... (expires: 2026-10-20T18:33:15Z)
+Project ID request failed, Reason: HTTP requests disabled because it reached the maximum number of failing requests (0).
+Unknown Unity Connect error (408). Please contact support at support@unity.com while processing request "https://services.unity.com/api/unity/legacy/v1/projects/3030fd69-28ab-433f-b4bd-22b9b93c5118", HTTP error code 0
+.[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+

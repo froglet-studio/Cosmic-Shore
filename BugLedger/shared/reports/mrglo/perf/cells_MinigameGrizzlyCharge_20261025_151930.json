@@ -1,0 +1,58 @@
+{
+    "scene": "MinigameGrizzlyCharge",
+    "timestamp": "2026-10-25 15:19:30",
+    "label": "",
+    "secondsSinceSceneLoad": 109.9049301147461,
+    "floraObjectsInScene": 0,
+    "faunaObjectsInScene": 42,
+    "cells": [
+        {
+            "id": 0,
+            "gameObject": "Cell",
+            "config": "Boneyard Cell Config 1",
+            "spawnProfile": "Boneyard Spawn Profile 1",
+            "configChoice": "IntensityWise",
+            "isSatellite": false,
+            "satelliteEcologyEnabled": false,
+            "postInitialized": true,
+            "postInitDeferred": false,
+            "activeSpawner": "IntensityWiseLifeSpawner",
+            "phase": "Calm",
+            "liveVolume": 472299.6875,
+            "liveEnvironmentVolume": 463616.71875,
+            "livePrismCount": 9344,
+            "floraPlantingEnabled": true,
+            "faunaSpawningEnabled": true,
+            "diagnosticHold": false,
+            "restlessEnterVolume": 612691.0,
+            "frenzyEnterVolume": 659091.0,
+            "frenzyExitVolume": 649491.0,
+            "frenzyEnterCount": 12643,
+            "frenzyExitCount": 12043,
+            "membraneRadius": 1200.0,
+            "expectedNucleusRadius": 0.0,
+            "nucleusIsControlZone": true,
+            "faunaReleaseTier": 0,
+            "controllingDomain": "Ruby",
+            "floraPopulationScale": 1.0,
+            "floraPrismScale": 1.0,
+            "faunaPopulationScale": 1.0,
+            "floraLiveTotal": 0,
+            "faunaLiveTotal": 42,
+            "flora": [],
+            "fauna": [
+                {
+                    "config": "Boneyard Scavenger 1",
+                    "prefab": "QuadFish",
+                    "live": 42,
+                    "initialBatch": 60,
+                    "cap": 150,
+                    "atCap": false,
+                    "spawnProbability": 1.0,
+                    "releaseTier": 0
+                }
+            ]
+        }
+    ],
+    "notes": []
+}
