@@ -14,6 +14,6 @@ OUT=$(mktemp -d)
 "$DOTNET/dotnet" "$CSC" -langversion:9.0 -nostdlib -noconfig $REFS -target:exe -main:TraceDriver -out:"$OUT/t.exe" \
   Tools/Build/kite_navigator_lab/TraceDriver.cs \
   Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorCore.cs \
-  Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorAI.cs >&2
+  Assets/_Scripts/Controller/AI/Wrasse/KiteNavigatorAI.cs >&2
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$VER" > "$OUT/t.runtimeconfig.json"
 "$DOTNET/dotnet" "$OUT/t.exe" "$1"

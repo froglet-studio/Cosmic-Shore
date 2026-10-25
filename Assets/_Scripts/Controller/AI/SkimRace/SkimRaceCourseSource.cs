@@ -62,7 +62,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The live map's fingerprint for <paramref name="intensity"/> (<see cref="SkimRaceTrackFingerprint"/>),
         /// read from the three components the race itself reads: the track's path and curve setting
-        /// (<see cref="SpawnableWaypointTrack"/>), the laps (<see cref="CrystalCollisionTurnMonitor"/>)
+        /// (<see cref="SpawnableWaypointTrack"/>), the laps (<see cref="NetworkCrystalCollisionTurnMonitor"/>)
         /// and the crystal anchors (<see cref="CrystalManager"/>). Authored data only, so it is the same
         /// before and after the track is spawned. <paramref name="sceneHandle"/> names the scene load the
         /// track belongs to (one per race). False when the scene does not carry all three, or has no path
@@ -73,7 +73,7 @@ namespace CosmicShore.Gameplay
             fingerprint = null;
             sceneHandle = 0;
             var track = Object.FindAnyObjectByType<SpawnableWaypointTrack>(FindObjectsInactive.Include);
-            var monitor = Object.FindAnyObjectByType<CrystalCollisionTurnMonitor>(FindObjectsInactive.Include);
+            var monitor = Object.FindAnyObjectByType<NetworkCrystalCollisionTurnMonitor>(FindObjectsInactive.Include);
             var crystals = Object.FindAnyObjectByType<CrystalManager>(FindObjectsInactive.Include);
             if (track == null || monitor == null || crystals == null) return false;
 

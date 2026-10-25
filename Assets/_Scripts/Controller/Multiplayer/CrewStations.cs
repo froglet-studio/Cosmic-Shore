@@ -42,7 +42,8 @@ namespace CosmicShore.Gameplay
     /// A hull with more than one seat a person can sit in: the crew vessels (the Orca's helm and three gunners, the
     /// Honeyguide and the Ratel, the Grouper and the Wrasse, the Goby and the Pistol) and the Jacks (fly or herd). The
     /// component that implements it decides what a seat change does on its own hull (who it hands the hull to, what it
-    /// pauses); <see cref="CrewStations"/> decides which seat a person goes to.
+    /// pauses); <see cref="CrewStations"/> decides which seat a person goes to. The seat a crew's card names (its
+    /// <c>SeatName</c>, read by <c>Tools/Build/check_crew_vessels.py</c>) is the separate <see cref="ICrewSeat"/>.
     /// </summary>
     public interface ICrewStations
     {

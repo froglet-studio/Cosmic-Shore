@@ -16,8 +16,9 @@ Correct them in [`TEAM.json`](TEAM.json), which also maps each person's git name
 |---|---|---|
 | **Garrett** | Owner of `bleeding-edge`. He reviews and merges most pull requests: vessels, tests, environment / ecology, arcade modes, impact effects, materials, skills. His own work: AI training, crystal hull fusion, the Regatta AI roadmap, the multiplayer (MPPM) roadmap, the labs (Omni Motion / Shepard / Combine, Thresher Plant Lab). Most `cece/*` sessions are merged by him; recent ones built the Thresher and the Stoat as their own vessels (#1076, #1079, #1085). | Garrett Milliron, garrett@froglet.studio |
 | **Caleb** | QA sessions (`Docs/QA/RESULTS`), the arcade mode map and previews, card art; merges some `claude/*` work (Skim Race race rings, #1096). | Caleb Steinhagen / FenrysUnchained |
-| **Shombith** | **Owns all cloud and backend services and data management** (UGS: Cloud Save and its data such as `HangarCloudData`, authentication, the backend; Shombith, 2026-10-18). UI: `Menu_Main`, the UI prefabs, colour tokens, the Codex; multiplayer scenes. He drives the **Amoebius engine** milestones (`Port/src/CosmicShore.Engine`, `Player`, tests, online play) and merges those pull requests (`cece/focused-planck-*`). | Shombith03, shombith@froglet.studio |
+| **Shombith** | **Heads tooling**: the Amoebius engine, editor tools, the Claude skills such as `/ship`, and the hooks (Shombith, 2026-10-23). **Owns all cloud and backend services and data management** (UGS: Cloud Save and its data such as `HangarCloudData`, authentication, the backend; Shombith, 2026-10-18). UI: `Menu_Main`, the UI prefabs, colour tokens, the Codex; multiplayer scenes. He drives the **Amoebius engine** milestones (`Port/src/CosmicShore.Engine`, `Player`, tests, online play) and merges those pull requests (`cece/focused-planck-*`). | Shombith03, shombith@froglet.studio |
 | **Yash** | The Bug Hunt; party / multiplayer (UGS) hardening (the cloud and backend layer itself is Shombith's); diagnostics (redlog); leaderboards; the **Vessel Studio** (the artifact, studio pages, Sync panel); the **Amoebius launcher** (VESSEL STUDIO page, studio server, artifact library). Branches `Ys-*`, `vessel-studio*`, `amoebius-*`. | Yash Sadhukhan / YsKhan61 |
+| **Iggy** | Wrote much of the game's foundation (`Assets/_Scripts/_Core`, `Game`, `App`; 2022-04 to 2025-12). An **approver** on Froglet Tasks with the core four (Shombith, 2026-10-25). | KidIgarus, isaiah.merrill@gmail.com |
 | Andrew | QA sessions and results. | Andrew Mokhtary (Soncub) |
 | aradia1 | Audio and haptics (FMOD project, drift / boost sounds), vessel feel. | unconfirmed |
 | dbrutus | Arcade and multiplayer code, tests. | unconfirmed |
@@ -58,26 +59,39 @@ it; `who_works_where.py` reports a session nobody has merged as unattributed.
    more each re-solves what the other already did (below).
 7. **Leave a trail.** When work touches another collaborator's area, the commit or PR says so: "Affects:
    Garrett's Thresher HUD". The next session reads the trail; the owner sees it in review.
-8. **Read the team activity on every prompt** (Yash, 2026-10-15: "stay updated by searching all git repos
-   automatically every time someone works on something"). The `team_activity.py` hook
-   (`.claude/settings.json`) fetches `origin` in the background, at most every 3 minutes. On each prompt it lists
-   the commits pushed to ANY branch since the session's last prompt, or the last 12 hours on its first prompt.
-   It leaves out the session's own commits. A commit is marked **HOT** when it touches a file this session has
-   worked on. Read a HOT commit before you change that file again, build on it, and tell the person. The hook
-   self-tests: `python3 .claude/hooks/team_activity.py --self-test`.
-9. **Hand work to each other on the board** (Yash, 2026-10-15: "ask them during their work to make to-dos and
-   tests for other collaborators; Yash is willing to do some of the work if you assign it there"). A session
-   cannot open Unity, sign in to a dashboard or watch a first-timer play, so whatever its work leaves for a person
-   goes on [`TEAM_TASKS.md`](TEAM_TASKS.md) through `python3 Tools/Build/team_tasks.py add`: the editor test, the
-   playtest, the UGS or PostHog step, the missing content, the owner's decision. Each task names who can take it.
-   **Yash has offered to take tasks** (editor tests, playtests, UGS and dashboard setup, follow-up fixes); name the
-   area's owner where it is theirs. Tell the person what you added and suggest who to hand it to. Take a task
-   before starting it (`take <id> --who <name>`) and close it with a note (`done <id> --note ...`); a failed test
-   is not done, it becomes a new `dev` task. `/ship` puts `team_tasks.py pr-section` in the PR body, so GitHub
-   reviewers see the hand-offs, and every task is mirrored to a GitHub issue labelled `team-task`
-   (`team_tasks.py gh-sync`, run by `.github/workflows/team-tasks-sync.yml`); the board stays the source. The `team_tasks_nudge.py` hook reminds every session and gives activation /
-   onboarding prompts that area's open tasks. Self-tests: `team_tasks.py --self-test`,
-   `.claude/hooks/team_tasks_nudge.py --self-test`.
+8. **Read the team activity when you need it** (Yash, 2026-10-15: "stay updated by searching all git repos
+   automatically every time someone works on something"). `python3 .claude/hooks/team_activity.py --peek 12` lists
+   the commits pushed to ANY branch in the last 12 hours, leaving out the session's own; a commit is marked **HOT**
+   when it touches a file this session has worked on. Read a HOT commit before you change that file again, build on
+   it, and tell the person. It ran as a hook on every prompt until 2026-10-23, when Shombith switched it off as too
+   noisy and too slow; it is now run on request (or from the session deck's Team button). Self-test:
+   `python3 .claude/hooks/team_activity.py --self-test`.
+9. **Hand work to each other as tickets** (Yash, 2026-10-15: "ask them during their work to make to-dos and
+   tests for other collaborators"; Shombith, 2026-10-23 and 2026-10-25: never assigned, branch-tracked, a real ticket
+   tool). A session cannot open Unity, sign in to a dashboard or watch a first-timer play, so what its work leaves for
+   a person (the editor test, the playtest, the UGS or PostHog step, the missing content, the decision) is a ticket on
+   **Froglet Tasks**: a GitHub issue labelled `team-task`, read on the Froglet Tasks page
+   (https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f) and written through the page or the `/team-tasks` skill
+   (`Tools/Build/team_tasks.py`). Developers and testers file tickets themselves; a Claude session **suggests** one
+   and files it only when its person approves (no hook files, closes or re-ranks anything). People sign in with
+   claude.ai; the **approvers** (the core four and Iggy, `TEAM.json`) are the page's Editors, edit milestones and let
+   others in. Opening the page at the start of a day is recommended, never required. The rules:
+   - **Nobody's until taken.** A ticket names no one (rule 11); an assignee set on GitHub is cleared by the sweep.
+   - **Taking needs only your name** (`take <id>`, or Take it on the page): the ticket shows as yours to everyone.
+     **Naming a branch starts it** (`take <id> --branch <branch>`, a branch pasted on the page at the take or later, or
+     "Start in a new session", which opens a Claude Code session on the ticket from the base branch, `bleeding-edge` in
+     Beta phase 1). Not started within 14 days of the take, it goes back to open, nobody's (Shombith, 2026-10-25). It closes when that
+     branch merges into bleeding-edge, and goes back to open, nobody's, when the branch is deleted, released or idle
+     for 14 days (`.github/workflows/team-tasks.yml` runs the sweep on every merge, deletion and nightly).
+   - **14 days untaken: archived** (closed as not planned, label `archived`). Done tickets close as completed. Both
+     come back with `revive`, and the 14 days start again.
+   - **One ticket per branch.** Every hand test a branch leaves is a checklist line on its one ticket.
+   - **Priority ranks tickets, milestones rank time** (M1 closed testing on all platforms ... M5 full release). A person
+     re-ranks with `set` or on the page, and nothing automatic overrides that.
+   - **Done needs its proof**: `done <id> --note "<the check>"`; a failed test is not done.
+   `/ship` puts `team_tasks.py pr-section` in the PR body. The old markdown board (`TEAM_TASKS.md`) is a pointer now;
+   the `team_tasks_nudge.py` hook that pushed tasks into every prompt was switched off on 2026-10-23 and deleted on
+   2026-10-25 (Shombith). Self-test: `team_tasks.py --self-test`.
 10. **Give a report to whoever asks** (Yash, 2026-10-15: "if someone asks you about a report of some other person
    working on some shared field, you should be able to give those reports to them"). Garrett asking for Yash's
    Regatta AI work, Shombith asking what changed in an area he shares: build the report from the system, never from
@@ -89,6 +103,11 @@ it; `who_works_where.py` reports a session nobody has merged as unattributed.
    gets a row and a report doc when the work starts; keep the hand-written half current when the work moves. The
    `report_request.py` hook reminds a session whenever a prompt asks for a report. Self-tests:
    `team_report.py --self-test`, `.claude/hooks/report_request.py --self-test`.
+
+11. **No favourites among the core four** (Shombith, 2026-10-23). Garrett, Caleb, Shombith and Yash carry equal
+   weight. Tasks are never assigned and nobody is a default taker; there are no standing volunteer offers. Never
+   let one person's request override another's area without whoever decides there. Shombith heads tooling: the Amoebius engine, editor tools, the Claude
+   skills (`/ship` and the rest) and the hooks.
 
 ## What happened without this (2026-10-13, one merge, measured)
 
@@ -180,13 +199,9 @@ Recorded in [`TOOLING_DECISIONS.md`](TOOLING_DECISIONS.md) §6 by Shombith, who 
 Sessions no longer ask whether these tools helped. [`TOOLING_FEEDBACK.md`](TOOLING_FEEDBACK.md) keeps what people
 volunteer.
 
-**Everyone is told, not only Claude.** Two hooks show the person a notice once per session:
-- `team_context.py`:
-  - on the first prompt, whatever it is about: who the team is, that Claude checks who works where, and the tools
-    decision;
-  - on the first prompt about the engine or the tools ("Amoebius", "engine", `Port/`, "launcher", "which tool"):
-    one line with the decision above.
-- `vessel_studio_nudge.py`: the same for vessel work.
-
-Claude's answer to any question about these tools opens with the status line. Once §6 of
-`TOOLING_DECISIONS.md` records a decision, `team_context.py` reports that instead.
+**Notices.** `team_context.py` used to show the person a team notice on a session's first prompt, and the tools
+decision on the first prompt about the engine or the tools. Shombith switched it off on 2026-10-23 with
+`team_activity.py` and `team_tasks_nudge.py` (deleted 2026-10-25): together they added about 7 KB to prompts and sent
+sessions off to fetch and query before answering. `vessel_studio_nudge.py` (once per session, on vessel work) and
+`report_request.py` (when a prompt asks for a report) still run. The Froglet Tasks page
+(https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f) is the board for the team's tickets (rule 9).

@@ -107,6 +107,9 @@ namespace CosmicShore.UI
                                  "the authored text otherwise.")]
         protected TMPro.TMP_Text eyebrowText;
 
+        [SerializeField, Tooltip("The eyebrow while the card is open as the weekly challenge. Empty: no eyebrow then.")]
+        protected string weeklyEyebrowLine = "Weekly challenge";
+
         [SerializeField, Tooltip("The hull's class description.")]
         protected TMPro.TMP_Text vesselDescriptionText;
 
@@ -440,7 +443,7 @@ namespace CosmicShore.UI
             if (eyebrowText)
             {
                 _authoredEyebrow ??= eyebrowText.text;
-                eyebrowText.text = available ? "Weekly challenge" : _authoredEyebrow;
+                eyebrowText.text = available ? weeklyEyebrowLine : _authoredEyebrow;
             }
         }
 

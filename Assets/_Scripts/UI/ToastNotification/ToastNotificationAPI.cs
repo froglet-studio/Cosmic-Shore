@@ -62,18 +62,14 @@ namespace CosmicShore.UI
             var settings = Resources.Load<ToastNotificationSettingsSO>(SettingsPath);
             if (settings != null)
             {
-                var field = typeof(ToastNotificationManager).GetField("settings",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                field?.SetValue(mgr, settings);
+                mgr.SetSettings(settings);
             }
 
             // Wire channel
             var channel = Channel;
             if (channel != null)
             {
-                var field = typeof(ToastNotificationManager).GetField("channel",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                field?.SetValue(mgr, channel);
+                mgr.SetChannel(channel);
 
                 mgr.enabled = false;
                 mgr.enabled = true;

@@ -151,6 +151,9 @@ namespace CosmicShore.Gameplay
                     audioSystem?.PlayGameplaySFX(
                         isTrackImpact ? GameplaySFXCategory.TrackImpact : GameplaySFXCategory.VesselImpact,
                         transform.position);
+                    // The camera following this vessel takes the hit, as heavy as the prism is (Docs/CAMERA_FEEL.md).
+                    VesselCameraFeel.Impact(Vessel?.VesselStatus, prismImpactee.transform.position,
+                        VesselCameraFeel.PrismWeight(prismImpactee.Prism));
                     var prismEffects = vesselImpactorDataContainerSO.VesselPrismEffects;
                     for (int i = 0; i < prismEffects.Length; i++)
                     {
@@ -167,11 +170,13 @@ namespace CosmicShore.Gameplay
                     if (!IsSweepDispatch && !TakesCrystalsByContact) break;   // the Jacks' net takes it instead
                     if (!TryLatchCrystalImpact(omniCrystalImpactee.Crystal)) break;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
+                    VesselCameraFeel.Pickup(Vessel?.VesselStatus);
                     var data = CrystalImpactData.FromCrystal(omniCrystalImpactee.Crystal);
-                    if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
-                        networkVesselImpactor.ExecuteOnHitOmniCrystal(data);
-                    else
-                        ExecuteOmniCrystalImpact(data);
+                    switch (RouteCrystalPickup())
+                    {
+                        case CrystalPickupRoute.Broadcast: networkVesselImpactor.ExecuteOnHitOmniCrystal(data); break;
+                        case CrystalPickupRoute.Local: ExecuteOmniCrystalImpact(data); break;
+                    }
                     break;
                 }
 
@@ -185,6 +190,7 @@ namespace CosmicShore.Gameplay
                         if (!TryLatchCrystalImpact(elementalCrystalImpactee.Crystal)) break;
                         var lifeformEffects = vesselImpactorDataContainerSO.VesselLifeformCrystalEffects;
                         if (!DoesEffectExist(lifeformEffects)) break;
+                        VesselCameraFeel.Bump(Vessel?.VesselStatus, elementalCrystalImpactee.transform.position);
                         for (int i = 0; i < lifeformEffects.Length; i++)
                         {
                             if (IsEffectSlotEmpty(lifeformEffects[i], vesselImpactorDataContainerSO,
@@ -198,11 +204,13 @@ namespace CosmicShore.Gameplay
 
                     if (!TryLatchCrystalImpact(elementalCrystalImpactee.Crystal)) break;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
+                    VesselCameraFeel.Pickup(Vessel?.VesselStatus);
                     var data = CrystalImpactData.FromCrystal(elementalCrystalImpactee.Crystal);
-                    if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
-                        networkVesselImpactor.ExecuteOnHitElementalCrystal(data);
-                    else
-                        ExecuteElementalCrystalImpact(data);
+                    switch (RouteCrystalPickup())
+                    {
+                        case CrystalPickupRoute.Broadcast: networkVesselImpactor.ExecuteOnHitElementalCrystal(data); break;
+                        case CrystalPickupRoute.Local: ExecuteElementalCrystalImpact(data); break;
+                    }
                     break;
                 }
 
@@ -215,6 +223,7 @@ namespace CosmicShore.Gameplay
                     var skimmerEffects = vesselImpactorDataContainerSO.VesselSkimmerEffects;
                     if (!DoesEffectExist(skimmerEffects)) return;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.VesselImpact, transform.position);
+                    VesselCameraFeel.Bump(Vessel?.VesselStatus, skimmerImpactee.transform.position);
                     for (int i = 0; i < skimmerEffects.Length; i++)
                     {
                         if (IsEffectSlotEmpty(skimmerEffects[i], vesselImpactorDataContainerSO,
@@ -226,6 +235,39 @@ namespace CosmicShore.Gameplay
                     break;
             }
         }
+
+        /// <summary>
+        /// Where this machine sends its half of a crystal pickup. See <see cref="RouteCrystalPickup(bool, bool)"/>.
+        /// </summary>
+        public enum CrystalPickupRoute
+        {
+            /// <summary>Offline: no network copy exists, so the chain runs here and only here.</summary>
+            Local = 0,
+            /// <summary>This machine owns the vessel: it reports the pickup and every peer runs the chain once.</summary>
+            Broadcast = 1,
+            /// <summary>A spawned copy of someone else's vessel: their owner's broadcast runs it here.</summary>
+            OwnerBroadcasts = 2,
+        }
+
+        CrystalPickupRoute RouteCrystalPickup() =>
+            RouteCrystalPickup(networkVesselImpactor.IsSpawned, networkVesselImpactor.IsOwner);
+
+        /// <summary>
+        /// A crystal pickup's vessel chain runs ONCE per machine, carried by the vessel's owner
+        /// (<see cref="NetworkVesselImpactor"/>'s ServerRpc → ClientRpc reaches every peer).
+        ///
+        /// A non-owner copy also touches the crystal in its own physics, and that contact used to
+        /// fall into the offline branch and run the chain locally as well — so every peer watching
+        /// another pilot ran it TWICE: once from its own contact, once from the owner's broadcast.
+        /// For a Squirrel the first run's morph landed on the ring that run laid, and the second
+        /// found no ring (the explosion effect's 0.15 s anti-spam swallowed it), held the crystal's
+        /// body for <c>targetGraceSeconds</c> and faded it out: a collider-less ghost crystal left
+        /// behind on every screen but the collector's.
+        /// </summary>
+        public static CrystalPickupRoute RouteCrystalPickup(bool isSpawned, bool isOwner) =>
+            !isSpawned ? CrystalPickupRoute.Local
+            : isOwner ? CrystalPickupRoute.Broadcast
+            : CrystalPickupRoute.OwnerBroadcasts;
 
         /// <summary>
         /// True exactly once per crystal per latch window — false for the

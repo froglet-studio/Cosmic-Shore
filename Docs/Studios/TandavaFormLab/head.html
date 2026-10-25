@@ -1,0 +1,301 @@
+<title>Tandava Form Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one screen. The cell fills the stage with the game's goal rows top left; the bench of controls sits on the
+   right (below the cell on a phone). A single dark look on purpose: it is the inside of a cell. */
+:root {
+  --void: #05060c;        /* the cell's interior */
+  --bench: #0b0e1a;       /* the control bench */
+  --rim: #1c2240;         /* hairlines */
+  --ink: #e5e8f6;         /* text */
+  --mute: #8b91b2;        /* secondary text */
+  --jade: #18c5ba;        /* the pilots' domain: the accent */
+  --jade-ink: #04211f;
+  --gold: #f2c14e;        /* the ascension and every burst: gold prisms, never fire */
+  --pearl: #f3ead6;       /* the halo rings */
+  --danger: #ff4fd2;      /* danger plates: the guards */
+  --charge: #fabf2e; --mass: #ed4561; --space: #3d99f2; --time: #9e6bf0;
+  --f-display: "Oxanium", "Bahnschrift", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --f-data: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { background: var(--void); color: var(--ink); font: 14px/1.45 var(--f-body); }
+* { box-sizing: border-box; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
+
+.app { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+.bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap;
+  padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--rim); background: var(--bench); }
+.brand { display: flex; align-items: baseline; gap: var(--s-3); flex-wrap: wrap; min-width: 0; }
+.eyebrow { font: 600 11px/1 var(--f-data); letter-spacing: .14em; text-transform: uppercase; color: var(--mute); }
+h1 { margin: 0; font: 700 22px/1.1 var(--f-display); letter-spacing: .02em; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--jade); }
+.modes { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--rim); border-radius: 999px; }
+.modes button { border: 0; background: transparent; padding: 6px 16px; border-radius: 999px; cursor: pointer;
+  font: 600 13px/1 var(--f-display); letter-spacing: .06em; text-transform: uppercase; color: var(--mute); }
+.modes button[aria-selected="true"] { background: var(--jade); color: var(--jade-ink); }
+
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) 360px; min-height: 0; }
+.view { position: relative; min-height: 0; overflow: hidden; background: var(--void); }
+#gl { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+.panel { border-left: 1px solid var(--rim); background: var(--bench); overflow-y: auto; min-height: 0;
+  padding-block: var(--s-4); padding-inline: var(--s-4); display: flex; flex-direction: column; gap: var(--s-5); }
+
+/* the goal rows, top left: TandavaController's IGoalSource rows, as the game's goal stack draws them */
+.goals { position: absolute; left: var(--s-4); top: var(--s-4); display: grid; gap: 6px; pointer-events: none;
+  width: min(330px, calc(100% - 32px)); }
+.goals .eyebrow { color: #a9b0d4; text-shadow: 0 1px 6px #000; }
+.goal { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 2px 10px;
+  padding: 8px 12px 9px; border-radius: 8px; background: rgba(8, 10, 22, .72); border: 1px solid rgba(255, 255, 255, .07);
+  backdrop-filter: blur(3px); }
+.goal .gl { font: 600 14px/1.2 var(--f-display); letter-spacing: .02em; overflow-wrap: anywhere; }
+.goal .gv { font: 600 13px/1.2 var(--f-data); font-variant-numeric: tabular-nums; color: #dfe3f7; white-space: nowrap; }
+.goal .hair { grid-column: 1 / -1; position: relative; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .1); margin-top: 5px; overflow: hidden; }
+.goal .hair > i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--jade); transition: width .25s linear; }
+.goal.primary { padding-block: 10px 11px; }
+.goal.primary .gl { font-size: 18px; }
+.goal.primary .gv { font-size: 15px; color: var(--ink); }
+.goal.flare { animation: flare 1.4s ease-out; }
+@keyframes flare { 0% { transform: scale(1.06); background: rgba(242, 193, 78, .55); border-color: var(--gold); }
+  100% { transform: scale(1); background: rgba(8, 10, 22, .72); border-color: rgba(255, 255, 255, .07); } }
+.goal.alert .gl { color: var(--danger); }
+.goal.gold .gl { color: var(--gold); }
+
+.hint { position: absolute; right: var(--s-4); bottom: var(--s-3); font: 11px/1.3 var(--f-data); color: #8a91b6;
+  text-align: right; pointer-events: none; text-shadow: 0 1px 6px #000; max-width: calc(100% - 32px); }
+.toasts { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); display: grid; gap: var(--s-2);
+  justify-items: center; pointer-events: none; width: min(560px, calc(100% - 32px)); }
+.toast { font: 500 15px/1.35 var(--f-body); padding: 9px 16px; border-radius: 10px; text-align: center;
+  background: rgba(8, 10, 20, .8); border: 1px solid var(--rim); backdrop-filter: blur(4px); transition: opacity .6s, transform .6s; }
+.toast.quiet { font: 12px/1.3 var(--f-data); color: var(--mute); }
+.toast.gold { border-color: rgba(242, 193, 78, .55); }
+.toast.out { opacity: 0; transform: translateY(6px); }
+.title { position: absolute; left: 0; right: 0; top: 56%; display: grid; justify-items: center; gap: 6px; pointer-events: none;
+  opacity: 0; text-align: center; padding-inline: 16px; }
+.title .t1 { font: 700 clamp(28px, 5.6vw, 60px)/1 var(--f-display); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--gold); text-shadow: 0 0 22px rgba(242, 193, 78, .5), 0 2px 18px #000; }
+.title .t2 { font: 500 clamp(14px, 1.8vw, 18px)/1.35 var(--f-body); color: #ece4cf; text-shadow: 0 2px 12px #000; max-width: 640px; }
+.title.show { animation: card 4.4s ease-out forwards; }
+@keyframes card { 0% { opacity: 0; transform: scale(1.06); } 12% { opacity: 1; transform: scale(1); } 76% { opacity: 1; } 100% { opacity: 0; transform: scale(.98); } }
+.vignette { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 58%, rgba(242, 193, 78, .26) 100%); }
+.vignette.beat { opacity: 1; transition: none; }
+.vignette.sting { background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 50%, rgba(255, 79, 210, .32) 100%); }
+
+.brief { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); width: min(520px, calc(100% - 32px));
+  background: rgba(11, 14, 26, .92); border: 1px solid var(--rim); border-radius: 14px; padding: var(--s-4) var(--s-5);
+  display: grid; gap: var(--s-3); backdrop-filter: blur(4px); }
+.brief h2 { margin: 0; font: 700 20px/1.15 var(--f-display); letter-spacing: .03em; text-wrap: balance; }
+.brief p { margin: 0; color: #c9cde6; font-size: 13.5px; line-height: 1.5; }
+.brief .row { justify-content: space-between; align-items: center; }
+.outcome { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(3, 4, 10, .5); }
+.outcome .card { background: var(--bench); border: 1px solid var(--rim); border-radius: 14px; padding: var(--s-5);
+  width: min(400px, calc(100% - 32px)); display: grid; gap: var(--s-3); text-align: center; }
+.outcome .verdict { font: 700 40px/1 var(--f-display); letter-spacing: .08em; }
+.outcome .verdict.win { color: var(--jade); } .outcome .verdict.loss { color: var(--danger); }
+.outcome .label { font: 600 14px/1.3 var(--f-display); letter-spacing: .08em; text-transform: uppercase; }
+.outcome .stats { text-align: left; }
+.glfail { position: absolute; inset: 0; display: grid; place-items: center; padding: var(--s-5); text-align: center; color: var(--mute); }
+
+/* bench */
+.group { display: grid; gap: var(--s-3); }
+.group > h2 { margin: 0; font: 600 11px/1 var(--f-data); letter-spacing: .14em; text-transform: uppercase; color: var(--mute); }
+.forms { display: grid; gap: var(--s-2); }
+.form { display: grid; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--rim); }
+.form[data-on="true"] { border-color: var(--jade); background: rgba(24, 197, 186, .06); }
+.form .top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-2); }
+.form .fname { font: 600 16px/1.1 var(--f-display); }
+.form .fnum { font: 600 10px/1 var(--f-data); letter-spacing: .1em; text-transform: uppercase; color: var(--mute); }
+.form .fstat { font: 11px/1.4 var(--f-data); color: var(--mute); font-variant-numeric: tabular-nums; }
+.form .mix { display: flex; height: 5px; border-radius: 3px; overflow: hidden; }
+.form .mix i { display: block; height: 100%; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--rim); background: #12162a; border-radius: 999px; padding: 5px 10px; cursor: pointer;
+  font: 600 12px/1.1 var(--f-body); color: #cdd2ec; text-align: left; }
+.chip:hover { border-color: #39437a; }
+.chip[aria-pressed="true"] { border-color: var(--jade); background: rgba(24, 197, 186, .14); color: var(--ink); }
+.row { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.btn { border: 1px solid var(--rim); background: #12162a; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.btn:hover { border-color: #39437a; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.go { background: var(--jade); border-color: var(--jade); color: var(--jade-ink); }
+.btn.warn { border-color: #5a2250; color: #ffb3ec; }
+.btn kbd { margin-left: 6px; }
+.verbs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
+.verbs .btn { text-align: left; display: grid; gap: 2px; padding: 9px 11px; }
+.verbs .btn b { font: 600 13px/1.2 var(--f-body); display: flex; justify-content: space-between; gap: 6px; }
+.verbs .btn small { font: 11px/1.35 var(--f-body); color: var(--mute); font-weight: 400; }
+.verbs .btn[aria-pressed="true"] { border-color: var(--jade); background: rgba(24, 197, 186, .1); }
+.seg { display: inline-flex; border: 1px solid var(--rim); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+.seg button { border: 0; background: transparent; padding: 7px 10px; cursor: pointer; font: 600 12px/1 var(--f-data); color: var(--mute); }
+.seg button + button { border-left: 1px solid var(--rim); }
+.seg button[aria-pressed="true"] { background: #1b2140; color: var(--ink); }
+.setting { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; }
+.setting .k { color: #c4c9e4; }
+.check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: #c4c9e4; }
+.check input { accent-color: var(--jade); width: 16px; height: 16px; }
+.stats { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px var(--s-4); font: 12px/1.3 var(--f-data); font-variant-numeric: tabular-nums; margin: 0; }
+.stats dt { color: var(--mute); } .stats dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.meterbox { display: grid; gap: 6px; }
+.meterbox .setting { font: 12px/1.3 var(--f-data); font-variant-numeric: tabular-nums; }
+.bar2 { position: relative; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, .08); }
+.bar2 > i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 4px; background: var(--jade); transition: width .2s linear; }
+.bar2 > b { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--ink); }
+.bar2 > s { position: absolute; top: -3px; width: 1px; height: 14px; background: var(--mute); text-decoration: none; }
+.note { margin: 0; font-size: 12px; line-height: 1.55; color: var(--mute); }
+.note strong { color: #c4c9e4; font-weight: 600; }
+.rules { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 12.5px; line-height: 1.45; color: #c4c9e4; }
+.rules b { color: var(--ink); }
+kbd { font: 11px/1 var(--f-data); padding: 2px 5px; border: 1px solid var(--rim); border-radius: 4px; color: var(--mute); }
+
+@media (max-width: 860px) {
+  .app { height: auto; min-height: 100%; }
+  .stage { grid-template-columns: minmax(0, 1fr); }
+  .view { height: 64vh; min-height: 360px; }
+  .panel { border-left: 0; border-top: 1px solid var(--rim); overflow: visible; }
+  .goals { width: min(270px, calc(100% - 32px)); }
+  .goal.primary .gl { font-size: 15px; }
+  .hint { display: none; }
+  .brief { bottom: 16px; padding: var(--s-3) var(--s-4); }
+  .brief p { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast, .goal .hair > i, .bar2 > i { transition: none; }
+  .goal.flare { animation: none; outline: 1px solid var(--gold); }
+  .title.show { animation: cardStill 4.4s linear forwards; }
+  @keyframes cardStill { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+}
+</style>
+
+<div class="app">
+  <header class="bar">
+    <div class="brand">
+      <span class="eyebrow">Cosmic Shore · arena · GameModes 62</span>
+      <h1>Tandava <em>Form Lab</em></h1>
+    </div>
+    <nav class="modes" role="tablist" aria-label="Mode">
+      <button id="tab-hunt" role="tab" aria-selected="true">Hunt</button>
+      <button id="tab-forms" role="tab" aria-selected="false">Forms</button>
+    </nav>
+  </header>
+
+  <main class="stage">
+    <div class="view" id="view">
+      <canvas id="gl" aria-label="The Tandava cell, its plants, the creature and the pilots"></canvas>
+      <div class="goals" aria-live="polite">
+        <span class="eyebrow" id="g-eyebrow">Goals</span>
+        <div class="goal primary" id="g1"><span class="gl" id="g1-l">Great Serpent</span><span class="gv" id="g1-v">0%</span><span class="hair"><i id="g1-b"></i></span></div>
+        <div class="goal" id="g2"><span class="gl" id="g2-l">Roaming</span><span class="gv" id="g2-v">Body 100%</span><span class="hair"><i id="g2-b"></i></span></div>
+        <div class="goal" id="g3"><span class="gl" id="g3-l">Time left</span><span class="gv" id="g3-v">7:00</span></div>
+      </div>
+      <div class="title" id="title" aria-live="assertive"><div class="t1" id="title-1"></div><div class="t2" id="title-2"></div></div>
+      <div class="vignette" id="vignette"></div>
+      <div class="toasts" id="toasts"></div>
+      <div class="brief" id="brief">
+        <h2>One creature, one crowded cell</h2>
+        <p>It hunts a crowded reef of six plant species. Healthy, it turns on any pilot who comes close and lunges, its guard plates out. When it feeds it rolls up round the plant, in a different coil each meal, with its plates circling it, and it stops healing: strike the body then. Cut it below seven tenths and it runs. There is no clock.</p>
+        <div class="row"><span class="note">Click the creature to strike it · click a plant to camp it</span><button class="btn go" id="brief-go">Start the hunt</button></div>
+      </div>
+      <div class="hint" id="hint">Drag to orbit · scroll to zoom · click to fly your dart there</div>
+      <div class="outcome" id="outcome" hidden>
+        <div class="card">
+          <div class="verdict" id="out-verdict">VICTORY</div>
+          <div class="label" id="out-label">Its body is broken</div>
+          <dl class="stats" id="out-stats"></dl>
+          <div class="row" style="justify-content:center">
+            <button class="btn go" id="out-again">Hunt again</button>
+            <button class="btn" id="out-close">Look around</button>
+          </div>
+        </div>
+      </div>
+      <div class="glfail" id="glfail" hidden>This page needs WebGL to draw the cell. Try another browser or turn on hardware acceleration.</div>
+    </div>
+
+    <aside class="panel">
+      <section class="group" id="pane-hunt">
+        <h2>The hunt</h2>
+        <div class="row">
+          <button class="btn go" id="b-start">Start the hunt</button>
+          <button class="btn" id="b-reset">Reset</button>
+          <button class="btn" id="b-draw">New draw</button>
+        </div>
+        <p class="note" id="draw-note">This match drew -</p>
+        <div class="verbs" role="group" aria-label="Your dart">
+          <button class="btn" id="v-strike" aria-pressed="false"><b>Strike the body <kbd>S</kbd></b><small>One run through it, behind the guards</small></button>
+          <button class="btn" id="v-deny" aria-pressed="false"><b>Camp its plant <kbd>D</kbd></b><small>Sit by the food it is heading for</small></button>
+          <button class="btn" id="v-thread" aria-pressed="false"><b>Thread a ring <kbd>H</kbd></b><small>The nearest open halo ring</small></button>
+          <button class="btn" id="v-shadow" aria-pressed="false"><b>Shadow it <kbd>F</kbd></b><small>Ride 260 u off it: it will lunge</small></button>
+          <button class="btn" id="v-meals" aria-pressed="false"><b>Strike its meals <kbd>M</kbd></b><small>A run at its body each time it eats</small></button>
+          <button class="btn" id="v-hold" aria-pressed="false"><b>Hold <kbd>X</kbd></b><small>Stop where you are</small></button>
+        </div>
+        <div class="setting"><span class="k">AI wingmates</span>
+          <div class="seg" id="seg-ai"><button data-v="off">Off</button><button data-v="autopilot" aria-pressed="true">Autopilot 70 u/s</button><button data-v="fast">Fast 140</button></div>
+        </div>
+        <dl class="stats">
+          <dt>Clock</dt><dd id="h-clock">0 s</dd>
+          <dt>Doing</dt><dd id="h-doing">Waiting at the hatch</dd>
+          <dt>Mood</dt><dd id="h-mood">Calm</dd>
+          <dt>Forms taken</dt><dd id="h-commits">-</dd>
+          <dt>Meals</dt><dd id="h-meals">0</dd>
+          <dt>Cut by you</dt><dd id="h-you">0</dd>
+          <dt>Cut by the wing</dt><dd id="h-ai">0</dd>
+          <dt>Stung by guards</dt><dd id="h-stings">0</dd>
+          <dt>Halo rings</dt><dd id="h-rings">-</dd>
+        </dl>
+        <div class="meterbox">
+          <div class="setting"><span class="k">Threat</span><span id="h-threat">0.00</span></div>
+          <div class="bar2" title="Threat: wary at 0.30, fleeing at 0.65"><i id="h-threat-b"></i><s style="left:30%"></s><s style="left:65%"></s></div>
+          <div class="setting"><span class="k">Stomach</span><span id="h-stomach">0 / 12,566 to change</span></div>
+          <div class="bar2" title="What it has eaten against this form's bank"><i id="h-stomach-b" style="background:var(--gold)"></i><b id="h-bank"></b></div>
+        </div>
+        <ol class="rules">
+          <li><b>Shatter it:</b> cut its body below 35% of its form.</li>
+          <li><b>Break the dance:</b> thread 9 of the 12 halo rings before the 30 s drum stops.</li>
+          <li>Healthy, it <b>lunges</b> at you for 2.5 s, guards out, then rests 6 s. Hurt below 70%, it flees instead.</li>
+          <li>There is no clock. You lose when the Antlion's last feast is eaten.</li>
+        </ol>
+      </section>
+
+      <section class="group" id="pane-forms" hidden>
+        <h2>Four forms · three variants each</h2>
+        <div class="forms" id="form-list"></div>
+        <div class="row">
+          <button class="btn" id="b-pose" aria-pressed="false">Meal pose <kbd>P</kbd></button>
+          <button class="btn warn" id="b-cut">Cut 30% <kbd>C</kbd></button>
+          <button class="btn" id="b-rehatch">Re-hatch</button>
+        </div>
+        <label class="check"><input type="checkbox" id="c-tour" checked> Tour the forms</label>
+        <p class="note">A form it has taken is <strong>remembered</strong>: a cut grows back from the stomach in about a second.
+          Press <kbd>P</kbd> to step through its poses: the serpents roll up in a coil, a constrictor's wrap and a figure-eight, every eater has its strike pose, the Many-Headed Serpent lunges every head reared and strikes with them all, and the Antlion lunges jaws wide and snaps them shut. In each the plates leave the head to circle it as <strong>danger plates</strong>, and it stops laying, so a cut there stays cut.</p>
+      </section>
+
+      <section class="group">
+        <h2>View</h2>
+        <div class="setting"><span class="k">Speed</span>
+          <div class="seg" id="seg-speed"><button data-v="0.5">½×</button><button data-v="1" aria-pressed="true">1×</button><button data-v="2">2×</button><button data-v="4">4×</button></div>
+        </div>
+        <div class="setting"><span class="k">Camera</span>
+          <div class="seg" id="seg-cam"><button data-v="creature" aria-pressed="true">Creature</button><button data-v="dart">My dart</button><button data-v="wide">Whole cell</button></div>
+        </div>
+        <div class="setting"><span class="k">Colour by</span>
+          <div class="seg" id="seg-colour"><button data-v="element" aria-pressed="true">Element</button><button data-v="domain">One colour</button></div>
+        </div>
+        <div class="setting">
+          <label class="check"><input type="checkbox" id="c-sound" checked> Sound</label>
+          <button class="btn" id="b-pause">Pause <kbd>Space</kbd></button>
+        </div>
+      </section>
+
+      <p class="note"><strong>What this is.</strong> The 51 shipped Tandava body plans, upsampled as the game does, and a port of
+        <strong>TandavaDirectorCore</strong> in the game's small closed cell (800 u): 27 plants of six species that regrow and replant, round-robin bites,
+        funded regrowth, the threat, lunge and mood levers, the serpents' meal coils (a formation drawn per meal), the strike pose, the Many-Headed Serpent's all-heads strike, the Antlion's snapping jaws, the halo and its attendants. The flock is simplified (each tadpole springs to a slot of its element with the sort core's gain, spacing and inertia). Your dart and the wing are stand-ins for the hulls; times are a model, not a Unity measurement.</p>
+    </aside>
+  </main>
+</div>

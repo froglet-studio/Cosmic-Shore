@@ -18,7 +18,8 @@ namespace CosmicShore.Editor
     /// libraries, a base module over 200 MB, or the wrong package name. <b>Warnings</b> are what
     /// Play accepts today but the team decided against: native libraries without 16 KB page
     /// alignment (Play blocks UPDATES lacking it from 1 Feb 2027), an app category other than
-    /// <c>game</c>, a Play Billing permission (Unity IAP was removed), no native debug symbols
+    /// <c>game</c>, a Play Billing permission (Unity IAP was removed), no 32-bit (armeabi-v7a)
+    /// libraries, no native debug symbols
     /// (Play's "you've not uploaded debug symbols"), and a base module over 150 MB.</para>
     ///
     /// <para>No Unity API here, so the parsing is unit-tested on its own
@@ -124,7 +125,7 @@ namespace CosmicShore.Editor
                 sb.AppendLine("ABIs: " + (Abis.Count == 0 ? "(none)" : string.Join(", ", Abis)));
                 foreach (var lib in Libraries)
                     sb.AppendLine($"  {lib.Path}: LOAD align {FormatAlign(lib.MinLoadAlign)}{(lib.Is16KAligned ? "" : "  <- not 16 KB")}");
-                sb.AppendLine($"Base module, compressed: {BaseCompressedBytes / (1024.0 * 1024.0):F1} MB (Play's limit is 200 MB)");
+                sb.AppendLine($"Base module, compressed, as one phone downloads it: {BaseCompressedBytes / (1024.0 * 1024.0):F1} MB (Play's limit is 200 MB)");
                 sb.AppendLine($"Signed: {(Signed ? (DebugSigned ? "yes, with the Android DEBUG key" : "yes") : "no")}");
                 sb.AppendLine($"Native debug symbols: {(HasDebugSymbols ? "in the bundle" : "none")}");
                 return sb.ToString();
@@ -157,11 +158,12 @@ namespace CosmicShore.Editor
                     catch (FormatException ex) { report.Errors.Add($"The manifest could not be read: {ex.Message}"); }
                 }
 
+                var baseEntries = new List<(string name, long compressedBytes)>();
                 foreach (var entry in zip.Entries)
                 {
                     string name = entry.FullName;
                     if (name.StartsWith("base/", StringComparison.Ordinal))
-                        report.BaseCompressedBytes += entry.CompressedLength;
+                        baseEntries.Add((name, entry.CompressedLength));
                     else if (name.StartsWith(DebugSymbolsPrefix, StringComparison.Ordinal))
                         report.HasDebugSymbols = true;
 
@@ -181,6 +183,8 @@ namespace CosmicShore.Editor
                         }
                     }
                 }
+
+                report.BaseCompressedBytes = EstimateBaseDownloadBytes(baseEntries);
             }
 
             Evaluate(report, expectedPackage);
@@ -212,6 +216,8 @@ namespace CosmicShore.Editor
                 r.Errors.Add("No arm64-v8a libraries: Play requires 64-bit. Player Settings > Android > Target Architectures > ARM64.");
             if (r.Abis.Count == 0)
                 r.Errors.Add("No native libraries at all. A Unity player always has some; the bundle is incomplete.");
+            if (r.Abis.Contains("arm64-v8a") && !r.Abis.Contains("armeabi-v7a"))
+                r.Warnings.Add("No armeabi-v7a libraries, so phones running 32-bit Android cannot install the app; Play shows them \"Item not found\". Some Moto G Power and Samsung Galaxy M models are among them. Player Settings > Android > Target Architectures > ARMv7 (kept on since 2026-10-15, Docs/ANDROID_BUILD.md section 0).");
 
             var unaligned = r.Libraries.Where(l => !l.Is16KAligned).ToList();
             if (unaligned.Count > 0)
@@ -229,6 +235,32 @@ namespace CosmicShore.Editor
                 r.Errors.Add("The base module is over Play's 200 MB limit. Turn on Player Settings > Android > Publishing Settings > Split Application Binary.");
             else if (r.BaseCompressedBytes > BaseModuleWarnBytes)
                 r.Warnings.Add("The base module is over 150 MB, close to Play's 200 MB limit. Consider Split Application Binary.");
+        }
+
+        /// <summary>
+        /// The base module's compressed size as ONE phone downloads it: everything outside
+        /// <c>base/lib/</c>, plus the native libraries of the largest single ABI. Play splits a bundle
+        /// per ABI, so summing every ABI's libraries would count each phone's download twice once
+        /// 32-bit and 64-bit both ship. Pure; unit-tested.
+        /// </summary>
+        public static long EstimateBaseDownloadBytes(IEnumerable<(string name, long compressedBytes)> baseEntries)
+        {
+            long shared = 0;
+            var perAbi = new Dictionary<string, long>();
+            foreach (var (name, bytes) in baseEntries)
+            {
+                string[] parts = name.Split('/');
+                if (parts.Length >= 4 && parts[1] == "lib")
+                {
+                    perAbi.TryGetValue(parts[2], out long sum);
+                    perAbi[parts[2]] = sum + bytes;
+                }
+                else
+                {
+                    shared += bytes;
+                }
+            }
+            return shared + (perAbi.Count == 0 ? 0 : perAbi.Values.Max());
         }
 
         // ──────────────────────────────────────────────

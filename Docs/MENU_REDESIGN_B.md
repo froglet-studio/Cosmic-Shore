@@ -724,7 +724,12 @@ a Prefab Variant cannot change; everything they share is a nested prefab.
   with ordinary navigation.
 - Favourite star wired by the modal in code (it was dead on the Arena and Maelstrom copies).
 - Arena: a hull strip (`KitHullTile`, `OnVesselPickRequested`) replaces the carousel arrows; the
-  controls block follows the shown hull. Maelstrom: the format block (race target, game cap, points by
+  controls block follows the shown hull. **2026-10-25 (Yash):** the strip is a WINDOW onto the card's hulls
+  (`ArenaLaunchPanel.StripOffset`), with `<` / `>` arrows (`PrevVesselButton` / `NextVesselButton`, two
+  `KitButtonSmall`s at the strip's ends, wired to the panel's `prevButton` / `nextButton`) that step the pick and
+  slide the window to keep it in view. The strip went from eight tiles to seven between the arrows (`Hull8` is
+  inactive). Why: Regatta lists nine hulls, and on a fixed eight-tile strip the ninth, the Stoat, had no tile and
+  could never be picked. `ArenaHullStripTests`. Maelstrom: the format block (race target, game cap, points by
   place, seats) and the pool summary are wired.
 - `ArcadeGameConfigureModal` ModalType 10 -> 1 (10 is the Arcade window's own: one B closed both).
 
@@ -1979,9 +1984,12 @@ boards were approved with "Approved, price is fine, make it look-only for now". 
 - **The upgrade moment.** Six crystals fly from the button to the hull. On landing, the new pip flashes white and settles
   in the element's colour, the hull morphs from the old level to the new one (`AnimateElementLevel`, 0.5 s) and swells
   (`Pulse`), a hex ring bursts, and a banner names the element, "LEVEL N" and "{ability} grows".
-- **Look-only.** Levels are saved per vessel per element in PlayerPrefs (`HangarUpgradeStore`,
-  `hangar.upgrade.{vessel}.{element}`, max 10). The hull shows the bought form on every visit, and **nothing in a match
-  reads it**. The crystals spent are real. Making upgrades count in play is a separate decision for the owner (and
+- **Look-only.** Levels are saved per vessel per element, max 10, on the player's cloud profile
+  (`HangarUpgradeStore` -> `PlayerDataService.SetHangarUpgradeLevel`, `ProfileEconomy.HangarUpgrades`), in the same save
+  as the crystals they cost (2026-10-25, `Docs/REFACTOR_BACKLOG.md` S67: they were in PlayerPrefs, so a reinstall kept
+  the debit and lost the level). A level bought before then is still read from the old device key
+  `hangar.upgrade.{vessel}.{element}` and adopted into the profile once it has loaded. The hull shows the bought form on
+  every visit, and **nothing in a match reads it**. The crystals spent are real. Making upgrades count in play is a separate decision for the owner (and
   Garrett, who owns vessel tuning).
 - **The words** are serialized on `HangarUpgradesPage`: `buyTemplate`, `maxedWord`, `bannerTemplate` and
   `bannerLineTemplate`.
@@ -2804,7 +2812,7 @@ Measured at ship time on `claude/new-session-76hnyc` after the bleeding-edge mer
 |---|---|---|---|---|
 | R1 | `chrome_provider_steam / google / apple` stand-in glyphs are unreferenced by any shipped asset | debt this branch created | `grep -rl <guid> Assets --include=*.unity --include=*.prefab --include=*.asset` = 0 for all three; only `author_start_flow.py` / `author_menu_settings.py` self-tests use them as planted stand-ins | Retire them from `author_ui_chrome_icons.py` (and point the self-tests at any other chrome sprite)? A first-party redrawn Google G is a brand risk if someone wires it again. |
 | R2 | `ControlGlyphSet.asset` has two writers | debt made visible | `author_ingame_hud.py` owns the pad labels; Garrett's `e1fc17719` hand-added bindings 13 / 14; the generator now leaves unnamed bindings untouched (merge `9601b40fb`) | One owner: should the HUD generator author 13 / 14 too, or hand pad labels back to the asset? Ask Garrett. |
-| R3 | `check_generated_assets.py` reports `m_OnClick.m_PersistentCalls` as "not a serialized field of Button.ButtonClickedEvent" | debt walked past (the checker, not this branch) | 134 `[field]` findings on this branch, every one that same field; `m_PersistentCalls` is serialized on `UnityEventBase`, so the reflection probably stops at the derived type | Fix the checker to walk base types of `UnityEvent` subclasses; until then its `[field]` count is noise. |
+| R3 | `check_generated_assets.py` reports `m_OnClick.m_PersistentCalls` as "not a serialized field of Button.ButtonClickedEvent" | debt walked past (the checker, not this branch) | 134 `[field]` findings on this branch, every one that same field; `m_PersistentCalls` is serialized on `UnityEventBase`, so the reflection probably stops at the derived type | Fix the checker to walk base types of `UnityEvent` subclasses; until then its `[field]` count is noise. **Fixed 2026-10-24 (`claude/pensive-cannon-op8s2c`):** the bases were walked, but `UnityEventBase` lives in the engine's CoreModule, which the schema never read; `Schema/Program.cs` now reads `UnityEngine.Events` from it, so a valid persistent call is clean and a typo inside one is still caught (`--self-test`). |
 | R4 | `check_generated_assets.py` `[guid]` findings outside this branch's work | debt walked past | 2 `GameCanvas.prefab` modifications target fileIDs missing from `EndGameStatsPanel.prefab` / `R_Pause_Menu_Panel.prefab`; 11 `UIKitTestScene.unity` InputSystemUIInputModule actions point at guid `ca9f5fa95ffab41fb9a615ab714db018` (no asset) | GameCanvas: delete the dead modifications (they target removed objects)? UIKitTestScene: re-point to the project's input actions asset. |
 | R5 | Hand-edited YAML is never parse-checked | debt made visible | Garrett's `Rhino.asset` shipped an unescaped apostrophe (fixed `e2802341a`); found only because `check_hangar_ability_kinds.py` uses `yaml.safe_load` | A cheap repo gate: tag-tolerant `yaml.load` of every changed `.asset/.prefab/.unity` (58 files in ~seconds; `/asset-surgery` §5). |
 | R6 | `ElementalBarsView` builds 20 petal Images per spawn on the eight hulls with no baked flowers | debt this branch made quiet (2026-10-19) | Sparrow, Dolphin, Manta, Rhino, Serpent, Urchin, Scarab, Butterfly HUDs: 0 `Petal[0-4]` nodes, 0 authored `petalRoot`s (grep of `Assets/_Prefabs/UI Elements/VesselHUD/*.prefab`); the lockup's runtime sockets no longer warn | Bake them (FrogletTools > Vessels > Wiring > Bake Elemental Petal Bars Into All Vessel HUDs) or accept the runtime build? Garrett's prefabs. |
@@ -2924,3 +2932,45 @@ still the one random event, so both showed "Cosmic Shore soundtrack". Now:
 **Arena hull icons.** The vessel chips on Arena cards drew white squares: `KitArenaGameCard` put each vessel's icon on
 the chip's FIRST child, which is the chip frame's fill (`Fill`, `Border`, `Icon`), and left the sprite-less `Icon`
 drawing a white quad on top. It now finds the `Icon` child by name.
+
+## 63. The Hangar's pad presses belong to the menu (2026-10-25, awaiting in-editor approval)
+
+(Numbered 63 because `claude/new-session-76hnyc`, in flight, already writes sections 61 and 62.)
+
+Yash's play test: on the Hangar's Abilities tab with a Sparrow, RT both paged the top bar to the Ark (the top bar shows
+LT / RT for that) and played Pulsefire Cannons (its keycap reads RT). `ScreenSwitcher` and `HangarAbilitiesPage` both
+polled the trigger off the device in the same frame. The same clash sat on LT (Skyburst Rockets), on LB / RB for any
+ability there (the tabs step on them), and on A: with the pad on another control, A pressed that control AND played the
+ability bound to A (Turret Stance).
+
+**The rule.** On a menu screen the pad is the menu's. `HangarAbilitiesPage` no longer polls pad controls; a pad keycap
+is a label of the in-match control. The pad replays an ability through its row (D-pad to the row, A), the same way a
+click or a tap does (the row's `KitButton` was already wired to it). The keyboard keys the abilities use (LSHIFT, SPACE,
+Q, E, F, R, TAB, the mouse off the UI) have no menu job, so they still play their ability. Every pad control alike, not
+only the ones that clash today, so the page cannot start fighting the menu again when a screen gains a control.
+
+**Why not the other way round.** Letting the Abilities tab keep the triggers would make the top bar's LT / RT a lie on
+that tab, and still leave LB / RB and A fighting. The TRY flight (§35) could take the pad because it was a real flight
+(`ModePreviewWindow.AnyHasFocus`, which also stood the shell down); the AI demo (§59) is a display, so it does not.
+
+The header line now reads "Labels follow your device. Select one to see it again." (was "Press one", which read as
+"press that control"; Yash, 2026-10-25), authored in `author_menu_hangar.py` and regenerated into `HangarView.prefab`.
+Changed: `HangarAbilitiesPage` (the poll and its summary), `HangarControlInput` (summary only), the header line.
+
+## 66. The Hangar's ability rows are information (2026-10-25, awaiting in-editor approval)
+
+Yash, after talking to Shombith: "my abilities don't need to be selected or clicked to test it in hangar. They are just
+info. So LT / RT always works, just to change the tabs." (Sections 64 and 65, which made LT / RT work only from a tab
+menu, were reverted on Ys-bleeding-edge the same day, `c28b962c2`; LT / RT page the tabs from anywhere, as before.)
+
+- **Nothing the player presses plays an ability.** §63 had already stopped the pad's controls; this removes the rest:
+  the click / tap / A on a row and the keyboard key a row shows. `HangarAbilitiesPage` adds no click listener and polls
+  no key; `HangarControlInput` keeps only the device tracking the keycap labels need (`WasPressed` is gone), and the
+  `demoResumeSeconds` pause after a player's press is gone with the press.
+- **The AI demo is unchanged:** every 2.4 s the next ability's keycap sinks, its row lights and the stage performs it.
+- **The rows keep their look and drop their input** (`author_menu_hangar.py`, `kit_row(..., interactive=False)`): each
+  row's KitButton stays as the frame (an open slot still draws disabled) but leaves pad navigation, a CanvasGroup on
+  the row blocks no raycasts so no click reaches it, and the press sound is gone. The generator fails if a row becomes
+  a pad stop, takes clicks or regains its sound (planted defect: a row takes clicks again).
+- **Header line:** "Labels follow your device." ("Select one to see it again." described a press that no longer exists.)
+

@@ -1,0 +1,163 @@
+{
+  "id": "remora",
+  "order": 4,
+  "name": "Remora",
+  "tagline": "the drafter: ride the wake, latch, sling past",
+  "round": "concept · round 1",
+  "accent": "#ff8a3d",
+  "kind": "slipstream",
+  "chip": "concept · round 1",
+  "summary": "The drafter. Alone it is slow (55 u/s). In a rival's wake its speed cap becomes their speed ×1.3, so it catches anyone it can get behind. Hold LT within reach behind a rival and it latches: towed at their speed, the draft meter filling, taking petals if its Mass is up. Let go, or press RT, and it slings past at ×1.7 their speed plus the draft. Never leads until the last straight.",
+  "spec": [
+    {
+      "k": "Mechanic",
+      "v": "wake draft · LT latch (towed) · release to sling"
+    },
+    {
+      "k": "Draft",
+      "v": "cap = rival speed ×1.3 within 14 u of their path"
+    },
+    {
+      "k": "Sling",
+      "v": "×1.7 their speed + draft bonus, 2.5 s"
+    },
+    {
+      "k": "Why",
+      "v": "racing's draft and slipstream: Mario Kart World, F-Zero, Rocket League boost chains"
+    }
+  ],
+  "fantasy": "The fish that rides the shark. It makes every race a two-hander: pick your host, hide in their wake, and the last corner is yours.",
+  "why": "In racing, winners add new skill verbs rather than tracks (Mario Kart World 14M on grind and wall-ride; CrossWorlds at 84 Metacritic still missed). Drafting is racing's oldest tactic and no Cosmic Shore hull owns it. It is also the purest PvP-is-petals-only vessel: its only attack is a tow that drinks petals.",
+  "flight": {
+    "cruise": 55,
+    "pitchYaw": 120,
+    "roll": 130,
+    "grip": 30,
+    "accel": 1.5,
+    "topSpeed": 240
+  },
+  "params": {
+    "petalRate": 0.3
+  },
+  "elements": {
+    "charge": {
+      "name": "Sling",
+      "param": "slingMult",
+      "range": [
+        1,
+        1.25
+      ],
+      "l5": "Overtake",
+      "tip": "Charge is the energy of the sling off a host."
+    },
+    "mass": {
+      "name": "Leech",
+      "param": "petalRate",
+      "range": [
+        0,
+        1
+      ],
+      "l5": "Barnacle",
+      "tip": "Mass is how many petals a tow takes per second (0 at level 0; PvP is petals only)."
+    },
+    "space": {
+      "name": "Latch Reach",
+      "param": "latchReach",
+      "range": [
+        1,
+        1.6
+      ],
+      "l5": "Long Latch",
+      "tip": "Space is how far behind a rival LT can latch."
+    },
+    "time": {
+      "name": "Deep Draft",
+      "param": "draftCap",
+      "range": [
+        1,
+        1.2
+      ],
+      "l5": "Tailwind",
+      "tip": "Time is how much faster than its host a drafting Remora may go."
+    }
+  },
+  "styles": [
+    {
+      "name": "Balanced",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Every element at 0: the recipe's numbers."
+    },
+    {
+      "name": "Shadow",
+      "lv": {
+        "charge": 0,
+        "mass": 0,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Latches from far and drafts deep: never loses its host."
+    },
+    {
+      "name": "Parasite",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 0,
+        "time": 0
+      },
+      "info": "Drinks petals while towed and slings hardest: the hunter."
+    },
+    {
+      "name": "Maxed",
+      "lv": {
+        "charge": 10,
+        "mass": 10,
+        "space": 10,
+        "time": 10
+      },
+      "info": "Every element at 10. A ceiling, not a match state."
+    }
+  ],
+  "players": [
+    {
+      "ai": false,
+      "domain": "jade",
+      "level": "Hard",
+      "style": "Balanced"
+    },
+    {
+      "ai": true,
+      "domain": "ruby",
+      "level": "Hard",
+      "style": "Balanced"
+    },
+    {
+      "ai": true,
+      "domain": "gold",
+      "level": "Hard",
+      "style": "Shadow"
+    }
+  ],
+  "controls": {
+    "lt": "latch (hold) behind a rival",
+    "rt": "sling (or release LT)"
+  },
+  "notModelled": [
+    "Its rivals here are other Remoras; in the game it would draft any hull, and a Manta at 720 u/s is a very different host.",
+    "A wake is a 4 s path of 0.1 s samples; the game would need a wake volume per vessel.",
+    "Alone on a course it is the slowest hull in the fleet by design: race it with players."
+  ],
+  "sources": [
+    "Design: Docs/Studios/CONCEPT_FLEET.md (Remora). Petal transfer follows Docs/ELEMENTAL_ECONOMY.md (a debuff is a transfer); the Squirrel's Crystal Joust is the nearest shipped relative."
+  ],
+  "docs": "Docs/Studios/CONCEPT_FLEET.md",
+  "scorecard": {
+    "rivals": 2,
+    "note": "Headless races seat two Hard rivals (Ruby, Gold): the Remora has nothing to draft alone."
+  }
+}

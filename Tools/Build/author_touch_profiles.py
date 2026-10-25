@@ -9,7 +9,7 @@ The decisions are Garrett's, 2026-10-21 (Docs/Reports/MOBILE_VESSELS.md section 
   * a hull that needs its cards gets TotemButtons: no thumb-lift abilities, the cards (plus the extra
     buttons below) laid out round the right thumb;
   * the Dolphin's one-thumb aim rolls one to one with the phone (2026-10-22: "like augmented reality"); the Manta soars and the Thresher aims its launch with no
-    thumb down, steering by tilt (the Manta's turned over on both axes); the Rhino energizes with no thumb down;
+    thumb down, steering by tilt (the Manta's pitch turned over); the Rhino energizes with no thumb down;
   * the Scarab has a set-and-hold throttle slider and a drift button, the Brittle Star two fire buttons
     whose drag aims, the Shrike a fire button and a zoom toggle, the Serpent's scope latches.
 
@@ -47,7 +47,8 @@ def button(inp, icon, behaviour=HOLD, aims=False, primary=False, tint="none"):
 
 
 def profile(vessel, scheme, **kw):
-    p = dict(vessel=VESSEL[vessel], scheme=SCHEME[scheme], liftDefer=0, tiltRoll=False, tiltSteer=False, tiltFlip=False,
+    p = dict(vessel=VESSEL[vessel], scheme=SCHEME[scheme], liftDefer=0, tiltRoll=False, tiltSteer=False,
+             tiltFlipPitch=False, tiltFlipYaw=False, oneThumbCurve=0,
              idleTriggers=False, idleFull=False, toggles=[], displayOnly=[], extras=[], slider=False, sliderStart=0.5,
              glyphs=[], coreGlyphs=[])
     p.update(kw)
@@ -59,13 +60,15 @@ PROFILES = [
     profile("Squirrel", "ThumbLifts",
             glyphs=[("Mass", "LiftLeftThumb")], coreGlyphs=[("Drift", "LiftRightThumb")]),
     # Lift EITHER thumb: drift and Echo Sight together (touch overrides on the prefab); the phone rolls
-    # the hull one to one while that thumb aims (TouchAttitudeRoll).
-    profile("Dolphin", "ThumbLifts", tiltRoll=True,
+    # the hull one to one while that thumb aims (TouchAttitudeRoll). One-thumb flight is softened at home and
+    # as sharp at the rim (Garrett, 2026-10-25: "too sensitive around the home... I like that it can turn sharp").
+    profile("Dolphin", "ThumbLifts", tiltRoll=True, oneThumbCurve=0.6,
             glyphs=[("Charge", "LiftEitherThumb"), ("Time", "LiftEitherThumb")]),
     # Yastri on either lift; both thumbs off soars (IdleAction -> the boost) steered by tilt.
-    # Flat out: the throttle reads full with no thumb down (720 u/s, the pad's full soar). Its tilt is turned over
-    # on both axes (Garrett, 2026-10-22: "both left/right and up/down were the opposite of my expectation").
-    profile("Manta", "ThumbLifts", tiltSteer=True, tiltFlip=True, idleFull=True,
+    # Flat out: the throttle reads full with no thumb down (720 u/s, the pad's full soar). Its tilt PITCH is turned
+    # over (Garrett, 2026-10-22: "both left/right and up/down were the opposite of my expectation"); its yaw was
+    # flipped with it and put back on 2026-10-25 ("manta gyro has its yaw controls flipped from intended").
+    profile("Manta", "ThumbLifts", tiltSteer=True, tiltFlipPitch=True, idleFull=True,
             glyphs=[("Mass", "LiftEitherThumb"), ("Time", "LiftBothThumbs")]),
     # A lift swings that side's blade; both thumbs off energizes (both triggers fully pulled).
     profile("Rhino", "ThumbLifts", idleTriggers=True,
@@ -130,7 +133,8 @@ def render_button(b):
 def render_profile(p):
     out = "vessel: %d\nscheme: %d\nliftDeferSeconds: %s\ntiltRollOnOneThumb: %d\ntiltSteersWhileIdle: %d\n" % (
         p["vessel"], p["scheme"], p["liftDefer"], int(p["tiltRoll"]), int(p["tiltSteer"]))
-    out += "flipTiltSteer: %d\n" % int(p["tiltFlip"])
+    out += "flipTiltSteerPitch: %d\nflipTiltSteerYaw: %d\n" % (int(p["tiltFlipPitch"]), int(p["tiltFlipYaw"]))
+    out += "oneThumbResponseCurve: %s\n" % p["oneThumbCurve"]
     out += "idlePullsBothTriggers: %d\nidleFullThrottle: %d\n" % (int(p["idleTriggers"]), int(p["idleFull"]))
     out += "toggleElements:" + yaml_list([ELEMENT[e] for e in p["toggles"]], 0, str).rstrip("\n") + "\n"
     out += "displayOnlyElements:" + yaml_list([ELEMENT[e] for e in p["displayOnly"]], 0, str).rstrip("\n") + "\n"

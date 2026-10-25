@@ -434,6 +434,15 @@ namespace CosmicShore.Gameplay
             float closingSeconds = 0f) =>
             maxDegrees > 0f && sweptDegrees + Mathf.Max(0f, sweepRateDegreesPerSecond) * Mathf.Max(0f, closingSeconds) >= maxDegrees;
 
+        /// <summary>
+        /// The target the field autopilot judges: the BEARING of the point it steers for (<paramref name="localSteer"/>,
+        /// hull space) at the RANGE of the thing it is after (<paramref name="objectiveRange"/>, a Regatta ring). On a race
+        /// line the steering point always sits one look-ahead (60-520 u) ahead, inside the autopilot's 90 u "far enough to
+        /// lay a pair" test at cruise, so judging that point alone, a Regatta Stoat never laid a pair and raced at cruise.
+        /// </summary>
+        public static Vector3 AutopilotGauge(Vector3 localSteer, float objectiveRange) =>
+            localSteer.sqrMagnitude > 1e-6f ? localSteer.normalized * Mathf.Max(0f, objectiveRange) : localSteer;
+
         public static bool AutopilotTriggers(Vector3 localTarget, float minDistance, float straightDegrees, float maxDegrees,
             out bool left, out bool right)
         {

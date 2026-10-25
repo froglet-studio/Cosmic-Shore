@@ -158,11 +158,7 @@ namespace CosmicShore.Gameplay
             var listA = vesselPrismController?.Trail?.TrailList;
             if (listA != null && listA.Count > 0) return listA[^1];
 
-            var trail2Field = typeof(VesselPrismController).GetField(
-                "Trail2",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
-            );
-            var trail2 = trail2Field?.GetValue(vesselPrismController) as Trail;
+            var trail2 = vesselPrismController.SecondaryTrail;
             if (trail2 != null && trail2.TrailList.Count > 0) return trail2.TrailList[^1];
 
             return null;

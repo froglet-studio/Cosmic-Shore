@@ -1242,7 +1242,7 @@ one retune command all use that record (the user's choices, 2026-10-05).
 
 **What counts as "the map changed"** - only what changes the race: an intensity's path points
 (`SpawnableWaypointTrack.waypoints`), its curve setting (`useSplinePerIntensity`), its laps
-(`CrystalCollisionTurnMonitor.ResolveLaps`) and where its crystals sit (`CrystalManager`'s anchor set for
+(`NetworkCrystalCollisionTurnMonitor.ResolveLaps`) and where its crystals sit (`CrystalManager`'s anchor set for
 that intensity, clamped into the list exactly as the spawner does). Colours, prism looks, prism spacing and
 the crystal spawn jitter do not count. Positions count in whole units, so a nudge under half a unit is the
 same map. `SkimRaceTrackFingerprint` hashes those four facts into 8 hex digits (32-bit FNV-1a over

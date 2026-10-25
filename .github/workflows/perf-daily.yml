@@ -29,6 +29,7 @@ on:
 
 permissions:
   contents: read
+  issues: read   # the status lists the open Performance tickets (Froglet Tasks, team_tasks.open_tickets)
 
 concurrency:
   group: perf-daily-${{ github.ref }}
@@ -52,6 +53,8 @@ jobs:
           python3 Tools/Build/perf_capture_report.py --self-test
       - name: Sweep (gates + every shared capture vs its baseline)
         id: sweep
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p out
           python3 Tools/Build/perf_hunt.py sweep --strict --out out/perf_sweep.json | tee out/perf_sweep.md
@@ -100,6 +103,7 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: write
+      issues: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -114,6 +118,8 @@ jobs:
           name: perf-amoebius
           path: amoebius-out
       - name: Sweep again with the Amoebius run, writing the status and the report
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p Port/obj/perf_hunt
           for f in amoebius-out/*.json; do [ -f "$f" ] && cp "$f" Port/obj/perf_hunt/; done

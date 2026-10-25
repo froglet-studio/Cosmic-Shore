@@ -32,6 +32,12 @@ not the person's: they are measured separately as "the AI today" for comparison.
     python3 Tools/Build/learn_drives_from_flights.py --write         # + the Regatta variants and LEARNED_DRIVES.md
     python3 Tools/Build/learn_drives_from_flights.py --check         # the written variants are well formed
     python3 Tools/Build/learn_drives_from_flights.py --self-test     # synthetic flights with known answers
+    python3 Tools/Build/learn_drives_from_flights.py --mode Switchback [--write]   # any other racing mode, same rules
+
+**Any racing mode** (Yash, 2026-10-26: the AIs are trained in each vessel's own racing minigame at its four intensities,
+not in Regatta: "in case of Dolphin, we should keep playing that Dolphin minigame, Switchback"). `--mode <GameModes name>`
+reads that mode's flights and writes `<asset>_<mode>` variants, which AIBoostPolicySO.ForMode loads in that mode only;
+the report goes to LEARNED_DRIVES_<mode>.md and counts the flights per intensity. The race lines are Regatta's alone.
 """
 import argparse
 import datetime
@@ -54,7 +60,7 @@ TRIGGER_ON = 0.15     # a trigger squeezed past this is a press (the Stoat's two
 OUT_DIR = os.path.join(REPO, "Assets", "Resources", "AIBoostPolicies")   # AIBoostPolicySO.ModeVariantFolder
 MANTA_SCRIPT = os.path.join(REPO, "Assets", "_Scripts", "Controller", "AI", "Boost", "MantaSoarAITuningSO.cs")
 REPORT_DOC = os.path.join(REPO, "Docs", "AI_SYSTEM", "LEARNED_DRIVES.md")
-MODE = "Regatta"
+MODE = "Regatta"   # --mode sets it: the GameModes name whose flights are read and whose variants are written
 MIN_FINISHED = 3
 MIN_EPISODES = 6
 STATE_BOOSTING, STATE_DISCHARGING, STATE_DRIFTING, STATE_ATTACHED = 1, 2, 4, 16
@@ -471,7 +477,7 @@ def check():
         text = open(os.path.join(OUT_DIR, fn), encoding="utf-8").read()
         if not os.path.exists(os.path.join(OUT_DIR, fn + ".meta")):
             problems.append(f"{fn}: no .meta")
-        base = fn[:-len(f"_{MODE}.asset")] + ".asset"
+        base = fn[:fn.rfind("_")] + ".asset"   # <asset>_<mode>.asset, any mode
         base_path = next((os.path.join(d, base) for d in (POLICY_DIR, STOAT_DIR) if os.path.exists(os.path.join(d, base))), None)
         if base_path:
             bt = open(base_path, encoding="utf-8").read()
@@ -501,6 +507,9 @@ def report(results, wrote):
         lines.append(f"### {R['hull']} ({HULLS[R['hull']]['verb']})\n")
         lines.append(f"{R['flights']} editor flight(s), {R['finished']} finished; learned from: "
                      + (", ".join(os.path.basename(u) for u in R["used"]) or "-") + "\n")
+        if R.get("intensities"):
+            lines.append("By intensity (flights / finished): " + ", ".join(
+                f"I{i} {n} / {d}" for i, (n, d) in sorted(R["intensities"].items())) + "\n")
         if R["why"]:
             lines.append(f"Nothing written: {R['why']}.\n")
         flat = lambda d: {f"{a}.{k}": v for a, m in d.items() for k, v in m.items()} if R["hull"] == "Stoat" else d
@@ -547,10 +556,17 @@ def ring_crossings(f):
     return out
 
 
+def lane_share(radius, mouth, clearance):
+    """One crossing on the style's scale, against ITS OWN ring's mouth (RaceLineStyleSO.LaneRadius run backwards): the
+    line is laid per course from that course's mouth, so an I1 crossing (110 u mouth) measured against an I3 mouth (72 u)
+    reads as flying far wider than it was."""
+    return (radius - RAIL_OFFSET) / max(1.0, mouth - clearance - RAIL_OFFSET)
+
+
 def learn_race_lines(parsed):
     """{hull: {"LaneShare": x}} from the fastest MIN_FINISHED finished races of each hull that races a line
     (author_race_lines.HULLS): its median ring-crossing radius, put on the style's own scale (0 = the rails' radius,
-    1 = the tightest mouth less the hull's room at its risk)."""
+    1 = that ring's mouth less the hull's room at its risk): the median of every crossing's own share."""
     from learn_from_flights import finished_of
     import author_race_lines as arl
     learned, report = {}, {}
@@ -564,9 +580,8 @@ def learn_race_lines(parsed):
         v = arl.values(hull)
         clearance = v["HullClearance"] * (1.5 + (0.75 - 1.5) * v["Risk"])
         tightest = min(R for _, R in cross)
-        room = max(1.0, tightest - clearance - RAIL_OFFSET)
         median = statistics.median(r for r, _ in cross)
-        share = min(1.0, max(0.0, (median - RAIL_OFFSET) / room))
+        share = min(1.0, max(0.0, statistics.median(lane_share(r, R, clearance) for r, R in cross)))
         report[hull].update({"medianCrossing": round(median, 1), "tightestMouth": tightest, "LaneShare": round(share, 3)})
         learned[hull] = {"LaneShare": round(share, 3)}
     return learned, report
@@ -599,24 +614,37 @@ def run(sources, write):
         S = samples_of(f)
         if S:
             by_hull[f["hull"]].append((f, S))
-    lines, line_report = learn_race_lines(parsed)
-    print("race lines (where each hull crosses the rings; Resources/RaceLines):")
-    for hull, r in line_report.items():
-        print(f"  {hull}: {r}")
-    if write and lines:
-        write_race_lines(lines)
-    results = [learn_hull(h, fl) for h, fl in by_hull.items()]
+    if MODE == "Regatta":
+        lines, line_report = learn_race_lines(parsed)
+        print("race lines (where each hull crosses the rings; Resources/RaceLines):")
+        for hull, r in line_report.items():
+            print(f"  {hull}: {r}")
+        if write and lines:
+            write_race_lines(lines)
+    from learn_from_flights import finished_of
+    results = []
+    for h, fl in by_hull.items():
+        if MODE != "Regatta" and not fl:
+            continue   # a hull this mode does not seat: no section
+        R = learn_hull(h, fl)
+        R["intensities"] = {}
+        for f, _ in fl:
+            n, d = R["intensities"].get(int(f.get("intensity") or 0), (0, 0))
+            R["intensities"][int(f.get("intensity") or 0)] = (n + 1, d + (1 if finished_of(f) else 0))
+        results.append(R)
     wrote = [p for R in results if write and R["learned"] for p in write_variant(R["hull"], R["learned"])]
     text = report(results, wrote)
     print(text)
     if write:
-        open(REPORT_DOC, "w", encoding="utf-8").write(
-            "# What the other Regatta AIs learned from editor flights\n\n"
-            f"Generated by `python3 Tools/Build/learn_drives_from_flights.py --write` ({datetime.date.today().isoformat()}). "
-            "Each hull's numbers are written as a Regatta-only variant in `Assets/Resources/AIBoostPolicies/` "
+        doc = REPORT_DOC if MODE == "Regatta" else REPORT_DOC.replace("LEARNED_DRIVES", f"LEARNED_DRIVES_{MODE}")
+        flag = "" if MODE == "Regatta" else f" --mode {MODE}"
+        open(doc, "w", encoding="utf-8").write(
+            f"# What the {MODE} AIs learned from editor flights\n\n"
+            f"Generated by `python3 Tools/Build/learn_drives_from_flights.py{flag} --write` ({datetime.date.today().isoformat()}). "
+            f"Each hull's numbers are written as a {MODE}-only variant in `Assets/Resources/AIBoostPolicies/` "
             "(`AIBoostPolicySO.ForMode`, `MantaSoarAITuningSO.LoadForMode`, `AIModeTuning` for the Stoat's three); the hull's own assets and every other mode are "
             "untouched. How it works: the script's header; the plan: `SITUATION_RECORDING_PLAN.md` §9.\n\n" + text + "\n")
-        print(f"wrote {os.path.relpath(REPORT_DOC, REPO)}")
+        print(f"wrote {os.path.relpath(doc, REPO)}")
     return 0
 
 
@@ -688,6 +716,8 @@ def self_test():
                 "columns": ["x", "y", "z", "rings", "held"], "samples": rows}
     cr = ring_crossings(line_flight(60.0, 100))
     assert cr and abs(cr[0][0] - 60.0) < 1e-6 and cr[0][1] == 110, cr
+    # One line flown at two intensities is one share: each crossing is scaled by its own ring's mouth.
+    assert abs(lane_share(66.0, 110, 21.6) - lane_share(41.0, 72, 21.6)) < 0.02, "an I1 crossing must not read as wider"
     ctrl = learned("Rhino", "random")["learned"]
     assert ctrl["alignDegrees"] > rh["alignDegrees"] + 5, ("negative control: a pilot ignoring the rule must not look lined up", ctrl)
     do = learned("Dolphin", "policy")["learned"]
@@ -764,7 +794,10 @@ def main():
     ap.add_argument("--write", action="store_true")
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--self-test", action="store_true")
+    ap.add_argument("--mode", default="Regatta", help="the GameModes name to learn (default Regatta)")
     a = ap.parse_args()
+    global MODE
+    MODE = a.mode
     if a.self_test:
         return self_test()
     if a.check:

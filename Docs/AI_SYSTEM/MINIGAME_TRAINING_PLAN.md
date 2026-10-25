@@ -1,0 +1,119 @@
+# Training the AIs through each vessel's own racing minigame
+
+**Decided by Yash, 2026-10-26.** This replaces "train every AI in Regatta" (`REGATTA_AI_ROADMAP.md`). Yash's words:
+
+> "It's not through Regatta, but it's through creating some mini games, some fun racing mini games of them or modifying
+> the existing mini games, racing mini games especially of them. On basis of four intensity level, making them super fun
+> and also intense to play according to intensity level. [...] In case of Dolphin, we should keep playing that Dolphin
+> minigame, Switchback [...] in different intensity levels with some AIs dolphins as well, and through my repetitive
+> gameplay you can collect the data on how I'm navigating. Just like how we train squirrel and stoat. [...] If we have
+> four vessels or three vessels, or even two vessels trained to their maximum intelligence in their respective
+> minigames [...] then through that data we can use some elemental changes and others to create the regatta entirely
+> [...] Regatta should be a racing arena game where every vessel should have some meaning and fun and thrill and
+> advantage and disadvantage to win or lose the game."
+
+## 1. The loop, per vessel
+
+1. **One racing minigame per vessel**, four intensities. The minigame is where the vessel's verbs matter most, so a
+   person's play there shows how the vessel is meant to be flown.
+2. **The intensities teach, then test.** I1 is basic and teaches the vessel's verbs one at a time, as the intensity
+   ladder does in every other mode. Each level adds one demand. I4 is intense and fun for someone who has mastered it.
+3. **People play it over and over**, with AI rivals of the same hull on the grid. Every race is recorded automatically
+   (`HumanFlightRecorder`, every mode). Since 2026-10-25 the record includes each AI's state (`rivalState`), so a
+   recording shows how the person flies and why each AI did what it did.
+4. **The learner turns the races into AI numbers for that minigame.** Run
+   `python3 Tools/Build/learn_drives_from_flights.py --mode <Mode> [--write]`. It writes `<asset>_<Mode>` variants that
+   only that mode loads (`AIBoostPolicySO.ForMode`), and reports flights per intensity. It needs three finished races
+   of a hull before it writes. The Squirrel (Skim Race, `learn_from_flights.py`, per-intensity `SkimRaceAIConfig_I1-I4`)
+   and the Stoat are the worked examples.
+5. **Repeat until the AI races like the person at every intensity.** The test is the AI rival's own pace in the
+   recordings (`regatta_rival_report.py`, extended to the minigame).
+6. **Then Regatta is rebuilt from what the trained vessels can do** (§4).
+
+## 2. Which minigame trains which vessel
+
+From `VESSEL_MODE_CHART.md` §4 (live cards). The racing minigame is the one whose score is a race.
+
+| Vessel | Racing minigame | Shape | State (2026-10-26) |
+|---|---|---|---|
+| **Dolphin** | **Switchback** | open gate race, random gates | **First.** 6 hand-flown races (I1 2, I2 4, all finished). AI Dolphins thread 0-2 of 20 rings at I2 (§3.1) |
+| Squirrel | Skim Race | skim the track's rails | Trained (`learn_from_flights.py`, per-intensity configs) |
+| Stoat | Warpline (also Slingshot) | gate race, field pairs | 4 hand-flown races (I1-I2). AI on hold for Garrett's configuration |
+| Rhino | Headlong | lapped gate race | none yet |
+| Manta | Redline | gate race | none yet |
+| Urchin | Skein | gate race on rails | none yet |
+| Sparrow | Breakwater | gate race through breakwaters | 5 hand-flown (I1, I4). The AI stalls after a few rings (ticket T-20261015-cb8f) |
+| Butterfly | Waystation | fold race | 2 (Caleb, I1). The AI threaded 0 rings (before the fold fix) |
+| Scarab | Scarab Scramble / Tollway | goal race / toll race | none yet |
+| Serpent | **none** | - | no racing minigame of its own yet: one has to be made or chosen |
+
+## 3. Switchback first (Dolphin)
+
+### 3.1 What tonight's races show (Yash, 2026-10-26, I2, two Medium AI Dolphins each)
+
+- Yash finished all four: 80, 82, 132 and 221 s. The AI Dolphins threaded **0-2 of 20 rings**.
+- They are not frozen: about 65 u/s, discharging 4-14% of the time, drifting 10-35%. But they are in the **Through**
+  phase (committed to a gate) 58-71% of the race and still miss its 28 u radius mouth.
+- This is the defect Regatta fixed on 2026-10-17. A drifting Dolphin locks its course on the gate's "through" point,
+  which sits on the ring's AXIS, so a commit made off-axis passes beside the mouth. Regatta moved the through point onto
+  the line through the ring's centre (`GateRaceController.ArmRacer`, `aiCommitFromApproachPoint`), and later added a
+  re-attack after a missed ring. Switchback still runs with the switch OFF. Turning it on is ticket T-20261015-cb8f:
+  Garrett's call for his gate races, Yash's for the training plan.
+- `learn_drives_from_flights.py --mode Switchback` already has three finished races to learn from (I1 and I2 mixed).
+  Measured against the AI's numbers, the person:
+  - starts a discharge lined up within 27 degrees, not 12;
+  - needs only 0.9 s of runway, not 2.5;
+  - spends the charge at 0.82, not 0.95.
+
+### 3.2 The intensity ladder today
+
+Intensity is the course alone (`SWITCHBACK.md`, "Intensity is the COURSE"):
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Mouth diameter | 144 | 56 | 22 | 8.6 |
+| Max corner | 45° | 50° | 55° | 60° |
+| What it asks | nothing new | threading | precision | precision |
+
+The Dolphin's verbs are skim (bank charge), drift (carve a turn its 110°/s cannot make) and discharge (spend it down a
+straight). None of them is taught or demanded by a level. Only the mouth shrinks, and I2 is a cliff (72 → 28 u radius).
+
+### 3.3 Proposal: one new demand per level (for Yash to choose, Garrett to approve)
+
+| | I1: Learn to fly | I2: Carve | I3: Charge economy | I4: Gauntlet |
+|---|---|---|---|---|
+| Teaches | steering through gates | the drift | skim, then spend | all three, under pressure |
+| Mouth (radius) | 72 (as now) | 48 | 32 | 20 |
+| Course | a smooth flowing arc, gentle corners (≤ 30°), long legs | **switchbacks**: pairs of 90-150° hairpins only a drift makes | skim ribbons (prism walls) along some legs to bank charge, long straights after them to discharge | tight hairpins, short legs, danger prisms near the racing line |
+| Rivals | AI Dolphins on Easy | Medium | Medium / Hard | Hard |
+| Fun | flow, speed, no failure | the carve | timing the release | risk vs reward: the fast line is the dangerous one |
+
+Why these numbers: the I4 mouth today (4.3 u radius against a 2.86 u hull) leaves no room for a drift. A person
+cannot carve through it, so the ladder ends in precision, not mastery. The proposed mouths keep the same order (each
+level tighter) without the cliff.
+
+Each change lands in the course generator (`SwitchbackCourse`, `SwitchbackCourseTests`) and the mode's generator
+(`author_switchback_assets.py`). It is a redesign of Garrett's mode, so it waits for his yes.
+
+## 4. The end state: Regatta rebuilt from the trained vessels
+
+Once two to four vessels race at their best in their own minigames:
+
+- **Regatta is designed from their measured skills**, not tuned blind. Each trained AI shows what its vessel is good
+  at: the Dolphin's carve, the Squirrel's skim, the Stoat's warp, the Urchin's rail. Regatta's course gets sections
+  that favour each, so every vessel has an advantage somewhere and a disadvantage somewhere else.
+- **Elemental changes balance it**: `StartingElements` per hull and intensity, as `regatta_balance.py` does today, but
+  set from the trained AIs' real times instead of a model.
+- What Regatta already has stays: the race lines per hull (learned from people), the per-AI recording, and the AI
+  fixes. Its AI numbers become the trained minigame numbers.
+
+## 5. What is done, what is next
+
+- **Done (2026-10-26):** the learner reads any mode (`--mode`). The plan is recorded here.
+- **Next, decisions for Yash** (and Garrett for Switchback):
+  1. Turn on the Regatta steering fix for Switchback (`aiCommitFromApproachPoint`), so the AI Dolphins can race and the
+     training has real rivals.
+  2. Choose or reshape the I1-I4 design in §3.3, then build it.
+  3. Write the first Switchback Dolphin numbers now (`--mode Switchback --write`), or wait for more races per intensity.
+- **Then:** Yash plays Switchback at each intensity, repeatedly. Each batch: learn, check the AI's pace in the
+  recordings, adjust. Then the next vessel.

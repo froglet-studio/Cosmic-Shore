@@ -64,6 +64,9 @@ namespace CosmicShore.UI
 
         public event Action<ToastNotificationItem> OnDismissed;
 
+        /// <summary>Binds the label of an item built in code (the manager's default prefab).</summary>
+        internal void SetMessageText(TMP_Text text) => messageText = text;
+
         private void Awake()
         {
             _canvasGroup = GetComponent<CanvasGroup>();

@@ -54,9 +54,10 @@ namespace CosmicShore.Gameplay
         const int SiteFloats = 6;
 
         /// <summary>The base-class fields that feed generation (the same set
-        /// <c>CellEnvironmentSpawnableBase.GetParameterHash</c> hashes). Everything else on the
-        /// bases is laying or runtime state (intensityLevel, layAcrossFrames, the prism prefab).</summary>
-        static readonly string[] BaseFields = { "seed", "density", "spawnClearRadius", "spawnClearPoints" };
+        /// <c>CellEnvironmentSpawnableBase.GetParameterHash</c> hashes), named by the base itself with
+        /// <c>nameof</c>. Everything else on the bases is laying or runtime state (intensityLevel,
+        /// layAcrossFrames, the prism prefab).</summary>
+        static string[] BaseFields => CellEnvironmentSpawnableBase.FingerprintBaseFields;
 
         const string FamilyBase = "CellEnvironmentSpawnableBase";
 
@@ -83,9 +84,12 @@ namespace CosmicShore.Gameplay
             MixString(ref h, type.Name);
             foreach (var name in BaseFields)
             {
-                var f = FindField(type, name);
+                // A base field this cannot find would drop out of the key and let a stale bake be
+                // served for any value of it, so a miss is an error, never a skip.
+                var f = FindField(type, name) ?? throw new InvalidOperationException(
+                    $"{type.Name} has no base field '{name}' for the layout-bake fingerprint");
                 MixString(ref h, name);
-                if (f != null) MixValue(ref h, f.GetValue(generator), f.FieldType, 0);
+                MixValue(ref h, f.GetValue(generator), f.FieldType, 0);
             }
             for (var t = type; t != null && t.Name != FamilyBase; t = t.BaseType)
             {

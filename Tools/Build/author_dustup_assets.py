@@ -36,7 +36,7 @@ SCRIPT_PATHS = {
     "DustupSettingsSO":       "Assets/_Scripts/Controller/Arcade/Dustup/DustupSettingsSO.cs",
     "DustupScoringRuleSO":    "Assets/_Scripts/Controller/Arcade/Dustup/DustupScoringRuleSO.cs",
     "DustupPointTurnMonitor": "Assets/_Scripts/Controller/Arcade/TurnMonitors/DustupPointTurnMonitor.cs",
-    "ButterflyAutopilotModeDriver": "Assets/_Scripts/Controller/Arcade/ButterflyGames/ButterflyAutopilotModeDriver.cs",
+    "ButterflyAutopilotModeDriver": "Assets/_Scripts/Controller/AI/Butterfly/ButterflyAutopilotModeDriver.cs",
 }
 G_SCRIPT = {k: guid(f"script/{k}") for k in SCRIPT_PATHS}
 G_ASSET = {
@@ -82,7 +82,7 @@ CARD_REL = "Assets/_SO_Assets/Games/ArcadeGameDustup.asset"
 for k, p in SCRIPT_PATHS.items():
     g.script_meta(p, G_SCRIPT[k])
 g.folder_meta("Assets/_Scripts/Controller/Arcade/Dustup")
-g.folder_meta("Assets/_Scripts/Controller/Arcade/ButterflyGames")
+g.folder_meta("Assets/_Scripts/Controller/AI/Butterfly")
 g.text_meta("Assets/_Scripts/Controller/Arcade/DUSTUP.md")
 
 # ── 2. Scoring rule ──────────────────────────────────────────────────────────
@@ -218,5 +218,5 @@ common.assert_scene(errors, scene,
 g.finish(errors, referenced=EXISTING,
          minted=list(G_SCRIPT.values()) + list(G_ASSET.values())
                 + [guid("folder/Assets/_Scripts/Controller/Arcade/Dustup"),
-                   guid("folder/Assets/_Scripts/Controller/Arcade/ButterflyGames"),
+                   guid("folder/Assets/_Scripts/Controller/AI/Butterfly"),
                    guid("text/Assets/_Scripts/Controller/Arcade/DUSTUP.md")])

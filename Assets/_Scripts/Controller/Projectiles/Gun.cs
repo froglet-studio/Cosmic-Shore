@@ -106,6 +106,9 @@ namespace CosmicShore.Gameplay
                     break;
             }
 
+            // The camera following the shooter recoils (Docs/CAMERA_FEEL.md); it rate-limits a held trigger itself.
+            VesselCameraFeel.Shot(_vesselStatus);
+
             if (!ignoreCooldown)
             {
                 _onCooldown = true;
@@ -181,6 +184,8 @@ namespace CosmicShore.Gameplay
                         projectileScale, dir * sideLength, projectileTime, charge, energy, dir);
                 }
             }
+
+            VesselCameraFeel.Shot(_vesselStatus);   // one recoil per blast, not per spike
         }
 
         #region Firing Implementations

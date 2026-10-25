@@ -1,0 +1,1248 @@
+<title>Froglet Tasks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: a lists sidebar (Reminders) beside an issue list (GitHub); a ticket opens as a page sheet (Notion); a helper chat floats bottom right. */
+:root {
+  --bg: #ffffff; --side: #f3f5f4; --panel: #ffffff; --fg: #1b1f1d; --muted: #66706b; --faint: #98a19c;
+  --line: #e2e7e4; --hover: #eef2f0; --sel: #e1ece6; --chip: #edf1ef;
+  --accent: #1f7a52; --accent-fg: #ffffff; --accent-soft: #dcefe5;
+  --open: #1a7f37; --live: #b06a00; --done: #7b52d1; --arch: #8a928e; --p1: #cf222e; --p2: #b06a00; --info: #2563c9;
+  --shadow: 0 12px 40px rgba(16, 32, 24, .16); --scrim: rgba(16, 24, 20, .28);
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #171a19; --side: #1e2221; --panel: #1c201f; --fg: #e6eae8; --muted: #9aa39f; --faint: #6c7571;
+  --line: #2c3230; --hover: #242928; --sel: #263a30; --chip: #252a29;
+  --accent: #4cc38a; --accent-fg: #0b1c13; --accent-soft: #1f3a2c;
+  --open: #3fb950; --live: #e0a23a; --done: #a68af0; --arch: #7d8682; --p1: #ff6b6b; --p2: #e0a23a; --info: #6ea8ff;
+  --shadow: 0 12px 40px rgba(0, 0, 0, .5); --scrim: rgba(0, 0, 0, .5); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #171a19; --side: #1e2221; --panel: #1c201f; --fg: #e6eae8; --muted: #9aa39f; --faint: #6c7571;
+  --line: #2c3230; --hover: #242928; --sel: #263a30; --chip: #252a29;
+  --accent: #4cc38a; --accent-fg: #0b1c13; --accent-soft: #1f3a2c;
+  --open: #3fb950; --live: #e0a23a; --done: #a68af0; --arch: #7d8682; --p1: #ff6b6b; --p2: #e0a23a; --info: #6ea8ff;
+  --shadow: 0 12px 40px rgba(0, 0, 0, .5); --scrim: rgba(0, 0, 0, .5); color-scheme: dark; }
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.45 var(--sans); }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.mono { font-family: var(--mono); font-size: 12px; }
+.app { display: grid; grid-template-columns: 272px minmax(0, 1fr); height: 100%; }
+
+/* Sidebar */
+.side { background: var(--side); border-right: 1px solid var(--line); overflow-y: auto; display: flex; flex-direction: column; gap: 16px;
+  padding-block: 18px; padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 4px; }
+.brand svg { flex: none; }
+.brand b { font-size: 15px; letter-spacing: -.01em; }
+.brand span { color: var(--muted); font-size: 12px; display: block; }
+.search { position: relative; }
+.search input { width: 100%; box-sizing: border-box; padding: 7px 10px 7px 30px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); }
+.search svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--faint); }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tile { text-align: left; border: 0; background: var(--bg); border-radius: 12px; padding: 9px 10px; cursor: pointer; display: grid;
+  grid-template-columns: auto 1fr; column-gap: 8px; align-items: center; box-shadow: 0 0 0 1px var(--line) inset; }
+.tile .dot { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: var(--accent-fg); }
+.tile .n { font-size: 20px; font-weight: 700; justify-self: end; font-variant-numeric: tabular-nums; }
+.tile .l { grid-column: 1 / -1; color: var(--muted); font-weight: 600; font-size: 12.5px; margin-top: 4px; }
+.tile[aria-current="true"] { background: var(--accent); box-shadow: none; }
+.tile[aria-current="true"] .l, .tile[aria-current="true"] .n { color: var(--accent-fg); }
+.tile[aria-current="true"] .dot { background: var(--accent-fg) !important; color: var(--accent); }
+.group-h { font-size: 11.5px; font-weight: 700; color: var(--muted); padding: 0 8px 4px; letter-spacing: .02em; }
+.nav { display: flex; flex-direction: column; gap: 1px; }
+.nav button { display: flex; align-items: center; gap: 10px; border: 0; background: none; padding: 6px 8px; border-radius: 8px; cursor: pointer; text-align: left; }
+.nav button:hover { background: var(--hover); }
+.nav button[aria-current="true"] { background: var(--sel); font-weight: 600; }
+.nav .ic { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; color: var(--accent-fg); flex: none; font-size: 10px; font-weight: 700; }
+.nav .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav .c { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; color: var(--muted); font-size: 12px; padding: 0 6px; }
+.base-pill { display: flex; align-items: center; gap: 6px; }
+.base-pill .mono { color: var(--fg); background: var(--chip); padding: 1px 6px; border-radius: 5px; }
+.btn { border: 1px solid var(--line); background: var(--bg); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; text-decoration: none; color: var(--fg); display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover:not(:disabled) { background: var(--hover); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+.btn.primary:hover:not(:disabled) { filter: brightness(1.06); background: var(--accent); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn.ghost { border-color: transparent; background: none; }
+.btn.small { padding: 3px 9px; font-size: 12.5px; }
+
+/* Main */
+.main { overflow-y: auto; min-width: 0; }
+.main-in { max-width: 1000px; margin: 0 auto; padding-block: 22px 96px; padding-left: max(16px, 28px); padding-right: max(16px, env(safe-area-inset-right, 0px), 28px); }
+.head { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.head h1 { margin: 0; font-size: 28px; letter-spacing: -.02em; line-height: 1.1; text-wrap: balance; }
+.head .count { font-size: 28px; font-weight: 700; color: var(--accent); margin-left: auto; font-variant-numeric: tabular-nums; }
+.sub { color: var(--muted); margin: 6px 0 0; max-width: 72ch; }
+.menu-btn, .filter-btn { display: none; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 18px 0 8px; }
+.toolbar label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12.5px; }
+.toolbar select, .field select, .field input, .field textarea { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 5px 8px; }
+.toolbar select { max-width: 170px; }
+.tb-right { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+.chip-clear { border: 0; background: none; color: var(--accent); cursor: pointer; font-weight: 600; font-size: 12.5px; }
+.card { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.cards { display: grid; gap: 12px; margin-top: 16px; }
+.fy-acts { display: flex; gap: 10px; align-items: center; margin-left: auto; }
+.fy-acts + .count { margin-left: 0; }
+.cards.info { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start; }
+.cmds, .rules { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.cmd { display: grid; gap: 2px; min-width: 0; }
+.cmd-top { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; min-width: 0; }
+.cmd code { font-family: var(--mono); font-size: 12.5px; background: var(--chip); padding: 1px 6px; border-radius: 5px; overflow-wrap: anywhere; }
+.rules li { padding-left: 14px; position: relative; max-width: 72ch; }
+.rules li::before { content: ""; position: absolute; left: 0; top: .6em; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.banner { margin-top: 14px; border-radius: 10px; padding: 10px 14px; background: var(--accent-soft); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.list { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.list + .list { margin-top: 14px; }
+.ghead { width: 100%; display: flex; align-items: center; gap: 8px; padding: 9px 14px; border: 0; background: var(--side); cursor: pointer; text-align: left; font-weight: 600; border-bottom: 1px solid var(--line); }
+.ghead .c { color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+.ghead .chev { transition: transform .15s; color: var(--muted); }
+.ghead[aria-expanded="false"] .chev { transform: rotate(-90deg); }
+.row { width: 100%; display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 14px; border: 0;
+  border-top: 1px solid var(--line); background: var(--bg); text-align: left; cursor: pointer; }
+.list > .row:first-child, .ghead + .row { border-top: 0; }
+.row:hover { background: var(--hover); }
+.row[aria-current="true"] { background: var(--sel); }
+.row .st { margin-top: 2px; }
+.row .title { font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.row .meta { grid-column: 2; color: var(--muted); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.row .right { grid-row: 1 / span 2; grid-column: 3; display: flex; align-items: flex-start; gap: 6px; }
+.why-you { color: var(--info); }
+.more { width: 100%; border: 0; border-top: 1px solid var(--line); background: var(--bg); color: var(--accent); font-weight: 600; padding: 9px; cursor: pointer; }
+.more:hover { background: var(--hover); }
+.label { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 1px 8px; font-size: 11.5px; font-weight: 600; background: var(--chip); color: var(--muted); white-space: nowrap; }
+.label.p1 { color: var(--p1); background: color-mix(in srgb, var(--p1) 12%, transparent); }
+.label.p2 { color: var(--p2); background: color-mix(in srgb, var(--p2) 13%, transparent); }
+.label.live { color: var(--live); background: color-mix(in srgb, var(--live) 13%, transparent); }
+.label.ms { color: var(--accent); background: var(--accent-soft); }
+.label.pending { color: var(--done); background: color-mix(in srgb, var(--done) 12%, transparent); }
+.label.info { color: var(--info); background: color-mix(in srgb, var(--info) 12%, transparent); }
+.soon { color: var(--p2); font-weight: 600; }
+.empty { padding: 40px 20px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px; }
+.empty b { color: var(--fg); display: block; margin-bottom: 4px; font-size: 15px; }
+
+/* Board view: cards in columns (Group by picks the columns) */
+.viewsw { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; margin-left: 12px; align-self: center; }
+.viewsw button { border: 0; background: var(--bg); padding: 5px 12px; font-weight: 600; font-size: 12.5px; cursor: pointer; color: var(--muted); }
+.viewsw button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(260px, 1fr); gap: 14px; overflow-x: auto; padding-bottom: 8px; align-items: start; }
+.col { background: var(--side); border-radius: 14px; padding: 10px; display: grid; gap: 8px; min-width: 0; }
+.col-h { display: flex; align-items: center; gap: 8px; padding: 2px 4px 4px; font-weight: 700; }
+.col-h .dotc { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.col-h .c { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; margin-left: auto; }
+.tcard { text-align: left; border: 0; background: var(--panel); border-radius: 12px; padding: 11px 12px 10px; cursor: pointer; display: grid; gap: 7px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .06), 0 0 0 1px var(--line); transition: transform .12s, box-shadow .12s; }
+.tcard:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0, 0, 0, .08), 0 0 0 1px var(--line); }
+.tcard[aria-current="true"] { box-shadow: 0 0 0 2px var(--accent); }
+.tcard .tt { font-weight: 600; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.tcard .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.tcard .foot { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.tcard .foot .mono { font-size: 11px; }
+.clock { flex: 1; height: 4px; border-radius: 2px; background: var(--chip); overflow: hidden; }
+.clock i { display: block; height: 100%; border-radius: 2px; background: var(--open); }
+.clock.warn i { background: var(--p2); }
+.avatar { width: 20px; height: 20px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 10px; font-weight: 700; color: var(--accent-fg); background: var(--live); flex: none; }
+.col .more { border-radius: 10px; border: 0; background: none; }
+
+/* Graph strip */
+.graphs { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, 1.3fr); gap: 12px; margin: 16px 0 6px; }
+.gcard { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; min-width: 0; display: grid; gap: 6px; align-content: start; }
+.gcard h3 { margin: 0; font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.gcard .big { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.gcard .delta { font-size: 12.5px; font-weight: 600; }
+.gcard svg { width: 100%; height: auto; display: block; overflow: visible; }
+.rings { display: flex; gap: 10px; flex-wrap: wrap; }
+.ring { display: grid; justify-items: center; gap: 2px; font-size: 11.5px; color: var(--muted); }
+.ring b { color: var(--fg); font-size: 12px; }
+.donut-row { display: flex; gap: 12px; align-items: center; }
+.gcard .donut-row svg { width: 76px; flex: none; }
+.gcard .ring svg { width: 56px; }
+.donut-legend { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+.donut-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+/* Branches */
+.pipe { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+.pipe .stage { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-family: var(--mono); font-size: 12.5px; background: var(--bg); }
+.pipe .stage.now { background: var(--accent); color: var(--accent-fg); border-color: transparent; font-weight: 700; }
+.pipe .arrow { color: var(--faint); }
+.brow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 14px; border-top: 1px solid var(--line); background: var(--bg); }
+.list > .brow:first-child { border-top: 0; }
+.brow .name { font-family: var(--mono); font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.brow .meta { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.brow .side-n { color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; text-align: right; }
+
+/* Milestones */
+.ms { display: grid; gap: 8px; }
+.ms-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.ms-top .key { font-family: var(--mono); font-weight: 700; color: var(--accent); }
+.ms-top b { font-size: 16px; }
+.ms-top .due { margin-left: auto; color: var(--muted); font-size: 12.5px; }
+.prog { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.prog .track { flex: 1; height: 6px; background: var(--chip); border-radius: 3px; overflow: hidden; }
+.prog .track i { display: block; height: 100%; background: var(--accent); }
+.gate { font-weight: 600; }
+.fields { display: grid; gap: 10px; }
+.field { display: grid; gap: 4px; }
+.field label { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.field input, .field textarea, .field select { width: 100%; box-sizing: border-box; padding: 7px 10px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Insights */
+.stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+.stat { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.stat .v { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat .k { color: var(--muted); font-size: 12.5px; font-weight: 600; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.chart h3, .card h3 { margin: 0 0 10px; font-size: 13px; }
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 34px; gap: 8px; align-items: center; font-size: 12.5px; }
+.bar .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.bar .t { height: 10px; background: var(--chip); border-radius: 3px; overflow: hidden; }
+.bar .t i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.bar .v { text-align: right; font-variant-numeric: tabular-nums; }
+.chart svg { width: 100%; height: auto; display: block; }
+.legend { display: flex; gap: 14px; color: var(--muted); font-size: 12px; margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.merged { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; }
+.merged li { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; }
+.merged .d { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Feedback */
+.fb-list { display: grid; gap: 10px; margin-top: 16px; }
+.fb { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; }
+.fb .who { color: var(--muted); font-size: 12.5px; }
+.fb p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Ticket sheet */
+.scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 20; }
+.sheet { position: fixed; top: 0; right: 0; bottom: 0; width: min(640px, 100%); background: var(--panel); box-shadow: var(--shadow); z-index: 21;
+  display: flex; flex-direction: column; border-left: 1px solid var(--line); }
+.sheet-bar { display: flex; align-items: center; gap: 8px; padding: calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 10px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.sheet-bar .mono { color: var(--muted); }
+.sheet-bar .sp { flex: 1; }
+.sheet-body { overflow-y: auto; padding: 22px max(16px, env(safe-area-inset-right, 0px), 28px) calc(40px + env(safe-area-inset-bottom, 0px)) 28px; display: grid; gap: 22px; align-content: start; }
+.sheet h2 { margin: 0; font-size: 23px; line-height: 1.25; letter-spacing: -.015em; text-wrap: balance; }
+.props { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 2px 12px; margin: 0; }
+.props dt { color: var(--muted); padding: 6px 0; }
+.props dd { margin: 0; padding: 4px 0; min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.props select { border: 1px solid transparent; background: none; border-radius: 6px; padding: 3px 6px; margin-left: -6px; cursor: pointer; font-weight: 600; }
+.props select:hover:not(:disabled), .props select:focus { border-color: var(--line); background: var(--bg); }
+.props select:disabled { cursor: default; }
+.by { color: var(--faint); font-size: 12px; }
+.status { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.sec h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.check { display: flex; gap: 10px; align-items: flex-start; padding: 5px 0; }
+.check .box { flex: none; width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--faint); margin-top: 2px; display: grid; place-items: center; }
+.check.done .box { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.check.done span { color: var(--muted); text-decoration: line-through; }
+.prose { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 72ch; }
+.prose code, .check code, .msg code { font-family: var(--mono); font-size: 12.5px; background: var(--chip); padding: 0 4px; border-radius: 4px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.form { display: grid; gap: 8px; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.form input, .form textarea, .form select { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 7px 10px; width: 100%; box-sizing: border-box; }
+.hint { color: var(--muted); font-size: 12.5px; margin: 0; }
+.note { border-radius: 10px; padding: 10px 12px; background: var(--chip); color: var(--muted); font-size: 13px; }
+.history { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; color: var(--muted); font-size: 13px; }
+.ai { border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 8px; }
+
+/* Helper chat */
+.chat-btn { position: fixed; right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 15;
+  border: 0; border-radius: 999px; padding: 10px 16px; background: var(--fg); color: var(--bg); font-weight: 700; cursor: pointer; box-shadow: var(--shadow); display: flex; gap: 8px; align-items: center; }
+.chat { position: fixed; right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 25;
+  width: min(400px, calc(100% - 36px)); height: min(560px, calc(100% - 36px)); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+.chat-h { display: flex; align-items: center; gap: 8px; padding: 10px 12px 10px 16px; border-bottom: 1px solid var(--line); }
+.chat-h b { flex: 1; }
+.msgs { flex: 1; overflow-y: auto; padding: 14px; display: grid; gap: 10px; align-content: start; }
+.msg { max-width: 92%; padding: 8px 12px; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; }
+.msg.me { justify-self: end; background: var(--accent); color: var(--accent-fg); border-bottom-right-radius: 4px; }
+.msg.bot { justify-self: start; background: var(--chip); border-bottom-left-radius: 4px; }
+.msg.tool { justify-self: start; color: var(--faint); font-size: 12px; padding: 0 4px; }
+.starters { display: flex; flex-wrap: wrap; gap: 6px; }
+.chat form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
+.chat form input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg); border-radius: 9px; padding: 8px 10px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg);
+  padding: 9px 14px; border-radius: 10px; z-index: 40; font-weight: 600; max-width: min(520px, calc(100% - 32px)); }
+
+@media (max-width: 900px) { .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } .grid2 { grid-template-columns: 1fr; } .graphs { grid-template-columns: 1fr 1fr; } .graphs .gcard:first-child { grid-column: 1 / -1; } }
+@media (max-width: 820px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { position: fixed; inset: 0 auto 0 0; width: min(300px, 86vw); z-index: 30; box-shadow: var(--shadow); padding-top: calc(18px + env(safe-area-inset-top, 0px)); }
+  .side[data-open="false"] { display: none; }
+  .menu-btn, .filter-btn { display: inline-flex; }
+  .toolbar[data-open="false"] { display: none; }
+  .toolbar label { flex: 1 1 140px; }
+  .toolbar select { max-width: none; flex: 1; min-width: 0; }
+  .tb-right { margin-left: 0; width: 100%; }
+  .head h1, .head .count { font-size: 24px; }
+  .props { grid-template-columns: 116px minmax(0, 1fr); }
+  .sheet-body { padding-left: max(16px, env(safe-area-inset-left, 0px)); }
+  .row .right { grid-row: auto; grid-column: 2; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .two { grid-template-columns: 1fr; }
+  .board { grid-auto-columns: 86%; scroll-snap-type: x mandatory; }
+  .col { scroll-snap-align: start; }
+  .graphs { grid-template-columns: 1fr; }
+  .viewsw { margin-left: 0; }
+  .bar { grid-template-columns: minmax(0, 110px) minmax(0, 1fr) 30px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <aside class="side" id="side" data-open="false" aria-label="Lists"></aside>
+  <main class="main" id="main"><div class="main-in" id="mainIn"></div></main>
+</div>
+<div id="sheetHost"></div>
+<div id="chatHost"></div>
+
+<script>
+const REPO = "froglet-studio/Cosmic-Shore";
+const REPO_URL = "https://github.com/" + REPO;
+const IDLE_DAYS = 14;
+const DEPTS = { testers: "Testers", developers: "Developers", decisions: "Decisions", content: "Content & docs" };
+const DEPT_COLORS = { testers: "var(--open)", developers: "var(--info)", decisions: "var(--done)", content: "var(--live)" };
+const KINDS = ["test", "dev", "content", "setup", "decision", "docs"];
+const KIND_DEPT = { test: "testers", dev: "developers", setup: "developers", decision: "decisions", content: "content", docs: "content" };
+const PIPELINE = ["bleeding-edge", "development", "master", "release"];   // the release plan's branch flow
+const DEFAULT_MILESTONES = [
+  { key: "M1", name: "Closed testing, all platforms", gate: "co-op repeat retention over weeks with the same experience",
+    scope: "Every vessel and every game mode tested on every platform, with the performance fixing that makes that possible; alpha access; friends, family and Tadpole feedback; instrumented data." },
+  { key: "M2", name: "Beta phase 2, limited keys", gate: "X% of new users play again after 1 week", scope: "Pre-release access with FFT feedback; limited beta keys, one at a time; activation data." },
+  { key: "M3", name: "Beta phase 3", gate: "X% of users claim they would give a 5-star review when surveyed", scope: "Alpha access with Tadpole feedback; beta access with limited keys; activation, retention and referral data." },
+  { key: "M4", name: "Early access, $15", gate: "feature complete: only content from here", scope: "The same loop, paid. Activation, retention and referral data." },
+  { key: "M5", name: "Full release, free to play", gate: "", scope: "Then Game 2 design, and everlasting content, bug fixing and balance updates." },
+];
+const PAGES = ["branches", "milestones", "insights", "feedback", "suggested", "info"];
+
+const S = {
+  tasks: new Map(), takes: new Map(), overrides: new Map(), fresh: new Map(), suggestions: new Map(), milestoneDocs: new Map(), feedback: new Map(),
+  meta: null, branches: null, activity: null, settings: null, loaded: false, error: "", ready: false,
+  list: load("list", "open"), view: load("view", "board"), q: "", area: "", kind: "", from: "", sort: load("sort", "priority"), group: load("group", "dept"),
+  shown: 50, filters: false, expanded: new Set(), open: null, form: null, ai: null, names: {},
+  cleared: new Set(load("cleared", [])),
+  meId: null, meName: "", canWrite: null, canEdit: false, sheetMode: null, msEdit: null, envs: null, chatOpen: false, chat: [], chatBusy: false, draft: null,
+};
+let db = null, user = null, sample = null, mcp = null;
+
+function load(k, d) { try { const v = localStorage.getItem("froglet-tasks." + k); return v ? JSON.parse(v) : d; } catch { return d; } }
+function keep(k, v) { try { localStorage.setItem("froglet-tasks." + k, JSON.stringify(v)); } catch {} }
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const today = () => new Date().toISOString().slice(0, 10);
+const addDays = (d, n) => new Date(Date.parse(d) + n * 864e5).toISOString().slice(0, 10);
+const days = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+function fmtDay(d) { if (!d) return ""; const t = new Date(String(d).slice(0, 10) + "T12:00:00Z"); return isNaN(t) ? d : t.toLocaleDateString(undefined, { day: "numeric", month: "short" }); }
+function rich(s) {
+  return esc(s).replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/https?:\/\/[^\s<)]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`)
+    .replace(/(^|[\s(])#(\d{3,5})\b/g, (m, p, n) => `${p}<a href="${REPO_URL}/pull/${n}" target="_blank" rel="noopener">#${n}</a>`);
+}
+const base = () => (S.settings && S.settings.base) || (S.meta && S.meta.base) || "bleeding-edge";
+const phase = () => (S.settings && S.settings.phase) || "Beta phase 1";
+function milestones() {
+  const from = [...S.milestoneDocs.values()].filter((m) => /^M\d+$/.test(m.key || m.id));
+  const list = from.length ? from.map((m) => ({ ...m, key: m.key || m.id })) : DEFAULT_MILESTONES;
+  return list.sort((a, b) => Number(a.key.slice(1)) - Number(b.key.slice(1)));
+}
+const msName = (k) => (milestones().find((m) => m.key === k) || {}).name || "";
+
+/* ---- the effective ticket: the synced issue, plus anything done here since the last sync ---- */
+const newer = (doc, t) => !!doc && (doc.at || "") > (t.syncedAt || "");
+function headline(task) {
+  const s = String(task || "").trim().split("\n")[0];
+  const m = s.match(/^(.{16,140}?)(?::\s|\.\s|\.$)/);
+  return m ? m[1] : s.length > 140 ? s.slice(0, 137).replace(/\s+\S*$/, "") + "…" : s;
+}
+function eff(t) {
+  if (!t) return null;
+  const e = { ...t, pending: [], head: headline(t.task || t.title) };
+  const tk = S.takes.get(t.id);
+  if (newer(tk, t)) {
+    const who = S.names[tk.byId] || "Someone";
+    if (tk.action === "take") Object.assign(e, t.state === "live" && t.takenBy ? { branch: tk.branch || t.branch || "" }
+      : { state: "live", takenBy: who, taken: String(tk.at || today()).slice(0, 10), branch: tk.branch || "", session: tk.session || "", sessionUrl: tk.sessionUrl || "" });
+    else if (tk.action === "release" || tk.action === "revive") Object.assign(e, { state: "open", takenBy: "", branch: "" });
+    else if (tk.action === "done") e.state = "done";
+    else if (tk.action === "archive") e.state = "archived";
+    e.pending.push(tk.action);
+  }
+  const ov = S.overrides.get(t.id);
+  if (newer(ov, t)) for (const f of ["priority", "dept", "milestone"]) if (f in ov) { e[f] = ov[f] === "none" ? "" : ov[f]; e.pending.push(f); }
+  if (e.state === "open") {
+    const since = [t.id.slice(2, 6) + "-" + t.id.slice(6, 8) + "-" + t.id.slice(8, 10), (t.released || "").slice(0, 10), (t.revived || "").slice(0, 10)]
+      .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort().pop();
+    e.archivesOn = since ? addDays(since, IDLE_DAYS) : "";
+    e.daysLeft = e.archivesOn ? days(today(), e.archivesOn) : null;
+  } else { e.archivesOn = ""; e.daysLeft = null; }
+  // A live ticket with no branch is taken but not started: 14 days from the take, it goes back to open.
+  e.startBy = e.state === "live" && !e.branch && /^\d{4}-\d{2}-\d{2}/.test(e.taken || "") ? addDays(String(e.taken).slice(0, 10), IDLE_DAYS) : "";
+  e.startLeft = e.startBy ? days(today(), e.startBy) : null;
+  return e;
+}
+function all() { return [...S.tasks.values()].map(eff).filter((t) => t && t.state !== "merged"); }
+const isOpen = (t) => t.state === "open" || t.state === "live";
+const closedOn = (t) => String((t.state === "done" ? t.done : t.archived) || "").slice(0, 10);
+
+const firstName = (n) => String(n || "").toLowerCase().split(" ")[0];
+function isMine(t) {
+  const tk = S.takes.get(t.id);
+  return t.state === "live" && ((tk && tk.action === "take" && S.meId && tk.byId === S.meId) || (!!S.meName && firstName(t.takenBy) === firstName(S.meName)));
+}
+const notStarted = (t) => t.startBy ? `not started · back to open ${t.startLeft <= 0 ? "today" : "in " + t.startLeft + " day" + (t.startLeft === 1 ? "" : "s")}` : "not started";
+
+/* ---- For you: from what this viewer took, finished or filed. Computed here, shown only to them, never stored. ---- */
+function myTickets(T) {
+  const first = (S.meName || "").split(" ")[0].toLowerCase();
+  const mine = new Set([...S.takes.values()].filter((d) => d.byId && d.byId === S.meId).map((d) => d.id));
+  return T.filter((t) => mine.has(t.id) || (first && (t.takenBy || "").toLowerCase().split(" ")[0] === first));
+}
+function forYou(T) {
+  const mine = myTickets(T);
+  const area = {}, kind = {};
+  for (const t of mine) { area[t.area] = (area[t.area] || 0) + 1; kind[t.kind] = (kind[t.kind] || 0) + 1; }
+  const learned = mine.length > 0;
+  return T.filter((t) => t.state === "open" && !S.cleared.has(t.id)).map((t) => {
+    let s = 0; const why = [];
+    if (area[t.area]) { s += 3; why.push(`you worked on ${t.area}`); }
+    if (kind[t.kind]) { s += 1; if (!area[t.area]) why.push(`you take ${t.kind} tickets`); }
+    if (t.priority === "P1") { s += 2; why.push("P1"); } else if (t.priority === "P2") s += 1;
+    if (t.daysLeft !== null && t.daysLeft <= 4) { s += 1; why.push(`archives in ${Math.max(0, t.daysLeft)} days`); }
+    if (!learned && t.milestone === "M1") { s += 1; why.push("needed for M1"); }
+    return { ...t, score: s, why: why.join(" · ") };
+  }).filter((t) => t.score >= (learned ? 3 : 2)).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+}
+const forYouTop = (T) => forYou(T).slice(0, 15);
+
+/* ---- lists ---- */
+function listDef(key) {
+  if (key === "open") return { title: "Open", sub: "Nobody's until someone takes it. Untaken for 14 days, a ticket is archived.", test: (t) => t.state === "open" };
+  if (key === "live") return { title: "Live", sub: `Taken: each shows whose it is. Naming a branch starts it, and it closes when that branch merges into ${base()}. Not started within 14 days, it goes back to open.`, test: (t) => t.state === "live" };
+  if (key === "p1") return { title: "P1", sub: "Blocks a person or a build, or ships broken or silently.", test: (t) => isOpen(t) && t.priority === "P1" };
+  if (key === "soon") return { title: "Archives soon", sub: "Open tickets nobody has taken, archived within 4 days.", test: (t) => t.state === "open" && t.daysLeft !== null && t.daysLeft <= 4 };
+  if (key === "foryou") return { title: "For you", sub: "Suggested from what you took and finished. Only you see this list; nothing is assigned. Clear it and only tickets that turn up later show here.", foryou: true, test: () => true };
+  if (key === "archive") return { title: "Archive", sub: "Done, or not taken in 14 days. Bring one back and its 14 days start again.", test: (t) => t.state === "done" || t.state === "archived" };
+  if (key.startsWith("dept:")) { const d = key.slice(5); return { title: DEPTS[d] || d, sub: "Open and live tickets for this department.", test: (t) => isOpen(t) && t.dept === d }; }
+  if (key.startsWith("ms:")) { const k = key.slice(3); return { title: `${k} · ${msName(k)}`, sub: "Open and live tickets aimed at this milestone.", test: (t) => isOpen(t) && t.milestone === k }; }
+  if (key.startsWith("from:")) { const b = key.slice(5); return { title: b, mono: true, sub: "Tickets filed from this branch, or live on it.", test: (t) => isOpen(t) && (t.filedOn === b || t.branch === b) }; }
+  return listDef("open");
+}
+const PR = { P1: 1, P2: 2, P3: 3 };
+function sorter(key) {
+  if (key === "newest") return (a, b) => b.id.localeCompare(a.id);
+  if (key === "oldest") return (a, b) => a.id.localeCompare(b.id);
+  if (key === "expiring") return (a, b) => (a.daysLeft ?? 99) - (b.daysLeft ?? 99) || a.id.localeCompare(b.id);
+  if (key === "closed") return (a, b) => closedOn(b).localeCompare(closedOn(a));
+  return (a, b) => (PR[a.priority] || 4) - (PR[b.priority] || 4) || (a.daysLeft ?? 99) - (b.daysLeft ?? 99) || a.id.localeCompare(b.id);
+}
+const GROUPS = {
+  none: null,
+  area: { label: "Area", key: (t) => t.area || "General" },
+  from: { label: "Branch it came from", key: (t) => t.filedOn || "filed without a branch" },
+  dept: { label: "Department", key: (t) => DEPTS[t.dept] || t.dept },
+  milestone: { label: "Milestone", key: (t) => (t.milestone ? `${t.milestone} · ${msName(t.milestone)}` : "No milestone") },
+  kind: { label: "Kind", key: (t) => t.kind },
+};
+function visible() {
+  const def = listDef(S.list);
+  const q = S.q.trim().toLowerCase();
+  let L = def.foryou ? forYouTop(all()) : all().filter(def.test);
+  if (q) L = L.filter((t) => [t.id, t.title, t.task, t.area, t.branch, t.filedOn, t.takenBy, "#" + t.number].join(" ").toLowerCase().includes(q));
+  if (S.area) L = L.filter((t) => t.area === S.area);
+  if (S.kind) L = L.filter((t) => t.kind === S.kind);
+  if (S.from) L = L.filter((t) => t.filedOn === S.from);
+  return def.foryou ? L : L.sort(sorter(S.list === "archive" && S.sort === "priority" ? "closed" : S.sort));
+}
+
+/* ---- icons ---- */
+function stateIcon(t, size = 16) {
+  const c = { open: "var(--open)", live: "var(--live)", done: "var(--done)", archived: "var(--arch)" }[t.state] || "var(--arch)";
+  if (t.state === "done") return `<svg class="st" width="${size}" height="${size}" viewBox="0 0 16 16" aria-label="Done"><circle cx="8" cy="8" r="7" fill="${c}"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" stroke="var(--bg)" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  if (t.state === "archived") return `<svg class="st" width="${size}" height="${size}" viewBox="0 0 16 16" aria-label="Archived"><circle cx="8" cy="8" r="6.6" stroke="${c}" stroke-width="1.6" fill="none"/><path d="M5 8h6" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+  if (t.state === "live") return `<svg class="st" width="${size}" height="${size}" viewBox="0 0 16 16" aria-label="Live"><circle cx="8" cy="8" r="6.6" stroke="${c}" stroke-width="1.6" fill="none"/><path d="M8 1.4a6.6 6.6 0 0 1 0 13.2z" fill="${c}"/></svg>`;
+  return `<svg class="st" width="${size}" height="${size}" viewBox="0 0 16 16" aria-label="Open"><circle cx="8" cy="8" r="6.6" stroke="${c}" stroke-width="1.6" fill="none"/><circle cx="8" cy="8" r="1.6" fill="${c}"/></svg>`;
+}
+const STATE_WORD = { open: "Open", live: "Live", done: "Done", archived: "Archived" };
+const svg = (p) => `<svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">${p}</svg>`;
+const ICON = {
+  open: svg(`<circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="2.2" fill="none"/>`),
+  live: svg(`<path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>`),
+  p1: svg(`<path d="M8 2.5v7M8 12.6v.4" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>`),
+  soon: svg(`<circle cx="8" cy="8" r="5.6" stroke="currentColor" stroke-width="2" fill="none"/><path d="M8 5v3.2l2 1.4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>`),
+  foryou: svg(`<path d="M8 13.5S2.5 10 2.5 6.3A2.8 2.8 0 0 1 8 5a2.8 2.8 0 0 1 5.5 1.3C13.5 10 8 13.5 8 13.5z" fill="currentColor"/>`),
+  suggested: svg(`<path d="M8 2l1.6 3.6L13.5 6l-2.9 2.6.8 3.9L8 10.6 4.6 12.5l.8-3.9L2.5 6l3.9-.4z" fill="currentColor"/>`),
+  branches: svg(`<circle cx="4.5" cy="3.5" r="1.8" fill="currentColor"/><circle cx="4.5" cy="12.5" r="1.8" fill="currentColor"/><circle cx="11.5" cy="6" r="1.8" fill="currentColor"/><path d="M4.5 5v6M11.5 7.8c0 2.6-7 1.6-7 3" stroke="currentColor" stroke-width="1.6" fill="none"/>`),
+  milestones: svg(`<path d="M3 14V2.5M3 3h8.5l-1.6 2.6L11.5 8H3" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/>`),
+  insights: svg(`<path d="M3 13V8M7 13V4M11 13V9M14 13H2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`),
+  feedback: svg(`<path d="M2.5 3.5h11v7H7l-3 2.5v-2.5H2.5z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/>`),
+  info: svg(`<circle cx="8" cy="8" r="6.4" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M8 7.2v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="4.8" r="1.1" fill="currentColor"/>`),
+  archive: svg(`<rect x="2" y="3" width="12" height="3" rx="1" fill="currentColor"/><path d="M3 7h10v6H3z" stroke="currentColor" stroke-width="1.6" fill="none"/>`),
+};
+
+/* ---- render ---- */
+// Store updates arrive in bursts, and a redraw replaces every control: an open dropdown would close under the
+// pointer. So redraws are coalesced into one frame, and a panel the viewer is using (a focused select, input or
+// textarea) is left alone until focus leaves it.
+let renderQueued = false;
+function render() {
+  if (renderQueued) return;
+  renderQueued = true;
+  requestAnimationFrame(() => { renderQueued = false; renderSide(); renderMain(); renderSheet(); renderChat(); });
+}
+function inUse(host) {
+  const a = document.activeElement;
+  if (host && a && host.contains(a) && /^(SELECT|INPUT|TEXTAREA)$/.test(a.tagName)) { S.dirty = true; return true; }
+  return false;
+}
+document.addEventListener("focusout", () => setTimeout(() => { if (S.dirty && !inUse(document.body)) { S.dirty = false; render(); } }, 0));
+
+function renderSide(force) {
+  if (!force && inUse(document.getElementById("side"))) return;
+  const T = all();
+  const n = (f) => T.filter(f).length;
+  const pendingSug = [...S.suggestions.values()].filter((s) => s.status === "pending").length + S.fresh.size;
+  const tiles = [
+    ["open", "Open", "var(--accent)", n((t) => t.state === "open")],
+    ["live", "Live", "var(--live)", n((t) => t.state === "live")],
+    ["foryou", "For you", "var(--info)", S.loaded ? forYouTop(T).length : 0],
+    ["p1", "P1", "var(--p1)", n((t) => isOpen(t) && t.priority === "P1")],
+    ["suggested", "Suggested", "var(--done)", pendingSug],
+    ["soon", "Archives soon", "var(--arch)", n((t) => t.state === "open" && t.daysLeft !== null && t.daysLeft <= 4)],
+  ];
+  const sync = S.meta && S.meta.at ? `Synced with GitHub ${new Date(S.meta.at).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : "Not synced yet";
+  const views = [["branches", "Branches", "var(--info)", S.branches ? S.branches.branches.length : ""], ["milestones", "Milestones", "var(--accent)", milestones().length],
+    ["insights", "Insights", "var(--done)", ""], ["feedback", "Feedback", "var(--live)", S.feedback.size || ""], ["info", "Info", "var(--muted)", ""]];
+  const side = document.getElementById("side");
+  side.innerHTML = `
+    <div class="brand"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="8" fill="var(--accent)"/><path d="M8 14.5l4 4 8-9" stroke="var(--accent-fg)" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><b>Froglet Tasks</b><span>Cosmic Shore hand-offs</span></div></div>
+    <div class="search"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input id="q" type="search" placeholder="Search tickets" aria-label="Search tickets" value="${esc(S.q)}"></div>
+    <div class="tiles">${tiles.map(([k, l, c, v]) => `<button class="tile" data-list="${k}" aria-current="${S.list === k}"><span class="dot" style="background:${c}">${ICON[k]}</span><span class="n">${v}</span><span class="l">${l}</span></button>`).join("")}</div>
+    <div class="nav">${views.map(([k, l, c, v]) => `<button data-list="${k}" aria-current="${S.list === k}"><span class="ic" style="background:${c}">${ICON[k]}</span><span class="t">${l}</span><span class="c">${v}</span></button>`).join("")}</div>
+    <div><div class="group-h">Departments</div><div class="nav">${Object.entries(DEPTS).map(([k, l]) =>
+      `<button data-list="dept:${k}" aria-current="${S.list === "dept:" + k}"><span class="ic" style="background:${DEPT_COLORS[k]}">${l[0]}</span><span class="t">${esc(l)}</span><span class="c">${n((t) => isOpen(t) && t.dept === k)}</span></button>`).join("")}</div></div>
+    <div class="nav"><button data-list="archive" aria-current="${S.list === "archive"}"><span class="ic" style="background:var(--arch)">${ICON.archive}</span><span class="t">Archive</span><span class="c">${n((t) => t.state === "done" || t.state === "archived")}</span></button></div>
+    <div class="side-foot">
+      <button class="btn primary" data-act="new" type="button">New task</button>
+      <span class="base-pill">Sessions start from <span class="mono">${esc(base())}</span></span>
+      <span>${esc(phase())} · ${esc(sync)}${mcp ? ` · <button class="chip-clear" data-act="sync-now" type="button" ${S.syncing ? "disabled" : ""}>${S.syncing ? "Sync started" : "Sync now"}</button>` : ""}</span>
+    </div>`;
+  const q = side.querySelector("#q");
+  q.addEventListener("input", () => { S.q = q.value; S.shown = 50; if (PAGES.includes(S.list)) S.list = "open"; renderMain(true); });
+}
+
+function rowHtml(t) {
+  const prio = t.priority === "P1" ? `<span class="label p1">P1</span>` : t.priority === "P2" ? `<span class="label p2">P2</span>` : "";
+  const ms = t.milestone && !S.list.startsWith("ms:") ? `<span class="label ms">${esc(t.milestone)}</span>` : "";
+  const live = t.state === "live" ? `<span class="label live">${esc(t.takenBy || "Someone")} · ${esc(t.branch || (t.session ? "new session" : "not started"))}</span>` : "";
+  const pend = t.pending.length ? `<span class="label pending">syncing</span>` : "";
+  const when = t.state === "open" && t.daysLeft !== null && t.daysLeft <= 7
+    ? `<span class="${t.daysLeft <= 4 ? "soon" : ""}">${t.daysLeft <= 0 ? "archives today" : `archives in ${t.daysLeft} day${t.daysLeft === 1 ? "" : "s"}`}</span>` : "";
+  const closed = t.state === "done" ? `<span>done ${esc(fmtDay(t.done))}</span>` : t.state === "archived" ? `<span>archived ${esc(fmtDay(t.archived))}</span>` : "";
+  const why = t.why ? `<span class="why-you">${esc(t.why)}</span>` : "";
+  return `<button class="row" data-open="${esc(t.id)}" aria-current="${S.open === t.id}">${stateIcon(t)}
+    <span class="title">${esc(t.head)}</span><span class="right">${prio}${ms}</span>
+    <span class="meta"><span class="mono">${esc(t.id)}</span><span>${esc(t.area)}</span>${live}${when}${closed}${why}${pend}</span></button>`;
+}
+
+function headHtml(title, count, sub, mono) {
+  return `<div class="head"><button class="btn menu-btn" data-act="menu" type="button" aria-label="Show lists">Lists</button><h1 class="${mono ? "mono" : ""}" style="${mono ? "font-size:22px" : ""}">${esc(title)}</h1>${count !== "" ? `<span class="count">${count}</span>` : ""}</div>${sub ? `<p class="sub">${sub}</p>` : ""}`;
+}
+
+function renderMain(force) {
+  const host = document.getElementById("mainIn");
+  if (!force && inUse(host)) return;
+  if (PAGES.includes(S.list)) { host.innerHTML = ({ branches: pageBranches, milestones: pageMilestones, insights: pageInsights, feedback: pageFeedback, suggested: pageSuggested, info: pageInfo })[S.list](); bindPage(host); return; }
+  const def = listDef(S.list);
+  const L = visible();
+  const total = def.foryou ? L : all().filter(def.test);
+  const areas = [...new Set(total.map((t) => t.area))].sort();
+  const froms = [...new Set(total.map((t) => t.filedOn).filter(Boolean))].sort();
+  const filtered = S.q || S.area || S.kind || S.from;
+  let body;
+  if (!S.loaded) {
+    body = `<div class="empty"><b>${S.error ? "The board could not load" : db === null && S.ready ? "Open this page in claude.ai" : "Loading tickets"}</b>${S.error ? esc(S.error) : db === null && S.ready ? "The tickets live in this page's shared store, which only claude.ai serves." : "Reading the team's tickets."}</div>`;
+  } else if (!S.tasks.size) {
+    body = `<div class="empty"><b>No tickets yet</b>A Claude session fills this board from GitHub Issues with <span class="mono">/team-tasks sync</span>.</div>`;
+  } else if (!L.length) {
+    body = `<div class="empty"><b>${filtered ? "No ticket matches" : def.foryou ? (S.cleared.size ? "All clear" : "Nothing to suggest yet") : "Nothing here"}</b>${filtered ? "Clear the filters to see the whole list." : def.foryou ? (S.cleared.size ? "Tickets that turn up later and fit what you work on show here." : "Take a ticket and this list learns what you work on.") : esc(def.sub)}</div>`;
+  } else if (S.view === "board" && !def.foryou) {
+    body = boardHtml(L);
+  } else if (S.group !== "none" && GROUPS[S.group] && !def.foryou) {
+    const g = new Map();
+    for (const t of L) { const k = GROUPS[S.group].key(t); if (!g.has(k)) g.set(k, []); g.get(k).push(t); }
+    const keys = [...g.keys()].sort((a, b) => g.get(b).length - g.get(a).length || a.localeCompare(b));
+    body = keys.map((k) => {
+      const rows = g.get(k); const open = S.expanded.has(S.group + ":" + k); const show = open ? rows : rows.slice(0, 5);
+      return `<div class="list"><button class="ghead" data-group="${esc(S.group + ":" + k)}" aria-expanded="${open}">
+        <svg class="chev" width="12" height="12" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+        <span>${esc(k)}</span><span class="c">${rows.length}</span></button>${show.map(rowHtml).join("")}
+        ${!open && rows.length > 5 ? `<button class="more" data-group="${esc(S.group + ":" + k)}">Show all ${rows.length}</button>` : ""}</div>`;
+    }).join("");
+  } else {
+    body = `<div class="list">${L.slice(0, S.shown).map(rowHtml).join("")}${L.length > S.shown ? `<button class="more" data-act="more">Show ${Math.min(50, L.length - S.shown)} more of ${L.length - S.shown}</button>` : ""}</div>`;
+  }
+  const mine = [...S.fresh.values()].filter((d) => d.byId === S.meId);
+  const banner = S.list === "open" && mine.length ? `<div class="banner">${mine.length} task${mine.length === 1 ? "" : "s"} you filed here ${mine.length === 1 ? "is" : "are"} waiting for the next sync to reach GitHub. <button class="btn small" data-list="suggested">See ${mine.length === 1 ? "it" : "them"}</button></div>` : "";
+  const opt = (v, l, cur) => `<option value="${esc(v)}" ${v === cur ? "selected" : ""}>${esc(l)}</option>`;
+  const switcher = def.foryou ? `<span class="fy-acts">${S.cleared.size ? `<button class="chip-clear" data-act="fy-restore" type="button">Bring back ${S.cleared.size} cleared</button>` : ""}${L.length ? `<button class="btn small" data-act="fy-clear" type="button">Clear list</button>` : ""}</span>` : `<span class="viewsw" role="group" aria-label="View"><button data-act="view-board" aria-pressed="${S.view === "board"}">Board</button><button data-act="view-list" aria-pressed="${S.view === "list"}">List</button></span>`;
+  const graphs = S.loaded && S.tasks.size && (S.list === "open" || S.list === "live") ? graphsHtml() : "";
+  host.innerHTML = `${headHtml(def.title, L.length, esc(def.sub), def.mono).replace('<span class="count">', switcher + '<span class="count">')}${graphs}${banner}
+    <div class="head" style="margin-top:6px"><button class="btn filter-btn small" data-act="filters" type="button">${filtered ? "Filters on" : "Filter and sort"}</button></div>
+    <div class="toolbar" data-open="${S.filters}">
+      <label>Area <select id="fArea">${opt("", "All", S.area)}${areas.map((a) => opt(a, a, S.area)).join("")}</select></label>
+      <label>Kind <select id="fKind">${opt("", "All", S.kind)}${KINDS.map((k) => opt(k, k, S.kind)).join("")}</select></label>
+      <label>From <select id="fFrom">${opt("", "Any branch", S.from)}${froms.map((b) => opt(b, b, S.from)).join("")}</select></label>
+      ${filtered ? `<button class="chip-clear" data-act="clear" type="button">Clear</button>` : ""}
+      ${def.foryou ? "" : `<span class="tb-right"><label>Sort <select id="fSort">${opt("priority", S.list === "archive" ? "Recently closed" : "Priority", S.sort)}${opt("expiring", "Archives soonest", S.sort)}${opt("newest", "Newest", S.sort)}${opt("oldest", "Oldest", S.sort)}</select></label>
+      <label>Group <select id="fGroup">${Object.entries(GROUPS).map(([k, g]) => opt(k, g ? (S.view === "board" ? "Columns: " + g.label : g.label) : (S.view === "board" ? "Columns: Priority" : "None"), S.group)).join("")}</select></label></span>`}
+    </div>${body}`;
+  const on = (id, fn) => { const el = host.querySelector("#" + id); if (el) el.addEventListener("change", fn); };
+  on("fArea", (e) => { S.area = e.target.value; S.shown = 50; renderMain(true); });
+  on("fKind", (e) => { S.kind = e.target.value; S.shown = 50; renderMain(true); });
+  on("fFrom", (e) => { S.from = e.target.value; S.shown = 50; renderMain(true); });
+  on("fSort", (e) => { S.sort = e.target.value; keep("sort", S.sort); renderMain(true); });
+  on("fGroup", (e) => { S.group = e.target.value; keep("group", S.group); renderMain(true); });
+}
+
+/* ---- the board: cards in columns ---- */
+const initials = (n) => String(n || "?").split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+function cardHtml(t) {
+  const prio = t.priority === "P1" ? `<span class="label p1">P1</span>` : t.priority === "P2" ? `<span class="label p2">P2</span>` : "";
+  const ms = t.milestone ? `<span class="label ms">${esc(t.milestone)}</span>` : "";
+  const kind = `<span class="label">${esc(t.kind)}</span>`;
+  const pend = t.pending.length ? `<span class="label pending">syncing</span>` : "";
+  let foot;
+  if (t.state === "live") foot = `<span class="avatar" title="${esc(t.takenBy)}">${esc(initials(t.takenBy))}</span><span class="${t.branch ? "mono" : ""}">${esc(t.branch || (t.session ? "new session" : "not started"))}</span>`;
+  else if (t.state === "open" && t.daysLeft !== null) {
+    const used = Math.min(1, Math.max(0, (IDLE_DAYS - t.daysLeft) / IDLE_DAYS));
+    foot = `<span class="mono">${esc(t.id.slice(2, 10).replace(/(\d{4})(\d{2})(\d{2})/, "$3/$2"))}</span><span class="clock ${t.daysLeft <= 4 ? "warn" : ""}" title="${t.daysLeft} of 14 days left before it is archived"><i style="width:${100 - used * 100}%"></i></span><span class="${t.daysLeft <= 4 ? "soon" : ""}">${Math.max(0, t.daysLeft)}d</span>`;
+  } else foot = `<span>${esc(STATE_WORD[t.state] || t.state)} ${esc(fmtDay(closedOn(t)))}</span>`;
+  return `<button class="tcard" data-open="${esc(t.id)}" aria-current="${S.open === t.id}"><span class="tt">${esc(t.head)}</span>
+    <span class="chips">${prio}${ms}${kind}<span class="label">${esc(t.area)}</span>${pend}</span>
+    <span class="foot">${foot}</span>${t.why ? `<span class="why-you" style="font-size:12px">${esc(t.why)}</span>` : ""}</button>`;
+}
+const COL_ORDER = { dept: Object.values(DEPTS), kind: KINDS };
+function boardHtml(L) {
+  const g = GROUPS[S.group] || { key: (t) => t.priority };
+  const cols = new Map();
+  for (const t of L) { const k = g.key(t); if (!cols.has(k)) cols.set(k, []); cols.get(k).push(t); }
+  let keys = [...cols.keys()];
+  const order = COL_ORDER[S.group] || (S.group === "none" ? ["P1", "P2", "P3"] : null);
+  const at = (k) => (order.indexOf(k) < 0 ? 999 : order.indexOf(k));
+  if (order) keys.sort((a, b) => at(a) - at(b));
+  else if (S.group === "milestone") keys.sort();
+  else keys.sort((a, b) => cols.get(b).length - cols.get(a).length);
+  const color = (k) => ({ Testers: "var(--open)", Developers: "var(--info)", Decisions: "var(--done)", "Content & docs": "var(--live)", P1: "var(--p1)", P2: "var(--p2)", P3: "var(--arch)" })[k] || "var(--info)";
+  return `<div class="board">${keys.map((k) => {
+    const all_ = cols.get(k); const id = "col:" + S.group + ":" + k; const open = S.expanded.has(id); const show = open ? all_ : all_.slice(0, 20);
+    return `<section class="col"><div class="col-h"><span class="dotc" style="background:${color(k)}"></span><span>${esc(k)}</span><span class="c">${all_.length}</span></div>
+      ${show.map(cardHtml).join("")}${!open && all_.length > 20 ? `<button class="more" data-group="${esc(id)}">Show ${all_.length - 20} more</button>` : ""}</section>`;
+  }).join("")}</div>`;
+}
+
+/* ---- the graph strip ---- */
+function openOn(T, d) { return T.filter((t) => (t.filed || "").slice(0, 10) <= d && !(closedOn(t) && closedOn(t) <= d && !isOpen(t))).length; }
+function areaChart(points, W = 520, H = 92) {
+  const max = Math.max(1, ...points.map((p) => p.v)), min = Math.min(...points.map((p) => p.v));
+  const lo = Math.max(0, min - (max - min) * 0.15), x = (i) => (i / (points.length - 1)) * W, y = (v) => H - 4 - ((H - 12) * (v - lo)) / Math.max(1, max - lo);
+  const line = points.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
+  const last = points[points.length - 1];
+  return `<svg viewBox="0 0 ${W} ${H + 16}" role="img" aria-label="Open tickets per day">
+    <defs><linearGradient id="ga" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".28"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+    <path d="${line} L${W},${H} L0,${H} Z" fill="url(#ga)"/><path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${x(points.length - 1)}" cy="${y(last.v)}" r="4" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+    <text x="0" y="${H + 14}" font-size="10.5" fill="var(--muted)">${fmtDay(points[0].d)}</text><text x="${W}" y="${H + 14}" font-size="10.5" fill="var(--muted)" text-anchor="end">${fmtDay(last.d)}</text></svg>`;
+}
+function ring(pct, label, sub) {
+  const r = 22, c = 2 * Math.PI * r;
+  return `<div class="ring"><svg viewBox="0 0 56 56" width="56" height="56" role="img" aria-label="${esc(label)} ${pct}% done"><circle cx="28" cy="28" r="${r}" fill="none" stroke="var(--chip)" stroke-width="6"/>
+    <circle cx="28" cy="28" r="${r}" fill="none" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(c * pct) / 100} ${c}" transform="rotate(-90 28 28)"/>
+    <text x="28" y="32" text-anchor="middle" font-size="12" font-weight="700" fill="var(--fg)">${pct}%</text></svg><b>${esc(label)}</b><span>${esc(sub)}</span></div>`;
+}
+function donut(parts) {
+  const total = parts.reduce((a, p) => a + p[1], 0) || 1, r = 26, c = 2 * Math.PI * r; let off = 0;
+  const segs = parts.map(([, v, col]) => { const len = (c * v) / total; const s_ = `<circle cx="34" cy="34" r="${r}" fill="none" stroke="${col}" stroke-width="12" stroke-dasharray="${len} ${c - len}" stroke-dashoffset="${-off}" transform="rotate(-90 34 34)"/>`; off += len; return s_; }).join("");
+  return `<div class="donut-row"><svg viewBox="0 0 68 68" width="76" height="76" role="img" aria-label="Open tickets by department">${segs}</svg>
+    <div class="donut-legend">${parts.map(([n, v, col]) => `<span><i style="background:${col}"></i>${esc(n)} ${v}</span>`).join("")}</div></div>`;
+}
+function graphsHtml() {
+  const T = all();
+  const D = [...Array(30)].map((_, i) => addDays(today(), i - 29));
+  const pts = D.map((d) => ({ d, v: openOn(T, d) }));
+  const now = pts[pts.length - 1].v, wk = pts[pts.length - 8].v, delta = now - wk;
+  const since7 = addDays(today(), -7);
+  const filed7 = T.filter((t) => (t.filed || "") >= since7).length, done7 = T.filter((t) => t.state === "done" && closedOn(t) >= since7).length;
+  const rings = milestones().filter((m) => T.some((t) => t.milestone === m.key)).slice(0, 4).map((m) => { const mine = T.filter((t) => t.milestone === m.key); const d = mine.filter((t) => t.state === "done").length, o = mine.filter(isOpen).length; return ring(d + o ? Math.round((100 * d) / (d + o)) : 0, m.key, `${o} open`); }).join("");
+  const dept = Object.entries(DEPTS).map(([k, n]) => [n, T.filter((t) => isOpen(t) && t.dept === k).length, DEPT_COLORS[k]]);
+  return `<div class="graphs">
+    <div class="gcard"><h3>Open and live tickets, last 30 days</h3><div style="display:flex;align-items:baseline;gap:10px"><span class="big">${now}</span>
+      <span class="delta" style="color:${delta > 0 ? "var(--p2)" : "var(--open)"}">${delta > 0 ? "+" : ""}${delta} this week</span><span class="by">${filed7} filed · ${done7} done in 7 days</span></div>${areaChart(pts)}</div>
+    <div class="gcard"><h3>Milestones done</h3><div class="rings">${rings}</div></div>
+    <div class="gcard"><h3>Open by department</h3>${donut(dept)}</div></div>`;
+}
+
+/* ---- pages ---- */
+function pageBranches() {
+  const B = S.branches;
+  const cur = base();
+  const pipe = `<div class="pipe">${PIPELINE.map((b, i) => `${i ? `<span class="arrow">→</span>` : ""}<span class="stage ${b === cur ? "now" : ""}">${esc(b)}</span>`).join("")}</div>`;
+  const intro = `Every session starts from <b class="mono">${esc(cur)}</b> (${esc(phase())}). Work moves down the release plan: bleeding-edge, then development, master and release. A ticket taken on a branch closes when that branch merges into ${esc(cur)}.`;
+  if (!B) return headHtml("Branches", "", intro) + pipe + `<div class="cards"><div class="empty"><b>No branch report yet</b>The next sync lists the branches with a commit in the last three weeks.</div></div>`;
+  const q = S.q.trim().toLowerCase();
+  const rows = B.branches.filter((b) => !q || b.name.toLowerCase().includes(q));
+  const T = all();
+  return headHtml("Branches", rows.length, intro + ` Checked ${esc(fmtDay(B.checked))}; branches with a commit in the last ${B.days} days.`) + pipe +
+    `<div class="cards"><div class="list">${rows.map((b) => {
+      const live = (b.live || []).map((id) => T.find((t) => t.id === id)).filter(Boolean);
+      return `<div class="brow"><span class="name">${esc(b.name)}</span><span class="side-n">${b.ahead ? `${b.ahead} ahead of ${esc(B.base)}` : `merged into ${esc(B.base)}`}</span>
+        <span class="meta"><span>last commit ${esc(fmtDay(b.last))}</span><span>${esc(b.subject)}</span>
+        ${live.map((t) => `<button class="label live" data-open="${esc(t.id)}" style="border:0;cursor:pointer">${esc(t.id)} · ${esc(t.takenBy)}</button>`).join("")}
+        ${b.filed ? `<button class="label" data-list="from:${esc(b.name)}" style="border:0;cursor:pointer">${b.filed} open ticket${b.filed === 1 ? "" : "s"} filed here</button>` : ""}</span></div>`;
+    }).join("") || `<div class="empty">No branch matches.</div>`}</div></div>`;
+}
+
+function pageMilestones() {
+  const T = all();
+  const M = milestones();
+  const editing = S.msEdit;
+  const card = (m) => {
+    const mine = T.filter((t) => t.milestone === m.key); const done = mine.filter((t) => t.state === "done").length; const open = mine.filter(isOpen).length;
+    const pct = done + open ? Math.round((100 * done) / (done + open)) : 0;
+    if (editing && editing.key === m.key) return formMilestone(editing);
+    return `<div class="card ms"><div class="ms-top"><span class="key">${esc(m.key)}</span><b>${esc(m.name)}</b><span class="due">${m.due ? "Due " + esc(fmtDay(m.due)) : "No date set"}</span></div>
+      <div class="gate">${m.gate ? "Gate: " + esc(m.gate) : "No gate after this one"}</div><p class="sub" style="margin:0">${esc(m.scope || "")}</p>
+      <div class="prog"><div class="track"><i style="width:${pct}%"></i></div><span>${done} done · ${open} open</span></div>
+      <div class="actions"><button class="btn small" data-list="ms:${esc(m.key)}">Open tickets</button>${S.canEdit ? `<button class="btn small ghost" data-act="ms-edit" data-key="${esc(m.key)}">Edit</button>` : ""}</div></div>`;
+  };
+  const settings = S.canEdit ? `<div class="card ms"><b>Where sessions start</b><p class="hint">The base branch every new session starts from and every ticket's branch merges into. Move it when the plan moves to the next phase.</p>
+      <div class="two"><div class="field"><label for="setBase">Base branch</label><select id="setBase">${PIPELINE.map((b) => `<option ${b === base() ? "selected" : ""}>${esc(b)}</option>`).join("")}</select></div>
+      <div class="field"><label for="setPhase">Phase</label><input id="setPhase" value="${esc(phase())}"></div></div>
+      <div class="actions"><button class="btn small" data-act="save-settings">Save</button></div></div>` : "";
+  return headHtml("Milestones", M.length, `From the release plan. Each milestone's gate is its exit criterion. ${S.canEdit ? "You can edit them; GitHub follows on the next sync." : "Approvers (the core four and Iggy) edit them."}`) +
+    `<div class="cards">${M.map(card).join("")}${editing && editing.isNew ? formMilestone(editing) : ""}
+     ${S.canEdit && !editing ? `<div><button class="btn" data-act="ms-add">Add a milestone</button></div>` : ""}${settings}</div>`;
+}
+function formMilestone(m) {
+  return `<div class="card ms"><b>${m.isNew ? "New milestone" : "Edit " + esc(m.key)}</b><div class="fields">
+    <div class="two"><div class="field"><label for="msName">Name</label><input id="msName" value="${esc(m.name || "")}"></div>
+    <div class="field"><label for="msDue">Due</label><input id="msDue" type="date" value="${esc(m.due || "")}"></div></div>
+    <div class="field"><label for="msGate">Gate (the exit criterion)</label><input id="msGate" value="${esc(m.gate || "")}"></div>
+    <div class="field"><label for="msScope">Scope</label><textarea id="msScope" rows="3">${esc(m.scope || "")}</textarea></div></div>
+    <div class="actions"><button class="btn primary small" data-act="ms-save">Save ${esc(m.key)}</button><button class="btn ghost small" data-act="ms-cancel">Cancel</button></div></div>`;
+}
+
+function bars(rows, max) {
+  return `<div class="bars">${rows.map(([n, v]) => `<div class="bar"><span class="n" title="${esc(n)}">${esc(n)}</span><span class="t"><i style="width:${max ? (100 * v) / max : 0}%"></i></span><span class="v">${v}</span></div>`).join("")}</div>`;
+}
+function pageInsights() {
+  const T = all();
+  const open = T.filter((t) => t.state === "open"), live = T.filter((t) => t.state === "live");
+  const since7 = addDays(today(), -7);
+  const done7 = T.filter((t) => t.state === "done" && closedOn(t) >= since7).length;
+  const filed7 = T.filter((t) => (t.filed || "") >= since7).length;
+  const soon = open.filter((t) => t.daysLeft !== null && t.daysLeft <= 4).length;
+  const stats = [["Open", open.length], ["Live", live.length], ["Filed, 7 days", filed7], ["Done, 7 days", done7], ["Archive within 4 days", soon]];
+  // filed vs closed per day, last 21 days
+  const D = [...Array(21)].map((_, i) => addDays(today(), i - 20));
+  const filed = D.map((d) => T.filter((t) => (t.filed || "").slice(0, 10) === d).length);
+  const closed = D.map((d) => T.filter((t) => (t.state === "done" || t.state === "archived") && closedOn(t) === d).length);
+  const top = Math.max(1, ...filed, ...closed);
+  const W = 640, H = 170, padL = 28, padB = 22, bw = (W - padL) / D.length;
+  const y = (v) => H - padB - ((H - padB - 8) * v) / top;
+  const ticks = [0, Math.ceil(top / 2), top];
+  const chart = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Tickets filed and closed per day, last 21 days">
+    ${ticks.map((v) => `<line x1="${padL}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${padL - 6}" y="${y(v) + 4}" text-anchor="end" font-size="10" fill="var(--muted)">${v}</text>`).join("")}
+    ${D.map((d, i) => `<rect x="${padL + i * bw + 2}" y="${y(filed[i])}" width="${bw / 2 - 2}" height="${H - padB - y(filed[i])}" fill="var(--accent)" rx="1.5"><title>${fmtDay(d)}: ${filed[i]} filed</title></rect>
+      <rect x="${padL + i * bw + bw / 2}" y="${y(closed[i])}" width="${bw / 2 - 2}" height="${H - padB - y(closed[i])}" fill="var(--done)" rx="1.5"><title>${fmtDay(d)}: ${closed[i]} closed</title></rect>
+      ${i % 5 === 0 || i === D.length - 1 ? `<text x="${padL + i * bw + bw / 2}" y="${H - 6}" text-anchor="middle" font-size="10" fill="var(--muted)">${fmtDay(d)}</text>` : ""}`).join("")}</svg>
+    <div class="legend"><span><i style="background:var(--accent)"></i>Filed</span><span><i style="background:var(--done)"></i>Done or archived</span></div>`;
+  const count = (arr, f) => { const m = {}; for (const t of arr) { const k = f(t); m[k] = (m[k] || 0) + 1; } return Object.entries(m).sort((a, b) => b[1] - a[1]); };
+  const openLive = T.filter(isOpen);
+  const byArea = count(openLive, (t) => t.area).slice(0, 12);
+  const byDept = count(openLive, (t) => DEPTS[t.dept] || t.dept);
+  const byBranch = count(openLive, (t) => t.filedOn || "no branch").slice(0, 10);
+  const byPrio = ["P1", "P2", "P3"].map((p) => [p, openLive.filter((t) => t.priority === p).length]);
+  const ms = milestones().map((m) => { const mine = T.filter((t) => t.milestone === m.key); return [`${m.key} · ${m.name}`, mine.filter((t) => t.state === "done").length, mine.filter(isOpen).length]; });
+  const merged = (S.activity && S.activity.merged) || [];
+  return headHtml("Insights", "", "How the hand-offs move. Tickets and branches only: nothing here compares people.") +
+    `<div class="stats">${stats.map(([k, v]) => `<div class="stat"><div class="v">${v}</div><div class="k">${esc(k)}</div></div>`).join("")}</div>
+    <div class="card chart" style="margin-top:12px"><h3>Filed and closed, last 21 days</h3>${chart}</div>
+    <div class="grid2">
+      <div class="card chart"><h3>Open by priority</h3>${bars(byPrio, Math.max(1, ...byPrio.map((r) => r[1])))}<h3 style="margin-top:14px">Open by department</h3>${bars(byDept, Math.max(1, ...byDept.map((r) => r[1])))}</div>
+      <div class="card chart"><h3>Open by area (top 12)</h3>${bars(byArea, Math.max(1, ...byArea.map((r) => r[1])))}</div>
+      <div class="card chart"><h3>Milestones (done of open and done)</h3><div class="bars">${ms.map(([n, d, o]) => `<div class="bar"><span class="n" title="${esc(n)}">${esc(n)}</span><span class="t"><i style="width:${d + o ? (100 * d) / (d + o) : 0}%"></i></span><span class="v">${d}/${d + o}</span></div>`).join("")}</div></div>
+      <div class="card chart"><h3>Open tickets by the branch they came from</h3>${bars(byBranch, Math.max(1, ...byBranch.map((r) => r[1])))}</div>
+    </div>
+    <div class="card" style="margin-top:12px"><h3>Merged into ${esc(base())}, last ${S.activity ? S.activity.days : 7} days</h3>
+      ${merged.length ? `<ul class="merged">${merged.slice(0, 30).map((m) => `<li><span class="d">${esc(fmtDay(m.date))}</span><span><a href="${REPO_URL}/pull/${m.pr}" target="_blank" rel="noopener">#${m.pr}</a> ${esc(m.title || m.branch)} <span class="by mono">${esc(m.branch)}</span></span></li>`).join("")}</ul>` : `<p class="hint">The next sync lists what merged.</p>`}</div>`;
+}
+
+function pageFeedback() {
+  const F = [...S.feedback.values()].sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  return headHtml("Feedback", F.length || "", "What would make this board better? Everyone who opens it sees the feedback, and Claude reads it when the page is next improved.") +
+    `<div class="cards"><div class="card"><div class="field"><label for="fbText">Your feedback about Froglet Tasks</label><textarea id="fbText" rows="3" placeholder="What is missing, confusing or slow?">${esc(S.fbDraft || "")}</textarea></div>
+      <div class="actions" style="margin-top:8px"><button class="btn primary small" data-act="fb-send">Send feedback</button></div></div></div>
+    <div class="fb-list">${F.map((f) => `<div class="fb"><span class="who">${esc(S.names[f.byId] || "Someone")} · ${esc(fmtDay(f.at))}</span><p>${esc(f.text)}</p></div>`).join("") || `<div class="empty">No feedback yet.</div>`}</div>`;
+}
+
+// What a Claude session can do with this board. Kept in step with .claude/skills/team-tasks/SKILL.md.
+const INFO_SKILLS = [
+  ["/team-tasks", "What is open: P1 and P2 first, then the counts per department, with this page's link."],
+  ["/team-tasks suggest", "Proposes a ticket from the session's work. It waits in Suggested until its person, or an approver, approves it."],
+  ["/team-tasks add", "Files a ticket once the person says yes. On a branch that already has one, it adds a checklist line instead."],
+  ["/team-tasks take", "Takes a ticket in your name. With a branch it also starts it; a session started from a ticket names its branch first."],
+  ["/team-tasks done", "Closes a ticket with the check that proved it. A failed test is not done."],
+  ["/team-tasks release", "Gives a ticket back: open again, nobody's."],
+  ["/team-tasks set", "Re-ranks priority, department or milestone. Attributed; nothing automatic changes it again."],
+  ["/team-tasks review", "Re-reads tickets and proposes a ranking and duplicates. Shows the table and writes nothing before a yes."],
+  ["/team-tasks sync", "Carries this page's takes, re-ranks, new tasks, approved suggestions and milestones to GitHub, and brings GitHub back."],
+];
+const INFO_RELATED = [
+  ["/ship", "Puts what the branch leaves for people on its one ticket, and the Hand-offs section in the pull request."],
+  ["/bug-closeout", "Closes the ticket a fixed bug had, with the proof, alongside the other records."],
+  ["/bug-ledger", "Files a design or content call it runs into as a decision ticket, naming nobody."],
+  ["/perf-hunt", "Turns a fix in someone else's area into a ticket with the measurement attached, instead of a commit."],
+  ["/vessel-model", "Leaves a hull's in-editor checks as one test ticket for its branch."],
+];
+const INFO_CLI = [
+  ["python3 Tools/Build/team_tasks.py list --json", "Open tickets"],
+  ["python3 Tools/Build/team_tasks.py me", "Your live tickets and the ones suggested for you"],
+  ["python3 Tools/Build/team_tasks.py take <id> [--branch <branch>]", "Take one; the branch starts it (now or later)"],
+  ["python3 Tools/Build/team_tasks.py done <id> --note \"<proof>\"", "Close one"],
+  ["python3 Tools/Build/team_tasks.py pr-section", "The Hand-offs section for a pull request"],
+  ["python3 Tools/Build/team_tasks.py --self-test", "The tool's own tests"],
+];
+function pageInfo() {
+  const cmd = (c, d) => `<li class="cmd"><span class="cmd-top"><code>${esc(c)}</code><button class="chip-clear" data-act="copy-cmd" data-cmd="${esc(c)}" type="button" aria-label="Copy ${esc(c)}">Copy</button></span><span class="hint">${esc(d)}</span></li>`;
+  return headHtml("Info", "", "Everything this page does, a Claude session can do too. Use whichever you prefer: the page is recommended at the start of a day, never required.") +
+    `<div class="cards info">
+      <div class="card"><h3>In a Claude session</h3><p class="hint">Type these in any Claude Code session on the repo.</p><ul class="cmds">${INFO_SKILLS.map(([c, d]) => cmd(c, d)).join("")}</ul></div>
+      <div class="card"><h3>Skills that use the board</h3><ul class="cmds">${INFO_RELATED.map(([c, d]) => cmd(c, d)).join("")}</ul></div>
+      <div class="card"><h3>From a terminal</h3><ul class="cmds">${INFO_CLI.map(([c, d]) => cmd(c, d)).join("")}</ul></div>
+      <div class="card"><h3>The rules</h3><ul class="rules">
+        <li>Nobody is assigned. A ticket is nobody's until someone takes it, and then it shows as theirs to everyone.</li>
+        <li>Naming a branch starts it. Not started within 14 days of taking it, it goes back to open.</li>
+        <li>The branch decides: it merges into ${esc(base())} and the ticket closes. Deleted, released or 14 days without a commit, and it is open again.</li>
+        <li>An open ticket nobody takes in 14 days is archived. Revive brings it back.</li>
+        <li>One ticket per branch: every hand test a branch leaves goes in its one checklist.</li>
+        <li>A Claude session never files a ticket on its own, these skills included. It suggests one, or asks its person first.</li>
+        <li>Priority ranks tickets and milestones rank time. Nothing compares people.</li></ul></div>
+      <div class="card"><h3>Signing in and approvals</h3><p class="prose">You sign in with your claude.ai account. The approvers (Garrett, Caleb, Shombith, Yash and Iggy) are this page's Editors: they edit milestones and the base branch, and let other people in. Anyone let in can take, file, suggest and send feedback.</p></div>
+      <div class="card"><h3>How it stays in step with GitHub</h3><p class="prose">Tickets are GitHub issues labelled <code>team-task</code> on <a href="${REPO_URL}/issues?q=label%3Ateam-task" target="_blank" rel="noopener">${esc(REPO)}</a>. What you do here shows for everyone at once. It reaches GitHub, and GitHub's changes come back, with the sync every 3 hours, or straight away with Sync now at the bottom of the sidebar. A merge into ${esc(base())} closes its branch's ticket through the repo's workflow.</p>
+        <p class="hint" style="margin-top:8px">Start in a new session, on a ticket, opens a Claude Code session from ${esc(base())} with the ticket as its prompt.</p></div>
+    </div>`;
+}
+
+function pageSuggested() {
+  const sug = [...S.suggestions.values()].filter((s) => s.status === "pending").sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  const fresh = [...S.fresh.values()];
+  const meFirst = (S.meName || "").split(" ")[0].toLowerCase();
+  const canApprove = (s) => S.canEdit || (meFirst && String(s.forName || "").toLowerCase().split(" ")[0] === meFirst);
+  const card = (s, kind) => `<div class="card ms"><div class="ms-top"><b>${esc(headline(s.task))}</b>${s.priority ? `<span class="label ${s.priority === "P1" ? "p1" : s.priority === "P2" ? "p2" : ""}">${esc(s.priority)}</span>` : ""}${s.milestone ? `<span class="label ms">${esc(s.milestone)}</span>` : ""}</div>
+    <p class="prose">${rich(s.task)}</p>${s.doneWhen ? `<p class="hint">Done when: ${rich(s.doneWhen)}</p>` : ""}
+    <p class="hint">${kind === "sug" ? `Suggested by ${esc(s.from || "a Claude session")}${s.forName ? `, for ${esc(s.forName)} to approve` : ""}` : `Filed here by ${esc(S.names[s.byId] || "someone")}; it reaches GitHub on the next sync`}${s.why ? ` · ${esc(s.why)}` : ""}</p>
+    <div class="actions">${kind === "sug" ? `<button class="btn primary small" data-act="sug-approve" data-id="${esc(s.id)}" ${canApprove(s) ? "" : "disabled"}>Approve and file</button><button class="btn ghost small" data-act="sug-dismiss" data-id="${esc(s.id)}" ${canApprove(s) ? "" : "disabled"}>Dismiss</button>${canApprove(s) ? "" : `<span class="by">The person whose session suggested it, or an approver, decides.</span>`}`
+      : s.byId === S.meId ? `<button class="btn ghost small" data-act="fresh-withdraw" data-id="${esc(s.id)}">Withdraw</button>` : ""}</div></div>`;
+  return headHtml("Suggested", sug.length + fresh.length || "", "Claude sessions never file a ticket on their own: they suggest it here or ask their person first. A suggestion becomes a ticket once the person who ran that session, or an approver, approves it.") +
+    `<div class="cards">${sug.map((s) => card(s, "sug")).join("")}${fresh.map((s) => card(s, "fresh")).join("")}
+      ${!sug.length && !fresh.length ? `<div class="empty"><b>Nothing waiting</b>Ask a Claude session to suggest a task with <span class="mono">/team-tasks suggest</span>, or file one yourself with New task.</div>` : ""}</div>`;
+}
+
+function bindPage(host) {
+  const f = host.querySelector("#fbText"); if (f) f.addEventListener("input", () => { S.fbDraft = f.value; });
+  for (const id of ["msName", "msDue", "msGate", "msScope"]) { const el = host.querySelector("#" + id); if (el) el.addEventListener("input", () => { S.msEdit[{ msName: "name", msDue: "due", msGate: "gate", msScope: "scope" }[id]] = el.value; }); }
+}
+
+/* ---- the ticket page, and the new-task form ---- */
+function prop(label, value) { return `<dt>${label}</dt><dd>${value}</dd>`; }
+function sel(field, value, options, can) {
+  return `<select data-field="${field}" ${can ? "" : "disabled"} aria-label="${field}">${options.map(([v, l]) => `<option value="${esc(v)}" ${v === value ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+}
+function byLine(by) {
+  if (!by) return "";
+  const who = by.split(" ")[0];
+  const what = { rule: "by the rule set", kind: "from its kind", claude: "by a Claude session", GitHub: "on GitHub" }[who] || `by ${who}`;
+  return `<span class="by">${esc(what)}</span>`;
+}
+const msOptions = () => [["none", "No milestone"], ...milestones().map((m) => [m.key, `${m.key} · ${m.name}`])];
+function renderSheet() {
+  const host = document.getElementById("sheetHost");
+  if (!S.open && S.sheetMode !== "new") { host.innerHTML = ""; return; }
+  if (inUse(host)) return;
+  if (S.sheetMode === "new") { host.innerHTML = newTaskSheet(); bindSheet(host); return; }
+  const t = eff(S.tasks.get(S.open));
+  if (!t) { host.innerHTML = ""; return; }
+  const can = S.canWrite !== false && !!db;
+  const f = S.form && S.form.id === t.id ? S.form : null;
+  const actions = [];
+  if (t.state === "open") actions.push(`<button class="btn primary" data-act="take-form" ${can ? "" : "disabled"}>Take it</button>`, mcp ? `<button class="btn" data-act="session-form" ${can ? "" : "disabled"}>Start in a new session</button>` : "", `<button class="btn" data-act="archive" ${can ? "" : "disabled"}>Archive</button>`);
+  if (t.state === "live" && isMine(t)) actions.push(`<button class="btn ${t.branch ? "" : "primary"}" data-act="take-form" ${can ? "" : "disabled"}>${t.branch ? "Change branch" : "Start: name your branch"}</button>`);
+  if (t.state === "live") actions.push(`<button class="btn" data-act="release" ${can ? "" : "disabled"}>Release</button>`);
+  if (isOpen(t)) actions.push(`<button class="btn" data-act="done-form" ${can ? "" : "disabled"}>Mark done</button>`);
+  if (t.state === "done" || t.state === "archived") actions.push(`<button class="btn primary" data-act="revive" ${can ? "" : "disabled"}>Bring back</button>`);
+  const branchList = (S.branches ? S.branches.branches : []).map((b) => `<option value="${esc(b.name)}">`).join("");
+  let form = "";
+  const starting = t.state === "live";
+  if (f && f.kind === "take") form = `<div class="form"><label for="fBranch"><b>Your branch</b>${starting ? "" : ` <span class="by">optional</span>`}</label><input id="fBranch" class="mono" list="branchList" placeholder="claude/your-branch" value="${esc(f.branch || "")}"><datalist id="branchList">${branchList}</datalist>
+      <p class="hint">${starting ? "" : "Leave it empty to take it now and name it when you start: not started within 14 days, it goes back to open. "}A branch starts the ticket. It closes when the branch merges into ${esc(base())}, and goes back to open if the branch is deleted or has no commit for 14 days.</p>
+      <div class="actions"><button class="btn primary" data-act="take-branch">${starting ? "Start on this branch" : "Take it"}</button><button class="btn ghost" data-act="cancel">Cancel</button></div></div>`;
+  else if (f && f.kind === "done") form = `<div class="form"><label for="fNote"><b>What proved it</b></label><textarea id="fNote" rows="3" placeholder="The check, the commit or the result">${esc(f.note || "")}</textarea>
+      <p class="hint">A test that failed is not done: say what failed instead, and leave it open.</p>
+      <div class="actions"><button class="btn primary" data-act="done">Mark done</button><button class="btn ghost" data-act="cancel">Cancel</button></div></div>`;
+  else if (f && f.kind === "session") form = `<div class="form"><b>Start a Claude Code session on this ticket</b>
+      <p class="hint">It opens on <span class="mono">${esc(REPO)}</span> from <span class="mono">${esc(base())}</span>, takes the ticket on its own branch, and closes it with proof when the work is done. You find it in your Claude Code sessions.</p>
+      ${S.envs === null ? `<p class="hint">Reading your cloud environments…</p>` : S.envs.error ? `<p class="hint">${esc(S.envs.error)}</p>` : `<label for="fEnv">Environment</label><select id="fEnv">${S.envs.list.map((e) => `<option value="${esc(e.environment_id)}" ${e.environment_id === f.env ? "selected" : ""}>${esc(e.name || e.environment_id)}</option>`).join("")}</select>`}
+      <div class="actions"><button class="btn primary" data-act="session-start" ${S.envs && S.envs.list && S.envs.list.length && !f.busy ? "" : "disabled"}>${f.busy ? "Starting…" : "Start session"}</button><button class="btn ghost" data-act="cancel">Cancel</button></div></div>`;
+  const steps = (t.steps || []).map((s) => `<div class="check ${s.done ? "done" : ""}"><span class="box">${s.done ? `<svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5.2l2 2 4-4.4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>` : ""}</span><span>${rich(s.text)}</span></div>`).join("");
+  const rest = t.task && t.task.trim() !== t.head ? t.task.trim() : "";
+  const hist = [t.filed && `Filed ${fmtDay(t.filed)}${t.filedBy ? " by " + t.filedBy : ""}${t.filedOn ? " from " + t.filedOn : ""}`,
+    t.released && `Released ${t.released}`, t.revived && `Brought back ${fmtDay(t.revived)}`, t.done && `Done ${t.done}`, t.archived && `Archived ${t.archived}`].filter(Boolean);
+  const ai = S.ai && S.ai.id === t.id ? S.ai : null;
+  const aiHtml = !sample || !isOpen(t) ? "" : `<section class="sec"><h3>Ask Claude</h3><div class="ai">
+      ${ai && ai.busy ? `<span class="by">Claude is reading the ticket…</span>` : ai && ai.result ? `
+        <div class="actions"><span class="label ${ai.result.priority === "P1" ? "p1" : ai.result.priority === "P2" ? "p2" : ""}">${esc(ai.result.priority)}</span><span class="label">${esc(DEPTS[ai.result.dept] || ai.result.dept)}</span><span class="label ms">${esc(ai.result.milestone && ai.result.milestone !== "none" ? ai.result.milestone : "No milestone")}</span></div>
+        <p class="prose">${esc(ai.result.why)}</p>
+        <div class="actions"><button class="btn primary small" data-act="ai-use" ${can ? "" : "disabled"}>Use these</button><button class="btn ghost small" data-act="ai-clear">Dismiss</button></div>`
+      : ai && ai.error ? `<span class="by">${esc(ai.error)}</span>` : `<span class="by">Claude suggests a priority, department and milestone with a reason. Nothing changes until you use it.</span>`}
+      ${ai && (ai.busy || ai.result) ? "" : `<div><button class="btn small" data-act="ai">Suggest a ranking</button></div>`}</div></section>`;
+  const liveWhere = t.state === "live" ? `<span>${esc(t.takenBy || "Someone")}${t.branch ? ` on <span class="mono">${esc(t.branch)}</span>` : t.sessionUrl ? ` in <a href="${esc(t.sessionUrl)}" target="_blank" rel="noopener">a new session</a>` : ""}</span>` : "";
+  host.innerHTML = `<div class="scrim" data-act="close"></div>
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(t.head)}">
+      <div class="sheet-bar"><span class="mono">${esc(t.id)}</span>${t.number ? `<a class="mono" href="${esc(t.url || `${REPO_URL}/issues/${t.number}`)}" target="_blank" rel="noopener">#${t.number} on GitHub</a>` : ""}<span class="sp"></span>
+        <button class="btn ghost" data-act="copy" type="button">Copy link</button><button class="btn ghost" data-act="close" type="button" aria-label="Close">Close</button></div>
+      <div class="sheet-body"><h2>${esc(t.head)}</h2>
+        ${t.pending.length ? `<div class="note">Saved here. A Claude session carries it to GitHub on the next sync.</div>` : ""}
+        <dl class="props">
+          ${prop("Status", `<span class="status">${stateIcon(t, 14)} ${STATE_WORD[t.state] || t.state}</span>${liveWhere}`)}
+          ${prop("Priority", sel("priority", t.priority, [["P1", "P1 · blocks or ships broken"], ["P2", "P2 · needed for M1"], ["P3", "P3"]], can && isOpen(t)) + byLine(t.prioBy))}
+          ${prop("Department", sel("dept", t.dept, Object.entries(DEPTS), can && isOpen(t)) + byLine(t.deptBy))}
+          ${prop("Milestone", sel("milestone", t.milestone || "none", msOptions(), can && isOpen(t)) + byLine(t.msBy))}
+          ${prop("Area", esc(t.area))}${prop("Kind", esc(t.kind))}
+          ${t.filedOn ? prop("Filed from", `<button class="label" data-list="from:${esc(t.filedOn)}" style="border:0;cursor:pointer">${esc(t.filedOn)}</button>`) : ""}
+          ${t.needs && t.needs !== "anyone" ? prop("Needs", esc(t.needs.replace(/^anyone\s*/i, "") || t.needs)) : ""}
+          ${t.state === "live" && !t.branch ? prop("Started", `Not yet <span class="${t.startLeft !== null && t.startLeft <= 4 ? "soon" : "by"}">${t.startBy ? `back to open ${esc(fmtDay(t.startBy))} unless ${isMine(t) ? "you name" : "they name"} a branch` : "naming a branch starts it"}</span>`) : ""}
+          ${t.state === "open" && t.archivesOn ? prop("Archives", `${esc(fmtDay(t.archivesOn))} <span class="${t.daysLeft <= 4 ? "soon" : "by"}">${t.daysLeft <= 0 ? "today" : `in ${t.daysLeft} days`} if nobody takes it</span>`) : ""}
+        </dl>
+        ${can ? "" : `<div class="note">${db ? "You can read this board. Changing it needs Contributor access from an approver (the core four or Iggy)." : "Open this page in claude.ai to take or change tickets."}</div>`}
+        <div class="actions">${actions.join("")}</div>${form}
+        ${rest ? `<section class="sec"><h3>Details</h3><p class="prose">${rich(rest)}</p></section>` : ""}
+        ${steps ? `<section class="sec"><h3>Done when</h3>${steps}<p class="by" style="margin:6px 0 0">Tick the boxes on the GitHub issue.</p></section>` : ""}
+        ${t.see ? `<section class="sec"><h3>See</h3><p class="prose">${rich(t.see)}</p></section>` : ""}
+        ${aiHtml}
+        ${hist.length ? `<section class="sec"><h3>History</h3><ul class="history">${hist.map((h) => `<li>${rich(h)}</li>`).join("")}</ul></section>` : ""}
+      </div></div>`;
+  bindSheet(host, t);
+}
+function newTaskSheet() {
+  const d = S.draft || {};
+  const areas = [...new Set(all().map((t) => t.area))].sort();
+  const opt = (v, l, cur) => `<option value="${esc(v)}" ${v === cur ? "selected" : ""}>${esc(l)}</option>`;
+  return `<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="New task">
+    <div class="sheet-bar"><b>New task</b><span class="sp"></span><button class="btn ghost" data-act="close" type="button">Close</button></div>
+    <div class="sheet-body"><p class="hint">It names nobody: anyone takes it later. It reaches GitHub on the next sync. From a Claude session, use <span class="mono">/team-tasks add</span> instead; one ticket per branch.</p>
+      <div class="fields">
+        <div class="field"><label for="nTask">What needs doing, in one sentence a person can act on</label><textarea id="nTask" rows="3">${esc(d.task || "")}</textarea></div>
+        <div class="field"><label for="nDone">Done when (one step per line)</label><textarea id="nDone" rows="3">${esc(d.doneWhen || "")}</textarea></div>
+        <div class="two"><div class="field"><label for="nArea">Area</label><input id="nArea" list="areaList" value="${esc(d.area || "")}"><datalist id="areaList">${areas.map((a) => `<option value="${esc(a)}">`).join("")}</datalist></div>
+          <div class="field"><label for="nKind">Kind</label><select id="nKind">${KINDS.map((k) => opt(k, k, d.kind || "test")).join("")}</select></div></div>
+        <div class="two"><div class="field"><label for="nPrio">Priority</label><select id="nPrio">${[["P1", "P1 · blocks or ships broken"], ["P2", "P2 · needed for M1"], ["P3", "P3"]].map(([v, l]) => opt(v, l, d.priority || "P3")).join("")}</select></div>
+          <div class="field"><label for="nMs">Milestone</label><select id="nMs">${msOptions().map(([v, l]) => opt(v, l, d.milestone || "none")).join("")}</select></div></div>
+        <div class="field"><label for="nSee">Links (optional)</label><input id="nSee" value="${esc(d.see || "")}"></div>
+      </div>
+      <div class="actions"><button class="btn primary" data-act="new-save">File it</button><button class="btn ghost" data-act="close">Cancel</button>
+        <a class="btn ghost" href="${REPO_URL}/issues/new?labels=team-task" target="_blank" rel="noopener">Or open an issue on GitHub</a></div></div></div>`;
+}
+function bindSheet(host, t) {
+  const b = host.querySelector("#fBranch"); if (b) { b.addEventListener("input", () => { S.form.branch = b.value; }); b.focus(); }
+  const n = host.querySelector("#fNote"); if (n) { n.addEventListener("input", () => { S.form.note = n.value; }); n.focus(); }
+  const e = host.querySelector("#fEnv"); if (e) e.addEventListener("change", () => { S.form.env = e.value; keep("env", e.value); });
+  if (t) host.querySelectorAll("select[data-field]").forEach((s) => s.addEventListener("change", () => override(t.id, { [s.dataset.field]: s.value })));
+  const map = { nTask: "task", nDone: "doneWhen", nArea: "area", nKind: "kind", nPrio: "priority", nMs: "milestone", nSee: "see" };
+  for (const [id, k] of Object.entries(map)) { const el = host.querySelector("#" + id); if (el) el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => { S.draft = { ...(S.draft || {}), [k]: el.value }; }); }
+}
+
+/* ---- the helper chat: answers from the board, drafts tasks, changes nothing itself ---- */
+const RULES = `You are the helper inside Froglet Tasks, the Cosmic Shore team's hand-off board (tickets are GitHub issues on ${REPO}).
+Answer questions about tickets, branches, milestones and what the team has been doing, using the tools; keep answers short and plain, and name ticket ids (T-...) so people can open them.
+Rules of the board: a ticket names nobody until someone takes it, naming their branch; it closes when that branch merges into the base branch; untaken for 14 days it is archived. The core four (Garrett, Caleb, Shombith, Yash) carry equal weight: never rank, compare or praise people, and never say who should do a ticket.
+You cannot change anything. To file a task, call draft_task: the person reviews it and files it themselves. Never say you filed, took or closed something.`;
+function chatTools() {
+  const T = () => all();
+  const brief = (t) => ({ id: t.id, title: t.head, state: t.state, priority: t.priority, area: t.area, kind: t.kind, milestone: t.milestone, takenBy: t.takenBy || undefined, branch: t.branch || undefined, filedOn: t.filedOn, filed: t.filed, archivesOn: t.archivesOn || undefined });
+  return [
+    { name: "find_tickets", description: "Search tickets. Returns up to `limit` (default 15) brief tickets matching all given filters, plus the total count.",
+      inputSchema: { type: "object", properties: { query: { type: "string" }, state: { type: "string", enum: ["open", "live", "done", "archived", "any"] }, area: { type: "string" }, priority: { type: "string" }, milestone: { type: "string" }, branch: { type: "string" }, limit: { type: "number" } } },
+      execute: (i) => { const q = String(i.query || "").toLowerCase(); let L = T();
+        const st = String(i.state || "open"); if (st !== "any") L = L.filter((t) => t.state === st);
+        if (q) L = L.filter((t) => [t.id, t.task, t.area, t.branch, t.filedOn].join(" ").toLowerCase().includes(q));
+        if (i.area) L = L.filter((t) => t.area.toLowerCase().includes(String(i.area).toLowerCase()));
+        if (i.priority) L = L.filter((t) => t.priority === String(i.priority).toUpperCase());
+        if (i.milestone) L = L.filter((t) => t.milestone === String(i.milestone).toUpperCase());
+        if (i.branch) L = L.filter((t) => t.branch === i.branch || t.filedOn === i.branch);
+        L.sort(sorter("priority")); return { total: L.length, tickets: L.slice(0, Math.min(40, Number(i.limit) || 15)).map(brief) }; } },
+    { name: "get_ticket", description: "One ticket in full: task text, done-when steps, links and history.",
+      inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
+      execute: (i) => { const t = T().find((x) => x.id === String(i.id).trim()); if (!t) throw new Error("no ticket " + i.id); return { ...brief(t), task: t.task, doneWhen: (t.steps || []).map((s) => (s.done ? "[x] " : "[ ] ") + s.text), see: t.see, released: t.released, done: t.done, archived: t.archived }; } },
+    { name: "team_activity", description: "What happened in the last `days` (default 7): pull requests merged into the base branch, tickets filed, taken and closed, and tickets live now.",
+      inputSchema: { type: "object", properties: { days: { type: "number" } } },
+      execute: (i) => { const n = Math.min(21, Number(i.days) || 7); const since = addDays(today(), -n); const all_ = T();
+        return { base: base(), merged: ((S.activity && S.activity.merged) || []).filter((m) => m.date >= since).slice(0, 40),
+          filed: all_.filter((t) => (t.filed || "") >= since).map(brief).slice(0, 40), closed: all_.filter((t) => !isOpen(t) && closedOn(t) >= since).map(brief).slice(0, 40),
+          liveNow: all_.filter((t) => t.state === "live").map(brief) }; } },
+    { name: "branches", description: "Branches with a commit in the last three weeks: last commit, how far ahead of the base, live tickets.",
+      execute: () => S.branches ? { base: S.branches.base, branches: S.branches.branches.slice(0, 60) } : { note: "no branch report yet" } },
+    { name: "milestones", description: "The release plan's milestones with gate, scope, due date and ticket counts.",
+      execute: () => milestones().map((m) => ({ ...m, open: T().filter((t) => t.milestone === m.key && isOpen(t)).length, done: T().filter((t) => t.milestone === m.key && t.state === "done").length })) },
+    { name: "draft_task", description: "Prepare a new task for the person to review and file. It is NOT filed: the page shows a card the person can open and file.",
+      inputSchema: { type: "object", properties: { task: { type: "string" }, doneWhen: { type: "string", description: "steps, one per line" }, area: { type: "string" }, kind: { type: "string", enum: KINDS }, priority: { type: "string", enum: ["P1", "P2", "P3"] }, milestone: { type: "string" } }, required: ["task", "doneWhen"] },
+      execute: (i) => { S.chatDraft = { task: String(i.task), doneWhen: String(i.doneWhen || ""), area: String(i.area || ""), kind: KINDS.includes(i.kind) ? i.kind : "test", priority: ["P1", "P2", "P3"].includes(i.priority) ? i.priority : "P3", milestone: String(i.milestone || "none") }; return "Drafted. The person sees it under the chat and decides whether to file it."; } },
+  ];
+}
+function renderChat() {
+  const host = document.getElementById("chatHost");
+  if (!sample) { host.innerHTML = ""; return; }
+  if (!S.chatOpen) { host.innerHTML = `<button class="chat-btn" data-act="chat-open" type="button">${ICON.feedback} Ask Claude</button>`; return; }
+  if (host.contains(document.activeElement) && document.activeElement.id === "chatIn" && !S.chatRepaint) return;
+  S.chatRepaint = false;
+  const starters = ["What is the team working on?", "What merged in the last 3 days?", "Which P1 tickets are open?", "What should I pick up?"];
+  host.innerHTML = `<div class="chat" role="dialog" aria-label="Ask Claude about the board"><div class="chat-h"><b>Ask Claude</b><button class="btn ghost small" data-act="chat-clear">New chat</button><button class="btn ghost small" data-act="chat-close" aria-label="Close">Close</button></div>
+    <div class="msgs" id="msgs">${S.chat.length ? S.chat.map((m) => `<div class="msg ${m.role === "user" ? "me" : m.role === "tool" ? "tool" : "bot"}">${m.role === "assistant" ? rich(m.content) : esc(m.content)}</div>`).join("")
+      : `<p class="hint">Ask about tickets, branches, milestones or what the team did lately. It can draft a task for you to file; it never changes anything itself.</p><div class="starters">${starters.map((s) => `<button class="btn small" data-act="chat-ask" data-q="${esc(s)}">${esc(s)}</button>`).join("")}</div>`}
+      ${S.chatDraft ? `<div class="card ms"><b>Draft: ${esc(headline(S.chatDraft.task))}</b><span class="hint">Not filed. Open it to check and file it.</span><div class="actions"><button class="btn primary small" data-act="draft-open">Review and file</button><button class="btn ghost small" data-act="draft-drop">Discard</button></div></div>` : ""}</div>
+    <form id="chatForm"><input id="chatIn" placeholder="${S.chatBusy ? "Claude is answering…" : "Ask about the board"}" autocomplete="off" ${S.chatBusy ? "disabled" : ""}><button class="btn primary small" type="submit" ${S.chatBusy ? "disabled" : ""}>Send</button></form></div>`;
+  const m = host.querySelector("#msgs"); m.scrollTop = m.scrollHeight;
+  host.querySelector("#chatForm").addEventListener("submit", (ev) => { ev.preventDefault(); const v = host.querySelector("#chatIn").value.trim(); if (v) ask(v); });
+}
+async function ask(q) {
+  if (S.chatBusy) return;
+  S.chat.push({ role: "user", content: q }); S.chat.push({ role: "assistant", content: "…" }); S.chatBusy = true; S.chatRepaint = true; renderChat();
+  const turns = S.chat.filter((m) => m.role !== "tool").slice(0, -1);
+  const context = `Today is ${today()}. The viewer is ${S.meName || "a team member"}. The base branch is ${base()} (${phase()}).`;
+  const bubble = S.chat[S.chat.length - 1];
+  try {
+    const { text } = await sample([{ role: "user", content: RULES + "\n\n" + context }, { role: "assistant", content: "Understood." }, ...turns], {
+      cache: false, tools: chatTools(), modelTier: "quick",
+      onText: ({ text }) => { bubble.content = text; const el = document.querySelector("#msgs .msg:last-child"); if (el) el.innerHTML = rich(text); },
+    });
+    bubble.content = text;
+  } catch (e) {
+    bubble.content = (e && e.text) || ({ not_granted: "Asking Claude is not available on this page for you.", rate_limited: "Claude is busy. Try again in a minute.", tools_unavailable: "This view cannot run the helper's tools. Open the page in claude.ai." }[e && e.code] || "Claude could not answer. Try again.");
+  }
+  S.chatBusy = false; S.chatRepaint = true; renderChat();
+}
+
+/* ---- writes: the page's store; a Claude session carries them to GitHub on the next sync ---- */
+let toastTimer = 0;
+function toast(msg) {
+  let el = document.getElementById("toast");
+  if (!el) { el = document.createElement("div"); el.id = "toast"; el.className = "toast"; el.setAttribute("role", "status"); document.body.appendChild(el); }
+  el.textContent = msg; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 3400);
+}
+async function write(path, data, done, merge) {
+  if (!db || !S.meId) { toast("Sign in to claude.ai to change the board."); return false; }
+  try { const ref = db.doc(path); const body = { ...data, byId: S.meId, at: new Date().toISOString() }; await (merge ? ref.update(body) : ref.set(body)); if (done) toast(done); return true; }
+  catch (e) {
+    if (e && e.code === "invalid_argument") { toast("You can read this but not change it. An approver can give you access."); if (!merge) { S.canWrite = false; render(); } }
+    else toast("Not saved: " + ((e && e.message) || "the store did not answer") + ". Try again.");
+    return false;
+  }
+}
+// For you's cleared list is this viewer's own: data/users/<id>/foryou is private to them, on every device.
+async function saveCleared(ids, done) {
+  S.cleared = new Set(ids); keep("cleared", [...S.cleared]); render();
+  if (db && S.meId) { try { await db.doc(`data/users/${S.meId}/foryou`).set({ ids: [...S.cleared], at: new Date().toISOString() }); } catch {} }
+  toast(done);
+}
+async function act(id, action, extra, done) { if (await write("takes/" + id, { id, action, ...extra }, done)) { S.form = null; render(); } }
+async function override(id, fields, why) {
+  const t = S.tasks.get(id); const prev = S.overrides.get(id);
+  const keepF = newer(prev, t) ? Object.fromEntries(Object.entries(prev).filter(([k]) => ["priority", "dept", "milestone", "why"].includes(k))) : {};
+  await write("overrides/" + id, { id, ...keepF, ...fields, ...(why ? { why } : {}) }, "Saved. GitHub follows on the next sync.");
+}
+const shortId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+async function startSession(t) {
+  const f = S.form; const env = f.env || (S.envs.list[0] || {}).environment_id;
+  if (!env) return;
+  f.busy = true; renderSheet();
+  const prompt = `Take Froglet Tasks ticket ${t.id} (${REPO_URL}/issues/${t.number}) and do it.
+
+${t.task}
+
+Done when:
+${(t.steps || []).map((s) => "- " + s.text).join("\n") || "- (see the issue)"}
+
+First, name your branch on the ticket so the team sees it is live: run
+  python3 Tools/Build/team_tasks.py take ${t.id} --branch "$(git branch --show-current)" --who "${S.meName || "your name"}"
+Then do the work on that branch. When it is done, close the ticket with its proof (the /team-tasks skill: done ${t.id} --note "<the check that proved it>"). It also closes on its own when your branch merges into ${base()}.`;
+  try {
+    const r = await mcp.callTool("Claude Code Remote", "create_session", { environment_id: env, source_url: "https://github.com/" + REPO, source_revision: base(), title: `${t.id} ${t.head}`.slice(0, 120), prompt });
+    const p = r.payload; const raw = typeof p === "string" ? p : JSON.stringify(p || {});
+    const sid = (p && (p.id || p.session_id || (p.session && p.session.id) || (p.ccr && p.ccr.id))) || (raw.match(/session_[A-Za-z0-9]+/) || [""])[0];
+    const url = sid ? `https://claude.ai/code/${sid}` : "";
+    await act(t.id, "take", { session: sid || "started", sessionUrl: url }, "Session started. The ticket is yours; the session names its branch.");
+    if (url) toast("Session started. Open it from your Claude Code sessions.");
+  } catch (e) {
+    f.busy = false;
+    const msg = { needs_reauth: "Reconnect Claude Code in claude.ai Settings, then try again.", server_not_connected: "Claude Code is not connected for you in claude.ai Settings → Connectors.",
+      approval_required: "Starting a session needs your approval. Press Start session again and allow it.", not_in_manifest: "Starting sessions is turned off for this page in your permissions.",
+      tool_error: "Claude Code refused: " + ((e && e.message) || "") }[e && e.code] || "The session may not have started. Check your Claude Code sessions before trying again.";
+    toast(msg); renderSheet();
+  }
+}
+const SYNC_PROMPT = `Sync the Froglet Tasks page with GitHub Issues for ${REPO}: someone pressed Sync now on the page. Change nothing except what the steps say, and do not commit or push anything.
+0. Work in a checkout of ${REPO} (make a light one if there is none: git clone --filter=blob:none --no-checkout https://github.com/${REPO} && cd Cosmic-Shore && git sparse-checkout set --no-cone /Tools/Build/ /Docs/ /.claude/skills/team-tasks/ && git checkout bleeding-edge). git fetch --prune origin. If Tools/Build/team_tasks.py has no "def file_from_page", run git checkout origin/claude/keen-turing-mrod9b -- Tools/Build/team_tasks.py Docs/TEAM.json .claude/skills/team-tasks (working tree only).
+1. Follow .claude/skills/team-tasks/SKILL.md, section "/team-tasks sync", exactly. The page is https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f.
+2. Then run python3 Tools/Build/team_tasks.py sweep.
+3. End with one line: what the sync applied and skipped, and the sweep's summary.`;
+async function syncNow() {
+  const last = S.meta && S.meta.at ? Date.now() - Date.parse(S.meta.at) : Infinity;
+  if (last < 15 * 60 * 1000) { toast("Synced less than 15 minutes ago. The next scheduled sync is within 3 hours."); return; }
+  S.syncing = true; renderSide(true);
+  try {
+    const envs = await mcp.callTool("Claude Code Remote", "list_environments", { limit: 20 });
+    const list = ((envs.payload && envs.payload.environments) || []).filter((e) => e.state !== "archived");
+    const env = list.some((e) => e.environment_id === load("env", "")) ? load("env", "") : (list[0] || {}).environment_id;
+    if (!env) throw { code: "no_env" };
+    await mcp.callTool("Claude Code Remote", "create_session", { environment_id: env, source_url: "https://github.com/" + REPO, source_revision: base(), title: "Froglet Tasks sync", prompt: SYNC_PROMPT });
+    toast("Sync started in a Claude Code session. The page updates by itself in a few minutes.");
+  } catch (e) {
+    S.syncing = false;
+    toast({ no_env: "You have no cloud environment yet. Create one in Claude Code on the web first.", server_not_connected: "Claude Code is not connected for you in claude.ai Settings → Connectors.", needs_reauth: "Reconnect Claude Code in claude.ai Settings, then try again.", approval_required: "Starting a sync session needs your approval. Press Sync now again and allow it." }[e && e.code] || "The sync may not have started. Check your Claude Code sessions.");
+  }
+  renderSide(true);
+}
+async function loadEnvs() {
+  if (S.envs && S.envs.list) return;
+  S.envs = null; renderSheet();
+  try {
+    const r = await mcp.callTool("Claude Code Remote", "list_environments", { limit: 20 });
+    const list = ((r.payload && r.payload.environments) || []).filter((e) => e.state !== "archived");
+    S.envs = list.length ? { list } : { error: "You have no cloud environment yet. Create one in Claude Code on the web first." };
+    if (S.form) S.form.env = list.some((e) => e.environment_id === load("env", "")) ? load("env", "") : (list[0] || {}).environment_id;
+  } catch (e) {
+    S.envs = { error: { server_not_connected: "Claude Code is not connected for you in claude.ai Settings → Connectors.", needs_reauth: "Reconnect Claude Code in claude.ai Settings.", approval_required: "Allow this page to use Claude Code, then try again.", not_in_manifest: "Starting sessions is turned off for this page in your permissions." }[e && e.code] || "Could not read your environments. Try again." };
+  }
+  renderSheet();
+}
+async function askClaude(t) {
+  S.ai = { id: t.id, busy: true }; renderSheet();
+  const prompt = `You rank one hand-off ticket for Froglet's game Cosmic Shore. Rules:
+Priority: P1 = blocks a person or a build, or ships broken or silently. P2 = needed for the current milestone (M1), or archives within 4 days. P3 = everything else.
+Department: testers (tests, playtests), developers (code, setup), decisions (a call someone must make), content (writing, art, docs).
+Milestones: ${milestones().map((m) => `${m.key} ${m.name}: ${m.scope}`).join(" ")}
+Answer with JSON only: {"priority": "P1"|"P2"|"P3", "dept": "testers"|"developers"|"decisions"|"content", "milestone": "M1".."M5" or "none", "why": "one sentence naming the words or facts that decided it"}.
+
+Ticket ${t.id} (kind ${t.kind}, area ${t.area}, filed from ${t.filedOn || "an unknown branch"}${t.daysLeft !== null ? `, archives in ${t.daysLeft} days` : ""}):
+${t.task}
+Done when:
+${(t.steps || []).map((s) => "- " + s.text).join("\n") || "- (none written)"}`;
+  try {
+    const r = await sample.json(prompt, { modelTier: "quick" });
+    if (!r || !PR[r.priority] || !DEPTS[r.dept]) throw { message: "Claude's answer did not fit the board. Try again." };
+    S.ai = { id: t.id, result: r };
+  } catch (e) { S.ai = { id: t.id, error: e && e.code === "not_granted" ? "Asking Claude is not available on this page for you." : e && e.code === "rate_limited" ? "Claude is busy. Try again in a minute." : (e && e.message) || "Claude could not answer." }; }
+  renderSheet();
+}
+
+document.addEventListener("click", async (ev) => {
+  const el = ev.target.closest("[data-list], [data-open], [data-group], [data-act]");
+  if (!el) return;
+  if (el.dataset.list) { S.list = el.dataset.list; keep("list", S.list); S.shown = 50; S.area = S.kind = S.from = ""; S.msEdit = null; S.open = null; S.sheetMode = null; document.getElementById("side").dataset.open = "false"; render(); document.getElementById("main").scrollTop = 0; return; }
+  if (el.dataset.open) { openTicket(el.dataset.open); return; }
+  if (el.dataset.group) { const k = el.dataset.group; S.expanded.has(k) ? S.expanded.delete(k) : S.expanded.add(k); renderMain(); return; }
+  const a = el.dataset.act; const t = eff(S.tasks.get(S.open));
+  if (a === "menu") { document.getElementById("side").dataset.open = "true"; return; }
+  if (a === "filters") { S.filters = !S.filters; renderMain(); return; }
+  if (a === "sync-now") { syncNow(); return; }
+  if (a === "fy-clear") { const ids = forYou(all()).map((x) => x.id); await saveCleared([...S.cleared, ...ids], `Cleared ${Math.min(ids.length, 15)}. New tickets that fit you show here.`); return; }
+  if (a === "fy-restore") { await saveCleared([], "Brought back."); return; }
+  if (a === "copy-cmd") { const c = el.dataset.cmd; try { await navigator.clipboard.writeText(c); toast("Copied"); } catch { toast(c); } return; }
+  if (a === "view-board" || a === "view-list") { S.view = a === "view-board" ? "board" : "list"; keep("view", S.view); renderMain(); return; }
+  if (a === "clear") { S.q = S.area = S.kind = S.from = ""; render(); return; }
+  if (a === "more") { S.shown += 50; renderMain(); return; }
+  if (a === "close") { closeTicket(); return; }
+  if (a === "new") { S.sheetMode = "new"; S.open = null; render(); return; }
+  if (a === "new-save") {
+    const d = S.draft || {};
+    if (!String(d.task || "").trim() || !String(d.doneWhen || "").trim()) { toast("Write the task and when it is done."); return; }
+    const kind = d.kind || "test";
+    const doc = { task: d.task.trim(), doneWhen: d.doneWhen.trim().split("\n").map((s) => s.trim()).filter(Boolean).join("; "), area: (d.area || "General").trim(), kind, dept: KIND_DEPT[kind], priority: d.priority || "P3", milestone: d.milestone && d.milestone !== "none" ? d.milestone : "", see: d.see || "" };
+    if (await write("new/" + shortId(), doc, "Filed. It reaches GitHub on the next sync.")) { S.draft = null; closeTicket(); }
+    return;
+  }
+  if (a === "chat-open") { S.chatOpen = true; S.chatRepaint = true; renderChat(); const i = document.getElementById("chatIn"); if (i) i.focus(); return; }
+  if (a === "chat-close") { S.chatOpen = false; renderChat(); return; }
+  if (a === "chat-clear") { S.chat = []; S.chatDraft = null; S.chatRepaint = true; renderChat(); return; }
+  if (a === "chat-ask") { ask(el.dataset.q); return; }
+  if (a === "draft-open") { S.draft = { ...S.chatDraft }; S.chatDraft = null; S.sheetMode = "new"; S.open = null; S.chatRepaint = true; render(); return; }
+  if (a === "draft-drop") { S.chatDraft = null; S.chatRepaint = true; renderChat(); return; }
+  if (a === "fb-send") { const txt = String(S.fbDraft || "").trim(); if (!txt) { toast("Write your feedback first."); return; } if (await write("feedback/" + shortId(), { text: txt.slice(0, 4000) }, "Thanks. Your feedback is saved.")) { S.fbDraft = ""; renderMain(); } return; }
+  if (a === "sug-approve" || a === "sug-dismiss") { const id = el.dataset.id; if (await write("suggestions/" + id, { status: a === "sug-approve" ? "approved" : "dismissed", approvedBy: S.meName || "" }, a === "sug-approve" ? "Approved. It is filed on the next sync." : "Dismissed.", true)) renderMain(); return; }
+  if (a === "fresh-withdraw") { try { await db.doc("new/" + el.dataset.id).delete(); toast("Withdrawn."); } catch { toast("Not withdrawn. Try again."); } return; }
+  if (a === "ms-edit") { const m = milestones().find((x) => x.key === el.dataset.key); S.msEdit = { ...m }; renderMain(); return; }
+  if (a === "ms-add") { const n = Math.max(0, ...milestones().map((m) => Number(m.key.slice(1)))) + 1; S.msEdit = { key: "M" + n, name: "", gate: "", scope: "", due: "", isNew: true }; renderMain(); return; }
+  if (a === "ms-cancel") { S.msEdit = null; renderMain(); return; }
+  if (a === "ms-save") { const m = S.msEdit; if (!String(m.name || "").trim()) { toast("Give the milestone a name."); return; }
+    if (await write("milestones/" + m.key, { key: m.key, name: m.name.trim(), gate: (m.gate || "").trim(), scope: (m.scope || "").trim(), due: m.due || "" }, `${m.key} saved. GitHub follows on the next sync.`)) { S.msEdit = null; renderMain(); } return; }
+  if (a === "save-settings") { const b = document.getElementById("setBase").value, p = document.getElementById("setPhase").value.trim(); if (await write("meta/settings", { base: b, phase: p || phase() }, `Sessions now start from ${b}.`)) render(); return; }
+  if (!t) return;
+  if (a === "copy") { const link = location.href.split("#")[0] + "#" + t.id; try { await navigator.clipboard.writeText(link); toast("Link copied"); } catch { toast(link); } }
+  else if (a === "take-form") { S.form = { id: t.id, kind: "take", branch: t.branch || "" }; renderSheet(); }
+  else if (a === "done-form") { S.form = { id: t.id, kind: "done", note: "" }; renderSheet(); }
+  else if (a === "session-form") { S.form = { id: t.id, kind: "session", env: load("env", "") }; loadEnvs(); renderSheet(); }
+  else if (a === "session-start") startSession(t);
+  else if (a === "cancel") { S.form = null; renderSheet(); }
+  else if (a === "take-branch") {
+    const br = (S.form && S.form.branch || "").trim();
+    if (/\s/.test(br) || (!br && t.state === "live")) { toast("Name the branch you do it on, without spaces."); return; }
+    if (br) act(t.id, "take", { branch: br }, `${t.state === "live" ? "Started" : "Taken"} on ${br}. It closes when the branch merges.`);
+    else act(t.id, "take", {}, "Taken: it shows as yours to everyone. Name your branch when you start; not started in 14 days, it goes back to open.");
+  }
+  else if (a === "done") { const note = (S.form && S.form.note || "").trim(); if (!note) { toast("Say what proved it before marking it done."); return; } act(t.id, "done", { note }, "Marked done."); }
+  else if (a === "release") act(t.id, "release", {}, "Released. It is open again, nobody's.");
+  else if (a === "archive") act(t.id, "archive", {}, "Archived. Bring it back from Archive.");
+  else if (a === "revive") act(t.id, "revive", {}, "Back in Open, with 14 days before it is archived again.");
+  else if (a === "ai") askClaude(t);
+  else if (a === "ai-clear") { S.ai = null; renderSheet(); }
+  else if (a === "ai-use" && S.ai && S.ai.result) { const r = S.ai.result; await override(t.id, { priority: r.priority, dept: r.dept, milestone: r.milestone && r.milestone !== "none" ? r.milestone : "none" }, "suggested by Claude: " + r.why); S.ai = null; renderSheet(); }
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (S.open || S.sheetMode) closeTicket(); else if (S.chatOpen) { S.chatOpen = false; renderChat(); } else document.getElementById("side").dataset.open = "false"; } });
+function openTicket(id) { S.open = id; S.sheetMode = null; S.form = null; try { history.replaceState(null, "", "#" + id); } catch {} render(); }
+function closeTicket() { S.open = null; S.sheetMode = null; S.form = null; try { history.replaceState(null, "", location.pathname + location.search); } catch {} render(); }
+
+async function resolveNames() {
+  if (!user || !user.profiles) return;
+  const docs = [...S.takes.values(), ...S.overrides.values(), ...S.fresh.values(), ...S.feedback.values()];
+  const ids = [...new Set(docs.map((d) => d.byId).filter((id) => id && !(id in S.names)))];
+  if (!ids.length) return;
+  try { const ps = await user.profiles(ids); for (const id of ids) S.names[id] = (ps[id] && ps[id].name) || "Someone"; render(); } catch {}
+}
+
+/* ---- boot ---- */
+if (/^#T-\d{8}-[0-9a-f]{4}$/.test(location.hash)) S.open = location.hash.slice(1);
+render();
+(async () => {
+  const use = (n) => (window.claude && window.claude.use ? window.claude.use(n) : Promise.resolve(null));
+  [db, user, sample, mcp] = await Promise.all([use("db"), use("user"), use("sample"), use("mcp")]);
+  S.ready = true;
+  if (user) {
+    try { const me = await user.me(); S.meId = me.id; S.meName = me.name || ""; } catch {}
+    try { const w = await user.can("data.write"); if (w === false) S.canWrite = false; } catch {}
+    try { S.canEdit = !!(await user.canEdit()); } catch {}
+  }
+  if (!db) { render(); return; }
+  const fail = (e) => { S.error = "The store refused the read (" + ((e && e.code) || "unknown") + "). Reload the page."; render(); };
+  const sub = (name, key, after) => db.collection(name).limit(1000).onSnapshot((snap) => {
+    S[key] = new Map(snap.docs.map((d) => [d.id, { ...d.data(), id: d.id }])); if (after) after(); resolveNames(); render();
+  }, fail);
+  sub("tasks", "tasks", () => { S.loaded = true; });
+  if (S.meId) db.doc(`data/users/${S.meId}/foryou`).onSnapshot((d) => { if (d.exists) { S.cleared = new Set(d.data().ids || []); keep("cleared", [...S.cleared]); render(); } }, () => {});
+  sub("takes", "takes"); sub("overrides", "overrides"); sub("new", "fresh"); sub("suggestions", "suggestions"); sub("milestones", "milestoneDocs"); sub("feedback", "feedback");
+  for (const [path, key] of [["meta/sync", "meta"], ["meta/branches", "branches"], ["meta/activity", "activity"], ["meta/settings", "settings"]])
+    db.doc(path).onSnapshot((d) => { S[key] = d.exists ? d.data() : null; render(); }, () => {});
+})();
+</script>

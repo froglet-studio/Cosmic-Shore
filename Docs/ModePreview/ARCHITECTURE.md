@@ -387,9 +387,9 @@ start, against one that subscribes when Menu_Main loads). SceneLoader unpauses a
 statement, so a restore on that route fires immediately *after* it and hands the loading match
 `Time.timeScale = 0` — launching a game out of a flying preview would start it frozen.
 
-> `SceneLoader.LaunchGame` is the **only** producer of that unpause. `MiniGame` (which does call
-> `TogglePauseGame(false)` on entry) is the legacy single-player base with two subclasses — not
-> the `MiniGameControllerBase` hierarchy every shipped mode uses, and nothing in that hierarchy
+> `SceneLoader.LaunchGame` is the **only** producer of that unpause. `MiniGame` (which called
+> `TogglePauseGame(false)` on entry) was the legacy single-player base, retired 2026-10-25 with its two
+> unused subclasses (`Docs/REFACTOR_BACKLOG.md` M6) — never the `MiniGameControllerBase` hierarchy every shipped mode uses, and nothing in that hierarchy
 > touches `PauseSystem` at all. A restore that leaned on the game scene unpausing itself would be
 > leaning on a class the arcade modes do not instantiate.
 

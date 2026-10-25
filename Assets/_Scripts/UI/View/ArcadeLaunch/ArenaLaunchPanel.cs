@@ -48,11 +48,16 @@ namespace CosmicShore.UI
         Button selectVesselButton;
 
         [Header("Hull strip (optional)")]
-        [SerializeField, Tooltip("One tile per hull the card offers, in roster order (the style-B " +
-                                 "configure tree). A tap shows that hull; a hull another pilot holds is " +
-                                 "drawn locked and refuses. Surplus tiles are hidden. Optional: the " +
-                                 "carousel arrows work without it.")]
+        [SerializeField, Tooltip("The tiles of the hull strip, left to right (the style-B configure tree). " +
+                                 "They show a window onto the card's hulls in roster order: a card with more " +
+                                 "hulls than tiles slides the window to keep the current pick in view, so the " +
+                                 "prev / next arrows reach every hull. A tap shows that hull; a hull another " +
+                                 "pilot holds is drawn locked and refuses. Surplus tiles are hidden. Optional: " +
+                                 "the carousel arrows work without it.")]
         List<KitHullTile> hullTiles = new();
+
+        // The card hull the leftmost tile shows (StripOffset).
+        int _stripOffset;
 
         /// <summary>+1 / -1: the pilot asked for the next / previous vessel.</summary>
         public event Action<int> OnVesselCycleRequested;
@@ -69,6 +74,7 @@ namespace CosmicShore.UI
         public override void Bind(SO_ArcadeGame game, int intensity)
         {
             _controlsVessel = null;
+            _stripOffset = 0;
             base.Bind(game, intensity);
         }
 
@@ -79,7 +85,7 @@ namespace CosmicShore.UI
             if (nextButton)         nextButton.onClick.AddListener(RequestNext);
             if (selectVesselButton) selectVesselButton.onClick.AddListener(RequestConfirm);
             for (int i = 0; i < hullTiles.Count; i++)
-                if (hullTiles[i]) hullTiles[i].Bind(i, RequestPick);
+                if (hullTiles[i]) hullTiles[i].Bind(i, RequestTile);
         }
 
         protected override void OnDisable()
@@ -128,25 +134,46 @@ namespace CosmicShore.UI
         SO_Vessel _controlsVessel;
 
         /// <summary>
-        /// Draw the hull strip: one tile per hull in <paramref name="ships"/>, <paramref name="shown"/>
-        /// selected, a hull <paramref name="heldByOthers"/> names drawn locked. Once the pick is
-        /// <paramref name="confirmed"/> the strip stops taking taps. A panel without tiles ignores it.
+        /// Draw the hull strip: the tiles show a window onto <paramref name="ships"/> that keeps
+        /// <paramref name="shown"/> in view (selected), a hull <paramref name="heldByOthers"/> names drawn
+        /// locked. Once the pick is <paramref name="confirmed"/> the strip stops taking taps. A panel
+        /// without tiles ignores it.
         /// </summary>
         public void ShowHullStrip(IReadOnlyList<SO_Vessel> ships, int shown, Func<SO_Vessel, bool> heldByOthers,
                                   bool confirmed)
         {
+            int count = ships?.Count ?? 0;
+            _stripOffset = StripOffset(_stripOffset, shown, count, hullTiles.Count);
             for (int i = 0; i < hullTiles.Count; i++)
             {
                 var tile = hullTiles[i];
                 if (!tile) continue;
-                var ship = ships != null && i < ships.Count ? ships[i] : null;
-                tile.Show(ship, i == shown, ship && heldByOthers != null && heldByOthers(ship), !confirmed);
+                int index = _stripOffset + i;
+                var ship = index < count ? ships[index] : null;
+                tile.Show(ship, index == shown, ship && heldByOthers != null && heldByOthers(ship), !confirmed);
             }
+        }
+
+        /// <summary>
+        /// The card hull the leftmost of <paramref name="tiles"/> tiles shows: unchanged while
+        /// <paramref name="shown"/> is in view, slid just far enough to bring it in otherwise, and never past
+        /// either end. Zero when every hull fits. The Regatta card lists nine hulls on an eight-tile strip,
+        /// and with a fixed strip the ninth (the Stoat) had no tile and could never be picked (2026-10-25).
+        /// </summary>
+        public static int StripOffset(int offset, int shown, int count, int tiles)
+        {
+            if (tiles <= 0 || count <= tiles) return 0;
+            if (shown >= 0 && shown < count)
+            {
+                if (shown < offset) offset = shown;
+                else if (shown >= offset + tiles) offset = shown - tiles + 1;
+            }
+            return Mathf.Clamp(offset, 0, count - tiles);
         }
 
         void RequestPrev()    => OnVesselCycleRequested?.Invoke(-1);
         void RequestNext()    => OnVesselCycleRequested?.Invoke(+1);
         void RequestConfirm() => OnVesselConfirmRequested?.Invoke();
-        void RequestPick(int index) => OnVesselPickRequested?.Invoke(index);
+        void RequestTile(int tile) => OnVesselPickRequested?.Invoke(_stripOffset + tile);
     }
 }

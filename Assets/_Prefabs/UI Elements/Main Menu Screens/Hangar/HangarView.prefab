@@ -12888,7 +12888,6 @@ MonoBehaviour:
   kindOverrides: []
   demoStepSeconds: 2.4
   demoLeadSeconds: 0.8
-  demoResumeSeconds: 4
   keyPressSeconds: 0.35
   keyPressScale: 0.84
 --- !u!1 &1039055069906463975
@@ -13111,7 +13110,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Labels follow your device. Press one to see it again.
+  m_text: Labels follow your device.
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
   m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
@@ -13291,7 +13290,7 @@ GameObject:
   - component: {fileID: 349875219089715354}
   - component: {fileID: 116498602161485017}
   - component: {fileID: 63731771264682369}
-  - component: {fileID: 942590768810546301}
+  - component: {fileID: 111098552121215615}
   m_Layer: 5
   m_Name: Charge
   m_TagString: Untagged
@@ -13363,7 +13362,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Navigation:
-    m_Mode: 3
+    m_Mode: 0
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 0}
     m_SelectOnDown: {fileID: 0}
@@ -13402,19 +13401,18 @@ MonoBehaviour:
   borderGraphic: {fileID: 192975017428741405}
   contentGraphics: []
   playGradient: {fileID: 0}
---- !u!114 &942590768810546301
-MonoBehaviour:
+--- !u!225 &111098552121215615
+CanvasGroup:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 573327111478497993}
   m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  category: 11
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &146990537278994598
 GameObject:
   m_ObjectHideFlags: 0
@@ -14882,7 +14880,7 @@ GameObject:
   - component: {fileID: 466532363442303254}
   - component: {fileID: 305104746928440572}
   - component: {fileID: 358378545028115605}
-  - component: {fileID: 534636496702914888}
+  - component: {fileID: 1060541411147124699}
   m_Layer: 5
   m_Name: Mass
   m_TagString: Untagged
@@ -14954,7 +14952,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Navigation:
-    m_Mode: 3
+    m_Mode: 0
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 0}
     m_SelectOnDown: {fileID: 0}
@@ -14993,19 +14991,18 @@ MonoBehaviour:
   borderGraphic: {fileID: 190892128419822815}
   contentGraphics: []
   playGradient: {fileID: 0}
---- !u!114 &534636496702914888
-MonoBehaviour:
+--- !u!225 &1060541411147124699
+CanvasGroup:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 94227682259949214}
   m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  category: 11
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &636131949628763901
 GameObject:
   m_ObjectHideFlags: 0
@@ -16473,7 +16470,7 @@ GameObject:
   - component: {fileID: 677219330703846131}
   - component: {fileID: 805723965718746680}
   - component: {fileID: 408580241069520459}
-  - component: {fileID: 357182255865218103}
+  - component: {fileID: 496774289325872554}
   m_Layer: 5
   m_Name: Space
   m_TagString: Untagged
@@ -16545,7 +16542,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Navigation:
-    m_Mode: 3
+    m_Mode: 0
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 0}
     m_SelectOnDown: {fileID: 0}
@@ -16584,19 +16581,18 @@ MonoBehaviour:
   borderGraphic: {fileID: 907470660779798436}
   contentGraphics: []
   playGradient: {fileID: 0}
---- !u!114 &357182255865218103
-MonoBehaviour:
+--- !u!225 &496774289325872554
+CanvasGroup:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 550958760295193690}
   m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  category: 11
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &1138395229162281478
 GameObject:
   m_ObjectHideFlags: 0
@@ -18064,7 +18060,7 @@ GameObject:
   - component: {fileID: 474608735385411691}
   - component: {fileID: 456470411211855314}
   - component: {fileID: 735655153849007565}
-  - component: {fileID: 769699005556398471}
+  - component: {fileID: 1137087323424733101}
   m_Layer: 5
   m_Name: Time
   m_TagString: Untagged
@@ -18136,7 +18132,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Navigation:
-    m_Mode: 3
+    m_Mode: 0
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 0}
     m_SelectOnDown: {fileID: 0}
@@ -18175,19 +18171,18 @@ MonoBehaviour:
   borderGraphic: {fileID: 24157614450276740}
   contentGraphics: []
   playGradient: {fileID: 0}
---- !u!114 &769699005556398471
-MonoBehaviour:
+--- !u!225 &1137087323424733101
+CanvasGroup:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 945546289243107542}
   m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  category: 11
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &107082742035867007
 GameObject:
   m_ObjectHideFlags: 0

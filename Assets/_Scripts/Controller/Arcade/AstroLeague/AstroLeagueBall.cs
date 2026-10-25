@@ -715,8 +715,7 @@ namespace CosmicShore.Gameplay
             // The mesh lives on a VISUAL CHILD so the impact pop has something to deform that is
             // not the physics body. The authored root renderer (if any) is stood down rather than
             // removed, so a scene that still carries one can't double-draw the ball.
-            var rootRenderer = GetComponent<MeshRenderer>();
-            if (rootRenderer != null) rootRenderer.enabled = false;
+            if (TryGetComponent(out MeshRenderer rootRenderer)) rootRenderer.enabled = false;
 
             var visualGo = new GameObject("BallVisual");
             _visual = visualGo.transform;

@@ -663,7 +663,7 @@ namespace CosmicShore.Gameplay
         Vector3[] _runLo = new Vector3[64], _runHi = new Vector3[64];
 
         /// <summary>The families, one per rule a part of the world is laid by.</summary>
-        enum Fam { Trunk, Heartwood, Buttress, Branch, Canopy, Kelp, Dune, Firefly }
+        enum Fam { Trunk = 0, Heartwood = 1, Buttress = 2, Branch = 3, Canopy = 4, Kelp = 5, Dune = 6, Firefly = 7 }
 
         /// <summary>A spatially compact run of one family's lays (a strand, a coral, an arc of
         /// planks), with its bounds and the bounds of each 16-lay run inside it.</summary>

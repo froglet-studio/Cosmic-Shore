@@ -412,6 +412,34 @@ namespace CosmicShore.UI
             ScheduleSave();
         }
 
+        /// <summary>A bought Hangar level (<c>HangarUpgradeStore</c>), 0 when none. Vessel and element are the enums' values.</summary>
+        public int GetHangarUpgradeLevel(int vessel, int element)
+        {
+            var upgrades = CurrentProfile?.Economy?.HangarUpgrades;
+            if (upgrades == null) return 0;
+            foreach (var u in upgrades)
+                if (u != null && u.Vessel == vessel && u.Element == element) return u.Level;
+            return 0;
+        }
+
+        /// <summary>
+        /// Saves a Hangar level on the profile. Called right after <see cref="TrySpendCrystals"/> pays for it, so
+        /// the debit and the level ride the same debounced save.
+        /// </summary>
+        public void SetHangarUpgradeLevel(int vessel, int element, int level)
+        {
+            if (CurrentProfile?.Economy == null)
+                return;
+
+            var upgrades = CurrentProfile.Economy.HangarUpgrades ??= new List<HangarUpgradeLevel>();
+            var entry = upgrades.Find(u => u != null && u.Vessel == vessel && u.Element == element);
+            if (entry == null)
+                upgrades.Add(entry = new HangarUpgradeLevel { Vessel = vessel, Element = element });
+            entry.Level = level;
+            OnProfileChanged?.Invoke(CurrentProfile);
+            ScheduleSave();
+        }
+
         public void SetAvatarId(int avatarId)
         {
             if (CurrentProfile == null)

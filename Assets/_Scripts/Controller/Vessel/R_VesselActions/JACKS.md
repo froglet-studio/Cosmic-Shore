@@ -24,7 +24,7 @@ Code:
 |---|---|
 | The herd, the jacks, the two modes, the decoy, contacts, Mass 5 | `Executors/JacksExecutor.cs` (implements `IFaunaHerd`) |
 | The lab's arithmetic and the flight formation, pure | `Controller/Vessel/JacksMath.cs` (held by `Tests/Editor/JacksMathTests.cs`) |
-| The jacks' herding AI (Strömbom drive and collect) | `Executors/JacksAI.cs` |
+| The jacks' herding AI (Strömbom drive and collect) | `Controller/AI/Jacks/JacksAI.cs` (moved 2026-10-25) |
 | The herding view (Steady camera, small view, double-tap switch) | `Executors/JacksView.cs` |
 | The netting jacks' buttons | `Data Containers/JacksActionSO.cs` (`JacksControl`: Call 0, Teleport 1, Decoy 2 (retired), TeleportLeft 3, TeleportRight 4, Wide 5) |
 | Every number | `Data Containers/JacksConfigSO.cs`, `Assets/_SO_Assets/VesselActions/Jacks/JacksConfig.asset` |

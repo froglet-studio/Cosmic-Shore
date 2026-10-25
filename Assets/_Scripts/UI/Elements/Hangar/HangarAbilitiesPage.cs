@@ -10,10 +10,16 @@ namespace CosmicShore.UI
     /// <summary>
     /// The Hangar's ABILITIES tab (rev 3): every ability of the selected vessel - its icon, name,
     /// element and what it does - with the control that fires it written as the player's own device
-    /// names it (LT / RT / A / B on a pad, LSHIFT / SPACE on a keyboard, nothing on touch). Pressing that
-    /// control - or tapping the row - makes the 3D vessel on the stage PERFORM it in the element's
-    /// colour, and lights the row. The move is the ability's own kind (shot, boost, build, sense...), read
-    /// from its name and description by <see cref="HangarAbilityKinds"/> (Docs/MENU_REDESIGN_B.md section 46).
+    /// names it (LT / RT / A / B on a pad, LSHIFT / SPACE on a keyboard, nothing on touch). When the AI demo
+    /// plays an ability the 3D vessel on the stage PERFORMS it in the element's colour and the row lights. The
+    /// move is the ability's own kind (shot, boost, build, sense...), read from its name and description by
+    /// <see cref="HangarAbilityKinds"/> (Docs/MENU_REDESIGN_B.md section 46).
+    ///
+    /// <para><b>The rows are information</b> (section 66; Yash and Shombith, 2026-10-25: "my abilities don't need to
+    /// be selected or clicked ... They are just info"). Nothing the player presses plays one: not a click, a tap,
+    /// A, a pad control or a keyboard key, and the rows are not pad stops (author_menu_hangar.py takes them out of
+    /// navigation and out of raycasts). Every pad control is the menu's on this screen - LT / RT page the screens,
+    /// LB / RB step the tabs (section 63: polling RT fired Pulsefire while it paged to the Ark).</para>
     ///
     /// <para>The rows read the shipped <see cref="ElementalAbilityMapSO"/> (name, description, input)
     /// and the vessel's own HUD icon art; the control name comes from the fleet's one glyph table
@@ -24,8 +30,7 @@ namespace CosmicShore.UI
     /// cost, very low cost ... just light weight to show the controls"). While the tab is on screen the AI presses each
     /// ability's control in turn: the keycap sinks, the row lights and the stage's display copy performs the move. It
     /// costs what the stage already costs - no world, no hull swap, no camera loan. It replaced TRY and the flown
-    /// showcase, which stood a whole Barren cell, swapped the menu hull and borrowed the gameplay camera. A press of
-    /// the player's own pauses the demo for a moment and it carries on from the next ability.</para>
+    /// showcase, which stood a whole Barren cell, swapped the menu hull and borrowed the gameplay camera.</para>
     /// </summary>
     public class HangarAbilitiesPage : MonoBehaviour, IHangarTabPage
     {
@@ -33,6 +38,8 @@ namespace CosmicShore.UI
         public class Row
         {
             public Element element = Element.Charge;
+            [Tooltip("The row's frame. A look only: out of pad navigation and raycasts, nothing presses it (section 66); " +
+                     "an open slot draws it disabled.")]
             public KitButton button;
             public Image icon;
             public TMP_Text nameText;
@@ -98,8 +105,6 @@ namespace CosmicShore.UI
         [SerializeField, Min(0.5f)] private float demoStepSeconds = 2.4f;
         [Tooltip("Seconds before the first press after the tab opens or the vessel changes.")]
         [SerializeField, Min(0f)] private float demoLeadSeconds = 0.8f;
-        [Tooltip("Seconds the AI waits after the player presses a control before it carries on.")]
-        [SerializeField, Min(0f)] private float demoResumeSeconds = 4f;
         [Tooltip("Seconds a pressed keycap stays sunk.")]
         [SerializeField, Min(0.05f)] private float keyPressSeconds = 0.35f;
         [Tooltip("Keycap scale at the bottom of a press.")]
@@ -116,13 +121,6 @@ namespace CosmicShore.UI
         {
             if (!glyphSet) glyphSet = Resources.Load<ControlGlyphSetSO>("ControlGlyphSet");
             if (!lockupStyle) lockupStyle = Resources.Load<AbilityLockupStyleSO>("AbilityLockupStyle");
-            foreach (var row in rows)
-            {
-                if (row?.button == null) continue;
-                var r = row;
-                int index = System.Array.IndexOf(rows, r);
-                r.button.onClick.AddListener(() => PlayerFire(index));
-            }
         }
 
         public void SetVessel(SO_Vessel vessel, HangarVesselStage stage)
@@ -199,8 +197,6 @@ namespace CosmicShore.UI
             {
                 var row = rows[i];
                 if (row == null) continue;
-                if (_active && (HangarControlInput.WasPressed(row.pad) || HangarControlInput.WasPressed(row.key)))
-                    PlayerFire(i);
                 if (row.pressed > 0f)
                 {
                     row.pressed = Mathf.Max(0f, row.pressed - dt / keyPressSeconds);
@@ -217,14 +213,6 @@ namespace CosmicShore.UI
             }
         }
 
-        /// <summary>A row tapped or its control pressed by the player: play it, then let the AI carry on after it.</summary>
-        void PlayerFire(int index)
-        {
-            if (!Fire(rows[index], holdTurn: true)) return;
-            _demoNext = index + 1;
-            _demoClock = demoResumeSeconds;
-        }
-
         /// <summary>The AI's press: the next ability this vessel has, round and round.</summary>
         void DemoStep()
         {
@@ -234,19 +222,18 @@ namespace CosmicShore.UI
                 var row = rows[i];
                 if (row == null || row.open) continue;
                 _demoNext = i + 1;
-                Fire(row, holdTurn: false);
+                Fire(row);
                 return;
             }
         }
 
-        bool Fire(Row row, bool holdTurn)
+        void Fire(Row row)
         {
-            if (row == null || row.open || (row.button && !row.button.interactable)) return false;
+            if (row == null || row.open || (row.button && !row.button.interactable)) return;
             row.lit = 1f;
             row.pressed = 1f;
             if (row.halo) row.halo.Flash();
-            if (_stage) _stage.Perform(Colour(row.element), row.kind, holdTurn);
-            return true;
+            if (_stage) _stage.Perform(Colour(row.element), row.kind, holdTurn: false);
         }
 
         HangarAbilityKind KindOf(VesselClassType vessel, Element element, ElementalAbilityEntry entry)

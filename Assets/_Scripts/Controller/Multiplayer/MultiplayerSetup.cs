@@ -139,11 +139,44 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[NetTrace] Network started - IsHost={nm.IsHost} IsServer={nm.IsServer} IsClient={nm.IsClient} " +
                         $"activeScene={UnityEngine.SceneManagement.SceneManager.GetActiveScene().name} " +
                         $"sceneCount={UnityEngine.SceneManagement.SceneManager.sceneCount}");
+            MarkNetworkConfig(nm);
+        }
+
+        // B35 (Docs/PartySystem/BUGS.md): the host refuses a client whose NetworkConfig hash differs
+        // ("NetworkConfig mismatch") and says nothing about which part. Each peer's test log records
+        // its own hash and the prefab keys inside it, so two logs of one failed join name the prefab
+        // the editors disagree on. Once per Netcode start (a host fires both started events).
+        string _markedNetworkConfig;
+
+        void MarkNetworkConfig(NetworkManager nm)
+        {
+            var config = nm.NetworkConfig;
+            if (config?.Prefabs?.NetworkPrefabOverrideLinks == null) return;
+            var keys = config.Prefabs.NetworkPrefabOverrideLinks
+                .Select(kv => (kv.Key, kv.Value?.Prefab ? kv.Value.Prefab.name : null));
+            string detail = DescribeNetworkConfig(config.GetConfig(), keys);
+            if (detail == _markedNetworkConfig) return;
+            _markedNetworkConfig = detail;
+            NetSessionRecorder.Mark("netConfig", detail);
+        }
+
+        /// <summary>
+        /// "hash=&lt;16 hex&gt; prefabs=&lt;n&gt; &lt;key&gt;:&lt;name&gt; ...", keys sorted as Netcode hashes them.
+        /// </summary>
+        internal static string DescribeNetworkConfig(ulong configHash, IEnumerable<(uint key, string name)> prefabKeys)
+        {
+            var sorted = prefabKeys.OrderBy(p => p.key).ToList();
+            var sb = new System.Text.StringBuilder(32 + sorted.Count * 24);
+            sb.Append("hash=").Append(configHash.ToString("x16")).Append(" prefabs=").Append(sorted.Count);
+            foreach (var (key, name) in sorted)
+                sb.Append(' ').Append(key).Append(':').Append(string.IsNullOrEmpty(name) ? "?" : name);
+            return sb.ToString();
         }
 
         void OnNetworkStoppedTrace(bool wasHost)
         {
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[NetTrace] Network stopped (wasHost={wasHost}).");
+            _markedNetworkConfig = null;
             if (_tracedSceneManager != null)
             {
                 _tracedSceneManager.OnSceneEvent -= OnSceneEventTrace;
@@ -288,8 +321,7 @@ namespace CosmicShore.Gameplay
                 // bind conflicts. Relay transport handles actual multiplayer connections.
                 if (!CurrentPlayer.IsMainEditor)
                 {
-                    var transport = nm.GetComponent<UnityTransport>();
-                    if (transport != null)
+                    if (nm.TryGetComponent(out UnityTransport transport))
                     {
                         var tags = CurrentPlayer.Tags;
                         var tagKey = tags != null && tags.Count > 0 ? string.Join("-", tags) : "clone";
@@ -564,6 +596,9 @@ namespace CosmicShore.Gameplay
             try
             {
                 CSDebug.LogWarning("[Net] Transport failure - bouncing to solo menu.");
+                // B36: Relay drops a player it has not heard from for ~10 s, and the transport only pings
+                // from the main thread. Name the freeze this drop most likely followed, if any.
+                NetSessionRecorder.Mark("relayDrop", FrameStallWatch.DescribeRecentStall());
 
                 // Same self-rescue as host-loss: tear down, shut down NM, reload Menu_Main,
                 // and recreate our OWN solo host (EnsurePartySessionAsync). The legacy path

@@ -67,7 +67,14 @@ attached, stationary), `lvC lvM lvS lvT`, `held` (AI-holding samples are now kep
 `camx camy camz camfx camfy camfz fov camMode` (Caleb's V1 view); `rivalVel` (vx, vy, vz per rival, aligned with
 `rivals`); `crystals` (the 12 nearest: x, y, z, element); `railEvents` ([t, rail, prism, 1 destroyed / 0 restored]).
 Since 2026-10-17 also: the hull's resource meters `m0..m3` (names in the header's `meterNames`, the boost meter's
-index in `boostMeter`; the Dolphin's charge is read from them) and `timeMode` (the Stoat's Mass / Time mode). Not
+index in `boostMeter`; the Dolphin's charge is read from them) and `timeMode` (the Stoat's Mass / Time mode).
+Since 2026-10-25 also **each rival's state** (`rivalState`, aligned with `rivals`; columns named in `rivalStateColumns`):
+its `state` bits (the pilot's six plus `rivalStateBits`: `ai`, `breakingOff` = `AIPilot.IsBreakingOrbit`, `restricted`
+= translation restricted), its `boost` (BoostMultiplier), `boostStatus` (an index into `rivalBoostStatuses`, the AI boost
+driver's status with its numbers blanked to `#`; -1 for none), `phase` (`AIPilot.ObjectivePhase`, -1 for none) and
+`courseNose` (degrees between the hull's course and its nose). Why: an AI Rhino held 50 u/s through two whole Regatta
+races (2026-10-23) and the record could not say whether its ramp driver was waiting, braking or stood down.
+`regatta_rival_report.py --hull <hull>` prints each race's shares. Not
 recorded: the hull-specific speed-verb phases (ramp, soar, skim boost) beyond `boost`, the meters and `state`; they have
 no shared field on the vessel status.
 
@@ -271,8 +278,15 @@ ring never sampled) was fixed in `HumanFlightRecorder` and `learn_from_flights.f
 **The plan** (with `RACING_LINE.md` §3-4; nothing reaches the game without the owner's OK and an editor test):
 
 1. **Test the ring face first**, the cheapest likely win. **Applied 2026-10-17** (Yash: "do it"):
-   `SkimRaceAIConfig_Regatta.asset` now has `SkimHeight` -6.498 plus the learned look-ahead, mass margin and stick
-   gain (`LEARNED_FROM_FLIGHTS.md`). Waiting on the editor race against the old AI (checklist entry "Regatta Squirrel
+   `SkimRaceAIConfig_Regatta.asset` got `SkimHeight` -6.498 plus the learned look-ahead, mass margin and stick gain.
+   **Re-learned 2026-10-25:** races written 23/24 before the recorder fix now count as finished, so the three fastest
+   finished races changed:
+   - `SkimHeight` -5.948 (same face);
+   - `LookaheadSeconds` 1.03;
+   - `LookaheadMin` 70;
+   - `StickGainPerDegree` 0.025.
+
+   See `LEARNED_FROM_FLIGHTS.md`. Waiting on the editor race against the old AI (checklist entry "Regatta Squirrel
    AI skims the ring face").
 2. **Port the racing line** (`RACING_LINE.md` §3, task T-20261015-7fc3): the averaged faster-half line per leg as the
    pilot's target, with the face above.
