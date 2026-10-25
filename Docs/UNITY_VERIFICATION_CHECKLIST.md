@@ -3171,6 +3171,25 @@ I1 43.0 s vs 48.2, I2 56.1 vs 55.4, I3 56.3 vs stalled), gates.
 4. Any other mode with an AI Rhino (Broadside): it still ramps on long straights (no next leg there: every objective is
    read as a 90° corner).
 
+### 🔴 Arena vessel picker: < > arrows and a sliding hull strip, so every hull can be picked (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** `ConfigureArenaView.prefab` gains `PrevVesselButton` / `NextVesselButton` (two `KitButtonSmall`
+instances, labels `<` and `>`, at the ends of `HullStrip`, wired to `ArenaLaunchPanel.prevButton` / `nextButton`);
+Hull1-7 move 40 u right and `Hull8` is inactive and off the tile list. `ArenaLaunchPanel.ShowHullStrip` shows a
+window onto the card's hulls that follows the pick (`StripOffset`); a tile tap reports the hull's real index.
+Why: the Regatta card lists nine hulls and the strip had eight tiles, so the Stoat (ninth) could not be picked.
+**Verified without the editor:** `unity_refcompile` editor config (0 errors in changed files), `ArenaHullStripTests` written (not run),
+the prefab parses as YAML with no duplicate fileIDs. The YAML was written by a script, so open the prefab once.
+**Verify in editor:**
+1. Open `ConfigureArenaView.prefab`: no missing-prefab or broken-reference warnings; `<` sits left of the hull
+   tiles and `>` right of them, the same height as the tiles, not overlapping a tile.
+2. Menu ▸ Arena ▸ Regatta: seven hulls show. Press `>` until the Stoat is shown: the strip slides one tile per
+   press once the pick reaches the right end, and the Stoat's tile is selected. CLAIM, then Start: you fly the Stoat.
+3. Press `<` back to the first hull: the strip slides back. A tap on any visible tile picks THAT hull (not the one
+   at the same position before the slide).
+4. A card with seven hulls or fewer looks as before (no slide). Run `ArenaHullStripTests`.
+5. Ask Shombith (style-B UI owner) to look at the arrows' look and placement.
+
 ### 🔴 The flight recorder keeps each rival's state (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** `HumanFlightRecorder.RecordRivalState` writes `rivalState` per rival per sample (state bits incl. AI /
