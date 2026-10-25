@@ -181,6 +181,11 @@ list.
 
 ## 5. The first upload to internal testing (by hand)
 
+> **Done — build 412826, 2026-10-14** (the status block at the top of this file has its current
+> state). This section is the record of what that upload involved, and steps 1 and 2 (account type,
+> tester list) are still worth re-reading whenever the tester list changes. **Every upload after
+> that one, including the 32-bit rebuild the status block asks for, goes through §6.**
+
 The Play Developer API cannot make an app's first upload, so this one goes through Play Console.
 
 1. **Check the account type**: Settings > Developer account > Account details.
