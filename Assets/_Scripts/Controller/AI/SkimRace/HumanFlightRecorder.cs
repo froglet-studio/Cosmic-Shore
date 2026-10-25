@@ -185,10 +185,17 @@ namespace CosmicShore.Gameplay
             {
                 if (_recording)
                 {
+                    // How the turn ended, read before anything else this frame: a match that ended by its own rules
+                    // (you finished, a rival won, a mode with no ring target timed out) still has your hull; leaving for
+                    // the menu has already despawned it. Whether YOU finished is the separate "finished" field. (The first
+                    // cut keyed this on the ring target and called every race a rival won, and every mode without rings,
+                    // "left": 43 of 73 flights, 2026-10-17 to 10-24.)
+                    bool matchStillHere = _player && _player.Vessel?.VesselStatus != null
+                                          && _gameData.Players != null && _gameData.Players.Count > 0;
                     // The ring that ended the race is threaded on this frame or the last; samples run at 10 Hz, so without
                     // this last one a finished race was written one ring short (23 / 24, Regatta 2026-10-16).
                     TakeSample(now);
-                    Finish(_target > 0 && LastRings() >= _target ? "race over" : "race left before the finish");
+                    Finish(matchStillHere ? "race over" : "left before the end");
                 }
                 _turnWasRunning = false;
                 return;

@@ -212,6 +212,20 @@ def console_rate_limits(log):
                if l.get("type") == "warning" and RATE_LIMIT.search(l.get("msg", "")))
 
 
+def longest_stall(events):
+    """B36: the longest frame freeze (seconds) a player's record marked while online, or 0. A freeze of
+    ~10 s loses the Relay connection ("player timed out due to inactivity")."""
+    longest = 0.0
+    for ev in events:
+        ev = ev[1] if isinstance(ev, tuple) else ev
+        if ev.get("e") == "stall":
+            try:
+                longest = max(longest, float((ev.get("detail") or "").split("s", 1)[0]))
+            except ValueError:
+                pass
+    return longest
+
+
 def peer_summary(log, name=None):
     rec = log.get("record") or {}
     con = log.get("console") or {}
@@ -223,9 +237,11 @@ def peer_summary(log, name=None):
     limits = f"{counted}" + (f" (console {seen})" if seen != counted else "")
     events = log["_events"] if "_events" in log else rec.get("lifecycle") or []
     carried = "  [record carried over from an earlier Play: counters and why may be that one's]" if log.get("_carried") else ""
+    freeze = longest_stall(events)
+    stall = f" longest freeze {freeze:.1f}s" if freeze else ""
     return (f"{name or log.get('peer', '?'):<10} {rec.get('role', '?'):<10} "
             f"{'CLEAN' if clean else 'DIRTY':<6} errors {con.get('errors', 0):<4} warnings {con.get('warnings', 0):<4} "
-            f"reads {counters.get('lobbyReads', 0)} 429s {limits} "
+            f"reads {counters.get('lobbyReads', 0)} 429s {limits}{stall} "
             f"events {len(events)}  ({log.get('why', '')}){carried}")
 
 
@@ -396,6 +412,13 @@ def self_test():
     check([peer_name(two[1], p) for p in two[1]["peers"]] == ["belac/main", "yskha/main"], "...whose players carry their sender")
     check(len(two[0]["peers"]) == 1 and peer_name(two[0], two[0]["peers"][0]) == "main",
           "a later Play that overlapped nothing stays its own test (negative control)")
+
+    # B36: a frozen frame shows on the player's summary line.
+    froze = parse(json.dumps(_fixture("main", "2026-10-20T19:58:24Z", "host",
+                  [(415.0, "stall", "12.4s in MinigameBloomrush"), (418.0, "relayDrop", "after a 12.4 s freeze 2.9 s earlier")], [])), "x", "owner")
+    check("longest freeze 12.4s" in peer_summary(froze), "a recorded freeze shows on the summary line")
+    calm = parse(json.dumps(_fixture("main", "2026-10-20T19:58:24Z", "host", [(5.0, "party", "a->b")], [])), "x", "owner")
+    check("freeze" not in peer_summary(calm), "...and nothing shows without one (negative control)")
 
     # B35: two players whose Netcode configs differ - the report names the prefab key only one has.
     h = at(_fixture("main", "2026-10-23T23:02:05Z", "host", [(1.0, "netConfig", "hash=00000000000000aa prefabs=2 11:Goby 22:Player")], []), "2026-10-23T23:10:00Z", "belac")
