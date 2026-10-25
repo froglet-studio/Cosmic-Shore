@@ -343,6 +343,10 @@ def build_view():
     nm = card.child(N("Pilot/Name", "Name", TL(210, 50, 400, 56)))
     nm.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Pilot", "Display", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("Display", "TextLight"))
+    # Rev 13: the name opens the name editor (the avatar opens the avatar editor). Its text takes the raycast.
+    nm.comps = [(k, cid, (lambda b: (lambda ctx, go: b(ctx, go).replace("  m_RaycastTarget: 0\n", "  m_RaycastTarget: 1\n", 1)))(body))
+                if k == "tmp" else (k, cid, body) for k, cid, body in nm.comps]
+    nm.add("button", 114, C.plain_button(c("Pilot/Name", "tmp")))
     btns = card.child(N("Pilot/Buttons", "Buttons", TL(210, 118, 400, 40)))
     btns.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 12, 3, (0, 0), (0, 0)))
     for key, cap in (("ChangeAvatar", "CHANGE AVATAR"), ("Rename", "RENAME")):
@@ -770,6 +774,7 @@ C.STUB_KIND.update({"ubutton": (114, A.BUTTON), "record": (114, S["record"])})
 SCREEN_REFS = {"displayNameText": ("Pilot/Name#tmp", "tmp"), "avatarImage": ("Pilot/Avatar/Icon#img", "img"),
                "gamesCompletedText": ("Pilot/GamesValue#tmp", "tmp"), "flightTimeText": ("Pilot/FlightValue#tmp", "tmp"),
                "sessionsText": ("Pilot/SessionsValue#tmp", "tmp"), "renameButton": ("Rename|root#button", "button"),
+               "nameButton": ("Pilot/Name#button", "ubutton"),
                "recordWindow": ("Record#record", "record"), "backButton": ("Back|root#button", "button")}
 SWITCHER = "4216411968520269688"            # Menu_Main's ScreenSwitcher (Back returns through it)
 AVATAR_BUTTONS = (("Pilot/Avatar#button", "ubutton"), ("ChangeAvatar|root#button", "button"))
@@ -933,7 +938,7 @@ def scene_transform(text):
 
 
 SCREEN_ORDER = ("displayNameText", "avatarImage", "gamesCompletedText", "flightTimeText", "sessionsText",
-                "profileWindow", "avatarButtons", "renameButton", "episodesButton", "episodes", "recordButton", "recordWindow",
+                "profileWindow", "avatarButtons", "renameButton", "nameButton", "episodesButton", "episodes", "recordButton", "recordWindow",
                 "backButton", "screenSwitcher")
 
 

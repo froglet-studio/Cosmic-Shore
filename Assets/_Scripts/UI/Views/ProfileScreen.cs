@@ -24,6 +24,8 @@ namespace CosmicShore.UI
         [SerializeField] private Button[] avatarButtons = { };
         [Tooltip("Opens the window on the Display name tab.")]
         [SerializeField] private Button renameButton;
+        [Tooltip("The pilot's name on the card: pressing it opens the name editor, as RENAME does (Rev 13).")]
+        [SerializeField] private Button nameButton;
         [Tooltip("The Episodes card; its press asks EpisodeScreen, which refuses while episodes are closed.")]
         [SerializeField] private Button episodesButton;
         [Tooltip("The (inactive) Episodes panel.")]
@@ -64,6 +66,7 @@ namespace CosmicShore.UI
             foreach (var b in avatarButtons)
                 if (b) b.onClick.AddListener(OpenAvatar);
             if (renameButton) renameButton.onClick.AddListener(OpenName);
+            if (nameButton) nameButton.onClick.AddListener(OpenName);
             if (episodesButton) episodesButton.onClick.AddListener(OpenEpisodes);
             if (recordButton) recordButton.onClick.AddListener(OpenRecord);
             if (backButton) backButton.onClick.AddListener(Back);

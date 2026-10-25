@@ -878,13 +878,17 @@ namespace CosmicShore.UI
             if (inFreestyle) return;
             if (HasActiveModal)
             {
-                // Inside a hub window LT / RT swap it for its neighbour (rev 7). Only while that window is the
-                // top modal: under a configure the triggers belong to the game, and a guided path or a preview
-                // holding the stick leaves the pad one way forward.
+                // Inside a hub window LB / RB swap it for its neighbour (the hub strip's keycaps), and LT / RT keep
+                // paging the top bar's screens, leaving the window (Shombith, 2026-10-25: "These should be swapped with
+                // LB and RB when inside the screen and LT and RT should still work"; rev 7 slid on LT / RT). Only while
+                // that window is the top modal: under a configure the pad belongs to the game, and a guided path or a
+                // preview holding the stick leaves the pad one way forward.
                 if (!guided && !ModePreviewWindow.AnyHasFocus && ActiveHubWindow != ModalWindows.NONE)
                 {
-                    if (Gamepad.current.leftTrigger.wasPressedThisFrame) SlideHubWindow(-1);
-                    else if (Gamepad.current.rightTrigger.wasPressedThisFrame) SlideHubWindow(+1);
+                    if (Gamepad.current.leftShoulder.wasPressedThisFrame) SlideHubWindow(-1);
+                    else if (Gamepad.current.rightShoulder.wasPressedThisFrame) SlideHubWindow(+1);
+                    else if (Gamepad.current.leftTrigger.wasPressedThisFrame) { CloseAllModals(); NavigateLeft(); }
+                    else if (Gamepad.current.rightTrigger.wasPressedThisFrame) { CloseAllModals(); NavigateRight(); }
                 }
                 return;
             }

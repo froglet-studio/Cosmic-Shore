@@ -65,7 +65,9 @@ SLIDE_DISTANCE, SLIDE_SECONDS = 160, 0.32   # ScreenSwitcher.hubSlideDistance / 
 STRIP_TOP, STRIP_H = 104, 44
 WORD_GAP = 30                     # between two words
 CHEVRON = 14                      # the strip's small chevrons
-KEYCAP_W = K.label_width("LT", "Label") + 24
+# The strip's keycaps read LB / RB (Shombith, 2026-10-25): the shoulders slide the hub windows, the triggers page the
+# top bar. Node keys keep their LT / RT names so every fileID stays put.
+KEYCAP_W = max(K.label_width(w, "Label") for w in ("LB", "RB", "LT", "RT")) + 24
 KEYCAP_H = K.line_height("Label") + 8
 # The edge arrows: a glass plate inside the windows' gutters, centred on the screen's height, the chevron above the
 # neighbour's name. The gutters are author_menu_arcade.py's WINDOW_LEFT / WINDOW_RIGHT (100 / 60): a plate 52 wide,
@@ -144,7 +146,7 @@ def chevron(parent, k, name, r, colour):
 def strip_node(host):
     parts, width = strip_layout()
     s = host.child(N("Strip", "Strip", R((0.5, 1), None, (0, -STRIP_TOP), (width, STRIP_H), (0.5, 1))))
-    for side, text_ in (("LTKeycap", "LT"), ("RTKeycap", "RT")):
+    for side, text_ in (("LTKeycap", "LB"), ("RTKeycap", "RB")):
         slot = s.child(N(f"Strip/{side}", side, R((0, 0.5), None, (parts[side], 0), (KEYCAP_W, KEYCAP_H), (0, 0.5))))
         slot.children.append(P.Inst(f"Strip/{side}/Keycap", "KitKeycap", "Keycap", STRETCH, [("Label#tmp", "m_text", text_, None)]))
     for side in ("LeftChevron", "RightChevron"):

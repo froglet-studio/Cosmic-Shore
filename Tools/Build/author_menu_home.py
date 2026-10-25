@@ -80,7 +80,7 @@ IDS = dict(
     bar_text_rt="1060766722", bar_text="1060766723",
     accept_go="909973148", accept_rt="909973149", accept_img="909973151", accept_icon_rt="1829191283", accept_icon="1829191284",
     cancel_go="1110576754", cancel_rt="1110576755", cancel_img="1110576757", cancel_icon_rt="1002720939", cancel_icon="1002720940",
-    name_go="7613213338458363602", name_rt="8076153094407706410", name_img="1014305526008866599",
+    name_btn="151569430713730966", name_go="7613213338458363602", name_rt="8076153094407706410", name_img="1014305526008866599",
     name_text_rt="8019494028173304602", name_text="1674904252436572557",
     avatar_go="3602970348709213962", avatar_rt="5738383061455623117", avatar_img="7652523670908676547",
     avatar_btn="4628693416680068390",
@@ -463,6 +463,13 @@ def patch_header(p):
     p.add_comp(I["avatar_go"], "button", 114, lambda ctx, go: mono(go, A.BUTTON,
                A.selectable() + f"  m_TargetGraphic: {ref(I['avatar_img'])}\n"
                + A.calls([(SWITCHER, "CosmicShore.UI.ScreenSwitcher", "OnClickProfileNav")])))
+    # The name's own Button opens it too (Shombith, 2026-10-25: "Clicking on the avatar or name should bring up the whole
+    # profile"); it opened the display-name editor, which is the profile's own now. Its press sound stays.
+    nb = p.doc(I["name_btn"])
+    nb = re.sub(r"(      - m_Target: )\{fileID: " + PROFILE_WINDOW + r"\}\n        m_TargetAssemblyTypeName: [^\n]*\n(?:          [^\n]*\n)?        m_MethodName: OpenDisplayName\n",
+                lambda m: f"{m.group(1)}{{fileID: {SWITCHER}}}\n        m_TargetAssemblyTypeName: CosmicShore.UI.ScreenSwitcher, Assembly-CSharp\n"
+                          "        m_MethodName: OnClickProfileNav\n", nb)
+    p.replace(I["name_btn"], nb)
 
     # Lamp: a diamond on the avatar's corner; no profile call (it asks Go offline?).
     p.rect(I["lamp_rt"], R((1, 0), (1, 0), (4, 4), (28, 28), (0.5, 0.5)))
@@ -863,6 +870,8 @@ def validate(files):
     avatar_btn = str(ctx.fid(f"{I['avatar_go']}#button"))
     assert sc.has(avatar_btn) and f"m_Target: {{fileID: {SWITCHER}}}" in sc.docs[avatar_btn] \
         and "m_MethodName: OnClickProfileNav\n" in sc.docs[avatar_btn], "pressing the Home pilot no longer opens the profile"
+    nb = sc.docs[I["name_btn"]]
+    assert "m_MethodName: OnClickProfileNav\n" in nb and "OpenDisplayName" not in nb, "pressing the Home pilot's name does not open the profile"
     assert sc.script(PROFILE_WINDOW) == C.script("ProfileIconSelectView"), "PROFILE_WINDOW is not the profile window"
     lamp = sc.docs[I["lamp_comp"]]
     assert f"  statusLabel: {{fileID: {ctx.c('Name/Status', 'tmp')}}}" in lamp, "the lamp's status label is unwired"
@@ -968,8 +977,14 @@ def self_test(files):
 
     def avatar_dead(f):
         s = f[SCENE]
-        i = s.index("m_MethodName: OpenAvatar\n", s.index(f"  m_TargetGraphic: {{fileID: {IDS['avatar_img']}}}"))
-        f[SCENE] = s[:i] + "m_MethodName: OpenAvatarX\n" + s[i + len("m_MethodName: OpenAvatar\n"):]
+        i = s.index("m_MethodName: OnClickProfileNav\n", s.index(f"  m_TargetGraphic: {{fileID: {IDS['avatar_img']}}}"))
+        f[SCENE] = s[:i] + "m_MethodName: OnClickProfileNavX\n" + s[i + len("m_MethodName: OnClickProfileNav\n"):]
+
+    def name_dead(f):
+        s = f[SCENE]
+        i = s.index(f"--- !u!114 &{I['name_btn']}\n")
+        j = s.index("--- ", i + 4)
+        f[SCENE] = s[:i] + s[i:j].replace("m_MethodName: OnClickProfileNav\n", "m_MethodName: OpenDisplayName\n") + s[j:]
 
     def arcade_unfocused(f):
         hub = HUBS[1][5]
@@ -981,6 +996,7 @@ def self_test(files):
         ("the invite's drop-in stripped", lambda f: f.__setitem__(invite_path(), M.strip_entrances(f[invite_path()]))),
         ("the lamp's status label unwired", unwire_status),
         ("the Home avatar no longer opens the profile window", avatar_dead),
+        ("the Home pilot's name back on the name editor", name_dead),
         ("Arcade not the pad's first stop", arcade_unfocused),
         ("a hub left a plain Button", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"guid: {S['kitbutton']}", f"guid: {S['button']}", 1))),
