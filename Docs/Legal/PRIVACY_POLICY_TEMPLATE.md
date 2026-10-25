@@ -119,7 +119,8 @@ play ("bots"), abusive names or messages, and repeated quitting or griefing.
 how your vessel moved during a match; whether a score, purchase or reward request matches the
 game's rules; the platform's check that the game and device are genuine (Apple App Attest and
 DeviceCheck, Google Play Integrity); which platform account you signed in with; reports other
-players make about you; how often you leave matches early; and the birth year you entered on the
+players make about you; how often you leave matches early; when you start matches and how long they
+take (to spot automated play); and the birth year you entered on the
 age screen, so we know who is under 18. We **do not** scan your device, read other apps or files,
 or install anything outside the game.
 

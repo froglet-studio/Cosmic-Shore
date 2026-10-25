@@ -11,7 +11,7 @@ player's device, so a modified game cannot change what it decides. Part of the f
 | `CloudCode/weekly-score.js` | The only writer of the weekly-challenge leaderboards: refuses unknown boards, times under `RULES.minSeconds` (20 s), posts closer than 20 s apart and more than 200 a week | T2 |
 | `CloudCode/weekly-score.test.cjs` | `node Tools/UGS/CloudCode/weekly-score.test.cjs` | T2 |
 | `AccessControl/project-policy.json` | Denies players any direct leaderboard write, so `weekly-score` is the only way onto a board | T2 |
-| `CloudCode/match-report.js` | Every player reports each match (`start`, `end`). Counts quits without the quitter's help (`FAIRPLAY_CONDUCT`: started, finished, left, leave rate over the last 20) and compares the players' end reports of one match, recording a `host_result_mismatch` signal against the host in `FAIRPLAY_SIGNALS` when they disagree | T4, T9 |
+| `CloudCode/match-report.js` | Every player reports each match (`start`, `end`); also keeps the birth year (R13) and raises the two bot-farming signals (R10). Counts quits without the quitter's help (`FAIRPLAY_CONDUCT`: started, finished, left, leave rate over the last 20) and compares the players' end reports of one match, recording a `host_result_mismatch` signal against the host in `FAIRPLAY_SIGNALS` when they disagree | T4, T9 |
 | `CloudCode/match-report.test.cjs` | `node Tools/UGS/CloudCode/match-report.test.cjs` | T4, T9 |
 | `AccessControl/moderation-policy.json` | Lets players send reports to UGS Moderation (the Report button on the profile popup) | T8 |
 | (no file) | Steam sign-in is a dashboard identity provider plus `Assets/Resources/SteamConfig.asset`, below | T1 |
@@ -61,7 +61,7 @@ old direct write open.
 Off in the game (`MatchReportGate.Enabled = false` in `Assets/_Scripts/System/CloudData/ServerMatchReports.cs`; while
 off, `MatchReporter` is never attached).
 
-1. `node Tools/UGS/CloudCode/match-report.test.cjs` prints `14 passed`.
+1. `node Tools/UGS/CloudCode/match-report.test.cjs` prints `21 passed`.
 2. `ugs deploy Tools/UGS/CloudCode/match-report.js` (development first).
 3. Set `MatchReportGate.Enabled = true` in a test build and run the "Match reports" editor checks in
    `Docs/UNITY_VERIFICATION_CHECKLIST.md`. Read a player's `FAIRPLAY_CONDUCT` and a host's `FAIRPLAY_SIGNALS` in the
@@ -71,6 +71,11 @@ off, `MatchReporter` is never attached).
 Minors (R13): each `start` carries the birth year the age screen recorded, kept in the protected key `FAIRPLAY_AGE`
 (only ever moved younger). A player not surely 18, or of unknown age, gets no quit record, and every signal about them
 carries `review: "human"`. Phase B's trust record must never move such an account automatically.
+
+Bot farming (R10), observe only: a player who starts matches in 20 distinct hours of the last 24 gets an
+`around_the_clock` signal, and one whose last 6 finished matches of a mode (each over 30 s) took the same time to within
+2% gets `repetitive_results`, both in their own `FAIRPLAY_SIGNALS` with the numbers. Limits are `RULES` at the top of
+the script. Not run for minors.
 
 What it does not do yet: nothing acts on the record. The leave rate and the signals wait for the trust record and the
 Undertow (phase B), and a host that tells every player the same false scores is not caught (that needs a server the

@@ -2441,3 +2441,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (Netcode, vessels; has offered to take tasks)
 - **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261025-cebb · open · decision · Fair play
+- **Task:** Fair play - R10 phase C: may the human-vs-AI flight classifier train on HumanFlightRecorder flights and the AI pilots' flights (Docs/AI_SYSTEM/AI_DATA_IN_UGS.md)? It would read them without trimming or replacing them, and needs the players' own consent question before any release-build sample (Docs/AntiCheat/README.md 4.4)
+- **Done when:** Yash and Garrett have said yes or no, and the answer is written in Docs/AntiCheat/README.md 4.4
+- **Who can take it:** Yash and Garrett (own the flight data)
+- **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Docs/AntiCheat/README.md

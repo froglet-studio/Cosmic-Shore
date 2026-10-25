@@ -142,5 +142,71 @@ async function test(name, fn) { await fn(); passed++; console.log("ok -", name);
     assert.equal(signalsOf("host2")[0].review, "standard", "an adult host's signal is standard");
   });
 
+  // ---- Bot farming (Threat Board R10) ----
+  const T0 = Date.UTC(2026, 9, 25, 0, 5);
+  const H = 3600000;
+  const startAt = (c, t, id = "f") => apply(c, { action: "start", matchId: id, mode: "SkimRace", hostId: "h" }, t, true, "me");
+  const endAt = (c, t, id = "f", score = 10) =>
+    apply(c, { action: "end", matchId: id, mode: "SkimRace", hostId: "h", scores: [{ id: "me", score }] }, t, true, "me");
+
+  await test("starting matches in 20 hours of one day raises around_the_clock once", () => {
+    const c = emptyConduct(); const raised = [];
+    for (let h = 0; h < 22; h++) raised.push(...startAt(c, T0 + h * H).selfSignals);
+    assert.equal(raised.length, 1); assert.equal(raised[0].kind, "around_the_clock"); assert.equal(raised[0].activeHours, 20);
+  });
+
+  await test("a long human session (8 hours, a match every 5 minutes) raises nothing", () => {
+    const c = emptyConduct(); let n = 0;
+    for (let t = T0; t < T0 + 8 * H; t += 5 * 60000) n += startAt(c, t).selfSignals.length;
+    assert.equal(n, 0);
+  });
+
+  await test("six matches of one mode within half a second of each other raise repetitive_results", () => {
+    const c = emptyConduct(); const raised = []; let t = T0;
+    for (let i = 0; i < 6; i++) {
+      startAt(c, t, "r" + i); t += 120000 + (i % 2 ? 400 : -300);
+      raised.push(...endAt(c, t, "r" + i).selfSignals); t += 60000;
+    }
+    assert.equal(raised.length, 1); assert.equal(raised[0].kind, "repetitive_results");
+    assert.ok(raised[0].durationCv < 0.01); assert.deepEqual(raised[0].scores, [10, 10, 10, 10, 10, 10]);
+  });
+
+  await test("human variation in match time raises nothing", () => {
+    const c = emptyConduct(); let n = 0, t = T0;
+    const lengths = [118, 131, 109, 140, 125, 115, 122, 137];
+    lengths.forEach((L, i) => { startAt(c, t, "v" + i); t += L * 1000; n += endAt(c, t, "v" + i).selfSignals.length; t += 60000; });
+    assert.equal(n, 0);
+  });
+
+  await test("matches under 30 s are never compared", () => {
+    const c = emptyConduct(); let n = 0, t = T0;
+    for (let i = 0; i < 8; i++) { startAt(c, t, "s" + i); t += 10000; n += endAt(c, t, "s" + i).selfSignals.length; t += 5000; }
+    assert.equal(n, 0);
+  });
+
+  await test("no farming check for a minor (R13)", () => {
+    const c = emptyConduct(); let n = 0, t = T0;
+    for (let h = 0; h < 24; h++) {
+      n += apply(c, { action: "start", matchId: "m" + h, mode: "SkimRace", hostId: "h" }, t, false, "me").selfSignals.length;
+      t += 120000;
+      n += apply(c, { action: "end", matchId: "m" + h, mode: "SkimRace", hostId: "h", scores: [] }, t, false, "me").selfSignals.length;
+      t = T0 + (h + 1) * H;
+    }
+    assert.equal(n, 0);
+  });
+
+  await test("a farming signal is stored on the player's own record with the review rule", async () => {
+    const realNow = Date.now; let fake = Date.UTC(Y, 2, 1, 0, 1);
+    Date.now = () => fake;
+    try {
+      for (let h = 0; h < 20; h++) {
+        await call("farm", { action: "start", matchId: "x" + h, mode: "SkimRace", hostId: "farm", players: ["farm"] });
+        fake += H;
+      }
+    } finally { Date.now = realNow; }
+    const s = signalsOf("farm");
+    assert.equal(s.length, 1); assert.equal(s[0].kind, "around_the_clock"); assert.equal(s[0].review, "standard");
+  });
+
   console.log(`\n${passed} passed`);
 })().catch((e) => { console.error("FAILED:", e); process.exit(1); });

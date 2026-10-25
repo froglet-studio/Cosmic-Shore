@@ -22,6 +22,12 @@
 // Code default), and every signal recorded about them says review: "human", which phase B must honour (no
 // automatic Undertow for a child). Security checks still run: a minor host's mismatching results are recorded.
 //
+// Bot farming (Threat Board R10; README section 4.4), from the same reports and observe only: a player who starts
+// matches in RULES.clockMaxActiveHours distinct hours of the last 24 (no person plays around the clock), or whose
+// last RULES.repeatMatches finished matches of one mode took almost exactly the same time (a script replaying a
+// route; people vary by far more than RULES.repeatMaxDurationCv), gets a signal in their own FAIRPLAY_SIGNALS with
+// the numbers. Not for minors: it is a behaviour profile (R13). The human-versus-AI flight classifier is phase C.
+//
 // Params: action ("start" | "end"), matchId, mode, hostId, players (JSON array of UGS ids),
 //         scores (JSON array of { id, score }; end only), winner (end only), birthYear (start only; 0 = unknown)
 // Returns: { ok, reason, matchesStarted, matchesLeft, leaveRate }
@@ -44,7 +50,46 @@ const RULES = {
   adultAge: 18,               // surely this old by the birth year alone: nowYear - birthYear - 1 >= adultAge
   oldestAge: 100,
   keepConductForMinors: false, // quit counting is a behaviour profile; off for minors unless counsel says otherwise
+  // Bot farming (R10)
+  clockMaxActiveHours: 20,     // distinct hours with a match start in the last 24 h
+  clockSignalCooldownHours: 24,
+  repeatMatches: 6,            // finished matches of one mode compared
+  repeatMinSeconds: 30,        // shorter matches are ignored (a quick quit-and-retry is not a route)
+  repeatMaxDurationCv: 0.02,   // standard deviation / mean of their durations
+  repeatSignalCooldownHours: 6,
 };
+
+const HOUR_MS = 3600000;
+
+// Pure: records a match start's hour and returns an around_the_clock signal, or null.
+function clockSignal(c, nowMs) {
+  const hour = Math.floor(nowMs / HOUR_MS);
+  c.hours = (Array.isArray(c.hours) ? c.hours : []).filter((h) => h > hour - 48);
+  if (!c.hours.includes(hour)) c.hours.push(hour);
+  const active = c.hours.filter((h) => h > hour - 24).length;
+  if (active < RULES.clockMaxActiveHours) return null;
+  if (c.lastClockSignalAt && nowMs - c.lastClockSignalAt < RULES.clockSignalCooldownHours * HOUR_MS) return null;
+  c.lastClockSignalAt = nowMs;
+  return { kind: "around_the_clock", activeHours: active, limit: RULES.clockMaxActiveHours, at: nowMs };
+}
+
+// Pure: after a finished match, a repetitive_results signal when the last finished matches of its mode took almost
+// exactly the same time, or null.
+function repeatSignal(c, report, playerId, nowMs) {
+  const same = c.recent.filter((m) => !m.left && m.mode === report.mode && m.endedAt - m.startedAt >= RULES.repeatMinSeconds * 1000);
+  if (same.length < RULES.repeatMatches) return null;
+  const last = same.slice(-RULES.repeatMatches);
+  const durations = last.map((m) => (m.endedAt - m.startedAt) / 1000);
+  const mean = durations.reduce((a, b) => a + b, 0) / durations.length;
+  const sd = Math.sqrt(durations.reduce((a, d) => a + (d - mean) * (d - mean), 0) / durations.length);
+  const cv = mean > 0 ? sd / mean : 1;
+  if (cv > RULES.repeatMaxDurationCv) return null;
+  if (c.lastRepeatSignalAt && nowMs - c.lastRepeatSignalAt < RULES.repeatSignalCooldownHours * HOUR_MS) return null;
+  c.lastRepeatSignalAt = nowMs;
+  const own = last.map((m) => { const s = (m.scores || []).find((x) => x.id === playerId); return s ? s.score : null; });
+  return { kind: "repetitive_results", mode: report.mode, durations, durationCv: Math.round(cv * 10000) / 10000,
+    limit: RULES.repeatMaxDurationCv, scores: own, at: nowMs };
+}
 
 // Pure: the stored birth year after a report. Only a later (younger) year replaces a stored one.
 function mergeBirthYear(stored, reported, nowYear) {
@@ -97,9 +142,9 @@ function closeOpenAsLeft(c, trackConduct) {
   c.open = null;
 }
 
-// Pure: applies one report to one player's conduct record. Returns { ok, reason, report? }.
-// trackConduct false (a minor): unfinished matches are dropped, never counted as left.
-function apply(c, params, nowMs, trackConduct = true) {
+// Pure: applies one report to one player's conduct record. Returns { ok, reason, report?, selfSignals? }.
+// trackConduct false (a minor): unfinished matches are dropped, never counted as left, and no farming check runs.
+function apply(c, params, nowMs, trackConduct = true, playerId = "") {
   if (c.open && nowMs - c.open.at > RULES.openTimeoutMinutes * 60000) closeOpenAsLeft(c, trackConduct);
 
   if (typeof params.mode !== "string" || params.mode.length === 0 || params.mode.length > 48) return { ok: false, reason: "bad_mode" };
@@ -111,7 +156,8 @@ function apply(c, params, nowMs, trackConduct = true) {
     closeOpenAsLeft(c, trackConduct); // the previous match was never finished
     if (trackConduct) c.matchesStarted++;
     c.open = { matchId: params.matchId, mode: params.mode, hostId: params.hostId, at: nowMs, players };
-    return { ok: true };
+    const clock = trackConduct ? clockSignal(c, nowMs) : null;
+    return { ok: true, selfSignals: clock ? [clock] : [] };
   }
 
   if (params.action === "end") {
@@ -127,7 +173,8 @@ function apply(c, params, nowMs, trackConduct = true) {
     if (trackConduct) c.matchesFinished++;
     c.open = null;
     pushRecent(c, report);
-    return { ok: true, report };
+    const repeat = trackConduct ? repeatSignal(c, report, playerId, nowMs) : null;
+    return { ok: true, report, selfSignals: repeat ? [repeat] : [] };
   }
 
   return { ok: false, reason: "unknown_action" };
@@ -175,7 +222,7 @@ module.exports = async ({ params, context, logger }) => {
   for (let attempt = 0; attempt < 3; attempt++) {
     const loaded = await loadProtected(api, projectId, playerId, CONDUCT_KEY);
     const conduct = Object.assign(emptyConduct(), loaded.value || {});
-    const result = apply(conduct, params, nowMs, trackConduct);
+    const result = apply(conduct, params, nowMs, trackConduct, playerId);
     if (!result.ok) return summary(conduct, false, result.reason);
 
     try {
@@ -183,6 +230,12 @@ module.exports = async ({ params, context, logger }) => {
     } catch (e) {
       if (e && e.response && e.response.status === 409 && attempt < 2) continue;
       throw e;
+    }
+
+    if (result.selfSignals && result.selfSignals.length > 0) {
+      try { await appendSignals(api, projectId, playerId, result.selfSignals.map((x) => ({ ...x, review: reviewFor(birthYear, nowYear) }))); }
+      catch (e) { logger.warning(`match report saved; farming signal not stored: ${e.message}`); }
+      for (const x of result.selfSignals) logger.info(`${x.kind}: player ${playerId}`);
     }
 
     if (result.report) {
@@ -206,6 +259,14 @@ async function updateBirthYear(api, projectId, playerId, params, nowYear) {
   return merged;
 }
 
+async function appendSignals(api, projectId, playerId, added) {
+  const loaded = await loadProtected(api, projectId, playerId, SIGNALS_KEY);
+  const signals = Array.isArray(loaded.value) ? loaded.value : [];
+  signals.push(...added);
+  if (signals.length > RULES.maxSignals) signals.splice(0, signals.length - RULES.maxSignals);
+  await saveProtected(api, projectId, playerId, SIGNALS_KEY, signals, loaded.writeLock);
+}
+
 async function compareWithOthers(api, projectId, playerId, report, logger) {
   const others = report.players.filter((id) => id !== playerId);
   for (const other of others) {
@@ -215,13 +276,10 @@ async function compareWithOthers(api, projectId, playerId, report, logger) {
     const diff = disagreements(report, same);
     if (diff.length === 0) continue;
 
-    const host = await loadProtected(api, projectId, report.hostId, SIGNALS_KEY);
     const hostAge = (await loadProtected(api, projectId, report.hostId, AGE_KEY)).value;
     const review = reviewFor(hostAge && hostAge.birthYear, new Date().getUTCFullYear());
-    const signals = Array.isArray(host.value) ? host.value : [];
-    signals.push({ kind: "host_result_mismatch", mode: report.mode, startedAt: report.startedAt, reporters: [playerId, other], diff, review, at: Date.now() });
-    if (signals.length > RULES.maxSignals) signals.splice(0, signals.length - RULES.maxSignals);
-    await saveProtected(api, projectId, report.hostId, SIGNALS_KEY, signals, host.writeLock);
+    await appendSignals(api, projectId, report.hostId,
+      [{ kind: "host_result_mismatch", mode: report.mode, startedAt: report.startedAt, reporters: [playerId, other], diff, review, at: Date.now() }]);
     logger.info(`host_result_mismatch: host ${report.hostId}, ${report.mode}, reporters ${playerId} and ${other}`);
   }
 }
@@ -237,4 +295,5 @@ module.exports.params = {
   birthYear: { type: "Numeric", required: false },
 };
 
-module.exports._test = { apply, findSameMatch, disagreements, leaveRate, emptyConduct, mergeBirthYear, treatAsMinor, reviewFor, RULES };
+module.exports._test = { apply, findSameMatch, disagreements, leaveRate, emptyConduct, mergeBirthYear, treatAsMinor, reviewFor,
+  clockSignal, repeatSignal, RULES };
