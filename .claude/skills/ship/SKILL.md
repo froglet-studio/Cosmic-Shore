@@ -78,6 +78,13 @@ ten minutes, a green run of it (negative-controlled) IS evidence, and the verifi
 "compiled against Unity reference assemblies (`unity_refcompile`), not opened in the editor" instead
 of "not compiled". How to run it, and its false positives: `/asset-surgery` §4.
 
+**A green `unity_refcompile` does not cover Amoebius.** Amoebius compiles the same `Assets/_Scripts` against its own
+`UnityEngine` shim, as a development build with no platform symbol, so a Unity API the shim lacks breaks the engine
+and nothing on the Unity side notices (2026-10-19: `Debug.developerConsoleEnabled`, CS0117). When the branch calls a
+Unity API the game did not call before, `dotnet build Port/src/CosmicShore.Live` (.NET 10 SDK, `dotnet-install.sh
+--channel 10.0`, about 2 minutes) is the check; `Docs/CONDITIONAL_COMPILATION.md` "The Amoebius variant" has the
+guard that keeps player-only APIs out of it.
+
 **§2.5 is NOT one of these.** The tool-output gate is a git and filesystem question — did the
 WRITER tool's assets land in a commit — and it needs no compiler, no editor and no CI. It
 runs in full, in every mode.
@@ -124,6 +131,11 @@ run the `/reorient` skill first and act on its verdict before shipping.
   the same branch, `git diff` between the two merge commits' trees was EMPTY, which is better
   evidence the resolution is right than any amount of re-reading it.
 
+- **A `.prefab` / `.unity` conflict is resolved per OBJECT, never per line:** `/asset-surgery` § "resolve a
+  `.unity` / `.prefab` MERGE per OBJECT" and `Tools/Build/merge_unity_scene.py`, with its five assertions. That
+  includes the shape where each side DELETED different adjacent documents. Git then pairs one side's deleted
+  object against the other's surviving neighbour, and every "keep both" builds an object out of two. (2026-10-18:
+  the Rhino rig swap against bleeding-edge's HUD cleanup, 74 deletions and 0 genuine conflicts.)
 - **Merge the base branch in before reviewing**, so you resolve conflicts rather than
   leaving them for a reviewer, and so §2 reviews the tree that will actually land.
   **`git fetch` the base again right before you open the PR, and treat a moved tip as a
@@ -334,6 +346,24 @@ run the `/reorient` skill first and act on its verdict before shipping.
   For each name that still exists (`git ls-remote origin refs/heads/<name>`), run
   `git fetch --depth=50 origin <name>` and then
   `git log --oneline origin/<base>..FETCH_HEAD -- <your changed files>`.
+- **Taking THEIR side of a file your branch refactored voids your branch's PROSE about that refactor, and nothing
+  conflicts there.** `cece/sharp-tesla-j0kd7z` moved the Wrasse's `KiteNavigator` onto a shared `ICrewSeat`; the next
+  base merge (2026-10-21) took bleeding-edge's `KiteNavigator` wholesale because it had grown its own crew system. The
+  code was right after that. Five claims that the Wrasse ran on the shared pieces were still in the docs: a CLOSED team
+  task, a verification-checklist entry, the project overview row, a report and the brief. A closed task is the worst of
+  them, because nobody re-reads a done row. After any take-theirs on a file your branch changed, grep your branch's diff
+  for the file's types (`git diff <merge-base>..HEAD -- '*.md' | grep <Type>`) and correct or reopen each claim.
+- **An add/add conflict on a `.meta` is two GUIDs for one asset path, and taking one side wholesale
+  orphans every reference to the other.** Two branches each created `RampBoostAIPolicySO.cs` and
+  `RhinoAIBoostPolicy.asset` (2026-10-17, `cece/relaxed-hopper-r62hbd` against bleeding-edge), so
+  the file names matched and the guids did not. `git checkout --theirs` on the four files is the
+  right resolve, but the branch's own `Rhino.prefab` still pointed `boostPolicy` at the LOSING
+  asset guid. It surfaced here only because both sides had edited that prefab line. Had the other
+  branch not wired the prefab, the line would have auto-merged to a guid no file carries: a null
+  policy, and "the AI quietly never ramps" in play. After taking a side on any `AA` `.meta`,
+  `git grep` the losing guid across `Assets/` and repoint every hit. Two quicker tells that the
+  other copy is the one to keep: its doc comment names your branch as a source, or a
+  `Docs/TEAM_TASKS.md` row already flags the duplicate.
 - **"Pick one wholesale" is right when the two fixes have the same BLAST RADIUS, and wrong when
   they do not — ask about scope before you discard either.** The collision above assumes two
   implementations of one fix. The other shape is two fixes at different ALTITUDES, and there
@@ -941,14 +971,13 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
   in-flight or recent work in those paths, the PR body gets an **Affects** line ("Affects: Garrett's
   `cece/zen-fermat` Stoat modes - builds on them, changes nothing they decided"). A branch that would replace or
   re-tune another collaborator's work is a NO-GO until the person you work with has confirmed it with them (§4).
-- **Hand-offs** (`Docs/TEAM.md` rule 9): anything the branch leaves for a person (an editor test, a playtest, a
-  dashboard step, content, an owner's decision) is a task on `Docs/TEAM_TASKS.md` (`python3 Tools/Build/team_tasks.py
-  add ...`), naming who can take it (Yash has offered to take tasks). Close the tasks the branch finished. Then put
-  `python3 Tools/Build/team_tasks.py pr-section` in the PR body as its **Hand-offs** section, and run
-  `team_tasks.py --check`.
-- If the branch used or touched Amoebius or the Vessel Studio (both under evaluation, `Docs/TOOLING_DECISIONS.md`)
-  and `Docs/TOOLING_FEEDBACK.md` has no row for that tool from the last three days, ask the person the one feedback
-  question and commit their answer before opening the PR.
+- **Hand-offs** (`Docs/TEAM.md` rule 9, the `/team-tasks` skill): anything the branch leaves for a person (an editor
+  test, a playtest, a dashboard step, content, a decision) goes on the branch's ONE ticket (`/team-tasks add`; a second
+  `add` appends a checklist line), naming nobody: tickets are never assigned; taking one makes it the taker's, and naming a branch starts it. Close
+  the tickets the branch finished (`team_tasks.py done <id> --note <proof>`). Then put
+  `python3 Tools/Build/team_tasks.py pr-section` in the PR body as its **Hand-offs** section.
+- Do not ask whether Amoebius or the Vessel Studio helped: the decision is recorded (`Docs/TOOLING_DECISIONS.md`
+  §6, 2026-10-19) and Shombith asked sessions to stop. Keep Vessel Studio work out of `Port/`.
 - Check for a PR template (`.github/pull_request_template.md` and variants); mirror its
   structure if present.
 - PR body: what & why, per-system summary, **verification status** (what a human must

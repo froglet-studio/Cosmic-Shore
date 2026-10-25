@@ -172,6 +172,11 @@ namespace CosmicShore.Gameplay
             if (!stamped && prism != null && prism.TryEnsureRenderEntityForStamp())
                 stamped = PrismRenderService.StampGrow(in prism.RenderHandle, now, k, in startFrac);
 
+            // No Entities Graphics on this device (a WebGL2 browser): the same stamp rides the
+            // MeshRenderer's property block (Docs/PRISM_ANIMATION.md §4.11). False everywhere else.
+            if (!stamped)
+                stamped = PrismMeshRendererStamps.StampGrow(meshRenderer, now, k, in startFrac);
+
             if (!stamped)
                 PrismClockDiagnostics.WarnNoRenderEntity($"grow:{name}", this,
                     prism != null
@@ -342,6 +347,9 @@ namespace CosmicShore.Gameplay
                 {
                     PrismRenderService.StampGrow(in prism.RenderHandle,
                         PrismClock.SettledPast, _clockK, in _clockStartFrac);
+                    // The MeshRenderer twin of "rewrite into the past" is removal: the settled
+                    // material is the end state (no-op off the §4.11 path).
+                    PrismMeshRendererStamps.ClearGrowStamp(meshRenderer);
                     _clockSettleTime = PrismClock.Now;
                 }
                 return;

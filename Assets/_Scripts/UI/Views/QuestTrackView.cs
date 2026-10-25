@@ -48,6 +48,14 @@ namespace CosmicShore.UI
         [Tooltip("World-space distance from viewport center at which min values are reached")]
         [SerializeField] private float parallaxFalloff = 400f;
 
+        [Header("Summary (optional)")]
+        [Tooltip("\"1 of 5 complete\": quests claimed out of the list.")]
+        [SerializeField] private TMP_Text summaryText;
+        [Tooltip("The summary's line. {claimed} is the quests claimed, {total} the quests listed. Empty shows nothing.")]
+        [SerializeField] private string summaryLine = "{claimed} of {total} complete";
+        [Tooltip("The description of a placeholder quest (SO_UnlockData.IsPlaceholder). Empty shows nothing.")]
+        [SerializeField] private string comingSoonLine = "Coming Soon";
+
         private readonly List<QuestItemCard> _cards = new();
         private readonly List<CanvasGroup> _descriptionLabels = new();
         private ScreenSwitcher _screenSwitcher;
@@ -143,6 +151,7 @@ namespace CosmicShore.UI
 
                 card.Configure(questList.Quests[i]);
                 card.SetState(GetCardState(i));
+                card.SetContext(i, MaxIntensityOf(questList.Quests[i]), PreviousQuestName(i));
 
                 int cardIndex = i;
                 card.BindClaimAction(() => HandleClaimPressed(cardIndex));
@@ -181,46 +190,44 @@ namespace CosmicShore.UI
 
         // ── Card State ────────────────────────────────────────────────────────
 
-        QuestItemState GetCardState(int questIndex)
-        {
-            var quest = questList.Quests[questIndex];
-            var service = GameModeProgressionService.Instance;
-            bool isUnlocked = questIndex == 0 || (service != null && service.IsGameModeUnlocked(quest.GameMode));
-            if (!isUnlocked) return QuestItemState.Locked;
-
-            if (questIndex + 1 < questList.Quests.Count && service != null
-                && service.IsGameModeUnlocked(questList.Quests[questIndex + 1].GameMode))
-                return QuestItemState.Claimed;
-
-            if (quest.IsPlaceholder)
-                return QuestItemState.ReadyToClaim;
-
-            if (service != null && service.IsQuestCompleted(quest.GameMode))
-                return QuestItemState.ReadyToClaim;
-
-            return QuestItemState.Unlocked;
-        }
+        QuestItemState GetCardState(int questIndex) =>
+            QuestFrontier.StateOf(questList, questIndex, GameModeProgressionService.Instance);
 
         void RefreshAllCards()
         {
+            int claimed = 0;
             for (int i = 0; i < _cards.Count && i < questList.Quests.Count; i++)
-                _cards[i].SetState(GetCardState(i));
+            {
+                var state = GetCardState(i);
+                _cards[i].SetState(state);
+                _cards[i].SetContext(i, MaxIntensityOf(questList.Quests[i]), PreviousQuestName(i));
+                if (state == QuestItemState.Claimed) claimed++;
+            }
+            if (summaryText && questList != null)
+                summaryText.text = TemplateText.Fill(summaryLine,
+                    "claimed", claimed.ToString(), "total", questList.Quests.Count.ToString());
         }
+
+        /// <summary>The highest intensity the player has unlocked on a quest's mode (0 while locked,
+        /// and for a quest that is not a game mode - the hangar node has no intensities).</summary>
+        static int MaxIntensityOf(SO_UnlockData quest)
+        {
+            var service = GameModeProgressionService.Instance;
+            if (service == null || quest == null || quest.FeatureKind != FeatureKind.GameMode) return 0;
+            return service.GetMaxUnlockedIntensity(quest.GameMode);
+        }
+
+        string PreviousQuestName(int index) =>
+            index > 0 && questList != null && index - 1 < questList.Quests.Count && questList.Quests[index - 1]
+                ? questList.Quests[index - 1].DisplayName
+                : null;
 
         /// <summary>
         /// Returns the index of the first quest that is Unlocked or ReadyToClaim (the frontier).
         /// Falls back to the last card if all are claimed.
         /// </summary>
-        int GetActiveQuestIndex()
-        {
-            for (int i = 0; i < questList.Quests.Count; i++)
-            {
-                var state = GetCardState(i);
-                if (state == QuestItemState.Unlocked || state == QuestItemState.ReadyToClaim)
-                    return i;
-            }
-            return _cards.Count > 0 ? _cards.Count - 1 : -1;
-        }
+        int GetActiveQuestIndex() =>
+            _cards.Count > 0 ? QuestFrontier.FrontierIndex(questList, GameModeProgressionService.Instance) : -1;
 
         void UpdateActivePulse()
         {
@@ -478,7 +485,7 @@ namespace CosmicShore.UI
                 if (tmp != null)
                 {
                     var quest = questList.Quests[i];
-                    tmp.text = quest.IsPlaceholder ? "Coming Soon" : quest.Description;
+                    tmp.text = quest.IsPlaceholder ? comingSoonLine : quest.Description;
                 }
 
                 if (!go.TryGetComponent<CanvasGroup>(out var cg))
@@ -620,24 +627,43 @@ namespace CosmicShore.UI
 
         // ── Parallax Depth ────────────────────────────────────────────────────
 
+        // The parallax value each card was last written with (NaN = write it next frame).
+        private readonly List<float> _parallaxWritten = new();
+        private KitSightline _parallaxSight;
+
+        // Writes a card only when its parallax value changed, and nothing while nobody can see the track.
+        // Assigning a transform marks it moved even with the same value, and a moved card makes every
+        // RectMask2D above and inside it re-clip its graphics: with the style-B quest cards (three masks
+        // each) that ran every frame on the hidden Profile screen and in freestyle, part of the 3-7 ms
+        // ClipperRegistry.Cull in the 2026-10-19..23 Menu_Main captures (Docs/PERFORMANCE_OPTIMIZATION.md §2).
         void UpdateParallax()
         {
             if (scrollRect == null || _cards.Count == 0 || parallaxFalloff <= 0f) return;
 
-            var viewportRect = scrollRect.viewport ?? scrollRect.GetComponent<RectTransform>();
+            _parallaxSight ??= new KitSightline(scrollRect.transform, null, null);
+            while (_parallaxWritten.Count < _cards.Count) _parallaxWritten.Add(float.NaN);
+            if (!_parallaxSight.Visible) return;
+
+            var viewportRect = scrollRect.viewport ? scrollRect.viewport : (RectTransform)scrollRect.transform;
             Vector3 viewportCenter = viewportRect.TransformPoint(viewportRect.rect.center);
 
             for (int i = 0; i < _cards.Count; i++)
             {
                 var card = _cards[i];
-                if (card == null || card.IsAnimating) continue;
+                if (card == null || card.IsAnimating)
+                {
+                    _parallaxWritten[i] = float.NaN;   // an animation owns it now; rewrite once it ends
+                    continue;
+                }
 
-                var cardRect = card.GetComponent<RectTransform>();
+                var cardRect = (RectTransform)card.transform;
                 Vector3 cardCenter = cardRect.TransformPoint(cardRect.rect.center);
                 float distance = Mathf.Abs(cardCenter.x - viewportCenter.x);
                 float t = Mathf.Clamp01(distance / parallaxFalloff);
+                if (Mathf.Abs(t - _parallaxWritten[i]) < 1e-4f) continue;   // NaN never compares equal
+                _parallaxWritten[i] = t;
 
-                card.transform.localScale = Vector3.one * Mathf.Lerp(1f, minCardScale, t);
+                cardRect.localScale = Vector3.one * Mathf.Lerp(1f, minCardScale, t);
 
                 if (card.TryGetComponent<CanvasGroup>(out var cg))
                     cg.alpha = Mathf.Lerp(1f, minCardAlpha, t);
@@ -651,6 +677,7 @@ namespace CosmicShore.UI
             foreach (var card in _cards)
                 if (card != null) Destroy(card.gameObject);
             _cards.Clear();
+            _parallaxWritten.Clear();
         }
 
         void KillAllTweens()

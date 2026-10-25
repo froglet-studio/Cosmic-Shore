@@ -165,7 +165,7 @@ The vessels' `_touchActionOverrides` are unchanged in net; touch and pad bind th
 |---|---|
 | Vessels lay **no trail**, except freestyle (pen waits while the cell holds > 10,000 prisms), the Wanderway tether, and Skim Race / Joust with a **FIFO cap** (oldest prism consumed past 2,000 / 1,200 per vessel, shared per seat) | `TrailsDisabled`, `CappedTrailActive` → **MobileLow, §3.6** (menu + freestyle + the race cap; not "trails off everywhere") |
 | ~~Cell life (flora/fauna spawners, flora growth) paused except in the home world (Garland)~~ **decided: not ported** | `CellLifeRuns` |
-| No cytoplasm motes in any cell | `SnowChanger.Initialize`, `Enabled` → **MobileLow, §3.6** |
+| No cytoplasm motes in any cell | `SnowChanger.Initialize`, `Enabled` → **MobileLow, §3.6** (since §3.10: thinned to a quarter, never removed - the shards point at the crystal) |
 | ~~Toybox: Wander (no Ark), domain changer, element charger, vessel changer~~ **decided: not ported** | `LightToysOnly` |
 | Vessel changer roster narrowed to Squirrel + Butterfly | `ShipsVessel` → **not ported** (a feature removal, §3.6) |
 | Wanderway belt 30,000 → 1,200 resident prisms, no lifeforms | `Wander_WithoutArk.asset` — **shared, ungated** → **MobileLow override, §3.6** |
@@ -375,7 +375,7 @@ so Windows and iOS run exactly what bleeding-edge ran. MobileLow carries Garrett
 | **Freestyle trail waits above 10,000 cell prisms**, resumes at 9,700 | `freestyleCellPrismBudget` / `Resume` → the same handler, once a second, per cell with hysteresis. Never during a Wanderway run (`WanderwayRun.AnyRunning`): the tether needs a trail - re-evaluated the frame a run or preview starts or stops, not a second later. A spawner that waits is the sanctioned lever, not an exception | same numbers, checked inside the spawn loop |
 | **Menu screens and nav bar DEACTIVATED while flying** | `deactivateMenuWhileFlying` → `ScreenSwitcher`: on the enter blend's end it switches off every active screen root EXCEPT HOME, and the nav bar, and switches exactly those back on at the start of the exit, before the fade-in. HOME stays live because it carries listeners a flight must not silence (ship review): the party-invite popup subscribes in `OnEnable`, and `HomeScreen` subscribes to profile changes in `Start` but drops them in `OnDisable`. `FlipUI` re-applies the last phone flip when re-enabled | HOME + nav bar in flight, plus every non-HOME screen disabled for the whole session (not ported: those screens are features). Garrett's build was offline, so it had no invites to miss |
 | **HUD domain glow rests instead of breathing** | `quietScoreGlow` → `DomainScorePanel.ArmGlow`; the score-change punch still plays | same |
-| **No cytoplasm motes** | `disableCytoplasm` → `SnowChanger.Initialize` | same |
+| **A quarter of the cytoplasm shards** (was: none) | `cytoplasmDensity: 0.25` → `SnowChanger.Initialize` scales the shard count, through `GraphicsCuts.CytoplasmDensity`. The shards point at the cell's crystal, so they are a navigation cue: a tier thins them and never removes them (Garrett, 2026-10-21; floor `GraphicsCuts.MinCytoplasmDensity` = 0.1). The Web profile is 0.25 too | removed every mote |
 | **Wanderway belt 30,000 → 1,200 resident prisms, no lifeform scenes, 4 ahead, 2 crystals, 2 arrivals at once** | `wanderwayBudget` → `WanderToy.Configure` writes it onto the BUILT `ConveyorConfig`; the settings asset is untouched. `MaxConcurrentArrivals` moved from a constant onto `ConveyorConfig` (default 3) for it | edited the shared `Wander_WithoutArk.asset` and the constant, so every platform got the small belt |
 
 **Not ported, and why:**
@@ -493,7 +493,8 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
 | `ITSAppUsesNonExemptEncryption = NO` written into every iOS build | `Assets/_Scripts/Editor/Build/IosExportCompliancePostprocess.cs` | Stops App Store Connect holding each build at "Missing Compliance". The declaration: HTTPS + Relay DTLS, standard algorithms, in support of gameplay, under the EAR Cat. 5 Pt. 2 Note 4 games exclusion. **The company owns this answer**; delete the file to answer per upload instead. |
 | NativeShare's photo-library purpose string: the plugin default ("The app requires access to Photos to save media to it.") → a specific one naming paintings and screenshots | `ProjectSettings/NativeShare.json` (the plugin's own settings file; its iOS post-process writes `NSPhotoLibraryUsageDescription` / `NSPhotoLibraryAddUsageDescription` from it) | App Review 5.1.1 rejects purpose strings that don't say what the access is for. |
 | Apple Team ID `9959RFD7XD` + Automatically Sign on; **TestFlight from GitHub Actions** (2026-10-12) | `ProjectSettings.asset`, `.github/workflows/ios-testflight.yml`, `Tools/iOS/set_manual_signing.rb`, `Tools/iOS/asc_api_key_json.py` (manual dispatch only) | Iggy's paid membership is active to 16 Aug 2027, and nobody on the team has a Mac. The job compiles a Windows-made Xcode export on a free `macos-26` runner (Xcode 26, which uploads require), signs it with the company's distribution certificate and uploads it. Setup and secrets: `Docs/IOS_BUILD.md` §2 Path C. **Run 4 (2026-10-12) uploaded the first build to TestFlight**, on the team API key. Run 3 had failed at the upload because `ASC_KEY_P8` held the key body without its BEGIN/END lines; the job now accepts that shape. Run 5 (2026-10-12) uploaded the phone-menu fix the same way. |
-| **Android release build + pre-upload check** (2026-10-13) | `Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.Android.cs`, `AndroidBundleCheck.cs`, `Tools/Build/check_android_signing_settings.py` | **FrogletTools > Build > Android App Bundle (Release)** builds a signed `.aab` with a minutes-since-2026 version code, puts Player Settings back, and checks the bundle for everything Play rejects (debug key, target < 36, debuggable, no arm64, over 200 MB) plus 16 KB alignment, app category, Billing and native debug symbols (embedded in the bundle since 2026-10-14). The static CI job fails on a committed keystore path. Not run in Unity yet. Steps: `Docs/ANDROID_BUILD.md`. |
+| **32-bit (ARMv7) Android back, beside ARM64** (2026-10-15, owner's call) | `ProjectSettings.asset` (`AndroidTargetArchitectures` 2 → 3), `AndroidResolverDependencies.xml` (`androidAbis` `arm64-v8a,armeabi-v7a`) | Reverses the 2026-10-08 ARM64-only change above. Two testers on the internal track got "Item not found" while a third could install: a Moto G Power and a Samsung Galaxy M, phone families that run 32-bit Android on 64-bit chips. Every native plugin already ships `armeabi-v7a` (FMOD, Lofelt haptics; NativeShare is Java-only). Play delivers one ABI per phone, so downloads do not grow; the build and the upload do. The bundle check now warns when 32-bit libraries are missing, and estimates the base size per phone (the largest ABI, not both). |
+| **Android release build + pre-upload check** (2026-10-13) | `Assets/_Scripts/Editor/Build/CosmicShoreBuildPipeline.Android.cs`, `AndroidBundleCheck.cs`, `Tools/Build/check_android_signing_settings.py` | **FrogletTools > Build > Android App Bundle (Release)** builds a signed `.aab` with a minutes-since-2026 version code, puts Player Settings back, and checks the bundle for everything Play rejects (debug key, target < 36, debuggable, no arm64, over 200 MB) plus 16 KB alignment, app category, Billing and native debug symbols (embedded in the bundle since 2026-10-14). The static CI job fails on a committed keystore path. Build 412826 (2026-10-14) went to Play internal testing from this menu; the refusal dialogs, batchmode and the Test Runner are not checked in the Editor yet. Steps: `Docs/ANDROID_BUILD.md`. |
 
 **Found and left open** (setup guide §5):
 
@@ -544,6 +545,79 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
 - **CLAUDE.md says "No automated CI/CD pipeline is currently configured", which is stale.**
   `.github/workflows/` holds `unity-ci.yml`, `bleeding-edge-guard.yml`, `ios-testflight.yml` and
   the Amoebius ones. `Docs/BUILD_AND_DELIVERY.md` §10 is the current picture.
+
+### 3.10 Quality presets cut GPU work (2026-10-21)
+
+**Why.** Garrett, 2026-10-21: "we are very GPU bottlenecked on mobile ... we need to create the medium
+and low setting to also shift some of that burden off the GPU", aimed at older phones. Until this
+change, picking a preset in Settings changed only Unity's `QualitySettings` level (lod bias, particle
+raycast budget, texture mips on Very Low). URP's shadows are already off on `URP_Asset.asset`, so a
+preset pick changed almost nothing a phone GPU pays for. The procedural sky, the AA pass, HDR, bloom,
+render scale and the transparent overdraw stayed the same on Low as on Ultra. Only the MobileLow
+TIER (§3.5) cut them, and only on the devices classified as MobileLow.
+
+**What each preset cuts** (`Assets/Resources/QualityPresetCuts.asset`, `QualityPresetCutsSO`; every
+number is a field there):
+
+| Preset | Written when picked (the player can change it after) | Render cuts while in effect |
+|---|---|---|
+| **Ultra / Very High / High** | nothing | nothing - render as before |
+| **Medium** | nothing | **baked sky** (the HyperSea sky's nebulae, dust and stars stop drifting and twinkling; one texture sample per pixel instead of ~20 noise octaves and two Voronoi searches); wormhole exact view at **0.75** of the camera's resolution |
+| **Low** | **AA Off**; render scale at most **80%** (Linear upscale) | everything Medium cuts, plus: **HDR off**; bloom built at **quarter** resolution with at most **3** pyramid levels; membrane at **642** capsules (level 3); **a quarter of the cytoplasm shards**; wormhole view at **0.5** |
+| **Very Low** | **AA Off**; render scale at most **70%** | the same as Low, plus **one view at a time** (`singleView`, 2026-10-22): no crew vessel draws a picture-in-picture, the pilot camera hidden under a full-screen seat view draws nothing, and the person starts on the Wrasse or the Ratel (below) |
+
+**How it is wired.**
+- `GraphicsCuts` (`_Scripts/System/Platform/`) is the one reader: it merges the device tier's cuts
+  (`PlatformProfile.Current`) with the preset's. A flag is on if either asks, and a cap is the tighter
+  of the two, so a preset never undoes a MobileLow cut. `CapsuleMembrane`, `SnowChanger`, `WormholeView`,
+  `PlatformRenderApplier` and `GraphicsSettingsApplier` read it instead of the profile.
+- **Cytoplasm shards are thinned, never removed.** They point at the cell's crystal (Garrett, 2026-10-21),
+  so `cytoplasmDensity` (on the tier profiles and the preset rows) is a fraction, with a floor of
+  `GraphicsCuts.MinCytoplasmDensity` (0.1) that no tier or preset can go under. The old `disableCytoplasm`
+  flag is gone; MobileLow and Web keep a quarter.
+- `GraphicsSettingsApplier.ApplyQuality` pushes the preset in force (`GraphicsCuts.SetPreset`) and then
+  applies the live cuts: HDR (now restored to the URP asset's authored value when a cut is lifted,
+  instead of "only ever off"), bloom (`PostProcessCuts`: one global runtime volume at priority 1000
+  that overrides ONLY bloom's `downscale` and `maxIterations`, so each scene's threshold, intensity and
+  tint still apply and no profile asset is written), and the sky (`PlatformRenderApplier.ApplySkybox`,
+  which now also puts the authored sky back when a preset that baked it is lifted).
+- **Custom keeps the cuts.** A hand change to AA, render scale, upscaler or texture quality makes the
+  preset Custom; `GraphicsSettingsData.BasePreset` remembers the preset it started from, and
+  `EffectivePreset` keeps that preset's render cuts in force. It is persisted (`gfx.BasePreset`); a
+  snapshot saved before it existed takes the saved preset, or Unity's running quality level if the saved
+  preset was Custom.
+- **"Written when picked"** is `PresetCuts.ApplyPickTo`, called from `DisplayGraphicsSettings.SetQualityPreset`.
+  It only lowers render scale (never raises it), and the settings panel re-reads the AA and upscaler
+  dropdowns after a pick.
+- Live on a change: sky, HDR, bloom, AA, render scale. Read when an object wakes: membrane, cytoplasm,
+  and the wormhole view's cap (read per frame). The panel already shows "some changes apply after a restart".
+
+- **One view at a time on Very Low** (Garrett, 2026-10-22: "if the lowest graphics setting are selected
+  don't display pips. start the player in the wrasse and the ratel. in this setting very little of the
+  game should even need to be processed, so the ratel should run fine on very old phones"). The row's
+  `singleView` flag, read through `GraphicsCuts.SingleView` / `CrewSingleView.On` every frame, so it
+  follows a change at once. Every crew view honours it (`KiteNavigatorView`, `HoneyguideDynamoView`,
+  `CrewPictureInPicture` for the Goby, `OrcaCrewView`, `JacksView`): the camera of a seat nobody sits
+  in is off rather than a small square, and the pilot camera under a full-screen seat view is parked by
+  `PilotCameraPark` (no layers, a solid clear, no post-processing or shadows; still enabled, so
+  `Camera.main` holds). The Wrasse and the Ratel are where the person starts: the Wrasse is one top-down
+  camera, the Ratel is a UI board with the world not drawn at all behind it. Swaps still work from the
+  keys, the D-pad and the Ratel's Fly button; with no small view there is no double tap. The Orca
+  sniper's scope is gameplay, not a picture-in-picture, and stays.
+
+**Known limits.**
+- Picking a preset ABOVE Low does not put AA or render scale back. The player sets them, or presses
+  Auto-Detect. High+ rows write nothing, so desktop players who pick High keep their settings exactly.
+- First-run auto-detect is unchanged: MobileLow still recommends Very Low with **4x MSAA** (Garrett's
+  Round 8: with HDR off it fits tile memory), and the render cuts of Very Low apply on top. Only a hand
+  pick of Very Low or Low writes AA Off. Which one a MobileLow phone should start on is Garrett's call.
+- Only the HyperSea sky has a bake (`bakedSkies`). Other procedural skies would need their own
+  `bake_static_skybox.py` output and a row.
+- Panini projection stays on every preset (it is part of the speed tunnel's look, §3.5).
+
+**Tests:** `QualityPresetCutsTests` (edit mode): the shipped table, every lower preset cutting at least
+as much as the one above, High+ cutting nothing, the pick writes, Custom keeping its base, and the
+asset not holding the 4096x2048 bake resident.
 
 ---
 

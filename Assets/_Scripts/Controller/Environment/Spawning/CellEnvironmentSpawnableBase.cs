@@ -49,6 +49,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Clearance points in the structure's local space.")]
         [SerializeField] protected Vector3[] spawnClearPoints = System.Array.Empty<Vector3>();
 
+        /// <summary>The base fields that feed generation, in the order the layout-bake fingerprint
+        /// mixes them (<see cref="PrismLayoutBakeFormat.Fingerprint"/>). Named with <c>nameof</c> so a
+        /// rename moves the fingerprint - and with it the bake file the game asks for - instead of
+        /// silently dropping that field from the key and serving a stale bake.</summary>
+        internal static readonly string[] FingerprintBaseFields =
+            { nameof(seed), nameof(density), nameof(spawnClearRadius), nameof(spawnClearPoints) };
+
         /// <summary>Golden angle in radians - the phyllotaxis constant (same value as
         /// PrismGeometry.AddShellPatch) behind canopies, whorls, and placement spirals.</summary>
         protected const float GoldenAngle = 2.39996323f;
@@ -140,14 +147,29 @@ namespace CosmicShore.Gameplay
             _plantingSites = null;
         }
 
+        /// <summary>
+        /// True when this world's layout may be served from its BAKE (<see cref="PrismLayoutBake"/>)
+        /// instead of running <see cref="BuildEnvironment"/> while the game loads. Its whole
+        /// output must be the lay list and the planting sites. A world whose
+        /// <see cref="SpawnLeafObjects"/> reads other build state (a rail world that indexes its
+        /// lays by range) overrides this false and always generates live.
+        /// </summary>
+        protected virtual bool BakesLayout => true;
+
         protected override SpawnTrailData[] GenerateTrailData()
         {
-            _noiseSeed = seed != 0 ? seed : DefaultSeed;
-            _r = new System.Random(_noiseSeed);
-            _cachedLays = new List<PrismLay>(LayCapacity);
-            _plantingSites = new List<FloraPlantingSite>();
+            // The layout is fitted flush at authoring time (Docs/ECOSYSTEM.md §62), and that fit
+            // is the expensive part of a build, so the bake made by Tools/Build/bake_prism_layouts.py
+            // is read instead whenever one exists for these exact parameters.
+            if (!BakesLayout || !PrismLayoutBake.TryLoad(this, out _cachedLays, out _plantingSites))
+            {
+                _noiseSeed = seed != 0 ? seed : DefaultSeed;
+                _r = new System.Random(_noiseSeed);
+                _cachedLays = new List<PrismLay>(LayCapacity);
+                _plantingSites = new List<FloraPlantingSite>();
 
-            BuildEnvironment();
+                BuildEnvironment();
+            }
 
             var points = new SpawnPoint[_cachedLays.Count];
             for (int i = 0; i < _cachedLays.Count; i++)
@@ -213,6 +235,18 @@ namespace CosmicShore.Gameplay
         protected Vector3 Jit(Vector3 s, float amt = 0.2f)
         {
             float k = 1f + RangeF(-amt, amt);
+            return new Vector3(Mathf.Max(0.5f, s.x * k), Mathf.Max(0.5f, s.y * k), Mathf.Max(0.5f, s.z * k));
+        }
+
+        /// <summary>
+        /// <see cref="Jit"/> for a prism authored FLUSH with its neighbours: the same one draw from
+        /// the shared stream (so swapping it in moves no other prism), but the factor only ever
+        /// SHRINKS, into [1 - 2*amt, 1]. A size fitted to touch its neighbours that a jitter can
+        /// grow is a size that clips (NO PRISM MAY INTERPENETRATE ANOTHER, Docs/ECOSYSTEM.md §62).
+        /// </summary>
+        protected Vector3 JitDown(Vector3 s, float amt = 0.2f)
+        {
+            float k = 1f - RangeF(0f, 2f * amt);   // one draw, like Jit: swapping it in moves no other prism
             return new Vector3(Mathf.Max(0.5f, s.x * k), Mathf.Max(0.5f, s.y * k), Mathf.Max(0.5f, s.z * k));
         }
 

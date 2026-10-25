@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
 using UnityEngine;
@@ -25,25 +26,27 @@ namespace CosmicShore.Gameplay
     /// toggle - recorded, and every learner skips it); the camera the pilot looked through (position, forward, field of
     /// view, mode); every other pilot's position, velocity and rings; and the nearest crystals. Once per race: every
     /// ring (order, position, axis, mouth radius, laps), every rail (its prisms and up axes, contact shell, owning
-    /// domain), the rival difficulty, the build and the course fingerprint, and each rail prism destroyed or restored
-    /// while the race ran (<c>railEvents</c>). The rails come from the arena
+    /// domain), the rival difficulty, the build and the course fingerprint, each rail prism destroyed or restored
+    /// while the race ran (<c>railEvents</c>), and the pilot's own button presses (<c>buttonEvents</c>). The hull, mode
+    /// and race target are named when recording starts, and one last sample is taken on the frame the race ends, so the
+    /// ring that ended it is counted. The rails come from the arena
     /// (<see cref="RegattaCourseSource.TryResolveLiveRails"/>), copied when recording starts, so
     /// <c>Tools/Build/learn_from_flights.py</c> and <c>situation_features.py</c> can measure the flight against them.</para>
     ///
     /// <para>One <c>flight_&lt;Mode&gt;_&lt;Vessel&gt;_&lt;time&gt;.json</c> per match (schema <c>cosmic-shore.flight/3</c>,
-    /// with the mode, the vessel and the training type) in <c>&lt;Diagnostics folder&gt;/Flights/</c>. After Play, Unity
-    /// asks "Store AI training record?" naming the vessel, the mode and the training type, and stores it on the
-    /// person's <c>bugledger/&lt;user&gt;</c> branch (<c>BugHuntAutoSend</c>, <c>BugHuntReports</c> kind <c>flights</c>). A
-    /// match that could not be stored says why in one Console warning. Editor and development builds only; nothing
-    /// leaves the machine unless its owner presses Store. Players get their own consent question before any of this
-    /// ships.</para>
+    /// with the mode, the vessel and the training type) in <c>&lt;Diagnostics folder&gt;/Flights/</c>. After Play, the editor
+    /// sends each new record to the person's <c>bugledger/&lt;user&gt;</c> branch without a question (since 2026-10-16;
+    /// <c>BugHuntAutoSend</c>, <c>BugHuntReports</c> kind <c>flights</c>) and logs one Console line naming the vessel and
+    /// the mode. A match that could not be stored says why in one Console warning. The recorder compiles in editor and
+    /// development builds; only the automatic send is editor-only, so a development build's records stay on its machine.
+    /// Players get their own consent question before any of this ships.</para>
     /// </summary>
     public sealed class HumanFlightRecorder : MonoBehaviour
     {
         public const string CommandName = "flightrec";
         public const string Schema = "cosmic-shore.flight/3";   // /3: the situation (SITUATION_RECORDING_PLAN.md §2); columns are read by name, so additions keep /3
 
-        /// <summary>The kind of AI training a record serves, as Unity's "Store AI training record?" names it.</summary>
+        /// <summary>The kind of AI training a record serves, written into the record's <c>training</c> field.</summary>
         public const string TrainingType = "imitation: learning from your flying";
         const float SampleHz = 10f;
         const float LookEvery = 0.5f;
@@ -51,6 +54,13 @@ namespace CosmicShore.Gameplay
 
         // The "state" column's bits (written into the file's header as "stateBits").
         const int StateBoosting = 1, StateDischarging = 2, StateDrifting = 4, StateSlowed = 8, StateAttached = 16, StateStationary = 32;
+        // Bits only a rival's "rivalState" carries (the AI's side of the situation): an AI is flying it, the AI is breaking
+        // off an orbit (AIPilot.IsBreakingOrbit: the boost drivers stand down), the hull's translation is restricted.
+        const int RivalStateAI = 64, RivalStateBreakingOff = 128, RivalStateRestricted = 256;
+        // "rivalState" columns per rival, aligned with "rivals": state bits, BoostMultiplier, the AI boost driver's status
+        // (an index into "rivalBoostStatuses", -1 for none), the AI's objective phase (AIPilot.ObjectivePhase, -1 for none),
+        // and the degrees between the hull's course and its nose (AIPilot.HeadingDirection reads the course).
+        const int RivalStateColumns = 5;
 
         /// <summary>The flights folder: beside the diagnostics captures, so Store AI record finds them.</summary>
         public static string Folder => Path.Combine(DiagnosticsHUD.OutputDirectory, "Flights");
@@ -95,6 +105,8 @@ namespace CosmicShore.Gameplay
             public float Charge;                 // charged-boost charge
             public int State;                    // State* bits
             public float LvC, LvM, LvS, LvT;     // element levels, 0..1 (charge, mass, space, time)
+            public float M0, M1, M2, M3;         // the hull's first four resource meters (CurrentAmount), -1 if absent
+            public int TimeMode;                 // the Stoat's mode: 1 Time (catch sling), 0 Mass (field dipole), -1 another hull
             public bool Held;                    // the AI held the hull (the You / AI toggle)
             public Vector3 CamPos, CamFwd, CamUp;    // forward + up = the camera's full rotation
             public float Fov, Aspect;            // vertical field of view (degrees), width / height
@@ -117,11 +129,28 @@ namespace CosmicShore.Gameplay
         readonly List<float> _rivals = new(2048 * 16);
         readonly List<float> _rivalVel = new(2048 * 12);
         readonly List<string> _rivalHulls = new(8);
+        readonly List<float> _rivalState = new(2048 * 4 * RivalStateColumns);
+        // Each AI boost driver status seen, with its numbers blanked to '#' so "ramping (412 u/s)" and "ramping (430 u/s)"
+        // are one entry: the table "rivalBoostStatuses" that "rivalState" indexes.
+        readonly List<string> _rivalBoostStatuses = new(32);
+        readonly Dictionary<string, int> _rivalBoostStatusIndex = new(32);
+        readonly StringBuilder _statusKey = new(96);
         readonly List<float> _crystals = new(2048 * MaxCrystals * 4);
         readonly List<float> _crystalPick = new(MaxCrystals * 2);
         readonly List<RailCopy> _rails = new(4);
         readonly List<float> _railEvents = new(256);   // t, rail, prism index, 1 destroyed / 0 restored
         readonly List<float> _ringData = new(64 * 8);   // index, x, y, z, ax, ay, az, radius per ring
+        // The pilot's own button presses and releases (InputEvents: abilities, the sticks' actions, flip): t, event, 1 / 0.
+        // Only the local pilot's input strategies raise these events, so an AI's presses never arrive here.
+        readonly List<float> _buttonEvents = new(512);
+        // The hull's resource meters, named once (the Dolphin's drift charge, ammo, ...), and which one its charged
+        // boost spends (ChargeBoostActionSO.BoostResourceIndex; -1 when it has none): what the Dolphin AI decides on.
+        readonly List<string> _meterNames = new(4);
+        int _boostMeter = -1;
+        // The Stoat's mode switch (its triggers are the field dipole in Mass mode, the catch sling in Time mode), found
+        // once per race; null on every other hull.
+        StoatModeExecutor _stoatMode;
+        ScriptableEventInputEvents _pressed, _released;
         GameDataSO _gameData;
         Player _player;
         float _nextSample, _nextLook, _raceStart, _frameSum, _prevSampleT;
@@ -129,6 +158,10 @@ namespace CosmicShore.Gameplay
         bool _havePrevRot;
         int _frames, _startRings, _ownRail = -1, _courseSeed, _courseIntensity;
         bool _recording, _turnWasRunning;
+        // Named when recording starts and kept: by the time the turn ends the hull may already be despawned and the game
+        // data reset (leaving to the menu mid-race wrote a flight with hull "Unknown" and raceTarget 0, 2026-10-16).
+        string _hullName = "Unknown", _modeName = "Unknown", _domainName = "";
+        int _target, _intensity;
         string _waiting = "waiting for a match", _railWhy = "";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -163,7 +196,20 @@ namespace CosmicShore.Gameplay
             bool running = _gameData.IsTurnRunning;
             if (!running)
             {
-                if (_recording) Finish("race over");
+                if (_recording)
+                {
+                    // How the turn ended, read before anything else this frame: a match that ended by its own rules
+                    // (you finished, a rival won, a mode with no ring target timed out) still has your hull; leaving for
+                    // the menu has already despawned it. Whether YOU finished is the separate "finished" field. (The first
+                    // cut keyed this on the ring target and called every race a rival won, and every mode without rings,
+                    // "left": 43 of 73 flights, 2026-10-17 to 10-24.)
+                    bool matchStillHere = _player && _player.Vessel?.VesselStatus != null
+                                          && _gameData.Players != null && _gameData.Players.Count > 0;
+                    // The ring that ended the race is threaded on this frame or the last; samples run at 10 Hz, so without
+                    // this last one a finished race was written one ring short (23 / 24, Regatta 2026-10-16).
+                    TakeSample(now);
+                    Finish(matchStillHere ? "race over" : "left before the end");
+                }
                 _turnWasRunning = false;
                 return;
             }
@@ -177,9 +223,14 @@ namespace CosmicShore.Gameplay
             {
                 if (now < _nextLook) return;
                 _nextLook = now + LookEvery;
+                // Development diagnostics switched off (DevDiagnostics): the build plays like a release one, which
+                // records nothing. A race already being recorded when they go off still finishes and is stored.
+                if (!DevDiagnostics.Enabled) { _waiting = "development diagnostics are off"; return; }
                 if (!TryFindLocalHuman()) { _waiting = "waiting for your hull (AI-only races are not recorded)"; return; }
                 _recording = true;
                 _startRings = _player.RoundStats?.SwitchesThreaded ?? 0;
+                NameRace();
+                ListenToButtons();
                 CopyCourse();
             }
 
@@ -215,6 +266,46 @@ namespace CosmicShore.Gameplay
             _nextLook = now;
         }
 
+        void NameRace()
+        {
+            if (_player && _player.Vessel?.VesselStatus != null) _hullName = _player.Vessel.VesselStatus.VesselType.ToString();
+            if (_player) _domainName = _player.Domain.ToString();
+            if (!_gameData) return;
+            _modeName = _gameData.GameMode.ToString();
+            if (_gameData.SwitchTargetCount > 0) _target = _gameData.SwitchTargetCount;
+            if (_gameData.SelectedIntensity != null && _gameData.SelectedIntensity.Value > 0) _intensity = _gameData.SelectedIntensity.Value;
+        }
+
+        void ListenToButtons()
+        {
+            StopListening();
+            var input = _player && _player.Vessel?.VesselStatus != null ? _player.Vessel.VesselStatus.InputStatus : null;
+            if (input == null) return;
+            _pressed = input.OnButtonPressed;
+            _released = input.OnButtonReleased;
+            if (_pressed) _pressed.OnRaised += OnPressed;
+            if (_released) _released.OnRaised += OnReleased;
+        }
+
+        void StopListening()
+        {
+            if (_pressed) _pressed.OnRaised -= OnPressed;
+            if (_released) _released.OnRaised -= OnReleased;
+            _pressed = _released = null;
+        }
+
+        void OnPressed(InputEvents e) => RecordButton(e, 1);
+        void OnReleased(InputEvents e) => RecordButton(e, 0);
+
+        void RecordButton(InputEvents e, int down)
+        {
+            // IdleAction arrives every few frames while both thumbs are lifted; it is the "no input" state, not a press.
+            if (!_recording || e == InputEvents.IdleAction || PilotControl.IsHeldByAI(_player)) return;
+            _buttonEvents.Add(Time.time - _raceStart); _buttonEvents.Add((int)e); _buttonEvents.Add(down);
+        }
+
+        int LastRings() => _samples.Count > 0 ? _samples[_samples.Count - 1].Rings : 0;
+
         bool TryFindLocalHuman()
         {
             if (_gameData.LocalPlayer is Player local && local && !local.IsInitializedAsAI && local.Vessel != null)
@@ -242,6 +333,7 @@ namespace CosmicShore.Gameplay
             var tf = _player.Vessel.Transform;
             if (input == null || !tf) return;
             float t = now - _raceStart;
+            NameRace();
             int rivalStart = _rivals.Count, crystalStart = _crystals.Count;
             RecordRivals();
             RecordCrystals(tf.position);
@@ -261,6 +353,7 @@ namespace CosmicShore.Gameplay
             _prevSampleT = t;
             _havePrevRot = true;
 
+            NameMeters(status);
             var resources = status.ResourceSystem;
             int state = (status.IsBoosting ? StateBoosting : 0) | (status.IsChargedBoostDischarging ? StateDischarging : 0)
                         | (status.IsDrifting ? StateDrifting : 0) | (status.IsSlowed ? StateSlowed : 0)
@@ -280,12 +373,36 @@ namespace CosmicShore.Gameplay
                 Charge = status.ChargedBoostCharge, State = state,
                 LvC = Level(resources, Element.Charge), LvM = Level(resources, Element.Mass),
                 LvS = Level(resources, Element.Space), LvT = Level(resources, Element.Time),
+                M0 = Meter(resources, 0), M1 = Meter(resources, 1), M2 = Meter(resources, 2), M3 = Meter(resources, 3),
+                TimeMode = _stoatMode ? (_stoatMode.IsTimeMode ? 1 : 0) : -1,
                 // The AI holding this hull (the Third Eye's You / AI toggle) is not the human's flight: kept, marked,
                 // and skipped by every learner (situation_features.py, situation.js, learn_from_flights.py).
                 Held = PilotControl.IsHeldByAI(_player),
                 CamPos = camPos, CamFwd = camFwd, CamUp = camUp, Fov = fov, Aspect = aspect, CamMode = camMode, RearView = rearView,
                 CrystalStart = crystalStart, CrystalCount = (_crystals.Count - crystalStart) / 4,
             });
+        }
+
+        static float Meter(ResourceSystem resources, int index)
+        {
+            if (!resources || resources.Resources == null || (uint)index >= (uint)resources.Resources.Count) return -1f;
+            var res = resources.Resources[index];
+            return res != null ? res.CurrentAmount : -1f;
+        }
+
+        /// <summary>Name the hull's meters once per race (the first sample).</summary>
+        void NameMeters(IVesselStatus status)
+        {
+            if (_meterNames.Count > 0) return;
+            var resources = status.ResourceSystem;
+            if (resources && resources.Resources != null)
+                for (int i = 0; i < resources.Resources.Count && i < 4; i++)
+                    _meterNames.Add(resources.Resources[i] != null ? resources.Resources[i].Name ?? "" : "");
+            if (_meterNames.Count == 0) _meterNames.Add("");
+            _boostMeter = status.ActionHandler != null && status.ActionHandler.TryGetBoundAction<ChargeBoostActionSO>(out var charge, out _)
+                ? charge.BoostResourceIndex : -1;
+            var registry = _player && _player.Vessel?.Transform ? _player.Vessel.Transform.GetComponentInChildren<ActionExecutorRegistry>() : null;
+            _stoatMode = registry ? registry.Get<StoatModeExecutor>() : null;
         }
 
         static float Level(ResourceSystem resources, Element element)
@@ -450,15 +567,26 @@ namespace CosmicShore.Gameplay
             _rivals.Clear();
             _rivalVel.Clear();
             _rivalHulls.Clear();
+            _rivalState.Clear();
+            _rivalBoostStatuses.Clear();
+            _rivalBoostStatusIndex.Clear();
             _crystals.Clear();
             _rails.Clear();
             _railEvents.Clear();
+            _buttonEvents.Clear();
+            _meterNames.Clear();
+            _boostMeter = -1;
+            _stoatMode = null;
+            StopListening();
             _ringData.Clear();
             _ownRail = -1;
             _courseSeed = _courseIntensity = 0;
             _railWhy = "";
             _havePrevRot = false;
             _prevSampleT = 0f;
+            _hullName = _modeName = "Unknown";
+            _domainName = "";
+            _target = _intensity = 0;
         }
 
         /// <summary>Every other pilot's hull this sample: position, velocity and rings threaded, in the match's player order (the
@@ -477,8 +605,58 @@ namespace CosmicShore.Gameplay
                 _rivals.Add(at.x); _rivals.Add(at.y); _rivals.Add(at.z);
                 _rivals.Add(p.RoundStats?.SwitchesThreaded ?? 0);
                 _rivalVel.Add(vel.x); _rivalVel.Add(vel.y); _rivalVel.Add(vel.z);
+                RecordRivalState(vessel.VesselStatus, vessel.Transform);
                 if (first) _rivalHulls.Add(vessel.VesselStatus.VesselType.ToString().ToLowerInvariant());
             }
+        }
+
+        /// <summary>
+        /// A rival's state, so a flight can say WHY an AI flew as it did without a Unity session (2026-10-25: an AI Rhino
+        /// held 50 u/s through two whole Regatta races and the record could not say whether its ramp driver was waiting,
+        /// braking or stood down). The AI's own fields are read through TryGetComponent, never the VesselStatus.AIPilot
+        /// getter, which ADDS a pilot to a hull that has none.
+        /// </summary>
+        void RecordRivalState(IVesselStatus status, Transform hull)
+        {
+            int state = (status.IsBoosting ? StateBoosting : 0) | (status.IsChargedBoostDischarging ? StateDischarging : 0)
+                        | (status.IsDrifting ? StateDrifting : 0) | (status.IsSlowed ? StateSlowed : 0)
+                        | (status.IsAttached ? StateAttached : 0) | (status.IsStationary ? StateStationary : 0)
+                        | (status.IsTranslationRestricted ? RivalStateRestricted : 0);
+            int boostStatus = -1, phase = -1;
+            if (status is Component c && c.TryGetComponent(out AIPilot pilot) && pilot.AutoPilotEnabled)
+            {
+                state |= RivalStateAI | (pilot.IsBreakingOrbit ? RivalStateBreakingOff : 0);
+                boostStatus = BoostStatusIndex(pilot.BoostStatus);
+                if (pilot.Objective.Has) phase = (int)pilot.Objective.Phase;
+            }
+            Vector3 course = status.Course;
+            float courseNose = course.sqrMagnitude > 1e-6f ? Vector3.Angle(course, hull.forward) : 0f;
+            _rivalState.Add(state);
+            _rivalState.Add(status.BoostMultiplier);
+            _rivalState.Add(boostStatus);
+            _rivalState.Add(phase);
+            _rivalState.Add(courseNose);
+        }
+
+        /// <summary>The status's index in "rivalBoostStatuses", its digits blanked to '#'; -1 for none.</summary>
+        int BoostStatusIndex(string status)
+        {
+            if (string.IsNullOrEmpty(status)) return -1;
+            _statusKey.Clear();
+            bool inNumber = false;
+            foreach (char ch in status)
+            {
+                bool digit = char.IsDigit(ch) || (inNumber && ch == '.');
+                if (digit) { if (!inNumber) _statusKey.Append('#'); }
+                else _statusKey.Append(ch);
+                inNumber = digit;
+            }
+            string key = _statusKey.ToString();
+            if (_rivalBoostStatusIndex.TryGetValue(key, out int index)) return index;
+            index = _rivalBoostStatuses.Count;
+            _rivalBoostStatuses.Add(key);
+            _rivalBoostStatusIndex[key] = index;
+            return index;
         }
 
         // Stopping Play mid-race (or quitting) writes the race so far as an unfinished flight.
@@ -507,8 +685,7 @@ namespace CosmicShore.Gameplay
             try
             {
                 Directory.CreateDirectory(Folder);
-                string hull = _player && _player.Vessel?.VesselStatus != null ? _player.Vessel.VesselStatus.VesselType.ToString() : "Unknown";
-                string mode = _gameData ? _gameData.GameMode.ToString() : "Unknown";
+                string hull = _hullName, mode = _modeName;
                 string file = Path.Combine(Folder, $"flight_{mode}_{hull}_{DateTime.Now:yyyyMMdd_HHmmss}.json");
                 File.WriteAllText(file, Serialize(hull, why));
                 LastFile = file;
@@ -527,7 +704,7 @@ namespace CosmicShore.Gameplay
             var c = CultureInfo.InvariantCulture;
             // A rail to measure the flight against exists only where the mode lays one (Regatta, for now). Copied when
             // recording started; if it was not there yet, copied now (no hole events then).
-            bool regatta = _gameData && _gameData.GameMode == GameModes.Regatta;
+            bool regatta = _modeName == nameof(GameModes.Regatta);
             if (regatta && _rails.Count == 0) TryCopyRails();
             bool haveLane = regatta && _rails.Count > 0 && _ownRail >= 0;
             var own = haveLane ? _rails[_ownRail] : null;
@@ -535,16 +712,16 @@ namespace CosmicShore.Gameplay
             int railPrisms = 0;
             for (int r = 0; r < _rails.Count; r++) railPrisms += _rails[r].Points.Count;
             var sb = new StringBuilder(64 * 1024 + railPrisms * 60 + _samples.Count * 400 + _crystals.Count * 6);
-            int target = _gameData ? _gameData.SwitchTargetCount : 0;
+            int target = _target;
             int rings = _samples[_samples.Count - 1].Rings;
             int ringCount = _ringData.Count / 8;
-            int intensity = _gameData && _gameData.SelectedIntensity != null ? _gameData.SelectedIntensity.Value : 0;
+            int intensity = _intensity;
             sb.Append("{\n");
             sb.Append("\"schema\":\"").Append(Schema).Append("\",\n");
-            sb.Append("\"mode\":\"").Append(_gameData ? _gameData.GameMode.ToString() : "Unknown").Append("\",\"hull\":\"").Append(hull).Append("\",");
+            sb.Append("\"mode\":\"").Append(_modeName).Append("\",\"hull\":\"").Append(hull).Append("\",");
             sb.Append("\"source\":\"unity\",\"hullKey\":\"").Append(hull.ToLowerInvariant()).Append("\",");
             sb.Append("\"training\":\"").Append(TrainingType).Append("\",");
-            sb.Append("\"domain\":\"").Append(_player ? _player.Domain.ToString() : "").Append("\",");
+            sb.Append("\"domain\":\"").Append(_domainName).Append("\",");
             sb.Append("\"intensity\":").Append(intensity).Append(',');
             sb.Append("\"rivalDifficulty\":\"").Append(_gameData ? _gameData.RequestedAIDifficulty.ToString() : "").Append("\",");
             sb.Append("\"build\":\"").Append(Esc(Application.version)).Append("\",\"unity\":\"").Append(Esc(Application.unityVersion)).Append("\",");
@@ -561,6 +738,9 @@ namespace CosmicShore.Gameplay
             sb.Append("\"shellHalf\":[").Append(F(shellHalf.x)).Append(',').Append(F(shellHalf.y)).Append(',').Append(F(shellHalf.z)).Append("],");
             sb.Append("\"laneError\":\"").Append(haveLane ? "" : Esc(_railWhy)).Append("\",\n");
             sb.Append("\"camera\":\"camx..camfz: position and forward, camux..camuz: up, fov: vertical degrees, camAspect: width / height, camRear: look-behind\",\n");
+            sb.Append("\"meterNames\":[");
+            for (int i = 0; i < _meterNames.Count; i++) sb.Append(i > 0 ? ",\"" : "\"").Append(Esc(_meterNames[i])).Append('"');
+            sb.Append("],\"boostMeter\":").Append(_boostMeter).Append(",\n");
             sb.Append("\"stateBits\":{\"boosting\":").Append(StateBoosting).Append(",\"discharging\":").Append(StateDischarging)
               .Append(",\"drifting\":").Append(StateDrifting).Append(",\"slowed\":").Append(StateSlowed)
               .Append(",\"attached\":").Append(StateAttached).Append(",\"stationary\":").Append(StateStationary).Append("},");
@@ -605,6 +785,16 @@ namespace CosmicShore.Gameplay
                   .Append((int)_railEvents[i + 2]).Append(',').Append((int)_railEvents[i + 3]).Append(']');
             }
             sb.Append("],\n");
+            // The pilot's button presses: [t, InputEvents value, 1 pressed / 0 released].
+            sb.Append("\"buttonNames\":{");
+            var names = (InputEvents[])Enum.GetValues(typeof(InputEvents));
+            for (int i = 0; i < names.Length; i++)
+                sb.Append(i > 0 ? ",\"" : "\"").Append(names[i]).Append("\":").Append((int)names[i]);
+            sb.Append("},\"buttonEvents\":[");
+            for (int i = 0; i + 2 < _buttonEvents.Count; i += 3)
+                sb.Append(i > 0 ? ",[" : "[").Append(F(_buttonEvents[i])).Append(',').Append((int)_buttonEvents[i + 1]).Append(',')
+                  .Append((int)_buttonEvents[i + 2]).Append(']');
+            sb.Append("],\n");
 
             sb.Append("\"rivalHulls\":[");
             for (int i = 0; i < _rivalHulls.Count; i++) sb.Append(i > 0 ? ",\"" : "\"").Append(_rivalHulls[i]).Append('"');
@@ -635,6 +825,27 @@ namespace CosmicShore.Gameplay
                 }
                 sb.Append(']');
             }
+            // Each rival's state, aligned with "rivals": RivalStateColumns values per rival (RecordRivalState).
+            sb.Append("],\n\"rivalStateColumns\":[\"state\",\"boost\",\"boostStatus\",\"phase\",\"courseNose\"],");
+            sb.Append("\"rivalStateBits\":{\"ai\":").Append(RivalStateAI).Append(",\"breakingOff\":").Append(RivalStateBreakingOff)
+              .Append(",\"restricted\":").Append(RivalStateRestricted).Append("},\n\"rivalBoostStatuses\":[");
+            for (int i = 0; i < _rivalBoostStatuses.Count; i++)
+                sb.Append(i > 0 ? ",\"" : "\"").Append(Esc(_rivalBoostStatuses[i])).Append('"');
+            sb.Append("],\n\"rivalState\":[");
+            for (int i = 0; i < _samples.Count; i++)
+            {
+                var m = _samples[i];
+                sb.Append(i > 0 ? ",[" : "[");
+                int start = m.RivalStart / 4 * RivalStateColumns;
+                for (int k = 0; k < m.RivalCount * RivalStateColumns; k++)
+                {
+                    if (k > 0) sb.Append(',');
+                    float v = _rivalState[start + k];
+                    int col = k % RivalStateColumns;
+                    sb.Append(col == 1 ? F(v, "0.##") : col == 4 ? F(v, "0.#") : ((int)v).ToString(c));
+                }
+                sb.Append(']');
+            }
             // The nearest crystals each sample, aligned with "samples": x, y, z, element per crystal.
             sb.Append("],\n\"crystals\":[");
             for (int i = 0; i < _samples.Count; i++)
@@ -653,7 +864,8 @@ namespace CosmicShore.Gameplay
 
             sb.Append("\"columns\":[\"t\",\"x\",\"y\",\"z\",\"fx\",\"fy\",\"fz\",\"ux\",\"uy\",\"uz\",\"speed\",\"boost\",\"xSum\",\"ySum\",\"xDiff\",\"yDiff\",\"throttle\",\"rings\",\"lt\",\"rt\",\"cx\",\"cy\",\"cz\","
                     + "\"vx\",\"vy\",\"vz\",\"pitchRate\",\"yawRate\",\"rollRate\",\"charge\",\"state\",\"lvC\",\"lvM\",\"lvS\",\"lvT\",\"held\","
-                    + "\"camx\",\"camy\",\"camz\",\"camfx\",\"camfy\",\"camfz\",\"fov\",\"camMode\",\"camux\",\"camuy\",\"camuz\",\"camAspect\",\"camRear\"],\n");
+                    + "\"camx\",\"camy\",\"camz\",\"camfx\",\"camfy\",\"camfz\",\"fov\",\"camMode\",\"camux\",\"camuy\",\"camuz\",\"camAspect\",\"camRear\","
+                    + "\"m0\",\"m1\",\"m2\",\"m3\",\"timeMode\"],\n");
             sb.Append("\"samples\":[\n");
             for (int i = 0; i < _samples.Count; i++)
             {
@@ -678,7 +890,8 @@ namespace CosmicShore.Gameplay
                   .Append(F(m.CamFwd.x, "0.###")).Append(',').Append(F(m.CamFwd.y, "0.###")).Append(',').Append(F(m.CamFwd.z, "0.###")).Append(',')
                   .Append(F(m.Fov, "0.#")).Append(',').Append(m.CamMode).Append(',')
                   .Append(F(m.CamUp.x, "0.###")).Append(',').Append(F(m.CamUp.y, "0.###")).Append(',').Append(F(m.CamUp.z, "0.###")).Append(',')
-                  .Append(F(m.Aspect, "0.###")).Append(',').Append(m.RearView ? '1' : '0').Append(']');
+                  .Append(F(m.Aspect, "0.###")).Append(',').Append(m.RearView ? '1' : '0').Append(',')
+                  .Append(F(m.M0, "0.###")).Append(',').Append(F(m.M1, "0.###")).Append(',').Append(F(m.M2, "0.###")).Append(',').Append(F(m.M3, "0.###")).Append(',').Append(m.TimeMode).Append(']');
             }
             sb.Append("\n]\n}\n");
             if (regatta && !haveLane)

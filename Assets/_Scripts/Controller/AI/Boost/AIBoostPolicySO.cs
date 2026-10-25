@@ -35,8 +35,19 @@ namespace CosmicShore.Gameplay
         /// <summary>The vessel cannot translate right now (a stance, a stop) - never boost.</summary>
         public readonly bool Restricted;
 
+        /// <summary>From the objective to where the pilot flies AFTER it (the mode's
+        /// <see cref="AIPilot.SetNextLegProvider"/>; the gate races give the mouth, then the next ring). Zero when the
+        /// mode does not say.</summary>
+        public readonly Vector3 NextLeg;
+
+        /// <summary>From the vessel to where it is actually flying, when that is a lead point on a path rather than the
+        /// objective (a race line's look-ahead, <see cref="AIPilot.MarkAimAsPathLead"/>); zero otherwise. See
+        /// <see cref="PathDirection"/>.</summary>
+        public readonly Vector3 ToPath;
+
         public AIBoostContext(Vector3 toTarget, Vector3 heading, Vector3 forward, float speed, float stick,
-                              bool breakingOrbit, bool commitDriftHeld, bool restricted)
+                              bool breakingOrbit, bool commitDriftHeld, bool restricted, Vector3 nextLeg = default,
+                              Vector3 toPath = default)
         {
             ToTarget = toTarget;
             Heading = heading;
@@ -46,15 +57,35 @@ namespace CosmicShore.Gameplay
             BreakingOrbit = breakingOrbit;
             CommitDriftHeld = commitDriftHeld;
             Restricted = restricted;
+            NextLeg = nextLeg;
+            ToPath = toPath;
         }
 
         public float Distance => ToTarget.magnitude;
 
-        /// <summary>Degrees between where the vessel is travelling and where the objective is.</summary>
-        public float AngleToTarget => Vector3.Angle(Heading, ToTarget);
+        /// <summary>
+        /// Where the pilot is going: the path's lead point when it flies one (<see cref="ToPath"/>), else the objective.
+        /// On Regatta's race line the line follows the braid's curve between rings, so the hull is pointed along the
+        /// curve and the ring it is after sits 18-35 deg off the course for most of every leg (median 21 deg in
+        /// <c>Tools/Build/rhino_line_sim.py</c>): judged by the ring, no stretch of the line was ever "straight" and no
+        /// hull spent its speed verb there (the Rhino ramped 5-10% of a race and took 196-216 s for three laps; judged by
+        /// the path, 70-100% and 30-52 s; 2026-10-25). The runway and the corner stay the objective's
+        /// (<see cref="Distance"/>, <see cref="CornerDegrees"/>).
+        /// </summary>
+        public Vector3 PathDirection => ToPath.sqrMagnitude > 1e-4f ? ToPath : ToTarget;
+
+        /// <summary>Degrees between where the vessel is travelling and where it is going (<see cref="PathDirection"/>:
+        /// the objective, or a race line's lead point).</summary>
+        public float AngleToTarget => Vector3.Angle(Heading, PathDirection);
 
         /// <summary>Seconds to the objective at the current speed - the straight still ahead.</summary>
         public float RunwaySeconds => Distance / Mathf.Max(Speed, 1f);
+
+        /// <summary>Degrees the pilot turns AT the objective (between the leg into it and <see cref="NextLeg"/>), or -1
+        /// when the mode does not say what comes after it.</summary>
+        public float CornerDegrees => NextLeg.sqrMagnitude > 1e-4f && ToTarget.sqrMagnitude > 1e-4f
+            ? Vector3.Angle(ToTarget, NextLeg)
+            : -1f;
     }
 
     /// <summary>
@@ -113,6 +144,22 @@ namespace CosmicShore.Gameplay
 
         public bool AllowsMode(GameModes mode) => disabledInModes == null || !disabledInModes.Contains(mode);
 
+        /// <summary>Resources folder of the per-mode variants <see cref="ForMode"/> looks in.</summary>
+        public const string ModeVariantFolder = "AIBoostPolicies";
+
+        /// <summary>
+        /// The variant of <paramref name="policy"/> tuned for one mode - <c>Resources/AIBoostPolicies/&lt;name&gt;_&lt;mode&gt;</c>,
+        /// e.g. <c>RhinoAIBoostPolicy_Regatta</c>, written by <c>Tools/Build/learn_drives_from_flights.py</c> from people's
+        /// editor flights - else <paramref name="policy"/> itself. The SkimRaceAIConfigSO.LoadForRegatta pattern: a mode's
+        /// learned numbers never retune the hull in every other mode. Same class as the base or it is ignored.
+        /// </summary>
+        public static AIBoostPolicySO ForMode(AIBoostPolicySO policy, GameModes mode)
+        {
+            if (!policy) return policy;
+            var variant = Resources.Load<AIBoostPolicySO>($"{ModeVariantFolder}/{policy.name}_{mode}");
+            return variant && variant.GetType() == policy.GetType() ? variant : policy;
+        }
+
         /// <summary>A straight worth starting to spend on (before the runway test).</summary>
         public bool IsStraight(in AIBoostContext c) =>
             !c.Restricted && !c.BreakingOrbit && c.AngleToTarget <= alignDegrees && c.Stick <= stickBand;
@@ -166,6 +213,10 @@ namespace CosmicShore.Gameplay
         /// <summary>While true the pilot holds its throttle full (the Rhino's ramp: a lifted throttle is a bend in
         /// the straight-line gesture, and grades the ramp down).</summary>
         public virtual bool HoldsFullThrottle => false;
+
+        /// <summary>While 0 or more, the pilot writes exactly this throttle (the Rhino's ramp brake: a lifted throttle
+        /// grades the ramp down, so it bleeds at the ramp's own rate). -1 = the pilot's own throttle.</summary>
+        public virtual float Throttle => -1f;
 
         /// <summary>While 0 or more, the pilot keeps its total steering (|XSum| + |YSum| + |YDiff|) at or under this,
         /// scaling every axis down together so it still steers toward the objective, only gentler. -1 = no limit.</summary>

@@ -108,8 +108,9 @@ measurable now. The later phases wait for the gate, and stay at zero until it fl
 
 ## 6. The path to activation, in order
 
-**Every step below that needs a person is a task on [`TEAM_TASKS.md`](TEAM_TASKS.md)** (`python3
-Tools/Build/team_tasks.py list --area Activation`). Yash has offered to take tasks; take one before starting it.
+**Every step below that needs a person is a ticket on Froglet Tasks** (GitHub issues labelled `team-task`;
+`python3 Tools/Build/team_tasks.py list --area Activation`). Tickets name nobody; take one, naming your branch,
+before starting it.
 
 1. ~~**Land the training branch.**~~ Merged into `Ys-bleeding-edge` 2026-10-15 (§4). It reaches
    `bleeding-edge` with this branch's next PR.
@@ -134,10 +135,11 @@ Tools/Build/team_tasks.py list --area Activation`). Yash has offered to take tas
 
 ## 7. Stale records found by this sweep
 
-- `MENU_PROGRESSION_AND_IAP.md` (chain table) and `QUEST_TRACK_AND_BREADCRUMB.md` (authored-content
-  table) still list Crystal Capture / Hex Race / Joust / PartyGame. The live chain is Scurry → Hex Race
-  → Joust → Maelstrom → Vessel Hangar.
-- `Docs/QuestMap/QUEST_MAP.html` still draws the retired breadcrumb nodes.
+- ~~`MENU_PROGRESSION_AND_IAP.md` (chain table) and `QUEST_TRACK_AND_BREADCRUMB.md` (authored-content
+  table) still list Crystal Capture / Hex Race / Joust / PartyGame.~~ Corrected 2026-10-17: both tables now
+  match `GameModeQuestList.asset` (Scurry → Hex Race → Joust → Maelstrom → Vessel Hangar).
+- `Docs/QuestMap/QUEST_MAP.html` still draws the retired breadcrumb nodes. It now carries an "out of date"
+  banner; redrawing it waits on the phases decision (T-20261015-fb65).
 - `Analytics/ANALYTICS_HANDOFF.md` §8 still calls the quest branch unmerged. Its two reconcile items
   (the `Version` vs `SchemaVersion` field name, and the second progression key `QUEST_GRAPH_PROGRESS`)
   have no record of being done.

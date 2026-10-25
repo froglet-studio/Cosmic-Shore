@@ -604,7 +604,7 @@ namespace CosmicShore.Gameplay
         {
             while (true)
             {
-                yield return new WaitForSeconds(
+                yield return CosmicShore.Utility.WaitCache.Seconds(
                     Mathf.Max(0.1f, config ? config.BehaviorTickSeconds : 1.5f)
                     * AggressionMultiplier(config ? config.CadenceByAggression : null));
 
@@ -805,7 +805,7 @@ namespace CosmicShore.Gameplay
         bool IsEdiblePrism(Prism prism)
         {
             if (!prism || prism.destroyed) return false;
-            if (IsShieldedMass(prism)) return false;
+            if (IsInedibleShield(prism)) return false;
             if (prism is HealthPrism hp)
             {
                 if (!hp.LifeForm) return false;

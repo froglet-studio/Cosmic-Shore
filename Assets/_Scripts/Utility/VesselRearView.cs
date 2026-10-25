@@ -32,8 +32,8 @@ namespace CosmicShore.Utility
     /// <c>CustomCameraController.EffectiveOffset</c> flips z when
     /// <see cref="CustomCameraController.RearView"/> is set, leaving <c>_followOffset</c> itself
     /// untouched. Everything that legitimately moves the camera keeps writing that field and
-    /// keeps working while the rear view is up — the Manta/Rhino zoom-out abilities
-    /// (<c>ZoomOutActionExecutor</c>, <c>CameraZoomFollowScaleProvider</c>), adaptive zoom, the
+    /// keeps working while the rear view is up — the zoom-out ability
+    /// (<c>ZoomOutAction</c>, <c>CameraZoomFollowScaleProvider</c>), adaptive zoom, the
     /// skimmer's camera-scaling prism effect, and a mid-flight vessel swap re-applying its own
     /// <c>CameraSettingsSO</c>. Had the toggle written a mirrored offset instead, the first of
     /// those to fire would have written a negative z back and silently dropped the pilot out of
@@ -213,7 +213,14 @@ namespace CosmicShore.Utility
         /// </summary>
         sealed class Driver : MonoBehaviour
         {
-            void LateUpdate() => Apply();
+            // Named so the Profiler can tell the ten nested "Driver" classes apart (they all read as
+            // "::Driver.LateUpdate"; the 2026-10-17 menu capture had an 88 ms spike there and no way to say whose).
+            static readonly Unity.Profiling.ProfilerMarker s_lateUpdate = new("VesselRearView.LateUpdate");
+
+            void LateUpdate()
+            {
+                using (s_lateUpdate.Auto()) Apply();
+            }
 
             void OnDisable()
             {

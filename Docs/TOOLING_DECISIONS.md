@@ -1,10 +1,10 @@
 # Open tooling decisions: Amoebius, the Vessel Studio, and the one tool that builds Froglet's games
 
-**Status: OPEN** (raised by Yash, 2026-10-15). **Decided by:** Garrett, Caleb, Shombith and Yash. Claude
-gathers the evidence and records the decision; it does not make it. Until a decision is recorded in §6, both
-tools stay as they are, marked **under evaluation**. Sessions recommend them as an option, never as a
-requirement. Sessions also ask the people using them, now and then, whether they helped: see
-[`TOOLING_FEEDBACK.md`](TOOLING_FEEDBACK.md).
+**Status: DECIDED 2026-10-19** (raised by Yash, 2026-10-15; decided by Shombith, who started and drives the
+engine; §6). Amoebius stays as the long-term engine goal, focused solely on the game; the Vessel Studio is an
+artifact and not part of the engine (whether the artifact stays is still open, and Yash drives it); there is no
+single unifying tool. Sessions no longer ask whether these tools helped. §1-§5 below are the evidence and options
+as written on 2026-10-15, kept for the record.
 
 ## 1. The questions
 
@@ -127,14 +127,16 @@ The feedback log is how we find out.
 
 | Date | Question | Decision | Who decided | Follow-up |
 |---|---|---|---|---|
-| | | | | |
+| 2026-10-19 | Amoebius: keep, narrow, or stop? | **Amoebius stays.** It is a long-term goal: Froglet's own engine, so that one day the team can leave Unity completely. Doing that now is not plausible (legal challenges, the porting, other problems), so Unity stays the engine the game ships on. The engine is focused solely on the game. Sessions no longer ask whether it helped; Shombith drives what is good for it. | Shombith (started the engine and drives it) | Garrett, Caleb and Yash told through this row. |
+| 2026-10-19 | The Vessel Studio: keep, narrow, or remove? | **The Vessel Studio is an artifact and is not part of the engine.** The engine carries no studio work; the studio is its own task. Whether the studio artifact itself is kept is not decided here. | Shombith (for the engine's side) | Yash (drives the studio and the launcher) plans taking the studio out of the engine; the artifact's own future stays with the team. |
+| 2026-10-19 | One tool that builds every Froglet game? | **No.** Unifying everything into one tool costs far more than Shombith is willing to put resources into. | Shombith | §5's recommendation is not taken up. |
+| 2026-10-19 | (proposal) Where synced artifacts live | An artifact-storing webpage that keeps the synced artifacts anyone thinks are important. | Proposed by Shombith | Open: who builds it and where. |
 
 When a decision is recorded:
 - update CLAUDE.md's "Tools under evaluation" section, `Port/CLAUDE.md`, and the `/vessel-studio`,
   `/amoebius` and `/amoebius-artifact` skills;
-- update `.claude/hooks/vessel_studio_nudge.py`. `team_context.py` reads this section itself: once it holds a
-  dated row, its notices say a decision was recorded, and they stop saying "under evaluation". Reword them if the
-  decision needs more than that.
+- update `.claude/hooks/vessel_studio_nudge.py`. (`team_context.py`, which read this section to word its notices,
+  was switched off on 2026-10-23; CLAUDE.md carries the decision.)
 
 ## 7. How we decide
 

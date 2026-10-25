@@ -68,11 +68,17 @@ namespace CosmicShore.Gameplay
 
         private IVesselStatus _status;
         private float _baseBoostMultiplier;
+        // The mode's own Soar tuning (MantaSoarAITuningSO, e.g. learned from Regatta flights), looked up once the
+        // autopilot first drives; null = this executor's own bands.
+        private MantaSoarAITuningSO _aiTuning;
+        private bool _aiTuningResolved;
         private bool _wasBoosting;
 
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status = shipStatus;
+            _aiTuning = null;
+            _aiTuningResolved = false;
             _baseBoostMultiplier = boostMultiplierOverride > 0f
                 ? boostMultiplierOverride
                 : shipStatus.BoostMultiplier;
@@ -93,8 +99,10 @@ namespace CosmicShore.Gameplay
                 // function of how straight it is flying, plus a Yastri net trigger on the turn's
                 // side once the yaw stick is past aiYastriStickBand (a hairpin pivot).
                 var input = _status.InputStatus;
+                ResolveAITuning();
                 AutopilotTriggers(input.XSum, Mathf.Max(Mathf.Abs(input.XSum), Mathf.Abs(input.YSum)),
-                    aiBoostStickBand, aiYastriStickBand, out lt, out rt);
+                    _aiTuning ? _aiTuning.BoostStickBand : aiBoostStickBand,
+                    _aiTuning ? _aiTuning.YastriStickBand : aiYastriStickBand, out lt, out rt);
             }
             else
             {
@@ -153,6 +161,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The vessel is flown by its AIPilot right now - a backfill bot, a released
         /// companion, or the menu's lava-lamp autopilot.</summary>
+        private void ResolveAITuning()
+        {
+            if (_aiTuningResolved) return;
+            if (!_status.AIPilot.TryGetGameMode(out var mode)) return;   // game data not wired yet: ask again next frame
+            _aiTuning = MantaSoarAITuningSO.LoadForMode(mode);
+            _aiTuningResolved = true;
+        }
+
         private bool IsAutopilotDriven =>
             _status.AIPilot != null && _status.AIPilot.AutoPilotEnabled;
 

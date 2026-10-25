@@ -1,5 +1,9 @@
 # Regatta AI roadmap — six racing AIs, one way to build them
 
+> **2026-10-26: AI training moved to each vessel's own racing minigame** (Yash). This roadmap stays as the record of
+> the Regatta work; the plan going forward is `MINIGAME_TRAINING_PLAN.md`: train each hull in its minigame at four
+> intensities (the Dolphin in Switchback first), then rebuild Regatta from what the trained vessels can do.
+
 **The goal (the user, 2026-10-14):** six vessels whose AI can race **Regatta** (`GameModes.Regatta = 56`,
 `Arcade/REGATTA.md`), built so that a seventh is cheap, and running the same way in Unity, in Amoebius and in
 the Vessel Studio. This file supersedes the per-vessel order in `Docs/Studios/VESSEL_STUDIO_ROLLOUT.md` §3: the
@@ -14,7 +18,7 @@ has been timed in Regatta yet.
 
 | Hull | Model race (I1, card's elements) | Its speed verb | AI today | Pick |
 |---|---|---|---|---|
-| Rhino | **17.8 s** (fastest) | ramp: straight stick → 1200 u/s; a corner costs the wind-up | none of its own (the ramp engages on a straight stick) | **Yes**: the fastest hull, and the hardest AI (when to straighten) |
+| Rhino | **17.8 s** (fastest) | ramp: straight stick → 1200 u/s; a corner costs the wind-up | `RampBoostAIPolicySO` (since 2026-10-15; rebuilt 2026-10-17 to brake on the ramp) | **Yes**: the fastest hull, and the hardest AI (when to straighten) |
 | Manta | 23.9 s | Soar: boost costs yaw, 720 u/s | layer-4 Soar drive (`MantaAnalogTurnBoostExecutor`) | **Yes**: fast, and its drive exists |
 | Dolphin | 41.9 s | drift charge → discharge, 347 u/s | `ChargeBoostAIPolicySO` | **Yes**: a skill mechanic the AI already half-owns |
 | Scarab | 44.9 s (Time 10) | throttle ceiling + Time-5 Snap Dash | full throttle + `SnapDashAIPolicySO` | Reserve: fast and nearly free to drive, but nothing to learn |
@@ -22,7 +26,7 @@ has been timed in Regatta yet.
 | Squirrel | 48.5 s | skims the rail for boost | **`SkimRacePilot` + `RegattaRingObjective`**, the best AI in the game | **Yes**: done; verify only |
 | Serpent | 58.1 s (Time 10) | 4 pellets | `PelletBoostAIPolicySO` | No: slow |
 | Sparrow | 73.6 s (Time 10) | indefinite boost | `HoldBoostAIPolicySO` | No: slowest |
-| **Stoat** | **not on the card yet** | the black-hole / white-hole pair: hold to warp the path and fly it ×2–×4 | dipole autopilot (path-watching, one-lap cap) + `GateRaceHandicap` difficulty | **Yes, next** (the user's pick) |
+| **Stoat** | 48.5 s (Time 10; on the card since 2026-10-17) | the black-hole / white-hole pair: hold to warp the path and fly it ×2–×4 | dipole autopilot (path-watching, one-lap cap) + `GateRaceHandicap` difficulty | **Yes** (the user's pick) |
 
 **The six: Squirrel, Stoat, Manta, Rhino, Urchin, Dolphin.** Six different speed verbs (skim, sling, soar,
 ramp, ride, charge), so each AI teaches the framework something new. Scarab is the reserve if one stalls.
@@ -44,6 +48,13 @@ hull's own bindings, ticked with a read-only context, input-only. Make that the 
   Everyone                        →  DIAGNOSTICS aim, state, reason                  (one struct: Third Eye, Amoebius, studio)
 ```
 
+**What shipped instead of parts of this plan (2026-10-17).** No `Diagnostics` struct, no `Controller/AI/Drives/` folder
+and no `new_racing_drive.py` were built. The look-ahead landed as `AIBoostContext.NextLeg` and `CornerDegrees` (filled from
+`AIPilot.SetNextLegProvider`, which `GateRaceController` sets). The Third Eye reads `AIBoostDriver.Status` (the drive's
+state in words) and `AIPilot.Objective` (phase, ring, lap, mistake). A drive can also write the throttle
+(`AIBoostDriver.Throttle`, the Rhino's brake). Drives stay in `Controller/AI/Boost/`. Items 2, 4 and 5 below are not
+started; item 5 is superseded by the 2026-10-16 editor-only decision (§3).
+
 1. **One drive contract.** A racing drive is an `AIBoostDriver`. Its context gains the course look-ahead it
    lacks: the ring after next, and the corner angle between them. That is the one fact a Rhino, Manta or Stoat
    needs to decide "spend now, or set up the turn". It gains a `Diagnostics` (state + reason), which the Third
@@ -59,7 +70,7 @@ hull's own bindings, ticked with a read-only context, input-only. Make that the 
    generator stage, its `…DriveTests`, a studio drive module stub with its parity test (§5), its
    `studio_to_unity/<hull>.json` map, and the roster and status-board rows. A new racing AI becomes "fill in one
    `Tick`, one test, one studio module".
-5. **One race studio, not six.** The Regatta studio page (built on the gate-race core the rollout plan already
+5. **(Superseded 2026-10-16: the Regatta AIs are tested in the Unity editor only, §3.) One race studio, not six.** The Regatta studio page (built on the gate-race core the rollout plan already
    called for, `gate_race.js`) loads each hull as a drive module. Course I1–I4 is emitted from `RegattaCourse`,
    and the scorecard is lap time per hull × difficulty against the balance model. A hull studio (the Squirrel's,
    the Stoat's) stays for the hull's FEEL; the AI race lives in one place.
@@ -68,21 +79,89 @@ hull's own bindings, ticked with a read-only context, input-only. Make that the 
 
 ## 3. The order
 
-| # | Work | Done when |
-|---|---|---|
-| **0** | **Groundwork**: Regatta runs in Amoebius (`engine_smoke`, `--arcade Regatta`) and the `ai_state` tool (§5); Regatta in `AIDifficultyRules.IsOfferedFor` (every non-Squirrel AI gets `GateRaceHandicap`; check the Squirrel's `SkimRaceHandicap` follows the same lobby pick); gate-race belief readable for the Third Eye (status #10); context gains the look-ahead; the `Diagnostics` struct | Third Eye shows any Regatta AI's aim and its mistakes; tests pin the look-ahead |
-| **1** | **Stoat** (§3.1) | A Hard AI Stoat finishes Regatta I1–I4 within the target band; Third Eye shows clean pairs |
-| 2 | **Squirrel** verify in Regatta (it already flies the Skim Race pilot) | Measured lap times per difficulty; the 2026-10-06 "threaded no rings" note is confirmed gone |
-| 3 | **Manta**: fold the Soar drive in, add corner look-ahead (cut Soar before a corner it cannot yaw round) | Lap times; no ring missed at Soar speed |
-| 4 | **Rhino**: a NEW drive. Straighten for the ramp only when the runway to the next corner pays back the wind-up; otherwise hold the line | Beats its cruise time on every intensity; misses no corner mouth at 1200 u/s |
-| 5 | **Urchin**: measure the lane-stay rate (REGATTA.md §6's open number); fix re-latching rivals' lanes if it is low | Rides its own lane through ≥ N% of the race |
-| 6 | **Dolphin**: measure the charge policy in Regatta; tune the discharge runway | Lap times per difficulty |
-| 7 | **Mixed grid**: clear `SO_ArcadeGame.OpponentAIVessel` in `author_regatta_assets.py` (the Squirrel pin is a stopgap, REGATTA.md §6); re-run `regatta_balance.py` against AI times; set `StartingElements` from them | An all-AI domain of each of the six can win; the spread holds |
+| # | Work | Done when | Status |
+|---|---|---|---|
+| **0** | **Groundwork**: Regatta runs in Amoebius (`engine_smoke`, `--arcade Regatta`) and the `ai_state` tool (§5); Regatta in `AIDifficultyRules.IsOfferedFor` (every non-Squirrel AI gets `GateRaceHandicap`; check the Squirrel's `SkimRaceHandicap` follows the same lobby pick); gate-race belief readable for the Third Eye (status #10); context gains the look-ahead; the `Diagnostics` struct | Third Eye shows any Regatta AI's aim and its mistakes; tests pin the look-ahead | Partly done: Regatta offers difficulty; the Third Eye reads `AIPilot.Objective` and `AIBoostDriver.Status`; look-ahead done (`NextLeg` / `CornerDegrees`). No `Diagnostics` struct; Amoebius race not started |
+| **1** | **Stoat** (§3.1) | A Hard AI Stoat finishes Regatta I1–I4 within the target band; Third Eye shows clean pairs | On the card (2026-10-17); autopilot learns from flights; not timed. **On hold** for Garrett's configuration (§3.1) |
+| 2 | **Squirrel** verify in Regatta (it already flies the Skim Race pilot) | Measured lap times per difficulty; the 2026-10-06 "threaded no rings" note is confirmed gone | Learned ring face from 29 flights (2026-10-16, on bleeding-edge via #1165); not editor-timed |
+| 3 | **Manta**: fold the Soar drive in, add corner look-ahead (cut Soar before a corner it cannot yaw round) | Lap times; no ring missed at Soar speed | Regatta Soar bands 0.8 / 0.85 (2026-10-17, `f4e35748c`, from `manta_drive_sim.py`; Manta flights replace them). The corner look-ahead was modelled and NOT shipped: slower on every course. **2026-10-24: learned from Yash's flights**: bands 0.975 / 0.975 (he holds Soar ~87% of the time), line 0.809 (crosses rings ~79 u from the centre); a Third Eye race should confirm it still turns hard corners |
+| 4 | **Rhino**: a NEW drive. Straighten for the ramp only when the runway to the next corner pays back the wind-up; otherwise hold the line | Beats its cruise time on every intensity; misses no corner mouth at 1200 u/s | First cut 2026-10-15; rebuilt 2026-10-17 (brake on the ramp), retuned for centre steering; **2026-10-24 from Yash's six races** (two finished): Regatta corner speed 600 → 333, line 0.80 → 0.676, set by hand; the learner replaces them at the third finished race. Editor checks T-20261016-01ec, T-20261024-2979 |
+| 5 | **Urchin**: measure the lane-stay rate (REGATTA.md §6's open number); fix re-latching rivals' lanes if it is low | Rides its own lane through ≥ N% of the race | **Measured 2026-10-25:** own lane in 15 of 17 recorded races (300 u/s), a rival's in 2 (I4, 42-48 u/s). Fixed: a 4 s dry-crawl cap and a stand-off approach to its own lane (`REGATTA.md` §6); not editor-verified |
+| 6 | **Dolphin**: measure the charge policy in Regatta; tune the discharge runway | Lap times per difficulty | Drift again at the discharge's peak (2026-10-17, `9b064721b`); model only. **2026-10-24:** Yash's one race (I1, unfinished) re-drifts at the peak too; line 0.60 → 0.785 set by hand; the discharge runway waits for three finished races. Editor checks T-20261016-b719, T-20261024-c9ba |
+| 7 | **Mixed grid**: clear `SO_ArcadeGame.OpponentAIVessel` in `author_regatta_assets.py` (the Squirrel pin is a stopgap, REGATTA.md §6); re-run `regatta_balance.py` against AI times; set `StartingElements` from them | An all-AI domain of each of the six can win; the spread holds | Not started |
 
 **2026-10-15 status:** an audit of the five racing hulls (all except the Stoat) found and fixed the race-breakers listed in
 `Arcade/REGATTA.md` §6.1. Step 0 is partly done: Regatta now offers difficulty, and every gate-race AI reports its
 phase, ring, lap and boost decision to the Third Eye (`AIPilot.Objective`, `AIBoostDriver.Status`), with trails.
 The Rhino now has a drive (`RampBoostAIPolicySO`, step 4's first cut). Nothing has been timed yet.
+
+**2026-10-17: step 4's drive.** The Rhino brakes ON the ramp (its 300 u/s² bleed, not the 120 u/s² coast) to a corner
+speed sized by the corner after the objective (a new `AIPilot.SetNextLegProvider`, filled by `GateRaceController`), and
+presses the ramp only where the leg pays the wind-up back (`AI/AI_BOOST.md`, the Rhino ramp section). Under the old
+axis steering the offline model (`Tools/Build/rhino_drive_sim.py`) had the new drive at I1 43.0 / I2 56.1 / I3 56.3 s / I4
+stalled, against the old drive's 48.2 / 55.4 / stalled / stalled.
+
+**2026-10-17: Regatta steers through the ring's centre.** `GateRaceController.ArmRacer` (Regatta only,
+`AICommitFromApproachPoint`) now puts the "through" point on the line from the pilot through the ring's centre, not on
+the ring's axis. A drifting hull locks its course on that point; an axis point is off that line when the pilot commits
+off-axis, so the locked line passed beside the mouth. In the models the axis point stalled the Dolphin at I2-I4 (both
+drives) and the old Rhino drive at I3-I4; on the centre line every race finished. This changes every Regatta AI. Under
+it the Rhino was retuned (`cornerReleaseDegrees` 50 → 30, `minSpeedGain` 150 → 50): old vs new drive, I1 43.8 / 44.9,
+I2 58.8 / 62.9, I3 53.7 / 50.1, I4 51.8 / 55.4 s, about a tie (208 vs 213 s in all). The brake stays for hairpins;
+`cornerSpeed` is learned from Yash's Rhino flights when they arrive. **2026-10-24:** set by hand from his six Rhino
+races (two finished): Regatta `cornerSpeed` 333 (was 600) and the Rhino line `LaneShare` 0.676 (was 0.80); the
+learner replaces both at the third finished race (`AI_BOOST.md` Ramp, `REGATTA.md` §6.2).
+
+**2026-10-17 (later): every hull races its own line along the sides** (`REGATTA.md` §6.2). The centre line above
+is now only the fallback: every styled hull (all but the Squirrel and the Urchin) flies the gap between two rails at its
+own distance from the braid, with its own room and risk, and a person's flights of a hull set its line.
+
+**2026-10-17: step 6, the Dolphin drifts again at the peak** (`ChargeBoostAIPolicySO`, `AI/AI_BOOST.md`). The drift
+freezes speed, so every discharge now holds the next commit drift off only until the speed meets the transformer's
+falling target. Model (`Tools/Build/dolphin_drive_sim.py`, centre steering), 3 laps old vs new: I1 56.9 / 54.0, I2
+66.0 / 64.6, I3 80.8 / 73.1, I4 74.0 / 71.9 s; on a straight the average speed goes 202 → 299 u/s.
+
+**2026-10-17: step 3, the Manta holds Soar deeper into turns.** Soar raises the Manta's turn rate (0.2 v + 30 deg/s), so
+it turns better fast, and the executor's bands (0.35 / 0.75) dropped Soar too early. Regatta now flies `BoostStickBand`
+0.8 and `YastriStickBand` 0.85 through `Resources/AIBoostPolicies/MantaSoarAITuning_Regatta` (the learner's slot,
+written with its writer; every other mode keeps the executor's bands; a person's Manta flights replace these).
+Model (`Tools/Build/manta_drive_sim.py`), 3 laps, default → Regatta bands: I1 26.5 → 25.0, I2 32.8 → 31.0, I3 37.5 →
+35.6, I4 37.6 → 35.5 s. The roadmap's corner look-ahead (drop Soar before a corner, like the Rhino's brake) was modelled
+and **not shipped**: slower on every course (27.6 / 34.6 / 40.5 / 39.8 s), because the Manta's turn radius barely
+shrinks when it slows (237 u at 720 u/s, 156 u at 180 u/s). Test: `RegattaDriveTuningTests.
+MantaRegattaTuning_LoadsWithThePivotBandAboveTheBoostBand`.
+
+**2026-10-25: the shared steering was losing every styled hull's race** (`Arcade/REGATTA.md` §6.3). Measured from
+the AI rivals in 87 stored editor races (`Tools/Build/regatta_rival_report.py`): every hull on the gate steering or the
+race line threaded 5.5-9.3 rings a minute (the Urchin 23.5, the Squirrel 13.7), crossing the ring's plane just outside
+the mouth and swinging 500-1500 u wide. Two fixes for all of them at once: the orbit break-off no longer judges the
+race line's lead point (`AIPilot.MarkAimAsPathLead`), and the aim never cuts the next ring's mouth
+(`RegattaRaceLine.AimThroughRing`). Offline (`Tools/Build/regatta_line_sim.py`, the first model WITH the break-off and
+`AIPilot`'s own stick law): break-offs plus misses 18-83 → 0 per hull over I1-I4, every hull faster on every course
+(Manta I4 215.5 → 66.5 s, Scarab I3 135.3 → 53.6 s). The Scarab's corner lift was modelled and not shipped
+(`scarab_drive_sim.py`). Per-hull drive work resumes from races flown after this change: re-run
+`regatta_rival_report.py --since 2026-10-26`.
+
+**2026-10-25 (later): step 4, the Rhino on its line** (`Arcade/REGATTA.md` §6.4). Modelled on the race line for the
+first time (`Tools/Build/rhino_line_sim.py`), the Rhino ramped 5-10% of a race (196-216 s): the drives judged "straight"
+by the ring round the bend, which the line never points at. They now judge it on the path the pilot flies
+(`AIBoostContext.PathDirection`, race line only): 29.6 / 40.7 / 51.8 / 48.0 s, and the same gate opens every other
+hull's speed verb on the line. A retune (`cornerSpeed` 1000, runway 0.6 s: 119 s against 170 s over I1-I4) waits on
+Yash, whose flights set 333. The Dolphin's start-line drift and the Urchin's lane were fixed the same day by another
+session (`4cc4dc4c52`).
+
+**2026-10-25 (evening): step 3, the Manta, and the nose lag** (`Arcade/REGATTA.md` §6.4.1). The models now carry an AI
+hull's nose lag (1.5/s, kept for AIs when people lost it on 10-21) and match the real races: under it the Manta's stick
+sat near full and its Soar was on 1-18% of a race. Its Regatta look-ahead goes 0.35 / 0.8 → 0.6 / 1.0 s
+(`manta_line_sim.py`: 697 s with I4 stalled → 280 s, no miss), and the Rhino's to 0.8 / 1.4 s (447.7 → 405.4 s, no miss).
+Bands, `LaneShare` and the lag itself unchanged.
+
+The three drive sims are models without break-off or rotation-follow lag (`regatta_line_sim.py` has both; `manta_line_sim.py` and `rhino_line_sim.py` have the lag), and default to the Regatta steering
+(`THROUGH_CENTRE = True`). The editor is the measurement; none of this has been run there.
+
+**2026-10-17: the Regatta AIs learn from people's editor flights.** The Squirrel's skim line came from 29 flights (the 2026-10-16 learning run)
+(`SITUATION_RECORDING_PLAN.md` §8); the Rhino, Dolphin and Manta drives learn the same way through Regatta-only variants
+(`learn_drives_from_flights.py`, §9), waiting on flights of those hulls. The Stoat joined the card on 2026-10-17 and learns the same way.
 
 **Decision (Yash, 2026-10-16): the Regatta AIs are tested in the Unity editor only, and the Regatta artifact is
 deleted.** "Delete the artifact, it's not needed; only tests will happen in the Unity editor itself." The loop is: change
@@ -119,11 +198,52 @@ these are leads, not results.
 - **Levels ordered correctly** for the Serpent and the Manta; the Squirrel's Medium beat its Hard on two courses (rail
   rams reset its boost: noise larger than the belief mistakes).
 
+### 3.0 How the Regatta AIs are trained: one skill at a time, per hull (2026-10-17)
+
+Yash, 2026-10-17: "every vessel moves in different ways ... they should process in their own way. The ultimate goal is
+to win the race fast ... how risky you want to play versus how careful ... more player data can help us gain more
+values on how to set the AIs", like game bots trained to do different tasks and then fight real matches. So each hull's
+racing AI is a set of SKILLS, each trained and measured on its own, then raced together:
+
+| Skill | The question | Per hull, per mode, in | Learned from people by | Tested by |
+|---|---|---|---|---|
+| **Line** | Where on the course to fly | `RaceLineStyleSO` (`Resources/RaceLines`) | ring-crossing radius (`learn_drives_from_flights.py`) | `RegattaRaceLineTests`, the Third Eye |
+| **Speed verb** | When to spend the hull's speed (ramp, Soar, discharge, sling) | `AIBoostPolicySO` variants, `MantaSoarAITuningSO`, the Stoat's configs | engage / release moments | `RhinoRampDriveTests`, `DolphinChargeDriveTests`, the drive sims |
+| **Skim** | When to skim a rail, and when to stop once the speed is there | the Squirrel's `SkimRaceAIConfig_Regatta` (`DirectBoost`: it leaves the rails at boost 3.1) | skim share against boost (to do: needs the skimmer's real reach, not a prism-centre distance) | `SKIM_RACE_AI.md` harness |
+| **Hazards** | Keep off rails and rivals | the line's room (`HullClearance`), the guards | rail distance while flying | the line tests |
+| **Racecraft** | How bold to be, overtaking | the style's `Risk` + per-seat spread | (to do: rival-proximity moments) | (to do) |
+
+Training runs in three stages, the same for every hull:
+1. **Imitation (now):** each skill's numbers come from people's editor flights of that hull, in that mode, from their
+   fastest finished races (`learn_drives_from_flights.py --write`; nothing is written below three finished races).
+2. **Search (next):** each skill's numbers are tuned against race time in the offline drive sims, and later in
+   Amoebius headless races (§4), keeping only changes that win on every intensity.
+3. **Race (always):** the skills fly together in the real game; the Third Eye and the timed races are the judge.
+
 ### 3.1 Stoat, the first one
+
+> **Status, 2026-10-17: ON HOLD for AI work. Garrett is configuring the Stoat itself** (Yash: "Stoat still needs
+> configuring, getting done by Garrett"). Do not tune its autopilot numbers or build its drive until his configuration
+> lands; read his branch first (`who_works_where.py query Assets/_SO_Assets/VesselActions/Stoat`). Where the Stoat's
+> AI stands today, all on `bleeding-edge`, none editor-verified:
+> - **On the Regatta card** (Time 10 at every intensity, 48.5 s model time at I1).
+> - **Its autopilot** is the three executors' own: the field pair (Mass mode, path-watching), the catch sling (Time
+>   mode) and the mode switch at 70 degrees off the nose. All three steer at `AIPilot.TargetPosition`.
+> - **Its race line** (`Resources/RaceLines/Stoat_Regatta`: 0.55 out, 10 u room, risk 0.6).
+> - **The range fix** (`e4fc4d266`): on the line the field and sling autopilots take the bearing from the steering
+>   point and the RANGE from the ring (`AIPilot.ObjectivePosition`), or they would never lay a pair (`StoatDipoleTests`).
+> - **Per-mode tuning** reads `<config>_Regatta` copies through `AIModeTuning` (none written yet;
+>   `learn_drives_from_flights.py` measures the Stoat from flights).
+> - **Not done, by design:** a speed model like the Rhino's, Dolphin's and Manta's (the pair's physics is too rich for a
+>   rough model to be trusted), and any retune. Its `StoatAIBoostPolicy` is a Squirrel skim-ring copy that builds no
+>   driver: harmless, and Garrett's to keep or delete.
+>
+> When Garrett's configuration lands: re-check the three autopilot distances (`autopilotLetGoNear`,
+> `autopilotMinDistance`, `aiSlingMinDistance`) against the race line's look-ahead, fly it in Regatta, and learn it.
 
 The user's brief: **better speed control and manoeuvring with the black-hole / white-hole pair.**
 
-1. **Studio first** ([Vessel Studio](https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa), Stoat page). Read
+1. **(Superseded 2026-10-16: the Regatta AIs are tested in the editor only.) Studio first** ([Vessel Studio](https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa), Stoat page). Read
    `requests` and `decisions` first.
    - **Speed control**: hold the pair to a TARGET speed for the leg. Let go early into a corner, carry the
      boost down a straight. Today it holds while the path is warped, with a one-lap cap.
@@ -131,12 +251,13 @@ The user's brief: **better speed control and manoeuvring with the black-hole / w
      path through the next ring mouth, using the corner angle from the look-ahead.
    - Scorecard columns: lap time on the Regatta course I1–I4, rings missed, overshoot past a ring, time over
      cruise, pairs per lap. The current Hard result in the studio (Warpline courses) is 49–59 s.
-2. **Clone to Unity** (`/artifact-to-unity`): the drive's numbers through `studio_to_unity.py`; the decision
+2. **(Superseded with step 1.) Clone to Unity** (`/artifact-to-unity`): the drive's numbers through `studio_to_unity.py`; the decision
    logic ported line for line, as the first drive in `Controller/AI/Drives/` (the fold in §2.2), with
    page-golden tests.
-3. **Put the Stoat on the Regatta card**: `author_regatta_assets.py` (the card's `Vessels`, a `StartingElements`
-   row), a Stoat row in `regatta_balance.py` (its speed is the field flight, not a ceiling, so the model needs a
-   sling term). The balance assert must still pass.
+3. **Put the Stoat on the Regatta card** - **done 2026-10-17** (Yash): `author_regatta_assets.py` lists it, and
+   `regatta_balance.py`'s Stoat row prices its warp (Time 10 at every intensity, 48.5 s at I1 beside the Squirrel and
+   the Urchin; the fleet's tuned spread unchanged at 4.13x). Its autopilot learns from editor flights through
+   `AIModeTuning` (`SITUATION_RECORDING_PLAN.md` §9).
 4. **Verify**: Third Eye in Regatta (Arcade ▸ Regatta, ally AI set to Stoat); Easy vs Hard; profile the
    pathfinder near a sink.
 
@@ -164,8 +285,8 @@ model instead of `skimrace_sim_harness`'s hand model (`Sim.cs`):
 | The AI code | Compiled live from `Assets/` (`CosmicShore.Live`). The legacy hand copy `Port/src/CosmicShore.Game/Controller/AI/AIPilot.cs` has drifted, but only legacy tests use it | Nothing to port: a drive written in `Assets/` runs in Amoebius on the next build. Keep drives pure (§2.3) so they never need an engine feature the port lacks |
 | Watching an AI | MCP tools are generic (`game_get`, `game_hierarchy`); no AI tool | One **`ai_state`** MCP tool and control-port verb that return every pilot's `Diagnostics` (aim, state, reason, belief): the same struct the Third Eye draws. Claude, a test script and a human all read one answer |
 | Racing headless | `--arcade MODE`, `--auto bench:`, `--train` (Skim Race, `TrainingPilot`) | `--race` (§4). Regatta first |
-| The studio | VESSEL STUDIO page (`StudioCatalog.cs`, `studios.json`): Open, PLAY IN ENGINE (`engineMode` → `--arcade`), Open live. The studio's AI is JavaScript in a browser window | A **Regatta** studio card with `engineMode: Regatta`, so PLAY IN ENGINE opens the real race with the AIs. The Stoat card's note goes away once the game flies the dipole sling the studio does |
-| Studio ↔ game parity | Planned, not built (`VESSEL_STUDIO_PLAN.md` §4a step 2: Node runs the page's functions, dotnet runs the C#) | Per drive: a **parity test** that feeds the same recorded contexts to the page's drive module and to the C# drive, and requires the same presses. That keeps the browser AI and the game AI one AI. The drive's config SO is mapped in `Tools/Build/studio_to_unity/<hull>.json` (only `stoat.json` exists today) |
+| The studio | VESSEL STUDIO page (`StudioCatalog.cs`, `studios.json`): Open, PLAY IN ENGINE (`engineMode` → `--arcade`), Open live. The studio's AI is JavaScript in a browser window | (Superseded 2026-10-16: no Regatta studio; tests are in the editor.) A **Regatta** studio card with `engineMode: Regatta`, so PLAY IN ENGINE opens the real race with the AIs. The Stoat card's note goes away once the game flies the dipole sling the studio does |
+| Studio ↔ game parity | Planned, not built (`VESSEL_STUDIO_PLAN.md` §4a step 2: Node runs the page's functions, dotnet runs the C#) | Per drive: a **parity test** that feeds the same recorded contexts to the page's drive module and to the C# drive, and requires the same presses. That keeps the browser AI and the game AI one AI. The drive's config SO is mapped in `Tools/Build/studio_to_unity/<hull>.json` (`stoat.json` and `brittlestar.json` exist today, plus `clones.json`) |
 | The studio inside the engine | WebAssembly build of Amoebius: not scheduled (`VESSEL_STUDIO_PLAN.md` §4) | Out of scope here. PLAY IN ENGINE plus the parity tests give "one AI" without it |
 
 ## 6. What the user tests, per step

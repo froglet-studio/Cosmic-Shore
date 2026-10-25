@@ -61,6 +61,19 @@ namespace CosmicShore.UI
         [Tooltip("AI profile list used to resolve AI avatars by name.")]
         [SerializeField] protected SO_AIProfileList aiProfileList;
 
+        [Header("Rev 8 glass ladder (Docs/MENU_REDESIGN_B.md section 49)")]
+        [Tooltip("Spawned into the card container above each team's rows when any domain fields two or more pilots. " +
+                 "Empty: no headers, every row shows its own score.")]
+        [SerializeField] private ScoreboardTeamHeader teamHeaderPrefab;
+        [Tooltip("A winning team's line when every member shares one score (a team race time). {score} is that score.")]
+        [SerializeField] private string teamWonLine = "Won - {score}";
+        [Tooltip("A winning team's line when its members' scores differ (each row shows its own).")]
+        [SerializeField] private string teamWonNoScoreLine = "Won";
+        [Tooltip("Any other team's line when its members share one score. {score} is that score.")]
+        [SerializeField] private string teamLine = "{score}";
+        [Tooltip("What the local pilot earned and the wallet counting up. Empty: no strip.")]
+        [SerializeField] private ScoreboardRewardStrip rewardStrip;
+
         [Header("Crystal Rewards")]
         [Tooltip("Crystals by finishing place, best first: index 0 = 1st, index 1 = 2nd, and so on. " +
                  "Places past the end of the list earn 0, and LAST place always earns 0 regardless " +
@@ -99,8 +112,42 @@ namespace CosmicShore.UI
                  "Leave unassigned in non-tournament scenes.")]
         [SerializeField] private GameObject continueButton;
 
+        [Header("End-screen safety net")]
+        [Tooltip("Seconds after the winner is known within which the end screen must have been raised (the reveal holds " +
+                 "3 s). Past it the board shows itself and says the reveal was cut short.")]
+        [SerializeField, Min(1f)] private float endScreenGraceSeconds = 5f;
+
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
+
+        [Header("Style-B board (Docs/MENU_REDESIGN_B.md section 22.4)")]
+        [Tooltip("Wire the four buttons in code rather than by persistent calls. The style-B board " +
+                 "is a nested prefab, so a persistent call into this component would be a per-" +
+                 "instance override - the shape that left the legacy board's Play Again calling a " +
+                 "null target.")]
+        [SerializeField] private bool wireButtonsInCode;
+        [Tooltip("'Skim Race - Intensity 3' above the banner.")]
+        [SerializeField] private TMP_Text modeText;
+
+        [Header("Words (every line the board writes; empty shows nothing)")]
+        [Tooltip("The banner when a domain won. {domain} is its name.")]
+        [SerializeField] private string bannerWinLine = "{domain} victory";
+        [Tooltip("The banner when no domain won.")]
+        [SerializeField] private string bannerNoWinnerLine = "Game over";
+        [Tooltip("The line above the banner. {mode} is the game, {intensity} its intensity.")]
+        [SerializeField] private string modeLine = "{mode} - Intensity {intensity}";
+        [Tooltip("The line above the banner for a game without an intensity. {mode} is the game.")]
+        [SerializeField] private string modeNoIntensityLine = "{mode}";
+        [Tooltip("Play again, for the host (whose press restarts the match).")]
+        [SerializeField] private string playAgainHostLine = "Play again";
+        [Tooltip("Play again, for a guest (whose press is a rematch vote).")]
+        [SerializeField] private string playAgainGuestLine = "Rematch?";
+        [Tooltip("A guest's button once their vote is in.")]
+        [SerializeField] private string rematchSentLine = "Rematch sent";
+        [Tooltip("The host's button once anyone votes. {votes} voted of {pilots}.")]
+        [SerializeField] private string hostTallyLine = "Play again ({votes}/{pilots})";
+        [Tooltip("A guest's button once anyone votes, before they vote. {votes} voted of {pilots}.")]
+        [SerializeField] private string guestTallyLine = "Rematch? ({votes}/{pilots})";
 
         #endregion
 
@@ -111,6 +158,7 @@ namespace CosmicShore.UI
         private RectTransform _scoreboardRect;
         private Sequence _entranceSeq;
         private readonly List<PlayerScoreCard> _spawnedCards = new();
+        private readonly List<ScoreboardTeamHeader> _spawnedHeaders = new();
 
         // Mode rule's team-total domain placement for the game just shown (index 0 = 1st);
         // null outside tournament mode. Computed once per ShowScoreboard, consumed by the
@@ -121,15 +169,81 @@ namespace CosmicShore.UI
 
         #region Unity Lifecycle
 
+        // Every board in the scene, active or not, so an end screen that reached none can still find one.
+        static readonly List<Scoreboard> s_boards = new();
+
+        /// <summary>Counts every <see cref="ShowScoreboard"/>, so the end-game raiser can tell whether its raise
+        /// reached a board at all.</summary>
+        public static int ShowCount { get; private set; }
+
+        /// <summary>
+        /// The end screen was raised and no board answered - its object (or a parent) was switched off after load,
+        /// which also unsubscribed it, and the player was left in the arena with no way out (2026-10-17, the owner:
+        /// "Skim Race solo with AI, reveal shows then nothing"). Turns each board back on, says what was off, and shows it.
+        /// </summary>
+        public static void ShowUnreached()
+        {
+            foreach (var board in s_boards)
+            {
+                if (!board) continue;
+                var off = new List<string>();
+                for (var t = board.transform; t; t = t.parent)
+                    if (!t.gameObject.activeSelf) { off.Add(t.name); t.gameObject.SetActive(true); }
+                if (!board.enabled) { off.Add($"{board.name}'s Scoreboard component"); board.enabled = true; }
+                CSDebug.LogWarning($"[Scoreboard] The end screen reached no scoreboard ({(off.Count > 0 ? string.Join(", ", off) + " was off" : "it was not subscribed")}) - showing it anyway.");
+                board.ShowScoreboard();
+            }
+        }
+
+        /// <summary>
+        /// The winner is known: the end screen should follow once the reveal ends. EndGameSequencer raises it from a
+        /// coroutine, and a coroutine dies silently if its object is disabled mid-reveal - the player is then left in
+        /// the arena with no board and nothing in the console. This waits on a timer that does not depend on any
+        /// object staying enabled and, if no board has shown by then, shows it and says so.
+        /// </summary>
+        void ArmEndScreenSafetyNet() => EndScreenSafetyNetAsync(ShowCount, endScreenGraceSeconds).Forget();
+
+        static async UniTaskVoid EndScreenSafetyNetAsync(int shownBefore, float seconds)
+        {
+            await UniTask.Delay(System.TimeSpan.FromSeconds(seconds), ignoreTimeScale: true);
+            if (ShowCount != shownBefore || s_boards.Count == 0) return;
+            CSDebug.LogWarning($"[Scoreboard] The winner was decided {seconds:0} s ago and no end screen was raised - the " +
+                               "reveal (EndGameSequencer) was cut short. Showing the scoreboard.");
+            ShowUnreached();
+        }
+
         void Awake()
         {
+            s_boards.Add(this);
+            EndScreenWitness.Watch(scoreboardPanel, "scoreboard panel");
             statsProvider = GetComponent<ScoreboardStatsProvider>();
             if (!statsProvider)
                 CSDebug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");
 
             ResolveGameController();
+            if (wireButtonsInCode) WireButtons();
             HideScoreboard();
         }
+
+        void WireButtons()
+        {
+            Wire(playAgainButton, OnPlayAgainButtonPressed);
+            Wire(continueButton, OnContinueButtonPressed);
+            Wire(mainMenuButton, OnMainMenuButtonPressed);
+            Wire(leaveLobbyButton, OnLeaveLobbyButtonPressed);
+        }
+
+        static void Wire(GameObject host, UnityEngine.Events.UnityAction action)
+        {
+            if (host && host.TryGetComponent(out Button button)) button.onClick.AddListener(action);
+        }
+
+        /// <summary>
+        /// Main Menu (host only - a guest sees Leave lobby): the whole party returns to the menu.
+        /// The legacy board routed this through the pause menu's handler, whose host branch raises
+        /// the same event.
+        /// </summary>
+        public void OnMainMenuButtonPressed() => onClickToMainMenu.Raise();
 
         /// <summary>
         /// Finds the scene's game controller when the inspector reference is empty.
@@ -161,6 +275,8 @@ namespace CosmicShore.UI
 
             if (gameData?.OnShowGameEndScreen != null)
                 gameData.OnShowGameEndScreen.OnRaised += ShowScoreboard;
+            if (gameData?.OnWinnerCalculated != null)
+                gameData.OnWinnerCalculated.OnRaised += ArmEndScreenSafetyNet;
 
             var resetEvent = OnResetForReplay ?? gameData?.OnResetForReplay;
             if (resetEvent != null) resetEvent.OnRaised += HideScoreboard;
@@ -182,6 +298,8 @@ namespace CosmicShore.UI
 
             if (gameData?.OnShowGameEndScreen != null)
                 gameData.OnShowGameEndScreen.OnRaised -= ShowScoreboard;
+            if (gameData?.OnWinnerCalculated != null)
+                gameData.OnWinnerCalculated.OnRaised -= ArmEndScreenSafetyNet;
 
             var resetEvent = OnResetForReplay ?? gameData?.OnResetForReplay;
             if (resetEvent != null) resetEvent.OnRaised -= HideScoreboard;
@@ -224,6 +342,16 @@ namespace CosmicShore.UI
 
         void ShowScoreboard()
         {
+            // A destroyed board still subscribed (its OnDisable never ran) is a C# object whose Unity side is gone: it
+            // would pay the wallet, find no panel and count as the board that answered, so the real one's safety nets
+            // stood down. Drop it and say so.
+            if (!this)
+            {
+                if (gameData && gameData.OnShowGameEndScreen != null) gameData.OnShowGameEndScreen.OnRaised -= ShowScoreboard;
+                if (gameData && gameData.OnWinnerCalculated != null) gameData.OnWinnerCalculated.OnRaised -= ArmEndScreenSafetyNet;
+                CSDebug.LogWarning("[Scoreboard] A destroyed scoreboard was still subscribed to the end screen - dropped it.");
+                return;
+            }
             if (!gameData) { CSDebug.LogError("[Scoreboard] GameData is null!"); return; }
 
 // Fail OPEN: the panel (with its Main Menu / Play Again buttons) must appear even
@@ -238,6 +366,7 @@ namespace CosmicShore.UI
                     : null;
 
                 ConfigureLobbyButtons();
+                RenderModeLine();
                 ShowMultiplayerView();
                 PopulateDynamicStats();
             }
@@ -247,20 +376,32 @@ namespace CosmicShore.UI
                 CSDebug.LogError("[Scoreboard] Population threw — showing the panel anyway so the player can exit.");
             }
 
-            if (scoreboardPanel)
+            if (!scoreboardPanel)
             {
-                scoreboardPanel.gameObject.SetActive(true);
-
-                // Entrance animation disabled for now: PlayEntranceAnimation() slid the panel
-                // by mutating its own anchoredPosition (read current pos as the rest target,
-                // shoved it down by `offset`, tweened back via DOAnchorPos) and never restored
-                // it on HideScoreboard(). On a stretch-anchored panel a re-entrant/interrupted
-                // show captured the already-displaced position as the new rest target, so the
-                // panel drifted off-base in modes that re-show the board (Joust / Crystal Capture).
-                // Show at the authored position with no slide. (Re-enable once the rest pos is
-                // captured at Awake and restored on hide.)
-                ShowScoreboardImmediate();
+                CSDebug.LogWarning($"[Scoreboard] '{name}' in scene '{gameObject.scene.name}' has no scoreboard panel - " +
+                                   "it cannot show the end screen. Wire scoreboardPanel on its Scoreboard component.");
+                return;
             }
+
+            scoreboardPanel.gameObject.SetActive(true);
+            EnsureBoardVisible();
+            // Counted only once a panel is really up, so the raisers' safety nets still fire when a raise reached
+            // nothing that could show.
+            ShowCount++;
+            VerifyBoardShownAsync().Forget();
+            // The board owns the screen now: the vessel's ability row would otherwise draw over its bottom edge. The
+            // next turn (or a replay) brings the row back through the HUD's own lifecycle.
+            gameData.LocalPlayer?.Vessel?.VesselStatus?.VesselHUDController?.HideHUD();
+
+            // Entrance animation disabled for now: PlayEntranceAnimation() slid the panel
+            // by mutating its own anchoredPosition (read current pos as the rest target,
+            // shoved it down by `offset`, tweened back via DOAnchorPos) and never restored
+            // it on HideScoreboard(). On a stretch-anchored panel a re-entrant/interrupted
+            // show captured the already-displaced position as the new rest target, so the
+            // panel drifted off-base in modes that re-show the board (Joust / Crystal Capture).
+            // Show at the authored position with no slide. (Re-enable once the rest pos is
+            // captured at Awake and restored on hide.)
+            ShowScoreboardImmediate();
         }
 
         /// <summary>
@@ -312,7 +453,7 @@ namespace CosmicShore.UI
             // party) and left a client unable to say the most common thing anybody wants to say at
             // a scoreboard, with the host guessing whether anyone wanted another round.
             if (playAgainButton)  playAgainButton.SetActive(true);
-            if (playAgainLabel)   playAgainLabel.text = isClient ? "REMATCH?" : "PLAY AGAIN";
+            if (playAgainLabel)   playAgainLabel.text = isClient ? playAgainGuestLine : playAgainHostLine;
 
             StartRematchVoteRoster();
         }
@@ -354,6 +495,7 @@ namespace CosmicShore.UI
             StopRematchVoteRoster();
             if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(false);
             if (endGameObject) endGameObject.SetActive(false);
+            if (rewardStrip) rewardStrip.Hide();
             ClearPlayerCards();
         }
 
@@ -421,7 +563,83 @@ namespace CosmicShore.UI
 
         void OnDestroy()
         {
+            s_boards.Remove(this);
             _entranceSeq?.Kill();
+        }
+
+        /// <summary>
+        /// A frame after showing, the board must still be on screen: something that switches the end screen (or the
+        /// canvas under it) off in the same frame would otherwise leave the player with nothing, and a quiet console.
+        /// </summary>
+        async UniTaskVoid VerifyBoardShownAsync()
+        {
+            await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
+            await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
+            if (!this || !scoreboardPanel) return;
+            string hidden = WhatHidesBoard();
+            if (hidden == null) return;
+            CSDebug.LogWarning($"[Scoreboard] The scoreboard was hidden right after it was shown ({hidden}) - showing it again.");
+            scoreboardPanel.gameObject.SetActive(true);
+            EnsureBoardVisible();
+            ShowScoreboardImmediate();
+        }
+
+        /// <summary>What keeps the shown board off screen, or null when nothing does.</summary>
+        string WhatHidesBoard()
+        {
+            for (var t = scoreboardPanel; t; t = t.parent)
+            {
+                if (!t.gameObject.activeSelf) return $"'{t.name}' is inactive";
+                if (t.TryGetComponent<CanvasGroup>(out var group) && group.alpha <= 0.01f) return $"'{t.name}' is at alpha 0";
+                if (t.TryGetComponent<Canvas>(out var canvas) && !canvas.enabled) return $"the canvas '{t.name}' is disabled";
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Anything above the board that would keep it off screen once shown - an inactive parent, a parent CanvasGroup
+        /// at alpha 0, a disabled Canvas - is put right and named, so a hidden end screen is a warning, never silence.
+        /// </summary>
+        void EnsureBoardVisible()
+        {
+            for (var t = scoreboardPanel; t; t = t.parent)
+            {
+                if (!t.gameObject.activeSelf)
+                {
+                    CSDebug.LogWarning($"[Scoreboard] '{t.name}' above the scoreboard was inactive - turning it on.");
+                    t.gameObject.SetActive(true);
+                }
+                if (t.TryGetComponent<CanvasGroup>(out var group) && group.alpha <= 0.01f)
+                {
+                    CSDebug.LogWarning($"[Scoreboard] '{t.name}' above the scoreboard was at alpha 0 - showing it.");
+                    group.alpha = 1f;
+                }
+                if (t.TryGetComponent<Canvas>(out var canvas) && !canvas.enabled)
+                {
+                    CSDebug.LogWarning($"[Scoreboard] The canvas '{t.name}' holding the scoreboard was disabled - enabling it.");
+                    canvas.enabled = true;
+                }
+            }
+            if (scoreboardPanel is RectTransform rect && (rect.rect.width < 1f || rect.rect.height < 1f))
+                CSDebug.LogWarning($"[Scoreboard] The scoreboard is {rect.rect.width:0}x{rect.rect.height:0} - it cannot be seen.");
+            var lossy = scoreboardPanel.lossyScale;
+            if (Mathf.Abs(lossy.x) < 1e-4f || Mathf.Abs(lossy.y) < 1e-4f)
+                CSDebug.LogWarning($"[Scoreboard] The scoreboard's world scale is {lossy} - a parent is scaled to 0, so it cannot be seen.");
+
+            if (!CSDebug.IsVerbose(CSLogChannel.ArcadeMatch)) return;
+            var host = scoreboardPanel.GetComponentInParent<Canvas>();
+            // Overlay canvases drawn over the board (a higher sort order) - anything opaque among them hides it.
+            var above = new List<string>();
+            if (host)
+                foreach (var other in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+                    if (other.isRootCanvas && other != host.rootCanvas && other.isActiveAndEnabled &&
+                        other.renderMode == RenderMode.ScreenSpaceOverlay && other.sortingOrder >= host.rootCanvas.sortingOrder)
+                        above.Add($"{other.name}({other.sortingOrder})");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Scoreboard] Overlay canvases over the board: {(above.Count > 0 ? string.Join(", ", above) : "none")}");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[Scoreboard] Shown: activeInHierarchy={scoreboardPanel.gameObject.activeInHierarchy}, " +
+                $"rect={(scoreboardPanel is RectTransform r ? r.rect.size.ToString() : "?")}, lossyScale={lossy}, " +
+                $"canvas={(host ? $"{host.rootCanvas.name} mode={host.rootCanvas.renderMode} order={host.rootCanvas.sortingOrder} enabled={host.rootCanvas.enabled}" : "none")}");
         }
 
         #endregion
@@ -500,22 +718,36 @@ namespace CosmicShore.UI
 
         protected virtual void SetBannerForDomain(Domains domain)
         {
-            string domainLabel = domain switch
-            {
-                Domains.Jade => "JADE",
-                Domains.Ruby => "RUBY",
-                Domains.Gold => "GOLD",
-                Domains.Blue => "BLUE",
-                _            => null,
-            };
-
             if (BannerImage) BannerImage.color = GetDomainColor(domain);
-            if (BannerText)
-            {
-                BannerText.text = string.IsNullOrEmpty(domainLabel)
-                    ? "GAME OVER"
-                    : $"{domainLabel} VICTORY";
-            }
+            if (BannerText) BannerText.text = BannerLine(domain, bannerWinLine, bannerNoWinnerLine);
+            if (BannerText && domain != Domains.Blue && (int)domain != 0) BannerText.color = GetDomainColor(domain);
+        }
+
+        /// <summary>
+        /// "Jade victory" - or "Game over" when no domain won. Blue is the "no domain" sentinel
+        /// (GameDataSO.WinnerDomain's reset value), so it never names a winner: "BLUE VICTORY" used
+        /// to be reachable on a board where nobody flies Blue.
+        /// </summary>
+        public static string BannerLine(Domains domain, string winLine, string noWinnerLine) => domain switch
+        {
+            Domains.Jade or Domains.Ruby or Domains.Gold => TemplateText.Fill(winLine, "domain", domain.ToString()),
+            _ => TemplateText.Fill(noWinnerLine),
+        };
+
+        void RenderModeLine()
+        {
+            if (!modeText || gameData == null) return;
+            string mode = PauseMenu.SpacedName(gameData.GameMode.ToString());
+            int intensity = gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 0;
+            modeText.text = intensity > 0
+                ? TemplateText.Fill(modeLine, "mode", mode, "intensity", intensity.ToString())
+                : TemplateText.Fill(modeNoIntensityLine, "mode", mode);
+        }
+
+        void DecorateCard(PlayerScoreCard card, string pilotName, Domains domain)
+        {
+            card.SetDomain(domain == Domains.Blue || (int)domain == 0 ? string.Empty : domain.ToString(), GetDomainColor(domain));
+            card.SetLocal(gameData != null && gameData.LocalPlayer != null && gameData.LocalPlayer.Name == pilotName);
         }
 
         void PopulatePlayerCards(List<IRoundStats> orderedStats)
@@ -542,6 +774,7 @@ namespace CosmicShore.UI
                 card.Setup(stats.Name, FormatPlayerScore(stats), domainColor, i);
 
                 card.SetAvatar(ResolveAvatarSprite(stats));
+                DecorateCard(card, stats.Name, stats.Domain);
 
                 string secondary = FormatSecondaryStat(stats);
                 if (!string.IsNullOrEmpty(secondary))
@@ -578,14 +811,31 @@ namespace CosmicShore.UI
             }
 
             string winnerName = results[0].Name;
+            var ladder = ScoreboardLadder.Build(results, gameData.WinnerDomain);
+            int stagger = 0;
 
-            for (int i = 0; i < results.Count; i++)
+            foreach (var entry in ladder)
             {
-                var r = results[i];
+                if (entry.IsHeader)
+                {
+                    if (!teamHeaderPrefab) continue;
+                    var header = Instantiate(teamHeaderPrefab, playerCardContainer);
+                    header.Bind(entry.Domain.ToString(), GetDomainColor(entry.Domain), TeamLine(entry));
+                    _spawnedHeaders.Add(header);
+                    continue;
+                }
+
+                var r = results[entry.ResultIndex];
                 var card = Instantiate(playerCardPrefab, playerCardContainer);
 
-                card.Setup(r.Name, r.ScoreText, GetDomainColor(r.Domain), i);
+                card.Setup(r.Name, r.ScoreText, GetDomainColor(r.Domain), stagger++);
+                card.SetRank(r.Rank > 0 ? r.Rank : entry.ResultIndex + 1);
                 card.SetAvatar(ResolveAvatarSpriteByName(r.Name));
+                card.SetOutcome(entry.Won);
+                DecorateCard(card, r.Name, r.Domain);
+                // A header carries the team's shared score once; with no header prefab every row keeps its own.
+                card.ShowScore(entry.ShowsScore || !teamHeaderPrefab);
+                card.SetShare(entry.Share);
 
                 if (!string.IsNullOrEmpty(r.Secondary))
                     card.ShowSecondaryStat(r.Secondary);
@@ -600,6 +850,14 @@ namespace CosmicShore.UI
             AwardCrystalsToLocalPlayer(winnerName);
         }
 
+        string TeamLine(ScoreboardLadder.Entry header)
+        {
+            string line = header.SharedScore != null
+                ? (header.Won ? teamWonLine : teamLine)
+                : (header.Won ? teamWonNoScoreLine : string.Empty);
+            return string.IsNullOrEmpty(line) ? string.Empty : line.Replace("{score}", header.SharedScore ?? string.Empty);
+        }
+
         void ClearPlayerCards()
         {
             foreach (var card in _spawnedCards)
@@ -607,6 +865,9 @@ namespace CosmicShore.UI
                 if (card) Destroy(card.gameObject);
             }
             _spawnedCards.Clear();
+            foreach (var header in _spawnedHeaders)
+                if (header) Destroy(header.gameObject);
+            _spawnedHeaders.Clear();
 
             // Safety: also destroy any leftover cards in the container (e.g. editor-placed templates)
             if (playerCardContainer)
@@ -644,6 +905,7 @@ namespace CosmicShore.UI
             string source = gameData.IsMaelstromMode ? "tournament_placement" : "game_placement";
 
             _crystalsAwardedThisGame = true;
+            if (rewardStrip) rewardStrip.Hide();
             if (amount <= 0) return;   // e.g. a last-place domain earns nothing this game
 
             // Wallet write is an external-service boundary: it runs mid-way through building the
@@ -652,6 +914,7 @@ namespace CosmicShore.UI
             try
             {
                 int newBalance = service.AddCrystals(amount, source);
+                if (rewardStrip) rewardStrip.Show(amount, newBalance - amount, newBalance);
                 CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Scoreboard] Awarded {amount} crystals to '{localName}' ({source}) - new balance={newBalance}");
             }
             catch (System.Exception e)
@@ -873,7 +1136,7 @@ namespace CosmicShore.UI
             // none in TMP Settings, and m_missingGlyphCharacter 0. The "REMATCH ✓" this used to say
             // would have drawn a blank where the tick is. It never showed because the label was
             // unwired; wiring it is what would have surfaced it.
-            if (playAgainLabel) playAgainLabel.text = "REMATCH SENT";
+            if (playAgainLabel) playAgainLabel.text = rematchSentLine;
         }
 
         bool _rematchVoteCast;
@@ -891,9 +1154,10 @@ namespace CosmicShore.UI
             var nm = NetworkManager.Singleton;
             bool isHost = nm == null || nm.IsServer;
 
+            string v = votes.ToString(), n = Mathf.Max(votes, humans).ToString();
             playAgainLabel.text = isHost
-                ? $"PLAY AGAIN ({votes}/{Mathf.Max(votes, humans)})"
-                : (_rematchVoteCast ? "REMATCH SENT" : $"REMATCH? ({votes}/{Mathf.Max(votes, humans)})");
+                ? TemplateText.Fill(hostTallyLine, "votes", v, "pilots", n)
+                : (_rematchVoteCast ? rematchSentLine : TemplateText.Fill(guestTallyLine, "votes", v, "pilots", n));
         }
 
         public void OnLeaveLobbyButtonPressed()

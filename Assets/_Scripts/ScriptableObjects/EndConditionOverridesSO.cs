@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -119,6 +120,16 @@ namespace CosmicShore.ScriptableObjects
         /// can reach.</para></summary>
         public const float BroadsideExtraPilotFraction = 0.6f;
 
+        /// <summary>Tandava's shatter threshold used when <see cref="tandavaBreakPercent"/> is 0: the pilots win when the
+        /// swarm's body - whatever form it wears - is cut below this percent of that form's full body (Assets/_Scripts/
+        /// Controller/Arcade/TANDAVA.md). The match also ends when the pilots break the halo, wipe it out or starve it
+        /// (they win) or the Antlion eats its last feast (they lose); there is no clock.</summary>
+        public const int DefaultTandavaBreakPercent = 35;
+
+        /// <summary>Tandava's halo used when <see cref="tandavaHaloRingsToBreak"/> is 0: the pilots win when they break
+        /// this many of the twelve halo rings round the Lord of the Dance before its drum stops (TANDAVA.md §3.6).</summary>
+        public const int DefaultTandavaHaloRingsToBreak = 9;
+
         /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
         /// (auto/default). It is BOTH the end-game target and the number of gates the course is
         /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
@@ -200,6 +211,13 @@ namespace CosmicShore.ScriptableObjects
         /// Read by <c>ThresherTimeController</c> both to size the circuit and (through it) by the
         /// turn monitor for the finish line, so the two cannot drift.</summary>
         public const int DefaultThresherTimeGateTarget = 24;
+
+        /// <summary>Wrasse Run RACE length used when <see cref="wrasseRunGateTarget"/> is 0 - gate
+        /// threadings, i.e. laps x rings. 16 = two laps of an eight-ring circuit: a ring counts only when
+        /// the Wrasse's kite threads it, at the Grouper's 60 u/s cruise plus the boosts Time loops save.
+        /// Read by <c>WrasseRunController</c> both to size the circuit and (through it) by the turn
+        /// monitor for the finish line, so the two cannot drift.</summary>
+        public const int DefaultWrasseRunGateTarget = 16;
 
         /// <summary>Regatta RACE length used when <see cref="regattaGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 24 = three laps of the eight-ring circuit. The rings
@@ -345,6 +363,11 @@ namespace CosmicShore.ScriptableObjects
                  "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
         [Min(0)] public int thresherTimeGateTarget = 24;
 
+        [Tooltip("Wrasse Run: gate threadings that win the race - LAPS x RINGS, not rings. The " +
+                 "controller lays target/laps rings, so this one number is both the finish line " +
+                 "and the size of the circuit. 16 = two laps of eight. 0 uses the default.")]
+        [Min(0)] public int wrasseRunGateTarget = 16;
+
         [Tooltip("Regatta: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "arena lays eight rings a lap with the rails threaded through them, so this " +
                  "must be a multiple of eight; the controller races laps = target / 8. 24 = " +
@@ -390,6 +413,16 @@ namespace CosmicShore.ScriptableObjects
                  "0 = default (100).")]
         [Min(0)] public int broadsidePointsPerPilot = 100;
 
+        [Tooltip("Tandava: the pilots win when the swarm's body is cut below this PERCENT of its form's full body (it " +
+                 "shatters). They also win by breaking the halo, wiping it out or starving it (there is no clock), and " +
+                 "lose if the Antlion eats its last feast. 0 = default (35).")]
+        [Range(0, 100)] public int tandavaBreakPercent = 35;
+
+        [Tooltip("Tandava: halo rings (twelve round the Lord of the Dance) the pilots must break before its drum stops to " +
+                 "break the dance and win. Clamped to the halo's ring count. 0 = default (9).")]
+        [FormerlySerializedAs("tandavaFlamesToBreak")]
+        [Range(0, 12)] public int tandavaHaloRingsToBreak = 9;
+
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -418,6 +451,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int slingshotGateTargetBuild = 16;
         [Min(0)] public int warplineGateTargetBuild = 10;
         [Min(0)] public int thresherTimeGateTargetBuild = 24;
+        [Min(0)] public int wrasseRunGateTargetBuild = 16;
         [Min(0)] public int regattaGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 750;
         [Min(0)] public int tollwayTollTargetBuild = 8;
@@ -427,6 +461,9 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int tapestryRoundSecondsBuild = 150;
         [Min(0)] public int siroccoPrismTargetBuild = 600;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
+        [Range(0, 100)] public int tandavaBreakPercentBuild = 35;
+        [FormerlySerializedAs("tandavaFlamesToBreakBuild")]
+        [Range(0, 12)] public int tandavaHaloRingsToBreakBuild = 9;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -669,6 +706,14 @@ namespace CosmicShore.ScriptableObjects
             thresherTimeGateTarget > 0 ? thresherTimeGateTarget : DefaultThresherTimeGateTarget;
 
         /// <summary>
+        /// Wrasse Run race length ("thread N gates", i.e. laps x rings): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultWrasseRunGateTarget"/>. Read by
+        /// <c>WrasseRunCourseSource.AuthoredGateTarget</c>, which the turn monitor asks in turn.
+        /// </summary>
+        public int GetWrasseRunGateTarget() =>
+            wrasseRunGateTarget > 0 ? wrasseRunGateTarget : DefaultWrasseRunGateTarget;
+
+        /// <summary>
         /// Regatta race length ("thread N gates", i.e. laps x rings): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultRegattaGateTarget"/>. Read by
         /// <c>RegattaController.AuthoredGateTarget</c>, which the turn monitor asks in turn.
@@ -756,6 +801,17 @@ namespace CosmicShore.ScriptableObjects
             Mathf.RoundToInt(GetBroadsidePointsPerPilot() *
                              (1f + BroadsideExtraPilotFraction * (Mathf.Max(1, teamSize) - 1)));
 
+        /// <summary>Tandava's shatter threshold in percent of the current form's full body: the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultTandavaBreakPercent"/>. Read server-side by TandavaController.</summary>
+        public int GetTandavaBreakPercent() =>
+            tandavaBreakPercent > 0 ? tandavaBreakPercent : DefaultTandavaBreakPercent;
+
+        /// <summary>Halo rings the pilots must break to break Tandava's dance: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultTandavaHaloRingsToBreak"/>. Read server-side by TandavaController, which clamps it to the halo
+        /// it built.</summary>
+        public int GetTandavaHaloRingsToBreak() =>
+            tandavaHaloRingsToBreak > 0 ? tandavaHaloRingsToBreak : DefaultTandavaHaloRingsToBreak;
+
         /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
         /// mode whose target is auto-calculated from its track (SkimRace with a 0 count), or that
@@ -792,6 +848,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Slingshot                 => GetSlingshotGateTarget(),
                 GameModes.Warpline                  => GetWarplineGateTarget(),
                 GameModes.ThresherTime              => GetThresherTimeGateTarget(),
+                GameModes.WrasseRun                 => GetWrasseRunGateTarget(),
                 GameModes.Regatta                   => regattaGateTarget > 0 ? regattaGateTarget : DefaultRegattaGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
@@ -804,6 +861,8 @@ namespace CosmicShore.ScriptableObjects
                 // Per PILOT, not a total - the race target scales with team size and is only known at
                 // runtime, so the editor's authored-target readout shows the rate.
                 GameModes.Broadside                 => GetBroadsidePointsPerPilot(),
+                // A PERCENT of the final form's body, not a count: the readout shows the threshold.
+                GameModes.Tandava                   => GetTandavaBreakPercent(),
                 _                                   => 0,
             };
 
@@ -851,6 +910,7 @@ namespace CosmicShore.ScriptableObjects
             slingshotGateTarget == slingshotGateTargetBuild &&
             warplineGateTarget == warplineGateTargetBuild &&
             thresherTimeGateTarget == thresherTimeGateTargetBuild &&
+            wrasseRunGateTarget == wrasseRunGateTargetBuild &&
             regattaGateTarget == regattaGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
             tollwayTollTarget == tollwayTollTargetBuild &&
@@ -859,7 +919,9 @@ namespace CosmicShore.ScriptableObjects
             dustupPointTarget == dustupPointTargetBuild &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
-            broadsidePointsPerPilot == broadsidePointsPerPilotBuild;
+            broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
+            tandavaBreakPercent == tandavaBreakPercentBuild &&
+            tandavaHaloRingsToBreak == tandavaHaloRingsToBreakBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -889,6 +951,7 @@ namespace CosmicShore.ScriptableObjects
             slingshotGateTarget = slingshotGateTargetBuild;
             warplineGateTarget = warplineGateTargetBuild;
             thresherTimeGateTarget = thresherTimeGateTargetBuild;
+            wrasseRunGateTarget = wrasseRunGateTargetBuild;
             regattaGateTarget = regattaGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
@@ -898,6 +961,8 @@ namespace CosmicShore.ScriptableObjects
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
+            tandavaBreakPercent = tandavaBreakPercentBuild;
+            tandavaHaloRingsToBreak = tandavaHaloRingsToBreakBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -928,6 +993,7 @@ namespace CosmicShore.ScriptableObjects
             slingshotGateTargetBuild = slingshotGateTarget;
             warplineGateTargetBuild = warplineGateTarget;
             thresherTimeGateTargetBuild = thresherTimeGateTarget;
+            wrasseRunGateTargetBuild = wrasseRunGateTarget;
             regattaGateTargetBuild = regattaGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;
@@ -937,6 +1003,8 @@ namespace CosmicShore.ScriptableObjects
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
+            tandavaBreakPercentBuild = tandavaBreakPercent;
+            tandavaHaloRingsToBreakBuild = tandavaHaloRingsToBreak;
         }
     }
 }

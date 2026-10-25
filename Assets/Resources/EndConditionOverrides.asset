@@ -36,6 +36,8 @@ MonoBehaviour:
   tapestryRoundSeconds: 150
   siroccoPrismTarget: 600
   broadsidePointsPerPilot: 100
+  tandavaBreakPercent: 35
+  tandavaHaloRingsToBreak: 9
   salvoPrismTarget: 700
   switchbackGateTarget: 20
   waystationRingTarget: 24
@@ -48,6 +50,7 @@ MonoBehaviour:
   slingshotGateTarget: 16
   warplineGateTarget: 10
   thresherTimeGateTarget: 24
+  wrasseRunGateTarget: 16
   regattaGateTarget: 24
   hijackStealTarget: 750
   hexRaceCrystalCountBuild: 0
@@ -74,6 +77,8 @@ MonoBehaviour:
   tapestryRoundSecondsBuild: 150
   siroccoPrismTargetBuild: 600
   broadsidePointsPerPilotBuild: 100
+  tandavaBreakPercentBuild: 35
+  tandavaHaloRingsToBreakBuild: 9
   salvoPrismTargetBuild: 700
   switchbackGateTargetBuild: 20
   waystationRingTargetBuild: 24
@@ -86,6 +91,7 @@ MonoBehaviour:
   slingshotGateTargetBuild: 16
   warplineGateTargetBuild: 10
   thresherTimeGateTargetBuild: 24
+  wrasseRunGateTargetBuild: 16
   regattaGateTargetBuild: 24
   hijackStealTargetBuild: 750
   autoRestoreBuildValuesBeforeBuild: 1

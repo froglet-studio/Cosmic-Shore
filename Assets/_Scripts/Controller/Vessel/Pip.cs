@@ -86,7 +86,22 @@ namespace CosmicShore.Gameplay
             // reliably precede the bind: a vessel spawned inactive runs Awake when something
             // activates it, which can be after VesselController.Initialize. Writing false here
             // would then switch the local pilot's own view off a moment after granting it.
+            //
+            // An UNWIRED pipCamera made the default-off a no-op: the Grizzly's Pip had no reference and its
+            // PipCamera instance no inactive override, so every Grizzly in a match, AI included, rendered the
+            // world a second time into a texture nothing shows (the first shared Unity capture, Grizzly Charge
+            // 2026-10-16: two 640x320 PipCameras enabled, render thread 80% busy). Find the child by name instead.
+            if (pipCamera == null) pipCamera = FindOwnPipCamera();
             SetCameraActive(_isLocalPilot);
+        }
+
+        /// <summary>This hull's PipCamera.prefab instance (the only child camera of that name), or null.</summary>
+        Camera FindOwnPipCamera()
+        {
+            foreach (var cam in GetComponentsInChildren<Camera>(true))
+                if (cam.gameObject.name.StartsWith("PipCamera", System.StringComparison.Ordinal))
+                    return cam;
+            return null;
         }
 
         void OnDestroy()

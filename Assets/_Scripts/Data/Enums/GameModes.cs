@@ -319,8 +319,24 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/THRESHERTIME.md.
         ThresherTime = 66,
 
+        // WrasseRun (68): the Wrasse and Grouper's circuit race - Thresher Time's shape (a lapped gate
+        // circuit on the shared HeadlongCircuit solver) where a ring counts only when the WRASSE (the
+        // navigator's kite) threads it: the Grouper flies the plane through the next ring, the kite swings
+        // through its mouth, and Time loops save the boosts that reach the next one. 67 is SerpentCharge's
+        // on an in-flight branch. See _Scripts/Controller/Arcade/WRASSERUN.md.
+        WrasseRun = 68,
+
+        // Tandava (69): the co-op ARENA hunt (Squirrel / Sparrow / Rhino, every pilot on ONE domain) - one tadpole swarm
+        // (the sort core's scripted-form mode) forages a small closed cell and takes four remembered forms, Great Serpent ->
+        // Many-Headed Serpent -> Lord of the Dance (a halo of rings) -> Antlion, decided by TandavaDirectorCore; break it
+        // before the Antlion's last feast. Authored as 62 on claude/tandava-arena-mode and moved to 69 at the 2026-10-25
+        // merge: GrizzlyCharge had taken 62 and the modes after it 63-68 (67 is SerpentCharge's, in flight). The
+        // ArcadeGameTandava, ModePreview_Tandava and GameToastConfig_Tandava assets carry the number and moved with it.
+        // See _Scripts/Controller/Arcade/TANDAVA.md.
+        Tandava = 69,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 62) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 64) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

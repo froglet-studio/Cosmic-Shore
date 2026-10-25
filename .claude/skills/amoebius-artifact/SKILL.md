@@ -5,8 +5,10 @@ description: Bring a claude.ai artifact into Amoebius (the Cosmic Shore engine u
 
 # Bring an artifact into Amoebius
 
-**Status: under evaluation.** The artifact library is part of the Amoebius launcher, which the team has not decided
-to keep (`Docs/TOOLING_DECISIONS.md` §3). Import what the person asks for, and do not add library features unasked.
+**Status (decided 2026-10-19, `Docs/TOOLING_DECISIONS.md` §6):** Amoebius stays and is focused solely on the game;
+the Vessel Studio is an artifact, not part of the engine, so where this library lives is Yash's open follow-up (Shombith
+proposed an artifact-storing webpage for the synced artifacts the team finds important). Import what the person asks
+for, and do not add library features unasked.
 
 Amoebius's **VESSEL STUDIO** page (rail icon VESSEL STUDIO, `--page studios`) shows the Vessel Studio first,
 then an **ARTIFACTS** library: every claude.ai artifact brought into the repo, each opening from Amoebius's

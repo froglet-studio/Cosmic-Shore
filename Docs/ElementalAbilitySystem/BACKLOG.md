@@ -75,7 +75,8 @@ Sparrow HUD indicators (~~roll armed~~ SHIPPED — the boost icon's ring is now 
 
 ## Open decisions (owner: Garrett)
 
-1. **Initial element levels.** SP arcade spawns at level 5 in everything (`MiniGame.cs:61`) —
+1. **Initial element levels.** *(Since then the SP default became resting 0, and `MiniGame.cs` was retired on
+   2026-10-25; the legacy explore Play button keeps the 0 in `ArcadeExploreView`.)* SP arcade spawns at level 5 in everything (`MiniGame.cs:61`) —
    all upgrades ON at spawn; MP spawns at 0 — upgrades unreachable without crystals.
    *Recommendation:* spawn at resting 0 (or captain-authored levels) everywhere; let crystals +
    comeback drive progression. This makes the unlock an earned mid-match power spike in every mode.
@@ -101,7 +102,8 @@ auditor shipped. Squirrel and Sparrow are compliant. What is left, in rough prio
 
 ### Blocked on design (cannot be wired until someone authors the map)
 
-1. **Author the open `ElementalAbilityMapSO` slots** for Rhino and Serpent (Manta shipped
+1. **[Rhino RESOLVED 2026-10-16 — all four rows designed and shipped, `FLEET_MAPS.md` §2; Serpent
+   resolved by its scope + rifle and Seed Wall branches.]** Author the open `ElementalAbilityMapSO` slots for Rhino and Serpent (Manta shipped
    2026-08-26 via the spec remake — see FLEET_MAPS.md §2 Manta and `MANTA_STING_KABLOOM.md`;
    Dolphin shipped earlier). Each
    still has `(open design slot)` entries with `Input = 0` and **no `UpgradeLabel` on any element**.
@@ -110,7 +112,10 @@ auditor shipped. Squirrel and Sparrow are compliant. What is left, in rough prio
 
 ### Wiring, once the maps land
 
-2. **Rhino already has four icons** — `LaserTargeting`, `Crystal`, `ForceField` (all three are
+2. **[SUPERSEDED 2026-10-16 — the Rhino row binds 4/4 with PLACEHOLDER icons (`Rhino_SwordEnergy` /
+   `Afterimage` / `BladeReach` / `RampSpool`), and the three vessel-prefab objects plus
+   `BoostContainer` named below were DELETED with the pre-lockup status cluster
+   (`Docs/ABILITY_LOCKUP.md`). Kept for the record:]** **Rhino already has four icons** — `LaserTargeting`, `Crystal`, `ForceField` (all three are
    vessel-prefab objects parented into the HUD instance) plus `BoostContainer` from the HUD variant.
    They sit at x 1288.6 / 1461.6 / 1639.6 / 1814.6, y 116.7, 99.8×99.8 — a real row needing only
    ~3 px of pitch evening. Bind + reorder once the Rhino map is authored.
@@ -268,7 +273,21 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
 
 ## Danger-prism consequence drift (observed while shipping `claude/dolphin-time5-debuff-immunity-kn4vmy`)
 
-25. **CLAUDE.md's danger-prism paragraph asserts an "input mute" that nothing wires.** The
+25. **[RESOLVED 2026-10-17 — the input mute is DELETED.** `SparrowDebuffByRhinoDangerPrismEffectSO`,
+    its asset (guid `5fc2331a92e0b9a4b92f1d03c99669f5`) and `EventOnVesselSlowedByRhinoDangerPrism.asset`
+    are gone (Garrett: control theft is not an economy form — a danger prism burns petals and
+    nothing takes controls). The Sparrow's container lost the entry; the Grizzly's held ONLY the
+    mute and now carries the fleet burn `VesselElementalDebuffByDangerPrismEffect`. A danger
+    prism's costs are now the slow, the elemental hit and the boost reset. The two notes below are
+    history.]**
+    **[CORRECTED 2026-10-16 — the "referenced by no container" measurement below is WRONG.**
+    `SparrowDebuffByRhinoDangerPrismEffect.asset` is in the **Sparrow's and Grizzly's** vessel
+    containers (`SparrowImpactorDataContainer.asset`, `GrizzlyImpactorDataContainer.asset` — grep
+    the asset's guid `5fc2331a92e0b9a4b92f1d03c99669f5`) and mutes the victim's Button2 for 5 s on
+    ANY danger prism, so the input mute DOES land, on those two hulls. Since the Rhino's Danger
+    Afterimages it also has a new source — see the 2026-10-16 section below. The "boost reset"
+    imprecision stands.]**
+    **CLAUDE.md's danger-prism paragraph asserts an "input mute" that nothing wires.** The
     locked-design paragraph lists a danger prism's costs as "slow + all-element debuff +
     boost reset", and the elemental-immunity sentence says the immunity "denies ONLY the
     elemental drain: the slow, the input mute and the boost reset still land". Verified at
@@ -291,7 +310,16 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     bonus): different resource (energy vs boost), different gate (per-asset element vs
     hardcoded Charge). The two are easy to confuse from an ability map's prose alone.
 
-27. **The Rhino's `GrowTrailAction` has never run — its grow loop is unreachable.**
+27. **[SHIPPED 2026-10-16 — DELETED, not fixed (`cece/relaxed-hopper-r62hbd`).** `GrowTrail`'s R_
+    action, asset, executor, its `InputEvent 0` binding and its `AIPilot.abilities` entry (Duration 0
+    / Cooldown 0, a start/stop every frame) are gone, with `GrowSkimmer` and `ZoomOut`. Deltas from
+    the row as written: the SHRINK loop never ran either — every scaler already sat at its 1.0
+    floor — so the action did literally nothing and removal is behaviour-neutral; the Rhino still
+    lays the 0.75-volume resting sliver (`BaseScale (3, 3, 0.5)`, `Gap 2`). The design fork below is
+    void: the Rhino's Mass is now **Afterimage** (the sword lays prisms in its own shape), which is
+    where its mass now comes from. Cleave and Astro League still need their volume re-checked against
+    the afterimage mass — that is the afterimage playtest row below, not this one. Kept for the record:]**
+    **The Rhino's `GrowTrailAction` has never run — its grow loop is unreachable.**
     `GrowTrailActionExecutor.Begin` sets `_growing = true` and then calls `End()`, which sets
     it back to `false`, so `LoopAsync`'s `while (_growing)` never executes a single step and it
     falls straight through to a shrink loop that has nothing to shrink. The ordering is simply
@@ -389,8 +417,8 @@ of Time were fixed (Rhino ramp ceiling, Serpent boost speed) and four defensive 
 | # | Item | Status |
 |---|---|---|
 | 5.1 | Retire the generic channel; migrate 10 call sites; author the 9 asset-hosted floats + 2 prefab floats | **SHIPPED** |
-| 5.2 | Rhino/Serpent playtest — each loses an undeclared Time application (ramp ceiling ÷2.5, boost speed ÷1.6 at Time 10). Neither number was ever authored as a design | **NEEDS PLAYTEST** |
-| 5.3 | **THREE `ElementalFloat`s were authored `Enabled` and never evaluated** — `GrowTrailActionSO.maxSize` (Mass 4→8), `GrowSkimmerActionSO.shrinkRate` (Charge 6→2) and `FullAutoActionSO.speedValue` (Space 375→4875), all read via `.Value` on a ScriptableObject, which nothing binds. Authored `Enabled: 0`; runtime behaviour byte-identical. Turning any of them ON is a BALANCE change and needs a design call | **SHIPPED (data honest; the ramps remain a design question)** |
+| 5.2 | Rhino/Serpent playtest — each loses an undeclared Time application (ramp ceiling ÷2.5, boost speed ÷1.6 at Time 10). Neither number was ever authored as a design. *(2026-10-16: the Rhino's ramp has since been retuned to cruise 50 × 16.8 = 840 u/s top (2026-09-25) and Time is read live, not snapshotted at first engage; it still only scales the wind-up 220 → 550 u/s², never the ceiling. The playtest has still not happened.)* | **NEEDS PLAYTEST** |
+| 5.3 | **THREE `ElementalFloat`s were authored `Enabled` and never evaluated** — `GrowTrailActionSO.maxSize` (Mass 4→8), `GrowSkimmerActionSO.shrinkRate` (Charge 6→2) and `FullAutoActionSO.speedValue` (Space 375→4875), all read via `.Value` on a ScriptableObject, which nothing binds. Authored `Enabled: 0`; runtime behaviour byte-identical. Turning any of them ON is a BALANCE change and needs a design call. *(2026-10-16: `GrowTrailActionSO` and `GrowSkimmerActionSO` are deleted outright with their executors — two of the three ramps no longer have a host; only `FullAutoActionSO.speedValue` remains a design question.)* | **SHIPPED (data honest; the ramps remain a design question)** |
 | 5.3b | **`Tools/Build/check_elemental_floats.py`** — the standing gate. Fails on any ElementalFloat authored `Enabled` with `Min != Max` on a ScriptableObject nothing evaluates. Keyed on the asset's own `m_Script` guid (a field NAME is not an identity), states how many blocks it scanned, `--self-test` with four negative controls, proven against the real tree in both directions | **SHIPPED** |
 | 5.4 | **Legacy bound path: the stated hazard was WRONG and is retracted.** `ElementalShipComponent.BindElementalFloats` reflects over MonoBehaviour fields ONLY, so no ScriptableObject-hosted ElementalFloat is ever bound and none can be dirtied — the vessel-contract rule-1 concern does not apply. What shipped instead: `ElementalFloatBinder` deleted (dead, and broken — it set a nonexistent `"Ship"` property and its "clone" dropped Min/Max/element/Enabled), `Skimmer`'s redundant bind removed (it reads live), `AOERadialBlocks.depthScale` deleted (unserialized, permanently 1, compounding on pool reuse) | **SHIPPED** |
 | 5.4b | **The live surface was TWO fields, and one of them was not behaviour-neutral.** Measured against the shipped prefabs: FOUR of the six sit on components no prefab, scene or asset references (`ConsumeBoostAction.boostMultiplier`, `GrowActionBase.maxSize`/`shrinkRate`, `ZoomGrowRateDistributeAction.sharedRate`) — converting them is dead work, so they moved to 5.4c. `FullAutoAction.speed` is authored `Enabled: 0` on both Falcon and Shrike, so its conversion is a no-op by construction. `FireGunAction.ProjectileTime` (Urchin ×2 guns, `Enabled: 1`, 4 → 8 on **Space**) is the only field with live behaviour — and it is the field **`EnergizeAction` used as a WRITABLE channel** (`ProjectileTime.Value = x` on start, restore on stop), so converting the read alone would have made that write a no-op and silently switched off the Urchin's energize. The write got a channel of its own first: a FLOOR (`FireGunAction.RaiseOutputFloors` / `ClearOutputFloors`), composed as `Mathf.Max(element, floor)`. Identical at the authored numbers, and it removes three defects the write-and-restore shape carried (a level change mid-energize made `ScaleValueWithLevel` overwrite the raise and drop it; the restored "default" was captured from `fireActions[0]` and written to EVERY gun; that default was the pre-scaling authored `Value` 5, so a restore replaced the element-scaled lifetime with a constant until the next level event) | **SHIPPED** |
@@ -400,13 +428,16 @@ of Time were fixed (Rhino ramp ceiling, Serpent boost speed) and four defensive 
 | 5.7 | **Nine SO-hosted `ElementalFloat`s become plain `float`s — the type is the claim.** An ElementalFloat on a ScriptableObject read as `.Value` can never scale, so on these nine the type was a promise the build could not keep. `check_elemental_floats.py` gates the DANGEROUS case (an authored ramp that never runs) and structurally cannot gate a misleading type. Full row, including the two things this was wrong about, in `FLEET_GAPS.md` §3 | **SHIPPED** |
 | 5.8 | **`element_ability_table.py` was wrong about SEVEN of its twelve reported gaps.** Fixed: comment/string blanking in `follow_static_calls` (a doc comment hung a Scarab gate on three hulls); namespace-qualified `Element.X` args (the Manta's two L5 gates read as unimplemented); nested-prefab-instance `m_Modifications` floats (six of twelve vessel prefabs invisible); C# field initializers; and `guard_state` reading a serialized bool's C# default (an unauthored `false` counted as a live gate on ten of twelve hulls). 12 disagreements → 5 | **SHIPPED** |
 | 5.9 | **The Scarab's map declared a retired upgrade.** "Armored Switch" was retired with the switch's prism fill on 2026-08-24; the map went on naming it, so every surface that asks the map reported a wired Mass 5. Entry corrected to an `(open design slot)` that records the retirement, and its `AbilityDescription` corrected (Mass scales the RING RADIUS, not a fill that no longer exists) | **SHIPPED** |
-| 5.10 | The remaining gaps are DESIGN gaps, not wiring. Five when this row was written; **three** after the scope + rifle branch merged and filled the Serpent's Charge and Space: **Rhino Charge + Space, Serpent Mass**. Report: **`FLEET_GAPS.md`** — and re-run `element_ability_table.py --gaps` rather than trusting either count | **OPEN — design** |
+| 5.10 | The remaining gaps are DESIGN gaps, not wiring. Five when this row was written; **three** after the scope + rifle branch merged and filled the Serpent's Charge and Space: **Rhino Charge + Space, Serpent Mass**. Report: **`FLEET_GAPS.md`** — and re-run `element_ability_table.py --gaps` rather than trusting either count. *(2026-10-16: all three are filled — Serpent Mass 2026-10-09, Rhino Charge + Space 2026-10-16; the Rhino reads 4/4 · 4/4 · 4/4 with 0 disagreements. `--gaps` now lists only the Grizzly, a different shape: the retired map multiplier still authored on all four rows, a Mass row that scales nothing, and a prose Charge L5.)* | **CLOSED for the original three; Grizzly open** |
 | 5.11a | **A shared `ShipActionSO` mutated its own serialized field at runtime — and the dangerous copy was dead code.** `GrowSkimmerActionSO.ApplyMaxSizeDebuff` writes `maxSize.Value = original * multiplier`, awaits, then writes it back — on a SHARED asset, so in multiplayer two Rhinos debuffed at overlapping times race on one number and the second restore writes the FIRST one's already-multiplied value back as "original". This is the exact last-initializer-wins hazard `ARCHITECTURE.md §2(a)` and the vessel contract both name as their cautionary tale, and it predates this branch — found by D1 while proving the `Enabled: 0` flip on that same field is a no-op. Measured: **nothing calls it.** There are TWO methods by that name — the live caller (`VesselChangeSkimmerSizeByProjectileEffectSO`) holds a `ShieldSkimmerScaleConfigSO`, a different class whose version writes a private runtime `_maxScaleMultiplier` and never touches a serialized field. The uncalled one is deleted, which also unblocked 5.7's `maxSize`. **Sequel (Sep 2026):** the live one is deleted too, with the control-theft tier (`Docs/ELEMENTAL_ECONOMY.md §9`) — and it shared the hazard as well as the name, since ONE `ShieldSkimmerScaleConfig.asset` drives every Rhino, so writing runtime state on it still let one hit shrink every Rhino's blade. Runtime state made it safer, not safe | **SHIPPED** |
 | 5.11b | **CLOSED by the control-theft tier (Sep 2026).** What survived 5.11a was `ShieldSkimmerScaleConfigSO`'s own debuff latch and multiplier on the SHARED asset, so two Rhinos shared one debuff and the second press was swallowed by `if (_isMaxSizeDebuffed) return`. Its only caller — `VesselChangeSkimmerSizeBySparrowFullAutoProjectileEffect` — is deleted with the control tier (`Docs/ELEMENTAL_ECONOMY.md §9`), so `ApplyMaxSizeDebuff`, `_isMaxSizeDebuffed` and `_maxScaleMultiplier` are gone and `MaxScale`/`PrismMaxScale` are the authored values. The playtest this row asked for is moot: the answer to *"does the debuff change anything on screen"* is now **nothing does** | **CLOSED — the mechanic was removed rather than fixed** |
 
 ## Rhino follow-ups (opened by `cece/serene-goodall-338ctt`)
 
-- **Rhino has no `VesselChangeSpeedByPrismEffectSO` in its prism container** (CLAUDE.md's danger
+- **[RESOLVED AS DESIGN 2026-10-16 — "the bulldozer ignores mass." The absence is now intentional
+  and recorded in the Rhino map's Time row description: the hull ploughs prisms aside
+  (`RhinoPloughPrismEffect`) and the ramp keeps climbing through them. Not a gap.]**
+  **Rhino has no `VesselChangeSpeedByPrismEffectSO` in its prism container** (CLAUDE.md's danger
   prism section already names it the open item with Serpent). The new sword BIND slows ROTATION
   inside super-shielded mass and deliberately touches nothing about speed; a hull ram into ordinary
   mass still costs the Rhino no speed. Measurement: grep `Rhino` vessel impactor container for the
@@ -437,20 +468,29 @@ measurement attached is worse than no row.
   `Tools/Build/author_combat_debuff_magnitudes.py`, which is a Broadside **pricing** decision, not
   a wiring change. The container and both prefabs are deliberately KEPT: a dangling container
   reference is worse than an empty one.
-- **`ScriptableEventSkimmerDebuffApplied` / `SkimmerDebuffPayload` have no producer.** Measured: the
+- **[RESOLVED 2026-10-16 — the consumer side went first.]** `EventOnSkimmerDebuffApplied.asset` and
+  `EventOnVesselSlowedByExplosion.asset` are deleted, and `RhinoVesselHUDController`'s four SOAP
+  channels with them (two had no producer; the other two counted EVERY Rhino's blasts, not this
+  one's). The `ScriptableEventSkimmerDebuffApplied` / `SkimmerDebuffPayload` TYPE survives with no
+  asset, producer or consumer — the generic vehicle is still there for a future Debuff-class
+  skimmer effect. Kept for the record:
+  **`ScriptableEventSkimmerDebuffApplied` / `SkimmerDebuffPayload` have no producer.** Measured: the
   only raiser was `VesselDamageBySkimmerEffectSO` (deleted); the only consumer is
   `RhinoVesselHUDController.ShowDebuffTimer`, whose readout is ALREADY dark for an unrelated reason
   (the ability lockup's retire sweep switched the Rhino's whole root-level status cluster off —
   `Docs/ABILITY_LOCKUP.md`). Kept as a wire rather than deleted: it is the generic *"a skimmer
   debuffed you"* vehicle and the next Debuff-class skimmer effect is its producer. Deciding between
   "wire the next producer" and "delete channel + handler + payload" is a design call, not a cleanup.
-- **`ShieldSkimmerScaleConfigSO.prismMaxScale` / `PrismMaxScale` have no reader.** Measured: a
+- **[SHIPPED 2026-10-16 — deleted, field and asset key together.]**
+  **`ShieldSkimmerScaleConfigSO.prismMaxScale` / `PrismMaxScale` have no reader.** Measured: a
   project-wide grep finds the `[SerializeField]`, the accessor, and nothing else (the unrelated
   `BreakwaterStationBuilder.PrismMaxScale` is a different constant). Its only consumer was the
   retired max-size debuff. Kept as serialized data rather than dropped inside a removal commit, so
   the value is recoverable if the blade ever regains a prism-growth cap; delete it in a pass that
   can also drop the key from `ShieldSkimmerScaleConfig.asset`.
-- **Six of `Rhino.prefab`'s eight `SkimmerImpactor` overrides are INERT and one of them is mine.**
+- **[SHIPPED 2026-10-16 — 14 inert `SkimmerImpactor` / `Skimmer` overrides naming fields that no
+  longer exist removed from `Rhino.prefab`; the Rhino now counts 0 on the grep below.]**
+  **Six of `Rhino.prefab`'s eight `SkimmerImpactor` overrides are INERT and one of them is mine.**
   Measured on the merged tree: that instance overrides `skimmerImpactorDataContainer` (the ONLY
   field the script still declares), plus `skimmerPrismEffectsSO.Array.size`/`data[0..2]`,
   `vesselSkimmerEffectsSO.Array.size`/`data[0]` and `skimmerPrismStayEffectsSO.Array.size` — and all
@@ -687,7 +727,9 @@ fauna snap-back, Cleave scoring) are in `R_VesselActions/RHINO_PLOUGH.md` § Fol
   `skimmerCrystalEffectsSO` (`:14-16`) in favour of `skimmerImpactorDataContainer`, but Unity never
   prunes an unresolvable modification. Measured with
   `grep -cE "propertyPath: '?(skimmerPrismEffectsSO|vesselSkimmerEffectsSO|skimmerCrystalEffectsSO|skimmerPrismStayEffectsSO)" Assets/_Prefabs/Spacevessels/*.prefab`:
-  Dolphin 4, Rhino 7, Squirrel 8, Stoat 8, Thresher 8. They are inert, but they read as live wiring
+  Dolphin 4, Rhino 7, Squirrel 8, Stoat 8, Thresher 8 *(2026-10-16: Rhino 0 — removed on
+  `cece/relaxed-hopper-r62hbd`; the grep now finds Dolphin 4, Squirrel 8, Thresher 8 and no Stoat
+  line)*. They are inert, but they read as live wiring
   (the Rhino's name `SkimmerDamagePrismEffect` on its sword, which it does not run). Delete them
   through the prefab-drift path (`PrefabDriftFixer`), never by hand-editing the YAML.
 - **[walked past] An orphaned `[FormerlySerializedAs("shipSkimmerEffectsSO")]`** now sits on
@@ -704,6 +746,111 @@ fauna snap-back, Cleave scoring) are in `R_VesselActions/RHINO_PLOUGH.md` § Fol
   the enclosing type, and add the collision to `--self-test`.
 - **[made visible, tool] `element_ability_table.py` prints no L5 for an element whose ABILITY slot
   is open.** `print_row` returns at the open-slot check (`:935`, re-grep) before the upgrade lines, so
-  the Rhino's Space-5 Breaker is counted (`L5 gates wired 1/4`) but never shown. Print the
+  the Rhino's Space-5 Breaker is counted (`L5 gates wired 1/4`) but never shown *(2026-10-16: moot
+  for the Rhino — it has no open row left and the tool prints all four L5s; the code path is
+  unchanged, so it will hide the next open-row upgrade)*. Print the
   `UpgradeLabel` and its gate sites for an open row too, so the table answers "what does Space 5 do on
   the Rhino" without reading the map asset.
+
+## From the Rhino four-row branch (`cece/relaxed-hopper-r62hbd`, 2026-10-16)
+
+The Rhino's map is complete — Sword Energy / Live Wire, Afterimage / Danger Afterimages, Blade
+Reach / Breaker, Ramp Spool / Momentum, plus the omni-crystal Surge (`FLEET_MAPS.md` §2,
+`R_VesselActions/RHINO_SWORD_AFTERIMAGE.md`). **Nothing on this branch has run in the Unity editor.**
+
+### Shipped (step-1 audit fixes, each with what the old state actually was)
+
+- **Ramp on peers.** Every peer now grades the ramp from `InputStatus`' replicated sticks; only the
+  owner did, so replicas held `IsBoosting` and ×16.8 forever after the first ramp. Time is read live
+  (was snapshotted at first engage); climb/bleed compares against `VesselTransformer.TrackedSpeed`.
+- **Sword pose and energy replication.** Every peer poses the blade from the replicated analog
+  trigger mirrors (press/release events drive the pose only for touch, which writes no mirrors).
+  Energy, energize phase and surge are owner-authoritative through `RhinoSwordNetworkRelay` on the
+  Rhino root; non-owners mirror them.
+- **AI never ramped or energized.** `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` ramps on a
+  straight that pays the wind-up back, brakes ON the ramp to a corner speed and lets go at a sharp
+  corner (`AI_BOOST.md`, Ramp; only a human input strategy raised `FullSpeedStraightAction`, so
+  `AI_BOOST.md`'s old "the Rhino AI could already boost" was wrong).
+  `RhinoSwordAutopilot` writes the trigger mirrors on the owning machine: strokes at the nearest
+  hostile prism in reach, holds the energize stance near super-shielded mass or on a ≥ 75% meter.
+  The AIPilot abilities list is empty (its one entry was the dead `GrowTrail`).
+- **`ChargeTestHarness` 0.5 on `Rhino.prefab`** pinned Charge at level 5 every frame; set to 0.
+- **The sword's elemental-crystal BURST drained all energy** on every petal the sword touched.
+  `RhinoSwordCrystalBurstEffectSO` and its asset are deleted; the sword collects elemental crystals
+  with no sword-side effect. The burst LOOK lives on in the omni Surge.
+- **Energize tail refresh.** An ungated refresh kept a blade lit for as long as the stance kept
+  coming back. Removed: the 5 s tail now runs out once the stance is let go, unless Charge L5
+  **Live Wire** is active.
+- **Recycled-prism re-dispatch.** Ignition re-dispatch replays SUPER-shielded contacts only, and the
+  box-overlap set is identity-tested with `prismProperties.TimeCreated`, so a recycled prism is no
+  longer re-cut.
+- **Sword collider** is a TRIGGER again (it had become a solid kinematic capsule in the PR #928 merge
+  and physically shoved the Astro League ball).
+- **HUD dead channels and the resurrected status cluster** — see the 2026-10-16 notes on rows 25 and
+  the economy follow-ups above, and `Docs/ABILITY_LOCKUP.md`.
+- **Inert overrides, `prismMaxScale`, `GrowTrail` (#27)** — marked SHIPPED in place above.
+
+### Open
+
+- **Afterimage mass budget — playtest.** `RhinoSwordAfterimageConfig.asset` is a first pass that has
+  never been played: window 5 s, one afterimage per ≥ 0.3 s and ≥ 6 u of tip travel, ≤ 16 per window,
+  ≤ 6 segments of ≤ 10 u covering 90% of the blade, segment 2 × 0.8 (× cbrt of the Mass multiplier,
+  ×1 → ×2.5 volume), collider delay 0.1 s; the Surge lays them for its whole 6 s too. It adds mass
+  well beyond the resting sliver (0.75 volume per prism) the Rhino otherwise lays, so Headlong, Cleave
+  and Astro League need their volume ladders checked against it. *(balance)*
+- **[RESOLVED 2026-10-17 — mute deleted, Grizzly given the fleet danger burn; see #25.]**
+  **Danger Afterimages × the Sparrow/Grizzly input mute — design call.**
+  `SparrowDebuffByRhinoDangerPrismEffect` (Sparrow + Grizzly containers) mutes the victim's Button2
+  for 5 s on ANY danger prism; Rhino Mass L5 now lays danger prisms, so it newly reaches those two
+  hulls through the Rhino. It sits against `ELEMENTAL_ECONOMY.md` §9's control-theft rule. Raised to
+  design, deliberately not changed. *(design)*
+- **Afterimage self-farm — tuning watch (2026-10-17).** The Rhino's own blade now cuts its own
+  afterimages past the 1 s self-trail grace and banks 0.04 × Charge per cut, so one energize (cost
+  0.1) followed by cutting its own wake (up to 16 afterimages × up to 6 segments × 0.04) can refill
+  the meter. Not a bug — playtest whether the loop is too strong; if it is, the lever is
+  energy-per-own-afterimage, not immunity. *(balance)*
+- **[tool false positive] `element_ability_table.py` reports `VesselExplosionByCrystalEffectSO`'s
+  Space gate on the Rhino as live** (`VesselExplosionByCrystalEffectSO.cs:208 <-
+  RhinoVesselExplosionByCrystalEffect.asset`, listed under Breaker) although
+  `_spaceUpgradeSparesAllies` is UNAUTHORED on that asset, so it takes the C# default `false` and
+  the branch never runs (only `DolphinVesselExplosionByCrystalEffect.asset` authors it `1`). This is
+  finding #5 of `FLEET_GAPS.md` §3 again — `guard_state` reading a serialized bool's C# default —
+  on a guard that sits ABOVE the gate rather than on it. Breaker is really gated only at
+  `RhinoSkimmerDamagePrismEffectSO`. *(tool)*
+- **[gate false positive] `check_vessel_on_vessel_motion.py` is red on bleeding-edge as well as here
+  (measured 2026-10-18, exit 1 on both trees: "1 PROBLEM(S) (13 victim-facing effect(s) over 3
+  families)").** It flags `VesselImpulseByExplosionEffectSO.cs:75` (`ModifyVelocity`), but the
+  effect returns unless `impactee.SourceVessel` IS the vessel it hit (`:47`). It is the Grizzly's
+  self-launch, wired only into `GrizzlyExplosionImpactorDataContainer.asset`, and moves no
+  opponent. The gate reads the call and not the self-only guard. Fix the GATE (recognise the
+  `SourceVessel == victim` early return, or a reasoned allow-list entry with a negative control),
+  never the effect. Until then the gate shows red on every branch. *(tool)*
+- 5.2 (Rhino Time playtest) stays open, above.
+
+## From the silence branch (`cece/sleepy-shannon-9qk646`, 2026-10-21)
+
+Rows only, from `/ship` §3.6. Each one names what was measured and what is still to be measured.
+
+- **[debt this branch created] Two fallback paths for a look nobody ships.**
+  - The silence feedback still carries round 1's 2D path for when the perimeter is off: `SilenceScreenFeedback.EnsureOverlay` with its ScreenSpaceOverlay canvas and a CPU-baked mask texture, which re-bakes in 1/48 depth steps.
+  - It also still carries URP's black darkening, `PostProcessingManager.SetSilenceVignette`.
+  - Measured on the shipped asset: `perimeterAmount` 1, so the overlay never runs, and `vignetteDarken` 0, so the darkening never runs.
+  - Blocking question for Garrett: do low-end phones need a perimeter-off fallback (the perimeter needs a camera-colour copy and `shader.isSupported`)? If not, retire both paths and the `vignetteDarken`/`vignetteSmoothness` fields. If yes, keep them and say so in `SILENCE.md` §5.
+- **[debt this branch created] The perimeter's per-frame CPU mesh rebuild is not measured on a phone.**
+  - While silenced, `SilencePerimeterPass.Fill` re-poses up to 160 shards and rewrites one dynamic mesh: 36 to 60 facets each, at most about 28,800 vertices (counted from `SilencePerimeter.Geometry`).
+  - It also adds a full-screen colour copy, the same one `BlackHoleLensPass` makes.
+  - Measure it on a phone build with the `prof` overlay during `silence test 8` before tuning `perimeterCount` down (`/perf-hunt`).
+  - If it is costly, the fix is posing on the GPU: per-shard pose rows in a buffer, the static geometry uploaded once.
+- **[debt this branch created] Only one of the shader's three passes is held to the lab.**
+  - `Tools/Shaders/verify_silence_perimeter.py` runs the edge pass's HLSL mask as C++ against the lab's twin: 3750 points, worst 4e-6.
+  - The warp and shard passes are ported line for line from the lab's GLSL, but only compile-checked.
+  - A `verify_black_hole_lens.py`-style pixel parity (HLSL and GLSL both translated to C++) would cover them.
+- **[walked past] Amoebius does not build on bleeding-edge.** `TouchTilt.cs` (from `f9c8d70aba`, the flight branch) uses `GravitySensor`, which the engine's Unity shim lacks: CS0103 at lines 29 and 77. It reproduces on a clean bleeding-edge worktree (2026-10-21). It is not this branch's to fix (`Port/` is Shombith's). The fix is a shim stub, or keeping the `GravitySensor` read out of the Amoebius variant (`Docs/CONDITIONAL_COMPILATION.md`, "The Amoebius variant").
+- **[made visible] New vessels bring new harm paths, and nothing flags an ungated one.**
+  - The merge of bleeding-edge brought the Starlings' shield bite, a direct `DeactivateShields` on a rival's prism that ignored silence. It was found only by diffing the call sites before and after the merge, and is fixed in the merge commit.
+  - Branches in flight that add vessels: `claude/project-thread-xrej29` (Marlin), `claude/honeyguide-ratel`, and `grizzly-v3` (plasma claw). Each must route pilot harm through `Prism.Damage`/`Steal`/`Consume`/`Vanish` (gated inside) or ask `DeflectsSilenced` before a direct `DeactivateShields`.
+  - A text gate was measured and NOT built. Of 24 `DeactivateShields(` sites on 2026-10-21:
+    - 9 act for a pilot and are gated;
+    - 2 of those 9 are gated further up the method than a 14-line window sees (Astro League ball, Rhino skimmer);
+    - the rest act for nobody: flora, fauna, managers and spawners.
+  - So a window rule cries wolf. The sound version tags the pilot-harm sites (an attribute or a `// silence-gated:` marker) and gates the TAGGED set.

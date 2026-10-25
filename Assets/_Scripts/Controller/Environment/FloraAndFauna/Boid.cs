@@ -244,6 +244,12 @@ namespace CosmicShore.Gameplay
                 if (!isAttached)
                 {
                     target = Goal;      // Check it later
+                    // The leash (Fauna.Leash): a leashed forager's target is its holder's goal (through Goal's pens).
+                    if (Leash != null && Leash.TrySteer(this, out var leashGoal, out _, out _))
+                    {
+                        Goal = leashGoal;
+                        target = Goal;
+                    }
                 }
 
                 // A replicated puppet takes the GRAZING half of the tick and none of the
@@ -259,7 +265,7 @@ namespace CosmicShore.Gameplay
                 // out of phase instead of ticking (and paying their consume
                 // cascades) in the same frame forever - a phase-locked swarm lands
                 // several full behavior ticks on one frame at a regular beat.
-                yield return new WaitForSeconds(behaviorUpdateRate * Random.Range(0.9f, 1.1f));
+                yield return CosmicShore.Utility.WaitCache.About(behaviorUpdateRate * Random.Range(0.9f, 1.1f));
             }
         }
 
@@ -392,9 +398,11 @@ namespace CosmicShore.Gameplay
                                             // NEAREST edible prism; UpdateFeeding (per-frame)
                                             // turns to face it BEFORE the suction starts and
                                             // holds facing until it's pulled all the way in.
-                                            if (sqr < bestFeedSqr)
+                                            // A painted prism ranks closer (PaintedPrey: preferred, never forced).
+                                            float rank = PaintedPrey.Rank(otherPrism, sqr);
+                                            if (rank < bestFeedSqr)
                                             {
-                                                bestFeedSqr = sqr;
+                                                bestFeedSqr = rank;
                                                 feedCandidate = otherPrism;
                                             }
                                         }
@@ -429,6 +437,8 @@ namespace CosmicShore.Gameplay
             // the meal), don't overwrite its velocity/rotation with the flock steering.
             if (forager)
             {
+                // Leashed: only the holder's order, re-checked by this forager's own diet; unordered, it does not graze.
+                if (Leash != null) feedCandidate = LeashedMeal();
                 if (!IsFeedingHold)
                     _feedTarget = feedCandidate;
                 if (IsFeedingEngaged)
@@ -500,18 +510,18 @@ namespace CosmicShore.Gameplay
             if (forager)
             {
                 bool isFaunaBody = prism is HealthPrism bodyPrism && bodyPrism.ResolveOwnerFauna() != null;
-                if (IsShieldedMass(prism) || isFaunaBody) return;
+                if (IsInedibleShield(prism) || isFaunaBody) return;
                 // Nucleus-interior mass is the territorial claim, never forager food -
                 // same check as the scan, re-applied in case the nucleus radius
                 // refreshed inside the pacing window.
                 if (cell != null && cell.IsInsideNucleus(prism.transform.position)) return;
 
                 // Foragers CONSUME (implode toward the tadpole → the suction
-                // shader), matching how LightFauna grazes. devastate:false so a
-                // shielded prism that somehow reaches here only loses its shield,
-                // never gets eaten.
+                // shader), matching how LightFauna grazes. devastate only for a shield the diet let
+                // through (IsInedibleShield: a Frenzy, or a herd upgrade), so that shield is eaten
+                // with its prism rather than shed.
                 float meal = Mathf.Max(0f, prism.Volume);   // read before the consume (round 11f: the stomach is conserved)
-                prism.Consume(transform, embeddedHealthPrism.Domain, _consumerName, false, true);
+                prism.Consume(transform, embeddedHealthPrism.Domain, _consumerName, IsShieldedMass(prism), true);
                 NotifyFed(meal);
             }
             else
@@ -689,7 +699,7 @@ namespace CosmicShore.Gameplay
         {
             if (!prism || prism.destroyed) return false;
             if (blockCollider && prism.gameObject == blockCollider.gameObject) return false;
-            if (IsShieldedMass(prism)) return false;
+            if (IsInedibleShield(prism)) return false;
             if (prism is HealthPrism && prism.GetComponentInParent<Fauna>() != null) return false;
             if (cell == null) return true;
             // Band + cell pen: mass outside this creature's own annulus is unreachable, so it
@@ -715,6 +725,9 @@ namespace CosmicShore.Gameplay
                 BrakeToHover();
                 return true;
             }
+
+            // Leashed: the order IS the meal, re-read every frame so a new order takes over at once.
+            if (Leash != null) _feedTarget = LeashedMeal();
 
             var feedTarget = _feedTarget;
             if (!feedTarget || feedTarget.destroyed)
@@ -783,7 +796,7 @@ namespace CosmicShore.Gameplay
             if (IsEdibleForForager(feedTarget))
             {
                 float meal = Mathf.Max(0f, feedTarget.Volume);
-                feedTarget.Consume(transform, eaterDomain, eaterName, false, true);
+                feedTarget.Consume(transform, eaterDomain, eaterName, IsShieldedMass(feedTarget), true);
                 NotifyFed(meal);
                 bites++;
             }
@@ -797,7 +810,7 @@ namespace CosmicShore.Gameplay
                 var prism = FeedScratch[i];
                 if (prism == feedTarget || !IsEdibleForForager(prism)) continue;
                 float bite = Mathf.Max(0f, prism.Volume);
-                prism.Consume(transform, eaterDomain, eaterName, false, true);
+                prism.Consume(transform, eaterDomain, eaterName, IsShieldedMass(prism), true);
                 NotifyFed(bite);
                 bites++;
             }
@@ -805,6 +818,59 @@ namespace CosmicShore.Gameplay
             // Someone else got the whole mouthful first — nothing to watch, resume roaming.
             if (bites == 0)
                 _feedHoldUntil = 0f;
+        }
+
+        // --- The leash (Fauna.Leash, per-frame) ------------------------------
+
+        protected override bool CanBeLeashed => forager && base.CanBeLeashed;
+
+        public override bool LeashCanEat(Prism prism) => IsEdibleForForager(prism);
+
+        /// <summary>The holder's ordered meal if this forager may eat it (its own diet decides), else null.</summary>
+        Prism LeashedMeal()
+        {
+            var meal = Leash?.OrderedMeal(this);
+            return meal && IsEdibleForForager(meal) ? meal : null;
+        }
+
+        /// <summary>
+        /// Per-frame steer toward the holder's goal: the velocity slerps toward it at the holder's turn rate and its speed
+        /// eases to the holder's at 2.5/s. Returns the rotation rate Update turns the body at (the holder's, when it names
+        /// one). The behaviour tick's flocking still applies on its own cadence.
+        /// </summary>
+        float SteerOnLeash(float ownTurnRate)
+        {
+            if (!Leash.TrySteer(this, out var goal, out float speed, out float turnRate)) return ownTurnRate;
+            Vector3 to = goal - transform.position;
+            if (to.sqrMagnitude < 1e-4f) return ownTurnRate;
+            float turn = turnRate > 0f ? turnRate : ownTurnRate;
+            float current = currentVelocity.magnitude;
+            Vector3 heading = current > 1e-3f ? currentVelocity / current : transform.forward;
+            heading = Vector3.Slerp(heading, to.normalized, Mathf.Clamp01(Time.deltaTime * turn));
+            current = Mathf.Lerp(current, Mathf.Max(0f, speed), Mathf.Clamp01(Time.deltaTime * 2.5f));
+            currentVelocity = heading * current;
+            if (current > 1e-3f && SafeLookRotation.TryGet(currentVelocity, out var rotation, this))
+                desiredRotation = rotation;
+            return turn;
+        }
+
+        public override void LeashLaunch(Vector3 velocity)
+        {
+            if (!IsSimAuthority || !float.IsFinite(velocity.x) || !float.IsFinite(velocity.y) || !float.IsFinite(velocity.z)) return;
+            currentVelocity = velocity;
+            if (velocity.sqrMagnitude > 1e-6f && SafeLookRotation.TryGet(velocity, out var rotation, this))
+                desiredRotation = rotation;
+        }
+
+        public override float LeashTopSpeed => Mathf.Max(0f, maxSpeed);
+        public override float LeashMinSpeed => Mathf.Max(0f, minSpeed);
+        public override float LeashMouthReach => Mathf.Max(0f, trailBlockInteractionRadius);
+
+        public override bool TryGetLeashDash(out float dashMultiplier, out float tickSeconds)
+        {
+            dashMultiplier = Mathf.Max(1f, huntSpeedMultiplier);
+            tickSeconds = Mathf.Max(0.05f, behaviorUpdateRate);
+            return forager;
         }
 
         void FaceFeedFocus()
@@ -843,6 +909,8 @@ namespace CosmicShore.Gameplay
             float turnRate = 1f;
             if (forager && !isKilled && UpdateFeeding())
                 turnRate = Mathf.Max(1f, feedingTurnBoost);
+            else if (Leash != null && !isKilled)
+                turnRate = SteerOnLeash(turnRate);
 
             transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, Time.deltaTime * turnRate);
 

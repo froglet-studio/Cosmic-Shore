@@ -59,11 +59,30 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Refresh interval while in boosted mode (seconds).  UGS lobby reads are
-        /// rate-limited to ~1/s per client; 0.75s keeps us safely under that cap
-        /// while staying responsive enough that invite arrivals feel instant.
+        /// Refresh interval while in boosted mode (seconds). UGS Lobby allows one GET per second
+        /// PER PLAYER, across every lobby that player reads. This was 0.75 s, which is 1.33 GETs/s
+        /// from the presence refresh alone, over the cap before the party session's own GET (B31).
+        /// A tick makes ONE read (the party session's turn replaces the presence read), and
+        /// <see cref="LobbyReadPacer"/> holds every read at least 1.05 s after the last.
         /// </summary>
-        public const float BOOSTED_INTERVAL_SECONDS = 0.75f;
+        public const float BOOSTED_INTERVAL_SECONDS = 1.1f;
+
+        /// <summary>
+        /// The fewest seconds between two GETs of the PARTY session from the refresh tick (B31).
+        /// The presence refresh and the party refresh used to GET on every 1.5 s tick: 1.33 GETs/s
+        /// against UGS Lobby's 1 GET/s/player, so a party saw a 429 about every 10 s for as long as
+        /// it existed (Caleb's two-machine log, 2026-10-16: 69 in 11 minutes). The party roster does
+        /// not need the GET each tick: the SDK keeps <c>ISession.Players</c> current from its own
+        /// lobby events, and the tick still syncs the roster from it every time. This GET is the
+        /// safety net under those events. Its tick skips the presence read (see
+        /// <see cref="IsPartySessionPollDue"/>): the average alone was not enough, because the two
+        /// reads went out in the same second and the second was refused every time (B31 again,
+        /// 2026-10-24).
+        /// </summary>
+        public const float PARTY_SESSION_POLL_SECONDS = 6f;
+
+        /// <summary>The party session's poll spacing while boosted, when the presence refresh spends most of the budget.</summary>
+        public const float PARTY_SESSION_POLL_BOOSTED_SECONDS = 15f;
 
         /// <summary>
         /// How long (seconds) a single Boost() call keeps the scheduler in boosted
@@ -81,7 +100,7 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>
         /// Applied to the DEFAULT interval only. The boosted interval is already at
-        /// 0.75 s against a ~1/s read cap, so it has no room to be jittered DOWN, and
+        /// 1.1 s against a ~1/s read cap, so it has no room to be jittered DOWN, and
         /// the boost window is the one phase where responsiveness is the point.
         /// </para>
         /// </summary>
@@ -94,6 +113,7 @@ namespace CosmicShore.Gameplay
         private readonly float _defaultInterval;
         private float _timer;
         private float _boostedUntil;  // unscaled time; 0 = not boosted
+        private float _nextPartySessionPollAt;  // unscaled time; 0 = poll on the first ask
 
         /// <summary>
         /// Jitter source. Deliberately a PRIVATE <see cref="System.Random"/> rather than
@@ -169,10 +189,31 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// True when the party session is due a GET, without claiming it. The refresh tick asks first so
+        /// a tick that reads the party session skips its presence read: one GET per tick, never two in
+        /// the same second (B31, <see cref="LobbyReadPacer"/>).
+        /// </summary>
+        public bool IsPartySessionPollDue(float now) => now >= _nextPartySessionPollAt;
+
+        /// <summary>
+        /// True when the refresh tick may GET the party session now, and starts the wait for the next
+        /// one (<see cref="PARTY_SESSION_POLL_SECONDS"/>, or <see cref="PARTY_SESSION_POLL_BOOSTED_SECONDS"/>
+        /// while boosted). A tick told no still syncs the roster from the session's own player list.
+        /// Pure: the caller passes the clock and the boost state.
+        /// </summary>
+        public bool TryTakePartySessionPoll(float now, bool boosted)
+        {
+            if (now < _nextPartySessionPollAt) return false;
+            _nextPartySessionPollAt = now + (boosted ? PARTY_SESSION_POLL_BOOSTED_SECONDS : PARTY_SESSION_POLL_SECONDS);
+            return true;
+        }
+
+        /// <summary>
         /// The default interval scaled by a symmetric jitter in
         /// <c>[1 - INTERVAL_JITTER_FRACTION, 1 + INTERVAL_JITTER_FRACTION]</c>, so the MEAN
         /// cadence is unchanged and only the phase between clients is broken up. At the
-        /// shipped 1.5 s default that is 1.35-1.65 s, still well clear of the ~1/s read cap.
+        /// shipped 1.5 s default that is 1.35-1.65 s: 0.67 presence GETs/s, which leaves the
+        /// party session's poll room under the 1 GET/s/player cap.
         /// </summary>
         private float RollInterval()
         {

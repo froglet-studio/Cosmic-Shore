@@ -34,11 +34,14 @@ namespace CosmicShore.UI
         [Tooltip("Three-wedge per-domain volume indicator on the pause button face. " +
                  "Optional - leave null if the button has no indicator wired yet.")]
         [SerializeField] DomainVolumeIndicator domainVolumeIndicator;
+        [Tooltip("What the freestyle button does, drawn in the middle of its volume hex: leave " +
+                 "freestyle (chrome_close). Empty = no glyph (Docs/MENU_REDESIGN_B.md section 22.5).")]
+        [SerializeField] Sprite exitGlyph;
         [Tooltip("Toggles freestyle <-> menu state. Pressing the volume/pause button exits freestyle.")]
         [SerializeField] MenuCrystalClickHandler crystalClickHandler;
 
         [Header("SOAP Events")]
-        [SerializeField] ScriptableEventShipHUDData onShipHUDInitialized;
+        [SerializeField] ScriptableEventVesselHUDData onShipHUDInitialized;
 
         [Header("Pause Menu")]
         [SerializeField] GameObject pauseMenuPrefab;
@@ -71,6 +74,7 @@ namespace CosmicShore.UI
                 domainVolumeIndicator = volumePauseButton.gameObject.AddComponent<DomainVolumeIndicator>();
 
             domainVolumeIndicator.SetGameData(gameData);
+            if (exitGlyph) domainVolumeIndicator.SetCentreGlyph(exitGlyph, 40f);
         }
 
         void OnEnable()
@@ -170,7 +174,7 @@ namespace CosmicShore.UI
         // UI
         // ---------------------------------------------------------
 
-        // While flying freestyle, ESCAPE or the pad's START returns you to the appshell - the
+        // While flying freestyle, ESCAPE or the pad's SELECT returns you to the appshell - the
         // counterpart to the on-screen Volume/Pause button, and the same one gesture the game
         // scenes use (OverviewGesture, asked by MiniGameHUD too, so the two cannot drift).
         //
@@ -209,7 +213,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Vessel HUD reparenting - identical to MiniGameHUD.OnShipHUDInitialized().
-        /// When a vessel spawns, ShipHUD.Start() raises this SOAP event with the
+        /// When a vessel spawns, VesselHUD.Start() raises this SOAP event with the
         /// vessel's MiniGameHUD children. We reparent them under our parent
         /// (Game UI canvas) so they render as siblings.
         ///

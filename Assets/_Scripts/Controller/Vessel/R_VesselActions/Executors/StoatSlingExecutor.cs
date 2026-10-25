@@ -55,6 +55,19 @@ namespace CosmicShore.Gameplay
         [Tooltip("Every number of the sling: squeeze → orbit, slingshot, life, the crystal style, audio slots.")]
         [SerializeField] StoatSlingConfigSO config;
 
+        // The autopilot's numbers: the mode's own copy when it has one (AIModeTuning, e.g. StoatSlingConfig_Regatta learned
+        // from people's editor flights), resolved once the pilot's mode is known; this config otherwise. Only the AI's
+        // reads go through it - a person flying this hull reads `config`.
+        StoatSlingConfigSO _aiConfig;
+        StoatSlingConfigSO AIConfig
+        {
+            get
+            {
+                if (!_aiConfig) _aiConfig = AIModeTuning.ForPilot(config, _status);
+                return _aiConfig ? _aiConfig : config;
+            }
+        }
+
         struct Hold
         {
             public bool Holding;
@@ -119,6 +132,7 @@ namespace CosmicShore.Gameplay
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status = shipStatus;
+            _aiConfig = null;
             _holds[0] = default;
             _holds[1] = default;
             _laid = false;
@@ -143,7 +157,7 @@ namespace CosmicShore.Gameplay
             _holds[i].Holding = true;
             _holds[i].HeldFor = 0f;
             // An autopilot writes no trigger, so its fixed squeeze is the hold from the start.
-            float start = config != null && _status != null && _status.AutoPilotEnabled ? config.AutopilotHold01 : 0f;
+            float start = config != null && _status != null && _status.AutoPilotEnabled ? AIConfig.AutopilotHold01 : 0f;
             _holds[i].Live = start;
             _holds[i].Peak = start;
             if (config == null) return;
@@ -453,20 +467,23 @@ namespace CosmicShore.Gameplay
             if (_laid)
             {
                 bool letGo;
-                if (!_caught) letGo = Time.time - _laidAt >= config.AiCatchGiveUpSeconds;
+                if (!_caught) letGo = Time.time - _laidAt >= AIConfig.AiCatchGiveUpSeconds;
                 else
                 {
                     float off = Vector3.Angle(hull.forward, ai.TargetPosition - hull.position);
-                    float cone = config.AiReleaseConeDegrees;
+                    float cone = AIConfig.AiReleaseConeDegrees;
                     letGo = off <= cone || (Timing01 >= 0.999f && off <= 3f * cone);
                 }
                 if (letGo && ResolveBoundInput(_orbitSide, handler, out var held)) handler.StopShipControllerActionsReplicated(held);
                 return;
             }
-            if (config.AiSlingMinTurnDegrees <= 0f) return;
-            if (Time.time - _aiLastSlingTime < config.AiSlingIntervalSeconds) return;
-            var local = hull.InverseTransformPoint(ai.TargetPosition);
-            if (!StoatSlingMath.TryAutopilotSide(local, config.AiSlingMinTurnDegrees, config.AiSlingMinDistance, out bool attractorLeft))
+            if (AIConfig.AiSlingMinTurnDegrees <= 0f) return;
+            if (Time.time - _aiLastSlingTime < AIConfig.AiSlingIntervalSeconds) return;
+            // Bearing from the steering point, range from the objective: on a race line the steering point sits one
+            // look-ahead away, inside AiSlingMinDistance at cruise (StoatDipoleMath.AutopilotGauge).
+            var local = StoatDipoleMath.AutopilotGauge(hull.InverseTransformPoint(ai.TargetPosition),
+                                                       (ai.ObjectivePosition - hull.position).magnitude);
+            if (!StoatSlingMath.TryAutopilotSide(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance, out bool attractorLeft))
                 return;
             var side = attractorLeft ? Side.Left : Side.Right;
             if (!ResolveBoundInput(side, handler, out var ie)) return;
@@ -505,7 +522,7 @@ namespace CosmicShore.Gameplay
             int i = (int)side;
             if (!_holds[i].Holding) return;
             _holds[i].HeldFor += Time.deltaTime;
-            float sample = StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, config.HoldRampSeconds, autopilot, config.AutopilotHold01);
+            float sample = StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, config.HoldRampSeconds, autopilot, AIConfig.AutopilotHold01);
             _holds[i].Live = sample;
             _holds[i].Peak = StoatSlingMath.Peak(_holds[i].Peak, sample);
         }

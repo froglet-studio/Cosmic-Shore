@@ -40,8 +40,8 @@ namespace CosmicShore.Data
         /// <summary>
         /// Whether the launch panel offers the picker for <paramref name="mode"/>. True only where
         /// the mode's AI actually READS the difficulty - a picker that changes nothing in the match
-        /// is a promise the game breaks. Skim Race is the first; add a mode here in the same
-        /// change that teaches its pilot to read <c>GameDataSO.RequestedAIDifficulty</c>.
+        /// is a promise the game breaks. Add a mode here in the same change that teaches its pilot
+        /// to read <c>GameDataSO.RequestedAIDifficulty</c>.
         /// </summary>
         public static bool IsOfferedFor(GameModes mode) =>
             mode == GameModes.SkimRace
@@ -49,7 +49,17 @@ namespace CosmicShore.Data
             || mode == GameModes.Slingshot || mode == GameModes.Warpline
             // Regatta (2026-10-14): its Squirrels fly the Skim Race pilot (SkimRaceHandicap), every other hull the gate
             // race's GateRaceHandicap - both read the same pick and the same numbers.
-            || mode == GameModes.Regatta;
+            || mode == GameModes.Regatta
+            || UsesPilotBelief(mode);
+
+        /// <summary>
+        /// Whether <paramref name="mode"/>'s AI reads the difficulty through the PLATFORM autopilot's
+        /// belief (<c>AIPilotBelief</c>, installed by <c>ServerPlayerVesselInitializerWithAI
+        /// .ConfigureAIPilotForMode</c>) - the Arena modes flown on <c>AIPilot</c>. Never a mode with a
+        /// handicap of its own (the Skim Race pilot, a gate race), or the mistakes would be made twice.
+        /// </summary>
+        public static bool UsesPilotBelief(GameModes mode) =>
+            mode == GameModes.AstroLeague || mode == GameModes.BroodRush || mode == GameModes.Broadside;
 
         /// <summary>One step easier or harder, clamped to Easy..Hard (the gamepad's left/right).</summary>
         public static AIDifficulty Step(AIDifficulty from, int direction)

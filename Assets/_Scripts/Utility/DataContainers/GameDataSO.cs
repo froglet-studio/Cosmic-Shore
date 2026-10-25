@@ -356,7 +356,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// The resolved joust-collision target for the current session - the per-domain
-        /// joust sum that ends a Joust turn. Published by <see cref="JoustCollisionTurnMonitor"/>
+        /// joust sum that ends a Joust turn. Published by <see cref="NetworkJoustCollisionTurnMonitor"/>
         /// in StartMonitor on every peer (a scene constant, identical across clients). Read by
         /// the Joust controller to format the "N Jousts Left" loser line into
         /// <see cref="ScoreResult.ScoreText"/>. Reset in <see cref="ResetRuntimeData"/> and
@@ -700,6 +700,60 @@ namespace CosmicShore.Utility
             private set => _localRoundStats = value;
         }
         public ISession ActiveSession { get; set; }
+
+        // ── One Play is one session (B33, Docs/PartySystem/BUGS.md) ─────────────────────
+        // The project enters Play WITHOUT a domain reload (EditorSettings: Enter Play Mode Options),
+        // and this asset outlives Play in the Editor, so ActiveSession and IsOfflineSession carried
+        // the previous Play's values into the next one. A second Play then started "in" a party
+        // session whose lobby was already gone: PartySessionService.CreateAsync returned early on the
+        // non-null reference, the party went InParty with nothing hosted, and the boot's Relay wait
+        // retried for ~30 s until a refresh noticed the dead session (Caleb's log, 2026-10-16). Both
+        // are reset when Play starts - the point a player build's process starts - as the other
+        // runtime-only state in this project is (SpectatorSession.ResetStatics and friends).
+
+        static readonly List<GameDataSO> s_loaded = new();
+
+        void OnEnable()
+        {
+            if (!s_loaded.Contains(this)) s_loaded.Add(this);
+        }
+
+        void OnDisable() => s_loaded.Remove(this);
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ClearSessionStateFromLastPlay()
+        {
+            foreach (var data in s_loaded.ToArray())
+                data.ClearPlaySessionState();
+        }
+
+        /// <summary>
+        /// Forgets the session state a previous Play left behind and leaves that session in the
+        /// background, so its lobby stops advertising a party nobody can join. Returns the session it
+        /// dropped (null when there was none). In a player build there never is one at startup.
+        /// </summary>
+        internal ISession ClearPlaySessionState()
+        {
+            var carried = ActiveSession;
+            ActiveSession = null;
+            IsOfflineSession = false;
+            if (carried != null) LeaveCarriedSessionAsync(carried);
+            return carried;
+        }
+
+        static async void LeaveCarriedSessionAsync(ISession carried)
+        {
+            try
+            {
+                if (carried.IsHost) await carried.AsHost().DeleteAsync();
+                else await carried.LeaveAsync();
+            }
+            catch (Exception e)
+            {
+                // Usually already gone server-side; either way nothing here can use it any more.
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[GameDataSO] Leaving the session carried from the last Play failed: {e.Message}");
+            }
+        }
         public int TurnsTakenThisRound { get; set; }
         public int RoundsPlayed { get; set; }
 

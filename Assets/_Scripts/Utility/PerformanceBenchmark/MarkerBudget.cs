@@ -72,12 +72,39 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             // this row is also the diag's tell for a run whose Burst jobs had not compiled yet.
             "ShellContact.Query",
 
+            // The nested "Driver" LateUpdates, each named for its owner (they all read as "::Driver.LateUpdate"
+            // before; a 2026-10-17 menu capture had one 88 ms spike there and could not say whose).
+            "BlackHoleRegistry.LateUpdate",
+            "WormholeView.LateUpdate",
+            "WarpFieldVesselScaler.LateUpdate",
+            "PrismLit.Flush",
+            "PrismCradle.Flush",
+            "VesselSpeedTunnel.LateUpdate",
+            "VesselPlacementView.LateUpdate",
+            "VesselRearView.LateUpdate",
+            // Inside the black-hole field tick (the Stoat's poles): the field's own phases. The tick's
+            // top-level phases (BlackHole.Tick/Field/Pairs/...) are listed with the drivers below.
+            "BlackHole.GravityField.Admit",
+            "BlackHole.GravityField.Prune",
+
             // Skim Race AI (every AI seat, every frame), and the two planners inside Decide that cost
             // the most: the 20 Hz track planner (bursts) and the laid-mass guard.
             "SkimRace.Pilot.Decide",
             "SkimRace.Pilot.FillObstacles",
             "SkimRace.Driver.TrackMpc",
             "SkimRace.Driver.GuardMass",
+
+            // Black holes and wormholes (the Stoat's dipole, wormhole cells): one LateUpdate driver each, read as
+            // anonymous Driver.LateUpdate self time - 2.7 ms average, 88 ms spikes - until these existed (2026-10-18).
+            "BlackHole.Tick",
+            "BlackHole.Field",
+            "BlackHole.Pairs",
+            "BlackHole.VesselPull",
+            "BlackHole.Waves",
+            "BlackHole.Warp",
+            "BlackHole.Lens",
+            "Wormhole.Tick",
+            "Wormhole.SelectAndRender",
         };
 
         /// <summary>The <c>diag</c> argument prefix that adds markers: <c>m=Name1,Name2</c>.</summary>

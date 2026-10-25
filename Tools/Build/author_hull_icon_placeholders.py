@@ -19,7 +19,9 @@ ball energy), and a white source is the only one a multiply tint reproduces exac
 
 Each icon names the ACT, read from the hull's ElementalAbilityMapSO entry:
 
-  Rhino    Mass   Trail Slabs        three trail slabs, growing   (Mass = size)
+  Rhino    Charge Sword Energy       a blade with a lightning bolt beside it   (Charge = energy)
+           Mass   Afterimage         a blade trailed by two fading copies of itself   (Mass = size)
+           Space  Blade Reach        a long blade over a two-headed reach arrow   (Space = reach)
            Time   Ramp Spool         a ramp wedge under a wind-up arrow   (Time = rate)
   Serpent  Charge Sniper Shot        one long round with its tracer streaks
            Mass   Seed Wall          a 3x3 patch of the wall's touching diamonds, seed ringed
@@ -29,9 +31,10 @@ Each icon names the ACT, read from the hull's ElementalAbilityMapSO entry:
            Space  Ball Forge         a ball with crystals converging on it
            Time   Throttle           a speed dial with its needle
 
-OPEN DESIGN SLOTS GET NO ICON - the Rhino's Charge and Space. Their
-map entries are `(open design slot)` with no ability behind them, and the contract for that
-is a LOCKED card (VesselHUDView.omniAbilitySprite's tooltip: "an ability that does not exist
+OPEN DESIGN SLOTS GET NO ICON (none today - the Rhino's Charge and Space were the last two and
+were designed 2026-10-16; its Trail Slabs icon was retired with that ability). An open slot's
+map entry is `(open design slot)` with no ability behind it, and the contract for that is a
+LOCKED card (VesselHUDView.omniAbilitySprite's tooltip: "an ability that does not exist
 is not the same as one the player has not unlocked, and the locked card says the first").
 Drawing a picture for one would be inventing an ability (/vessel skill section 3).
 
@@ -139,11 +142,34 @@ def rotated(fn, deg, cx=64.0, cy=64.0):
 
 # -- Rhino ---------------------------------------------------------------------
 
-def rhino_trail_slabs(px, py):
-    """Three trail slabs in a row, each larger than the last - Mass grows the slab."""
-    return (box(px, py, 10, 50, 28, 78, 3)
-            or box(px, py, 38, 40, 62, 88, 3.5)
-            or box(px, py, 72, 26, 118, 102, 4))
+def rhino_sword_energy(px, py):
+    """A blade with a lightning bolt beside it - Charge banks the sword's energy."""
+    if capsule(px, py, 18, 20, 70, 108, 7):                      # the blade, rising to the right
+        return True
+    if capsule(px, py, 6, 34, 34, 18, 4):                        # the crossguard
+        return True
+    bolt = ((104, 112), (80, 70), (98, 70), (74, 18))            # a zigzag bolt
+    return any(capsule(px, py, *bolt[i], *bolt[i + 1], 5) for i in range(len(bolt) - 1))
+
+
+def rhino_afterimage(px, py):
+    """A blade trailed by two thinner, fainter-reading copies of itself - Mass lays the copies."""
+    for dx, w in ((0, 7.5), (-22, 5), (-42, 3)):
+        if capsule(px, py, 46 + dx, 14, 104 + dx, 112, w):
+            return True
+    return False
+
+
+def rhino_blade_reach(px, py):
+    """A long blade over a two-headed reach arrow - Space lengthens the sword."""
+    if capsule(px, py, 30, 80, 120, 80, 7):                      # the blade
+        return True
+    if capsule(px, py, 22, 64, 22, 96, 4.5) or capsule(px, py, 8, 80, 22, 80, 4.5):   # guard + grip
+        return True
+    if capsule(px, py, 26, 38, 112, 38, 3.5):                    # the reach shaft
+        return True
+    return (arrowhead(px, py, 26, 38, 180.0, 14, 11)
+            or arrowhead(px, py, 112, 38, 0.0, 14, 11))
 
 
 def rhino_ramp_spool(px, py):
@@ -257,7 +283,9 @@ def scarab_throttle(px, py):
 # hull -> {file name: coverage function}
 HULLS = {
     "Rhino": {
-        "Rhino_TrailSlabs-PLACEHOLDER.png": rhino_trail_slabs,
+        "Rhino_SwordEnergy-PLACEHOLDER.png": rhino_sword_energy,
+        "Rhino_Afterimage-PLACEHOLDER.png": rhino_afterimage,
+        "Rhino_BladeReach-PLACEHOLDER.png": rhino_blade_reach,
         "Rhino_RampSpool-PLACEHOLDER.png": rhino_ramp_spool,
     },
     "Serpent": {

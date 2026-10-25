@@ -3,25 +3,28 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Puppeteers the Brittle Star's hull (built by <see cref="BrittleStarHullBuilder"/>). Design record:
+    /// Puppeteers the Brittle Star's hull (<see cref="BrittleStarHullSource"/>: the model <c>BrittleStar.fbx</c> through
+    /// <see cref="BrittleStarHullModel"/> since 2026-10-18, or the procedural <see cref="BrittleStarHullBuilder"/>). Design record:
     /// <c>R_VesselActions/BRITTLE_STAR.md</c> §2.2. Everything it draws is the class document's:
     /// <list type="bullet">
     /// <item><b>Thrusters.</b> "When speed mode is off, only [the] thruster on the cockpit should be engaged. The outer
     /// thrusters should only engage as the vessel banks. When speed mode is turned on, all of the thrusters should engage
-    /// at once." The pod flames on the OUTSIDE of a turn light with the stick; Speed Mode (and Overdrive) light all five.</item>
+    /// at once." The pod flames on the OUTSIDE of a turn light with the stick; Speed Mode lights all five; overheated guns flare every flame.</item>
     /// <item><b>The firing rotation.</b> The support ring turns about the nose axis to bring the aimed turret round
     /// (<see cref="BrittleStarExecutor.RingPhase"/>), and Creation Mode's five corner trails turn with it.</item>
     /// <item><b>The ring's life.</b> Thrown, it is gone from the hull; rebuilt, it blooms back out from the cockpit
     /// (<see cref="BrittleStarExecutor.RingPresence01"/>) — continuity of existence, never a pop.</item>
     /// </list>
     ///
-    /// <para><b>Channel discipline.</b> This component writes TRANSFORMS only: the ring's localRotation and localScale,
-    /// the flames' localScale, and a gentle bank of the drawn hull. The builder writes VERTICES (the element morph) and
-    /// the muzzles' positions. No channel has two writers.</para>
+    /// <para><b>Channel discipline.</b> This component decides TRANSFORMS only: the ring's turn and presence and the
+    /// flames' lengths (written through the hull, which knows its own parts' rest frames), and a gentle bank of the drawn
+    /// hull. The element morph is the model's blend shapes (the base class) or the builder's vertices, and the hull keeps
+    /// the muzzles on the barrels. No channel has two writers.</para>
     /// </summary>
     public class BrittleStarAnimation : VesselAnimation
     {
@@ -39,8 +42,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float emberFlame = 0.12f;
         [Tooltip("How much stick lights the outside pods fully (0..1 of a full deflection).")]
         [SerializeField, Range(0.05f, 1f)] float bankToLight = 0.6f;
-        [Tooltip("Overdrive's extra flame length, as a multiple.")]
-        [SerializeField, Min(1f)] float overdriveFlame = 1.35f;
+        [Tooltip("Extra flame length while the guns are overheated, as a multiple (the hull venting heat).")]
+        [FormerlySerializedAs("overdriveFlame")]
+        [SerializeField, Min(1f)] float overheatFlame = 1.35f;
         [Tooltip("Flicker: fraction of a flame's length it wavers by, and how fast.")]
         [SerializeField, Range(0f, 0.5f)] float flicker = 0.12f;
         [SerializeField, Min(0f)] float flickerRate = 22f;
@@ -53,10 +57,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("Degrees per second the ring idles round when nothing aims it (Creation Mode only — the corner trails twist).")]
         [SerializeField] float creationIdleSpin = 0f;
 
-        BrittleStarHullBuilder _hull;
+        BrittleStarHullSource _hull;
         Transform _hullTransform;
         Quaternion _hullRestRot;
-        Vector3 _ringRestScale = Vector3.one;
         readonly float[] _flameLength = new float[BrittleStarHullForm.Points + 1];
         float _yaw;
         float _clock;
@@ -69,10 +72,15 @@ namespace CosmicShore.Gameplay
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
-            _hull = GetComponentInChildren<BrittleStarHullBuilder>(true);
+            _hull = GetComponentInChildren<BrittleStarHullSource>(true);
             if (!executor) executor = GetComponentInChildren<BrittleStarExecutor>(true);
             if (!_hull)
-                CSDebug.LogWarning($"[BrittleStarAnimation] '{name}' has no BrittleStarHullBuilder in its children; nothing to animate.");
+                CSDebug.LogWarning($"[BrittleStarAnimation] '{name}' has no BrittleStarHullSource in its children; nothing to animate.");
+            // The model (BrittleStar.fbx under the hull) is found, not wired: its sub-objects' fileIDs exist only after
+            // Unity imports it. The base drives its element shapes by name; the flares need the renderer; the ring's
+            // spin and the Space barrels reach past the bind-pose bounds, so it must not be culled on them.
+            if (!SkinnedMeshRenderer) SkinnedMeshRenderer = GetComponentInChildren<SkinnedMeshRenderer>(true);
+            if (SkinnedMeshRenderer) SkinnedMeshRenderer.updateWhenOffscreen = true;
             base.Initialize(vesselStatus);
             CaptureRest();
             InitializeProceduralMorphs(vesselStatus);
@@ -83,11 +91,10 @@ namespace CosmicShore.Gameplay
             if (!_hull) return;
             _hullTransform = _hull.transform;
             _hullRestRot = _hullTransform.localRotation;
-            if (_hull.Ring) _ringRestScale = _hull.Ring.localScale;
             for (int i = 0; i < _flameLength.Length; i++) _flameLength[i] = 0f;
         }
 
-        // The parts are the builder's, found through it rather than by name, so nothing to resolve.
+        // The parts are the hull's, found through it (the model resolves its own bones by name), so nothing to resolve.
         protected override void AssignTransforms() { }
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle) => Drive(yaw);
@@ -106,22 +113,20 @@ namespace CosmicShore.Gameplay
             _hullTransform.localRotation = _hullRestRot * Quaternion.Euler(0f, 0f, -_yaw * bankDegrees);
 
             float speed01 = executor ? executor.Speed01 : 0f;
-            bool overdrive = executor && executor.Overdrive;
-            var ring = _hull.Ring;
-            if (ring)
+            bool overheated = executor && executor.Overheated;
+            if (_hull.Ring)
             {
                 float phase = executor ? executor.RingPhase : 0f;
-                if (executor && executor.Creation01 > 0f && executor.AimedPoint < 0 && creationIdleSpin != 0f)
+                if (executor && executor.Creation01 > 0f && !executor.Aiming && creationIdleSpin != 0f)
                     phase += _clock * creationIdleSpin * Mathf.Deg2Rad;
-                ring.localRotation = Quaternion.Euler(0f, 0f, phase * Mathf.Rad2Deg);
                 // Thrown: gone. Rebuilt: blooms back out with a little overshoot.
                 float presence = executor ? executor.RingPresence01 : 1f;
                 float bloom = presence >= 1f ? 1f : DOVirtual.EasedValue(0f, 1f, presence, Ease.OutBack);
-                ring.localScale = _ringRestScale * Mathf.Max(0.001f, bloom);
+                _hull.SetRingPose(phase, Mathf.Max(0.001f, bloom));
             }
 
             // The cockpit's own thruster: always lit, longer with Speed Mode.
-            SetFlame(-1, Mathf.Lerp(cockpitFlame, litFlame, speed01), overdrive, dt);
+            SetFlame(-1, Mathf.Lerp(cockpitFlame, litFlame, speed01), overheated, dt);
 
             // The pods: an ember at rest, lit on the outside of a turn, all lit in Speed Mode.
             float ringPhase = executor ? executor.RingPhase : 0f;
@@ -131,36 +136,29 @@ namespace CosmicShore.Gameplay
                 float side = Mathf.Cos(BrittleStarHullForm.PointAngle(i) + ringPhase);
                 float bank = Mathf.Clamp01(-side * _yaw / bankToLight);
                 float lit = Mathf.Max(speed01, bank);
-                SetFlame(i, Mathf.Lerp(emberFlame, litFlame, lit), overdrive, dt);
+                SetFlame(i, Mathf.Lerp(emberFlame, litFlame, lit), overheated, dt);
             }
         }
 
-        void SetFlame(int index, float target, bool overdrive, float dt)
+        void SetFlame(int index, float target, bool overheated, float dt)
         {
-            var flame = _hull.Flame(index);
-            if (!flame) return;
-            if (overdrive) target *= overdriveFlame;
+            if (overheated) target *= overheatFlame;
             int slot = index + 1;
             _flameLength[slot] = Mathf.Lerp(_flameLength[slot], target, 1f - Mathf.Exp(-flameRate * dt));
             float wobble = 1f + flicker * Mathf.Sin(_clock * flickerRate + slot * 1.7f) * Mathf.Sin(_clock * flickerRate * 0.61f + slot);
             float length = Mathf.Max(0.001f, _flameLength[slot] * wobble);
             float girth = Mathf.Lerp(0.6f, 1f, Mathf.Clamp01(_flameLength[slot] / Mathf.Max(0.01f, litFlame)));
-            flame.localScale = new Vector3(girth, girth, length);
+            _hull.SetFlame(index, girth, length);
         }
 
         void ResetPose()
         {
             if (!_hullTransform) return;
             _hullTransform.localRotation = _hullRestRot;
-            if (_hull.Ring)
-            {
-                _hull.Ring.localRotation = Quaternion.identity;
-                _hull.Ring.localScale = _ringRestScale;
-            }
+            _hull.ResetRingPose();
             for (int i = -1; i < BrittleStarHullForm.Points; i++)
             {
-                var flame = _hull.Flame(i);
-                if (flame) flame.localScale = new Vector3(1f, 1f, emberFlame);
+                _hull.SetFlame(i, 1f, emberFlame);
                 _flameLength[i + 1] = 0f;
             }
             _yaw = 0f;

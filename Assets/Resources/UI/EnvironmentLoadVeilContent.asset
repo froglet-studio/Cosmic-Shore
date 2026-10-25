@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e895dc3cb24462e9418df9a64f89528, type: 3}
+  m_Name: EnvironmentLoadVeilContent
+  m_EditorClassIdentifier: 
+  enteringWord: Entering
+  loadingWord: Loading
+  tipLabel: Tip
+  stepLabels:
+  - Laying prisms
+  - Growing prisms
+  - Settling the cell
+  - Opening the cell
+  cellLines:
+  - cellName: Garland
+    line: A flowering bough wound twice around the seed of the world
+  - cellName: Geode
+    line: A crystal cathedral cracked open to the void
+  - cellName: Zephyr
+    line: A painted sky of wind rivers and cyclones
+  - cellName: Yggdra
+    line: The World-Tree - a garden grown around a colossal braided trunk
+  - cellName: Hesperides
+    line: The Garden - terraced beds, pergolas and hanging baskets
+  - cellName: Ourobor
+    line: One-sided country - cities on both faces, no up anywhere
+  - cellName: Orrery
+    line: Flying inside a celestial clock
+  - cellName: Daedala
+    line: An Escher city of roads, arches, and floating isles
+  - cellName: Caldera
+    line: Four forges ringing the core - lava runs for the brave
+  tips:
+  - LT and RT slide between the Toy Box, Arcade, Arena and Mission windows.
+  - Rest on a pilot's picture in the friends panel to see where they are.
+  - On Home, press Y to fly the cell yourself, and Y again to come back.
+  - The Toy Box's shuffle re-rolls the world, your domain and your hull.
+  lattice: {fileID: 2100000, guid: 5ec732c8e557e34dafa8c292cb0aa10e, type: 2}
+  stepGlyphs:
+  - {fileID: 21300000, guid: 9a2e8aee608f36c409403a7aa8f7a795, type: 3}
+  - {fileID: 21300000, guid: 27f1ab73885787d43aa87c63aa127eb9, type: 3}
+  - {fileID: 21300000, guid: 4b483b4fab1fc8c4aa44c7938d822381, type: 3}
+  - {fileID: 21300000, guid: 58d2a48561523ad4b8f4587f632f2dc2, type: 3}
+  displayFont: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
+  captionFont: {fileID: 4519786210045101501, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}

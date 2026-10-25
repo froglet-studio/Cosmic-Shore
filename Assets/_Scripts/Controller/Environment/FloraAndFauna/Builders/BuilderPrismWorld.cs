@@ -260,10 +260,20 @@ namespace CosmicShore.Gameplay
             if (flight.sqrMagnitude > 1e-4f)
             {
                 var v = flight * (Mathf.PI / (2f * T));
-                if (PrismRenderService.StampFlight(in p.RenderHandle, PrismClock.Now, T, new float3(v.x, v.y, v.z)))
+                var fv = new float3(v.x, v.y, v.z);
+                if (PrismRenderService.StampFlight(in p.RenderHandle, PrismClock.Now, T, fv))
                 {
                     var local = p.transform.InverseTransformPoint(start);
                     PrismRenderService.EncapsulateBoundsPoint(in p.RenderHandle, new float3(local.x, local.y, local.z), 1f);
+                    _settling.Add(new PendingSettle { Prism = p, At = Time.time + T });
+                }
+                else if (PrismMeshRendererStamps.StampFlight(p.StampRenderer, PrismClock.Now, T, in fv))
+                {
+                    // No Entities Graphics on this device (Docs/PRISM_ANIMATION.md §4.11): same stamp and
+                    // envelope on the MeshRenderer; the settle below clears it like the entity's.
+                    var local = p.transform.InverseTransformPoint(start);
+                    PrismMeshRendererStamps.ResetBounds(p.StampRenderer);
+                    PrismMeshRendererStamps.EncapsulateBoundsPoint(p.StampRenderer, new float3(local.x, local.y, local.z), 1f);
                     _settling.Add(new PendingSettle { Prism = p, At = Time.time + T });
                 }
             }
@@ -308,7 +318,7 @@ namespace CosmicShore.Gameplay
             if (!Live(h, out var p)) return;
             var s = _slots[h];
             if (string.IsNullOrEmpty(s.PrevPlayer)) return;
-            p.Steal(s.PrevPlayer, s.PrevDomain, false);
+            p.ReturnTo(s.PrevPlayer, s.PrevDomain);   // a give-back, which silence does not refuse
         }
 
         public void Reclaim(int h, int vesselId)
@@ -342,7 +352,11 @@ namespace CosmicShore.Gameplay
             {
                 var e = _settling[i];
                 if (now < e.At && e.Prism) continue;
-                if (e.Prism && !e.Prism.destroyed) PrismRenderService.ClearFlightStamp(in e.Prism.RenderHandle);
+                if (e.Prism && !e.Prism.destroyed)
+                {
+                    PrismRenderService.ClearFlightStamp(in e.Prism.RenderHandle);
+                    PrismMeshRendererStamps.ClearFlightStamp(e.Prism.StampRenderer); // §4.11 twin
+                }
                 _settling.RemoveAt(i);
             }
             if (now >= _nextSweep) Sweep(now);
@@ -391,7 +405,10 @@ namespace CosmicShore.Gameplay
             _carried.Clear();
             for (int i = 0; i < _settling.Count; i++)
                 if (_settling[i].Prism && !_settling[i].Prism.destroyed)
+                {
                     PrismRenderService.ClearFlightStamp(in _settling[i].Prism.RenderHandle);
+                    PrismMeshRendererStamps.ClearFlightStamp(_settling[i].Prism.StampRenderer); // §4.11 twin
+                }
             _settling.Clear();
             for (int b = 0; b < _bodyList.Count; b++)
             {

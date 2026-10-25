@@ -104,9 +104,15 @@ namespace CosmicShore.UI
             WriteCurrent();
         }
 
+        KitSightline _sight;
+
         void Update()
         {
             if (_entries.Count <= 1 || !bodyText || !bodyText.gameObject.activeInHierarchy) return;
+            // Windows never deactivate (they hide at CanvasGroup alpha 0): a briefing behind a closed configure
+            // kept cycling and fading its text, re-batching the menu canvas for a line nobody could see.
+            _sight ??= new KitSightline(bodyText.transform, null, null);
+            if (!_sight.Visible) return;
 
             // Unscaled: the launch panel can be open while the menu holds timeScale at 0.
             float dt = Time.unscaledDeltaTime;

@@ -44,6 +44,7 @@ sys.path.insert(0, HERE)
 VERSION = 1
 DEG = 180 / math.pi
 PRISM_HALF = 3
+SLOWED_BIT = 8                          # VesselStatus state bit the recorder writes: Slowed (a prism hit)
 LEAD_CAP, LEAD_SHARE, THROUGH = 480, 0.4, 320
 MIN_FLIGHTS = 3   # editor flights of one hull before anything is learned from them
 PHASES = ["cruise", "approach", "line-up", "thread", "exit", "skim run", "boost straight", "recovery"]
@@ -147,6 +148,8 @@ def normalize(f):
         "n": n, "t": col("t", 0), "spd": col("speed", 0), "boost": col("boost", 1), "thr": col("throttle", 1), "lt": col("lt", 0),
         "rt": col("rt", 0), "rings": [int(x) for x in col("rings", 0)], "held": col("held", 0),
         "skims": col("skims", 0) if "skims" in idx else None, "rams": col("rams", 0) if "rams" in idx else None,
+        # The recorder's VesselStatus bits (flight/3): Slowed (8) is set while a prism hit has the hull slowed.
+        "slowed": [int(x) & SLOWED_BIT != 0 for x in col("state", 0)] if "state" in idx else None,
         "p": [], "f": [], "u": [], "rv": f.get("rivals"), "rivalHulls": f.get("rivalHulls") or [],
     }
     for r in rows:
@@ -593,7 +596,15 @@ def events(N, C, F):
                 lat = vlen(sub(off, mul(g["a"], dot(off, g["a"]))))
                 if g["r"] < lat < g["r"] * 3:
                     ev["miss"].append(i)
-        if (N["rams"][i] > N["rams"][i - 1]) if N["rams"] else (N["spd"][i] < N["spd"][i - 1] * 0.65):
+        # A rail hit: the page counts rams; Unity's flight/3 sets the Slowed bit on the hit (one per slowed episode);
+        # older Unity flights only have speed, where a drop below 65% in one sample is the best guess.
+        if N["rams"]:
+            hit = N["rams"][i] > N["rams"][i - 1]
+        elif N["slowed"]:
+            hit = N["slowed"][i] and not N["slowed"][i - 1]
+        else:
+            hit = N["spd"][i] < N["spd"][i - 1] * 0.65
+        if hit:
             ev["ram"].append(i)
         if skim_hull and ((N["skims"][i] > N["skims"][i - 1]) if N["skims"] else (N["boost"][i] > N["boost"][i - 1] + 0.04)):
             ev["skim"].append(i)
@@ -795,7 +806,7 @@ def analyze(flight, course, lag=None):
     share = {p: r2(v / max(1, N["n"])) for p, v in share.items()}
     return {"version": VERSION, "norm": N, "feats": F, "labels": L, "events": ev, "segments": segs, "legs": lg, "skims": sk, "boosts": boosts, "mistakes": mistakes,
             "viewFeats": V, "view": view_summary(N, V, sk, misses), "lag": measure_lag(N, F, V), "lagApplied": lag or 0,
-            "summary": {"samples": N["n"], "seconds": r2(N["n"] / N["hz"]), "rings": len(ev["ring"]), "missed": len(ev["miss"]), "rams": len(ev["ram"]),
+            "summary": {"samples": N["n"], "seconds": r2(N["t"][-1] - N["t"][0]) if N["n"] else 0, "rings": len(ev["ring"]), "missed": len(ev["miss"]), "rams": len(ev["ram"]),
                         "skimsTaken": len([s for s in sk if s["taken"]]), "skimsSkipped": len([s for s in sk if not s["taken"]]), "boostPresses": len(boosts),
                         "meanTurnRate": r2(sum(x["turnRate"] for x in F) / max(1, N["n"])), "phaseShare": share}}
 
@@ -1055,6 +1066,9 @@ def report(sources, write=False):
             print("  skip", err)
             continue
         if d.get("mode") != "Regatta":
+            continue
+        if (d.get("hull") or "Unknown") == "Unknown":
+            print(f"  skip {os.path.basename(name)}: no hull named (a race restarted part-way, recorded before 2026-10-17's fix)")
             continue
         C = course_from(COURSE, int(d.get("intensity") or 1))
         if not C:

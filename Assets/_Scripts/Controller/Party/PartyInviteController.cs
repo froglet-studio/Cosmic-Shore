@@ -40,6 +40,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Optional. Best-effort toast shown when a join fails and the client bounces back to its own menu. May be suppressed during the scene reload.")]
         [SerializeField] private ToastChannel bounceToastChannel;
 
+        [Tooltip("Toast after a join that UGS refused because the party has no free seat. Empty shows no toast.")]
+        [SerializeField, TextArea] private string partyFullToast = "That party is full.";
+
+        [Tooltip("Toast after a join whose party ended before we got in (its lobby is gone: the host left or the invite was stale). Empty shows no toast.")]
+        [SerializeField, TextArea] private string partyEndedToast = "That party has ended.";
+
         [Header("Timing")]
         // The initializers below equal what PartyServices.prefab SERIALIZES (5 / 10 / 30), so a reader
         // of this file is not misled: a serialized field's initializer is not its shipped value.
@@ -257,13 +263,15 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogVerbose(CSLogChannel.Party, "[PartyInviteController] Accept flow cancelled.");
             }
-            catch (Exception e) when (UgsRequestPolicy.Classify(e) == UgsFailureClass.Full)
+            catch (Exception e) when (UgsRequestPolicy.Classify(e) is UgsFailureClass.Full or UgsFailureClass.Gone)
             {
-                // The party filled between our pre-flight and the join (two players pressing Join
+                // Full: the party filled between our pre-flight and the join (two players pressing Join
                 // on a 3/4 party): the session's seat count IS the party size, so UGS refused us.
-                // An expected refusal, not a fault - back to our own menu with the reason.
+                // Gone: the party ended first - its host left, or the invite / presence entry was stale
+                // ("SessionNotFound: lobby not found"). Both are expected refusals, not faults - back to
+                // our own menu with the reason.
                 await UniTask.Yield(PlayerLoopTiming.Update);
-                await BounceToSoloMenuAsync("That party is full.");
+                await BounceToSoloMenuAsync(UgsRequestPolicy.Classify(e) == UgsFailureClass.Full ? partyFullToast : partyEndedToast);
             }
             catch (Exception e)
             {
@@ -443,13 +451,15 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyInviteController] {label} cancelled.");
             }
-            catch (Exception e) when (UgsRequestPolicy.Classify(e) == UgsFailureClass.Full)
+            catch (Exception e) when (UgsRequestPolicy.Classify(e) is UgsFailureClass.Full or UgsFailureClass.Gone)
             {
-                // The party filled between our pre-flight and the join (two players pressing Join
+                // Full: the party filled between our pre-flight and the join (two players pressing Join
                 // on a 3/4 party): the session's seat count IS the party size, so UGS refused us.
-                // An expected refusal, not a fault - back to our own menu with the reason.
+                // Gone: the party ended first - its host left, or the invite / presence entry was stale
+                // ("SessionNotFound: lobby not found"). Both are expected refusals, not faults - back to
+                // our own menu with the reason.
                 await UniTask.Yield(PlayerLoopTiming.Update);
-                await BounceToSoloMenuAsync("That party is full.");
+                await BounceToSoloMenuAsync(UgsRequestPolicy.Classify(e) == UgsFailureClass.Full ? partyFullToast : partyEndedToast);
             }
             catch (Exception e)
             {
@@ -523,12 +533,15 @@ namespace CosmicShore.Gameplay
                 var hcs = HostConnectionService.Instance;
                 if (hcs != null)
                     await hcs.LeavePartySessionAsync().AsMainThread();
+                if (PlayEnded("leave-lobby flow")) return;
 
                 await _networkTransition.ShutdownAsync(shutdownTimeoutSeconds, ct).AsMainThread();
                 _networkTransition.ClearStaleReferences();
+                if (PlayEnded("leave-lobby flow")) return;
 
                 await SceneManager.LoadSceneAsync(_sceneNames.MainMenuScene, LoadSceneMode.Single)
                     .ToUniTask(cancellationToken: ct);
+                if (PlayEnded("leave-lobby flow")) return;
 
                 if (hcs != null)
                     await hcs.EnsurePartySessionAsync().AsMainThread();
@@ -544,6 +557,7 @@ namespace CosmicShore.Gameplay
                 // Timeout / cancel continuations can land on the thread pool.
                 // Yield onto PlayerLoop.Update to land on Unity's main thread.
                 await UniTask.Yield(PlayerLoopTiming.Update);
+                if (PlayEnded("leave-lobby flow")) return;
                 CSDebug.LogError($"[PartyInviteController] Leave-lobby flow failed " +
                                $"({e.GetType().Name}): {e}");
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyInviteController] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
@@ -661,6 +675,9 @@ namespace CosmicShore.Gameplay
         {
             CSDebug.LogWarning($"[PartyInviteController] Bouncing to solo menu: {toastMessage}");
             NetSessionRecorder.Mark("bounce", toastMessage);
+            // A bounce lands on HOME with its notice, never on the launch panel of a match the party
+            // it was launched with can no longer play (MenuReturnCard).
+            CosmicShore.UI.MenuReturnCard.Clear();
             await RecoverFromFailedTransitionAsync();
             // Show the notice AFTER recovery. ToastService is a scene-bound MonoBehaviour
             // (it subscribes to the channel in OnEnable), so it is destroyed + recreated by
@@ -668,7 +685,26 @@ namespace CosmicShore.Gameplay
             // before recovery is therefore silently dropped (the channel event has no
             // subscriber). Raising it here lands on the fresh menu's live ToastService.
             // See Docs/PartySystem/BUGS.md B10.
-            bounceToastChannel?.ShowPrefix(toastMessage);
+            if (!string.IsNullOrEmpty(toastMessage)) bounceToastChannel?.ShowPrefix(toastMessage);
+        }
+
+        /// <summary>Whether Play is running. Tests substitute it; it is Unity's own flag otherwise.</summary>
+        internal static Func<bool> IsPlaying { get; set; } = () => Application.isPlaying;
+
+        /// <summary>
+        /// True once Play has stopped or this controller is gone, so the flow that awaited must stop
+        /// (B38, Docs/PartySystem/BUGS.md). The recovery and the leave-lobby flow await the party leave and
+        /// the Netcode shutdown (seconds, with a timeout) before loading Menu_Main; when Play stopped in that
+        /// window, the load ran in edit mode and threw ("This can only be used during play mode", Bug Ledger
+        /// E-41b7610878; on Unity 6000.3 a null operation, "Value cannot be null. Parameter name:
+        /// asyncOperation", E-0de9ec6c70), and the solo session after it would have been created in edit
+        /// mode, where nothing ever leaves it.
+        /// </summary>
+        private bool PlayEnded(string flow)
+        {
+            if (IsPlaying() && this != null) return false;
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyInviteController] Play ended during the {flow} - stopping it.");
+            return true;
         }
 
         /// <summary>
@@ -680,6 +716,7 @@ namespace CosmicShore.Gameplay
             // Recovery may be entered from a thread-pool continuation; land on
             // PlayerLoop.Update to guarantee main thread before touching anything.
             await UniTask.Yield(PlayerLoopTiming.Update);
+            if (PlayEnded("recovery")) return;
             CSDebug.LogVerbose(CSLogChannel.Party, "[PartyInviteController] Attempting recovery - recreating solo Relay session");
 
             // A spectate that failed or lost its host must not leave the approval payload armed:
@@ -701,18 +738,22 @@ namespace CosmicShore.Gameplay
                 var hcs = HostConnectionService.Instance;
                 if (hcs != null)
                     await hcs.LeavePartySessionAsync().AsMainThread();
+                if (PlayEnded("recovery")) return;
 
                 await _networkTransition.ShutdownAsync(shutdownTimeoutSeconds, CancellationToken.None).AsMainThread();
                 _networkTransition.ClearStaleReferences();
+                if (PlayEnded("recovery")) return;
 
                 await SceneManager.LoadSceneAsync(_sceneNames.MainMenuScene, LoadSceneMode.Single)
                     .ToUniTask();
+                if (PlayEnded("recovery")) return;
 
                 if (hcs != null)
                     await hcs.EnsurePartySessionAsync().AsMainThread();
             }
             catch (Exception e)
             {
+                if (PlayEnded("recovery")) return;
                 CSDebug.LogError($"[PartyInviteController] Recovery failed ({e.GetType().Name}): {e}");
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyInviteController] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
             }

@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca40055ba78a4f3a9fea67d6bf2d8e1c, type: 3}
+  m_Name: PrismInteractionLodConfig
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PrismInteractionLodConfigSO
+  burstMaterial: {fileID: 2100000, guid: bb416e904a654a8597031d364831aa5d, type: 2}
+  maxLiveBursts: 48
+  maxLiveTriangles: 80000
+  crowdedFill: 0.5
+  packedFill: 0.8
+  destructionEnabled: 1
+  explosionAsFragments: 1
+  maxLiveExplosions: 4096
+  destructionCut: 1
+  depthMinScreen:
+  - 0.05
+  - 0.315
+  - 0.52
+  - 0.6
+  silverDepths:
+  - 4
+  - 6
+  - 8
+  - 10
+  fragmentBurst: 0.36
+  fragmentDrift: 0.216
+  fragmentLift: 2
+  fragmentAim: 0.95
+  fragmentSpeedGain: 1.65
+  fragmentSpeedRef: 10
+  fragmentSizeSpeed: 0.8
+  fragmentSizeSpin: 0.25
+  fragmentSpinCap: 1.6
+  fragmentLevelRef: 4
+  fragmentEndSmall: 0.45
+  fragmentEndBig: 0.92
+  fragmentShrink: 0.35
+  fragmentSpinNoise: 0.15
+  fragmentNoiseFrequency: 3
+  fragmentTravelNoise: 0.48
+  fragmentVariety: 0.5
+  shedEnabled: 1
+  shedMinScreen: 0.08
+  shedFineScreen: 0.24
+  shedFinestScreen: 0.28
+  shedSubdivision: 12
+  shedFineSubdivision: 18
+  shedFinestSubdivision: 24
+  rollWeight: 1
+  rollRadius: 0.05
+  rollGap: 0.01
+  bloomWeight: 0
+  unravelWeight: 0
+  flakeWeight: 0
+  bloomRings: 3
+  bloomSegments: 3
+  peelNoise: 0.6
+  shedInflate: 0.02
+  spread: 0.55
+  openSeconds: 0.22
+  spinPerSpeed: 0.3
+  bloomTurns: 0.7
+  unravelTurns: 0.8
+  ribbonsPerFace: 6
+  shardsPerFaceEdge: 3
+  dissolveGrain: 0.35

@@ -92,8 +92,8 @@ namespace CosmicShore.Game
         Matrix4x4[] matrices;
 
         /// <summary>
-        /// Capsules actually drawn: all of them, unless the device tier caps the subdivision level
-        /// (<c>PlatformProfileSO.MembraneMaxSubdivisions</c>). The icosphere generator only ever
+        /// Capsules actually drawn: all of them, unless the device tier or quality preset caps the
+        /// subdivision level (<c>GraphicsCuts.MembraneMaxSubdivisions</c>). The icosphere generator only ever
         /// APPENDS midpoint vertices, and the jitter is drawn per vertex in index order, so the
         /// first 10*4^s+2 capsules are exactly the layout a membrane authored at level s would have,
         /// and the baked animation indexes them the same way. Drawing a prefix is therefore a
@@ -120,6 +120,37 @@ namespace CosmicShore.Game
         Vector3[] perpendiculars;
         // Noise sampling coordinates (one per capsule, derived from jittered position)
         Vector3[] noiseCoords;
+
+        static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
+        static readonly int DullColorId = Shader.PropertyToID("_DullColor");
+        MaterialPropertyBlock _colourBlock;
+
+        /// <summary>The membrane's own colours as its material authors them (SpindleGraph's <c>_BrightColor</c> /
+        /// <c>_DullColor</c>) - what a mode's tint eases away from and back to. False without a material.</summary>
+        public bool TryGetMaterialColours(out Color bright, out Color dull)
+        {
+            bright = dull = Color.white;
+            if (!membraneMaterial) return false;
+            if (membraneMaterial.HasProperty(BrightColorId)) bright = membraneMaterial.GetColor(BrightColorId);
+            if (membraneMaterial.HasProperty(DullColorId)) dull = membraneMaterial.GetColor(DullColorId);
+            return true;
+        }
+
+        /// <summary>
+        /// Recolour THIS membrane's draw (a property block on its instanced draw) - never the material, which is
+        /// <c>SpindleMaterial</c>, shared with every spindle, worm segment and two fauna prefabs. A mode-side visual
+        /// (<see cref="CosmicShore.Gameplay.CellVisualTint"/>); the membrane's boundary and gameplay are untouched.
+        /// </summary>
+        public void SetColourOverride(Color bright, Color dull)
+        {
+            _colourBlock ??= new MaterialPropertyBlock();
+            _colourBlock.SetColor(BrightColorId, bright);
+            _colourBlock.SetColor(DullColorId, dull);
+            renderParams.matProps = _colourBlock;
+        }
+
+        /// <summary>Back to the material's own colours.</summary>
+        public void ClearColourOverride() => renderParams.matProps = null;
 
         /// <summary>The baked preset currently assigned, if any. Used by the editor bake tooling.</summary>
         public CapsuleMembraneAnimationSO AnimationPreset => animationPreset;
@@ -215,13 +246,13 @@ namespace CosmicShore.Game
         public static int IcosphereVertexCount(int level) => 10 * (1 << (2 * level)) + 2;
 
         /// <summary>
-        /// <paramref name="total"/> capsules, or the prefix the device tier allows. A cap at or above
-        /// this membrane's own level changes nothing.
+        /// <paramref name="total"/> capsules, or the prefix the device tier and quality preset allow
+        /// (<see cref="GraphicsCuts.MembraneMaxSubdivisions"/>). A cap at or above this membrane's own
+        /// level changes nothing.
         /// </summary>
         int TierCappedCount(int total)
         {
-            var profile = PlatformProfile.Current;
-            int cap = profile ? profile.MembraneMaxSubdivisions : -1;
+            int cap = GraphicsCuts.MembraneMaxSubdivisions;
             if (cap < 0 || cap >= subdivisions) return total;
             return Mathf.Min(total, IcosphereVertexCount(cap));
         }

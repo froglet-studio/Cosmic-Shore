@@ -22,7 +22,7 @@ namespace CosmicShore.UI
     public class ToyboxShuffleCard : MonoBehaviour
     {
         [Header("Labels (all optional)")]
-        [SerializeField, Tooltip("Heading - 'SHUFFLE THE TOY BOX'. Taken from the config asset.")]
+        [SerializeField, Tooltip("Heading - 'Shuffle the toy box'. Taken from the config asset.")]
         TMP_Text titleText;
 
         [SerializeField, Tooltip("Second line: what a press will do, or what the last one did.")]
@@ -31,6 +31,12 @@ namespace CosmicShore.UI
         [Header("Art (all optional)")]
         [SerializeField, Tooltip("Flat fill behind the card.")]
         Image accentFill;
+
+        [Header("Style-B (optional)")]
+        [SerializeField, Tooltip("The card's own SHUFFLE button. A press on it shuffles exactly as a press on the " +
+                                 "card does, and it greys with the card; keep it off the pad's navigation so " +
+                                 "the card stays one stop.")]
+        Button shuffleButton;
 
         ToyboxModal _modal;
         Button _button;
@@ -60,6 +66,11 @@ namespace CosmicShore.UI
                 _button.onClick.RemoveListener(HandleClicked);
                 _button.onClick.AddListener(HandleClicked);
             }
+            if (shuffleButton)
+            {
+                shuffleButton.onClick.RemoveListener(HandleClicked);
+                shuffleButton.onClick.AddListener(HandleClicked);
+            }
 
             Redraw();
         }
@@ -72,7 +83,7 @@ namespace CosmicShore.UI
         void Redraw()
         {
             var config = ToyboxDailyActivityConfigSO.Instance;
-            SetText(titleText, config != null ? config.ShuffleTitle : "SHUFFLE THE TOY BOX");
+            SetText(titleText, config != null ? config.ShuffleTitle : "Shuffle the toy box");
 
             bool shuffling = _modal && _modal.IsShuffling;
             string last = _modal ? _modal.LastShuffleSummary : "";
@@ -81,16 +92,18 @@ namespace CosmicShore.UI
             // then what it would do. The last-shuffle line is what makes the press legible at all
             // on a shuffle that landed on a cell you cannot see from the menu.
             string detail =
-                shuffling ? "SHUFFLING..."
+                shuffling ? "Shuffling..."
                 : !string.IsNullOrEmpty(last) ? last
                 : config != null ? config.ShuffleDetail
-                : "NEW WORLD, NEW COLOURS, NEW HULL";
+                : "New world, new colours, new hull";
 
             SetText(detailText, detail);
 
             // Dead while a shuffle is in flight, and while no toy can answer - a second press
             // mid-shuffle would plan against toys the first press is in the middle of replacing.
-            if (_button) _button.interactable = !shuffling && (!_modal || _modal.CanShuffle);
+            bool live = !shuffling && (!_modal || _modal.CanShuffle);
+            if (_button) _button.interactable = live;
+            if (shuffleButton) shuffleButton.interactable = live;
         }
 
         /// <summary>

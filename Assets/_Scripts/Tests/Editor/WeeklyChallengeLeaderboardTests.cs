@@ -114,6 +114,26 @@ namespace CosmicShore.Tests
                     .FormatHoursMinutesSeconds(TimeSpan.FromSeconds(3600 + s)).Length);
         }
 
+        [Test]
+        public void DaysCountdown_ShowsDaysOnlyWhenADayOrMoreIsLeft()
+        {
+            Assert.AreEqual("6d 03:12:09", WeeklyChallengeLeaderboardModal.FormatDaysCountdown(
+                new TimeSpan(6, 3, 12, 9)));
+            Assert.AreEqual("1d 00:00:00", WeeklyChallengeLeaderboardModal.FormatDaysCountdown(TimeSpan.FromDays(1)));
+            Assert.AreEqual("23:59:59", WeeklyChallengeLeaderboardModal.FormatDaysCountdown(
+                new TimeSpan(23, 59, 59)));
+            Assert.AreEqual("00:00:00", WeeklyChallengeLeaderboardModal.FormatDaysCountdown(TimeSpan.FromSeconds(-5)));
+        }
+
+        [Test]
+        public void Ordinal_UsesTheTeensException()
+        {
+            string[] want = { "1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "22nd", "101st", "111th" };
+            int[] n = { 1, 2, 3, 4, 11, 12, 13, 21, 22, 101, 111 };
+            for (int i = 0; i < n.Length; i++)
+                Assert.AreEqual(want[i], WeeklyChallengeLeaderboardPanel.Ordinal(n[i]));
+        }
+
         // ── Regional boards ────────────────────────────────────────────────────
 
         [Test]

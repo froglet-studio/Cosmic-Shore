@@ -170,6 +170,13 @@ namespace CosmicShore.UI
         [Tooltip("Arcade modal window. Opens as overlay when Arcade nav is clicked.")]
         [SerializeField] private ModalWindowManager ArcadeModal;
 
+        [Header("Return From a Match")]
+        [Tooltip("Leaving a match re-opens the launch panel of the card it was launched from (MenuReturnCard), " +
+                 "once the menu's vessel is ready, the boot world is built and the lobby has spawned. If that " +
+                 "takes longer than this many seconds (unscaled) the menu stays on HOME, as it did before. Longer " +
+                 "than the splash's own 60 s hold for the boot world, so a slow phone still gets its panel back.")]
+        [SerializeField] private float returnToCardTimeoutSeconds = 90f;
+
         [Header("Home Hub Buttons")]
         [Tooltip("Seconds the four home-hub buttons (Mission / Toy Box / Arena / Arcade) take to fade " +
                  "OUT when any modal opens and back IN when the last one closes on HOME. 0 snaps. " +
@@ -180,10 +187,23 @@ namespace CosmicShore.UI
                  "window never opens over a live profile chip. Empty entries are ignored.")]
         [SerializeField] private List<GameObject> hubCompanions = new();
 
+        [Header("Hub Window Slide (rev 7)")]
+        [Tooltip("The home hub's windows in slide order. Inside one of them LT / RT (and HubWindowNav's edge arrows) " +
+                 "swap it for its neighbour, stopping at the ends - no wrap (the owner, 2026-10-17: \"slide stop\"). " +
+                 "Docs/MENU_REDESIGN_B.md §47.2.")]
+        [SerializeField] private List<ModalWindows> hubWindowOrder = new()
+            { ModalWindows.TOYBOX, ModalWindows.ARCADE, ModalWindows.ARENA, ModalWindows.MISSION };
+        [Tooltip("How far, in canvas units, the old window slides out and the new one slides in from.")]
+        [SerializeField] private float hubSlideDistance = 160f;
+        [Tooltip("Seconds a window swap takes (unscaled: the menu runs paused).")]
+        [SerializeField] private float hubSlideSeconds = 0.32f;
+
         [Header("Gamepad Freestyle Toggle")]
-        [Tooltip("Crystal click handler that toggles freestyle mode. Y button (buttonNorth) invokes ToggleTransition.")]
+        [Tooltip("Crystal click handler that toggles freestyle mode. The pad's Select / View button invokes ToggleTransition, and " +
+                 "RequestExitFreestyle leaves freestyle through it. Found in the scene at Awake when left empty (there is " +
+                 "one per menu scene): Menu_Main shipped it empty, so the pad toggle on Home did nothing.")]
         [SerializeField] private MenuCrystalClickHandler crystalClickHandler;
-        [Tooltip("Seconds after a freestyle transition completes before Y can toggle again.")]
+        [Tooltip("Seconds after a freestyle transition completes before Select can toggle again.")]
         [SerializeField] private float freestyleToggleCooldown = 3f;
 
         // The strip (this rect) slides inside its viewport by anchoredPosition, one viewport width
@@ -208,6 +228,12 @@ namespace CosmicShore.UI
         private readonly List<CanvasGroup> _hubGroups = new();
         private bool _hubGroupsResolved;
         private Coroutine _hubButtonsFade;
+
+        // The running hub-window swap and the rest position of every window it has moved.
+        private Coroutine _hubSlide;
+        private readonly Dictionary<RectTransform, Vector2> _hubSlideRest = new();
+        // Each hub window's Home entry availability, found once (MenuHubButton ensures the view in Awake).
+        private Dictionary<ModalWindows, MenuAvailabilityView> _hubEntries;
 
         // Cached canvas references for aspect-ratio-safe sliding
         private Canvas _rootCanvas;
@@ -291,7 +317,12 @@ namespace CosmicShore.UI
             UpdateModalStackInteractable();
             UpdateHubButtonsVisibility();
             Refocus();
+            ModalStackChanged?.Invoke();
         }
+
+        /// <summary>Raised after every change to the modal stack (an open, a close, a prune), once the stack is
+        /// committed. <see cref="HubWindowNav"/> repaints on it.</summary>
+        public event System.Action ModalStackChanged;
 
         #region Home hub buttons
 
@@ -414,6 +445,16 @@ namespace CosmicShore.UI
             if (target) eventSystem.SetSelectedGameObject(target.gameObject);
         }
 
+        /// <summary>True while the EventSystem's selection is a live control on the HOME screen.</summary>
+        private bool HomeControlSelected()
+        {
+            var es = EventSystem.current;
+            var selected = es ? es.currentSelectedGameObject : null;
+            var root = CurrentScreenRoot();
+            return selected && root && selected.activeInHierarchy && selected.transform.IsChildOf(root.transform)
+                   && selected.TryGetComponent<Selectable>(out var s) && s.IsInteractable();
+        }
+
         private GameObject CurrentScreenRoot()
         {
             if (screens == null || currentScreen < 0 || currentScreen >= screens.Count) return null;
@@ -428,6 +469,16 @@ namespace CosmicShore.UI
         /// </summary>
         private static Selectable PreferredSelectable(GameObject scope)
         {
+            // The flagged hub first (Arcade): the first available one in hierarchy order is Toy Box,
+            // which made A on a fresh Home open the Toy Box while the A keycap sat on Arcade.
+            foreach (var hub in scope.GetComponentsInChildren<MenuHubButton>(false))
+            {
+                if (!hub.PreferredFocus) continue;
+                var view = hub.GetComponent<MenuAvailabilityView>();
+                if (view && !view.IsAvailable) continue;
+                if (hub.TryGetComponent(out Selectable s) && s.IsInteractable()) return s;
+            }
+
             foreach (var hub in scope.GetComponentsInChildren<MenuHubButton>(false))
             {
                 var view = hub.GetComponent<MenuAvailabilityView>();
@@ -540,16 +591,30 @@ namespace CosmicShore.UI
                     "You can manually assign screens in the inspector for full control."
                 );
             }
+
+            // An authored reference wins; an empty one is found, so a lost wiring cannot silently take Y (and the host
+            // pulling a flying guest into a card) away again. author_menu_home.py authors it in Menu_Main.
+            if (!crystalClickHandler)
+                crystalClickHandler = FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include);
         }
 
         private void OnEnable()
         {
             TrySubscribeFreestyleEvents();
+            EnvironmentLoadVeil.Released += PlayCurrentScreenEntrances;
         }
+
+        /// <summary>
+        /// The boot world's veil has started revealing the menu: the screen the player is on plays
+        /// its entrances now, so the menu ARRIVES with the world instead of having settled behind
+        /// the cover where nobody saw it (Docs/MENU_REDESIGN_B.md section 25).
+        /// </summary>
+        private void PlayCurrentScreenEntrances() => KitEntrance.ReplayUnder(GetScreenRootRT(currentScreen));
 
         private void OnDisable()
         {
             UnsubscribeFreestyleEvents();
+            EnvironmentLoadVeil.Released -= PlayCurrentScreenEntrances;
 
             // Scene-unload safety: the UI module's actions live on a shared asset instance
             // that outlives this scene — never leave Submit/Cancel/Move disabled for the
@@ -649,6 +714,58 @@ namespace CosmicShore.UI
             {
                 StartCoroutine(LaunchModalCoroutine());
             }
+
+            // Back from a match launched off a card: land on that card's launch panel, not on HOME.
+            if (MenuReturnCard.TryTake(out var returnCard))
+                StartCoroutine(ReturnToLaunchedCardCoroutine(returnCard));
+        }
+
+        /// <summary>
+        /// Re-opens the card a match was launched from, over the window that lists it, so the player
+        /// can change the setup and go again (<see cref="MenuReturnCard"/>). The panel re-seeds itself
+        /// from the setup that just flew (<c>LaunchPreferenceStore</c>).
+        ///
+        /// <para>Waits for three things a press never has to, because a press cannot land while the
+        /// splash still covers the menu: the menu's own vessel (the menu is Ready), the boot world
+        /// (the panel's live preview stands a second arena, which must not race the first build), and
+        /// the lobby the card commits to (<see cref="ArcadeGameConfigureModal.IsReadyToOpenCards"/>).
+        /// Gives up quietly to HOME after <see cref="returnToCardTimeoutSeconds"/>.</para>
+        /// </summary>
+        private IEnumerator ReturnToLaunchedCardCoroutine(MenuReturnCard.Card card)
+        {
+            float giveUpAt = Time.unscaledTime + returnToCardTimeoutSeconds;
+            var menu = FindAnyObjectByType<MainMenuController>();
+
+            while ((menu && menu.CurrentState is MainMenuState.None or MainMenuState.Initializing)
+                   || EnvironmentLoadVeil.IsCovering
+                   || !ArcadeGameConfigureModal.IsReadyToOpenCards)
+            {
+                if (Time.unscaledTime > giveUpAt)
+                {
+                    CSDebug.LogVerbose(CSLogChannel.MenuUI,
+                        $"[ScreenSwitcher] Return to {card.Mode}'s panel abandoned after {returnToCardTimeoutSeconds:0}s " +
+                        "(menu, boot world or lobby not ready) - staying on HOME.");
+                    yield break;
+                }
+                yield return null;
+            }
+
+            // Ready, not merely past Initializing: a launch (LaunchingGame) or a flight (Freestyle)
+            // that started meanwhile is somewhere the player went.
+            if (menu && menu.CurrentState != MainMenuState.Ready) yield break;
+
+            if (!MenuReturnCard.ShouldReopen(
+                    isPartyClient: ArcadeConfigSyncManager.IsPartyClient,
+                    guided: MenuGuide.IsActive || QuestArcadeConstraints.Active,
+                    inFreestyle: InFreestyle,
+                    windowOpen: HasActiveModal))
+                yield break;
+
+            var week = WeeklyChallengeService.Instance ? WeeklyChallengeService.Instance.ThisWeek : default;
+            if (card.WeeklyChallenge && week.IsValid && week.GameMode == card.Mode)
+                OpenWeeklyChallenge();
+            else
+                OpenGame(card.Mode);
         }
 
         private IEnumerator LaunchModalCoroutine()
@@ -660,10 +777,11 @@ namespace CosmicShore.UI
             PlayerPrefs.DeleteKey(ReturnToModalPrefKey);
             PlayerPrefs.Save();
 
-            // Game-related modals require context (selected game, party state) that is
-            // lost on scene transition - never auto-reopen them after returning from a game.
-            // ARCADE is included because re-opening the arcade overlay on return causes
-            // stale game configuration to resurface.
+            // Game-related modals require context (selected game, party state) that a modal TYPE
+            // does not carry - never reopen them from this pref. ARCADE is included because
+            // re-opening the arcade overlay on its own causes stale game configuration to
+            // resurface. Coming back from a match re-opens the launched card through
+            // MenuReturnCard instead, which carries the card (ReturnToLaunchedCardCoroutine).
             if (modalType is ModalWindows.ARCADE_GAME_CONFIGURE
                           or ModalWindows.ARCADE
                           or ModalWindows.ARENA_GAME_CONFIGURE)
@@ -699,6 +817,18 @@ namespace CosmicShore.UI
                 && EventSystem.current && EventSystem.current.sendNavigationEvents)
                 ApplyFreestyleInputGate(true);
 
+            // The mirror heal (2026-10-19 play test: "everything breaking, cannot play vessel"). Outside freestyle
+            // the pad belongs to the UI unless a preview window holds the stick; navigation left OFF there is a
+            // leak from a preview that ended without giving it back, and every modal (Arcade, Toy Box) refuses to
+            // open until it is restored - so nothing can be launched. Give it back and say so once per leak.
+            if (!inFreestyle && !_appliedFreestyleGate && !ModePreviewWindow.AnyHasFocus
+                && EventSystem.current && !EventSystem.current.sendNavigationEvents)
+            {
+                CSDebug.LogWarning("[ScreenSwitcher] EventSystem navigation was left off outside freestyle and preview " +
+                                   "flight (a preview ended without giving the pad back); restored so menus can open.", this);
+                ApplyFreestyleInputGate(false);
+            }
+
             if (inFreestyle != _appliedFreestyleGate)
             {
                 ApplyFreestyleInputGate(inFreestyle);
@@ -720,15 +850,17 @@ namespace CosmicShore.UI
 
             // A guided path (MenuGuide) leaves the pad exactly one way forward - the spotlit
             // control, pressed with A through the EventSystem - plus Settings. Freestyle and
-            // screen paging are other places to go, so they stand down; X-for-Settings and
+            // screen paging are other places to go, so they stand down; Start-for-Settings and
             // A-for-the-Arcade below are the path's own controls and stay.
             bool guided = MenuGuide.IsActive;
 
-            // Y (buttonNorth) toggles freestyle from any state - checked before
-            // the freestyle early-return so it works as both enter and exit.
-            // A cooldown prevents accidental rapid toggling after each transition.
+            // Select / View toggles freestyle from any state - checked before
+            // the freestyle early-return so it works as both enter and exit (Garrett, 2026-10-21:
+            // it was Y, which flight can use). In freestyle it is also the overview gesture
+            // (OverviewGesture, answered by MenuMiniGameHUD); ToggleTransition ignores the second
+            // call while the first transition runs. A cooldown prevents rapid toggling.
             if (crystalClickHandler && !guided
-                && Gamepad.current.buttonNorth.wasPressedThisFrame
+                && Gamepad.current.selectButton.wasPressedThisFrame
                 && Time.unscaledTime >= _freestyleToggleCooldownUntil
                 && !HasActiveModal
                 && ScreenIsActive(MenuScreens.HOME))
@@ -738,17 +870,32 @@ namespace CosmicShore.UI
             }
 
             if (inFreestyle) return;
-            if (HasActiveModal) return;
+            if (HasActiveModal)
+            {
+                // Inside a hub window LT / RT swap it for its neighbour (rev 7). Only while that window is the
+                // top modal: under a configure the triggers belong to the game, and a guided path or a preview
+                // holding the stick leaves the pad one way forward.
+                if (!guided && !ModePreviewWindow.AnyHasFocus && ActiveHubWindow != ModalWindows.NONE)
+                {
+                    if (Gamepad.current.leftTrigger.wasPressedThisFrame) SlideHubWindow(-1);
+                    else if (Gamepad.current.rightTrigger.wasPressedThisFrame) SlideHubWindow(+1);
+                }
+                return;
+            }
 
             if (ScreenIsActive(MenuScreens.HOME))
             {
-                if (Gamepad.current.buttonSouth.wasPressedThisFrame)
+                // A on a focused Home control is that control's Submit (a hub opens its own window);
+                // answering it here too opened the Arcade on top of whatever the pad was on. The
+                // shortcut stands only while nothing on Home holds the pad's selection.
+                if (Gamepad.current.buttonSouth.wasPressedThisFrame && !HomeControlSelected())
                 {
                     OpenArcadePanel();
                     return;
                 }
 
-                if (Gamepad.current.buttonWest.wasPressedThisFrame)
+                // Start opens Settings from the app shell (Garrett, 2026-10-21: it was X).
+                if (Gamepad.current.startButton.wasPressedThisFrame)
                 {
                     OpenModalByType(ModalWindows.SETTINGS);
                     return;
@@ -756,6 +903,10 @@ namespace CosmicShore.UI
             }
 
             if (guided) return;
+
+            // A preview on a SCREEN holds the stick: the triggers are the vessel's
+            // abilities, not screen paging. A modal's preview never reached here (HasActiveModal).
+            if (ModePreviewWindow.AnyHasFocus) return;
 
             if (Gamepad.current.leftTrigger.wasPressedThisFrame)
                 NavigateLeft();
@@ -1393,6 +1544,8 @@ namespace CosmicShore.UI
             // Notify the incoming screen
             if (_screenMap.TryGetValue(ScreenIndex, out var enteringScreen))
                 enteringScreen.OnScreenEnter();
+            // Screens hide by alpha and never re-enable, so this is their entrances' cue.
+            KitEntrance.ReplayUnder(GetScreenRootRT(ScreenIndex));
 
             // Slide effect: one viewport width per index, in the viewport's own units, so the
             // screen lands inside the safe area at any aspect ratio.
@@ -1420,6 +1573,55 @@ namespace CosmicShore.UI
         #endregion
 
         #region Arcade Panel Logic
+
+        /// <summary>
+        /// Home's weekly-challenge card: open the Arcade window and, inside it, this week's challenge in
+        /// the configure window - the same path the weekly card in the Arcade grid takes.
+        /// </summary>
+        public void OpenWeeklyChallenge()
+        {
+            OpenArcadePanel();
+            var explore = ArcadeModal ? ArcadeModal.GetComponentInChildren<ArcadeExploreView>(true) : null;
+            if (explore) explore.SelectWeeklyChallenge();
+            else CSDebug.LogWarning("[ScreenSwitcher] The Arcade window has no ArcadeExploreView - the weekly challenge cannot open.");
+        }
+
+        /// <summary>
+        /// Opens <paramref name="game"/>'s configure window from anywhere in the menu (rev 3: the Hangar's
+        /// Games tab). The window is the one whose roster lists the game - the Arcade's or the Arena's -
+        /// so the configure opens over the same browser it would from that window's own card.
+        /// </summary>
+        public bool OpenGame(SO_ArcadeGame game)
+        {
+            if (!game || WebToybox.IsBuild) return false;
+            foreach (var explore in FindObjectsByType<ArcadeExploreView>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (!explore.Offers(game)) continue;
+                var window = explore.GetComponentInParent<ModalWindowManager>(true);
+                if (window) window.ModalWindowIn();
+                explore.SelectGame(game);
+                return true;
+            }
+            CSDebug.LogWarning($"[ScreenSwitcher] No game window lists {game.DisplayName} - its configure cannot open.");
+            return false;
+        }
+
+        /// <summary>
+        /// <see cref="OpenGame(SO_ArcadeGame)"/> for a mode: the card is the one the game windows' own
+        /// rosters hold, so the configure opens over the window that draws it (the return from a match,
+        /// <see cref="MenuReturnCard"/>).
+        /// </summary>
+        public bool OpenGame(GameModes mode)
+        {
+            if (WebToybox.IsBuild) return false;
+            foreach (var explore in FindObjectsByType<ArcadeExploreView>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var game = explore.FindGameByMode(mode);
+                if (game) return OpenGame(game);
+            }
+            CSDebug.LogWarning($"[ScreenSwitcher] No game window lists a {mode} card - its configure cannot open.");
+            return false;
+        }
 
         private void OpenArcadePanel()
         {
@@ -1581,6 +1783,164 @@ namespace CosmicShore.UI
 
         /// <summary>The home hub's Mission entry.</summary>
         public void OnClickMissionNav() => OpenModal(ModalWindows.MISSION);
+
+        #region Hub window slide (rev 7)
+
+        /// <summary>
+        /// The hub window on top of the stack - the one LT / RT slide from - or NONE when the top modal is anything
+        /// else (a configure over the window, Settings) or nothing is open.
+        /// </summary>
+        public ModalWindows ActiveHubWindow
+        {
+            get
+            {
+                if (activeModalStack.Count == 0) return ModalWindows.NONE;
+                var top = activeModalStack[activeModalStack.Count - 1];
+                return top.modal && hubWindowOrder.Contains(top.type) ? top.type : ModalWindows.NONE;
+            }
+        }
+
+        /// <summary>
+        /// The next window from <paramref name="from"/> in <paramref name="direction"/> (-1 left, +1 right) that may
+        /// open now, skipping a locked one; NONE at the end of the row (the slide stops, it does not wrap).
+        /// </summary>
+        public ModalWindows HubNeighbour(ModalWindows from, int direction) =>
+            NeighbourInRow(hubWindowOrder, from, direction, CanOpenHubWindow);
+
+        /// <summary>
+        /// The slide rule on its own: the first window past <paramref name="from"/> in <paramref name="row"/>, going
+        /// <paramref name="direction"/>, that <paramref name="canOpen"/> allows; NONE past either end (no wrap) or when
+        /// <paramref name="from"/> is not in the row.
+        /// </summary>
+        public static ModalWindows NeighbourInRow(IReadOnlyList<ModalWindows> row, ModalWindows from, int direction,
+                                                  System.Func<ModalWindows, bool> canOpen)
+        {
+            int step = System.Math.Sign(direction);
+            int i = -1;
+            for (int k = 0; row != null && k < row.Count; k++)
+                if (row[k] == from) { i = k; break; }
+            if (i < 0 || step == 0) return ModalWindows.NONE;
+            for (int j = i + step; j >= 0 && j < row.Count; j += step)
+                if (canOpen == null || canOpen(row[j])) return row[j];
+            return ModalWindows.NONE;
+        }
+
+        /// <summary>LT / RT and the edge arrows: swap the open hub window for its neighbour. False at an end.</summary>
+        public bool SlideHubWindow(int direction)
+        {
+            var from = ActiveHubWindow;
+            return from != ModalWindows.NONE && SwapHubWindow(HubNeighbour(from, direction), direction);
+        }
+
+        /// <summary>A strip entry: swap the open hub window for <paramref name="window"/>, sliding the way it lies.</summary>
+        public bool SlideHubWindowTo(ModalWindows window)
+        {
+            var from = ActiveHubWindow;
+            if (from == ModalWindows.NONE || window == from || !CanOpenHubWindow(window)) return false;
+            return SwapHubWindow(window, hubWindowOrder.IndexOf(window) > hubWindowOrder.IndexOf(from) ? 1 : -1);
+        }
+
+        private bool SwapHubWindow(ModalWindows to, int direction)
+        {
+            if (to == ModalWindows.NONE) return false;
+            var outgoing = activeModalStack[activeModalStack.Count - 1].modal;
+            var incoming = FindModal(to);
+            if (!outgoing || !incoming || incoming == outgoing) return false;
+
+            // The new window opens BEFORE the old one closes, so the stack never empties: the Home hub row does not
+            // fade up between them, ReturnToModal never reads NONE, and Refocus lands once, on the new window's first
+            // card. An open the window refuses (the freestyle gate) leaves the old window where it was.
+            if (to == ModalWindows.ARCADE) OpenArcadePanel();
+            else OpenModal(to);
+            if (!incoming.IsOpen) return false;
+            outgoing.ModalWindowOut();
+
+            if (_hubSlide != null)
+            {
+                StopCoroutine(_hubSlide);
+                _hubSlide = null;
+                RestoreHubSlideRests();
+            }
+            if (hubSlideSeconds > 0f && hubSlideDistance > 0f && isActiveAndEnabled)
+                _hubSlide = StartCoroutine(HubSlide(outgoing, incoming, direction));
+            return true;
+        }
+
+        /// <summary>
+        /// Whether <paramref name="window"/> would open now from its Home hub entry: registered, in this build (the
+        /// browser Toybox), and its <see cref="MenuHubButton"/>'s availability Available. The slide skips a window
+        /// that fails, the same refusal its hub entry gives.
+        /// </summary>
+        public bool CanOpenHubWindow(ModalWindows window)
+        {
+            if (!FindModal(window)) return false;
+            if (WebToybox.IsBuild && !IsModalInWebToybox(window)) return false;
+            if (_hubEntries == null)
+            {
+                _hubEntries = new Dictionary<ModalWindows, MenuAvailabilityView>();
+                foreach (var hub in GetComponentsInChildren<MenuHubButton>(true))
+                    if (hub.TryGetComponent<MenuAvailabilityView>(out var view)) _hubEntries[hub.Target] = view;
+            }
+            return !_hubEntries.TryGetValue(window, out var entry) || !entry || entry.IsAvailable;
+        }
+
+        private ModalWindowManager FindModal(ModalWindows type)
+        {
+            if (type == ModalWindows.ARCADE && ArcadeModal) return ArcadeModal;
+            if (Modals == null) return null;
+            foreach (var modal in Modals)
+                if (modal && modal.ModalType == type) return modal;
+            return null;
+        }
+
+        // The old window slides out the way the player pressed while its "Window Out" fades it; the new one slides
+        // in from the other side under its "Window In". The old one holds its offset until it has faded, so it never
+        // snaps back into view. Unscaled: the menu runs paused.
+        private IEnumerator HubSlide(ModalWindowManager outgoing, ModalWindowManager incoming, int direction)
+        {
+            var outRt = HubSlideTarget(outgoing);
+            var inRt = HubSlideTarget(incoming);
+            Vector2 outRest = HubSlideRest(outRt), inRest = HubSlideRest(inRt);
+            float d = hubSlideDistance * direction;
+            for (float t = 0f; t < hubSlideSeconds; t += Time.unscaledDeltaTime)
+            {
+                float k = t / hubSlideSeconds;
+                float settle = (1f - k) * (1f - k) * (1f - k);
+                if (outRt) outRt.anchoredPosition = outRest + new Vector2(-d * k * k, 0f);
+                if (inRt) inRt.anchoredPosition = inRest + new Vector2(d * settle, 0f);
+                yield return null;
+            }
+            if (inRt) inRt.anchoredPosition = inRest;
+            if (outRt) outRt.anchoredPosition = outRest + new Vector2(-d, 0f);
+
+            var outGroup = outgoing ? outgoing.GetComponent<CanvasGroup>() : null;
+            for (float t = 0f; t < 1f && outgoing && !outgoing.IsOpen && outGroup && outGroup.alpha > 0.01f;
+                 t += Time.unscaledDeltaTime)
+                yield return null;
+
+            RestoreHubSlideRests();
+            _hubSlide = null;
+        }
+
+        private static RectTransform HubSlideTarget(ModalWindowManager modal) =>
+            modal ? modal.transform as RectTransform : null;
+
+        private Vector2 HubSlideRest(RectTransform rt)
+        {
+            if (!rt) return default;
+            if (!_hubSlideRest.TryGetValue(rt, out var rest))
+                _hubSlideRest[rt] = rest = rt.anchoredPosition;
+            return rest;
+        }
+
+        private void RestoreHubSlideRests()
+        {
+            foreach (var pair in _hubSlideRest)
+                if (pair.Key) pair.Key.anchoredPosition = pair.Value;
+            _hubSlideRest.Clear();
+        }
+
+        #endregion
 
         public void OnClickLeftArrow()
         {
@@ -1831,6 +2191,7 @@ namespace CosmicShore.UI
             // Notify the current screen that it's being re-entered
             if (_screenMap.TryGetValue(currentScreen, out var enteringScreen))
                 enteringScreen.OnScreenEnter();
+            KitEntrance.ReplayUnder(GetScreenRootRT(currentScreen));
 
             Refocus();
         }

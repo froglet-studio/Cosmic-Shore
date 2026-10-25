@@ -1,392 +1,326 @@
-# Team tasks: hand work to each other
+# Team tasks
 
-**One board for work that one collaborator's session leaves for another**: a test that needs the Unity
-Editor, a playtest, a dashboard or service to set up, content to write, a decision to take. Almost all of
-our work goes through Claude sessions, and a session cannot open Unity, sign in to a dashboard or watch a
-first-timer play. This is where it says so, and where somebody picks it up (Docs/TEAM.md rule 9).
+The team's hand-off tickets live on **GitHub Issues** (label `team-task`) since 2026-10-24; this file no longer holds
+them. Rules: [`Docs/TEAM.md`](TEAM.md) rule 9.
 
-**Yash has offered to take tasks** (Yash, 2026-10-15): testing in the editor, playtests, UGS and
-dashboard setup, and follow-up fixes. When you add a task he could do, name him in "Who can take it".
-Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your own.
+- **The board:** the Froglet Tasks page, https://claude.ai/artifact/E7pkoypRXCTXiSM4ZxZe8f
+- **From a session:** the `/team-tasks` skill, or `python3 Tools/Build/team_tasks.py list`
+- **On GitHub:** issues labelled [`team-task`](https://github.com/froglet-studio/Cosmic-Shore/issues?q=label%3Ateam-task)
 
-## How to use it
-
-- **Add** a task whenever your work leaves something another person can do or test. Claude sessions do
-  this before they finish (a hook reminds them), and tell the person what they added:
-  `python3 Tools/Build/team_tasks.py add --area Activation --kind test --task "..." --done-when "..." --who "Yash (offered), anyone with the Editor" --see "Docs/..."`
-- **Find** work: `python3 Tools/Build/team_tasks.py list` (open tasks), `--for Yash`, `--area Activation`,
-  `--kind test`.
-- **Take** one, so nobody does it twice: `team_tasks.py take <id> --who <you>`. **Close** it:
-  `team_tasks.py done <id> --note "what happened, commit or result"`. A test that FAILS is not done: write
-  what failed in the note and add the fix as a new `dev` task.
-- **On GitHub**: every task is mirrored to an issue (issues #1105-#1144 hold the first 40), titled `[<id>] <task>`
-  and labelled `team-task`, `kind:<kind>`, `area:<area>` and `taken`. Filter the repository's issues by `team-task`
-  to see the board on GitHub or a phone, and comment on an issue to discuss a task. **The board is the source**: take
-  and close tasks here (`take`, `done`); the sync rewrites an issue's body and closes it when the task is done. It
-  runs on every push of this file to `bleeding-edge` or `Ys-bleeding-edge`
-  (`.github/workflows/team-tasks-sync.yml`), nightly, and by hand (`team_tasks.py gh-sync`, `--dry-run` to preview).
-  It never reopens an issue or moves one backwards, so an older copy of the board on another branch cannot undo a
-  newer one; a task closed on GitHub but still open here is reported, so it can be closed here with `done`. `/ship`
-  also puts `team_tasks.py pr-section` into the pull request body, so a reviewer sees what a branch handed off.
-- **Kinds:** `test` (run something and report pass or fail), `dev` (code), `content` (words, tips, art),
-  `setup` (a dashboard, a service, a key), `decision` (the owner or the core four decide), `docs`.
-- Ids are `T-<date>-<hash>`, never "the next number", so two branches cannot collide. If two branches both
-  append a task, git conflicts at the end of the file: keep both. `team_tasks.py --check` validates the board.
-- QA's own failures stay in `Docs/QA/DEV_TASKS.md` (written by `/qa-backlog`); vessel and AI test scripts stay
-  in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. A task here may point at either.
-
-## The board
+A task a branch still writes below the marker in the old format is filed as a ticket by the next sweep
+(`.github/workflows/team-tasks.yml`); prefer `/team-tasks add`.
 
 <!-- team-tasks -->
 
-### T-20261015-7b5a · open · test · Activation
-- **Task:** Re-test the first-login spotlight in Unity: the 2026-10-06 playtest saw no dim, no frame, no caption and dead presses; a CanvasRenderer fix landed after it and was never re-tested.
-- **Done when:** On a fresh profile Menu_Main shows the dim, the pulsing frame on ARCADE, its caption and a pressable Settings gear, and the menu takes presses. Result written in the checklist section.
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
-- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
-- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, 'First-login guide - spotlight draws nothing in Unity'
+### T-20261015-d4f5 · done · test · ui
+- **Task:** Profiler capture on claude/new-session-76hnyc: Menu_Main Home (not flying) and the lava lamp. Canvas.BuildBatch / SendWillRenderCanvases should not fire every frame from closed windows (style-B ambient loops now sleep while hidden); compare frame time with bleeding-edge
+- **Done when:** A shared capture shows no per-frame canvas rebuild from hidden menu windows and Home/lava-lamp frame time at or better than bleeding-edge
+- **Who can take it:** Yash or Shombith
+- **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 24
+- **Done:** 2026-10-24, Closed without being run (Yash, 2026-10-24): the test named claude/new-session-76hnyc, which merged into bleeding-edge as #1153 on 2026-10-19 and went through Rev 4-10 after this was written. Re-test the merged menu on bleeding-edge as a new task if needed.
 
-### T-20261015-b47d · open · test · Activation
-- **Task:** Hand-test the first-login guide, the microgame Lesson with its ghost demo, and the ftue_* analytics events, end to end.
-- **Done when:** All nine steps of the checklist section pass, or each failure is written there and added here as a dev task.
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
-- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
-- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, 'Ghost demo + first-login guide + FTUE analytics'; Docs/ModePreview/TRAINING_PLAN.md 10.7
-
-### T-20261015-9809 · open · setup · Activation
-- **Task:** Declare ftue_step_completed (quest_id, phase_index, step_id, step_name, seconds_since_launch), ftue_phase_completed (quest_id, phase_index, seconds_since_launch) and ftue_completed (quest_id, seconds_since_launch) in the UGS dashboard Event Manager; UGS silently drops undeclared events.
-- **Done when:** The three events and their parameters are in the Event Manager, and one test session's events show up in UGS.
-- **Who can take it:** Yash (offered; UGS), Shombith (analytics handoff)
-- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
-- **See:** Docs/ACTIVATION.md 5; Docs/Analytics/event-taxonomy.md 4
-
-### T-20261015-2fc0 · open · setup · Activation
-- **Task:** Build the activation funnel and D1/D7 retention in PostHog: game_first_launched > menu_ready > ftue_step_completed (guide) > ftue_phase_completed (phase 0) > game_started > game_completed, split by invite_wave.
-- **Done when:** The funnel and the retention charts exist and read real sessions; the paid-EA gate (D1 >= 35%, D7 >= 15%) can be read off them.
-- **Who can take it:** Ian (funnel owner, C3), Yash (offered)
-- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
-- **See:** Docs/ACTIVATION.md 6.3; Docs/Analytics/POSTHOG_SETUP.md; Docs/Analytics/DATA_ARCHITECTURE.md
-
-### T-20261015-99cd · open · test · Activation
-- **Task:** Watch three to five first-time players on a default build (master unlock at its shipped default) without helping them, and note where each one stalls.
-- **Done when:** Notes per player (where they stalled, how long to the first match, whether they came back) are linked here, and each stall is a new task.
-- **Who can take it:** Andrew, Shombith, Yash (offered)
-- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
-- **See:** Docs/ACTIVATION.md 6.4; STEAM_EA_INVESTOR_CHECKPOINT C2 / E7
-
-### T-20261015-fb65 · open · decision · Activation
-- **Task:** Decide what Main Quest phases 1-5 become now that first login goes to the Game of the Week microgame; they still assume the freestyle flight school ended phase 0 and a Crystal Capture funnel follows.
-- **Done when:** The decision is recorded in TRAINING_PLAN 11 and the phases are re-authored or retired accordingly.
-- **Who can take it:** Garrett and the core four (product call)
-- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
-- **See:** Docs/ModePreview/TRAINING_PLAN.md 11.1
-
-### T-20261015-f4c7 · open · dev · Activation
-- **Task:** Reconcile Menu_Main between the first-login guide (merged into Ys-bleeding-edge 2026-10-15) and Menu Redesign B (claude/new-session-76hnyc) before either reaches bleeding-edge: the spotlight must find the restyled ARCADE entry, cards and Settings gear.
-- **Done when:** Both are on one branch, the spotlight walks the restyled menu in the editor, and author_first_login_guide.py --check passes.
-- **Who can take it:** Shombith (Menu_Main owner), Yash (offered)
-- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
-- **See:** Docs/ACTIVATION.md 4; Docs/MENU_REDESIGN_B.md on claude/new-session-76hnyc
-
-### T-20261015-d364 · open · content · Activation
-- **Task:** Write Mentor tip lists for the non-racing mode families (TRAINING_PLAN phase 5): only the racing family (SwitchesThreaded) and seven racing modes have tips today.
-- **Done when:** Every playable card composes a Mentor list (DrillCoverageTests asserts it once phase 6 lands); author_drill_assets.py --check passes.
-- **Who can take it:** Caleb, Garrett, anyone who writes game copy; Yash (offered) to wire them
-- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
-- **See:** Docs/ModePreview/TRAINING_PLAN.md 4.2 and 10
-
-### T-20261015-ed8e · open · content · Activation
-- **Task:** Author SO_ArcadeGame.Tips for the 54 of 56 arcade cards that have none, so GameBriefingView has something to teach before a match. Write them in each mode's author_<mode>_assets.py generator, not only in the asset.
-- **Done when:** Every card has two or more tips and every touched generator's --check passes.
-- **Who can take it:** Caleb (arcade mode map), anyone; Yash (offered)
-- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
-- **See:** Docs/ArcadeLaunch/ARCHITECTURE.md (Tips); the /arcadegame skill
-
-### T-20261015-81b3 · open · dev · Analytics
-- **Task:** Reconcile the two items ANALYTICS_HANDOFF 8 left for the quest-branch merge: the save record's Version vs SchemaVersion, and the second progression key QUEST_GRAPH_PROGRESS beside GAME_MODE_PROGRESSION.
-- **Done when:** One schema field name and a written decision on the two keys, with a test.
-- **Who can take it:** Shombith (handoff addressee), Yash (offered)
-- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
-- **See:** Docs/Analytics/ANALYTICS_HANDOFF.md 8
-
-### T-20261015-013e · open · test · Activation
-- **Task:** Run the three progression QA items that have never been run: QA-PROGRESSION-GATE-ON, QA-PROGRESSION-GATE-OFF and QA-FTUE-QUEST-ROWS.
-- **Done when:** Results are submitted under Docs/QA/RESULTS and /qa-backlog has applied them.
-- **Who can take it:** Andrew, Caleb, Yash (offered)
-- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
-- **See:** Docs/QA/QA_BACKLOG.md
-
-### T-20261015-ff1c · open · docs · Activation
-- **Task:** Fix stale activation docs: the unlock-chain tables in MENU_PROGRESSION_AND_IAP.md and QUEST_TRACK_AND_BREADCRUMB.md (live chain: Scurry > Hex Race > Joust > Maelstrom > Vessel Hangar), and QuestMap/QUEST_MAP.html, which still draws the retired breadcrumb nodes.
-- **Done when:** The three docs match the shipped GameModeQuestList.asset and the quest graph.
-- **Who can take it:** anyone; Yash (offered)
-- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
-- **See:** Docs/ACTIVATION.md 7
-
-### T-20261015-1a5b · done · dev · Performance
-- **Task:** check_mathf_params_alloc.py is red on two sites that predate the activation work: BlackHoleWarp.cs:87 (3-value Mathf.Max) and FlipWave.cs:153 (4-value Mathf.Max), each allocating a params array.
-- **Done when:** Both use MathfNoAlloc or nested two-value calls and the gate passes.
-- **Who can take it:** the owners of the black hole and FlipWave code (check who_works_where.py); Yash (offered)
-- **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
-- **See:** Tools/Build/check_mathf_params_alloc.py
-
-### T-20261015-18e7 · taken by Yash · test · Regatta AI
-- **Task:** Playtest Regatta in Unity on Ys-bleeding-edge: five hulls (Squirrel, Manta, Rhino, Urchin, Dolphin) on AI seats, Hard, I1 then I3, watched in the Third Eye with Trails on.
-- **Done when:** Every hull finishes three laps at I1 (and I3, or the ring it fails at is noted); AIs read Approach then Through near rings and break off straight after a miss; result written in the 2026-10-15 Regatta section of Docs/UNITY_VERIFICATION_CHECKLIST.md.
-- **Who can take it:** Yash (testing it), anyone with the Unity Editor
-- **Added:** 2026-10-15 by Yash's session (regatta-ai) (`Ys-bleeding-edge`)
-- **See:** Docs/Reports/REGATTA_AI.md section 2
-- **Taken:** 2026-10-15, Yash
-
-### T-20261015-0064 · open · decision · AI training
-- **Task:** Decide the AI-training direction: extend the genetic trainer (Assets/_Scripts/Utility/AITraining) for Regatta rather than build a second one; where consented player flights are stored and the privacy wording; whether a neural-network AI may ever ship.
-- **Done when:** The answers are written in Docs/AI_SYSTEM/AI_TRAINING_PLAN.md section 5.
-- **Who can take it:** Garrett and the core four; studyholic and Shombith for the trainer
-- **Added:** 2026-10-15 by Yash's session (regatta-ai) (`Ys-bleeding-edge`)
-- **See:** Docs/AI_SYSTEM/AI_TRAINING_PLAN.md
-
-### T-20261015-cb8f · open · decision · Regatta AI
-- **Task:** Decide whether the gate-race steering fix (commit at the approach point, re-attack after a missed ring; on in Regatta only) is turned on for Headlong, Switchback, Breakwater, Skein and Redline (inspector switch aiCommitFromApproachPoint) after a playtest.
-- **Done when:** Each mode's switch is set by its owner and the choice noted in REGATTA.md section 6.1.
-- **Who can take it:** Garrett (gate races owner)
-- **Added:** 2026-10-15 by Yash's session (regatta-ai) (`Ys-bleeding-edge`)
-- **See:** Docs/Reports/REGATTA_AI.md section 3
-
-### T-20261015-2082 · open · dev · AI training
-- **Task:** Build T1 of the AI training plan: the AI Lab (Test Range R1-R3) in MinigameRegatta - any hull on any seat (trained or untrained), 0.25x-8x time, the Third Eye's trails and readout in a development build, speed graph and phase timeline, a scorecard JSON per run.
-- **Done when:** A development build of Regatta opens the AI Lab, races chosen hulls at chosen speed, and writes a scorecard file the artifact's numbers can be compared with.
-- **Who can take it:** Yash (offered), with Garrett for the trainer hand-off
-- **Added:** 2026-10-15 by Yash's session (regatta-ai) (`Ys-bleeding-edge`)
-- **See:** Docs/AI_SYSTEM/AI_TRAINING_PLAN.md section 3 L1, Docs/Studios/VESSEL_TEST_RANGE_PLAN.md
-
-- **Done:** 2026-10-15, Fixed on perf/performance-optimization: BlackHoleWarp.cs uses MathfNoAlloc.Max, FlipWave.cs nests two-value Max. Proof: python3 Tools/Build/check_mathf_params_alloc.py -> OK (2093 files); unity_refcompile player-dev RESULT OK; Amoebius Debug build. /verify-unity unavailable in the session.
-
-### T-20261015-56dd · open · test · Performance
-- **Task:** First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, keep playing 8 minutes (the editor captures S2 by itself; the Scene view badge counts down), stop playing and press Send to Claude when Unity asks (the file is one JSON holding burst, diag, prof, renderers, cells and the console; pasting it into a Claude session also works). Close the Third Eye window and any preview first: an extra camera renders the world again and the capture says so.
-- **Done when:** A capture_Menu_Main_S2_*.json whose reader output (python3 Tools/Build/perf_capture_report.py) shows no ERROR line (Release, Burst on, no managed job time) is pasted and recorded in Docs/PERFORMANCE_OPTIMIZATION.md 2 with its numbers.
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
-- **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
-- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; Docs/DIAGNOSTICS.md, the Bug Hunt & Performance badge
-
-### T-20261015-3e0b · open · test · Performance
-- **Task:** Skim Race I2 with 2 AI, Release: play 90 s (the editor captures SkimRace by itself), stop, then Send to Claude. This is the Burst check the 10-08 fix still owes (burst must read BURST and the Profiler must show no managed job time) and the test of the PoolRefill.Squirrel Prism ~9 KB/frame allocation lead from the Amoebius run.
-- **Done when:** The capture is shared or pasted; its burst section reads Run() BURST, Schedule() BURST; prof.managedJobMs < 0.2; the Profiler top-allocators list confirms or clears PoolRefill.Squirrel Prism. Recorded in Docs/PERFORMANCE_OPTIMIZATION.md 2.
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
-- **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
-- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; Docs/DIAGNOSTICS.md, the Bug Hunt & Performance badge
-
-### T-20261015-3972 · open · test · Performance
-- **Task:** S5 Wildlife Liberation, Release: play two minutes into a match (the editor captures S5 by itself), stop, then Send to Claude. It is the go/no-go for lever L8 (batched creature body re-sync): Fauna.BodySync must average 8 ms or more for L8 to be worth building.
-- **Done when:** The capture is shared or pasted and the Fauna.BodySync / LightFauna.Update rows are read; the L8 decision is written in Docs/PERFORMANCE_OPTIMIZATION.md 3.3.
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
-- **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
-- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.6 and 4.6; Docs/DIAGNOSTICS.md, the Bug Hunt & Performance badge
-
-### T-20261015-949d · done · test · diagnostics
-- **Task:** Test the Bug Hunt check-in and Team Bug Board in Unity: FrogletTools > Diagnostics > Bug Hunt Check-in, Share now; play with an error; daily sweep picks it up
-- **Done when:** A check-in commit with BugLedger/shared/issues + reports lands on the branch, and the next sweep shows the issue on https://claude.ai/artifact/5zNw9wDjMrxvZVjGD7KBno
+### T-20261015-e890 · done · test · ui
+- **Task:** Boot flow on claude/new-session-76hnyc: from Bootstrap through sign-in, Menu_Main shows only after Garland is built (black + small LOADING bar, then one fade); no GROWING GARLAND headline; game scenes' connecting screen unchanged; Toy Box Arkway/microscene loads use the subtle readout
+- **Done when:** All four checks pass in the editor, and the boot cover time is noted
 - **Who can take it:** Yash
-- **Added:** 2026-10-15 by a Claude session (`Ys-bleeding-edge`)
-- **See:** Docs/DIAGNOSTICS.md#the-bug-hunt-check-in
-- **Done:** 2026-10-15, Superseded 2026-10-15: the Bug Ledger window, check-in and Stage & Push were removed; the one 'Send to Claude' question replaces them (new test task added).
+- **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 25
+- **Done:** 2026-10-24, Closed without being run (Yash, 2026-10-24): the test named claude/new-session-76hnyc, which merged into bleeding-edge as #1153 on 2026-10-19 and went through Rev 4-10 after this was written. Re-test the merged menu on bleeding-edge as a new task if needed.
 
-### T-20261015-8bae · open · decision · diagnostics
-- **Task:** Assets/_Models/shield1.blend makes every machine without Blender log a red 'Blender could not be found' on import (Bug Ledger E-fd64b43840). Nothing in Assets references its guid. Delete it, or export it to .fbx?
-- **Done when:** The .blend is gone or replaced by an .fbx, and the error stops on a machine without Blender
-- **Who can take it:** Garrett (decides); Yash can do it
-- **Added:** 2026-10-15 by a Claude session (`Ys-bleeding-edge`)
-- **See:** Docs/DIAGNOSTICS.md#the-bug-hunt-check-in
-
-### T-20261015-e266 · open · test · AI / Third Eye
-- **Task:** Play-test the Third Eye You / AI toggle in Regatta: hand your hull to the AI, take over a rival AI hull, all-AI
-- **Done when:** Steps 1-6 of the 'Third Eye: a You / AI toggle' entry pass in the editor
-- **Who can take it:** Yash, Andrew
-- **Added:** 2026-10-15 by Claude (Yash's session) (`Ys-bleeding-edge`)
-- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md
-
-### T-20261015-72e1 · open · dev · Performance
-- **Task:** Amoebius: Mesh.SetVertices(List)/SetUVs(List<Vector4>)/SetTriangles(List) copy their lists into fresh arrays on every call (ToArray), and the renderer detects a changed mesh by array identity (SceneRenderer ReferenceEquals on RenderVertices / RenderUvWide / RenderSubmesh), so a per-frame mesh upload allocates the whole buffer each frame: CrystalChargeArcs.LateUpdate reads ~708 KB/frame in the Skim Race marker run while the game's own code is allocation-free (it reuses its writer lists). Unity's SetVertices(List) allocates nothing. Make the setters copy in place when the length matches, bump mesh.version, and have the renderer's dirty check key on version (or a per-buffer stamp) instead of array identity, so the engine's allocation numbers mean the game's.
-- **Done when:** python3 Tools/Build/perf_hunt.py amoebius --no-build reads CrystalChargeArcs.LateUpdate under 1 KB/frame with the mesh still animating (a screenshot or the flux arcs visibly moving), engine tests green, and the CrystalChargeArcs entry removed from Docs/perf/amoebius_known.json.
-- **Who can take it:** Shombith (the Amoebius engine), Yash (offered)
-- **Added:** 2026-10-15 by the performance session (perf-hunt) (`perf/performance-optimization`)
-- **See:** Docs/perf/amoebius_known.json; Port/src/CosmicShore.Engine/Rendering/Mesh.cs:249,289; Mesh.Extras.cs:78,139; Port/src/CosmicShore.Render/SceneRenderer.cs:2676,1428,2501; Port/docs/ARCHITECTURE.md 11.3b
-
-### T-20261015-f106 · open · setup · Performance
-- **Task:** Switch on the daily performance check: GitHub runs a scheduled workflow only from the repository's DEFAULT branch, so .github/workflows/perf-daily.yml (merged into Ys-bleeding-edge) fires once a day only after it reaches bleeding-edge / the default branch. Until then run it by hand: Actions > perf-daily > Run workflow on Ys-bleeding-edge. Check the first run's two artifacts (perf-sweep, perf-amoebius) read sensibly: gates all OK, the Amoebius Skim Race run 'within baseline'.
-- **Done when:** A perf-daily run has completed green on the default branch on its own schedule (Actions shows a scheduled run), and its perf-sweep artifact lists the gates OK and the shared captures.
-- **Who can take it:** Garrett (bleeding-edge / repo settings), Shombith (CI), Yash (offered)
-- **Added:** 2026-10-15 by the performance session (perf-hunt) (`perf/performance-optimization`)
-- **See:** .github/workflows/perf-daily.yml; Docs/PERFORMANCE_OPTIMIZATION.md 3.4; /perf-hunt section 0
-
-### T-20261015-7d29 · open · test · Performance
-- **Task:** Test the Bug Hunt & Performance badge in the Scene view: open Unity, check the card shows bugs and perf with no dialog on load, fold/unfold/hide it, press Release if shown, then Play Menu_Main past the badge's auto-capture countdown, stop, and check Unity asks Send to Claude.
-- **Done when:** Every step of the 2026-10-15 badge entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes (or the failing step is reported to a Claude session), and the entry is moved to verified.
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
-- **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
-- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-15; Docs/DIAGNOSTICS.md, The Bug Hunt & Performance badge
-
-### T-20261015-0bc6 · open · test · diagnostics
-- **Task:** Test the one-button bug flow in Unity: play until a red error appears (or Debug.LogError from any script), stop Play, press Send to Claude; play and stop again with the same error
-- **Done when:** The dialog appears once; origin/bugledger/<you> gets BugLedger/shared/issues/E-*.bug.json; git status unchanged and you are still on your branch; the second stop shows no dialog
-- **Who can take it:** Yash, Andrew
-- **Added:** 2026-10-15 by a Claude session (`Ys-bleeding-edge`)
-- **See:** Docs/DIAGNOSTICS.md#send-to-claude--the-only-ui
-
-### T-20261015-4996 · open · content · audio
-- **Task:** Boost Activate (event:/SFX/Oneshots/Gameplay sfx/Boost Activate) has a loop region but is fired as a one-shot, so the code refuses to play it: the Manta's boost is silent and logs one error per session (Bug Ledger E-cdf0c783c1). Remove the loop region, or tell engineering it is a held boost sound
-- **Done when:** Boosting the Manta plays a sound and the [FMODOneShotVolumeHelper] looping error stops
-- **Who can take it:** Charles (audio owner)
-- **Added:** 2026-10-15 by a Claude session (`Ys-bleeding-edge`)
-- **See:** Docs/AudioSystem/CHARLES_TASKS.md (C2)
-
-### T-20261015-aa0d · open · test · Regatta AI
-- **Task:** Playtest the Squirrel AI skimming Regatta's rails: Squirrels on AI seats at I1 and I4, the Third Eye's skim readout on one (lift 7.5, direct off, shell gap 1.5-6), and tune Resources/SkimRaceAIConfig_Regatta.asset live if it still strikes or drifts off its rail
-- **Done when:** The Squirrel rides outside its own rail, strikes near zero, threads every ring; any tuned numbers recorded in author_skimrace_ai_config.py
-- **Who can take it:** Yash (found it), Andrew, anyone with the Unity Editor
-- **Added:** 2026-10-15 by Claude for Yash (`Ys-bleeding-edge`)
-- **See:** Docs/SKIM_RACE_AI.md §15; Docs/UNITY_VERIFICATION_CHECKLIST.md (Regatta Squirrel skim)
-
-### T-20261015-7edd · open · test · Performance
-- **Task:** Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main for 8 minutes (the editor captures S2 by itself), stop, Send to Claude. Then fly close to an omni and a Charge crystal and check their light looks as before.
-- **Done when:** The capture reads well above the 19-30 fps reported on 10-15, and the 2026-10-15 lava-lamp entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes.
-- **Who can take it:** Yash (reported it), Andrew, anyone with the Unity Editor
-- **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
-- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 2 (10-15 lava lamp row); Docs/UNITY_VERIFICATION_CHECKLIST.md
-
-### T-20261015-a5a5 · open · decision · Performance
-- **Task:** The Charge light now sleeps when a crystal is under 24 px in radius on screen (CrystalChargeArcsProfileSO.sleepBelowScreenRadiusPixels; it rebuilt a mesh per crystal per frame and cost more than every other menu script together in the lava lamp). Check the look at the distance it wakes and pick the number; also worth deciding whether the arcs should rebuild at a lower rate mid-distance.
-- **Done when:** Garrett has looked at it in the lava lamp and the field holds his number (generator and asset).
-- **Who can take it:** Garrett (owns the crystals)
-- **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
-- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 2 (10-15 lava lamp row)
-
-### T-20261015-1551 · open · test · Performance
-- **Task:** Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), play two sessions of 90 s or more, one with the Third Eye CLOSED and one with it OPEN (the editor captures each by itself, labelled MinigameRegatta; the capture records the open cameras), stop Play and Send to Claude each time
-- **Done when:** Both captures are on bugledger/yskha and the report names what the 10 fps is spent on (game vs Third Eye vs editor state)
-- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
-- **Added:** 2026-10-15 by Claude for Yash (`Ys-bleeding-edge`)
-- **See:** Docs/PERFORMANCE_OPTIMIZATION.md §4.2a
-
-### T-20261015-4354 · open · test · Multiplayer
-- **Task:** Run the Unity multiplayer hand tests on Ys-bleeding-edge: the eleven QA-NET items in Docs/QA/QA_BACKLOG.md (QA-NET-SDK-UPGRADE first, it is the gate), in the order in Docs/QA/ANDREW_TEST_HANDOFF.md. Give each Multiplayer Play Mode virtual player its own tag (P2, P3, P4) first. Plus two checks with no QA item yet: host drops then the new host invites at once (5 times), and 5 minutes idle in the menu with no 429s.
-- **Done when:** Every QA-NET item has a verdict in a Docs/QA/RESULTS/<date>-<name>.md file that was Submitted (BLOCKED is a valid verdict, e.g. QA-NET-ARCADE-LOBBY-FOLLOW without three machines); the two extra checks are written in its 'Anything else' section; then tell Claude to apply the results.
-- **Who can take it:** Andrew, Yash (offered)
-- **Added:** 2026-10-15 by Yash's session (multiplayer) (`Ys-bleeding-edge`)
-- **See:** Docs/QA/ANDREW_TEST_HANDOFF.md; Docs/QA/README.md; Docs/MULTIPLAYER_START_HERE.md 5.2; Docs/PartySystem/TESTS.md
-
-### T-20261015-0426 · open · test · Multiplayer
-- **Task:** Hand-test Amoebius multiplayer on Windows from Prisma.exe: the eight steps of Docs/MULTIPLAYER_START_HERE.md 5.1 (four players tile, party up, simulated 4G, pulled cable, session fault 'party is full', capture, TCP still works, through the relay). Do NOT run the live UGS test (5.3); that touches the real UGS project and waits for the owner's go-ahead.
-- **Done when:** Each of the eight steps is PASS or FAIL in the 'Anything else' section of a QA results file, with the log text verbatim for any FAIL; a FAIL is also added here as a dev task.
-- **Who can take it:** Andrew, Yash (offered), a Windows machine
-- **Added:** 2026-10-15 by Yash's session (multiplayer) (`Ys-bleeding-edge`)
-- **See:** Docs/QA/ANDREW_TEST_HANDOFF.md; Docs/MULTIPLAYER_START_HERE.md 5.1; Port/docs/MULTIPLAYER.md
-
-### T-20261015-fafa · open · dev · Performance
-- **Task:** Pool the AOE explosions: ExplosionHelper.SpawnAllAndDetonate does Object.Instantiate(prefab) per detonation and AOEExplosion Destroys itself after (Projectiles/AOEExplosion.cs), so every crystal collect and every explodable projectile mints a GameObject tree. Measured in Amoebius (Skim Race I2, 2026-10-15): VesselImpactor.AcceptImpactee 5.6 KB/frame, all of it SquirrelVesselExplosionByCrystalEffect (the Squirrel's boost ring, ~300 KB per omni collect in .NET; the ring's prisms are the design, the un-pooled explosion object is the practice gap). A GenericPoolManager<AOEExplosion> per prefab (like PrismExplosionPoolManager) with Release instead of Destroy at the end of ExplodeAsync; keep the reset-for-replay cleanup. Go/no-go: a Unity Release capture's Instantiate / GC rows on a crystal collect.
-- **Done when:** AOE explosions come from a pool; perf_hunt.py amoebius shows VesselImpactor.AcceptImpactee under 1 KB/frame on Skim Race I2 and the baseline is adopted; a Release capture of Skim Race shows no Instantiate on a crystal collect.
-- **Who can take it:** Garrett (projectiles / the Squirrel's ring), Yash (offered)
-- **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
-- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.3 (L13) and 2 (10-15 rows)
-
-### T-20261015-641c · open · decision · Performance
-- **Task:** Spindles are the last big GameObject-renderer cost in the lava lamp (lever L1): one Renderer per limb, ~40k enabled in a grown Lattice with ~4.6k visible, +5.3 ms CPU measured in S2 (record 3.3). Every Prism is already on entities (record 1.2); spindles are not prisms. Decide the shape: draw spindles through Entities Graphics like prisms, or merge a plant's spindles into one mesh per plant, keeping the per-spindle wither fade (continuity law). Ecology is LOCKED, so this is yours to call before anyone builds it.
-- **Done when:** Garrett has picked an approach (or ruled L1 out) and recorded it in Docs/PERFORMANCE_OPTIMIZATION.md 3.3; a build task follows if he picks one.
-- **Who can take it:** Garrett (ecology / flora owner)
-- **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
-- **See:** Docs/PERFORMANCE_OPTIMIZATION.md 1.2 and 3.3 (L1); Docs/Reports/PERFORMANCE.md, Waiting on Garrett
-
-### T-20261015-6009 · open · test · Regatta AI
-- **Task:** Teach the Regatta Squirrel AI from your flying: Third Eye > Record on, fly Regatta as the Squirrel by hand 5 times to the finish, stop Play and Send to Claude; then ask a session to run learn_from_flights.py --write and test the AI
-- **Done when:** LEARNED_FROM_FLIGHTS.md lists your races and the Squirrel AI flies the learned line without striking its rail
+### T-20261015-e4dc · done · test · ui
+- **Task:** Style-B start flow on claude/new-session-76hnyc: Bootstrap splash (dim, LOADING bar, no spinner), Connection lost window + RETRY on A, age gate and consent (B/Esc declines), sign-in auth panel and pilot-name panel (rule ticks, count, single press on A), splash holds until Garland is built
+- **Done when:** All nine steps of the checklist entry 'Style-B start flow' pass in the editor, with a pad and with a keyboard
 - **Who can take it:** Yash
-- **Added:** 2026-10-15 by Claude for Yash (`Ys-bleeding-edge`)
-- **See:** Docs/SKIM_RACE_AI.md §16
+- **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, Docs/MENU_REDESIGN_B.md section 26
+- **Done:** 2026-10-24, Closed without being run (Yash, 2026-10-24): the test named claude/new-session-76hnyc, which merged into bleeding-edge as #1153 on 2026-10-19 and went through Rev 4-10 after this was written. Re-test the merged menu on bleeding-edge as a new task if needed.
 
-### T-20261015-1188 · open · test · AI / training
-- **Task:** Fly 3-5 Regatta races by hand (Squirrel first) in the Unity EDITOR (training data comes from the editor only, 2026-10-16) and store each record when Unity asks
-- **Done when:** `python3 Tools/Build/situation_features.py --write` reads them (flight/3) and writes learned_situations.json for the hull
+### T-20261015-ef54 · done · test · ui
+- **Task:** Style-B Maelstrom game UI on claude/new-session-76hnyc: hub (chips, side-by-side round cards with the upcoming card outlined, Race to N bars, Pilots ready faces, READY on A, LB/RB scroll), stats screen (NEXT on A), summary (winner line, domain chips, ranked cards, A/Y/B)
+- **Done when:** All six steps of the checklist entry 'Style-B Maelstrom game UI' pass in the editor, solo with AI and in a two-player party
 - **Who can take it:** Yash
-- **Added:** 2026-10-15 by Claude (Yash's session) (`Ys-bleeding-edge`)
-- **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md
+- **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, Docs/MENU_REDESIGN_B.md section 27
+- **Done:** 2026-10-24, Closed without being run (Yash, 2026-10-24): the test named claude/new-session-76hnyc, which merged into bleeding-edge as #1153 on 2026-10-19 and went through Rev 4-10 after this was written. Re-test the merged menu on bleeding-edge as a new task if needed.
 
-### T-20261015-7fc3 · open · dev · AI / Regatta
-- **Task:** Port the two learned knobs to Unity: the commit distance as a curve over the leg (GateRaceController aiCommitDistance -> a + b x leg) and the skim-worth rule (the Squirrel's Skim Race pilot in Regatta), behind inspector switches, off by default
-- **Done when:** A learned tune from the page's Copy JSON sets them in Unity and the Third Eye shows the AI committing / skipping skims as the page does
-- **Who can take it:** Garrett (gate races) with Yash
-- **Added:** 2026-10-15 by Claude (Yash's session) (`Ys-bleeding-edge`)
-- **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md S5
-
-### T-20261015-0576 · open · test · AI training
-- **Task:** After your next hand-flown Regatta race in the editor, open the stored flight_Regatta_*.json and check the new situation data: 44 columns per sample, rails (one per lane) with ownRail, ringList, railEvents after a rail hit, camMode not -1; toggle You/AI for a few seconds and those rows have held 1
-- **Done when:** Checklist entry 'AI training recorder: flight/3 records the situation' steps 2 and 2a pass, or what is wrong is reported
+### T-20261017-3d13 · open · test · performance
+- **Task:** Re-capture Menu_Main with the Stoat for 10 minutes in a Release editor run, with the Third Eye CLOSED (it is a second camera and taints the frame time). The vessel-registry fix should keep frames flat; the diag now names each Driver.LateUpdate and the BlackHole.* rows.
+- **Done when:** A bugledger/yskha capture from after this fix shows no slide from minute 1 to minute 10, and its diag has the BlackHoleRegistry.LateUpdate row
 - **Who can take it:** Yash
-- **Added:** 2026-10-15 by Yash's session (`Ys-bleeding-edge`)
-- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md
+- **Added:** 2026-10-17 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md §2 (10-17 Stoat slowdown); Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-17 Stoat entry
 
-### T-20261015-ac73 · open · test · Multiplayer
-- **Task:** Check that multiplayer test logs collect themselves in Unity: an MPPM test (main + P2 + P3) leaves one Logs/NetSessions file per player, ONE 'Send to Claude?' names the players, the send lands them on bugledger/<you>, and net_logs.py show 1 prints one timeline. Solo play writes nothing. From now on, press Send to Claude after every multiplayer hand test instead of pasting consoles.
-- **Done when:** The six steps of the checklist entry 'Multiplayer test logs collect themselves' pass, or a failure is noted with its console
-- **Who can take it:** Andrew, Yash (offered)
-- **Added:** 2026-10-15 by Yash (`Ys-bleeding-edge`)
-- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Multiplayer test logs entry); Docs/DIAGNOSTICS.md § Multiplayer test logs; Amoebius writes the same logs during the live UGS test (Docs/MULTIPLAYER_START_HERE.md 5.3)
+### T-20261017-b227 · open · test · Vessel Studio
+- **Task:** Playtest the ten concept vessels in the Vessel Studio artifact (hub row 'New vessels - the concept fleet'): fly each on phone and PC, watch its AI, and Record Keep / Drop with a line of why on each page's Decisions tab; then pick five, then three (Docs/Studios/CONCEPT_FLEET.md section 1).
+- **Done when:** Every one of the ten pages has a Keep or Drop decision in the shared log and the owner has named the five and the three.
+- **Who can take it:** Yash (asked for them; offered playtests), Garrett (product call on the three)
+- **Added:** 2026-10-17 by Claude (concept fleet session) (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md; https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa
 
-### T-20261015-d7f8 · done · dev · Performance
-- **Task:** Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.831 -> 5.578 KB/frame (+46%)
-- **Done when:** perf_hunt.py amoebius reads within baseline for that marker
-- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
-- **Added:** 2026-10-15 by perf_hunt sweep (`perf/performance-optimization`)
-- **See:** Docs/Reports/PERFORMANCE.md
-- **Done:** 2026-10-15, Duplicate of T-20261015-fafa: attributed with nested markers to the un-pooled AOE ring explosion on each omni collect (lever L13, Garrett).
+### T-20261017-3244 · open · dev · Vessel Studio
+- **Task:** Give the picked concept vessels a clean AI difficulty ladder (Hard fastest on every course, D24): the shared belief mistakes barely cost these fast movers and the lab-only press delay punishes tempo mechanics (the Octopus's Easy DNFs; the Albatross's Easy loses the updraft). One AI round per kept vessel, scorecard before and after.
+- **Done when:** Each kept vessel's Scorecard shows Hard < Medium < Easy on all four courses, recorded in CONCEPT_FLEET.md section 4.
+- **Who can take it:** Yash (offered: follow-up fixes), any Claude session with /vessel-studio
+- **Added:** 2026-10-17 by Claude (concept fleet session) (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 4; studio-kinds.js ai() per kind
 
-### T-20261015-c8e2 · open · dev · Performance
-- **Task:** Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)
-- **Done when:** perf_hunt.py amoebius reads within baseline for that marker
-- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
-- **Added:** 2026-10-15 by perf_hunt sweep (`perf/performance-optimization`)
-- **See:** Docs/Reports/PERFORMANCE.md
+### T-20261017-b999 · open · decision · Vessel Studio
+- **Task:** Decide the concept fleet's three open design questions before any port: the Albatross's own gravity (a vessel that falls in a HyperSea without gravity), the Remora's compounding slipstream (two drafters ratchet each other to the cap) and whether a tow may take petals, and the Dragonfly / Marlin second input strategy (left stick = translation, RT = throttle).
+- **Done when:** A decision per question recorded in the artifact's decision log and CONCEPT_FLEET.md section 6.
+- **Who can take it:** Garrett (vessels, product); Yash
+- **Added:** 2026-10-17 by Claude (concept fleet session) (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 6
 
-### T-20261015-c7db · open · dev · Performance
-- **Task:** Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame
-- **Done when:** perf_hunt.py amoebius reads within baseline for that marker
-- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
-- **Added:** 2026-10-15 by perf_hunt sweep (`perf/performance-optimization`)
-- **See:** Docs/Reports/PERFORMANCE.md
+### T-20261017-479c · open · test · Refactor
+- **Task:** Settle whether Unity 6 binds a MonoBehaviour whose class name differs from its file name: open Assets/_Prefabs/Spacevessels/Squirrel.prefab (any vessel) and check the R_ShipElementStatsHandler component (file R_VesselElementStatsHandler.cs) shows its script and serialized values, not 'Missing script'. VesselStatus GetOrAdd()s it at runtime, which would hide a failed binding. 19 such mismatches exist, 13 of them on assets (Docs/REFACTOR_BACKLOG.md section 0, batch 2, M5).
+- **Done when:** Result (binds / missing) recorded in Docs/REFACTOR_BACKLOG.md M5; if missing, a dev task to rename file or class is added.
+- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-17 by Yash (session) (`Ys-bleeding-edge`)
+- **See:** Docs/REFACTOR_BACKLOG.md section 0 batch 2
 
-### T-20261015-7392 · done · dev · AI training
-- **Task:** Add the pilot's VIEW to the situation recording: record the camera pose/FOV each sample (V1), compute on-screen / occluded / time-to-contact view features and a coarse view grid (V2), gate the target and skipped-skim labels on what was visible (V3), measure the per-pilot reaction lag (V4)
-- **Done when:** flight/3 (or /4) carries the camera; situation_features --self-test passes with the view group; the skim rule is fit only on skims the pilot could see; learn_from_flights reports a measured lag
-- **Who can take it:** Yash (his AI-training session); Garrett for V4's handicap numbers
-- **Added:** 2026-10-15 by Caleb (`claude/friendly-faraday-qropbs`)
-- **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §7
-- **Done:** 2026-10-16, V1-V4 built on Ys-bleeding-edge 2026-10-16 (Yash's session): camera in flight/3, view group + grid, labels gated on what was seen, measured reaction lag reported by both learners; situation_features --self-test covers each with a negative control. Editor check is T-20261015-0576 (checklist step 2b); V5 not started.
+### T-20261017-7915 · open · dev · Stoat
+- **Task:** The Stoat's AI is paused while you configure the Stoat (Yash, 2026-10-17). When your configuration lands, say so here; the next AI session re-checks the autopilot distances against Regatta's race line, flies it and learns it (REGATTA_AI_ROADMAP.md §3.1 has where the AI stands)
+- **Done when:** Garrett notes his Stoat configuration is done, and the AI follow-up is picked up
+- **Who can take it:** Garrett (Stoat configuration)
+- **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md §3.1
 
-### T-20261016-f695 · open · decision · AI training
-- **Task:** Once 3+ hand-flown Regatta editor flights with the camera exist, compare the measured reaction lag (situation_features.py report / learned_situations.json reactionLag) with SkimRaceDifficultySO's Easy/Medium/Hard ReactionSeconds (0.5 / 0.25 / ...) and decide whether any should change
-- **Done when:** A decision is recorded in Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §7 (keep, or new numbers)
-- **Who can take it:** Garrett (handicap owner)
-- **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
-- **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §7 Status
+### T-20261017-0b70 · open · decision · Butterfly
+- **Task:** Butterfly AI audit (BUTTERFLY.md §8a), two calls in your modes: (1) the AI cruises at 0.6 throttle (~45 u/s vs a person's 67) in Dustup, Sirocco and Tapestry - give those modes a full-throttle floor like Regatta and Waystation? (2) in Dustup and Sirocco the AI never fetches crystals, so its Space and Charge stay at level 0 while people level up - add Tapestry's crystal detour?
+- **Done when:** Garrett decides both; the chosen change is made
+- **Who can take it:** Garrett (Butterfly modes owner); Yash can make the change
+- **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md §8a
 
-### T-20261016-e585 · done · test · Grizzly
-- **Task:** Playtest the Grizzly trigger bombs at the new 250 u/s launch speed (grizzly-v3): fire a bomb ahead, freeze it, fly past it, release with it behind you - you should be thrown forward, and chaining bombs should carry you to top speed
-- **Done when:** A bomb frozen a moment after firing is clearly ahead of the ship, its blast no longer swallows the ship, and fly-past-then-detonate launches you forward
-- **Who can take it:** Jonathan (Grizzly design owner); Yash (offered)
-- **Added:** 2026-10-16 by a Claude session (`grizzly-v3`)
-- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md
-- **Done:** 2026-10-16, Tested by the Grizzly design owner on grizzly-v3 at 6e6028e5c (2026-10-16): bombs, launch momentum, LB cycle, claw cones + cells, PiP sniper scope all confirmed.
+### T-20261017-5cf2 · open · test · Butterfly
+- **Task:** Play Waystation with AI Butterflies (Third Eye on one): each fold lands just short of a ring and threads it; the AI flies ~67 u/s; your own hull gains no AIPilot component; run WaystationFoldTests
+- **Done when:** tests pass and the folds land in the rings
+- **Who can take it:** Yash (has offered to take tasks)
+- **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The AI Butterfly's fold lands in the ring)
 
-### T-20261016-3ba5 · done · test · Grizzly
-- **Task:** Playtest grizzly-v3 bombs on a pad: 180 u/s bombs, blasts launch along the nose and the speed carries ~2 s (chain LT/RT without slowing), X does nothing in Explosives mode, LB cycles weapons; then run GrizzlyTimeCourseTests + GrizzlyTriggerBombTests in the Test Runner
-- **Done when:** Bomb feel confirmed by the Grizzly driver and both edit-mode suites green in Unity
-- **Who can take it:** Grizzly driver (glory.jones1) or Yash
-- **Added:** 2026-10-16 by a Claude session (`grizzly-v3`)
-- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md
-- **Done:** 2026-10-16, Tested by the Grizzly design owner on grizzly-v3 at 6e6028e5c (2026-10-16): bombs, launch momentum, LB cycle, claw cones + cells, PiP sniper scope all confirmed.
+### T-20261017-3c5d · open · dev · Vessel Studio / concept fleet
+- **Task:** Round 2 of the concept fleet: one vessel per session in the owner's order (CONCEPT_FLEET.md section 8); the Gibbon's session merges the Tether prototype (section 8.1)
+- **Done when:** each picked vessel has a studio round the owner recorded Keep on, and a kept vessel is ported with /artifact-to-unity
+- **Who can take it:** Yash (sessions), Garrett (element sign-off)
+- **Added:** 2026-10-17 by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 8
 
-### T-20261016-e80b · done · test · Grizzly
-- **Task:** Playtest the Grizzly trigger layouts on grizzly-v3: LB to PLASMA CLAW (LT left-front cone, RT right-front cone, pressure sizes them), LB to SNIPER (hold LT = full-screen scope that rides the round while held, RT fires, 3 s cooldown), bombs vanish when you leave Explosives; check the full-screen scope layout on GrizzlyHUD (toggle scopeFillsScreen if it looks wrong); run GrizzlyTriggerWeaponsTests
-- **Done when:** Grizzly driver confirms both layouts feel right and the suite is green in Unity
-- **Who can take it:** Grizzly driver (glory.jones1) or Yash
-- **Added:** 2026-10-16 by a Claude session (`grizzly-v3`)
-- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md
-- **Done:** 2026-10-16, Tested by the Grizzly design owner on grizzly-v3 at 6e6028e5c (2026-10-16): bombs, launch momentum, LB cycle, claw cones + cells, PiP sniper scope all confirmed.
+### T-20261017-e64b · open · dev · Vessel / Tether
+- **Task:** Bring cece/loving-feynman-hlgf18 (the Tether prototype) onto Ys-bleeding-edge: Tether = 14 collides with Thresher = 14; take the next free id (re-check before claiming: 17 went to the Angler and the Kite's branch claims 19, so 18 as of 2026-10-18; 18 then went to the Goby and 19-23 are taken: 24 as of 2026-10-24), rewrite TETHER.md section 12, run check_network_prefab_hashes.py and the edit-mode suite
+- **Done when:** the Tether flies from Toy Box > Vessel Changer on Ys-bleeding-edge with its own id and the suite green
+- **Who can take it:** Yash or the Gibbon session; Garrett merged the branch's family
+- **Added:** 2026-10-17 by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/TETHER.md on that branch; CONCEPT_FLEET.md section 8.1
+
+### T-20261017-a640 · open · dev · Vessel Studio / Gibbon
+- **Task:** Gibbon (+ the Tether; the notes' "Given" is the Gibbon): two modes from cece/loving-feynman-hlgf18: time mode = the branch's auto-tethers, space mode = two sticks + two triggers (one pair per tether), slicing by what the tethers cut, movement by 0 / 1 / 2 tethers attached; the time <-> space transition first
+- **Done when:** Garrett flies the transition and calls it natural
+- **Who can take it:** Yash (session 1 of round 2)
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-929b · open · dev · Vessel Studio / Flea
+- **Task:** Give Garrett a branch with the Flea; if good, bring it into the game as a playable vessel, then a small racing game, then push to bleeding-edge
+- **Done when:** Garrett has flown it from a branch; the Unity Flea flies from the Vessel Changer
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-ba54 · open · dev · Vessel Studio / Albatross
+- **Task:** Up/down from the nearest point on the nucleus (cytoplasm and nucleus), small strong thermals with an explosion, a membrane-crossing consequence that grows faster than linear with time avoided; qualitative before numbers
+- **Done when:** Garrett flies it and the frame reads as diving toward / falling away from the nucleus
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-3cc7 · open · dev · Vessel Studio / Dragonfly
+- **Task:** Control swap (LT held: look stick becomes roll / elevation, no A/B), long-cooldown stored boosts along the current motion, and a precision kit: grasping joust that steals an element, and geometry mines (triangle / square / kite / pentagon / rhombus)
+- **Done when:** Garrett flies the swap and one mine shape
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-1bc9 · open · dev · Vessel Studio / Marlin
+- **Task:** Pure drifter: never gets grip, less drift assist, the kit built around drifting; tune for fun
+- **Done when:** Garrett flies it and still wants the character
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-b900 · open · dev · Code review
+- **Task:** Review Joseph Zhou's pull request when it lands (Unity crashed while he prepared it); approval is required before merge
+- **Done when:** the PR is approved or sent back with notes
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-0406 · open · decision · Amoebius
+- **Task:** Decide PR #1045 (Prisma Unity Relay transport, 9 Oct, 1 commit, 817 behind bleeding-edge). bleeding-edge already has its core, built differently: Unity Relay protocol (Wire/Relay), UGS sign-in with per-profile session token (Wire/Ugs), START ONLINE through UGS Lobby + Relay (Shombith, #1089), one NetStack. #1045 is built on the shared-folder sessions and LAN fallback Shombith removed on 14 Oct. Only three things in it are missing on bleeding-edge: automatic region pick by UGS QoS (bleeding-edge only pins COSMIC_SHORE_RELAY_REGION), DTLS 1.2 via BouncyCastle (bleeding-edge uses plain UDP on purpose; a new dependency), and the 9 Oct LIVE run against real UGS Relay (2/2 passed, ~60 ms RTT, spawns/RPCs/NetVars synced; bleeding-edge's docs say nothing has talked to UGS's relay yet). Proposed plan: merge bleeding-edge into prisma-relay-transport taking Shombith's side everywhere, drop CosmicShore.Online / LAN fallback / --relay-* flags / RELAY.md, then port only the QoS region pick into Wire/Relay and record the live results in Port/docs/MULTIPLAYER.md; leave DTLS out. Or close #1045 as superseded.
+- **Done when:** Yash and Shombith choose port-the-gaps or close; #1045 is then either a small PR on Shombith's design (QoS region pick + live evidence, engine tests and unity_isolation_check green) or closed with a comment naming what bleeding-edge replaced it with.
+- **Who can take it:** Yash (author), Shombith (owns Amoebius networking)
+- **Added:** 2026-10-17 by Yash's session (work report) (`Ys-bleeding-edge`)
+- **See:** PR #1045 (prisma-relay-transport); Port/docs/MULTIPLAYER.md 6.7-6.10; Docs/TOOLING_DECISIONS.md 3
+
+### T-20261017-d3b8 · open · decision · Tools
+- **Task:** Decide PR #1030 (branch hygiene, 8 Oct, 9 commits, 1,105 behind bleeding-edge). None of it is on bleeding-edge and nobody else has built it: the Branch cleanup workflow (.github/workflows/branch-cleanup.yml + Tools/BranchJanitor/branch_cleanup.py, report / dry-run / archive / delete, tags archive/<branch> before deleting), policy.json, the browser Branch Janitor page, Docs/BranchArchive/ (one evidence doc per inactive branch) and a new Amoebius launcher BRANCHES page. The archive lists are stale (505 branches then, 545 on 2026-10-17), and a new launcher page is the growth Docs/TOOLING_DECISIONS.md asks to hold until the Amoebius decision. Options: (a) merge bleeding-edge in, keep the workflow, script, policy and docs, drop the BRANCHES page, regenerate the archive for today's branches; (b) keep it as is; (c) close it.
+- **Done when:** Yash picks a, b or c; for (a) the PR is refreshed, the archive regenerated, and the workflow's report mode run once on the real repo.
+- **Who can take it:** Yash (author); the core four for the launcher page
+- **Added:** 2026-10-17 by Yash's session (work report) (`Ys-bleeding-edge`)
+- **See:** PR #1030 (claude/trusting-curie-bn6rrn); Docs/TOOLING_DECISIONS.md 3
+
+### T-20261024-bd25 · open · test · Vessel Studio / Flea
+- **Task:** Fly the Unity Flea from branch claude/flea-vessel: Menu_Main freestyle, Toy Box > Vessel Changer > Flea; RT (Right Shift / LMB) timed to a prism contact is a perfect bounce, LT (Left Shift / RMB) crouches and hops
+- **Done when:** The six steps in Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Flea (vessel 24)' pass in the editor, or what failed is written down; then decide: racing game next, or tune first
+- **Who can take it:** Garrett (Yash can run the checklist first)
+- **Added:** 2026-10-24 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/FLEA.md on claude/flea-vessel; T-20261017-929b
+
+### T-20261021-a2b3 · done · dev · Performance
+- **Task:** Prism creation is per-prism polling. Every laid prism starts its own CreateBlockCoroutine, and while the per-frame budget is spent, each waiting prism is resumed every frame only to yield again. Under the menu veil the budget is a fixed 512 completions a frame. Measured in the second Orrery capture: 34,770 completions at 0.07 ms each (2.5 s of real work), metered over ~68+ frames. Measure first (the third capture, T-20261021-a96c, shows the settle with the grow-in snapped). If the creation queue is then the floor, replace the polling with one queue the gate drains on a time slice, so a waiting prism costs nothing per frame
+- **Done when:** A capture shows the creation queue's share of a swap, and if it is the floor, a change that drains it from one queue on a time slice lands with a before/after capture
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b; Prism.CreateBlockCoroutine; Prism.MaxCreationCompletionsPerFrame / LoadGateCreationCompletionsPerFrame
+- **Done:** 2026-10-24, Prism.CreationQueue replaces per-prism polling (Bloomrush: 56k coroutines/frame, 166 ms). Unity after-capture owed (Bloomrush, Release).
+
+### T-20261024-803f · open · test · Performance
+- **Task:** Re-capture Menu_Main after the QuestTrackView fix (Ys-bleeding-edge): Release, Third Eye closed, play Menu_Main (freestyle or the hub) past the 4-minute auto-capture and stop Play. Compare ClipperRegistry.Cull with the 10-19..23 captures (3.1-7.7 ms/frame; 0.26 ms on 10-16).
+- **Done when:** A Menu_Main capture after the fix shows ClipperRegistry.Cull and CPU busy back near the 10-16 baseline, or names what still costs
+- **Who can take it:** Yash, Caleb or Andrew (anyone with the Unity Editor)
+- **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md §2 10-24
+
+### T-20261024-1a3f · open · dev · Menu_Main UI
+- **Task:** Menu_Main UI clipping cost since style-B (#1153): ClipperRegistry.Cull 3.1-7.7 ms/frame in every Menu_Main capture 10-19..23 (0.26 ms on 10-16); RectMask2D count 18 -> 59. Hidden screens and modals stay active (alpha 0), so any graphic that moves under a mask is re-clipped every frame. QuestTrackView's parallax was one such mover (fixed 10-24); find any other with a Release capture after that fix, and consider deactivating or disabling the masks of screens nobody can see (closed modals, off-strip screens, freestyle).
+- **Done when:** Menu_Main CPU busy back near the 10-16 baseline (3.8 ms) in a Release capture
+- **Who can take it:** Shombith (style-B menu)
+- **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/MENU_REDESIGN_B.md §24; Docs/PERFORMANCE_OPTIMIZATION.md §2 10-24
+
+### T-20261024-3084 · open · decision · Ecology
+- **Task:** Bloomrush (and Rampage, same cactus forest) grows its ~480-plant arena DURING play: about 56,000 prisms wait for creation at the 90 s mark in both of Andrew's 10-20 captures, and at the gameplay budget (6 completions a frame for laid-world mass) the forest takes ~2.6 min to finish appearing. The per-frame cost of the wait is fixed (Prism.CreationQueue, 10-24); the growth rate is a design call: build the forest under the load gate (512/frame behind the connecting screen), or give environment mass a time slice in play.
+- **Done when:** A decision recorded, and a Bloomrush capture shows the forest's backlog drained or bounded
+- **Who can take it:** Garrett (ecology, arenas)
+- **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md §2 10-24
+
+### T-20261024-0212 · open · test · Performance
+- **Task:** Re-capture Bloomrush after the prism creation queue (Ys-bleeding-edge): Release, Third Eye closed, Arcade > Bloomrush, play past the 90 s auto-capture, stop Play. Compare with the 10-20 captures (CPU busy 130-221 ms, Prism.CreateBlockCoroutine x56k/frame, CoroutinesDelayedCalls 139 ms).
+- **Done when:** A Bloomrush capture after the fix with CoroutinesDelayedCalls near zero
+- **Who can take it:** Andrew (has the Bloomrush captures), Yash, anyone with the Unity Editor
+- **Added:** 2026-10-24 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-24 prism creation queue
+
+### T-20261024-b06b · open · test · Multiplayer
+- **Task:** Retest B35 (joins refused with 'NetworkConfig mismatch') on two machines on Ys-bleeding-edge: one hosts a party, the other direct-joins, then once more by accepting an invite. Then press Send to Claude (automatic) and run net_logs.py show 1.
+- **Done when:** Both joins land in the party, the host logs no 'NetworkConfig mismatch', and net_logs.py show prints no 'NetworkConfig differs between players'.
+- **Who can take it:** Caleb, Gradi, Yash (offered)
+- **Added:** 2026-10-24 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/PartySystem/BUGS.md B35; Docs/UNITY_VERIFICATION_CHECKLIST.md 'Party: B35 fixed'
+
+### T-20261024-7309 · open · dev · Amoebius
+- **Task:** Amoebius's edit-mode test build (Tools/Build/prisma_edit_mode_tests) needed test-only gap-fills for engine APIs new game code uses: URP VolumeFrameworkUpdateMode + UniversalAdditionalCameraData.volumeStack/requiresVolumeFrameworkUpdate (OrthographicLens), TouchControl.startTime (PilotSwapGesture), Vector3.RotateTowards (PistolBodyMath), GravitySensor (TouchTilt), NetworkConfig.GetConfig + NetworkPrefabs.NetworkPrefabOverrideLinks (MultiplayerSetup, B35). The live engine build likely lacks them too; add them to the engine or confirm the gap-fill is enough.
+- **Done when:** The engine declares these, or its owner decides the gap-fill stays; gapfill.py then reports them as present.
+- **Who can take it:** Shombith (engine)
+- **Added:** 2026-10-24 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Tools/Build/prisma_edit_mode_tests/gapfill.py
+
+### T-20261024-2979 · open · test · Regatta AI
+- **Task:** Race an AI Rhino in Regatta I1 and I3 (Third Eye on it) with the corner speed 333 and line 0.676 set from your six Rhino races: it should brake to about 330 u/s before sharp rings, fly about two thirds of the way out, and scrape rails less; note its times (before: about 45 s I1, 50 s I3; the offline model predicts slower)
+- **Done when:** The UNITY_VERIFICATION_CHECKLIST entry for 2026-10-24 Rhino corner speed and line is ticked, with the I1 and I3 times
+- **Who can take it:** Yash (has offered to take tasks)
+- **Added:** 2026-10-24 by Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Rhino corner speed and line, 2026-10-24); Assets/_Scripts/Controller/AI/AI_BOOST.md (Ramp)
+
+### T-20261024-3e3c · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part A steps 3 and 9 on GitHub Actions: run Unity CI (tier static) on Ys-bleeding-edge and confirm the skimmer audit, AI/replay gate and generator loop ran green; then check the first Bleeding-edge guard run after A landed is green at every static step
+- **Done when:** Both runs green with those steps present and not skipped; result noted in BRANCH_PARTS_STATUS.md
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-faca · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part A steps 4-6 in the Unity editor: Audit Vessel Skimmers vs audit_vessel_skimmers.py (6 faults), Validate Lifeform Crystals vs audit_lifeform_crystals.py, and an Inspector edit to SkimRaceAIConfig_I4.asset turning author_skimrace_ai_config.py --check to DRIFT (then git checkout the asset)
+- **Done when:** All three steps match their PASS lines; mismatches pasted into DT-002
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-3d2f · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part E (AI training fixes, deployed tournament genome): run its editor steps, then push it onto Ys-bleeding-edge with pick_branch_parts.py build E
+- **Done when:** Editor steps pass and E is pushed; discard any Archive/SessionState asset changes from the test session
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-e80a · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part F (Skim Race AI intensity-4 policy v2-i4): run its editor steps, then push it with pick_branch_parts.py build F
+- **Done when:** Editor steps pass and F is pushed; Skim Race AI config assets not left modified
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-e462 · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part G (load-time target, unattended load sweep R7): after E has landed, run its editor steps, then push it with pick_branch_parts.py build G
+- **Done when:** Editor steps pass and G is pushed (E and M already in)
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-d76a · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part H (parity harness, Unity side): run its editor steps (needs a throwaway returning-user account named exactly 'parity'), push H, then push part I (Port/ only) after it
+- **Done when:** H's editor steps pass, H then I pushed as separate pushes
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-e520 · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part J (multiplayer QoL: Add Friend, recently played with, ready lights, dropping out, invite inbox): run its two-account editor steps, then push it with pick_branch_parts.py build J
+- **Done when:** Two-account steps pass (or are marked 'needs two accounts'), J pushed
+- **Who can take it:** Yash; a second UGS account / machine (Caleb or Andrew)
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-5cad · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part K (leak and lifetime fixes: effect cooldowns, score trackers, delayed tasks): run its editor steps, then push it with pick_branch_parts.py build K
+- **Done when:** Editor steps pass and K is pushed
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-7c3d · open · test · Branch parts (nice-brahmagupta)
+- **Task:** Part L (heritable genome, off by default): run its editor steps and get Garrett's sign-off on the LOCKED rule 'the genome is a lean, not a level' and on worm fission as a mutating birth; then push L
+- **Done when:** Steps pass, Garrett's sign-off recorded, L pushed
+- **Who can take it:** Yash (tests); Garrett (sign-off)
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-a306 · open · setup · Branch parts (nice-brahmagupta)
+- **Task:** Part B (untrack FMOD's cache, PR template): ask the sound designer to open Cosmic Shore.fspro, settle the 'Squirel boost' track volumes, save, build and commit Metadata/ and Build/; then push B
+- **Done when:** The sound designer's commit is on Ys-bleeding-edge and B is pushed
+- **Who can take it:** Yash (push); the sound designer (FMOD save)
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-a0c4 · open · docs · Branch parts (nice-brahmagupta)
+- **Task:** Part C step 10: get Shombith and Garrett to read the Steam Playtest runbook (A4 step 6, branch model, upload block, the name step, A6 template) and confirm they can execute each step
+- **Done when:** Both confirm, or their corrections are filed
+- **Who can take it:** Yash (chase); Shombith and Garrett (read)
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-eb42 · open · docs · Branch parts (nice-brahmagupta)
+- **Task:** Part D (plans and docs) last: push it once the parts its QA items describe have landed, then run /qa-backlog once on bleeding-edge; when every part has landed or been dropped, delete the test plan, pick_branch_parts.py and BRANCH_PARTS_STATUS.md
+- **Done when:** D pushed, QA backlog refreshed, the one-off plan files deleted
+- **Who can take it:** Yash
+- **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261024-c9ba · open · test · Regatta AI
+- **Task:** Race an AI Dolphin in Regatta I1 and I3 (Third Eye, trails on) with the line 0.785 set from your Dolphin race: it should fly about three quarters of the way out, never cross a rail, and still thread every ring after a drift; note its times
+- **Done when:** The UNITY_VERIFICATION_CHECKLIST entry for 2026-10-24 Dolphin line is ticked, with the I1 and I3 times
+- **Who can take it:** Yash (has offered to take tasks)
+- **Added:** 2026-10-24 by Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Dolphin line, 2026-10-24); Assets/_Scripts/Controller/Arcade/REGATTA.md 6.2

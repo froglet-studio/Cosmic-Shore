@@ -26,7 +26,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("ARENA seating (Docs/HomeHub/ARCHITECTURE.md §3.9). On: every hull in this " +
                  "match is flown by exactly ONE pilot - once a pilot or an AI has a vessel class " +
                  "nobody else may take it - and a human may hand their ship to the AI and take " +
-                 "over an AI teammate's hull mid-match (D-pad left/right, keyboard 1/2). Seats " +
+                 "over an AI teammate's hull mid-match (D-pad left/right, the left/right arrow keys). Seats " +
                  "are therefore capped at the number of hulls this card lists (MaxSeats). Set " +
                  "on the cards in the ArenaGames roster; an arcade card that pins one hull " +
                  "leaves it off.")]

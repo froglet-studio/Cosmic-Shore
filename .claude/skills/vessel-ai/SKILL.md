@@ -15,6 +15,9 @@ instead of copying them:
 | `Docs/AI_SYSTEM/README.md` | Start here: the branch AI work lives on (`Ys-bleeding-edge`), the first command of every AI session (`python3 Tools/Build/ai_branch_sync.py`) |
 | `Docs/AI_SYSTEM/ARCHITECTURE.md` | The six layers (§1) and **the roster of every AI** (§2, the source of truth). A new AI gets a row there first |
 | `Docs/AI_SYSTEM/DIAGNOSIS_PLAYBOOK.md` | The five tiers of evidence, the intake checklist, the user's test-script template, the status board |
+| `Docs/AI_SYSTEM/VESSEL_MODE_CHART.md` | Which hulls have an AI, which modes offer each hull, and what has flown where (`vessel_mode_chart.py --write`; re-run after flights or card changes) |
+| `Arcade/REGATTA.md` §6.3 | How the AI rivals really raced, read from people's editor flights (`regatta_rival_report.py`: rings a minute, circling, stalls, per hull), and the offline race-line model WITH `AIPilot`'s break-off and stick law (`regatta_line_sim.py`). Measure a Regatta AI there before modelling it: the 2026-10-25 failure (break-offs on the line, cut mouths) was invisible to the drive sims |
+| `Docs/AI_SYSTEM/RACING_LINE.md` | Learning from people's editor flights: the racing line averaged from clean legs (`racing_line.py`), each leg's style read from the recording, the capture plan. Readers: `situation_features.py`, `learn_from_flights.py` |
 | `Docs/SKIM_RACE_AI.md` | The most developed AI (the Squirrel's). Its benchmark (§1), difficulty (§10) and simulator are the model for the rest |
 | `Docs/Studios/VESSEL_STUDIO_ROLLOUT.md` | Which vessels have AI, and the order their studios are built in |
 | `/vessel-studio` | The browser studio: AI race panel, levels (§1.5.7), cameras (§1.5.9) |
@@ -78,9 +81,12 @@ Copy this list into the AI's doc and tick it.
 
 ### 3.1 Difficulty levels
 
-- **Three cards offer a difficulty** (`AIDifficultyRules.IsOfferedFor`): Skim Race (`SkimRaceHandicap` on crystals) and,
-  since 2026-10-10, Slingshot and Warpline (`GateRaceHandicap` on rings, applied by `GateRaceController`, so any
-  gate race can join by being named there). In every other mode the AI's skill follows the **intensity** (Grizzly Time: skill = intensity × 0.25, throttle
+- **Where a difficulty is offered** (`AIDifficultyRules.IsOfferedFor`): Skim Race (its own pilot), the gate
+  races Slingshot / Warpline (`GateRaceHandicap`), Regatta (Squirrels on the Skim Race pilot, every other hull
+  `GateRaceHandicap`), and the Arena's Astro League / Brood Rush /
+  Broadside (`AIDifficultyRules.UsesPilotBelief` -> `AIPilotBelief` on the platform `AIPilot`: the same two
+  mistakes on whatever point the autopilot wants; never on a mode with its own handicap). In every other
+  mode the AI's skill follows the **intensity** (Grizzly Time: skill = intensity × 0.25, throttle
   0.7 → 1.0). Say which one your AI uses.
 - **To add a difficulty to a mode**, follow Skim Race's pattern (`SKIM_RACE_AI.md` §10) and do not invent a
   second one:

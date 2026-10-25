@@ -51,6 +51,22 @@ namespace CosmicShore.UI
         [Tooltip("The procedural hexagon gauge. Leave null to auto-create a full-rect child graphic.")]
         [SerializeField] DomainVolumeHexGraphic hexGraphic;
 
+        [Header("Centre glyph (style B)")]
+        [Tooltip("What the button DOES, drawn in the middle of the hex: the pause bars in a match. " +
+                 "Created after the host face is hidden, so it survives the cleanup that hides " +
+                 "every other child graphic. Empty = no glyph (the menu's freestyle button).")]
+        [SerializeField] Sprite centreGlyph;
+        [Tooltip("Size of that glyph, in the button's own units.")]
+        [Min(1f)] [SerializeField] float centreGlyphSize = 44f;
+
+        [Header("Keycap under the hex (style B)")]
+        [Tooltip("The pad control that presses this button, drawn as a keycap under the hex - 'Start' " +
+                 "in a match. Empty = no keycap. The label follows the device the player is holding.")]
+        [SerializeField] string padKeycap;
+        [Tooltip("The same control on a keyboard ('Esc'). Empty = the keycap hides on a keyboard " +
+                 "rather than show a pad name to someone who has no pad.")]
+        [SerializeField] string keyboardKeycap;
+
         [Header("Theme")]
         [Tooltip("Optional override. By default colors are pulled from GameDataSO.ThemeManagerData.ColorSet, matching MultiplayerHUD and every other domain-tinted UI.")]
         [SerializeField] ThemeManagerDataContainerSO themeDataOverride;
@@ -127,6 +143,7 @@ namespace CosmicShore.UI
 
         void Update()
         {
+            if (_keycap && transform.localRotation != _keycapAlignedFor) AlignKeycap();
             if (Time.unscaledTime >= _nextSampleAt)
             {
                 _nextSampleAt = Time.unscaledTime + sampleIntervalSeconds;
@@ -167,6 +184,131 @@ namespace CosmicShore.UI
             hexGraphic.raycastTarget = false; // never intercept the button click
 
             HideHostButtonFace();
+            EnsureCentreGlyph();
+            EnsureKeycap();
+        }
+
+        TMP_Text _keycapLabel;
+        GameObject _keycap;
+        Quaternion _keycapAlignedFor = new(0f, 0f, 0f, 0f);
+
+        /// <summary>
+        /// The pause hex is ROTATED (30 degrees in GameCanvas), so a keycap anchored to its rect's
+        /// bottom edge sat off to one side and tilted. The cap undoes the hex's rotation and hangs
+        /// straight below its centre, upright, whatever the hex's own turn.
+        /// </summary>
+        void AlignKeycap()
+        {
+            var rt = (RectTransform)_keycap.transform;
+            var turn = transform.localRotation;
+            rt.localRotation = Quaternion.Inverse(turn);
+            float drop = ((RectTransform)transform).rect.height * 0.5f + 8f;
+            rt.anchoredPosition = Quaternion.Inverse(turn) * new Vector3(0f, -drop, 0f);
+            _keycapAlignedFor = turn;
+        }
+        InputDeviceIconSetSwitcher _switcher;
+
+        /// <summary>
+        /// The control that presses this button, as a style-B keycap under the hex. Built after
+        /// the host face is hidden, like the centre glyph, and relabelled whenever the device
+        /// changes - a pad name shown to a keyboard player is misinformation.
+        /// </summary>
+        void EnsureKeycap()
+        {
+            if (string.IsNullOrEmpty(padKeycap) || _keycap) return;
+
+            _keycap = new GameObject("Keycap (auto)", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var rt = (RectTransform)_keycap.transform;
+            rt.SetParent(transform, false);
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.sizeDelta = new Vector2(64f, 28f);
+            AlignKeycap();
+            var plate = _keycap.GetComponent<Image>();
+            plate.color = UITheme.Resolve(null, UIColorToken.SurfaceVeryDark);
+            plate.raycastTarget = false;
+            var line = _keycap.AddComponent<Outline>();
+            line.effectColor = UITheme.Resolve(null, UIColorToken.SurfaceLight);
+            line.effectDistance = new Vector2(1f, -1f);
+
+            var labelGo = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            var lrt = (RectTransform)labelGo.transform;
+            lrt.SetParent(rt, false);
+            lrt.anchorMin = Vector2.zero;
+            lrt.anchorMax = Vector2.one;
+            lrt.offsetMin = lrt.offsetMax = Vector2.zero;
+            _keycapLabel = labelGo.GetComponent<TextMeshProUGUI>();
+            var face = Resources.Load<TMP_FontAsset>("Fonts & Materials/ChakraPetch-Regular SDF");
+            if (face) _keycapLabel.font = face;
+            _keycapLabel.fontSize = 14f;
+            _keycapLabel.fontStyle = FontStyles.UpperCase;
+            _keycapLabel.characterSpacing = 8f;
+            _keycapLabel.alignment = TextAlignmentOptions.Center;
+            _keycapLabel.color = UITheme.Resolve(null, UIColorToken.TextLight);
+            _keycapLabel.raycastTarget = false;
+
+            _switcher = GetComponentInParent<InputDeviceIconSetSwitcher>(true);
+            if (!_switcher) _switcher = gameObject.AddComponent<InputDeviceIconSetSwitcher>();
+            _switcher.OnSetChanged += HandleDeviceChanged;
+            KitInputDevice.Listen(RedrawKeycap);
+            RedrawKeycap();
+        }
+
+        void RedrawKeycap() => HandleDeviceChanged(_switcher ? _switcher.Current : InputDeviceIconSetSwitcher.IconSet.None);
+
+        // Touch (IconSet.None) and a phone with no pad name no control: the cap hides.
+        void HandleDeviceChanged(InputDeviceIconSetSwitcher.IconSet set)
+            => DrawKeycap(set == InputDeviceIconSetSwitcher.IconSet.KeyboardText,
+                          set != InputDeviceIconSetSwitcher.IconSet.None && KitInputDevice.ShowsControlHints);
+
+        void DrawKeycap(bool keyboard, bool allowed)
+        {
+            if (!_keycap) return;
+            string label = keyboard ? keyboardKeycap : padKeycap;
+            bool shown = allowed && !string.IsNullOrEmpty(label);
+            _keycap.GetComponent<Image>().enabled = shown;
+            _keycapLabel.enabled = shown;
+            if (!shown) return;
+            _keycapLabel.text = label;
+            var rt = (RectTransform)_keycap.transform;
+            rt.sizeDelta = new Vector2(Mathf.Max(36f, _keycapLabel.GetPreferredValues(label).x + 20f), 28f);
+        }
+
+        void OnDestroy()
+        {
+            if (_switcher) _switcher.OnSetChanged -= HandleDeviceChanged;
+            KitInputDevice.Unlisten(RedrawKeycap);
+        }
+
+        /// <summary>
+        /// Give a runtime-added indicator its centre glyph (MenuMiniGameHUD adds the component in
+        /// code, so it cannot carry the serialized one). Safe before or after the hex is built.
+        /// </summary>
+        public void SetCentreGlyph(Sprite glyph, float size = 44f)
+        {
+            centreGlyph = glyph;
+            centreGlyphSize = size;
+            if (hexGraphic) EnsureCentreGlyph();
+        }
+
+        void EnsureCentreGlyph()
+        {
+            if (!centreGlyph) return;
+            const string name = "CentreGlyph (auto)";
+            if (transform.Find(name)) return;
+
+            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(transform, false);
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(centreGlyphSize, centreGlyphSize);
+            rt.anchoredPosition = Vector2.zero;
+
+            var img = go.GetComponent<Image>();
+            img.sprite = centreGlyph;
+            img.preserveAspect = true;
+            img.raycastTarget = false;
+            img.color = UITheme.Resolve(null, UIColorToken.TextLight);
         }
 
         /// <summary>

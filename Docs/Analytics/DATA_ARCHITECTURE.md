@@ -146,6 +146,12 @@ Cost: nested `[Serializable]` classes. Newtonsoft (which the UGS SDK uses under 
 used on this path — worth restating, because it silently drops `Dictionary<,>` and has bitten this
 codebase before.
 
+**AI training data.** The AI flight recordings (`HumanFlightRecorder`, about 0.5 MB per race) have their own brief:
+`Docs/AI_SYSTEM/AI_DATA_IN_UGS.md`. In short:
+- small per-race summaries in Cloud Save, the full flight in a file store;
+- lossless compression only, never fewer decimals, samples or columns;
+- check with Yash or Garrett first.
+
 ---
 
 ## 3. Cloud Save schemas — the proposal
@@ -182,7 +188,8 @@ correlation across two payloads.
     "CrystalBalance": 37,
     "LifetimeCrystalsEarned": 412,
     "LifetimeCrystalsSpent": 375,
-    "UnlockedRewardIds": []
+    "UnlockedRewardIds": [],
+    "HangarUpgrades": [{ "Vessel": 16, "Element": 2, "Level": 3 }]
   },
   "Progression": {
   },
@@ -200,6 +207,10 @@ correlation across two payloads.
 
 **What changed and why**
 
+- **New (2026-10-25) — `Economy.HangarUpgrades`.** The Hangar's bought elemental levels (vessel and element as the
+  enums' values, level 1-10). In Economy because crystals pay for them: the debit and the level ride one save, where
+  they used to be split between this key and the device's PlayerPrefs (`Docs/REFACTOR_BACKLOG.md` S67). Additive, so
+  no schema bump: a profile without the key loads with an empty list.
 - Key renamed to `SCREAMING_SNAKE`; fields to `PascalCase`. Consistency ask, item one.
 - `firstSeenUtc` → `Lifecycle.FirstSeenUtcMs`. Same value, name now states the unit.
 - **`LastLoginTick` moves here** from `PLAYER_STATS_PROFILE` as `LastSeenUtcMs`, converted from .NET
@@ -536,7 +547,7 @@ only scalars, so it travels as a comma-joined string and the PostHog sink expand
 
 `PlayerUUID` is **left as-is** rather than repointed at the new id: it is load-bearing for AOE block
 ownership strings (`AOERadialBlocks`, `AOEBlockCreation`, `AOEDangerHemisphereBlocks`) and for
-`MiniGame`'s local-player comparison, so changing its meaning would be a gameplay change smuggled
+the legacy `MiniGame`'s local-player comparison (that class was retired 2026-10-25), so changing its meaning would be a gameplay change smuggled
 into an analytics commit. `IPlayer.UgsPlayerId` is added alongside it, and retiring `PlayerUUID` is
 tracked in §10.
 

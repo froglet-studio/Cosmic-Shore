@@ -23,8 +23,12 @@ namespace CosmicShore.UI
     /// advertise a party session (<c>PartyPlayerData.PartySessionId</c>); without one the button
     /// is drawn inert rather than hidden, so "you cannot" reads differently from "there is no
     /// such thing". See Docs/PartySystem/SPECTATOR.md.</para>
+    ///
+    /// <para>What each state LOOKS like goes through the virtual Draw / SetPartShown hooks, so the
+    /// style-B row (<see cref="KitOnlineRow"/>) draws the same states without a second copy of the
+    /// invite, kick and join rules. This class draws the legacy look.</para>
     /// </summary>
-    public class OnlineInfoEntry : MonoBehaviour
+    public class OnlineInfoEntry : MonoBehaviour, IFriendProfileSource
     {
         [Header("Display")]
         [SerializeField] private Image avatarIcon;
@@ -100,24 +104,26 @@ namespace CosmicShore.UI
                  "can't be spam-clicked. Shared by both buttons.")]
         [SerializeField] private float actionCooldownSeconds = 0.4f;
 
-        public enum Status { Online, InLobby, InMatch, LobbyFull, InYourParty }
+        public enum Status { Online = 0, InLobby = 1, InMatch = 2, LobbyFull = 3, InYourParty = 4 }
 
         /// <summary>What the row's join/spectate button is doing for this player.</summary>
         public enum JoinMode
         {
             /// <summary>No button - already in your party, or nothing to join.</summary>
-            Hidden,
+            Hidden = 0,
             /// <summary>JOIN their party directly.</summary>
-            Join,
+            Join = 1,
             /// <summary>JOIN drawn but inert - their party is full.</summary>
-            JoinDisabled,
+            JoinDisabled = 2,
             /// <summary>SPECTATE their match (the only control on the row).</summary>
-            Spectate,
+            Spectate = 3,
             /// <summary>SPECTATE drawn but inert - in a match that advertises no session.</summary>
-            SpectateDisabled,
+            SpectateDisabled = 4,
         }
 
         string _playerId;
+        string _displayName;
+        Sprite _avatar;
         Action<string> _onInvite;
         Action<string> _onCancel;
         Action<string> _onKick;
@@ -136,6 +142,61 @@ namespace CosmicShore.UI
         CanvasGroup _canvasGroup;
 
         public string PlayerId => _playerId;
+
+        /// <summary>Raised after the row's pilot, status or invite state changes (the profile popup follows it).</summary>
+        public event Action ProfileChanged;
+
+        /// <summary>The row as a profile (Rev 7, <see cref="FriendProfilePopup"/>): the same state the row draws.</summary>
+        public bool TryGetProfile(out FriendProfile profile)
+        {
+            profile = new FriendProfile(_playerId, _displayName, _avatar, null, _lastStatus, _lastPartyMemberCount,
+                                        _lastPartyMaxSlots, _lastMatchName, _invitable && !_isPending, _isPending, _joinMode);
+            return !string.IsNullOrEmpty(_playerId);
+        }
+
+        /// <summary>The profile popup's INVITE: exactly this row's Invite press (cooldown, pending look and all).</summary>
+        public void RequestInvite()
+        {
+            if (!_isPending) HandleInviteClicked();
+        }
+
+        /// <summary>The profile popup's JOIN / SPECTATE: exactly this row's join press.</summary>
+        public void RequestJoin()
+        {
+            if (_joinMode == JoinMode.Join || _joinMode == JoinMode.Spectate) HandleJoinClicked();
+        }
+
+        protected Button InviteButton => inviteButton;
+        protected Button CancelButton => cancelButton;
+        protected Button JoinButton => joinButton;
+        protected TMP_Text LabelText => labelText;
+
+        /// <summary>Shows or hides one of the row's buttons. Legacy: the GameObject.</summary>
+        protected virtual void SetPartShown(Component part, bool shown) => part.gameObject.SetActive(shown);
+
+        /// <summary>Writes the status line. <paramref name="color"/> is the legacy palette's colour.</summary>
+        protected virtual void DrawLabel(Status status, bool pending, string text, Color color)
+        {
+            if (!labelText) return;
+            labelText.text = text;
+            labelText.color = color;
+        }
+
+        /// <summary>Paints the join / spectate button for its verb and whether it can be pressed.</summary>
+        protected virtual void DrawJoinButton(bool spectate, bool live)
+        {
+            var icon = joinButtonIcon ? joinButtonIcon : joinButton.GetComponent<Image>();
+            if (!icon) return;
+
+            var sprite = spectate ? spectateSprite : joinSprite;
+            if (sprite) icon.sprite = sprite;
+            var tint = spectate ? spectateTint : joinTint;
+            if (!live) tint.a *= joinDisabledAlpha;
+            icon.color = tint;
+        }
+
+        /// <summary>Called whenever the row enters or leaves the invite-pending state.</summary>
+        protected virtual void OnInvitePendingChanged(bool pending) { }
 
         /// <summary>
         /// Populates the entry with online player data.
@@ -169,6 +230,8 @@ namespace CosmicShore.UI
             Action<string> onSpectate = null)
         {
             _playerId = playerId;
+            _displayName = displayName;
+            _avatar = avatar;
             _onInvite = onInvite;
             _onCancel = onCancel;
             _onKick = onKick;
@@ -201,7 +264,7 @@ namespace CosmicShore.UI
                 if (_invitable)
                     inviteButton.onClick.AddListener(HandleInviteClicked);
                 inviteButton.interactable = _invitable;
-                inviteButton.gameObject.SetActive(_invitable);
+                SetPartShown(inviteButton, _invitable);
             }
 
             // Cancel / Kick (✕) - one button, two roles. Wired once; visible when an
@@ -213,7 +276,7 @@ namespace CosmicShore.UI
                 cancelButton.onClick.RemoveAllListeners();
                 cancelButton.onClick.AddListener(HandleCancelClicked);
                 cancelButton.interactable = true;
-                cancelButton.gameObject.SetActive(_kickable);
+                SetPartShown(cancelButton, _kickable);
             }
 
             // Join / Spectate - one button, two verbs (see JoinMode). In a MATCH it is the only
@@ -225,6 +288,8 @@ namespace CosmicShore.UI
             StopPulse();
             _isPending = false;
             ApplyRowTint(RowIsLive ? defaultTint : disabledTint);
+            OnInvitePendingChanged(false);
+            ProfileChanged?.Invoke();
         }
 
         /// <summary>The row reads as live when ANY of its controls can be pressed.</summary>
@@ -243,16 +308,8 @@ namespace CosmicShore.UI
             joinButton.onClick.RemoveAllListeners();
             if (live) joinButton.onClick.AddListener(HandleJoinClicked);
             joinButton.interactable = live;
-            joinButton.gameObject.SetActive(shown);
-
-            var icon = joinButtonIcon ? joinButtonIcon : joinButton.GetComponent<Image>();
-            if (!icon) return;
-
-            var sprite = spectate ? spectateSprite : joinSprite;
-            if (sprite) icon.sprite = sprite;
-            var tint = spectate ? spectateTint : joinTint;
-            if (!live) tint.a *= joinDisabledAlpha;
-            icon.color = tint;
+            SetPartShown(joinButton, shown);
+            DrawJoinButton(spectate, live);
         }
 
         public void SetStatus(Status status, int partyMemberCount = 0, int partyMaxSlots = 0, string matchName = null)
@@ -263,9 +320,8 @@ namespace CosmicShore.UI
             _lastMatchName = matchName;
 
             // While pending, the label is overridden - don't clobber it.
-            if (_isPending) return;
-
-            ApplyStatusLabel(status, partyMemberCount, partyMaxSlots, matchName);
+            if (!_isPending) ApplyStatusLabel(status, partyMemberCount, partyMaxSlots, matchName);
+            ProfileChanged?.Invoke();
         }
 
         void ApplyStatusLabel(Status status, int partyMemberCount, int partyMaxSlots, string matchName)
@@ -303,11 +359,7 @@ namespace CosmicShore.UI
                     break;
             }
 
-            if (labelText)
-            {
-                labelText.text = text;
-                labelText.color = color;
-            }
+            DrawLabel(status, false, text, color);
         }
 
         /// <summary>
@@ -317,25 +369,23 @@ namespace CosmicShore.UI
         /// </summary>
         public void SetInvitePending()
         {
-            if (inviteButton) inviteButton.gameObject.SetActive(false);
-            if (cancelButton) cancelButton.gameObject.SetActive(true);
+            if (inviteButton) SetPartShown(inviteButton, false);
+            if (cancelButton) SetPartShown(cancelButton, true);
             // Two ways to end up in the same party is one too many: while our invite is out,
             // the direct join stands down (the ✕ retracts the invite if they change their mind).
-            if (joinButton) joinButton.gameObject.SetActive(false);
+            if (joinButton) SetPartShown(joinButton, false);
 
             _isPending = true;
 
-            if (labelText)
-            {
-                labelText.text = pendingRequestLabel;
-                labelText.color = pendingInviteTintBright;
-            }
+            DrawLabel(_lastStatus, true, pendingRequestLabel, pendingInviteTintBright);
+            OnInvitePendingChanged(true);
 
             StopPulse();
             if (isActiveAndEnabled)
                 _pulseCoroutine = StartCoroutine(PulsePending());
             else
                 ApplyRowTint(pendingInviteTint);
+            ProfileChanged?.Invoke();
         }
 
         /// <summary>Restores the row to its post-populate state.</summary>
@@ -345,17 +395,19 @@ namespace CosmicShore.UI
             _isPending = false;
 
             // The ✕ stays visible only if this row is a kickable party member.
-            if (cancelButton) cancelButton.gameObject.SetActive(_kickable);
+            if (cancelButton) SetPartShown(cancelButton, _kickable);
             if (inviteButton)
             {
                 inviteButton.interactable = _invitable;
-                inviteButton.gameObject.SetActive(_invitable);
+                SetPartShown(inviteButton, _invitable);
             }
             ApplyJoinMode(_joinMode);
             ApplyRowTint(RowIsLive ? defaultTint : disabledTint);
 
             // Restore the proper status label.
             ApplyStatusLabel(_lastStatus, _lastPartyMemberCount, _lastPartyMaxSlots, _lastMatchName);
+            OnInvitePendingChanged(false);
+            ProfileChanged?.Invoke();
         }
 
         IEnumerator PulsePending()
@@ -416,7 +468,7 @@ namespace CosmicShore.UI
             _canvasGroup.alpha = 1f;
         }
 
-        void ApplyRowTint(Color c)
+        protected virtual void ApplyRowTint(Color c)
         {
             if (backgroundImage) backgroundImage.color = c;
         }
@@ -468,7 +520,7 @@ namespace CosmicShore.UI
                 // OnPartyMemberKicked refresh re-renders the row; hide the ✕ immediately
                 // so it can't be re-clicked during the async gap.
                 _onKick?.Invoke(_playerId);
-                if (cancelButton) cancelButton.gameObject.SetActive(false);
+                if (cancelButton) SetPartShown(cancelButton, false);
             }
         }
 

@@ -101,6 +101,7 @@ namespace CosmicShore.Core
         void OnDisable()
         {
             _stopped = true;
+            MenuGuide.SkipRequested -= HandleSkipRequested;
 
             if (gameData != null && gameData.OnClientReady != null)
                 gameData.OnClientReady.OnRaised -= HandleClientReady;
@@ -174,7 +175,29 @@ namespace CosmicShore.Core
             }
 
             _started = true;
+            MenuGuide.SkipRequested += HandleSkipRequested;
             StartCoroutine(StartAfterDelay());
+        }
+
+        /// <summary>
+        /// The player pressed Skip on the guide: the whole tutorial ends now and never returns. It
+        /// is persisted as done (so the next launch does not run it again) but NOT announced as
+        /// completed, so <c>ftue_completed</c> keeps meaning "played through".
+        /// </summary>
+        void HandleSkipRequested()
+        {
+            if (!_started || _stopped || quest == null) return;
+            MenuGuide.SkipRequested -= HandleSkipRequested;
+            StopAllCoroutines();
+            _ctx?.RunCleanups();
+            _ctx?.EndFlightTraining();
+            _ctx?.SetNavLocked(false);
+            QuestArcadeConstraints.Clear();
+            _current = null;
+            _stopped = true;
+            instructionView?.Hide();
+            QuestProgressStore.MarkQuestCompleted(QuestId);
+            CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] '{QuestId}' skipped by the player.");
         }
 
         /// <summary>

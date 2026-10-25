@@ -183,19 +183,11 @@ public class VesselTransformer : MonoBehaviour
                  "not scaled. 1 = no change while stopped.")]
         [SerializeField, Min(0f)] float restrictedTurnMultiplier = 3f;
 
-        [Tooltip("How fast the hull swings onto the rotation the pilot has commanded, per second, " +
-                 "while this machine's HUMAN pilot flies on touch - in a drift as well as out of " +
-                 "one. AI, autopilot and remote hulls always use the fleet's shared response. " +
-                 "0 = the fleet's shared response (1.5/s, a 0.67 s time constant). Read by the " +
-                 "base RotateShip only: a transformer that overrides it (single-stick, command) " +
-                 "ignores this field.")]
-        [SerializeField, Min(0f)] float touchNoseResponse = 0f;
-
         /// <summary>
         /// The nose closes a LEFTOVER gap - one a discontinuous command left behind (a 180 degree
-        /// flip, a device switch from a lagging pad mid-turn) - no faster than this multiple of the
-        /// vessel's own combined max turn rate. It never binds while flying: chasing a command that
-        /// turns at w, an exponential follower moves at most w, which is under the cap.
+        /// flip, an ability that turns the command) - no faster than this multiple of the vessel's
+        /// own combined max turn rate. It never binds while flying: the command turns at most at
+        /// that rate, so a nose that IS the command is always under the cap.
         /// </summary>
         const float NoseCatchUpTurnRateMultiple = 1.5f;
 
@@ -320,11 +312,27 @@ public class VesselTransformer : MonoBehaviour
         /// </summary>
         public Quaternion CommandedRotation => accumulatedRotation;
 
-        /// <summary>Per-second fraction with which the hull's rotation and the smoothed cruise
-        /// speed close on their commanded values (the shared <c>LERP_AMOUNT</c>). Read-only.
-        /// Exact for every AI and autopilot hull: <see cref="touchNoseResponse"/> only ever
-        /// applies to a local human touch pilot (see <see cref="NoseFollowFraction"/>).</summary>
+        /// <summary>Per-second fraction with which an AI, autopilot or remote hull's rotation, and
+        /// every hull's smoothed cruise speed, close on their commanded values (the shared
+        /// <c>LERP_AMOUNT</c>). Read-only. Exact for every AI and autopilot hull; a local HUMAN
+        /// pilot's nose has no lag at all (<see cref="NoseFollowFraction"/>), so anything that
+        /// predicts a particular hull reads <see cref="NoseFollowRate"/> instead.</summary>
         public static float RotationFollowRate => LERP_AMOUNT;
+
+        /// <summary>This hull's nose follow rate per second, as <see cref="NoseFollowFraction"/>
+        /// applies it: <see cref="RotationFollowRate"/> for an AI, autopilot or remote hull; for this
+        /// machine's human pilot, their device's rate (<see cref="PilotNoseFollowPerSecond"/>: the pad
+        /// 1.5, touch 9), or <see cref="float.PositiveInfinity"/> (the nose IS the command) on a device
+        /// with no lag. For a predictor of this hull's path (the Stoat's foresight).</summary>
+        public float NoseFollowRate
+        {
+            get
+            {
+                if (!IsLocalHumanPilot) return LERP_AMOUNT;
+                float rate = PilotNoseFollowPerSecond;
+                return rate > 0f ? rate : float.PositiveInfinity;
+            }
+        }
 
         /// <summary>The boost ceiling this hull's skim boost saturates at. Read-only.</summary>
         public float MaxBoost => MaxBoostMultiplier;
@@ -399,6 +407,10 @@ public class VesselTransformer : MonoBehaviour
         /// overrides so the manual-throttle channel is disabled alongside the throttle target
         /// (see <see cref="RefreshDriftSpeedHold"/>).</summary>
         public bool IsDriftSpeedHeld => _driftSpeedHeld;
+
+        /// <summary>Whether a drift on this hull keeps the speed it began at (<see cref="holdSpeedWhileDrifting"/>):
+        /// an autopilot must not start one before the hull is up to speed (AIPilot.CanCommitAt).</summary>
+        public bool HoldsSpeedWhileDrifting => holdSpeedWhileDrifting;
 
         // ----------------------------- Update Loop -----------------------------
         protected virtual void Update()
@@ -577,33 +589,46 @@ public class VesselTransformer : MonoBehaviour
         }
 
         /// <summary>
-        /// This frame's slerp fraction from the hull's rotation toward the commanded one.
+        /// This frame's slerp fraction from the hull's rotation toward the commanded one. EVERY
+        /// transformer's RotateShip goes through here (base, single-stick, gun, command), so one
+        /// rule holds for the whole fleet.
         ///
-        /// The fleet value, <c>LERP_AMOUNT * dt</c>, is a first-order lag with a 0.67 s time
-        /// constant: while turning at w the nose trails the command by w / 1.5 - eighty degrees
-        /// at the Squirrel's full 120 deg/s - and keeps swinging for a second after the input
-        /// stops. A stick hides most of that: its spring returns it to centre the moment the
-        /// thumb lets go, and the pad's cosine curve keeps mid-stick rates low. Glass has neither.
-        /// A thumb has to be walked back to an origin it cannot feel, while the hull is still
-        /// coming round from the last input, so the pilot reads the swing as their own and
-        /// counter-steers into it. That is the overcorrection.
+        /// <para><b>A human pilot has no steering lag</b> (Garrett, 2026-10-21: "get rid of all
+        /// steering lag"), on every device: the nose IS the rotation the stick has commanded, this
+        /// frame. The fleet value, <c>LERP_AMOUNT * dt</c>, was a first-order lag with a 0.67 s time
+        /// constant: while turning at w the nose trailed the command by w / 1.5 - eighty degrees at
+        /// the Squirrel's full 120 deg/s - and kept swinging for a second after the input stopped,
+        /// which a pilot reads as their own and counter-steers into. It was taken off touch first
+        /// (a per-hull <c>touchNoseResponse</c>, five hulls, retired with this) and is now gone for
+        /// pads, keyboards and mice too. The steady turn RATE is unchanged; only the lag behind it
+        /// is gone.</para>
         ///
-        /// A vessel that authors <see cref="touchNoseResponse"/> follows at that rate instead,
-        /// for the local human pilot on touch (<see cref="IsLocalHumanTouchPilot"/>) - in a drift
-        /// too, so the remaining thumb steers the slide as crisply
-        /// as it steers straight flight, and the drift's Mult turns it sharper exactly as it does
-        /// on a pad. The steady turn RATE is unchanged - only the lag behind it shrinks (at a
-        /// full-lock drift's 216 deg/s, 144 degrees behind at the fleet rate, 24 at 9). Never
-        /// slower than the fleet.
+        /// <para><b>Except where a device's dial asks for a lag</b> (<see cref="PilotNoseFollowPerSecond"/>):
+        /// the pad keeps the fleet lag, 1.5/s (Garrett, 2026-10-23: "it is responsive, but eases into its
+        /// target from the repeated lerp. we want to keep this on gamepad"); touch has its own dial,
+        /// shipped at 9 (0.11 s), short enough that a thumb on glass, already damped by friction, only
+        /// loses its hard starts and stops.</para>
+        ///
+        /// <para>Two things keep it smooth. The command itself is integrated from eased stick rates,
+        /// so it never jumps; and a LEFTOVER gap - one a discontinuous command left behind (a 180
+        /// degree flip, an ability that rotates the command, a pad handing over mid-turn) - is closed
+        /// no faster than <see cref="NoseCatchUpTurnRateMultiple"/> times the hull's own combined max
+        /// turn rate, so it reads as a fast turn, never a snap (vessel rule 43: the camera is
+        /// hard-attached).</para>
+        ///
+        /// <para><b>AI, autopilot and remote hulls keep the fleet lag.</b> The autopilots model it
+        /// (<c>SkimRacePilot</c> leads every corner by <see cref="RotationFollowRate"/>, trained
+        /// pilots learned against it), and a remote player's replica is not ours to simulate.</para>
         /// </summary>
         protected float NoseFollowFraction(Quaternion target, float dt)
         {
             float fleet = LERP_AMOUNT * dt;
-            if (touchNoseResponse <= LERP_AMOUNT || !IsLocalHumanTouchPilot)
-                return fleet;
+            if (!IsLocalHumanPilot) return fleet;
 
-            float t = 1f - Mathf.Exp(-touchNoseResponse * dt);
+            float pilotRate = PilotNoseFollowPerSecond;
+            if (pilotRate > 0f) return 1f - Mathf.Exp(-pilotRate * dt);
 
+            float t = 1f;
             float gap = Quaternion.Angle(transform.rotation, target);
             if (gap > 1e-3f)
                 t = Mathf.Min(t, MaxCombinedTurnRateDegreesPerSecond() * NoseCatchUpTurnRateMultiple * dt / gap);
@@ -612,17 +637,28 @@ public class VesselTransformer : MonoBehaviour
         }
 
         /// <summary>
-        /// True only while THIS machine's human flies the hull on glass. A handheld selects the
-        /// touch strategy for every <c>InputController</c> on it (<c>SystemInfo.deviceType</c>),
-        /// so the AI players and the menu's autopilot also report <see cref="InputDeviceType.Touch"/>
-        /// there - and an autopilot steering off a hull it models at <see cref="RotationFollowRate"/>
-        /// (the Skim Race pilot) would mis-lead every corner if its own hull answered faster. A
-        /// remote player's replica is not ours to tune either. Same test as the gun hull's camera
-        /// gate (<c>GunVesselTransformer.IsLocalPilotCamera</c>).
+        /// The local human pilot's nose follow rate per second for the device they fly with, or 0 for
+        /// no lag: the pad's <see cref="GamepadFlightConfigSO.NoseFollowPerSecond"/> (1.5, the fleet lag),
+        /// touch's <see cref="TouchControlProfileLibrarySO.NoseFollowPerSecond"/> (9); keyboard and mouse
+        /// have none. One dial per device, never per hull.
         /// </summary>
-        bool IsLocalHumanTouchPilot =>
-            InputStatus != null && InputStatus.ActiveInputDevice == InputDeviceType.Touch
-            && VesselStatus != null && !VesselStatus.AutoPilotEnabled
+        float PilotNoseFollowPerSecond => InputStatus.ActiveInputDevice switch
+        {
+            InputDeviceType.Gamepad => GamepadFlightConfigSO.Instance.NoseFollowPerSecond,
+            InputDeviceType.Touch => TouchControlProfileLibrarySO.Instance
+                ? TouchControlProfileLibrarySO.Instance.NoseFollowPerSecond
+                : 0f,
+            _ => 0f,
+        };
+
+        /// <summary>
+        /// True only while THIS machine's human flies the hull. A handheld selects the touch strategy
+        /// for every <c>InputController</c> on it, so the device alone cannot tell a human from the
+        /// AI players and the menu's autopilot; the autopilot flag and the local-pilot test can. Same
+        /// test as the gun hull's camera gate (<c>GunVesselTransformer.IsLocalPilotCamera</c>).
+        /// </summary>
+        bool IsLocalHumanPilot =>
+            InputStatus != null && VesselStatus != null && !VesselStatus.AutoPilotEnabled
             && VesselStatus.Player != null && VesselStatus.Player.IsLocalPilot;
 
         /// <summary>The fastest the command can rotate with every axis at full stick at once -
@@ -936,10 +972,54 @@ public class VesselTransformer : MonoBehaviour
 
         protected virtual void Roll()
         {
-            if (InputStatus == null || BankIntoTurnSuppressed) return;
+            if (InputStatus == null || ApplyHeldRoll() || BankIntoTurnSuppressed) return;
             accumulatedRotation = Quaternion.AngleAxis(
                 InputStatus.YDiff * (speed * RotationThrottleScaler + RollScaler) * RollScalar * FlightDeltaTime,
                 transform.forward) * accumulatedRotation;
+        }
+
+        bool _heldRollActive;
+        float _heldRollApplied;
+
+        /// <summary>
+        /// Roll as an ANGLE (<see cref="IInputStatus.HoldsRollAngle"/>): the Dolphin's aim on a phone, where
+        /// the phone is an augmented-reality window and the hull rolls exactly as far as the phone has turned
+        /// since the aim began (Garrett, 2026-10-22: "1 to 1 roll like augmented reality not a control that
+        /// sends the vessel into a roll"). Each frame applies the change in the held angle to the COMMAND
+        /// only; the hull follows through the touch nose lag (<see cref="NoseFollowFraction"/>,
+        /// <c>TouchControlProfiles.noseFollowPerSecond</c>, 9/s: 0.11 s), which filters the attitude
+        /// sensor's jitter and still settles on exactly the phone's angle (Garrett, 2026-10-23: "have the
+        /// dolphin's 1:1 roll accept a bit of this smoothing since i did notice a slight jitter"). It
+        /// first wrote the step into the hull too, for zero lag, and the sensor noise reached the
+        /// hard-attached camera unfiltered. Letting go keeps the roll where it is. Returns true while the
+        /// angle is held, so the rate roll stands down.
+        /// </summary>
+        bool ApplyHeldRoll()
+        {
+            if (!InputStatus.HoldsRollAngle)
+            {
+                _heldRollActive = false;
+                return false;
+            }
+
+            // The angle is measured from where the phone was when the hold began, so the hull's roll at
+            // that moment is zero on the same scale.
+            if (!_heldRollActive)
+            {
+                _heldRollActive = true;
+                _heldRollApplied = 0f;
+            }
+
+            float step = Mathf.DeltaAngle(_heldRollApplied, InputStatus.HeldRollDegrees);
+            _heldRollApplied += step;
+
+            // An ability that owns the roll axis still owns it; the phone's turn is consumed, not stored.
+            if (BankIntoTurnSuppressed || step == 0f) return true;
+
+            // Clockwise from behind is a negative angle about forward (Euler(0, 0, 90) * up = left).
+            var turn = Quaternion.AngleAxis(-step, transform.forward);
+            accumulatedRotation = turn * accumulatedRotation;
+            return true;
         }
 
         protected float CurrentBoostAmount()
@@ -1008,6 +1088,14 @@ public class VesselTransformer : MonoBehaviour
         /// wrong on whichever vessel adopts that ability next.
         /// </summary>
         public float CurrentThrottleTarget => ComputeThrottleTarget();
+
+        /// <summary>
+        /// The scalar flight model's tracked cruise speed - the value <see cref="StepTowardTarget"/>
+        /// steps toward <see cref="CurrentThrottleTarget"/> - BEFORE the impact slow, the warp field
+        /// and flight time scale reach it. <c>VesselStatus.Speed</c> is the published speed after
+        /// all of those, so an ability asking "is my speed below its target?" must ask this one.
+        /// </summary>
+        public float TrackedSpeed => speed;
 
         float _speedTrackingRate;
 
@@ -1460,9 +1548,10 @@ public class VesselTransformer : MonoBehaviour
 
             throttleMultiplier = Mathf.Max(accumulatedThrottleModification, 0f);
 
-            // Edge-triggered, like the body flare: FlareEngine/StopFlareEngine write through
-            // SkinnedMeshRenderer.materials[3], which allocates the array (and instances the
-            // materials) on every call - and this ran every frame for every flying hull.
+            // Edge-triggered, like the body flare: FlareEngine/StopFlareEngine used to write through
+            // SkinnedMeshRenderer.materials[3], which allocated the array (and instanced the
+            // materials) on every call - and this ran every frame for every flying hull. They now
+            // write a per-slot property block, and only on a change (VesselAnimation.ApplyFlare).
             bool engineFlaring = throttleMultiplier > 1f;
             if (engineFlaring != _engineFlaring)
             {

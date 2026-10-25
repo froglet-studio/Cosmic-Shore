@@ -92,7 +92,7 @@ namespace CosmicShore.Gameplay
                     : floraCfg.FloraPrefab.PlantPeriod;
 
                 if (waitPeriod > 0f)
-                    yield return new WaitForSeconds(waitPeriod);
+                    yield return CosmicShore.Utility.WaitCache.About(waitPeriod);
                 else
                     yield return null;
 
@@ -189,7 +189,7 @@ namespace CosmicShore.Gameplay
             {
                 float wait = Mathf.Max(0.05f, spawnProfile.BaseFaunaSpawnTime);
                 wait = ScaleFaunaInterval(host, wait);
-                yield return new WaitForSeconds(wait);
+                yield return CosmicShore.Utility.WaitCache.About(wait);
 
                 if (!host) yield break;
                 if (!host.FaunaSpawningEnabled) continue;

@@ -368,6 +368,29 @@ namespace CosmicShore.Utility
                 // (amount 0, opacity 1 at t = t0) — no unanimated-mesh flash to hide.
                 PrismRenderService.SetVisible(in RenderHandle, true);
             }
+            else if (PrismMeshRendererStamps.Active)
+            {
+                // No Entities Graphics on this device (a WebGL2 browser): this pooled carrier draws itself,
+                // with the SAME one stamp in its own property block (Docs/PRISM_ANIMATION.md §4.11) and the
+                // same flight envelope as its local bounds. CompleteEffect clears the block and hides it.
+                PrismMeshRendererStamps.NoteFirstUse();
+                _mpb.Clear();
+                PrismMeshRendererStamps.WriteExplosionClock(_mpb, PrismClock.Now, speed, MaxDuration,
+                    new Unity.Mathematics.float3(velocity.x, velocity.y, velocity.z), 0f);
+                if (_hasPendingTeamColors)
+                    PrismMeshRendererStamps.WriteTeamColors(_mpb,
+                        PrismRenderService.ToFloat4(_pendingBrightColor),
+                        PrismRenderService.ToFloat4(_pendingDarkColor));
+                _renderer.SetPropertyBlock(_mpb);
+                if (_meshFilter != null && _meshFilter.sharedMesh != null)
+                {
+                    Vector3 objDispV = transform.InverseTransformVector(velocity) * MaxDuration;
+                    var objDisp = new Unity.Mathematics.float3(objDispV.x, objDispV.y, objDispV.z);
+                    PrismMeshRendererStamps.ExpandBounds(_renderer, _meshFilter.sharedMesh, in objDisp,
+                        4f + 0.25f * Unity.Mathematics.math.length(objDisp));
+                }
+                _renderer.enabled = true;
+            }
             else
             {
                 PrismClockDiagnostics.WarnNoRenderEntity($"explosion:{name}", this,

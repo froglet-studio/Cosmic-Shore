@@ -183,7 +183,8 @@ namespace CosmicShore.Gameplay
             var response = new StoatDipoleMath.HullResponse
             {
                 Enabled = true,
-                NoseFollowRate = VesselTransformer.RotationFollowRate,
+                // THIS hull's rate: a human pilot's nose has no lag (infinite rate), an AI's keeps the fleet's.
+                NoseFollowRate = transformer.NoseFollowRate,
                 SpeedFollowRate = VesselTransformer.RotationFollowRate,
                 // The target in the same units as `engine` (the published speed carries the speed multiplier and warp field).
                 TargetSpeed = target * transformer.SpeedMultiplier * WarpFieldRuntime.ScaleAt(hull.position),
@@ -324,7 +325,7 @@ namespace CosmicShore.Gameplay
             if (!hull || _status.Player == null) return;
             var mine = _status.Domain;
             s_scan.Clear();
-            s_scan.AddRange(Object.FindObjectsByType<VesselStatus>(FindObjectsSortMode.None));
+            s_scan.AddRange(VesselStatus.Live);
             float range2 = config.ForesightRange * config.ForesightRange;
             var self = _status as Component;
             s_scan.RemoveAll(v => !v || (self && v.transform == self.transform) || v.Player == null || ((IVesselStatus)v).Domain == mine

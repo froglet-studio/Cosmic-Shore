@@ -234,12 +234,18 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Where the pilot is asking the zoom to sit this frame: their trigger depth, deadzoned,
         /// and nothing else at all. See the class summary on why there is nothing else.
+        ///
+        /// <para><b>Touch has no trigger depth</b> (2026-10-21, Garrett: "the serpent's scope should
+        /// open to max zoom"): a phone never writes <c>LeftTriggerAnalog</c>, so the scope opened
+        /// unzoomed. Holding the scope on touch IS a full pull; the <c>zoomResponse</c> chase still
+        /// ramps it in, so it reads as raised rather than snapped. Every other device is unchanged.</para>
         /// </summary>
         float ResolveZoomTarget()
         {
             var so = ResolvedConfig;
             var input = _status?.InputStatus;
             if (so == null || input == null) return 0f;
+            if (input.ActiveInputDevice == InputDeviceType.Touch) return 1f;
 
             float depth = Mathf.Clamp01(input.LeftTriggerAnalog);
             float dead = so.ZoomDeadzone;

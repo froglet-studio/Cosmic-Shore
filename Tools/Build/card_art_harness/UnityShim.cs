@@ -323,7 +323,16 @@ namespace UnityEngine
         public static Color white => new Color(1, 1, 1);
         public static Color black => new Color(0, 0, 0);
         public static Color clear => new Color(0, 0, 0, 0);
+        public static Color Lerp(Color a, Color b, float t)
+        {
+            t = t < 0f ? 0f : t > 1f ? 1f : t;
+            return new Color(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t);
+        }
     }
+
+    public enum ColorSpace { Uninitialized = -1, Gamma = 0, Linear = 1 }
+    // the kite juice harness renders in gamma, as a PNG is stored
+    public static class QualitySettings { public static ColorSpace activeColorSpace => ColorSpace.Gamma; }
 
     public static class Mathf
     {
@@ -366,6 +375,8 @@ namespace UnityEngine
         public static float Lerp(float a, float b, float t) => a + (b - a) * Clamp01(t);
         public static float LerpUnclamped(float a, float b, float t) => a + (b - a) * t;
         public static float InverseLerp(float a, float b, float v) => a != b ? Clamp01((v - a) / (b - a)) : 0f;
+        public static float GammaToLinearSpace(float v) =>
+            v <= 0.04045f ? v / 12.92f : (float)System.Math.Pow((v + 0.055f) / 1.055f, 2.4f);
         public static float SmoothStep(float from, float to, float t)
         {
             t = Clamp01(t); t = -2f * t * t * t + 3f * t * t;

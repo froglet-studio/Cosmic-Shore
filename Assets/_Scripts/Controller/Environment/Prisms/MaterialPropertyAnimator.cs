@@ -102,6 +102,18 @@ namespace CosmicShore.Gameplay
         Color _clockFromDark;
         Vector3 _clockFromSpread;
 
+        /// <summary>
+        /// The colours on screen NOW: an in-flight clock transition's analytic current, else the settled target.
+        /// False before any material was bound (nothing authored to report).
+        /// </summary>
+        internal bool TryGetDisplayedColors(out Color bright, out Color dark)
+        {
+            if (TryGetClockColorCurrent(out bright, out dark, out _)) return true;
+            bright = TargetBrightColor;
+            dark = TargetDarkColor;
+            return bright != default || dark != default;
+        }
+
         /// <summary>Analytic displayed colors of an in-flight clock transition —
         /// the interruption start-state and the exotic-handoff pin, computed on
         /// demand (never tracked per frame).</summary>
@@ -126,7 +138,14 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        public void UpdateMaterial(Material transparentMaterial, Material opaqueMaterial, float duration = 0.8f, Action onComplete = null)
+        /// <summary>
+        /// The GRADE: how long a colour transition runs when the caller names none — a steal, a team change, a
+        /// state change. A steal close to the viewer SHEDS instead (PrismInteractionLod), over this same length,
+        /// so squinted at the two are one transition.
+        /// </summary>
+        public const float DefaultTransitionSeconds = 0.8f;
+
+        public void UpdateMaterial(Material transparentMaterial, Material opaqueMaterial, float duration = DefaultTransitionSeconds, Action onComplete = null)
         {
             if (!enabled || MeshRenderer == null) return;
 
@@ -170,6 +189,7 @@ namespace CosmicShore.Gameplay
             _clockColorActive = false;
             if (cachedPrism != null && PrismRenderService.IsHandleUsable(in cachedPrism.RenderHandle))
                 PrismRenderService.ClearColorTransitionStamp(in cachedPrism.RenderHandle);
+            PrismMeshRendererStamps.ClearColorTransitionStamp(MeshRenderer);
 
             bool transparent = cachedPrism != null && cachedPrism.prismProperties != null &&
                                cachedPrism.prismProperties.IsTransparent;
@@ -253,6 +273,16 @@ namespace CosmicShore.Gameplay
                     PrismRenderService.ToFloat4(StartDarkColor),
                     PrismRenderService.ToFloat3(StartSpread));
 
+            // No Entities Graphics on this device (a WebGL2 browser): the same stamp rides the
+            // renderer's property block (Docs/PRISM_ANIMATION.md §4.11). False everywhere else, so
+            // the entity path's silent snap for a sink-less prism is unchanged there. Not while an
+            // exotic visual owns the renderer — the entity path skips that window too.
+            if (!stamped && cachedPrism != null && !cachedPrism.ExoticVisualActive)
+                stamped = PrismMeshRendererStamps.StampColorTransition(MeshRenderer, now, duration,
+                    PrismRenderService.ToFloat4(StartBrightColor),
+                    PrismRenderService.ToFloat4(StartDarkColor),
+                    PrismRenderService.ToFloat3(StartSpread));
+
             if (stamped)
             {
                 _clockColorActive = true;
@@ -270,6 +300,7 @@ namespace CosmicShore.Gameplay
                     _clockColorActive = false;
                     if (cachedPrism != null)
                         PrismRenderService.ClearColorTransitionStamp(in cachedPrism.RenderHandle);
+                    PrismMeshRendererStamps.ClearColorTransitionStamp(MeshRenderer);
                     onComplete?.Invoke();
                 });
             }
@@ -308,6 +339,9 @@ namespace CosmicShore.Gameplay
         internal void FlushDisplayedColorsToRenderer()
         {
             if (MeshRenderer == null || PropertyBlock == null) return;
+            // On the §4.11 MeshRenderer stamp path there is no handoff: this renderer drew all along and its
+            // block holds the live stamps, which a Clear() here would wipe.
+            if (PrismMeshRendererStamps.Active) return;
             PropertyBlock.Clear();
             if (TryGetClockColorCurrent(out var bright, out var dark, out var spread))
             {

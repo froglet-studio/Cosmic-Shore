@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -119,9 +120,10 @@ namespace CosmicShore.ScriptableObjects
                  "score change.")]
         [SerializeField] bool quietScoreGlow;
 
-        [Tooltip("Cells spawn no cytoplasm motes on this tier (~300 transparent mote objects per " +
-                 "cell). Cosmetic only: not mass, not lifeforms.")]
-        [SerializeField] bool disableCytoplasm;
+        [Tooltip("Fraction of a cell's cytoplasm shards spawned on this tier (1 = all). The shards " +
+                 "are FUNCTIONAL - they point at the cell's crystal - so a tier thins them and never " +
+                 "removes them: the floor is " + nameof(GraphicsCuts) + ".MinCytoplasmDensity.")]
+        [SerializeField, Range(GraphicsCuts.MinCytoplasmDensity, 1f)] float cytoplasmDensity = 1f;
 
         [Header("Content: Wanderway (applied at runtime on this tier)")]
         [Tooltip("Overrides on the Wanderway belt's budget, applied to the config WanderToy builds " +
@@ -159,25 +161,14 @@ namespace CosmicShore.ScriptableObjects
 
         public bool DeactivateMenuWhileFlying => deactivateMenuWhileFlying;
         public bool QuietScoreGlow => quietScoreGlow;
-        public bool DisableCytoplasm => disableCytoplasm;
+        /// <summary>Fraction of each cell's cytoplasm shards spawned on this tier (1 = all).</summary>
+        public float CytoplasmDensity => cytoplasmDensity;
         public WanderwayBudget Wanderway => wanderwayBudget;
 
         /// <summary>The skybox this tier draws in place of <paramref name="authored"/>, or null to keep
         /// it. Loads the replacement on first use (Resources caches it after that).</summary>
-        public Material SkyboxReplacementFor(Material authored)
-        {
-            if (!authored || skyboxReplacements == null) return null;
-            foreach (var entry in skyboxReplacements)
-            {
-                if (entry.Authored != authored || string.IsNullOrEmpty(entry.ReplacementResource)) continue;
-                var replacement = Resources.Load<Material>(entry.ReplacementResource);
-                if (!replacement)
-                    CSDebug.LogWarning($"[PlatformProfile] {name}: skybox replacement " +
-                                       $"'{entry.ReplacementResource}' is not a Material under a Resources folder.");
-                return replacement;
-            }
-            return null;
-        }
+        public Material SkyboxReplacementFor(Material authored) =>
+            SkyboxReplacement.Find(skyboxReplacements, authored, name);
 
         /// <summary>
         /// A race-wide trail budget shared by every vessel in a match: each keeps
@@ -273,6 +264,24 @@ namespace CosmicShore.ScriptableObjects
 
             public Material Authored => authored;
             public string ReplacementResource => replacementResource;
+
+            /// <summary>The replacement <paramref name="entries"/> name for <paramref name="authored"/>,
+            /// loaded on first use (Resources caches it after that), or null when none does.
+            /// <paramref name="owner"/> names the asset in the warning for a bad path.</summary>
+            public static Material Find(SkyboxReplacement[] entries, Material authored, string owner)
+            {
+                if (!authored || entries == null) return null;
+                foreach (var entry in entries)
+                {
+                    if (entry.Authored != authored || string.IsNullOrEmpty(entry.ReplacementResource)) continue;
+                    var replacement = Resources.Load<Material>(entry.ReplacementResource);
+                    if (!replacement)
+                        CSDebug.LogWarning($"[PlatformProfile] {owner}: skybox replacement " +
+                                           $"'{entry.ReplacementResource}' is not a Material under a Resources folder.");
+                    return replacement;
+                }
+                return null;
+            }
         }
     }
 

@@ -112,12 +112,20 @@ namespace CosmicShore.Gameplay
         // lay list carries the authored scale either way), which is exactly the point - the
         // harness measures what the generator STATES and the engine is what can trim it.
         protected virtual bool AdmitsAuthoredPrismScale => false;
+        // CellEnvironmentSpawnableBase.BakesLayout: the rail worlds override it false (PrismLayoutBake).
+        protected virtual bool BakesLayout => true;
 
         protected float RangeF(float min, float max) => (float)(_r.NextDouble() * (max - min) + min);
 
         protected Vector3 Jit(Vector3 s, float amt = 0.2f)
         {
             float k = 1f + RangeF(-amt, amt);
+            return new Vector3(Mathf.Max(0.5f, s.x * k), Mathf.Max(0.5f, s.y * k), Mathf.Max(0.5f, s.z * k));
+        }
+        // CellEnvironmentSpawnableBase.JitDown, verbatim: a jitter that only shrinks a flush size.
+        protected Vector3 JitDown(Vector3 s, float amt = 0.2f)
+        {
+            float k = 1f - RangeF(0f, 2f * amt);
             return new Vector3(Mathf.Max(0.5f, s.x * k), Mathf.Max(0.5f, s.y * k), Mathf.Max(0.5f, s.z * k));
         }
 

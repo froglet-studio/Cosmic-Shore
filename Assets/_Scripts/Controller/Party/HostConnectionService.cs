@@ -57,8 +57,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] private int presenceLobbyMaxPlayers = 100;
 
         [Tooltip("How often (seconds) to refresh the online player list and check for invites. " +
-                 "UGS lobby read rate limit is ~1/s per client, so 1.5s keeps us safely under " +
-                 "while staying responsive enough that invite arrival and member joins feel instant.")]
+                 "UGS Lobby allows 1 GET/s per player across all lobbies: 1.5s is 0.67/s for presence, " +
+                 "and the party session is read at most every 6s (LobbyRefreshScheduler), 0.83/s in all.")]
         [SerializeField] private float refreshIntervalSeconds = 1.5f;
 
         [Inject] private PlayerDataService playerDataService;
@@ -289,11 +289,16 @@ namespace CosmicShore.Gameplay
         /// The one log for a failed accept / direct join / spectate, before the caller rethrows. A full
         /// party is a designed outcome since B25 (the session's MaxPlayers refuses the fifth player) and
         /// PartyInviteController already toasts and warns it, so only a real fault is an error here.
+        /// A party that ended before the join landed (Gone: "SessionNotFound - lobby not found", the
+        /// host left or the invite was stale) is the same kind of outcome and is warned the same way.
         /// </summary>
         static void LogJoinFailure(string what, Exception e)
         {
-            if (UgsRequestPolicy.Classify(e) == UgsFailureClass.Full)
+            var failure = UgsRequestPolicy.Classify(e);
+            if (failure == UgsFailureClass.Full)
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] {what}: the party is full ({e.Message}).");
+            else if (failure == UgsFailureClass.Gone)
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] {what}: the party has ended ({e.Message}).");
             else
                 CSDebug.LogError(
                     $"[HostConnectionService] {what} error ({e.GetType().Name}): {e}" +
@@ -322,6 +327,12 @@ namespace CosmicShore.Gameplay
         /// <see cref="EnsureInitializedAsync"/> re-entry guard.
         /// </summary>
         private bool IsInPresenceLobby => IsInitialized && _lobbyService.ActiveLobby != null;
+
+        /// <summary>
+        /// True while this player sits in the shared presence lobby, which an invite needs. False while it
+        /// is being (re)joined (B37), when <see cref="SendInviteAsync"/> refuses.
+        /// </summary>
+        public bool HasPresenceLobby => IsInPresenceLobby;
 
         /// <summary>
         /// True when NetworkManager is actively hosting a Relay-backed party
@@ -652,8 +663,11 @@ namespace CosmicShore.Gameplay
 
             if (_lobbyService.ActiveLobby == null)
             {
-                CSDebug.LogError(
-                    "[INVITE-SEND] ABORT - presence lobby is null");
+                // Expected while the presence lobby is being (re)joined - the rejoin back-off is running
+                // (B37). The friends panel tells the player to try again; a console error here only filed
+                // a ledger issue for a state the session recovers from by itself.
+                CSDebug.LogWarning(
+                    $"[INVITE-SEND] ABORT - no presence lobby yet (rejoin pending: {_presenceRejoinPending})");
                 throw new InvalidOperationException("Presence lobby unavailable.");
             }
 
@@ -1266,6 +1280,18 @@ namespace CosmicShore.Gameplay
                 // every future guest. Sweep them out while we still can.
                 NetworkSceneObjectGuard.Sweep("before party session create (host start)");
 
+                // A session reference that survives to here is one this machine was NOT serving (the
+                // fast path above would have returned) and cannot serve now that the NetworkManager is
+                // down. CreateAsync no-ops on any non-null reference, so it used to "create" nothing and
+                // the state machine went InParty with no Relay host, while the boot's Relay wait retried
+                // against it for ~30 s (B33: the previous Play's session; a guest's dropped one too).
+                if (_partySessionService.ActiveSession != null)
+                {
+                    CSDebug.LogVerbose(CSLogChannel.Party,
+                        $"[HostConnectionService] Leaving party session {_partySessionService.ActiveSession.Id} before creating our own: nothing here serves it.");
+                    await _partySessionService.LeaveAsync().AsMainThread();
+                }
+
                 await _partySessionService.CreateAsync(connectionData.MaxPartySlots).AsMainThread();
 
                 connectionData.IsPartyHost = true;
@@ -1452,7 +1478,11 @@ namespace CosmicShore.Gameplay
             bool shouldReconnect = false;
             try
             {
-                await _lobbyService.RefreshAsync();
+                // B31: one lobby read per tick. When the party session is due its read, this tick
+                // skips the presence read and works from the presence lobby as last read; the two
+                // back to back in one second was a 429 on every party read.
+                if (!PartyReadDueThisTick())
+                    await _lobbyService.RefreshAsync();
 
                 // Periodic self-heal: if a simultaneous-create split left us in our
                 // own presence lobby while a peer sits in theirs, converge everyone
@@ -1528,6 +1558,9 @@ namespace CosmicShore.Gameplay
                 }
                 else if (failure == UgsFailureClass.RateLimited)
                 {
+                    // The tick is counted as a lobby read but its 429 was not, so a session record said
+                    // "429s 2" over a console of 69 refresh rate limits (Caleb's MPPM log, 2026-10-16).
+                    UgsRequestTelemetry.Count(UgsRequestCounter.RateLimited);
                     _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
                     CSDebug.LogWarning("[HostConnectionService] Rate limited during refresh - backing off");
                 }
@@ -1552,9 +1585,11 @@ namespace CosmicShore.Gameplay
                     }
 
                     _consecutiveRefreshErrors++;
-                    if (_consecutiveRefreshErrors >= MAX_REFRESH_ERRORS_BEFORE_RECONNECT)
+                    if (PresenceErrorForcesRejoin(failure, _consecutiveRefreshErrors))
                     {
-                        CSDebug.LogWarning($"[HostConnectionService] {_consecutiveRefreshErrors} consecutive refresh errors - reconnecting to presence lobby");
+                        CSDebug.LogWarning(failure == UgsFailureClass.Gone
+                            ? "[HostConnectionService] Presence lobby is gone - rejoining at once"
+                            : $"[HostConnectionService] {_consecutiveRefreshErrors} consecutive refresh errors - reconnecting to presence lobby");
                         UgsRequestTelemetry.Count(UgsRequestCounter.PresenceForceReset);
                         _consecutiveRefreshErrors = 0;
                         // Clear the internal session reference so JoinOrCreateAsync will proceed.
@@ -1592,7 +1627,51 @@ namespace CosmicShore.Gameplay
                 if (_lobbyService.ActiveLobby == null)
                     SchedulePresenceRejoin();
                 else
+                {
                     ApplyPostLobbyJoinState();
+                    LeaveReconnecting();
+                }
+            }
+        }
+
+        /// <summary>
+        /// After a background presence rejoin (the refresh watchdog's, or the backoff retry's), put the
+        /// state machine back where the party really is (<see cref="StateAfterPresenceRejoin"/>). Not
+        /// part of <see cref="ApplyPostLobbyJoinState"/>: the front-door init takes its own
+        /// Reconnecting -> InPresenceLobby step right after it.
+        /// </summary>
+        private void LeaveReconnecting()
+        {
+            if (_stateMachine.CurrentState == PartyState.Reconnecting)
+                _stateMachine.TryTransition(StateAfterPresenceRejoin(PartySessionLive));
+        }
+
+        /// <summary>
+        /// Whether a presence refresh failure rebuilds the presence layer now. A lobby that is GONE for
+        /// us (deleted, <c>NotInLobby</c>, <c>SessionNotFound</c>) will not come back, so it rejoins at
+        /// once; anything else waits for <see cref="MAX_REFRESH_ERRORS_BEFORE_RECONNECT"/> in a row. In a
+        /// match the refresh runs every 10 s, so the three strikes cost Caleb 30 s of a dead lobby (B32).
+        /// </summary>
+        internal static bool PresenceErrorForcesRejoin(UgsFailureClass failure, int consecutiveErrors) =>
+            failure == UgsFailureClass.Gone || consecutiveErrors >= MAX_REFRESH_ERRORS_BEFORE_RECONNECT;
+
+        /// <summary>
+        /// Where the party state machine goes once the presence lobby is back after a
+        /// <see cref="PartyState.Reconnecting"/>: the party itself never left if its session is still
+        /// served (InParty), otherwise the menu's presence-only state. Nothing used to take it out of
+        /// Reconnecting, so a host whose presence lobby was rebuilt stayed there for the rest of the
+        /// session while its party kept running (B32).
+        /// </summary>
+        internal static PartyState StateAfterPresenceRejoin(bool partySessionLive) =>
+            partySessionLive ? PartyState.InParty : PartyState.InPresenceLobby;
+
+        /// <summary>True while this machine is in a party session it can still serve: hosting it, or connected to its host.</summary>
+        private bool PartySessionLive
+        {
+            get
+            {
+                var nm = NetworkManager.Singleton;
+                return PartySession != null && nm != null && nm.IsListening && (nm.IsServer || nm.IsConnectedClient);
             }
         }
 
@@ -1643,6 +1722,7 @@ namespace CosmicShore.Gameplay
                 _presenceRejoinPending = false;
                 _presenceRejoinAttempts = 0;
                 ApplyPostLobbyJoinState();
+                LeaveReconnecting();
                 CSDebug.LogVerbose(CSLogChannel.Party,
                     $"[HostConnectionService] Presence lobby rejoined - lobby: {_lobbyService.ActiveLobby.Id}");
             }
@@ -1938,6 +2018,17 @@ namespace CosmicShore.Gameplay
                 _ = ClearOutgoingInviteIfPresentAsync(joinedId, "presence-join");
         }
 
+        /// <summary>
+        /// True when this tick's <see cref="RefreshPartyMembersAsync"/> will read the party session: the
+        /// same conditions it checks, without claiming the poll.
+        /// </summary>
+        private bool PartyReadDueThisTick() =>
+            _partySessionService.ActiveSession != null
+            && connectionData.PartyMembers != null
+            && !connectionData.IsSpectating
+            && Time.unscaledTime - _partySessionService.CreatedAtUnscaledTime >= SESSION_CREATION_GRACE_PERIOD_SECONDS
+            && _scheduler.IsPartySessionPollDue(Time.unscaledTime);
+
         private async UniTask RefreshPartyMembersAsync(bool bypassGraceGate = false)
         {
             var tickSession = _partySessionService.ActiveSession;
@@ -1954,7 +2045,14 @@ namespace CosmicShore.Gameplay
                 Time.unscaledTime - _partySessionService.CreatedAtUnscaledTime < SESSION_CREATION_GRACE_PERIOD_SECONDS)
                 return;
 
-            try { await _partySessionService.RefreshAsync(); }
+            // B31: the GET runs at most every PARTY_SESSION_POLL_SECONDS (a reconcile after a leave
+            // always reads). Between GETs the roster below syncs from ISession.Players, which the
+            // SDK keeps current from its lobby events. Two GETs per 1.5 s tick was 1.33/s against
+            // UGS Lobby's 1 GET/s/player: a 429 about every 10 s while a party existed. The tick that
+            // reads here skipped its presence read (PartyReadDueThisTick), and LobbyReadPacer spaces
+            // this read from any other.
+            bool poll = bypassGraceGate || _scheduler.TryTakePartySessionPoll(Time.unscaledTime, _scheduler.IsBoosted);
+            try { if (poll) await _partySessionService.RefreshAsync(); }
             catch (Exception e)
             {
                 // [stale-tick] The session this tick was polling is no longer the
@@ -1994,6 +2092,7 @@ namespace CosmicShore.Gameplay
                 // [rate-limit] UGS throttled us - back off, keep ActiveSession.
                 if (failure == UgsFailureClass.RateLimited)
                 {
+                    UgsRequestTelemetry.Count(UgsRequestCounter.RateLimited); // see the presence refresh's catch
                     CSDebug.LogWarning($"[HostConnectionService] Party session refresh rate-limited - backing off");
                     _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
                     return;

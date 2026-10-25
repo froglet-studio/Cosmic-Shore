@@ -277,6 +277,11 @@ namespace CosmicShore.Gameplay
                         Vector3 onFinger = a + ab * t;
                         if ((centre - onFinger).sqrMagnitude > contact * contact) continue;
 
+                        // Super-shielded mass cannot burn or be cut; the finger still lands on it, visibly -
+                        // the deflection jiggle (rate-limited per prism) - and spends nothing on it (Docs/LIT.md,
+                        // "dynamic contact never does nothing", ported from the cone claw on bleeding-edge).
+                        if (prism.AbsorbSuperShieldHit(0f)) continue;
+
                         if (!so.SliceEnabled)
                         {
                             if (igniteBudget <= 0) continue;
@@ -286,7 +291,6 @@ namespace CosmicShore.Gameplay
                         }
 
                         if (sliced >= so.SlicesPerFrame) continue;
-                        if (prism.prismProperties is { IsSuperShielded: true }) continue;
 
                         // Light the neighbours first: the cut prism is about to be gone.
                         IgniteAround(onFinger, so, status, burn, convert, prism, ref igniteBudget);
@@ -316,6 +320,7 @@ namespace CosmicShore.Gameplay
             {
                 var n = _neighbours[i];
                 if (n == null || n == except || n.destroyed || n.Domain == status.Domain) continue;
+                if (n.prismProperties is { IsSuperShielded: true }) continue;   // cannot burn; spend nothing
                 burn.Ignite(n, status.PlayerName, status.Domain, convert);
                 igniteBudget--;
             }

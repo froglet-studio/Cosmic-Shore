@@ -84,12 +84,14 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameSlingshot** | `_Scenes/Multiplayer Scenes/` | `Slingshot (64)` | `SlingshotController` |
 | **MinigameWarpline** | `_Scenes/Multiplayer Scenes/` | `Warpline (65)` | `WarplineController` |
 | **MinigameThresherTime** | `_Scenes/Multiplayer Scenes/` | `ThresherTime (66)` | `ThresherTimeController` |
+| **MinigameWrasseRun** | `_Scenes/Multiplayer Scenes/` | `WrasseRun (68)` | `WrasseRunController` |
 | **MinigameRegatta** | `_Scenes/Multiplayer Scenes/` | `Regatta (56)` | `RegattaController` |
 | **MinigameBroadside** | `_Scenes/Multiplayer Scenes/` | `Broadside (57)` | `BroadsideController` |
 | **MinigameWaystation** | `_Scenes/Multiplayer Scenes/` | `Waystation (58)` | `WaystationController` |
 | **MinigameDustup** | `_Scenes/Multiplayer Scenes/` | `Dustup (59)` | `DustupController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameSirocco** | `_Scenes/Multiplayer Scenes/` | `Sirocco (61)` | `SiroccoController` |
+| **MinigameTandava** | `_Scenes/Multiplayer Scenes/` | `Tandava (69)` | `TandavaController` |
 | **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller. **Out of the build since 2026-10-13** (Garrett's call, DESIGN_CALLS 12.3): the scene stays on disk, its entry is gone from `EditorBuildSettings.asset` and its card is in `_SO_Assets/Games/_Archive/`. |
 | **MinigameMaelstromMultuplayer** | `_Scenes/Multiplayer Scenes/` | Maelstrom variant | Multi-round tournament format |
 
@@ -319,12 +321,14 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 64 | `Slingshot` | MP | MinigameSlingshot | `SlingshotController` (Stoat wormhole-sling circuit race — see `SLINGSHOT.md`) |
 | 65 | `Warpline` | MP | MinigameWarpline | `WarplineController` (the Stoat's time race on the field dipole — see `WARPLINE.md`) |
 | 66 | `ThresherTime` | MP | MinigameThresherTime | `ThresherTimeController` (Thresher sling circuit race — see `THRESHERTIME.md`) |
+| 68 | `WrasseRun` | MP | MinigameWrasseRun | `WrasseRunController` (the Wrasse's kite collects the rings — see `WRASSERUN.md`) |
 | 56 | `Regatta` | MP | MinigameRegatta | `RegattaController` (the ARENA race — every playable hull on a rail circuit; see `REGATTA.md`) |
 | 57 | `Broadside` | MP | MinigameBroadside | `BroadsideController` (the ARENA brawl — seven hulls, each with its own weapon, priced per VERB; see `BROADSIDE.md`) |
 | 58 | `Waystation` | MP | MinigameWaystation | `WaystationController` (Butterfly migration race — clusters you weave, folds between them; a teleport threads nothing. See `WAYSTATION.md`) |
 | 59 | `Dustup` | MP | MinigameDustup | `DustupController` (Butterfly dust duel, Charge — a pass OVER a rival is one Strike point; Boneyard. See `DUSTUP.md`) |
 | 60 | `Tapestry` | MP | MinigameTapestry | `TapestryController` (Butterfly timed painting war, Mass — volume standing at the whistle, `VolumeRemaining`; Barren cell. See `TAPESTRY.md`) |
 | 61 | `Sirocco` | MP | MinigameSirocco | `SiroccoController` (Butterfly erosion race, Space — prisms destroyed through Rampage's forest. See `SIROCCO.md`) |
+| 69 | `Tandava` | MP | MinigameTandava | `TandavaController` (UNLISTED since 2026-10-25: on no roster, card in `Games/_Archive`; co-op ARENA hunt in a closed cell - Rhino / Squirrel / Sparrow on one domain against one creature that forages where it likes, rolls up round its meal behind a ring of guards while it feeds, and evolves Great Serpent -> Many-Headed Serpent -> Lord of the Dance (a halo of rings) -> Antlion; a variant of each form per match; the cell glows gold for the dance alone. See `TANDAVA.md`) |
 
 Note: IDs 7, 31 and 47 are skipped in the enum, and all three are reserved forever because saved selections still carry them. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp — see the naming note at the top of this document); 47 was Drumfire, the Dolphin-only rhythm range removed in 2026-09 because it read as Rampage without offering enough of its own (its lane geometry survives as a platform capability — `ApproachLaneGeometry`, `CrystalManager.CrystalPlacementMode.ApproachLanes`, `ScoringMetric.VolumeDestroyed`). Many single-player arcade modes (1, 3-6, 9-25, 27) share scenes configured by `SO_ArcadeGame` assets rather than having dedicated scene files; they use the same underlying scene infrastructure with different turn monitors, scoring, and environment configurations. `Rampage(2)` left this set — it is now a multiplayer destruction race with its own `MinigameRampage` scene (see `_Scripts/Controller/Arcade/RAMPAGE.md`).
 
@@ -438,7 +442,7 @@ Collision-based competitive duel. Players collide with each other; first to reac
 - `UseGolfRules => true` — lower score = better
 - Server-authoritative collision tracking: clients report via ServerRpc, server monotonically updates counts
 - Winner score = elapsed time; loser score = 99999
-- `JoustCollisionTurnMonitor` with `CollisionsNeeded` threshold
+- `NetworkJoustCollisionTurnMonitor` with `CollisionsNeeded` threshold
 - Atomic results sync via `FixedString64Bytes[]` / `float[]` / `int[]` arrays in ClientRpc
 - `_finalResultsSent` guard prevents duplicate end-game processing
 
@@ -556,10 +560,8 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 |---|---|---|
 | `TimeBasedTurnMonitor` | `TurnMonitors/` | Elapsed time ≥ duration |
 | `NetworkTimeBasedTurnMonitor` | `TurnMonitors/` | Network-aware time-based |
-| `CrystalCollisionTurnMonitor` | `TurnMonitors/` | Player collects N crystals |
-| `NetworkCrystalCollisionTurnMonitor` | `TurnMonitors/` | Network-aware crystal collection |
-| `JoustCollisionTurnMonitor` | `TurnMonitors/` | Player completes N jousts |
-| `NetworkJoustCollisionTurnMonitor` | `TurnMonitors/` | Network-aware joust tracking |
+| `NetworkCrystalCollisionTurnMonitor` | `TurnMonitors/` | Player's domain collects N crystals (network-aware; the local-only base was folded in, 2026-10-25) |
+| `NetworkJoustCollisionTurnMonitor` | `TurnMonitors/` | Player's domain completes N jousts (network-aware; the local-only base was folded in, 2026-10-25) |
 | `VesselCollisionTurnMonitor` | `TurnMonitors/` | Player vessel collides with object |
 | `CellControlTurnMonitor` | `TurnMonitors/` | Cell ownership conditions met |
 | `VolumeCreatedTurnMonitor` | `TurnMonitors/` | Player creates N prisms |
@@ -572,7 +574,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `WildlifeKillTurnMonitor` | `TurnMonitors/` | A domain's summed creature kills reach the Wildlife Liberation target |
 | `DogFightPointTurnMonitor` | `TurnMonitors/` | A domain's summed gunnery points reach the Dog Fight target |
 | `SalvoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Salvo target |
-| `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein, Redline, Grizzly Time, Slingshot, Warpline, Thresher Time, Regatta, Waystation). Was `SwitchbackGateTurnMonitor` |
+| `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein, Redline, Grizzly Time, Slingshot, Warpline, Thresher Time, Wrasse Run, Regatta, Waystation). Was `SwitchbackGateTurnMonitor` |
 | `HijackStealTurnMonitor` | `TurnMonitors/` | A domain's summed prisms STOLEN reach the Hijack target |
 | `TollwayTollTurnMonitor` | `TurnMonitors/` | A domain's summed TOLLS reach the Tollway target |
 | `WreckingBallPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed (ball + plate) reach the Wrecking Ball target |
@@ -581,6 +583,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `DustupPointTurnMonitor` | `TurnMonitors/` | A domain's summed dustings (Strike-class CombatPoints) reach the Dustup target (on `CombatPointTurnMonitorBase`) |
 | `TapestryTimeTurnMonitor` | `TurnMonitors/` | Timed: the round ends when `EndConditionOverridesSO.tapestryRoundSeconds` runs out (on `NetworkTimeBasedTurnMonitor`, duration read at `StartMonitor` on every peer) |
 | `SiroccoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Sirocco target |
+| `TandavaTurnMonitor` | `TurnMonitors/` | Server-side: the turn ends the moment the swarm's outcome stops being Running (the cycle completed, or it was shattered, starved, or its dance broken - there is no clock), read off `TandavaScoringRuleSO`; the goal stack draws the mode's own rows (`TandavaController` is its `IGoalSource`: the form and its progress, what it is doing and its body, the halo and the drum) and this monitor's display is what rebuilds it each tick |
 
 All turn monitors live in `Assets/_Scripts/Controller/Arcade/TurnMonitors/`.
 

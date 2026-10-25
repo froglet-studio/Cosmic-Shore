@@ -23,23 +23,48 @@ trio, and the traps).
   ecology-specific: respect it everywhere.
 - **No imposed death.** No decay, lifespan, or fixed-period despawn timers. Populations are
   bounded by **consumption + starvation**, never an imposed clock. (Repeatedly rejected.)
+  **One authorized exception (the designer, 2026-10-16): the Angler's KEEPER.** The first
+  creature in an Angler's school does not starve, and an Angler with an empty school has one
+  born to it. It is fenced:
+  - one reader (`Fauna.IsStarving` → `IFaunaLeash.Sustains`);
+  - one implementer (`AnglerCommandExecutor`);
+  - at most one creature per Angler;
+  - only starvation is waived: predation, jousts and lost body prisms still kill it.
+
+  It is an exception, never a precedent (`Docs/ECOSYSTEM.md` §0, §61.4).
+  **The second sign-off (the designer, 2026-10-21): a HERD's floor.** The Jacks' herd (Marlin and Jacks' when signed off) is
+  "a special swarm that can be upgraded to break rules and should only starve down to a minimum
+  size". Its holder sustains its first `minHerd` creatures (in join order) and an empty herd has
+  that many born to it, through the platform's one fauna spawn seam in the cell's colour. The same
+  fence: one reader (`IFaunaLeash.Sustains`), one implementer (`JacksExecutor`, through
+  `IFaunaHerd`), only starvation waived. Every other rule a herd may break is a method on
+  `IFaunaHerd` with one reader in `Fauna` (`R_VesselActions/JACKS.md` §3).
 - **No domain asymmetry.** Fauna spawn in **one color — the cell's controlling color**. Never
   cross-domain / prey-weighted / per-domain-biased spawning. The herbivore DIET is spatial in
   nucleus cells (see "Volume is the spine" below): outside the nucleus they graze **any**
   domain's mass voraciously; inside they eat **nothing**. Cells without a nucleus keep the
-  legacy opposing-mass diet. **Shielded and super-shielded mass is never food, in any cell** —
-  `Prism.Consume` is a no-op on super-shielded mass and only sheds the shield on shielded mass,
-  so targeting one is a feed-hold the creature can never finish. Every herbivore edibility
-  predicate routes through `Fauna.IsShieldedMass`; do not write a grazer that tests shield state
-  itself. Shielded mass is likewise **not a steering target** — it is excluded from the cell's
+  legacy opposing-mass diet. **Super-shielded mass is never food, in any cell; shielded mass is
+  food only during a FRENZY** (the designer, 2026-10-21: "in general shielded prisms should be food
+  during a frenzy when the cell has too many prism") — a cell in `CellPhase.Frenzy` has too much
+  mass, so its fauna may eat its armour too, and a herd whose holder's upgrade allows it
+  (`IFaunaHerd.EatsShields`, the Jacks' Space level 5) eats it anywhere. Outside those, a
+  shielded prism is off the menu, because `Prism.Consume` only sheds its shield: a grazer that
+  eats one consumes it with `devastate: true`, and super-shielded mass ignores even that. Every
+  herbivore edibility predicate routes through `Fauna.IsInedibleShield` (the cell's half is
+  `Cell.IsInedibleShield` / `Cell.ShieldedMassIsFood`); do not write a grazer that tests shield
+  state itself. Shielded mass is likewise **not a steering target** — it is excluded from the cell's
   targeting grids (`Cell.AddBlock`, re-filed on any shield transition by
-  `Cell.NotifyBlockShieldStateChanged`), because "fauna must never be led to mass they cannot
+  `Cell.NotifyBlockShieldStateChanged`, and every shielded prism re-filed when the cell enters or
+  leaves a Frenzy), because "fauna must never be led to mass they cannot
   eat" is one rule, not two. (`Docs/ECOSYSTEM.md §16`, `§22`.)
   A mode may redefine what "controls" a cell — Brood Rush makes it the nucleus claim (Cleave
   pinned it to the race leader until its fauna were removed; `Cell.SetModeControlOverride`
   survives as the platform capability) — but the spawn colour is still
   exactly ONE colour, the controller's, and that setter also re-colours the LIVE swarm so a
-  cell can never hold two fauna colours at once. A mode may also PEN a cell's fauna
+  cell can never hold two fauna colours at once. (A tamed creature's MARK is not a second fauna
+  colour: its spindles lean a little toward its tamer's domain hue so a player can tell their herd
+  or school from the wild (Garrett, 2026-10-21, `IFaunaLeash.TryGetLeashMark`), while its domain,
+  body prisms and diet stay the cell's.) A mode may also PEN a cell's fauna
   (`Cell.FaunaContainmentRadius` = the OUTER wall, `Cell.FaunaExclusionRadius` = the INNER one —
   together a cell-level annulus a mode can open and close while the match runs; Astro League holds
   its cleanup crew outside the court and drops the inner wall when the cell's own volume ladder
@@ -210,6 +235,13 @@ trio, and the traps).
   unauthored `RenderedObject` from its own children, skipping anything under a `Prism` or a
   `Crystal` — *when a serialized reference cannot be authored headlessly, ask whether it needs
   to be authored at all*. `Docs/ECOSYSTEM.md §46`.
+- **A DYING LIMB BECOMES A CYTOPLASM SHARD** (Garrett, 2026-10-21). Every spindle that withers
+  or dies may leave a new shard in its cell's `SnowChanger` field (every fifth limb,
+  `limbsPerMorphedShard`; Garrett toned it down by a factor 5 the same day), condensing on the limb's own
+  fade clock (`Spindle.MorphIntoShard` -> `SnowChanger.AddMorphedShard`), so an ordered wither
+  stays ordered and nothing pops. Shards carry no mass and no collider. `maxMorphedShards` is a
+  performance backstop: past it a limb only evaporates, and a shard is never culled to make
+  room. `Docs/ECOSYSTEM.md §63`.
 - **Volume is the spine.** Phase, dominant domain, prey, HUD all key off per-domain **VOLUME**
   (`Cell.LiveVolume`), not prism count. Count is a rare frenzy/perf backstop only.
   **Node control is the NUCLEUS**: in a cell with a nucleus, `DominantDomain` reads only the
@@ -1240,6 +1272,24 @@ trio, and the traps).
   same explicit, active event class as a scene load. **Do not** turn this into anything that runs on
   its own: no auto-rotate, no idle re-roll, no "the cell has been up too long" reset. That would be
   the timed culler §0 rejects, wearing a new costume. Detail: `Docs/ECOSYSTEM.md §19`.
+
+- **NO PRISM MAY INTERPENETRATE ANOTHER holds for EVERY generated lay list, not only the species
+  fitted under it** (`Docs/ECOSYSTEM.md §62`). **It is held at AUTHORING time, inside each
+  generator, never by a runtime pass.** Garrett, 2026-10-20: *"we don't want to bloat our run time
+  load when this is a strictly editor time solvable problem ... don't reduce prism count. minimally
+  reduce scale so they are flush."* A prism is sized flush with the neighbours its own construction
+  knows (analytic indices, not a search). No prism is removed, and the draws stay the same (`JitDown`
+  where `Jit` would undo a fit). `Tools/Build/audit_prism_clipping.py` runs every shipped generator
+  at I1-I4 and reports clipping by family. The residuals are random scatter (Boneyard, Caldera,
+  Zephyr), the Gyroid's walk drift and two shapes under the 0.5 scale floor; each one is an open
+  decision (§62.4). **A cell's `PhaseThresholds` ride its laid VOLUME**: a generator change that
+  moves it re-measures the ladder in the same change. **A cell environment loads from its BAKE**
+  (§62.2b): a change to its generator, its prefab or `CellEnvironmentSpawnableBase` re-runs
+  `python3 Tools/Build/bake_prism_layouts.py` in the same change (`--check` is the gate), or the
+  world is generated live with a `[PrismLayoutBake]` warning. **Dynamic contact never does nothing**
+  (§62.6). A mover that touches a prism it cannot affect acknowledges the hit: own armoured mass
+  LIGHTS, and super-shielded mass jiggles. Still open: the Mandelbulb flora family gates an
+  interpenetration BOUND, not a zero (§62.5).
 
 **Protocol:** (1) restate which invariants the change touches + confirm none are violated;
 (2) confirm at genuine forks (AskUserQuestion); (3) implement surgically, config-driven; (4) state

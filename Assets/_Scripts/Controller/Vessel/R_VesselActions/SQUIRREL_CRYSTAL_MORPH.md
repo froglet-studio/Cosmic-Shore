@@ -77,6 +77,11 @@ corners off a target corner).
    (`BoostRingBuilder.RingLaid`): each prism's own shield semi-axes
    (`PrismOctahedronShield.ShellSemiAxesLocal`) at its own final pose and `TargetScale`. Retune
    `SpawnableRings` and the animation follows; there is no second authority.
+   **The targets are resolved in the BODY copy's frame (`CrystalMorphRunner.BodyFrame`), not the
+   morph root's.** `CrystalDepthPrisms` turns every model child of a crystal to its own random pose
+   (`CrystalPoseJitter`), so the body sits rotated under the root; the morph copies that pose so frame 0
+   is the crystal, and a target taken in the root's frame landed turned by it — the whole ring tilted,
+   then a shift onto the real ring at the hand-off (fixed 2026-10-25; the Scarab forge had the same bug).
 4. **The ring is live from frame 0; only its PHOTONS wait.** Colliders, shield state and the
    spatial index go final at the lay, so the ring is skimmable while the crystal is still landing
    on it. `Prism.SetOwnerHidden` holds drawing and nothing else — the existing photon-only hold,

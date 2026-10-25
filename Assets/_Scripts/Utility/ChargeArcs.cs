@@ -725,11 +725,8 @@ namespace CosmicShore.Utility
                 {
                     // never a fifth seam round one bloom
                     var first = sites.Seams[recent[0]];
-                    foreach (int site in new[] { first.SiteA, first.SiteB })
-                    {
-                        if (!recent.TrueForAll(e => sites.Seams[e].Touches(site))) continue;
-                        if (options.Exists(e => !sites.Seams[e].Touches(site))) options.RemoveAll(e => sites.Seams[e].Touches(site));
-                    }
+                    AvoidCircling(first.SiteA);
+                    AvoidCircling(first.SiteB);
                 }
                 int seam = options[random.Next(options.Count)];
                 var edge = sites.Seams[seam];
@@ -748,6 +745,21 @@ namespace CosmicShore.Utility
             int drop = 0;
             while (drop < legs.Count && seconds - legs[drop].Leaves > settings.SeamFade * span) drop++;
             if (drop > 0) legs.RemoveRange(0, drop);
+        }
+
+        // When the last four seams all ran round <paramref name="site"/>, drop the options that would run round it a
+        // fifth time - unless that leaves none. Loops, not an array and lambdas: this runs for every seam struck on
+        // every Charge crystal, seen or not, and allocated each time (2026-10-25).
+        void AvoidCircling(int site)
+        {
+            for (int r = 0; r < recent.Count; r++)
+                if (!sites.Seams[recent[r]].Touches(site)) return;
+            bool escape = false;
+            for (int o = 0; o < options.Count && !escape; o++)
+                escape = !sites.Seams[options[o]].Touches(site);
+            if (!escape) return;
+            for (int o = options.Count - 1; o >= 0; o--)
+                if (sites.Seams[options[o]].Touches(site)) options.RemoveAt(o);
         }
     }
 
@@ -1032,6 +1044,9 @@ namespace CosmicShore.Utility
         /// ago each point was struck; and its petal light into <paramref name="faceLight"/> (one per face). Returns the
         /// number of points on the trail.
         /// </summary>
+        // exp(-d^2) < 0.01 beyond this: ln(100).
+        const float NegligibleGlowD2 = 4.6051702f;
+
         public static int SeamWalk(ChargeSites sites, ChargeSeamWalker walker, float seconds, in ChargeArcSettings settings,
             ChargeArcMeshWriter writer, Vector3 eye, float[] faceLight)
         {
@@ -1084,13 +1099,17 @@ namespace CosmicShore.Utility
             {
                 var face = sites.Faces[f];
                 float g = 0f;
+                float invSigma2 = 1f / (face.Sigma * face.Sigma);
                 foreach (var lit in s_lit)
                 {
                     var q = (Vector3)lit;
                     foreach (var back in face.Back)
                     {
-                        float d = (back - q).magnitude / face.Sigma;
-                        g = Mathf.Max(g, lit.w * Mathf.Exp(-d * d));
+                        // Past this a point adds under 0.01 (life <= 1), which can neither light the petal nor raise
+                        // a glow that does: skip its sqrt and Exp. Most pairs are this far apart.
+                        float d2 = (back - q).sqrMagnitude * invSigma2;
+                        if (d2 > NegligibleGlowD2) continue;
+                        g = Mathf.Max(g, lit.w * Mathf.Exp(-d2));
                     }
                 }
                 if (g > 0.01f) faceLight[f] = settings.Glow * settings.SeamPetalGlow * 2.4f * g;

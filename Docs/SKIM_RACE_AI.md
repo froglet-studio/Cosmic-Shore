@@ -1242,7 +1242,7 @@ one retune command all use that record (the user's choices, 2026-10-05).
 
 **What counts as "the map changed"** - only what changes the race: an intensity's path points
 (`SpawnableWaypointTrack.waypoints`), its curve setting (`useSplinePerIntensity`), its laps
-(`CrystalCollisionTurnMonitor.ResolveLaps`) and where its crystals sit (`CrystalManager`'s anchor set for
+(`NetworkCrystalCollisionTurnMonitor.ResolveLaps`) and where its crystals sit (`CrystalManager`'s anchor set for
 that intensity, clamped into the list exactly as the spawner does). Colours, prism looks, prism spacing and
 the crystal spawn jitter do not count. Positions count in whole units, so a nudge under half a unit is the
 same map. `SkimRaceTrackFingerprint` hashes those four facts into 8 hex digits (32-bit FNV-1a over
@@ -1831,7 +1831,7 @@ two parts (`Docs/AI_SYSTEM/AI_TRAINING_PLAN.md` L3, steps 1 and 4A):
 
 1. **The recorder** (`HumanFlightRecorder`, editor and development builds only), now the **AI training recorder for every
    game mode and vessel** (single player; online players later), files `flight_<Mode>_<Vessel>_<time>.json` with a
-   `training` field. After Play, Unity asks **"Store AI training record?"** and names the vessel, mode and training type. **It is automatic** (Yash,
+   `training` field. After Play the record goes to Claude by itself (no question since 2026-10-16; the console names the vessel and mode). **It is automatic** (Yash,
    2026-10-15: the Record button kept reading on with nothing saved, so it was removed). It starts when a match's turn
    starts (Go) and stops when it ends (the Play Again menu) or when Play stops. Only the local player's own hull is
    recorded; seconds the AI holds it (You / AI) are recorded with `held` = 1 and every learner skips them. Ten times

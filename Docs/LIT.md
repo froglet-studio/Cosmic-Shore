@@ -38,6 +38,35 @@ lands, which is a property of the producer, not of the state:
 | Proximity fuze (Sparrow skyburst) | Sphere | **armed** — where this warhead will go off | everything | `Projectile.PublishFuzeLit` |
 | Explosion passthrough | any | **resolved** — the blast arrived and spared this | **own domain only** | `ExplosionImpactor.PublishLit` |
 | Bomb passage (Grizzly trigger bomb) | Cylinder wake / Sphere when frozen | **live** — a bomb is inside this mass and has not gone off | everything | `GrizzlyBombVisual.PublishLit` |
+| Contact acknowledgement (Thresher cord and ball) | Cylinder over the step's touches / Sphere for one | **resolved** — the cord passed through own mass it had nothing left to do to (already shielded) | **own domain only** | `ThresherExecutor.PublishAcknowledged` |
+
+**DYNAMIC CONTACT NEVER DOES NOTHING** (Garrett, 2026-10-20: *"dynamic clipping should never do
+nothing"*). A moving thing that passes through a prism with no mechanical effect reads on screen as
+a clip. The Thresher's cord passing through its own already-shielded mass did exactly that. So the
+contact is acknowledged even when nothing happens mechanically: own-domain mass is LIT (the row
+above), and super-shielded rival mass gets its deflection jiggle (`Prism.AbsorbSuperShieldHit`), the
+same answer every other hit on it gets. The one deliberate exception is the fleet's own-fresh-trail
+grace (`SelfTrailContactConfigSO`): the cord trails through the mass its own hull laid a moment ago
+on every step, and lighting that would make the producer always-on (see below).
+
+The same rule, applied across the fleet on 2026-10-20 (a sweep for every place a mover tested a
+prism and then silently skipped it):
+
+| Where | Was | Now |
+|---|---|---|
+| `PrismTeamManager.Steal` (hull, skimmer, Urchin spike, black hole, Thresher Mass Mode) | super-shielded: silent `return` | deflection jiggle |
+| `AstroLeagueBall` (also the Scarab's forged balls) | super-shielded passed "untouched"; own already-shielded mass: nothing | jiggle; own armour LIT (`ownDomainOnly`, the ball's colour) |
+| `BrittleStarExecutor.CutWithCords` | super-shielded skipped before the touch test | jiggle on touch |
+| `ShrikeExecutor.FireLance` (below the pierce upgrade) | super-shielded skipped before the ray test | jiggle where the beam meets it |
+| `GrizzlyFlamethrowerActionExecutor` | super-shielded refused inside `Ignite`, spending an ignite | jiggle, no ignite spent |
+
+**Still open (each a call for the vessel's owner, `Docs/TEAM_TASKS.md`):** own-domain mass a
+round with friendly fire off flies through (`Projectile.DisallowImpactOnPrism`: Urchin spikes,
+explodable and energised spikes), the Serpent sniper's own-domain and sub-Charge-5 super-shielded
+pass-through (its cone query reaches the full range, so the prisms the round actually passed
+need the stop point first), the Kite navigator's head through own mass, the Butterfly dust on own
+super-shielded mass, and every own-fresh-trail grace window. Lighting these risks always-on
+producers (see below), which is why they are decisions rather than fixes.
 
 **A producer that wants to say TWO things about one force should look for a different CHANNEL, not a
 second light.** The fuze row was briefly paired with a prism *ripple* on the same round — a vertex

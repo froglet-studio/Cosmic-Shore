@@ -24,9 +24,11 @@ namespace CosmicShore.UI
     /// screen shows. It renders only while the Ark screen is the active one (<see cref="IScreen"/>), on
     /// UNSCALED time, because <c>ScreenSwitcher</c> pauses the game on every screen but HOME.</para>
     ///
-    /// <para><b>Its UI is built in code</b> under this object's rect (the picture, a title and the CONVERT
-    /// button), so the scene carries one GameObject and this component
-    /// (<c>Tools/Build/author_elemental_converter.py</c>).</para>
+    /// <para><b>Its picture is built in code</b> under this object's rect, behind everything else. The style-B
+    /// overlay (Docs/MENU_REDESIGN_B.md section 16: the title band, the recipe panel, the converter bar and
+    /// CONVERT) is an authored prefab (<c>Tools/Build/author_menu_ark.py</c>) this view drives through the
+    /// fields under "Style-B overlay"; with no CONVERT button wired it falls back to the first cut's
+    /// code-built title and button (<c>Tools/Build/author_elemental_converter.py</c>).</para>
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
     public sealed class ElementalConverterView : MonoBehaviour, IScreen
@@ -65,7 +67,7 @@ namespace CosmicShore.UI
         [Header("Layout")]
         [Tooltip("Title shown above the picture.")]
         [SerializeField] string title = "ELEMENTAL CONVERTER";
-        [Tooltip("Caption on the button.")]
+        [Tooltip("Caption on the button (and CONVERT's resting label in the style-B overlay).")]
         [SerializeField] string buttonLabel = "CONVERT";
         [Tooltip("Font for the title and the button. Empty uses TextMeshPro's default.")]
         [SerializeField] TMP_FontAsset font;
@@ -81,6 +83,55 @@ namespace CosmicShore.UI
         [SerializeField] Color textColor = new(0.04f, 0.08f, 0.04f, 1f);
         [Tooltip("The title's colour.")]
         [SerializeField] Color titleColor = new(0.6f, 1f, 0.5f, 1f);
+
+        [Header("Style-B overlay (optional)")]
+        [Tooltip("CONVERT. Wiring it switches the code-built title and button off.")]
+        [SerializeField] KitButton convertButton;
+        [Tooltip("CONVERT's label: \"Convert\", \"Converting...\", \"Convert again\".")]
+        [SerializeField] TMP_Text convertLabel;
+        [Tooltip("The converter bar's eyebrow: Ready / Converting / Converted.")]
+        [SerializeField] KitText statusText;
+        [Tooltip("The run's clock, \"00:11 / 00:22\".")]
+        [SerializeField] TMP_Text clockText;
+        [Tooltip("The bar's four segments (Image, Filled Horizontal), in fly-in order: Space, Charge, Mass, Time.")]
+        [SerializeField] Image[] segments = { };
+        [Tooltip("Each segment's travelling spark, shown once its element has merged.")]
+        [SerializeField] CanvasGroup[] segmentSparks = { };
+        [Tooltip("The recipe panel's four rows, in fly-in order.")]
+        [SerializeField] ConverterRecipeRow[] recipeRows = { };
+        [Tooltip("\"2 of 4 merged\".")]
+        [SerializeField] KitText mergedText;
+
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("The status eyebrow before a run.")]
+        [SerializeField] string readyStatusLine = "Ready";
+        [Tooltip("The status eyebrow during a run.")]
+        [SerializeField] string convertingStatusLine = "Converting";
+        [Tooltip("The status eyebrow after a run.")]
+        [SerializeField] string convertedStatusLine = "Converted";
+        [Tooltip("CONVERT's label during a run (before one it reads the Layout's button label).")]
+        [SerializeField] string convertingButtonLine = "Converting...";
+        [Tooltip("CONVERT's label after a run.")]
+        [SerializeField] string convertAgainButtonLine = "Convert again";
+        [Tooltip("The merged count. {merged} is how many elements have merged, {total} how many there are.")]
+        [SerializeField] string mergedLine = "{merged} of {total} merged";
+        [Tooltip("The clock. {time} is the play time, {length} the run's length (or the next line before it is known).")]
+        [SerializeField] string clockLine = "{time} / {length}";
+        [Tooltip("The clock's {length} while the run's length is not known yet.")]
+        [SerializeField] string unknownLengthLine = "--:--";
+        [Tooltip("The omni block: dim until the omni forms.")]
+        [SerializeField] CanvasGroup omniGroup;
+        [Tooltip("Pops the omni in as it forms (ceremony). Optional.")]
+        [SerializeField] KitEntrance omniPop;
+
+        const float OmniDimAlpha = 0.35f;
+        const int Elements = 4;
+
+        enum Phase { None = -1, Ready = 0, Converting = 1, Converted = 2 }
+
+        Phase _phase = Phase.None;
+        int _merged = -1, _clockShown = -1, _clockTotal = -1;
+        bool _omniShown;
 
         RawImage _surface;
         Button _button;
@@ -103,7 +154,10 @@ namespace CosmicShore.UI
             // Arriving shows the four idling, waiting to be converted; a finished combine plays again.
             _player.Begin(convert: false);
             _frame = 0f;   // snap to the first framing rather than easing in from the last visit's
-            if (_button) _button.Select();
+            // No Select() here: the switcher's Refocus lands on CONVERT, the screen's first live control,
+            // and a second owner of first focus is how the pad lost track of it on other screens.
+            _phase = Phase.None;
+            DrawOverlay();
         }
 
         // Leaving lets the picture go: at screen pixels x2 with MSAA it is hundreds of MB on a phone, and nothing
@@ -126,7 +180,11 @@ namespace CosmicShore.UI
         public void Convert()
         {
             if (!EnsureStage()) return;
+            // A press mid-run used to restart the whole sequence; the run finishes first now (CONVERT reads
+            // "Converting..." and is inactive meanwhile).
+            if (_player.IsRunning) return;
             _player.Convert();
+            DrawOverlay();
         }
 
         void LateUpdate()
@@ -152,6 +210,71 @@ namespace CosmicShore.UI
             EnsureTarget();
             if (_target && _target.height > 0) _camera.aspect = (float)_target.width / _target.height;
             _camera.Render();
+            DrawOverlay();
+        }
+
+        /// <summary>
+        /// The overlay's live state: each element's row and segment from its own flight, the merged count,
+        /// the omni (dim until it forms, then popped in), the clock and CONVERT. Text and colours are written
+        /// only when they change; the bars every frame.
+        /// </summary>
+        void DrawOverlay()
+        {
+            if (!_player) return;
+            int merged = 0;
+            for (int k = 0; k < Elements; k++)
+            {
+                float p = _player.ElementProgress(k);
+                if (p >= 1f) merged++;
+                if (k < recipeRows.Length && recipeRows[k]) recipeRows[k].Draw(p);
+                if (k < segments.Length && segments[k]) segments[k].fillAmount = p;
+                if (k < segmentSparks.Length) KitVisibility.SetShown(segmentSparks[k], p >= 1f);
+            }
+            if (merged != _merged)
+            {
+                _merged = merged;
+                if (mergedText) mergedText.SetText(TemplateText.Fill(mergedLine, "merged", merged.ToString(), "total", Elements.ToString()));
+            }
+
+            bool formed = _player.OmniFormed;
+            if (formed != _omniShown || _phase == Phase.None)
+            {
+                if (formed && !_omniShown && omniPop && isActiveAndEnabled) omniPop.Play();
+                _omniShown = formed;
+                if (omniGroup) omniGroup.alpha = formed ? 1f : OmniDimAlpha;
+            }
+
+            var phase = _player.IsRunning ? Phase.Converting : _player.IsDone ? Phase.Converted : Phase.Ready;
+            if (phase != _phase)
+            {
+                _phase = phase;
+                if (statusText)
+                    statusText.SetText(phase switch { Phase.Converting => convertingStatusLine, Phase.Converted => convertedStatusLine, _ => readyStatusLine });
+                if (convertLabel)
+                    convertLabel.text = phase switch { Phase.Converting => convertingButtonLine, Phase.Converted => convertAgainButtonLine, _ => buttonLabel };
+                if (convertButton)
+                {
+                    convertButton.Variant = phase == Phase.Converting ? KitButtonVariant.Inactive : KitButtonVariant.Play;
+                    convertButton.interactable = phase != Phase.Converting;
+                }
+            }
+
+            // Play time runs on after the omni wakes (it idles), so the clock stops at the run's length.
+            int total = Mathf.CeilToInt((float)_player.RunDuration);
+            int shown = Mathf.Min(Mathf.FloorToInt((float)_player.RunTime), total);
+            if (clockText && (shown != _clockShown || total != _clockTotal))
+            {
+                _clockShown = shown;
+                _clockTotal = total;
+                clockText.text = TemplateText.Fill(clockLine, "time", Clock(shown), "length", total > 0 ? Clock(total) : unknownLengthLine);
+            }
+        }
+
+        /// <summary>"01:05" - minutes and seconds.</summary>
+        public static string Clock(int seconds)
+        {
+            seconds = Mathf.Max(0, seconds);
+            return $"{seconds / 60:00}:{seconds % 60:00}";
         }
 
         bool EnsureStage()
@@ -251,9 +374,17 @@ namespace CosmicShore.UI
         {
             var picture = NewChild("Picture");
             Stretch(picture);
+            // Behind the authored overlay: a child added in Awake would otherwise draw over it.
+            picture.SetAsFirstSibling();
             _surface = picture.gameObject.AddComponent<RawImage>();
             _surface.raycastTarget = false;
             _surface.color = Color.white;
+
+            if (convertButton)
+            {
+                convertButton.onClick.AddListener(Convert);
+                return;
+            }
 
             var heading = NewChild("Title");
             heading.anchorMin = new Vector2(0f, 1f);

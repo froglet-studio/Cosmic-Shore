@@ -266,9 +266,17 @@ namespace CosmicShore.Gameplay
             if (!other.TryGetComponent(out ImpactCollider impacteeCollider))
                 return;
 
+            // Both sides must be initialized, not only this one. A skimmer or vessel whose hull has
+            // no live pilot yet (freshly spawned, mid-swap in the Vessel Changer) skips its OWN
+            // impacts through the gate above, but as the IMPACTEE it reached e.g. an omni crystal,
+            // which read its domain and threw (Bug Ledger E-79b40242f7, Garrett/jtgjones).
+            var impactee = impacteeCollider.Impactor;
+            if (impactee is ImpactorBase impacteeBase && !impacteeBase.isInitialized)
+                return;
+
             EnsureAcceptMarker();
             using (_acceptMarker.Auto())
-                AcceptImpactee(impacteeCollider.Impactor);
+                AcceptImpactee(impactee);
         }
     }
 }

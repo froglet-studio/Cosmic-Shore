@@ -22,6 +22,10 @@
 #ifndef PRISM_CLOCK_ANIMATION_INCLUDED
 #define PRISM_CLOCK_ANIMATION_INCLUDED
 
+// A plane-measuring view (the Kite's navigator board) swaps the spread's camera distance for the
+// distance out of its plane, for its own render only: PrismFlightSqrDistance below.
+#include "PrismDepthPlane.hlsl"
+
 // -----------------------------------------------------------------------------
 // Grow-in bloom (BlockGraph vertex stage).
 // Reproduces PrismScaleManager's exponential approach exactly:
@@ -439,7 +443,7 @@ void PrismFlightSqrDistance_float(float Clock, float StartTime, float Duration, 
         pos += Velocity * (0.63661977 * Duration) * (covered - 1.0);
     }
     float3 d = pos - CameraPosition;
-    SqrDistance = dot(d, d);
+    SqrDistance = PrismDepthSqrDistance(pos, dot(d, d));
 }
 
 // -----------------------------------------------------------------------------

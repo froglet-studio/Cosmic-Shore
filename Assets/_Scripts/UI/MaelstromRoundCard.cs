@@ -11,22 +11,27 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// <b>Maelstrom Data Card</b> - one round in the Maelstrom scroll. Shows the round header
-    /// (ROUND INDEX, ROUND NAME, WINNING DOMAIN) and instantiates one <b>Player Data Card</b>
+    /// (the round number, the mode, the winning domain) and instantiates one <b>Player Data Card</b>
     /// (<see cref="MaelstromPlayerCard"/>) per player who finished that round, with their Round Score
     /// and Total Score. The card background tints to the winning domain via the colour resolver the
     /// view passes in (the theme's per-domain UI accent); the winning-domain name is coloured to match.
     ///
     /// Two setup paths: <see cref="Setup"/> (a completed round) and <see cref="SetupPreview"/> (the
-    /// round-0 lobby preview - roster only, no round score, winner "-").
+    /// round about to be played - roster only, no round score, "Up next" in place of a winner).
+    ///
+    /// <para>Style B (Docs/MENU_REDESIGN_B.md section 27): a "Round n" eyebrow over the mode's name on
+    /// the mode's own card art, the winner as a domain pill, and ROUND / TOTAL column heads over the
+    /// rows. The round about to be played carries the Control Active outline
+    /// (<see cref="currentRoundHighlight"/>).</para>
     /// </summary>
     public class MaelstromRoundCard : MonoBehaviour
     {
         [Header("Round header")]
-        [Tooltip("\"ROUND INDEX : 1\".")]
+        [Tooltip("\"Round 1\" (the eyebrow).")]
         [SerializeField] TMP_Text roundNumberText;
-        [Tooltip("\"ROUND NAME : SCRUM\" (the mode; \"-\" in the preview).")]
+        [Tooltip("The mode's name (\"To be drawn\" before the draw lands).")]
         [SerializeField] TMP_Text roundNameText;
-        [Tooltip("\"WINNING DOMAIN : JADE\" (domain name coloured).")]
+        [Tooltip("The winning domain's name, in its colour.")]
         [SerializeField] TMP_Text winningDomainText;
         [Tooltip("Optional accent for the most-recently-played round (the auto-scroll target).")]
         [SerializeField] GameObject currentRoundHighlight;
@@ -34,6 +39,26 @@ namespace CosmicShore.UI
         [Header("Domain colour")]
         [Tooltip("The card background image that tints to the winning domain colour.")]
         [SerializeField] Image cardBackground;
+
+        [Header("Style B (optional)")]
+        [Tooltip("The mode's card art across the top of the card.")]
+        [SerializeField] Image cardArt;
+        [Tooltip("Alpha of the art while the round is still to be played.")]
+        [SerializeField, Range(0f, 1f)] float upcomingArtAlpha = 0.45f;
+        [Tooltip("The winner pill (plate, mark, name = winningDomainText). Hidden with no winner.")]
+        [SerializeField] CanvasGroup winnerPill;
+        [SerializeField] Image winnerPillBackground;
+        [SerializeField] Image winnerPillMark;
+        [SerializeField, Range(0f, 1f)] float pillAlpha = 0.14f;
+        [Tooltip("\"Up next\" / \"-\" in the pill's place.")]
+        [SerializeField] TMP_Text winnerPlaceholderText;
+
+        [Header("Words (empty = no line)")]
+        [Tooltip("The eyebrow; {round} is the round number.")]
+        [SerializeField] string roundTemplate = "Round {round}";
+        [SerializeField] string toBeDrawnWord = "To be drawn";
+        [SerializeField] string upNextWord = "Up next";
+        [SerializeField] string noWinnerWord = "-";
 
         [Header("Player Data Cards")]
         [SerializeField] MaelstromPlayerCard playerCardPrefab;
@@ -45,46 +70,74 @@ namespace CosmicShore.UI
         Func<Domains, Color> _colorOf;
 
         public void Setup(MaelstromRoundRecord record, Func<MaelstromPlayerSnapshot, Sprite> avatarOf,
-                          Func<Domains, int> totalOf, Func<Domains, Color> colorOf, bool isCurrent = false)
+                          Func<Domains, int> totalOf, Func<Domains, Color> colorOf, bool isCurrent = false,
+                          Func<Domains, int> pointsOf = null, Sprite art = null)
         {
             if (record == null) return;
             _colorOf = colorOf;
-            SetHeader(record.RoundNumber, record.ModeDisplayName, record.WinningDomain, showWinner: true);
+            SetHeader(record.RoundNumber, record.ModeDisplayName, record.WinningDomain, showWinner: true, upcoming: false);
+            SetArt(art, upcoming: false);
             if (currentRoundHighlight) currentRoundHighlight.SetActive(isCurrent);
-            BuildPlayers(record.Players, avatarOf, totalOf, showRoundScore: true);
+            BuildPlayers(record.Players, avatarOf, totalOf, showRoundScore: true, pointsOf);
         }
 
         public void SetupPreview(int roundNumber, IReadOnlyList<MaelstromPlayerSnapshot> roster,
                                  Func<MaelstromPlayerSnapshot, Sprite> avatarOf, Func<Domains, int> totalOf,
-                                 Func<Domains, Color> colorOf)
+                                 Func<Domains, Color> colorOf, string modeName = null, Sprite art = null)
         {
             _colorOf = colorOf;
-            SetHeader(roundNumber, modeName: null, winner: Domains.Blue, showWinner: false);
+            _previewRound = roundNumber;
+            SetHeader(roundNumber, modeName, winner: Domains.Blue, showWinner: false, upcoming: true);
+            SetArt(art, upcoming: true);
             if (currentRoundHighlight) currentRoundHighlight.SetActive(true);
-            BuildPlayers(roster, avatarOf, totalOf, showRoundScore: false);
+            BuildPlayers(roster, avatarOf, totalOf, showRoundScore: false, null);
+        }
+
+        /// <summary>The draw landed: name the round about to be played and show its art.</summary>
+        public void SetUpcomingRound(string modeName, Sprite art)
+        {
+            SetHeader(_previewRound, modeName, Domains.Blue, showWinner: false, upcoming: true);
+            SetArt(art, upcoming: true);
+        }
+
+        int _previewRound = 1;
+
+        void SetArt(Sprite art, bool upcoming)
+        {
+            if (!cardArt) return;
+            cardArt.sprite = art;
+            cardArt.enabled = art != null;
+            cardArt.color = new Color(1f, 1f, 1f, upcoming ? upcomingArtAlpha : 1f);
         }
 
         Color DomainColor(Domains domain) => _colorOf != null ? _colorOf(domain) : Color.gray;
 
-        void SetHeader(int roundNumber, string modeName, Domains winner, bool showWinner)
+        void SetHeader(int roundNumber, string modeName, Domains winner, bool showWinner, bool upcoming)
         {
-            if (roundNumberText) roundNumberText.text = $"ROUND INDEX : {roundNumber}";
+            if (roundNumberText)
+                roundNumberText.text = string.IsNullOrEmpty(roundTemplate) ? string.Empty : roundTemplate.Replace("{round}", roundNumber.ToString());
             if (roundNameText)
-                roundNameText.text = $"ROUND NAME : {(string.IsNullOrEmpty(modeName) ? "-" : modeName.ToUpperInvariant())}";
+                roundNameText.text = !string.IsNullOrEmpty(modeName) ? modeName : upcoming ? toBeDrawnWord : noWinnerWord;
 
             bool hasWinner = showWinner && winner != Domains.Blue;
             Color wc = DomainColor(hasWinner ? winner : Domains.Blue);
 
             if (winningDomainText)
-                winningDomainText.text = hasWinner
-                    ? $"WINNING DOMAIN : <color=#{ColorUtility.ToHtmlStringRGB(wc)}>{winner.ToString().ToUpperInvariant()}</color>"
-                    : "WINNING DOMAIN : -";
+            {
+                winningDomainText.text = hasWinner ? winner.ToString().ToUpperInvariant() : string.Empty;
+                winningDomainText.color = wc;
+            }
+            KitVisibility.SetShown(winnerPill, hasWinner);
+            if (winnerPillMark) winnerPillMark.color = wc;
+            if (winnerPillBackground) winnerPillBackground.color = new Color(wc.r, wc.g, wc.b, pillAlpha);
+            if (winnerPlaceholderText) winnerPlaceholderText.text = hasWinner ? string.Empty : upcoming ? upNextWord : noWinnerWord;
 
             if (cardBackground) cardBackground.color = wc;
         }
 
         void BuildPlayers(IReadOnlyList<MaelstromPlayerSnapshot> players,
-                          Func<MaelstromPlayerSnapshot, Sprite> avatarOf, Func<Domains, int> totalOf, bool showRoundScore)
+                          Func<MaelstromPlayerSnapshot, Sprite> avatarOf, Func<Domains, int> totalOf, bool showRoundScore,
+                          Func<Domains, int> pointsOf)
         {
             Clear();
             if (players == null || !playerCardPrefab || !playerCardContainer) return;
@@ -106,6 +159,7 @@ namespace CosmicShore.UI
                 string round = showRoundScore ? (s.ScoreText ?? string.Empty) : string.Empty;
                 string total = totalOf != null ? totalOf(s.Domain).ToString() : string.Empty;
                 card.Setup(s.Name, avatarOf != null ? avatarOf(s) : null, s.Domain, round, total, DomainColor(s.Domain));
+                card.SetPoints(pointsOf != null ? pointsOf(s.Domain) : -1);
                 _spawned.Add(card);
             }
         }

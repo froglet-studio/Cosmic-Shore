@@ -5,9 +5,9 @@ description: Fix the console errors collaborators sent from Unity with the one "
 
 # Bug Ledger — fix what the play tests sent
 
-**The whole Unity UI is one question** (`BugHuntAutoSend`; Yash, 2026-10-15: "no complex UI
-toolboxes in Unity... just auto send consoles"). After a play test that logged a new red error the
-editor asks **"Send to Claude?"**; Send pushes that machine's issues (plus new redlog / crash / perf
+**There is no Unity UI at all** (`BugHuntAutoSend`; Yash, 2026-10-15: "no complex UI toolboxes in
+Unity... just auto send consoles", and 2026-10-16: "make send to Claude automatic too, no question").
+After a play test that logged a new red error the editor sends by itself: it pushes that machine's issues (plus new redlog / crash / perf
 files) to its own branch **`origin/bugledger/<user>`**, under `BugLedger/shared/`, built in a
 throwaway index so the person's working tree and branch are never touched (`BugLedgerSender`).
 There is no Bug Ledger window, no staging, no settings — never tell anyone to press buttons in one.
@@ -27,7 +27,7 @@ Report files: `git show origin/bugledger/<user>:BugLedger/shared/reports/<user>/
 **redlog** session has the full context around a ledger signature.
 
 **Nothing sent?** Fix from what the person gave you (screenshot / pasted Console text), then tell
-them in one line: after the next play test, press **Send to Claude** when Unity asks.
+them in one line: after the next play test, do nothing: after the next play test the editor sends it to Claude by itself.
 
 Kinds: `E-…` captured error (validated by play runs) · `T-…` editor-tool finding (closed only by a
 clean re-run of that tool — tell the person which) · `C-…` hand-filed (no signature).
@@ -48,7 +48,12 @@ python3 Tools/Build/net_logs.py collect --dir <folder>  # a local Logs/NetSessio
 Each player's line gives its role, CLEAN/DIRTY (the record's verdict), errors, warnings, lobby
 reads, 429s and lifecycle events; the timeline interleaves every player's lifecycle (party,
 clientApproved, clientLeft, leaverToAI, refused, bounce) and warnings/errors in wall-clock order.
-Use it to find which player saw what first. A test missing a player means that player never stopped cleanly
+Use it to find which player saw what first. A test between two machines arrives on two
+`bugledger/*` branches; `net_logs.py` groups the logs whose Plays overlapped into one test
+(`belac/main`, `yskha/main`). Read `429s 2 (console 69)` as 69: the refresh ticks' 429s went uncounted
+until 2026-10-16. A "carried over" mark means a pre-fix Unity file held earlier Plays: trust its
+events, not its counters or its `why`. The party findings so far are B31-B33 in
+`Docs/PartySystem/BUGS.md`. A test missing a player means that player never stopped cleanly
 (a killed process writes nothing). A test with no logs at all means the person did not press
 Send, or the main editor saw no other player (solo online play writes nothing): say so in one
 line. The mechanism is in `Docs/DIAGNOSTICS.md` § "Multiplayer test logs".
@@ -71,7 +76,7 @@ Worst first (open, then regressions, then times seen). One issue on several bran
    work, or a `Debug.Log` are not fixes (CLAUDE.md § What Claude Code Should Never Do).
 5. **Load the area's skill / topic file first**; shared prefabs and SOs are fixed once at the source.
 6. A DESIGN or CONTENT call (an FMOD event's loop region, what a skimmer should do) is not yours:
-   restore established behaviour if you can, and hand it to its owner with `team_tasks.py add`.
+   restore established behaviour if you can, and file it as a `decision` ticket (`/team-tasks add`, naming nobody).
 7. Team rules (CLAUDE.md § Team): a fix in another collaborator's area beyond a wiring/data repair
    is a task for its owner, not a commit; commits there say `Affects: <person>'s <area>`.
 
@@ -88,7 +93,11 @@ commit (throwaway index; your HEAD, index and working tree are untouched). Their
 its next sync (editor load, or before a send) **only once that commit is in their HEAD** — tell them
 to pull. Two clean play tests then close it unseen; if the error returns it reopens and their next
 "Send to Claude" brings it back (`regressions > 0` = your fix did not hold: re-root-cause from
-scratch). Leave `ignored` issues alone (`mark-fixed` refuses without `--force`); never delete issue
+scratch). **A fix that reached some senders only** (the issue is `validating` on one `bugledger/*` branch and still
+`open`, with no `fixCommit`, on another): hand it on with `mark-fixed <id> --commit <the same sha> --branch <user>`.
+Copies already validating that commit are left alone (a rewrite would zero their clean runs), so never re-run a
+plain `mark-fixed` just to reach one more tester. Skip it when the open copy has `regressions` > 0 — that machine
+saw the error AFTER taking the fix. Leave `ignored` issues alone (`mark-fixed` refuses without `--force`); never delete issue
 files — closing is the editor's job, after validation.
 
 ## 4. "Is it fixed?" — answer from their branch
@@ -102,6 +111,11 @@ files — closing is the editor's job, after validation.
 | `validating`, `cleanSessions` k of n | fixed and being proven: n−k more clean play tests close it |
 | gone from the branch | closed (it stayed silent), or they discarded it |
 | `open` with `regressions` > 0 | the fix did not hold — say so, and fix it again |
+
+**A fix stuck at 0 of n** although they have played since pulling it: read their trail,
+`git show origin/bugledger/<user>:BugLedger/shared/reports/<user>/ledger/validation.log`. Each play run
+has a line (its length, the fixes it counted, what fired); "waiting for a pull" means the fix commit
+is not in their checkout; no play-run lines at all means the ledger's play-mode handler never ran.
 
 ## 5. Verification
 

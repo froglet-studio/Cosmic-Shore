@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Author the launch panel's AI DIFFICULTY row (Easy / Medium / Hard) into
-ArcadeGameConfigureModal.prefab, directly under the intensity row.
+Author the launch panel's AI DIFFICULTY row (Easy / Medium / Hard) into BOTH launch windows:
+ArcadeGameConfigureModal.prefab (the Arcade's, directly under the intensity row) and the Arena's
+ArenaGameConfigureModal in Menu_Main (beside the ADD AI toggle, above Start - see ARENA below).
 
-    python3 Tools/Build/author_ai_difficulty_row.py           # write the prefab
-    python3 Tools/Build/author_ai_difficulty_row.py --check   # fail if the prefab drifted from this script
+    python3 Tools/Build/author_ai_difficulty_row.py           # write the prefab and the scene
+    python3 Tools/Build/author_ai_difficulty_row.py --check   # fail if either drifted from this script
 
 WHAT IT BUILDS
 
@@ -34,6 +35,20 @@ WHY A SCRIPT
   file byte for byte, so a hand edit to the row, a moved neighbour that breaks the layout asserts,
   or a stale picker field all fail it. Every fileID is minted deterministically, so a re-run is a
   no-op.
+
+ARENA
+
+  The Arena's window (a scene object in Menu_Main, ArenaLaunchPanel) has the same
+  ConfigurationDetailView children, and its row sits in the SAME place as the Arcade's: hung from
+  the Arena intensity row's own bottom anchor, ROW_GAP_UNDER_INTENSITY under it, spanning its width,
+  so EASY sits under 1, MEDIUM under 2 and HARD under 3. There the vessel CAROUSEL
+  (ControlsDescription) used to start, so fit_arena_carousel re-fits it once, statically (every arena
+  card offers the difficulty, and ArenaLaunchPanel has no controls block for the runtime move):
+  CAROUSEL_GAP under the row down to CAROUSEL_GAP over the ADD AI toggle, the hull icon (it preserves
+  its aspect) filling it above SELECT VESSEL, the arrows level with the icon's centre, and SELECT
+  VESSEL placed by author_arena_launch_panel_layout (called from here, so its --check agrees).
+  Same donors, same cloning, its own fileID namespace; --check proves the row and the carousel clear
+  every sibling in canvas pixels.
 """
 import argparse
 import hashlib
@@ -43,10 +58,14 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from author_toybox_layout import Scene  # noqa: E402
-from author_arena_launch_panel_layout import solve_rect, overlaps  # noqa: E402
+from author_arena_launch_panel_layout import solve_rect, overlaps, vec2  # noqa: E402
+from author_arena_launch_panel_layout import author as arena_select_layout  # noqa: E402
+from author_arena_launch_panel_layout import CONFIRM_SPRITE_SIZE, GAP_UNDER_ICON as SELECT_GAP_UNDER_ICON  # noqa: E402
+from author_arena_launch_panel_layout import stood_down as arena_rebuilt  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PREFAB = os.path.join(ROOT, "Assets", "_Prefabs", "ArcadeGameConfigureModal.prefab")
+ARENA_SCENE = os.path.join(ROOT, "Assets", "_Scenes", "Menu_Main.unity")
 PICKER_META = os.path.join(ROOT, "Assets", "_Scripts", "UI", "Elements", "AIDifficultyPicker.cs.meta")
 FONT_ASSET = os.path.join(ROOT, "Assets", "Unity Assests", "TextMesh Pro", "Resources",
                           "Fonts & Materials", "ALDRICH-REGULAR SDF.asset")
@@ -61,6 +80,7 @@ BUTTON_GUID = "4e29b1a8efbd4b44bb3f3716e73f07ff"
 MENU_AUDIO_GUID = "698f3492214843a49b922c5c64f54760"
 HLG_GUID = "30649d3a9faa99c48a7b1166b86bf2a0"
 PANEL_GUID = "b8cde2beae294092a0e28d5ce9af40a4"       # MinigameLaunchPanel
+ARENA_PANEL_GUID = "f88ec54d81f44c1b8e00e003064be273" # ArenaLaunchPanel
 
 # the intensity row's plates (IntensitySelectButton.prefab's BorderSpriteSelected / Unselected)
 PLATE_LIT = "{fileID: 21300000, guid: 28f47c9f52f227c48a39438a82bbeec7, type: 3}"
@@ -92,6 +112,33 @@ OPTIONS = [("Easy", 1, "EASY"), ("Medium", 2, "MEDIUM"), ("Hard", 3, "HARD")]  #
 # the controls block must keep at least this much height while the row is shown
 MIN_CONTROLS_HEIGHT = 200.0
 CONTROLS_GAP = 10.0                # MinigameLaunchPanel.controlsGapUnderDifficultyRow's default
+
+
+class Target:
+    """One launch window the row is authored into."""
+
+    def __init__(self, name, path, modal, panel_guid, salt):
+        self.name = name
+        self.path = path
+        self.modal = modal              # None: the whole file is the window (the prefab)
+        self.panel_guid = panel_guid
+        self.salt = salt                # the fileID namespace
+
+    @property
+    def is_arena(self):
+        return self.modal is not None
+
+
+ARCADE = Target("ArcadeGameConfigureModal.prefab", PREFAB, None, PANEL_GUID, "CosmicShore/AIDifficultyRow")
+ARENA = Target("Menu_Main ArenaGameConfigureModal", ARENA_SCENE, "ArenaGameConfigureModal", ARENA_PANEL_GUID,
+               "CosmicShore/AIDifficultyRow/Arena")
+TARGETS = [ARCADE, ARENA]
+
+# Arena: the vessel carousel is re-fitted under the row (fit_arena_carousel)
+CAROUSEL_GAP = 8.0                 # px between the carousel and the row above / the ADD AI toggle below
+CAROUSEL_PAD = 8.0                 # px inside the carousel above the icon and below SELECT VESSEL
+SELECT_PLATE_HEIGHT = CONFIRM_SPRITE_SIZE[1]
+MIN_ICON_HEIGHT = 150.0
 
 
 def fail(msg):
@@ -129,10 +176,16 @@ def go_named(sc, parent_go, name):
     return hits[0] if hits else None
 
 
-def the_go(sc, name):
-    hits = [g for g, n in sc.names.items() if n == name and sc.cls(g) == "1"]
+def the_go(sc, name, tg):
+    if tg.is_arena:
+        roots = [g for g, n in sc.names.items() if n == tg.modal and sc.cls(g) == "1"]
+        if len(roots) != 1:
+            fail(f"expected exactly one {tg.modal}, found {len(roots)}")
+        hits = [g for g in sc.subtree(roots[0]) if sc.names.get(g) == name]
+    else:
+        hits = [g for g, n in sc.names.items() if n == name and sc.cls(g) == "1"]
     if len(hits) != 1:
-        fail(f"expected exactly one GameObject named {name}, found {len(hits)}")
+        fail(f"expected exactly one GameObject named {name} in {tg.name}, found {len(hits)}")
     return hits[0]
 
 
@@ -143,25 +196,26 @@ def component(sc, go, guid):
     fail(f"{sc.names.get(go)} has no component with script {guid}")
 
 
-def panel_doc(sc):
-    hits = [fid for fid, (h, b) in sc.docs.items() if "!u!114" in h and PANEL_GUID in b]
+def panel_doc(sc, tg):
+    hits = [fid for fid, (h, b) in sc.docs.items() if "!u!114" in h and tg.panel_guid in b]
     if len(hits) != 1:
-        fail(f"expected one MinigameLaunchPanel, found {len(hits)}")
+        fail(f"expected one launch panel ({tg.panel_guid}) in {tg.name}, found {len(hits)}")
     return hits[0]
 
 
 # ---- minting ----------------------------------------------------------------------------------
 
 class Minter:
-    def __init__(self, taken):
+    def __init__(self, taken, salt):
         self.taken = set(taken)
+        self.salt = salt
         self.ids = {}
 
     def __call__(self, key):
         if key in self.ids:
             return self.ids[key]
         for salt in range(64):
-            h = hashlib.md5(f"CosmicShore/AIDifficultyRow/{key}/{salt}".encode()).hexdigest()
+            h = hashlib.md5(f"{self.salt}/{key}/{salt}".encode()).hexdigest()
             fid = str(int(h[:16], 16) % (INT64_MAX // 2) + 1)
             if fid not in self.taken:
                 self.taken.add(fid)
@@ -183,9 +237,9 @@ def all_keys():
 
 # ---- strip (the prefab as it was before this script) -------------------------------------------
 
-def strip(sc):
+def strip(sc, tg):
     """Remove the row and every reference to it. Returns the set of fileIDs removed."""
-    cdv = the_go(sc, "ConfigurationDetailView")
+    cdv = the_go(sc, "ConfigurationDetailView", tg)
     row = go_named(sc, cdv, "AIDifficulty")
     removed = set()
     if row:
@@ -201,7 +255,7 @@ def strip(sc):
         for fid in removed:
             body = re.sub(r"^  - \{fileID: %s\}\n" % fid, "", body, flags=re.M)
         sc.docs[cdv_rt][1] = body
-    panel = panel_doc(sc)
+    panel = panel_doc(sc, tg)
     sc.docs[panel][1] = re.sub(r"^  aiDifficultyPicker: \{fileID: -?\d+\}\n", "", sc.body(panel), flags=re.M)
     sc.rebuild_maps()
     return removed
@@ -255,8 +309,80 @@ def tmp_doc(sc, donor_tmp, fid, go, text, size, h_align, wrap, spacing):
     return header, body
 
 
-def author(sc, mint, pguid):
-    cdv = the_go(sc, "ConfigurationDetailView")
+def arena_row_rect(sc, cdv):
+    """The Arena row's rect: hung from the Arena intensity row's own bottom anchor, the same
+    ROW_GAP_UNDER_INTENSITY under it as the Arcade's, spanning the same width. Returns the rect
+    fields and the row's bottom edge in canvas px."""
+    cdv_r = solve_rect(sc, cdv, CANVAS)
+    intensity = go_named(sc, cdv, "Intensity")
+    if not intensity:
+        fail("arena: no Intensity row under ConfigurationDetailView")
+    ib = sc.body(sc.go_tf[intensity])
+    amin, amax = vec2(ib, "m_AnchorMin"), vec2(ib, "m_AnchorMax")
+    top = solve_rect(sc, intensity, CANVAS)[1] - ROW_GAP_UNDER_INTENSITY
+    pos_y = round(top - (cdv_r[1] + amin[1] * cdv_r[3]), 3)
+    return ((amin[0], amin[1]), (amax[0], amin[1]), (0, pos_y), (0, ROW_HEIGHT), (0.5, 1)), top - ROW_HEIGHT
+
+
+def set_y(sc, go, amin_y, amax_y, pos_y, size_y, why):
+    """Rewrite only the vertical half of a RectTransform; the horizontal layout is left as authored."""
+    rt = sc.go_tf[go]
+    b = sc.body(rt)
+    for key, v in (("m_AnchorMin", amin_y), ("m_AnchorMax", amax_y), ("m_AnchoredPosition", pos_y),
+                   ("m_SizeDelta", size_y)):
+        if v is None:
+            continue
+        b = sub1(b, r"^(  %s: \{x: [^,]+, y: )[^}]+(\})$" % key, lambda mm, v=v: mm.group(1) + fmt(v) + mm.group(2), why + " " + key)
+    sc.docs[rt][1] = b
+
+
+def fit_arena_carousel(sc, cdv, row_bottom):
+    """Make room for the row: the vessel carousel (ControlsDescription) runs from CAROUSEL_GAP under
+    the row down to CAROUSEL_GAP over the ADD AI toggle, the hull icon (aspect-preserving) fills it
+    above the SELECT VESSEL plate, and the arrows sit level with the icon's centre. SELECT VESSEL itself
+    is placed by author_arena_launch_panel_layout (under the icon), called right after this."""
+    cdv_r = solve_rect(sc, cdv, CANVAS)
+    carousel = go_named(sc, cdv, "ControlsDescription")
+    toggle = go_named(sc, cdv, "Toggle")
+    if not carousel or not toggle:
+        fail("arena: no ControlsDescription (vessel carousel) or Toggle under ConfigurationDetailView")
+    top = row_bottom - CONTROLS_GAP
+    bottom = solve_rect(sc, toggle, CANVAS)
+    bottom = bottom[1] + bottom[3] + CAROUSEL_GAP
+    cb = sc.body(sc.go_tf[carousel])
+    if vec2(cb, "m_AnchorMin")[1] != 0 or vec2(cb, "m_AnchorMax")[1] != 1 or vec2(cb, "m_Pivot")[1] != 0.5:
+        fail("arena: the carousel is no longer stretch-anchored with a centre pivot - revisit fit_arena_carousel")
+    off_min = bottom - cdv_r[1]
+    off_max = top - (cdv_r[1] + cdv_r[3])
+    set_y(sc, carousel, None, None, round((off_min + off_max) / 2, 3), round(off_max - off_min, 3), "carousel")
+    sc.rebuild_maps()
+
+    icon = the_child(sc, carousel, "VesselIcon")
+    content = sc.tf_go[sc.tf_parent[sc.go_tf[icon]]]
+    c = solve_rect(sc, content, CANVAS)
+    icon_top = top - CAROUSEL_PAD
+    icon_bottom = bottom + CAROUSEL_PAD + SELECT_PLATE_HEIGHT + SELECT_GAP_UNDER_ICON
+    if icon_top - icon_bottom < MIN_ICON_HEIGHT:
+        fail(f"arena: the hull icon would be {icon_top - icon_bottom:.0f}px tall (< {MIN_ICON_HEIGHT})")
+    set_y(sc, icon, round((icon_bottom - c[1]) / c[3], 6), round((icon_top - c[1]) / c[3], 6), 0, 0, "icon")
+    centre = (icon_top + icon_bottom) / 2 - (c[1] + c[3] / 2)
+    for name in ("PrevButton", "NextButton"):
+        set_y(sc, the_child(sc, carousel, name), None, None, round(centre, 3), None, name)
+    sc.rebuild_maps()
+    arena_select_layout(sc)
+    sc.rebuild_maps()
+    return carousel, icon
+
+
+def the_child(sc, root, name):
+    hits = [g for g in sc.subtree(root) if sc.names.get(g) == name]
+    if len(hits) != 1:
+        fail(f"arena: expected one {name} under {sc.names.get(root)}, found {len(hits)}")
+    return hits[0]
+
+
+def author(sc, mint, pguid, tg):
+    cdv = the_go(sc, "ConfigurationDetailView", tg)
     cdv_rt = sc.go_tf[cdv]
     intensity = go_named(sc, cdv, "Intensity")
     if not intensity:
@@ -357,11 +483,16 @@ def author(sc, mint, pguid):
         picker_options.append((value, m(f"{n}.button"), m(f"{n}.image"), m(f"{n}.label.tmp")))
 
     # -- Row ---------------------------------------------------------------------------------------
-    row_top_offset = INTENSITY_OFFSET_Y - ROW_GAP_UNDER_INTENSITY
+    if tg.is_arena:
+        (amin, amax, pos, size, pivot), row_bottom = arena_row_rect(sc, cdv)
+        fit_arena_carousel(sc, cdv, row_bottom)
+    else:
+        row_top_offset = INTENSITY_OFFSET_Y - ROW_GAP_UNDER_INTENSITY
+        amin = (INTENSITY_ANCHOR_X[0], INTENSITY_BOTTOM_ANCHOR_Y)
+        amax = (INTENSITY_ANCHOR_X[1], INTENSITY_BOTTOM_ANCHOR_Y)
+        pos, size, pivot = (0, row_top_offset), (0, ROW_HEIGHT), (0.5, 1)
     row_rt = rect_doc(sc, d_rt, m("row.rt"), m("row.go"), cdv_rt, [m("header.rt"), m("buttons.rt")],
-                      (INTENSITY_ANCHOR_X[0], INTENSITY_BOTTOM_ANCHOR_Y),
-                      (INTENSITY_ANCHOR_X[1], INTENSITY_BOTTOM_ANCHOR_Y),
-                      (0, row_top_offset), (0, ROW_HEIGHT), (0.5, 1))
+                      amin, amax, pos, size, pivot)
     pk_h, pk_b = sc.docs[d_audio]
     pk_h = re.sub(r"&-?\d+", "&" + m("row.picker"), pk_h, count=1)
     pk_b = sub1(pk_b, r"^  m_GameObject: \{fileID: -?\d+\}$", f"  m_GameObject: {{fileID: {m('row.go')}}}", "pk go")
@@ -380,6 +511,15 @@ def author(sc, mint, pguid):
                                                        [d[0] for d in row_docs], False))] + row_docs))
 
     # -- place every group where Unity would serialize it: GameObjects ascend by fileID ----------
+    if tg.is_arena:
+        # A scene is (almost) one ascending run of fileIDs, prefab instances included: put each
+        # document before the first one with a larger fileID.
+        for go_fid, docs in groups:
+            for fid, h, b in docs:
+                insert_at = next((i for i, f in enumerate(sc.order) if int(f) > int(fid)), len(sc.order))
+                sc.docs[fid] = [h, b]
+                sc.order.insert(insert_at, fid)
+        groups = []
     for go_fid, docs in sorted(groups, key=lambda g: int(g[0])):
         insert_at = None
         for idx, fid in enumerate(sc.order):
@@ -400,7 +540,7 @@ def author(sc, mint, pguid):
                 lambda mm: mm.group(1) + f"  - {{fileID: {m('row.rt')}}}\n", "cdv children")
     sc.docs[cdv_rt][1] = body
 
-    panel = panel_doc(sc)
+    panel = panel_doc(sc, tg)
     pb = sc.body(panel)
     pb = sub1(pb, r"^(  domainTiles:\n(?:  - \{fileID: -?\d+\}\n)*)",
               lambda mm: mm.group(1) + f"  aiDifficultyPicker: {{fileID: {m('row.picker')}}}\n", "panel field")
@@ -423,7 +563,7 @@ def text_of(sc):
     return sc.preamble + "".join(sc.docs[f][0] + sc.docs[f][1] for f in sc.order)
 
 
-def validate(sc, mint, pguid):
+def validate(sc, mint, pguid, tg):
     text = text_of(sc)
     defined = set(re.findall(r"^--- !u!\d+ &(-?\d+)", text, re.M))
     ids = list(mint.ids.values())
@@ -459,10 +599,10 @@ def validate(sc, mint, pguid):
             fail(f"{sc.names.get(go)} is not in its parent's m_Children")
 
     # 4. the panel points at the picker, once
-    panel = panel_doc(sc)
+    panel = panel_doc(sc, tg)
     refs = re.findall(r"^  aiDifficultyPicker: \{fileID: (-?\d+)\}$", sc.body(panel), re.M)
     if refs != [mint.ids["row.picker"]]:
-        fail(f"MinigameLaunchPanel.aiDifficultyPicker is {refs}, expected the picker")
+        fail(f"{tg.name}: the panel's aiDifficultyPicker is {refs}, expected the picker")
     if pguid not in sc.body(mint.ids["row.picker"]):
         fail("picker doc does not name AIDifficultyPicker's script guid")
 
@@ -485,7 +625,7 @@ def validate(sc, mint, pguid):
     # 6. layout, solved in canvas pixels
     row = sc.tf_go[mint.ids["row.rt"]]
     row_rect = solve_rect(sc, row, CANVAS)
-    cdv = the_go(sc, "ConfigurationDetailView")
+    cdv = the_go(sc, "ConfigurationDetailView", tg)
     cdv_rect = solve_rect(sc, cdv, CANVAS)
     if not (row_rect[0] >= cdv_rect[0] - 0.5 and row_rect[0] + row_rect[2] <= cdv_rect[0] + cdv_rect[2] + 0.5):
         fail(f"row {row_rect} leaves ConfigurationDetailView {cdv_rect} horizontally")
@@ -500,14 +640,30 @@ def validate(sc, mint, pguid):
     buttons_rect = solve_rect(sc, sc.tf_go[mint.ids["buttons.rt"]], CANVAS)
     if buttons_rect[0] + buttons_rect[2] > row_rect[0] + row_rect[2] + 0.5:
         fail("the buttons overflow the row")
-    controls = the_go(sc, "ControlsDescription")
+    controls = the_go(sc, "ControlsDescription", tg)
     c = solve_rect(sc, controls, CANVAS)
-    moved_top = row_rect[1] - CONTROLS_GAP
-    if moved_top - c[1] < MIN_CONTROLS_HEIGHT:
-        fail(f"the controls block would be {moved_top - c[1]:.0f}px tall under the row (< {MIN_CONTROLS_HEIGHT})")
-    if c[1] + c[3] < row_rect[1]:
-        fail("the controls block no longer starts under the intensity row - the runtime move "
-             "in MinigameLaunchPanel.FitControlsUnderDifficultyRow is unnecessary; revisit the layout")
+    if tg.is_arena:
+        # Nothing moves at runtime here: the carousel was re-fitted under the row, so every sibling
+        # in the window - the carousel and Start included - must clear the row, and the carousel
+        # must clear everything but the row's neighbours it was fitted between.
+        for other in sc.children(cdv):
+            if other == row:
+                continue
+            if overlaps(row_rect, solve_rect(sc, other, CANVAS)):
+                fail(f"arena row {row_rect} overlaps {sc.names.get(other)}")
+            if other != controls and overlaps(c, solve_rect(sc, other, CANVAS)):
+                fail(f"arena carousel {c} overlaps {sc.names.get(other)}")
+        icon = solve_rect(sc, the_child(sc, controls, "VesselIcon"), CANVAS)
+        if icon[1] < c[1] - 0.5 or icon[1] + icon[3] > c[1] + c[3] + 0.5:
+            fail(f"arena: the hull icon {icon} leaves the carousel {c}")
+        moved_top = None
+    else:
+        moved_top = row_rect[1] - CONTROLS_GAP
+        if moved_top - c[1] < MIN_CONTROLS_HEIGHT:
+            fail(f"the controls block would be {moved_top - c[1]:.0f}px tall under the row (< {MIN_CONTROLS_HEIGHT})")
+        if c[1] + c[3] < row_rect[1]:
+            fail("the controls block no longer starts under the intensity row - the runtime move "
+                 "in MinigameLaunchPanel.FitControlsUnderDifficultyRow is unnecessary; revisit the layout")
 
     # 7. every label is ASCII the UI font carries, and fits its plate
     font = open(FONT_ASSET, encoding="utf-8", errors="ignore").read()
@@ -527,7 +683,8 @@ def validate(sc, mint, pguid):
     return row_rect, c, moved_top
 
 
-def build(path):
+def build(tg):
+    path = tg.path
     sc = Scene(path)
     original = text_of(sc)
     # The parser must round-trip the file EXACTLY before anything is written through it - a
@@ -535,23 +692,23 @@ def build(path):
     with open(path, encoding="utf-8", newline="") as fh:
         if fh.read() != original:
             fail("the YAML parser does not round-trip " + os.path.basename(path) + " - refusing to edit it")
-    strip(sc)
+    strip(sc, tg)
     pguid = picker_guid()
-    mint = Minter(sc.docs.keys())
+    mint = Minter(sc.docs.keys(), tg.salt)
     for k in all_keys():
         mint(k)
-    author(sc, mint, pguid)
-    row_rect, controls, moved_top = validate(sc, mint, pguid)
+    author(sc, mint, pguid, tg)
+    row_rect, controls, moved_top = validate(sc, mint, pguid, tg)
     return sc, original, text_of(sc), row_rect, controls, moved_top
 
 
-def negative_control(path):
+def negative_control(tg):
     """Prove the layout gate can fail: an oversized row must be refused."""
     global ROW_HEIGHT
     saved = ROW_HEIGHT
     ROW_HEIGHT = 600.0
     try:
-        build(path)
+        build(tg)
     except SystemExit as e:
         return str(e)
     finally:
@@ -559,34 +716,66 @@ def negative_control(path):
     fail("negative control: a 600px row passed the layout gate")
 
 
+# The style-B rebuild (Tools/Build/author_menu_configure.py) replaced BOTH windows' ConfigurationContent
+# with its own views - ConfigureView in the Arcade modal prefab, ConfigureArenaView in Menu_Main's Arena
+# window - and authors the AI difficulty row into them itself (step 03, Pilots). The children this
+# script clones and lays out (ConfigurationDetailView, the carousel) are gone there, so for such a
+# window this spent one-shot STANDS DOWN rather than aborting (CLAUDE.md: "a spent one-shot must
+# STAND DOWN, not abort"), and author_menu_configure.py --check is the gate for the row.
+CONFIGURE_VIEW_PREFAB = os.path.join(ROOT, "Assets", "_Prefabs", "UI Elements", "Main Menu Screens", "Configure",
+                                     "ConfigureView.prefab.meta")
+
+
+def stood_down(tg):
+    with open(tg.path, encoding="utf-8") as fh:
+        text = fh.read()
+    if tg.is_arena:
+        return arena_rebuilt(text)
+    if not os.path.exists(CONFIGURE_VIEW_PREFAB):
+        return False
+    with open(CONFIGURE_VIEW_PREFAB, encoding="utf-8") as fh:
+        guid = re.search(r"^guid: (\w+)", fh.read(), re.M).group(1)
+    return f"guid: {guid}" in text and "m_Name: ConfigurationDetailView" not in text
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
 
-    sc, original, authored, row_rect, controls, moved_top = build(PREFAB)
-    print(f"row      L={row_rect[0]:.1f} B={row_rect[1]:.1f} W={row_rect[2]:.1f} H={row_rect[3]:.1f} (canvas px)")
-    print(f"controls top {controls[1] + controls[3]:.1f} -> {moved_top:.1f} while the row shows "
-          f"({moved_top - controls[1]:.0f}px tall; {controls[3]:.0f}px otherwise)")
-    print("negative control refused:", negative_control(PREFAB).split(": ", 1)[-1])
+    for tg in TARGETS:
+        if stood_down(tg):
+            print(f"[{tg.name}] OK  stood down: the window is the style-B configure view now "
+                  "(author_menu_configure.py authors its AI difficulty row)")
+            continue
+        sc, original, authored, row_rect, controls, moved_top = build(tg)
+        print(f"[{tg.name}]")
+        print(f"row      L={row_rect[0]:.1f} B={row_rect[1]:.1f} W={row_rect[2]:.1f} H={row_rect[3]:.1f} (canvas px)")
+        if moved_top is None:
+            print(f"carousel L={controls[0]:.1f} B={controls[1]:.1f} W={controls[2]:.1f} H={controls[3]:.1f} "
+                  f"(re-fitted under the row)")
+        else:
+            print(f"controls top {controls[1] + controls[3]:.1f} -> {moved_top:.1f} while the row shows "
+                  f"({moved_top - controls[1]:.0f}px tall; {controls[3]:.0f}px otherwise)")
+        print("negative control refused:", negative_control(tg).split(": ", 1)[-1])
 
-    if args.check:
-        if authored != original:
-            a, b = original.splitlines(), authored.splitlines()
-            for i, (x, y) in enumerate(zip(a, b)):
-                if x != y:
-                    print(f"first difference at line {i + 1}:\n  file:   {x}\n  script: {y}")
-                    break
-            fail("ArcadeGameConfigureModal.prefab differs from what this script authors - re-run it")
-        print("OK: the AI difficulty row matches this script.")
-        return
+        if args.check:
+            if authored != original:
+                a, b = original.splitlines(), authored.splitlines()
+                for i, (x, y) in enumerate(zip(a, b)):
+                    if x != y:
+                        print(f"first difference at line {i + 1}:\n  file:   {x}\n  script: {y}")
+                        break
+                fail(f"{tg.name} differs from what this script authors - re-run it")
+            print("OK: the AI difficulty row matches this script.")
+            continue
 
-    if authored == original:
-        print("already authored - nothing to write.")
-        return
-    with open(PREFAB, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(authored)
-    print("wrote", os.path.relpath(PREFAB, ROOT))
+        if authored == original:
+            print("already authored - nothing to write.")
+            continue
+        with open(tg.path, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(authored)
+        print("wrote", os.path.relpath(tg.path, ROOT))
 
 
 if __name__ == "__main__":

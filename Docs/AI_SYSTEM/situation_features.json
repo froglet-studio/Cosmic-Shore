@@ -25,7 +25,7 @@
       "xSum ySum xDiff yDiff throttle",
       "lt rt",
       "rings threaded",
-      "skims, rams, held (the page; Unity infers skims from a boost rise and rail hits from a speed drop)",
+      "skims, rams, held (the page; Unity infers skims from a boost rise; rail hits from the Slowed state bit on flight/3, else a speed drop)", "buttonEvents: the pilot's own presses [t, InputEvents, 1 / 0] (flight/3, 2026-10-16 on)",
       "rivals: x y z rings per other pilot",
       "camera (HumanFlightRecorder since 2026-10-16): camx camy camz, camfx camfy camfz (forward), camux camuy camuz (up), fov (vertical deg), camAspect, camRear (look-behind), camMode"
     ]
@@ -177,7 +177,7 @@
     "phase": "in this order: recovery (after a missed mouth until headingErr < 25), thread (1 s before a ring), exit (0.8 s after), skim run (0.5 s around a skim, or going for one), line-up (timeToMouth < 4 and turning > 25 deg/s), boost straight (boost held, turning < 12), approach (headingErr < 30, or going for the approach point or mouth), cruise",
     "corrections": "a person's override {t0, t1, phase, target} beats the guess",
     "skim choices": "taken: the first touch of a skim run (none in the 1.5 s before), judged 0.5 s earlier; skipped: a skim with detour <= 12 u within 2 s and no skim in the next 2 s (one per 1.5 s)",
-    "mistakes": "missed mouth: crossed the ring's plane between 1 and 3 radii from the centre; rail hit: rams went up (Unity: speed fell below 65% in one sample)",
+    "mistakes": "missed mouth: crossed the ring's plane between 1 and 3 radii from the centre; rail hit: rams went up (Unity flight/3: the Slowed state bit (8) came on; older Unity flights: speed fell below 65% in one sample)",
     "commit point": "per leg, where the target last switched away from the approach point; none when the leg had no approach",
     "view gate": "V3, only on flights with a camera (a flight without one is read as all-seeing, its labels unchanged): a target candidate counts only if it was in plain view within the last 1 s (if none was, all count); a SKIPPED skim needs its prism in plain view for the 0.3 s before the choice, asked of that prism from the camera at each of those samples, else it is seen: false and left out of the skim fit; a missed mouth is cause control (the ring was in plain view within 1 s) or navigation (it was not)"
   },

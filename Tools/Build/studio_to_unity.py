@@ -50,7 +50,12 @@ def parse_spec_labels(html):
     """{key: label} from the page's SPEC rows (['group', 'key', 'label', min, max, step]): the artifact's own names."""
     q = r"'((?:[^'\\]|\\.)*)'"   # a JS single-quoted string, escapes included
     rows = re.finditer(r"\[\s*" + q + r"\s*,\s*'(\w+)'\s*,\s*" + q + r"\s*,\s*-?[\d.]", html)   # a row, not a key list
-    return {m.group(2): m.group(3).replace("\\'", "'") for m in rows}
+    out = {m.group(2): m.group(3).replace("\\'", "'") for m in rows}
+    # the lab form (goby.html): ['group', 'key', lo, hi, step, 'label', 'tip']
+    num = r"\s*,\s*-?[\d.]+"
+    for m in re.finditer(r"\[\s*" + q + r"\s*,\s*'(\w+)'" + num * 3 + r"\s*,\s*" + q, html):
+        out.setdefault(m.group(2), m.group(3).replace("\\'", "'"))
+    return out
 
 
 def settings_from(obj):

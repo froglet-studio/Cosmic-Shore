@@ -908,11 +908,14 @@ MonoBehaviour:
     RestlessExit: 15900
     FrenzyEnter: 33000
     FrenzyExit: 32200
-    RestlessEnterVolume: 602000
-    RestlessExitVolume: 592000
-    FrenzyEnterVolume: 985000
-    FrenzyExitVolume: 960000
+    RestlessEnterVolume: 550182
+    RestlessExitVolume: 540182
+    FrenzyEnterVolume: 933182
+    FrenzyExitVolume: 908182
 """))
+    # The four volumes are the hand-set ladder less the 51,818 the environment lost when every
+    # prism was fitted flush (SpawnableHesperides, NO PRISM MAY INTERPENETRATE ANOTHER): the
+    # shipped asset carries the same numbers, so re-running this writes what ships.
     meta_asset(cell_rel, cell_guid)
 
     print(f"wrote {len(made)} assets (+ metas)")

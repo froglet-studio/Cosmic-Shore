@@ -113,6 +113,8 @@ namespace CosmicShore.Gameplay
         public bool Jousted(string killerName)
         {
             if (dying || isCleaningUp) return false;
+            // A silenced pilot harms no lifeform (VesselSilence, Docs/ElementalAbilitySystem/SILENCE.md).
+            if (VesselSilence.IsSilenced(killerName)) return false;
             dying = true;
             deathStyle = LifeformDeathStyle.Jousted;
             Die(killerName);
@@ -170,6 +172,9 @@ namespace CosmicShore.Gameplay
 
         // --- Composition: extracted trackers (SRP) ---
         protected HealthBlockTracker healthTracker;
+        /// <summary>The live health prisms (body mass) this lifeform holds right now - for a plant, what is left to eat.
+        /// Read-only; Tandava's director ranks plants by it.</summary>
+        public int HealthBlockCount => healthTracker?.Count ?? 0;
         protected SpindleTracker spindleTracker;
 
         // --- Internal state ---

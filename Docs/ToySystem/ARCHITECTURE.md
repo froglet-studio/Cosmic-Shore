@@ -35,8 +35,9 @@ detection. On top of that base the `Toy` class adds:
   (`ToyContext.IsFreestyleActive`).
 - **Continuity-law bloom-in** — every toy scales from zero on spawn (nothing pops in).
 - **A switch ring** — every toy is drawn inside one continuous ring, square across your flight
-  path, **at the radius of its own trigger collider**, in the **prism shader**. The ring is the
-  affordance: thread it and something fires, and *which prism it is painted as* says what.
+  path, **at the radius of its own trigger collider**, drawn as a **spindle** in the colour of a
+  prism (since 2026-10-21). The ring is the affordance: thread it and something fires, and *which
+  prism's colour it wears* says what.
   See "The switch" below — there are no exemptions left.
 - **Exit-gated re-arm** — a toy is *not consumed*, but it re-arms **only once the local vessel
   has flown clear of its trigger volume** (a per-frame distance poll with `exitRadiusMultiplier`
@@ -1134,6 +1135,13 @@ adds **no collider**: the toy's own trigger sphere remains the entire interactio
 > *threader-agnostic*: a **vessel** threads a toy, a **ball** threads a Scarab switch or an Astro
 > League goal. Same shape, same promise.
 
+**A second body threads toys too (2026-10-20).** A hull's `ISwitchThreadProbe` - the Thresher's ball, the flail
+(`ThresherExecutor`) - fires a toy when its segment passes through the toy's trigger sphere: `Toy.Update` samples the
+LOCAL hull's probe every frame and activates through the same deferred path a hull's trigger entry uses; the toy
+re-arms only once the hull AND the probe are clear of the exit radius. It is an opt-in interface over
+`IRingThreadProbe`, so a probe that only threads race rings (the Wrasse's kite) does not fire toys (Garrett: "lets
+flip things so the wrasse does not activate toys, but the thresher flail does").
+
 Before this pass the toybox taught it inconsistently — the painting's stroke gates and milestones
 were rings, but a toy root was a tinted sphere with a name floating over it and an invisible 42-unit
 trigger, so "how do I use this thing?" was answered by flying at it and finding out. Now **every
@@ -1164,15 +1172,28 @@ and is gone: that toy is a switch now.)*
 
 #### What a switch's SHADER says
 
-> **Every switch is drawn in the PRISM shader**, the same material family the painted trail wears
-> — so a switch is made of the same stuff as the world it acts on. The one channel left free to
-> carry meaning is *which prism it is painted as*, and that channel is `ToySwitchSignal`.
+> **Every switch wears a PRISM's colour**, the material family the painted trail wears — so a
+> switch speaks the language of the world it acts on. The one channel left free to carry meaning is
+> *which prism's colour it wears*, and that channel is `ToySwitchSignal`.
+
+**The ring is a SYNTHETIC WIRE (Garrett, 2026-10-21: "a synthetic spindle geometry that is more like a wire
+... synthetic constructs up close, but spindles from afar").** `ToyFactory.AddSwitchRing` builds it as a
+machined three-strand cable (`Assets/_Models/Spindles/SpindleWireRing`) on `SpindleWireGraph`, in the
+signal's colour (a dark body at `switchRingDarkShare` of the signal, facets square to the camera in the
+signal colour itself, so the machined facets read), and `SwitchRingLod` hands it to the
+spindle LOD: solid and machined up close, turning to a spindle's lace while the prisms' depth effect is open
+(184 - 700 units), settling back into a solid ring and then a glowing thread that never fades or is culled
+(`Docs/SPINDLE_LOD.md` §9). Tuning on `Resources/SpindleLodProfile`: `switchRingStrength` (how far the lay
+loosens), `switchRingDistance` (the lace's fade, ~14,000 units) and `switchRingSway` (0). Outside Play,
+without the profile or with `lodEnabled` off, the ring is the signal's prism, as before. Hubs and cones
+beside a ring stay prisms.
 
 | Signal | Painted as | Says | Wearers |
 |---|---|---|---|
 | `Neutral` | `Domains.Blue`'s plain prism material — the platform's existing "no team / neutral entity" sentinel | *thread me and something happens* | every toy root, every matrix station, the painting's milestones and its SHARE/REPAINT gates, the Wanderway return station |
 | `Domain` | that domain's plain prism material | *threading me makes your trail this domain* | the Domain Changer's slots; the painting's **stroke-start gates** (crossing one calls `RequestStrokeDomain`, so it really does hand you one) |
 | `Next` | the free-pickup LIME (`SO_ColorSet.GetCtaSignalColor`) on the prism shader | *this is the switch YOU are meant to thread next* | Switchback's gates — the local pilot's next one only |
+| `Halo` | a fixed PEARL (`ToyFactory.HaloPearl`, a warm white) on the prism shader - the one colour no playable domain, no danger rim and no free pickup wears | *this is a halo ring: thread it to break it* | Tandava's halo (`TandavaHaloRing`) round the Lord of the Dance - a guarded ring does not change colour, its drawn mouth dims smaller while its crossing test is off (`Assets/_Scripts/Controller/Arcade/TANDAVA.md` §3.6). It was `Flame`, a danger-red ring of fire, until fire left the mode (the value 3 is kept) |
 
 **`Next` is the first PER-VIEWER signal, and that is what makes it legal.** Every other signal
 describes the switch itself and reads the same on every screen; this one describes the

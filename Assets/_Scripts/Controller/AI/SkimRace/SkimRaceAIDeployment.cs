@@ -43,8 +43,7 @@ namespace CosmicShore.Gameplay
             if (vessel.VesselStatus == null || vessel.VesselStatus.VesselType != VesselClassType.Squirrel)
                 return null; // tuned for the Squirrel; other hulls keep AIPilot
 
-            var pilot = vesselObject.GetComponent<SkimRacePilot>();
-            if (pilot == null) pilot = vesselObject.AddComponent<SkimRacePilot>();
+            if (!vesselObject.TryGetComponent(out SkimRacePilot pilot)) pilot = vesselObject.AddComponent<SkimRacePilot>();
             // No upper clamp: an intensity with no tuning file of its own flies the general policy.
             int intensity = gameData.SelectedIntensity != null ? Mathf.Max(1, gameData.SelectedIntensity.Value) : 1;
             // The per-intensity tuning files were tuned on Skim Race's tracks; Regatta flies its own copy of the
@@ -55,7 +54,7 @@ namespace CosmicShore.Gameplay
             // The host's lobby pick, independent of intensity (intensity is the map, difficulty is
             // the opponent): the same per-intensity policy, plus the difficulty's deliberate mistakes
             // (none for Hard). Every seat - backfill and adopted hull alike - is installed under it.
-            // Only where the card OFFERS the picker (AIDifficultyRules.IsOfferedFor - Skim Race): the
+            // Only where the card OFFERS the picker (AIDifficultyRules.IsOfferedFor - Skim Race, Regatta and the other cards it lists): the
             // pick is pre-launch config that outlives the card it was made on, so without this a host
             // who chose Easy on Skim Race would hand Regatta's AI mistakes its lobby never showed.
             var difficulty = AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty);

@@ -31,6 +31,13 @@ namespace CosmicShore.UI
         [SerializeField] private Button acceptButton;
         [SerializeField] private Button declineButton;
         [SerializeField] private CanvasGroup canvasGroup;
+        [Tooltip("Optional. \"Party 2 / 4\" - the host's party, read from the presence list.")]
+        [SerializeField] private TMP_Text partyCountText;
+        [Tooltip("Optional. A bar that drains over the seconds the invite stays up.")]
+        [SerializeField] private KitDrain timerBar;
+        [Tooltip("Optional. The drop-in played each time the popup appears (Play On Enable off - this panel " +
+                 "starts it). It shares the visibility CanvasGroup and fades up to whatever alpha it finds.")]
+        [SerializeField] private KitEntrance entrance;
 
         [Header("Data")]
         [SerializeField] private SO_ProfileIconList profileIcons;
@@ -154,6 +161,11 @@ namespace CosmicShore.UI
                     inviterAvatarImage.sprite = sprite;
             }
 
+            if (partyCountText != null)
+                partyCountText.text = PartyCountLabel(invite.HostPlayerId);
+            if (timerBar != null)
+                timerBar.Play(autoHideSeconds);
+
             SetButtonsInteractable(true);
             ShowPanel(true);
 
@@ -237,9 +249,15 @@ namespace CosmicShore.UI
             if (show)
                 transform.SetAsLastSibling();
 
+            bool appearing = show && canvasGroup.alpha < 0.01f;
+            // A running entrance writes this same group every frame; stop it before hiding.
+            if (!show && entrance) entrance.Finish();
+
             canvasGroup.alpha = show ? 1f : 0f;
             canvasGroup.blocksRaycasts = show;
             canvasGroup.interactable = show;
+
+            if (appearing && entrance) entrance.Play();
         }
 
         private void SetButtonsInteractable(bool interactable)
@@ -248,6 +266,18 @@ namespace CosmicShore.UI
                 acceptButton.interactable = interactable;
             if (declineButton != null)
                 declineButton.interactable = interactable;
+        }
+
+        /// <summary>"Party 2 / 4" from the host's presence entry; empty when the host is not listed.</summary>
+        private string PartyCountLabel(string hostPlayerId)
+        {
+            if (connectionData?.OnlinePlayers == null) return string.Empty;
+            foreach (var player in connectionData.OnlinePlayers)
+            {
+                if (player.PlayerId != hostPlayerId) continue;
+                return player.PartyMaxSlots > 0 ? $"Party {Mathf.Max(1, player.PartyMemberCount)} / {player.PartyMaxSlots}" : string.Empty;
+            }
+            return string.Empty;
         }
 
         private Sprite ResolveAvatarSprite(int avatarId)

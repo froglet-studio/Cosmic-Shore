@@ -151,8 +151,7 @@ namespace CosmicShore.Editor
                 var offenders = new List<string>();
                 foreach (var prism in go.GetComponentsInChildren<Prism>(true))
                 {
-                    var renderer = prism.GetComponent<Renderer>();
-                    if (renderer == null) continue;
+                    if (!prism.TryGetComponent(out Renderer renderer)) continue;
                     foreach (var mat in renderer.sharedMaterials)
                     {
                         if (mat == null || mat.shader == null) continue;

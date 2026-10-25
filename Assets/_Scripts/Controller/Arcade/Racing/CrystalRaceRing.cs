@@ -41,7 +41,8 @@ namespace CosmicShore.Gameplay
     /// runs the vessel's half of the pickup locally, and reports the crystal's half to the server
     /// (<see cref="CrystalManager.ReportRingThreaded"/>), which refuses a ring that has already
     /// moved. The crossing is a swept segment test, so a boosted hull cannot fly through between
-    /// two samples.</para>
+    /// two samples. A hull with a second threading body (<see cref="IRingThreadProbe"/>: the
+    /// Thresher's ball) threads the ring with either.</para>
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Crystal))]
@@ -151,6 +152,10 @@ namespace CosmicShore.Gameplay
             /// <summary><c>VesselTransformer.TeleportCount</c> at the last sample: a change means
             /// the step is a jump, and a jump threads nothing (GateRaceController records why).</summary>
             public int TeleportCount;
+
+            /// <summary>The hull's second threading body (<see cref="IRingThreadProbe"/>: the Thresher's
+            /// ball). The ring is threaded by the hull OR by it.</summary>
+            public readonly RingThreadProbeSample Probe = new();
         }
 
         // ── The track, shared by every ring ───────────────────────────────
@@ -336,6 +341,8 @@ namespace CosmicShore.Gameplay
                 }
 
                 Vector3 cur = t.position;
+                // Sampled every frame, ahead of every skip below, so the probe's next segment is one frame long.
+                bool probeFlew = sample.Probe.Advance(vessel, maxStepSqr, out var probePrev, out var probeCur);
                 int teleports = TeleportCountOf(vessel);
                 if (!sample.HasLastPosition || teleports != sample.TeleportCount)
                 {
@@ -357,7 +364,7 @@ namespace CosmicShore.Gameplay
                 // The crystal's own domain rule. A pilot it would refuse threads nothing.
                 if (impactor && !impactor.AcceptsDomain(collector.OwnDomain)) continue;
 
-                if (!_ring.CrossedMouth(prev, cur)) continue;
+                if (!_ring.CrossedMouth(prev, cur) && !(probeFlew && _ring.CrossedMouth(probePrev, probeCur))) continue;
 
                 _reportedAt = Time.time;
                 latched = true;
@@ -387,7 +394,9 @@ namespace CosmicShore.Gameplay
 
         void Forget(IPlayer p)
         {
-            if (_samples.TryGetValue(p, out var sample)) sample.HasLastPosition = false;
+            if (!_samples.TryGetValue(p, out var sample)) return;
+            sample.HasLastPosition = false;
+            sample.Probe.Forget();
         }
 
         void PruneDepartedPilots(List<IPlayer> players)

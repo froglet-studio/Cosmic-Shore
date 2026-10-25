@@ -13,19 +13,24 @@ namespace CosmicShore.Editor
     /// Performance captures with no button (Yash, 2026-10-15: "captures should happen automatic, no Capture button").
     /// Docs/DIAGNOSTICS.md § "The Bug Hunt &amp; Performance badge"; Docs/PERFORMANCE_OPTIMIZATION.md §4.6.
     ///
-    /// <para>In Editor Play mode, once per scene per play session, after the scene has run long enough to be the state
+    /// <para>In Editor Play mode, once per scene per play session (plus the early capture below), after the scene has run long enough to be the state
     /// the record measures, this runs the HUD's <c>capture &lt;label&gt; 15</c> by itself: burst, diag 15 s, the
     /// Profiler hierarchy (prof switches Profiler recording on for its 180 frames and back off; no window needed),
     /// renderers, cells, one JSON. The scenario table comes from <c>Docs/perf/status.json</c> (written by
     /// <c>Tools/Build/perf_hunt.py</c>: scene, label, afterSeconds), so a scenario scene gets its record label (S2,
     /// SkimRace, S5) at its record time; any other gameplay scene is captured under its own name after
-    /// <see cref="DefaultAfterSeconds"/>. When Play stops, the Bug Ledger's one question ("Send to Claude?",
-    /// <see cref="BugHuntAutoSend"/>) offers the new file; the daily sweep judges it.</para>
+    /// <see cref="DefaultAfterSeconds"/>. When Play stops, <see cref="BugHuntAutoSend"/> sends the new file to
+    /// <c>bugledger/&lt;user&gt;</c> with no question; the daily sweep judges it.</para>
     ///
     /// <para>Skipped, and said so on the badge: Code Optimization = Debug (C# ~5x slower, the sweep would refuse it
     /// anyway), a paused editor, the boot scenes. Costs the play session one 15 s sampling window, a 180-frame
     /// Profiler recording and one renderer census per scene, so the person may see a short hitch at the end of it.
     /// Off on this machine with the EditorPrefs key <see cref="OffKey"/> (no UI by design).</para>
+    ///
+    /// <para>A scene whose record time is longer than <see cref="EarlySeconds"/> (Menu_Main's S2 waits 8 minutes) is also
+    /// captured at <see cref="EarlySeconds"/> under its own label (<c>S2-4min</c>), so a shorter play test still sends
+    /// something (Yash, 2026-10-18). The sweep keys baselines by scene and label, so the early capture never stands in for
+    /// the record's.</para>
     /// </summary>
     [InitializeOnLoad]
     public static class PerfAutoCapture
@@ -33,6 +38,8 @@ namespace CosmicShore.Editor
         public const string OffKey = "CosmicShore.PerfAutoCapture.Off";
         const float DefaultAfterSeconds = 90f;
         const int CaptureSeconds = 15;
+        const float EarlySeconds = 240f;
+        const string EarlySuffix = "-4min";
         static readonly HashSet<string> SkippedScenes = new(StringComparer.OrdinalIgnoreCase) { "Bootstrap", "Authentication" };
 
         [Serializable] class Scenario { public string label; public string scene; public float afterSeconds; }
@@ -76,8 +83,12 @@ namespace CosmicShore.Editor
                 if (scene != s_scene) { s_scene = scene; s_sceneSince = now; }
                 if (string.IsNullOrEmpty(scene) || SkippedScenes.Contains(scene)) { StatusLine = ""; return; }
 
-                var (label, after) = Target(scene);
-                if (s_captured.Contains(scene)) { StatusLine = $"Auto-capture: {label} done this session."; return; }
+                var (recordLabel, recordAfter) = Target(scene);
+                // The early capture first (when the record waits longer than it), then the record's own.
+                bool early = recordAfter > EarlySeconds && !s_captured.Contains(scene + "|" + recordLabel + EarlySuffix);
+                string label = early ? recordLabel + EarlySuffix : recordLabel;
+                float after = early ? EarlySeconds : recordAfter;
+                if (s_captured.Contains(scene + "|" + label)) { StatusLine = $"Auto-capture: {label} done this session."; return; }
                 if (CompilationPipeline.codeOptimization == CodeOptimization.Debug)
                 {
                     StatusLine = "Auto-capture off while Code Optimization is Debug (press Release).";
@@ -96,8 +107,10 @@ namespace CosmicShore.Editor
                 // The HUD spawns a moment into Play; until it answers, try again next second.
                 if (!DiagnosticsHUD.CaptureRunning && answer != null && answer.StartsWith("no DiagnosticsHUD", StringComparison.Ordinal))
                     return;
-                s_captured.Add(scene);
-                StatusLine = $"Auto-capture: {label} running (15 s, then the Profiler). Stop Play afterwards to send it.";
+                s_captured.Add(scene + "|" + label);
+                StatusLine = early
+                    ? $"Auto-capture: {label} running; {recordLabel} follows at {(int)recordAfter / 60} min. Stop Play once it finishes and it goes to Claude by itself."
+                    : $"Auto-capture: {label} running (15 s, then the Profiler). Stop Play and it goes to Claude by itself.";
             }
             catch (Exception e)
             {

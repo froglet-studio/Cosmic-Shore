@@ -1,10 +1,22 @@
 # Android builds — a signed App Bundle on Google Play internal testing
 
-Status (2026-10-13): **the scripted build and its pre-upload check are on the branch but have not
-run in Unity yet** (no editor in the authoring session). The check's parsing was proven outside
-Unity against manifests linked by Google's own `aapt2` and against the repo's FMOD and Nice
-Vibrations libraries (§4). The Play app `com.FrogletGames.CosmicShore` exists; nothing has been
-uploaded to it.
+Status (2026-10-25):
+
+- **The release build has run.** Build **412826** (version 0.2.0, built 2026-10-14 16:26 UTC from
+  FrogletTools > Build > Android App Bundle (Release)) is on Play **internal testing** for
+  `com.FrogletGames.CosmicShore`. It is the newest upload on record; Play Console's Internal
+  testing page is the authority if someone uploaded since.
+- **That build is 64-bit only.** One tester installed it; two (a Moto G Power and a Samsung
+  Galaxy M, which run 32-bit Android) got "Item not found". 32-bit (ARMv7) ships again from
+  2026-10-15 (§0). **Upload a new build** so those phones can install it (§6), then check them in
+  Play Console's Device catalog.
+- **Development builds run on phones.** Garrett passed the phone round on an Android development
+  build on 2026-10-20 (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, Phone round). §8 covers the
+  development APK and the switch that makes it play like release.
+- **Not yet checked in the Editor:** the build's refusal dialogs, batchmode exit codes and
+  `AndroidBundleCheckTests` in the Test Runner (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, Android
+  release build). The check's parsing was proven outside Unity against manifests linked by
+  Google's own `aapt2` and against the repo's FMOD and Nice Vibrations libraries (§4).
 
 Internal testing reaches up to 100 testers within minutes of a rollout, and needs no store listing,
 content rating or review first. That is the target here. Closed and open testing and production
@@ -22,7 +34,7 @@ build checks the ones Play rejects on, and stops rather than changing them back.
 | Package | `com.FrogletGames.CosmicShore` | Fixed forever by the first upload |
 | Target API | 36 | Play's minimum for new apps and updates since 31 Aug 2026 |
 | Minimum API | 28 (Android 9) | |
-| Architectures | ARM64 only, IL2CPP | Play requires 64-bit; 32-bit was dropped deliberately |
+| Architectures | ARMv7 + ARM64, IL2CPP | Play requires 64-bit. 32-bit was dropped on 2026-10-08 and **added back on 2026-10-15**: two team phones (a Moto G Power and a Samsung Galaxy M) run 32-bit Android on 64-bit chips, and Play showed them "Item not found". Play splits a bundle per ABI, so a phone downloads only its own libraries |
 | R8 minify | On | Unity Ads, the cause of the old R8 launch crash, is removed |
 | Unity IAP | Removed | So no outdated Play Billing library ships |
 | Audio | FMOD's Desktop banks (36 MB) | No platform overrides a bank folder, so Android and iOS ship the same banks |
@@ -139,6 +151,7 @@ and no Java.
 | Error | Target SDK ≥ 36 | Manifest |
 | Error | Not debuggable | Manifest |
 | Error | Has `arm64-v8a` libraries | `base/lib/<abi>/` |
+| Warning | Has `armeabi-v7a` libraries too (32-bit phones) | `base/lib/<abi>/` |
 | Error | Version code between 1 and 2,100,000,000 | Manifest |
 | Error | Base module ≤ 200 MB compressed | Zip entry sizes |
 | Warning | Every 64-bit library is 16 KB page-aligned | Each `.so`'s ELF LOAD segments |
@@ -167,6 +180,11 @@ Internal testing works now. Replacing or rebuilding that library is on the rollo
 list.
 
 ## 5. The first upload to internal testing (by hand)
+
+> **Done — build 412826, 2026-10-14** (the status block at the top of this file has its current
+> state). This section is the record of what that upload involved, and steps 1 and 2 (account type,
+> tester list) are still worth re-reading whenever the tester list changes. **Every upload after
+> that one, including the 32-bit rebuild the status block asks for, goes through §6.**
 
 The Play Developer API cannot make an app's first upload, so this one goes through Play Console.
 
@@ -219,7 +237,55 @@ App bundle explorer > the version > Downloads > Native debug symbols.
 | Dialog: "The editor is not on Android" | File > Build Profiles > Android > Switch Platform |
 | Play: "signed in debug mode" | The check fails on this first. Select the upload key and rebuild |
 | Play: "signed with the wrong key" | Later uploads must use the key the first upload registered. If it is lost: Play Console > Test and release > Setup > App signing > **Request upload key reset** |
+| A tester taps "Download it on Google Play" and gets **"Item not found"**, while the app installs for others on the same list | **First, is their phone 32-bit?** Play Console > Reach and devices > Device catalog > search the model; "Unsupported" with an ABI reason means their Android is 32-bit. Bundles before 2026-10-15 were 64-bit only and hide the app from those phones; rebuild and upload. **Otherwise it is the account:** The Play Store app on their phone is signed into a different Google account than the email on the list. Most often the list has a work address and the phone uses a personal Gmail. Play Store > profile icon shows the active account. Either add THAT account to the list (Testers > the email list > add > Save; no new release needed), or switch Play Store to the listed account. Then open the opt-in link in Chrome, signed into the same account, tap **Accept invite**, and only then **Download it on Google Play**. If it persists, clear the Play Store's cache and wait 10-15 minutes. A Google Workspace account whose admin restricts Play cannot install test apps; use a personal Gmail |
 | Play: "Version code … has already been used" | Build again (a new minute), or pass `-buildVersionCode` |
 | Play warning: "contains native code, and you've not uploaded debug symbols" | Only a recommendation; the release can go out. The bundle was built without the menu (or before 2026-10-14). The check warns about this too. Rebuild with FrogletTools > Build > Android App Bundle (Release) |
 | Gradle fails during the build | Most Android Gradle failures trace to `Assets/Plugins/Android/*.gradle` and the EDM4U block; see `Docs/PLATFORM_UNIFICATION.md` §2.1. Send the Console error to Claude |
 | The check says the base module is over 200 MB | Player Settings > Android > Publishing Settings > **Split Application Binary**, then rebuild |
+
+## 8. A development build that plays like release (Patch And Run)
+
+Android's **Patch** and **Patch And Run** (Build Profiles > Android) only work on a Development
+Build: they push the changed scripts and assets to the installed app instead of a full rebuild and
+reinstall. A development build normally carries the diagnostics HUD, the AI-training flight
+recorder, Unity's red on-screen error console and the info logs. **`DevDiagnostics`**
+(`Assets/_Scripts/Utility/DevDiagnostics.cs`) switches all of them off together, so the patched
+build plays like a release build.
+
+1. Build Profiles > Android: tick **Development Build**. Leave **Autoconnect Profiler**, **Deep
+   Profiling Support** and **Script Debugging** unticked: they slow the build down and are not
+   covered by the switch.
+2. Build And Run once, then **Patch And Run** for every change after that.
+3. On the phone, turn the diagnostics **off**: press **Off** on the diagnostics HUD's command row, or
+   hold **four fingers** on the screen for **two seconds**. The HUD disappears.
+4. The choice is saved on the phone (PlayerPrefs `CosmicShore.DevDiagnostics`). It survives
+   relaunches and every Patch, until the app is uninstalled or its data is cleared.
+5. To get the diagnostics back, hold four fingers for two seconds again (Shift+F7 on a keyboard).
+
+**To start a fresh install with the diagnostics off**, add `CS_DEV_DIAGNOSTICS_OFF` to the Android
+Build Profile's **Scripting Defines**. A choice made on the phone still wins over it.
+
+**A development APK without the Build Profiles window:** **FrogletTools > Build > Android APK
+(Development)**, or from the command line (the editor must not have the project open):
+
+```
+Unity -quit -batchmode -nographics -buildTarget Android -projectPath <proj> \
+      -executeMethod CosmicShore.Editor.CosmicShoreBuildPipeline.BuildAndroidDevelopment \
+      -buildOutput Builds/Android [-diagnosticsOff] [-buildVersion 0.2.1] -logFile <log>
+```
+
+It writes `Builds/Android/CosmicShore-<version>-<code>-dev.apk`, signed with Unity's debug key, and
+puts Player Settings back afterwards. `-diagnosticsOff` builds it with `CS_DEV_DIAGNOSTICS_OFF`.
+Install it with `adb install -r <apk>`. A phone that holds the Play (upload-key) install must
+uninstall that first, because Android refuses an update signed with a different key.
+
+What the switch does not change:
+
+- Unity's **"Development Build"** watermark in the corner. Unity has no setting for it.
+- Asset-authored test shortcuts: the Episode Token config's unverified grants and the Weekly
+  Challenge catalogue's `test` block. Each is switched on its own asset.
+- Warnings and errors still reach logcat, as they do in a release build.
+- A development build still runs a little slower than release: the profiler hooks and development
+  checks stay compiled in. Take performance numbers from a release build
+  (`Docs/PERFORMANCE_OPTIMIZATION.md`).
+

@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6156a719b7a5fd5e35c65d3745df8a9, type: 3}
+  m_Name: AnglerConfig
+  m_EditorClassIdentifier: 
+  lureAhead: 14
+  lureCruise: 0
+  lureRadius: 70
+  tameRadius: 22
+  tameTime: 2.5
+  tameDecay: 0.6
+  squadCap: 24
+  leashTow: 1.6
+  formBack: 6
+  tadTurn: 4
+  spareOwn: 1
+  paintRange: 3200
+  paintCone: 3
+  brushMin: 0.35
+  eraseCone: 1.5
+  brushNear: 2
+  slingAhead: 12
+  slingSpeed: 150
+  homeTurn: 12
+  slingTime: 3
+  slingCatch: 8
+  slingCluster: 24
+  dashFrac: 0.75
+  dashTime: 0.35
+  cameraLift: 56
+  cameraLiftTime: 0.4
+  paintedPreference: 4
+  lureGrowth: 3
+  faunaSpeed:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 4
+    UseFloor: 1
+    Floor: 1
+  lockBiteCooldown: 1
+  lockBiteReach: 6
+  omniFauna:
+  - {fileID: 11400000, guid: 9a71c56e49ff4ee493c70be766f1b335, type: 2}
+  - {fileID: 11400000, guid: d6d14731fd184959b837ab47e378f813, type: 2}
+  - {fileID: 11400000, guid: 0e87f3117e7141a7b5bce66b0385a2d0, type: 2}
+  - {fileID: 11400000, guid: c7ff7791587d4467ba9fbe88358b2119, type: 2}
+  - {fileID: 11400000, guid: 4053ff006892420d8ca5efa51365570c, type: 2}
+  - {fileID: 11400000, guid: 5697aa8685514f2ca9b9de9638fce1a1, type: 2}
+  - {fileID: 11400000, guid: 3107bcc776d54a74b110b883f10fba61, type: 2}
+  - {fileID: 11400000, guid: 414bce89d4dc495f87bbccfb02e5b847, type: 2}
+  - {fileID: 11400000, guid: ede43cd3ab5943c58c646065c1f57a1f, type: 2}
+  - {fileID: 11400000, guid: 28c9a96388684fa0b3b10b9dbea56c70, type: 2}
+  - {fileID: 11400000, guid: 72fa98519b534214b89e9c29c44b89da, type: 2}
+  - {fileID: 11400000, guid: 62a30981533145a5b66304c04e7c50e0, type: 2}
+  companionFauna: {fileID: 11400000, guid: 0e87f3117e7141a7b5bce66b0385a2d0, type: 2}
+  brushInterval: 0
+  tameHueLean: 0.35

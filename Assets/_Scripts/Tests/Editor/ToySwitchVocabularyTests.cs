@@ -11,9 +11,10 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Locks the SWITCH shader vocabulary (Docs/ToySystem/ARCHITECTURE.md, "The switch"):
-    /// every switch is drawn in the prism shader, and WHICH prism it is painted as says what it
-    /// will do.
+    /// Locks the SWITCH colour vocabulary (Docs/ToySystem/ARCHITECTURE.md, "The switch"): WHICH
+    /// prism's colour a switch wears says what it will do. (Since 2026-10-21 the ring itself is drawn
+    /// as a spindle wearing that colour - Docs/SPINDLE_LOD.md section 8 - so the vocabulary is the
+    /// colour, not the shader.)
     ///
     /// <para>The rule that needs holding is the RESERVATION - <b>a switch wearing a playable
     /// domain's colour is one that hands you that domain</b>. Half of it is structural and needs
@@ -112,6 +113,24 @@ namespace CosmicShore.Tests
                         "channel distance) - a player cannot read the reservation off it.");
                 }
             }
+        }
+
+        [Test]
+        public void EveryUnreservedVerbReadsAsItself()
+        {
+            // The unreserved verbs must not be mistakable for EACH OTHER either: a halo ring that reads
+            // as "thread me next" would send a pilot into the one ring the dance is guarding.
+            var verbs = NonDomainSignals.ToList();
+            for (int a = 0; a < verbs.Count; a++)
+                for (int b = a + 1; b < verbs.Count; b++)
+                {
+                    Color ca = ToyFactory.SwitchColor(null, verbs[a], Domains.Blue);
+                    Color cb = ToyFactory.SwitchColor(null, verbs[b], Domains.Blue);
+                    float delta = Mathf.Abs(ca.r - cb.r) + Mathf.Abs(ca.g - cb.g) + Mathf.Abs(ca.b - cb.b);
+                    Assert.Greater(delta, 0.5f,
+                        $"{verbs[a]} and {verbs[b]} switches are too close in colour ({delta:F2} summed " +
+                        "channel distance) - the signal is the only thing that says what a ring does.");
+                }
         }
 
         [Test]

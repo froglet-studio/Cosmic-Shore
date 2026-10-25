@@ -63,6 +63,19 @@ namespace CosmicShore.Gameplay
         [Tooltip("Every number of the dipole and the pathfinder (shared with StoatPathfinderExecutor).")]
         [SerializeField] StoatDipoleConfigSO config;
 
+        // The autopilot's numbers: the mode's own copy when it has one (AIModeTuning, e.g. StoatDipoleConfig_Regatta learned
+        // from people's editor flights), resolved once the pilot's mode is known; this config otherwise. Only the AI's
+        // reads go through it - a person flying this hull reads `config`.
+        StoatDipoleConfigSO _aiConfig;
+        StoatDipoleConfigSO AIConfig
+        {
+            get
+            {
+                if (!_aiConfig) _aiConfig = AIModeTuning.ForPilot(config, _status);
+                return _aiConfig ? _aiConfig : config;
+            }
+        }
+
         struct Hold
         {
             public bool Holding;
@@ -175,6 +188,7 @@ namespace CosmicShore.Gameplay
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status = shipStatus;
+            _aiConfig = null;
             _resolvedSiblings = false;
             _holds[0] = default;
             _holds[1] = default;
@@ -202,7 +216,7 @@ namespace CosmicShore.Gameplay
             if (_holds[i].Holding) return;
             _holds[i].Holding = true;
             _holds[i].HeldFor = 0f;
-            _holds[i].Live = _status.AutoPilotEnabled ? config.AutopilotHold01 : 0f;
+            _holds[i].Live = _status.AutoPilotEnabled ? AIConfig.AutopilotHold01 : 0f;
             if (!IsOpen || _openedFrame != Time.frameCount) Open();
         }
 
@@ -546,7 +560,7 @@ namespace CosmicShore.Gameplay
             _holds[i].Live = !analog && !autopilot && config.KeySqueeze > 0f
                 ? config.KeySqueeze
                 : StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, config.HoldRampSeconds, autopilot,
-                    config.AutopilotHold01);
+                    AIConfig.AutopilotHold01);
         }
 
         /// <summary>A peer's copy: lay, follow and close the pair exactly as the owner publishes it.</summary>
@@ -726,7 +740,7 @@ namespace CosmicShore.Gameplay
         {
             var handler = _status.ActionHandler;
             if (!handler) return;
-            bool watch = config.AutopilotWatchPath && Pathfinder();
+            bool watch = AIConfig.AutopilotWatchPath && Pathfinder();
             if (_aiHoldingLeft || _aiHoldingRight)
             {
                 // At most one lap round the sink, in either hold. A hull circling its own sink keeps the
@@ -747,7 +761,7 @@ namespace CosmicShore.Gameplay
                 float closing = IsOpen
                     ? StoatDipoleMath.ClosingSeconds(_separation.Magnitude, _sink.HorizonRadius, _source.HorizonRadius, config.FollowRate)
                     : 0f;
-                bool capped = StoatDipoleMath.OrbitCapReached(_aiOrbitSwept, config.AutopilotMaxOrbitDegrees, _aiOrbitRate, closing);
+                bool capped = StoatDipoleMath.OrbitCapReached(_aiOrbitSwept, AIConfig.AutopilotMaxOrbitDegrees, _aiOrbitRate, closing);
                 if (capped) _aiReleaseAt = 0f;
                 else if (watch)
                 {
@@ -756,10 +770,12 @@ namespace CosmicShore.Gameplay
                     float held = Time.time - _aiHoldStart;
                     _aiDry = _pathfinder.IsWarped ? 0f : _aiDry + Time.deltaTime;
                     var aiNow = _status.AIPilot;
-                    bool near = aiNow && (aiNow.TargetPosition - _status.Transform.position).sqrMagnitude
-                                         < config.AutopilotLetGoNear * config.AutopilotLetGoNear;
-                    bool letGo = near || held > config.AutopilotMaxHoldSeconds ||
-                                 (held > config.AutopilotMinHoldSeconds && _aiDry > config.AutopilotDrySeconds);
+                    // Near the thing it is AFTER (a Regatta ring), not the steering point: on a race line that point
+                    // is always one look-ahead away (AIPilot.ObjectivePosition).
+                    bool near = aiNow && (aiNow.ObjectivePosition - _status.Transform.position).sqrMagnitude
+                                         < AIConfig.AutopilotLetGoNear * AIConfig.AutopilotLetGoNear;
+                    bool letGo = near || held > AIConfig.AutopilotMaxHoldSeconds ||
+                                 (held > AIConfig.AutopilotMinHoldSeconds && _aiDry > AIConfig.AutopilotDrySeconds);
                     if (!letGo) return;
                     _aiReleaseAt = 0f;
                 }
@@ -774,19 +790,21 @@ namespace CosmicShore.Gameplay
             }
             // After an orbit-capped let-go, the full interval: the quick relay would lay the next pair while the
             // hull is still turning out of the last one, and catch it again.
-            float wait = watch && !_aiOrbitCapped ? config.AutopilotRelaySeconds : config.AutopilotIntervalSeconds;
+            float wait = watch && !_aiOrbitCapped ? AIConfig.AutopilotRelaySeconds : AIConfig.AutopilotIntervalSeconds;
             if (Time.time - _aiLastPairTime < wait) return;
             var ai = _status.AIPilot;
             var hull = _status.Transform;
             if (!ai || !hull) return;
-            var local = hull.InverseTransformPoint(ai.TargetPosition);
+            // Bearing from the steering point, range from the objective (StoatDipoleMath.AutopilotGauge).
+            var local = StoatDipoleMath.AutopilotGauge(hull.InverseTransformPoint(ai.TargetPosition),
+                                                       (ai.ObjectivePosition - hull.position).magnitude);
             // Watching the path lays a pair whenever the target is not right on top of it, at any bearing: the
             // warp is the speed, so the pair is open as much of the race as it can be.
             if (!StoatDipoleMath.AutopilotTriggers(local,
-                    watch ? config.AutopilotLetGoNear * 1.5f : config.AutopilotMinDistance, AutopilotStraightDegrees,
+                    watch ? AIConfig.AutopilotLetGoNear * 1.5f : AIConfig.AutopilotMinDistance, AutopilotStraightDegrees,
                     watch ? 180f : AutopilotMaxDegrees, out bool left, out bool right))
                 return;
-            _aiReleaseAt = watch ? float.PositiveInfinity : Time.time + config.AutopilotHoldSeconds;
+            _aiReleaseAt = watch ? float.PositiveInfinity : Time.time + AIConfig.AutopilotHoldSeconds;
             _aiHoldStart = Time.time;
             _aiDry = 0f;
             _aiOrbitSwept = 0f;
