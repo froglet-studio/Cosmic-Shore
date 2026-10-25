@@ -641,7 +641,7 @@ COL_GAP = (SET_W - 2 * PAD - 3 * COL_W) // 2
 EYEBROW = {"arcade": "Arcade", "arena": "Arena", "maelstrom": "Arcade - Maelstrom"}
 PANEL_CLASS = {"arcade": "minigame", "arena": "arena", "maelstrom": "maelstrom"}
 VIEW_NAME = {"arcade": "ConfigureView", "arena": "ConfigureArenaView", "maelstrom": "ConfigureMaelstromView"}
-HULL_SLOTS = 8
+HULL_SLOTS = 7          # hull tiles on the Arena strip; the < > arrows slide it over a card with more hulls
 
 
 
@@ -967,19 +967,33 @@ def vessel_body(sec):
           "", "BodySmall", "NeutralLightest", valign="top", wrap=True)
 
 
-HULL_COLS = 8
+HULL_COLS = HULL_SLOTS
 HULL_ROWS = (HULL_SLOTS + HULL_COLS - 1) // HULL_COLS
-HULL_W_SET = (SET_W - 2 * PAD - (HULL_COLS - 1) * 4) // HULL_COLS
+HULL_TILE_GAP = 4
+HULL_W_SET = 74                      # a tile; the strip of seven sits centred between the arrows
+ARROW_W, ARROW_H, ARROW_GAP = 32, 56, 6
+HULL_ROW_W = HULL_SLOTS * HULL_W_SET + (HULL_SLOTS - 1) * HULL_TILE_GAP
+HULL_ROW_X = (SET_W - 2 * PAD - HULL_ROW_W) // 2
 HULL_SEC_H = SEC_HEAD + HULL_ROWS * HULL_H + 8 + 34
 
 
 def hull_body(sec):
-    """The Arena's hulls as one row of eight tiles, then the class line and Claim."""
+    """The Arena's shared vessel panel: < seven hull tiles >, then the class line and Claim. The arrows sit
+    against the tiles and level with their middle, inset from the panel's edges (Yash, 2026-10-25: "make
+    them little center to the vessel panel"), and slide the strip over a card with more hulls than tiles
+    (ArenaLaunchPanel.StripOffset). Whose hull it picks - the pilot's own, or the AI seat they tapped - is the
+    modal's (the shared vessel panel, Docs/HomeHub/ARCHITECTURE.md section 3.2)."""
     inner = SET_W - 2 * PAD
+    assert HULL_ROW_X - ARROW_GAP - ARROW_W >= 0, "the < arrow runs off the vessel panel"
     strip = sec.child(N("HullStrip", "HullStrip", TL(0, SEC_HEAD, inner, HULL_ROWS * HULL_H)))
     for i in range(HULL_SLOTS):
         strip.children.append(Inst(f"Hull{i + 1}", "ConfigureHullTile", f"Hull{i + 1}",
-                                   TL((i % HULL_COLS) * (HULL_W_SET + 4), (i // HULL_COLS) * HULL_H, HULL_W_SET, HULL_H)))
+                                   TL(HULL_ROW_X + i * (HULL_W_SET + HULL_TILE_GAP), 0, HULL_W_SET, HULL_H)))
+    arrow_y = (HULL_H - ARROW_H) // 2
+    for name, caption, x in (("PrevVesselButton", "<", HULL_ROW_X - ARROW_GAP - ARROW_W),
+                             ("NextVesselButton", ">", HULL_ROW_X + HULL_ROW_W + ARROW_GAP)):
+        strip.children.append(Inst(name, "KitButtonSmall", name, TL(x, arrow_y, ARROW_W, ARROW_H),
+                                   K.button_mods("KitButtonSmall", "Default", False, caption, small=True)))
     top = SEC_HEAD + HULL_ROWS * HULL_H + 8
     bw, bh = K.button_size("CLAIM", small=True)
     info = sec.child(N("ClassInfo", "ClassInfo", TL(0, top, inner - bw - 12, 34)))
@@ -1128,19 +1142,15 @@ def steps_row(chrome, kind):
     M.rim_border(M.find_node(steps, "Steps/Frame/Border"), "Charge")   # rev 6: setting up a game is play
     y = PAD
     keys = ("Step1", "Step2", "Step3") if kind != "maelstrom" else (None, "Step1", "Step2")
-    if kind != "maelstrom":
-        vh = HULL_SEC_H if kind == "arena" else VESSEL_SEC_H
-        cv = section(steps, "Step1", y, vh, "Vessel", "Squirrel", 1)
-        (hull_body if kind == "arena" else vessel_body)(cv)
-        y += vh + SEC_GAP
-    ci = section(steps, keys[1], y, INTENSITY_SEC_H, "Intensity", "1", 2)
+    # Entrance staggers follow the order on screen (the Maelstrom keeps its own: Intensity 2, Pilots 3).
+    ci = section(steps, keys[1], y, INTENSITY_SEC_H, "Intensity", "1", 2 if kind == "maelstrom" else 1)
     for i in range(4):
         ci.children.append(Inst(f"Intensity{i + 1}", "ConfigureIntensityNode", f"Intensity{i + 1}",
                                 TL(i * (NODE_W + NODE_GAP), SEC_HEAD, NODE_W, NODE_H),
                                 [("root#in", "staggerIndex", i + 2, None)]))
     y += INTENSITY_SEC_H + SEC_GAP
     ph = SEC_HEAD + PILOTS_BODY_H + (8 + AI_ROW_H if kind != "maelstrom" else 0)
-    cp = section(steps, keys[2], y, ph, "Pilots", "1 of 4", 3)
+    cp = section(steps, keys[2], y, ph, "Pilots", "1 of 4", 3 if kind == "maelstrom" else 2)
     for i, (dname, dval) in enumerate(DOMAINS):
         cp.children.append(Inst(f"Domain{dname}", "ConfigureDomainColumn", f"{dname}Column",
                                 TL(i * (COL_W + COL_GAP), SEC_HEAD, COL_W, TILE_H + 6 + SEAT_H),
@@ -1150,6 +1160,13 @@ def steps_row(chrome, kind):
     if kind in ("arcade", "arena"):
         ai_row(cp, SET_W - 2 * PAD, SEC_HEAD + PILOTS_BODY_H + 8)
     y += ph + SEC_GAP
+    # The vessel comes LAST, under the pilots (Yash, 2026-10-25: intensity on top, the vessel panel below):
+    # on the Arena it is the shared vessel panel, picking the hull of whichever seat above was tapped.
+    if kind != "maelstrom":
+        vh = HULL_SEC_H if kind == "arena" else VESSEL_SEC_H
+        cv = section(steps, "Step1", y, vh, "Vessel", "Squirrel", 3)
+        (hull_body if kind == "arena" else vessel_body)(cv)
+        y += vh + SEC_GAP
     if kind == "maelstrom":
         format_section(steps, y)
         y += SEC_HEAD + 4 * FORMAT_ROW_H + SEC_GAP
@@ -1231,9 +1248,16 @@ def panel_body(ctx, go, kind):
                    f"  microToast: {ref(ctx.c('Preview/Toast', 'toast'))}\n")
     if kind == "arena":
         fields += (f"  roster: {K.ref(11400000, ARENA_ROSTER, 2)}\n"
-                   "  vesselIcon: {fileID: 0}\n  prevButton: {fileID: 0}\n  nextButton: {fileID: 0}\n"
+                   "  vesselIcon: {fileID: 0}\n"
+                   f"  prevButton: {ref(ctx.iref('PrevVesselButton', 'root#button'))}\n"
+                   f"  nextButton: {ref(ctx.iref('NextVesselButton', 'root#button'))}\n"
                    f"  selectVesselButton: {ref(ctx.iref('ClaimButton', 'root#button'))}\n"
-                   + refs("hullTiles", [ctx.iref(f"Hull{i + 1}", "root#hull") for i in range(HULL_SLOTS)]))
+                   + refs("hullTiles", [ctx.iref(f"Hull{i + 1}", "root#hull") for i in range(HULL_SLOTS)])
+                   + f"  seatCaptionText: {ref(ctx.c('Step1/Caption', 'tmp'))}\n"
+                   "  ownSeatCaption: Your vessel\n"
+                   "  aiSeatCaption: '{domain} AI''s vessel'\n"
+                   "  autoVesselLine: Auto\n"
+                   + refs("seatVesselNameTexts", [ctx.c("Step1/Value", "tmp"), ctx.c("ClassInfo/Name", "tmp")]))
     if kind == "maelstrom":
         fields += (f"  videoView: {ref(ctx.c('Preview', 'video'))}\n"
                    f"  poolList: {ref(ctx.c('Pool', 'list'))}\n"
@@ -2006,7 +2030,12 @@ def validate_prefabs(files):
                         f"{view}: the +1 toast shares the preview's GameObject (hiding it hides the preview)"
         if kind == "arena":
             wired(text, body, "selectVesselButton", S["button"], view)
-            hulls = re.findall(r"^  - \{fileID: (-?\d+)\}", body.split("  hullTiles:")[1], re.M)
+            # The < > arrows step the shared vessel panel (and slide the strip past its seventh tile).
+            wired(text, body, "prevButton", S["button"], view)
+            wired(text, body, "nextButton", S["button"], view)
+            wired(text, body, "seatCaptionText", TMP, view)
+            tiles_block = re.match(r"(?:  - .*\n)*", body.split("  hullTiles:\n")[1]).group(0)
+            hulls = re.findall(r"^  - \{fileID: (-?\d+)\}", tiles_block, re.M)
             assert len(hulls) == HULL_SLOTS and all(A.kind_of(text, h) == (114, S["hull"]) for h in hulls), \
                 f"{view}: the hull strip needs {HULL_SLOTS} hull tiles"
             assert f"roster: {{fileID: 11400000, guid: {ARENA_ROSTER}" in body, f"{view}: no Arena roster (Handles is false)"

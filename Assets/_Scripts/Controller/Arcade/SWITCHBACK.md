@@ -272,6 +272,24 @@ the detour cannot become an orbit. The registry scan is throttled to `aiCrystalS
 (0.5s) and filters to `Crystal.CrystalManager != null`, the same filter `RampageObjectiveProvider`
 records: `Crystal.Active` also holds every lifeform heart the food web drops.
 
+### The Regatta steering, on since 2026-10-26 (the Dolphin's training minigame)
+
+`SwitchbackController` overrides `AICommitFromApproachPoint` to true (the scene switch stays as it was). In people's
+races the AI Dolphins threaded 0-2 of 20 rings, and two things caused it:
+- **The approach point sat outside the commit radius.** On any leg over 650 u the point behind the ring is the full
+  `aiApproachLead` (300 u) out, beyond `aiCommitDistance` (260 u). A pilot reaching it was still "approaching" and
+  steered at the point it sat on. The Dolphin's 35 u turning circle kept it 265-335 u out, so it never committed: it
+  circled gate 0 for the whole race. With the switch on, `GateRaceController.ApproachLeadFor` keeps the approach point
+  at most 0.8 of the commit radius.
+- **A drift committed off-axis missed the mouth.** The far-side point on the ring's axis is off the line from where the
+  Dolphin commits, and a commit drift locks its course on it. The switch puts the through point on the line from the
+  pilot through the ring's CENTRE, and re-attacks at once after a missed mouth (`Arcade/REGATTA.md` §6, 2026-10-17).
+
+Offline on the six recorded courses (`Tools/Build/switchback_dolphin_sim.py`): 0 rings on every one before, 20 of 20
+on every one after. The Dolphin's charge drive in Switchback uses numbers learned from Yash's races
+(`DolphinAIBoostPolicy_Switchback`, `Docs/AI_SYSTEM/LEARNED_DRIVES_Switchback.md`); the plan is
+`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`. Garrett's other gate races keep their scene switch.
+
 ## Crystals, and the interference they buy
 
 The mode authors no crystal behaviour. Two shipped systems put some on the course anyway, and both
