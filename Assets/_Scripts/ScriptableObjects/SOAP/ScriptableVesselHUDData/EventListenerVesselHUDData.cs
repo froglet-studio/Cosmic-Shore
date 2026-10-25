@@ -12,7 +12,7 @@ namespace CosmicShore.ScriptableObjects
         [System.Serializable]
         public class EventResponse : EventResponse<ShipHUDData>
         {
-            [SerializeField] private ScriptableEventShipHUDData _scriptableEvent = null;
+            [SerializeField] private ScriptableEventVesselHUDData _scriptableEvent = null;
             public override ScriptableEvent<ShipHUDData> ScriptableEvent => _scriptableEvent;
             [SerializeField] private ShipHUDDataUnityEvent _response = null;
             public override UnityEvent<ShipHUDData> Response => _response;

@@ -51,7 +51,7 @@ namespace CosmicShore.UI
         [Header("Legacy Ship Selection (deprecated)")]
         [SerializeField] private Transform ShipSelectionContainer;
         [SerializeField] private InfiniteScroll ShipSelectionScrollView;
-        [SerializeField] private HangarShipSelectNavLink ShipSelectCardPrefab;
+        [SerializeField] private HangarVesselSelectNavLink ShipSelectCardPrefab;
 
         [Header("Legacy Training UI")]
         [SerializeField] private Transform GameSelectionContainer;
@@ -316,7 +316,7 @@ namespace CosmicShore.UI
             {
                 for (var i = 0; i < ShipSelectionContainer.childCount; i++)
                 {
-                    var selectCard = ShipSelectionContainer.GetChild(i).gameObject.GetComponent<HangarShipSelectNavLink>();
+                    var selectCard = ShipSelectionContainer.GetChild(i).gameObject.GetComponent<HangarVesselSelectNavLink>();
                     selectCard.SetActive(selectCard.Ship == selectedShip);
                 }
             }
@@ -358,7 +358,7 @@ namespace CosmicShore.UI
             yield return null;
             if (ShipSelectionContainer && ShipSelectionContainer.childCount > 0)
             {
-                var shipSelectCard = ShipSelectionContainer.GetChild(0).gameObject.GetComponent<HangarShipSelectNavLink>();
+                var shipSelectCard = ShipSelectionContainer.GetChild(0).gameObject.GetComponent<HangarVesselSelectNavLink>();
                 shipSelectCard.Select();
             }
         }

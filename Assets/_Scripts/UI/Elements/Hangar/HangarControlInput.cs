@@ -1,15 +1,11 @@
-using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using HintBinding = CosmicShore.UI.InputDeviceIconSetSwitcher.HintBinding;
 
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Reads the PHYSICAL control behind a <see cref="HintBinding"/> straight off the device, so the
-    /// Hangar can answer "the player just pressed SPACE" without a vessel (and its input strategy) being
-    /// alive. Also tracks which device the player last used, so labels follow the hand on the controls.
-    /// The Hangar asks it only about keyboard keys: on a menu screen every pad control is the menu's
-    /// (<see cref="HangarAbilitiesPage"/>).
+    /// Tracks which device the player last used - a pad or the keyboard / mouse - so the Hangar's keycaps name the
+    /// controls of the hand that is on them. It reads no control as a press: the Hangar's ability rows are information
+    /// (Docs/MENU_REDESIGN_B.md section 66), and on a menu screen every pad control is the menu's (section 63).
     /// </summary>
     public static class HangarControlInput
     {
@@ -32,38 +28,5 @@ namespace CosmicShore.UI
             pad.buttonSouth.wasPressedThisFrame || pad.buttonEast.wasPressedThisFrame || pad.buttonWest.wasPressedThisFrame
             || pad.buttonNorth.wasPressedThisFrame || pad.leftTrigger.wasPressedThisFrame || pad.rightTrigger.wasPressedThisFrame
             || pad.leftShoulder.wasPressedThisFrame || pad.rightShoulder.wasPressedThisFrame || pad.leftStick.ReadValue().sqrMagnitude > 0.25f;
-
-        /// <summary>True on the frame the control behind <paramref name="binding"/> goes down.</summary>
-        public static bool WasPressed(HintBinding binding)
-        {
-            var pad = Gamepad.current;
-            var kb = Keyboard.current;
-            var mouse = Mouse.current;
-            switch (binding)
-            {
-                case HintBinding.PadButtonSouth: return pad != null && pad.buttonSouth.wasPressedThisFrame;
-                case HintBinding.PadButtonNorth: return pad != null && pad.buttonNorth.wasPressedThisFrame;
-                case HintBinding.PadButtonEast: return pad != null && pad.buttonEast.wasPressedThisFrame;
-                case HintBinding.PadButtonWest: return pad != null && pad.buttonWest.wasPressedThisFrame;
-                case HintBinding.PadLeftShoulder: return pad != null && pad.leftShoulder.wasPressedThisFrame;
-                case HintBinding.PadRightShoulder: return pad != null && pad.rightShoulder.wasPressedThisFrame;
-                case HintBinding.PadLeftTrigger: return pad != null && pad.leftTrigger.wasPressedThisFrame;
-                case HintBinding.PadRightTrigger: return pad != null && pad.rightTrigger.wasPressedThisFrame;
-                case HintBinding.KeyLeftShift: return kb != null && kb.leftShiftKey.wasPressedThisFrame;
-                case HintBinding.KeyRightShift: return kb != null && kb.rightShiftKey.wasPressedThisFrame;
-                case HintBinding.KeySpace: return kb != null && kb.spaceKey.wasPressedThisFrame;
-                case HintBinding.KeyTab: return kb != null && kb.tabKey.wasPressedThisFrame;
-                case HintBinding.KeyQ: return kb != null && kb.qKey.wasPressedThisFrame;
-                case HintBinding.KeyE: return kb != null && kb.eKey.wasPressedThisFrame;
-                case HintBinding.KeyF: return kb != null && kb.fKey.wasPressedThisFrame;
-                case HintBinding.KeyR: return kb != null && kb.rKey.wasPressedThisFrame;
-                // A mouse button over the UI is a click on the UI, not an ability.
-                case HintBinding.MouseLeft: return mouse != null && mouse.leftButton.wasPressedThisFrame && !OverUi();
-                case HintBinding.MouseRight: return mouse != null && mouse.rightButton.wasPressedThisFrame && !OverUi();
-                default: return false;
-            }
-        }
-
-        static bool OverUi() => EventSystem.current && EventSystem.current.IsPointerOverGameObject();
     }
 }

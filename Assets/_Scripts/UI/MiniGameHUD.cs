@@ -58,7 +58,7 @@ namespace CosmicShore.UI
         [Header("Event Channels")]
         [SerializeField] private ScriptableEventInt onMoundDroneSpawned;
         [SerializeField] private ScriptableEventInt onQueenDroneSpawned;
-        [SerializeField] private ScriptableEventShipHUDData onShipHUDInitialized;
+        [SerializeField] private ScriptableEventVesselHUDData onShipHUDInitialized;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
         [Header("Pre-Game Cinematic")]

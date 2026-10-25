@@ -41,7 +41,7 @@ namespace CosmicShore.UI
         [SerializeField] MenuCrystalClickHandler crystalClickHandler;
 
         [Header("SOAP Events")]
-        [SerializeField] ScriptableEventShipHUDData onShipHUDInitialized;
+        [SerializeField] ScriptableEventVesselHUDData onShipHUDInitialized;
 
         [Header("Pause Menu")]
         [SerializeField] GameObject pauseMenuPrefab;
@@ -213,7 +213,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Vessel HUD reparenting - identical to MiniGameHUD.OnShipHUDInitialized().
-        /// When a vessel spawns, ShipHUD.Start() raises this SOAP event with the
+        /// When a vessel spawns, VesselHUD.Start() raises this SOAP event with the
         /// vessel's MiniGameHUD children. We reparent them under our parent
         /// (Game UI canvas) so they render as siblings.
         ///

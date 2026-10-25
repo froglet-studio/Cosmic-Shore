@@ -1,5 +1,9 @@
 # Regatta AI roadmap — six racing AIs, one way to build them
 
+> **2026-10-26: AI training moved to each vessel's own racing minigame** (Yash). This roadmap stays as the record of
+> the Regatta work; the plan going forward is `MINIGAME_TRAINING_PLAN.md`: train each hull in its minigame at four
+> intensities (the Dolphin in Switchback first), then rebuild Regatta from what the trained vessels can do.
+
 **The goal (the user, 2026-10-14):** six vessels whose AI can race **Regatta** (`GameModes.Regatta = 56`,
 `Arcade/REGATTA.md`), built so that a seventh is cheap, and running the same way in Unity, in Amoebius and in
 the Vessel Studio. This file supersedes the per-vessel order in `Docs/Studios/VESSEL_STUDIO_ROLLOUT.md` §3: the
@@ -82,7 +86,7 @@ started; item 5 is superseded by the 2026-10-16 editor-only decision (§3).
 | 2 | **Squirrel** verify in Regatta (it already flies the Skim Race pilot) | Measured lap times per difficulty; the 2026-10-06 "threaded no rings" note is confirmed gone | Learned ring face from 29 flights (2026-10-16, on bleeding-edge via #1165); not editor-timed |
 | 3 | **Manta**: fold the Soar drive in, add corner look-ahead (cut Soar before a corner it cannot yaw round) | Lap times; no ring missed at Soar speed | Regatta Soar bands 0.8 / 0.85 (2026-10-17, `f4e35748c`, from `manta_drive_sim.py`; Manta flights replace them). The corner look-ahead was modelled and NOT shipped: slower on every course. **2026-10-24: learned from Yash's flights**: bands 0.975 / 0.975 (he holds Soar ~87% of the time), line 0.809 (crosses rings ~79 u from the centre); a Third Eye race should confirm it still turns hard corners |
 | 4 | **Rhino**: a NEW drive. Straighten for the ramp only when the runway to the next corner pays back the wind-up; otherwise hold the line | Beats its cruise time on every intensity; misses no corner mouth at 1200 u/s | First cut 2026-10-15; rebuilt 2026-10-17 (brake on the ramp), retuned for centre steering; **2026-10-24 from Yash's six races** (two finished): Regatta corner speed 600 → 333, line 0.80 → 0.676, set by hand; the learner replaces them at the third finished race. Editor checks T-20261016-01ec, T-20261024-2979 |
-| 5 | **Urchin**: measure the lane-stay rate (REGATTA.md §6's open number); fix re-latching rivals' lanes if it is low | Rides its own lane through ≥ N% of the race | Not started |
+| 5 | **Urchin**: measure the lane-stay rate (REGATTA.md §6's open number); fix re-latching rivals' lanes if it is low | Rides its own lane through ≥ N% of the race | **Measured 2026-10-25:** own lane in 15 of 17 recorded races (300 u/s), a rival's in 2 (I4, 42-48 u/s). Fixed: a 4 s dry-crawl cap and a stand-off approach to its own lane (`REGATTA.md` §6); not editor-verified |
 | 6 | **Dolphin**: measure the charge policy in Regatta; tune the discharge runway | Lap times per difficulty | Drift again at the discharge's peak (2026-10-17, `9b064721b`); model only. **2026-10-24:** Yash's one race (I1, unfinished) re-drifts at the peak too; line 0.60 → 0.785 set by hand; the discharge runway waits for three finished races. Editor checks T-20261016-b719, T-20261024-c9ba |
 | 7 | **Mixed grid**: clear `SO_ArcadeGame.OpponentAIVessel` in `author_regatta_assets.py` (the Squirrel pin is a stopgap, REGATTA.md §6); re-run `regatta_balance.py` against AI times; set `StartingElements` from them | An all-AI domain of each of the six can win; the spread holds | Not started |
 
@@ -138,7 +142,21 @@ race line's lead point (`AIPilot.MarkAimAsPathLead`), and the aim never cuts the
 (`scarab_drive_sim.py`). Per-hull drive work resumes from races flown after this change: re-run
 `regatta_rival_report.py --since 2026-10-26`.
 
-The three drive sims are models without break-off or rotation-follow lag (`regatta_line_sim.py` has both), and default to the Regatta steering
+**2026-10-25 (later): step 4, the Rhino on its line** (`Arcade/REGATTA.md` §6.4). Modelled on the race line for the
+first time (`Tools/Build/rhino_line_sim.py`), the Rhino ramped 5-10% of a race (196-216 s): the drives judged "straight"
+by the ring round the bend, which the line never points at. They now judge it on the path the pilot flies
+(`AIBoostContext.PathDirection`, race line only): 29.6 / 40.7 / 51.8 / 48.0 s, and the same gate opens every other
+hull's speed verb on the line. A retune (`cornerSpeed` 1000, runway 0.6 s: 119 s against 170 s over I1-I4) waits on
+Yash, whose flights set 333. The Dolphin's start-line drift and the Urchin's lane were fixed the same day by another
+session (`4cc4dc4c52`).
+
+**2026-10-25 (evening): step 3, the Manta, and the nose lag** (`Arcade/REGATTA.md` §6.4.1). The models now carry an AI
+hull's nose lag (1.5/s, kept for AIs when people lost it on 10-21) and match the real races: under it the Manta's stick
+sat near full and its Soar was on 1-18% of a race. Its Regatta look-ahead goes 0.35 / 0.8 → 0.6 / 1.0 s
+(`manta_line_sim.py`: 697 s with I4 stalled → 280 s, no miss), and the Rhino's to 0.8 / 1.4 s (447.7 → 405.4 s, no miss).
+Bands, `LaneShare` and the lag itself unchanged.
+
+The three drive sims are models without break-off or rotation-follow lag (`regatta_line_sim.py` has both; `manta_line_sim.py` and `rhino_line_sim.py` have the lag), and default to the Regatta steering
 (`THROUGH_CENTRE = True`). The editor is the measurement; none of this has been run there.
 
 **2026-10-17: the Regatta AIs learn from people's editor flights.** The Squirrel's skim line came from 29 flights (the 2026-10-16 learning run)

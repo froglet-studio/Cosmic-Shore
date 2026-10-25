@@ -16,7 +16,7 @@ MonoBehaviour:
   HullClearance: 18
   Risk: 0.4
   RiskSpread: 0.15
-  CarefulLookaheadSeconds: 0.35
-  BoldLookaheadSeconds: 0.8
+  CarefulLookaheadSeconds: 0.8
+  BoldLookaheadSeconds: 1.4
   MinLookahead: 60
   MaxLookahead: 520

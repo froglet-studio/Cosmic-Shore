@@ -121,9 +121,11 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    spec. Collider sizes specifically: `worldRadius = m_Radius × max(|sx|,|sy|,|sz|)`, and sweep
    sibling prefabs for the same authored value.
 5. Grep by **class name**, not file name — the vessel layer renamed Ship→Vessel in file names
-   only: `VesselActionSO.cs` declares `ShipActionSO`, `VesselHelper.cs` declares `ShipHelper`,
-   `R_VesselElementStatsHandler.cs` declares `R_ShipElementStatsHandler`, `VesselActions.cs`
-   declares `enum ShipActions`.
+   first: `VesselActionSO.cs` declares `ShipActionSO`, `VesselHelper.cs` declares `ShipHelper`,
+   `VesselActions.cs` declares `enum ShipActions`. Every class an ASSET binds to now matches its
+   file (2026-10-25, `Docs/REFACTOR_BACKLOG.md` M5: `R_VesselElementStatsHandler`, `VesselHUD` and
+   nine more were renamed); these three are a base class, a static helper and an enum, which no
+   asset names.
 6. **Re-fetch any branch you cite immediately before asserting its state** — branches and
    bleeding-edge move mid-session. This skill's own fleet snapshot went stale twice while being
    written: the Dolphin branch grew its row-wiring commit between research and verification, and

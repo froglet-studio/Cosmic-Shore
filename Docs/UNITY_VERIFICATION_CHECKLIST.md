@@ -3171,6 +3171,38 @@ I1 43.0 s vs 48.2, I2 56.1 vs 55.4, I3 56.3 vs stalled), gates.
 4. Any other mode with an AI Rhino (Broadside): it still ramps on long straights (no next leg there: every objective is
    read as a 90° corner).
 
+### 🔴 The Scarab AI's Regatta line set from Yash's two Scarab races (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** the Scarab's race line `LaneShare` 0.60 → 0.788 (`race_lines_learned.json` → `author_race_lines.py` →
+`Resources/RaceLines/Scarab_Regatta`). Yash crossed the I2 rings a median 63 u out of the 88 u mouth (37 crossings, two
+unfinished races). Set by hand at his ask; the learner replaces it at the third finished Scarab race. No C# changed.
+**Verified without the editor:** `author_race_lines.py --check`, `learn_drives_from_flights.py --check`.
+**Verify in editor:**
+1. Regatta I2 and I3 with a Hard AI Scarab, Third Eye with trails: it flies about four fifths of the way out from the
+   braid, never crosses a rail, and threads the rings without the wide miss-and-swing of 2026-10-23.
+2. `regatta_rival_report.py --hull scarab` on that race: rings per minute and its state shares.
+
+### 🔴 Two AIs that sat out whole Regatta races: the Dolphin frozen in a start-line drift, the Urchin on a rival's lane (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- **Dolphin:** `AIPilot` commits a drift only at `commitMinSpeed` (20 u/s) or faster, and on a hull whose drift keeps
+  its speed (`VesselTransformer.HoldsSpeedWhileDrifting`) only at `commitUpToSpeedShare` (0.9) of its throttle target.
+  It lets go of a commit drift that falls under 20 u/s. Applies to every hull that commits drifts.
+- **Urchin:** a dry crawl on a rival's lane is left after `MaxDryCrawlSeconds` (4 s), and a free Urchin beside a
+  rival's lane aims 20 u past its own lane, away from the rival lane.
+
+Why: in Yash's 2026-10-25 Stoat race the AI Dolphin held 0 u/s, drifting, for 60 s. In two 2026-10-20 I4 races the AI
+Urchin crawled the human's lane at 42-48 u/s for 105 s.
+**Verified without the editor:** `unity_refcompile` editor config, `RegattaStuckAITests` written (not run).
+**Verify in editor:**
+1. Regatta I1 and I2 with an AI Dolphin, Third Eye on it: it leaves the start line at cruise and races (rings
+   thread, speed well above 0). Its boost line reads "charging in the drift" only while it is moving.
+2. Regatta I4 with you on Jade and ONE AI Urchin: it reaches its own lane within a few seconds and rides at about
+   300 u/s. In the recording (`regatta_rival_report.py --hull urchin`) it is boosted most of the race.
+3. Squirrel / Manta / Rhino AIs: no change in how often they drift (their drift does not hold speed, so only the
+   20 u/s floor applies).
+4. Run `RegattaStuckAITests`, `UrchinRailAssessmentTests`.
+
 ### 🔴 Arena vessel picker: < > arrows and a sliding hull strip, so every hull can be picked (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** `ConfigureArenaView.prefab` gains `PrevVesselButton` / `NextVesselButton` (two `KitButtonSmall`
@@ -14112,6 +14144,16 @@ Reference compile clean (player; editor: the 3 known errors only); Amoebius buil
    they open at once.
 5. Profiler on the Abilities tab: no cost above the plain stage (one 30 Hz render of the hull).
 
+## 🔴 2026-10-25 — Hangar: the ability rows are information (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
+
+Docs/MENU_REDESIGN_B.md §66. Changed `HangarAbilitiesPage`, `HangarControlInput`, `HangarView.prefab` (regenerated).
+1. Hangar > Abilities, any vessel: the AI demo still plays each ability in turn (keycap sinks, row lights, the hull
+   performs it).
+2. Clicking or tapping a row, pressing SPACE / LSHIFT (the keys the rows show), or any pad button: nothing plays, and
+   the demo keeps its rhythm. The rows show no hover or press state and the pad never lands on them.
+3. LT / RT page the screens from anywhere on the Hangar; LB / RB step its tabs. Pulsefire never fires.
+4. The header line reads "Labels follow your device."; keycaps still switch between pad and keyboard names.
+
 ## 🔴 2026-10-25 — Hangar: pad presses belong to the menu, not the ability rows (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
 
 Docs/MENU_REDESIGN_B.md §63. Changed `HangarAbilitiesPage` (pad controls no longer polled), `HangarControlInput`
@@ -14530,4 +14572,39 @@ SpindleLodTests 17/17 on the engine runner (no test covers the batches).
    only set by Regatta's line).
 5. After a few races, run `python3 Tools/Build/regatta_rival_report.py --dir <your flights> --since 2026-10-26`: rings
    a minute per hull should rise from 5.5-9.3 toward the model's (Manta ~22, Scarab ~27, Rhino ~11).
+
+## 🔴 2026-10-25 — Charge crystal light: no per-seam allocation, cheaper petal glow (unverified: no Unity CLI in the session)
+
+**File:** `Assets/_Scripts/Utility/ChargeArcs.cs` (`ChargeSeamWalker.AvoidCircling`, `ChargeArcs.SeamWalk`). Ran
+instead: refcompile player-dev OK; the two rewrites matched the originals on 200,000 random cases each.
+
+1. Edit-mode: run `CrystalChargeArcsTests` (they need the Editor's AssetDatabase).
+2. Release, any mode with Charge crystals (Wrecking Ball): the bolt still walks the seams, never circles one bloom a
+   fifth time, and the petals beside it glow as before.
+3. In the capture: no `GC.Alloc` under `CrystalChargeArcs.LateUpdate`; its ms/frame under the 0.83 of 10-22.
+
+## 🔴 2026-10-25 — Regatta: on the race line, the speed drives judge "straight" on the path (unverified: no Unity CLI in the session)
+
+**Files:** `AIBoostPolicySO.cs` (`AIBoostContext.ToPath` / `PathDirection`; `AngleToTarget` reads it), `AIPilot.cs`
+(`TickBoostPolicy` passes the line's aim when it is a path lead), `ChargeBoostAIPolicySO.cs` (nose check). What ran
+instead of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in changed files; console, conditional
+compilation and AI-state gates OK; `rhino_line_sim.py --self-test`. `Arcade/REGATTA.md` §6.4.
+
+1. Run `RegattaDriveTuningTests` (the three new `Context_*` / `RampPolicy_OnTheLine_*`): all pass.
+2. Regatta, I1 and I3, an AI Rhino (Third Eye, Follow it): its boost status reads "ramping" on the straights of its line
+   and "braking on the ramp" before corners, not "waiting" for the whole race; it races far above 50 u/s.
+3. Same grid with an AI Sparrow, Scarab and Dolphin: the Sparrow holds its afterburner on straights, the Scarab
+   dashes, the Dolphin spends its charge (status "discharging").
+4. Any other mode with these hulls (a crystal mode, Headlong): boosting looks as before (no path, no change).
+
+## 🔴 2026-10-25 — Regatta: the Manta's and the Rhino's race lines look further ahead, for the AI's nose lag (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/Resources/RaceLines/Manta_Regatta.asset` (look-ahead 0.6 / 1.0 s) and `Rhino_Regatta.asset` (0.8 /
+1.4 s), written by `Tools/Build/author_race_lines.py` (`--check` OK). No C# changed. `Arcade/REGATTA.md` §6.4.1.
+
+1. Regatta, I3 and I4, Hard, an AI Manta (Third Eye, Follow it): it rides its line without weaving (no left-right
+   swing of the nose on straights), Soars on the straights (boost status / trail flare), and threads the rings on bends.
+2. Same with an AI Rhino: it ramps on straights, brakes before corners and threads the I3 / I4 rings.
+3. After a few races, `python3 Tools/Build/regatta_rival_report.py --dir <flights> --since 2026-10-26 --hull manta`:
+   rings a minute well above the 8 of the older races, boosted share well above 20%.
 

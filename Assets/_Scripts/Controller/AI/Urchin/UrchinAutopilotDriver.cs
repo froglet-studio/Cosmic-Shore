@@ -75,6 +75,8 @@ namespace CosmicShore.Gameplay
             public float NextAssess;
             public Trail AssessedTrail;
             public UrchinRailVerdict Verdict = UrchinRailVerdict.Ride;
+            public bool CrawlingDry;
+            public float DryCrawlSince = -1f;
             public float NextSpike;
             public float NextSlip;
             public float NextTrack;
@@ -143,17 +145,25 @@ namespace CosmicShore.Gameplay
 
             if (now >= s.NextAssess || s.AssessedTrail != trail)
             {
+                // A new rail is a new ride: its crawl clock starts from now.
+                if (s.AssessedTrail != trail) s.DryCrawlSince = -1f;
                 s.NextAssess = now + _config.AssessIntervalSeconds;
                 s.AssessedTrail = trail;
                 // Slowed is read off the ride itself where the hull carries one (so a Time-5
                 // Slipstream, which grinds hostile mass at full pace, is not a crawl); a hull with
                 // no follower is assumed to crawl hostile mass, the conservative reading.
                 bool slowed = s.Follower != null ? s.Follower.IsCrawlTerrain(prism) : hostile;
-                s.Verdict = Assess(s, status, trail, prism, course, pos, objective, objectiveRadius,
-                                   crawlingDry: UrchinRailAssessment.IsDryCrawl(
-                                       hostile, slowed, convertible,
-                                       convertible && CanAffordSpike(status, _config.SpikeMinAmmo)));
+                s.CrawlingDry = UrchinRailAssessment.IsDryCrawl(hostile, slowed, convertible,
+                                                                convertible && CanAffordSpike(status, _config.SpikeMinAmmo));
+                s.Verdict = Assess(s, status, trail, prism, course, pos, objective, objectiveRadius, s.CrawlingDry);
             }
+
+            // A dry crawl is only worth a short way: past MaxDryCrawlSeconds the rail is left whatever the arc test
+            // said, so a rival's lane (which threads every ring) cannot hold the pilot ring after ring.
+            if (!s.CrawlingDry) s.DryCrawlSince = -1f;
+            else if (s.DryCrawlSince < 0f) s.DryCrawlSince = now;
+            if (UrchinRailAssessment.DryCrawlTooLong(s.CrawlingDry, s.DryCrawlSince, now, _config.MaxDryCrawlSeconds))
+                s.Verdict = UrchinRailVerdict.Leave;
 
             switch (s.Verdict)
             {
@@ -161,6 +171,7 @@ namespace CosmicShore.Gameplay
                     if (TrySlip(pilot))
                     {
                         s.AssessedTrail = null;
+                        s.DryCrawlSince = -1f;
                         return false;
                     }
                     // Slip unbound or still inside its own interval: keep riding meanwhile.

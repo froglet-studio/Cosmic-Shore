@@ -24,7 +24,7 @@ The fix (2026-10-25), both halves shipped:
     python3 Tools/Build/regatta_line_sim.py              # every styled hull, I1-I4, before vs the fix
     python3 Tools/Build/regatta_line_sim.py --self-test
 """
-import math, os, sys
+import functools, math, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import situation_features as sf
 from rhino_drive_sim import add, sub, mul, dot, norm, unit, ang, rotate_toward
@@ -41,6 +41,22 @@ HULLS = {
     "Sparrow": (80, 0.1, 80, 0.55, 10, 0.5),
 }
 CAREFUL, BOLD, MIN_LOOK, MAX_LOOK = 0.35, 0.8, 60, 520
+RACE_LINES = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..",
+                                          "Assets", "Resources", "RaceLines"))
+
+
+@functools.lru_cache(maxsize=None)
+def authored_look_seconds(hull):
+    """(careful, bold) look-ahead seconds a hull's Regatta race line is authored with (Resources/RaceLines/<hull>_Regatta),
+    or None when the asset or its fields are missing. A per-hull model's default run reads this, so "shipped" is the
+    shipped look-ahead and not every hull's 0.35 / 0.8 (the Manta's and the Rhino's moved off it on 2026-10-25)."""
+    try:
+        text = open(os.path.join(RACE_LINES, f"{hull}_Regatta.asset"), encoding="utf-8").read()
+        careful = float(re.search(r"^\s+CarefulLookaheadSeconds:\s*([-0-9.eE]+)", text, re.M).group(1))
+        bold = float(re.search(r"^\s+BoldLookaheadSeconds:\s*([-0-9.eE]+)", text, re.M).group(1))
+        return careful, bold
+    except (OSError, AttributeError, ValueError):
+        return None
 
 
 def gap_line(lanes, own, radius):
@@ -152,7 +168,21 @@ def inside_turning_circle(to, heading, R, capture=18.0):
     return norm(sub(to, centre)) < max(0.0, R - capture)
 
 
-def race(hull, intensity, exempt, T=240, dt=1 / 60, own=0, gate=False, only_when_cut=False):
+NOSE_FOLLOW = 1.5   # VesselTransformer.LERP_AMOUNT: AI, autopilot and remote hulls' nose follows the command at 1.5/s
+
+
+def turn_with_lag(fwd, cmd, target, turn_rad, dt, lag):
+    """One frame of the stick's turn. lag=False: the nose IS the command (the models before 2026-10-25, evening).
+    lag=True, the game: the stick turns the COMMANDED heading (VesselTransformer.accumulatedRotation) and the nose
+    slerps toward it at NOSE_FOLLOW per second (AI hulls kept this when people lost it, 2026-10-21). Returns (fwd, cmd)."""
+    if not lag:
+        f = rotate_toward(fwd, target, turn_rad)
+        return f, f
+    cmd = rotate_toward(cmd, target, turn_rad)
+    return rotate_toward(fwd, cmd, math.radians(ang(fwd, cmd)) * min(1.0, NOSE_FOLLOW * dt)), cmd
+
+
+def race(hull, intensity, exempt, T=240, dt=1 / 60, own=0, gate=False, only_when_cut=False, lag=False, look_s=None, max_look=None, blend=0.0):
     v, rts, base, share, clear, risk = HULLS[hull]
     C = sf.course_from(sf.load_course_js(), intensity)
     gates = C['gates']; n = len(gates); total = 3 * n
@@ -160,14 +190,15 @@ def race(hull, intensity, exempt, T=240, dt=1 / 60, own=0, gate=False, only_when
     tight = min(g['r'] for g in gates)
     room = max(0.0, tight - clear * (1.5 + (0.75 - 1.5) * risk) - RAIL_OFFSET)
     line = gap_line(C['lanes'], own, RAIL_OFFSET + share * room)
-    look = min(MAX_LOOK, max(MIN_LOOK, v * (CAREFUL + (BOLD - CAREFUL) * risk)))
+    careful, bold = look_s or (CAREFUL, BOLD)
+    look = min(max_look or MAX_LOOK, max(MIN_LOOK, v * (careful + (bold - careful) * risk)))
     omega = v * rts + base
     R = v / math.radians(omega)
     run = max(max(0.0, 2 * R - 18), v * 1.5)
     ring_at = [nearest(line, p, -1) for p in P]
     hint = nearest(line, P[0], -1)
     pos = point_ahead(line, (hint - 40) % len(line), 0); fwd = unit(sub(line[(hint - 38) % len(line)], pos))
-    hint = -1
+    hint = -1; cmd = list(fwd)
     idx = 0; t = 0.0; lost = -1; orbit = Orbit(); extending = False; ext_t = 0.0; breaks = 0; misses = 0
     while t < T and idx < total:
         g = idx % n; ring = P[g]; ax = A[g]
@@ -195,8 +226,10 @@ def race(hull, intensity, exempt, T=240, dt=1 / 60, own=0, gate=False, only_when
             if (not closing and inside_turning_circle(to, fwd, R)) or orbit.tick(to):
                 extending = True; ext_t = 0.0; breaks += 1; orbit.reset()
         steer = add(fwd, mul(unit(to), -0.35)) if extending else to
-        s = ai_stick(ang(fwd, steer))
-        fwd = rotate_toward(fwd, steer, math.radians(omega * s) * dt)
+        # blend > 0: judge the error from where the nose is about to point (the nose moved blend of the way to the command)
+        judge = rotate_toward(fwd, cmd, math.radians(ang(fwd, cmd)) * blend) if (lag and blend > 0) else fwd
+        s = ai_stick(ang(judge, steer))
+        fwd, cmd = turn_with_lag(fwd, cmd, steer, math.radians(omega * s) * dt, dt, lag)
         newpos = add(pos, mul(fwd, v * dt))
         a0 = dot(sub(pos, ring), ax); a1 = dot(sub(newpos, ring), ax)
         if a0 * a1 <= 0 and a0 != a1:

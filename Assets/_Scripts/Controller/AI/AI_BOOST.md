@@ -208,6 +208,14 @@ steering; its Python drivers mirror `Driver.Tick`, change both together): on a s
 `learn_drives_from_flights.py` reports (does not write) `redriftShareOfPeak` for Dolphin flights: the speed a drift froze
 over the top speed of the discharge before it (1.0 = drifting again at the peak).
 
+**A commit at the start line froze it (2026-10-25, fixed, not editor-verified).** The first flight with the
+recorder's rival state (Yash's Stoat race, Regatta I2 Hard) shows the AI Dolphin at 0 u/s for the whole race: drifting
+100% of it, its status "charging in the drift" throughout. A drift that keeps its speed keeps 0 when it begins at rest,
+and with no motion the aim never swings off course to end it. `AIPilot` now commits only at `commitMinSpeed` (20 u/s)
+or faster and, on a speed-holding hull, at `commitUpToSpeedShare` (0.9) of its throttle target (the discharge peak
+satisfies this, so the re-drift is not delayed), and lets go of a commit drift that falls under `commitMinSpeed`
+(`AIPilot.CanCommitAt`, `RegattaStuckAITests`).
+
 **Yash's flight agrees (2026-10-24, one I1 race, unfinished).** He drifted 83% of the race, drifted again at a
 discharge's peak 19 times of 21 (`redriftShareOfPeak` 0.98-1.06), and spent the charge to 0.96 (the asset's
 `spendAtCharge01` is 0.95). He discharged in short bursts, often far off the ring's line, where the AI waits for 2.5 s

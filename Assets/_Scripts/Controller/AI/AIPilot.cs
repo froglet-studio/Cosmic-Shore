@@ -62,6 +62,15 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] bool ram;
         [SerializeField] bool drift;
+        [Tooltip("Never commit a drift slower than this (u/s), and let go of a commit drift that has fallen under it. " +
+                 "A hull whose drift holds its speed (the Dolphin's holdSpeedWhileDrifting) keeps the speed it drifted " +
+                 "at, so a commit at the start line held 0 u/s for a whole race: the hull never moved, its aim never " +
+                 "changed, and the drift was never let go (Regatta I2, 2026-10-25). Well under every hull's cruise.")]
+        [SerializeField, Min(0f)] float commitMinSpeed = 20f;
+        [Tooltip("On a hull whose drift keeps its speed, commit only once the speed is this share of the speed the " +
+                 "throttle is taking it to: up to speed, so the drift holds a race pace rather than a launch pace. " +
+                 "Also the ChargeBoost rule's peak (speed meets the falling target), so it never delays a re-drift there.")]
+        [SerializeField, Range(0f, 1f)] float commitUpToSpeedShare = 0.9f;
 
         [Header("Targeting")]
         [Tooltip("When true, AI targets enemy players instead of crystals/items (used for Joust)")]
@@ -957,7 +966,7 @@ namespace CosmicShore.Gameplay
                 // to unwind (the release already happened in TickBoostPolicy).
                 ReleaseAimTelegraph();
             }
-            else if (LookingAtCrystal && drift && !VesselStatus.IsDrifting)
+            else if (LookingAtCrystal && drift && !VesselStatus.IsDrifting && CommitSpeedOk())
             {
                 // COMMIT. The course locks onto the objective and the nose is freed to swing
                 // elsewhere; from here the vessel is travelling at the crystal no matter where it
@@ -967,6 +976,14 @@ namespace CosmicShore.Gameplay
                 SetCommitDriftHeld(true);
                 EngageAimTelegraph();
                 desiredDirection = ResolveDriftLookDirection(desiredDirection);
+            }
+            else if (_commitDriftHeld && VesselStatus.IsDrifting && !CanCommitAt(VesselStatus.Speed, commitMinSpeed))
+            {
+                // Our commit drift is holding the hull (nearly) still: a drift that keeps its speed keeps 0, and
+                // with no motion the aim never swings off course to end it. Let go; the throttle takes over.
+                vessel.StopShipControllerActions(CommitControl);
+                SetCommitDriftHeld(false);
+                ReleaseAimTelegraph();
             }
             else if (LookingAtCrystal && VesselStatus.IsDrifting)
             {
@@ -1061,6 +1078,25 @@ namespace CosmicShore.Gameplay
             throttle += throttleIncrease * Time.deltaTime;
         }
         
+        /// <summary>
+        /// Fast enough to commit a drift: at least <paramref name="minSpeed"/>, and on a hull whose drift
+        /// <paramref name="holdsSpeed"/> also <paramref name="upToSpeedShare"/> of <paramref name="throttleTarget"/>
+        /// (the speed the throttle is taking it to), since that drift keeps the speed it begins at. Keeping a held
+        /// commit drift asks only the first part (<c>holdsSpeed: false</c>): a drift at speed is never let go for
+        /// the throttle target rising under it.
+        /// </summary>
+        public static bool CanCommitAt(float speed, float minSpeed, bool holdsSpeed = false, float throttleTarget = 0f,
+                                       float upToSpeedShare = 0f) =>
+            speed >= minSpeed && (!holdsSpeed || speed >= upToSpeedShare * throttleTarget);
+
+        bool CommitSpeedOk()
+        {
+            var transformer = VesselStatus.VesselTransformer;
+            bool holds = transformer && transformer.HoldsSpeedWhileDrifting;
+            return CanCommitAt(VesselStatus.Speed, commitMinSpeed, holds,
+                               holds ? transformer.CurrentThrottleTarget : 0f, commitUpToSpeedShare);
+        }
+
         /// <summary>
         /// The direction this vessel is actually TRAVELLING — the quantity a turn radius applies
         /// to. Outside a drift it is the nose; inside one the course is locked and the nose swings
@@ -1344,9 +1380,12 @@ namespace CosmicShore.Gameplay
             Vector3 toJudged = _objective.Has && !_objective.Mistake ? judged - transform.position : toObjective;
             // The leg after the objective, from the objective (zero when the mode does not say, or while breaking off).
             Vector3 nextLeg = !_extending && _nextLegProvider?.Invoke() is Vector3 after ? after - judged : default;
+            // On a path (a race line's lead point, MarkAimAsPathLead) "is this straight" is asked of where the pilot is
+            // going, not of the ring round the bend (AIBoostContext.PathDirection); the runway and corner stay the ring's.
+            Vector3 toPath = _aimIsPathLead && !_extending ? toObjective : default;
             _boostDriver.Tick(new AIBoostContext(
                 toJudged, HeadingDirection(), transform.forward, VesselStatus.Speed, LastStickDeflection(),
-                _extending, _commitDriftHeld, VesselStatus.IsTranslationRestricted, nextLeg));
+                _extending, _commitDriftHeld, VesselStatus.IsTranslationRestricted, nextLeg, toPath));
 
             // The drift-charge driver spends the bank by ending the commit drift on a straight -
             // the same release the off-course branch performs, just earlier.
