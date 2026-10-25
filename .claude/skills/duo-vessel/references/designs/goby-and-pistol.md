@@ -100,6 +100,49 @@
 >   Squirrel effects are stripped through the Goby's own containers; it still collects crystals), and an AI-flown Goby
 >   that the seat does not run on (backfill, other machines) flies the platform AIPilot without the kit. Team tasks.
 
+## The ability matrix: both seats, every platform (2026-10-25)
+
+Garrett, 2026-10-25: "ability matrix should now include controls like that. table with all three platforms. please give
+me an ability matrix for both seats." Columns run in the 2D characters' control priority: **mobile, gamepad,
+mouse/keyboard**. The four cards are the HUD's row (`GobyPistolHUDController`); each seat draws them its own way. Keep this
+table in step with `GobyPistolDuo` (`HumanPistol`, `Choose`), the hull's bindings (`author_goby_assets.py`
+`GOBY_BINDINGS`) and the phone buttons (`GobyPistolButtons`) in every change that moves a control.
+
+**The Goby seat** (the 3D flier that lays the islands and perches):
+
+| Card | Ability | What it does, and how its element scales it | Level 5 | Mobile | Gamepad | Mouse / keyboard |
+|---|---|---|---|---|---|---|
+| Charge | **Lock** (feeds the Pistol's Vortex Sting) | Locks the best target in the nose's cone, rival vessels first, then fauna; while the lock is on the Pistol's screen its rings home on it. Charge raises the petals a ring hit takes (1 -> 3). | none yet **[open]** | Lock button | Y or LT | F |
+| Mass | **Perches** (the Pistol's dens) | Passive: a dart's end becomes a perch once it is 900 u from the last one; the Pistol builds its den there. The card counts them and flashes on each. | (Fortress, on the Pistol's dens) | passive | passive | passive |
+| Space | **Undertow** (the Pistol's) | Passive: mass beside the Pistol's plane is pulled into it; the card's gauge is the reach (40 -> 200 u with Space). | (Deep Undertow) | passive | passive | passive |
+| Time | **Dart** | Hold to charge the distance (140 -> 600 u over 0.8 s), let go to dart; it stops on the first block on its line. The gauge is the charge, the veil the cooldown. | **Phase Dart**: darts pass through prisms | Dart button: hold, let go | X or RT: hold, let go | Q: hold, let go |
+| (flight) | the hull's own flight | Cruises; perched, it is pinned and aims. | | two thumbs | both sticks | the desktop flight scheme |
+
+**The Pistol seat** (the 2D sidescroller that rides the islands, Tiny Wings style):
+
+| Card | Ability | What it does, and how its element scales it | Level 5 | Mobile | Gamepad | Mouse / keyboard |
+|---|---|---|---|---|---|---|
+| Charge | **Snap** -> **Vortex Sting** | Fires a vortex ring (the toroidal lens) that gathers prisms round its core; with the Goby's lock on screen it homes, and a rival hull it passes through loses petals from each element (1 -> 3 with Charge). The veil is its cooldown. | none yet **[open]** | Snap button | X | Q (or E) |
+| Mass | **Dens**, and **Back** | At each perch it rests and builds a den: one prism per 40 u ridden since the last den, x1 -> x2.5 with Mass, at most 80. Teleporting grows none. The card counts the den prisms; Back, pressed while riding, turns the next perch's pick round. | **Fortress**: danger and super-shielded prisms too | Back button | Y (or LB) | F (or the B key) |
+| Space | **Ghost** (and the Undertow, passive) | Ghost: a moment of passing through prisms, then a cooldown (the veil). The Undertow pulls mass beside the plane into it, 40 -> 200 u with Space; the card's gauge is that reach. | **Deep Undertow**: shielded prisms pulled too | Ghost button | B | T (or G) |
+| Time | **the dive** (and the aimed jump, off) | Hold to press into the hill; let go on an upslope and it throws the Pistol. The gauge is its speed. With `aimedJump` on, a dragged jump whose cooldown Time shortens (9 -> 3 s); off since 2026-10-22, so Time's card on the Pistol is **[open]**. | (Phase Dart is the Goby's) | finger held on the view (aimed jump: drag) | A or LT (aimed jump: RT + right stick) | Space, S, down, or mouse held (aimed jump: J) |
+
+**The path map** (the Pistol seat, at a perch after its rest; picking another den teleports there):
+
+| Move | Mobile | Gamepad | Mouse / keyboard |
+|---|---|---|---|
+| Spin the map | drag | right stick | drag, or Q / E |
+| Pick a path (from the den at the nearer end) | tap its glowing bar | left stick (the next path that way on screen) | click its bar, or A / D |
+| Ride it (or teleport, then ride) | tap the picked path again | A or LT | Space (or S, down), or click the picked path |
+| Turn it round at its den | Back button | Y | F |
+| Ride on without stopping | keep the finger down, still | keep A or LT held | keep Space held |
+
+**Both seats:**
+
+| Move | Mobile | Gamepad | Mouse / keyboard |
+|---|---|---|---|
+| Swap seats | two-finger swipe, or double tap the small view | D-pad left / right | left / right arrows |
+
 **Status (2026-10-18):** in the game as a prototype, not yet flown in the editor. The Goby is vessel class 18 (card
 "Goby and Pistol"), flyable from the Toybox's Vessel Changer, built from the shared crew pieces (SKILL.md "One notion
 of a crew vessel"); its numbers are cloned from the lab (`studio_to_unity.py --vessel goby`). The editor playtest is
@@ -846,3 +889,10 @@ the line it settled.
   choosing the den to teleport to." The map's controls reworked touch first (drag spins, tap picks, tap again rides),
   then the pad (right stick spins, left stick picks, A rides), then the keyboard (top section). **[proposed]** tap-again
   to ride on touch, and the spin kept between perches.
+- 2026-10-25, Garrett: "ability matrix should now include controls like that. table with all three platforms. please give
+  me an ability matrix for both seats. the goby AI was doing a bad job of taking paths that would give the shrimp plenty
+  to destroy." The ability matrix above (both seats, mobile / gamepad / mouse-keyboard). The Goby AI now plans each
+  island through the opposing prisms (`PistolPaths.BestHeading`): of 26 fixed headings and a heading through each of up
+  to 64 sampled opposing prisms, the one whose island passes the most within the Pistol's reach, its end inside the home
+  radius; Easy and Medium misread the counts (up to +-50 % / +-22 %, rolled per island). It chases a rival only when no
+  opposing prism is in reach. **[proposed]** the corridor (the undertow's reach, or `pathScoreBand` when wider).

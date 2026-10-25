@@ -132,6 +132,86 @@ namespace CosmicShore.Gameplay
             return best;
         }
 
+        /// <summary>The Goby AI's candidate headings for its next island: 26 directions spread evenly over the sphere (a
+        /// Fibonacci lattice), so no way out of a perch is left unweighed.</summary>
+        public static readonly Vector3[] Headings = BuildHeadings(26);
+
+        static Vector3[] BuildHeadings(int n)
+        {
+            var dirs = new Vector3[n];
+            float golden = Mathf.PI * (3f - Mathf.Sqrt(5f));
+            for (int i = 0; i < n; i++)
+            {
+                float y = 1f - 2f * (i + 0.5f) / n, r = Mathf.Sqrt(Mathf.Max(0f, 1f - y * y)), a = golden * i;
+                dirs[i] = new Vector3(Mathf.Cos(a) * r, y, Mathf.Sin(a) * r);
+            }
+            return dirs;
+        }
+
+        /// <summary>How many of <paramref name="points"/> an island laid from <paramref name="from"/> along
+        /// <paramref name="dir"/> for <paramref name="length"/> would pass within <paramref name="radius"/> of (the reach
+        /// the Pistol's undertow and ring have over it).</summary>
+        public static int CorridorCount(Vector3 from, Vector3 dir, float length, float radius, List<Vector3> points)
+        {
+            int n = 0; float r2 = radius * radius;
+            for (int i = 0; i < points.Count; i++)
+            {
+                Vector3 v = points[i] - from;
+                float along = v.x * dir.x + v.y * dir.y + v.z * dir.z;
+                if (along < 0f || along > length) continue;
+                if ((v - dir * along).sqrMagnitude <= r2) n++;
+            }
+            return n;
+        }
+
+        /// <summary>Most prisms <see cref="BestHeading"/> aims a heading through (sampled evenly), on top of the fixed
+        /// <see cref="Headings"/>: the fixed ones are ~40 degrees apart, too coarse for a long island's narrow corridor.</summary>
+        public const int AimedHeadings = 64;
+
+        /// <summary>
+        /// The Goby AI's way to its next island (Garrett, 2026-10-25: "the goby AI was doing a bad job of taking paths that
+        /// would give the shrimp plenty to destroy"): of the fixed <see cref="Headings"/> and a heading through each of up to
+        /// <see cref="AimedHeadings"/> of the <paramref name="points"/> themselves, the one whose island would pass the most
+        /// opposing points within <paramref name="radius"/>, never ending more than <paramref name="homeRadius"/> from
+        /// <paramref name="home"/>; a tie goes to the least turn from <paramref name="forward"/>. <paramref name="misjudge"/>
+        /// (0 for a sharp AI) scales each heading's count by up to ±half that, from <paramref name="seed"/>: the easier AIs
+        /// misread the field. False when no heading passes any.
+        /// </summary>
+        public static bool BestHeading(Vector3 from, float length, float radius, List<Vector3> points, Vector3 home, float homeRadius,
+                                       Vector3 forward, float misjudge, uint seed, out Vector3 heading, out int count)
+        {
+            heading = forward; count = 0;
+            if (points.Count == 0) return false;
+            float bestScore = 0f, bestCos = -2f;
+            int aimed = Mathf.Min(points.Count, AimedHeadings), stride = Mathf.Max(1, points.Count / Mathf.Max(1, aimed));
+            for (int i = 0; i < Headings.Length + aimed; i++)
+            {
+                Vector3 d;
+                if (i < Headings.Length) d = Headings[i];
+                else
+                {
+                    Vector3 v = points[((i - Headings.Length) * stride) % points.Count] - from;
+                    float m = v.magnitude;
+                    if (m < 1f) continue;
+                    d = v / m;
+                }
+                if ((from + d * length - home).magnitude > homeRadius) continue;
+                int c = CorridorCount(from, d, length, radius, points);
+                if (c <= 0) continue;
+                float score = c * (1f + misjudge * (Hash01(seed, (uint)i) - 0.5f));
+                float cos = Vector3.Dot(d, forward);
+                if (score > bestScore || (score == bestScore && cos > bestCos)) { heading = d; bestScore = score; bestCos = cos; count = c; }
+            }
+            return count > 0;
+        }
+
+        static float Hash01(uint seed, uint i)
+        {
+            uint h = seed * 0x9E3779B1u ^ (i + 0x7F4A7C15u) * 0x85EBCA77u;
+            h ^= h >> 15; h *= 0x2C1B3C6Du; h ^= h >> 12; h *= 0x297A2D39u; h ^= h >> 15;
+            return (h & 0xFFFFFF) / 16777216f;
+        }
+
         /// <summary>
         /// Whether a prism at frame coordinates <paramref name="fr"/> (x along the island, y up, z out of its plane) lies
         /// where the vortex ring can reach it: over the island (0..<paramref name="endX"/>), within the undertow's

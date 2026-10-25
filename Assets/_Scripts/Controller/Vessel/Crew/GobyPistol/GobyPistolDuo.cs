@@ -68,6 +68,11 @@ namespace CosmicShore.Gameplay
 
         // the Goby's own AI (while the human flies the Pistol): it aims the hull and darts by the same calls the buttons make
         Vector3 _aiDir; float _aiDecideAt, _aiIslandGoal; bool _aiHasDir;
+        // its route: the island it means to lay next, aimed where the most opposing prisms are (PistolPaths.BestHeading)
+        readonly List<Vector3> _routePts = new();
+        uint _misjudgeSeed;
+        Vector3 _aiRouteEnd; bool _aiHasRoute; int _aiRouteCount;
+        const int RoutePointsMax = 2048;   // the opposing prisms a route is weighed against (sampled evenly beyond that)
         // perched: pinned on the end of an island, aiming, until the perch time is up (it cruises between perches)
         bool _perched; float _perchT;
         PistolAI.Mulberry32 _aiRng;
@@ -593,8 +598,16 @@ namespace CosmicShore.Gameplay
             if (_darting) return;
             var lvl = Difficulty();
             if (!_lockTarget || !_lockIsVessel) AiLockNearestRival();
+            if (_aiIslandGoal <= 0f)
+            {
+                // a new island: how long, and how the easier AIs will misread the field this time
+                _aiIslandGoal = Mathf.Lerp(Config.IslandMinLength, Config.IslandMaxLength, _aiRng.Next());
+                _misjudgeSeed = (uint)(_aiRng.Next() * uint.MaxValue);
+                _aiHasDir = false;
+            }
             if (!_aiHasDir || _t >= _aiDecideAt)
             {
+                AiPlanRoute(lvl);
                 _aiDir = AiCruiseDirection(lvl); _aiHasDir = true;
                 _aiDecideAt = _t + Config.AiRethinkSeconds * (0.7f + 0.6f * _aiRng.Next()) + lvl.Late;
             }
@@ -603,7 +616,6 @@ namespace CosmicShore.Gameplay
                 _status.VesselTransformer.ApplyRotation(Mathf.Min(deg, Config.AiTurnRate * dt), axis);
             if (_perched) return;   // aims from the perch; it lifts off when the perch time is up (StepPerch)
             if (IsAuthority()) _status.VesselTransformer.TranslateShip(_gt.forward * (Config.AiCruiseSpeed * dt));
-            if (_aiIslandGoal <= 0f) _aiIslandGoal = Mathf.Lerp(Config.IslandMinLength, Config.IslandMaxLength, _aiRng.Next());
             float from = Vector3.Distance(_gt.position, _perches[_perches.Count - 1].Pos);
             if (DartReady && deg < 25f && IslandsAhead < Config.IslandQueue && from + 0.5f * Config.AiDartLength >= _aiIslandGoal)
             {
@@ -627,14 +639,44 @@ namespace CosmicShore.Gameplay
             if (pick != null) { _lockTarget = pick.Transform; _lockVessel = pick; _lockIsVessel = true; }
         }
 
-        /// <summary>Where the cruising Goby AI heads next: at a locked rival in reach; back toward the last perch while the
-        /// Pistol's islands are full (it circles there instead of laying more); home when it strays; else a wander off the
-        /// nose. Easy and Medium misjudge it by a few degrees.</summary>
+        /// <summary>
+        /// The island the Goby AI means to lay next (Garrett, 2026-10-25: "the goby AI was doing a bad job of taking paths
+        /// that would give the shrimp plenty to destroy"): from the last perch, the heading whose island would pass the most
+        /// opposing prisms within the Pistol's reach (the undertow's, or <c>pathScoreBand</c>), its end inside the home
+        /// radius. The easier AIs misread the counts (misjudge, rolled per island: Easy up to ±50 %, Medium ±22 %). No route
+        /// when nothing opposing is in reach: it falls back to a rival, home, or a wander.
+        /// </summary>
+        void AiPlanRoute(PistolAI.Difficulty lvl)
+        {
+            _aiHasRoute = false; _aiRouteCount = 0;
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable || _perches.Count == 0) return;
+            Vector3 last = _perches[_perches.Count - 1].Pos;
+            float goal = _aiIslandGoal > 0f ? _aiIslandGoal : Config.IslandMaxLength;
+            float radius = Mathf.Max(Config.PullReach.EvaluateReplicated(_status), Config.PathScoreBand);
+            index.QuerySphere(last, goal + radius, _q);
+            _routePts.Clear();
+            int stride = Mathf.Max(1, Mathf.CeilToInt(_q.Count / (float)RoutePointsMax));
+            for (int i = 0; i < _q.Count; i += stride) if (Opposing(_q[i])) _routePts.Add(_q[i].transform.position);
+            _q.Clear();
+            bool found = PistolPaths.BestHeading(last, goal, radius, _routePts, _home, Config.AiHomeRadius, _gt.forward,
+                lvl.Mis * 10f, _misjudgeSeed, out var heading, out _aiRouteCount);
+            _routePts.Clear();
+            if (!found) return;
+            _aiRouteEnd = last + heading * goal;
+            _aiHasRoute = true;
+        }
+
+        /// <summary>Where the cruising Goby AI heads next: back toward the last perch while the Pistol's islands are full (it
+        /// circles there instead of laying more); along its route, where the island will pass the most opposing prisms;
+        /// else at a locked rival in reach; home when it strays; else a wander off the nose. Easy and Medium misjudge it by a
+        /// few degrees.</summary>
         Vector3 AiCruiseDirection(PistolAI.Difficulty lvl)
         {
             Vector3 pos = _gt.position, last = _perches[_perches.Count - 1].Pos, dir;
-            if (_lockTarget && (_lockTarget.position - pos).sqrMagnitude < Config.LockRange * Config.LockRange) dir = _lockTarget.position - pos;
-            else if (IslandsAhead >= Config.IslandQueue && (last - pos).magnitude > 0.5f * Config.IslandMinLength) dir = last - pos;
+            if (IslandsAhead >= Config.IslandQueue && (last - pos).magnitude > 0.5f * Config.IslandMinLength) dir = last - pos;
+            else if (_aiHasRoute && (_aiRouteEnd - pos).sqrMagnitude > 1f) dir = _aiRouteEnd - pos;
+            else if (_lockTarget && (_lockTarget.position - pos).sqrMagnitude < Config.LockRange * Config.LockRange) dir = _lockTarget.position - pos;
             else if ((pos - _home).magnitude > 0.7f * Config.AiHomeRadius) dir = _home - pos;
             else dir = Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 120f, _gt.up) * Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 50f, _gt.right) * _gt.forward;
             if (_aiRng.Next() < lvl.Mis * 4f) dir = Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 20f, _gt.up) * dir;
@@ -1767,7 +1809,7 @@ namespace CosmicShore.Gameplay
             GUI.Box(box, string.Empty);
             GUILayout.BeginArea(new Rect(box.x + 8f, box.y + 6f, box.width - 16f, box.height - 12f));
             GUILayout.Label($"GOBY & PISTOL   you fly: {(_human == Half.Goby ? "GOBY" : "PISTOL")}   AI: {aiLevel}   swap: D-pad left/right, 1/2 or double tap the small view");
-            GUILayout.Label($"Goby    perches {_perches.Count}   dart {(DartReady ? "ready" : "...")}{(_charging ? $" charging {DartCharge01:0.00}" : "")}   lock {(_lockTarget ? (_lockIsVessel ? "vessel" : "fauna") : "none")}");
+            GUILayout.Label($"Goby    route {(_aiHasRoute ? _aiRouteCount + " opposing" : "none")}   perches {_perches.Count}   dart {(DartReady ? "ready" : "...")}{(_charging ? $" charging {DartCharge01:0.00}" : "")}   lock {(_lockTarget ? (_lockIsVessel ? "vessel" : "fauna") : "none")}");
             GUILayout.Label($"Pistol  {(_resting ? $"resting at perch {_at}" : $"riding {_seg} {(_dir > 0 ? "on" : "back")}")}   jump {_p.launch}   den prisms {DenPrisms}   heading {(_travelDir > 0 ? "on" : "back")}   rings {_rings.Count}");
             GUILayout.Label(_human == Half.Pistol
                 ? (_choosing

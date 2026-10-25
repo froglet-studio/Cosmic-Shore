@@ -89,6 +89,9 @@ not run.
    distance ridden since the teleport. Holding the dive through a perch rides on after half a second.
 4. The Goby's view never shows the bars.
 5. Fly the Goby: the AI Pistol heads for the island with the most rival prisms.
+6. Fly the Pistol (2026-10-25): the AI Goby lays its islands through clusters of rival prisms (the debug overlay's Goby
+   line reads `route N opposing`), not off in random directions; with nothing rival in reach it still cruises and
+   chases a rival or wanders.
 
 ### 🔴 2D cameras fade the sky's Voronoi cell net (`cece/cool-shannon-aulgpe`, 2026-10-25) — NOT EDITOR-VERIFIED
 

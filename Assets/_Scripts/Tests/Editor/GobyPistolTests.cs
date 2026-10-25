@@ -500,6 +500,26 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void GobyAi_LaysItsIslandThroughTheOpposingPrisms()
+        {
+            // Garrett, 2026-10-25: "the goby AI was doing a bad job of taking paths that would give the shrimp plenty to destroy"
+            var pts = new List<Vector3>();
+            var rng = new System.Random(3);
+            Vector3 band = new Vector3(Mathf.Cos(17f * Mathf.Deg2Rad), 0.1f, Mathf.Sin(17f * Mathf.Deg2Rad)).normalized;
+            float J() => (float)rng.NextDouble() * 40f - 20f;
+            for (int i = 0; i < 40; i++) pts.Add(band * (400f + i * 12.5f) + new Vector3(J(), J(), J()));
+            for (int i = 0; i < 12; i++) pts.Add(new Vector3(J() * 40f, J() * 40f, J() * 40f));
+            Assert.That(PistolPaths.BestHeading(Vector3.zero, 1000f, 60f, pts, Vector3.zero, 4000f, Vector3.forward, 0f, 1u, out var h, out int c), Is.True);
+            Assert.That(Vector3.Angle(h, band), Is.LessThan(6f), "the island runs through the band of opposing prisms");
+            Assert.That(c, Is.GreaterThanOrEqualTo(35));
+            int fixedBest = 0;
+            foreach (var d in PistolPaths.Headings) fixedBest = Mathf.Max(fixedBest, PistolPaths.CorridorCount(Vector3.zero, d, 1000f, 60f, pts));
+            Assert.That(fixedBest, Is.LessThan(c), "the control: the fixed headings alone miss most of the band");
+            Assert.That(PistolPaths.BestHeading(Vector3.zero, 1000f, 60f, pts, Vector3.zero, 500f, Vector3.forward, 0f, 1u, out _, out _), Is.False,
+                "never past the home radius");
+        }
+
+        [Test]
         public void Pistol_HasItsOwnModel()
         {
             // Garrett, 2026-10-24: "give the pistol a model" (specs/pistol.py, Docs/VesselModels/Pistol.md)

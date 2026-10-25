@@ -234,6 +234,12 @@ enum before taking a value.
   cannot use.
 - Hand-picked targets (the Pistol's Launch: tap and drag, or the right trigger + right stick) go
   through the input strategy, never a raw `Input` read.
+- **Every crew brief carries an ability matrix with all three platforms** (Garrett, 2026-10-25: "ability matrix should
+  now include controls like that. table with all three platforms"): per seat, each card's ability, what it does and how
+  its element scales it, its level-5 upgrade, and its control on mobile, gamepad and mouse/keyboard, in that column order
+  for a 2D seat ("the control priority for 2d characters is mobile, gamepad, mouse/keyboard"); plus the seat-level moves
+  (a map, the swap). Design a 2D seat's controls touch first, then the pad, then the keyboard. The Goby & Pistol's
+  (`references/designs/goby-and-pistol.md`) is the pattern; update it in every change that moves a control.
 
 ### 3.3 The four-icon row and ONE shared meter (Garrett, 2026-10-14)
 
