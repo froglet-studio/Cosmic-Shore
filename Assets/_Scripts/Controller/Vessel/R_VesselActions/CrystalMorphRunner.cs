@@ -83,6 +83,16 @@ namespace CosmicShore.Gameplay
         /// <summary>Seconds of GEOMETRY in the window — the shader's window.</summary>
         protected float MorphSeconds => _morphSeconds;
 
+        /// <summary>
+        /// The frame the morph mesh's vertices are drawn in: the BODY copy's transform, never this object's.
+        /// The two differ whenever the crystal's model is posed under its root —
+        /// <see cref="CrystalDepthPrisms"/> turns every model child to the crystal's own random pose
+        /// (<see cref="CrystalPoseJitter"/>), and <see cref="Adopt"/> copies that local pose so frame 0 IS the
+        /// crystal. A target resolved in the root's frame then lands turned by that pose: the whole ring
+        /// tilted, until the real one is revealed and it reads as a shift. Every target goes through this.
+        /// </summary>
+        protected Transform BodyFrame => _body.Count > 0 && _body[0] ? _body[0].transform : transform;
+
         /// <summary>The cage the body draws — the source every morph mesh is built from.</summary>
         protected Mesh SourceMesh =>
             _body.Count > 0 && _body[0] && _body[0].TryGetComponent<MeshFilter>(out var f) ? f.sharedMesh : null;

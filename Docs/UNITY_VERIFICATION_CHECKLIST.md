@@ -6201,6 +6201,22 @@ clears `scheduledByOwner` and `ownerScratch` and zeroes `scheduledActionCount`
 
 ---
 
+### 🔴 Squirrel ring morph / Scarab forge land on the pose-jittered body's frame (`cece/gifted-brown-x8cf74`, 2026-10-25)
+
+**Bug (Garrett):** the omni crystal morphed onto a TILTED ring, then shifted onto the real one. Cause:
+`CrystalDepthPrisms.ApplyPose` turns each crystal's model children to a random pose (`CrystalPoseJitter`);
+the morph's body copy carries that local pose, but the ring/ball targets were resolved in the morph ROOT's
+frame, so they landed turned by the jitter. **Fix:** `CrystalMorphRunner.BodyFrame`; `SquirrelCrystalMorph`
+and `ScarabCrystalMorph` resolve targets in it.
+
+**Not opened in Unity** (no editor). `unity_refcompile` player: 0 project errors.
+
+**Verify in editor:** Squirrel through several omni crystals (each has a different jitter): the plates land
+exactly on the ring, with no tilt and no shift at the hand-off (set `Resources/CrystalMorphConfig.duration` 9 to
+watch). Scarab forge: the cage closes onto the ball with no snap at the end.
+
+---
+
 ### 🔴 Squirrel omni-crystal morph: the crystal becomes its eight shielded ring prisms (`cece/dreamy-fermat-szo9ck`, 2026-10-08)
 
 **Landed** (`_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md`): a Squirrel's omni

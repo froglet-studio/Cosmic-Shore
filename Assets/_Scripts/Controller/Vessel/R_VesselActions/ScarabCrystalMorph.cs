@@ -169,11 +169,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool StampOntoBall(Crystal crystal)
         {
-            // The hull is read in the frame the ball DRAWS it in, then brought into this object's
-            // local space — the mesh's targets have to live in the same frame as its vertices.
+            // The hull is read in the frame the ball DRAWS it in, then brought into the
+            // BODY's space (BodyFrame, not this object's: the crystal's model is posed under its root)
+            // — the mesh's targets have to live in the same frame as its vertices.
             Transform visual = _ball.VisualRoot;
-            Matrix4x4 toLocal = transform.worldToLocalMatrix * visual.localToWorldMatrix;
-            Vector3 centre = transform.InverseTransformPoint(_ball.transform.position);
+            Transform frame = BodyFrame;
+            Matrix4x4 toLocal = frame.worldToLocalMatrix * visual.localToWorldMatrix;
+            Vector3 centre = frame.InverseTransformPoint(_ball.transform.position);
 
             if (!CrystalMorphMeshBuilder.ConvexHullTarget.TryFromMesh(
                     _ball.HullMesh, toLocal, centre, out var target, out string hullDiagnosis))
