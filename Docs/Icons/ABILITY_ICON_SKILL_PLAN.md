@@ -213,7 +213,12 @@ Sparrow boost icon; the drift pair replaces two teal placeholders; Boost Ring ke
 **Sparrow** (Turret Stance, Cannons + the prism-rounds mode sprite, Afterburner, and a five-rung rocket ladder
 with no baked plate) redrawn and rebound; **Dolphin** measured and left - all four of its cards are live
 readouts (blast profile, crystal, jaws, 11-step ring) with nothing to redraw. Sheets: `Docs/Icons/sheets/`.
-Next: Garrett's feedback on round 2, then the eleven placeholders.
+**Round 3 (2026-10-25, one card at a time with Garrett):** the Squirrel's Crystal Joust (two real hulls nose to nose),
+Skimming (hull in its sphere over prisms, domain / blue) and Drift (trail + hull turned by the live angle) - "the icons
+are teaching the ability" - then the **Dolphin's Time card**: the live mesh from above in the domain colour, turned by
+the drift angle, over the card's PLATE GAUGE (the eleven-step ring retired: "the ring now reads as a skimmer. lets just
+have the whole lower totem fill with the consistency of other resources"). Charge, Mass and Space stay live readouts.
+Next: the Dolphin's other cards if Garrett wants them, the Sparrow, then the eleven placeholders.
 
 | Round | What | Why first |
 |---|---|---|

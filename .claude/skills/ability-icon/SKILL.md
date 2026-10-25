@@ -96,6 +96,9 @@ every gate and named nothing.
   a step ring, a sprite ladder); a sprite swap polishes none of that, and a ladder is ONE icon in several
   states (`subdir`, `family=False`, the card's sprite is the top rung, `rebind.py list=` rewrites the view's
   list). The Dolphin had nothing to redraw.
+- **A quantity is the plate gauge, never a ring.** A ring round a hull reads as a skimmer (Garrett, the Dolphin's
+  Time card). How-much goes to `AbilityIconBinding.gauge` - the lockup's one linear fill of the lower totem - and
+  the icon spends its shapes on who and what. A sprite ladder is the same mistake in steps.
 - Round caps are the old language. Every new icon is angular; a hull is redrawn whole so its four
   match, never one icon in the new language next to three in the old.
 - Two sheets, not one: look at 128 to judge the drawing, at 40 to judge the icon.

@@ -2223,3 +2223,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (has offered to take tests) or Garrett
 - **Added:** 2026-10-25 by a Claude session (`cece/loving-ptolemy-4715w4`)
 - **See:** Docs/Icons/sheets/squirrel_drift.png, .claude/skills/ability-icon/references/LESSONS.md 30
+
+### T-20261025-b9d5 · open · test · hud
+- **Task:** Dolphin Time card: open DolphinHUDVariant.prefab, confirm the Time card compiles and draws - the plate gauge fills with the boost bank while drifting (the eleven-step ring is gone), the top-down Dolphin wears the pilot's domain colour and turns by the drift angle, easing back when the drift ends; run FrogletTools > Vessels > Wiring > Wire Vessel Ability Row on the Dolphin HUD and check it changes nothing
+- **Done when:** A Dolphin flight in Freestyle shows the bank filling the lower totem of the Time card and the hull turning off its course while drifting; the wirer is a no-op on the rebound prefab
+- **Who can take it:** Yash (or Garrett on his next Dolphin flight)
+- **Added:** 2026-10-25 by Claude session cece/loving-ptolemy-4715w4 (`cece/loving-ptolemy-4715w4`)
+- **See:** Docs/Icons/sheets/dolphin_charge_fill.png, Tools/Build/icon_kit/specs/dolphin.py, Assets/_Scripts/UI/View/DolphinVesselHUDView.cs

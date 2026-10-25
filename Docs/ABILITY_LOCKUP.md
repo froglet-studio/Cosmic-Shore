@@ -164,7 +164,7 @@ through a `GaugeClip` — a `TrapezoidGraphic` carrying a `Mask` — which shape
 leaving the vessel's `fillAmount` contract untouched. The alternative, mirroring that value onto a
 `TrapezoidGraphic`, would need a per-frame poll of somebody else's field: a drive site this style has
 no business owning. Cost is two extra draw calls on a card that HAS a meter; three cards fleet-wide
-carry one today. The track's own taper is **derived from the plate at the track's top**, not assumed
+carried one when this was written (four with the Dolphin's Time card, 2026-10-25). The track's own taper is **derived from the plate at the track's top**, not assumed
 to be the full width — identical at `gaugeCellFraction 1`, which is why that seam would have stayed
 invisible until someone lowered the fraction.
 
@@ -267,6 +267,7 @@ to claim, silently, and only on the vessels whose authoring had drifted.
 | Squirrel | **Time** (Skimming) | `boostFill` — the skim-energy meter. It is authored under the skimming button and belongs on the card of the ability it reports on, which since the 2026-09 element re-cut is **Time**: skimming is what banks the energy |
 | Sparrow | Time (Afterburner) | `rollChargeIndicator` — the strafing-roll pip, already on the right card |
 | Scarab | Space (Ball Forge) | `energyRing` — authored under the throttle button, re-homed |
+| Dolphin | **Time** (Charge Fill Rate) | `ChargeFillGauge` — a bare Image under the Time card's container, bound 2026-10-25 when the authored eleven-step boost ring retired ("the ring now reads as a skimmer. lets just have the whole lower totem fill with the consistency of other resources" — Garrett). The view writes the bank's `fillAmount`; the hull part beside it (`Dolphin_ChargeFill`) turns by the live drift angle |
 
 ## The cooldown — one recharge readout for the fleet
 

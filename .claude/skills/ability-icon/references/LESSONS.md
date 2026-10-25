@@ -162,3 +162,15 @@ one thing right. then move on."
     same resolve the omni card gets). driftColor / doubleDriftColor survive only on the single-icon fallback.
     General rule: once a card's parts carry team colour, a state is told by SHAPE (and a team-derived colour),
     not by a second palette.
+33. **A ring around a hull reads as a SKIMMER; a quantity is the plate gauge.** The Dolphin's Time card (the boost
+    bank fills while it drifts) was offered as the top-down Dolphin inside a boost ring. Garrett: "i like the top
+    down view, but the ring now reads as a skimmer. lets just have the whole lower totem fill with the consistency
+    of other resources." So the bank is the card's PLATE GAUGE - `AbilityIconBinding.gauge`, the fleet's one
+    linear fill the lockup adopts onto the ability plate (Docs/ABILITY_LOCKUP.md "The gauge") - and the card's
+    icon is the hull alone (`Dolphin_ChargeFill`, the live mesh from above, domain colour, turned by the live
+    drift angle). The authored eleven-step ring retired: `chargeSteps` emptied, the step methods gone, the PNGs
+    left where the artist put them. The kit learned three things: a `pair=` child with icon None is a bare gauge
+    Image, `binding=` names it on the view's abilityIcons entry, `fields={"x": "[]"}` empties a serialized list;
+    and `card.py` draws the gauge (`gauge=0..1`) so a sheet shows a metered card as the HUD does. General rule: a
+    HOW-MUCH on a card is never a shape of its own - not a ring, not a ladder - it is the plate filling, the same
+    on every card that has one; the icon spends its shapes on WHO and WHAT.

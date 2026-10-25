@@ -14,7 +14,11 @@ A spec may carry `REBIND = [...]` with two kinds of step:
         e.g. a white ring; an optional 4th item (ax, ay, w, h) point-anchors the child instead of stretching it,
         for a part the view ROTATES about its own centre) - the Dolphin's jaw-pair arrangement, for a card whose
         parts are tinted, swapped or turned separately. `fields={...}` sets other view fields: ("icon", name) for
-        a sprite, or a raw YAML value. Idempotent: an existing child of that name is left alone.
+        a sprite, or a raw YAML value (`"[]"` empties a serialized LIST, its items included). A child whose icon is
+        None is a bare GAUGE Image (no sprite, Filled / Vertical / origin Bottom, empty): the lockup adopts it as the
+        card's plate fill when `binding=dict(element=4, gauge="<child name>")` names it on the view's abilityIcons
+        entry (the Dolphin's Time card: the boost bank is the plate, not a ring). Idempotent: an existing child of
+        that name is left alone.
 
 The guid of an icon is read from its .meta (the kit writes the meta before it rebinds). A rebind never touches a
 file it was not named for: the same placeholder sprite can be referenced from another prefab on purpose (the
@@ -70,6 +74,10 @@ def _set_in_block(text, fid, key, value):
 def _child_blocks(go_name, parent_rt, layer, guid, fid_go, fid_rt, fid_cr, fid_img, rect=None):
     """rect: None = stretched to the container; (ax, ay, w, h) = point-anchored at the container's centre, offset
     (ax, ay) in the container's units, size (w, h) - a part the view ROTATES about its own centre (the drift hull)."""
+    if guid is None:   # a bare gauge: Filled / Vertical / Bottom, empty; the lockup gives it its plain sprite
+        sprite, itype, aspect, fmethod, famount = "{fileID: 0}", 3, 0, 1, 0
+    else:
+        sprite, itype, aspect, fmethod, famount = f"{{fileID: 21300000, guid: {guid}, type: 3}}", 0, 1, 4, 1
     if rect is None:
         anchors = "  m_AnchorMin: {x: 0, y: 0}\n  m_AnchorMax: {x: 1, y: 1}\n  m_AnchoredPosition: {x: 0, y: 0}\n  m_SizeDelta: {x: 0, y: 0}"
     else:
@@ -137,12 +145,12 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {{fileID: 21300000, guid: {guid}, type: 3}}
-  m_Type: 0
-  m_PreserveAspect: 1
+  m_Sprite: {sprite}
+  m_Type: {itype}
+  m_PreserveAspect: {aspect}
   m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
+  m_FillMethod: {fmethod}
+  m_FillAmount: {famount}
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
@@ -168,7 +176,7 @@ def _apply_pair(text, step, icon_meta):
         rect = child[3] if len(child) > 3 else None
         seed = f"{step['file']}/{container}/{name}"
         fid_go, fid_rt, fid_cr, fid_img = (_fid(seed + k) for k in ("go", "rt", "cr", "img"))
-        guid = guid_of(icon_meta[icon])
+        guid = guid_of(icon_meta[icon]) if icon else None
         if f"&{fid_img}\n" not in text:
             text = text.rstrip("\n") + "\n" + _child_blocks(name, rt, layer, guid, fid_go, fid_rt, fid_cr, fid_img, rect)
             ra, rb = _block(text, rt)
@@ -178,7 +186,7 @@ def _apply_pair(text, step, icon_meta):
             else:
                 rblk = re.sub(r"(m_Children:\n(?:  - \{fileID: \d+\}\n)*)", lambda m: m.group(1) + f"  - {{fileID: {fid_rt}}}\n", rblk, count=1)
             text = text[:ra] + rblk + text[rb:]
-        else:
+        elif guid:
             text = _set_in_block(text, fid_img, "m_Sprite", f"{{fileID: 21300000, guid: {guid}, type: 3}}")
         if pair.get("view") and field:
             va, vb = _block(text, pair["view"])
@@ -190,11 +198,28 @@ def _apply_pair(text, step, icon_meta):
                 anchor = pair.get("after", "impactIcon")
                 vblk = re.sub(rf"^(\s*{anchor}: .*\n)", lambda m: m.group(1) + f"  {field}: {{fileID: {fid_img}}}\n", vblk, count=1, flags=re.M)
             text = text[:va] + vblk + text[vb:]
-    # Other serialized fields on the view the pair needs: a sprite (("icon", name)) or a raw YAML value.
+    # The card's plate GAUGE: the abilityIcons entry for `element` points its `gauge` at the named child.
+    if pair.get("binding"):
+        bnd = pair["binding"]
+        seed = f"{step['file']}/{container}/{bnd['gauge']}"
+        fid_img = _fid(seed + "img")
+        va, vb = _block(text, pair["view"])
+        vblk = text[va:vb]
+        pat = rf"^(  - element: {bnd['element']}\n    icon: [^\n]*\n    upgradedSprite: [^\n]*\n)(    gauge: [^\n]*\n)?"
+        if not re.search(pat, vblk, re.M):
+            raise SystemExit(f"{step['file']}: no abilityIcons entry for element {bnd['element']} on {pair['view']}")
+        vblk = re.sub(pat, lambda m: m.group(1) + f"    gauge: {{fileID: {fid_img}}}\n", vblk, count=1, flags=re.M)
+        text = text[:va] + vblk + text[vb:]
+    # Other serialized fields on the view the pair needs: a sprite (("icon", name)), a raw YAML value, or "[]" to
+    # empty a serialized list (its items go with it).
     for field, value in pair.get("fields", {}).items():
         v = _sprite_ref(guid_of(icon_meta[value[1]])) if isinstance(value, tuple) else value
         va, vb = _block(text, pair["view"])
         vblk = text[va:vb]
+        if v == "[]":
+            vblk = re.sub(rf"^(\s*{re.escape(field)}:)[^\n]*\n(?:\s+- [^\n]*\n)*", lambda m: m.group(1) + " []\n", vblk, count=1, flags=re.M)
+            text = text[:va] + vblk + text[vb:]
+            continue
         replaced = _set_field(vblk, field, v)
         if replaced is None:
             anchor = pair.get("after", "impactIcon")

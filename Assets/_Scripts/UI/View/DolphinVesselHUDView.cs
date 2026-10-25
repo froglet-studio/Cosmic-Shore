@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
@@ -19,7 +18,7 @@ namespace CosmicShore.UI
     ///   Mass   → crystal seeding  (the recharge fill)      → "Claimed Seed"
     ///   Space  → cone blast       (jaws)                   → "Clean Blast"
     ///   Omni   → the blast itself (prisms it destroyed)   — the non-elemental card
-    ///   Time   → charge fill rate (the boost ring)         → "Drift Ward"
+    ///   Time   → charge fill rate (the hull turned by its drift over the plate gauge) → "Drift Ward"
     ///
     /// <para><b>Every slot draws one dimension of the same weapon.</b> The Dolphin has essentially
     /// one offensive act — bank energy by skimming, fly into a crystal, release a cone — and the
@@ -29,7 +28,7 @@ namespace CosmicShore.UI
     /// left to right it is the whole weapon.</para>
     ///
     /// <para>Every one of those icons is a live gameplay gauge — a generated profile mesh, a
-    /// recharge fill, a jaw gape, a boost ring — repainted per frame. So the upgrade signal is
+    /// recharge fill, a jaw gape, a drifting hull over the bank — repainted per frame. So the upgrade signal is
     /// carried by the element badge and a persistent scale bump rather than by icon colour (turn
     /// tintIconOnUpgrade OFF on this prefab), and the local rest scales below are re-anchored on
     /// every upgrade flip so this view's own tweens can never wipe the bump.</para>
@@ -135,13 +134,28 @@ namespace CosmicShore.UI
 
         // ---- Time: boost charged while drifting ---------------------------------------
         [Header("Time — boost charged while drifting")]
-        [Tooltip("The boost gauge itself — the Dolphin's authored 11-step ring (Boost Display). " +
-                 "Bound as the Time ability icon, because Time is what sets how fast it fills. The " +
-                 "ring encodes its own level by stepping through chargeSteps below — this view " +
-                 "writes NOTHING else on it (see SetDriftBoost).")]
+        [Tooltip("The boost BANK: the Image the Time card binds as its gauge (AbilityIconBinding.gauge). " +
+                 "The lockup re-homes it onto the card's plate and re-forms it to Filled / Vertical / " +
+                 "Bottom - the fleet's one linear gauge - and this view writes only its fillAmount " +
+                 "(SetDriftBoost). It wore an authored eleven-step ring until 2026-10-25; Garrett: " +
+                 "\"the ring now reads as a skimmer. lets just have the whole lower totem fill with " +
+                 "the consistency of other resources.\"")]
         [SerializeField] private Image driftBoostIcon;
-        [Tooltip("The 11 authored ring steps, ordered EMPTY → FULL. Driven by the boost meter.")]
-        [SerializeField] private List<Sprite> chargeSteps = new();
+        [Tooltip("The Dolphin itself, seen from above (its real mesh, Dolphin_ChargeFill): the part that " +
+                 "TEACHES the card. Painted in the pilot's domain colour and turned every frame by the " +
+                 "signed angle between the hull's forward and its course - a drift IS that divergence, " +
+                 "and the drift is what fills the bank behind it. Its sprite is the hull centred in its " +
+                 "own canvas, so the rotation is about the hull.")]
+        [SerializeField] private Image driftHullIcon;
+        [Tooltip("Degrees the hull may turn off the course line on the card. The real angle is clamped " +
+                 "to this so a spin never puts the hull upside down on its plate.")]
+        [SerializeField, Min(1f)] private float driftMaxAngle = 75f;
+        [Tooltip("Degrees per second the drawn angle may move toward the live one, so a course that " +
+                 "flips as the vessel passes through zero speed eases rather than snaps. The same " +
+                 "speed brings the hull back onto the line when the drift ends.")]
+        [SerializeField, Min(1f)] private float driftAngleSpeed = 360f;
+        [Tooltip("Fallback colour of the hull part until the controller pushes the pilot's domain colour.")]
+        [SerializeField] private Color driftHullFallbackColor = Color.white;
 
         [Header("Space — the full-energy CTA")]
         [Tooltip("Colour the jaws rest at. Matches the authored art (white); the CTA lime is " +
@@ -162,7 +176,8 @@ namespace CosmicShore.UI
         [SerializeField] private float iconPunchDuration = 0.25f;
         [SerializeField] private float colorTweenDuration = 0.3f;
 
-        int _stepsMinusOne;
+        float _driftAngleShown;
+        Color _driftHullColor = Color.white;
 
         Vector3 _profileRestScale = Vector3.one;
         Vector3 _crystalIconRestScale = Vector3.one;
@@ -256,8 +271,6 @@ namespace CosmicShore.UI
 
         public override void Initialize()
         {
-            _stepsMinusOne = Mathf.Max(0, (chargeSteps?.Count ?? 0) - 1);
-
             ResolveBarsConfig();
 
             ResolveProfileColors();
@@ -304,9 +317,19 @@ namespace CosmicShore.UI
             if (faunaCountText) { faunaCountText.color = _faunaRest; faunaCountText.text = string.Empty; }
             _echoCountTimer = 0f;
 
-            // The ring's colour is authored art - never repainted from here.
+            // The bank starts empty; the lockup owns the gauge's sprite, shape and colour (AdoptGauge).
             if (driftBoostIcon && driftBoostIcon.type == Image.Type.Filled)
                 driftBoostIcon.fillAmount = 0f;
+
+            // The hull part sits on the course line until a drift turns it, in the fallback colour
+            // until the controller's first push names the pilot's domain.
+            _driftAngleShown = 0f;
+            _driftHullColor = driftHullFallbackColor;
+            if (driftHullIcon)
+            {
+                driftHullIcon.rectTransform.localRotation = Quaternion.identity;
+                driftHullIcon.color = _driftHullColor;
+            }
         }
 
         /// <summary>
@@ -756,52 +779,53 @@ namespace CosmicShore.UI
         }
 
         // ---------------------------------------------------------------
-        // Time: how fast the drift banks boost. The ring is an ELEVEN-SPRITE
-        // authored gauge, so stepping the sprite is the whole readout. This
-        // deliberately writes nothing else: a swell keyed to charge01 and a colour
-        // ramp both landed on EVERY resource tick - the 1 Hz passive regen, each charge tick, each
-        // discharge tick - so the icon jittered between discrete scales and killed its own tween
-        // doing it. Leaving the transform alone also means the level-5 scale bump the base class
-        // applies survives, which matters more here than juice: this HUD has upgrade tint and the
-        // element badge both turned off, so the bump is the only upgrade signal the slot has left.
+        // Time: how fast the drift banks boost. The bank is the card's PLATE GAUGE - the Image the
+        // lockup adopted and re-formed to a vertical fill (Docs/ABILITY_LOCKUP.md "The gauge") - so
+        // writing fillAmount is the whole readout. This deliberately writes nothing else: a swell
+        // keyed to charge01 and a colour ramp both landed on EVERY resource tick - the 1 Hz passive
+        // regen, each charge tick, each discharge tick - so the icon jittered between discrete
+        // scales and killed its own tween doing it. Leaving the transform alone also means the
+        // level-5 scale bump the base class applies survives, which matters more here than juice:
+        // this HUD has upgrade tint and the element badge both turned off, so the bump is the only
+        // upgrade signal the slot has left. (Until 2026-10-25 the bank stepped an eleven-sprite
+        // authored ring; a ring around a hull reads as a skimmer, so the bank moved to the plate.)
         // ---------------------------------------------------------------
         public void SetDriftBoost(float charge01)
         {
             if (!driftBoostIcon) return;
 
-            charge01 = Mathf.Clamp01(charge01);
             if (driftBoostIcon.type == Image.Type.Filled)
-                driftBoostIcon.fillAmount = charge01;
-
-            // The authored ring encodes the level in its lit segments - step it.
-            SetBoostStepNormalized(charge01);
+                driftBoostIcon.fillAmount = Mathf.Clamp01(charge01);
         }
 
-        /// <summary>0–1 normalized boost → the matching ring step.</summary>
-        public void SetBoostStepNormalized(float norm01)
+        /// <summary>
+        /// The pilot's domain colour for the hull part. A colour, not a state: the hull wears its
+        /// team at rest, mid-drift and at full bank alike - what changes on this card is the ANGLE
+        /// and the FILL (the Squirrel's drift card keeps the same rule).
+        /// </summary>
+        public void SetDriftHullColor(Color color)
         {
-            if (!driftBoostIcon || chargeSteps == null || chargeSteps.Count == 0)
-                return;
-
-            norm01 = Mathf.Clamp01(norm01);
-
-            int idx = (_stepsMinusOne <= 0)
-                ? 0
-                : Mathf.Clamp(Mathf.RoundToInt(norm01 * _stepsMinusOne), 0, _stepsMinusOne);
-
-            SetBoostStepIndex(idx);
+            if (_driftHullColor == color) return;
+            _driftHullColor = color;
+            if (driftHullIcon) driftHullIcon.color = color;
         }
 
-        public void SetBoostStepIndex(int idx)
+        /// <summary>
+        /// The signed angle between the hull's forward and its course, in degrees (positive = the
+        /// nose has swung LEFT of the course), pushed every frame by the controller. While
+        /// <paramref name="drifting"/> the hull part turns toward it (clamped, eased at
+        /// driftAngleSpeed); when the drift ends it eases back onto the course line at the same
+        /// speed. Nothing else on the card moves: the fill behind it says how much the drift banked.
+        /// </summary>
+        public void SetDriftAngle(float angleDegrees, bool drifting)
         {
-            if (!driftBoostIcon || chargeSteps == null || chargeSteps.Count == 0)
-                return;
-            if (idx < 0 || idx >= chargeSteps.Count) return;
+            if (!driftHullIcon) return;
 
-            var sprite = chargeSteps[idx];
-            if (!sprite || driftBoostIcon.sprite == sprite) return;
+            float target = drifting ? Mathf.Clamp(angleDegrees, -driftMaxAngle, driftMaxAngle) : 0f;
+            if (Mathf.Approximately(_driftAngleShown, target)) return;
 
-            driftBoostIcon.sprite = sprite;
+            _driftAngleShown = Mathf.MoveTowards(_driftAngleShown, target, driftAngleSpeed * Time.deltaTime);
+            driftHullIcon.rectTransform.localRotation = Quaternion.Euler(0f, 0f, _driftAngleShown);
         }
 
         protected override void OnDestroy()

@@ -15,7 +15,8 @@ namespace CosmicShore.Gameplay
     ///                             what the last blast did to LIVING things (pilots, creatures)
     ///   Mass   → crystal seeding: the recharge fill, and which crystal tier the next cycle plants
     ///   Space  → cone blast:      the jaw gape, and what the last cone claimed
-    ///   Time   → charge fill rate: the boost banked while drifting
+    ///   Time   → charge fill rate: the boost banked while drifting (the plate gauge), under the hull
+    ///            turned by its drift angle
     ///
     /// Energy is bound BY NAME rather than by index. It used to be an index, and the prefab had it
     /// pointing at Boost — a meter ChargeBoostActionExecutor writes through CurrentAmount directly,
@@ -74,6 +75,7 @@ namespace CosmicShore.Gameplay
 
         ResourceSystem _resources;
         IVesselStatus _status;
+        Transform _shipTransform;
         DeployTeamCrystalActionExecutor _crystalExecutor;
         EchoSightActionExecutor _sightExecutor;
 
@@ -111,6 +113,7 @@ namespace CosmicShore.Gameplay
 
             _status = vesselStatus;
             _resources = vesselStatus?.ResourceSystem;
+            _shipTransform = vesselStatus?.Vessel?.Transform;
 
             // Cleared up front: a re-init can hand this controller an AI or remote pilot, and a
             // stale true would let OnEnable resume driving a hidden HUD.
@@ -253,6 +256,36 @@ namespace CosmicShore.Gameplay
 
             PushCrystalSeeding();
             PushBlastProfile();
+            PushDriftHull();
+        }
+
+        // The Time card's hull part: the Dolphin in the pilot's domain colour, turned by how far its
+        // nose has left its course. Polled - IsDrifting is written by the drift action on the status,
+        // and the angle changes every frame of a drift. The bank behind it is pushed by the resource
+        // (HandleDriftBoostChanged), not here.
+        void PushDriftHull()
+        {
+            if (_status == null) return;
+            view.SetDriftHullColor(ResolveDomainSignalColor());
+            view.SetDriftAngle(DriftAngleDegrees(), _status.IsDrifting);
+        }
+
+        /// <summary>
+        /// The drift, as the card draws it: the signed angle in degrees between the vessel's forward
+        /// and its course, in the SHIP's own frame - positive when the nose has swung LEFT of the
+        /// course. A drift IS nose-vs-course divergence, so the angle falls straight out of it; the
+        /// same reading the Squirrel's drift card turns its hull by. 0 when there is no course yet.
+        /// </summary>
+        float DriftAngleDegrees()
+        {
+            if (!_shipTransform || _status == null) return 0f;
+            var course = _status.Course;
+            if (course.sqrMagnitude < 1e-6f) return 0f;
+
+            var c = course.normalized;
+            float ahead = Vector3.Dot(c, _shipTransform.forward);
+            float lateral = Vector3.Dot(c, _shipTransform.right);
+            return Mathf.Atan2(lateral, ahead) * Mathf.Rad2Deg;
         }
 
         // Crystal seeding is PASSIVE: nothing is carried, so the slot shows the recharge fill (0 -> 1
