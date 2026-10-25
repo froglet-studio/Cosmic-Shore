@@ -3133,3 +3133,27 @@ the same" (they already did in the game - the bright Arcade was the old mockup's
 - **Proof without an editor.** refcompile player config clean, the Amoebius Live build, every menu generator `--check`
   and `--self-test`, `author_tandava_assets.py --check`, `check_ui_colors.py`, `check_generated_assets.py`,
   `lattice_preview.py`. Unity's own compile and the hand test are owed (checklist entry "Rev 13").
+
+## 70. The sea everywhere; the lattice retired (2026-10-25, awaiting in-editor approval)
+
+Shombith, 2026-10-25: "Remove the grid bg from the toy cards also replace with the new background in the authentication
+and loading screens as well. Any part with grid bg should change to this new sea bg. Hangar should have it too."
+
+- **One background: the sea.** `Sea_Window.mat` (§67, §69) is behind every window and screen that had a background:
+  the hub windows, Profile, the friends drawer, the in-game scoreboard, the splash and sign-in scenes, the cell-change
+  loading screen (`EnvironmentLoadVeilContentSO.background`, formerly `lattice`, kept by `[FormerlySerializedAs]`) and
+  now the Hangar (behind the whole screen, under the top bar; `author_menu_hangar.py` checks it).
+- **`Sea_Panel.mat` inside panels.** The same three layers closer together (spacing 30, height 6), fainter (0.12 / 0.18 /
+  0.26) and with no wash - the panel's glass is its ground. It replaces `Lattice_Panel` in the Ark recipe, the
+  leaderboard list, the pilot card, the avatar preview and the toy configure cards. `menu_b_motion.panel_sea_node`
+  (was `grid_node`); `window_lattice_node` is gone, every caller uses `window_sea_node`.
+- **No background on the toy cards.** The Toy Box card and the Shuffle card lose theirs.
+- **The lattice is retired.** `Lattice.shader`, `UILattice.cginc`, `Lattice_Panel.mat` and `Lattice_Window.mat` are
+  deleted (`author_ui_lattice.py` RETIRED, so `--check` fails if one comes back) and its clang harness leaves
+  `lattice_preview.py`. `validate_screens` fails any menu screen, Menu_Main, the two start scenes, the scoreboard or the
+  loading-screen asset that still names a lattice material, and fails those four outside the menu if they lose the sea.
+- **Proof without an editor.** refcompile player config clean (editor config: the 3 errors already on bleeding-edge,
+  none in changed files), the Amoebius Live build, every touched generator's `--check` and `--self-test`
+  (`author_ui_lattice.py` gains negative controls for a panel back on the lattice, the sign-in without its sea and a
+  washed-over panel sea), `lattice_preview.py --check`, `check_generated_assets.py`, `check_ui_colors.py`. Unity's own
+  compile and the look in the editor are owed (checklist entry "Sea everywhere").

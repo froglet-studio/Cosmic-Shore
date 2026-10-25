@@ -107,7 +107,7 @@ def recipe_panel(root):
     pn = root.child(N("Recipe", "Recipe", TR(40, 108, 438, 760)))
     pn.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=1))
     C.frame(pn, "Recipe/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
-    pn.child(M.grid_node("Recipe/Grid"))
+    pn.child(M.panel_sea_node("Recipe/Grid"))
     M.bracket_nodes(pn, "Recipe/Bracket")
     C.section_label(pn, "Recipe/Caption", "Caption", "Recipe", TL(26, 26, 200, 18))
     label(pn.child(N("Recipe/Merged", "Merged", TR(26, 26, 220, 18))), "0 of 4 merged", "Label", "NeutralLightest",

@@ -913,7 +913,7 @@ def build_panel():
     scrim = root.child(N("Scrim", "Scrim", STRETCH))
     scrim.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.86), raycast=True)).add("th", 114, H.themed("SurfaceBlack", 0.86))
     scrim.add("cg", 225, H.canvas_group(True)).add("in", 114, HM.M.entrance("Fade", duration=0.2))
-    root.children.append(HM.M.window_lattice_node("Lattice"))
+    root.children.append(HM.M.window_sea_node("Lattice", name="Sea"))
     head = root.child(N("Header", "Header", R((0.5, 1), (0.5, 1), (0, -56), (LIST_W, 120), (0.5, 1))))
     head.add("in", 114, HM.M.entrance("Rise", distance=14))
     mode = head.child(N("Header/Mode", "Mode", HM.TL(0, 0, LIST_W, 22)))

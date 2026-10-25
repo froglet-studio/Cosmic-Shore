@@ -9,7 +9,7 @@ module, so a screen built in one item moves and reads like a screen built in ano
     ambient(...)       KitAmbient body: float / breathe / spin / sway / pan (the separable ambient layer)
     spark_body(...)    KitSpark body: the travelling highlight, or a button sweep (pause > 0)
     shake() / drain()  KitShake / KitDrain bodies
-    grid_node(...)     the living lattice backdrop (rev 6; Lattice_Panel.mat), window_lattice_node for windows
+    panel_sea_node(...) the sea inside a panel (§70; Sea_Panel.mat), window_sea_node behind a window (Sea_Window.mat)
     bracket_nodes(...) four corner brackets (kit_bracket, turned by z rotation)
     spark_line(...)    a 2 px route line that clips a KitSpark streak (RectMask2D)
 
@@ -122,14 +122,15 @@ def _lattice_guid(key):
     return hashlib.md5(f"CosmicShore/MenuB/lattice/{key}".encode()).hexdigest()
 
 
-LATTICE_PANEL_MAT = _lattice_guid("panel_mat")
-LATTICE_WINDOW_MAT = _lattice_guid("window_mat")
 SEA_WINDOW_MAT = _lattice_guid("sea_window_mat")
+SEA_PANEL_MAT = _lattice_guid("sea_panel_mat")
+# The retired crystal lattice's materials (§45.2, retired for the sea 2026-10-25, §70): kept so a gate can name them.
+RETIRED_LATTICE_MATS = (_lattice_guid("panel_mat"), _lattice_guid("window_mat"))
 
 
 def lattice_image(material_guid):
-    """A sprite-less Image (its UVs span the rect - the lattice's edge fade and reveal read them) drawn with a
-    lattice material. White tint: the material carries the colours; the vertex alpha grows it in."""
+    """A sprite-less Image (its UVs span the rect - the sea's edge fade and wash read them) drawn with one of the
+    background materials. White tint: the material carries the colours; the vertex alpha fades it with its window."""
     base = K.image((1.0, 1.0, 1.0, 1.0))
     return lambda ctx, go: base(ctx, go).replace(
         "  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {material_guid}, type: 2}}\n", 1)
@@ -170,24 +171,17 @@ def find_node(node, key):
     return None
 
 
-def grid_node(key, name="Lattice"):
-    """Rev 6 (Docs/MENU_REDESIGN_B.md §45.2): the living crystal lattice that replaced the blueprint grid
-    (kit_grid). Full-stretch; put it first under a panel's fill so content draws over it."""
+def panel_sea_node(key, name="Sea"):
+    """The sea inside a panel (§70, Sea_Panel.mat: finer, fainter lines and no wash), the background the blueprint grid
+    and then the crystal lattice used to be. Full-stretch; put it first under a panel's fill so content draws over it."""
     n = K.Node(key, name, K.STRETCH)
-    n.add("cr", 222, K.canvas_renderer()).add("img", 114, lattice_image(LATTICE_PANEL_MAT))
-    return n
-
-
-def window_lattice_node(key, name="Lattice", rect=None):
-    """The two-layer lattice for a whole window's backdrop (Lattice_Window.mat)."""
-    n = K.Node(key, name, rect or K.STRETCH)
-    n.add("cr", 222, K.canvas_renderer()).add("img", 114, lattice_image(LATTICE_WINDOW_MAT))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, lattice_image(SEA_PANEL_MAT))
     return n
 
 
 def window_sea_node(key, name="SeaLines", rect=None):
-    """The sea lines behind a whole window (§67, Sea_Window.mat): slow wave lines in three depth layers over the
-    window's veil. Put it right after the veil so the window's content draws over it."""
+    """The sea behind a whole window or screen (§67, §70, Sea_Window.mat): slow wave lines in three depth layers over a
+    wash. Put it right after the veil so the window's content draws over it."""
     n = K.Node(key, name, rect or K.STRETCH)
     n.add("cr", 222, K.canvas_renderer()).add("img", 114, lattice_image(SEA_WINDOW_MAT))
     return n

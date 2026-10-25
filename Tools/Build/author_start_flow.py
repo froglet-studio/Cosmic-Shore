@@ -27,7 +27,7 @@ StartAgeGate / StartConsent boards).
         a panel that started active flashed at full size for a frame before the controller hid it.
         The kit buttons carry NO ControllerButtonPress: the controller selects each panel's control as
         the panel appears, so A arrives as an EventSystem submit; a pad poll on top fired it twice.
-    Rev 9 (Docs/MENU_REDESIGN_B.md §54, the approved R9 boards): the living lattice (Lattice_Window) drifts
+    Rev 9 (Docs/MENU_REDESIGN_B.md §54, the approved R9 boards): the sea (Sea_Window, §70; the living lattice before it) moves
         over the feature art on both the splash and the sign-in scene, between the dim and the bottom fade.
         The auth panel's window becomes the sign-in window - SignInChooser's three faces: CHOOSE ("Sign in to
         fly", Continue with Steam / Google / Apple, the "or" rule, Play as guest - the controller's
@@ -208,8 +208,8 @@ def vignette_nodes(prefix):
     fade = N(f"{prefix}/BottomFade", "BottomFade", R((0, 0), (1, 0), (0, 210), (0, 420)))
     fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.9), K.kit_sprite("kit_fade_v"))) \
         .add("th", 114, H.themed("SurfaceBlack", 0.9))
-    # Rev 9: the living lattice drifts over the dimmed art (shader-only: no CPU, never dirties the canvas).
-    return [dim, M.window_lattice_node(f"{prefix}/Lattice"), fade]
+    # §70: the sea over the dimmed art (shader-only: no CPU, never dirties the canvas).
+    return [dim, M.window_sea_node(f"{prefix}/Lattice", name="Sea"), fade]
 
 
 def readout_node(prefix, with_line):
@@ -783,7 +783,7 @@ def validate(files):
                     f"{path}: a start-flow button also polls the pad (it would press twice)"
     # Rev 9: the lattice over the art, in both scenes, between the dim and the bottom fade.
     for path, s_ in ((SPLASH, sc), (AUTH, au)):
-        lat = [d for d in s_.docs.values() if f"guid: {M.LATTICE_WINDOW_MAT}, type: 2" in d]
+        lat = [d for d in s_.docs.values() if f"guid: {M.SEA_WINDOW_MAT}, type: 2" in d]
         assert lat, f"{path}: no living lattice over the feature art"
     # Rev 9: the sign-in window.
     choosers = [(fid, d) for fid, d in au.docs.items() if f"guid: {S['chooser']}" in d]
@@ -901,7 +901,7 @@ def self_test(files):
         ("the auth panel ships active", edit_doc(AUTH, AU["auth_go"], lambda d: d.replace("  m_IsActive: 0", "  m_IsActive: 1"))),
         ("the guest button also polls the pad", add_cbp),
         ("a privacy sprite missing", lambda f: f.__setitem__(PRIVACY, re.sub(r"(  focusRingSprite: ).*", r"\1{fileID: 0}", f[PRIVACY]))),
-        ("the splash lost its lattice", lambda f: f.__setitem__(SPLASH, f[SPLASH].replace(M.LATTICE_WINDOW_MAT, "0" * 32))),
+        ("the splash lost its sea", lambda f: f.__setitem__(SPLASH, f[SPLASH].replace(M.SEA_WINDOW_MAT, "0" * 32))),
         ("the controller lost its chooser", edit_doc(AUTH, AU["ctrl"], lambda d: re.sub(r"(  signInChooser: )\{fileID: -?\d+\}", r"\1{fileID: 0}", d))),
         ("the welcome card ships shown", lambda f: f.__setitem__(SPLASH, _show_face(f[SPLASH], "group"))),
         ("the PROGRESS face ships shown", lambda f: f.__setitem__(AUTH, _show_face(f[AUTH], "progressGroup"))),

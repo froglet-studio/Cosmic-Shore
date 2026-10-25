@@ -14988,3 +14988,17 @@ Owed in the editor (`Docs/MENU_REDESIGN_B.md` §69):
       SET SAIL opens the arena launch panel with Squirrel / Sparrow / Rhino; Episode 2 locked.
 - [ ] Launch Tandava solo and in a party (guest sees the card), with AI seats; leaving returns sensibly.
 - [ ] The sea: lines shade sky to periwinkle left to right, a deep-blue wash at the top, still slow.
+
+## Sea everywhere, lattice retired; LB/RB, music card, name opens profile (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session; `/verify-unity` could not run. Proven offline: refcompile player config clean,
+Amoebius Live builds, every touched generator `--check` / `--self-test`, `lattice_preview.py --check`, gates.
+Owed in the editor (`Docs/MENU_REDESIGN_B.md` §70):
+- [ ] No missing-material pink anywhere: the deleted Lattice materials are named by nothing.
+- [ ] The sea moves behind the splash, the sign-in scene, the cell-change loading screen, the in-game scoreboard, the
+      friends drawer and the Hangar; the finer panel sea inside the Ark recipe, leaderboard list, pilot card, avatar
+      preview and toy configure cards.
+- [ ] Toy Box cards and the Shuffle card carry no background pattern.
+- [ ] Hub windows: LB / RB slide between windows; LT / RT close the window and page the top bar.
+- [ ] The now-playing card hides while any window is open over Home.
+- [ ] Home: clicking the pilot's name opens the Profile; in the Profile, clicking the name opens the name editor.

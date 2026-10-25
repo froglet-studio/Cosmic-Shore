@@ -169,7 +169,7 @@ def window_node(parent):
     tint.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark", WINDOW_TINT), K.kit_sprite("kit_sliver14_fill"), True))
     # Rev 6: the living lattice behind the panel and a Space (people) rim round it. Rev 7: the two-layer window lattice
     # (with its element energy) rather than the faint panel one - the party panel no longer covers it with a slab.
-    w.children.append(M.window_lattice_node("Drawer/Window/Lattice"))
+    w.children.append(M.window_sea_node("Drawer/Window/Lattice", name="Sea"))
     bord = w.child(N("Drawer/Window/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_sliver14_line1"), True))
     glyph = w.child(N("Drawer/Window/TitleGlyph", "TitleGlyph", TL(20, 16, 24, 24)))
@@ -468,7 +468,7 @@ def validate_orb(sc, ctx):
     border = sc.docs[str(ctx.c("Drawer/Window/Border", "img"))]
     assert not any(f"guid: {g}" in border for g in M.RETIRED_RIM_GUIDS), \
         "the drawer window is lit with an element rim again (Docs/UI_COLOR_RULES.md)"
-    assert f"guid: {M.LATTICE_WINDOW_MAT}" in sc.docs[str(ctx.c("Drawer/Window/Lattice", "img"))], "the drawer window has no window lattice"
+    assert f"guid: {M.SEA_WINDOW_MAT}" in sc.docs[str(ctx.c("Drawer/Window/Lattice", "img"))], "the drawer window has no sea behind it"
 
 
 def subtree_rts(sc, rt):
@@ -504,7 +504,7 @@ def self_test(files):
             f[SCENE], member, f"m_AnchoredPosition: {K.v2(x, y)}", f"m_AnchoredPosition: {K.v2(x, y + 9)}"))),
         ("the orb grown into the windows", lambda f: f.__setitem__(SCENE, in_doc(
             f[SCENE], ctx.rt("Drawer/Orb"), f"m_SizeDelta: {K.v2(ORB, ORB)}", f"m_SizeDelta: {K.v2(140, 140)}"))),
-        ("the orb's field on another material", lambda f: f.__setitem__(SCENE, f[SCENE].replace(M.PRESENCE_MAT, M.LATTICE_PANEL_MAT, 1))),
+        ("the orb's field on another material", lambda f: f.__setitem__(SCENE, f[SCENE].replace(M.PRESENCE_MAT, M.SEA_PANEL_MAT, 1))),
         ("the window's element rim back", lambda f: f.__setitem__(SCENE, in_doc(
             f[SCENE], ctx.c("Drawer/Window/Border", "img"), "  m_Material: {fileID: 0}\n",
             f"  m_Material: {{fileID: 2100000, guid: {M.rim_material('Space')}, type: 2}}\n"))),

@@ -97,7 +97,6 @@ def build_card():
     fill = root.child(N("Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
-    root.child(M.grid_node("Grid"))
     bord = root.child(N("Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
     acc = root.child(N("Accent", "Accent", R((0, 1), (1, 1), (0, -1), (-24, 3), (0.5, 1))))
@@ -162,7 +161,6 @@ def shuffle_card(parent):
     n = parent.child(N(k, "ShuffleCard", R((0, 1), None, (0, 0), (FEAT_W, FEAT_H), (0, 1))))
     ring_node(n, f"{k}/FocusRing", 14)
     frame(n, k)
-    n.child(M.grid_node(f"{k}/Grid"))
     image_node(n, f"{k}/Glyph", "Glyph", R((0, 0.5), None, (84, 0), (44, 44), (0, 0.5)), "TextLight",
                K.chrome_sprite("chrome_shuffle"), preserve=True)
     label(n.child(N(f"{k}/Eyebrow", "Eyebrow", R((0, 1), None, (222, -26), (420, 18), (0, 1)))), "Shuffle", "Label",

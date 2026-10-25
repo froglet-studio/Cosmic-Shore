@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 """
-Author the LATTICE materials (Docs/MENU_REDESIGN_B.md §45.2): the living crystal lattice that replaced the
-blueprint grid (kit_grid) behind style-B panels and windows.
+Author the style-B UI materials. The backgrounds are the SEA (Docs/MENU_REDESIGN_B.md §67, §70): SeaLines.shader on
+UISeaLines.cginc (hand-written; Tools/Build/lattice_preview.py compiles and renders the maths with clang).
 
-    Assets/_Graphics/Materials/Shaders/UI/Lattice.shader     hand-written; UI/Default plumbing + UILattice.cginc
-    Assets/_Graphics/Materials/Shaders/UI/UILattice.cginc    hand-written; the maths (Tools/Build/lattice_preview.py
-                                                             compiles and renders it with clang)
-    Lattice_Panel.mat     one finer layer for panels (the Ark recipe, leaderboard, Profile card, Toy Box cards...)
-    Lattice_Window.mat    two layers for a panel-sized backdrop (the pilot record, the friends drawer, the in-game HUD)
-    Sea_Window.mat        the sea lines behind a whole window (Arcade, Arena, Mission, Toy Box, Configure, Profile,
-                          Leaderboard): SeaLines.shader on UISeaLines.cginc, §67
+    Sea_Window.mat        the sea behind a whole window or screen (the hub windows, Profile, the friends drawer, the
+                          in-game scoreboard, sign-in and splash, the loading screen, the Hangar): lines over a wash
+    Sea_Panel.mat         the sea inside a panel (the Ark recipe, the leaderboard list, the pilot card, the avatar
+                          preview, the toy configure cards): finer, fainter lines and no wash
+
+The crystal lattice (Lattice.shader, UILattice.cginc, Lattice_Panel.mat, Lattice_Window.mat, §45.2) was RETIRED on
+2026-10-25 (Shombith: "Any part with grid bg should change to this new sea bg"); its files are deleted and the gate
+fails any screen that still names one of its materials.
 
 It also writes the rev 6 rims (ElementRim.shader, §45.3: ElementRim_<element>.mat) and the presence orb and party
 bonds (§45.4): Presence.shader / Bond.shader on UIPresence.cginc, Presence_Orb.mat (the friends orb in Menu_Main)
 and Bond_Party.mat (the party molecule's bonds in PartyPanel.prefab).
 
-This writes the two materials and the shader / include metas (deterministic guids), so every reference the menu
-generators emit (menu_b_motion.grid_node / window_lattice_node) resolves. The element colours are the theme's
+This writes the materials and the shader / include metas (deterministic guids), so every reference the menu
+generators emit (menu_b_motion.panel_sea_node / window_sea_node) resolves. The element colours are the theme's
 (UIThemeSO element fields, AbilityLockupStyleSO's colours).
 
     python3 Tools/Build/author_ui_lattice.py              # write
@@ -57,6 +58,7 @@ PRESENCE_CGINC_GUID = guid("presence_cginc")
 SEA_SHADER_GUID = guid("sea_shader")
 SEA_CGINC_GUID = guid("sea_cginc")
 SEA_GUID = guid("sea_window_mat")
+SEA_PANEL_GUID = guid("sea_panel_mat")
 PRESENCE_GUID = guid("presence_mat")
 BOND_GUID = guid("bond_mat")
 # Rev 7 (§47.1): the selection's light - the rim shader in white (the vertex colour, the theme's Selection blue,
@@ -76,22 +78,9 @@ WINDOW_GUID = guid("window_mat")
 
 ELEMENTS = {"_ChargeColor": (1, 0.827451, 0.3019608), "_MassColor": (0.49803922, 0.65882355, 1),
             "_SpaceColor": (0.6901961, 0.4862745, 1), "_TimeColor": (0.37254903, 0.9411765, 0.78431374)}
-LINE = (0.2627451, 0.29803923, 0.5372549)          # SurfaceLight #434C89
-
-# name: (floats). Every property the shader declares is written, so Unity never re-serializes the asset.
-# Still since 2026-10-24 (Garrett: "every pixel is important"; a background never moves for its own sake, and elements
-# carry no colour, so no element pulses or twinkles): drift 0 holds it, pulse and twinkle densities 0 draw neither.
-# The crystallise-in on a window's open stays - a transition is a meaningful moment.
-STILL = dict(_NearDrift=0, _FarDrift=0, _PulseDensity=0, _TwinkleDensity=0)
-MATERIALS = {
-    "Lattice_Panel": dict(_LineWidth=1.1, _NodeSize=2.2, _NearSpacing=64, _NearAlpha=0.5, _NearDrift=0,
-                          _FarSpacing=36, _FarAlpha=0, _FarDrift=0, _PulseDensity=0, _PulseSpeed=150,
-                          _PulseRepeat=900, _PulseLength=70, _TwinkleDensity=0, _FadeStart=0.6, _Reveal=1),
-    "Lattice_Window": dict(_LineWidth=1.1, _NodeSize=2.4, _NearSpacing=130, _NearAlpha=0.42, _NearDrift=0,
-                           _FarSpacing=72, _FarAlpha=0.2, _FarDrift=0, _PulseDensity=0, _PulseSpeed=240,
-                           _PulseRepeat=1400, _PulseLength=120, _TwinkleDensity=0, _FadeStart=0.55, _Reveal=1),
-}
-MAT_GUID = {"Lattice_Panel": PANEL_GUID, "Lattice_Window": WINDOW_GUID}
+# The retired crystal lattice (§45.2; retired 2026-10-25 for the sea, §70): its guids stay so the gate can catch a
+# screen that still names one.
+RETIRED_LATTICE_GUIDS = {"Lattice_Panel": PANEL_GUID, "Lattice_Window": WINDOW_GUID}
 # The sea lines behind a whole window (§67, Shombith 2026-10-25: the canvas's Rev 12 Sea lines board, "keep it a bit
 # slow"): three depth layers of thin wave lines in a lighter neutral blue, sliding sideways one 480-unit loop per
 # 90 / 68 / 45 s - half again slower than the board's 60 / 45 / 30. The one background motion the menu keeps
@@ -108,6 +97,11 @@ SEA_GLOW = (0.23921569, 0.54901963, 1, 0.16)                 # #3D8CFF
 SEA = dict(_Spacing=46, _Loop=480, _Amplitude=9, _FarAlpha=0.2, _FarWidth=0.9, _FarSeconds=90, _MidAlpha=0.3,
            _MidWidth=1.1, _MidSeconds=68, _NearAlpha=0.42, _NearWidth=1.5, _NearSeconds=45, _FadeTop=0.2, _FadeBottom=0.2)
 SEA_SLOWEST_LOOP = 40
+# The sea inside a panel (§70, Shombith 2026-10-25: "Any part with grid bg should change to this new sea bg"): the same
+# three layers, closer together, lower and fainter, with no wash - the panel's own glass is the ground. Same speeds.
+SEA_PANEL = dict(SEA, _Spacing=30, _Amplitude=6, _FarAlpha=0.12, _FarWidth=0.8, _MidAlpha=0.18, _MidWidth=0.9,
+                 _NearAlpha=0.26, _NearWidth=1.1, _FadeTop=0.08, _FadeBottom=0.08)
+CLEAR = (0, 0, 0, 0)
 # The presence orb (§45.4). Its member seats sit on the inner ring at these angles (degrees, counter-clockwise from
 # the right): the shader's bonds (_BondAngles, _MemberRadius) and the drawer generator's avatar positions
 # (author_menu_friends_drawer.py) both read them, so a bond always ends under its avatar.
@@ -138,20 +132,20 @@ def col(rgb, a=1):
     return "{r: %s, g: %s, b: %s, a: %s}" % (f(rgb[0]), f(rgb[1]), f(rgb[2]), f(a))
 
 
-def material(name):
-    floats = dict(MATERIALS[name], **UI_FLOATS)
-    colors = dict(_Color=(1, 1, 1), _LineColor=LINE, **ELEMENTS)
+def material_yaml(name, shader_guid, floats, colors):
+    """A UI material on one of these shaders. `colors` values are (r, g, b) or (r, g, b, a) - Unity keeps Vector
+    properties among the colours too. Every property the shader declares is written, so Unity never re-serializes it."""
     return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!21 &2100000\nMaterial:\n  serializedVersion: 8\n"
             "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
             f"  m_PrefabAsset: {{fileID: 0}}\n  m_Name: {name}\n"
-            f"  m_Shader: {{fileID: 4800000, guid: {SHADER_GUID}, type: 3}}\n  m_Parent: {{fileID: 0}}\n"
+            f"  m_Shader: {{fileID: 4800000, guid: {shader_guid}, type: 3}}\n  m_Parent: {{fileID: 0}}\n"
             "  m_ModifiedSerializedProperties: 0\n  m_ValidKeywords: []\n  m_InvalidKeywords: []\n"
             "  m_LightmapFlags: 4\n  m_EnableInstancingVariants: 0\n  m_DoubleSidedGI: 0\n  m_CustomRenderQueue: -1\n"
             "  stringTagMap: {}\n  disabledShaderPasses: []\n  m_LockedProperties: \n  m_SavedProperties:\n"
             "    serializedVersion: 3\n    m_TexEnvs:\n    - _MainTex:\n        m_Texture: {fileID: 0}\n"
             "        m_Scale: {x: 1, y: 1}\n        m_Offset: {x: 0, y: 0}\n    m_Ints: []\n    m_Floats:\n"
-            + "".join(f"    - {k}: {f(v)}\n" for k, v in sorted(floats.items()))
-            + "    m_Colors:\n" + "".join(f"    - {k}: {col(v)}\n" for k, v in sorted(colors.items()))
+            + "".join(f"    - {k}: {f(v)}\n" for k, v in sorted(dict(floats, **UI_FLOATS).items()))
+            + "    m_Colors:\n" + "".join(f"    - {k}: {col(v[:3], v[3] if len(v) > 3 else 1)}\n" for k, v in sorted(colors.items()))
             + "  m_BuildTextureStacks: []\n  m_AllowLocking: 1\n")
 
 
@@ -161,14 +155,18 @@ def mat_meta(g):
 
 
 def shader_material(name, shader_guid, floats, colors):
-    """A UI material on another of these shaders: the lattice material's layout, its own name, shader and values.
-    `colors` values are (r, g, b) or (r, g, b, a) - Unity keeps Vector properties among the colours too."""
-    m = material("Lattice_Window").replace("m_Name: Lattice_Window", f"m_Name: {name}")
-    m = m.replace(f"guid: {SHADER_GUID}", f"guid: {shader_guid}")
-    head, _ = m.split("    m_Floats:\n", 1)
-    return (head + "    m_Floats:\n" + "".join(f"    - {k}: {f(v)}\n" for k, v in sorted(dict(floats, **UI_FLOATS).items()))
-            + "    m_Colors:\n" + "".join(f"    - {k}: {col(v[:3], v[3] if len(v) > 3 else 1)}\n" for k, v in sorted(colors.items()))
-            + "  m_BuildTextureStacks: []\n  m_AllowLocking: 1\n")
+    return material_yaml(name, shader_guid, floats, colors)
+
+
+def shader_meta(g):
+    return (f"fileFormatVersion: 2\nguid: {g}\nShaderImporter:\n  externalObjects: {{}}\n"
+            "  defaultTextures: []\n  nonModifiableTextures: []\n  preprocessorOverride: 0\n"
+            "  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
+
+
+def include_meta(g):
+    return (f"fileFormatVersion: 2\nguid: {g}\nShaderIncludeImporter:\n  externalObjects: {{}}\n"
+            "  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
 
 
 def rim_material(element):
@@ -213,10 +211,12 @@ def presence_material():
                                 _Bond2=clear, _BondAngles=ORB_MEMBER_ANGLES + (0,)))
 
 
-def sea_material():
+def sea_material(panel=False):
+    lines = dict(_Color=(1, 1, 1), _LineColor=SEA_LINE, _LineColorMid=SEA_LINE_MID, _LineColorEnd=SEA_LINE_END)
+    if panel:
+        return shader_material("Sea_Panel", SEA_SHADER_GUID, SEA_PANEL, dict(lines, _WashTop=CLEAR, _WashBottom=CLEAR, _GlowColor=CLEAR))
     return shader_material("Sea_Window", SEA_SHADER_GUID, SEA, dict(
-        _Color=(1, 1, 1), _LineColor=SEA_LINE, _LineColorMid=SEA_LINE_MID, _LineColorEnd=SEA_LINE_END,
-        _WashTop=SEA_WASH_TOP, _WashBottom=SEA_WASH_BOTTOM, _GlowColor=SEA_GLOW))
+        lines, _WashTop=SEA_WASH_TOP, _WashBottom=SEA_WASH_BOTTOM, _GlowColor=SEA_GLOW))
 
 
 def bond_material():
@@ -224,29 +224,22 @@ def bond_material():
 
 
 def outputs():
-    out = {
-        f"{SHADER}.meta": (f"fileFormatVersion: 2\nguid: {SHADER_GUID}\nShaderImporter:\n  externalObjects: {{}}\n"
-                           "  defaultTextures: []\n  nonModifiableTextures: []\n  preprocessorOverride: 0\n"
-                           "  userData: \n  assetBundleName: \n  assetBundleVariant: \n"),
-        f"{CGINC}.meta": (f"fileFormatVersion: 2\nguid: {CGINC_GUID}\nShaderIncludeImporter:\n  externalObjects: {{}}\n"
-                          "  userData: \n  assetBundleName: \n  assetBundleVariant: \n"),
-    }
-    for name in MATERIALS:
-        out[f"{DIR}/{name}.mat"] = material(name)
-        out[f"{DIR}/{name}.mat.meta"] = mat_meta(MAT_GUID[name])
-    out[f"{RIM_SHADER}.meta"] = out[f"{SHADER}.meta"].replace(SHADER_GUID, RIM_SHADER_GUID)
-    out[f"{RIM_CGINC}.meta"] = out[f"{CGINC}.meta"].replace(CGINC_GUID, RIM_CGINC_GUID)
-    out[f"{PRESENCE_SHADER}.meta"] = out[f"{SHADER}.meta"].replace(SHADER_GUID, PRESENCE_SHADER_GUID)
-    out[f"{BOND_SHADER}.meta"] = out[f"{SHADER}.meta"].replace(SHADER_GUID, BOND_SHADER_GUID)
-    out[f"{PRESENCE_CGINC}.meta"] = out[f"{CGINC}.meta"].replace(CGINC_GUID, PRESENCE_CGINC_GUID)
+    out = {}
+    out[f"{RIM_SHADER}.meta"] = shader_meta(RIM_SHADER_GUID)
+    out[f"{RIM_CGINC}.meta"] = include_meta(RIM_CGINC_GUID)
+    out[f"{PRESENCE_SHADER}.meta"] = shader_meta(PRESENCE_SHADER_GUID)
+    out[f"{BOND_SHADER}.meta"] = shader_meta(BOND_SHADER_GUID)
+    out[f"{PRESENCE_CGINC}.meta"] = include_meta(PRESENCE_CGINC_GUID)
     out[f"{DIR}/Presence_Orb.mat"] = presence_material()
     out[f"{DIR}/Presence_Orb.mat.meta"] = mat_meta(PRESENCE_GUID)
     out[f"{DIR}/Bond_Party.mat"] = bond_material()
     out[f"{DIR}/Bond_Party.mat.meta"] = mat_meta(BOND_GUID)
-    out[f"{SEA_SHADER}.meta"] = out[f"{SHADER}.meta"].replace(SHADER_GUID, SEA_SHADER_GUID)
-    out[f"{SEA_CGINC}.meta"] = out[f"{CGINC}.meta"].replace(CGINC_GUID, SEA_CGINC_GUID)
+    out[f"{SEA_SHADER}.meta"] = shader_meta(SEA_SHADER_GUID)
+    out[f"{SEA_CGINC}.meta"] = include_meta(SEA_CGINC_GUID)
     out[f"{DIR}/Sea_Window.mat"] = sea_material()
     out[f"{DIR}/Sea_Window.mat.meta"] = mat_meta(SEA_GUID)
+    out[f"{DIR}/Sea_Panel.mat"] = sea_material(panel=True)
+    out[f"{DIR}/Sea_Panel.mat.meta"] = mat_meta(SEA_PANEL_GUID)
     out[f"{DIR}/SelectionRim.mat"] = selection_material(False)
     out[f"{DIR}/SelectionRim.mat.meta"] = mat_meta(SELECTION_GUID)
     out[f"{DIR}/SelectionBar.mat"] = selection_material(True)
@@ -260,13 +253,19 @@ def shipped_prefabs():
     import glob
     out = {os.path.relpath(p, REPO): open(p, encoding="utf-8").read()
            for p in glob.glob(os.path.join(REPO, SCREENS, "**", "*.prefab"), recursive=True)}
-    out["Assets/_Scenes/Menu_Main.unity"] = open(os.path.join(REPO, "Assets/_Scenes/Menu_Main.unity"), encoding="utf-8").read()
+    for p in ("Assets/_Scenes/Menu_Main.unity",) + SEA_ELSEWHERE:
+        out[p] = open(os.path.join(REPO, p), encoding="utf-8").read()
     return out
 
 
 RIM_SCRIPT = "b403ee3874d54f79d0f27e7013879c0f"      # KitRimMesh.cs
 PARTY_PANEL = f"{SCREENS}/Party/PartyPanel.prefab"
-RETIRED = tuple(f"{DIR}/ElementRim_{e}.mat{x}" for e in RIMS for x in ("", ".meta"))
+RETIRED = (tuple(f"{DIR}/ElementRim_{e}.mat{x}" for e in RIMS for x in ("", ".meta"))
+           + tuple(f"{p}{x}" for p in (SHADER, CGINC, f"{DIR}/Lattice_Panel.mat", f"{DIR}/Lattice_Window.mat")
+                   for x in ("", ".meta")))
+# Outside the menu screens, the scenes and assets that drew the lattice before §70 (their generators now draw the sea).
+SEA_ELSEWHERE = ("Assets/_Scenes/Authentication.unity", "Assets/_Scenes/Bootstrap.unity",
+                 "Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab", "Assets/Resources/UI/EnvironmentLoadVeilContent.asset")
 
 
 def rim_pairs(text):
@@ -291,6 +290,12 @@ def validate_screens(prefabs):
     """Rev 6: no style-B screen draws the blueprint grid any more, and every window's backdrop carries the lattice."""
     gridded = sorted(p for p, t in prefabs.items() if f"guid: {KIT_GRID}" in t)
     assert not gridded, f"the blueprint grid is still drawn in {gridded}"
+    # §70: the lattice is retired; every background is the sea.
+    for name, g in RETIRED_LATTICE_GUIDS.items():
+        latticed = sorted(p for p, t in prefabs.items() if f"guid: {g}" in t)
+        assert not latticed, f"the retired {name} lattice is still drawn in {latticed} (§70: the sea replaced it)"
+    for p in SEA_ELSEWHERE:
+        assert f"guid: {SEA_GUID}" in prefabs.get(p, ""), f"{p} has no sea behind it (§70)"
     for w in WINDOWS:
         assert f"m_Material: {{fileID: 2100000, guid: {SEA_GUID}, type: 2}}" in prefabs.get(w, ""), \
             f"{w} has no sea lines behind it"
@@ -304,21 +309,6 @@ def validate_screens(prefabs):
 
 
 def validate(files):
-    shader = open(os.path.join(REPO, SHADER), encoding="utf-8").read()
-    declared = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", shader, re.M)) - {"_MainTex"}
-    assert '#include "UILattice.cginc"' in shader, "Lattice.shader does not include UILattice.cginc"
-    for name in MATERIALS:
-        m = files[f"{DIR}/{name}.mat"]
-        assert f"m_Shader: {{fileID: 4800000, guid: {SHADER_GUID}, type: 3}}" in m, f"{name} does not use Lattice.shader"
-        written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
-        assert written == declared, f"{name}: properties drifted from the shader (missing {declared - written}, extra {written - declared})"
-        assert f"guid: {MAT_GUID[name]}" in files[f"{DIR}/{name}.mat.meta"], f"{name}.mat.meta has the wrong guid"
-    assert f"guid: {SHADER_GUID}" in files[f"{SHADER}.meta"], "Lattice.shader.meta has the wrong guid"
-    # Still (2026-10-24): no drift, no element pulses, no twinkling nodes.
-    for name in MATERIALS:
-        for k, v in STILL.items():
-            assert f"    - {k}: {f(v)}\n" in files[f"{DIR}/{name}.mat"], f"{name}: {k} must be {v} - the lattice holds still"
-
     rim = open(os.path.join(REPO, RIM_SHADER), encoding="utf-8").read()
     rim_declared = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", rim, re.M)) - {"_MainTex"}
     back = [p for p in RETIRED if p in files]
@@ -337,18 +327,22 @@ def validate(files):
     src = open(os.path.join(REPO, SEA_SHADER), encoding="utf-8").read()
     assert '#include "UISeaLines.cginc"' in src, "SeaLines.shader does not include UISeaLines.cginc"
     sea_declared = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", src, re.M)) - {"_MainTex"}
-    m = files[f"{DIR}/Sea_Window.mat"]
-    assert f"m_Shader: {{fileID: 4800000, guid: {SEA_SHADER_GUID}, type: 3}}" in m, "Sea_Window is not on SeaLines.shader"
-    written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
-    assert written == sea_declared, f"Sea_Window: properties drifted (missing {sea_declared - written}, extra {written - sea_declared})"
-    assert f"guid: {SEA_GUID}" in files[f"{DIR}/Sea_Window.mat.meta"], "Sea_Window.mat.meta has the wrong guid"
+    for name, g in (("Sea_Window", SEA_GUID), ("Sea_Panel", SEA_PANEL_GUID)):
+        m = files[f"{DIR}/{name}.mat"]
+        assert f"m_Shader: {{fileID: 4800000, guid: {SEA_SHADER_GUID}, type: 3}}" in m, f"{name} is not on SeaLines.shader"
+        written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
+        assert written == sea_declared, f"{name}: properties drifted (missing {sea_declared - written}, extra {written - sea_declared})"
+        assert f"guid: {g}" in files[f"{DIR}/{name}.mat.meta"], f"{name}.mat.meta has the wrong guid"
+        assert f"- _LineColor: {col(SEA_LINE)}" in m and f"- _LineColorEnd: {col(SEA_LINE_END)}" in m and SEA_LINE != SEA_LINE_END, \
+            f"{name}: the lines do not shade across the window (Rev 13: gradients)"
+        for k in ("_FarSeconds", "_MidSeconds", "_NearSeconds"):
+            v = float(re.search(rf"^    - {k}: (.*)$", m, re.M).group(1))
+            assert v >= SEA_SLOWEST_LOOP, f"{name}: {k} is {v} s - the sea lines stay slow (at least {SEA_SLOWEST_LOOP} s a loop)"
     assert f"guid: {SEA_SHADER_GUID}" in files[f"{SEA_SHADER}.meta"], "SeaLines.shader.meta has the wrong guid"
-    assert f"- _LineColor: {col(SEA_LINE)}" in m and f"- _LineColorEnd: {col(SEA_LINE_END)}" in m and SEA_LINE != SEA_LINE_END, \
-        "Sea_Window: the lines do not shade across the window (Rev 13: gradients)"
+    m = files[f"{DIR}/Sea_Window.mat"]
     assert f"- _WashTop: {col(SEA_WASH_TOP[:3], SEA_WASH_TOP[3])}" in m, "Sea_Window: no wash at the top (Rev 13: the brighter blue)"
-    for k in ("_FarSeconds", "_MidSeconds", "_NearSeconds"):
-        v = float(re.search(rf"^    - {k}: (.*)$", m, re.M).group(1))
-        assert v >= SEA_SLOWEST_LOOP, f"Sea_Window: {k} is {v} s - the sea lines stay slow (at least {SEA_SLOWEST_LOOP} s a loop)"
+    for k in ("_WashTop", "_WashBottom", "_GlowColor"):
+        assert f"- {k}: {col(CLEAR[:3], 0)}" in files[f"{DIR}/Sea_Panel.mat"], f"Sea_Panel: {k} must be clear - a panel's sea has no wash"
     orb = files[f"{DIR}/Presence_Orb.mat"]
     assert f"- _SpaceColor: {col(NEUTRAL)}" in orb, "the orb's ring must be the neutral blue, not an element's colour"
     for k in ("_SpinSeconds", "_DotSize", "_BondPeriod", "_BondSpeed"):
@@ -392,15 +386,14 @@ def drift(files):
 def self_test(files):
     f_ = f
     cases = [
-        ("a material on the wrong shader", lambda f: f.__setitem__(f"{DIR}/Lattice_Panel.mat", f[f"{DIR}/Lattice_Panel.mat"].replace(SHADER_GUID, "0" * 32))),
-        ("a property the shader no longer declares", lambda f: f.__setitem__(f"{DIR}/Lattice_Window.mat", f[f"{DIR}/Lattice_Window.mat"].replace(
-            "    - _FadeStart:", "    - _Retired: 1\n    - _FadeStart:", 1))),
-        ("the lattice drifting again", lambda f: f.__setitem__(f"{DIR}/Lattice_Window.mat", f[f"{DIR}/Lattice_Window.mat"].replace(
-            "    - _NearDrift: 0\n", "    - _NearDrift: 40\n", 1))),
+        ("the panel sea on the wrong shader", lambda f: f.__setitem__(f"{DIR}/Sea_Panel.mat", f[f"{DIR}/Sea_Panel.mat"].replace(SEA_SHADER_GUID, "0" * 32))),
+        ("a property the sea shader no longer declares", lambda f: f.__setitem__(f"{DIR}/Sea_Panel.mat", f[f"{DIR}/Sea_Panel.mat"].replace(
+            "    - _FadeTop:", "    - _Retired: 1\n    - _FadeTop:", 1))),
+        ("the panel sea washed over", lambda f: f.__setitem__(f"{DIR}/Sea_Panel.mat", sea_material().replace("Sea_Window", "Sea_Panel"))),
         ("the orb's dots orbiting again", lambda f: f.__setitem__(f"{DIR}/Presence_Orb.mat", f[f"{DIR}/Presence_Orb.mat"].replace(
             "    - _SpinSeconds: 0\n", "    - _SpinSeconds: 24\n", 1))),
         ("the Time rim material brought back", lambda f: f.__setitem__(f"{DIR}/ElementRim_Time.mat", rim_material("Time"))),
-        ("the shader meta on another guid", lambda f: f.__setitem__(f"{SHADER}.meta", f[f"{SHADER}.meta"].replace(SHADER_GUID, "1" * 32))),
+        ("the sea shader meta on another guid", lambda f: f.__setitem__(f"{SEA_SHADER}.meta", f[f"{SEA_SHADER}.meta"].replace(SEA_SHADER_GUID, "1" * 32))),
         ("the orb's bonds aimed away from the seats", lambda f: f.__setitem__(f"{DIR}/Presence_Orb.mat", f[f"{DIR}/Presence_Orb.mat"].replace(
             f"- _BondAngles: {col(ORB_MEMBER_ANGLES, 0)}", f"- _BondAngles: {col((90, 45, 270), 0)}", 1))),
         ("the orb's seats off the inner ring", lambda f: f.__setitem__(f"{DIR}/Presence_Orb.mat", f[f"{DIR}/Presence_Orb.mat"].replace(
@@ -414,7 +407,7 @@ def self_test(files):
         ("the sea lines one flat colour again", lambda f: f.__setitem__(f"{DIR}/Sea_Window.mat", f[f"{DIR}/Sea_Window.mat"].replace(
             f"- _LineColorEnd: {col(SEA_LINE_END)}", f"- _LineColorEnd: {col(SEA_LINE)}", 1).replace(
             f"- _LineColor: {col(SEA_LINE)}", f"- _LineColor: {col(SEA_LINE_MID)}", 1))),
-        ("the sea material on the lattice shader", lambda f: f.__setitem__(f"{DIR}/Sea_Window.mat", f[f"{DIR}/Sea_Window.mat"].replace(
+        ("the sea material on the retired lattice shader", lambda f: f.__setitem__(f"{DIR}/Sea_Window.mat", f[f"{DIR}/Sea_Window.mat"].replace(
             SEA_SHADER_GUID, SHADER_GUID))),
         ("the theme loses the selection's material", lambda f: f.__setitem__(THEME, f[THEME].replace(SELECTION_GUID, "8" * 32, 1))),
     ]
@@ -426,6 +419,10 @@ def self_test(files):
             PARTY_PANEL: screens[PARTY_PANEL].replace(f"guid: {BOND_GUID}", f"guid: {RIM_GUID['Space']}", 1)}))),
         ("a window without its sea lines", lambda f: f.__setitem__("__screens__", dict(screens, **{
             WINDOWS[2]: screens[WINDOWS[2]].replace(SEA_GUID, "2" * 32)}))),
+        ("a panel back on the lattice", lambda f: f.__setitem__("__screens__", dict(screens, **{
+            WINDOWS[0]: screens[WINDOWS[0]] + f"  m_Material: {{fileID: 2100000, guid: {PANEL_GUID}, type: 2}}\n"}))),
+        ("the sign-in without its sea", lambda f: f.__setitem__("__screens__", dict(screens, **{
+            SEA_ELSEWHERE[0]: screens[SEA_ELSEWHERE[0]].replace(SEA_GUID, "3" * 32)}))),
         ("a party bond without KitRimMesh", lambda f: f.__setitem__("__screens__", dict(screens, **{
             PARTY_PANEL: screens[PARTY_PANEL].replace(RIM_SCRIPT, "5" * 32)}))),
     ]

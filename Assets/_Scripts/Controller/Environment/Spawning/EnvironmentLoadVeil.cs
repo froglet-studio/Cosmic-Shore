@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
     /// "Loading" caption at the bottom of the screen, not a headline.</para>
     ///
     /// <para><b>Rev 7: not black any more</b> (the owner, 2026-10-17: "Black loading screen when changing cell show
-    /// something interesting"; Docs/MENU_REDESIGN_B.md §47.4). Over the black: the living lattice, an omni crystal
+    /// something interesting"; Docs/MENU_REDESIGN_B.md §47.4). Over the black: the sea (§70), an omni crystal
     /// filling as the cell builds, "Entering" and the cell's name with its line, the four build steps lighting in
     /// their elements as the real phases pass (laying, growing, the all-clear hold, the reveal), and a tip. The build
     /// runs this screen at about 10 frames a second, so nothing here is fast motion: the crystal rises with the work
@@ -174,15 +174,15 @@ namespace CosmicShore.Gameplay
             if (!_words)
                 CSDebug.LogWarning($"[EnvironmentLoadVeil] No {nameof(EnvironmentLoadVeilContentSO)} at Resources/" +
                                  $"{EnvironmentLoadVeilContentSO.ResourcePath} - the loading screen shows its bar alone.");
-            // The living lattice over the black (its motion is the shader's, so it costs no canvas rebuild).
-            if (_words && _words.lattice)
+            // The sea over the black (its motion is the shader's, so it costs no canvas rebuild).
+            if (_words && _words.background)
             {
-                var lattice = new GameObject("Lattice", typeof(Image));
-                lattice.transform.SetParent(transform, false);
-                var image = lattice.GetComponent<Image>();
-                image.material = _words.lattice;
+                var sea = new GameObject("Sea", typeof(Image));
+                sea.transform.SetParent(transform, false);
+                var image = sea.GetComponent<Image>();
+                image.material = _words.background;
                 image.raycastTarget = false;
-                Stretch(lattice.GetComponent<RectTransform>());
+                Stretch(sea.GetComponent<RectTransform>());
             }
 
             // The backdrop bleeds and the readout does not - the safe-area split of

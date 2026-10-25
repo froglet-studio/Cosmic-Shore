@@ -795,6 +795,10 @@ def stage_fx(clip):
 
 def build_view(row_guid):
     root = N("root", "HangarView", STRETCH)
+    # §70 (Shombith 2026-10-25: "Hangar should have it too"): the sea behind the whole screen, under the top bar, first so
+    # every zone draws over it. Its wash dims the menu world behind the Hangar the way a hub window's veil does.
+    sea = root.child(N("Sea", "Sea", R((0, 0), (1, 1), (0, -42), (0, -84))))
+    sea.add("cr", 222, K.canvas_renderer()).add("img", 114, M.lattice_image(M.SEA_WINDOW_MAT))
 
     # ---- header ----
     header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
@@ -1180,6 +1184,7 @@ def validate_prefabs(files, guids):
         check_sources(path, text, files)
     # The detail view: every field set, each to the right kind of object.
     view = files[f"{OUT_DIR}/HangarView.prefab"]
+    assert f"guid: {M.SEA_WINDOW_MAT}, type: 2" in view, "the Hangar has no sea behind it (§70)"
     detail = K.FileIds("HangarView")("root#detail")
     _, body = doc_of(view, detail)
     for field, want in DETAIL_FIELDS.items():
@@ -1338,6 +1343,7 @@ def self_test(current, files, guids):
     desc_ref = re.search(r"vesselDescriptionText: \{fileID: (-?\d+)\}", dbody).group(1)
     plants = {
         "the screen's entrances stripped": view_plant(M.strip_entrances),
+        "the Hangar without its sea": view_plant(lambda t: t.replace(M.SEA_WINDOW_MAT, "0" * 32)),
         "an ability row takes clicks again": view_plant(lambda t: T.in_doc(
             t, str(K.FileIds("HangarView")("Tabs/Abilities/Charge#cg")), "  m_BlocksRaycasts: 0\n", "  m_BlocksRaycasts: 1\n")),
         "detail field swapped onto the wrong kind": view_plant(lambda t: t.replace(

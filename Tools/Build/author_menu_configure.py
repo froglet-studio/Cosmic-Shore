@@ -1396,7 +1396,7 @@ def build_leaderboard_view():
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark", 0.92), K.kit_sprite("kit_sliver14_fill"), True)) \
         .add("th", 114, themed("SurfaceVeryDark", 0.92))
-    lst.child(M.grid_node("List/Grid"))
+    lst.child(M.panel_sea_node("List/Grid"))
     bord = lst.child(N("List/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True)).add("th", 114, themed("SurfaceDark"))
