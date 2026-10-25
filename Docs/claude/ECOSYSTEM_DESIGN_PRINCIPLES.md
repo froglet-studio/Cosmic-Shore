@@ -64,7 +64,15 @@ trio, and the traps).
   cell can never hold two fauna colours at once. (A tamed creature's MARK is not a second fauna
   colour: its spindles lean a little toward its tamer's domain hue so a player can tell their herd
   or school from the wild (Garrett, 2026-10-21, `IFaunaLeash.TryGetLeashMark`), while its domain,
-  body prisms and diet stay the cell's.) A mode may also PEN a cell's fauna
+  body prisms and diet stay the cell's.) **THE THIRD SIGN-OFF (the designer, 2026-10-24): the Jacks' net STEALS, and the omni crystal
+  BEARS, in the player's colour.** "if an opposing team's fauna is netted it steals it" and "lets have the omnicrystal
+  produce an omnivorous worm fauna in the player's domain" (`R_VesselActions/JACKS.md` §1.1). So a cell may hold a second
+  fauna colour, fenced: a creature changes domain only through `Fauna.StealInto` (one caller, `JacksNet`; only a species
+  whose whole body recolours, `Fauna.CanBeStolen`; replicated by `FaunaNetworkSync`), and a creature is BORN in a player's
+  colour only through `VesselSpawnFaunaByCrystalEffectSO` (one asset, the Jacks' omni crystal), through the platform's one
+  spawn seam. A stolen or crystal-born creature's offspring are born in its colour (birth copies the parent's domain).
+  Nothing else about it changes: it eats, breeds, starves and dies by its own rules, and a mode's
+  `Cell.SetModeControlOverride` still re-colours the live swarm. An exception, never a precedent. A mode may also PEN a cell's fauna
   (`Cell.FaunaContainmentRadius` = the OUTER wall, `Cell.FaunaExclusionRadius` = the INNER one —
   together a cell-level annulus a mode can open and close while the match runs; Astro League holds
   its cleanup crew outside the court and drops the inner wall when the cell's own volume ladder

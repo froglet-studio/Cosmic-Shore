@@ -51,7 +51,8 @@ namespace CosmicShore.UI
         [Header("Data")]
         [SerializeField] SO_VesselList vessels;
         [SerializeField] SO_CaptainList captains;
-        [SerializeField] AbilityLockupStyleSO lockupStyle;
+        [Tooltip("What a by-vessel bar fills in (neutral: Docs/UI_COLOR_RULES.md, no element colours in the UI).")]
+        [SerializeField] CosmicShore.UI.UIColorToken vesselBarTint = CosmicShore.UI.UIColorToken.ControlActive;
 
         [Header("Pilot")]
         [SerializeField] TMP_Text nameText;
@@ -114,7 +115,6 @@ namespace CosmicShore.UI
 
         void Awake()
         {
-            if (!lockupStyle) lockupStyle = Resources.Load<AbilityLockupStyleSO>("AbilityLockupStyle");
             if (closeButton) closeButton.onClick.AddListener(Close);
             if (changePilotButton) changePilotButton.onClick.AddListener(OpenPicker);
             SetShown(false);
@@ -151,6 +151,14 @@ namespace CosmicShore.UI
             SetShown(false);
             var events = EventSystem.current;
             if (events && _returnFocus) events.SetSelectedGameObject(_returnFocus);
+        }
+
+        /// <summary>Closes the favourite-pilot picker if it is open; true when it was (Back answers the picker first).</summary>
+        public bool ClosePicker()
+        {
+            if (!picker || !picker.IsOpen) return false;
+            picker.Close();
+            return true;
         }
 
         void OpenPicker()
@@ -240,7 +248,7 @@ namespace CosmicShore.UI
                 row.fill.gameObject.SetActive(share > 0f);
                 row.fill.anchorMax = new Vector2(share, row.fill.anchorMax.y);
             }
-            if (row.fillImage && lockupStyle && vessel) row.fillImage.color = lockupStyle.ColourFor(vessel.PrimaryElement);
+            if (row.fillImage) row.fillImage.color = CosmicShore.UI.UITheme.Resolve(null, vesselBarTint);
         }
 
         string Seconds(float s) => s > 0f

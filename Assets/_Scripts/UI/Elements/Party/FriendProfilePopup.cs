@@ -231,7 +231,7 @@ namespace CosmicShore.UI
                 avatar.sprite = p.Avatar;
                 avatar.enabled = p.Avatar;
             }
-            if (ring) ring.color = p.DomainColour ?? UITheme.Resolve(theme, UIColorToken.ElementSpace);
+            if (ring) ring.color = p.DomainColour ?? UITheme.Resolve(theme, UIColorToken.NeutralLightest);
             if (nameText) nameText.text = p.DisplayName ?? string.Empty;
             KitVisibility.SetShown(friendTag, IsFriend(p.PlayerId));
 
@@ -250,7 +250,7 @@ namespace CosmicShore.UI
             KitVisibility.SetShown(joinGroup, p.Join != OnlineInfoEntry.JoinMode.Hidden);
             if (joinButton)
             {
-                joinButton.Variant = spectate ? KitButtonVariant.Play : KitButtonVariant.Time;
+                joinButton.Variant = spectate ? KitButtonVariant.Default : KitButtonVariant.Play;   // joining is the call to action; watching is neutral
                 joinButton.interactable = p.Join is OnlineInfoEntry.JoinMode.Join or OnlineInfoEntry.JoinMode.Spectate;
             }
             if (joinLabel) joinLabel.SetText(spectate ? spectateWord : joinWord);

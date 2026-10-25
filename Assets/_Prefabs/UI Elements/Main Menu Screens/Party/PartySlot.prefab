@@ -1268,9 +1268,9 @@ MonoBehaviour:
   primaryGraphics:
   - {fileID: 1020156780924970038}
   - {fileID: 795129533965046070}
-  unselectedPrimaryToken: 15
+  unselectedPrimaryToken: 7
   secondaryGraphics: []
-  lockedSecondaryToken: 11
+  lockedSecondaryToken: 7
   artGraphics: []
   lockGraphic: {fileID: 0}
   lockLabel: {fileID: 0}
@@ -1579,7 +1579,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.6901961, g: 0.4862745, b: 1, a: 1}
+  m_Color: {r: 0.45490196, g: 0.48235294, b: 0.6784314, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1609,7 +1609,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
-  token: 15
+  token: 7
   alpha: 1
 --- !u!1 &649391452648449963
 GameObject:
@@ -1760,7 +1760,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.6901961, g: 0.4862745, b: 1, a: 1}
+  m_Color: {r: 0.45490196, g: 0.48235294, b: 0.6784314, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1852,8 +1852,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294933680
-  m_fontColor: {r: 0.6901961, g: 0.4862745, b: 1, a: 1}
+    rgba: 4289559412
+  m_fontColor: {r: 0.45490196, g: 0.48235294, b: 0.6784314, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1929,7 +1929,7 @@ MonoBehaviour:
   roles: {fileID: 11400000, guid: af2b1c2844e6e0940d27379f27d7a89c, type: 2}
   role: 8
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
-  colorToken: 15
+  colorToken: 7
   colorDrivenExternally: 1
 --- !u!114 &377732507084335685 stripped
 MonoBehaviour:
