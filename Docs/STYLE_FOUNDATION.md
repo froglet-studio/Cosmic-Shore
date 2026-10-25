@@ -196,6 +196,11 @@ Knowledge (XP) · Charge / Mass / Time / Space (elemental crystals) · Omnicryst
 
 Elemental glyphs match the vessel-HUD petal geometry — one system, not two.
 
+**Elements have no colour (LOCKED, Garrett 2026-10-24).** The team colours in §3 never stand for an element:
+jade is not Time, gold is not Charge, blue is not Mass, ruby is not Space. An element is told by shape and
+position only. The lockup's rev 3 element colouring is OFF (`check_element_colour.py`); see
+`Docs/claude/VESSEL_HUD_AND_ELEMENTS.md` "Elements have no colour".
+
 **Objective glyphs (art present, unwired).** Nine line-weight monochrome silhouettes, one per
 `ScoringMetric`, in `_Graphics/UI/Objectives/`, drawn by `Tools/Build/author_objective_icons.py`.
 Nothing reads them today — the readout they were drawn for was removed and the art kept; see

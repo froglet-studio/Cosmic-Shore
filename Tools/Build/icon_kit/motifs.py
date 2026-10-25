@@ -95,6 +95,17 @@ def rail(cx, y_near, y_far, w_near, w_far, ties=4, tie_gap=4.0):
     return m
 
 
+def trail_band(y0=96, y1=114, x0=6, x1=122, notches=4):
+    """A ribbon of trail seen from the side: one solid band with V notches cut from its top, so it reads as
+    blocks at 40 px without splitting into components (the Urchin rides it, the Squirrel skims it)."""
+    m = rect(x0, y0, x1, y1)
+    w = (x1 - x0) / notches
+    for i in range(1, notches):
+        x = x0 + i * w
+        m &= ~fill([(x - 6, y0), (x + 6, y0), (x, y0 + 9)])
+    return m
+
+
 def speed_wedge(x, y, length, w, lean=0.0):
     """One motion mark: a chamfered bar, not three lines."""
     pts = [(x, y - w / 2), (x + length, y - w / 2), (x + length - w * 0.6, y + w / 2), (x - w * 0.6, y + w / 2)]

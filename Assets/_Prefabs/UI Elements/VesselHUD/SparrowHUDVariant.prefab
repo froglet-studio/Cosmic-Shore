@@ -452,7 +452,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: f0197e0a2ce38654ea3d882fff64967a, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 43f8deb1623fc8aa4e228dc5322c0964, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -1036,9 +1036,11 @@ MonoBehaviour:
   upgradePunchScale: 1.35
   upgradePunchDuration: 0.35
   missileIcons:
-  - {fileID: 21300000, guid: 4326cd8fb95b3e34ab41f098e75730a2, type: 3}
-  - {fileID: 21300000, guid: 8306bc28766790c4e95529f8ed9ca0cb, type: 3}
-  - {fileID: 21300000, guid: dcdff3c20c9ecde42aaf995f157e2007, type: 3}
+  - {fileID: 21300000, guid: f879e30d9946bd93f26cac8e5bc0ed83, type: 3}
+  - {fileID: 21300000, guid: 90011b99525776837b40769b6dc218a7, type: 3}
+  - {fileID: 21300000, guid: 82e14856ec114f0ec0b12694c7f2278d, type: 3}
+  - {fileID: 21300000, guid: 3e332158edfad8dc498cc911115c7e0c, type: 3}
+  - {fileID: 21300000, guid: e48a57aebfeadc56b6dc0d544bafa795, type: 3}
   missileIcon: {fileID: 3855639277037614910}
   rollChargeIndicator: {fileID: 6877628874251343197}
   rollArmedColor: {r: 0.55, g: 0.9, b: 1, a: 1}
@@ -1047,8 +1049,8 @@ MonoBehaviour:
   rollSpendPunchScale: 0.3
   weaponModeIcon: {fileID: 4990196459091587280}
   weaponModeIcons:
-  - {fileID: 21300000, guid: 6da9cfe8d216bd84695e3b4c71bfa533, type: 3}
-  - {fileID: 21300000, guid: 50344d4701b0890479c9a02018960d9b, type: 3}
+  - {fileID: 21300000, guid: c71ffb50b4b84c0ad6695f8c640f326e, type: 3}
+  - {fileID: 21300000, guid: fa138d5b3f8ae85e16858f351ed925d1, type: 3}
 --- !u!1 &2785019855397802838
 GameObject:
   m_ObjectHideFlags: 0
@@ -1372,7 +1374,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: f0197e0a2ce38654ea3d882fff64967a, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 43f8deb1623fc8aa4e228dc5322c0964, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -2507,7 +2509,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 4a5259289f0bdff46a3c22300b3933d7, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 6220006d8f1ce8007a29ff0281f44619, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -2582,7 +2584,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 7aededbf59d8deb4fb340521261c6efa, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e48a57aebfeadc56b6dc0d544bafa795, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -2978,7 +2980,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 6da9cfe8d216bd84695e3b4c71bfa533, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c71ffb50b4b84c0ad6695f8c640f326e, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1

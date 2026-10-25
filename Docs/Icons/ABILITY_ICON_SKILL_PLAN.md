@@ -206,8 +206,14 @@ The round, as a skill section:
 sheet, author) and `.claude/skills/ability-icon/` written, and the **Manta (4) and Urchin (4)**
 redrawn through the kit (`Docs/Icons/sheets/manta.png`, `urchin.png`), their old generators standing
 down on the PNGs. The Thresher was not round 2's proof after all: Garrett asked for the floor to be
-raised on the worst first, so the two "does not read" hulls went first. Next: Garrett's feedback on
-the two sheets, then the eleven placeholders.
+raised on the worst first, so the two "does not read" hulls went first. **Round 2 (2026-10-25):** Garrett's call on round 1 ("slightly better, not quite there") plus the LOCKED
+colour rule (elements have no colour; `check_element_colour.py`; the lockup's rev 3 element colouring OFF).
+**Squirrel** (Crystal Joust replaces the skull - also the Jousts metric icon; Skimming replaces the borrowed
+Sparrow boost icon; the drift pair replaces two teal placeholders; Boost Ring kept, Steal is generated) and
+**Sparrow** (Turret Stance, Cannons + the prism-rounds mode sprite, Afterburner, and a five-rung rocket ladder
+with no baked plate) redrawn and rebound; **Dolphin** measured and left - all four of its cards are live
+readouts (blast profile, crystal, jaws, 11-step ring) with nothing to redraw. Sheets: `Docs/Icons/sheets/`.
+Next: Garrett's feedback on round 2, then the eleven placeholders.
 
 | Round | What | Why first |
 |---|---|---|

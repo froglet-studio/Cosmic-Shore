@@ -62,3 +62,4 @@ MonoBehaviour:
   upgradeTransitionDuration: 0.2
   unlockPunchScale: 1.05
   unlockPunchDuration: 0.5
+  elementColour: 0

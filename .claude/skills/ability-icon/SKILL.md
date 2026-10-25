@@ -80,6 +80,12 @@ every gate and named nothing.
   the fleet's motion mark.
 - A gauge sprite (the Urchin's charge ring) is not an ability icon: it is a bare ring on purpose.
   Check `author_<hull>_hud.py` before calling a ring "generic".
+- **Elements have no colour** (LOCKED, Garrett 2026-10-24): never a colour per element on a card, a blob, an
+  edge, an icon or a sheet; the four domain colours are team identity only. `check_element_colour.py`.
+- **Measure the HUD first.** On the older hulls a card is often a live readout (a generated graphic, a jaw pair,
+  a step ring, a sprite ladder); a sprite swap polishes none of that, and a ladder is ONE icon in several
+  states (`subdir`, `family=False`, the card's sprite is the top rung, `rebind.py list=` rewrites the view's
+  list). The Dolphin had nothing to redraw.
 - Round caps are the old language. Every new icon is angular; a hull is redrawn whole so its four
   match, never one icon in the new language next to three in the old.
 - Two sheets, not one: look at 128 to judge the drawing, at 40 to judge the icon.
@@ -89,7 +95,10 @@ every gate and named nothing.
 The prefab bindings (`AbilityIconBinding` on `<Hull>HUDVariant.prefab`, `Manta.prefab`,
 `Jacks.prefab`) reference the PNG by **guid**; the kit writes the PNG and leaves the `.meta`, so a
 redraw changes no prefab. A NEW hull's four `.meta`s are written by the kit with a deterministic guid
-(`guid_for(hull, name)`), and its `author_<hull>_assets.py` binds them. When a hull moves onto the
+(`guid_for(hull, name)`), and its `author_<hull>_assets.py` binds them. An icon that REPLACES a sprite under
+another name (a placeholder, borrowed art) carries `REBIND` steps in its spec - one per referencing file, with
+the count of references it expects - and `before=` so the sheet still shows what it replaced; references
+outside the HUD (another screen's prefab) are left to their owners. When a hull moves onto the
 kit, its old generator **stands down** on the PNGs (keeps the metas and anything else it owns, prints
 where the PNGs now come from) - `author_manta_icon_placeholders.py` and `author_urchin_hud.py` are
 the pattern; a generator that still re-emits the placeholder would undo the art on its next run

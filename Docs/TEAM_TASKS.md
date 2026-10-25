@@ -2167,12 +2167,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/Icons/ABILITY_ICON_SKILL_PLAN.md, Docs/Icons/ability_icons_audit_2026-10-24.png
 - **Done:** 2026-10-24, Garrett 2026-10-24: angular; the flower owns the element (no redundant element mark on the icon); a hull's own silhouette is fair game where appropriate (the Dolphin's jaw on its Space icon is the example)
 
-### T-20261024-893c · open · decision · icons
+### T-20261024-893c · done · decision · icons
 - **Task:** Judge round 1 of the ability-icon kit: the Manta's and Urchin's redrawn ability icons (before/after sheets at 128/60/40). Say which read, which do not, and what the language is missing; Soar is the weakest
 - **Done when:** Garrett's feedback is folded into .claude/skills/ability-icon/references/LESSONS.md and ICON_LANGUAGE.md, and the next hull is named
 - **Who can take it:** Garrett
 - **Added:** 2026-10-24 by a Claude session (`cece/loving-ptolemy-4715w4`)
 - **See:** Docs/Icons/sheets/manta.png, Docs/Icons/sheets/urchin.png, Docs/Icons/ABILITY_ICON_SKILL_PLAN.md §8
+- **Done:** 2026-10-25, Garrett 2026-10-24: slightly better, not quite there; the colour rule (elements have no colour) and Squirrel / Dolphin / Sparrow first
 
 ### T-20261024-aa5e · open · test · icons
 - **Task:** Fly the Manta and the Urchin in freestyle (Toybox Vessel Changer) and look at the four-icon ability row: the redrawn icons sit in the 60 px box, read under the cooldown veil and the gauge fill, and the Urchin's charge ring still draws round its Charge card
@@ -2180,3 +2181,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (has offered to take tests) or Caleb (QA)
 - **Added:** 2026-10-24 by a Claude session (`cece/loving-ptolemy-4715w4`)
 - **See:** Docs/Icons/sheets/manta.png, Docs/Icons/sheets/urchin.png
+
+### T-20261025-b706 · open · decision · icons
+- **Task:** Judge round 2 of the ability-icon kit: the Squirrel (Crystal Joust, Skimming, the drift pair) and Sparrow (Turret Stance, Cannons + prism rounds, Afterburner, the five-rung rocket ladder) before/after sheets; the Dolphin was measured and left (its four cards are live readouts). Weakest: Turret Stance, Crystal Joust
+- **Done when:** feedback folded into .claude/skills/ability-icon/references/LESSONS.md and ICON_LANGUAGE.md; next hull named
+- **Who can take it:** Garrett
+- **Added:** 2026-10-25 by a Claude session (`cece/loving-ptolemy-4715w4`)
+- **See:** Docs/Icons/sheets/squirrel.png, Docs/Icons/sheets/sparrow.png
+
+### T-20261025-f1e8 · open · test · icons
+- **Task:** Fly the Squirrel and the Sparrow in freestyle and look at the ability row: the Squirrel's joust card (split crystal) flashes red on a joust, the Time card shows the skimming icon with the boost fill behind it, the drift card swaps to the lean / broadside sprites while drifting; the Sparrow's Charge card steps 0..4 rockets as the bay fills (five rungs now), the Space card swaps bullets <-> prism rounds when you stop, the roll ring still draws round the Afterburner. Also the ability lockup's cards no longer wear an element colour (lava off)
+- **Done when:** both rows checked on PC; anything that does not read goes to the icons board
+- **Who can take it:** Yash (has offered to take tests) or Caleb (QA)
+- **Added:** 2026-10-25 by a Claude session (`cece/loving-ptolemy-4715w4`)
+- **See:** Docs/Icons/sheets/squirrel.png, Docs/Icons/sheets/sparrow.png, Docs/claude/VESSEL_HUD_AND_ELEMENTS.md 'Elements have no colour'
+
+### T-20261025-8f03 · open · dev · UI
+- **Task:** Elements have no colour (Garrett 2026-10-24, LOCKED): remove the remaining element->colour maps - CodexHarvester's Element.Charge => Color table, the Kite Navigator's elementColors (KiteNavigatorConfigSO), and decide whether AbilityLockupStyleSO's chargeColour/massColour/spaceColour/timeColour fields (now OFF via elementColour: 0 on the asset) are deleted or kept for a non-element use. python3 Tools/Build/check_element_colour.py lists the sites
+- **Done when:** check_element_colour.py lists no sites and the Codex / Kite Navigator tell elements apart by shape or label
+- **Who can take it:** Shombith (UI, Codex, lockup style); the Wrasse & Grouper crew for the Kite Navigator
+- **Added:** 2026-10-25 by a Claude session (`cece/loving-ptolemy-4715w4`)
+- **See:** Docs/claude/VESSEL_HUD_AND_ELEMENTS.md 'Elements have no colour', Tools/Build/check_element_colour.py

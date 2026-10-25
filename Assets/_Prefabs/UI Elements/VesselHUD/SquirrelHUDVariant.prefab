@@ -1740,7 +1740,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 28ece425c4d02474e802223309bdbb11, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 680ebedf06004d5ddb4e4aacd0d49d0f, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -2632,7 +2632,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: f0197e0a2ce38654ea3d882fff64967a, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 80e31a05f8aecfb41d65147725a262c3, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -3202,8 +3202,8 @@ MonoBehaviour:
   colorLerpSpeed: 4
   crystalFlashDuration: 0.5
   fullBoostWhiteMix: 0.3
-  driftingSprite: {fileID: 21300000, guid: 41c9f6e2ec44f0c458351500f1bfacdc, type: 3}
-  doubleDriftingSprite: {fileID: 21300000, guid: 117829e3ccd2f4c439bc98b203359180,
+  driftingSprite: {fileID: 21300000, guid: 162cb1108b4d4851fd0cdd0700d6b3d1, type: 3}
+  doubleDriftingSprite: {fileID: 21300000, guid: ed7ef11e2ae4028239cdef6f7914a234,
     type: 3}
   impactIcon: {fileID: 4425814395415128621}
   impactRestColor: {r: 1, g: 1, b: 1, a: 1}

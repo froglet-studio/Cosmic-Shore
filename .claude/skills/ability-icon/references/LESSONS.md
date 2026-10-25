@@ -40,3 +40,39 @@ game where appropriate. Dolphin uses its jaw silhouette to good effect in its sp
 10. **Soar is the weakest of the eight** (a ray at 60, a delta at 40); it is the one to ask about
     first. Kabloom (blast with a hollow core), Sting (octagon bomb), Track Projector (road to the
     horizon) and Trail Rider (ball on the ribbon) are the ones that moved most.
+
+## 2026-10-24/25 - round 2 (Squirrel, Sparrow; the Dolphin measured and left)
+
+Garrett: "this is slightly better. but not quite there. first we need to make sure we never conflate the domain
+colors with elemental identity. jade is not time. gold is not charge. mass is not blue. space is not ruby ... we
+need to set a rule that we explicitly do not do this." "lets start with the squirrel, dolphin, and sparrow. their
+abilities are more locked in. lets get their icons polished."
+
+11. **Elements have no colour - LOCKED.** The lockup's rev 3 lava colours (Charge gold, Mass blue, Space violet,
+    Time teal) were the domain palette read as elements; the sheet of round 1 repeated the mistake by washing
+    each plate in "its element's" colour. Both are gone: `AbilityLockupStyle.asset` serialises
+    `elementColour: 0`, `check_element_colour.py` holds it (and lists the element->colour maps still in code with
+    their owners), the sheet draws white on the plate. Rule text: `Docs/claude/VESSEL_HUD_AND_ELEMENTS.md`
+    "Elements have no colour".
+12. **Measure the HUD before deciding what an icon IS.** On these three hulls the "icon" is often a live
+    readout: the Dolphin's Charge card is a generated blast cross-section, its Space card the two jaw halves
+    opening to the next gape, its Time card an 11-step ring; the Squirrel's Space card is a generated reach
+    ring with a count; the Sparrow's Charge card is a sprite LADDER. A sprite swap polishes none of that. The
+    Dolphin had nothing to redraw and was left alone; the Squirrel got two cards and its two drift sprites;
+    the Sparrow got three cards, a five-rung ladder and the weapon-mode pair.
+13. **A ladder is one icon in several states, not several icons**: its rungs live in their own folder, are
+    `family=False` (they are each other's variants on purpose), the card's own sprite IS the top rung, and the
+    view's `missileIcons` list is rewritten to all five (`rebind.py` `list=`). The old three-rung art had a dark
+    decagon PLATE baked in and sat on the lockup's plate; the bay holds four rockets and the ladder said two.
+14. **A ghost at alpha 0.5 sits on the gates' threshold** and vanishes at 40 px (the empty rack lost its
+    ghosts). Ghosts are 0.6.
+15. **Borrowed art is a rebind, not a redraw**: the Squirrel's Time card wore the Sparrow's boost icon, and the
+    Sparrow's prefab referenced that boost icon TWICE (the Time card and a legacy `BoostIcon` image). A rebind
+    step asserts the count it expects (`expect=`), so a second reference is found rather than silently swapped.
+16. **The placeholder the skull was is also the Jousts metric icon** (`ModeControlsLibrary.asset`): every
+    reference to a sprite being replaced is its own rebind step, and the ones outside the HUD (the drift
+    placeholder in `AbilityControlRow.prefab`, the cannon one in `HomeScreen.prefab`) are left for their owners.
+17. **The drift's sweep needs to be as heavy as the hull.** Round 1's arc was a hairline behind an arrow and
+    read as an arrow; at 12 px the arc under the tail reads as a slide.
+18. The weakest of this round: the Sparrow's Turret Stance (a pawn at 40 px) and the Squirrel's Crystal Joust
+    (a gem with a cut - the joust itself is not in it). Ask about those first.

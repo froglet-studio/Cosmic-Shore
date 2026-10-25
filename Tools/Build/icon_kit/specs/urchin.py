@@ -12,18 +12,9 @@ Before (author_urchin_hud.py placeholders, 2026-10): a 12-point star, a ball on 
 three overlapping circles.
 """
 from canvas import disc, fill, rect, shift
-from motifs import hull, rail, spiked_ball
+from motifs import hull, rail, spiked_ball, trail_band
 
 HULL = "Urchin"
-
-
-def _trail_band(y0=96, y1=114, notches=4):
-    m = rect(6, y0, 122, y1)
-    w = (122 - 6) / notches
-    for i in range(1, notches):
-        x = 6 + i * w
-        m &= ~fill([(x - 6, y0), (x + 6, y0), (x, y0 + 9)])
-    return m
 
 
 def chain_spikes():
@@ -35,7 +26,7 @@ def chain_spikes():
 
 
 def trail_rider():
-    band = _trail_band()
+    band = trail_band()
     ball = spiked_ball(64, 58, 24, spikes=12, spike=0.58, rot=15, width=0.4)
     return band | ball
 
@@ -50,7 +41,7 @@ def track_projector():
 
 
 def slip():
-    band = _trail_band(y0=100, y1=116, notches=4)
+    band = trail_band(y0=100, y1=116, notches=4)
     ghost = spiked_ball(38, 76, 19, spikes=12, spike=0.58, rot=15, width=0.4)
     lifted = spiked_ball(86, 40, 19, spikes=12, spike=0.58, rot=15, width=0.4)
     return [(band | lifted, 1.0), (ghost, 0.5)]

@@ -24,12 +24,14 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 import canvas  # noqa: E402
+import rebind  # noqa: E402
 import sheet as sheet_mod  # noqa: E402
 import verify  # noqa: E402
 
 ICON_ROOT = os.path.join(ROOT, "Assets", "_Graphics", "Icons", "AbilityIcons")
 DONOR_META = os.path.join(ICON_ROOT, "Manta", "Manta_Kabloom.png.meta")   # the house 128 px sprite meta
 SHEETS = os.path.join(ROOT, "Docs", "Icons", "sheets")
+FOLDER_META = "fileFormatVersion: 2\nguid: {guid}\nfolderAsset: yes\nDefaultImporter:\n  externalObjects: {{}}\n  userData: \n  assetBundleName: \n  assetBundleVariant: \n"
 TOLERANCE = 2
 
 
@@ -57,35 +59,48 @@ def render_all(spec):
 
 
 def gate(rendered):
-    """Run the legibility gates on the renders (via temp PNGs, so the gate measures what will be written)."""
+    """Run the legibility gates on the renders (via temp PNGs, so the gate measures what will be written).
+    The distinct-within-hull gate runs over the icons that sit in one folder and are not a LADDER (family=False:
+    a gauge's rungs are each other's variants on purpose)."""
     bad = 0
     with tempfile.TemporaryDirectory() as td:
-        paths = []
+        family = []
         for icon, im in rendered:
-            p = os.path.join(td, icon["name"] + ".png")
+            folder = os.path.join(td, icon.get("subdir", ""))
+            os.makedirs(folder, exist_ok=True)
+            p = os.path.join(folder, icon["name"] + ".png")
             im.save(p)
-            paths.append(p)
-        for p in paths:
             r = verify.measure(p)
             fails = verify.judge(r)
             bad += bool(fails)
             print("  " + verify.fmt(r, fails))
-        for a, b, iou in verify.judge_family(paths):
+            if icon.get("family", True):
+                family.append(p)
+        for a, b, iou in verify.judge_family(family):
             print(f"  FAIL distinct: {a} vs {b} IoU {iou:.2f} > {verify.PAIR_IOU_MAX}")
             bad += 1
     return bad
 
 
-def committed(png):
-    """The icon as the branch last COMMITTED it (so the sheet's BEFORE survives a write), else the file on disk."""
+def committed(png, before=None):
+    """The icon as the branch last COMMITTED it (so the sheet's BEFORE survives a write), else the file on disk.
+    A NEW icon names the sprite it replaces as `before` (repo-relative), so the sheet still shows what it was."""
     import io
     import subprocess
+    if before and not os.path.exists(png) and not _in_head(png):
+        png = os.path.join(ROOT, before)
     rel = os.path.relpath(png, ROOT)
     try:
         data = subprocess.run(["git", "-C", ROOT, "show", f"HEAD:{rel}"], capture_output=True, check=True).stdout
         return Image.open(io.BytesIO(data)).convert("RGBA")
     except (subprocess.CalledProcessError, OSError):
         return Image.open(png).convert("RGBA") if os.path.exists(png) else None
+
+
+def _in_head(png):
+    import subprocess
+    rel = os.path.relpath(png, ROOT)
+    return subprocess.run(["git", "-C", ROOT, "cat-file", "-e", f"HEAD:{rel}"], capture_output=True).returncode == 0
 
 
 def same_pixels(a, b):
@@ -103,8 +118,8 @@ def run(hull, check=False, preview=False):
     rows = []
     drift = 0
     for icon, im in rendered:
-        png = os.path.join(out_dir, icon["name"] + ".png")
-        before = committed(png)
+        png = os.path.join(out_dir, icon.get("subdir", ""), icon["name"] + ".png")
+        before = committed(png, icon.get("before"))
         rows.append((icon["name"], icon["element"], before, im))
         if check:
             on_disk = Image.open(png).convert("RGBA") if os.path.exists(png) else None
@@ -115,6 +130,12 @@ def run(hull, check=False, preview=False):
                                         title=f"{spec.HULL} ability icons - before / after (icon_kit)")
     print(f"  sheet: {os.path.relpath(sheet_path, ROOT)}")
     if check:
+        if getattr(spec, "REBIND", None) and not drift:
+            metas = {i["name"]: os.path.join(out_dir, i.get("subdir", ""), i["name"] + ".png.meta") for i in spec.ICONS}
+            if all(os.path.exists(m) for m in metas.values()):
+                for f in rebind.apply(ROOT, spec.REBIND, metas, check=True):
+                    print(f"  DRIFT binding in {f}")
+                    drift += 1
         print(f"  {'no drift' if not drift else str(drift) + ' icon(s) drifted'}")
         return 1 if (drift or bad) else 0
     if preview:
@@ -122,15 +143,24 @@ def run(hull, check=False, preview=False):
     if bad:
         print("  NOT WRITTEN: a gate failed (fix the spec, or argue the gate in verify.py with a negative control)")
         return 1
-    os.makedirs(out_dir, exist_ok=True)
+    metas = {}
     for icon, im in rendered:
-        png = os.path.join(out_dir, icon["name"] + ".png")
+        folder = os.path.join(out_dir, icon.get("subdir", ""))
+        os.makedirs(folder, exist_ok=True)
+        folder_meta = folder.rstrip("/") + ".meta"
+        if not os.path.exists(folder_meta):
+            open(folder_meta, "w").write(FOLDER_META.format(guid=guid_for(spec.HULL, os.path.relpath(folder, ICON_ROOT) + ".folder")))
+            print(f"  wrote {os.path.relpath(folder_meta, ROOT)} (new folder guid)")
+        png = os.path.join(folder, icon["name"] + ".png")
         im.save(png, optimize=True)
         meta = png + ".meta"
         if not os.path.exists(meta):
             open(meta, "w").write(sprite_meta(guid_for(spec.HULL, icon["name"])))
             print(f"  wrote {os.path.relpath(meta, ROOT)} (new guid)")
+        metas[icon["name"]] = meta
         print(f"  wrote {os.path.relpath(png, ROOT)}")
+    for f in rebind.apply(ROOT, getattr(spec, "REBIND", []), metas):
+        print(f"  rebound {f}")
     return 0
 
 

@@ -157,6 +157,28 @@ geometry re-point. The printed procedure ends by clearing the animation's part f
   caller** (its historical MiniGame turn-reset and Hangar call sites are commented out); the emit
   future-proofs any revived re-seed path.
 
+### Elements have no colour (LOCKED — Garrett, 2026-10-24)
+
+> "we need to make sure we never conflate the domain colors with elemental identity. jade is not time. gold is not
+> charge. mass is not blue. space is not ruby. and when you do that it confuses players. i know this conflation got
+> introduced recently, but we need to set a rule that we explicitly do not do this."
+
+**The four domain colours (Jade, Ruby, Gold, Blue) say WHOSE something is — a team, a trail, a stolen prism, a
+team-locked crystal — and nothing else. An ELEMENT (Charge, Mass, Space, Time) is identified by shape and
+position: the petal flower, the hull morph, the icon's place in the row. No element is ever given a colour,
+anywhere — not a card, a lava blob, an edge, a pip, a bar, an icon, a studio panel or a codex entry.** An
+element-coloured surface reads as a team claim, and a team claim on an element readout tells the player
+something false.
+
+What changed on the day of the rule: the ability lockup's rev 3 element colouring (2026-10-16: Charge gold,
+Mass blue, Space violet, Time teal behind each card) is OFF — `Resources/AbilityLockupStyle.asset` now
+serialises `elementColour: 0`, and `python3 Tools/Build/check_element_colour.py` fails if the line is missing
+(the C# default is still on) or non-zero, and if any ability icon carries a baked colour. The gate also LISTS the
+element→colour maps still in code so their owners can resolve them: `CodexHarvester` (Shombith), the Kite
+Navigator's `elementColors` (the Wrasse & Grouper crew), and the lockup SO's own fields (kept, off). A new
+element→colour map anywhere is a bug under this rule; add the site to the gate's list only while its removal is
+being arranged.
+
 ### The Four-Icon Ability Row (LOCKED structure — every vessel HUD)
 
 > **Rev 3 element colour (2026-10-16, approved by Shombith; `AbilityLockupStyleSO.elementColour`).** Each card

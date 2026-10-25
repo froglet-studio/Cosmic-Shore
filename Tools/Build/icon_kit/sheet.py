@@ -1,8 +1,8 @@
 """The contact sheet: every icon of a hull BEFORE and AFTER, at 128 / 60 / 40 px, on a plate like the lockup's.
 
 LOOK at it (Read the PNG) before writing anything into Assets/. The plate is the lockup's plateColor over the
-HUD navy with the element's colour washed behind the icon, the way the Rev 3 cards wear it; the colours here
-are a preview, not the style asset (AbilityLockupStyle.asset is the truth in the Editor).
+HUD navy, the icon white on it, the way the row draws it. No element colour anywhere: elements have no colour
+(Garrett 2026-10-24, LOCKED), and a coloured preview would teach the eye the wrong thing.
 """
 import os
 
@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 NAVY = (14, 20, 44, 255)
 PLATE = (0, 4, 31, 255)
-ELEMENT = {"Charge": (255, 200, 60), "Mass": (70, 130, 255), "Space": (160, 95, 255), "Time": (50, 215, 205)}
+ELEMENT_LABEL = (150, 156, 190)
 SIZES = (128, 60, 40)
 
 
@@ -19,13 +19,6 @@ def _plate(size, element):
     im = Image.new("RGBA", (size + 2 * pad, size + 2 * pad), NAVY)
     d = ImageDraw.Draw(im)
     d.rectangle([2, 2, im.width - 3, im.height - 3], fill=PLATE)
-    c = ELEMENT.get(element, (120, 120, 120))
-    blob = Image.new("RGBA", im.size, (0, 0, 0, 0))
-    bd = ImageDraw.Draw(blob)
-    r = int(size * 0.42)
-    bd.ellipse([im.width // 2 - r - size // 10, im.height // 2 - r + size // 8, im.width // 2 + r - size // 10, im.height // 2 + r + size // 8],
-               fill=c + (70,))
-    im.alpha_composite(blob)
     return im, pad
 
 
@@ -52,7 +45,7 @@ def before_after(rows, out_path, title=""):
     for i, (name, element, before, after) in enumerate(rows):
         y = 30 + i * row_h
         d.text((8, y + 60), name, fill=(230, 230, 230, 255), font=font)
-        d.text((8, y + 74), element, fill=ELEMENT.get(element, (160, 160, 160)) + (255,), font=font)
+        d.text((8, y + 74), element, fill=ELEMENT_LABEL + (255,), font=font)
         for g, img in enumerate((before, after)):
             x = label_w + g * (group_w + 24)
             if img is None:
