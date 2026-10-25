@@ -1048,6 +1048,7 @@ namespace CosmicShore.Gameplay
 
             aggressiveness = 100f;  // Multiplier to mitigate vanishing cross products that cause aimless drift
             float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, _maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
+            TurnHardIfBehind(Vector3.Dot(transform.forward, desiredDirection), ref combinedLocalCrossProduct, ref angle);
 
             if (VesselStatus.IsSingleStickControls)
             {
@@ -1095,6 +1096,24 @@ namespace CosmicShore.Gameplay
             bool holds = transformer && transformer.HoldsSpeedWhileDrifting;
             return CanCommitAt(VesselStatus.Speed, commitMinSpeed, holds,
                                holds ? transformer.CurrentThrottleTarget : 0f, commitUpToSpeedShare);
+        }
+
+        /// <summary>
+        /// A target BEHIND the nose is turned toward at full stick. The steering above scales with the cross product,
+        /// whose length is sin(error): it shrinks to nothing as the target goes dead astern, so a pilot whose target sat
+        /// 180 deg behind it wrote no turn at all and flew away from it in a straight line. Nothing else caught it: the
+        /// orbit detector sees a steady bearing and the turning-circle test only fires near the target. Measured in
+        /// Yash's Switchback race of 2026-10-26 (I4): an AI Dolphin missed gate 0's mouth, broke off, came out of the
+        /// break-off with its approach point 179-180 deg behind it, and flew 14,600 u away from the course for the
+        /// remaining 230 s. With <paramref name="forwardDot"/> under 0 (more than 90 deg off the nose) the turn axis is
+        /// the cross product's direction, or the hull's own up (a yaw) when the target is exactly astern, at full
+        /// deflection. Elsewhere nothing changes; past ~120 deg the old stick was already full. Pure, for the tests.
+        /// </summary>
+        public static void TurnHardIfBehind(float forwardDot, ref Vector3 localCross, ref float angleDegrees)
+        {
+            if (forwardDot >= 0f) return;
+            localCross = localCross.sqrMagnitude > 1e-8f ? localCross.normalized : Vector3.up;
+            angleDegrees = 90f;
         }
 
         /// <summary>

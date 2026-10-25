@@ -64,6 +64,34 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0.4f * 500f, GateRaceController.ApproachLeadFor(Lead, 500f, Commit, fromApproachPoint: false), 1e-4f);
         }
 
+        // AIPilot.TurnHardIfBehind: a target dead astern used to write no turn (the stick scales with sin(error)), and an
+        // AI Dolphin flew 14,600 u away from Switchback's course after a missed mouth (Yash's I4 race, 2026-10-26).
+        [Test]
+        public void TargetDeadAstern_TurnsAtFullStick()
+        {
+            Vector3 cross = Vector3.zero; float angle = 0f;   // exactly behind: no cross product at all
+            AIPilot.TurnHardIfBehind(-1f, ref cross, ref angle);
+            Assert.AreEqual(1f, Mathf.Clamp(angle * cross.y, -1f, 1f), 1e-4f, "a full yaw when the target is exactly astern");
+        }
+
+        [Test]
+        public void TargetNearlyAstern_TurnsFullTowardItsSide()
+        {
+            Vector3 cross = new(0.02f, -0.03f, 0f); float angle = 0.1f;   // ~178 deg off: the old stick was ~0.003
+            AIPilot.TurnHardIfBehind(-0.999f, ref cross, ref angle);
+            Assert.AreEqual(-1f, Mathf.Clamp(angle * cross.y, -1f, 1f), 1e-4f, "full stick, on the target's own side");
+        }
+
+        [Test]
+        public void TargetAhead_SteersAsBefore()
+        {
+            // Negative control: anything in front of the nose keeps the shipped stick exactly.
+            Vector3 cross = new(0.05f, 0.1f, 0f); float angle = 1.3f;
+            AIPilot.TurnHardIfBehind(0.99f, ref cross, ref angle);
+            Assert.AreEqual(new Vector3(0.05f, 0.1f, 0f), cross);
+            Assert.AreEqual(1.3f, angle, 1e-6f);
+        }
+
         [Test]
         public void ApproachLead_OnAShortLeg_KeepsTheLegCap()
         {
