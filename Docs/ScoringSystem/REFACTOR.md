@@ -120,7 +120,7 @@ Game feed: `GameEventFeed` resolves via injected `gameData`; the static
 `GameFeedAPI` hardcoded dict is replaced by an `SO_ColorSet` handed to it by
 `ThemeManager` at game start. (The feed has since been superseded by the
 config-driven toast system — `GameToastAPI` / `GameToastController` in
-`_Scripts/UI/GameToastSystem/` — which inherits the same single-source rule.) Vessel HUD: `SquirrelVesselHUDController` and
+`_Scripts/UI/GameToastSystem/` — which inherits the same single-source rule.) Vessel HUD: `SquirrelHUDController` and
 `SilhouetteController` `[Inject] GameDataSO` and resolve via `GetDomainUIColor`
 (silhouette danger → shared `EnvironmentColors.Danger`); their `DomainColorPaletteSO`
 fields (`domainColors`, `SilhouetteConfigSO.domainPalette`) were removed.

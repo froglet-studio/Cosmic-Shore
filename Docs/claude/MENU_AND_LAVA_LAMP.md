@@ -56,7 +56,7 @@ public interface IScreen
 - Persists return-to-screen/modal state via `PlayerPrefs` across scene reloads
 - Coming back from a match, re-opens the launch panel of the card it was launched from (`MenuReturnCard`, `ReturnToLaunchedCardCoroutine`), not HOME (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.2.1)
 - Notifies `IScreen` implementors on navigation transitions
-- Supports gamepad left/right trigger navigation: between screens with no modal open, and (rev 7) between the home hub's windows (Toy Box, Arcade, Arena, Mission, `hubWindowOrder`) while one of them is the top modal, stopping at the ends and skipping a window its hub entry refuses (`SlideHubWindow`, `CanOpenHubWindow`). `HubWindowNav` draws the strip and edge arrows (`Docs/MENU_REDESIGN_B.md` §47.2). `ModalStackChanged` fires after every stack change
+- Supports gamepad left/right trigger navigation: between screens with no modal open, and (rev 7) between the home hub's windows (Toy Box, Arcade, Arena, Voyage - the Mission window renamed in Rev 13 - `hubWindowOrder`) while one of them is the top modal, stopping at the ends and skipping a window its hub entry refuses (`SlideHubWindow`, `CanOpenHubWindow`). `HubWindowNav` draws the strip and edge arrows (`Docs/MENU_REDESIGN_B.md` §47.2). Since Rev 13 the top bar has four tabs (Hangar, Ark, Home, Port): the Profile screen has no tab (`navHiddenScreens`), LT / RT page past it, and it opens from the Home pilot or Y and closes with Back / B (`Docs/MENU_REDESIGN_B.md` §69). `ModalStackChanged` fires after every stack change
 - On a device tier that sets `PlatformProfileSO.DeactivateMenuWhileFlying` (MobileLow phones only), DEACTIVATES the active non-HOME screen roots and the nav bar once the enter-freestyle blend settles, and reactivates exactly those at the start of the exit (`HandleFreestyleSettled` / `RestoreMenuAfterFlying`). HOME stays active: the party-invite popup and `HomeScreen`'s profile subscription must keep listening in flight. Anything under a screen root that subscribes in `Start` and unsubscribes in `OnDisable` breaks under this - subscribe in `OnEnable`. Every other tier hides them by CanvasGroup alone, as before. `Docs/PLATFORM_UNIFICATION.md` §3.6
 
 **Adding a new screen**: Create a `MonoBehaviour` implementing `IScreen` if it needs enter/exit lifecycle. Add a `ScreenEntry` in the `ScreenSwitcher` inspector mapping. The switcher will discover and call the `IScreen` automatically.
@@ -219,7 +219,7 @@ Per-vessel HUD controllers (`IVesselHUDController` implementors):
 | Rhino | `RhinoHUDController` | `RhinoHUDView` |
 | Serpent | `SerpentHUDController` | `SerpentHUDView` |
 | Sparrow | `SparrowHUDController` | `SparrowHUDView` |
-| Dolphin | `DolphinVesselHUDController` | `DolphinVesselHUDView` |
+| Dolphin | `DolphinHUDController` | `DolphinVesselHUDView` |
 | Squirrel | — | `SquirrelHUDView` |
 
 HUD prefab variants at `_Prefabs/UI Elements/VesselHUD/` (e.g., `MantaHUDVariant.prefab`, `DolphinHUDVariant.prefab`).

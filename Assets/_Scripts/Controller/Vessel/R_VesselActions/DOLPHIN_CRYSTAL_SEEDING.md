@@ -179,7 +179,7 @@ placement from the binding, so nothing is hand-positioned.
 | Highlight shader | `_Graphics/Materials/Graphs/PrismDestructionSight.hlsl` |
 | Graph splice tool | `Tools/Shaders/wire_prism_destruction_sight.py` |
 | Shared blast geometry | `ImpactEffects/EffectsSO/Helpers/ExplosionHelper.cs` (`BlastVolume`, `TryResolveConicVolume`) |
-| HUD | `UI/View/DolphinVesselHUDView.cs`, `Data Containers/DolphinVesselHUDController.cs` |
+| HUD | `UI/View/DolphinVesselHUDView.cs`, `Data Containers/DolphinHUDController.cs` |
 | Assets | `_SO_Assets/VesselActions/Dolphin/DeployTeamCrystalAction.asset`, `EchoSightAction.asset` |
 
 ## 5. Tuning knobs

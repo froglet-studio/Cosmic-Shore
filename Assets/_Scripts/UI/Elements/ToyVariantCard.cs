@@ -231,7 +231,7 @@ namespace CosmicShore.UI
 
             if (_bloom)
             {
-                var styled = style ? style.bloomColor : new Color(0.96f, 0.96f, 1f, 0.3f);
+                var styled = style ? style.BloomColor : new Color(0.96f, 0.96f, 1f, 0.3f);
                 // Hue from the CTA, alpha from the style - the palette says "act on me" and the
                 // product says how bright. Lifted a little toward white so a saturated lime glow
                 // reads as light rather than as a green plate behind the card.
@@ -287,7 +287,7 @@ namespace CosmicShore.UI
         void EnsureBloom(AbilityLockupStyleSO style)
         {
             if (_bloom || _bloomMissing) return;
-            if (!style || !style.bloomSprite) { _bloomMissing = true; return; }
+            if (!style || !style.BloomSprite) { _bloomMissing = true; return; }
 
             var go = new GameObject("SelectionBloom", typeof(RectTransform), typeof(Image));
             var rect = (RectTransform)go.transform;
@@ -300,7 +300,7 @@ namespace CosmicShore.UI
             rect.offsetMax = new Vector2(bloomPadding, bloomPadding);
 
             _bloom = go.GetComponent<Image>();
-            _bloom.sprite = style.bloomSprite;
+            _bloom.sprite = style.BloomSprite;
             _bloom.type = Image.Type.Sliced;
             _bloom.raycastTarget = false;
             _bloom.color = new Color(1f, 1f, 1f, 0f);

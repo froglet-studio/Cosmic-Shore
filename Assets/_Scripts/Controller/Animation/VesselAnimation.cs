@@ -464,7 +464,7 @@ namespace CosmicShore.Gameplay
                 float target = normalized * shape.FullWeight;
                 _elementMorphTweens[i]?.Kill();
 
-                if (instant || _morphConfig.morphDuration <= 0f)
+                if (instant || _morphConfig.MorphDuration <= 0f)
                 {
                     _elementShapeWeights[i] = target;
                     shape.Renderer.SetBlendShapeWeight(shape.ShapeIndex, target);
@@ -475,8 +475,8 @@ namespace CosmicShore.Gameplay
                 _elementMorphTweens[i] = DOTween
                     .To(() => _elementShapeWeights[index],
                         weight => _elementShapeWeights[index] = weight,
-                        target, _morphConfig.morphDuration)
-                    .SetEase(_morphConfig.morphEase)
+                        target, _morphConfig.MorphDuration)
+                    .SetEase(_morphConfig.MorphEase)
                     .SetLink(shape.Renderer.gameObject);
             }
         }

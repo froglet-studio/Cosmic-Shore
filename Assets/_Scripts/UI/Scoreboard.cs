@@ -1012,9 +1012,9 @@ namespace CosmicShore.UI
         Sprite ResolveAvatarSpriteByName(string playerName)
         {
             // AI players - look up by name in AI profile list (struct, not nullable)
-            if (aiProfileList != null && aiProfileList.aiProfiles != null)
+            if (aiProfileList != null && aiProfileList.AiProfiles != null)
             {
-                foreach (var p in aiProfileList.aiProfiles)
+                foreach (var p in aiProfileList.AiProfiles)
                 {
                     if (p.Name == playerName)
                         return p.AvatarSprite;
@@ -1022,17 +1022,17 @@ namespace CosmicShore.UI
             }
 
             // Human players - look up by AvatarId via gameData.Players
-            if (profileIconList != null && profileIconList.profileIcons != null && gameData?.Players != null)
+            if (profileIconList != null && profileIconList.ProfileIcons != null && gameData?.Players != null)
             {
                 var player = gameData.Players.FirstOrDefault(pl => pl.Name == playerName);
                 if (player != null)
                 {
-                    foreach (var icon in profileIconList.profileIcons)
+                    foreach (var icon in profileIconList.ProfileIcons)
                     {
                         if (icon.Id == player.AvatarId) return icon.IconSprite;
                     }
-                    if (profileIconList.profileIcons.Count > 0)
-                        return profileIconList.profileIcons[0].IconSprite;
+                    if (profileIconList.ProfileIcons.Count > 0)
+                        return profileIconList.ProfileIcons[0].IconSprite;
                 }
             }
 

@@ -44,7 +44,7 @@ MonoBehaviour:
   - Rest on a pilot's picture in the friends panel to see where they are.
   - On Home, press Y to fly the cell yourself, and Y again to come back.
   - The Toy Box's shuffle re-rolls the world, your domain and your hull.
-  lattice: {fileID: 2100000, guid: 5ec732c8e557e34dafa8c292cb0aa10e, type: 2}
+  background: {fileID: 2100000, guid: a718859f761b339d50cf8da837ec360e, type: 2}
   stepGlyphs:
   - {fileID: 21300000, guid: 9a2e8aee608f36c409403a7aa8f7a795, type: 3}
   - {fileID: 21300000, guid: 27f1ab73885787d43aa87c63aa127eb9, type: 3}

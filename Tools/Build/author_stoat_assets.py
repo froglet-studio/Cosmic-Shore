@@ -42,7 +42,7 @@ WHAT IT MAKES (`R_VesselActions/STOAT.md`)
     stops being a Squirrel clone. Removed: the Squirrel FBX (its hit box re-authored as the Stoat's own
     StoatBody / StoatHitbox sized to the hull; two of its four jets re-homed onto the hull's hips without
     the Squirrel's sideways DriftJet, two dropped), SquirrelHUDVariant + its hint roots +
-    SquirrelVesselHUDController, SquirrelVesselTelemetry (-> DefaultVesselTelemetry), the DriftTrail /
+    SquirrelHUDController, SquirrelVesselTelemetry (-> DefaultVesselTelemetry), the DriftTrail /
     SquirrelTube executors, the SquirrelShard pool, ToggleAlignAction, the Squirrel-gated drift / proximity
     audio, the Squirrel drift switches, the skimmer's stale overrides and its Space scaling. Added: the
     Stoat's own HUD (StoatHUDVariant, copied once from the Thresher's: StoatHUDView + four icons + four
@@ -1572,7 +1572,7 @@ def check_stage6(files, prefab, errors):
     for guid, what in ((SQUIRREL_FBX_INSTANCE, "the Squirrel FBX instance"), (SQUIRREL_HUD_INSTANCE, "the SquirrelHUDVariant instance")):
         want(f"--- !u!1001 &{guid}\n" not in prefab, f"{what} is still nested in the prefab")
     for sguid, what in (("5db69771d02b4c24ca00998adf318137", "the Squirrel model"), ("c1572db06ad4244469ad3f25d86940b8", "SquirrelHUDVariant"),
-                        ("002a4e51f3b840e3b397dac7b84f1a9a", "SquirrelVesselHUDController"),
+                        ("002a4e51f3b840e3b397dac7b84f1a9a", "SquirrelHUDController"),
                         ("2b0d487de1554acfad93a158ddac3874", "SquirrelVesselTelemetry"),
                         ("32b33e1ed2484f50a02e78e895fd4809", "SquirrelTubeActionExecutor"), (SQUIRREL_CAMERA, "the Squirrel's camera settings"),
                         (SQUIRREL_SKIMMER_CONTAINER, "the Squirrel's skimmer container"), (SQUIRREL_VESSEL_CONTAINER, "the Squirrel's vessel container"),

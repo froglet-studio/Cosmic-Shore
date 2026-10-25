@@ -126,7 +126,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
             // A load recording that lands back in a non-game scene was abandoned by the player
             // (or failed and fell back) — close it out honestly instead of timing the menu.
-            if (!IsGameScene(scene.name))
+            // A return-to-menu recording is MEANT to land there (B36); it ends when the menu shows.
+            if (!IsGameScene(scene.name) && !LoadInsights.IsRecordingMenuReturn)
                 LoadInsights.AbortLoad($"landed in non-game scene '{scene.name}'");
         }
 
@@ -163,8 +164,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     // Pure clients never run SceneLoader.LaunchGame — the server-driven scene pull
                     // IS their load start. (Hosts already began at InvokeGameLaunch; BeginLoad is
                     // a no-op while recording is active.)
-                    if (!nm.IsServer && LoadInsights.Armed && !LoadInsights.IsRecording && IsGameScene(ev.SceneName))
+                    if (!nm.IsServer && LoadInsights.ShouldRecord && !LoadInsights.IsRecording && IsGameScene(ev.SceneName))
                         LoadInsights.BeginLoad($"Netcode scene load (client) — {ev.SceneName}");
+                    // The host sending this client back to the menu (B36: that load froze ~10 s and dropped Relay).
+                    // The host records its own from SceneLoader.ReturnToMainMenu.
+                    else if (!nm.IsServer && LoadInsights.ShouldRecord && ev.SceneName == "Menu_Main"
+                             && !LoadInsights.IsRecordingMenuReturn)
+                        LoadInsights.BeginLoad($"Return to menu (client) — {SceneManager.GetActiveScene().name} → {ev.SceneName}",
+                                               menuReturn: true);
                     LoadInsights.Mark($"Netcode scene load begins: {ev.SceneName}");
                     if (!nm.IsServer)
                     {

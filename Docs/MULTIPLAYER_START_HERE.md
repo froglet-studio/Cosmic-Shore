@@ -69,6 +69,31 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 | Amoebius online play: START ONLINE, + PLAYER 2, SETTINGS > ONLINE (UGS environment, UGS CHECK) | `Port/docs/LAUNCHER.md` § START ONLINE |
 | Netcode, transports, relay, UGS sign-in and Lobby, simulator, stats, faults (code; built in one place, `NetStack.cs`) | `Port/src/CosmicShore.Engine/Networking/Wire/` |
 
+### 3.1 What reaches Claude by itself, and the sweep that reads it
+
+Nobody has to press anything. After any Play in the editor that went online (a party, a match, solo against AI
+online), the Bug Hunt's after-Play send (`BugHuntAutoSend`) pushes whatever is new to `bugledger/<user>`:
+
+| What | Written by | Read with |
+|---|---|---|
+| The multiplayer test log, every player of the test (session marks: joins, `stall`, `relayDrop`, 429s, config hash) | `NetTestLogs`, `NetSessionRecorder` | `net_logs.py collect`, `show <n>` |
+| A Load Time Insights report of every load while online: each launch, and each return to the menu (`loadKind: "menuReturn"`) | `LoadInsights` (records unarmed while online since 2026-10-25) | `net_logs.py show <n>`, section "Loads"; RELAY RISK marks a frame over 9 s |
+| New red console errors | Bug Ledger | `bug_ledger.py` |
+
+**The multiplayer sweep** (a scheduled Claude session, once a day; it can also be run by hand from any session):
+
+1. `git fetch origin`, check out `Ys-bleeding-edge` and merge it; `python3 Tools/Build/net_logs.py collect`.
+2. For each test newer than the last sweep (`Docs/PartySystem/SWEEP_LOG.md`, newest first): `net_logs.py show <n>`.
+   Read the joins, `stall` and `relayDrop` marks, 429 counts, config-hash mismatches and the loads with RELAY RISK.
+   Match each to a bug in `Docs/PartySystem/BUGS.md` (B-number) or open a new one (next free number, checked on
+   every branch).
+3. Fix what can be fixed from the code, on `Ys-bleeding-edge` only, with the usual proof (§2: tests in Amoebius,
+   `unity_refcompile`, the gates, the checklist entry). Never push to `bleeding-edge`; never touch the live UGS project.
+4. What needs a person (a hand retest, an editor step, a design call): *suggest* a Froglet Tasks ticket on the page
+   (one per branch; nobody is named or assigned; an approver approves it). Never file one unapproved.
+5. Add a dated row to `Docs/PartySystem/SWEEP_LOG.md`: tests read, what was found, what was fixed (commits),
+   what was suggested. A sweep that found nothing new writes one line and changes nothing else.
+
 ## 4. Where things stand (2026-10-14, after PRs #1087-#1090)
 
 ### Amoebius (our engine): built and tested
@@ -221,7 +246,7 @@ Each step has the check that proves it done. Update the state in §4 when a step
 | U3 | Block 6: reconnection grace | A 15 s network pull mid-match hands the vessel back with no menu |
 | U4 | **What the first real logs showed** (Caleb ↔ ys1, two machines, 2026-10-16; `Docs/PartySystem/BUGS.md` B31-B33). **Fixed 2026-10-17, awaiting the hand retest:** the party session is read at most every 6 s, and since 2026-10-24 no two lobby reads go out in the same second (`LobbyReadPacer`; the first fix still drew 1,061 429s) (B31); leaving the shared presence lobby no longer deletes it under everyone, and a rejoin leaves `Reconnecting` (B32); a new editor Play no longer inherits the last Play's session (B33) | B31: no `rate-limited` lines in a 10-minute party (`net_logs.py` shows `429s 0`); B32: a guest's mid-match leave keeps the host `InParty`; B33: a second Play's log starts clean |
 | U5 | **Joins refused with `NetworkConfig mismatch`** (Caleb ↔ Gradi, 21-23 Oct; `Docs/PartySystem/BUGS.md` B35). **Fixed 2026-10-24, awaiting the hand retest:** 11 network prefabs carried a stale `GlobalObjectIdHash`; they now carry Unity's value and `check_network_prefab_hashes.py` fails on a stale one. Each test log records `netConfig` | Two machines: a direct join and an invite accept both land in the party; `net_logs.py show` prints no `NetworkConfig differs` |
-| U6 | **Relay drops the host** ("player timed out due to inactivity"; owner, 20 Oct; `Docs/PartySystem/BUGS.md` B36). **Root-caused 2026-10-25, not fixed:** Relay cuts a player silent for ~10 s, and a frozen frame sends nothing; the drops followed Bloomrush teardowns in a mode running at 3-5 fps on that machine. The test log now records each freeze (`stall`) and the freeze each drop followed (`relayDrop`) | Play Bloomrush solo to the end and back to the menu; `net_logs.py show` gives the longest freeze. A 10 s one before a drop sends the fix to the freezing frame (profile) |
+| U6 | **Relay drops the host** ("player timed out due to inactivity"; owner, 20 Oct; `Docs/PartySystem/BUGS.md` B36). **Root-caused 2026-10-25, not fixed:** Relay cuts a player silent for ~10 s, and a frozen frame sends nothing; the drops followed Bloomrush teardowns in a mode running at 3-5 fps on that machine. The test log now records each freeze (`stall`) and the freeze each drop followed (`relayDrop`) | Play Bloomrush solo to the end and back to the menu; `net_logs.py show` gives the longest freeze. A 10 s one before a drop sends the fix to the freezing frame (profile). Since 2026-10-25 every online load, the return to the menu included, sends its own Load Time Insights report (§3.1) |
 
 ## 7. How a session starts here
 
@@ -234,6 +259,6 @@ Each step has the check that proves it done. Update the state in §4 when a step
    14/14 expected - it does not run until it moves to the UGS stand-ins, §4). Never point a session's
    tests at the live UGS project: that is the owner's §5.3.
 5. Unity C#: follow §2's `/verify-unity` rule and add the checklist entry.
-5a. A test the owner ran: read its logs first (`python3 Tools/Build/net_logs.py collect`, then `show <n>`).
+5a. A test anyone ran: read its logs first (`python3 Tools/Build/net_logs.py collect`, then `show <n>`; §3.1).
     Ask for a pasted console only if no log reached a branch.
 6. Finish by updating §4 and §6 here.

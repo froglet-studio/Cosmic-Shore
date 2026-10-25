@@ -125,6 +125,30 @@ def rival_states(flight):
     return out
 
 
+def rival_kites(flight, rings):
+    """{rival index: summary} from `rivalKite` (HumanFlightRecorder.RecordKite: a crew vessel's kite, 2026-10-26), or {}
+    for a flight without it: the share of samples with a kite seated, and per ring index chased the hull's and the kite's
+    closest pass - a kite that came within the mouth and still did not thread says the miss is the navigator's."""
+    rows, tracks = flight.get("rivalKite") or [], flight.get("rivals") or []
+    if not rows:
+        return {}
+    n = len(rings)
+    acc = {}
+    for kr, rr in zip(rows, tracks):
+        for j in range(min(len(kr) // 4, len(rr) // 4)):
+            a = acc.setdefault(j, {"n": 0, "seated": 0, "closest": {}})
+            a["n"] += 1
+            hull, k = (rr[4 * j], rr[4 * j + 1], rr[4 * j + 2]), int(rr[4 * j + 3]) % n
+            c = a["closest"].setdefault(k, [1e9, 1e9])
+            c[0] = min(c[0], dist(hull, rings[k]))
+            if kr[4 * j + 3] >= 0:
+                a["seated"] += 1
+                c[1] = min(c[1], dist((kr[4 * j], kr[4 * j + 1], kr[4 * j + 2]), rings[k]))
+    return {j: {"seated": a["seated"] / max(1, a["n"]),
+                "closest": {k: (round(h), None if kt >= 1e9 else round(kt)) for k, (h, kt) in sorted(a["closest"].items())}}
+            for j, a in acc.items()}
+
+
 def load(paths, since=None, mode="Regatta"):
     out = []
     for p in paths:
@@ -142,12 +166,13 @@ def load(paths, since=None, mode="Regatta"):
         rings = [(r[xi], r[yi], r[zi]) for r in f["ringList"]]
         target = int(f.get("raceTarget") or 3 * len(rings))
         states = rival_states(f)
+        kites = rival_kites(f, rings)
         for j, (h, tr) in enumerate(rival_tracks(f)):
             a = analyse(tr, rings, target)
             if a:
                 a.update(hull=h.lower(), difficulty=f.get("rivalDifficulty") or "?", intensity=f.get("intensity"),
                          target=target, file=os.path.basename(p), date=str(f.get("date", ""))[:10],
-                         state=states.get(j))
+                         state=states.get(j), kite=kites.get(j))
                 out.append(a)
     return out
 
@@ -183,6 +208,12 @@ def report(races, hull=None):
             if st:
                 print(f"      breaking off {st['breakingOff']:.0%}, restricted {st['restricted']:.0%}, boosted {st['boosted']:.0%}; "
                       + "; ".join(f"{share:.0%} {label}" for share, label in st["statuses"][:3]))
+            kt = x.get("kite")
+            if kt:
+                stalled = {i for i, _ in x["stalls"]}
+                print(f"      kite seated {kt['seated']:.0%}; closest pass to each stalled ring (hull / kite, u): "
+                      + (", ".join(f"ring {i}: {kt['closest'][i][0]} / {kt['closest'][i][1]}" for i in sorted(stalled)
+                                   if i in kt["closest"]) or "no stalls"))
 
 
 def self_test():
@@ -210,6 +241,13 @@ def self_test():
     if not rs or rs["breakingOff"] != 0.25 or rs["boosted"] != 0.25 or rs["statuses"][0] != (0.5, "Rhino: cruising"):
         bad.append(f"rivalState summary {rs}")
     if rival_states({}) != {}: bad.append("an older flight without rivalState must read as none")
+    # rivalKite: one rival chasing ring 0 at (0,0,0); its hull passes 80 u off, its kite 10 u off; one sample unseated
+    kf = {"rivals": [[80, 0, 0, 0], [90, 0, 0, 0], [100, 0, 0, 0]],
+          "rivalKite": [[10, 0, 0, 2], [0, 0, 0, -1], [30, 0, 0, 2]]}
+    kt = rival_kites(kf, [(0, 0, 0), (1000, 0, 0)]).get(0)
+    if not kt or abs(kt["seated"] - 2 / 3) > 1e-6 or kt["closest"][0] != (80, 10):
+        bad.append(f"rivalKite summary {kt}")
+    if rival_kites({}, [(0, 0, 0)]) != {}: bad.append("an older flight without rivalKite must read as none")
     print("regatta_rival_report self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
     return 0 if not bad else 1
 

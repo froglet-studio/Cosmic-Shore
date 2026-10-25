@@ -48,8 +48,11 @@ namespace CosmicShore.Gameplay
         /// 2026-10-21: "distinguish them by giving their spindles a slight hue shift in your domain. do the same thing for
         /// other tamer classes like the angler"): its spindles lean <paramref name="lean"/> (0..1) of the way toward
         /// <paramref name="domain"/>'s prism hue (<see cref="Fauna.ApplyLeashMark"/>). Presentation only: the creature's
-        /// own domain, body prisms and diet are untouched. False (or a lean of 0) = no mark.
+        /// own domain, body prisms and diet are untouched. <paramref name="glow"/> lights the creature up (Garrett,
+        /// 2026-10-23: "fauna that get herded should light up when in herding mode"): its spindle colours are multiplied
+        /// by 1 + glow (HDR, so the bloom catches them); 0 = unlit. A holder whose glow changes calls
+        /// <see cref="Fauna.RefreshLeashMark"/> on each creature it holds. False (or no lean and no glow) = no mark.
         /// </summary>
-        bool TryGetLeashMark(out Domains domain, out float lean);
+        bool TryGetLeashMark(out Domains domain, out float lean, out float glow);
     }
 }

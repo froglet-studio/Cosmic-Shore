@@ -65,6 +65,59 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Flights record every crew vessel's kite (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `HumanFlightRecorder` writes `rivalKite` (per rival per sample: the kite's x, y, z and the crew's saved
+boosts; -1 when no kite is seated) and `kite` (the pilot's own), read from `KiteNavigator.TryGetKitePose` /
+`SavedBoosts`. `regatta_rival_report.py` prints each stalled ring's closest hull and kite pass.
+
+**Verified without the editor:** reference compile editor 0 errors in changed files, player-dev OK;
+`regatta_rival_report.py --self-test` OK. NOT run in Unity.
+
+**Verify in editor:**
+1. Play Wrasse Run with two AI crews to the end. The stored `flight_WrasseRun_Wrasse_*.json` has `rivalKite` rows with
+   real positions (boosts 0 or more) for each AI Wrasse, and `kite` rows for your own.
+2. A Regatta or Switchback flight has `rivalKite` rows of `0,0,0,-1` for its non-crew rivals (nothing breaks).
+
+### 🔴 The AI Thresher slings; the Wrasse's stale boost policy cleared (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `ThresherSlingAIPolicySO` (new) on `Thresher.prefab`'s AIPilot (`ThresherAIBoostPolicy.asset`), replacing
+the Squirrel's inherited `SkimRingAIPolicySO`, which bound nothing on a Thresher. At a corner 70°+ off and 120 u+ away it
+presses Plant (and Winch) through the replicated path, and lets go when its course faces the ring (15°) or after 3 s
+(THRESHERTIME.md §4). `ThresherActionSO.Control` getter added. `Wrasse.prefab`'s AIPilot names no policy now: the
+Sparrow's, inherited with the clone, pressed a Boost the Wrasse does not bind; the crew's boost is KiteNavigator's.
+Both mode generators check it.
+
+**Verified without the editor:** reference compile (editor config) 0 errors in changed files; `author_thresher_assets`,
+`author_thresher_time_assets`, `author_wrasse_assets`, `author_wrasse_run_assets` `--check` OK (the two new checks
+watched failing on the old references); network-prefab-hash check OK. NOT run: `ThresherSlingAIPolicyTests`.
+
+**Verify in editor:**
+1. Run `ThresherSlingAIPolicyTests` (EditMode): all pass.
+2. Thresher Time with AI Threshers, I2: at a sharp corner an AI plants (its ball stops, it swings round), leaves toward
+   the ring and threads it. The Third Eye readout says `ThresherAIBoostPolicy: planted: swinging round the ball` then
+   `waiting for a corner`. Every AI still finishes.
+3. No AI Thresher sits planted: each swing ends within about 3 s.
+4. In a party of two, the client sees the AI's ball stop and the AI swing, the same as the host (the presses replicate).
+5. Wrasse Run with AI crews: the Grouper still boosts on the straights (KiteNavigator), exactly as before.
+
+**First-pass tuning** (`ThresherAIBoostPolicy`): plant at 70°+ off, 120 u+ away, 1.5 s between slings, let go within
+15° or at 3 s, winch while planted. The AI learning sweep learns them from people's Thresher races once there are three
+complete ones in a mode.
+
+### 🔴 Skim Race flights carry their track (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `HumanFlightRecorder` copies Skim Race's `SpawnableWaypointTrack` into each Skim Race flight
+(`lane`, `rails`), as it copies Regatta's rails, so the Squirrel's skim is measured there by the AI learning sweep
+(`Docs/AI_SYSTEM/AUTO_LEARNING.md` §5). Nothing else in the recorder changed.
+
+**Verified without the editor:** reference compile (editor config) 0 errors in changed files. NOT run in Unity.
+
+**Verify in editor:**
+1. Play Skim Race as the Squirrel to the end. The console has no `record stored WITHOUT its rail` warning.
+2. The stored `flight_SkimRace_Squirrel_*.json` has a non-empty `lane` and `ownRail` 0 or more.
+3. Regatta flights are unchanged (they still carry their rails and course seed).
+
 ### 🔴 Switchback: the I1-I4 training ladder (hairpins, skim walls, danger prisms) (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed** (Yash, `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.3). The AI steering fix and the learned
@@ -135,6 +188,98 @@ back. The < > arrows are generator-authored, 32 x 56, level with the tiles and i
 ### 🟡 Leaving a match lands on its launch panel, not on HOME (`claude/wizardly-euler-3ccjg6`, #1529, 2026-10-25) — PARTIALLY CONFIRMED IN EDITOR
 
 **Confirmed in editor 2026-10-25 by Yash**, after #1529 merged to bleeding-edge: Main Menu from a match lands back on its launch panel and works as expected (step 1). Ticket T-20261025-4e15 (#1526) closed with that note. Steps 2-6 (the pause menu, Arena, Maelstrom / weekly challenge, a party of two, the boot and freestyle no-regression checks) were not recorded separately; tick each here when it is run, and turn the entry green once all six have passed.
+
+### 🔴 Goby & Pistol: the path map, teleport between perches, either way from any den (`cece/cool-shannon-aulgpe`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** after its rest at a perch the Pistol's view becomes the path map: each island glows by the opposing
+prisms the vortex ring could reach over it; pick a den and a direction (A / D or left stick, F / Y turns round) and dive
+(or tap a path's start) to ride it. Another den is a teleport: no rest, no den growth. The AI takes the richest island.
+`PistolPaths` (pure) + `GobyPistolDuo` (scores, choice, map camera, lit bars for the Pistol's camera only).
+
+**Verified without the editor:** refcompile player 0 errors, editor 0 in changed files; `PistolPaths` run headless in a
+harness (options, cursor, AI pick, band; a planted wrong expectation failed); logging, conditional compilation, crew
+vessels, orthographic views, `author_goby_assets --check`. New tests `Paths_*` compile, not run. `/verify-unity` did
+not run.
+
+**Verify in editor (Toybox, Goby and Pistol, fly the Pistol):**
+1. Ride to a perch: after the rest the view pulls back to all perches; islands with rival prisms near them glow lime and
+   thicker, empty ones thin blue; the highlight is white with a pointer along the way it rides.
+2. Touch first (Garrett, 2026-10-25: controls for 2D characters are mobile, then gamepad, then mouse/keyboard): on a
+   phone, drag spins the map, a tap on a path's bar picks it from the nearer den, a tap on the picked path rides it, Back
+   turns it round, a finger held still from the ride rides on. Pad: right stick spins, left stick picks the next path that
+   way on screen, A rides, Y turns round. Keyboard: Space rides, A / D pick, F turns round, Q / E spin. The head's
+   "ahead" waits. The spin stays as you left it at the next perch.
+3. Pick another den and dive: the Pistol appears there and rides; arriving at the next perch the den grows only by the
+   distance ridden since the teleport. Holding the dive through a perch rides on after half a second.
+4. The Goby's view never shows the bars.
+5. Fly the Goby: the AI Pistol heads for the island with the most rival prisms.
+6. Fly the Pistol (2026-10-25): the AI Goby lays its islands through clusters of rival prisms (the debug overlay's Goby
+   line reads `route N opposing`), not off in random directions; with nothing rival in reach it still cruises and
+   chases a rival or wanders.
+
+### 🔴 2D cameras fade the sky's Voronoi cell net (`cece/cool-shannon-aulgpe`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** `TwoDCameraSky` sets the global `_SkyCellOverlaySuppress` per camera; `HyperSeaSkybox.shader` fades
+its cell overlay by it. Registered: the Pistol's camera, the Wrasse's kite board, the Jacks' herding view.
+
+**Verified without the editor:** refcompile player 0 errors, editor 0 in changed files; `bake_static_skybox.py`
+re-baked the phone sky byte-identical (the global unset reads 0, so the sky is unchanged everywhere else);
+`CrewVesselTests.TwoDCameraSky_FadesTheCellNetOnlyInA2DCamera` compiles, not run. `/verify-unity` did not run.
+
+**Verify in editor:** fly the Pistol, the Wrasse's kite and the Jacks' herding view: no cell net in their views (full
+screen and small square), stars and nebulae still there; the Goby's own chase view, the Squirrel's and every other
+main view still show the cells.
+
+### 🔴 Goby & Pistol: the Pistol's model, each seat's own cards, the vortex ring's toroidal lens (`cece/cool-shannon-aulgpe`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** the Pistol is drawn as `Pistol.fbx` (a pistol-shrimp ship, `specs/pistol.py`) instead of a capsule:
+nose along its travel, 2.7 u long, domain on slot 0, the hammer claw shuts on a Snap, the tail curls on a dive. The
+Goby has its own HUD (`GobyHUDVariant`, `GobyPistolHUDView` / `GobyPistolHUDController`, written by
+`author_goby_hud.py`): each seat's four cards change icon, chip, press, veil, gauge and count on a swap, and the
+Pistol's controls moved onto the fleet's face buttons (A / Space dive, B / T ghost, X / Q Snap, Y / F back; G, E, the B
+key and LB still work; the aimed jump's key is J). The vortex ring is a `VortexRingLens` (a URP full-screen pass beside
+the black hole's) instead of a faceted torus.
+
+**Verified without the editor:** `unity_refcompile` player 0 errors, editor 0 in changed files;
+`verify_vortex_ring_lens.py` PASS (ring projection vs brute force on off-axis cameras, glslang compile, negative
+controls); `build.py specs/pistol.py --check` and the hovering-assembly gate; `author_goby_hud.py` and
+`author_goby_assets.py` `--check` and `--self-test`; logging, conditional compilation, crew vessels, orthographic views.
+New EditMode tests compile, not run (`GobyPistolTests.Pistol_HasItsOwnModel`, `Hud_EachSeatHasItsOwnCards`,
+`VortexRingLensTests`). `/verify-unity` did not run: no Unity CLI in the session.
+
+**Verify in editor (Toybox, Vessel Changer > Goby and Pistol):**
+1. `Pistol.fbx` imports with no errors; the shader `VortexRingLens` compiles on first open (the real URP library has
+   never compiled it).
+2. Fly the Pistol (swap with D-pad / arrows): the shrimp rides the hills nose first, tips with the slope, turns round
+   when heading back; Snap shuts the claw; holding dive curls the tail; ghosting shrinks it. Its domain colour shows.
+3. The ability row: flying the Goby shows Lock / perches / reach gauge / Dart with Y, X chips (Q, F on keyboard);
+   flying the Pistol shows Snap / den count / Ghost / dive with X, Y, B, A chips (Q, F, T, Space). Veils sweep on Dart,
+   Snap and Ghost; Mass flashes on each perch. No Squirrel drift card or boost fill anywhere.
+4. Snap a ring: it reads as a subtle clear-glass doughnut bending what is behind it, in the Pistol's view (off-axis
+   lens), the small square and the Goby's chase view; it swells in and fades out; nothing in front of it is bent.
+5. Watch the frame time while rings live (a second full-screen colour copy).
+
+### 🔴 Crystal pickups run once per machine: no ghost omni crystal on a watcher's screen (`cece/gallant-brown-2gs03c`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** `VesselImpactor.RouteCrystalPickup(isSpawned, isOwner)`. A spawned copy of another pilot's vessel
+no longer runs the omni/elemental crystal chain from its own physics contact. Only the owner's
+ServerRpc → ClientRpc runs it, once on every peer. Before this, a watcher ran the chain twice. For a Squirrel the
+second morph found no ring (0.15 s anti-spam) and faded a collider-less copy of the crystal (Garrett, host, watching
+Shombith's Squirrel). Record: `R_VesselActions/SQUIRREL_CRYSTAL_MORPH.md` §3.
+
+**Verified without the editor:** `unity_refcompile` player: OK; editor: 0 errors in changed files.
+`VesselCrystalPickupRouteTests` (3) compile; reverting `VesselImpactor` breaks them (negative control).
+
+**Verify in editor:**
+1. Host + one client (ParrelSync or two machines), both Squirrels. The client collects an omni crystal. On the
+   HOST's screen the crystal becomes the eight-prism ring and nothing is left behind. No
+   `[SquirrelCrystalMorph] no usable Shielded boost ring` warning appears.
+2. Reverse: the host collects; the client's screen shows the same clean morph.
+3. Each screen shows ONE ring per pickup, not two.
+4. Elemental crystal pickup by the client (any hull with a hull fusion): one fusion on the host's screen, not two.
+5. Offline freestyle: omni and elemental pickups still play as before.
+
+### 🔴 Leaving a match lands on its launch panel, not on HOME (`claude/wizardly-euler-3ccjg6`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** `MenuReturnCard` (`_Scripts/UI/`) records the card a match was launched from
 (`ArcadeGameConfigureModal.HandleAllPlayersReady`, every peer). The next Menu_Main load takes it, and
@@ -3424,6 +3569,37 @@ known AuthenticationServiceFacade errors). `/verify-unity` is not available in t
 2. Play with the network off, wait 10 s, turn it on: no `Could not create presence lobby` error; a
    `Presence lobby not rejoined - retrying` warning, then the online list fills.
 3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
+
+### 🔴 Party: B31 addendum - a lobby write's read is retried on a 429 (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B31, "First retest"): `LobbyPropertyWriter.WriteAsync` runs its read
+before the save under `UgsRequestPolicy`, so one 429 no longer drops the write (the 25 Oct "RepublishLocalIdentity
+error ... RateLimitExceeded"). `Refresh` / `Save` are internal delegates so tests drive them.
+**Verified without the editor:** `LobbyPropertyWriterRetryTests` (3, uses `DispatchProxy` for a stand-in `ISession`)
+plus `UgsRequestPolicyTests`, `OfflineSessionTests`, `PartyRefreshRecoveryTests` on Amoebius (111/111); the retry test
+fails with the old code; `unity_refcompile` player and editor. `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. The three `LobbyPropertyWriterRetryTests` pass in the Test Runner (if `DispatchProxy` is unavailable in the editor's
+   Mono, they fail at `DispatchProxy.Create`; say so in the next session).
+2. Start a party (host), then within 2 s rename yourself: no "[LobbyPropertyWriter] ... RateLimitExceeded" warning.
+
+### 🔴 Net: Load Time Insights records every online load by itself, the return to the menu included (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B36, `Docs/MULTIPLAYER_START_HERE.md` §3.1): `LoadInsights.ShouldRecord`
+is armed OR online (`OnlineProvider`, set in `MultiplayerSetup.Start`). `SceneLoader.ReturnToMainMenu` (host) and the
+client's Netcode Menu_Main pull start a `menuReturn` recording that ends when the menu's splash fades
+(`FadeFromSplashWhenSettled`). `BugHuntReports` collects `load_*.json` (kind `load`); `BugHuntAutoSend` sends new ones
+with no question. `net_logs.py show` lists a test's loads.
+**Verified without the editor:** `LoadInsightsAutoRecordTests` (6) and the full edit-mode suite on Amoebius (624/628;
+the 4 failures are the known SceneTransitionManager / AppManagerBootstrap ones); `net_logs.py --self-test`;
+`unity_refcompile` player, player-dev and editor; the Amoebius Release player build. `/verify-unity` is not available
+in the cloud session.
+**Verify in editor:**
+1. Offline, Record Insight Mode NOT armed: launch a game. No new report in the Load Time Insights tab (unchanged).
+2. Online (solo against AI online is enough), not armed: launch Bloomrush. A report appears when the arena completes.
+3. Fly 90 s, return to the menu. A second report appears once the menu shows; its trigger reads "Return to menu -
+   MinigameBloomrush → Menu_Main" and its longest frame is the teardown frame L14 waits for.
+4. Stop Play. The console line "[BugLedger] Sent to Claude automatically: ... 2 load timing report(s)" shows.
 
 ### 🔴 Net: B36 - a game freeze is recorded, and a Relay drop names the freeze it followed (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
@@ -14899,6 +15075,45 @@ Not opened in Unity (no editor in the session); `unity_refcompile --config edito
 - [ ] Open that card's details: `Level 3 → 7`, each number `now → next`, `Unlocks at Lv 5: ...` for a jolt the pick passes.
 - [ ] With no hand, open details: each held card heads `Lv N → N+1` with numbers beside the next level's and its next jolt; a card at 15 shows `Max level`.
 
+## Garrett's palette and attention pass (2026-10-24, `claude/new-session-76hnyc`)
+
+Not opened in Unity (no editor in the session; `/verify-unity` did not run). `unity_refcompile` player: 0 errors in
+project code; Amoebius builds. Rules: `Docs/UI_COLOR_RULES.md`. Check by hand:
+- [ ] Menu_Main, every hub window: no element colours anywhere (no yellow / blue / purple / teal labels, rims or bars);
+      no panel border light runs round a panel; the lattice backdrop holds still; nothing floats or spins idly.
+- [ ] Buttons: PLAY / JOIN / ACCEPT lime; UPGRADE / UNLOCK / CONVERT / SPEND gold; DELETE MY DATA fire; Spectate,
+      Invite, Main menu, Leave lobby neutral.
+- [ ] Weekly leaderboard: podium first lime, second white, third neutral; reward amounts lime; a blocked launch's
+      reason in fire.
+- [ ] Selection blue only on the picked tile / open tab: not on the playing track, your scoreboard row, the favourite
+      pilot ring, the Toybox daily card, the sign-in spinner. The Hangar pilot underline is blue on the picked pilot.
+- [ ] Friends orb: no orbiting dots, still ring, solid bonds; the online count still reads.
+- [ ] In a match: the ability row has no element colour and no lava motion; the scoreboard rows have plain hairline
+      borders, PLAY AGAIN lime, MAIN MENU neutral, the reward amount lime.
+- [ ] Settings > links open www.froglet.games pages.
+- [ ] The bar under the open top-nav tab (Home / Hangar / Ark) is a still sky-blue line, like the hub strip's.
+- [ ] Hub strip: Toy Box, Arcade, Arena and Mission all read in the same blue whichever is open; only the underline moves.
+- [ ] Home: the Toy Box, Arcade and Arena buttons look the same (no lime Arcade); Mission is dimmed while unavailable.
+- [ ] EditMode suite passes.
+
+## Sea lines behind every window (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session. Proven offline: `lattice_preview.py` compiles `UISeaLines.cginc` and the
+`SeaLines.shader` fragment with clang and asserts the dials; `author_ui_lattice.py --check / --self-test`; every
+window generator `--check`; `check_ui_colors.py`; `check_generated_assets.py`. Owed in the editor:
+- [ ] `CosmicShore/UI/SeaLines` compiles with no errors or warnings (Console, shader inspector).
+- [ ] Arcade, Arena, Mission, Toy Box, Configure, Profile, Leaderboard: slow lines in three depths, no seam, no flicker,
+      the world barely visible through the 95 % veil (`Docs/MENU_REDESIGN_B.md` §67).
+
+## Friends drawer docks into hub windows (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session; `/verify-unity` could not run. Proven offline: refcompile player config clean,
+Amoebius `CosmicShore.Live` builds, `author_menu_friends_drawer.py --check / --self-test`, the hub window generators
+`--check`. Owed in the editor (`Docs/MENU_REDESIGN_B.md` §68):
+- [ ] `FriendsDrawer` and `FriendsDrawerDock` compile; no missing-script warnings on the four hub windows.
+- [ ] Home / Hangar: the drawer takes the left side under the nav and moves nothing.
+- [ ] Arcade / Arena / Mission / Toy Box: the cards move right with the drawer (normal and maximised) and back on close.
+- [ ] A game's configure (e.g. Scurry), Settings, Leaderboard: the drawer closes and the orb hides until Back.
 ## 🔴 2026-10-24 — Quest track parallax sleeps while hidden (Menu_Main clipping cost) (unverified: no Unity CLI in the session)
 
 **Files:** `Assets/_Scripts/UI/Views/QuestTrackView.cs`. What ran instead of `/verify-unity`: `unity_refcompile`
@@ -15033,3 +15248,357 @@ instead of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors
 4. Headlong, any AI: steering as before (its switch is off).
 5. After a few races, `python3 Tools/Build/regatta_rival_report.py --dir <flights> --mode Switchback --since 2026-10-26`.
 
+## 🔴 2026-10-26 — Breakwater: the AI Sparrows fly the Regatta steering and fire the rocket at the station; any AI turns hard for a target behind it (unverified: no Unity CLI in the session)
+
+**Files:** `BreakwaterController.cs` (`AICommitFromApproachPoint` => true), `HoldBoostAIPolicySO.cs` ("clear the way"),
+`Resources/AIBoostPolicies/SparrowAIBoostPolicy_Breakwater.asset` (new), `SparrowAIBoostPolicy.asset` (the new fields,
+empty), `AIPilot.cs` (`TurnHardIfBehind`), `MinigameAbilityAITests.cs`, `SwitchbackAISteeringTests.cs`. What ran instead
+of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in changed files; `learn_drives_from_flights.py
+--check` (all modes) OK. `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.5, §6.
+
+1. Run `MinigameAbilityAITests` (5) and `SwitchbackAISteeringTests` (8): all pass.
+2. Breakwater, I1 and I4, AI Sparrows (Third Eye, Follow one): it lines up behind each station and threads the eye; it
+   no longer circles a station. A rocket leaves as it closes on a station (one per station) and blows the weave open.
+3. Breakwater with a human Sparrow: the rocket and guns work as before (the rule is the AI's only).
+4. Switchback I4: an AI that misses a mouth turns straight back instead of flying away.
+5. Any crystal mode or Dog Fight with AI Sparrows: their rocket still fires on its timer.
+
+
+## Rev 13: four tabs, profile from the pilot, Voyage, brighter sea (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session; `/verify-unity` could not run. Proven offline: refcompile player config clean,
+Amoebius Live builds, every menu generator `--check` / `--self-test`, `author_tandava_assets.py --check`, gates.
+Owed in the editor (`Docs/MENU_REDESIGN_B.md` §69):
+- [ ] `VoyageView`, `ProfileScreen`, `ScreenSwitcher`, `SeaLines.shader` compile with no errors.
+- [ ] The top bar shows Hangar, Ark, Home, Port; LT / RT never land on the Profile.
+- [ ] Home: clicking the pilot or pressing Y opens the Profile; Back / B returns Home (and closes the pilot picker first).
+- [ ] Profile: full-width pilot card with five stats, Favourites, Fly time by vessel, Audio Studio; no Episodes, no Quests.
+- [ ] Home's fourth hub reads VOYAGE, draws like the others and opens the Voyage window; the strip reads Voyage.
+- [ ] Voyage: Episode 1 bar and "n of 5", the five quest rows with CLAIM / PLAY working, Tandava's art and text,
+      SET SAIL opens the arena launch panel with Squirrel / Sparrow / Rhino; Episode 2 locked.
+- [ ] Launch Tandava solo and in a party (guest sees the card), with AI seats; leaving returns sensibly.
+- [ ] The sea: lines shade sky to periwinkle left to right, a deep-blue wash at the top, still slow.
+
+## Sea everywhere, lattice retired; LB/RB, music card, name opens profile (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session; `/verify-unity` could not run. Proven offline: refcompile player config clean,
+Amoebius Live builds, every touched generator `--check` / `--self-test`, `lattice_preview.py --check`, gates.
+Owed in the editor (`Docs/MENU_REDESIGN_B.md` §70):
+- [ ] No missing-material pink anywhere: the deleted Lattice materials are named by nothing.
+- [ ] The sea moves behind the splash, the sign-in scene, the cell-change loading screen, the in-game scoreboard, the
+      friends drawer and the Hangar; the finer panel sea inside the Ark recipe, leaderboard list, pilot card, avatar
+      preview and toy configure cards.
+- [ ] Toy Box cards and the Shuffle card carry no background pattern.
+- [ ] Hub windows: LB / RB slide between windows; LT / RT close the window and page the top bar.
+- [ ] The now-playing card hides while any window is open over Home.
+- [ ] Home: clicking the pilot's name opens the Profile; in the Profile, clicking the name opens the name editor.
+
+## Rev 17 J: the Voyage window, episodes apart from voyages (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session. Proven offline: generator `--check` / `--self-test`, refcompile, gates.
+Owed in the editor (`Docs/MENU_REDESIGN_B.md` §71):
+- [ ] Voyage window: "Episodes" left with Episode 1's panel (title, bar, "n / 5") and five quest cards on a track;
+      Episode 2 a locked bar under it; "Voyages" right with Tandava full bleed, Voyage 2 and 3 locked.
+- [ ] The quest cards fit at 224 wide: names, goal rows and PLAY QUEST do not overlap; CLAIM and PLAY work.
+- [ ] SET SAIL is focused first and opens the arena launch panel; the voyages column scrolls once there are more.
+- [ ] The friends drawer still pushes the window's header and body right.
+
+## Rev 18 A: game and toy cards (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session. Proven offline: refcompile, generator `--check` / `--self-test`, the drift harness.
+Owed in the editor (`Docs/MENU_REDESIGN_B.md` §72):
+- [ ] `CardDrift.shader` compiles; `KitCoverImage` compiles with the new `overscan` field.
+- [ ] `HullLit.shader` compiles. Arcade: art band on top, body under it with faint sea lines; the hull (lit, no plate,
+      §73) reads at 1080p and on a phone; the petals
+      read; the name fits; picks and star sit on the art; locked cards dim and show the lock.
+- [ ] Arena: art top half, pilots / domains, name, description, the seated hulls lit along the foot (all hulls shown).
+- [ ] Toy Box: portrait in its well, section / name / tagline under it.
+- [ ] The art drifts slowly and never shows an edge, including inside a party-pick or favourite refresh; toy portraits bob.
+- [ ] The Profiler shows no per-frame canvas rebuild from the cards.
+
+## 🔴 2026-10-25 — Prism carriers: no "Quaternion To Matrix conversion failed" on slice, destruction or shed (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/Utility/Effects/PrismSlice.cs` (`TryRequest`), `PrismCollisionBurst.cs`
+(`TryRequestDestruction`, `TryRequestShed`): each normalizes the rotation on entry, as `PrismDebris` (eb9b53b4) and
+`TryRequestSuction` already do. Bug Ledger E-16d65ffecb, E-4b42aa3244, E-a41c3e0381, E-12a3d17ed1. What ran instead
+of `/verify-unity`: `unity_refcompile` player RESULT OK.
+
+1. Any mode with a long-lived trail (Freestyle, a few minutes of flying): destroy prisms on it (ram, shoot, blade-slice)
+   and steal some (fly a vessel of another domain through it). No "Quaternion To Matrix conversion failed" in the Console.
+2. The deaths, slices and steal sheds look as before (no tilted or skewed debris).
+
+## 🔴 2026-10-23 — The Jacks: a spinning jack between the fish, no Rhino jets, the herd lights up (`cece/optimistic-rubin-t46tzs`) - NOT EDITOR-VERIFIED
+
+**Superseded 2026-10-24 by the net (the next entry): steps 1-3 (the jack) no longer apply; "no Rhino jets", the glow
+and the host + client glow (step 5) still do, with the glow now following the plane's pull.**
+
+Garrett: "fauna that get herded should light up when in herding mode. fauna that get called should light up when flying.
+the vestigal jets from the rhino should be gone. instead of a sword (1 axis) make it all three orthogonal axes (like a jack
+in the game of jacks) ... spin it about the (1,1,1) axis and place that axis ... the same axis that draws a line between the
+two fish." Design: `R_VesselActions/JACKS.md` §5. No editor or `unity` CLI in the session, so `/verify-unity` did not run:
+the C# compiles headless (`unity_refcompile` player: 0 errors in project code; editor: 0 errors in changed files),
+`author_jacks_assets.py --check` / `--self-test` pass (the check failed on the old prefab first: jets, one
+arm). `NetworkConfig.ProtocolVersion` is now 13: host and client must run the same build. Team task: T-20261023-2368.
+
+1. Toy Box > Vessel Changer → **Jacks**, flying. No Rhino jets, plumes or sword streaks anywhere on the hull. Between the
+   two fish a three-armed jack (the old sword's white material) spins about the line through the fish; its arm tips turn
+   round each fish. Roll, pitch, spread and close the fish: the jack's axis stays on the line between them, it grows as
+   they spread and shrinks as they close, and it never flips.
+2. Fly the jack through a trail and past crystals: it skims (the Jacks' skim feedback and crystal vacuum) on all three
+   arms, not only one.
+3. Switch to herding: the jack is drawn on the board halfway between the two jacks (at most 40 u an arm) and does NOT
+   skim or vacuum crystals there. The whole herd lights up (bloom) while you herd, and goes back to its marked colours
+   when you switch to flying.
+4. Flying: press A (call). The herd lights up while the call lasts (2.5 s), then goes dark.
+5. Host plus one client, the client on the Jacks: on both machines the herd lights up herding and during a call, and the
+   jack spins between the client's fish.
+6. Console clean; the `renderers` line does not jump when the herd lights up (a lit herd shares one material per mark).
+7. Look calls: `toyJackReach` 1, `toyJackMinArm` / `toyJackMaxArm` 4 / 40, `toyJackArmRadius` 1.2,
+   `toyJackSpinDegreesPerSecond` 120, `toyJackSkimsWhileHerding` off (all on `JacksBodies`), `herdGlow` 1.5 on
+   `JacksConfig`.
+
+## 🔴 2026-10-24 — The Jacks' net, the plane-pull call, the herding zoom, the omni crystal's worm (`cece/optimistic-rubin-t46tzs`) - NOT EDITOR-VERIFIED
+
+Garrett: "the spinning jack in the middle doesn't work. lets make it a net that opens wider with xdiff ..." Design:
+`R_VesselActions/JACKS.md` §1, §1.1. No editor or `unity` CLI in the session, so `/verify-unity` did not run: the C#
+compiles headless (`unity_refcompile` player: 0 errors in project code; editor: 0 errors in changed files),
+`author_jacks_assets.py --check` / `--self-test` pass (the check failed on the old assets first: the jack's arm colliders,
+no net or zoom fields, no worm effect), and the EditMode tests `JacksMathTests` (the net, the chase distance) and
+`LeashMarkTests` are written but not run. Protocol 13: host and client must run the same build. Team tasks: T-20261024-7999 (this test), T-20261024-c0b5 (button icons).
+
+1. Toy Box > Vessel Changer → **Jacks**, netting (flying). A net of strands hangs between the two fish, its bag trailing
+   behind. Push the sticks apart: the fish spread and the net opens wider and taller; together, it closes. It grows open
+   at take-off and shrinks away on landing (no pop). Nothing between the fish spins.
+2. Fly the net through a crystal (an omni crystal and a loose elemental one, e.g. a dropped heart): it is caught and rides
+   in the bag. The chase camera backs off so both fish and every netted crystal stay on screen, and comes home on landing.
+3. Switch to herding (D-pad): the net goes away and the crystals stay where they were. Run a jack onto each: it collects
+   it (the elemental one's level rises; the omni crystal counts and respawns elsewhere).
+4. Collecting an omni crystal (with the hull or a jack) bears a worm colony in YOUR domain behind the hull; it eats prisms
+   and creatures.
+5. Fly the net through a trail and a plant: the prisms it touches are destroyed (or shed shields) as if the hull had hit
+   them. Fly it through creatures: a rival-domain creature turns your colour (body prisms too), its plain body prisms
+   shield, and it joins the herd (it glows). Your own creatures shield and join.
+6. Netting, press B (or T): the herd stops being drawn to the plane and stops glowing; again: drawn and glowing. Herding,
+   B / T / the call button (top right, under the zoom button) pulls the herd to the point between the jacks (cooldown).
+7. Herding: the view is closer than before and follows the jacks. Y / F / the zoom button (top right) eases out to the
+   whole cell and back; the thumbs still drive the jacks while zoomed out.
+8. Two players, the rival flies into your net: they lose a crystal per element (petals), knocked into your net.
+9. Host plus one client on the Jacks: the host sees the client's net, the herd steals / shields / glows the same way, and
+   the omni crystal the client's net let go of sits in the same place on both machines.
+10. Look calls (numbers on `JacksConfig` and `JacksBodies`): `netSpread` 30, `netMinHeight` / `netMaxHeight` 6 / 36,
+    `netDepth` 26, `netRivalTake` 0.1, `herdViewZoom` 0.75, `zoomButtonSize` 0.09, `netStrandRadius` 0.3; icons for the
+    two buttons (`zoomButtonIcon`, `callButtonIcon`) are empty.
+
+### Round 2 (2026-10-24, same branch): Garrett's playtest notes
+
+"there are some angles where the net looses visibility. it also seem to bend the opposite way from expected when flying
+up/down or left/right. i had a hard time collecting crystals one i switched to the herding mode. we can remove the pip from
+both modes. at the sharks fly apart in herding mode the camera should zoom out so they never collide with the screen
+perimeter." Headless compile OK (player and editor, 0 errors in changed files); `author_jacks_assets.py --check` failed on
+the round-1 config first, then passed.
+
+11. Orbit the netting jacks with the camera (roll, loop): the net is solid from every side, in your domain's colour.
+12. Climb, dive and turn hard while netting: the bag swings out behind the way the net is travelling (below in a climb,
+    outside in a turn) and settles straight back when you fly level.
+13. Land with crystals in the net, then run a jack over each as the top-down view shows it: every one is collected, even
+    one the net left well above or below the board.
+14. No small view in either mode: herding is the top-down view alone, netting the chase view alone. The D-pad, arrows or
+    two-finger swipe still switch.
+15. Herding, run the two jacks apart toward opposite edges: the view zooms out so neither reaches the edge, and back in as
+    they come together.
+
+### Round 3 (2026-10-25, same branch)
+
+Garrett: "lets allow them to net the omicrystal and move it around. lets have prisms move and be dragged by the net. they
+should only be destroyed when they collide with other prisms. lets remove the rhino speed buff at full speed and straight."
+Headless compile OK (player and editor, 0 errors in changed files); `author_jacks_assets.py --check` failed first (the
+ramp boost still bound, its registry on the hull, no `netPrismCap`), then passed.
+
+16. Netting, fly the hull straight into the omni crystal: it is NOT collected; it rides in the net. Land, run a jack over
+    it: collected. (A Squirrel or any other hull still collects it on touch.)
+17. Netting through a trail: its prisms ride in the net instead of exploding, and stay where they were when you land.
+18. Drag a netted prism into a standing trail or another prism: both explode (debris along the hit). Prisms riding side
+    by side in the net never break each other.
+19. Fly straight at full speed: no ramp boost (no surge, no boost sound); the AI Jacks never ramps either.
+
+### Round 4 (2026-10-25, same branch)
+
+Garrett: "if either jack hits the omnicrystal it should still produce the serpent, but if it nets the omnicrystal it should
+move it. same with the elemental crystals the hulls can collect in either mode, but the net allows them to be relocated."
+Headless compile OK (player and editor, 0 errors in changed files); `author_jacks_assets.py --check` failed first (no
+`jackNetCrystalReach`), then passed.
+
+20. Netting, steer one FISH onto the omni crystal: it is collected and a worm colony is born in your domain behind the hull.
+    Steer the crystal between the fish instead: it rides in the net, and the worm is not born.
+21. Same with an elemental crystal: a fish that hits it collects it (its level rises); between the fish, the net carries it.
+22. Herding, a jack over a crystal still collects it (round 2), the omni one bearing the worm.
+
+### Round 5 (2026-10-25, same branch)
+
+Garrett: "i don't see prism moving i just see them getting destroy. when prisms of the same domain are netted then they
+should be briefly lit not moved or destroyed. ... when i maintain a direction up and down it does the opposite. when i
+change directions left and right it does not respond at all ... it should work whether changing or maintaining directions.
+The herding view had some strange empty icons in the upper right." Headless compile OK (player and editor, 0 errors in
+changed files); `author_jacks_assets.py --check` failed first (no swing or lit fields), then passed. New EditMode tests:
+`JacksMathTests.Net_SwingsOutAgainstTheTurn_InEveryDirection_WhileTheTurnLasts`, `Net_ALeaningBag_HoldsWhatHangsInIt`.
+
+23. Netting through a RIVAL trail: its prisms ride in the net (no explosion at the mouth) and break only when you drag them
+    into another prism. Through YOUR trail (an older stretch, not the one coming out of the hull): its prisms light up
+    briefly as the net crosses them and stay where they are.
+24. Hold the stick to pitch up: the bag swings down and stays down while the turn lasts; pitch down: up. Yaw left: it swings
+    right, yaw right: left; any diagonal swings out against that diagonal. Fly level: it settles straight back.
+25. Herding: no empty squares in the upper right (they appear only once icons are set on JacksConfig).
+
+### Round 6, polish (2026-10-25, same branch)
+
+Garrett: "remove the rhino skimmer effect and update the map text. bring this vessel as close to polish as you can".
+Headless compile OK; `author_jacks_assets.py --check` failed first (the Rhino skimmer container, the skimmer's Space
+scale, the pre-net map words), then passed; `/element-ability-table Jacks` now reads 4/4 level-5 gates live.
+
+26. Fly the Jacks into a rival hull and through a rival trail, both modes: no sword strike, no sword steal, no shield
+    break from the hull (the hidden skimmer carries no effects; only the net and the herd act).
+27. Herding, park the hull's invisible spot on a crystal or a trail: nothing is collected or rammed there (the jacks
+    collect; the hull touches nothing).
+28. The ability cards: the Time card lights while the herding call pulls the herd (cooldown veil after), and while
+    netting it is lit whenever the plane's pull is on (B toggles it, no veil). The card texts name B for the call and A
+    for the Time-5 decoy.
+
+### Round 7 (2026-10-25, same branch)
+
+Garrett: "the net did not interact with any prisms. it should be dragging them just like the crystals." Cause: the net
+skipped every `HealthPrism`, i.e. every plant's prism, and a freestyle cell's prisms are mostly plants'. Now a plant prism
+the net takes is plucked (freed as cell mass) and dragged. Headless compile OK (player, 0 errors in project code).
+
+29. Netting through a plant of ANOTHER domain: its prisms come away and ride in the net; the plant is left with fewer.
+    Drag them into another prism: both break. (A plant of YOUR domain lights up instead, step 23; in a cell whose plants
+    are your colour, use a rival's plant or trail.)
+30. A big plant fills the net (48 prisms): after that, prisms crossing the mouth break against the ones it carries.
+
+### Round 8 (2026-10-25, same branch): the decoy dash and the second decoy
+
+Garrett: "lets make the time ability to fly both jacks over to the decoy quickly when a trigger is pulled in herding mode.
+Lets have the upgrade give the player a second decoy controlled by the second trigger (in placement and which one you fly
+to)." Headless compile OK (player and editor, 0 errors in changed files); `author_jacks_assets.py --check` failed first
+(Input 6 still bound, no dash fields, the old Time card words), then passed. The decoy's second slot replicates
+(`JacksBodies.n_decoyB`, protocol 13 still).
+
+31. Herding, lift a thumb (or press a bumper) to leave the decoy, run the jacks away, pull EITHER trigger: both jacks dash
+    to the decoy, quickly, and land either side of it; the thumbs take them back after. On a phone, tap the decoy.
+32. At Time 5: lift the screen-LEFT jack (left bumper) and the screen-RIGHT jack (right bumper) in different places: two
+    decoys. The left trigger dashes to the left one, the right trigger to the right one; a trigger whose decoy is not
+    down does nothing. Below Time 4 the second decoy goes away.
+33. Netting: the jump (the trigger or both thumbs lifted) goes to the decoy placed last, and spends it. A (Button1)
+    does nothing now (the flying decoy is retired).
+34. The Time card lights while the jacks dash; its text reads Decoy Dash / Second Decoy.
+
+### Round 9 (2026-10-25, same branch)
+
+Garrett: "the net still did not interact with any prisms. i could not longer place a decoy or call the fauna to the jacks in
+herding mode. there should always be at least one decoy available. the second decoy unlocks with upgrading time."
+Causes: the net skipped `Prism.IsEnvironmentOwned` prisms, which are every plant's (it means "no player name"); round 8
+moved decoy placement off the triggers onto the bumpers alone, and the herding call and zoom had no on-screen button since
+round 5. Headless compile OK (player and editor, 0 errors in changed files); `author_jacks_assets.py --check` failed first
+(no `decoyPlaceHold`, the round-8 card words), then passed.
+
+35. Netting through a plant of another domain: its prisms come away and ride in the net (round 7's step 29, now for real).
+36. Land: a decoy is already down between the jacks. Tap a trigger: both dash to it. Hold a trigger: the decoy moves to
+    the jack on that side. A bumper or a lifted thumb lays it too. The netting jump no longer spends it.
+37. At Time 5: hold the left trigger and the right trigger in different places: two decoys; each trigger's tap dashes to
+    its own.
+38. Herding, A, B, T or Space (or the call button, a dot in a ring, top right under the zoom's corner brackets) calls the
+    herd between the jacks.
+
+### Round 10 (2026-10-25, same branch)
+
+Garrett: "things are getting messy. the gamepad ui still has button place in the top right corner for zooming out and
+something else. on PC the gamepad view should only every have the 5 standard ability icons and any additional active
+controls should be to the left of those (like the squirrel's drift) and it should be labeled with a glyph. this is always
+true for vessels. mass should be the herd calling ability in herding mode and the plane attraction toggle in net mode.
+Space be the zoomed out view in herding mode and netting mode being zoomed out allows an even bigger net. in herding mode
+the triggers should drop decoys. in netting mode the triggers should fast travel to the decoy. netting mode is still having
+no interaction with prisms when it should be dragging them like the crystals."
+The prism cause, found this round: the Toybox boots into Garland, whose bough is ~4,300 owner-less plain `SpawnablePrism`s
+(`SpawnableGarland`, laid with no player name) and only 13 plants; the net still skipped every owner-less PLAIN prism as "a
+mode's track", so it touched nothing. Now it skips none (the track is super-shielded, which it never moves). Steps 31-34
+and 36-38 above are replaced by these. Headless compile OK (`unity_refcompile`, 80 assemblies, 0 errors in project code);
+`author_jacks_assets.py --check` and `--self-test` OK; `check_hangar_ability_kinds.py` was red before this round (Jacks'
+Danger Share and Breeding, four Starling rows) and is now red on Danger Share and the Starling rows only.
+
+39. Netting through Garland's bough (the Toybox's boot cell): the prisms the net crosses come away and ride in it; one that
+    runs into another prism breaks both. Your own domain's are lit for a moment, not moved.
+40. Herding: nothing is drawn top right - no zoom, no call button. The HUD shows the five cards (Charge, Mass "The Call",
+    Space "Wide", Time "Decoys", the omni crystal), each chip naming its control: B / T, Y / F, the two triggers.
+41. Herding: B or T (or tapping the Mass card) calls the herd between the jacks; the Mass card lights, then its veil
+    drains over the cooldown. Netting: B or T toggles the plane's pull; the Mass card is lit while it is on.
+42. Herding: Y or F (or the Space card) eases out to the whole cell and back; the Space card is lit while out. Netting:
+    the same press opens the net about 1.8 times bigger (wide, tall and deep) without a pop, and the chase camera pulls
+    back to hold it; press again and it eases back.
+43. Herding: pull the left trigger (L shift) - the decoy is laid at the screen-left jack; the right trigger at the
+    screen-right jack (one decoy: it moves). A mouse let go lays nothing; on a phone a lifted thumb still lays it.
+44. Netting: pull a trigger - the hull teleports to the decoy and keeps its heading; the decoy stays. The Time card flashes.
+45. At Time 5: each trigger lays its own decoy while herding and teleports to its own while netting.
+46. A second machine sees the bigger net when the owner presses Y (the Wide flag replicates).
+
+### Round 11 (2026-10-25, same branch)
+
+Garrett: "great improvements. don't teleport, move quickly, so the player has a sense of where they travelled to. remove
+the space ability in net mode." The netting trigger now flies the hull to the decoy (`travelSpeed` 900 u/s, 0.35-1.2 s,
+the Angler's velocity displacement); Wide is herding only and round 10's bigger net (`wideNetScale`, its replicated flag)
+is retired. Steps 42 (netting half), 44 and 46 above are replaced by these. Headless compile and the generator's checks
+as below in the commit.
+
+47. Netting: pull a trigger - the hull flies fast to the decoy, visibly crossing the space between, keeping its heading,
+    and stops close to the decoy; the Time card is lit while it flies. A far decoy takes about a second, a near one about
+    a third of a second. Netted crystals ride along.
+48. Netting: Y or F (or the Space card) does nothing - the net keeps its size, the camera does not move.
+49. Herding: Y or F still eases out to the whole cell and back; the Space card is lit only then.
+
+### Round 12 (2026-10-25, same branch)
+
+Garrett: "Let's have the decoy look like a third jack." Each decoy is drawn as a copy of the jack model
+(`JacksBodies.UpdateDecoys`). Headless compile OK; `author_jacks_assets.py --check` OK.
+
+50. Land: a third jack swims in place between the two (the always-there decoy), the same model, colour and size, with a
+    jack's dot and the decoy's ring round it in the herding view.
+51. Pull a trigger to re-lay it: it shrinks away where it was and grows in at the jack on that side - no pop. At Time 5
+    the second decoy is a fourth jack.
+52. Take off and net: the decoy jacks stay on the board, drawn at the flying size; fly into one - nothing is hit (no
+    collider). A second machine sees the same decoy jacks.
+
+### Round 13 (2026-10-25, same branch)
+
+Garrett: "when the fish is laid it should match the orientation of the laid fish. as that fish reorients so should the
+decoy. when switching from herding to netting, the new orientation should be the average orientation of the two fish. same
+for location. when prisms are stuck in the net their orientation should match the expectation of being stuck in the net."
+Headless compile OK; `author_jacks_assets.py --check` / `--self-test` OK; the new `JacksMathTests` case
+(`Net_ASurfacePoint_LiesAcrossTheMesh_FacingTheMouth`) checked against a numeric replica, not run in NUnit.
+
+53. Herding: lay a decoy with the left trigger, then steer the left jack round in circles: the decoy jack turns with it,
+    nose for nose. The decoy laid between the jacks on landing faces their average heading.
+54. Point both jacks the same way and take off: the hull leaves between them facing that way, not the board's old forward.
+55. Net a run of bough prisms: each sinks to the back of the net and turns to lie flat against the mesh, long side along
+    the line between the fish, no snap. A second machine sees the decoys face the same way.
+
+## 🔴 2026-10-26 — Breakwater: the AI Sparrows fly the Regatta steering and fire the rocket at the station; any AI turns hard for a target behind it (unverified: no Unity CLI in the session)
+
+**Files:** `BreakwaterController.cs` (`AICommitFromApproachPoint` => true), `HoldBoostAIPolicySO.cs` ("clear the way"),
+`Resources/AIBoostPolicies/SparrowAIBoostPolicy_Breakwater.asset` (new), `SparrowAIBoostPolicy.asset` (the new fields,
+empty), `AIPilot.cs` (`TurnHardIfBehind`), `MinigameAbilityAITests.cs`, `SwitchbackAISteeringTests.cs`. What ran instead
+of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in changed files; `learn_drives_from_flights.py
+--check` (all modes) OK. `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.5, §6.
+
+1. Run `MinigameAbilityAITests` (5) and `SwitchbackAISteeringTests` (8): all pass.
+2. Breakwater, I1 and I4, AI Sparrows (Third Eye, Follow one): it lines up behind each station and threads the eye; it
+   no longer circles a station. A rocket leaves as it closes on a station (one per station) and blows the weave open.
+3. Breakwater with a human Sparrow: the rocket and guns work as before (the rule is the AI's only).
+4. Switchback I4: an AI that misses a mouth turns straight back instead of flying away.
+5. Any crystal mode or Dog Fight with AI Sparrows: their rocket still fires on its timer.
+
+## 🔴 2026-10-26 — Squirrel prism pool refills fast enough (unverified: no Unity editor in the session)
+
+**File:** `Assets/_Prefabs/Environment/PrismManagers.prefab` (Squirrel Prism pool: `bufferSizeTarget` 240,
+`maxInstantiateRate` 160, `maxAddsPerFrame` 8). Measured in Amoebius: pool misses 7.5 KB/frame -> 0.
+
+1. Release, Arcade > Thresher Time (or Regatta with Squirrels), play past the auto-capture.
+2. In the capture: no `PoolMiss.Squirrel Prism` row (was 1.71 ms/frame in Thresher Time), `PoolRefill.Squirrel Prism`
+   present; trails look the same.

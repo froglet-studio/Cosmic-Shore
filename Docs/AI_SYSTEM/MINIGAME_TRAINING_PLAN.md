@@ -21,8 +21,8 @@
 3. **People play it over and over**, with AI rivals of the same hull on the grid. Every race is recorded automatically
    (`HumanFlightRecorder`, every mode). Since 2026-10-25 the record includes each AI's state (`rivalState`), so a
    recording shows how the person flies and why each AI did what it did.
-4. **The learner turns the races into AI numbers for that minigame.** Run
-   `python3 Tools/Build/learn_drives_from_flights.py --mode <Mode> [--write]`. It writes `<asset>_<Mode>` variants that
+4. **The learner turns the races into AI numbers for that minigame, on its own** (the hourly AI learning sweep,
+   `AUTO_LEARNING.md`, runs `learn_drives_from_flights.py --mode <Mode> --write`; nobody runs it by hand). It writes `<asset>_<Mode>` variants that
    only that mode loads (`AIBoostPolicySO.ForMode`), and reports flights per intensity. It needs three finished races
    of a hull before it writes. The Squirrel (Skim Race, `learn_from_flights.py`, per-intensity `SkimRaceAIConfig_I1-I4`)
    and the Stoat are the worked examples.
@@ -131,6 +131,22 @@ times a race through the AI nose lag (`Arcade/REGATTA.md` §6.4.1), so it is sti
 learned numbers mix I1 and I2; the Squirrel has one config per intensity, the Dolphin's drive does not yet. More races
 per intensity come next; the I1-I4 ladder (§3.3, decision 2) is built.
 
+### 3.5 The first races after the fix (Yash, 2026-10-26, 01:40-02:03, before the new ladder)
+
+`regatta_rival_report.py --mode Switchback`, the AI Dolphin rivals (Medium) in the six races flown after the fix
+landed (I1, I2, I4 on the old ladder):
+
+| | before the fix (four I2 races) | after (I2 and I4) |
+|---|---|---|
+| Rings threaded, of 20 | 0-2 | 11-20 (one finished an I4 race) |
+| Boosted | 5-16% of the race | 22-33% |
+
+**One AI still flew away**, in the 02:03 I4 race: it missed gate 0's 4.3 u mouth, broke off, and came out of the
+break-off with its target exactly behind it (179-180 deg). `AIPilot`'s stick scales with sin(error), which is zero
+dead astern, so it wrote no turn and flew 14,600 u away for the rest of the race. **Fixed for every AI in every mode:**
+`AIPilot.TurnHardIfBehind` turns at full stick toward any target more than 90 deg off the nose (the old stick was already
+full past about 120 deg; only the dead zone near 180 deg changes). Tests: `SwitchbackAISteeringTests.Target*`.
+
 ## 4. The end state: Regatta rebuilt from the trained vessels
 
 Once two to four vessels race at their best in their own minigames:
@@ -143,6 +159,39 @@ Once two to four vessels race at their best in their own minigames:
 - What Regatta already has stays: the race lines per hull (learned from people), the per-AI recording, and the AI
   fixes. Its AI numbers become the trained minigame numbers.
 
+## 6. The AIs use their abilities to win their own races (Yash, 2026-10-26)
+
+> "The sparrow can use its shooting ability to clear up space in front of you for it to race down the track. This way
+> we have to train the sparrow AIs. And also other AIs should be able to use their ability in order to gain advantage
+> on racing, in their own minigame races."
+
+**How an ability becomes a racing decision.** Every AI hull lists abilities on its `AIPilot` (`abilities`: start, hold
+`Duration`, rest `Cooldown`, forever), a blind timer. A hull's drive (`AIBoostPolicySO`, picked per mode by
+`ForMode`) can take an ability off that timer (`AIBoostDriver.Drives`) and fire it when it helps. That is the
+pattern: one drive per hull per minigame, its numbers learned from people's races (§1).
+
+| Vessel / minigame | The ability that wins the race | AI today |
+|---|---|---|
+| **Sparrow / Breakwater** | the **rocket** (SkyBurst): a 50 u hole in the station's danger weave around the 18 u eye; the **guns** saw the weave and refill the bay | **2026-10-26:** the rocket is fired at the station, once per station, nose on it, inside its 229 u reach, paid for (`HoldBoostAIPolicySO` "clear the way", on only in `SparrowAIBoostPolicy_Breakwater`). Guns: the timer, 79% of the race along the nose (Yash held them 95-100% in his 10-20 races) |
+| Dolphin / Switchback | drift + charge discharge; the crystal blast on rivals | the charge drive, learned (§3.4); blast through the crystal detour |
+| Squirrel / Skim Race | skimming the rails | trained (`learn_from_flights.py`) |
+| Stoat / Warpline | the field pair's warp | on hold for Garrett's configuration |
+| Rhino / Headlong | the ramp; ramming costs it nothing | the ramp drive (Regatta-tuned) |
+| Manta / Redline | Soar | the Soar executor's bands |
+| Urchin / Skein | riding its own rail | `UrchinAutopilotDriver` |
+| Scarab / Scramble, Tollway | Snap Dash | dashes on straights (`SnapDashAIPolicySO`) |
+
+**Breakwater's steering, first.** The AI Sparrows threaded about 1 station a minute in Yash's five races, circling 56%
+of the race: the 280 u approach point lay outside the 240 u commit radius, Switchback's defect. `BreakwaterController`
+now flies the Regatta steering too. Offline on the five courses (`switchback_dolphin_sim.py`, `SPARROW_BREAKWATER`):
+stuck on three of five and through the danger weave at 12-13 of 15 stations on the other two before; every station
+threaded through the eye after.
+
+**What the next races teach.** Tonight's Sparrow races (shooting the stations open) had not reached the ledger when
+this was written. When they do: the rocket's range and aim, and when the guns run, are measured from them the way the
+Dolphin's discharge was (`buttonEvents`: input 2 is the rocket, input 1 the guns, input 7 the boost), and written into
+the Breakwater variant. The same loop then gives each vessel above its own ability rule in its own minigame.
+
 ## 5. What is done, what is next
 
 - **Done (2026-10-26):** the learner reads any mode (`--mode`). The plan is recorded here. Then, on Yash's yes, all
@@ -152,6 +201,6 @@ Once two to four vessels race at their best in their own minigames:
   3. The first Switchback Dolphin numbers are written (§3.4). They came from I1 and I2 on the old ladder, so the next
      races re-learn them.
   None of it has been run in Unity (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
-- **Next:** Yash plays Switchback at each intensity, repeatedly. Each batch: `learn_drives_from_flights.py --mode
-  Switchback --write`, check the AI's pace in the recordings (`regatta_rival_report.py --mode Switchback`), adjust.
+- **Next:** Yash plays Switchback at each intensity, repeatedly. Nothing else: every race is relearned from within the
+  hour by the AI learning sweep (`AUTO_LEARNING.md`), which also checks the AI's pace and fixes what numbers cannot.
   Then the next vessel.

@@ -13,6 +13,7 @@ namespace CosmicShore.ScriptableObjects
             public Quaternion rotation;
         }
 
-        public List<WallData> walls = new List<WallData>();
+        [SerializeField] List<WallData> walls = new List<WallData>();
+        public List<WallData> Walls => walls;
     }
 }

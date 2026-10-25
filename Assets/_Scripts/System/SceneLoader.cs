@@ -303,6 +303,11 @@ namespace CosmicShore.Core
             GC.Collect();
 
             _sceneTransitionManager?.FadeFromBlack().Forget();
+
+            // The menu is on screen: a return-to-menu load recording (B36) ends here. A launch recording ends
+            // elsewhere (MiniGameHUD), so only the menu-return kind is closed.
+            if (LoadInsights.IsRecordingMenuReturn)
+                LoadInsights.CompleteLoad("Menu shown - the splash fades");
         }
 
         /// <summary>
@@ -355,6 +360,10 @@ namespace CosmicShore.Core
             // own Menu_Main sceneLoaded finally sets the fade. The RPC and the despawn
             // messages share the reliable channel, so the veil always lands first.
             NotifyClientsOfMenuReturn();
+
+            // B36: the game -> menu load froze ~10 s on a slow machine and Unity Relay dropped the host. Record it
+            // (online play records by itself, LoadInsights.ShouldRecord); it ends when the menu shows.
+            LoadInsights.BeginLoad($"Return to menu — {SceneManager.GetActiveScene().name} → {menuScene}", menuReturn: true);
 
             LoadSceneAsync(menuScene).Forget();
         }

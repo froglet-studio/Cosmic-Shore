@@ -38,6 +38,7 @@ How every vessel is coloured (the colour language, the shared materials' scheme,
 | Honeyguide | [Honeyguide.md](Honeyguide.md) | `Honeyguide.fbx` (new, 2026-10-21), the Honeyguide and Ratel's hull, drawn by `Honeyguide.prefab` in place of the Sparrow's model and puppeted by `HoneyguideBody` | the same | `specs/honeyguide.py` |
 | Marlin | [Marlin.md](Marlin.md) | `Marlin.fbx` (new, 2026-10-21), saved for a swordsman: no prefab draws it since Marlin and Jacks became the Jacks | the same | `specs/marlin.py` |
 | Jack | [Jack.md](Jack.md) | `Jack.fbx` (new, 2026-10-21), the two herders, drawn where the jacks run (`JacksBodies`) | the same | `specs/jack.py` |
+| Pistol | [Pistol.md](Pistol.md) | `Pistol.fbx` (new, 2026-10-25), the Goby and Pistol's second seat, a hovering assembly (19 / 19 parts float 1.07-2.05 %); not wired yet: `GobyPistolDuo` still draws a capsule | the same | `specs/pistol.py` |
 | Rhino | [Rhino.md](Rhino.md) | `Rhino_Test.fbx` (part-per-mesh placeholder) | `rhino_shapekey_with_animations.fbx`, the rig-swap target, with four REAL morphs | `specs/rhino.py` |
 
 **2026-10-18, withdrawn after the owner's Editor test:** the rebuilt Sparrow flew backwards, the Urchin did not

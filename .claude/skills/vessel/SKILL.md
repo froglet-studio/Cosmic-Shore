@@ -246,7 +246,7 @@ applies to new abilities, new resources on the meter list, and anything that add
 14. **A HUD controller must never reach for another vessel's executor by TYPE.**
     `GetComponentInChildren<SomeOtherVesselsExecutor>(true)` compiles fine, returns null on every
     vessel that isn't the one carrying it, and the gauge it feeds then simply never moves — no
-    error, no warning, nothing to notice. `SquirrelVesselHUDController` polled the Sparrow-only
+    error, no warning, nothing to notice. `SquirrelHUDController` polled the Sparrow-only
     `OverheatingActionExecutor` for its heat gauge for the component's entire life; the gauge was
     dead the whole time and the bug only surfaced when the Sparrow branch DELETED the type and the
     Squirrel stopped compiling. If a HUD needs a signal, bind it on the vessel's OWN component (a
@@ -1278,6 +1278,28 @@ objects no-ops off the server (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`).
   real path within 3 s of starting a held turn (measured 2026-10-13, `StoatDipoleMath.HullResponse` fixed it
   to within 2 u). Seed the predictor from `CommandedRotation`, the follow rate and the throttle target, and
   pin it with a test against a frame-stepped model of the transformer (`StoatDipoleTests` has one).
+
+### 4.ac2 An ability that takes prisms: `IsEnvironmentOwned` is NOT "a mode's track" (the Jacks' net, 2026-10-25)
+
+`Prism.IsEnvironmentOwned` means only **no player name**. That is Skim Race's track, but it is also every plant prism
+and every prism a cell's environment lays: the Toybox boots into **Garland**, whose bough is ~4,300 owner-less
+`SpawnablePrism`s (`SpawnableGarland` → `PrismTrailBuilder.ConfigureLaid`, no player name) beside 13 plants. The Jacks'
+net skipped `IsEnvironmentOwned` "to spare the track" and so touched NOTHING for three playtest rounds, each reported as
+"no interaction with prisms", while static reading of the spatial index, the move and the render path found no bug.
+Rules: (1) to spare an indestructible track, test what makes it indestructible (`prismProperties.IsSuperShielded`), not
+the owner name; (2) when a prism filter "does nothing" in play, first list what the TEST CELL actually spawns (follow
+the scene's `CellConfigs` → the BootDefault config → its EnvironmentPrefab and spawn profile) and run each population
+through the filter by hand. The hull breaks owner-less prisms in every mode; an ability that refuses them needs a
+reason that names the case.
+
+### 4.ac3 A vessel draws no controls of its own (LOCKED, Garrett 2026-10-25)
+
+The HUD is the five standard cards (four elemental + the omni crystal's); any other active control is a CORE card left
+of them with a glyph chip (`Docs/claude/VESSEL_HUD_AND_ELEMENTS.md`). The Jacks' herding view drew a zoom and a call
+button top right for rounds 2-9 and they were removed. Put the control on a card instead. A mode that pauses the
+flight's buttons (a crew seat, the Jacks' herding) still hears card taps by subscribing to the input status's
+`OnButtonPressed` while paused (`JacksExecutor.ListenToCards`). A card is only pressable if its map `Input` is BOUND
+on the prefab (`AbilityCardPress` asks `ResolvesOnActiveDevice`), so keep the binding even when one mode ignores it.
 
 ### 4.ad Porting a vessel from its studio — the settings, the CAMERA, and the AI's hand-over
 

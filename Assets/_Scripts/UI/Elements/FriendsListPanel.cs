@@ -931,16 +931,16 @@ namespace CosmicShore.UI
 
         Sprite ResolveAvatar(int avatarId)
         {
-            if (!profileIcons || profileIcons.profileIcons == null) return null;
+            if (!profileIcons || profileIcons.ProfileIcons == null) return null;
 
-            foreach (var icon in profileIcons.profileIcons)
+            foreach (var icon in profileIcons.ProfileIcons)
             {
                 if (icon.Id == avatarId)
                     return icon.IconSprite;
             }
 
-            return profileIcons.profileIcons.Count > 0
-                ? profileIcons.profileIcons[0].IconSprite
+            return profileIcons.ProfileIcons.Count > 0
+                ? profileIcons.ProfileIcons[0].IconSprite
                 : null;
         }
 

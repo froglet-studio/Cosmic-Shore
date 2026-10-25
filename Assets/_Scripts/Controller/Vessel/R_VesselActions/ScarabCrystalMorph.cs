@@ -144,7 +144,7 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
                 $"[CrystalMorph] Scarab: '{crystal.name}' at {origin.Position} closing onto a " +
                 $"{ball.name} hull of {hull.triangles.Length / 3} facets over " +
-                $"{morph.MorphSeconds:F2}s + {morph.Config.duration - morph.MorphSeconds:F2}s of " +
+                $"{morph.MorphSeconds:F2}s + {morph.Config.Duration - morph.MorphSeconds:F2}s of " +
                 $"dissolve ({morph.Census}, {morph.MorphVertexCount} morph vertices, colour target " +
                 $"{(morph.HasTargetColour ? "read" : "NOT FOUND")}).");
             return morph;
@@ -186,7 +186,7 @@ namespace CosmicShore.Gameplay
             }
 
             var mesh = CrystalMorphMeshBuilder.TryBuild(SourceMesh, in target,
-                                                        Config.phaseNear, Config.phaseFar,
+                                                        Config.PhaseNear, Config.PhaseFar,
                                                         out string diagnosis);
             if (mesh == null)
             {

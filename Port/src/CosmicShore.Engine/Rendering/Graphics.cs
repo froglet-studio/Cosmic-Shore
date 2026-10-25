@@ -158,6 +158,16 @@ namespace CosmicShore.Engine
             CosmicShore.Engine.Matrix4x4 objectToWorld, CosmicShore.Engine.Matrix4x4? prevObjectToWorld = null)
             => RenderMeshInstanced(rparams, mesh, submeshIndex, new[] { objectToWorld }, 1);
 
+        /// <summary>Unity's <c>List&lt;Matrix4x4&gt;</c> overload (GobyPistolDuo's heat map draws its pieces this way).
+        /// Recorded as the array form; the copy is the port's, not the game's.</summary>
+        public static void RenderMeshInstanced(in RenderParams rparams, Mesh mesh, int submeshIndex,
+            System.Collections.Generic.List<CosmicShore.Engine.Matrix4x4> instanceData, int instanceCount = -1,
+            int startInstance = 0)
+        {
+            if (instanceData is null) return;
+            RenderMeshInstanced(rparams, mesh, submeshIndex, instanceData.ToArray(), instanceCount, startInstance);
+        }
+
         public static void RenderMeshInstanced(in RenderParams rparams, Mesh mesh, int submeshIndex,
             CosmicShore.Engine.Matrix4x4[] instanceData, int instanceCount = -1, int startInstance = 0)
         {
