@@ -51,14 +51,29 @@ def squirrel_nose(box, cx, cy, roll=0.0):
                                          pitch=VIEW_D["pitch"], yaw=VIEW_D["yaw"])
 
 
+HALF = dict(box=57, dilate_px=1.8)      # each hull of the pair: fitted to 57 px, the noses 2 px apart at the centre line
+
+
+def joust_self():
+    """The player's Squirrel, right-facing, in the LEFT half: nose at x 63."""
+    return squirrel(HALF["box"], 34.5, 64, dilate_px=HALF["dilate_px"])
+
+
+def joust_other():
+    """The opponent, the same hull the same size mirrored, in the RIGHT half: nose at x 65, nose to nose."""
+    return mesh_silhouette.silhouette(FBX, box=HALF["box"], cx=93.5, cy=64, dilate_px=HALF["dilate_px"], mirror=True,
+                                      pitch=VIEW_D["pitch"], yaw=VIEW_D["yaw"])
+
+
 def crystal_joust():
-    """The joust: the Squirrel (view D) coming up behind a SECOND, SMALLER Squirrel - the pilot it overtakes - which
-    is knocked, spun 35 degrees nose-up off the line. Garrett 2026-10-25: "perhaps use a second smaller squirrel"
-    (the hexagonal creature before it read as two brackets at 40 px)."""
-    box, cx, cy = 80, 46, 76             # the fitted box IS the hull's length: tail at 6, nose at 86
-    n = squirrel_nose(box, cx, cy)
-    small = squirrel(40, n[0] + 18, n[1] - 16, roll=-35, dilate_px=1.6)
-    return squirrel(box, cx, cy, dilate_px=1.5) | small
+    """The joust: two Squirrels (the real mesh, view D), the same size, nose to nose. On the HUD they are TWO
+    child Images the view tints separately - the player's in the pilot's domain colour, the opponent in the
+    palette's danger colour, both snapping to the shared lime on a joust (SquirrelVesselHUDView.PaintJoustPair /
+    JuiceImpact). This composite is the one white sprite the Jousts objective box shows (ModeControlsLibrary).
+    Garrett 2026-10-25: "the two squirrels should be facing each other and the same size. the right facing
+    squirrel should be the players domain color. the other squirrel can be the danger color (fire). when the
+    player jousts then both can turn lime." """
+    return joust_self() | joust_other()
 
 
 def skimming():
@@ -82,16 +97,24 @@ def sharp_drift():
     return body | sweep
 
 
+HALF_EXEMPT = {k: "half of the nose-to-nose pair; the pair is measured on Squirrel_CrystalJoust" for k in ("coverage", "box_fill", "gap", "in_box")}
 ICONS = [
     dict(name="Squirrel_CrystalJoust", element="Charge", act="Crystal Joust", draw=crystal_joust, before=PH + "HuntIcon-PLACEHOLDER.png",
-         exempt={"gap": "Garrett 2026-10-25 - the hull is its real mesh; the rib gaps are the fidelity he asked for"}),
+         exempt={"gap": "Garrett 2026-10-25 - the hulls are their real mesh; the rib gaps are the fidelity he asked for",
+                 "coverage": "two real hulls nose to nose at 57 px each sit at 0.10; thicker than 1.8 px loses the ribs"}),
+    dict(name="Squirrel_JoustSelf", element="Charge", act="Crystal Joust: the player's hull (domain colour)", draw=joust_self, subdir="Pair", family=False, exempt=HALF_EXEMPT),
+    dict(name="Squirrel_JoustOther", element="Charge", act="Crystal Joust: the opponent (danger colour)", draw=joust_other, subdir="Pair", family=False, exempt=HALF_EXEMPT),
     dict(name="Squirrel_Skimming", element="Time", act="Skimming", draw=skimming, before="Assets/_Graphics/Design Assests/HUD UI/New_Sparrow/boost icon.png"),
     dict(name="Squirrel_Drift", element="Core", act="Drift", draw=drift, subdir="Core", before=PH + "DriftIconSelected-PLACEHOLDER.png"),
     dict(name="Squirrel_SharpDrift", element="Core", act="Sharp Drift", draw=sharp_drift, subdir="Core", before=PH + "CannonIconSelected-PLACEHOLDER.png"),
 ]
 
 REBIND = [
-    dict(file=VARIANT, old="28ece425c4d02474e802223309bdbb11", icon="Squirrel_CrystalJoust", expect=1),   # the skull
+    # The Charge card's icon is a transparent container over the two tinted hulls (the Dolphin's jaw-pair arrangement);
+    # the view's joustSelfIcon / joustOpponentIcon point at the children. The skull it wore is gone with the sprite.
+    dict(file=VARIANT, pair=dict(container="4425814395415128621", view="7422230368815066413",
+                                 children=[("JoustSelf", "Squirrel_JoustSelf", "joustSelfIcon"),
+                                           ("JoustOther", "Squirrel_JoustOther", "joustOpponentIcon")])),
     dict(file="Assets/Resources/ModeControlsLibrary.asset", old="28ece425c4d02474e802223309bdbb11", icon="Squirrel_CrystalJoust", expect=1),
     dict(file=VARIANT, old="f0197e0a2ce38654ea3d882fff64967a", icon="Squirrel_Skimming", expect=1),       # the Sparrow's boost icon
     dict(file=VARIANT, old="41c9f6e2ec44f0c458351500f1bfacdc", icon="Squirrel_Drift", expect=1),          # DriftIconSelected-PLACEHOLDER

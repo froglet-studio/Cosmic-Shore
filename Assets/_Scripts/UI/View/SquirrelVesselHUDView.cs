@@ -110,12 +110,29 @@ namespace CosmicShore.UI
         [SerializeField] private float driftScale = 1.15f;
 
         [Header("Impact (the joust - the CHARGE card)")]
+        [Tooltip("The Charge card's icon Image - the lockup kerns and punches THIS. When the two joust " +
+                 "hulls below are wired it is a transparent container (no sprite, alpha 0), the Dolphin's " +
+                 "jaw-pair arrangement; alone, it is the one tinted icon it used to be.")]
         [FormerlySerializedAs("dangerRingIcon")]
         [SerializeField] private Image impactIcon;
         [FormerlySerializedAs("normalColor")]
         [SerializeField] private Color impactRestColor = Color.white;
+        [Tooltip("Flash colour of the single-icon path (no pair wired). With the pair, a joust turns BOTH " +
+                 "hulls the shared lime instead.")]
         [FormerlySerializedAs("dangerColor")]
         [SerializeField] private Color joustFlashColor = Color.red;
+        [Tooltip("The player's Squirrel, right-facing, a child of the icon: tinted in the pilot's DOMAIN " +
+                 "colour (SetPlayerDomainColor - the same push that paints the boost fill and the steal count).")]
+        [SerializeField] private Image joustSelfIcon;
+        [Tooltip("The opponent, left-facing, nose to nose with the player's: tinted the palette's DANGER " +
+                 "colour (SetDangerTint - the same push that paints the Boost Ring). Garrett 2026-10-25: " +
+                 "'the right facing squirrel should be the players domain color. the other squirrel can " +
+                 "be the danger color (fire). when the player jousts then both can turn lime.'")]
+        [SerializeField] private Image joustOpponentIcon;
+        [Tooltip("Shared colour spec: the joust's hit colour is its limeColor, the SAME lime a maxed flower and " +
+                 "the Dolphin's armed jaws show. Loaded from Resources when left empty; never author a second lime.")]
+        [SerializeField] private ElementalBarsConfigSO barsConfig;
+        [SerializeField] private string barsConfigResourcePath = "ElementalBarsConfig";
 
         [Header("Boost Ring cooldown (Mass slot)")]
         [Tooltip("The Boost Ring ability's icon. Its RECHARGE is drawn by the fleet's standard " +
@@ -172,6 +189,7 @@ namespace CosmicShore.UI
         // Juice tweens
         private Tween _impactScaleTween;
         private Tween _impactColorTween;
+        private Sequence _joustColorTween;
         private Tween _boostScaleTween;
 
         private Vector3 _impactIconOriginalScale;
@@ -334,6 +352,7 @@ namespace CosmicShore.UI
         {
             _dangerTint = danger;
             PaintBoostRing();
+            PaintJoustPair();
         }
 
         void PaintBoostRing()
@@ -361,9 +380,10 @@ namespace CosmicShore.UI
 
             if (impactIcon)
             {
-                impactIcon.color = impactRestColor;
+                impactIcon.color = HasJoustPair ? new Color(1f, 1f, 1f, 0f) : impactRestColor;
                 _impactIconOriginalScale = AbilityIconRestScale(Element.Charge);
             }
+            PaintJoustPair();
 
 
             if (tubeCooldownIcon)
@@ -416,6 +436,35 @@ namespace CosmicShore.UI
                 boostFill.color = color;
 
             PaintStealCount(color);
+            PaintJoustPair();
+        }
+
+        /// <summary>Both joust hulls are wired - the Charge icon is a transparent container over them.</summary>
+        bool HasJoustPair => joustSelfIcon && joustOpponentIcon;
+
+        /// <summary>The shared lime - "this is full / this landed" everywhere on the HUD.</summary>
+        Color JoustHitColor
+        {
+            get
+            {
+                if (!barsConfig && !string.IsNullOrEmpty(barsConfigResourcePath))
+                    barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
+                return barsConfig ? barsConfig.limeColor : joustFlashColor;
+            }
+        }
+
+        /// <summary>
+        /// Rest colours of the pair: the player's hull in the pilot's domain colour, the opponent in the
+        /// palette's danger colour. Neither is an ELEMENT colour (elements have no colour): one is a team
+        /// claim and the other the fleet's one warning hue. A danger colour the palette does not author
+        /// (alpha 0) leaves the opponent white rather than black.
+        /// </summary>
+        void PaintJoustPair()
+        {
+            if (!HasJoustPair) return;
+            _joustColorTween?.Kill();
+            joustSelfIcon.color = _playerDomainColor;
+            joustOpponentIcon.color = _dangerTint.a > 0f ? _dangerTint : Color.white;
         }
 
         public void SetBoostState(float boost01, bool isBoosted, bool isFull,
@@ -593,6 +642,21 @@ namespace CosmicShore.UI
                         .DOScale(_impactIconOriginalScale, iconPunchDuration * 0.7f)
                         .SetEase(Ease.OutBounce);
                 });
+
+            if (HasJoustPair)
+            {
+                // The pair: both hulls snap to the shared lime and settle back to their own colours -
+                // the player's to the domain, the opponent's to danger.
+                _joustColorTween?.Kill();
+                var hit = JoustHitColor;
+                joustSelfIcon.color = hit;
+                joustOpponentIcon.color = hit;
+                _joustColorTween = DOTween.Sequence()
+                    .Join(joustSelfIcon.DOColor(_playerDomainColor, colorTweenDuration).SetEase(Ease.OutQuad))
+                    .Join(joustOpponentIcon.DOColor(_dangerTint.a > 0f ? _dangerTint : Color.white, colorTweenDuration).SetEase(Ease.OutQuad))
+                    .SetLink(joustSelfIcon.gameObject);
+                return;
+            }
 
             // Color flash: snap to the source colour, tween back to rest
             _impactColorTween?.Kill();

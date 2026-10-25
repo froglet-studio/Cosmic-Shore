@@ -119,3 +119,14 @@ one thing right. then move on."
     ahead of the big one reads as the overtake at every size, and needs no new pictogram. `silhouette(roll=)`
     turns a hull in the plane exactly (on the projected points, not a raster rotate). Two thin hulls sit at the
     coverage floor: thicken them (1.5 / 1.6 px) rather than shrink the gap between them.
+27. **A card can be a PAIR the HUD tints separately - that is a view change, not a sprite.** Garrett: "the two
+    squirrels should be facing each other and the same size. the right facing squirrel should be the players
+    domain color. the other squirrel can be the danger color (fire). when the player jousts then both can turn
+    lime." The Dolphin's jaw pair was the pattern: the card's icon Image becomes a transparent container (no
+    sprite, alpha 0 - the lockup still kerns and punches it) over two stretched child Images; the view paints
+    them from pushes it already receives (SetPlayerDomainColor, SetDangerTint) and snaps both to the shared
+    `ElementalBarsConfigSO.limeColor` on a joust. Neither tint is an element colour: a team claim and the fleet's
+    warning hue. `rebind.py` `pair=` builds the children in the prefab YAML with deterministic fileIDs and wires
+    the view's fields; the kit writes three sprites (the pair in Pair/, each exempt from the whole-icon gates,
+    and the white composite the Jousts objective box keeps). C# touched: SquirrelVesselHUDView - no Unity CLI in
+    this session, so the editor check is on the board.

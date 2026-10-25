@@ -2202,3 +2202,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (UI, Codex, lockup style); the Wrasse & Grouper crew for the Kite Navigator
 - **Added:** 2026-10-25 by a Claude session (`cece/loving-ptolemy-4715w4`)
 - **See:** Docs/claude/VESSEL_HUD_AND_ELEMENTS.md 'Elements have no colour', Tools/Build/check_element_colour.py
+
+### T-20261025-5884 · open · test · Squirrel
+- **Task:** Editor-verify the Crystal Joust pair (no Unity CLI in the session that wrote it): open SquirrelHUDVariant.prefab - the Charge card's DangerRingsIcon is a transparent container with JoustSelf / JoustOther child Images; SquirrelVesselHUDView compiles with joustSelfIcon / joustOpponentIcon / barsConfig; in freestyle the right-facing Squirrel wears the pilot's domain colour, the left-facing one the danger (fire) colour, and a joust snaps both to lime and settles back. Also the arcade launch panel's Jousts objective box shows the white pair
+- **Done when:** compiles, both tints right at rest, lime on a joust, no console error from the lockup about the Charge icon
+- **Who can take it:** Yash (has offered to take tests) or Garrett
+- **Added:** 2026-10-25 by a Claude session (`cece/loving-ptolemy-4715w4`)
+- **See:** .claude/skills/ability-icon/references/LESSONS.md 27, Docs/Icons/sheets/squirrel_crystal_joust.png

@@ -32,11 +32,12 @@ def _polys(fbx_rel):
     return _CACHE[fbx_rel]
 
 
-def silhouette(fbx_rel, pitch=0.0, yaw=0.0, box=114, cx=64.0, cy=64.0, dilate_px=0.0, close_px=0.0, roll=0.0):
+def silhouette(fbx_rel, pitch=0.0, yaw=0.0, box=114, cx=64.0, cy=64.0, dilate_px=0.0, close_px=0.0, roll=0.0, mirror=False):
     """Mask of the hull seen from above (file frame: +Y nose, +X pilot's right, +Z up), nose to the right on
     screen, tipped `pitch` degrees toward the viewer (positive = the nose end comes toward us) and turned `yaw`
     degrees clockwise on screen; fitted to `box` icon px about (cx, cy), then rolled `roll` degrees (clockwise on
-    screen) about that centre - the in-plane turn of a hull that has been knocked."""
+    screen) about that centre - the in-plane turn of a hull that has been knocked. `mirror` flips it left-right
+    (nose to the LEFT): the opponent in a nose-to-nose pair."""
     pa, ya = math.radians(-pitch), math.radians(yaw)
     Ryaw = np.array([[math.cos(ya), -math.sin(ya), 0], [math.sin(ya), math.cos(ya), 0], [0, 0, 1]])
     Rpitch = np.array([[1, 0, 0], [0, math.cos(pa), -math.sin(pa)], [0, math.sin(pa), math.cos(pa)]])
@@ -59,6 +60,8 @@ def silhouette(fbx_rel, pitch=0.0, yaw=0.0, box=114, cx=64.0, cy=64.0, dilate_px
         pts = []
         for v in q:
             x, y = (v[0] - mx) * k, (v[1] - my) * k
+            if mirror:
+                x = -x
             pts.append(((x * cr - y * sr) + cx * SS, (x * sr + y * cr) + cy * SS))
         d.polygon(pts, fill=255)
     if close_px:
