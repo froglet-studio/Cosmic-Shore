@@ -263,11 +263,17 @@ namespace CosmicShore.Gameplay
             return resources ? resources.GetNormalizedLevel(e) * 10f : 0f;
         }
 
-        bool Upgraded(Element e)
-        {
-            var abilities = _status?.ElementalAbilityHandler;
-            return abilities && abilities.IsUpgradeActive(e);
-        }
+        // The four level-5 upgrades, each its own gate with its element written out, so /element-ability-table reads the
+        // live gate off the source (an upgrade passed through a variable read as prose there).
+        R_VesselElementalAbilityHandler Abilities => _status?.ElementalAbilityHandler;
+        /// <summary>CHARGE 5, Attack: the herd goes for rivals and bites them.</summary>
+        bool ChargeUpgraded { get { var a = Abilities; return a && a.IsUpgradeActive(Element.Charge); } }
+        /// <summary>MASS 5, Mass Clusters: the herd lays our mass.</summary>
+        bool MassUpgraded { get { var a = Abilities; return a && a.IsUpgradeActive(Element.Mass); } }
+        /// <summary>SPACE 5, Eat Shields: the herd eats shielded prisms.</summary>
+        bool SpaceUpgraded { get { var a = Abilities; return a && a.IsUpgradeActive(Element.Space); } }
+        /// <summary>TIME 5, Flying Decoy: netting, the jacks drop the decoy where they are.</summary>
+        bool TimeUpgraded { get { var a = Abilities; return a && a.IsUpgradeActive(Element.Time); } }
 
         // ------------------------------------------------------------------ the buttons (JacksActionSO)
 
@@ -311,7 +317,7 @@ namespace CosmicShore.Gameplay
         /// <summary>TIME level 5: the jacks drop THE decoy where they are (their one decoy; a new one replaces the old).</summary>
         public void DropJacksDecoy()
         {
-            if (!config || !Upgraded(Element.Time) || Time.time < _decoyReadyAt) return;
+            if (!config || !TimeUpgraded || Time.time < _decoyReadyAt) return;
             DropDecoy(OnPlane(JacksCentre));
             _decoyReadyAt = Time.time + config.DecoyCooldown;
         }
@@ -544,7 +550,7 @@ namespace CosmicShore.Gameplay
         /// pilot rule).</summary>
         void StepAIButtons()
         {
-            if (_herding || !Upgraded(Element.Time) || _hasDecoy || Time.time < _aiDecoyAt) return;
+            if (_herding || !TimeUpgraded || _hasDecoy || Time.time < _aiDecoyAt) return;
             DropJacksDecoy();
             _aiDecoyAt = Time.time + 6f;
         }
@@ -798,7 +804,7 @@ namespace CosmicShore.Gameplay
             float pace = JacksMath.SpeedMultiplier(Level(Element.Time));
             float sep = config.Separation, nr = config.NeighbourRadius, nr2 = nr * nr;
             float callDead = 30f * config.LabScale;
-            bool attacks = Upgraded(Element.Charge);
+            bool attacks = ChargeUpgraded;
             if (attacks) ScanVessels();
 
             for (int i = 0; i < _herd.Count; i++)
@@ -1075,7 +1081,7 @@ namespace CosmicShore.Gameplay
             if (_status.Player is { IsNetworkOwner: false }) return;
             ScanVessels();
             float charge = Level(Element.Charge);
-            bool bites = Upgraded(Element.Charge);
+            bool bites = ChargeUpgraded;
             var own = _status.Domain;
             for (int v = 0; v < _vessels.Count; v++)
             {
@@ -1129,7 +1135,7 @@ namespace CosmicShore.Gameplay
         {
             if (Time.time < _pooAt) return;
             _pooAt = Time.time + config.PooEvery;
-            if (!Upgraded(Element.Mass) || _herd.Count == 0) return;
+            if (!MassUpgraded || _herd.Count == 0) return;
             var spawner = _status.VesselPrismController;
             var channel = spawner ? spawner.PrismSpawnChannel : null;
             if (!channel) return;
@@ -1197,7 +1203,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>SPACE level 5 (Garrett, 2026-10-20: "the swarm can eat shielded prisms"): a rule the herd breaks.</summary>
-        public bool EatsShields(Fauna creature) => Upgraded(Element.Space);
+        public bool EatsShields(Fauna creature) => SpaceUpgraded;
 
         /// <summary>MASS: the herd's birth rate (<see cref="JacksMath.FeedsPerOffspringScale"/>).</summary>
         public float FeedsPerOffspringScale(Fauna creature) => JacksMath.FeedsPerOffspringScale(Level(Element.Mass));

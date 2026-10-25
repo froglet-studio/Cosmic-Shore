@@ -14224,3 +14224,17 @@ changed files); `author_jacks_assets.py --check` failed first (no swing or lit f
     right, yaw right: left; any diagonal swings out against that diagonal. Fly level: it settles straight back.
 25. Herding: no empty squares in the upper right (they appear only once icons are set on JacksConfig).
 
+### Round 6, polish (2026-10-25, same branch)
+
+Garrett: "remove the rhino skimmer effect and update the map text. bring this vessel as close to polish as you can".
+Headless compile OK; `author_jacks_assets.py --check` failed first (the Rhino skimmer container, the skimmer's Space
+scale, the pre-net map words), then passed; `/element-ability-table Jacks` now reads 4/4 level-5 gates live.
+
+26. Fly the Jacks into a rival hull and through a rival trail, both modes: no sword strike, no sword steal, no shield
+    break from the hull (the hidden skimmer carries no effects; only the net and the herd act).
+27. Herding, park the hull's invisible spot on a crystal or a trail: nothing is collected or rammed there (the jacks
+    collect; the hull touches nothing).
+28. The ability cards: the Time card lights while the herding call pulls the herd (cooldown veil after), and while
+    netting it is lit whenever the plane's pull is on (B toggles it, no veil). The card texts name B for the call and A
+    for the Time-5 decoy.
+

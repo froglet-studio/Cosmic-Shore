@@ -26,7 +26,7 @@ Code:
 | The lab's arithmetic and the flight formation, pure | `Controller/Vessel/JacksMath.cs` (held by `Tests/Editor/JacksMathTests.cs`) |
 | The jacks' herding AI (Strömbom drive and collect) | `Executors/JacksAI.cs` |
 | The herding view (Steady camera, small view, double-tap switch) | `Executors/JacksView.cs` |
-| The flying jacks' buttons | `Data Containers/JacksActionSO.cs` (`JacksControl`: Call 0, Teleport 1, Decoy 2) |
+| The netting jacks' buttons | `Data Containers/JacksActionSO.cs` (`JacksControl`: Call 0, Teleport 1, Decoy 2) |
 | Every number | `Data Containers/JacksConfigSO.cs`, `Assets/_SO_Assets/VesselActions/Jacks/JacksConfig.asset` |
 | The four cards | `UI/Controller/JacksHUDController.cs`, `Resources/ElementalAbilityMaps/Jacks.asset` |
 | The herd's rule breaks (platform) | `Environment/FloraAndFauna/IFaunaHerd.cs`, read by `Fauna` |
@@ -168,7 +168,13 @@ that grow open and shrink away (`netGrowRate`). What crosses the mouth (`JacksNe
   Jacks' crystal effects). The worm colony is not network-synced, so each peer bears its own, as every local species is.
 
 The near-field skimmer (the Rhino's sword capsule) is hidden and made a small sphere at the hull (`skimmerRadius` 4); the
-jack it was for a day (2026-10-23) is retired, and its two arm colliders came off the prefab (`net_retrofit`).
+jack it was for a day (2026-10-23) is retired, and its two arm colliders came off the prefab (`net_retrofit`). Since
+2026-10-25 it carries the fleet's EMPTY skimmer container (`NoEffectsSkimmerImpactorDataContainer`; Garrett: "remove the
+rhino skimmer effect"): the Rhino's container was still giving it the sword's prism damage (its Space-5 Breaker), the
+sword's combat hit and its steal on rival hulls. It only collects elemental crystals now (their effects are the
+crystal's own). The invisible hull's TOUCH leaves crystals and prisms alone in both modes once the jacks are seated
+(`IHullContactGate`): the fish collect, the net carries, drags and lights. Its five colliders still meet other HULLS
+(jousts, rams), which is a call for the playtest.
 
 ## 2. Elements (Garrett, 2026-10-20)
 
@@ -177,7 +183,16 @@ jack it was for a day (2026-10-23) is retired, and its two arm colliders came of
 | Charge | the share of DANGER creatures: 0% at -5, 100% at 15. A danger creature that touches a rival hull stings it (a scored Strike through `CombatHitDrain`) and is spent | **Attack**: the herd goes for rivals within `attackRange` and every creature that touches one bites it (a Strike) |
 | Mass | the herd's birth rate: a birth takes the species' own feeds at -5, a third of them at 15 | **Mass Clusters**: every `pooEvery` one creature lays `pooCount` prisms of our domain |
 | Space | every herder's ring: the thumb floor at -5, +6% of it per level above | **Eat Shields**: the herd eats shielded prisms (never super-shielded) |
-| Time | the herd's speed, +6% per level, floored at x0.4 | **Flying Decoy**: flying, X drops the decoy where the jacks are (was the Marlin Decoy) |
+| Time | the herd's speed, +6% per level, floored at x0.4 | **Flying Decoy**: netting, A (Button1, Input 6) drops the decoy where the jacks are (was the Marlin Decoy) |
+
+Each upgrade is its own gate with its element written out (`JacksExecutor.ChargeUpgraded` .. `TimeUpgraded`), so
+`/element-ability-table` reads all four as live (2026-10-25; through one `Upgraded(e)` helper it read three as prose). The
+table still reads no scaling for Charge, Mass and Time, and Space as the hidden skimmer's 30 -> 50: the real curves are the
+lab's formulas in `JacksMath` (`DangerShare`, `FeedsPerOffspringScale`, `Ring`, `SpeedMultiplier`), which no channel of
+the tool reads, and the skimmer's curve is switched off on the Jacks (`Scale.Enabled` 0, an override of the nested
+variant the tool reads past). The map's words were rewritten for the net the same day (`STALE_MAP_WORDS`). The Time card
+on the HUD is the call: herding, lit while it pulls the herd, its cooldown on the veil; netting, lit while the plane's
+pull is on.
 
 The herders are the two jacks and the decoy (the marlin was a third until 2026-10-21). The design rule "never stun
 vessels" holds: no contact slows or stuns a hull. PvP is petals only, so every hit on a rival is a Strike.
@@ -281,8 +296,8 @@ units and multiplied by `labScale` (0.4).
   while the herd is leashed on the host; whether the owner sees the creatures close enough to score is for the
   host-client test.
 - **Crystal hull fusion** still bakes the Rhino's hull shape (the four Jacks entries are the Rhino's).
-- `element_ability_table.py Jacks` reads the Rhino's ForceFieldSkimmer for Space and the ramp for Time; the jacks' real
-  bindings are in code (`JacksExecutor.Ring`, `JacksMath.SpeedMultiplier`).
+- `element_ability_table.py Jacks` reads the four level-5 gates (2026-10-25) but not the scaling (§2): the curves are
+  `JacksMath`'s lab formulas. Teaching the tool a channel for them, or moving the curves onto authored endpoints, is open.
 - **Hull-radius sweeps see the jacks.** The two jack models are children of the vessel root, up to the herd ring away
   from the hull while herding, and `PrismOcclusionCorridor.MeasureCircumscribedRadius` (scope pip, Echo Sight, occlusion
   corridor, crystal ejector) counts every active child renderer. The Wrasse's kite has the same shape; the fix is one

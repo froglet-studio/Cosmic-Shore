@@ -12,7 +12,8 @@ namespace CosmicShore.UI
     /// <item><b>Charge</b> - the share of the herd that is DANGER, on the card's gauge.</item>
     /// <item><b>Mass</b> - the herd's size, as a number on the card, and how full it is on the gauge.</item>
     /// <item><b>Space</b> - lit while a decoy is down (the flying jacks can jump to it).</item>
-    /// <item><b>Time</b> - lit while the jacks CALL the herd, with the call's long cooldown on the card's veil.</item>
+    /// <item><b>Time</b> - the CALL: herding, lit while it pulls the herd between the jacks, with its long cooldown on the
+    /// card's veil; netting, lit while the herd is drawn to the plane (the call toggles it; no cooldown).</item>
     /// </list>
     /// The view is the Rhino's HUD (the hull is a Rhino clone). The herd count is GENERATED into the Mass card at runtime
     /// (the Wrasse's counts are the pattern), so the HUD prefab carries no extra object. Polled from this hull's own
@@ -95,14 +96,14 @@ namespace CosmicShore.UI
                 view.SetAbilityPressed(Element.Space, decoy);
             }
 
-            bool calling = crew.Calling;
+            bool calling = crew.Herding ? crew.Calling : crew.PlaneAttract;
             if (calling != _callLit)
             {
                 _callLit = calling;
                 view.SetAbilityPressed(Element.Time, calling);
             }
 
-            float veil = crew.CallCooldown01;
+            float veil = crew.Herding ? crew.CallCooldown01 : 0f;
             if (!Mathf.Approximately(veil, _veil))
             {
                 _veil = veil;

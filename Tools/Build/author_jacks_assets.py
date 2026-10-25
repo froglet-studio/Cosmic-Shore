@@ -146,6 +146,16 @@ SKIMMER_GO = "2695624631939139826"                 # its root GameObject (stripp
 SKIMMER_VARIANT_GUID = "c8d5df1098821194eb69eec4c965548e"
 SKIMMER_SOURCE_GO = "3630837686170528968"          # the variant's root GameObject, the added components' target
 SKIMMER_Y_COLLIDER = "4880931740909781519"         # the sword's own capsule (direction 1)
+# the skimmer's effects (Garrett, 2026-10-25: "remove the rhino skimmer effect"): the Rhino's container carried the sword's
+# prism damage (its Space-5 Breaker), its combat hit and its steal on rival hulls; the Jacks' hidden skimmer takes the
+# fleet's empty container - it only collects elemental crystals, whose effects are the crystal's own
+RHINO_SKIMMER_CONTAINER_GUID = "05483649aa8bbea458ee49ed300542bd"   # RhinoForceFieldSkimmerImpactorDataContainer
+NO_EFFECTS_SKIMMER_CONTAINER_GUID = "0ae2a0c5e2da4ac8885103089fc2ddce"   # NoEffectsSkimmerImpactorDataContainer
+# ... and its Space-scaled size (the sword's 30 -> 50) is switched off: JacksBodies sizes the hidden skimmer, so the curve
+# changed nothing and only read, in /element-ability-table, as the Jacks' Space scaling
+SKIMMER_COMPONENT = "1957019139854139517"   # the Skimmer on the nested ForceFieldSkimmer Variant
+SKIMMER_SCALE_OFF = (f"    - target: {{fileID: {SKIMMER_COMPONENT}, guid: {SKIMMER_VARIANT_GUID},\n        type: 3}}\n"
+                     "      propertyPath: Scale.Enabled\n      value: 0\n      objectReference: {fileID: 0}\n")
 RETIRED_ARM_COLLIDERS = ("2200000000000000061", "2200000000000000062")   # the jack's X and Z arms (2026-10-23 only)
 # the omni crystal produces an omnivorous worm in our domain (Garrett, 2026-10-24): one VesselSpawnFaunaByCrystalEffectSO in
 # the Jacks' container, naming the worm colony
@@ -272,6 +282,10 @@ def check_jack(text: str):
     for cid in RETIRED_ARM_COLLIDERS:
         if f"&{cid}\n" in text or f"{{fileID: {cid}}}" in text:
             errs.append(f"Jacks.prefab: the retired jack's arm collider {cid} is still on the skimmer (run the tool)")
+    if not (inst and SKIMMER_SCALE_OFF in inst.group(1)):
+        errs.append("Jacks.prefab: the hidden skimmer still scales with Space (the sword's 30 -> 50; it changes nothing)")
+    if RHINO_SKIMMER_CONTAINER_GUID in text or not (inst and NO_EFFECTS_SKIMMER_CONTAINER_GUID in inst.group(1)):
+        errs.append("Jacks.prefab: the hidden skimmer does not carry the empty skimmer container (the Rhino's sword effects ride along)")
     if inst and re.search(r"addedObject: \{fileID: 0\}", inst.group(1)):
         errs.append("Jacks.prefab: the sword skimmer lists an added component that names nothing")
     return errs
@@ -501,6 +515,10 @@ def retrofit(text: str) -> str:
     text = text.replace(f"guid: {DONOR_CONTAINER_GUID},", f"guid: {CONTAINER_GUID},")
     text = text.replace(f"  settings: {{fileID: 11400000, guid: {RHINO_CAMERA_GUID}, type: 2}}",
                         f"  settings: {{fileID: 11400000, guid: {CAMERA_GUID}, type: 2}}")
+    text = text.replace(f"guid: {RHINO_SKIMMER_CONTAINER_GUID},", f"guid: {NO_EFFECTS_SKIMMER_CONTAINER_GUID},")
+    inst = re.search(r"--- !u!1001 &%s\nPrefabInstance:\n(?:.*\n)*?    m_Modifications:\n" % SKIMMER_INSTANCE, text)
+    if inst and SKIMMER_SCALE_OFF not in text:
+        text = text[:inst.end()] + SKIMMER_SCALE_OFF + text[inst.end():]
     return net_retrofit(icons_retrofit(bodies_retrofit(text)))
 
 
@@ -687,10 +705,13 @@ MAP_ENTRIES = [
     (3, 0, "Herding Ring", "Space widens the ring both jacks and the decoy push the herd out of; it is never "
         "smaller than a big thumb.",
      "Eat Shields", "The herd eats shielded prisms."),
-    (4, 7, "Herd Speed", "Time sets how fast the herd swims. The jacks' call (A) pulls the herd to them for a moment, on "
-        "a long cooldown.",
-     "Flying Decoy", "Flying, the jacks leave the decoy where they are (X), so they can jump back to it."),
+    (4, 7, "Herd Speed", "Time sets how fast the herd swims. The call (B): herding, it pulls the herd between the jacks "
+        "for a moment, on a long cooldown; netting, it turns the herd's pull to your plane on and off.",
+     "Flying Decoy", "Netting, the jacks drop the decoy where they are (A), so they can jump back to it."),
 ]
+# The words the map shipped with before the net (2026-10-21..24): a map that still carries them is rewritten (2026-10-25:
+# "update the map text"); words the team edited since are left alone.
+STALE_MAP_WORDS = ("The jacks'' call (A)", "(X), so they can jump back")
 
 
 def map_entries() -> str:
@@ -706,7 +727,8 @@ def map_retrofit(text: str) -> str:
     """The committed map named Jacks, and its cards' words rewritten where they still name the marlin (words the team
     edited since are left alone). Idempotent."""
     text = text.replace("  m_Name: Marlin\n", "  m_Name: Jacks\n")
-    if "arlin" in text[text.index("  entries:\n"):]:
+    entries = text[text.index("  entries:\n"):]
+    if "arlin" in entries or any(w in entries for w in STALE_MAP_WORDS):
         text = text[:text.index("  entries:\n")] + map_entries()
     return text
 
@@ -882,6 +904,7 @@ def check_registrations(container: str, network: str, lists, cls: str, kmap: str
     want(f"  vesselClass: {JACKS_CLASS_ID}\n" in kmap and "  m_Name: Jacks\n" in kmap, "ElementalAbilityMaps/Jacks: wrong class or name")
     want("arlin" not in kmap, "ElementalAbilityMaps/Jacks: a card still names the marlin")
     want("Sword" not in kmap, "ElementalAbilityMaps/Jacks: still the Rhino's cards")
+    want(not any(w in kmap for w in STALE_MAP_WORDS), "ElementalAbilityMaps/Jacks: still the words from before the net (run the tool)")
     jacks, rhino = fusion_entries(fusion, JACKS_CLASS_ID), fusion_entries(fusion, RHINO_CLASS_ID)
     want(len(jacks) == 4, f"CrystalHullFusionConfig: {len(jacks)} Jacks entries, not 4")
     want([e.split("\n", 1)[1] for e in jacks] == [e.split("\n", 1)[1] for e in rhino],
@@ -1014,6 +1037,9 @@ def self_test():
     expect(check_prefab(good.replace(f"  - component: {{fileID: {BODIES_ID}}}\n", ""), script_guid), 1, "no bodies component")
     arm = (f"--- !u!136 &{RETIRED_ARM_COLLIDERS[0]}\nCapsuleCollider:\n  m_GameObject: {{fileID: {SKIMMER_GO}}}\n")
     expect(check_prefab(good + arm, script_guid), 1, "the retired jack's arm collider")
+    expect(check_prefab(good.replace(NO_EFFECTS_SKIMMER_CONTAINER_GUID, RHINO_SKIMMER_CONTAINER_GUID), script_guid), 1,
+           "the Rhino's sword effects on the hidden skimmer")
+    expect(check_prefab(good.replace(SKIMMER_SCALE_OFF, ""), script_guid), 1, "the hidden skimmer scaling with Space")
     if check_prefab(net_retrofit(good + arm), script_guid):
         fails.append("net_retrofit does not take the retired jack's arm collider off")
     jets = read(DONOR).split("--- !u!1001 &3901220500000001\n", 1)
@@ -1088,6 +1114,10 @@ def self_test():
         fails.append("the class retrofit does not take the marlin's crew and name off the card")
     expect(check_registrations(container, network, lists, cls, kmap.replace("Flying Decoy", "Marlin Decoy"), fusion), 1,
            "a card that still names the marlin")
+    stale = kmap.replace("(A), so they can jump back", "(X), so they can jump back")
+    expect(check_registrations(container, network, lists, cls, stale, fusion), 1, "the map's words from before the net")
+    if map_retrofit(stale) != kmap:
+        fails.append("the map retrofit does not rewrite the words from before the net")
     if map_retrofit(kmap.replace("Flying Decoy", "Marlin Decoy")) != kmap or map_retrofit(kmap) != kmap:
         fails.append("the map retrofit does not rewrite the marlin's words, or is not idempotent")
     expect(check_registrations(container, network, lists, cls.replace(CARD_FIELDS["SquadImage"], "2286f04c9031ee84d8d935de1926f92a"), kmap,

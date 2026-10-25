@@ -29,14 +29,15 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public sealed class JacksBodies : NetworkBehaviour, IHullContactGate
     {
-        /// <summary>Netting, the invisible hull's touch leaves crystals and prisms to the net (Garrett, 2026-10-25: "lets
-        /// allow them to net the omicrystal and move it around", "i don't see prism moving i just see them getting
-        /// destroy"); herding, or before the jacks are seated, it touches them as any hull does. Read on every peer from
-        /// the replicated mode.</summary>
-        public bool TakesCrystalsByContact => !(_jacksShown && _flying);
+        /// <summary>The hull is invisible: once the jacks are seated its touch leaves crystals and prisms alone in EITHER mode
+        /// (Garrett, 2026-10-25: "lets allow them to net the omicrystal and move it around", "i don't see prism moving i just
+        /// see them getting destroy"), because the fish and the net are the Jacks' body - the fish collect what they touch,
+        /// the net carries, drags and lights. Herding the hull is parked out of sight, and an unseen hull taking crystals
+        /// or ramming trails was a hull nobody could see doing it. Read on every peer from the replicated seat.</summary>
+        public bool TakesCrystalsByContact => !_jacksShown;
 
         /// <inheritdoc cref="TakesCrystalsByContact"/>
-        public bool TakesPrismsByContact => !(_jacksShown && _flying);
+        public bool TakesPrismsByContact => !_jacksShown;
 
         // Offsets are quantized before they are written, so jacks at rest do not dirty the variables every tick.
         const float OffsetQuantum = 0.25f;

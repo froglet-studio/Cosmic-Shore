@@ -176,9 +176,11 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float strikeCooldown = 1.2f;
 
         [Header("The herding view")]
-        [Tooltip("The small view's height, as a share of the screen's height (the Wrasse's pipSize).")]
+        [Tooltip("Unused since 2026-10-24 (one view at a time, no small view): kept so a reinstated small view keeps its " +
+                 "size. Was the small view's height, as a share of the screen's height.")]
         [SerializeField, Range(0.1f, 0.6f)] float pipSize = 0.32f;
-        [Tooltip("The small view's margin from the screen's corner, as a share of the screen's height.")]
+        [Tooltip("The margin of the herding view's buttons and of a stick-driven jack from the screen's edge, as a share of " +
+                 "the screen's height.")]
         [SerializeField, Range(0f, 0.2f)] float viewMargin = 0.02f;
         [Tooltip("How far above and below the plane the herding camera sees (game units).")]
         [SerializeField, Min(10f)] float viewDepth = 600f;
