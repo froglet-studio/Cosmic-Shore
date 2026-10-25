@@ -108,7 +108,7 @@ def views_sheet(fbx_rel, out, mirror=False, pitches=(0, 20, 45, 70, 90), yaws=(0
     from PIL import ImageDraw
     import canvas as C
     views = [(p, y) for p in pitches for y in yaws]
-    cols, tile = len(yaws), N + 8
+    cols, tile = len(yaws), 128 + 8   # C.render gives the 128 px icon, not the supersampled canvas
     sheet = Image.new("RGBA", (cols * tile, (len(views) // cols) * tile), (14, 20, 44, 255))
     d = ImageDraw.Draw(sheet)
     for i, (p, y) in enumerate(views):

@@ -76,7 +76,7 @@ def flower(element, size):
     return canvas
 
 
-def _gauge(im, x0, y0, w, h, inset, fill01):
+def _gauge(im, x0, y0, w, h, inset, fill01, fill_color=None):
     """The fleet's one gauge as the lockup draws it (Docs/ABILITY_LOCKUP.md 'The gauge'): a dim track inset inside the
     ability plate's slant band by PlateEdgeReach, and a linear fill rising from its base, both masked to the trapezoid.
     Drawn on its own layer so the style's alphas blend over the plate."""
@@ -97,15 +97,16 @@ def _gauge(im, x0, y0, w, h, inset, fill01):
         layer = Image.new("RGBA", im.size, (0, 0, 0, 0))
         d = ImageDraw.Draw(layer)
         lf, rf = side(fy)
-        d.polygon([(lf * SS, fy * SS), (rf * SS, fy * SS), (r1 * SS, (y0 + h - reach) * SS), (l1 * SS, (y0 + h - reach) * SS)], fill=S["gaugeFill"])
+        d.polygon([(lf * SS, fy * SS), (rf * SS, fy * SS), (r1 * SS, (y0 + h - reach) * SS), (l1 * SS, (y0 + h - reach) * SS)], fill=fill_color or S["gaugeFill"])
         im.alpha_composite(layer)
 
 
-def card(icon, element="Charge", tint=(255, 255, 255, 255), locked=False, scale=1.0, chip=None, gauge=None):
+def card(icon, element="Charge", tint=(255, 255, 255, 255), locked=False, scale=1.0, chip=None, gauge=None, gauge_color=None):
     """The card at HUD scale 1 (104 x 182 plus the chip), as an RGBA image; `scale` enlarges for the sheet.
     `icon` is a PIL image (any size: it is fitted into iconBoxSize like the lockup does); `tint` multiplies it
     (the joust flash, a gauge state); `locked` draws the quiet plate with no icon; `gauge` (0..1) draws the card's
-    plate gauge at that fill, behind the icon, as a card with an adopted meter has it."""
+    plate gauge at that fill, behind the icon, as a card with an adopted meter has it; `gauge_color` overrides the
+    style's fill colour for a view that paints its meter (the Squirrel's domain boost, the Sparrow's roll pip)."""
     W = int(S["plateWidth"])
     H = int(S["petalCell"] + S["cellGap"] + S["abilityCell"])
     pad = 10
@@ -118,7 +119,7 @@ def card(icon, element="Charge", tint=(255, 255, 255, 255), locked=False, scale=
     _trapezoid(d, pad, pad, W, S["petalCell"], S["inset"], True, plate, edge, S["edgeT"])
     _trapezoid(d, pad, pad + S["petalCell"] + S["cellGap"], W, S["abilityCell"], S["inset"], False, plate, edge, S["edgeT"])
     if gauge is not None and not locked:
-        _gauge(im, pad, pad + S["petalCell"] + S["cellGap"], W, S["abilityCell"], S["inset"], float(gauge))
+        _gauge(im, pad, pad + S["petalCell"] + S["cellGap"], W, S["abilityCell"], S["inset"], float(gauge), gauge_color)
     im = im.resize((W + 2 * pad, total_h), Image.LANCZOS)
     fl = flower(element, int(S["flower"]))
     im.alpha_composite(fl, (pad + (W - fl.width) // 2, pad + (int(S["petalCell"]) - fl.height) // 2))
