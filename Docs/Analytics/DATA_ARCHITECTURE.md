@@ -188,7 +188,8 @@ correlation across two payloads.
     "CrystalBalance": 37,
     "LifetimeCrystalsEarned": 412,
     "LifetimeCrystalsSpent": 375,
-    "UnlockedRewardIds": []
+    "UnlockedRewardIds": [],
+    "HangarUpgrades": [{ "Vessel": 16, "Element": 2, "Level": 3 }]
   },
   "Progression": {
   },
@@ -206,6 +207,10 @@ correlation across two payloads.
 
 **What changed and why**
 
+- **New (2026-10-25) — `Economy.HangarUpgrades`.** The Hangar's bought elemental levels (vessel and element as the
+  enums' values, level 1-10). In Economy because crystals pay for them: the debit and the level ride one save, where
+  they used to be split between this key and the device's PlayerPrefs (`Docs/REFACTOR_BACKLOG.md` S67). Additive, so
+  no schema bump: a profile without the key loads with an empty list.
 - Key renamed to `SCREAMING_SNAKE`; fields to `PascalCase`. Consistency ask, item one.
 - `firstSeenUtc` → `Lifecycle.FirstSeenUtcMs`. Same value, name now states the unit.
 - **`LastLoginTick` moves here** from `PLAYER_STATS_PROFILE` as `LastSeenUtcMs`, converted from .NET
