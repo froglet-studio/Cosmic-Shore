@@ -195,13 +195,14 @@ namespace CosmicShore.ScriptableObjects
                  "Borderless: there is no resting outline, by design.")]
         public Color plateColor = new(0.024f, 0.031f, 0.063f, 0.86f);
 
-        [Header("Element colour - the rev 3 lava lamp (approved 2026-10-16)")]
+        [Header("Element colour - the rev 3 lava lamp (retired 2026-10-24: elements carry no colour)")]
         [Tooltip("Each card wears its ELEMENT's colour: soft blobs drifting slowly behind the icon like a " +
                  "lava lamp, the slant edge in the same colour, and a matching keycap edge. Colour here " +
                  "is information (which element scales this ability), never a team colour. The flower " +
                  "petals keep their level ladder - they are the HUD's vocabulary and are never tinted. " +
-                 "Off = the borderless near-black plates as before.")]
-        public bool elementColour = true;
+                 "Off = the borderless near-black plates as before. OFF since 2026-10-24 (Garrett: elements are " +
+                 "shown by shape, animation and effects, never a fixed colour; Docs/UI_COLOR_RULES.md).")]
+        public bool elementColour;
         public Color chargeColour = new(1f, 0.827f, 0.302f, 1f);
         public Color massColour = new(0.498f, 0.659f, 1f, 1f);
         public Color spaceColour = new(0.690f, 0.486f, 1f, 1f);
@@ -217,7 +218,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Seconds per wander cycle, min to max - each card picks its own so the row never pulses in step.")]
         public Vector2 lavaPeriod = new(9f, 14f);
         [Tooltip("Move the blobs. Off keeps the colour but holds it still (no per-frame layout work).")]
-        public bool lavaMotion = true;
+        public bool lavaMotion;
         [Tooltip("Slant-edge alpha in the element colour.")]
         [Range(0f, 1f)] public float elementEdgeAlpha = 0.9f;
 

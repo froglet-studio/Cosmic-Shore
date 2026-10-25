@@ -27,7 +27,7 @@ StartAgeGate / StartConsent boards).
         a panel that started active flashed at full size for a frame before the controller hid it.
         The kit buttons carry NO ControllerButtonPress: the controller selects each panel's control as
         the panel appears, so A arrives as an EventSystem submit; a pad poll on top fired it twice.
-    Rev 9 (Docs/MENU_REDESIGN_B.md §54, the approved R9 boards): the living lattice (Lattice_Window) drifts
+    Rev 9 (Docs/MENU_REDESIGN_B.md §54, the approved R9 boards): the sea (Sea_Window, §70; the living lattice before it) moves
         over the feature art on both the splash and the sign-in scene, between the dim and the bottom fade.
         The auth panel's window becomes the sign-in window - SignInChooser's three faces: CHOOSE ("Sign in to
         fly", Continue with Steam / Google / Apple, the "or" rule, Play as guest - the controller's
@@ -208,8 +208,8 @@ def vignette_nodes(prefix):
     fade = N(f"{prefix}/BottomFade", "BottomFade", R((0, 0), (1, 0), (0, 210), (0, 420)))
     fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.9), K.kit_sprite("kit_fade_v"))) \
         .add("th", 114, H.themed("SurfaceBlack", 0.9))
-    # Rev 9: the living lattice drifts over the dimmed art (shader-only: no CPU, never dirties the canvas).
-    return [dim, M.window_lattice_node(f"{prefix}/Lattice"), fade]
+    # §70: the sea over the dimmed art (shader-only: no CPU, never dirties the canvas).
+    return [dim, M.window_sea_node(f"{prefix}/Lattice", name="Sea"), fade]
 
 
 def readout_node(prefix, with_line):
@@ -275,7 +275,7 @@ def retry_window():
 def welcome_window():
     """Section 58: "Welcome back, pilot" over the splash while a signed-in pilot's profile and session load
     (BootWelcomeCard reads the boot status channel; hidden until then)."""
-    w = window("Welcome", R((0.5, 0.5), None, (0, 60), (WIN_W, WELCOME_H)), "Welcome back, pilot", "Cta", "", "H2")
+    w = window("Welcome", R((0.5, 0.5), None, (0, 60), (WIN_W, WELCOME_H)), "Welcome back, pilot", "NeutralLightest", "", "H2")
     spinner_line(w, "Welcome", 116)
     w.add("welcome", 114, lambda ctx, go: K.mono(go, S["welcome"],
           f"  requestEvent: {K.ref(11400000, BOOT_STATUS_CHANNEL, 2)}\n"
@@ -424,7 +424,7 @@ def heading(f, key, eyebrow, eyebrow_token, title, title_role, body=None, body_h
 def spinner_line(f, key, top):
     row = f.child(N(f"{key}/Waiting", "Waiting", TL(PAD, top, INNER, 22)))
     sp = row.child(N(f"{key}/Waiting/Spinner", "Spinner", R((0, 0.5), None, (9, 0), (18, 16))))
-    sp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Selection"), K.kit_sprite("kit_hex_line1"), preserve=True)) \
+    sp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), K.kit_sprite("kit_hex_line1"), preserve=True)) \
         .add("spin", 114, M.ambient("Spin", period=1.1, amplitude=0))
     H.label(row.child(N(f"{key}/Waiting/Line", "Line", R((0, 0.5), (1, 0.5), (14, 0), (-28, 22)))), "", "BodySmall", "NeutralLightest")
     return row
@@ -449,10 +449,10 @@ def auth_window():
     w = bare_window("SignIn", R((0.5, 0.5), None, (0, height / 2 - 80), (WIN_W, height), (0.5, 1)))
 
     ch = face(w, "SignIn/Choose", True)
-    heading(ch, "SignIn/Choose", "Welcome, pilot", "Cta", "Sign in to fly", "H1",
+    heading(ch, "SignIn/Choose", "Welcome, pilot", "NeutralLightest", "Sign in to fly", "H1",
             "Your pilot, crystals and vessels follow you to every device you sign in on.")
     H.label(ch.child(N("SignIn/Choose/SilentNote", "SilentNote", TL(PAD, at["SignIn/Choose/SilentNote"], INNER, NOTE_H), active=False)),
-            "Steam is not running. Start Steam to sign in with it, or pick a way below.", "BodySmall", "ElementCharge",
+            "Steam is not running. Start Steam to sign in with it, or pick a way below.", "BodySmall", "Danger",
             valign="top", wrap=True)
     for name, _ in CHOOSER:
         ch.child(brand_button(f"SignIn/Choose/{name}", f"{name}Button",
@@ -468,18 +468,18 @@ def auth_window():
             "You can link an account later in Settings > Account.", "BodySmall", "NeutralLightest")
 
     pr = face(w, "SignIn/Progress", False)
-    heading(pr, "SignIn/Progress", "Google", "Cta", "Finish in your browser", "H2",
+    heading(pr, "SignIn/Progress", "Google", "NeutralLightest", "Finish in your browser", "H2",
             "A Google sign-in page opened in your browser. Choose your account there, then come back here.", body_h=70)
     spinner_line(pr, "SignIn/Progress", 196)
     pr.child(icon_button("SignIn/Progress/Primary", "PrimaryButton", TL(PAD, 236, 240, 52), "Play", "Try again", cap="A", align=4))
-    pr.child(icon_button("SignIn/Progress/Secondary", "SecondaryButton", TL(PAD + 256, 236, 240, 52), "Space", "Other ways", align=4))
+    pr.child(icon_button("SignIn/Progress/Secondary", "SecondaryButton", TL(PAD + 256, 236, 240, 52), "Default", "Other ways", align=4))
     pr.child(icon_button("SignIn/Progress/Guest", "GuestLink", TL(PAD, 300, 260, 36), "Cancel", "Play as guest", icon="chrome_person"))
 
     au = face(w, "SignIn/Auto", False)
-    H.label(au.child(N("SignIn/Auto/Eyebrow", "Eyebrow", TL(PAD, 30, INNER, 20))), "Welcome back, pilot", "Label", "Cta")
+    H.label(au.child(N("SignIn/Auto/Eyebrow", "Eyebrow", TL(PAD, 30, INNER, 20))), "Welcome back, pilot", "Label", "NeutralLightest")
     # R9b: no Steam mark (Valve allows only its approved artwork); the account name and caption carry the card.
     H.label(au.child(N("SignIn/Auto/Name", "Name", TL(PAD, 70, INNER, 34))), "", "H2", "TextLight")
-    H.label(au.child(N("SignIn/Auto/Caption", "Caption", TL(PAD, 108, INNER, 20))), "Steam account", "Label", "Cta")
+    H.label(au.child(N("SignIn/Auto/Caption", "Caption", TL(PAD, 108, INNER, 20))), "Steam account", "Label", "NeutralLightest")
     spinner_line(au, "SignIn/Auto", 152)
     au.child(icon_button("SignIn/Auto/OtherWays", "OtherWaysButton", TL(PAD, 190, 300, 36), "Cancel", "Other ways to sign in"))
 
@@ -783,7 +783,7 @@ def validate(files):
                     f"{path}: a start-flow button also polls the pad (it would press twice)"
     # Rev 9: the lattice over the art, in both scenes, between the dim and the bottom fade.
     for path, s_ in ((SPLASH, sc), (AUTH, au)):
-        lat = [d for d in s_.docs.values() if f"guid: {M.LATTICE_WINDOW_MAT}, type: 2" in d]
+        lat = [d for d in s_.docs.values() if f"guid: {M.SEA_WINDOW_MAT}, type: 2" in d]
         assert lat, f"{path}: no living lattice over the feature art"
     # Rev 9: the sign-in window.
     choosers = [(fid, d) for fid, d in au.docs.items() if f"guid: {S['chooser']}" in d]
@@ -901,7 +901,7 @@ def self_test(files):
         ("the auth panel ships active", edit_doc(AUTH, AU["auth_go"], lambda d: d.replace("  m_IsActive: 0", "  m_IsActive: 1"))),
         ("the guest button also polls the pad", add_cbp),
         ("a privacy sprite missing", lambda f: f.__setitem__(PRIVACY, re.sub(r"(  focusRingSprite: ).*", r"\1{fileID: 0}", f[PRIVACY]))),
-        ("the splash lost its lattice", lambda f: f.__setitem__(SPLASH, f[SPLASH].replace(M.LATTICE_WINDOW_MAT, "0" * 32))),
+        ("the splash lost its sea", lambda f: f.__setitem__(SPLASH, f[SPLASH].replace(M.SEA_WINDOW_MAT, "0" * 32))),
         ("the controller lost its chooser", edit_doc(AUTH, AU["ctrl"], lambda d: re.sub(r"(  signInChooser: )\{fileID: -?\d+\}", r"\1{fileID: 0}", d))),
         ("the welcome card ships shown", lambda f: f.__setitem__(SPLASH, _show_face(f[SPLASH], "group"))),
         ("the PROGRESS face ships shown", lambda f: f.__setitem__(AUTH, _show_face(f[AUTH], "progressGroup"))),

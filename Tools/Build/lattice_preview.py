@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """
-Compile the SHIPPED lattice shader maths with clang and render it (asset-surgery §4.5c): the real
-Assets/_Graphics/Materials/Shaders/UI/UILattice.cginc and the real fragment body of Lattice.shader, through a
-short listed set of substitutions, into a C++ harness that renders frames to PNG and asserts the dials drive.
+Compile the SHIPPED style-B UI shader maths with clang and render it (asset-surgery §4.5c): each real include and
+the real fragment body of its shader, through a short listed set of substitutions, into a C++ harness that renders
+frames to PNG and asserts the dials drive.
 
     python3 Tools/Build/lattice_preview.py                 # compile, assert, render PNGs to the scratch dir
     python3 Tools/Build/lattice_preview.py --out DIR       # render into DIR
     python3 Tools/Build/lattice_preview.py --check         # compile + assert only (no PNGs)
 
-What it proves: the include and the fragment compile (-Wall -Werror); pulses appear only when lines carry them;
-reveal 0 shows nothing, reveal 1 equals the plain draw, reveal 0.5 shows a disc; the far layer adds coverage; the
-edge fade empties the corners. The rim (ElementRim.shader) and the presence orb and party bonds (Presence.shader,
-Bond.shader on UIPresence.cginc, section 45.4) go through the same translation: the orb draws exactly _Online dots
+What it proves: every include and fragment compiles (-Wall -Werror). The crystal lattice (Lattice.shader) was retired for
+the sea on 2026-10-25 (Docs/MENU_REDESIGN_B.md section 70) and its harness with it. The rim (ElementRim.shader) and the
+presence orb and party bonds (Presence.shader, Bond.shader on UIPresence.cginc, section 45.4): the orb draws exactly _Online dots
 on its orbit and turns them, a bond lights only in its member's colour and only for a seated member, the bond
-dashes flow outward, and the molecule's bond stays on its line. What it does not: Unity's own shader compile (no editor here) - the UI plumbing
+dashes flow outward, and the molecule's bond stays on its line. The sea lines (SeaLines.shader on UISeaLines.cginc,
+section 67) are thin, move slowly, loop without a seam, hold still at 0 seconds and fade at the window's top and
+bottom. What it does not: Unity's own shader compile (no editor here) - the UI plumbing
 (stencil, clip rect, UnityCG) is Unity's standard UI/Default block, copied from SilhouetteHolo.shader.
 """
 import argparse
@@ -26,13 +27,15 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 SHADER_DIR = os.path.join(REPO, "Assets/_Graphics/Materials/Shaders/UI")
-CGINC = os.path.join(SHADER_DIR, "UILattice.cginc")
-SHADER = os.path.join(SHADER_DIR, "Lattice.shader")
 RIM_CGINC = os.path.join(SHADER_DIR, "UIElementRim.cginc")
 RIM_SHADER = os.path.join(SHADER_DIR, "ElementRim.shader")
 PRESENCE_CGINC = os.path.join(SHADER_DIR, "UIPresence.cginc")
 PRESENCE_SHADER = os.path.join(SHADER_DIR, "Presence.shader")
 BOND_SHADER = os.path.join(SHADER_DIR, "Bond.shader")
+SEA_CGINC = os.path.join(SHADER_DIR, "UISeaLines.cginc")
+SEA_SHADER = os.path.join(SHADER_DIR, "SeaLines.shader")
+DRIFT_CGINC = os.path.join(SHADER_DIR, "UICardDrift.cginc")
+HULL_CGINC = os.path.join(SHADER_DIR, "UIHullLit.cginc")
 
 # The whole translation: HLSL out-params to C++ references, and the vector constructor spellings.
 SUBS = [(r"\bout float\b", "float&"),
@@ -54,6 +57,7 @@ static inline float4 mk4(float3 c, float a) { return (float4){c.x, c.y, c.z, a};
 static inline float4 mk4(float a, float b, float c, float d) { return (float4){a, b, c, d}; }
 static inline float frac(float x) { return x - std::floor(x); }
 static inline float saturate(float x) { return x < 0 ? 0 : (x > 1 ? 1 : x); }
+static inline float3 saturate(float3 v) { return (float3){saturate(v.x), saturate(v.y), saturate(v.z)}; }
 static inline float hmin(float a, float b) { return a < b ? a : b; }
 static inline float hmax(float a, float b) { return a > b ? a : b; }
 static inline float habs(float a) { return a < 0 ? -a : a; }
@@ -67,6 +71,7 @@ static inline float3 lerp(float3 a, float3 b, float t) { return a + (b - a) * t;
 static inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
 static inline float atan2_(float y, float x) { return std::atan2(y, x); }
 static inline float cos_(float x) { return std::cos(x); }
+static inline float sqrt_(float x) { return std::sqrt(x); }
 typedef float4 half4;
 typedef int sampler2D;
 static inline float4 tex2D(sampler2D, float2) { return (float4){1, 1, 1, 1}; }
@@ -77,104 +82,8 @@ static inline float4 tex2D(sampler2D, float2) { return (float4){1, 1, 1, 1}; }
 #define sin sin_
 #define atan2 atan2_
 #define cos cos_
+#define sqrt sqrt_
 """
-
-UNIFORMS = r"""
-struct v2f { float4 vertex; float4 color; float2 texcoord; float4 worldPosition; };
-float4 _Time;
-fixed4 _Color, _LineColor, _ChargeColor, _MassColor, _SpaceColor, _TimeColor;
-float _LineWidth, _NodeSize, _NearSpacing, _NearAlpha, _NearDrift, _FarSpacing, _FarAlpha, _FarDrift;
-float _PulseDensity, _PulseSpeed, _PulseRepeat, _PulseLength, _TwinkleDensity, _FadeStart, _Reveal;
-"""
-
-MAIN = r"""
-#undef min
-#undef max
-#undef abs
-#undef floor
-#undef sin
-#undef atan2
-#undef cos
-static float4 col(float r, float g, float b) { return (float4){r, g, b, 1}; }
-static void defaults() {
-    _Color = col(1, 1, 1); _LineColor = col(0.263f, 0.298f, 0.537f);
-    _ChargeColor = col(1, 0.827f, 0.302f); _MassColor = col(0.498f, 0.659f, 1);
-    _SpaceColor = col(0.690f, 0.486f, 1); _TimeColor = col(0.373f, 0.941f, 0.784f);
-    _LineWidth = 1.1f; _NodeSize = 2.4f; _NearSpacing = 130; _NearAlpha = 0.42f; _NearDrift = 55;
-    _FarSpacing = 72; _FarAlpha = 0.2f; _FarDrift = 90; _PulseDensity = 0.22f; _PulseSpeed = 240;
-    _PulseRepeat = 1400; _PulseLength = 120; _TwinkleDensity = 0.05f; _FadeStart = 0.55f; _Reveal = 1;
-}
-// Render W x H pixels of a 1920 x 1080 canvas; returns stats and optionally writes a PPM over the menu's deep blue.
-struct Stats { double coverage; double elementPixels; double cornerAlpha; double centreAlpha; };
-static Stats render(int W, int H, float t, float vertexAlpha, const char* ppm) {
-    _Time = (float4){t / 20, t, t * 2, t * 3};
-    FILE* f = ppm ? std::fopen(ppm, "wb") : nullptr;
-    if (f) std::fprintf(f, "P6 %d %d 255\n", W, H);
-    Stats s = {0, 0, 0, 0};
-    int corner = 0, centre = 0;
-    for (int y = 0; y < H; y++)
-        for (int x = 0; x < W; x++) {
-            v2f IN;
-            float u = (x + 0.5f) / W, v = (y + 0.5f) / H;
-            IN.texcoord = (float2){u, v};
-            IN.worldPosition = (float4){u * 1920, v * 1080, 0, 1};
-            IN.color = (float4){1, 1, 1, vertexAlpha};
-            float4 c = frag(IN);
-            s.coverage += c.w;
-            float sat = std::fmax(c.x, std::fmax(c.y, c.z)) - std::fmin(c.x, std::fmin(c.y, c.z));
-            if (c.w > 0.05f && sat > 0.35f) s.elementPixels += 1;
-            float du = u - 0.5f, dv = v - 0.5f;
-            if (du * du + dv * dv > 0.36f) { s.cornerAlpha += c.w; corner++; }
-            if (du * du + dv * dv < 0.01f) { s.centreAlpha += c.w; centre++; }
-            if (f) {
-                float bg[3] = {0.008f, 0.016f, 0.10f};
-                float rgb[3] = {c.x, c.y, c.z};
-                unsigned char px[3];
-                for (int k = 0; k < 3; k++) {
-                    float o = bg[k] * (1 - c.w) + rgb[k] * c.w;
-                    px[k] = (unsigned char)(o < 0 ? 0 : (o > 1 ? 255 : o * 255));
-                }
-                std::fwrite(px, 1, 3, f);
-            }
-        }
-    if (f) std::fclose(f);
-    s.coverage /= (double)W * H; s.elementPixels /= (double)W * H;
-    s.cornerAlpha /= corner ? corner : 1; s.centreAlpha /= centre ? centre : 1;
-    return s;
-}
-int main(int argc, char** argv) {
-    const char* out = argc > 1 ? argv[1] : nullptr;
-    char path[1024];
-    auto P = [&](const char* name) -> const char* { if (!out) return nullptr; std::snprintf(path, sizeof path, "%s/%s", out, name); return path; };
-    defaults();
-    Stats a = render(480, 270, 3.0f, 1.0f, P("lattice_t3.ppm"));
-    Stats b = render(480, 270, 9.0f, 1.0f, P("lattice_t9.ppm"));
-    Stats half = render(480, 270, 3.0f, 0.5f, P("lattice_reveal_half.ppm"));
-    Stats none = render(480, 270, 3.0f, 0.0f, nullptr);
-    _PulseDensity = 0; _TwinkleDensity = 0;
-    Stats calm = render(480, 270, 3.0f, 1.0f, nullptr);
-    defaults(); _FarAlpha = 0;
-    Stats nofar = render(480, 270, 3.0f, 1.0f, nullptr);
-    defaults(); _Reveal = 0;
-    Stats plain = render(480, 270, 3.0f, 1.0f, nullptr);
-    std::printf("full %.4f el %.5f corner %.4f centre %.4f | t9 el %.5f | half %.4f centre %.4f corner %.4f | none %.5f | "
-                "calm el %.5f | nofar %.4f | plain %.4f\n", a.coverage, a.elementPixels, a.cornerAlpha, a.centreAlpha,
-                b.elementPixels, half.coverage, half.centreAlpha, half.cornerAlpha, none.coverage, calm.elementPixels,
-                nofar.coverage, plain.coverage);
-    int bad = 0;
-    auto need = [&](bool ok, const char* what) { if (!ok) { std::printf("FAIL: %s\n", what); bad++; } };
-    need(a.coverage > 0.02 && a.coverage < 0.6, "the lattice covers a sensible share of the panel");
-    need(a.elementPixels > 0.0005, "element energy (pulses / twinkles) is visible");
-    need(calm.elementPixels < a.elementPixels * 0.2, "with no pulses and no twinkles the element colour goes away");
-    need(none.coverage < 1e-4, "reveal 0 draws nothing");
-    need(std::fabs(plain.coverage - a.coverage) < a.coverage * 0.02, "reveal 1 equals the plain draw");
-    need(half.centreAlpha > 0.02 && half.cornerAlpha < 1e-3, "reveal 0.5 is a disc: lattice at the centre, none at the corners");
-    need(nofar.coverage < a.coverage, "the far layer adds coverage");
-    need(a.cornerAlpha < a.centreAlpha * 0.5, "the edge fade empties the corners");
-    return bad ? 1 : 0;
-}
-"""
-
 
 RIM_UNIFORMS = r"""
 struct v2f { float4 vertex; float4 color; float2 texcoord; float4 worldPosition; float4 rimUV; };
@@ -360,6 +269,16 @@ int main() {
     need(std::fabs(emptyCover - offBond) < 0.05f, "an empty seat's bond draws nothing at all");
     need(centre.w > corner.w * 4 && corner.w < 0.02f, "the glow sits in the middle and the corners stay clear");
     need(std::fabs(shift - 0.022f) < 0.003f, "the bond's dashes flow outward at their set speed");
+    // The shipped orb since 2026-10-24: no orbiting dots, a still ring, solid still bonds.
+    defaults(); _SpinSeconds = 0; _DotSize = 0; _BondPeriod = 0; _BondSpeed = 0; _Online = 3;
+    _Bond0 = C(0.9f, 0.15f, 0.3f, 1);
+    float g0, stillDots = dots(0, &g0);
+    float4 r0 = at(0.9f, 0.1f, 0), r1 = at(0.9f, 0.1f, 10);
+    float b0 = PresenceBond(0, 0.05f, 0, 0.022f, 0.03f, 0, 0), b1 = PresenceBond(0, 0.05f, 7.3f, 0.022f, 0.03f, 0, 0);
+    std::printf("still orb: dots %.0f | ring a %.4f -> %.4f | bond %.3f -> %.3f\n", stillDots, r0.w, r1.w, b0, b1);
+    need(stillDots == 0, "dot size 0 draws no orbiting dots");
+    need(r0.w == r1.w, "spin 0 holds the ring still");
+    need(b0 > 0.5f && b0 == b1, "bond period 0 draws a solid, still bond");
     return bad ? 1 : 0;
 }
 """
@@ -401,9 +320,244 @@ int main() {
 """
 
 
+SEA_UNIFORMS = r"""
+struct v2f { float4 vertex; float4 color; float2 texcoord; float4 worldPosition; };
+float4 _Time;
+fixed4 _Color, _LineColor, _LineColorMid, _LineColorEnd, _WashTop, _WashBottom, _GlowColor;
+float _Spacing, _Loop, _Amplitude, _FarAlpha, _FarWidth, _FarSeconds, _MidAlpha, _MidWidth, _MidSeconds;
+float _NearAlpha, _NearWidth, _NearSeconds, _FadeTop, _FadeBottom;
+"""
+
+SEA_MAIN = r"""
+#undef min
+#undef max
+#undef abs
+#undef floor
+#undef sin
+#undef atan2
+#undef cos
+#undef sqrt
+static void defaults() {   // Sea_Window.mat (author_ui_lattice.py SEA)
+    _Color = (float4){1, 1, 1, 1};
+    _LineColor = (float4){0.286f, 0.722f, 1, 1}; _LineColorMid = (float4){0.498f, 0.596f, 1, 1}; _LineColorEnd = (float4){0.612f, 0.549f, 1, 1};
+    _Spacing = 46; _Loop = 480; _Amplitude = 9;
+    _FarAlpha = 0.2f; _FarWidth = 0.9f; _FarSeconds = 90; _MidAlpha = 0.3f; _MidWidth = 1.1f; _MidSeconds = 68;
+    _NearAlpha = 0.42f; _NearWidth = 1.5f; _NearSeconds = 45; _FadeTop = 0.2f; _FadeBottom = 0.2f;
+    _WashTop = (float4){0.031f, 0.086f, 0.329f, 0.75f}; _WashBottom = (float4){0, 0.008f, 0.055f, 0}; _GlowColor = (float4){0.239f, 0.549f, 1, 0.16f};
+}
+// The line-only checks run without the wash, so coverage measures the lines alone.
+static void noWash() { _WashTop.w = 0; _WashBottom.w = 0; _GlowColor.w = 0; }
+// A W x H render of a 1920 x 1080 window at time t: mean alpha, optional PPM over the 95 % veil's near-black, and
+// the per-pixel alphas for comparing frames.
+static double render(int W, int H, float t, float vertexAlpha, const char* ppm, float* keep) {
+    _Time = (float4){t / 20, t, t * 2, t * 3};
+    FILE* f = ppm ? std::fopen(ppm, "wb") : nullptr;
+    if (f) std::fprintf(f, "P6 %d %d 255\n", W, H);
+    double sum = 0;
+    for (int y = 0; y < H; y++)
+        for (int x = 0; x < W; x++) {
+            v2f IN;
+            float u = (x + 0.5f) / W, v = 1 - (y + 0.5f) / H;
+            IN.texcoord = (float2){u, v};
+            IN.worldPosition = (float4){u * 1920, v * 1080, 0, 1};
+            IN.color = (float4){1, 1, 1, vertexAlpha};
+            float4 c = frag(IN);
+            sum += c.w;
+            if (keep) keep[y * W + x] = c.w;
+            if (f) {
+                float bg[3] = {0.0f, 0.004f, 0.04f};
+                unsigned char px[3];
+                float rgb[3] = {c.x, c.y, c.z};
+                for (int k = 0; k < 3; k++) {
+                    float o = bg[k] * (1 - c.w) + rgb[k] * c.w;
+                    px[k] = (unsigned char)(o < 0 ? 0 : (o > 1 ? 255 : o * 255));
+                }
+                std::fwrite(px, 1, 3, f);
+            }
+        }
+    if (f) std::fclose(f);
+    return sum / ((double)W * H);
+}
+static double diff(const float* a, const float* b, int n) {
+    double d = 0;
+    for (int i = 0; i < n; i++) d += std::fabs(a[i] - b[i]);
+    return d / n;
+}
+int main(int argc, char** argv) {
+    const char* out = argc > 1 ? argv[1] : nullptr;
+    char path[1024];
+    auto P = [&](const char* name) -> const char* { if (!out) return nullptr; std::snprintf(path, sizeof path, "%s/%s", out, name); return path; };
+    // Full size: the lines are about one canvas unit wide, so a smaller render would miss them.
+    const int W = 1920, H = 1080, N = W * H;
+    static float f0[N], f1[N], fLoop[N], fNearLoop[N], tmp[N];
+    defaults();
+    render(W, H, 10.0f, 1.0f, P("sea_t10.ppm"), nullptr);
+    render(W, H, 25.0f, 1.0f, P("sea_t25.ppm"), nullptr);
+    // The wash: strong at the top, clear at the bottom, nothing where the window is hidden.
+    static float washed[N];
+    render(W, H, 10.0f, 1.0f, nullptr, washed);
+    double washTop = 0, washBottom = 0;
+    for (int x = 0; x < W; x++) { washTop += washed[2 * W + x]; washBottom += washed[(H - 3) * W + x]; }
+    washTop /= W; washBottom /= W;
+    defaults(); noWash();
+    double cover = render(W, H, 10.0f, 1.0f, nullptr, f0);
+    render(W, H, 10.0f + 1.0f / 60.0f, 1.0f, nullptr, f1);
+    // One loop of every layer at once: 90, 68 and 45 s share no small common period, so hold the far and middle
+    // layers still and run the near one exactly one loop.
+    defaults(); noWash(); _FarSeconds = 0; _MidSeconds = 0;
+    render(W, H, 10.0f, 1.0f, nullptr, fLoop);
+    render(W, H, 10.0f + _NearSeconds, 1.0f, nullptr, fNearLoop);
+    double loopDiff = diff(fLoop, fNearLoop, N);
+    // Still: every layer at 0 seconds draws the same frame at any time.
+    defaults(); noWash(); _FarSeconds = 0; _MidSeconds = 0; _NearSeconds = 0;
+    render(W, H, 3.0f, 1.0f, nullptr, tmp);
+    render(W, H, 30.0f, 1.0f, nullptr, fLoop);
+    double stillDiff = diff(tmp, fLoop, N);
+    defaults();
+    double hidden = render(W, H, 10.0f, 0.0f, nullptr, nullptr);
+    noWash();
+    double half = render(W, H, 10.0f, 0.5f, nullptr, nullptr);
+    // The edges: the top and bottom rows are faded out, the middle rows carry lines.
+    double top = 0, mid = 0;
+    for (int x = 0; x < W; x++) top += f0[x] + f0[(H - 1) * W + x];
+    for (int y = H / 2 - 100; y < H / 2 + 100; y++) for (int x = 0; x < W; x++) mid += f0[y * W + x];
+    mid /= 200.0 * W; top /= 2.0 * W;
+    double frame = diff(f0, f1, N);
+    std::printf("sea: cover %.4f | one frame apart %.5f | near loop %.6f | still %.6f | hidden %.6f | half %.4f | top %.5f mid %.4f\n",
+                cover, frame, loopDiff, stillDiff, hidden, half, top, mid);
+    int bad = 0;
+    auto need = [&](bool ok, const char* what) { if (!ok) { std::printf("FAIL: %s\n", what); bad++; } };
+    need(cover > 0.003 && cover < 0.02, "the sea lines are thin, and brighter than rev 12's (a small share of the window)");
+    need(frame > 1e-6, "the lines move");
+    need(frame < cover * 0.5, "and slowly: from one frame to the next a line moves a fraction of its width");
+    need(loopDiff < 2e-3, "a layer that slides one whole loop lands back where it started (no seam)");
+    need(stillDiff < 1e-6, "0 seconds holds every layer still");
+    need(hidden < 1e-7, "a hidden window draws nothing");
+    need(std::fabs(half - cover * 0.5) < cover * 0.02, "the vertex alpha fades the lines");
+    need(top < 1e-6 && mid > cover, "the top and bottom fade out, the middle carries the lines");
+    std::printf("sea wash: top %.3f bottom %.3f\n", washTop, washBottom);
+    need(washTop > 0.5 && washBottom < 0.02, "the wash is deep at the top and clear at the bottom (Rev 13)");
+    return bad ? 1 : 0;
+}
+"""
+
+
+DRIFT_MAIN = r"""
+#undef min
+#undef max
+#undef abs
+#undef floor
+#undef sin
+#undef atan2
+#undef cos
+#undef sqrt
+int main() {
+    // Card_ArtDrift.mat: reach (5, 3), 40 s. The path stays inside the reach, comes back after one loop sideways,
+    // moves a little between frames, and holds still at 0 seconds.
+    float2 reach = (float2){5.0f, 3.0f};
+    float mx = 0, my = 0, step_ = 0;
+    float2 prev = CardDriftOffset(0.0f, 40.0f, reach);
+    for (int i = 1; i <= 40 * 60 * 3; i++) {
+        float2 o = CardDriftOffset(i / 60.0f, 40.0f, reach);
+        mx = std::fmax(mx, std::fabs(o.x)); my = std::fmax(my, std::fabs(o.y));
+        step_ = std::fmax(step_, std::fabs(o.x - prev.x) + std::fabs(o.y - prev.y));
+        prev = o;
+    }
+    float2 a = CardDriftOffset(7.0f, 40.0f, reach), b = CardDriftOffset(47.0f, 40.0f, reach);
+    float2 still = CardDriftOffset(13.0f, 0.0f, reach);
+    std::printf("card drift: reach x %.3f y %.3f | biggest frame step %.4f | loop x %.5f | still %.5f\n", mx, my, step_,
+                std::fabs(a.x - b.x), std::fabs(still.x) + std::fabs(still.y));
+    int ok = mx <= 5.0001f && my <= 3.0001f && mx > 4.9f && my > 2.9f && step_ < 0.05f && std::fabs(a.x - b.x) < 1e-3f
+             && still.x == 0 && still.y == 0;
+    if (!ok) { std::printf("FAIL: the card drift leaves its reach, jumps, does not loop or will not hold still\n"); return 1; }
+    return 0;
+}
+"""
+
+
+HULL_MAIN = r"""
+#undef min
+#undef max
+#undef abs
+#undef floor
+#undef sin
+#undef atan2
+#undef cos
+#undef sqrt
+static float lum(float3 c) { return 0.2126f * c.x + 0.7152f * c.y + 0.0722f * c.z; }
+int main() {
+    // Hull_Lit.mat: gain 1.3, lift (0.14, 0.17, 0.30), white edge at 0.6. The card body is about (0.0, 0.016, 0.12).
+    float3 lift = (float3){0.14f, 0.17f, 0.30f}, white = (float3){1, 1, 1};
+    float3 black = HullLit((float3){0, 0, 0}, 1, 1, 1.3f, lift, white, 0.6f);
+    float3 trim = HullLit((float3){0.9f, 0.92f, 1.0f}, 1, 1, 1.3f, lift, white, 0.6f);
+    float3 edge = HullLit((float3){0, 0, 0}, 1, 0, 1.3f, lift, white, 0.6f);
+    float body = lum((float3){0.0f, 0.016f, 0.12f});
+    std::printf("hull lit: black -> %.3f (card %.3f) | trim -> %.3f | edge -> %.3f\n", lum(black), body, lum(trim), lum(edge));
+    int ok = lum(black) > body + 0.1f && lum(trim) > 0.95f && lum(edge) > lum(black) + 0.3f && lum(black) < 0.35f;
+    if (!ok) { std::printf("FAIL: the lit hull does not stand off the card, or its darks wash out\n"); return 1; }
+    return 0;
+}
+"""
+
+
+def build_hull(work):
+    inc = translate(open(HULL_CGINC, encoding="utf-8").read())
+    src = os.path.join(work, "hull.cpp")
+    open(src, "w").write(SHIM + inc + HULL_MAIN)
+    exe = os.path.join(work, "hull")
+    r = subprocess.run(["clang++", "-std=c++17", "-O2", "-Wall", "-Werror", "-Wno-unused-function", src, "-o", exe],
+                       capture_output=True, text=True)
+    if r.returncode:
+        sys.stderr.write(r.stderr)
+        raise SystemExit("FAIL: the hull light maths does not compile")
+    r = subprocess.run([exe], capture_output=True, text=True)
+    sys.stdout.write(r.stdout)
+    if r.returncode:
+        raise SystemExit("FAIL: the lit hull does not read on the card")
+
+
+def build_drift(work):
+    inc = translate(open(DRIFT_CGINC, encoding="utf-8").read())
+    src = os.path.join(work, "drift.cpp")
+    open(src, "w").write(SHIM + inc + DRIFT_MAIN)
+    exe = os.path.join(work, "drift")
+    r = subprocess.run(["clang++", "-std=c++17", "-O2", "-Wall", "-Werror", "-Wno-unused-function", src, "-o", exe],
+                       capture_output=True, text=True)
+    if r.returncode:
+        sys.stderr.write(r.stderr)
+        raise SystemExit("FAIL: the card drift maths does not compile")
+    r = subprocess.run([exe], capture_output=True, text=True)
+    sys.stdout.write(r.stdout)
+    if r.returncode:
+        raise SystemExit("FAIL: the card drift does not stay in its reach")
+
+
+def build_sea(work, out):
+    inc = translate(open(SEA_CGINC, encoding="utf-8").read())
+    frag = translate(extract_frag(open(SEA_SHADER, encoding="utf-8").read()))
+    src = os.path.join(work, "sea.cpp")
+    open(src, "w").write(SHIM + inc + SEA_UNIFORMS + frag + SEA_MAIN)
+    exe = os.path.join(work, "sea")
+    r = subprocess.run(["clang++", "-std=c++17", "-O2", "-Wall", "-Werror", "-Wno-unused-function", src, "-o", exe],
+                       capture_output=True, text=True)
+    if r.returncode:
+        sys.stderr.write(r.stderr)
+        raise SystemExit("FAIL: the sea lines shader maths does not compile")
+    r = subprocess.run([exe] + ([out] if out else []), capture_output=True, text=True)
+    sys.stdout.write(r.stdout)
+    if r.returncode:
+        raise SystemExit("FAIL: the sea lines dials do not drive as asserted")
+    if out:
+        from PIL import Image
+        for name in ("sea_t10", "sea_t25"):
+            ppm = os.path.join(out, name + ".ppm")
+            Image.open(ppm).save(os.path.join(out, name + ".png"))
+            os.remove(ppm)
+
+
 def extract_frag(shader_text):
     m = re.search(r"fixed4 frag\(v2f IN\) : SV_Target\n(\s*)\{", shader_text)
-    assert m, "frag() not found in Lattice.shader"
+    assert m, "frag() not found in the shader"
     i, depth = m.end() - 1, 0
     for j in range(i, len(shader_text)):
         if shader_text[j] == "{":
@@ -412,28 +566,13 @@ def extract_frag(shader_text):
             depth -= 1
             if depth == 0:
                 return "fixed4 frag(v2f IN)\n" + shader_text[i:j + 1]
-    raise AssertionError("unbalanced frag() in Lattice.shader")
+    raise AssertionError("unbalanced frag() in the shader")
 
 
 def translate(src):
     for pat, rep in SUBS:
         src = re.sub(pat, rep, src)
     return src
-
-
-def build(work):
-    inc = translate(open(CGINC, encoding="utf-8").read())
-    frag = translate(extract_frag(open(SHADER, encoding="utf-8").read()))
-    cpp = SHIM + inc + UNIFORMS + frag + MAIN
-    src = os.path.join(work, "lattice.cpp")
-    open(src, "w").write(cpp)
-    exe = os.path.join(work, "lattice")
-    r = subprocess.run(["clang++", "-std=c++17", "-O2", "-Wall", "-Werror", "-Wno-unused-function", src, "-o", exe],
-                       capture_output=True, text=True)
-    if r.returncode:
-        sys.stderr.write(r.stderr)
-        raise SystemExit("FAIL: the lattice shader maths does not compile")
-    return exe
 
 
 def build_rim(work):
@@ -478,24 +617,15 @@ def main():
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     work = tempfile.mkdtemp(prefix="lattice_")
-    exe = build(work)
     out = None if args.check else (args.out or work)
     if out:
         os.makedirs(out, exist_ok=True)
-    r = subprocess.run([exe] + ([out] if out else []), capture_output=True, text=True)
-    sys.stdout.write(r.stdout)
-    if r.returncode:
-        raise SystemExit("FAIL: the lattice dials do not drive as asserted")
-    if out:
-        from PIL import Image
-        for name in ("lattice_t3", "lattice_t9", "lattice_reveal_half"):
-            ppm = os.path.join(out, name + ".ppm")
-            Image.open(ppm).save(os.path.join(out, name + ".png"))
-            os.remove(ppm)
-        print(f"rendered to {out}")
     build_rim(work)
     build_presence(work)
-    print("OK: the lattice, the rim, the presence orb and the bonds compile and their dials drive")
+    build_sea(work, out)
+    build_drift(work)
+    build_hull(work)
+    print("OK: the rim, the presence orb, the bonds, the sea lines, the card drift and the lit hull compile and their dials drive")
 
 
 if __name__ == "__main__":

@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: ElementRim_Time
-  m_Shader: {fileID: 4800000, guid: 231d55b2b7a461dd9681bb96f99d1460, type: 3}
+  m_Name: Sea_Panel
+  m_Shader: {fileID: 4800000, guid: a858c84b2f4f82fe28d88ab1da996dc2, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -29,26 +29,34 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _BaseLevel: 0.45
-    - _Breathe: 0
-    - _BreatheSeconds: 1.8
+    - _Amplitude: 6
     - _ColorMask: 15
-    - _Linear: 0
-    - _Omni: 0
-    - _Speed: 0.12
+    - _FadeBottom: 0.08
+    - _FadeTop: 0.08
+    - _FarAlpha: 0.12
+    - _FarSeconds: 90
+    - _FarWidth: 0.8
+    - _Loop: 480
+    - _MidAlpha: 0.18
+    - _MidSeconds: 68
+    - _MidWidth: 0.9
+    - _NearAlpha: 0.26
+    - _NearSeconds: 45
+    - _NearWidth: 1.1
+    - _Spacing: 30
     - _Stencil: 0
     - _StencilComp: 8
     - _StencilOp: 0
     - _StencilReadMask: 255
     - _StencilWriteMask: 255
-    - _Tail: 0.22
     - _UseUIAlphaClip: 0
     m_Colors:
-    - _ChargeColor: {r: 1, g: 0.827451, b: 0.3019608, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _ElementColor: {r: 0.372549, g: 0.9411765, b: 0.7843137, a: 1}
-    - _MassColor: {r: 0.4980392, g: 0.6588236, b: 1, a: 1}
-    - _SpaceColor: {r: 0.6901961, g: 0.4862745, b: 1, a: 1}
-    - _TimeColor: {r: 0.372549, g: 0.9411765, b: 0.7843137, a: 1}
+    - _GlowColor: {r: 0, g: 0, b: 0, a: 0}
+    - _LineColor: {r: 0.2862745, g: 0.7215686, b: 1, a: 1}
+    - _LineColorEnd: {r: 0.6117647, g: 0.5490196, b: 1, a: 1}
+    - _LineColorMid: {r: 0.4980392, g: 0.5960785, b: 1, a: 1}
+    - _WashBottom: {r: 0, g: 0, b: 0, a: 0}
+    - _WashTop: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

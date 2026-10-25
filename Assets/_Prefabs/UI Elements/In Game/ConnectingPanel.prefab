@@ -191,7 +191,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1084409188186918338}
   - component: {fileID: 380165486786364918}
-  - component: {fileID: 627889339781650946}
   m_Layer: 5
   m_Name: Drift
   m_TagString: Untagged
@@ -232,22 +231,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   image: {fileID: 1147704321609715374}
---- !u!114 &627889339781650946
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 294852020924023654}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fd34103d35b600054f385f891268893d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mode: 4
-  period: 28
-  amplitude: 0.06
-  phase: 0
 --- !u!1 &1044616899980077005
 GameObject:
   m_ObjectHideFlags: 0
@@ -1108,6 +1091,22 @@ MonoBehaviour:
   mode: 1
   period: 1.6
   amplitude: 0.6
+  phase: 0
+--- !u!114 &627889339781650946
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 294852020924023654}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd34103d35b600054f385f891268893d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 4
+  period: 28
+  amplitude: 0.06
   phase: 0
 --- !u!1 &917125772582838926
 GameObject:

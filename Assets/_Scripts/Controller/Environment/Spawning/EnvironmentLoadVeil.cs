@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
     /// "Loading" caption at the bottom of the screen, not a headline.</para>
     ///
     /// <para><b>Rev 7: not black any more</b> (the owner, 2026-10-17: "Black loading screen when changing cell show
-    /// something interesting"; Docs/MENU_REDESIGN_B.md §47.4). Over the black: the living lattice, an omni crystal
+    /// something interesting"; Docs/MENU_REDESIGN_B.md §47.4). Over the black: the sea (§70), an omni crystal
     /// filling as the cell builds, "Entering" and the cell's name with its line, the four build steps lighting in
     /// their elements as the real phases pass (laying, growing, the all-clear hold, the reveal), and a tip. The build
     /// runs this screen at about 10 frames a second, so nothing here is fast motion: the crystal rises with the work
@@ -174,15 +174,15 @@ namespace CosmicShore.Gameplay
             if (!_words)
                 CSDebug.LogWarning($"[EnvironmentLoadVeil] No {nameof(EnvironmentLoadVeilContentSO)} at Resources/" +
                                  $"{EnvironmentLoadVeilContentSO.ResourcePath} - the loading screen shows its bar alone.");
-            // The living lattice over the black (its motion is the shader's, so it costs no canvas rebuild).
-            if (_words && _words.lattice)
+            // The sea over the black (its motion is the shader's, so it costs no canvas rebuild).
+            if (_words && _words.background)
             {
-                var lattice = new GameObject("Lattice", typeof(Image));
-                lattice.transform.SetParent(transform, false);
-                var image = lattice.GetComponent<Image>();
-                image.material = _words.lattice;
+                var sea = new GameObject("Sea", typeof(Image));
+                sea.transform.SetParent(transform, false);
+                var image = sea.GetComponent<Image>();
+                image.material = _words.background;
                 image.raycastTarget = false;
-                Stretch(lattice.GetComponent<RectTransform>());
+                Stretch(sea.GetComponent<RectTransform>());
             }
 
             // The backdrop bleeds and the readout does not - the safe-area split of
@@ -200,8 +200,10 @@ namespace CosmicShore.Gameplay
             crystalGo.transform.SetParent(_content, false);
             _crystal = crystalGo.AddComponent<LoadCrystalGraphic>();
             _crystal.raycastTarget = false;
-            _crystal.SetColours(UITheme.Resolve(null, UIColorToken.ElementMass), UITheme.Resolve(null, UIColorToken.ElementTime),
-                                UITheme.Resolve(null, UIColorToken.ElementCharge), UITheme.Resolve(null, UIColorToken.ElementSpace),
+            // The facets are the neutral blues, not the four element colours: elements carry no colour in the UI
+            // (Docs/UI_COLOR_RULES.md). The crystal's growth is the transition's motion.
+            _crystal.SetColours(UITheme.Resolve(null, UIColorToken.SurfaceLight), UITheme.Resolve(null, UIColorToken.NeutralLightest),
+                                UITheme.Resolve(null, UIColorToken.ControlActive), UITheme.Resolve(null, UIColorToken.NeutralLightest),
                                 UITheme.Resolve(null, UIColorToken.TextLight));
             Centre(crystalGo.GetComponent<RectTransform>(), new Vector2(0f, 150f), new Vector2(300f, 300f));
 
@@ -219,13 +221,12 @@ namespace CosmicShore.Gameplay
 
             var steps = Row(_content, "Steps", 40f);
             Centre((RectTransform)steps.transform, new Vector2(0f, -230f), new Vector2(0f, 30f));
-            UIColorToken[] elements = { UIColorToken.ElementMass, UIColorToken.ElementTime, UIColorToken.ElementCharge, UIColorToken.ElementSpace };
             for (int i = 0; i < StepCount; i++)
             {
                 var step = Row(steps.transform, $"Step{i + 1}", 12f);
                 _steps[i] = step.AddComponent<CanvasGroup>();
                 _steps[i].alpha = StepPendingAlpha;
-                var colour = UITheme.Resolve(null, elements[i]);
+                var colour = UITheme.Resolve(null, UIColorToken.TextLight);   // the glyph tells the steps apart, not a colour
                 var glyph = _words.StepGlyph(i);
                 if (glyph)
                 {
@@ -245,7 +246,7 @@ namespace CosmicShore.Gameplay
             if (string.IsNullOrEmpty(tip)) return;
             var tipRow = Row(_content, "Tip", 12f);
             Centre((RectTransform)tipRow.transform, new Vector2(0f, -310f), new Vector2(0f, 26f));
-            Label(tipRow.transform, "TipLabel", _words.captionFont, 13f, 12f, UITheme.Resolve(null, UIColorToken.ElementTime),
+            Label(tipRow.transform, "TipLabel", _words.captionFont, 13f, 12f, UITheme.Resolve(null, UIColorToken.NeutralLightest),
                   _words.tipLabel).fontStyle = FontStyles.UpperCase;
             Label(tipRow.transform, "TipText", _words.captionFont, 17f, 0f, UITheme.Resolve(null, UIColorToken.TextLight), tip);
         }

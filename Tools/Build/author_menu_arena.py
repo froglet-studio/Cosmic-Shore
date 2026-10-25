@@ -60,6 +60,8 @@ COLS, ROWS, GAP = 4, 1, 20
 CARD_W, CARD_H = (A.CONTENT_W - (COLS - 1) * GAP) // COLS, 560
 GRID_W = COLS * CARD_W + (COLS - 1) * GAP
 TEXT_W = -52                    # stretched text: 26 px either side
+ART_BAND_H = CARD_H // 2        # Rev 18 A: the art on top, the body under it
+HULL_PLATE = 52
 PLACEHOLDER_ART = A.sprite_guid("Assets/_SO_Assets/Games/ArcadeGameSkimRace.asset", "CardBackground")
 
 
@@ -85,14 +87,14 @@ def build_card():
     fill = root.child(N("Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
+    # Rev 18 A (Docs/MENU_REDESIGN_B.md section 72): the art drifts in a band on top; the words sit on the opaque body.
     clip = root.child(N("Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-2, -2))))
     clip.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), K.kit_sprite("kit_sliver14_fill"), True)) \
-        .add("mask", 114, A.mask(False)) \
-        .add("cover", 114, lambda ctx, go: mono(go, S["cover"], f"  image: {ref(ctx.c('Clip/Art', 'img'))}\n"))
-    art_node(clip, "Clip/Art", "Art", R(size=(CARD_W, CARD_W * 510 / 768)), PLACEHOLDER_ART)
-    image_node(clip, "Clip/Fade", "Fade", R((0, 0), (1, 0), (0, 0), (0, 320), (0.5, 0)), "SurfaceBlack",
-               K.kit_sprite("kit_fade_v"))
+        .add("mask", 114, A.mask(False))
+    A.art_band(clip, "Clip/Band", CARD_W, ART_BAND_H, PLACEHOLDER_ART)
+    A.body_sea(clip, "Clip/Sea", CARD_H - ART_BAND_H)
+    image_node(root, "Seam", "Seam", R((0, 0), (1, 0), (0, CARD_H - ART_BAND_H), (-2, 1), (0.5, 0.5)), "SurfaceDark")
     bord = root.child(N("Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
 
@@ -108,10 +110,10 @@ def build_card():
              f"  theme: {K.ref(11400000, K.THEME, 2)}\n  hoverToken: {K.TOKEN_INDEX['TextLight']}\n"
              + refs("texts", []) + refs("graphics", [ctx.c("Star/Glyph", "th")])))
 
-    lock = root.child(N("Lock", "Lock", R(pos=(0, 50), size=(34, 34))))
+    lock = root.child(N("Lock", "Lock", R(pos=(0, CARD_H / 2 - ART_BAND_H / 2 + 14), size=(34, 34))))
     lock.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight", 0.0), K.chrome_sprite("chrome_lock"),
                                                                    preserve=True))
-    lab = root.child(N("LockLabel", "LockLabel", R(pos=(0, 18), size=(200, 18))))
+    lab = root.child(N("LockLabel", "LockLabel", R(pos=(0, CARD_H / 2 - ART_BAND_H / 2 - 18), size=(200, 18))))
     lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("LOCKED", "Label", tok("TextLight", 0.0), align="center")) \
         .add("kt", 114, K.kit_text("Label", "TextLight", driven=True))
 
@@ -121,28 +123,27 @@ def build_card():
     pick.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), A.AVATAR_PLACEHOLDER, preserve=True)) \
         .add("cg", 225, canvas_group(False)).add("le", 114, le(pw=24, ph=24))
 
-    # A tall card stacks its words up from the bottom: hulls, tagline, title, then the eyebrow with the
-    # domain count on its right.
-    label(root.child(N("Eyebrow", "Eyebrow", R((0, 0), None, (26, 180), (240, 18), (0, 0)))), "Arena - 2 - 6 pilots",
+    # The body reads down from the seam: pilots and domains on one line, the name, the description; the hulls the
+    # card seats sit lit along the foot (Hull_Lit.mat, section 73).
+    body_top = CARD_H - ART_BAND_H
+    label(root.child(N("Eyebrow", "Eyebrow", R((0, 0), None, (26, body_top - 30), (240, 18), (0, 0.5)))), "Arena - 2 - 6 pilots",
           "Label", "NeutralLightest")
-    title = root.child(N("Title", "Title", R((0, 0), (1, 0), (0, 128), (TEXT_W, 46), (0.5, 0))))
+    label(root.child(N("Domains", "Domains", R((1, 0), None, (-26, body_top - 30), (120, 18), (1, 0.5)))), "2 domains", "Label",
+          "NeutralLightest", align="right")
+    title = root.child(N("Title", "Title", R((0, 0), (1, 0), (0, body_top - 70), (TEXT_W, 46), (0.5, 0.5))))
     title.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Game", "H1", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H1", "TextLight", driven=True))
-    tag = root.child(N("Tagline", "Tagline", R((0, 0), (1, 0), (0, 74), (TEXT_W, 42), (0.5, 0))))
+    tag = root.child(N("Tagline", "Tagline", R((0, 0), (1, 0), (0, body_top - 132), (TEXT_W, 66), (0.5, 0.5))))
     tag.add("cr", 222, K.canvas_renderer()) \
         .add("tmp", 114, text("", "BodySmall", tok("TextLight"), valign="top", wrap=True)) \
         .add("kt", 114, K.kit_text("BodySmall", "TextLight"))
-    label(root.child(N("Domains", "Domains", R((1, 0), None, (-26, 180), (120, 18), (1, 0)))), "2 domains", "Label",
-          "TextLight", align="right")
-    hulls = root.child(N("Hulls", "Hulls", R((0, 0), (1, 0), (0, 22), (TEXT_W, 40), (0.5, 0))))
-    hulls.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 6, 3, (0, 0), (0, 0)))
-    chip = hulls.child(N("Hulls/Chip", "HullChip", R(size=(40, 40))))
-    H.framed(chip, "Hulls/Chip", 10, "SurfaceVeryDark", "SurfaceLight")
-    chip.add("cg", 225, canvas_group(False)).add("le", 114, le(ignore=True, pw=40, ph=40))
-    art_node(chip, "Hulls/Chip/Icon", "Icon", R(size=(30, 30)), None, preserve=True)
+    hulls = root.child(N("Hulls", "Hulls", R((0, 0), (1, 0), (0, 22 + HULL_PLATE / 2), (TEXT_W, HULL_PLATE), (0.5, 0.5))))
+    hulls.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 3, (0, 0), (0, 0)))
+    chip = A.hull_icon(hulls, "Hulls/Chip", R(size=(HULL_PLATE, HULL_PLATE)), "Hulls/Chip/Icon", HULL_PLATE)
+    chip.add("cg", 225, canvas_group(False)).add("le", 114, le(ignore=True, pw=HULL_PLATE, ph=HULL_PLATE))
 
     root.add("tile", 114, A.tile_body(c("FocusRing", "img"), c("Fill", "img"), c("Border", "img"), 14,
-                                      primary=[c("Title", "tmp")], art=[c("Clip/Art", "img")],
+                                      primary=[c("Title", "tmp")], art=[c("Clip/Band/Art", "img")],
                                       lock=c("Lock", "img"), lock_label=c("LockLabel", "tmp"), sel_border="Selection",
                                       on_click=[lambda ctx: (ctx.c("root", "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")]))
     root.add("card", 114, lambda ctx, go: mono(go, S["card"],
@@ -151,7 +152,7 @@ def build_card():
              f"  StarIconInActive: {K.sprite_ref(K.chrome_sprite('chrome_star'))}\n"
              "  ExploreView: {fileID: 0}\n"
              f"  GameTitle: {ref(ctx.c('Title', 'tmp'))}\n"
-             f"  BackgroundImage: {ref(ctx.c('Clip/Art', 'img'))}\n"
+             f"  BackgroundImage: {ref(ctx.c('Clip/Band/Art', 'img'))}\n"
              f"  StarImage: {ref(ctx.c('Star/Glyph', 'img'))}\n"
              "  Index: 0\n  VesselIcon: {fileID: 0}\n"
              f"  VesselList: {K.ref(11400000, A.VESSEL_LIST, 2)}\n"
@@ -185,8 +186,8 @@ def build_view():
     root = N("root", "ArenaView", STRETCH)
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
     image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=A.WINDOW_BACKDROP_ALPHA)
-    # Rev 6: the living lattice over the glass (Lattice_Window.mat); it crystallises in as the window fades in.
-    root.child(M.window_lattice_node("BackdropLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
+    # §67: the sea lines over the glass (Sea_Window.mat), slow wave lines in three depth layers.
+    root.child(M.window_sea_node("BackdropLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
 
     # Sibling order is FOCUS order (ScreenSwitcher.Refocus): the cards first, the party panel (laid
     # out on the left by the reversed row) next, the header's Back last - as the arcade window.
@@ -220,6 +221,7 @@ def build_view():
     # Rev 3: the party panel moved to the one friends drawer on Menu_Main; the explore scroll fills the body.
 
     header = root.child(N("Header", "Header", A.WINDOW_HEADER))
+    A.drawer_dock(root)
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
     label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "ARENA", "Label",
           "NeutralLightest")
@@ -406,6 +408,7 @@ def validate(files):
     assert body and S["card"] in body, "ArenaGameCard: the root carries no KitArenaGameCard"
     for field, want in CARD_FIELDS.items():
         C.wired(card, body, field, want, "ArenaGameCard")
+    A.check_card_a(card, "ArenaGameCard", "Clip/Band", (A.CONTENT_W - (COLS - 1) * GAP) / COLS, ART_BAND_H)
     chip_le = A.doc_of(card, K.FileIds("ArenaGameCard")("Hulls/Chip#le"))[1]
     assert chip_le and "  m_IgnoreLayout: 1\n" in chip_le, "the hull chip template must start out of layout (hidden)"
     view = files[prefab_path("ArenaView")]

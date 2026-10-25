@@ -166,11 +166,26 @@ geometry re-point. The printed procedure ends by clearing the animation's part f
 > petals are never tinted. A locked card stays dim and still. Tunable on the style asset (`lavaAlpha`,
 > `lavaDrift`, `lavaPeriod`, `lavaMotion` off = still colour, no per-frame work). Mockups: the canvas's Rev 3 page,
 > `R3Hud<Vessel>` boards.
+>
+> **Retired 2026-10-24 (Garrett, `Docs/UI_COLOR_RULES.md`):** elements are told by shape, animation and effects, never
+> by a fixed colour. `elementColour` and `lavaMotion` now default to off and `Resources/AbilityLockupStyle.asset`
+> ships both off (`author_ingame_hud.py` checks it; `check_ui_colors.py` gates it). The fields stay for the vessel
+> HUDs that still call `ColourFor` (Starling, Goby & Pistol, Orca, touch controls), which are their owners' to re-tune.
 
 > **Every card is its ability's button (2026-10-19, Garrett).** A finger on a pressable card presses the control its
 > chip names and lifting releases (`AbilityCardPress`); locked, passive (`Input: 0`) and gesture cards are not
 > pressable, and a touch that starts on a card is not a flight thumb (`FlightTouchClaims`). `Docs/ABILITY_LOCKUP.md`
 > "Tap a card".
+
+> **No vessel draws controls of its own (LOCKED, Garrett 2026-10-25, every vessel).** "On PC the gamepad view should only
+> every have the 5 standard ability icons and any additional active controls should be to the left of those (like the
+> squirrel's drift) and it should be labeled with a glyph. this is always true for vessels." The five are the four
+> elemental cards and the omni crystal's. A control that is not one of them is a CORE card left of the five
+> (`CoreAbility`, `VesselHUDView.CoreAbilityDisplayOrder`), its chip drawn from the binding's input like every card's.
+> Never a button a vessel draws over its view: the Jacks' herding view carried a zoom and a call button top right in
+> rounds 2-9 and they were removed (its call is the Mass card, its zoom the Space card, `R_VesselActions/JACKS.md` §1).
+> A mode that pauses the flight's buttons (a crew seat, the Jacks' herding) still hears its cards by listening to the
+> input status's `OnButtonPressed` itself (`JacksExecutor.ListenToCards`).
 
 Every vessel HUD shows **exactly four ELEMENTAL ability icons in the lower right — one per element** —
 and the order is not a layout preference, it is the element contract made visible:
