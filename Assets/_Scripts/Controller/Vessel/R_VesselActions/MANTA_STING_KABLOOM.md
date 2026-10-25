@@ -208,7 +208,7 @@ Garrett, 2026-10-21: *"the manta can fly ultra fast when you lift both thumbs an
 
 ## 6. HUD
 
-`MantaVesselHUDController` / `MantaVesselHUDView` were rewritten around the bomb bay. The old
+`MantaHUDController` / `MantaVesselHUDView` were rewritten around the bomb bay. The old
 overcharge fields carry over by `[FormerlySerializedAs]` so the prefab wiring survived the
 rename — and since the 2026-08-26 playtest pass every readout lives INSIDE the ability row
 (the readouts' old floating homes read as a second UI, and the fuse panel popping mid-screen

@@ -14,7 +14,7 @@ namespace CosmicShore.UI
     /// The fuse countdown is the one per-frame poll (a burning number has no event to ride);
     /// it early-outs while nothing is planted.
     /// </summary>
-    public class MantaVesselHUDController : VesselHUDController
+    public class MantaHUDController : VesselHUDController
     {
         [Header("View")]
         [SerializeField] private MantaVesselHUDView view;

@@ -469,14 +469,14 @@ measurement attached is worse than no row.
   a wiring change. The container and both prefabs are deliberately KEPT: a dangling container
   reference is worse than an empty one.
 - **[RESOLVED 2026-10-16 — the consumer side went first.]** `EventOnSkimmerDebuffApplied.asset` and
-  `EventOnVesselSlowedByExplosion.asset` are deleted, and `RhinoVesselHUDController`'s four SOAP
+  `EventOnVesselSlowedByExplosion.asset` are deleted, and `RhinoHUDController`'s four SOAP
   channels with them (two had no producer; the other two counted EVERY Rhino's blasts, not this
   one's). The `ScriptableEventSkimmerDebuffApplied` / `SkimmerDebuffPayload` TYPE survives with no
   asset, producer or consumer — the generic vehicle is still there for a future Debuff-class
   skimmer effect. Kept for the record:
   **`ScriptableEventSkimmerDebuffApplied` / `SkimmerDebuffPayload` have no producer.** Measured: the
   only raiser was `VesselDamageBySkimmerEffectSO` (deleted); the only consumer is
-  `RhinoVesselHUDController.ShowDebuffTimer`, whose readout is ALREADY dark for an unrelated reason
+  `RhinoHUDController.ShowDebuffTimer`, whose readout is ALREADY dark for an unrelated reason
   (the ability lockup's retire sweep switched the Rhino's whole root-level status cluster off —
   `Docs/ABILITY_LOCKUP.md`). Kept as a wire rather than deleted: it is the generic *"a skimmer
   debuffed you"* vehicle and the next Debuff-class skimmer effect is its producer. Deciding between

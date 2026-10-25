@@ -32,7 +32,7 @@ namespace CosmicShore.UI
     /// re-init flipped the pilot between local and AI. Each push is change-detected, so a steady
     /// card costs a compare per frame.</para>
     /// </summary>
-    public sealed class RhinoVesselHUDController : VesselHUDController
+    public sealed class RhinoHUDController : VesselHUDController
     {
         [Header("View")]
         [SerializeField] private RhinoVesselHUDView view;

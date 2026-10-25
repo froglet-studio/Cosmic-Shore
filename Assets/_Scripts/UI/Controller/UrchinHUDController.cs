@@ -24,7 +24,7 @@ namespace CosmicShore.UI
     /// progress, read off the vessel's OWN spike executor. Also a clock, also polled.</item>
     /// </list>
     /// </summary>
-    public class UrchinVesselHUDController : VesselHUDController
+    public class UrchinHUDController : VesselHUDController
     {
         [Header("View")]
         [SerializeField] UrchinVesselHUDView view;

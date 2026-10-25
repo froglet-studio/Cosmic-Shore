@@ -2278,7 +2278,7 @@ corrected above, and their checks wait for the next `/qa-backlog` run.
 
 ### QA-URCHIN-HUD ⬜ — the Urchin finally has its four ability icons and gauges
 **Source:** PR #973 (`Tools/Build/author_urchin_hud.py`; `UrchinHUDVariant.prefab`,
-`Urchin.prefab`, `UrchinVesselHUDController`). Prefabs written as text and never imported; the
+`Urchin.prefab`, `UrchinHUDController`). Prefabs written as text and never imported; the
 Urchin flew with no HUD at all before this. Reference: `Docs/UNITY_VERIFICATION_CHECKLIST.md`
 "Urchin HUD variant and four-icon row".
 

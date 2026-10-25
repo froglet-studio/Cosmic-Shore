@@ -184,7 +184,7 @@ Nothing below can be checked without play mode.
 
 ## Follow-ups
 
-- ~~**No HUD.**~~ Closed 2026-10-06 (`URCHIN_BACKLOG.md` U3): `UrchinVesselHUDController` reads
+- ~~**No HUD.**~~ Closed 2026-10-06 (`URCHIN_BACKLOG.md` U3): `UrchinHUDController` reads
   `UrchinTrackActionExecutor.CooldownRemaining01` from a serialized reference and pushes it as
   the Space card's recharge veil.
 - **No deploy sound.** `deployEvent` ships **empty** (an unwired `EventReference` is a visible TODO;
