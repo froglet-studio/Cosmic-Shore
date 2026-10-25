@@ -218,7 +218,8 @@ same ledger issues. Keep it a pure function — no editor types, no statics with
 
 Auto-capture guard rails: own `[BugLedger]`/`[CrashDetector]` console lines are excluded, a
 bounded queue absorbs storms (dedupe makes drops harmless), an **auto-issue cap** stops a runaway
-error generator from minting files, and occurrence updates are throttled to **one file write per
+error generator from minting files (it counts open issues seen in the last 30 days; counting every
+issue ever filed stopped a months-old ledger filing anything new), and occurrence updates are throttled to **one file write per
 issue per editor session** — so a published issue doesn't flip to pending-MOD on every single
 occurrence.
 
@@ -327,6 +328,12 @@ frames are the stack walker, `DebugLogHandler`, `Logger` and `BenignLobbyLogFilt
 drops those and the native address prefix, so its first line is the code that logged. (The first
 shared "Rpc methods can only be invoked after starting the NetworkManager!" arrived with nothing
 but plumbing, so its sender could not be found.)
+Native frames with no managed method (Windows, mono, a plugin DLL) count as plumbing too. When ten
+SDK frames fill the excerpt before any `CosmicShore.` frame, the excerpt drops SDK frames to fit and
+ends with `...` and our first three frames (still under the 1,500-character cap the board keeps).
+An issue's stack is kept from its first sighting, except that one which names none of our frames
+is replaced by the first later excerpt that does, so issues filed by an older ledger fill in once
+their reporter pulls.
 
 **Older path, still read:** issues published before this into a branch's working-tree
 `BugLedger/shared/issues/` are still imported at load and still read by `collect`.
