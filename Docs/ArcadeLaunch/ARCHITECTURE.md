@@ -926,6 +926,14 @@ integration point rather than part of the two-screen path.
 
 ## The Maelstrom pool list is a Toy Box VARIANT ROW
 
+> **Superseded 2026-10-25 (kept for the lesson below).** The style-B configure windows (`a326296f6`,
+> 2026-10-15) moved the pool list out of `Menu_Main` into `ConfigureMaelstromView.prefab`, with its own
+> row, `ConfigurePoolRow.prefab`; both are authored by `Tools/Build/author_menu_configure.py`. The
+> `MaelstromPoolRow.prefab` this section describes was then referenced by nothing, and its generator,
+> `author_maelstrom_pool_cards.py`, had no grid left to patch, so both were deleted
+> (`Docs/REFACTOR_BACKLOG.md` S62). What still holds is the rule at the end of the next paragraphs: a
+> card slot is a promise about what the data means.
+
 `MaelstromPoolRow.prefab` was a 228×170 chamfered PNG drawn **Simple** — stretched — into a 260×80
 grid cell, carrying one centred label and nothing else. That is the trap §4.1.8 of
 `Docs/HomeHub/ARCHITECTURE.md` records for the toy cards and `Docs/GAME_MODE_TOPBAR.md` for the goal
