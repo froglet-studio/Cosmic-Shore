@@ -59,7 +59,7 @@ def crystal_joust():
     Chosen 2026-10-25 from four placements (halves flung apart / at the nose / bigger / already passed)."""
     me = squirrel_top(56, 64, 100, heading=0)
     body = fill(ngon(6, 26, 96, 64, rot=0))
-    channel = rect(0, 55, 128, 73)
+    channel = rect(0, 50, 128, 78)   # wider than the body: a clear gap each side, not a slit (gate: gap)
     return me | (body & ~channel)
 
 
