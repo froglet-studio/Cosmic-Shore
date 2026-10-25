@@ -117,7 +117,8 @@ rate, so it reaches the ceiling sooner, not higher.
 ## 4. AI — cruise only, honestly
 
 `AIPilot` writes the stick and the throttle and nothing else, and the Thresher's sling is the
-**triggers** (LT plants, RT winds). **An AI Thresher never slings.** It races at cruise on the
+**triggers** (LT plants, RT winds). **Since 2026-10-26 an AI Thresher slings the sharp corners**
+(`ThresherSlingAIPolicySO`, below); everywhere else it races at cruise on the
 gate-race platform's approach steering — throttle `lerp(0.2, 0.9, skill)` with skill = intensity ×
 0.25, so 56 / 76 / 95 / **114 u/s** at levels 1–4 (the towed ball, its chain slack because no RT is
 pulled, costs 1–10% of that in a hard turn) — on a ≤ 60 u circle. That is why every floor sits above
@@ -128,14 +129,20 @@ human who slings will beat it.
 - AI approach numbers are sized to that cruise circle, not the 229 u full-sling one: Slingshot's
   ratios (2.2 / 2.5 / 1.7×) on 60 u — commit **135** / lead **150** / through **100**. The generator
   asserts they sit outside the cruise circle (AIPilot has no arrive-and-stop).
-- `Thresher.prefab`'s `AIPilot` is enabled (asserted). Its `boostPolicy` is the Squirrel's
-  `SkimRingAIPolicySO`, inherited with the hull clone; it binds only a `SquirrelTubeActionSO`, which the
-  Thresher does not carry, so its driver is null and inert.
-- **Follow-up, not done here:** an autopilot sling (Grizzly Time's autopilot bomb-jump and Slingshot's
-  `AutopilotSling` are the models — plant through the REPLICATED press when the next gate is ≥ ~70° off
-  the nose, release when the orbit's tangent faces it). It belongs in `ThresherExecutor`, which another
-  branch was editing while this mode was authored (the hull/animation/ball pass), so it was left out
-  rather than merged blind. Until then the AI is honest about being slower.
+- `Thresher.prefab`'s `AIPilot` is enabled (asserted). Its `boostPolicy` is **`ThresherAIBoostPolicy`**
+  (`ThresherSlingAIPolicySO`, 2026-10-26). Until then it was the Squirrel's `SkimRingAIPolicySO`, inherited
+  with the hull clone, which binds only a `SquirrelTubeActionSO` the Thresher does not carry, so the AI never
+  slung.
+- **The autopilot sling** is the design this section used to leave as the follow-up. When the ring is at
+  least `plantMinTurnDegrees` (70) off the course and `plantMinDistance` (120 u) away, it presses Plant and,
+  with `windWhilePlanted`, Winch. The ball stops, the ship swings round it and the rigid chain spins it up.
+  It lets go once the course (the orbit's tangent) is within `releaseConeDegrees` (15) of the ring, or after
+  `maxPlantSeconds` (3). Released unaimed, it leaves along the tangent at the orbit's speed (the same let-go
+  as a human with no launch view; the ×4.8 aimed launch stays a human's). Both edges go through the
+  REPLICATED press, because every peer simulates the chain from the presses. It is a boost policy rather
+  than code in `ThresherExecutor`, so its numbers are per-mode assets the AI learning sweep can learn from
+  people's Thresher races (`Docs/AI_SYSTEM/AUTO_LEARNING.md`). The course is still cut for an AI at cruise
+  (every corner flyable without a sling), so an AI that slings badly still finishes.
 
 ## 5. Numbers, and where they are authored
 
@@ -201,7 +208,9 @@ circuits' recipe in `render_card_backgrounds.py`.
 4. **Lap wrap.** After gate 8 the lit ring returns to gate 1 and the goal row reads 8/24.
 5. **Intensity 4.** A median lap is a triangle: two near-hairpins (~100–120 u) that throw a sling wide
    and a third (~200 u) that holds most of one. Planting at the hairpins should be the fast line.
-6. **AI.** Add AI Threshers: they steer, thread rings at cruise, never plant, and finish the race.
+6. **AI.** Add AI Threshers: they steer and thread rings at cruise. At a sharp corner (the next ring 70°+
+   off) they plant, swing round the ball and leave toward the ring. They finish the race. The Third Eye's
+   readout says "planted: swinging round the ball" while one is planted.
 7. **MPPM two clients.** Both see the same circuit; a client's gate reports are credited once; a
    sling at the ceiling is not read as a respawn (`maxPlausibleSpeed` 1600).
 8. **Regressions.** Grizzly Time, Redline and Headlong unchanged.
@@ -211,7 +220,7 @@ circuits' recipe in `render_card_backgrounds.py`.
 ## 8. Known limitations / follow-ups
 
 - **Not editor-verified.** Nobody has flown it.
-- **AI never slings** (§4). An autopilot sling in `ThresherExecutor` is the follow-up.
+- **The AI's sling is unmeasured** (§4, 2026-10-26): not run in Unity, its numbers are the design's, not tuned.
 - **Whether slinging WINS is the open question.** The orbit is time off the track; the table in §1
   says a sling pays as a corner, not as a straight. If a cruise pilot who never plants keeps up with a
   slinger, the dials are the chain's (`lockSpin`, `chainRigidRate`, `maxBall`) or the course (tighter

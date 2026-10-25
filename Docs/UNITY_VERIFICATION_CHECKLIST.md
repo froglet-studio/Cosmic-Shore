@@ -65,6 +65,32 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The AI Thresher slings; the Wrasse's stale boost policy cleared (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `ThresherSlingAIPolicySO` (new) on `Thresher.prefab`'s AIPilot (`ThresherAIBoostPolicy.asset`), replacing
+the Squirrel's inherited `SkimRingAIPolicySO`, which bound nothing on a Thresher. At a corner 70°+ off and 120 u+ away it
+presses Plant (and Winch) through the replicated path, and lets go when its course faces the ring (15°) or after 3 s
+(THRESHERTIME.md §4). `ThresherActionSO.Control` getter added. `Wrasse.prefab`'s AIPilot names no policy now: the
+Sparrow's, inherited with the clone, pressed a Boost the Wrasse does not bind; the crew's boost is KiteNavigator's.
+Both mode generators check it.
+
+**Verified without the editor:** reference compile (editor config) 0 errors in changed files; `author_thresher_assets`,
+`author_thresher_time_assets`, `author_wrasse_assets`, `author_wrasse_run_assets` `--check` OK (the two new checks
+watched failing on the old references); network-prefab-hash check OK. NOT run: `ThresherSlingAIPolicyTests`.
+
+**Verify in editor:**
+1. Run `ThresherSlingAIPolicyTests` (EditMode): all pass.
+2. Thresher Time with AI Threshers, I2: at a sharp corner an AI plants (its ball stops, it swings round), leaves toward
+   the ring and threads it. The Third Eye readout says `ThresherAIBoostPolicy: planted: swinging round the ball` then
+   `waiting for a corner`. Every AI still finishes.
+3. No AI Thresher sits planted: each swing ends within about 3 s.
+4. In a party of two, the client sees the AI's ball stop and the AI swing, the same as the host (the presses replicate).
+5. Wrasse Run with AI crews: the Grouper still boosts on the straights (KiteNavigator), exactly as before.
+
+**First-pass tuning** (`ThresherAIBoostPolicy`): plant at 70°+ off, 120 u+ away, 1.5 s between slings, let go within
+15° or at 3 s, winch while planted. The AI learning sweep learns them from people's Thresher races once there are three
+complete ones in a mode.
+
 ### 🔴 Skim Race flights carry their track (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed:** `HumanFlightRecorder` copies Skim Race's `SpawnableWaypointTrack` into each Skim Race flight

@@ -92,6 +92,9 @@ at full throttle. Two laps of ~4.6 k u are ~150 s at cruise; every boost buys ~3
   - **the Wrasse's AI** is `KiteNavigatorAI` on the Sling: it drags the kite through the next ring
     (`TryGetNextRing`) whenever the board plane cuts its mouth, and otherwise whirls loops, preferring Time.
   - With `aiCrewNavigates` off, an AI hull seats no kite, its probe is never live, and its HULL threads.
+- The hull's `AIPilot` names **no boost policy** (2026-10-26). The Sparrow's `SparrowAIBoostPolicy`, inherited with the
+  clone, pressed a `BoostActionSO` the Wrasse does not bind, so it never did anything; the boost is the crew's
+  (`AIPilotWantsBoost` above). `author_wrasse_assets.py` clears it in the clone and checks it.
 - **A human's AI squad mate** (the human pilots, the AI navigates) is the same navigator AI on the same
   rope: through the ring first, aiming a point just past the mouth along the ring's axis, else loops.
 - **A human navigator with an AI pilot** (the human took the kite with the swap): the hull's `AIPilot`
