@@ -56,6 +56,10 @@ RIM_GUID = "a0f080f06c102c7469074c50e7457822"     # Rectangle 1127 (2).png - the
 # Menu_Main's canvas is 240. Read off the scene rather than written down (see resolve_multiplier).
 SLICE_MULTIPLIER_REF = 100.0
 
+# MaelstromPoolListView.cs's own guid. The SCENE half of this script exists only while Menu_Main
+# carries that component; see scene_half_superseded().
+POOL_LIST_SCRIPT_GUID = "3f20b36785bc4524913c138d1d6b68ba"
+
 # Fixed so a re-run is idempotent: minting one per run would append a new fitter every time.
 FITTER_ID = 515927811
 
@@ -426,6 +430,20 @@ def verify_scene(text):
         raise SystemExit("the fitter document points at a different GameObject than the list uses")
 
 
+def scene_half_superseded(scene_text):
+    """True when Menu_Main no longer carries a MaelstromPoolListView AT ALL (by script guid).
+
+    The style-B configure windows (a326296f6, 2026-10-15) moved the pool list out of Menu_Main
+    into ConfigureMaelstromView.prefab, which Tools/Build/author_menu_configure.py authors with its
+    own row (ConfigurePoolRow.prefab). From then the grid this script patched did not exist, and
+    patch_grid() aborted - taking the row-prefab check down with it, the "spent one-shot above the
+    validation" shape CLAUDE.md records. So the scene half STANDS DOWN, and says so, instead of
+    aborting. Keyed on the script guid rather than the m_EditorClassIdentifier text: a list view
+    that is still in the scene but serialized differently must still fail loudly in patch_grid().
+    """
+    return POOL_LIST_SCRIPT_GUID not in scene_text
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
@@ -434,9 +452,16 @@ def main():
     scene = open(SCENE, errors="ignore").read()
     mult = resolve_multiplier(scene)
     want_prefab = build_prefab(mult)
-    want_scene = patch_grid(scene)
-
-    verify_scene(want_scene)
+    stood_down = scene_half_superseded(scene)
+    if stood_down:
+        want_scene = scene
+        print("scene half stood down: Menu_Main has no MaelstromPoolListView since the style-B "
+              "configure windows (a326296f6); author_menu_configure.py authors the pool list and its "
+              "row (ConfigurePoolRow.prefab). MaelstromPoolRow.prefab is referenced by nothing - "
+              "retiring it and this script is its owners' call.")
+    else:
+        want_scene = patch_grid(scene)
+        verify_scene(want_scene)
 
     have_prefab = open(PREFAB, errors="ignore").read()
     drift = []
@@ -449,7 +474,8 @@ def main():
         if drift:
             print("DRIFT: " + ", ".join(drift))
             return 1
-        print("ok: pool row + grid match what this script authors")
+        print("ok: pool row matches what this script authors (grid: stood down)" if stood_down
+              else "ok: pool row + grid match what this script authors")
         return 0
 
     if not drift:
