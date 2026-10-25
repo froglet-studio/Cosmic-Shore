@@ -21,8 +21,8 @@
 3. **People play it over and over**, with AI rivals of the same hull on the grid. Every race is recorded automatically
    (`HumanFlightRecorder`, every mode). Since 2026-10-25 the record includes each AI's state (`rivalState`), so a
    recording shows how the person flies and why each AI did what it did.
-4. **The learner turns the races into AI numbers for that minigame.** Run
-   `python3 Tools/Build/learn_drives_from_flights.py --mode <Mode> [--write]`. It writes `<asset>_<Mode>` variants that
+4. **The learner turns the races into AI numbers for that minigame, on its own** (the hourly AI learning sweep,
+   `AUTO_LEARNING.md`, runs `learn_drives_from_flights.py --mode <Mode> --write`; nobody runs it by hand). It writes `<asset>_<Mode>` variants that
    only that mode loads (`AIBoostPolicySO.ForMode`), and reports flights per intensity. It needs three finished races
    of a hull before it writes. The Squirrel (Skim Race, `learn_from_flights.py`, per-intensity `SkimRaceAIConfig_I1-I4`)
    and the Stoat are the worked examples.
@@ -152,6 +152,6 @@ Once two to four vessels race at their best in their own minigames:
   3. The first Switchback Dolphin numbers are written (§3.4). They came from I1 and I2 on the old ladder, so the next
      races re-learn them.
   None of it has been run in Unity (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
-- **Next:** Yash plays Switchback at each intensity, repeatedly. Each batch: `learn_drives_from_flights.py --mode
-  Switchback --write`, check the AI's pace in the recordings (`regatta_rival_report.py --mode Switchback`), adjust.
+- **Next:** Yash plays Switchback at each intensity, repeatedly. Nothing else: every race is relearned from within the
+  hour by the AI learning sweep (`AUTO_LEARNING.md`), which also checks the AI's pace and fixes what numbers cannot.
   Then the next vessel.
