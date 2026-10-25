@@ -35,6 +35,7 @@ BOND_SHADER = os.path.join(SHADER_DIR, "Bond.shader")
 SEA_CGINC = os.path.join(SHADER_DIR, "UISeaLines.cginc")
 SEA_SHADER = os.path.join(SHADER_DIR, "SeaLines.shader")
 DRIFT_CGINC = os.path.join(SHADER_DIR, "UICardDrift.cginc")
+HULL_CGINC = os.path.join(SHADER_DIR, "UIHullLit.cginc")
 
 # The whole translation: HLSL out-params to C++ references, and the vector constructor spellings.
 SUBS = [(r"\bout float\b", "float&"),
@@ -56,6 +57,7 @@ static inline float4 mk4(float3 c, float a) { return (float4){c.x, c.y, c.z, a};
 static inline float4 mk4(float a, float b, float c, float d) { return (float4){a, b, c, d}; }
 static inline float frac(float x) { return x - std::floor(x); }
 static inline float saturate(float x) { return x < 0 ? 0 : (x > 1 ? 1 : x); }
+static inline float3 saturate(float3 v) { return (float3){saturate(v.x), saturate(v.y), saturate(v.z)}; }
 static inline float hmin(float a, float b) { return a < b ? a : b; }
 static inline float hmax(float a, float b) { return a > b ? a : b; }
 static inline float habs(float a) { return a < 0 ? -a : a; }
@@ -473,6 +475,47 @@ int main() {
 """
 
 
+HULL_MAIN = r"""
+#undef min
+#undef max
+#undef abs
+#undef floor
+#undef sin
+#undef atan2
+#undef cos
+#undef sqrt
+static float lum(float3 c) { return 0.2126f * c.x + 0.7152f * c.y + 0.0722f * c.z; }
+int main() {
+    // Hull_Lit.mat: gain 1.3, lift (0.14, 0.17, 0.30), white edge at 0.6. The card body is about (0.0, 0.016, 0.12).
+    float3 lift = (float3){0.14f, 0.17f, 0.30f}, white = (float3){1, 1, 1};
+    float3 black = HullLit((float3){0, 0, 0}, 1, 1, 1.3f, lift, white, 0.6f);
+    float3 trim = HullLit((float3){0.9f, 0.92f, 1.0f}, 1, 1, 1.3f, lift, white, 0.6f);
+    float3 edge = HullLit((float3){0, 0, 0}, 1, 0, 1.3f, lift, white, 0.6f);
+    float body = lum((float3){0.0f, 0.016f, 0.12f});
+    std::printf("hull lit: black -> %.3f (card %.3f) | trim -> %.3f | edge -> %.3f\n", lum(black), body, lum(trim), lum(edge));
+    int ok = lum(black) > body + 0.1f && lum(trim) > 0.95f && lum(edge) > lum(black) + 0.3f && lum(black) < 0.35f;
+    if (!ok) { std::printf("FAIL: the lit hull does not stand off the card, or its darks wash out\n"); return 1; }
+    return 0;
+}
+"""
+
+
+def build_hull(work):
+    inc = translate(open(HULL_CGINC, encoding="utf-8").read())
+    src = os.path.join(work, "hull.cpp")
+    open(src, "w").write(SHIM + inc + HULL_MAIN)
+    exe = os.path.join(work, "hull")
+    r = subprocess.run(["clang++", "-std=c++17", "-O2", "-Wall", "-Werror", "-Wno-unused-function", src, "-o", exe],
+                       capture_output=True, text=True)
+    if r.returncode:
+        sys.stderr.write(r.stderr)
+        raise SystemExit("FAIL: the hull light maths does not compile")
+    r = subprocess.run([exe], capture_output=True, text=True)
+    sys.stdout.write(r.stdout)
+    if r.returncode:
+        raise SystemExit("FAIL: the lit hull does not read on the card")
+
+
 def build_drift(work):
     inc = translate(open(DRIFT_CGINC, encoding="utf-8").read())
     src = os.path.join(work, "drift.cpp")
@@ -581,7 +624,8 @@ def main():
     build_presence(work)
     build_sea(work, out)
     build_drift(work)
-    print("OK: the rim, the presence orb, the bonds, the sea lines and the card drift compile and their dials drive")
+    build_hull(work)
+    print("OK: the rim, the presence orb, the bonds, the sea lines, the card drift and the lit hull compile and their dials drive")
 
 
 if __name__ == "__main__":

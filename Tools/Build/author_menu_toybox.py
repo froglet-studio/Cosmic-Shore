@@ -111,6 +111,7 @@ def build_card():
                       alpha=0.45)
     A.drift_art(well, "Portrait", "Portrait", R(size=(TOY_PORTRAIT, TOY_PORTRAIT)), None, material=A.PORTRAIT_BOB_MAT,
                 preserve=True)
+    A.body_sea(clip, "Clip/Sea", TOY_H - TOY_WELL_H)
     image_node(root, "Seam", "Seam", R((0, 0), (1, 0), (0, TOY_H - TOY_WELL_H), (-2, 1), (0.5, 0.5)), "SurfaceDark")
     bord = root.child(N("Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))

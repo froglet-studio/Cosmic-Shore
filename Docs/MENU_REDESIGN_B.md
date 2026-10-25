@@ -3215,3 +3215,21 @@ cards are still noisy", then "implement a" on the canvas's Rev 18 board.
   (the two materials, slow, on the right shader), `lattice_preview.py --check` (the drift stays in its reach, loops,
   holds still at 0 s), every menu generator `--check`, `check_generated_assets.py`, `check_ui_colors.py`. The look, the
   drift and the plates in the editor are owed (checklist entry "Rev 18 A").
+
+## 73. The hull lit, not plated; the sea in the card bodies (2026-10-25, awaiting in-editor approval)
+
+Shombith, 2026-10-25, on the built Rev 18 A cards: "Good but dont like the white bg, also the blue part can have the sea
+lines".
+
+- **No plate.** The pale octagon behind the hull is gone. The hull is drawn with `Hull_Lit.mat` (`HullLit.shader` on
+  `UIHullLit.cginc`): the near-black render x 1.3 plus a cool lift (0.14, 0.17, 0.30), and a thin white edge (0.6) taken
+  from the sprite's alpha 4 texels out. Chosen from a contact sheet of the real hull renders on the card navy (the
+  second of four strengths: the hull stands off the card and its trim and red details stay). Still - no time term, and
+  `author_ui_lattice.py` fails the shader if one appears. Arcade: the hull at 60 px where the plate was; Arena: the seated
+  hulls at 52 px along the foot (the holder keeps its `Icon` child for `KitArenaGameCard`).
+- **The sea in the body.** Each card's body (Arcade, Arena, Toy) carries `Sea_Panel.mat` under its words, inside the
+  card's clip so the cut corner crops it (`author_menu_arcade.body_sea`).
+- **Proof without an editor.** `lattice_preview.py --check` (the lit black reads 0.17 against the card's 0.02, trim stays
+  white, the edge is brighter than the body), `author_ui_lattice.py` / `author_menu_arcade.py` / `author_menu_arena.py` /
+  `author_menu_toybox.py` `--check` and `--self-test` (new controls: the hull left dark, the hull back to a dark render),
+  every menu generator `--check`, `check_generated_assets.py`, `check_ui_colors.py`.

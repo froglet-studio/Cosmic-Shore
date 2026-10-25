@@ -842,15 +842,17 @@ def build_panel():
 
 CARD_W, CARD_H = 341, 296
 # Rev 18 A (Docs/MENU_REDESIGN_B.md section 72, Shombith 2026-10-25 "implement a"): the art in a band on top, an opaque body
-# under it - the hull on a pale plate (the dark hull renders vanish on a dark chip), the name, the genre petals. Nothing is
-# written on the art. The art drifts slowly (Card_ArtDrift.mat) inside a margin KitCoverImage draws it larger by.
+# under it - the hull, the name, the genre petals. Nothing is written on the art. The art drifts slowly (Card_ArtDrift.mat)
+# inside a margin KitCoverImage draws it larger by. Section 73: the hull is lit (Hull_Lit.mat) instead of sitting on a
+# pale plate, and the body carries the sea lines (Sea_Panel.mat).
 ART_BAND_H = 200
 BODY_H = CARD_H - ART_BAND_H
 ART_OVERSCAN = 1.05
 ART_DRIFT_MAT = M._lattice_guid("card_art_drift_mat")
 PORTRAIT_BOB_MAT = M._lattice_guid("card_portrait_bob_mat")
 ART_DRIFT_REACH = (5, 3)               # author_ui_lattice.ART_DRIFT: must stay inside the overscan margin
-PLATE = 58                             # the pale hull plate (kit_oct_fill)
+HULL_ICON = 60                         # the hull, lit (Hull_Lit.mat) - no plate behind it (section 73)
+HULL_LIT_MAT = M._lattice_guid("hull_lit_mat")
 PETAL = 46                             # the petal sprite carries a wide transparent margin: the shape reads about 18
 
 
@@ -874,12 +876,22 @@ def art_band(parent, key, w, h, sprite):
     return band
 
 
-def hull_plate(parent, key, r, icon_key, icon_size):
-    """The hull on a pale octagon: the dark renders read at once on light, with no shader."""
-    plate = image_node(parent, key, "HullPlate", r, "TextLight", K.kit_sprite("kit_oct_fill"), preserve=True)
-    art_node(plate, icon_key, "VesselIcon" if icon_key == "VesselIcon" else "Icon", R(size=(icon_size, icon_size)), None,
-             preserve=True)
-    return plate
+def hull_icon(parent, key, r, icon_key, icon_size):
+    """The hull with no plate behind it (section 73, Shombith 2026-10-25: "dont like the white bg"): the near-black render
+    drawn with Hull_Lit.mat - lifted toward a cool grey and edged in white - so it reads on the navy body. `key` is a
+    plain holder (the arena chip's CanvasGroup and LayoutElement go on it); the icon is its `Icon` / `VesselIcon` child."""
+    holder = parent.child(N(key, "Hull", r))
+    drift_art(holder, icon_key, "VesselIcon" if icon_key == "VesselIcon" else "Icon", R(size=(icon_size, icon_size)), None,
+              material=HULL_LIT_MAT, preserve=True)
+    return holder
+
+
+def body_sea(parent, key, body_h):
+    """The sea inside a card's body (section 73: "the blue part can have the sea lines"): Sea_Panel.mat over the body,
+    under the words. Inside the card's clip, so the cut corner crops it."""
+    sea = parent.child(N(key, "Sea", R((0, 0), (1, 0), (0, body_h / 2), (0, body_h), (0.5, 0.5))))
+    sea.add("cr", 222, K.canvas_renderer()).add("img", 114, M.lattice_image(M.SEA_PANEL_MAT))
+    return sea
 
 
 def build_card(placeholder_art):
@@ -894,13 +906,14 @@ def build_card(placeholder_art):
         .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), K.kit_sprite("kit_sliver14_fill"), True)) \
         .add("mask", 114, mask(False))
     art_band(clip, "Clip/Band", CARD_W, ART_BAND_H, placeholder_art)
+    body_sea(clip, "Clip/Sea", BODY_H)
     image_node(root, "Seam", "Seam", R((0, 0), (1, 0), (0, BODY_H), (-2, 1), (0.5, 0.5)), "SurfaceDark")
     bord = root.child(N("Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
 
-    # The body: plate, name, petals.
-    hull_plate(root, "VesselChip", R((0, 0), None, (16, BODY_H / 2), (PLATE, PLATE), (0, 0.5)), "VesselIcon", PLATE - 8)
-    text_x = 16 + PLATE + 14
+    # The body: the hull, the name, the petals.
+    hull_icon(root, "VesselChip", R((0, 0), None, (12, BODY_H / 2), (HULL_ICON, HULL_ICON), (0, 0.5)), "VesselIcon", HULL_ICON)
+    text_x = 12 + HULL_ICON + 12
     title = root.child(N("Title", "Title", R((0, 0), (1, 0), (text_x / 2 - 8, BODY_H / 2 + 14), (-text_x - 16, 30), (0.5, 0.5))))
     title.add("cr", 222, K.canvas_renderer()).add("tmp", 114, ellipsis(text("Game", "H3", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H3", "TextLight", driven=True))
@@ -1442,8 +1455,8 @@ def check_profile_hovers(files):
 
 
 def check_card_a(card, name, band_key, card_w, band_h):
-    """Rev 18 A (section 72): the art drifts (Card_ArtDrift.mat) under a band that crops it, the drift never shows an edge,
-    and the hull sits on its pale plate. Shared with author_menu_arena.py."""
+    """Rev 18 A (section 72): the art drifts (Card_ArtDrift.mat) under a band that crops it, the drift never shows an edge;
+    section 73: the hull is lit (no plate) and the body carries the sea. Shared with author_menu_arena.py."""
     F = K.FileIds(name)
     _, art = doc_of(card, F(f"{band_key}/Art#img"))
     assert art and f"m_Material: {{fileID: 2100000, guid: {ART_DRIFT_MAT}, type: 2}}" in art, \
@@ -1458,7 +1471,8 @@ def check_card_a(card, name, band_key, card_w, band_h):
         f"{name}: overscan {ov} leaves less margin than the drift's reach {ART_DRIFT_REACH} - an edge would show"
     _, mk = doc_of(card, F(f"{band_key}#mask"))
     assert mk and RECT_MASK_2D in mk, f"{name}: the art band does not crop the drifting art"
-    assert f"guid: {K.kit_sprite('kit_oct_fill')}" in card, f"{name}: the hull has no pale plate"
+    assert f"guid: {HULL_LIT_MAT}" in card, f"{name}: the hull is not lit (Hull_Lit.mat) - it vanishes on the navy body"
+    assert f"guid: {M.SEA_PANEL_MAT}" in card, f"{name}: the body has no sea lines (Sea_Panel.mat)"
 
 
 def validate_prefabs(files, guids):
@@ -1649,6 +1663,7 @@ def self_test(current, files, guids):
             r"(m_CorrespondingSourceObject: \{fileID: )\d+(, guid: " + K.prefab_guid("KitButtonSmall") + ")",
             r"\g<1>4242\2", t, count=1)),
         "the card art standing still": prefab_plant(card, lambda t: t.replace(ART_DRIFT_MAT, "0" * 32)),
+        "the hull back to a dark render": prefab_plant(card, lambda t: t.replace(HULL_LIT_MAT, ART_DRIFT_MAT)),
         "the art band with no overscan": prefab_plant(card, lambda t: re.sub(r"  overscan: [\d.]+\n", "  overscan: 1\n", t)),
         "lists not embedded": prefab_plant(panel, lambda t: t.replace("  embedded: 1\n", "  embedded: 0\n", 1)),
         "slot field unwired": prefab_plant(panel, lambda t: t.replace(f"  - {{fileID: {slot1}}}\n", "  - {fileID: 0}\n", 1)),

@@ -7,6 +7,7 @@ UISeaLines.cginc (hand-written; Tools/Build/lattice_preview.py compiles and rend
                           in-game scoreboard, sign-in and splash, the loading screen, the Hangar): lines over a wash
     Card_ArtDrift.mat     a game card's art drifting slowly inside its overscan (CardDrift.shader on UICardDrift.cginc, §72)
     Card_PortraitBob.mat  a toy card's portrait bobbing (the same shader)
+    Hull_Lit.mat          the hull icon on the cards, lifted and edged so it reads on navy (HullLit.shader, §73)
     Sea_Panel.mat         the sea inside a panel (the Ark recipe, the leaderboard list, the pilot card, the avatar
                           preview, the toy configure cards): finer, fainter lines and no wash
 
@@ -46,6 +47,8 @@ SEA_SHADER = f"{DIR}/SeaLines.shader"
 SEA_CGINC = f"{DIR}/UISeaLines.cginc"
 DRIFT_SHADER = f"{DIR}/CardDrift.shader"
 DRIFT_CGINC = f"{DIR}/UICardDrift.cginc"
+HULL_SHADER = f"{DIR}/HullLit.shader"
+HULL_CGINC = f"{DIR}/UIHullLit.cginc"
 
 
 def guid(key):
@@ -63,10 +66,13 @@ SEA_SHADER_GUID = guid("sea_shader")
 SEA_CGINC_GUID = guid("sea_cginc")
 DRIFT_SHADER_GUID = guid("drift_shader")
 DRIFT_CGINC_GUID = guid("drift_cginc")
+HULL_SHADER_GUID = guid("hull_lit_shader")
+HULL_CGINC_GUID = guid("hull_lit_cginc")
 SEA_GUID = guid("sea_window_mat")
 SEA_PANEL_GUID = guid("sea_panel_mat")
 ART_DRIFT_GUID = guid("card_art_drift_mat")
 PORTRAIT_BOB_GUID = guid("card_portrait_bob_mat")
+HULL_LIT_GUID = guid("hull_lit_mat")
 PRESENCE_GUID = guid("presence_mat")
 BOND_GUID = guid("bond_mat")
 # Rev 7 (§47.1): the selection's light - the rim shader in white (the vertex colour, the theme's Selection blue,
@@ -117,6 +123,10 @@ CLEAR = (0, 0, 0, 0)
 ART_DRIFT = dict(_DriftX=5, _DriftY=3, _Seconds=40)
 PORTRAIT_BOB = dict(_DriftX=0, _DriftY=4, _Seconds=8)
 ART_DRIFT_SLOWEST_LOOP, PORTRAIT_BOB_SLOWEST_LOOP = 30, 6
+# The hull icon on the cards (§73, Shombith 2026-10-25: "dont like the white bg"): no plate - the near-black render is
+# lifted toward a cool grey and edged thinly in white (the Rev 19 contact sheet's second row). Still.
+HULL_LIT = dict(_Gain=1.3, _RimWidth=4, _RimIntensity=0.6)
+HULL_LIFT = (0.14, 0.17, 0.30)
 # The presence orb (§45.4). Its member seats sit on the inner ring at these angles (degrees, counter-clockwise from
 # the right): the shader's bonds (_BondAngles, _MemberRadius) and the drawer generator's avatar positions
 # (author_menu_friends_drawer.py) both read them, so a bond always ends under its avatar.
@@ -238,6 +248,10 @@ def drift_material(name, values):
     return shader_material(name, DRIFT_SHADER_GUID, values, dict(_Color=(1, 1, 1)))
 
 
+def hull_material():
+    return shader_material("Hull_Lit", HULL_SHADER_GUID, HULL_LIT, dict(_Color=(1, 1, 1), _Lift=HULL_LIFT, _RimColor=(1, 1, 1)))
+
+
 def bond_material():
     return shader_material("Bond_Party", BOND_SHADER_GUID, BOND, dict(_Color=(1, 1, 1)))
 
@@ -265,6 +279,10 @@ def outputs():
     out[f"{DIR}/Card_ArtDrift.mat.meta"] = mat_meta(ART_DRIFT_GUID)
     out[f"{DIR}/Card_PortraitBob.mat"] = drift_material("Card_PortraitBob", PORTRAIT_BOB)
     out[f"{DIR}/Card_PortraitBob.mat.meta"] = mat_meta(PORTRAIT_BOB_GUID)
+    out[f"{HULL_SHADER}.meta"] = shader_meta(HULL_SHADER_GUID)
+    out[f"{HULL_CGINC}.meta"] = include_meta(HULL_CGINC_GUID)
+    out[f"{DIR}/Hull_Lit.mat"] = hull_material()
+    out[f"{DIR}/Hull_Lit.mat.meta"] = mat_meta(HULL_LIT_GUID)
     out[f"{DIR}/SelectionRim.mat"] = selection_material(False)
     out[f"{DIR}/SelectionRim.mat.meta"] = mat_meta(SELECTION_GUID)
     out[f"{DIR}/SelectionBar.mat"] = selection_material(True)
@@ -381,6 +399,16 @@ def validate(files):
         v = float(re.search(r"^    - _Seconds: (.*)$", m, re.M).group(1))
         assert v >= floor, f"{name}: _Seconds is {v} - the card pictures stay slow (at least {floor} s a loop)"
     assert f"guid: {DRIFT_SHADER_GUID}" in files[f"{DRIFT_SHADER}.meta"], "CardDrift.shader.meta has the wrong guid"
+    # §73: the hull icon - lit, still.
+    src = open(os.path.join(REPO, HULL_SHADER), encoding="utf-8").read()
+    assert '#include "UIHullLit.cginc"' in src and "_Time." not in src, "HullLit.shader must include UIHullLit.cginc and hold still"
+    hull_declared = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", src, re.M)) - {"_MainTex"}
+    m = files[f"{DIR}/Hull_Lit.mat"]
+    assert f"m_Shader: {{fileID: 4800000, guid: {HULL_SHADER_GUID}, type: 3}}" in m, "Hull_Lit is not on HullLit.shader"
+    written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
+    assert written == hull_declared, f"Hull_Lit: properties drifted (missing {hull_declared - written}, extra {written - hull_declared})"
+    assert f"- _Lift: {col(HULL_LIFT)}" in m and HULL_LIT["_Gain"] > 1, "Hull_Lit: the dark hull is not lifted - it would vanish on the card"
+    assert f"guid: {HULL_LIT_GUID}" in files[f"{DIR}/Hull_Lit.mat.meta"], "Hull_Lit.mat.meta has the wrong guid"
     orb = files[f"{DIR}/Presence_Orb.mat"]
     assert f"- _SpaceColor: {col(NEUTRAL)}" in orb, "the orb's ring must be the neutral blue, not an element's colour"
     for k in ("_SpinSeconds", "_DotSize", "_BondPeriod", "_BondSpeed"):
@@ -451,6 +479,8 @@ def self_test(files):
             "    - _Seconds: 40\n", "    - _Seconds: 6\n", 1))),
         ("the portrait bob on the sea shader", lambda f: f.__setitem__(f"{DIR}/Card_PortraitBob.mat", f[f"{DIR}/Card_PortraitBob.mat"].replace(
             DRIFT_SHADER_GUID, SEA_SHADER_GUID))),
+        ("the hull left dark", lambda f: f.__setitem__(f"{DIR}/Hull_Lit.mat", f[f"{DIR}/Hull_Lit.mat"].replace(
+            f"- _Lift: {col(HULL_LIFT)}", f"- _Lift: {col((0, 0, 0))}", 1))),
         ("the theme loses the selection's material", lambda f: f.__setitem__(THEME, f[THEME].replace(SELECTION_GUID, "8" * 32, 1))),
     ]
     screens = shipped_prefabs()

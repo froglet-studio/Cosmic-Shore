@@ -15018,9 +15018,10 @@ Owed in the editor (`Docs/MENU_REDESIGN_B.md` §71):
 No Unity editor in the cloud session. Proven offline: refcompile, generator `--check` / `--self-test`, the drift harness.
 Owed in the editor (`Docs/MENU_REDESIGN_B.md` §72):
 - [ ] `CardDrift.shader` compiles; `KitCoverImage` compiles with the new `overscan` field.
-- [ ] Arcade: art band on top, body under it; the hull on its pale plate is readable at 1080p and on a phone; the petals
+- [ ] `HullLit.shader` compiles. Arcade: art band on top, body under it with faint sea lines; the hull (lit, no plate,
+      §73) reads at 1080p and on a phone; the petals
       read; the name fits; picks and star sit on the art; locked cards dim and show the lock.
-- [ ] Arena: art top half, pilots / domains, name, description, hull plates along the foot (all hulls shown).
+- [ ] Arena: art top half, pilots / domains, name, description, the seated hulls lit along the foot (all hulls shown).
 - [ ] Toy Box: portrait in its well, section / name / tagline under it.
 - [ ] The art drifts slowly and never shows an edge, including inside a party-pick or favourite refresh; toy portraits bob.
 - [ ] The Profiler shows no per-frame canvas rebuild from the cards.
