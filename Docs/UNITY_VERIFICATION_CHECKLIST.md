@@ -65,6 +65,116 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The AI Thresher slings; the Wrasse's stale boost policy cleared (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `ThresherSlingAIPolicySO` (new) on `Thresher.prefab`'s AIPilot (`ThresherAIBoostPolicy.asset`), replacing
+the Squirrel's inherited `SkimRingAIPolicySO`, which bound nothing on a Thresher. At a corner 70°+ off and 120 u+ away it
+presses Plant (and Winch) through the replicated path, and lets go when its course faces the ring (15°) or after 3 s
+(THRESHERTIME.md §4). `ThresherActionSO.Control` getter added. `Wrasse.prefab`'s AIPilot names no policy now: the
+Sparrow's, inherited with the clone, pressed a Boost the Wrasse does not bind; the crew's boost is KiteNavigator's.
+Both mode generators check it.
+
+**Verified without the editor:** reference compile (editor config) 0 errors in changed files; `author_thresher_assets`,
+`author_thresher_time_assets`, `author_wrasse_assets`, `author_wrasse_run_assets` `--check` OK (the two new checks
+watched failing on the old references); network-prefab-hash check OK. NOT run: `ThresherSlingAIPolicyTests`.
+
+**Verify in editor:**
+1. Run `ThresherSlingAIPolicyTests` (EditMode): all pass.
+2. Thresher Time with AI Threshers, I2: at a sharp corner an AI plants (its ball stops, it swings round), leaves toward
+   the ring and threads it. The Third Eye readout says `ThresherAIBoostPolicy: planted: swinging round the ball` then
+   `waiting for a corner`. Every AI still finishes.
+3. No AI Thresher sits planted: each swing ends within about 3 s.
+4. In a party of two, the client sees the AI's ball stop and the AI swing, the same as the host (the presses replicate).
+5. Wrasse Run with AI crews: the Grouper still boosts on the straights (KiteNavigator), exactly as before.
+
+**First-pass tuning** (`ThresherAIBoostPolicy`): plant at 70°+ off, 120 u+ away, 1.5 s between slings, let go within
+15° or at 3 s, winch while planted. The AI learning sweep learns them from people's Thresher races once there are three
+complete ones in a mode.
+
+### 🔴 Skim Race flights carry their track (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `HumanFlightRecorder` copies Skim Race's `SpawnableWaypointTrack` into each Skim Race flight
+(`lane`, `rails`), as it copies Regatta's rails, so the Squirrel's skim is measured there by the AI learning sweep
+(`Docs/AI_SYSTEM/AUTO_LEARNING.md` §5). Nothing else in the recorder changed.
+
+**Verified without the editor:** reference compile (editor config) 0 errors in changed files. NOT run in Unity.
+
+**Verify in editor:**
+1. Play Skim Race as the Squirrel to the end. The console has no `record stored WITHOUT its rail` warning.
+2. The stored `flight_SkimRace_Squirrel_*.json` has a non-empty `lane` and `ownRail` 0 or more.
+3. Regatta flights are unchanged (they still carry their rails and course seed).
+
+### 🔴 Switchback: the I1-I4 training ladder (hairpins, skim walls, danger prisms) (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed** (Yash, `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.3). The AI steering fix and the learned
+`DolphinAIBoostPolicy_Switchback` landed in a parallel session (entry "the AI Dolphins race Switchback", with
+`SwitchbackAISteeringTests`); this entry is the ladder on top of it. `SwitchbackCourse` has a new ladder: mouths 72 / 48 / 32 / 20, I1 corners ≤ 40°, hairpins
+(90-150°) from I2 (`IsHairpinCorner`). `SwitchbackFeatures` + `SpawnableSwitchbackFeatures` (prefab
+`_Prefabs/Spawnables/SpawnableSwitchbackFeatures`, `featuresPrefab` on the controller) lay I3's skim walls and I4's
+danger prisms from `OnCourseRaised`. Switchback card art re-rendered.
+
+**Verified without the editor:** reference compile (editor config) 0 errors in changed files. The course generator and
+the feature layout compiled against the Unity math stub and run over 400 seeds per intensity: every course generates,
+caps hold, features keep clear of mouths, other legs and the nucleus. `author_switchback_assets.py --check` OK (and
+watched failing on a mutated prefab).
+`render_card_backgrounds.py --check` OK. NOT run: `SwitchbackCourseTests`, `SwitchbackFeaturesTests` in Unity.
+
+**Verify in editor:**
+1. Run `SwitchbackCourseTests` and `SwitchbackFeaturesTests` (EditMode): all pass.
+2. Open `MinigameSwitchback.unity`: the controller shows `Features Prefab` = SpawnableSwitchbackFeatures.
+3. Play I1 with two Medium AI Dolphins: wide rings, gentle corners, nothing else on the course.
+4. I2: every second corner is a hairpin and the mouths are 48 u (were 28). The AI Dolphins thread the rings
+   and drift the hairpins.
+5. I3: walls of plain prisms beside every second leg, never across a gate or another leg; skimming one banks charge.
+6. I4: clusters of three red danger prisms just off every leg's line; brushing one hurts.
+7. Console silent at every level (a missing prefab logs `[Switchback] No features prefab assigned`).
+8. Then play each level a few times: the flights train the next numbers (`learn_drives_from_flights.py --mode Switchback`).
+
+**First-pass tuning:** wall 26 u off the line over the middle half of legs ≥ 400 u, a prism every 14 u; danger 12 u
+off, three 10 u apart; features keep 30 u from every rim and the nucleus (`SwitchbackFeatures`). The learned AI numbers
+came from I1/I2 races on the old ladder: re-learn after new races.
+
+### 🟢 Arena configure: one shared vessel panel for every seat; intensity on top (`claude/wizardly-euler-3ccjg6`, 2026-10-25) — VERIFIED IN EDITOR
+
+**Verified in editor 2026-10-25 by Yash**: every step below run and passing, the party-of-two guest rule and the EditMode tests included (Froglet Tasks T-20261025-f5ea, #1542, closed with this result).
+
+**What landed:** the settings column reads Intensity, Pilots, Vessel (Arcade and Arena). On the Arena, tapping a seat
+row selects it and the vessel panel below (< seven tiles >, CLAIM) picks THAT seat's hull: your own, or an AI's (no
+claim; the host applies it, `RequestAIVessel`, protocol 12 -> 14). Tap the selected AI again or your own row to go
+back. The < > arrows are generator-authored, 32 x 56, level with the tiles and inset from the panel edges
+(`Docs/HomeHub/ARCHITECTURE.md` §3.2.1).
+
+**Verified without the editor:** `unity_refcompile` player OK, editor 0 errors in changed files;
+`author_menu_configure.py --check` / `--self-test` OK (its drift from `d9b7305b1` is gone); every gate in
+`.claude/skills/to-bleeding-edge/gates.sh` OK. `SharedVesselPanelTests` compile, not run.
+
+**Verify in editor:**
+1. Arcade > any card: the column reads Intensity, Pilots, Vessel; the pad's first focus is an intensity node.
+2. Arena > Regatta: the caption reads "Your vessel"; the < > sit level with the tiles, a little in from the panel's
+   edges; tiles, arrows and CLAIM pick your hull as before; Start waits for CLAIM.
+3. Add two AI. Tap one AI's row: it turns the Selection colour, the caption reads "<Domain> AI's vessel", CLAIM hides.
+   Tap a tile: that AI's row name and icon change at once. Use the arrows: they step it, skipping hulls taken.
+4. Tap the same AI row again (or your own row): the caption is "Your vessel" and your hull is shown again.
+5. Party of two: the guest can select and pick only their own team's AI; the host sees the guest's picks.
+6. Launch: each AI flies the hull its row named.
+7. Run `SharedVesselPanelTests` and `ArenaHullStripTests` (EditMode).
+
+### 🟢 AI seat names follow the pick; result rows name each pilot's vessel (`claude/wizardly-euler-3ccjg6`, 2026-10-25) — VERIFIED IN EDITOR
+
+**Verified in editor 2026-10-25 by Yash**: every step below run and passing, the party-of-two guest rule and the EditMode tests included (Froglet Tasks T-20261025-f5ea, #1542, closed with this result).
+
+**What landed:** `ArcadeGameConfigureModal.AiSeatName` resolves the hull by `AIHullSeating.SeatHull`, the rule the chip's icon and hover label already used. On an opponent seat it named the card's pinned hull first, so a picked hull showed under "Squirrel" (Regatta) until hovered. The result panel's line under each name is now `{domain}  ·  {vessel}`, the hull that human or AI was flying at the end (`Scoreboard.pilotLine` / `pilotNoVesselLine`, authored on the component).
+
+**Verified without the editor:** `unity_refcompile` player OK; `author_ingame_hud.py`, `check_hud_onscreen.py`, `author_menu_configure.py` checks OK.
+
+**Verify in editor:**
+1. Arena > Regatta configure: add an AI on the other team, tap its chip to step the hull. The row's name changes at once (no hover needed) and matches the hover label.
+2. Play the match with a mix of hulls, humans and AI. Each result row reads e.g. `RUBY · SQUIRREL` under the name, and the hull is the one that pilot flew. A single-hull card shows its hull on every row.
+
+### 🟡 Leaving a match lands on its launch panel, not on HOME (`claude/wizardly-euler-3ccjg6`, #1529, 2026-10-25) — PARTIALLY CONFIRMED IN EDITOR
+
+**Confirmed in editor 2026-10-25 by Yash**, after #1529 merged to bleeding-edge: Main Menu from a match lands back on its launch panel and works as expected (step 1). Ticket T-20261025-4e15 (#1526) closed with that note. Steps 2-6 (the pause menu, Arena, Maelstrom / weekly challenge, a party of two, the boot and freestyle no-regression checks) were not recorded separately; tick each here when it is run, and turn the entry green once all six have passed.
+
 ### 🔴 Goby & Pistol: the path map, teleport between perches, either way from any den (`cece/cool-shannon-aulgpe`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** after its rest at a perch the Pistol's view becomes the path map: each island glows by the opposing
@@ -3445,6 +3555,37 @@ known AuthenticationServiceFacade errors). `/verify-unity` is not available in t
 2. Play with the network off, wait 10 s, turn it on: no `Could not create presence lobby` error; a
    `Presence lobby not rejoined - retrying` warning, then the online list fills.
 3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
+
+### 🔴 Party: B31 addendum - a lobby write's read is retried on a 429 (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B31, "First retest"): `LobbyPropertyWriter.WriteAsync` runs its read
+before the save under `UgsRequestPolicy`, so one 429 no longer drops the write (the 25 Oct "RepublishLocalIdentity
+error ... RateLimitExceeded"). `Refresh` / `Save` are internal delegates so tests drive them.
+**Verified without the editor:** `LobbyPropertyWriterRetryTests` (3, uses `DispatchProxy` for a stand-in `ISession`)
+plus `UgsRequestPolicyTests`, `OfflineSessionTests`, `PartyRefreshRecoveryTests` on Amoebius (111/111); the retry test
+fails with the old code; `unity_refcompile` player and editor. `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. The three `LobbyPropertyWriterRetryTests` pass in the Test Runner (if `DispatchProxy` is unavailable in the editor's
+   Mono, they fail at `DispatchProxy.Create`; say so in the next session).
+2. Start a party (host), then within 2 s rename yourself: no "[LobbyPropertyWriter] ... RateLimitExceeded" warning.
+
+### 🔴 Net: Load Time Insights records every online load by itself, the return to the menu included (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B36, `Docs/MULTIPLAYER_START_HERE.md` §3.1): `LoadInsights.ShouldRecord`
+is armed OR online (`OnlineProvider`, set in `MultiplayerSetup.Start`). `SceneLoader.ReturnToMainMenu` (host) and the
+client's Netcode Menu_Main pull start a `menuReturn` recording that ends when the menu's splash fades
+(`FadeFromSplashWhenSettled`). `BugHuntReports` collects `load_*.json` (kind `load`); `BugHuntAutoSend` sends new ones
+with no question. `net_logs.py show` lists a test's loads.
+**Verified without the editor:** `LoadInsightsAutoRecordTests` (6) and the full edit-mode suite on Amoebius (624/628;
+the 4 failures are the known SceneTransitionManager / AppManagerBootstrap ones); `net_logs.py --self-test`;
+`unity_refcompile` player, player-dev and editor; the Amoebius Release player build. `/verify-unity` is not available
+in the cloud session.
+**Verify in editor:**
+1. Offline, Record Insight Mode NOT armed: launch a game. No new report in the Load Time Insights tab (unchanged).
+2. Online (solo against AI online is enough), not armed: launch Bloomrush. A report appears when the arena completes.
+3. Fly 90 s, return to the menu. A second report appears once the menu shows; its trigger reads "Return to menu -
+   MinigameBloomrush → Menu_Main" and its longest frame is the teardown frame L14 waits for.
+4. Stop Play. The console line "[BugLedger] Sent to Claude automatically: ... 2 load timing report(s)" shows.
 
 ### 🔴 Net: B36 - a game freeze is recorded, and a Relay drop names the freeze it followed (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
@@ -15078,6 +15219,36 @@ compilation and AI-state gates OK; `rhino_line_sim.py --self-test`. `Arcade/REGA
 3. After a few races, `python3 Tools/Build/regatta_rival_report.py --dir <flights> --since 2026-10-26 --hull manta`:
    rings a minute well above the 8 of the older races, boosted share well above 20%.
 
+## 🔴 2026-10-26 — Switchback: the AI Dolphins fly the Regatta steering and learned charge numbers (unverified: no Unity CLI in the session)
+
+**Files:** `SwitchbackController.cs` (`AICommitFromApproachPoint` => true), `GateRaceController.cs`
+(`ApproachLeadFor`: with that switch on the approach point stays inside the commit radius),
+`Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback.asset` (learned), `SwitchbackAISteeringTests.cs`. What ran
+instead of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in changed files;
+`learn_drives_from_flights.py --check --mode Switchback` OK. `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.4.
+
+1. Run `SwitchbackAISteeringTests` (5 tests) and `RegattaNoCrystalTargetTests`: all pass.
+2. Switchback, I1, Hard AI Dolphins (Third Eye, Follow one): it threads gate 0 and goes on gate after gate; it no
+   longer circles the first gate's approach point. Its boost status shows "discharging" on the straights.
+3. Switchback, I2, Medium and Hard: the AI Dolphins finish (the old races: 0-2 of 20). Note how many mouths they miss.
+4. Headlong, any AI: steering as before (its switch is off).
+5. After a few races, `python3 Tools/Build/regatta_rival_report.py --dir <flights> --mode Switchback --since 2026-10-26`.
+
+## 🔴 2026-10-26 — Breakwater: the AI Sparrows fly the Regatta steering and fire the rocket at the station; any AI turns hard for a target behind it (unverified: no Unity CLI in the session)
+
+**Files:** `BreakwaterController.cs` (`AICommitFromApproachPoint` => true), `HoldBoostAIPolicySO.cs` ("clear the way"),
+`Resources/AIBoostPolicies/SparrowAIBoostPolicy_Breakwater.asset` (new), `SparrowAIBoostPolicy.asset` (the new fields,
+empty), `AIPilot.cs` (`TurnHardIfBehind`), `MinigameAbilityAITests.cs`, `SwitchbackAISteeringTests.cs`. What ran instead
+of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in changed files; `learn_drives_from_flights.py
+--check` (all modes) OK. `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.5, §6.
+
+1. Run `MinigameAbilityAITests` (5) and `SwitchbackAISteeringTests` (8): all pass.
+2. Breakwater, I1 and I4, AI Sparrows (Third Eye, Follow one): it lines up behind each station and threads the eye; it
+   no longer circles a station. A rocket leaves as it closes on a station (one per station) and blows the weave open.
+3. Breakwater with a human Sparrow: the rocket and guns work as before (the rule is the AI's only).
+4. Switchback I4: an AI that misses a mouth turns straight back instead of flying away.
+5. Any crystal mode or Dog Fight with AI Sparrows: their rocket still fires on its timer.
+
 
 ## Rev 13: four tabs, profile from the pilot, Voyage, brighter sea (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
@@ -15394,3 +15565,26 @@ Headless compile OK; `author_jacks_assets.py --check` / `--self-test` OK; the ne
 55. Net a run of bough prisms: each sinks to the back of the net and turns to lie flat against the mesh, long side along
     the line between the fish, no snap. A second machine sees the decoys face the same way.
 
+## 🔴 2026-10-26 — Breakwater: the AI Sparrows fly the Regatta steering and fire the rocket at the station; any AI turns hard for a target behind it (unverified: no Unity CLI in the session)
+
+**Files:** `BreakwaterController.cs` (`AICommitFromApproachPoint` => true), `HoldBoostAIPolicySO.cs` ("clear the way"),
+`Resources/AIBoostPolicies/SparrowAIBoostPolicy_Breakwater.asset` (new), `SparrowAIBoostPolicy.asset` (the new fields,
+empty), `AIPilot.cs` (`TurnHardIfBehind`), `MinigameAbilityAITests.cs`, `SwitchbackAISteeringTests.cs`. What ran instead
+of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in changed files; `learn_drives_from_flights.py
+--check` (all modes) OK. `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.5, §6.
+
+1. Run `MinigameAbilityAITests` (5) and `SwitchbackAISteeringTests` (8): all pass.
+2. Breakwater, I1 and I4, AI Sparrows (Third Eye, Follow one): it lines up behind each station and threads the eye; it
+   no longer circles a station. A rocket leaves as it closes on a station (one per station) and blows the weave open.
+3. Breakwater with a human Sparrow: the rocket and guns work as before (the rule is the AI's only).
+4. Switchback I4: an AI that misses a mouth turns straight back instead of flying away.
+5. Any crystal mode or Dog Fight with AI Sparrows: their rocket still fires on its timer.
+
+## 🔴 2026-10-26 — Squirrel prism pool refills fast enough (unverified: no Unity editor in the session)
+
+**File:** `Assets/_Prefabs/Environment/PrismManagers.prefab` (Squirrel Prism pool: `bufferSizeTarget` 240,
+`maxInstantiateRate` 160, `maxAddsPerFrame` 8). Measured in Amoebius: pool misses 7.5 KB/frame -> 0.
+
+1. Release, Arcade > Thresher Time (or Regatta with Squirrels), play past the auto-capture.
+2. In the capture: no `PoolMiss.Squirrel Prism` row (was 1.71 ms/frame in Thresher Time), `PoolRefill.Squirrel Prism`
+   present; trails look the same.

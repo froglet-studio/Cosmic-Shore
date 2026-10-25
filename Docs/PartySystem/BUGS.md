@@ -2138,6 +2138,16 @@ is one GET per second, not one per second on average.
   without claiming it. **Hand test:** same as above: `429s 0` and no `rate-limited` line in a 10-minute
   party. If 429s remain, they come from reads outside the pacer (the SDK's own), and the next step is Block 5.
 
+**First retest, 25 Oct (multiplayer sweep, `shombith+gradi-20261025_175453`, both on `bleeding-edge` with the
+pacer).** A 6-minute two-machine party with a join: Shombith 1 rate-limit failure in 310 reads, Gradi 3 in 200
+(against 1,061 in Caleb's and Gradi's 21-23 Oct logs). All four came in the first 2-3 s after a party started,
+when the SDK's own create / join calls had just read the lobby. One of them cost something: the identity
+republish's read before its save was not under `UgsRequestPolicy`, so that one 429 dropped the write ("[LobbyPropertyWriter]
+RepublishLocalIdentity error ... RateLimitExceeded", in Gradi's 25 Oct solo log too). **Fixed 2026-10-25:**
+`LobbyPropertyWriter.WriteAsync` runs that read under the policy like the save, so a 429 is retried with
+back-off; held by `LobbyPropertyWriterRetryTests` (3; the retry test fails with the old code). The other
+writes through it (joined party, invite clear) had no per-tick fallback and gain the most.
+
 ## B32 — After a guest leaves mid-match, the host sits in `Reconnecting` for the rest of the session 🟡 (observed 2026-10-16; root-caused & fixed 2026-10-17; needs a two-machine retest)
 
 **Seen in.** Same log as B31. ys1 joined Caleb's party (client 1 approved at 72 s), both pressed Ready in
@@ -2348,6 +2358,12 @@ game `OnDestroy` grows with the square of the count. So the 10 s in Unity is mos
 objects and unloading assets, which Amoebius cannot reproduce. The 24 Oct creation queue (`5de4316d05`) already
 removed the 57,000 coroutines each such destroy also had to stop, after the 20 Oct drops. Not fixed further until a
 Unity Load Time Insights capture of the return says which of L14's two fixes applies.
+
+**The capture is automatic now (2026-10-25).** Load Time Insights records every load while online with no arming,
+including the return to the menu (`loadKind: "menuReturn"`), and the after-Play send ships each report to
+`bugledger/<user>`. So the next online Bloomrush anyone plays, on any machine, brings the measurement L14 waits for;
+`net_logs.py show` lists it under the test, with a RELAY RISK flag on a frame over 9 s. The scheduled multiplayer
+sweep (`Docs/MULTIPLAYER_START_HERE.md` §3.1) reads it. No hand step is needed for the capture any more.
 
 ## B37 — "Could not create presence lobby: Object reference not set to an instance of an object" 🟡 (fixed 2026-10-25; cause likely, not proven)
 

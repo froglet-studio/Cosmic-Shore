@@ -25,7 +25,7 @@ that grew into the Menu_Main lava lamp, freestyle, toybox and lobby. It was **re
 with its scene, controller, card and mode preview; ID 28 stays reserved. Do not reintroduce it.
 `OnlineDuelForTheCell (29)` (`MinigameDuelForCellMultiplayer_Gameplay.unity`, card
 `ArcadeGameOnlineDuelForTheCell.asset`) followed the same day: Brood Rush replaced it. Its controller
-stays, because the CoOp Wildlife Blitz scene runs on `OnlineDuelForTheCellController`. ID 29 stays reserved.
+stays reserved; `OnlineDuelForTheCellController` was on no scene and was retired 2026-10-25 (`Docs/Reports/DEAD_CODE_M8.md`). ID 29 stays reserved.
 
 **2026-10-13:** the 2v2 CoOp vs AI (30) and CoOp Wildlife Blitz (32) scenes were dropped from the build
 list, and their cards plus the 21 legacy cards that named no existing scene were moved to
@@ -43,7 +43,7 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **Bootstrap** | 0 (must be first) | `_Scenes/Bootstrap.unity` | App entry point: DI registration, platform config, auth start, splash |
 | **Authentication** | 1 | `_Scenes/Authentication.unity` | Auth UI, cached session check, NetworkManager host start |
 | **Menu_Main** | 2 | `_Scenes/Menu_Main.unity` | Main menu with networked autopilot vessel, screen navigation |
-| **SplashScreen** | — | `_Scenes/SplashScreen.unity` | Optional splash screen (used by `SplashToAuthFlow`) |
+| **SplashScreen** | — | `_Scenes/SplashScreen.unity` | Optional splash screen (`SplashToAuthFlow`, which routed it, was on no scene and was retired 2026-10-25) |
 
 ### Single-Player Game Scenes
 
@@ -249,7 +249,6 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         │
         ├── SkimRaceController              — deterministic track, crystal race, golf scoring
         ├── JoustController      — collision tracking, server-authoritative winner, golf scoring
-        ├── OnlineDuelForTheCellController — vessel ownership swap between rounds (its own mode is retired; CoOp Wildlife Blitz's scene runs it)
         ├── ScurryController — minimal subclass (1 round, 1 turn)
         ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
         ├── BroodRushController             — nucleus-control fauna-wave race, brood scoring
@@ -563,12 +562,6 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `NetworkCrystalCollisionTurnMonitor` | `TurnMonitors/` | Player's domain collects N crystals (network-aware; the local-only base was folded in, 2026-10-25) |
 | `NetworkJoustCollisionTurnMonitor` | `TurnMonitors/` | Player's domain completes N jousts (network-aware; the local-only base was folded in, 2026-10-25) |
 | `VesselCollisionTurnMonitor` | `TurnMonitors/` | Player vessel collides with object |
-| `CellControlTurnMonitor` | `TurnMonitors/` | Cell ownership conditions met |
-| `VolumeCreatedTurnMonitor` | `TurnMonitors/` | Player creates N prisms |
-| `VolumeDestroyedTurnMonitor` | `TurnMonitors/` | Player destroys N prisms |
-| `AllLifeFormsDestroyedTurnMonitor` | `TurnMonitors/` | All enemies defeated |
-| `DistanceTurnMonitor` | `TurnMonitors/` | Player travels N units |
-| `ResourceAccumulationTurnMonitor` | `TurnMonitors/` | Player collects N resources |
 | `RampagePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Rampage target |
 | `CleavePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Cleave target |
 | `WildlifeKillTurnMonitor` | `TurnMonitors/` | A domain's summed creature kills reach the Wildlife Liberation target |
@@ -684,7 +677,6 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | Domain games base | `MultiplayerDomainGamesController.cs` | `_Scripts/Controller/Arcade/` |
 | SkimRace | `SkimRaceController.cs` | `_Scripts/Controller/Arcade/` |
 | Joust | `JoustController.cs` | `_Scripts/Controller/Arcade/` |
-| Cellular Duel (MP) | `OnlineDuelForTheCellController.cs` | `_Scripts/Controller/Arcade/` |
 | Crystal Capture | `ScurryController.cs` | `_Scripts/Controller/Arcade/` |
 | Astro League | `AstroLeagueController.cs` | `_Scripts/Controller/Arcade/AstroLeague/` |
 | Nucleus Rush (Brood Rush) | `BroodRushController.cs` | `_Scripts/Controller/Arcade/` |

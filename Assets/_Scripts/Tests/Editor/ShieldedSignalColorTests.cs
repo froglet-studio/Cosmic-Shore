@@ -83,23 +83,23 @@ namespace CosmicShore.Tests
             // The refusal belongs to the CALLER, not to the accessor (Docs/PALETTE.md §2.8): "no
             // pilot can fly Blue" is a fact about pilots, and a neutral mine or an uncommitted
             // crystal legitimately asks the palette what colour no-team is. So this drives the
-            // HUD that paints the shielded signal - SquirrelVesselHUDController.ResolveShieldedColor
+            // HUD that paints the shielded signal - SquirrelHUDController.ResolveShieldedColor
             // - over the LIVE palette, with Jade as the positive control proving the read is wired
             // (an unwired gameData would also return alpha 0 and pass vacuously).
             const System.Reflection.BindingFlags Private =
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
-            var hudType = typeof(CosmicShore.UI.SquirrelVesselHUDController);
+            var hudType = typeof(CosmicShore.UI.SquirrelHUDController);
             var gameDataField = hudType.GetField("gameData", Private);
             var resolve = hudType.GetMethod("ResolveShieldedColor", Private);
-            Assert.IsNotNull(gameDataField, "SquirrelVesselHUDController no longer has its injected gameData field.");
-            Assert.IsNotNull(resolve, "SquirrelVesselHUDController no longer has ResolveShieldedColor(Domains).");
+            Assert.IsNotNull(gameDataField, "SquirrelHUDController no longer has its injected gameData field.");
+            Assert.IsNotNull(resolve, "SquirrelHUDController no longer has ResolveShieldedColor(Domains).");
 
             var go = new GameObject("ShieldedSignalColorTests.SquirrelHUD");
             var gameData = ScriptableObject.CreateInstance<CosmicShore.Utility.GameDataSO>();
             try
             {
                 gameData.ThemeManagerData = Container();
-                var hud = go.AddComponent<CosmicShore.UI.SquirrelVesselHUDController>();
+                var hud = go.AddComponent<CosmicShore.UI.SquirrelHUDController>();
                 gameDataField.SetValue(hud, gameData);
 
                 var jade = (Color)resolve.Invoke(hud, new object[] { Domains.Jade });

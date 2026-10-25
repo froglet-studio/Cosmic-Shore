@@ -34,6 +34,8 @@ Assets/_Scripts/Tests/Editor/NetworkConfigMarkTests.cs
 Assets/_Scripts/Tests/Editor/FrameStallWatchTests.cs
 Assets/_Scripts/Tests/Editor/PresenceLobbyCreateTests.cs
 Assets/_Scripts/Tests/Editor/PartyRecoveryAfterPlayTests.cs
+Assets/_Scripts/Tests/Editor/LoadInsightsAutoRecordTests.cs
+Assets/_Scripts/Tests/Editor/LobbyPropertyWriterRetryTests.cs
 Assets/_Scripts/Tests/Editor/PartyRosterTests.cs
 Assets/_Scripts/Tests/Editor/RaceRankToastDriverTests.cs
 Assets/_Scripts/Tests/Editor/RegattaTeamPlayTests.cs

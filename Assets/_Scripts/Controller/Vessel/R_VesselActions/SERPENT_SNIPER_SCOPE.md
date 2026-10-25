@@ -264,7 +264,7 @@ for the retired Steady Eye bleed; round 4 removed the bleed and the field with i
 | `_Scripts/UI/Elements/ToyPreviewCamera.cs` | **+** (round 5) `EnsureRig`'s URP block routes through the helper |
 | `_Scripts/Controller/Managers/PrismSpatialIndex.cs` | **+** `QueryCone` / `ConeContains` |
 | `_Scripts/UI/View/CloakSeedWallActionSO.cs` | **+** declines while scoped |
-| `_Scripts/UI/Controller/SerpentVesselHUDController.cs` | **+** drives the Charge card's cooldown veil |
+| `_Scripts/UI/Controller/SerpentHUDController.cs` | **+** drives the Charge card's cooldown veil |
 | `Assets/Resources/ElementalAbilityMaps/Serpent.asset` | Charge + Space entries authored; Time's `Input` corrected |
 | `Assets/_SO_Assets/VesselActions/Serpent/SniperScopeAction.asset` | **new** |
 | `Assets/_SO_Assets/VesselActions/Serpent/SniperShotAction.asset` | **new** |
@@ -310,7 +310,7 @@ bucket walk, same unordered-snapshot contract, with the radius a function of axi
 
 ### 2. The readiness push was correct and invisible
 
-`SerpentVesselHUDController` pushes `CooldownRemaining01` into the fleet's clockwise cooldown veil
+`SerpentHUDController` pushes `CooldownRemaining01` into the fleet's clockwise cooldown veil
 every frame, and it has been doing so since round 1. The veil is drawn **on an ability ICON**, and
 **the Serpent binds 0 of its 4 ability icons** — so its lockup renders four LOCKED cards and the
 veil has nothing to sit on. A perfectly wired readout with nowhere to appear.
@@ -438,7 +438,7 @@ and its extremes are usually the two readings the player actually needs.*
 **What this does NOT fix, stated plainly:** the readout lives on the scope overlay, so it is only
 on screen while the left trigger is held. The fleet's own ability row would carry it everywhere,
 and the Serpent binds no icons for it to sit on — that is still the icon-authoring follow-up below,
-and the `SerpentVesselHUDController` push into it is still live and still waiting for one.
+and the `SerpentHUDController` push into it is still live and still waiting for one.
 
 ### The PIP moved and grew
 
@@ -523,7 +523,7 @@ r = R · tan(coneHalfAngle) / tan(windowFov / 2)
 
 **The lockup's cooldown veil now draws on a LOCKED card.** `AbilityLockupView.SetAbilityCooldown`
 refused a locked slot, so the Serpent's recharge — pushed correctly from
-`SerpentVesselHUDController` since the ability shipped — landed nowhere for three rounds of
+`SerpentHUDController` since the ability shipped — landed nowhere for three rounds of
 playtest. The veil never needed an icon anyway: it sizes itself on the ability **plate**, which a
 locked card has.
 

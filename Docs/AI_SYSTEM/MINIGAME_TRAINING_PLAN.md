@@ -21,8 +21,8 @@
 3. **People play it over and over**, with AI rivals of the same hull on the grid. Every race is recorded automatically
    (`HumanFlightRecorder`, every mode). Since 2026-10-25 the record includes each AI's state (`rivalState`), so a
    recording shows how the person flies and why each AI did what it did.
-4. **The learner turns the races into AI numbers for that minigame.** Run
-   `python3 Tools/Build/learn_drives_from_flights.py --mode <Mode> [--write]`. It writes `<asset>_<Mode>` variants that
+4. **The learner turns the races into AI numbers for that minigame, on its own** (the hourly AI learning sweep,
+   `AUTO_LEARNING.md`, runs `learn_drives_from_flights.py --mode <Mode> --write`; nobody runs it by hand). It writes `<asset>_<Mode>` variants that
    only that mode loads (`AIBoostPolicySO.ForMode`), and reports flights per intensity. It needs three finished races
    of a hull before it writes. The Squirrel (Skim Race, `learn_from_flights.py`, per-intensity `SkimRaceAIConfig_I1-I4`)
    and the Stoat are the worked examples.
@@ -36,7 +36,7 @@ From `VESSEL_MODE_CHART.md` §4 (live cards). The racing minigame is the one who
 
 | Vessel | Racing minigame | Shape | State (2026-10-26) |
 |---|---|---|---|
-| **Dolphin** | **Switchback** | open gate race, random gates | **First.** 6 hand-flown races (I1 2, I2 4, all finished). AI Dolphins thread 0-2 of 20 rings at I2 (§3.1) |
+| **Dolphin** | **Switchback** | open gate race, random gates | **First.** 6 hand-flown races (I1 2, I2 4, all finished). The steering fix, the I1-I4 ladder (§3.3) and the first learned numbers are in (2026-10-26); the AI's pace needs new races |
 | Squirrel | Skim Race | skim the track's rails | Trained (`learn_from_flights.py`, per-intensity configs) |
 | Stoat | Warpline (also Slingshot) | gate race, field pairs | 4 hand-flown races (I1-I2). AI on hold for Garrett's configuration |
 | Rhino | Headlong | lapped gate race | none yet |
@@ -57,17 +57,17 @@ From `VESSEL_MODE_CHART.md` §4 (live cards). The racing minigame is the one who
 - This is the defect Regatta fixed on 2026-10-17. A drifting Dolphin locks its course on the gate's "through" point,
   which sits on the ring's AXIS, so a commit made off-axis passes beside the mouth. Regatta moved the through point onto
   the line through the ring's centre (`GateRaceController.ArmRacer`, `aiCommitFromApproachPoint`), and later added a
-  re-attack after a missed ring. Switchback still runs with the switch OFF. Turning it on is ticket T-20261015-cb8f:
-  Garrett's call for his gate races, Yash's for the training plan.
+  re-attack after a missed ring. **Turned on for Switchback on 2026-10-26** (`SwitchbackController.AICommitFromApproachPoint`,
+  Yash's call for the training plan; ticket T-20261015-cb8f covers Garrett's other gate races).
 - `learn_drives_from_flights.py --mode Switchback` already has three finished races to learn from (I1 and I2 mixed).
   Measured against the AI's numbers, the person:
   - starts a discharge lined up within 27 degrees, not 12;
   - needs only 0.9 s of runway, not 2.5;
   - spends the charge at 0.82, not 0.95.
 
-### 3.2 The intensity ladder today
+### 3.2 The intensity ladder before 2026-10-26
 
-Intensity is the course alone (`SWITCHBACK.md`, "Intensity is the COURSE"):
+Intensity was the course alone (`SWITCHBACK.md`, "Intensity is the COURSE"):
 
 | | I1 | I2 | I3 | I4 |
 |---|---|---|---|---|
@@ -76,15 +76,15 @@ Intensity is the course alone (`SWITCHBACK.md`, "Intensity is the COURSE"):
 | What it asks | nothing new | threading | precision | precision |
 
 The Dolphin's verbs are skim (bank charge), drift (carve a turn its 110°/s cannot make) and discharge (spend it down a
-straight). None of them is taught or demanded by a level. Only the mouth shrinks, and I2 is a cliff (72 → 28 u radius).
+straight). None of them was taught or demanded by a level. Only the mouth shrank, and I2 was a cliff (72 → 28 u radius).
 
-### 3.3 Proposal: one new demand per level (for Yash to choose, Garrett to approve)
+### 3.3 One new demand per level (built 2026-10-26)
 
 | | I1: Learn to fly | I2: Carve | I3: Charge economy | I4: Gauntlet |
 |---|---|---|---|---|
 | Teaches | steering through gates | the drift | skim, then spend | all three, under pressure |
 | Mouth (radius) | 72 (as now) | 48 | 32 | 20 |
-| Course | a smooth flowing arc, gentle corners (≤ 30°), long legs | **switchbacks**: pairs of 90-150° hairpins only a drift makes | skim ribbons (prism walls) along some legs to bank charge, long straights after them to discharge | tight hairpins, short legs, danger prisms near the racing line |
+| Course | a smooth flowing arc, gentle corners (≤ 40°: 30° failed every seed in the 480-1080 shell), long legs | **switchbacks**: pairs of 90-150° hairpins only a drift makes | skim ribbons (prism walls) along some legs to bank charge, long straights after them to discharge | tight hairpins, short legs, danger prisms near the racing line |
 | Rivals | AI Dolphins on Easy | Medium | Medium / Hard | Hard |
 | Fun | flow, speed, no failure | the carve | timing the release | risk vs reward: the fast line is the dangerous one |
 
@@ -92,8 +92,60 @@ Why these numbers: the I4 mouth today (4.3 u radius against a 2.86 u hull) leave
 cannot carve through it, so the ladder ends in precision, not mastery. The proposed mouths keep the same order (each
 level tighter) without the cliff.
 
-Each change lands in the course generator (`SwitchbackCourse`, `SwitchbackCourseTests`) and the mode's generator
-(`author_switchback_assets.py`). It is a redesign of Garrett's mode, so it waits for his yes.
+Built as proposed, with the exact numbers in `SWITCHBACK.md` ("Intensity is the COURSE"): the hairpins in
+`SwitchbackCourse` (`SwitchbackCourseTests`), the I3 walls and I4 danger prisms in `SwitchbackFeatures` /
+`SpawnableSwitchbackFeatures` (`SwitchbackFeaturesTests`), wired by `author_switchback_assets.py`. The rivals' difficulty
+per level is still the player's pick in the launch panel. It is a redesign of Garrett's mode: he can re-tune any of it.
+
+### 3.4 Done 2026-10-26: the AI Dolphins race Switchback (decisions 1 and 3 of §5)
+
+**Why they threaded nothing.** Measured with `Tools/Build/regatta_rival_report.py --mode Switchback` (it now reads any
+mode), the AI Dolphins circled gate 0 for the whole race at I2: 0 rings, 22-52 s of circling each. At I1 they got 0-11.
+Raced offline on the six recorded courses (new `Tools/Build/switchback_dolphin_sim.py`: the gate steering, the commit
+drift, the AI nose lag, the charge economy), two defects showed, and the Regatta steering fixed only the second:
+1. **The approach point lay outside the commit radius** (300 u lead against a 260 u commit on any leg over 650 u). The
+   Dolphin's 35 u circle kept it 265-335 u out, so it never committed. Now, with the Regatta steering on, the approach
+   point stays at most 0.8 of the commit radius (`GateRaceController.ApproachLeadFor`).
+2. **A drift committed off-axis locked a line beside the 28 u mouth** (§3.1). This is the Regatta fix.
+
+**What changed:**
+- `SwitchbackController.AICommitFromApproachPoint` = true: the Regatta steering, which now carries the approach-point
+  cap.
+- `DolphinAIBoostPolicy_Switchback` written from Yash's races (`LEARNED_DRIVES_Switchback.md`): discharge lined up
+  within 27.4 deg (was 12), with 0.87 s of runway (2.5), at 0.82 charge (0.95).
+- Tests: `SwitchbackAISteeringTests`. Other gate races keep their scene switch (Headlong is the negative control).
+
+**The model, seconds for the 20 gates** (Hard, no rivals; the person's time in brackets):
+
+| Course | Today | The fix, the AI's own charge numbers | The fix, learned from Yash |
+|---|---|---|---|
+| I1 (101) | 0 rings | 104.8 | 100.9 |
+| I1 (88) | 0 rings | 115.5 | **88.8** |
+| I2 (221) | 0 rings | 190.8 | 169.0 |
+| I2 (80) | 0 rings | 184.0 | 197.3 |
+| I2 (82) | 0 rings | 166.6 | 180.2 |
+| I2 (132) | 0 rings | 188.8 | 181.5 |
+
+**Still open, the next step for the Dolphin:** at I2 the boosted Dolphin (about 250 u/s) misses the 28 u mouths 9-18
+times a race through the AI nose lag (`Arcade/REGATTA.md` §6.4.1), so it is still 2x slower than Yash there. The
+learned numbers mix I1 and I2; the Squirrel has one config per intensity, the Dolphin's drive does not yet. More races
+per intensity come next; the I1-I4 ladder (§3.3, decision 2) is built.
+
+### 3.5 The first races after the fix (Yash, 2026-10-26, 01:40-02:03, before the new ladder)
+
+`regatta_rival_report.py --mode Switchback`, the AI Dolphin rivals (Medium) in the six races flown after the fix
+landed (I1, I2, I4 on the old ladder):
+
+| | before the fix (four I2 races) | after (I2 and I4) |
+|---|---|---|
+| Rings threaded, of 20 | 0-2 | 11-20 (one finished an I4 race) |
+| Boosted | 5-16% of the race | 22-33% |
+
+**One AI still flew away**, in the 02:03 I4 race: it missed gate 0's 4.3 u mouth, broke off, and came out of the
+break-off with its target exactly behind it (179-180 deg). `AIPilot`'s stick scales with sin(error), which is zero
+dead astern, so it wrote no turn and flew 14,600 u away for the rest of the race. **Fixed for every AI in every mode:**
+`AIPilot.TurnHardIfBehind` turns at full stick toward any target more than 90 deg off the nose (the old stick was already
+full past about 120 deg; only the dead zone near 180 deg changes). Tests: `SwitchbackAISteeringTests.Target*`.
 
 ## 4. The end state: Regatta rebuilt from the trained vessels
 
@@ -107,13 +159,48 @@ Once two to four vessels race at their best in their own minigames:
 - What Regatta already has stays: the race lines per hull (learned from people), the per-AI recording, and the AI
   fixes. Its AI numbers become the trained minigame numbers.
 
+## 6. The AIs use their abilities to win their own races (Yash, 2026-10-26)
+
+> "The sparrow can use its shooting ability to clear up space in front of you for it to race down the track. This way
+> we have to train the sparrow AIs. And also other AIs should be able to use their ability in order to gain advantage
+> on racing, in their own minigame races."
+
+**How an ability becomes a racing decision.** Every AI hull lists abilities on its `AIPilot` (`abilities`: start, hold
+`Duration`, rest `Cooldown`, forever), a blind timer. A hull's drive (`AIBoostPolicySO`, picked per mode by
+`ForMode`) can take an ability off that timer (`AIBoostDriver.Drives`) and fire it when it helps. That is the
+pattern: one drive per hull per minigame, its numbers learned from people's races (§1).
+
+| Vessel / minigame | The ability that wins the race | AI today |
+|---|---|---|
+| **Sparrow / Breakwater** | the **rocket** (SkyBurst): a 50 u hole in the station's danger weave around the 18 u eye; the **guns** saw the weave and refill the bay | **2026-10-26:** the rocket is fired at the station, once per station, nose on it, inside its 229 u reach, paid for (`HoldBoostAIPolicySO` "clear the way", on only in `SparrowAIBoostPolicy_Breakwater`). Guns: the timer, 79% of the race along the nose (Yash held them 95-100% in his 10-20 races) |
+| Dolphin / Switchback | drift + charge discharge; the crystal blast on rivals | the charge drive, learned (§3.4); blast through the crystal detour |
+| Squirrel / Skim Race | skimming the rails | trained (`learn_from_flights.py`) |
+| Stoat / Warpline | the field pair's warp | on hold for Garrett's configuration |
+| Rhino / Headlong | the ramp; ramming costs it nothing | the ramp drive (Regatta-tuned) |
+| Manta / Redline | Soar | the Soar executor's bands |
+| Urchin / Skein | riding its own rail | `UrchinAutopilotDriver` |
+| Scarab / Scramble, Tollway | Snap Dash | dashes on straights (`SnapDashAIPolicySO`) |
+
+**Breakwater's steering, first.** The AI Sparrows threaded about 1 station a minute in Yash's five races, circling 56%
+of the race: the 280 u approach point lay outside the 240 u commit radius, Switchback's defect. `BreakwaterController`
+now flies the Regatta steering too. Offline on the five courses (`switchback_dolphin_sim.py`, `SPARROW_BREAKWATER`):
+stuck on three of five and through the danger weave at 12-13 of 15 stations on the other two before; every station
+threaded through the eye after.
+
+**What the next races teach.** Tonight's Sparrow races (shooting the stations open) had not reached the ledger when
+this was written. When they do: the rocket's range and aim, and when the guns run, are measured from them the way the
+Dolphin's discharge was (`buttonEvents`: input 2 is the rocket, input 1 the guns, input 7 the boost), and written into
+the Breakwater variant. The same loop then gives each vessel above its own ability rule in its own minigame.
+
 ## 5. What is done, what is next
 
-- **Done (2026-10-26):** the learner reads any mode (`--mode`). The plan is recorded here.
-- **Next, decisions for Yash** (and Garrett for Switchback):
-  1. Turn on the Regatta steering fix for Switchback (`aiCommitFromApproachPoint`), so the AI Dolphins can race and the
-     training has real rivals.
-  2. Choose or reshape the I1-I4 design in §3.3, then build it.
-  3. Write the first Switchback Dolphin numbers now (`--mode Switchback --write`), or wait for more races per intensity.
-- **Then:** Yash plays Switchback at each intensity, repeatedly. Each batch: learn, check the AI's pace in the
-  recordings, adjust. Then the next vessel.
+- **Done (2026-10-26):** the learner reads any mode (`--mode`). The plan is recorded here. Then, on Yash's yes, all
+  three decisions:
+  1. The Regatta steering is on in Switchback, with the approach-point cap (§3.4).
+  2. The I1-I4 ladder of §3.3 is built. Its I2 mouth is 48 u (was 28), which is where §3.4's nose-lag misses were.
+  3. The first Switchback Dolphin numbers are written (§3.4). They came from I1 and I2 on the old ladder, so the next
+     races re-learn them.
+  None of it has been run in Unity (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+- **Next:** Yash plays Switchback at each intensity, repeatedly. Nothing else: every race is relearned from within the
+  hour by the AI learning sweep (`AUTO_LEARNING.md`), which also checks the AI's pace and fixes what numbers cannot.
+  Then the next vessel.

@@ -310,8 +310,8 @@ def executor_retrofit(text: str) -> str:
 
 
 def hud_retrofit(text: str) -> str:
-    """RhinoVesselHUDController (the sword) becomes JacksHUDController, wired to the executor. Idempotent."""
-    rhino_hud, jacks_hud = guid_of_script("RhinoVesselHUDController"), guid_of_script("JacksHUDController")
+    """RhinoHUDController (the sword) becomes JacksHUDController, wired to the executor. Idempotent."""
+    rhino_hud, jacks_hud = guid_of_script("RhinoHUDController"), guid_of_script("JacksHUDController")
     head, docs = split_docs(text)
     out = []
     for _, _, d in docs:
@@ -849,7 +849,7 @@ def check_prefab(text: str, script_guid: str):
     for n in RHINO_SUBTREES:
         want(n not in names, f"Jacks.prefab: the Rhino's {n} is still on the hull")
     for n in RHINO_COMPONENTS + ["ShieldSkimmerScaleDriver", "RhinoSwordAfterimage", "ShieldSwipeActionExecutor",
-                                 "RhinoVesselHUDController"]:
+                                 "RhinoHUDController"]:
         want(f"guid: {guid_of_script(n)}, type: 3" not in text, f"Jacks.prefab: the Rhino's {n} is still on the hull")
     hud = re.search(r"guid: %s, type: 3\}\n((?:.*\n)*?)(?=--- !u!|\Z)" % guid_of_script("JacksHUDController"), text)
     want(hud and f"  crew: {{fileID: {EXECUTOR_ID}}}\n" in hud.group(1), "Jacks.prefab: the HUD is not JacksHUDController on the executor")

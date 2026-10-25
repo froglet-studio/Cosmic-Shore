@@ -337,7 +337,7 @@ All four abilities are passive or gesture-driven. Since 2026-10-17 Charge, Mass 
 authored `Input: 13` (`BothSticksAction` — hold both triggers to energize; the swing; the
 afterimages follow the energize) so their cards draw the two-trigger chip, and the energize press
 lights Charge (the first map entry bound to that input); Time stays `Input: 0` (the passive
-sentinel) and its sticks-apart chip is set by `RhinoVesselHUDController`. Nothing here has run in
+sentinel) and its sticks-apart chip is set by `RhinoHUDController`. Nothing here has run in
 the Unity editor yet. Detail: `R_VesselActions/RHINO_ENERGY_SWORD.md`,
 `RHINO_SWORD_AFTERIMAGE.md`, `RHINO_RAMP_BOOST.md`, `RHINO_PLOUGH.md`.
 
@@ -411,7 +411,7 @@ mechanic, not merely when magnification is.
 
 **One fleet-wide UI fix came out of the same round.** `AbilityLockupView.SetAbilityCooldown`
 refused a LOCKED card, so this vessel's recharge — pushed correctly from
-`SerpentVesselHUDController` from the day the ability shipped — landed nowhere for three rounds of
+`SerpentHUDController` from the day the ability shipped — landed nowhere for three rounds of
 playtest, because the Serpent binds 0/4 icons. It now draws (the veil sizes itself on the ability
 PLATE, which a locked card has). *An indicator that refuses to draw because its decoration is
 missing is indistinguishable from an indicator nobody is driving.*
@@ -481,7 +481,7 @@ nothing here touches it.
    mechanic was deleted, so that card had been showing a gauge nothing drove. ⚠ **Stated cost:
    the Squirrel now has no drift readout on the HUD at all** — `ElementalBarsView.JuiceDriftStart`
    exists, is fully written and is ALSO dead (no callers anywhere), so if drift feedback is wanted
-   back it is one line in `SquirrelVesselHUDController` pointing at the petal flowers instead of
+   back it is one line in `SquirrelHUDController` pointing at the petal flowers instead of
    at an ability icon.
 
 HUD: the shared upgrade-highlight system (`VesselHUDView.abilityIcons` + base

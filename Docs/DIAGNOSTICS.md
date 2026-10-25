@@ -244,12 +244,19 @@ occurrence.
 - **Marked fixed by whoever fixed it** — in practice a Claude session, `bug_ledger.py mark-fixed`,
   which writes VALIDATING plus the fix commit onto the sender's `bugledger/<user>` branch. The
   editor adopts it only once that commit is in its HEAD (§ "Send to Claude").
+- **Compile errors close themselves.** An open `error CSnnnn:` issue is resolved at the first editor
+  load where the scripts compiled clean (`EditorUtility.scriptCompilationFailed` false): Unity loads no
+  new scripts while a compile error stands, so the load is the compiler's proof. A half-finished pull
+  or a branch switch had left 61 of them open across the shared ledgers. One that comes back is filed
+  again.
 - **Validation evidence** is scope-matched, and only counts while auto-capture is ON (a clean
   session proves nothing while nothing listens):
   - `PlayMode` issues: each play run ≥ the minimum length where the signature stays silent
     counts one clean session (a bounded queue drain runs before the verdict so an in-flight
     error can't be miscounted);
-  - `EditMode` issues: a full editor session ≥ the minimum length, credited at clean quit;
+  - `EditMode` issues: an editor span ≥ the minimum length, credited at clean quit and at each
+    script reload (a shorter span runs on into the next one; a credited span starts a new one, so
+    an error the reload itself raises lands in the new span and reopens the fix);
   - `Tool` issues: **the tool that filed it is the validator** — a FULL clean re-run of that tool
     resolves its validating findings (quota 1: a deterministic re-run is stronger evidence than
     any number of play sessions). Partial sweeps must not call `ReportToolFindings`.

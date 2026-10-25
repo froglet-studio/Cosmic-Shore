@@ -158,6 +158,7 @@ namespace CosmicShore.Editor
             {
                 LoadAllLocked();
                 SyncFromSharedLocked();
+                if (!EditorUtility.scriptCompilationFailed) ResolveCompiledErrorsLocked();
             }
 
             if (string.IsNullOrEmpty(SessionState.GetString(EditorStartKey, "")))
@@ -242,6 +243,7 @@ namespace CosmicShore.Editor
         {
             Unhook();
             StopWorker();
+            CreditEditorSpanAtReload();
             lock (SeenLock)
             {
                 PersistSet(SeenPlayKey, SeenThisPlay);
@@ -478,6 +480,30 @@ namespace CosmicShore.Editor
             var deadline = DateTime.UtcNow.AddMilliseconds(400);
             while (!Queue.IsEmpty && DateTime.UtcNow < deadline)
                 Thread.Sleep(5);
+        }
+
+        /// <summary>
+        /// A script reload closes an EditMode span as well as quitting does. Crediting only at quit
+        /// gave a fix one count per editor launch, and none to a person who keeps Unity open all day
+        /// or whose editor is killed: E-2c9bfa16f7 (an error raised at every script reload) sat at
+        /// 0 of 2 through five play runs and four reloads. A span shorter than the minimum keeps
+        /// running into the next reload; one that is long enough is credited and a new span starts,
+        /// so an error raised by the reload itself lands in the new span and reopens the fix.
+        /// </summary>
+        static void CreditEditorSpanAtReload()
+        {
+            if (!TryParseIso(SessionState.GetString(EditorStartKey, ""), out var started)) return;
+            double minutes = (DateTime.UtcNow - started).TotalMinutes;
+            if (minutes < _minEditorMinutes) return;
+            HashSet<string> seen;
+            lock (SeenLock)
+            {
+                seen = new HashSet<string>(SeenThisEditorSession, StringComparer.OrdinalIgnoreCase);
+                SeenThisEditorSession.Clear();
+            }
+            CreditCleanSessions("EditMode", seen, qualifies: true,
+                why: $"{Math.Max(1, (int)minutes)}min editor span, script reload");
+            SessionState.SetString(EditorStartKey, Iso(DateTime.UtcNow));
         }
 
         static void CreditEditorSessionEnd()
@@ -978,6 +1004,29 @@ namespace CosmicShore.Editor
             }
             catch { }
             DeleteLocked(issue.Id);
+        }
+
+        static readonly System.Text.RegularExpressions.Regex CompileErrorTitle =
+            new(@"\berror CS\d{4}:", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+        /// <summary>
+        /// A compile error is fixed when the code compiles: Unity loads no new scripts while any
+        /// compile error stands, so a load with compilation clean is the compiler's own proof. Each one
+        /// otherwise stayed open for good (61 across the shared ledgers on 2026-10-25, each seen once,
+        /// some from September: a half-finished pull or a branch switch compiled mid-way). If the
+        /// error comes back it is filed again, open.
+        /// </summary>
+        static void ResolveCompiledErrorsLocked()
+        {
+            List<BugLedgerIssue> compiled = null;
+            foreach (var issue in Issues.Values)
+                if (issue.Kind == BugLedgerIssueKind.Auto && (issue.IsOpen || issue.IsValidating) &&
+                    CompileErrorTitle.IsMatch(issue.Title ?? ""))
+                    (compiled ??= new List<BugLedgerIssue>()).Add(issue);
+            if (compiled == null) return;
+            foreach (var issue in compiled)
+                ResolveLocked(issue, "compiled clean: the scripts compiled and loaded without this error");
+            Trail($"scripts compiled clean: closed {compiled.Count} compile error(s)");
         }
 
         static string TombstonePath(string id) => Path.Combine(ResolvedDir, id + ".bug.json");

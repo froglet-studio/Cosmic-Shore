@@ -246,7 +246,7 @@ applies to new abilities, new resources on the meter list, and anything that add
 14. **A HUD controller must never reach for another vessel's executor by TYPE.**
     `GetComponentInChildren<SomeOtherVesselsExecutor>(true)` compiles fine, returns null on every
     vessel that isn't the one carrying it, and the gauge it feeds then simply never moves — no
-    error, no warning, nothing to notice. `SquirrelVesselHUDController` polled the Sparrow-only
+    error, no warning, nothing to notice. `SquirrelHUDController` polled the Sparrow-only
     `OverheatingActionExecutor` for its heat gauge for the component's entire life; the gauge was
     dead the whole time and the bug only surfaced when the Sparrow branch DELETED the type and the
     Squirrel stopped compiling. If a HUD needs a signal, bind it on the vessel's OWN component (a
@@ -1331,7 +1331,7 @@ the Stoat's first port (2026-10-10) showed the three places a copy goes wrong. D
    `framingFieldOfView` to the studio's FOV (68): the camera moves nearer by tan(68°/2)/tan(fov/2) and turns
    its look so the hull reads the same size AND sits at the same height on screen at whatever FOV the player
    chose (`CustomCameraController.FramedLook`, `CameraLookAheadTests`). A per-vessel FOV was tried first and
-   reverted: `CameraSettingsApplier` re-applies the player's value on every settings change.
+   reverted: `CameraSettingsApplier` re-applied the player's value on every settings change (that class was on no scene and was retired 2026-10-25).
 4. **The studio's look has no owner tint.** A slung hole's `DomainTintAmount` filled the black hole's shadow
    with the owner's dark domain colour (it read as JADE, not black). The studio draws a pure black shadow, a
    warm photon ring and a white-hot core; the Stoat's config ships the tint at 0, and the lens draws the ring
