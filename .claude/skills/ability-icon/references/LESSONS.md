@@ -149,3 +149,9 @@ one thing right. then move on."
     is the fallback for a HUD without the parts). The hull sprite is the mesh centred in its own canvas so the
     child's rotation is about the hull. Unity wraps long flow values onto a second line in prefab YAML - a field
     rewrite must match `{...}` across lines or it leaves a dangling `type: 3}` (rebind `_set_field`).
+31. **A part that turns must pivot on the hull's AXIS, not its bounding box.** Garrett: "the trail should be
+    directly behind the squirrel so the pointing down vs up has an anti symmetry to it." In view D the nose-tail
+    line sits 16 px above the sprite's bbox centre (the wings and pods hang below it), so a hull centred by its
+    bbox had the trail running under it and turned about the wrong point. Measure the axis with
+    `project_point()` on the nose and tail vertices, draw the hull that much low in its canvas so the axis IS
+    the canvas centre (the child rect's pivot), and put the trail on that line.

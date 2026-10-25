@@ -21,6 +21,7 @@ The core (drift) icons live in Core/ so the family gate compares the elemental i
 import math
 
 import mesh_silhouette
+from canvas import shift as C_shift
 from canvas import band, empty, fill, ngon, rect, ring, rotate, scale, stroke, translate
 from motifs import block, hull, prism, speed_wedge, trail_band
 
@@ -117,15 +118,20 @@ def skimming():
     return skim_self() | skim_ring() | skim_ahead()
 
 
-DRIFT_HULL = dict(cx=88, cy=64, box=56)            # the hull part, on the course line; its child rect is centred here
-DRIFT_TRAIL_X = (12, 29, 46)                        # the trail behind the tail (tail at x ~62), along the course line
+DRIFT_HULL = dict(cx=88, cy=64, box=56)            # the hull part; its child rect is centred here, ON the course line
+DRIFT_AXIS_OFFSET = 16.0                            # in view D the nose-tail axis sits 16 px ABOVE the sprite's bbox centre
+                                                    # (measured: nose (120, 48.1), tail (8, 47.9) for box 112 at (64, 64)), so
+                                                    # the hull is drawn 16 px low in its canvas and the axis - the pivot - is
+                                                    # the canvas centre: the trail sits directly behind, and a turn up or
+                                                    # down is the same picture mirrored (Garrett: "an anti symmetry")
+DRIFT_TRAIL_X = (20, 36, 52)                        # the trail behind the tail (tail at x ~63.5), on the course line
 DRIFT_Y = 64
 
 
 def drift_hull():
     """The hull part: the Squirrel straight along its course (nose right), fitted to its OWN 128 canvas - the HUD
     places it in a point-anchored child rect on the course line and turns it by the live slip angle."""
-    return squirrel(112, 64, 64, dilate_px=1.4)
+    return squirrel(112, 64, 64 + DRIFT_AXIS_OFFSET, dilate_px=1.4)
 
 
 def drift_trail_blocks():
@@ -147,8 +153,14 @@ def drift_trail_octa():
 
 def _hull_on_card(roll=0.0):
     k = DRIFT_HULL["box"] / 128.0
-    return mesh_silhouette.silhouette(FBX, box=112 * k, cx=DRIFT_HULL["cx"], cy=DRIFT_HULL["cy"], dilate_px=1.4, roll=roll,
-                                      pitch=VIEW_D["pitch"], yaw=VIEW_D["yaw"])
+    # the part as the HUD places it: fitted to its child rect, its axis on the course line, turned about that point
+    m = mesh_silhouette.silhouette(FBX, box=112 * k, cx=64, cy=64 + DRIFT_AXIS_OFFSET * k, dilate_px=1.4,
+                                   pitch=VIEW_D["pitch"], yaw=VIEW_D["yaw"])
+    from PIL import Image
+    import numpy as np
+    from canvas import SS, N
+    im = Image.fromarray((m * 255).astype(np.uint8)).rotate(-roll, center=(64 * SS, 64 * SS), resample=Image.BILINEAR)
+    return C_shift(np.asarray(im) > 127, DRIFT_HULL["cx"] - 64, DRIFT_HULL["cy"] - 64)
 
 
 def drift():
