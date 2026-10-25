@@ -13937,6 +13937,19 @@ Reference compile clean (player; editor: the 3 known errors only); Amoebius buil
    they open at once.
 5. Profiler on the Abilities tab: no cost above the plain stage (one 30 Hz render of the hull).
 
+## 🔴 2026-10-25 — Hangar: pad presses belong to the menu, not the ability rows (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
+
+Docs/MENU_REDESIGN_B.md §61. Changed `HangarAbilitiesPage` (pad controls no longer polled), `HangarControlInput`
+(summary only). What ran instead of `/verify-unity`: `unity_refcompile` player RESULT OK; `author_menu_hangar.py
+--check` OK; console-logging gate OK.
+1. Menu_Main with a pad, Hangar > Abilities, Sparrow: press RT. The top bar pages to the Ark; Pulsefire does NOT play.
+   Back on the Hangar, LT pages to the left only (Skyburst Rockets does not play); LB / RB step the tabs only.
+2. D-pad to the Pulsefire row, press A: Pulsefire plays (keycap sinks, row glows, the hull fires); Turret Stance (A)
+   does not play with it. The AI resumes ~4 s later.
+3. Keyboard: press the key a row shows (e.g. SPACE, LSHIFT): that ability plays. Mouse click / touch tap on a row: it
+   plays.
+4. Keycaps still follow the device (pad LT / RT / A / B, keyboard keys) as the last-used device changes.
+
 ## 🔴 2026-10-19 — Song names and Arena hull icons (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
 
 Docs/MENU_REDESIGN_B.md §60. Changed `AudioSystem`, `SoundtrackPlayer`, `SoundtrackSO`, `AudioStudioPanel`,

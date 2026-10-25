@@ -10,10 +10,18 @@ namespace CosmicShore.UI
     /// <summary>
     /// The Hangar's ABILITIES tab (rev 3): every ability of the selected vessel - its icon, name,
     /// element and what it does - with the control that fires it written as the player's own device
-    /// names it (LT / RT / A / B on a pad, LSHIFT / SPACE on a keyboard, nothing on touch). Pressing that
-    /// control - or tapping the row - makes the 3D vessel on the stage PERFORM it in the element's
-    /// colour, and lights the row. The move is the ability's own kind (shot, boost, build, sense...), read
-    /// from its name and description by <see cref="HangarAbilityKinds"/> (Docs/MENU_REDESIGN_B.md section 46).
+    /// names it (LT / RT / A / B on a pad, LSHIFT / SPACE on a keyboard, nothing on touch). Pressing the
+    /// row (A on a pad, a click, a tap) or that ability's keyboard key makes the 3D vessel on the stage
+    /// PERFORM it in the element's colour, and lights the row. The move is the ability's own kind (shot,
+    /// boost, build, sense...), read from its name and description by <see cref="HangarAbilityKinds"/>
+    /// (Docs/MENU_REDESIGN_B.md section 46).
+    ///
+    /// <para><b>The pad belongs to the menu here</b> (section 61). The Hangar is a screen, and the pad controls
+    /// the abilities use most have menu jobs on it: LT / RT page the screens, LB / RB step the tabs and A presses
+    /// whatever the pad has selected. Polling them fired an ability on a press meant for the menu (RT on a Sparrow
+    /// paged to the Ark AND fired Pulsefire), so a pad keycap is a label of the in-match control and is never
+    /// polled - every pad control alike, so the page does not depend on which ones the menu leaves free today.
+    /// The keyboard keys the abilities use have no menu job, so they still play their ability.</para>
     ///
     /// <para>The rows read the shipped <see cref="ElementalAbilityMapSO"/> (name, description, input)
     /// and the vessel's own HUD icon art; the control name comes from the fleet's one glyph table
@@ -199,7 +207,9 @@ namespace CosmicShore.UI
             {
                 var row = rows[i];
                 if (row == null) continue;
-                if (_active && (HangarControlInput.WasPressed(row.pad) || HangarControlInput.WasPressed(row.key)))
+                // Only the keyboard key: the pad's controls are the menu's (see the class summary); a pad
+                // reaches the row through the EventSystem, A on the focused row.
+                if (_active && HangarControlInput.WasPressed(row.key))
                     PlayerFire(i);
                 if (row.pressed > 0f)
                 {

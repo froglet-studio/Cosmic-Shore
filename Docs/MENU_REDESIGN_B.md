@@ -2924,3 +2924,24 @@ still the one random event, so both showed "Cosmic Shore soundtrack". Now:
 **Arena hull icons.** The vessel chips on Arena cards drew white squares: `KitArenaGameCard` put each vessel's icon on
 the chip's FIRST child, which is the chip frame's fill (`Fill`, `Border`, `Icon`), and left the sprite-less `Icon`
 drawing a white quad on top. It now finds the `Icon` child by name.
+
+## 61. The Hangar's pad presses belong to the menu (2026-10-25, awaiting in-editor approval)
+
+Yash's play test: on the Hangar's Abilities tab with a Sparrow, RT both paged the top bar to the Ark (the top bar shows
+LT / RT for that) and played Pulsefire Cannons (its keycap reads RT). `ScreenSwitcher` and `HangarAbilitiesPage` both
+polled the trigger off the device in the same frame. The same clash sat on LT (Skyburst Rockets), on LB / RB for any
+ability there (the tabs step on them), and on A: with the pad on another control, A pressed that control AND played the
+ability bound to A (Turret Stance).
+
+**The rule.** On a menu screen the pad is the menu's. `HangarAbilitiesPage` no longer polls pad controls; a pad keycap
+is a label of the in-match control. The pad replays an ability through its row (D-pad to the row, A), the same way a
+click or a tap does (the row's `KitButton` was already wired to it). The keyboard keys the abilities use (LSHIFT, SPACE,
+Q, E, F, R, TAB, the mouse off the UI) have no menu job, so they still play their ability. Every pad control alike, not
+only the ones that clash today, so the page cannot start fighting the menu again when a screen gains a control.
+
+**Why not the other way round.** Letting the Abilities tab keep the triggers would make the top bar's LT / RT a lie on
+that tab, and still leave LB / RB and A fighting. The TRY flight (§35) could take the pad because it was a real flight
+(`ModePreviewWindow.AnyHasFocus`, which also stood the shell down); the AI demo (§59) is a display, so it does not.
+
+The header line stays "Labels follow your device. Press one to see it again." ("one" is the row). Changed:
+`HangarAbilitiesPage` (the poll and its summary), `HangarControlInput` (summary only).
