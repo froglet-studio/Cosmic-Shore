@@ -51,45 +51,43 @@
     }
   ],
   "bugs": {
-    "open": 2,
+    "open": 270,
+    "source": "551 branch(es)",
     "top": [
-      {
-        "id": "E-8cd155dc89",
-        "state": "open",
-        "title": "[BugLedgerTest] Synthetic error \u2014 file me, mark me fixed, then watch validation close me."
-      },
       {
         "id": "E-cdf0c783c1",
         "state": "open",
+        "testers": 6,
         "title": "[FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti"
       },
       {
-        "id": "E-76d7341dae",
-        "state": "validating",
-        "title": "[Regatta] Turn started with no course on this peer - gates flown now cannot be credited. The SyncCourse broadc"
+        "id": "E-8cd155dc89",
+        "state": "open",
+        "testers": 6,
+        "title": "[BugLedgerTest] Synthetic error \u2014 file me, mark me fixed, then watch validation close me."
+      },
+      {
+        "id": "E-0a098d80df",
+        "state": "open",
+        "testers": 5,
+        "title": "Relay allocation is invalid. See NetworkDriver.GetRelayConnectionStatus and RelayConnectionStatus.AllocationIn"
+      },
+      {
+        "id": "E-4d0d17e44b",
+        "state": "open",
+        "testers": 5,
+        "title": "Received error message from Relay: player timed out due to inactivity."
+      },
+      {
+        "id": "E-e5ff2abb8c",
+        "state": "open",
+        "testers": 5,
+        "title": "Transport failure! Relay allocation needs to be recreated, and NetworkManager restarted. Use NetworkManager.On"
       }
     ],
-    "validating": 1
+    "validating": 39
   },
   "captures": [
-    {
-      "cpuBusyMs": 31.617097854614258,
-      "gcKB": 30.91253662109375,
-      "key": "MinigameWreckingBall|MinigameWreckingBall",
-      "timestamp": "2026-10-22 23:43:30",
-      "user": "owner",
-      "valid": true,
-      "verdict": "adopted as the baseline"
-    },
-    {
-      "cpuBusyMs": 38.890037536621094,
-      "gcKB": 409.8428039550781,
-      "key": "Menu_Main|MinigameRegatta",
-      "timestamp": "2026-10-22 23:56:25",
-      "user": "owner",
-      "valid": true,
-      "verdict": "adopted as the baseline"
-    },
     {
       "cpuBusyMs": 3.0181937217712402,
       "gcKB": 61.10776138305664,
@@ -106,7 +104,7 @@
       "timestamp": "2026-10-23 13:50:32",
       "user": "owner",
       "valid": true,
-      "verdict": "adopted as the baseline"
+      "verdict": "within baseline"
     },
     {
       "cpuBusyMs": 16.522550582885742,
@@ -115,7 +113,7 @@
       "timestamp": "2026-10-23 13:56:52",
       "user": "owner",
       "valid": true,
-      "verdict": "adopted as the baseline"
+      "verdict": "within baseline"
     },
     {
       "cpuBusyMs": 10.79955005645752,
@@ -124,7 +122,7 @@
       "timestamp": "2026-10-23 14:02:10",
       "user": "owner",
       "valid": true,
-      "verdict": "adopted as the baseline"
+      "verdict": "within baseline"
     },
     {
       "cpuBusyMs": 22.813396453857422,
@@ -133,7 +131,7 @@
       "timestamp": "2026-10-23 14:13:05",
       "user": "owner",
       "valid": true,
-      "verdict": "adopted as the baseline"
+      "verdict": "within baseline"
     },
     {
       "cpuBusyMs": 26.555517196655273,
@@ -141,6 +139,24 @@
       "key": "Menu_Main|Garland",
       "timestamp": "2026-10-23 19:42:57",
       "user": "owner",
+      "valid": true,
+      "verdict": "REGRESSION"
+    },
+    {
+      "cpuBusyMs": 11.583251953125,
+      "gcKB": 20.374347686767578,
+      "key": "Menu_Main|S2-4min",
+      "timestamp": "2026-10-25 08:19:05",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "adopted as the baseline"
+    },
+    {
+      "cpuBusyMs": 12.834184646606445,
+      "gcKB": 20.5296630859375,
+      "key": "Menu_Main|Garland",
+      "timestamp": "2026-10-25 08:23:05",
+      "user": "yskha",
       "valid": true,
       "verdict": "REGRESSION"
     }
@@ -168,7 +184,7 @@
     }
   ],
   "gatesOk": true,
-  "generatedUtc": "2026-10-25T02:22:40Z",
+  "generatedUtc": "2026-10-25T16:51:38Z",
   "next": [
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker UniTaskLoopRunnerPreLateUpdate 0.0007 -> 0.3666 ms/frame (+52271%)",
@@ -269,10 +285,16 @@
     "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker CoroutinesDelayedCalls 0.1444 -> 0.5622 ms/frame (+289%)",
     "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker Physics.Simulate 0.092 -> 0.3397 ms/frame (+269%)",
     "Resolve: Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker LightFauna.Tick.PrismScan 0.0912 -> 0.2943 ms/frame (+223%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): cpuBusyMs 3.846808671951294 -> 12.834184646606445 (+234%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): p95Ms 18.76990509033203 -> 25.25600242614746 (+35%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker PlayerLoop 9.2708 -> 12.8267 ms/frame (+38%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker UGUI.Rendering.UpdateBatches 0.6009 -> 4.563 ms/frame (+659%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker BehaviourUpdate 1.0212 -> 1.7767 ms/frame (+74%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker LateBehaviourUpdate 0.4277 -> 1.4627 ms/frame (+242%)",
     "Capture S2 Lattice in Release (no valid baseline yet): Play Menu_Main in Release, Cell Selector > Lattice, and keep playing 8 minutes: the editor captures S2 by itself [T-20261020-fb02]",
     "Capture Skim Race I2 in Release (no valid baseline yet): Play Arcade > Skim Race, intensity 2, 2 AI, in Release for 90 s: the editor captures it by itself - also proves the Burst fix [T-20261015-3e0b]",
     "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go [T-20261015-3972]",
-    "2 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [BugLedgerTest] Synthetic error \u2014 file me, mark me fixed, then watch validation close me.)"
+    "270 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti)"
   ],
   "openPerformanceTasks": [
     {
@@ -490,7 +512,13 @@
     "Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker Animators.Update 0.2478 -> 0.6937 ms/frame (+180%)",
     "Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker CoroutinesDelayedCalls 0.1444 -> 0.5622 ms/frame (+289%)",
     "Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker Physics.Simulate 0.092 -> 0.3397 ms/frame (+269%)",
-    "Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker LightFauna.Tick.PrismScan 0.0912 -> 0.2943 ms/frame (+223%)"
+    "Performance regression in Menu_Main|Garland (owner, 2026-10-23 19:42:57): marker LightFauna.Tick.PrismScan 0.0912 -> 0.2943 ms/frame (+223%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): cpuBusyMs 3.846808671951294 -> 12.834184646606445 (+234%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): p95Ms 18.76990509033203 -> 25.25600242614746 (+35%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker PlayerLoop 9.2708 -> 12.8267 ms/frame (+38%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker UGUI.Rendering.UpdateBatches 0.6009 -> 4.563 ms/frame (+659%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker BehaviourUpdate 1.0212 -> 1.7767 ms/frame (+74%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker LateBehaviourUpdate 0.4277 -> 1.4627 ms/frame (+242%)"
   ],
   "scenarios": [
     {
