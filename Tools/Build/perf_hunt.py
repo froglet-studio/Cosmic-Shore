@@ -225,8 +225,27 @@ def summarize(b):
             "prismPath": f["prismPath"], "markers": markers, "timestamp": b.get("timestamp"), "codeOpt": f["codeOpt"]}
 
 
-def compare_capture(b, baselines, adopt=False):
-    """Judge one capture against its baseline. Returns (verdict dict, baselines possibly changed)."""
+def baseline_key(key, user):
+    """A baseline belongs to one machine: `scene|label|user`. Until 2026-10-25 it was `scene|label`, so every
+    tester's capture was judged against whichever machine's capture was adopted first (Andrew's and Caleb's
+    Garland runs against Yash's 3.8 ms one: 52 of 184 'regressions' were the machine, not the code)."""
+    return f"{key}|{user or 'local'}"
+
+
+def claim_legacy_baselines(baselines, captures):
+    """Give each `scene|label` baseline (from before baselines were per machine) to the machine whose capture it was
+    adopted from: the capture with the same key and timestamp. One no capture matches stays as it was, unused."""
+    for c in captures:
+        key = capture_key(c["bundle"])
+        legacy = baselines.get(key)
+        if legacy is not None and legacy.get("timestamp") == c["bundle"].get("timestamp"):
+            baselines.setdefault(baseline_key(key, c["user"]), legacy)
+            del baselines[key]
+    return baselines
+
+
+def compare_capture(b, baselines, adopt=False, user=None):
+    """Judge one capture against its machine's baseline. Returns (verdict dict, baselines possibly changed)."""
     key = capture_key(b)
     validity = pcr.validity(b)
     errors = [v for v in validity if v.startswith("ERROR")]
@@ -236,9 +255,10 @@ def compare_capture(b, baselines, adopt=False):
     if errors:
         verdict["action"] = "invalid: not compared"
         return verdict
-    base = baselines.get(key)
+    bkey = baseline_key(key, user)
+    base = baselines.get(bkey)
     if base is None or adopt:
-        baselines[key] = dict(summary, adoptedUtc=now_iso())
+        baselines[bkey] = dict(summary, adoptedUtc=now_iso())
         verdict["action"] = "adopted as the baseline" if base is None else "baseline replaced (--adopt)"
         return verdict
     verdict["baseline"] = {"timestamp": base.get("timestamp"), "cpuBusyMs": base.get("cpuBusyMs"),
@@ -361,10 +381,12 @@ def default_local_dir():
 
 def cmd_collect(args):
     captures = collect_captures(args.local if args.local else default_local_dir())
-    baselines = load_json(BASELINES, {})
+    # Oldest first, so each machine's first valid capture of a scenario is its baseline.
+    captures.sort(key=lambda c: str(c["bundle"].get("timestamp") or ""))
+    baselines = claim_legacy_baselines(load_json(BASELINES, {}), captures)
     verdicts = []
     for c in captures:
-        v = compare_capture(c["bundle"], baselines, adopt=False)
+        v = compare_capture(c["bundle"], baselines, adopt=False, user=c["user"])
         v.update(user=c["user"], name=c["name"], branches=c["branches"])
         verdicts.append(v)
     board = {"generatedUtc": now_iso(), "branchesScanned": len(_remote_branches()), "captures": verdicts}
@@ -388,7 +410,7 @@ def cmd_compare(args):
     if not b or b.get("kind") != "perf-capture":
         sys.exit(f"{args.capture} is not a perf-capture bundle")
     baselines = load_json(BASELINES, {})
-    v = compare_capture(b, baselines, adopt=args.adopt)
+    v = compare_capture(b, baselines, adopt=args.adopt, user=args.user)
     save_json(BASELINES, baselines)
     print(json.dumps(v, indent=2))
     return 2 if v["regressions"] else 0
@@ -570,6 +592,20 @@ def file_task(task, done_when, see):
     return m.group(0) if m else None
 
 
+def latest_per_machine(verdicts):
+    """The newest valid verdict per scenario and machine. A regression stands until that machine's NEXT capture of
+    the scenario compares within its baseline; an older capture's regression is history, not work (until
+    2026-10-25 every capture ever shared kept its regression on the list, the oldest first)."""
+    newest = {}
+    for v in verdicts:
+        if not v.get("valid"):
+            continue
+        k = (v["key"], v.get("user"))
+        if k not in newest or str(v.get("timestamp") or "") >= str(newest[k].get("timestamp") or ""):
+            newest[k] = v
+    return list(newest.values())
+
+
 def gate_and_capture_regressions(gates, board):
     """(key, task, done-when, see) for every red gate and every capture regression. The sweep files tasks from these;
     a status refresh lists them too, so it never reports a capture regression as gone (it did until 2026-10-17)."""
@@ -578,9 +614,9 @@ def gate_and_capture_regressions(gates, board):
         if not g["ok"]:
             out.append(("gate:" + g["gate"], f"Performance gate '{g['gate']}' is red: {g['line']}",
                         f"python3 Tools/Build/perf_hunt.py gates reports '{g['gate']}' OK", "Docs/PERFORMANCE_OPTIMIZATION.md 3.4"))
-    for v in (board["captures"] if board else []):
+    for v in latest_per_machine(board["captures"] if board else []):
         for line in v["regressions"]:
-            out.append((f"capture:{v['key']}:{line.split(' ')[0]}", f"Performance regression in {v['key']} ({v['user']}, {v['timestamp']}): {line}",
+            out.append((f"capture:{v['key']}|{v['user']}:{line.split(' ')[0]}", f"Performance regression in {v['key']} ({v['user']}, {v['timestamp']}): {line}",
                         f"a new capture of {v['key']} compares within its baseline (perf_hunt.py compare)", "Docs/Reports/PERFORMANCE.md"))
     return out
 
@@ -670,7 +706,7 @@ def _bugs():
 def build_status(gates, board, amoebius, regressions):
     """One small JSON: what is green, what regressed, and the next steps in order. Written by every sweep."""
     baselines = load_json(BASELINES, {})
-    have = {k.split("|", 1)[1].lower() for k in baselines if "|" in k}
+    have = {k.split("|")[1].lower() for k in baselines if "|" in k}
     tasks = _open_tasks()
     bugs = _bugs()
     nxt = []
@@ -762,7 +798,7 @@ def self_test():
         STATE, REPORT = os.path.join(tmp, "s.json"), os.path.join(tmp, "Reports", "PERFORMANCE.md")
         base = {}
         v = compare_capture(sample, base)
-        assert v["action"].startswith("adopted") and "Menu_Main|S2" in base, v
+        assert v["action"].startswith("adopted") and "Menu_Main|S2|local" in base, v
         garland = json.loads(json.dumps(sample)); garland["cells"] = "cells: 1 | cell 0 'Garland Cell Config' Frenzy"
         assert capture_key(garland) == "Menu_Main|Garland", capture_key(garland)
         lattice = json.loads(json.dumps(sample)); lattice["cells"] = "cells: 1 | cell 0 'Lattice Cell Config' Frenzy"
@@ -781,7 +817,24 @@ def self_test():
         better = json.loads(json.dumps(sample)); better["diag"]["avgCpuBusyMs"] = 12.0
         assert compare_capture(better, base)["action"] == "improved"
         compare_capture(better, base, adopt=True)
-        assert base["Menu_Main|S2"]["cpuBusyMs"] == 12.0
+        assert base["Menu_Main|S2|local"]["cpuBusyMs"] == 12.0
+        # Baselines are per machine: another machine's slower capture adopts its own, never regresses against this one.
+        other = compare_capture(worse, base, user="belac")
+        assert other["action"].startswith("adopted") and "Menu_Main|S2|belac" in base, other
+        assert compare_capture(worse, base, user="belac")["action"] == "within baseline"
+        assert compare_capture(worse, base)["action"] == "REGRESSION", "the same capture still regresses on the faster machine"
+        # A baseline from before the split goes to the machine whose capture it was adopted from (same timestamp).
+        old = {"Menu_Main|S2": dict(summarize(sample), adoptedUtc="x"), "Gone|X": {"timestamp": "never"}}
+        claim_legacy_baselines(old, [{"bundle": sample, "user": "yskha"}, {"bundle": worse, "user": "owner"}])
+        assert "Menu_Main|S2|yskha" in old and "Menu_Main|S2" not in old and "Gone|X" in old, sorted(old)
+        # Only each machine's newest capture of a scenario counts: a fixed regression is history.
+        vs = [{"key": "K", "user": "a", "valid": True, "timestamp": "2026-10-16", "regressions": ["cpuBusyMs up"]},
+              {"key": "K", "user": "a", "valid": True, "timestamp": "2026-10-20", "regressions": []},
+              {"key": "K", "user": "b", "valid": True, "timestamp": "2026-10-18", "regressions": ["gcKB up"]},
+              {"key": "K", "user": "b", "valid": False, "timestamp": "2026-10-21", "regressions": []}]
+        assert [(v["user"], v["timestamp"]) for v in latest_per_machine(vs)] == [("a", "2026-10-20"), ("b", "2026-10-18")]
+        regs = gate_and_capture_regressions([], {"captures": vs})
+        assert [r[0] for r in regs] == ["capture:K|b:gcKB"], regs
 
         doc = {"mode": "SkimRace", "intensity": 2, "players": 3, "frames": 1800,
                "markers": [{"name": "PoolRefill.Squirrel Prism", "kbPerFrame": 9.0, "avgMsPerFrame": 0.07},
@@ -863,6 +916,7 @@ def main():
     p = sub.add_parser("compare", help="one capture against its baseline")
     p.add_argument("capture")
     p.add_argument("--adopt", action="store_true", help="make this capture the baseline (after a confirmed improvement)")
+    p.add_argument("--user", default="local", help="whose machine took it (the bugledger/<user> name): baselines are per machine")
     p = sub.add_parser("amoebius", help="run the Amoebius marker scenarios and compare allocations with their baseline")
     p.add_argument("--from-json", nargs="+", help="judge existing amoebius-markers run file(s) instead of running the engine")
     p.add_argument("--modes", default="SkimRace:2:3", help="Mode:intensity:players, comma separated")
