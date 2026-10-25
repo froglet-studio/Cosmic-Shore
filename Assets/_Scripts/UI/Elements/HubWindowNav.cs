@@ -1,7 +1,6 @@
 using System;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
@@ -10,7 +9,7 @@ namespace CosmicShore.UI
     /// The way between the home hub's windows (Rev 7, Docs/MENU_REDESIGN_B.md §47.2; the owner, 2026-10-17: "pressing
     /// lt rt or pressing a new left right button should slide between the menus"): a strip under the top nav naming the
     /// four windows with the shown one underlined, and an arrow on each screen edge naming the neighbour it slides to.
-    /// LT / RT do the same from the pad, only while the pad is on the strip (<see cref="ScreenSwitcher"/> reads them; §65). The slide stops at the ends, so the
+    /// LT / RT do the same from the pad (<see cref="ScreenSwitcher"/> reads them). The slide stops at the ends, so the
     /// first window has no left arrow and the last no right arrow.
     ///
     /// <para>One instance over every window: it shows while a hub window is the TOP modal and hides under a configure,
@@ -76,25 +75,6 @@ namespace CosmicShore.UI
         {
             if (screenSwitcher) screenSwitcher.ModalStackChanged -= Repaint;
             MenuGuide.Changed -= Repaint;
-        }
-
-        /// <summary>True when <paramref name="selected"/> is a live control on this strip: the hub windows' tab menu,
-        /// the only place LT / RT slide the windows from (Docs/MENU_REDESIGN_B.md §65).</summary>
-        public bool Holds(GameObject selected) =>
-            selected && selected.activeInHierarchy && selected.transform.IsChildOf(transform);
-
-        /// <summary>Put the pad on <paramref name="window"/>'s word, so after LT / RT the focus ring sits on the window
-        /// now showing.</summary>
-        public void SelectTab(ScreenSwitcher.ModalWindows window)
-        {
-            var es = EventSystem.current;
-            if (!es) return;
-            foreach (var item in items)
-                if (item.window == window && item.tab && item.tab.IsInteractable())
-                {
-                    es.SetSelectedGameObject(item.tab.gameObject);
-                    return;
-                }
         }
 
         void Slide(int direction)

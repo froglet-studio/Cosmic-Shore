@@ -20,11 +20,9 @@ namespace CosmicShore.UI
     /// <para><b>Settings is always cut out</b> (<see cref="MenuGuide.CollectAlwaysAvailable"/>),
     /// and while Settings is open the whole spotlight stands aside.</para>
     ///
-    /// <para><b>The pad and the keyboard are held on the path</b>: a selection that wanders off the
-    /// target (or a Settings control) is put back on the target, so A or Enter presses the right
-    /// thing and neither the D-pad nor the arrow keys can reach a dimmed one (a top-nav tab is a pad
-    /// stop since Docs/MENU_REDESIGN_B.md §64). With no gamepad an EMPTY selection stays empty, so a
-    /// mouse player never sees a focus ring they did not ask for.</para>
+    /// <para><b>The pad is held on the path</b>: while a gamepad is connected, a selection that
+    /// wanders off the target (or a Settings control) is put back on the target, so A presses the
+    /// right thing and the D-pad cannot reach a dimmed one.</para>
     ///
     /// <para><b>Skip is always offered</b> (the owner, 2026-10-15: "even if those come we need a skip
     /// button"): a SKIP button in the bottom-right corner, above the dim, with the pad's Y as its
@@ -370,17 +368,15 @@ namespace CosmicShore.UI
             return any && any != _caption ? any.font : null;
         }
 
-        /// <summary>Put a pad or keyboard selection that left the path back on the target.</summary>
+        /// <summary>Put a pad selection that left the path back on the target.</summary>
         void HoldPadOnPath()
         {
+            if (Gamepad.current == null) return;
             var es = EventSystem.current;
             if (!es || !es.sendNavigationEvents) return;
 
             var selected = es.currentSelectedGameObject;
             if (selected && OnPath(selected.transform)) return;
-            // Without a pad, a selection off the path came from the arrow keys or from code (a pointer press off
-            // the path lands on the dim), so it goes back too; an empty one is a mouse player's and stays empty.
-            if (Gamepad.current == null && !selected) return;
 
             var selectable = _target.GetComponentInChildren<Selectable>();
             if (!selectable) selectable = _target.GetComponentInParent<Selectable>();
