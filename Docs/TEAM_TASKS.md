@@ -2162,14 +2162,15 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 
 ### T-20261024-7999 · open · test · Jacks
 - **Task:** Fly the Jacks' net in Unity on cece/optimistic-rubin-t46tzs (Toybox Vessel Changer > Jacks): the net opens with the sticks apart; it carries crystals (all five) and drops them on landing for the jacks to collect; it destroys the prisms it touches like the hull; it steals and shields creatures (they join the herd and glow); the netting call (B/T) toggles the plane pull; the herding view is closer, follows the jacks, and Y/F/the zoom button shows the whole cell; an omni crystal bears a worm in your domain; a rival in the net loses crystals; host + client agree. Run EditMode JacksMathTests and LeashMarkTests
-- **Done when:** UNITY_VERIFICATION_CHECKLIST 2026-10-24 Jacks net steps 1-9, round 2 steps 11-15 and round 3 steps 16-19 , round 4 steps 20-22 , round 5 steps 23-25 , round 6 steps 26-28 , round 7 steps 29-30 , round 8 steps 31-34 and round 9 steps 35-38 pass, or the failures are dev tasks
+- **Done when:** UNITY_VERIFICATION_CHECKLIST 2026-10-24 Jacks net steps 1-9, round 2 steps 11-15 and round 3 steps 16-19 , round 4 steps 20-22 , round 5 steps 23-25 , round 6 steps 26-28 , round 7 steps 29-30 , round 9 step 35 and round 10 steps 39-46 pass (round 8's 31-34 and round 9's 36-38 were replaced by round 10), or the failures are dev tasks
 - **Who can take it:** Yash (offered), Garrett (vessel owner, the look calls in step 10)
 - **Added:** 2026-10-24 by a Claude session (`cece/optimistic-rubin-t46tzs`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md §1.1; Docs/UNITY_VERIFICATION_CHECKLIST.md
 
-### T-20261024-c0b5 · open · content · Jacks
+### T-20261024-c0b5 · done · content · Jacks
 - **Task:** Draw two icons for the Jacks' herding view buttons (zoom out to the whole cell, call the herd) and set them on JacksConfig.zoomButtonIcon / callButtonIcon; today the buttons are the style guide's frame alone
 - **Done when:** Both buttons show an icon in the herding view
 - **Who can take it:** Shombith (UI, icons) or Garrett
 - **Added:** 2026-10-24 by a Claude session (`cece/optimistic-rubin-t46tzs`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md §1
+- **Done:** 2026-10-25, Moot since round 10 (2026-10-25): the herding view's zoom and call buttons were removed; the call is the Mass card and the zoom the Space card (JACKS.md §1).

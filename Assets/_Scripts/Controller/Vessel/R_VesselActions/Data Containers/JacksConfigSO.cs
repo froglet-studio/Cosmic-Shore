@@ -140,6 +140,10 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.2f, 1f)] float netCameraFill = 0.8f;
         [Tooltip("Netting: how fast the chase camera eases to the distance that keeps the net in view (1/s).")]
         [SerializeField, Min(0.1f)] float netCameraEase = 3f;
+        [Tooltip("WIDE, the Space ability, while netting (Garrett, 2026-10-25: \"netting mode being zoomed out allows an even " +
+                 "bigger net\"): the fish's spread, the net's height and its depth are multiplied by this, and the chase " +
+                 "camera pulls back to keep it all in view. 1 = Wide changes nothing while netting.")]
+        [SerializeField, Range(1f, 4f)] float wideNetScale = 1.8f;
 
         [Header("The AI")]
         [Tooltip("An AI hull herds this long (s), then flies.")]
@@ -154,16 +158,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float callCooldown = 20f;
         [Tooltip("Retired 2026-10-25 with the flying decoy (Time level 5 is the second decoy now); nothing reads it.")]
         [SerializeField, Min(0f)] float decoyCooldown = 4f;
-        [Tooltip("The Time ability (Garrett, 2026-10-25: \"fly both jacks over to the decoy quickly when a trigger is pulled in " +
-                 "herding mode\"): the dash's speed as a multiple of the jacks' run (dogSpeed), times the herd's Time speed.")]
-        [SerializeField, Min(1f)] float dashSpeed = 3f;
-        [Tooltip("The dash: how far apart the two jacks land, one either side of the decoy (u).")]
-        [SerializeField, Min(0f)] float dashGap = 40f;
-        [Tooltip("Herding: a trigger held this long (s) lays that side's decoy at the jack on that side instead of dashing (a " +
-                 "tap dashes).")]
-        [SerializeField, Min(0.05f)] float decoyPlaceHold = 0.3f;
-        [Tooltip("The dash on a phone: a tap this close to a decoy on the herding view (pixels) dashes to it.")]
-        [SerializeField, Min(8f)] float decoyTapPixels = 70f;
         [Tooltip("Seconds between teleports (the lab's 0.6 s guard).")]
         [SerializeField, Min(0f)] float teleportGuard = 0.6f;
 
@@ -219,7 +213,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.2f, 2f)] float herdViewZoom = 0.75f;
         [Tooltip("Herding: how much the view's framing follows the jacks rather than the herd (1 = the jacks alone).")]
         [SerializeField, Range(0f, 1f)] float herdFollowJacks = 1f;
-        [Tooltip("Herding, zoomed out to the whole cell (the zoom button, gamepad Y, F): the cell's diameter times this " +
+        [Tooltip("Herding, zoomed out to the whole cell (Wide, the Space ability: its card, gamepad Y, F): the cell's diameter times this " +
                  "fills the view's short side.")]
         [SerializeField, Min(0.5f)] float cellViewMargin = 1.1f;
         [Tooltip("Herding: the view zooms out so both jacks stay inside this share of it from its centre (Garrett, " +
@@ -230,12 +224,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float herdJacksMargin = 40f;
         [Tooltip("How fast the herding view eases between the jacks' zoom and the whole cell (1/s).")]
         [SerializeField, Min(0.1f)] float viewZoomEase = 3f;
-        [Tooltip("The zoom button's size, as a share of the screen's height (top right of the herding view).")]
-        [SerializeField, Range(0.04f, 0.3f)] float zoomButtonSize = 0.09f;
-        [Tooltip("Optional icon drawn inside the zoom button (empty: the button is the style guide's frame alone).")]
-        [SerializeField] Sprite zoomButtonIcon;
-        [Tooltip("Optional icon drawn inside the herding view's call button, below the zoom button (empty: the frame alone).")]
-        [SerializeField] Sprite callButtonIcon;
 
         [Header("Audio (FMOD; empty until sound design wires them)")]
         [Tooltip("The jacks call the herd.")]
@@ -292,29 +280,25 @@ namespace CosmicShore.Gameplay
         public float JackNetCrystalReach => jackNetCrystalReach;
         public float NetCameraFill => netCameraFill;
         public float NetCameraEase => netCameraEase;
+        public float WideNetScale => wideNetScale;
         /// <summary>The fish's distance apart with the net closed, and fully open: what <see cref="JacksMath.NetOpenFromGap"/>
         /// reads the opening back from.</summary>
         public float NetClosedGap => 2f * flightGap;
         public float NetOpenGap => 2f * (flightGap + netSpread + flightReach);
+        /// <summary>The same, fully open while Wide (the Space ability) nets: the spread <see cref="WideNetScale"/> times over.</summary>
+        public float WideNetOpenGap => 2f * (flightGap + netSpread * wideNetScale + flightReach);
         public float HerdViewZoom => herdViewZoom;
         public float HerdFollowJacks => herdFollowJacks;
         public float CellViewMargin => cellViewMargin;
         public float ViewZoomEase => viewZoomEase;
         public float HerdJacksFill => herdJacksFill;
         public float HerdJacksMargin => herdJacksMargin;
-        public float ZoomButtonSize => zoomButtonSize;
-        public Sprite ZoomButtonIcon => zoomButtonIcon;
-        public Sprite CallButtonIcon => callButtonIcon;
         public float AIHerdSeconds => aiHerdSeconds;
         public float AIFlightSeconds => aiFlightSeconds;
         public float CallTime => callTime;
         public float CallCooldown => callCooldown;
         public float DecoyCooldown => decoyCooldown;
         public float TeleportGuard => teleportGuard;
-        public float DashSpeed => dashSpeed;
-        public float DashGap => dashGap;
-        public float DecoyTapPixels => decoyTapPixels;
-        public float DecoyPlaceHold => decoyPlaceHold;
         public float PooEvery => pooEvery;
         public int PooCount => pooCount;
         public float PooSpread => pooSpread * labScale;

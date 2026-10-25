@@ -14283,3 +14283,34 @@ round 5. Headless compile OK (player and editor, 0 errors in changed files); `au
 38. Herding, A, B, T or Space (or the call button, a dot in a ring, top right under the zoom's corner brackets) calls the
     herd between the jacks.
 
+### Round 10 (2026-10-25, same branch)
+
+Garrett: "things are getting messy. the gamepad ui still has button place in the top right corner for zooming out and
+something else. on PC the gamepad view should only every have the 5 standard ability icons and any additional active
+controls should be to the left of those (like the squirrel's drift) and it should be labeled with a glyph. this is always
+true for vessels. mass should be the herd calling ability in herding mode and the plane attraction toggle in net mode.
+Space be the zoomed out view in herding mode and netting mode being zoomed out allows an even bigger net. in herding mode
+the triggers should drop decoys. in netting mode the triggers should fast travel to the decoy. netting mode is still having
+no interaction with prisms when it should be dragging them like the crystals."
+The prism cause, found this round: the Toybox boots into Garland, whose bough is ~4,300 owner-less plain `SpawnablePrism`s
+(`SpawnableGarland`, laid with no player name) and only 13 plants; the net still skipped every owner-less PLAIN prism as "a
+mode's track", so it touched nothing. Now it skips none (the track is super-shielded, which it never moves). Steps 31-34
+and 36-38 above are replaced by these. Headless compile OK (`unity_refcompile`, 80 assemblies, 0 errors in project code);
+`author_jacks_assets.py --check` and `--self-test` OK; `check_hangar_ability_kinds.py` was red before this round (Jacks'
+Danger Share and Breeding, four Starling rows) and is now red on Danger Share and the Starling rows only.
+
+39. Netting through Garland's bough (the Toybox's boot cell): the prisms the net crosses come away and ride in it; one that
+    runs into another prism breaks both. Your own domain's are lit for a moment, not moved.
+40. Herding: nothing is drawn top right - no zoom, no call button. The HUD shows the five cards (Charge, Mass "The Call",
+    Space "Wide", Time "Decoys", the omni crystal), each chip naming its control: B / T, Y / F, the two triggers.
+41. Herding: B or T (or tapping the Mass card) calls the herd between the jacks; the Mass card lights, then its veil
+    drains over the cooldown. Netting: B or T toggles the plane's pull; the Mass card is lit while it is on.
+42. Herding: Y or F (or the Space card) eases out to the whole cell and back; the Space card is lit while out. Netting:
+    the same press opens the net about 1.8 times bigger (wide, tall and deep) without a pop, and the chase camera pulls
+    back to hold it; press again and it eases back.
+43. Herding: pull the left trigger (L shift) - the decoy is laid at the screen-left jack; the right trigger at the
+    screen-right jack (one decoy: it moves). A mouse let go lays nothing; on a phone a lifted thumb still lays it.
+44. Netting: pull a trigger - the hull teleports to the decoy and keeps its heading; the decoy stays. The Time card flashes.
+45. At Time 5: each trigger lays its own decoy while herding and teleports to its own while netting.
+46. A second machine sees the bigger net when the owner presses Y (the Wide flag replicates).
+

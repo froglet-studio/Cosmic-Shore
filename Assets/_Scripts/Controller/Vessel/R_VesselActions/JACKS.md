@@ -26,7 +26,7 @@ Code:
 | The lab's arithmetic and the flight formation, pure | `Controller/Vessel/JacksMath.cs` (held by `Tests/Editor/JacksMathTests.cs`) |
 | The jacks' herding AI (Strömbom drive and collect) | `Executors/JacksAI.cs` |
 | The herding view (Steady camera, small view, double-tap switch) | `Executors/JacksView.cs` |
-| The netting jacks' buttons | `Data Containers/JacksActionSO.cs` (`JacksControl`: Call 0, Teleport 1, Decoy 2) |
+| The netting jacks' buttons | `Data Containers/JacksActionSO.cs` (`JacksControl`: Call 0, Teleport 1, Decoy 2 (retired), TeleportLeft 3, TeleportRight 4, Wide 5) |
 | Every number | `Data Containers/JacksConfigSO.cs`, `Assets/_SO_Assets/VesselActions/Jacks/JacksConfig.asset` |
 | The four cards | `UI/Controller/JacksHUDController.cs`, `Resources/ElementalAbilityMaps/Jacks.asset` |
 | The herd's rule breaks (platform) | `Environment/FloraAndFauna/IFaunaHerd.cs`, read by `Fauna` |
@@ -38,16 +38,32 @@ Code:
 
 ## 1. What the player does
 
+**Every control is an ability card** (Garrett, 2026-10-25, round 10: "on PC the gamepad view should only every have the 5
+standard ability icons and any additional active controls should be to the left of those (like the squirrel's drift) and
+it should be labeled with a glyph. this is always true for vessels"). The herding view draws no buttons of its own (rounds
+2-9 put a zoom and a call button top right; they are gone). The three active abilities are the elemental cards, the same
+in both modes, each chip naming its control:
+
+| Card | Control | Herding | Netting |
+|---|---|---|---|
+| **Mass: The Call** | B / T (Button2, Input 7) | calls the herd to the point between the jacks (`callTime`, then `callCooldown` on the card's veil) | toggles whether the herd is drawn to the plane (lit while it is) |
+| **Space: Wide** | Y / F (Button4, Input 14) | eases the view out to the whole cell and back | the net grows `wideNetScale` (1.8) times - spread, height and depth - and the chase camera pulls back to hold it |
+| **Time: Decoys** | the triggers / L and R shift (Inputs 2 and 1; the chip is the two-trigger glyph, Input 13) | a pull lays that trigger's decoy at the jack on that side of the screen (a phone: lift a thumb) | a pull jumps the hull to that trigger's decoy (a phone: lift a thumb, or both for the one placed last, Input 4) |
+
+Without Time 5 there is one decoy and either trigger lays it or jumps to it; with it each trigger has its own. A card
+tapped on screen presses its control in either mode: netting through the flight's buttons, herding through
+`JacksExecutor.OnCardPress` (the flight's buttons are paused while the jacks herd). Wide is one toggle for both modes.
+
 One player, two thumbs, two modes. The switch is the seat swap: D-pad left / right, the left / right arrow keys (`Docs/CREW_STATIONS.md`: fly -> herd -> the next hull), or a double tap on
 the small view (the Wrasse's gesture, `PilotSwapGesture`).
 
 - **Herding.** The hull holds still (`IVesselStatus.IsStationary`, held every frame and given back as the round left it)
   and its x-z plane is the board. Each touch takes the nearest jack, which runs to the point under the thumb
-  (`dogSpeed`). Lifting the thumb leaves the decoy where that jack stands (one decoy; a new one replaces the old). On a
-  gamepad the left stick runs the left jack and the right stick the right one (screen-relative, `padDogSpeed`), and the
-  bumper on that side is the lift; the trigger on that side is the dash (§2, Time). A stick never drives a jack off the screen. The flight input is paused: the
-  sticks are the jacks'. The herd is always drawn to the board's plane. **Call** (A, B, T or Space, read straight off the device
-  because the flight's buttons are paused, or the view's call button on a phone): for `callTime` the herd is pulled to
+  (`dogSpeed`). Lifting the thumb leaves the decoy where that jack stands (a phone's way; a mouse let go lays nothing,
+  the triggers lay it on PC). On a gamepad the left stick runs the left jack and the right stick the right one
+  (screen-relative, `padDogSpeed`); the trigger on that side lays that side's decoy. A stick never drives a jack off the
+  screen. The flight input is paused: the sticks are the jacks'. The herd is always drawn to the board's plane. **Call**
+  (the Mass card; B or T, read straight off the device because the flight's buttons are paused): for `callTime` the herd is pulled to
   the point between the jacks, which stop repelling; then `callCooldown` (Garrett, 2026-10-24: "in herding mode it
   attracts fauna to the point between the jacks, with the plane attraction always on"). A jack that touches a crystal
   collects it, measured across the board as the top-down view shows it (`jackCrystalReach` 32 u, up to `jackCrystalHeight`
@@ -62,8 +78,9 @@ the small view (the Wrasse's gesture, `PilotSwapGesture`).
   `netSpread` further apart, so the **net** between them opens wider and taller (§1.1).
   - **Call** is Button2 (B, T; Input 7): it TOGGLES whether the herd is drawn to the plane (Garrett, 2026-10-24: "in
     netting mode it toggles plane attraction for fauna of your domain"). On at take-off; the herd glows while it is on.
-  - **Jump** to the decoy is Input 1 (a trigger, or a lifted thumb) and Input 4 (both thumbs lifted): the hull and the
-    jacks jump there, keeping their heading; the decoy is spent. Nothing while herding.
+  - **Jump** to a decoy is a trigger (Input 2 the left's, Input 1 the right's, or a lifted thumb) and Input 4 (both
+    thumbs lifted: the one placed last): the hull and the jacks jump there, keeping their heading; the decoy stays.
+  - **Wide** is Button4 (Y, F; Input 14): the bigger net.
   - No ramp boost (Garrett, 2026-10-25: "lets remove the rhino speed buff at full speed and straight"): Input 0 is
     unbound and the Rhino's `RampBoostActionRegistry` is stripped, so the AI's boost policy cannot arm it either. The hull
     flies at the Rhino rig's plain speed.
@@ -83,12 +100,8 @@ the small view (the Wrasse's gesture, `PilotSwapGesture`).
 - **The herding view, 2026-10-24** (Garrett: "the herding view should have a view that is zoomed in a bit more and
   follows the jacks. the player can use a button to zoom out to the whole cell if they want to have a view of more
   fauna"): the span is `herdViewZoom` (0.75) of the thumb-framed one, and the framing follows the jacks
-  (`herdFollowJacks` 1; 0 frames the herd as before). The zoom button (top right of the herding view; gamepad Y, F) eases
-  out to the whole cell (`cellViewMargin` x its diameter) and back (`viewZoomEase`); thumbs still aim the jacks at any
-  zoom. The call button sits under it. Both are the style guide's PiP frame (`PipViewFrame.ShowRect`) round an icon
-  (`zoomButtonIcon`, `callButtonIcon`); until one is authored each wears a plain drawn glyph (corner brackets; a dot in a
-  ring; `JacksView.Glyph`), never an empty frame (2026-10-24: "strange empty icons"; 2026-10-25: hiding them left a phone
-  no call).
+  (`herdFollowJacks` 1; 0 frames the herd as before). Wide (the Space card; Y, F) eases out to the whole cell
+  (`cellViewMargin` x its diameter) and back (`viewZoomEase`); thumbs still aim the jacks at any zoom.
 - **One view at a time** (Garrett, 2026-10-24, round 2: "we can remove the pip from both modes"): herding, the jacks'
   view has the whole screen and the game camera sleeps under it; netting, the game camera alone. The small view and its
   double tap are gone; the swap is the D-pad, the arrow keys or the two-finger swipe. Herding, the view also zooms out as
@@ -149,8 +162,13 @@ that grow open and shrink away (`netGrowRate`). What crosses the mouth (`JacksNe
   they collide with other prisms"): caught and DRAGGED where the net holds them (up to `netPrismCap`, 48), each step a move
   of the prism-motion fundamental (`Docs/PRISM_MOTION.md`, the third mover): a dragged prism that runs into another prism
   destroys both, scored to us (`PrismMotion.Annihilate`), and the net's own prisms are movers of the same step, so the
-  catch never breaks itself. (Round 7's plucking never ran: the net also skipped `Prism.IsEnvironmentOwned`, which is
-  "no player name" - every plant prism - and not only Skim Race's track; now only an owner-less PLAIN prism is skipped.)
+  catch never breaks itself. **Owner-less mass is netted like any other** (round 10, 2026-10-25: "netting mode is still
+  having no interaction with prisms when it should be dragging them like the crystals"). Rounds 5-9 skipped every
+  owner-less plain prism (`Prism.IsEnvironmentOwned`, "no player name") as a mode's fixed track - and in the Toybox's boot
+  cell, Garland, the whole bough the player flies through is ~4,300 owner-less `SpawnablePrism`s laid by its
+  `SpawnableGarland` (`PrismTrailBuilder.ConfigureLaid` names no player), while its plants are 13. So the net touched
+  nothing in all three rounds. The hull breaks those prisms in every mode; an indestructible track (Skim Race's) is
+  super-shielded, which the net never moves.
   A PLANT's prism is plucked and dragged too (2026-10-25: "the net did not interact with any
   prisms. it should be dragging them just like the crystals"; round 5 skipped all living mass, and a cell's prisms are
   mostly its plants'): `HealthPrism.LeaveAsSkeleton` frees it from its plant as ordinary cell mass (it stops swaying, the
@@ -187,18 +205,20 @@ crystal's own). The invisible hull's TOUCH leaves crystals and prisms alone in b
 | Element | Scales | Level 5 |
 |---|---|---|
 | Charge | the share of DANGER creatures: 0% at -5, 100% at 15. A danger creature that touches a rival hull stings it (a scored Strike through `CombatHitDrain`) and is spent | **Attack**: the herd goes for rivals within `attackRange` and every creature that touches one bites it (a Strike) |
-| Mass | the herd's birth rate: a birth takes the species' own feeds at -5, a third of them at 15 | **Mass Clusters**: every `pooEvery` one creature lays `pooCount` prisms of our domain |
-| Space | every herder's ring: the thumb floor at -5, +6% of it per level above | **Eat Shields**: the herd eats shielded prisms (never super-shielded) |
-| Time | **Decoy Dash** (2026-10-25: "lets make the time ability to fly both jacks over to the decoy quickly when a trigger is pulled in herding mode"): herding, a trigger TAP (Q / E, or a tap on the decoy) dashes both jacks to the decoy, and a trigger HOLD (`decoyPlaceHold` 0.3 s) lays that side's decoy at the jack on that side (bumpers and lifted thumbs lay it too); there is ALWAYS one decoy (2026-10-25: "there should always be at least one decoy available"): laid between the jacks when they land and never spent by the netting jump. The decoy dash at `dashSpeed` (3) x their run, landing `dashGap` (40 u) apart either side of it; Time scales the dash and the herd's speed alike, +6% per level, floored at x0.4 | **Second Decoy** (2026-10-25: "lets have the upgrade give the player a second decoy controlled by the second trigger (in placement and which one you fly to)"): each side has its own decoy - the left trigger lays (hold) and dashes to (tap) the left one, and the jack further left on the herding view leaves it with its bumper or a lifted thumb; the right likewise; the netting jump goes to the one placed last. It replaced the Flying Decoy (netting, A dropped the decoy; Input 6 is unbound) |
+| Mass | **The Call** (round 10: "mass should be the herd calling ability in herding mode and the plane attraction toggle in net mode"; B, T). Scales the herd's birth rate: a birth takes the species' own feeds at -5, a third of them at 15 | **Mass Clusters**: every `pooEvery` one creature lays `pooCount` prisms of our domain |
+| Space | **Wide** (round 10: "Space be the zoomed out view in herding mode and netting mode being zoomed out allows an even bigger net"; Y, F). Scales every herder's ring: the thumb floor at -5, +6% of it per level above | **Eat Shields**: the herd eats shielded prisms (never super-shielded) |
+| Time | **Decoys** (round 10, 2026-10-25: "in herding mode the triggers should drop decoys. in netting mode the triggers should fast travel to the decoy"): herding, a trigger lays the decoy at the jack on that side (a phone: a lifted thumb); netting, a trigger jumps the hull to it. There is ALWAYS one decoy (2026-10-25: "there should always be at least one decoy available"): laid between the jacks when they land and never spent by the jump. Time scales the herd's speed, +6% per level, floored at x0.4. (Rounds 8-9 made Time a herding DASH of both jacks to the decoy; retired with `dashSpeed`, `dashGap`, `decoyPlaceHold` and `decoyTapPixels`.) | **Second Decoy** (2026-10-25: "lets have the upgrade give the player a second decoy controlled by the second trigger (in placement and which one you fly to)"): each trigger has its own decoy - the left trigger lays the left one (at the jack further left on the herding view) and jumps to it, the right likewise; a phone's both-thumbs lift jumps to the one placed last. It replaced the Flying Decoy (netting, A dropped the decoy; Input 6 is unbound) |
 
 Each upgrade is its own gate with its element written out (`JacksExecutor.ChargeUpgraded` .. `TimeUpgraded`), so
 `/element-ability-table` reads all four as live (2026-10-25; through one `Upgraded(e)` helper it read three as prose). The
 table still reads no scaling for Charge, Mass and Time, and Space as the hidden skimmer's 30 -> 50: the real curves are the
 lab's formulas in `JacksMath` (`DangerShare`, `FeedsPerOffspringScale`, `Ring`, `SpeedMultiplier`), which no channel of
 the tool reads, and the skimmer's curve is switched off on the Jacks (`Scale.Enabled` 0, an override of the nested
-variant the tool reads past). The map's words were rewritten for the net the same day (`STALE_MAP_WORDS`). The Time card
-on the HUD is the call: herding, lit while it pulls the herd, its cooldown on the veil; netting, lit while the plane's
-pull is on.
+variant the tool reads past). The map's words are rewritten by the tool whenever they still carry an older round's words
+(`STALE_MAP_WORDS`). On the HUD (`JacksHUDController`): the Charge card's gauge is the danger share; the Mass card is the
+call - herding, lit while it pulls the herd, its cooldown on the veil; netting, lit while the plane's pull is on - with
+the herd's size on it and its fill on the gauge; the Space card is lit while Wide is on; the Time card flashes
+(`decoyFlashSeconds`) when a decoy is laid or jumped to.
 
 The herders are the two jacks and the decoy (the marlin was a third until 2026-10-21). The design rule "never stun
 vessels" holds: no contact slows or stuns a hull. PvP is petals only, so every hit on a rival is a Strike.
@@ -289,7 +309,8 @@ units and multiplied by `labScale` (0.4).
   `netMinHeight`/`netMaxHeight`, `netDepth`), whether prisms should only shed shields rather than be destroyed (today a
   hull contact), the rival take (`netRivalTake` 0.1, `netRivalCooldown` 2), the herding zoom (`herdViewZoom` 0.75), and
   the worm colony as the omni crystal's creature (the shipped "Worm Colony Kaiju" config; a smaller worm may read better).
-  The zoom and call buttons wear drawn glyphs until icons are authored (`zoomButtonIcon`, `callButtonIcon`).
+  Round 10: a dragged bough prism destroys whatever it runs into, which in Garland's packed bough may read as the net
+  chewing through it - watch it in the playtest; `netPrismCap` and `wideNetScale` are the levers.
 - **A netted crystal's place on other peers.** Every peer carries the crystals its own net catches; a peer whose copy of
   the jacks lags may catch a crystal a frame later or not at all. The owner's release puts the omni crystal right for
   everyone; a loose elemental crystal is local to each machine already.

@@ -85,13 +85,19 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The net between jack <paramref name="a"/> and jack <paramref name="b"/>, opened by how far apart they
         /// are (every peer reads the same opening back from the published fish), its mouth facing the hull's
-        /// <paramref name="forward"/> and its bag hanging toward <paramref name="bag"/> (<see cref="Swing"/>).</summary>
-        internal static JacksMath.NetFrame FrameFor(JacksConfigSO cfg, Vector3 a, Vector3 b, Vector3 forward, Vector3 up, Vector3 bag)
+        /// <paramref name="forward"/> and its bag hanging toward <paramref name="bag"/> (<see cref="Swing"/>), and
+        /// <paramref name="wide01"/> of the way to Wide's bigger net (<see cref="JacksExecutor.Wide01"/>, eased, so nothing pops).</summary>
+        internal static JacksMath.NetFrame FrameFor(JacksConfigSO cfg, Vector3 a, Vector3 b, Vector3 forward, Vector3 up, Vector3 bag,
+                                                    float wide01)
         {
-            float open = JacksMath.NetOpenFromGap(Vector3.Distance(a, b), cfg.NetClosedGap, cfg.NetOpenGap);
-            float height = Mathf.Lerp(cfg.NetMinHeight, cfg.NetMaxHeight, open);
-            return JacksMath.NetFrame.Between(a, b, forward, up, bag, height, cfg.NetDepth);
+            float open = JacksMath.NetOpenFromGap(Vector3.Distance(a, b), cfg.NetClosedGap, OpenGap(cfg, wide01));
+            float scale = Mathf.Lerp(1f, cfg.WideNetScale, wide01);
+            float height = Mathf.Lerp(cfg.NetMinHeight, cfg.NetMaxHeight, open) * scale;
+            return JacksMath.NetFrame.Between(a, b, forward, up, bag, height, cfg.NetDepth * scale);
         }
+
+        /// <summary>The fish's distance apart with the net fully open, <paramref name="wide01"/> of the way to Wide's.</summary>
+        internal static float OpenGap(JacksConfigSO cfg, float wide01) => Mathf.Lerp(cfg.NetOpenGap, cfg.WideNetOpenGap, wide01);
 
         /// <summary>
         /// Where the bag hangs (<see cref="JacksMath.SwingBag"/>): back from the hull's nose, swung out against how fast the
@@ -120,8 +126,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Whether the fish are close enough to hold a net: at take-off they swim in from the herding board, and a
         /// net strung across that whole gap would sweep the board. The net opens once they are in formation.</summary>
-        internal static bool Formed(JacksConfigSO cfg, Vector3 a, Vector3 b) =>
-            (a - b).sqrMagnitude <= Sq(cfg.NetOpenGap * FormedSlack);
+        internal static bool Formed(JacksConfigSO cfg, Vector3 a, Vector3 b, float wide01) =>
+            (a - b).sqrMagnitude <= Sq(OpenGap(cfg, wide01) * FormedSlack);
 
         // the fish are "in formation" this far past the net's widest gap
         const float FormedSlack = 1.25f;
@@ -132,14 +138,14 @@ namespace CosmicShore.Gameplay
         internal void Step(JacksExecutor ex, Vector3 a, Vector3 b, float dt)
         {
             var cfg = ex.Config;
-            if (!Formed(cfg, a, b))
+            if (!Formed(cfg, a, b, ex.Wide01))
             {
                 if (Open) Release(ex);
                 return;
             }
             var status = ex.Status;
             var hull = status.Transform;
-            Frame = FrameFor(cfg, a, b, hull.forward, hull.up, _trail.Step(cfg, hull.forward, dt));
+            Frame = FrameFor(cfg, a, b, hull.forward, hull.up, _trail.Step(cfg, hull.forward, dt), ex.Wide01);
             Open = true;
 
             Carry(cfg, dt);
@@ -359,8 +365,9 @@ namespace CosmicShore.Gameplay
         /// plants'): a plant prism the net takes is PLUCKED, freed from its plant as ordinary cell mass
         /// (<see cref="HealthPrism.LeaveAsSkeleton"/>: it stops swaying, the plant forgets it, the mass stays in the world),
         /// then dragged like any other. Never a creature's body (the creature is netted as a creature), super-shielded mass,
-        /// a prism still growing in, an environment-owned track (an owner-less plain prism; plants are owner-less too and ARE dragged), or the trail
-        /// still coming out of our own hull.
+        /// a prism still growing in, or the trail still coming out of our own hull. Owner-less mass (a cell's bough, a
+        /// plant) is netted like any other (Garrett, 2026-10-25, round 10: "netting mode is still having no interaction with
+        /// prisms when it should be dragging them like the crystals").
         /// </summary>
         void CatchPrisms(JacksExecutor ex)
         {
@@ -376,10 +383,11 @@ namespace CosmicShore.Gameplay
                 var p = _prisms[i];
                 if (!p || p.destroyed || p.SpatialIndexId < 0 || _draggedSet.Contains(p)) continue;
                 var living = p as HealthPrism;
-                // an owner-less plain prism is a mode's fixed environment (Skim Race's track); every PLANT prism is owner-less
-                // too (IsEnvironmentOwned is "no player name"), and skipping those is what kept the net from touching any prism
-                // in rounds 5 and 7
-                if ((p.IsEnvironmentOwned && !living) || SelfTrailContactConfigSO.SuppressesHullContact(p, status)) continue;
+                // an owner-less prism is netted like any other (rounds 5-9 skipped every owner-less plain prism as "a mode's
+                // fixed environment", which in the Toybox's Garland is the whole bough the player flies through - ~4,300
+                // owner-less SpawnablePrisms - so the net touched nothing; the hull breaks them too). An indestructible track
+                // (Skim Race's) is super-shielded, and the net never moves super-shielded mass (below).
+                if (SelfTrailContactConfigSO.SuppressesHullContact(p, status)) continue;
                 if (living && living.ResolveOwnerFauna()) continue;   // a creature's body: the creature is netted
                 if (!f.Contains(p.transform.position, 0.5f * p.transform.lossyScale.magnitude, out float s, out float t, out float w))
                     continue;

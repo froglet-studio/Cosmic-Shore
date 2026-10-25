@@ -21,12 +21,13 @@ namespace CosmicShore.Gameplay
     /// <para><b>Herding</b> (Garrett, 2026-10-24: "the herding view should have a view that is zoomed in a bit more and
     /// follows the jacks. the player can use a button to zoom out to the whole cell if they want to have a view of more
     /// fauna"): the span is <see cref="JacksConfigSO.HerdViewZoom"/> of the thumb-framed one and the framing follows the
-    /// jacks (<see cref="JacksConfigSO.HerdFollowJacks"/>); the zoom button (top right; gamepad Y, F) eases the view out to
-    /// the whole cell and back, and the call button under it is the herding call on a phone.</para>
+    /// jacks (<see cref="JacksConfigSO.HerdFollowJacks"/>); the SPACE ability, Wide (its card; gamepad Y, F), eases the view
+    /// out to the whole cell and back. The view draws no buttons of its own (Garrett, 2026-10-25: "on PC the gamepad view
+    /// should only every have the 5 standard ability icons and any additional active controls should be to the left of
+    /// those ... labeled with a glyph. this is always true for vessels"): every control is an ability card.</para>
     ///
     /// <para>The rings and dots it shows are 2D marks, drawn through an <see cref="UnprocessedOverlay"/> so the view's bloom
-    /// does not smear them (the world under them keeps it), and no Panini bows it (<see cref="OrthographicLens"/>). The small
-    /// view wears the style guide's frame (<see cref="PipViewFrame"/>).</para>
+    /// does not smear them (the world under them keeps it), and no Panini bows it (<see cref="OrthographicLens"/>).</para>
     /// </summary>
     sealed class JacksView
     {
@@ -34,19 +35,11 @@ namespace CosmicShore.Gameplay
         readonly GameObject _root;
         readonly Camera _cam;
         readonly UnprocessedOverlay _marks;
-        readonly PipViewFrame _frame = new();
         Vector3 _centre, _forward;
         bool _placed;
 
-        // the whole-cell view (the zoom button): 0 = the jacks' view, 1 = the cell, eased
-        bool _cellView;
+        // the whole-cell view (Wide, the Space ability): 0 = the jacks' view, 1 = the cell, eased
         float _cell01;
-
-        /// <summary>The herding view's two buttons (a phone's way to the call and the zoom; the pad and keys have their own).</summary>
-        internal enum HerdButton { None, Zoom, Call }
-
-        readonly Button _zoomButton = new(), _callButton = new();
-        bool _herdingNow;
 
         Camera _pilot;
         Rect _pilotRect;
@@ -74,14 +67,13 @@ namespace CosmicShore.Gameplay
         {
             RestorePilot();
             _park.Release();
-            _frame.Dispose();
-            _zoomButton.Dispose();
-            _callButton.Dispose();
             _marks.Dispose();
             if (_root) Object.Destroy(_root);
         }
 
-        internal void Frame(bool herding, float dt)
+        /// <summary>Frame this frame's view: herding, the board from above (out to the whole cell while
+        /// <paramref name="wide"/>); netting, nothing (the game's camera has the screen).</summary>
+        internal void Frame(bool herding, bool wide, float dt)
         {
             var cfg = _ex.Config;
             var pilot = CameraManager.ViewCamera;
@@ -102,10 +94,8 @@ namespace CosmicShore.Gameplay
             else _park.Release();
 
             // the span across the view's SHORT side: herding, the thumb-framed span zoomed in (HerdViewZoom), eased out to the
-            // whole cell while the zoom button holds it there; netting, the thumb-framed span
-            _herdingNow = herding;
-            if (!herding) _cellView = false;
-            _cell01 = Mathf.MoveTowards(_cell01, _cellView ? 1f : 0f, cfg.ViewZoomEase * dt);
+            // whole cell while Wide holds it there; netting, the thumb-framed span
+            _cell01 = Mathf.MoveTowards(_cell01, herding && wide ? 1f : 0f, cfg.ViewZoomEase * dt);
             var cell = _cell01 > 0f ? _ex.CellHere : null;
             float jacksSpan = herding ? cfg.ViewSpan * cfg.HerdViewZoom : cfg.ViewSpan;
             float cellSpan = cell ? 2f * cell.MembraneRadius * cfg.CellViewMargin : jacksSpan;
@@ -149,8 +139,6 @@ namespace CosmicShore.Gameplay
             float lift = Mathf.Max(cfg.ViewDepth, cell ? cell.MembraneRadius : 0f);
             _cam.transform.SetPositionAndRotation(_centre + up * lift, Quaternion.LookRotation(-up, _forward));
             _marks.Sync();
-            _frame.Show(null);   // no small view, so no frame round one
-            PlaceButtons(cfg, herding);
         }
 
         // the zoom-out that keeps the jacks on screen eases out this fast (1/s): a jack flung to the edge is still in view
@@ -170,127 +158,6 @@ namespace CosmicShore.Gameplay
                 size = Mathf.Max(size, Mathf.Max(y, x / camAspect) / fill);
             }
             return size;
-        }
-
-        /// <summary>The zoom button: ease out to the whole cell, or back to the jacks (herding only).</summary>
-        internal void ToggleCellView()
-        {
-            if (_herdingNow) _cellView = !_cellView;
-        }
-
-        /// <summary>Which of the herding view's buttons is under <paramref name="screen"/> (none while netting).</summary>
-        internal HerdButton ButtonAt(Vector2 screen)
-        {
-            if (!_herdingNow) return HerdButton.None;
-            if (_zoomButton.Contains(screen)) return HerdButton.Zoom;
-            if (_callButton.Contains(screen)) return HerdButton.Call;
-            return HerdButton.None;
-        }
-
-        // top right, the zoom button over the call button, in the style guide's frame (PipViewFrame), each with its
-        // optional authored icon
-        void PlaceButtons(JacksConfigSO cfg, bool herding)
-        {
-            if (!herding)
-            {
-                _zoomButton.Hide();
-                _callButton.Hide();
-                return;
-            }
-            float size = cfg.ZoomButtonSize * Screen.height, margin = cfg.ViewMargin * Screen.height;
-            var zoom = new Rect(Screen.width - margin - size, Screen.height - margin - size, size, size);
-            var call = new Rect(zoom.x, zoom.y - margin - size, size, size);
-            // each button wears its authored icon, or a plain drawn glyph until one is authored (Garrett, 2026-10-24: "the
-            // herding view had some strange empty icons in the upper right"; 2026-10-25: hiding them left a phone no call)
-            _zoomButton.Show(zoom, cfg.ZoomButtonIcon ? cfg.ZoomButtonIcon : Glyph(ref s_zoomGlyph, DrawZoomGlyph));
-            _callButton.Show(call, cfg.CallButtonIcon ? cfg.CallButtonIcon : Glyph(ref s_callGlyph, DrawCallGlyph));
-        }
-
-        // ---- the drawn glyphs: a shape, never text (the player-facing-text rule is about words) ----
-
-        static Sprite s_zoomGlyph, s_callGlyph;
-        const int GlyphSize = 64;
-
-        static Sprite Glyph(ref Sprite cache, System.Func<int, int, bool> inside)
-        {
-            if (cache) return cache;
-            var tex = new Texture2D(GlyphSize, GlyphSize, TextureFormat.RGBA32, false) { name = "JacksViewGlyph", filterMode = FilterMode.Bilinear };
-            var px = new Color32[GlyphSize * GlyphSize];
-            for (int y = 0; y < GlyphSize; y++)
-            for (int x = 0; x < GlyphSize; x++)
-                px[y * GlyphSize + x] = inside(x, y) ? new Color32(255, 255, 255, 235) : new Color32(255, 255, 255, 0);
-            tex.SetPixels32(px);
-            tex.Apply(false, true);
-            cache = Sprite.Create(tex, new Rect(0, 0, GlyphSize, GlyphSize), new Vector2(0.5f, 0.5f));
-            return cache;
-        }
-
-        // zoom out: four corner brackets, the frame of a wider view
-        static bool DrawZoomGlyph(int x, int y)
-        {
-            const int m = 6, len = 20, th = 6;
-            int ix = Mathf.Min(x, GlyphSize - 1 - x), iy = Mathf.Min(y, GlyphSize - 1 - y);
-            return ix >= m && iy >= m && ((ix < m + th && iy < m + len) || (iy < m + th && ix < m + len));
-        }
-
-        // call: a dot inside a ring, the herd drawn to a point
-        static bool DrawCallGlyph(int x, int y)
-        {
-            float dx = x - (GlyphSize - 1) * 0.5f, dy = y - (GlyphSize - 1) * 0.5f, r = Mathf.Sqrt(dx * dx + dy * dy);
-            return r <= 8f || (r >= 21f && r <= 27f);
-        }
-
-        /// <summary>One of the herding view's buttons: a style-guide frame over a screen rect, an optional icon inside it. It
-        /// takes no taps itself (the executor reads the touch and asks <see cref="ButtonAt"/>).</summary>
-        sealed class Button
-        {
-            readonly PipViewFrame _frame = new();
-            GameObject _iconGo;
-            UnityEngine.UI.Image _icon;
-            Rect _rect;
-            bool _shown;
-
-            internal bool Contains(Vector2 screen) => _shown && _rect.Contains(screen);
-
-            internal void Show(Rect pixels, Sprite icon)
-            {
-                _rect = pixels;
-                _shown = true;
-                _frame.ShowRect(pixels);
-                if (!icon) { if (_iconGo) _iconGo.SetActive(false); return; }
-                if (!_icon)
-                {
-                    var canvas = PipViewFrame.Canvas;
-                    if (!canvas) return;
-                    _iconGo = new GameObject("JacksViewButtonIcon", typeof(RectTransform));
-                    _iconGo.transform.SetParent(canvas.transform, false);
-                    var rt = (RectTransform)_iconGo.transform;
-                    rt.anchorMin = rt.anchorMax = Vector2.zero;
-                    rt.pivot = Vector2.zero;
-                    _icon = _iconGo.AddComponent<UnityEngine.UI.Image>();
-                    _icon.raycastTarget = false;
-                    _icon.preserveAspect = true;
-                }
-                _iconGo.SetActive(true);
-                _icon.sprite = icon;
-                var r = (RectTransform)_iconGo.transform;
-                float inset = 0.2f * pixels.width;
-                r.anchoredPosition = pixels.position + Vector2.one * inset;
-                r.sizeDelta = pixels.size - Vector2.one * (2f * inset);
-            }
-
-            internal void Hide()
-            {
-                _shown = false;
-                _frame.Hide();
-                if (_iconGo) _iconGo.SetActive(false);
-            }
-
-            internal void Dispose()
-            {
-                _frame.Dispose();
-                if (_iconGo) Object.Destroy(_iconGo);
-            }
         }
 
         /// <summary>

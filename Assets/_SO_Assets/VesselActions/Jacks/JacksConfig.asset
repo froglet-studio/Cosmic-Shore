@@ -57,13 +57,10 @@ MonoBehaviour:
   jackCrystalHeight: 200
   netCameraFill: 0.8
   netCameraEase: 3
+  wideNetScale: 1.8
   callTime: 2.5
   callCooldown: 20
   decoyCooldown: 4
-  dashSpeed: 3
-  dashGap: 40
-  decoyPlaceHold: 0.3
-  decoyTapPixels: 70
   teleportGuard: 0.6
   pooEvery: 6
   pooCount: 7
@@ -86,9 +83,6 @@ MonoBehaviour:
   herdJacksFill: 0.8
   herdJacksMargin: 40
   viewZoomEase: 3
-  zoomButtonSize: 0.09
-  zoomButtonIcon: {fileID: 0}
-  callButtonIcon: {fileID: 0}
   callSfx:
     Guid:
       Data1: 0
