@@ -8,12 +8,13 @@ in order to win the race." Unity already sends every recorded race to origin/bug
 task, Docs/AI_SYSTEM/AUTO_LEARNING.md) runs it, and it
 
   1. finds the flights it has not learned from yet (Docs/AI_SYSTEM/ai_learning_seen.json is the memory);
-  2. for every RACE mode (its flights carry a ring list) with new flights, runs each learner that mode feeds, writing:
-       learn_drives_from_flights.py --mode <Mode> --write   every hull with a drive (Rhino, Dolphin, Manta, Urchin, Stoat):
-                                                            <asset>_<Mode> variants + LEARNED_DRIVES[_<Mode>].md;
-                                                            Regatta also its race lines (author_race_lines.py)
-       learn_from_flights.py --write                        the Regatta Squirrel's skim line
-     then each learner's own --check;
+  2. for every mode with new flights, runs each learner that mode feeds, writing:
+       learn_drives_from_flights.py --mode <Mode> --write   every hull whose prefab names a boost policy the learner has a
+                                                            measure for (Sparrow, Scarab, Serpent, Squirrel, Rhino, Dolphin,
+                                                            ...), plus the Manta's Soar and the Stoat's pair: <asset>_<Mode>
+                                                            variants + LEARNED_DRIVES[_<Mode>].md; Regatta also its race lines
+       learn_from_flights.py [--mode SkimRace] --write      the Squirrel's skim line (Regatta writes; Skim Race reports)
+     then each learner's own --check; a hull that cannot be written is reported with the reason;
   3. measures how the AI rivals raced in the new flights against the person (regatta_rival_report.py);
   4. writes Docs/Reports/AI_LEARNING.md: what was new, what each learner changed, the person's and the AI's pace, and
      every vessel/mode whose flights no learner reads yet (the session's to-do).
@@ -25,17 +26,17 @@ Modes on HOLD are reported, never written (another collaborator's call).
     python3 Tools/Build/ai_learn.py --run       # learn from it, write the report and the memory
     python3 Tools/Build/ai_learn.py --self-test
 """
-import argparse, collections, datetime, json, os, re, subprocess, sys, tempfile
+import argparse, collections, datetime, hashlib, json, os, re, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, HERE)
 import learn_from_flights as lf  # noqa: E402  - the one reader of the flights on every branch
+import learn_drives_from_flights as ld  # noqa: E402  - which hull a drive learner covers (its prefab's boost policy)
 
 SEEN = os.path.join(REPO, "Docs", "AI_SYSTEM", "ai_learning_seen.json")
 REPORT = os.path.join(REPO, "Docs", "Reports", "AI_LEARNING.md")
-DRIVE_HULLS = ("Rhino", "Dolphin", "Manta", "Urchin", "Stoat")   # learn_drives_from_flights.HULLS
-SKIM_LINE = ("Regatta", "Squirrel")                              # learn_from_flights.py
+SKIM_LINE_MODES = ("Regatta", "SkimRace")   # learn_from_flights.py: the Squirrel's skim line (SkimRace: report only)
 
 # Modes whose AI is someone else's call: reported, never written.
 HOLD = {
@@ -69,41 +70,65 @@ def load_flights():
     return out
 
 
+LEARNERS = ("ai_learn.py", "learn_drives_from_flights.py", "learn_from_flights.py", "author_race_lines.py")
+
+
+def learners_fingerprint():
+    """The learners' own code: when it changes (a new hull, a better measure), every flight is learned from again."""
+    h = hashlib.sha1()
+    for name in LEARNERS:
+        with open(os.path.join(HERE, name), "rb") as fh:
+            h.update(fh.read())
+    return h.hexdigest()[:16]
+
+
 def load_seen():
+    """The flights already learned from, by THESE learners; a learner that changed since makes every flight new again."""
     if not os.path.exists(SEEN):
         return set()
-    return set(json.load(open(SEEN, encoding="utf-8")).get("flights", []))
+    data = json.load(open(SEEN, encoding="utf-8"))
+    if data.get("learners") != learners_fingerprint():
+        return set()
+    return set(data.get("flights", []))
 
 
 def save_seen(paths):
-    data = {"note": "Every flight ai_learn.py has learned from (paths on origin/bugledger/*). Delete a line to relearn it.",
-            "flights": sorted(paths)}
+    data = {"note": "Every flight ai_learn.py has learned from (paths on origin/bugledger/*), and the learners it used: "
+                    "when a learner changes, every flight is learned from again. Delete a line to relearn it.",
+            "learners": learners_fingerprint(), "flights": sorted(paths)}
     with open(SEEN, "w", encoding="utf-8", newline="\n") as fh:
         json.dump(data, fh, indent=1)
         fh.write("\n")
 
 
 def plan(flights, seen):
-    """What the new flights feed: {mode: {"hulls": Counter, "learners": [...], "hold": str|None, "race": bool}}."""
+    """What the new flights feed: {mode: {"hulls", "learners", "report" {hull: why}, "unread", "hold", "race"}}. Which
+    learner covers a hull comes from the learners themselves (learn_drives_from_flights.coverage reads each vessel's
+    prefab), so a new vessel with a boost policy is learned from its first races with no edit here."""
     race_modes = {f["mode"] for f in flights if f["race"]}
     new = [f for f in flights if f["path"] not in seen and f["mode"] not in ("Unknown", "Random") and f["hull"] != "Unknown"]
     out = {}
     for f in new:
-        m = out.setdefault(f["mode"], {"hulls": collections.Counter(), "learners": [], "unread": set(),
+        m = out.setdefault(f["mode"], {"hulls": collections.Counter(), "learners": [], "unread": set(), "report": {},
                                        "hold": HOLD.get(f["mode"]), "race": f["mode"] in race_modes})
         m["hulls"][f["hull"]] += 1
     for mode, m in out.items():
-        hulls = set(m["hulls"])
-        # Regatta's drive learner also learns every hull's race line (author_race_lines.py), so it reads them all.
-        drive_reads = set(DRIVE_HULLS) | (hulls - {SKIM_LINE[1]} if mode == "Regatta" else set())
-        if m["race"] and hulls & drive_reads:
-            m["learners"].append("drives")
-        if (mode, SKIM_LINE[1]) == SKIM_LINE and SKIM_LINE[1] in hulls:
-            m["learners"].append("skim line")
-        read = drive_reads if m["race"] else set()
-        if mode == SKIM_LINE[0]:
-            read.add(SKIM_LINE[1])
-        m["unread"] = hulls - read
+        for hull in sorted(m["hulls"]):
+            if hull == "Squirrel" and mode in SKIM_LINE_MODES:
+                if "skim line" not in m["learners"]:
+                    m["learners"].append("skim line")
+                continue
+            kind, why = ld.coverage(hull, mode)
+            if kind == "drives":
+                if "drives" not in m["learners"]:
+                    m["learners"].insert(0, "drives")
+            elif kind == "report":
+                m["report"][hull] = why
+            else:
+                m["unread"].add(hull)
+        # Regatta's drive learner also learns every hull's race line (author_race_lines.py).
+        if mode == "Regatta" and set(m["hulls"]) - {"Squirrel"} and "drives" not in m["learners"]:
+            m["learners"].insert(0, "drives")
     return new, out
 
 
@@ -150,8 +175,9 @@ def run_learners(mode, m):
             code, text = py(os.path.join(HERE, "author_race_lines.py"), "--check")
             results.append(("author_race_lines --check", code, text.splitlines()[-1] if text else ""))
     if "skim line" in m["learners"]:
-        code, text = py(os.path.join(HERE, "learn_from_flights.py"), "--write")
-        results.append(("learn_from_flights --write", code, text.splitlines()[-1] if text else ""))
+        args = ["--write"] if mode == "Regatta" else ["--mode", mode, "--write"]
+        code, text = py(os.path.join(HERE, "learn_from_flights.py"), *args)
+        results.append((f"learn_from_flights {' '.join(args)}", code, text.splitlines()[-1] if text else ""))
     return results
 
 
@@ -170,6 +196,10 @@ def write_report(now, new, modes, outcomes, paces, changed):
             if name != "hold":
                 L.append(f"- `{name}`: {'OK' if code == 0 else 'FAILED'}. {text}")
         if outcomes.get(mode):
+            L.append("")
+        for hull, why in sorted(m["report"].items()):
+            L.append(f"- **{hull}: measured, not written** - {why}.")
+        if m["report"]:
             L.append("")
         if m["unread"]:
             L += ["**No learner reads these yet** (the sweep's to-do): " + ", ".join(sorted(m["unread"])) + ".", ""]
@@ -203,6 +233,7 @@ def main():
         print(f"  {mode}: " + ", ".join(f"{h} {n}" for h, n in sorted(m["hulls"].items()))
               + (f"  learners: {', '.join(m['learners'])}" if m["learners"] else "")
               + (f"  HOLD: {m['hold']}" if m["hold"] else "")
+              + (f"  reported only: {', '.join(sorted(m['report']))}" if m["report"] else "")
               + (f"  no learner: {', '.join(sorted(m['unread']))}" if m["unread"] else ""))
     if not a.run:
         return 0
@@ -220,7 +251,7 @@ def main():
     changed = {p for p, h in after.items() if before.get(p) != h}
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     write_report(now, new, modes, outcomes, paces, changed)
-    save_seen(seen | {f["path"] for f in new})
+    save_seen({f["path"] for f in flights})
     failed = [(mode, n) for mode, rs in outcomes.items() for n, code, _ in rs if code != 0]
     print(f"ai_learn: report {os.path.relpath(REPORT, REPO)}; {len(changed)} learned file(s) changed"
           + (f"; FAILED: {failed}" if failed else "") + ".")
@@ -233,22 +264,32 @@ def self_test():
           dict(path="a/flight_Breakwater_Sparrow_1.json", mode="Breakwater", hull="Sparrow", race=True),
           dict(path="a/flight_Regatta_Squirrel_1.json", mode="Regatta", hull="Squirrel", race=True),
           dict(path="a/flight_Regatta_Sparrow_1.json", mode="Regatta", hull="Sparrow", race=True),
+          dict(path="a/flight_SkimRace_Squirrel_1.json", mode="SkimRace", hull="Squirrel", race=False),
           dict(path="a/flight_Warpline_Stoat_1.json", mode="Warpline", hull="Stoat", race=True),
           dict(path="a/flight_Bloomrush_Manta_1.json", mode="Bloomrush", hull="Manta", race=False),
+          dict(path="a/flight_GrizzlyCharge_Grizzly_1.json", mode="GrizzlyCharge", hull="Grizzly", race=False),
+          dict(path="a/flight_WrasseRun_Wrasse_1.json", mode="WrasseRun", hull="Wrasse", race=True),
+          dict(path="a/flight_Tapestry_Ghost_1.json", mode="Tapestry", hull="Ghost", race=False),
           dict(path="a/flight_Random_Unknown_1.json", mode="Random", hull="Unknown", race=False)]
     bad = []
     new, modes = plan(fl, {"a/flight_Switchback_Dolphin_1.json"})
-    if len(new) != 6: bad.append(f"new {len(new)} (the seen flight and the Unknown hull are not new)")
+    if len(new) != 10: bad.append(f"new {len(new)} (the seen flight and the Unknown hull are not new)")
     if modes["Switchback"]["hulls"]["Dolphin"] != 1 or modes["Switchback"]["learners"] != ["drives"]:
         bad.append(f"Switchback {modes['Switchback']}")
-    if modes["Breakwater"]["learners"] or modes["Breakwater"]["unread"] != {"Sparrow"}:
-        bad.append("a Sparrow race has no learner yet and must be listed as unread")
+    if modes["Breakwater"]["learners"] != ["drives"]:
+        bad.append(f"the Sparrow's boost policy is learned in Breakwater {modes['Breakwater']}")
     if modes["Regatta"]["learners"] != ["drives", "skim line"] or modes["Regatta"]["unread"]:
-        bad.append(f"Regatta Squirrel {modes['Regatta']}")
+        bad.append(f"Regatta {modes['Regatta']}")
+    if modes["SkimRace"]["learners"] != ["skim line"]:
+        bad.append(f"Skim Race's Squirrel is measured by the skim learner {modes['SkimRace']}")
     if not modes["Warpline"]["hold"]:
         bad.append("Warpline must be on hold")
-    if modes["Bloomrush"]["learners"] or modes["Bloomrush"]["unread"] != {"Manta"}:
-        bad.append("a non-race mode feeds no drive learner")
+    if modes["Bloomrush"]["learners"] != ["drives"]:
+        bad.append("the Manta's Soar is learned in any mode")
+    if "Grizzly" not in modes["GrizzlyCharge"]["report"] or "Wrasse" not in modes["WrasseRun"]["report"]:
+        bad.append("a hull that cannot be written is reported with its reason")
+    if modes["Tapestry"]["unread"] != {"Ghost"}:
+        bad.append("a hull nothing covers is listed as unread")
     if plan(fl, {f["path"] for f in fl})[0]:
         bad.append("everything seen must leave nothing new")
     print("ai_learn self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))

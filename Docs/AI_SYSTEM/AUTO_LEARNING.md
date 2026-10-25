@@ -68,4 +68,38 @@ sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARN
 | Judging and fixing an AI that cannot race | yes, in the same sweep | §2 step 4 |
 | Offline checks (gates, generators, harnesses) | in every sweep that changes code | §2 step 4 |
 | Unity EditMode / PlayMode tests | **no** | no Unity runner is attached to CI (`unity-ci.yml`, since 2026-10-13); they need an editor |
-| A learner for a hull that has none (Sparrow, Scarab, Serpent, Butterfly, ...) | **no** | built once per hull by a session (§3) |
+| Learning a NEW vessel | yes, when its prefab names a boost policy of a known class | `learn_drives_from_flights.py` reads every vessel's prefab (§5) |
+
+## 5. Which learner covers which vessel (2026-10-26)
+
+`learn_drives_from_flights.py` no longer lists its hulls by hand. For a hull it does not special-case, it reads the
+vessel's prefab: the boost policy its AIPilot names, that policy's class, and the ability each input is bound to. The
+class says which recorded signal is the verb and which of the policy's fields the verb writes (`POLICY_CLASSES`). A race
+measures against the next ring; a mode without rings against the nearest crystal, or the nearest rival in a duel
+(`RIVAL_TARGET_MODES`). A match without rings counts once it ran to its end. An existing variant is the start of a
+write, so a field set there by hand survives (`SparrowAIBoostPolicy_Breakwater`'s rocket).
+
+| Vessel | Learner | The verb | What it writes |
+|---|---|---|---|
+| Dolphin | drives (ChargeBoost) | discharge (state bit) | when to discharge, at what charge |
+| Rhino | drives (RampBoost) | ramp (state bit) | ramp start / stop, corner speed |
+| Manta | drives (Soar) | both triggers | the two Soar bands (needs real Soaring: mean ≥ 0.05) |
+| Stoat | drives (AIModeTuning) | its pair | its three configs (Warpline on hold) |
+| Sparrow | drives (HoldBoost) | boost (state bit) | start / stop bands, shortest hold and rest |
+| Serpent | drives (PelletBoost) | a ConsumeBoost press | start bands, seconds between pellets |
+| Scarab | drives (SnapDash) | throttle double-tap at TIME 5 | start bands, dash cooldown |
+| Squirrel | drives (SkimRing) outside Regatta and Skim Race; skim line in Regatta (writes) and Skim Race (report only) | a boost-ring press / the skim | ring bands / skim line |
+| Every hull in Regatta | race lines | where it crosses the rings | `race_lines_learned.json` |
+| Urchin | report only | rail ride | its riding lives in each mode's scene fields |
+| Grizzly | report only | - | its bomb autopilot does not load per mode, and `grizzly-v3` (jtgjones) is reworking the bombs |
+| Butterfly | report only | - | its Mass / Dust choice is each mode's controller code; no Dust bit is recorded |
+| Wrasse | report only (defect) | - | its prefab names `SparrowAIBoostPolicy`, which presses a Boost the Wrasse does not bind: the AI never boosts |
+| Thresher | report only (defect) | - | its prefab names `SquirrelAIBoostPolicy`, which presses a boost ring the Thresher does not have: the AI never boosts |
+
+A policy switched off in a mode (`disabledInModes`) is reported there, never written: the Sparrow in Dog Fight, the
+Squirrel in Joust and Skim Race, the Scarab in Scarab Scramble.
+
+**Skim Race is report only on purpose.** Its per-intensity policies are simulation-tuned to win their tracks
+(`author_skimrace_ai_config.py`, which gave Regatta its own copy so Skim Race's calibrated numbers never move). Since
+2026-10-26 the recorder copies Skim Race's track into each flight, so the Squirrel's skim is measured there beside the
+policy each intensity flies (`LEARNED_FROM_FLIGHTS_SkimRace.md`), as evidence for that tuner.
