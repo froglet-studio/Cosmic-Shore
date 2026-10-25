@@ -138,6 +138,14 @@ race line's lead point (`AIPilot.MarkAimAsPathLead`), and the aim never cuts the
 (`scarab_drive_sim.py`). Per-hull drive work resumes from races flown after this change: re-run
 `regatta_rival_report.py --since 2026-10-26`.
 
+**2026-10-25 (later): step 4, the Rhino on its line** (`Arcade/REGATTA.md` §6.4). Modelled on the race line for the
+first time (`Tools/Build/rhino_line_sim.py`), the Rhino ramped 5-10% of a race (196-216 s): the drives judged "straight"
+by the ring round the bend, which the line never points at. They now judge it on the path the pilot flies
+(`AIBoostContext.PathDirection`, race line only): 29.6 / 40.7 / 51.8 / 48.0 s, and the same gate opens every other
+hull's speed verb on the line. A retune (`cornerSpeed` 1000, runway 0.6 s: 119 s against 170 s over I1-I4) waits on
+Yash, whose flights set 333. The Dolphin's start-line drift and the Urchin's lane were fixed the same day by another
+session (`4cc4dc4c52`).
+
 The three drive sims are models without break-off or rotation-follow lag (`regatta_line_sim.py` has both), and default to the Regatta steering
 (`THROUGH_CENTRE = True`). The editor is the measurement; none of this has been run there.
 
