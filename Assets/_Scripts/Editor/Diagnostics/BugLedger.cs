@@ -122,6 +122,8 @@ namespace CosmicShore.Editor
         static volatile int _minPlaySeconds = 15;
         static volatile int _minEditorMinutes = 10;
         static volatile int _maxAutoIssues = 150;
+        /// <summary>Only open issues seen this recently count toward <see cref="_maxAutoIssues"/>.</summary>
+        const int CapWindowDays = 30;
 
         /// <summary>Bumped on every mutation; the window polls it to know when to repaint.</summary>
         public static int ChangeStamp => _changeStamp;
@@ -353,15 +355,23 @@ namespace CosmicShore.Editor
                         return;
                     }
 
+                    // The cap stops a runaway error generator, so it counts what is firing now: open
+                    // issues seen in the last CapWindowDays. Counting every issue ever filed blinded a
+                    // long-lived ledger: 159 issues (90 open ones last seen in September, 34 fixes being
+                    // checked) passed the cap of 150, and that editor filed nothing new (E-2fab142e42).
                     int autoCount = 0;
+                    var since = Iso(DateTime.UtcNow.AddDays(-CapWindowDays));
                     foreach (var existing in Issues.Values)
-                        if (existing.Kind == BugLedgerIssueKind.Auto) autoCount++;
+                        if (existing.Kind == BugLedgerIssueKind.Auto && existing.IsOpen &&
+                            string.CompareOrdinal(existing.LastSeenUtc ?? "", since) >= 0)
+                            autoCount++;
                     if (autoCount >= _maxAutoIssues)
                     {
                         if (!_capWarned)
                         {
                             _capWarned = true;
-                            Debug.LogWarning($"[BugLedger] Auto-issue cap reached ({_maxAutoIssues}) — new error signatures are no longer being filed. Triage the ledger.");
+                            Trail($"auto-issue cap reached ({autoCount} open issues seen in {CapWindowDays} days): {id} and later new errors are not filed");
+                            Debug.LogWarning($"[BugLedger] Auto-issue cap reached ({_maxAutoIssues} open errors seen in the last {CapWindowDays} days) — new error signatures are no longer being filed. Triage the ledger.");
                         }
                         return;
                     }
