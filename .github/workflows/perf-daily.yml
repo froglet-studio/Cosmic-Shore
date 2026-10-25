@@ -6,6 +6,9 @@
 #   amoebius  the game's own ProfilerMarkers measured in Amoebius (Port/, the engine under evaluation -
 #             Docs/TOOLING_DECISIONS.md) for one Skim Race match: allocations per marker against the committed
 #             baseline. Red when a marker allocates more than it did. Milliseconds there are only reported.
+#             Scheduled and manual runs only: a pull request never runs it (Yash, 2026-10-25: his PRs into
+#             bleeding-edge are not held on Amoebius). Amoebius parity CI still compiles the port on every
+#             bleeding-edge push.
 #   publish   (scheduled and manual runs only) re-runs the sweep with the amoebius job's result and COMMITS
 #             Docs/perf/status.json and Docs/Reports/PERFORMANCE.md to bleeding-edge (Yash, 2026-10-17), so the
 #             editor's Project Record (BugHuntSendConfirmation) and every session read today's status from the
@@ -66,6 +69,7 @@ jobs:
           retention-days: 30
 
   amoebius:
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
