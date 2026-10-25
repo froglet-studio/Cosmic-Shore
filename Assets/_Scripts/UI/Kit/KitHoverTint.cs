@@ -11,8 +11,8 @@ namespace CosmicShore.UI
     /// over this object, every target wears <see cref="hoverToken"/>; on exit, and on disable, each
     /// target re-applies its own token, so nothing is remembered and a theme edit is never fought.
     ///
-    /// Pointer only. Gamepad focus belongs to a Selectable (<see cref="KitSelectableBase"/>): a top-nav tab's
-    /// is its <see cref="KitTopNavTab"/> focus ring, and a keycap's plain Button shows none. Leave a target out (or disable this component) when
+    /// Pointer only. Gamepad focus belongs to a Selectable (<see cref="KitSelectableBase"/>), and the
+    /// surfaces this serves are not Selectables. Leave a target out (or disable this component) when
     /// something else drives its colour - a locked nav tab's label belongs to its MenuAvailabilityView.
     /// </summary>
     [AddComponentMenu("Cosmic Shore/UI Kit/Kit Hover Tint")]

@@ -861,14 +861,11 @@ def build_card(placeholder_art):
     star.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
     glyph = image_node(star, "Star/Glyph", "Glyph", R(size=(24, 24)), "NeutralLightest", K.chrome_sprite("chrome_star"),
                        preserve=True)
-    # A pad stop with its own ring (§65): every press the menu offers is reachable by D-pad / left stick, A presses it.
-    star_ring = K.focus_ring(star, "Star", size=(4, 4))
     star.add("audio", 114, menu_audio(5)) \
         .add("button", 114, lambda ctx, go: mono(go, BUTTON,
-             selectable(nav_mode=3) + f"  m_TargetGraphic: {ref(ctx.c('Star', 'img'))}\n"
+             selectable(nav_mode=0) + f"  m_TargetGraphic: {ref(ctx.c('Star', 'img'))}\n"
              + calls([(ctx.c("root", "card"), "CosmicShore.UI.KitGameCard", "ToggleFavorite"),
                       (ctx.c("Star", "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")]))) \
-        .add("focus", 114, star_ring) \
         .add("hover", 114, lambda ctx, go: mono(go, S["hover"],
              f"  theme: {K.ref(11400000, K.THEME, 2)}\n  hoverToken: {K.TOKEN_INDEX['TextLight']}\n"
              + refs("texts", []) + refs("graphics", [ctx.c("Star/Glyph", "th")])))

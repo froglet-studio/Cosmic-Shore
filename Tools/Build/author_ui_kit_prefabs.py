@@ -691,22 +691,10 @@ def build_hex_tile():
 
 def build_top_nav_tab():
     root = Node("root", "KitTopNavTab", rect(size=(140, 84)))
-    # The pad's focus ring (Docs/MENU_REDESIGN_B.md §64): the tab is a pad stop, and LT / RT page the screens only
-    # while the pad is on the bar. Behind the words; inset from the 84-tall band so it stays inside it.
-    ring = root.child(Node("FocusRing", "FocusRing", rect((0, 0), (1, 1), (0, 0), (8, -16))))
-    ring.add("cr", 222, canvas_renderer()).add("img", 114, image(tok("Cta", 0.0), kit_sprite("kit_sliver10_line2"), True))
     # The whole tab is the hit area (labels do not raycast): an invisible Image, culled by its
     # CanvasRenderer, so the host's EventTrigger and the hover lift answer anywhere on the tab.
     root.add("cr", 222, canvas_renderer()).add("img", 114, image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
         .add("hover", 114, hover_tint("TextLight", ["InactiveImage#kt"], ["InactiveImage/Icon#th"]))
-    # KitTopNavTab: a Selectable that owns only the ring. Its onClick stays empty - the host's EventTrigger
-    # presses the tab, on a click and on Submit (A) - so a click never presses twice.
-    root.add("tab", 114, lambda ctx, go: mono(go, kit_script("KitTopNavTab"),
-                                               SELECTABLE_FIELDS
-                                               + f"  m_TargetGraphic: {{fileID: {ctx.c('root', 'img')}}}\n"
-                                               "  m_OnClick:\n    m_PersistentCalls:\n      m_Calls: []\n"
-                                               f"  theme: {ref(11400000, THEME, 2)}\n"
-                                               f"  focusRing: {{fileID: {ctx.c('FocusRing', 'img')}}}\n"))
     inactive = root.child(Node("InactiveImage", "InactiveImage", STRETCH))
     inactive.add("cr", 222, canvas_renderer()).add("tmp", 114, tmp("TAB", "Button", tok("NeutralLightest"))) \
         .add("kt", 114, kit_text("Button", "NeutralLightest"))
@@ -741,19 +729,6 @@ def build_top_nav_tab():
     aicon.add("cr", 222, canvas_renderer()).add("img", 114, image(tok("TextLight"), None, preserve=True)) \
         .add("th", 114, themed("TextLight"))
     return root
-
-
-def focus_ring(parent, key, size=(8, 8), sprite="kit_sliver10_line2"):
-    """A pad focus ring under `parent` (node key `<key>/FocusRing`), painted by KitFocusRing on the host: the kit's
-    sky-blue Selection while the pad or the keyboard has the control, hidden for a pointer (Docs/MENU_REDESIGN_B.md
-    §65: every press the menu offers is a pad stop, and one the player cannot see is not). Returns the host's
-    KitFocusRing component body."""
-    ring = parent.child(Node(f"{key}/FocusRing", "FocusRing", rect((0, 0), (1, 1), (0, 0), size)))
-    ring.add("cr", 222, canvas_renderer()).add("img", 114, image(tok("Selection", 0.0), kit_sprite(sprite), True))
-    return lambda ctx, go: mono(go, kit_script("KitFocusRing"),
-                                f"  theme: {ref(11400000, THEME, 2)}\n"
-                                f"  ring: {{fileID: {ctx.c(f'{key}/FocusRing', 'img')}}}\n"
-                                f"  ringToken: {TOKEN_INDEX['Selection']}\n")
 
 
 def framed(root, sliver, fill_token, border_token, line="line1", raycast=False):
@@ -1285,16 +1260,6 @@ def validate(out):
         for m in re.finditer(r"  m_enableAutoSizing: (\d)\n  m_fontSizeMin: ([\d.]+)\n  m_fontSizeMax: ([\d.]+)\n", text):
             assert m.group(1) == "1" and float(m.group(2)) < float(m.group(3)) or float(m.group(3)) <= 8, \
                 f"{path}: a kit label does not auto-size (it would spill out of its rect)"
-    # §64: the pad reaches the tab bar - each tab is a Selectable with a focus ring, and its own onClick stays empty
-    # (the host's EventTrigger presses it; a wired onClick would press it twice per click).
-    nav = out[f"{PREFAB_DIR}/KitTopNavTab.prefab"]
-    tab_doc = re.search(r"^--- !u!114 &-?\d+\n(?:(?!^--- ).*\n)*?  m_Script: \{fileID: 11500000, guid: "
-                        + kit_script("KitTopNavTab") + r", type: 3\}\n(?:(?!^--- ).*\n)*", nav, re.M)
-    assert tab_doc, "the nav tab is not a pad stop (no KitTopNavTab Selectable on its root)"
-    assert "    m_Mode: 3\n" in tab_doc.group(0), "the nav tab is out of pad navigation"
-    assert re.search(r"  focusRing: \{fileID: [1-9]\d*\}\n", tab_doc.group(0)), "the nav tab has no focus ring"
-    assert "  m_OnClick:\n    m_PersistentCalls:\n      m_Calls: []\n" in tab_doc.group(0), \
-        "the nav tab's onClick is wired (a click would press it twice: the host's EventTrigger already does)"
 
 
 def unity_empty_scalars(text):
@@ -1323,9 +1288,6 @@ def self_test(out):
             f"  m_Material: {{fileID: 2100000, guid: {bar_mat}, type: 2}}\n", "  m_Material: {fileID: 0}\n", 1)),
         "the selected tile border falls back to the green CTA": (tile, lambda t: t.replace(
             f"  selectedBorderToken: {TOKEN_INDEX['Selection']}\n", f"  selectedBorderToken: {TOKEN_INDEX['Cta']}\n", 1)),
-        "the nav tab is no pad stop": (nav, lambda t: t.replace(kit_script("KitTopNavTab"), kit_script("KitHoverTint"), 1)),
-        "the nav tab loses its focus ring": (nav, lambda t: re.sub(r"  focusRing: \{fileID: -?\d+\}\n",
-                                                                   "  focusRing: {fileID: 0}\n", t, count=1)),
     }
     ok = True
     for label, (path, plant) in plants.items():
