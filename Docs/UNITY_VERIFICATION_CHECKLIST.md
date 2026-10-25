@@ -3171,6 +3171,17 @@ I1 43.0 s vs 48.2, I2 56.1 vs 55.4, I3 56.3 vs stalled), gates.
 4. Any other mode with an AI Rhino (Broadside): it still ramps on long straights (no next leg there: every objective is
    read as a 90° corner).
 
+### 🔴 The Scarab AI's Regatta line set from Yash's two Scarab races (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** the Scarab's race line `LaneShare` 0.60 → 0.788 (`race_lines_learned.json` → `author_race_lines.py` →
+`Resources/RaceLines/Scarab_Regatta`). Yash crossed the I2 rings a median 63 u out of the 88 u mouth (37 crossings, two
+unfinished races). Set by hand at his ask; the learner replaces it at the third finished Scarab race. No C# changed.
+**Verified without the editor:** `author_race_lines.py --check`, `learn_drives_from_flights.py --check`.
+**Verify in editor:**
+1. Regatta I2 and I3 with a Hard AI Scarab, Third Eye with trails: it flies about four fifths of the way out from the
+   braid, never crosses a rail, and threads the rings without the wide miss-and-swing of 2026-10-23.
+2. `regatta_rival_report.py --hull scarab` on that race: rings per minute and its state shares.
+
 ### 🔴 Two AIs that sat out whole Regatta races: the Dolphin frozen in a start-line drift, the Urchin on a rival's lane (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:**
