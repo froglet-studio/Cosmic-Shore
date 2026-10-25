@@ -238,74 +238,89 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The net: its mouth is the line between the two fish (<see cref="A"/> to A + <see cref="X"/> x <see cref="Width"/>),
-        /// <see cref="Height"/> tall along <see cref="Y"/>, and its bag hangs behind the mouth (against <see cref="Z"/>, the
-        /// way the jacks fly), deepest in the middle (<see cref="DepthAt"/>). A point in the net is (s, t, w): s 0..1 along
-        /// the mouth, t -1..1 up it, w 0..1 from the mouth to the bag.
+        /// <see cref="Height"/> tall along <see cref="Y"/> (the hull's up, square to the fish line), facing <see cref="Normal"/>
+        /// (the way the hull flies); its bag hangs <see cref="Bag"/>-ward behind the mouth, deepest in the middle
+        /// (<see cref="DepthAt"/>). <see cref="Bag"/> may lean any way, along the fish line too, so the bag can swing out in
+        /// every direction (<see cref="SwingBag"/>). A point in the net is (s, t, w): s 0..1 along the mouth, t -1..1 up it,
+        /// w 0..1 from the mouth to the bag.
         /// </summary>
         public struct NetFrame
         {
-            public Vector3 A, X, Y, Z;
+            public Vector3 A, X, Y, Normal, Bag;
             public float Width, Height, Depth;
 
-            /// <summary>The net between jack <paramref name="a"/> and jack <paramref name="b"/>, moving along
-            /// <paramref name="motion"/> (its bag hangs back against it, square to the line between the fish), the mouth's
-            /// top toward <paramref name="up"/> (the hull's).</summary>
-            public static NetFrame Between(Vector3 a, Vector3 b, Vector3 motion, Vector3 up, float height, float depth)
+            // the bag never lies flatter than this against the mouth (the cosine of its lean from straight back)
+            const float MinBack = 0.3f;
+
+            /// <summary>The net between jack <paramref name="a"/> and jack <paramref name="b"/>, its mouth facing
+            /// <paramref name="forward"/> and standing up along <paramref name="up"/> (both the hull's), its bag straight back.</summary>
+            public static NetFrame Between(Vector3 a, Vector3 b, Vector3 forward, Vector3 up, float height, float depth) =>
+                Between(a, b, forward, up, -forward, height, depth);
+
+            /// <summary>The same, its bag hanging toward <paramref name="bag"/> (behind the mouth; leaned no flatter than
+            /// <see cref="MinBack"/>).</summary>
+            public static NetFrame Between(Vector3 a, Vector3 b, Vector3 forward, Vector3 up, Vector3 bag, float height, float depth)
             {
                 var ab = b - a;
                 float w = ab.magnitude;
                 var x = w > 1e-5f ? ab / w : Vector3.right;
-                var z = Vector3.ProjectOnPlane(motion, x);
-                if (z.sqrMagnitude < 1e-8f) z = Vector3.ProjectOnPlane(Vector3.Cross(x, up), x);
-                if (z.sqrMagnitude < 1e-8f) z = Vector3.ProjectOnPlane(Vector3.forward, x);
-                z.Normalize();
-                var y = Vector3.Cross(z, x);
-                if (Vector3.Dot(y, up) < 0f) y = -y;
-                return new NetFrame { A = a, X = x, Y = y, Z = z, Width = w, Height = height, Depth = depth };
+                var y = Vector3.ProjectOnPlane(up, x);
+                if (y.sqrMagnitude < 1e-8f) y = Vector3.ProjectOnPlane(forward, x);
+                y.Normalize();
+                var n = Vector3.Cross(x, y);
+                if (Vector3.Dot(n, forward) < 0f) n = -n;
+                var g = bag.sqrMagnitude > 1e-8f ? bag.normalized : -n;
+                float back = -Vector3.Dot(g, n);
+                if (back < MinBack) g = (g - n * (MinBack - back)).normalized;
+                return new NetFrame { A = a, X = x, Y = y, Normal = n, Bag = g, Width = w, Height = height, Depth = depth };
             }
 
             /// <summary>How deep the bag is at (s, t): <see cref="Depth"/> in the middle of the mouth, nothing at its rim.</summary>
             public float DepthAt(float s, float t) =>
                 Depth * Mathf.Sin(Mathf.PI * Mathf.Clamp01(s)) * Mathf.Cos(0.5f * Mathf.PI * Mathf.Clamp(t, -1f, 1f));
 
-            public Vector3 Centre => A + X * (0.5f * Width) - Z * (0.5f * Depth);
+            public Vector3 Centre => A + X * (0.5f * Width) + Bag * (0.5f * Depth);
 
             /// <summary>The point (s, t, w) of the net in the world.</summary>
             public Vector3 Point(float s, float t, float w) =>
-                A + X * (s * Width) + Y * (t * 0.5f * Height) - Z * (Mathf.Clamp01(w) * DepthAt(s, t));
+                A + X * (s * Width) + Y * (t * 0.5f * Height) + Bag * (Mathf.Clamp01(w) * DepthAt(s, t));
 
             /// <summary>
             /// Whether <paramref name="p"/> is inside the net, <paramref name="margin"/> included (a thing's own size): between
-            /// the fish, inside the mouth's height, and between the mouth and the bag. Its (s, t, w) either way.
+            /// the fish, inside the mouth's height, and between the mouth and the bag. Its (s, t, w) either way: the depth
+            /// behind the mouth along <see cref="Bag"/>, and the mouth point it hangs from.
             /// </summary>
             public bool Contains(Vector3 p, float margin, out float s, out float t, out float w)
             {
                 var d = p - A;
-                s = Width > 1e-5f ? Vector3.Dot(d, X) / Width : 0f;
+                float along = -Vector3.Dot(d, Normal);
+                float lean = Mathf.Max(MinBack * 0.5f, -Vector3.Dot(Bag, Normal));
+                float depth = along / lean;
+                var m = d - Bag * depth;
+                s = Width > 1e-5f ? Vector3.Dot(m, X) / Width : 0f;
                 float half = Mathf.Max(1e-3f, 0.5f * Height);
-                t = Vector3.Dot(d, Y) / half;
-                float z = Vector3.Dot(d, Z);
+                t = Vector3.Dot(m, Y) / half;
                 float sm = Width > 1e-5f ? margin / Width : 0f, tm = margin / half;
                 float bag = DepthAt(s, t);
-                w = bag > 1e-4f ? -z / bag : 0f;
-                return s >= -sm && s <= 1f + sm && Mathf.Abs(t) <= 1f + tm && z <= margin && -z <= bag + margin;
+                w = bag > 1e-4f ? depth / bag : 0f;
+                return s >= -sm && s <= 1f + sm && Mathf.Abs(t) <= 1f + tm && depth >= -margin && depth <= bag + margin;
             }
         }
 
         /// <summary>
-        /// The way a net is moving, eased (Garrett, 2026-10-24: the net "seem to bend the opposite way from expected when flying
-        /// up/down or left/right"): <paramref name="trail"/> eases toward the direction of <paramref name="velocity"/>, so the
-        /// bag hangs back against the way the net actually travels and swings out behind it through a climb or a turn, as a
-        /// towed net does, instead of turning with the hull's nose. Below <paramref name="minSpeed"/> it holds; with no
-        /// direction yet it takes <paramref name="fallback"/>.
+        /// Where the bag hangs (Garrett, 2026-10-24/25: "i would expect this to work in any direction (including combinations
+        /// like 30 degrees vs 70 degrees) and it should work whether changing or maintaining directions"): straight back
+        /// from <paramref name="forward"/>, swung OUT against the hull's turn - <paramref name="forwardRate"/> is how fast its
+        /// nose is turning (per second, eased), so turning up the bag swings down, turning left it swings right, for as long
+        /// as the turn lasts, in whatever direction it turns. <paramref name="swingSeconds"/> scales the swing, capped at
+        /// <paramref name="maxSwing"/> (the tangent of the largest lean).
         /// </summary>
-        public static Vector3 EaseTrail(Vector3 trail, Vector3 velocity, Vector3 fallback, float minSpeed, float rate, float dt)
+        public static Vector3 SwingBag(Vector3 forward, Vector3 forwardRate, float swingSeconds, float maxSwing)
         {
-            if (trail.sqrMagnitude < 1e-8f) trail = fallback.sqrMagnitude > 1e-8f ? fallback.normalized : Vector3.forward;
-            float speed = velocity.magnitude;
-            if (speed < minSpeed) return trail;
-            var next = Vector3.Slerp(trail, velocity / speed, Ease(rate, dt));
-            return next.sqrMagnitude > 1e-8f ? next.normalized : trail;
+            var f = forward.sqrMagnitude > 1e-8f ? forward.normalized : Vector3.forward;
+            var turn = Vector3.ProjectOnPlane(forwardRate, f) * swingSeconds;
+            turn = Vector3.ClampMagnitude(turn, Mathf.Max(0f, maxSwing));
+            return (-f - turn).normalized;
         }
 
         /// <summary>

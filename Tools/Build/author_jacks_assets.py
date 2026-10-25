@@ -552,8 +552,10 @@ THUMB_VIEW_FIELDS = "  phoneShortMm: 71\n  thumbCover: 0.9\n"
 HERD_MARK_FIELDS = "  herdHueLean: 0.35\n  herdGlow: 1.5\n"   # the glow: "fauna that get herded should light up" (2026-10-23)
 # The net (Garrett, 2026-10-24: "lets make it a net that opens wider with xdiff"), after the flight's and the AI's fields;
 # and the herding view zoomed in, following the jacks, with its whole-cell zoom and buttons, after viewPanEase.
-NET_FIELDS = ("  netSpread: 30\n  netMinHeight: 6\n  netMaxHeight: 36\n  netDepth: 26\n  netTrailEase: 5\n  netSettle: 0.75\n"
-              "  netSettleEase: 3\n  netPrismCap: 48\n  netRivalTake: 0.1\n  netRivalCooldown: 2\n  jackCrystalReach: 32\n  jackNetCrystalReach: 10\n"
+NET_FIELDS = ("  netSpread: 30\n  netMinHeight: 6\n  netMaxHeight: 36\n  netDepth: 26\n  netTrailEase: 5\n"
+              "  netSwingSeconds: 0.6\n  netSwingMax: 1.2\n  netSettle: 0.75\n"
+              "  netSettleEase: 3\n  netPrismCap: 48\n  netLitLift: 0.6\n  netLitSeconds: 0.6\n  netLitFadeSeconds: 0.25\n"
+              "  netRivalTake: 0.1\n  netRivalCooldown: 2\n  jackCrystalReach: 32\n  jackNetCrystalReach: 10\n"
               "  jackCrystalHeight: 200\n"
               "  netCameraFill: 0.8\n  netCameraEase: 3\n")
 HERD_VIEW_FIELDS = ("  herdViewZoom: 0.75\n  herdFollowJacks: 1\n  cellViewMargin: 1.1\n  herdJacksFill: 0.8\n  herdJacksMargin: 40\n"
@@ -582,10 +584,17 @@ def config_retrofit(text: str) -> str:
     if "  netSpread:" in text and "  netTrailEase:" not in text:   # 2026-10-24 round 2: the trail, the jacks' reach, the zoom-out
         text = re.sub(r"^(  netDepth: .*\n)", lambda m: m.group(1) + "  netTrailEase: 5\n", text, count=1, flags=re.M)
         text = text.replace("  jackCrystalReach: 18\n", "  jackCrystalReach: 32\n  jackNetCrystalReach: 10\n  jackCrystalHeight: 200\n")
+    if "  netTrailEase:" in text and "  netSwingSeconds:" not in text:   # round 5 (2026-10-25): the swing, our prisms lit
+        text = re.sub(r"^(  netTrailEase: .*\n)", lambda m: m.group(1) + "  netSwingSeconds: 0.6\n  netSwingMax: 1.2\n", text,
+                      count=1, flags=re.M)
     if "  jackCrystalReach:" in text and "  jackNetCrystalReach:" not in text:   # round 4 (2026-10-25): netting jacks collect
         text = re.sub(r"^(  jackCrystalReach: .*\n)", lambda m: m.group(1) + "  jackNetCrystalReach: 10\n", text, count=1, flags=re.M)
     if "  netSpread:" in text and "  netPrismCap:" not in text:   # round 3 (2026-10-25): the net drags prisms
         text = re.sub(r"^(  netSettleEase: .*\n)", lambda m: m.group(1) + "  netPrismCap: 48\n", text, count=1, flags=re.M)
+    if "  netPrismCap:" in text and "  netLitLift:" not in text:
+        text = re.sub(r"^(  netPrismCap: .*\n)",
+                      lambda m: m.group(1) + "  netLitLift: 0.6\n  netLitSeconds: 0.6\n  netLitFadeSeconds: 0.25\n", text,
+                      count=1, flags=re.M)
     if "  herdViewZoom:" in text and "  herdJacksFill:" not in text:
         text = re.sub(r"^(  cellViewMargin: .*\n)", lambda m: m.group(1) + "  herdJacksFill: 0.8\n  herdJacksMargin: 40\n", text,
                       count=1, flags=re.M)
@@ -813,7 +822,8 @@ def check_assets(config: str, controls, container: str):
     if "  herdGlow:" not in config:
         errs.append("JacksConfig.asset: no herd glow field (run the tool)")
     if ("  netSpread:" not in config or "  netCameraEase:" not in config or "  netTrailEase:" not in config
-            or "  netPrismCap:" not in config or "  jackNetCrystalReach:" not in config):
+            or "  netPrismCap:" not in config or "  jackNetCrystalReach:" not in config or "  netSwingSeconds:" not in config
+            or "  netLitLift:" not in config):
         errs.append("JacksConfig.asset: no net fields (run the tool)")
     if "  herdViewZoom:" not in config or "  callButtonIcon:" not in config or "  herdJacksFill:" not in config:
         errs.append("JacksConfig.asset: no herding view zoom fields (run the tool)")
@@ -1042,7 +1052,8 @@ def self_test():
     expect(check_assets(cfg.replace("  herdGlow: 1.5\n", ""), controls, cont), 1, "no herd glow field")
     expect(check_assets(cfg.replace(NET_FIELDS, ""), controls, cont), 1, "no net fields")
     expect(check_assets(cfg.replace(HERD_VIEW_FIELDS, ""), controls, cont), 1, "no herding view zoom fields")
-    round1 = cfg.replace("  netTrailEase: 5\n", "").replace("  netPrismCap: 48\n", "").replace("  jackNetCrystalReach: 10\n", "").replace("  jackCrystalReach: 32\n  jackCrystalHeight: 200\n",
+    round1 = cfg.replace("  netSwingSeconds: 0.6\n  netSwingMax: 1.2\n", "").replace(
+        "  netLitLift: 0.6\n  netLitSeconds: 0.6\n  netLitFadeSeconds: 0.25\n", "").replace("  netTrailEase: 5\n", "").replace("  netPrismCap: 48\n", "").replace("  jackNetCrystalReach: 10\n", "").replace("  jackCrystalReach: 32\n  jackCrystalHeight: 200\n",
                                                              "  jackCrystalReach: 18\n").replace("  herdJacksFill: 0.8\n  herdJacksMargin: 40\n", "")
     expect(check_assets(round1, controls, cont), 1, "the net's first-round config")
     if config_retrofit(round1) != cfg:

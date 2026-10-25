@@ -27,12 +27,16 @@ namespace CosmicShore.Gameplay
     /// <para>Bones and models are found BY NAME (vessel-model contract: FBX sub-object ids are not derivable offline); a
     /// missing model leaves its half of this component idle.</para>
     /// </summary>
-    public sealed class JacksBodies : NetworkBehaviour, ICrystalPickupGate
+    public sealed class JacksBodies : NetworkBehaviour, IHullContactGate
     {
-        /// <summary>Netting, the hull's touch leaves crystals to the net (Garrett, 2026-10-25: "lets allow them to net the
-        /// omicrystal and move it around"); herding, or before the jacks are seated, it takes them as any hull does.
-        /// Read on every peer from the replicated mode.</summary>
+        /// <summary>Netting, the invisible hull's touch leaves crystals and prisms to the net (Garrett, 2026-10-25: "lets
+        /// allow them to net the omicrystal and move it around", "i don't see prism moving i just see them getting
+        /// destroy"); herding, or before the jacks are seated, it touches them as any hull does. Read on every peer from
+        /// the replicated mode.</summary>
         public bool TakesCrystalsByContact => !(_jacksShown && _flying);
+
+        /// <inheritdoc cref="TakesCrystalsByContact"/>
+        public bool TakesPrismsByContact => !(_jacksShown && _flying);
 
         // Offsets are quantized before they are written, so jacks at rest do not dirty the variables every tick.
         const float OffsetQuantum = 0.25f;
@@ -124,7 +128,7 @@ namespace CosmicShore.Gameplay
         NetMesh _net;
         float _netGrow;
         JacksMath.NetFrame _netShown;
-        JacksNet.Trail _netTrail;
+        JacksNet.Swing _netTrail;
         bool _jacksShown, _snap = true, _flying;
         Vector3 _decoyOffset, _prevHullPosition;
         float _hullSpeed;
@@ -442,8 +446,8 @@ namespace CosmicShore.Gameplay
                 want = JacksNet.Formed(_crew.Config, a, b);
                 if (want)
                 {
-                    var motion = _netTrail.Step(_crew.Config, a, b, transform.forward, Time.deltaTime);
-                    _netShown = JacksNet.FrameFor(_crew.Config, a, b, motion, transform.up);
+                    var bag = _netTrail.Step(_crew.Config, transform.forward, Time.deltaTime);
+                    _netShown = JacksNet.FrameFor(_crew.Config, a, b, transform.forward, transform.up, bag);
                 }
                 else _netTrail.Reset();
             }
@@ -544,7 +548,7 @@ namespace CosmicShore.Gameplay
                     var tangent = _line[Mathf.Min(i + 1, _samples - 1)] - _line[Mathf.Max(i - 1, 0)];
                     if (tangent.sqrMagnitude < 1e-8f) tangent = f.X;
                     tangent.Normalize();
-                    var n1 = Vector3.Cross(tangent, f.Z);
+                    var n1 = Vector3.Cross(tangent, f.Normal);
                     if (n1.sqrMagnitude < 1e-6f) n1 = Vector3.Cross(tangent, f.Y);
                     n1.Normalize();
                     var n2 = Vector3.Cross(tangent, n1);

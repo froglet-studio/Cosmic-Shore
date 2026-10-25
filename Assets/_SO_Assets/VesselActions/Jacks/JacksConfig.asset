@@ -42,9 +42,14 @@ MonoBehaviour:
   netMaxHeight: 36
   netDepth: 26
   netTrailEase: 5
+  netSwingSeconds: 0.6
+  netSwingMax: 1.2
   netSettle: 0.75
   netSettleEase: 3
   netPrismCap: 48
+  netLitLift: 0.6
+  netLitSeconds: 0.6
+  netLitFadeSeconds: 0.25
   netRivalTake: 0.1
   netRivalCooldown: 2
   jackCrystalReach: 32

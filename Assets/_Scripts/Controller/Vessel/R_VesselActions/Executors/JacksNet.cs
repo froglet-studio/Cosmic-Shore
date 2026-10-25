@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <list type="bullet">
     /// <item><b>Crystals</b>, all five ("all five crystals can be relocated using the net"): caught and CARRIED, settling into
-    /// the bag. The netting hull's own touch leaves them alone (<see cref="ICrystalPickupGate"/>, <c>JacksBodies</c>), so
+    /// the bag. The netting hull's own touch leaves them alone (<see cref="IHullContactGate"/>, <c>JacksBodies</c>), so
     /// the omni crystal the hull flies into is netted rather than collected (Garrett, 2026-10-25). When the jacks land (switch to herding) the net goes away and the crystals stay where they were; the cell's
     /// omni crystal is put there on every machine (<see cref="CrystalManager.RelocateCrystal"/>). Herding, a jack that
     /// touches a crystal collects it (<see cref="CollectByJacks"/>).</item>
@@ -58,6 +58,10 @@ namespace CosmicShore.Gameplay
         }
 
         readonly List<Dragged> _dragged = new();
+        // our own domain's prisms the net crosses are LIT, not moved (Garrett, 2026-10-25: "when prisms of the same domain
+        // are netted then they should be briefly lit not moved or destroyed"): each one until when, then it fades
+        readonly Dictionary<Prism, float> _litUntil = new();
+        readonly List<Prism> _litScratch = new();
         readonly HashSet<Prism> _draggedSet = new();
         NativeParallelHashMap<int, int> _moverOfSlot;
         NativeArray<float3> _from, _to;
@@ -80,41 +84,39 @@ namespace CosmicShore.Gameplay
         internal Vector3 ItemPosition(int i) => _items[i].Placed;
 
         /// <summary>The net between jack <paramref name="a"/> and jack <paramref name="b"/>, opened by how far apart they
-        /// are (every peer reads the same opening back from the published fish).</summary>
-        internal static JacksMath.NetFrame FrameFor(JacksConfigSO cfg, Vector3 a, Vector3 b, Vector3 motion, Vector3 up)
+        /// are (every peer reads the same opening back from the published fish), its mouth facing the hull's
+        /// <paramref name="forward"/> and its bag hanging toward <paramref name="bag"/> (<see cref="Swing"/>).</summary>
+        internal static JacksMath.NetFrame FrameFor(JacksConfigSO cfg, Vector3 a, Vector3 b, Vector3 forward, Vector3 up, Vector3 bag)
         {
             float open = JacksMath.NetOpenFromGap(Vector3.Distance(a, b), cfg.NetClosedGap, cfg.NetOpenGap);
             float height = Mathf.Lerp(cfg.NetMinHeight, cfg.NetMaxHeight, open);
-            return JacksMath.NetFrame.Between(a, b, motion, up, height, cfg.NetDepth);
+            return JacksMath.NetFrame.Between(a, b, forward, up, bag, height, cfg.NetDepth);
         }
 
         /// <summary>
-        /// The way a net between <paramref name="a"/> and <paramref name="b"/> is travelling, eased
-        /// (<see cref="JacksMath.EaseTrail"/>): its bag hangs back against it. Each net that is drawn or run keeps its own.
+        /// Where the bag hangs (<see cref="JacksMath.SwingBag"/>): back from the hull's nose, swung out against how fast the
+        /// nose is turning (eased at <c>netTrailEase</c>), in any direction and for as long as the turn lasts. Rounds 1-3 hung
+        /// it against the net's averaged path, which leans INTO a held turn (the opposite of what a player expects) and could
+        /// not lean along the fish line at all. Each net that is drawn or run keeps its own.
         /// </summary>
-        internal struct Trail
+        internal struct Swing
         {
-            Vector3 _dir, _prevCentre;
+            Vector3 _prevForward, _rate;
             bool _has;
 
-            internal Vector3 Step(JacksConfigSO cfg, Vector3 a, Vector3 b, Vector3 fallback, float dt)
+            internal Vector3 Step(JacksConfigSO cfg, Vector3 forward, float dt)
             {
-                var centre = 0.5f * (a + b);
-                var velocity = _has && dt > 0f ? (centre - _prevCentre) / dt : Vector3.zero;
-                if (!_has) _dir = fallback;
-                _dir = JacksMath.EaseTrail(_dir, velocity, fallback, TrailMinSpeed, cfg.NetTrailEase, dt);
-                _prevCentre = centre;
+                var rate = _has && dt > 0f ? (forward - _prevForward) / dt : Vector3.zero;
+                _rate = _has ? Vector3.Lerp(_rate, rate, JacksMath.Ease(cfg.NetTrailEase, dt)) : Vector3.zero;
+                _prevForward = forward;
                 _has = true;
-                return _dir;
+                return JacksMath.SwingBag(forward, _rate, cfg.NetSwingSeconds, cfg.NetSwingMax);
             }
 
             internal void Reset() => _has = false;
         }
 
-        // below this speed (u/s) the bag holds the way it was hanging
-        const float TrailMinSpeed = 2f;
-
-        Trail _trail;
+        Swing _trail;
 
         /// <summary>Whether the fish are close enough to hold a net: at take-off they swim in from the herding board, and a
         /// net strung across that whole gap would sweep the board. The net opens once they are in formation.</summary>
@@ -137,13 +139,14 @@ namespace CosmicShore.Gameplay
             }
             var status = ex.Status;
             var hull = status.Transform;
-            Frame = FrameFor(cfg, a, b, _trail.Step(cfg, a, b, hull.forward, dt), hull.up);
+            Frame = FrameFor(cfg, a, b, hull.forward, hull.up, _trail.Step(cfg, hull.forward, dt));
             Open = true;
 
             Carry(cfg, dt);
             CatchCrystals();
             DragPrisms(ex, dt);
             CatchPrisms(ex);
+            FadeLit(cfg, false);
             NetFauna(ex);
             if (ElementalTransfer.IsDecidedHere(status)) TakeFromRivals(ex);
         }
@@ -165,6 +168,7 @@ namespace CosmicShore.Gameplay
             _items.Clear();
             _dragged.Clear();
             _draggedSet.Clear();
+            if (ex.Config) FadeLit(ex.Config, true);
             _inside.Clear();
             _trail.Reset();
             Open = false;
@@ -348,27 +352,31 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>A prism the net's mouth crosses is caught and dragged (up to <c>netPrismCap</c>); not a creature's body
-        /// or a plant's (living mass is posed by its owner), not super-shielded mass, not an environment-owned track, and
-        /// not the trail still coming out of our own hull.</summary>
+        /// <summary>A prism the net's mouth crosses: one of OUR domain is lit, never moved; any other is caught and dragged (up
+        /// to <c>netPrismCap</c>). Never a creature's body or a plant's (living mass is posed by its owner), super-shielded
+        /// mass, an environment-owned track, or the trail still coming out of our own hull.</summary>
         void CatchPrisms(JacksExecutor ex)
         {
             int cap = ex.Config.NetPrismCap;
-            if (_dragged.Count >= cap) return;
             var index = PrismSpatialIndex.EnsureInstance();
             if (index == null || !index.IsAvailable) return;
             var f = Frame;
             var status = ex.Status;
             float radius = 0.5f * Mathf.Sqrt(f.Width * f.Width + f.Height * f.Height + f.Depth * f.Depth) + 4f;
             int found = index.QuerySphere(f.Centre, radius, _prisms);
-            for (int i = 0; i < found && _dragged.Count < cap; i++)
+            for (int i = 0; i < found; i++)
             {
                 var p = _prisms[i];
                 if (!p || p.destroyed || p.SpatialIndexId < 0 || _draggedSet.Contains(p)) continue;
-                if (p is HealthPrism || p.IsEnvironmentOwned || p.prismProperties is { IsSuperShielded: true }) continue;
-                if (SelfTrailContactConfigSO.SuppressesHullContact(p, status)) continue;
+                if (p is HealthPrism || p.IsEnvironmentOwned || SelfTrailContactConfigSO.SuppressesHullContact(p, status)) continue;
                 if (!f.Contains(p.transform.position, 0.5f * p.transform.lossyScale.magnitude, out float s, out float t, out float w))
                     continue;
+                if (p.Domain == status.Domain)
+                {
+                    Light(ex.Config, p);   // ours: lit while the net crosses it, never moved
+                    continue;
+                }
+                if (_dragged.Count >= cap || p.prismProperties is { IsSuperShielded: true }) continue;
                 _dragged.Add(new Dragged
                 {
                     Prism = p,
@@ -379,6 +387,29 @@ namespace CosmicShore.Gameplay
                 _draggedSet.Add(p);
             }
             _prisms.Clear();
+        }
+
+        void Light(JacksConfigSO cfg, Prism p)
+        {
+            if (!_litUntil.ContainsKey(p)) p.SetColorLift(cfg.NetLitLift, cfg.NetLitFadeSeconds);
+            _litUntil[p] = Time.time + cfg.NetLitSeconds;
+        }
+
+        // a lit prism fades back to its own colour once the net has been off it for netLitSeconds (all of them at once
+        // when the net goes away)
+        void FadeLit(JacksConfigSO cfg, bool all)
+        {
+            if (_litUntil.Count == 0) return;
+            _litScratch.Clear();
+            foreach (var kv in _litUntil)
+                if (all || !kv.Key || Time.time >= kv.Value) _litScratch.Add(kv.Key);
+            for (int i = 0; i < _litScratch.Count; i++)
+            {
+                var p = _litScratch[i];
+                if (p && !p.destroyed) p.SetColorLift(0f, cfg.NetLitFadeSeconds);
+                _litUntil.Remove(p);
+            }
+            _litScratch.Clear();
         }
 
         void EnsureNative(int cap)
@@ -450,7 +481,7 @@ namespace CosmicShore.Gameplay
                 _rivalReadyAt[victim] = Time.time + cfg.NetRivalCooldown;
                 // knocked loose backward, into the bag: the net catches them as they come out of the hull
                 ElementalTransfer.ApplyAllAuthoritative(ElementalTransferForm.Eject, victim, status, cfg.NetRivalTake,
-                                                        -Frame.Z * RivalThrowSpeed, ElementalDebuffSources.VesselContact);
+                                                        Frame.Bag * RivalThrowSpeed, ElementalDebuffSources.VesselContact);
             }
         }
 

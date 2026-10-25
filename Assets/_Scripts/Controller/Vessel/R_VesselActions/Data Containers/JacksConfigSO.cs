@@ -96,10 +96,15 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.5f)] float netMaxHeight = 36f;
         [Tooltip("Netting: how deep the bag hangs behind the mouth, in its middle (u).")]
         [SerializeField, Min(0.5f)] float netDepth = 26f;
-        [Tooltip("Netting: how fast the bag swings round to hang back against the way the net travels (1/s; Garrett, " +
-                 "2026-10-24: it bent \"the opposite way from expected when flying up/down or left/right\"). Lower trails " +
-                 "longer through a turn.")]
+        [Tooltip("Netting: how fast the bag's swing follows the hull's turning (1/s; the turn rate it swings against is eased " +
+                 "at this). Lower swings later and longer.")]
         [SerializeField, Min(0.1f)] float netTrailEase = 5f;
+        [Tooltip("Netting: how far the bag swings out against a turn, in seconds of the nose's turn (Garrett, 2026-10-25: \"i " +
+                 "would expect this to work in any direction ... whether changing or maintaining directions\"): turning up " +
+                 "it swings down, turning left it swings right, for as long as the turn lasts.")]
+        [SerializeField, Min(0f)] float netSwingSeconds = 0.6f;
+        [Tooltip("Netting: the most the bag leans from straight back (the tangent of the angle: 1.2 is about 50 degrees).")]
+        [SerializeField, Min(0f)] float netSwingMax = 1.2f;
         [Tooltip("Netting: a crystal settles this far into the bag (0 the mouth, 1 the bottom).")]
         [SerializeField, Range(0f, 1f)] float netSettle = 0.75f;
         [Tooltip("Netting: how fast a netted crystal sinks to netSettle (1/s).")]
@@ -107,6 +112,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Netting: the most prisms the net drags at once (Garrett, 2026-10-25: \"lets have prisms move and be dragged " +
                  "by the net\"). Each is a mover of the prism-motion rule: one that runs into another prism destroys both.")]
         [SerializeField, Range(0, 256)] int netPrismCap = 48;
+        [Tooltip("Netting: our own domain's prisms the net crosses are lit, not moved (Garrett, 2026-10-25: \"when prisms of " +
+                 "the same domain are netted then they should be briefly lit\"): how far toward white (Prism.SetColorLift).")]
+        [SerializeField, Range(0f, 1f)] float netLitLift = 0.6f;
+        [Tooltip("Netting: how long an own-domain prism stays lit after the net leaves it (s).")]
+        [SerializeField, Min(0f)] float netLitSeconds = 0.6f;
+        [Tooltip("Netting: how long a lit prism takes to light up and to fade back (s): nothing pops.")]
+        [SerializeField, Min(0f)] float netLitFadeSeconds = 0.25f;
         [Tooltip("Netting: a netted rival hull loses this much of each element (normalized; 0.1 = one crystal each), " +
                  "knocked loose into the net.")]
         [SerializeField, Range(0f, 1f)] float netRivalTake = 0.1f;
@@ -253,9 +265,14 @@ namespace CosmicShore.Gameplay
         public float NetMaxHeight => Mathf.Max(netMinHeight, netMaxHeight);
         public float NetDepth => netDepth;
         public float NetTrailEase => netTrailEase;
+        public float NetSwingSeconds => netSwingSeconds;
+        public float NetSwingMax => netSwingMax;
         public float NetSettle => netSettle;
         public float NetSettleEase => netSettleEase;
         public int NetPrismCap => netPrismCap;
+        public float NetLitLift => netLitLift;
+        public float NetLitSeconds => netLitSeconds;
+        public float NetLitFadeSeconds => netLitFadeSeconds;
         public float NetRivalTake => netRivalTake;
         public float NetRivalCooldown => netRivalCooldown;
         public float JackCrystalReach => jackCrystalReach;

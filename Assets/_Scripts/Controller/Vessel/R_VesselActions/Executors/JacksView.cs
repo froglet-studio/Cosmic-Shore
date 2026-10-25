@@ -200,8 +200,10 @@ namespace CosmicShore.Gameplay
             float size = cfg.ZoomButtonSize * Screen.height, margin = cfg.ViewMargin * Screen.height;
             var zoom = new Rect(Screen.width - margin - size, Screen.height - margin - size, size, size);
             var call = new Rect(zoom.x, zoom.y - margin - size, size, size);
-            _zoomButton.Show(zoom, cfg.ZoomButtonIcon);
-            _callButton.Show(call, cfg.CallButtonIcon);
+            // a button shows only once it has an icon (Garrett, 2026-10-24: "the herding view had some strange empty icons in
+            // the upper right"); the pad's Y / B and the keys F / T reach both meanwhile
+            if (cfg.ZoomButtonIcon) _zoomButton.Show(zoom, cfg.ZoomButtonIcon); else _zoomButton.Hide();
+            if (cfg.CallButtonIcon) _callButton.Show(call, cfg.CallButtonIcon); else _callButton.Hide();
         }
 
         /// <summary>One of the herding view's buttons: a style-guide frame over a screen rect, an optional icon inside it. It

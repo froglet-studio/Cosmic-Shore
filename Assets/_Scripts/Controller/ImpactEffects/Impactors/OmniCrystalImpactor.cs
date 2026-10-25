@@ -46,7 +46,7 @@ namespace CosmicShore.Gameplay
             if (Crystal.IsExploding)
                 return;
 
-            // a hull whose touch leaves crystals alone (the Jacks netting, ICrystalPickupGate) does not collect by contact
+            // a hull whose touch leaves crystals alone (the Jacks netting, IHullContactGate) does not collect by contact
             if (!IsSweepDispatch && impactee is VesselImpactor gated && !gated.TakesCrystalsByContact)
                 return;
 

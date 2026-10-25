@@ -85,8 +85,10 @@ the small view (the Wrasse's gesture, `PilotSwapGesture`).
   fauna"): the span is `herdViewZoom` (0.75) of the thumb-framed one, and the framing follows the jacks
   (`herdFollowJacks` 1; 0 frames the herd as before). The zoom button (top right of the herding view; gamepad Y, F) eases
   out to the whole cell (`cellViewMargin` x its diameter) and back (`viewZoomEase`); thumbs still aim the jacks at any
-  zoom. The call button sits under it. Both are the style guide's PiP frame (`PipViewFrame.ShowRect`), each with an
-  optional icon (`zoomButtonIcon`, `callButtonIcon`, empty for now).
+  zoom. The call button sits under it. Both are the style guide's PiP frame (`PipViewFrame.ShowRect`) round an icon
+  (`zoomButtonIcon`, `callButtonIcon`), and each shows ONLY once its icon is set (Garrett, 2026-10-24: "the herding view
+  had some strange empty icons in the upper right"); until then a phone has no call or zoom in herding (T-20261024-c0b5),
+  the pad (Y, B) and keys (F, T) do.
 - **One view at a time** (Garrett, 2026-10-24, round 2: "we can remove the pip from both modes"): herding, the jacks'
   view has the whole screen and the game camera sleeps under it; netting, the game camera alone. The small view and its
   double tap are gone; the swap is the D-pad, the arrow keys or the two-finger swipe. Herding, the view also zooms out as
@@ -116,15 +118,19 @@ The net hangs between the fish while they net (`JacksMath.NetFrame`): its mouth 
 `netMinHeight`..`netMaxHeight` tall as it opens, and its bag trails `netDepth` behind, deepest in the middle. How far it
 is open is read back from how far apart the fish are (`NetOpenFromGap`), so every peer nets and draws the same net from
 the published jacks; it opens only once the fish are in formation (`JacksNet.Formed`), so a take-off from a wide board
-never strings a net across it. Its bag hangs back against the way the net TRAVELS (`JacksMath.EaseTrail`, `netTrailEase`),
-square to the line between the fish, so in a climb or a turn it swings out behind like a towed net; round 1 tied it to the
-hull's nose, which read as bending the wrong way. `JacksBodies` draws it as faceted strand tubes, wound outward and in the
+never strings a net across it. Its bag hangs straight back from the hull's nose and SWINGS OUT against the hull's turn
+(`JacksMath.SwingBag`: `netSwingSeconds` 0.6 of the nose's turn rate, eased at `netTrailEase`, leaning at most
+`netSwingMax` 1.2, about 50 degrees): turning up it swings down, turning left it swings right, at any angle between, for
+as long as the turn lasts (Garrett, 2026-10-25: "i would expect this to work in any direction (including combinations like
+30 degrees vs 70 degrees) and it should work whether changing or maintaining directions"). The bag may lean along the fish
+line too (`NetFrame.Bag`, a skewed bag; the mouth stays between the fish). Rounds 1-4 hung it against the net's averaged
+path, which leans INTO a held turn and could not lean left or right at all. `JacksBodies` draws it as faceted strand tubes, wound outward and in the
 jacks' own domain material (round 1 wound them inward on the sword's Fresnel blade and the net vanished from some angles),
 that grow open and shrink away (`netGrowRate`). What crosses the mouth (`JacksNet`, run on every peer for what that peer simulates):
 
 - **Crystals, all five**: caught and carried, settling `netSettle` into the bag. While netting the hull's own touch
   leaves crystals alone (Garrett, 2026-10-25: "lets allow them to net the omicrystal and move it around"): the Jacks'
-  root is an `ICrystalPickupGate` (`JacksBodies.TakesCrystalsByContact`, off while netting, read on every peer from the
+  root is an `IHullContactGate` (`JacksBodies.TakesCrystalsByContact` and `TakesPrismsByContact`, off while netting, read on every peer from the
   replicated mode), and both halves of a crystal contact honour it (`VesselImpactor`'s omni case, `OmniCrystalImpactor`
   and `ElementalCrystalImpactor` on the server and every peer), so the omni crystal the hull flies into is netted, not
   collected. A deliberate pickup (a sweep: the herding jacks, the race rings) is never gated.
@@ -136,13 +142,18 @@ that grow open and shrink away (`netGrowRate`). What crosses the mouth (`JacksNe
   net carries what crosses its mouth between them. On landing the net goes away and they
   stay where they were; the cell's omni crystal is put there on every machine by the hull's owner
   (`CrystalManager.RelocateCrystal`, new: a slot write on the network manager, no second bloom where it already is).
+- **Our own prisms** (Garrett, 2026-10-25: "when prisms of the same domain are netted then they should be briefly lit not
+  moved or destroyed"): lit (`Prism.SetColorLift`, `netLitLift` 0.6, fading in and out over `netLitFadeSeconds`) while the
+  net crosses them and `netLitSeconds` after; never moved. A look on each machine; nothing reads it.
 - **Prisms** (Garrett, 2026-10-25: "lets have prisms move and be dragged by the net. they should only be destroyed when
   they collide with other prisms"): caught and DRAGGED where the net holds them (up to `netPrismCap`, 48), each step a move
   of the prism-motion fundamental (`Docs/PRISM_MOTION.md`, the third mover): a dragged prism that runs into another prism
   destroys both, scored to us (`PrismMotion.Annihilate`), and the net's own prisms are movers of the same step, so the
   catch never breaks itself. Living mass (a creature's or a plant's body), super-shielded mass, an environment-owned track
   and our own fresh trail are never dragged. On landing they stay where they are. (Round 1 destroyed every prism the net
-  touched.)
+  touched; round 3's drag never showed, because the invisible hull in the middle of the mouth rammed every prism first:
+  the hull's prism contact is gated too while netting, `IHullContactGate.TakesPrismsByContact`, on both halves of the
+  contact (`VesselImpactor`, `PrismImpactor`), so the netting hull neither rams prisms nor is hurt by them.)
 - **Creatures**: one of another domain is STOLEN (`Fauna.StealInto`: its domain and body prisms become ours, replicated by
   `FaunaNetworkSync`'s stolen domain; only species that recolour their whole body, `Fauna.CanBeStolen`, the light fauna).
   Then, like any creature of ours that goes through the net, its plain body prisms are shielded (`Fauna.ShieldBody`,

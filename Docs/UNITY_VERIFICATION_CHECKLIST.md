@@ -14208,3 +14208,19 @@ Headless compile OK (player and editor, 0 errors in changed files); `author_jack
 21. Same with an elemental crystal: a fish that hits it collects it (its level rises); between the fish, the net carries it.
 22. Herding, a jack over a crystal still collects it (round 2), the omni one bearing the worm.
 
+### Round 5 (2026-10-25, same branch)
+
+Garrett: "i don't see prism moving i just see them getting destroy. when prisms of the same domain are netted then they
+should be briefly lit not moved or destroyed. ... when i maintain a direction up and down it does the opposite. when i
+change directions left and right it does not respond at all ... it should work whether changing or maintaining directions.
+The herding view had some strange empty icons in the upper right." Headless compile OK (player and editor, 0 errors in
+changed files); `author_jacks_assets.py --check` failed first (no swing or lit fields), then passed. New EditMode tests:
+`JacksMathTests.Net_SwingsOutAgainstTheTurn_InEveryDirection_WhileTheTurnLasts`, `Net_ALeaningBag_HoldsWhatHangsInIt`.
+
+23. Netting through a RIVAL trail: its prisms ride in the net (no explosion at the mouth) and break only when you drag them
+    into another prism. Through YOUR trail (an older stretch, not the one coming out of the hull): its prisms light up
+    briefly as the net crosses them and stay where they are.
+24. Hold the stick to pitch up: the bag swings down and stays down while the turn lasts; pitch down: up. Yaw left: it swings
+    right, yaw right: left; any diagonal swings out against that diagonal. Fly level: it settles straight back.
+25. Herding: no empty squares in the upper right (they appear only once icons are set on JacksConfig).
+
