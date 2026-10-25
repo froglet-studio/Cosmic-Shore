@@ -56,7 +56,7 @@ S = dict(nav=C.script("HubWindowNav"), tab=K.kit_script("KitTextTab"))
 SAFE_AREA_RT, MODAL_WINDOWS_RT, SWITCHER = FD.SAFE_AREA_RT, FD.MODAL_WINDOWS_RT, HM.SWITCHER
 
 # The row, in ScreenSwitcher.ModalWindows values and the words the strip shows (authored on each tab).
-HUB = (("ToyBox", 13, "Toy Box"), ("Arcade", 10, "Arcade"), ("Arena", 14, "Arena"), ("Mission", 15, "Mission"))
+HUB = (("ToyBox", 13, "Toy Box"), ("Arcade", 10, "Arcade"), ("Arena", 14, "Arena"), ("Mission", 15, "Voyage"))   # Rev 13: the Mission window is the Voyage window
 HUB_WORD_TOKENS = (("restLabelToken", "NeutralLightest"), ("selectedLabelToken", "NeutralLightest"),
                    ("hoverLabelToken", "TextLight"))
 SLIDE_DISTANCE, SLIDE_SECONDS = 160, 0.32   # ScreenSwitcher.hubSlideDistance / hubSlideSeconds

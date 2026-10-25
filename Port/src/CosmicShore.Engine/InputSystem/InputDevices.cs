@@ -619,14 +619,6 @@ namespace CosmicShore.Engine.InputSystem
         public override void MakeCurrent() => current = this;
     }
 
-    public class GravitySensor : Sensor
-    {
-        public static GravitySensor current { get; set; }
-        public Vector3Control gravity { get; }
-        public GravitySensor() : base("GravitySensor") { gravity = AddChild(new Vector3Control { name = "gravity" }); }
-        public override void MakeCurrent() => current = this;
-    }
-
     public class AttitudeSensor : Sensor
     {
         public static AttitudeSensor current { get; set; }
@@ -789,8 +781,6 @@ namespace CosmicShore.Engine.InputSystem.Controls
         public Vector2Control position { get; }
         public Vector2Control delta { get; }
         public Vector2Control startPosition { get; }
-        /// <summary>When the touch began (seconds, the input system's clock).</summary>
-        public DoubleControl startTime { get; }
         public IntegerControl touchId { get; }
         public AxisControl pressure { get; }
         /// <summary>When the touch began, on the input clock in seconds (Unity's TouchControl.startTime).</summary>
@@ -804,7 +794,6 @@ namespace CosmicShore.Engine.InputSystem.Controls
             position = AddChild(new Vector2Control { name = "position" });
             delta = AddChild(new Vector2Control { name = "delta" });
             startPosition = AddChild(new Vector2Control { name = "startPosition" });
-            startTime = AddChild(new DoubleControl { name = "startTime" });
             touchId = AddChild(new IntegerControl { name = "touchId" });
             pressure = AddChild(new AxisControl { name = "pressure" });
             startTime = AddChild(new DoubleControl { name = "startTime" });

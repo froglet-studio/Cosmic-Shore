@@ -14973,3 +14973,18 @@ compilation and AI-state gates OK; `rhino_line_sim.py --self-test`. `Arcade/REGA
 3. After a few races, `python3 Tools/Build/regatta_rival_report.py --dir <flights> --since 2026-10-26 --hull manta`:
    rings a minute well above the 8 of the older races, boosted share well above 20%.
 
+
+## Rev 13: four tabs, profile from the pilot, Voyage, brighter sea (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session; `/verify-unity` could not run. Proven offline: refcompile player config clean,
+Amoebius Live builds, every menu generator `--check` / `--self-test`, `author_tandava_assets.py --check`, gates.
+Owed in the editor (`Docs/MENU_REDESIGN_B.md` §69):
+- [ ] `VoyageView`, `ProfileScreen`, `ScreenSwitcher`, `SeaLines.shader` compile with no errors.
+- [ ] The top bar shows Hangar, Ark, Home, Port; LT / RT never land on the Profile.
+- [ ] Home: clicking the pilot or pressing Y opens the Profile; Back / B returns Home (and closes the pilot picker first).
+- [ ] Profile: full-width pilot card with five stats, Favourites, Fly time by vessel, Audio Studio; no Episodes, no Quests.
+- [ ] Home's fourth hub reads VOYAGE, draws like the others and opens the Voyage window; the strip reads Voyage.
+- [ ] Voyage: Episode 1 bar and "n of 5", the five quest rows with CLAIM / PLAY working, Tandava's art and text,
+      SET SAIL opens the arena launch panel with Squirrel / Sparrow / Rhino; Episode 2 locked.
+- [ ] Launch Tandava solo and in a party (guest sees the card), with AI seats; leaving returns sensibly.
+- [ ] The sea: lines shade sky to periwinkle left to right, a deep-blue wash at the top, still slow.

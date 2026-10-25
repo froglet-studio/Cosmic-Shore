@@ -426,7 +426,7 @@ int main() {
 SEA_UNIFORMS = r"""
 struct v2f { float4 vertex; float4 color; float2 texcoord; float4 worldPosition; };
 float4 _Time;
-fixed4 _Color, _LineColor;
+fixed4 _Color, _LineColor, _LineColorMid, _LineColorEnd, _WashTop, _WashBottom, _GlowColor;
 float _Spacing, _Loop, _Amplitude, _FarAlpha, _FarWidth, _FarSeconds, _MidAlpha, _MidWidth, _MidSeconds;
 float _NearAlpha, _NearWidth, _NearSeconds, _FadeTop, _FadeBottom;
 """
@@ -441,11 +441,15 @@ SEA_MAIN = r"""
 #undef cos
 #undef sqrt
 static void defaults() {   // Sea_Window.mat (author_ui_lattice.py SEA)
-    _Color = (float4){1, 1, 1, 1}; _LineColor = (float4){0.435f, 0.518f, 0.847f, 1};
+    _Color = (float4){1, 1, 1, 1};
+    _LineColor = (float4){0.286f, 0.722f, 1, 1}; _LineColorMid = (float4){0.498f, 0.596f, 1, 1}; _LineColorEnd = (float4){0.612f, 0.549f, 1, 1};
     _Spacing = 46; _Loop = 480; _Amplitude = 9;
-    _FarAlpha = 0.13f; _FarWidth = 0.8f; _FarSeconds = 90; _MidAlpha = 0.19f; _MidWidth = 1; _MidSeconds = 68;
-    _NearAlpha = 0.27f; _NearWidth = 1.3f; _NearSeconds = 45; _FadeTop = 0.2f; _FadeBottom = 0.2f;
+    _FarAlpha = 0.2f; _FarWidth = 0.9f; _FarSeconds = 90; _MidAlpha = 0.3f; _MidWidth = 1.1f; _MidSeconds = 68;
+    _NearAlpha = 0.42f; _NearWidth = 1.5f; _NearSeconds = 45; _FadeTop = 0.2f; _FadeBottom = 0.2f;
+    _WashTop = (float4){0.031f, 0.086f, 0.329f, 0.75f}; _WashBottom = (float4){0, 0.008f, 0.055f, 0}; _GlowColor = (float4){0.239f, 0.549f, 1, 0.16f};
 }
+// The line-only checks run without the wash, so coverage measures the lines alone.
+static void noWash() { _WashTop.w = 0; _WashBottom.w = 0; _GlowColor.w = 0; }
 // A W x H render of a 1920 x 1080 window at time t: mean alpha, optional PPM over the 95 % veil's near-black, and
 // the per-pixel alphas for comparing frames.
 static double render(int W, int H, float t, float vertexAlpha, const char* ppm, float* keep) {
@@ -490,22 +494,31 @@ int main(int argc, char** argv) {
     const int W = 1920, H = 1080, N = W * H;
     static float f0[N], f1[N], fLoop[N], fNearLoop[N], tmp[N];
     defaults();
-    double cover = render(W, H, 10.0f, 1.0f, P("sea_t10.ppm"), f0);
+    render(W, H, 10.0f, 1.0f, P("sea_t10.ppm"), nullptr);
     render(W, H, 25.0f, 1.0f, P("sea_t25.ppm"), nullptr);
+    // The wash: strong at the top, clear at the bottom, nothing where the window is hidden.
+    static float washed[N];
+    render(W, H, 10.0f, 1.0f, nullptr, washed);
+    double washTop = 0, washBottom = 0;
+    for (int x = 0; x < W; x++) { washTop += washed[2 * W + x]; washBottom += washed[(H - 3) * W + x]; }
+    washTop /= W; washBottom /= W;
+    defaults(); noWash();
+    double cover = render(W, H, 10.0f, 1.0f, nullptr, f0);
     render(W, H, 10.0f + 1.0f / 60.0f, 1.0f, nullptr, f1);
     // One loop of every layer at once: 90, 68 and 45 s share no small common period, so hold the far and middle
     // layers still and run the near one exactly one loop.
-    defaults(); _FarSeconds = 0; _MidSeconds = 0;
+    defaults(); noWash(); _FarSeconds = 0; _MidSeconds = 0;
     render(W, H, 10.0f, 1.0f, nullptr, fLoop);
     render(W, H, 10.0f + _NearSeconds, 1.0f, nullptr, fNearLoop);
     double loopDiff = diff(fLoop, fNearLoop, N);
     // Still: every layer at 0 seconds draws the same frame at any time.
-    defaults(); _FarSeconds = 0; _MidSeconds = 0; _NearSeconds = 0;
+    defaults(); noWash(); _FarSeconds = 0; _MidSeconds = 0; _NearSeconds = 0;
     render(W, H, 3.0f, 1.0f, nullptr, tmp);
     render(W, H, 30.0f, 1.0f, nullptr, fLoop);
     double stillDiff = diff(tmp, fLoop, N);
     defaults();
     double hidden = render(W, H, 10.0f, 0.0f, nullptr, nullptr);
+    noWash();
     double half = render(W, H, 10.0f, 0.5f, nullptr, nullptr);
     // The edges: the top and bottom rows are faded out, the middle rows carry lines.
     double top = 0, mid = 0;
@@ -517,7 +530,7 @@ int main(int argc, char** argv) {
                 cover, frame, loopDiff, stillDiff, hidden, half, top, mid);
     int bad = 0;
     auto need = [&](bool ok, const char* what) { if (!ok) { std::printf("FAIL: %s\n", what); bad++; } };
-    need(cover > 0.001 && cover < 0.02, "the sea lines are faint and thin: a small share of the window");
+    need(cover > 0.003 && cover < 0.02, "the sea lines are thin, and brighter than rev 12's (a small share of the window)");
     need(frame > 1e-6, "the lines move");
     need(frame < cover * 0.5, "and slowly: from one frame to the next a line moves a fraction of its width");
     need(loopDiff < 2e-3, "a layer that slides one whole loop lands back where it started (no seam)");
@@ -525,6 +538,8 @@ int main(int argc, char** argv) {
     need(hidden < 1e-7, "a hidden window draws nothing");
     need(std::fabs(half - cover * 0.5) < cover * 0.02, "the vertex alpha fades the lines");
     need(top < 1e-6 && mid > cover, "the top and bottom fade out, the middle carries the lines");
+    std::printf("sea wash: top %.3f bottom %.3f\n", washTop, washBottom);
+    need(washTop > 0.5 && washBottom < 0.02, "the wash is deep at the top and clear at the bottom (Rev 13)");
     return bad ? 1 : 0;
 }
 """

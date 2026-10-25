@@ -96,9 +96,17 @@ MAT_GUID = {"Lattice_Panel": PANEL_GUID, "Lattice_Window": WINDOW_GUID}
 # slow"): three depth layers of thin wave lines in a lighter neutral blue, sliding sideways one 480-unit loop per
 # 90 / 68 / 45 s - half again slower than the board's 60 / 45 / 30. The one background motion the menu keeps
 # (Docs/UI_COLOR_RULES.md); SEA_SLOWEST_LOOP is the floor the gate holds every layer to.
-SEA_LINE = (0.43529412, 0.5176471, 0.84705883)     # #6F84D8
-SEA = dict(_Spacing=46, _Loop=480, _Amplitude=9, _FarAlpha=0.13, _FarWidth=0.8, _FarSeconds=90, _MidAlpha=0.19,
-           _MidWidth=1, _MidSeconds=68, _NearAlpha=0.27, _NearWidth=1.3, _NearSeconds=45, _FadeTop=0.2, _FadeBottom=0.2)
+# Rev 13 (§69, Shombith 2026-10-25: "make the blue a little bit brighter and use gradients", the R13 boards): the lines
+# shade sky -> periwinkle across the window and every layer is about half again stronger; a wash lies over the veil -
+# deep blue at the top fading to clear at the bottom, with a soft glow up top.
+SEA_LINE = (0.28627452, 0.72156864, 1)              # #49B8FF, left
+SEA_LINE_MID = (0.49803922, 0.59607846, 1)          # #7F98FF
+SEA_LINE_END = (0.6117647, 0.54901963, 1)           # #9C8CFF, right
+SEA_WASH_TOP = (0.03137255, 0.08627451, 0.32941177, 0.75)    # #081654
+SEA_WASH_BOTTOM = (0, 0.007843138, 0.05490196, 0)            # #00020E, clear
+SEA_GLOW = (0.23921569, 0.54901963, 1, 0.16)                 # #3D8CFF
+SEA = dict(_Spacing=46, _Loop=480, _Amplitude=9, _FarAlpha=0.2, _FarWidth=0.9, _FarSeconds=90, _MidAlpha=0.3,
+           _MidWidth=1.1, _MidSeconds=68, _NearAlpha=0.42, _NearWidth=1.5, _NearSeconds=45, _FadeTop=0.2, _FadeBottom=0.2)
 SEA_SLOWEST_LOOP = 40
 # The presence orb (§45.4). Its member seats sit on the inner ring at these angles (degrees, counter-clockwise from
 # the right): the shader's bonds (_BondAngles, _MemberRadius) and the drawer generator's avatar positions
@@ -206,7 +214,9 @@ def presence_material():
 
 
 def sea_material():
-    return shader_material("Sea_Window", SEA_SHADER_GUID, SEA, dict(_Color=(1, 1, 1), _LineColor=SEA_LINE))
+    return shader_material("Sea_Window", SEA_SHADER_GUID, SEA, dict(
+        _Color=(1, 1, 1), _LineColor=SEA_LINE, _LineColorMid=SEA_LINE_MID, _LineColorEnd=SEA_LINE_END,
+        _WashTop=SEA_WASH_TOP, _WashBottom=SEA_WASH_BOTTOM, _GlowColor=SEA_GLOW))
 
 
 def bond_material():
@@ -333,6 +343,9 @@ def validate(files):
     assert written == sea_declared, f"Sea_Window: properties drifted (missing {sea_declared - written}, extra {written - sea_declared})"
     assert f"guid: {SEA_GUID}" in files[f"{DIR}/Sea_Window.mat.meta"], "Sea_Window.mat.meta has the wrong guid"
     assert f"guid: {SEA_SHADER_GUID}" in files[f"{SEA_SHADER}.meta"], "SeaLines.shader.meta has the wrong guid"
+    assert f"- _LineColor: {col(SEA_LINE)}" in m and f"- _LineColorEnd: {col(SEA_LINE_END)}" in m and SEA_LINE != SEA_LINE_END, \
+        "Sea_Window: the lines do not shade across the window (Rev 13: gradients)"
+    assert f"- _WashTop: {col(SEA_WASH_TOP[:3], SEA_WASH_TOP[3])}" in m, "Sea_Window: no wash at the top (Rev 13: the brighter blue)"
     for k in ("_FarSeconds", "_MidSeconds", "_NearSeconds"):
         v = float(re.search(rf"^    - {k}: (.*)$", m, re.M).group(1))
         assert v >= SEA_SLOWEST_LOOP, f"Sea_Window: {k} is {v} s - the sea lines stay slow (at least {SEA_SLOWEST_LOOP} s a loop)"
@@ -398,6 +411,9 @@ def self_test(files):
             r"    - _Breathe: [\d.]+\n", "    - _Breathe: 0\n", f[f"{DIR}/SelectionRim.mat"], count=1))),
         ("the sea lines racing", lambda f: f.__setitem__(f"{DIR}/Sea_Window.mat", f[f"{DIR}/Sea_Window.mat"].replace(
             "    - _NearSeconds: 45\n", "    - _NearSeconds: 12\n", 1))),
+        ("the sea lines one flat colour again", lambda f: f.__setitem__(f"{DIR}/Sea_Window.mat", f[f"{DIR}/Sea_Window.mat"].replace(
+            f"- _LineColorEnd: {col(SEA_LINE_END)}", f"- _LineColorEnd: {col(SEA_LINE)}", 1).replace(
+            f"- _LineColor: {col(SEA_LINE)}", f"- _LineColor: {col(SEA_LINE_MID)}", 1))),
         ("the sea material on the lattice shader", lambda f: f.__setitem__(f"{DIR}/Sea_Window.mat", f[f"{DIR}/Sea_Window.mat"].replace(
             SEA_SHADER_GUID, SHADER_GUID))),
         ("the theme loses the selection's material", lambda f: f.__setitem__(THEME, f[THEME].replace(SELECTION_GUID, "8" * 32, 1))),

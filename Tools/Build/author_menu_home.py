@@ -89,11 +89,14 @@ IDS = dict(
     row_go="1613024078", row_rt="1613024079", row_hlg="1613024080",
     tap_btn="797780469", quest_runner="654228613",
 )
+# Rev 13 (Shombith, 2026-10-25): the fourth hub is VOYAGE - the Mission window became the Voyage window (episodes, the
+# quest track, and the voyages they lead to: Tandava first). Its key and GameObjects keep the Mission names (the modal
+# type is still ModalWindows.MISSION); it opens (Available) and draws like the other three.
 HUBS = [  # key, go, rt, root img, button, hub comp, avail comp, label go, label rt, label tmp, caption, glyph, variant
     ("Toybox", "200217508", "200217509", "200217512", "200217511", "200217515", "200217514", "1681475207", "1681475208", "1681475209", "Toy Box", "chrome_cube", "Default"),
     ("Arcade", "1749518386", "1749518387", "1749518390", "1749518389", "1749518393", "1749518392", "466012893", "466012894", "466012895", "Arcade", "chrome_pad", "Default"),
     ("Arena", "1015093819", "1015093820", "1015093823", "1015093822", "1015093826", "1015093825", "2097070915", "2097070916", "2097070917", "Arena", "chrome_blades", "Default"),
-    ("Mission", "895856520", "895856521", "895856524", "895856523", "895856527", "895856526", "25247041", "25247042", "25247043", "Mission", "chrome_target", "Inactive"),
+    ("Mission", "895856520", "895856521", "895856524", "895856523", "895856527", "895856526", "25247041", "25247042", "25247043", "Voyage", "chrome_globe", "Default"),
 ]
 HUB_PAD, HUB_MIN_W, HUB_H = (28, 28, 18, 18), 210, 66
 
@@ -305,6 +308,7 @@ def patch_hubs(p):
         p.replace(hub, hb)
         if variant == "Inactive":
             p.field(avail, "dimOwnGraphics", "0")
+        p.field(avail, "availability", "2" if variant == "Inactive" else "0")
 
 
 def _last_doc(p, node):
@@ -454,10 +458,11 @@ def patch_header(p):
     clip_rt = p.emit(avatar_nodes(), I["avatar_rt"], I["avatar_rt"])
     p.children(I["avatar_rt"], [clip_rt, I["lamp_rt"]])
     p.field(I["home_comp"], "avatarImage", ref(p.ctx.c("Avatar/Clip/Avatar", "img")))
-    # Parity with the old Home: pressing the avatar opens the profile window (its Avatar tab).
+    # Rev 13 (Shombith, 2026-10-25): the profile has no tab; pressing the pilot (avatar or name) opens it, as Y does.
+    # The avatar editor is the profile's own CHANGE AVATAR.
     p.add_comp(I["avatar_go"], "button", 114, lambda ctx, go: mono(go, A.BUTTON,
                A.selectable() + f"  m_TargetGraphic: {ref(I['avatar_img'])}\n"
-               + A.calls([(PROFILE_WINDOW, "CosmicShore.UI.ProfileIconSelectView", "OpenAvatar")])))
+               + A.calls([(SWITCHER, "CosmicShore.UI.ScreenSwitcher", "OnClickProfileNav")])))
 
     # Lamp: a diamond on the avatar's corner; no profile call (it asks Go offline?).
     p.rect(I["lamp_rt"], R((1, 0), (1, 0), (4, 4), (28, 28), (0.5, 0.5)))
@@ -621,7 +626,7 @@ def upnext_node():
              f"  questMeterText: {ref(ctx.c('UpNext/Quest/MeterText', 'tmp'))}\n"
              + K.refs_list("questMeterSegments", [ctx.c(f"UpNext/Quest/Meter{i + 1}", "th") for i in range(4)])
              + f"  weeklyDock: {ref(ctx.c('UpNext/Weekly', 'dock'))}\n  questDock: {ref(ctx.c('UpNext/Quest', 'dock'))}\n"
-             + "  noBestText: None yet\n  readyToClaimText: Ready to claim on your Profile\n"
+             + "  noBestText: None yet\n  readyToClaimText: Ready to claim in Voyage\n"
              + "  nextGoalTemplate: 'Next: {goal}'\n  allUnlockedText: Every intensity unlocked\n"
              + "  meterTemplate: Intensity {level} of {max}\n"
              + f"  games: {K.ref(11400000, ARCADE_GAMES, 2)}\n  screenSwitcher: {ref(SWITCHER)}\n  refreshSeconds: 1\n"))
@@ -850,13 +855,14 @@ def validate(files):
         assert S["kitbutton"] in d, f"{key}Button is not a KitButton"
         assert f"  m_TargetGraphic: {{fileID: {ctx.c(f'Hub/{key}/Fill', 'img')}}}" in d, f"{key}Button: press feedback targets another object"
         assert f"  variant: {K.VARIANTS[variant]}\n" in d, f"{key}Button: wrong variant"
-        assert variant in ("Default", "Inactive"), f"{key}: the four hubs draw alike (Default; Mission Inactive while unavailable)"
+        assert variant == "Default", f"{key}: the four hubs draw alike (Default)"
+        assert "  availability: 0\n" in sc.docs[avail], f"{key}: the hub is not Available"
         assert "m_MethodName: PlayAudio" in d, f"{key}Button lost its press sound"
         assert f"  preferredFocus: {1 if key == 'Arcade' else 0}\n" in sc.docs[hub], f"{key}: preferredFocus wrong"
     assert re.search(r"  m_Calls: \[\]\n", sc.docs[I["lamp_btn"]]), "the lamp still opens the profile window"
     avatar_btn = str(ctx.fid(f"{I['avatar_go']}#button"))
-    assert sc.has(avatar_btn) and f"m_Target: {{fileID: {PROFILE_WINDOW}}}" in sc.docs[avatar_btn] \
-        and "m_MethodName: OpenAvatar\n" in sc.docs[avatar_btn], "pressing the Home avatar no longer opens the profile window"
+    assert sc.has(avatar_btn) and f"m_Target: {{fileID: {SWITCHER}}}" in sc.docs[avatar_btn] \
+        and "m_MethodName: OnClickProfileNav\n" in sc.docs[avatar_btn], "pressing the Home pilot no longer opens the profile"
     assert sc.script(PROFILE_WINDOW) == C.script("ProfileIconSelectView"), "PROFILE_WINDOW is not the profile window"
     lamp = sc.docs[I["lamp_comp"]]
     assert f"  statusLabel: {{fileID: {ctx.c('Name/Status', 'tmp')}}}" in lamp, "the lamp's status label is unwired"

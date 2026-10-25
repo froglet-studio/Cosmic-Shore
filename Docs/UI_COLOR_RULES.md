@@ -37,7 +37,7 @@ Still on element colours, and not changed here because they are other people's H
 `StarlingHUDView`, `GobyPistolButtons`, `OrcaHUDController`, `TouchControlsHud`, `AbilityLockupView` call `ColourFor`.
 With `elementColour` off the lockup itself is neutral; those vessel HUDs still tint by element.
 
-Hub windows: the strip's four words (Toy Box, Arcade, Arena, Mission) all read in the one neutral blue
+Hub windows: the strip's four words (Toy Box, Arcade, Arena, Voyage) all read in the one neutral blue
 (`NeutralLightest`), the shown one included; its still underline alone marks it (Shombith, 2026-10-24).
 
 ## Attention economy
@@ -50,8 +50,10 @@ Hub windows: the strip's four words (Toy Box, Arcade, Arena, Mission) all read i
   avatars and art, the settings gear, element halos (`KitElementHalo.breathe` off).
 - **The one background motion: the sea lines** behind a whole window (Arcade, Arena, Mission, Toy Box, Configure,
   Profile, Leaderboard; `Docs/MENU_REDESIGN_B.md` §67). Shombith chose it on 2026-10-25 from the canvas's Rev 12 board
-  ("keep it a bit slow"): thin neutral-blue wave lines over a 95 % veil, three layers sliding one 480-unit loop per
-  90 / 68 / 45 s. `author_ui_lattice.py` fails any layer faster than 40 s a loop.
+  ("keep it a bit slow"): thin wave lines over a 95 % veil, three layers sliding one 480-unit loop per 90 / 68 / 45 s.
+  Rev 13 (2026-10-25, "make the blue a little bit brighter and use gradients"): the lines shade sky to periwinkle
+  across the window and a deep-blue wash fades from the top. `author_ui_lattice.py` fails any layer faster than 40 s a
+  loop and a sea that has gone back to one flat colour.
 - **Kept, because they mean something:** progress spinners while something loads or connects, the music EQ while a
   track plays, the hint that teaches a control, the START sweep, the current quest segment's spark, window entrances
   and the lattice crystallising in (transitions are meaningful moments; Shombith proposed putting the dramatic visuals

@@ -65,4 +65,30 @@ float SeaEdgeFade(float v, float fadeIn, float fadeOut)
     return smoothstep(0.0, fadeIn, v) * (1.0 - smoothstep(1.0 - fadeOut, 1.0, v));
 }
 
+// The line colour across the window: left to middle to right, u being the rect's 0..1 width.
+float3 SeaLineColour(float u, float3 left, float3 mid, float3 right)
+{
+    return u < 0.5 ? lerp(left, mid, u * 2.0) : lerp(mid, right, u * 2.0 - 1.0);
+}
+
+// The wash under the lines as straight colour (rgb) and coverage (a): top to bottom, with a soft glow centred high up.
+float4 SeaWash(float2 uv, float4 top, float4 bottom, float4 glow)
+{
+    float t = smoothstep(0.0, 1.0, uv.y);
+    float4 w = float4(lerp(bottom.rgb, top.rgb, t), lerp(bottom.a, top.a, t));
+    float2 d = (uv - float2(0.5, 0.72)) * float2(1.4, 1.8);
+    float g = (1.0 - smoothstep(0.0, 1.0, length(d))) * glow.a;
+    float a = w.a + g * (1.0 - w.a);
+    float3 rgb = (w.rgb * w.a * (1.0 - g) + glow.rgb * g) / max(a, 0.0001);
+    return float4(rgb, a);
+}
+
+// The lines (colour, coverage) over the wash: straight colour and coverage out.
+float4 SeaOver(float3 lineColour, float lineAlpha, float4 wash)
+{
+    float a = lineAlpha + wash.a * (1.0 - lineAlpha);
+    float3 rgb = (lineColour * lineAlpha + wash.rgb * wash.a * (1.0 - lineAlpha)) / max(a, 0.0001);
+    return float4(rgb, a);
+}
+
 #endif

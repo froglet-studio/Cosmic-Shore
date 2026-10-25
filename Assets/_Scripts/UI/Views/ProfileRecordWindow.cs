@@ -153,6 +153,14 @@ namespace CosmicShore.UI
             if (events && _returnFocus) events.SetSelectedGameObject(_returnFocus);
         }
 
+        /// <summary>Closes the favourite-pilot picker if it is open; true when it was (Back answers the picker first).</summary>
+        public bool ClosePicker()
+        {
+            if (!picker || !picker.IsOpen) return false;
+            picker.Close();
+            return true;
+        }
+
         void OpenPicker()
         {
             if (picker) picker.Open();

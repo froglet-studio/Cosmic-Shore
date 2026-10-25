@@ -162,6 +162,12 @@ namespace CosmicShore.UI
                  "carries its own reading (Unavailable rather than Locked). Do not author one in both.")]
         [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT };
 
+        [Header("Screens Off the Tab Bar")]
+        [Tooltip("Screens with no tab of their own (Rev 13, Shombith 2026-10-25: the top bar is Hangar, Ark, Home and " +
+                 "Port). LT / RT page past them, and while one is open the tab bar shows Home lit - the screen opens " +
+                 "over Home. The Profile is opened from the pilot card on Home (or Y) and closed with Back (or B).")]
+        [SerializeField] private List<MenuScreens> navHiddenScreens = new() { MenuScreens.PROFILE };
+
         [Tooltip("Reason a disabled screen's nav link gives when pressed. Empty leaves the refusal sting to " +
                  "speak alone. Deliberately generic: MenuScreens names (ARK, PORT) are internal.")]
         [SerializeField] private string disabledScreenMessage = "Not open yet.";
@@ -898,6 +904,13 @@ namespace CosmicShore.UI
                 if (Gamepad.current.startButton.wasPressedThisFrame)
                 {
                     OpenModalByType(ModalWindows.SETTINGS);
+                    return;
+                }
+
+                // Y opens the profile, as pressing the pilot card does (Rev 13: Select already toggles freestyle).
+                if (!guided && Gamepad.current.buttonNorth.wasPressedThisFrame)
+                {
+                    OnClickProfileNav();
                     return;
                 }
             }
@@ -1752,9 +1765,17 @@ namespace CosmicShore.UI
             NavigateTo(MenuScreens.ARK);
         }
 
+        /// <summary>Opens the profile screen over Home without the strip's slide (it has no tab: Rev 13). The Home pilot
+        /// card and Y call it; <see cref="OnClickProfileBack"/> returns.</summary>
         public void OnClickProfileNav()
         {
-            NavigateTo(MenuScreens.PROFILE);
+            NavigateTo(MenuScreens.PROFILE, false);
+        }
+
+        /// <summary>The profile's Back (and B): straight back to Home, the screen it opened over.</summary>
+        public void OnClickProfileBack()
+        {
+            NavigateTo(MenuScreens.HOME, false);
         }
 
         /// <summary>
@@ -1952,10 +1973,14 @@ namespace CosmicShore.UI
             NavigateRight();
         }
 
+        /// <summary>A screen with no tab (<see cref="navHiddenScreens"/>): LT / RT page past it.</summary>
+        private bool IsIndexNavHidden(int index) =>
+            navHiddenScreens != null && navHiddenScreens.Contains(GetScreenIdForIndex(index));
+
         private void NavigateLeft()
         {
             int target = currentScreen - 1;
-            while (target >= 0 && IsIndexDisabled(target))
+            while (target >= 0 && (IsIndexDisabled(target) || IsIndexNavHidden(target)))
                 target--;
 
             if (target < 0)
@@ -1968,7 +1993,7 @@ namespace CosmicShore.UI
         {
             int max = GetScreenCount() - 1;
             int target = currentScreen + 1;
-            while (target <= max && IsIndexDisabled(target))
+            while (target <= max && (IsIndexDisabled(target) || IsIndexNavHidden(target)))
                 target++;
 
             if (target > max)
@@ -1984,6 +2009,9 @@ namespace CosmicShore.UI
 
         private void UpdateNavBar(int index)
         {
+            // A screen with no tab lights Home's: it opens over Home (Rev 13).
+            if (IsIndexNavHidden(index)) index = GetIndexForScreen(MenuScreens.HOME);
+
             // Two supported ways to highlight the active nav tab:
             //
             //  1. Explicit per-button icon lists (NavActiveImages / NavInactiveImages).

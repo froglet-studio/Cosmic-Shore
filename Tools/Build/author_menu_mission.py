@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 """
+REV 13 (Docs/MENU_REDESIGN_B.md section 69): this window is the VOYAGE window now - the episode card, the quest track
+(QuestRow.prefab, QuestTrackView moved here from the Profile) and the voyages (VoyageView: Tandava open, Episode 2
+locked). The hub entry is Available and reads Voyage. The text below describes the Mission window it was built as.
+
 Author the MISSION window of the style-B menu redesign (item 8, Docs/MENU_REDESIGN_B.md section 17.2;
 the approved MissionWindow board on the "Menu Redesign B" canvas) as prefabs, and wire it into
 Menu_Main.unity. It takes the Arena window's LOOK (author_menu_arena.py) and none of its data path:
@@ -50,12 +54,13 @@ N, STRETCH, R, tok = K.Node, K.STRETCH, K.rect, K.tok
 ref, mono, refs = A.ref, A.mono, A.refs
 text, label, le, canvas_group = H.text, H.label, H.le, H.canvas_group
 image_node, art_node, ring_node = A.image_node, A.art_node, A.ring_node
+TL = C.TL
 c = A.c
 
-PREFABS = ("MissionCard", "MissionView")
+PREFABS = ("MissionCard", "MissionView", "QuestRow")
 S = dict(card=C.script("KitMissionCard"), view=C.script("MissionExploreView"), avail=C.script("MenuAvailabilityView"),
          arcade_view=A.S["view"], screen=C.script("ArcadeScreen"), gate=A.S["gate"], tile=A.S["tile"], kt=A.S["kt"],
-         cover=A.S["cover"], close=A.S["close"])
+         cover=A.S["cover"], close=A.S["close"], voyage=C.script("VoyageView"))
 MISSION_GAMES = "7f11dbcad659c684e96f9673bc3f367e"       # MissionGames.asset (SO_MissionList)
 GRID_LAYOUT = "8a8695521f0d02e499659fee002a26c2"         # UnityEngine.UI.GridLayoutGroup
 LOCKED_MESSAGE = "Missions open with the full release."
@@ -127,6 +132,89 @@ def build_card():
 # MissionView.prefab
 # --------------------------------------------------------------------------------------------
 
+# --------------------------------------------------------------------------------------------
+# Rev 13 (Shombith, 2026-10-25, §69): the Mission window is the VOYAGE window. "the episodes and quest tracker moves into
+# the voyages ... and we can lead onto voyages (specific missions like the tandava)". Left: the episode card and the
+# quest track (QuestTrackView, moved here from the Profile, spawning QuestRow). Right: the voyages - Tandava featured
+# and open (VoyageView: Set sail opens its launch window), and Episode 2 locked. The approved R13Voyage board.
+# --------------------------------------------------------------------------------------------
+
+QUEST_LIST = "5eee61facaac4bb46b9e9892512f74cb"          # GameModeQuestList.asset (SO_UnlockList), the Profile's before
+TANDAVA_CARD = "a7460784ce7229f7440d35280ae4b04f"        # Games/_Archive/ArcadeGameTandava.asset (author_tandava_assets VOYAGE)
+SLIDER = P.SLIDER
+LEFT_W, ROW_H, ROW_GAP = 620, 64, 10
+EPISODE_H, FEATURE_H, NEXT_H = 250, 480, 220
+FORMS = (("Great Serpent", "eats coiled, wrapped or in a figure-eight"), ("Many-Headed Serpent", "every head rears, then strikes"),
+         ("Lord of the Dance", "rises in a halo of 12 rings to a drum"), ("Antlion", "lunges with its jaws wide"))
+
+
+def build_quest_row():
+    """One quest as a row of the Voyage window's track: numeral, name, goal line, state, and CLAIM / PLAY - the same
+    KitQuestCard QuestTrackView drives on the old Profile card, with the art, goals and track node left out."""
+    root = N("root", "QuestRow", R(size=(LEFT_W, ROW_H)))
+    root.add("cg", 225, canvas_group(True)).add("le", 114, le(ph=ROW_H))
+    root.add("in", 114, M.entrance("Rise", by_sibling=True))
+    fill = root.child(N("Fill", "Fill", STRETCH))
+    fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark", 0.86), K.kit_sprite("kit_sliver10_fill"), True))
+    border = root.child(N("Border", "Border", STRETCH))
+    border.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver10_line1"), True))
+    border.add("pop", 114, M.entrance("Pop", play_on_enable=False, duration=M.CEREMONY))
+    num = root.child(N("Numeral", "Numeral", R((0, 0.5), None, (18, 0), (46, 40), (0, 0.5))))
+    num.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("01", "H2", tok("TextLight"))).add("kt", 114, K.kit_text("H2", "TextLight"))
+    title = root.child(N("Title", "Title", R((0, 0.5), (1, 0.5), (16, 10), (-200, 26), (0.5, 0.5))))
+    title.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Quest", "Body", tok("TextLight")))) \
+        .add("kt", 114, K.kit_text("Body", "TextLight"))
+    desc = root.child(N("Description", "Description", R((0, 0.5), (1, 0.5), (16, -12), (-200, 20), (0.5, 0.5))))
+    desc.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("", "BodySmall", tok("NeutralLightest")))) \
+        .add("kt", 114, K.kit_text("BodySmall", "NeutralLightest"))
+    state = root.child(N("State", "State", R((1, 0.5), None, (-18, 0), (140, 18), (1, 0.5))))
+    state.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("In progress", "Label", tok("NeutralLightest"), align="right")) \
+        .add("kt", 114, K.kit_text("Label", "NeutralLightest"))
+    # CLAIM (ready) and PLAY (in progress) sit where the state word is; KitQuestCard shows one at a time.
+    w, h = K.button_size("CLAIM", small=True)
+    claim = root.child(N("Claim", "Claim", R((1, 0.5), None, (-160, 0), (w, h), (1, 0.5))))
+    claim.add("cg", 225, canvas_group(False))
+    claim.children.append(P.small("ClaimButton", "ClaimButton", "Cta", "CLAIM", STRETCH, opaque=True))
+    w, h = K.button_size("PLAY", small=True)
+    play = root.child(N("Play", "Play", R((1, 0.5), None, (-160, 0), (w, h), (1, 0.5))))
+    play.add("cg", 225, canvas_group(False))
+    play.children.append(P.small("PlayButton", "PlayButton", "Default", "PLAY", STRETCH))
+    root.add("card", 114, lambda ctx, go: mono(go, P.S["card"],
+             f"  nameText: {ref(ctx.c('Title', 'tmp'))}\n"
+             f"  descriptionText: {ref(ctx.c('Description', 'tmp'))}\n"
+             "  iconImage: {fileID: 0}\n  lockedOverlay: {fileID: 0}\n  completedOverlay: {fileID: 0}\n"
+             f"  claimButton: {ref(ctx.iref('ClaimButton', 'root#button'))}\n"
+             f"  cardButton: {ref(ctx.iref('PlayButton', 'root#button'))}\n"
+             "  cardBackground: {fileID: 0}\n  lockedTint: {r: 0.35, g: 0.35, b: 0.35, a: 1}\n"
+             "  glowBorder: {fileID: 0}\n"
+             "  activeQuestGlowColor: {r: 0.4, g: 0.7, b: 1, a: 1}\n"
+             "  readyToClaimGlowColor: {r: 0.4, g: 1, b: 0.55, a: 1}\n"
+             f"  theme: {K.ref(11400000, K.THEME, 2)}\n"
+             f"  border: {ref(ctx.c('Border', 'img'))}\n"
+             f"  borderStrong: {K.sprite_ref(K.kit_sprite('kit_sliver10_line2'))}\n"
+             f"  borderQuiet: {K.sprite_ref(K.kit_sprite('kit_sliver10_line1'))}\n"
+             f"  numeralText: {ref(ctx.c('Numeral', 'kt'))}\n"
+             f"  stateText: {ref(ctx.c('State', 'kt'))}\n"
+             f"  titleText: {ref(ctx.c('Title', 'kt'))}\n"
+             "  art: {fileID: 0}\n  lockGroup: {fileID: 0}\n  completedChip: {fileID: 0}\n  goalsGroup: {fileID: 0}\n"
+             "  goals: []\n"
+             f"  claimGroup: {ref(ctx.c('Claim', 'cg'))}\n"
+             f"  playGroup: {ref(ctx.c('Play', 'cg'))}\n"
+             "  meterBars: []\n  meterText: {fileID: 0}\n"
+             f"  playLabel: {ref(ctx.iref('PlayButton', 'Label#kt'))}\n"
+             "  lockedLineGroup: {fileID: 0}\n  lockedLineText: {fileID: 0}\n"
+             "  node: {fileID: 0}\n  nodeFilled: {fileID: 0}\n  nodeOutline: {fileID: 0}\n"
+             "  segment: {fileID: 0}\n  segmentSpark: {fileID: 0}\n"
+             f"  claimPop: {ref(ctx.c('Border', 'pop'))}\n"))
+    return root
+
+
+def panel_frame(node, key, accent="SurfaceDark"):
+    """The Rev 10 panel: a cut-corner glass frame with corner brackets."""
+    C.frame(node, f"{key}/Frame", 14, "SurfaceVeryDark", accent, fill_alpha=0.86)
+    M.bracket_nodes(node, f"{key}/Bracket")
+
+
 def build_view():
     root = N("root", "MissionView", STRETCH)
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
@@ -134,53 +222,129 @@ def build_view():
     # §67: the sea lines over the glass (Sea_Window.mat), slow wave lines in three depth layers.
     root.child(M.window_sea_node("BackdropLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
 
-    # Sibling order is FOCUS order (ScreenSwitcher.Refocus): the cards first, the party panel next, Back last.
+    # Sibling order is FOCUS order (ScreenSwitcher.Refocus): Set sail first, the quests next, Back last.
     body = root.child(N("Body", "Body", A.WINDOW_BODY))
-    body.add("hlg", 114, lambda ctx, go: K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 1))(ctx, go)
+    body.add("hlg", 114, lambda ctx, go: K.hv_layout(False, (0, 0, 0, 0), 40, 0, (1, 1), (0, 1))(ctx, go)
              .replace("  m_ReverseArrangement: 0\n", "  m_ReverseArrangement: 1\n"))
-    # Motion (section 22.8): the window's two blocks rise in on every open - the modal never
-    # re-enables, so ModalWindowManager replays them (KitEntrance.ReplayUnder).
+    # Motion (section 22.8): the two columns rise in on every open (KitEntrance.ReplayUnder).
     body.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", stagger=1))
-    ex = body.child(N("Explore", "ExploreScroll", R((0, 1), None, (0, 0), (A.EXPLORE_W, 844), (0, 1))))
-    ex.add("le", 114, le(mw=0, fw=1)).add("scroll", 114, A.scroll_rect("Explore/Viewport/Content", "Explore/Viewport"))
-    vp = ex.child(N("Explore/Viewport", "Viewport", R((0, 0), (1, 1), (-5, 0), (-10, 0))))
-    vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
-        .add("mask", 114, A.rect_mask())
-    content = vp.child(N("Explore/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
-    content.add("vlg", 114, K.hv_layout(True, (6, 6, 6, 6), 0, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
-    allm = content.child(N("AllMissions", "AllMissions", R((0, 1), None, (0, 0), (GRID_W, 18), (0, 1))))
-    allm.add("le", 114, le(ph=18))
-    label(allm.child(N("AllMissions/Label", "Label", R((0, 0), (1, 1), (0, 0), (-10, 0)))), "ALL MISSIONS", "Label", "TextLight")
-    label(allm.child(N("AllMissions/Count", "Count", R((0, 0), (1, 1), (0, 0), (-10, 0)))), "1", "Label", "NeutralLightest",
-          align="right")
-    content.child(N("Gap", "Gap", R((0, 1), None, (0, 0), (GRID_W, 10), (0, 1)))).add("le", 114, le(ph=10))
-    grid = content.child(N("Grid", "MissionGrid", R((0, 1), None, (0, 0), (GRID_W, CARD_H), (0, 1))))
-    grid.add("grid", 114, lambda ctx, go: mono(go, GRID_LAYOUT,
-             "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 0\n    m_Bottom: 0\n"
-             "  m_ChildAlignment: 0\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
-             f"  m_CellSize: {{x: {CARD_W}, y: {CARD_H}}}\n  m_Spacing: {{x: {GAP}, y: {GAP}}}\n"
-             "  m_Constraint: 1\n  m_ConstraintCount: 2\n"))
-    # Rev 3: the party panel moved to the one friends drawer on Menu_Main.
+
+    # Right column (first in hierarchy, drawn on the right: the row is reversed): the voyages.
+    right = body.child(N("Voyages", "Voyages", R((0, 1), None, (0, 0), (1100, 844), (0, 1))))
+    right.add("le", 114, le(mw=0, fw=1))
+    right.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 14, 0, (1, 1), (1, 0)))
+    head = right.child(N("Voyages/Head", "Head", R((0, 1), None, (0, 0), (1100, 18), (0, 1))))
+    head.add("le", 114, le(ph=18))
+    label(head.child(N("Voyages/Head/Label", "Label", STRETCH)), "Voyages", "Label", "TextLight")
+    label(head.child(N("Voyages/Head/Count", "Count", STRETCH)), "1 open", "Label", "NeutralLightest", align="right")
+
+    feat = right.child(N("Featured", "Featured", R((0, 1), None, (0, 0), (1100, FEATURE_H), (0, 1))))
+    feat.add("le", 114, le(ph=FEATURE_H))
+    panel_frame(feat, "Featured", "SurfaceLight")
+    clip = feat.child(N("Featured/Clip", "Clip", R((0, 0), (0, 1), (262, 0), (520, -4), (0.5, 0.5))))
+    clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack"))).add("mask", 114, A.rect_mask())
+    art = clip.child(N("Featured/Clip/Art", "Art", STRETCH))
+    art.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, None)) \
+        .add("cover", 114, lambda ctx, go: mono(go, S["cover"], ""))
+    image_node(clip, "Featured/Clip/Fade", "Fade", R((1, 0), (1, 1), (0, 0), (160, 0), (1, 0.5)), "SurfaceBlack",
+               K.kit_sprite("kit_fade_v"), alpha=0.7)
+    label(clip.child(N("Featured/Clip/Kind", "Kind", TL(22, 20, 200, 18))), "Co-op hunt", "Label", "TextLight")
+    chip = clip.child(N("Featured/Clip/Open", "Open", TL(150, 16, 70, 26)))
+    C.frame(chip, "Featured/Clip/Open/Frame", 10, "SurfaceBlack", "Cta", fill_alpha=0.6)
+    label(chip.child(N("Featured/Clip/Open/Label", "Label", STRETCH)), "Open", "Label", "Cta", align="center")
+    info = feat.child(N("Featured/Info", "Info", R((0, 0), (1, 1), (290, 0), (-620, -56), (0.5, 0.5))))
+    label(info.child(N("Featured/Info/Eyebrow", "Eyebrow", R((0, 1), (1, 1), (0, 0), (0, 18), (0.5, 1)))), "Voyage 1", "Label", "NeutralLightest")
+    t = info.child(N("Featured/Info/Title", "Title", R((0, 1), (1, 1), (0, -24), (0, 60), (0.5, 1))))
+    t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Voyage", "Display", tok("TextLight")))) \
+        .add("kt", 114, K.kit_text("Display", "TextLight", driven=True))
+    d = info.child(N("Featured/Info/Description", "Description", R((0, 1), (1, 1), (0, -92), (0, 92), (0.5, 1))))
+    d.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("", "BodySmall", tok("NeutralLightest"), valign="top", wrap=True))) \
+        .add("kt", 114, K.kit_text("BodySmall", "NeutralLightest", driven=True))
+    track = info.child(N("Featured/Info/Forms", "Forms", R((0, 1), (1, 1), (0, -200), (0, 110), (0.5, 1))))
+    C.themed_line(track, "Featured/Info/Forms/Line", "Line", R((0, 1), (1, 1), (0, -10), (-120, 2), (0.5, 1)), "SurfaceDark")
+    for i, (name, line) in enumerate(FORMS):
+        k = f"Featured/Info/Forms/Form{i + 1}"
+        f = track.child(N(k, f"Form{i + 1}", R((i / 4, 1), ((i + 1) / 4, 1), (0, 0), (-12, 110), (0.5, 1))))
+        image_node(f, f"{k}/Node", "Node", TL(0, 0, 22, 20), "TextLight" if i == 0 else "SurfaceLight",
+                   K.kit_sprite("kit_hex_fill" if i == 0 else "kit_hex_line2"))
+        label(f.child(N(f"{k}/Name", "Name", R((0, 1), (1, 1), (0, -28), (0, 22), (0.5, 1)))), name, "BodySmall",
+              "TextLight" if i == 0 else "NeutralLightest")
+        label(f.child(N(f"{k}/Line", "Line", R((0, 1), (1, 1), (0, -54), (0, 40), (0.5, 1)))), line, "Caption" if "Caption" in K.ROLES else "BodySmall",
+              "NeutralLightest", valign="top", wrap=True)
+    label(info.child(N("Featured/Info/Crew", "Crew", R((0, 0), (1, 0), (0, 70), (0, 20), (0.5, 0)))),
+          "Squirrel, Sparrow or Rhino  -  the whole party on one domain  -  no clock", "BodySmall", "NeutralLightest")
+    w, h = K.button_size("SET SAIL")
+    sail = info.child(N("Featured/Info/SetSail", "SetSail", R((0, 0), None, (0, 0), (w + 20, h), (0, 0))))
+    sail.children.append(P.kit_button("SetSail", "SetSailButton", "Cta", "SET SAIL", STRETCH, opaque=True))
+    feat.add("voyage", 114, lambda ctx, go: mono(go, S["voyage"],
+             f"  voyage: {K.ref(11400000, TANDAVA_CARD, 2)}\n  configureModal: {{fileID: 0}}\n"
+             f"  art: {ref(ctx.c('Featured/Clip/Art', 'img'))}\n"
+             f"  titleText: {ref(ctx.c('Featured/Info/Title', 'tmp'))}\n"
+             f"  descriptionText: {ref(ctx.c('Featured/Info/Description', 'tmp'))}\n"
+             f"  setSailButton: {ref(ctx.iref('SetSail', 'root#button'))}\n"))
+
+    nxt = right.child(N("Next", "Next", R((0, 1), None, (0, 0), (1100, NEXT_H), (0, 1))))
+    nxt.add("le", 114, le(ph=NEXT_H))
+    panel_frame(nxt, "Next")
+    label(nxt.child(N("Next/Eyebrow", "Eyebrow", TL(28, 26, 300, 18))), "Voyage 2", "Label", "NeutralLightest")
+    label(nxt.child(N("Next/Title", "Title", TL(28, 50, 700, 40))), "Episode 2", "H1", "NeutralLightest")
+    label(nxt.child(N("Next/Line", "Line", TL(28, 98, 700, 22))), "The next voyage arrives with Episode 2.", "Body", "NeutralLightest")
+    image_node(nxt, "Next/Lock", "Lock", R((1, 0), None, (-30, 26), (24, 28), (1, 0)), "SurfaceLight",
+               K.chrome_sprite("chrome_lock"), preserve=True)
+
+    # Left column: the episode and its quest track.
+    left = body.child(N("Episode", "Episode", R((0, 1), None, (0, 0), (LEFT_W, 844), (0, 1))))
+    left.add("le", 114, le(pw=LEFT_W, mw=LEFT_W))
+    ep = left.child(N("Episode/Card", "Card", R((0, 1), (1, 1), (0, 0), (0, EPISODE_H), (0.5, 1))))
+    panel_frame(ep, "Episode/Card")
+    label(ep.child(N("Episode/Card/Eyebrow", "Eyebrow", TL(28, 26, 300, 18))), "Episode 1", "Label", "NeutralLightest")
+    label(ep.child(N("Episode/Card/Title", "Title", TL(28, 50, 560, 44))), "The Hypersea", "H1", "TextLight")
+    label(ep.child(N("Episode/Card/Line", "Line", TL(28, 102, 560, 44))),
+          "Learn the sea, find a crew, then sail your first voyage. Each episode ends on one.", "BodySmall", "NeutralLightest",
+          valign="top", wrap=True)
+    bar = ep.child(N("Episode/Card/Bar", "Bar", R((0, 0), (1, 0), (-40, 60), (-136, 4), (0.5, 0.5))))
+    bar.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
+    fa = bar.child(N("Episode/Card/Bar/FillArea", "FillArea", STRETCH))
+    fl = fa.child(N("Episode/Card/Bar/FillArea/Fill", "Fill", R((0, 0), (0.2, 1), (0, 0), (0, 0))))
+    fl.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive"))).add("th", 114, H.themed("ControlActive"))
+    bar.add("slider", 114, lambda ctx, go: K.mono(go, SLIDER,
+            K.SELECTABLE_FIELDS.replace("  m_Interactable: 1\n", "  m_Interactable: 0\n")
+            + f"  m_TargetGraphic: {ref(ctx.c('Episode/Card/Bar', 'img'))}\n"
+            f"  m_FillRect: {ref(ctx.rt('Episode/Card/Bar/FillArea/Fill'))}\n  m_HandleRect: {{fileID: 0}}\n"
+            "  m_Direction: 0\n  m_MinValue: 0\n  m_MaxValue: 5\n  m_WholeNumbers: 1\n  m_Value: 1\n"
+            "  m_OnValueChanged:\n    m_PersistentCalls:\n      m_Calls: []\n", enabled=False))
+    label(ep.child(N("Episode/Card/Summary", "Summary", R((1, 0), None, (-28, 60), (110, 18), (1, 0.5)))), "0 of 5", "Label",
+          "NeutralLightest", align="right")
+    qhead = left.child(N("Episode/QuestsHead", "QuestsHead", R((0, 1), (1, 1), (0, -(EPISODE_H + 24)), (0, 18), (0.5, 1))))
+    label(qhead.child(N("Episode/QuestsHead/Label", "Label", STRETCH)), "Quests", "Label", "TextLight")
+    rows = left.child(N("Episode/Quests", "Quests", R((0, 1), (1, 1), (0, -(EPISODE_H + 52)), (0, 5 * (ROW_H + ROW_GAP)), (0.5, 1))))
+    rows.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), ROW_GAP, 0, (1, 1), (1, 0)))
+    row_ref = f"{{fileID: {K.FileIds('QuestRow')('root#go')}, guid: {asset_guid('QuestRow')}, type: 3}}"
+    left.add("track", 114, lambda ctx, go: mono(go, P.S["track"],
+             f"  questList: {K.ref(11400000, QUEST_LIST, 2)}\n  questItemPrefab: {row_ref}\n"
+             f"  questItemContainer: {ref(ctx.rt('Episode/Quests'))}\n"
+             f"  progressBarSlider: {ref(ctx.c('Episode/Card/Bar', 'slider'))}\n"
+             "  sliderAnimDuration: 1\n  sliderEase: 32\n  ghostSlider: {fileID: 0}\n"
+             "  questDescriptionContainer: {fileID: 0}\n  questDescriptionPrefab: {fileID: 0}\n  descriptionFadeDuration: 0.4\n"
+             "  scrollRect: {fileID: 0}\n  snapDuration: 0.6\n  snapSpeedThreshold: 50\n  minCardScale: 0.8\n"
+             "  minCardAlpha: 0.7\n  parallaxFalloff: 0\n"
+             f"  summaryText: {ref(ctx.c('Episode/Card/Summary', 'tmp'))}\n"
+             "  summaryLine: '{claimed} of {total}'\n  comingSoonLine: Coming Soon\n"))
 
     header = root.child(N("Header", "Header", A.WINDOW_HEADER))
     A.drawer_dock(root)
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
-    label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "MISSIONS", "Label",
+    label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "VOYAGE", "Label",
           "NeutralLightest")
-    label(header.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (760, 46), (0, 1)))), "Explore missions", "H1",
+    label(header.child(N("Header/Title", "Title", R((0, 1), None, (0, -20), (760, 46), (0, 1)))), "Where your story goes next", "H1",
           "TextLight")
     A.back_button(header)
-
-    card_ref = f"{{fileID: {K.FileIds('MissionCard')('root#card')}, guid: {asset_guid('MissionCard')}, type: 3}}"
-    root.add("view", 114, lambda ctx, go: mono(go, S["view"],
-             f"  missions: {K.ref(11400000, MISSION_GAMES, 2)}\n  grid: {ref(ctx.rt('Grid'))}\n"
-             f"  cardPrefab: {card_ref}\n  countText: {ref(ctx.c('AllMissions/Count', 'tmp'))}\n"))
     return root
 
 
 def prefab_outputs():
     out = {}
-    for name, build in (("MissionCard", build_card), ("MissionView", build_view)):
+    for name, build in (("MissionCard", build_card), ("MissionView", build_view), ("QuestRow", build_quest_row)):
         out[prefab_path(name)] = P.prefab_text(build(), name)
         out[prefab_path(name) + ".meta"] = K.PREFAB_META.format(g=asset_guid(name))
     out[OUT_DIR + ".meta"] = K.FOLDER_META.format(g=asset_guid("folder/Mission"))
@@ -301,12 +465,25 @@ def validate(files):
     view = files[prefab_path("MissionView")]
     A.check_window_inset(view, "MissionView")      # clear of the friends orb (rev 6)
     V = K.FileIds("MissionView")
-    _, vbody = A.doc_of(view, V("root#view"))
-    assert vbody and S["view"] in vbody, "MissionView: the root carries no MissionExploreView"
-    assert f"  missions: {{fileID: 11400000, guid: {MISSION_GAMES}, type: 2}}\n" in vbody, "MissionView must draw MissionGames"
-    assert f"guid: {asset_guid('MissionCard')}" in vbody, "MissionView's cardPrefab is not MissionCard"
-    C.wired(view, vbody, "grid", 224, "MissionExploreView")
-    C.wired(view, vbody, "countText", TMP, "MissionExploreView")
+    # Rev 13 (§69): the Voyage window - the featured voyage is Tandava and Set sail launches it; the quest track lives here.
+    _, vy = A.doc_of(view, V("Featured#voyage"))
+    assert vy and S["voyage"] in vy, "the Voyage window has no VoyageView on its featured voyage"
+    assert f"  voyage: {{fileID: 11400000, guid: {TANDAVA_CARD}, type: 2}}\n" in vy, "the featured voyage is not Tandava's card"
+    for field, want in (("art", IMG), ("titleText", TMP), ("descriptionText", TMP)):
+        C.wired(view, vy, field, want, "VoyageView")
+    C.wired(view, vy, "setSailButton", A.S["button"], "VoyageView")
+    _, tr = A.doc_of(view, V("Episode#track"))
+    assert tr and P.S["track"] in tr, "the Voyage window has no QuestTrackView (the quest track moved here from the Profile)"
+    assert f"  questList: {{fileID: 11400000, guid: {QUEST_LIST}, type: 2}}\n" in tr, "the quest track does not read GameModeQuestList"
+    assert f"guid: {asset_guid('QuestRow')}" in tr, "the quest track does not spawn QuestRow"
+    for field, want in (("questItemContainer", 224), ("progressBarSlider", SLIDER), ("summaryText", TMP)):
+        C.wired(view, tr, field, want, "QuestTrackView")
+    assert "m_Name: Episode 2\n" not in view and "Episode 2" in view, "the locked voyage is not named Episode 2"
+    row = files[prefab_path("QuestRow")]
+    _, rb = A.doc_of(row, K.FileIds("QuestRow")("root#card"))
+    assert rb and P.S["card"] in rb, "QuestRow: the root carries no KitQuestCard"
+    for field in ("claimButton", "cardButton", "claimGroup", "playGroup", "titleText", "stateText", "numeralText"):
+        assert re.search(r"^  " + field + r": \{fileID: [1-9-]", rb, re.M), f"QuestRow: {field} is not wired"
     assert f"guid: {A.asset_guid('PartyPanel')}" not in view, "MissionView still instances the PartyPanel (rev 3: the friends drawer)"
     assert view.count("guid: " + S["close"]) == 1, "MissionView: Back must close through ModalWindowCloseButton"
 
@@ -349,8 +526,10 @@ def self_test(files):
             f[prefab_path("MissionView")], K.FileIds("MissionView")("Body#rt"), "m_AnchoredPosition: {x: 20", "m_AnchoredPosition: {x: -20"))),
         ("mission cards shipped Available", lambda f: f.__setitem__(card, f[card].replace("  availability: 1\n", "  availability: 0\n"))),
         ("a card with no threat count", lambda f: f.__setitem__(card, re.sub(r"(  threatsText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[card]))),
-        ("the view drawing no missions", lambda f: f.__setitem__(view, f[view].replace(
-            f"  missions: {{fileID: 11400000, guid: {MISSION_GAMES}, type: 2}}\n", "  missions: {fileID: 0}\n"))),
+        ("the featured voyage not Tandava", lambda f: f.__setitem__(view, f[view].replace(TANDAVA_CARD, "3" * 32))),
+        ("the quest track left out", lambda f: f.__setitem__(view, f[view].replace(f"guid: {P.S['track']}", "guid: " + "4" * 32))),
+        ("a quest row that cannot claim", lambda f: f.__setitem__(prefab_path("QuestRow"), re.sub(
+            r"(  claimButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[prefab_path("QuestRow")]))),
         ("the party panel back in the window", lambda f: f.__setitem__(view, f[view] + f"# guid: {A.asset_guid('PartyPanel')}\n")),
     ]
     ok = all(expect(l, m) for l, m in cases)

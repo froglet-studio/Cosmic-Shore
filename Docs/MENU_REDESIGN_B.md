@@ -3087,3 +3087,49 @@ this panel opens up. It should not move other contents if it is home, hangar or 
   open, and open it inside Arcade, Arena, Mission and Toy Box: the cards slide right with it and back when it closes;
   maximise pushes further. Open a game (Scurry) from Arcade: the drawer closes and the orb is gone until Back. Watch
   that the Arcade cards still read at the narrower width (the grid reflows; nothing measured it in the editor).
+
+## 69. Rev 13: four tabs, the profile from the pilot, the Voyage window, a brighter sea (2026-10-25, awaiting in-editor approval)
+
+Shombith approved the canvas's Rev 13 boards (R13Voyage, R13Profile, R13Home, R13Notes) with four answers: Y opens the
+profile ("pressing select opens the freestyle anyway"), the locked second voyage is named **Episode 2**, the friends
+drawer's pilot does not open the profile, and Ark and Port keep their places. "All of the buttons of the hub should look
+the same" (they already did in the game - the bright Arcade was the old mockup's - and Voyage now draws Default too).
+
+- **Top bar: Hangar, Ark, Home, Port.** `author_menu_topnav.py` drops the PROFILE tab (`RETIRED_TAB_INDICES`, its minted
+  documents removed every run). `ScreenSwitcher.navHiddenScreens` (default PROFILE): LT / RT page past it and the tab
+  bar lights Home while it is open.
+- **The profile opens from the pilot.** The Home avatar's button calls `ScreenSwitcher.OnClickProfileNav` (it opened
+  the avatar editor; that is the profile's own CHANGE AVATAR), and Y on Home does the same. The screen appears without
+  the strip's slide. Back (B, a `ControllerButtonPress` on the profile's BACK) closes the favourite-pilot picker first,
+  else returns to Home (`ProfileScreen.backButton`, `ScreenSwitcher.OnClickProfileBack`).
+- **The profile IS the pilot record.** `ProfileView.prefab`: a header ("Profile / Your pilot", BACK), a full-width pilot
+  card (avatar, name, CHANGE AVATAR / RENAME, and Fly time, Games, Sessions, Crystals and Pilot since), then the record's
+  Favourites and Fly time by vessel on the left and the Audio Studio on the right (nine rows at 46). No Episodes card,
+  no quest row, no EXPAND, no record background of its own (the veil and the sea lines are the screen's).
+  `ProfileScreen.OnScreenEnter` opens the record; its close, name and stat fields are left empty
+  (`RECORD_UNUSED`). The now-playing card rests on Home now (the profile carries the Audio Studio). The scene's old
+  QuestTrackView on the ProfileScreen root and its stubs into the view are removed (`RETIRED_REFS`).
+- **Voyage replaces Mission.** The Home hub button and the hub strip read Voyage (glyph `chrome_globe`, Available,
+  Default); the modal type stays `ModalWindows.MISSION`. `MissionView.prefab` (author_menu_mission.py) is the approved
+  R13Voyage board: the Episode 1 card with the quest progress bar and "n of 5", the quest track as rows
+  (`QuestRow.prefab`, a compact KitQuestCard: numeral, name, goal line, state, CLAIM / PLAY - QuestTrackView moved here,
+  reading `GameModeQuestList`), the featured voyage and the locked Episode 2 card. Home's Up next quest card opens the
+  Voyage window and says "Ready to claim in Voyage". The mission grid (MissionExploreView / MissionCard) is no longer
+  mounted; MissionCard.prefab is still generated, unused.
+- **Tandava is Voyage 1, open.** `VoyageView` draws the card's art, name and description and Set sail calls
+  `ArcadeGameConfigureModal.OpenFor(card)`, which opens the arena launch panel (Tandava seats Squirrel, Sparrow, Rhino).
+  The four forms on the card are authored text. `author_tandava_assets.py` gains `VOYAGE = True`: the card stays in
+  `_Archive` and off every grid but is back on the master roster (`OrganicRematchGames`), the by-mode lookup party
+  guests, the AI spawner and the return-from-match path use. Being on the master roster also makes it a rematch pick.
+- **The sea, brighter, with gradients.** `SeaLines.shader`: `_LineColor` / `_LineColorMid` / `_LineColorEnd` shade the
+  lines across the window (#49B8FF, #7F98FF, #9C8CFF), the layers are stronger (0.2 / 0.3 / 0.42, widths 0.9 / 1.1 / 1.5),
+  and `_WashTop` / `_WashBottom` / `_GlowColor` lay a deep-blue wash (#081654 at 0.75, clear at the bottom) and a soft
+  glow up top over the veil. Same 90 / 68 / 45 s. `lattice_preview.py` asserts the wash (top 0.76, bottom 0).
+- **Merge notes.** Yash's Hangar change (the ability rows are information, §66) is kept, with the palette rule put
+  back on it: the stage demo draws in the neutral `elementTint`, not AbilityLockupStyle's element colours.
+  `author_menu_configure.py` learned bleeding-edge's hand-authored arena hull arrows (d9b7305b11).
+  The purchase and toy-configure windows are regenerated: their buy buttons still drew the old Mass blue (the
+  palette pass had not reached them).
+- **Proof without an editor.** refcompile player config clean, the Amoebius Live build, every menu generator `--check`
+  and `--self-test`, `author_tandava_assets.py --check`, `check_ui_colors.py`, `check_generated_assets.py`,
+  `lattice_preview.py`. Unity's own compile and the hand test are owed (checklist entry "Rev 13").

@@ -28,10 +28,17 @@ namespace CosmicShore.UI
         [SerializeField] private Button episodesButton;
         [Tooltip("The (inactive) Episodes panel.")]
         [SerializeField] private EpisodeScreen episodes;
-        [Tooltip("The pilot card's expand button: opens the pilot record (favourites, fly time by vessel, Audio Studio).")]
+        [Tooltip("Legacy (Rev 10): the pilot card's expand button. Empty since Rev 13, where the record IS the profile.")]
         [SerializeField] private Button recordButton;
-        [Tooltip("The pilot record window (Rev 10, Docs/MENU_REDESIGN_B.md §56).")]
+        [Tooltip("The pilot record (favourites, fly time by vessel, Audio Studio). Since Rev 13 it shows whenever this " +
+                 "screen is on (Docs/MENU_REDESIGN_B.md §69).")]
         [SerializeField] private ProfileRecordWindow recordWindow;
+
+        [Header("Back (Rev 13)")]
+        [Tooltip("The profile's Back (B on a pad): closes the pilot picker if it is open, else returns to Home.")]
+        [SerializeField] private Button backButton;
+        [Tooltip("The scene's switcher, which Back returns through. Found in the scene when left empty.")]
+        [SerializeField] private ScreenSwitcher screenSwitcher;
 
         [Header("Words (empty shows nothing)")]
         [Tooltip("Flight time with hours. {h} hours, {m} minutes.")]
@@ -59,6 +66,14 @@ namespace CosmicShore.UI
             if (renameButton) renameButton.onClick.AddListener(OpenName);
             if (episodesButton) episodesButton.onClick.AddListener(OpenEpisodes);
             if (recordButton) recordButton.onClick.AddListener(OpenRecord);
+            if (backButton) backButton.onClick.AddListener(Back);
+        }
+
+        void Back()
+        {
+            if (recordWindow && recordWindow.ClosePicker()) return;
+            if (!screenSwitcher) screenSwitcher = FindAnyObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
+            if (screenSwitcher) screenSwitcher.OnClickProfileBack();
         }
 
         void OpenRecord() { if (recordWindow) recordWindow.Open(); }
@@ -92,6 +107,7 @@ namespace CosmicShore.UI
             var service = Service;
             if (service != null && service.CurrentProfile != null)
                 Refresh(service.CurrentProfile);
+            if (recordWindow && !recordButton) recordWindow.Open();
         }
 
         public void OnScreenExit()

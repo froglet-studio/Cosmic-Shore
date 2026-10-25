@@ -2,6 +2,9 @@
 // sideways, slowly, at their own speeds over the window's veil. UGUI-compatible (UI/Default structure: stencil
 // masking, RectMask2D clip, vertex colour). Draw it on an Image with no sprite: the UVs then span the rect, which the
 // top and bottom fade read. Animated by _Time alone, so it never dirties a canvas. The maths is UISeaLines.cginc.
+// Rev 13 (§69, Shombith 2026-10-25: "make the blue a little bit brighter and use gradients"): the lines shade from one
+// colour to another across the window, and a wash (deep blue at the top to clear at the bottom, with a soft glow up
+// top) lies over the veil under them.
 Shader "CosmicShore/UI/SeaLines"
 {
     Properties
@@ -10,7 +13,9 @@ Shader "CosmicShore/UI/SeaLines"
         _Color ("Tint", Color) = (1,1,1,1)
 
         [Header(Lines)]
-        _LineColor ("Line Colour", Color) = (0.435, 0.518, 0.847, 1)
+        _LineColor ("Line Colour (left)", Color) = (0.435, 0.518, 0.847, 1)
+        _LineColorMid ("Line Colour (middle)", Color) = (0.435, 0.518, 0.847, 1)
+        _LineColorEnd ("Line Colour (right)", Color) = (0.435, 0.518, 0.847, 1)
         _Spacing ("Spacing between lines (canvas units)", Float) = 46
         _Loop ("Wave loop length (canvas units)", Float) = 480
         _Amplitude ("Wave height (canvas units)", Float) = 9
@@ -33,6 +38,11 @@ Shader "CosmicShore/UI/SeaLines"
         [Header(Shape)]
         _FadeTop ("Fade at the top (share of the height)", Range(0, 0.5)) = 0.2
         _FadeBottom ("Fade at the bottom (share of the height)", Range(0, 0.5)) = 0.2
+
+        [Header(Wash)]
+        _WashTop ("Wash at the top (alpha is its strength)", Color) = (0, 0, 0, 0)
+        _WashBottom ("Wash at the bottom (alpha is its strength)", Color) = (0, 0, 0, 0)
+        _GlowColor ("Glow up top (alpha is its strength)", Color) = (0, 0, 0, 0)
 
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
@@ -104,7 +114,7 @@ Shader "CosmicShore/UI/SeaLines"
 
             fixed4 _Color;
             float4 _ClipRect;
-            fixed4 _LineColor;
+            fixed4 _LineColor, _LineColorMid, _LineColorEnd, _WashTop, _WashBottom, _GlowColor;
             float _Spacing, _Loop, _Amplitude;
             float _FarAlpha, _FarWidth, _FarSeconds;
             float _MidAlpha, _MidWidth, _MidSeconds;
@@ -127,16 +137,19 @@ Shader "CosmicShore/UI/SeaLines"
             {
                 // A hidden window (its CanvasGroup at alpha 0) draws nothing: stop before the maths.
                 if (IN.color.a < 0.004) return float4(0.0, 0.0, 0.0, 0.0);
+                float4 wash = SeaWash(IN.texcoord, _WashTop, _WashBottom, _GlowColor);
                 float fade = SeaEdgeFade(IN.texcoord.y, _FadeBottom, _FadeTop);
-                if (fade <= 0.0) return float4(0.0, 0.0, 0.0, 0.0);
                 // Canvas-space position: the lines keep their size whatever the window's.
-                float a = SeaLines(IN.worldPosition.xy, _Time.y, _Spacing, _Loop, _Amplitude,
-                                   float3(_FarAlpha, _MidAlpha, _NearAlpha), float3(_FarWidth, _MidWidth, _NearWidth),
-                                   float3(_FarSeconds, _MidSeconds, _NearSeconds));
+                float a = fade > 0.0
+                    ? SeaLines(IN.worldPosition.xy, _Time.y, _Spacing, _Loop, _Amplitude,
+                               float3(_FarAlpha, _MidAlpha, _NearAlpha), float3(_FarWidth, _MidWidth, _NearWidth),
+                               float3(_FarSeconds, _MidSeconds, _NearSeconds)) * fade
+                    : 0.0;
+                float3 lineColour = SeaLineColour(IN.texcoord.x, _LineColor.rgb, _LineColorMid.rgb, _LineColorEnd.rgb);
 
-                fixed4 color;
-                color.rgb = _LineColor.rgb * IN.color.rgb;
-                color.a = a * fade * IN.color.a;
+                fixed4 color = SeaOver(lineColour, a, wash);
+                color.rgb *= IN.color.rgb;
+                color.a *= IN.color.a;
 
                 #ifdef UNITY_UI_CLIP_RECT
                 color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
