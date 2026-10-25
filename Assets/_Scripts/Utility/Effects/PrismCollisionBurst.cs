@@ -31,13 +31,21 @@ namespace CosmicShore.Utility
     /// <see cref="Flake"/> stay in the shader for the lab) while the prism underneath already wears the new colour:
     /// each face's skin rolls up AWAY from where the camera was at the steal, over the grade's length, then over the
     /// edge and round until its own prism hides it — the mass crystal's trick: nothing changes where it is seen.</item>
+    /// <item><b>Suction</b> (<see cref="TryRequestSuction"/>, round 15): a consumed prism comes apart along the SAME cut at
+    /// the SAME detail level as a destruction, and every fragment is drawn into the eater: each face lets go of its
+    /// triangles one after another from its point nearest the eater (round 15b), so they string out along the path,
+    /// each lifting off, winding in and shrinking away as it arrives, over the implosion's own life. The sink is
+    /// the one stamp ever written after a spawn — the SuctionGraph's moving-target exception, one float3 per live
+    /// suction per frame (<see cref="RefreshSuctions"/>), because the eater swims while it feeds.</item>
     /// </list>
     ///
     /// <para><b>It rides the slice's carrier unchanged</b> — <see cref="PrismRenderService.SpawnSliceDebrisBatch"/>
-    /// and the slice's stamp channels, with its own mesh and material — so it added no ECS component, no
-    /// prototype and no render-service code. Same shape as <see cref="PrismSlice"/>: requests queue during the
-    /// frame, ONE batch spawns them, ONE batched destroy retires each expired batch, nothing writes to a live
-    /// entity.</para>
+    /// and the slice's stamp channels, with its own mesh and material — so it added no ECS component and no
+    /// prototype. Same shape as <see cref="PrismSlice"/>: requests queue during the frame, ONE batch spawns them, ONE
+    /// batched destroy retires each expired batch. Nothing writes to a live entity but a SUCTION's sink (round 15):
+    /// one float4 per live suction per frame through the one render-service method it added,
+    /// <see cref="PrismRenderService.RefreshSliceDebrisSinkBatch"/> — the §1 moving-target exception the
+    /// SuctionGraph's implosion already makes, never per-frame progress.</para>
     ///
     /// <para><b>It never costs an interaction its visual.</b> Every refusal — the config off or missing, the
     /// budget full, the render service down — returns false, and the caller draws the ordinary effect.
@@ -48,7 +56,8 @@ namespace CosmicShore.Utility
     public static class PrismCollisionBurst
     {
         /// <summary>The kinds, in <c>PrismCollisionBurst.hlsl</c>'s order.</summary>
-        public const int Shatter = 0, Bloom = 1, Unravel = 2, Glitter = 3, Flake = 4, Fragment = 5, Roll = 6, KindCount = 7;
+        public const int Shatter = 0, Bloom = 1, Unravel = 2, Glitter = 3, Flake = 4, Fragment = 5, Roll = 6, Suction = 7,
+            KindCount = 8;
 
         /// <summary>
         /// A ROLL's life past the grade it stands for, as a share of the grade's length — <c>PRISM_BURST_ROLL_TAIL</c>
@@ -121,6 +130,25 @@ namespace CosmicShore.Utility
             return (1f + 0.5f * v) * (1f + 0.6f * v);
         }
 
+        /// <summary>How a <see cref="Suction"/> is drawn in — <c>PrismBurstSuctionShape</c> in the HLSL, from the config.</summary>
+        public struct SuctionShape
+        {
+            public float Lift, Variety;
+
+            public static SuctionShape Of(PrismInteractionLodConfigSO cfg) => new()
+            {
+                Lift = cfg.SuctionLift, Variety = cfg.FragmentVariety,
+            };
+        }
+
+        /// <summary>
+        /// How far, in WORLD units, a <see cref="Suction"/> fragment can be from the live sink, for a sink
+        /// <paramref name="sinkDistance"/> from the prism's centre — the SAME sum as <c>PrismBurstSuctionReach</c> in the
+        /// HLSL, whose harness proves every pose stays inside it: the distance, plus 3R, plus the lift × (1 + v/2).
+        /// </summary>
+        public static float SuctionReach(float radius, float sinkDistance, SuctionShape shape) =>
+            sinkDistance + radius * (3f + Mathf.Max(0f, shape.Lift) * (1f + 0.5f * Mathf.Clamp01(shape.Variety)));
+
         /// <summary>
         /// The explosion material's own dials — its <c>_Spread</c>, <c>_ExplosiveRotation</c> and <c>_ExplosiveSpead</c>
         /// (sic, the graph's ExplosiveSpread) — so every depth of the cut moves by the explosion's tuning, single-sourced.
@@ -165,24 +193,28 @@ namespace CosmicShore.Utility
         static readonly int FragmentFadeId = Shader.PropertyToID("_FragmentFade");
         static readonly int FragmentNoiseId = Shader.PropertyToID("_FragmentNoise");
         static readonly int FragmentVarietyId = Shader.PropertyToID("_FragmentVariety");
+        static readonly int SuctionMotionId = Shader.PropertyToID("_SuctionMotion");
+        static readonly int SuctionShapeId = Shader.PropertyToID("_SuctionShape");
         static readonly int ExplosionDialsId = Shader.PropertyToID("_ExplosionDials");
         static readonly int SourceSpreadId = Shader.PropertyToID("_Spread");
         static readonly int SourceRotationId = Shader.PropertyToID("_ExplosiveRotation");
         static readonly int SourceSlideId = Shader.PropertyToID("_ExplosiveSpead");
 
         /// <summary>
-        /// The shader programs a burst can draw with (round 11, the performance pass): the game's two KIND-ONLY ones —
-        /// the destruction's (<c>_BURST_FRAGMENT</c>) and the steal's (<c>_BURST_ROLL</c>), each carrying only its own
-        /// kind's code and registers — and the every-kind one the lab-only sheds (bloom, unravel, flake, shatter,
-        /// glitter) still need. <see cref="VariantOf"/> picks one from a stamp's kind.
+        /// The shader programs a burst can draw with (round 11, the performance pass): the game's three KIND-ONLY ones —
+        /// the destruction's (<c>_BURST_FRAGMENT</c>), the steal's (<c>_BURST_ROLL</c>) and the consumption's
+        /// (<c>_BURST_SUCTION</c>, round 15), each carrying only its own kind's code and registers — and the every-kind
+        /// one the lab-only sheds (bloom, unravel, flake, shatter, glitter) still need. <see cref="VariantOf"/> picks one
+        /// from a stamp's kind.
         /// </summary>
-        public const int VariantAll = 0, VariantFragment = 1, VariantRoll = 2, VariantCount = 3;
+        public const int VariantAll = 0, VariantFragment = 1, VariantRoll = 2, VariantSuction = 3, VariantCount = 4;
 
         /// <summary>The <c>multi_compile_local</c> keyword of each variant (none for <see cref="VariantAll"/>).</summary>
-        public static readonly string[] VariantKeywords = { null, "_BURST_FRAGMENT", "_BURST_ROLL" };
+        public static readonly string[] VariantKeywords = { null, "_BURST_FRAGMENT", "_BURST_ROLL", "_BURST_SUCTION" };
 
         /// <summary>The program a burst of <paramref name="kind"/> draws with.</summary>
-        public static int VariantOf(int kind) => kind == Fragment ? VariantFragment : kind == Roll ? VariantRoll : VariantAll;
+        public static int VariantOf(int kind) =>
+            kind == Fragment ? VariantFragment : kind == Roll ? VariantRoll : kind == Suction ? VariantSuction : VariantAll;
 
         static readonly Material[] s_runtimeMaterials = new Material[VariantCount];
         static PrismInteractionLodConfigSO s_runtimeMaterialFor;
@@ -241,9 +273,9 @@ namespace CosmicShore.Utility
             }
         }
 
-        // Which live queue a request retires from: a close-up destruction, a shed, or a level-0 explosion (round 11,
-        // kept out of the detail budget).
-        const byte QueueDestruction = 0, QueueShed = 1, QueueExplosion = 2;
+        // Which live queue a request retires from: a close-up destruction, a shed, a level-0 explosion (round 11,
+        // kept out of the detail budget), a close-up suction, or a level-0 suction (round 15, likewise kept out).
+        const byte QueueDestruction = 0, QueueShed = 1, QueueExplosion = 2, QueueSuction = 3, QueueSuction0 = 4;
 
         /// <summary>The requests of one frame that draw one mesh with one program: one spawn batch each.</summary>
         sealed class Bucket
@@ -252,18 +284,57 @@ namespace CosmicShore.Utility
             public int Variant;
             public readonly List<PrismRenderService.SliceDebrisSpawn> Spawns = new(32);
             public readonly List<byte> Queues = new(32);
+            /// <summary>Each spawn's suction target (empty for every other kind), index-aligned with
+            /// <see cref="Spawns"/>.</summary>
+            public readonly List<SuctionTarget> Targets = new(32);
         }
 
-        // At most one bucket per (detail mesh, program): the explosion's 24 wedges, four cut depths, three roll resolutions.
+        /// <summary>What a live suction's sink refresh needs, captured at the request so the refresh never reads a
+        /// component back: the eater, the entity's fixed world→object matrix and scale, the prism's centre, and the
+        /// sink-independent part of the reach.</summary>
+        struct SuctionTarget
+        {
+            public Transform Target;
+            public Matrix4x4 WorldToObject;
+            public Vector3 AbsScale;
+            public Vector3 Centre;
+            public float ReachBase;
+        }
+
+        /// <summary>A live suction: its entity, its end, its budget share and its target, plus a CPU mirror of its
+        /// object-space culling box so a wandering sink grows it without a read-back.</summary>
+        struct SuctionRecord
+        {
+            public Entity Entity;
+            public float EndTime;
+            public int Triangles;
+            public bool Level0;
+            public SuctionTarget Sink;
+            public float3 BoundsMin;
+            public float3 BoundsMax;
+        }
+
+        // At most one bucket per (detail mesh, program): the explosion's 24 wedges, four cut depths, three roll
+        // resolutions — and the same cut meshes again for the suction's program.
         static readonly List<Bucket> s_buckets = new(8);
         static int s_pendingCount;
         static int s_pendingTriangles;
         static int s_pendingExplosions;
+        static int s_pendingSuctions0;
         static readonly List<Entity> s_scratch = new(64);
         static readonly LiveQueue s_liveDestruction = new();
         static readonly LiveQueue s_liveShed = new();
         static readonly LiveQueue s_liveExplosion = new();
         static int s_liveEpoch = -1;
+
+        // Live suctions in append order. Every suction lives the implosion's one authored life, so append order IS
+        // expiry order and the sweep only ever inspects the head (as PrismDebris' implosion records).
+        static readonly List<SuctionRecord> s_liveSuctions = new(256);
+        static int s_liveSuctionHead;
+        static int s_liveSuctionDetail;
+        static int s_liveSuctionDetailTriangles;
+        static int s_liveSuctions0;
+        static readonly List<PrismRenderService.ImplosionDebrisRefresh> s_sinkScratch = new(64);
 
         static TickHost s_host;
         static bool s_quitting;
@@ -271,10 +342,14 @@ namespace CosmicShore.Utility
         const float SuspendSeconds = 5f;
 
         /// <summary>Detail-level entities alive now — diagnostics and the budget.</summary>
-        public static int LiveCount => s_liveDestruction.Count + s_liveShed.Count;
+        public static int LiveCount => s_liveDestruction.Count + s_liveShed.Count + s_liveSuctionDetail;
 
         /// <summary>Detail-level triangles alive now — diagnostics and the budget.</summary>
-        public static int LiveTriangles => s_liveDestruction.Triangles + s_liveShed.Triangles;
+        public static int LiveTriangles => s_liveDestruction.Triangles + s_liveShed.Triangles + s_liveSuctionDetailTriangles;
+
+        /// <summary>Level-0 suctions alive now (outside the detail budget; capped by
+        /// <see cref="PrismInteractionLodConfigSO.MaxLiveSuctions"/>).</summary>
+        public static int LiveSuctions0 => s_liveSuctions0;
 
         /// <summary>Level-0 explosions alive now (outside the detail budget; capped by
         /// <see cref="PrismInteractionLodConfigSO.MaxLiveExplosions"/>).</summary>
@@ -299,10 +374,13 @@ namespace CosmicShore.Utility
             s_pendingCount = 0;
             s_pendingTriangles = 0;
             s_pendingExplosions = 0;
+            s_pendingSuctions0 = 0;
             s_scratch.Clear();
             s_liveDestruction.Clear();
             s_liveShed.Clear();
             s_liveExplosion.Clear();
+            ClearSuctions();
+            s_sinkScratch.Clear();
             s_liveEpoch = -1;
             s_host = null;
             s_quitting = false;
@@ -335,6 +413,16 @@ namespace CosmicShore.Utility
             cfg != null && cfg.IsSane && cfg.BurstMaterial != null &&
             s_liveExplosion.Count + s_pendingExplosions < cfg.MaxLiveExplosions;
 
+        /// <summary>
+        /// Whether one more LEVEL-0 suction could be accepted right now: the service up, the config sane, and the
+        /// suctions' own cap (<see cref="PrismInteractionLodConfigSO.MaxLiveSuctions"/>) not reached — the detail budget
+        /// is not consulted, as for <see cref="CanAcceptExplosion"/>.
+        /// </summary>
+        public static bool CanAcceptSuction0(PrismInteractionLodConfigSO cfg) =>
+            !s_quitting && PrismRenderService.Enabled && Time.unscaledTime >= s_suspendedUntil &&
+            cfg != null && cfg.IsSane && cfg.BurstMaterial != null &&
+            s_liveSuctions0 + s_pendingSuctions0 < cfg.MaxLiveSuctions;
+
         /// <summary>Whether <paramref name="triangles"/> more fit the triangle budget right now.</summary>
         public static bool FitsTriangles(PrismInteractionLodConfigSO cfg, int triangles) =>
             cfg != null && LiveTriangles + s_pendingTriangles + triangles <= cfg.MaxLiveTriangles;
@@ -356,6 +444,11 @@ namespace CosmicShore.Utility
             Color bright, Color dark, Vector3 impactVelocity, float speedLimitOverride, PrismKind tier, int kind, Mesh mesh,
             bool level0 = false)
         {
+            // A rotation that drifted off unit length (1.00001 after many prism-to-prism multiplications) makes
+            // Matrix4x4.TRS log "Quaternion To Matrix conversion failed" (Bug Ledger E-16d65ffecb and three more).
+            // Normalize once here; the bounds below read the same rotation.
+            rotation = Quaternion.Normalize(rotation);
+
             var cfg = PrismInteractionLodConfigSO.Instance;
             bool accepted = level0 ? CanAcceptExplosion(cfg) : CanAccept(cfg) && FitsTriangles(cfg, TrianglesOf(mesh));
             if (!accepted || mesh == null || !PrismDebris.TryGetExplosionLayer(out _)) return false;
@@ -403,6 +496,8 @@ namespace CosmicShore.Utility
             Color oldBright, Color oldDark, float gradeSeconds, int kind, Mesh mesh,
             Vector3 cameraPosition, int subdivision)
         {
+            rotation = Quaternion.Normalize(rotation);   // Bug Ledger E-16d65ffecb: see TryRequestDestruction
+
             var cfg = PrismInteractionLodConfigSO.Instance;
             if (!CanAccept(cfg) || !FitsTriangles(cfg, TrianglesOf(mesh)) || !PrismDebris.TryGetExplosionLayer(out _)) return false;
 
@@ -431,6 +526,68 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// Queues a SUCTION on <paramref name="mesh"/> (a depth of the destruction's cut) for the prism that was at
+        /// (<paramref name="position"/>, <paramref name="rotation"/>, <paramref name="scale"/>), drawn into
+        /// <paramref name="target"/> over <paramref name="life"/> seconds (the implosion's authored duration) in the
+        /// domain's palette. The target is RETAINED, not snapshotted: the sink follows the eater while it lives and
+        /// freezes where it was last seen when it dies, exactly as the SuctionGraph's implosion does.
+        /// <paramref name="level0"/>: the cut's depth 0, accepted by <see cref="CanAcceptSuction0"/>, outside the detail
+        /// budget. Returns false — the caller draws the SuctionGraph's implosion instead — on any refusal.
+        /// </summary>
+        public static bool TryRequestSuction(Vector3 position, Quaternion rotation, Vector3 scale,
+            Color bright, Color dark, Transform target, float life, Mesh mesh, bool level0 = false)
+        {
+            var cfg = PrismInteractionLodConfigSO.Instance;
+            if (target == null || mesh == null || life <= 0f) return false;
+            // The suction runs before PrismDebris.TryRequestImplosion, so it owns that path's fix: a consumed prism's
+            // rotation drifts off unit length and Matrix4x4.TRS refuses it (Bug Ledger E-16d65ffecb).
+            rotation = Quaternion.Normalize(rotation);
+            bool accepted = level0 ? CanAcceptSuction0(cfg) : CanAccept(cfg) && FitsTriangles(cfg, TrianglesOf(mesh));
+            if (!accepted || !PrismDebris.TryGetExplosionLayer(out _)) return false;
+
+            var localToWorld = Matrix4x4.TRS(position, rotation, scale);
+            var sink = new SuctionTarget
+            {
+                Target = target,
+                WorldToObject = localToWorld.inverse,
+                AbsScale = Abs(scale),
+                Centre = position,
+                ReachBase = SuctionReach(0.5f * Abs(scale).magnitude, 0f, SuctionShape.Of(cfg)),
+            };
+            Vector3 at = target.position;
+            SinkBounds(in sink, at, out float3 min, out float3 max);
+
+            Queue(new PrismRenderService.SliceDebrisSpawn
+            {
+                LocalToWorld = localToWorld,
+                BrightColor = PrismRenderService.ToFloat4(bright),
+                DarkColor = PrismRenderService.ToFloat4(dark),
+                Timing = new float4(0f, life, SeedOf(position), Suction),
+                Plane = float4.zero,                    // no fade of its own: every fragment is gone as it arrives
+                Centre = new float4(at.x, at.y, at.z, 1f),   // the LIVE sink (refreshed while the eater lives)
+                Pivot = float4.zero,                    // inside: the domain's own bright
+                Axis = new float4(at.x, at.y, at.z, 0f),     // the sink at the stamp: the order and the vortex's axis
+                Drift = float4.zero,                    // the prism goes nowhere but into the sink
+                Bounds = new AABB { Center = (min + max) * 0.5f, Extents = (max - min) * 0.5f },
+            }, level0 ? QueueSuction0 : QueueSuction, mesh, VariantSuction, sink);
+            return true;
+        }
+
+        /// <summary>
+        /// The object-space box around every pose a suction can take for a sink at <paramref name="worldSink"/>: the
+        /// ball of <see cref="SuctionReach"/> about the sink, whose semi-axes in object space are the reach over each
+        /// axis' scale (the entity matrix never moves).
+        /// </summary>
+        static void SinkBounds(in SuctionTarget sink, Vector3 worldSink, out float3 min, out float3 max)
+        {
+            float reach = sink.ReachBase + Vector3.Distance(worldSink, sink.Centre);
+            Vector3 c = sink.WorldToObject.MultiplyPoint3x4(worldSink);
+            var e = new float3(reach / sink.AbsScale.x, reach / sink.AbsScale.y, reach / sink.AbsScale.z);
+            min = new float3(c.x, c.y, c.z) - e;
+            max = new float3(c.x, c.y, c.z) + e;
+        }
+
+        /// <summary>
         /// The skin's scale: the prism's, grown by <paramref name="inflate"/> prism radii on every side so the
         /// skin and the prism under it never share a depth.
         /// </summary>
@@ -446,7 +603,8 @@ namespace CosmicShore.Utility
             math.frac(math.dot(new float3(position.x, position.y, position.z),
                 new float3(0.1031f, 0.11369f, 0.13787f)) * 43.7585f);
 
-        static void Queue(in PrismRenderService.SliceDebrisSpawn spawn, byte queue, Mesh mesh, int variant)
+        static void Queue(in PrismRenderService.SliceDebrisSpawn spawn, byte queue, Mesh mesh, int variant,
+            SuctionTarget sink = default)
         {
             Bucket bucket = null;
             for (int i = 0; i < s_buckets.Count; i++)
@@ -458,9 +616,14 @@ namespace CosmicShore.Utility
             }
             bucket.Spawns.Add(spawn);
             bucket.Queues.Add(queue);
+            bucket.Targets.Add(sink);
             if (queue == QueueExplosion)
             {
                 s_pendingExplosions++;
+            }
+            else if (queue == QueueSuction0)
+            {
+                s_pendingSuctions0++;
             }
             else
             {
@@ -559,6 +722,10 @@ namespace CosmicShore.Utility
                 m.SetVector(FragmentNoiseId,
                     new Vector4(cfg.FragmentSpinNoise, cfg.FragmentNoiseFrequency, cfg.FragmentTravelNoise, cfg.FragmentSpeedRef));
                 m.SetFloat(FragmentVarietyId, cfg.FragmentVariety);
+                m.SetVector(SuctionMotionId,
+                    new Vector4(cfg.SuctionStagger, cfg.SuctionAcceleration, cfg.SuctionLift, cfg.SuctionSwirl));
+                m.SetVector(SuctionShapeId,
+                    new Vector4(cfg.SuctionSpin, cfg.SuctionShrink, cfg.SuctionFaceLag, cfg.SuctionOrderNoise));
                 tuned &= ApplyExplosionTuning(m);
                 s_runtimeMaterials[v] = m;
             }
@@ -618,15 +785,18 @@ namespace CosmicShore.Utility
             {
                 Drain();
                 Sweep();
+                // After the sweep, so a suction retired this frame is not written to.
+                RefreshSuctions();
             }
         }
 
         static readonly Unity.Profiling.ProfilerMarker s_drainMarker = new("PrismCollisionBurst.Drain");
         static readonly Unity.Profiling.ProfilerMarker s_sweepMarker = new("PrismCollisionBurst.Sweep");
+        static readonly Unity.Profiling.ProfilerMarker s_refreshMarker = new("PrismCollisionBurst.RefreshSuctions");
 
         static void Drain()
         {
-            if (s_pendingCount == 0 && s_pendingExplosions == 0) return;
+            if (s_pendingCount == 0 && s_pendingExplosions == 0 && s_pendingSuctions0 == 0) return;
 
             using (s_drainMarker.Auto())
             {
@@ -653,6 +823,7 @@ namespace CosmicShore.Utility
                             s_liveDestruction.Clear();
                             s_liveShed.Clear();
                             s_liveExplosion.Clear();
+                            ClearSuctions();
                             s_liveEpoch = epoch;
                         }
 
@@ -661,8 +832,15 @@ namespace CosmicShore.Utility
                         for (int i = 0; i < s_scratch.Count; i++)
                         {
                             byte q = bucket.Queues[i];
+                            float end = now + bucket.Spawns[i].Timing.y;
+                            if (q == QueueSuction || q == QueueSuction0)
+                            {
+                                AddSuction(s_scratch[i], end, triangles, q == QueueSuction0, bucket.Targets[i],
+                                    bucket.Spawns[i].Bounds);
+                                continue;
+                            }
                             var live = q == QueueShed ? s_liveShed : q == QueueExplosion ? s_liveExplosion : s_liveDestruction;
-                            live.Add(s_scratch[i], now + bucket.Spawns[i].Timing.y, triangles);
+                            live.Add(s_scratch[i], end, triangles);
                         }
                     }
                     else
@@ -672,6 +850,7 @@ namespace CosmicShore.Utility
 
                     bucket.Spawns.Clear();
                     bucket.Queues.Clear();
+                    bucket.Targets.Clear();
                 }
 
                 if (failed > 0)
@@ -687,13 +866,14 @@ namespace CosmicShore.Utility
                 s_pendingCount = 0;
                 s_pendingTriangles = 0;
                 s_pendingExplosions = 0;
+                s_pendingSuctions0 = 0;
                 s_scratch.Clear();
             }
         }
 
         static void Sweep()
         {
-            if (LiveCount == 0 && s_liveExplosion.Count == 0) return;
+            if (LiveCount == 0 && s_liveExplosion.Count == 0 && s_liveSuctions0 == 0) return;
 
             using (s_sweepMarker.Auto())
             {
@@ -702,6 +882,7 @@ namespace CosmicShore.Utility
                     s_liveDestruction.Clear();
                     s_liveShed.Clear();
                     s_liveExplosion.Clear();
+                    ClearSuctions();
                     return;
                 }
 
@@ -710,9 +891,131 @@ namespace CosmicShore.Utility
                 s_liveShed.TakeExpired(now, s_scratch);
                 s_liveDestruction.TakeExpired(now, s_scratch);
                 s_liveExplosion.TakeExpired(now, s_scratch);
+                TakeExpiredSuctions(now, s_scratch);
                 if (s_scratch.Count > 0)
                     PrismRenderService.DestroyDebrisBatch(s_scratch, s_liveEpoch);
                 s_scratch.Clear();
+            }
+        }
+
+        static void AddSuction(Entity entity, float endTime, int triangles, bool level0, in SuctionTarget sink, AABB bounds)
+        {
+            s_liveSuctions.Add(new SuctionRecord
+            {
+                Entity = entity,
+                EndTime = endTime,
+                Triangles = triangles,
+                Level0 = level0,
+                Sink = sink,
+                BoundsMin = bounds.Center - bounds.Extents,
+                BoundsMax = bounds.Center + bounds.Extents,
+            });
+            if (level0)
+            {
+                s_liveSuctions0++;
+            }
+            else
+            {
+                s_liveSuctionDetail++;
+                s_liveSuctionDetailTriangles += triangles;
+            }
+        }
+
+        static void ClearSuctions()
+        {
+            s_liveSuctions.Clear();
+            s_liveSuctionHead = 0;
+            s_liveSuctionDetail = 0;
+            s_liveSuctionDetailTriangles = 0;
+            s_liveSuctions0 = 0;
+        }
+
+        /// <summary>Appends every expired suction to <paramref name="into"/>, drops it, and lets go of its eater so a
+        /// finished suction never keeps a creature's Transform reachable.</summary>
+        static void TakeExpiredSuctions(float now, List<Entity> into)
+        {
+            int end = s_liveSuctionHead;
+            while (end < s_liveSuctions.Count && s_liveSuctions[end].EndTime <= now) end++;
+            for (int i = s_liveSuctionHead; i < end; i++)
+            {
+                var rec = s_liveSuctions[i];
+                into.Add(rec.Entity);
+                if (rec.Level0)
+                {
+                    s_liveSuctions0--;
+                }
+                else
+                {
+                    s_liveSuctionDetail--;
+                    s_liveSuctionDetailTriangles -= rec.Triangles;
+                }
+                rec.Sink.Target = null;
+                s_liveSuctions[i] = rec;
+            }
+            s_liveSuctionHead = end;
+            if (s_liveSuctionHead == s_liveSuctions.Count) ClearSuctions();
+            else if (s_liveSuctionHead >= 256 && s_liveSuctionHead * 2 >= s_liveSuctions.Count)
+            {
+                s_liveSuctions.RemoveRange(0, s_liveSuctionHead);
+                s_liveSuctionHead = 0;
+            }
+        }
+
+        /// <summary>
+        /// The §1 moving-target exception, as PrismDebris.RefreshImplosions: each live suction's sink follows its eater —
+        /// one float3 per live suction per frame, and a bounds write only when the sink wanders far enough that the
+        /// ball of <see cref="SuctionReach"/> about it leaves the stamped box. Nothing here touches the animation's
+        /// progress; the GPU owns that. An eater that dies mid-suction drops out and the sink stays where it was last
+        /// seen.
+        /// </summary>
+        static void RefreshSuctions()
+        {
+            if (s_liveSuctionHead == s_liveSuctions.Count) return;
+            if (s_liveEpoch != PrismRenderService.CurrentEpoch) return;
+
+            using (s_refreshMarker.Auto())
+            {
+                s_sinkScratch.Clear();
+                for (int i = s_liveSuctionHead; i < s_liveSuctions.Count; i++)
+                {
+                    var rec = s_liveSuctions[i];
+                    // `is null` skips the Unity fake-null operator: once the eater is seen gone it is real-null'd, so
+                    // a dead eater's record costs a reference compare.
+                    if (rec.Sink.Target is null) continue;
+                    if (rec.Sink.Target == null)
+                    {
+                        rec.Sink.Target = null;
+                        s_liveSuctions[i] = rec;
+                        continue;
+                    }
+
+                    Vector3 world = rec.Sink.Target.position;
+                    SinkBounds(in rec.Sink, world, out float3 min, out float3 max);
+                    bool grow = math.any(min < rec.BoundsMin) || math.any(max > rec.BoundsMax);
+                    AABB bounds = default;
+                    if (grow)
+                    {
+                        rec.BoundsMin = math.min(rec.BoundsMin, min);
+                        rec.BoundsMax = math.max(rec.BoundsMax, max);
+                        s_liveSuctions[i] = rec;
+                        bounds = new AABB
+                        {
+                            Center = (rec.BoundsMin + rec.BoundsMax) * 0.5f,
+                            Extents = (rec.BoundsMax - rec.BoundsMin) * 0.5f,
+                        };
+                    }
+
+                    s_sinkScratch.Add(new PrismRenderService.ImplosionDebrisRefresh
+                    {
+                        Entity = rec.Entity,
+                        Location = new float3(world.x, world.y, world.z),
+                        GrowBounds = grow,
+                        Bounds = bounds,
+                    });
+                }
+
+                PrismRenderService.RefreshSliceDebrisSinkBatch(s_sinkScratch, s_liveEpoch);
+                s_sinkScratch.Clear();
             }
         }
     }
