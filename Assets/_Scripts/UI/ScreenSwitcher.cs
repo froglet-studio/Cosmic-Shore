@@ -170,6 +170,13 @@ namespace CosmicShore.UI
         [Tooltip("Arcade modal window. Opens as overlay when Arcade nav is clicked.")]
         [SerializeField] private ModalWindowManager ArcadeModal;
 
+        [Header("Return From a Match")]
+        [Tooltip("Leaving a match re-opens the launch panel of the card it was launched from (MenuReturnCard), " +
+                 "once the menu's vessel is ready, the boot world is built and the lobby has spawned. If that " +
+                 "takes longer than this many seconds (unscaled) the menu stays on HOME, as it did before. Longer " +
+                 "than the splash's own 60 s hold for the boot world, so a slow phone still gets its panel back.")]
+        [SerializeField] private float returnToCardTimeoutSeconds = 90f;
+
         [Header("Home Hub Buttons")]
         [Tooltip("Seconds the four home-hub buttons (Mission / Toy Box / Arena / Arcade) take to fade " +
                  "OUT when any modal opens and back IN when the last one closes on HOME. 0 snaps. " +
@@ -707,6 +714,58 @@ namespace CosmicShore.UI
             {
                 StartCoroutine(LaunchModalCoroutine());
             }
+
+            // Back from a match launched off a card: land on that card's launch panel, not on HOME.
+            if (MenuReturnCard.TryTake(out var returnCard))
+                StartCoroutine(ReturnToLaunchedCardCoroutine(returnCard));
+        }
+
+        /// <summary>
+        /// Re-opens the card a match was launched from, over the window that lists it, so the player
+        /// can change the setup and go again (<see cref="MenuReturnCard"/>). The panel re-seeds itself
+        /// from the setup that just flew (<c>LaunchPreferenceStore</c>).
+        ///
+        /// <para>Waits for three things a press never has to, because a press cannot land while the
+        /// splash still covers the menu: the menu's own vessel (the menu is Ready), the boot world
+        /// (the panel's live preview stands a second arena, which must not race the first build), and
+        /// the lobby the card commits to (<see cref="ArcadeGameConfigureModal.IsReadyToOpenCards"/>).
+        /// Gives up quietly to HOME after <see cref="returnToCardTimeoutSeconds"/>.</para>
+        /// </summary>
+        private IEnumerator ReturnToLaunchedCardCoroutine(MenuReturnCard.Card card)
+        {
+            float giveUpAt = Time.unscaledTime + returnToCardTimeoutSeconds;
+            var menu = FindAnyObjectByType<MainMenuController>();
+
+            while ((menu && menu.CurrentState is MainMenuState.None or MainMenuState.Initializing)
+                   || EnvironmentLoadVeil.IsCovering
+                   || !ArcadeGameConfigureModal.IsReadyToOpenCards)
+            {
+                if (Time.unscaledTime > giveUpAt)
+                {
+                    CSDebug.LogVerbose(CSLogChannel.MenuUI,
+                        $"[ScreenSwitcher] Return to {card.Mode}'s panel abandoned after {returnToCardTimeoutSeconds:0}s " +
+                        "(menu, boot world or lobby not ready) - staying on HOME.");
+                    yield break;
+                }
+                yield return null;
+            }
+
+            // Ready, not merely past Initializing: a launch (LaunchingGame) or a flight (Freestyle)
+            // that started meanwhile is somewhere the player went.
+            if (menu && menu.CurrentState != MainMenuState.Ready) yield break;
+
+            if (!MenuReturnCard.ShouldReopen(
+                    isPartyClient: ArcadeConfigSyncManager.IsPartyClient,
+                    guided: MenuGuide.IsActive || QuestArcadeConstraints.Active,
+                    inFreestyle: InFreestyle,
+                    windowOpen: HasActiveModal))
+                yield break;
+
+            var week = WeeklyChallengeService.Instance ? WeeklyChallengeService.Instance.ThisWeek : default;
+            if (card.WeeklyChallenge && week.IsValid && week.GameMode == card.Mode)
+                OpenWeeklyChallenge();
+            else
+                OpenGame(card.Mode);
         }
 
         private IEnumerator LaunchModalCoroutine()
@@ -718,10 +777,11 @@ namespace CosmicShore.UI
             PlayerPrefs.DeleteKey(ReturnToModalPrefKey);
             PlayerPrefs.Save();
 
-            // Game-related modals require context (selected game, party state) that is
-            // lost on scene transition - never auto-reopen them after returning from a game.
-            // ARCADE is included because re-opening the arcade overlay on return causes
-            // stale game configuration to resurface.
+            // Game-related modals require context (selected game, party state) that a modal TYPE
+            // does not carry - never reopen them from this pref. ARCADE is included because
+            // re-opening the arcade overlay on its own causes stale game configuration to
+            // resurface. Coming back from a match re-opens the launched card through
+            // MenuReturnCard instead, which carries the card (ReturnToLaunchedCardCoroutine).
             if (modalType is ModalWindows.ARCADE_GAME_CONFIGURE
                           or ModalWindows.ARCADE
                           or ModalWindows.ARENA_GAME_CONFIGURE)
@@ -1543,6 +1603,23 @@ namespace CosmicShore.UI
                 return true;
             }
             CSDebug.LogWarning($"[ScreenSwitcher] No game window lists {game.DisplayName} - its configure cannot open.");
+            return false;
+        }
+
+        /// <summary>
+        /// <see cref="OpenGame(SO_ArcadeGame)"/> for a mode: the card is the one the game windows' own
+        /// rosters hold, so the configure opens over the window that draws it (the return from a match,
+        /// <see cref="MenuReturnCard"/>).
+        /// </summary>
+        public bool OpenGame(GameModes mode)
+        {
+            if (WebToybox.IsBuild) return false;
+            foreach (var explore in FindObjectsByType<ArcadeExploreView>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var game = explore.FindGameByMode(mode);
+                if (game) return OpenGame(game);
+            }
+            CSDebug.LogWarning($"[ScreenSwitcher] No game window lists a {mode} card - its configure cannot open.");
             return false;
         }
 

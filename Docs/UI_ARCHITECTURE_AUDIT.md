@@ -1098,7 +1098,7 @@ flowchart TD
     GAME -- "session end / host quits to menu" --> G
 ```
 
-**Return-from-game always lands on HOME.** A `ReturnToScreen`/`ReturnToModal` PlayerPrefs persistence system is fully implemented in `ScreenSwitcher`, but every producer call is commented out and both `SceneLoader.LaunchGame()` and `ReturnToMainMenu()` explicitly delete the keys — so the player always comes back to Home.
+**Return-from-game lands on the launched card's panel (2026-10-25).** The `ReturnToScreen`/`ReturnToModal` PlayerPrefs keys are still deleted by `SceneLoader.LaunchGame()` and `ReturnToMainMenu()`, and a pref never reopens a configure window (a modal type carries no card). Instead `MenuReturnCard` carries the card a match was launched from through the game scene, and `ScreenSwitcher.ReturnToLaunchedCardCoroutine` re-opens its launch panel over the window that lists it once the menu is up, so the player can change the setup and go again. A guest, a guided path, a host loss and an app restart still land on Home (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.2.1).
 
 **Freestyle toggle** (`MenuCrystalClickHandler`): entering freestyle disables autopilot, fades all menu chrome out over ~0.5s while the camera blends, and holds input paused until the camera settles. Exiting restores each menu panel to its *saved* pre-freestyle alpha. During freestyle, `ScreenSwitcher` disables the EventSystem's move/submit/cancel actions (self-healing every frame) so the gamepad flies the ship instead of driving menu selection.
 
