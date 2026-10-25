@@ -134,8 +134,12 @@ table in step with `GobyPistolDuo` (`HumanPistol`, `Choose`), the hull's binding
 | Spin the map | drag | right stick | drag, or Q / E |
 | Pick a path (from the den at the nearer end) | tap its glowing bar | left stick (the next path that way on screen) | click its bar, or A / D |
 | Ride it (or teleport, then ride) | tap the picked path again | A or LT | Space (or S, down), or click the picked path |
-| Turn it round at its den | Back button | Y | F |
+| Turn it round at its den | tap the den's other path (or the Back button) | Y | F |
 | Ride on without stopping | keep the finger down, still | keep A or LT held | keep Space held |
+
+The phone's Dart, Lock, Snap, Ghost and Back buttons are drawn by the seat (`GobyPistolButtons`, round the right thumb).
+Since 2026-10-25 `/vessel` §4.ac3 (LOCKED, Garrett) says a vessel draws no controls of its own: each becomes its card
+(the follow-ups below).
 
 **Both seats:**
 
@@ -332,6 +336,20 @@ craft riding the trail.
 7. The Pistol's AI priorities.
 8. What the Pistol does before the spline exists (spawning or respawning away from the trail),
    and whether one half dying downs the pair.
+
+### 8.1 Follow-ups left by `cece/cool-shannon-aulgpe` (shipped 2026-10-25)
+
+1. **The phone buttons become the cards** (`/vessel` §4.ac3, LOCKED 2026-10-25: a vessel draws no controls of its own).
+   `GobyPistolButtons` predates the rule and still draws Dart, Lock, Snap, Ghost and Back. The per-seat cards exist
+   (`GobyPistolHUDController`), so each seat's card taps become its controls; the Pistol's cards need their inputs
+   BOUND on `Goby.prefab` (Button1 and Button2 are not today: `GOBY_BINDINGS` in `author_goby_assets.py`) and the seat
+   must hear taps while its flight input is paused (`JacksExecutor.ListenToCards` is the pattern). Then the matrix's
+   mobile column changes. Measure first: `grep -n "GobyPistolButtons" -r Assets/_Scripts`.
+2. **The path map's cost on a long chain is unmeasured.** `ScorePaths` queries spheres every 1.5 x max(reach, band)
+   along one island per frame while the map is open; `AiPlanRoute` queries one sphere of the island's length round the
+   last perch every rethink. Profile both with 20+ perches in a dense cell before tuning.
+3. **Time's card on the Pistol** stays the dive while the aimed jump is off (open since 2026-10-22).
+4. **The Charge level-5 upgrade** on either seat (open).
 
 ## 9. The lab comes first [stated]
 

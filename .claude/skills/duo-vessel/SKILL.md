@@ -357,6 +357,10 @@ enum before taking a value.
   seats separate UI ability icons, glyphs, etc."): one HUD variant whose view carries both seats' icons per card, a
   controller that re-seeds icons, chips, veils, gauges and counts on a swap (`author_goby_hud.py`, `GobyPistolHUDView`,
   `GobyPistolHUDController` are the pattern).
+- **An AI that picks a heading from a fixed lattice misses narrow targets.** 26 evenly spread headings are ~40 degrees
+  apart; an island 1000 u long with a 60 u corridor catches only what lies within ~3.5 degrees of its line, so the
+  Goby AI's lattice alone caught 1 of a 40-prism band. Add a candidate heading through each of a sample of the targets
+  themselves (`PistolPaths.BestHeading`, `AimedHeadings`): it found all 40 (2026-10-25, measured headless).
 - **A chip can only name a control the glyph set has.** A seat that reads keys of its own (the Pistol's G and B) has
   no honest chip: `ControlGlyphSet` holds one row per fleet control (A / Space, B / T, X / Q, Y / F, the triggers and
   shifts, RB / E). Put each seat's moves on those controls, keep the old keys as quiet aliases, and the chips derive.
