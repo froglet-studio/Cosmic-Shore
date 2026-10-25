@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Fair play: host measures AI-like steering (`claude/vigilant-archimedes-euoz8z`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** Threat Board T6, the part left after `PilotControl` went out of release builds: a modified client can
+switch on the AI pilot for its own hull, and the AI writes the same input a human does. `MovementPlausibilityMonitor`
+(the T5 host check) now also measures how each nose moves (`SteeringProfile`): the share of 10 Hz samples held still
+(under 2 deg/s) and the mean change in turn rate. The turn-end summary (ArcadeMatch channel) logs both for every guest
+and every AI hull. With `aiLikeMaxIdlePercent` and `aiLikeMaxTurnJerk` set in a `Resources/MovementPlausibilityConfig`
+asset, a guest at or under both after 60 s of flying raises one `AiLikeSteering` signal per turn. **Observe only**: no
+asset exists, so both limits are 0 and nothing is judged. Crew vessels, guests riding another hull, AI pilots and the
+host's own hull are never judged. A pilot swap restarts the measure.
+
+**Verified without the editor:** `unity_refcompile` player: 88 assemblies, 0 errors. Editor config: the new
+`SteeringProfileTests` compile (the 3 errors are the unchanged PlayMode usings in the facade). The test scenarios were
+re-run in Python: continuous correction gives 0% still and a jerk of 1.6; stop-and-flick gives 77% still and a jerk of
+138. Amoebius port build: no errors in the changed files; a planted error in `SteeringProfile` was caught.
+
+**Test in the editor:**
+1. `SteeringProfileTests` pass.
+2. Arena match, MPPM host + one guest, ArcadeMatch channel on (FrogletTools > Toolbox > Logging). At turn end the
+   summary lists each hull with "% still, deg/s2, s"; AI hulls read near 0% still. Write down the AI and human values
+   for a few hulls: they set the two limits.
+3. Guest takes an AI teammate's hull (pilot swap): the guest's steering restarts; no signal.
+4. Crew vessel (Wrasse and Grouper, Goby and Pistol) flown by a guest: listed as "(not judged)".
+
 ### 🔴 Fair play: Steam sign-in on PC, linked to the existing account (`claude/vigilant-archimedes-euoz8z`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** Threat Board T1, the Steam part. New package `com.rlabrecque.steamworks.net` 2025.164.1 (Steamworks.NET,

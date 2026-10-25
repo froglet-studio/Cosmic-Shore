@@ -10,6 +10,7 @@ namespace CosmicShore.Gameplay
         None = 0,
         SustainedSpeed = 1,
         JumpRate = 2,
+        AiLikeSteering = 3,
     }
 
     /// <summary>

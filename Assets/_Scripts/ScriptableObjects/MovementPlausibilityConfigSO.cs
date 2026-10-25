@@ -53,7 +53,29 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("After a signal, the same pilot cannot raise the same kind of signal again for this many seconds.")]
         [SerializeField, Min(1f)] float signalCooldownSeconds = 30f;
 
+        [Header("AI-like steering (Threat Board T6)")]
+        [Tooltip("A turn rate (degrees per second) below this counts as holding the nose still. Humans hold still " +
+                 "between inputs; the AI pilot corrects every frame.")]
+        [SerializeField, Min(0f)] float steerIdleTurnRate = 2f;
+
+        [Tooltip("A guest whose share of still samples (percent) stays at or below this, AND whose mean change in " +
+                 "turn rate stays at or below the jerk limit, raises an AiLikeSteering signal. Set both from the " +
+                 "per-turn log of AI and human values. 0 = observe only.")]
+        [SerializeField, Range(0f, 100f)] float aiLikeMaxIdlePercent = 0f;
+
+        [Tooltip("Mean change in turn rate (degrees per second, per second) at or below which steering reads as the " +
+                 "AI's. 0 = observe only.")]
+        [SerializeField, Min(0f)] float aiLikeMaxTurnJerk = 0f;
+
+        [Tooltip("Seconds of steering a guest must fly in one turn before the AI-like check judges it.")]
+        [SerializeField, Min(10f)] float aiLikeMinSeconds = 60f;
+
         public float SampleInterval => sampleInterval;
+        public float SteerIdleTurnRate => steerIdleTurnRate;
+        public float AiLikeMaxIdlePercent => aiLikeMaxIdlePercent;
+        public float AiLikeMaxTurnJerk => aiLikeMaxTurnJerk;
+        public float AiLikeMinSeconds => aiLikeMinSeconds;
+        public bool AiLikeCheckOn => aiLikeMaxIdlePercent > 0f && aiLikeMaxTurnJerk > 0f;
         public float WindowSeconds => windowSeconds;
         public float JumpSpeed => jumpSpeed;
         public float SustainSeconds => sustainSeconds;

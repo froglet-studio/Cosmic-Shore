@@ -2434,3 +2434,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (authentication)
 - **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
 - **See:** Assets/_Scripts/System/Steam/SteamSignIn.cs
+
+### T-20261025-4fef · open · test · Fair play
+- **Task:** Fair play - T6 AI-like steering limits: play arena matches with the ArcadeMatch log channel on, write down the turn-end 'still %' and 'deg/s2' numbers for AI hulls and for humans on gamepad, keyboard and touch, then set aiLikeMaxIdlePercent and aiLikeMaxTurnJerk in a Resources/MovementPlausibilityConfig asset below every human value seen
+- **Done when:** The asset exists with both limits, and a playtest of humans on every input raised no AiLikeSteering signal
+- **Who can take it:** Yash (Netcode, vessels; has offered to take tasks)
+- **Added:** 2026-10-25 by Shombith (`claude/vigilant-archimedes-euoz8z`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md

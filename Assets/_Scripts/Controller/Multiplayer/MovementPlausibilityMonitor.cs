@@ -25,6 +25,14 @@ namespace CosmicShore.Gameplay
     /// and jump count per hull, separately for guests and for the host's AI pilots, whose flying is honest by
     /// construction and calibrates the ceilings.</para>
     ///
+    /// <para><b>AI-like steering (Threat Board T6).</b> Every client carries the AI pilots, and the AI writes the
+    /// same input a human does, so a modified client can hand its own hull to the AI. The host cannot see inputs,
+    /// only where each nose points, so it measures two things per hull: the share of samples where the nose is held
+    /// still (humans pause between inputs; the AI corrects every frame) and the mean change in turn rate. AI hulls
+    /// on the host calibrate both; until <see cref="MovementPlausibilityConfigSO.AiLikeCheckOn"/>, nothing is
+    /// judged. Crew vessels are never judged, because a guest legitimately parks a crew hull on its AI
+    /// (<see cref="CrewStations"/>), and neither is a guest who is riding another hull.</para>
+    ///
     /// <para>The host's own hull is never judged: the host is the authority, and policing it from itself proves
     /// nothing (that is Threat Board T4). Hulls owned by the server (AI, or a human flying an AI hull through the
     /// pilot swap) are simulated here and cannot be spoofed, so they only calibrate.</para>
@@ -47,6 +55,13 @@ namespace CosmicShore.Gameplay
             public int Jumps;
             public float MaxSustained;
             public bool Seen;
+
+            // Steering (T6): reset whenever the hull changes owner (pilot swap) or jumps.
+            public bool SteerJudged;
+            public bool CrewHull;           // read once: a crew hull may be parked on its AI by a guest
+            public ulong SteerOwner = ulong.MaxValue;
+            public SteeringProfile Steering;
+            public bool AiLikeSignalled;    // once per turn
         }
 
         GameDataSO _gameData;
@@ -120,6 +135,7 @@ namespace CosmicShore.Gameplay
                 if (!_tracks.TryGetValue(vessel, out var track))
                 {
                     track = NewTrack();
+                    track.CrewHull = CrewStations.CrewOf(vessel) != null;
                     _tracks[vessel] = track;
                 }
                 track.Player = player;
@@ -127,7 +143,11 @@ namespace CosmicShore.Gameplay
                 track.Owner = owner;
                 track.Judged = owner != NetworkManager.ServerClientId;
                 track.Seen = true;
-                Sample(track, vessel.Transform.position, now);
+                if (track.SteerOwner != owner) ResetSteering(track, owner);
+                track.SteerJudged = track.Judged && !IsAI(player) && ReferenceEquals(player.Vessel, vessel) &&
+                                    !track.CrewHull &&
+                                    !(player is Player human && CrewStations.IsRiding(human));
+                Sample(track, vessel.Transform.position, vessel.Transform.forward, now);
             }
 
             // Hulls that left the match: drop them so a respawned object starts clean.
@@ -144,7 +164,7 @@ namespace CosmicShore.Gameplay
 
         static bool IsAI(IPlayer player) => player is Player p && p.NetIsAI.Value;
 
-        void Sample(Track t, Vector3 position, float now)
+        void Sample(Track t, Vector3 position, Vector3 forward, float now)
         {
             if (t.FirstSampleAt < 0f) t.FirstSampleAt = now;
 
@@ -160,9 +180,12 @@ namespace CosmicShore.Gameplay
                     t.Jumps++;
                     t.Count = 0;
                     t.OverCeilingTime = 0f;
+                    t.Steering.Restart(forward);
                     CheckJumpRate(t, now);
                 }
+                else SampleSteering(t, forward, dt, now);
             }
+            else t.Steering.Restart(forward);
 
             t.Positions[t.Head] = position;
             t.Times[t.Head] = now;
@@ -207,6 +230,30 @@ namespace CosmicShore.Gameplay
             return path / span;
         }
 
+        static void ResetSteering(Track t, ulong owner)
+        {
+            t.SteerOwner = owner;
+            t.Steering = default;
+            t.AiLikeSignalled = false;
+        }
+
+        void SampleSteering(Track t, Vector3 forward, float dt, float now)
+        {
+            t.Steering.Add(forward, dt, _config.SteerIdleTurnRate);
+
+            if (!t.SteerJudged || t.AiLikeSignalled || !_config.AiLikeCheckOn) return;
+            if (t.Steering.Seconds < _config.AiLikeMinSeconds) return;
+
+            float idlePercent = t.Steering.IdlePercent, jerk = t.Steering.MeanTurnJerk;
+            if (idlePercent > _config.AiLikeMaxIdlePercent || jerk > _config.AiLikeMaxTurnJerk) return;
+
+            t.AiLikeSignalled = true;
+            Raise(t, FairPlaySignalKind.AiLikeSteering, idlePercent, _config.AiLikeMaxIdlePercent, now);
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[FairPlay] AI-like steering: {t.Player.Name} mean turn jerk {jerk:0.#} (limit {_config.AiLikeMaxTurnJerk:0.#}) " +
+                $"over {t.Steering.Seconds:0}s");
+        }
+
         void CheckJumpRate(Track t, float now)
         {
             if (!t.Judged || _config.MaxJumpsPerMinute <= 0f) return;
@@ -231,16 +278,65 @@ namespace CosmicShore.Gameplay
         void LogTurnSummary()
         {
             if (!CSDebug.IsVerbose(CSLogChannel.ArcadeMatch) || _tracks.Count == 0) return;
-            var sb = new StringBuilder("[FairPlay] movement this turn (fastest sustained path speed, jumps):");
+            var sb = new StringBuilder("[FairPlay] movement this turn (fastest sustained path speed, jumps; " +
+                                       "steering: still %, mean turn jerk, seconds):");
             foreach (var t in _tracks.Values)
             {
                 sb.Append("\n  ").Append(t.Judged ? "guest " : "AI    ")
                   .Append(t.Vessel.VesselStatus.VesselType).Append(' ')
                   .Append(t.Player.Name).Append(": ")
                   .Append(t.MaxSustained.ToString("0.#")).Append(" u/s, ")
-                  .Append(t.Jumps).Append(" jumps");
+                  .Append(t.Jumps).Append(" jumps; ")
+                  .Append(t.Steering.IdlePercent.ToString("0.#")).Append("% still, ")
+                  .Append(t.Steering.MeanTurnJerk.ToString("0.#")).Append(" deg/s2, ")
+                  .Append(t.Steering.Seconds.ToString("0")).Append('s')
+                  .Append(t.SteerJudged ? "" : " (not judged)");
             }
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, sb.ToString());
         }
+    }
+
+    /// <summary>
+    /// How a nose moves over time (Threat Board T6): the share of samples held still and the mean change in turn
+    /// rate. Pure, so the edit-mode tests can feed it shapes of steering directly.
+    /// </summary>
+    public struct SteeringProfile
+    {
+        Vector3 _prevForward;
+        float _prevTurnRate;
+        int _state;                 // 0 no forward yet, 1 forward, 2 forward and turn rate
+        int _samples, _idle, _jerkSamples;
+        float _jerkSum, _seconds;
+
+        /// <summary>Starts a new run of samples from <paramref name="forward"/> (after a jump), keeping the totals.</summary>
+        public void Restart(Vector3 forward)
+        {
+            _prevForward = forward;
+            _state = 1;
+        }
+
+        /// <summary>One sample <paramref name="dt"/> seconds after the last; a turn rate under
+        /// <paramref name="idleTurnRate"/> (degrees per second) counts as still.</summary>
+        public void Add(Vector3 forward, float dt, float idleTurnRate)
+        {
+            if (_state == 0 || dt <= 0f) { Restart(forward); return; }
+            float turnRate = Vector3.Angle(_prevForward, forward) / dt;
+            _prevForward = forward;
+            _samples++;
+            _seconds += dt;
+            if (turnRate < idleTurnRate) _idle++;
+            if (_state == 2)
+            {
+                _jerkSum += Mathf.Abs(turnRate - _prevTurnRate) / dt;
+                _jerkSamples++;
+            }
+            _prevTurnRate = turnRate;
+            _state = 2;
+        }
+
+        public int Samples => _samples;
+        public float Seconds => _seconds;
+        public float IdlePercent => _samples > 0 ? 100f * _idle / _samples : 0f;
+        public float MeanTurnJerk => _jerkSamples > 0 ? _jerkSum / _jerkSamples : 0f;
     }
 }
