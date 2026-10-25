@@ -60,8 +60,8 @@ Shader "CosmicShore/PrismCollisionBurst"
         _FragmentVariety ("Per-death variety (0: two prisms struck alike play one animation)", Range(0, 1)) = 0.5
 
         [Header(The suction fragments (written by PrismCollisionBurst from PrismInteractionLodConfig))]
-        _SuctionMotion ("Stagger (share of life), acceleration, lift (prism radii), swirl (turns)", Vector) = (0.5, 2.2, 0.35, 0.35)
-        _SuctionShape ("Spin (turns), shrink (share of the trip), size order (0 facing first, 1 smallest first), order jitter", Vector) = (0.75, 0.45, 0.35, 0.1)
+        _SuctionMotion ("Stagger (share of life), acceleration, lift (prism radii), swirl (turns)", Vector) = (0.7, 1.4, 0.35, 0.25)
+        _SuctionShape ("Spin (turns), shrink (share of the trip), face lag (share of the order), order jitter", Vector) = (0.75, 0.3, 0.2, 0.03)
 
         [Header(Look)]
         _FresnelPower ("Skin Fresnel Power", Range(0.5, 8)) = 4
@@ -194,8 +194,8 @@ Shader "CosmicShore/PrismCollisionBurst"
                 float4(_FragmentNoise.x, _FragmentNoise.y, timing.z, _FragmentNoise.z), shape, posWS, nrmWS);
         }
 
-        // A fragment of the SAME cut drawn into the sink (round 15): its turn (the side facing the sink first), its
-        // curve in, its swirl about the line to the sink, its tumble at the destruction's capped rate, gone as it
+        // A fragment of the SAME cut drawn into the sink (round 15): its turn (each face lets go of its triangles one
+        // after another from its point nearest the sink, round 15b), its curve in, its swirl about the line to the sink, its tumble at the destruction's capped rate, gone as it
         // arrives. The live sink is _SliceCentre; the stamp's is _SliceAxis.
         void BurstSuction(Attributes input, PrismBurstFrame f, float3 uOS, float3 vOS, float age, float4 timing,
             out float3 posWS, out float3 nrmWS)
@@ -208,13 +208,13 @@ Shader "CosmicShore/PrismCollisionBurst"
             shape.swirl = _SuctionMotion.w;
             shape.spin = _SuctionShape.x;
             shape.shrink = _SuctionShape.y;
-            shape.sizeOrder = _SuctionShape.z;
+            shape.faceLag = _SuctionShape.z;
             shape.sizeSpin = _FragmentSize.y;
             shape.spinCap = _FragmentSize.z;
             shape.levelRef = _FragmentSize.w;
             shape.variety = _FragmentVariety;
-            PrismBurstSuctionPose(f.rest, f.normal, TransformObjectToWorld(centroidOS), f.centre, centroidOS, input.tri.z,
-                f.radius, age, timing.y, PRISM_BURST_PROP(float4, _SliceCentre).xyz, PRISM_BURST_PROP(float4, _SliceAxis).xyz,
+            PrismBurstSuctionPose(f.rest, f.normal, TransformObjectToWorld(centroidOS), f.centre, f.faceCentre, f.faceU, f.faceV,
+                centroidOS, input.tri.z, f.radius, age, timing.y, PRISM_BURST_PROP(float4, _SliceCentre).xyz, PRISM_BURST_PROP(float4, _SliceAxis).xyz,
                 float4(_FragmentNoise.x, _FragmentNoise.y, timing.z, _SuctionShape.w), shape, posWS, nrmWS);
         }
 

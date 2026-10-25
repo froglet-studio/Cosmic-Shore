@@ -862,7 +862,8 @@ struct PrismBurstSuctionShape
     float swirl;     // turns it winds about the line to the sink on the way in: the drain's vortex
     float spin;      // turns it tumbles on the way in (× min(1 + sizeSpin × level, spinCap): the smaller a little faster)
     float shrink;    // the share of its trip over which it shrinks into the sink (it is gone the moment it arrives)
-    float sizeOrder; // 0: the side facing the sink goes first (the SuctionGraph's face order); 1: the smallest first
+    float faceLag;   // how much later the faces turned away from the sink start peeling than the face toward it (a share
+                     // of the order); the rest of the order is each face's own sequence, one triangle after another
     float sizeSpin;  // per size level the smaller spin this much faster (the destruction's)
     float spinCap;   // the most any fragment's spin is multiplied (the destruction's: nothing flickers)
     float levelRef;  // the size level counted as "the smallest" (the destruction's)
@@ -872,18 +873,24 @@ struct PrismBurstSuctionShape
 // One fragment of the cut drawn into the SINK, in WORLD space. sink is the live convergence point (refreshed by the CPU
 // while the eater lives — the §1 moving-target exception, exactly the SuctionGraph's _Location); sink0 is where it was
 // at the stamp, which fixes the ORDER and the vortex's AXIS so neither changes under a fragment already on its way.
-// Its turn: the side facing the sink first (the SuctionGraph consumes the face nearest its _Location first), the
-// smaller a little sooner as sizeOrder asks, a gradient noise at its centroid moving it a little (noise.w), so
-// neighbours leave nearly together, never in step; every start inside the first stagger of the life and every trip
-// over by 95% of it. Its trip, u in [0, 1] of its own time, eased in as u^accel: along a quadratic curve from its rest
+// Its turn (round 15b, Garrett: "detach one triangle at a time along the current faces. so we would see the triangle
+// spaced out along their path ... that face simply separates its triangles as it is pulled in"): every face stays whole
+// and lets go of its triangles ONE AFTER ANOTHER, starting from the point of the face nearest the sink and spreading
+// across it, so each face feeds a stream of triangles strung out along the path in; the face toward the sink starts
+// first and the face turned away faceLag later (the SuctionGraph's face order, kept as a lag, not a block). A gradient
+// noise at its centroid bends the front a little (noise.w) and a hash far below a triangle's own share breaks exact
+// ties, so no two triangles of a face leave at one instant. Every start inside the first stagger of the life and
+// every trip over by 95% of it. Its trip, u in [0, 1] of its own time, eased in as u^accel: along a quadratic curve from its rest
 // centroid, through a point lifted off its face, to the sink, wound about the line to the sink by the swirl — a
 // rotation about an axis THROUGH the sink, so it never carries a fragment farther from it — tumbling about
 // cross(N, the axis) and its own normal, and shrinking to nothing as it arrives, so it is gone exactly AT the sink.
 // The first frame is the prism: at age 0 every term is zero and the scale is 1. noise = (spin amplitude, frequency,
 // seed, order jitter).
-void PrismBurstSuctionPose(float3 rest, float3 N, float3 middle, float3 centre, float3 noisePoint, float level,
-    float radius, float age, float life, float3 sink, float3 sink0, float4 noise, PrismBurstSuctionShape s,
-    out float3 pos, out float3 nrm)
+// faceCentre, faceU and faceV are its face's centre and half-extent vectors (world), which place the face's point
+// nearest the sink.
+void PrismBurstSuctionPose(float3 rest, float3 N, float3 middle, float3 centre, float3 faceCentre, float3 faceU,
+    float3 faceV, float3 noisePoint, float level, float radius, float age, float life, float3 sink, float3 sink0,
+    float4 noise, PrismBurstSuctionShape s, out float3 pos, out float3 nrm)
 {
     float3 q = noisePoint * noise.y + noise.z * float3(17.13, 31.71, 7.37);
     float n1 = PrismBurstGradientNoise(q);
@@ -895,9 +902,22 @@ void PrismBurstSuctionPose(float3 rest, float3 N, float3 middle, float3 centre, 
 #ifdef PRISM_BURST_SUCTION_UNORDERED
     float order = PrismBurstHash(middle * 13.7 + noise.z);   // negative control only: every fragment at a random turn
 #else
-    float facing = 0.5 - 0.5 * clamp(dot(middle - centre, axis) / max(radius, 1e-5), -1.0, 1.0);
-    float smallFirst = 1.0 - saturate(size / max(s.levelRef, 1e-3));
-    float order = saturate(lerp(facing, smallFirst, saturate(s.sizeOrder)) + noise.w * n3);
+    // The face's point nearest the sink (at the stamp): the sink's foot clamped onto the face's rectangle.
+    float lu = max(length(faceU), 1e-5);
+    float lv = max(length(faceV), 1e-5);
+    float3 uHat = faceU / lu;
+    float3 vHat = faceV / lv;
+    float3 toSink = sink0 - faceCentre;
+    float3 nearest = faceCentre + uHat * clamp(dot(toSink, uHat), -lu, lu) + vHat * clamp(dot(toSink, vHat), -lv, lv);
+#ifdef PRISM_BURST_SUCTION_WHOLE_FACE
+    float along = 0.0;   // negative control only: a face lets go of all its triangles at once
+#else
+    float along = saturate(length(middle - nearest) / (2.0 * sqrt(lu * lu + lv * lv)));
+#endif
+    float faceLag = saturate(s.faceLag);
+    float faceTurn = 0.5 - 0.5 * clamp(dot(N, axis), -1.0, 1.0);
+    float tie = 0.002 * PrismBurstHash(middle * 7.31 + noise.z * 3.7);
+    float order = saturate(faceLag * faceTurn + (1.0 - faceLag) * along + noise.w * n3 + tie);
 #endif
     float stagger = clamp(s.stagger, 0.0, 0.85);
     float start = order * stagger * life;

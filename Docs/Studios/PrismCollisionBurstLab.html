@@ -742,15 +742,15 @@ struct PrismBurstSuctionShape
     float swirl;
     float spin;
     float shrink;
-    float sizeOrder;
+    float faceLag;
     float sizeSpin;
     float spinCap;
     float levelRef;
     float variety;
 };
-void PrismBurstSuctionPose(vec3 rest, vec3 N, vec3 middle, vec3 centre, vec3 noisePoint, float level,
-    float radius, float age, float life, vec3 sink, vec3 sink0, vec4 noise, PrismBurstSuctionShape s,
-    out vec3 pos, out vec3 nrm)
+void PrismBurstSuctionPose(vec3 rest, vec3 N, vec3 middle, vec3 centre, vec3 faceCentre, vec3 faceU,
+    vec3 faceV, vec3 noisePoint, float level, float radius, float age, float life, vec3 sink, vec3 sink0,
+    vec4 noise, PrismBurstSuctionShape s, out vec3 pos, out vec3 nrm)
 {
     vec3 q = noisePoint * noise.y + noise.z * vec3(17.13, 31.71, 7.37);
     float n1 = PrismBurstGradientNoise(q);
@@ -761,9 +761,21 @@ void PrismBurstSuctionPose(vec3 rest, vec3 N, vec3 middle, vec3 centre, vec3 noi
 #ifdef PRISM_BURST_SUCTION_UNORDERED
     float order = PrismBurstHash(middle * 13.7 + noise.z);
 #else
-    float facing = 0.5 - 0.5 * clamp(dot(middle - centre, axis) / max(radius, 1e-5), -1.0, 1.0);
-    float smallFirst = 1.0 - saturate(size / max(s.levelRef, 1e-3));
-    float order = saturate(mix(facing, smallFirst, saturate(s.sizeOrder)) + noise.w * n3);
+    float lu = max(length(faceU), 1e-5);
+    float lv = max(length(faceV), 1e-5);
+    vec3 uHat = faceU / lu;
+    vec3 vHat = faceV / lv;
+    vec3 toSink = sink0 - faceCentre;
+    vec3 nearest = faceCentre + uHat * clamp(dot(toSink, uHat), -lu, lu) + vHat * clamp(dot(toSink, vHat), -lv, lv);
+#ifdef PRISM_BURST_SUCTION_WHOLE_FACE
+    float along = 0.0;
+#else
+    float along = saturate(length(middle - nearest) / (2.0 * sqrt(lu * lu + lv * lv)));
+#endif
+    float faceLag = saturate(s.faceLag);
+    float faceTurn = 0.5 - 0.5 * clamp(dot(N, axis), -1.0, 1.0);
+    float tie = 0.002 * PrismBurstHash(middle * 7.31 + noise.z * 3.7);
+    float order = saturate(faceLag * faceTurn + (1.0 - faceLag) * along + noise.w * n3 + tie);
 #endif
     float stagger = clamp(s.stagger, 0.0, 0.85);
     float start = order * stagger * life;

@@ -2718,13 +2718,19 @@ gnomen triangles that are used on the explosion shader on the suction shader. Us
   on the destruction's own mesh at the destruction's own depth (`PrismInteractionLod.TrySuction` runs `PickDepth`,
   the crowding steps and the triangle fit exactly as `TryDestruction` does), and every silver triangle and gnomon is
   drawn into the eater over the implosion's authored life (`PrismImplosion.prefab` `implosionDuration`, 2 s, read
-  through `PrismDebris.TryGetImplosionDuration`). Each fragment takes its TURN — the side facing the eater first (the
-  SuctionGraph's `SequentialFaceConverger` consumes the face nearest `_Location` first), the smaller a little sooner
-  (`suctionSizeOrder` 0.35), a gradient noise keeping neighbours near but never in step — inside the first
-  `suctionStagger` (0.5) of the life; then its own trip, eased in as u^`suctionAcceleration` (2.2): along a curve
-  lifted `suctionLift` (0.35 R) off its face, wound `suctionSwirl` (0.35 turns, its hand per suction) about the line to
-  the eater, tumbling `suctionSpin` (0.75 turns, the destruction's size spin and cap), shrinking over the last
-  `suctionShrink` (0.45) of the trip so it is gone exactly AT the eater; every fragment in by 95% of the life.
+  through `PrismDebris.TryGetImplosionDuration`). **Round 15b (Garrett, the same day): *"i was thinking it would detatch
+  one triangle at a time along the current faces. so we would see the triangle spaced out along their path. so
+  instead of one whole face that face simply separates its triangles as it is pulled in."*** Every face stays whole
+  and lets go of its triangles ONE AFTER ANOTHER, starting from the face's point nearest the eater and spreading
+  across it, over `suctionStagger` (0.7) of the life; the face toward the eater starts first and the face turned
+  away `suctionFaceLag` (0.2 of the order) later, the SuctionGraph's face order kept as a lag instead of a block. A
+  gradient noise bends the peel front a little (`suctionOrderNoise` 0.03). Each triangle's own trip (the remaining
+  quarter of the life) is eased in as u^`suctionAcceleration` (1.4) along a curve lifted `suctionLift` (0.35 R) off
+  its face, wound `suctionSwirl` (0.25 turns, its hand per suction) about the line to the eater, tumbling
+  `suctionSpin` (0.75 turns, the destruction's size spin and cap), shrinking over the last `suctionShrink` (0.3) of
+  the trip so it is gone exactly AT the eater; with the trips overlapping, each face feeds a stream of triangles
+  strung out along the path in. Every fragment is in by 95% of the life. (Round 15's first cut ordered the whole
+  prism by how far each piece sat toward the eater, so the face toward it went as one block.)
 - **The moving target, unchanged**: the eater swims while it feeds, so the sink is RETAINED, not snapshotted — the
   burst carrier's one post-spawn write, `PrismCollisionBurst.RefreshSuctions` → `PrismRenderService
   .RefreshSliceDebrisSinkBatch`, one float4 (`_SliceCentre`, unused by every other burst kind) per live suction per
@@ -2739,8 +2745,11 @@ gnomen triangles that are used on the explosion shader on the suction shader. Us
   still runs the pooled SuctionGraph, which owns its completion callback.
 - **Proved offline**: `verify_prism_collision_burst.py` § S — the first frame is the prism, every fragment rigid up to
   its shrink, every pose inside `PrismBurstSuctionReach` about the LIVE sink (= `PrismCollisionBurst.SuctionReach`, the
-  culling box grown when the sink wanders), every fragment at the live sink by 95% of the life, the facing side first;
-  negative controls: a random order (S6 fires), the sink snapshotted at the stamp (S5 fires). Every pass compiles with
+  culling box grown when the sink wanders), every fragment at the live sink by 95% of the life; on each face the
+  triangles let go from its point nearest the sink outward (S6: every same-face pair in order) and one at a time (S7:
+  each face's departures spread over at least half its share, under 2% of consecutive ones at one instant; measured
+  0.79 and 15 of 17,784); negative controls: a random order (S6 fires), a face letting go whole (S7 fires), the sink
+  snapshotted at the stamp (S5 fires). Every pass compiles with
   `_BURST_SUCTION`, plain and DOTS-instanced. The Collision Burst Lab does not draw the suction yet (its page is rebuilt
   from the shipped HLSL; its JS port has no suction kind).
 

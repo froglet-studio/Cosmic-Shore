@@ -51,14 +51,14 @@ MonoBehaviour:
   suctionEnabled: 1
   suctionAsFragments: 1
   maxLiveSuctions: 1024
-  suctionStagger: 0.5
-  suctionAcceleration: 2.2
+  suctionStagger: 0.7
+  suctionAcceleration: 1.4
   suctionLift: 0.35
-  suctionSwirl: 0.35
+  suctionSwirl: 0.25
   suctionSpin: 0.75
-  suctionShrink: 0.45
-  suctionSizeOrder: 0.35
-  suctionOrderNoise: 0.1
+  suctionShrink: 0.3
+  suctionFaceLag: 0.2
+  suctionOrderNoise: 0.03
   shedEnabled: 1
   shedMinScreen: 0.08
   shedFineScreen: 0.24

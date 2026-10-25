@@ -49,8 +49,9 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
   S. THE SUCTION (round 15: the destruction's cut drawn into a moving sink; both cuts at depths 0-10, the shipped shape
      and every slider at the end of its range, the noise off and on, the eater swimming up to 8 u/s): the first frame
      is the prism; unit normals; every fragment rigid up to its shrink; every pose inside PrismBurstSuctionReach about
-     the LIVE sink (the CPU's bounds); every fragment in, at the live sink, by 95% of the life; the side facing the
-     sink leaves first (the SuctionGraph's face order).
+     the LIVE sink (the CPU's bounds); every fragment in, at the live sink, by 95% of the life; on each face the
+     triangles let go from the face's point nearest the sink outward (S6), ONE AT A TIME, spread over the face's share
+     of the life (S7, round 15b).
   X. THE EXPLOSION MAP (the lab draws the explosion with it) equals the harness's own Rodrigues statement of
      RotateFacesAlongAxis' closed form with the graph's constants.
   NEGATIVE CONTROLS, each must FAIL the test it guards:
@@ -67,6 +68,7 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
   20c. -DPRISM_BURST_FRAGMENT_VARIETY_OFF=1  — every death alike: two prisms struck alike play one animation (F11 fires).
   21. -DPRISM_BURST_ROLL_TOWARD_CAMERA=1   — the roll rolls toward the camera, onto faces it sees (R fires).
   22. -DPRISM_BURST_SUCTION_UNORDERED=1    — every suction fragment at a random turn (S6 fires).
+  23b. -DPRISM_BURST_SUCTION_WHOLE_FACE=1  — a face lets go of all its triangles at once (S7 fires).
   23. -DPRISM_BURST_SUCTION_SNAPSHOT=1     — the sink snapshotted at the stamp: the mass converges on where the
                                              eater WAS (S5 fires).
 
@@ -897,26 +899,56 @@ static void run_roll_tests() {
 
 // S. the SUCTION kind (round 15): the destruction's cut drawn into a MOVING sink — the first frame is the prism, every
 // fragment stays rigid up to its shrink and inside the reach the CPU sizes the bounds by about the LIVE sink, every one
-// is in, at the live sink, by 95% of the life, and the side facing the sink leaves first.
+// is in, at the live sink, by 95% of the life; and (round 15b) each face lets go of its triangles ONE AT A TIME from its
+// point nearest the sink, so they string out along the path.
 static PrismBurstSuctionShape suctionShape(bool extreme) {
     PrismBurstSuctionShape s;
     // the shipped shape (PrismInteractionLodConfig.asset), or every slider at the end of its range
-    s.stagger = extreme ? 0.85f : 0.5f; s.accel = extreme ? 4.0f : 2.2f; s.lift = extreme ? 2.0f : 0.35f;
-    s.swirl = extreme ? 2.0f : 0.35f; s.spin = extreme ? 3.0f : 0.75f; s.shrink = extreme ? 0.05f : 0.45f;
-    s.sizeOrder = extreme ? 1.0f : 0.35f; s.sizeSpin = extreme ? 1.0f : 0.25f; s.spinCap = extreme ? 3.0f : 1.6f;
+    s.stagger = extreme ? 0.85f : 0.7f; s.accel = extreme ? 4.0f : 1.4f; s.lift = extreme ? 2.0f : 0.35f;
+    s.swirl = extreme ? 2.0f : 0.25f; s.spin = extreme ? 3.0f : 0.75f; s.shrink = extreme ? 0.05f : 0.3f;
+    s.faceLag = extreme ? 1.0f : 0.2f; s.sizeSpin = extreme ? 1.0f : 0.25f; s.spinCap = extreme ? 3.0f : 1.6f;
     s.levelRef = extreme ? 1.0f : 4.0f; s.variety = extreme ? 1.0f : 0.5f;
     return s;
+}
+// A face's +u axis, as HighPolyPrismMesh lays it out (the cut builders' table); +v is cross(n, u), as BurstVert takes it.
+static float3 faceUOf(float3 n) {
+    if (n.x > 0.5f) return float3(0, 1, 0);
+    if (n.x < -0.5f) return float3(0, 0, 1);
+    if (n.y > 0.5f) return float3(0, 0, 1);
+    if (n.y < -0.5f) return float3(1, 0, 0);
+    if (n.z > 0.5f) return float3(1, 0, 0);
+    return float3(0, 1, 0);
 }
 static void suctionPose(const Pose& P, const WVert& v, float age, float life, float3 sink, float3 sink0, float4 noise,
                         const PrismBurstSuctionShape& s, float3& pos, float3& nrm) {
     FragFrame f = fragFrame(P, v);
     float R = length(linear(P, float3(0.5f, 0.5f, 0.5f)));
-    PrismBurstSuctionPose(f.rest, f.n, f.centroid, P.t, v.centroid, v.level, R, age, life, sink, sink0, noise, s, pos, nrm);
+    float3 u = faceUOf(v.n);
+    PrismBurstSuctionPose(f.rest, f.n, f.centroid, P.t, f.faceCentre, linear(P, u * 0.5f), linear(P, cross(v.n, u) * 0.5f),
+                          v.centroid, v.level, R, age, life, sink, sink0, noise, s, pos, nrm);
+}
+// The instant a fragment lets go (its centroid first leaves its own age-0 pose — compared with itself, not with the
+// stored centroid, whose float rounding out at the pose's translation would read as motion), by bisection.
+static float suctionLeaves(const Pose& P, const std::vector<WVert>& m, size_t i, float life, float3 sink0, float4 noise,
+                           const PrismBurstSuctionShape& s, float R) {
+    auto centre = [&](float age) {
+        float3 c(0, 0, 0), n;
+        for (int k = 0; k < 3; k++) { float3 q; suctionPose(P, m[i + k], age, life, sink0, sink0, noise, s, q, n); c = c + q / 3.0f; }
+        return c;
+    };
+    float3 c0 = centre(0.0f);
+    float tol = 1e-5f * R + 1e-6f * length(c0);
+    float lo = 0, hi = life;
+    for (int it = 0; it < 30; it++) {
+        float age = 0.5f * (lo + hi);
+        if (length(centre(age) - c0) > tol) hi = age; else lo = age;
+    }
+    return hi;
 }
 static void run_suction_tests() {
     const float life = 2.0f;   // PrismImplosion.prefab implosionDuration
-    float worstReach = 0, worstRigid = 0, worstArrival = 0;
-    int ordered = 0, orderPairs = 0;
+    float worstReach = 0, worstRigid = 0, worstArrival = 0, narrowest = 1e9f;
+    int ordered = 0, orderPairs = 0, together = 0, gaps = 0;
     struct Cut { bool sier; int depth; };
     for (bool extreme : {false, true})
     for (Cut cut : {Cut{true, 0}, Cut{true, 3}, Cut{false, 0}, Cut{false, 4}, Cut{false, 7}, Cut{false, 10}})
@@ -929,7 +961,7 @@ static void run_suction_tests() {
             float3 sink0 = P.t + rndDir() * (R * rnd(1.2f, 12.0f));
             // the eater swims while it feeds (a grazer drifts ~6 u over the suction, a predator farther)
             float3 swim = rndDir() * rnd(0.0f, 8.0f);
-            float4 noise(amp, 3.0f, rnd(0, 1), amp > 0 ? 0.1f : 0.0f);
+            float4 noise(amp, 3.0f, rnd(0, 1), amp > 0 ? 0.03f : 0.0f);   // the shipped order noise
             for (float age : {0.0f, 0.05f, 0.3f, 0.7f, 1.1f, 1.5f, 1.8f, 0.95f * life, life}) {
                 float3 sink = sink0 + swim * age;
                 float reach = PrismBurstSuctionReach(R, length(sink - P.t), s.lift, s.variety);
@@ -967,33 +999,46 @@ static void run_suction_tests() {
                     CHECK(off <= 2e-5f && (kk - 1) * d0[longest] <= 2e-5f * reach, "suction %d: a fragment deformed", cut.depth);
                 }
             }
-            // S6. the side FACING the sink leaves first (size order and order noise off: the SuctionGraph's face order)
-            if (!extreme && amp == 0 && cut.depth >= 4) {
-                PrismBurstSuctionShape s0 = s; s0.sizeOrder = 0.0f;
-                std::vector<float> leave(m.size() / 3), facing(m.size() / 3);
-                float3 axis = normalize(sink0 - P.t);
-                for (size_t i = 0; i < m.size(); i += 3) {
-                    facing[i / 3] = dot(world(P, m[i].centroid) - P.t, axis) / R;
-                    float lo = 0, hi = life;
-                    for (int it = 0; it < 24; it++) {
-                        float age = 0.5f * (lo + hi); float3 c(0, 0, 0), n;
-                        for (int k = 0; k < 3; k++) { float3 q; suctionPose(P, m[i + k], age, life, sink0, sink0, noise, s0, q, n); c = c + q / 3.0f; }
-                        if (length(c - world(P, m[i].centroid)) > 1e-6f * R) hi = age; else lo = age;
-                    }
-                    leave[i / 3] = hi;
-                }
-                for (size_t i = 0; i < leave.size(); i++)
-                    for (size_t j = i + 1; j < leave.size(); j += 5) {
-                        if (std::fabs(facing[i] - facing[j]) < 0.3f) continue;
-                        orderPairs++;
-                        if ((facing[i] > facing[j]) == (leave[i] < leave[j])) ordered++;
-                    }
+            if (extreme || cut.depth < 4) continue;
+            // Each fragment's instant of letting go, and its distance from its face's point nearest the sink.
+            std::vector<float> leave(m.size() / 3), from(m.size() / 3);
+            for (size_t i = 0; i < m.size(); i += 3) {
+                leave[i / 3] = suctionLeaves(P, m, i, life, sink0, noise, s, R);
+                FragFrame f = fragFrame(P, m[i]);
+                float3 u = faceUOf(m[i].n), U = linear(P, u * 0.5f), V = linear(P, cross(m[i].n, u) * 0.5f);
+                float lu = length(U), lv = length(V); float3 uh = U / lu, vh = V / lv, t = sink0 - f.faceCentre;
+                float3 near = f.faceCentre + uh * clamp(dot(t, uh), -lu, lu) + vh * clamp(dot(t, vh), -lv, lv);
+                from[i / 3] = length(f.centroid - near) / (2 * std::sqrt(lu * lu + lv * lv));
             }
+            // S6. on each face the triangles nearer its point nearest the sink let go first (noise off)
+            if (amp == 0)
+                for (size_t i = 0; i < leave.size(); i++)
+                    for (size_t j = i + 1; j < leave.size(); j += 3) {
+                        if (length(m[3*i].n - m[3*j].n) > 0 || std::fabs(from[i] - from[j]) < 0.05f) continue;
+                        orderPairs++;
+                        if ((from[i] < from[j]) == (leave[i] < leave[j])) ordered++;
+                    }
+            // S7. ONE AT A TIME (the shipped noise on): a face's triangles let go spread over most of its share of the
+            // life, and no two of a face at one instant — so they string out along the path instead of the face going whole
+            if (amp > 0)
+                for (int face = 0; face < 6; face++) {
+                    // the cut builders lay the six faces out one after another, the same count each
+                    size_t per = leave.size() / 6;
+                    std::vector<float> t(leave.begin() + face * per, leave.begin() + (face + 1) * per);
+                    std::sort(t.begin(), t.end());
+                    float spread = (t.back() - t.front()) / (s.stagger * (1 - s.faceLag) * life);
+                    narrowest = std::min(narrowest, spread);
+                    CHECK(spread >= 0.5f, "suction %d: a face let go of its triangles within %.0f%% of its share: the face went whole", cut.depth, 100 * spread);
+                    for (size_t k = 1; k < t.size(); k++) { gaps++; if (t[k] - t[k-1] <= 1e-6f * life) together++; }
+                }
         }
     }
     printf("suction: worst reach use %.3f, worst deformation %.2g, farthest from the sink at 95%% of life %.2g R; "
-           "the side facing the sink left first in %d of %d pairs\n", worstReach, worstRigid, worstArrival, ordered, orderPairs);
-    CHECK(orderPairs > 0 && ordered >= orderPairs * 97 / 100, "the side facing the sink did not leave first (%d of %d)", ordered, orderPairs);
+           "nearer its face's sink point left first in %d of %d pairs; narrowest face spread %.2f of its share; "
+           "%d of %d consecutive departures at one instant\n",
+           worstReach, worstRigid, worstArrival, ordered, orderPairs, narrowest, together, gaps);
+    CHECK(orderPairs > 0 && ordered >= orderPairs * 97 / 100, "a face's triangles did not let go from its sink point outward (%d of %d)", ordered, orderPairs);
+    CHECK(gaps > 0 && together <= gaps / 50, "%d of %d consecutive departures of a face at one instant: not one at a time", together, gaps);
 }
 
 // 10. voronoi; 11. unknown kind.
@@ -1157,7 +1202,8 @@ def main():
                                  ("-DPRISM_BURST_FRAGMENT_VARIETY_OFF=1", "variety", "every-death-alike control"),
                                  ("-DPRISM_BURST_ROLL_TOWARD_CAMERA=1", "roll", "roll-toward-camera control"),
                                  ("-DPRISM_BURST_SUCTION_UNORDERED=1", "suction", "unordered-suction control"),
-                                 ("-DPRISM_BURST_SUCTION_SNAPSHOT=1", "suction", "snapshot-sink control")):
+                                 ("-DPRISM_BURST_SUCTION_SNAPSHOT=1", "suction", "snapshot-sink control"),
+                                 ("-DPRISM_BURST_SUCTION_WHOLE_FACE=1", "suction", "whole-face control")):
             rc, out = build_and_run(work, [flag], arg, label)
             fired = rc != 0
             print(f"negative control [{label}]: {'FIRED' if fired else 'DID NOT FIRE'} ({out.splitlines()[-1]})")

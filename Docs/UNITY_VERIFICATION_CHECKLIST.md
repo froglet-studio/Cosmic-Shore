@@ -12816,11 +12816,12 @@ imports without errors (magenta = rejected), the config asset loads (not a missi
    `TheFragmentReachIsTheProvedSum`, `TheShaderDefaultsAreTheShippedFragmentShape`, the config test.
 15. **Round 15 — the suction on the destruction's cut and ladder (`cece/stoic-hopper-6luqvc`, 2026-10-25)**: the
    shader imports with the `_BURST_SUCTION` keyword and the `_SuctionMotion` / `_SuctionShape` properties (no magenta),
-   and `PrismInteractionLodConfig` shows the `suction*` fields (enabled, as fragments, 1,024, stagger 0.5, acceleration
-   2.2, lift 0.35, swirl 0.35, spin 0.75, shrink 0.45, size order 0.35, order noise 0.1). (a) Watch a fauna graze or a
-   predator eat trail prisms CLOSE to the camera: each prism comes apart into silver triangles and gnomons of many
-   sizes, the side facing the eater first, lifting off and winding into the eater's mouth, each gone as it arrives;
-   the eater keeps swimming and the pieces follow it (no convergence on where it was). (b) Back away: the pieces get
+   and `PrismInteractionLodConfig` shows the `suction*` fields (enabled, as fragments, 1,024, stagger 0.7, acceleration
+   1.4, lift 0.35, swirl 0.25, spin 0.75, shrink 0.3, face lag 0.2, order noise 0.03). (a) Watch a fauna graze or a
+   predator eat trail prisms CLOSE to the camera: no face leaves whole — each face lets go of its silver triangles
+   ONE AT A TIME, starting from its point nearest the eater, so a stream of triangles is strung out along the path
+   into the eater's mouth while the rest of the face is still in place (round 15b); each triangle is gone as it
+   arrives; the eater keeps swimming and the stream follows it (no convergence on where it was). (b) Back away: the pieces get
    coarser until, far off, the prism comes apart in its 24 wedges — never the old face-by-face SuctionGraph unless
    `suctionAsFragments` is off. (c) A swarm eating dozens at once near the camera: later suctions come out one or two
    levels coarser, none vanish, no frame spike in `prof` (`PrismCollisionBurst.RefreshSuctions`, `.Drain`), and no

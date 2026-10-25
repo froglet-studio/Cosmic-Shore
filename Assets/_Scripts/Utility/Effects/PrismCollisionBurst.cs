@@ -32,8 +32,9 @@ namespace CosmicShore.Utility
     /// each face's skin rolls up AWAY from where the camera was at the steal, over the grade's length, then over the
     /// edge and round until its own prism hides it — the mass crystal's trick: nothing changes where it is seen.</item>
     /// <item><b>Suction</b> (<see cref="TryRequestSuction"/>, round 15): a consumed prism comes apart along the SAME cut at
-    /// the SAME detail level as a destruction, and every fragment is drawn into the eater: the side facing it first,
-    /// lifting off its face, winding in and shrinking away as it arrives, over the implosion's own life. The sink is
+    /// the SAME detail level as a destruction, and every fragment is drawn into the eater: each face lets go of its
+    /// triangles one after another from its point nearest the eater (round 15b), so they string out along the path,
+    /// each lifting off, winding in and shrinking away as it arrives, over the implosion's own life. The sink is
     /// the one stamp ever written after a spawn — the SuctionGraph's moving-target exception, one float3 per live
     /// suction per frame (<see cref="RefreshSuctions"/>), because the eater swims while it feeds.</item>
     /// </list>
@@ -712,7 +713,7 @@ namespace CosmicShore.Utility
                 m.SetVector(SuctionMotionId,
                     new Vector4(cfg.SuctionStagger, cfg.SuctionAcceleration, cfg.SuctionLift, cfg.SuctionSwirl));
                 m.SetVector(SuctionShapeId,
-                    new Vector4(cfg.SuctionSpin, cfg.SuctionShrink, cfg.SuctionSizeOrder, cfg.SuctionOrderNoise));
+                    new Vector4(cfg.SuctionSpin, cfg.SuctionShrink, cfg.SuctionFaceLag, cfg.SuctionOrderNoise));
                 tuned &= ApplyExplosionTuning(m);
                 s_runtimeMaterials[v] = m;
             }

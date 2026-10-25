@@ -178,14 +178,15 @@ namespace CosmicShore.ScriptableObjects
                  "suction falls back to the SuctionGraph's implosion — never nothing.")]
         [SerializeField] int maxLiveSuctions = 1024;
 
-        [Tooltip("The share of the implosion's life the fragments' STARTS are spread over: 0, all leave together; " +
-                 "higher, one after another (the SuctionGraph consumes face by face). The rest of the life is each " +
-                 "fragment's own trip, all of them in by 95% of it.")]
-        [Range(0f, 0.85f)] [SerializeField] float suctionStagger = 0.5f;
+        [Tooltip("Round 15b (Garrett: \"detach one triangle at a time along the current faces\"): the share of the " +
+                 "implosion's life over which each face lets go of its triangles, one after another from its point " +
+                 "nearest the eater, so they string out along the path in. Higher: more spaced out. The rest of the " +
+                 "life is each triangle's own trip, all of them in by 95% of it.")]
+        [Range(0f, 0.85f)] [SerializeField] float suctionStagger = 0.7f;
 
         [Tooltip("Each trip's progress is (its own time)^this: it creeps off the face, then rushes in — the crystal " +
                  "capture's suction is never linear either. 1: linear.")]
-        [Range(1f, 4f)] [SerializeField] float suctionAcceleration = 2.2f;
+        [Range(1f, 4f)] [SerializeField] float suctionAcceleration = 1.4f;
 
         [Tooltip("How far each fragment first rises off its face on the way in, in prism radii (the curve's control " +
                  "point), so the pieces visibly part before they are drawn in.")]
@@ -193,22 +194,23 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Turns each fragment winds about the line to the eater on the way in: the drain's vortex. Its hand " +
                  "and amount vary per suction with fragmentVariety.")]
-        [Range(0f, 2f)] [SerializeField] float suctionSwirl = 0.35f;
+        [Range(0f, 2f)] [SerializeField] float suctionSwirl = 0.25f;
 
         [Tooltip("Turns each fragment tumbles on the way in, the smaller a little faster up to fragmentSpinCap.")]
         [Range(0f, 3f)] [SerializeField] float suctionSpin = 0.75f;
 
         [Tooltip("The share of its own trip over which a fragment shrinks into the eater: it is gone the moment it " +
                  "arrives.")]
-        [Range(0.05f, 1f)] [SerializeField] float suctionShrink = 0.45f;
+        [Range(0.05f, 1f)] [SerializeField] float suctionShrink = 0.3f;
 
-        [Tooltip("Which go first: 0, the side facing the eater (the SuctionGraph's face order); 1, the smallest " +
-                 "(as a destruction's smallest leave first).")]
-        [Range(0f, 1f)] [SerializeField] float suctionSizeOrder = 0.35f;
+        [Tooltip("How much later the faces turned away from the eater start letting go than the face toward it, as a " +
+                 "share of the order (the SuctionGraph's face order, kept as a lag). 0: every face starts together; " +
+                 "1: one face after another.")]
+        [Range(0f, 1f)] [SerializeField] float suctionFaceLag = 0.2f;
 
-        [Tooltip("How much a gradient noise over the prism moves each fragment's turn, so neighbours leave nearly " +
-                 "together, never in step. 0: a perfect wave.")]
-        [Range(0f, 0.3f)] [SerializeField] float suctionOrderNoise = 0.1f;
+        [Tooltip("How much a gradient noise over the prism bends each face's peel front. Keep it small: larger " +
+                 "shuffles the one-at-a-time sequence. 0: a perfectly straight front.")]
+        [Range(0f, 0.3f)] [SerializeField] float suctionOrderNoise = 0.03f;
 
         [Header("Stealing — the grade, or a shed at one of three resolutions")]
         [Tooltip("Off: every steal is the ordinary grade.")]
@@ -316,7 +318,7 @@ namespace CosmicShore.ScriptableObjects
         public float SuctionSwirl => Mathf.Clamp(suctionSwirl, 0f, 2f);
         public float SuctionSpin => Mathf.Clamp(suctionSpin, 0f, 3f);
         public float SuctionShrink => Mathf.Clamp(suctionShrink, 0.05f, 1f);
-        public float SuctionSizeOrder => Mathf.Clamp01(suctionSizeOrder);
+        public float SuctionFaceLag => Mathf.Clamp01(suctionFaceLag);
         public float SuctionOrderNoise => Mathf.Clamp(suctionOrderNoise, 0f, 0.3f);
 
         /// <summary>The deepest cut a death can be drawn at (the number of depth lines, capped).</summary>

@@ -349,7 +349,7 @@ namespace CosmicShore.Tests
             Assert.IsTrue(Regex.IsMatch(shader, $@"_FragmentVariety \(""[^""]*"", Range\(0, 1\)\) = {Regex.Escape(F(cfg.FragmentVariety))}\r?\n"),
                 $"_FragmentVariety defaults to {F(cfg.FragmentVariety)}");
             Has("_SuctionMotion", cfg.SuctionStagger, cfg.SuctionAcceleration, cfg.SuctionLift, cfg.SuctionSwirl);
-            Has("_SuctionShape", cfg.SuctionSpin, cfg.SuctionShrink, cfg.SuctionSizeOrder, cfg.SuctionOrderNoise);
+            Has("_SuctionShape", cfg.SuctionSpin, cfg.SuctionShrink, cfg.SuctionFaceLag, cfg.SuctionOrderNoise);
         }
 
         [Test]
