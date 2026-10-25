@@ -2422,3 +2422,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash
 - **Added:** 2026-10-24 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/BRANCH_PARTS_STATUS.md; Docs/BRANCH_TEST_PLAN_2026-10-12.md on cece/nice-brahmagupta-ojclij (part's steps block); push with pick_branch_parts.py from that branch, --base origin/Ys-bleeding-edge
+
+### T-20261025-3f13 · open · test · Multiplayer
+- **Task:** B36 (Relay drops the host): on the machine that sent the 'owner' logs, play Bloomrush solo against AI to the end and back to the menu twice, on Ys-bleeding-edge. The multiplayer log is sent by itself; then run net_logs.py show 1 and read 'longest freeze' and any relayDrop event.
+- **Done when:** We know the longest freeze in the Bloomrush-to-menu load on that machine, and whether a relayDrop names a freeze of about 10 s.
+- **Who can take it:** the owner (the 'owner' Bug Ledger sender), Yash (offered)
+- **Added:** 2026-10-25 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/PartySystem/BUGS.md B36
+
+### T-20261025-c6d3 · open · dev · Performance
+- **Task:** Bloomrush ran at 190-680 ms a frame on the owner's editor (flights of 20 Oct, intensity 1, Manta), against 17-21 ms for every other mode on the same machine, and its teardown on the way to the menu likely froze ~10 s, which drops the Relay connection (B36). Profile a Bloomrush match and its return to the menu (/perf-hunt, Docs/PERFORMANCE_OPTIMIZATION.md) and fix the slow frame.
+- **Done when:** Bloomrush and its return to the menu run without a multi-second frame on that machine, measured.
+- **Who can take it:** Garrett (arcade modes), Yash (offered)
+- **Added:** 2026-10-25 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/PartySystem/BUGS.md B36; bugledger/owner flights/flight_Bloomrush_Manta_20261020_*.json

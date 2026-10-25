@@ -3143,6 +3143,23 @@ puts the AI on the rail's - face, the side every ring sits on, 22 u off the rail
 4. Fail = it hits the rail more, stalls at a ring, or flips faces every ring. Undo: set `SkimHeight` back to 4.346 in
    `Tools/Build/author_skimrace_ai_config.py` (`REGATTA_LEARNED`) and re-run it.
 
+### 🔴 Net: B36 - a game freeze is recorded, and a Relay drop names the freeze it followed (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B36): `FrameStallWatch` records any frame of 3 s or more while the
+NetworkManager is listening (`stall` in the session record; a warning at 9 s, since Relay drops a connection
+after about 10 s of silence). `MultiplayerSetup.OnTransportFailure` records `relayDrop` naming the freeze it
+followed. `net_logs.py show` prints each player's longest freeze.
+**Verified without the editor:** `FrameStallWatchTests` (5) and the full edit-mode suite on Amoebius (612/616; the
+4 failures are the known SceneTransitionManager / AppManagerBootstrap ones); `net_logs.py --self-test`;
+`unity_refcompile` player and editor. `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. Play online and stay in the menu: no `stall` events and no warning (the watch costs one clock read per frame).
+2. In the menu, pause the editor (Pause button) for 12 s and resume. The console shows the `[Net] The game froze
+   for 12.0 s ...` warning; the multiplayer log has a `stall` event. If the Relay then drops, its `relayDrop`
+   says "after a 12.0 s freeze".
+3. Play Bloomrush solo against AI to the end and back to the menu, then `net_logs.py show 1`: read the longest
+   freeze on the summary line.
+
 ### 🔴 Party: B31 fixed again - lobby reads one second apart (`Ys-bleeding-edge`, 2026-10-24) — NOT EDITOR-VERIFIED
 
 **What landed** (`Docs/PartySystem/BUGS.md` B31, "The first fix did not hold"): `LobbyReadPacer` holds every
