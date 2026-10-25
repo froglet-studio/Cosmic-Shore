@@ -47,6 +47,8 @@ MonoBehaviour:
   netSettle: 0.75
   netSettleEase: 3
   netPrismCap: 48
+  netPrismSettle: 1
+  netPrismTurnEase: 6
   netLitLift: 0.6
   netLitSeconds: 0.6
   netLitFadeSeconds: 0.25

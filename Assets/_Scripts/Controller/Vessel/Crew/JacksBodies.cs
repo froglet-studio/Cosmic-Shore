@@ -126,6 +126,9 @@ namespace CosmicShore.Gameplay
         // the second decoy (Time level 5, 2026-10-25), a world offset like the first
         readonly NetworkVariable<Vector3> n_decoyB = new(
             readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        // which jack laid each decoy, whose orientation the decoy keeps: two bits each (0 both, 1 jack A, 2 jack B)
+        readonly NetworkVariable<byte> n_decoyFrom = new(
+            readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
 
         /// <summary>True where the jacks are DECIDED: the owning machine, or anywhere while not network-spawned.</summary>
         bool IsAuthority => !IsSpawned || IsOwner;
@@ -456,7 +459,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Each decoy down is drawn as a third jack (a fourth with Time 5's second; Garrett, 2026-10-25: "Let's have the decoy
-        /// look like a third jack"), swimming in place on the board at the jacks' own size, on every peer: the owner's
+        /// look like a third jack"), facing the way the jack that laid it faces (<see cref="SourceHeading"/>), swimming in place
+        /// on the board at the jacks' own size, on every peer: the owner's
         /// decoys here, the published ones elsewhere. Laid, it grows in; re-laid somewhere else, it shrinks out of the old
         /// place and grows into the new one (the continuity law); taken away, it shrinks out.
         /// </summary>
@@ -481,23 +485,39 @@ namespace CosmicShore.Gameplay
                 }
                 else
                 {
-                    if (_decoyGrow[s] <= 0f)
-                    {
-                        // laid: it faces the way the hull does, on the board
-                        _decoyShown[s] = at;
-                        var heading = Vector3.ProjectOnPlane(transform.forward, up);
-                        j.Heading = heading.sqrMagnitude > 1e-6f ? heading.normalized : Vector3.ProjectOnPlane(transform.up, up).normalized;
-                    }
-                    else _decoyShown[s] = at;   // a small move (the board settling) is followed
+                    _decoyShown[s] = at;   // laid, or a small move (the board settling) followed
                     _decoyGrow[s] = Mathf.MoveTowards(_decoyGrow[s], 1f, step);
                 }
                 bool shown = _decoyGrow[s] > 0f;
                 if (j.T.gameObject.activeSelf != shown) j.T.gameObject.SetActive(shown);
                 if (!shown) continue;
-                var facing = Quaternion.LookRotation(Vector3.ProjectOnPlane(j.Heading, up).sqrMagnitude > 1e-6f
-                    ? Vector3.ProjectOnPlane(j.Heading, up) : transform.forward, up);
+                // it faces the way the jack that laid it faces, and turns as that jack turns (Garrett, 2026-10-25: "when the
+                // fish is laid it should match the orientation of the laid fish. as that fish reorients so should the
+                // decoy"); the one laid between them on landing faces the way both do on average
+                var want = Vector3.ProjectOnPlane(SourceHeading(DecoySource(s)), up);
+                if (want.sqrMagnitude > 1e-6f) j.Heading = want.normalized;
+                var heading = Vector3.ProjectOnPlane(j.Heading, up);
+                var facing = Quaternion.LookRotation(heading.sqrMagnitude > 1e-6f ? heading : transform.forward, up);
                 Pose(j, _decoyShown[s], facing, 0f, 0f, Mathf.SmoothStep(0f, 1f, _decoyGrow[s]), dt);
             }
+        }
+
+        /// <summary>The drawn heading of jack <paramref name="k"/> (its nose; the hull's while flying).</summary>
+        internal Vector3 JackHeading(int k) => k >= 0 && k < _jacks.Length && _jacks[k] != null ? _jacks[k].Heading : transform.forward;
+
+        // the jack that laid decoy s: the executor's here, the published one elsewhere
+        int DecoySource(int s)
+        {
+            if (IsAuthority) return _crew ? _crew.DecoySource(s) : -1;
+            return ((n_decoyFrom.Value >> (2 * s)) & 3) - 1;
+        }
+
+        // that jack's heading; -1 is both on average
+        Vector3 SourceHeading(int from)
+        {
+            if (from >= 0) return JackHeading(from);
+            var sum = JackHeading(0) + JackHeading(1);
+            return sum.sqrMagnitude > 1e-4f ? sum : transform.forward;
         }
 
         // ------------------------------------------------------------------ the skimmer and the net
@@ -683,6 +703,11 @@ namespace CosmicShore.Gameplay
             Write(n_jackB, b);
             if (decoy) Write(n_decoy, _decoyOffset);
             if (decoyB) Write(n_decoyB, _decoyOffsetB);
+            if (_crew)
+            {
+                byte from = (byte)((_crew.DecoySource(0) + 1) | ((_crew.DecoySource(1) + 1) << 2));
+                if (from != n_decoyFrom.Value) n_decoyFrom.Value = from;
+            }
         }
 
         static void Write(NetworkVariable<Vector3> v, Vector3 value)

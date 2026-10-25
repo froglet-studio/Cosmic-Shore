@@ -269,5 +269,27 @@ namespace CosmicShore.Tests
                                                  Vector3.right, 20f, 24f);
             Assert.GreaterOrEqual(-Vector3.Dot(flat.Bag, flat.Normal), 0.29f);
         }
+
+        [Test]
+        public void Net_ASurfacePoint_LiesAcrossTheMesh_FacingTheMouth()
+        {
+            // what is stuck in the net lies flat against it (2026-10-25): along the fish line at the bottom of the bag, standing
+            // out toward the mouth, and the normal is square to both directions of the mesh everywhere
+            var net = JacksMath.NetFrame.Between(new Vector3(-20f, 0f, 0f), new Vector3(20f, 0f, 0f), Vector3.forward, Vector3.up,
+                                                20f, 24f);
+            net.SurfaceAt(0.5f, 0f, 1f, out var along, out var normal);
+            Assert.Less(Vector3.Distance(along, Vector3.right), Eps, "across the bottom of the bag: along the fish line");
+            Assert.Less(Vector3.Distance(normal, Vector3.forward), Eps, "facing the mouth");
+            foreach (var (s, t) in new[] { (0.2f, 0.5f), (0.8f, -0.6f), (0.5f, 0.9f), (0.05f, 0f) })
+            {
+                net.SurfaceAt(s, t, 1f, out along, out normal);
+                const float h = 1e-3f;
+                var ds = net.Point(s + h, t, 1f) - net.Point(s - h, t, 1f);
+                var dt = net.Point(s, t + h, 1f) - net.Point(s, t - h, 1f);
+                Assert.Less(Mathf.Abs(Vector3.Dot(normal, ds.normalized)), 1e-2f, $"square to the mesh along s at ({s}, {t})");
+                Assert.Less(Mathf.Abs(Vector3.Dot(normal, dt.normalized)), 1e-2f, $"square to the mesh along t at ({s}, {t})");
+                Assert.Greater(Vector3.Dot(normal, net.Normal), 0f, "toward the mouth");
+            }
+        }
     }
 }

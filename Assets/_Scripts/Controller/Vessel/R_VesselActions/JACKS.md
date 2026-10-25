@@ -63,8 +63,10 @@ The next one waits for this one to land plus `teleportGuard`.
 
 **The decoy is a third jack** (Garrett, 2026-10-25: "Let's have the decoy look like a third jack"): each decoy down is drawn
 as a copy of the jacks' model (`JacksBodies.UpdateDecoys`; a fourth with Time 5's second), painted in the domain's ship
-material, at the jacks' own size for the mode, swimming in place on the board and facing the way the hull did when it was
-laid. It grows in where it is laid, and a re-laid decoy shrinks out of its old place and grows into the new one
+material, at the jacks' own size for the mode, swimming in place on the board and facing the way the jack that laid it
+faces - and turning as that jack turns (Garrett, 2026-10-25: "when the fish is laid it should match the orientation of the
+laid fish. as that fish reorients so should the decoy"; `JacksExecutor.DecoySource`, published as `n_decoyFrom`). The one
+laid between the jacks on landing faces the way both do on average. It grows in where it is laid, and a re-laid decoy shrinks out of its old place and grows into the new one
 (`decoyGrowRate` 5/s; a move over `decoyRelayDistance` 8 u is a re-lay, a smaller one is followed). Every peer draws it
 from the published decoys. The copy has no collider. Its 2D mark is a jack's dot; its ring keeps the decoy's colour.
 
@@ -83,7 +85,7 @@ the small view (the Wrasse's gesture, `PilotSwapGesture`).
   collects it, measured across the board as the top-down view shows it (`jackCrystalReach` 32 u, up to `jackCrystalHeight`
   200 u above or below the board; round 1 measured in 3D and missed the crystals the net left off the board), so the
   crystals the net let go of are the jacks' to pick up.
-- **Netting** (the flying mode; Garrett, 2026-10-24). The jacks take off: the hull jumps to halfway between them, facing the board's forward, and they swim into
+- **Netting** (the flying mode; Garrett, 2026-10-24). The jacks take off: the hull jumps to halfway between them, facing the way they face on average (2026-10-25: "the new orientation should be the average orientation of the two fish. same for location"; the board's forward if they face opposite ways), and they swim into
   formation beside it (`flightFormationEase`). The hull flies on the fleet's own two-thumb flight (the Rhino's rig and
   ramp), and each jack sits under its thumb (`JacksMath.FlightOffset`: `flightGap` from the centre line, moved
   `flightReach` by its stick, in the hull's frame). So the fish ARE the controls: one up and the other down is a roll,
@@ -177,7 +179,10 @@ that grow open and shrink away (`netGrowRate`). What crosses the mouth (`JacksNe
   they collide with other prisms"): caught and DRAGGED where the net holds them (up to `netPrismCap`, 48), each step a move
   of the prism-motion fundamental (`Docs/PRISM_MOTION.md`, the third mover): a dragged prism that runs into another prism
   destroys both, scored to us (`PrismMotion.Annihilate`), and the net's own prisms are movers of the same step, so the
-  catch never breaks itself. **Owner-less mass is netted like any other** (round 10, 2026-10-25: "netting mode is still
+  catch never breaks itself. A netted prism sinks into the mesh (`netPrismSettle` 1, at `netSettleEase`) and turns to lie
+  flat against it, its length along the fish line and its face to the mouth (`netPrismTurnEase` 6/s;
+  `JacksMath.NetFrame.SurfaceAt`; 2026-10-25: "when prisms are stuck in the net their orientation should match the
+  expectation of being stuck in the net"). **Owner-less mass is netted like any other** (round 10, 2026-10-25: "netting mode is still
   having no interaction with prisms when it should be dragging them like the crystals"). Rounds 5-9 skipped every
   owner-less plain prism (`Prism.IsEnvironmentOwned`, "no player name") as a mode's fixed track - and in the Toybox's boot
   cell, Garland, the whole bough the player flies through is ~4,300 owner-less `SpawnablePrism`s laid by its

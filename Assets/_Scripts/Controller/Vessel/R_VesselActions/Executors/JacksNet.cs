@@ -316,17 +316,24 @@ namespace CosmicShore.Gameplay
             if (n == 0) return;
             var index = PrismSpatialIndex.Instance;
             if (index == null || !index.IsAvailable) return;
-            EnsureNative(ex.Config.NetPrismCap);
+            var cfgJ = ex.Config;
+            EnsureNative(cfgJ.NetPrismCap);
 
+            // each sinks into the mesh and turns to lie flat against it, its length along the fish line (Garrett, 2026-10-25:
+            // "when prisms are stuck in the net their orientation should match the expectation of being stuck in the net")
+            float settle = JacksMath.Ease(cfgJ.NetSettleEase, dt), turn = JacksMath.Ease(cfgJ.NetPrismTurnEase, dt);
             _moverOfSlot.Clear();
             for (int i = 0; i < n; i++)
             {
                 var d = _dragged[i];
                 var p = d.Prism;
+                d.W += (cfgJ.NetPrismSettle - d.W) * settle;
                 _from[i] = p.transform.position;
                 _to[i] = Frame.Point(d.S, d.T, d.W);
                 _moverOfSlot.TryAdd(p.SpatialIndexId, i);
-                p.transform.position = _to[i];
+                Frame.SurfaceAt(d.S, d.T, d.W, out var along, out var normal);
+                var lie = Quaternion.LookRotation(along, normal);
+                p.transform.SetPositionAndRotation(_to[i], Quaternion.Slerp(p.transform.rotation, lie, turn));
                 p.NotifyPositionChanged();
             }
 

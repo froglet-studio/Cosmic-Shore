@@ -577,9 +577,12 @@ THUMB_VIEW_FIELDS = "  phoneShortMm: 71\n  thumbCover: 0.9\n"
 HERD_MARK_FIELDS = "  herdHueLean: 0.35\n  herdGlow: 1.5\n"   # the glow: "fauna that get herded should light up" (2026-10-23)
 # The net (Garrett, 2026-10-24: "lets make it a net that opens wider with xdiff"), after the flight's and the AI's fields;
 # and the herding view zoomed in, following the jacks, with its whole-cell zoom and buttons, after viewPanEase.
+# A netted prism sinks into the mesh and lies flat against it (round 13, Garrett, 2026-10-25: "when prisms are stuck in the
+# net their orientation should match the expectation of being stuck in the net"), after netPrismCap.
+NET_PRISM_LIE_FIELDS = "  netPrismSettle: 1\n  netPrismTurnEase: 6\n"
 NET_FIELDS = ("  netSpread: 30\n  netMinHeight: 6\n  netMaxHeight: 36\n  netDepth: 26\n  netTrailEase: 5\n"
               "  netSwingSeconds: 0.6\n  netSwingMax: 1.2\n  netSettle: 0.75\n"
-              "  netSettleEase: 3\n  netPrismCap: 48\n  netLitLift: 0.6\n  netLitSeconds: 0.6\n  netLitFadeSeconds: 0.25\n"
+              "  netSettleEase: 3\n  netPrismCap: 48\n" + NET_PRISM_LIE_FIELDS + "  netLitLift: 0.6\n  netLitSeconds: 0.6\n  netLitFadeSeconds: 0.25\n"
               "  netRivalTake: 0.1\n  netRivalCooldown: 2\n  jackCrystalReach: 32\n  jackNetCrystalReach: 10\n"
               "  jackCrystalHeight: 200\n"
               "  netCameraFill: 0.8\n  netCameraEase: 3\n")
@@ -635,6 +638,8 @@ def config_retrofit(text: str) -> str:
                       count=1, flags=re.M)
     if "  herdViewZoom:" not in text:
         text = re.sub(r"^(  viewPanEase: .*\n)", lambda m: m.group(1) + HERD_VIEW_FIELDS, text, count=1, flags=re.M)
+    if "  netPrismCap:" in text and "  netPrismSettle:" not in text:   # round 13 (2026-10-25): prisms lie in the mesh
+        text = re.sub(r"^(  netPrismCap: .*\n)", lambda m: m.group(1) + NET_PRISM_LIE_FIELDS, text, count=1, flags=re.M)
     if "  travelSpeed:" not in text:   # round 11 (2026-10-25): the fast travel replaces the jump
         text = re.sub(r"^(  teleportGuard: .*\n)", lambda m: m.group(1) + TRAVEL_FIELDS, text, count=1, flags=re.M)
     for field in RETIRED_FIELDS:   # rounds 10-11: the herding dash, the view's own buttons, Wide's bigger net
@@ -873,7 +878,7 @@ def check_assets(config: str, controls, container: str):
         errs.append("JacksConfig.asset: no herd glow field (run the tool)")
     if ("  netSpread:" not in config or "  netCameraEase:" not in config or "  netTrailEase:" not in config
             or "  netPrismCap:" not in config or "  jackNetCrystalReach:" not in config or "  netSwingSeconds:" not in config
-            or "  netLitLift:" not in config or "  travelSpeed:" not in config):
+            or "  netLitLift:" not in config or "  travelSpeed:" not in config or "  netPrismSettle:" not in config):
         errs.append("JacksConfig.asset: no net fields (run the tool)")
     if "  herdViewZoom:" not in config or "  viewZoomEase:" not in config or "  herdJacksFill:" not in config:
         errs.append("JacksConfig.asset: no herding view zoom fields (run the tool)")
@@ -1108,7 +1113,7 @@ def self_test():
     expect(check_assets(cfg.replace("  herdGlow: 1.5\n", ""), controls, cont), 1, "no herd glow field")
     expect(check_assets(cfg.replace(NET_FIELDS, ""), controls, cont), 1, "no net fields")
     expect(check_assets(cfg.replace(HERD_VIEW_FIELDS, ""), controls, cont), 1, "no herding view zoom fields")
-    round1 = cfg.replace(TRAVEL_FIELDS, "").replace("  netSwingSeconds: 0.6\n  netSwingMax: 1.2\n", "").replace(
+    round1 = cfg.replace(TRAVEL_FIELDS, "").replace(NET_PRISM_LIE_FIELDS, "").replace("  netSwingSeconds: 0.6\n  netSwingMax: 1.2\n", "").replace(
         "  netLitLift: 0.6\n  netLitSeconds: 0.6\n  netLitFadeSeconds: 0.25\n", "").replace("  netTrailEase: 5\n", "").replace("  netPrismCap: 48\n", "").replace("  jackNetCrystalReach: 10\n", "").replace("  jackCrystalReach: 32\n  jackCrystalHeight: 200\n",
                                                              "  jackCrystalReach: 18\n").replace("  herdJacksFill: 0.8\n  herdJacksMargin: 40\n", "")
     expect(check_assets(round1, controls, cont), 1, "the net's first-round config")
@@ -1119,6 +1124,10 @@ def self_test():
     expect(check_assets(round9, controls, cont), 2, "the round-9 config (the dash and the view buttons, no fast travel)")
     if config_retrofit(round9) != cfg:
         fails.append("the config retrofit does not bring the round-9 config to round 11")
+    round12 = cfg.replace(NET_PRISM_LIE_FIELDS, "")
+    expect(check_assets(round12, controls, cont), 1, "the round-12 config (prisms not yet lying in the mesh)")
+    if config_retrofit(round12) != cfg:
+        fails.append("the config retrofit does not bring the round-12 config to round 13")
     round10 = cfg.replace("  netCameraEase: 3\n", "  netCameraEase: 3\n  wideNetScale: 1.8\n").replace(TRAVEL_FIELDS, "")
     expect(check_assets(round10, controls, cont), 2, "the round-10 config (Wide's net, no fast travel)")
     if config_retrofit(round10) != cfg:

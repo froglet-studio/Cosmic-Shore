@@ -286,6 +286,28 @@ namespace CosmicShore.Gameplay
                 A + X * (s * Width) + Y * (t * 0.5f * Height) + Bag * (Mathf.Clamp01(w) * DepthAt(s, t));
 
             /// <summary>
+            /// The net's layer <paramref name="w"/> deep (1 the mesh of the bag) at (<paramref name="s"/>, <paramref name="t"/>):
+            /// <paramref name="along"/> runs across it along the fish line, <paramref name="normal"/> stands out of it toward the
+            /// mouth (both unit). What a thing pressed into the net lies flat against (Garrett, 2026-10-25: "when prisms are
+            /// stuck in the net their orientation should match the expectation of being stuck in the net").
+            /// </summary>
+            public void SurfaceAt(float s, float t, float w, out Vector3 along, out Vector3 normal)
+            {
+                s = Mathf.Clamp01(s);
+                t = Mathf.Clamp(t, -1f, 1f);
+                w = Mathf.Clamp01(w);
+                float sinS = Mathf.Sin(Mathf.PI * s), cosS = Mathf.Cos(Mathf.PI * s);
+                float sinT = Mathf.Sin(0.5f * Mathf.PI * t), cosT = Mathf.Cos(0.5f * Mathf.PI * t);
+                // the derivatives of Point(s, t, w) along s and along t
+                var ds = X * Width + Bag * (w * Depth * Mathf.PI * cosS * cosT);
+                var dt = Y * (0.5f * Height) - Bag * (w * Depth * 0.5f * Mathf.PI * sinS * sinT);
+                along = ds.sqrMagnitude > 1e-10f ? ds.normalized : X;
+                var n = Vector3.Cross(ds, dt);
+                normal = n.sqrMagnitude > 1e-10f ? n.normalized : Normal;
+                if (Vector3.Dot(normal, Normal) < 0f) normal = -normal;
+            }
+
+            /// <summary>
             /// Whether <paramref name="p"/> is inside the net, <paramref name="margin"/> included (a thing's own size): between
             /// the fish, inside the mouth's height, and between the mouth and the bag. Its (s, t, w) either way: the depth
             /// behind the mouth along <see cref="Bag"/>, and the mouth point it hangs from.

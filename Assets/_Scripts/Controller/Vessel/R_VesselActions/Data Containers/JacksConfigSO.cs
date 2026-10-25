@@ -112,6 +112,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Netting: the most prisms the net drags at once (Garrett, 2026-10-25: \"lets have prisms move and be dragged " +
                  "by the net\"). Each is a mover of the prism-motion rule: one that runs into another prism destroys both.")]
         [SerializeField, Range(0, 256)] int netPrismCap = 48;
+        [Tooltip("Netting: a netted prism sinks this far into the bag (0 the mouth, 1 the mesh) at netSettleEase, and lies " +
+                 "flat against the net there (Garrett, 2026-10-25: \"when prisms are stuck in the net their orientation should " +
+                 "match the expectation of being stuck in the net\").")]
+        [SerializeField, Range(0f, 1f)] float netPrismSettle = 1f;
+        [Tooltip("Netting: how fast a netted prism turns to lie flat against the net, its length along the fish line (1/s).")]
+        [SerializeField, Min(0.1f)] float netPrismTurnEase = 6f;
         [Tooltip("Netting: our own domain's prisms the net crosses are lit, not moved (Garrett, 2026-10-25: \"when prisms of " +
                  "the same domain are netted then they should be briefly lit\"): how far toward white (Prism.SetColorLift).")]
         [SerializeField, Range(0f, 1f)] float netLitLift = 0.6f;
@@ -274,6 +280,8 @@ namespace CosmicShore.Gameplay
         public float NetSettle => netSettle;
         public float NetSettleEase => netSettleEase;
         public int NetPrismCap => netPrismCap;
+        public float NetPrismSettle => netPrismSettle;
+        public float NetPrismTurnEase => netPrismTurnEase;
         public float NetLitLift => netLitLift;
         public float NetLitSeconds => netLitSeconds;
         public float NetLitFadeSeconds => netLitFadeSeconds;

@@ -127,6 +127,8 @@ namespace CosmicShore.Gameplay
         readonly bool[] _decoyOn = new bool[2];
         readonly Vector3[] _decoys = new Vector3[2];
         int _lastDecoy;   // the decoy placed most recently: the one a phone's both-thumbs lift jumps to
+        // which jack laid each decoy (0, 1; -1 both: the one laid between them on landing), whose orientation it keeps
+        readonly int[] _decoyFrom = { -1, -1 };
         float _decoyActedAt = -99f;   // the last decoy laid or jumped to (the Time card's flash)
 
         // WIDE, the Space ability (Garrett, 2026-10-25: "Space be the zoomed out view in herding mode"), herding only since
@@ -370,6 +372,7 @@ namespace CosmicShore.Gameplay
             if (_decoyOn[0] || _status == null || !_status.Transform) return;
             _decoys[0] = OnPlane(JacksCentre);
             _decoyOn[0] = true;
+            _decoyFrom[0] = -1;   // between the two: it faces the way they do on average
             _lastDecoy = 0;
         }
 
@@ -396,11 +399,15 @@ namespace CosmicShore.Gameplay
             if (config && creature && _herd.Count < config.HerdCap && creature.Leashable && !creature.IsLeashed) Join(creature);
         }
 
-        void DropDecoy(int slot, Vector3 at)
+        /// <summary>Lay decoy <paramref name="slot"/> at <paramref name="at"/>, laid by jack <paramref name="from"/> (Garrett,
+        /// 2026-10-25: "when the fish is laid it should match the orientation of the laid fish. as that fish reorients so
+        /// should the decoy"; <see cref="DecoySource"/>).</summary>
+        void DropDecoy(int slot, Vector3 at, int from)
         {
             if (!TimeUpgraded) slot = 0;
             _decoys[slot] = at;
             _decoyOn[slot] = true;
+            _decoyFrom[slot] = from;
             _lastDecoy = slot;
             _decoyActedAt = Time.time;
             if (config) Play(config.DecoySfx, at);
@@ -558,7 +565,7 @@ namespace CosmicShore.Gameplay
             {
                 _jack[k] = OnPlane(_jack[k]);
                 if (_jackDown[k]) _jack[k] = JacksMath.StepToward(_jack[k], OnPlane(_jackTarget[k]), config.DogSpeed, dt);
-                else if (_jackWasDown[k] && _liftLays[k]) DropDecoy(DecoySlotFor(k), _jack[k]);   // the lift
+                else if (_jackWasDown[k] && _liftLays[k]) DropDecoy(DecoySlotFor(k), _jack[k], k);   // the lift
                 _jackWasDown[k] = _jackDown[k];
                 if (_jackDown[k]) _liftLays[k] = _byThumb[k];
             }
@@ -682,7 +689,11 @@ namespace CosmicShore.Gameplay
         /// a pull lays that trigger's decoy at the jack on that side of the screen (with one decoy, either trigger lays it).</summary>
         void ReadTrigger(int side, bool down)
         {
-            if (down && !_triggerWas[side]) DropDecoy(side, OnPlane(_jack[ScreenSideJack(side)]));
+            if (down && !_triggerWas[side])
+            {
+                int k = ScreenSideJack(side);
+                DropDecoy(side, OnPlane(_jack[k]), k);
+            }
             _triggerWas[side] = down;
         }
 
@@ -815,8 +826,19 @@ namespace CosmicShore.Gameplay
             }
             var t = _status != null ? _status.Transform : null;
             if (!t) return;
+            // the hull takes off where the two fish are on average, facing the way they face on average (Garrett, 2026-10-25:
+            // "when switching from herding to netting, the new orientation should be the average orientation of the two fish.
+            // same for location"); two fish facing opposite ways average to nothing, and then the board's forward is kept
             if (takeOff && _vessel != null && ElementalTransfer.IsDecidedHere(_status))
-                _vessel.SetPose(new Pose(OnPlane(JacksCentre), Quaternion.LookRotation(_f, _u)));
+            {
+                var heading = _f;
+                if (_bodies)
+                {
+                    var sum = Vector3.ProjectOnPlane(_bodies.JackHeading(0) + _bodies.JackHeading(1), _u);
+                    if (sum.sqrMagnitude > 0.01f) heading = sum.normalized;
+                }
+                _vessel.SetPose(new Pose(OnPlane(JacksCentre), Quaternion.LookRotation(heading, _u)));
+            }
             var toLocal = Quaternion.Inverse(t.rotation);
             for (int k = 0; k < 2; k++) _flightLocal[k] = toLocal * (_jack[k] - t.position);
         }
@@ -1483,5 +1505,8 @@ namespace CosmicShore.Gameplay
         /// <summary>Flying: a jack's place in the hull's frame (what <see cref="JacksBodies"/> publishes).</summary>
         internal Vector3 JackLocal(int k) => _flightLocal[k];
         internal bool TryGetDecoy(int slot, out Vector3 at) { at = _decoys[slot]; return _decoyOn[slot]; }
+        /// <summary>The jack that laid decoy <paramref name="slot"/> (0, 1), or -1 for both (the decoy laid between them on
+        /// landing): the decoy is drawn facing the way that jack faces, for as long as it lies there.</summary>
+        internal int DecoySource(int slot) => _decoyFrom[slot];
     }
 }

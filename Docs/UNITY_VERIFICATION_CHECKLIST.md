@@ -14340,3 +14340,17 @@ Garrett: "Let's have the decoy look like a third jack." Each decoy is drawn as a
 52. Take off and net: the decoy jacks stay on the board, drawn at the flying size; fly into one - nothing is hit (no
     collider). A second machine sees the same decoy jacks.
 
+### Round 13 (2026-10-25, same branch)
+
+Garrett: "when the fish is laid it should match the orientation of the laid fish. as that fish reorients so should the
+decoy. when switching from herding to netting, the new orientation should be the average orientation of the two fish. same
+for location. when prisms are stuck in the net their orientation should match the expectation of being stuck in the net."
+Headless compile OK; `author_jacks_assets.py --check` / `--self-test` OK; the new `JacksMathTests` case
+(`Net_ASurfacePoint_LiesAcrossTheMesh_FacingTheMouth`) checked against a numeric replica, not run in NUnit.
+
+53. Herding: lay a decoy with the left trigger, then steer the left jack round in circles: the decoy jack turns with it,
+    nose for nose. The decoy laid between the jacks on landing faces their average heading.
+54. Point both jacks the same way and take off: the hull leaves between them facing that way, not the board's old forward.
+55. Net a run of bough prisms: each sinks to the back of the net and turns to lie flat against the mesh, long side along
+    the line between the fish, no snap. A second machine sees the decoys face the same way.
+
