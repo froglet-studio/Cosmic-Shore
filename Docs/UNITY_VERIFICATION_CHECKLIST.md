@@ -14597,3 +14597,14 @@ compilation and AI-state gates OK; `rhino_line_sim.py --self-test`. `Arcade/REGA
    dashes, the Dolphin spends its charge (status "discharging").
 4. Any other mode with these hulls (a crystal mode, Headlong): boosting looks as before (no path, no change).
 
+## 🔴 2026-10-25 — Regatta: the Manta's and the Rhino's race lines look further ahead, for the AI's nose lag (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/Resources/RaceLines/Manta_Regatta.asset` (look-ahead 0.6 / 1.0 s) and `Rhino_Regatta.asset` (0.8 /
+1.4 s), written by `Tools/Build/author_race_lines.py` (`--check` OK). No C# changed. `Arcade/REGATTA.md` §6.4.1.
+
+1. Regatta, I3 and I4, Hard, an AI Manta (Third Eye, Follow it): it rides its line without weaving (no left-right
+   swing of the nose on straights), Soars on the straights (boost status / trail flare), and threads the rings on bends.
+2. Same with an AI Rhino: it ramps on straights, brakes before corners and threads the I3 / I4 rings.
+3. After a few races, `python3 Tools/Build/regatta_rival_report.py --dir <flights> --since 2026-10-26 --hull manta`:
+   rings a minute well above the 8 of the older races, boosted share well above 20%.
+

@@ -427,6 +427,44 @@ No mouth missed in any of them. **Not changed, for Yash to decide:** the sweep (
 races) and `engageRunwaySeconds` 0.6 (1.5). The model has no rail rams, which matter at 700 u/s, so the person's number
 stands until editor races say otherwise. Tests: `RegattaDriveTuningTests.Context_*`, `RampPolicy_OnTheLine_*`.
 
+### 6.4.1 The AI's nose lags: a longer look-ahead for the Manta and the Rhino (2026-10-25, the Manta)
+
+**Every model before this one turned the nose the instant the stick moved. The game does not, for an AI.** The stick
+turns the COMMANDED heading (`VesselTransformer.accumulatedRotation`) and the nose slerps toward it at 1.5/s
+(`LERP_AMOUNT`, a 0.67 s time constant). People lost that lag on 2026-10-21; AI, autopilot and remote hulls kept it
+(`NoseFollowFraction`), and only the Squirrel's Skim Race pilot leads its corners for it. A pilot chasing a point 0.35-0.8
+s ahead through a 0.67 s lag overshoots, corrects, overshoots: its stick sits near full. The models now carry it
+(`regatta_line_sim.turn_with_lag`, `lag=True`; `manta_line_sim.py` `nose="nose"`; `rhino_line_sim.py`, on by default)
+and match the real races far better: the shipped Manta races I1-I3 in 53-96 s and stalls at I4, where the real AI Manta
+threaded about 8 rings a minute at 240-268 u/s, i.e. barely above its 180 u/s cruise.
+
+**The Manta** (`Tools/Build/manta_line_sim.py`: its Soar executor law on its line, with the lag, and a rail ram costing
+half its speed as `MantaVesselChangeSpeedByPrism` does on a rail that is not its colour). Under the lag its stick sat
+near full, so its Soar (full below a 0.975 stick) was on only 1-18% of the race. A longer look-ahead calms the stick:
+
+| Manta look-ahead (careful / bold s), lag on | I1 | I2 | I3 | I4 | misses | rail rams |
+|---|---|---|---|---|---|---|
+| 0.35 / 0.8 (every hull's default) | 53.2 | 78.1 | 95.7 | stalled | 0 / 3 / 8 / 178 | 2 / 9 / 19 / 187 |
+| **0.6 / 1.0 (shipped)** | 54.3 | 64.5 | 77.3 | 84.0 | none | 0 / 10 / 6 / 30 |
+| 0.8 / 1.4 | 54.4 | 61.7 | 74.8 | 81.5 | none | 2 / 10 / 18 / 50 |
+
+The Regatta Soar bands (0.975, learned from Yash's flights) stay: on the line they are the best of the three sets tried
+with or without the lag, and the corner cap `manta_drive_sim.py` dropped (cut Soar before a corner) is slower on the
+line too. Raising `MaxLookahead` past 520 u changes nothing measurable. Judging the error from where the nose is about
+to point (part way to the command) was tried in both models and gains under 10%: not shipped.
+
+**The Rhino, re-measured with the lag** (§6.4's path judging still halves its race: 898.6 → 447.7 s over I1-I4, with a
+miss now flown the gate way as `GateRaceController` does). Once its ramp fires on the line it reaches 450-585 u/s and
+missed 12 I3/I4 mouths through the same lag; 0.8 / 1.4 s: 405.4 s and none.
+
+**What changed:** `Resources/RaceLines/Manta_Regatta` and `Rhino_Regatta` look-ahead seconds (written by
+`Tools/Build/author_race_lines.py`, `--check` green). These were still the defaults every hull got on 2026-10-17, never
+learned; the learned `LaneShare` values stay. **The lag itself is left as it is**: it is the fleet feel AI hulls share
+with remote players, and Garrett's call (`VesselTransformer`).
+**Re-checked under the lag:** §6.3's fix (no break-off on the line, never cut a mouth) still makes every hull faster or
+equal on every course, but the Manta and the Scarab still miss mouths at I2-I4 in the fixed-speed model; the Scarab is
+next to look at with its own model.
+
 ## 6.5 Scoring — the team sum
 
 `RegattaScoringRuleSO` (a `GateRaceScoringRuleSO` subclass; the asset is points rules,

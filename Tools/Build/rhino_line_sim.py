@@ -15,7 +15,8 @@ own stick law and break-off, but at a constant speed. This one joins them:
 - AIPilot's stick law and the Rhino's turn rate ((v x 0.2 + 90) deg/s), the steering scaled down under the drive's
   rotation limit (LimitRotation) exactly as the pilot does;
 - path_angle=True (shipped 2026-10-25, AIBoostContext.PathDirection): "is this straight" asked of the line's aim, the
-  runway and corner of the ring. path_angle=False is the drive before: judged by the ring round the bend, the line was
+  runway and corner of the ring; lag=True: the nose follows the command at 1.5/s, as an AI hull's does
+  (regatta_line_sim.turn_with_lag). path_angle=False is the drive before: judged by the ring round the bend, the line was
   never straight (the ring sat 18-35 deg off the course) and the Rhino ramped 5-10% of a race.
 
     python3 Tools/Build/rhino_line_sim.py              # the Regatta drive on I1-I4: time, rings, share of the race ramping
@@ -55,7 +56,7 @@ def regatta_policy():
     return p
 
 
-def race(intensity, pol=None, T=420, dt=1 / 60, own=0, drive=True, path_angle=True):
+def race(intensity, pol=None, T=420, dt=1 / 60, own=0, drive=True, path_angle=True, lag=True, look_s=None):
     C = sf.course_from(sf.load_course_js(), intensity)
     gates = C['gates']; n = len(gates); total = 3 * n
     P = [g['p'] for g in gates]; A = [unit(g['a']) for g in gates]
@@ -67,14 +68,18 @@ def race(intensity, pol=None, T=420, dt=1 / 60, own=0, drive=True, path_angle=Tr
     ex = rd.Exec(); drv = rd.NewDriver(pol, ex)
     hint = L.nearest(line, P[0], -1)
     pos = line[(hint - 40) % len(line)]; fwd = unit(sub(line[(hint - 38) % len(line)], pos)); hint = -1
-    speed = rd.CRUISE; tracked = speed; stick = 0.0
+    speed = rd.CRUISE; tracked = speed; stick = 0.0; cmd = list(fwd)
+    careful, bold = look_s or (L.CAREFUL, L.BOLD); lost = -1
     idx = 0; t = 0.0; ramping = 0.0; braking = 0.0; maxv = 0.0; misses = 0
     while t < T and idx < total:
         g = idx % n; ring = P[g]; ax = A[g]
         hint = L.nearest(line, pos, hint)
         if norm(sub(line[hint], pos)) > 250: hint = L.nearest(line, pos, -1)
-        look = min(L.MAX_LOOK, max(L.MIN_LOOK, speed * (L.CAREFUL + (L.BOLD - L.CAREFUL) * RISK)))
-        aim = L.ring_gated_aim(line, hint, look, ring_at[g], pos, ring, ax, gates[g]['r'], CLEAR)
+        look = min(L.MAX_LOOK, max(L.MIN_LOOK, speed * (careful + (bold - careful) * RISK)))
+        if lost != idx:
+            aim = L.ring_gated_aim(line, hint, look, ring_at[g], pos, ring, ax, gates[g]['r'], CLEAR)
+        else:   # a missed mouth is flown the gate way until threaded (GateRaceController)
+            aim = add(ring, mul(unit(sub(ring, pos)), 320))
         after = L.point_ahead(line, ring_at[g], look)
         to_ring = sub(ring, pos)
         # path_angle: "straight" judged on where the pilot is going (the line's aim), the runway and corner on the ring
@@ -100,13 +105,13 @@ def race(intensity, pol=None, T=420, dt=1 / 60, own=0, drive=True, path_angle=Tr
         if ex.on: ramping += dt
         if drive and drv.mode == 'brake': braking += dt
         maxv = max(maxv, speed)
-        fwd = rotate_toward(fwd, sub(aim, pos), math.radians((speed * RTS + BASE) * s) * dt)
+        fwd, cmd = L.turn_with_lag(fwd, cmd, sub(aim, pos), math.radians((speed * RTS + BASE) * s) * dt, dt, lag)
         newpos = add(pos, mul(fwd, speed * dt))
         a0 = dot(sub(pos, ring), ax); a1 = dot(sub(newpos, ring), ax)
         if a0 * a1 <= 0 and a0 != a1:
             k = a0 / (a0 - a1); hit = add(pos, mul(sub(newpos, pos), k))
             if norm(sub(hit, ring)) <= gates[g]['r']: idx += 1
-            elif norm(sub(hit, ring)) < 1500: misses += 1
+            elif norm(sub(hit, ring)) < 1500: misses += 1; lost = idx
         pos = newpos; t += dt
     return {"time": round(t, 1) if idx >= total else None, "rings": idx, "top": round(maxv),
             "ramping": round(ramping / max(t, 1e-6), 2), "braking": round(braking / max(t, 1e-6), 2), "misses": misses}
