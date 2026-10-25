@@ -21,13 +21,21 @@ namespace CosmicShore.Tests
         static SpindleLodProfileSO Profile()
         {
             var p = ScriptableObject.CreateInstance<SpindleLodProfileSO>();
-            p.nearEndGirths = 100f;
-            p.midEndGirths = 420f;
-            p.hysteresis = 0.08f;
-            p.convergeStartGirths = 110f;
-            p.farFadeStartGirths = 1300f;
-            p.farFadeEndGirths = 1900f;
+            Set(p, "nearEndGirths", 100f);
+            Set(p, "midEndGirths", 420f);
+            Set(p, "hysteresis", 0.08f);
+            Set(p, "convergeStartGirths", 110f);
+            Set(p, "farFadeStartGirths", 1300f);
+            Set(p, "farFadeEndGirths", 1900f);
             return p;
+        }
+
+        // The bands are serialized private fields; a test sets them the way the inspector does.
+        static void Set(SpindleLodProfileSO p, string field, float value)
+        {
+            var so = new SerializedObject(p);
+            so.FindProperty(field).floatValue = value;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         static SpindleLodSystem.TierBounds Covert(SpindleLodProfileSO p) => SpindleLodSystem.BoundsFor(p, false, default, default);
@@ -69,11 +77,11 @@ namespace CosmicShore.Tests
         public void Inward_WaitsForTheHysteresisBand()
         {
             var p = Profile();
-            float keep = 1f - p.hysteresis;
-            Assert.AreEqual(Tier.Mid, SpindleLodSystem.TierFor(p.nearEndGirths * keep + 0.1f, Tier.Mid, Covert(p)), "mid holds inside the band");
-            Assert.AreEqual(Tier.Near, SpindleLodSystem.TierFor(p.nearEndGirths * keep - 0.1f, Tier.Mid, Covert(p)));
-            Assert.AreEqual(Tier.Min, SpindleLodSystem.TierFor(p.midEndGirths * keep + 0.1f, Tier.Min, Covert(p)), "the thread holds inside the band");
-            Assert.AreEqual(Tier.Mid, SpindleLodSystem.TierFor(p.midEndGirths * keep - 0.1f, Tier.Min, Covert(p)));
+            float keep = 1f - p.Hysteresis;
+            Assert.AreEqual(Tier.Mid, SpindleLodSystem.TierFor(p.NearEndGirths * keep + 0.1f, Tier.Mid, Covert(p)), "mid holds inside the band");
+            Assert.AreEqual(Tier.Near, SpindleLodSystem.TierFor(p.NearEndGirths * keep - 0.1f, Tier.Mid, Covert(p)));
+            Assert.AreEqual(Tier.Min, SpindleLodSystem.TierFor(p.MidEndGirths * keep + 0.1f, Tier.Min, Covert(p)), "the thread holds inside the band");
+            Assert.AreEqual(Tier.Mid, SpindleLodSystem.TierFor(p.MidEndGirths * keep - 0.1f, Tier.Min, Covert(p)));
             Object.DestroyImmediate(p);
         }
 
@@ -82,15 +90,15 @@ namespace CosmicShore.Tests
         {
             var p = Profile();
             Assert.IsTrue(p.BandsAreSane(out string why), why);
-            float keep = 1f - p.hysteresis;
+            float keep = 1f - p.Hysteresis;
             // near <-> mid: the whole band [nearEnd x keep, nearEnd] lies below convergeStart, where
             // the mid graph returns SpindleGraph's lace exactly.
-            Assert.LessOrEqual(p.nearEndGirths, p.convergeStartGirths);
+            Assert.LessOrEqual(p.NearEndGirths, p.ConvergeStartGirths);
             // mid <-> far: the whole band [midEnd x keep, midEnd] lies at or past convergeEnd, where
             // the mid braid has fully converged into the far thread.
-            Assert.AreEqual(p.ConvergeEndGirths, p.midEndGirths * keep, 1e-4f);
+            Assert.AreEqual(p.ConvergeEndGirths, p.MidEndGirths * keep, 1e-4f);
             // far <-> culled: the inward edge is farFadeEnd itself, where the thread's alpha is zero.
-            Assert.AreEqual(p.farFadeEndGirths, SpindleLodSystem.CullBoundFor(p) * keep, 1e-3f);
+            Assert.AreEqual(p.FarFadeEndGirths, SpindleLodSystem.CullBoundFor(p) * keep, 1e-3f);
             Assert.AreEqual(SpindleLodSystem.CullBoundFor(p), Covert(p).cull, 1e-4f);
             Object.DestroyImmediate(p);
         }
@@ -133,7 +141,7 @@ namespace CosmicShore.Tests
             Assert.Greater(MaxPrismOpening(b.nearEnd * 1.05f), 0f, "the boundary is not where opening STARTS");
             Assert.AreEqual(1f, b.midEnd * b.keep, 1e-5f, "the far tier's inward edge must be the prisms' over-distance");
             Assert.AreEqual(Danger.z * 20f - Danger.z, MaxPrismOpening(b.midEnd * b.keep), 1e-4f, "not fully open at the far edge");
-            Assert.AreEqual(p.overtFadeEndNorm, b.cull * b.keep, 1e-3f, "the cull's inward edge is the fade's end");
+            Assert.AreEqual(p.OvertFadeEndNorm, b.cull * b.keep, 1e-3f, "the cull's inward edge is the fade's end");
             Object.DestroyImmediate(p);
         }
 
@@ -147,11 +155,11 @@ namespace CosmicShore.Tests
             var p = Profile();
             var b = Overt(p);
             Assert.AreEqual(Recede.y, b.lowStart * b.keep, 1e-4f, "the 72-triangle braid takes over before the recede has ended");
-            Assert.AreEqual(p.overtThreadStartNorm, b.minStart, 1e-5f);
+            Assert.AreEqual(p.OvertThreadStartNorm, b.minStart, 1e-5f);
             Assert.Greater(b.minStart * b.keep, b.lowStart, "the thread's band overlaps the 72-braid's");
             Assert.Less(b.midEnd, b.lowStart * b.keep, "the peak's band overlaps the 72-braid's");
-            Assert.GreaterOrEqual(p.overtFadeStartNorm, b.minStart, "the thread fades before it has taken over");
-            Assert.AreEqual(1500f, Mathf.Sqrt(p.overtFadeEndNorm * Danger.w), 1f, "the spindles are not gone by ~1,500 units");
+            Assert.GreaterOrEqual(p.OvertFadeStartNorm, b.minStart, "the thread fades before it has taken over");
+            Assert.AreEqual(1500f, Mathf.Sqrt(p.OvertFadeEndNorm * Danger.w), 1f, "the spindles are not gone by ~1,500 units");
             Assert.IsFalse(p.OvertBandsAreSane(new Vector4(2.25f, 9.5f, 0, 0), out _), "a thread band inside the 72-braid's");
             Assert.IsTrue(p.OvertBandsAreSane(Recede, out string why), why);
             Assert.IsFalse(p.OvertBandsAreSane(new Vector4(1.02f, 16f, 0, 0), out _), "a recede inside the over-distance band");
@@ -206,11 +214,11 @@ namespace CosmicShore.Tests
         {
             var config = AssetDatabase.LoadAssetAtPath<IncorporealDepthSO>("Assets/Resources/IncorporealDepth.asset");
             Assert.IsNotNull(config, "Resources/IncorporealDepth is missing");
-            Assert.IsNotNull(config.tierMaterialSet, "IncorporealDepth has no tier material set");
-            var danger = config.tierMaterialSet.DangerousBlockMaterial;
+            Assert.IsNotNull(config.TierMaterialSet, "IncorporealDepth has no tier material set");
+            var danger = config.TierMaterialSet.DangerousBlockMaterial;
             Assert.IsNotNull(danger);
             Vector4 s = config.TierSpread();
-            Vector4 want = danger.GetVector("_Spread") * config.strength;
+            Vector4 want = danger.GetVector("_Spread") * config.Strength;
             Assert.AreEqual(want.z, s.z, 1e-5f, "the spread is not the danger prism's");
             Assert.AreEqual(danger.GetFloat("_SqrDistance"), s.w, 1e-3f, "the ramp is not the prisms'");
         }
@@ -219,10 +227,10 @@ namespace CosmicShore.Tests
         public void BrokenBandOrder_IsRejected()
         {
             var p = Profile();
-            p.convergeStartGirths = 90f;   // the mid tier would start converging before it exists
+            Set(p, "convergeStartGirths", 90f);   // the mid tier would start converging before it exists
             Assert.IsFalse(p.BandsAreSane(out _));
-            p.convergeStartGirths = 110f;
-            p.farFadeStartGirths = 400f;   // the thread would fade before it is a thread
+            Set(p, "convergeStartGirths", 110f);
+            Set(p, "farFadeStartGirths", 400f);   // the thread would fade before it is a thread
             Assert.IsFalse(p.BandsAreSane(out _));
             Object.DestroyImmediate(p);
         }
@@ -233,8 +241,8 @@ namespace CosmicShore.Tests
             var shipped = AssetDatabase.LoadAssetAtPath<SpindleLodProfileSO>("Assets/Resources/SpindleLodProfile.asset");
             Assert.IsNotNull(shipped, "Resources/SpindleLodProfile is missing - run Tools/Build/author_spindle_lod_meshes.py");
             Assert.IsTrue(shipped.IsSane(out string why), why);
-            Assert.IsNotEmpty(shipped.meshSets);
-            foreach (var set in shipped.meshSets)
+            Assert.IsNotEmpty(shipped.MeshSets);
+            foreach (var set in shipped.MeshSets)
                 Assert.IsTrue(set.MatchesImport(out string mismatch),
                     $"the LOD meshes no longer match the imported braid: {mismatch}");
         }
@@ -246,7 +254,7 @@ namespace CosmicShore.Tests
             // SpindleMaterial on SpindleDepthGraph, its three depth floats at their pass-through 0.
             var shipped = AssetDatabase.LoadAssetAtPath<SpindleLodProfileSO>("Assets/Resources/SpindleLodProfile.asset");
             Assert.IsNotNull(shipped);
-            var template = shipped.depthTemplate;
+            var template = shipped.DepthTemplate;
             Assert.IsNotNull(template, "depthTemplate is unset - run Tools/Build/author_spindle_lod_meshes.py");
             foreach (var property in new[] { "_SpindleLodStrength", "_SpindleDepthReach", "_SpindleDepthForm" })
             {
@@ -255,8 +263,8 @@ namespace CosmicShore.Tests
             }
             foreach (var property in new[] { "_DullColor", "_BrightColor", "_CellDensity", "_SwayAmplitude", "_PrismClock" })
                 Assert.IsTrue(template.HasProperty(property), $"SpindleDepthGraph lost SpindleGraph's {property}");
-            Assert.That(shipped.switchRingStrength, Is.InRange(0f, 2f));
-            Assert.Greater(shipped.switchRingDistance, 2000000f, "a switch ring's lace must outlast a branch's");
+            Assert.That(shipped.SwitchRingStrength, Is.InRange(0f, 2f));
+            Assert.Greater(shipped.SwitchRingDistance, 2000000f, "a switch ring's lace must outlast a branch's");
         }
 
         [Test]
@@ -271,11 +279,11 @@ namespace CosmicShore.Tests
             Assert.AreSame(wire.source, wire.mid, "the wire's mid tier must be its near mesh");
             Assert.AreNotSame(wire.source, wire.low);
             Assert.IsTrue(wire.MatchesImport(out string why), why);
-            Assert.IsNotNull(shipped.wireTemplate, "wireTemplate is unset");
+            Assert.IsNotNull(shipped.WireTemplate, "wireTemplate is unset");
             foreach (var property in new[] { "_SpindleLodGirth", "_SpindleLodStrand", "_SpindleLodStrength", "_DullColor", "_Distance" })
-                Assert.IsTrue(shipped.wireTemplate.HasProperty(property), $"SpindleWire.mat's shader has no {property}");
+                Assert.IsTrue(shipped.WireTemplate.HasProperty(property), $"SpindleWire.mat's shader has no {property}");
             int synthetic = 0;
-            foreach (var set in shipped.meshSets) if (set.synthetic) synthetic++;
+            foreach (var set in shipped.MeshSets) if (set.synthetic) synthetic++;
             Assert.AreEqual(1, synthetic, "exactly one synthetic set");
         }
 
