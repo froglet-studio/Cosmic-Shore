@@ -64,6 +64,18 @@
 >   (below) is answered.
 > - The four cards: Charge **Vortex Sting**, Mass **Dens** (L5 Fortress), Space **Undertow** (L5 Deep Undertow), Time
 >   **Quick Jump** (L5 Phase Dart). `Tools/Build/author_goby_assets.py` writes and checks them.
+> - The Pistol has its own MODEL (Garrett, 2026-10-24: "give the pistol a model"): `Pistol.fbx`, a pistol-shrimp ship
+>   built by `/vessel-model` (`specs/pistol.py`, `Docs/VesselModels/Pistol.md`): 19 floating parts, the big hammer claw
+>   on its right (the side the Pistol's camera sees going forward), four element morphs. The seat draws it where the
+>   ride puts it, nose along its travel and tipped with the slope or its flight, `pistolModelLength` 2.7 u long, wearing
+>   the pair's domain on slot 0; the hammer shuts on a Snap and re-cocks (`snapClawShut` 75 deg, hold 0.08 s, re-cock
+>   0.35 s) and the tail curls under on a dive (`diveTailCurl` 22 deg). Shrinks to 0.6 while ghosting, as the capsule did.
+> - The vortex ring is no longer a flat faceted torus (Garrett, 2026-10-24: "make the vortex ring loose the flat effect
+>   and replace it with a cool warping effect like the black holes use but convey a more subtle toroid"): each ring is a
+>   `VortexRingLens`, a full-screen URP pass beside the black hole's that bends the light behind the ring toward its
+>   core circle like a clear glass rod, with a faint 0x9fe8ff rim, a slight chromatic split and a slow swirl
+>   (`Docs/BLACK_HOLE.md` §5.3; knobs on `Resources/VortexRingLens.mat`). It swells in over 0.25 s and fades over its
+>   last 0.5 s; the prisms it carries still flow round it. The Goby's lock stays a lit ring (a fact in the world).
 > - Still the Squirrel's: the hull MODEL's rig (the Goby's own hull, `Goby.fbx`, is built on the Squirrel's bones), the nested skimmer prefab (its
 >   Squirrel effects are stripped through the Goby's own containers; it still collects crystals), and an AI-flown Goby
 >   that the seat does not run on (backfill, other machines) flies the platform AIPilot without the kit. Team tasks.
@@ -794,3 +806,14 @@ the line it settled.
   ramp end, determinism; controls: flat, growth), `Ride_IsTinyWings` (pace in screens a second, flights, perfect slides,
   the top speed in bird lengths; the never-dive, never-let-go and sloppy controls), `Proportions_AreTinyWings` on the
   game's ranges, the view test on the game's framing. Their logic run in .NET against the pure files: all pass.
+- 2026-10-24, Garrett: "this vessel needs a lot of work but this is big step. now give the pistol a model, give both of
+  its seats separate UI ability icons, glyphs, etc. and make the vortex ring loose the flat effect and replace it with a
+  cool warping effect like the black holes use but convey a more subtle toroid instead of a spherical singularity."
+  - The Pistol's model: `Pistol.fbx` (three rounds; a wasp, then a shrimp side-on, then its paint and fan fixed), drawn
+    by the seat in place of the capsule, with the claw snap and the dive's tail curl. **[proposed]** its length 2.7 u
+    (the capsule's) and the claw on the camera's side going forward.
+  - Each seat's own HUD: `GobyHUDVariant`, eight placeholder icons, per-seat chips, veils, gauges and counts (top
+    section). **[proposed]** the Pistol's controls on the fleet's four labelled face buttons (old keys kept), so every
+    chip is honest; the aimed jump's key J.
+  - The toroidal lens: `VortexRingLens` (top section). **[proposed]** dropping the faceted ring mesh entirely (the lens
+    alone carries the ring); the rim tint stays the ring's old 0x9fe8ff rather than the domain colour.

@@ -65,6 +65,35 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Goby & Pistol: the Pistol's model, each seat's own cards, the vortex ring's toroidal lens (`cece/cool-shannon-aulgpe`, 2026-10-24) — NOT EDITOR-VERIFIED
+
+**What landed:** the Pistol is drawn as `Pistol.fbx` (a pistol-shrimp ship, `specs/pistol.py`) instead of a capsule:
+nose along its travel, 2.7 u long, domain on slot 0, the hammer claw shuts on a Snap, the tail curls on a dive. The
+Goby has its own HUD (`GobyHUDVariant`, `GobyPistolHUDView` / `GobyPistolHUDController`, written by
+`author_goby_hud.py`): each seat's four cards change icon, chip, press, veil, gauge and count on a swap, and the
+Pistol's controls moved onto the fleet's face buttons (A / Space dive, B / T ghost, X / Q Snap, Y / F back; G, E, the B
+key and LB still work; the aimed jump's key is J). The vortex ring is a `VortexRingLens` (a URP full-screen pass beside
+the black hole's) instead of a faceted torus.
+
+**Verified without the editor:** `unity_refcompile` player 0 errors, editor 0 in changed files;
+`verify_vortex_ring_lens.py` PASS (ring projection vs brute force on off-axis cameras, glslang compile, negative
+controls); `build.py specs/pistol.py --check` and the hovering-assembly gate; `author_goby_hud.py` and
+`author_goby_assets.py` `--check` and `--self-test`; logging, conditional compilation, crew vessels, orthographic views.
+New EditMode tests compile, not run (`GobyPistolTests.Pistol_HasItsOwnModel`, `Hud_EachSeatHasItsOwnCards`,
+`VortexRingLensTests`). `/verify-unity` did not run: no Unity CLI in the session.
+
+**Verify in editor (Toybox, Vessel Changer > Goby and Pistol):**
+1. `Pistol.fbx` imports with no errors; the shader `VortexRingLens` compiles on first open (the real URP library has
+   never compiled it).
+2. Fly the Pistol (swap with D-pad / arrows): the shrimp rides the hills nose first, tips with the slope, turns round
+   when heading back; Snap shuts the claw; holding dive curls the tail; ghosting shrinks it. Its domain colour shows.
+3. The ability row: flying the Goby shows Lock / perches / reach gauge / Dart with Y, X chips (Q, F on keyboard);
+   flying the Pistol shows Snap / den count / Ghost / dive with X, Y, B, A chips (Q, F, T, Space). Veils sweep on Dart,
+   Snap and Ghost; Mass flashes on each perch. No Squirrel drift card or boost fill anywhere.
+4. Snap a ring: it reads as a subtle clear-glass doughnut bending what is behind it, in the Pistol's view (off-axis
+   lens), the small square and the Goby's chase view; it swells in and fades out; nothing in front of it is bent.
+5. Watch the frame time while rings live (a second full-screen colour copy).
+
 ### 🔴 Seats, then hulls: any person changes seat and vessel in freestyle (`cece/relaxed-tesla-axhxzy`, 2026-10-23) — NOT EDITOR-VERIFIED
 
 **What landed:** one swap ring for every person (`CrewStations`, `Docs/CREW_STATIONS.md`): D-pad left / right, the

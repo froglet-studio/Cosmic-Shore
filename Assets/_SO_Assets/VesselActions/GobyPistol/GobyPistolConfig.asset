@@ -126,6 +126,13 @@ MonoBehaviour:
   viewDistance: 60
   viewPistolAt: -0.35
   depthFullSpreadAt: 60
+  pistolModel: {fileID: 919132149155446097, guid: 7d2e9b4c1a6f4e83b5c0d8a2f6e1b937, type: 3}
+  pistolModelLength: 2.7
+  snapClawShut: 75
+  snapClawHold: 0.08
+  snapClawRecock: 0.35
+  diveTailCurl: 22
+  diveTailRate: 10
   aiDartLength: 300
   aiCruiseSpeed: 100
   aiTurnRate: 90

@@ -223,6 +223,22 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("For the Pistol's view only, a prism this far out of its plane reads as far as the Goby's view's most distant mass.")]
         [SerializeField, Min(1f)] float depthFullSpreadAt = 60f;
 
+        [Header("Pistol: its model (Pistol.fbx, specs/pistol.py: a pistol-shrimp ship, nose +Z, big claw on its right)")]
+        [Tooltip("The Pistol's hull, drawn where the ride puts it. Empty: a capsule stands in.")]
+        [SerializeField] GameObject pistolModel;
+        [Tooltip("The model's length along its travel, claw tip to fan tip, u (the capsule it replaced was 2.72).")]
+        [SerializeField, Min(0.1f)] float pistolModelLength = 2.7f;
+        [Tooltip("How far the hammer claw shuts on a Snap, degrees (the model rests it cocked 75 degrees open).")]
+        [SerializeField, Range(0f, 90f)] float snapClawShut = 75f;
+        [Tooltip("Seconds the claw stays shut after a Snap before it re-cocks.")]
+        [SerializeField, Min(0f)] float snapClawHold = 0.08f;
+        [Tooltip("Seconds the claw takes to re-cock after the hold.")]
+        [SerializeField, Min(0.01f)] float snapClawRecock = 0.35f;
+        [Tooltip("How far the tail curls under while the Pistol dives, degrees.")]
+        [SerializeField, Range(0f, 60f)] float diveTailCurl = 22f;
+        [Tooltip("How fast the tail follows the dive, per second.")]
+        [SerializeField, Min(0.1f)] float diveTailRate = 10f;
+
         [Header("AI")]
         [Tooltip("The Goby AI's dart, u: it darts once its island is as long as it planned, so the dart's end is the perch.")]
         [SerializeField, Min(10f)] float aiDartLength = 300f;
@@ -276,6 +292,13 @@ namespace CosmicShore.ScriptableObjects
         public float TrailBlockGap => trailBlockGap;
         public Vector3 TrailBlockScale => trailBlockScale;
         public float BodyR => pBodyR;
+        public GameObject PistolModel => pistolModel;
+        public float PistolModelLength => pistolModelLength;
+        public float SnapClawShut => snapClawShut;
+        public float SnapClawHold => snapClawHold;
+        public float SnapClawRecock => snapClawRecock;
+        public float DiveTailCurl => diveTailCurl;
+        public float DiveTailRate => diveTailRate;
         public float BodyHalfDepth => pBodyHalfDepth;
         public float SlingPull => pSlingPull;
         public bool AimedJump => aimedJump;

@@ -435,6 +435,21 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Pistol_HasItsOwnModel()
+        {
+            // Garrett, 2026-10-24: "give the pistol a model" (specs/pistol.py, Docs/VesselModels/Pistol.md)
+            var cfg = AssetDatabase.LoadAssetAtPath<CosmicShore.ScriptableObjects.GobyPistolConfigSO>("Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset");
+            Assert.That(cfg, Is.Not.Null);
+            Assert.That(cfg.PistolModel, Is.Not.Null, "the seat draws a model, not the capsule");
+            Assert.That(AssetDatabase.GetAssetPath(cfg.PistolModel), Does.EndWith("Pistol.fbx"));
+            var bones = new HashSet<string>();
+            foreach (var t in cfg.PistolModel.GetComponentsInChildren<Transform>(true)) bones.Add(t.name);
+            Assert.That(bones, Does.Contain("claw"), "the hammer claw the Snap shuts");
+            Assert.That(bones, Does.Contain("tail.1"), "the tail the dive curls");
+            Assert.That(cfg.PistolModel.GetComponentInChildren<SkinnedMeshRenderer>(true), Is.Not.Null);
+        }
+
+        [Test]
         public void Hud_EachSeatHasItsOwnCards()
         {
             // Garrett, 2026-10-24: "give both of its seats separate UI ability icons, glyphs, etc." (author_goby_hud.py)

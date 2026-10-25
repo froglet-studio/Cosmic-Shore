@@ -91,7 +91,11 @@ namespace CosmicShore.Gameplay
         readonly GobyPistolButtons _buttons = new();
         CrewViewRender _render;
         GameObject _view, _bodyGo; Camera _cam; bool _camLive; Quaternion _camRot; Vector3 _camPos, _camWindow; float _camWidth;
-        Mesh _torus; Material _ringMat, _lockMat, _bodyMat;
+        Mesh _torus; Material _lockMat, _bodyMat;
+        // the Pistol's model (Pistol.fbx): its scale, which way it faces along the plane, the claw it snaps and the tail it
+        // curls on a dive, each turned about the model's own right axis from its rest pose
+        bool _bodyIsModel; float _bodyScale = 1f, _facing = 1f, _snapAt = -10f, _tailCurl; Material _bodyDomain;
+        Transform _claw, _tail; Quaternion _clawRest, _tailRest;
 
         GobyPistolConfigSO Config => config;
 
@@ -228,7 +232,8 @@ namespace CosmicShore.Gameplay
             _render?.Dispose(); _render = null; _pip.Dispose();
             if (_view) Destroy(_view);
             if (_bodyGo) Destroy(_bodyGo);
-            foreach (var o in new Object[] { _torus, _ringMat, _lockMat, _bodyMat }) if (o) Destroy(o);
+            foreach (var o in new Object[] { _torus, _lockMat, _bodyMat }) if (o) Destroy(o);
+            _claw = _tail = null; _bodyIsModel = false; _bodyDomain = null;
             _perches.Clear(); _segments.Clear(); _tracks.Clear(); ClearLock();
             _goby = null; _status = null; _gt = null; _cam = null; _view = null; _bodyGo = null; _camLive = false;
         }
@@ -639,7 +644,7 @@ namespace CosmicShore.Gameplay
             _dive = inp.Dive;
             var ev = PistolBodyMath.Step(_p, _f, _t, dt, inp, _body);
             _travelled += ev.Travelled;
-            if (ev.FireSnap) FireRing(ev.SnapAim);
+            if (ev.FireSnap) { FireRing(ev.SnapAim); _snapAt = _t; }
             if (_p.x >= _f.EndX - Config.ArriveDistance) Arrive(_dir > 0 ? _seg + 1 : _seg);
         }
 
@@ -969,6 +974,7 @@ namespace CosmicShore.Gameplay
                     if (_vs.pVortexCollapse >= 0.5f && prism && !prism.destroyed && !prism.DeflectsSilenced(_status.PlayerName, 40f))
                         prism.Damage((prism.transform.position - ring.C).normalized * 40f, _status.Domain, _status.PlayerName);
                 }
+                VortexRingLens.Remove(ring);
                 _rings.RemoveAt(i);
             }
         }
@@ -992,7 +998,7 @@ namespace CosmicShore.Gameplay
 
         void ReleaseAllRings()
         {
-            foreach (var run in _rings) foreach (var prism in run.Prisms) _held.Remove(prism);
+            foreach (var run in _rings) { VortexRingLens.Remove(run.Ring); foreach (var prism in run.Prisms) _held.Remove(prism); }
             _rings.Clear(); _held.Clear();
         }
 
@@ -1140,15 +1146,10 @@ namespace CosmicShore.Gameplay
             _cam = _view.AddComponent<Camera>();
             _cam.clearFlags = CameraClearFlags.Skybox; _cam.orthographic = false; _cam.nearClipPlane = 0.5f; _cam.farClipPlane = 6000f;
             _torus = BuildRingMesh(VortexRing.Tube, 24, 6);
-            // lit and flat-shaded volumes (nothing in the world looks flat): the ring 0x9fe8ff, the lock a warm ring, the
-            // Pistol a small orange body
-            _ringMat = Lit(new Color32(159, 232, 255, 255), new Color32(18, 58, 68, 255), 0.65f);
+            // the lock is a lit, faceted volume (nothing in the world looks flat); the vortex ring is no mesh at all but a
+            // toroidal warp of what lies behind it (VortexRingLens, Garrett 2026-10-24: "loose the flat effect")
             _lockMat = Lit(new Color32(255, 92, 108, 255), new Color32(80, 16, 22, 255), 0.5f);
-            _bodyMat = Lit(new Color32(255, 138, 61, 255), new Color32(90, 34, 5, 255), 0.45f);
-            _bodyGo = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            _bodyGo.name = "Pistol";
-            if (_bodyGo.TryGetComponent(out Collider col)) Destroy(col);
-            if (_bodyGo.TryGetComponent(out MeshRenderer mr)) mr.sharedMaterial = _bodyMat;
+            BuildBody();
             _render = new CrewViewRender(_cam, RenderLook);
             _camLive = false;
         }
@@ -1156,13 +1157,7 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             if (_goby == null) return;
-            // the Pistol's body: a capsule lying along its travel (its long axis on the frame's x), smaller while ghosting
-            if (_bodyGo)
-            {
-                float r = Config.BodyR;
-                _bodyGo.transform.SetPositionAndRotation(_p.wpos, Quaternion.LookRotation(_f.M, _f.R));
-                _bodyGo.transform.localScale = new Vector3(r * 2f, r * 1.6f, r * 2f) * (_t < _p.ghostUntil ? 0.6f : 1f);
-            }
+            PoseBody();
             if (!_cam) return;
             if (!showSideView) { _cam.enabled = false; _pip.Restore(); Draw3D(); return; }
             _pip.Layout(_cam, HumanInSeat, Config.PipSize, Config.ViewMargin);
@@ -1192,10 +1187,117 @@ namespace CosmicShore.Gameplay
             Draw3D();
         }
 
+        /// <summary>The Pistol's body: its model (Pistol.fbx) at its length, wearing the pair's domain on slot 0; a lit capsule
+        /// stands in when the config names no model.</summary>
+        void BuildBody()
+        {
+            var model = Config.PistolModel;
+            _bodyIsModel = model;
+            if (model)
+            {
+                _bodyGo = Instantiate(model);
+                _bodyGo.name = "Pistol";
+                foreach (var c in _bodyGo.GetComponentsInChildren<Collider>(true)) Destroy(c);
+                foreach (var a in _bodyGo.GetComponentsInChildren<Animator>(true)) a.enabled = false;   // posed here, by bone
+                float length = 0f;
+                foreach (var r in _bodyGo.GetComponentsInChildren<Renderer>(true))
+                {
+                    // the mesh's own bounds: its node is identity in the model, nose on +Z (specs/pistol.py)
+                    if (r is SkinnedMeshRenderer s && s.sharedMesh) { length = Mathf.Max(length, s.sharedMesh.bounds.size.z); s.updateWhenOffscreen = true; }
+                    else if (r.TryGetComponent(out MeshFilter mf) && mf.sharedMesh) length = Mathf.Max(length, mf.sharedMesh.bounds.size.z);
+                }
+                _bodyDomain = null;
+                PaintBodyDomain();
+                _bodyScale = length > 1e-3f ? Config.PistolModelLength / length : 1f;
+                _claw = FindBone(_bodyGo.transform, "claw");
+                _tail = FindBone(_bodyGo.transform, "tail.1");
+                if (_claw) _clawRest = _claw.localRotation;
+                if (_tail) _tailRest = _tail.localRotation;
+                return;
+            }
+            _bodyMat = Lit(new Color32(255, 138, 61, 255), new Color32(90, 34, 5, 255), 0.45f);
+            _bodyGo = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            _bodyGo.name = "Pistol";
+            if (_bodyGo.TryGetComponent(out Collider col)) Destroy(col);
+            if (_bodyGo.TryGetComponent(out MeshRenderer mr)) mr.sharedMaterial = _bodyMat;
+        }
+
+        /// <summary>The pair's domain on the model's slot 0 (the fleet's Domain slot), repainted when the hull's changes.
+        /// Shared materials only: the domain material is a shared per-domain asset.</summary>
+        void PaintBodyDomain()
+        {
+            var domain = _status?.ShipMaterial;
+            if (!_bodyGo || !domain || domain == _bodyDomain) return;
+            _bodyDomain = domain;
+            foreach (var r in _bodyGo.GetComponentsInChildren<Renderer>(true))
+            {
+                var mats = r.sharedMaterials;
+                if (mats.Length > 0) { mats[0] = domain; r.sharedMaterials = mats; }
+            }
+        }
+
+        static Transform FindBone(Transform root, string name)
+        {
+            if (root.name == name) return root;
+            for (int i = 0; i < root.childCount; i++) { var hit = FindBone(root.GetChild(i), name); if (hit) return hit; }
+            return null;
+        }
+
+        /// <summary>Where the ride put the Pistol, nose along its travel on the plane (tipped with its flight or the slope
+        /// under it), smaller while ghosting; the hammer claw shuts on a Snap and re-cocks, and the tail curls under on a
+        /// dive.</summary>
+        void PoseBody()
+        {
+            if (!_bodyGo) return;
+            float ghost = _t < _p.ghostUntil ? 0.6f : 1f;
+            if (!_bodyIsModel)
+            {
+                float r = Config.BodyR;   // the capsule: its long axis on the frame's x
+                _bodyGo.transform.SetPositionAndRotation(_p.wpos, Quaternion.LookRotation(_f.M, _f.R));
+                _bodyGo.transform.localScale = new Vector3(r * 2f, r * 1.6f, r * 2f) * ghost;
+                return;
+            }
+            PaintBodyDomain();
+            Vector2 d;
+            if (_p.grounded) { PistolPlane.Ground(_f, _p.x, out float m); d = new Vector2(1f, m) * Mathf.Sign(_p.v == 0f ? _facing : _p.v); }
+            else d = new Vector2(_p.vx, _p.vy);
+            if (Mathf.Abs(d.x) > 0.05f) _facing = Mathf.Sign(d.x);
+            if (d.sqrMagnitude < 1e-4f) d = new Vector2(_facing, 0f);
+            Vector3 fwd = (_f.R * d.x + _f.Up * d.y).normalized;
+            var root = _bodyGo.transform;
+            root.SetPositionAndRotation(_p.wpos, Quaternion.LookRotation(fwd, _f.Up));
+            root.localScale = Vector3.one * (_bodyScale * ghost);
+
+            // the claw: shut on the Snap, held, then re-cocked (its hinge turns about the model's right axis)
+            if (_claw)
+            {
+                float since = _t - _snapAt;
+                float shut = since < 0f ? 0f : since <= Config.SnapClawHold ? 1f : 1f - Mathf.Clamp01((since - Config.SnapClawHold) / Config.SnapClawRecock);
+                TurnAboutModelRight(root, _claw, _clawRest, shut * Config.SnapClawShut);
+            }
+            if (_tail)
+            {
+                _tailCurl = Mathf.MoveTowards(_tailCurl, Diving ? 1f : 0f, Time.deltaTime * Config.DiveTailRate);
+                TurnAboutModelRight(root, _tail, _tailRest, -_tailCurl * Config.DiveTailCurl);   // minus: the tail's tip goes under
+            }
+        }
+
+        /// <summary>Sets <paramref name="bone"/> to its rest pose turned <paramref name="degrees"/> about the model's own right
+        /// axis (positive: the tip down and forward, the claw's shutting sense).</summary>
+        static void TurnAboutModelRight(Transform root, Transform bone, Quaternion rest, float degrees)
+        {
+            var parent = bone.parent;
+            var restWorld = (parent ? parent.rotation : Quaternion.identity) * rest;
+            var turn = root.rotation * Quaternion.AngleAxis(degrees, Vector3.right) * Quaternion.Inverse(root.rotation);
+            bone.rotation = turn * restWorld;
+        }
+
         void Draw3D()
         {
+            // each vortex ring bends the light behind it round its core: a subtle toroidal lens, the black holes' kin
             foreach (var run in _rings)
-                Draw(_torus, Matrix4x4.TRS(run.Ring.C, Quaternion.LookRotation(run.Ring.N, Mathf.Abs(run.Ring.N.y) < 0.9f ? Vector3.up : Vector3.right), Vector3.one * _vs.pVortexR), _ringMat);
+                VortexRingLens.Set(run.Ring, run.Ring.C, run.Ring.N, _vs.pVortexR, _vs.pVortexR * VortexRing.Tube,
+                    VortexRingLens.LifeFade(run.Ring.Age, run.Ring.Life), VortexRingLens.DefaultTint, _vs.pVortexSpin);
             // the lock is a fact in the world, so it is drawn there: a lit ring round the locked target, facing the Goby
             if (_lockTarget)
             {
