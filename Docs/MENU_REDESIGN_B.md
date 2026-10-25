@@ -725,7 +725,12 @@ a Prefab Variant cannot change; everything they share is a nested prefab.
   with ordinary navigation.
 - Favourite star wired by the modal in code (it was dead on the Arena and Maelstrom copies).
 - Arena: a hull strip (`KitHullTile`, `OnVesselPickRequested`) replaces the carousel arrows; the
-  controls block follows the shown hull. Maelstrom: the format block (race target, game cap, points by
+  controls block follows the shown hull. **2026-10-25 (Yash):** the strip is a WINDOW onto the card's hulls
+  (`ArenaLaunchPanel.StripOffset`), with `<` / `>` arrows (`PrevVesselButton` / `NextVesselButton`, two
+  `KitButtonSmall`s at the strip's ends, wired to the panel's `prevButton` / `nextButton`) that step the pick and
+  slide the window to keep it in view. The strip went from eight tiles to seven between the arrows (`Hull8` is
+  inactive). Why: Regatta lists nine hulls, and on a fixed eight-tile strip the ninth, the Stoat, had no tile and
+  could never be picked. `ArenaHullStripTests`. Maelstrom: the format block (race target, game cap, points by
   place, seats) and the pool summary are wired.
 - `ArcadeGameConfigureModal` ModalType 10 -> 1 (10 is the Arcade window's own: one B closed both).
 
@@ -1980,9 +1985,12 @@ boards were approved with "Approved, price is fine, make it look-only for now". 
 - **The upgrade moment.** Six crystals fly from the button to the hull. On landing, the new pip flashes white and settles
   in the element's colour, the hull morphs from the old level to the new one (`AnimateElementLevel`, 0.5 s) and swells
   (`Pulse`), a hex ring bursts, and a banner names the element, "LEVEL N" and "{ability} grows".
-- **Look-only.** Levels are saved per vessel per element in PlayerPrefs (`HangarUpgradeStore`,
-  `hangar.upgrade.{vessel}.{element}`, max 10). The hull shows the bought form on every visit, and **nothing in a match
-  reads it**. The crystals spent are real. Making upgrades count in play is a separate decision for the owner (and
+- **Look-only.** Levels are saved per vessel per element, max 10, on the player's cloud profile
+  (`HangarUpgradeStore` -> `PlayerDataService.SetHangarUpgradeLevel`, `ProfileEconomy.HangarUpgrades`), in the same save
+  as the crystals they cost (2026-10-25, `Docs/REFACTOR_BACKLOG.md` S67: they were in PlayerPrefs, so a reinstall kept
+  the debit and lost the level). A level bought before then is still read from the old device key
+  `hangar.upgrade.{vessel}.{element}` and adopted into the profile once it has loaded. The hull shows the bought form on
+  every visit, and **nothing in a match reads it**. The crystals spent are real. Making upgrades count in play is a separate decision for the owner (and
   Garrett, who owns vessel tuning).
 - **The words** are serialized on `HangarUpgradesPage`: `buyTemplate`, `maxedWord`, `bannerTemplate` and
   `bannerLineTemplate`.
@@ -2969,6 +2977,13 @@ pad could not land on them at all; only the invisible LT / RT keycap buttons at 
   so a click never presses twice. The word, underline and hover lift are unchanged.
 - The LT / RT keycap buttons leave pad navigation (`Navigation.Mode` None): they are pointer affordances, draw no ring,
   and D-pad up from a screen should land on a tab. A click on them still pages.
+
+**Nothing selected is not a dead pad** (Yash's first test, 2026-10-25: "I don't even control anything"). A click on the
+background clears the selection (`deselectOnBackgroundClick`; the Editor's first click into the Game view is one), and
+the UI module sends a move only to the selection, so the D-pad did nothing; LT / RT, now bar-only, did nothing either.
+With nothing selected, the first D-pad / left-stick push puts the pad on the screen (`Refocus`), and LT / RT act as if
+from the bar (they page and leave the pad on the tab). The menu navigates with the D-pad and the LEFT stick only; the
+right stick is not UI navigation (on the Hangar it turns the vessel).
 
 **The pad stays on the bar.**
 - After LT / RT the selection moves to the tab of the screen now showing, so the ring follows the underline.
