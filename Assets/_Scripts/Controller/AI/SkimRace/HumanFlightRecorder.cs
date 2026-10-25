@@ -505,21 +505,36 @@ namespace CosmicShore.Gameplay
             {
                 Debug.LogWarning($"[HumanFlightRecorder] rings not copied: {e.GetType().Name}: {e.Message}");
             }
-            if (_gameData && _gameData.GameMode == GameModes.Regatta) TryCopyRails();
+            if (_gameData && HasRails(_gameData.GameMode)) TryCopyRails();
         }
 
+        /// <summary>The modes whose flights carry their rails: Regatta's braid, and Skim Race's track (since 2026-10-26, so the
+        /// Squirrel's skim learner can measure Skim Race too).</summary>
+        static bool HasRails(GameModes mode) => mode == GameModes.Regatta || mode == GameModes.SkimRace;
+
         /// <summary>Every rail in the arena: each prism's position and up axis, the contact shell's half-size (authored
-        /// scale x 1.5) and the domain that owns it. The pilot's own rail is the one in their domain colour (else the first).</summary>
+        /// scale x 1.5) and the domain that owns it. The pilot's own rail is the one in their domain colour (else the first).
+        /// Skim Race's rail is its <see cref="SpawnableWaypointTrack"/>, found as <see cref="SkimRaceCourseSource"/> finds it.</summary>
         bool TryCopyRails()
         {
             _rails.Clear();
             _ownRail = -1;
             try
             {
-                if (!RegattaCourseSource.TryResolveLiveRails(out var rails, out _railWhy)) return false;
-                _courseSeed = rails.CourseSeed;
-                _courseIntensity = rails.CourseIntensity;
-                var trails = rails.GetTrails();
+                List<Trail> trails;
+                if (_gameData && _gameData.GameMode == GameModes.SkimRace)
+                {
+                    var track = FindAnyObjectByType<SpawnableWaypointTrack>();
+                    if (!track) { _railWhy = "no Skim Race track in the scene yet"; return false; }
+                    trails = track.GetTrails();
+                }
+                else
+                {
+                    if (!RegattaCourseSource.TryResolveLiveRails(out var rails, out _railWhy)) return false;
+                    _courseSeed = rails.CourseSeed;
+                    _courseIntensity = rails.CourseIntensity;
+                    trails = rails.GetTrails();
+                }
                 if (trails == null || trails.Count == 0) { _railWhy = "the rails have no lanes"; return false; }
                 Domains domain = _player ? _player.Domain : Domains.Jade;
                 for (int t = 0; t < trails.Count; t++)
@@ -705,8 +720,9 @@ namespace CosmicShore.Gameplay
             // A rail to measure the flight against exists only where the mode lays one (Regatta, for now). Copied when
             // recording started; if it was not there yet, copied now (no hole events then).
             bool regatta = _modeName == nameof(GameModes.Regatta);
-            if (regatta && _rails.Count == 0) TryCopyRails();
-            bool haveLane = regatta && _rails.Count > 0 && _ownRail >= 0;
+            bool railed = regatta || _modeName == nameof(GameModes.SkimRace);
+            if (railed && _rails.Count == 0) TryCopyRails();
+            bool haveLane = railed && _rails.Count > 0 && _ownRail >= 0;
             var own = haveLane ? _rails[_ownRail] : null;
             Vector3 shellHalf = own?.ShellHalf ?? Vector3.zero;
             int railPrisms = 0;
@@ -894,8 +910,8 @@ namespace CosmicShore.Gameplay
                   .Append(F(m.M0, "0.###")).Append(',').Append(F(m.M1, "0.###")).Append(',').Append(F(m.M2, "0.###")).Append(',').Append(F(m.M3, "0.###")).Append(',').Append(m.TimeMode).Append(']');
             }
             sb.Append("\n]\n}\n");
-            if (regatta && !haveLane)
-                Debug.LogWarning($"[HumanFlightRecorder] Regatta record stored WITHOUT its rail ({_railWhy}); the learner cannot measure it against the rail.");
+            if (railed && !haveLane)
+                Debug.LogWarning($"[HumanFlightRecorder] {_modeName} record stored WITHOUT its rail ({_railWhy}); the learner cannot measure it against the rail.");
             return sb.ToString();
         }
 

@@ -65,6 +65,19 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Skim Race flights carry their track (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `HumanFlightRecorder` copies Skim Race's `SpawnableWaypointTrack` into each Skim Race flight
+(`lane`, `rails`), as it copies Regatta's rails, so the Squirrel's skim is measured there by the AI learning sweep
+(`Docs/AI_SYSTEM/AUTO_LEARNING.md` §5). Nothing else in the recorder changed.
+
+**Verified without the editor:** reference compile (editor config) 0 errors in changed files. NOT run in Unity.
+
+**Verify in editor:**
+1. Play Skim Race as the Squirrel to the end. The console has no `record stored WITHOUT its rail` warning.
+2. The stored `flight_SkimRace_Squirrel_*.json` has a non-empty `lane` and `ownRail` 0 or more.
+3. Regatta flights are unchanged (they still carry their rails and course seed).
+
 ### 🔴 Switchback: the I1-I4 training ladder (hairpins, skim walls, danger prisms) (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed** (Yash, `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.3). The AI steering fix and the learned

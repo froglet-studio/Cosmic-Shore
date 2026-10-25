@@ -1,6 +1,6 @@
 # AI learning: what the last races taught
 
-Written by `Tools/Build/ai_learn.py --run` (the scheduled AI learning sweep, `Docs/AI_SYSTEM/AUTO_LEARNING.md`) on 2026-10-25 22:18 UTC. Nobody runs it by hand: every race flown in Unity reaches it on its own.
+Written by `Tools/Build/ai_learn.py --run` (the scheduled AI learning sweep, `Docs/AI_SYSTEM/AUTO_LEARNING.md`) on 2026-10-25 22:43 UTC. Nobody runs it by hand: every race flown in Unity reaches it on its own.
 
 **159 new flight(s)** since the last learn.
 
@@ -8,22 +8,24 @@ Written by `Tools/Build/ai_learn.py --run` (the scheduled AI learning sweep, `Do
 
 New flights: Manta 5.
 
-**No learner reads these yet** (the sweep's to-do): Manta.
+- `learn_drives_from_flights --write`: OK. nothing.
+- `learn_drives_from_flights --check`: OK. check: OK
 
 ## Breakwater
 
 New flights: Sparrow 5.
 
-**No learner reads these yet** (the sweep's to-do): Sparrow.
+- `learn_drives_from_flights --write`: OK. nothing.
+- `learn_drives_from_flights --check`: OK. check: OK
 
 The person, every recorded race in this mode:
 
-| Hull | Intensity | Races | Finished | Fastest |
-|---|---|---:|---:|---:|
-| Sparrow | I1 | 3 | 3 | 84 s |
-| Sparrow | I4 | 2 | 2 | 89 s |
+| Hull | Intensity | Races | Finished | Fastest | Last raced |
+|---|---|---:|---:|---:|---|
+| Sparrow | I1 | 3 | 3 | 84 s | 2026-10-20 16:27 |
+| Sparrow | I4 | 2 | 2 | 89 s | 2026-10-20 16:35 |
 
-The AI rivals in those races (`regatta_rival_report.py`):
+The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
@@ -34,37 +36,38 @@ sparrow        5      1    0.7    36      56%     2%    0/5    0: 5, 1: 2, 9: 1
 
 New flights: Manta 2.
 
-**No learner reads these yet** (the sweep's to-do): Manta.
+- `learn_drives_from_flights --write`: OK. nothing.
+- `learn_drives_from_flights --check`: OK. check: OK
 
 ## DogFight
 
 New flights: Sparrow 4.
 
-**No learner reads these yet** (the sweep's to-do): Sparrow.
+- **Sparrow: measured, not written** - SparrowAIBoostPolicy is switched off in DogFight (disabledInModes).
 
 ## Dustup
 
 New flights: Butterfly 1.
 
-**No learner reads these yet** (the sweep's to-do): Butterfly.
+- **Butterfly: measured, not written** - its AI's one choice, Mass or Dust, is made by each Butterfly mode's controller (ButterflyAutopilotModeDriver) in code, and the recorder logs no Dust-mode bit: nothing to learn into yet.
 
 ## GrizzlyCharge
 
 New flights: Grizzly 7.
 
-**No learner reads these yet** (the sweep's to-do): Grizzly.
+- **Grizzly: measured, not written** - its AI bombs through GrizzlyTriggerBombConfigSO's autopilot fields, which do not load per mode, and jtgjones's grizzly-v3 is reworking the bomb triggers (15 unmerged commits): learn it once that lands.
 
 ## Hijack
 
 New flights: Urchin 1.
 
-**No learner reads these yet** (the sweep's to-do): Urchin.
+- **Urchin: measured, not written** - the Urchin's riding is its modes' scene fields, not a drive asset (reported).
 
 ## Joust
 
 New flights: Squirrel 1.
 
-**No learner reads these yet** (the sweep's to-do): Squirrel.
+- **Squirrel: measured, not written** - SquirrelAIBoostPolicy is switched off in Joust (disabledInModes).
 
 ## Regatta
 
@@ -75,29 +78,31 @@ New flights: Dolphin 1, Manta 13, Rhino 6, Scarab 3, Serpent 2, Sparrow 6, Squir
 - `author_race_lines --check`: OK. author_race_lines --check: OK (7 hulls, 4 learned)
 - `learn_from_flights --write`: OK. wrote Docs/AI_SYSTEM/LEARNED_FROM_FLIGHTS.md
 
+- **Urchin: measured, not written** - the Urchin's riding is its modes' scene fields, not a drive asset (reported).
+
 The person, every recorded race in this mode:
 
-| Hull | Intensity | Races | Finished | Fastest |
-|---|---|---:|---:|---:|
-| Dolphin | I1 | 1 | 0 | - |
-| Manta | I1 | 6 | 5 | 29 s |
-| Manta | I3 | 2 | 1 | 51 s |
-| Manta | I4 | 5 | 3 | 75 s |
-| Rhino | I1 | 1 | 1 | 36 s |
-| Rhino | I3 | 5 | 1 | 61 s |
-| Scarab | I2 | 3 | 0 | - |
-| Serpent | I3 | 2 | 1 | 164 s |
-| Sparrow | I1 | 3 | 1 | 64 s |
-| Sparrow | I3 | 1 | 0 | - |
-| Sparrow | I4 | 2 | 0 | - |
-| Squirrel | I1 | 38 | 2 | 104 s |
-| Squirrel | I3 | 11 | 4 | 117 s |
-| Stoat | I2 | 2 | 0 | - |
-| Unknown | I1 | 4 | 0 | - |
-| Urchin | I1 | 2 | 2 | 55 s |
-| Urchin | I3 | 4 | 1 | 76 s |
+| Hull | Intensity | Races | Finished | Fastest | Last raced |
+|---|---|---:|---:|---:|---|
+| Dolphin | I1 | 1 | 0 | - | 2026-10-22 23:55 |
+| Manta | I1 | 6 | 5 | 29 s | 2026-10-20 17:33 |
+| Manta | I3 | 2 | 1 | 51 s | 2026-10-20 17:48 |
+| Manta | I4 | 5 | 3 | 75 s | 2026-10-20 17:45 |
+| Rhino | I1 | 1 | 1 | 36 s | 2026-10-20 17:54 |
+| Rhino | I3 | 5 | 1 | 61 s | 2026-10-20 18:02 |
+| Scarab | I2 | 3 | 0 | - | 2026-10-25 21:56 |
+| Serpent | I3 | 2 | 1 | 164 s | 2026-10-17 04:54 |
+| Sparrow | I1 | 3 | 1 | 64 s | 2026-10-23 00:24 |
+| Sparrow | I3 | 1 | 0 | - | 2026-10-23 00:14 |
+| Sparrow | I4 | 2 | 0 | - | 2026-10-23 00:10 |
+| Squirrel | I1 | 38 | 2 | 104 s | 2026-10-17 01:34 |
+| Squirrel | I3 | 11 | 4 | 117 s | 2026-10-17 01:44 |
+| Stoat | I2 | 2 | 0 | - | 2026-10-26 00:13 |
+| Unknown | I1 | 4 | 0 | - | 2026-10-16 17:39 |
+| Urchin | I1 | 2 | 2 | 55 s | 2026-10-17 03:18 |
+| Urchin | I3 | 4 | 1 | 76 s | 2026-10-20 17:51 |
 
-The AI rivals in those races (`regatta_rival_report.py`):
+The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
@@ -116,30 +121,30 @@ scarab         2      5    5.5   322       0%     0%    0/2    1: 1, 4: 1, 5: 1
 
 New flights: Scarab 1.
 
-**No learner reads these yet** (the sweep's to-do): Scarab.
+- **Scarab: measured, not written** - ScarabAIBoostPolicy is switched off in ScarabScramble (disabledInModes).
 
 ## Scurry
 
 New flights: Squirrel 9.
 
-**No learner reads these yet** (the sweep's to-do): Squirrel.
+- `learn_drives_from_flights --write`: OK. nothing.
+- `learn_drives_from_flights --check`: OK. check: OK
 
 ## Skein
 
 New flights: Urchin 1.
 
-- `learn_drives_from_flights --write`: OK. nothing.
-- `learn_drives_from_flights --check`: OK. check: OK
+- **Urchin: measured, not written** - the Urchin's riding is its modes' scene fields, not a drive asset (reported).
 
 The person, every recorded race in this mode:
 
-| Hull | Intensity | Races | Finished | Fastest |
-|---|---|---:|---:|---:|
-| Unknown | I1 | 1 | 0 | - |
-| Unknown | I3 | 1 | 0 | - |
-| Urchin | I3 | 1 | 0 | - |
+| Hull | Intensity | Races | Finished | Fastest | Last raced |
+|---|---|---:|---:|---:|---|
+| Unknown | I1 | 1 | 0 | - | 2026-10-16 13:09 |
+| Unknown | I3 | 1 | 0 | - | 2026-10-16 18:29 |
+| Urchin | I3 | 1 | 0 | - | 2026-10-16 18:35 |
 
-The AI rivals in those races (`regatta_rival_report.py`):
+The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
@@ -150,16 +155,16 @@ urchin         3      4    1.7    64      21%     1%    0/3    1: 1, 2: 1, 3: 1,
 
 New flights: Squirrel 7.
 
-**No learner reads these yet** (the sweep's to-do): Squirrel.
+- `learn_from_flights --mode SkimRace --write`: OK. No Skim Race Squirrel flights with their track yet (the recorder copies Skim Race's track since 2026-10-26).
 
 The person, every recorded race in this mode:
 
-| Hull | Intensity | Races | Finished | Fastest |
-|---|---|---:|---:|---:|
-| Squirrel | I1 | 1 | 0 | - |
-| Squirrel | I2 | 6 | 0 | - |
+| Hull | Intensity | Races | Finished | Fastest | Last raced |
+|---|---|---:|---:|---:|---|
+| Squirrel | I1 | 1 | 0 | - | 2026-10-19 10:27 |
+| Squirrel | I2 | 6 | 0 | - | 2026-10-22 22:37 |
 
-The AI rivals in those races (`regatta_rival_report.py`):
+The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
@@ -175,13 +180,13 @@ New flights: Dolphin 12.
 
 The person, every recorded race in this mode:
 
-| Hull | Intensity | Races | Finished | Fastest |
-|---|---|---:|---:|---:|
-| Dolphin | I1 | 4 | 3 | 75 s |
-| Dolphin | I2 | 5 | 5 | 80 s |
-| Dolphin | I4 | 3 | 2 | 247 s |
+| Hull | Intensity | Races | Finished | Fastest | Last raced |
+|---|---|---:|---:|---:|---|
+| Dolphin | I1 | 4 | 3 | 75 s | 2026-10-26 01:41 |
+| Dolphin | I2 | 5 | 5 | 80 s | 2026-10-26 01:46 |
+| Dolphin | I4 | 3 | 2 | 247 s | 2026-10-26 02:03 |
 
-The AI rivals in those races (`regatta_rival_report.py`):
+The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
@@ -192,21 +197,21 @@ dolphin       26      6    3.3    68      20%     1%    2/26   0: 26, 5: 6, 6: 6
 
 New flights: Butterfly 1.
 
-**No learner reads these yet** (the sweep's to-do): Butterfly.
+- **Butterfly: measured, not written** - its AI's one choice, Mass or Dust, is made by each Butterfly mode's controller (ButterflyAutopilotModeDriver) in code, and the recorder logs no Dust-mode bit: nothing to learn into yet.
 
 ## ThresherTime
 
 New flights: Thresher 2.
 
-**No learner reads these yet** (the sweep's to-do): Thresher.
+- **Thresher: measured, not written** - its boost policy SquirrelAIBoostPolicy (SkimRingAIPolicySO) presses SquirrelTubeActionSO, which this hull does not bind - the drive cannot act.
 
 The person, every recorded race in this mode:
 
-| Hull | Intensity | Races | Finished | Fastest |
-|---|---|---:|---:|---:|
-| Thresher | I1 | 2 | 1 | 127 s |
+| Hull | Intensity | Races | Finished | Fastest | Last raced |
+|---|---|---:|---:|---:|---|
+| Thresher | I1 | 2 | 1 | 127 s | 2026-10-22 23:29 |
 
-The AI rivals in those races (`regatta_rival_report.py`):
+The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
@@ -222,12 +227,12 @@ New flights: Stoat 6.
 
 The person, every recorded race in this mode:
 
-| Hull | Intensity | Races | Finished | Fastest |
-|---|---|---:|---:|---:|
-| Stoat | I1 | 4 | 4 | 87 s |
-| Stoat | I2 | 2 | 2 | 86 s |
+| Hull | Intensity | Races | Finished | Fastest | Last raced |
+|---|---|---:|---:|---:|---|
+| Stoat | I1 | 4 | 4 | 87 s | 2026-10-25 07:33 |
+| Stoat | I2 | 2 | 2 | 86 s | 2026-10-25 07:38 |
 
-The AI rivals in those races (`regatta_rival_report.py`):
+The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
@@ -238,15 +243,15 @@ stoat         12      4    2.7   144      41%     0%    0/12   0: 13, 2: 8, 3: 7
 
 New flights: Butterfly 2.
 
-**No learner reads these yet** (the sweep's to-do): Butterfly.
+- **Butterfly: measured, not written** - its AI's one choice, Mass or Dust, is made by each Butterfly mode's controller (ButterflyAutopilotModeDriver) in code, and the recorder logs no Dust-mode bit: nothing to learn into yet.
 
 The person, every recorded race in this mode:
 
-| Hull | Intensity | Races | Finished | Fastest |
-|---|---|---:|---:|---:|
-| Butterfly | I1 | 2 | 1 | 205 s |
+| Hull | Intensity | Races | Finished | Fastest | Last raced |
+|---|---|---:|---:|---:|---|
+| Butterfly | I1 | 2 | 1 | 205 s | 2026-10-21 15:32 |
 
-The AI rivals in those races (`regatta_rival_report.py`):
+The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
@@ -257,15 +262,15 @@ butterfly      2      0    0.0    50      44%     3%    0/2    0: 2
 
 New flights: Wrasse 3.
 
-**No learner reads these yet** (the sweep's to-do): Wrasse.
+- **Wrasse: measured, not written** - its boost policy SparrowAIBoostPolicy (HoldBoostAIPolicySO) presses BoostActionSO, which this hull does not bind - the drive cannot act.
 
 The person, every recorded race in this mode:
 
-| Hull | Intensity | Races | Finished | Fastest |
-|---|---|---:|---:|---:|
-| Wrasse | I1 | 3 | 1 | 94 s |
+| Hull | Intensity | Races | Finished | Fastest | Last raced |
+|---|---|---:|---:|---:|---|
+| Wrasse | I1 | 3 | 1 | 94 s | 2026-10-22 23:13 |
 
-The AI rivals in those races (`regatta_rival_report.py`):
+The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last changed: `git log -1 --format=%cI -- <the AI's files>`):
 
 ```
 hull       races  rings  r/min   u/s  circling  stuck finished  worst rings (index: stalls)
@@ -276,16 +281,16 @@ wrasse         3     16    8.4   113       7%     1%    2/3    0: 4, 7: 3, 3: 1
 
 New flights: Scarab 1.
 
-**No learner reads these yet** (the sweep's to-do): Scarab.
+- `learn_drives_from_flights --write`: OK. nothing.
+- `learn_drives_from_flights --check`: OK. check: OK
 
 ## Files the learners changed
 
-- `Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback.asset`
-- `CLAUDE.md`
 - `Docs/AI_SYSTEM/AUTO_LEARNING.md`
 - `Docs/AI_SYSTEM/LEARNED_DRIVES.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Skein.md`
-- `Docs/AI_SYSTEM/LEARNED_DRIVES_Switchback.md`
-- `Docs/AI_SYSTEM/LEARNED_FROM_FLIGHTS.md`
-- `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`
-- `Docs/AI_SYSTEM/README.md`
+- `Docs/AI_SYSTEM/LEARNED_DRIVES_Bloomrush.md`
+- `Docs/AI_SYSTEM/LEARNED_DRIVES_Breakwater.md`
+- `Docs/AI_SYSTEM/LEARNED_DRIVES_Broadside.md`
+- `Docs/AI_SYSTEM/LEARNED_DRIVES_Scurry.md`
+- `Docs/AI_SYSTEM/LEARNED_DRIVES_WreckingBall.md`
+- `Docs/UNITY_VERIFICATION_CHECKLIST.md`
