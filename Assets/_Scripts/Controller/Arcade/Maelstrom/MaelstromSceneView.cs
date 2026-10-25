@@ -1031,18 +1031,18 @@ namespace CosmicShore.Gameplay
 
         Sprite ResolveAvatar(MaelstromPlayerSnapshot s)
         {
-            if (s.IsAI && aiProfileList != null && aiProfileList.aiProfiles != null)
+            if (s.IsAI && aiProfileList != null && aiProfileList.AiProfiles != null)
             {
-                foreach (var p in aiProfileList.aiProfiles)
+                foreach (var p in aiProfileList.AiProfiles)
                     if (p.Name == s.Name) return p.AvatarSprite;
             }
 
-            if (profileIconList != null && profileIconList.profileIcons != null)
+            if (profileIconList != null && profileIconList.ProfileIcons != null)
             {
-                foreach (var icon in profileIconList.profileIcons)
+                foreach (var icon in profileIconList.ProfileIcons)
                     if (icon.Id == s.AvatarId) return icon.IconSprite;
-                if (profileIconList.profileIcons.Count > 0)
-                    return profileIconList.profileIcons[0].IconSprite;
+                if (profileIconList.ProfileIcons.Count > 0)
+                    return profileIconList.ProfileIcons[0].IconSprite;
             }
             return null;
         }

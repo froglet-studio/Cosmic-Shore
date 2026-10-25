@@ -32,30 +32,36 @@ namespace CosmicShore.ScriptableObjects
                  "(e.g. Maelstrom, a session-level meta that is not part of the chain).")]
         // Maelstrom is now part of the quest chain — claimed after Joust — so nothing is
         // always-unlocked by default anymore. The shipped ProgressionConfig.asset agrees.
-        public List<GameModes> alwaysUnlockedModes = new();
+        [SerializeField] List<GameModes> alwaysUnlockedModes = new();
+        public List<GameModes> AlwaysUnlockedModes => alwaysUnlockedModes;
 
         [Tooltip("If true, the first quest in the quest list is always unlocked " +
                  "('the first game is free'). This is independent of the always-unlocked list.")]
-        public bool firstQuestAlwaysUnlocked = true;
+        [SerializeField] bool firstQuestAlwaysUnlocked = true;
+        public bool FirstQuestAlwaysUnlocked => firstQuestAlwaysUnlocked;
 
         [Header("Intensity")]
         [Tooltip("Highest intensity available the moment a mode is unlocked (intensity 1..N " +
                  "playable). Default 3 => intensities 1, 2 and 3 are open immediately and only " +
                  "intensity 4 is gated: completing the intensity-3 goal unlocks 4 and finishes " +
                  "the quest.")]
-        [Min(1)] public int defaultMaxIntensity = 3;
+        [SerializeField, Min(1)] int defaultMaxIntensity = 3;
+        public int DefaultMaxIntensity => defaultMaxIntensity;
 
         [Tooltip("Absolute maximum intensity tier any mode can reach.")]
-        [Min(1)] public int maxIntensity = 4;
+        [SerializeField, Min(1)] int maxIntensity = 4;
+        public int MaxIntensity => maxIntensity;
 
         [Tooltip("Game modes whose FULL intensity range is always available (not gated by " +
                  "play counts), e.g. Maelstrom (one intensity is picked in the lobby).")]
-        public List<GameModes> fullIntensityModes = new() { GameModes.Maelstrom };
+        [SerializeField] List<GameModes> fullIntensityModes = new() { GameModes.Maelstrom };
+        public List<GameModes> FullIntensityModes => fullIntensityModes;
 
         [Header("Feature Unlocks")]
         [Tooltip("DisplayName of the quest that gates the Vessel Hangar feature. The hangar " +
                  "unlocks once every quest before this one in the chain is completed.")]
-        public string vesselHangarQuestDisplayName = "VESSEL HANGAR";
+        [SerializeField] string vesselHangarQuestDisplayName = "VESSEL HANGAR";
+        public string VesselHangarQuestDisplayName => vesselHangarQuestDisplayName;
 
         /// <summary>True if the mode is in the always-unlocked list.</summary>
         public bool IsAlwaysUnlocked(GameModes mode) =>

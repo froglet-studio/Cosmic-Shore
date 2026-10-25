@@ -150,7 +150,7 @@ namespace CosmicShore.UI
 
             var quest = list.Quests[index];
             var state = QuestFrontier.StateOf(list, index, service);
-            int maxIntensity = service.Config ? service.Config.maxIntensity : 4;
+            int maxIntensity = service.Config ? service.Config.MaxIntensity : 4;
             int unlocked = quest.FeatureKind == FeatureKind.GameMode ? Mathf.Max(1, service.GetMaxUnlockedIntensity(quest.GameMode)) : 0;
 
             Set(questTitleText, quest.DisplayName);

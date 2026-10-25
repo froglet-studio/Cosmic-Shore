@@ -299,7 +299,7 @@ namespace CosmicShore.Gameplay
             float target = VesselElementalMorphConfigSO.NormalizedMorphWeight(level);
             _morphTweens[index]?.Kill();
 
-            if (instant || _procMorphConfig == null || _procMorphConfig.morphDuration <= 0f)
+            if (instant || _procMorphConfig == null || _procMorphConfig.MorphDuration <= 0f)
             {
                 _morphWeights[index] = target;
                 _morphDirty = true;
@@ -309,8 +309,8 @@ namespace CosmicShore.Gameplay
             _morphTweens[index] = DOTween
                 .To(() => _morphWeights[index],
                     weight => { _morphWeights[index] = weight; _morphDirty = true; },
-                    target, _procMorphConfig.morphDuration)
-                .SetEase(_procMorphConfig.morphEase)
+                    target, _procMorphConfig.MorphDuration)
+                .SetEase(_procMorphConfig.MorphEase)
                 .SetLink(gameObject);
         }
 
