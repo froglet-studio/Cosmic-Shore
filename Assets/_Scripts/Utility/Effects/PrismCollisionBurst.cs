@@ -356,6 +356,11 @@ namespace CosmicShore.Utility
             Color bright, Color dark, Vector3 impactVelocity, float speedLimitOverride, PrismKind tier, int kind, Mesh mesh,
             bool level0 = false)
         {
+            // A rotation that drifted off unit length (1.00001 after many prism-to-prism multiplications) makes
+            // Matrix4x4.TRS log "Quaternion To Matrix conversion failed" (Bug Ledger E-16d65ffecb and three more).
+            // Normalize once here; the bounds below read the same rotation.
+            rotation = Quaternion.Normalize(rotation);
+
             var cfg = PrismInteractionLodConfigSO.Instance;
             bool accepted = level0 ? CanAcceptExplosion(cfg) : CanAccept(cfg) && FitsTriangles(cfg, TrianglesOf(mesh));
             if (!accepted || mesh == null || !PrismDebris.TryGetExplosionLayer(out _)) return false;
@@ -403,6 +408,8 @@ namespace CosmicShore.Utility
             Color oldBright, Color oldDark, float gradeSeconds, int kind, Mesh mesh,
             Vector3 cameraPosition, int subdivision)
         {
+            rotation = Quaternion.Normalize(rotation);   // Bug Ledger E-16d65ffecb: see TryRequestDestruction
+
             var cfg = PrismInteractionLodConfigSO.Instance;
             if (!CanAccept(cfg) || !FitsTriangles(cfg, TrianglesOf(mesh)) || !PrismDebris.TryGetExplosionLayer(out _)) return false;
 
