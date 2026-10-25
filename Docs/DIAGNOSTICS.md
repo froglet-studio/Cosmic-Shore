@@ -244,6 +244,11 @@ occurrence.
 - **Marked fixed by whoever fixed it** — in practice a Claude session, `bug_ledger.py mark-fixed`,
   which writes VALIDATING plus the fix commit onto the sender's `bugledger/<user>` branch. The
   editor adopts it only once that commit is in its HEAD (§ "Send to Claude").
+- **Compile errors close themselves.** An open `error CSnnnn:` issue is resolved at the first editor
+  load where the scripts compiled clean (`EditorUtility.scriptCompilationFailed` false): Unity loads no
+  new scripts while a compile error stands, so the load is the compiler's proof. A half-finished pull
+  or a branch switch had left 61 of them open across the shared ledgers. One that comes back is filed
+  again.
 - **Validation evidence** is scope-matched, and only counts while auto-capture is ON (a clean
   session proves nothing while nothing listens):
   - `PlayMode` issues: each play run ≥ the minimum length where the signature stays silent
