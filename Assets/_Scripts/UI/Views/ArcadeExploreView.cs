@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Gameplay;
@@ -855,22 +856,32 @@ namespace CosmicShore.UI
             ArcadeGameConfigureModal.OpenForWeeklyChallenge(card, challenge);
         }
 
+        // The legacy Play button's launch values. They were statics on the retired MiniGame, which nothing wrote
+        // once Arcade.cs stopped (2026-10-25, REFACTOR_BACKLOG.md M6), so they are the values it held: SelectShip
+        // sets the resources; the vessel, intensity and player count never moved off their defaults. Resting level
+        // 0 in every element: authored ability baselines are exact at spawn (Docs/ElementalAbilitySystem/BACKLOG.md
+        // § Open decisions #1).
+        const VesselClassType LegacyLaunchVessel = VesselClassType.Dolphin;
+        const int LegacyLaunchIntensity = 1;
+        const int LegacyLaunchPlayers = 1;
+        static ResourceCollection s_launchResources = new(0f, 0f, 0f, 0f);
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetLaunchResources() => s_launchResources = new(0f, 0f, 0f, 0f);
+
         public void SelectShip(SO_Vessel selectedShip)
         {
             selectedVesselClassType.Value = selectedShip.Class;
-            // TODO - Remove statics from MiniGame, use SOAP Data Container
-            // notify the mini game engine that this is the vessel to play
-            // MiniGame.PlayerShipType = selectedShip.Class;
 
             // Set resource levels from the vessel's config
-            MiniGame.ResourceCollection = selectedShip.InitialResourceLevels;
+            s_launchResources = selectedShip.InitialResourceLevels;
         }
 
         public void PlaySelectedGame()
         {
             AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
-            LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerVesselType, SelectedGame.Mode, SelectedGame.IsMultiplayer));
-            Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerVesselType, MiniGame.ResourceCollection, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, SelectedGame.IsMultiplayer, false);
+            LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(LegacyLaunchIntensity, LegacyLaunchPlayers, LegacyLaunchVessel, SelectedGame.Mode, SelectedGame.IsMultiplayer));
+            Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, LegacyLaunchVessel, s_launchResources, LegacyLaunchIntensity, LegacyLaunchPlayers, SelectedGame.IsMultiplayer, false);
         }
 
         public void ToggleFavorite()
