@@ -380,3 +380,24 @@
 2026-10-25T16:57:11.089Z E-fa9f643cd7: fix 911c8c2b7 is not in this checkout yet — waiting for a pull
 2026-10-25T17:07:06.588Z PlayMode session ended (605s play run, exiting play mode): 11 fix(es) waiting; counted: E-2320339269 1/2 E-5103c76904 1/2 E-5a15f5e924 1/2 E-7cc3e0223c 1/2 E-ad12affa41 1/2 E-f1681b036f 1/2; fired: E-d6b3d6f496
 2026-10-25T17:25:54.089Z PlayMode session ended (293s play run, exiting play mode): 11 fix(es) waiting; counted: E-2320339269 2/2 E-5103c76904 2/2 E-5a15f5e924 2/2 E-7cc3e0223c 2/2 E-ad12affa41 2/2 E-f1681b036f 2/2; fired: E-d6b3d6f496 E-2fab142e42
+2026-10-25T17:39:36.236Z PlayMode session ended (1115s play run, exiting play mode): 5 fix(es) waiting; counted: none
+2026-10-25T17:39:49.187Z PlayMode session ended (1128s play run, exiting play mode): 5 fix(es) waiting; counted: none
+2026-10-25T17:50:31.796Z editor load: play=False capture=True minPlay=15s issues=144
+2026-10-25T18:00:04.614Z editor load: play=True capture=True minPlay=15s issues=144
+2026-10-25T18:00:18.920Z editor load: play=False capture=True minPlay=15s issues=144
+2026-10-25T18:00:18.953Z editor load: play=False capture=True minPlay=15s issues=144
+2026-10-25T18:00:26.561Z E-0de9ec6c70: fix c5449e28a taken (EditMode); needs 2 clean run(s)
+2026-10-25T18:00:26.600Z E-16d65ffecb: fix eb9b53b45 is not in this checkout yet — waiting for a pull
+2026-10-25T18:00:26.653Z E-20f939a2fa: fix 911c8c2b7 taken (PlayMode); needs 2 clean run(s)
+2026-10-25T18:00:26.708Z E-41b7610878: fix c5449e28a taken (EditMode); needs 2 clean run(s)
+2026-10-25T18:00:26.765Z E-4584be3111: fix 911c8c2b7 taken (PlayMode); needs 2 clean run(s)
+2026-10-25T18:00:26.806Z E-4b42aa3244: fix eb9b53b45 is not in this checkout yet — waiting for a pull
+2026-10-25T18:00:26.859Z E-6b79cd07f1: fix e80f9a02d taken (PlayMode); needs 2 clean run(s)
+2026-10-25T18:00:26.915Z E-6e925c3b8b: fix db43442b7 is not in this checkout yet — waiting for a pull
+2026-10-25T18:00:26.967Z E-72e807d601: fix 456375be0 taken (PlayMode); needs 2 clean run(s)
+2026-10-25T18:00:27.006Z E-79b40242f7: fix 97ecf47e0 is not in this checkout yet — waiting for a pull
+2026-10-25T18:00:27.047Z E-908f18b36f: fix 5ad9f467b is not in this checkout yet — waiting for a pull
+2026-10-25T18:00:27.087Z E-a41c3e0381: fix eb9b53b45 is not in this checkout yet — waiting for a pull
+2026-10-25T18:00:27.138Z E-ca3bc5cbe1: fix e80f9a02d taken (PlayMode); needs 2 clean run(s)
+2026-10-25T18:00:27.191Z E-fa9f643cd7: fix 911c8c2b7 taken (PlayMode); needs 2 clean run(s)
+2026-10-25T18:06:05.879Z PlayMode session ended (348s play run, exiting play mode): 13 fix(es) waiting; counted: E-20f939a2fa 1/2 E-4584be3111 1/2 E-6b79cd07f1 1/2 E-72e807d601 1/2 E-ca3bc5cbe1 1/2 E-fa9f643cd7 1/2
