@@ -15425,3 +15425,18 @@ Headless compile OK; `author_jacks_assets.py --check` / `--self-test` OK; the ne
 55. Net a run of bough prisms: each sinks to the back of the net and turns to lie flat against the mesh, long side along
     the line between the fish, no snap. A second machine sees the decoys face the same way.
 
+## 🔴 2026-10-26 — Breakwater: the AI Sparrows fly the Regatta steering and fire the rocket at the station; any AI turns hard for a target behind it (unverified: no Unity CLI in the session)
+
+**Files:** `BreakwaterController.cs` (`AICommitFromApproachPoint` => true), `HoldBoostAIPolicySO.cs` ("clear the way"),
+`Resources/AIBoostPolicies/SparrowAIBoostPolicy_Breakwater.asset` (new), `SparrowAIBoostPolicy.asset` (the new fields,
+empty), `AIPilot.cs` (`TurnHardIfBehind`), `MinigameAbilityAITests.cs`, `SwitchbackAISteeringTests.cs`. What ran instead
+of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in changed files; `learn_drives_from_flights.py
+--check` (all modes) OK. `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.5, §6.
+
+1. Run `MinigameAbilityAITests` (5) and `SwitchbackAISteeringTests` (8): all pass.
+2. Breakwater, I1 and I4, AI Sparrows (Third Eye, Follow one): it lines up behind each station and threads the eye; it
+   no longer circles a station. A rocket leaves as it closes on a station (one per station) and blows the weave open.
+3. Breakwater with a human Sparrow: the rocket and guns work as before (the rule is the AI's only).
+4. Switchback I4: an AI that misses a mouth turns straight back instead of flying away.
+5. Any crystal mode or Dog Fight with AI Sparrows: their rocket still fires on its timer.
+

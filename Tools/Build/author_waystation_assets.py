@@ -15,8 +15,8 @@ removal of Switchback's own `firstGateDistance`, which Waystation deliberately d
 
 Run with --check to validate and diff without writing.
 """
-import re
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -193,9 +193,10 @@ scene = lib.swap_guid(scene, EXISTING["SwitchbackScoringRule"],
 # line as an unresolvable modification forever, so it is removed rather than left.
 scene = lib.replace_block(scene, "  firstGateDistance: 620\n", "",
                           "Switchback's firstGateDistance")
-# The same for Switchback's course features (its intensity 3 skim walls and 4 danger prisms, 2026-10-25):
-# a SwitchbackController field Waystation does not declare.
-scene = re.sub(r"  featuresPrefab: \{fileID: -?\d+, guid: [0-9a-f]{32}, type: 3\}\n", "", scene, count=1)
+# Switchback's feature layer (I3 skim walls, I4 danger prisms; SwitchbackController.featuresPrefab, 2026-10-25)
+# is also Switchback's own: WaystationController does not declare it. Removed when the donor carries it, so the
+# clone stays right whether or not the donor has the field.
+scene = re.sub(r"^  featuresPrefab: \{[^\n]*\}\n", "", scene, count=1, flags=re.M)
 
 # The four AI seats fly the Butterfly.
 old_ai = "".join(f"  - vesselClass: 2\n    PlayerName: AI {i}\n    AvatarId: {i}\n"
