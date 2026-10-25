@@ -3181,6 +3181,15 @@ puts the AI on the rail's - face, the side every ring sits on, 22 u off the rail
 `LookaheadSeconds` 1.016 -> 0.93, `LookaheadMin` 26.8 -> 60, `MassGuardMargin` 1.298 -> 1.379, `StickGainPerDegree`
 0.041 -> 0.032. No code changed (`SkimRaceDriver` already takes the face from `SkimHeight`'s sign). Why:
 `Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md` §8; numbers: `Docs/AI_SYSTEM/LEARNED_FROM_FLIGHTS.md`.
+**Re-learned 2026-10-25** (policy `regatta-learned-20261025-3flights`). Races written 23/24 before the recorder fix now
+count as finished, so the three fastest finished races changed:
+- `SkimHeight` -6.498 -> **-5.948**: same face, 0.55 u nearer the rail.
+- `LookaheadSeconds` 0.93 -> **1.03**.
+- `LookaheadMin` 60 -> **70**.
+- `StickGainPerDegree` 0.032 -> **0.025**.
+- The margins are unchanged.
+
+The steps below test these values.
 **Verified without the editor:** `author_skimrace_ai_config.py --check`, `learn_from_flights.py --self-test`.
 **Verify in editor:**
 1. Regatta I1, solo, Squirrel against AI Squirrels (or let the AI fly your hull: Third Eye ▸ Pilots ▸ AI). Watch an AI
@@ -3326,8 +3335,11 @@ and `net_logs.py show` merged it. **Not run:** the editor, MPPM, a real send.
 - **The last ring is counted.** It takes one last sample on the frame the race ends, so a finished race is written 24/24.
   Before, 12 of Yash's 13 finished races read 23/24, their last sample 2–19 u short of ring 24.
 - **The hull, mode, domain, target and intensity are named when recording starts**, so a race left mid-way no longer
-  writes hull "Unknown" with raceTarget 0. A race that ends short of its target is marked `"ended":"race left before the
-  finish"`.
+  writes hull "Unknown" with raceTarget 0. `ended` says how the turn ended: `race over` when the match ended by its
+  own rules (you finished, a rival won, a mode with no ring target ended), `left before the end` when the match was gone
+  that frame (back to the menu), `play stopped` when Play stopped. Whether you finished is `finished`. (Fixed
+  2026-10-25: the first cut marked every race short of the ring target "race left before the finish", which mislabelled
+  21 races a rival won and 22 flights of modes without rings.)
 - **`buttonEvents`** `[t, InputEvents value, 1 pressed / 0 released]`, with a `buttonNames` map. It holds the pilot's
   own presses (abilities, stick actions, flip), with no IdleAction and nothing while the AI holds the hull.
 - **No labels are typed.** `racing_line.py` reads each leg's style (rail, drift, ability, boost, plain, rival
@@ -3344,7 +3356,14 @@ within 30 u of the last ring. `Tools/Build/racing_line.py` is new (`Docs/AI_SYST
 3. Drift through a few turns and ride your own rail for a stretch: `python3 Tools/Build/racing_line.py --dir <Flights folder>`
    shows those legs under `drift` and `rail` in its styles table.
 4. Start a race and go back to the menu mid-way: if it is stored, its hull is `Squirrel` (not Unknown), `raceTarget` is
-   24, and `ended` is `race left before the finish`.
+   24, and `ended` is `left before the end`. Lose a Regatta race to a rival, and play a Skim Race: both are `race over`.
+
+**Shown by the stored flights (2026-10-25, 73 flights from 6 people since the fix):**
+- No flight is written one ring short any more; the finished Regatta races read 24/24.
+- No hull "Unknown" after 2026-10-17 06:26.
+- 70 of 73 flights carry button presses.
+
+Steps 1 and 2 are met by that data; steps 3 and 4 still need a run in the editor.
 
 ### 🔴 AI training recorder: flight/3 records the situation (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
 
