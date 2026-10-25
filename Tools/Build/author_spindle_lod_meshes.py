@@ -535,6 +535,7 @@ MonoBehaviour:
   lodEnabled: 1
   tickIntervalSeconds: 0.2
   maxTransitionsPerFrame: 384
+  maxTransitionMsPerFrame: 3
   batchFarThreads: 1
   nearEndGirths: 100
   midEndGirths: 420
