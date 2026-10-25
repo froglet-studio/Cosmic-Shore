@@ -46,7 +46,7 @@ the small view (the Wrasse's gesture, `PilotSwapGesture`).
   (`dogSpeed`). Lifting the thumb leaves the decoy where that jack stands (one decoy; a new one replaces the old). On a
   gamepad the left stick runs the left jack and the right stick the right one (screen-relative, `padDogSpeed`), and the
   bumper on that side is the lift; the trigger on that side is the dash (§2, Time). A stick never drives a jack off the screen. The flight input is paused: the
-  sticks are the jacks'. The herd is always drawn to the board's plane. **Call** (B or T, read straight off the device
+  sticks are the jacks'. The herd is always drawn to the board's plane. **Call** (A, B, T or Space, read straight off the device
   because the flight's buttons are paused, or the view's call button on a phone): for `callTime` the herd is pulled to
   the point between the jacks, which stop repelling; then `callCooldown` (Garrett, 2026-10-24: "in herding mode it
   attracts fauna to the point between the jacks, with the plane attraction always on"). A jack that touches a crystal
@@ -86,9 +86,9 @@ the small view (the Wrasse's gesture, `PilotSwapGesture`).
   (`herdFollowJacks` 1; 0 frames the herd as before). The zoom button (top right of the herding view; gamepad Y, F) eases
   out to the whole cell (`cellViewMargin` x its diameter) and back (`viewZoomEase`); thumbs still aim the jacks at any
   zoom. The call button sits under it. Both are the style guide's PiP frame (`PipViewFrame.ShowRect`) round an icon
-  (`zoomButtonIcon`, `callButtonIcon`), and each shows ONLY once its icon is set (Garrett, 2026-10-24: "the herding view
-  had some strange empty icons in the upper right"); until then a phone has no call or zoom in herding (T-20261024-c0b5),
-  the pad (Y, B) and keys (F, T) do.
+  (`zoomButtonIcon`, `callButtonIcon`); until one is authored each wears a plain drawn glyph (corner brackets; a dot in a
+  ring; `JacksView.Glyph`), never an empty frame (2026-10-24: "strange empty icons"; 2026-10-25: hiding them left a phone
+  no call).
 - **One view at a time** (Garrett, 2026-10-24, round 2: "we can remove the pip from both modes"): herding, the jacks'
   view has the whole screen and the game camera sleeps under it; netting, the game camera alone. The small view and its
   double tap are gone; the swap is the D-pad, the arrow keys or the two-finger swipe. Herding, the view also zooms out as
@@ -149,7 +149,9 @@ that grow open and shrink away (`netGrowRate`). What crosses the mouth (`JacksNe
   they collide with other prisms"): caught and DRAGGED where the net holds them (up to `netPrismCap`, 48), each step a move
   of the prism-motion fundamental (`Docs/PRISM_MOTION.md`, the third mover): a dragged prism that runs into another prism
   destroys both, scored to us (`PrismMotion.Annihilate`), and the net's own prisms are movers of the same step, so the
-  catch never breaks itself. A PLANT's prism is plucked and dragged too (2026-10-25: "the net did not interact with any
+  catch never breaks itself. (Round 7's plucking never ran: the net also skipped `Prism.IsEnvironmentOwned`, which is
+  "no player name" - every plant prism - and not only Skim Race's track; now only an owner-less PLAIN prism is skipped.)
+  A PLANT's prism is plucked and dragged too (2026-10-25: "the net did not interact with any
   prisms. it should be dragging them just like the crystals"; round 5 skipped all living mass, and a cell's prisms are
   mostly its plants'): `HealthPrism.LeaveAsSkeleton` frees it from its plant as ordinary cell mass (it stops swaying, the
   plant forgets it, the mass stays), then it is a mover like any other. A creature's body is never dragged (the creature
@@ -187,7 +189,7 @@ crystal's own). The invisible hull's TOUCH leaves crystals and prisms alone in b
 | Charge | the share of DANGER creatures: 0% at -5, 100% at 15. A danger creature that touches a rival hull stings it (a scored Strike through `CombatHitDrain`) and is spent | **Attack**: the herd goes for rivals within `attackRange` and every creature that touches one bites it (a Strike) |
 | Mass | the herd's birth rate: a birth takes the species' own feeds at -5, a third of them at 15 | **Mass Clusters**: every `pooEvery` one creature lays `pooCount` prisms of our domain |
 | Space | every herder's ring: the thumb floor at -5, +6% of it per level above | **Eat Shields**: the herd eats shielded prisms (never super-shielded) |
-| Time | **Decoy Dash** (2026-10-25: "lets make the time ability to fly both jacks over to the decoy quickly when a trigger is pulled in herding mode"): herding, a trigger (Q / E, or a tap on the decoy) dashes both jacks to the decoy at `dashSpeed` (3) x their run, landing `dashGap` (40 u) apart either side of it; Time scales the dash and the herd's speed alike, +6% per level, floored at x0.4 | **Second Decoy** (2026-10-25: "lets have the upgrade give the player a second decoy controlled by the second trigger (in placement and which one you fly to)"): each side has its own decoy - the jack further left on the herding view leaves the left one (its bumper, or lifting its thumb) and the left trigger dashes to it, the right likewise; the netting jump goes to the one placed last. It replaced the Flying Decoy (netting, A dropped the decoy; Input 6 is unbound) |
+| Time | **Decoy Dash** (2026-10-25: "lets make the time ability to fly both jacks over to the decoy quickly when a trigger is pulled in herding mode"): herding, a trigger TAP (Q / E, or a tap on the decoy) dashes both jacks to the decoy, and a trigger HOLD (`decoyPlaceHold` 0.3 s) lays that side's decoy at the jack on that side (bumpers and lifted thumbs lay it too); there is ALWAYS one decoy (2026-10-25: "there should always be at least one decoy available"): laid between the jacks when they land and never spent by the netting jump. The decoy dash at `dashSpeed` (3) x their run, landing `dashGap` (40 u) apart either side of it; Time scales the dash and the herd's speed alike, +6% per level, floored at x0.4 | **Second Decoy** (2026-10-25: "lets have the upgrade give the player a second decoy controlled by the second trigger (in placement and which one you fly to)"): each side has its own decoy - the left trigger lays (hold) and dashes to (tap) the left one, and the jack further left on the herding view leaves it with its bumper or a lifted thumb; the right likewise; the netting jump goes to the one placed last. It replaced the Flying Decoy (netting, A dropped the decoy; Input 6 is unbound) |
 
 Each upgrade is its own gate with its element written out (`JacksExecutor.ChargeUpgraded` .. `TimeUpgraded`), so
 `/element-ability-table` reads all four as live (2026-10-25; through one `Upgraded(e)` helper it read three as prose). The
@@ -287,7 +289,7 @@ units and multiplied by `labScale` (0.4).
   `netMinHeight`/`netMaxHeight`, `netDepth`), whether prisms should only shed shields rather than be destroyed (today a
   hull contact), the rival take (`netRivalTake` 0.1, `netRivalCooldown` 2), the herding zoom (`herdViewZoom` 0.75), and
   the worm colony as the omni crystal's creature (the shipped "Worm Colony Kaiju" config; a smaller worm may read better).
-  The zoom and call buttons have no icons yet (`zoomButtonIcon`, `callButtonIcon`).
+  The zoom and call buttons wear drawn glyphs until icons are authored (`zoomButtonIcon`, `callButtonIcon`).
 - **A netted crystal's place on other peers.** Every peer carries the crystals its own net catches; a peer whose copy of
   the jacks lags may catch a crystal a frame later or not at all. The owner's release puts the omni crystal right for
   everyone; a loose elemental crystal is local to each machine already.

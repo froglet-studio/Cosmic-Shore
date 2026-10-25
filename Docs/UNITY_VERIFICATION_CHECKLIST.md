@@ -14266,3 +14266,20 @@ to)." Headless compile OK (player and editor, 0 errors in changed files); `autho
     does nothing now (the flying decoy is retired).
 34. The Time card lights while the jacks dash; its text reads Decoy Dash / Second Decoy.
 
+### Round 9 (2026-10-25, same branch)
+
+Garrett: "the net still did not interact with any prisms. i could not longer place a decoy or call the fauna to the jacks in
+herding mode. there should always be at least one decoy available. the second decoy unlocks with upgrading time."
+Causes: the net skipped `Prism.IsEnvironmentOwned` prisms, which are every plant's (it means "no player name"); round 8
+moved decoy placement off the triggers onto the bumpers alone, and the herding call and zoom had no on-screen button since
+round 5. Headless compile OK (player and editor, 0 errors in changed files); `author_jacks_assets.py --check` failed first
+(no `decoyPlaceHold`, the round-8 card words), then passed.
+
+35. Netting through a plant of another domain: its prisms come away and ride in the net (round 7's step 29, now for real).
+36. Land: a decoy is already down between the jacks. Tap a trigger: both dash to it. Hold a trigger: the decoy moves to
+    the jack on that side. A bumper or a lifted thumb lays it too. The netting jump no longer spends it.
+37. At Time 5: hold the left trigger and the right trigger in different places: two decoys; each trigger's tap dashes to
+    its own.
+38. Herding, A, B, T or Space (or the call button, a dot in a ring, top right under the zoom's corner brackets) calls the
+    herd between the jacks.
+
