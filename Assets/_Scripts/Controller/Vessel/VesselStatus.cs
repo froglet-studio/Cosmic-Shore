@@ -28,8 +28,28 @@ namespace CosmicShore.Gameplay
 
     public class VesselStatus : MonoBehaviour, IVesselStatus
     {
+        static readonly List<VesselStatus> s_live = new();
+
+        /// <summary>
+        /// Every enabled vessel, kept by OnEnable/OnDisable: the set
+        /// <c>FindObjectsByType&lt;VesselStatus&gt;</c> answers, without walking the scene. That walk
+        /// costs in proportion to EVERY object loaded (each trail prism is one), so it grows all
+        /// session: in a Stoat match it measured 1.8 ms a call in the first minute and 20 ms
+        /// (worst 61 ms) eight minutes in — the black-hole pull, the Stoat's ripple and the warp
+        /// scaler each paid it on a timer (2026-10-17). Copy it before doing anything that can
+        /// enable or disable a vessel while you iterate.
+        /// </summary>
+        public static IReadOnlyList<VesselStatus> Live => s_live;
+
+        // Drops only dead entries, never live ones: this project enters Play without a domain or a
+        // scene reload, so a vessel already in the open scene may have registered before this runs,
+        // and clearing would hide it until it is toggled. OnDisable keeps the list clean otherwise.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetLive() => s_live.RemoveAll(v => !v);
+
         void OnEnable()
         {
+            s_live.Add(this);
             // Proximity collider-LOD: every vessel (human, AI, menu autopilot) is a
             // focus that keeps nearby prism colliders alive - hull, skimmer, and
             // trigger interactions all happen here. Registration lazily creates the
@@ -40,6 +60,7 @@ namespace CosmicShore.Gameplay
 
         void OnDisable()
         {
+            s_live.Remove(this);
             PrismColliderLodManager.UnregisterFocus(transform);
         }
 

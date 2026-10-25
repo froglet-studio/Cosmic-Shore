@@ -1,10 +1,22 @@
 # Android builds — a signed App Bundle on Google Play internal testing
 
-Status (2026-10-13): **the scripted build and its pre-upload check are on the branch but have not
-run in Unity yet** (no editor in the authoring session). The check's parsing was proven outside
-Unity against manifests linked by Google's own `aapt2` and against the repo's FMOD and Nice
-Vibrations libraries (§4). The Play app `com.FrogletGames.CosmicShore` exists; nothing has been
-uploaded to it.
+Status (2026-10-25):
+
+- **The release build has run.** Build **412826** (version 0.2.0, built 2026-10-14 16:26 UTC from
+  FrogletTools > Build > Android App Bundle (Release)) is on Play **internal testing** for
+  `com.FrogletGames.CosmicShore`. It is the newest upload on record; Play Console's Internal
+  testing page is the authority if someone uploaded since.
+- **That build is 64-bit only.** One tester installed it; two (a Moto G Power and a Samsung
+  Galaxy M, which run 32-bit Android) got "Item not found". 32-bit (ARMv7) ships again from
+  2026-10-15 (§0). **Upload a new build** so those phones can install it (§6), then check them in
+  Play Console's Device catalog.
+- **Development builds run on phones.** Garrett passed the phone round on an Android development
+  build on 2026-10-20 (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, Phone round). §8 covers the
+  development APK and the switch that makes it play like release.
+- **Not yet checked in the Editor:** the build's refusal dialogs, batchmode exit codes and
+  `AndroidBundleCheckTests` in the Test Runner (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, Android
+  release build). The check's parsing was proven outside Unity against manifests linked by
+  Google's own `aapt2` and against the repo's FMOD and Nice Vibrations libraries (§4).
 
 Internal testing reaches up to 100 testers within minutes of a rollout, and needs no store listing,
 content rating or review first. That is the target here. Closed and open testing and production
@@ -22,7 +34,7 @@ build checks the ones Play rejects on, and stops rather than changing them back.
 | Package | `com.FrogletGames.CosmicShore` | Fixed forever by the first upload |
 | Target API | 36 | Play's minimum for new apps and updates since 31 Aug 2026 |
 | Minimum API | 28 (Android 9) | |
-| Architectures | ARM64 only, IL2CPP | Play requires 64-bit; 32-bit was dropped deliberately |
+| Architectures | ARMv7 + ARM64, IL2CPP | Play requires 64-bit. 32-bit was dropped on 2026-10-08 and **added back on 2026-10-15**: two team phones (a Moto G Power and a Samsung Galaxy M) run 32-bit Android on 64-bit chips, and Play showed them "Item not found". Play splits a bundle per ABI, so a phone downloads only its own libraries |
 | R8 minify | On | Unity Ads, the cause of the old R8 launch crash, is removed |
 | Unity IAP | Removed | So no outdated Play Billing library ships |
 | Audio | FMOD's Desktop banks (36 MB) | No platform overrides a bank folder, so Android and iOS ship the same banks |
@@ -139,6 +151,7 @@ and no Java.
 | Error | Target SDK ≥ 36 | Manifest |
 | Error | Not debuggable | Manifest |
 | Error | Has `arm64-v8a` libraries | `base/lib/<abi>/` |
+| Warning | Has `armeabi-v7a` libraries too (32-bit phones) | `base/lib/<abi>/` |
 | Error | Version code between 1 and 2,100,000,000 | Manifest |
 | Error | Base module ≤ 200 MB compressed | Zip entry sizes |
 | Warning | Every 64-bit library is 16 KB page-aligned | Each `.so`'s ELF LOAD segments |
@@ -219,6 +232,7 @@ App bundle explorer > the version > Downloads > Native debug symbols.
 | Dialog: "The editor is not on Android" | File > Build Profiles > Android > Switch Platform |
 | Play: "signed in debug mode" | The check fails on this first. Select the upload key and rebuild |
 | Play: "signed with the wrong key" | Later uploads must use the key the first upload registered. If it is lost: Play Console > Test and release > Setup > App signing > **Request upload key reset** |
+| A tester taps "Download it on Google Play" and gets **"Item not found"**, while the app installs for others on the same list | **First, is their phone 32-bit?** Play Console > Reach and devices > Device catalog > search the model; "Unsupported" with an ABI reason means their Android is 32-bit. Bundles before 2026-10-15 were 64-bit only and hide the app from those phones; rebuild and upload. **Otherwise it is the account:** The Play Store app on their phone is signed into a different Google account than the email on the list. Most often the list has a work address and the phone uses a personal Gmail. Play Store > profile icon shows the active account. Either add THAT account to the list (Testers > the email list > add > Save; no new release needed), or switch Play Store to the listed account. Then open the opt-in link in Chrome, signed into the same account, tap **Accept invite**, and only then **Download it on Google Play**. If it persists, clear the Play Store's cache and wait 10-15 minutes. A Google Workspace account whose admin restricts Play cannot install test apps; use a personal Gmail |
 | Play: "Version code … has already been used" | Build again (a new minute), or pass `-buildVersionCode` |
 | Play warning: "contains native code, and you've not uploaded debug symbols" | Only a recommendation; the release can go out. The bundle was built without the menu (or before 2026-10-14). The check warns about this too. Rebuild with FrogletTools > Build > Android App Bundle (Release) |
 | Gradle fails during the build | Most Android Gradle failures trace to `Assets/Plugins/Android/*.gradle` and the EDM4U block; see `Docs/PLATFORM_UNIFICATION.md` §2.1. Send the Console error to Claude |

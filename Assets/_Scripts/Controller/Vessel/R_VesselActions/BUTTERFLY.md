@@ -564,6 +564,39 @@ the prefab with the fleet audits under **FrogletTools ▸ Vessels ▸ Audits**.
 9. **Elements.** Feed Mass and Space crystals and watch the hull morph, Mass mode's wake widen and
    the dust capsule lengthen.
 
+## 8a. The AI, audited (2026-10-17)
+
+A read-only audit of every Butterfly AI path (Yash's request; `Docs/AI_SYSTEM/ARCHITECTURE.md` roster). The AI is the
+platform `AIPilot` steered by each mode's target provider, plus `ButterflyAutopilotModeDriver` (the Mass / Dust switch,
+replicated) in Dustup, Sirocco and Tapestry, plus the fold drive in Waystation. No boost ability is bound and no
+`boostPolicy` is set: the fold is the hull's only speed tool. What passes: `AIPilot` enabled, input-only (replicated
+presses and target providers only), the mode driver reads the mode back instead of counting presses, no per-tick
+allocation. Every mode can be scored by an all-AI Butterfly domain.
+
+**Fixed 2026-10-17 (Waystation only):**
+- The fold lands inside the ring: the aim limit is asin(0.5 R / d), and the drive lets go 30 u short of the plane.
+- The AI races at full throttle.
+- The autopilot check no longer adds an `AIPilot` to human hulls (`WAYSTATION.md` "Known limitations",
+  `WaystationFoldTests`).
+
+**Open, ranked; the design calls are Garrett's (team board):**
+1. **The AI cruises at 67% of a person's speed in Dustup, Sirocco and Tapestry**: the prefab's
+   `defaultThrottleHigh/Low` 0.6 gives ~45 u/s against 67, and those modes set no throttle floor. A hunter that
+   cannot catch a person. Fix: `SetThrottleFloor(1)` where the mode wants it.
+2. **In Dustup and Sirocco the AI never fetches crystals**: their target providers return the rival or the hostile
+   mass every frame (Sirocco says so on purpose), so its Space (dust length) and Charge (the bite) stay at level 0
+   while people level up. Fix: Tapestry's crystal detour (`TapestryController.TryNearestCrystal`).
+3. **Intensity changes nothing**: throttle, aggressiveness and avoidance author Low = High, and no lobby difficulty
+   is offered.
+4. **Wormholes and fold gates are invisible to the AI** (`BUTTERFLY_FOLD.md`); no rival-pair avoidance.
+5. **The AI checklist is empty**: not in `check_ai_no_state_writes.py`'s scopes, no `AI.Butterfly.*` markers, no
+   diagnostics or Third Eye branch, no tests for the mode driver or the four controllers.
+6. **Dustup's hover** (30 u along the hull's own up) is a guess, unverified.
+
+**For Regatta (not on the card):** a fold drive extracted from Waystation into `Controller/AI/Butterfly/`, a
+`RaceLines/Butterfly_Regatta` style, a Mass / Dust policy for a course of super-shielded rails (Mass lays a wake 5-20x
+wide; Dust erodes rival rails: the owner's decision), wormhole avoidance, and the checklist above.
+
 ## 9. Follow-ups
 
 - **The crystal catcher does not grow with the hull** (§3.1a, 2026-10-09). It is a fixed 30 u

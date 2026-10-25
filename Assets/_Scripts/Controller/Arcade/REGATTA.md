@@ -263,7 +263,7 @@ and the Manta got Regatta Soar bands (`f4e35748c`, below).
 **Per-hull Regatta variants.** The Rhino, Dolphin and Manta drives and the Stoat's three configs each read a
 Regatta-only copy when one exists (`Resources/AIBoostPolicies/<asset>_Regatta`, written by
 `learn_drives_from_flights.py` from people's editor flights). Only the Manta's exists: `MantaSoarAITuning_Regatta`,
-Soar bands 0.8 / 0.85 against the executor's 0.35 / 0.75 (2026-10-17, set from `Tools/Build/manta_drive_sim.py`, which
+Soar bands 0.8 / 0.85 against the executor's 0.35 / 0.75 (since 2026-10-24: 0.975 / 0.975, learned from Yash's 3 fastest of 9 finished Manta flights; `LEARNED_DRIVES.md`) (2026-10-17, set from `Tools/Build/manta_drive_sim.py`, which
 raced three laps 1.5-2 s faster at every intensity; Manta flights replace it). So the Squirrel
 (`SkimRaceAIConfig_Regatta`) and the Manta fly Regatta numbers; the Rhino, the Dolphin and the Stoat fly their shipped
 numbers.
@@ -303,15 +303,31 @@ once, and a big hull scrapes them (a ram slows the Manta, Dolphin and Sparrow an
   rim (`HullClearance`), and its **risk**. Bold cuts more of each bend (a longer look-ahead) and keeps 0.75x the room;
   careful follows the line tightly with 1.5x. Every AI seat draws its own risk round the hull's (seeded per seat), so a
   grid has careful and bold pilots of the same hull. Starting values: Rhino 0.80 / 18 u / 0.40 (biggest, fastest:
-  out wide, safer), Manta 0.70 / 16 / 0.50, Dolphin 0.60 / 12 / 0.50, Stoat 0.55 / 10 / 0.60, Serpent 0.60 / 12 /
+  out wide, safer; line set 2026-10-24 from Yash's six Rhino races: 0.676), Manta 0.70 / 16 / 0.50 (line learned 2026-10-24: 0.809), Dolphin 0.60 / 12 / 0.50 (line set 2026-10-24 from Yash's one Dolphin race: 0.785), Stoat 0.55 / 10 / 0.60, Serpent 0.60 / 12 /
   0.50, Sparrow 0.55 / 10 / 0.50, Scarab 0.60 / 12 / 0.45.
 - **Learned from people**: `learn_drives_from_flights.py` measures where a person crosses the rings in their fastest
   three finished races of a hull and writes that hull's `LaneShare` (`race_lines_learned.json`, read by the
-  generator). No Rhino, Manta, Dolphin, Stoat, Sparrow or Scarab flights yet; the Serpent has one finished race.
+  generator). Each crossing is scaled by its OWN ring's mouth (an I1 crossing read against the I3 mouth looked far
+  wider: the Rhino's six races read 0.815 that way and 0.676 crossing by crossing, I1 0.676 and I3 0.672). The Manta's
+  line is learned (0.809). The Rhino's 0.676 was SET BY HAND on 2026-10-24 (Yash's ask) from all six of his Rhino races,
+  four of them unfinished, because only two finished; the learner replaces it at the third finished race. The Dolphin's 0.785 was set by hand the same day from Yash's one
+  Dolphin race (I1, 22 crossings, unfinished); the learner replaces it at the third finished race too.
 - **Steering** (`GateRaceController.TryRaceLine`, overridden here): asked after the difficulty belief and the
   missed-mouth test, so an Easy pilot's mistakes and a missed ring are still flown the gate way (a missed ring is flown
   the gate way until threaded, or the closed line would carry the pilot a whole lap round to it). The point a second
   look-ahead further on is the boost drivers' corner (`AIBoostContext.CornerDegrees`).
+- **The speed drives judge the RING, not the steering point** (2026-10-17, found checking the Dolphin): every boost
+  driver gauges its runway as distance ÷ speed to its target, and on the line the target is one look-ahead (0.35-0.8 s)
+  ahead. The Rhino ramps only with 1.5 s of runway and the Dolphin spends only with 2.5 s, so on the line neither would
+  ever have fired its speed verb. `AIPilot.TickBoostPolicy` now hands the drivers the ring the mode reports
+  (`AIPilot.ObjectivePosition`: bearing, range and the turn there; a difficulty mistake keeps the believed point), and
+  the line's "after" is a look-ahead past the RING, so `CornerDegrees` is the turn at the ring. The Manta's drive reads
+  the stick and was unaffected.
+- **The Stoat needed one fix for it** (2026-10-17): its field and sling autopilots judged RANGE by the point they
+  steer for, and the line keeps that point one look-ahead ahead (60 u at cruise), inside their "far enough to lay a
+  pair" tests (90 u, 120 u). It would have laid no pair, warped nowhere and raced at cruise. They now take the bearing
+  from the line and the range from the ring they are after (`AIPilot.ObjectivePosition`,
+  `StoatDipoleMath.AutopilotGauge`; `StoatDipoleTests`). The mode switch reads only the angle and was unaffected.
 - **Not on a line:** the Squirrel (its own Skim Race pilot; Yash's own Squirrel crosses rings 11 u from the centre,
   median of 1,042 crossings: the braid's middle IS the Squirrel's line) and the Urchin (rides its own lane).
 - **Tests:** `RegattaRaceLineTests` (clearance, radius, the centre line as the negative control, the loop, the

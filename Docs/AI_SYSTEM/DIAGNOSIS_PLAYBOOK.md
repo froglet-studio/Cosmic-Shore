@@ -97,7 +97,7 @@ rows. Row 10's belief is exposed (2026-10-15).
 |---|---|---|---|---|
 | 1 | Platform autopilot (`AIPilot`, boost policies) | 2 (not in the input-only gate) | Widen the input-only gate to it; markers (`AI.Autopilot.*`, `AI.Boost.*`); then a `diag` in a 4-AI arena mode | AI session, then user |
 | 2 | Urchin rail rider (Hijack, Skein, **Regatta new**) | 2, tests exist (not gated) | Gate scope; markers; review the Regatta rail choice against `UrchinRailAssessmentTests`; user script for Regatta | AI session, then user |
-| 3 | Scarab jukes (Scarab Scramble, **new**) | 2, tests exist (not gated) | Gate scope; markers; review `ScarabScrambleJukePlanner`; move it to `Controller/AI/Scarab/` (`ARCHITECTURE.md` §4.3) | AI session |
+| 3 | Scarab jukes (Scarab Scramble, **new**) | 2, tests exist (not gated) | Gate scope; markers; review `ScarabScrambleJukePlanner` (moved to `Controller/AI/Scarab/` 2026-10-17, `ARCHITECTURE.md` §4.3) | AI session |
 | 4 | Grizzly AI bombs (**new**) | 2, tests exist (not gated) | Gate scope; markers; review the autopilot branch of `GrizzlyTriggerBombExecutor`; user script in Grizzly Time | AI session, then user |
 | 5 | Butterfly mode switch | 2 (not gated) | Gate scope; markers; a test for the mode-switch rule | AI session |
 | 6 | Manta turn boost | 2 (not gated) | Gate scope; markers; review | AI session |

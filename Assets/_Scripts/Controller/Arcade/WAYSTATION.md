@@ -244,6 +244,14 @@ gameplay monolith), so they have had a syntax pass and an API-surface read and n
 
 ## Known limitations
 
+- **The AI fold lands IN the ring now, and the AI races at full throttle (2026-10-17).** An audit found the flat
+  12-degree aim cone landed a 420 u fold 87 u off a 40-56 u mouth (900 u: 187 u). The fold goes along the heading it
+  leaves on, so its aim is now also held under asin(0.5 R / d) (`aiFoldMouthShare`), and it lets go `aiFoldLandShort`
+  (30 u) before the ring's plane so the hull flies through the mouth. Widening the cone is therefore NOT safe; the
+  note below that suggests it predates this. `WaystationController.AIThrottleFloor` is now 1 (the Butterfly's authored
+  0.6 skill throttle cruised at ~45 u/s against a person's 67). The autopilot check uses `TryGetComponent`: it used
+  `VesselStatus.AIPilot`, whose getter ADDS an autopilot to every human's hull, every server tick.
+  `WaystationFoldTests`. Not editor-verified.
 - **An AI's fold is UNTUNED.** The drive is written and fails safe, but `aiFoldMinDistance`,
   `aiFoldAimDegrees` and `aiFoldRetrySeconds` are reasoned numbers rather than measured ones: how
   often a bot's heading actually falls inside a 12-degree cone on its next ring is a property of

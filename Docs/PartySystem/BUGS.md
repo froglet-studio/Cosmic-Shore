@@ -38,10 +38,11 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B28 | The boot gate's in-attempt retry was unbounded, so "three attempts" was a minimum and the offline fallback could arrive minutes late | Fixed 2026-10-08 (bounded by the per-attempt timeout) | 🟡 |
 | B29 | The Join/Accept pre-flight refuses on STALE presence: a party that just shrank reads as "full", and a host that just re-created its session reads as "no longer available" | **Session case fixed 2026-10-09** (an invite and the `partySession` it names now go out in one save; this was "defect 5"); the Count case is open - its cure is Block 5 (push instead of poll) | 🟡 |
 | B30 | A party guest's swapped-in vessel never moves, and the gap throws every 250 ms | Root-caused & fixed 2026-10-13; playtest-confirmed by the owner | 🟢 |
-| B31 | While a party exists, its session refresh is rate-limited (429) about every 10 s, and the record did not count it | Root-caused & fixed 2026-10-17: two GETs per 1.5 s tick (1.33/s) against UGS's 1 GET/s/player; the party GET now runs at most every 6 s (0.83/s). Needs a two-machine retest | 🟡 |
+| B31 | While a party exists, its session refresh is rate-limited (429) about every 10 s, and the record did not count it | Fixed 2026-10-17 by averaging under 1 GET/s; that did not hold (1,061 party-read 429s, 21-23 Oct) because the presence and party reads still went out in the same second. Fixed again 2026-10-24: every read passes `LobbyReadPacer` (1.05 s apart) and a tick reads one lobby. Needs a two-machine retest | 🟡 |
 | B32 | After a guest leaves mid-match, the host's presence lobby answers `NotInLobby` and the host sits in `Reconnecting` for the rest of the session | Root-caused & fixed 2026-10-17: the leaving player hosted the shared presence lobby and its leave DELETED it; the host then never left `Reconnecting`. Needs a two-machine retest | 🟡 |
 | B33 | In the editor, a new Play starts inside the PREVIOUS Play's party session (no domain reload), so the first ~30 s fail with "lobby not found" | Root-caused & fixed 2026-10-17: `GameDataSO.ActiveSession` outlived Play and `CreateAsync` no-oped on it. Needs an editor retest | 🟡 |
 | B34 | In the editor, `ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!…'` some time after Play stops (Bug Ledger E-c523697cae, all four testers) | Root-caused 2026-10-17 in the SDK source: B33's leaked session meets Wire's Play-exit teardown. The console copy is filtered; the leak is B33 | 🟡 |
+| B35 | Every direct join fails: the host logs `NetworkConfig mismatch`, the joiner gets `NetworkManagerStartFailed` and falls back to hosting alone (Caleb and Gradi, five tests 21-23 Oct) | Root-caused & fixed 2026-10-24: 11 of the 31 network prefabs committed a wrong `GlobalObjectIdHash`, and each editor used the wrong or the right one depending on what it had opened in edit mode. Committed Unity's values; the gate fails on a wrong one; each test log records the config. Needs a two-machine retest | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -2113,6 +2114,27 @@ spacing, and the budget under 1/s with the old cadence as the negative control. 
 machines party up and idle 10 minutes in the menu; `net_logs.py show` reports `429s 0` and no
 `rate-limited` line.
 
+**The first fix did not hold (measured 2026-10-24).** Caleb's and Gradi's tests of 21-23 Oct, all on code
+with the fix above: 1,061 `Party session refresh rate-limited` warnings against 12 presence-refresh ones,
+spaced 7.8 s apart (one per party poll plus its 3 s back-off). Nearly every party read was refused. The
+average was under the cap, but the tick still read the presence lobby and then the party session back to
+back, milliseconds apart, so the party read always fell in the same second as the presence read. UGS's cap
+is one GET per second, not one per second on average.
+
+**Second fix (2026-10-24).**
+- `LobbyReadPacer` (`Assets/_Scripts/Utility/`) is the one gate every lobby GET of ours passes: the
+  presence refresh, the party refresh, and `LobbyPropertyWriter` / `PartySessionService`'s reads before and
+  after a save. No two go out less than 1.05 s apart; a read that would waits its turn. It resets at Play
+  start.
+- The refresh tick makes one read: on the tick the party session is due a read
+  (`LobbyRefreshScheduler.IsPartySessionPollDue`, asked without claiming it), it skips the presence read and
+  works from the presence lobby as last read. So the tick never waits a second in the middle, and the
+  presence lobby is read every tick but one in four.
+- Held by `PartyRefreshRecoveryTests` (13): the pacer refuses a read right behind another and allows it at
+  1.05 s, a refused try claims nothing, the Play-start reset frees the slot, and the party poll can be asked
+  without claiming it. **Hand test:** same as above: `429s 0` and no `rate-limited` line in a 10-minute
+  party. If 429s remain, they come from reads outside the pacer (the SDK's own), and the next step is Block 5.
+
 ## B32 — After a guest leaves mid-match, the host sits in `Reconnecting` for the rest of the session 🟡 (observed 2026-10-16; root-caused & fixed 2026-10-17; needs a two-machine retest)
 
 **Seen in.** Same log as B31. ys1 joined Caleb's party (client 1 approved at 72 s), both pressed Ready in
@@ -2225,4 +2247,41 @@ it fails to reset belongs to a session that no longer exists.
 
 **Still open.** The leak behind it is B33. When B33 leaves the SDK session cleanly as Play exits, this
 error has nothing left to fire on, and the filter rule can be deleted.
+
+## B35 — Every direct join fails with `NetworkConfig mismatch` 🟡 (root-caused & fixed 2026-10-24)
+
+**Seen in.** The multiplayer test logs of Caleb (`belac`) and Gradi, five two-machine tests from
+2026-10-21 to 2026-10-23, both editors on the same commit. Each time one of them direct-joins the other:
+the host logs `[Netcode] NetworkConfig mismatch. The configuration between the server and client does not
+match` (twice, once per connection attempt); the joiner logs `Received error message from Relay: not
+connected`, then `SessionException NetworkManagerStartFailed`, and its party falls back from
+`JoiningParty` to `HostingParty` alone. Later tries in the same Play add `SessionConflict: player is
+already a member` (the lobby join had succeeded; only Netcode failed). The 19-20 Oct tests had none.
+
+**Cause.** With `ForceSamePrefabs` on, the connection request carries a hash of the sorted
+`GlobalObjectIdHash` of every registered network prefab (NGO 2.13.3 `NetworkConfig.GetConfig`), and the
+host refuses any client whose hash differs. Each editor uses the hash IN MEMORY, and
+`NetworkObject.OnValidate` regenerates it from the prefab's GUID only in edit mode: it skips while
+entering Play. So a prefab first loaded as Play starts keeps its COMMITTED value, and one the editor had
+already loaded (selected it, opened a scene or a tool that holds it) carries the regenerated value.
+Eleven registered prefabs committed a value that is not the one Unity computes (AstroLeagueBall,
+Butterfly, Falcon, MassSharkFauna, NetworkVesselSpawner, Player, QuadFish, Rhino, Scarab, TadPoleFauna,
+Termite; AstroLeagueBall at 0). Two editors on the same commit therefore disagreed whenever their
+histories differed, and nothing said which prefab. Same mechanism, no logged proof of WHICH prefab
+differed in these tests: the logs carry only the host's one-line refusal.
+
+**What changed.**
+- The eleven prefabs carry the value Unity computes (`xxh32("GlobalObjectId_V1-1-<guid>-<fileID>-0")`,
+  checked against prefabs Unity regenerated itself), so every editor and every build agrees whatever it
+  loaded first. One line per prefab; no other field moved.
+- `Tools/Build/check_network_prefab_hashes.py` fails on a stale hash as well as a collision, and `--fix`
+  writes Unity's value (`--self-test` proves both fire, with negative controls).
+- Each peer's test log records `netConfig`: its config hash and the prefab keys inside it, once per
+  Netcode start (`MultiplayerSetup.MarkNetworkConfig`, pinned by `NetworkConfigMarkTests`).
+  `python3 Tools/Build/net_logs.py show <test>` prints `NetworkConfig differs between players (B35)` with
+  the keys only one player has, so a future mismatch names its prefab.
+
+**Hand test.** Two machines on this commit: one hosts a party, the other direct-joins (and once by
+accepting an invite). Pass: the joiner lands in the party, no `NetworkConfig mismatch` on the host. If it
+still fails, send the logs; `net_logs.py show` will name the prefab or setting.
 

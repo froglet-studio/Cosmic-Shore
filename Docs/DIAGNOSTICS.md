@@ -212,7 +212,7 @@ same ledger issues. Keep it a pure function — no editor types, no statics with
 
 | Route | Id | How |
 |---|---|---|
-| **Auto-capture** | `E-…` | Every distinct error/exception/assert signature files itself, once — captured via `logMessageReceivedThreaded` into a background worker (the log path never blocks on file IO). A thousand repeats update one issue. |
+| **Auto-capture** | `E-…` | Every distinct error/exception/assert signature files itself, once — captured via `logMessageReceivedThreaded` into a background worker (the log path never blocks on file IO). A thousand repeats update one issue. Errors raised inside a Test Runner test are skipped (their stack carries NUnit / TestRunner frames): the Test Runner already judges them, and an expected one is declared with `LogAssert.Expect`. |
 | **Custom** | `C-…` | For anything auto-capture cannot see ("the quest screen is empty"): filed on the Team Bug Board artifact (no Unity needed) and imported by the daily sweep with `bug_ledger.py file`. |
 | **Tool findings** | `T-…` | `BugLedger.ReportFromTool` / `ReportToolFindings` — auditors and validators file their failures as tracked issues. The crash detector's File Bug button uses the same route. |
 
@@ -426,7 +426,9 @@ the bottom-left corner of every Scene view. It opens expanded once per editor st
   push as the after-play question) and **Release** (Code Optimization is Debug, so a capture would not count).
 - **No Capture button** (Yash, 2026-10-15: "captures should happen automatic"). `PerfAutoCapture` runs
   `capture <label> 15` by itself in Play, once per scene per session, after the scene's time from the status file
-  (S2 8 min, Skim Race 90 s, S5 2 min; any other gameplay scene 90 s under its own name). It skips Debug code
+  (S2 8 min, Skim Race 90 s, S5 2 min; any other gameplay scene 90 s under its own name). A scene whose time is
+  over 4 minutes (today only S2) also gets an early capture at 4 minutes, labelled `S2-4min`, so a shorter play test
+  still sends data (Yash, 2026-10-18); the sweep keeps its baseline apart from S2's. It skips Debug code
   optimization, a paused editor and the boot scenes. While playing, the badge shows its countdown. A new capture
   then goes to Claude by itself after Play. It costs one short hitch per scene (a 180-frame Profiler recording and a
   renderer census). Turn it off on one machine with the EditorPrefs key `CosmicShore.PerfAutoCapture.Off`.

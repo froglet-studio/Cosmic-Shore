@@ -360,5 +360,23 @@ namespace CosmicShore.Tests
             Assert.IsFalse(StoatDipoleMath.OrbitCapReached(150f, 360f, 160f, closing), "a lap that would end at 310 holds on");
             Assert.AreEqual(0f, StoatDipoleMath.ClosingSeconds(5f, 10f, 10f, 1f), "poles already inside the threshold close at once");
         }
+
+        [Test]
+        public void Autopilot_OnARaceLine_JudgesTheRingsRange_WithTheLinesBearing()
+        {
+            // Regatta's race line keeps the steering point one look-ahead (60 u at cruise) ahead. Judged alone it is inside
+            // the 90 u "far enough to lay a pair" test, so the Stoat never laid one; the ring it is after is 500 u away.
+            var steer = new Vector3(20f, 0f, 57f);   // 60 u ahead, a little right
+            Assert.IsFalse(StoatDipoleMath.AutopilotTriggers(steer, 90f, 12f, 180f, out _, out _),
+                "negative control: the steering point alone never lays a pair");
+            var gauge = StoatDipoleMath.AutopilotGauge(steer, 500f);
+            Assert.AreEqual(500f, gauge.magnitude, 1e-3f);
+            Assert.AreEqual(0f, Vector3.Angle(steer, gauge), 1e-3f, "the bearing stays the line's");
+            Assert.IsTrue(StoatDipoleMath.AutopilotTriggers(gauge, 90f, 12f, 180f, out bool l, out bool r));
+            Assert.IsTrue(r && !l, "the line bends right: the right trigger");
+            Assert.IsFalse(StoatSlingMath.TryAutopilotSide(steer, 30f, 120f, out _),
+                "negative control: the sling's 120 u test fails on the steering point too");
+            Assert.AreEqual(Vector3.zero, StoatDipoleMath.AutopilotGauge(Vector3.zero, 500f), "no bearing: no target");
+        }
     }
 }
