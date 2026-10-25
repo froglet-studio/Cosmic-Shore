@@ -342,6 +342,15 @@ enum before taking a value.
 - **An unrolled world folds where the path crosses itself.** If one half's world is built from the other
   half's path (the Pistol's sidescroller), loops, helices and turns tighter than the band fold it. Measure
   this with an unroll test that has a control which must fold (a flat circle), before tuning anything else.
+- **A crew hull cloned from a donor keeps the donor's HUD.** The Goby drew the Squirrel's HUD (drift card, boost fill,
+  steal ring) for ten days after its kit was stripped, because the HUD lives in a nested prefab and a controller the kit
+  strip never named. Give each seat its own cards in the same pass as the kit (2026-10-24, Garrett: "give both of its
+  seats separate UI ability icons, glyphs, etc."): one HUD variant whose view carries both seats' icons per card, a
+  controller that re-seeds icons, chips, veils, gauges and counts on a swap (`author_goby_hud.py`, `GobyPistolHUDView`,
+  `GobyPistolHUDController` are the pattern).
+- **A chip can only name a control the glyph set has.** A seat that reads keys of its own (the Pistol's G and B) has
+  no honest chip: `ControlGlyphSet` holds one row per fleet control (A / Space, B / T, X / Q, Y / F, the triggers and
+  shifts, RB / E). Put each seat's moves on those controls, keep the old keys as quiet aliases, and the chips derive.
 
 ## 7. Glossary
 
