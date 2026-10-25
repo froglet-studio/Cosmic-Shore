@@ -462,8 +462,7 @@ namespace CosmicShore.Utility.AITraining
                 var go = vessel.Transform != null ? vessel.Transform.gameObject : null;
                 if (go == null) continue;
 
-                var pilot = go.GetComponent<TrainingPilot>();
-                if (pilot == null) pilot = go.AddComponent<TrainingPilot>();
+                if (!go.TryGetComponent(out TrainingPilot pilot)) pilot = go.AddComponent<TrainingPilot>();
 
                 pilot.BindVessel(vessel, gameData, cellData);
                 pilot.TargetMode = scenario.TargetMode;

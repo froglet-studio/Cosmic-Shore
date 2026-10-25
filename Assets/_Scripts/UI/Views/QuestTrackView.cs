@@ -51,6 +51,10 @@ namespace CosmicShore.UI
         [Header("Summary (optional)")]
         [Tooltip("\"1 of 5 complete\": quests claimed out of the list.")]
         [SerializeField] private TMP_Text summaryText;
+        [Tooltip("The summary's line. {claimed} is the quests claimed, {total} the quests listed. Empty shows nothing.")]
+        [SerializeField] private string summaryLine = "{claimed} of {total} complete";
+        [Tooltip("The description of a placeholder quest (SO_UnlockData.IsPlaceholder). Empty shows nothing.")]
+        [SerializeField] private string comingSoonLine = "Coming Soon";
 
         private readonly List<QuestItemCard> _cards = new();
         private readonly List<CanvasGroup> _descriptionLabels = new();
@@ -200,7 +204,8 @@ namespace CosmicShore.UI
                 if (state == QuestItemState.Claimed) claimed++;
             }
             if (summaryText && questList != null)
-                summaryText.text = $"{claimed} of {questList.Quests.Count} complete";
+                summaryText.text = TemplateText.Fill(summaryLine,
+                    "claimed", claimed.ToString(), "total", questList.Quests.Count.ToString());
         }
 
         /// <summary>The highest intensity the player has unlocked on a quest's mode (0 while locked,
@@ -480,7 +485,7 @@ namespace CosmicShore.UI
                 if (tmp != null)
                 {
                     var quest = questList.Quests[i];
-                    tmp.text = quest.IsPlaceholder ? "Coming Soon" : quest.Description;
+                    tmp.text = quest.IsPlaceholder ? comingSoonLine : quest.Description;
                 }
 
                 if (!go.TryGetComponent<CanvasGroup>(out var cg))

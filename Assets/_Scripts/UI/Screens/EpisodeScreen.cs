@@ -140,8 +140,7 @@ namespace CosmicShore.UI
                 var nameTransform = cardGO.transform.Find("EpisodeName");
                 if (nameTransform != null)
                 {
-                    var nameTMP = nameTransform.GetComponent<TMP_Text>();
-                    if (nameTMP != null)
+                    if (nameTransform.TryGetComponent(out TMP_Text nameTMP))
                         nameTMP.text = episode.title;
                 }
 
@@ -149,8 +148,7 @@ namespace CosmicShore.UI
                 var detailTransform = cardGO.transform.Find("EpisodeDetail");
                 if (detailTransform != null)
                 {
-                    var detailTMP = detailTransform.GetComponent<TMP_Text>();
-                    if (detailTMP != null)
+                    if (detailTransform.TryGetComponent(out TMP_Text detailTMP))
                         detailTMP.text = episode.description;
                 }
 
@@ -171,8 +169,7 @@ namespace CosmicShore.UI
                 var valueTransform = cardGO.transform.Find("Button/ValueText");
                 if (valueTransform != null)
                 {
-                    var valueTMP = valueTransform.GetComponent<TMP_Text>();
-                    if (valueTMP != null)
+                    if (valueTransform.TryGetComponent(out TMP_Text valueTMP))
                     {
                         if (isPurchasable)
                             valueTMP.text = FormatPrice(episode.priceUsd);
@@ -187,16 +184,14 @@ namespace CosmicShore.UI
                 var bgTransform = cardGO.transform.Find("BG");
                 if (bgTransform != null && episode.cardImage != null)
                 {
-                    var bgImage = bgTransform.GetComponent<Image>();
-                    if (bgImage != null)
+                    if (bgTransform.TryGetComponent(out Image bgImage))
                         bgImage.sprite = episode.cardImage;
                 }
 
                 var button = cardGO.transform.Find("Button");
                 if (button != null)
                 {
-                    var btn = button.GetComponent<Button>();
-                    if (btn != null)
+                    if (button.TryGetComponent(out Button btn))
                     {
                         if (isPurchasable)
                         {

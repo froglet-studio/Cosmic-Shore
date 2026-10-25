@@ -525,8 +525,8 @@ fallback otherwise). Edit-mode coverage: `Assets/_Scripts/Tests/Editor/Maelstrom
 | Data asset | `_SO_Assets/Maelstrom/MaelstromData.asset` (+ 4 `Event_Maelstrom*.asset`) |
 | Arcade card | `_SO_Assets/Games/ArcadeGameMaelstrom.asset` (in `GameLists/ArcadeGames.asset`) |
 | Lobby / hub / summary scene | `_Scenes/Multiplayer Scenes/Maelstrom.unity` |
-| Pool list row (the launch panel's ladder readout) | `_Scripts/UI/View/ArcadeLaunch/MaelstromPoolEntry.cs` + `_Prefabs/UI Elements/ArcadeLaunch/MaelstromPoolRow.prefab` |
-| Pool row + grid generator (`--check`) | `Tools/Build/author_maelstrom_pool_cards.py` |
+| Pool list row (the launch panel's ladder readout) | `_Scripts/UI/View/ArcadeLaunch/MaelstromPoolEntry.cs` on `ConfigurePoolRow.prefab`, inside `ConfigureMaelstromView.prefab` (the style-B configure window) |
+| Pool row + list generator (`--check`) | `Tools/Build/author_menu_configure.py` (the old `MaelstromPoolRow.prefab` and `author_maelstrom_pool_cards.py` were retired 2026-10-25) |
 
 ## 7. Editor wiring
 

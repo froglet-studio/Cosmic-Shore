@@ -24,7 +24,7 @@ namespace CosmicShore.Gameplay
     [RequireComponent(typeof(VesselAnimation))]
     [RequireComponent(typeof(R_VesselActionHandler))]
     [RequireComponent(typeof(VesselCustomization))]
-    [RequireComponent(typeof(R_ShipElementStatsHandler))]
+    [RequireComponent(typeof(R_VesselElementStatsHandler))]
 
     public class VesselStatus : MonoBehaviour, IVesselStatus
     {
@@ -249,12 +249,12 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        R_ShipElementStatsHandler _elementalStatsHandler;
-        public R_ShipElementStatsHandler ElementalStatsHandler
+        R_VesselElementStatsHandler _elementalStatsHandler;
+        public R_VesselElementStatsHandler ElementalStatsHandler
         {
             get
             {
-                _elementalStatsHandler = _elementalStatsHandler != null ? _elementalStatsHandler : gameObject.GetOrAdd<R_ShipElementStatsHandler>();
+                _elementalStatsHandler = _elementalStatsHandler != null ? _elementalStatsHandler : gameObject.GetOrAdd<R_VesselElementStatsHandler>();
                 return _elementalStatsHandler;
             }
         }

@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public sealed class TouchAttitudeRoll
     {
-        enum Source { None, Attitude, Gravity }
+        enum Source { None = 0, Attitude = 1, Gravity = 2 }
 
         Source _source;
         Quaternion _attitudeReference;

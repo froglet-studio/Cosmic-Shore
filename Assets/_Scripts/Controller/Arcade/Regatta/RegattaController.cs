@@ -218,6 +218,14 @@ namespace CosmicShore.Gameplay
                  "joins the lane going the way the race goes. Lane prisms sit a few units apart.")]
         [SerializeField, Min(0)] int aiOwnLaneLeadPrisms = 12;
 
+        [Tooltip("A free AI Urchin closer than this (units) to a RIVAL's lane than to its own steers for its own lane " +
+                 "from the side away from the rival lane (aiOwnLaneStandOff past it), so it leaves the rival rail at " +
+                 "once instead of brushing along it and latching it again (the lanes are only 22 u apart).")]
+        [SerializeField, Min(0f)] float aiRivalLaneClearance = 30f;
+
+        [Tooltip("How far past its own lane, away from the rival lane it is beside, a free AI Urchin aims (units).")]
+        [SerializeField, Min(0f)] float aiOwnLaneStandOff = 20f;
+
         SpawnableRegattaRails _railsForAI;
         readonly Dictionary<Domains, List<Prism>> _laneByDomain = new();
 
@@ -269,9 +277,55 @@ namespace CosmicShore.Gameplay
                 var ahead = lane[(nearest + step) % lane.Count];
                 if (!ahead) continue;
                 target = ahead.transform.position;
+                if (TryNearestRivalLanePoint(pilot.Domain, from, out Vector3 rival, out float rivalDistance))
+                    target = OwnLaneApproach(target, from, rival, rivalDistance, Mathf.Sqrt(best),
+                                             aiRivalLaneClearance, aiOwnLaneStandOff);
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Where a free Urchin aims for its own lane point <paramref name="ownAhead"/>. Unchanged unless it is within
+        /// <paramref name="clearance"/> of a rival's lane AND nearer that lane than its own; then the aim moves
+        /// <paramref name="standOff"/> past its own lane, straight away from the rival point, so the pilot leaves the
+        /// rival rail on its first frame instead of riding beside it. Regatta I4, 2026-10-20: an AI Urchin spawned
+        /// beside a rival's lane stayed within 14 u of it for 96% of two races, at 42-48 u/s instead of 300.
+        /// </summary>
+        public static Vector3 OwnLaneApproach(Vector3 ownAhead, Vector3 from, Vector3 rivalPoint, float rivalDistance,
+                                              float ownDistance, float clearance, float standOff)
+        {
+            if (rivalDistance > clearance || rivalDistance >= ownDistance) return ownAhead;
+            Vector3 away = ownAhead - rivalPoint;
+            if (away.sqrMagnitude < 1e-6f) away = from - rivalPoint;
+            return away.sqrMagnitude < 1e-6f ? ownAhead : ownAhead + away.normalized * standOff;
+        }
+
+        /// <summary>The nearest prism of any lane that is not <paramref name="own"/>'s, from <paramref name="from"/>.
+        /// Lanes are a few units per prism, so every other prism is enough for a "how close" answer.</summary>
+        bool TryNearestRivalLanePoint(Domains own, Vector3 from, out Vector3 point, out float distance)
+        {
+            point = default;
+            distance = float.MaxValue;
+            var trails = _railsForAI ? _railsForAI.GetTrails() : null;
+            if (trails == null) return false;
+            float best = float.MaxValue;
+            _laneByDomain.TryGetValue(own, out var ownLane);
+            foreach (var trail in trails)
+            {
+                var list = trail?.TrailList;
+                if (list == null || list.Count == 0 || ReferenceEquals(list, ownLane)) continue;
+                for (int i = 0; i < list.Count; i += 2)
+                {
+                    var prism = list[i];
+                    if (!prism || prism.Domain == own) continue;
+                    float d = (prism.transform.position - from).sqrMagnitude;
+                    if (d < best) { best = d; point = prism.transform.position; }
+                }
+            }
+            if (best == float.MaxValue) return false;
+            distance = Mathf.Sqrt(best);
+            return true;
         }
 
         /// <summary>
@@ -311,12 +365,21 @@ namespace CosmicShore.Gameplay
             _pilotLines[seat] = state;
 
             float look = style.Lookahead(status.Speed, state.Risk);
-            aim = state.Line.PointAhead(nearest, look);
-            // The corner the boost drivers judge is the turn AT the ring they are after (AIBoostContext's objective), so
-            // "after" is the line a look-ahead past that ring, not past the steering point.
-            after = TryGetAIGate(pilot, out var gate)
-                ? state.Line.PointAhead(LineIndexAtRing(state.Line, gate.Position), look)
-                : state.Line.PointAhead(nearest, 2f * look);
+            if (TryGetAIGate(pilot, out var gate))
+            {
+                // Never cut across the next ring's mouth on the way to the look-ahead (RegattaRaceLine.AimThroughRing).
+                int ringIndex = LineIndexAtRing(state.Line, gate.Position);
+                aim = state.Line.AimThroughRing(nearest, look, self, ringIndex, gate.Position, gate.Axis,
+                    gate.Radius - style.ClearanceAt(state.Risk));
+                // The corner the boost drivers judge is the turn AT the ring they are after (AIBoostContext's objective),
+                // so "after" is the line a look-ahead past that ring, not past the steering point.
+                after = state.Line.PointAhead(ringIndex, look);
+            }
+            else
+            {
+                aim = state.Line.PointAhead(nearest, look);
+                after = state.Line.PointAhead(nearest, 2f * look);
+            }
             return true;
         }
 

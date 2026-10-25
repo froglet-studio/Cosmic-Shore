@@ -2223,6 +2223,15 @@ unloaded one is the negative control). **Hand test:** in the editor, Play, party
 The second Play's `net_logs.py` log shows `HostingParty->InParty` more than a second apart (a real Relay
 creation), no "lobby not found", and no "Relay session not ready".
 
+**Also seen (2026-10-25, Bug Ledger `E-c2a4d444b8`, Yash; `E-81100c14a5`, Yash and Andrew).** Stopping Play while
+the game is still starting an online session logs `SessionException: Failed to start the network manager` (the
+SDK's `NetworkManagerSession.OnStopCompleted`: the NetworkManager shut down before its start finished) or
+`Cannot start when Singleton is not set` (the start began after the NetworkManager was gone). Both surface
+unobserved through `UniTaskExtensions.AsMainThread`, so the caller that started the session (boot's solo host,
+`MultiplayerSetup`, the presence or party create) is fire-and-forget at that moment and the 1,500-character stack
+excerpt does not name it. A teardown race, not a gameplay fault: the fix is for the starting caller to observe
+Play stopping (cancel, or catch `NetworkManagerStartFailed` while `IsQuitting`) - the same shape as B38.
+
 ## B34 — `ObjectDisposedException` on a `$lobby` channel after Play stops 🟡 (root-caused 2026-10-17; the leak itself is B33)
 
 **Seen in.** Bug Ledger `E-c523697cae`, on every tester's branch (`bugledger/yskha`, `gradi`, `mrglo`,
@@ -2331,6 +2340,15 @@ machine. If it shows "no freeze", the drop is a network fault and needs a differ
 Tickets: T-20261025-482c (#1520, the retest) and T-20261024-0212 (#1495, Bloomrush's slow frames after the
 prism creation queue; it now also times the return to the menu).
 
+**The freeze, measured in Amoebius (2026-10-25).** Lever L14 in `Docs/PERFORMANCE_OPTIMIZATION.md` §3.3 has the
+numbers. After 90 s of Bloomrush on `Ys-bleeding-edge`, 26,680 laid prisms still wait for creation, each already a
+GameObject, and the switch to the menu is one frame of 1.3-1.5 s in Amoebius. A sampling trace of that frame puts
+almost all of it in the engine (scene parsing, GC, object destruction); the game's own teardown is ~0.06 s, and no
+game `OnDestroy` grows with the square of the count. So the 10 s in Unity is most likely Unity destroying those
+objects and unloading assets, which Amoebius cannot reproduce. The 24 Oct creation queue (`5de4316d05`) already
+removed the 57,000 coroutines each such destroy also had to stop, after the 20 Oct drops. Not fixed further until a
+Unity Load Time Insights capture of the return says which of L14's two fixes applies.
+
 ## B37 — "Could not create presence lobby: Object reference not set to an instance of an object" 🟡 (fixed 2026-10-25; cause likely, not proven)
 
 **Seen in.** Bug Ledger `E-6b79cd07f1` (Gradi, 5 times, and Shombith, twice, 2-11 Sep) and, in the same
@@ -2388,4 +2406,5 @@ button and has no report; it is unchanged.
 **Hand test.** Two machines: one joins a party that is not there (or the host stops Play mid-join), and the
 joiner stops Play while "Bouncing to solo menu" is on screen. No `Recovery failed` error in the console after
 Play stops.
+Ticket: T-20261025-6541 (#1527).
 

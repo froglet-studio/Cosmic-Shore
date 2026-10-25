@@ -724,7 +724,12 @@ a Prefab Variant cannot change; everything they share is a nested prefab.
   with ordinary navigation.
 - Favourite star wired by the modal in code (it was dead on the Arena and Maelstrom copies).
 - Arena: a hull strip (`KitHullTile`, `OnVesselPickRequested`) replaces the carousel arrows; the
-  controls block follows the shown hull. Maelstrom: the format block (race target, game cap, points by
+  controls block follows the shown hull. **2026-10-25 (Yash):** the strip is a WINDOW onto the card's hulls
+  (`ArenaLaunchPanel.StripOffset`), with `<` / `>` arrows (`PrevVesselButton` / `NextVesselButton`, two
+  `KitButtonSmall`s at the strip's ends, wired to the panel's `prevButton` / `nextButton`) that step the pick and
+  slide the window to keep it in view. The strip went from eight tiles to seven between the arrows (`Hull8` is
+  inactive). Why: Regatta lists nine hulls, and on a fixed eight-tile strip the ninth, the Stoat, had no tile and
+  could never be picked. `ArenaHullStripTests`. Maelstrom: the format block (race target, game cap, points by
   place, seats) and the pool summary are wired.
 - `ArcadeGameConfigureModal` ModalType 10 -> 1 (10 is the Arcade window's own: one B closed both).
 
@@ -1979,9 +1984,12 @@ boards were approved with "Approved, price is fine, make it look-only for now". 
 - **The upgrade moment.** Six crystals fly from the button to the hull. On landing, the new pip flashes white and settles
   in the element's colour, the hull morphs from the old level to the new one (`AnimateElementLevel`, 0.5 s) and swells
   (`Pulse`), a hex ring bursts, and a banner names the element, "LEVEL N" and "{ability} grows".
-- **Look-only.** Levels are saved per vessel per element in PlayerPrefs (`HangarUpgradeStore`,
-  `hangar.upgrade.{vessel}.{element}`, max 10). The hull shows the bought form on every visit, and **nothing in a match
-  reads it**. The crystals spent are real. Making upgrades count in play is a separate decision for the owner (and
+- **Look-only.** Levels are saved per vessel per element, max 10, on the player's cloud profile
+  (`HangarUpgradeStore` -> `PlayerDataService.SetHangarUpgradeLevel`, `ProfileEconomy.HangarUpgrades`), in the same save
+  as the crystals they cost (2026-10-25, `Docs/REFACTOR_BACKLOG.md` S67: they were in PlayerPrefs, so a reinstall kept
+  the debit and lost the level). A level bought before then is still read from the old device key
+  `hangar.upgrade.{vessel}.{element}` and adopted into the profile once it has loaded. The hull shows the bought form on
+  every visit, and **nothing in a match reads it**. The crystals spent are real. Making upgrades count in play is a separate decision for the owner (and
   Garrett, who owns vessel tuning).
 - **The words** are serialized on `HangarUpgradesPage`: `buyTemplate`, `maxedWord`, `bannerTemplate` and
   `bannerLineTemplate`.
@@ -2948,3 +2956,21 @@ that tab, and still leave LB / RB and A fighting. The TRY flight (§35) could ta
 The header line now reads "Labels follow your device. Select one to see it again." (was "Press one", which read as
 "press that control"; Yash, 2026-10-25), authored in `author_menu_hangar.py` and regenerated into `HangarView.prefab`.
 Changed: `HangarAbilitiesPage` (the poll and its summary), `HangarControlInput` (summary only), the header line.
+
+## 66. The Hangar's ability rows are information (2026-10-25, awaiting in-editor approval)
+
+Yash, after talking to Shombith: "my abilities don't need to be selected or clicked to test it in hangar. They are just
+info. So LT / RT always works, just to change the tabs." (Sections 64 and 65, which made LT / RT work only from a tab
+menu, were reverted on Ys-bleeding-edge the same day, `c28b962c2`; LT / RT page the tabs from anywhere, as before.)
+
+- **Nothing the player presses plays an ability.** §63 had already stopped the pad's controls; this removes the rest:
+  the click / tap / A on a row and the keyboard key a row shows. `HangarAbilitiesPage` adds no click listener and polls
+  no key; `HangarControlInput` keeps only the device tracking the keycap labels need (`WasPressed` is gone), and the
+  `demoResumeSeconds` pause after a player's press is gone with the press.
+- **The AI demo is unchanged:** every 2.4 s the next ability's keycap sinks, its row lights and the stage performs it.
+- **The rows keep their look and drop their input** (`author_menu_hangar.py`, `kit_row(..., interactive=False)`): each
+  row's KitButton stays as the frame (an open slot still draws disabled) but leaves pad navigation, a CanvasGroup on
+  the row blocks no raycasts so no click reaches it, and the press sound is gone. The generator fails if a row becomes
+  a pad stop, takes clicks or regains its sound (planted defect: a row takes clicks again).
+- **Header line:** "Labels follow your device." ("Select one to see it again." described a press that no longer exists.)
+

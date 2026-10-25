@@ -321,8 +321,7 @@ namespace CosmicShore.Gameplay
                 // bind conflicts. Relay transport handles actual multiplayer connections.
                 if (!CurrentPlayer.IsMainEditor)
                 {
-                    var transport = nm.GetComponent<UnityTransport>();
-                    if (transport != null)
+                    if (nm.TryGetComponent(out UnityTransport transport))
                     {
                         var tags = CurrentPlayer.Tags;
                         var tagKey = tags != null && tags.Count > 0 ? string.Join("-", tags) : "clone";

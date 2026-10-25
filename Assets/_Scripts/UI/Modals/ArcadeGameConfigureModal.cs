@@ -1712,7 +1712,7 @@ namespace CosmicShore.UI
 
             // Re-assert the pick: the local player's NetDefaultVesselType is owner-written and
             // this is the moment the pilot actually committed to it.
-            SetSelectedShipInternal(_availableShips[_availableShipIndex]);
+            SetSelectedShipInternal(_availableShips[_availableShipIndex], commit: true);
             RefreshVesselPicker();
             RefreshStartAvailability();
         }
@@ -2719,7 +2719,10 @@ namespace CosmicShore.UI
         /// names one vessel, which is what collapsed the two-screen flow into one panel - so this
         /// runs once per card open, from <see cref="InitializeDefaultShipFromAvailable"/>.
         /// </summary>
-        void SetSelectedShipInternal(SO_Vessel ship)
+        /// <param name="commit">True where the pilot commits to the hull (SELECT VESSEL, Start): the
+        /// owner write must land. False for the provisional writes (the default on card open, the
+        /// carousel), which may run before this machine's Player exists; Start re-asserts them.</param>
+        void SetSelectedShipInternal(SO_Vessel ship, bool commit = false)
         {
             if (config)
                 config.SelectedShip = ship;
@@ -2728,7 +2731,7 @@ namespace CosmicShore.UI
 
             // Write the selected vessel class to the local player's NetworkVariable
             // so the server spawns the correct vessel for this client.
-            SyncLocalPlayerVesselType(ship);
+            SyncLocalPlayerVesselType(ship, commit);
         }
 
         #endregion
@@ -2852,6 +2855,10 @@ namespace CosmicShore.UI
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-2] [ArcadeConfigModal] OnStartGameClicked (confirming ready)");
             audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
+
+            // Start is the commit for every card: a card without a SELECT VESSEL step only wrote its
+            // hull provisionally (on open, maybe before this Player existed), so write it now.
+            if (config) SyncLocalPlayerVesselType(config.SelectedShip, commit: true);
 
             // Show "Waiting for others..." and hide the Start button
             _localPlayerReady = true;
@@ -3190,11 +3197,16 @@ namespace CosmicShore.UI
         /// choice is propagated to the server independently of
         /// gameData.selectedVesselClass (which carries the host's choice).
         /// </summary>
-        void SyncLocalPlayerVesselType(SO_Vessel ship)
+        void SyncLocalPlayerVesselType(SO_Vessel ship, bool commit)
         {
-            var localPlayer = ResolveLocalOwnedPlayer();
+            var localPlayer = commit ? ResolveLocalOwnedPlayer() : LocalOwnedPlayerQuiet();
             if (localPlayer == null)
             {
+                // A provisional write (card open, carousel) can run before this machine's Player
+                // exists: the default hull was dropped with a red error on every such open (Bug
+                // Ledger E-908f18b36f, Andrew, Garrett, Shombith). It is re-asserted at the commit,
+                // which is where a missing Player really means a wrong hull.
+                if (!commit) return;
                 CSDebug.LogError("[ArcadeConfigModal] Vessel selection DROPPED - no owned local Player " +
                                "resolved. NetDefaultVesselType not updated; spawn would use a stale class.");
                 return;

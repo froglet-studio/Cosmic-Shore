@@ -17,7 +17,12 @@ import math
 import os
 import subprocess
 
-RESEARCH_REF = "origin/cece/gifted-curie-x2cpd0"
+RESEARCH_REF = "origin/cece/gifted-curie-x2cpd0"   # where the targets come from (also the label assets carry)
+# The research COMMIT actually read. Pinned so `author_swarm_fauna.py --check` answers the same in every clone:
+# reading the branch head made the verdict depend on whether (and how recently) that branch was fetched.
+# This is the head the committed plans and SwarmEvoFateRule.json reproduce from byte for byte (2026-10-25).
+# To adopt newer research, move this to the new commit, re-run the generator and commit its output.
+RESEARCH_COMMIT = "325dbc9512f62a000505243d72530f40299d7776"
 RESEARCH_DIR = "Tools/NCA/results/swarm_targets"
 KINDS = ("mass", "space", "charge", "time")
 # research element index (0 Charge, 1 Mass, 2 Space, 3 Time) of each plan's majority
@@ -44,11 +49,26 @@ def identity(elem, h, tier):
     return o, (tier if elem == 0 else 0)
 
 
+def _sum_ltr(values, start=0):
+    """Plain left-to-right addition, the summation every committed plan was baked with.
+
+    Python 3.12 made the built-in sum() of floats compensated (Neumaier), which moves the last bits
+    of the frame-0 centroid. The plans round to 3 decimals, so on 3.12+ about 1 position in 45
+    flipped by 0.001 and --check reported the committed mass and charge plans as drift (measured
+    2026-10-25 on Python 3.13: 107 of 4,608 mass values, 83 of 4,296 charge values). Explicit
+    addition gives the same answer on every Python.
+    """
+    acc = start
+    for v in values:
+        acc = acc + v
+    return acc
+
+
 def _load(kind, src, repo):
     if src:
         with open(os.path.join(src, f"{kind}.json"), encoding="utf-8") as fh:
             return json.load(fh)
-    text = subprocess.run(["git", "-C", repo, "show", f"{RESEARCH_REF}:{RESEARCH_DIR}/{kind}.json"],
+    text = subprocess.run(["git", "-C", repo, "show", f"{RESEARCH_COMMIT}:{RESEARCH_DIR}/{kind}.json"],
                           check=True, capture_output=True, text=True).stdout
     return json.loads(text)
 
@@ -62,14 +82,14 @@ def bake(kind, src=None, repo="."):
     frames = d["frames"]
     F, N = len(frames), len(frames[0]["units"])
     P = [[u["p"] for u in fr["units"]] for fr in frames]
-    c = [sum(P[0][k][a] for k in range(N)) / N for a in range(3)]
+    c = [_sum_ltr(P[0][k][a] for k in range(N)) / N for a in range(3)]
     P = [[[p[a] - c[a] for a in range(3)] for p in fr] for fr in P]
 
     def dist(a, b):
-        return math.sqrt(sum((a[i] - b[i]) ** 2 for i in range(3)))
+        return math.sqrt(_sum_ltr((a[i] - b[i]) ** 2 for i in range(3)))
 
-    steps = sum(dist(P[f + 1][k], P[f][k]) for f in range(F - 1) for k in range(N)) / ((F - 1) * N)
-    wrap = sum(dist(P[0][k], P[F - 1][k]) for k in range(N)) / N
+    steps = _sum_ltr(dist(P[f + 1][k], P[f][k]) for f in range(F - 1) for k in range(N)) / ((F - 1) * N)
+    wrap = _sum_ltr(dist(P[0][k], P[F - 1][k]) for k in range(N)) / N
     order = list(range(F)) if wrap < 1.5 * steps else list(range(F)) + list(range(F - 2, 0, -1))
 
     u0 = frames[0]["units"]
@@ -80,7 +100,7 @@ def bake(kind, src=None, repo="."):
     face = []
     for fr in frames:
         for u in fr["units"]:
-            f = u["f"]; n = math.sqrt(sum(x * x for x in f)) or 1.0
+            f = u["f"]; n = math.sqrt(_sum_ltr(x * x for x in f)) or 1.0
             face.extend(_r(x / n) for x in f)
     # The GRID model (SwarmGridCore, the research's hgrid2) also reads every frame's own prism,
     # tier and spindle and each unit's domain SLOT - its coarse field rasterises them. Prism

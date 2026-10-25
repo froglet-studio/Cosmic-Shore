@@ -116,7 +116,8 @@ namespace CosmicShore.Gameplay
             public readonly List<int> entries = new();
             public Matrix4x4[] matrices = new Matrix4x4[64];
             public Bounds bounds;
-            public bool dirty;
+            public bool dirty;               // a full Rebuild is due (new batch, or the box is stale)
+            public int leftSinceRebuild;     // leaves since the box was last fitted
             public RenderParams renderParams;
         }
 
@@ -253,9 +254,9 @@ namespace CosmicShore.Gameplay
             var system = EnsureInstance();
             if (!system) return null;
             if (!renderer.TryGetComponent(out MeshFilter filter) || !filter.sharedMesh ||
-                !system._setOfMesh.TryGetValue(filter.sharedMesh, out int set) || !system._profile.meshSets[set].synthetic)
+                !system._setOfMesh.TryGetValue(filter.sharedMesh, out int set) || !system._profile.MeshSets[set].synthetic)
                 return null;
-            return system.Add(renderer, filter, set, nearMaterial, false, system._profile.switchRingStrength);
+            return system.Add(renderer, filter, set, nearMaterial, false, system._profile.SwitchRingStrength);
         }
 
         /// <summary>
@@ -311,7 +312,7 @@ namespace CosmicShore.Gameplay
             if (s_unavailable) return null;
 
             var profile = SpindleLodProfileSO.Instance;
-            if (!profile || !profile.lodEnabled)
+            if (!profile || !profile.LodEnabled)
             {
                 s_unavailable = true;
                 return null;
@@ -350,20 +351,20 @@ namespace CosmicShore.Gameplay
         bool Initialize(SpindleLodProfileSO profile)
         {
             _profile = profile;
-            if (!profile.midTemplate.shader || !profile.midTemplate.shader.isSupported ||
-                !profile.farTemplate.shader || !profile.farTemplate.shader.isSupported)
+            if (!profile.MidTemplate.shader || !profile.MidTemplate.shader.isSupported ||
+                !profile.FarTemplate.shader || !profile.FarTemplate.shader.isSupported)
             {
                 CSDebug.LogWarning("[SpindleLod] a spindle LOD shader is missing or unsupported on this device; every spindle keeps its authored braid.");
                 return false;
             }
 
-            for (int s = 0; s < profile.meshSets.Count; s++)
+            for (int s = 0; s < profile.MeshSets.Count; s++)
             {
-                var set = profile.meshSets[s];
+                var set = profile.MeshSets[s];
                 if (set == null) continue;
                 // The synthetic wire's tiers all draw on SpindleWireGraph; without it the rings stay
                 // whatever ToyFactory gave them (it checks the same template before building a wire).
-                if (set.synthetic && (!profile.wireTemplate || !profile.wireTemplate.shader || !profile.wireTemplate.shader.isSupported))
+                if (set.synthetic && (!profile.WireTemplate || !profile.WireTemplate.shader || !profile.WireTemplate.shader.isSupported))
                     continue;
                 if (!set.MatchesImport(out string why))
                 {
@@ -378,7 +379,7 @@ namespace CosmicShore.Gameplay
 
             _transforms = new TransformAccessArray(1024);
             Grow(1024);
-            _style = profile.style;
+            _style = profile.LookStyle;
             PublishGlobals();
             return true;
         }
@@ -390,10 +391,10 @@ namespace CosmicShore.Gameplay
             bool overt = Overt;
             Vector4 recede = IncorporealDepth.Recede;
             Shader.SetGlobalVector(BandsId, overt
-                ? new Vector4(recede.x, recede.y, p.overtFadeStartNorm, p.overtFadeEndNorm)
-                : new Vector4(p.convergeStartGirths, p.ConvergeEndGirths, p.farFadeStartGirths, p.farFadeEndGirths));
-            Shader.SetGlobalVector(LookId, new Vector4(p.minThreadPixels, p.threadBase, p.threadFacet, p.threadGlow));
-            Shader.SetGlobalVector(Look2Id, new Vector4(p.threadAlpha, overt ? 1f : 0f, p.switchRingShadeBase, p.switchRingShadeFacet));
+                ? new Vector4(recede.x, recede.y, p.OvertFadeStartNorm, p.OvertFadeEndNorm)
+                : new Vector4(p.ConvergeStartGirths, p.ConvergeEndGirths, p.FarFadeStartGirths, p.FarFadeEndGirths));
+            Shader.SetGlobalVector(LookId, new Vector4(p.MinThreadPixels, p.ThreadBase, p.ThreadFacet, p.ThreadGlow));
+            Shader.SetGlobalVector(Look2Id, new Vector4(p.ThreadAlpha, overt ? 1f : 0f, p.SwitchRingShadeBase, p.SwitchRingShadeFacet));
             _bounds = BoundsFor(p, overt, IncorporealDepth.Spread, recede);
         }
 
@@ -440,7 +441,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         internal static TierBounds BoundsFor(SpindleLodProfileSO p, bool overt, Vector4 spread, Vector4 recede)
         {
-            float keep = 1f - p.hysteresis;
+            float keep = 1f - p.Hysteresis;
             // OVERT: the 144-triangle braid carries the whole recede, and the 144 -> 72 step's inward
             // edge is the recede's END, where both braids have converged into the thread's own
             // construction (they differ by their decimation alone, under a pixel there); the
@@ -451,13 +452,13 @@ namespace CosmicShore.Gameplay
                 {
                     overt = true, sqrDistance = Mathf.Max(spread.w, 1f), keep = keep,
                     nearEnd = IncorporealDepth.OpeningStartNorm(spread), midEnd = 1f / keep,
-                    lowStart = recede.y / keep, minStart = p.overtThreadStartNorm, cull = p.overtFadeEndNorm / keep,
+                    lowStart = recede.y / keep, minStart = p.OvertThreadStartNorm, cull = p.OvertFadeEndNorm / keep,
                 }
                 : new TierBounds
                 {
                     overt = false, sqrDistance = 1f, keep = keep,
-                    nearEnd = p.nearEndGirths, midEnd = p.midEndGirths, lowStart = p.midEndGirths, minStart = p.midEndGirths,
-                    cull = p.farFadeEndGirths / keep,
+                    nearEnd = p.NearEndGirths, midEnd = p.MidEndGirths, lowStart = p.MidEndGirths, minStart = p.MidEndGirths,
+                    cull = p.FarFadeEndGirths / keep,
                 };
         }
 
@@ -467,10 +468,10 @@ namespace CosmicShore.Gameplay
         {
             for (int i = 0; i < _entries.Count; i++)
                 if (_entries[i].tier != Tier.Near || _entries[i].batched) Apply(i, Tier.Near, batch: false);
-            _style = _profile.style;
+            _style = _profile.LookStyle;
             PublishGlobals();
             for (int b = 0; b < _batches.Count; b++)
-                _batches[b].mesh = TierMesh(_profile.meshSets[_batches[b].set], _batches[b].tier);
+                _batches[b].mesh = TierMesh(_profile.MeshSets[_batches[b].set], _batches[b].tier);
             _nextTickAt = 0f;
         }
 
@@ -527,7 +528,7 @@ namespace CosmicShore.Gameplay
             });
             _transforms.Add(renderer.transform);
             _lastPose[i] = float4x4.identity;
-            _girth[i] = _profile.meshSets[set].girth;
+            _girth[i] = _profile.MeshSets[set].girth;
             _tier[i] = (byte)Tier.Near;
             NearCount++;
             s_tierCount[(int)Tier.Near]++;
@@ -540,7 +541,7 @@ namespace CosmicShore.Gameplay
             if (e.batched) LeaveBatch(i);
             if (restore && e.renderer && e.filter && e.materials.near)
             {
-                e.filter.sharedMesh = _profile.meshSets[e.set].source;
+                e.filter.sharedMesh = _profile.MeshSets[e.set].source;
                 e.renderer.sharedMaterial = e.materials.near;
                 e.renderer.ResetLocalBounds();
                 e.renderer.enabled = true;
@@ -568,8 +569,8 @@ namespace CosmicShore.Gameplay
 
         Handle AddBody(Renderer renderer, Material near, float strength)
         {
-            if (!_profile.depthOnBodies || !_profile.depthTemplate || !IsSpindleShaded(near)) return null;
-            if (!_profile.depthTemplate.shader || !_profile.depthTemplate.shader.isSupported) return null;
+            if (!_profile.DepthOnBodies || !_profile.DepthTemplate || !IsSpindleShaded(near)) return null;
+            if (!_profile.DepthTemplate.shader || !_profile.DepthTemplate.shader.isSupported) return null;
 
             float reach = ReachBucket(ReachOf(renderer));
             var depth = BodyMaterialFor(near, strength, reach);
@@ -639,7 +640,7 @@ namespace CosmicShore.Gameplay
             if (_bodyMaterials.TryGetValue(key, out var m) && m) return m;
             // The body's own look - every property, keyword and the render queue - on the depth graph,
             // which carries SpindleGraph's blackboard verbatim.
-            m = new Material(_profile.depthTemplate) { name = near.name + "_Depth" };
+            m = new Material(_profile.DepthTemplate) { name = near.name + "_Depth" };
             m.CopyPropertiesFromMaterial(near);
             m.SetFloat(StrengthId, strength);
             m.SetFloat(ReachId, reach);
@@ -668,11 +669,11 @@ namespace CosmicShore.Gameplay
         TierMaterials MaterialsFor(int set, Material near, float strength)
         {
             if (_materials.TryGetValue((set, near, strength), out var m) && m.mid && m.far) return m;
-            var ms = _profile.meshSets[set];
+            var ms = _profile.MeshSets[set];
             // A synthetic wire draws every tier on SpindleWireGraph: it never trades its solid look for
             // the plain thread's fade.
-            var midTemplate = ms.synthetic ? _profile.wireTemplate : _profile.midTemplate;
-            var farTemplate = ms.synthetic ? _profile.wireTemplate : _profile.farTemplate;
+            var midTemplate = ms.synthetic ? _profile.WireTemplate : _profile.MidTemplate;
+            var farTemplate = ms.synthetic ? _profile.WireTemplate : _profile.FarTemplate;
             m = new TierMaterials
             {
                 near = near,
@@ -692,7 +693,7 @@ namespace CosmicShore.Gameplay
             var b = new FarBatch
             {
                 set = set, tier = tier, strength = m.strength, material = m.far,
-                mesh = TierMesh(_profile.meshSets[set], tier),
+                mesh = TierMesh(_profile.MeshSets[set], tier),
                 renderParams = new RenderParams(m.far) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false },
             };
             _batches.Add(b);
@@ -725,17 +726,17 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!_profile || !_profile.lodEnabled)
+            if (!_profile || !_profile.LodEnabled)
             {
                 RestoreAllAndRetire();
                 return;
             }
 
-            if (_profile.style != _style) Restyle();
+            if (_profile.LookStyle != _style) Restyle();
 
             if (Time.unscaledTime >= _nextTickAt)
             {
-                _nextTickAt = Time.unscaledTime + _profile.tickIntervalSeconds;
+                _nextTickAt = Time.unscaledTime + _profile.TickIntervalSeconds;
                 // Bodies and switch rings read only the globals, so they are kept current even
                 // when no limb is registered.
                 if (_entries.Count > 0) Tick();
@@ -775,7 +776,7 @@ namespace CosmicShore.Gameplay
                 _pending.Clear();
                 _pendingCursor = 0;
                 _dead.Clear();
-                bool batchFar = _profile.batchFarThreads;
+                bool batchFar = _profile.BatchFarThreads;
                 for (int i = 0; i < n; i++)
                 {
                     var e = _entries[i];
@@ -787,7 +788,7 @@ namespace CosmicShore.Gameplay
                         continue;
                     }
                     bool still = moved[i] == 0;
-                    var want = Kept((Tier)desired[i], _profile.meshSets[e.set].synthetic);
+                    var want = Kept((Tier)desired[i], _profile.MeshSets[e.set].synthetic);
                     bool wantBatch = batchFar && IsFarFamily(want) && still && e.stillOnce && !e.fading;
 
                     if (e.stillOnce != still)
@@ -818,11 +819,11 @@ namespace CosmicShore.Gameplay
             if (_pendingCursor >= _pending.Count) return;
             using (s_drainMarker.Auto())
             {
-                int budget = _profile.maxTransitionsPerFrame;
+                int budget = _profile.MaxTransitionsPerFrame;
                 // Count AND time: a swap costs several renderer writes, so the count alone let one
                 // frame spend 14.7 ms here. What is left waits for the next frame, invisibly.
                 long deadline = System.Diagnostics.Stopwatch.GetTimestamp() +
-                                (long)(_profile.maxTransitionMsPerFrame * 0.001 * System.Diagnostics.Stopwatch.Frequency);
+                                (long)(_profile.MaxTransitionMsPerFrame * 0.001 * System.Diagnostics.Stopwatch.Frequency);
                 var cam = CameraManager.ViewCamera;
                 Vector3 camPos = cam ? cam.transform.position : Vector3.zero;
                 while (_pendingCursor < _pending.Count && budget > 0)
@@ -837,7 +838,7 @@ namespace CosmicShore.Gameplay
                     // Re-derive from the pass's verdict, which _tier does not yet hold for a limb
                     // still waiting: recompute it here from the pose the pass read.
                     var want = Classify(i, camPos);
-                    bool wantBatch = _profile.batchFarThreads && IsFarFamily(want) && e.stillOnce && !e.fading;
+                    bool wantBatch = _profile.BatchFarThreads && IsFarFamily(want) && e.stillOnce && !e.fading;
                     if (want == e.tier && wantBatch == e.batched) continue;
                     Apply(i, want, wantBatch);
                     budget--;
@@ -848,7 +849,7 @@ namespace CosmicShore.Gameplay
         Tier Classify(int i, Vector3 camPos)
         {
             float metric = ClassifyJob.Metric(_lastPose[i], camPos, _girth[i], _bounds.overt, _bounds.sqrDistance);
-            return Kept((Tier)ClassifyJob.TierFor(metric, _tier[i], _bounds), _profile.meshSets[_entries[i].set].synthetic);
+            return Kept((Tier)ClassifyJob.TierFor(metric, _tier[i], _bounds), _profile.MeshSets[_entries[i].set].synthetic);
         }
 
         /// <summary>A synthetic wire (a switch ring) is never culled: past the cull it stays the thread,
@@ -859,7 +860,7 @@ namespace CosmicShore.Gameplay
         /// farFadeEnd: a thread is only ever switched back on where its alpha is still zero, and
         /// fades in from there. (Every boundary is placed by the same rule: near/mid swaps happen
         /// below convergeStart, mid/far ones above convergeEnd = midEnd x keep.)</summary>
-        internal static float CullBoundFor(SpindleLodProfileSO p) => p.farFadeEndGirths / (1f - p.hysteresis);
+        internal static float CullBoundFor(SpindleLodProfileSO p) => p.FarFadeEndGirths / (1f - p.Hysteresis);
 
         /// <summary>The tier a limb at <paramref name="metric"/> (its style's units) moves to from
         /// <paramref name="current"/> under <paramref name="b"/> - the Burst pass's own rule.</summary>
@@ -874,7 +875,7 @@ namespace CosmicShore.Gameplay
             if (e.batched) LeaveBatch(i);
             e = _entries[i];
 
-            var set = _profile.meshSets[e.set];
+            var set = _profile.MeshSets[e.set];
             switch (tier)
             {
                 case Tier.Near:
@@ -935,7 +936,19 @@ namespace CosmicShore.Gameplay
             e.batchSlot = b.entries.Count;
             _entries[i] = e;
             b.entries.Add(i);
-            b.dirty = true;
+            // Incremental, never a rebuild: a joining limb writes its own slot and grows the box. A
+            // full Rebuild per changed frame walked every limb of the batch (18,893 instanced limbs
+            // in Wrecking Ball: SpindleLod.Draw 9.3 ms/frame while the drain was busy).
+            if (b.dirty) return;
+            if (b.entries.Count == 1) { b.dirty = true; return; }
+            if (b.matrices.Length < b.entries.Count)
+                System.Array.Resize(ref b.matrices, Mathf.NextPowerOfTwo(b.entries.Count));
+            var m = PoseMatrix(_lastPose[i]);
+            b.matrices[e.batchSlot] = m;
+            var box = InstanceBox(b.mesh.bounds, m);
+            box.Expand(InstancePad(b));
+            b.bounds.Encapsulate(box);
+            b.renderParams.worldBounds = b.bounds;
         }
 
         void LeaveBatch(int i)
@@ -951,9 +964,12 @@ namespace CosmicShore.Gameplay
                 var me = _entries[movedEntry];
                 me.batchSlot = slot;
                 _entries[movedEntry] = me;
+                b.matrices[slot] = b.matrices[last];
             }
             b.entries.RemoveAt(last);
-            b.dirty = true;
+            // The box is kept: it only over-covers (a little culling, never a missing limb), and is
+            // fitted again once half the batch has left.
+            if (++b.leftSinceRebuild * 2 > b.entries.Count) b.dirty = true;
             e.batched = false;
             e.batchSlot = -1;
             e.batch = null;
@@ -1012,24 +1028,33 @@ namespace CosmicShore.Gameplay
             Bounds world = default;
             for (int j = 0; j < count; j++)
             {
-                float4x4 p = _lastPose[batch.entries[j]];
-                var m = new Matrix4x4(
-                    new Vector4(p.c0.x, p.c0.y, p.c0.z, p.c0.w), new Vector4(p.c1.x, p.c1.y, p.c1.z, p.c1.w),
-                    new Vector4(p.c2.x, p.c2.y, p.c2.z, p.c2.w), new Vector4(p.c3.x, p.c3.y, p.c3.z, p.c3.w));
+                var m = PoseMatrix(_lastPose[batch.entries[j]]);
                 batch.matrices[j] = m;
-                // The instance's world box, conservatively: its mesh box's eight corners through
-                // its pose would be exact; centre +- the transformed half-diagonal is enough for a
-                // culling box and cheaper. The sway and the width hold add a little - padded below.
-                Vector3 c = m.MultiplyPoint3x4(meshBounds.center);
-                Vector3 r = Vector3.one * m.MultiplyVector(meshBounds.extents).magnitude;
-                var box = new Bounds(c, r * 2f);
+                var box = InstanceBox(meshBounds, m);
                 if (j == 0) world = box; else world.Encapsulate(box);
             }
-            world.Expand(world.size.magnitude * 0.05f + 1f + (Overt ? 2f * IncorporealDepth.MaxOpening * batch.strength : 0f));
+            world.Expand(world.size.magnitude * 0.05f + InstancePad(batch));
             batch.bounds = world;
             batch.renderParams.worldBounds = world;
             batch.dirty = false;
+            batch.leftSinceRebuild = 0;
         }
+
+        static Matrix4x4 PoseMatrix(float4x4 p) => new(
+            new Vector4(p.c0.x, p.c0.y, p.c0.z, p.c0.w), new Vector4(p.c1.x, p.c1.y, p.c1.z, p.c1.w),
+            new Vector4(p.c2.x, p.c2.y, p.c2.z, p.c2.w), new Vector4(p.c3.x, p.c3.y, p.c3.z, p.c3.w));
+
+        // The instance's world box, conservatively: its mesh box's eight corners through its pose
+        // would be exact; centre +- the transformed half-diagonal is enough for a culling box and
+        // cheaper. The sway and the width hold add a little - InstancePad covers them.
+        static Bounds InstanceBox(Bounds meshBounds, Matrix4x4 m)
+        {
+            Vector3 c = m.MultiplyPoint3x4(meshBounds.center);
+            Vector3 r = Vector3.one * m.MultiplyVector(meshBounds.extents).magnitude;
+            return new Bounds(c, r * 2f);
+        }
+
+        float InstancePad(FarBatch batch) => 1f + (Overt ? 2f * IncorporealDepth.MaxOpening * batch.strength : 0f);
 
         // ── Teardown ────────────────────────────────────────────────────────────────────────────
 

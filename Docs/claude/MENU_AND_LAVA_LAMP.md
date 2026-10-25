@@ -159,7 +159,7 @@ Game UI [RectTransform, CanvasGroup]                    ← already in freestyle
 
 **No entry behind the boot veil (do not regress, 2026-10-22).** The primary fix for a stray click launching freestyle during the Garland intro is the base's: the boot world builds behind `EnvironmentLoadVeil`'s opaque cover (`dc023d00d`) and Home's full-screen surface flies only on a double tap (`DoubleTapRelay`, `01403d976`). Routes that bypass both - the pad's Select, Submit, the toybox modals - are covered by `MenuCrystalClickHandler.ToggleTransition`, which refuses to ENTER freestyle while `EnvironmentLoadVeil.IsCovering`. Exits are never gated; new entry routes go through `ToggleTransition` so they inherit it.
 
-**Freestyle input ownership + HUD-after-swap (do not regress).** The menu ("appshell") and the vessel both poll the one gamepad, so ownership must be exclusive: in freestyle `ScreenSwitcher.HandleEnterFreestyle` sets `EventSystem.sendNavigationEvents = false` (restored on exit) so the pad flies the ship and no longer double-drives the UI selection ring / Submit on the still-touch-interactable vessel HUD (`ScreenSwitcher.Update` screen-nav was already gated on `_isInFreestyle`; the vessel is paused in menu state). `MenuMiniGameHUD.Update` polls **gamepad Select / View** (`OverviewGesture`; it was Start until 2026-10-21) while in freestyle → `MenuCrystalClickHandler.ToggleTransition()`, the pad counterpart to the on-screen Volume/Pause exit. On a runtime **vessel swap**, `VesselController.Initialize` creates the new HUD hidden and the swap never re-enters freestyle, so `ClientPlayerVesselInitializer.ReInitializePair` re-raises `GameDataSO.OnPlayerPairInitialized` and `MenuMiniGameHUD` re-shows the local HUD (gated on freestyle + local player) — the `onShipHUDInitialized`/`ShipHUD` reparent path is dead for menu vessels (no `ShipHUD` on the vessel prefabs). See `Docs/ToySystem/ARCHITECTURE.md`.
+**Freestyle input ownership + HUD-after-swap (do not regress).** The menu ("appshell") and the vessel both poll the one gamepad, so ownership must be exclusive: in freestyle `ScreenSwitcher.HandleEnterFreestyle` sets `EventSystem.sendNavigationEvents = false` (restored on exit) so the pad flies the ship and no longer double-drives the UI selection ring / Submit on the still-touch-interactable vessel HUD (`ScreenSwitcher.Update` screen-nav was already gated on `_isInFreestyle`; the vessel is paused in menu state). `MenuMiniGameHUD.Update` polls **gamepad Select / View** (`OverviewGesture`; it was Start until 2026-10-21) while in freestyle → `MenuCrystalClickHandler.ToggleTransition()`, the pad counterpart to the on-screen Volume/Pause exit. On a runtime **vessel swap**, `VesselController.Initialize` creates the new HUD hidden and the swap never re-enters freestyle, so `ClientPlayerVesselInitializer.ReInitializePair` re-raises `GameDataSO.OnPlayerPairInitialized` and `MenuMiniGameHUD` re-shows the local HUD (gated on freestyle + local player) — the `onShipHUDInitialized`/`VesselHUD` reparent path is dead for menu vessels (no `VesselHUD` on the vessel prefabs). See `Docs/ToySystem/ARCHITECTURE.md`.
 
 #### Phase 1: Core Freestyle HUD (target hierarchy)
 
@@ -203,7 +203,7 @@ Vessel HUDs reparent into "Game UI" automatically through the existing SOAP pipe
 
 ```
 Vessel spawned (MenuServerPlayerVesselInitializer)
-  └─ ShipHUD.Start() [on vessel prefab]
+  └─ VesselHUD.Start() [on vessel prefab]
       └─ onShipHUDInitialized.Raise(ShipHUDData)
           └─ MiniGameHUD.OnShipHUDInitialized()
               └─ Reparents HUD children under transform.parent (= "Game UI")
@@ -308,7 +308,7 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 | Minigame HUD view | `MiniGameHUDView.cs` | `_Scripts/UI/View/` |
 | Scoreboard (end-game results) | `Scoreboard.cs` | `_Scripts/UI/` |
 | Player score card (per-player) | `PlayerScoreCard.cs` | `_Scripts/UI/` |
-| Vessel HUD reparenting bridge | `VesselHUD.cs` (class: `ShipHUD`) | `_Scripts/Controller/Vessel/` |
+| Vessel HUD reparenting bridge | `VesselHUD.cs` (class `VesselHUD`; `ShipHUD` until 2026-10-25) | `_Scripts/Controller/Vessel/` |
 | Freestyle SOAP events container | `MenuFreestyleEventsContainerSO.cs` | `_Scripts/ScriptableObjects/` |
 | VesselHUD prefab variants | `*HUDVariant.prefab` | `_Prefabs/UI Elements/VesselHUD/` |
 | PlayerScoreCard prefab | `PlayerScoreCard.prefab` | `_Prefabs/UI Elements/In Game/` |

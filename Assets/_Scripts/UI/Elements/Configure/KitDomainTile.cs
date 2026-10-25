@@ -45,6 +45,14 @@ namespace CosmicShore.UI
         [Tooltip("How many seats this domain holds right now: the chips under its strip (Data role).")]
         [SerializeField] private KitText countText;
 
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("The line on the domain the player is in.")]
+        [SerializeField] private string yourDomainLine = "Your domain";
+        [Tooltip("The line on a domain the player can join.")]
+        [SerializeField] private string joinLine = "Tap to join";
+        [Tooltip("The line on every domain while the challenge sets the player's domain.")]
+        [SerializeField] private string setByChallengeLine = "Set by the challenge";
+
         [Header("Open Seat")]
         [Tooltip("The open-seat row under the chips, shown while the match can still seat someone.")]
         [SerializeField] private CanvasGroup openSeatGroup;
@@ -93,7 +101,7 @@ namespace CosmicShore.UI
         private void WriteLine()
         {
             if (!lineText) return;
-            lineText.SetText(!IsInteractable ? "Set by the challenge" : IsSelected ? "Your domain" : "Tap to join");
+            lineText.SetText(!IsInteractable ? setByChallengeLine : IsSelected ? yourDomainLine : joinLine);
         }
 
         // The count is read off the strip rather than pushed by the modal: chips are parented,
