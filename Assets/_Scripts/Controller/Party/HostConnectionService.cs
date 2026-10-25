@@ -329,6 +329,12 @@ namespace CosmicShore.Gameplay
         private bool IsInPresenceLobby => IsInitialized && _lobbyService.ActiveLobby != null;
 
         /// <summary>
+        /// True while this player sits in the shared presence lobby, which an invite needs. False while it
+        /// is being (re)joined (B37), when <see cref="SendInviteAsync"/> refuses.
+        /// </summary>
+        public bool HasPresenceLobby => IsInPresenceLobby;
+
+        /// <summary>
         /// True when NetworkManager is actively hosting a Relay-backed party
         /// session. The canonical "am I a live party host?" predicate - checks
         /// both Netcode reality (<c>IsListening</c>, <c>IsServer</c>) and the
@@ -657,8 +663,11 @@ namespace CosmicShore.Gameplay
 
             if (_lobbyService.ActiveLobby == null)
             {
-                CSDebug.LogError(
-                    "[INVITE-SEND] ABORT - presence lobby is null");
+                // Expected while the presence lobby is being (re)joined - the rejoin back-off is running
+                // (B37). The friends panel tells the player to try again; a console error here only filed
+                // a ledger issue for a state the session recovers from by itself.
+                CSDebug.LogWarning(
+                    $"[INVITE-SEND] ABORT - no presence lobby yet (rejoin pending: {_presenceRejoinPending})");
                 throw new InvalidOperationException("Presence lobby unavailable.");
             }
 

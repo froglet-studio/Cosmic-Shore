@@ -3201,6 +3201,20 @@ The steps below test these values.
 4. Fail = it hits the rail more, stalls at a ring, or flips faces every ring. Undo: set `SkimHeight` back to 4.346 in
    `Tools/Build/author_skimrace_ai_config.py` (`REGATTA_LEARNED`) and re-run it.
 
+### 🔴 Party: B37 - the presence lobby create waits for Unity Services; its failures name their cause (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B37): `PresenceLobbyService.JoinOrCreateAsync` waits for Unity
+Services and a sign-in; a retryable create failure is a warning, anything else is logged with its stack;
+`SendInviteAsync` with no presence lobby is a warning, and the friends panel shows `serviceNotReadyLine`.
+**Verified without the editor:** `PresenceLobbyCreateTests` (2) and the full edit-mode suite on Amoebius (615/619;
+the 4 known SceneTransitionManager / AppManagerBootstrap failures); `unity_refcompile` player and editor (only the
+known AuthenticationServiceFacade errors). `/verify-unity` is not available in the cloud session.
+**Verify in editor:**
+1. Normal Play online: the presence lobby joins as before (the online list fills, invites work).
+2. Play with the network off, wait 10 s, turn it on: no `Could not create presence lobby` error; a
+   `Presence lobby not rejoined - retrying` warning, then the online list fills.
+3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
+
 ### 🔴 Net: B36 - a game freeze is recorded, and a Relay drop names the freeze it followed (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed** (`Docs/PartySystem/BUGS.md` B36): `FrameStallWatch` records any frame of 3 s or more while the
