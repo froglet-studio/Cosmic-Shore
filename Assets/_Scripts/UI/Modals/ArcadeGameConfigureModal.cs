@@ -317,6 +317,22 @@ namespace CosmicShore.UI
         #region Public API
 
         /// <summary>
+        /// True once a card can really open here. The lobby a card commits to is a networked object,
+        /// and before it has spawned the host's commit returns on its first line: a panel no guest
+        /// sees, with a Start that never launches. A press cannot land that early (the splash still
+        /// covers the menu); the return-to-card path (<see cref="MenuReturnCard"/>, opened by
+        /// <see cref="ScreenSwitcher"/>) can, so it waits on this.
+        /// </summary>
+        public static bool IsReadyToOpenCards
+        {
+            get
+            {
+                var sync = ArcadeConfigSyncManager.Instance;
+                return !sync || sync.IsSpawned;
+            }
+        }
+
+        /// <summary>
         /// Open the launch surface for a card - the single entry point a card tile should call.
         ///
         /// <para>It exists because a panel may live in its OWN window (the Maelstrom's), and which
@@ -2915,6 +2931,11 @@ namespace CosmicShore.UI
             // config below is reset, and never on a mere ready press (a pilot who readies and
             // whose party then dismisses the card has not launched anything).
             RememberLaunchPreference(shouldLaunch);
+
+            // And the CARD it is flying, so leaving the match lands back on this panel instead of on
+            // HOME (MenuReturnCard). Every instance writes it; a guest's menu stands down on the way
+            // back and follows the host's re-opened lobby instead.
+            MenuReturnCard.Remember(_selectedGame.Mode, _weeklyChallengeLocked);
 
             if (shouldLaunch)
             {
