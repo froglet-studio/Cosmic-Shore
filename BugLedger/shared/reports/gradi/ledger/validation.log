@@ -403,3 +403,27 @@
 2026-10-25T18:06:05.879Z PlayMode session ended (348s play run, exiting play mode): 13 fix(es) waiting; counted: E-20f939a2fa 1/2 E-4584be3111 1/2 E-6b79cd07f1 1/2 E-72e807d601 1/2 E-ca3bc5cbe1 1/2 E-fa9f643cd7 1/2
 2026-10-25T18:13:41.727Z PlayMode session ended (74s play run, exiting play mode): 13 fix(es) waiting; counted: E-20f939a2fa 2/2 E-4584be3111 2/2 E-6b79cd07f1 2/2 E-72e807d601 2/2 E-ca3bc5cbe1 2/2 E-fa9f643cd7 2/2
 2026-10-25T20:07:17.141Z E-6b14fd9bb5: fix eb9b53b45 is not in this checkout yet — waiting for a pull
+2026-10-25T20:07:46.070Z editor load: play=False capture=True minPlay=15s issues=139
+2026-10-25T20:09:50.354Z editor load: play=True capture=True minPlay=15s issues=139
+2026-10-25T20:10:05.908Z editor load: play=False capture=True minPlay=15s issues=139
+2026-10-25T20:10:07.734Z editor load: play=False capture=True minPlay=15s issues=139
+2026-10-25T20:10:17.248Z E-16d65ffecb: fix eb9b53b45 is not in this checkout yet — waiting for a pull
+2026-10-25T20:10:17.286Z E-4b42aa3244: fix eb9b53b45 is not in this checkout yet — waiting for a pull
+2026-10-25T20:10:17.321Z E-6b14fd9bb5: fix eb9b53b45 is not in this checkout yet — waiting for a pull
+2026-10-25T20:10:17.356Z E-6e925c3b8b: fix db43442b7 is not in this checkout yet — waiting for a pull
+2026-10-25T20:10:17.390Z E-79b40242f7: fix 97ecf47e0 is not in this checkout yet — waiting for a pull
+2026-10-25T20:10:17.426Z E-908f18b36f: fix 5ad9f467b is not in this checkout yet — waiting for a pull
+2026-10-25T20:10:17.462Z E-a41c3e0381: fix eb9b53b45 is not in this checkout yet — waiting for a pull
+2026-10-25T20:14:02.766Z PlayMode session ended (233s play run, exiting play mode): 7 fix(es) waiting; counted: none
+2026-10-25T20:45:04.689Z editor load: play=False capture=True minPlay=15s issues=139
+2026-10-25T20:50:53.290Z editor load: play=True capture=True minPlay=15s issues=139
+2026-10-25T20:51:07.500Z editor load: play=False capture=True minPlay=15s issues=139
+2026-10-25T20:51:08.118Z editor load: play=False capture=True minPlay=15s issues=139
+2026-10-25T20:51:16.010Z E-16d65ffecb: fix eb9b53b45 is not in this checkout yet — waiting for a pull
+2026-10-25T20:51:16.047Z E-4b42aa3244: fix eb9b53b45 is not in this checkout yet — waiting for a pull
+2026-10-25T20:51:16.083Z E-6b14fd9bb5: fix eb9b53b45 is not in this checkout yet — waiting for a pull
+2026-10-25T20:51:16.118Z E-6e925c3b8b: fix db43442b7 is not in this checkout yet — waiting for a pull
+2026-10-25T20:51:16.154Z E-79b40242f7: fix 97ecf47e0 is not in this checkout yet — waiting for a pull
+2026-10-25T20:51:16.188Z E-908f18b36f: fix 5ad9f467b is not in this checkout yet — waiting for a pull
+2026-10-25T20:51:16.224Z E-a41c3e0381: fix eb9b53b45 is not in this checkout yet — waiting for a pull
+2026-10-25T20:58:13.636Z PlayMode session ended (425s play run, exiting play mode): 7 fix(es) waiting; counted: none; fired: E-d6b3d6f496 E-2fab142e42
