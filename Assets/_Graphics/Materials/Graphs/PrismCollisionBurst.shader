@@ -1,5 +1,5 @@
-// PrismCollisionBurst.shader — the prism's detail levels for DESTRUCTION (shatter, glitter) and
-// STEALING (the bloom, unravel and flake sheds), Docs/PRISM_ANIMATION.md §4.12, Docs/PRISM_MOTION.md
+// PrismCollisionBurst.shader — the prism's detail levels for DESTRUCTION (the fragment cut), STEALING (the roll;
+// the lab's bloom, unravel and flake sheds) and CONSUMPTION (the suction), Docs/PRISM_ANIMATION.md §4.12, Docs/PRISM_MOTION.md
 // § "The look". Everything that decides WHERE a vertex goes and WHETHER a fragment survives lives in
 // PrismCollisionBurst.hlsl, which Tools/Shaders/verify_prism_collision_burst.py compiles and EXECUTES;
 // this file is the URP plumbing around it plus the colouring, and the verifier front-end compiles every
@@ -9,12 +9,16 @@
 // pure render entities PrismCollisionBurst.cs spawns through PrismRenderService
 // .SpawnSliceDebrisBatch, with the slice's per-instance stamp channels, five of which a burst reads:
 //     _SliceTiming = (start, life, seed, kind)  — kind 0 shatter, 1 bloom, 2 unravel, 3 glitter, 4 flake,
-//                                                 5 fragment (the destruction), 6 roll (the steal)
-//     _SliceDrift  = (flight velocity, world xyz; explosion speed w) — zero for a shed
+//                                                 5 fragment (the destruction), 6 roll (the steal),
+//                                                 7 suction (the consumption)
+//     _SliceDrift  = (flight velocity, world xyz; explosion speed w) — zero for a shed and a suction
 //     _SlicePlane  = (fade curve, -, -, -)      — 0 destruction (linear), 1 shed (the grade's smoothstep)
 //     _SlicePivot  = (inside colour rgb, set w) — w 1: the inside wears this;
 //                                                 w 0: the domain's own bright (a shed: the OLD domain's)
-//     _SliceAxis   = (camera world position at the steal, shed subdivision) — the ROLL peels away from it
+//     _SliceAxis   = (camera world position at the steal, shed subdivision) — the ROLL peels away from it;
+//                    a SUCTION's sink at the stamp (xyz), which fixes its order and its vortex's axis
+//     _SliceCentre = a SUCTION's LIVE sink (world xyz), refreshed while the eater lives — the one stamp a burst
+//                    is ever written after its spawn (the §1 moving-target exception, the SuctionGraph's _Location)
 // Their Properties-block defaults are the UNSTAMPED state — age 0, zero flight — which renders the
 // plain prism: an unstamped material is inert, never broken.
 //
@@ -34,7 +38,7 @@ Shader "CosmicShore/PrismCollisionBurst"
         _Spread ("Spread (carried by every prism entity, unused here)", Vector) = (0, 0, 0, 0)
         _SliceTiming ("Timing (start, life, seed, kind)", Vector) = (0, 7.5, 0, 0)
         _SlicePlane ("Fade curve (x: 0 destruction, 1 shed)", Vector) = (0, 0, 0, 0)
-        _SliceCentre ("Slice centre (carried by the slice entity, unused here)", Vector) = (0, 0, 0, 1)
+        _SliceCentre ("Suction: the live sink, world (xyz)", Vector) = (0, 0, 0, 1)
         _SlicePivot ("Inside colour (rgb), used when w is 1", Vector) = (0, 0, 0, 0)
         _SliceAxis ("Roll: the camera's world position at the steal (xyz), the shed mesh's subdivision (w)", Vector) = (0, 0, 0, 12)
         _SliceDrift ("Flight velocity, world (xyz) + explosion speed (w)", Vector) = (0, 0, 0, 0)
@@ -54,6 +58,10 @@ Shader "CosmicShore/PrismCollisionBurst"
         _FragmentFade ("Smallest gone at, largest gone at (share of life), shrink share, speed gain", Vector) = (0.45, 0.92, 0.35, 1.65)
         _FragmentNoise ("Noise: spin amplitude, frequency (per object unit), travel amplitude; speed reference (u/s)", Vector) = (0.15, 3, 0.48, 10)
         _FragmentVariety ("Per-death variety (0: two prisms struck alike play one animation)", Range(0, 1)) = 0.5
+
+        [Header(The suction fragments (written by PrismCollisionBurst from PrismInteractionLodConfig))]
+        _SuctionMotion ("Stagger (share of life), acceleration, lift (prism radii), swirl (turns)", Vector) = (0.7, 1.4, 0.35, 0.25)
+        _SuctionShape ("Spin (turns), shrink (share of the trip), face lag (share of the order), order jitter", Vector) = (0.75, 0.3, 0.2, 0.03)
 
         [Header(Look)]
         _FresnelPower ("Skin Fresnel Power", Range(0.5, 8)) = 4
@@ -97,6 +105,8 @@ Shader "CosmicShore/PrismCollisionBurst"
             float4 _FragmentFade;
             float4 _FragmentNoise;
             float _FragmentVariety;
+            float4 _SuctionMotion;
+            float4 _SuctionShape;
             float _FresnelPower;
             float _InnerGlow;
             float _DissolveNoiseScale;
@@ -156,6 +166,57 @@ Shader "CosmicShore/PrismCollisionBurst"
             UNITY_VERTEX_INPUT_INSTANCE_ID
             UNITY_VERTEX_OUTPUT_STEREO
         };
+
+        // A fragment of the cut, in WORLD space: its own burst, the explosion's spin about cross(velocity, N) at the
+        // explosion's rate (amount = the explosion's speed × t), its own end, the smallest first.
+        void BurstFragment(Attributes input, PrismBurstFrame f, float3 uOS, float3 vOS, float age, float4 timing,
+            float4 drift, out float3 posWS, out float3 nrmWS)
+        {
+            float3 centroidOS = input.normalOS * 0.5 + uOS * (input.tri.x - 0.5) + vOS * (input.tri.y - 0.5);
+            PrismBurstFragmentShape shape;
+            shape.burst = _FragmentMotion.x;
+            shape.drift = _FragmentMotion.y;
+            shape.lift = _FragmentMotion.z;
+            shape.aim = _FragmentMotion.w;
+            shape.sizeSpeed = _FragmentSize.x;
+            shape.sizeSpin = _FragmentSize.y;
+            shape.spinCap = _FragmentSize.z;
+            shape.levelRef = _FragmentSize.w;
+            shape.endSmall = _FragmentFade.x;
+            shape.endBig = _FragmentFade.y;
+            shape.shrink = _FragmentFade.z;
+            shape.tau = _BurstShape.y;
+            shape.speedGain = _FragmentFade.w;
+            shape.speedRef = _FragmentNoise.w;
+            shape.variety = _FragmentVariety;
+            PrismBurstFragmentPose(f.rest, f.normal, TransformObjectToWorld(centroidOS), f.faceCentre, length(f.triUV), centroidOS,
+                input.tri.z, f.radius, age, timing.y, drift.w * age, drift.xyz, _ExplosionDials.x,
+                float4(_FragmentNoise.x, _FragmentNoise.y, timing.z, _FragmentNoise.z), shape, posWS, nrmWS);
+        }
+
+        // A fragment of the SAME cut drawn into the sink (round 15): its turn (each face lets go of its triangles one
+        // after another from its point nearest the sink, round 15b), its curve in, its swirl about the line to the sink, its tumble at the destruction's capped rate, gone as it
+        // arrives. The live sink is _SliceCentre; the stamp's is _SliceAxis.
+        void BurstSuction(Attributes input, PrismBurstFrame f, float3 uOS, float3 vOS, float age, float4 timing,
+            out float3 posWS, out float3 nrmWS)
+        {
+            float3 centroidOS = input.normalOS * 0.5 + uOS * (input.tri.x - 0.5) + vOS * (input.tri.y - 0.5);
+            PrismBurstSuctionShape shape;
+            shape.stagger = _SuctionMotion.x;
+            shape.accel = _SuctionMotion.y;
+            shape.lift = _SuctionMotion.z;
+            shape.swirl = _SuctionMotion.w;
+            shape.spin = _SuctionShape.x;
+            shape.shrink = _SuctionShape.y;
+            shape.faceLag = _SuctionShape.z;
+            shape.sizeSpin = _FragmentSize.y;
+            shape.spinCap = _FragmentSize.z;
+            shape.levelRef = _FragmentSize.w;
+            shape.variety = _FragmentVariety;
+            PrismBurstSuctionPose(f.rest, f.normal, TransformObjectToWorld(centroidOS), f.centre, f.faceCentre, f.faceU, f.faceV,
+                centroidOS, input.tri.z, f.radius, age, timing.y, PRISM_BURST_PROP(float4, _SliceCentre).xyz, PRISM_BURST_PROP(float4, _SliceAxis).xyz,
+                float4(_FragmentNoise.x, _FragmentNoise.y, timing.z, _SuctionShape.w), shape, posWS, nrmWS);
+        }
 
         Varyings BurstVert(Attributes input)
         {
@@ -222,51 +283,38 @@ Shader "CosmicShore/PrismCollisionBurst"
             float piece;
             float kind = floor(timing.w + 0.5);
             // The game's materials compile ONE kind (round 11, PrismCollisionBurst.ResolveRuntimeMaterial): the
-            // destruction's (_BURST_FRAGMENT) or the steal's (_BURST_ROLL), so neither vertex program carries the
-            // other's code or the five lab-only kinds (and their registers); no keyword is the lab's every-kind
-            // program. The stamped kind still drives the clip and the fade, so a variant is exact for its kind.
+            // destruction's (_BURST_FRAGMENT), the steal's (_BURST_ROLL) or the consumption's (_BURST_SUCTION), so no
+            // vertex program carries another's code or the five lab-only kinds (and their registers); no keyword is
+            // the lab's every-kind program. The stamped kind still drives the clip and the fade, so a variant is exact
+            // for its kind.
 #if defined(_BURST_ROLL)
             PrismBurstRoll(f, p, posWS, nrmWS);
             piece = PrismBurstHash(f.faceKey * 7.1 + p.seed * 3.3);
+#elif defined(_BURST_FRAGMENT)
+            BurstFragment(input, f, uOS, vOS, age, timing, drift, posWS, nrmWS);
+            piece = 0.0;
+#elif defined(_BURST_SUCTION)
+            BurstSuction(input, f, uOS, vOS, age, timing, posWS, nrmWS);
+            piece = 0.0;
 #else
-#if !defined(_BURST_FRAGMENT)
             if (kind == PRISM_BURST_FRAGMENT)
-#endif
             {
-                // A fragment of the cut, in WORLD space: its own burst, the explosion's spin about cross(velocity, N)
-                // at the explosion's rate (amount = the explosion's speed × t), its own end, the smallest first.
-                float3 centroidOS = input.normalOS * 0.5 + uOS * (input.tri.x - 0.5) + vOS * (input.tri.y - 0.5);
-                PrismBurstFragmentShape shape;
-                shape.burst = _FragmentMotion.x;
-                shape.drift = _FragmentMotion.y;
-                shape.lift = _FragmentMotion.z;
-                shape.aim = _FragmentMotion.w;
-                shape.sizeSpeed = _FragmentSize.x;
-                shape.sizeSpin = _FragmentSize.y;
-                shape.spinCap = _FragmentSize.z;
-                shape.levelRef = _FragmentSize.w;
-                shape.endSmall = _FragmentFade.x;
-                shape.endBig = _FragmentFade.y;
-                shape.shrink = _FragmentFade.z;
-                shape.tau = _BurstShape.y;
-                shape.speedGain = _FragmentFade.w;
-                shape.speedRef = _FragmentNoise.w;
-                shape.variety = _FragmentVariety;
-                PrismBurstFragmentPose(f.rest, f.normal, TransformObjectToWorld(centroidOS), f.faceCentre, length(f.triUV), centroidOS,
-                    input.tri.z, f.radius, age, timing.y, drift.w * age, drift.xyz, _ExplosionDials.x,
-                    float4(_FragmentNoise.x, _FragmentNoise.y, timing.z, _FragmentNoise.z), shape, posWS, nrmWS);
+                BurstFragment(input, f, uOS, vOS, age, timing, drift, posWS, nrmWS);
                 piece = 0.0;
             }
-#if !defined(_BURST_FRAGMENT)
+            else if (kind == PRISM_BURST_SUCTION)
+            {
+                BurstSuction(input, f, uOS, vOS, age, timing, posWS, nrmWS);
+                piece = 0.0;
+            }
             else
             {
                 PrismBurstPose(timing.w, f, p, posWS, nrmWS, piece);
             }
 #endif
-#endif
 
             // The flight: the explosion's own, linear and undamped, so the cloud's centre goes
-            // exactly where the ordinary debris would have gone. A shed's is zero: the prism stays.
+            // exactly where the ordinary debris would have gone. A shed's and a suction's are zero.
             posWS += drift.xyz * age;
 
             output.positionCS = TransformWorldToHClip(posWS);
@@ -286,9 +334,10 @@ Shader "CosmicShore/PrismCollisionBurst"
         void BurstClip(Varyings input)
         {
             float progress = input.phase.x;
-            // A fragment leaves by shrinking away to its own centre (PrismBurstFragmentPose): no clip of its own.
-#if !defined(_BURST_FRAGMENT)
-            if (input.phase.z != PRISM_BURST_FRAGMENT)
+            // A fragment leaves by shrinking away to its own centre (PrismBurstFragmentPose), a suction's into the
+            // sink (PrismBurstSuctionPose): no clip of their own.
+#if !defined(_BURST_FRAGMENT) && !defined(_BURST_SUCTION)
+            if (input.phase.z != PRISM_BURST_FRAGMENT && input.phase.z != PRISM_BURST_SUCTION)
             {
                 // Glitter shards and flake scales go out WHOLE (a scale when the wave reaches it); the
                 // other kinds erode raggedly within a piece.
@@ -318,7 +367,7 @@ Shader "CosmicShore/PrismCollisionBurst"
             #pragma vertex BurstVert
             #pragma fragment BurstFrag
             #pragma multi_compile_instancing
-            #pragma multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL
+            #pragma multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL _BURST_SUCTION
             #pragma instancing_options renderinglayer
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 
@@ -359,7 +408,7 @@ Shader "CosmicShore/PrismCollisionBurst"
             #pragma vertex BurstVert
             #pragma fragment BurstDepthFrag
             #pragma multi_compile_instancing
-            #pragma multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL
+            #pragma multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL _BURST_SUCTION
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 
             half BurstDepthFrag(Varyings input) : SV_Target
@@ -383,7 +432,7 @@ Shader "CosmicShore/PrismCollisionBurst"
             #pragma vertex BurstVert
             #pragma fragment BurstDepthNormalsFrag
             #pragma multi_compile_instancing
-            #pragma multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL
+            #pragma multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL _BURST_SUCTION
             #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 

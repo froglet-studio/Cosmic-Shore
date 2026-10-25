@@ -2102,6 +2102,29 @@ namespace CosmicShore.ECS
             }
         }
 
+        /// <summary>
+        /// <see cref="RefreshImplosionDebrisBatch"/> for the burst carrier's SUCTION (PrismCollisionBurst, the slice
+        /// entities drawing the destruction's cut into a moving sink): the live sink rides the slice's
+        /// <see cref="PrismSliceCentreOverride"/>, which no other burst kind reads. The same §1 exception, the same
+        /// shape — one float4 per live suction per frame, a bounds write only when the sink wandered out of them.
+        /// </summary>
+        public static void RefreshSliceDebrisSinkBatch(
+            System.Collections.Generic.List<ImplosionDebrisRefresh> refreshes, int epoch)
+        {
+            if (refreshes == null || refreshes.Count == 0) return;
+            if (epoch != _epoch || _world == null || !_world.IsCreated) return;
+
+            var em = _world.EntityManager;
+            for (int i = 0; i < refreshes.Count; i++)
+            {
+                var r = refreshes[i];
+                if (r.Entity == Entity.Null || !em.Exists(r.Entity)) continue;
+                em.SetComponentData(r.Entity, new PrismSliceCentreOverride { Value = new float4(r.Location, 1f) });
+                if (r.GrowBounds)
+                    em.SetComponentData(r.Entity, new RenderBounds { Value = r.Bounds });
+            }
+        }
+
         // The former SHIELD SHATTER batch spawner lived here. It is GONE on purpose
         // (Docs/PRISM_ANIMATION.md §4.8.1): a shield's shards are ordinary explosion
         // debris now — PrismShieldShatter groups a frame's disengages per shield mesh and
