@@ -743,6 +743,19 @@ def build_top_nav_tab():
     return root
 
 
+def focus_ring(parent, key, size=(8, 8), sprite="kit_sliver10_line2"):
+    """A pad focus ring under `parent` (node key `<key>/FocusRing`), painted by KitFocusRing on the host: the kit's
+    sky-blue Selection while the pad or the keyboard has the control, hidden for a pointer (Docs/MENU_REDESIGN_B.md
+    §65: every press the menu offers is a pad stop, and one the player cannot see is not). Returns the host's
+    KitFocusRing component body."""
+    ring = parent.child(Node(f"{key}/FocusRing", "FocusRing", rect((0, 0), (1, 1), (0, 0), size)))
+    ring.add("cr", 222, canvas_renderer()).add("img", 114, image(tok("Selection", 0.0), kit_sprite(sprite), True))
+    return lambda ctx, go: mono(go, kit_script("KitFocusRing"),
+                                f"  theme: {ref(11400000, THEME, 2)}\n"
+                                f"  ring: {{fileID: {ctx.c(f'{key}/FocusRing', 'img')}}}\n"
+                                f"  ringToken: {TOKEN_INDEX['Selection']}\n")
+
+
 def framed(root, sliver, fill_token, border_token, line="line1", raycast=False):
     """Slivered fill + border children, each painted by KitThemedGraphic."""
     fill = root.child(Node("Fill", "Fill", STRETCH))

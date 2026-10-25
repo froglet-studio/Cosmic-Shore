@@ -14042,6 +14042,20 @@ Reference compile clean (player; editor: the 3 known errors only); Amoebius buil
    they open at once.
 5. Profiler on the Abilities tab: no cost above the plain stage (one 30 Hz render of the hull).
 
+## 🔴 2026-10-25 — One pad rule for the whole menu: the stick reaches every press, A presses, B goes back (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
+
+Docs/MENU_REDESIGN_B.md §65. Changed `ScreenSwitcher`, `HubWindowNav`, `AudioStudioPanel`, `KitFocusRing` (new);
+ArcadeGameCard, ArenaGameCard, ProfileView prefabs and Menu_Main's hub strip (regenerated). New gate
+`check_menu_pad_reach.py`. What ran instead of `/verify-unity`: see the commit.
+1. Home with nothing selected (click the background): A does NOT open the Arcade; it puts the pad on Home (the Arcade
+   hub glows). A again opens the Arcade.
+2. Open the Arcade: D-pad up from the cards reaches the strip (TOY BOX / ARCADE / ARENA / MISSION) with a sky-blue ring.
+   On the cards LT / RT do nothing; on the strip they slide the windows and the ring follows; A on a strip word jumps
+   there. B closes the window.
+3. On an Arcade or Arena card, D-pad to its star: a sky-blue ring shows round it; A stars / unstars the card.
+4. Profile > Audio Studio: D-pad to a track's tick box (ring shows), A ticks / unticks it. Y does nothing there now.
+5. Mouse: no ring appears on a star, a tick box or a strip word after a click; hovering still lifts them.
+
 ## 🔴 2026-10-25 — LT / RT page the screens only from the top tab bar (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
 
 Docs/MENU_REDESIGN_B.md §64. Changed `ScreenSwitcher`, `MenuSpotlight` (keyboard held on the guide's path), `KitTopNavTab` (new), `KitTopNavTab.prefab`, `Menu_Main.unity`

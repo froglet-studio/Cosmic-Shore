@@ -121,10 +121,14 @@ def strip_tab(strip, key, word, x):
         .add("kt", 114, K.kit_text("Button", "NeutralLightest", driven=True))
     und = n.child(N(f"{k}/Underline", "Underline", R((0, 0), (1, 0), (0, 4), (0, 2), (0.5, 0))))
     und.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Selection", 0.0)))
+    # The strip is the hub windows' tab menu (Docs/MENU_REDESIGN_B.md §65): a pad stop with KitTextTab's focus ring,
+    # and the only place LT / RT slide the windows from.
+    ring = n.child(N(f"{k}/FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (24, 4))))
+    ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Selection", 0.0), K.kit_sprite("kit_sliver10_line2"), True))
     n.add("tab", 114, lambda ctx, go: mono(go, S["tab"],
-          no_nav(A.selectable()) + f"  m_TargetGraphic: {ref(ctx.c(f'{k}/Hit', 'img'))}\n"
+          A.selectable() + f"  m_TargetGraphic: {ref(ctx.c(f'{k}/Hit', 'img'))}\n"
           + A.calls([(ctx.c(k, "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")])
-          + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {{fileID: 0}}\n"
+          + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c(f'{k}/FocusRing', 'img'))}\n"
           "  isSelected: 0\n"
           f"  label: {ref(ctx.c(f'{k}/Label', 'tmp'))}\n  underline: {ref(ctx.c(f'{k}/Underline', 'img'))}\n"))
     n.add("audio", 114, A.menu_audio(11))
@@ -269,7 +273,9 @@ def validate(files):
     for key, _, word in HUB:
         tab = sc.docs[str(ctx.c(f"Strip/{key}", "tab"))]
         assert S["tab"] in tab, f"the strip's {word} is not a KitTextTab"
-        assert re.search(r"  m_Navigation:\n    m_Mode: 0\n", tab), f"the pad can land on the strip's {word} (it must stay on the cards)"
+        # §65: the strip is the hub windows' tab menu - a pad stop with a focus ring, where LT / RT slide the windows.
+        assert re.search(r"  m_Navigation:\n    m_Mode: 3\n", tab), f"the pad cannot reach the strip's {word} (LT / RT slide only from it)"
+        assert f"  focusRing: {{fileID: {ctx.c(f'Strip/{key}/FocusRing', 'img')}}}\n" in tab, f"the strip's {word} has no focus ring"
         lab = sc.docs[str(ctx.c(f"Strip/{key}/Label", "tmp"))]
         assert f"  m_text: {word}\n" in lab, f"the strip's {word} lost its authored word"
     for side in ("Left", "Right"):
@@ -317,8 +323,8 @@ def self_test(files):
         return text_[:i] + seg.replace(old, new, 1) + text_[j:]
 
     expect("the strip skips the Arena", lambda t: in_doc(t, ctx.c("Host", "nav"), "  - window: 14\n", "  - window: 15\n"))
-    expect("the pad can land on a strip word", lambda t: in_doc(
-        t, ctx.c("Strip/Arcade", "tab"), "  m_Navigation:\n    m_Mode: 0\n", "  m_Navigation:\n    m_Mode: 3\n"))
+    expect("the pad cannot reach a strip word", lambda t: in_doc(
+        t, ctx.c("Strip/Arcade", "tab"), "  m_Navigation:\n    m_Mode: 3\n", "  m_Navigation:\n    m_Mode: 0\n"))
     expect("the nav rests visible over Home", lambda t: in_doc(t, ctx.c("Host", "cg"), "  m_Alpha: 0\n", "  m_Alpha: 1\n"))
     expect("ScreenSwitcher wraps Mission back to Toy Box", lambda t: in_doc(
         t, SWITCHER, f"  hubWindowOrder: {hub_order_hex()}\n", f"  hubWindowOrder: {hub_order_hex()}0d000000\n"))
