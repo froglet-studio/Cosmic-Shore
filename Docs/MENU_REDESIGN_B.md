@@ -2978,6 +2978,13 @@ pad could not land on them at all; only the invisible LT / RT keycap buttons at 
 - The LT / RT keycap buttons leave pad navigation (`Navigation.Mode` None): they are pointer affordances, draw no ring,
   and D-pad up from a screen should land on a tab. A click on them still pages.
 
+**Nothing selected is not a dead pad** (Yash's first test, 2026-10-25: "I don't even control anything"). A click on the
+background clears the selection (`deselectOnBackgroundClick`; the Editor's first click into the Game view is one), and
+the UI module sends a move only to the selection, so the D-pad did nothing; LT / RT, now bar-only, did nothing either.
+With nothing selected, the first D-pad / left-stick push puts the pad on the screen (`Refocus`), and LT / RT act as if
+from the bar (they page and leave the pad on the tab). The menu navigates with the D-pad and the LEFT stick only; the
+right stick is not UI navigation (on the Hangar it turns the vessel).
+
 **The pad stays on the bar.**
 - After LT / RT the selection moves to the tab of the screen now showing, so the ring follows the underline.
 - `Refocus` leaves a selection on the bar alone while no window is open: a screen change under the bar selects nothing

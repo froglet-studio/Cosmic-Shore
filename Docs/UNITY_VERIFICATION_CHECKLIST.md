@@ -14117,6 +14117,9 @@ Reference compile clean (player; editor: the 3 known errors only); Amoebius buil
 Docs/MENU_REDESIGN_B.md §64. Changed `ScreenSwitcher`, `MenuSpotlight` (keyboard held on the guide's path), `KitTopNavTab` (new), `KitTopNavTab.prefab`, `Menu_Main.unity`
 (top nav: Submit entries, keycaps out of pad navigation), `NavBarPadFocusTests` (new). What ran instead of
 `/verify-unity`: see the PR's Verification section.
+0. Navigate with the D-pad or the LEFT stick (the right stick is not menu navigation; on the Hangar it turns the vessel).
+   Click into the Game view (this clears the selection): the first D-pad push selects a control on the screen, and
+   LT / RT with nothing selected still page and leave the ring on the top tab. The pad is never dead.
 1. Menu_Main with a pad, Hangar, the pad on a vessel tile (e.g. Sparrow): LT / RT do nothing (no screen change).
 2. D-pad up from the Hangar: the pad lands on a top tab and its sky-blue focus ring shows (never on the LT / RT
    keycaps). RT now pages to the Ark, and the ring moves to ARK with the underline; RT again pages to Home; LT back.
