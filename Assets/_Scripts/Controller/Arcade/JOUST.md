@@ -348,7 +348,6 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 | Base multiplayer mini-game | `MultiplayerMiniGameControllerBase.cs` | `_Scripts/Controller/Arcade/` |
 | Base mini-game controller | `MiniGameControllerBase.cs` | `_Scripts/Controller/Arcade/` |
 | Joust turn monitor (network) | `NetworkJoustCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
-| Joust turn monitor (base) | `JoustCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Collision effect SO | `VesselExplosionBySkimmerEffectSO.cs` | `_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Skimmer Effects/` |
 | Joust confirm RPC carrier | `NetworkVesselImpactor.cs` | `_Scripts/Controller/ImpactEffects/Impactors/` |
 | Confirmed-joust dispatch | `VesselImpactor.cs` | `_Scripts/Controller/ImpactEffects/Impactors/` |

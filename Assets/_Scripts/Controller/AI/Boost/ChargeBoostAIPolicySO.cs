@@ -157,7 +157,7 @@ namespace CosmicShore.Gameplay
                 if (c.AngleToTarget > _policy.AlignDegrees) return;
                 // The discharge fires along the NOSE, and in a drift the nose is free of the course: spend only with the
                 // nose on the objective too, or the boost throws the hull wide of the ring (2026-10-14 Regatta audit).
-                if (Vector3.Angle(c.Forward, c.ToTarget) > _policy.AlignDegrees) return;
+                if (Vector3.Angle(c.Forward, c.PathDirection) > _policy.AlignDegrees) return;
                 if (!_policy.HasRunway(c)) return;
                 float charge = Charge01();
                 if (charge < _policy.spendAtCharge01) return;

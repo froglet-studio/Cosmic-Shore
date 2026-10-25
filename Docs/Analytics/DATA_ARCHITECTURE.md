@@ -547,7 +547,7 @@ only scalars, so it travels as a comma-joined string and the PostHog sink expand
 
 `PlayerUUID` is **left as-is** rather than repointed at the new id: it is load-bearing for AOE block
 ownership strings (`AOERadialBlocks`, `AOEBlockCreation`, `AOEDangerHemisphereBlocks`) and for
-`MiniGame`'s local-player comparison, so changing its meaning would be a gameplay change smuggled
+the legacy `MiniGame`'s local-player comparison (that class was retired 2026-10-25), so changing its meaning would be a gameplay change smuggled
 into an analytics commit. `IPlayer.UgsPlayerId` is added alongside it, and retiring `PlayerUUID` is
 tracked in §10.
 

@@ -28,6 +28,44 @@ namespace CosmicShore.Tests
             }
         }
 
+        // AIBoostContext.PathDirection (2026-10-25): on a race line "straight" is judged on the path, the runway on the ring.
+        [Test]
+        public void Context_OnAPath_JudgesTheAngleOnThePath_AndTheRunwayOnTheRing()
+        {
+            var toRing = new Vector3(300f, 0f, 600f);   // the ring round the bend, ~27 deg off the course
+            var c = new AIBoostContext(toRing, Vector3.forward, Vector3.forward, 400f, 0f, false, false, false,
+                toPath: new Vector3(5f, 0f, 200f));
+            Assert.Less(c.AngleToTarget, 2f, "the hull is flying straight along its line");
+            Assert.AreEqual(toRing.magnitude, c.Distance, 1e-3f, "the runway is still the distance to the ring");
+            Assert.AreEqual(toRing.magnitude / 400f, c.RunwaySeconds, 1e-4f);
+        }
+
+        [Test]
+        public void Context_WithoutAPath_JudgesTheObjective()
+        {
+            // Negative control: every mode that is not on a race line (no toPath) reads exactly as before.
+            var toRing = new Vector3(300f, 0f, 600f);
+            var c = new AIBoostContext(toRing, Vector3.forward, Vector3.forward, 400f, 0f, false, false, false);
+            Assert.AreEqual(Vector3.Angle(Vector3.forward, toRing), c.AngleToTarget, 1e-3f);
+            Assert.AreEqual(toRing, c.PathDirection);
+        }
+
+        [Test]
+        public void RampPolicy_OnTheLine_SeesAStraight_WhereTheRingAloneDidNot()
+        {
+            var policy = ScriptableObject.CreateInstance<RampBoostAIPolicySO>();
+            try
+            {
+                var toRing = new Vector3(300f, 0f, 600f);
+                var byRing = new AIBoostContext(toRing, Vector3.forward, Vector3.forward, 400f, 0.05f, false, false, false);
+                var byPath = new AIBoostContext(toRing, Vector3.forward, Vector3.forward, 400f, 0.05f, false, false, false,
+                    toPath: new Vector3(5f, 0f, 200f));
+                Assert.IsFalse(policy.IsStraight(byRing), "judged by the ring round the bend: never straight (the bug)");
+                Assert.IsTrue(policy.IsStraight(byPath), "judged by the line it is flying: straight");
+            }
+            finally { Object.DestroyImmediate(policy); }
+        }
+
         [Test]
         public void ForMode_NullPolicy_StaysNull()
         {

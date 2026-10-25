@@ -3191,6 +3191,17 @@ I1 43.0 s vs 48.2, I2 56.1 vs 55.4, I3 56.3 vs stalled), gates.
 4. Any other mode with an AI Rhino (Broadside): it still ramps on long straights (no next leg there: every objective is
    read as a 90° corner).
 
+### 🔴 The Scarab AI's Regatta line set from Yash's two Scarab races (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** the Scarab's race line `LaneShare` 0.60 → 0.788 (`race_lines_learned.json` → `author_race_lines.py` →
+`Resources/RaceLines/Scarab_Regatta`). Yash crossed the I2 rings a median 63 u out of the 88 u mouth (37 crossings, two
+unfinished races). Set by hand at his ask; the learner replaces it at the third finished Scarab race. No C# changed.
+**Verified without the editor:** `author_race_lines.py --check`, `learn_drives_from_flights.py --check`.
+**Verify in editor:**
+1. Regatta I2 and I3 with a Hard AI Scarab, Third Eye with trails: it flies about four fifths of the way out from the
+   braid, never crosses a rail, and threads the rings without the wide miss-and-swing of 2026-10-23.
+2. `regatta_rival_report.py --hull scarab` on that race: rings per minute and its state shares.
+
 ### 🔴 Two AIs that sat out whole Regatta races: the Dolphin frozen in a start-line drift, the Urchin on a rival's lane (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:**
@@ -12796,6 +12807,332 @@ The **Rhino's energised sword** lands a Strike and drains nothing — it is now 
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
 
+## 🔴 Tandava — the co-op arena hunt (`claude/tandava-arena-mode`, 2026-10-06) — NOT EDITOR-VERIFIED
+
+**Unlisted since 2026-10-25: the card is on no roster, so nothing below can be reached from the UI.** To run these
+steps, list it on a local branch first (`TANDAVA.md`, the Unlisted note: `git mv` the card back from
+`Games/_Archive`, `LISTED = True`, re-run the generator). Also check that, as shipped, Tandava appears on NO screen
+(Arena, Arcade, Missions, Toybox) and is never offered as a rematch.
+
+**The second design (2026-10-06) supersedes everything from "What landed" down to QA-TANDAVA-8 below** (kept as the
+record of the first design; its route, exit, oases, bull, winged lion and ring of fire are gone). One creature in a
+CLOSED standard cell (`CapsuleMembrane`, radius 1,200) with 16 dispersed Borromean plants. It hatches WHOLE as the Great
+Serpent and forages where it likes, its speed and behaviour set by THREAT (calm 60 u/s, wary 90, fleeing 126; the turn up
+to 2.5x with the whole body carried round it, `SortTurnCarry`). Feeding, it takes its feed twin - its Charge plates out
+round its mouth as DANGER plates (`SwarmTickSettings.PlanDanger`) - and stops regrowing (`SetLevers` hold); losing 20%
+of its body at one meal breaks it and it bolts. Otherwise a cut regrows within about a second (no kill-lay-hold). Banked
+(rising stomach shares 0.35 / 0.6 / 0.85) it becomes the Many-Headed Serpent (5, 7 or 10 heads), rises in place into the
+Lord of the Dance inside a halo of twelve pearl `TandavaHaloRing` switch rings (`ToySwitchSignal.Halo`, was `Flame`) with
+a 30 s drum and a gold cell, then the Sea Lion, whose last feast completes the cycle. A variant of each form is drawn
+per match. No fire anywhere: the effect is gold prism debris (`TandavaGoldBurst`). Pilots win by shattering it (below
+35% of its form), breaking the halo (9 of 12, `EndConditionOverrides.tandavaHaloRingsToBreak`), wiping it out, starving
+it, or holding it off for 7 minutes. The top-left goal stack draws the mode's own rows (`IGoalSource`). Design and
+status: `Assets/_Scripts/Controller/Arcade/TANDAVA.md`.
+
+**Compiled? Headless only.** `/verify-unity` could NOT run: the authoring session had no Unity editor and no `unity`
+CLI. What did run: `unity_refcompile` player config (0 errors in project code, none of the changed files in any
+unverifiable bucket); the editor config (4 errors, all in files this branch does not touch - `CameraSettingsSOEditor`,
+`ResourceDisplay`, `UniversalStatsProviderEditor`, last changed by the port's `aeba7a88`; the three changed Editor files
+compile); `swarm_glue_typecheck`; the swarm harness - Tandava T1-T15 and the untouched field / grid / sort / evofate /
+round 11d / tick job / lineage / LOD suites, all pass; `author_tandava_assets.py --check` (88 files) and `--self-test`
+(16 of 16 scene checks fire on the donor); `tandava_plans.py`; `render_card_backgrounds.py` (the Tandava card
+re-rendered); `check_console_logging`, `check_conditional_compilation`, `check_gamelist_scenes`,
+`author_arena_launch_panel_layout --check` (`check_vessel_class_icons` reports only the Butterfly's empty icons -
+untouched, not on this card). Nothing has run in the Editor; `ToySwitchVocabularyTests` (the `Halo` colour) has not
+been executed.
+
+### QA-TANDAVA-9 — the hunt runs: it hatches whole, forages, flees (solo, any hull)
+
+1. Open `MinigameTandava.unity`: no `Missing (Mono Script)`; the controller shows `settings = TandavaSettings`,
+   `rule = TandavaScoringRule`; the Cell lists `Tandava Cell Config` (the standard membrane, not Cleave).
+2. Launch from the **Arena** screen (Rhino / Squirrel / Sparrow). During the ready screen a Great Serpent (450-510
+   tadpoles) assembles at x = -650 - WHOLE, not a young serpent growing - while 16 Borromean plants stand dispersed.
+3. After the go, leave it alone: it swims plant to plant (~60 u/s), lines its head up on each, and the goal rows (top
+   left) read its name and a rising percentage, "Roaming", "Body 100%", "Time left 6:59".
+4. Charge it: row 2 turns "Wary", then "Fleeing", and it bolts AWAY from you visibly faster (~125 u/s) and turns harder,
+   its body turning as ONE piece (no tail strung out behind). Back off: it calms within a few seconds.
+5. Record: does a fleeing creature outrun each hull? (the model: the Sparrow can just keep up, the Squirrel and Rhino catch it)
+
+### QA-TANDAVA-10 — feeding: the guards, the vulnerability, the broken meal
+
+1. Watch it reach a plant: its hood plates leave its head and orbit its mouth (red DANGER plates, ~40 u round the
+   plant); row 2 reads "Feeding - strike the body"; the first time, the narrator says so.
+2. Fly into a guard plate: your hull is burned and slowed (the danger-prism effect). Fly through the BODY behind the ring:
+   the cut stays cut while it eats (no regrowth at the table).
+3. Cut ~20% of it during one meal: the meal breaks ("Its meal is broken. It bolts."), it flees, and the cut regrows
+   within about a second once it is away (if it has eaten before).
+4. Record the meal length and how much a plant loses per meal (the model: 7-10 s, most of a 60-prism plant).
+
+### QA-TANDAVA-11 — the forms, the goals tab, the gold
+
+1. Let it feed: on each change the old shape bursts into GOLD prism shards (no fire, no red flames anywhere), a gold
+   light flashes over it, the primary goal row FLARES with the new name ("Seven-Headed Serpent", say), and a toast names it.
+2. The Many-Headed Serpent: when it eats, every head dips to the food in a ring round the plant.
+3. Cut its limbs at any form outside a meal: they regrow quickly and it stays that form (it never shrinks back a form).
+4. Replay a few matches: the variants differ (the serpent's length and hood, the head count 5 / 7 / 10, the dancer's pose,
+   the sea lion's fluke and fins).
+
+### QA-TANDAVA-12 — the ascension: the rise, the halo, the drum, the Sea Lion
+
+1. Banked, the Many-Headed Serpent rises where it stands into the Lord of the Dance; the cell blooms and eases to GOLD
+   (and only now - every other form, the cell keeps its own colours); the figure assembles ~12 s.
+2. Twelve pearl halo rings light round it; row 1 reads "Halo rings broken 0/9", row 3 the drum. The attendant packs
+   patrol, and a ring they sit on DIMS and cannot be broken.
+3. Thread open rings: each breaks with a gold burst and scores 25; nine before the drum stops breaks the dance (the
+   figure falls back into the serpent; "The dance is broken").
+4. Let the drum run out instead: it becomes the Sea Lion (row 1: "Sea Lion - the last feast"), the cell eases back to
+   its own colours, and its last feast completes the cycle (the pilots lose) unless they shatter it or the clock runs out.
+
+### QA-TANDAVA-13 — two peers, one animal (host + client, MPPM)
+
+1. Both see the same variants, the same form at the same moment (burst, flare, toast), the same moods, the halo in the
+   same place, and the creature in the same place (the client's nudged within ~25 u).
+2. A CLIENT threading a ring breaks it on both machines (reported, the server checks the guard and the distance).
+3. A client that joins late hatches the first variant and re-sorts into the drawn one at once (watch for a visible snap).
+
+### QA-TANDAVA-14 — nothing else moved
+
+1. **The Swarm cell's swarms are unchanged** (no scripted plans: no levers, no turn carry, no plan danger): kill a majority,
+   it still morphs; its research plans' tier-1 marks still show no danger at rest.
+2. Every other mode's goal stack still draws its metric row (`GoalStack.Source` is null outside Tandava).
+3. Every other switch is unchanged: the toybox's Neutral and Domain switches, Switchback's lime Next gate.
+4. `EndConditionOverrides` (FrogletTools > Game Modes > End Game Conditions) shows "Tandava - Halo Rings to Break the
+   Dance" = 9 and the shatter percent = 35, and the asset's old `tandavaFlamesToBreak` value carried across.
+
+### QA-TANDAVA-15 — the three things the playable lab flagged (`TANDAVA.md` §4.1)
+
+1. **The hatchling cannot heal.** In the first 20 s, before its first meal, cut a third of the Great Serpent: expect it
+   to stay cut (the stomach is empty). Then let it eat once and cut again: expect it back to its full form within about
+   a second. Note how long a pair of pilots takes to shatter it if they rush it from the go.
+2. **The spine cut.** In a Squirrel, chase the fleeing serpent from behind and fly down its spine; then cross its body
+   side to side. Count the tadpoles each pass takes (the lab predicts about 40% and about 2%), and whether a real hull can
+   repeat the spine pass before it regrows.
+3. **The wing at the halo.** Fill a lobby with AI, let the creature reach the dance, and watch whether the autopilots
+   thread nine rings before the drum stops. If they do, an all-AI lobby can win, and the halo wants a tighter mouth,
+   more held rings or fewer open ones.
+
+### QA-TANDAVA-16 — the third pass: the small crowded cell, the lunge, no clock (`TANDAVA.md` §0, §3.2-3.3)
+
+The third pass also laid Atlantis through the cell; the fourth removed it (QA-TANDAVA-17), so its phase-floor and
+perf-soak items are gone.
+
+1. **The cell.** The membrane reads at 800 u (the creature's body is about a third of the cell across), the half-size
+   nucleus at 196 u, NO environment, and 27 plants of six species (Borromean, Coral, Lantern, Reed, Frond in the cell's
+   Mass colour; Tendril and Coral in Space) crowded through the reef. The membrane animates (it has no baked preset at
+   this radius - watch for a stall or a pop at load).
+2. **The lunge.** Fly at a healthy creature: within about 380 u it turns on you, guard plates out round its jaws, and
+   charges at about 144 u/s for up to 2.5 s, resting 6 s between; touching a plate stings and slows the hull. Cut it under 70% and it runs instead.
+3. **No clock.** The goal stack has two rows outside the dance (the form and progress, the mood and body) and the drum
+   row only during it; nothing ends the match on time.
+4. **Faster forms.** The first change comes within about a minute unopposed, and each new body reads within a second or
+   two of the commit (no long scramble of tadpoles).
+5. **No stalemate.** With no clock, fill a lobby with AI and let it run ten minutes: note whether the creature is ever
+   pinned at one form (the lab's bots kept it at its first two forms for seven minutes). Then loiter near it yourself:
+   it should charge you every 8 s or so and still get meals in between (harness T17).
+
+### QA-TANDAVA-17 — the fourth pass: no environment, the serpents eat rolled up (`TANDAVA.md` §0, §2, §3.4)
+
+C# changed (`TandavaDirectorCore`: `TandavaForm.CoilPlanIndices` / `CoilMouths` / `CoilRoamRadius`, `Coil`, `DrawCoil`;
+`TandavaVariantSpec`'s three new fields; `TandavaController.BuildCore` copies them). `/verify-unity` was not available in
+the session: compiled headless with `Tools/Build/unity_refcompile` (player config, 0 project errors) and run in the swarm
+harness (T1-T18 pass), never in the Editor.
+
+1. **No environment.** The cell loads with nothing between the reef and the wall - no Atlantis, no city, no thorns; the
+   load veil lifts no slower than before. `SpawnableAtlantis Tandava.prefab` is gone from the project and nothing logs a
+   missing reference.
+2. **The coils.** Watch the Great Serpent eat three meals: each time it swims over its plant and rolls up round it - a
+   flat coil, a constrictor's wrap (a helix up the plant) or a figure-eight - a different one each meal, the hood plates
+   circling it (a crown above the flat ones, a ring round the wrap). The body reads as one snake through the curl
+   (no tadpoles left behind at the old head end, no knot where the turns meet).
+3. **The Many-Headed Serpent** coils its body under its raised heads (the necks rise from the coil like a rearing cobra's)
+   while the heads ring the food; again a different formation each meal. The ten-headed one's two tails stay apart.
+4. **Faster meals.** A Great Serpent meal lasts a few seconds (the harness: 2.5 s against 10.7 s in the old pose); a
+   Many-Headed one about 6 s. Note it against the old feel: if a meal is now too short to punish, the lever is
+   `MealVolume` or `BitersPerStep`, not the coils.
+5. **By the wall.** Lead it to a plant near the membrane (the band runs to 720 u): it should still coil round it, its
+   coil inside the wall (its centre may go to about 700 u while coiled, 616 swimming).
+6. **Striking a coil.** A pass through the coiled body cuts it; a pass through the guard crown stings. The lunge still
+   wears the old strike pose (guards round the jaws), not a coil.
+7. **Card.** The Tandava card shows the serpent wrapped round a plant in the reef, no city.
+
+### QA-TANDAVA-18 — the fifth pass: the Antlion replaces the Sea Lion (`TANDAVA.md` §0, §2)
+
+Plans and C# comments/strings only (the director is unchanged: the final form is still form 4, its bank and feast the
+same). Where QA-TANDAVA-11/12 say "Sea Lion", read "Antlion". Headless only: harness T1-T18 pass; never seen in the Editor.
+
+1. **The look.** Let the drum run out: the figure re-sorts into an antlion larva - a wide, flat, oval abdomen ringed by a
+   fringe of bristle plates (a double fringe on the short-jawed variant), a dark stripe down its back, a narrow thorax,
+   a flat head and two long sickle jaws hooking in with a gap between the tips; six short legs paddling. It should read
+   as one animal at the camera's usual distance (compare the reference photo in the session).
+2. **The jaws work.** In flight the jaws open and close a little (a 9.6 s cycle) and the tips never touch or cross.
+3. **The meal.** At a plant it clasps the plant inside its jaws, the bristles leave the abdomen to circle it as danger
+   plates; a meal takes about 10-11 s (harness).
+4. **HUD and narration** say "Antlion" everywhere ("Antlion - the last feast"; the line "The drum stops. The Antlion drops
+   out of the halo, jaws open."), and the end card on a loss reads that the Antlion has fed.
+5. **Size.** The body is 675-744 tadpoles (the Sea Lion's were 618-642): watch the frame time through the final form.
+
+### QA-TANDAVA-19 — the sixth pass: the Antlion's jaws snap at the pilot it lunges at (`TANDAVA.md` §0)
+
+C# changed (`TandavaDirectorCore`: `TandavaForm.LungePlanIndex` / `SnapPlanIndex` / `LungeMouth`, `Snapping`, the
+`Snapped` event, `SnapReach` / `SnapLeadSeconds` / `SnapHoldSeconds` / `TurnSnap`, `LeversFor(..., snapping)`;
+`TandavaVariantSpec`'s three fields; `TandavaController.ApplyToSwarm`; the platform's `SwarmSortParams.PlanWellClip`
+and `SwarmFaunaConfigSO.ScriptedPlanWellClip`, null/empty for every other swarm). `/verify-unity` was not available:
+compiled headless (`unity_refcompile`, player config) and run in the swarm harness (T1-T19 pass); never in the Editor.
+
+1. **The charge.** Reach the Antlion and loiter about 250 u off it: it turns on you with its jaws spread WIDE, the six
+   teeth (danger plates) visible on their inner edges.
+2. **The snap.** As the jaws come within about 150 u, they slam shut in well under a second, and stay shut a moment; it
+   barely turns while they close. Dodge and it snaps anyway (half a second before the lunge would run out).
+3. **Stung.** Let it catch you: a snap that closes on your hull stings and slows it (the danger-plate teeth).
+4. **On a client.** In a networked match the client's Antlion wears the same wide and snapped poses at the same moments
+   (the plan index is replicated), and swims the same committed line while snapping.
+5. **Nothing else moved.** The Great Serpent's lunge looks as before (its strike pose); every other swarm in the game
+   (the Swarm cell, Brood Rush) moves as before - the new well-clip multiplier is empty for them.
+
+### QA-TANDAVA-20 — the seventh pass: the Many-Headed Serpent lunges with all its heads (`TANDAVA.md` §0)
+
+Plans and the harness; one C# number (`TandavaDirectorSettings.SnapHoldSeconds` 1 -> 1.3, the Antlion's snap too) and
+doc comments. Headless only: harness T1-T19 pass, `unity_refcompile` 0 project errors; never seen in the Editor.
+
+1. **The charge.** Loiter about 250 u off a Many-Headed Serpent: it turns on you with every head REARED back over its
+   collar, necks bowed, heads looking at you, their hoods glowing as danger plates.
+2. **The strike.** As it comes within about 150 u, every neck shoots forward together and the heads close on a ring
+   round the bite point, snouts in; the strike holds about 1.3 s, and it barely turns while it does. Check all three
+   variants: the ten-headed one throws ten heads with no necks crossing.
+3. **Stung.** Let a strike land: the hood plates sting and slow the hull.
+4. **The Antlion** still snaps as QA-TANDAVA-19 describes, its jaws now held shut a little longer (1.3 s).
+
+
+**What landed.** A new arena card, `GameModes.Tandava = 69` (Rhino / Squirrel / Sparrow, every pilot on ONE
+domain), scene `MinigameTandava`, every asset authored by `Tools/Build/author_tandava_assets.py`. A tadpole swarm
+(the sort core in a new SCRIPTED mode: `SwarmSortParams.Scripted`, `SwarmFauna.RequestForm`) hatches at x = -2,000
+of a 3,600 u cell (the Cleave membrane), eats at eight Borromean oases and races for an exit plane at x = +2,000.
+Each time its body is full and its stomach holds the surplus it takes its next form (Young Serpent → Serpent →
+Great Serpent → Bull). Phase A eased every peer's cell into each form's colours; that was superseded the same day
+(see phase B: the cell now keeps its own colours except through the dance; `CellVisualTint`: membrane, nucleus and
+cytoplasm, recoloured by property block / one per-cell material clone).
+
+**Phase B (the ascension, same branch, 2026-10-06).** The exit is SEALED to every form but the last: every peer
+nudges its own swarm back inside the membrane (`TandavaDirectorCore.SealCorrection`). When the route is eaten the swarm
+forages leftovers, and with nothing left it presses on the membrane and starves (its own metabolism: the Tandava
+config's `StarvationSeconds 30` / `ShedIntervalSeconds 0.25`, plus a 40 s outcome clock). The banked Bull goes to a
+dance ground at (1,075, 0, 400) and takes a fifth form, the **Lord of the Dance** (a Nataraja of tadpoles with four
+Time attendant packs orbiting), inside a **ring of fire**: twelve `TandavaFlame` switch rings (new switch verb
+`ToySwitchSignal.Flame`, the danger red). A 30 s drum runs; nine flames threaded while unguarded
+(`EndConditionOverrides.tandavaFlamesToBreak`) break the dance and win, and the figure molts back into the Bull.
+When the drum stops it takes the sixth form, the **Winged Lion**, the only form that may cross. Pilots win by
+wiping it out, starving it, breaking the dance, or cutting the Winged Lion below 35%
+(`EndConditionOverrides.tandavaBreakPercent`). Design and status: `Assets/_Scripts/Controller/Arcade/TANDAVA.md`.
+
+**Compiled? Headless only.** `/verify-unity` could NOT run: the authoring session had no Unity editor and no `unity`
+CLI. What did run: `unity_refcompile` (player and editor configs: 0 errors in project code, none of the changed files
+in any unverifiable bucket), `swarm_glue_typecheck`, the swarm harness (294 checks including Tandava T1-T9, all
+pass), the generator's `--check` and its `--self-test` negative control (the donor scene trips all 16 scene checks),
+and the standing static gates. Nothing has run in the Editor, and `EnumIntegrityTests` (updated to 60 modes) has not
+been executed. **Phase B**: `unity_refcompile` player config 0 project errors and none of the changed files in any
+bucket; the editor config's 4 errors are all `FrogletTool` in `EndConditionOverridesWindow.cs`, whose attribute lives in
+an UNCHANGED Editor file that config does not compile (an artifact of the approximate config, not a defect);
+`swarm_glue_typecheck` OK; the full swarm harness OK with Tandava T1-T13; the generator's `--check` (59 files) and
+`--self-test`; the `check_*` gates (only `check_vessel_class_icons` fails, on the Butterfly's empty icons - untouched,
+not on this card). `ToySwitchVocabularyTests.EveryUnreservedVerbReadsAsItself` (new) has not been executed.
+
+### QA-TANDAVA-1 — the race runs and the cell changes with it (solo, any hull)
+
+1. Open `MinigameTandava.unity`: no `Missing (Mono Script)`; the controller shows `settings = TandavaSettings`,
+   `rule = TandavaScoringRule`; the Cell lists `Tandava Cell Config`; four AI templates on **Random**.
+2. Launch from the **Arena** screen. The carousel must offer exactly Rhino, Squirrel and Sparrow.
+3. You spawn on a start line at x = -2,300 facing down the course. The swarm hatches ~6 s in at x = -2,000 as the
+   Young Serpent (~140 tadpoles growing toward ~200) and holds there until GO.
+4. At GO the cell keeps its OWN colours (no bloom, no tint). A toast reads "Something in the reef remembers the old
+   shapes."
+5. Let it run unopposed. Expect it to stop at each oasis, commit Serpent / Great Serpent / Bull at very roughly
+   40 / 88 / 126 s (the harness model, NOT a measurement - record the real times) with the cell UNCHANGED at each; the
+   Bull to bank and rise into the Lord of the Dance at ~162 s ("The Bull has eaten enough. It rises into the Lord of
+   the Dance...") - the ONE moment the cell blooms and turns to bronze and fire - the ring to light at ~182 s, the
+   Winged Lion at ~212 s (the cell easing back to its own colours), and escape at ~4 min: DEFEAT "ESCAPED AS THE
+   WINGED LION", the cell still its own.
+   **The shapes:** no form walks. The Bull flies, its four legs swept back and out as fins beating together; look at
+   it from the front and the side - from no angle may it read as a bull walking on legs.
+6. Watch the frame time with the swarm fully grown (462 tadpoles at density 3) and ~4,200 cytoplasm motes.
+
+**PASS:** the forms commit in order; the cell changes colour ONLY from the rise into the dance to the Winged Lion; the
+HUD reads "Serpent 62%"-style progress; the run ends on the exit. **FAIL:** a form skipped or repeated · the cell
+recolouring at a serpent or Bull commit, on starvation, at the escape or the win · the cell recolouring with no form change, or
+staying recoloured in the NEXT match (an override that leaked into the shared membrane/nucleus/snow materials) · the
+swarm never leaving the hatch (no director: look for the 30 s "no swarm" error) · the swarm stalling at an oasis
+longer than 45 s.
+
+### QA-TANDAVA-2 — the pilots can win, and denial costs the swarm
+
+1. Burn the plants of the oasis ahead before it arrives. It must skip that oasis (the server re-checks each second)
+   and reach the exit a form short.
+2. Cull it: every member killed → VICTORY "THE SWARM IS GONE". Cut the Winged Lion below 35% → "THE WINGED LION IS
+   BROKEN".
+3. Scores are members culled plus 25 a flame ("N culled, M flames"); a starved tadpole scores nobody.
+4. AI teammates fly at the swarm (led 40 u toward its goal, spread ±45 u). An all-AI Sparrow cannot keep up (cruise 35
+   vs the swarm's 50) - stated in TANDAVA.md, not a bug.
+5. The swarm wears ONE colour (the cell's hostile controller). No member may ever show the pilots' own colour.
+
+### QA-TANDAVA-3 — two peers see the same animal (host + client, MPPM)
+
+1. Both peers see the same form at the same moment and the cell changes colour together.
+2. Measure how far apart the two peers' swarms are mid-race (the client is nudged toward the server's anchor: 20%
+   of the gap per tick, at most 6 u, once past 25 u). Record the worst gap.
+3. A client's kills count toward its score on both machines; the match ends on the server's outcome for both.
+
+### QA-TANDAVA-5 — the sealed exit and starvation
+
+1. **The seal**: herd the Young Serpent (or any non-final form) to the exit plane at x = +2,000. It must never cross:
+   held ~60 u inside, the narrator saying "The membrane holds. Only the final form can pass." ONCE per form. Watch for
+   a visible jerk at the hold (the nudge is rigid; it should read as pressing on a wall, not a teleport).
+2. **Starvation**: burn every oasis once it is the Bull. It forages (visits the leftovers), then "Nothing left to
+   eat...", the cell keeps its own colours, it presses on the membrane ~140 u inside and sheds members (one per 0.25 s
+   once unfed 30 s while hungry). Within ~40 s at the membrane: VICTORY "STARVED BEFORE THE MEMBRANE".
+3. A shed tadpole scores nobody; nobody is killed by the mode (watch the kill feed).
+
+### QA-TANDAVA-6 — the ascension: the dance ground, the statue and the ring of fire
+
+1. The banked Bull rises into the dance form AT ONCE (the cell blooms and turns to bronze and fire - the only tint in
+   the match) and swims to (1,075, 0, 400), beside the course, assembling as it goes. On arrival: the dance form's
+   line, and twelve **red** rings bloom in a circle ~133 u round the swarm in its (up, side) plane.
+2. By arrival (~20 s after the rise) the swarm reads as the **Lord of the Dance**: crown, flying hair, the drum and fire
+   hands, the raised leg, the pedestal and dwarf - and four green packs orbiting just outside the ring, two each way
+   (a turn per ~32 s). Compare against the harness picture (`TANDAVA_DUMP`, TANDAVA.md §4). Record how long the shape
+   takes to read, and whether it reads while still swimming.
+3. The HUD reads "Ring of fire 0/9 - drum 30 s" and counts down.
+4. **Thread a flame** (the rings face along the circle - fly ROUND the dancer): it withers out; the HUD counts; the
+   first flame's toast "A flame is out. Put out 9..." and at eight "8 of 9. One flame more!".
+5. **The guard**: when a pack is over a flame, its ring shrinks to about a third (guttered) and threading it does
+   nothing. Kill most of a pack: the flame it held opens again.
+6. Put out nine before the drum stops: VICTORY "THE DANCE IS BROKEN"; the remaining flames wither; the figure molts
+   back into the Bull with NO deaths; the cell eases back to its own colours.
+7. Let the drum finish instead: the remaining flames wither, the swarm takes the Winged Lion, and the cell eases back
+   to its own colours.
+
+### QA-TANDAVA-7 — the Winged Lion
+
+1. The cell is its own again; the lion reads as a body, mane, two great wings beating slowly (~10 s a beat), a tail, and
+   NO legs: two flame ribbons stream from its haunches in a V beside the tail. From the pilots' chase view the ribbons
+   must read as contrails, not dangling legs. It heads for the exit, which lets it through.
+2. Cut it below 35% before it crosses (~27 s of flight unopposed): "THE WINGED LION IS BROKEN".
+3. AI teammates threaded flames during the dance and chase the lion after (watch an all-AI Rhino lobby).
+
+### QA-TANDAVA-8 — the ascension on two peers (host + client, MPPM)
+
+1. Both peers draw the ring in the same place, the same flames out, the same flames guttered.
+2. A CLIENT threading a flame puts it out on both machines (reported to the server, which checks the guard and that
+   the client's vessel is within ~174 u of the flame) and scores it.
+3. The client's swarm is held behind the sealed membrane too (each peer applies the seal to its own swarm).
+
+### QA-TANDAVA-4 — nothing else moved
+
+1. **The Swarm cell's swarms are unchanged**: kill a majority, it still morphs (they are not scripted).
+2. **Cleave's cell** (the other 3,600 u cell) still builds its cytoplasm at the prefab's spacing (its config does not
+   author `CytoplasmShardDistance`).
+3. A cell with no tint never allocates the per-cell snow material (the clone is made only by `PrepareColourOverride`).
+4. Every other switch is unchanged: the toybox's Neutral and Domain switches, Switchback's lime Next gate (the new
+   `Flame` verb only adds a material row in `ToyFactory.SwitchMaterial`).
+
 ## 🔴 AI orbit — at most ONE lap round a black hole (Stoat) or an objective (`Ys-bleeding-edge`, 2026-10-10) — NOT EDITOR-VERIFIED
 
 Reported: an AI sometimes circles its target four, five, six times before it gets out. Fleet-wide
@@ -12925,6 +13262,21 @@ imports without errors (magenta = rejected), the config asset loads (not a missi
    cloud is visibly larger than the old explosion's — and nothing is culled while on screen at a hard hit (the bounds
    grow with the burst, the drift and the variety's reach). EditMode:
    `TheFragmentReachIsTheProvedSum`, `TheShaderDefaultsAreTheShippedFragmentShape`, the config test.
+15. **Round 15 — the suction on the destruction's cut and ladder (`cece/stoic-hopper-6luqvc`, 2026-10-25)**: the
+   shader imports with the `_BURST_SUCTION` keyword and the `_SuctionMotion` / `_SuctionShape` properties (no magenta),
+   and `PrismInteractionLodConfig` shows the `suction*` fields (enabled, as fragments, 1,024, stagger 0.7, acceleration
+   1.4, lift 0.35, swirl 0.25, spin 0.75, shrink 0.3, face lag 0.2, order noise 0.03). (a) Watch a fauna graze or a
+   predator eat trail prisms CLOSE to the camera: no face leaves whole — each face lets go of its silver triangles
+   ONE AT A TIME, starting from its point nearest the eater, so a stream of triangles is strung out along the path
+   into the eater's mouth while the rest of the face is still in place (round 15b); each triangle is gone as it
+   arrives; the eater keeps swimming and the stream follows it (no convergence on where it was). (b) Back away: the pieces get
+   coarser until, far off, the prism comes apart in its 24 wedges — never the old face-by-face SuctionGraph unless
+   `suctionAsFragments` is off. (c) A swarm eating dozens at once near the camera: later suctions come out one or two
+   levels coarser, none vanish, no frame spike in `prof` (`PrismCollisionBurst.RefreshSuctions`, `.Drain`), and no
+   piece is culled at the screen edge while it flies in (the bounds grow when the sink wanders). (d) The Sparrow's
+   ReverseSuction (Grow) is unchanged. EditMode: `TheSuctionIsTheHlslsKindAndReach`,
+   `TheSuctionRidesTheDestructionsLadder`, `TheGameCompilesOneKindPerProgram`,
+   `TheShaderDefaultsAreTheShippedFragmentShape`, `TheShaderReadsTheStampsTheCarrierWrites`.
 
 ### 🔴 The collision burst — level 1's high-res death (same branch, 2026-10-14) — NOT EDITOR-VERIFIED
 
@@ -14153,6 +14505,16 @@ Reference compile clean (player; editor: the 3 known errors only); Amoebius buil
    they open at once.
 5. Profiler on the Abilities tab: no cost above the plain stage (one 30 Hz render of the hull).
 
+## 🔴 2026-10-25 — Hangar: the ability rows are information (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
+
+Docs/MENU_REDESIGN_B.md §66. Changed `HangarAbilitiesPage`, `HangarControlInput`, `HangarView.prefab` (regenerated).
+1. Hangar > Abilities, any vessel: the AI demo still plays each ability in turn (keycap sinks, row lights, the hull
+   performs it).
+2. Clicking or tapping a row, pressing SPACE / LSHIFT (the keys the rows show), or any pad button: nothing plays, and
+   the demo keeps its rhythm. The rows show no hover or press state and the pad never lands on them.
+3. LT / RT page the screens from anywhere on the Hangar; LB / RB step its tabs. Pulsefire never fires.
+4. The header line reads "Labels follow your device."; keycaps still switch between pad and keyboard names.
+
 ## 🔴 2026-10-25 — Hangar: pad presses belong to the menu, not the ability rows (`claude/gifted-heisenberg-tniah8`) - NOT EDITOR-VERIFIED (no Unity CLI in the session)
 
 Docs/MENU_REDESIGN_B.md §63. Changed `HangarAbilitiesPage` (pad controls no longer polled), `HangarControlInput`
@@ -14571,4 +14933,39 @@ SpindleLodTests 17/17 on the engine runner (no test covers the batches).
    only set by Regatta's line).
 5. After a few races, run `python3 Tools/Build/regatta_rival_report.py --dir <your flights> --since 2026-10-26`: rings
    a minute per hull should rise from 5.5-9.3 toward the model's (Manta ~22, Scarab ~27, Rhino ~11).
+
+## 🔴 2026-10-25 — Charge crystal light: no per-seam allocation, cheaper petal glow (unverified: no Unity CLI in the session)
+
+**File:** `Assets/_Scripts/Utility/ChargeArcs.cs` (`ChargeSeamWalker.AvoidCircling`, `ChargeArcs.SeamWalk`). Ran
+instead: refcompile player-dev OK; the two rewrites matched the originals on 200,000 random cases each.
+
+1. Edit-mode: run `CrystalChargeArcsTests` (they need the Editor's AssetDatabase).
+2. Release, any mode with Charge crystals (Wrecking Ball): the bolt still walks the seams, never circles one bloom a
+   fifth time, and the petals beside it glow as before.
+3. In the capture: no `GC.Alloc` under `CrystalChargeArcs.LateUpdate`; its ms/frame under the 0.83 of 10-22.
+
+## 🔴 2026-10-25 — Regatta: on the race line, the speed drives judge "straight" on the path (unverified: no Unity CLI in the session)
+
+**Files:** `AIBoostPolicySO.cs` (`AIBoostContext.ToPath` / `PathDirection`; `AngleToTarget` reads it), `AIPilot.cs`
+(`TickBoostPolicy` passes the line's aim when it is a path lead), `ChargeBoostAIPolicySO.cs` (nose check). What ran
+instead of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in changed files; console, conditional
+compilation and AI-state gates OK; `rhino_line_sim.py --self-test`. `Arcade/REGATTA.md` §6.4.
+
+1. Run `RegattaDriveTuningTests` (the three new `Context_*` / `RampPolicy_OnTheLine_*`): all pass.
+2. Regatta, I1 and I3, an AI Rhino (Third Eye, Follow it): its boost status reads "ramping" on the straights of its line
+   and "braking on the ramp" before corners, not "waiting" for the whole race; it races far above 50 u/s.
+3. Same grid with an AI Sparrow, Scarab and Dolphin: the Sparrow holds its afterburner on straights, the Scarab
+   dashes, the Dolphin spends its charge (status "discharging").
+4. Any other mode with these hulls (a crystal mode, Headlong): boosting looks as before (no path, no change).
+
+## 🔴 2026-10-25 — Regatta: the Manta's and the Rhino's race lines look further ahead, for the AI's nose lag (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/Resources/RaceLines/Manta_Regatta.asset` (look-ahead 0.6 / 1.0 s) and `Rhino_Regatta.asset` (0.8 /
+1.4 s), written by `Tools/Build/author_race_lines.py` (`--check` OK). No C# changed. `Arcade/REGATTA.md` §6.4.1.
+
+1. Regatta, I3 and I4, Hard, an AI Manta (Third Eye, Follow it): it rides its line without weaving (no left-right
+   swing of the nose on straights), Soars on the straights (boost status / trail flare), and threads the rings on bends.
+2. Same with an AI Rhino: it ramps on straights, brakes before corners and threads the I3 / I4 rings.
+3. After a few races, `python3 Tools/Build/regatta_rival_report.py --dir <flights> --since 2026-10-26 --hull manta`:
+   rings a minute well above the 8 of the older races, boosted share well above 20%.
 

@@ -975,6 +975,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: DISCOVERIES "Verifier blind spot" (the check now also covers the lone seed, to 1.8e-7).
 - Promoted: §8
 
+### L-NCA-10 — A lab that ports a director must reproduce one harness result before any of its own flags are read
+- Lab: Tandava Form Lab (`Docs/Studios/TandavaFormLab/`) · Branch: `claude/tandava-arena-mode` · Date: 2026-10-25
+- What happened: the lab's JS port of `TandavaDirectorCore` drives a stand-in flock, not the sort core. Its first flags (a hatchling that cannot heal, a spine cut forty times a cross cut, two wingmates breaking the dance in 9 s) were worth reading only because the same port first reproduced harness T7: unopposed, the creature completed in 210-237 s over 9-10 meals, inside the C# run's band.
+- Do instead: name one harness test the lab must match, check it after every director change in both languages, and file each new lab result as an Editor QA item with the lever that would move it, not as a defect.
+- Evidence: `TANDAVA.md` §4.1, QA-TANDAVA-15/16; `lunge_check.js`.
+- Promoted: no
+
+### L-NCA-11 — A pose the director holds briefly must be timed by the director, not baked as a loop
+- Lab: Tandava Form Lab + `swarm_core_harness` T19 · Branch: `claude/tandava-arena-mode` · Date: 2026-10-25
+- What happened: the Antlion's snap was first baked as a looping gape-snap plan. The members could not follow the loop at the swarm's speed, so the jaws barely moved in the harness. Directing gape and snap as two static poses, with the director committing the snap 0.5 s before contact and holding it 1.3 s, closed the jaws. That only worked once the lunge poses were also given a per-plan well clip of 5 (`SwarmSortParams.PlanWellClip`), so the members could keep up with a 144 u/s charge.
+- Do instead: bake a fast tell as separate poses and let the director time it. Measure the live swing against the plan's (T19 asserts at least half).
+- Evidence: `TandavaDirectorCore` `Snapping`/`_snapUntil`; harness T19; `TANDAVA.md` §8 `PlanWellClip`.
+- Promoted: no
+
 ---
 
 ## ECO — ecology bestiary and flight labs (Tools/Ecology)
