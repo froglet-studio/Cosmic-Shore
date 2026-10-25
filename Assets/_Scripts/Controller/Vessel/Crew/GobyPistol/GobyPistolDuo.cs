@@ -230,6 +230,7 @@ namespace CosmicShore.Gameplay
             ReleaseAllRings();
             Pin(false); HoldPen(false);
             _render?.Dispose(); _render = null; _pip.Dispose();
+            TwoDCameraSky.Unregister(_cam);
             if (_view) Destroy(_view);
             if (_bodyGo) Destroy(_bodyGo);
             foreach (var o in new Object[] { _torus, _lockMat, _bodyMat }) if (o) Destroy(o);
@@ -1151,6 +1152,7 @@ namespace CosmicShore.Gameplay
             _lockMat = Lit(new Color32(255, 92, 108, 255), new Color32(80, 16, 22, 255), 0.5f);
             BuildBody();
             _render = new CrewViewRender(_cam, RenderLook);
+            TwoDCameraSky.Register(_cam);   // a 2D camera: no sky cell net glued to the side view (TwoDCameraSky)
             _camLive = false;
         }
 

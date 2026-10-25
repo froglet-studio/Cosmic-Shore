@@ -65,6 +65,19 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 2D cameras fade the sky's Voronoi cell net (`cece/cool-shannon-aulgpe`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** `TwoDCameraSky` sets the global `_SkyCellOverlaySuppress` per camera; `HyperSeaSkybox.shader` fades
+its cell overlay by it. Registered: the Pistol's camera, the Wrasse's kite board, the Jacks' herding view.
+
+**Verified without the editor:** refcompile player 0 errors, editor 0 in changed files; `bake_static_skybox.py`
+re-baked the phone sky byte-identical (the global unset reads 0, so the sky is unchanged everywhere else);
+`CrewVesselTests.TwoDCameraSky_FadesTheCellNetOnlyInA2DCamera` compiles, not run. `/verify-unity` did not run.
+
+**Verify in editor:** fly the Pistol, the Wrasse's kite and the Jacks' herding view: no cell net in their views (full
+screen and small square), stars and nebulae still there; the Goby's own chase view, the Squirrel's and every other
+main view still show the cells.
+
 ### 🔴 Goby & Pistol: the Pistol's model, each seat's own cards, the vortex ring's toroidal lens (`cece/cool-shannon-aulgpe`, 2026-10-24) — NOT EDITOR-VERIFIED
 
 **What landed:** the Pistol is drawn as `Pistol.fbx` (a pistol-shrimp ship, `specs/pistol.py`) instead of a capsule:
