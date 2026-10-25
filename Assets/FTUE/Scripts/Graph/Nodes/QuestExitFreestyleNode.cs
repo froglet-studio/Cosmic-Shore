@@ -21,10 +21,12 @@ namespace CosmicShore.Core
         public override QuestVenue Venue => QuestVenue.AppShell;
 
         [Tooltip("Drive the freestyle→menu transition programmatically instead of waiting for the player's own back action.")]
-        public bool forceExit;
+        [SerializeField] bool forceExit;
+        public bool ForceExit => forceExit;
 
         [Tooltip("Force-exit only: safety timeout (seconds) before advancing anyway.")]
-        [Min(1f)] public float timeoutSeconds = 8f;
+        [SerializeField, Min(1f)] float timeoutSeconds = 8f;
+        public float TimeoutSeconds => timeoutSeconds;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {

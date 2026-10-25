@@ -843,7 +843,7 @@ namespace CosmicShore.Gameplay
             Camera.farClipPlane = _currentSettings.farClipPlane;
             _lookAhead = _currentSettings.lookAheadDistance;
             _lookLift = _currentSettings.lookAheadLift;
-            _chaseEase = Mathf.Max(0f, _currentSettings.chaseEaseRate);
+            _chaseEase = Mathf.Max(0f, _currentSettings.ChaseEaseRate);
             _framingFov = Mathf.Max(0f, _currentSettings.framingFieldOfView);
             _easedLookValid = false;
 
@@ -853,8 +853,8 @@ namespace CosmicShore.Gameplay
                 _followOffset.y = settings.followOffset.y;
 
                 _followSmoothTime = settings.followSmoothTime;
-                _rotationSmoothTime = settings.rotationSmoothTime;
-                _disableRotationLerp = settings.disableSmoothing;
+                _rotationSmoothTime = settings.RotationSmoothTime;
+                _disableRotationLerp = settings.DisableSmoothing;
 
                 SetCameraDistance(settings.dynamicMinDistance);
             }
@@ -862,7 +862,7 @@ namespace CosmicShore.Gameplay
             {
                 _followOffset = settings.followOffset;
                 _disableRotationLerp = true;
-                adaptiveZoomEnabled = settings.enableAdaptiveZoom;
+                adaptiveZoomEnabled = settings.EnableAdaptiveZoom;
                 _neutralOffsetZ = _followOffset.z;
             }
         }

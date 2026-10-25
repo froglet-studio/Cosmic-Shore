@@ -27,13 +27,16 @@ namespace CosmicShore.Core
         }
 
         [Tooltip("Optional speaker name shown on the panel.")]
-        public string speakerName = "Captain";
+        [SerializeField] string speakerName = "Captain";
+        public string SpeakerName => speakerName;
 
         [Tooltip("Optional portrait override for this beat. Empty = the panel's own captain sprite.")]
-        public Sprite portrait;
+        [SerializeField] Sprite portrait;
+        public Sprite Portrait => portrait;
 
         [Tooltip("The dialogue lines, in order. Next steps through them; the last line closes the panel.")]
-        [TextArea(2, 8)] public List<string> lines = new();
+        [SerializeField, TextArea(2, 8)] List<string> lines = new();
+        public List<string> Lines => lines;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {

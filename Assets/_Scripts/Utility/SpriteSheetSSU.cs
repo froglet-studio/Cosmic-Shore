@@ -11,7 +11,8 @@ namespace CosmicShore.Utility
     /// </summary>
     public class SpriteSheetSSU : MonoBehaviour
     {
-        public bool updateChanges = false;
+        [SerializeField] bool updateChanges = false;
+        public bool UpdateChanges => updateChanges;
 
         SpriteRenderer spriteRenderer;
         Image image;
