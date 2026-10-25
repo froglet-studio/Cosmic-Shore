@@ -3003,3 +3003,44 @@ is no pad stop; it loses its ring); `author_menu_topnav.py` adds the Submit entr
 navigation (planted defects: A no longer presses HOME; the RT keycap back in pad navigation). `NavBarPadFocusTests`
 holds the rule. Changed: `ScreenSwitcher`, `MenuSpotlight`, `KitTopNavTab` (new), `KitTopNavTab.prefab`, `Menu_Main.unity` (top nav
 only), comments in `KitTextTab`, `KitHoverTint`, `HangarAbilitiesPage`.
+
+## 65. One pad rule for the whole menu: the stick reaches every press, A presses, B goes back (2026-10-25, awaiting in-editor approval)
+
+Yash, after §64: "LT / RT ... and then everything else, every other button should be navigated using thumbsticks. And
+don't keep those X button or A button there. So every button will be clickable by A and back will be by B. Other than
+that, LT / RT will only be accessed when I am hovered on the tab menu ... make sure all the buttons and all the places
+where it's clickable can be navigated." Asked to choose, Yash picked the whole main menu, the face-button shortcuts to
+go, and left the sticks to the best experience.
+
+**The rule.**
+- The D-pad and the **left** stick move between controls (the UI module's Navigate). The right stick keeps its jobs:
+  it turns the Hangar's vessel and scrolls the credits. Making it navigate too would take those away.
+- **A** presses the selected control; **B** goes back (closes the top window, as before).
+- **LT / RT** act only from a tab menu: the top tab bar pages the screens (§64), and the strip naming Toy Box / Arcade /
+  Arena / Mission pages the hub windows. After a press the pad sits on the tab now showing.
+- With nothing selected (a click on the background clears it), the first D-pad / left-stick push or A puts the pad on
+  the screen or the top window; LT / RT act as from the tab menu. The pad is never dead.
+
+**Shortcuts removed.** A on Home with nothing selected opened the Arcade; it now only wakes the pad (the Arcade hub is
+the first control it lands on). Y on an Audio Studio row (un)ticked it; the tick box does that now. **Kept**, as not
+face-button shortcuts or not ours to drop: Start opens Settings and Select toggles freestyle (Garrett's app-shell map,
+2026-10-21), and Y skips the first-login guide (the guide's LOCKED "skip is always offered" rule; its SKIP button is
+also a pad stop).
+
+**Every press is a pad stop.** `Tools/Build/check_menu_pad_reach.py` (`--self-test`) reads Menu_Main and every prefab
+it reaches and fails on an interactable Selectable out of navigation, on a navigation-off instance override, and on a
+pointer press with no Selectable. It found, and this change fixed:
+- the Arcade and Arena cards' favourite **star** (`author_menu_arcade.py`, `author_menu_arena.py`);
+- the hub **strip**'s four words (`author_menu_hub_nav.py`; they were kept off the pad on purpose under rev 7);
+- and the Audio Studio's **tick boxes**, reachable but with no focus to show (`author_menu_profile.py`).
+Each now shows the sky-blue focus ring: the strip through `KitTextTab`'s ring, the star and the tick through the new
+`KitFocusRing` (a ring for a plain Button, shown for the pad and keyboard, never for a pointer;
+`author_ui_kit_prefabs.focus_ring`). Fourteen pointer-only controls stay, each listed in the check with the pad's own
+way to the same action: the LT / RT keycaps on both tab menus, three invisible tap surfaces (Home's double-tap to fly,
+the preview's FLY twin, the info card's tap-outside), the preview's STOP / FULL SCREEN (shown only while the sticks fly
+it), the credits scrollbar (the right stick scrolls), and the Toy Box's SHUFFLE button (the shuffle card does the same).
+
+Changed: `ScreenSwitcher` (no A shortcut, the hub strip rule, no dead pad in a window), `HubWindowNav` (`Holds`,
+`SelectTab`), `AudioStudioPanel` (no Y), `KitFocusRing` (new), the four generators above and their prefabs, Menu_Main
+(the strip).
+
