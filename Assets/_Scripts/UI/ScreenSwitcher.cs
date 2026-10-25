@@ -436,13 +436,42 @@ namespace CosmicShore.UI
                 : CurrentScreenRoot();
             if (!scope) return;
 
-            // Already inside the right scope: leave the player's own D-pad position alone.
+            // Already inside the right scope: leave the player's own D-pad position alone. With no window open the
+            // tab bar is in that scope too (§64): a pad that went up to the bar stays there while the screen under it
+            // changes, and no control on the new screen is selected (a Hangar vessel tile would pick its vessel).
             var current = eventSystem.currentSelectedGameObject;
-            if (current && current.activeInHierarchy && current.transform.IsChildOf(scope.transform))
+            if (current && current.activeInHierarchy
+                && (current.transform.IsChildOf(scope.transform)
+                    || (activeModalStack.Count == 0 && IsOnNavBar(current, NavBar))))
                 return;
 
             var target = PreferredSelectable(scope);
             if (target) eventSystem.SetSelectedGameObject(target.gameObject);
+        }
+
+        /// <summary>
+        /// True when <paramref name="selected"/> is a live control on the top tab bar: a tab (a
+        /// <see cref="KitTopNavTab"/>) or its LT / RT keycap. The one test for "the pad is on the tab bar"
+        /// (Docs/MENU_REDESIGN_B.md §64): only then do LT / RT page the screens, A there is the bar's and not
+        /// Home's Arcade shortcut, and <see cref="Refocus"/> leaves the pad where it is.
+        /// </summary>
+        public static bool IsOnNavBar(GameObject selected, Transform navBar) =>
+            selected && navBar && selected.activeInHierarchy && selected.transform.IsChildOf(navBar);
+
+        private static GameObject SelectedObject()
+        {
+            var es = EventSystem.current;
+            return es ? es.currentSelectedGameObject : null;
+        }
+
+        /// <summary>Put the pad on the tab of screen <paramref name="index"/>, so after LT / RT the focus ring
+        /// sits on the screen now showing.</summary>
+        private void SelectNavLink(int index)
+        {
+            var es = EventSystem.current;
+            var link = ResolveNavLinkObject(index);
+            if (es && link && link.TryGetComponent(out Selectable tab) && tab.IsInteractable())
+                es.SetSelectedGameObject(link);
         }
 
         /// <summary>True while the EventSystem's selection is a live control on the HOME screen.</summary>
@@ -503,10 +532,15 @@ namespace CosmicShore.UI
         /// </summary>
         private void UpdateScreensInteractable()
         {
-            if (!screensCanvasGroup) return;
             if (InFreestyle) return;
 
-            screensCanvasGroup.interactable = activeModalStack.Count == 0;
+            bool open = activeModalStack.Count == 0;
+            if (screensCanvasGroup) screensCanvasGroup.interactable = open;
+            // The tabs are pad stops (§64): under a window the pad must not climb out of it onto the bar. A click on a
+            // tab is untouched (its EventTrigger is not gated by a CanvasGroup); the LT / RT keycap buttons, which
+            // would page the screen behind the window, stand down with it.
+            var nav = NavBarGroup();
+            if (nav) nav.interactable = open;
         }
 
         /// <summary>
@@ -887,8 +921,10 @@ namespace CosmicShore.UI
             {
                 // A on a focused Home control is that control's Submit (a hub opens its own window);
                 // answering it here too opened the Arcade on top of whatever the pad was on. The
-                // shortcut stands only while nothing on Home holds the pad's selection.
-                if (Gamepad.current.buttonSouth.wasPressedThisFrame && !HomeControlSelected())
+                // shortcut stands only while nothing on Home, and nothing on the tab bar (§64: A there
+                // presses that tab), holds the pad's selection.
+                if (Gamepad.current.buttonSouth.wasPressedThisFrame && !HomeControlSelected()
+                    && !IsOnNavBar(SelectedObject(), NavBar))
                 {
                     OpenArcadePanel();
                     return;
@@ -908,10 +944,18 @@ namespace CosmicShore.UI
             // abilities, not screen paging. A modal's preview never reached here (HasActiveModal).
             if (ModePreviewWindow.AnyHasFocus) return;
 
+            // LT / RT page the screens only while the pad is on the top tab bar (Yash, 2026-10-25: "you have to
+            // navigate the tab menu to access it with LT and RT"; Docs/MENU_REDESIGN_B.md §64). Below the bar a
+            // trigger belongs to whatever the pad is on. The pad stays on the bar, on the tab of the screen now showing.
+            if (!IsOnNavBar(SelectedObject(), NavBar)) return;
+
+            int before = currentScreen;
             if (Gamepad.current.leftTrigger.wasPressedThisFrame)
                 NavigateLeft();
             if (Gamepad.current.rightTrigger.wasPressedThisFrame)
                 NavigateRight();
+            if (currentScreen != before)
+                SelectNavLink(currentScreen);
         }
 
         #endregion
@@ -2206,14 +2250,18 @@ namespace CosmicShore.UI
 
         private void SetNavBarVisible(bool visible)
         {
-            if (!NavBar) return;
-
-            if (!NavBar.TryGetComponent<CanvasGroup>(out var cg))
-                cg = NavBar.gameObject.AddComponent<CanvasGroup>();
+            var cg = NavBarGroup();
+            if (!cg) return;
 
             cg.alpha = visible ? 1f : 0f;
             cg.blocksRaycasts = visible;
-            cg.interactable = visible;
+            cg.interactable = visible && activeModalStack.Count == 0;
+        }
+
+        private CanvasGroup NavBarGroup()
+        {
+            if (!NavBar) return null;
+            return NavBar.TryGetComponent(out CanvasGroup cg) ? cg : NavBar.gameObject.AddComponent<CanvasGroup>();
         }
 
         private void CloseAllModals()
