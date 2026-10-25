@@ -20,7 +20,7 @@ WHAT IT MAKES (the design: Assets/_Scripts/Controller/Vessel/R_VesselActions/JAC
         - a FRESH Netcode GlobalObjectIdHash for this guid, InScenePlacedSourceGlobalObjectIdHash cleared
         - JacksExecutor on the ShipActions object and in its ActionExecutorRegistry, wired to JacksConfig.asset, the
           fleet's turn-end channel and Event_CombatHitStats (the Angler's assets)
-        - the flying jacks' buttons: the Rhino's ramp boost stays on Input 0; the JUMP to the decoy on Input 1 (the trigger
+        - the netting jacks' buttons: no ramp boost (stripped 2026-10-25, its registry too); the JUMP to the decoy on Input 1 (the trigger
           / a lifted thumb) and Input 4 (both thumbs lifted); CALL on Input 7 (A); the jacks' own DECOY on Input 6 (X; the
           Time level-5 upgrade). The Rhino's gamepad overrides (the shield swipes) are emptied
         - NO SWORD: the sword driver and its afterimages (ScaleSkimmerObject), the shield swipes (ShieldSwipeActionRegistry),
@@ -115,12 +115,12 @@ SHIP_ACTIONS_GO = "1916516311732452555"      # the ShipActions child (its Action
 REGISTRY_ID = "5397651131628914846"
 EXECUTOR_ID = "2200000000000000001"          # JacksExecutor on ShipActions
 
-# The flying jacks' buttons (InputEvents: 0 FullSpeedStraight, 1 RightStickAction, 4 IdleAction, 6 Button1 (X), 7 Button2 (A))
+# The flying jacks' buttons (InputEvents: 1 RightStickAction, 4 IdleAction, 6 Button1, 7 Button2). Input 0 (FullSpeedStraight)
+# carried the Rhino's ramp boost until Garrett, 2026-10-25: "lets remove the rhino speed buff at full speed and straight".
 BINDINGS = re.compile(r"(  _inputEventShipActions:)\n(?:  [- ] .*\n)+")
 OVERRIDES = re.compile(r"(  _gamepadActionOverrides:)\n(?:  [- ] .*\n)+")
 WANT_BINDINGS = (
     "  _inputEventShipActions:\n"
-    f"  - InputEvent: 0\n    ShipActions:\n    - {{fileID: 11400000, guid: {RAMP_BOOST_GUID}, type: 2}}\n"
     f"  - InputEvent: 1\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksTeleport']}, type: 2}}\n"
     f"  - InputEvent: 4\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksTeleport']}, type: 2}}\n"
     f"  - InputEvent: 6\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksDecoy']}, type: 2}}\n"
@@ -128,7 +128,10 @@ WANT_BINDINGS = (
 
 # the sword's five streaks and the legacy jet objects are Rhino parts too (Garrett, 2026-10-23: "the vestigal jets from the
 # rhino should be gone"; "instead of a sword (1 axis) make it all three orthogonal axes")
-RHINO_SUBTREES = ["ScaleSkimmerObject", "ShieldSwipeActionRegistry", "LeftJetParticle", "RightJetParticle", "JetTest"] + [
+# ... and the Rhino's ramp speed boost (Garrett, 2026-10-25: "lets remove the rhino speed buff at full speed and straight"): its
+# executor's registry goes, so neither the button nor the AI's boost policy (RampBoostAIPolicySO) can arm it
+RHINO_SUBTREES = ["ScaleSkimmerObject", "ShieldSwipeActionRegistry", "LeftJetParticle", "RightJetParticle", "JetTest",
+                  "RampBoostActionRegistry"] + [
     f"RhinoSwordBladeTracer{i}" for i in range(5)]
 RHINO_COMPONENTS = ["RhinoSwordNetworkRelay", "VesselElementalImmunity", "RhinoSwordAutopilot", "RhinoSwordFXController"]
 # the Rhino's nested jets: the ten VesselJets (two pods, eight body nozzles), the pods' JetFX and the arc lightning
@@ -550,7 +553,7 @@ HERD_MARK_FIELDS = "  herdHueLean: 0.35\n  herdGlow: 1.5\n"   # the glow: "fauna
 # The net (Garrett, 2026-10-24: "lets make it a net that opens wider with xdiff"), after the flight's and the AI's fields;
 # and the herding view zoomed in, following the jacks, with its whole-cell zoom and buttons, after viewPanEase.
 NET_FIELDS = ("  netSpread: 30\n  netMinHeight: 6\n  netMaxHeight: 36\n  netDepth: 26\n  netTrailEase: 5\n  netSettle: 0.75\n"
-              "  netSettleEase: 3\n  netRivalTake: 0.1\n  netRivalCooldown: 2\n  jackCrystalReach: 32\n  jackCrystalHeight: 200\n"
+              "  netSettleEase: 3\n  netPrismCap: 48\n  netRivalTake: 0.1\n  netRivalCooldown: 2\n  jackCrystalReach: 32\n  jackCrystalHeight: 200\n"
               "  netCameraFill: 0.8\n  netCameraEase: 3\n")
 HERD_VIEW_FIELDS = ("  herdViewZoom: 0.75\n  herdFollowJacks: 1\n  cellViewMargin: 1.1\n  herdJacksFill: 0.8\n  herdJacksMargin: 40\n"
                     "  viewZoomEase: 3\n  zoomButtonSize: 0.09\n"
@@ -578,6 +581,8 @@ def config_retrofit(text: str) -> str:
     if "  netSpread:" in text and "  netTrailEase:" not in text:   # 2026-10-24 round 2: the trail, the jacks' reach, the zoom-out
         text = re.sub(r"^(  netDepth: .*\n)", lambda m: m.group(1) + "  netTrailEase: 5\n", text, count=1, flags=re.M)
         text = text.replace("  jackCrystalReach: 18\n", "  jackCrystalReach: 32\n  jackCrystalHeight: 200\n")
+    if "  netSpread:" in text and "  netPrismCap:" not in text:   # round 3 (2026-10-25): the net drags prisms
+        text = re.sub(r"^(  netSettleEase: .*\n)", lambda m: m.group(1) + "  netPrismCap: 48\n", text, count=1, flags=re.M)
     if "  herdViewZoom:" in text and "  herdJacksFill:" not in text:
         text = re.sub(r"^(  cellViewMargin: .*\n)", lambda m: m.group(1) + "  herdJacksFill: 0.8\n  herdJacksMargin: 40\n", text,
                       count=1, flags=re.M)
@@ -768,7 +773,8 @@ def check_prefab(text: str, script_guid: str):
     for key, guid in (("config", CONFIG_GUID), ("OnMiniGameTurnEnd", TURN_END_GUID), ("onCombatHitLanded", COMBAT_HIT_GUID)):
         want(ex and f"  {key}: {{fileID: 11400000, guid: {guid}, type: 2}}" in ex.group(1),
              f"Jacks.prefab: JacksExecutor.{key} is not wired")
-    want(WANT_BINDINGS in text, "Jacks.prefab: the flying jacks' buttons are not ramp 0, jump 1 + 4, decoy 6, call 7")
+    want(WANT_BINDINGS in text, "Jacks.prefab: the netting jacks' buttons are not jump 1 + 4, decoy 6, call 7 (and no ramp boost)")
+    want(f"guid: {RAMP_BOOST_GUID}, type: 2" not in text, "Jacks.prefab: the Rhino's ramp speed boost is still bound")
     want("  _gamepadActionOverrides: []\n" in text, "Jacks.prefab: the Rhino's gamepad overrides (the swipes) are still bound")
     want(f"guid: {CONTAINER_GUID}," in text and f"guid: {DONOR_CONTAINER_GUID}," not in text,
          "Jacks.prefab: the VesselImpactor is not on JacksImpactorDataContainer (the Rhino's plough would ride along)")
@@ -803,7 +809,8 @@ def check_assets(config: str, controls, container: str):
         errs.append("JacksConfig.asset: no herd mark field (run the tool)")
     if "  herdGlow:" not in config:
         errs.append("JacksConfig.asset: no herd glow field (run the tool)")
-    if "  netSpread:" not in config or "  netCameraEase:" not in config or "  netTrailEase:" not in config:
+    if ("  netSpread:" not in config or "  netCameraEase:" not in config or "  netTrailEase:" not in config
+            or "  netPrismCap:" not in config):
         errs.append("JacksConfig.asset: no net fields (run the tool)")
     if "  herdViewZoom:" not in config or "  callButtonIcon:" not in config or "  herdJacksFill:" not in config:
         errs.append("JacksConfig.asset: no herding view zoom fields (run the tool)")
@@ -1032,7 +1039,7 @@ def self_test():
     expect(check_assets(cfg.replace("  herdGlow: 1.5\n", ""), controls, cont), 1, "no herd glow field")
     expect(check_assets(cfg.replace(NET_FIELDS, ""), controls, cont), 1, "no net fields")
     expect(check_assets(cfg.replace(HERD_VIEW_FIELDS, ""), controls, cont), 1, "no herding view zoom fields")
-    round1 = cfg.replace("  netTrailEase: 5\n", "").replace("  jackCrystalReach: 32\n  jackCrystalHeight: 200\n",
+    round1 = cfg.replace("  netTrailEase: 5\n", "").replace("  netPrismCap: 48\n", "").replace("  jackCrystalReach: 32\n  jackCrystalHeight: 200\n",
                                                              "  jackCrystalReach: 18\n").replace("  herdJacksFill: 0.8\n  herdJacksMargin: 40\n", "")
     expect(check_assets(round1, controls, cont), 1, "the net's first-round config")
     if config_retrofit(round1) != cfg:

@@ -1,5 +1,8 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
+using Unity.Collections;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -12,12 +15,14 @@ namespace CosmicShore.Gameplay
     ///
     /// <list type="bullet">
     /// <item><b>Crystals</b>, all five ("all five crystals can be relocated using the net"): caught and CARRIED, settling into
-    /// the bag. When the jacks land (switch to herding) the net goes away and the crystals stay where they were; the cell's
+    /// the bag. The netting hull's own touch leaves them alone (<see cref="ICrystalPickupGate"/>, <c>JacksBodies</c>), so
+    /// the omni crystal the hull flies into is netted rather than collected (Garrett, 2026-10-25). When the jacks land (switch to herding) the net goes away and the crystals stay where they were; the cell's
     /// omni crystal is put there on every machine (<see cref="CrystalManager.RelocateCrystal"/>). Herding, a jack that
     /// touches a crystal collects it (<see cref="CollectByJacks"/>).</item>
-    /// <item><b>Prisms</b> ("collected by the net but when they collide they are destroyed like always"): each one the net
-    /// touches is handed to the hull's own impactor, exactly as a hull contact (<see cref="ImpactorBase.AcceptImpacteeFromSweep"/>).
-    /// A creature's body prisms are not prisms here: the creature is.</item>
+    /// <item><b>Prisms</b> (Garrett, 2026-10-25: "lets have prisms move and be dragged by the net. they should only be
+    /// destroyed when they collide with other prisms"): caught and DRAGGED, a mover of the prism-motion fundamental, so a
+    /// dragged prism that runs into another prism destroys both (<see cref="DragPrisms"/>). Living mass (a creature's or a
+    /// plant's body) and super-shielded mass are never dragged.</item>
     /// <item><b>Creatures</b>: one of another domain is STOLEN into ours (<see cref="Fauna.StealInto"/>), and then, like any
     /// creature of ours that goes through the net, its body is shielded (<see cref="Fauna.ShieldBody"/>) and it joins the
     /// herd, so it wears the herd's mark and glow.</item>
@@ -43,7 +48,20 @@ namespace CosmicShore.Gameplay
 
         readonly List<Item> _items = new();
         readonly List<Prism> _prisms = new();
-        HashSet<int> _touching = new(), _touchingNext = new();
+
+        // the prisms the net drags (Garrett, 2026-10-25: "lets have prisms move and be dragged by the net. they should only be
+        // destroyed when they collide with other prisms"): a mover of the prism-motion fundamental (Docs/PRISM_MOTION.md)
+        sealed class Dragged
+        {
+            public Prism Prism;
+            public float S, T, W;
+        }
+
+        readonly List<Dragged> _dragged = new();
+        readonly HashSet<Prism> _draggedSet = new();
+        NativeParallelHashMap<int, int> _moverOfSlot;
+        NativeArray<float3> _from, _to;
+        PrismMotionLevel _level = PrismMotionLevel.Showcase;
         HashSet<Fauna> _inside = new(), _insideNext = new();
         readonly Dictionary<IVesselStatus, float> _rivalReadyAt = new();
         readonly Dictionary<Crystal, CrystalImpactor> _impactorOf = new();
@@ -124,7 +142,8 @@ namespace CosmicShore.Gameplay
 
             Carry(cfg, dt);
             CatchCrystals();
-            TouchPrisms(ex);
+            DragPrisms(ex, dt);
+            CatchPrisms(ex);
             NetFauna(ex);
             if (ElementalTransfer.IsDecidedHere(status)) TakeFromRivals(ex);
         }
@@ -144,7 +163,8 @@ namespace CosmicShore.Gameplay
                 c.CrystalManager.RelocateCrystal(c.Id, c.transform.position);
             }
             _items.Clear();
-            _touching.Clear();
+            _dragged.Clear();
+            _draggedSet.Clear();
             _inside.Clear();
             _trail.Reset();
             Open = false;
@@ -266,31 +286,115 @@ namespace CosmicShore.Gameplay
             return Mathf.Abs(h) <= height && (d - up * h).sqrMagnitude <= reach2;
         }
 
-        // ------------------------------------------------------------------ prisms: destroyed like always
+        // ------------------------------------------------------------------ prisms: dragged, broken only by prisms
 
-        void TouchPrisms(JacksExecutor ex)
+        /// <summary>
+        /// The net's prisms ride where it holds them, and each step is a MOVE of the prism-motion fundamental
+        /// (<see cref="PrismMotion"/>, <c>Docs/PRISM_MOTION.md</c>): the transform, the collider, the index and the shell agree
+        /// the frame it is made, and a dragged prism that runs into another prism destroys both, scored to us. The net's own
+        /// prisms are movers of the same step, so the ones it carries side by side never meet (a pair already touching is at
+        /// rest), and one netted prism never breaks another. Super-shielded mass is never dragged (no force moves it).
+        /// </summary>
+        void DragPrisms(JacksExecutor ex, float dt)
         {
-            var vessel = ex.HullImpactor;
+            for (int i = _dragged.Count - 1; i >= 0; i--)
+                if (!_dragged[i].Prism || _dragged[i].Prism.destroyed || _dragged[i].Prism.SpatialIndexId < 0)
+                {
+                    _draggedSet.Remove(_dragged[i].Prism);
+                    _dragged.RemoveAt(i);
+                }
+            int n = _dragged.Count;
+            if (n == 0) return;
+            var index = PrismSpatialIndex.Instance;
+            if (index == null || !index.IsAvailable) return;
+            EnsureNative(ex.Config.NetPrismCap);
+
+            _moverOfSlot.Clear();
+            for (int i = 0; i < n; i++)
+            {
+                var d = _dragged[i];
+                var p = d.Prism;
+                _from[i] = p.transform.position;
+                _to[i] = Frame.Point(d.S, d.T, d.W);
+                _moverOfSlot.TryAdd(p.SpatialIndexId, i);
+                p.transform.position = _to[i];
+                p.NotifyPositionChanged();
+            }
+
+            var cfg = PrismMotionConfigSO.Instance;
+            _level = PrismMotion.NextLevel(_level, n,
+                cfg != null ? cfg.ShowcaseMaxMovers : PrismMotionConfigSO.DefaultShowcaseMaxMovers,
+                cfg != null ? cfg.BoxMaxMovers : PrismMotionConfigSO.DefaultBoxMaxMovers);
+            var movers = new PrismMotion.MoverSteps(_moverOfSlot, _from, _to);
+            var status = ex.Status;
+            for (int i = 0; i < n; i++)
+            {
+                var p = _dragged[i].Prism;
+                if (!p || p.destroyed) continue;
+                float3 step = _to[i] - _from[i];
+                if (math.lengthsq(step) < 1e-12f || !PrismMotion.TryGetBox(p, out var box)) continue;
+                box.Center -= step;   // the transform already stands at the end of the step
+                if (!PrismMotion.TryFirstContact(index, p, in box, step, in movers, out int slot, out _)) continue;
+                if (_moverOfSlot.ContainsKey(slot)) continue;   // another of the net's own: they travel together
+                var struck = index.ResolvePrism(slot, materialise: true);
+                if (!struck || struck == p || struck.destroyed) continue;
+                var closing = dt > 0f ? (Vector3)(step / dt) : Vector3.zero;
+                PrismMotion.Annihilate(p, struck, closing, status.Domain, status.PlayerName, _level);
+            }
+        }
+
+        /// <summary>A prism the net's mouth crosses is caught and dragged (up to <c>netPrismCap</c>); not a creature's body
+        /// or a plant's (living mass is posed by its owner), not super-shielded mass, not an environment-owned track, and
+        /// not the trail still coming out of our own hull.</summary>
+        void CatchPrisms(JacksExecutor ex)
+        {
+            int cap = ex.Config.NetPrismCap;
+            if (_dragged.Count >= cap) return;
             var index = PrismSpatialIndex.EnsureInstance();
-            if (!vessel || index == null || !index.IsAvailable) { _touching.Clear(); return; }
+            if (index == null || !index.IsAvailable) return;
             var f = Frame;
+            var status = ex.Status;
             float radius = 0.5f * Mathf.Sqrt(f.Width * f.Width + f.Height * f.Height + f.Depth * f.Depth) + 4f;
             int found = index.QuerySphere(f.Centre, radius, _prisms);
-            _touchingNext.Clear();
-            for (int i = 0; i < found; i++)
+            for (int i = 0; i < found && _dragged.Count < cap; i++)
             {
                 var p = _prisms[i];
-                if (!p || p.destroyed) continue;
-                if (p is HealthPrism hp && hp.ResolveOwnerFauna()) continue;   // a creature's body: the creature is netted
-                if (!f.Contains(p.transform.position, 0.5f * p.transform.lossyScale.magnitude, out _, out _, out _)) continue;
-                int id = p.GetInstanceID();
-                _touchingNext.Add(id);
-                // one contact per entry, as a hull trigger fires once on entering
-                if (_touching.Contains(id) || !p.TryGetComponent(out PrismImpactor impactor)) continue;
-                vessel.AcceptImpacteeFromSweep(impactor);
+                if (!p || p.destroyed || p.SpatialIndexId < 0 || _draggedSet.Contains(p)) continue;
+                if (p is HealthPrism || p.IsEnvironmentOwned || p.prismProperties is { IsSuperShielded: true }) continue;
+                if (SelfTrailContactConfigSO.SuppressesHullContact(p, status)) continue;
+                if (!f.Contains(p.transform.position, 0.5f * p.transform.lossyScale.magnitude, out float s, out float t, out float w))
+                    continue;
+                _dragged.Add(new Dragged
+                {
+                    Prism = p,
+                    S = Mathf.Clamp(s, 0.05f, 0.95f),
+                    T = Mathf.Clamp(t, -0.9f, 0.9f),
+                    W = Mathf.Clamp01(w),
+                });
+                _draggedSet.Add(p);
             }
-            (_touching, _touchingNext) = (_touchingNext, _touching);
+            _prisms.Clear();
         }
+
+        void EnsureNative(int cap)
+        {
+            cap = Mathf.Max(1, cap);
+            if (_from.IsCreated && _from.Length >= cap) return;
+            DisposeNative();
+            _moverOfSlot = new NativeParallelHashMap<int, int>(cap, Allocator.Persistent);
+            _from = new NativeArray<float3>(cap, Allocator.Persistent);
+            _to = new NativeArray<float3>(cap, Allocator.Persistent);
+        }
+
+        void DisposeNative()
+        {
+            if (_moverOfSlot.IsCreated) _moverOfSlot.Dispose();
+            if (_from.IsCreated) _from.Dispose();
+            if (_to.IsCreated) _to.Dispose();
+        }
+
+        /// <summary>The executor is gone: the native buffers go with it.</summary>
+        internal void Dispose() => DisposeNative();
 
         // ------------------------------------------------------------------ creatures: stolen, shielded, herded
 

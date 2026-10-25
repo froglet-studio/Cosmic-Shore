@@ -15,11 +15,12 @@ verification record. The code is one static class, `PrismMotion`
 
 ## 1. What a moving prism is
 
-A prism is **moving** when a FORCE displaces it from where it rests. Two forces do today:
+A prism is **moving** when a FORCE displaces it from where it rests. Three forces do today:
 
 | Mover | What moves the prism | Shape of the move | Path |
 |---|---|---|---|
 | The Rhino's hull plough (`RhinoPloughPrismEffectSO`, `RHINO_PLOUGH.md`) | a hull ram shoves it sideways out of the furrow | ONE step, made the frame of the ram (the visual slides on the prism clock afterwards) | one-shot: `PrismMotion.TrySweep` |
+| The Jacks' net (`JacksNet.DragPrisms`, `R_VesselActions/JACKS.md` §1.1; Garrett, 2026-10-25: "lets have prisms move and be dragged by the net. they should only be destroyed when they collide with other prisms") | the net between the two flying fish carries what its mouth crossed | one step per frame, per dragged prism (up to `netPrismCap`, 48) | the box path: `PrismMotion.TryFirstContact` with the net's own prisms as movers of the same step (`MoverSteps`), so the catch never breaks itself; level by `NextLevel` over the count |
 | Every black hole's gravity field (`BlackHoleGravityField`, `BLACK_HOLE.md` §3) — the Stoat's dipole, the drift pair, the crystal wormhole | the holes' pull, integrated every frame | one step per frame, per body (up to 6,000 bodies) | climbs the LADDER (§2.3) with its body count: boxes (`PrismMotion.TryFirstContact`, main thread) at levels 1–2, spheres (`PrismMotion.ContactJob`, Burst) at level 3 |
 
 **Not a moving prism**: one POSED by its owner every frame — a creature's body (`HealthPrism`, the

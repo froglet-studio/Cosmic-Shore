@@ -34,10 +34,19 @@ namespace CosmicShore.Gameplay
         protected override bool isInitialized => Vessel?.VesselStatus?.Player != null;
         public override Domains OwnDomain => Vessel.VesselStatus.Domain;
 
+        ICrystalPickupGate _crystalGate;
+
+        /// <summary>
+        /// Whether this hull's TOUCH takes a crystal now (<see cref="ICrystalPickupGate"/>; true for a hull without a gate).
+        /// Read by both halves of a crystal contact, so a gated hull neither runs its pickup nor has the crystal credit it.
+        /// </summary>
+        public bool TakesCrystalsByContact => _crystalGate == null || _crystalGate.TakesCrystalsByContact;
+
         private void Awake()
         {
             Vessel ??= GetComponent<IVessel>();
             networkVesselImpactor ??= GetComponent<NetworkVesselImpactor>();
+            TryGetComponent(out _crystalGate);
         }
 
         // Shell-tier probes: the hull colliders whose trigger events land on THIS
@@ -150,6 +159,7 @@ namespace CosmicShore.Gameplay
 
                 case OmniCrystalImpactor omniCrystalImpactee:
                 {
+                    if (!IsSweepDispatch && !TakesCrystalsByContact) break;   // the Jacks' net takes it instead
                     if (!TryLatchCrystalImpact(omniCrystalImpactee.Crystal)) break;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
                     var data = CrystalImpactData.FromCrystal(omniCrystalImpactee.Crystal);

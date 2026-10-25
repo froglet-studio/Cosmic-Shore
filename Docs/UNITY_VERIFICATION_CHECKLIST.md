@@ -14182,3 +14182,17 @@ the round-1 config first, then passed.
 15. Herding, run the two jacks apart toward opposite edges: the view zooms out so neither reaches the edge, and back in as
     they come together.
 
+### Round 3 (2026-10-25, same branch)
+
+Garrett: "lets allow them to net the omicrystal and move it around. lets have prisms move and be dragged by the net. they
+should only be destroyed when they collide with other prisms. lets remove the rhino speed buff at full speed and straight."
+Headless compile OK (player and editor, 0 errors in changed files); `author_jacks_assets.py --check` failed first (the
+ramp boost still bound, its registry on the hull, no `netPrismCap`), then passed.
+
+16. Netting, fly the hull straight into the omni crystal: it is NOT collected; it rides in the net. Land, run a jack over
+    it: collected. (A Squirrel or any other hull still collects it on touch.)
+17. Netting through a trail: its prisms ride in the net instead of exploding, and stay where they were when you land.
+18. Drag a netted prism into a standing trail or another prism: both explode (debris along the hit). Prisms riding side
+    by side in the net never break each other.
+19. Fly straight at full speed: no ramp boost (no surge, no boost sound); the AI Jacks never ramps either.
+

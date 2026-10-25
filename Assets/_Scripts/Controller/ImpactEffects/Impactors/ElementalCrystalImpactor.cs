@@ -59,8 +59,16 @@ namespace CosmicShore.Gameplay
             if (impactee is not SkimmerImpactor skimmerImpactor) return;
 
             if (DefersToItsVesselsSkimmer(skimmerImpactor)) return;
+            // a hull whose touch leaves crystals alone (the Jacks netting, ICrystalPickupGate) does not skim one up either
+            if (!IsSweepDispatch && !VesselTakesByContact(skimmerImpactor)) return;
 
             CollectBy(skimmerImpactor);
+        }
+
+        static bool VesselTakesByContact(SkimmerImpactor skimmer)
+        {
+            var hull = skimmer.Skimmer ? skimmer.Skimmer.VesselStatus?.Transform : null;
+            return !hull || !hull.TryGetComponent(out VesselImpactor vessel) || vessel.TakesCrystalsByContact;
         }
 
         /// <summary>

@@ -239,6 +239,7 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            _net.Dispose();
             _marks?.Dispose();
             _marks = null;
             _flightMarks?.Dispose();

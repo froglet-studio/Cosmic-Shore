@@ -44,6 +44,7 @@ MonoBehaviour:
   netTrailEase: 5
   netSettle: 0.75
   netSettleEase: 3
+  netPrismCap: 48
   netRivalTake: 0.1
   netRivalCooldown: 2
   jackCrystalReach: 32

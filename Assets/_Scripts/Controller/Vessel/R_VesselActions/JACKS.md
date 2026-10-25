@@ -64,7 +64,9 @@ the small view (the Wrasse's gesture, `PilotSwapGesture`).
     netting mode it toggles plane attraction for fauna of your domain"). On at take-off; the herd glows while it is on.
   - **Jump** to the decoy is Input 1 (a trigger, or a lifted thumb) and Input 4 (both thumbs lifted): the hull and the
     jacks jump there, keeping their heading; the decoy is spent. Nothing while herding.
-  - The ramp boost stays on Input 0.
+  - No ramp boost (Garrett, 2026-10-25: "lets remove the rhino speed buff at full speed and straight"): Input 0 is
+    unbound and the Rhino's `RampBoostActionRegistry` is stripped, so the AI's boost policy cannot arm it either. The hull
+    flies at the Rhino rig's plain speed.
 - **Landing.** Switch back: the jacks start herding where they flew, laid onto the hull's plane, and the hull holds there.
 - **The AI** (an AI hull, or a human's hull the app shell parks on its AI) herds for `aiHerdSeconds` with the jacks'
   drive-and-collect AI (`JacksAI`, aim points only, as thumbs), then nets for `aiFlightSeconds` on the hull's own
@@ -120,12 +122,21 @@ hull's nose, which read as bending the wrong way. `JacksBodies` draws it as face
 jacks' own domain material (round 1 wound them inward on the sword's Fresnel blade and the net vanished from some angles),
 that grow open and shrink away (`netGrowRate`). What crosses the mouth (`JacksNet`, run on every peer for what that peer simulates):
 
-- **Crystals, all five**: caught and carried, settling `netSettle` into the bag. On landing the net goes away and they
+- **Crystals, all five**: caught and carried, settling `netSettle` into the bag. While netting the hull's own touch
+  leaves crystals alone (Garrett, 2026-10-25: "lets allow them to net the omicrystal and move it around"): the Jacks'
+  root is an `ICrystalPickupGate` (`JacksBodies.TakesCrystalsByContact`, off while netting, read on every peer from the
+  replicated mode), and both halves of a crystal contact honour it (`VesselImpactor`'s omni case, `OmniCrystalImpactor`
+  and `ElementalCrystalImpactor` on the server and every peer), so the omni crystal the hull flies into is netted, not
+  collected. A deliberate pickup (a sweep: the herding jacks, the race rings) is never gated. On landing the net goes away and they
   stay where they were; the cell's omni crystal is put there on every machine by the hull's owner
   (`CrystalManager.RelocateCrystal`, new: a slot write on the network manager, no second bloom where it already is).
-- **Prisms**: each one the net touches goes to the hull's own impactor as a hull contact
-  (`ImpactorBase.AcceptImpacteeFromSweep`), once per entry, so it is destroyed (or sheds its shield) exactly as a hull hit
-  would. A creature's body prisms are skipped: the creature is netted, not shredded.
+- **Prisms** (Garrett, 2026-10-25: "lets have prisms move and be dragged by the net. they should only be destroyed when
+  they collide with other prisms"): caught and DRAGGED where the net holds them (up to `netPrismCap`, 48), each step a move
+  of the prism-motion fundamental (`Docs/PRISM_MOTION.md`, the third mover): a dragged prism that runs into another prism
+  destroys both, scored to us (`PrismMotion.Annihilate`), and the net's own prisms are movers of the same step, so the
+  catch never breaks itself. Living mass (a creature's or a plant's body), super-shielded mass, an environment-owned track
+  and our own fresh trail are never dragged. On landing they stay where they are. (Round 1 destroyed every prism the net
+  touched.)
 - **Creatures**: one of another domain is STOLEN (`Fauna.StealInto`: its domain and body prisms become ours, replicated by
   `FaunaNetworkSync`'s stolen domain; only species that recolour their whole body, `Fauna.CanBeStolen`, the light fauna).
   Then, like any creature of ours that goes through the net, its plain body prisms are shielded (`Fauna.ShieldBody`,

@@ -104,6 +104,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 1f)] float netSettle = 0.75f;
         [Tooltip("Netting: how fast a netted crystal sinks to netSettle (1/s).")]
         [SerializeField, Min(0.1f)] float netSettleEase = 3f;
+        [Tooltip("Netting: the most prisms the net drags at once (Garrett, 2026-10-25: \"lets have prisms move and be dragged " +
+                 "by the net\"). Each is a mover of the prism-motion rule: one that runs into another prism destroys both.")]
+        [SerializeField, Range(0, 256)] int netPrismCap = 48;
         [Tooltip("Netting: a netted rival hull loses this much of each element (normalized; 0.1 = one crystal each), " +
                  "knocked loose into the net.")]
         [SerializeField, Range(0f, 1f)] float netRivalTake = 0.1f;
@@ -248,6 +251,7 @@ namespace CosmicShore.Gameplay
         public float NetTrailEase => netTrailEase;
         public float NetSettle => netSettle;
         public float NetSettleEase => netSettleEase;
+        public int NetPrismCap => netPrismCap;
         public float NetRivalTake => netRivalTake;
         public float NetRivalCooldown => netRivalCooldown;
         public float JackCrystalReach => jackCrystalReach;

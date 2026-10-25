@@ -27,8 +27,13 @@ namespace CosmicShore.Gameplay
     /// <para>Bones and models are found BY NAME (vessel-model contract: FBX sub-object ids are not derivable offline); a
     /// missing model leaves its half of this component idle.</para>
     /// </summary>
-    public sealed class JacksBodies : NetworkBehaviour
+    public sealed class JacksBodies : NetworkBehaviour, ICrystalPickupGate
     {
+        /// <summary>Netting, the hull's touch leaves crystals to the net (Garrett, 2026-10-25: "lets allow them to net the
+        /// omicrystal and move it around"); herding, or before the jacks are seated, it takes them as any hull does.
+        /// Read on every peer from the replicated mode.</summary>
+        public bool TakesCrystalsByContact => !(_jacksShown && _flying);
+
         // Offsets are quantized before they are written, so jacks at rest do not dirty the variables every tick.
         const float OffsetQuantum = 0.25f;
         const byte DecoyBit = 1, CallingBit = 2, SeatedBit = 4, FlyingBit = 8, PlaneBit = 16;
