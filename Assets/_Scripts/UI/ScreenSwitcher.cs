@@ -442,7 +442,8 @@ namespace CosmicShore.UI
             var current = eventSystem.currentSelectedGameObject;
             if (current && current.activeInHierarchy
                 && (current.transform.IsChildOf(scope.transform)
-                    || (activeModalStack.Count == 0 && IsOnNavBar(current, NavBar))))
+                    || (activeModalStack.Count == 0 && IsOnNavBar(current, NavBar))
+                    || (ActiveHubWindow != ModalWindows.NONE && HubStrip() is { } strip && strip.Holds(current))))
                 return;
 
             var target = PreferredSelectable(scope);
@@ -452,11 +453,20 @@ namespace CosmicShore.UI
         /// <summary>
         /// True when <paramref name="selected"/> is a live control on the top tab bar: a tab (a
         /// <see cref="KitTopNavTab"/>) or its LT / RT keycap. The one test for "the pad is on the tab bar"
-        /// (Docs/MENU_REDESIGN_B.md §64): only then do LT / RT page the screens, A there is the bar's and not
-        /// Home's Arcade shortcut, and <see cref="Refocus"/> leaves the pad where it is.
+        /// (Docs/MENU_REDESIGN_B.md §64): only then do LT / RT page the screens, and <see cref="Refocus"/> leaves
+        /// the pad where it is.
         /// </summary>
         public static bool IsOnNavBar(GameObject selected, Transform navBar) =>
             selected && navBar && selected.activeInHierarchy && selected.transform.IsChildOf(navBar);
+
+        private HubWindowNav _hubStrip;
+
+        /// <summary>The strip naming the hub windows (one per menu scene), found once.</summary>
+        private HubWindowNav HubStrip()
+        {
+            if (!_hubStrip) _hubStrip = FindAnyObjectByType<HubWindowNav>(FindObjectsInactive.Include);
+            return _hubStrip;
+        }
 
         private static GameObject SelectedObject()
         {
@@ -474,15 +484,6 @@ namespace CosmicShore.UI
                 es.SetSelectedGameObject(link);
         }
 
-        /// <summary>True while the EventSystem's selection is a live control on the HOME screen.</summary>
-        private bool HomeControlSelected()
-        {
-            var es = EventSystem.current;
-            var selected = es ? es.currentSelectedGameObject : null;
-            var root = CurrentScreenRoot();
-            return selected && root && selected.activeInHierarchy && selected.transform.IsChildOf(root.transform)
-                   && selected.TryGetComponent<Selectable>(out var s) && s.IsInteractable();
-        }
 
         private GameObject CurrentScreenRoot()
         {
@@ -884,8 +885,8 @@ namespace CosmicShore.UI
 
             // A guided path (MenuGuide) leaves the pad exactly one way forward - the spotlit
             // control, pressed with A through the EventSystem - plus Settings. Freestyle and
-            // screen paging are other places to go, so they stand down; Start-for-Settings and
-            // A-for-the-Arcade below are the path's own controls and stay.
+            // screen paging are other places to go, so they stand down; Start-for-Settings below is
+            // the path's own and stays (A presses the spotlit control through the EventSystem).
             bool guided = MenuGuide.IsActive;
 
             // Select / View toggles freestyle from any state - checked before
@@ -904,38 +905,45 @@ namespace CosmicShore.UI
             }
 
             if (inFreestyle) return;
+
+            // The pad is never dead (§64): with nothing selected - a click on the background clears the selection,
+            // and a move goes only to the selection - the first D-pad / left-stick push, or A, puts the pad on the
+            // top window or the screen. A presses only what is selected (§65: no face-button shortcuts in the menu).
+            var selected = SelectedObject();
+            bool nothingSelected = !selected || !selected.activeInHierarchy;
+            if (nothingSelected && !ModePreviewWindow.AnyHasFocus
+                && (PadMoved(Gamepad.current) || Gamepad.current.buttonSouth.wasPressedThisFrame))
+            {
+                Refocus();
+                return;
+            }
+
             if (HasActiveModal)
             {
-                // Inside a hub window LT / RT swap it for its neighbour (rev 7). Only while that window is the
-                // top modal: under a configure the triggers belong to the game, and a guided path or a preview
-                // holding the stick leaves the pad one way forward.
+                // Inside a hub window LT / RT swap it for its neighbour (rev 7) - only from the strip naming the four
+                // windows, the hub windows' own tab menu, the same rule as the top tab bar (§65). Only while that
+                // window is the top modal: under a configure the triggers belong to the game, and a guided path or a
+                // preview holding the stick leaves the pad one way forward.
                 if (!guided && !ModePreviewWindow.AnyHasFocus && ActiveHubWindow != ModalWindows.NONE)
                 {
-                    if (Gamepad.current.leftTrigger.wasPressedThisFrame) SlideHubWindow(-1);
-                    else if (Gamepad.current.rightTrigger.wasPressedThisFrame) SlideHubWindow(+1);
+                    var strip = HubStrip();
+                    if (!strip || !(nothingSelected || strip.Holds(selected))) return;
+                    bool slideLeft = Gamepad.current.leftTrigger.wasPressedThisFrame;
+                    bool slideRight = Gamepad.current.rightTrigger.wasPressedThisFrame;
+                    if (!slideLeft && !slideRight) return;
+                    SlideHubWindow(slideLeft ? -1 : +1);
+                    // The pad stays on the strip, on the window now showing (also at an end, where nothing slides).
+                    strip.SelectTab(ActiveHubWindow);
                 }
                 return;
             }
 
-            if (ScreenIsActive(MenuScreens.HOME))
+            // Start opens Settings from the app shell (Garrett, 2026-10-21: it was X). A system button, not a face
+            // button: §65 leaves it, as it leaves Select for freestyle.
+            if (ScreenIsActive(MenuScreens.HOME) && Gamepad.current.startButton.wasPressedThisFrame)
             {
-                // A on a focused Home control is that control's Submit (a hub opens its own window);
-                // answering it here too opened the Arcade on top of whatever the pad was on. The
-                // shortcut stands only while nothing on Home, and nothing on the tab bar (§64: A there
-                // presses that tab), holds the pad's selection.
-                if (Gamepad.current.buttonSouth.wasPressedThisFrame && !HomeControlSelected()
-                    && !IsOnNavBar(SelectedObject(), NavBar))
-                {
-                    OpenArcadePanel();
-                    return;
-                }
-
-                // Start opens Settings from the app shell (Garrett, 2026-10-21: it was X).
-                if (Gamepad.current.startButton.wasPressedThisFrame)
-                {
-                    OpenModalByType(ModalWindows.SETTINGS);
-                    return;
-                }
+                OpenModalByType(ModalWindows.SETTINGS);
+                return;
             }
 
             if (guided) return;
@@ -944,17 +952,8 @@ namespace CosmicShore.UI
             // abilities, not screen paging. A modal's preview never reached here (HasActiveModal).
             if (ModePreviewWindow.AnyHasFocus) return;
 
-            // Nothing selected: a click on the background clears the selection (the Editor's first click into the
-            // Game view is one), and a move goes only to the selection, so the pad would be dead on this screen. A
-            // move puts the pad on the screen; LT / RT below act as if from the bar (§64, Yash's play test 2026-10-25:
-            // "I don't even control anything").
-            var selected = SelectedObject();
-            bool nothingSelected = !selected || !selected.activeInHierarchy;
-            if (nothingSelected && PadMoved(Gamepad.current))
-            {
-                Refocus();
-                return;
-            }
+            // With nothing selected LT / RT act as if from the bar (§64, Yash's play test 2026-10-25: "I don't even
+            // control anything"); a move or A already put the pad on the screen above.
 
             // LT / RT page the screens only while the pad is on the top tab bar (Yash, 2026-10-25: "you have to
             // navigate the tab menu to access it with LT and RT"; Docs/MENU_REDESIGN_B.md §64). Below the bar a
