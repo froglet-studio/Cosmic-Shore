@@ -482,7 +482,7 @@ def completed(f):
     from learn_from_flights import finished_of
     if is_race(f):
         return finished_of(f)
-    if f.get("ended") == "race over":
+    if f.get("result") or f.get("ended") == "race over":
         return True
     rows = f.get("samples") or []
     return bool(rows) and "left" in str(f.get("ended")) and (rows[-1][0] - rows[0][0]) >= 60.0
@@ -654,8 +654,14 @@ def learn_hull(hull, flights):
     (held) from all of them, and what would be written."""
     spec = HULLS[hull]
     done = sorted([fs for fs in flights if completed(fs[0])], key=lambda fs: fs[0].get("raceSeconds") or 1e9)
-    # A race learns from its fastest MIN_FINISHED; a match without rings has no time to rank by, so all of them count.
-    used = done[:MIN_FINISHED] if all(is_race(f) for f, _ in done) else done
+    # A race learns from its fastest MIN_FINISHED. A match without rings has no time to rank by: it learns from the
+    # matches the person WON (the flight's "result", recorded since 2026-10-26) once there are MIN_FINISHED of them,
+    # else from every complete one.
+    if all(is_race(f) for f, _ in done):
+        used = done[:MIN_FINISHED]
+    else:
+        won = [fs for fs in done if (fs[0].get("result") or {}).get("youWon")]
+        used = won if len(won) >= MIN_FINISHED else done
     every = [s for _, S in flights for s in S]
     learned, person, ai, why = {}, {}, {}, None
     if hull == "Manta":
@@ -1148,6 +1154,11 @@ def self_test():
         assert g and g["alignDegrees"] <= 10.5 and g["stickBand"] <= 0.31 and g["engageRunwaySeconds"] >= 1.15, R
         assert g["minSecondsBetweenPellets"] >= 1.45, g
         assert completed(fl[0]) and not is_race(fl[0]), "a match without rings that ran out is complete"
+        # Matches the person WON teach first: three won rule-flights plus a lost random one learn the rule's numbers.
+        wins = [dict(crystal_flight("rule", 120 + i), result={"youWon": True}) for i in range(3)]
+        lost = dict(crystal_flight("random", 130), result={"youWon": False})
+        gw = learn_hull("Ghost", [(f, samples_of(f)) for f in wins + [lost]])["learned"]
+        assert gw and gw["alignDegrees"] <= 10.5, ("a lost match must not teach when three won ones exist", gw)
         rnd = learn_hull("Ghost", [(f, samples_of(f)) for f in [crystal_flight("random", 120 + i) for i in range(3)]])["learned"]
         assert rnd.get("alignDegrees", 0) > g["alignDegrees"] + 5, ("negative control: random presses are not lined up", rnd)
         # The Snap Dash: two throttle edges within the window at TIME 5 are one dash; a slow double press, or below

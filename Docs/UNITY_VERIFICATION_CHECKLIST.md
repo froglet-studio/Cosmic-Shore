@@ -65,6 +65,23 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Every flight records the match's result (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+
+**What landed:** `HumanFlightRecorder` waits (up to 8 s) after a turn that ended by its own rules for
+`GameDataSO.Results`, then writes `result` (winner domain and name, your domain, `youWon`, every ranked row); a match
+left early writes `null`. The learner prefers won matches in modes without rings; the AI learning report shows wins.
+
+**Verified without the editor:** reference compile editor 0 errors in changed files, player-dev OK; learner and
+ai_learn self-tests. NOT run in Unity.
+
+**Verify in editor:**
+1. Win a Grizzly Charge (or any arcade) match and lose another. Each stored flight has a `result` with the right
+   `winnerDomain` and `youWon` true / false, and one row per pilot with `you` true on yours.
+2. Leave a match from the pause menu before it ends: its flight has `"result": null`.
+3. Press Play Again on the result screen right away: the finished match is still stored once, with its result, and the
+   next one records normally.
+4. The Console shows nothing new.
+
 ### 🔴 Flights record every crew vessel's kite (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
 **What landed:** `HumanFlightRecorder` writes `rivalKite` (per rival per sample: the kite's x, y, z and the crew's saved
