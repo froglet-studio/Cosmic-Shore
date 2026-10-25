@@ -780,7 +780,6 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 | In-game HUD | `SkimRaceHUD.cs` | `_Scripts/UI/` |
 | Scoreboard | `SkimRaceScoreboard.cs` | `_Scripts/UI/` |
 | Elemental comeback | `ElementalComebackSystem.cs` | `_Scripts/Controller/Arcade/` |
-| Stats provider | `SkimRaceStatsProvider.cs` | `_Scripts/Controller/Arcade/` |
 | Player stats profile | `SkimRacePlayerStatsProfile.cs` | `_Scripts/UI/` |
 | Full documentation | `SKIMRACE.md` | `_Scripts/Controller/Arcade/` |
 

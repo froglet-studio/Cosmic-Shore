@@ -32,8 +32,8 @@ Assets/
 │   │   ├── Economy/           # CatalogManager, CaptainManager, Inventory, StoreShelve, VirtualItem, ItemPrice
 │   │   ├── PlayerData/        # PlayerProfile, PlayerSession
 │   │   ├── Instrumentation/   # AnalyticsServiceFacade (UGS Analytics, single writer)
-│   │   ├── Runtime/           # Dialogue runtime (DialogueManager, models, views, helpers)
-│   │   ├── RewindSystem/      # Rewind/replay functionality
+│   │   ├── Runtime/           # Dialogue runtime (models, views, helpers)
+│   │   ├── RewindSystem/      # Rewind/replay base types (no rewinder on any scene)
 │   │   ├── Audio/             # AudioSystem (FMOD events + legacy music AudioSources)
 │   │   ├── LoadOut/           # Vessel loadout configuration
 │   │   ├── CallToAction/      # Promotional/CTA system
@@ -48,7 +48,7 @@ Assets/
 │   │   ├── Controller/        # VesselHUD controllers (Manta, Rhino, Serpent, Sparrow)
 │   │   ├── View/              # VesselHUD views (all vessel types + Minigame, Multiplayer)
 │   │   ├── Interfaces/        # IVesselHUDController, IVesselHUDView, IMinigameHUDController, IScreen
-│   │   ├── Elements/          # Reusable UI components (NavLink, NavGroup, ProfileDisplayWidget, etc.)
+│   │   ├── Elements/          # Reusable UI components (NavLink, NavGroup, etc.)
 │   │   ├── Views/             # Screen/view implementations (VesselSelection, Profile)
 │   │   ├── Modals/            # Modal dialogs (Settings, Profile, PurchaseConfirmation)
 │   │   ├── Screens/           # Screen containers
