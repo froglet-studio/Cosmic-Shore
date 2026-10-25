@@ -14238,3 +14238,14 @@ scale, the pre-net map words), then passed; `/element-ability-table Jacks` now r
     netting it is lit whenever the plane's pull is on (B toggles it, no veil). The card texts name B for the call and A
     for the Time-5 decoy.
 
+### Round 7 (2026-10-25, same branch)
+
+Garrett: "the net did not interact with any prisms. it should be dragging them just like the crystals." Cause: the net
+skipped every `HealthPrism`, i.e. every plant's prism, and a freestyle cell's prisms are mostly plants'. Now a plant prism
+the net takes is plucked (freed as cell mass) and dragged. Headless compile OK (player, 0 errors in project code).
+
+29. Netting through a plant of ANOTHER domain: its prisms come away and ride in the net; the plant is left with fewer.
+    Drag them into another prism: both break. (A plant of YOUR domain lights up instead, step 23; in a cell whose plants
+    are your colour, use a rival's plant or trail.)
+30. A big plant fills the net (48 prisms): after that, prisms crossing the mouth break against the ones it carries.
+

@@ -149,8 +149,12 @@ that grow open and shrink away (`netGrowRate`). What crosses the mouth (`JacksNe
   they collide with other prisms"): caught and DRAGGED where the net holds them (up to `netPrismCap`, 48), each step a move
   of the prism-motion fundamental (`Docs/PRISM_MOTION.md`, the third mover): a dragged prism that runs into another prism
   destroys both, scored to us (`PrismMotion.Annihilate`), and the net's own prisms are movers of the same step, so the
-  catch never breaks itself. Living mass (a creature's or a plant's body), super-shielded mass, an environment-owned track
-  and our own fresh trail are never dragged. On landing they stay where they are. (Round 1 destroyed every prism the net
+  catch never breaks itself. A PLANT's prism is plucked and dragged too (2026-10-25: "the net did not interact with any
+  prisms. it should be dragging them just like the crystals"; round 5 skipped all living mass, and a cell's prisms are
+  mostly its plants'): `HealthPrism.LeaveAsSkeleton` frees it from its plant as ordinary cell mass (it stops swaying, the
+  plant forgets it, the mass stays), then it is a mover like any other. A creature's body is never dragged (the creature
+  is netted), nor super-shielded mass, a prism still growing in, an environment-owned track, or our own fresh trail. Once
+  `netPrismCap` is full, a prism crossing the mouth meets the dragged ones and both break: a big plant can fill it. On landing they stay where they are. (Round 1 destroyed every prism the net
   touched; round 3's drag never showed, because the invisible hull in the middle of the mouth rammed every prism first:
   the hull's prism contact is gated too while netting, `IHullContactGate.TakesPrismsByContact`, on both halves of the
   contact (`VesselImpactor`, `PrismImpactor`), so the netting hull neither rams prisms nor is hurt by them.)

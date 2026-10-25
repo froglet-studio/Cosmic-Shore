@@ -352,9 +352,15 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>A prism the net's mouth crosses: one of OUR domain is lit, never moved; any other is caught and dragged (up
-        /// to <c>netPrismCap</c>). Never a creature's body or a plant's (living mass is posed by its owner), super-shielded
-        /// mass, an environment-owned track, or the trail still coming out of our own hull.</summary>
+        /// <summary>
+        /// A prism the net's mouth crosses: one of OUR domain is lit, never moved; any other is caught and dragged (up to
+        /// <c>netPrismCap</c>), a PLANT's included (Garrett, 2026-10-25: "the net did not interact with any prisms. it should
+        /// be dragging them just like the crystals" - round 5 skipped every living prism, and a cell's prisms are mostly its
+        /// plants'): a plant prism the net takes is PLUCKED, freed from its plant as ordinary cell mass
+        /// (<see cref="HealthPrism.LeaveAsSkeleton"/>: it stops swaying, the plant forgets it, the mass stays in the world),
+        /// then dragged like any other. Never a creature's body (the creature is netted as a creature), super-shielded mass,
+        /// a prism still growing in, an environment-owned track, or the trail still coming out of our own hull.
+        /// </summary>
         void CatchPrisms(JacksExecutor ex)
         {
             int cap = ex.Config.NetPrismCap;
@@ -368,7 +374,9 @@ namespace CosmicShore.Gameplay
             {
                 var p = _prisms[i];
                 if (!p || p.destroyed || p.SpatialIndexId < 0 || _draggedSet.Contains(p)) continue;
-                if (p is HealthPrism || p.IsEnvironmentOwned || SelfTrailContactConfigSO.SuppressesHullContact(p, status)) continue;
+                if (p.IsEnvironmentOwned || SelfTrailContactConfigSO.SuppressesHullContact(p, status)) continue;
+                var living = p as HealthPrism;
+                if (living && living.ResolveOwnerFauna()) continue;   // a creature's body: the creature is netted
                 if (!f.Contains(p.transform.position, 0.5f * p.transform.lossyScale.magnitude, out float s, out float t, out float w))
                     continue;
                 if (p.Domain == status.Domain)
@@ -376,7 +384,14 @@ namespace CosmicShore.Gameplay
                     Light(ex.Config, p);   // ours: lit while the net crosses it, never moved
                     continue;
                 }
-                if (_dragged.Count >= cap || p.prismProperties is { IsSuperShielded: true }) continue;
+                if (_dragged.Count >= cap || !p.IsCreationComplete || p.prismProperties is { IsSuperShielded: true }) continue;
+                if (living)
+                {
+                    // plucked: free cell mass from here on, left in the host cell
+                    var cell = Cell.FindNearestActiveCell(p.transform.position);
+                    living.LeaveAsSkeleton(cell ? cell.transform : null);
+                    if (p.destroyed || p.SpatialIndexId < 0) continue;
+                }
                 _dragged.Add(new Dragged
                 {
                     Prism = p,
