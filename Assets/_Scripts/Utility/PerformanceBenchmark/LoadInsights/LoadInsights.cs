@@ -93,6 +93,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         static string s_sceneFrom = "", s_sceneTo = "", s_gameMode = "";
         static int s_intensity, s_totalPlayers, s_humanPlayers, s_aiBackfill;
         static bool s_isMultiplayer;
+        static bool s_menuReturn;
 
         /// <summary>The most recently completed (or recovered) report this session.</summary>
         public static LoadInsightReport LastReport { get; private set; }
@@ -101,6 +102,30 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public static string LastReportPath { get; private set; } = "";
 
         public static bool IsRecording => s_recording;
+
+        /// <summary>True while the open recording is a return to the menu (<see cref="BeginLoad"/>'s menuReturn).</summary>
+        public static bool IsRecordingMenuReturn => s_recording && s_menuReturn;
+
+        /// <summary>
+        /// Whether a load starting now is recorded: Record Insight Mode is armed by hand, OR the game is online
+        /// (<see cref="OnlineProvider"/>). Online play records every load by itself (Yash, 2026-10-25: "it should
+        /// not be manually done"): the recorder only works between a load's start and its end, and the after-play
+        /// send carries the reports to Claude (BugHuntReports kind "load"). B36 is why: the freeze that dropped the
+        /// Relay sat in a load nobody had armed a recording for.
+        /// </summary>
+        public static bool ShouldRecord => Armed || SafeOnline();
+
+        /// <summary>
+        /// Online: a networked session is running and it is not the offline local host. MultiplayerSetup installs
+        /// the real check when it starts (it knows both); until then, and in tests, nothing is online.
+        /// </summary>
+        public static Func<bool> OnlineProvider { get; set; } = () => false;
+
+        static bool SafeOnline()
+        {
+            try { return OnlineProvider(); }
+            catch { return false; }
+        }
 
         /// <summary>
         /// Record Insight Mode. While armed (and a host exists), every game launch is recorded
@@ -144,12 +169,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         // ── Recording lifecycle ─────────────────────────
 
         /// <summary>
-        /// Starts recording a load (no-op unless armed + host present). Called at game launch;
+        /// Starts recording a load (no-op unless <see cref="ShouldRecord"/> + host present). Called at game launch,
+        /// a cell swap and the return to the menu (<paramref name="menuReturn"/>, ended when the menu shows);
         /// a second call while recording abandons the first as superseded.
         /// </summary>
-        public static void BeginLoad(string trigger)
+        public static void BeginLoad(string trigger, bool menuReturn = false)
         {
-            if (!HostAvailable || !Armed) return;
+            if (!HostAvailable || !ShouldRecord) return;
             if (s_recording) CompleteInternal($"Superseded by new load ({trigger})", aborted: true);
 
             lock (s_gate)
@@ -172,6 +198,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 s_gameMode = "";
                 s_intensity = 0; s_totalPlayers = 0; s_humanPlayers = 0; s_aiBackfill = 0;
                 s_isMultiplayer = false;
+                s_menuReturn = menuReturn;
 
                 s_startTs = Stopwatch.GetTimestamp();
                 s_generation++;
@@ -570,6 +597,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             var report = new LoadInsightReport
             {
                 trigger = s_trigger,
+                loadKind = s_menuReturn ? "menuReturn" : "launch",
                 completionReason = reason,
                 sceneFrom = s_sceneFrom,
                 sceneTo = string.IsNullOrEmpty(s_sceneTo) ? SafeActiveSceneName() : s_sceneTo,

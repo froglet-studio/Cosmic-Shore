@@ -3447,6 +3447,24 @@ known AuthenticationServiceFacade errors). `/verify-unity` is not available in t
    `Presence lobby not rejoined - retrying` warning, then the online list fills.
 3. During the outage press Invite on a friend: the "Connection service not ready" toast, and the row resets.
 
+### 🔴 Net: Load Time Insights records every online load by itself, the return to the menu included (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed** (`Docs/PartySystem/BUGS.md` B36, `Docs/MULTIPLAYER_START_HERE.md` §3.1): `LoadInsights.ShouldRecord`
+is armed OR online (`OnlineProvider`, set in `MultiplayerSetup.Start`). `SceneLoader.ReturnToMainMenu` (host) and the
+client's Netcode Menu_Main pull start a `menuReturn` recording that ends when the menu's splash fades
+(`FadeFromSplashWhenSettled`). `BugHuntReports` collects `load_*.json` (kind `load`); `BugHuntAutoSend` sends new ones
+with no question. `net_logs.py show` lists a test's loads.
+**Verified without the editor:** `LoadInsightsAutoRecordTests` (6) and the full edit-mode suite on Amoebius (624/628;
+the 4 failures are the known SceneTransitionManager / AppManagerBootstrap ones); `net_logs.py --self-test`;
+`unity_refcompile` player, player-dev and editor; the Amoebius Release player build. `/verify-unity` is not available
+in the cloud session.
+**Verify in editor:**
+1. Offline, Record Insight Mode NOT armed: launch a game. No new report in the Load Time Insights tab (unchanged).
+2. Online (solo against AI online is enough), not armed: launch Bloomrush. A report appears when the arena completes.
+3. Fly 90 s, return to the menu. A second report appears once the menu shows; its trigger reads "Return to menu -
+   MinigameBloomrush → Menu_Main" and its longest frame is the teardown frame L14 waits for.
+4. Stop Play. The console line "[BugLedger] Sent to Claude automatically: ... 2 load timing report(s)" shows.
+
 ### 🔴 Net: B36 - a game freeze is recorded, and a Relay drop names the freeze it followed (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed** (`Docs/PartySystem/BUGS.md` B36): `FrameStallWatch` records any frame of 3 s or more while the

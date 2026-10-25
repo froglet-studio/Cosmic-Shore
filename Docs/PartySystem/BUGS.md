@@ -2349,6 +2349,12 @@ objects and unloading assets, which Amoebius cannot reproduce. The 24 Oct creati
 removed the 57,000 coroutines each such destroy also had to stop, after the 20 Oct drops. Not fixed further until a
 Unity Load Time Insights capture of the return says which of L14's two fixes applies.
 
+**The capture is automatic now (2026-10-25).** Load Time Insights records every load while online with no arming,
+including the return to the menu (`loadKind: "menuReturn"`), and the after-Play send ships each report to
+`bugledger/<user>`. So the next online Bloomrush anyone plays, on any machine, brings the measurement L14 waits for;
+`net_logs.py show` lists it under the test, with a RELAY RISK flag on a frame over 9 s. The scheduled multiplayer
+sweep (`Docs/MULTIPLAYER_START_HERE.md` §3.1) reads it. No hand step is needed for the capture any more.
+
 ## B37 — "Could not create presence lobby: Object reference not set to an instance of an object" 🟡 (fixed 2026-10-25; cause likely, not proven)
 
 **Seen in.** Bug Ledger `E-6b79cd07f1` (Gradi, 5 times, and Shombith, twice, 2-11 Sep) and, in the same

@@ -56,6 +56,11 @@ namespace CosmicShore.Gameplay
 
         private void Start()
         {
+            // B36: every load of an online session records Load Time Insights by itself (LoadInsights.ShouldRecord).
+            // Online = this NetworkManager is listening and the session is not the offline local host.
+            CosmicShore.Utility.PerformanceBenchmark.LoadInsights.OnlineProvider = () =>
+                this && networkManager != null && networkManager.IsListening && !(gameData != null && gameData.IsOfflineSession);
+
             if (authenticationDataVariable == null)
             {
                 CSDebug.LogError("[MultiplayerSetup] authenticationDataVariable was not injected - check AppManager DI registration.");
