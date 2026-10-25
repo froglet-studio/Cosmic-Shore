@@ -32,7 +32,20 @@ python3 Tools/Build/ai_branch_sync.py --no-fetch # offline / already fetched
 | Party, presence, lobby, netcode, multiplayer packages | `Ys-bleeding-edge` |
 | `Assets/_Scripts/Utility/PerformanceBenchmark/**`, `Docs/PERFORMANCE_OPTIMIZATION.md`, allocation / Burst gates | `perf/performance-optimization` |
 | Stoat, black holes, `Port/`, `Docs/Studios/**`, `/vessel-studio` | `Ys-bleeding-edge` |
-| Everything else (modes, vessels, ecology, UI) | `bleeding-edge` (via its authors) |
+| Everything else (modes, vessels, ecology, UI) | `bleeding-edge` (via its authors). **Yash's own sessions: `Ys-bleeding-edge` too** (below) |
+
+**Yash's sessions build on `Ys-bleeding-edge` first, whatever the area (Yash, 2026-10-25).** "I'm changing features and
+adding them to Ys-bleeding-edge, testing them first and then deciding whether to push it or not in bleeding edge." So a
+session Yash drives, on any feature (a menu flow, a mode, a vessel, not only AI or multiplayer):
+
+- branches from `Ys-bleeding-edge` (or merges it into the working branch before the PR) and opens its PR **into
+  `Ys-bleeding-edge`**;
+- **never pushes to `bleeding-edge` and never opens a PR into it**, `/to-bleeding-edge` included, unless Yash asks for
+  that promotion in the chat;
+- leaves the promotion to Yash, who tests on `Ys-bleeding-edge` and then decides.
+
+(The first change this would have caught: #1529, the return-to-launch-panel flow, went straight to `bleeding-edge`; its
+doc follow-up #1537 was retargeted to `Ys-bleeding-edge`.)
 
 ---
 

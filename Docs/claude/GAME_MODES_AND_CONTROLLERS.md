@@ -1347,7 +1347,6 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
     └── MultiplayerDomainGamesController
         ├── SkimRaceController              — crystal race (crystals drawn as race rings), deterministic track, golf scoring
         ├── JoustController      — collision tracking, golf scoring
-        ├── OnlineDuelForTheCellController — vessel ownership swap between rounds (mode 29 retired; CoOp Wildlife Blitz's scene runs it)
         ├── ScurryController — minimal (1 round, 1 turn)
         ├── AstroLeagueController             — hypersea soccer, an ARENA card seating Rhino, Scarab and Squirrel (`ArcadeGameAstroLeague.asset` `Vessels`, listed in `ArenaGames`; the Rhino strikes on the blade, the other two play through their own kit — `ASTROLEAGUE.md`), server-simulated ball, golden goal
         ├── BroodRushController             — nucleus-control fauna-wave race, brood scoring

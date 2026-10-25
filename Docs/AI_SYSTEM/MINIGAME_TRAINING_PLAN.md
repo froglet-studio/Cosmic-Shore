@@ -97,6 +97,40 @@ Built as proposed, with the exact numbers in `SWITCHBACK.md` ("Intensity is the 
 `SpawnableSwitchbackFeatures` (`SwitchbackFeaturesTests`), wired by `author_switchback_assets.py`. The rivals' difficulty
 per level is still the player's pick in the launch panel. It is a redesign of Garrett's mode: he can re-tune any of it.
 
+### 3.4 Done 2026-10-26: the AI Dolphins race Switchback (decisions 1 and 3 of §5)
+
+**Why they threaded nothing.** Measured with `Tools/Build/regatta_rival_report.py --mode Switchback` (it now reads any
+mode), the AI Dolphins circled gate 0 for the whole race at I2: 0 rings, 22-52 s of circling each. At I1 they got 0-11.
+Raced offline on the six recorded courses (new `Tools/Build/switchback_dolphin_sim.py`: the gate steering, the commit
+drift, the AI nose lag, the charge economy), two defects showed, and the Regatta steering fixed only the second:
+1. **The approach point lay outside the commit radius** (300 u lead against a 260 u commit on any leg over 650 u). The
+   Dolphin's 35 u circle kept it 265-335 u out, so it never committed. Now, with the Regatta steering on, the approach
+   point stays at most 0.8 of the commit radius (`GateRaceController.ApproachLeadFor`).
+2. **A drift committed off-axis locked a line beside the 28 u mouth** (§3.1). This is the Regatta fix.
+
+**What changed:**
+- `SwitchbackController.AICommitFromApproachPoint` = true: the Regatta steering, which now carries the approach-point
+  cap.
+- `DolphinAIBoostPolicy_Switchback` written from Yash's races (`LEARNED_DRIVES_Switchback.md`): discharge lined up
+  within 27.4 deg (was 12), with 0.87 s of runway (2.5), at 0.82 charge (0.95).
+- Tests: `SwitchbackAISteeringTests`. Other gate races keep their scene switch (Headlong is the negative control).
+
+**The model, seconds for the 20 gates** (Hard, no rivals; the person's time in brackets):
+
+| Course | Today | The fix, the AI's own charge numbers | The fix, learned from Yash |
+|---|---|---|---|
+| I1 (101) | 0 rings | 104.8 | 100.9 |
+| I1 (88) | 0 rings | 115.5 | **88.8** |
+| I2 (221) | 0 rings | 190.8 | 169.0 |
+| I2 (80) | 0 rings | 184.0 | 197.3 |
+| I2 (82) | 0 rings | 166.6 | 180.2 |
+| I2 (132) | 0 rings | 188.8 | 181.5 |
+
+**Still open, the next step for the Dolphin:** at I2 the boosted Dolphin (about 250 u/s) misses the 28 u mouths 9-18
+times a race through the AI nose lag (`Arcade/REGATTA.md` §6.4.1), so it is still 2x slower than Yash there. The
+learned numbers mix I1 and I2; the Squirrel has one config per intensity, the Dolphin's drive does not yet. More races
+per intensity come next; the I1-I4 ladder (§3.3, decision 2) is built.
+
 ## 4. The end state: Regatta rebuilt from the trained vessels
 
 Once two to four vessels race at their best in their own minigames:
@@ -111,12 +145,13 @@ Once two to four vessels race at their best in their own minigames:
 
 ## 5. What is done, what is next
 
-- **Done (2026-10-26):** the learner reads any mode (`--mode`). The plan is recorded here. Then, on Yash's yes:
-  1. The Regatta steering fix is on for Switchback (`AICommitFromApproachPoint`), so the AI Dolphins can race.
-  2. The I1-I4 ladder of §3.3 is built.
-  3. The first Switchback Dolphin numbers are written from the 6 races (`DolphinAIBoostPolicy_Switchback`,
-     `LEARNED_DRIVES_Switchback.md`): line up within 27°, stick band 0.46, 0.87 s of runway, spend at 0.82. They came
-     from I1 and I2 on the old ladder, so the next races re-learn them.
+- **Done (2026-10-26):** the learner reads any mode (`--mode`). The plan is recorded here. Then, on Yash's yes, all
+  three decisions:
+  1. The Regatta steering is on in Switchback, with the approach-point cap (§3.4).
+  2. The I1-I4 ladder of §3.3 is built. Its I2 mouth is 48 u (was 28), which is where §3.4's nose-lag misses were.
+  3. The first Switchback Dolphin numbers are written (§3.4). They came from I1 and I2 on the old ladder, so the next
+     races re-learn them.
   None of it has been run in Unity (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
 - **Next:** Yash plays Switchback at each intensity, repeatedly. Each batch: `learn_drives_from_flights.py --mode
-  Switchback --write`, check the AI's pace in the recordings, adjust. Then the next vessel.
+  Switchback --write`, check the AI's pace in the recordings (`regatta_rival_report.py --mode Switchback`), adjust.
+  Then the next vessel.

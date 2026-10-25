@@ -183,6 +183,14 @@ namespace CosmicShore.UI
         int _availableShipIndex = -1;
         bool _vesselConfirmed;
 
+        // The seat the Arena's shared vessel panel is editing: the local pilot's own hull
+        // (OwnVesselSeat), or an AI seat by its ordinal. A tap on an AI's seat row selects it,
+        // and the hull strip and the < > arrows then pick for that AI; a tap on your own row, or
+        // on the selected AI again, gives the panel back to your own hull. Per session, like the
+        // confirmation: back to your own hull on every open and close.
+        const int OwnVesselSeat = -1;
+        int _vesselSeat = OwnVesselSeat;
+
         bool RequiresVesselConfirmation => _activePanel is ArenaLaunchPanel;
 
         /// <summary>
@@ -251,6 +259,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnAIDifficultyChangedOnClient += HandleAIDifficultyChangedOnClient;
                 arcadeConfigSyncManager.OnRosterChangedOnClient += HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllyVesselCycleRequested += HandleAllyVesselCycleRequested;
+                arcadeConfigSyncManager.OnAIVesselSetRequested += HandleAIVesselSetRequested;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
                 arcadeConfigSyncManager.OnPlayerReadyCountChanged += HandleReadyCountChanged;
 
@@ -292,6 +301,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnAIDifficultyChangedOnClient -= HandleAIDifficultyChangedOnClient;
                 arcadeConfigSyncManager.OnRosterChangedOnClient -= HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllyVesselCycleRequested -= HandleAllyVesselCycleRequested;
+                arcadeConfigSyncManager.OnAIVesselSetRequested -= HandleAIVesselSetRequested;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
                 arcadeConfigSyncManager.OnPlayerReadyCountChanged -= HandleReadyCountChanged;
             }
@@ -468,6 +478,7 @@ namespace CosmicShore.UI
             _localPlayerReady = false;
             _readyCount = 0;
             _vesselConfirmed = false;
+            _vesselSeat = OwnVesselSeat;
             ReleaseArenaHullClaim();
 
             // Before anything reads a control: the panel decides WHICH intensity row, domain tiles
@@ -1643,10 +1654,33 @@ namespace CosmicShore.UI
 
         #region Vessel picker (Arena)
 
-        /// <summary>Redraw the active panel's vessel picker, if it has one.</summary>
+        /// <summary>
+        /// Redraw the active panel's vessel picker, if it has one: the local pilot's own hull, or the selected
+        /// AI seat's (<see cref="_vesselSeat"/>). An AI seat that can no longer be edited here (kicked, moved off
+        /// this pilot's team, a card without the picker) hands the panel back to the pilot's own hull.
+        /// </summary>
         void RefreshVesselPicker()
         {
             if (_activePanel is not ArenaLaunchPanel arena) return;
+
+            if (_vesselSeat != OwnVesselSeat && !MayEditAiSeat(_vesselSeat))
+            {
+                _vesselSeat = OwnVesselSeat;
+                MarkEditedSeat();
+            }
+
+            if (_vesselSeat != OwnVesselSeat)
+            {
+                int ordinal = _vesselSeat;
+                var seatDomain = config.AIDomains[ordinal];
+                var hull = AIHullSeating.SeatHull(OpponentHull, seatDomain, HumanDomains(), config.AIVesselAt(ordinal));
+                var shown = CardVessel(hull);
+                arena.ShowSeatVessel(shown, seatDomain.ToString(), _availableShips.Count > 1);
+                var taken = TakenHullsForAiSeat(ordinal);
+                arena.ShowHullStrip(_availableShips, shown ? _availableShips.FindIndex(v => v && v.Class == shown.Class) : -1,
+                                    v => taken.Contains(v.Class), confirmed: false);
+                return;
+            }
 
             var ship = _availableShipIndex >= 0 && _availableShipIndex < _availableShips.Count
                 ? _availableShips[_availableShipIndex]
@@ -1657,9 +1691,17 @@ namespace CosmicShore.UI
         }
 
         /// <summary>A tap on the hull strip: show that hull, unless the pick is already made, a claim
-        /// is in flight, or another pilot holds it (the tile refuses that tap itself).</summary>
+        /// is in flight, or another pilot holds it (the tile refuses that tap itself). With an AI seat
+        /// selected it asks the host to put that AI in the hull instead.</summary>
         void HandleVesselPickRequested(int index)
         {
+            if (_vesselSeat != OwnVesselSeat)
+            {
+                if (index >= 0 && index < _availableShips.Count && _availableShips[index])
+                    RequestAiSeatVessel(_vesselSeat, _availableShips[index].Class);
+                return;
+            }
+
             if (_vesselConfirmed || ArenaHullClaimPending) return;
             if (index < 0 || index >= _availableShips.Count || index == _availableShipIndex) return;
             if (IsHullHeldByOtherPilot(_availableShips[index].Class)) return;
@@ -1672,6 +1714,12 @@ namespace CosmicShore.UI
 
         void HandleVesselCycleRequested(int direction)
         {
+            if (_vesselSeat != OwnVesselSeat)
+            {
+                RequestAiSeatCycle(_vesselSeat, direction);
+                return;
+            }
+
             if (_vesselConfirmed || _availableShips.Count == 0) return;
             if (ArenaHullClaimPending) return;
 
@@ -1691,6 +1739,8 @@ namespace CosmicShore.UI
 
         void HandleVesselConfirmRequested()
         {
+            // An AI's pick lands as it is made; only the pilot's own hull is claimed.
+            if (_vesselSeat != OwnVesselSeat) return;
             if (_vesselConfirmed || ArenaHullClaimPending) return;
             if (_availableShipIndex < 0 || _availableShipIndex >= _availableShips.Count) return;
 
@@ -2253,6 +2303,9 @@ namespace CosmicShore.UI
                 (_, newDomain) => HandlePlayerDomainChanged(p, newDomain);
             p.NetDomain.OnValueChanged += handler;
             _domainHandlers[p] = handler;
+
+            // The local pilot's own row takes the shared vessel panel back from an AI seat.
+            if (isLocal) MarkEditedSeat();
         }
 
         readonly List<DomainAvatarChip> _aiChips = new();
@@ -2323,7 +2376,12 @@ namespace CosmicShore.UI
                 if (chip) Destroy(chip.gameObject);
             _aiChips.Clear();
 
-            if (aiCount <= 0) return;
+            if (aiCount <= 0)
+            {
+                MarkEditedSeat();
+                RefreshVesselPicker();
+                return;
+            }
 
             var totalCounts = new Dictionary<Domains, int>(humanCounts);
             var dataService = PlayerDataService.Instance;
@@ -2370,6 +2428,11 @@ namespace CosmicShore.UI
                 DrawAiSeatHull(seat, ordinal, domain, placedChip, humanDomains, localDomain);
                 _aiChips.Add(seat);
             }
+
+            // The seats moved, so the shared vessel panel may be pointing at one that is gone, and the
+            // selected AI's pick may have changed (a guest learns it here, from the host's roster).
+            MarkEditedSeat();
+            RefreshVesselPicker();
         }
 
         /// <summary>A seat row's role line: "You / Host", "You", "Host" or "Pilot".</summary>
@@ -2377,17 +2440,20 @@ namespace CosmicShore.UI
             isLocal ? (isHost ? "You / Host" : "You") : (isHost ? "Host" : "Pilot");
 
         /// <summary>
-        /// What an AI seat row is called: the hull it will fly when that is already decided (an
-        /// opponent's pinned hull, an ally's pick), otherwise just "AI pilot". A bot has no profile,
-        /// so its hull is the only name it has.
+        /// What an AI seat row is called: the hull it will fly when that is already decided (a
+        /// picked hull, else an opponent's pinned hull), otherwise just "AI pilot". A bot has no
+        /// profile, so its hull is the only name it has.
+        ///
+        /// <para>Resolved by the SAME rule as the chip's icon and hover label
+        /// (<see cref="AIHullSeating.SeatHull"/>, as in <see cref="DrawAiSeatHull"/>). It used to
+        /// check the opponent seat FIRST and name the card's pinned hull there, so a host who picked
+        /// another hull for an opponent AI saw the new icon under the old name ("Squirrel" in
+        /// Regatta) until they hovered and the hover label, which read the pick, replaced it.</para>
         /// </summary>
         string AiSeatName(int ordinal, Domains domain, ICollection<Domains> humanDomains)
         {
-            SO_Vessel hull = null;
-            if (AIHullSeating.IsOpponentSeat(OpponentHull, domain, humanDomains))
-                hull = CardVessel(OpponentHull);
-            else if (AllyHullPickerAvailable && config != null)
-                hull = CardVessel(config.AIVesselAt(ordinal));
+            var pick = AllyHullPickerAvailable && config != null ? config.AIVesselAt(ordinal) : VesselClassType.Random;
+            var hull = CardVessel(AIHullSeating.SeatHull(OpponentHull, domain, humanDomains, pick));
             return hull && !string.IsNullOrEmpty(hull.Name) ? hull.Name : "AI pilot";
         }
 
@@ -2431,7 +2497,9 @@ namespace CosmicShore.UI
             var shown = CardVessel(AIHullSeating.SeatHull(OpponentHull, domain, humanDomains, pick));
             bool mine = domain == localDomain && humanDomains.Contains(domain);
             bool tappable = picker && placed && (!IsClientMode || mine);   // AIHullSeating.MayPick, read from this machine
-            seat.SetHull(shown ? shown.IconActive : null, tappable ? () => HandleAllyHullChipClicked(ordinal) : null);
+            // A tap SELECTS the seat: the shared vessel panel then picks this AI's hull.
+            seat.SetHull(shown ? shown.IconActive : null, tappable ? () => SelectVesselSeat(ordinal) : null);
+            seat.SetEditing(tappable && _vesselSeat == ordinal);
 
             // The icon alone is small at strip size: name the hull on hover, and offer its card.
             if (shown)
@@ -2452,35 +2520,178 @@ namespace CosmicShore.UI
             vesselInfoPopup.Show(vessel, seatLabel);
         }
 
-        /// <summary>A tap on one of the local pilot's ally chips: ask the host to step its hull.
-        /// The host decides on every peer, itself included, so there is one rule.</summary>
-        void HandleAllyHullChipClicked(int ordinal)
+        /// <summary>
+        /// Point the shared vessel panel at <paramref name="seat"/>: an AI seat this pilot may pick for, or
+        /// <see cref="OwnVesselSeat"/>. Tapping the seat already selected gives the panel back to the
+        /// pilot's own hull, so one tap opens an AI's pick and a second closes it.
+        /// </summary>
+        void SelectVesselSeat(int seat)
+        {
+            if (seat != OwnVesselSeat && !MayEditAiSeat(seat)) return;
+            seat = NextVesselSeat(_vesselSeat, seat);
+            if (seat == _vesselSeat) return;
+
+            _vesselSeat = seat;
+            if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
+            MarkEditedSeat();
+            RefreshVesselPicker();
+        }
+
+        /// <summary>The seat the shared vessel panel edits after a tap on <paramref name="tapped"/>: that seat, or
+        /// the pilot's own hull when the tapped AI seat was already selected (the second tap closes it).</summary>
+        internal static int NextVesselSeat(int current, int tapped) =>
+            tapped != OwnVesselSeat && tapped == current ? OwnVesselSeat : tapped;
+
+        /// <summary>Whether this pilot may pick AI <paramref name="ordinal"/>'s hull here: an Arena card with
+        /// the picker, a placed seat, and (on a guest) an ally on their own team - the
+        /// <see cref="AIHullSeating.MayPick"/> rule the host enforces, read from this machine.</summary>
+        bool MayEditAiSeat(int ordinal)
+        {
+            if (!AllyHullPickerAvailable || config == null) return false;
+            if (ordinal < 0 || ordinal >= config.AIDomains.Count) return false;
+            var domain = config.AIDomains[ordinal];
+            if (domain == Domains.Blue) return false;
+            if (!IsClientMode) return true;
+            var self = LocalOwnedPlayerQuiet();
+            return self && self.NetDomain.Value == domain;
+        }
+
+        /// <summary>The domains the humans in the lobby sit on (an AI there is an ally, elsewhere an opponent).</summary>
+        HashSet<Domains> HumanDomains()
+        {
+            var domains = new HashSet<Domains>();
+            if (gameData == null) return domains;
+            foreach (var ip in gameData.Players)
+                if (ip is Player p && p && !p.NetIsAI.Value) domains.Add(p.NetDomain.Value);
+            return domains;
+        }
+
+        /// <summary>
+        /// Hulls AI <paramref name="ordinal"/> may not take on an arena card: one another pilot has claimed,
+        /// or one another AI already flies. Empty elsewhere (hulls are not exclusive). The host's rule for a
+        /// pick and a cycle alike; the strip draws the same set locked.
+        /// </summary>
+        HashSet<VesselClassType> TakenHullsForAiSeat(int ordinal)
+        {
+            var taken = new HashSet<VesselClassType>();
+            if (!ArenaHullsExclusive || config == null || gameData == null) return taken;
+
+            foreach (var ip in gameData.Players)
+                if (ip is Player p && p && p.IsSpawned && AIHullSeating.IsConcrete(p.ArenaHullClaim))
+                    taken.Add(p.ArenaHullClaim);
+            for (int i = 0; i < config.AIVessels.Count; i++)
+                if (i != ordinal && AIHullSeating.IsConcrete(config.AIVessels[i]))
+                    taken.Add(config.AIVessels[i]);
+            return taken;
+        }
+
+        /// <summary>Mark which seat row the vessel panel is editing: the selected AI's, or the local pilot's own.
+        /// The local pilot's row is pressable whenever an AI seat could be selected, to take the panel back.</summary>
+        void MarkEditedSeat()
+        {
+            bool picker = AllyHullPickerAvailable && _activePanel is ArenaLaunchPanel;
+            var self = LocalOwnedPlayerQuiet();
+            foreach (var kv in _playerChips)
+            {
+                if (!kv.Value) continue;
+                bool own = kv.Key && kv.Key == self;
+                kv.Value.SetHull(null, own && picker ? () => SelectVesselSeat(OwnVesselSeat) : null);
+                kv.Value.SetEditing(own && picker && _vesselSeat == OwnVesselSeat);
+            }
+            for (int i = 0; i < _aiChips.Count; i++)
+                if (_aiChips[i]) _aiChips[i].SetEditing(picker && _vesselSeat == i && MayEditAiSeat(i));
+        }
+
+        /// <summary>The < > arrows with an AI seat selected: ask the host to step its hull. The host decides
+        /// on every peer, itself included, so there is one rule.</summary>
+        void RequestAiSeatCycle(int ordinal, int direction)
         {
             if (arcadeConfigSyncManager && arcadeConfigSyncManager.IsSpawned)
             {
-                arcadeConfigSyncManager.RequestAllyVesselCycle(ordinal, +1);
+                arcadeConfigSyncManager.RequestAllyVesselCycle(ordinal, direction);
                 return;
             }
 
             // Offline / no lobby object: this machine IS the authority.
-            var self = LocalOwnedPlayerQuiet();
-            ApplyAllyVesselCycle(self, ordinal, +1);
+            ApplyAllyVesselCycle(LocalOwnedPlayerQuiet(), ordinal, direction);
+        }
+
+        /// <summary>A hull tile with an AI seat selected: ask the host to put that AI in it.</summary>
+        void RequestAiSeatVessel(int ordinal, VesselClassType hull)
+        {
+            if (arcadeConfigSyncManager && arcadeConfigSyncManager.IsSpawned)
+            {
+                arcadeConfigSyncManager.RequestAIVessel(ordinal, hull);
+                return;
+            }
+
+            ApplyAIVesselSet(LocalOwnedPlayerQuiet(), ordinal, hull);
+        }
+
+        /// <summary>HOST: a pilot asked to put AI <paramref name="ordinal"/> in <paramref name="hull"/>.</summary>
+        void HandleAIVesselSetRequested(ulong clientId, int ordinal, int hull)
+        {
+            if (IsClientMode || !UsesLaunchPanels || gameData == null) return;
+            ApplyAIVesselSet(FindHumanPlayer(clientId), ordinal, (VesselClassType)hull);
+        }
+
+        /// <summary>The human Player owned by <paramref name="clientId"/>, or null.</summary>
+        Player FindHumanPlayer(ulong clientId)
+        {
+            if (gameData == null) return null;
+            foreach (var ip in gameData.Players)
+                if (ip is Player p && p && !p.NetIsAI.Value && !p.IsInitializedAsAI && p.OwnerClientId == clientId)
+                    return p;
+            return null;
+        }
+
+        /// <summary>
+        /// HOST: whether <paramref name="requester"/> may pick AI <paramref name="ordinal"/>'s hull
+        /// (<see cref="AIHullSeating.MayPick"/>): the host any seat, an opponent's included; a guest only their own
+        /// team's allies. Says why in the ArcadeLaunch channel when it refuses.
+        /// </summary>
+        bool MayRequesterPickAiSeat(Player requester, int ordinal)
+        {
+            if (IsClientMode || config == null || !AllyHullPickerAvailable) return false;
+            if (ordinal < 0 || ordinal >= config.AIDomains.Count) return false;
+
+            var seatDomain = config.AIDomains[ordinal];
+            if (requester && AIHullSeating.MayPick(requester.OwnerClientId == NetworkManager.ServerClientId,
+                    requester.NetDomain.Value, seatDomain))
+                return true;
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ArcadeLaunch] Ally hull pick refused - AI {ordinal} ({seatDomain}) is not on " +
+                $"{(requester ? requester.NetName.Value.ToString() : "an unknown pilot")}'s team.");
+            return false;
+        }
+
+        /// <summary>
+        /// HOST: put AI <paramref name="ordinal"/> in <paramref name="hull"/>, if the requester may pick that
+        /// seat, the card lists the hull, and no other pilot or AI holds it (arena seating).
+        /// </summary>
+        void ApplyAIVesselSet(Player requester, int ordinal, VesselClassType hull)
+        {
+            if (!MayRequesterPickAiSeat(requester, ordinal)) return;
+            if (!AIHullSeating.IsConcrete(hull) || !_availableShips.Any(v => v && v.Class == hull)) return;
+
+            config.SyncAIVesselSlots();
+            if (config.AIVessels[ordinal] == hull || TakenHullsForAiSeat(ordinal).Contains(hull)) return;
+
+            config.AIVessels[ordinal] = hull;
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ArcadeLaunch] AI {ordinal} ({config.AIDomains[ordinal]}) will fly {hull}.");
+
+            _aiChipSignature = null;   // the icon changed even though the seat did not
+            RefreshRoster();
+            BroadcastRosterToClients();
         }
 
         /// <summary>HOST: a pilot asked to step ally AI <paramref name="ordinal"/>'s hull.</summary>
         void HandleAllyVesselCycleRequested(ulong clientId, int ordinal, int direction)
         {
             if (IsClientMode || !UsesLaunchPanels || gameData == null) return;
-
-            Player requester = null;
-            foreach (var ip in gameData.Players)
-                if (ip is Player p && p && !p.NetIsAI.Value && !p.IsInitializedAsAI && p.OwnerClientId == clientId)
-                {
-                    requester = p;
-                    break;
-                }
-
-            ApplyAllyVesselCycle(requester, ordinal, direction);
+            ApplyAllyVesselCycle(FindHumanPlayer(clientId), ordinal, direction);
         }
 
         /// <summary>
@@ -2492,31 +2703,11 @@ namespace CosmicShore.UI
         /// </summary>
         void ApplyAllyVesselCycle(Player requester, int ordinal, int direction)
         {
-            if (IsClientMode || config == null || !AllyHullPickerAvailable) return;
-            if (ordinal < 0 || ordinal >= config.AIDomains.Count) return;
-
-            var seatDomain = config.AIDomains[ordinal];
-            if (!requester || !AIHullSeating.MayPick(requester.OwnerClientId == NetworkManager.ServerClientId,
-                    requester.NetDomain.Value, seatDomain))
-            {
-                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
-                    $"[ArcadeLaunch] Ally hull pick refused - AI {ordinal} ({seatDomain}) is not on " +
-                    $"{(requester ? requester.NetName.Value.ToString() : "an unknown pilot")}'s team.");
-                return;
-            }
+            if (!MayRequesterPickAiSeat(requester, ordinal)) return;
 
             config.SyncAIVesselSlots();
-
-            var taken = new HashSet<VesselClassType>();
-            if (ArenaHullsExclusive)
-            {
-                foreach (var ip in gameData.Players)
-                    if (ip is Player p && p && p.IsSpawned && AIHullSeating.IsConcrete(p.ArenaHullClaim))
-                        taken.Add(p.ArenaHullClaim);
-                for (int i = 0; i < config.AIVessels.Count; i++)
-                    if (i != ordinal && AIHullSeating.IsConcrete(config.AIVessels[i]))
-                        taken.Add(config.AIVessels[i]);
-            }
+            var seatDomain = config.AIDomains[ordinal];
+            var taken = TakenHullsForAiSeat(ordinal);
 
             var roster = _availableShips.Where(v => v).Select(v => v.Class).Distinct().ToList();
             if (!AIHullSeating.TryCycle(roster, config.AIVessels[ordinal], direction, taken, out var next))
@@ -2807,6 +2998,7 @@ namespace CosmicShore.UI
             _localPlayerReady = false;
             _readyCount = 0;
             _vesselConfirmed = false;
+            _vesselSeat = OwnVesselSeat;
             ReleaseArenaHullClaim();
 
             // A satellite arena is the expensive half of the preview - it must never outlive the
@@ -3295,6 +3487,7 @@ namespace CosmicShore.UI
 
             _selectedGame = game;
             _vesselConfirmed = false;
+            _vesselSeat = OwnVesselSeat;
             ReleaseArenaHullClaim();
 
             config.ResetState();
@@ -3433,6 +3626,7 @@ namespace CosmicShore.UI
 
             _isClientMode = false;
             _vesselConfirmed = false;
+            _vesselSeat = OwnVesselSeat;
             ReleaseArenaHullClaim();
             _appliedLobbyGeneration = 0;
             DespawnAllChips();

@@ -267,13 +267,7 @@ Cleave and Dog Fight record. Which side is "behind" is **latched** when the gate
 not recomputed: a pilot that drifts just past the plane without threading would otherwise see the
 sides swap and swing away (Dog Fight's break-off lesson).
 
-**Since 2026-10-26 the AI commits from its approach point** (`AICommitFromApproachPoint => true`, Regatta's steering
-fix of 2026-10-17): the "through" point sits on the line from the pilot through the ring's centre, and a missed mouth is
-re-attacked. A drifting Dolphin locks its course on that point, and on the ring's AXIS it passed beside the mouth
-whenever it committed off-axis: in Yash's four I2 races of 2026-10-26 the AI Dolphins spent 58–71% of each race
-committed to a gate and threaded 0–2 of 20. Their boost numbers in this mode come from people's Switchback races
-(`DolphinAIBoostPolicy_Switchback`, `Docs/AI_SYSTEM/LEARNED_DRIVES_Switchback.md`, `learn_drives_from_flights.py --mode
-Switchback`).
+**Since 2026-10-26 the AI flies Regatta's gate steering**: see "The Regatta steering, on since 2026-10-26" below.
 
 Switchback is **not** in `ServerPlayerVesselInitializerWithAI`'s seek-players set. Installing the
 steering hook is correct here — unlike Rampage and Salvo, whose objective IS a crystal and whose
@@ -291,6 +285,24 @@ the way" is monotone in progress and stops holding the instant the pilot is past
 the detour cannot become an orbit. The registry scan is throttled to `aiCrystalScanSeconds`
 (0.5s) and filters to `Crystal.CrystalManager != null`, the same filter `RampageObjectiveProvider`
 records: `Crystal.Active` also holds every lifeform heart the food web drops.
+
+### The Regatta steering, on since 2026-10-26 (the Dolphin's training minigame)
+
+`SwitchbackController` overrides `AICommitFromApproachPoint` to true (the scene switch stays as it was). In people's
+races the AI Dolphins threaded 0-2 of 20 rings, and two things caused it:
+- **The approach point sat outside the commit radius.** On any leg over 650 u the point behind the ring is the full
+  `aiApproachLead` (300 u) out, beyond `aiCommitDistance` (260 u). A pilot reaching it was still "approaching" and
+  steered at the point it sat on. The Dolphin's 35 u turning circle kept it 265-335 u out, so it never committed: it
+  circled gate 0 for the whole race. With the switch on, `GateRaceController.ApproachLeadFor` keeps the approach point
+  at most 0.8 of the commit radius.
+- **A drift committed off-axis missed the mouth.** The far-side point on the ring's axis is off the line from where the
+  Dolphin commits, and a commit drift locks its course on it. The switch puts the through point on the line from the
+  pilot through the ring's CENTRE, and re-attacks at once after a missed mouth (`Arcade/REGATTA.md` §6, 2026-10-17).
+
+Offline on the six recorded courses (`Tools/Build/switchback_dolphin_sim.py`): 0 rings on every one before, 20 of 20
+on every one after. The Dolphin's charge drive in Switchback uses numbers learned from Yash's races
+(`DolphinAIBoostPolicy_Switchback`, `Docs/AI_SYSTEM/LEARNED_DRIVES_Switchback.md`); the plan is
+`Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md`. Garrett's other gate races keep their scene switch.
 
 ## Crystals, and the interference they buy
 
@@ -344,7 +356,7 @@ wedge on a build that will not happen.
 | Objective glyph | `_Graphics/UI/Objectives/objective_switches_threaded.png` |
 | Cell / spawn profile | The Skim Race cell's assets, referenced verbatim — **not** forked |
 | Course features (I3 walls, I4 danger) | `_Prefabs/Spawnables/SpawnableSwitchbackFeatures.prefab` |
-| The AI's boost numbers in this mode | `Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback.asset` (written by `learn_drives_from_flights.py`) |
+| The AI's boost numbers in this mode | `Assets/Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback.asset` (written by `learn_drives_from_flights.py --mode Switchback`) |
 
 Every Switchback-owned asset is authored by `Tools/Build/author_switchback_assets.py`
 (deterministic GUIDs, idempotent, validates before writing). **Re-tune there and re-run** rather

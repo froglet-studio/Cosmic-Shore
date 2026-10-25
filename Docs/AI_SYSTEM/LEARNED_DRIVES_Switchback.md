@@ -14,8 +14,8 @@ By intensity (flights / finished): I1 2 / 2, I2 4 / 4
 | `engageRunwaySeconds` | 0.87 | 1.86 | 0.87 |
 | `episodes` | 131 | 14 | - |
 | `minHoldSeconds` | 0.00 | 0.00 | - |
-| `minRearmSeconds` | 0.44 | -60.55 | - |
-| `minRestSeconds` | 0.44 | -60.55 | - |
+| `minRearmSeconds` | 0.44 | -56.06 | - |
+| `minRestSeconds` | 0.44 | -56.06 | - |
 | `redriftShareOfPeak` | 1.00 | 0.73 | - |
 | `releaseAlignDegrees` | 10.85 | 98.43 | - |
 | `releaseRunwaySeconds` | 1.47 | 2.39 | - |

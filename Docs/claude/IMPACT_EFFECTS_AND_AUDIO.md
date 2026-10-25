@@ -199,8 +199,7 @@ per-instance volume and therefore ignores the SFX slider when the bus fails to r
 (`_Scripts/Controller/FX/FMODOneShotVolumeHelper.cs` documents why). For a **looping/continuous**
 sound (engine, drift, ambient, creature loop) use a `StudioEventEmitter` on the prefab — again with
 the event exposed — or a small controller that owns its own `EventReference` field, like
-`ShipAudioController`, `DriftAudioController`, `ProximityBoostAudioController`,
-`FloraAmbientAudioController`.
+`ShipAudioController`, `DriftAudioController`, `ProximityBoostAudioController`.
 
 **Create, attach and release through `FmodSafe`; resolve volume through `AudioSystem`.**
 `RuntimeManager.CreateInstance` THROWS for an event no loaded bank knows (renamed, deleted, stale

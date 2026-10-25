@@ -8,6 +8,9 @@ work by merge. Testing an AI visually: the one Vessel Studio artifact (`/vessel-
 window in Unity (FrogletTools > AI > Third Eye). The rules every AI follows, difficulty, finish times and the
 test ladder: the **`/vessel-ai`** skill.
 
+**Yash's sessions, any area: build on `Ys-bleeding-edge`, PR into it, and never push or open a PR into `bleeding-edge`**
+unless Yash asks; Yash tests there and decides what is promoted (2026-10-25, [`BRANCH_WORKFLOW.md`](BRANCH_WORKFLOW.md) §1).
+
 | Read | When |
 |---|---|
 | [`../ElementalAbilitySystem/SILENCE.md`](../ElementalAbilitySystem/SILENCE.md) §6 | **The combat-balance plan (Garrett, 2026-10-20):** optimize each hull's AI in mirror matches in its Charge arcade game, then against the other hulls in Broadside (the Charge arena game: the mixed-fleet rumble), scored on the petals each pilot makes opponents lose (strip, steal, danger-prism collisions), until each hull's score plateaus; then balance the hulls so every plateau is the same. Never balance against an AI that has not plateaued. Needs a per-attacker petal ledger first, and the AI has to learn silence both ways |

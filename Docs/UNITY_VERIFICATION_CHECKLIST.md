@@ -65,37 +65,76 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Switchback: AI steering fix, the I1-I4 training ladder, learned Dolphin numbers (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
+### 🔴 Switchback: the I1-I4 training ladder (hairpins, skim walls, danger prisms) (`Ys-bleeding-edge`, 2026-10-26) — NOT EDITOR-VERIFIED
 
-**What landed** (Yash, `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3): `SwitchbackController.AICommitFromApproachPoint`
-is on (Regatta's steering fix). `SwitchbackCourse` has a new ladder: mouths 72 / 48 / 32 / 20, I1 corners ≤ 40°, hairpins
+**What landed** (Yash, `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.3). The AI steering fix and the learned
+`DolphinAIBoostPolicy_Switchback` landed in a parallel session (entry "the AI Dolphins race Switchback", with
+`SwitchbackAISteeringTests`); this entry is the ladder on top of it. `SwitchbackCourse` has a new ladder: mouths 72 / 48 / 32 / 20, I1 corners ≤ 40°, hairpins
 (90-150°) from I2 (`IsHairpinCorner`). `SwitchbackFeatures` + `SpawnableSwitchbackFeatures` (prefab
 `_Prefabs/Spawnables/SpawnableSwitchbackFeatures`, `featuresPrefab` on the controller) lay I3's skim walls and I4's
-danger prisms from `OnCourseRaised`. `DolphinAIBoostPolicy_Switchback` (learned from 6 races). Switchback card art
-re-rendered.
+danger prisms from `OnCourseRaised`. Switchback card art re-rendered.
 
 **Verified without the editor:** reference compile (editor config) 0 errors in changed files. The course generator and
 the feature layout compiled against the Unity math stub and run over 400 seeds per intensity: every course generates,
 caps hold, features keep clear of mouths, other legs and the nucleus. `author_switchback_assets.py --check` OK (and
-watched failing on a mutated prefab). `learn_drives_from_flights.py --mode Switchback --check` OK.
+watched failing on a mutated prefab).
 `render_card_backgrounds.py --check` OK. NOT run: `SwitchbackCourseTests`, `SwitchbackFeaturesTests` in Unity.
 
 **Verify in editor:**
 1. Run `SwitchbackCourseTests` and `SwitchbackFeaturesTests` (EditMode): all pass.
 2. Open `MinigameSwitchback.unity`: the controller shows `Features Prefab` = SpawnableSwitchbackFeatures.
 3. Play I1 with two Medium AI Dolphins: wide rings, gentle corners, nothing else on the course.
-4. I2: every second corner is a hairpin. The AI Dolphins thread most of the 20 rings (before: 0-2) and drift
-   the hairpins.
+4. I2: every second corner is a hairpin and the mouths are 48 u (were 28). The AI Dolphins thread the rings
+   and drift the hairpins.
 5. I3: walls of plain prisms beside every second leg, never across a gate or another leg; skimming one banks charge.
 6. I4: clusters of three red danger prisms just off every leg's line; brushing one hurts.
 7. Console silent at every level (a missing prefab logs `[Switchback] No features prefab assigned`).
 8. Then play each level a few times: the flights train the next numbers (`learn_drives_from_flights.py --mode Switchback`).
 
 **First-pass tuning:** wall 26 u off the line over the middle half of legs ≥ 400 u, a prism every 14 u; danger 12 u
-off, three 10 u apart; features keep 30 u from every rim and the nucleus (`SwitchbackFeatures`). Learned AI: align 27°,
-stick band 0.46, runway 0.87 s, spend at 0.82 (from I1/I2 races on the old ladder).
+off, three 10 u apart; features keep 30 u from every rim and the nucleus (`SwitchbackFeatures`). The learned AI numbers
+came from I1/I2 races on the old ladder: re-learn after new races.
 
-### 🔴 Leaving a match lands on its launch panel, not on HOME (`claude/wizardly-euler-3ccjg6`, 2026-10-25) — NOT EDITOR-VERIFIED
+### 🟢 Arena configure: one shared vessel panel for every seat; intensity on top (`claude/wizardly-euler-3ccjg6`, 2026-10-25) — VERIFIED IN EDITOR
+
+**Verified in editor 2026-10-25 by Yash**: every step below run and passing, the party-of-two guest rule and the EditMode tests included (Froglet Tasks T-20261025-f5ea, #1542, closed with this result).
+
+**What landed:** the settings column reads Intensity, Pilots, Vessel (Arcade and Arena). On the Arena, tapping a seat
+row selects it and the vessel panel below (< seven tiles >, CLAIM) picks THAT seat's hull: your own, or an AI's (no
+claim; the host applies it, `RequestAIVessel`, protocol 12 -> 14). Tap the selected AI again or your own row to go
+back. The < > arrows are generator-authored, 32 x 56, level with the tiles and inset from the panel edges
+(`Docs/HomeHub/ARCHITECTURE.md` §3.2.1).
+
+**Verified without the editor:** `unity_refcompile` player OK, editor 0 errors in changed files;
+`author_menu_configure.py --check` / `--self-test` OK (its drift from `d9b7305b1` is gone); every gate in
+`.claude/skills/to-bleeding-edge/gates.sh` OK. `SharedVesselPanelTests` compile, not run.
+
+**Verify in editor:**
+1. Arcade > any card: the column reads Intensity, Pilots, Vessel; the pad's first focus is an intensity node.
+2. Arena > Regatta: the caption reads "Your vessel"; the < > sit level with the tiles, a little in from the panel's
+   edges; tiles, arrows and CLAIM pick your hull as before; Start waits for CLAIM.
+3. Add two AI. Tap one AI's row: it turns the Selection colour, the caption reads "<Domain> AI's vessel", CLAIM hides.
+   Tap a tile: that AI's row name and icon change at once. Use the arrows: they step it, skipping hulls taken.
+4. Tap the same AI row again (or your own row): the caption is "Your vessel" and your hull is shown again.
+5. Party of two: the guest can select and pick only their own team's AI; the host sees the guest's picks.
+6. Launch: each AI flies the hull its row named.
+7. Run `SharedVesselPanelTests` and `ArenaHullStripTests` (EditMode).
+
+### 🟢 AI seat names follow the pick; result rows name each pilot's vessel (`claude/wizardly-euler-3ccjg6`, 2026-10-25) — VERIFIED IN EDITOR
+
+**Verified in editor 2026-10-25 by Yash**: every step below run and passing, the party-of-two guest rule and the EditMode tests included (Froglet Tasks T-20261025-f5ea, #1542, closed with this result).
+
+**What landed:** `ArcadeGameConfigureModal.AiSeatName` resolves the hull by `AIHullSeating.SeatHull`, the rule the chip's icon and hover label already used. On an opponent seat it named the card's pinned hull first, so a picked hull showed under "Squirrel" (Regatta) until hovered. The result panel's line under each name is now `{domain}  ·  {vessel}`, the hull that human or AI was flying at the end (`Scoreboard.pilotLine` / `pilotNoVesselLine`, authored on the component).
+
+**Verified without the editor:** `unity_refcompile` player OK; `author_ingame_hud.py`, `check_hud_onscreen.py`, `author_menu_configure.py` checks OK.
+
+**Verify in editor:**
+1. Arena > Regatta configure: add an AI on the other team, tap its chip to step the hull. The row's name changes at once (no hover needed) and matches the hover label.
+2. Play the match with a mix of hulls, humans and AI. Each result row reads e.g. `RUBY · SQUIRREL` under the name, and the hull is the one that pilot flew. A single-hull card shows its hull on every row.
+
+### 🟡 Leaving a match lands on its launch panel, not on HOME (`claude/wizardly-euler-3ccjg6`, #1529, 2026-10-25) — PARTIALLY CONFIRMED IN EDITOR
+
+**Confirmed in editor 2026-10-25 by Yash**, after #1529 merged to bleeding-edge: Main Menu from a match lands back on its launch panel and works as expected (step 1). Ticket T-20261025-4e15 (#1526) closed with that note. Steps 2-6 (the pause menu, Arena, Maelstrom / weekly challenge, a party of two, the boot and freestyle no-regression checks) were not recorded separately; tick each here when it is run, and turn the entry green once all six have passed.
 
 **What landed:** `MenuReturnCard` (`_Scripts/UI/`) records the card a match was launched from
 (`ArcadeGameConfigureModal.HandleAllPlayersReady`, every peer). The next Menu_Main load takes it, and
@@ -14637,4 +14676,19 @@ compilation and AI-state gates OK; `rhino_line_sim.py --self-test`. `Arcade/REGA
 2. Same with an AI Rhino: it ramps on straights, brakes before corners and threads the I3 / I4 rings.
 3. After a few races, `python3 Tools/Build/regatta_rival_report.py --dir <flights> --since 2026-10-26 --hull manta`:
    rings a minute well above the 8 of the older races, boosted share well above 20%.
+
+## 🔴 2026-10-26 — Switchback: the AI Dolphins fly the Regatta steering and learned charge numbers (unverified: no Unity CLI in the session)
+
+**Files:** `SwitchbackController.cs` (`AICommitFromApproachPoint` => true), `GateRaceController.cs`
+(`ApproachLeadFor`: with that switch on the approach point stays inside the commit radius),
+`Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback.asset` (learned), `SwitchbackAISteeringTests.cs`. What ran
+instead of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in changed files;
+`learn_drives_from_flights.py --check --mode Switchback` OK. `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.4.
+
+1. Run `SwitchbackAISteeringTests` (5 tests) and `RegattaNoCrystalTargetTests`: all pass.
+2. Switchback, I1, Hard AI Dolphins (Third Eye, Follow one): it threads gate 0 and goes on gate after gate; it no
+   longer circles the first gate's approach point. Its boost status shows "discharging" on the straights.
+3. Switchback, I2, Medium and Hard: the AI Dolphins finish (the old races: 0-2 of 20). Note how many mouths they miss.
+4. Headlong, any AI: steering as before (its switch is off).
+5. After a few races, `python3 Tools/Build/regatta_rival_report.py --dir <flights> --mode Switchback --since 2026-10-26`.
 

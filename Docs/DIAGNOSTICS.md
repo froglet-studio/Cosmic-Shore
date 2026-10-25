@@ -249,7 +249,9 @@ occurrence.
   - `PlayMode` issues: each play run ≥ the minimum length where the signature stays silent
     counts one clean session (a bounded queue drain runs before the verdict so an in-flight
     error can't be miscounted);
-  - `EditMode` issues: a full editor session ≥ the minimum length, credited at clean quit;
+  - `EditMode` issues: an editor span ≥ the minimum length, credited at clean quit and at each
+    script reload (a shorter span runs on into the next one; a credited span starts a new one, so
+    an error the reload itself raises lands in the new span and reopens the fix);
   - `Tool` issues: **the tool that filed it is the validator** — a FULL clean re-run of that tool
     resolves its validating findings (quota 1: a deterministic re-run is stronger evidence than
     any number of play sessions). Partial sweeps must not call `ReportToolFindings`.
