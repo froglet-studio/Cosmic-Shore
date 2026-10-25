@@ -313,6 +313,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public event System.Action<ulong, int, int> OnAllyVesselCycleRequested;
 
+        /// <summary>
+        /// HOST: a pilot asked to put an AI in a given hull (the shared vessel panel). Args: requesting client
+        /// id, AI ordinal, hull (VesselClassType as int). The host's modal decides, as for
+        /// <see cref="OnAllyVesselCycleRequested"/>, and re-broadcasts through <see cref="NotifyRosterChanged"/>.
+        /// </summary>
+        public event System.Action<ulong, int, int> OnAIVesselSetRequested;
+
         void Awake()
         {
             Instance = this;
@@ -788,6 +795,28 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer || !_lobby.Value.IsOpen) return;
             OnAllyVesselCycleRequested?.Invoke(rpcParams.Receive.SenderClientId, aiOrdinal, direction);
+        }
+
+        /// <summary>
+        /// Ask the host to put AI <paramref name="aiOrdinal"/> in <paramref name="hull"/> - a tap on the shared
+        /// vessel panel's hull strip while that AI's seat is selected. The host decides under the same rules as
+        /// a cycle (<see cref="OnAIVesselSetRequested"/>), so a guest can only set their own team's allies and
+        /// a hull another pilot or AI holds is refused.
+        /// </summary>
+        public void RequestAIVessel(int aiOrdinal, VesselClassType hull)
+        {
+            if (!IsSpawned) return;
+            if (IsServer)
+                OnAIVesselSetRequested?.Invoke(NetworkManager.Singleton.LocalClientId, aiOrdinal, (int)hull);
+            else
+                RequestAIVessel_ServerRpc(aiOrdinal, (int)hull);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void RequestAIVessel_ServerRpc(int aiOrdinal, int hull, ServerRpcParams rpcParams = default)
+        {
+            if (!IsServer || !_lobby.Value.IsOpen) return;
+            OnAIVesselSetRequested?.Invoke(rpcParams.Receive.SenderClientId, aiOrdinal, hull);
         }
 
         #endregion

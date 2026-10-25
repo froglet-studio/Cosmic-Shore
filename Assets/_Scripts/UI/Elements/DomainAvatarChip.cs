@@ -69,6 +69,11 @@ namespace CosmicShore.UI
                  "round chip whose label sits under it.")]
         [SerializeField] bool hoverReplacesText;
 
+        [Header("Editing (the shared vessel panel)")]
+        [Tooltip("Optional mark shown while the configure window's vessel panel is picking THIS seat's hull. Leave " +
+                 "empty and the seat's name and role turn the theme's Selection colour instead.")]
+        [SerializeField] GameObject editingMarker;
+
         System.Action _onKick;
         Button _generatedKick;
         bool _kickWired;
@@ -117,6 +122,38 @@ namespace CosmicShore.UI
         {
             if (nameText) nameText.text = displayName ?? string.Empty;
             if (roleText) roleText.text = role ?? string.Empty;
+        }
+
+        bool _editing;
+        Color _nameColor, _roleColor;
+
+        /// <summary>
+        /// Mark this seat as the one the shared vessel panel is picking for (the Arena configure window: tap a
+        /// seat, then pick its hull below). Shows <see cref="editingMarker"/>, or tints the name and role in the
+        /// theme's Selection colour when none is authored.
+        /// </summary>
+        public void SetEditing(bool editing)
+        {
+            if (editingMarker)
+            {
+                editingMarker.SetActive(editing);
+                return;
+            }
+            if (editing == _editing) return;
+            if (editing)
+            {
+                if (nameText) _nameColor = nameText.color;
+                if (roleText) _roleColor = roleText.color;
+                var selection = UITheme.Resolve(null, UIColorToken.Selection);
+                if (nameText) nameText.color = selection;
+                if (roleText) roleText.color = selection;
+            }
+            else
+            {
+                if (nameText) nameText.color = _nameColor;
+                if (roleText) roleText.color = _roleColor;
+            }
+            _editing = editing;
         }
 
         /// <summary>
