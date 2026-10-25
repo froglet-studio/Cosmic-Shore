@@ -8,7 +8,7 @@ namespace CosmicShore.UI
     /// A word tab inside a window (Docs/STYLE_FOUNDATION.md section 10.4 tabs; the profile window's
     /// AVATAR / DISPLAY NAME): the word, and a 2px underline that marks the tab that is showing.
     ///
-    /// <para>Like a top-nav tab (<see cref="KitTopNavTab"/>, whose shown look the nav itself toggles),
+    /// <para>Unlike the top-nav tabs (KitTopNavTab.prefab, toggled by the nav itself),
     /// this is a real Selectable: the pad reaches it, the CTA ring draws on focus, and the host
     /// only sets <see cref="IsSelected"/>. Colours: the shown tab's word is TextLight over a sky-blue
     /// Selection underline with the selection light running along it (rev 7); the others read

@@ -3,15 +3,16 @@ using System.Globalization;
 using CosmicShore.Core;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
     /// <summary>
     /// The Audio Studio - music only (Docs/MENU_REDESIGN_B.md §56; the owner: "No mixer just the music"). Now playing
-    /// with back / pause / skip, shuffle and stop; every track as a row: press it to play it now, its tick box to put it in
-    /// or out of the rotation. The tick box is a pad stop with its own focus ring; the Y shortcut that did the same went
-    /// with the menu's face-button shortcuts (Docs/MENU_REDESIGN_B.md §65: A presses what is selected, B goes back). Drives <see cref="SoundtrackPlayer"/> (AudioSystem.Soundtrack).
+    /// with back / pause / skip, shuffle and stop; every track as a row: press it to play it now, Y (or its tick box) to
+    /// put it in or out of the rotation. Drives <see cref="SoundtrackPlayer"/> (AudioSystem.Soundtrack).
     /// While the soundtrack has no per-track events (the FMOD music event plays its tracks at random), rows cannot be
     /// played or named as playing; the notice says so, and back / skip / pause / stop still work.
     /// </summary>
@@ -24,7 +25,7 @@ namespace CosmicShore.UI
             [Tooltip("The row: pressing it plays the track now.")]
             public KitTile tile;
             public TMP_Text titleText;
-            [Tooltip("The tick box: a click, a tap, or A with the pad on it.")]
+            [Tooltip("The tick box (mouse / touch); Y on the selected row does the same.")]
             public Button tickButton;
             public GameObject tickMark;
             public GameObject playingMark;
@@ -108,6 +109,15 @@ namespace CosmicShore.UI
             float progress = _player.Progress;
             if (progressTrack) progressTrack.SetActive(progress >= 0f);
             if (progressFill && progress >= 0f) progressFill.anchorMax = new Vector2(progress, progressFill.anchorMax.y);
+
+            // Y on the selected row ticks / unticks it.
+            var pad = Gamepad.current;
+            var keys = Keyboard.current;
+            bool y = (pad != null && pad.buttonNorth.wasPressedThisFrame) || (keys != null && keys.tKey.wasPressedThisFrame);
+            if (!y) return;
+            var selected = EventSystem.current ? EventSystem.current.currentSelectedGameObject : null;
+            for (int i = 0; i < rows.Length; i++)
+                if (rows[i].tile && rows[i].tile.gameObject == selected) { ToggleTick(i); break; }
         }
 
         void ToggleTick(int i)

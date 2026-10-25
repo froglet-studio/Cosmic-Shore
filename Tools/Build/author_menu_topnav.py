@@ -244,13 +244,9 @@ def persistent_call(method, indent):
 
 
 def event_trigger(fid, go, method):
-    """The tab's press -> ScreenSwitcher.<method>: PointerClick (eventID 4, the links' shipped wiring) and Submit
-    (eventID 15, A or Enter while the pad is on the tab: the tab is a KitTopNavTab pad stop, Docs/MENU_REDESIGN_B.md
-    §64, whose own onClick stays empty so a click presses once)."""
+    """A PointerClick EventTrigger -> ScreenSwitcher.<method>: the links' shipped wiring, verbatim."""
     return (f"--- !u!114 &{fid}\n" + K.mono(go, EVENT_TRIGGER,
             "  m_Delegates:\n  - eventID: 4\n    callback:\n      m_PersistentCalls:\n        m_Calls:\n"
-            + persistent_call(method, 8)
-            + "  - eventID: 15\n    callback:\n      m_PersistentCalls:\n        m_Calls:\n"
             + persistent_call(method, 8)))
 
 
@@ -467,10 +463,7 @@ def transform(text):
         sc.replace(a["rt"], rt_doc(a["rt"], a["go"], [k["stub"]], BUTTONS["rt"],
                                     K.rect((0, 1), None, (x, -BAND_H / 2), keycap_size(a["key"]))))
         sc.replace(a["img"], body(a["img"], 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True), a["go"], ids.ctx))
-        btn = re.sub(r"^  m_Transition: \d+$", "  m_Transition: 0", sc.docs[a["btn"]], flags=re.M)
-        # The keycap buttons are for the pointer: out of pad navigation (§64), so D-pad up from a screen lands on a
-        # tab, which draws the focus ring, never on a keycap, which draws none. The pad has LT / RT themselves.
-        sc.replace(a["btn"], re.sub(r"^  m_Navigation:\n    m_Mode: \d+$", "  m_Navigation:\n    m_Mode: 0", btn, flags=re.M))
+        sc.replace(a["btn"], re.sub(r"^  m_Transition: \d+$", "  m_Transition: 0", sc.docs[a["btn"]], flags=re.M))
 
     sw = sc.docs[SWITCHER]
     sw = set_block(sw, "NavBarLine", "  NavBarLine: {fileID: 0}\n")
@@ -490,12 +483,12 @@ PATCHED = {NAVBAR["rt"], BUTTONS["rt"], BUTTONS["hlg"], SWITCHER} | {a[k] for a 
 
 # Patched documents that are NOT regenerated whole: only these fields may differ.
 PATCHED_FIELDS = {SWITCHER: ("NavBarLine", "NavBarLineSprites", "NavActiveImages", "NavInactiveImages")}
-PATCHED_FIELDS.update({a["btn"]: ("m_Transition", "m_Navigation") for a in ARROWS})
+PATCHED_FIELDS.update({a["btn"]: ("m_Transition",) for a in ARROWS})
 
 
 def strip_fields(doc, names):
     for name in names:
-        doc = re.sub(r"^  " + re.escape(name) + r":(?: .*)?\n(?:  - .*\n|    .*\n)*", "", doc, flags=re.M)
+        doc = re.sub(r"^  " + re.escape(name) + r":(?: .*)?\n(?:  - .*\n(?:    .*\n)*)*", "", doc, flags=re.M)
     return doc
 
 
@@ -587,15 +580,11 @@ def validate(before_text, after_text, guids):
         trig = sc.docs[t["trigger"]]
         assert f"m_GameObject: {{fileID: {t['stub_go']}}}" in trig and f"m_MethodName: {method}\n" in trig \
             and f"m_Target: {{fileID: {SWITCHER}}}" in trig and "eventID: 4" in trig, f"{link}: click wiring"
-        assert "  - eventID: 15\n" in trig and trig.count(f"m_MethodName: {method}\n") == 2, \
-            f"{link}: A does not press the tab (no Submit entry on its EventTrigger)"
     strip = sc.children(BUTTONS["rt"])
     assert strip == [ARROWS[0]["rt"]] + [t["stub"] for t in ids.tabs] + [ARROWS[1]["rt"]], "strip order"
     for a_index, a in enumerate(ARROWS):
         btn = sc.docs[a["btn"]]
         assert f"m_MethodName: {a['method']}\n" in btn and f"m_TargetGraphic: {{fileID: {a['img']}}}" in btn
-        assert "  m_Navigation:\n    m_Mode: 0\n" in btn, \
-            f"{a['name']}: the keycap is a pad stop (it draws no focus ring; the pad must land on a tab)"
         assert ids.keys[a_index]["hover"] in sc.components(a["go"]), f"{a['name']}: hover tint not attached"
         assert f"m_Father: {{fileID: {BUTTONS['rt']}}}" in sc.docs[a["rt"]]
     port = ids.tabs[PORT]
@@ -651,9 +640,6 @@ def self_test(current, guids):
             lambda s: in_doc(s, SWITCHER, "disabledScreenMessage: Not open yet.", "disabledScreenMessage: Closed."),
         "unrelated document edited": lambda s: s.replace("  m_Name: Screens\n", "  m_Name: Screenz\n", 1),
         "ARK lost its glyph": lambda s: s.replace(f"guid: {glyph_guid(1)}, type: 3}}", "guid: 0, type: 3}", 1),
-        "A no longer presses HOME": lambda s: in_doc(s, t[HOME]["trigger"], "  - eventID: 15\n", "  - eventID: 16\n"),
-        "the RT keycap back in pad navigation": lambda s: in_doc(s, ARROWS[1]["btn"], "  m_Navigation:\n    m_Mode: 0\n",
-                                                                  "  m_Navigation:\n    m_Mode: 3\n"),
     }
     failed = []
     for name, plant in plants.items():
