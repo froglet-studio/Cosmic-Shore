@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace CosmicShore.UI
 {
-    public sealed class SquirrelVesselHUDController : VesselHUDController
+    public sealed class SquirrelHUDController : VesselHUDController
     {
         [Header("View")]
         [SerializeField] private SquirrelVesselHUDView view;

@@ -3,7 +3,7 @@ namespace CosmicShore.UI
     /// <summary>
     /// The Rhino's HUD view. Everything it shows lives on the fleet's four-card ability row
     /// (<see cref="VesselHUDView.abilityIcons"/>, drawn by the ability lockup), driven by
-    /// <see cref="RhinoVesselHUDController"/> through the base view's card pushes.
+    /// <see cref="RhinoHUDController"/> through the base view's card pushes.
     ///
     /// <para>It used to carry a pre-lockup STATUS CLUSTER beside the row - a skimmer-size ring, a
     /// "slowed" counter, a slow-line flash, a debuff timer, laser and crystal indicators - wired

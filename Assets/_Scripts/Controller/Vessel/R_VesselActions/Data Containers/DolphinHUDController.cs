@@ -46,7 +46,7 @@ namespace CosmicShore.Gameplay
     /// inside the 0.15 s cooldown would share a count, which is acceptable for a tally and is not
     /// acceptable for anything else — do not read these numbers for scoring.</para>
     /// </summary>
-    public class DolphinVesselHUDController : VesselHUDController
+    public class DolphinHUDController : VesselHUDController
     {
         [Header("View")]
         [SerializeField] private DolphinVesselHUDView view;

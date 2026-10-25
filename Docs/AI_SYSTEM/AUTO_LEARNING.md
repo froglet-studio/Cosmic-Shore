@@ -26,6 +26,11 @@ race writes nothing. A learner writes a hull's numbers only once it has three fi
 
 ## 2. What the sweep does (the scheduled task's whole instruction)
 
+The scheduled task "AI learning sweep" (`trig_01VieYjD52nneXYEXHM8nUKY`, every hour at :20 UTC, created 2026-10-25 on
+Yash's request) wakes the session "AI learning sweep (hourly)" (`session_01WGSY8UTqMrqdcy2tWPMkBD`). Change what the
+sweep does HERE, not in the task: the task says only "do section 2 of AUTO_LEARNING.md".
+
+
 1. `git fetch origin`, check out `Ys-bleeding-edge`, merge `origin/Ys-bleeding-edge` (merge, never rebase).
 2. `python3 Tools/Build/ai_learn.py`. **0 new flights: stop.** No commit, no message.
 3. `python3 Tools/Build/ai_learn.py --run`, then read `Docs/Reports/AI_LEARNING.md`.

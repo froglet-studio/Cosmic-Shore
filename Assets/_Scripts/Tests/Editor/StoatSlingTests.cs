@@ -293,7 +293,7 @@ namespace CosmicShore.Tests
                      {
                          ("5db69771d02b4c24ca00998adf318137", "the Squirrel model"),
                          ("c1572db06ad4244469ad3f25d86940b8", "SquirrelHUDVariant"),
-                         ("002a4e51f3b840e3b397dac7b84f1a9a", "SquirrelVesselHUDController"),
+                         ("002a4e51f3b840e3b397dac7b84f1a9a", "SquirrelHUDController"),
                          ("2b0d487de1554acfad93a158ddac3874", "SquirrelVesselTelemetry"),
                          ("3c3fc507fffc4f5e86ab043ee7543cd2", "the Squirrel's camera settings"),
                          ("769c65db9958c064485be49a2183f263", "the Squirrel's vessel container"),

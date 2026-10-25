@@ -4,7 +4,7 @@
 > Prefab Variant of `VesselHUDPrefab`) binds the four-icon row Chain Spikes / Trail Rider / Track
 > Projector / Slip, with the ammo fill on the Charge card's gauge, the riding indicator on Mass and
 > the Track Projector recharge veil on Space; `Urchin.prefab` carries a `ShipHUDContainer`, an
-> `UrchinVesselHUDController`, and `VesselStatus.vesselHUDController` points at it. Everything is
+> `UrchinHUDController`, and `VesselStatus.vesselHUDController` points at it. Everything is
 > written by `Tools/Build/author_urchin_hud.py` (`--check`). Not delivered as written: the four
 > icons are white PLACEHOLDER silhouettes awaiting the art pass, the Chain Spikes hold-to-charge has
 > no gauge (the executor does not expose charge progress), and the HUD has **not been opened in the
@@ -17,7 +17,7 @@ Paste everything below into a fresh session.
 
 The Urchin is the only vessel in the fleet whose elemental ability map is **complete** — four named
 abilities, four level-5 upgrades — and which has **no HUD prefab at all**. There is no
-`UrchinHUDVariant.prefab`, so `UrchinVesselHUDController.cs` and `UrchinVesselHUDView.cs` are
+`UrchinHUDVariant.prefab`, so `UrchinHUDController.cs` and `UrchinVesselHUDView.cs` are
 unreferenced code and the vessel flies with nothing on screen telling the player what it can do.
 
 It locks two shipped modes — **Hijack** (the rail heist) and **Skein** (the cable race) — so this is

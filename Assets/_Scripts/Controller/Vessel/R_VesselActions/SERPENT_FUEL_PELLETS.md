@@ -60,7 +60,7 @@ and the gate that decides whether a press burns cannot disagree.
 | `Executors/ConsumeBoostActionExecutor.cs` | The pellet tank: gate on fuel, spend, overlapping burns, multiplier, teardown |
 | `Data Containers/ConsumeBoostActionSO.cs` | Shared stateless config: per-pellet multiplier, burn duration, Time scaling, fuel index + pellet cost |
 | `_SO_Assets/VesselActions/Serpent/ConsumeBoostAction.asset` | The authored numbers (dead magazine keys removed) |
-| `UI/Controller/SerpentVesselHUDController.cs` | Pushes the fuel level to the view off `ResourceSystem.OnResourceChanged` |
+| `UI/Controller/SerpentHUDController.cs` | Pushes the fuel level to the view off `ResourceSystem.OnResourceChanged` |
 | `UI/View/SerpentVesselHUDView.cs` | Paints the four pips (`SetPelletFuel`) |
 | `_Prefabs/UI Elements/VesselHUD/SerpentHUDVariant.prefab` | `TimeIcon` + re-parented pips |
 | `_Prefabs/Spacevessels/Serpent.prefab` | Executor `config` wired; `abilityIcons` Time binding; `shieldIcon` nulled |

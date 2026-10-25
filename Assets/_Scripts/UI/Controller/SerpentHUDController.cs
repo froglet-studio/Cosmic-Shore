@@ -4,7 +4,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.UI;
 namespace CosmicShore.UI
 {
-    public class SerpentVesselHUDController : VesselHUDController
+    public class SerpentHUDController : VesselHUDController
     {
         [Header("View")]
         [SerializeField] private SerpentVesselHUDView view;

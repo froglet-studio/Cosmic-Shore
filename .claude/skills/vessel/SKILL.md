@@ -246,7 +246,7 @@ applies to new abilities, new resources on the meter list, and anything that add
 14. **A HUD controller must never reach for another vessel's executor by TYPE.**
     `GetComponentInChildren<SomeOtherVesselsExecutor>(true)` compiles fine, returns null on every
     vessel that isn't the one carrying it, and the gauge it feeds then simply never moves — no
-    error, no warning, nothing to notice. `SquirrelVesselHUDController` polled the Sparrow-only
+    error, no warning, nothing to notice. `SquirrelHUDController` polled the Sparrow-only
     `OverheatingActionExecutor` for its heat gauge for the component's entire life; the gauge was
     dead the whole time and the bug only surfaced when the Sparrow branch DELETED the type and the
     Squirrel stopped compiling. If a HUD needs a signal, bind it on the vessel's OWN component (a

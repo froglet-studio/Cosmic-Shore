@@ -409,7 +409,7 @@ The refusal belongs to the **CALLER**, not to the accessor: "no pilot can fly Bl
 pilots, and a neutral mine or an uncommitted crystal legitimately wants to know what colour no-team
 is, so the palette stays a pure palette read. A HUD that means *this pilot's domain* tests for the
 sentinel itself and treats it as "not resolved yet" — alpha 0, keep your white, and keep looking
-(`SquirrelVesselHUDController.ResolveShieldedColor`). Two executors already used exactly that idiom
+(`SquirrelHUDController.ResolveShieldedColor`). Two executors already used exactly that idiom
 from the other direction before this — `EchoSightActionExecutor` and `SniperShotActionExecutor` both
 write `status?.Player != null ? status.Domain : Domains.Blue`, i.e. **Blue already MEANS unresolved in
 this codebase** — which is the whole reason it must never be looked up as a colour.

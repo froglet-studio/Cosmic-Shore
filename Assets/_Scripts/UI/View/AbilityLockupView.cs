@@ -1244,7 +1244,7 @@ namespace CosmicShore.UI
         /// means "this vessel has not authored an icon for this slot", which is a fact about the
         /// ART - and a slot that is being DRIVEN is an ability that exists, whatever the row can
         /// draw of it. The Serpent is the case that proved it: its sniper's recharge was pushed
-        /// correctly from <c>SerpentVesselHUDController</c> from the day the ability shipped, and
+        /// correctly from <c>SerpentHUDController</c> from the day the ability shipped, and
         /// landed nowhere for three rounds of playtest because that vessel binds 0 of its 4 icons.
         /// The veil needs no icon anyway - it sizes itself on the ability PLATE, which a locked
         /// card has. The general rule: <i>an indicator that refuses to draw because its
