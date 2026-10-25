@@ -220,6 +220,7 @@ def build_view():
     # Rev 3: the party panel moved to the one friends drawer on Menu_Main; the explore scroll fills the body.
 
     header = root.child(N("Header", "Header", A.WINDOW_HEADER))
+    A.drawer_dock(root)
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
     label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "ARENA", "Label",
           "NeutralLightest")

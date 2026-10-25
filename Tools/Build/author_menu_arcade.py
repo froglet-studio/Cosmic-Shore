@@ -90,6 +90,7 @@ S = dict(
     weekly=script("Assets/_Scripts/UI/Elements/WeeklyChallengeCard.cs"),
     audio=script("Assets/_Scripts/UI/MenuAudio.cs"),
     view=script("Assets/_Scripts/UI/Views/ArcadeExploreView.cs"),
+    dock=script("Assets/_Scripts/UI/Elements/Party/FriendsDrawerDock.cs"),
     runner=script("Assets/FTUE/Scripts/Graph/Runtime/QuestGraphRunner.cs"),
     gate=script("Assets/_Scripts/UI/Elements/OfflineUIGate.cs"),
     close=script("Assets/_Scripts/UI/Modals/ModalWindowCloseButton.cs"),
@@ -724,6 +725,16 @@ CONTENT_W = EXPLORE_W - 10 - 12                     # viewport inset, content pa
 EMPTY_LINE = "No one else is online right now. Pilots who come online show here, ready to invite."
 
 
+DOCK_GAP = 24
+
+
+def drawer_dock(root):
+    """§64: the hub window makes room for the open friends drawer - its Header and Body start right of it
+    (FriendsDrawerDock), so the cards move right. Shared by the Arcade, Arena, Mission and Toy Box windows."""
+    root.add("dock", 114, lambda ctx, go: mono(go, S["dock"],
+             f"  pushed:\n  - {ref(ctx.rt('Header'))}\n  - {ref(ctx.rt('Body'))}\n  gap: {DOCK_GAP}\n"))
+
+
 def section_header(parent, key, name, title, shown=True, count="0"):
     n = parent.child(N(key, name, R((0, 1), None, (0, 0), (ROW_W, 18), (0, 1))))
     n.add("le", 114, le(ph=18, ignore=not shown))
@@ -1055,6 +1066,7 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     # (author_menu_friends_drawer.py), so the explore scroll takes the whole body.
 
     header = root.child(N("Header", "Header", WINDOW_HEADER))
+    drawer_dock(root)
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
     label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "ARCADE", "Label",
           "NeutralLightest")

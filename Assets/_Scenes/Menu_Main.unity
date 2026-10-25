@@ -66857,9 +66857,12 @@ MonoBehaviour:
   maximiseButton: {fileID: 94948150780373061}
   restoreGlyph: {fileID: 1110817463156529909}
   maximiseGlyph: {fileID: 540410152477085683}
-  normalSize: {x: 460, y: 860}
-  maximisedSize: {x: 720, y: 900}
-  openInset: 16
+  screenSwitcher: {fileID: 0}
+  normalWidth: 460
+  maximisedWidth: 720
+  dockTop: 84
+  dockBottom: 0
+  openInset: 0
   moveSeconds: 0.22
 --- !u!1 &815546721374735624
 GameObject:
@@ -68404,10 +68407,10 @@ RectTransform:
   - {fileID: 242078005697888997}
   m_Father: {fileID: 505095873391946135}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.5}
-  m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: -468, y: 0}
-  m_SizeDelta: {x: 460, y: 860}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: -468, y: -42}
+  m_SizeDelta: {x: 460, y: -84}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!225 &471128676009213165
 CanvasGroup:

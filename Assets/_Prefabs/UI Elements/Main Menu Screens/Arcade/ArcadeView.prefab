@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 784163782775647553}
+  - component: {fileID: 342208225667284889}
   m_Layer: 5
   m_Name: ArcadeView
   m_TagString: Untagged
@@ -40,6 +41,22 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &342208225667284889
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 293686568211086848}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d953354217c86ae8eaec252ad2308e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pushed:
+  - {fileID: 305343344215627172}
+  - {fileID: 495323116807929180}
+  gap: 24
 --- !u!1 &777466045979284420
 GameObject:
   m_ObjectHideFlags: 0

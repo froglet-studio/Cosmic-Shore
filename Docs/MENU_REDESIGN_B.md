@@ -3010,3 +3010,31 @@ Make it 95% opaque".
   0 seconds holds it still, a hidden window draws nothing, the edges fade. Unity's own shader compile is still owed.
 - **Hand test.** Open Arcade, Arena, Mission, Toy Box, a game's Configure, Profile and Leaderboard: the lines drift
   slowly right to left in three depths, the game world barely shows through, no seam passes, nothing flickers.
+
+## 64. The friends drawer docks into hub windows and never covers a game window (2026-10-25, awaiting in-editor approval)
+
+Shombith, 2026-10-25: "Friends panel should not overlap over any gameplay cards. So If I open scurry it cannot be
+opened unless I close the scurry window. Next the friends card can be a self sizer according to the panel it is in.
+For panels it should slide out from the left and take up the whole left side ... plus also the top parts and it would
+move the content of other panels. Example, when it is enabled inside the arcade screen the cards move to the right when
+this panel opens up. It should not move other contents if it is home, hangar or any other screens."
+
+- **Size.** The drawer window is anchored to the left edge and stretched from under the top nav (84) to the bottom,
+  flush with the edge (inset 0): its height follows whatever screen it is on. Only the widths are authored (460, 720
+  maximised). `FriendsDrawer` now tweens only x and width (`normalWidth`, `maximisedWidth`, `dockTop`, `dockBottom`
+  replace `normalSize` / `maximisedSize`).
+- **Docking.** `FriendsDrawer` listens to `ScreenSwitcher.ModalStackChanged`. With a hub window on top (Arcade, Arena,
+  Mission, Toy Box) it publishes `FriendsDrawer.DockWidth`, the open window's right edge, on every frame of the slide.
+  Each hub window carries a `FriendsDrawerDock` (`author_menu_arcade.drawer_dock`) that moves its Header's and Body's
+  left edge to `max(authored gutter, DockWidth + 24)`, so the layout groups reflow the cards into the narrower body
+  and they move right with the drawer. Home, the Hangar, Ark, Profile and Settings carry no dock: the drawer slides
+  over them and moves nothing.
+- **Blocked.** With any other window on top (a game's configure such as Scurry's, Settings, the leaderboard, the
+  profile window) the drawer closes at once and the orb hides; both come back when that window closes.
+- **Gates.** `author_menu_friends_drawer.py` checks the full-height anchoring, the widths, and that all four hub windows
+  carry a dock pushing exactly their Header and Body (three new negative controls). The refcompile player config and
+  the Amoebius Live build compile both scripts.
+- **Hand test.** Open the drawer on Home and the Hangar: it covers the left side, nothing moves. Open Arcade with it
+  open, and open it inside Arcade, Arena, Mission and Toy Box: the cards slide right with it and back when it closes;
+  maximise pushes further. Open a game (Scurry) from Arcade: the drawer closes and the orb is gone until Back. Watch
+  that the Arcade cards still read at the narrower width (the grid reflows; nothing measured it in the editor).

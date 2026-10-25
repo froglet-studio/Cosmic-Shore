@@ -14139,3 +14139,13 @@ window generator `--check`; `check_ui_colors.py`; `check_generated_assets.py`. O
 - [ ] `CosmicShore/UI/SeaLines` compiles with no errors or warnings (Console, shader inspector).
 - [ ] Arcade, Arena, Mission, Toy Box, Configure, Profile, Leaderboard: slow lines in three depths, no seam, no flicker,
       the world barely visible through the 95 % veil (`Docs/MENU_REDESIGN_B.md` §63).
+
+## Friends drawer docks into hub windows (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session; `/verify-unity` could not run. Proven offline: refcompile player config clean,
+Amoebius `CosmicShore.Live` builds, `author_menu_friends_drawer.py --check / --self-test`, the hub window generators
+`--check`. Owed in the editor (`Docs/MENU_REDESIGN_B.md` §64):
+- [ ] `FriendsDrawer` and `FriendsDrawerDock` compile; no missing-script warnings on the four hub windows.
+- [ ] Home / Hangar: the drawer takes the left side under the nav and moves nothing.
+- [ ] Arcade / Arena / Mission / Toy Box: the cards move right with the drawer (normal and maximised) and back on close.
+- [ ] A game's configure (e.g. Scurry), Settings, Leaderboard: the drawer closes and the orb hides until Back.

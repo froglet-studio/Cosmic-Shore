@@ -13,8 +13,10 @@ section 45.4; the owner chose option A, "Orb", over the bond rail).
        |                            with one dot per player online, the bonds), you at the centre, up to
        |                            three party members on the inner ring, "N online" under it
        |                            (KitPresenceOrb); pressing it opens the drawer
-       '- Window                    glass panel that slides in from the left (460 x 860, maximised
-          |                         720 x 900), the panel lattice behind it and a Space rim round it:
+       '- Window                    panel that slides in from the left and takes the whole left side
+          |                         under the top nav (460 wide, maximised 720; section 64): over a hub
+          |                         window it docks and the cards move right (FriendsDrawerDock); over a
+          |                         game's configure or Settings it never opens. The lattice is behind it:
           |                         the Space glyph and title, a minimise (slide back) and a maximise
           '- PartyPanel             THE shared party panel (item 3's prefab, instanced - never copied),
                                     drawn as the party molecule since rev 6 (author_menu_arcade.py)
@@ -64,9 +66,13 @@ PARTY_GUID = AR.asset_guid("PartyPanel")
 SAFE_AREA_RT = "1034510601983959698"
 MODAL_WINDOWS_RT = "6818916199485298600"
 
-NORMAL = (460, 860)
-MAXIMISED = (720, 900)
-INSET = 16
+# §64 (Shombith, 2026-10-25): the window takes the whole left side, from under the top nav (DOCK_TOP) to the bottom,
+# flush with the screen edge, so its height follows the screen; over a hub window it docks and the cards move right
+# (FriendsDrawerDock, author_menu_arcade.drawer_dock). Only the widths are fixed.
+NORMAL_W = 460
+MAXIMISED_W = 720
+DOCK_TOP, DOCK_BOTTOM = 84, 0
+INSET = 0
 BTN = 28
 
 # The presence orb (section 45.4). Its place is author_menu_arcade.ORB_* (the windows' gutter gate reads it too);
@@ -151,7 +157,8 @@ WINDOW_TINT = 0.6   # the same wash as author_menu_profile.RECORD_TINT
 
 
 def window_node(parent):
-    w = parent.child(N("Drawer/Window", "Window", R((0, 0.5), None, (-NORMAL[0] - 8, 0), NORMAL, (0, 0.5))))
+    w = parent.child(N("Drawer/Window", "Window", R((0, 0), (0, 1), (-NORMAL_W - 8, (DOCK_BOTTOM - DOCK_TOP) / 2),
+                                                    (NORMAL_W, -(DOCK_TOP + DOCK_BOTTOM)), (0, 0.5))))
     w.add("cg", 225, H.canvas_group(False))
     fill = w.child(N("Drawer/Window/Fill", "Fill", STRETCH))
     # Fully opaque, the pilot record's surface (the owner, 2026-10-18: "Make the friends panel bg the same and full
@@ -269,7 +276,8 @@ def host_node():
              f"  maximiseButton: {ref(ctx.c('Drawer/Window/Maximise', 'button'))}\n"
              f"  restoreGlyph: {ref(ctx.c('Drawer/Window/Maximise/Restore', 'cg'))}\n"
              f"  maximiseGlyph: {ref(ctx.c('Drawer/Window/Maximise/Glyph', 'cg'))}\n"
-             f"  normalSize: {{x: {NORMAL[0]}, y: {NORMAL[1]}}}\n  maximisedSize: {{x: {MAXIMISED[0]}, y: {MAXIMISED[1]}}}\n"
+             "  screenSwitcher: {fileID: 0}\n"
+             f"  normalWidth: {NORMAL_W}\n  maximisedWidth: {MAXIMISED_W}\n  dockTop: {DOCK_TOP}\n  dockBottom: {DOCK_BOTTOM}\n"
              f"  openInset: {INSET}\n  moveSeconds: 0.22\n"))
     return host
 
@@ -364,9 +372,41 @@ def validate(files):
     ch = sc.docs[crystal_handler(sc)]
     assert f"  - {{fileID: {ctx.c('Host', 'cg')}}}" in ch, "the drawer does not fade with the menu in freestyle"
     validate_profile(sc, ctx)
+    validate_dock(sc, ctx, files.get("__hub__") or hub_windows())
     for fid in sc.order:
         for m in re.finditer(r"\{fileID: (-?\d+)\}", sc.docs[fid]):
             assert m.group(1) == "0" or sc.has(m.group(1)), f"dangling local fileID {m.group(1)} in {fid}"
+
+
+HUB_WINDOWS = [f"Assets/_Prefabs/UI Elements/Main Menu Screens/{p}" for p in (
+    "Arcade/ArcadeView.prefab", "Arena/ArenaView.prefab", "Mission/MissionView.prefab", "Toybox/ToyboxView.prefab")]
+DOCK = C.script("FriendsDrawerDock")
+
+
+def hub_windows():
+    return {p: open(os.path.join(REPO, p), encoding="utf-8").read() for p in HUB_WINDOWS}
+
+
+def validate_dock(sc, ctx, hub):
+    """§64: the window takes the whole left side under the nav (its height follows the screen), and every hub window
+    makes room for it (FriendsDrawerDock pushing its Header and Body)."""
+    win = sc.docs[str(ctx.rt("Drawer/Window"))]
+    for want in ("m_AnchorMin: {x: 0, y: 0}", "m_AnchorMax: {x: 0, y: 1}",
+                 f"m_SizeDelta: {K.v2(NORMAL_W, -(DOCK_TOP + DOCK_BOTTOM))}"):
+        assert want in win, f"the drawer window does not take the whole left side ({want} missing)"
+    dr = sc.docs[str(ctx.c("Host", "drawer"))]
+    for f, v in (("normalWidth", NORMAL_W), ("maximisedWidth", MAXIMISED_W), ("dockTop", DOCK_TOP), ("dockBottom", DOCK_BOTTOM)):
+        assert f"  {f}: {v}\n" in dr, f"FriendsDrawer.{f} is not {v}"
+    for path, text_ in hub.items():
+        dock = re.search(r"^--- !u!114 &-?\d+\nMonoBehaviour:\n((?:(?!--- ).*\n)*?  m_Script: \{fileID: 11500000, guid: %s, type: 3\}\n(?:(?!--- ).*\n)*)" % DOCK, text_, re.M)
+        assert dock, f"{path} does not make room for the friends drawer (no FriendsDrawerDock)"
+        pushed = re.findall(r"^  - \{fileID: (-?\d+)\}", dock.group(1), re.M)
+        names = set()
+        for fid in pushed:
+            rt = re.search(r"^--- !u!224 &%s\n(?:(?!--- ).*\n)*?  m_GameObject: \{fileID: (-?\d+)\}" % fid, text_, re.M)
+            go = rt and re.search(r"^--- !u!1 &%s\n(?:(?!--- ).*\n)*?  m_Name: (\w+)" % rt.group(1), text_, re.M)
+            names.add(go.group(1) if go else None)
+        assert names == {"Header", "Body"}, f"{path}: the dock must push the Header and the Body, pushes {names}"
 
 
 def validate_profile(sc, ctx):
@@ -481,6 +521,15 @@ def self_test(files):
             f[SCENE], ctx.c("Drawer/Profile", "popup"), "  joinWord: Join\n", "  joinWord: \n"))),
         ("the profile card's friend list unwired", lambda f: f.__setitem__(SCENE, in_doc(
             f[SCENE], ctx.c("Drawer/Profile", "popup"), f"guid: {AR.FRIENDS_DATA}", "guid: " + "0" * 32))),
+    ]
+    hub = hub_windows()
+    cases += [
+        ("the drawer window back to a fixed height", lambda f: f.__setitem__(SCENE, in_doc(
+            f[SCENE], ctx.rt("Drawer/Window"), "m_AnchorMax: {x: 0, y: 1}", "m_AnchorMax: {x: 0, y: 0.5}"))),
+        ("the Arena window without its dock", lambda f: f.__setitem__("__hub__", dict(hub, **{
+            HUB_WINDOWS[1]: hub[HUB_WINDOWS[1]].replace(DOCK, "6" * 32)}))),
+        ("the Arcade dock pushing only the header", lambda f: f.__setitem__("__hub__", dict(hub, **{
+            HUB_WINDOWS[0]: re.sub(r"(  pushed:\n  - \{fileID: -?\d+\}\n)  - \{fileID: -?\d+\}\n", r"\1", hub[HUB_WINDOWS[0]], count=1)}))),
     ]
     ok = all(expect(l, m) for l, m in cases)
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")
