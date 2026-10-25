@@ -2377,17 +2377,20 @@ namespace CosmicShore.UI
             isLocal ? (isHost ? "You / Host" : "You") : (isHost ? "Host" : "Pilot");
 
         /// <summary>
-        /// What an AI seat row is called: the hull it will fly when that is already decided (an
-        /// opponent's pinned hull, an ally's pick), otherwise just "AI pilot". A bot has no profile,
-        /// so its hull is the only name it has.
+        /// What an AI seat row is called: the hull it will fly when that is already decided (a
+        /// picked hull, else an opponent's pinned hull), otherwise just "AI pilot". A bot has no
+        /// profile, so its hull is the only name it has.
+        ///
+        /// <para>Resolved by the SAME rule as the chip's icon and hover label
+        /// (<see cref="AIHullSeating.SeatHull"/>, as in <see cref="DrawAiSeatHull"/>). It used to
+        /// check the opponent seat FIRST and name the card's pinned hull there, so a host who picked
+        /// another hull for an opponent AI saw the new icon under the old name ("Squirrel" in
+        /// Regatta) until they hovered and the hover label, which read the pick, replaced it.</para>
         /// </summary>
         string AiSeatName(int ordinal, Domains domain, ICollection<Domains> humanDomains)
         {
-            SO_Vessel hull = null;
-            if (AIHullSeating.IsOpponentSeat(OpponentHull, domain, humanDomains))
-                hull = CardVessel(OpponentHull);
-            else if (AllyHullPickerAvailable && config != null)
-                hull = CardVessel(config.AIVesselAt(ordinal));
+            var pick = AllyHullPickerAvailable && config != null ? config.AIVesselAt(ordinal) : VesselClassType.Random;
+            var hull = CardVessel(AIHullSeating.SeatHull(OpponentHull, domain, humanDomains, pick));
             return hull && !string.IsNullOrEmpty(hull.Name) ? hull.Name : "AI pilot";
         }
 

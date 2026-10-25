@@ -65,6 +65,16 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 AI seat names follow the pick; result rows name each pilot's vessel (`claude/wizardly-euler-3ccjg6`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** `ArcadeGameConfigureModal.AiSeatName` resolves the hull by `AIHullSeating.SeatHull`, the rule the chip's icon and hover label already used. On an opponent seat it named the card's pinned hull first, so a picked hull showed under "Squirrel" (Regatta) until hovered. The result panel's line under each name is now `{domain}  ·  {vessel}`, the hull that human or AI was flying at the end (`Scoreboard.pilotLine` / `pilotNoVesselLine`, authored on the component).
+
+**Verified without the editor:** `unity_refcompile` player OK; `author_ingame_hud.py`, `check_hud_onscreen.py`, `author_menu_configure.py` checks OK.
+
+**Verify in editor:**
+1. Arena > Regatta configure: add an AI on the other team, tap its chip to step the hull. The row's name changes at once (no hover needed) and matches the hover label.
+2. Play the match with a mix of hulls, humans and AI. Each result row reads e.g. `RUBY · SQUIRREL` under the name, and the hull is the one that pilot flew. A single-hull card shows its hull on every row.
+
 ### 🟡 Leaving a match lands on its launch panel, not on HOME (`claude/wizardly-euler-3ccjg6`, #1529, 2026-10-25) — PARTIALLY CONFIRMED IN EDITOR
 
 **Confirmed in editor 2026-10-25 by Yash**, after #1529 merged to bleeding-edge: Main Menu from a match lands back on its launch panel and works as expected (step 1). Ticket T-20261025-4e15 (#1526) closed with that note. Steps 2-6 (the pause menu, Arena, Maelstrom / weekly challenge, a party of two, the boot and freestyle no-regression checks) were not recorded separately; tick each here when it is run, and turn the entry green once all six have passed.
