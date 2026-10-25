@@ -65,6 +65,31 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Leaving a match lands on its launch panel, not on HOME (`claude/wizardly-euler-3ccjg6`, 2026-10-25) — NOT EDITOR-VERIFIED
+
+**What landed:** `MenuReturnCard` (`_Scripts/UI/`) records the card a match was launched from
+(`ArcadeGameConfigureModal.HandleAllPlayersReady`, every peer). The next Menu_Main load takes it, and
+`ScreenSwitcher.ReturnToLaunchedCardCoroutine` re-opens that card over the window that lists it (Arcade, Arena,
+the Maelstrom's own window, or this week's challenge). It waits until the menu is Ready, the boot world is built and
+the lobby has spawned, and gives up to HOME after 90 s. The panel re-seeds from `LaunchPreferenceStore` as on any
+open. HOME as before for: a party guest (the host's re-opened lobby reaches them), a guided path or the first
+orientation funnel, a host loss / session end, an app restart (Yash: "it should take me back to the Game Config
+Panel rather than into lavalamp Home UI ... This should be the general flow").
+
+**Verified without the editor:** `unity_refcompile` player: OK; editor: 0 errors in changed files.
+`MenuReturnCardTests` 9/9 in a scratch NUnit harness (stubbed UnityEngine), with a negative control that fails 2.
+
+**Verify in editor:**
+1. Solo: Arcade > Skim Race, pick intensity 3 and AI difficulty Hard, play to the result panel, press Main Menu.
+   Menu_Main comes back on the Skim Race launch panel over the Arcade grid, at intensity 3 / Hard, with the live
+   preview running. Back lands on the Arcade grid; Start launches again.
+2. Same from the pause menu's Main Menu mid-match.
+3. Arena > Regatta: back on the Arena launch window, the carousel on your hull, SELECT VESSEL still needed.
+4. Maelstrom: the summary's Main Menu lands on the Maelstrom's window. Weekly challenge: lands on this week's challenge.
+5. Party of two (host + guest): host presses Main Menu; both land on the panel, the guest as a guest (read-only
+   host controls), ready-up works.
+6. No regression: first boot opens on HOME; enter freestyle during the splash and nothing opens over you.
+
 ### 🔴 Camera feel: inertia, impact shake, skim and drift rumble, recoil (`Ys-bleeding-edge`, 2026-10-25) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/CAMERA_FEEL.md`. `CustomCameraController` adds a feel layer after its pose and takes it off
