@@ -56,14 +56,18 @@ S = dict(nav=C.script("HubWindowNav"), tab=K.kit_script("KitTextTab"))
 SAFE_AREA_RT, MODAL_WINDOWS_RT, SWITCHER = FD.SAFE_AREA_RT, FD.MODAL_WINDOWS_RT, HM.SWITCHER
 
 # The row, in ScreenSwitcher.ModalWindows values and the words the strip shows (authored on each tab).
-HUB = (("ToyBox", 13, "Toy Box"), ("Arcade", 10, "Arcade"), ("Arena", 14, "Arena"), ("Mission", 15, "Mission"))
+HUB = (("ToyBox", 13, "Toy Box"), ("Arcade", 10, "Arcade"), ("Arena", 14, "Arena"), ("Mission", 15, "Voyage"))   # Rev 13: the Mission window is the Voyage window
+HUB_WORD_TOKENS = (("restLabelToken", "NeutralLightest"), ("selectedLabelToken", "NeutralLightest"),
+                   ("hoverLabelToken", "TextLight"))
 SLIDE_DISTANCE, SLIDE_SECONDS = 160, 0.32   # ScreenSwitcher.hubSlideDistance / hubSlideSeconds
 
 # The strip: under the 84-unit nav band, centred (the board: 120 down at 1080).
 STRIP_TOP, STRIP_H = 104, 44
 WORD_GAP = 30                     # between two words
 CHEVRON = 14                      # the strip's small chevrons
-KEYCAP_W = K.label_width("LT", "Label") + 24
+# The strip's keycaps read LB / RB (Shombith, 2026-10-25): the shoulders slide the hub windows, the triggers page the
+# top bar. Node keys keep their LT / RT names so every fileID stays put.
+KEYCAP_W = max(K.label_width(w, "Label") for w in ("LB", "RB", "LT", "RT")) + 24
 KEYCAP_H = K.line_height("Label") + 8
 # The edge arrows: a glass plate inside the windows' gutters, centred on the screen's height, the chevron above the
 # neighbour's name. The gutters are author_menu_arcade.py's WINDOW_LEFT / WINDOW_RIGHT (100 / 60): a plate 52 wide,
@@ -126,7 +130,10 @@ def strip_tab(strip, key, word, x):
           + A.calls([(ctx.c(k, "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")])
           + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {{fileID: 0}}\n"
           "  isSelected: 0\n"
-          f"  label: {ref(ctx.c(f'{k}/Label', 'tmp'))}\n  underline: {ref(ctx.c(f'{k}/Underline', 'img'))}\n"))
+          f"  label: {ref(ctx.c(f'{k}/Label', 'tmp'))}\n  underline: {ref(ctx.c(f'{k}/Underline', 'img'))}\n"
+          # Arcade, Mission, Arena and Toy Box all read in the one neutral blue; the underline marks the shown one
+          # (Shombith, 2026-10-24).
+          + "".join(f"  {f}: {K.TOKEN_INDEX[t]}\n" for f, t in HUB_WORD_TOKENS)))
     n.add("audio", 114, A.menu_audio(11))
 
 
@@ -139,7 +146,7 @@ def chevron(parent, k, name, r, colour):
 def strip_node(host):
     parts, width = strip_layout()
     s = host.child(N("Strip", "Strip", R((0.5, 1), None, (0, -STRIP_TOP), (width, STRIP_H), (0.5, 1))))
-    for side, text_ in (("LTKeycap", "LT"), ("RTKeycap", "RT")):
+    for side, text_ in (("LTKeycap", "LB"), ("RTKeycap", "RB")):
         slot = s.child(N(f"Strip/{side}", side, R((0, 0.5), None, (parts[side], 0), (KEYCAP_W, KEYCAP_H), (0, 0.5))))
         slot.children.append(P.Inst(f"Strip/{side}/Keycap", "KitKeycap", "Keycap", STRETCH, [("Label#tmp", "m_text", text_, None)]))
     for side in ("LeftChevron", "RightChevron"):
@@ -272,6 +279,8 @@ def validate(files):
         assert re.search(r"  m_Navigation:\n    m_Mode: 0\n", tab), f"the pad can land on the strip's {word} (it must stay on the cards)"
         lab = sc.docs[str(ctx.c(f"Strip/{key}/Label", "tmp"))]
         assert f"  m_text: {word}\n" in lab, f"the strip's {word} lost its authored word"
+        for f, t in HUB_WORD_TOKENS:
+            assert f"  {f}: {K.TOKEN_INDEX[t]}\n" in tab, f"the strip's {word}: {f} is not {t} (all four words read in one blue)"
     for side in ("Left", "Right"):
         btn = sc.docs[str(ctx.c(f"{side}Arrow", "button"))]
         assert re.search(r"  m_Navigation:\n    m_Mode: 0\n", btn), f"the pad can land on the {side.lower()} arrow"
@@ -316,6 +325,8 @@ def self_test(files):
         assert old in seg, f"{old!r} not in document {fid}"
         return text_[:i] + seg.replace(old, new, 1) + text_[j:]
 
+    expect("the shown hub word turning white again", lambda t: in_doc(t, ctx.c("Strip/Arcade", "tab"),
+           f"  selectedLabelToken: {K.TOKEN_INDEX['NeutralLightest']}\n", f"  selectedLabelToken: {K.TOKEN_INDEX['TextLight']}\n"))
     expect("the strip skips the Arena", lambda t: in_doc(t, ctx.c("Host", "nav"), "  - window: 14\n", "  - window: 15\n"))
     expect("the pad can land on a strip word", lambda t: in_doc(
         t, ctx.c("Strip/Arcade", "tab"), "  m_Navigation:\n    m_Mode: 0\n", "  m_Navigation:\n    m_Mode: 3\n"))

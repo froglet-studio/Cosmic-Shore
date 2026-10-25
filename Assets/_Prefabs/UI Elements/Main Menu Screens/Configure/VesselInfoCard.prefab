@@ -168,7 +168,7 @@ MonoBehaviour:
     hex: {fileID: 943987377210281749}
     name: {fileID: 1014917642350593683}
   abilitiesGroup: {fileID: 176477249828429200}
-  lockupStyle: {fileID: 11400000, guid: e37e3e9bfd384670a91498f17950618e, type: 2}
+  hexTint: 7
   subtitleTemplate: '{seat}  -  {element} vessel'
   elementOnlyTemplate: '{element} vessel'
   abilitiesHeading: ABILITIES

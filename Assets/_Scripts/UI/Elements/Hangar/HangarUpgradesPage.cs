@@ -51,7 +51,8 @@ namespace CosmicShore.UI
         [Header("Header")]
         [SerializeField] private TMP_Text headerLineText;
 
-        [SerializeField] private AbilityLockupStyleSO lockupStyle;
+        [Tooltip("What an upgrade row's glyph, halo and earned pips draw in: gold, because an upgrade is spent crystals. Docs/UI_COLOR_RULES.md: an element never has a fixed colour in the UI - its glyph's shape says which it is.")]
+        [SerializeField] private CosmicShore.UI.UIColorToken elementTint = CosmicShore.UI.UIColorToken.Purchase;
 
         [Header("Price")]
         [Tooltip("Crystals per level: the next level costs this x that level (the owner: 100).")]
@@ -98,7 +99,6 @@ namespace CosmicShore.UI
 
         void Awake()
         {
-            if (!lockupStyle) lockupStyle = Resources.Load<AbilityLockupStyleSO>("AbilityLockupStyle");
             foreach (var row in rows)
             {
                 if (row == null) continue;
@@ -253,7 +253,7 @@ namespace CosmicShore.UI
 
         string ElementName(int i, Row row) => i >= 0 && i < elementNames.Length ? elementNames[i] : row.element.ToString();
 
-        Color Colour(Element e) => lockupStyle ? lockupStyle.ColourFor(e) : Color.white;
+        Color Colour(Element e) => CosmicShore.UI.UITheme.Resolve(null, elementTint);
 
         static string Fill(string template, params (string key, string value)[] tokens)
         {

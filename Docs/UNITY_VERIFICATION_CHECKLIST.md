@@ -14850,6 +14850,45 @@ Not opened in Unity (no editor in the session); `unity_refcompile --config edito
 - [ ] Open that card's details: `Level 3 → 7`, each number `now → next`, `Unlocks at Lv 5: ...` for a jolt the pick passes.
 - [ ] With no hand, open details: each held card heads `Lv N → N+1` with numbers beside the next level's and its next jolt; a card at 15 shows `Max level`.
 
+## Garrett's palette and attention pass (2026-10-24, `claude/new-session-76hnyc`)
+
+Not opened in Unity (no editor in the session; `/verify-unity` did not run). `unity_refcompile` player: 0 errors in
+project code; Amoebius builds. Rules: `Docs/UI_COLOR_RULES.md`. Check by hand:
+- [ ] Menu_Main, every hub window: no element colours anywhere (no yellow / blue / purple / teal labels, rims or bars);
+      no panel border light runs round a panel; the lattice backdrop holds still; nothing floats or spins idly.
+- [ ] Buttons: PLAY / JOIN / ACCEPT lime; UPGRADE / UNLOCK / CONVERT / SPEND gold; DELETE MY DATA fire; Spectate,
+      Invite, Main menu, Leave lobby neutral.
+- [ ] Weekly leaderboard: podium first lime, second white, third neutral; reward amounts lime; a blocked launch's
+      reason in fire.
+- [ ] Selection blue only on the picked tile / open tab: not on the playing track, your scoreboard row, the favourite
+      pilot ring, the Toybox daily card, the sign-in spinner. The Hangar pilot underline is blue on the picked pilot.
+- [ ] Friends orb: no orbiting dots, still ring, solid bonds; the online count still reads.
+- [ ] In a match: the ability row has no element colour and no lava motion; the scoreboard rows have plain hairline
+      borders, PLAY AGAIN lime, MAIN MENU neutral, the reward amount lime.
+- [ ] Settings > links open www.froglet.games pages.
+- [ ] The bar under the open top-nav tab (Home / Hangar / Ark) is a still sky-blue line, like the hub strip's.
+- [ ] Hub strip: Toy Box, Arcade, Arena and Mission all read in the same blue whichever is open; only the underline moves.
+- [ ] Home: the Toy Box, Arcade and Arena buttons look the same (no lime Arcade); Mission is dimmed while unavailable.
+- [ ] EditMode suite passes.
+
+## Sea lines behind every window (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session. Proven offline: `lattice_preview.py` compiles `UISeaLines.cginc` and the
+`SeaLines.shader` fragment with clang and asserts the dials; `author_ui_lattice.py --check / --self-test`; every
+window generator `--check`; `check_ui_colors.py`; `check_generated_assets.py`. Owed in the editor:
+- [ ] `CosmicShore/UI/SeaLines` compiles with no errors or warnings (Console, shader inspector).
+- [ ] Arcade, Arena, Mission, Toy Box, Configure, Profile, Leaderboard: slow lines in three depths, no seam, no flicker,
+      the world barely visible through the 95 % veil (`Docs/MENU_REDESIGN_B.md` §67).
+
+## Friends drawer docks into hub windows (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session; `/verify-unity` could not run. Proven offline: refcompile player config clean,
+Amoebius `CosmicShore.Live` builds, `author_menu_friends_drawer.py --check / --self-test`, the hub window generators
+`--check`. Owed in the editor (`Docs/MENU_REDESIGN_B.md` §68):
+- [ ] `FriendsDrawer` and `FriendsDrawerDock` compile; no missing-script warnings on the four hub windows.
+- [ ] Home / Hangar: the drawer takes the left side under the nav and moves nothing.
+- [ ] Arcade / Arena / Mission / Toy Box: the cards move right with the drawer (normal and maximised) and back on close.
+- [ ] A game's configure (e.g. Scurry), Settings, Leaderboard: the drawer closes and the orb hides until Back.
 ## 🔴 2026-10-24 — Quest track parallax sleeps while hidden (Menu_Main clipping cost) (unverified: no Unity CLI in the session)
 
 **Files:** `Assets/_Scripts/UI/Views/QuestTrackView.cs`. What ran instead of `/verify-unity`: `unity_refcompile`
@@ -14969,6 +15008,58 @@ compilation and AI-state gates OK; `rhino_line_sim.py --self-test`. `Arcade/REGA
 3. After a few races, `python3 Tools/Build/regatta_rival_report.py --dir <flights> --since 2026-10-26 --hull manta`:
    rings a minute well above the 8 of the older races, boosted share well above 20%.
 
+
+## Rev 13: four tabs, profile from the pilot, Voyage, brighter sea (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session; `/verify-unity` could not run. Proven offline: refcompile player config clean,
+Amoebius Live builds, every menu generator `--check` / `--self-test`, `author_tandava_assets.py --check`, gates.
+Owed in the editor (`Docs/MENU_REDESIGN_B.md` §69):
+- [ ] `VoyageView`, `ProfileScreen`, `ScreenSwitcher`, `SeaLines.shader` compile with no errors.
+- [ ] The top bar shows Hangar, Ark, Home, Port; LT / RT never land on the Profile.
+- [ ] Home: clicking the pilot or pressing Y opens the Profile; Back / B returns Home (and closes the pilot picker first).
+- [ ] Profile: full-width pilot card with five stats, Favourites, Fly time by vessel, Audio Studio; no Episodes, no Quests.
+- [ ] Home's fourth hub reads VOYAGE, draws like the others and opens the Voyage window; the strip reads Voyage.
+- [ ] Voyage: Episode 1 bar and "n of 5", the five quest rows with CLAIM / PLAY working, Tandava's art and text,
+      SET SAIL opens the arena launch panel with Squirrel / Sparrow / Rhino; Episode 2 locked.
+- [ ] Launch Tandava solo and in a party (guest sees the card), with AI seats; leaving returns sensibly.
+- [ ] The sea: lines shade sky to periwinkle left to right, a deep-blue wash at the top, still slow.
+
+## Sea everywhere, lattice retired; LB/RB, music card, name opens profile (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session; `/verify-unity` could not run. Proven offline: refcompile player config clean,
+Amoebius Live builds, every touched generator `--check` / `--self-test`, `lattice_preview.py --check`, gates.
+Owed in the editor (`Docs/MENU_REDESIGN_B.md` §70):
+- [ ] No missing-material pink anywhere: the deleted Lattice materials are named by nothing.
+- [ ] The sea moves behind the splash, the sign-in scene, the cell-change loading screen, the in-game scoreboard, the
+      friends drawer and the Hangar; the finer panel sea inside the Ark recipe, leaderboard list, pilot card, avatar
+      preview and toy configure cards.
+- [ ] Toy Box cards and the Shuffle card carry no background pattern.
+- [ ] Hub windows: LB / RB slide between windows; LT / RT close the window and page the top bar.
+- [ ] The now-playing card hides while any window is open over Home.
+- [ ] Home: clicking the pilot's name opens the Profile; in the Profile, clicking the name opens the name editor.
+
+## Rev 17 J: the Voyage window, episodes apart from voyages (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session. Proven offline: generator `--check` / `--self-test`, refcompile, gates.
+Owed in the editor (`Docs/MENU_REDESIGN_B.md` §71):
+- [ ] Voyage window: "Episodes" left with Episode 1's panel (title, bar, "n / 5") and five quest cards on a track;
+      Episode 2 a locked bar under it; "Voyages" right with Tandava full bleed, Voyage 2 and 3 locked.
+- [ ] The quest cards fit at 224 wide: names, goal rows and PLAY QUEST do not overlap; CLAIM and PLAY work.
+- [ ] SET SAIL is focused first and opens the arena launch panel; the voyages column scrolls once there are more.
+- [ ] The friends drawer still pushes the window's header and body right.
+
+## Rev 18 A: game and toy cards (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session. Proven offline: refcompile, generator `--check` / `--self-test`, the drift harness.
+Owed in the editor (`Docs/MENU_REDESIGN_B.md` §72):
+- [ ] `CardDrift.shader` compiles; `KitCoverImage` compiles with the new `overscan` field.
+- [ ] `HullLit.shader` compiles. Arcade: art band on top, body under it with faint sea lines; the hull (lit, no plate,
+      §73) reads at 1080p and on a phone; the petals
+      read; the name fits; picks and star sit on the art; locked cards dim and show the lock.
+- [ ] Arena: art top half, pilots / domains, name, description, the seated hulls lit along the foot (all hulls shown).
+- [ ] Toy Box: portrait in its well, section / name / tagline under it.
+- [ ] The art drifts slowly and never shows an edge, including inside a party-pick or favourite refresh; toy portraits bob.
+- [ ] The Profiler shows no per-frame canvas rebuild from the cards.
 
 ## 🔴 2026-10-25 — Prism carriers: no "Quaternion To Matrix conversion failed" on slice, destruction or shed (unverified: no Unity CLI in the session)
 
