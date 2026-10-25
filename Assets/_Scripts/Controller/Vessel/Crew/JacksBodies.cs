@@ -41,7 +41,7 @@ namespace CosmicShore.Gameplay
 
         // Offsets are quantized before they are written, so jacks at rest do not dirty the variables every tick.
         const float OffsetQuantum = 0.25f;
-        const byte DecoyBit = 1, CallingBit = 2, SeatedBit = 4, FlyingBit = 8, PlaneBit = 16;
+        const byte DecoyBit = 1, CallingBit = 2, SeatedBit = 4, FlyingBit = 8, PlaneBit = 16, DecoyBBit = 32;
 
         [Header("Models (found by name under this hull)")]
         [Tooltip("Name of the Rhino rig the hull was cloned from (left in the prefab, switched off: the puppetry still turns " +
@@ -116,6 +116,9 @@ namespace CosmicShore.Gameplay
             readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Vector3> n_decoy = new(
             readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        // the second decoy (Time level 5, 2026-10-25), a world offset like the first
+        readonly NetworkVariable<Vector3> n_decoyB = new(
+            readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
 
         /// <summary>True where the jacks are DECIDED: the owning machine, or anywhere while not network-spawned.</summary>
         bool IsAuthority => !IsSpawned || IsOwner;
@@ -131,7 +134,7 @@ namespace CosmicShore.Gameplay
         JacksMath.NetFrame _netShown;
         JacksNet.Swing _netTrail;
         bool _jacksShown, _snap = true, _flying;
-        Vector3 _decoyOffset, _prevHullPosition;
+        Vector3 _decoyOffset, _decoyOffsetB, _prevHullPosition;
         float _hullSpeed;
 
         sealed class Jack
@@ -239,8 +242,8 @@ namespace CosmicShore.Gameplay
         /// The owner's jacks, decoy, call and mode, as world positions on this peer. False where this machine decides the
         /// jacks itself (the owner, or unspawned), or before the owner has published them.
         /// </summary>
-        internal bool TryGetRemoteCrew(out Vector3 jackA, out Vector3 jackB, out bool hasDecoy, out Vector3 decoy, out bool calling,
-                                       out bool flying, out bool plane)
+        internal bool TryGetRemoteCrew(out Vector3 jackA, out Vector3 jackB, out bool hasDecoy, out Vector3 decoy,
+                                       out bool hasDecoyB, out Vector3 decoyB, out bool calling, out bool flying, out bool plane)
         {
             byte flags = n_flags.Value;
             var p = transform.position;
@@ -249,6 +252,8 @@ namespace CosmicShore.Gameplay
             jackB = flying ? p + transform.rotation * n_jackB.Value : p + n_jackB.Value;
             decoy = p + n_decoy.Value;
             hasDecoy = (flags & DecoyBit) != 0;
+            decoyB = p + n_decoyB.Value;
+            hasDecoyB = (flags & DecoyBBit) != 0;
             calling = (flags & CallingBit) != 0;
             plane = (flags & PlaneBit) != 0;
             return !IsAuthority && (flags & SeatedBit) != 0;
@@ -282,11 +287,16 @@ namespace CosmicShore.Gameplay
                 bool flying = seated && !_crew.Herding;
                 bool calling = seated && _crew.Calling;
                 bool plane = seated && _crew.PlaneAttract;
-                bool decoy = false;
-                if (seated && _crew.TryGetDecoy(out var at))
+                bool decoy = false, decoyB = false;
+                if (seated && _crew.TryGetDecoy(0, out var at))
                 {
                     decoy = true;
                     _decoyOffset = at - transform.position;
+                }
+                if (seated && _crew.TryGetDecoy(1, out var atB))
+                {
+                    decoyB = true;
+                    _decoyOffsetB = atB - transform.position;
                 }
                 Vector3 a = Vector3.zero, b = Vector3.zero;
                 if (seated)
@@ -294,7 +304,7 @@ namespace CosmicShore.Gameplay
                     a = flying ? _crew.JackLocal(0) : _crew.JackWorld(0) - transform.position;
                     b = flying ? _crew.JackLocal(1) : _crew.JackWorld(1) - transform.position;
                 }
-                Publish(seated, flying, calling, plane, decoy, a, b, _decoyOffset);
+                Publish(seated, flying, calling, plane, decoy, decoyB, a, b);
                 SetMode(flying);
                 Place(0, a, true, rot);
                 Place(1, b, true, rot);
@@ -577,16 +587,17 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void Publish(bool seated, bool flying, bool calling, bool plane, bool decoy, Vector3 a, Vector3 b, Vector3 decoyOffset)
+        void Publish(bool seated, bool flying, bool calling, bool plane, bool decoy, bool decoyB, Vector3 a, Vector3 b)
         {
             if (!IsSpawned || !IsOwner) return;
             byte flags = (byte)((seated ? SeatedBit : 0) | (flying ? FlyingBit : 0) | (calling ? CallingBit : 0)
-                                | (plane ? PlaneBit : 0) | (decoy ? DecoyBit : 0));
+                                | (plane ? PlaneBit : 0) | (decoy ? DecoyBit : 0) | (decoyB ? DecoyBBit : 0));
             if (flags != n_flags.Value) n_flags.Value = flags;
             if (!seated) return;
             Write(n_jackA, a);
             Write(n_jackB, b);
-            if (decoy) Write(n_decoy, decoyOffset);
+            if (decoy) Write(n_decoy, _decoyOffset);
+            if (decoyB) Write(n_decoyB, _decoyOffsetB);
         }
 
         static void Write(NetworkVariable<Vector3> v, Vector3 value)

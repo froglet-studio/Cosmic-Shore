@@ -42,11 +42,11 @@ MonoBehaviour:
     UpgradeLabel: 'Eat Shields'
     UpgradeDescription: 'The herd eats shielded prisms.'
   - Element: 4
-    AbilityLabel: 'Herd Speed'
-    AbilityDescription: 'Time sets how fast the herd swims. The call (B): herding, it pulls the herd between the jacks for a moment, on a long cooldown; netting, it turns the herd''s pull to your plane on and off.'
-    Input: 7
+    AbilityLabel: 'Decoy Dash'
+    AbilityDescription: 'Herding, pull a trigger (or tap the decoy) and both jacks dash to the decoy. Time makes the dash and the herd faster.'
+    Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 'Flying Decoy'
-    UpgradeDescription: 'Netting, the jacks drop the decoy where they are (A), so they can jump back to it.'
+    UpgradeLabel: 'Second Decoy'
+    UpgradeDescription: 'A second decoy: the jack on each side of the screen leaves its own (its bumper, or lifting its thumb), and that side''s trigger dashes to it.'

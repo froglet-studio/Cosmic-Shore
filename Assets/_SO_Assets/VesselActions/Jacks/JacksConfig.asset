@@ -60,6 +60,9 @@ MonoBehaviour:
   callTime: 2.5
   callCooldown: 20
   decoyCooldown: 4
+  dashSpeed: 3
+  dashGap: 40
+  decoyTapPixels: 70
   teleportGuard: 0.6
   pooEvery: 6
   pooCount: 7

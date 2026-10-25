@@ -152,8 +152,15 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float callTime = 2.5f;
         [Tooltip("callCooldown: herding, seconds before the call is ready again.")]
         [SerializeField, Min(0f)] float callCooldown = 20f;
-        [Tooltip("decoyCooldown: Time L5, seconds between the decoys the flying jacks drop.")]
+        [Tooltip("Retired 2026-10-25 with the flying decoy (Time level 5 is the second decoy now); nothing reads it.")]
         [SerializeField, Min(0f)] float decoyCooldown = 4f;
+        [Tooltip("The Time ability (Garrett, 2026-10-25: \"fly both jacks over to the decoy quickly when a trigger is pulled in " +
+                 "herding mode\"): the dash's speed as a multiple of the jacks' run (dogSpeed), times the herd's Time speed.")]
+        [SerializeField, Min(1f)] float dashSpeed = 3f;
+        [Tooltip("The dash: how far apart the two jacks land, one either side of the decoy (u).")]
+        [SerializeField, Min(0f)] float dashGap = 40f;
+        [Tooltip("The dash on a phone: a tap this close to a decoy on the herding view (pixels) dashes to it.")]
+        [SerializeField, Min(8f)] float decoyTapPixels = 70f;
         [Tooltip("Seconds between teleports (the lab's 0.6 s guard).")]
         [SerializeField, Min(0f)] float teleportGuard = 0.6f;
 
@@ -301,6 +308,9 @@ namespace CosmicShore.Gameplay
         public float CallCooldown => callCooldown;
         public float DecoyCooldown => decoyCooldown;
         public float TeleportGuard => teleportGuard;
+        public float DashSpeed => dashSpeed;
+        public float DashGap => dashGap;
+        public float DecoyTapPixels => decoyTapPixels;
         public float PooEvery => pooEvery;
         public int PooCount => pooCount;
         public float PooSpread => pooSpread * labScale;

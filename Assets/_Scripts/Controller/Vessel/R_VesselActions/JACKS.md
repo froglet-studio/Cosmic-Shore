@@ -45,7 +45,7 @@ the small view (the Wrasse's gesture, `PilotSwapGesture`).
   and its x-z plane is the board. Each touch takes the nearest jack, which runs to the point under the thumb
   (`dogSpeed`). Lifting the thumb leaves the decoy where that jack stands (one decoy; a new one replaces the old). On a
   gamepad the left stick runs the left jack and the right stick the right one (screen-relative, `padDogSpeed`), and the
-  bumper or trigger on that side is the lift. A stick never drives a jack off the screen. The flight input is paused: the
+  bumper on that side is the lift; the trigger on that side is the dash (§2, Time). A stick never drives a jack off the screen. The flight input is paused: the
   sticks are the jacks'. The herd is always drawn to the board's plane. **Call** (B or T, read straight off the device
   because the flight's buttons are paused, or the view's call button on a phone): for `callTime` the herd is pulled to
   the point between the jacks, which stop repelling; then `callCooldown` (Garrett, 2026-10-24: "in herding mode it
@@ -187,7 +187,7 @@ crystal's own). The invisible hull's TOUCH leaves crystals and prisms alone in b
 | Charge | the share of DANGER creatures: 0% at -5, 100% at 15. A danger creature that touches a rival hull stings it (a scored Strike through `CombatHitDrain`) and is spent | **Attack**: the herd goes for rivals within `attackRange` and every creature that touches one bites it (a Strike) |
 | Mass | the herd's birth rate: a birth takes the species' own feeds at -5, a third of them at 15 | **Mass Clusters**: every `pooEvery` one creature lays `pooCount` prisms of our domain |
 | Space | every herder's ring: the thumb floor at -5, +6% of it per level above | **Eat Shields**: the herd eats shielded prisms (never super-shielded) |
-| Time | the herd's speed, +6% per level, floored at x0.4 | **Flying Decoy**: netting, A (Button1, Input 6) drops the decoy where the jacks are (was the Marlin Decoy) |
+| Time | **Decoy Dash** (2026-10-25: "lets make the time ability to fly both jacks over to the decoy quickly when a trigger is pulled in herding mode"): herding, a trigger (Q / E, or a tap on the decoy) dashes both jacks to the decoy at `dashSpeed` (3) x their run, landing `dashGap` (40 u) apart either side of it; Time scales the dash and the herd's speed alike, +6% per level, floored at x0.4 | **Second Decoy** (2026-10-25: "lets have the upgrade give the player a second decoy controlled by the second trigger (in placement and which one you fly to)"): each side has its own decoy - the jack further left on the herding view leaves the left one (its bumper, or lifting its thumb) and the left trigger dashes to it, the right likewise; the netting jump goes to the one placed last. It replaced the Flying Decoy (netting, A dropped the decoy; Input 6 is unbound) |
 
 Each upgrade is its own gate with its element written out (`JacksExecutor.ChargeUpgraded` .. `TimeUpgraded`), so
 `/element-ability-table` reads all four as live (2026-10-25; through one `Upgraded(e)` helper it read three as prose). The

@@ -14249,3 +14249,20 @@ the net takes is plucked (freed as cell mass) and dragged. Headless compile OK (
     are your colour, use a rival's plant or trail.)
 30. A big plant fills the net (48 prisms): after that, prisms crossing the mouth break against the ones it carries.
 
+### Round 8 (2026-10-25, same branch): the decoy dash and the second decoy
+
+Garrett: "lets make the time ability to fly both jacks over to the decoy quickly when a trigger is pulled in herding mode.
+Lets have the upgrade give the player a second decoy controlled by the second trigger (in placement and which one you fly
+to)." Headless compile OK (player and editor, 0 errors in changed files); `author_jacks_assets.py --check` failed first
+(Input 6 still bound, no dash fields, the old Time card words), then passed. The decoy's second slot replicates
+(`JacksBodies.n_decoyB`, protocol 13 still).
+
+31. Herding, lift a thumb (or press a bumper) to leave the decoy, run the jacks away, pull EITHER trigger: both jacks dash
+    to the decoy, quickly, and land either side of it; the thumbs take them back after. On a phone, tap the decoy.
+32. At Time 5: lift the screen-LEFT jack (left bumper) and the screen-RIGHT jack (right bumper) in different places: two
+    decoys. The left trigger dashes to the left one, the right trigger to the right one; a trigger whose decoy is not
+    down does nothing. Below Time 4 the second decoy goes away.
+33. Netting: the jump (the trigger or both thumbs lifted) goes to the decoy placed last, and spends it. A (Button1)
+    does nothing now (the flying decoy is retired).
+34. The Time card lights while the jacks dash; its text reads Decoy Dash / Second Decoy.
+

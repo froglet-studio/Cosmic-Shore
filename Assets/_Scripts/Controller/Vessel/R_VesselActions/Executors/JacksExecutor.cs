@@ -122,11 +122,18 @@ namespace CosmicShore.Gameplay
         readonly bool[] _jackDown = new bool[2];
         readonly bool[] _jackWasDown = new bool[2];
         readonly Vector3[] _flightLocal = new Vector3[2];   // flying: each jack's place in the hull's frame, eased
-        bool _hasDecoy;
-        Vector3 _decoy;
+        // the decoys (Garrett, 2026-10-25: "lets have the upgrade give the player a second decoy controlled by the second
+        // trigger (in placement and which one you fly to)"): slot 0 always; slot 1 with Time level 5, the right side's
+        readonly bool[] _decoyOn = new bool[2];
+        readonly Vector3[] _decoys = new Vector3[2];
+        int _lastDecoy;   // the decoy placed most recently: the one the netting jump goes to
+
+        // the Time ability (2026-10-25: "fly both jacks over to the decoy quickly when a trigger is pulled in herding mode")
+        bool _dashing;
+        int _dashSlot;
 
         // the call and the decoy
-        float _callUntil, _callReadyAt, _decoyReadyAt, _teleReadyAt, _aiDecoyAt;
+        float _callUntil, _callReadyAt, _teleReadyAt;
 
         // the mode: herding (the hull holds, the jacks run on its plane) or flying (the jacks fly the hull)
         bool _herding, _inputPaused, _holding, _heldWasStationary;
@@ -166,7 +173,9 @@ namespace CosmicShore.Gameplay
         public bool PlaneAttract => _planeAttract;
         /// <summary>0 when the call is ready, 1 just after it was used.</summary>
         public float CallCooldown01 => config && config.CallCooldown > 0f ? Mathf.Clamp01((_callReadyAt - Time.time) / config.CallCooldown) : 0f;
-        public bool HasDecoy => _hasDecoy;
+        public bool HasDecoy => _decoyOn[0] || _decoyOn[1];
+        /// <summary>Herding: both jacks are dashing to a decoy (the Time ability).</summary>
+        public bool Dashing => _dashing;
         /// <summary>The jacks are out herding and the hull holds still (false: they are flying it).</summary>
         public bool Herding => _herding;
         /// <summary>The share of the herd that is danger at the current Charge.</summary>
@@ -204,9 +213,10 @@ namespace CosmicShore.Gameplay
             _planeAttract = true;
             _vessel = _status != null && _status.Transform ? _status.Transform.GetComponent<IVessel>() : null;
             _snapped = false;
-            _hasDecoy = false;
+            ClearDecoys();
+            _dashing = false;
             _holding = false;   // a respawn resets the hull's stationary flag itself
-            _callUntil = _callReadyAt = _decoyReadyAt = _teleReadyAt = _aiDecoyAt = 0f;
+            _callUntil = _callReadyAt = _teleReadyAt = 0f;
             _recruitAt = _floorBirthAt = 0f;
             _aiModeAt = Time.time + (config ? config.AIFlightSeconds : 6f);
             _pooAt = Time.time + (config ? config.PooEvery : 6f);
@@ -251,7 +261,8 @@ namespace CosmicShore.Gameplay
         void OnTurnEnd()
         {
             ReleaseAll();
-            _hasDecoy = false;
+            ClearDecoys();
+            _dashing = false;
         }
 
         /// <summary>The local human owns this hull (not an AI, not a remote copy).</summary>
@@ -300,26 +311,72 @@ namespace CosmicShore.Gameplay
             Play(config.CallSfx, JacksCentre);
         }
 
-        /// <summary>The flying jacks JUMP to the decoy, keeping their heading; the decoy is spent. On the machine that owns
-        /// the hull (its transform replicates). Nothing while they herd: the hull is parked and the jacks run to it.</summary>
+        /// <summary>The netting jacks JUMP to the decoy placed last, keeping their heading; that decoy is spent. On the machine
+        /// that owns the hull (its transform replicates). Herding, the triggers DASH instead (<see cref="Dash"/>).</summary>
         public void Teleport()
         {
-            if (!config || !_hasDecoy || _herding || Time.time < _teleReadyAt || _vessel == null || _status == null) return;
+            int slot = _decoyOn[_lastDecoy] ? _lastDecoy : _decoyOn[0] ? 0 : _decoyOn[1] ? 1 : -1;
+            if (!config || slot < 0 || _herding || Time.time < _teleReadyAt || _vessel == null || _status == null) return;
             if (!ElementalTransfer.IsDecidedHere(_status)) return;
             var t = _status.Transform;
             if (!t) return;
             Play(config.TeleportSfx, t.position);
-            _vessel.SetPose(new Pose(_decoy, t.rotation));
+            _vessel.SetPose(new Pose(_decoys[slot], t.rotation));
             _teleReadyAt = Time.time + config.TeleportGuard;
-            _hasDecoy = false;
+            _decoyOn[slot] = false;
         }
 
-        /// <summary>TIME level 5: the jacks drop THE decoy where they are (their one decoy; a new one replaces the old).</summary>
-        public void DropJacksDecoy()
+        /// <summary>
+        /// THE TIME ABILITY (Garrett, 2026-10-25: "lets make the time ability to fly both jacks over to the decoy quickly when
+        /// a trigger is pulled in herding mode"): both jacks dash to decoy <paramref name="slot"/> at <c>dashSpeed</c> x their
+        /// run, faster with Time, one either side of it; the thumbs and sticks take them back when they arrive. Without the
+        /// Time-5 upgrade there is one decoy and either trigger dashes to it; with it each trigger dashes to its own.
+        /// </summary>
+        void Dash(int slot)
         {
-            if (!config || !TimeUpgraded || Time.time < _decoyReadyAt) return;
-            DropDecoy(OnPlane(JacksCentre));
-            _decoyReadyAt = Time.time + config.DecoyCooldown;
+            if (!_herding || !config) return;
+            // one decoy: either trigger goes to it; two (Time 5): each trigger to its own, nothing while its own is not down
+            if (!TimeUpgraded) slot = _decoyOn[0] ? 0 : -1;
+            else if (!_decoyOn[slot]) slot = -1;
+            if (slot < 0) return;
+            _dashing = true;
+            _dashSlot = slot;
+            _pointerJack.Clear();
+            Play(config.TeleportSfx, _decoys[slot]);
+        }
+
+        /// <summary>Herding, a dash under way: both jacks run to either side of the decoy; done when both are there.</summary>
+        void StepDash(float dt)
+        {
+            if (!_decoyOn[_dashSlot]) { _dashing = false; return; }
+            var at = OnPlane(_decoys[_dashSlot]);
+            float speed = config.DogSpeed * config.DashSpeed * JacksMath.SpeedMultiplier(Level(Element.Time));
+            bool arrived = true;
+            for (int k = 0; k < 2; k++)
+            {
+                var goal = at + _r * ((k == 0 ? -0.5f : 0.5f) * config.DashGap);
+                _jack[k] = JacksMath.StepToward(OnPlane(_jack[k]), goal, speed, dt);
+                _jackTarget[k] = _jack[k];
+                _jackDown[k] = _jackWasDown[k] = false;
+                arrived &= (_jack[k] - goal).sqrMagnitude < 1f;
+            }
+            if (arrived) _dashing = false;
+        }
+
+        void ClearDecoys()
+        {
+            _decoyOn[0] = _decoyOn[1] = false;
+            _lastDecoy = 0;
+        }
+
+        /// <summary>Which decoy a lift by jack <paramref name="k"/> leaves: the one decoy, or with Time 5 its SIDE's - the jack
+        /// further left on the herding view leaves the left trigger's decoy, the other the right trigger's.</summary>
+        int DecoySlotFor(int k)
+        {
+            if (!TimeUpgraded) return 0;
+            if (_view == null) return k;
+            float x = _view.WorldToScreen(_jack[k]).x, other = _view.WorldToScreen(_jack[1 - k]).x;
+            return x <= other ? 0 : 1;
         }
 
         // a held button or a double press toggles the plane's pull once
@@ -331,10 +388,12 @@ namespace CosmicShore.Gameplay
             if (config && creature && _herd.Count < config.HerdCap && creature.Leashable && !creature.IsLeashed) Join(creature);
         }
 
-        void DropDecoy(Vector3 at)
+        void DropDecoy(int slot, Vector3 at)
         {
-            _decoy = at;
-            _hasDecoy = true;
+            if (!TimeUpgraded) slot = 0;
+            _decoys[slot] = at;
+            _decoyOn[slot] = true;
+            _lastDecoy = slot;
             if (config) Play(config.DecoySfx, at);
         }
 
@@ -369,9 +428,12 @@ namespace CosmicShore.Gameplay
                 if (!_herding) StepFlightJacks(dt);
                 else if (human) ReadHumanJacks(dt, ring);
                 else StepAIJacks(dt, ring);
-                if (_herding) StepJacks(dt);
-                if (_hasDecoy) _decoy = OnPlane(_decoy);
-                if (_status.AutoPilotEnabled) StepAIButtons();
+                if (_herding && _dashing) StepDash(dt);
+                else if (_herding) StepJacks(dt);
+                else _dashing = false;
+                for (int s = 0; s < 2; s++)
+                    if (_decoyOn[s]) _decoys[s] = OnPlane(_decoys[s]);
+                if (!TimeUpgraded) _decoyOn[1] = false;   // the second decoy goes with the upgrade
             }
 
             bool herdingNow = remote ? _remoteHerding : _herding;
@@ -415,14 +477,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool FollowRemoteCrew()
         {
-            if (!_bodies || !_bodies.TryGetRemoteCrew(out var a, out var b, out bool decoy, out var at, out bool calling,
-                                                       out bool flying, out bool plane)) return false;
+            if (!_bodies || !_bodies.TryGetRemoteCrew(out var a, out var b, out bool decoy, out var at, out bool decoyB, out var atB,
+                                                       out bool calling, out bool flying, out bool plane)) return false;
             _remoteHerding = !flying;
             _remotePlane = plane;
             _jack[0] = a;
             _jack[1] = b;
-            _hasDecoy = decoy;
-            if (decoy) _decoy = OnPlane(at);
+            _decoyOn[0] = decoy;
+            if (decoy) _decoys[0] = OnPlane(at);
+            _decoyOn[1] = decoyB;
+            if (decoyB) _decoys[1] = OnPlane(atB);
             if (calling) _callUntil = Time.time + RemoteCallHold;
             else if (_callUntil > Time.time) _callUntil = Time.time;
             return true;
@@ -484,7 +548,7 @@ namespace CosmicShore.Gameplay
             {
                 _jack[k] = OnPlane(_jack[k]);
                 if (_jackDown[k]) _jack[k] = JacksMath.StepToward(_jack[k], OnPlane(_jackTarget[k]), config.DogSpeed, dt);
-                else if (_jackWasDown[k]) DropDecoy(_jack[k]);   // the lift: the decoy is left where the jack stands
+                else if (_jackWasDown[k]) DropDecoy(DecoySlotFor(k), _jack[k]);   // the lift: a decoy is left where the jack stands
                 _jackWasDown[k] = _jackDown[k];
             }
         }
@@ -546,15 +610,6 @@ namespace CosmicShore.Gameplay
             _planeAttract = true;
         }
 
-        /// <summary>The AI's buttons: at Time 5 it leaves a decoy where it flies every few seconds (the lab's <c>shAI</c>
-        /// pilot rule).</summary>
-        void StepAIButtons()
-        {
-            if (_herding || !TimeUpgraded || _hasDecoy || Time.time < _aiDecoyAt) return;
-            DropJacksDecoy();
-            _aiDecoyAt = Time.time + 6f;
-        }
-
         // ---- the human on the jacks: thumbs, the mouse, the sticks ----
 
         void ReadHumanJacks(float dt, float ring)
@@ -572,6 +627,7 @@ namespace CosmicShore.Gameplay
                     int id = t.touchId.ReadValue();
                     var at = t.position.ReadValue();
                     if (t.press.wasPressedThisFrame && PressHerdButton(at)) continue;
+                    if (t.press.wasPressedThisFrame && TapDecoy(at)) continue;
                     if (t.press.wasPressedThisFrame && !_view.PipContains(at, true)) Claim(id, at);
                     if (t.press.isPressed && _pointerJack.TryGetValue(id, out int k)) { Aim(k, at); held[k] = true; }
                     if (t.press.wasReleasedThisFrame) _pointerJack.Remove(id);
@@ -582,7 +638,7 @@ namespace CosmicShore.Gameplay
             if (mouse != null)
             {
                 var at = mouse.position.ReadValue();
-                bool button = mouse.leftButton.wasPressedThisFrame && PressHerdButton(at);
+                bool button = mouse.leftButton.wasPressedThisFrame && (PressHerdButton(at) || TapDecoy(at));
                 if (!button && mouse.leftButton.wasPressedThisFrame && !_view.PipContains(at, true)) Claim(MouseId, at);
                 if (mouse.leftButton.isPressed && _pointerJack.TryGetValue(MouseId, out int k)) { Aim(k, at); held[k] = true; }
                 if (mouse.leftButton.wasReleasedThisFrame) _pointerJack.Remove(MouseId);
@@ -597,12 +653,40 @@ namespace CosmicShore.Gameplay
             if ((pad != null && pad.buttonEast.wasPressedThisFrame) || (keys != null && keys.tKey.wasPressedThisFrame)) Call();
             if ((pad != null && pad.buttonNorth.wasPressedThisFrame) || (keys != null && keys.fKey.wasPressedThisFrame))
                 _view.ToggleCellView();
+            // the Time ability: a trigger dashes both jacks to a decoy - the left trigger (Q) to the left one, the right (E)
+            // to the right one; with one decoy, either trigger goes to it
+            bool lt = pad != null && pad.leftTrigger.ReadValue() > 0.5f, rt = pad != null && pad.rightTrigger.ReadValue() > 0.5f;
+            if ((lt && !_triggerWas[0]) || (keys != null && keys.qKey.wasPressedThisFrame)) Dash(0);
+            if ((rt && !_triggerWas[1]) || (keys != null && keys.eKey.wasPressedThisFrame)) Dash(1);
+            _triggerWas[0] = lt;
+            _triggerWas[1] = rt;
 
             for (int k = 0; k < 2; k++)
                 if (!held[k] && !_padHolds[k]) _jackDown[k] = false;
         }
 
         readonly bool[] _padHolds = new bool[2];
+        readonly bool[] _triggerWas = new bool[2];
+
+        /// <summary>A phone's dash: a tap on a decoy (within <c>decoyTapPixels</c> of it on the herding view) dashes both jacks
+        /// to it, unless a jack is closer under the finger.</summary>
+        bool TapDecoy(Vector2 at)
+        {
+            if (_view == null || !config) return false;
+            float best = config.DecoyTapPixels * config.DecoyTapPixels;
+            int slot = -1;
+            for (int s = 0; s < 2; s++)
+            {
+                if (!_decoyOn[s]) continue;
+                float d = (_view.WorldToScreen(_decoys[s]) - at).sqrMagnitude;
+                if (d < best) { best = d; slot = s; }
+            }
+            if (slot < 0) return false;
+            for (int k = 0; k < 2; k++)
+                if ((_view.WorldToScreen(_jack[k]) - at).sqrMagnitude < best) return false;   // the finger is on a jack
+            Dash(slot);
+            return true;
+        }
 
         /// <summary>A press on the herding view's call or zoom button (a phone's way to them): true when it took the press.</summary>
         bool PressHerdButton(Vector2 at)
@@ -637,8 +721,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The sticks (the lab's <c>gatherPadDogs</c>): the left stick runs the left jack and the right stick the right one,
         /// screen-relative (stick up = up the screen), at <c>padDogSpeed</c> x <c>dogSpeed</c>; a jack holds still when its
-        /// stick rests, so resting drops nothing. The bumper or trigger on that side is the thumb's lift: it leaves the decoy
-        /// where that jack stands. When both sticks rest, the left stick takes whichever jack is further left on screen. A
+        /// stick rests, so resting drops nothing. The bumper on that side is the thumb's lift: it leaves a decoy where that
+        /// jack stands (the trigger on that side is the dash, <see cref="Dash"/>). When both sticks rest, the left stick takes whichever jack is further left on screen. A
         /// stick never drives its jack off the screen.
         /// </summary>
         void ReadPad(Gamepad pad, float dt, bool[] heldByPointer)
@@ -657,9 +741,8 @@ namespace CosmicShore.Gameplay
                 int k = _padJack[s];
                 _padHolds[k] = false;
                 if (heldByPointer[k]) continue;
-                bool lift = s == 0
-                    ? pad.leftShoulder.isPressed || pad.leftTrigger.ReadValue() > 0.5f
-                    : pad.rightShoulder.isPressed || pad.rightTrigger.ReadValue() > 0.5f;
+                // the bumper is the lift; the trigger on that side is the dash (the Time ability, 2026-10-25)
+                bool lift = s == 0 ? pad.leftShoulder.isPressed : pad.rightShoulder.isPressed;
                 bool edge = lift && !_padLiftWas[s];
                 _padLiftWas[s] = lift;
                 if (edge) { _jackDown[k] = false; continue; }   // one step up: StepJacks drops the decoy where the jack stands
@@ -898,7 +981,8 @@ namespace CosmicShore.Gameplay
                 _herders.Add(_jack[0]);
                 _herders.Add(_jack[1]);
             }
-            if (_hasDecoy) _herders.Add(_decoy);
+            for (int s = 0; s < 2; s++)
+                if (_decoyOn[s]) _herders.Add(_decoys[s]);
             return _herders;
         }
 
@@ -1307,10 +1391,11 @@ namespace CosmicShore.Gameplay
                 if (!flightView || _herding) marks.Dot(_jack[k], jackColor, dot * 3f, 8f);
                 if (!calling) marks.Ring(_jack[k], _r, _f, ring, ringDots, ringColor * fade, ringDot, ringPixels);
             }
-            if (_hasDecoy)
+            for (int s = 0; s < 2; s++)
             {
-                marks.Dot(_decoy, decoyColor, dot * 3f, 8f);
-                marks.Ring(_decoy, _r, _f, ring, ringDots, decoyColor * new Color(1f, 1f, 1f, 0.6f) * fade, ringDot, ringPixels);
+                if (!_decoyOn[s]) continue;
+                marks.Dot(_decoys[s], decoyColor, dot * 3f, 8f);
+                marks.Ring(_decoys[s], _r, _f, ring, ringDots, decoyColor * new Color(1f, 1f, 1f, 0.6f) * fade, ringDot, ringPixels);
             }
             float charge = Level(Element.Charge);
             for (int i = 0; i < _herd.Count; i++)
@@ -1386,6 +1471,6 @@ namespace CosmicShore.Gameplay
         internal Vector3 JackWorld(int k) => _jack[k];
         /// <summary>Flying: a jack's place in the hull's frame (what <see cref="JacksBodies"/> publishes).</summary>
         internal Vector3 JackLocal(int k) => _flightLocal[k];
-        internal bool TryGetDecoy(out Vector3 at) { at = _decoy; return _hasDecoy; }
+        internal bool TryGetDecoy(int slot, out Vector3 at) { at = _decoys[slot]; return _decoyOn[slot]; }
     }
 }

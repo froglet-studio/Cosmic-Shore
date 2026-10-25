@@ -123,7 +123,6 @@ WANT_BINDINGS = (
     "  _inputEventShipActions:\n"
     f"  - InputEvent: 1\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksTeleport']}, type: 2}}\n"
     f"  - InputEvent: 4\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksTeleport']}, type: 2}}\n"
-    f"  - InputEvent: 6\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksDecoy']}, type: 2}}\n"
     f"  - InputEvent: 7\n    ShipActions:\n    - {{fileID: 11400000, guid: {CONTROL['JacksCall']}, type: 2}}\n")
 
 # the sword's five streaks and the legacy jet objects are Rhino parts too (Garrett, 2026-10-23: "the vestigal jets from the
@@ -542,7 +541,7 @@ def config_asset(script_guid: str) -> str:
         "  separation: 58\n  neighbourRadius: 160\n  grazeSense: 130\n  minHerd: 30\n  herdCap: 150\n  floorBirthSeconds: 0.12\n"
         f"  companionFauna: {{fileID: 11400000, guid: {COMPANION_FAUNA_GUID}, type: 2}}\n" + HERD_MARK_FIELDS +
         "  dogSpeed: 520\n  padDogSpeed: 1\n  aiNoise: 0.15\n" + FLIGHT_FIELDS + NET_FIELDS + "  callTime: 2.5\n  callCooldown: 20\n  decoyCooldown: 4\n"
-        "  teleportGuard: 0.6\n  pooEvery: 6\n  pooCount: 7\n  pooSpread: 22\n  pooPrismScale: {x: 2, y: 2, z: 5}\n"
+        + DASH_FIELDS + "  teleportGuard: 0.6\n  pooEvery: 6\n  pooCount: 7\n  pooSpread: 22\n  pooPrismScale: {x: 2, y: 2, z: 5}\n"
         "  attackRange: 200\n  contactReach: 8\n  strikeCooldown: 1.2\n  pipSize: 0.32\n  viewMargin: 0.02\n  viewDepth: 600\n"
         + STABILITY_FIELDS + HERD_VIEW_FIELDS +
         f"  callSfx:\n    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n"
@@ -576,6 +575,8 @@ NET_FIELDS = ("  netSpread: 30\n  netMinHeight: 6\n  netMaxHeight: 36\n  netDept
               "  netRivalTake: 0.1\n  netRivalCooldown: 2\n  jackCrystalReach: 32\n  jackNetCrystalReach: 10\n"
               "  jackCrystalHeight: 200\n"
               "  netCameraFill: 0.8\n  netCameraEase: 3\n")
+# The Time ability and the second decoy (Garrett, 2026-10-25), after decoyCooldown where the C# declares them.
+DASH_FIELDS = "  dashSpeed: 3\n  dashGap: 40\n  decoyTapPixels: 70\n"
 HERD_VIEW_FIELDS = ("  herdViewZoom: 0.75\n  herdFollowJacks: 1\n  cellViewMargin: 1.1\n  herdJacksFill: 0.8\n  herdJacksMargin: 40\n"
                     "  viewZoomEase: 3\n  zoomButtonSize: 0.09\n"
                     "  zoomButtonIcon: {fileID: 0}\n  callButtonIcon: {fileID: 0}\n")
@@ -613,6 +614,8 @@ def config_retrofit(text: str) -> str:
         text = re.sub(r"^(  netPrismCap: .*\n)",
                       lambda m: m.group(1) + "  netLitLift: 0.6\n  netLitSeconds: 0.6\n  netLitFadeSeconds: 0.25\n", text,
                       count=1, flags=re.M)
+    if "  dashSpeed:" not in text:   # round 8 (2026-10-25): the dash and the second decoy
+        text = re.sub(r"^(  decoyCooldown: .*\n)", lambda m: m.group(1) + DASH_FIELDS, text, count=1, flags=re.M)
     if "  herdViewZoom:" in text and "  herdJacksFill:" not in text:
         text = re.sub(r"^(  cellViewMargin: .*\n)", lambda m: m.group(1) + "  herdJacksFill: 0.8\n  herdJacksMargin: 40\n", text,
                       count=1, flags=re.M)
@@ -643,9 +646,9 @@ def container_asset() -> str:
 
 
 DESCRIPTION = ("  Description: Two jacks herd the cell's wildlife. Herding, run each jack with a thumb,\n"
-               "    lift it to leave the decoy, and call the herd. Netting, fly them, one fish under each\n"
-               "    thumb, with a net between them that opens as the sticks go apart. D-pad left or right\n"
-               "    switches between herding and netting.\n")
+               "    lift it to leave a decoy, pull a trigger to dash both jacks to it, and call the herd.\n"
+               "    Netting, fly them, one fish under each thumb, with a net between them that opens as\n"
+               "    the sticks go apart. D-pad left or right switches between herding and netting.\n")
 # The marlin era's crew names (Marlin, Jacks): the Jacks are one vessel with one seat, so the card names no crew.
 CREW = "  CrewNames:\n  - Marlin\n  - Jacks\n  CrewNameTemplate: '{0} and {1}'\n"
 
@@ -705,13 +708,14 @@ MAP_ENTRIES = [
     (3, 0, "Herding Ring", "Space widens the ring both jacks and the decoy push the herd out of; it is never "
         "smaller than a big thumb.",
      "Eat Shields", "The herd eats shielded prisms."),
-    (4, 7, "Herd Speed", "Time sets how fast the herd swims. The call (B): herding, it pulls the herd between the jacks "
-        "for a moment, on a long cooldown; netting, it turns the herd's pull to your plane on and off.",
-     "Flying Decoy", "Netting, the jacks drop the decoy where they are (A), so they can jump back to it."),
+    (4, 1, "Decoy Dash", "Herding, pull a trigger (or tap the decoy) and both jacks dash to the decoy. Time makes the dash "
+        "and the herd faster.",
+     "Second Decoy", "A second decoy: the jack on each side of the screen leaves its own (its bumper, or lifting its thumb), "
+        "and that side's trigger dashes to it."),
 ]
 # The words the map shipped with before the net (2026-10-21..24): a map that still carries them is rewritten (2026-10-25:
 # "update the map text"); words the team edited since are left alone.
-STALE_MAP_WORDS = ("The jacks'' call (A)", "(X), so they can jump back")
+STALE_MAP_WORDS = ("The jacks'' call (A)", "(X), so they can jump back", "'Flying Decoy'", "'Herd Speed'")
 
 
 def map_entries() -> str:
@@ -807,7 +811,8 @@ def check_prefab(text: str, script_guid: str):
     for key, guid in (("config", CONFIG_GUID), ("OnMiniGameTurnEnd", TURN_END_GUID), ("onCombatHitLanded", COMBAT_HIT_GUID)):
         want(ex and f"  {key}: {{fileID: 11400000, guid: {guid}, type: 2}}" in ex.group(1),
              f"Jacks.prefab: JacksExecutor.{key} is not wired")
-    want(WANT_BINDINGS in text, "Jacks.prefab: the netting jacks' buttons are not jump 1 + 4, decoy 6, call 7 (and no ramp boost)")
+    want(WANT_BINDINGS in text, "Jacks.prefab: the netting jacks' buttons are not jump 1 + 4, call 7 (no ramp boost, no flying "
+                                "decoy: Time 5 is the second decoy since 2026-10-25)")
     want(f"guid: {RAMP_BOOST_GUID}, type: 2" not in text, "Jacks.prefab: the Rhino's ramp speed boost is still bound")
     want("  _gamepadActionOverrides: []\n" in text, "Jacks.prefab: the Rhino's gamepad overrides (the swipes) are still bound")
     want(f"guid: {CONTAINER_GUID}," in text and f"guid: {DONOR_CONTAINER_GUID}," not in text,
@@ -845,7 +850,7 @@ def check_assets(config: str, controls, container: str):
         errs.append("JacksConfig.asset: no herd glow field (run the tool)")
     if ("  netSpread:" not in config or "  netCameraEase:" not in config or "  netTrailEase:" not in config
             or "  netPrismCap:" not in config or "  jackNetCrystalReach:" not in config or "  netSwingSeconds:" not in config
-            or "  netLitLift:" not in config):
+            or "  netLitLift:" not in config or "  dashSpeed:" not in config):
         errs.append("JacksConfig.asset: no net fields (run the tool)")
     if "  herdViewZoom:" not in config or "  callButtonIcon:" not in config or "  herdJacksFill:" not in config:
         errs.append("JacksConfig.asset: no herding view zoom fields (run the tool)")
@@ -904,7 +909,7 @@ def check_registrations(container: str, network: str, lists, cls: str, kmap: str
     want(f"  vesselClass: {JACKS_CLASS_ID}\n" in kmap and "  m_Name: Jacks\n" in kmap, "ElementalAbilityMaps/Jacks: wrong class or name")
     want("arlin" not in kmap, "ElementalAbilityMaps/Jacks: a card still names the marlin")
     want("Sword" not in kmap, "ElementalAbilityMaps/Jacks: still the Rhino's cards")
-    want(not any(w in kmap for w in STALE_MAP_WORDS), "ElementalAbilityMaps/Jacks: still the words from before the net (run the tool)")
+    want(not any(w in kmap for w in STALE_MAP_WORDS), "ElementalAbilityMaps/Jacks: still older card words (before the net or the dash; run the tool)")
     jacks, rhino = fusion_entries(fusion, JACKS_CLASS_ID), fusion_entries(fusion, RHINO_CLASS_ID)
     want(len(jacks) == 4, f"CrystalHullFusionConfig: {len(jacks)} Jacks entries, not 4")
     want([e.split("\n", 1)[1] for e in jacks] == [e.split("\n", 1)[1] for e in rhino],
@@ -1078,7 +1083,7 @@ def self_test():
     expect(check_assets(cfg.replace("  herdGlow: 1.5\n", ""), controls, cont), 1, "no herd glow field")
     expect(check_assets(cfg.replace(NET_FIELDS, ""), controls, cont), 1, "no net fields")
     expect(check_assets(cfg.replace(HERD_VIEW_FIELDS, ""), controls, cont), 1, "no herding view zoom fields")
-    round1 = cfg.replace("  netSwingSeconds: 0.6\n  netSwingMax: 1.2\n", "").replace(
+    round1 = cfg.replace(DASH_FIELDS, "").replace("  netSwingSeconds: 0.6\n  netSwingMax: 1.2\n", "").replace(
         "  netLitLift: 0.6\n  netLitSeconds: 0.6\n  netLitFadeSeconds: 0.25\n", "").replace("  netTrailEase: 5\n", "").replace("  netPrismCap: 48\n", "").replace("  jackNetCrystalReach: 10\n", "").replace("  jackCrystalReach: 32\n  jackCrystalHeight: 200\n",
                                                              "  jackCrystalReach: 18\n").replace("  herdJacksFill: 0.8\n  herdJacksMargin: 40\n", "")
     expect(check_assets(round1, controls, cont), 1, "the net's first-round config")
@@ -1112,13 +1117,13 @@ def self_test():
            "a card that still names the marlin's crew")
     if class_retrofit(cls.replace(DESCRIPTION, DESCRIPTION + CREW).replace("  Name: Jacks\n", "  Name: Marlin and Jacks\n")) != cls:
         fails.append("the class retrofit does not take the marlin's crew and name off the card")
-    expect(check_registrations(container, network, lists, cls, kmap.replace("Flying Decoy", "Marlin Decoy"), fusion), 1,
+    expect(check_registrations(container, network, lists, cls, kmap.replace("Second Decoy", "Marlin Decoy"), fusion), 1,
            "a card that still names the marlin")
-    stale = kmap.replace("(A), so they can jump back", "(X), so they can jump back")
+    stale = kmap.replace("'Second Decoy'", "'Flying Decoy'")
     expect(check_registrations(container, network, lists, cls, stale, fusion), 1, "the map's words from before the net")
     if map_retrofit(stale) != kmap:
         fails.append("the map retrofit does not rewrite the words from before the net")
-    if map_retrofit(kmap.replace("Flying Decoy", "Marlin Decoy")) != kmap or map_retrofit(kmap) != kmap:
+    if map_retrofit(kmap.replace("Second Decoy", "Marlin Decoy")) != kmap or map_retrofit(kmap) != kmap:
         fails.append("the map retrofit does not rewrite the marlin's words, or is not idempotent")
     expect(check_registrations(container, network, lists, cls.replace(CARD_FIELDS["SquadImage"], "2286f04c9031ee84d8d935de1926f92a"), kmap,
                               fusion), 1, "the Rhino's squad image")
