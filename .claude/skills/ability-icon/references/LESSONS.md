@@ -140,3 +140,12 @@ one thing right. then move on."
 29. **The ring stays white, and thinner.** A part the view never tints is still its own child (field None in the
     `pair=` step) so it is not painted with the hull. 5 px. Garrett on the two pairs: "I really like where we
     landed here on both because the icons are teaching the ability" - now the bar at the top of SKILL.md.
+30. **A card can be a LIVE READOUT built from parts.** Garrett: "use blocks and straight as the default state. when
+    drifting change them to octahedrons. have the angle between vessel and the trail match the player's
+    difference between vessel forward and course velocity." The drift card is a stretched TRAIL part (blocks at
+    rest, octahedrons while drifting - a drift lays shielded prisms, and shielded reads as a diamond) and a HULL
+    part in its own point-anchored child rect on the course line (`pair=` child with a rect), turned every frame
+    by the signed forward-vs-course angle the controller now pushes (`SetDriftAngle`; the old binary side lean
+    is the fallback for a HUD without the parts). The hull sprite is the mesh centred in its own canvas so the
+    child's rotation is about the hull. Unity wraps long flow values onto a second line in prefab YAML - a field
+    rewrite must match `{...}` across lines or it leaves a dangling `type: 3}` (rebind `_set_field`).

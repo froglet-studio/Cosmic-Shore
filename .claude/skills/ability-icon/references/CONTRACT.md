@@ -14,6 +14,7 @@
 | Upgrade sprite | `AbilityIconBinding.upgradedSprite` (optional, authored art, swapped at level 5) | same contract, name it `<Hull>_<Act>_L5.png` |
 | Locked card | a slot with no icon draws LOCKED (hairline mark), never a padlock | the lockup |
 | A card as a tinted PAIR | the icon Image is a transparent container (no sprite, alpha 0; the lockup kerns and punches it) over stretched child Images the VIEW tints by state and team (the Dolphin's jaws; the Squirrel's two joust hulls) | `rebind.py pair=`; `SquirrelVesselHUDView.PaintJoustPair` |
+| A card as LIVE PARTS | a stretched part the view SWAPS (the drift trail: blocks / octahedrons) and a point-anchored part the view TURNS about its own centre by a live angle (the drift hull; `pair=` child with a rect; the sprite is the mesh centred in its own canvas) | `SquirrelVesselHUDView.SetDriftAngle`; `SquirrelVesselHUDController.DriftAngleDegrees` |
 | Gauges are not icons | the Urchin's `Urchin_ChargeRing.png` is the hold-charge ring the HUD draws round the Charge card; the Sparrow's missile gauges likewise | `author_urchin_hud.py` |
 | Placeholders | `*-PLACEHOLDER.png` is the name of art owed (Rhino 4, Scarab 4, Serpent 3 on 2026-10-24); the art pass overwrites the PNG and keeps the name's guid, renaming the file AND updating the binding only in the same change | `author_hull_icon_placeholders.py` |
 | Card art | the class card (`SO_Class_<Hull>.IconActive`) and the arcade card background are NOT this contract: `vessel_model/render_cards.py` and `/cardart` | `check_vessel_class_icons.py` |

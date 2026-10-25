@@ -2216,3 +2216,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (has offered to take tests) or Garrett
 - **Added:** 2026-10-25 by a Claude session (`cece/loving-ptolemy-4715w4`)
 - **See:** Docs/Icons/sheets/squirrel_skimming.png, .claude/skills/ability-icon/references/LESSONS.md 28
+
+### T-20261025-3a06 · open · test · Squirrel
+- **Task:** Editor-verify the drift card parts (no Unity CLI in the session that wrote it): the core card's DriftIcon is a transparent container with DriftTrail (stretched) and DriftHull (35x35 child at +15,0) Images; SquirrelVesselHUDView compiles with driftTrailIcon / driftHullIcon / driftTrailRestSprite / driftTrailDriftingSprite / driftMaxAngle / driftAngleSpeed and the controller's DriftAngleDegrees; in freestyle: blocks straight behind the hull at rest, octahedrons the moment a drift engages, the hull turning smoothly by the real angle between forward and course (sign: nose left of course = hull turns counter-clockwise), light-blue tint on a drift and orange on a sharp drift, back to straight and white on release
+- **Done when:** compiles, the three states look right, the turn follows the real slip angle and its sign, no lockup console error about the drift icon
+- **Who can take it:** Yash (has offered to take tests) or Garrett
+- **Added:** 2026-10-25 by a Claude session (`cece/loving-ptolemy-4715w4`)
+- **See:** Docs/Icons/sheets/squirrel_drift.png, .claude/skills/ability-icon/references/LESSONS.md 30

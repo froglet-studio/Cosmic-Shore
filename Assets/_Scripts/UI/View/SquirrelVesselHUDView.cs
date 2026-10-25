@@ -108,6 +108,24 @@ namespace CosmicShore.UI
         [SerializeField] private float driftRotationDuration = 0.45f;
         [Tooltip("Scale the icon swells to while drifting, relative to its kerned rest scale.")]
         [SerializeField] private float driftScale = 1.15f;
+        [Tooltip("The drift card as PARTS under its icon (Garrett 2026-10-25: 'use blocks and straight as the " +
+                 "default state. when drifting change them to octahedrons. have the angle between vessel and the " +
+                 "trail match the player's difference between vessel forward and course velocity'): the TRAIL, " +
+                 "stretched across the card - blocks at rest, octahedrons (shielded prisms) while drifting.")]
+        [SerializeField] private Image driftTrailIcon;
+        [Tooltip("The HULL, point-anchored on its own centre so it can TURN: rotated every frame of a drift by the " +
+                 "signed angle between the vessel's forward and its course (SetDriftAngle), eased, and tinted " +
+                 "driftColor / doubleDriftColor while held.")]
+        [SerializeField] private Image driftHullIcon;
+        [Tooltip("The trail at rest: blocks, straight behind the hull.")]
+        [SerializeField] private Sprite driftTrailRestSprite;
+        [Tooltip("The trail while drifting: octahedrons - a drift lays shielded prisms.")]
+        [SerializeField] private Sprite driftTrailDriftingSprite;
+        [Tooltip("Largest hull turn the card shows, degrees either side - past this a drift reads as a spin.")]
+        [SerializeField, Range(10f, 90f)] private float driftMaxAngle = 75f;
+        [Tooltip("How fast the shown angle follows the live one, degrees per second. The live angle moves in small " +
+                 "steps; the hull should glide, not tick.")]
+        [SerializeField, Min(1f)] private float driftAngleSpeed = 360f;
 
         [Header("Impact (the joust - the CHARGE card)")]
         [Tooltip("The Charge card's icon Image - the lockup kerns and punches THIS. When the two joust " +
@@ -211,6 +229,7 @@ namespace CosmicShore.UI
         private Tween _driftRotationTween;
         private Tween _driftColorTween;
         private Tween _driftScaleTween;
+        private float _driftAngleShown;          // the pair's hull turn, degrees, eased toward the live angle
 
         // The generated Space readout. Built once by EnsureGeneratedAbilityIcons.
         private Image _reachIcon;
@@ -568,26 +587,50 @@ namespace CosmicShore.UI
             _driftRestColor = _driftIcon.color;
             _drifting = false;
             _driftSide = 0;
+            _driftAngleShown = 0f;
+            if (HasDriftPair)
+            {
+                if (driftTrailRestSprite) driftTrailIcon.sprite = driftTrailRestSprite;
+                driftHullIcon.rectTransform.localRotation = Quaternion.identity;
+                driftHullIcon.color = Color.white;
+            }
         }
+
+        /// <summary>The trail and the hull are wired as parts - the card's icon is a transparent container over them.</summary>
+        bool HasDriftPair => driftTrailIcon && driftHullIcon;
 
         /// <summary>
         /// A drift began. The lean is deliberately NOT decided here: on the frame a drift engages
-        /// the nose has not yet left the course, so any side read now is noise. The controller
-        /// feeds <see cref="SetDriftSide"/> every frame of the drift and the icon leans the moment
+        /// the nose has not yet left the course, so any angle read now is noise. The controller
+        /// feeds <see cref="SetDriftAngle"/> every frame of the drift and the hull turns the moment
         /// the two actually diverge - which is also what lets it follow a drift that swaps sides.
         /// </summary>
         public void JuiceDriftStart(bool isDoubleDrift)
         {
             if (!_driftIcon) return;
 
-            var sprite = isDoubleDrift ? doubleDriftingSprite : driftingSprite;
-            if (sprite) _driftIcon.sprite = sprite;
+            if (HasDriftPair)
+            {
+                // The parts: the trail becomes octahedrons (a drift lays shielded prisms), the hull takes the
+                // state tint. The container keeps the scale punch; UGUI does not pass a parent's colour down.
+                if (driftTrailDriftingSprite) driftTrailIcon.sprite = driftTrailDriftingSprite;
+                _driftColorTween?.Kill();
+                _driftColorTween = driftHullIcon
+                    .DOColor(isDoubleDrift ? doubleDriftColor : driftColor, driftRotationDuration)
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(driftHullIcon.gameObject);
+            }
+            else
+            {
+                var sprite = isDoubleDrift ? doubleDriftingSprite : driftingSprite;
+                if (sprite) _driftIcon.sprite = sprite;
 
-            _driftColorTween?.Kill();
-            _driftColorTween = _driftIcon
-                .DOColor(isDoubleDrift ? doubleDriftColor : driftColor, driftRotationDuration)
-                .SetEase(Ease.OutQuad)
-                .SetLink(_driftIcon.gameObject);
+                _driftColorTween?.Kill();
+                _driftColorTween = _driftIcon
+                    .DOColor(isDoubleDrift ? doubleDriftColor : driftColor, driftRotationDuration)
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(_driftIcon.gameObject);
+            }
 
             var rest = CoreAbilityIconRestScale(CoreAbility.Drift);
             _driftScaleTween?.Kill();
@@ -597,6 +640,28 @@ namespace CosmicShore.UI
                 .SetLink(_driftIcon.gameObject);
 
             _drifting = true;
+        }
+
+        /// <summary>
+        /// The live drift: the signed angle, in degrees, between the vessel's forward and its course, positive
+        /// when the nose has swung LEFT of the course (the course lies to the ship's right). Pushed every frame
+        /// of a drift. With the parts wired the hull turns by exactly that angle (clamped, eased); the single-icon
+        /// path leans the whole icon to the side it names, re-tweening only when the side changes.
+        /// </summary>
+        public void SetDriftAngle(float angleDegrees)
+        {
+            if (!_driftIcon || !_drifting) return;
+            if (HasDriftPair)
+            {
+                float target = Mathf.Clamp(angleDegrees, -driftMaxAngle, driftMaxAngle);
+                _driftAngleShown = Mathf.MoveTowards(_driftAngleShown, target, driftAngleSpeed * Time.deltaTime);
+                driftHullIcon.rectTransform.localRotation = Quaternion.Euler(0f, 0f, _driftAngleShown);
+                return;
+            }
+            // Below this the nose has not left the course far enough for a side to mean anything.
+            const float sideDeadbandDegrees = 3f;
+            int side = Mathf.Abs(angleDegrees) < sideDeadbandDegrees ? 0 : (angleDegrees > 0f ? -1 : 1);
+            SetDriftSide(side);
         }
 
         /// <summary>
@@ -617,14 +682,33 @@ namespace CosmicShore.UI
             _drifting = false;
             _driftSide = 0;
 
-            if (_driftRestSprite) _driftIcon.sprite = _driftRestSprite;
-            LeanDriftIcon(0f);
+            if (HasDriftPair)
+            {
+                if (driftTrailRestSprite) driftTrailIcon.sprite = driftTrailRestSprite;
+                _driftRotationTween?.Kill();
+                _driftRotationTween = driftHullIcon.rectTransform
+                    .DOLocalRotate(Vector3.zero, driftRotationDuration)
+                    .SetEase(Ease.OutCubic)
+                    .OnUpdate(() => _driftAngleShown = driftHullIcon.rectTransform.localEulerAngles.z)
+                    .OnComplete(() => _driftAngleShown = 0f)
+                    .SetLink(driftHullIcon.gameObject);
+                _driftColorTween?.Kill();
+                _driftColorTween = driftHullIcon
+                    .DOColor(Color.white, colorTweenDuration)
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(driftHullIcon.gameObject);
+            }
+            else
+            {
+                if (_driftRestSprite) _driftIcon.sprite = _driftRestSprite;
+                LeanDriftIcon(0f);
 
-            _driftColorTween?.Kill();
-            _driftColorTween = _driftIcon
-                .DOColor(_driftRestColor, colorTweenDuration)
-                .SetEase(Ease.OutQuad)
-                .SetLink(_driftIcon.gameObject);
+                _driftColorTween?.Kill();
+                _driftColorTween = _driftIcon
+                    .DOColor(_driftRestColor, colorTweenDuration)
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(_driftIcon.gameObject);
+            }
 
             _driftScaleTween?.Kill();
             _driftScaleTween = _driftIcon.rectTransform

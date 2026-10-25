@@ -11,8 +11,10 @@ A spec may carry `REBIND = [...]` with two kinds of step:
          view="<view MonoBehaviour fileID>", children=[("JoustSelf", "Squirrel_JoustSelf", "joustSelfIcon"), ...]))
         the icon Image `container` becomes a transparent holder (no sprite, alpha 0) and gets one stretched child
         Image per entry (name, icon, the view field that is pointed at it; None for a part the view never tints,
-        e.g. a white ring) - the Dolphin's jaw-pair arrangement, for a card whose parts are tinted separately.
-        Idempotent: an existing child of that name is left alone.
+        e.g. a white ring; an optional 4th item (ax, ay, w, h) point-anchors the child instead of stretching it,
+        for a part the view ROTATES about its own centre) - the Dolphin's jaw-pair arrangement, for a card whose
+        parts are tinted, swapped or turned separately. `fields={...}` sets other view fields: ("icon", name) for
+        a sprite, or a raw YAML value. Idempotent: an existing child of that name is left alone.
 
 The guid of an icon is read from its .meta (the kit writes the meta before it rebinds). A rebind never touches a
 file it was not named for: the same placeholder sprite can be referenced from another prefab on purpose (the
@@ -48,16 +50,31 @@ def _block(text, fid):
     return start, (end + 1 if end > 0 else len(text))
 
 
+def _set_field(blk, key, value):
+    """Replace `key: <value>` in a YAML block. A flow mapping value may WRAP onto a second line (Unity breaks long
+    `{fileID: ..., guid: ..., type: 3}` values after the guid), so a `{...}` value is matched across lines."""
+    pat = rf"^(\s*{re.escape(key)}: )(\{{[^}}]*\}}|[^\n]*)"
+    if not re.search(pat, blk, re.M):
+        return None
+    return re.sub(pat, lambda m: m.group(1) + value, blk, count=1, flags=re.M)
+
+
 def _set_in_block(text, fid, key, value):
     a, b = _block(text, fid)
-    blk = text[a:b]
-    if not re.search(rf"^\s*{re.escape(key)}: ", blk, re.M):
+    new = _set_field(text[a:b], key, value)
+    if new is None:
         raise SystemExit(f"{key} not found in block {fid}")
-    new = re.sub(rf"^(\s*{re.escape(key)}: ).*$", lambda m: m.group(1) + value, blk, count=1, flags=re.M)
     return text[:a] + new + text[b:]
 
 
-def _child_blocks(go_name, parent_rt, layer, guid, fid_go, fid_rt, fid_cr, fid_img):
+def _child_blocks(go_name, parent_rt, layer, guid, fid_go, fid_rt, fid_cr, fid_img, rect=None):
+    """rect: None = stretched to the container; (ax, ay, w, h) = point-anchored at the container's centre, offset
+    (ax, ay) in the container's units, size (w, h) - a part the view ROTATES about its own centre (the drift hull)."""
+    if rect is None:
+        anchors = "  m_AnchorMin: {x: 0, y: 0}\n  m_AnchorMax: {x: 1, y: 1}\n  m_AnchoredPosition: {x: 0, y: 0}\n  m_SizeDelta: {x: 0, y: 0}"
+    else:
+        ax, ay, w, h = rect
+        anchors = f"  m_AnchorMin: {{x: 0.5, y: 0.5}}\n  m_AnchorMax: {{x: 0.5, y: 0.5}}\n  m_AnchoredPosition: {{x: {ax}, y: {ay}}}\n  m_SizeDelta: {{x: {w}, y: {h}}}"
     return f"""--- !u!1 &{fid_go}
 GameObject:
   m_ObjectHideFlags: 0
@@ -90,10 +107,7 @@ RectTransform:
   m_Children: []
   m_Father: {{fileID: {parent_rt}}}
   m_LocalEulerAnglesHint: {{x: 0, y: 0, z: 0}}
-  m_AnchorMin: {{x: 0, y: 0}}
-  m_AnchorMax: {{x: 1, y: 1}}
-  m_AnchoredPosition: {{x: 0, y: 0}}
-  m_SizeDelta: {{x: 0, y: 0}}
+{anchors}
   m_Pivot: {{x: 0.5, y: 0.5}}
 --- !u!222 &{fid_cr}
 CanvasRenderer:
@@ -149,12 +163,14 @@ def _apply_pair(text, step, icon_meta):
     # the container: no sprite, alpha 0 - it kerns and punches, its children draw
     text = _set_in_block(text, container, "m_Sprite", "{fileID: 0}")
     text = _set_in_block(text, container, "m_Color", "{r: 1, g: 1, b: 1, a: 0}")
-    for name, icon, field in pair["children"]:
+    for child in pair["children"]:
+        name, icon, field = child[:3]
+        rect = child[3] if len(child) > 3 else None
         seed = f"{step['file']}/{container}/{name}"
         fid_go, fid_rt, fid_cr, fid_img = (_fid(seed + k) for k in ("go", "rt", "cr", "img"))
         guid = guid_of(icon_meta[icon])
         if f"&{fid_img}\n" not in text:
-            text = text.rstrip("\n") + "\n" + _child_blocks(name, rt, layer, guid, fid_go, fid_rt, fid_cr, fid_img)
+            text = text.rstrip("\n") + "\n" + _child_blocks(name, rt, layer, guid, fid_go, fid_rt, fid_cr, fid_img, rect)
             ra, rb = _block(text, rt)
             rblk = text[ra:rb]
             if "m_Children: []" in rblk:
@@ -167,12 +183,23 @@ def _apply_pair(text, step, icon_meta):
         if pair.get("view") and field:
             va, vb = _block(text, pair["view"])
             vblk = text[va:vb]
-            if re.search(rf"^\s*{field}: ", vblk, re.M):
-                vblk = re.sub(rf"^(\s*{field}: ).*$", lambda m: m.group(1) + f"{{fileID: {fid_img}}}", vblk, count=1, flags=re.M)
+            replaced = _set_field(vblk, field, f"{{fileID: {fid_img}}}")
+            if replaced is not None:
+                vblk = replaced
             else:
                 anchor = pair.get("after", "impactIcon")
                 vblk = re.sub(rf"^(\s*{anchor}: .*\n)", lambda m: m.group(1) + f"  {field}: {{fileID: {fid_img}}}\n", vblk, count=1, flags=re.M)
             text = text[:va] + vblk + text[vb:]
+    # Other serialized fields on the view the pair needs: a sprite (("icon", name)) or a raw YAML value.
+    for field, value in pair.get("fields", {}).items():
+        v = _sprite_ref(guid_of(icon_meta[value[1]])) if isinstance(value, tuple) else value
+        va, vb = _block(text, pair["view"])
+        vblk = text[va:vb]
+        replaced = _set_field(vblk, field, v)
+        if replaced is None:
+            anchor = pair.get("after", "impactIcon")
+            replaced = re.sub(rf"^(\s*{anchor}: .*\n)", lambda m: m.group(1) + f"  {field}: {v}\n", vblk, count=1, flags=re.M)
+        text = text[:va] + replaced + text[vb:]
     return text
 
 

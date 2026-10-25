@@ -11,9 +11,10 @@
   Time    Skimming       the Squirrel centred in its skimmer sphere over a row of prisms (blocks) - a tinted PAIR:
                          hull + sphere + the prisms under it in the domain colour, the prisms ahead in the blue
                          (before: the SPARROW's boost icon, borrowed; round 2's chevron over a notched band)
-  core    Drift          the hull sliding: the chevron turned off its course on a swept band
-  core    Sharp Drift    the same hull broadside on a tighter, double band (before: DriftIconSelected /
-                         CannonIconSelected placeholders - baked teal, and the sharp one a CANNON)
+  core    Drift          PARTS the HUD drives: the trail (blocks at rest, octahedrons while drifting) stretched
+                         across the card, and the hull (the real mesh) in its own child rect, turned every frame by
+                         the signed angle between the vessel's forward and its course (before: DriftIcon /
+                         DriftIconSelected / CannonIconSelected placeholders - a ring-and-arrow, baked teal, a CANNON)
 
 The core (drift) icons live in Core/ so the family gate compares the elemental icons only.
 """
@@ -21,7 +22,7 @@ import math
 
 import mesh_silhouette
 from canvas import band, empty, fill, ngon, rect, ring, rotate, scale, stroke, translate
-from motifs import block, hull, speed_wedge, trail_band
+from motifs import block, hull, prism, speed_wedge, trail_band
 
 HULL = "Squirrel"
 VARIANT = "Assets/_Prefabs/UI Elements/VesselHUD/SquirrelHUDVariant.prefab"
@@ -116,18 +117,51 @@ def skimming():
     return skim_self() | skim_ring() | skim_ahead()
 
 
+DRIFT_HULL = dict(cx=88, cy=64, box=56)            # the hull part, on the course line; its child rect is centred here
+DRIFT_TRAIL_X = (12, 29, 46)                        # the trail behind the tail (tail at x ~62), along the course line
+DRIFT_Y = 64
+
+
+def drift_hull():
+    """The hull part: the Squirrel straight along its course (nose right), fitted to its OWN 128 canvas - the HUD
+    places it in a point-anchored child rect on the course line and turns it by the live slip angle."""
+    return squirrel(112, 64, 64, dilate_px=1.4)
+
+
+def drift_trail_blocks():
+    """The trail at rest: three blocks straight behind the hull on the course line."""
+    m = empty()
+    for x in DRIFT_TRAIL_X:
+        m |= block(x, DRIFT_Y, w=13, h=9, dp=5)
+    return m
+
+
+def drift_trail_octa():
+    """The trail while drifting: octahedrons - a drift lays SHIELDED prisms, and a shielded prism reads as a
+    diamond where a bare one reads as a square (Docs/claude/VESSEL_HUD_AND_ELEMENTS.md)."""
+    m = empty()
+    for x in DRIFT_TRAIL_X:
+        m |= prism(x, DRIFT_Y, 9)
+    return m
+
+
+def _hull_on_card(roll=0.0):
+    k = DRIFT_HULL["box"] / 128.0
+    return mesh_silhouette.silhouette(FBX, box=112 * k, cx=DRIFT_HULL["cx"], cy=DRIFT_HULL["cy"], dilate_px=1.4, roll=roll,
+                                      pitch=VIEW_D["pitch"], yaw=VIEW_D["yaw"])
+
+
 def drift():
-    # The hull points up-right while it travels right: the slide is the broad arc under its tail.
-    body = fill(rotate([(112, 50), (48, 18), (64, 50), (48, 82)], -32, 84, 50))
-    sweep = band(28, 30, 64, 24, 108, 12)
-    return body | sweep
+    """The drift card at REST, composed as the HUD lays the parts: blocks straight behind the hull. (The parts
+    are what the HUD draws; this composite is the card's icon for the sheets.) Garrett 2026-10-25: "use blocks and
+    straight as the default state. when drifting change them to octahedrons. have the angle between vessel and the
+    trail match the player's difference between vessel forward and course velocity." """
+    return drift_trail_blocks() | _hull_on_card(0.0)
 
 
 def sharp_drift():
-    # Broadside, and the arc tighter and doubled.
-    body = fill(rotate([(116, 44), (44, 8), (62, 44), (44, 80)], -74, 86, 44))
-    sweep = band(40, 22, 76, 30, 110, 12) | band(40, 22, 54, 36, 104, 8)
-    return body | sweep
+    """The same card mid-drift, for the sheet: octahedrons, the hull turned 50 off the course line."""
+    return drift_trail_octa() | _hull_on_card(-50.0)
 
 
 HALF_EXEMPT = {k: "half of the nose-to-nose pair; the pair is measured on Squirrel_CrystalJoust" for k in ("coverage", "box_fill", "gap", "in_box")}
@@ -145,8 +179,16 @@ ICONS = [
          exempt={"coverage": "part of a trio", "thin": "a 5 px ring", "box_fill": "part of a trio", "in_box": "part of a trio"}),
     dict(name="Squirrel_SkimAhead", element="Time", act="Skimming: prisms ahead (blue)", draw=skim_ahead, subdir="Pair", family=False,
          exempt={"coverage": "half of a pair", "box_fill": "half of a pair", "in_box": "half of a pair", "components": "two prisms", "specks": "the blocks' seam slivers", "gap": "the seams", "thin": "the seams"}),
-    dict(name="Squirrel_Drift", element="Core", act="Drift", draw=drift, subdir="Core", before=PH + "DriftIconSelected-PLACEHOLDER.png"),
-    dict(name="Squirrel_SharpDrift", element="Core", act="Sharp Drift", draw=sharp_drift, subdir="Core", before=PH + "CannonIconSelected-PLACEHOLDER.png"),
+    dict(name="Squirrel_Drift", element="Core", act="Drift (rest composite)", draw=drift, subdir="Core", before=PH + "DriftIcon-PLACEHOLDER.png",
+         exempt={"gap": "the real mesh", "components": "three prisms and a hull", "specks": "the blocks' seam slivers", "in_box": "the hull's nose at the margin", "coverage": "the hull is a part that must TURN inside the card, so it is drawn small"}),
+    dict(name="Squirrel_SharpDrift", element="Core", act="Drift (mid-drift composite, 50 deg)", draw=sharp_drift, subdir="Core", family=False, before=PH + "CannonIconSelected-PLACEHOLDER.png",
+         exempt={"gap": "the real mesh", "components": "three prisms and a hull", "specks": "slivers", "in_box": "the turned hull", "coverage": "the hull is a part that must TURN inside the card, so it is drawn small"}),
+    dict(name="Squirrel_DriftHull", element="Core", act="Drift: the hull part (turned by the live angle)", draw=drift_hull, subdir="Core", family=False,
+         exempt={"gap": "the real mesh", "specks": "slivers"}),
+    dict(name="Squirrel_DriftTrailBlocks", element="Core", act="Drift: the trail at rest (blocks)", draw=drift_trail_blocks, subdir="Core", family=False,
+         exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "three prisms", "specks": "seam slivers", "gap": "seams", "thin": "seams", "at40": "the seams close at 40 px, the blocks stay"}),
+    dict(name="Squirrel_DriftTrailOcta", element="Core", act="Drift: the trail while drifting (octahedrons)", draw=drift_trail_octa, subdir="Core", family=False,
+         exempt={"coverage": "a part", "box_fill": "a part", "in_box": "a part", "components": "three prisms"}),
 ]
 
 REBIND = [
@@ -162,6 +204,13 @@ REBIND = [
                                  children=[("SkimSelf", "Squirrel_SkimSelf", "skimSelfIcon"),
                                            ("SkimRing", "Squirrel_SkimRing", None),
                                            ("SkimAhead", "Squirrel_SkimAhead", "skimAheadIcon")])),
-    dict(file=VARIANT, old="41c9f6e2ec44f0c458351500f1bfacdc", icon="Squirrel_Drift", expect=1),          # DriftIconSelected-PLACEHOLDER
-    dict(file=VARIANT, old="117829e3ccd2f4c439bc98b203359180", icon="Squirrel_SharpDrift", expect=1),     # CannonIconSelected-PLACEHOLDER
+    # The drift card: the trail stretched across the card, the hull in its own 40 x 40 child rect centred on the course
+    # line 15 units right of the card's centre (the hull sprite is the mesh centred in its own canvas, so the child's
+    # rotation is about the hull). The old whole-icon swap sprites (driftingSprite / doubleDriftingSprite) are cleared.
+    dict(file=VARIANT, pair=dict(container="5199230409720723880", view="7422230368815066413", after="skimAheadIcon",
+                                 children=[("DriftTrail", "Squirrel_DriftTrailBlocks", "driftTrailIcon"),
+                                           ("DriftHull", "Squirrel_DriftHull", "driftHullIcon", (15, 0, 35, 35))],
+                                 fields={"driftTrailRestSprite": ("icon", "Squirrel_DriftTrailBlocks"),
+                                         "driftTrailDriftingSprite": ("icon", "Squirrel_DriftTrailOcta"),
+                                         "driftingSprite": "{fileID: 0}", "doubleDriftingSprite": "{fileID: 0}"})),
 ]
