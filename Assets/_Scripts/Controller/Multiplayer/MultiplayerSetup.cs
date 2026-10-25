@@ -597,6 +597,9 @@ namespace CosmicShore.Gameplay
             try
             {
                 CSDebug.LogWarning("[Net] Transport failure - bouncing to solo menu.");
+                // B36: Relay drops a player it has not heard from for ~10 s, and the transport only pings
+                // from the main thread. Name the freeze this drop most likely followed, if any.
+                NetSessionRecorder.Mark("relayDrop", FrameStallWatch.DescribeRecentStall());
 
                 // Same self-rescue as host-loss: tear down, shut down NM, reload Menu_Main,
                 // and recreate our OWN solo host (EnsurePartySessionAsync). The legacy path

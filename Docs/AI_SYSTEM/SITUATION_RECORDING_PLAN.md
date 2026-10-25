@@ -271,8 +271,15 @@ ring never sampled) was fixed in `HumanFlightRecorder` and `learn_from_flights.f
 **The plan** (with `RACING_LINE.md` §3-4; nothing reaches the game without the owner's OK and an editor test):
 
 1. **Test the ring face first**, the cheapest likely win. **Applied 2026-10-17** (Yash: "do it"):
-   `SkimRaceAIConfig_Regatta.asset` now has `SkimHeight` -6.498 plus the learned look-ahead, mass margin and stick
-   gain (`LEARNED_FROM_FLIGHTS.md`). Waiting on the editor race against the old AI (checklist entry "Regatta Squirrel
+   `SkimRaceAIConfig_Regatta.asset` got `SkimHeight` -6.498 plus the learned look-ahead, mass margin and stick gain.
+   **Re-learned 2026-10-25:** races written 23/24 before the recorder fix now count as finished, so the three fastest
+   finished races changed:
+   - `SkimHeight` -5.948 (same face);
+   - `LookaheadSeconds` 1.03;
+   - `LookaheadMin` 70;
+   - `StickGainPerDegree` 0.025.
+
+   See `LEARNED_FROM_FLIGHTS.md`. Waiting on the editor race against the old AI (checklist entry "Regatta Squirrel
    AI skims the ring face").
 2. **Port the racing line** (`RACING_LINE.md` §3, task T-20261015-7fc3): the averaged faster-half line per leg as the
    pilot's target, with the face above.
