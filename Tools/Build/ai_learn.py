@@ -83,30 +83,50 @@ def learners_fingerprint():
 
 
 def load_seen():
-    """The flights already learned from, by THESE learners; a learner that changed since makes every flight new again."""
+    """(learned, waiting): the flights already learned from by THESE learners, and the flights no learner could read
+    yet with the reason ({path: why}). A learner that changed since makes every flight new again."""
     if not os.path.exists(SEEN):
-        return set()
+        return set(), {}
     data = json.load(open(SEEN, encoding="utf-8"))
     if data.get("learners") != learners_fingerprint():
-        return set()
-    return set(data.get("flights", []))
+        return set(), {}
+    return set(data.get("flights", [])), dict(data.get("waiting", {}))
 
 
-def save_seen(paths):
+def save_seen(paths, waiting):
     data = {"note": "Every flight ai_learn.py has learned from (paths on origin/bugledger/*), and the learners it used: "
-                    "when a learner changes, every flight is learned from again. Delete a line to relearn it.",
-            "learners": learners_fingerprint(), "flights": sorted(paths)}
+                    "when a learner changes, every flight is learned from again. Delete a line to relearn it. "
+                    "'waiting' holds the flights no learner read yet (mode on hold, hull with no learner) and why: "
+                    "each is learned from once its reason goes away. A flight whose learner failed is in neither, so "
+                    "the next sweep tries it again.",
+            "learners": learners_fingerprint(), "flights": sorted(paths), "waiting": dict(sorted(waiting.items()))}
     with open(SEEN, "w", encoding="utf-8", newline="\n") as fh:
         json.dump(data, fh, indent=1)
         fh.write("\n")
 
 
-def plan(flights, seen):
+def waiting_reason(f):
+    """Why no learner reads this flight now (the mode is on hold, or no learner covers its hull), or None when one does."""
+    if HOLD.get(f["mode"]):
+        return "hold: " + HOLD[f["mode"]]
+    if f["hull"] == "Squirrel" and f["mode"] in SKIM_LINE_MODES:
+        return None
+    # Regatta's drive learner also learns every hull's race line (author_race_lines.py).
+    if f["mode"] == "Regatta":
+        return None
+    kind, why = ld.coverage(f["hull"], f["mode"])
+    return None if kind == "drives" else f"{kind}: {why}"
+
+
+def plan(flights, seen, waiting=None):
     """What the new flights feed: {mode: {"hulls", "learners", "report" {hull: why}, "unread", "hold", "race"}}. Which
     learner covers a hull comes from the learners themselves (learn_drives_from_flights.coverage reads each vessel's
-    prefab), so a new vessel with a boost policy is learned from its first races with no edit here."""
+    prefab), so a new vessel with a boost policy is learned from its first races with no edit here. A flight left
+    waiting is new again only once its reason changed (the hold lifted, a learner now covers its hull)."""
+    waiting = waiting or {}
     race_modes = {f["mode"] for f in flights if f["race"]}
-    new = [f for f in flights if f["path"] not in seen and f["mode"] not in ("Unknown", "Random") and f["hull"] != "Unknown"]
+    new = [f for f in flights if f["path"] not in seen and f["mode"] not in ("Unknown", "Random") and f["hull"] != "Unknown"
+           and (f["path"] not in waiting or waiting[f["path"]] != waiting_reason(f))]
     out = {}
     for f in new:
         m = out.setdefault(f["mode"], {"hulls": collections.Counter(), "learners": [], "unread": set(), "report": {},
@@ -225,8 +245,8 @@ def main():
         return self_test()
 
     flights = load_flights()
-    seen = load_seen()
-    new, modes = plan(flights, seen)
+    seen, waiting = load_seen()
+    new, modes = plan(flights, seen, waiting)
     print(f"ai_learn: {len(flights)} flight(s) on the branches, {len(new)} new.")
     for mode in sorted(modes):
         m = modes[mode]
@@ -251,11 +271,27 @@ def main():
     changed = {p for p, h in after.items() if before.get(p) != h}
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     write_report(now, new, modes, outcomes, paces, changed)
-    save_seen({f["path"] for f in flights})
     failed = [(mode, n) for mode, rs in outcomes.items() for n, code, _ in rs if code != 0]
+    learned, now_waiting = settle(new, {mode for mode, _ in failed})
+    waiting = {p: w for p, w in waiting.items() if p not in learned}
+    waiting.update(now_waiting)
+    save_seen(seen | learned, waiting)
     print(f"ai_learn: report {os.path.relpath(REPORT, REPO)}; {len(changed)} learned file(s) changed"
           + (f"; FAILED: {failed}" if failed else "") + ".")
     return 1 if failed else 0
+
+
+def settle(new, failed_modes):
+    """(learned paths, {waiting path: why}) for this run's new flights. A flight counts as learned from only when a
+    learner read it and every learner of its mode succeeded; one in a failed mode is neither, so the next sweep retries it."""
+    learned, waiting = set(), {}
+    for f in new:
+        why = waiting_reason(f)
+        if why:
+            waiting[f["path"]] = why
+        elif f["mode"] not in failed_modes:
+            learned.add(f["path"])
+    return learned, waiting
 
 
 def self_test():
@@ -292,6 +328,21 @@ def self_test():
         bad.append("a hull nothing covers is listed as unread")
     if plan(fl, {f["path"] for f in fl})[0]:
         bad.append("everything seen must leave nothing new")
+    # Only a flight a learner read, in a mode whose learners all succeeded, is marked learned (Codex, PR 1558).
+    learned, waiting = settle(new, {"Breakwater"})
+    if any("Warpline" in p for p in learned) or not any("Warpline" in p for p in waiting):
+        bad.append("a flight in a mode on hold waits, it is not learned")
+    if any("Ghost" in p for p in learned) or not any("Ghost" in p for p in waiting):
+        bad.append("a flight no learner covers waits, it is not learned")
+    if any("Breakwater" in p for p in learned | set(waiting)):
+        bad.append("a flight whose learner failed is retried next sweep (neither learned nor waiting)")
+    if not any("Switchback_Dolphin_2" in p for p in learned):
+        bad.append("a flight a learner read is learned")
+    if any(f["path"] in waiting for f in plan(fl, learned, waiting)[0]):
+        bad.append("a waiting flight whose reason has not changed is not new again")
+    stale = {p: "hold: an old reason" for p in waiting}
+    if not any(f["path"] in waiting for f in plan(fl, learned, stale)[0]):
+        bad.append("a waiting flight whose reason changed (hold lifted, learner added) is new again")
     print("ai_learn self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
     return 0 if not bad else 1
 

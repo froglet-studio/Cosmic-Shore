@@ -101,6 +101,12 @@ POLICY_CLASSES = {
                                       "engageRunwaySeconds": "engageRunwaySeconds", "dashCooldownSeconds": "minRestSeconds"}},
     "SkimRingAIPolicySO": {"verb": "boost ring", "signal": ("press", "SquirrelTubeActionSO"), "drives": "SquirrelTubeActionSO",
                            "fields": {"ringAlignDegrees": "alignDegrees", "ringStickBand": "stickBand"}},
+    # The Thresher's sling (2026-10-26): a press of its PLANT trigger (a ThresherActionSO whose asset is the Plant one).
+    "ThresherSlingAIPolicySO": {"verb": "sling (plant)", "signal": ("press", "ThresherActionSO", "Plant"),
+                                "drives": "ThresherActionSO",
+                                "fields": {"plantMinTurnDegrees": "engageAngleLow", "plantMinDistance": "engageDistanceLow",
+                                           "releaseConeDegrees": "releaseAngleMedian", "maxPlantSeconds": "holdHigh",
+                                           "slingIntervalSeconds": "minRestSeconds"}},
     # ChargeBoost (Dolphin) and RampBoost (Rhino) are HULLS entries above, with their own extra measures.
 }
 PREFAB_DIR = os.path.join(REPO, "Assets", "_Prefabs", "Spacevessels")
@@ -138,7 +144,7 @@ def script_class(asset_path):
 
 
 def bindings(prefab_text):
-    """{InputEvent int: [ability class, ...]} from the vessel's action handler: the keyboard/base list and the pad's."""
+    """{InputEvent int: [(ability class, asset name), ...]} from the vessel's action handler: the base list and the pad's."""
     out = {}
     for block in ("_inputEventShipActions", "_gamepadActionOverrides"):
         m = re.search(block + r":\n((?:  - InputEvent: \d+\n    ShipActions:\n(?:    - \{[^}]*\}\n)*)*)", prefab_text)
@@ -149,7 +155,7 @@ def bindings(prefab_text):
                 path = guid_paths().get(g)
                 cls = script_class(path) if path and path.endswith(".asset") else None
                 if cls:
-                    out.setdefault(int(ie), []).append(cls)
+                    out.setdefault(int(ie), []).append((cls, os.path.basename(path)[:-6]))
     return out
 
 
@@ -172,10 +178,13 @@ def resolve_hull(hull):
     spec.update({k: v for k, v in POLICY_CLASSES[cls].items()})
     bound = bindings(text)
     drives = spec.get("drives")
-    if drives and not any(drives in v for v in bound.values()):
+    if drives and not any(drives == cls for v in bound.values() for cls, _ in v):
         spec["why"] = f"its boost policy {policy} ({cls}) presses {drives}, which this hull does not bind - the drive cannot act"
     if spec["signal"][0] == "press":
-        spec["input"] = next((ie for ie, v in sorted(bound.items()) if spec["signal"][1] in v), None)
+        want_cls = spec["signal"][1]
+        want_name = spec["signal"][2] if len(spec["signal"]) > 2 else ""
+        spec["input"] = next((ie for ie, v in sorted(bound.items())
+                              if any(cls == want_cls and want_name in name for cls, name in v)), None)
     return spec
 
 
@@ -215,6 +224,8 @@ def policy_off_in_mode(policy, mode):
 
 # Hulls whose AI has no boost policy to learn into: reported with the reason (ai_learn.py shows it), never guessed.
 REPORT_ONLY = {
+    "Wrasse": "its boost is the crew's: KiteNavigator spends a saved boost while the next ring is aiBoostRingDistance "
+              "away (AIPilotWantsBoost, KiteNavigatorConfig), which does not load per mode; its AIPilot names no policy",
     "Grizzly": "its AI bombs through GrizzlyTriggerBombConfigSO's autopilot fields, which do not load per mode, and "
                "jtgjones's grizzly-v3 is reworking the bomb triggers (15 unmerged commits): learn it once that lands",
     "Butterfly": "its AI's one choice, Mass or Dust, is made by each Butterfly mode's controller "
@@ -259,6 +270,8 @@ RANGES = {
     # the generic policies (POLICY_CLASSES)
     "ringAlignDegrees": (0.5, 10.0), "ringStickBand": (0.0, 1.0), "minSecondsBetweenPellets": (0.0, 5.0),
     "dashCooldownSeconds": (0.2, 10.0),
+    "plantMinTurnDegrees": (0.0, 180.0), "plantMinDistance": (0.0, 2000.0), "releaseConeDegrees": (1.0, 90.0),
+    "maxPlantSeconds": (0.2, 20.0), "slingIntervalSeconds": (0.0, 20.0),
 }
 
 
@@ -455,6 +468,11 @@ def measure_generic(flights, spec, held=False):
         m["releaseRunwaySeconds"] = pct([x["runway"] for x in rel], 0.5)
         m["minHoldSeconds"] = pct([e[2] for e in eps], 0.1)
     m["minRestSeconds"] = pct(rests, 0.1) if rests else None
+    # Threshold measures (a verb started once the target is AT LEAST this far off / this far away) and the let-go.
+    m["engageAngleLow"] = pct([x["angle"] for x in eng], 0.2)
+    m["engageDistanceLow"] = pct([x["dist"] for x in eng], 0.2)
+    m["releaseAngleMedian"] = pct([x["angle"] for x in rel], 0.5)
+    m["holdHigh"] = pct([e[2] for e in eps], 0.95)
     return m
 
 
