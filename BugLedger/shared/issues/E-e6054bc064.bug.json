@@ -13,8 +13,8 @@
   "logType": "Error",
   "reporter": "yskha",
   "machine": "COSMOS",
-  "createdUtc": "2026-10-15T16:52:00.493Z",
-  "lastSeenUtc": "2026-10-15T16:52:00.493Z",
+  "createdUtc": "2026-10-25T22:05:46.106Z",
+  "lastSeenUtc": "2026-10-25T22:05:46.106Z",
   "fixedBy": "claude",
   "fixedUtc": "2026-10-15T22:13:45.151Z",
   "fixCommit": "24ba982c81d9abe29b1de2a6c64daea6eab8ee4e",
@@ -22,7 +22,7 @@
   "resolution": "",
   "timesSeen": 1,
   "regressions": 0,
-  "cleanSessions": 0,
+  "cleanSessions": 1,
   "cleanSessionsRequired": 2,
   "validationPaused": false
 }
