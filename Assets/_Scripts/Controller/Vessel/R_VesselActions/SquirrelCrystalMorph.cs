@@ -106,7 +106,7 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
                 $"[CrystalMorph] Squirrel: began on '{crystal.name}' at {origin.Position} (the crystal " +
                 $"is now at {crystal.transform.position}), domain {domain}, {morph.Census}; waiting " +
-                $"up to {morph.Config.targetGraceSeconds:F2}s for a {PrismKind.Shielded} ring.");
+                $"up to {morph.Config.TargetGraceSeconds:F2}s for a {PrismKind.Shielded} ring.");
             return morph;
         }
 
@@ -129,11 +129,11 @@ namespace CosmicShore.Gameplay
                 return;
             }
             float distance = Vector3.Distance(lay.Pose.position, _collectPosition);
-            if (distance > Config.ringCaptureRadius)
+            if (distance > Config.RingCaptureRadius)
             {
                 CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
                     $"[CrystalMorph] Squirrel: skipped a shielded ring {distance:F0}u from the " +
-                    $"collect (capture radius {Config.ringCaptureRadius:F0}u) — another pickup's.");
+                    $"collect (capture radius {Config.RingCaptureRadius:F0}u) — another pickup's.");
                 return;
             }
 
@@ -154,9 +154,9 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            var mesh = CrystalMorphMeshBuilder.TryBuild(SourceMesh, targets, Config.fillerPhase,
-                                                        Config.panelPhaseStart,
-                                                        Mathf.Max(Config.panelPhaseStart, Config.panelPhaseEnd),
+            var mesh = CrystalMorphMeshBuilder.TryBuild(SourceMesh, targets, Config.FillerPhase,
+                                                        Config.PanelPhaseStart,
+                                                        Mathf.Max(Config.PanelPhaseStart, Config.PanelPhaseEnd),
                                                         out string diagnosis);
             if (mesh == null)
             {
@@ -181,7 +181,7 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
                 $"[CrystalMorph] Squirrel: took ring #{_ringsSeen} {distance:F1}u from the collect — " +
                 $"{_held.Count} prisms held, {MorphVertexCount} morph vertices, {MorphSeconds:F2}s of " +
-                $"morph + {Config.duration - MorphSeconds:F2}s of dissolve (colour target " +
+                $"morph + {Config.Duration - MorphSeconds:F2}s of dissolve (colour target " +
                 $"{(_haveTargetColour ? "read" : "NOT FOUND")}).");
         }
 
@@ -289,7 +289,7 @@ namespace CosmicShore.Gameplay
             Unsubscribe();
             CSDebug.LogWarning(
                 $"[SquirrelCrystalMorph] no usable {PrismKind.Shielded} boost ring arrived within " +
-                $"{Config.targetGraceSeconds:F2}s ({_ringsSeen} ring(s) seen), so the crystal is " +
+                $"{Config.TargetGraceSeconds:F2}s ({_ringsSeen} ring(s) seen), so the crystal is " +
                 "fading out instead of morphing. The ring is laid by a SIBLING effect " +
                 "(SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam " +
                 "cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's " +

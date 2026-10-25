@@ -395,9 +395,9 @@ namespace CosmicShore.UI
 
         Sprite ResolveAvatarSprite(int avatarId)
         {
-            if (avatarId < 0 || profileIcons?.profileIcons == null) return null;
+            if (avatarId < 0 || profileIcons?.ProfileIcons == null) return null;
 
-            foreach (var icon in profileIcons.profileIcons)
+            foreach (var icon in profileIcons.ProfileIcons)
                 if (icon.Id == avatarId)
                     return icon.IconSprite;
 

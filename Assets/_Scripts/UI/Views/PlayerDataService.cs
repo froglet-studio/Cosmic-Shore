@@ -280,8 +280,8 @@ namespace CosmicShore.UI
 
         int GetDefaultAvatarId()
         {
-            if (profileIcons != null && profileIcons.profileIcons.Count > 0)
-                return profileIcons.profileIcons[0].Id;
+            if (profileIcons != null && profileIcons.ProfileIcons.Count > 0)
+                return profileIcons.ProfileIcons[0].Id;
 
             return 0;
         }
@@ -565,25 +565,25 @@ namespace CosmicShore.UI
         /// </summary>
         public Sprite GetRandomAvatarSprite()
         {
-            if (profileIcons == null || profileIcons.profileIcons == null ||
-                profileIcons.profileIcons.Count == 0)
+            if (profileIcons == null || profileIcons.ProfileIcons == null ||
+                profileIcons.ProfileIcons.Count == 0)
                 return null;
 
-            return profileIcons.profileIcons[UnityEngine.Random.Range(0, profileIcons.profileIcons.Count)].IconSprite;
+            return profileIcons.ProfileIcons[UnityEngine.Random.Range(0, profileIcons.ProfileIcons.Count)].IconSprite;
         }
 
         public Sprite GetAvatarSprite(int avatarId)
         {
-            if (profileIcons == null || profileIcons.profileIcons == null || profileIcons.profileIcons.Count == 0)
+            if (profileIcons == null || profileIcons.ProfileIcons == null || profileIcons.ProfileIcons.Count == 0)
                 return null;
 
-            for (int i = 0; i < profileIcons.profileIcons.Count; i++)
+            for (int i = 0; i < profileIcons.ProfileIcons.Count; i++)
             {
-                if (profileIcons.profileIcons[i].Id == avatarId)
-                    return profileIcons.profileIcons[i].IconSprite;
+                if (profileIcons.ProfileIcons[i].Id == avatarId)
+                    return profileIcons.ProfileIcons[i].IconSprite;
             }
 
-            return profileIcons.profileIcons[0].IconSprite;
+            return profileIcons.ProfileIcons[0].IconSprite;
         }
 
         // ----------------- Crystal Currency -----------------
