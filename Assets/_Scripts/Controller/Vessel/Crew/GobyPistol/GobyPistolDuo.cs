@@ -55,7 +55,8 @@ namespace CosmicShore.Gameplay
         bool _pinned, _penHeld;
         Vector3 _home;
         readonly List<Den> _perches = new();                 // perch k: where the Goby sat, and the den the Pistol builds there
-        readonly List<PlaneSegment> _segments = new();       // segment k: the dart from perch k to perch k + 1
+        readonly List<PlaneSegment> _segments = new();
+        readonly List<PistolPlane.HillTrack> _tracks = new();   // each island's ground, built from its perches' seed (the same on every machine)
         readonly Trail _trail = new();
 
         // the Goby: its dart and its lock
@@ -66,7 +67,14 @@ namespace CosmicShore.Gameplay
         Transform _lockTarget; IVesselStatus _lockVessel; bool _lockIsVessel;
 
         // the Goby's own AI (while the human flies the Pistol): it aims the hull and darts by the same calls the buttons make
-        Vector3 _aiDir; float _aiDecideAt, _aiLandedAt; bool _aiHasDir;
+        Vector3 _aiDir; float _aiDecideAt, _aiIslandGoal; bool _aiHasDir;
+        // its route: the island it means to lay next, aimed where the most opposing prisms are (PistolPaths.BestHeading)
+        readonly List<Vector3> _routePts = new();
+        uint _misjudgeSeed;
+        Vector3 _aiRouteEnd; bool _aiHasRoute; int _aiRouteCount;
+        const int RoutePointsMax = 2048;   // the opposing prisms a route is weighed against (sampled evenly beyond that)
+        // perched: pinned on the end of an island, aiming, until the perch time is up (it cruises between perches)
+        bool _perched; float _perchT;
         PistolAI.Mulberry32 _aiRng;
 
         // the Pistol
@@ -75,6 +83,19 @@ namespace CosmicShore.Gameplay
         int _seg = -1, _dir = 1, _at, _travelDir = 1;
         bool _resting = true; float _restT, _waitT, _travelled; int _restQueue, _restSpawned;
         bool _touchGhost, _touchSnap, _backPressed;
+        float _dive;
+        // the choice at a perch (PistolPaths, Garrett 2026-10-25): every island's opposing prisms, kept one island at a time;
+        // the map the person picks a den and a direction on; the cursor and how the dive confirms it
+        readonly List<PathChoice> _options = new();
+        readonly List<int> _pathScore = new();
+        readonly HashSet<Prism> _scoreSeen = new();
+        int _scoreCursor, _pathScoreMax; float _scoreAt;
+        bool _choosing, _diveWasDown; PathChoice _choice; float _chooseT; Vector2 _stickWas;
+        MapPointer _mapPointer;
+        float _mapRadius = 1f, _mapYaw, _mapPitch;   // the person's spin of the map, kept from perch to perch
+        Mesh _cube; Material[] _heatMats; Material _pickMat;
+        readonly List<Matrix4x4>[] _heatPieces = { new(), new(), new(), new(), new() };
+        readonly List<Matrix4x4> _pickPieces = new();
         bool _mouseDown, _aiming; Vector2 _mouseFrom, _pointerAt; Vector2? _mouseAim, _padAim; int _fingerId = -1;
         float _scanAt;
         readonly List<RingRun> _rings = new();
@@ -86,8 +107,12 @@ namespace CosmicShore.Gameplay
         readonly CrewSmallViewDoubleTap _pipTap = new();
         readonly GobyPistolButtons _buttons = new();
         CrewViewRender _render;
-        GameObject _view, _bodyGo; Camera _cam; bool _camLive; Quaternion _camRot; Vector3 _camPos;
-        Mesh _torus; Material _ringMat, _lockMat, _bodyMat;
+        GameObject _view, _bodyGo; Camera _cam; bool _camLive; Quaternion _camRot; Vector3 _camPos, _camWindow; float _camWidth;
+        Mesh _torus; Material _lockMat, _bodyMat;
+        // the Pistol's model (Pistol.fbx): its scale, which way it faces along the plane, the claw it snaps and the tail it
+        // curls on a dive, each turned about the model's own right axis from its rest pose
+        bool _bodyIsModel; float _bodyScale = 1f, _facing = 1f, _snapAt = -10f, _tailCurl; Material _bodyDomain;
+        Transform _claw, _tail; Quaternion _clawRest, _tailRest;
 
         GobyPistolConfigSO Config => config;
 
@@ -131,6 +156,31 @@ namespace CosmicShore.Gameplay
         public bool HasLock => _lockTarget;
         public bool DartReady => !_darting && _t >= _dartReadyAt;
         public bool HeadingBack => _travelDir < 0;
+        /// <summary>True while the Pistol, at a perch, waits for its person to pick a den and a direction (the path map).</summary>
+        public bool Choosing => _choosing;
+        /// <summary>The opposing prisms the vortex ring could reach along island <paramref name="segment"/>, last counted.</summary>
+        public int PathScore(int segment) => segment >= 0 && segment < _pathScore.Count ? _pathScore[segment] : 0;
+        // what each seat's four cards read (GobyPistolHUDController): 1 the instant a move is spent, 0 when it is ready
+        public bool LockHeld => _lockHeld && _human == Half.Goby;
+        public float DartCooldown01 => _darting || _t >= _dartReadyAt ? 0f : Mathf.Clamp01((_dartReadyAt - _t) / Mathf.Max(0.01f, Config.DartCooldown));
+        public float SnapCooldown01 => _p == null || _t >= _p.vortexAt ? 0f : Mathf.Clamp01((_p.vortexAt - _t) / Mathf.Max(0.01f, _body.pVortexCd));
+        public float GhostCooldown01 => _p == null || _t >= _p.ghostAt ? 0f : Mathf.Clamp01((_p.ghostAt - _t) / Mathf.Max(0.01f, _body.pGhostCd));
+        public bool SnapHeld => _p != null && _p.prevVortex;
+        public bool Ghosting => _p != null && _t < _p.ghostUntil;
+        public bool Diving => _dive > 0.5f;
+        /// <summary>The Pistol's speed as a share of its top speed (pMaxSpeed), 0..1.</summary>
+        public float Speed01 => _p == null ? 0f : Mathf.Clamp01((_p.grounded ? Mathf.Abs(_p.v) : Mathf.Sqrt(_p.vx * _p.vx + _p.vy * _p.vy)) / Mathf.Max(1f, _body.pMaxSpeed));
+        /// <summary>How far the undertow reaches now, 0 at Space's rest and 1 at its full level.</summary>
+        public float PullReach01
+        {
+            get
+            {
+                if (!Config || _status == null) return 0f;
+                var reach = Config.PullReach;
+                float lo = reach.EvaluateAtNormalizedLevel(0f), hi = reach.EvaluateAtNormalizedLevel(1f);
+                return hi - lo <= 1e-3f ? 0f : Mathf.Clamp01((reach.EvaluateReplicated(_status) - lo) / (hi - lo));
+            }
+        }
 
         // the local pilot's own hull, flown by a human: the crew seat rule every crew vessel shares; or the Pistol seat of a
         // Goby another machine flies, which the person here rides (CrewStations)
@@ -161,10 +211,11 @@ namespace CosmicShore.Gameplay
             if (!config) config = ScriptableObject.CreateInstance<GobyPistolConfigSO>();
             _body = Config.Body; _vs = Config.Vortex;
             _t = 0f; _swapReadyAt = 0f; _human = Half.Goby;
-            _perches.Clear(); _segments.Clear(); _rings.Clear(); _held.Clear();
+            _perches.Clear(); _segments.Clear(); _tracks.Clear(); _rings.Clear(); _held.Clear();
+            _pathScore.Clear(); _scoreCursor = 0; _pathScoreMax = 0; _choosing = false; _mapYaw = _mapPitch = 0f; _mapPointer = default;
             _darting = _charging = false; _dartReadyAt = 0f; ClearLock();
             _aiRng = new PistolAI.Mulberry32(20261022u); _ai = new PistolAI(31337u + 17u);
-            _home = _gt.position; _aiHasDir = false; _aiLandedAt = 0f;
+            _home = _gt.position; _aiHasDir = false; _aiIslandGoal = 0f; _perched = false; _perchT = 0f;
             _remotePistol = false; _sentPerches = -1; _sentLock = 0; _stateSendAt = 0f;
             if (_rider)
             {
@@ -175,9 +226,10 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                Pin(true); HoldPen(true);
-                // the Goby starts perched where it is, on a pad of its own
+                HoldPen(true);
+                // the Goby starts perched where it is, on a pad of its own: the first island begins here
                 AddPerch(_gt.position, _gt.up, ownPad: true);
+                _perched = true; Pin(true);
             }
             _p = new PistolBodyMath.State { launch = Mathf.RoundToInt(_body.pLaunchCharges) };
             _f = WaitingFrame();
@@ -200,10 +252,14 @@ namespace CosmicShore.Gameplay
             ReleaseAllRings();
             Pin(false); HoldPen(false);
             _render?.Dispose(); _render = null; _pip.Dispose();
+            TwoDCameraSky.Unregister(_cam);
             if (_view) Destroy(_view);
             if (_bodyGo) Destroy(_bodyGo);
-            foreach (var o in new Object[] { _torus, _ringMat, _lockMat, _bodyMat }) if (o) Destroy(o);
-            _perches.Clear(); _segments.Clear(); ClearLock();
+            foreach (var o in new Object[] { _torus, _lockMat, _bodyMat, _cube, _pickMat }) if (o) Destroy(o);
+            if (_heatMats != null) foreach (var m in _heatMats) if (m) Destroy(m);
+            _heatMats = null; _choosing = false; _pathScore.Clear();
+            _claw = _tail = null; _bodyIsModel = false; _bodyDomain = null;
+            _perches.Clear(); _segments.Clear(); _tracks.Clear(); ClearLock();
             _goby = null; _status = null; _gt = null; _cam = null; _view = null; _bodyGo = null; _camLive = false;
         }
 
@@ -211,7 +267,8 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy() => Unbind();
 
-        /// <summary>Translation pinned (the fleet's restricted stance): the Goby never cruises; it only aims and darts.</summary>
+        /// <summary>Translation pinned (the fleet's restricted stance) while the Goby is perched or darting: perched it only
+        /// aims, darting it is moved along the dart; between perches it cruises on its own flight.</summary>
         void Pin(bool on)
         {
             if (_pinned == on || _status == null) return;
@@ -275,6 +332,7 @@ namespace CosmicShore.Gameplay
 
             if (_human == Half.Goby && !_aiCrew) HumanGoby(dt); else GobyAI(dt);
             StepDart(dt);
+            StepPerch(dt);
             HoldLock();
 
             if (_remotePistol) { SendPerches(); return; }
@@ -327,7 +385,7 @@ namespace CosmicShore.Gameplay
             if (go < 6f) return;
             _darting = true; _dartDir = f; _dartUp = _gt.up; _dartDist = go; _dartWent = 0f;
             _dartSpeed = go / Mathf.Max(0.05f, Config.DartSeconds);
-            _aiHasDir = false;
+            _perched = false; Pin(true);
         }
 
         /// <summary>The first block (not the pair's own) the hull's padded line meets within <paramref name="len"/>.</summary>
@@ -361,14 +419,42 @@ namespace CosmicShore.Gameplay
             if (_dartWent < _dartDist - 0.01f) return;
             _darting = false;
             _dartReadyAt = _t + Config.DartCooldown;
-            _aiLandedAt = _t;
             Vector3 at = _gt.position;
-            bool onBlock = NearBlock(at, Config.HullRadius + 4f);
             var prev = _perches[_perches.Count - 1];
-            AddPerch(at, _dartUp, ownPad: !onBlock);
-            var seg = new PlaneSegment(prev.Pos, at, (prev.Up + _dartUp).normalized);
-            _segments.Add(seg);
-            LayGround(seg);
+            // a dash, not a perch: too close to the last perch for an island, or the Pistol already has its islands ahead
+            if (!GobyIslands.Reaches(prev.Pos, at, Config.IslandMinLength) || IslandsAhead >= Config.IslandQueue) { Pin(false); return; }
+            // a perch: the end of an island (a long gap is laid as several, each a perch of its own), pinned for the perch time
+            bool onBlock = NearBlock(at, Config.HullRadius + 4f);
+            int pieces = GobyIslands.Pieces(prev.Pos, at, Config.IslandMaxLength);
+            Vector3 from = prev.Pos, fromUp = prev.Up;
+            for (int i = 1; i <= pieces; i++)
+            {
+                float k = i / (float)pieces;
+                Vector3 pos = Vector3.Lerp(prev.Pos, at, k), up = Vector3.Slerp(prev.Up, _dartUp, k);
+                AddPerch(pos, up, ownPad: i < pieces || !onBlock);
+                var seg = new PlaneSegment(from, pos, (fromUp + up).normalized);
+                _segments.Add(seg);
+                _tracks.Add(TrackFor(seg, _segments.Count - 1));
+                LayGround(seg, _tracks[_tracks.Count - 1]);
+                from = pos; fromUp = up;
+            }
+            _perched = true; _perchT = 0f; _aiHasDir = false;
+        }
+
+        /// <summary>Islands laid ahead of the one the Pistol is on (none counted while it flies on another machine).</summary>
+        int IslandsAhead => _remotePistol ? 0 : GobyIslands.Ahead(_perches.Count, _resting, _at, _seg, _dir);
+
+        /// <summary>Perched, the Goby aims for <c>perchSeconds</c> (longer while a person charges a dart from it), then lifts
+        /// off and cruises on its own flight.</summary>
+        void StepPerch(float dt)
+        {
+            if (_perched)
+            {
+                _perchT += dt;
+                bool charging = _human == Half.Goby && !_aiCrew && _charging;
+                if (_perchT >= Config.PerchSeconds && !charging) _perched = false;
+            }
+            Pin(_perched || _darting);
         }
 
         bool NearBlock(Vector3 at, float r)
@@ -404,18 +490,21 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>The dart's ground: a trail block every <c>trailBlockGap</c> along the line, on the hills the Pistol rides.</summary>
-        void LayGround(in PlaneSegment seg)
+        /// <summary>An island's ground from its perches (<see cref="PistolPlane.IslandSeed"/>): the rider's machine builds the same.</summary>
+        PistolPlane.HillTrack TrackFor(in PlaneSegment seg, int island) => PistolPlane.HillTrack.Build(seg.L, PistolPlane.IslandSeed(seg.A, seg.B), Config.HillSpec, island);
+
+        /// <summary>The island's ground: a trail block every <c>trailBlockGap</c> along the line, on the hills the Pistol rides.</summary>
+        void LayGround(in PlaneSegment seg, PistolPlane.HillTrack track)
         {
             var prisms = _status.VesselPrismController;
             var channel = prisms ? prisms.PrismSpawnChannel : null;
             if (!channel || seg.L < 1f) return;
-            float gap = Mathf.Max(2f, Config.TrailBlockGap), amp = Config.HillAmplitude, wave = Config.HillWavelength;
+            float gap = Mathf.Max(2f, Config.TrailBlockGap);
             Vector3 scale = Config.TrailBlockScale;
             for (float s = gap * 0.5f; s < seg.L; s += gap)
             {
-                Vector3 pos = seg.Ground(s, amp, wave);
-                Vector3 along = seg.S + seg.N * PistolPlane.HillSlope(s, seg.L, amp, wave);
+                Vector3 pos = seg.Ground(s, track);
+                Vector3 along = seg.S + seg.N * track.Slope(s);
                 if (!SafeLookRotation.TryGet(along, seg.N, out var rot, this, logError: false)) continue;
                 var ret = channel.RaiseEvent(new PrismEventData
                 {
@@ -498,24 +587,40 @@ namespace CosmicShore.Gameplay
 
         // ================================ the Goby's AI (while the human flies the Pistol) ================================
 
-        /// <summary>The seat's Goby: locks the nearest rival in reach, picks a perch about <c>aiDartLength</c> away (toward a
-        /// locked rival, within reach of home), turns the hull onto it and darts once the Pistol has caught up (or after
-        /// <c>aiWaitForPistol</c>). It acts through the same calls the Goby's buttons make.</summary>
+        /// <summary>The seat's Goby (Garrett, 2026-10-23: "the goby is barely cruising around at all"): it CRUISES at
+        /// <c>aiCruiseSpeed</c>, steering toward a locked rival or wandering within reach of home, and darts once its island
+        /// is as long as it planned (a length between <c>islandMinLength</c> and <c>islandMaxLength</c>), so the dart's end
+        /// is the next perch. While the Pistol already has <c>islandQueue</c> islands ahead it lays none and stays near the
+        /// last perch. Perched, it aims at where it will go next. It acts through the calls the Goby's buttons make, and
+        /// moves the hull itself (the pilot's input is paused while it flies).</summary>
         void GobyAI(float dt)
         {
             if (_darting) return;
             var lvl = Difficulty();
             if (!_lockTarget || !_lockIsVessel) AiLockNearestRival();
-            if (!_aiHasDir && _t >= _aiDecideAt) { _aiDir = AiChooseDirection(lvl); _aiHasDir = true; }
-            if (!_aiHasDir) return;
-            float maxDeg = 140f * dt;
+            if (_aiIslandGoal <= 0f)
+            {
+                // a new island: how long, and how the easier AIs will misread the field this time
+                _aiIslandGoal = Mathf.Lerp(Config.IslandMinLength, Config.IslandMaxLength, _aiRng.Next());
+                _misjudgeSeed = (uint)(_aiRng.Next() * uint.MaxValue);
+                _aiHasDir = false;
+            }
+            if (!_aiHasDir || _t >= _aiDecideAt)
+            {
+                AiPlanRoute(lvl);
+                _aiDir = AiCruiseDirection(lvl); _aiHasDir = true;
+                _aiDecideAt = _t + Config.AiRethinkSeconds * (0.7f + 0.6f * _aiRng.Next()) + lvl.Late;
+            }
             Quaternion.FromToRotation(_gt.forward, _aiDir).ToAngleAxis(out float deg, out var axis);
-            if (deg > 0.05f && axis.sqrMagnitude > 1e-8f && IsAuthority()) _status.VesselTransformer.ApplyRotation(Mathf.Min(deg, maxDeg), axis);
-            bool pistolHere = _resting && _at == _perches.Count - 1;
-            if (deg < 4f && DartReady && (pistolHere || _t - _aiLandedAt > Config.AiWaitForPistol))
+            if (deg > 0.05f && axis.sqrMagnitude > 1e-8f && IsAuthority())
+                _status.VesselTransformer.ApplyRotation(Mathf.Min(deg, Config.AiTurnRate * dt), axis);
+            if (_perched) return;   // aims from the perch; it lifts off when the perch time is up (StepPerch)
+            if (IsAuthority()) _status.VesselTransformer.TranslateShip(_gt.forward * (Config.AiCruiseSpeed * dt));
+            float from = Vector3.Distance(_gt.position, _perches[_perches.Count - 1].Pos);
+            if (DartReady && deg < 25f && IslandsAhead < Config.IslandQueue && from + 0.5f * Config.AiDartLength >= _aiIslandGoal)
             {
                 FireDart(Config.AiDartLength);
-                _aiDecideAt = _t + lvl.Late * (0.5f + _aiRng.Next());
+                if (_darting) _aiIslandGoal = 0f;
             }
         }
 
@@ -534,26 +639,48 @@ namespace CosmicShore.Gameplay
             if (pick != null) { _lockTarget = pick.Transform; _lockVessel = pick; _lockIsVessel = true; }
         }
 
-        Vector3 AiChooseDirection(PistolAI.Difficulty lvl)
+        /// <summary>
+        /// The island the Goby AI means to lay next (Garrett, 2026-10-25: "the goby AI was doing a bad job of taking paths
+        /// that would give the shrimp plenty to destroy"): from the last perch, the heading whose island would pass the most
+        /// opposing prisms within the Pistol's reach (the undertow's, or <c>pathScoreBand</c>), its end inside the home
+        /// radius. The easier AIs misread the counts (misjudge, rolled per island: Easy up to ±50 %, Medium ±22 %). No route
+        /// when nothing opposing is in reach: it falls back to a rival, home, or a wander.
+        /// </summary>
+        void AiPlanRoute(PistolAI.Difficulty lvl)
         {
-            Vector3 pos = _gt.position, bestDir = _gt.forward; float bestScore = float.MinValue, L = Config.AiDartLength;
-            for (int k = 0; k < 12; k++)
-            {
-                Vector3 dir;
-                if (k == 0 && _lockTarget) dir = (_lockTarget.position - pos).normalized;
-                else if (k == 1 && (pos - _home).magnitude > Config.AiHomeRadius * 0.5f) dir = (_home - pos).normalized;
-                else dir = Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 140f, _gt.up) * Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 90f, _gt.right) * _gt.forward;
-                float go = L; bool hit = FirstOnLine(pos, dir, L * 1.4f, out float along);
-                if (hit) go = along;
-                float score = -Mathf.Abs(go - L) * (hit ? 0.6f : 1f) - Mathf.Max(0f, (pos + dir * go - _home).magnitude - Config.AiHomeRadius) * 2f;
-                if (go < 60f) score -= 1000f;
-                if (k == 0 && _lockTarget) score += 120f;
-                score += _aiRng.Next() * 30f;
-                if (score > bestScore) { bestScore = score; bestDir = dir; }
-            }
-            // a misjudged perch: the aim off by a few degrees (Easy / Medium)
-            if (_aiRng.Next() < lvl.Mis * 4f) bestDir = Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 20f, _gt.up) * bestDir;
-            return bestDir.normalized;
+            _aiHasRoute = false; _aiRouteCount = 0;
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable || _perches.Count == 0) return;
+            Vector3 last = _perches[_perches.Count - 1].Pos;
+            float goal = _aiIslandGoal > 0f ? _aiIslandGoal : Config.IslandMaxLength;
+            float radius = Mathf.Max(Config.PullReach.EvaluateReplicated(_status), Config.PathScoreBand);
+            index.QuerySphere(last, goal + radius, _q);
+            _routePts.Clear();
+            int stride = Mathf.Max(1, Mathf.CeilToInt(_q.Count / (float)RoutePointsMax));
+            for (int i = 0; i < _q.Count; i += stride) if (Opposing(_q[i])) _routePts.Add(_q[i].transform.position);
+            _q.Clear();
+            bool found = PistolPaths.BestHeading(last, goal, radius, _routePts, _home, Config.AiHomeRadius, _gt.forward,
+                lvl.Mis * 10f, _misjudgeSeed, out var heading, out _aiRouteCount);
+            _routePts.Clear();
+            if (!found) return;
+            _aiRouteEnd = last + heading * goal;
+            _aiHasRoute = true;
+        }
+
+        /// <summary>Where the cruising Goby AI heads next: back toward the last perch while the Pistol's islands are full (it
+        /// circles there instead of laying more); along its route, where the island will pass the most opposing prisms;
+        /// else at a locked rival in reach; home when it strays; else a wander off the nose. Easy and Medium misjudge it by a
+        /// few degrees.</summary>
+        Vector3 AiCruiseDirection(PistolAI.Difficulty lvl)
+        {
+            Vector3 pos = _gt.position, last = _perches[_perches.Count - 1].Pos, dir;
+            if (IslandsAhead >= Config.IslandQueue && (last - pos).magnitude > 0.5f * Config.IslandMinLength) dir = last - pos;
+            else if (_aiHasRoute && (_aiRouteEnd - pos).sqrMagnitude > 1f) dir = _aiRouteEnd - pos;
+            else if (_lockTarget && (_lockTarget.position - pos).sqrMagnitude < Config.LockRange * Config.LockRange) dir = _lockTarget.position - pos;
+            else if ((pos - _home).magnitude > 0.7f * Config.AiHomeRadius) dir = _home - pos;
+            else dir = Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 120f, _gt.up) * Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 50f, _gt.right) * _gt.forward;
+            if (_aiRng.Next() < lvl.Mis * 4f) dir = Quaternion.AngleAxis((_aiRng.Next() - 0.5f) * 20f, _gt.up) * dir;
+            return dir.sqrMagnitude > 1e-6f ? dir.normalized : _gt.forward;
         }
 
         PistolAI.Difficulty Difficulty() => aiLevel switch
@@ -569,16 +696,18 @@ namespace CosmicShore.Gameplay
         PistolPlane.Frame WaitingFrame()
         {
             Vector3 a = _perches[_perches.Count - 1].Pos;
-            return PistolPlane.For(new PlaneSegment(a, a + _gt.forward * 100f, _gt.up), 1, Config.SlopeDegrees, 0f, Config.HillWavelength);
+            return PistolPlane.For(new PlaneSegment(a, a + _gt.forward * 100f, _gt.up), 1, Config.SlopeDegrees, null);
         }
 
         void StepPistol(float dt)
         {
+            ScorePaths();
             if (_resting) { Rest(dt); return; }
             var inp = _human == Half.Pistol ? HumanPistol() : AIPistol();
+            _dive = inp.Dive;
             var ev = PistolBodyMath.Step(_p, _f, _t, dt, inp, _body);
             _travelled += ev.Travelled;
-            if (ev.FireSnap) FireRing(ev.SnapAim);
+            if (ev.FireSnap) { FireRing(ev.SnapAim); _snapAt = _t; }
             if (_p.x >= _f.EndX - Config.ArriveDistance) Arrive(_dir > 0 ? _seg + 1 : _seg);
         }
 
@@ -603,10 +732,14 @@ namespace CosmicShore.Gameplay
             while (_restSpawned < due) { LayDenPrism(den); _restSpawned++; }
             if (_restT < Config.RestSeconds) return;
 
-            // the Pistol's choice at a perch: on toward the Goby, or back toward the older dens (Back; the AI goes back after
-            // waiting at the head)
-            if (_human == Half.Pistol) { if (_backPressed) { _backPressed = false; _travelDir = -_travelDir; } }
-            else if (_at == _perches.Count - 1 && _at > 0) { _waitT += dt; if (_waitT > Config.AiBackAfter) { _travelDir = -1; _waitT = 0f; } }
+            // the Pistol's choice at a perch (Garrett, 2026-10-25): any den, either way. A person picks on the path map; the AI
+            // takes the island holding the most opposing prisms for its ring, and otherwise its old way (on toward the Goby,
+            // back toward the older dens after waiting at the head)
+            PistolPaths.Options(_perches.Count, _segments.Count, _options);
+            if (_human == Half.Pistol) { Choose(dt); return; }
+            int best = PistolPaths.Best(_options, _pathScore, _segments.Count, _at);
+            if (best >= 0) { SetOff(_options[best]); return; }
+            if (_at == _perches.Count - 1 && _at > 0) { _waitT += dt; if (_waitT > Config.AiBackAfter) { _travelDir = -1; _waitT = 0f; } }
             else if (_travelDir < 0 && _restT > Config.RestSeconds) _travelDir = 1;   // the AI turns for the head at the den it went back to
 
             if (_travelDir < 0 && _at == 0) _travelDir = 1;
@@ -618,9 +751,244 @@ namespace CosmicShore.Gameplay
         void Ride(int seg, int dir)
         {
             _seg = seg; _dir = dir; _resting = false;
-            _f = PistolPlane.For(_segments[seg], dir, Config.SlopeDegrees, Config.HillAmplitude, Config.HillWavelength);
-            PistolBodyMath.PlaceAtStart(_p, _f, Mathf.Max(_body.pMinSpeed, _p.v));
+            _f = PistolPlane.For(_segments[seg], dir, Config.SlopeDegrees, _tracks[seg]);
+            // from a standstill: the Pistol rested at the perch, so it sets off at the ride's least speed and gathers it on
+            // the way down, never carrying its arrival speed into the first hump and flying off the perch (Garrett,
+            // 2026-10-22: "it should not launch from the perch each time")
+            PistolBodyMath.PlaceAtStart(_p, _f, _body.pMinSpeed);
         }
+
+        /// <summary>Sets off on <paramref name="c"/>: from another perch it TELEPORTS there first, which grows no den (only the
+        /// distance ridden does, counted from here: Garrett, 2026-10-25).</summary>
+        void SetOff(PathChoice c)
+        {
+            if (!PistolPaths.Ready(c, _segments.Count)) return;
+            if (c.Perch != _at)
+            {
+                _at = Mathf.Clamp(c.Perch, 0, _perches.Count - 1);
+                _travelled = 0f;
+                _p.wpos = _perches[_at].Pos;
+                _camLive = false;   // a cut, not a pan, to the den it jumped to
+            }
+            _choosing = false;
+            _travelDir = c.Dir;
+            _waitT = 0f;
+            Ride(c.Segment, c.Dir);
+        }
+
+        /// <summary>
+        /// The person's pick on the path map, controls in the order the 2D cameras serve them (Garrett, 2026-10-25: "the
+        /// control priority for 2d characters is mobile, gamepad, mouse/keyboard ... the player needs to be able to spin
+        /// the map"):
+        /// <list type="bullet">
+        /// <item><b>Touch</b> (the mouse is the same pointer): drag spins the map; a tap on a path picks it, starting from
+        /// the den at the end nearer the tap; a tap on the picked path rides it; the phone's Back button turns it round.
+        /// A finger still down from the ride, held still for <c>chooseHoldSeconds</c>, rides on.</item>
+        /// <item><b>Gamepad</b>: the right stick spins the map; the left stick moves the pick to the next path that way on
+        /// screen; A (or the left trigger) rides it, a fresh press or held through the perch; Y turns it round.</item>
+        /// <item><b>Keyboard</b>: Space (or S, down) rides it the same way; A / D move the pick; F turns it round; Q / E spin
+        /// the map.</item>
+        /// </list>
+        /// </summary>
+        void Choose(float dt)
+        {
+            bool began = false, held = false; Vector2 at = _pointerAt;
+            if (_cam) ReadPointer(out at, out began, out held);
+            var kb = Keyboard.current; var pad = Gamepad.current;
+            if (!_choosing)
+            {
+                _choosing = true; _chooseT = 0f; _stickWas = Vector2.zero;
+                _choice = new PathChoice(_at, _travelDir);
+                _diveWasDown = DiveButtonHeld(kb, pad);
+                // a finger or the mouse still down from the ride: held still it rides on, moved it spins the map
+                _mapPointer.Open(held, at);
+                _scoreCursor = 0;
+            }
+            _chooseT += dt;
+            if (_options.Count == 0) return;
+            if (PistolPaths.IndexOf(_options, _choice) < 0) _choice = _options[PistolPaths.Nearest(_options, _choice.Perch)];
+            bool go = false;
+
+            // touch first (and the mouse, the same pointer): drag spins, a tap picks, a tap on the pick rides
+            _mapPointer.Step(began, held, at, dt, TapSlop, TapMaxSeconds, out var drag, out bool tap, out var tapAt, out bool carriedStill);
+            if (drag != Vector2.zero) SpinMap(drag * (180f / Mathf.Max(1f, Screen.height)) * Config.MapSpinDragScale);
+            if (carriedStill && _chooseT >= Config.ChooseHoldSeconds) go = true;
+            if (tap && PickNear(tapAt, out var picked))
+            {
+                if (picked.Same(_choice)) go = true;
+                else _choice = picked;
+            }
+
+            // then the gamepad: right stick spins, left stick moves the pick, A rides, Y turns round
+            if (pad != null)
+            {
+                Vector2 spin = pad.rightStick.ReadValue();
+                if (spin.sqrMagnitude > 0.04f) SpinMap(spin * (Config.MapSpinRate * dt));
+                Vector2 move = pad.leftStick.ReadValue();
+                if (move.magnitude > 0.6f && _stickWas.magnitude <= 0.6f) _choice = StepToward(move);
+                _stickWas = move;
+                if (pad.buttonNorth.wasPressedThisFrame) _backPressed = true;
+            }
+
+            // then the keyboard: A / D move the pick, F (or B) turns round, Q / E spin, Space rides
+            if (kb != null)
+            {
+                if (kb.aKey.wasPressedThisFrame) _choice = StepToward(Vector2.left);
+                if (kb.dKey.wasPressedThisFrame) _choice = StepToward(Vector2.right);
+                if (kb.fKey.wasPressedThisFrame || kb.bKey.wasPressedThisFrame) _backPressed = true;
+                float yaw = (kb.eKey.isPressed ? 1f : 0f) - (kb.qKey.isPressed ? 1f : 0f);
+                if (yaw != 0f) SpinMap(new Vector2(yaw * Config.MapSpinRate * dt, 0f));
+            }
+
+            if (_backPressed)   // the phone's Back button, Y or F: the same den, the other way
+            {
+                _backPressed = false;
+                var turned = new PathChoice(_choice.Perch, -_choice.Dir);
+                if (PistolPaths.IndexOf(_options, turned) >= 0) _choice = turned;
+            }
+
+            bool dive = DiveButtonHeld(kb, pad);
+            if (dive && !_diveWasDown) go = true;
+            if (dive && _chooseT >= Config.ChooseHoldSeconds) go = true;   // held through the perch: rides on
+            _diveWasDown = dive;
+            if (!go || !PistolPaths.Ready(_choice, _segments.Count)) return;
+            SetOff(_choice);
+            _mouseDown = held && !_mapPointer.Moved; _aiming = false; _mouseFrom = at;   // a finger still down keeps diving
+            _mapPointer = default;
+        }
+
+        // a press that moves less than this is a tap (scaled for the screen's density), and a tap is quick
+        float TapSlop => 12f * Mathf.Max(1f, Screen.dpi / 160f);
+        const float TapMaxSeconds = 0.35f;
+
+        static bool DiveButtonHeld(Keyboard kb, Gamepad pad)
+            => (pad != null && (pad.buttonSouth.isPressed || pad.leftTrigger.ReadValue() > 0.5f))
+               || (kb != null && (kb.spaceKey.isPressed || kb.sKey.isPressed || kb.downArrowKey.isPressed));
+
+        /// <summary>Spins the map: x turns it round its up, y tips it (degrees), the tip held short of looking straight down
+        /// or up.</summary>
+        void SpinMap(Vector2 degrees)
+        {
+            _mapYaw = Mathf.Repeat(_mapYaw + degrees.x + 180f, 360f) - 180f;
+            _mapPitch = Mathf.Clamp(_mapPitch - degrees.y, -80f, 80f);
+        }
+
+        /// <summary>The path whose start lies next on screen in <paramref name="dir"/> (screen space, y up): the nearest
+        /// within 60 degrees of it.</summary>
+        PathChoice StepToward(Vector2 dir)
+        {
+            if (!_cam) return PistolPaths.Step(_options, _choice, dir.x >= 0f ? 1 : -1);
+            Vector2 from = _cam.WorldToScreenPoint(OptionAnchor(_choice)), d = dir.normalized;
+            var best = _choice; float bestCost = float.MaxValue;
+            foreach (var c in _options)
+            {
+                if (c.Same(_choice)) continue;
+                var sp = _cam.WorldToScreenPoint(OptionAnchor(c));
+                if (sp.z <= 0f) continue;
+                Vector2 v = (Vector2)sp - from;
+                float len = v.magnitude;
+                if (len < 1f) continue;
+                float cos = Vector2.Dot(v / len, d);
+                if (cos < 0.5f) continue;
+                float cost = len * (1f + 2f * (1f - cos));
+                if (cost < bestCost) { bestCost = cost; best = c; }
+            }
+            return best;
+        }
+
+        /// <summary>The path a tap at <paramref name="screen"/> lands on (anywhere along its glowing bar, within
+        /// <c>mapPickPixels</c>), starting from the den at the end nearer the tap; the head's "ahead" by its pointer.</summary>
+        bool PickNear(Vector2 screen, out PathChoice picked)
+        {
+            picked = _choice;
+            if (!_cam) return false;
+            float reach = Config.MapPickPixels * Mathf.Max(1f, Screen.dpi / 160f), bestD = reach * reach;
+            bool any = false;
+            for (int k = 0; k < _segments.Count; k++)
+            {
+                var seg = _segments[k]; var track = _tracks[k];
+                const int n = 12;
+                Vector3 a = _cam.WorldToScreenPoint(seg.Ground(0f, track));
+                for (int i = 1; i <= n; i++)
+                {
+                    Vector3 b = _cam.WorldToScreenPoint(seg.Ground(seg.L * i / n, track));
+                    if (a.z > 0f && b.z > 0f)
+                    {
+                        Vector2 ab = (Vector2)(b - a);
+                        float t = ab.sqrMagnitude > 1e-4f ? Mathf.Clamp01(Vector2.Dot(screen - (Vector2)a, ab) / ab.sqrMagnitude) : 0f;
+                        float d = (screen - ((Vector2)a + ab * t)).sqrMagnitude;
+                        if (d < bestD)
+                        {
+                            bestD = d; any = true;
+                            float along = (i - 1 + t) / n;
+                            picked = along <= 0.5f ? new PathChoice(k, 1) : new PathChoice(k + 1, -1);
+                        }
+                    }
+                    a = b;
+                }
+            }
+            foreach (var c in _options)
+            {
+                if (PistolPaths.Ready(c, _segments.Count)) continue;
+                var sp = _cam.WorldToScreenPoint(OptionAnchor(c));
+                float d = ((Vector2)sp - screen).sqrMagnitude;
+                if (sp.z > 0f && d < bestD) { bestD = d; picked = c; any = true; }
+            }
+            return any;
+        }
+
+        /// <summary>Where an option is picked on the map: a little way along its island from its den (the head's "ahead",
+        /// which waits for the next island, a little way along the Goby's nose).</summary>
+        Vector3 OptionAnchor(PathChoice c)
+        {
+            if (!PistolPaths.Ready(c, _segments.Count))
+                return _perches[Mathf.Clamp(c.Perch, 0, _perches.Count - 1)].Pos + (_gt ? _gt.forward : Vector3.forward) * _mapRadius * 0.12f;
+            var seg = _segments[c.Segment];
+            float s = c.Dir > 0 ? seg.L * 0.18f : seg.L * 0.82f;
+            return seg.Ground(s, _tracks[c.Segment]);
+        }
+
+        /// <summary>One island's score at a time: the opposing prisms (not the pair's domain, never super-shielded or still
+        /// growing: what the vortex ring can catch) over it, within the undertow's reach of its plane and
+        /// <c>pathScoreBand</c> of its ground. Every frame while the map is open, every <c>pathScoreInterval</c> otherwise.</summary>
+        void ScorePaths()
+        {
+            while (_pathScore.Count < _segments.Count) _pathScore.Add(0);
+            if (_pathScore.Count > _segments.Count) _pathScore.RemoveRange(_segments.Count, _pathScore.Count - _segments.Count);
+            if (_segments.Count == 0) { _pathScoreMax = 0; return; }
+            if (!_choosing && _t < _scoreAt) return;
+            _scoreAt = _t + Config.PathScoreInterval;
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return;
+            int k = _scoreCursor % _segments.Count;
+            _scoreCursor = (k + 1) % _segments.Count;
+            var seg = _segments[k];
+            var f = PistolPlane.For(seg, 1, Config.SlopeDegrees, _tracks[k]);
+            float reach = Mathf.Max(1f, Config.PullReach.EvaluateReplicated(_status)), band = Config.PathScoreBand;
+            float step = Mathf.Max(reach, band) * 1.5f, r = Mathf.Sqrt(reach * reach + band * band + step * step * 0.25f);
+            int count = 0;
+            _scoreSeen.Clear();
+            for (float s = 0f; s <= seg.L + step * 0.5f; s += step)
+            {
+                index.QuerySphere(seg.Ground(Mathf.Min(s, seg.L), _tracks[k]), r, _q2);
+                foreach (var prism in _q2)
+                {
+                    if (!_scoreSeen.Add(prism) || !Opposing(prism)) continue;
+                    Vector3 fr = f.ToFrame(prism.transform.position);
+                    if (PistolPaths.InBand(fr, f.EndX, PistolPlane.Ground(f, Mathf.Clamp(fr.x, 0f, f.EndX)), reach, band)) count++;
+                }
+                _q2.Clear();
+            }
+            _scoreSeen.Clear();
+            _pathScore[k] = count;
+            _pathScoreMax = 0;
+            foreach (int n in _pathScore) _pathScoreMax = Mathf.Max(_pathScoreMax, n);
+        }
+
+        /// <summary>A prism the vortex ring could take that is not the pair's: another domain, breakable, not super-shielded,
+        /// not still growing (the ring's own capture rule, StepRings).</summary>
+        bool Opposing(Prism prism) => Breakable(prism) && !prism.IsGrowing && !prism.prismProperties.IsSuperShielded
+                                      && prism.Domain != _status.Domain;
 
         void LayDenPrism(Den den)
         {
@@ -650,7 +1018,7 @@ namespace CosmicShore.Gameplay
             _ai.Vis.Clear();
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return;
-            index.QuerySphere(_p.wpos, Config.AI.pLaunchRange + 60f, _q);
+            index.QuerySphere(_p.wpos, Mathf.Max(Config.AI.pLaunchRange, 200f) + 60f, _q);   // the Snap's reach ahead (PistolAI)
             for (int i = 0; i < _q.Count; i++)
             {
                 var prism = _q[i];
@@ -685,8 +1053,12 @@ namespace CosmicShore.Gameplay
             else if (button == 2 && down) _backPressed = true;
         }
 
-        // hold to dive; drag (or RT + right stick) to aim a jump and let go; G / B ghost; Q / E / X / Y Snap; B key or LB
-        // to head back at a perch; on a phone a finger on the Pistol's view dives and drags
+        // On the fleet's four face buttons, the same ones the Goby's seat and every hull use, so each card's chip names its
+        // control from the one glyph set (Space / A = Button1, T / B = Button2, Q / X = Button3, F / Y = Button4):
+        // hold Space / A to dive (let go on an upslope and the hill throws it, Tiny Wings); T / B ghost; Q / X Snap; F / Y to
+        // head back at a perch. The keys this seat used before the cards named them still work (G ghost, E Snap, the B key
+        // and LB back). On a phone a finger on the Pistol's view dives. Only with aimedJump on: drag (or RT + right stick,
+        // or J) aims a jump and letting go flings it (Garrett, 2026-10-22: "launching intentionally was wierd")
         PistolBodyMath.Input HumanPistol()
         {
             var inp = new PistolBodyMath.Input();
@@ -697,7 +1069,7 @@ namespace CosmicShore.Gameplay
                 if (began) { _mouseDown = true; _aiming = false; _mouseFrom = mp; }
                 if (_mouseDown)
                 {
-                    if ((mp - _mouseFrom).magnitude > 12f) _aiming = true;
+                    if (Config.AimedJump && (mp - _mouseFrom).magnitude > 12f) _aiming = true;
                     if (_aiming && PlanePoint(mp, out var w)) _mouseAim = new Vector2(w.x - _p.x, w.y - _p.y);
                     if (!_aiming) dive = 1f;
                     if (!held)
@@ -709,21 +1081,21 @@ namespace CosmicShore.Gameplay
             }
             if (pad != null)
             {
-                if (pad.rightTrigger.ReadValue() > 0.5f) _padAim = pad.rightStick.ReadValue() * _body.pLaunchRange;
+                if (Config.AimedJump && pad.rightTrigger.ReadValue() > 0.5f) _padAim = pad.rightStick.ReadValue() * _body.pLaunchRange;
                 else if (_padAim.HasValue) { if (_padAim.Value.magnitude > 10f) { inp.HasLaunch = true; inp.Launch = _padAim.Value; } _padAim = null; }
                 if (pad.buttonSouth.isPressed) dive = 1f;
                 dive = Mathf.Max(dive, pad.leftTrigger.ReadValue());
                 inp.Ghost |= pad.buttonEast.isPressed;
-                inp.Snap |= pad.buttonWest.isPressed || pad.buttonNorth.isPressed;
-                if (pad.leftShoulder.wasPressedThisFrame) _backPressed = true;
+                inp.Snap |= pad.buttonWest.isPressed;
+                if (pad.buttonNorth.wasPressedThisFrame || pad.leftShoulder.wasPressedThisFrame) _backPressed = true;
             }
             if (kb != null)
             {
                 if (kb.spaceKey.isPressed || kb.sKey.isPressed || kb.downArrowKey.isPressed) dive = 1f;
-                if (kb.fKey.wasPressedThisFrame && !inp.HasLaunch) { inp.HasLaunch = true; inp.Launch = new Vector2(0.7f * _body.pLaunchRange, 0.45f * _body.pLaunchRange); }
-                inp.Ghost |= kb.gKey.isPressed;
+                if (Config.AimedJump && kb.jKey.wasPressedThisFrame && !inp.HasLaunch) { inp.HasLaunch = true; inp.Launch = new Vector2(0.7f * _body.pLaunchRange, 0.45f * _body.pLaunchRange); }
+                inp.Ghost |= kb.tKey.isPressed || kb.gKey.isPressed;
                 inp.Snap |= kb.qKey.isPressed || kb.eKey.isPressed;
-                if (kb.bKey.wasPressedThisFrame) _backPressed = true;
+                if (kb.fKey.wasPressedThisFrame || kb.bKey.wasPressedThisFrame) _backPressed = true;
             }
             inp.Ghost |= _touchGhost;
             inp.Snap |= _touchSnap;
@@ -901,6 +1273,7 @@ namespace CosmicShore.Gameplay
                     if (_vs.pVortexCollapse >= 0.5f && prism && !prism.destroyed && !prism.DeflectsSilenced(_status.PlayerName, 40f))
                         prism.Damage((prism.transform.position - ring.C).normalized * 40f, _status.Domain, _status.PlayerName);
                 }
+                VortexRingLens.Remove(ring);
                 _rings.RemoveAt(i);
             }
         }
@@ -924,7 +1297,7 @@ namespace CosmicShore.Gameplay
 
         void ReleaseAllRings()
         {
-            foreach (var run in _rings) foreach (var prism in run.Prisms) _held.Remove(prism);
+            foreach (var run in _rings) { VortexRingLens.Remove(run.Ring); foreach (var prism in run.Prisms) _held.Remove(prism); }
             _rings.Clear(); _held.Clear();
         }
 
@@ -1006,9 +1379,12 @@ namespace CosmicShore.Gameplay
             }
             if (_perches.Count > count) _perches.RemoveRange(count, _perches.Count - count);
             // the darts between them; the one the Pistol rides keeps its frame
-            if (_segments.Count > count - 1) _segments.RemoveRange(count - 1, _segments.Count - (count - 1));
+            if (_segments.Count > count - 1) { _segments.RemoveRange(count - 1, _segments.Count - (count - 1)); _tracks.RemoveRange(count - 1, _tracks.Count - (count - 1)); }
             for (int k = _segments.Count; k < count - 1; k++)
+            {
                 _segments.Add(new PlaneSegment(_perches[k].Pos, _perches[k + 1].Pos, (_perches[k].Up + _perches[k + 1].Up).normalized));
+                _tracks.Add(TrackFor(_segments[k], k));
+            }
             if (_at >= _perches.Count) _at = _perches.Count - 1;
             if (_seg >= _segments.Count) { _seg = -1; _resting = true; }
 
@@ -1068,52 +1444,284 @@ namespace CosmicShore.Gameplay
             _view = new GameObject("PistolView");   // at the scene root: the hull's scale and pose are not the view's
             _cam = _view.AddComponent<Camera>();
             _cam.clearFlags = CameraClearFlags.Skybox; _cam.orthographic = false; _cam.nearClipPlane = 0.5f; _cam.farClipPlane = 6000f;
-            _cam.fieldOfView = Config.ViewFov;
             _torus = BuildRingMesh(VortexRing.Tube, 24, 6);
-            // lit and flat-shaded volumes (nothing in the world looks flat): the ring 0x9fe8ff, the lock a warm ring, the
-            // Pistol a small orange body
-            _ringMat = Lit(new Color32(159, 232, 255, 255), new Color32(18, 58, 68, 255), 0.65f);
+            // the lock is a lit, faceted volume (nothing in the world looks flat); the vortex ring is no mesh at all but a
+            // toroidal warp of what lies behind it (VortexRingLens, Garrett 2026-10-24: "loose the flat effect")
             _lockMat = Lit(new Color32(255, 92, 108, 255), new Color32(80, 16, 22, 255), 0.5f);
-            _bodyMat = Lit(new Color32(255, 138, 61, 255), new Color32(90, 34, 5, 255), 0.45f);
-            _bodyGo = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            _bodyGo.name = "Pistol";
-            if (_bodyGo.TryGetComponent(out Collider col)) Destroy(col);
-            if (_bodyGo.TryGetComponent(out MeshRenderer mr)) mr.sharedMaterial = _bodyMat;
+            BuildBody();
             _render = new CrewViewRender(_cam, RenderLook);
+            TwoDCameraSky.Register(_cam);   // a 2D camera: no sky cell net glued to the side view (TwoDCameraSky)
             _camLive = false;
         }
 
         void LateUpdate()
         {
             if (_goby == null) return;
-            // the Pistol's body: a capsule lying along its travel (its long axis on the frame's x), smaller while ghosting
-            if (_bodyGo)
-            {
-                float r = Config.BodyR;
-                _bodyGo.transform.SetPositionAndRotation(_p.wpos, Quaternion.LookRotation(_f.M, _f.R));
-                _bodyGo.transform.localScale = new Vector3(r * 2f, r * 1.6f, r * 2f) * (_t < _p.ghostUntil ? 0.6f : 1f);
-            }
+            PoseBody();
             if (!_cam) return;
             if (!showSideView) { _cam.enabled = false; _pip.Restore(); Draw3D(); return; }
             _pip.Layout(_cam, HumanInSeat, Config.PipSize, Config.ViewMargin);
-            _cam.fieldOfView = Config.ViewFov;
-            // the side camera: square to the plane, looking along +M from its back (so the frame's x runs left to right), a
-            // little ahead of the Pistol, eased so a new stretch's frame turns in rather than cuts
-            float aspect = Mathf.Max(0.2f, _cam.aspect), D = Config.ViewWidth / (2f * Mathf.Tan(0.5f * Config.ViewFov * Mathf.Deg2Rad) * aspect);
-            Vector3 centre = _p.wpos + _f.R * (Config.ViewWidth * 0.15f);
-            Vector3 wantPos = centre - _f.M * D; var wantRot = Quaternion.LookRotation(_f.M, _f.Up);
-            float k = _camLive ? Mathf.Clamp01(Time.deltaTime * 4f) : 1f;
+            if (_choosing && _human == Half.Pistol) { MapView(); Draw3D(); return; }
+            _cam.farClipPlane = 6000f;
+            // the side camera, Tiny Wings' (Garrett, 2026-10-22): square to the plane and looking along +M from its back (so
+            // the frame's x runs left to right), BESIDE the Pistol with an off-axis lens that looks ahead. It frames the
+            // ground near the bottom with the Pistol a third of the way in, and zooms out as the Pistol speeds up and flies
+            // high so the ground below never leaves the screen (PistolPlane.TinyWingsView); the camera pulls back with the
+            // zoom, so the lens never changes. Zooming out is quick and back in slow, so a landing never snaps the view.
+            float aspect = Mathf.Max(0.2f, _cam.pixelHeight > 0 ? (float)_cam.pixelWidth / _cam.pixelHeight : 1f);
+            float speed = _p.grounded ? _p.v : Mathf.Sqrt(_p.vx * _p.vx + _p.vy * _p.vy);
+            Vector2 centre = PistolPlane.TinyWingsView(_f, _p.x, _p.y, speed, Config.ViewWidth, Config.ViewMaxWidth, Config.ViewSpeedWiden,
+                Config.ViewPistolAt, Config.ViewGroundedAt, Config.ViewHeadroom, aspect, out float wantW);
+            _camWidth = !_camLive ? wantW : Mathf.Lerp(_camWidth, wantW, Mathf.Clamp01(Time.deltaTime * (wantW > _camWidth ? 3f : 0.8f)));
+            float W = _camWidth, H = W / aspect, D = Mathf.Max(20f, Config.ViewDistance) * W / Mathf.Max(1f, Config.ViewWidth);
+            Vector3 wantPos = _f.ToWorld(_p.x, centre.y) - _f.M * D, wantWindow = _f.ToWorld(centre.x, centre.y);
+            var wantRot = Quaternion.LookRotation(_f.M, _f.Up);
+            float k = Mathf.Clamp01(Time.deltaTime * 4f), kp = Mathf.Clamp01(Time.deltaTime * 6f);
             _camRot = _camLive ? Quaternion.Slerp(_camRot, wantRot, k) : wantRot;
-            _camPos = _camLive ? Vector3.Lerp(_camPos, wantPos, Mathf.Clamp01(Time.deltaTime * 8f)) : wantPos;
+            _camPos = _camLive ? Vector3.Lerp(_camPos, wantPos, kp) : wantPos;
+            _camWindow = _camLive ? Vector3.Lerp(_camWindow, wantWindow, kp) : wantWindow;
             _camLive = true;
+            Vector3 w = Quaternion.Inverse(_camRot) * (_camWindow - _camPos);
+            float near = _cam.nearClipPlane;
+            PistolPlane.OffAxis(new Vector2(w.x, w.y), Mathf.Max(5f, w.z), W, H, near, out float fl, out float fr, out float fb, out float ft);
+            _cam.projectionMatrix = Matrix4x4.Frustum(fl, fr, fb, ft, near, _cam.farClipPlane);
             _cam.transform.SetPositionAndRotation(_camPos, _camRot);
             Draw3D();
         }
 
+        /// <summary>The Pistol's body: its model (Pistol.fbx) at its length, wearing the pair's domain on slot 0; a lit capsule
+        /// stands in when the config names no model.</summary>
+        void BuildBody()
+        {
+            var model = Config.PistolModel;
+            _bodyIsModel = model;
+            if (model)
+            {
+                _bodyGo = Instantiate(model);
+                _bodyGo.name = "Pistol";
+                foreach (var c in _bodyGo.GetComponentsInChildren<Collider>(true)) Destroy(c);
+                foreach (var a in _bodyGo.GetComponentsInChildren<Animator>(true)) a.enabled = false;   // posed here, by bone
+                float length = 0f;
+                foreach (var r in _bodyGo.GetComponentsInChildren<Renderer>(true))
+                {
+                    // the mesh's own bounds: its node is identity in the model, nose on +Z (specs/pistol.py)
+                    if (r is SkinnedMeshRenderer s && s.sharedMesh) { length = Mathf.Max(length, s.sharedMesh.bounds.size.z); s.updateWhenOffscreen = true; }
+                    else if (r.TryGetComponent(out MeshFilter mf) && mf.sharedMesh) length = Mathf.Max(length, mf.sharedMesh.bounds.size.z);
+                }
+                _bodyDomain = null;
+                PaintBodyDomain();
+                _bodyScale = length > 1e-3f ? Config.PistolModelLength / length : 1f;
+                _claw = FindBone(_bodyGo.transform, "claw");
+                _tail = FindBone(_bodyGo.transform, "tail.1");
+                if (_claw) _clawRest = _claw.localRotation;
+                if (_tail) _tailRest = _tail.localRotation;
+                return;
+            }
+            _bodyMat = Lit(new Color32(255, 138, 61, 255), new Color32(90, 34, 5, 255), 0.45f);
+            _bodyGo = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            _bodyGo.name = "Pistol";
+            if (_bodyGo.TryGetComponent(out Collider col)) Destroy(col);
+            if (_bodyGo.TryGetComponent(out MeshRenderer mr)) mr.sharedMaterial = _bodyMat;
+        }
+
+        /// <summary>The pair's domain on the model's slot 0 (the fleet's Domain slot), repainted when the hull's changes.
+        /// Shared materials only: the domain material is a shared per-domain asset.</summary>
+        void PaintBodyDomain()
+        {
+            var domain = _status?.ShipMaterial;
+            if (!_bodyGo || !domain || domain == _bodyDomain) return;
+            _bodyDomain = domain;
+            foreach (var r in _bodyGo.GetComponentsInChildren<Renderer>(true))
+            {
+                var mats = r.sharedMaterials;
+                if (mats.Length > 0) { mats[0] = domain; r.sharedMaterials = mats; }
+            }
+        }
+
+        static Transform FindBone(Transform root, string name)
+        {
+            if (root.name == name) return root;
+            for (int i = 0; i < root.childCount; i++) { var hit = FindBone(root.GetChild(i), name); if (hit) return hit; }
+            return null;
+        }
+
+        /// <summary>Where the ride put the Pistol, nose along its travel on the plane (tipped with its flight or the slope
+        /// under it), smaller while ghosting; the hammer claw shuts on a Snap and re-cocks, and the tail curls under on a
+        /// dive.</summary>
+        void PoseBody()
+        {
+            if (!_bodyGo) return;
+            float ghost = _t < _p.ghostUntil ? 0.6f : 1f;
+            if (!_bodyIsModel)
+            {
+                float r = Config.BodyR;   // the capsule: its long axis on the frame's x
+                _bodyGo.transform.SetPositionAndRotation(_p.wpos, Quaternion.LookRotation(_f.M, _f.R));
+                _bodyGo.transform.localScale = new Vector3(r * 2f, r * 1.6f, r * 2f) * ghost;
+                return;
+            }
+            PaintBodyDomain();
+            Vector2 d;
+            if (_p.grounded) { PistolPlane.Ground(_f, _p.x, out float m); d = new Vector2(1f, m) * Mathf.Sign(_p.v == 0f ? _facing : _p.v); }
+            else d = new Vector2(_p.vx, _p.vy);
+            if (Mathf.Abs(d.x) > 0.05f) _facing = Mathf.Sign(d.x);
+            if (d.sqrMagnitude < 1e-4f) d = new Vector2(_facing, 0f);
+            Vector3 fwd = (_f.R * d.x + _f.Up * d.y).normalized;
+            var root = _bodyGo.transform;
+            root.SetPositionAndRotation(_p.wpos, Quaternion.LookRotation(fwd, _f.Up));
+            root.localScale = Vector3.one * (_bodyScale * ghost);
+
+            // the claw: shut on the Snap, held, then re-cocked (its hinge turns about the model's right axis)
+            if (_claw)
+            {
+                float since = _t - _snapAt;
+                float shut = since < 0f ? 0f : since <= Config.SnapClawHold ? 1f : 1f - Mathf.Clamp01((since - Config.SnapClawHold) / Config.SnapClawRecock);
+                TurnAboutModelRight(root, _claw, _clawRest, shut * Config.SnapClawShut);
+            }
+            if (_tail)
+            {
+                _tailCurl = Mathf.MoveTowards(_tailCurl, Diving ? 1f : 0f, Time.deltaTime * Config.DiveTailRate);
+                TurnAboutModelRight(root, _tail, _tailRest, -_tailCurl * Config.DiveTailCurl);   // minus: the tail's tip goes under
+            }
+        }
+
+        /// <summary>Sets <paramref name="bone"/> to its rest pose turned <paramref name="degrees"/> about the model's own right
+        /// axis (positive: the tip down and forward, the claw's shutting sense).</summary>
+        static void TurnAboutModelRight(Transform root, Transform bone, Quaternion rest, float degrees)
+        {
+            var parent = bone.parent;
+            var restWorld = (parent ? parent.rotation : Quaternion.identity) * rest;
+            var turn = root.rotation * Quaternion.AngleAxis(degrees, Vector3.right) * Quaternion.Inverse(root.rotation);
+            bone.rotation = turn * restWorld;
+        }
+
+        /// <summary>The path map: the camera pulls back to frame every perch, looking along the islands' planes (their
+        /// hills side-on, the side view's language), with an ordinary lens.</summary>
+        void MapView()
+        {
+            Vector3 lo = _perches[0].Pos, hi = lo, n = Vector3.zero, up = Vector3.zero;
+            foreach (var d in _perches) { lo = Vector3.Min(lo, d.Pos); hi = Vector3.Max(hi, d.Pos); }
+            for (int k = 0; k < _segments.Count; k++)
+            {
+                var f = PistolPlane.For(_segments[k], 1, Config.SlopeDegrees, null);
+                n += Vector3.Dot(f.M, _f.M) >= 0f ? f.M : -f.M;
+                up += f.Up;
+            }
+            if (n.sqrMagnitude < 1e-6f) n = _f.M;
+            n.Normalize();
+            up = Vector3.ProjectOnPlane(up.sqrMagnitude > 1e-6f ? up : _f.Up, n);
+            if (up.sqrMagnitude < 1e-6f) up = Vector3.ProjectOnPlane(Vector3.up, n);
+            Vector3 centre = (lo + hi) * 0.5f;
+            float radius = 1f;
+            foreach (var d in _perches) radius = Mathf.Max(radius, (d.Pos - centre).magnitude);
+            radius += Config.PathScoreBand;
+            _mapRadius = radius;
+            float fov = Config.MapFov, dist = radius / Mathf.Sin(0.5f * fov * Mathf.Deg2Rad) * Config.MapMargin;
+            // the person's spin: round the map's up, then tipped about the view's right
+            up.Normalize();
+            Vector3 right = Vector3.Cross(up, n).normalized;
+            var spin = Quaternion.AngleAxis(_mapYaw, up) * Quaternion.AngleAxis(_mapPitch, right);
+            Vector3 look = spin * n, lookUp = spin * up;
+            var wantRot = Quaternion.LookRotation(look, lookUp);
+            Vector3 wantPos = centre - look * dist;
+            // the pull back eases in; once the map is open it follows the spin closely
+            float k1 = Mathf.Clamp01(Time.deltaTime * (_chooseT < 0.6f ? 4f : 16f));
+            _camRot = _camLive ? Quaternion.Slerp(_camRot, wantRot, k1) : wantRot;
+            _camPos = _camLive ? Vector3.Lerp(_camPos, wantPos, k1) : wantPos;
+            _camLive = true;
+            _cam.farClipPlane = Mathf.Max(6000f, dist + radius * 2f);
+            _cam.ResetProjectionMatrix();
+            _cam.fieldOfView = fov;
+            _cam.transform.SetPositionAndRotation(_camPos, _camRot);
+            DrawMap();
+        }
+
+        /// <summary>The paths as facts in the world, for the Pistol's camera only: a lit, faceted bar along each island's
+        /// ground, thicker and from the neutral blue toward the call-to-action lime as it holds more opposing prisms; the
+        /// highlighted path in white, with a pointer at its den along the way it rides.</summary>
+        void DrawMap()
+        {
+            EnsureMapAssets();
+            foreach (var list in _heatPieces) list.Clear();
+            _pickPieces.Clear();
+            float thick = _mapRadius * Config.MapPathThickness;
+            bool pickReady = PistolPaths.Ready(_choice, _segments.Count);
+            for (int k = 0; k < _segments.Count; k++)
+            {
+                float heat = _pathScoreMax > 0 ? (float)PathScore(k) / _pathScoreMax : 0f;
+                int level = Mathf.Clamp(Mathf.RoundToInt(heat * (_heatPieces.Length - 1)), 0, _heatPieces.Length - 1);
+                float w = thick * Mathf.Lerp(Config.MapPathThinShare, 1f, heat);
+                bool picked = pickReady && _choice.Segment == k;
+                AddPath(k, w, picked ? _pickPieces : _heatPieces[level], picked ? w * 1.35f : w);
+            }
+            // the pointer: at the picked den, along the way it rides (the head's "ahead" waits for the Goby's next island)
+            Vector3 den = _perches[Mathf.Clamp(_choice.Perch, 0, _perches.Count - 1)].Pos, tip = OptionAnchor(_choice);
+            Vector3 dir = tip - den;
+            if (dir.sqrMagnitude > 1e-4f)
+            {
+                float len = Mathf.Min(dir.magnitude, _mapRadius * 0.1f), head = thick * 4f;
+                var rot = Quaternion.LookRotation(dir.normalized, _cam ? -_cam.transform.forward : Vector3.up);
+                _pickPieces.Add(Matrix4x4.TRS(den + dir.normalized * (len - head * 0.5f), rot, new Vector3(head, head * 0.4f, head)));
+                _pickPieces.Add(Matrix4x4.TRS(den, Quaternion.identity, Vector3.one * thick * 3f));   // the den it sets off from
+            }
+            var rp = new RenderParams(_heatMats[0]) { camera = _cam, shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off, receiveShadows = false };
+            for (int i = 0; i < _heatPieces.Length; i++)
+            {
+                if (_heatPieces[i].Count == 0) continue;
+                rp.material = _heatMats[i];
+                Graphics.RenderMeshInstanced(rp, _cube, 0, _heatPieces[i]);
+            }
+            if (_pickPieces.Count > 0)
+            {
+                rp.material = _pickMat;
+                Graphics.RenderMeshInstanced(rp, _cube, 0, _pickPieces);
+            }
+        }
+
+        void AddPath(int k, float w, List<Matrix4x4> into, float drawW)
+        {
+            var seg = _segments[k]; var track = _tracks[k];
+            int pieces = Mathf.Clamp(Mathf.CeilToInt(seg.L / 40f), 4, 32);
+            Vector3 lift = seg.N * drawW;   // just above the trail, so the ground's blocks never hide it
+            Vector3 a = seg.Ground(0f, track) + lift;
+            for (int i = 1; i <= pieces; i++)
+            {
+                Vector3 b = seg.Ground(seg.L * i / pieces, track) + lift;
+                Vector3 d = b - a;
+                if (d.sqrMagnitude > 1e-4f)
+                    into.Add(Matrix4x4.TRS((a + b) * 0.5f, Quaternion.LookRotation(d, seg.N), new Vector3(drawW, drawW, d.magnitude + drawW * 0.5f)));
+                a = b;
+            }
+        }
+
+        void EnsureMapAssets()
+        {
+            if (_heatMats != null) return;
+            _cube = CubeMesh();
+            _heatMats = new Material[_heatPieces.Length];
+            for (int i = 0; i < _heatMats.Length; i++)
+            {
+                var c = Color.Lerp(Config.MapPathColdColor, Config.MapPathHotColor, i / (float)(_heatMats.Length - 1));
+                _heatMats[i] = Lit(c, c * 0.45f, 0.55f);
+            }
+            var pick = Config.MapPickColor;
+            _pickMat = Lit(pick, pick * 0.6f, 0.6f);
+        }
+
+        /// <summary>A unit cube with its own normals per face: a faceted, lit bar piece.</summary>
+        static Mesh CubeMesh()
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var mesh = Instantiate(go.GetComponent<MeshFilter>().sharedMesh);
+            Destroy(go);
+            return mesh;
+        }
+
         void Draw3D()
         {
+            // each vortex ring bends the light behind it round its core: a subtle toroidal lens, the black holes' kin
             foreach (var run in _rings)
-                Draw(_torus, Matrix4x4.TRS(run.Ring.C, Quaternion.LookRotation(run.Ring.N, Mathf.Abs(run.Ring.N.y) < 0.9f ? Vector3.up : Vector3.right), Vector3.one * _vs.pVortexR), _ringMat);
+                VortexRingLens.Set(run.Ring, run.Ring.C, run.Ring.N, _vs.pVortexR, _vs.pVortexR * VortexRing.Tube,
+                    VortexRingLens.LifeFade(run.Ring.Age, run.Ring.Life), VortexRingLens.DefaultTint, _vs.pVortexSpin);
             // the lock is a fact in the world, so it is drawn there: a lit ring round the locked target, facing the Goby
             if (_lockTarget)
             {
@@ -1201,11 +1809,13 @@ namespace CosmicShore.Gameplay
             GUI.Box(box, string.Empty);
             GUILayout.BeginArea(new Rect(box.x + 8f, box.y + 6f, box.width - 16f, box.height - 12f));
             GUILayout.Label($"GOBY & PISTOL   you fly: {(_human == Half.Goby ? "GOBY" : "PISTOL")}   AI: {aiLevel}   swap: D-pad left/right, 1/2 or double tap the small view");
-            GUILayout.Label($"Goby    perches {_perches.Count}   dart {(DartReady ? "ready" : "...")}{(_charging ? $" charging {DartCharge01:0.00}" : "")}   lock {(_lockTarget ? (_lockIsVessel ? "vessel" : "fauna") : "none")}");
+            GUILayout.Label($"Goby    route {(_aiHasRoute ? _aiRouteCount + " opposing" : "none")}   perches {_perches.Count}   dart {(DartReady ? "ready" : "...")}{(_charging ? $" charging {DartCharge01:0.00}" : "")}   lock {(_lockTarget ? (_lockIsVessel ? "vessel" : "fauna") : "none")}");
             GUILayout.Label($"Pistol  {(_resting ? $"resting at perch {_at}" : $"riding {_seg} {(_dir > 0 ? "on" : "back")}")}   jump {_p.launch}   den prisms {DenPrisms}   heading {(_travelDir > 0 ? "on" : "back")}   rings {_rings.Count}");
             GUILayout.Label(_human == Half.Pistol
-                ? "Pistol: hold Space / mouse / finger / A to dive; drag (or RT + right stick) and let go to jump; G / B ghost; Q E / X Y Snap; B key / LB back"
-                : "Goby: aim the hull; hold Q / RT to charge a dart, let go to dart; F / LT lock");
+                ? (_choosing
+                    ? "Pistol at a perch: the map - drag / right stick / Q E spins; tap a path / left stick / A D picks; tap it again / A / Space rides; Back / Y / F turns round"
+                    : "Pistol: hold Space / mouse / finger / A to dive; T / B ghost; Q / X Snap; F / Y back; with aimed jumps on, drag (or RT + right stick, or J) and let go")
+                : "Goby: aim the hull; hold Q / X / RT to charge a dart, let go to dart; F / Y / LT lock");
             GUILayout.EndArea();
 #endif
         }

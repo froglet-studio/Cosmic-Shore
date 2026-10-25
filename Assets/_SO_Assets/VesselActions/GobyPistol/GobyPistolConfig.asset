@@ -21,23 +21,38 @@ MonoBehaviour:
   queryReach: 6
   ownPerchBlocks: 5
   perchBlockSize: 4
+  perchSeconds: 1.5
+  islandMinLength: 900
+  islandMaxLength: 1800
+  islandQueue: 3
   lockRange: 1400
   lockCone: 12
   lockKeepScale: 1.6
-  slopeDegrees: 22
-  hillAmplitude: 10
-  hillWavelength: 70
-  trailBlockGap: 10
-  trailBlockScale: {x: 4, y: 0.9, z: 9}
-  pGravity: 95
-  pDiveMul: 2.6
-  pMinSpeed: 22
-  pDrag: 0.35
-  pGoodLand: 28
-  pBodyR: 2.5
+  slopeDegrees: 0
+  hillHalfLengthMin: 10
+  hillHalfLengthMax: 15
+  hillHalfHeightMin: 3.6
+  hillHalfHeightMax: 7.2
+  hillBand: 9
+  hillGrowthPerIsland: 0.08
+  hillGrowthMax: 1.5
+  trailBlockGap: 6
+  trailBlockScale: {x: 1.4, y: 0.4, z: 5.5}
+  pGravity: 19
+  pDiveMul: 7.5
+  pMinSpeed: 6
+  pDrag: 0.05
+  pGoodLand: 30
+  pMinAir: 0.15
+  pAirGravity: 1
+  pSmoothBoost: 1.05
+  pHardKeep: 1
+  pMaxSpeed: 90
+  pBodyR: 0.85
   pBodyHalfDepth: 10
-  pLaunchRange: 220
-  pLaunchSpeed: 160
+  pLaunchRange: 35
+  aimedJump: 0
+  pLaunchSpeed: 30
   pLaunchCharges: 1
   jumpCooldown:
     Enabled: 1
@@ -50,7 +65,7 @@ MonoBehaviour:
   pGhostTime: 2.5
   pGhostCd: 8
   pSlingPull: 0.22
-  arriveDistance: 8
+  arriveDistance: 2
   restSeconds: 1.2
   denUnitsPerPrism: 40
   denMassScale:
@@ -103,14 +118,40 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   pipSize: 0.32
   viewMargin: 0.015
-  viewWidth: 700
-  viewFov: 40
+  viewWidth: 29
+  viewMaxWidth: 150
+  viewSpeedWiden: 0.15
+  viewGroundedAt: 0.4
+  viewHeadroom: 0.2
+  viewDistance: 60
+  viewPistolAt: -0.35
   depthFullSpreadAt: 60
-  aiDartLength: 380
-  aiWaitForPistol: 7
-  aiHomeRadius: 1600
+  pathScoreBand: 60
+  pathScoreInterval: 0.1
+  chooseHoldSeconds: 0.5
+  mapFov: 50
+  mapMargin: 1.2
+  mapPathThickness: 0.014
+  mapPathThinShare: 0.25
+  mapPickPixels: 70
+  mapSpinDragScale: 1
+  mapSpinRate: 120
+  mapPathColdColor: {r: 0.3, g: 0.45, b: 0.75, a: 1}
+  mapPathHotColor: {r: 0.6156863, g: 1, b: 0.18039216, a: 1}
+  mapPickColor: {r: 0.96, g: 0.96, b: 1, a: 1}
+  pistolModel: {fileID: 919132149155446097, guid: 7d2e9b4c1a6f4e83b5c0d8a2f6e1b937, type: 3}
+  pistolModelLength: 2.7
+  snapClawShut: 75
+  snapClawHold: 0.08
+  snapClawRecock: 0.35
+  diveTailCurl: 22
+  diveTailRate: 10
+  aiDartLength: 300
+  aiCruiseSpeed: 100
+  aiTurnRate: 90
+  aiRethinkSeconds: 2.5
+  aiHomeRadius: 4000
   aiBackAfter: 4
-  aiHighDive: 120
   dartButtonIcon: {fileID: 21300000, guid: 173cce5c2e60d5fe47fe15cfb2bfa249, type: 3}
   dartButtonLabel: 
   lockButtonIcon: {fileID: 21300000, guid: 13d97730f43e8a72a2b175f57a747ffe, type: 3}
