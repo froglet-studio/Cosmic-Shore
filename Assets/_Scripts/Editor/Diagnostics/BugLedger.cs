@@ -323,6 +323,17 @@ namespace CosmicShore.Editor
                         issue.LastSeenUtc = nowIso;
                         if (entry.InPlayMode && issue.Scope != "PlayMode") issue.Scope = "PlayMode";
 
+                        // The stack is kept from the first sighting. One filed by an older ledger (or
+                        // cut off inside Unity's own frames) never names our caller, so take the first
+                        // later excerpt that does: "Destroying components immediately" (E-6bc7e07601)
+                        // was stored as ten Unity frames that end at DestroyImmediate.
+                        bool stackImproved = false;
+                        if (!OwnsAFrame(issue.Stack))
+                        {
+                            var fresh = StackExcerpt(entry.Stack);
+                            if (OwnsAFrame(fresh)) { issue.Stack = fresh; stackImproved = true; }
+                        }
+
                         if (issue.IsValidating && !issue.ValidationPaused)
                         {
                             // The fix did not fix. Reopen loudly — this is the ledger's whole point.
@@ -333,7 +344,7 @@ namespace CosmicShore.Editor
                             Trail($"{issue.Id} came back while its fix was being checked: reopened (regression {issue.Regressions})");
                             Debug.LogWarning($"[BugLedger] Regression: \"{issue.Title}\" recurred while validating — reopened (regression #{issue.Regressions}).");
                         }
-                        else if (firstThisSession)
+                        else if (firstThisSession || stackImproved)
                         {
                             // One occurrence write per issue per editor session keeps the committed
                             // files quiet; later hits this session count in memory only.
@@ -1028,8 +1039,18 @@ namespace CosmicShore.Editor
         {
             foreach (var marker in PlumbingFrames)
                 if (line.Contains(marker, StringComparison.Ordinal)) return true;
-            return false;
+            // Any other NATIVE frame (USER32, COMCTL32, KERNEL32, mono-2.0-bdwgc, a plugin DLL): an
+            // address with no managed method after it. They filled the excerpt around our frames: the
+            // Wrasse impactor issue (E-1f28d58e0c) spent five of its ten lines on mono and Windows.
+            return line.StartsWith("0x", StringComparison.Ordinal) &&
+                   !line.Contains("(Mono JIT Code)", StringComparison.Ordinal);
         }
+
+        static bool OwnsAFrame(string stack) =>
+            !string.IsNullOrEmpty(stack) && stack.Contains("CosmicShore.", StringComparison.Ordinal);
+
+        /// <summary>How many of our own frames are appended when none made the excerpt.</summary>
+        const int MaxOwnFramesAppended = 3;
 
         /// <summary>Native frames read <c>0x0000023e8f67b363 (Mono JIT Code) Ns.Type:Method (…)</c>;
         /// keep only the managed part after the address and the JIT tag.</summary>
@@ -1056,7 +1077,33 @@ namespace CosmicShore.Editor
             }
             var result = sb.ToString();
             if (result.Length == 0) return Truncate(stack, MaxStackChars);   // nothing but plumbing: keep it raw
-            return result.Length > MaxStackChars ? result[..MaxStackChars] : result;
+            result = result.Length > MaxStackChars ? result[..MaxStackChars] : result;
+
+            // A deep SDK stack can fill the excerpt before reaching the caller that matters: the
+            // "Failed to start the network manager" issue (E-c2a4d444b8) kept 1,500 characters of
+            // Unity Multiplayer frames and not one of ours. Name our first frames when none made it.
+            if (OwnsAFrame(result)) return result;
+            var own = new StringBuilder();
+            int found = 0;
+            foreach (var raw in stack.Split('\n'))
+            {
+                var line = raw.TrimEnd();
+                if (!line.Contains("CosmicShore.", StringComparison.Ordinal) || IsPlumbing(line)) continue;
+                own.Append('\n').Append(StripNativePrefix(line));
+                if (++found >= MaxOwnFramesAppended) break;
+            }
+            if (found == 0) return result;
+            // Make room inside the cap by dropping SDK frames, so a reader that cuts at the cap (the
+            // Team Bug Board stores 1,500 characters) still shows ours.
+            var tail = "\n..." + own;
+            int room = MaxStackChars - tail.Length;
+            if (room <= 0) return own.ToString(1, Math.Min(own.Length - 1, MaxStackChars));
+            if (result.Length > room)
+            {
+                int cut = result.LastIndexOf('\n', room - 1);
+                result = cut > 0 ? result[..cut] : result[..room];
+            }
+            return result + tail;
         }
 
         static string RandomSuffix()
