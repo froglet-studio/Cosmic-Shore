@@ -24,7 +24,11 @@ difficulty (`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.3). **10** (2026-10-20) - `N
 (`Docs/ElementalAbilitySystem/SILENCE.md`). **11** (2026-10-21) - `FaunaNetworkSync`'s `_netLeashMark`, the
 mark a tamed creature wears (its spindles lean toward its holder's domain hue; `R_VesselActions/JACKS.md` §3). **12** (2026-10-23) - `Player.NetStation` (the seat and hull each person holds) and the crew relay RPCs
 (`RequestStation`, `ReportOwnSeat`, `CrewInput`, `CrewState`): seats, then hulls, for every person in freestyle and the
-arena (`CrewStations`, `Docs/CREW_STATIONS.md`).
+arena (`CrewStations`, `Docs/CREW_STATIONS.md`). **13** (2026-10-23/24, on `cece/optimistic-rubin-t46tzs`, not yet on bleeding-edge) - `FaunaNetworkSync`'s
+`_netLeashMark` becomes a `uint` (domain, glow, lean): the Jacks' herd lights up; and `FaunaNetworkSync`'s
+`_netStolenDomain` plus `ShieldBody_ClientRpc` (a creature stolen and shielded by the Jacks' net),
+`NetworkCrystalManager.RelocateCrystal_ServerRpc` (the net puts the omni crystal down) and `JacksBodies`' plane-pull flag
+(`R_VesselActions/JACKS.md` §1.1, §5).
 Two players testing a join must run the same build.
 
 - `ServerPlayerVesselInitializer` — core server-side vessel spawner. Listens for `OnPlayerNetworkSpawnedUlong` SOAP events, waits for NetworkVariables to sync (`preSpawnDelayMs`), spawns the vessel prefab via `VesselPrefabContainer`, injects DI with `GameObjectInjector.InjectRecursive()`, then delegates initialization to `ClientPlayerVesselInitializer`. Tracks processed players by `NetworkObjectId` (not `OwnerClientId`, since AI shares the host's). Uses `NetcodeHooks` (not direct `NetworkBehaviour` inheritance) for spawn/despawn hooks. `ProcessPreExistingPlayers()` catches host Player objects spawned before the initializer loaded. The spawner never shuts down the NetworkManager on despawn — under the eager-Relay design the network/Relay persists across all scene transitions and is torn down only by explicit party-leave (`PartyInviteController`) or transport failure (`MultiplayerSetup.OnTransportFailure`).

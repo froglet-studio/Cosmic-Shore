@@ -14980,3 +14980,256 @@ of `/verify-unity`: `unity_refcompile` player RESULT OK.
 1. Any mode with a long-lived trail (Freestyle, a few minutes of flying): destroy prisms on it (ram, shoot, blade-slice)
    and steal some (fly a vessel of another domain through it). No "Quaternion To Matrix conversion failed" in the Console.
 2. The deaths, slices and steal sheds look as before (no tilted or skewed debris).
+
+## 🔴 2026-10-23 — The Jacks: a spinning jack between the fish, no Rhino jets, the herd lights up (`cece/optimistic-rubin-t46tzs`) - NOT EDITOR-VERIFIED
+
+**Superseded 2026-10-24 by the net (the next entry): steps 1-3 (the jack) no longer apply; "no Rhino jets", the glow
+and the host + client glow (step 5) still do, with the glow now following the plane's pull.**
+
+Garrett: "fauna that get herded should light up when in herding mode. fauna that get called should light up when flying.
+the vestigal jets from the rhino should be gone. instead of a sword (1 axis) make it all three orthogonal axes (like a jack
+in the game of jacks) ... spin it about the (1,1,1) axis and place that axis ... the same axis that draws a line between the
+two fish." Design: `R_VesselActions/JACKS.md` §5. No editor or `unity` CLI in the session, so `/verify-unity` did not run:
+the C# compiles headless (`unity_refcompile` player: 0 errors in project code; editor: 0 errors in changed files),
+`author_jacks_assets.py --check` / `--self-test` pass (the check failed on the old prefab first: jets, one
+arm). `NetworkConfig.ProtocolVersion` is now 13: host and client must run the same build. Team task: T-20261023-2368.
+
+1. Toy Box > Vessel Changer → **Jacks**, flying. No Rhino jets, plumes or sword streaks anywhere on the hull. Between the
+   two fish a three-armed jack (the old sword's white material) spins about the line through the fish; its arm tips turn
+   round each fish. Roll, pitch, spread and close the fish: the jack's axis stays on the line between them, it grows as
+   they spread and shrinks as they close, and it never flips.
+2. Fly the jack through a trail and past crystals: it skims (the Jacks' skim feedback and crystal vacuum) on all three
+   arms, not only one.
+3. Switch to herding: the jack is drawn on the board halfway between the two jacks (at most 40 u an arm) and does NOT
+   skim or vacuum crystals there. The whole herd lights up (bloom) while you herd, and goes back to its marked colours
+   when you switch to flying.
+4. Flying: press A (call). The herd lights up while the call lasts (2.5 s), then goes dark.
+5. Host plus one client, the client on the Jacks: on both machines the herd lights up herding and during a call, and the
+   jack spins between the client's fish.
+6. Console clean; the `renderers` line does not jump when the herd lights up (a lit herd shares one material per mark).
+7. Look calls: `toyJackReach` 1, `toyJackMinArm` / `toyJackMaxArm` 4 / 40, `toyJackArmRadius` 1.2,
+   `toyJackSpinDegreesPerSecond` 120, `toyJackSkimsWhileHerding` off (all on `JacksBodies`), `herdGlow` 1.5 on
+   `JacksConfig`.
+
+## 🔴 2026-10-24 — The Jacks' net, the plane-pull call, the herding zoom, the omni crystal's worm (`cece/optimistic-rubin-t46tzs`) - NOT EDITOR-VERIFIED
+
+Garrett: "the spinning jack in the middle doesn't work. lets make it a net that opens wider with xdiff ..." Design:
+`R_VesselActions/JACKS.md` §1, §1.1. No editor or `unity` CLI in the session, so `/verify-unity` did not run: the C#
+compiles headless (`unity_refcompile` player: 0 errors in project code; editor: 0 errors in changed files),
+`author_jacks_assets.py --check` / `--self-test` pass (the check failed on the old assets first: the jack's arm colliders,
+no net or zoom fields, no worm effect), and the EditMode tests `JacksMathTests` (the net, the chase distance) and
+`LeashMarkTests` are written but not run. Protocol 13: host and client must run the same build. Team tasks: T-20261024-7999 (this test), T-20261024-c0b5 (button icons).
+
+1. Toy Box > Vessel Changer → **Jacks**, netting (flying). A net of strands hangs between the two fish, its bag trailing
+   behind. Push the sticks apart: the fish spread and the net opens wider and taller; together, it closes. It grows open
+   at take-off and shrinks away on landing (no pop). Nothing between the fish spins.
+2. Fly the net through a crystal (an omni crystal and a loose elemental one, e.g. a dropped heart): it is caught and rides
+   in the bag. The chase camera backs off so both fish and every netted crystal stay on screen, and comes home on landing.
+3. Switch to herding (D-pad): the net goes away and the crystals stay where they were. Run a jack onto each: it collects
+   it (the elemental one's level rises; the omni crystal counts and respawns elsewhere).
+4. Collecting an omni crystal (with the hull or a jack) bears a worm colony in YOUR domain behind the hull; it eats prisms
+   and creatures.
+5. Fly the net through a trail and a plant: the prisms it touches are destroyed (or shed shields) as if the hull had hit
+   them. Fly it through creatures: a rival-domain creature turns your colour (body prisms too), its plain body prisms
+   shield, and it joins the herd (it glows). Your own creatures shield and join.
+6. Netting, press B (or T): the herd stops being drawn to the plane and stops glowing; again: drawn and glowing. Herding,
+   B / T / the call button (top right, under the zoom button) pulls the herd to the point between the jacks (cooldown).
+7. Herding: the view is closer than before and follows the jacks. Y / F / the zoom button (top right) eases out to the
+   whole cell and back; the thumbs still drive the jacks while zoomed out.
+8. Two players, the rival flies into your net: they lose a crystal per element (petals), knocked into your net.
+9. Host plus one client on the Jacks: the host sees the client's net, the herd steals / shields / glows the same way, and
+   the omni crystal the client's net let go of sits in the same place on both machines.
+10. Look calls (numbers on `JacksConfig` and `JacksBodies`): `netSpread` 30, `netMinHeight` / `netMaxHeight` 6 / 36,
+    `netDepth` 26, `netRivalTake` 0.1, `herdViewZoom` 0.75, `zoomButtonSize` 0.09, `netStrandRadius` 0.3; icons for the
+    two buttons (`zoomButtonIcon`, `callButtonIcon`) are empty.
+
+### Round 2 (2026-10-24, same branch): Garrett's playtest notes
+
+"there are some angles where the net looses visibility. it also seem to bend the opposite way from expected when flying
+up/down or left/right. i had a hard time collecting crystals one i switched to the herding mode. we can remove the pip from
+both modes. at the sharks fly apart in herding mode the camera should zoom out so they never collide with the screen
+perimeter." Headless compile OK (player and editor, 0 errors in changed files); `author_jacks_assets.py --check` failed on
+the round-1 config first, then passed.
+
+11. Orbit the netting jacks with the camera (roll, loop): the net is solid from every side, in your domain's colour.
+12. Climb, dive and turn hard while netting: the bag swings out behind the way the net is travelling (below in a climb,
+    outside in a turn) and settles straight back when you fly level.
+13. Land with crystals in the net, then run a jack over each as the top-down view shows it: every one is collected, even
+    one the net left well above or below the board.
+14. No small view in either mode: herding is the top-down view alone, netting the chase view alone. The D-pad, arrows or
+    two-finger swipe still switch.
+15. Herding, run the two jacks apart toward opposite edges: the view zooms out so neither reaches the edge, and back in as
+    they come together.
+
+### Round 3 (2026-10-25, same branch)
+
+Garrett: "lets allow them to net the omicrystal and move it around. lets have prisms move and be dragged by the net. they
+should only be destroyed when they collide with other prisms. lets remove the rhino speed buff at full speed and straight."
+Headless compile OK (player and editor, 0 errors in changed files); `author_jacks_assets.py --check` failed first (the
+ramp boost still bound, its registry on the hull, no `netPrismCap`), then passed.
+
+16. Netting, fly the hull straight into the omni crystal: it is NOT collected; it rides in the net. Land, run a jack over
+    it: collected. (A Squirrel or any other hull still collects it on touch.)
+17. Netting through a trail: its prisms ride in the net instead of exploding, and stay where they were when you land.
+18. Drag a netted prism into a standing trail or another prism: both explode (debris along the hit). Prisms riding side
+    by side in the net never break each other.
+19. Fly straight at full speed: no ramp boost (no surge, no boost sound); the AI Jacks never ramps either.
+
+### Round 4 (2026-10-25, same branch)
+
+Garrett: "if either jack hits the omnicrystal it should still produce the serpent, but if it nets the omnicrystal it should
+move it. same with the elemental crystals the hulls can collect in either mode, but the net allows them to be relocated."
+Headless compile OK (player and editor, 0 errors in changed files); `author_jacks_assets.py --check` failed first (no
+`jackNetCrystalReach`), then passed.
+
+20. Netting, steer one FISH onto the omni crystal: it is collected and a worm colony is born in your domain behind the hull.
+    Steer the crystal between the fish instead: it rides in the net, and the worm is not born.
+21. Same with an elemental crystal: a fish that hits it collects it (its level rises); between the fish, the net carries it.
+22. Herding, a jack over a crystal still collects it (round 2), the omni one bearing the worm.
+
+### Round 5 (2026-10-25, same branch)
+
+Garrett: "i don't see prism moving i just see them getting destroy. when prisms of the same domain are netted then they
+should be briefly lit not moved or destroyed. ... when i maintain a direction up and down it does the opposite. when i
+change directions left and right it does not respond at all ... it should work whether changing or maintaining directions.
+The herding view had some strange empty icons in the upper right." Headless compile OK (player and editor, 0 errors in
+changed files); `author_jacks_assets.py --check` failed first (no swing or lit fields), then passed. New EditMode tests:
+`JacksMathTests.Net_SwingsOutAgainstTheTurn_InEveryDirection_WhileTheTurnLasts`, `Net_ALeaningBag_HoldsWhatHangsInIt`.
+
+23. Netting through a RIVAL trail: its prisms ride in the net (no explosion at the mouth) and break only when you drag them
+    into another prism. Through YOUR trail (an older stretch, not the one coming out of the hull): its prisms light up
+    briefly as the net crosses them and stay where they are.
+24. Hold the stick to pitch up: the bag swings down and stays down while the turn lasts; pitch down: up. Yaw left: it swings
+    right, yaw right: left; any diagonal swings out against that diagonal. Fly level: it settles straight back.
+25. Herding: no empty squares in the upper right (they appear only once icons are set on JacksConfig).
+
+### Round 6, polish (2026-10-25, same branch)
+
+Garrett: "remove the rhino skimmer effect and update the map text. bring this vessel as close to polish as you can".
+Headless compile OK; `author_jacks_assets.py --check` failed first (the Rhino skimmer container, the skimmer's Space
+scale, the pre-net map words), then passed; `/element-ability-table Jacks` now reads 4/4 level-5 gates live.
+
+26. Fly the Jacks into a rival hull and through a rival trail, both modes: no sword strike, no sword steal, no shield
+    break from the hull (the hidden skimmer carries no effects; only the net and the herd act).
+27. Herding, park the hull's invisible spot on a crystal or a trail: nothing is collected or rammed there (the jacks
+    collect; the hull touches nothing).
+28. The ability cards: the Time card lights while the herding call pulls the herd (cooldown veil after), and while
+    netting it is lit whenever the plane's pull is on (B toggles it, no veil). The card texts name B for the call and A
+    for the Time-5 decoy.
+
+### Round 7 (2026-10-25, same branch)
+
+Garrett: "the net did not interact with any prisms. it should be dragging them just like the crystals." Cause: the net
+skipped every `HealthPrism`, i.e. every plant's prism, and a freestyle cell's prisms are mostly plants'. Now a plant prism
+the net takes is plucked (freed as cell mass) and dragged. Headless compile OK (player, 0 errors in project code).
+
+29. Netting through a plant of ANOTHER domain: its prisms come away and ride in the net; the plant is left with fewer.
+    Drag them into another prism: both break. (A plant of YOUR domain lights up instead, step 23; in a cell whose plants
+    are your colour, use a rival's plant or trail.)
+30. A big plant fills the net (48 prisms): after that, prisms crossing the mouth break against the ones it carries.
+
+### Round 8 (2026-10-25, same branch): the decoy dash and the second decoy
+
+Garrett: "lets make the time ability to fly both jacks over to the decoy quickly when a trigger is pulled in herding mode.
+Lets have the upgrade give the player a second decoy controlled by the second trigger (in placement and which one you fly
+to)." Headless compile OK (player and editor, 0 errors in changed files); `author_jacks_assets.py --check` failed first
+(Input 6 still bound, no dash fields, the old Time card words), then passed. The decoy's second slot replicates
+(`JacksBodies.n_decoyB`, protocol 13 still).
+
+31. Herding, lift a thumb (or press a bumper) to leave the decoy, run the jacks away, pull EITHER trigger: both jacks dash
+    to the decoy, quickly, and land either side of it; the thumbs take them back after. On a phone, tap the decoy.
+32. At Time 5: lift the screen-LEFT jack (left bumper) and the screen-RIGHT jack (right bumper) in different places: two
+    decoys. The left trigger dashes to the left one, the right trigger to the right one; a trigger whose decoy is not
+    down does nothing. Below Time 4 the second decoy goes away.
+33. Netting: the jump (the trigger or both thumbs lifted) goes to the decoy placed last, and spends it. A (Button1)
+    does nothing now (the flying decoy is retired).
+34. The Time card lights while the jacks dash; its text reads Decoy Dash / Second Decoy.
+
+### Round 9 (2026-10-25, same branch)
+
+Garrett: "the net still did not interact with any prisms. i could not longer place a decoy or call the fauna to the jacks in
+herding mode. there should always be at least one decoy available. the second decoy unlocks with upgrading time."
+Causes: the net skipped `Prism.IsEnvironmentOwned` prisms, which are every plant's (it means "no player name"); round 8
+moved decoy placement off the triggers onto the bumpers alone, and the herding call and zoom had no on-screen button since
+round 5. Headless compile OK (player and editor, 0 errors in changed files); `author_jacks_assets.py --check` failed first
+(no `decoyPlaceHold`, the round-8 card words), then passed.
+
+35. Netting through a plant of another domain: its prisms come away and ride in the net (round 7's step 29, now for real).
+36. Land: a decoy is already down between the jacks. Tap a trigger: both dash to it. Hold a trigger: the decoy moves to
+    the jack on that side. A bumper or a lifted thumb lays it too. The netting jump no longer spends it.
+37. At Time 5: hold the left trigger and the right trigger in different places: two decoys; each trigger's tap dashes to
+    its own.
+38. Herding, A, B, T or Space (or the call button, a dot in a ring, top right under the zoom's corner brackets) calls the
+    herd between the jacks.
+
+### Round 10 (2026-10-25, same branch)
+
+Garrett: "things are getting messy. the gamepad ui still has button place in the top right corner for zooming out and
+something else. on PC the gamepad view should only every have the 5 standard ability icons and any additional active
+controls should be to the left of those (like the squirrel's drift) and it should be labeled with a glyph. this is always
+true for vessels. mass should be the herd calling ability in herding mode and the plane attraction toggle in net mode.
+Space be the zoomed out view in herding mode and netting mode being zoomed out allows an even bigger net. in herding mode
+the triggers should drop decoys. in netting mode the triggers should fast travel to the decoy. netting mode is still having
+no interaction with prisms when it should be dragging them like the crystals."
+The prism cause, found this round: the Toybox boots into Garland, whose bough is ~4,300 owner-less plain `SpawnablePrism`s
+(`SpawnableGarland`, laid with no player name) and only 13 plants; the net still skipped every owner-less PLAIN prism as "a
+mode's track", so it touched nothing. Now it skips none (the track is super-shielded, which it never moves). Steps 31-34
+and 36-38 above are replaced by these. Headless compile OK (`unity_refcompile`, 80 assemblies, 0 errors in project code);
+`author_jacks_assets.py --check` and `--self-test` OK; `check_hangar_ability_kinds.py` was red before this round (Jacks'
+Danger Share and Breeding, four Starling rows) and is now red on Danger Share and the Starling rows only.
+
+39. Netting through Garland's bough (the Toybox's boot cell): the prisms the net crosses come away and ride in it; one that
+    runs into another prism breaks both. Your own domain's are lit for a moment, not moved.
+40. Herding: nothing is drawn top right - no zoom, no call button. The HUD shows the five cards (Charge, Mass "The Call",
+    Space "Wide", Time "Decoys", the omni crystal), each chip naming its control: B / T, Y / F, the two triggers.
+41. Herding: B or T (or tapping the Mass card) calls the herd between the jacks; the Mass card lights, then its veil
+    drains over the cooldown. Netting: B or T toggles the plane's pull; the Mass card is lit while it is on.
+42. Herding: Y or F (or the Space card) eases out to the whole cell and back; the Space card is lit while out. Netting:
+    the same press opens the net about 1.8 times bigger (wide, tall and deep) without a pop, and the chase camera pulls
+    back to hold it; press again and it eases back.
+43. Herding: pull the left trigger (L shift) - the decoy is laid at the screen-left jack; the right trigger at the
+    screen-right jack (one decoy: it moves). A mouse let go lays nothing; on a phone a lifted thumb still lays it.
+44. Netting: pull a trigger - the hull teleports to the decoy and keeps its heading; the decoy stays. The Time card flashes.
+45. At Time 5: each trigger lays its own decoy while herding and teleports to its own while netting.
+46. A second machine sees the bigger net when the owner presses Y (the Wide flag replicates).
+
+### Round 11 (2026-10-25, same branch)
+
+Garrett: "great improvements. don't teleport, move quickly, so the player has a sense of where they travelled to. remove
+the space ability in net mode." The netting trigger now flies the hull to the decoy (`travelSpeed` 900 u/s, 0.35-1.2 s,
+the Angler's velocity displacement); Wide is herding only and round 10's bigger net (`wideNetScale`, its replicated flag)
+is retired. Steps 42 (netting half), 44 and 46 above are replaced by these. Headless compile and the generator's checks
+as below in the commit.
+
+47. Netting: pull a trigger - the hull flies fast to the decoy, visibly crossing the space between, keeping its heading,
+    and stops close to the decoy; the Time card is lit while it flies. A far decoy takes about a second, a near one about
+    a third of a second. Netted crystals ride along.
+48. Netting: Y or F (or the Space card) does nothing - the net keeps its size, the camera does not move.
+49. Herding: Y or F still eases out to the whole cell and back; the Space card is lit only then.
+
+### Round 12 (2026-10-25, same branch)
+
+Garrett: "Let's have the decoy look like a third jack." Each decoy is drawn as a copy of the jack model
+(`JacksBodies.UpdateDecoys`). Headless compile OK; `author_jacks_assets.py --check` OK.
+
+50. Land: a third jack swims in place between the two (the always-there decoy), the same model, colour and size, with a
+    jack's dot and the decoy's ring round it in the herding view.
+51. Pull a trigger to re-lay it: it shrinks away where it was and grows in at the jack on that side - no pop. At Time 5
+    the second decoy is a fourth jack.
+52. Take off and net: the decoy jacks stay on the board, drawn at the flying size; fly into one - nothing is hit (no
+    collider). A second machine sees the same decoy jacks.
+
+### Round 13 (2026-10-25, same branch)
+
+Garrett: "when the fish is laid it should match the orientation of the laid fish. as that fish reorients so should the
+decoy. when switching from herding to netting, the new orientation should be the average orientation of the two fish. same
+for location. when prisms are stuck in the net their orientation should match the expectation of being stuck in the net."
+Headless compile OK; `author_jacks_assets.py --check` / `--self-test` OK; the new `JacksMathTests` case
+(`Net_ASurfacePoint_LiesAcrossTheMesh_FacingTheMouth`) checked against a numeric replica, not run in NUnit.
+
+53. Herding: lay a decoy with the left trigger, then steer the left jack round in circles: the decoy jack turns with it,
+    nose for nose. The decoy laid between the jacks on landing faces their average heading.
+54. Point both jacks the same way and take off: the hull leaves between them facing that way, not the board's old forward.
+55. Net a run of bough prisms: each sinks to the back of the net and turns to lie flat against the mesh, long side along
+    the line between the fish, no snap. A second machine sees the decoys face the same way.
+

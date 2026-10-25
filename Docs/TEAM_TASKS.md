@@ -324,3 +324,10 @@ A task a branch still writes below the marker in the old format is filed as a ti
 - **Who can take it:** Yash (has offered to take tasks)
 - **Added:** 2026-10-24 by Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Dolphin line, 2026-10-24); Assets/_Scripts/Controller/Arcade/REGATTA.md 6.2
+
+### T-20261024-7999 · open · test · Jacks
+- **Task:** Fly the Jacks in Unity on cece/optimistic-rubin-t46tzs (Toybox Vessel Changer > Jacks, in Garland): the net opens with the sticks apart; it carries crystals (all five) and drags the bough's prisms, which lie flat in the mesh and break only against other prisms (your own domain's are lit); it steals and shields creatures; the five cards are every control (Mass the call / plane toggle, Space the herding zoom, Time the triggers: lay a decoy herding, fly fast to it netting); each decoy is a third jack facing the jack that laid it; take-off faces the fishes' average heading; an omni crystal bears a worm; host + client agree. Run EditMode JacksMathTests and LeashMarkTests
+- **Done when:** UNITY_VERIFICATION_CHECKLIST 2026-10-24 Jacks net steps 1-9, round 2 steps 11-15 and round 3 steps 16-19 , round 4 steps 20-22 , round 5 steps 23-25 , round 6 steps 26-28 , round 7 steps 29-30 , round 9 step 35, round 10 steps 39-43 and 45 and round 11 steps 47-49 and round 12 steps 50-52 and round 13 steps 53-55 pass, and EditMode JacksMathTests passes (round 8's 31-34, round 9's 36-38 and round 10's 44 and 46 were replaced), or the failures are dev tasks
+- **Who can take it:** Yash (offered), Garrett (vessel owner, the look calls in step 10)
+- **Added:** 2026-10-24 by a Claude session (`cece/optimistic-rubin-t46tzs`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/JACKS.md §1.1; Docs/UNITY_VERIFICATION_CHECKLIST.md

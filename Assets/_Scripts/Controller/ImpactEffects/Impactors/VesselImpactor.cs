@@ -34,10 +34,23 @@ namespace CosmicShore.Gameplay
         protected override bool isInitialized => Vessel?.VesselStatus?.Player != null;
         public override Domains OwnDomain => Vessel.VesselStatus.Domain;
 
+        IHullContactGate _contactGate;
+
+        /// <summary>
+        /// Whether this hull's TOUCH takes a crystal now (<see cref="IHullContactGate"/>; true for a hull without a gate).
+        /// Read by both halves of a crystal contact, so a gated hull neither runs its pickup nor has the crystal credit it.
+        /// </summary>
+        public bool TakesCrystalsByContact => _contactGate == null || _contactGate.TakesCrystalsByContact;
+
+        /// <summary>Whether this hull's TOUCH meets a prism now (<see cref="IHullContactGate"/>; true without a gate). Read by
+        /// both halves of a prism contact.</summary>
+        public bool TakesPrismsByContact => _contactGate == null || _contactGate.TakesPrismsByContact;
+
         private void Awake()
         {
             Vessel ??= GetComponent<IVessel>();
             networkVesselImpactor ??= GetComponent<NetworkVesselImpactor>();
+            TryGetComponent(out _contactGate);
         }
 
         // Shell-tier probes: the hull colliders whose trigger events land on THIS
@@ -107,6 +120,7 @@ namespace CosmicShore.Gameplay
             switch (impactee)
             {
                 case PrismImpactor prismImpactee:
+                    if (!IsSweepDispatch && !TakesPrismsByContact) return;   // the Jacks' net takes it instead
                     // A pilot does not ram the ribbon still coming out of their own ship. Sits
                     // above the SFX and the whole effect loop, because a self-ram used to cost
                     // real gameplay: VesselDamagePrismEffect shreds your own fresh trail, and on
@@ -153,6 +167,7 @@ namespace CosmicShore.Gameplay
 
                 case OmniCrystalImpactor omniCrystalImpactee:
                 {
+                    if (!IsSweepDispatch && !TakesCrystalsByContact) break;   // the Jacks' net takes it instead
                     if (!TryLatchCrystalImpact(omniCrystalImpactee.Crystal)) break;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
                     VesselCameraFeel.Pickup(Vessel?.VesselStatus);
