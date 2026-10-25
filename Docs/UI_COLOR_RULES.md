@@ -53,7 +53,14 @@ Hub windows: the strip's four words (Toy Box, Arcade, Arena, Voyage) all read in
   ("keep it a bit slow"): thin wave lines over a 95 % veil, three layers sliding one 480-unit loop per 90 / 68 / 45 s.
   Rev 13 (2026-10-25, "make the blue a little bit brighter and use gradients"): the lines shade sky to periwinkle
   across the window and a deep-blue wash fades from the top. `author_ui_lattice.py` fails any layer faster than 40 s a
-  loop and a sea that has gone back to one flat colour.
+  loop and a sea that has gone back to one flat colour. Since §70 the sea is the only background anywhere (the crystal
+  lattice is retired).
+- **The card pictures drift** (`Docs/MENU_REDESIGN_B.md` §72; Shombith 2026-10-25: "make it have some animation ... for
+  all of the gamemode toy cards", then "implement a" on the Rev 18 board). A game card's art moves at most 5 x 3 canvas
+  units on a 40 s Lissajous path inside its overscan (`Card_ArtDrift.mat`); a toy's portrait bobs 4 units over 8 s
+  (`Card_PortraitBob.mat`). It is the cards' one motion and stays this small: the generator fails a faster loop, and
+  `author_menu_arcade.check_card_a` fails an overscan the drift could cross. This is an explicit exception to "nothing
+  moves for its own sake" - raise it with Garrett if the cards ever read as busy.
 - **Kept, because they mean something:** progress spinners while something loads or connects, the music EQ while a
   track plays, the hint that teaches a control, the START sweep, the current quest segment's spark, window entrances
   and the lattice crystallising in (transitions are meaningful moments; Shombith proposed putting the dramatic visuals
@@ -67,5 +74,6 @@ Hub windows: the strip's four words (Toy Box, Arcade, Arena, Voyage) all read in
 | No element tokens, rims, literal element colours or element button variants in any UI prefab or scene; the lockup's element colour off | `Tools/Build/check_ui_colors.py` |
 | The kit palette (Play / Cta lime, Purchase gold, Danger fire, retired variants = Default) | `author_ui_kit_prefabs.py` validation |
 | The lattice / orb / bond materials still; no rim materials written; the sea lines slow (40 s a loop or more) | `author_ui_lattice.py` validation |
-| Period 0 really holds the shaders still; the sea lines move a fraction of a line per frame and loop without a seam | `lattice_preview.py --check` |
+| Period 0 really holds the shaders still; the sea lines move a fraction of a line per frame and loop without a seam; the card drift stays inside its reach and loops | `lattice_preview.py --check` |
+| The card art drifts on `Card_ArtDrift.mat` inside a band with enough overscan; the hull on a pale plate; the toy portrait on `Card_PortraitBob.mat` | `author_menu_arcade.py`, `author_menu_arena.py`, `author_menu_toybox.py` validation |
 | Each screen's colour choices | the screen's `author_*.py` generator and review against this page |

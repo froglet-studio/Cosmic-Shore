@@ -15012,3 +15012,15 @@ Owed in the editor (`Docs/MENU_REDESIGN_B.md` §71):
 - [ ] The quest cards fit at 224 wide: names, goal rows and PLAY QUEST do not overlap; CLAIM and PLAY work.
 - [ ] SET SAIL is focused first and opens the arena launch panel; the voyages column scrolls once there are more.
 - [ ] The friends drawer still pushes the window's header and body right.
+
+## Rev 18 A: game and toy cards (2026-10-25, `claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No Unity editor in the cloud session. Proven offline: refcompile, generator `--check` / `--self-test`, the drift harness.
+Owed in the editor (`Docs/MENU_REDESIGN_B.md` §72):
+- [ ] `CardDrift.shader` compiles; `KitCoverImage` compiles with the new `overscan` field.
+- [ ] Arcade: art band on top, body under it; the hull on its pale plate is readable at 1080p and on a phone; the petals
+      read; the name fits; picks and star sit on the art; locked cards dim and show the lock.
+- [ ] Arena: art top half, pilots / domains, name, description, hull plates along the foot (all hulls shown).
+- [ ] Toy Box: portrait in its well, section / name / tagline under it.
+- [ ] The art drifts slowly and never shows an edge, including inside a party-pick or favourite refresh; toy portraits bob.
+- [ ] The Profiler shows no per-frame canvas rebuild from the cards.

@@ -5,6 +5,8 @@ UISeaLines.cginc (hand-written; Tools/Build/lattice_preview.py compiles and rend
 
     Sea_Window.mat        the sea behind a whole window or screen (the hub windows, Profile, the friends drawer, the
                           in-game scoreboard, sign-in and splash, the loading screen, the Hangar): lines over a wash
+    Card_ArtDrift.mat     a game card's art drifting slowly inside its overscan (CardDrift.shader on UICardDrift.cginc, §72)
+    Card_PortraitBob.mat  a toy card's portrait bobbing (the same shader)
     Sea_Panel.mat         the sea inside a panel (the Ark recipe, the leaderboard list, the pilot card, the avatar
                           preview, the toy configure cards): finer, fainter lines and no wash
 
@@ -42,6 +44,8 @@ BOND_SHADER = f"{DIR}/Bond.shader"
 PRESENCE_CGINC = f"{DIR}/UIPresence.cginc"
 SEA_SHADER = f"{DIR}/SeaLines.shader"
 SEA_CGINC = f"{DIR}/UISeaLines.cginc"
+DRIFT_SHADER = f"{DIR}/CardDrift.shader"
+DRIFT_CGINC = f"{DIR}/UICardDrift.cginc"
 
 
 def guid(key):
@@ -57,8 +61,12 @@ BOND_SHADER_GUID = guid("bond_shader")
 PRESENCE_CGINC_GUID = guid("presence_cginc")
 SEA_SHADER_GUID = guid("sea_shader")
 SEA_CGINC_GUID = guid("sea_cginc")
+DRIFT_SHADER_GUID = guid("drift_shader")
+DRIFT_CGINC_GUID = guid("drift_cginc")
 SEA_GUID = guid("sea_window_mat")
 SEA_PANEL_GUID = guid("sea_panel_mat")
+ART_DRIFT_GUID = guid("card_art_drift_mat")
+PORTRAIT_BOB_GUID = guid("card_portrait_bob_mat")
 PRESENCE_GUID = guid("presence_mat")
 BOND_GUID = guid("bond_mat")
 # Rev 7 (§47.1): the selection's light - the rim shader in white (the vertex colour, the theme's Selection blue,
@@ -102,6 +110,13 @@ SEA_SLOWEST_LOOP = 40
 SEA_PANEL = dict(SEA, _Spacing=30, _Amplitude=6, _FarAlpha=0.12, _FarWidth=0.8, _MidAlpha=0.18, _MidWidth=0.9,
                  _NearAlpha=0.26, _NearWidth=1.1, _FadeTop=0.08, _FadeBottom=0.08)
 CLEAR = (0, 0, 0, 0)
+# The cards' pictures (§72, Shombith 2026-10-25: "Change the card background a little better make it have some
+# animation ... for all of the gamemode toy cards"): a game card's art drifts a few units on a slow Lissajous path inside
+# its overscan (KitCoverImage.overscan, author_menu_arcade.ART_OVERSCAN), a toy's portrait bobs. Both are slow; the
+# reach must stay inside the overscan margin or an edge shows (author_menu_arcade checks it).
+ART_DRIFT = dict(_DriftX=5, _DriftY=3, _Seconds=40)
+PORTRAIT_BOB = dict(_DriftX=0, _DriftY=4, _Seconds=8)
+ART_DRIFT_SLOWEST_LOOP, PORTRAIT_BOB_SLOWEST_LOOP = 30, 6
 # The presence orb (§45.4). Its member seats sit on the inner ring at these angles (degrees, counter-clockwise from
 # the right): the shader's bonds (_BondAngles, _MemberRadius) and the drawer generator's avatar positions
 # (author_menu_friends_drawer.py) both read them, so a bond always ends under its avatar.
@@ -219,6 +234,10 @@ def sea_material(panel=False):
         lines, _WashTop=SEA_WASH_TOP, _WashBottom=SEA_WASH_BOTTOM, _GlowColor=SEA_GLOW))
 
 
+def drift_material(name, values):
+    return shader_material(name, DRIFT_SHADER_GUID, values, dict(_Color=(1, 1, 1)))
+
+
 def bond_material():
     return shader_material("Bond_Party", BOND_SHADER_GUID, BOND, dict(_Color=(1, 1, 1)))
 
@@ -240,6 +259,12 @@ def outputs():
     out[f"{DIR}/Sea_Window.mat.meta"] = mat_meta(SEA_GUID)
     out[f"{DIR}/Sea_Panel.mat"] = sea_material(panel=True)
     out[f"{DIR}/Sea_Panel.mat.meta"] = mat_meta(SEA_PANEL_GUID)
+    out[f"{DRIFT_SHADER}.meta"] = shader_meta(DRIFT_SHADER_GUID)
+    out[f"{DRIFT_CGINC}.meta"] = include_meta(DRIFT_CGINC_GUID)
+    out[f"{DIR}/Card_ArtDrift.mat"] = drift_material("Card_ArtDrift", ART_DRIFT)
+    out[f"{DIR}/Card_ArtDrift.mat.meta"] = mat_meta(ART_DRIFT_GUID)
+    out[f"{DIR}/Card_PortraitBob.mat"] = drift_material("Card_PortraitBob", PORTRAIT_BOB)
+    out[f"{DIR}/Card_PortraitBob.mat.meta"] = mat_meta(PORTRAIT_BOB_GUID)
     out[f"{DIR}/SelectionRim.mat"] = selection_material(False)
     out[f"{DIR}/SelectionRim.mat.meta"] = mat_meta(SELECTION_GUID)
     out[f"{DIR}/SelectionBar.mat"] = selection_material(True)
@@ -343,6 +368,19 @@ def validate(files):
     assert f"- _WashTop: {col(SEA_WASH_TOP[:3], SEA_WASH_TOP[3])}" in m, "Sea_Window: no wash at the top (Rev 13: the brighter blue)"
     for k in ("_WashTop", "_WashBottom", "_GlowColor"):
         assert f"- {k}: {col(CLEAR[:3], 0)}" in files[f"{DIR}/Sea_Panel.mat"], f"Sea_Panel: {k} must be clear - a panel's sea has no wash"
+    # §72: the card pictures - every property the drift shader declares, and slow.
+    src = open(os.path.join(REPO, DRIFT_SHADER), encoding="utf-8").read()
+    assert '#include "UICardDrift.cginc"' in src, "CardDrift.shader does not include UICardDrift.cginc"
+    drift_declared = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", src, re.M)) - {"_MainTex"}
+    for name, g, floor in (("Card_ArtDrift", ART_DRIFT_GUID, ART_DRIFT_SLOWEST_LOOP), ("Card_PortraitBob", PORTRAIT_BOB_GUID, PORTRAIT_BOB_SLOWEST_LOOP)):
+        m = files[f"{DIR}/{name}.mat"]
+        assert f"m_Shader: {{fileID: 4800000, guid: {DRIFT_SHADER_GUID}, type: 3}}" in m, f"{name} is not on CardDrift.shader"
+        written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
+        assert written == drift_declared, f"{name}: properties drifted (missing {drift_declared - written}, extra {written - drift_declared})"
+        assert f"guid: {g}" in files[f"{DIR}/{name}.mat.meta"], f"{name}.mat.meta has the wrong guid"
+        v = float(re.search(r"^    - _Seconds: (.*)$", m, re.M).group(1))
+        assert v >= floor, f"{name}: _Seconds is {v} - the card pictures stay slow (at least {floor} s a loop)"
+    assert f"guid: {DRIFT_SHADER_GUID}" in files[f"{DRIFT_SHADER}.meta"], "CardDrift.shader.meta has the wrong guid"
     orb = files[f"{DIR}/Presence_Orb.mat"]
     assert f"- _SpaceColor: {col(NEUTRAL)}" in orb, "the orb's ring must be the neutral blue, not an element's colour"
     for k in ("_SpinSeconds", "_DotSize", "_BondPeriod", "_BondSpeed"):
@@ -409,6 +447,10 @@ def self_test(files):
             f"- _LineColor: {col(SEA_LINE)}", f"- _LineColor: {col(SEA_LINE_MID)}", 1))),
         ("the sea material on the retired lattice shader", lambda f: f.__setitem__(f"{DIR}/Sea_Window.mat", f[f"{DIR}/Sea_Window.mat"].replace(
             SEA_SHADER_GUID, SHADER_GUID))),
+        ("the card art racing", lambda f: f.__setitem__(f"{DIR}/Card_ArtDrift.mat", f[f"{DIR}/Card_ArtDrift.mat"].replace(
+            "    - _Seconds: 40\n", "    - _Seconds: 6\n", 1))),
+        ("the portrait bob on the sea shader", lambda f: f.__setitem__(f"{DIR}/Card_PortraitBob.mat", f[f"{DIR}/Card_PortraitBob.mat"].replace(
+            DRIFT_SHADER_GUID, SEA_SHADER_GUID))),
         ("the theme loses the selection's material", lambda f: f.__setitem__(THEME, f[THEME].replace(SELECTION_GUID, "8" * 32, 1))),
     ]
     screens = shipped_prefabs()

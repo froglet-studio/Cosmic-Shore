@@ -840,7 +840,46 @@ def build_panel():
 # ArcadeGameCard.prefab
 # --------------------------------------------------------------------------------------------
 
-CARD_W, CARD_H = 341, 218
+CARD_W, CARD_H = 341, 296
+# Rev 18 A (Docs/MENU_REDESIGN_B.md section 72, Shombith 2026-10-25 "implement a"): the art in a band on top, an opaque body
+# under it - the hull on a pale plate (the dark hull renders vanish on a dark chip), the name, the genre petals. Nothing is
+# written on the art. The art drifts slowly (Card_ArtDrift.mat) inside a margin KitCoverImage draws it larger by.
+ART_BAND_H = 200
+BODY_H = CARD_H - ART_BAND_H
+ART_OVERSCAN = 1.05
+ART_DRIFT_MAT = M._lattice_guid("card_art_drift_mat")
+PORTRAIT_BOB_MAT = M._lattice_guid("card_portrait_bob_mat")
+ART_DRIFT_REACH = (5, 3)               # author_ui_lattice.ART_DRIFT: must stay inside the overscan margin
+PLATE = 58                             # the pale hull plate (kit_oct_fill)
+PETAL = 46                             # the petal sprite carries a wide transparent margin: the shape reads about 18
+
+
+def drift_art(parent, key, name, r, sprite, material=None, preserve=False):
+    """An art Image drawn with one of the card picture materials (CardDrift.shader)."""
+    n = art_node(parent, key, name, r, sprite, preserve=preserve)
+    mat = material or ART_DRIFT_MAT
+    n.comps = [(k, cid, (lambda body: (lambda ctx, go: body(ctx, go).replace(
+        "  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {mat}, type: 2}}\n", 1)))(b))
+               if k == "img" else (k, cid, b) for k, cid, b in n.comps]
+    return n
+
+
+def art_band(parent, key, w, h, sprite):
+    """The card's art band: a RectMask2D the art drifts under, the art fitted COVER x ART_OVERSCAN."""
+    band = parent.child(N(f"{key}", "ArtBand", R((0, 1), (1, 1), (0, -h / 2), (0, h), (0.5, 0.5))))
+    band.add("mask", 114, rect_mask()) \
+        .add("cover", 114, lambda ctx, go: mono(go, S["cover"], f"  image: {ref(ctx.c(key + '/Art', 'img'))}\n"
+                                                                f"  overscan: {ART_OVERSCAN}\n"))
+    drift_art(band, f"{key}/Art", "Art", R(size=(w * ART_OVERSCAN, w * ART_OVERSCAN * 510 / 768)), sprite)
+    return band
+
+
+def hull_plate(parent, key, r, icon_key, icon_size):
+    """The hull on a pale octagon: the dark renders read at once on light, with no shader."""
+    plate = image_node(parent, key, "HullPlate", r, "TextLight", K.kit_sprite("kit_oct_fill"), preserve=True)
+    art_node(plate, icon_key, "VesselIcon" if icon_key == "VesselIcon" else "Icon", R(size=(icon_size, icon_size)), None,
+             preserve=True)
+    return plate
 
 
 def build_card(placeholder_art):
@@ -849,29 +888,38 @@ def build_card(placeholder_art):
     fill = root.child(N("Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
+    # The card's cut-corner shape clips everything (stencil); the band clips the drifting art to the top.
     clip = root.child(N("Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-2, -2))))
     clip.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), K.kit_sprite("kit_sliver14_fill"), True)) \
-        .add("mask", 114, mask(False)) \
-        .add("cover", 114, lambda ctx, go: mono(go, S["cover"], f"  image: {ref(ctx.c('Clip/Art', 'img'))}\n"))
-    art_node(clip, "Clip/Art", "Art", R(size=(CARD_W, CARD_W * 510 / 768)), placeholder_art)
-    image_node(clip, "Clip/Fade", "Fade", R((0, 0), (1, 0), (0, 0), (0, 110), (0.5, 0)), "SurfaceBlack",
-               K.kit_sprite("kit_fade_v"))
+        .add("mask", 114, mask(False))
+    art_band(clip, "Clip/Band", CARD_W, ART_BAND_H, placeholder_art)
+    image_node(root, "Seam", "Seam", R((0, 0), (1, 0), (0, BODY_H), (-2, 1), (0.5, 0.5)), "SurfaceDark")
     bord = root.child(N("Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
 
-    chip = root.child(N("VesselChip", "VesselChip", R((0, 1), None, (12, -12), (44, 44), (0, 1))))
-    H.framed(chip, "VesselChip", 10, "SurfaceDark", "SurfaceLight")
-    art_node(chip, "VesselIcon", "VesselIcon", R(size=(38, 38)), None, preserve=True)
+    # The body: plate, name, petals.
+    hull_plate(root, "VesselChip", R((0, 0), None, (16, BODY_H / 2), (PLATE, PLATE), (0, 0.5)), "VesselIcon", PLATE - 8)
+    text_x = 16 + PLATE + 14
+    title = root.child(N("Title", "Title", R((0, 0), (1, 0), (text_x / 2 - 8, BODY_H / 2 + 14), (-text_x - 16, 30), (0.5, 0.5))))
+    title.add("cr", 222, K.canvas_renderer()).add("tmp", 114, ellipsis(text("Game", "H3", tok("TextLight")))) \
+        .add("kt", 114, K.kit_text("H3", "TextLight", driven=True))
     for i, key in enumerate(("Petal", "PetalSecondary")):
         n = root.child(N(key, "GenrePetal" if i == 0 else "GenrePetalSecondary",
-                         R((0, 1), None, (64, -12 - i * 24), (22, 22), (0, 1))))
+                         R((0, 0), None, (text_x - 12 + i * 26, BODY_H / 2 - 18), (PETAL, PETAL), (0, 0.5))))
         n.add("cr", 222, K.canvas_renderer()).add("img", 114, lambda ctx, go: K.image(
             (1.0, 1.0, 1.0, 1.0), None, preserve=True)(ctx, go).replace("  m_Enabled: 1\n", "  m_Enabled: 0\n", 1))
 
+    # On the art: who in the party asked for it (top left) and the favourite star (top right, on a dark disc).
+    picks = root.child(N("Picks", "AvatarSpace", R((0, 1), None, (12, -12), (200, 24), (0, 1))))
+    picks.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 4, 3, (0, 0), (0, 0)))
+    pick = picks.child(N("Picks/Pick", "AvatarIcon", R(size=(24, 24))))
+    pick.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), AVATAR_PLACEHOLDER, preserve=True)) \
+        .add("cg", 225, canvas_group(False)).add("le", 114, le(ignore=True, pw=24, ph=24))
     star = root.child(N("Star", "FavoriteStar", R((1, 1), None, (-6, -6), (44, 44), (1, 1))))
     star.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
-    glyph = image_node(star, "Star/Glyph", "Glyph", R(size=(24, 24)), "NeutralLightest", K.chrome_sprite("chrome_star"),
+    image_node(star, "Star/Disc", "Disc", R(size=(32, 32)), "SurfaceBlack", K.kit_sprite("kit_oct_fill"), alpha=0.7, preserve=True)
+    glyph = image_node(star, "Star/Glyph", "Glyph", R(size=(20, 20)), "NeutralLightest", K.chrome_sprite("chrome_star"),
                        preserve=True)
     star.add("audio", 114, menu_audio(5)) \
         .add("button", 114, lambda ctx, go: mono(go, BUTTON,
@@ -883,26 +931,16 @@ def build_card(placeholder_art):
              + refs("texts", []) + refs("graphics", [ctx.c("Star/Glyph", "th")])))
     assert glyph
 
-    lock = root.child(N("Lock", "Lock", R(pos=(0, 22), size=(30, 30))))
+    # Locked: the lock and its word in the middle of the art.
+    lock = root.child(N("Lock", "Lock", R(pos=(0, CARD_H / 2 - ART_BAND_H / 2 + 12), size=(30, 30))))
     lock.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight", 0.0), K.chrome_sprite("chrome_lock"),
                                                                    preserve=True))
-    lab = root.child(N("LockLabel", "LockLabel", R(pos=(0, -6), size=(200, 18))))
+    lab = root.child(N("LockLabel", "LockLabel", R(pos=(0, CARD_H / 2 - ART_BAND_H / 2 - 16), size=(200, 18))))
     lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("LOCKED", "Label", tok("TextLight", 0.0), align="center")) \
         .add("kt", 114, K.kit_text("Label", "TextLight", driven=True))
 
-    bottom = root.child(N("Bottom", "Bottom", R((0, 0), (1, 0), (0, 12), (-28, 58), (0.5, 0))))
-    bottom.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 6, (1, 1), (0, 0)))
-    title = bottom.child(N("Bottom/Title", "Title", R((0, 0), None, (0, 0), (240, 58), (0, 0))))
-    title.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("Game", "H3", tok("TextLight"), valign="bottom", wrap=True)) \
-        .add("kt", 114, K.kit_text("H3", "TextLight", driven=True)).add("le", 114, le(mw=0, fw=1))
-    picks = bottom.child(N("Bottom/Picks", "AvatarSpace", R((0, 0), None, (0, 0), (22, 58), (0, 0))))
-    picks.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 4, 8, (0, 0), (0, 0))).add("le", 114, le(mw=0))
-    pick = picks.child(N("Bottom/Picks/Pick", "AvatarIcon", R(size=(22, 22))))
-    pick.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), AVATAR_PLACEHOLDER, preserve=True)) \
-        .add("cg", 225, canvas_group(False)).add("le", 114, le(ignore=True, pw=22, ph=22))
-
     root.add("tile", 114, tile_body(c("FocusRing", "img"), c("Fill", "img"), c("Border", "img"), 14,
-                                    primary=[c("Bottom/Title", "tmp")], art=[c("Clip/Art", "img"), c("VesselIcon", "img")],
+                                    primary=[c("Title", "tmp")], art=[c("Clip/Band/Art", "img"), c("VesselIcon", "img")],
                                     lock=c("Lock", "img"), lock_label=c("LockLabel", "tmp"), sel_border="Selection",
                                     on_click=[lambda ctx: (ctx.c("root", "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")]))
     root.add("card", 114, lambda ctx, go: mono(go, S["card"],
@@ -910,15 +948,15 @@ def build_card(placeholder_art):
              f"  StarIconActive: {K.sprite_ref(K.chrome_sprite('chrome_star_fill'))}\n"
              f"  StarIconInActive: {K.sprite_ref(K.chrome_sprite('chrome_star'))}\n"
              "  ExploreView: {fileID: 0}\n"
-             f"  GameTitle: {ref(ctx.c('Bottom/Title', 'tmp'))}\n"
-             f"  BackgroundImage: {ref(ctx.c('Clip/Art', 'img'))}\n"
+             f"  GameTitle: {ref(ctx.c('Title', 'tmp'))}\n"
+             f"  BackgroundImage: {ref(ctx.c('Clip/Band/Art', 'img'))}\n"
              f"  StarImage: {ref(ctx.c('Star/Glyph', 'img'))}\n"
              "  Index: 0\n"
              f"  VesselIcon: {ref(ctx.c('VesselIcon', 'img'))}\n"
              f"  VesselList: {K.ref(11400000, VESSEL_LIST, 2)}\n"
              f"  GenrePetal: {ref(ctx.c('Petal', 'img'))}\n"
              f"  GenrePetalSecondary: {ref(ctx.c('PetalSecondary', 'img'))}\n"
-             f"  AvatarSpace: {ref(ctx.rt('Bottom/Picks'))}\n"
+             f"  AvatarSpace: {ref(ctx.rt('Picks'))}\n"
              f"  ProfileIcons: {K.ref(11400000, PROFILE_ICONS, 2)}\n"
              "  LocalPickBorder: {fileID: 0}\n"
              "  localPickBorderColor: {r: 0.45, g: 1, b: 0.85, a: 1}\n"
@@ -1403,6 +1441,26 @@ def check_profile_hovers(files):
     assert "  m_RaycastTarget: 1\n" in hit, "the online row's avatar hit area does not take the pointer"
 
 
+def check_card_a(card, name, band_key, card_w, band_h):
+    """Rev 18 A (section 72): the art drifts (Card_ArtDrift.mat) under a band that crops it, the drift never shows an edge,
+    and the hull sits on its pale plate. Shared with author_menu_arena.py."""
+    F = K.FileIds(name)
+    _, art = doc_of(card, F(f"{band_key}/Art#img"))
+    assert art and f"m_Material: {{fileID: 2100000, guid: {ART_DRIFT_MAT}, type: 2}}" in art, \
+        f"{name}: the card art does not drift (Card_ArtDrift.mat)"
+    _, band = doc_of(card, F(f"{band_key}#cover"))
+    m = band and re.search(r"^  overscan: ([\d.]+)$", band, re.M)
+    assert m, f"{name}: the art band has no overscan - the drifting art would show its edge"
+    ov = float(m.group(1))
+    fit_w = max(card_w, band_h * 768 / 510) * ov
+    fit_h = max(card_w * 510 / 768, band_h) * ov
+    assert (fit_w - card_w) / 2 > ART_DRIFT_REACH[0] and (fit_h - band_h) / 2 > ART_DRIFT_REACH[1], \
+        f"{name}: overscan {ov} leaves less margin than the drift's reach {ART_DRIFT_REACH} - an edge would show"
+    _, mk = doc_of(card, F(f"{band_key}#mask"))
+    assert mk and RECT_MASK_2D in mk, f"{name}: the art band does not crop the drifting art"
+    assert f"guid: {K.kit_sprite('kit_oct_fill')}" in card, f"{name}: the hull has no pale plate"
+
+
 def validate_prefabs(files, guids):
     M.require_entrances(files, {prefab_path("ArcadeView"): 2, prefab_path("PartySlot"): 1})
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
@@ -1427,6 +1485,9 @@ def validate_prefabs(files, guids):
         assert want in friends, f"FriendsListPanel.{field} does not name the {name} row component"
     assert "  embedded: 1\n" in friends and "  listPartyMembers: 0\n" in friends, "the panel's lists must be embedded"
     check_profile_hovers(files)
+
+    check_card_a(files[prefab_path("ArcadeGameCard")], "ArcadeGameCard", "Clip/Band", (CONTENT_W - (GRID_COLS - 1) * 10) / GRID_COLS,
+                 ART_BAND_H)
 
     view = files[prefab_path("ArcadeView")]
     V = K.FileIds("ArcadeView")
@@ -1587,6 +1648,8 @@ def self_test(current, files, guids):
         "stub names an object missing from KitButtonSmall": prefab_plant(panel, lambda t: re.sub(
             r"(m_CorrespondingSourceObject: \{fileID: )\d+(, guid: " + K.prefab_guid("KitButtonSmall") + ")",
             r"\g<1>4242\2", t, count=1)),
+        "the card art standing still": prefab_plant(card, lambda t: t.replace(ART_DRIFT_MAT, "0" * 32)),
+        "the art band with no overscan": prefab_plant(card, lambda t: re.sub(r"  overscan: [\d.]+\n", "  overscan: 1\n", t)),
         "lists not embedded": prefab_plant(panel, lambda t: t.replace("  embedded: 1\n", "  embedded: 0\n", 1)),
         "slot field unwired": prefab_plant(panel, lambda t: t.replace(f"  - {{fileID: {slot1}}}\n", "  - {fileID: 0}\n", 1)),
         "Back closes by persistent call": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(

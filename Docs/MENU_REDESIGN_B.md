@@ -3184,3 +3184,34 @@ voyages", then "Rev17 J implement".
   a frozen voyages column, a quest card that cannot claim), `author_menu_profile.py --check` (the full-size QuestCard is
   byte-identical), refcompile player config, the gates. The look and the tracker's behaviour are owed in the editor
   (checklist entry "Rev 17 J").
+
+## 72. Rev 18 A: the game and toy cards (2026-10-25, awaiting in-editor approval)
+
+Shombith, 2026-10-25: "Change the card background a little better make it have some animation this is for all of the
+gamemode toy cards", "The vessels and the elemental icons do not show up in big or small screens", "they are too
+transparent ... can have a bg like the profile screen - keep this. Just change how they orient the details", "The game
+cards are still noisy", then "implement a" on the canvas's Rev 18 board.
+
+- **One shape for all three.** The art (or a toy's portrait) on top, an opaque body under it, a 1 px seam between. No
+  word is written on the art any more; the old bottom fade and the text over it are gone.
+- **Arcade card** (`ArcadeGameCard.prefab`, 341 x 296 at the reference width; was 218 tall): a 200 px art band, then the
+  hull on a pale octagon plate (`kit_oct_fill` in `TextLight` - the hull renders are dark and vanished on the old dark
+  chip), the name (H3, one line), and the genre petals under it at 46 px (the petal sprites carry a wide transparent
+  margin, so the shape reads about 18 px; they were 22 px images, a few pixels of shape). Party picks top left on the
+  art, the favourite star top right on a dark disc, the lock in the middle of the art.
+- **Arena card** (`ArenaGameCard.prefab`, 560 tall): the art in the top half; pilots and domains on one line, the name,
+  the description in full, and every hull the card seats on a pale plate (48 px) along the foot. The plate keeps its
+  `Icon` child, which `KitArenaGameCard` finds by name.
+- **Toy card** (`ToyCard.prefab`): the portrait in a well of its own, then the section, the name and the tagline.
+- **The pictures move, slowly.** `CardDrift.shader` (UICardDrift.cginc) moves a picture's vertices along a Lissajous
+  path - a translation, never a scale, so a quad needs no centre and an atlased sprite cannot bleed - and the card's
+  mask crops it. `KitCoverImage.overscan` (new, default 1) draws the game cards' art 5 % larger than a cover fit inside
+  a `RectMask2D` band, so the drift (5 x 3 units, 40 s, `Card_ArtDrift.mat`) never shows an edge;
+  `author_menu_arcade.check_card_a` computes the margin at the reference card size and fails if the reach could cross
+  it. A toy's portrait bobs 4 units over 8 s (`Card_PortraitBob.mat`). Shader-only, so no canvas rebuilds. Recorded as
+  the cards' one exception in `Docs/UI_COLOR_RULES.md`.
+- **Proof without an editor.** refcompile player config, `author_menu_arcade/arena/toybox.py --check` / `--self-test`
+  (new controls: the art standing still, a band with no overscan, a toy portrait standing still), `author_ui_lattice.py`
+  (the two materials, slow, on the right shader), `lattice_preview.py --check` (the drift stays in its reach, loops,
+  holds still at 0 s), every menu generator `--check`, `check_generated_assets.py`, `check_ui_colors.py`. The look, the
+  drift and the plates in the editor are owed (checklist entry "Rev 18 A").

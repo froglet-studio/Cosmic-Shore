@@ -34,6 +34,7 @@ PRESENCE_SHADER = os.path.join(SHADER_DIR, "Presence.shader")
 BOND_SHADER = os.path.join(SHADER_DIR, "Bond.shader")
 SEA_CGINC = os.path.join(SHADER_DIR, "UISeaLines.cginc")
 SEA_SHADER = os.path.join(SHADER_DIR, "SeaLines.shader")
+DRIFT_CGINC = os.path.join(SHADER_DIR, "UICardDrift.cginc")
 
 # The whole translation: HLSL out-params to C++ references, and the vector constructor spellings.
 SUBS = [(r"\bout float\b", "float&"),
@@ -439,6 +440,55 @@ int main(int argc, char** argv) {
 """
 
 
+DRIFT_MAIN = r"""
+#undef min
+#undef max
+#undef abs
+#undef floor
+#undef sin
+#undef atan2
+#undef cos
+#undef sqrt
+int main() {
+    // Card_ArtDrift.mat: reach (5, 3), 40 s. The path stays inside the reach, comes back after one loop sideways,
+    // moves a little between frames, and holds still at 0 seconds.
+    float2 reach = (float2){5.0f, 3.0f};
+    float mx = 0, my = 0, step_ = 0;
+    float2 prev = CardDriftOffset(0.0f, 40.0f, reach);
+    for (int i = 1; i <= 40 * 60 * 3; i++) {
+        float2 o = CardDriftOffset(i / 60.0f, 40.0f, reach);
+        mx = std::fmax(mx, std::fabs(o.x)); my = std::fmax(my, std::fabs(o.y));
+        step_ = std::fmax(step_, std::fabs(o.x - prev.x) + std::fabs(o.y - prev.y));
+        prev = o;
+    }
+    float2 a = CardDriftOffset(7.0f, 40.0f, reach), b = CardDriftOffset(47.0f, 40.0f, reach);
+    float2 still = CardDriftOffset(13.0f, 0.0f, reach);
+    std::printf("card drift: reach x %.3f y %.3f | biggest frame step %.4f | loop x %.5f | still %.5f\n", mx, my, step_,
+                std::fabs(a.x - b.x), std::fabs(still.x) + std::fabs(still.y));
+    int ok = mx <= 5.0001f && my <= 3.0001f && mx > 4.9f && my > 2.9f && step_ < 0.05f && std::fabs(a.x - b.x) < 1e-3f
+             && still.x == 0 && still.y == 0;
+    if (!ok) { std::printf("FAIL: the card drift leaves its reach, jumps, does not loop or will not hold still\n"); return 1; }
+    return 0;
+}
+"""
+
+
+def build_drift(work):
+    inc = translate(open(DRIFT_CGINC, encoding="utf-8").read())
+    src = os.path.join(work, "drift.cpp")
+    open(src, "w").write(SHIM + inc + DRIFT_MAIN)
+    exe = os.path.join(work, "drift")
+    r = subprocess.run(["clang++", "-std=c++17", "-O2", "-Wall", "-Werror", "-Wno-unused-function", src, "-o", exe],
+                       capture_output=True, text=True)
+    if r.returncode:
+        sys.stderr.write(r.stderr)
+        raise SystemExit("FAIL: the card drift maths does not compile")
+    r = subprocess.run([exe], capture_output=True, text=True)
+    sys.stdout.write(r.stdout)
+    if r.returncode:
+        raise SystemExit("FAIL: the card drift does not stay in its reach")
+
+
 def build_sea(work, out):
     inc = translate(open(SEA_CGINC, encoding="utf-8").read())
     frag = translate(extract_frag(open(SEA_SHADER, encoding="utf-8").read()))
@@ -530,7 +580,8 @@ def main():
     build_rim(work)
     build_presence(work)
     build_sea(work, out)
-    print("OK: the rim, the presence orb, the bonds and the sea lines compile and their dials drive")
+    build_drift(work)
+    print("OK: the rim, the presence orb, the bonds, the sea lines and the card drift compile and their dials drive")
 
 
 if __name__ == "__main__":
