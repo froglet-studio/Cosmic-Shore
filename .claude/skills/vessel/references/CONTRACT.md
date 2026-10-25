@@ -18,11 +18,12 @@ read all of it when creating or completing a vessel. Where this file and the cod
 10. [Docs & paper trail](#10-docs--paper-trail) — trackers, design docs, verification ledger
 11. [Fleet status snapshot](#11-fleet-status-snapshot) — dated; verify before trusting
 
-Naming trap that applies everywhere: file names renamed Ship→Vessel but class names did not.
+Naming trap that applies everywhere: file names renamed Ship→Vessel before class names did.
 `VesselActionSO.cs` → `ShipActionSO` · `VesselActionExecutorBase.cs` → `ShipActionExecutorBase` ·
-`VesselHelper.cs` → `ShipHelper` · `R_VesselElementStatsHandler.cs` → `R_ShipElementStatsHandler` ·
-`VesselActions.cs` → `enum ShipActions` · `VesselHUD.cs` → `ShipHUD` (legacy).
-**Grep by class name.** (`VesselCardView.cs` → `ShipCardView` was on this list until the
+`VesselHelper.cs` → `ShipHelper` · `VesselActions.cs` → `enum ShipActions`.
+**Grep by class name.** Every class an asset binds to now matches its file (2026-10-25,
+`Docs/REFACTOR_BACKLOG.md` M5): `R_VesselElementStatsHandler` and `VesselHUD` were
+`R_ShipElementStatsHandler` and `ShipHUD` until then. (`VesselCardView.cs` → `ShipCardView` was on this list until the
 freestyle vessel-selection panel was retired, 2026-09-23.)
 
 ---
@@ -120,7 +121,7 @@ mistake presents as a wiring bug, in a completely different part of the tool. Au
 DEPENDENCY ORDER (`<VesselAnimation subclass>` → `VesselStatus` → `VesselController` →
 `ResourceSystem`, `VesselImpactor`) and take, never re-add, what Unity auto-added along the way —
 `VesselStatus` pulls in `VesselCameraCustomizer`, `R_VesselActionHandler`, `VesselCustomization`
-and `R_ShipElementStatsHandler`, none of which carries `[DisallowMultipleComponent]`, so a second
+and `R_VesselElementStatsHandler`, none of which carries `[DisallowMultipleComponent]`, so a second
 `AddComponent` of any of them silently mints a duplicate. `ButterflyVesselSetup.Require<T>` is the
 shape: existing-or-add, and report the TYPE when the add comes back null.
 
@@ -439,7 +440,7 @@ juice through `ElementBars` when a vessel wants it.
   rule 39 for the full list of abstract bases a new vessel touches.
 
 - **`IVesselHUDView` is a trap**: an empty marker interface implemented by nothing —
-  `VesselHUDView` (abstract class) is the real contract. The legacy `ShipHUD` reparent path is
+  `VesselHUDView` (abstract class) is the real contract. The legacy `VesselHUD` (was `ShipHUD`) reparent path is
   dead for the shipping fleet (only Termite still nests `HUDContainer.prefab`).
 - **Lifecycle**: `VesselController.Initialize` initializes the HUD **hidden** and calls
   `SubscribeToEvents` only for the local user. Visibility is owned by scene hosts:
