@@ -161,7 +161,7 @@ namespace CosmicShore.Core
                 return;
             }
 
-            bool hasQuest = quest != null && quest.phases.Count > 0;
+            bool hasQuest = quest != null && quest.Phases.Count > 0;
             if (!hasQuest && debugPhaseOverride == null)
             {
                 Debug.LogWarning("[Quest] No quest (or debug phase) assigned on runner — nothing to run.");
@@ -205,7 +205,7 @@ namespace CosmicShore.Core
         /// the whole quest opted in, or this phase did (QuestPhaseGraphSO.runsUnderDeveloperUnlock).
         /// </summary>
         bool MayRunUnderGate(QuestPhaseGraphSO phase) =>
-            (quest != null && quest.runsUnderDeveloperUnlock) ||
+            (quest != null && quest.RunsUnderDeveloperUnlock) ||
             (phase != null && phase.runsUnderDeveloperUnlock);
 
         /// <summary>The phase a start would run first: the debug override, else the saved phase
@@ -213,11 +213,11 @@ namespace CosmicShore.Core
         QuestPhaseGraphSO FirstPhaseToRun()
         {
             if (debugPhaseOverride != null) return debugPhaseOverride;
-            if (quest == null || quest.phases.Count == 0) return null;
+            if (quest == null || quest.Phases.Count == 0) return null;
             int i = debugForceRun ? 0 : Mathf.Max(0, QuestProgressStore.GetPhaseIndex(QuestId));
-            for (; i < quest.phases.Count; i++)
-                if (quest.phases[i] != null && quest.phases[i].phaseEnabled)
-                    return quest.phases[i];
+            for (; i < quest.Phases.Count; i++)
+                if (quest.Phases[i] != null && quest.Phases[i].phaseEnabled)
+                    return quest.Phases[i];
             return null;
         }
 
@@ -238,7 +238,7 @@ namespace CosmicShore.Core
             }
 
             _phaseIndex = debugForceRun ? 0
-                : Mathf.Clamp(QuestProgressStore.GetPhaseIndex(QuestId), 0, quest.phases.Count - 1);
+                : Mathf.Clamp(QuestProgressStore.GetPhaseIndex(QuestId), 0, quest.Phases.Count - 1);
 
             CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] Starting '{QuestId}' at phase {_phaseIndex}.");
             StartPhase(resume: !debugForceRun);
@@ -284,22 +284,22 @@ namespace CosmicShore.Core
         void StartPhase(bool resume)
         {
             // Skip null or disabled phase slots (test harness / mis-authored quest).
-            while (_phaseIndex < quest.phases.Count
-                   && (quest.phases[_phaseIndex] == null || !quest.phases[_phaseIndex].phaseEnabled))
+            while (_phaseIndex < quest.Phases.Count
+                   && (quest.Phases[_phaseIndex] == null || !quest.Phases[_phaseIndex].phaseEnabled))
             {
                 CSDebug.LogVerbose(CSLogChannel.FTUE,
                     $"[Quest] Phase {_phaseIndex} of '{QuestId}' is " +
-                    $"{(quest.phases[_phaseIndex] == null ? "null" : "disabled")} — skipping.");
+                    $"{(quest.Phases[_phaseIndex] == null ? "null" : "disabled")} — skipping.");
                 _phaseIndex++;
             }
 
-            if (_phaseIndex >= quest.phases.Count)
+            if (_phaseIndex >= quest.Phases.Count)
             {
                 HandleQuestComplete();
                 return;
             }
 
-            _activeGraph = quest.phases[_phaseIndex];
+            _activeGraph = quest.Phases[_phaseIndex];
 
             // A phase that has not opted in to running under the master developer unlock is where
             // the quest stops while the gate is on: nothing marked complete, so it resumes here the
@@ -464,7 +464,7 @@ namespace CosmicShore.Core
             FTUEEventManager.RaiseQuestPhaseCompleted(QuestId, _phaseIndex);
 
             _phaseIndex++;
-            if (_phaseIndex >= quest.phases.Count)
+            if (_phaseIndex >= quest.Phases.Count)
             {
                 HandleQuestComplete();
                 return;

@@ -165,6 +165,11 @@ namespace CosmicShore.Gameplay
         bool _havePrevRot;
         int _frames, _startRings, _ownRail = -1, _courseSeed, _courseIntensity;
         bool _recording, _turnWasRunning;
+        // A match that ended by its own rules is stored once its RESULT is in (GameDataSO.Results, which the mode fills at
+        // game end, a frame or a ClientRpc after the turn stops), or after ResultWaitSeconds without one.
+        const float ResultWaitSeconds = 8f;
+        bool _awaitingResult;
+        float _resultDeadline;
         // Named when recording starts and kept: by the time the turn ends the hull may already be despawned and the game
         // data reset (leaving to the menu mid-race wrote a flight with hull "Unknown" and raceTarget 0, 2026-10-16).
         string _hullName = "Unknown", _modeName = "Unknown", _domainName = "";
@@ -201,6 +206,12 @@ namespace CosmicShore.Gameplay
 
             // Every game mode: an AI training record of whichever vessel the local player flies by hand.
             bool running = _gameData.IsTurnRunning;
+            if (_awaitingResult)
+            {
+                // Sampling has stopped; store the race once the result is in, the wait runs out, or a new turn begins.
+                if (HasResult() || now >= _resultDeadline || running) Finish("race over");
+                if (!running) return;
+            }
             if (!running)
             {
                 if (_recording)
@@ -215,7 +226,12 @@ namespace CosmicShore.Gameplay
                     // The ring that ended the race is threaded on this frame or the last; samples run at 10 Hz, so without
                     // this last one a finished race was written one ring short (23 / 24, Regatta 2026-10-16).
                     TakeSample(now);
-                    Finish(matchStillHere ? "race over" : "left before the end");
+                    if (matchStillHere && !HasResult())
+                    {
+                        _awaitingResult = true;
+                        _resultDeadline = now + ResultWaitSeconds;
+                    }
+                    else Finish(matchStillHere ? "race over" : "left before the end");
                 }
                 _turnWasRunning = false;
                 return;
@@ -702,18 +718,22 @@ namespace CosmicShore.Gameplay
         // Stopping Play mid-race (or quitting) writes the race so far as an unfinished flight.
         void OnApplicationQuit()
         {
-            if (_recording) Finish("play stopped");
+            if (_recording) Finish(_awaitingResult ? "race over" : "play stopped");
         }
 
         void OnDestroy()
         {
-            if (_recording) Finish("play stopped");
+            if (_recording) Finish(_awaitingResult ? "race over" : "play stopped");
             if (s_instance == this) s_instance = null;
         }
+
+        /// <summary>The mode has published its final ranked results (GameDataSO.Results).</summary>
+        bool HasResult() => _gameData && _gameData.Results != null && _gameData.Results.Count > 0;
 
         void Finish(string why)
         {
             _recording = false;
+            _awaitingResult = false;
             int byHand = 0;
             for (int i = 0; i < _samples.Count; i++) if (!_samples[i].Held) byHand++;
             if (byHand < 2 * SampleHz)
@@ -773,6 +793,7 @@ namespace CosmicShore.Gameplay
             sb.Append("\"laps\":").Append(target > 0 && ringCount > 0 ? Mathf.CeilToInt(target / (float)ringCount) : 0).Append(',');
             sb.Append("\"finished\":").Append(target > 0 && rings >= target ? "true" : "false").Append(',');
             sb.Append("\"raceSeconds\":").Append(F(_samples[_samples.Count - 1].T)).Append(',');
+            AppendResult(sb);
             sb.Append("\"meanFrameMs\":").Append(F(_frames > 0 ? 1000f * _frameSum / _frames : 0f, "0.0")).Append(',');
             sb.Append("\"sampleHz\":").Append(F(SampleHz)).Append(',');
             sb.Append("\"referenceShellHeight\":").Append(F(SkimRaceCourse.ReferenceShellHeight, "0.###")).Append(',');
@@ -965,6 +986,35 @@ namespace CosmicShore.Gameplay
             if (railed && !haveLane)
                 Debug.LogWarning($"[HumanFlightRecorder] {_modeName} record stored WITHOUT its rail ({_railWhy}); the learner cannot measure it against the rail.");
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// The match's result (2026-10-26, Yash: "record each match's result"), so a flight in a mode with no finish line
+        /// (Grizzly Charge, Bloomrush, Dog Fight) can still say who won: the winning domain and name, the pilot's domain,
+        /// whether that domain won, and every ranked row of <c>GameDataSO.Results</c> as [rank, name, domain, score, the
+        /// mode's score text, is this the pilot]. null when the match was left before it produced one.
+        /// </summary>
+        void AppendResult(StringBuilder sb)
+        {
+            if (!HasResult())
+            {
+                sb.Append("\"result\":null,");
+                return;
+            }
+            var results = _gameData.Results;
+            string you = _player ? _player.Name : "";
+            Domains yours = _player ? _player.Domain : Domains.Blue;
+            sb.Append("\"result\":{\"winnerDomain\":\"").Append(_gameData.WinnerDomain).Append("\",\"winnerName\":\"")
+              .Append(Esc(_gameData.WinnerName)).Append("\",\"yourDomain\":\"").Append(yours).Append("\",\"youWon\":")
+              .Append(_gameData.WinnerDomain == yours ? "true" : "false").Append(",\"rowColumns\":[\"rank\",\"name\",\"domain\",\"score\",\"scoreText\",\"you\"],\"rows\":[");
+            for (int i = 0; i < results.Count; i++)
+            {
+                var r = results[i];
+                sb.Append(i > 0 ? ",[" : "[").Append(r.Rank).Append(",\"").Append(Esc(r.Name)).Append("\",\"").Append(r.Domain)
+                  .Append("\",").Append(F(r.Score, "0.###")).Append(",\"").Append(Esc(r.ScoreText)).Append("\",")
+                  .Append(r.Name == you ? "true" : "false").Append(']');
+            }
+            sb.Append("]},");
         }
 
         /// <summary>A rail's prisms as [x, y, z, up x, up y, up z]; [] when there is none.</summary>

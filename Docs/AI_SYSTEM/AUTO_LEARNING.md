@@ -83,7 +83,7 @@ write, so a field set there by hand survives (`SparrowAIBoostPolicy_Breakwater`'
 
 | Vessel | Learner | The verb | What it writes |
 |---|---|---|---|
-| Dolphin | drives (ChargeBoost) | discharge (state bit) | when to discharge, at what charge |
+| Dolphin | drives (ChargeBoost) | discharge (state bit) | when to discharge, at what charge; in Switchback also one variant per intensity (`_I<n>`, `PER_INTENSITY_MODES`, `MINIGAME_TRAINING_PLAN.md` §3.6) |
 | Rhino | drives (RampBoost) | ramp (state bit) | ramp start / stop, corner speed |
 | Manta | drives (Soar) | both triggers | the two Soar bands (needs real Soaring: mean ≥ 0.05) |
 | Stoat | drives (AIModeTuning) | its pair | its three configs (Warpline on hold) |
@@ -105,3 +105,13 @@ Squirrel in Joust and Skim Race, the Scarab in Scarab Scramble.
 (`author_skimrace_ai_config.py`, which gave Regatta its own copy so Skim Race's calibrated numbers never move). Since
 2026-10-26 the recorder copies Skim Race's track into each flight, so the Squirrel's skim is measured there beside the
 policy each intensity flies (`LEARNED_FROM_FLIGHTS_SkimRace.md`), as evidence for that tuner.
+
+## 6. Every flight says who won (2026-10-26)
+
+Yash: "record each match's result". A match that ends by its own rules is stored once the mode has published its
+ranked results (`GameDataSO.Results`, waited for up to 8 s), with a `result` block: the winning domain and name, the
+pilot's domain, `youWon`, and every ranked row (rank, name, domain, score, the mode's score text, is this the pilot).
+A match left early writes `"result": null`. So a mode with no finish line (Grizzly Charge, Bloomrush, Dog Fight) can be
+judged: `learn_drives_from_flights.py` learns a mode without rings from the matches the person WON once there are three,
+and `Docs/Reports/AI_LEARNING.md` shows "You won N of M" per hull and intensity.
+

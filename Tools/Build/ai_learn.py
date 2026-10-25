@@ -66,7 +66,7 @@ def load_flights():
         out.append(dict(path=path, mode=d.get("mode") or "Unknown", hull=d.get("hull") or "Unknown",
                         intensity=d.get("intensity"), finished=bool(d.get("finished")),
                         seconds=d.get("raceSeconds") or 0.0, race=bool(d.get("ringList")),
-                        date=d.get("date") or "", text=text))
+                        date=d.get("date") or "", result=d.get("result"), text=text))
     return out
 
 
@@ -163,7 +163,9 @@ def pace(flights, mode):
         done = sorted(f["seconds"] for f in fs if f["finished"])
         best = f"{done[0]:.0f} s" if done else "-"
         last = max((f["date"] for f in fs), default="")
-        lines.append(f"| {hull} | I{i} | {len(fs)} | {len(done)} | {best} | {last[:16]} |")
+        results = [f["result"] for f in fs if f.get("result")]
+        won = f"{sum(1 for r in results if r.get('youWon'))} of {len(results)}" if results else "-"
+        lines.append(f"| {hull} | I{i} | {len(fs)} | {len(done)} | {best} | {won} | {last[:16]} |")
     with tempfile.TemporaryDirectory() as tmp:
         for f in mine:
             open(os.path.join(tmp, os.path.basename(f["path"])), "w", encoding="utf-8").write(f["text"])
@@ -226,7 +228,7 @@ def write_report(now, new, modes, outcomes, paces, changed):
         if mode in paces:
             rows, rivals = paces[mode]
             L += ["The person, every recorded race in this mode:", "",
-                  "| Hull | Intensity | Races | Finished | Fastest | Last raced |", "|---|---|---:|---:|---:|---|", *rows, "",
+                  "| Hull | Intensity | Races | Finished | Fastest | You won (matches with a result) | Last raced |", "|---|---|---:|---:|---:|---:|---|", *rows, "",
                   "The AI rivals in those races (`regatta_rival_report.py`; judge only races flown after the AI last "
                   "changed: `git log -1 --format=%cI -- <the AI's files>`):", "", "```", rivals, "```", ""]
     L += ["## Files the learners changed", ""]
@@ -265,8 +267,8 @@ def main():
     outcomes, paces = {}, {}
     for mode, m in sorted(modes.items()):
         outcomes[mode] = run_learners(mode, m)
-        if m["race"]:
-            paces[mode] = pace(flights, mode)
+        # Every mode: the person's table (with who won, since flights record their result); the AI rivals' rings for a race.
+        paces[mode] = pace(flights, mode)
     after = snapshot()
     changed = {p for p, h in after.items() if before.get(p) != h}
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")

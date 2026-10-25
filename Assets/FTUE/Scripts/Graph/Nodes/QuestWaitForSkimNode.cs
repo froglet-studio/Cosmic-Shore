@@ -19,13 +19,16 @@ namespace CosmicShore.Core
         public override string EditorSummary => $"Skim {targetSkims} prisms";
 
         [Tooltip("How many prisms must be skimmed.")]
-        [Min(1)] public int targetSkims = 10;
+        [SerializeField, Min(1)] int targetSkims = 10;
+        public int TargetSkims => targetSkims;
 
         [Tooltip("Haptic pulse per counted skim. Default None — the skimmer's own haptics effect already pulses on skim.")]
-        public HapticType perSkimHaptic = HapticType.None;
+        [SerializeField] HapticType perSkimHaptic = HapticType.None;
+        public HapticType PerSkimHaptic => perSkimHaptic;
 
         [Tooltip("Haptic pulse when the target count is reached.")]
-        public HapticType successHaptic = HapticType.ButtonPress;
+        [SerializeField] HapticType successHaptic = HapticType.ButtonPress;
+        public HapticType SuccessHaptic => successHaptic;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {

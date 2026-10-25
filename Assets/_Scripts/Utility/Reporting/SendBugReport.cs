@@ -7,11 +7,16 @@ namespace CosmicShore.Utility
 {
     public class SendBugReport : MonoBehaviour
     {
-        public GameObject bugReportPopUpWindow;
-        public Button sendButton;
-        public Button returnButton;
-        public TMP_InputField subjectInputField;
-        public TMP_InputField contentsInputField;
+        [SerializeField] GameObject bugReportPopUpWindow;
+        public GameObject BugReportPopUpWindow => bugReportPopUpWindow;
+        [SerializeField] Button sendButton;
+        public Button SendButton => sendButton;
+        [SerializeField] Button returnButton;
+        public Button ReturnButton => returnButton;
+        [SerializeField] TMP_InputField subjectInputField;
+        public TMP_InputField SubjectInputField => subjectInputField;
+        [SerializeField] TMP_InputField contentsInputField;
+        public TMP_InputField ContentsInputField => contentsInputField;
         [SerializeField] string recipient = "support@frogletgames.zendesk.com";  //for support reporting though Zendesk
 
         private void LateUpdate()

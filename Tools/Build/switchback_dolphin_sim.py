@@ -46,6 +46,11 @@ DOLPHIN_SWITCHBACK = {"cruise": CRUISE, "rts": 0.0, "base": TURN, "drift": True,
 SPARROW_BREAKWATER = {"cruise": 40.0, "rts": 0.1, "base": 80.0, "drift": False,
                       "commit": 240.0, "lead": 280.0, "through": 200.0,
                       "eye": 18.0 - 12.32 / 2}   # BREAKWATER.md: the 18 u eye, less half the 12.32 u hull; the rest is danger weave
+# The Butterfly in Waystation (2026-10-26): Butterfly.prefab DefaultMinimumSpeed 12 + DefaultThrottleScaler 55 at the AI's
+# full throttle (WaystationController.AIThrottleFloor 1) = 67 u/s, Pitch/Yaw 45 deg/s, RotationThrottleScaler 0, no drift;
+# MinigameWaystation.unity: commit 260, approach lead 300, through 220. Its fold is not modelled: cruise only is the floor.
+BUTTERFLY_WAYSTATION = {"cruise": 67.0, "rts": 0.0, "base": 45.0, "drift": False,
+                        "commit": 260.0, "lead": 300.0, "through": 220.0}
 
 
 def course_from_flight(path):
@@ -206,9 +211,18 @@ def self_test():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dir"); ap.add_argument("--self-test", action="store_true")
+    ap.add_argument("--mode", default="Switchback", help="Switchback (the Dolphin) or Waystation (the Butterfly, no fold)")
     a = ap.parse_args()
     if a.self_test:
         sys.exit(self_test())
+    if a.mode == "Waystation":
+        print("(seconds for the race or None, rings threaded, mouths missed, break-offs; the person's time)")
+        for p in sorted(glob.glob(os.path.join(a.dir, "flight_Waystation_*.json"))):
+            c = course_from_flight(p)
+            print(f"{c['file']} (person {c['person']:.0f} s)")
+            print(f"   the shipped steering: {race(c, False, cfg=BUTTERFLY_WAYSTATION, T=300)}")
+            print(f"   Regatta's steering:   {race(c, True, cfg=BUTTERFLY_WAYSTATION, T=300)}")
+        return
     courses = [course_from_flight(p) for p in sorted(glob.glob(os.path.join(a.dir, "flight_Switchback_*.json")))]
     print("(seconds for the 20 gates or None, gates threaded, mouths missed, break-offs, share drifting; the person's time)")
     for c in courses:

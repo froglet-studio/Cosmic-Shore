@@ -11,7 +11,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] Gun gun;
         [SerializeField] GameObject gunMount;
 
-        [FormerlySerializedAs("Team")] public Domains domain;
+        [SerializeField, FormerlySerializedAs("Team")] Domains domain;
+        public Domains Domain => domain;
 
         /*[RequireInterface(typeof(IVessel))]
         public MonoBehaviour Vessel;*/

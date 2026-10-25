@@ -203,8 +203,8 @@ namespace CosmicShore.Gameplay
             var ship = status.ShipTransform ? status.ShipTransform : transform;
             Vector3 course = status.Course.sqrMagnitude > 1e-4f ? status.Course.normalized : ship.forward;
 
-            float distance = so.placementDistance.EvaluateLive(status); // SPACE, live at use time
-            float radius = so.RingRadius * so.switchScale.EvaluateLive(status); // MASS, live
+            float distance = so.PlacementDistance.EvaluateLive(status); // SPACE, live at use time
+            float radius = so.RingRadius * so.SwitchScale.EvaluateLive(status); // MASS, live
             Vector3 center = ship.position + course * distance;
 
             // THE VESSEL'S OWN RULE: a switch grafts onto a LIVING PLANT'S HEART when one lies on
