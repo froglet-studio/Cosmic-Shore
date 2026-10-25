@@ -241,8 +241,13 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0.001f, 0.05f)] float mapPathThickness = 0.014f;
         [Tooltip("An empty path's glow, as a share of the thickest.")]
         [SerializeField, Range(0.05f, 1f)] float mapPathThinShare = 0.25f;
-        [Tooltip("A tap or click this close to a path's start, pixels, picks it and sets off.")]
+        [Tooltip("A tap or click this close to a path's glowing bar, pixels at 160 dpi (scaled up on denser screens), picks " +
+                 "it; a tap on the picked path rides it.")]
         [SerializeField, Min(8f)] float mapPickPixels = 70f;
+        [Tooltip("How far a drag across the map spins it: 1 turns it 180 degrees for a drag the screen's height.")]
+        [SerializeField, Min(0.05f)] float mapSpinDragScale = 1f;
+        [Tooltip("How fast the right stick (or Q / E) spins the map, degrees per second.")]
+        [SerializeField, Min(1f)] float mapSpinRate = 120f;
         [Tooltip("An empty path's glow (the palette's neutral).")]
         [SerializeField] Color mapPathColdColor = new(0.30f, 0.45f, 0.75f, 1f);
         [Tooltip("The path with the most opposing prisms (the palette's call-to-action lime).")]
@@ -327,6 +332,8 @@ namespace CosmicShore.ScriptableObjects
         public float MapPathThickness => mapPathThickness;
         public float MapPathThinShare => mapPathThinShare;
         public float MapPickPixels => mapPickPixels;
+        public float MapSpinDragScale => mapSpinDragScale;
+        public float MapSpinRate => mapSpinRate;
         public Color MapPathColdColor => mapPathColdColor;
         public Color MapPathHotColor => mapPathHotColor;
         public Color MapPickColor => mapPickColor;

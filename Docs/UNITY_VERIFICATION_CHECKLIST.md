@@ -80,10 +80,14 @@ not run.
 **Verify in editor (Toybox, Goby and Pistol, fly the Pistol):**
 1. Ride to a perch: after the rest the view pulls back to all perches; islands with rival prisms near them glow lime and
    thicker, empty ones thin blue; the highlight is white with a pointer along the way it rides.
-2. A / D and the left stick move the highlight across the map; F / Y turns it round at its den; the head's "ahead" waits.
+2. Touch first (Garrett, 2026-10-25: controls for 2D characters are mobile, then gamepad, then mouse/keyboard): on a
+   phone, drag spins the map, a tap on a path's bar picks it from the nearer den, a tap on the picked path rides it, Back
+   turns it round, a finger held still from the ride rides on. Pad: right stick spins, left stick picks the next path that
+   way on screen, A rides, Y turns round. Keyboard: Space rides, A / D pick, F turns round, Q / E spin. The head's
+   "ahead" waits. The spin stays as you left it at the next perch.
 3. Pick another den and dive: the Pistol appears there and rides; arriving at the next perch the den grows only by the
    distance ridden since the teleport. Holding the dive through a perch rides on after half a second.
-4. A tap or click near a path's start rides it. The Goby's view never shows the bars.
+4. The Goby's view never shows the bars.
 5. Fly the Goby: the AI Pistol heads for the island with the most rival prisms.
 
 ### 🔴 2D cameras fade the sky's Voronoi cell net (`cece/cool-shannon-aulgpe`, 2026-10-25) — NOT EDITOR-VERIFIED

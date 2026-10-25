@@ -73,9 +73,14 @@
 >   neutral blue toward the call-to-action lime as it holds more OPPOSING prisms (not the pair's domain, breakable, not
 >   super-shielded: what the vortex ring can catch) over it, within the undertow's reach of its plane and `pathScoreBand`
 >   60 u of its ground. The options are every den, either way it has an island (`PistolPaths`); the head's "ahead" waits
->   for the Goby's next island. A / D or the left stick moves the highlight (white, with a pointer at its den along the way
->   it rides), F / Y turns it round, and the dive rides it (a fresh press, or held 0.5 s, so holding the dive through a perch
->   rides on); a tap or click near a path's start picks it and goes. Picking another den TELEPORTS there and rides from it:
+>   for the Goby's next island. The pick is white, with a pointer at its den along the way it rides. Controls in the 2D
+>   cameras' priority (Garrett, 2026-10-25: "the control priority for 2d characters is mobile, gamepad, mouse/keyboard ...
+>   the player needs to be able to spin the map"): **touch** (the mouse is the same pointer) drags to spin the map, taps a
+>   path's glowing bar to pick it (starting from the den at the end nearer the tap), taps the picked path again to ride
+>   it, and the phone's Back button turns it round; a finger still down from the ride, held still 0.5 s, rides on
+>   (`MapPointer`). **Gamepad**: right stick spins, left stick moves the pick to the next path that way on screen, A (or LT)
+>   rides it (a fresh press, or held through the perch), Y turns it round. **Keyboard**: Space rides, A / D move the pick,
+>   F turns round, Q / E spin. The spin is kept from perch to perch. Picking another den TELEPORTS there and rides from it:
 >   no rest, no den growth (only the distance ridden grows the den the Pistol next arrives at). The AI takes the island
 >   with the most opposing prisms (ties: nearest end), and its old way when every island is empty. Scores are kept one
 >   island per 0.1 s, every frame while the map is open.
@@ -836,3 +841,8 @@ the line it settled.
   distance ridden (top section). **[proposed]** the map's look (side-on to the islands, lit bars by score, a white pick
   with a pointer), its controls (A / D or left stick, F / Y turns round, the dive or a tap rides), "opposing" = any domain
   but the pair's, and the AI's pick (the richest island, else its old way).
+- 2026-10-25, Garrett: "the control priority for 2d characters is mobile, gamepad, mouse/keyboard. so make sure the
+  controls work best in that priority. the player needs to be able to spin the map to decide where they want to go when
+  choosing the den to teleport to." The map's controls reworked touch first (drag spins, tap picks, tap again rides),
+  then the pad (right stick spins, left stick picks, A rides), then the keyboard (top section). **[proposed]** tap-again
+  to ride on touch, and the spin kept between perches.

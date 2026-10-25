@@ -134,6 +134,8 @@ MonoBehaviour:
   mapPathThickness: 0.014
   mapPathThinShare: 0.25
   mapPickPixels: 70
+  mapSpinDragScale: 1
+  mapSpinRate: 120
   mapPathColdColor: {r: 0.3, g: 0.45, b: 0.75, a: 1}
   mapPathHotColor: {r: 0.6156863, g: 1, b: 0.18039216, a: 1}
   mapPickColor: {r: 0.96, g: 0.96, b: 1, a: 1}

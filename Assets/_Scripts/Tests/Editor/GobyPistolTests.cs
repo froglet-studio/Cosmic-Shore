@@ -468,6 +468,38 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Map_TouchFirst_DragSpins_TapPicks_AHeldFingerRidesOn()
+        {
+            // Garrett, 2026-10-25: "the control priority for 2d characters is mobile, gamepad, mouse/keyboard ... the player
+            // needs to be able to spin the map"
+            var p = new MapPointer();
+            p.Open(false, Vector2.zero);
+            p.Step(true, true, new Vector2(100f, 100f), 0.016f, 12f, 0.35f, out var drag, out bool tap, out _, out _);
+            p.Step(false, true, new Vector2(140f, 100f), 0.016f, 12f, 0.35f, out drag, out tap, out _, out _);
+            Assert.That(drag.x, Is.EqualTo(40f).Within(1e-3f), "past the slop a press drags: the map spins");
+            p.Step(false, false, new Vector2(140f, 100f), 0.016f, 12f, 0.35f, out _, out tap, out _, out _);
+            Assert.That(tap, Is.False, "a drag that lifts is no tap");
+
+            p.Step(true, true, new Vector2(300f, 200f), 0.016f, 12f, 0.35f, out _, out _, out _, out _);
+            p.Step(false, true, new Vector2(305f, 202f), 0.05f, 12f, 0.35f, out drag, out _, out _, out _);
+            Assert.That(drag, Is.EqualTo(Vector2.zero), "inside the slop it does not spin");
+            p.Step(false, false, new Vector2(305f, 202f), 0.05f, 12f, 0.35f, out _, out tap, out var at, out _);
+            Assert.That(tap, Is.True, "a quick, still press is a tap");
+            Assert.That(at, Is.EqualTo(new Vector2(300f, 200f)), "where it went down");
+
+            p.Step(true, true, Vector2.zero, 0.016f, 12f, 0.35f, out _, out _, out _, out _);
+            p.Step(false, true, Vector2.zero, 0.5f, 12f, 0.35f, out _, out _, out _, out _);
+            p.Step(false, false, Vector2.zero, 0.016f, 12f, 0.35f, out _, out tap, out _, out _);
+            Assert.That(tap, Is.False, "the control: a long press is no tap");
+
+            p.Open(true, new Vector2(50f, 50f));   // the finger diving through the perch
+            p.Step(false, true, new Vector2(51f, 50f), 0.3f, 12f, 0.35f, out _, out _, out _, out bool still);
+            Assert.That(still, Is.True, "held still it asks to ride on");
+            p.Step(false, false, new Vector2(51f, 50f), 0.016f, 12f, 0.35f, out _, out tap, out _, out _);
+            Assert.That(tap, Is.False, "lifting a carried press is not a tap");
+        }
+
+        [Test]
         public void Pistol_HasItsOwnModel()
         {
             // Garrett, 2026-10-24: "give the pistol a model" (specs/pistol.py, Docs/VesselModels/Pistol.md)

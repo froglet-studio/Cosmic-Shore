@@ -85,8 +85,9 @@ namespace CosmicShore.Gameplay
         readonly List<int> _pathScore = new();
         readonly HashSet<Prism> _scoreSeen = new();
         int _scoreCursor, _pathScoreMax; float _scoreAt;
-        bool _choosing, _diveWasDown; PathChoice _choice; float _chooseT, _stickWas;
-        float _mapRadius = 1f;
+        bool _choosing, _diveWasDown; PathChoice _choice; float _chooseT; Vector2 _stickWas;
+        MapPointer _mapPointer;
+        float _mapRadius = 1f, _mapYaw, _mapPitch;   // the person's spin of the map, kept from perch to perch
         Mesh _cube; Material[] _heatMats; Material _pickMat;
         readonly List<Matrix4x4>[] _heatPieces = { new(), new(), new(), new(), new() };
         readonly List<Matrix4x4> _pickPieces = new();
@@ -206,7 +207,7 @@ namespace CosmicShore.Gameplay
             _body = Config.Body; _vs = Config.Vortex;
             _t = 0f; _swapReadyAt = 0f; _human = Half.Goby;
             _perches.Clear(); _segments.Clear(); _tracks.Clear(); _rings.Clear(); _held.Clear();
-            _pathScore.Clear(); _scoreCursor = 0; _pathScoreMax = 0; _choosing = false;
+            _pathScore.Clear(); _scoreCursor = 0; _pathScoreMax = 0; _choosing = false; _mapYaw = _mapPitch = 0f; _mapPointer = default;
             _darting = _charging = false; _dartReadyAt = 0f; ClearLock();
             _aiRng = new PistolAI.Mulberry32(20261022u); _ai = new PistolAI(31337u + 17u);
             _home = _gt.position; _aiHasDir = false; _aiIslandGoal = 0f; _perched = false; _perchT = 0f;
@@ -733,94 +734,163 @@ namespace CosmicShore.Gameplay
             Ride(c.Segment, c.Dir);
         }
 
-        /// <summary>The person's pick on the path map: the cursor walks the options (left stick / A, D; the one whose start is
-        /// next across the screen), Back turns it round at its den, a tap or click near a path's start picks that one and
-        /// sets off, and the dive sets off on the highlighted one (a fresh press, or held through the perch for
-        /// <c>chooseHoldSeconds</c>).</summary>
+        /// <summary>
+        /// The person's pick on the path map, controls in the order the 2D cameras serve them (Garrett, 2026-10-25: "the
+        /// control priority for 2d characters is mobile, gamepad, mouse/keyboard ... the player needs to be able to spin
+        /// the map"):
+        /// <list type="bullet">
+        /// <item><b>Touch</b> (the mouse is the same pointer): drag spins the map; a tap on a path picks it, starting from
+        /// the den at the end nearer the tap; a tap on the picked path rides it; the phone's Back button turns it round.
+        /// A finger still down from the ride, held still for <c>chooseHoldSeconds</c>, rides on.</item>
+        /// <item><b>Gamepad</b>: the right stick spins the map; the left stick moves the pick to the next path that way on
+        /// screen; A (or the left trigger) rides it, a fresh press or held through the perch; Y turns it round.</item>
+        /// <item><b>Keyboard</b>: Space (or S, down) rides it the same way; A / D move the pick; F turns it round; Q / E spin
+        /// the map.</item>
+        /// </list>
+        /// </summary>
         void Choose(float dt)
         {
-            bool began = false, held = false; Vector2 at = default;
+            bool began = false, held = false; Vector2 at = _pointerAt;
             if (_cam) ReadPointer(out at, out began, out held);
+            var kb = Keyboard.current; var pad = Gamepad.current;
             if (!_choosing)
             {
-                _choosing = true; _chooseT = 0f; _stickWas = 0f;
+                _choosing = true; _chooseT = 0f; _stickWas = Vector2.zero;
                 _choice = new PathChoice(_at, _travelDir);
-                _diveWasDown = DiveHeld(held);
+                _diveWasDown = DiveButtonHeld(kb, pad);
+                // a finger or the mouse still down from the ride: held still it rides on, moved it spins the map
+                _mapPointer.Open(held, at);
                 _scoreCursor = 0;
             }
             _chooseT += dt;
             if (_options.Count == 0) return;
             if (PistolPaths.IndexOf(_options, _choice) < 0) _choice = _options[PistolPaths.Nearest(_options, _choice.Perch)];
+            bool go = false;
 
-            int step = ChooseStep();
-            if (step != 0) _choice = StepOnScreen(step);
-            if (_backPressed)
+            // touch first (and the mouse, the same pointer): drag spins, a tap picks, a tap on the pick rides
+            _mapPointer.Step(began, held, at, dt, TapSlop, TapMaxSeconds, out var drag, out bool tap, out var tapAt, out bool carriedStill);
+            if (drag != Vector2.zero) SpinMap(drag * (180f / Mathf.Max(1f, Screen.height)) * Config.MapSpinDragScale);
+            if (carriedStill && _chooseT >= Config.ChooseHoldSeconds) go = true;
+            if (tap && PickNear(tapAt, out var picked))
+            {
+                if (picked.Same(_choice)) go = true;
+                else _choice = picked;
+            }
+
+            // then the gamepad: right stick spins, left stick moves the pick, A rides, Y turns round
+            if (pad != null)
+            {
+                Vector2 spin = pad.rightStick.ReadValue();
+                if (spin.sqrMagnitude > 0.04f) SpinMap(spin * (Config.MapSpinRate * dt));
+                Vector2 move = pad.leftStick.ReadValue();
+                if (move.magnitude > 0.6f && _stickWas.magnitude <= 0.6f) _choice = StepToward(move);
+                _stickWas = move;
+                if (pad.buttonNorth.wasPressedThisFrame) _backPressed = true;
+            }
+
+            // then the keyboard: A / D move the pick, F (or B) turns round, Q / E spin, Space rides
+            if (kb != null)
+            {
+                if (kb.aKey.wasPressedThisFrame) _choice = StepToward(Vector2.left);
+                if (kb.dKey.wasPressedThisFrame) _choice = StepToward(Vector2.right);
+                if (kb.fKey.wasPressedThisFrame || kb.bKey.wasPressedThisFrame) _backPressed = true;
+                float yaw = (kb.eKey.isPressed ? 1f : 0f) - (kb.qKey.isPressed ? 1f : 0f);
+                if (yaw != 0f) SpinMap(new Vector2(yaw * Config.MapSpinRate * dt, 0f));
+            }
+
+            if (_backPressed)   // the phone's Back button, Y or F: the same den, the other way
             {
                 _backPressed = false;
                 var turned = new PathChoice(_choice.Perch, -_choice.Dir);
                 if (PistolPaths.IndexOf(_options, turned) >= 0) _choice = turned;
             }
 
-            bool go = false;
-            if (began && PickNear(at, out var picked)) { _choice = picked; go = true; }
-            bool dive = DiveHeld(held);
+            bool dive = DiveButtonHeld(kb, pad);
             if (dive && !_diveWasDown) go = true;
-            if (dive && _chooseT >= Config.ChooseHoldSeconds) go = true;
+            if (dive && _chooseT >= Config.ChooseHoldSeconds) go = true;   // held through the perch: rides on
             _diveWasDown = dive;
             if (!go || !PistolPaths.Ready(_choice, _segments.Count)) return;
             SetOff(_choice);
-            _mouseDown = held; _aiming = false; _mouseFrom = at;   // a finger still down keeps diving
+            _mouseDown = held && !_mapPointer.Moved; _aiming = false; _mouseFrom = at;   // a finger still down keeps diving
+            _mapPointer = default;
         }
 
-        bool DiveHeld(bool pointerHeld)
+        // a press that moves less than this is a tap (scaled for the screen's density), and a tap is quick
+        float TapSlop => 12f * Mathf.Max(1f, Screen.dpi / 160f);
+        const float TapMaxSeconds = 0.35f;
+
+        static bool DiveButtonHeld(Keyboard kb, Gamepad pad)
+            => (pad != null && (pad.buttonSouth.isPressed || pad.leftTrigger.ReadValue() > 0.5f))
+               || (kb != null && (kb.spaceKey.isPressed || kb.sKey.isPressed || kb.downArrowKey.isPressed));
+
+        /// <summary>Spins the map: x turns it round its up, y tips it (degrees), the tip held short of looking straight down
+        /// or up.</summary>
+        void SpinMap(Vector2 degrees)
         {
-            var kb = Keyboard.current; var pad = Gamepad.current;
-            return pointerHeld
-                   || (kb != null && (kb.spaceKey.isPressed || kb.sKey.isPressed || kb.downArrowKey.isPressed))
-                   || (pad != null && (pad.buttonSouth.isPressed || pad.leftTrigger.ReadValue() > 0.5f));
+            _mapYaw = Mathf.Repeat(_mapYaw + degrees.x + 180f, 360f) - 180f;
+            _mapPitch = Mathf.Clamp(_mapPitch - degrees.y, -80f, 80f);
         }
 
-        /// <summary>-1, 0 or +1: a fresh push of the left stick or A / D (the D-pad and the arrows are the swap).</summary>
-        int ChooseStep()
+        /// <summary>The path whose start lies next on screen in <paramref name="dir"/> (screen space, y up): the nearest
+        /// within 60 degrees of it.</summary>
+        PathChoice StepToward(Vector2 dir)
         {
-            int step = 0;
-            var kb = Keyboard.current; var pad = Gamepad.current;
-            if (kb != null) { if (kb.aKey.wasPressedThisFrame) step = -1; else if (kb.dKey.wasPressedThisFrame) step = 1; }
-            float x = pad != null ? pad.leftStick.ReadValue().x : 0f;
-            if (step == 0 && Mathf.Abs(x) > 0.6f && Mathf.Abs(_stickWas) <= 0.6f) step = x > 0f ? 1 : -1;
-            _stickWas = x;
-            return step;
-        }
-
-        /// <summary>The option whose start is next across the screen in <paramref name="step"/>'s direction (so left means
-        /// left on the map), or along the chain when there is no camera yet.</summary>
-        PathChoice StepOnScreen(int step)
-        {
-            if (!_cam) return PistolPaths.Step(_options, _choice, step);
-            float from = _cam.WorldToScreenPoint(OptionAnchor(_choice)).x, bestDx = float.MaxValue;
-            var best = _choice;
+            if (!_cam) return PistolPaths.Step(_options, _choice, dir.x >= 0f ? 1 : -1);
+            Vector2 from = _cam.WorldToScreenPoint(OptionAnchor(_choice)), d = dir.normalized;
+            var best = _choice; float bestCost = float.MaxValue;
             foreach (var c in _options)
             {
+                if (c.Same(_choice)) continue;
                 var sp = _cam.WorldToScreenPoint(OptionAnchor(c));
                 if (sp.z <= 0f) continue;
-                float dx = (sp.x - from) * step;
-                if (dx > 0.5f && dx < bestDx) { bestDx = dx; best = c; }
+                Vector2 v = (Vector2)sp - from;
+                float len = v.magnitude;
+                if (len < 1f) continue;
+                float cos = Vector2.Dot(v / len, d);
+                if (cos < 0.5f) continue;
+                float cost = len * (1f + 2f * (1f - cos));
+                if (cost < bestCost) { bestCost = cost; best = c; }
             }
             return best;
         }
 
+        /// <summary>The path a tap at <paramref name="screen"/> lands on (anywhere along its glowing bar, within
+        /// <c>mapPickPixels</c>), starting from the den at the end nearer the tap; the head's "ahead" by its pointer.</summary>
         bool PickNear(Vector2 screen, out PathChoice picked)
         {
             picked = _choice;
             if (!_cam) return false;
-            float bestD = Config.MapPickPixels * Config.MapPickPixels;
+            float reach = Config.MapPickPixels * Mathf.Max(1f, Screen.dpi / 160f), bestD = reach * reach;
             bool any = false;
+            for (int k = 0; k < _segments.Count; k++)
+            {
+                var seg = _segments[k]; var track = _tracks[k];
+                const int n = 12;
+                Vector3 a = _cam.WorldToScreenPoint(seg.Ground(0f, track));
+                for (int i = 1; i <= n; i++)
+                {
+                    Vector3 b = _cam.WorldToScreenPoint(seg.Ground(seg.L * i / n, track));
+                    if (a.z > 0f && b.z > 0f)
+                    {
+                        Vector2 ab = (Vector2)(b - a);
+                        float t = ab.sqrMagnitude > 1e-4f ? Mathf.Clamp01(Vector2.Dot(screen - (Vector2)a, ab) / ab.sqrMagnitude) : 0f;
+                        float d = (screen - ((Vector2)a + ab * t)).sqrMagnitude;
+                        if (d < bestD)
+                        {
+                            bestD = d; any = true;
+                            float along = (i - 1 + t) / n;
+                            picked = along <= 0.5f ? new PathChoice(k, 1) : new PathChoice(k + 1, -1);
+                        }
+                    }
+                    a = b;
+                }
+            }
             foreach (var c in _options)
             {
+                if (PistolPaths.Ready(c, _segments.Count)) continue;
                 var sp = _cam.WorldToScreenPoint(OptionAnchor(c));
-                if (sp.z <= 0f) continue;
                 float d = ((Vector2)sp - screen).sqrMagnitude;
-                if (d < bestD) { bestD = d; picked = c; any = true; }
+                if (sp.z > 0f && d < bestD) { bestD = d; picked = c; any = true; }
             }
             return any;
         }
@@ -1504,9 +1574,15 @@ namespace CosmicShore.Gameplay
             radius += Config.PathScoreBand;
             _mapRadius = radius;
             float fov = Config.MapFov, dist = radius / Mathf.Sin(0.5f * fov * Mathf.Deg2Rad) * Config.MapMargin;
-            var wantRot = Quaternion.LookRotation(n, up.normalized);
-            Vector3 wantPos = centre - n * dist;
-            float k1 = Mathf.Clamp01(Time.deltaTime * 4f);
+            // the person's spin: round the map's up, then tipped about the view's right
+            up.Normalize();
+            Vector3 right = Vector3.Cross(up, n).normalized;
+            var spin = Quaternion.AngleAxis(_mapYaw, up) * Quaternion.AngleAxis(_mapPitch, right);
+            Vector3 look = spin * n, lookUp = spin * up;
+            var wantRot = Quaternion.LookRotation(look, lookUp);
+            Vector3 wantPos = centre - look * dist;
+            // the pull back eases in; once the map is open it follows the spin closely
+            float k1 = Mathf.Clamp01(Time.deltaTime * (_chooseT < 0.6f ? 4f : 16f));
             _camRot = _camLive ? Quaternion.Slerp(_camRot, wantRot, k1) : wantRot;
             _camPos = _camLive ? Vector3.Lerp(_camPos, wantPos, k1) : wantPos;
             _camLive = true;
@@ -1695,7 +1771,7 @@ namespace CosmicShore.Gameplay
             GUILayout.Label($"Pistol  {(_resting ? $"resting at perch {_at}" : $"riding {_seg} {(_dir > 0 ? "on" : "back")}")}   jump {_p.launch}   den prisms {DenPrisms}   heading {(_travelDir > 0 ? "on" : "back")}   rings {_rings.Count}");
             GUILayout.Label(_human == Half.Pistol
                 ? (_choosing
-                    ? "Pistol at a perch: the map - A / D or left stick picks a path, F / Y turns it round, Space / A / tap rides it (the brightest holds the most opposing prisms)"
+                    ? "Pistol at a perch: the map - drag / right stick / Q E spins; tap a path / left stick / A D picks; tap it again / A / Space rides; Back / Y / F turns round"
                     : "Pistol: hold Space / mouse / finger / A to dive; T / B ghost; Q / X Snap; F / Y back; with aimed jumps on, drag (or RT + right stick, or J) and let go")
                 : "Goby: aim the hull; hold Q / X / RT to charge a dart, let go to dart; F / Y / LT lock");
             GUILayout.EndArea();

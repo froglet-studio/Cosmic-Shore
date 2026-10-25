@@ -15,6 +15,45 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// One pointer on the path map, touch first (Garrett, 2026-10-25: "the control priority for 2d characters is mobile,
+    /// gamepad, mouse/keyboard"): a press that moves past the slop is a DRAG (it spins the map, frame by frame); one that
+    /// lifts quickly without moving is a TAP (it picks); a press already down when the map opened (the finger diving
+    /// through the perch) is CARRIED: held still it asks to ride on, moved it spins.
+    /// </summary>
+    public struct MapPointer
+    {
+        public bool Down, Carried, Moved;
+        public Vector2 From, Last;
+        public float Held;
+
+        /// <summary>The map opens with the pointer <paramref name="held"/> at <paramref name="at"/>.</summary>
+        public void Open(bool held, Vector2 at) { Down = held; Carried = held; Moved = false; From = Last = at; Held = 0f; }
+
+        /// <summary>One frame. <paramref name="drag"/> is how far it dragged this frame (zero until it passes
+        /// <paramref name="slop"/>); <paramref name="tap"/> is true on the frame a quick, still press lifts, at
+        /// <paramref name="tapAt"/>; <paramref name="carriedStill"/> while a carried press stays put.</summary>
+        public void Step(bool began, bool held, Vector2 at, float dt, float slop, float tapMaxSeconds,
+                         out Vector2 drag, out bool tap, out Vector2 tapAt, out bool carriedStill)
+        {
+            drag = Vector2.zero; tap = false; tapAt = From; carriedStill = false;
+            if (began) { Down = true; Carried = false; Moved = false; From = Last = at; Held = 0f; }
+            if (!Down) return;
+            if (held)
+            {
+                Held += dt;
+                if (!Moved && (at - From).magnitude > slop) Moved = true;
+                if (Moved) drag = at - Last;
+                Last = at;
+                carriedStill = Carried && !Moved;
+                return;
+            }
+            tap = !Moved && !Carried && Held <= tapMaxSeconds;
+            tapAt = From;
+            Down = false;
+        }
+    }
+
+    /// <summary>
     /// The Pistol's choice at a perch (Garrett, 2026-10-25: "when the shrimp gets to a new perch it should be able to pick
     /// another perch to teleport to. teleporting to different perches does not grow them. only traveling the distance using
     /// the dive should grow the den. the pistol should be able to travel either direction from a den as well. the view that
