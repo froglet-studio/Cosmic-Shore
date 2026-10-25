@@ -82,6 +82,18 @@ CELL_DIR = "Assets/_SO_Assets/Cell Configs/Tandava Cell"
 MODE_DIR = "Assets/_Scripts/Controller/Arcade/Tandava"
 PREFAB = "Assets/_Prefabs/FloraAndFauna/TandavaSwarmFauna.prefab"
 
+# ── Listing: the mode is built but kept OFF every screen for now (the prompter, 2026-10-25: "keep Tandava as a
+# gamemode but don't commit it to arena, arcade, mission or toybox"; "it should not show up in the UI"). The
+# enum, scene, build entry, controller and every asset stay; the card is parked in Games/_Archive (where the
+# out-of-build 2v2 card lives, and outside ArenaSeatingTests' top-level scan) and taken OFF the master roster and
+# the Arena grid. To list it: `git mv` the card and its .meta back to Games/ (the guid-collision gate would read the
+# parked copy as another asset's), set LISTED = True and re-run - both rosters get it again.
+LISTED = False
+CARD_LISTED_REL = "Assets/_SO_Assets/Games/ArcadeGameTandava.asset"
+CARD_PARKED_REL = "Assets/_SO_Assets/Games/_Archive/ArcadeGameTandava.asset"
+CARD_REL = CARD_LISTED_REL if LISTED else CARD_PARKED_REL
+CARD_OTHER_REL = CARD_PARKED_REL if LISTED else CARD_LISTED_REL
+
 # ── The plans: every variant of every form, and the feed twins ───────────────
 PLAN_KEYS = tandava_plans.plan_keys()
 G_PLAN = {k: guid(f"asset/TandavaPlan_{k}") for k in PLAN_KEYS}
@@ -96,6 +108,7 @@ RETIRED = ([f"{SWARM_DIR}/SwarmPlan_tandava_{k}.json" for k in ("serpent_s", "se
            + ["Assets/_Prefabs/Spawnables/SpawnableAtlantis Tandava.prefab"]
            # the Sea Lion, replaced by the Antlion as the final form (the prompter, 2026-10-07)
            + [f"{SWARM_DIR}/SwarmPlan_tandava_sea_lion_{v}{pose}.json" for v in (1, 2, 3) for pose in ("", "_feed")])
+RETIRED += [CARD_OTHER_REL]   # the card lives in exactly one place (same guid either way)
 for rel in RETIRED:
     g.stale += [rel, rel + ".meta"]
 
@@ -645,7 +658,7 @@ g.emit_asset("Assets/_SO_Assets/Scoring Rules/TandavaScoringRule.asset", G_ASSET
              f"  metric: 7\n  golfRules: 0\n  haloPoints: {HALO_POINTS}\n")
 
 CARD_HULLS = ("Rhino", "Squirrel", "Sparrow")
-g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameTandava.asset", G_ASSET["ArcadeGameTandava"],
+g.emit_asset(CARD_REL, G_ASSET["ArcadeGameTandava"],
              so(EXISTING["SO_ArcadeGame"], "ArcadeGameTandava") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Tandava
@@ -772,7 +785,12 @@ g.emit_scene("MinigameTandava", G_ASSET["MinigameTandava.unity"], SCENE)
 # ═════════════════════════════════════════════════════════════════════════════
 # 6. The shared registries
 # ═════════════════════════════════════════════════════════════════════════════
-g.register_arena_card(G_ASSET["ArcadeGameTandava"])        # master + ARENA grid, never Arcade
+if LISTED:
+    g.register_arena_card(G_ASSET["ArcadeGameTandava"])    # master + ARENA grid, never Arcade
+else:
+    for roster in (lib.GAME_LIST, lib.ARENA_GRID):         # parked: off every roster a screen draws
+        g.emit(roster, re.sub(rf"(?m)^  - \{{fileID: 11400000, guid: {G_ASSET['ArcadeGameTandava']}, type: 2\}}\n", "",
+                              g.read_current(roster)))
 g.register_always_unlocked()
 g.register_build_scene("MinigameBroodRush", "MinigameTandava", G_ASSET["MinigameTandava.unity"])
 # the halo's target was the ring of fire's: migrate the key (FormerlySerializedAs reads the old one; this rewrites it)
@@ -1007,12 +1025,16 @@ if not re.search(r"\bHalo = 3,", g.read("Assets/_Scripts/Data/Enums/ToySwitchSig
     errors.append("ToySwitchSignal.Halo is not 3 (the halo rings' verb)")
 
 # the card is an ARENA card, single domain, its hulls only
-card = g.files["Assets/_SO_Assets/Games/ArcadeGameTandava.asset"]
+card = g.files[CARD_REL]
 for h in CARD_HULLS:
     if EXISTING[f"Vessel_{h}"] not in card:
         errors.append(f"card missing {h}")
-if G_ASSET["ArcadeGameTandava"] not in g.files.get(lib.ARENA_GRID, ""):
+if LISTED and G_ASSET["ArcadeGameTandava"] not in g.files.get(lib.ARENA_GRID, ""):
     errors.append("card is not on the ARENA grid")
+if not LISTED:
+    for roster in (lib.GAME_LIST, lib.ARENA_GRID, lib.ARCADE_GRID):
+        if G_ASSET["ArcadeGameTandava"] in g.read_current(roster):
+            errors.append(f"card is on {roster} but the mode is parked (LISTED = False: no screen may show it)")
 if G_ASSET["ArcadeGameTandava"] in g.read_current(lib.ARCADE_GRID):
     errors.append("card is on the ARCADE grid (arena cards never are)")
 if re.search(r"(?i)\bfire\b|\bflame", card + g.files[SETTINGS_REL]):

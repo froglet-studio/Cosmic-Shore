@@ -9,6 +9,15 @@ player and editor), a Roslyn type-check of the swarm glue, and the generators. Q
 `Docs/UNITY_VERIFICATION_CHECKLIST.md` (§ Tandava; `/verify-unity` could not run: no Unity editor or `unity` CLI in the
 authoring session). `QA-TANDAVA-1..8` describe the first design and are superseded.
 
+**Unlisted (2026-10-25): the mode is kept but shows up NOWHERE in the UI** - not on the Arena, Arcade, Mission or
+Toybox screens and not a rematch pick (the prompter: "keep Tandava as a gamemode but don't commit it to arena, arcade,
+mission or toybox for now"). The enum (69), the scene and its build-settings entry, the controller and every asset stay;
+the card is parked in `Assets/_SO_Assets/Games/_Archive/` and is on no roster (`OrganicRematchGames`, `ArenaGames`,
+`ArcadeGames`), which the generator asserts. **To list it:** `git mv` the card and its `.meta` back to
+`Assets/_SO_Assets/Games/`, set `LISTED = True` in `Tools/Build/author_tandava_assets.py`, re-run it (it re-adds the
+card to the master roster and the Arena grid) and re-run `render_card_backgrounds.py`. To playtest while parked, do
+that on a local branch: the launch panel's hull carousel is what seats an arena card.
+
 **This is the second design (2026-10-06).** The first - a swarm racing down a long tube cell to an exit, through a young
 serpent, two bigger serpents, a bull and a winged lion - was rejected by the prompter as "stupid and boring", for eight
 reasons, each answered here:
@@ -448,7 +457,7 @@ Prisms: the reef 2,682 + one body of up to 642.
 | `Assets/_Scenes/Multiplayer Scenes/MinigameTandava.unity` | a one-shot clone of `MinigameBroodRush`: the controller, monitor, cell and four RANDOM-hull AI templates swapped, the pilots' line at x = 600 facing the hatch. When the donor moves on, the generator keeps the committed scene and still validates it |
 | `Assets/_SO_Assets/Cell Configs/Tandava Cell/` | the cell config, spawn profile, the swarm species and the seven dispersed flora forks |
 | `Assets/_Prefabs/Environment/TandavaMembrane.prefab` | a generated copy: the CapsuleMembrane at 800 u |
-| `Assets/_SO_Assets/Games/ArcadeGameTandava.asset` | the arena card: Rhino, Squirrel, Sparrow; 1-6 players seated as 3 (one per hull); one domain |
+| `Assets/_SO_Assets/Games/_Archive/ArcadeGameTandava.asset` | the arena card: Rhino, Squirrel, Sparrow; 1-6 players seated as 3 (one per hull); one domain. PARKED in `_Archive` and on no roster while the mode is unlisted (`LISTED` in the generator) |
 | `Assets/_Graphics/ARCADE/CardBackgrounds/Tandava.png` | the card backdrop (`render_card_backgrounds.py`, MODEL tier): the reef as species glyphs, the Great Serpent FEEDING (its own wrap plan, rolled up round a plant, its danger plates circling it), pilots striking the body |
 
 ## 8. Platform changes (and the rule each records)

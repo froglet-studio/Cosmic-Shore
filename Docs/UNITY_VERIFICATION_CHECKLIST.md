@@ -12778,6 +12778,11 @@ container), not a number, so it is reported rather than done.
 
 ## 🔴 Tandava — the co-op arena hunt (`claude/tandava-arena-mode`, 2026-10-06) — NOT EDITOR-VERIFIED
 
+**Unlisted since 2026-10-25: the card is on no roster, so nothing below can be reached from the UI.** To run these
+steps, list it on a local branch first (`TANDAVA.md`, the Unlisted note: `git mv` the card back from
+`Games/_Archive`, `LISTED = True`, re-run the generator). Also check that, as shipped, Tandava appears on NO screen
+(Arena, Arcade, Missions, Toybox) and is never offered as a rematch.
+
 **The second design (2026-10-06) supersedes everything from "What landed" down to QA-TANDAVA-8 below** (kept as the
 record of the first design; its route, exit, oases, bull, winged lion and ring of fire are gone). One creature in a
 CLOSED standard cell (`CapsuleMembrane`, radius 1,200) with 16 dispersed Borromean plants. It hatches WHOLE as the Great
