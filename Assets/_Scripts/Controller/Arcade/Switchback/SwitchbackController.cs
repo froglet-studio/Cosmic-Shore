@@ -34,6 +34,17 @@ namespace CosmicShore.Gameplay
 
         protected override string ModeName => "Switchback";
 
+        /// <summary>
+        /// Switchback flies Regatta's gate steering (<see cref="GateRaceController.AICommitFromApproachPoint"/>): commit no
+        /// earlier than the approach point, which now always lies inside the commit radius; aim through the ring's CENTRE
+        /// from where the pilot is; re-attack at once after a missed mouth. Switchback is the Dolphin's training minigame
+        /// (Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md, Yash 2026-10-26), and with the shipped steering its AI Dolphins
+        /// threaded 0-2 of 20 rings in every recorded race: they orbited gate 0's approach point (outside the commit
+        /// radius), and a drift committed off-axis locked a line beside the mouth. Offline on the six recorded courses
+        /// (<c>Tools/Build/switchback_dolphin_sim.py</c>): 0 rings on each before, 20 of 20 on each after.
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
+
         protected override RaceCourseSource CreateCourseSource() =>
             new SwitchbackCourseSource { FirstGateDistance = firstGateDistance };
     }

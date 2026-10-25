@@ -18,6 +18,7 @@ It changes nothing; it is the editor measurement the Regatta AI roadmap asks for
 races already flown. The flights live on origin/bugledger/<user> under BugLedger/shared/reports/<user>/flights/.
 
     python3 Tools/Build/regatta_rival_report.py --dir <folder of flight_Regatta_*.json> [--hull scarab] [--since 2026-10-17]
+    python3 Tools/Build/regatta_rival_report.py --dir <folder> --mode Switchback     # any gate race's flights (a minigame)
     python3 Tools/Build/regatta_rival_report.py --self-test
 """
 import argparse, glob, json, math, os, statistics, sys
@@ -124,7 +125,7 @@ def rival_states(flight):
     return out
 
 
-def load(paths, since=None):
+def load(paths, since=None, mode="Regatta"):
     out = []
     for p in paths:
         try:
@@ -132,7 +133,7 @@ def load(paths, since=None):
                 f = json.load(fh)
         except (OSError, ValueError):
             continue
-        if f.get("mode") != "Regatta" or not f.get("ringList"):
+        if f.get("mode") != mode or not f.get("ringList"):
             continue
         if since and str(f.get("date", "")) < since:
             continue
@@ -218,10 +219,11 @@ if __name__ == "__main__":
     ap.add_argument("--dir")
     ap.add_argument("--hull")
     ap.add_argument("--since")
+    ap.add_argument("--mode", default="Regatta", help="the GameModes name the flights were raced in (Switchback, ...)")
     ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args()
     if a.self_test:
         sys.exit(self_test())
     if not a.dir:
         ap.error("--dir is required")
-    report(load(sorted(glob.glob(os.path.join(a.dir, "flight_Regatta_*.json"))), a.since), a.hull and a.hull.lower())
+    report(load(sorted(glob.glob(os.path.join(a.dir, f"flight_{a.mode}_*.json"))), a.since, a.mode), a.hull and a.hull.lower())

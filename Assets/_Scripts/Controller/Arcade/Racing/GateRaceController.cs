@@ -131,9 +131,10 @@ namespace CosmicShore.Gameplay
                  "aiCommitDistance and the approach lead plus half the hull's turning radius), and after crossing a " +
                  "ring's plane OUTSIDE the mouth, re-latch the side from where the pilot is and break off at once. " +
                  "Off: commit at aiCommitDistance whatever the line, and circle the far-side point after a miss " +
-                 "until AIPilot's orbit detector fires. Ported from the Regatta AI studio (17/32 Hard races " +
-                 "finished off, 30/32 on). Regatta turns it on in code; every other gate race keeps its shipped " +
-                 "steering until its owner tests it on.")]
+                 "until AIPilot's orbit detector fires. On, the approach point also stays inside the commit radius " +
+                 "(ApproachLeadFor). Ported from the Regatta AI studio (17/32 Hard races finished off, 30/32 on). " +
+                 "Regatta and Switchback turn it on in code; every other gate race keeps its shipped steering until " +
+                 "its owner tests it on.")]
         [SerializeField] bool aiCommitFromApproachPoint;
 
         [Tooltip("Extra distance an AI will accept flying to take a crystal ON THE WAY to its next " +
@@ -326,6 +327,26 @@ namespace CosmicShore.Gameplay
         /// (2026-10-14 Regatta audit, the Manta). 1 = no cap.
         /// </summary>
         const float ApproachLeadShareOfLeg = 0.4f;
+
+        /// <summary>
+        /// With <see cref="AICommitFromApproachPoint"/> on, the approach point never sits further from the ring than this
+        /// share of <see cref="aiCommitDistance"/>, so a pilot that reaches it is inside the commit radius and turns in.
+        /// Without it a leg over 650 u put the approach point at the full 300 u lead, outside the 260 u commit radius: the
+        /// pilot arrived, was still "approaching", and steered at the point it sat on. A wide-turning hull overshoots
+        /// into the radius by luck; the Dolphin turns on a 35 u circle and orbited 265-335 u out for the whole race
+        /// (Switchback, Yash's races of 2026-10-26: AI Dolphins threaded 0-2 of 20 rings, circling gate 0;
+        /// <c>Tools/Build/switchback_dolphin_sim.py</c>: 0 rings, and 20 of 20 on all six recorded courses with this).
+        /// </summary>
+        const float ApproachLeadShareOfCommit = 0.8f;
+
+        /// <summary>The approach lead for a leg of <paramref name="legLength"/>: <paramref name="approachLead"/> capped at
+        /// <see cref="ApproachLeadShareOfLeg"/> of the leg and, with the Regatta steering on, at
+        /// <see cref="ApproachLeadShareOfCommit"/> of the commit radius. Pure, for the tests.</summary>
+        public static float ApproachLeadFor(float approachLead, float legLength, float commitDistance, bool fromApproachPoint)
+        {
+            float lead = Mathf.Min(approachLead, ApproachLeadShareOfLeg * legLength);
+            return fromApproachPoint ? Mathf.Min(lead, ApproachLeadShareOfCommit * commitDistance) : lead;
+        }
 
         /// <summary>
         /// The range inside which an AI stops lining up and aims through the ring. Shipped behaviour is the
@@ -1209,8 +1230,8 @@ namespace CosmicShore.Gameplay
                     detour = null;   // a new leg is a new line; re-decide what is on the way
                     // The leg into this ring: from the ring before it, or from where the pilot is for the first.
                     Vector3 legFrom = index > 0 ? _course[RingIndexFor(index - 1)].Position : self;
-                    approachLead = Mathf.Min(aiApproachLead,
-                        ApproachLeadShareOfLeg * Vector3.Distance(legFrom, gate.Position));
+                    approachLead = ApproachLeadFor(aiApproachLead, Vector3.Distance(legFrom, gate.Position),
+                        aiCommitDistance, AICommitFromApproachPoint);
                 }
 
                 // A crystal ON THE WAY, if there is one. Installing an external target

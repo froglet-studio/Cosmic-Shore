@@ -14647,3 +14647,18 @@ compilation and AI-state gates OK; `rhino_line_sim.py --self-test`. `Arcade/REGA
 3. After a few races, `python3 Tools/Build/regatta_rival_report.py --dir <flights> --since 2026-10-26 --hull manta`:
    rings a minute well above the 8 of the older races, boosted share well above 20%.
 
+## 🔴 2026-10-26 — Switchback: the AI Dolphins fly the Regatta steering and learned charge numbers (unverified: no Unity CLI in the session)
+
+**Files:** `SwitchbackController.cs` (`AICommitFromApproachPoint` => true), `GateRaceController.cs`
+(`ApproachLeadFor`: with that switch on the approach point stays inside the commit radius),
+`Resources/AIBoostPolicies/DolphinAIBoostPolicy_Switchback.asset` (learned), `SwitchbackAISteeringTests.cs`. What ran
+instead of `/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in changed files;
+`learn_drives_from_flights.py --check --mode Switchback` OK. `Docs/AI_SYSTEM/MINIGAME_TRAINING_PLAN.md` §3.4.
+
+1. Run `SwitchbackAISteeringTests` (5 tests) and `RegattaNoCrystalTargetTests`: all pass.
+2. Switchback, I1, Hard AI Dolphins (Third Eye, Follow one): it threads gate 0 and goes on gate after gate; it no
+   longer circles the first gate's approach point. Its boost status shows "discharging" on the straights.
+3. Switchback, I2, Medium and Hard: the AI Dolphins finish (the old races: 0-2 of 20). Note how many mouths they miss.
+4. Headlong, any AI: steering as before (its switch is off).
+5. After a few races, `python3 Tools/Build/regatta_rival_report.py --dir <flights> --mode Switchback --since 2026-10-26`.
+
