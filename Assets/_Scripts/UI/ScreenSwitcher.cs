@@ -944,19 +944,35 @@ namespace CosmicShore.UI
             // abilities, not screen paging. A modal's preview never reached here (HasActiveModal).
             if (ModePreviewWindow.AnyHasFocus) return;
 
+            // Nothing selected: a click on the background clears the selection (the Editor's first click into the
+            // Game view is one), and a move goes only to the selection, so the pad would be dead on this screen. A
+            // move puts the pad on the screen; LT / RT below act as if from the bar (§64, Yash's play test 2026-10-25:
+            // "I don't even control anything").
+            var selected = SelectedObject();
+            bool nothingSelected = !selected || !selected.activeInHierarchy;
+            if (nothingSelected && PadMoved(Gamepad.current))
+            {
+                Refocus();
+                return;
+            }
+
             // LT / RT page the screens only while the pad is on the top tab bar (Yash, 2026-10-25: "you have to
             // navigate the tab menu to access it with LT and RT"; Docs/MENU_REDESIGN_B.md §64). Below the bar a
             // trigger belongs to whatever the pad is on. The pad stays on the bar, on the tab of the screen now showing.
-            if (!IsOnNavBar(SelectedObject(), NavBar)) return;
+            if (!nothingSelected && !IsOnNavBar(selected, NavBar)) return;
 
-            int before = currentScreen;
-            if (Gamepad.current.leftTrigger.wasPressedThisFrame)
-                NavigateLeft();
-            if (Gamepad.current.rightTrigger.wasPressedThisFrame)
-                NavigateRight();
-            if (currentScreen != before)
-                SelectNavLink(currentScreen);
+            bool left = Gamepad.current.leftTrigger.wasPressedThisFrame;
+            bool right = Gamepad.current.rightTrigger.wasPressedThisFrame;
+            if (!left && !right) return;
+            if (left) NavigateLeft();
+            if (right) NavigateRight();
+            SelectNavLink(currentScreen);
         }
+
+        /// <summary>The D-pad or the left stick is pushed: the two the menu navigates with (the UI module's
+        /// Navigate). The right stick is not one of them; on the Hangar it turns the vessel.</summary>
+        private static bool PadMoved(Gamepad pad) =>
+            pad.dpad.ReadValue().sqrMagnitude > 0.25f || pad.leftStick.ReadValue().sqrMagnitude > 0.25f;
 
         #endregion
 
