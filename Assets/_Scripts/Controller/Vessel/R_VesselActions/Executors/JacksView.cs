@@ -1,7 +1,6 @@
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
 
 namespace CosmicShore.Gameplay
@@ -42,9 +41,7 @@ namespace CosmicShore.Gameplay
         float _cell01;
 
         Camera _pilot;
-        Rect _pilotRect;
         float _pilotDepth;
-        bool _pilotLifted;
 
         internal JacksView(JacksExecutor ex)
         {
@@ -65,7 +62,6 @@ namespace CosmicShore.Gameplay
 
         internal void Dispose()
         {
-            RestorePilot();
             _park.Release();
             _marks.Dispose();
             if (_root) Object.Destroy(_root);
@@ -77,14 +73,13 @@ namespace CosmicShore.Gameplay
         {
             var cfg = _ex.Config;
             var pilot = CameraManager.ViewCamera;
-            if (pilot != _pilot) { RestorePilot(); _pilot = pilot; if (_pilot) { _pilotRect = _pilot.rect; _pilotDepth = _pilot.depth; } }
+            if (pilot != _pilot) { _pilot = pilot; if (_pilot) _pilotDepth = _pilot.depth; }
 
             // ONE view at a time (Garrett, 2026-10-24: "we can remove the pip from both modes"): herding, the jacks' camera
             // has the whole screen and the pilot's camera sleeps under it, drawing nothing (CrewSingleView's park);
             // netting, the jacks' camera is off and the pilot's has the screen
             _cam.enabled = herding;
             if (_pilot) AdoptPilotLook(_pilot);
-            RestorePilot();
             if (herding)
             {
                 _cam.rect = new Rect(0f, 0f, 1f, 1f);
@@ -191,16 +186,6 @@ namespace CosmicShore.Gameplay
         // the pilot's camera asleep under the herd's view on the lowest preset (CrewSingleView)
         readonly PilotCameraPark _park = new();
 
-        void RestorePilot()
-        {
-            if (_pilotLifted && _pilot)
-            {
-                _pilot.rect = _pilotRect;
-                _pilot.depth = _pilotDepth;
-            }
-            _pilotLifted = false;
-        }
-
         internal Vector2 WorldToScreen(Vector3 world) => _cam.WorldToScreenPoint(world);
 
         /// <summary>A screen pixel as the point under it on the hull's plane (the board).</summary>
@@ -218,65 +203,6 @@ namespace CosmicShore.Gameplay
             vp.x = Mathf.Clamp(vp.x, m, 1f - m);
             vp.y = Mathf.Clamp(vp.y, m, 1f - m);
             return _ex.OnPlane(_cam.ViewportToWorldPoint(vp));
-        }
-
-        /// <summary>True when <paramref name="screen"/> is inside the small view in the lower left: this view while the jacks
-        /// fly, the game's camera while they herd.</summary>
-        internal bool PipContains(Vector2 screen, bool herding)
-        {
-            var small = herding ? (_pilotLifted ? _pilot : null) : _cam;
-            return small && small.enabled && small.pixelRect.Contains(screen);
-        }
-
-        // A double tap on the small view switches between herding and flying (the Wrasse's touch swap, KiteNavigator.PipDoubleTapped): two SHORT taps,
-        // the second soon after the first and near it, both inside the small view.
-        const float PipTapMaxSeconds = 0.3f, PipDoubleTapWindowSeconds = 0.45f, PipDoubleTapMaxPixels = 120f;
-        int _pipPressId = int.MinValue;
-        float _pipPressAt, _pipLastTapAt = -99f;
-        Vector2 _pipPressPos, _pipLastTapPos;
-
-        internal bool PipDoubleTapped(bool herding)
-        {
-            bool doubled = false;
-            var touchscreen = Touchscreen.current;
-            if (touchscreen != null)
-            {
-                var touches = touchscreen.touches;
-                for (int i = 0; i < touches.Count; i++)
-                {
-                    var t = touches[i];
-                    if (t.press.wasPressedThisFrame) PipPress(t.touchId.ReadValue(), t.position.ReadValue(), herding);
-                    if (t.press.wasReleasedThisFrame) doubled |= PipRelease(t.touchId.ReadValue());
-                }
-            }
-            var mouse = Mouse.current;
-            if (mouse != null)
-            {
-                if (mouse.leftButton.wasPressedThisFrame) PipPress(-1, mouse.position.ReadValue(), herding);
-                if (mouse.leftButton.wasReleasedThisFrame) doubled |= PipRelease(-1);
-            }
-            return doubled;
-        }
-
-        void PipPress(int id, Vector2 at, bool herding)
-        {
-            if (!PipContains(at, herding)) return;
-            _pipPressId = id;
-            _pipPressAt = Time.unscaledTime;
-            _pipPressPos = at;
-        }
-
-        bool PipRelease(int id)
-        {
-            if (id != _pipPressId) return false;
-            _pipPressId = int.MinValue;
-            float now = Time.unscaledTime;
-            if (now - _pipPressAt > PipTapMaxSeconds) return false;
-            bool doubled = _pipPressAt - _pipLastTapAt <= PipDoubleTapWindowSeconds
-                           && (_pipPressPos - _pipLastTapPos).sqrMagnitude <= PipDoubleTapMaxPixels * PipDoubleTapMaxPixels;
-            _pipLastTapAt = doubled ? -99f : now;
-            _pipLastTapPos = _pipPressPos;
-            return doubled;
         }
     }
 }

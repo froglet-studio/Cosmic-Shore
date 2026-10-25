@@ -25,7 +25,7 @@ Code:
 | The herd, the jacks, the two modes, the decoy, contacts, Mass 5 | `Executors/JacksExecutor.cs` (implements `IFaunaHerd`) |
 | The lab's arithmetic and the flight formation, pure | `Controller/Vessel/JacksMath.cs` (held by `Tests/Editor/JacksMathTests.cs`) |
 | The jacks' herding AI (Strömbom drive and collect) | `Controller/AI/Jacks/JacksAI.cs` (moved 2026-10-25) |
-| The herding view (Steady camera, small view, double-tap switch) | `Executors/JacksView.cs` |
+| The herding view (Steady camera, full screen while herding, the whole-cell zoom) | `Executors/JacksView.cs` |
 | The netting jacks' buttons | `Data Containers/JacksActionSO.cs` (`JacksControl`: Call 0, Teleport 1, Decoy 2 (retired), TeleportLeft 3, TeleportRight 4, Wide 5) |
 | Every number | `Data Containers/JacksConfigSO.cs`, `Assets/_SO_Assets/VesselActions/Jacks/JacksConfig.asset` |
 | The four cards | `UI/Controller/JacksHUDController.cs`, `Resources/ElementalAbilityMaps/Jacks.asset` |
@@ -70,8 +70,7 @@ laid between the jacks on landing faces the way both do on average. It grows in 
 (`decoyGrowRate` 5/s; a move over `decoyRelayDistance` 8 u is a re-lay, a smaller one is followed). Every peer draws it
 from the published decoys. The copy has no collider. Its 2D mark is a jack's dot; its ring keeps the decoy's colour.
 
-One player, two thumbs, two modes. The switch is the seat swap: D-pad left / right, the left / right arrow keys (`Docs/CREW_STATIONS.md`: fly -> herd -> the next hull), or a double tap on
-the small view (the Wrasse's gesture, `PilotSwapGesture`).
+One player, two thumbs, two modes. The switch is the seat swap: D-pad left / right, the left / right arrow keys or the two-finger swipe (`Docs/CREW_STATIONS.md`: fly -> herd -> the next hull; `PilotSwapGesture`).
 
 - **Herding.** The hull holds still (`IVesselStatus.IsStationary`, held every frame and given back as the round left it)
   and its x-z plane is the board. Each touch takes the nearest jack, which runs to the point under the thumb
@@ -324,6 +323,21 @@ units and multiplied by `labScale` (0.4).
   placeholders the HUD variant draws.
 
 ## 6. Follow-ups
+
+- **Debt this branch left (2026-10-25 ship, rows only).** (1) `JacksControl.Decoy` (2) and `JacksDecoy.asset` are
+  unbound and do nothing; the value stays because control assets serialize it, the asset could be deleted with its
+  `CONTROLS` row in `author_jacks_assets.py`. (2) `JacksConfigSO.decoyCooldown` is read by nothing ("Retired
+  2026-10-25" in its tooltip); adding it to `RETIRED_FIELDS` and deleting the field retires it the way round 10 retired
+  the dash's. (3) Naming drift: `JacksExecutor.Teleport(side)` and the `JacksTeleport*` assets now FLY the hull to the
+  decoy (round 11), and `teleportGuard` / `TeleportSfx` keep the old word; a rename is safe for the C# (the assets
+  serialize the enum's VALUE) but the asset files and the map's guids are the generator's. (4)
+  `check_hangar_ability_kinds.py` is red on the Jacks' **Danger Share** (a passive Charge card, classified Passive) as
+  it was before this branch, alongside four Starling rows; whether a passive card should count is the Hangar's call
+  (Shombith's area), not a wording fix here.
+- **The no-vessel-drawn-controls rule (LOCKED 2026-10-25) is broken elsewhere, measured at ship time:** the Honeyguide
+  draws a Fly button beside the Ratel's board and a Ratel button while flying (`Crew/HoneyguideDynamoView.cs`, "the
+  phone's way" between seats). A report for its owner, not a fix here: those buttons are the only swap a phone has
+  there, so they need a card (a core card left of the five) before they can go.
 
 - **Playtest the net** (2026-10-24, no playtest yet): its size against crystals and the chase camera (`netSpread`,
   `netMinHeight`/`netMaxHeight`, `netDepth`), whether prisms should only shed shields rather than be destroyed (today a

@@ -435,9 +435,9 @@ namespace CosmicShore.Gameplay
                 // the local human's mode, unless something else has parked the hull on its AI (the app shell): the same
                 // wake rule as every crew seat (CrewSeat.ShouldWake), so the pad and the touchscreen are not read under a menu
                 bool human = IsLocalHuman && !_status.AutoPilotEnabled;
-                if (human) PollSwap();
-                else if (_status.AutoPilotEnabled) StepAIMode();
-                else StopHerding();   // nobody runs the jacks here yet: they fly, and nothing jumps
+                // (the human's mode changes by the seat swap, TakeSeat, never polled here)
+                if (!human && _status.AutoPilotEnabled) StepAIMode();
+                else if (!human) StopHerding();   // nobody runs the jacks here yet: they fly, and nothing jumps
                 SetFlightInputPaused(human && _herding);
                 HoldHull(_herding);
 
@@ -775,13 +775,9 @@ namespace CosmicShore.Gameplay
 
         // ---- the mode ----
 
-        // a double tap on the small view; the swap gesture (D-pad, the left / right arrow keys, a two-finger swipe) is the person's, and
-        // CrewStations steps them fly -> herd -> the next hull through TakeSeat (the two modes are the hull's two seats)
-        void PollSwap()
-        {
-            if (_view == null || !_view.PipDoubleTapped(_herding) || Time.unscaledTime < _swapReadyAt) return;
-            TakeSeat(_herding ? 0 : 1);
-        }
+        // the swap gesture (D-pad, the left / right arrow keys, a two-finger swipe) is the person's, and CrewStations steps
+        // them fly -> herd -> the next hull through TakeSeat (the two modes are the hull's two seats; the small view and its
+        // double tap went with the picture-in-picture, round 2)
 
         /// <inheritdoc cref="ICrewStations.SeatCount"/>: flying (0) and herding (1).
         public int SeatCount => 2;
