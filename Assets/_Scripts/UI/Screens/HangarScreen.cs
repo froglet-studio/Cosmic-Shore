@@ -29,6 +29,8 @@ namespace CosmicShore.UI
         [SerializeField] private HangarVesselTile vesselTilePrefab;
         [Tooltip("\"1 / 11 owned\" beside the list's label.")]
         [SerializeField] private KitText ownedCountText;
+        [Tooltip("The owned count's line. {owned} is the hulls unlocked, {total} the hulls listed. Empty shows nothing.")]
+        [SerializeField] private string ownedCountLine = "{owned} / {total} owned";
 
         [Header("List Animation")]
         [Tooltip("Delay in seconds between each tile's fade-in.")]
@@ -145,7 +147,8 @@ namespace CosmicShore.UI
             }
 
             if (ownedCountText)
-                ownedCountText.SetText($"{sorted.Count(s => !s.IsLocked)} / {sorted.Count} owned");
+                ownedCountText.SetText(TemplateText.Fill(ownedCountLine,
+                    "owned", sorted.Count(s => !s.IsLocked).ToString(), "total", sorted.Count.ToString()));
         }
 
         void RebuildList()

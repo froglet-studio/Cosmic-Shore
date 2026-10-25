@@ -127,6 +127,16 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("The description panel's heading: what it is describing.")]
         TMP_Text aboutHeading;
 
+        [Header("Words (empty shows nothing)")]
+        [SerializeField, Tooltip("The status line once a variant is picked. {variant} is its name.")]
+        string selectedLine = "{variant} selected";
+        [SerializeField, Tooltip("The status line while the layer offers variants and none is picked.")]
+        string pickLine = "Pick a variation.";
+        [SerializeField, Tooltip("The description heading when nothing picked or opened names it.")]
+        string aboutLine = "About";
+        [SerializeField, Tooltip("The row that steps back out of a branch (when no panel Back is wired).")]
+        string backRowLabel = "<  Back";
+
         [Header("Freestyle handoff")]
         [SerializeField, Tooltip("The scene's freestyle toggle. REQUIRED - without it Navigate " +
                  "can only warn.")]
@@ -606,7 +616,7 @@ namespace CosmicShore.UI
         {
             return new ToyShellOption
             {
-                Label = "<  Back",
+                Label = backRowLabel,
                 Accent = _boundDefinition ? _boundDefinition.AccentColor : Color.white,
                 AppliesOnSelect = true,
                 Apply = GoBackLayer,
@@ -676,14 +686,14 @@ namespace CosmicShore.UI
 
             bool picked = _selected >= 0 && _selected < _rows.Count;
             string selectedLabel = picked ? _rows[_selected].Label : "";
-            if (statusText) statusText.text = picked ? $"{selectedLabel} selected" : offered > 0 ? "Pick a variation." : "";
+            if (statusText) statusText.text = picked ? TemplateText.Fill(selectedLine, "variant", selectedLabel) : offered > 0 ? pickLine : "";
             if (previewCaption) previewCaption.text = selectedLabel;
             if (aboutHeading)
             {
                 string opened = inBranch ? _stack[^1].OpenedBy : null;
                 aboutHeading.text = picked && !string.IsNullOrEmpty(_rows[_selected].Description) ? selectedLabel
                     : !string.IsNullOrEmpty(opened) ? opened
-                    : "About";
+                    : aboutLine;
             }
         }
 
