@@ -433,6 +433,25 @@ namespace CosmicShore.Tests
             CollectionAssert.AreEquivalent(new[] { "Vortex Sting", "Dens", "Undertow", "Quick Jump" }, labels);
             CollectionAssert.DoesNotContain(labels, "Boost Ring", "the Squirrel's kit is gone");
         }
+
+        [Test]
+        public void Hud_EachSeatHasItsOwnCards()
+        {
+            // Garrett, 2026-10-24: "give both of its seats separate UI ability icons, glyphs, etc." (author_goby_hud.py)
+            var hull = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Prefabs/Spacevessels/Goby.prefab");
+            Assert.That(hull, Is.Not.Null);
+            Assert.That(hull.TryGetComponent(out CosmicShore.UI.GobyPistolHUDController controller), Is.True,
+                "the hull's HUD controller is the Goby & Pistol's, not the Squirrel's");
+            Assert.That(hull.GetComponent<VesselStatus>().VesselHUDController, Is.SameAs(controller), "VesselStatus drives that controller");
+            var view = hull.GetComponentInChildren<CosmicShore.UI.GobyPistolHUDView>(true);
+            Assert.That(view, Is.Not.Null, "the HUD under ShipHUDContainer is the GobyHUDVariant");
+            Assert.That(hull.GetComponentInChildren<CosmicShore.UI.SquirrelVesselHUDView>(true), Is.Null, "the control: no Squirrel HUD left");
+            foreach (var element in CosmicShore.UI.VesselHUDView.AbilityDisplayOrder)
+            {
+                Assert.That(view.TryGetAbilityIcon(element, out var icon) && icon, Is.True, $"{element}: the card binds an icon");
+                Assert.That(view.HasBothSeatIcons(element), Is.True, $"{element}: the Goby and the Pistol each have their own icon");
+            }
+        }
     }
 }
 #endif

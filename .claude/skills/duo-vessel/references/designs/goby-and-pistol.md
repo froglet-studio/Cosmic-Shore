@@ -48,10 +48,23 @@
 >   nothing to drive until Garrett names what Time does on the Pistol (or turns `aimedJump` back on).
 > - The primer, heat and flares are RETIRED (they were the Goby's old kit). Charge has no level-5 upgrade yet **[open]**.
 > - Controls: Goby Dart = pad RT / X, key Q, phone Dart button (hold, let go); Lock = pad LT / Y, key F, phone Lock.
->   Pistol: dive / drag-to-jump / Ghost / Snap as before, plus Back (key B, pad LB, phone Back).
+>   Pistol (since 2026-10-24, on the fleet's four labelled face buttons so each card's chip names its control from the
+>   one glyph set): dive A / Space (hold), Ghost B / T, Snap X / Q, Back Y / F; the old keys still work (G ghost, E Snap,
+>   the B key and LB back); with `aimedJump` on, the keyboard jump is J (it was F, which is now Back). Phone: its own
+>   Ghost, Snap and Back buttons.
+> - Each seat has its OWN four cards (Garrett, 2026-10-24: "give both of its seats separate UI ability icons, glyphs,
+>   etc."): `GobyHUDVariant` + `GobyPistolHUDView` / `GobyPistolHUDController`, written by `Tools/Build/author_goby_hud.py`
+>   and swapped onto `Goby.prefab` by `author_goby_assets.py`. Flying the Goby: Charge **Lock** (Y / F, lit while it holds
+>   a lock), Mass the **perches** it has made (a count; flashes on each perch), Space the **undertow's reach** (a gauge),
+>   Time **Dart** (X / Q; the gauge is the held charge, the veil its cooldown). Flying the Pistol: Charge **Snap** (X / Q,
+>   the veil its cooldown), Mass the **den prisms** (a count) with **Back** (Y / F, lit while heading back), Space
+>   **Ghost** (B / T, the veil its cooldown; the same reach gauge), Time the **dive** (A / Space; the gauge is its speed).
+>   The icons are 128 px placeholders in `Assets/_Graphics/Icons/AbilityIcons/Goby/` for the art pass to replace 1:1,
+>   drawn on the motifs of the seats' phone buttons. Time's card on the Pistol stays the dive until Time's open question
+>   (below) is answered.
 > - The four cards: Charge **Vortex Sting**, Mass **Dens** (L5 Fortress), Space **Undertow** (L5 Deep Undertow), Time
 >   **Quick Jump** (L5 Phase Dart). `Tools/Build/author_goby_assets.py` writes and checks them.
-> - Still the Squirrel's: the hull MODEL (on the Squirrel's rig), the HUD controller, the nested skimmer prefab (its
+> - Still the Squirrel's: the hull MODEL's rig (the Goby's own hull, `Goby.fbx`, is built on the Squirrel's bones), the nested skimmer prefab (its
 >   Squirrel effects are stripped through the Goby's own containers; it still collects crystals), and an AI-flown Goby
 >   that the seat does not run on (backfill, other machines) flies the platform AIPilot without the kit. Team tasks.
 

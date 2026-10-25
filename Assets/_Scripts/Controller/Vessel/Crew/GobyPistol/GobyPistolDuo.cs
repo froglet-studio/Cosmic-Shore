@@ -78,6 +78,7 @@ namespace CosmicShore.Gameplay
         int _seg = -1, _dir = 1, _at, _travelDir = 1;
         bool _resting = true; float _restT, _waitT, _travelled; int _restQueue, _restSpawned;
         bool _touchGhost, _touchSnap, _backPressed;
+        float _dive;
         bool _mouseDown, _aiming; Vector2 _mouseFrom, _pointerAt; Vector2? _mouseAim, _padAim; int _fingerId = -1;
         float _scanAt;
         readonly List<RingRun> _rings = new();
@@ -134,6 +135,27 @@ namespace CosmicShore.Gameplay
         public bool HasLock => _lockTarget;
         public bool DartReady => !_darting && _t >= _dartReadyAt;
         public bool HeadingBack => _travelDir < 0;
+        // what each seat's four cards read (GobyPistolHUDController): 1 the instant a move is spent, 0 when it is ready
+        public bool LockHeld => _lockHeld && _human == Half.Goby;
+        public float DartCooldown01 => _darting || _t >= _dartReadyAt ? 0f : Mathf.Clamp01((_dartReadyAt - _t) / Mathf.Max(0.01f, Config.DartCooldown));
+        public float SnapCooldown01 => _p == null || _t >= _p.vortexAt ? 0f : Mathf.Clamp01((_p.vortexAt - _t) / Mathf.Max(0.01f, _body.pVortexCd));
+        public float GhostCooldown01 => _p == null || _t >= _p.ghostAt ? 0f : Mathf.Clamp01((_p.ghostAt - _t) / Mathf.Max(0.01f, _body.pGhostCd));
+        public bool SnapHeld => _p != null && _p.prevVortex;
+        public bool Ghosting => _p != null && _t < _p.ghostUntil;
+        public bool Diving => _dive > 0.5f;
+        /// <summary>The Pistol's speed as a share of its top speed (pMaxSpeed), 0..1.</summary>
+        public float Speed01 => _p == null ? 0f : Mathf.Clamp01((_p.grounded ? Mathf.Abs(_p.v) : Mathf.Sqrt(_p.vx * _p.vx + _p.vy * _p.vy)) / Mathf.Max(1f, _body.pMaxSpeed));
+        /// <summary>How far the undertow reaches now, 0 at Space's rest and 1 at its full level.</summary>
+        public float PullReach01
+        {
+            get
+            {
+                if (!Config || _status == null) return 0f;
+                var reach = Config.PullReach;
+                float lo = reach.EvaluateAtNormalizedLevel(0f), hi = reach.EvaluateAtNormalizedLevel(1f);
+                return hi - lo <= 1e-3f ? 0f : Mathf.Clamp01((reach.EvaluateReplicated(_status) - lo) / (hi - lo));
+            }
+        }
 
         // the local pilot's own hull, flown by a human: the crew seat rule every crew vessel shares; or the Pistol seat of a
         // Goby another machine flies, which the person here rides (CrewStations)
@@ -614,6 +636,7 @@ namespace CosmicShore.Gameplay
         {
             if (_resting) { Rest(dt); return; }
             var inp = _human == Half.Pistol ? HumanPistol() : AIPistol();
+            _dive = inp.Dive;
             var ev = PistolBodyMath.Step(_p, _f, _t, dt, inp, _body);
             _travelled += ev.Travelled;
             if (ev.FireSnap) FireRing(ev.SnapAim);
@@ -726,9 +749,12 @@ namespace CosmicShore.Gameplay
             else if (button == 2 && down) _backPressed = true;
         }
 
-        // hold to dive (let go on an upslope and the hill throws it, Tiny Wings); G / B ghost; Q / E / X / Y Snap; B key or
-        // LB to head back at a perch; on a phone a finger on the Pistol's view dives. Only with aimedJump on: drag (or RT +
-        // right stick, or F) aims a jump and letting go flings it (Garrett, 2026-10-22: "launching intentionally was wierd")
+        // On the fleet's four face buttons, the same ones the Goby's seat and every hull use, so each card's chip names its
+        // control from the one glyph set (Space / A = Button1, T / B = Button2, Q / X = Button3, F / Y = Button4):
+        // hold Space / A to dive (let go on an upslope and the hill throws it, Tiny Wings); T / B ghost; Q / X Snap; F / Y to
+        // head back at a perch. The keys this seat used before the cards named them still work (G ghost, E Snap, the B key
+        // and LB back). On a phone a finger on the Pistol's view dives. Only with aimedJump on: drag (or RT + right stick,
+        // or J) aims a jump and letting go flings it (Garrett, 2026-10-22: "launching intentionally was wierd")
         PistolBodyMath.Input HumanPistol()
         {
             var inp = new PistolBodyMath.Input();
@@ -756,16 +782,16 @@ namespace CosmicShore.Gameplay
                 if (pad.buttonSouth.isPressed) dive = 1f;
                 dive = Mathf.Max(dive, pad.leftTrigger.ReadValue());
                 inp.Ghost |= pad.buttonEast.isPressed;
-                inp.Snap |= pad.buttonWest.isPressed || pad.buttonNorth.isPressed;
-                if (pad.leftShoulder.wasPressedThisFrame) _backPressed = true;
+                inp.Snap |= pad.buttonWest.isPressed;
+                if (pad.buttonNorth.wasPressedThisFrame || pad.leftShoulder.wasPressedThisFrame) _backPressed = true;
             }
             if (kb != null)
             {
                 if (kb.spaceKey.isPressed || kb.sKey.isPressed || kb.downArrowKey.isPressed) dive = 1f;
-                if (Config.AimedJump && kb.fKey.wasPressedThisFrame && !inp.HasLaunch) { inp.HasLaunch = true; inp.Launch = new Vector2(0.7f * _body.pLaunchRange, 0.45f * _body.pLaunchRange); }
-                inp.Ghost |= kb.gKey.isPressed;
+                if (Config.AimedJump && kb.jKey.wasPressedThisFrame && !inp.HasLaunch) { inp.HasLaunch = true; inp.Launch = new Vector2(0.7f * _body.pLaunchRange, 0.45f * _body.pLaunchRange); }
+                inp.Ghost |= kb.tKey.isPressed || kb.gKey.isPressed;
                 inp.Snap |= kb.qKey.isPressed || kb.eKey.isPressed;
-                if (kb.bKey.wasPressedThisFrame) _backPressed = true;
+                if (kb.fKey.wasPressedThisFrame || kb.bKey.wasPressedThisFrame) _backPressed = true;
             }
             inp.Ghost |= _touchGhost;
             inp.Snap |= _touchSnap;
@@ -1260,8 +1286,8 @@ namespace CosmicShore.Gameplay
             GUILayout.Label($"Goby    perches {_perches.Count}   dart {(DartReady ? "ready" : "...")}{(_charging ? $" charging {DartCharge01:0.00}" : "")}   lock {(_lockTarget ? (_lockIsVessel ? "vessel" : "fauna") : "none")}");
             GUILayout.Label($"Pistol  {(_resting ? $"resting at perch {_at}" : $"riding {_seg} {(_dir > 0 ? "on" : "back")}")}   jump {_p.launch}   den prisms {DenPrisms}   heading {(_travelDir > 0 ? "on" : "back")}   rings {_rings.Count}");
             GUILayout.Label(_human == Half.Pistol
-                ? "Pistol: hold Space / mouse / finger / A to dive; drag (or RT + right stick) and let go to jump; G / B ghost; Q E / X Y Snap; B key / LB back"
-                : "Goby: aim the hull; hold Q / RT to charge a dart, let go to dart; F / LT lock");
+                ? "Pistol: hold Space / mouse / finger / A to dive; T / B ghost; Q / X Snap; F / Y back; with aimed jumps on, drag (or RT + right stick, or J) and let go"
+                : "Goby: aim the hull; hold Q / X / RT to charge a dart, let go to dart; F / Y / LT lock");
             GUILayout.EndArea();
 #endif
         }
