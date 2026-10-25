@@ -4068,6 +4068,11 @@ No Unity: Port/ only, and nothing on `bleeding-edge` calls these APIs until part
 
 ### 🔴 Android release build + pre-upload App Bundle check (`claude/serene-edison-lfv24f`, 2026-10-13) — NOT EDITOR-VERIFIED
 
+**Evidence so far (2026-10-25):** the menu build ran once: build 412826 (2026-10-14) was uploaded
+to Play internal testing and installed on one tester's phone. That covers part of step 3 and part
+of step 8 for the 64-bit-only build. Steps 1, 2 and 4-7 have no recorded run, and step 8's two
+32-bit phones need a build with ARMv7 (merged to bleeding-edge with this entry's 32-bit commit).
+
 No editor and no `unity` CLI in the authoring session, so `/verify-unity` did NOT run. Out of
 editor:
 - **Compile:** `unity_refcompile --config editor` reports 0 errors in project code. The only gaps
@@ -4112,7 +4117,8 @@ editor:
    - the dialog says "Ready to upload, with 1 warning(s)": `liblofelt_sdk.so` is not 16 KB-aligned;
    - `Builds/Android/CosmicShore-0.2.0-<about 410000+>.aab` and its `.check.txt` exist;
    - the report says package `com.FrogletGames.CosmicShore`, target 36, category `game`,
-     debuggable False, Signed: yes, ABIs: arm64-v8a, **Native debug symbols: in the bundle**;
+     debuggable False, Signed: yes, ABIs: arm64-v8a and armeabi-v7a (32-bit added back 2026-10-15),
+     **Native debug symbols: in the bundle**;
    - a `….symbols.zip` sits beside the `.aab`. If the log says "Could not turn on native debug
      symbols", Unity renamed the enum values; send the message to Claude.
 4. **Player Settings are put back.** `git status` shows no change to `ProjectSettings.asset`
@@ -4126,7 +4132,10 @@ editor:
 8. **Play.** Upload the `.aab` to Internal testing (`ANDROID_BUILD.md` §5):
    - Play accepts it with no signing, target-SDK or debuggable error, and **no "debug symbols"
      warning**;
-   - it installs from the tester link on the 4 GB Samsung and a flagship.
+   - it installs from the tester link on the 4 GB Samsung and a flagship;
+   - it installs on Caleb's Moto G Power and Yash's Samsung Galaxy M. Both showed "Item not found"
+     with the 64-bit-only build 412826. In Play Console > Device catalog, both models read
+     Supported once this build is uploaded.
 
 ---
 
