@@ -1,5 +1,9 @@
 # Regatta AI roadmap — six racing AIs, one way to build them
 
+> **2026-10-26: AI training moved to each vessel's own racing minigame** (Yash). This roadmap stays as the record of
+> the Regatta work; the plan going forward is `MINIGAME_TRAINING_PLAN.md`: train each hull in its minigame at four
+> intensities (the Dolphin in Switchback first), then rebuild Regatta from what the trained vessels can do.
+
 **The goal (the user, 2026-10-14):** six vessels whose AI can race **Regatta** (`GameModes.Regatta = 56`,
 `Arcade/REGATTA.md`), built so that a seventh is cheap, and running the same way in Unity, in Amoebius and in
 the Vessel Studio. This file supersedes the per-vessel order in `Docs/Studios/VESSEL_STUDIO_ROLLOUT.md` §3: the
