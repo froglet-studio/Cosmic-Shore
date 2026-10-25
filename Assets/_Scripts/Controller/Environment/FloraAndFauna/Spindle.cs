@@ -340,8 +340,10 @@ namespace CosmicShore.Gameplay
         // ── Hue lean: a holder's mark on a tamed creature (Fauna.ApplyLeashMark) ─────────────────────
         // Garrett, 2026-10-21: "distinguish them by giving their spindles a slight hue shift in your domain". The
         // limb's colours lean toward a target hue; nothing else about it changes. Like the phase variants it is a SHARED
-        // material per (base material, target, lean), minted under the phase variants and handed to the LOD as the near
-        // material, so a marked limb still batches with every other limb wearing the same mark.
+        // material per (base material, target, lean, glow), minted under the phase variants and handed to the LOD as the
+        // near material, so a marked limb still batches with every other limb wearing the same mark. The GLOW (Garrett,
+        // 2026-10-23: "fauna that get herded should light up") multiplies the limb's colours by 1 + glow, HDR, so the bloom
+        // catches a lit herd.
 
         static readonly int[] LeanColorIDs =
         {
@@ -349,24 +351,31 @@ namespace CosmicShore.Gameplay
             Shader.PropertyToID("_Color1"), Shader.PropertyToID("_Color2"),           // AnimatedSpindleGraph
             Shader.PropertyToID("_BaseColor"), Shader.PropertyToID("_Color"),         // a creature's imported body
         };
-        static readonly Dictionary<(Material, int, byte), Material> LeanedMaterials = new();   // (base, target RGBA, lean)
+        static readonly Dictionary<(Material, int, byte, byte), Material> LeanedMaterials = new();   // (base, target RGBA, lean, glow)
+
+        /// <summary>The glow's step (it is carried in a byte, here and on the wire): up to 255 x this extra intensity.</summary>
+        public const float GlowQuantum = 1f / 32f;
 
         Color _leanTarget;   // as given (HDR kept: clamping a bright colour to 8 bits can turn its hue)
         int _leanKey;        // the target as 8-bit RGBA, the cache key
         byte _lean;          // 0..255 of the way toward the target's hue; 0 = the limb's own colours
+        byte _glow;          // extra intensity in GlowQuantum steps; 0 = unlit
 
         /// <summary>
         /// Lean this limb's colours toward <paramref name="target"/>'s hue by <paramref name="lean"/> (0..1 of the way
-        /// round the hue circle, the short way; saturation, value and HDR intensity kept). 0 restores its own colours.
-        /// Presentation only. Safe before Start: Start mints the leaned material.
+        /// round the hue circle, the short way; saturation, value and HDR intensity kept), and light it up by
+        /// <paramref name="glow"/> (its colours x (1 + glow)). 0 and 0 restore its own colours. Presentation only. Safe
+        /// before Start: Start mints the leaned material.
         /// </summary>
-        public void SetHueLean(Color target, float lean)
+        public void SetHueLean(Color target, float lean, float glow = 0f)
         {
             byte amount = (byte)Mathf.RoundToInt(Mathf.Clamp01(lean) * 255f);
+            byte lit = QuantizeGlow(glow);
             Color32 rgba = amount > 0 ? (Color32)target : default;
             int key = rgba.r << 24 | rgba.g << 16 | rgba.b << 8 | rgba.a;
-            if (amount == _lean && key == _leanKey) return;
+            if (amount == _lean && key == _leanKey && lit == _glow) return;
             _lean = amount;
+            _glow = lit;
             _leanTarget = target;
             _leanKey = key;
             if (!_started || dying || isPermanentlyWithered) return;
@@ -390,17 +399,23 @@ namespace CosmicShore.Gameplay
 
         Material LeanedMaterial(Material baseMat)
         {
-            if (!baseMat || _lean == 0) return baseMat;
-            var key = (baseMat, _leanKey, _lean);
+            if (!baseMat || (_lean == 0 && _glow == 0)) return baseMat;
+            var key = (baseMat, _leanKey, _lean, _glow);
             if (LeanedMaterials.TryGetValue(key, out var leaned) && leaned) return leaned;
-            leaned = new Material(baseMat) { name = $"{baseMat.name}_Lean{_leanKey:X8}" };
-            float amount = _lean / 255f;
+            leaned = new Material(baseMat) { name = $"{baseMat.name}_Lean{_leanKey:X8}_{_lean}_Glow{_glow}" };
+            float amount = _lean / 255f, gain = 1f + _glow * GlowQuantum;
             for (int i = 0; i < LeanColorIDs.Length; i++)
                 if (leaned.HasProperty(LeanColorIDs[i]))
-                    leaned.SetColor(LeanColorIDs[i], LeanHue(leaned.GetColor(LeanColorIDs[i]), _leanTarget, amount));
+                    leaned.SetColor(LeanColorIDs[i], Glow(LeanHue(leaned.GetColor(LeanColorIDs[i]), _leanTarget, amount), gain));
             LeanedMaterials[key] = leaned;
             return leaned;
         }
+
+        /// <summary>The glow on the wire and in the material key: extra intensity in <see cref="GlowQuantum"/> steps.</summary>
+        public static byte QuantizeGlow(float glow) => (byte)Mathf.Clamp(Mathf.RoundToInt(glow / GlowQuantum), 0, 255);
+
+        /// <summary><paramref name="color"/>'s RGB times <paramref name="gain"/> (HDR, not clamped), alpha kept.</summary>
+        public static Color Glow(Color color, float gain) => new(color.r * gain, color.g * gain, color.b * gain, color.a);
 
         /// <summary>
         /// <paramref name="color"/> with its hue turned <paramref name="lean"/> of the way toward

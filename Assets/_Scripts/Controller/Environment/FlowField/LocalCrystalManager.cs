@@ -41,6 +41,8 @@ namespace CosmicShore.Gameplay
             UpdateCrystalPos(crystalId, newPos);
         }
 
+        public override void RelocateCrystal(int crystalId, Vector3 position) => UpdateCrystalPos(crystalId, position);
+
         public override void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams)
         {
             if (!cellData.TryGetCrystalById(crystalId, out var crystal)) return;
