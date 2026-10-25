@@ -1,31 +1,9 @@
 {
-  "amoebius": [
-    {
-      "key": "SkimRace|I2|3p",
-      "topGameAllocators": [
-        [
-          "PoolRefill.Squirrel Prism",
-          8.908
-        ],
-        [
-          "VesselImpactor.AcceptImpactee",
-          3.412
-        ],
-        [
-          "PoolActivate.Squirrel Prism",
-          0.726
-        ],
-        [
-          "PoolRefill.FastGrowPrism",
-          0.693
-        ]
-      ],
-      "verdict": "within baseline"
-    }
-  ],
+  "amoebius": [],
   "baselines": [
     "Menu_Main|Garland",
     "Menu_Main|MinigameRegatta",
+    "Menu_Main|S2-4min",
     "MinigameBloomrush|MinigameBloomrush",
     "MinigameBreakwater|MinigameBreakwater",
     "MinigameBroadside|MinigameBroadside",
@@ -36,6 +14,7 @@
     "MinigameSwitchback|MinigameSwitchback",
     "MinigameTapestry|MinigameTapestry",
     "MinigameThresherTime|MinigameThresherTime",
+    "MinigameWarpline|MinigameWarpline",
     "MinigameWaystation|MinigameWaystation",
     "MinigameWrasseRun|MinigameWrasseRun",
     "MinigameWreckingBall|MinigameWreckingBall"
@@ -51,8 +30,8 @@
     }
   ],
   "bugs": {
-    "open": 270,
-    "source": "551 branch(es)",
+    "open": 259,
+    "source": "556 branch(es)",
     "top": [
       {
         "id": "E-cdf0c783c1",
@@ -85,77 +64,77 @@
         "title": "Transport failure! Relay allocation needs to be recreated, and NetworkManager restarted. Use NetworkManager.On"
       }
     ],
-    "validating": 39
+    "validating": 52
   },
   "captures": [
     {
-      "cpuBusyMs": 3.0181937217712402,
-      "gcKB": 61.10776138305664,
-      "key": "MinigameRegatta|MinigameRegatta",
-      "timestamp": "2026-10-23 00:24:45",
-      "user": "owner",
-      "valid": true,
-      "verdict": "REGRESSION"
-    },
-    {
-      "cpuBusyMs": 16.23882484436035,
-      "gcKB": 18.92774772644043,
-      "key": "MinigameHijack|MinigameHijack",
-      "timestamp": "2026-10-23 13:50:32",
-      "user": "owner",
-      "valid": true,
-      "verdict": "within baseline"
-    },
-    {
-      "cpuBusyMs": 16.522550582885742,
-      "gcKB": 22.05561637878418,
-      "key": "MinigameDustup|MinigameDustup",
-      "timestamp": "2026-10-23 13:56:52",
-      "user": "owner",
-      "valid": true,
-      "verdict": "within baseline"
-    },
-    {
-      "cpuBusyMs": 10.79955005645752,
-      "gcKB": 23.88235092163086,
-      "key": "MinigameTapestry|MinigameTapestry",
-      "timestamp": "2026-10-23 14:02:10",
-      "user": "owner",
-      "valid": true,
-      "verdict": "within baseline"
-    },
-    {
-      "cpuBusyMs": 22.813396453857422,
-      "gcKB": 31.695173263549805,
-      "key": "MinigameBroadside|MinigameBroadside",
-      "timestamp": "2026-10-23 14:13:05",
-      "user": "owner",
-      "valid": true,
-      "verdict": "within baseline"
-    },
-    {
-      "cpuBusyMs": 26.555517196655273,
-      "gcKB": 24.082897186279297,
-      "key": "Menu_Main|Garland",
-      "timestamp": "2026-10-23 19:42:57",
-      "user": "owner",
-      "valid": true,
-      "verdict": "REGRESSION"
-    },
-    {
-      "cpuBusyMs": 11.583251953125,
-      "gcKB": 20.374347686767578,
+      "cpuBusyMs": 10.878334045410156,
+      "gcKB": 20.058313369750977,
       "key": "Menu_Main|S2-4min",
-      "timestamp": "2026-10-25 08:19:05",
+      "timestamp": "2026-10-25 18:37:50",
       "user": "yskha",
       "valid": true,
-      "verdict": "adopted as the baseline"
+      "verdict": "within baseline"
     },
     {
-      "cpuBusyMs": 12.834184646606445,
-      "gcKB": 20.5296630859375,
+      "cpuBusyMs": 11.034126281738281,
+      "gcKB": 19.303226470947266,
       "key": "Menu_Main|Garland",
-      "timestamp": "2026-10-25 08:23:05",
+      "timestamp": "2026-10-25 18:41:50",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "REGRESSION"
+    },
+    {
+      "cpuBusyMs": 11.55167007446289,
+      "gcKB": 93.24456024169922,
+      "key": "MinigameRegatta|MinigameRegatta",
+      "timestamp": "2026-10-25 21:53:24",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "REGRESSION"
+    },
+    {
+      "cpuBusyMs": 12.660911560058594,
+      "gcKB": 19.943618774414062,
+      "key": "Menu_Main|S2-4min",
+      "timestamp": "2026-10-25 22:28:54",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "REGRESSION"
+    },
+    {
+      "cpuBusyMs": 11.75367546081543,
+      "gcKB": 18.96903419494629,
+      "key": "Menu_Main|Garland",
+      "timestamp": "2026-10-25 22:32:54",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "REGRESSION"
+    },
+    {
+      "cpuBusyMs": 11.60446834564209,
+      "gcKB": 18.990278244018555,
+      "key": "Menu_Main|S2-4min",
+      "timestamp": "2026-10-25 22:41:52",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "within baseline"
+    },
+    {
+      "cpuBusyMs": 14.523198127746582,
+      "gcKB": 20.96033477783203,
+      "key": "Menu_Main|Garland",
+      "timestamp": "2026-10-25 22:45:52",
+      "user": "yskha",
+      "valid": true,
+      "verdict": "REGRESSION"
+    },
+    {
+      "cpuBusyMs": 7.6645917892456055,
+      "gcKB": 21.60072898864746,
+      "key": "MinigameRegatta|MinigameRegatta",
+      "timestamp": "2026-10-25 22:48:56",
       "user": "yskha",
       "valid": true,
       "verdict": "REGRESSION"
@@ -184,7 +163,7 @@
     }
   ],
   "gatesOk": true,
-  "generatedUtc": "2026-10-25T16:51:38Z",
+  "generatedUtc": "2026-10-25T17:40:46Z",
   "next": [
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker UniTaskLoopRunnerPreLateUpdate 0.0007 -> 0.3666 ms/frame (+52271%)",
@@ -291,10 +270,32 @@
     "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker UGUI.Rendering.UpdateBatches 0.6009 -> 4.563 ms/frame (+659%)",
     "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker BehaviourUpdate 1.0212 -> 1.7767 ms/frame (+74%)",
     "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker LateBehaviourUpdate 0.4277 -> 1.4627 ms/frame (+242%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 18:41:50): cpuBusyMs 3.846808671951294 -> 11.034126281738281 (+187%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 18:41:50): marker UGUI.Rendering.UpdateBatches 0.6009 -> 4.1744 ms/frame (+595%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 18:41:50): marker BehaviourUpdate 1.0212 -> 2.2456 ms/frame (+120%)",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-25 21:53:24): cpuBusyMs 8.692339897155762 -> 11.55167007446289 (+33%)",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-25 21:53:24): gcKB 47.01902389526367 -> 93.24456024169922 (+98%)",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-25 21:53:24): marker Inl_UniversalRenderTotal 0.9318 -> 1.9682 ms/frame (+111%)",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-25 21:53:24): marker LateBehaviourUpdate 0.1986 -> 1.2338 ms/frame (+521%)",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-25 21:53:24): marker CoroutinesDelayedCalls 0.1719 -> 0.6488 ms/frame (+277%)",
+    "Resolve: Performance regression in Menu_Main|S2-4min (yskha, 2026-10-25 22:28:54): marker LateBehaviourUpdate 0.7454 -> 1.2037 ms/frame (+61%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:32:54): cpuBusyMs 3.846808671951294 -> 11.75367546081543 (+206%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:32:54): marker UGUI.Rendering.UpdateBatches 0.6009 -> 4.2108 ms/frame (+601%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:32:54): marker BehaviourUpdate 1.0212 -> 2.2757 ms/frame (+123%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:32:54): marker LateBehaviourUpdate 0.4277 -> 0.7145 ms/frame (+67%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:45:52): cpuBusyMs 3.846808671951294 -> 14.523198127746582 (+278%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:45:52): p95Ms 18.76990509033203 -> 22.43290138244629 (+20%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:45:52): marker PlayerLoop 9.2708 -> 14.4929 ms/frame (+56%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:45:52): marker UGUI.Rendering.UpdateBatches 0.6009 -> 4.8871 ms/frame (+713%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:45:52): marker Inl_UniversalRenderTotal 1.4946 -> 3.3485 ms/frame (+124%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:45:52): marker BehaviourUpdate 1.0212 -> 1.8516 ms/frame (+81%)",
+    "Resolve: Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:45:52): marker LateBehaviourUpdate 0.4277 -> 0.7722 ms/frame (+81%)",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-25 22:48:56): marker LateBehaviourUpdate 0.1986 -> 2.0717 ms/frame (+943%)",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-25 22:48:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.4055 ms/frame (+51%)",
     "Capture S2 Lattice in Release (no valid baseline yet): Play Menu_Main in Release, Cell Selector > Lattice, and keep playing 8 minutes: the editor captures S2 by itself [T-20261020-fb02]",
     "Capture Skim Race I2 in Release (no valid baseline yet): Play Arcade > Skim Race, intensity 2, 2 AI, in Release for 90 s: the editor captures it by itself - also proves the Burst fix [T-20261015-3e0b]",
     "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go [T-20261015-3972]",
-    "270 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti)"
+    "259 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti)"
   ],
   "openPerformanceTasks": [
     {
@@ -518,7 +519,29 @@
     "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker PlayerLoop 9.2708 -> 12.8267 ms/frame (+38%)",
     "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker UGUI.Rendering.UpdateBatches 0.6009 -> 4.563 ms/frame (+659%)",
     "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker BehaviourUpdate 1.0212 -> 1.7767 ms/frame (+74%)",
-    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker LateBehaviourUpdate 0.4277 -> 1.4627 ms/frame (+242%)"
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 08:23:05): marker LateBehaviourUpdate 0.4277 -> 1.4627 ms/frame (+242%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 18:41:50): cpuBusyMs 3.846808671951294 -> 11.034126281738281 (+187%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 18:41:50): marker UGUI.Rendering.UpdateBatches 0.6009 -> 4.1744 ms/frame (+595%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 18:41:50): marker BehaviourUpdate 1.0212 -> 2.2456 ms/frame (+120%)",
+    "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-25 21:53:24): cpuBusyMs 8.692339897155762 -> 11.55167007446289 (+33%)",
+    "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-25 21:53:24): gcKB 47.01902389526367 -> 93.24456024169922 (+98%)",
+    "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-25 21:53:24): marker Inl_UniversalRenderTotal 0.9318 -> 1.9682 ms/frame (+111%)",
+    "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-25 21:53:24): marker LateBehaviourUpdate 0.1986 -> 1.2338 ms/frame (+521%)",
+    "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-25 21:53:24): marker CoroutinesDelayedCalls 0.1719 -> 0.6488 ms/frame (+277%)",
+    "Performance regression in Menu_Main|S2-4min (yskha, 2026-10-25 22:28:54): marker LateBehaviourUpdate 0.7454 -> 1.2037 ms/frame (+61%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:32:54): cpuBusyMs 3.846808671951294 -> 11.75367546081543 (+206%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:32:54): marker UGUI.Rendering.UpdateBatches 0.6009 -> 4.2108 ms/frame (+601%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:32:54): marker BehaviourUpdate 1.0212 -> 2.2757 ms/frame (+123%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:32:54): marker LateBehaviourUpdate 0.4277 -> 0.7145 ms/frame (+67%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:45:52): cpuBusyMs 3.846808671951294 -> 14.523198127746582 (+278%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:45:52): p95Ms 18.76990509033203 -> 22.43290138244629 (+20%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:45:52): marker PlayerLoop 9.2708 -> 14.4929 ms/frame (+56%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:45:52): marker UGUI.Rendering.UpdateBatches 0.6009 -> 4.8871 ms/frame (+713%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:45:52): marker Inl_UniversalRenderTotal 1.4946 -> 3.3485 ms/frame (+124%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:45:52): marker BehaviourUpdate 1.0212 -> 1.8516 ms/frame (+81%)",
+    "Performance regression in Menu_Main|Garland (yskha, 2026-10-25 22:45:52): marker LateBehaviourUpdate 0.4277 -> 0.7722 ms/frame (+81%)",
+    "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-25 22:48:56): marker LateBehaviourUpdate 0.1986 -> 2.0717 ms/frame (+943%)",
+    "Performance regression in MinigameRegatta|MinigameRegatta (yskha, 2026-10-25 22:48:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.4055 ms/frame (+51%)"
   ],
   "scenarios": [
     {
