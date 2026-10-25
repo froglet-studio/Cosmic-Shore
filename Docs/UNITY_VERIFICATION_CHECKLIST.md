@@ -14355,3 +14355,23 @@ RESULT OK, editor 0 errors in changed files; perf gates OK. Docs/PERFORMANCE_OPT
 2. In the recording: the release span is well under the 1.1-1.4 s of the 10-21 captures; "Suction: prisms not
    created yet" counts the invisible ones; "Suction: prisms with no render entity" is 0 (or names a real case).
 3. Swap back and forth a few times: no console error, the trail and the new world behave as before.
+
+## 🔴 2026-10-25 — Regatta: the race line's aim is a path lead (no break-off) and never cuts a mouth (unverified: no Unity CLI in the session)
+
+**Files:** `AIPilot.cs` (`MarkAimAsPathLead`, `UpdateOrbitBreak`), `GateRaceController.cs` (marks the line's aim),
+`RegattaRaceLine.cs` (`AimThroughRing`, `DistanceAlong`), `RegattaController.cs` (`TryRaceLine`). What ran instead of
+`/verify-unity`: `unity_refcompile` player RESULT OK, editor 0 errors in changed files (the 3 known
+`AuthenticationServiceFacade` errors only); `regatta_line_sim.py --self-test`. `Arcade/REGATTA.md` §6.3.
+
+1. Run the edit-mode tests `RegattaRaceLineTests` (the four new `AimThroughRing_*` / `DistanceAlong_*`) and
+   `RegattaNoCrystalTargetTests`: all pass.
+2. Regatta, I3, Hard rivals, a grid with a Manta, a Scarab, a Rhino and a Sparrow (the Third Eye, FrogletTools > AI >
+   Third Eye, Follow on each in turn). No AI flies off its line in a wide loop (500 u or more) between two rings; the
+   Manta and the Scarab thread the rings on bends instead of passing just beside them.
+3. Same at I1 and I4: every AI hull finishes its laps; the Third Eye's objective label stays on Approach on the line
+   (Misjudged only on Easy / Medium, as before).
+4. Any other gate race (Headlong, Skein) and any crystal mode: AIs still break off a crystal they circle (the flag is
+   only set by Regatta's line).
+5. After a few races, run `python3 Tools/Build/regatta_rival_report.py --dir <your flights> --since 2026-10-26`: rings
+   a minute per hull should rise from 5.5-9.3 toward the model's (Manta ~22, Scarab ~27, Rhino ~11).
+

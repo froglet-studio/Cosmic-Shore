@@ -79,6 +79,72 @@ namespace CosmicShore.Tests
             Assert.Less((ahead - line[3]).magnitude, 2f * step, "ahead of the last points is the first ones: a closed loop");
         }
 
+        // AimThroughRing (2026-10-25): a pilot steering at a point a look-ahead ahead cuts every bend, so at a ring on a bend
+        // the chord to that point can cross the ring's plane outside a small mouth. The test ring is centred ON the line
+        // (to isolate the cut from the line's own radius) at point K, with the pilot ON the line Back points before it.
+        const int K = 300, Back = 10;
+        const float Look = 700f;   // ~40 line points on this braid: a fast hull's look-ahead
+
+        static float ChordOffset(RegattaRaceLine line, Vector3 self, Vector3 aim, Vector3 centre, Vector3 axis)
+        {
+            float d0 = Vector3.Dot(self - centre, axis), d1 = Vector3.Dot(aim - centre, axis);
+            Vector3 hit = Vector3.Lerp(self, aim, d0 / (d0 - d1));
+            return (hit - centre).magnitude;
+        }
+
+        static (RegattaRaceLine line, Vector3 self, Vector3 centre, Vector3 axis, float cut) RingOnABend()
+        {
+            var line = RegattaRaceLine.BuildGapLine(Lane(0), Lane(1), Lane(2), 50f);
+            Vector3 centre = line[K];
+            Vector3 axis = (line[K + 1] - line[K - 1]).normalized;
+            Vector3 self = line[K - Back];
+            float cut = ChordOffset(line, self, line.PointAhead(K - Back, Look), centre, axis);
+            return (line, self, centre, axis, cut);
+        }
+
+        [Test]
+        public void AimThroughRing_ChordWouldMissTheMouth_AimsThroughTheCrossingPoint()
+        {
+            var (line, self, centre, axis, cut) = RingOnABend();
+            Assert.Greater(cut, 8f, "the bend's chord must cut the ring for this test to mean anything");
+            float mouth = cut - 5f;
+            Vector3 aim = line.AimThroughRing(K - Back, Look, self, K, centre, axis, mouth);
+            Assert.AreEqual(GatePlaneCrossing.InsideMouth, RaceGateRing.PlaneCrossing(self, aim, centre, axis, mouth),
+                "the pilot would fly its chord outside the mouth: a miss and a swing round (the 2026-10-25 recordings)");
+            Assert.Less(Vector3.Cross((centre - self).normalized, (aim - self).normalized).magnitude, 1e-3f,
+                "it aims straight on through the crossing point");
+            Assert.AreEqual(Look, (aim - self).magnitude, 0.05f * Look, "still about a look-ahead away, so it steers as gently");
+        }
+
+        [Test]
+        public void AimThroughRing_ChordThreadsTheMouth_KeepsTheLookahead()
+        {
+            // Negative control: where the free chord already threads the mouth, the line is not bent.
+            var (line, self, centre, axis, cut) = RingOnABend();
+            Vector3 aim = line.AimThroughRing(K - Back, Look, self, K, centre, axis, cut + 5f);
+            Assert.AreEqual(line.PointAhead(K - Back, Look), aim);
+        }
+
+        [Test]
+        public void AimThroughRing_RingBeyondTheLookahead_KeepsTheLookahead()
+        {
+            var line = RegattaRaceLine.BuildGapLine(Lane(0), Lane(1), Lane(2), 50f);
+            Vector3 centre = line[K + 200];
+            Vector3 axis = (line[K + 201] - line[K + 199]).normalized;
+            Vector3 aim = line.AimThroughRing(K, 300f, line[K], K + 200, centre, axis, 1f);
+            Assert.AreEqual(line.PointAhead(K, 300f), aim, "a ring far down the line does not bend the aim");
+        }
+
+        [Test]
+        public void DistanceAlong_WrapsTheLoop_AndStopsAtTheLimit()
+        {
+            var line = RegattaRaceLine.BuildGapLine(Lane(0), Lane(1), Lane(2), 50f);
+            float step = (line[1] - line[0]).magnitude;
+            Assert.AreEqual(4f * step, line.DistanceAlong(N - 2, 2), 0.1f * step, "forward past the end is the start");
+            Assert.LessOrEqual(line.DistanceAlong(0, N / 2, 10f * step), 11.5f * step, "counting stops past the limit");
+            Assert.AreEqual(0f, line.DistanceAlong(7, 7));
+        }
+
         [Test]
         public void Style_LaneRadius_StaysInsideTheMouthLessTheRoom_AndOutsideTheRails()
         {

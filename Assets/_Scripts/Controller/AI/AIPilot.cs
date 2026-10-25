@@ -266,6 +266,21 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetExternalTargetProvider(Func<Vector3> provider) => _externalTargetProvider = provider;
 
+        // Set by the external target provider, for the frame it is sampled in: see MarkAimAsPathLead.
+        bool _aimIsPathLead;
+
+        /// <summary>
+        /// Called from inside the external target provider: the position it is returning this frame is a LEAD POINT on a
+        /// path (a look-ahead along a race line), not an objective to reach. Such a point stays a look-ahead in front, so
+        /// its range never falls and a lap of turning reads as an orbit; and on a corner it sits off the nose inside the
+        /// turning circle. The orbit break-off is therefore skipped for it, as it already is for a rail
+        /// (<see cref="UpdateOrbitBreak"/>). Regatta's race line, 2026-10-25: people's editor races showed every styled
+        /// AI hull breaking off its own line and swinging 500-1500 u wide (Tools/Build/regatta_rival_report.py), and the
+        /// offline model of the line (regatta_line_sim.py) broke off 3-22 times a race on every hull and course.
+        /// Cleared before every sample, so a provider that does not call it keeps the break-off.
+        /// </summary>
+        public void MarkAimAsPathLead() => _aimIsPathLead = true;
+
         /// <summary>Restores default crystal/player target seeking.</summary>
         public void ClearExternalTargetProvider()
         {
@@ -901,6 +916,7 @@ namespace CosmicShore.Gameplay
 
             // External steering hook (e.g. Astro League ball striking) overrides all other
             // targeting when set - checked last so it always wins.
+            _aimIsPathLead = false;
             if (_externalTargetProvider != null)
                 _targetPosition = _externalTargetProvider();
 
@@ -1135,7 +1151,8 @@ namespace CosmicShore.Gameplay
         {
             // Riding a rail is not an orbit: the rail's aim point is always a lead ahead, so the range never falls and
             // a lap of turning would trip the detector (2026-10-14 Regatta audit: an AI Urchin rode at 0.6 throttle).
-            if (!breakOrbits || VesselStatus.IsDrifting || VesselStatus.IsAttached)
+            // Nor is following a path's lead point (MarkAimAsPathLead): the same lead-ahead aim as a rail.
+            if (!breakOrbits || VesselStatus.IsDrifting || VesselStatus.IsAttached || _aimIsPathLead)
             {
                 EndOrbitBreak();
                 return;

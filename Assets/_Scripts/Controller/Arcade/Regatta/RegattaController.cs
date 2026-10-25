@@ -311,12 +311,21 @@ namespace CosmicShore.Gameplay
             _pilotLines[seat] = state;
 
             float look = style.Lookahead(status.Speed, state.Risk);
-            aim = state.Line.PointAhead(nearest, look);
-            // The corner the boost drivers judge is the turn AT the ring they are after (AIBoostContext's objective), so
-            // "after" is the line a look-ahead past that ring, not past the steering point.
-            after = TryGetAIGate(pilot, out var gate)
-                ? state.Line.PointAhead(LineIndexAtRing(state.Line, gate.Position), look)
-                : state.Line.PointAhead(nearest, 2f * look);
+            if (TryGetAIGate(pilot, out var gate))
+            {
+                // Never cut across the next ring's mouth on the way to the look-ahead (RegattaRaceLine.AimThroughRing).
+                int ringIndex = LineIndexAtRing(state.Line, gate.Position);
+                aim = state.Line.AimThroughRing(nearest, look, self, ringIndex, gate.Position, gate.Axis,
+                    gate.Radius - style.ClearanceAt(state.Risk));
+                // The corner the boost drivers judge is the turn AT the ring they are after (AIBoostContext's objective),
+                // so "after" is the line a look-ahead past that ring, not past the steering point.
+                after = state.Line.PointAhead(ringIndex, look);
+            }
+            else
+            {
+                aim = state.Line.PointAhead(nearest, look);
+                after = state.Line.PointAhead(nearest, 2f * look);
+            }
             return true;
         }
 
