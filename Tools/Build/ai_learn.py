@@ -132,6 +132,24 @@ def plan(flights, seen):
     return new, out
 
 
+def seen_after(flights, new, modes, outcomes, seen):
+    """The memory after a run: everything already seen, every flight the plan never treats as new (an Unknown hull or
+    mode), and each NEW flight only once it was really learned from - its mode not on hold, every learner of its mode
+    exited 0, and its hull covered by a learner that writes (not listed as unread or report-only). The rest stays new,
+    so the next sweep retries a failed learner, and a mode or hull gains its races back when its learner arrives
+    (Codex on #1558: marking every flight seen dropped them for good)."""
+    new_paths = {f["path"] for f in new}
+    keep = set(seen) | {f["path"] for f in flights if f["path"] not in new_paths}
+    for f in new:
+        m = modes.get(f["mode"])
+        if not m or m["hold"] or f["hull"] in m["unread"] or f["hull"] in m["report"]:
+            continue
+        if any(code != 0 for _, code, _ in outcomes.get(f["mode"], [])):
+            continue
+        keep.add(f["path"])
+    return keep
+
+
 def pace(flights, mode):
     """The person's finished races and the AI rivals' (regatta_rival_report) in this mode, as report lines."""
     mine = [f for f in flights if f["mode"] == mode]
@@ -251,7 +269,7 @@ def main():
     changed = {p for p, h in after.items() if before.get(p) != h}
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     write_report(now, new, modes, outcomes, paces, changed)
-    save_seen({f["path"] for f in flights})
+    save_seen(seen_after(flights, new, modes, outcomes, seen))
     failed = [(mode, n) for mode, rs in outcomes.items() for n, code, _ in rs if code != 0]
     print(f"ai_learn: report {os.path.relpath(REPORT, REPO)}; {len(changed)} learned file(s) changed"
           + (f"; FAILED: {failed}" if failed else "") + ".")
@@ -292,6 +310,17 @@ def self_test():
         bad.append("a hull nothing covers is listed as unread")
     if plan(fl, {f["path"] for f in fl})[0]:
         bad.append("everything seen must leave nothing new")
+    # seen_after: only what was really learned from is remembered
+    outcomes = {mode: [("learner", 0, "")] for mode in modes}
+    outcomes["Breakwater"] = [("learn_drives_from_flights --write", 1, "boom")]
+    kept = seen_after(fl, new, modes, outcomes, {"a/flight_Switchback_Dolphin_1.json"})
+    if "a/flight_Switchback_Dolphin_2.json" not in kept: bad.append("a learned flight must be remembered")
+    if "a/flight_Breakwater_Sparrow_1.json" in kept: bad.append("a failed learner's flights must stay new")
+    if "a/flight_Warpline_Stoat_1.json" in kept: bad.append("a held mode's flights must stay new")
+    if "a/flight_Tapestry_Ghost_1.json" in kept: bad.append("an unread hull's flights must stay new")
+    if "a/flight_GrizzlyCharge_Grizzly_1.json" in kept: bad.append("a report-only hull's flights must stay new")
+    if "a/flight_Random_Unknown_1.json" not in kept or "a/flight_Switchback_Dolphin_1.json" not in kept:
+        bad.append("what was seen, or is never new, stays remembered")
     print("ai_learn self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
     return 0 if not bad else 1
 
