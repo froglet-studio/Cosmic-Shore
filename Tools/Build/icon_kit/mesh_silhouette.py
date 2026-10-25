@@ -32,10 +32,11 @@ def _polys(fbx_rel):
     return _CACHE[fbx_rel]
 
 
-def silhouette(fbx_rel, pitch=0.0, yaw=0.0, box=114, cx=64.0, cy=64.0, dilate_px=0.0, close_px=0.0):
+def silhouette(fbx_rel, pitch=0.0, yaw=0.0, box=114, cx=64.0, cy=64.0, dilate_px=0.0, close_px=0.0, roll=0.0):
     """Mask of the hull seen from above (file frame: +Y nose, +X pilot's right, +Z up), nose to the right on
     screen, tipped `pitch` degrees toward the viewer (positive = the nose end comes toward us) and turned `yaw`
-    degrees clockwise on screen; fitted to `box` icon px about (cx, cy)."""
+    degrees clockwise on screen; fitted to `box` icon px about (cx, cy), then rolled `roll` degrees (clockwise on
+    screen) about that centre - the in-plane turn of a hull that has been knocked."""
     pa, ya = math.radians(-pitch), math.radians(yaw)
     Ryaw = np.array([[math.cos(ya), -math.sin(ya), 0], [math.sin(ya), math.cos(ya), 0], [0, 0, 1]])
     Rpitch = np.array([[1, 0, 0], [0, math.cos(pa), -math.sin(pa)], [0, math.sin(pa), math.cos(pa)]])
@@ -52,8 +53,14 @@ def silhouette(fbx_rel, pitch=0.0, yaw=0.0, box=114, cx=64.0, cy=64.0, dilate_px
     mx, my = (lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2
     im = Image.new("L", (N, N), 0)
     d = ImageDraw.Draw(im)
+    ra = math.radians(roll)
+    cr, sr = math.cos(ra), math.sin(ra)
     for q in projected:
-        d.polygon([((v[0] - mx) * k + cx * SS, (v[1] - my) * k + cy * SS) for v in q], fill=255)
+        pts = []
+        for v in q:
+            x, y = (v[0] - mx) * k, (v[1] - my) * k
+            pts.append(((x * cr - y * sr) + cx * SS, (x * sr + y * cr) + cy * SS))
+        d.polygon(pts, fill=255)
     if close_px:
         r = int(close_px * SS) | 1
         im = im.filter(ImageFilter.MaxFilter(r)).filter(ImageFilter.MinFilter(r))
@@ -76,7 +83,7 @@ def nose_vertex(fbx_rel):
     return allv[allv[:, 1].argmax()]
 
 
-def project_point(fbx_rel, v, pitch=0.0, yaw=0.0, box=114, cx=64.0, cy=64.0):
+def project_point(fbx_rel, v, pitch=0.0, yaw=0.0, box=114, cx=64.0, cy=64.0, roll=0.0):
     """Where a mesh point lands, in icon px, for the same view and placement `silhouette()` uses."""
     R = _rotation(pitch, yaw)
     allv = np.vstack([np.asarray(p) for p in _polys(fbx_rel)])
@@ -86,4 +93,6 @@ def project_point(fbx_rel, v, pitch=0.0, yaw=0.0, box=114, cx=64.0, cy=64.0):
     k = box / ext
     mx, my = (lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2
     s = np.array([v[1], v[0], v[2]]) @ R.T
-    return ((s[0] - mx) * k + cx, (s[1] - my) * k + cy)
+    x, y = (s[0] - mx) * k, (s[1] - my) * k
+    ra = math.radians(roll)
+    return (x * math.cos(ra) - y * math.sin(ra) + cx, x * math.sin(ra) + y * math.cos(ra) + cy)

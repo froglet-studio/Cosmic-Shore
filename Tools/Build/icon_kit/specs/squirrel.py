@@ -35,27 +35,30 @@ FBX = "Assets/_Models/Vessel Models/SquirrelVessel_CosmicShoresTest1.fbx"
 VIEW_D = dict(pitch=45, yaw=15, dilate_px=1.2)   # Garrett 2026-10-25: "D" of the twelve-view sheet
 
 
-def squirrel(box, cx, cy):
+def squirrel(box, cx, cy, roll=0.0, dilate_px=None):
     """The Squirrel's REAL silhouette: its FBX mesh, parallel-projected from above tipped 45 and turned 15 (view D),
-    thickened 1.2 px so the ribbed tail survives the 60 px card. Garrett 2026-10-25 on a hand-drawn version:
-    "the fidelity is too low. this reads too abstractly." On this view the hull's nose-tail axis is horizontal."""
-    return mesh_silhouette.silhouette(FBX, box=box, cx=cx, cy=cy, **VIEW_D)
+    thickened so the ribbed tail survives the 60 px card. Garrett 2026-10-25 on a hand-drawn version: "the
+    fidelity is too low. this reads too abstractly." On this view the hull's nose-tail axis is horizontal."""
+    kw = dict(VIEW_D)
+    if dilate_px is not None:
+        kw["dilate_px"] = dilate_px
+    return mesh_silhouette.silhouette(FBX, box=box, cx=cx, cy=cy, roll=roll, **kw)
 
 
-def squirrel_nose(box, cx, cy):
+def squirrel_nose(box, cx, cy, roll=0.0):
     """Where the mesh's nose vertex lands for the same placement (the point the joust composes around)."""
-    return mesh_silhouette.project_point(FBX, mesh_silhouette.nose_vertex(FBX), box=box, cx=cx, cy=cy,
+    return mesh_silhouette.project_point(FBX, mesh_silhouette.nose_vertex(FBX), box=box, cx=cx, cy=cy, roll=roll,
                                          pitch=VIEW_D["pitch"], yaw=VIEW_D["yaw"])
 
 
 def crystal_joust():
-    """The joust: the Squirrel (view D) driving its nose into a creature - a hexagonal lifeform body, cracked
-    along the hull's axis where it hits. Chosen 2026-10-25 from four placements; a crack of 12 keeps the body a
-    body (a wide channel made two brackets)."""
-    box, cx, cy = 80, 46, 68          # the fitted box IS the hull's length: tail at cx - 40 = 6, nose at 86
+    """The joust: the Squirrel (view D) coming up behind a SECOND, SMALLER Squirrel - the pilot it overtakes - which
+    is knocked, spun 35 degrees nose-up off the line. Garrett 2026-10-25: "perhaps use a second smaller squirrel"
+    (the hexagonal creature before it read as two brackets at 40 px)."""
+    box, cx, cy = 80, 46, 76             # the fitted box IS the hull's length: tail at 6, nose at 86
     n = squirrel_nose(box, cx, cy)
-    body = fill(ngon(6, 28, n[0] + 6, n[1], rot=0)) & ~rect(0, n[1] - 6, 128, n[1] + 6)
-    return squirrel(box, cx, cy) | body
+    small = squirrel(40, n[0] + 18, n[1] - 16, roll=-35, dilate_px=1.6)
+    return squirrel(box, cx, cy, dilate_px=1.5) | small
 
 
 def skimming():

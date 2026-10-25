@@ -114,3 +114,8 @@ one thing right. then move on."
     HORIZONTAL in view D and the fitted box IS the hull's length. Compose from projected points, not from the
     numbers that produced them. And the creature at the nose needs a narrow crack (12 px) - a wide channel turns
     a body into two brackets.
+26. **The opponent is the same hull, smaller.** Garrett: "perhaps use a second smaller squirrel." A hexagon at
+    the nose read as brackets; a second Squirrel (the same mesh at 40 px, rolled 35 degrees nose-up: knocked)
+    ahead of the big one reads as the overtake at every size, and needs no new pictogram. `silhouette(roll=)`
+    turns a hull in the plane exactly (on the projected points, not a raster rotate). Two thin hulls sit at the
+    coverage floor: thicken them (1.5 / 1.6 px) rather than shrink the gap between them.
